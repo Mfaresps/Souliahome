@@ -636,8 +636,20 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 
 <!-- Approvals -->
 <div class="page" id="page-approvals">
+<div class="flex-between mb-12">
+<h2 class="page-title" style="margin-bottom:0">الموافقات والمتابعة</h2>
+<div class="flex gap-8">
+<button class="btn btn-outline btn-sm" id="appr-export-hub-btn" onclick="exportHubExcel()" style="display:none">📥 تصدير Hub</button>
+</div>
+</div>
+<!-- Tabs -->
+<div class="tab-bar mb-16" style="border-bottom:1px solid var(--border);padding-bottom:8px">
+  <button class="tab-btn active" id="appr-tab-approvals-btn" onclick="switchApprTab('approvals',this)">✅ الموافقات</button>
+  <button class="tab-btn" id="appr-tab-hub-btn" onclick="switchApprTab('hub',this)">📋 سجل التعديلات (Hub)</button>
+</div>
+<!-- Approvals content -->
+<div id="appr-tab-approvals-content">
 <div class="flex-between mb-16">
-<h2 class="page-title" style="margin-bottom:0">الموافقات</h2>
 <div class="flex gap-8" style="flex-wrap:wrap;align-items:center">
 <select id="appr-filter" style="width:170px" onchange="renderApprovals()"><option value="معلق">حالة: المعلقة</option><option value="معتمد">حالة: المعتمدة</option><option value="مرفوض">حالة: المرفوضة</option><option value="">حالة: الكل</option></select>
 <select id="appr-kind-filter" style="width:200px" onchange="renderApprovals()"><option value="">النوع: الكل</option><option value="return">النوع: استرجاع واستبدال فقط</option><option value="expense">النوع: مصاريف فقط</option></select>
@@ -654,6 +666,55 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 </div>
 <div class="kpi-strip" id="appr-kpi" style="grid-template-columns:repeat(auto-fit,minmax(128px,1fr))"></div>
 <div id="appr-list"></div>
+</div>
+<!-- History Hub content -->
+<div id="appr-tab-hub-content" style="display:none">
+<div class="filter-bar mb-16" style="flex-wrap:wrap;gap:8px">
+  <select id="hub-emp-filter" style="width:170px" onchange="renderHistoryHub()"><option value="">كل الموظفين</option></select>
+  <select id="hub-type-filter" style="width:160px" onchange="renderHistoryHub()">
+    <option value="">نوع الحركة: الكل</option>
+    <option value="مبيعات">مبيعات</option>
+    <option value="مشتريات">مشتريات</option>
+    <option value="مرتجع">مرتجع</option>
+  </select>
+  <select id="hub-action-filter" style="width:160px" onchange="renderHistoryHub()">
+    <option value="">نوع الإجراء: الكل</option>
+    <option value="تعديل">تعديل</option>
+    <option value="إلغاء">إلغاء</option>
+    <option value="خصم بعدي">خصم بعدي</option>
+    <option value="تعديل ديبوزت">تعديل ديبوزت</option>
+  </select>
+  <select id="hub-vault-filter" style="width:160px" onchange="renderHistoryHub()">
+    <option value="">الخزنة: الكل</option>
+    <option value="كاش">كاش</option>
+    <option value="فودافون كاش">فودافون كاش</option>
+    <option value="Instapay">Instapay</option>
+    <option value="تحويل بنكي">تحويل بنكي</option>
+  </select>
+  <input type="date" id="hub-from" style="width:145px" onchange="renderHistoryHub()" placeholder="من تاريخ">
+  <input type="date" id="hub-to" style="width:145px" onchange="renderHistoryHub()" placeholder="إلى تاريخ">
+  <input type="text" id="hub-search" style="width:180px" placeholder="بحث بالمرجع أو العميل..." oninput="renderHistoryHub()">
+  <button class="btn btn-outline btn-sm" onclick="clearHubFilters()">مسح الفلاتر</button>
+</div>
+<div class="kpi-strip" id="hub-kpi" style="grid-template-columns:repeat(auto-fit,minmax(128px,1fr));margin-bottom:16px"></div>
+<div class="overflow-x">
+  <table id="hub-table">
+    <thead>
+      <tr>
+        <th>التاريخ والوقت</th>
+        <th>الإجراء</th>
+        <th>الفاتورة</th>
+        <th>العميل</th>
+        <th>بواسطة</th>
+        <th>التفاصيل</th>
+        <th>الخزنة</th>
+        <th>إجمالي الفاتورة</th>
+      </tr>
+    </thead>
+    <tbody id="hub-tbody"></tbody>
+  </table>
+</div>
+</div>
 </div>
 
 <!-- Reports -->
@@ -1242,7 +1303,10 @@ async function onPageEnter(page) {
     case 'suppliers': renderSuppliers(); break;
     case 'expenses': renderExpenses(); break;
     case 'complaints': await loadComplaints(); break;
-    case 'approvals': renderApprovals(); break;
+    case 'approvals':
+      renderApprovals();
+      if (apprActiveTab === 'hub') renderHistoryHub();
+      break;
     case 'reports': await loadReports(); break;
     case 'vault': renderVaultPage(); break;
     case 'users': renderUsers(); break;
@@ -2480,21 +2544,34 @@ function recalcEditTx() {
   const remaining = total - deposit;
   const el = qs('#edit-tx-summary');
   if (!el) return;
+  // Vault delta hint for deposit changes
+  const origTx = transactions.find(t => t._id === editTxId);
+  const origDeposit = Number(origTx?.deposit) || 0;
+  const depositDelta = deposit - origDeposit;
+  const depMethod = String(origTx?.depMethod || '').trim() || 'الخزنة';
+  const isSaleTx = origTx?.type === 'مبيعات';
+  let vaultDeltaHtml = '';
+  if (isSaleTx && Math.abs(depositDelta) > 0) {
+    vaultDeltaHtml = depositDelta > 0
+      ? `<div style="margin-top:6px;padding:7px 10px;background:rgba(22,163,74,.08);border-radius:8px;font-size:.78rem;border-right:3px solid var(--green)">🔺 سيُضاف <strong style="color:var(--green)">${fmtJ(depositDelta)}</strong> للخزنة (${esc(depMethod)}) بعد الحفظ</div>`
+      : `<div style="margin-top:6px;padding:7px 10px;background:rgba(220,38,38,.06);border-radius:8px;font-size:.78rem;border-right:3px solid var(--red)">🔻 سيُخصم <strong style="color:var(--red)">${fmtJ(Math.abs(depositDelta))}</strong> من الخزنة (${esc(depMethod)}) بعد الحفظ</div>`;
+  }
   el.innerHTML = `
     <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>إجمالي الأصناف</span><strong>${fmtJ(itemsTotal)}</strong></div>
     ${discount ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الخصم</span><span style="color:var(--red)">- ${fmtJ(discount)}</span></div>` : ''}
     ${shipCost ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>تكلفة الشحن</span><span>+ ${fmtJ(shipCost)}</span></div>` : ''}
     <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:2px solid var(--border);font-size:1rem"><strong>الإجمالي النهائي</strong><strong style="color:var(--primary)">${fmtJ(total)}</strong></div>
-    <div style="display:flex;justify-content:space-between;margin-top:4px"><span>الديبوزت</span><span style="color:var(--green)">${fmtJ(deposit)}</span></div>
-    <div style="display:flex;justify-content:space-between;margin-top:4px"><span>المتبقي</span><strong style="color:${remaining > 0 ? 'var(--red)' : 'var(--green)'}">${fmtJ(remaining)}</strong></div>`;
+    <div style="display:flex;justify-content:space-between;margin-top:4px"><span>الديبوزت${isSaleTx && depMethod ? ` <span class="text-xs text-muted">(${esc(depMethod)})</span>` : ''}</span><span style="color:var(--green)">${fmtJ(deposit)}</span></div>
+    <div style="display:flex;justify-content:space-between;margin-top:4px"><span>المتبقي</span><strong style="color:${remaining > 0 ? 'var(--red)' : 'var(--green)'}">${fmtJ(remaining)}</strong></div>
+    ${vaultDeltaHtml}`;
 }
 
 async function saveEditMovement(id) {
   const tx = transactions.find(t => t._id === id); if (!tx) return;
   if (isExchangeSalePendingCollect(tx)) { toastExchangePendingLocked(); return; }
-  if (!editTxItems.length) { toast('أضف صنف واحد على الأقل', true); return; }
+  if (!editTxItems.length) { toast('أدخل مبلغاً صحيحاً قبل الحفظ', true); return; }
   const validItems = editTxItems.filter(it => it.name || it.productId);
-  if (!validItems.length) { toast('اختر صنف واحد على الأقل', true); return; }
+  if (!validItems.length) { toast('أدخل مبلغاً صحيحاً قبل الحفظ — اختر صنف واحد على الأقل', true); return; }
   const editRef = (qs('#edit-tx-ref')?.value || '').trim();
   if (tx.type === 'مبيعات' || tx.type === 'مشتريات') {
     if (tx.type === 'مبيعات' && !editRef) { toast('المرجع مطلوب', true); return; }
@@ -2510,6 +2587,24 @@ async function saveEditMovement(id) {
   const shipCost = Number(qs('#edit-tx-shipcost')?.value) || 0;
   const deposit = Number(qs('#edit-tx-deposit').value) || 0;
   const total = itemsTotal - discount + shipCost;
+  if (total <= 0 && tx.type === 'مبيعات') { toast('أدخل مبلغاً صحيحاً قبل الحفظ — الإجمالي يجب أن يكون أكبر من صفر', true); return; }
+  // Double confirmation for large deposit changes
+  if (tx.type === 'مبيعات') {
+    const origDeposit = tx.deposit || 0;
+    const depositDelta = Math.abs(deposit - origDeposit);
+    const CONFIRM_THRESHOLD = 500;
+    if (depositDelta > CONFIRM_THRESHOLD) {
+      const direction = deposit > origDeposit ? 'إضافة' : 'خصم';
+      const depMethod = String(tx.depMethod || 'الخزنة').trim();
+      const confirmed = confirm(
+        `⚠️ تأكيد مزدوج — تغيير كبير في الديبوزت\n\n` +
+        `الديبوزت سيتغير من ${fmtJ(origDeposit)} إلى ${fmtJ(deposit)}\n` +
+        `(${direction} ${fmtJ(depositDelta)} في خزنة: ${depMethod})\n\n` +
+        `هل تريد المتابعة؟`
+      );
+      if (!confirmed) return;
+    }
+  }
   const body = { client: qs('#edit-tx-client').value, phone: qs('#edit-tx-phone').value, ref: editRef,
     deposit, discount, shipCost, notes: qs('#edit-tx-notes').value, items: newItems, itemsTotal,
     total, remaining: total - deposit, payStatus: deposit >= total ? 'مكتمل' : 'معلق' };
@@ -2521,15 +2616,32 @@ async function saveEditMovement(id) {
   try {
     await api('/transactions/' + id, { method: 'PUT', body: JSON.stringify(body) });
     toast('تم تحديث الحركة'); closeModal();
-    transactions = await api('/transactions').catch(() => transactions); renderMovements(); buildSidebar();
+    transactions = await api('/transactions').catch(() => transactions);
+    renderMovements(); buildSidebar(); buildNotifications();
+    syncVaultState();
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 
 function openCancelMovement(id) {
   const tx = transactions.find(t => t._id === id);
   if (tx && isExchangeSalePendingCollect(tx)) { toastExchangePendingLocked(); return; }
-  openModal(`<h3>إلغاء الحركة</h3>
-    <div class="form-group"><label>سبب الإلغاء</label><textarea id="cancel-reason" rows="3"></textarea></div>
+  const deposit = tx ? (tx.deposit || 0) : 0;
+  const depMethod = tx ? String(tx.depMethod || '').trim() : '';
+  const vaultWarning = deposit > 0 && depMethod
+    ? `<div style="margin-top:0;margin-bottom:12px;padding:12px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.18);border-radius:10px;font-size:.83rem">
+        <div style="font-weight:700;color:var(--red);margin-bottom:6px">⚠️ تحذير — تأثير على الخزنة</div>
+        <div>سيُخصم <strong style="color:var(--red)">${fmtJ(deposit)}</strong> من خزنة <strong>${esc(depMethod)}</strong> تلقائياً بعد الإلغاء (رد المبلغ المدفوع للعميل)</div>
+        <div style="margin-top:4px;color:var(--muted)">هذا الإجراء لا يمكن التراجع عنه بعد التأكيد</div>
+      </div>` : '';
+  const txInfo = tx
+    ? `<div style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:12px;font-size:.82rem">
+        <div><strong>العميل:</strong> ${esc(tx.client || '-')} | <strong>المرجع:</strong> ${tx.ref ? '#' + esc(tx.ref) : '-'}</div>
+        <div style="margin-top:4px"><strong>الإجمالي:</strong> ${fmtJ(tx.total)} | <strong>الحالة:</strong> ${esc(tx.payStatus || '-')}</div>
+      </div>` : '';
+  openModal(`<h3>🚫 إلغاء الحركة</h3>
+    ${txInfo}
+    ${vaultWarning}
+    <div class="form-group"><label>سبب الإلغاء *</label><textarea id="cancel-reason" rows="3" placeholder="أدخل سبب الإلغاء..."></textarea></div>
     <div class="flex gap-8 mt-16">
       <button class="btn btn-danger" onclick="doCancelMovement('${esc(id)}')">تأكيد الإلغاء</button>
       <button class="btn btn-outline" onclick="closeModal()">رجوع</button>
@@ -2539,7 +2651,9 @@ async function doCancelMovement(id) {
   try {
     await api('/transactions/' + id + '/cancel', { method: 'POST', body: JSON.stringify({ cancelReason: qs('#cancel-reason').value, cancelledBy: currentUser?.name || '' }) });
     toast('تم إلغاء الحركة'); closeModal();
-    transactions = await api('/transactions').catch(() => transactions); renderMovements(); buildSidebar();
+    transactions = await api('/transactions').catch(() => transactions);
+    renderMovements(); buildSidebar(); buildNotifications();
+    syncVaultState();
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 
@@ -2556,7 +2670,9 @@ async function doCollectMovement(id) {
   try {
     await api('/transactions/' + id + '/collect', { method: 'POST', body: JSON.stringify({ collectMethod: qs('#collect-method').value, collectNote: qs('#collect-note')?.value || '' }) });
     toast('تم التحصيل'); closeModal();
-    transactions = await api('/transactions').catch(() => transactions); renderMovements(); buildSidebar();
+    transactions = await api('/transactions').catch(() => transactions);
+    renderMovements(); buildSidebar(); buildNotifications();
+    syncVaultState();
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 
@@ -2609,6 +2725,7 @@ async function doApplyPostDiscount(txId) {
     closeModal();
     transactions = await api('/transactions').catch(() => transactions);
     buildNotifications(); buildSidebar(); renderMovements();
+    syncVaultState();
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 
@@ -3078,8 +3195,13 @@ async function saveExpense(id) {
 }
 async function approveExpense(id) {
   if (!confirm('اعتماد هذا المصروف وخصمه من الخزنة؟')) return;
-  try { await api('/expenses/' + id + '/approve', { method: 'POST', body: '{}' }); toast('تم اعتماد المصروف وخصمه من الخزنة'); expenses = await api('/expenses').catch(() => expenses); settings = await api('/settings').catch(() => settings); renderExpenses(); buildSidebar(); buildNotifications(); }
-  catch (e) { toast('خطأ: ' + e.message, true); }
+  try {
+    await api('/expenses/' + id + '/approve', { method: 'POST', body: '{}' });
+    toast('تم اعتماد المصروف وخصمه من الخزنة');
+    expenses = await api('/expenses').catch(() => expenses);
+    renderExpenses(); buildSidebar(); buildNotifications();
+    syncVaultState();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function rejectExpense(id) {
   if (!confirm('رفض هذا المصروف؟')) return;
@@ -3232,8 +3354,13 @@ function renderReturnApprovalCard(r) {
 }
 async function approveExpenseFromAppr(id) {
   if (!confirm('اعتماد هذا المصروف وخصمه من الخزنة؟')) return;
-  try { await api('/expenses/' + id + '/approve', { method: 'POST', body: '{}' }); toast('تم اعتماد المصروف وخصمه من الخزنة'); expenses = await api('/expenses').catch(() => expenses); settings = await api('/settings').catch(() => settings); renderApprovals(); buildSidebar(); buildNotifications(); }
-  catch (e) { toast('خطأ: ' + e.message, true); }
+  try {
+    await api('/expenses/' + id + '/approve', { method: 'POST', body: '{}' });
+    toast('تم اعتماد المصروف وخصمه من الخزنة');
+    expenses = await api('/expenses').catch(() => expenses);
+    renderApprovals(); buildSidebar(); buildNotifications();
+    syncVaultState();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function rejectExpenseFromAppr(id) {
   if (!confirm('رفض هذا المصروف؟')) return;
@@ -3248,10 +3375,9 @@ async function approveReturnFromAppr(id) {
     returnRequests = await api('/returns').catch(() => returnRequests);
     transactions = await api('/transactions').catch(() => transactions);
     expenses = await api('/expenses').catch(() => expenses);
-    settings = await api('/settings').catch(() => settings);
     try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
-    if (vaultUnlocked) loadVaultLog();
     renderApprovals(); renderMovements(); buildSidebar(); buildNotifications();
+    syncVaultState();
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function rejectReturnFromAppr(id) {
@@ -3262,6 +3388,164 @@ async function rejectReturnFromAppr(id) {
     returnRequests = await api('/returns').catch(() => returnRequests);
     renderApprovals(); renderMovements(); buildSidebar(); buildNotifications();
   } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+
+/* History Hub (سجل التعديلات) */
+let apprActiveTab = 'approvals';
+
+function switchApprTab(tab, btn) {
+  apprActiveTab = tab;
+  qs('#appr-tab-approvals-content').style.display = tab === 'approvals' ? '' : 'none';
+  qs('#appr-tab-hub-content').style.display = tab === 'hub' ? '' : 'none';
+  const exportBtn = qs('#appr-export-hub-btn');
+  if (exportBtn) exportBtn.style.display = tab === 'hub' ? 'inline-flex' : 'none';
+  qsa('#page-approvals .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab === 'hub') renderHistoryHub();
+}
+
+function clearHubFilters() {
+  const ids = ['hub-emp-filter','hub-type-filter','hub-action-filter','hub-vault-filter','hub-from','hub-to','hub-search'];
+  ids.forEach(id => { const el = qs('#' + id); if (el) el.value = ''; });
+  renderHistoryHub();
+}
+
+function buildHubEntries() {
+  const entries = [];
+  (transactions || []).forEach(tx => {
+    (tx.editHistory || []).forEach(entry => {
+      entries.push({
+        txId: tx._id, txRef: tx.ref || '', txType: tx.type, txClient: tx.client || '',
+        txTotal: tx.total, txDepMethod: tx.depMethod || '',
+        action: entry.action || 'تعديل',
+        editedAt: entry.editedAt || '',
+        editedBy: entry.editedBy || '-',
+        before: entry.before || {},
+        discountApplied: entry.discountApplied,
+        vaultAccount: entry.vaultAccount || tx.depMethod || '',
+        notes: entry.notes || '',
+      });
+    });
+    if (tx.cancelled) {
+      entries.push({
+        txId: tx._id, txRef: tx.ref || '', txType: tx.type, txClient: tx.client || '',
+        txTotal: tx.total, txDepMethod: tx.depMethod || '',
+        action: 'إلغاء',
+        editedAt: tx.cancelledAt || tx.updatedAt || tx.createdAt || '',
+        editedBy: tx.cancelledBy || '-',
+        before: { cancelReason: tx.cancelReason || '' },
+        discountApplied: undefined, vaultAccount: tx.depMethod || '', notes: tx.cancelReason || '',
+      });
+    }
+  });
+  return entries.sort((a, b) => (b.editedAt || '').localeCompare(a.editedAt || ''));
+}
+
+function renderHistoryHub() {
+  const empSel = qs('#hub-emp-filter');
+  if (empSel) {
+    const allEntries = buildHubEntries();
+    const empSet = new Set(allEntries.map(e => e.editedBy).filter(Boolean));
+    const empVal = empSel.value;
+    empSel.innerHTML = '<option value="">كل الموظفين</option>' + [...empSet].map(e => `<option value="${esc(e)}"${empVal===e?' selected':''}>${esc(e)}</option>`).join('');
+    empSel.value = empVal;
+  }
+  const empF = qs('#hub-emp-filter')?.value || '';
+  const typeF = qs('#hub-type-filter')?.value || '';
+  const actionF = qs('#hub-action-filter')?.value || '';
+  const vaultF = qs('#hub-vault-filter')?.value || '';
+  const fromF = qs('#hub-from')?.value || '';
+  const toF = qs('#hub-to')?.value || '';
+  const searchF = (qs('#hub-search')?.value || '').toLowerCase().trim();
+  let entries = buildHubEntries();
+  if (empF) entries = entries.filter(e => e.editedBy === empF);
+  if (typeF) entries = entries.filter(e => e.txType === typeF);
+  if (actionF) entries = entries.filter(e => e.action === actionF);
+  if (vaultF) entries = entries.filter(e => String(e.vaultAccount || '').includes(vaultF) || String(e.txDepMethod || '').includes(vaultF));
+  if (fromF) entries = entries.filter(e => (e.editedAt || '').slice(0, 10) >= fromF);
+  if (toF) entries = entries.filter(e => (e.editedAt || '').slice(0, 10) <= toF);
+  if (searchF) entries = entries.filter(e => [e.txRef, e.txClient, e.editedBy, e.action, e.notes].join(' ').toLowerCase().includes(searchF));
+  const kpiEl = qs('#hub-kpi');
+  if (kpiEl) {
+    const totalEdits = entries.filter(e => e.action === 'تعديل' || e.action === 'تعديل ديبوزت').length;
+    const totalCancel = entries.filter(e => e.action === 'إلغاء').length;
+    const totalDisc = entries.filter(e => e.action === 'خصم بعدي').length;
+    const uniqueEmps = new Set(entries.map(e => e.editedBy)).size;
+    kpiEl.innerHTML = [
+      {label:'إجمالي السجلات', val:entries.length, color:'text-blue'},
+      {label:'تعديلات', val:totalEdits, color:'text-blue'},
+      {label:'إلغاءات', val:totalCancel, color:'text-red'},
+      {label:'خصومات بعدية', val:totalDisc, color:'text-orange'},
+      {label:'الموظفون المنفّذون', val:uniqueEmps, color:'text-purple'},
+    ].map(s => `<div class="kpi"><div class="kpi-val ${s.color}">${s.val}</div><div class="kpi-label">${s.label}</div></div>`).join('');
+  }
+  const tbody = qs('#hub-tbody');
+  if (!tbody) return;
+  if (!entries.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">لا توجد سجلات تعديلات تطابق الفلاتر الحالية</td></tr>';
+    return;
+  }
+  tbody.innerHTML = entries.map(entry => {
+    const actionBadge = entry.action === 'إلغاء'
+      ? '<span class="badge badge-red">إلغاء</span>'
+      : entry.action === 'خصم بعدي'
+        ? '<span class="badge badge-orange">خصم بعدي</span>'
+        : entry.action === 'تعديل ديبوزت'
+          ? '<span class="badge badge-blue">تعديل ديبوزت</span>'
+          : '<span class="badge badge-blue">تعديل</span>';
+    const vaultHtml = entry.vaultAccount
+      ? `<span class="text-xs" style="background:var(--surface2);padding:2px 7px;border-radius:8px">${esc(entry.vaultAccount)}</span>` : '-';
+    const details = buildHubRowDetails(entry);
+    const refCell = `<a href="#" onclick="event.preventDefault();navigateTo('movements');setTimeout(()=>showInvoiceDetail('${esc(entry.txId)}'),200)" style="color:var(--accent);font-weight:700">${entry.txRef ? '#' + esc(entry.txRef) : esc(entry.txId.slice(-6))}</a><div class="text-xs text-muted">${esc(entry.txType)}</div>`;
+    return `<tr>
+      <td style="white-space:nowrap"><div style="font-size:.75rem;font-weight:600">${(entry.editedAt||'').slice(0,10)}</div><div style="font-size:.68rem;color:var(--muted)">${formatEditDateTime(entry.editedAt)}</div></td>
+      <td>${actionBadge}</td>
+      <td>${refCell}</td>
+      <td>${esc(entry.txClient || '-')}</td>
+      <td><span style="background:var(--primary-pale);color:var(--accent);padding:1px 8px;border-radius:10px;font-size:.72rem;font-weight:600">${esc(entry.editedBy)}</span></td>
+      <td style="max-width:220px;font-size:.76rem;line-height:1.5">${details}</td>
+      <td>${vaultHtml}</td>
+      <td>${fmtJ(entry.txTotal)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function buildHubRowDetails(entry) {
+  if (entry.action === 'إلغاء') {
+    const reason = entry.before?.cancelReason || entry.notes || '-';
+    return `<span style="color:var(--red)">سبب الإلغاء:</span> ${esc(reason)}`;
+  }
+  if (entry.action === 'خصم بعدي') {
+    return `خصم: <strong style="color:var(--red)">${fmtJ(entry.discountApplied)}</strong> من ${esc(entry.vaultAccount || '-')}${entry.notes ? ' — ' + esc(entry.notes) : ''}`;
+  }
+  if (entry.action === 'تعديل ديبوزت') {
+    const b = entry.before || {};
+    return `ديبوزت: <span style="color:var(--red);text-decoration:line-through">${fmtJ(b.deposit)}</span> ← <span style="color:var(--green);font-weight:600">${fmtJ(entry.discountApplied)}</span>`;
+  }
+  const b = entry.before || {};
+  const parts = [];
+  if (b.deposit !== undefined) parts.push(`ديبوزت (قبل): ${fmtJ(b.deposit)}`);
+  if (b.total !== undefined) parts.push(`إجمالي (قبل): ${fmtJ(b.total)}`);
+  if (b.discount !== undefined && (b.discount || 0) > 0) parts.push(`خصم (قبل): ${fmtJ(b.discount)}`);
+  if (b.client) parts.push(`عميل (قبل): ${esc(b.client)}`);
+  return parts.length ? parts.join(' | ') : 'تعديل بيانات';
+}
+
+function exportHubExcel() {
+  const allEntries = buildHubEntries();
+  const data = allEntries.map(entry => ({
+    'التاريخ': (entry.editedAt || '').slice(0, 10),
+    'الوقت': formatEditDateTime(entry.editedAt),
+    'الإجراء': entry.action,
+    'مرجع الفاتورة': entry.txRef || '-',
+    'نوع الحركة': entry.txType,
+    'العميل': entry.txClient,
+    'بواسطة': entry.editedBy,
+    'الخزنة': entry.vaultAccount || '-',
+    'التفاصيل': buildHubRowDetails(entry).replace(/<[^>]+>/g, ''),
+    'إجمالي الفاتورة': entry.txTotal,
+  }));
+  writeExcel(data, 'سجل التعديلات', 'history_hub_' + today());
 }
 
 /* Reports */
@@ -3321,6 +3605,18 @@ function renderProfitTable(pp) {
 function renderVaultPage() {
   if (!vaultUnlocked) { qs('#vault-locked').style.display = 'block'; qs('#vault-content').style.display = 'none'; }
   else { qs('#vault-locked').style.display = 'none'; qs('#vault-content').style.display = 'block'; renderVaultSegs(); loadVaultLog(); }
+}
+
+/** Refreshes settings (vault balances) from server and, if vault page is open/unlocked, re-renders it in real time */
+async function syncVaultState() {
+  try { settings = await api('/settings'); } catch (_) {}
+  if (vaultUnlocked && currentPage === 'vault') {
+    renderVaultSegs();
+    loadVaultLog();
+  } else if (vaultUnlocked) {
+    // Quietly update segs so balance is current when user navigates to vault
+    renderVaultSegs();
+  }
 }
 async function unlockVault() {
   const pass = qs('#vault-pass-input').value; if (!pass) { toast('أدخل كلمة المرور', true); return; }
