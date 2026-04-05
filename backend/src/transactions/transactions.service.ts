@@ -654,6 +654,46 @@ export class TransactionsService {
     return s.includes('T') ? s.split('T')[0] : s.slice(0, 10);
   }
 
+  async applyPostDiscount(
+    id: string,
+    amount: number,
+    vaultAccount: string,
+    appliedBy: string,
+    notes = '',
+  ): Promise<TransactionDocument> {
+    const tx = await this.transactionModel.findById(id).exec();
+    if (!tx) throw new NotFoundException('الحركة غير موجودة');
+    if (tx.cancelled) throw new BadRequestException('لا يمكن تطبيق خصم على حركة ملغية');
+    if (tx.type !== 'مبيعات') throw new BadRequestException('الخصم البعدي يُطبَّق على فواتير المبيعات فقط');
+    const discountAmount = Math.round(amount);
+    if (discountAmount <= 0) throw new BadRequestException('مبلغ الخصم يجب أن يكون أكبر من صفر');
+    const historyEntry = {
+      editedAt: new Date().toISOString(),
+      editedBy: appliedBy,
+      action: 'خصم بعدي',
+      before: { discount: tx.discount, total: tx.total, remaining: tx.remaining },
+      discountApplied: discountAmount,
+      vaultAccount,
+      notes,
+    };
+    tx.discount = Math.round((tx.discount || 0) + discountAmount);
+    tx.total = Math.max(0, Math.round(tx.total - discountAmount));
+    tx.remaining = Math.max(0, Math.round((tx.remaining || 0) - discountAmount));
+    if (tx.remaining <= 0) tx.payStatus = 'مكتمل';
+    tx.editHistory = [...(tx.editHistory || []), historyEntry];
+    const saved = await tx.save();
+    const txDate = this.formatTxDateForVault(tx);
+    await this.vaultService.addSystemEntry(
+      -discountAmount,
+      vaultAccount,
+      `خصم بعدي على فاتورة #${tx.ref || tx._id} — ${tx.client || ''}${notes ? ' — ' + notes : ''}`,
+      txDate,
+      'خصم بعدي',
+      tx.ref || String(tx._id),
+    );
+    return saved;
+  }
+
   private async recordVaultForTransaction(
     tx: TransactionDocument,
   ): Promise<void> {
