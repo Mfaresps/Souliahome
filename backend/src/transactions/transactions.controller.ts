@@ -17,6 +17,7 @@ import {
   CancelTransactionDto,
   CollectTransactionDto,
   BulkDeleteDto,
+  PostDiscountDto,
 } from './dto/transaction.dto';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
@@ -95,6 +96,23 @@ export class TransactionsController {
     @Body() dto: CollectTransactionDto,
   ) {
     return this.transactionsService.collect(id, dto);
+  }
+
+  @Roles('admin')
+  @Post(':id/post-discount')
+  async applyPostDiscount(
+    @Param('id') id: string,
+    @Body() dto: PostDiscountDto,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const appliedBy = req.user.name || req.user.username || '';
+    return this.transactionsService.applyPostDiscount(
+      id,
+      dto.amount,
+      dto.vaultAccount,
+      appliedBy,
+      dto.notes,
+    );
   }
 
   @Put(':id')
