@@ -1,0 +1,218 @@
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  IsBoolean,
+  ValidateNested,
+  Min,
+  IsIn,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class TransactionItemDto {
+  @IsString()
+  @IsNotEmpty()
+  readonly code: string;
+
+  @IsString()
+  @IsNotEmpty()
+  readonly name: string;
+
+  @IsNumber()
+  @Min(1)
+  readonly qty: number;
+
+  @IsNumber()
+  @Min(0)
+  readonly price: number;
+
+  @IsNumber()
+  @Min(0)
+  readonly total: number;
+}
+
+export class CreateTransactionDto {
+  @IsString()
+  @IsNotEmpty()
+  readonly date: string;
+
+  @IsString()
+  @IsIn(['مبيعات', 'مشتريات', 'مرتجع مبيعات', 'مرتجع مشتريات', 'مرتجع'])
+  readonly type: string;
+
+  @IsString()
+  @IsOptional()
+  readonly client?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly phone?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly ref?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly notes?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly payment?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly deposit?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly remaining?: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => TransactionItemDto)
+  readonly items: TransactionItemDto[];
+
+  @IsNumber()
+  @Min(0)
+  readonly total: number;
+
+  @IsString()
+  @IsNotEmpty()
+  readonly employee: string;
+
+  @IsString()
+  @IsOptional()
+  readonly shipCo?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly shipZone?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly shipCost?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly discount?: number;
+
+  @IsString()
+  @IsOptional()
+  readonly depMethod?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly payStatus?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly itemsTotal?: number;
+}
+
+export class UpdateTransactionDto {
+  @IsString()
+  @IsOptional()
+  readonly client?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly phone?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly ref?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly notes?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly payment?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly deposit?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly remaining?: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => TransactionItemDto)
+  @IsOptional()
+  readonly items?: TransactionItemDto[];
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly total?: number;
+
+  @IsString()
+  @IsOptional()
+  readonly shipCo?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly shipZone?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly shipCost?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly discount?: number;
+
+  @IsString()
+  @IsOptional()
+  readonly depMethod?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly payStatus?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly itemsTotal?: number;
+}
+
+export class CancelTransactionDto {
+  @IsString()
+  @IsNotEmpty()
+  readonly cancelReason: string;
+
+  @IsString()
+  @IsNotEmpty()
+  readonly cancelledBy: string;
+}
+
+export class CollectTransactionDto {
+  @IsString()
+  @IsNotEmpty()
+  readonly collectMethod: string;
+
+  @IsString()
+  @IsOptional()
+  readonly collectNote?: string;
+}
+
+export class BulkDeleteDto {
+  @IsArray()
+  @IsString({ each: true })
+  readonly ids: string[];
+}

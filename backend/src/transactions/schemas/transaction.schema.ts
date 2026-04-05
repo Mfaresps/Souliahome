@@ -1,0 +1,110 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument } from 'mongoose';
+
+export type TransactionDocument = HydratedDocument<Transaction>;
+
+export class TransactionItem {
+  @Prop({ required: true })
+  code: string;
+
+  @Prop({ required: true })
+  name: string;
+
+  @Prop({ required: true })
+  qty: number;
+
+  @Prop({ required: true })
+  price: number;
+
+  @Prop({ required: true })
+  total: number;
+}
+
+@Schema({ timestamps: true })
+export class Transaction {
+  @Prop({ required: true })
+  date: string;
+
+  @Prop({
+    required: true,
+    enum: ['مبيعات', 'مشتريات', 'مرتجع مبيعات', 'مرتجع مشتريات', 'مرتجع'],
+  })
+  type: string;
+
+  @Prop({ default: '' })
+  client: string;
+
+  @Prop()
+  phone: string;
+
+  @Prop()
+  ref: string;
+
+  @Prop()
+  notes: string;
+
+  @Prop({ default: '' })
+  payment: string;
+
+  @Prop({ default: 0 })
+  deposit: number;
+
+  @Prop({ default: 0 })
+  remaining: number;
+
+  @Prop({ type: [Object], required: true })
+  items: TransactionItem[];
+
+  @Prop({ required: true })
+  total: number;
+
+  @Prop({ required: true })
+  employee: string;
+
+  @Prop()
+  shipCo: string;
+
+  @Prop()
+  shipZone: string;
+
+  @Prop({ default: 0 })
+  shipCost: number;
+
+  @Prop({ default: 0 })
+  discount: number;
+
+  @Prop()
+  depMethod: string;
+
+  @Prop({ default: 'معلق' })
+  payStatus: string;
+
+  @Prop({ default: 0 })
+  itemsTotal: number;
+
+  @Prop({ default: false })
+  cancelled: boolean;
+
+  @Prop()
+  cancelReason: string;
+
+  @Prop()
+  cancelledBy: string;
+
+  @Prop()
+  cancelledAt: string;
+
+  @Prop({ type: [Object], default: [] })
+  editHistory: Record<string, unknown>[];
+
+  @Prop()
+  collectMethod: string;
+
+  @Prop()
+  collectNote: string;
+
+  @Prop()
+  collectedAt: string;
+}
+
+export const TransactionSchema = SchemaFactory.createForClass(Transaction);

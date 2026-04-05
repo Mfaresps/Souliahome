@@ -1,0 +1,53 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: soulia-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: soulia
+      MONGO_INITDB_ROOT_PASSWORD: soulia_secret_2024
+      MONGO_INITDB_DATABASE: soulia
+    ports:
+      - '27018:27017'
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - soulia-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: soulia-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://soulia:soulia_secret_2024@mongodb:27017/soulia?authSource=admin
+      JWT_SECRET: soulia_jwt_super_secret_key_2024
+      PORT: 3000
+    ports:
+      - '3001:3000'
+    depends_on:
+      - mongodb
+    networks:
+      - soulia-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: soulia-frontend
+    restart: unless-stopped
+    ports:
+      - '8080:80'
+    depends_on:
+      - backend
+    networks:
+      - soulia-net
+
+volumes:
+  mongo-data:
+
+networks:
+  soulia-net:
+    driver: bridge
