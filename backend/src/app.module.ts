@@ -12,6 +12,7 @@ import { SettingsModule } from './settings/settings.module';
 import { VaultModule } from './vault/vault.module';
 import { SearchModule } from './search/search.module';
 import { ReturnsModule } from './returns/returns.module';
+import { ComplaintsModule } from './complaints/complaints.module';
 import { SeedService } from './seed/seed.service';
 
 @Module({
@@ -31,6 +32,7 @@ import { SeedService } from './seed/seed.service';
     VaultModule,
     SearchModule,
     ReturnsModule,
+    ComplaintsModule,
   ],
   providers: [SeedService],
 })
