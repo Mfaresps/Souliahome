@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell.exe -Command \"[System.Environment]::GetEnvironmentVariable\\('PATH','Machine'\\)\")",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" --version)",
+      "Bash(\"/c/Program Files/nodejs/npm.cmd\" --version)",
+      "Bash(powershell.exe -Command \"Get-Service -Name MongoDB -ErrorAction SilentlyContinue\")",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" -e \"require\\('net'\\).createConnection\\(27017,'localhost'\\).on\\('connect',\\(\\)=>{console.log\\('mongo up'\\);process.exit\\(0\\)}\\).on\\('error',\\(\\)=>{console.log\\('mongo down'\\);process.exit\\(1\\)}\\)\")",
+      "Bash(powershell.exe -Command \"winget install MongoDB.Server --accept-source-agreements --accept-package-agreements\")",
+      "Bash(\"/c/Program Files/nodejs/npm.cmd\" install)",
+      "Bash(cmd.exe /c \"set PATH=C:\\\\Program Files\\\\nodejs\\\\;%PATH% && cd D:\\\\website\\\\Souliahome\\\\backend && npm install\")"
+    ]
+  }
+}
