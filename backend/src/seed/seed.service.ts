@@ -6,7 +6,7 @@ import { SettingsService } from '../settings/settings.service';
 const ALL_PERMS = [
   'dashboard', 'transaction', 'inventory', 'movements',
   'clients', 'products', 'suppliers', 'expenses',
-  'reports', 'vault', 'users', 'settings',
+  'complaints', 'reports', 'vault', 'users', 'settings',
 ];
 
 const DEFAULT_USERS = [
