@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>استبيان رضا العملاء — Soulia</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Cairo',sans-serif;background:#f0f4f2;color:#0f1f16;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{background:#fff;border-radius:16px;padding:36px;max-width:500px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,.10)}
+.logo{text-align:center;margin-bottom:24px}
+.logo span{font-size:2rem;font-weight:900;color:#00311e}
+h2{text-align:center;font-size:1.3rem;font-weight:700;margin-bottom:6px}
+.sub{text-align:center;color:#6b8c78;font-size:.9rem;margin-bottom:24px}
+.info-box{background:#f0f4f2;border-radius:10px;padding:14px;margin-bottom:24px;font-size:.88rem}
+.info-row{display:flex;gap:8px;margin-bottom:4px}
+.info-label{color:#6b8c78;min-width:110px}
+.stars{display:flex;gap:10px;justify-content:center;margin-bottom:24px;flex-direction:row-reverse}
+.star{font-size:2.4rem;cursor:pointer;transition:transform .15s,filter .15s;filter:grayscale(1)}
+.star.active,.star:hover,.star:hover ~ .star{filter:grayscale(0)}
+.stars:hover .star{filter:grayscale(0)}
+.stars .star:hover ~ .star{filter:grayscale(1)}
+.star-label{text-align:center;font-size:.95rem;color:#2d7a4f;font-weight:600;margin-bottom:16px;min-height:1.4em}
+label{display:block;font-weight:600;margin-bottom:6px;font-size:.9rem}
+textarea{width:100%;background:#f8fafb;border:1px solid #d8e4dd;border-radius:10px;padding:10px 14px;font-family:'Cairo',sans-serif;font-size:.9rem;color:#0f1f16;resize:vertical;outline:none;transition:border .2s}
+textarea:focus{border-color:#2d7a4f}
+.btn{width:100%;padding:12px;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:background .2s,opacity .2s}
+.btn-primary{background:#00311e;color:#fff}
+.btn-primary:hover{background:#1a5c3a}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.success{text-align:center;padding:20px 0}
+.success .icon{font-size:3.5rem;margin-bottom:12px}
+.success h3{font-size:1.2rem;font-weight:700;color:#00311e;margin-bottom:8px}
+.success p{color:#6b8c78;font-size:.9rem}
+.error-msg{background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:14px;text-align:center;color:#dc2626;margin-bottom:16px}
+.loading{text-align:center;padding:40px;color:#6b8c78}
+.mt-16{margin-top:16px}
+</style>
+</head>
+<body>
+<div class="card" id="survey-card">
+  <div class="logo"><span>Soulia</span></div>
+  <div id="survey-content">
+    <div class="loading">⏳ جارٍ تحميل الاستبيان...</div>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'http://localhost:3000/api';
+const params = new URLSearchParams(location.search);
+const token = params.get('token');
+let selectedRating = 0;
+let complaint = null;
+
+const STAR_LABELS = ['', 'سيئ جداً', 'سيئ', 'مقبول', 'جيد', 'ممتاز'];
+
+async function init() {
+  const content = document.getElementById('survey-content');
+  if (!token) {
+    content.innerHTML = '<div class="error-msg">رابط الاستبيان غير صالح أو منتهي الصلاحية.</div>';
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/complaints/survey/${token}`);
+    if (!res.ok) throw new Error('غير صالح');
+    complaint = await res.json();
+    if (complaint.surveyCompletedAt) {
+      renderAlreadyDone();
+      return;
+    }
+    renderSurvey();
+  } catch (e) {
+    content.innerHTML = '<div class="error-msg">رابط الاستبيان غير صالح أو منتهي الصلاحية.</div>';
+  }
+}
+
+function renderSurvey() {
+  const c = complaint;
+  document.getElementById('survey-content').innerHTML = `
+    <h2>كيف كانت تجربتك معنا؟</h2>
+    <p class="sub">شكوى رقم <strong>${escHtml(c.complaintNo)}</strong></p>
+    <div class="info-box">
+      ${c.clientName ? `<div class="info-row"><span class="info-label">العميل:</span><span>${escHtml(c.clientName)}</span></div>` : ''}
+      ${c.transactionRef ? `<div class="info-row"><span class="info-label">الطلب:</span><span>${escHtml(c.transactionRef)}</span></div>` : ''}
+      <div class="info-row"><span class="info-label">الإجراء المتخذ:</span><span>${escHtml(c.managerAction || '—')}</span></div>
+      ${c.actionNote ? `<div class="info-row"><span class="info-label">ملاحظات:</span><span>${escHtml(c.actionNote)}</span></div>` : ''}
+    </div>
+    <div class="stars" id="stars-row" role="group" aria-label="التقييم">
+      ${[5,4,3,2,1].map(n => `<span class="star" data-val="${n}" onclick="setRating(${n})" title="${STAR_LABELS[n]}">⭐</span>`).join('')}
+    </div>
+    <div class="star-label" id="star-label">اختر تقييمك</div>
+    <div class="mt-16">
+      <label for="survey-comment">تعليقك (اختياري)</label>
+      <textarea id="survey-comment" rows="4" placeholder="شاركنا تجربتك أو أي اقتراحات..."></textarea>
+    </div>
+    <div class="mt-16">
+      <button class="btn btn-primary" id="submit-btn" onclick="submitSurvey()" disabled>إرسال التقييم</button>
+    </div>
+  `;
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function setRating(val) {
+  selectedRating = val;
+  document.getElementById('star-label').textContent = STAR_LABELS[val];
+  document.querySelectorAll('.star').forEach(s => {
+    s.classList.toggle('active', parseInt(s.dataset.val) <= val);
+  });
+  document.getElementById('submit-btn').disabled = false;
+}
+
+async function submitSurvey() {
+  if (!selectedRating) return;
+  const comment = (document.getElementById('survey-comment')?.value || '').trim();
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ جارٍ الإرسال...';
+  try {
+    const res = await fetch(`${API_BASE}/complaints/survey/${token}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating: selectedRating, comment }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'حدث خطأ');
+    }
+    renderDone();
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'إرسال التقييم';
+    document.getElementById('survey-content').insertAdjacentHTML('afterbegin', `<div class="error-msg">${escHtml(e.message)}</div>`);
+  }
+}
+
+function renderDone() {
+  document.getElementById('survey-content').innerHTML = `
+    <div class="success">
+      <div class="icon">🎉</div>
+      <h3>شكراً لك على تقييمك!</h3>
+      <p>لقد استلمنا تقييمك وسنعمل على تحسين خدماتنا باستمرار.</p>
+      <p style="margin-top:8px">فريق <strong>Soulia</strong> يقدّر ثقتك.</p>
+    </div>`;
+}
+
+function renderAlreadyDone() {
+  document.getElementById('survey-content').innerHTML = `
+    <div class="success">
+      <div class="icon">✅</div>
+      <h3>تم تعبئة الاستبيان مسبقاً</h3>
+      <p>لقد قمت بتعبئة هذا الاستبيان بالفعل. شكراً لك!</p>
+    </div>`;
+}
+
+init();
+</script>
+</body>
+</html>
