@@ -305,9 +305,11 @@ export class TransactionsService {
         String(existing._id),
       );
     }
+    const oldDeposit = existing.deposit || 0;
     const historyEntry = {
       editedAt: new Date().toISOString(),
       editedBy,
+      action: 'تعديل',
       before: {
         client: existing.client,
         phone: existing.phone,
@@ -330,6 +332,51 @@ export class TransactionsService {
     const tx = await this.transactionModel
       .findByIdAndUpdate(id, { ...dto, editHistory }, { new: true })
       .exec();
+
+    // Vault adjustment: synchronize vault with monetary changes on save
+    if (!existing.cancelled) {
+      const txDate = this.formatTxDateForVault(existing);
+      const txRef = existing.ref || String(existing._id);
+      const depMethod = String(existing.depMethod || '').trim();
+
+      if (existing.type === 'مبيعات' && dto.deposit !== undefined) {
+        // مبيعات: deposit change → vault delta
+        const newDeposit = Number(dto.deposit) || 0;
+        const depositDelta = newDeposit - oldDeposit;
+        if (depositDelta !== 0 && depMethod) {
+          const direction = depositDelta > 0 ? 'زيادة ديبوزت' : 'خصم ديبوزت';
+          await this.vaultService.addSystemEntry(
+            depositDelta,
+            depMethod,
+            `${direction} فاتورة #${txRef} — ${existing.client || ''} | قبل: ${oldDeposit} ج — بعد: ${newDeposit} ج | بواسطة: ${editedBy}`,
+            txDate,
+            'تعديل ديبوزت',
+            txRef,
+          );
+        }
+      } else if (
+        existing.type === 'مشتريات' &&
+        this.transactionAddsSupplierPurchases(existing) &&
+        dto.total !== undefined
+      ) {
+        // مشتريات: total change → vault delta (purchases are paid in full)
+        const oldTotal = existing.total || 0;
+        const newTotal = Number(dto.total) || 0;
+        const totalDelta = newTotal - oldTotal;
+        if (totalDelta !== 0 && depMethod) {
+          const direction = totalDelta > 0 ? 'زيادة قيمة مشتريات' : 'تخفيض قيمة مشتريات';
+          await this.vaultService.addSystemEntry(
+            -totalDelta, // negative: purchases withdraw from vault
+            depMethod,
+            `${direction} #${txRef} — ${existing.client || ''} | قبل: ${oldTotal} ج — بعد: ${newTotal} ج | بواسطة: ${editedBy}`,
+            txDate,
+            'تعديل مشتريات',
+            txRef,
+          );
+        }
+      }
+    }
+
     return tx!;
   }
 
