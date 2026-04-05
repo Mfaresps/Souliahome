@@ -216,3 +216,17 @@ export class BulkDeleteDto {
   @IsString({ each: true })
   readonly ids: string[];
 }
+
+export class PostDiscountDto {
+  @IsNumber()
+  @Min(0.01)
+  readonly amount: number;
+
+  @IsString()
+  @IsNotEmpty()
+  readonly vaultAccount: string;
+
+  @IsString()
+  @IsOptional()
+  readonly notes?: string;
+}
