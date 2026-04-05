@@ -558,6 +558,82 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="overflow-x"><table id="exp-table"><thead><tr><th>التاريخ</th><th>الوصف</th><th>النوع</th><th>الحساب</th><th>المبلغ</th><th>الحالة</th><th>الموظف</th><th>إجراءات</th></tr></thead><tbody></tbody></table></div>
 </div>
 
+<!-- Complaints -->
+<div class="page" id="page-complaints">
+<div class="flex-between mb-16">
+  <h2 class="page-title" style="margin-bottom:0" id="complaints-section-title">خدمة العملاء وما بعد البيع</h2>
+  <div class="flex gap-8">
+    <button class="btn btn-outline btn-sm" onclick="exportComplaintsExcel()">📥 تصدير Excel</button>
+    <button class="btn btn-primary btn-sm" onclick="openComplaintModal()">+ شكوى جديدة</button>
+  </div>
+</div>
+
+<!-- KPI strip -->
+<div class="kpi-strip" id="cmp-kpi" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-bottom:16px"></div>
+
+<!-- Filter bar -->
+<div class="filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:16px">
+  <select id="cmp-status-filter" style="width:150px" onchange="renderComplaints()">
+    <option value="">كل الحالات</option>
+    <option value="معلق">معلق</option>
+    <option value="مقبول">مقبول</option>
+    <option value="مرفوض">مرفوض</option>
+  </select>
+  <select id="cmp-emp-filter" style="width:170px" onchange="renderComplaints()"><option value="">كل الموظفين</option></select>
+  <input type="date" id="cmp-from" style="width:145px" onchange="renderComplaints()" placeholder="من تاريخ">
+  <input type="date" id="cmp-to" style="width:145px" onchange="renderComplaints()" placeholder="إلى تاريخ">
+  <div class="search-input"><input type="text" id="cmp-search" placeholder="بحث برقم الشكوى أو العميل..." oninput="renderComplaints()"></div>
+  <button class="btn btn-outline btn-sm" onclick="clearCmpFilters()">مسح</button>
+</div>
+
+<!-- Tabs -->
+<div class="tab-bar" style="margin-bottom:16px">
+  <button class="tab-btn active" id="cmp-tab-all" onclick="setCmpTab('all',this)">الكل</button>
+  <button class="tab-btn" id="cmp-tab-pending" onclick="setCmpTab('معلق',this)">المعلقة</button>
+  <button class="tab-btn" id="cmp-tab-accepted" onclick="setCmpTab('مقبول',this)">المقبولة</button>
+  <button class="tab-btn" id="cmp-tab-rejected" onclick="setCmpTab('مرفوض',this)">المرفوضة</button>
+  <button class="tab-btn" id="cmp-tab-followup" onclick="setCmpTab('followup',this)">المتابعة</button>
+</div>
+
+<!-- Table -->
+<div class="overflow-x">
+  <table id="cmp-table">
+    <thead><tr>
+      <th>رقم الشكوى</th>
+      <th>الموظف</th>
+      <th>العميل</th>
+      <th>الطلب</th>
+      <th>الوصف</th>
+      <th>الحالة</th>
+      <th>الإجراء</th>
+      <th>تاريخ التقديم</th>
+      <th>تقييم العميل</th>
+      <th>إجراءات</th>
+    </tr></thead>
+    <tbody id="cmp-tbody"></tbody>
+  </table>
+</div>
+
+<!-- Charts section -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:24px">
+  <div class="card" style="padding:16px">
+    <div class="card-title" style="margin-bottom:12px">توزيع الشكاوى</div>
+    <canvas id="cmp-chart-status" height="220"></canvas>
+  </div>
+  <div class="card" style="padding:16px">
+    <div class="card-title" style="margin-bottom:12px">رضا العملاء</div>
+    <canvas id="cmp-chart-rating" height="220"></canvas>
+  </div>
+  <div class="card" style="padding:16px">
+    <div class="card-title" style="margin-bottom:12px">الشكاوى حسب الشهر</div>
+    <canvas id="cmp-chart-trend" height="220"></canvas>
+  </div>
+</div>
+
+<!-- Negative feedback alert -->
+<div id="cmp-neg-alert" style="display:none;margin-top:16px"></div>
+</div>
+
 <!-- Approvals -->
 <div class="page" id="page-approvals">
 <div class="flex-between mb-16">
@@ -819,7 +895,8 @@ window.addEventListener('scroll', closeAllMenus, true);
 window.addEventListener('resize', closeAllMenus);
 
 let currentUser = null;
-let products = [], transactions = [], suppliers = [], expenses = [], settings = {}, users = [], vaultLog = [], inventoryCache = [], returnRequests = [];
+let products = [], transactions = [], suppliers = [], expenses = [], settings = {}, users = [], vaultLog = [], inventoryCache = [], returnRequests = [], complaints = [];
+let cmpTabFilter = 'all';
 let currentPage = 'dashboard';
 let movFilter = 'all';
 let movStatusFilter = '';
@@ -838,8 +915,8 @@ let vaultUnlocked = false;
 let reportCharts = {};
 let currentLang = 'ar';
 
-const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','reports','vault','users','settings'];
-const PERMS_AR = {dashboard:'الرئيسية',transaction:'الحركات',inventory:'المخزن',movements:'سجل الحركات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',reports:'التقارير',vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات'};
+const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','reports','vault','users','settings'];
+const PERMS_AR = {dashboard:'الرئيسية',transaction:'الحركات',inventory:'المخزن',movements:'سجل الحركات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',reports:'التقارير',vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات'};
 
 const NAV_ITEMS = [
   {id:'dashboard',label:'الرئيسية',labelEn:'Dashboard',icon:'📊',perm:'dashboard'},
@@ -850,6 +927,7 @@ const NAV_ITEMS = [
   {id:'products',label:'الأصناف',labelEn:'Products',icon:'🏷️',perm:'products'},
   {id:'suppliers',label:'الموردون',labelEn:'Suppliers',icon:'🚚',perm:'suppliers'},
   {id:'expenses',label:'المصاريف',labelEn:'Expenses',icon:'💸',perm:'expenses'},
+  {id:'complaints',label:'خدمة العملاء',labelEn:'Customer Service',icon:'🎯',perm:'complaints'},
   {id:'approvals',label:'الموافقات',labelEn:'Approvals',icon:'✅',perm:'approvals'},
   {id:'reports',label:'التقارير',labelEn:'Reports',icon:'📈',perm:'reports'},
   {id:'vault',label:'الخزنة',labelEn:'Vault',icon:'🔐',perm:'vault'},
@@ -1000,10 +1078,12 @@ function buildSidebar() {
   const navLabel = (n) => currentLang === 'en' ? (n.labelEn || n.label) : n.label;
   const pendingExpCount = expenses.filter(e => e.status === 'معلق').length;
   const pendingTxCount = transactions.filter(t => t.payStatus === 'معلق' && !t.cancelled).length;
+  const pendingCmpCount = complaints.filter(c => c.status === 'معلق').length;
   sb.innerHTML = NAV_ITEMS.filter(n => hasPerm(n.perm)).map(n => {
     let badge = '';
     if (n.id === 'approvals' && pendingExpCount > 0) badge = ` <span class="badge badge-orange" style="margin-right:4px;font-size:.65rem">${pendingExpCount}</span>`;
     if (n.id === 'movements' && pendingTxCount > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">${pendingTxCount}</span>`;
+    if (n.id === 'complaints' && pendingCmpCount > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">${pendingCmpCount}</span>`;
     return `<a class="nav-item${currentPage === n.id ? ' active' : ''}" data-page="${n.id}" href="#${n.id}" onclick="handleNavClick(event,'${n.id}')"><span>${n.icon}</span><span>${esc(navLabel(n))}${badge}</span></a>`;
   }).join('') + `<a class="nav-item" data-page="profile" href="#profile" onclick="handleNavClick(event,'profile')"><span>👤</span><span>${currentLang === 'en' ? 'Profile' : 'الملف الشخصي'}</span></a>`;
 }
@@ -1042,11 +1122,31 @@ function buildNotifications() {
       notifs.push({ id: 'exp-pending-' + exp._id, icon: '💰', type: 'info', title: `مصروف بانتظار الموافقة`, desc: `${exp.desc || ''} — ${fmtJ(exp.amount)} (${exp.category || ''})`, page: 'approvals' });
     });
   }
+  const pendingComplaints = (complaints || []).filter(c => c.status === 'معلق');
+  if (pendingComplaints.length > 0 && currentUser?.role === 'admin') {
+    pendingComplaints.forEach(c => {
+      notifs.push({ id: 'cmp-pending-' + c._id, icon: '🎯', type: 'warning', title: `شكوى جديدة: ${c.complaintNo}`, desc: `${c.submittedBy} — ${(c.description || '').slice(0, 60)}`, page: 'complaints' });
+    });
+  }
   const pendingReturns = (returnRequests || []).filter(r => r.status === 'معلق');
   if (pendingReturns.length > 0 && currentUser?.role === 'admin') {
     pendingReturns.forEach(ret => {
-      notifs.push({ id: 'ret-pending-' + ret._id, icon: '📦', type: 'warning', title: `طلب استرجاع بانتظار الموافقة`, desc: `${ret.client} — ${fmtJ(ret.total)} (${ret.reason})`, page: 'approvals' });
+      const kindLabel = ret.requestKind === 'exchange' ? 'استبدال' : 'استرجاع';
+      notifs.push({ id: 'ret-pending-' + ret._id, icon: '📦', type: 'warning', title: `طلب ${kindLabel} بانتظار الموافقة`, desc: `${ret.client} — ${fmtJ(ret.total)} (${ret.reason})`, page: 'approvals' });
     });
+  }
+  // Vault: exchange sales pending collection
+  if (currentUser?.role === 'admin') {
+    const pendingCollect = (transactions || []).filter(t => t.type === 'مبيعات' && !t.cancelled && t.payStatus === 'معلق' && (t.remaining || 0) > 0 && /(-EXC)$/i.test(String(t.ref || '')));
+    pendingCollect.forEach(t => {
+      notifs.push({ id: 'exc-collect-' + t._id, icon: '💰', type: 'info', title: `فرق استبدال بانتظار التحصيل`, desc: `${t.client} — متبقي ${fmtJ(t.remaining)} (فاتورة #${t.ref || '-'})`, page: 'movements' });
+    });
+    // Pending collection on regular sales
+    const pendingRegular = (transactions || []).filter(t => t.type === 'مبيعات' && !t.cancelled && t.payStatus === 'معلق' && (t.remaining || 0) > 0 && !/(-EXC)$/i.test(String(t.ref || '')));
+    if (pendingRegular.length > 0) {
+      const totalRemaining = pendingRegular.reduce((s, t) => s + (t.remaining || 0), 0);
+      notifs.push({ id: 'sales-pending-all', icon: '⏳', type: 'info', title: `${pendingRegular.length} فاتورة بانتظار التحصيل`, desc: `إجمالي المتبقي: ${fmtJ(totalRemaining)}`, page: 'movements' });
+    }
   }
   const visible = notifs.filter(n => !notifDismissed.includes(n.id));
   const badge = qs('#notif-badge');
@@ -1141,6 +1241,7 @@ async function onPageEnter(page) {
     case 'products': renderProducts(); break;
     case 'suppliers': renderSuppliers(); break;
     case 'expenses': renderExpenses(); break;
+    case 'complaints': await loadComplaints(); break;
     case 'approvals': renderApprovals(); break;
     case 'reports': await loadReports(); break;
     case 'vault': renderVaultPage(); break;
@@ -1160,6 +1261,7 @@ async function loadAllData() {
     ]);
     products = p; transactions = tx; suppliers = s; expenses = e; settings = st || {}; users = u;
     try { returnRequests = await api('/returns'); } catch (_) { returnRequests = []; }
+    try { complaints = await api('/complaints'); } catch (_) { complaints = []; }
     if (settings.darkMode) document.body.classList.add('dark-mode');
     if (settings.lang) { currentLang = settings.lang; applyLang(); }
     try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
@@ -1889,8 +1991,24 @@ function renderReturnItems() {
       </div>`).join('')}</div>
     <div style="margin-top:10px;padding:10px;background:var(--surface2);border-radius:var(--radius);font-weight:600;display:flex;flex-direction:column;gap:6px">
       <div style="display:flex;justify-content:space-between;width:100%"><span>إجمالي المرتجع (أصناف فقط — بدون شحن)</span><span style="color:var(--red)">${fmtJ(getReturnTotal())}</span></div>
-      ${retIsExchange ? `<div style="display:flex;justify-content:space-between;width:100%;font-size:.9rem"><span class="text-muted">إجمالي البدائل</span><span>${fmtJ(getExchangeTotal())}</span></div>
-      <div style="display:flex;justify-content:space-between;width:100%;font-size:.9rem;border-top:1px solid var(--border);padding-top:6px"><span>الفرق</span><span style="color:${getReturnTotal() - getExchangeTotal() > 0 ? 'var(--green)' : getReturnTotal() - getExchangeTotal() < 0 ? 'var(--orange)' : 'var(--muted)'}">${getReturnTotal() === getExchangeTotal() ? 'لا فرق' : (getReturnTotal() > getExchangeTotal() ? 'للعميل: ' + fmtJ(getReturnTotal() - getExchangeTotal()) : 'على العميل: ' + fmtJ(getExchangeTotal() - getReturnTotal()))}</span></div>` : ''}
+      ${(() => {
+        const ret = getReturnTotal();
+        const ex = getExchangeTotal();
+        const diff = ret - ex;
+        const refundSeg = qs('#ret-vault-refund')?.value || 'الخزنة';
+        const collectSeg = qs('#ret-vault-collect')?.value || 'الخزنة';
+        if (!retIsExchange) {
+          return ret > 0
+            ? `<div style="display:flex;align-items:center;gap:6px;margin-top:4px;padding:8px;background:rgba(220,38,38,.06);border-radius:8px;font-size:.82rem"><span>🔻 بعد الاعتماد: يُخصم <strong style="color:var(--red)">${fmtJ(ret)}</strong> من ${esc(refundSeg)} — رد للعميل (بدون شحن)</span></div>`
+            : '';
+        }
+        let vaultLine = '';
+        if (diff > 0) vaultLine = `<div style="padding:6px 8px;background:rgba(220,38,38,.06);border-radius:8px;font-size:.82rem;margin-top:4px">🔻 بعد الاعتماد: يُنشأ مصروف بمبلغ <strong style="color:var(--red)">${fmtJ(diff)}</strong> ويُخصم من ${esc(refundSeg)}</div>`;
+        else if (diff < 0) vaultLine = `<div style="padding:6px 8px;background:rgba(16,185,129,.06);border-radius:8px;font-size:.82rem;margin-top:4px">🔺 بعد الاعتماد: فرق <strong style="color:var(--green)">${fmtJ(Math.abs(diff))}</strong> متبقٍ على العميل — يُودَع عند التحصيل في ${esc(collectSeg)}</div>`;
+        else vaultLine = `<div style="padding:6px 8px;background:var(--surface2);border-radius:8px;font-size:.82rem;margin-top:4px;color:var(--muted)">✅ لا فرق نقدي</div>`;
+        return `<div style="display:flex;justify-content:space-between;width:100%;font-size:.9rem"><span class="text-muted">إجمالي البدائل</span><span>${fmtJ(ex)}</span></div>
+        <div style="display:flex;justify-content:space-between;width:100%;font-size:.9rem;border-top:1px solid var(--border);padding-top:6px"><span>الفرق</span><span style="color:${diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--orange)' : 'var(--muted)'}">${diff === 0 ? 'لا فرق' : (diff > 0 ? 'للعميل: ' + fmtJ(diff) : 'على العميل: ' + fmtJ(Math.abs(diff)))}</span></div>${vaultLine}`;
+      })()}
     </div>`;
   updateRetVaultAccountVisibility();
 }
@@ -2008,6 +2126,16 @@ async function saveReturnRequest() {
     return { code: p?.code || '', name: p?.name || '', qty: it.qty, price: it.price, total: it.qty * it.price };
   });
   const exchangeTotal = retIsExchange ? exchangeLines.reduce((s, it) => s + it.total, 0) : 0;
+  // Validate exchange items have sufficient stock
+  if (retIsExchange) {
+    for (const exLine of exchangeLines) {
+      const inv = inventoryCache.find(i => i.code === exLine.code);
+      if (inv && inv.current < exLine.qty) {
+        toast(`المخزون غير كافٍ — ${exLine.name}: المتاح ${inv.current}، المطلوب ${exLine.qty}`, true);
+        return;
+      }
+    }
+  }
   const refundSeg = qs('#ret-vault-refund')?.value || '';
   const collectSeg = qs('#ret-vault-collect')?.value || '';
   const body = {
@@ -2206,6 +2334,7 @@ function renderMovementTxRow(tx) {
           ${isExchangeSalePendingCollect(tx) ? `<div class="dd-item" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">✏️ تعديل <span class="text-xs">(مقفول)</span></div>` : `<div class="dd-item" onclick="openEditMovement('${esc(tx._id)}')">✏️ تعديل</div>`}
           <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')">🖨️ طباعة</div>
           ${(tx.remaining || 0) > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')">${isExchangeSalePendingCollect(tx) ? '💰 تحصيل فرق الاستبدال' : '💰 تحصيل'}</div>` : ''}
+          ${tx.type === 'مبيعات' && !tx.cancelled && isAdmin() ? `<div class="dd-item" onclick="openPostDiscountModal('${esc(tx._id)}')">💲 خصم بعد البيع</div>` : ''}
           ${tx.payStatus !== 'ملغي' && !tx.cancelled ? (isExchangeSalePendingCollect(tx) ? `<div class="dd-divider"></div><div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🚫 إلغاء <span class="text-xs">(مقفول)</span></div>` : `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')">🚫 إلغاء</div>`) : ''}
           ${isAdmin() ? (isExchangeSalePendingCollect(tx) ? `<div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🗑️ حذف <span class="text-xs">(مقفول)</span></div>` : `<div class="dd-item danger" onclick="deleteMovement('${esc(tx._id)}')">🗑️ حذف</div>`) : ''}
         </div>
@@ -2428,6 +2557,58 @@ async function doCollectMovement(id) {
     await api('/transactions/' + id + '/collect', { method: 'POST', body: JSON.stringify({ collectMethod: qs('#collect-method').value, collectNote: qs('#collect-note')?.value || '' }) });
     toast('تم التحصيل'); closeModal();
     transactions = await api('/transactions').catch(() => transactions); renderMovements(); buildSidebar();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+
+function openPostDiscountModal(txId) {
+  const tx = transactions.find(t => t._id === txId);
+  if (!tx) return;
+  const defVault = String(tx.depMethod || 'كاش').trim() || 'كاش';
+  const vaultOpts = RET_VAULT_SEGMENTS.map(v => `<option value="${esc(v)}"${v === defVault ? ' selected' : ''}>${esc(v)}</option>`).join('');
+  openModal(`
+    <h3>💲 خصم بعد البيع</h3>
+    <div class="text-sm text-muted mb-16">فاتورة #${esc(tx.ref || txId)} — ${esc(tx.client || '-')} | إجمالي الفاتورة الحالي: <strong>${fmtJ(tx.total)}</strong></div>
+    <div class="form-group">
+      <label>مبلغ الخصم *</label>
+      <input type="number" id="post-disc-amount" min="1" placeholder="0" oninput="updatePostDiscPreview('${esc(txId)}','${tx.total}')">
+    </div>
+    <div class="form-group">
+      <label>قسم الخزنة — السحب من *</label>
+      <select id="post-disc-vault">${vaultOpts}</select>
+      <div class="field-hint">سيُخصم مبلغ الخصم من هذا القسم فوراً (رد نقدي للعميل)</div>
+    </div>
+    <div class="form-group">
+      <label>سبب الخصم (اختياري)</label>
+      <input type="text" id="post-disc-notes" placeholder="سبب الخصم...">
+    </div>
+    <div id="post-disc-preview" style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:12px;font-size:.85rem;min-height:32px"></div>
+    <div class="flex gap-8 mt-16">
+      <button class="btn btn-primary" onclick="doApplyPostDiscount('${esc(txId)}')">تطبيق الخصم</button>
+      <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+    </div>`);
+}
+function updatePostDiscPreview(txId, txTotal) {
+  const amount = Number(qs('#post-disc-amount')?.value) || 0;
+  const el = qs('#post-disc-preview');
+  if (!el) return;
+  const total = Number(txTotal) || (transactions.find(t => t._id === txId)?.total || 0);
+  const newTotal = Math.max(0, total - amount);
+  el.innerHTML = amount > 0
+    ? `🔻 سيُخصم <strong style="color:var(--red)">${fmtJ(amount)}</strong> من الخزنة | الإجمالي الجديد للفاتورة: <strong>${fmtJ(newTotal)}</strong>`
+    : '<span class="text-muted">أدخل مبلغ الخصم لمعاينة التأثير</span>';
+}
+async function doApplyPostDiscount(txId) {
+  const amount = Number(qs('#post-disc-amount')?.value) || 0;
+  const vaultAccount = qs('#post-disc-vault')?.value || '';
+  const notes = qs('#post-disc-notes')?.value || '';
+  if (!amount || amount <= 0) { toast('أدخل مبلغ الخصم', true); return; }
+  if (!vaultAccount) { toast('اختر قسم الخزنة', true); return; }
+  try {
+    await api('/transactions/' + txId + '/post-discount', { method: 'POST', body: JSON.stringify({ amount, vaultAccount, notes }) });
+    toast('✅ تم تطبيق الخصم وخصم المبلغ من الخزنة');
+    closeModal();
+    transactions = await api('/transactions').catch(() => transactions);
+    buildNotifications(); buildSidebar(); renderMovements();
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 
@@ -3700,6 +3881,378 @@ function onCalcDrag(e) {
   w.style.right = 'auto';
 }
 function stopCalcDrag() { calcDragging = false; document.removeEventListener('mousemove', onCalcDrag); document.removeEventListener('mouseup', stopCalcDrag); }
+
+/* ===== COMPLAINTS ===== */
+let cmpCharts = {};
+
+async function loadComplaints() {
+  try {
+    complaints = await api('/complaints');
+  } catch (_) { complaints = []; }
+  // apply section title from settings
+  const titleEl = qs('#complaints-section-title');
+  if (titleEl && settings.complaintsTitle) titleEl.textContent = settings.complaintsTitle;
+  renderComplaints();
+  renderCmpCharts();
+  renderCmpNegAlert();
+}
+
+function setCmpTab(tab, btn) {
+  cmpTabFilter = tab;
+  qsa('.tab-btn', qs('#page-complaints')).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab !== 'all' && tab !== 'followup') {
+    qs('#cmp-status-filter').value = tab;
+  } else {
+    qs('#cmp-status-filter').value = '';
+  }
+  renderComplaints();
+}
+
+function clearCmpFilters() {
+  qs('#cmp-status-filter').value = '';
+  qs('#cmp-emp-filter').value = '';
+  qs('#cmp-from').value = '';
+  qs('#cmp-to').value = '';
+  qs('#cmp-search').value = '';
+  cmpTabFilter = 'all';
+  qsa('.tab-btn', qs('#page-complaints')).forEach(b => b.classList.remove('active'));
+  qs('#cmp-tab-all').classList.add('active');
+  renderComplaints();
+}
+
+function renderComplaints() {
+  // populate employee filter
+  const empSel = qs('#cmp-emp-filter');
+  const empSet = new Set(complaints.map(c => c.submittedBy).filter(Boolean));
+  const empVal = empSel.value;
+  empSel.innerHTML = '<option value="">كل الموظفين</option>' + [...empSet].map(e => `<option value="${esc(e)}"${empVal===e?' selected':''}>${esc(e)}</option>`).join('');
+
+  const statusF = qs('#cmp-status-filter').value;
+  const empF = empSel.value;
+  const fromF = qs('#cmp-from').value;
+  const toF = qs('#cmp-to').value;
+  const search = (qs('#cmp-search').value || '').toLowerCase();
+
+  let data = complaints.filter(c => {
+    if (cmpTabFilter === 'followup') { if (!c.inFollowUp) return false; }
+    else if (statusF) { if (c.status !== statusF) return false; }
+    if (empF && c.submittedBy !== empF) return false;
+    const dStr = (c.createdAt || '').slice(0, 10);
+    if (fromF && dStr < fromF) return false;
+    if (toF && dStr > toF) return false;
+    if (search) {
+      const haystack = [c.complaintNo, c.clientName, c.submittedBy, c.description, c.transactionRef].join(' ').toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    return true;
+  });
+
+  // KPI
+  const total = complaints.length;
+  const pending = complaints.filter(c => c.status === 'معلق').length;
+  const accepted = complaints.filter(c => c.status === 'مقبول').length;
+  const rejected = complaints.filter(c => c.status === 'مرفوض').length;
+  const rated = complaints.filter(c => c.surveyRating);
+  const avgRating = rated.length ? (rated.reduce((s, c) => s + c.surveyRating, 0) / rated.length).toFixed(1) : '-';
+  qs('#cmp-kpi').innerHTML = [
+    { label: 'إجمالي الشكاوى', val: total, color: 'text-blue' },
+    { label: 'معلقة', val: pending, color: 'text-orange' },
+    { label: 'مقبولة', val: accepted, color: 'text-green' },
+    { label: 'مرفوضة', val: rejected, color: 'text-red' },
+    { label: 'متوسط التقييم', val: avgRating === '-' ? '-' : avgRating + ' ⭐', color: 'text-purple' },
+    { label: 'معدل الحل', val: total ? Math.round((accepted + rejected) / total * 100) + '%' : '0%', color: 'text-green' },
+  ].map(s => `<div class="card stat-card"><div class="stat-label">${esc(s.label)}</div><div class="stat-val ${s.color}">${esc(String(s.val))}</div></div>`).join('');
+
+  const tbody = qs('#cmp-tbody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">لا توجد شكاوى</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(c => {
+    const statusBadge = c.status === 'مقبول'
+      ? `<span class="badge badge-green">مقبول</span>`
+      : c.status === 'مرفوض'
+        ? `<span class="badge badge-red">مرفوض</span>`
+        : `<span class="badge badge-orange">معلق</span>`;
+    const ratingHtml = c.surveyRating ? '⭐'.repeat(c.surveyRating) : '<span class="text-muted">—</span>';
+    const actionBadge = c.managerAction ? `<span class="badge badge-blue">${esc(c.managerAction)}</span>` : '<span class="text-muted">—</span>';
+    const surveyLink = c.surveyToken && !c.surveyCompletedAt
+      ? `<button class="btn btn-outline btn-xs" onclick="copySurveyLink('${esc(c.surveyToken)}')">📋 نسخ رابط</button>` : '';
+    const resolveBtn = isAdmin() && c.status === 'معلق'
+      ? `<button class="btn btn-primary btn-xs" onclick="openResolveModal('${c._id}')">قرار</button>` : '';
+    const deleteBtn = isAdmin()
+      ? `<button class="btn btn-danger btn-xs" onclick="deleteComplaint('${c._id}')">🗑</button>` : '';
+    const viewBtn = `<button class="btn btn-outline btn-xs" onclick="viewComplaint('${c._id}')">عرض</button>`;
+    return `<tr>
+      <td><span class="badge badge-blue">${esc(c.complaintNo)}</span></td>
+      <td>${esc(c.submittedBy || '—')}</td>
+      <td>${esc(c.clientName || '—')}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.transactionRef || '—')}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.description)}">${esc(c.description)}</td>
+      <td>${statusBadge}</td>
+      <td>${actionBadge}</td>
+      <td>${fmtDate((c.createdAt || '').slice(0, 10))}</td>
+      <td>${ratingHtml}</td>
+      <td class="flex gap-4" style="gap:4px">${viewBtn}${resolveBtn}${surveyLink}${deleteBtn}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderCmpCharts() {
+  // Status donut
+  const statusCtx = qs('#cmp-chart-status');
+  if (statusCtx) {
+    if (cmpCharts.status) cmpCharts.status.destroy();
+    const pending = complaints.filter(c => c.status === 'معلق').length;
+    const accepted = complaints.filter(c => c.status === 'مقبول').length;
+    const rejected = complaints.filter(c => c.status === 'مرفوض').length;
+    cmpCharts.status = new Chart(statusCtx, {
+      type: 'doughnut',
+      data: { labels: ['معلق', 'مقبول', 'مرفوض'], datasets: [{ data: [pending, accepted, rejected], backgroundColor: ['#f59e0b','#16a34a','#dc2626'], borderWidth: 2 }] },
+      options: { responsive: true, plugins: { legend: { position: 'bottom' } } },
+    });
+  }
+  // Rating bar
+  const ratingCtx = qs('#cmp-chart-rating');
+  if (ratingCtx) {
+    if (cmpCharts.rating) cmpCharts.rating.destroy();
+    const counts = [0,0,0,0,0];
+    complaints.forEach(c => { if (c.surveyRating >= 1 && c.surveyRating <= 5) counts[c.surveyRating - 1]++; });
+    cmpCharts.rating = new Chart(ratingCtx, {
+      type: 'bar',
+      data: { labels: ['⭐','⭐⭐','⭐⭐⭐','⭐⭐⭐⭐','⭐⭐⭐⭐⭐'], datasets: [{ label: 'عدد التقييمات', data: counts, backgroundColor: ['#dc2626','#f59e0b','#eab308','#22c55e','#16a34a'] }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } },
+    });
+  }
+  // Monthly trend
+  const trendCtx = qs('#cmp-chart-trend');
+  if (trendCtx) {
+    if (cmpCharts.trend) cmpCharts.trend.destroy();
+    const months = {};
+    complaints.forEach(c => {
+      const m = (c.createdAt || '').slice(0, 7);
+      if (m) months[m] = (months[m] || 0) + 1;
+    });
+    const keys = Object.keys(months).sort().slice(-6);
+    cmpCharts.trend = new Chart(trendCtx, {
+      type: 'line',
+      data: { labels: keys, datasets: [{ label: 'الشكاوى', data: keys.map(k => months[k]), borderColor: '#2d7a4f', backgroundColor: 'rgba(45,122,79,0.1)', fill: true, tension: 0.4 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } },
+    });
+  }
+}
+
+function renderCmpNegAlert() {
+  const negBox = qs('#cmp-neg-alert');
+  if (!negBox) return;
+  const neg = complaints.filter(c => c.surveyRating && c.surveyRating <= 2);
+  if (!neg.length) { negBox.style.display = 'none'; return; }
+  negBox.style.display = 'block';
+  negBox.innerHTML = `<div class="card" style="border:2px solid var(--red);padding:14px">
+    <div style="font-weight:700;color:var(--red);margin-bottom:10px">⚠️ شكاوى بتقييم سلبي (${neg.length})</div>
+    ${neg.map(c => `<div style="border-bottom:1px solid var(--border);padding:6px 0;font-size:.85rem">
+      <span class="badge badge-blue">${esc(c.complaintNo)}</span>
+      ${'⭐'.repeat(c.surveyRating)} — ${esc(c.clientName || c.submittedBy)}:
+      <em>${esc(c.surveyComment || '—')}</em>
+    </div>`).join('')}
+  </div>`;
+}
+
+// Modals
+function openComplaintModal() {
+  const txOptions = transactions.filter(t => !t.cancelled && t.type === 'مبيعات')
+    .map(t => `<option value="${t._id}" data-ref="${esc(t.ref || t._id)}" data-client="${esc(t.client || '')}">${esc(t.ref || t._id)} — ${esc(t.client || '—')} (${fmtDate((t.date||'').slice(0,10))})</option>`)
+    .join('');
+  openModal(`<h3 style="margin-bottom:16px">شكوى جديدة</h3>
+    <div class="form-group">
+      <label class="form-label">الطلب المرتبط (اختياري)</label>
+      <select id="cmp-tx-sel" style="width:100%" onchange="cmpTxChange(this)">
+        <option value="">— اختر طلباً —</option>${txOptions}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">اسم العميل</label>
+      <input type="text" id="cmp-client-input" class="form-input" placeholder="اسم العميل">
+    </div>
+    <div class="form-group">
+      <label class="form-label">وصف الشكوى <span style="color:var(--red)">*</span></label>
+      <textarea id="cmp-desc" rows="4" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;color:var(--text);resize:vertical" placeholder="اكتب تفاصيل الشكوى..."></textarea>
+    </div>
+    <div style="text-align:left;margin-top:8px">
+      <small class="text-muted">سيتم تسجيل اسم الموظف: <strong>${esc(currentUser?.name || currentUser?.username || '')}</strong></small>
+    </div>
+    <div class="flex gap-8" style="margin-top:16px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveComplaint()">حفظ وإرسال</button>
+    </div>`);
+}
+
+function cmpTxChange(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const client = opt ? (opt.getAttribute('data-client') || '') : '';
+  const clientInput = qs('#cmp-client-input');
+  if (clientInput && client) clientInput.value = client;
+}
+
+async function saveComplaint() {
+  const txSel = qs('#cmp-tx-sel');
+  const transactionId = txSel ? txSel.value : '';
+  const txOpt = txSel ? txSel.options[txSel.selectedIndex] : null;
+  const transactionRef = txOpt && transactionId ? (txOpt.getAttribute('data-ref') || transactionId) : '';
+  const clientName = (qs('#cmp-client-input')?.value || '').trim();
+  const description = (qs('#cmp-desc')?.value || '').trim();
+  if (!description) { toast('يرجى كتابة وصف الشكوى', true); return; }
+  try {
+    const body = { description };
+    if (transactionId) { body.transactionId = transactionId; body.transactionRef = transactionRef; }
+    if (clientName) body.clientName = clientName;
+    const res = await api('/complaints', { method: 'POST', body: JSON.stringify(body) });
+    toast(`تم حفظ الشكوى رقم ${res.complaintNo}`);
+    closeModal();
+    await loadComplaints();
+    buildSidebar();
+    buildNotifications();
+  } catch (e) { toast(e.message, true); }
+}
+
+function openResolveModal(id) {
+  const c = complaints.find(x => x._id === id);
+  if (!c) return;
+  openModal(`<h3 style="margin-bottom:4px">قرار الإدارة</h3>
+    <div style="margin-bottom:16px"><span class="badge badge-blue">${esc(c.complaintNo)}</span> — ${esc(c.clientName || c.submittedBy)}</div>
+    <div style="background:var(--surface);border-radius:var(--radius);padding:10px;margin-bottom:16px;font-size:.9rem">${esc(c.description)}</div>
+    <div class="form-group">
+      <label class="form-label">القرار <span style="color:var(--red)">*</span></label>
+      <select id="resolve-status" style="width:100%">
+        <option value="مقبول">قبول الشكوى</option>
+        <option value="مرفوض">رفض الشكوى</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">الإجراء المتخذ</label>
+      <select id="resolve-action" style="width:100%">
+        <option value="">— اختر —</option>
+        <option value="استبدال">استبدال</option>
+        <option value="استرداد">استرداد</option>
+        <option value="تعويض">تعويض</option>
+        <option value="رفض">رفض</option>
+        <option value="أخرى">أخرى</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">ملاحظات الإدارة</label>
+      <textarea id="resolve-note" rows="3" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;color:var(--text);resize:vertical" placeholder="ملاحظات إضافية..."></textarea>
+    </div>
+    <div style="background:var(--primary-pale);border-radius:var(--radius);padding:10px;font-size:.85rem;margin-bottom:16px">
+      💡 عند الحفظ سيتم إنشاء رابط استبيان لمشاركته مع العميل تلقائياً.
+    </div>
+    <div class="flex gap-8" style="justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+      <button class="btn btn-primary" onclick="resolveComplaint('${id}')">حفظ القرار</button>
+    </div>`);
+}
+
+async function resolveComplaint(id) {
+  const status = qs('#resolve-status').value;
+  const managerAction = qs('#resolve-action').value;
+  const actionNote = (qs('#resolve-note')?.value || '').trim();
+  try {
+    const res = await api(`/complaints/${id}/resolve`, {
+      method: 'POST',
+      body: JSON.stringify({ status, managerAction, actionNote }),
+    });
+    toast(`تم تحديث الشكوى — ${status}`);
+    if (res.surveyToken) {
+      const link = `${location.origin}/survey.html?token=${res.surveyToken}`;
+      closeModal();
+      openModal(`<h3 style="margin-bottom:12px">رابط استبيان العميل</h3>
+        <p style="margin-bottom:12px;color:var(--muted)">شارك هذا الرابط مع العميل لتقييم تجربته:</p>
+        <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;word-break:break-all;font-size:.85rem;user-select:all;margin-bottom:16px">${esc(link)}</div>
+        <div class="flex gap-8" style="justify-content:flex-end">
+          <button class="btn btn-outline" onclick="closeModal()">إغلاق</button>
+          <button class="btn btn-primary" onclick="navigator.clipboard.writeText('${esc(link)}').then(()=>toast('تم نسخ الرابط'))">📋 نسخ الرابط</button>
+        </div>`);
+    } else {
+      closeModal();
+    }
+    await loadComplaints();
+    buildSidebar();
+    buildNotifications();
+  } catch (e) { toast(e.message, true); }
+}
+
+function viewComplaint(id) {
+  const c = complaints.find(x => x._id === id);
+  if (!c) return;
+  const statusBadge = c.status === 'مقبول'
+    ? `<span class="badge badge-green">مقبول</span>`
+    : c.status === 'مرفوض'
+      ? `<span class="badge badge-red">مرفوض</span>`
+      : `<span class="badge badge-orange">معلق</span>`;
+  const ratingHtml = c.surveyRating ? '⭐'.repeat(c.surveyRating) + ` (${c.surveyRating}/5)` : '—';
+  const surveyLink = c.surveyToken
+    ? `${location.origin}/survey.html?token=${c.surveyToken}` : null;
+  openModal(`<h3 style="margin-bottom:4px">${esc(c.complaintNo)}</h3>
+    <div style="margin-bottom:14px">${statusBadge} ${c.managerAction ? `<span class="badge badge-blue">${esc(c.managerAction)}</span>` : ''}</div>
+    <table style="width:100%;font-size:.88rem;border-collapse:collapse">
+      <tr><td style="padding:5px 8px;color:var(--muted);width:140px">الموظف المقدِّم</td><td>${esc(c.submittedBy)}</td></tr>
+      <tr><td style="padding:5px 8px;color:var(--muted)">العميل</td><td>${esc(c.clientName || '—')}</td></tr>
+      <tr><td style="padding:5px 8px;color:var(--muted)">الطلب</td><td>${esc(c.transactionRef || '—')}</td></tr>
+      <tr><td style="padding:5px 8px;color:var(--muted)">تاريخ التقديم</td><td>${(c.createdAt||'').slice(0,16).replace('T',' ')}</td></tr>
+      <tr><td style="padding:5px 8px;color:var(--muted)">الوصف</td><td style="white-space:pre-wrap">${esc(c.description)}</td></tr>
+      ${c.resolvedBy ? `<tr><td style="padding:5px 8px;color:var(--muted)">المُعالِج</td><td>${esc(c.resolvedBy)}</td></tr>` : ''}
+      ${c.resolvedAt ? `<tr><td style="padding:5px 8px;color:var(--muted)">تاريخ المعالجة</td><td>${(c.resolvedAt||'').slice(0,16).replace('T',' ')}</td></tr>` : ''}
+      ${c.actionNote ? `<tr><td style="padding:5px 8px;color:var(--muted)">ملاحظات</td><td style="white-space:pre-wrap">${esc(c.actionNote)}</td></tr>` : ''}
+      <tr><td style="padding:5px 8px;color:var(--muted)">تقييم العميل</td><td>${ratingHtml}</td></tr>
+      ${c.surveyComment ? `<tr><td style="padding:5px 8px;color:var(--muted)">تعليق العميل</td><td style="white-space:pre-wrap">${esc(c.surveyComment)}</td></tr>` : ''}
+      ${surveyLink ? `<tr><td style="padding:5px 8px;color:var(--muted)">رابط الاستبيان</td><td style="word-break:break-all;font-size:.8rem">${esc(surveyLink)}</td></tr>` : ''}
+    </table>
+    <div class="flex gap-8" style="margin-top:16px;justify-content:flex-end">
+      ${surveyLink && !c.surveyCompletedAt ? `<button class="btn btn-outline" onclick="navigator.clipboard.writeText('${esc(surveyLink)}').then(()=>toast('تم النسخ'))">📋 نسخ رابط الاستبيان</button>` : ''}
+      <button class="btn btn-outline" onclick="closeModal()">إغلاق</button>
+    </div>`);
+}
+
+function copySurveyLink(token) {
+  const link = `${location.origin}/survey.html?token=${token}`;
+  navigator.clipboard.writeText(link).then(() => toast('تم نسخ رابط الاستبيان'));
+}
+
+async function deleteComplaint(id) {
+  if (!confirm('هل تريد حذف هذه الشكوى؟')) return;
+  try {
+    await api(`/complaints/${id}`, { method: 'DELETE' });
+    toast('تم الحذف');
+    complaints = complaints.filter(c => c._id !== id);
+    renderComplaints();
+    renderCmpCharts();
+    buildSidebar();
+  } catch (e) { toast(e.message, true); }
+}
+
+function exportComplaintsExcel() {
+  if (typeof XLSX === 'undefined') { toast('مكتبة التصدير غير محملة', true); return; }
+  const rows = complaints.map(c => ({
+    'رقم الشكوى': c.complaintNo,
+    'الموظف': c.submittedBy,
+    'العميل': c.clientName || '',
+    'الطلب': c.transactionRef || '',
+    'الوصف': c.description,
+    'الحالة': c.status,
+    'الإجراء': c.managerAction || '',
+    'ملاحظات': c.actionNote || '',
+    'المُعالِج': c.resolvedBy || '',
+    'تاريخ المعالجة': (c.resolvedAt || '').slice(0, 16).replace('T', ' '),
+    'تقييم العميل': c.surveyRating || '',
+    'تعليق العميل': c.surveyComment || '',
+    'تاريخ التقديم': (c.createdAt || '').slice(0, 16).replace('T', ' '),
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Complaints');
+  XLSX.writeFile(wb, `complaints_${today()}.xlsx`);
+}
 
 /* Init */
 (async function init() {
