@@ -132,9 +132,9 @@ export class TransactionsService {
     await this.assertOutboundWithinAvailableStock(dto.type, dto.items);
     // For purchases: check vault balance covers the deposit/upfront payment
     if (dto.type === 'مشتريات') {
-      const depositPaid = (dto as Record<string, unknown>).deposit as number || 0;
+      const depositPaid = (dto as unknown as { deposit?: number }).deposit || 0;
       if (depositPaid > 0) {
-        const method = (dto as Record<string, unknown>).depMethod as string || 'كاش';
+        const method = (dto as unknown as { depMethod?: string }).depMethod || 'كاش';
         await this.vaultService.assertSufficientBalance(method, depositPaid);
       }
     }
@@ -555,28 +555,46 @@ export class TransactionsService {
     if (tx.payStatus === 'مكتمل') {
       throw new BadRequestException('الحركة محصلة بالفعل');
     }
-    const collectAmount = tx.remaining || 0;
-    tx.remaining = 0;
-    tx.payStatus = 'مكتمل';
-    if (collectAmount > 0 && /-EXC$/i.test(String(tx.ref || ''))) {
-      tx.deposit = collectAmount;
+    const totalRemaining = tx.remaining || 0;
+    const isPurchase = tx.type === 'مشتريات';
+
+    // Partial payment support for purchases
+    let payAmount: number;
+    if (isPurchase && dto.collectAmount !== undefined && dto.collectAmount > 0) {
+      if (dto.collectAmount > totalRemaining) {
+        throw new BadRequestException(
+          `المبلغ المدخل (${dto.collectAmount} ج) أكبر من المتبقي (${totalRemaining} ج)`
+        );
+      }
+      payAmount = dto.collectAmount;
+    } else {
+      payAmount = totalRemaining;
+    }
+
+    const newRemaining = Math.max(0, totalRemaining - payAmount);
+    const isFullyPaid = newRemaining === 0;
+
+    tx.remaining = newRemaining;
+    tx.payStatus = isFullyPaid ? 'مكتمل' : 'معلق';
+    if (isFullyPaid && payAmount > 0 && /-EXC$/i.test(String(tx.ref || ''))) {
+      tx.deposit = payAmount;
     }
     tx.collectMethod = dto.collectMethod;
     tx.collectNote = dto.collectNote || '';
-    tx.collectedAt = new Date().toISOString().split('T')[0];
+    if (isFullyPaid) {
+      tx.collectedAt = new Date().toISOString().split('T')[0];
+    }
     const saved = await tx.save();
-    if (collectAmount > 0) {
-      const isPurchase = tx.type === 'مشتريات';
-      // مشتريات: paying remaining to supplier → deduct from vault (negative)
-      // مبيعات: receiving remaining from client → add to vault (positive)
+    if (payAmount > 0) {
+      // مشتريات: deduct from vault; مبيعات: add to vault
       await this.vaultService.addSystemEntry(
-        isPurchase ? -collectAmount : collectAmount,
+        isPurchase ? -payAmount : payAmount,
         dto.collectMethod,
         isPurchase
-          ? `دفع متبقي مشتريات #${tx.ref || tx._id} — ${tx.client || ''}`
+          ? `سداد مشتريات #${tx.ref || tx._id} — ${tx.client || ''}${!isFullyPaid ? ` (جزئي — متبقي: ${newRemaining} ج)` : ' (مكتمل)'}`
           : `تحصيل #${tx.ref || tx._id}`,
         new Date().toISOString().split('T')[0],
-        isPurchase ? 'دفع مشتريات' : 'تحصيل',
+        isPurchase ? 'مشتريات' : 'تحصيل',
         tx.ref || String(tx._id),
       );
     }
