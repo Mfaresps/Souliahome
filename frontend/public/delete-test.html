@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حذف العملاء والحركات</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            text-align: center;
+            grid-column: 1 / -1;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+        h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            min-height: 50px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+        }
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>🗑️ حذف العملاء والحركات</h1>
+    
+    <div class="container">
+        <!-- Login Section -->
+        <div class="card">
+            <h2>📝 تسجيل الدخول</h2>
+            <div class="form-group">
+                <label for="username">اسم المستخدم</label>
+                <input type="text" id="username" value="admin" placeholder="أدخل اسم المستخدم">
+            </div>
+            <div class="form-group">
+                <label for="password">كلمة المرور</label>
+                <input type="password" id="password" placeholder="أدخل كلمة المرور">
+            </div>
+            <button onclick="login()">تسجيل الدخول</button>
+            <div class="loading" id="loginLoader">جاري تسجيل الدخول...</div>
+            <div class="status" id="loginStatus" style="display: none;"></div>
+        </div>
+
+        <!-- Delete Customers Section -->
+        <div class="card">
+            <h2>👥 حذف العملاء</h2>
+            <div class="form-group">
+                <label for="userId">معرف العميل</label>
+                <input type="text" id="userId" placeholder="أدخل معرف العميل">
+            </div>
+            <button onclick="deleteUser()" id="deleteUserBtn" disabled>حذف العميل</button>
+            <div class="loading" id="deleteUserLoader">جاري الحذف...</div>
+            <div class="status" id="deleteUserStatus" style="display: none;"></div>
+        </div>
+
+        <!-- Delete Single Transaction Section -->
+        <div class="card">
+            <h2>📋 حذف حركة واحدة</h2>
+            <div class="form-group">
+                <label for="transactionId">معرف الحركة</label>
+                <input type="text" id="transactionId" placeholder="أدخل معرف الحركة">
+            </div>
+            <button onclick="deleteTransaction()" id="deleteTransBtn" disabled>حذف الحركة</button>
+            <div class="loading" id="deleteTransLoader">جاري الحذف...</div>
+            <div class="status" id="deleteTransStatus" style="display: none;"></div>
+        </div>
+
+        <!-- Delete Multiple Transactions Section -->
+        <div class="card">
+            <h2>📑 حذف عدة حركات</h2>
+            <div class="form-group">
+                <label for="transactionIds">معرفات الحركات (مفصول بفاصلة)</label>
+                <textarea id="transactionIds" placeholder="ID1, ID2, ID3" style="resize: vertical; min-height: 80px; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-family: monospace;"></textarea>
+            </div>
+            <button onclick="bulkDeleteTransactions()" id="bulkDeleteBtn" disabled>حذف الحركات</button>
+            <div class="loading" id="bulkDeleteLoader">جاري الحذف...</div>
+            <div class="status" id="bulkDeleteStatus" style="display: none;"></div>
+        </div>
+
+        <!-- Clear All Transactions Section -->
+        <div class="card">
+            <h2>⚠️ حذف جميع الحركات</h2>
+            <p style="color: #d32f2f; margin-bottom: 15px; font-weight: 600;">تحذير: هذا الإجراء سيحذف جميع الحركات!</p>
+            <button onclick="clearAllTransactions()" id="clearAllBtn" disabled style="background: #d32f2f;">حذف جميع الحركات</button>
+            <div class="loading" id="clearAllLoader">جاري الحذف...</div>
+            <div class="status" id="clearAllStatus" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        let token = null;
+
+        function showStatus(elementId, message, type) {
+            const status = document.getElementById(elementId);
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+        }
+
+        function hideStatus(elementId) {
+            const status = document.getElementById(elementId);
+            status.style.display = 'none';
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loader = document.getElementById('loginLoader');
+            
+            if (!username || !password) {
+                showStatus('loginStatus', '❌ الرجاء ملء جميع الحقول', 'error');
+                return;
+            }
+
+            loader.style.display = 'block';
+            hideStatus('loginStatus');
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.access_token) {
+                    token = data.access_token;
+                    showStatus('loginStatus', `✅ تم تسجيل الدخول بنجاح (${username})`, 'success');
+                    
+                    // Enable deletion buttons
+                    document.getElementById('deleteUserBtn').disabled = false;
+                    document.getElementById('deleteTransBtn').disabled = false;
+                    document.getElementById('bulkDeleteBtn').disabled = false;
+                    document.getElementById('clearAllBtn').disabled = false;
+                } else {
+                    showStatus('loginStatus', `❌ فشل تسجيل الدخول: ${data.message || 'بيانات غير صحيحة'}`, 'error');
+                }
+            } catch (error) {
+                showStatus('loginStatus', `❌ خطأ: ${error.message}`, 'error');
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        async function deleteUser() {
+            const userId = document.getElementById('userId').value;
+            const loader = document.getElementById('deleteUserLoader');
+
+            if (!userId) {
+                showStatus('deleteUserStatus', '❌ الرجاء إدخال معرف العميل', 'error');
+                return;
+            }
+
+            if (!token) {
+                showStatus('deleteUserStatus', '❌ الرجاء تسجيل الدخول أولاً', 'error');
+                return;
+            }
+
+            loader.style.display = 'block';
+            hideStatus('deleteUserStatus');
+
+            try {
+                const response = await fetch(`${API_URL}/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    showStatus('deleteUserStatus', `✅ تم حذف العميل بنجاح`, 'success');
+                    document.getElementById('userId').value = '';
+                } else {
+                    const data = await response.json();
+                    showStatus('deleteUserStatus', `❌ فشل: ${data.message || 'خطأ غير معروف'}`, 'error');
+                }
+            } catch (error) {
+                showStatus('deleteUserStatus', `❌ خطأ: ${error.message}`, 'error');
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        async function deleteTransaction() {
+            const transactionId = document.getElementById('transactionId').value;
+            const loader = document.getElementById('deleteTransLoader');
+
+            if (!transactionId) {
+                showStatus('deleteTransStatus', '❌ الرجاء إدخال معرف الحركة', 'error');
+                return;
+            }
+
+            if (!token) {
+                showStatus('deleteTransStatus', '❌ الرجاء تسجيل الدخول أولاً', 'error');
+                return;
+            }
+
+            loader.style.display = 'block';
+            hideStatus('deleteTransStatus');
+
+            try {
+                const response = await fetch(`${API_URL}/transactions/${transactionId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    showStatus('deleteTransStatus', `✅ تم تجميد الحركة بنجاح`, 'success');
+                    document.getElementById('transactionId').value = '';
+                } else {
+                    const data = await response.json();
+                    showStatus('deleteTransStatus', `❌ فشل: ${data.message || 'خطأ غير معروف'}`, 'error');
+                }
+            } catch (error) {
+                showStatus('deleteTransStatus', `❌ خطأ: ${error.message}`, 'error');
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        async function bulkDeleteTransactions() {
+            const transactionIds = document.getElementById('transactionIds').value;
+            const loader = document.getElementById('bulkDeleteLoader');
+
+            if (!transactionIds.trim()) {
+                showStatus('bulkDeleteStatus', '❌ الرجاء إدخال معرفات حركات', 'error');
+                return;
+            }
+
+            if (!token) {
+                showStatus('bulkDeleteStatus', '❌ الرجاء تسجيل الدخول أولاً', 'error');
+                return;
+            }
+
+            const ids = transactionIds.split(',').map(id => id.trim()).filter(id => id.length > 0);
+
+            loader.style.display = 'block';
+            hideStatus('bulkDeleteStatus');
+
+            try {
+                const response = await fetch(`${API_URL}/transactions/bulk-delete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ ids })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showStatus('bulkDeleteStatus', `✅ ${data.message} (عدد: ${ids.length})`, 'success');
+                    document.getElementById('transactionIds').value = '';
+                } else {
+                    const data = await response.json();
+                    showStatus('bulkDeleteStatus', `❌ فشل: ${data.message || 'خطأ غير معروف'}`, 'error');
+                }
+            } catch (error) {
+                showStatus('bulkDeleteStatus', `❌ خطأ: ${error.message}`, 'error');
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        async function clearAllTransactions() {
+            const loader = document.getElementById('clearAllLoader');
+
+            if (!token) {
+                showStatus('clearAllStatus', '❌ الرجاء تسجيل الدخول أولاً', 'error');
+                return;
+            }
+
+            const confirmed = confirm('⚠️ تحذير: هذا سيحذف جميع الحركات نهائياً! هل أنت متأكد؟');
+            if (!confirmed) return;
+
+            loader.style.display = 'block';
+            hideStatus('clearAllStatus');
+
+            try {
+                const response = await fetch(`${API_URL}/transactions/clear`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    showStatus('clearAllStatus', `✅ تم حذف جميع الحركات بنجاح`, 'success');
+                } else {
+                    const data = await response.json();
+                    showStatus('clearAllStatus', `❌ فشل: ${data.message || 'خطأ غير معروف'}`, 'error');
+                }
+            } catch (error) {
+                showStatus('clearAllStatus', `❌ خطأ: ${error.message}`, 'error');
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        // Allow Enter key to work with inputs
+        document.getElementById('password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') login();
+        });
+    </script>
+</body>
+</html>
