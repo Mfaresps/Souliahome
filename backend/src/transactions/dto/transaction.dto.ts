@@ -209,6 +209,11 @@ export class CollectTransactionDto {
   @IsString()
   @IsOptional()
   readonly collectNote?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly collectAmount?: number;
 }
 
 export class BulkDeleteDto {
