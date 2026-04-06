@@ -30,13 +30,24 @@ export class VaultService {
     return `V${ts}${rand}`;
   }
 
-  private async getSegmentBalance(seg: string): Promise<number> {
+  async getSegmentBalance(seg: string): Promise<number> {
     const settings = await this.settingsService.getSettings();
     switch (seg) {
       case 'vodafone': return settings.vaultVodafone || 0;
       case 'instapay': return settings.vaultInstapay || 0;
       case 'bank': return settings.vaultBank || 0;
       default: return settings.vaultCash || 0;
+    }
+  }
+
+  async assertSufficientBalance(method: string, amount: number): Promise<void> {
+    const seg = resolveVaultSegmentFromPaymentMethod(method);
+    const balance = await this.getSegmentBalance(seg);
+    if (balance < amount) {
+      const segLabel: Record<string, string> = { cash: 'كاش', vodafone: 'فودافون كاش', instapay: 'Instapay', bank: 'تحويل بنكي' };
+      throw new BadRequestException(
+        `رصيد ${segLabel[seg] || seg} غير كافٍ — الرصيد الحالي: ${balance} ج والمطلوب: ${amount} ج`
+      );
     }
   }
 

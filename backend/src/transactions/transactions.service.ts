@@ -130,6 +130,14 @@ export class TransactionsService {
   async create(dto: CreateTransactionDto): Promise<TransactionDocument> {
     await this.assertRetailRefForPersist(dto.type, dto.ref, undefined);
     await this.assertOutboundWithinAvailableStock(dto.type, dto.items);
+    // For purchases: check vault balance covers the deposit/upfront payment
+    if (dto.type === 'مشتريات') {
+      const depositPaid = (dto as Record<string, unknown>).deposit as number || 0;
+      if (depositPaid > 0) {
+        const method = (dto as Record<string, unknown>).depMethod as string || 'كاش';
+        await this.vaultService.assertSufficientBalance(method, depositPaid);
+      }
+    }
     const tx = await this.transactionModel.create(dto);
     await this.recordVaultForTransaction(tx);
     return tx;
