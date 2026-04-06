@@ -538,9 +538,29 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 
 <!-- Clients -->
 <div class="page" id="page-clients">
-<div class="flex-between mb-16">
+<div class="flex-between mb-16" style="flex-wrap:wrap;gap:10px">
 <h2 class="page-title" style="margin-bottom:0" data-i18n="clients">العملاء</h2>
-<div class="search-input"><input type="text" id="clients-search" placeholder="بحث عملاء..." oninput="debouncedRenderClients()"></div>
+<div class="flex gap-8" style="flex-wrap:wrap;align-items:center">
+  <div class="search-input"><input type="text" id="clients-search" placeholder="بحث عملاء..." oninput="debouncedRenderClients()"></div>
+  <select id="clients-order-filter" style="width:150px" onchange="debouncedRenderClients()">
+    <option value="orders">ترتيب: الأكثر طلبات</option>
+    <option value="total">ترتيب: الأعلى مبيعات</option>
+    <option value="remaining">ترتيب: الأعلى متبقي</option>
+    <option value="name">ترتيب: أبجدي</option>
+  </select>
+  <select id="clients-has-remaining" style="width:150px" onchange="debouncedRenderClients()">
+    <option value="">كل العملاء</option>
+    <option value="1">لديهم متبقي</option>
+    <option value="0">لا متبقي</option>
+  </select>
+  <button class="btn btn-outline btn-sm" onclick="exportClientsExcel()">📥 تصدير Excel</button>
+  <button class="btn btn-outline btn-sm" onclick="exportClientsCsv()">📄 تصدير CSV</button>
+</div>
+</div>
+<div id="clients-sel-bar" style="display:none;margin-bottom:10px;padding:8px 14px;background:var(--primary-pale);border-radius:8px;font-size:.85rem">
+  تم تحديد <strong id="clients-sel-count">0</strong> عميل
+  <button class="btn btn-outline btn-sm" style="margin-right:8px" onclick="deselectAllClients()">إلغاء التحديد</button>
+  <button class="btn btn-primary btn-sm" onclick="exportSelectedClientsExcel()">📥 تصدير المحددين</button>
 </div>
 <div class="grid grid-3" id="clients-grid"></div>
 <div id="clients-pagination"></div>
@@ -628,6 +648,10 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
   <input type="date" id="cmp-from" style="width:145px" onchange="renderComplaints()" placeholder="من تاريخ">
   <input type="date" id="cmp-to" style="width:145px" onchange="renderComplaints()" placeholder="إلى تاريخ">
   <div class="search-input"><input type="text" id="cmp-search" placeholder="بحث برقم الشكوى أو العميل..." oninput="renderComplaints()"></div>
+  <select id="cmp-sort-order" style="width:140px" onchange="renderComplaints()">
+    <option value="desc">الأحدث أولاً</option>
+    <option value="asc">الأقدم أولاً</option>
+  </select>
   <button class="btn btn-outline btn-sm" onclick="clearCmpFilters()">مسح</button>
 </div>
 
@@ -814,12 +838,13 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="card">
 <div class="flex-between mb-16">
 <h4>سجل الخزنة</h4>
-<div class="flex gap-8">
+<div class="flex gap-8" style="flex-wrap:wrap">
+<input type="text" id="vault-log-search" placeholder="🔍 بحث في السجل..." style="width:200px" oninput="vaultPage=1;renderVaultTable()">
 <input type="date" id="vault-from" style="width:140px" onchange="vaultPage=1;loadVaultLog()">
 <input type="date" id="vault-to" style="width:140px" onchange="vaultPage=1;loadVaultLog()">
 </div>
 </div>
-<div class="overflow-x"><table id="vault-table"><thead><tr><th>التاريخ</th><th>التوقيت</th><th>المبلغ</th><th>المصدر</th><th>#المرجع</th><th>القسم</th><th>الطريقة</th><th>الوصف</th></tr></thead><tbody></tbody></table></div>
+<div class="overflow-x"><table id="vault-table"><thead><tr><th>رقم المعاملة</th><th>التاريخ</th><th>التوقيت</th><th>المبلغ</th><th>الرصيد الكلي</th><th>المصدر</th><th>#المرجع</th><th>القسم</th><th>الطريقة</th><th>الموظف</th><th>الوصف</th></tr></thead><tbody></tbody></table></div>
 <div id="vault-pagination"></div>
 </div>
 </div>
@@ -1096,6 +1121,18 @@ function fmtDate(d) {
     } catch (_) {}
   }
   return str;
+}
+function fmtElapsed(isoStr) {
+  if (!isoStr) return '';
+  const diff = Date.now() - new Date(isoStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `منذ ${mins} دقيقة`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `منذ ${hrs} ساعة`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `منذ ${days} يوم`;
+  const months = Math.floor(days / 30);
+  return `منذ ${months} شهر`;
 }
 function fmtDateTime(d) {
   if (!d) return '-';
@@ -2643,6 +2680,7 @@ let editTxItems = [];
 let editTxId = '';
 function openEditMovement(id) {
   const tx = transactions.find(t => t._id === id); if (!tx) return;
+  if (tx.cancelled || tx.payStatus === 'ملغي') { toast('لا يمكن تعديل حركة ملغاة', true); return; }
   if (isExchangeSalePendingCollect(tx)) { toastExchangePendingLocked(); return; }
   editTxId = id;
   editTxItems = (tx.items || []).map(it => ({ name: it.name || '', code: it.code || '', qty: it.qty || 1, price: it.price || 0, productId: it.productId || '' }));
@@ -2973,6 +3011,7 @@ async function doApplyPostDiscount(txId) {
 async function archiveMovement(id) {
   const tx = transactions.find(t => t._id === id);
   if (tx && isExchangeSalePendingCollect(tx)) { toastExchangePendingLocked(); return; }
+  if (tx && (tx.cancelled || tx.payStatus === 'ملغي')) { toast('لا يمكن تجميد حركة ملغاة', true); return; }
   if (!confirm('سيتم تجميد هذه الحركة. لن تؤثر على المخزون أو الخزنة ويمكن فك التجميد لاحقاً.\nهل تريد المتابعة؟')) return;
   try {
     await api('/transactions/' + id, { method: 'DELETE' });
@@ -3123,32 +3162,68 @@ function exportSelectedExcel() {
   toast(`تم تصدير ${selected.length} حركة`);
 }
 function buildInvoiceHtml(tx) {
-  const itemsHtml = (tx.items || []).map((it, i) => `<tr><td>${i+1}</td><td>${esc(it.name || '')}</td><td>${it.qty}</td><td>${fmtJ(it.price)}</td><td>${fmtJ(it.total)}</td></tr>`).join('');
-  return `<div class="invoice-page" style="page-break-after:always;font-family:'Cairo',sans-serif;padding:24px;max-width:700px;margin:0 auto;direction:rtl">
-    <div style="text-align:center;margin-bottom:16px;border-bottom:2px solid #00311e;padding-bottom:12px">
-      <h2 style="color:#00311e;margin:0">Soulia</h2>
-      <p style="margin:4px 0;color:#555">فاتورة ${esc(tx.type)}</p>
+  const itemsHtml = (tx.items || []).map((it, i) => `
+    <tr style="background:${i%2===0?'#fff':'#f8fafb'}">
+      <td style="padding:8px 10px;text-align:center;border-bottom:1px solid #e2e8e4">${i+1}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #e2e8e4;font-weight:500">${esc(it.name || '')}</td>
+      <td style="padding:8px 10px;text-align:center;border-bottom:1px solid #e2e8e4">${it.qty}</td>
+      <td style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e8e4">${fmtJ(it.price)}</td>
+      <td style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e8e4;font-weight:700;color:#00311e">${fmtJ(it.total)}</td>
+    </tr>`).join('');
+  const payStatusColor = tx.payStatus === 'مكتمل' ? '#16a34a' : tx.payStatus === 'ملغي' ? '#dc2626' : '#e65100';
+  const paid = exchangeSalePaidDisplayAmount(tx);
+  return `<div class="invoice-page" style="page-break-after:always;font-family:'Cairo',sans-serif;padding:32px;max-width:720px;margin:0 auto;direction:rtl;background:#fff;border:1px solid #e2e8e4;border-radius:12px">
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:20px;border-bottom:3px solid #00311e">
+      <div>
+        <h1 style="color:#00311e;margin:0;font-size:28px;font-weight:900;letter-spacing:-0.5px">Soulia</h1>
+        <p style="margin:4px 0 0;color:#6b8c78;font-size:13px">نظام إدارة المخازن</p>
+      </div>
+      <div style="text-align:left">
+        <div style="background:#00311e;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700">فاتورة ${esc(tx.type)}</div>
+        <div style="margin-top:8px;font-size:12px;color:#6b8c78">${tx.ref ? 'رقم: <strong style="color:#00311e">#'+esc(tx.ref)+'</strong>' : ''}</div>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;font-size:13px">
-      <div><strong>التاريخ:</strong> ${esc((tx.date || '').slice(0, 10))}</div>
-      <div><strong>المرجع:</strong> ${tx.ref ? '#' + esc(tx.ref) : '-'}</div>
-      <div><strong>العميل:</strong> ${esc(tx.client || '-')}</div>
-      <div><strong>الهاتف:</strong> ${esc(tx.phone || '-')}</div>
-      <div><strong>الموظف:</strong> ${esc(tx.employee || '-')}</div>
-      <div><strong>الحالة:</strong> ${esc(tx.payStatus || '-')}</div>
+    <!-- Info Grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+      <div style="background:#f8fafb;border:1px solid #e2e8e4;border-radius:10px;padding:14px">
+        <div style="font-size:11px;color:#6b8c78;font-weight:700;margin-bottom:8px;text-transform:uppercase">بيانات العميل</div>
+        <div style="font-size:14px;font-weight:700;color:#0f1f16;margin-bottom:4px">${esc(tx.client || '—')}</div>
+        ${tx.phone ? `<div style="font-size:12px;color:#6b8c78">📞 ${esc(tx.phone)}</div>` : ''}
+      </div>
+      <div style="background:#f8fafb;border:1px solid #e2e8e4;border-radius:10px;padding:14px">
+        <div style="font-size:11px;color:#6b8c78;font-weight:700;margin-bottom:8px;text-transform:uppercase">تفاصيل الفاتورة</div>
+        <div style="font-size:12px;margin-bottom:3px">📅 <strong>التاريخ:</strong> ${esc((tx.date || '').slice(0, 10))}</div>
+        <div style="font-size:12px;margin-bottom:3px">👤 <strong>الموظف:</strong> ${esc(tx.employee || '—')}</div>
+        <div style="font-size:12px"><span style="background:${payStatusColor}20;color:${payStatusColor};padding:2px 8px;border-radius:6px;font-weight:700;font-size:11px">${esc(tx.payStatus || '—')}</span></div>
+      </div>
     </div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px">
-      <thead><tr style="background:#00311e;color:#fff"><th style="padding:6px;text-align:right">#</th><th style="padding:6px;text-align:right">الصنف</th><th style="padding:6px;text-align:right">الكمية</th><th style="padding:6px;text-align:right">السعر</th><th style="padding:6px;text-align:right">الإجمالي</th></tr></thead>
+    <!-- Items Table -->
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px;border:1px solid #e2e8e4;border-radius:10px;overflow:hidden">
+      <thead>
+        <tr style="background:#00311e;color:#fff">
+          <th style="padding:10px;text-align:center;width:40px">#</th>
+          <th style="padding:10px;text-align:right">الصنف</th>
+          <th style="padding:10px;text-align:center;width:70px">الكمية</th>
+          <th style="padding:10px;text-align:left;width:100px">السعر</th>
+          <th style="padding:10px;text-align:left;width:110px">الإجمالي</th>
+        </tr>
+      </thead>
       <tbody>${itemsHtml}</tbody>
     </table>
-    <div style="text-align:left;font-size:13px">
-      ${tx.discount ? `<div>الخصم: <span style="color:red">- ${fmtJ(tx.discount)}</span></div>` : ''}
-      ${tx.shipCost ? `<div>الشحن: + ${fmtJ(tx.shipCost)}</div>` : ''}
-      <div style="font-size:16px;font-weight:700;margin-top:8px">الإجمالي: ${fmtJ(tx.total)}</div>
-      <div>المدفوع: <span style="color:green">${fmtJ(exchangeSalePaidDisplayAmount(tx))}</span></div>
-      ${(tx.remaining || 0) > 0 ? `<div>المتبقي: <span style="color:red">${fmtJ(tx.remaining)}</span></div>` : ''}
+    <!-- Financial Summary -->
+    <div style="display:flex;justify-content:flex-end">
+      <div style="min-width:280px;border:1px solid #e2e8e4;border-radius:10px;overflow:hidden">
+        ${tx.discount ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#fff7ed;font-size:13px"><span>الخصم</span><span style="color:#dc2626;font-weight:600">- ${fmtJ(tx.discount)}</span></div>` : ''}
+        ${tx.shipCost ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#f8fafb;font-size:13px;border-top:1px solid #e2e8e4"><span>تكلفة الشحن</span><span style="font-weight:600">+ ${fmtJ(tx.shipCost)}</span></div>` : ''}
+        <div style="display:flex;justify-content:space-between;padding:12px 16px;background:#00311e;color:#fff;font-size:15px;font-weight:700"><span>الإجمالي</span><span>${fmtJ(tx.total)}</span></div>
+        ${paid > 0 ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#f0fdf4;font-size:13px;border-top:1px solid #e2e8e4"><span>المدفوع</span><span style="color:#16a34a;font-weight:600">${fmtJ(paid)}</span></div>` : ''}
+        ${(tx.remaining || 0) > 0 ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#fef2f2;font-size:13px;border-top:1px solid #fecaca"><span>المتبقي</span><span style="color:#dc2626;font-weight:700">${fmtJ(tx.remaining)}</span></div>` : ''}
+        ${tx.payment ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#f8fafb;font-size:12px;border-top:1px solid #e2e8e4;color:#6b8c78"><span>طريقة الدفع</span><span>${esc(tx.payment)}</span></div>` : ''}
+      </div>
     </div>
-    ${tx.notes ? `<div style="margin-top:12px;padding:8px;background:#f0f4f2;border-radius:6px;font-size:12px"><strong>ملاحظات:</strong> ${esc(tx.notes)}</div>` : ''}
+    ${tx.notes ? `<div style="margin-top:16px;padding:12px 16px;background:#f8fafb;border:1px solid #e2e8e4;border-radius:10px;font-size:12px;color:#6b8c78"><strong style="color:#0f1f16">📝 ملاحظات:</strong> ${esc(tx.notes)}</div>` : ''}
+    <div style="margin-top:20px;padding-top:14px;border-top:1px solid #e2e8e4;text-align:center;font-size:11px;color:#6b8c78">شكراً لتعاملكم معنا — Soulia Inventory System</div>
   </div>`;
 }
 function bulkPrintPDF() {
@@ -3323,8 +3398,11 @@ function closeInvoiceDetail() {
 }
 
 /* Clients */
+let selectedClientNames = new Set();
 function renderClients() {
   const tokens = normalizeUiSearch(qs('#clients-search')?.value || '').split(/\s+/).filter(Boolean);
+  const orderF = qs('#clients-order-filter')?.value || 'orders';
+  const hasRemaining = qs('#clients-has-remaining')?.value || '';
   const clientMap = {};
   transactions.forEach(tx => {
     if (!tx.client) return;
@@ -3337,19 +3415,68 @@ function renderClients() {
     const blob = normalizeUiSearch([c.name, c.phone].join(' '));
     return tokens.every(t => blob.includes(t));
   });
-  clients.sort((a, b) => b.orders - a.orders);
+  if (hasRemaining === '1') clients = clients.filter(c => c.remaining > 0);
+  else if (hasRemaining === '0') clients = clients.filter(c => c.remaining <= 0);
+  if (orderF === 'total') clients.sort((a, b) => b.total - a.total);
+  else if (orderF === 'remaining') clients.sort((a, b) => b.remaining - a.remaining);
+  else if (orderF === 'name') clients.sort((a, b) => a.name.localeCompare(b.name));
+  else clients.sort((a, b) => b.orders - a.orders);
   const CLIENTS_PAGE_SIZE = 30;
   const total = clients.length;
   if (clientsPage > Math.ceil(total / CLIENTS_PAGE_SIZE) || total === 0) clientsPage = 1;
   const pageData = clients.slice((clientsPage-1)*CLIENTS_PAGE_SIZE, clientsPage*CLIENTS_PAGE_SIZE);
-  qs('#clients-grid').innerHTML = pageData.length ? pageData.map(c => `
-    <div class="client-card" onclick="openClientProfile('${esc(c.name).replace(/'/g, "\\'")}')">
-      <h4>${esc(c.name)}</h4>
+  qs('#clients-grid').innerHTML = pageData.length ? pageData.map(c => {
+    const isSelected = selectedClientNames.has(c.name);
+    return `<div class="client-card" style="${isSelected ? 'border:2px solid var(--accent);background:var(--primary-pale)' : ''}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <h4 style="cursor:pointer;flex:1" onclick="openClientProfile('${esc(c.name).replace(/'/g, "\\'")}')">${esc(c.name)}</h4>
+        <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleClientSelect('${esc(c.name).replace(/'/g, "\\'")}',this.checked)" style="width:16px;height:16px;cursor:pointer">
+      </div>
       <p class="text-sm text-muted">${esc(c.phone || 'بدون رقم')}</p>
       <div class="info-row"><span>الطلبات: ${c.orders}</span><span>الإجمالي: ${fmtJ(c.total)}</span></div>
       <div class="info-row"><span class="text-red">المتبقي: ${fmtJ(c.remaining)}</span></div>
-    </div>`).join('') : '<div class="empty-state">لا يوجد عملاء</div>';
+    </div>`;
+  }).join('') : '<div class="empty-state">لا يوجد عملاء</div>';
   renderPagination('clients-pagination', total, clientsPage, CLIENTS_PAGE_SIZE, 'setClientsPage');
+  updateClientsSelBar();
+}
+function toggleClientSelect(name, checked) {
+  if (checked) selectedClientNames.add(name); else selectedClientNames.delete(name);
+  updateClientsSelBar();
+}
+function updateClientsSelBar() {
+  const bar = qs('#clients-sel-bar'); const cnt = qs('#clients-sel-count');
+  if (!bar || !cnt) return;
+  if (selectedClientNames.size > 0) { bar.style.display = 'flex'; cnt.textContent = selectedClientNames.size; }
+  else bar.style.display = 'none';
+}
+function deselectAllClients() { selectedClientNames.clear(); renderClients(); }
+function getClientsData() {
+  const clientMap = {};
+  transactions.forEach(tx => {
+    if (!tx.client) return;
+    if (!clientMap[tx.client]) clientMap[tx.client] = { name: tx.client, phone: tx.phone || '', orders: 0, total: 0, remaining: 0 };
+    clientMap[tx.client].orders++; clientMap[tx.client].total += (tx.total || 0); clientMap[tx.client].remaining += (tx.remaining || 0);
+    if (!clientMap[tx.client].phone && tx.phone) clientMap[tx.client].phone = tx.phone;
+  });
+  return Object.values(clientMap);
+}
+function exportClientsExcel() {
+  const data = getClientsData().map(c => ({ 'الاسم': c.name, 'الهاتف': c.phone, 'الطلبات': c.orders, 'الإجمالي': c.total, 'المتبقي': c.remaining }));
+  writeExcel(data, 'العملاء', 'clients_' + today());
+}
+function exportSelectedClientsExcel() {
+  const data = getClientsData().filter(c => selectedClientNames.has(c.name)).map(c => ({ 'الاسم': c.name, 'الهاتف': c.phone, 'الطلبات': c.orders, 'الإجمالي': c.total, 'المتبقي': c.remaining }));
+  if (!data.length) { toast('لا يوجد عملاء محددين', true); return; }
+  writeExcel(data, 'العملاء_المحددين', 'clients_selected_' + today());
+}
+function exportClientsCsv() {
+  const data = getClientsData();
+  const header = ['الاسم', 'الهاتف', 'الطلبات', 'الإجمالي', 'المتبقي'];
+  const rows = data.map(c => [c.name, c.phone, c.orders, c.total, c.remaining].map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv = '\uFEFF' + [header.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'clients_' + today() + '.csv'; a.click();
 }
 const debouncedRenderClients = debounce(() => { clientsPage = 1; renderClients(); }, 250);
 
@@ -3632,12 +3759,15 @@ function renderExpenses() {
     const isPending = e.status === 'معلق';
     const approveActions = isAdmin() && isPending ? `<div class="dd-item" onclick="approveExpense('${esc(e._id)}')">✅ اعتماد</div><div class="dd-item danger" onclick="rejectExpense('${esc(e._id)}')">❌ رفض</div><div class="dd-divider"></div>` : '';
     const editAction = isPending ? `<div class="dd-item" onclick="openExpenseModal('${esc(e._id)}')">✏️ تعديل</div>` : '';
+    const deleteAction = e.status !== 'معتمد' ? `<div class="dd-item danger" onclick="deleteExpense('${esc(e._id)}')">🗑️ حذف</div>` : '';
     return `<tr style="${isPending ? 'background:var(--primary-pale)' : ''}">
+      <td><input type="checkbox" class="exp-chk" value="${esc(e._id)}" ${!isPending ? 'disabled' : ''}></td>
+      <td><span class="badge badge-blue" style="font-size:.7rem">${esc(e.expenseNo || '-')}</span></td>
       <td>${fmtDate(e.date)}</td><td>${esc(e.desc || '-')}</td><td>${esc(e.category || '-')}</td>
       <td>${esc(e.account || '-')}</td><td>${fmtJ(e.amount)}</td><td>${expStatusBadge(e.status || 'معلق')}</td><td>${esc(e.employee || '-')}</td>
-      <td><div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu">${approveActions}${editAction}<div class="dd-item danger" onclick="deleteExpense('${esc(e._id)}')">🗑️ حذف</div></div></div></td>
+      <td><div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu">${approveActions}${editAction}${deleteAction}</div></div></td>
     </tr>`;
-  }).join('') : '<tr><td colspan="8" class="empty-state">لا توجد مصاريف</td></tr>';
+  }).join('') : '<tr><td colspan="10" class="empty-state">لا توجد مصاريف</td></tr>';
   renderPagination('exp-pagination', total, expPage, EXP_PAGE_SIZE, 'setExpPage');
 }
 const debouncedRenderExpenses = debounce(() => { expPage = 1; renderExpenses(); }, 250);
@@ -3653,6 +3783,7 @@ function openExpenseModal(id) {
   if (e && e.status === 'معتمد') { toast('لا يمكن تعديل مصروف معتمد', true); return; }
   openModal(`<h3>${e ? 'تعديل مصروف' : 'إضافة مصروف'}</h3>
     <div class="grid grid-2 gap-12">
+      <div class="form-group"><label>رقم المصروف *</label><input type="text" id="em-expno" value="${esc(e?.expenseNo || '')}" placeholder="EXP-..."></div>
       <div class="form-group"><label>التاريخ</label><input type="date" id="em-date" value="${e?.date?.slice(0, 10) || today()}"></div>
       <div class="form-group"><label>الوصف *</label><input type="text" id="em-desc" value="${esc(e?.desc || '')}"></div>
       <div class="form-group"><label>نوع المصروف *</label><select id="em-cat">${EXP_CATEGORIES.map(c => `<option value="${esc(c)}" ${e?.category === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
@@ -3663,7 +3794,9 @@ function openExpenseModal(id) {
     <div class="flex gap-8 mt-16"><button class="btn btn-primary" onclick="saveExpense('${id || ''}')">${e ? 'تحديث' : 'إضافة'}</button><button class="btn btn-outline" onclick="closeModal()">إلغاء</button></div>`);
 }
 async function saveExpense(id) {
-  const body = { date: qs('#em-date').value, desc: qs('#em-desc').value, category: qs('#em-cat').value, amount: Number(qs('#em-amount').value) || 0, account: qs('#em-account').value, notes: qs('#em-notes').value, employee: currentUser?.name || currentUser?.username || '' };
+  const expenseNo = (qs('#em-expno')?.value || '').trim();
+  if (!expenseNo) { toast('رقم المصروف مطلوب', true); return; }
+  const body = { expenseNo, date: qs('#em-date').value, desc: qs('#em-desc').value, category: qs('#em-cat').value, amount: Number(qs('#em-amount').value) || 0, account: qs('#em-account').value, notes: qs('#em-notes').value, employee: currentUser?.name || currentUser?.username || '' };
   if (!body.desc) { toast('الوصف مطلوب', true); return; }
   if (!body.amount || body.amount <= 0) { toast('المبلغ مطلوب', true); return; }
   try { if (id) await api('/expenses/' + id, { method: 'PUT', body: JSON.stringify(body) }); else await api('/expenses', { method: 'POST', body: JSON.stringify(body) }); toast(id ? 'تم التحديث' : 'تم الإضافة — في انتظار موافقة المدير'); closeModal(); expenses = await api('/expenses').catch(() => expenses); renderExpenses(); buildSidebar(); buildNotifications(); }
@@ -3685,9 +3818,24 @@ async function rejectExpense(id) {
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function deleteExpense(id) {
+  const exp = expenses.find(x => x._id === id);
+  if (exp && exp.status === 'معتمد') { toast('لا يمكن حذف مصروف معتمد من المدير', true); return; }
   if (!confirm('حذف هذا المصروف؟')) return;
   try { await api('/expenses/' + id, { method: 'DELETE' }); toast('تم الحذف'); expenses = await api('/expenses').catch(() => expenses); renderExpenses(); }
   catch (e) { toast('خطأ: ' + e.message, true); }
+}
+async function bulkDeleteExpenses() {
+  const ids = Array.from(document.querySelectorAll('.exp-chk:checked')).map(c => c.value);
+  if (!ids.length) { toast('لم يتم تحديد مصاريف', true); return; }
+  const pendingIds = ids.filter(id => { const e = expenses.find(x => x._id === id); return e && e.status === 'معلق'; });
+  if (!pendingIds.length) { toast('المصاريف المحددة ليست في حالة معلق', true); return; }
+  if (!confirm(`حذف ${pendingIds.length} مصروف معلق؟`)) return;
+  try {
+    await api('/expenses/bulk-delete', { method: 'POST', body: JSON.stringify({ ids: pendingIds }) });
+    toast(`تم حذف ${pendingIds.length} مصروف`);
+    expenses = await api('/expenses').catch(() => expenses);
+    renderExpenses();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 function exportExpensesExcel() { writeExcel(expenses.map(e => ({ 'التاريخ': (e.date||'').slice(0,10), 'الوصف': e.desc, 'الفئة': e.category, 'الحساب': e.account, 'المبلغ': e.amount, 'الحالة': e.status, 'الموظف': e.employee, 'ملاحظات': e.notes })), 'المصاريف', 'expenses_' + today()); }
 
@@ -3700,6 +3848,11 @@ function clearApprFilters() {
   renderApprovals();
 }
 function renderApprovals() {
+  if (!isAdmin()) {
+    qs('#appr-list').innerHTML = '<div class="empty-state">هذا القسم للمدير فقط</div>';
+    qs('#appr-kpi').innerHTML = '';
+    return;
+  }
   const filter = qs('#appr-filter')?.value || '';
   const kindFilter = qs('#appr-kind-filter')?.value || '';
   const dateFrom = qs('#appr-from')?.value || '';
@@ -4214,7 +4367,15 @@ function formatVaultAmountCellHtml(v) {
   return `<td class="${cls}"${hint}><span dir="ltr" style="display:inline-block;font-weight:600;unicode-bidi:embed">${num}</span></td>`;
 }
 function renderVaultTable() {
-  const data = Array.isArray(vaultLog) ? vaultLog : [];
+  let data = Array.isArray(vaultLog) ? vaultLog : [];
+  // Search filter
+  const vaultSearch = (qs('#vault-log-search')?.value || '').trim().toLowerCase();
+  if (vaultSearch) {
+    data = data.filter(v => {
+      const blob = [v.desc, v.ref, v.source, v.method, v.txNo, v.employee].join(' ').toLowerCase();
+      return blob.includes(vaultSearch);
+    });
+  }
   const segLabel = (s) => ({cash:'كاش',vodafone:'فودافون كاش',instapay:'Instapay',bank:'تحويل بنكي'}[s] || s || '-');
   const srcBadge = (s) => {
     if (!s) return '<span style="color:var(--muted)">-</span>';
@@ -4228,21 +4389,36 @@ function renderVaultTable() {
   const start = (vaultPage - 1) * VAULT_PAGE_SIZE;
   const pageData = data.slice(start, start + VAULT_PAGE_SIZE);
   qs('#vault-table tbody').innerHTML = pageData.length ? pageData.map(v => `
-    <tr><td>${fmtDate(v.date || v.createdAt)}</td>
+    <tr>
+      <td style="font-size:.75rem;color:var(--muted)">${v.txNo ? `<span style="font-size:.68rem;font-weight:600;color:var(--primary);direction:ltr">${esc(v.txNo)}</span>` : '-'}</td>
+      <td>${fmtDate(v.date || v.createdAt)}</td>
       <td style="font-size:.75rem;color:var(--muted);white-space:nowrap">${v.createdAt ? fmtDateTime(v.createdAt) : '-'}</td>
       ${formatVaultAmountCellHtml(v)}
+      <td style="font-weight:700;color:var(--primary)">${fmtJ(v.balance || 0)}</td>
       <td>${srcBadge(v.source)}</td>
       <td style="font-weight:600;direction:ltr">${v.ref ? '#' + esc(v.ref) : '-'}</td>
-      <td>${esc(segLabel(v.seg))}</td><td>${esc(v.method || '-')}</td><td>${esc(v.desc || '-')}</td>
-    </tr>`).join('') : '<tr><td colspan="8" class="empty-state">لا توجد سجلات</td></tr>';
+      <td>${esc(segLabel(v.seg))}</td><td>${esc(v.method || '-')}</td>
+      <td style="font-size:.78rem;color:var(--muted)">${esc(v.employee || '-')}</td>
+      <td>${esc(v.desc || '-')}</td>
+    </tr>`).join('') : '<tr><td colspan="11" class="empty-state">لا توجد سجلات</td></tr>';
   renderPagination('vault-pagination', total, vaultPage, VAULT_PAGE_SIZE, 'setVaultPage');
 }
 async function addVaultEntry() {
-  const body = { amount: Number(qs('#vault-amount').value) || 0, seg: qs('#vault-seg').value, method: qs('#vault-method').value, desc: qs('#vault-desc').value, date: new Date().toISOString() };
+  const body = { amount: Number(qs('#vault-amount').value) || 0, seg: qs('#vault-seg').value, method: qs('#vault-method').value, desc: qs('#vault-desc').value, date: new Date().toISOString(), employee: currentUser?.name || currentUser?.username || '' };
   if (!body.amount) { toast('أدخل المبلغ', true); return; }
   if (body.method === 'سحب') body.amount = -Math.abs(body.amount);
-  const segLabel = {cash:'كاش',vodafone:'فودافون كاش',instapay:'Instapay',bank:'تحويل بنكي'}[body.seg] || body.seg;
-  const confirmed = confirm(`تأكيد التسوية اليدوية\n\nالعملية: ${body.method}\nالمبلغ: ${fmtN(Math.abs(body.amount))} ج\nالحساب: ${segLabel}\nالوصف: ${body.desc || '—'}\n\nهل تريد تطبيق هذا التعديل على رصيد الخزنة؟`);
+  // Balance check for withdrawal
+  if (body.amount < 0) {
+    const segBalances = { cash: settings.vaultCash||0, vodafone: settings.vaultVodafone||0, instapay: settings.vaultInstapay||0, bank: settings.vaultBank||0 };
+    const segLabel = {cash:'كاش',vodafone:'فودافون كاش',instapay:'Instapay',bank:'تحويل بنكي'};
+    const currentBal = segBalances[body.seg] || 0;
+    if (currentBal + body.amount < 0) {
+      toast(`لا يمكن السحب — رصيد ${segLabel[body.seg]||body.seg} الحالي ${fmtJ(currentBal)} فقط`, true);
+      return;
+    }
+  }
+  const segLabel2 = {cash:'كاش',vodafone:'فودافون كاش',instapay:'Instapay',bank:'تحويل بنكي'}[body.seg] || body.seg;
+  const confirmed = confirm(`تأكيد التسوية اليدوية\n\nالعملية: ${body.method}\nالمبلغ: ${fmtN(Math.abs(body.amount))} ج\nالحساب: ${segLabel2}\nالوصف: ${body.desc || '—'}\nالموظف: ${body.employee}\n\nهل تريد تطبيق هذا التعديل على رصيد الخزنة؟`);
   if (!confirmed) return;
   try { await api('/vault', { method: 'POST', body: JSON.stringify(body) }); toast('تم تسجيل الحركة'); qs('#vault-amount').value = ''; qs('#vault-desc').value = ''; settings = await api('/settings').catch(() => settings); renderVaultSegs(); await loadVaultLog(); }
   catch (e) { toast('خطأ: ' + e.message, true); }
@@ -4267,6 +4443,10 @@ function renderUsers() {
 }
 function openUserModal(id) {
   const u = id ? users.find(x => x._id === id) : null;
+  // Only super admin can create roles; only super admin can edit super admin account
+  if (u && u.username === 'admin' && currentUser?.username !== 'admin') {
+    toast('لا يمكن تعديل حساب السوبر أدمن', true); return;
+  }
   openModal(`<h3>${u ? 'تعديل مستخدم' : 'إضافة مستخدم'}</h3>
     <div class="grid grid-2 gap-12">
       <div class="form-group"><label>اسم المستخدم</label><input type="text" id="um-username" value="${esc(u?.username || '')}" ${u ? 'readonly' : ''}></div>
@@ -4799,6 +4979,7 @@ function renderComplaints() {
   const toF = qs('#cmp-to').value;
   const search = (qs('#cmp-search').value || '').toLowerCase();
 
+  const cmpSortOrder = qs('#cmp-sort-order')?.value || 'desc';
   let data = complaints.filter(c => {
     if (cmpTabFilter === 'followup') { if (!c.inFollowUp) return false; }
     else if (statusF) { if (c.status !== statusF) return false; }
@@ -4812,6 +4993,10 @@ function renderComplaints() {
     }
     return true;
   });
+  data.sort((a, b) => cmpSortOrder === 'asc'
+    ? (a.createdAt||'').localeCompare(b.createdAt||'')
+    : (b.createdAt||'').localeCompare(a.createdAt||''));
+
 
   // KPI
   const total = complaints.length;
@@ -4849,6 +5034,7 @@ function renderComplaints() {
     const deleteBtn = isAdmin()
       ? `<button class="btn btn-danger btn-xs" onclick="deleteComplaint('${c._id}')">🗑</button>` : '';
     const viewBtn = `<button class="btn btn-outline btn-xs" onclick="viewComplaint('${c._id}')">عرض</button>`;
+    const elapsedHtml = c.createdAt ? `<span style="font-size:.7rem;color:var(--muted)">${fmtElapsed(c.createdAt)}</span>` : '—';
     return `<tr>
       <td><span class="badge badge-blue">${esc(c.complaintNo)}</span></td>
       <td>${esc(c.submittedBy || '—')}</td>
@@ -4857,7 +5043,7 @@ function renderComplaints() {
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.description)}">${esc(c.description)}</td>
       <td>${statusBadge}</td>
       <td>${actionBadge}</td>
-      <td>${fmtDate((c.createdAt || '').slice(0, 10))}</td>
+      <td>${fmtDate((c.createdAt || '').slice(0, 10))}<br>${elapsedHtml}</td>
       <td>${ratingHtml}</td>
       <td class="flex gap-4" style="gap:4px">${viewBtn}${resolveBtn}${surveyLink}${deleteBtn}</td>
     </tr>`;
