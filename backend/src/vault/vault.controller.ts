@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { VaultService } from './vault.service';
@@ -24,7 +25,11 @@ export class VaultController {
 
   @Roles('admin')
   @Post()
-  async addEntry(@Body() dto: CreateVaultEntryDto) {
-    return this.vaultService.addEntry(dto);
+  async addEntry(
+    @Body() dto: CreateVaultEntryDto,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const employee = req.user?.name || req.user?.username || '';
+    return this.vaultService.addEntry(dto, employee);
   }
 }
