@@ -105,6 +105,27 @@ export class Transaction {
 
   @Prop()
   collectedAt: string;
+
+  @Prop({ default: false })
+  archived: boolean;
+
+  @Prop()
+  archivedAt: string;
+
+  @Prop()
+  archivedBy: string;
+
+  /** Cancel request submitted by employee, pending manager approval */
+  @Prop({ type: Object, default: null })
+  cancelRequest: {
+    requestedBy: string;
+    reason: string;
+    requestedAt: string;
+    status: string; // 'معلق' | 'معتمد' | 'مرفوض'
+    reviewedBy?: string;
+    reviewedAt?: string;
+    rejectedReason?: string;
+  } | null;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);

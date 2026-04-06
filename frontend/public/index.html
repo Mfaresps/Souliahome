@@ -684,7 +684,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="flex-between mb-16">
 <div class="flex gap-8" style="flex-wrap:wrap;align-items:center">
 <select id="appr-filter" style="width:170px" onchange="renderApprovals()"><option value="معلق">حالة: المعلقة</option><option value="معتمد">حالة: المعتمدة</option><option value="مرفوض">حالة: المرفوضة</option><option value="">حالة: الكل</option></select>
-<select id="appr-kind-filter" style="width:200px" onchange="renderApprovals()"><option value="">النوع: الكل</option><option value="return">النوع: استرجاع واستبدال فقط</option><option value="expense">النوع: مصاريف فقط</option></select>
+<select id="appr-kind-filter" style="width:200px" onchange="renderApprovals()"><option value="">النوع: الكل</option><option value="return">النوع: استرجاع واستبدال فقط</option><option value="expense">النوع: مصاريف فقط</option><option value="cancel">النوع: طلبات إلغاء فقط</option></select>
 </div>
 </div>
 <div class="filter-bar mb-16">
@@ -1182,9 +1182,11 @@ function buildSidebar() {
   const pendingExpCount = expenses.filter(e => e.status === 'معلق').length;
   const pendingTxCount = transactions.filter(t => t.payStatus === 'معلق' && !t.cancelled).length;
   const pendingCmpCount = complaints.filter(c => c.status === 'معلق').length;
+  const pendingCancelCount = transactions.filter(t => t.cancelRequest && t.cancelRequest.status === 'معلق').length;
+  const totalApprovalsBadge = pendingExpCount + pendingCancelCount;
   sb.innerHTML = NAV_ITEMS.filter(n => hasPerm(n.perm)).map(n => {
     let badge = '';
-    if (n.id === 'approvals' && pendingExpCount > 0) badge = ` <span class="badge badge-orange" style="margin-right:4px;font-size:.65rem">${pendingExpCount}</span>`;
+    if (n.id === 'approvals' && totalApprovalsBadge > 0) badge = ` <span class="badge badge-orange" style="margin-right:4px;font-size:.65rem">${totalApprovalsBadge}</span>`;
     if (n.id === 'movements' && pendingTxCount > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">${pendingTxCount}</span>`;
     if (n.id === 'complaints' && pendingCmpCount > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">${pendingCmpCount}</span>`;
     return `<a class="nav-item${currentPage === n.id ? ' active' : ''}" data-page="${n.id}" href="#${n.id}" onclick="handleNavClick(event,'${n.id}')"><span>${n.icon}</span><span>${esc(navLabel(n))}${badge}</span></a>`;
@@ -1236,6 +1238,13 @@ function buildNotifications() {
     pendingReturns.forEach(ret => {
       const kindLabel = ret.requestKind === 'exchange' ? 'استبدال' : 'استرجاع';
       notifs.push({ id: 'ret-pending-' + ret._id, icon: '📦', type: 'warning', title: `طلب ${kindLabel} بانتظار الموافقة`, desc: `${ret.client} — ${fmtJ(ret.total)} (${ret.reason})`, page: 'approvals' });
+    });
+  }
+  // Cancel requests pending manager approval
+  const pendingCancelReqs = (transactions || []).filter(tx => tx.cancelRequest && tx.cancelRequest.status === 'معلق');
+  if (pendingCancelReqs.length > 0 && currentUser?.role === 'admin') {
+    pendingCancelReqs.forEach(tx => {
+      notifs.push({ id: 'cancel-req-' + tx._id, icon: '🚫', type: 'urgent', title: `طلب إلغاء حركة — بانتظار الموافقة`, desc: `${tx.client || 'بدون اسم'} — فاتورة #${tx.ref || '-'} (${fmtJ(tx.deposit || 0)} للرد)`, page: 'approvals' });
     });
   }
   // Vault: exchange sales pending collection
@@ -1490,7 +1499,11 @@ function movementStatusCell(tx) {
   if (isExchangeSalePendingCollect(tx)) {
     return '<span class="badge badge-orange" style="font-weight:800">معلق</span><div class="text-xs" style="margin-top:5px;color:var(--orange);font-weight:650;line-height:1.35">فرق استبدال — للشركة — بانتظار دفع العميل</div>';
   }
-  return statusBadge(tx.payStatus);
+  let base = statusBadge(tx.payStatus);
+  if (tx.cancelRequest && tx.cancelRequest.status === 'معلق') {
+    base += '<div class="text-xs" style="margin-top:4px;color:#b45309;font-weight:600">⏳ طلب إلغاء — انتظار المدير</div>';
+  }
+  return base;
 }
 
 /* Transaction Page */
@@ -1542,8 +1555,9 @@ function renderTxFields() {
   } else if (txType === 'مشتريات') {
     html = `
       <div class="form-group"><label>المورد *</label><select id="tx-supplier"><option value="">اختر مورد</option>${suppliers.map(s => `<option value="${esc(s.name)}">${esc(s.name)}</option>`).join('')}</select><div class="field-hint">المورد الذي تم الشراء منه</div></div>
-      <div class="form-group"><label>المرجع</label><input type="text" id="tx-ref" placeholder="أرقام فقط (اختياري)" inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"><div class="field-hint">إن وُجد: أرقام فقط وغير مكرر مع حركة أخرى</div></div>
-      <div class="form-group"><label>الحساب (السحب من)</label><select id="tx-account"><option value="كاش">كاش</option><option value="فودافون كاش">فودافون كاش</option><option value="Instapay">Instapay</option><option value="تحويل بنكي">تحويل بنكي</option></select><div class="field-hint">حساب الخزنة الذي سيتم الخصم منه</div></div>
+      <div class="form-group"><label>رقم الفاتورة *</label><div class="input-with-prefix"><span class="prefix">#</span><input type="text" id="tx-ref" placeholder="أرقام فقط" inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"></div><div class="field-hint">رقم فاتورة المورد — إجباري وغير مكرر</div><div class="field-error" id="err-ref"></div></div>
+      <div class="form-group"><label>حساب الدفع (السحب من) *</label><select id="tx-account"><option value="كاش">كاش</option><option value="فودافون كاش">فودافون كاش</option><option value="Instapay">Instapay</option><option value="تحويل بنكي">تحويل بنكي</option></select><div class="field-hint">حساب الخزنة الذي سيتم خصم العربون منه</div></div>
+      <div class="form-group"><label>العربون (دفعة مقدمة)</label><input type="number" id="tx-deposit" value="0" min="0" oninput="calcTxSummary()" placeholder="0"><div class="field-hint">اتركه 0 لدفع المبلغ كاملاً الآن — أدخل مبلغاً للدفع الجزئي</div></div>
       <div class="form-group"><label>ملاحظات</label><input type="text" id="tx-notes" placeholder="أي ملاحظات إضافية"><div class="field-hint">اختياري</div></div>`;
   } else {
     html = `
@@ -1812,7 +1826,8 @@ function calcTxSummary() {
     <div class="row"><span>${esc(discLabel)}</span><span>${fmtJ(discount)}</span></div>
     ${txType === 'مبيعات' ? `<div class="row"><span>الشحن</span><span>${fmtJ(shipCost)}</span></div>` : ''}
     <div class="row total-row"><span>الإجمالي</span><span>${fmtJ(total)}</span></div>
-    ${txType === 'مبيعات' ? `<div class="row"><span>الديبوزت</span><span>${fmtJ(deposit)}</span></div><div class="row"><span>المتبقي</span><span class="${remaining > 0 ? 'text-red' : 'text-green'}">${fmtJ(remaining)}</span></div>` : ''}`;
+    ${txType === 'مبيعات' ? `<div class="row"><span>الديبوزت</span><span>${fmtJ(deposit)}</span></div><div class="row"><span>المتبقي</span><span class="${remaining > 0 ? 'text-red' : 'text-green'}">${fmtJ(remaining)}</span></div>` : ''}
+    ${txType === 'مشتريات' ? (() => { const dep = Number(qs('#tx-deposit')?.value) || 0; const rem = Math.max(0, total - dep); const paid = dep > 0 ? dep : total; return `<div class="row"><span>العربون المدفوع الآن</span><span class="text-red">- ${fmtJ(paid)}</span></div>${rem > 0 ? `<div class="row"><span>المتبقي للمورد لاحقاً</span><span class="text-orange">${fmtJ(rem)}</span></div>` : '<div class="row"><span class="text-green">✅ مدفوع بالكامل</span></div>'}`; })() : ''}`;
   const payGroup = qs('#tx-payment-group');
   if (payGroup) {
     const isFullyPaid = remaining <= 0;
@@ -1966,6 +1981,8 @@ function hasReturnOrExchangeForInvoice(txId) {
 }
 function isSaleEligibleForReturnShortcut(tx) {
   if (!tx || tx.type !== 'مبيعات' || tx.cancelled || tx.payStatus === 'ملغي') return false;
+  // Cannot request return/exchange for a pending (not fully paid) transaction
+  if (tx.payStatus === 'معلق' || (tx.remaining || 0) > 0) return false;
   if (!(tx.client || '').trim()) return false;
   if (hasReturnOrExchangeForInvoice(tx._id)) return false;
   const txDate = new Date(tx.date);
@@ -2202,8 +2219,12 @@ function validateTx() {
   } else if (txType === 'مشتريات') {
     if (!qs('#tx-supplier')?.value) { toast('اختر المورد', true); valid = false; }
     const purRef = qs('#tx-ref')?.value?.trim() || '';
-    if (purRef && !/^\d+$/.test(purRef)) { toast('المرجع أرقام فقط', true); valid = false; }
-    if (purRef && isRetailRefTaken(purRef, null)) { toast('المرجع مستخدم في حركة أخرى', true); valid = false; }
+    if (!purRef) { const el = qs('#err-ref'); if (el) el.textContent = 'رقم الفاتورة مطلوب'; valid = false; }
+    else if (!/^\d+$/.test(purRef)) { const el = qs('#err-ref'); if (el) el.textContent = 'أرقام فقط'; valid = false; }
+    else if (isRetailRefTaken(purRef, null)) { const el = qs('#err-ref'); if (el) el.textContent = 'رقم مستخدم في حركة أخرى'; valid = false; }
+    const purDeposit = Number(qs('#tx-deposit')?.value) || 0;
+    const purItemsTotal = txItems.reduce((s, it) => s + (it.qty * it.price), 0);
+    if (purDeposit > purItemsTotal) { toast('العربون لا يمكن أن يتجاوز إجمالي الفاتورة', true); valid = false; }
   }
   return valid;
 }
@@ -2232,7 +2253,15 @@ async function saveTx() {
       payment: qs('#tx-payment')?.value || '', payStatus: (total - deposit) <= 0 ? 'مكتمل' : 'معلق' });
   } else if (txType === 'مشتريات') {
     const account = qs('#tx-account')?.value || 'كاش';
-    body.client = qs('#tx-supplier')?.value || ''; body.payment = account; body.depMethod = account; body.payStatus = 'مكتمل'; body.deposit = total; body.remaining = 0;
+    const purDeposit = Number(qs('#tx-deposit')?.value) || 0;
+    const paidNow = purDeposit > 0 ? purDeposit : total; // 0 means pay full
+    const purRemaining = Math.max(0, total - paidNow);
+    body.client = qs('#tx-supplier')?.value || '';
+    body.payment = account;
+    body.depMethod = account;
+    body.deposit = paidNow;
+    body.remaining = purRemaining;
+    body.payStatus = purRemaining <= 0 ? 'مكتمل' : 'معلق';
   }
   try {
     await api('/transactions', { method: 'POST', body: JSON.stringify(body) });
@@ -2480,7 +2509,13 @@ function renderMovementTxRow(tx) {
           <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')">🖨️ طباعة / PDF</div>
           ${(tx.remaining || 0) > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')">${isExchangeSalePendingCollect(tx) ? '💰 تحصيل فرق الاستبدال' : '💰 تحصيل'}</div>` : ''}
           ${tx.type === 'مبيعات' && !tx.cancelled && isAdmin() ? `<div class="dd-item" onclick="openPostDiscountModal('${esc(tx._id)}')">💲 خصم بعد البيع</div>` : ''}
-          ${tx.payStatus !== 'ملغي' && !tx.cancelled ? (isExchangeSalePendingCollect(tx) ? `<div class="dd-divider"></div><div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🚫 إلغاء <span class="text-xs">(مقفول)</span></div>` : `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')">🚫 إلغاء</div>`) : ''}
+          ${tx.payStatus !== 'ملغي' && !tx.cancelled && tx.payStatus !== 'مكتمل' ? (
+            isExchangeSalePendingCollect(tx)
+              ? `<div class="dd-divider"></div><div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🚫 إلغاء <span class="text-xs">(مقفول)</span></div>`
+              : tx.cancelRequest && tx.cancelRequest.status === 'معلق'
+                ? `<div class="dd-divider"></div><div class="dd-item" style="opacity:.7;cursor:default" onclick="event.stopPropagation()">⏳ طلب إلغاء معلق</div>`
+                : `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')">🚫 ${tx.payStatus === 'معلق' ? 'طلب إلغاء' : 'إلغاء'}</div>`
+          ) : ''}
           ${isAdmin() ? (isExchangeSalePendingCollect(tx) ? `<div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🗑️ أرشفة <span class="text-xs">(مقفول)</span></div>` : `<div class="dd-item danger" onclick="archiveMovement('${esc(tx._id)}')">🗂️ أرشفة</div>`) : ''}
         </div>
       </div>
@@ -2705,32 +2740,83 @@ async function saveEditMovement(id) {
 
 function openCancelMovement(id) {
   const tx = transactions.find(t => t._id === id);
-  if (tx && isExchangeSalePendingCollect(tx)) { toastExchangePendingLocked(); return; }
-  const deposit = tx ? (tx.deposit || 0) : 0;
-  const depMethod = tx ? String(tx.depMethod || '').trim() : '';
+  if (!tx) return;
+  if (isExchangeSalePendingCollect(tx)) { toastExchangePendingLocked(); return; }
+
+  // Completed transactions cannot be cancelled
+  if (tx.payStatus === 'مكتمل') {
+    toast('لا يمكن إلغاء حركة مكتملة — يمكن فقط إلغاء الحركات المعلقة', true);
+    return;
+  }
+
+  // Check if cancel request already submitted
+  if (tx.cancelRequest && tx.cancelRequest.status === 'معلق') {
+    toast('تم إرسال طلب إلغاء بالفعل — في انتظار موافقة المدير', true);
+    return;
+  }
+
+  const isPending = tx.payStatus === 'معلق';
+  const deposit = tx.deposit || 0;
+  const depMethod = String(tx.depMethod || '').trim();
+
+  const txInfo = `<div style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:12px;font-size:.82rem">
+    <div><strong>العميل:</strong> ${esc(tx.client || '-')} | <strong>المرجع:</strong> ${tx.ref ? '#' + esc(tx.ref) : '-'}</div>
+    <div style="margin-top:4px"><strong>الإجمالي:</strong> ${fmtJ(tx.total)} | <strong>الحالة:</strong> ${esc(tx.payStatus || '-')}</div>
+  </div>`;
+
   const vaultWarning = deposit > 0 && depMethod
-    ? `<div style="margin-top:0;margin-bottom:12px;padding:12px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.18);border-radius:10px;font-size:.83rem">
-        <div style="font-weight:700;color:var(--red);margin-bottom:6px">⚠️ تحذير — تأثير على الخزنة</div>
-        <div>سيُخصم <strong style="color:var(--red)">${fmtJ(deposit)}</strong> من خزنة <strong>${esc(depMethod)}</strong> تلقائياً بعد الإلغاء (رد المبلغ المدفوع للعميل)</div>
-        <div style="margin-top:4px;color:var(--muted)">هذا الإجراء لا يمكن التراجع عنه بعد التأكيد</div>
+    ? `<div style="margin-bottom:12px;padding:12px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.18);border-radius:10px;font-size:.83rem">
+        <div style="font-weight:700;color:var(--red);margin-bottom:6px">⚠️ تأثير على الخزنة عند الموافقة</div>
+        <div>سيُخصم <strong style="color:var(--red)">${fmtJ(deposit)}</strong> من خزنة <strong>${esc(depMethod)}</strong> (رد المبلغ المدفوع للعميل)</div>
       </div>` : '';
-  const txInfo = tx
-    ? `<div style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:12px;font-size:.82rem">
-        <div><strong>العميل:</strong> ${esc(tx.client || '-')} | <strong>المرجع:</strong> ${tx.ref ? '#' + esc(tx.ref) : '-'}</div>
-        <div style="margin-top:4px"><strong>الإجمالي:</strong> ${fmtJ(tx.total)} | <strong>الحالة:</strong> ${esc(tx.payStatus || '-')}</div>
-      </div>` : '';
-  openModal(`<h3>🚫 إلغاء الحركة</h3>
-    ${txInfo}
-    ${vaultWarning}
-    <div class="form-group"><label>سبب الإلغاء *</label><textarea id="cancel-reason" rows="3" placeholder="أدخل سبب الإلغاء..."></textarea></div>
-    <div class="flex gap-8 mt-16">
-      <button class="btn btn-danger" onclick="doCancelMovement('${esc(id)}')">تأكيد الإلغاء</button>
-      <button class="btn btn-outline" onclick="closeModal()">رجوع</button>
-    </div>`);
+
+  if (isPending) {
+    // Pending: employee submits cancel request → manager approves
+    openModal(`<h3>🚫 طلب إلغاء الحركة</h3>
+      <div style="padding:10px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.4);border-radius:8px;margin-bottom:12px;font-size:.83rem">
+        <strong>📋 هذا الطلب يحتاج موافقة المدير</strong><br>
+        سيظهر في قسم الموافقات — لن يتم الإلغاء إلا بعد اعتماد المدير
+      </div>
+      ${txInfo}
+      ${vaultWarning}
+      <div class="form-group"><label>سبب طلب الإلغاء *</label><textarea id="cancel-reason" rows="3" placeholder="أدخل سبب الإلغاء..."></textarea></div>
+      <div class="flex gap-8 mt-16">
+        <button class="btn btn-danger" onclick="doRequestCancelMovement('${esc(id)}')">📤 إرسال طلب الإلغاء</button>
+        <button class="btn btn-outline" onclick="closeModal()">رجوع</button>
+      </div>`);
+  } else {
+    // Non-pending non-completed: admin direct cancel
+    openModal(`<h3>🚫 إلغاء الحركة</h3>
+      ${txInfo}
+      ${vaultWarning}
+      <div class="form-group"><label>سبب الإلغاء *</label><textarea id="cancel-reason" rows="3" placeholder="أدخل سبب الإلغاء..."></textarea></div>
+      <div class="flex gap-8 mt-16">
+        <button class="btn btn-danger" onclick="doCancelMovement('${esc(id)}')">تأكيد الإلغاء</button>
+        <button class="btn btn-outline" onclick="closeModal()">رجوع</button>
+      </div>`);
+  }
 }
-async function doCancelMovement(id) {
+
+async function doRequestCancelMovement(id) {
+  const reason = (qs('#cancel-reason')?.value || '').trim();
+  if (!reason) { toast('يجب إدخال سبب الإلغاء', true); return; }
   try {
-    await api('/transactions/' + id + '/cancel', { method: 'POST', body: JSON.stringify({ cancelReason: qs('#cancel-reason').value, cancelledBy: currentUser?.name || '' }) });
+    await api('/transactions/' + id + '/request-cancel', {
+      method: 'POST',
+      body: JSON.stringify({ reason, requestedBy: currentUser?.name || currentUser?.username || '' }),
+    });
+    toast('✅ تم إرسال طلب الإلغاء — في انتظار موافقة المدير');
+    closeModal();
+    transactions = await api('/transactions').catch(() => transactions);
+    renderMovements(); buildSidebar(); buildNotifications();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+
+async function doCancelMovement(id) {
+  const reason = (qs('#cancel-reason')?.value || '').trim();
+  if (!reason) { toast('يجب إدخال سبب الإلغاء', true); return; }
+  try {
+    await api('/transactions/' + id + '/cancel', { method: 'POST', body: JSON.stringify({ cancelReason: reason, cancelledBy: currentUser?.name || '' }) });
     toast('تم إلغاء الحركة'); closeModal();
     transactions = await api('/transactions').catch(() => transactions);
     renderMovements(); buildSidebar(); buildNotifications();
@@ -2740,12 +2826,17 @@ async function doCancelMovement(id) {
 
 function openCollectMovement(id) {
   const tx = transactions.find(t => t._id === id); if (!tx) return;
+  const isPurchase = tx.type === 'مشتريات';
   const collectDef = String(tx.depMethod || 'كاش').trim() || 'كاش';
   const collectOpts = RET_VAULT_SEGMENTS.map(v => `<option value="${esc(v)}"${v === collectDef ? ' selected' : ''}>${esc(v)}</option>`).join('');
-  openModal(`<h3>تحصيل المتبقي (${fmtJ(tx.remaining)})</h3>
-    <div class="form-group"><label>طريقة التحصيل (قسم الخزنة)</label><select id="collect-method">${collectOpts}</select></div>
+  const title = isPurchase ? `دفع المتبقي للمورد (${fmtJ(tx.remaining)})` : `تحصيل المتبقي (${fmtJ(tx.remaining)})`;
+  const btnLabel = isPurchase ? 'دفع للمورد' : 'تحصيل';
+  const hint = isPurchase ? 'الحساب الذي سيتم الخصم منه لدفع المورد' : 'طريقة التحصيل (قسم الخزنة)';
+  openModal(`<h3>${title}</h3>
+    ${isPurchase ? `<div class="text-sm text-muted mb-8">سيتم خصم <strong>${fmtJ(tx.remaining)}</strong> من الخزنة ودفعها للمورد</div>` : ''}
+    <div class="form-group"><label>${hint}</label><select id="collect-method">${collectOpts}</select></div>
     <div class="form-group"><label>ملاحظات</label><input type="text" id="collect-note"></div>
-    <div class="flex gap-8 mt-16"><button class="btn btn-primary" onclick="doCollectMovement('${esc(id)}')">تحصيل</button><button class="btn btn-outline" onclick="closeModal()">إلغاء</button></div>`);
+    <div class="flex gap-8 mt-16"><button class="btn btn-primary" onclick="doCollectMovement('${esc(id)}')">${btnLabel}</button><button class="btn btn-outline" onclick="closeModal()">إلغاء</button></div>`);
 }
 async function doCollectMovement(id) {
   try {
@@ -2816,9 +2907,9 @@ async function archiveMovement(id) {
   if (!confirm('سيتم نقل هذه الحركة إلى الأرشيف. لن تؤثر على المخزون أو الخزنة ويمكن استعادتها لاحقاً.\nهل تريد المتابعة؟')) return;
   try {
     await api('/transactions/' + id, { method: 'DELETE' });
-    toast('تم أرشفة الحركة');
+    toast('🗂️ تم أرشفة الحركة وعكس تأثيرها على الخزنة والمخزون');
     transactions = await api('/transactions').catch(() => transactions);
-    renderMovements(); buildSidebar();
+    renderMovements(); buildSidebar(); syncVaultState();
   }
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
@@ -2829,10 +2920,10 @@ async function bulkArchiveMovements() {
   if (!selectedMovIds.size || !confirm(`سيتم أرشفة ${selectedMovIds.size} حركة. يمكن استعادتها لاحقاً من تبويب الأرشيف.\nهل تريد المتابعة؟`)) return;
   try {
     await api('/transactions/bulk-delete', { method: 'POST', body: JSON.stringify({ ids: [...selectedMovIds] }) });
-    toast('تم الأرشفة');
+    toast('🗂️ تم أرشفة الحركات وعكس تأثيرها على الخزنة والمخزون');
     selectedMovIds.clear();
     transactions = await api('/transactions').catch(() => transactions);
-    renderMovements(); buildSidebar();
+    renderMovements(); buildSidebar(); syncVaultState();
   }
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
@@ -2900,14 +2991,15 @@ function renderArchivedMovements() {
   </tr>`).join('');
 }
 async function restoreMovement(id) {
-  if (!confirm('سيتم استعادة الحركة وإعادة تفعيلها. ستعود للتأثير على المخزون والخزنة.\nهل تريد المتابعة؟')) return;
+  if (!confirm('سيتم استعادة الحركة وإعادة تفعيلها.\n✅ ستعود للتأثير على المخزون والخزنة تلقائياً.\n\nهل تريد المتابعة؟')) return;
   try {
     await api('/transactions/' + id + '/restore', { method: 'POST' });
-    toast('تم استعادة الحركة');
+    toast('✅ تم استعادة الحركة وتزامنها مع المخزون والخزنة');
     archivedMovements = archivedMovements.filter(t => t._id !== id);
     renderArchivedMovements();
     transactions = await api('/transactions').catch(() => transactions);
     buildSidebar();
+    syncVaultState();
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function hardDeleteMovement(id) {
@@ -3317,11 +3409,81 @@ function importProductsExcel(event) {
 }
 
 /* Suppliers */
+function getSupplierPurchases(supplierName) {
+  return transactions.filter(t =>
+    t.type === 'مشتريات' &&
+    !t.archived &&
+    (t.client || '').trim() === (supplierName || '').trim()
+  );
+}
 function renderSuppliers() {
-  qs('#suppliers-grid').innerHTML = suppliers.length ? suppliers.map(s => `
-    <div class="supplier-card"><h4>${esc(s.name)}</h4><p>${esc(s.phone || 'بدون رقم')}</p><p class="text-xs text-muted">${esc(s.address || '')}</p>
-      <div class="flex gap-8 mt-16" style="justify-content:center"><div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu"><div class="dd-item" onclick="openSupplierModal('${esc(s._id)}')">✏️ تعديل</div><div class="dd-divider"></div><div class="dd-item danger" onclick="deleteSupplier('${esc(s._id)}')">🗑️ حذف</div></div></div></div>
-    </div>`).join('') : '<div class="empty-state">لا يوجد موردون</div>';
+  qs('#suppliers-grid').innerHTML = suppliers.length ? suppliers.map(s => {
+    const txs = getSupplierPurchases(s.name);
+    const totalPurchased = txs.reduce((sum, t) => sum + (t.total || 0), 0);
+    const totalPaid = txs.reduce((sum, t) => sum + (t.deposit || 0), 0);
+    const totalRemaining = txs.reduce((sum, t) => sum + (t.remaining || 0), 0);
+    const pendingCount = txs.filter(t => t.payStatus === 'معلق' && !t.cancelled).length;
+    return `
+    <div class="supplier-card">
+      <h4>${esc(s.name)}</h4>
+      <p>${esc(s.phone || 'بدون رقم')}</p>
+      <p class="text-xs text-muted">${esc(s.address || '')}</p>
+      ${txs.length ? `
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:.78rem;text-align:right">
+        <div style="display:flex;justify-content:space-between"><span class="text-muted">الفواتير:</span><strong>${txs.length}</strong></div>
+        <div style="display:flex;justify-content:space-between"><span class="text-muted">إجمالي المشتريات:</span><strong>${fmtJ(totalPurchased)}</strong></div>
+        <div style="display:flex;justify-content:space-between"><span class="text-muted">المدفوع:</span><strong class="text-green">${fmtJ(totalPaid)}</strong></div>
+        ${totalRemaining > 0 ? `<div style="display:flex;justify-content:space-between"><span class="text-muted">المتبقي:</span><strong class="text-red">${fmtJ(totalRemaining)}</strong></div>` : ''}
+        ${pendingCount > 0 ? `<div style="margin-top:4px"><span class="badge badge-orange">${pendingCount} معلقة</span></div>` : ''}
+      </div>` : '<p class="text-xs text-muted" style="margin-top:8px">لا توجد فواتير</p>'}
+      <div class="flex gap-8 mt-16" style="justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="openSupplierInvoices('${esc(s.name)}')">📋 الفواتير</button>
+        <div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu"><div class="dd-item" onclick="openSupplierModal('${esc(s._id)}')">✏️ تعديل</div><div class="dd-divider"></div><div class="dd-item danger" onclick="deleteSupplier('${esc(s._id)}')">🗑️ حذف</div></div></div>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty-state">لا يوجد موردون</div>';
+}
+function openSupplierInvoices(supplierName) {
+  const txs = getSupplierPurchases(supplierName).sort((a, b) => new Date(b.date) - new Date(a.date));
+  const totalPurchased = txs.reduce((s, t) => s + (t.total || 0), 0);
+  const totalPaid = txs.reduce((s, t) => s + (t.deposit || 0), 0);
+  const totalRemaining = txs.reduce((s, t) => s + (t.remaining || 0), 0);
+  const rows = txs.length ? txs.map(t => {
+    const statusColor = t.cancelled ? '#ef4444' : t.payStatus === 'مكتمل' ? '#22c55e' : '#f59e0b';
+    const statusLabel = t.cancelled ? 'ملغي' : t.payStatus || '-';
+    return `<tr style="${t.cancelled ? 'opacity:.6;text-decoration:line-through' : ''}">
+      <td>${esc(t.date ? t.date.slice(0,10) : '-')}</td>
+      <td><strong>#${esc(t.ref || '-')}</strong></td>
+      <td>${fmtJ(t.total)}</td>
+      <td class="text-green">${fmtJ(t.deposit || 0)}</td>
+      <td class="${(t.remaining || 0) > 0 ? 'text-red' : ''}">${fmtJ(t.remaining || 0)}</td>
+      <td><span style="color:${statusColor};font-weight:600;font-size:.75rem">${esc(statusLabel)}</span></td>
+      <td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:.72rem" onclick="closeModal();showInvoiceDetail('${esc(t._id)}')">عرض</button></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="7" class="empty-state">لا توجد فواتير لهذا المورد</td></tr>`;
+  openModal(`
+    <h3>📋 فواتير المورد: ${esc(supplierName)}</h3>
+    <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;font-size:.82rem">
+      <div><span class="text-muted">إجمالي المشتريات: </span><strong>${fmtJ(totalPurchased)}</strong></div>
+      <div><span class="text-muted">المدفوع: </span><strong class="text-green">${fmtJ(totalPaid)}</strong></div>
+      ${totalRemaining > 0 ? `<div><span class="text-muted">المتبقي: </span><strong class="text-red">${fmtJ(totalRemaining)}</strong></div>` : ''}
+    </div>
+    <div class="overflow-x">
+      <table style="width:100%;font-size:.82rem;border-collapse:collapse">
+        <thead><tr style="background:var(--surface2)">
+          <th style="padding:6px 8px;text-align:right">التاريخ</th>
+          <th style="padding:6px 8px;text-align:right">رقم الفاتورة</th>
+          <th style="padding:6px 8px;text-align:right">الإجمالي</th>
+          <th style="padding:6px 8px;text-align:right">المدفوع</th>
+          <th style="padding:6px 8px;text-align:right">المتبقي</th>
+          <th style="padding:6px 8px;text-align:right">الحالة</th>
+          <th style="padding:6px 8px;text-align:right"></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div class="flex gap-8 mt-16"><button class="btn btn-outline" onclick="closeModal()">إغلاق</button></div>
+  `);
 }
 function openSupplierModal(id) {
   const s = id ? suppliers.find(x => x._id === id) : null;
@@ -3456,55 +3618,65 @@ function renderApprovals() {
   const actTo = qs('#appr-act-to')?.value || '';
   const allExpenses = expenses || [];
   const allReturns = returnRequests || [];
+  // Cancel requests derived from transactions
+  const allCancelReqs = (transactions || []).filter(tx => tx.cancelRequest && tx.cancelRequest.status);
   const pendingExp = allExpenses.filter(e => e.status === 'معلق');
   const pendingRet = allReturns.filter(r => r.status === 'معلق');
+  const pendingCancel = allCancelReqs.filter(tx => tx.cancelRequest.status === 'معلق');
   const approvedExp = allExpenses.filter(e => e.status === 'معتمد');
   const approvedRet = allReturns.filter(r => r.status === 'معتمد');
-  const rejectedAll = allExpenses.filter(e => e.status === 'مرفوض').length + allReturns.filter(r => r.status === 'مرفوض').length;
+  const rejectedAll = allExpenses.filter(e => e.status === 'مرفوض').length + allReturns.filter(r => r.status === 'مرفوض').length + allCancelReqs.filter(tx => tx.cancelRequest.status === 'مرفوض').length;
   qs('#appr-kpi').innerHTML = `
-    <div class="kpi"><div class="kpi-val text-orange">${pendingExp.length + pendingRet.length}</div><div class="kpi-label">معلقة</div></div>
+    <div class="kpi"><div class="kpi-val text-orange">${pendingExp.length + pendingRet.length + pendingCancel.length}</div><div class="kpi-label">معلقة</div></div>
     <div class="kpi"><div class="kpi-val text-orange">${fmtJ(pendingExp.reduce((s, e) => s + (e.amount || 0), 0))}</div><div class="kpi-label">مصاريف معلقة</div></div>
     <div class="kpi"><div class="kpi-val text-purple">${pendingRet.length}</div><div class="kpi-label">مرتجع/استبدال معلق</div></div>
+    <div class="kpi"><div class="kpi-val text-red" style="font-size:1.1rem">${pendingCancel.length}</div><div class="kpi-label">طلبات إلغاء</div></div>
     <div class="kpi"><div class="kpi-val text-green">${approvedExp.length + approvedRet.length}</div><div class="kpi-label">معتمدة (إجمالي)</div></div>
-    <div class="kpi"><div class="kpi-val text-green" style="font-size:1rem">${approvedRet.length}</div><div class="kpi-label">معتمد: مرتجع</div></div>
     <div class="kpi"><div class="kpi-val text-red">${rejectedAll}</div><div class="kpi-label">مرفوضة</div></div>`;
   let expData = allExpenses;
-  if (kindFilter === 'return') expData = [];
+  if (kindFilter === 'return' || kindFilter === 'cancel') expData = [];
   if (filter) expData = expData.filter(e => e.status === filter);
   if (dateFrom) expData = expData.filter(e => ((e.createdAt || e.date || '') + '').slice(0, 10) >= dateFrom);
   if (dateTo) expData = expData.filter(e => ((e.createdAt || e.date || '') + '').slice(0, 10) <= dateTo);
   if (actFrom) expData = expData.filter(e => e.approvedAt && e.approvedAt.slice(0, 10) >= actFrom);
   if (actTo) expData = expData.filter(e => e.approvedAt && e.approvedAt.slice(0, 10) <= actTo);
   let retData = allReturns;
-  if (kindFilter === 'expense') retData = [];
+  if (kindFilter === 'expense' || kindFilter === 'cancel') retData = [];
   if (filter) retData = retData.filter(r => r.status === filter);
   if (dateFrom) retData = retData.filter(r => ((r.createdAt || r.originalDate || '') + '').slice(0, 10) >= dateFrom);
   if (dateTo) retData = retData.filter(r => ((r.createdAt || r.originalDate || '') + '').slice(0, 10) <= dateTo);
   if (actFrom) retData = retData.filter(r => r.approvedAt && r.approvedAt.slice(0, 10) >= actFrom);
   if (actTo) retData = retData.filter(r => r.approvedAt && r.approvedAt.slice(0, 10) <= actTo);
+  let cancelData = allCancelReqs;
+  if (kindFilter === 'expense' || kindFilter === 'return') cancelData = [];
+  if (filter) cancelData = cancelData.filter(tx => tx.cancelRequest.status === filter);
+  if (dateFrom) cancelData = cancelData.filter(tx => (tx.cancelRequest.requestedAt || '').slice(0, 10) >= dateFrom);
+  if (dateTo) cancelData = cancelData.filter(tx => (tx.cancelRequest.requestedAt || '').slice(0, 10) <= dateTo);
+  if (actFrom) cancelData = cancelData.filter(tx => tx.cancelRequest.reviewedAt && tx.cancelRequest.reviewedAt.slice(0, 10) >= actFrom);
+  if (actTo) cancelData = cancelData.filter(tx => tx.cancelRequest.reviewedAt && tx.cancelRequest.reviewedAt.slice(0, 10) <= actTo);
   const combined = [
     ...expData.map(e => ({ ...e, _type: 'expense' })),
     ...retData.map(r => ({ ...r, _type: 'return' })),
+    ...cancelData.map(tx => ({ ...tx, _type: 'cancel', _status: tx.cancelRequest.status, _sortDate: tx.cancelRequest.reviewedAt || tx.cancelRequest.requestedAt || '' })),
   ].sort((a, b) => {
     const pendingFirst = !filter || filter === 'معلق';
+    const aStatus = a._type === 'cancel' ? a._status : a.status;
+    const bStatus = b._type === 'cancel' ? b._status : b.status;
     if (pendingFirst) {
-      if (a.status === 'معلق' && b.status !== 'معلق') return -1;
-      if (b.status === 'معلق' && a.status !== 'معلق') return 1;
+      if (aStatus === 'معلق' && bStatus !== 'معلق') return -1;
+      if (bStatus === 'معلق' && aStatus !== 'معلق') return 1;
     }
-    const sortA = (a.approvedAt || a.createdAt || a.date || '') + '';
-    const sortB = (b.approvedAt || b.createdAt || b.date || '') + '';
+    const sortA = (a._type === 'cancel' ? a._sortDate : (a.approvedAt || a.createdAt || a.date || '')) + '';
+    const sortB = (b._type === 'cancel' ? b._sortDate : (b.approvedAt || b.createdAt || b.date || '')) + '';
     return sortB.localeCompare(sortA);
   });
   if (!combined.length) {
-    let emptyMsg = 'لا توجد طلبات مطابقة للفلاتر الحالية';
-    if (filter === 'معتمد' && kindFilter === 'return') emptyMsg = 'لا توجد طلبات استرجاع أو استبدال معتمدة — غيّر التواريخ أو اختر «حالة: الكل»';
-    else if (filter === 'معتمد' && kindFilter === 'expense') emptyMsg = 'لا توجد مصاريف معتمدة في النطاق المحدد';
-    else if (filter === 'معتمد') emptyMsg = 'لا توجد طلبات معتمدة — للمرتجعات والاستبدال اختر أيضاً «النوع: استرجاع واستبدال فقط»';
-    qs('#appr-list').innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
+    qs('#appr-list').innerHTML = `<div class="empty-state">لا توجد طلبات مطابقة للفلاتر الحالية</div>`;
     return;
   }
   qs('#appr-list').innerHTML = combined.map(item => {
     if (item._type === 'expense') return renderExpenseApprovalCard(item);
+    if (item._type === 'cancel') return renderCancelRequestApprovalCard(item);
     return renderReturnApprovalCard(item);
   }).join('');
 }
@@ -3530,6 +3702,79 @@ function renderExpenseApprovalCard(e) {
     </div>
   </div>`;
 }
+function renderCancelRequestApprovalCard(tx) {
+  const cr = tx.cancelRequest;
+  const isPending = cr.status === 'معلق';
+  const deposit = tx.deposit || 0;
+  const depMethod = String(tx.depMethod || '').trim();
+  const statusColor = isPending ? 'var(--orange)' : cr.status === 'معتمد' ? 'var(--green)' : 'var(--red)';
+  const statusLabel = isPending ? '⏳ معلق' : cr.status === 'معتمد' ? '✅ معتمد' : '❌ مرفوض';
+  const vaultNote = deposit > 0 && depMethod
+    ? `<div class="text-xs" style="margin-top:4px;color:var(--red)">💸 سيُخصم <strong>${fmtJ(deposit)}</strong> من خزنة <strong>${esc(depMethod)}</strong> عند الاعتماد</div>` : '';
+  const reviewInfo = cr.reviewedBy
+    ? `<div class="text-xs text-muted" style="margin-top:4px">بواسطة: ${esc(cr.reviewedBy)} ${cr.reviewedAt ? '— ' + fmtDate(cr.reviewedAt) : ''}</div>` : '';
+  const rejectedNote = cr.rejectedReason
+    ? `<div class="text-xs" style="margin-top:4px;color:var(--red)">سبب الرفض: ${esc(cr.rejectedReason)}</div>` : '';
+  const actions = isPending && isAdmin()
+    ? `<div class="flex gap-8 mt-8">
+        <button class="btn btn-primary btn-sm" onclick="approveCancelRequest('${esc(tx._id)}')">✅ اعتماد الإلغاء</button>
+        <button class="btn btn-danger btn-sm" onclick="rejectCancelRequest('${esc(tx._id)}')">❌ رفض</button>
+      </div>` : '';
+  return `<div class="card mb-16" style="border-right:4px solid ${statusColor}">
+    <div class="flex-between" style="flex-wrap:wrap;gap:12px">
+      <div style="flex:1;min-width:220px">
+        <div class="flex gap-8" style="align-items:center;flex-wrap:wrap">
+          <span class="badge" style="background:rgba(220,38,38,.12);color:var(--red);font-size:.65rem">🚫 طلب إلغاء</span>
+          <strong style="font-size:.95rem">حركة #${esc(tx.ref || tx._id)}</strong>
+          <span style="font-size:.75rem;font-weight:600;color:${statusColor}">${statusLabel}</span>
+        </div>
+        <div class="text-sm text-muted" style="margin-top:6px">
+          ${tx.client ? `👤 ${esc(tx.client)}` : ''} ${tx.phone ? `· 📞 ${esc(tx.phone)}` : ''}
+        </div>
+        <div class="text-sm" style="margin-top:4px">
+          النوع: <strong>${esc(tx.type)}</strong> · الإجمالي: <strong>${fmtJ(tx.total)}</strong> · الديبوزت: <strong>${fmtJ(deposit)}</strong>
+        </div>
+        <div class="text-sm" style="margin-top:4px">📝 سبب الطلب: <strong>${esc(cr.reason)}</strong></div>
+        <div class="text-xs text-muted" style="margin-top:4px">📅 تاريخ الطلب: ${fmtDateTime(cr.requestedAt)} — بواسطة: ${esc(cr.requestedBy)}</div>
+        ${vaultNote}
+        ${reviewInfo}
+        ${rejectedNote}
+        ${actions}
+      </div>
+      <div style="text-align:center">
+        <button class="btn btn-outline btn-sm" onclick="showInvoiceDetail('${esc(tx._id)}')">📋 فتح الفاتورة</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function approveCancelRequest(txId) {
+  if (!isAdmin()) { toast('هذا الإجراء للمدير فقط', true); return; }
+  if (!confirm('اعتماد طلب الإلغاء؟\n\nسيتم إلغاء الحركة وخصم المبلغ المدفوع من الخزنة تلقائياً.')) return;
+  try {
+    await api('/transactions/' + txId + '/approve-cancel', { method: 'POST', body: '{}' });
+    toast('✅ تم اعتماد الإلغاء وخصم المبلغ من الخزنة');
+    transactions = await api('/transactions').catch(() => transactions);
+    renderApprovals(); renderMovements(); buildSidebar(); buildNotifications();
+    syncVaultState();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+
+async function rejectCancelRequest(txId) {
+  if (!isAdmin()) { toast('هذا الإجراء للمدير فقط', true); return; }
+  const reason = prompt('سبب رفض طلب الإلغاء (اختياري):') ?? null;
+  if (reason === null) return; // user pressed cancel
+  try {
+    await api('/transactions/' + txId + '/reject-cancel', {
+      method: 'POST',
+      body: JSON.stringify({ rejectedReason: reason.trim() }),
+    });
+    toast('تم رفض طلب الإلغاء');
+    transactions = await api('/transactions').catch(() => transactions);
+    renderApprovals(); renderMovements(); buildSidebar(); buildNotifications();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+
 function renderReturnApprovalCard(r) {
   const isPending = r.status === 'معلق';
   const isEx = r.requestKind === 'exchange';

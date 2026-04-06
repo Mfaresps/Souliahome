@@ -102,12 +102,21 @@ export class TransactionsService {
   }
 
   async findAll(page?: number, limit?: number): Promise<TransactionDocument[]> {
-    const query = this.transactionModel.find().sort({ createdAt: -1 });
+    const query = this.transactionModel
+      .find({ archived: { $ne: true } })
+      .sort({ createdAt: -1 });
     if (limit && limit > 0) {
       const skip = ((page || 1) - 1) * limit;
       query.skip(skip).limit(limit);
     }
     return query.exec();
+  }
+
+  async findArchived(): Promise<TransactionDocument[]> {
+    return this.transactionModel
+      .find({ archived: true })
+      .sort({ archivedAt: -1 })
+      .exec();
   }
 
   async findById(id: string): Promise<TransactionDocument> {
@@ -141,6 +150,9 @@ export class TransactionsService {
     if (!ref) {
       if (type === 'مبيعات') {
         throw new BadRequestException('الرقم المرجعي مطلوب');
+      }
+      if (type === 'مشتريات') {
+        throw new BadRequestException('رقم الفاتورة مطلوب للمشتريات');
       }
       return;
     }
@@ -186,7 +198,7 @@ export class TransactionsService {
   ): Promise<Map<string, number>> {
     const products = await this.productsService.findAll();
     const transactions = await this.transactionModel
-      .find({ cancelled: { $ne: true } })
+      .find({ cancelled: { $ne: true }, archived: { $ne: true } })
       .exec();
     const txs = excludeTransactionId
       ? transactions.filter((t) => String(t._id) !== excludeTransactionId)
@@ -392,24 +404,133 @@ export class TransactionsService {
       throw new BadRequestException('الحركة ملغية بالفعل');
     }
     this.assertNotExchangePendingCollect(tx);
+    return this.performCancellation(tx, dto.cancelReason, dto.cancelledBy);
+  }
+
+  private async performCancellation(
+    tx: TransactionDocument,
+    reason: string,
+    cancelledBy: string,
+  ): Promise<TransactionDocument> {
     const previousDeposit = tx.deposit || 0;
     tx.cancelled = true;
-    tx.cancelReason = dto.cancelReason;
-    tx.cancelledBy = dto.cancelledBy;
+    tx.cancelReason = reason;
+    tx.cancelledBy = cancelledBy;
     tx.cancelledAt = new Date().toISOString();
     tx.payStatus = 'ملغي';
     const saved = await tx.save();
-    if (previousDeposit > 0 && tx.depMethod) {
+    const vaultMethod = tx.depMethod || tx.payment || 'كاش';
+    if (tx.type === 'مشتريات') {
+      // Return money to vault: deposit paid upfront + remaining if already collected
+      const paidAmount =
+        tx.payStatus === 'ملغي' && tx.collectedAt
+          ? (tx.total || 0) // fully collected before cancel
+          : previousDeposit; // only deposit was paid
+      const totalRefund = tx.collectMethod
+        ? (tx.total || 0) // collected = was fully paid
+        : previousDeposit;
+      if (totalRefund > 0) {
+        await this.vaultService.addSystemEntry(
+          totalRefund, // positive: money returned from supplier
+          vaultMethod,
+          `إلغاء مشتريات #${tx.ref || tx._id} — ${tx.client || ''} (بواسطة: ${cancelledBy})`,
+          new Date().toISOString().split('T')[0],
+          'إلغاء',
+          tx.ref || String(tx._id),
+        );
+      }
+    } else if (previousDeposit > 0) {
+      // مبيعات / مرتجع: refund deposit to client — deduct from vault
       await this.vaultService.addSystemEntry(
         -previousDeposit,
-        tx.depMethod,
-        `إلغاء حركة #${tx.ref || tx._id}`,
+        vaultMethod,
+        `إلغاء حركة #${tx.ref || tx._id} — ${tx.client || ''} (بواسطة: ${cancelledBy})`,
         new Date().toISOString().split('T')[0],
         'إلغاء',
         tx.ref || String(tx._id),
       );
     }
     return saved;
+  }
+
+  async requestCancel(
+    id: string,
+    reason: string,
+    requestedBy: string,
+  ): Promise<TransactionDocument> {
+    const tx = await this.transactionModel.findById(id).exec();
+    if (!tx) throw new NotFoundException('الحركة غير موجودة');
+    if (tx.cancelled) throw new BadRequestException('الحركة ملغية بالفعل');
+    if (tx.archived) throw new BadRequestException('الحركة مؤرشفة');
+    if (tx.payStatus !== 'معلق') {
+      throw new BadRequestException(
+        'طلب الإلغاء مسموح فقط للحركات المعلقة — الحركة المكتملة لا يمكن إلغاؤها',
+      );
+    }
+    if (tx.cancelRequest && tx.cancelRequest.status === 'معلق') {
+      throw new BadRequestException('يوجد طلب إلغاء معلق بالفعل لهذه الحركة');
+    }
+    this.assertNotExchangePendingCollect(tx);
+    const updated = await this.transactionModel
+      .findByIdAndUpdate(
+        id,
+        {
+          cancelRequest: {
+            requestedBy,
+            reason,
+            requestedAt: new Date().toISOString(),
+            status: 'معلق',
+          },
+        },
+        { new: true },
+      )
+      .exec();
+    return updated!;
+  }
+
+  async approveCancel(
+    id: string,
+    reviewedBy: string,
+  ): Promise<TransactionDocument> {
+    const tx = await this.transactionModel.findById(id).exec();
+    if (!tx) throw new NotFoundException('الحركة غير موجودة');
+    if (!tx.cancelRequest || tx.cancelRequest.status !== 'معلق') {
+      throw new BadRequestException('لا يوجد طلب إلغاء معلق لهذه الحركة');
+    }
+    if (tx.cancelled) throw new BadRequestException('الحركة ملغية بالفعل');
+    // Mark cancel request as approved
+    await this.transactionModel
+      .findByIdAndUpdate(id, {
+        'cancelRequest.status': 'معتمد',
+        'cancelRequest.reviewedBy': reviewedBy,
+        'cancelRequest.reviewedAt': new Date().toISOString(),
+      })
+      .exec();
+    // Perform actual cancellation + vault debit
+    const reason = tx.cancelRequest.reason || 'موافقة المدير';
+    const requestedBy = tx.cancelRequest.requestedBy || reviewedBy;
+    return this.performCancellation(tx, reason, requestedBy);
+  }
+
+  async rejectCancel(
+    id: string,
+    reviewedBy: string,
+    rejectedReason?: string,
+  ): Promise<TransactionDocument> {
+    const tx = await this.transactionModel.findById(id).exec();
+    if (!tx) throw new NotFoundException('الحركة غير موجودة');
+    if (!tx.cancelRequest || tx.cancelRequest.status !== 'معلق') {
+      throw new BadRequestException('لا يوجد طلب إلغاء معلق لهذه الحركة');
+    }
+    // Clear cancelRequest so transaction returns fully to normal state
+    const updated = await this.transactionModel
+      .findByIdAndUpdate(
+        id,
+        { cancelRequest: null },
+        { new: true },
+      )
+      .exec();
+    return updated!;
   }
 
   async collect(
@@ -437,39 +558,98 @@ export class TransactionsService {
     tx.collectedAt = new Date().toISOString().split('T')[0];
     const saved = await tx.save();
     if (collectAmount > 0) {
+      const isPurchase = tx.type === 'مشتريات';
+      // مشتريات: paying remaining to supplier → deduct from vault (negative)
+      // مبيعات: receiving remaining from client → add to vault (positive)
       await this.vaultService.addSystemEntry(
-        collectAmount,
+        isPurchase ? -collectAmount : collectAmount,
         dto.collectMethod,
-        `تحصيل #${tx.ref || tx._id}`,
+        isPurchase
+          ? `دفع متبقي مشتريات #${tx.ref || tx._id} — ${tx.client || ''}`
+          : `تحصيل #${tx.ref || tx._id}`,
         new Date().toISOString().split('T')[0],
-        'تحصيل',
+        isPurchase ? 'دفع مشتريات' : 'تحصيل',
         tx.ref || String(tx._id),
       );
     }
     return saved;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, archivedBy?: string): Promise<void> {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) {
       throw new NotFoundException('الحركة غير موجودة');
     }
     this.assertNotExchangePendingCollect(tx);
-    await this.transactionModel.findByIdAndDelete(id).exec();
+    // Archive first — guaranteed regardless of vault result
+    await this.transactionModel
+      .findByIdAndUpdate(id, {
+        archived: true,
+        archivedAt: new Date().toISOString(),
+        archivedBy: archivedBy || '',
+      })
+      .exec();
+    // Reverse vault entries — non-blocking so archive always completes
+    this.reverseVaultForTransaction(
+      tx,
+      `أرشفة بواسطة ${archivedBy || 'النظام'}`,
+    ).catch((err) =>
+      console.error(`[archive] vault reverse failed for ${id}:`, err),
+    );
   }
 
-  async bulkRemove(ids: string[]): Promise<number> {
+  async bulkRemove(ids: string[], archivedBy?: string): Promise<number> {
     if (!ids.length) {
       return 0;
     }
-    const docs = await this.transactionModel.find({ _id: { $in: ids } }).exec();
+    const docs = await this.transactionModel
+      .find({ _id: { $in: ids }, archived: { $ne: true } })
+      .exec();
     for (const tx of docs) {
       this.assertNotExchangePendingCollect(tx);
     }
+    // Archive all first — guaranteed
     const result = await this.transactionModel
-      .deleteMany({ _id: { $in: ids } })
+      .updateMany(
+        { _id: { $in: ids } },
+        {
+          archived: true,
+          archivedAt: new Date().toISOString(),
+          archivedBy: archivedBy || '',
+        },
+      )
       .exec();
-    return result.deletedCount;
+    // Reverse vault entries per transaction — non-blocking
+    const reason = `أرشفة جماعية بواسطة ${archivedBy || 'النظام'}`;
+    for (const tx of docs) {
+      this.reverseVaultForTransaction(tx, reason).catch((err) =>
+        console.error(`[bulk-archive] vault reverse failed for ${String(tx._id)}:`, err),
+      );
+    }
+    return result.modifiedCount;
+  }
+
+  async restore(id: string): Promise<TransactionDocument> {
+    const tx = await this.transactionModel.findById(id).exec();
+    if (!tx) {
+      throw new NotFoundException('الحركة غير موجودة');
+    }
+    if (!tx.archived) {
+      throw new BadRequestException('الحركة ليست مؤرشفة');
+    }
+    // Unarchive first — guaranteed
+    const restored = await this.transactionModel
+      .findByIdAndUpdate(
+        id,
+        { archived: false, archivedAt: undefined, archivedBy: undefined },
+        { new: true },
+      )
+      .exec();
+    // Re-record vault entries — non-blocking so restore always completes
+    this.recordVaultForTransaction(restored!).catch((err) =>
+      console.error(`[restore] vault re-record failed for ${id}:`, err),
+    );
+    return restored!;
   }
 
   async clearAll(): Promise<void> {
@@ -479,7 +659,7 @@ export class TransactionsService {
   async getInventory(): Promise<InventoryItem[]> {
     const products = await this.productsService.findAll();
     const transactions = await this.transactionModel
-      .find({ cancelled: { $ne: true } })
+      .find({ cancelled: { $ne: true }, archived: { $ne: true } })
       .exec();
     return products.map((product) => {
       let purchases = 0;
@@ -536,7 +716,9 @@ export class TransactionsService {
 
   async getDashboard(expenseTotal = 0): Promise<DashboardData> {
     const inventory = await this.getInventory();
-    const transactions = await this.transactionModel.find().exec();
+    const transactions = await this.transactionModel
+      .find({ archived: { $ne: true } })
+      .exec();
     const activeTx = transactions.filter((t) => !t.cancelled);
     const lowStockCount = inventory.filter((p) => p.status !== 'ok').length;
     const salesTx = activeTx.filter((t) => t.type === 'مبيعات');
@@ -600,7 +782,7 @@ export class TransactionsService {
     expenseTotal = 0,
   ): Promise<Record<string, unknown>> {
     let transactions = await this.transactionModel
-      .find({ cancelled: { $ne: true } })
+      .find({ cancelled: { $ne: true }, archived: { $ne: true } })
       .exec();
     if (from) transactions = transactions.filter((t) => t.date >= from);
     if (to) transactions = transactions.filter((t) => t.date <= to);
@@ -755,16 +937,55 @@ export class TransactionsService {
         'ديبوزت مبيعات',
         txRef,
       );
+      // If collected, also record the collected remaining
+      if (
+        tx.payStatus === 'مكتمل' &&
+        tx.collectMethod &&
+        (tx.deposit || 0) < (tx.total || 0)
+      ) {
+        // collected = total - deposit
+        const collectedAmount = (tx.total || 0) - (tx.deposit || 0);
+        if (collectedAmount > 0) {
+          await this.vaultService.addSystemEntry(
+            collectedAmount,
+            tx.collectMethod,
+            `تحصيل مُستعاد #${txRef} — ${tx.client || ''}`,
+            txDate,
+            'تحصيل',
+            txRef,
+          );
+        }
+      }
     } else if (tx.type === 'مشتريات') {
       if (this.transactionAddsSupplierPurchases(tx)) {
-        await this.vaultService.addSystemEntry(
-          -(tx.total || 0),
-          tx.depMethod || 'كاش',
-          `مشتريات #${txRef} — ${tx.client || ''}`,
-          txDate,
-          'مشتريات',
-          txRef,
-        );
+        // Record only the deposit (amount paid upfront). If fully paid, deposit = total.
+        const depositPaid = tx.deposit || tx.total || 0;
+        if (depositPaid > 0) {
+          await this.vaultService.addSystemEntry(
+            -depositPaid,
+            tx.depMethod || 'كاش',
+            `مشتريات #${txRef} — ${tx.client || ''}${depositPaid < (tx.total || 0) ? ' (عربون)' : ''}`,
+            txDate,
+            'مشتريات',
+            txRef,
+          );
+        }
+        // If مكتمل and has a collectMethod, the remaining was paid via collect — record that too
+        if (
+          tx.payStatus === 'مكتمل' &&
+          tx.collectMethod &&
+          (tx.total || 0) > depositPaid
+        ) {
+          const remainingPaid = (tx.total || 0) - depositPaid;
+          await this.vaultService.addSystemEntry(
+            -remainingPaid,
+            tx.collectMethod,
+            `دفع متبقي مشتريات #${txRef} — ${tx.client || ''}`,
+            txDate,
+            'دفع مشتريات',
+            txRef,
+          );
+        }
       } else {
         const refundAmount = this.resolveReturnRefundVaultAmount(tx);
         if (refundAmount <= 0) {
@@ -792,6 +1013,107 @@ export class TransactionsService {
         'رد مرتجع',
         txRef,
       );
+    }
+  }
+
+  /**
+   * Reverses all vault entries that were originally recorded for this transaction.
+   * Used when archiving — so the vault balance is correctly adjusted back.
+   */
+  private async reverseVaultForTransaction(
+    tx: TransactionDocument,
+    reason: string,
+  ): Promise<void> {
+    const txRef = tx.ref || String(tx._id);
+    const today = new Date().toISOString().split('T')[0];
+
+    if (tx.cancelled) {
+      // Cancelled transactions already had their deposit reversed — nothing to undo
+      return;
+    }
+
+    if (tx.type === 'مبيعات') {
+      const deposit = tx.deposit || 0;
+      if (deposit > 0 && tx.depMethod) {
+        await this.vaultService.addSystemEntry(
+          -deposit,
+          tx.depMethod,
+          `${reason} — عكس ديبوزت #${txRef} — ${tx.client || ''}`,
+          today,
+          'أرشفة',
+          txRef,
+        );
+      }
+      // If already collected (remaining=0, مكتمل), also reverse the collected amount
+      if (tx.payStatus === 'مكتمل' && tx.collectMethod) {
+        // collected = total - deposit (what was paid at collect time)
+        const collectedAmount = (tx.total || 0) - deposit;
+        if (collectedAmount > 0) {
+          await this.vaultService.addSystemEntry(
+            -collectedAmount,
+            tx.collectMethod,
+            `${reason} — عكس تحصيل #${txRef} — ${tx.client || ''}`,
+            today,
+            'أرشفة',
+            txRef,
+          );
+        }
+      }
+    } else if (tx.type === 'مشتريات') {
+      if (this.transactionAddsSupplierPurchases(tx)) {
+        // Reverse deposit (upfront payment)
+        const depositPaid = tx.deposit || tx.total || 0;
+        if (depositPaid > 0 && tx.depMethod) {
+          await this.vaultService.addSystemEntry(
+            depositPaid, // positive: reverses the negative deposit entry
+            tx.depMethod,
+            `${reason} — عكس مشتريات #${txRef} — ${tx.client || ''}`,
+            today,
+            'أرشفة',
+            txRef,
+          );
+        }
+        // If remaining was already collected (paid to supplier), reverse that too
+        if (
+          tx.payStatus === 'مكتمل' &&
+          tx.collectMethod &&
+          (tx.total || 0) > depositPaid
+        ) {
+          const remainingPaid = (tx.total || 0) - depositPaid;
+          await this.vaultService.addSystemEntry(
+            remainingPaid, // positive: reverses the negative remaining-paid entry
+            tx.collectMethod,
+            `${reason} — عكس دفع متبقي مشتريات #${txRef} — ${tx.client || ''}`,
+            today,
+            'أرشفة',
+            txRef,
+          );
+        }
+      } else {
+        const refundAmount = this.resolveReturnRefundVaultAmount(tx);
+        if (refundAmount > 0 && tx.depMethod) {
+          await this.vaultService.addSystemEntry(
+            refundAmount, // positive: reverses the negative refund entry
+            tx.depMethod,
+            `${reason} — عكس رد مرتجع #${txRef} — ${tx.client || ''}`,
+            today,
+            'أرشفة',
+            txRef,
+          );
+        }
+      }
+    } else if (tx.type === 'مرتجع' || tx.type === 'مرتجع مبيعات') {
+      const refundAmount = this.resolveReturnRefundVaultAmount(tx);
+      if (refundAmount > 0 && tx.depMethod) {
+        await this.vaultService.addSystemEntry(
+          refundAmount, // positive: reverses the negative refund entry
+          tx.depMethod,
+          `${reason} — عكس رد مرتجع #${txRef} — ${tx.client || ''}`,
+          today,
+          'أرشفة',
+          txRef,
+        );
+      }
     }
   }
 }

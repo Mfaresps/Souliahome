@@ -230,3 +230,19 @@ export class PostDiscountDto {
   @IsOptional()
   readonly notes?: string;
 }
+
+export class RequestCancelDto {
+  @IsString()
+  @IsNotEmpty()
+  readonly reason: string;
+
+  @IsString()
+  @IsNotEmpty()
+  readonly requestedBy: string;
+}
+
+export class ReviewCancelDto {
+  @IsString()
+  @IsOptional()
+  readonly rejectedReason?: string;
+}

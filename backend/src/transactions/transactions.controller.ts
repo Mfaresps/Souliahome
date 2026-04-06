@@ -18,6 +18,8 @@ import {
   CollectTransactionDto,
   BulkDeleteDto,
   PostDiscountDto,
+  RequestCancelDto,
+  ReviewCancelDto,
 } from './dto/transaction.dto';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
@@ -65,6 +67,11 @@ export class TransactionsController {
     return this.transactionsService.getReports(from, to, expenseTotal);
   }
 
+  @Get('archived')
+  async findArchived() {
+    return this.transactionsService.findArchived();
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.transactionsService.findById(id);
@@ -77,9 +84,51 @@ export class TransactionsController {
 
   @Roles('admin')
   @Post('bulk-delete')
-  async bulkDelete(@Body() dto: BulkDeleteDto) {
-    const count = await this.transactionsService.bulkRemove(dto.ids);
-    return { message: `تم حذف ${count} حركة`, deletedCount: count };
+  async bulkDelete(
+    @Body() dto: BulkDeleteDto,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const archivedBy = req.user.name || req.user.username || '';
+    const count = await this.transactionsService.bulkRemove(dto.ids, archivedBy);
+    return { message: `تم أرشفة ${count} حركة`, deletedCount: count };
+  }
+
+  @Post(':id/restore')
+  async restore(@Param('id') id: string) {
+    return this.transactionsService.restore(id);
+  }
+
+  @Post(':id/request-cancel')
+  async requestCancel(
+    @Param('id') id: string,
+    @Body() dto: RequestCancelDto,
+  ) {
+    return this.transactionsService.requestCancel(
+      id,
+      dto.reason,
+      dto.requestedBy,
+    );
+  }
+
+  @Roles('admin')
+  @Post(':id/approve-cancel')
+  async approveCancel(
+    @Param('id') id: string,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const reviewedBy = req.user.name || req.user.username || '';
+    return this.transactionsService.approveCancel(id, reviewedBy);
+  }
+
+  @Roles('admin')
+  @Post(':id/reject-cancel')
+  async rejectCancel(
+    @Param('id') id: string,
+    @Body() dto: ReviewCancelDto,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const reviewedBy = req.user.name || req.user.username || '';
+    return this.transactionsService.rejectCancel(id, reviewedBy, dto.rejectedReason);
   }
 
   @Post(':id/cancel')
@@ -133,8 +182,12 @@ export class TransactionsController {
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    await this.transactionsService.remove(id);
-    return { message: 'تم حذف الحركة' };
+  async remove(
+    @Param('id') id: string,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const archivedBy = req.user.name || req.user.username || '';
+    await this.transactionsService.remove(id, archivedBy);
+    return { message: 'تم أرشفة الحركة' };
   }
 }
