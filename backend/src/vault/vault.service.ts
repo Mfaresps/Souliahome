@@ -95,6 +95,16 @@ export class VaultService {
     ref = '',
   ): Promise<VaultEntryDocument> {
     const seg = resolveVaultSegmentFromPaymentMethod(method);
+    // Block any deduction if balance is insufficient
+    if (amount < 0) {
+      const balance = await this.getSegmentBalance(seg);
+      if (balance + amount < 0) {
+        const segLabel: Record<string, string> = { cash: 'كاش', vodafone: 'فودافون كاش', instapay: 'Instapay', bank: 'تحويل بنكي' };
+        throw new BadRequestException(
+          `رصيد ${segLabel[seg] || seg} غير كافٍ — الرصيد الحالي: ${balance} ج والمطلوب خصم: ${Math.abs(amount)} ج`
+        );
+      }
+    }
     const settings = await this.settingsService.adjustVaultBalance(seg, amount);
     return this.vaultModel.create({
       date,
