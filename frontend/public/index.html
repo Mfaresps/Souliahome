@@ -484,44 +484,94 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 
 <!-- Active transactions panel -->
 <div id="mov-panel-list">
-<div class="flex-between mb-16">
-<h2 class="page-title" style="margin-bottom:0" data-i18n="movements">سجل الحركات</h2>
-<div class="flex gap-8" style="flex-wrap:wrap">
-<button class="btn btn-outline btn-sm" onclick="exportMovementsExcel()">📥 تصدير Excel</button>
-<button class="btn btn-outline btn-sm" id="mov-return-from-selection-btn" style="display:none" onclick="openMovementReturnShortcut(false)">📤 طلب استرجاع للمحدد</button>
-<button class="btn btn-primary btn-sm" id="mov-exchange-from-selection-btn" style="display:none" onclick="openMovementReturnShortcut(true)">🔁 طلب استبدال للمحدد</button>
-</div>
-</div>
+  <!-- Header with title and actions -->
+  <div class="flex-between mb-16" style="flex-wrap: wrap; gap: 12px;">
+    <h2 class="page-title" style="margin-bottom: 0;" data-i18n="movements">📋 سجل الحركات</h2>
+    <div class="flex gap-8" style="flex-wrap: wrap; align-items: center;">
+      <button class="btn btn-outline btn-sm" onclick="exportMovementsExcel()">📥 تصدير Excel</button>
+      <button class="btn btn-outline btn-sm" id="mov-return-from-selection-btn" style="display: none;" onclick="openMovementReturnShortcut(false)">📤 استرجاع المحدد</button>
+      <button class="btn btn-primary btn-sm" id="mov-exchange-from-selection-btn" style="display: none;" onclick="openMovementReturnShortcut(true)">🔁 استبدال المحدد</button>
+    </div>
+  </div>
 
-<!-- Bulk selection bar (shown when items selected) -->
-<div id="mov-bulk-bar" style="display:none;background:var(--primary);color:#fff;border-radius:var(--radius);padding:10px 16px;margin-bottom:12px;flex-wrap:wrap;gap:10px;align-items:center" class="flex">
-  <span id="mov-bulk-info" style="font-size:.88rem;font-weight:700"></span>
-  <div style="flex:1"></div>
-  <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="exportSelectedExcel()">📥 Excel المحدد</button>
-  <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="bulkPrintPDF()">🖨️ طباعة PDF</button>
-  <button class="btn btn-sm" id="mov-return-from-selection-btn2" style="display:none;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="openMovementReturnShortcut(false)">📤 استرجاع</button>
-  <button class="btn btn-sm" id="mov-exchange-from-selection-btn2" style="display:none;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="openMovementReturnShortcut(true)">🔁 استبدال</button>
-  <button class="btn btn-sm" id="bulk-cancel-btn" style="display:none;background:rgba(220,38,38,.7);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="bulkCancelMovements()">🚫 إلغاء المحدد</button>
-  <button class="btn btn-sm" id="bulk-del-btn" style="background:rgba(220,38,38,.7);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="bulkArchiveMovements()">🧊 تجميد المحدد</button>
-  <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="clearMovSelection()">✕ إلغاء التحديد</button>
-</div>
+  <!-- KPI Summary Cards -->
+  <div id="mov-kpi-strip" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;"></div>
 
-<div class="filter-bar">
-<input type="date" id="mov-from" style="width:150px" onchange="movPage=1;renderMovements()">
-<input type="date" id="mov-to" style="width:150px" onchange="movPage=1;renderMovements()">
-<button class="tab-btn active" onclick="setMovFilter('all',this)">الكل</button>
-<button class="tab-btn" onclick="setMovFilter('مبيعات',this)">مبيعات</button>
-<button class="tab-btn" onclick="setMovFilter('مشتريات',this)">مشتريات</button>
-<button class="tab-btn" onclick="setMovFilter('مرتجع',this)">مرتجع</button>
-<button class="tab-btn" onclick="setMovFilter('استرجاع',this)">استرجاع</button>
-<button class="tab-btn" onclick="setMovFilter('استبدال',this)">استبدال</button>
-<button class="tab-btn" onclick="setMovFilter('مكتمل',this,'status')">مكتمل</button>
-<button class="tab-btn" onclick="setMovFilter('معلق',this,'status')">انتظار التحصيل</button>
-<button class="tab-btn" onclick="setMovFilter('ملغي',this,'status')">ملغي</button>
-<div class="search-input"><input type="text" id="mov-search" placeholder="بحث..." oninput="debouncedRenderMovements()"></div>
-</div>
-<div class="overflow-x"><table id="mov-table"><thead><tr><th><input type="checkbox" class="checkbox" onchange="toggleAllMov(this)"></th><th>التاريخ والوقت</th><th>النوع</th><th>العميل/المورد</th><th>المرجع</th><th>الموظف</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody></tbody></table></div>
-<div id="mov-pagination"></div>
+  <!-- Bulk selection bar (shown when items selected) -->
+  <div id="mov-bulk-bar" style="display: none; background: var(--primary); color: #fff; border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; align-items: center;" class="flex">
+    <span id="mov-bulk-info" style="font-size: 0.88rem; font-weight: 700;"></span>
+    <div style="flex: 1;"></div>
+    <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.4);" onclick="exportSelectedExcel()">📥 Excel</button>
+    <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.4);" onclick="bulkPrintPDF()">🖨️ طباعة</button>
+    <button class="btn btn-sm" id="mov-return-from-selection-btn2" style="display: none; background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.4);" onclick="openMovementReturnShortcut(false)">📤 استرجاع</button>
+    <button class="btn btn-sm" id="mov-exchange-from-selection-btn2" style="display: none; background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.4);" onclick="openMovementReturnShortcut(true)">🔁 استبدال</button>
+    <button class="btn btn-sm" id="bulk-cancel-btn" style="display: none; background: rgba(220,38,38,0.7); color: #fff; border: 1px solid rgba(255,255,255,0.3);" onclick="bulkCancelMovements()">🚫 إلغاء</button>
+    <button class="btn btn-sm" id="bulk-del-btn" style="background: rgba(220,38,38,0.7); color: #fff; border: 1px solid rgba(255,255,255,0.3);" onclick="bulkArchiveMovements()">🧊 تجميد</button>
+    <button class="btn btn-sm" style="background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3);" onclick="clearMovSelection()">✕ إلغاء</button>
+  </div>
+
+  <!-- Filter Section with better organization -->
+  <div style="background: var(--surface2); padding: 16px; border-radius: var(--radius); margin-bottom: 20px; border: 1px solid var(--border);">
+    <!-- Date filters on top -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted);">من تاريخ</label>
+        <input type="date" id="mov-from" style="padding: 8px 10px; width: 100%;" onchange="movPage=1;renderMovements()">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted);">إلى تاريخ</label>
+        <input type="date" id="mov-to" style="padding: 8px 10px; width: 100%;" onchange="movPage=1;renderMovements()">
+      </div>
+    </div>
+
+    <!-- Type filters (horizontal scrollable) -->
+    <div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 8px;">
+      <button class="tab-btn active" onclick="setMovFilter('all',this)" style="white-space: nowrap;">الكل</button>
+      <button class="tab-btn" onclick="setMovFilter('مبيعات',this)" style="white-space: nowrap;">💰 مبيعات</button>
+      <button class="tab-btn" onclick="setMovFilter('مشتريات',this)" style="white-space: nowrap;">📦 مشتريات</button>
+      <button class="tab-btn" onclick="setMovFilter('مرتجع',this)" style="white-space: nowrap;">↩️ مرتجع</button>
+      <button class="tab-btn" onclick="setMovFilter('استرجاع',this)" style="white-space: nowrap;">📤 استرجاع</button>
+      <button class="tab-btn" onclick="setMovFilter('استبدال',this)" style="white-space: nowrap;">🔁 استبدال</button>
+      <div style="border-right: 1px solid var(--border);"></div>
+      <button class="tab-btn" onclick="setMovFilter('مكتمل',this,'status')" style="white-space: nowrap;">✅ مكتمل</button>
+      <button class="tab-btn" onclick="setMovFilter('معلق',this,'status')" style="white-space: nowrap;">⏳ انتظار</button>
+      <button class="tab-btn" onclick="setMovFilter('ملغي',this,'status')" style="white-space: nowrap;">❌ ملغي</button>
+    </div>
+
+    <!-- Search bar -->
+    <div class="search-input" style="width: 100%;">
+      <input type="text" id="mov-search" placeholder="🔍 بحث عميل، مرجع، هاتف، ملاحظات..." oninput="debouncedRenderMovements()" style="width: 100%; padding: 8px 12px;">
+    </div>
+  </div>
+
+  <!-- Table Section -->
+  <div style="background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden;">
+    <div class="overflow-x">
+      <table id="mov-table" style="width: 100%; border-collapse: collapse;">
+        <thead style="background: var(--surface2); position: sticky; top: 0; z-index: 10;">
+          <tr style="border-bottom: 2px solid var(--border);">
+            <th style="width: 40px; text-align: center; padding: 12px 8px;">
+              <input type="checkbox" class="checkbox" onchange="toggleAllMov(this)">
+            </th>
+            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text); white-space: nowrap;">التاريخ والوقت</th>
+            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text); white-space: nowrap;">النوع</th>
+            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);">العميل/المورد</th>
+            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--text); white-space: nowrap;">المرجع</th>
+            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text); white-space: nowrap;">الموظف</th>
+            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--text); white-space: nowrap;">الإجمالي</th>
+            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--text); white-space: nowrap;">المدفوع</th>
+            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--text); white-space: nowrap;">المتبقي</th>
+            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--text); white-space: nowrap;">الحالة</th>
+            <th style="width: 60px; text-align: center; font-weight: 600; color: var(--text);">إجراء</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div id="mov-pagination" style="margin-top: 16px;"></div>
 </div><!-- end mov-panel-list -->
 
 <!-- Archive panel -->
@@ -603,24 +653,89 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 
 <!-- Expenses -->
 <div class="page" id="page-expenses">
-<div class="flex-between mb-16">
-<h2 class="page-title" style="margin-bottom:0" data-i18n="expenses">المصاريف</h2>
-<div class="flex gap-8">
-<button class="btn btn-outline btn-sm" onclick="exportExpensesExcel()">📥 تصدير Excel</button>
-<button class="btn btn-primary btn-sm" onclick="openExpenseModal()">+ إضافة مصروف</button>
-</div>
-</div>
-<div class="kpi-strip" id="exp-kpi-strip"></div>
-<div class="filter-bar">
-<input type="date" id="exp-from" style="width:150px" onchange="expPage=1;renderExpenses()">
-<input type="date" id="exp-to" style="width:150px" onchange="expPage=1;renderExpenses()">
-<select id="exp-cat-filter" style="width:150px" onchange="expPage=1;renderExpenses()"><option value="">كل الفئات</option><option value="اعلانات">اعلانات</option><option value="تغليف">تغليف</option><option value="موصلات وتنقل">موصلات وتنقل</option><option value="اشتراكات">اشتراكات</option><option value="مرتبات">مرتبات</option><option value="اخرى">اخرى</option></select>
-<select id="exp-acc-filter" style="width:150px" onchange="expPage=1;renderExpenses()"><option value="">كل الحسابات</option><option value="كاش">كاش</option><option value="فودافون كاش">فودافون كاش</option><option value="Instapay">Instapay</option><option value="تحويل بنكي">تحويل بنكي</option></select>
-<button class="btn btn-outline btn-sm" onclick="clearExpFilters()">مسح الفلاتر</button>
-<div class="search-input"><input type="text" id="exp-search" placeholder="بحث..." oninput="debouncedRenderExpenses()"></div>
-</div>
-<div class="overflow-x"><table id="exp-table"><thead><tr><th>التاريخ</th><th>الوصف</th><th>النوع</th><th>الحساب</th><th>المبلغ</th><th>الحالة</th><th>الموظف</th><th>إجراءات</th></tr></thead><tbody></tbody></table></div>
-<div id="exp-pagination"></div>
+  <!-- Header Section -->
+  <div style="margin-bottom: 24px;">
+    <div class="flex-between mb-16">
+      <h2 class="page-title" style="margin-bottom: 0;" data-i18n="expenses">💸 المصاريف</h2>
+      <div class="flex gap-8">
+        <button class="btn btn-outline btn-sm" onclick="exportExpensesExcel()">📥 تصدير Excel</button>
+        <button class="btn btn-primary btn-sm" onclick="openExpenseModal()">+ إضافة مصروف</button>
+      </div>
+    </div>
+    
+    <!-- KPI Cards -->
+    <div class="kpi-strip" id="exp-kpi-strip"></div>
+  </div>
+
+  <!-- Filter Section -->
+  <div style="background: var(--surface2); padding: 16px; border-radius: var(--radius); margin-bottom: 20px; border: 1px solid var(--border);">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 12px;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted);">من تاريخ</label>
+        <input type="date" id="exp-from" style="width: 100%; padding: 8px 10px;" onchange="expPage=1;renderExpenses()">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted);">إلى تاريخ</label>
+        <input type="date" id="exp-to" style="width: 100%; padding: 8px 10px;" onchange="expPage=1;renderExpenses()">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted);">نوع المصروف</label>
+        <select id="exp-cat-filter" style="width: 100%; padding: 8px 10px;" onchange="expPage=1;renderExpenses()">
+          <option value="">كل الفئات</option>
+          <option value="اعلانات">اعلانات</option>
+          <option value="تغليف">تغليف</option>
+          <option value="موصلات وتنقل">موصلات وتنقل</option>
+          <option value="اشتراكات">اشتراكات</option>
+          <option value="مرتبات">مرتبات</option>
+          <option value="اخرى">اخرى</option>
+        </select>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted);">الحساب</label>
+        <select id="exp-acc-filter" style="width: 100%; padding: 8px 10px;" onchange="expPage=1;renderExpenses()">
+          <option value="">كل الحسابات</option>
+          <option value="كاش">كاش</option>
+          <option value="فودافون كاش">فودافون كاش</option>
+          <option value="Instapay">Instapay</option>
+          <option value="تحويل بنكي">تحويل بنكي</option>
+        </select>
+      </div>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end;">
+      <div class="search-input">
+        <input type="text" id="exp-search" placeholder="🔍 بحث حسب الوصف أو رقم المصروف..." oninput="debouncedRenderExpenses()" style="width: 100%;">
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="clearExpFilters()">مسح الفلاتر</button>
+    </div>
+  </div>
+
+  <!-- Table Section -->
+  <div style="background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden;">
+    <div class="overflow-x">
+      <table id="exp-table" style="width: 100%; border-collapse: collapse;">
+        <thead style="background: var(--surface2); position: sticky; top: 0; z-index: 10;">
+          <tr>
+            <th style="width: 40px; text-align: center; padding: 12px 8px;">
+              <input type="checkbox" id="exp-select-all" onchange="document.querySelectorAll('.exp-chk:not(:disabled)').forEach(c => c.checked = this.checked);">
+            </th>
+            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);">التاريخ</th>
+            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);">الوصف</th>
+            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);">النوع</th>
+            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);">الحساب</th>
+            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--text);">المبلغ</th>
+            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--text);">الحالة</th>
+            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);">الموظف</th>
+            <th style="width: 60px; text-align: center; font-weight: 600; color: var(--text);">إجراء</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div id="exp-pagination" style="margin-top: 16px;"></div>
 </div>
 
 <!-- Complaints -->
@@ -3800,7 +3915,7 @@ function renderExpenses() {
     if (to && e.date && e.date.slice(0, 10) > to) return false;
     if (cat && e.category !== cat) return false;
     if (acc && e.account !== acc) return false;
-    if (search && !(e.desc || '').toLowerCase().includes(search)) return false;
+    if (search && !(e.desc || '').toLowerCase().includes(search) && !(e.expenseNo || '').toLowerCase().includes(search)) return false;
     return true;
   });
   data.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -3815,23 +3930,48 @@ function renderExpenses() {
     <div class="kpi"><div class="kpi-val text-orange">${fmtJ(thisMonth)}</div><div class="kpi-label">هذا الشهر (معتمد)</div></div>
     <div class="kpi"><div class="kpi-val text-blue">${fmtJ(filteredTotal)}</div><div class="kpi-label">النتائج المعروضة</div></div>
     <div class="kpi"><div class="kpi-val text-purple">${pendingCount}</div><div class="kpi-label">في انتظار الموافقة</div></div>`;
-  const EXP_PAGE_SIZE = 30;
+  const EXP_PAGE_SIZE = 25;
   const total = data.length;
   if (expPage > Math.ceil(total / EXP_PAGE_SIZE) || total === 0) expPage = 1;
   const pageData = data.slice((expPage-1)*EXP_PAGE_SIZE, expPage*EXP_PAGE_SIZE);
+  
+  const statusBadgeMap = {
+    'معلق': { bg: '#fff3cd', color: '#856404', icon: '⏳' },
+    'معتمد': { bg: '#d4edda', color: '#155724', icon: '✅' },
+    'مرفوض': { bg: '#f8d7da', color: '#721c24', icon: '❌' }
+  };
+  
+  const categoryIconMap = {
+    'اعلانات': '📢',
+    'تغليف': '📦',
+    'موصلات وتنقل': '🚗',
+    'اشتراكات': '📅',
+    'مرتبات': '💼',
+    'اخرى': '📋'
+  };
+  
   qs('#exp-table tbody').innerHTML = pageData.length ? pageData.map(e => {
     const isPending = e.status === 'معلق';
+    const statusInfo = statusBadgeMap[e.status] || statusBadgeMap['معلق'];
+    const categoryIcon = categoryIconMap[e.category] || '📋';
+    
     const approveActions = isAdmin() && isPending ? `<div class="dd-item" onclick="approveExpense('${esc(e._id)}')">✅ اعتماد</div><div class="dd-item danger" onclick="rejectExpense('${esc(e._id)}')">❌ رفض</div><div class="dd-divider"></div>` : '';
     const editAction = isPending ? `<div class="dd-item" onclick="openExpenseModal('${esc(e._id)}')">✏️ تعديل</div>` : '';
     const deleteAction = e.status !== 'معتمد' ? `<div class="dd-item danger" onclick="deleteExpense('${esc(e._id)}')">🗑️ حذف</div>` : '';
-    return `<tr style="${isPending ? 'background:var(--primary-pale)' : ''}">
-      <td><input type="checkbox" class="exp-chk" value="${esc(e._id)}" ${!isPending ? 'disabled' : ''}></td>
-      <td><span class="badge badge-blue" style="font-size:.7rem">${esc(e.expenseNo || '-')}</span></td>
-      <td>${fmtDate(e.date)}</td><td>${esc(e.desc || '-')}</td><td>${esc(e.category || '-')}</td>
-      <td>${esc(e.account || '-')}</td><td>${fmtJ(e.amount)}</td><td>${expStatusBadge(e.status || 'معلق')}</td><td>${esc(e.employee || '-')}</td>
-      <td><div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu">${approveActions}${editAction}${deleteAction}</div></div></td>
+    
+    return `<tr style="border-bottom: 1px solid var(--border); transition: background 0.2s; ${isPending ? 'background: var(--primary-pale); opacity: 0.95;' : ''}">
+      <td style="width: 40px; text-align: center; padding: 12px 8px;"><input type="checkbox" class="exp-chk" value="${esc(e._id)}" ${!isPending ? 'disabled' : ''}></td>
+      <td style="padding: 12px 16px; white-space: nowrap; color: var(--muted); font-size: 0.9rem;">${fmtDate(e.date)}</td>
+      <td style="padding: 12px 16px; color: var(--text); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><strong>${esc(e.desc || '-')}</strong>${e.expenseNo ? `<br><span style="font-size: 0.75rem; color: var(--muted);">#${esc(e.expenseNo)}</span>` : ''}</td>
+      <td style="padding: 12px 16px; text-align: center;"><span style="font-size: 1.2rem;">${categoryIcon}</span> <span style="font-size: 0.85rem; color: var(--muted);">${esc(e.category || '-')}</span></td>
+      <td style="padding: 12px 16px; color: var(--text); font-size: 0.9rem;"><span style="background: var(--surface2); padding: 4px 10px; border-radius: 6px;">${esc(e.account || '-')}</span></td>
+      <td style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--red);">${fmtJ(e.amount)}</td>
+      <td style="padding: 12px 16px; text-align: center;"><span style="background: ${statusInfo.bg}; color: ${statusInfo.color}; padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">${statusInfo.icon} ${esc(e.status || 'معلق')}</span></td>
+      <td style="padding: 12px 16px; color: var(--muted); font-size: 0.9rem;">${esc(e.employee || '-')}</td>
+      <td style="width: 60px; text-align: center; padding: 12px 8px;"><div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu">${approveActions}${editAction}${deleteAction}</div></div></td>
     </tr>`;
-  }).join('') : '<tr><td colspan="10" class="empty-state">لا توجد مصاريف</td></tr>';
+  }).join('') : '<tr><td colspan="9" style="padding: 40px 16px; text-align: center; color: var(--muted);">📋 لا توجد مصاريف تطابق البحث</td></tr>';
+  
   renderPagination('exp-pagination', total, expPage, EXP_PAGE_SIZE, 'setExpPage');
 }
 const debouncedRenderExpenses = debounce(() => { expPage = 1; renderExpenses(); }, 250);
