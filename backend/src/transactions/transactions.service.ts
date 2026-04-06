@@ -580,6 +580,9 @@ export class TransactionsService {
     if (!tx) {
       throw new NotFoundException('الحركة غير موجودة');
     }
+    if (tx.cancelled || tx.payStatus === 'ملغي') {
+      throw new BadRequestException('لا يمكن تجميد حركة ملغاة');
+    }
     this.assertNotExchangePendingCollect(tx);
     // Archive first — guaranteed regardless of vault result
     await this.transactionModel

@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Req,
   UseGuards,
   ForbiddenException,
 } from '@nestjs/common';
@@ -37,7 +38,20 @@ export class UsersController {
 
   @Roles('admin')
   @Put(':id')
-  async update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @Req() req: { user: { username: string } },
+  ) {
+    const target = await this.usersService.findById(id);
+    // Only the super admin can edit the super admin account
+    if (target && target.username === 'admin' && req.user?.username !== 'admin') {
+      throw new ForbiddenException('لا يمكن تعديل حساب السوبر أدمن');
+    }
+    // Prevent demoting the super admin
+    if (target && target.username === 'admin' && dto.role && dto.role !== 'admin') {
+      throw new ForbiddenException('لا يمكن تغيير دور السوبر أدمن');
+    }
     return this.usersService.updateUser(id, dto);
   }
 
