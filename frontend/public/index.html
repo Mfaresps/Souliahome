@@ -479,7 +479,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <!-- Tab bar -->
 <div class="flex gap-8 mb-16" style="border-bottom:2px solid var(--border);padding-bottom:8px">
   <button class="tab-btn active" id="mov-tab-list" onclick="switchMovTab('list',this)">📋 سجل الحركات</button>
-  <button class="tab-btn" id="mov-tab-archive" onclick="switchMovTab('archive',this)">🗂️ الأرشيف</button>
+  <button class="tab-btn" id="mov-tab-archive" onclick="switchMovTab('archive',this)">🧊 الحركات المجمدة</button>
 </div>
 
 <!-- Active transactions panel -->
@@ -502,7 +502,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
   <button class="btn btn-sm" id="mov-return-from-selection-btn2" style="display:none;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="openMovementReturnShortcut(false)">📤 استرجاع</button>
   <button class="btn btn-sm" id="mov-exchange-from-selection-btn2" style="display:none;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="openMovementReturnShortcut(true)">🔁 استبدال</button>
   <button class="btn btn-sm" id="bulk-cancel-btn" style="display:none;background:rgba(220,38,38,.7);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="bulkCancelMovements()">🚫 إلغاء المحدد</button>
-  <button class="btn btn-sm" id="bulk-del-btn" style="background:rgba(220,38,38,.7);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="bulkArchiveMovements()">🗂️ أرشفة المحدد</button>
+  <button class="btn btn-sm" id="bulk-del-btn" style="background:rgba(220,38,38,.7);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="bulkArchiveMovements()">🧊 تجميد المحدد</button>
   <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="clearMovSelection()">✕ إلغاء التحديد</button>
 </div>
 
@@ -516,7 +516,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <button class="tab-btn" onclick="setMovFilter('استرجاع',this)">استرجاع</button>
 <button class="tab-btn" onclick="setMovFilter('استبدال',this)">استبدال</button>
 <button class="tab-btn" onclick="setMovFilter('مكتمل',this,'status')">مكتمل</button>
-<button class="tab-btn" onclick="setMovFilter('معلق',this,'status')">معلق</button>
+<button class="tab-btn" onclick="setMovFilter('معلق',this,'status')">انتظار التحصيل</button>
 <button class="tab-btn" onclick="setMovFilter('ملغي',this,'status')">ملغي</button>
 <div class="search-input"><input type="text" id="mov-search" placeholder="بحث..." oninput="debouncedRenderMovements()"></div>
 </div>
@@ -527,11 +527,11 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <!-- Archive panel -->
 <div id="mov-panel-archive" style="display:none">
 <div class="flex-between mb-16">
-  <h2 class="page-title" style="margin-bottom:0">🗂️ الأرشيف — الحركات المحذوفة</h2>
+  <h2 class="page-title" style="margin-bottom:0">🧊 الحركات المجمدة</h2>
   <button class="btn btn-outline btn-sm" onclick="loadArchivedMovements()">🔄 تحديث</button>
 </div>
-<p class="text-muted" style="font-size:.85rem;margin-bottom:12px">الحركات المؤرشفة لا تؤثر على المخزون أو الخزنة. يمكن استعادتها وإعادة تفعيلها.</p>
-<div class="overflow-x"><table id="archive-table"><thead><tr><th>التاريخ</th><th>النوع</th><th>العميل/المورد</th><th>المرجع</th><th>الموظف</th><th>الإجمالي</th><th>تاريخ الأرشفة</th><th>بواسطة</th><th>إجراءات</th></tr></thead><tbody id="archive-tbody"><tr><td colspan="9" class="empty-state">جارٍ التحميل...</td></tr></tbody></table></div>
+<p class="text-muted" style="font-size:.85rem;margin-bottom:12px">الحركات المجمدة لا تؤثر على المخزون أو الخزنة. يمكن فك التجميد وإعادة تفعيلها في أي وقت.</p>
+<div class="overflow-x"><table id="archive-table"><thead><tr><th>التاريخ</th><th>النوع</th><th>العميل/المورد</th><th>المرجع</th><th>الموظف</th><th>الإجمالي</th><th>تاريخ التجميد</th><th>بواسطة</th><th>إجراءات</th></tr></thead><tbody id="archive-tbody"><tr><td colspan="9" class="empty-state">جارٍ التحميل...</td></tr></tbody></table></div>
 <div id="archive-pagination"></div>
 </div><!-- end mov-panel-archive -->
 </div>
@@ -1294,7 +1294,7 @@ function buildNotifications() {
   const pendingCancelReqs = (transactions || []).filter(tx => tx.cancelRequest && tx.cancelRequest.status === 'معلق');
   if (pendingCancelReqs.length > 0 && currentUser?.role === 'admin') {
     pendingCancelReqs.forEach(tx => {
-      notifs.push({ id: 'cancel-req-' + tx._id, icon: '🚫', type: 'urgent', title: `طلب إلغاء حركة — بانتظار الموافقة`, desc: `${tx.client || 'بدون اسم'} — فاتورة #${tx.ref || '-'} (${fmtJ(tx.deposit || 0)} للرد)`, page: 'approvals', ts: tx.cancelRequest?.requestedAt || tx.createdAt || '' });
+      notifs.push({ id: 'cancel-req-' + tx._id, icon: '🚫', type: 'urgent', title: `طلب رد الديبوزيت وإلغاء الحركة — بانتظار الموافقة`, desc: `${tx.client || 'بدون اسم'} — فاتورة #${tx.ref || '-'} (${fmtJ(tx.deposit || 0)} للرد)`, page: 'approvals', ts: tx.cancelRequest?.requestedAt || tx.createdAt || '' });
     });
   }
   // Vault: exchange sales pending collection
@@ -1498,7 +1498,7 @@ function toastExchangePendingLocked() {
 function movementDisplayKindLabel(tx) {
   if (isMovExchangeReturn(tx)) return 'استبدال · إرجاع للمخزن';
   if (isMovExchangeSale(tx)) {
-    return isExchangeSalePendingCollect(tx) ? 'استبدال · تسليم بديل — معلق (متبقي للشركة)' : 'استبدال · تسليم بديل';
+    return isExchangeSalePendingCollect(tx) ? 'استبدال · تسليم بديل — انتظار التحصيل من الشحن' : 'استبدال · تسليم بديل';
   }
   if (tx.type === 'مرتجع') return 'استرجاع';
   return tx.type || '';
@@ -1510,7 +1510,7 @@ function movementKindBadge(tx) {
   if (isMovExchangeSale(tx)) {
     const pend = isExchangeSalePendingCollect(tx);
     const pendRow = pend
-      ? `<div style="margin-top:6px"><span class="badge badge-orange" style="font-weight:800">معلق</span><div class="text-xs" style="margin-top:4px;color:var(--orange);font-weight:600">سجل معلق — متبقي لصالح الشركة حتى التحصيل</div></div>`
+      ? `<div style="margin-top:6px"><span class="badge badge-orange" style="font-weight:800">انتظار التحصيل</span><div class="text-xs" style="margin-top:4px;color:var(--orange);font-weight:600">في انتظار التحصيل من شركة الشحن — متبقي لصالح الشركة</div></div>`
       : '';
     return `<span class="badge" style="background:#6d28d926;color:#6d28d9;font-weight:700">استبدال</span><div class="text-xs text-muted" style="margin-top:4px">تسليم بديل</div>${pendRow}`;
   }
@@ -1537,7 +1537,7 @@ function movementKindBadgeCompact(tx) {
   if (isMovExchangeReturn(tx)) return `<span class="badge" style="background:#6d28d926;color:#6d28d9;font-size:.65rem">استبدال</span>`;
   if (isMovExchangeSale(tx)) {
     return isExchangeSalePendingCollect(tx)
-      ? `<span class="badge" style="background:#6d28d926;color:#6d28d9;font-size:.65rem">استبدال</span> <span class="badge badge-orange" style="font-size:.6rem;font-weight:700">معلق</span>`
+      ? `<span class="badge" style="background:#6d28d926;color:#6d28d9;font-size:.65rem">استبدال</span> <span class="badge badge-orange" style="font-size:.6rem;font-weight:700">انتظار التحصيل</span>`
       : `<span class="badge" style="background:#6d28d926;color:#6d28d9;font-size:.65rem">استبدال</span>`;
   }
   if (tx.type === 'مرتجع') return `<span class="badge badge-orange" style="font-size:.65rem">استرجاع</span>`;
@@ -1547,18 +1547,18 @@ function movementKindBadgeCompact(tx) {
 function statusBadge(status) {
   if (!status) return '-';
   if (status === 'مكتمل') return '<span class="badge badge-green">مكتمل</span>';
-  if (status === 'معلق') return '<span class="badge badge-orange">معلق</span>';
+  if (status === 'معلق') return '<span class="badge badge-orange">في انتظار التحصيل من الشحن</span>';
   if (status === 'ملغي') return '<span class="badge badge-red">ملغي</span>';
   return `<span class="badge">${esc(status)}</span>`;
 }
 /** حالة صف سجل الحركات — فرق استبدال للشركة تُعرض دائماً كمعلق بوضوح */
 function movementStatusCell(tx) {
   if (isExchangeSalePendingCollect(tx)) {
-    return '<span class="badge badge-orange" style="font-weight:800">معلق</span><div class="text-xs" style="margin-top:5px;color:var(--orange);font-weight:650;line-height:1.35">فرق استبدال — للشركة — بانتظار دفع العميل</div>';
+    return '<span class="badge badge-orange" style="font-weight:800">انتظار التحصيل</span><div class="text-xs" style="margin-top:5px;color:var(--orange);font-weight:650;line-height:1.35">فرق استبدال — للشركة — في انتظار التحصيل من شركة الشحن</div>';
   }
   let base = statusBadge(tx.payStatus);
   if (tx.cancelRequest && tx.cancelRequest.status === 'معلق') {
-    base += '<div class="text-xs" style="margin-top:4px;color:#b45309;font-weight:600">⏳ طلب إلغاء — انتظار المدير</div>';
+    base += '<div class="text-xs" style="margin-top:4px;color:#b45309;font-weight:600">⏳ طلب رد الديبوزيت — انتظار المدير</div>';
   }
   return base;
 }
@@ -2575,10 +2575,10 @@ function renderMovementTxRow(tx) {
             isExchangeSalePendingCollect(tx)
               ? `<div class="dd-divider"></div><div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🚫 إلغاء <span class="text-xs">(مقفول)</span></div>`
               : tx.cancelRequest && tx.cancelRequest.status === 'معلق'
-                ? `<div class="dd-divider"></div><div class="dd-item" style="opacity:.7;cursor:default" onclick="event.stopPropagation()">⏳ طلب إلغاء معلق</div>`
-                : `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')">🚫 ${tx.payStatus === 'معلق' ? 'طلب إلغاء' : 'إلغاء'}</div>`
+                ? `<div class="dd-divider"></div><div class="dd-item" style="opacity:.7;cursor:default" onclick="event.stopPropagation()">⏳ طلب رد الديبوزيت — معلق</div>`
+                : `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')">🚫 ${tx.payStatus === 'معلق' ? 'طلب رد الديبوزيت وإلغاء' : 'إلغاء'}</div>`
           ) : ''}
-          ${isAdmin() ? (isExchangeSalePendingCollect(tx) ? `<div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🗑️ أرشفة <span class="text-xs">(مقفول)</span></div>` : `<div class="dd-item danger" onclick="archiveMovement('${esc(tx._id)}')">🗂️ أرشفة</div>`) : ''}
+          ${isAdmin() ? (isExchangeSalePendingCollect(tx) ? `<div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🧊 تجميد <span class="text-xs">(مقفول)</span></div>` : `<div class="dd-item danger" onclick="archiveMovement('${esc(tx._id)}')">🧊 تجميد</div>`) : ''}
         </div>
       </div>
     </td>
@@ -2820,7 +2820,7 @@ function openCancelMovement(id) {
 
   // Check if cancel request already submitted
   if (tx.cancelRequest && tx.cancelRequest.status === 'معلق') {
-    toast('تم إرسال طلب إلغاء بالفعل — في انتظار موافقة المدير', true);
+    toast('يوجد طلب رد ديبوزيت وإلغاء معلق بالفعل — في انتظار موافقة المدير', true);
     return;
   }
 
@@ -2841,16 +2841,16 @@ function openCancelMovement(id) {
 
   if (isPending) {
     // Pending: employee submits cancel request → manager approves
-    openModal(`<h3>🚫 طلب إلغاء الحركة</h3>
+    openModal(`<h3>🚫 طلب رد الديبوزيت وإلغاء الحركة</h3>
       <div style="padding:10px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.4);border-radius:8px;margin-bottom:12px;font-size:.83rem">
         <strong>📋 هذا الطلب يحتاج موافقة المدير</strong><br>
-        سيظهر في قسم الموافقات — لن يتم الإلغاء إلا بعد اعتماد المدير
+        سيظهر في قسم الموافقات — لن يتم الإلغاء ورد الديبوزيت إلا بعد اعتماد المدير
       </div>
       ${txInfo}
       ${vaultWarning}
-      <div class="form-group"><label>سبب طلب الإلغاء *</label><textarea id="cancel-reason" rows="3" placeholder="أدخل سبب الإلغاء..."></textarea></div>
+      <div class="form-group"><label>سبب الطلب *</label><textarea id="cancel-reason" rows="3" placeholder="أدخل سبب طلب رد الديبوزيت..."></textarea></div>
       <div class="flex gap-8 mt-16">
-        <button class="btn btn-danger" onclick="doRequestCancelMovement('${esc(id)}')">📤 إرسال طلب الإلغاء</button>
+        <button class="btn btn-danger" onclick="doRequestCancelMovement('${esc(id)}')">📤 إرسال طلب رد الديبوزيت وإلغاء الحركة</button>
         <button class="btn btn-outline" onclick="closeModal()">رجوع</button>
       </div>`);
   } else {
@@ -2874,7 +2874,7 @@ async function doRequestCancelMovement(id) {
       method: 'POST',
       body: JSON.stringify({ reason, requestedBy: currentUser?.name || currentUser?.username || '' }),
     });
-    toast('✅ تم إرسال طلب الإلغاء — في انتظار موافقة المدير');
+    toast('✅ تم إرسال طلب رد الديبوزيت وإلغاء الحركة — في انتظار موافقة المدير');
     closeModal();
     transactions = await api('/transactions').catch(() => transactions);
     renderMovements(); buildSidebar(); buildNotifications();
@@ -2973,10 +2973,10 @@ async function doApplyPostDiscount(txId) {
 async function archiveMovement(id) {
   const tx = transactions.find(t => t._id === id);
   if (tx && isExchangeSalePendingCollect(tx)) { toastExchangePendingLocked(); return; }
-  if (!confirm('سيتم نقل هذه الحركة إلى الأرشيف. لن تؤثر على المخزون أو الخزنة ويمكن استعادتها لاحقاً.\nهل تريد المتابعة؟')) return;
+  if (!confirm('سيتم تجميد هذه الحركة. لن تؤثر على المخزون أو الخزنة ويمكن فك التجميد لاحقاً.\nهل تريد المتابعة؟')) return;
   try {
     await api('/transactions/' + id, { method: 'DELETE' });
-    toast('🗂️ تم أرشفة الحركة وعكس تأثيرها على الخزنة والمخزون');
+    toast('🧊 تم تجميد الحركة وعكس تأثيرها على الخزنة والمخزون');
     transactions = await api('/transactions').catch(() => transactions);
     renderMovements(); buildSidebar(); syncVaultState();
   }
@@ -2986,10 +2986,10 @@ async function archiveMovement(id) {
 async function deleteMovement(id) { return archiveMovement(id); }
 
 async function bulkArchiveMovements() {
-  if (!selectedMovIds.size || !confirm(`سيتم أرشفة ${selectedMovIds.size} حركة. يمكن استعادتها لاحقاً من تبويب الأرشيف.\nهل تريد المتابعة؟`)) return;
+  if (!selectedMovIds.size || !confirm(`سيتم تجميد ${selectedMovIds.size} حركة. يمكن فك التجميد لاحقاً من قسم الحركات المجمدة.\nهل تريد المتابعة؟`)) return;
   try {
     await api('/transactions/bulk-delete', { method: 'POST', body: JSON.stringify({ ids: [...selectedMovIds] }) });
-    toast('🗂️ تم أرشفة الحركات وعكس تأثيرها على الخزنة والمخزون');
+    toast('🧊 تم تجميد الحركات وعكس تأثيرها على الخزنة والمخزون');
     selectedMovIds.clear();
     transactions = await api('/transactions').catch(() => transactions);
     renderMovements(); buildSidebar(); syncVaultState();
@@ -3058,7 +3058,7 @@ function renderArchivedMovements() {
     <td><span class="text-xs">${esc(tx.archivedBy || '-')}</span></td>
     <td>
       <div class="flex gap-8">
-        <button class="btn btn-outline btn-sm" onclick="restoreMovement('${esc(tx._id)}')">♻️ استعادة</button>
+        <button class="btn btn-outline btn-sm" onclick="restoreMovement('${esc(tx._id)}')">🔓 فك التجميد</button>
         <button class="btn btn-sm" style="background:var(--red);color:#fff;font-size:.75rem" onclick="hardDeleteMovement('${esc(tx._id)}')">🗑 حذف نهائي</button>
       </div>
     </td>
@@ -3066,10 +3066,10 @@ function renderArchivedMovements() {
   renderPagination('archive-pagination', total, archivePage, ARCHIVE_PAGE_SIZE, 'setArchivePage');
 }
 async function restoreMovement(id) {
-  if (!confirm('سيتم استعادة الحركة وإعادة تفعيلها.\n✅ ستعود للتأثير على المخزون والخزنة تلقائياً.\n\nهل تريد المتابعة؟')) return;
+  if (!confirm('سيتم فك التجميد وإعادة تفعيل الحركة.\n✅ ستعود للتأثير على المخزون والخزنة تلقائياً.\n\nهل تريد المتابعة؟')) return;
   try {
     await api('/transactions/' + id + '/restore', { method: 'POST' });
-    toast('✅ تم استعادة الحركة وتزامنها مع المخزون والخزنة');
+    toast('✅ تم فك التجميد وإعادة تفعيل الحركة — تمت المزامنة مع المخزون والخزنة');
     archivedMovements = archivedMovements.filter(t => t._id !== id);
     renderArchivedMovements();
     transactions = await api('/transactions').catch(() => transactions);
@@ -3108,7 +3108,7 @@ function txToExcelRow(tx) {
     'الإجمالي': tx.total,
     'المدفوع': exchangeSalePaidDisplayAmount(tx),
     'المتبقي': tx.remaining,
-    'الحالة': isExchangeSalePendingCollect(tx) ? 'معلق (فرق استبدال — للشركة)' : tx.payStatus,
+    'الحالة': isExchangeSalePendingCollect(tx) ? 'انتظار التحصيل (فرق استبدال — للشركة)' : tx.payStatus === 'معلق' ? 'في انتظار التحصيل من شركة الشحن' : tx.payStatus,
   };
 }
 function exportMovementsExcel() {
@@ -3261,9 +3261,9 @@ function showInvoiceDetail(id) {
   const tx = transactions.find(t => t._id === id);
   if (!tx) return;
   const statusClass = tx.cancelled || tx.payStatus === 'ملغي' ? 'cancelled' : tx.payStatus === 'مكتمل' ? 'paid' : 'pending';
-  let statusText = tx.cancelled || tx.payStatus === 'ملغي' ? '🚫 ملغي' : tx.payStatus === 'مكتمل' ? '✅ مكتمل — تم الدفع بالكامل' : '⏳ معلق — يوجد متبقي';
+  let statusText = tx.cancelled || tx.payStatus === 'ملغي' ? '🚫 ملغي' : tx.payStatus === 'مكتمل' ? '✅ مكتمل — تم الدفع بالكامل' : '⏳ في انتظار التحصيل من شركة الشحن';
   if (isExchangeSalePendingCollect(tx)) {
-    statusText = `⏳ معلق — فرق استبدال: على العميل دفع ${fmtJ(tx.remaining)} لإتمام العملية ثم التحصيل من هنا`;
+    statusText = `⏳ انتظار التحصيل من الشحن — فرق استبدال: على العميل دفع ${fmtJ(tx.remaining)} لإتمام العملية ثم التحصيل من هنا`;
   }
   const itemsRows = (tx.items || []).map((it, i) => `
     <tr>
@@ -3814,7 +3814,7 @@ function renderCancelRequestApprovalCard(tx) {
     <div class="flex-between" style="flex-wrap:wrap;gap:12px">
       <div style="flex:1;min-width:220px">
         <div class="flex gap-8" style="align-items:center;flex-wrap:wrap">
-          <span class="badge" style="background:rgba(220,38,38,.12);color:var(--red);font-size:.65rem">🚫 طلب إلغاء</span>
+          <span class="badge" style="background:rgba(220,38,38,.12);color:var(--red);font-size:.65rem">🚫 طلب رد الديبوزيت وإلغاء</span>
           <strong style="font-size:.95rem">حركة #${esc(tx.ref || tx._id)}</strong>
           <span style="font-size:.75rem;font-weight:600;color:${statusColor}">${statusLabel}</span>
         </div>
