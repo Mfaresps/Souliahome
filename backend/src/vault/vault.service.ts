@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { VaultEntry, VaultEntryDocument } from './schemas/vault-entry.schema';
@@ -24,9 +24,35 @@ export class VaultService {
     return this.vaultModel.find(filter).sort({ createdAt: -1 }).exec();
   }
 
-  async addEntry(dto: CreateVaultEntryDto): Promise<VaultEntryDocument> {
+  private generateTxNo(): string {
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+    return `V${ts}${rand}`;
+  }
+
+  private async getSegmentBalance(seg: string): Promise<number> {
+    const settings = await this.settingsService.getSettings();
+    switch (seg) {
+      case 'vodafone': return settings.vaultVodafone || 0;
+      case 'instapay': return settings.vaultInstapay || 0;
+      case 'bank': return settings.vaultBank || 0;
+      default: return settings.vaultCash || 0;
+    }
+  }
+
+  async addEntry(dto: CreateVaultEntryDto, employee?: string): Promise<VaultEntryDocument> {
     const date = dto.date || new Date().toISOString().split('T')[0];
     const desc = dto.desc || 'تعديل يدوي';
+    // Check sufficient balance before withdrawal
+    if (dto.amount < 0) {
+      const currentBalance = await this.getSegmentBalance(dto.seg);
+      if (currentBalance + dto.amount < 0) {
+        const segLabel: Record<string, string> = { cash: 'كاش', vodafone: 'فودافون كاش', instapay: 'Instapay', bank: 'تحويل بنكي' };
+        throw new BadRequestException(
+          `رصيد ${segLabel[dto.seg] || dto.seg} غير كافٍ — الرصيد الحالي: ${currentBalance} ج`
+        );
+      }
+    }
     const settings = await this.settingsService.adjustVaultBalance(
       dto.seg,
       dto.amount,
@@ -44,6 +70,8 @@ export class VaultService {
       balInstapay: settings.vaultInstapay,
       balBank: settings.vaultBank,
       balance: settings.vaultBalance,
+      employee: employee || dto.employee || '',
+      txNo: this.generateTxNo(),
     });
   }
 

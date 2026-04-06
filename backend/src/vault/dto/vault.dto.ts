@@ -19,6 +19,10 @@ export class CreateVaultEntryDto {
   @IsString()
   @IsOptional()
   readonly date?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly employee?: string;
 }
 
 export class VerifyPasswordDto {
