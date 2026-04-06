@@ -8,6 +8,7 @@ import {
   Param,
   Req,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { ExpensesService } from './expenses.service';
 import {
@@ -62,5 +63,14 @@ export class ExpensesController {
   async remove(@Param('id') id: string) {
     await this.expensesService.remove(id);
     return { message: 'تم حذف المصروف' };
+  }
+
+  @Post('bulk-delete')
+  async bulkDelete(@Body() body: { ids?: string[] }) {
+    if (!body.ids || !body.ids.length) {
+      throw new BadRequestException('ids مطلوبة');
+    }
+    const count = await this.expensesService.bulkRemovePending(body.ids);
+    return { message: `تم حذف ${count} مصروف`, count };
   }
 }
