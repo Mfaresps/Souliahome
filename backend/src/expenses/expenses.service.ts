@@ -88,6 +88,11 @@ export class ExpensesService {
     if (expense.status === 'مرفوض') {
       throw new BadRequestException('المصروف مرفوض، لا يمكن اعتماده');
     }
+    // Check vault balance before deducting
+    await this.vaultService.assertSufficientBalance(
+      expense.account || 'كاش',
+      expense.amount || 0,
+    );
     expense.status = 'معتمد';
     expense.approvedBy = approvedBy;
     expense.approvedAt = new Date().toISOString();
