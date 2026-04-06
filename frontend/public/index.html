@@ -956,7 +956,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <script>
 const qs = (s, p) => (p || document).querySelector(s);
 const qsa = (s, p) => [...(p || document).querySelectorAll(s)];
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = 'https://titten-record-psychiatry-salaries.trycloudflare.com/api';
 
 function esc(str) {
   if (str == null) return '';
@@ -2873,7 +2873,7 @@ function openCancelMovement(id) {
   const depMethod = String(tx.depMethod || '').trim();
 
   const txInfo = `<div style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:12px;font-size:.82rem">
-    <div><strong>العميل:</strong> ${esc(tx.client || '-')} | <strong>المرجع:</strong> ${tx.ref ? '#' + esc(tx.ref) : '-'}</div>
+    <div><strong>${tx.type === 'مشتريات' ? 'المورد' : 'العميل'}:</strong> ${esc(tx.client || '-')} | <strong>المرجع:</strong> ${tx.ref ? '#' + esc(tx.ref) : '-'}</div>
     <div style="margin-top:4px"><strong>الإجمالي:</strong> ${fmtJ(tx.total)} | <strong>الحالة:</strong> ${esc(tx.payStatus || '-')}</div>
   </div>`;
 
@@ -3370,7 +3370,7 @@ function showInvoiceDetail(id) {
       <div class="inv-meta">
         <div class="inv-field"><span class="inv-label">التاريخ والوقت</span><span class="inv-value">${fmtDateTime(tx.createdAt || tx.date)}</span></div>
         <div class="inv-field"><span class="inv-label">الرقم المرجعي</span><span class="inv-value" style="direction:ltr">${tx.ref ? '#' + esc(tx.ref) : '-'}</span></div>
-        <div class="inv-field"><span class="inv-label">اسم العميل</span><span class="inv-value">${esc(tx.client || '-')}</span></div>
+        <div class="inv-field"><span class="inv-label">${tx.type === 'مشتريات' ? 'اسم المورد' : 'اسم العميل'}</span><span class="inv-value">${esc(tx.client || '-')}</span></div>
         <div class="inv-field"><span class="inv-label">الهاتف</span><span class="inv-value" dir="ltr">${esc(tx.phone || '-')}</span></div>
         <div class="inv-field"><span class="inv-label">الموظف</span><span class="inv-value">${esc(tx.employee || '-')}</span></div>
         ${tx.shipCo ? `<div class="inv-field"><span class="inv-label">شركة الشحن</span><span class="inv-value">${esc(tx.shipCo)}</span></div>` : ''}
