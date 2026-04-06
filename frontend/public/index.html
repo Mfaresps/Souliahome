@@ -187,6 +187,13 @@ body.dark-mode .history-detail-item.removed{background:rgba(248,113,113,.08)}
 .notif-item.info .notif-icon{background:rgba(21,101,192,.1);color:var(--blue)}
 .notif-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:.85rem}
 body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.pagination{display:flex;align-items:center;justify-content:center;gap:5px;margin:14px 0;flex-wrap:wrap}
+.pagination button{min-width:32px;height:32px;padding:0 8px;border-radius:var(--radius);font-size:.8rem;font-weight:600;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all .2s}
+.pagination button:hover:not(:disabled){background:var(--surface2)}
+.pagination button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pagination button:disabled{opacity:.35;cursor:not-allowed}
+.pagination .pag-info{font-size:.76rem;color:var(--muted);padding:0 6px;white-space:nowrap}
+.pagination .pag-ellipsis{font-size:.8rem;color:var(--muted);padding:0 4px}
 .inv-detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
 .inv-detail-overlay.active{opacity:1;pointer-events:auto}
 .inv-detail{background:var(--bg);border-radius:16px;width:520px;max-width:94vw;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:invIn .25s ease;position:relative}
@@ -464,6 +471,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="search-input"><input type="text" placeholder="بحث في المخزن..." oninput="debouncedRenderInventory()"></div>
 </div>
 <div class="overflow-x"><table id="inv-table"><thead><tr><th>الكود</th><th>الصنف</th><th>سعر البيع</th><th>سعر الشراء</th><th>الرصيد الافتتاحي</th><th title="من المورد فقط">المشتريات</th><th title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th>المبيعات</th><th>الرصيد الحالي</th><th>الحالة</th></tr></thead><tbody></tbody></table></div>
+<div id="inv-pagination"></div>
 </div>
 
 <!-- Movements -->
@@ -499,8 +507,8 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 </div>
 
 <div class="filter-bar">
-<input type="date" id="mov-from" style="width:150px" onchange="renderMovements()">
-<input type="date" id="mov-to" style="width:150px" onchange="renderMovements()">
+<input type="date" id="mov-from" style="width:150px" onchange="movPage=1;renderMovements()">
+<input type="date" id="mov-to" style="width:150px" onchange="movPage=1;renderMovements()">
 <button class="tab-btn active" onclick="setMovFilter('all',this)">الكل</button>
 <button class="tab-btn" onclick="setMovFilter('مبيعات',this)">مبيعات</button>
 <button class="tab-btn" onclick="setMovFilter('مشتريات',this)">مشتريات</button>
@@ -513,6 +521,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="search-input"><input type="text" id="mov-search" placeholder="بحث..." oninput="debouncedRenderMovements()"></div>
 </div>
 <div class="overflow-x"><table id="mov-table"><thead><tr><th><input type="checkbox" class="checkbox" onchange="toggleAllMov(this)"></th><th>التاريخ والوقت</th><th>النوع</th><th>العميل/المورد</th><th>المرجع</th><th>الموظف</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody></tbody></table></div>
+<div id="mov-pagination"></div>
 </div><!-- end mov-panel-list -->
 
 <!-- Archive panel -->
@@ -523,6 +532,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 </div>
 <p class="text-muted" style="font-size:.85rem;margin-bottom:12px">الحركات المؤرشفة لا تؤثر على المخزون أو الخزنة. يمكن استعادتها وإعادة تفعيلها.</p>
 <div class="overflow-x"><table id="archive-table"><thead><tr><th>التاريخ</th><th>النوع</th><th>العميل/المورد</th><th>المرجع</th><th>الموظف</th><th>الإجمالي</th><th>تاريخ الأرشفة</th><th>بواسطة</th><th>إجراءات</th></tr></thead><tbody id="archive-tbody"><tr><td colspan="9" class="empty-state">جارٍ التحميل...</td></tr></tbody></table></div>
+<div id="archive-pagination"></div>
 </div><!-- end mov-panel-archive -->
 </div>
 
@@ -533,6 +543,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="search-input"><input type="text" id="clients-search" placeholder="بحث عملاء..." oninput="debouncedRenderClients()"></div>
 </div>
 <div class="grid grid-3" id="clients-grid"></div>
+<div id="clients-pagination"></div>
 </div>
 
 <!-- Products -->
@@ -555,6 +566,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 </div>
 </div>
 <div class="overflow-x"><table id="prod-table"><thead><tr><th><input type="checkbox" id="prod-select-all" onchange="toggleAllProducts(this.checked)"></th><th>الكود</th><th>الاسم</th><th>المورد</th><th>سعر البيع</th><th>سعر الشراء</th><th>الحد الأدنى</th><th>الرصيد الافتتاحي</th><th>إجراءات</th></tr></thead><tbody></tbody></table></div>
+<div id="prod-pagination"></div>
 </div>
 
 <!-- Suppliers -->
@@ -580,14 +592,15 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 </div>
 <div class="kpi-strip" id="exp-kpi-strip"></div>
 <div class="filter-bar">
-<input type="date" id="exp-from" style="width:150px" onchange="renderExpenses()">
-<input type="date" id="exp-to" style="width:150px" onchange="renderExpenses()">
-<select id="exp-cat-filter" style="width:150px" onchange="renderExpenses()"><option value="">كل الفئات</option><option value="اعلانات">اعلانات</option><option value="تغليف">تغليف</option><option value="موصلات وتنقل">موصلات وتنقل</option><option value="اشتراكات">اشتراكات</option><option value="مرتبات">مرتبات</option><option value="اخرى">اخرى</option></select>
-<select id="exp-acc-filter" style="width:150px" onchange="renderExpenses()"><option value="">كل الحسابات</option><option value="كاش">كاش</option><option value="فودافون كاش">فودافون كاش</option><option value="Instapay">Instapay</option><option value="تحويل بنكي">تحويل بنكي</option></select>
+<input type="date" id="exp-from" style="width:150px" onchange="expPage=1;renderExpenses()">
+<input type="date" id="exp-to" style="width:150px" onchange="expPage=1;renderExpenses()">
+<select id="exp-cat-filter" style="width:150px" onchange="expPage=1;renderExpenses()"><option value="">كل الفئات</option><option value="اعلانات">اعلانات</option><option value="تغليف">تغليف</option><option value="موصلات وتنقل">موصلات وتنقل</option><option value="اشتراكات">اشتراكات</option><option value="مرتبات">مرتبات</option><option value="اخرى">اخرى</option></select>
+<select id="exp-acc-filter" style="width:150px" onchange="expPage=1;renderExpenses()"><option value="">كل الحسابات</option><option value="كاش">كاش</option><option value="فودافون كاش">فودافون كاش</option><option value="Instapay">Instapay</option><option value="تحويل بنكي">تحويل بنكي</option></select>
 <button class="btn btn-outline btn-sm" onclick="clearExpFilters()">مسح الفلاتر</button>
 <div class="search-input"><input type="text" id="exp-search" placeholder="بحث..." oninput="debouncedRenderExpenses()"></div>
 </div>
 <div class="overflow-x"><table id="exp-table"><thead><tr><th>التاريخ</th><th>الوصف</th><th>النوع</th><th>الحساب</th><th>المبلغ</th><th>الحالة</th><th>الموظف</th><th>إجراءات</th></tr></thead><tbody></tbody></table></div>
+<div id="exp-pagination"></div>
 </div>
 
 <!-- Complaints -->
@@ -802,11 +815,12 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="flex-between mb-16">
 <h4>سجل الخزنة</h4>
 <div class="flex gap-8">
-<input type="date" id="vault-from" style="width:140px" onchange="loadVaultLog()">
-<input type="date" id="vault-to" style="width:140px" onchange="loadVaultLog()">
+<input type="date" id="vault-from" style="width:140px" onchange="vaultPage=1;loadVaultLog()">
+<input type="date" id="vault-to" style="width:140px" onchange="vaultPage=1;loadVaultLog()">
 </div>
 </div>
-<div class="overflow-x"><table id="vault-table"><thead><tr><th>التاريخ</th><th>المبلغ</th><th>المصدر</th><th>#المرجع</th><th>القسم</th><th>الطريقة</th><th>الوصف</th></tr></thead><tbody></tbody></table></div>
+<div class="overflow-x"><table id="vault-table"><thead><tr><th>التاريخ</th><th>التوقيت</th><th>المبلغ</th><th>المصدر</th><th>#المرجع</th><th>القسم</th><th>الطريقة</th><th>الوصف</th></tr></thead><tbody></tbody></table></div>
+<div id="vault-pagination"></div>
 </div>
 </div>
 </div>
@@ -994,6 +1008,8 @@ let currentPage = 'dashboard';
 let movFilter = 'all';
 let movStatusFilter = '';
 let invFilter = 'all';
+// Pagination page state (30/page for tables, 50/page for vault)
+let movPage = 1, invPage = 1, prodPage = 1, expPage = 1, archivePage = 1, clientsPage = 1, vaultPage = 1;
 let txType = 'مبيعات';
 let txItems = [];
 let txDiscount = 0;
@@ -1072,6 +1088,13 @@ function fmtDate(d) {
   if (str === t) return 'اليوم';
   const y = new Date(new Date(t).getTime() - 86400000).toISOString().slice(0, 10);
   if (str === y) return 'أمس';
+  const parts = str.split('-').map(Number);
+  if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
+    try {
+      const dt = new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
+      if (!isNaN(dt.getTime())) return dt.toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+    } catch (_) {}
+  }
   return str;
 }
 function fmtDateTime(d) {
@@ -1209,6 +1232,33 @@ function closeSidebar() {
   qs('#sidebar').classList.remove('open'); qs('#sidebar-overlay').style.display = 'none';
 }
 
+/* Pagination */
+function renderPagination(containerId, total, page, limit, fnName) {
+  const el = qs('#' + containerId);
+  if (!el) return;
+  const totalPages = Math.ceil(total / limit);
+  if (totalPages <= 1) { el.innerHTML = ''; return; }
+  const start = (page - 1) * limit + 1;
+  const end = Math.min(page * limit, total);
+  let html = `<span class="pag-info">${start}–${end} من ${fmtN(total)}</span>`;
+  html += `<button onclick="${fnName}(1)" ${page===1?'disabled':''}title="الأول">«</button>`;
+  html += `<button onclick="${fnName}(${page-1})" ${page===1?'disabled':''}title="السابق">‹</button>`;
+  const lo = Math.max(1, page-2), hi = Math.min(totalPages, page+2);
+  if (lo > 1) { html += `<button onclick="${fnName}(1)">1</button>`; if (lo > 2) html += `<span class="pag-ellipsis">…</span>`; }
+  for (let p = lo; p <= hi; p++) html += `<button class="${p===page?'active':''}" onclick="${fnName}(${p})">${p}</button>`;
+  if (hi < totalPages) { if (hi < totalPages-1) html += `<span class="pag-ellipsis">…</span>`; html += `<button onclick="${fnName}(${totalPages})">${totalPages}</button>`; }
+  html += `<button onclick="${fnName}(${page+1})" ${page===totalPages?'disabled':''}title="التالي">›</button>`;
+  html += `<button onclick="${fnName}(${totalPages})" ${page===totalPages?'disabled':''}title="الأخير">»</button>`;
+  el.innerHTML = `<div class="pagination">${html}</div>`;
+}
+function setMovPage(p) { movPage=p; renderMovements(); }
+function setInvPage(p) { invPage=p; renderInventory(); }
+function setProdPage(p) { prodPage=p; renderProducts(); }
+function setExpPage(p) { expPage=p; renderExpenses(); }
+function setArchivePage(p) { archivePage=p; renderArchivedMovements(); }
+function setClientsPage(p) { clientsPage=p; renderClients(); }
+function setVaultPage(p) { vaultPage=p; renderVaultTable(); }
+
 /* Notifications */
 let notifDismissed = JSON.parse(localStorage.getItem('notifDismissed') || '[]');
 function buildNotifications() {
@@ -1224,34 +1274,34 @@ function buildNotifications() {
   const pendingExp = expenses.filter(e => e.status === 'معلق');
   if (pendingExp.length > 0 && currentUser?.role === 'admin') {
     pendingExp.forEach(exp => {
-      notifs.push({ id: 'exp-pending-' + exp._id, icon: '💰', type: 'info', title: `مصروف بانتظار الموافقة`, desc: `${exp.desc || ''} — ${fmtJ(exp.amount)} (${exp.category || ''})`, page: 'approvals' });
+      notifs.push({ id: 'exp-pending-' + exp._id, icon: '💰', type: 'info', title: `مصروف بانتظار الموافقة`, desc: `${exp.desc || ''} — ${fmtJ(exp.amount)} (${exp.category || ''})`, page: 'approvals', ts: exp.createdAt || exp.date || '' });
     });
   }
   const pendingComplaints = (complaints || []).filter(c => c.status === 'معلق');
   if (pendingComplaints.length > 0 && currentUser?.role === 'admin') {
     pendingComplaints.forEach(c => {
-      notifs.push({ id: 'cmp-pending-' + c._id, icon: '🎯', type: 'warning', title: `شكوى جديدة: ${c.complaintNo}`, desc: `${c.submittedBy} — ${(c.description || '').slice(0, 60)}`, page: 'complaints' });
+      notifs.push({ id: 'cmp-pending-' + c._id, icon: '🎯', type: 'warning', title: `شكوى جديدة: ${c.complaintNo}`, desc: `${c.submittedBy} — ${(c.description || '').slice(0, 60)}`, page: 'complaints', ts: c.createdAt || '' });
     });
   }
   const pendingReturns = (returnRequests || []).filter(r => r.status === 'معلق');
   if (pendingReturns.length > 0 && currentUser?.role === 'admin') {
     pendingReturns.forEach(ret => {
       const kindLabel = ret.requestKind === 'exchange' ? 'استبدال' : 'استرجاع';
-      notifs.push({ id: 'ret-pending-' + ret._id, icon: '📦', type: 'warning', title: `طلب ${kindLabel} بانتظار الموافقة`, desc: `${ret.client} — ${fmtJ(ret.total)} (${ret.reason})`, page: 'approvals' });
+      notifs.push({ id: 'ret-pending-' + ret._id, icon: '📦', type: 'warning', title: `طلب ${kindLabel} بانتظار الموافقة`, desc: `${ret.client} — ${fmtJ(ret.total)} (${ret.reason})`, page: 'approvals', ts: ret.createdAt || '' });
     });
   }
   // Cancel requests pending manager approval
   const pendingCancelReqs = (transactions || []).filter(tx => tx.cancelRequest && tx.cancelRequest.status === 'معلق');
   if (pendingCancelReqs.length > 0 && currentUser?.role === 'admin') {
     pendingCancelReqs.forEach(tx => {
-      notifs.push({ id: 'cancel-req-' + tx._id, icon: '🚫', type: 'urgent', title: `طلب إلغاء حركة — بانتظار الموافقة`, desc: `${tx.client || 'بدون اسم'} — فاتورة #${tx.ref || '-'} (${fmtJ(tx.deposit || 0)} للرد)`, page: 'approvals' });
+      notifs.push({ id: 'cancel-req-' + tx._id, icon: '🚫', type: 'urgent', title: `طلب إلغاء حركة — بانتظار الموافقة`, desc: `${tx.client || 'بدون اسم'} — فاتورة #${tx.ref || '-'} (${fmtJ(tx.deposit || 0)} للرد)`, page: 'approvals', ts: tx.cancelRequest?.requestedAt || tx.createdAt || '' });
     });
   }
   // Vault: exchange sales pending collection
   if (currentUser?.role === 'admin') {
     const pendingCollect = (transactions || []).filter(t => t.type === 'مبيعات' && !t.cancelled && t.payStatus === 'معلق' && (t.remaining || 0) > 0 && /(-EXC)$/i.test(String(t.ref || '')));
     pendingCollect.forEach(t => {
-      notifs.push({ id: 'exc-collect-' + t._id, icon: '💰', type: 'info', title: `فرق استبدال بانتظار التحصيل`, desc: `${t.client} — متبقي ${fmtJ(t.remaining)} (فاتورة #${t.ref || '-'})`, page: 'movements' });
+      notifs.push({ id: 'exc-collect-' + t._id, icon: '💰', type: 'info', title: `فرق استبدال بانتظار التحصيل`, desc: `${t.client} — متبقي ${fmtJ(t.remaining)} (فاتورة #${t.ref || '-'})`, page: 'movements', ts: t.createdAt || '' });
     });
     // Pending collection on regular sales
     const pendingRegular = (transactions || []).filter(t => t.type === 'مبيعات' && !t.cancelled && t.payStatus === 'معلق' && (t.remaining || 0) > 0 && !/(-EXC)$/i.test(String(t.ref || '')));
@@ -1260,6 +1310,12 @@ function buildNotifications() {
       notifs.push({ id: 'sales-pending-all', icon: '⏳', type: 'info', title: `${pendingRegular.length} فاتورة بانتظار التحصيل`, desc: `إجمالي المتبقي: ${fmtJ(totalRemaining)}`, page: 'movements' });
     }
   }
+  const NOTIF_PRIORITY = { urgent: 1, warning: 2, info: 3 };
+  notifs.sort((a, b) => {
+    const pd = (NOTIF_PRIORITY[a.type] || 9) - (NOTIF_PRIORITY[b.type] || 9);
+    if (pd !== 0) return pd;
+    return (b.ts || '').localeCompare(a.ts || '');
+  });
   const visible = notifs.filter(n => !notifDismissed.includes(n.id));
   const badge = qs('#notif-badge');
   if (badge) badge.textContent = visible.length > 0 ? visible.length : '';
@@ -1271,6 +1327,7 @@ function buildNotifications() {
       <div class="notif-body">
         <div class="notif-title">${esc(n.title)}</div>
         <div class="notif-desc">${esc(n.desc)}</div>
+        ${n.ts ? `<div class="notif-time">${fmtDateTime(n.ts)}</div>` : ''}
       </div>
     </div>`).join('') : '<div class="notif-empty">لا توجد إشعارات جديدة</div>';
 }
@@ -2342,7 +2399,7 @@ async function loadInventory() {
   renderInventory();
 }
 
-function setInvFilter(f, btn) { invFilter = f; qsa('#page-inventory .tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderInventory(); }
+function setInvFilter(f, btn) { invFilter = f; invPage = 1; qsa('#page-inventory .tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderInventory(); }
 
 function renderInventory() {
   const inv = Array.isArray(inventoryCache) ? inventoryCache : [];
@@ -2385,15 +2442,20 @@ function renderInventory() {
       : (q > 0 ? '<div class="text-xs text-muted">بدون مرجع</div>' : '');
     return `<td style="vertical-align:top"><div style="font-weight:700;color:#6d28d9">${fmtN(q)}</div>${refLine}</td>`;
   };
-  qs('#inv-table tbody').innerHTML = data.length ? data.map(r => `
+  const INV_PAGE_SIZE = 30;
+  const total = data.length;
+  if (invPage > Math.ceil(total / INV_PAGE_SIZE) || total === 0) invPage = 1;
+  const pageData = data.slice((invPage-1)*INV_PAGE_SIZE, invPage*INV_PAGE_SIZE);
+  qs('#inv-table tbody').innerHTML = pageData.length ? pageData.map(r => `
     <tr>
       <td>${esc(r.code || '-')}</td><td style="font-weight:600">${esc(r.name)}</td><td>${fmtJ(r.sellPrice)}</td><td>${fmtJ(r.buyPrice)}</td>
       <td>${fmtN(r.openingBalance)}</td><td class="text-green">${fmtN(r.purchases)}</td>${invReturnCell(r)}<td class="text-blue">${fmtN(r.sales)}</td>
       <td>${stockBar(r)}</td>
       <td>${statusBadge(r)}</td>
     </tr>`).join('') : '<tr><td colspan="10" class="empty-state">لا توجد بيانات</td></tr>';
+  renderPagination('inv-pagination', total, invPage, INV_PAGE_SIZE, 'setInvPage');
 }
-const debouncedRenderInventory = debounce(renderInventory, 250);
+const debouncedRenderInventory = debounce(() => { invPage = 1; renderInventory(); }, 250);
 
 function exportInventoryExcel() {
   const data = inventoryCache.map(r => ({ 'الكود': r.code, 'الصنف': r.name, 'سعر البيع': r.sellPrice, 'سعر الشراء': r.buyPrice, 'الحد الأدنى': r.minStock, 'الرصيد الافتتاحي': r.openingBalance, 'المشتريات (مورد)': r.purchases, 'إرجاع للمخزن (كمية)': r.returnsToStock ?? 0, 'مراجع الإرجاع/الاستبدال': r.returnRefs || '', 'المبيعات': r.sales, 'الحالي': r.current }));
@@ -2547,15 +2609,22 @@ function renderMovements() {
   ].sort((a, b) => (b.sk || '').localeCompare(a.sk || ''));
   if (!merged.length) {
     qs('#mov-table tbody').innerHTML = '<tr><td colspan="11" class="empty-state">لا توجد حركات أو طلبات مطابقة</td></tr>';
+    const pagEl = qs('#mov-pagination'); if (pagEl) pagEl.innerHTML = '';
     updateMovementSelectionActions();
     return;
   }
-  qs('#mov-table tbody').innerHTML = merged.map(row => row.k === 'tx' ? renderMovementTxRow(row.tx) : renderMovementReturnRequestRow(row.r)).join('');
+  const MOV_PAGE_SIZE = 30;
+  const total = merged.length;
+  if (movPage > Math.ceil(total / MOV_PAGE_SIZE)) movPage = 1;
+  const pageData = merged.slice((movPage-1)*MOV_PAGE_SIZE, movPage*MOV_PAGE_SIZE);
+  qs('#mov-table tbody').innerHTML = pageData.map(row => row.k === 'tx' ? renderMovementTxRow(row.tx) : renderMovementReturnRequestRow(row.r)).join('');
+  renderPagination('mov-pagination', total, movPage, MOV_PAGE_SIZE, 'setMovPage');
   updateMovementSelectionActions();
 }
-const debouncedRenderMovements = debounce(renderMovements, 250);
+const debouncedRenderMovements = debounce(() => { movPage = 1; renderMovements(); }, 250);
 
 function setMovFilter(f, btn, type) {
+  movPage = 1;
   if (type === 'status') { movStatusFilter = f; movFilter = 'all'; } else { movFilter = f; movStatusFilter = ''; }
   qsa('#page-movements .tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderMovements();
 }
@@ -2971,9 +3040,14 @@ function renderArchivedMovements() {
   if (!tbody) return;
   if (!archivedMovements.length) {
     tbody.innerHTML = '<tr><td colspan="9" class="empty-state">لا توجد حركات مؤرشفة</td></tr>';
+    const pagEl = qs('#archive-pagination'); if (pagEl) pagEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = archivedMovements.map(tx => `<tr>
+  const ARCHIVE_PAGE_SIZE = 30;
+  const total = archivedMovements.length;
+  if (archivePage > Math.ceil(total / ARCHIVE_PAGE_SIZE)) archivePage = 1;
+  const pageData = archivedMovements.slice((archivePage-1)*ARCHIVE_PAGE_SIZE, archivePage*ARCHIVE_PAGE_SIZE);
+  tbody.innerHTML = pageData.map(tx => `<tr>
     <td><div style="font-size:.82rem">${fmtDate(tx.date)}</div></td>
     <td>${movementKindBadge(tx)}</td>
     <td>${esc(tx.client || '-')}</td>
@@ -2989,6 +3063,7 @@ function renderArchivedMovements() {
       </div>
     </td>
   </tr>`).join('');
+  renderPagination('archive-pagination', total, archivePage, ARCHIVE_PAGE_SIZE, 'setArchivePage');
 }
 async function restoreMovement(id) {
   if (!confirm('سيتم استعادة الحركة وإعادة تفعيلها.\n✅ ستعود للتأثير على المخزون والخزنة تلقائياً.\n\nهل تريد المتابعة؟')) return;
@@ -3263,15 +3338,20 @@ function renderClients() {
     return tokens.every(t => blob.includes(t));
   });
   clients.sort((a, b) => b.orders - a.orders);
-  qs('#clients-grid').innerHTML = clients.length ? clients.map(c => `
+  const CLIENTS_PAGE_SIZE = 30;
+  const total = clients.length;
+  if (clientsPage > Math.ceil(total / CLIENTS_PAGE_SIZE) || total === 0) clientsPage = 1;
+  const pageData = clients.slice((clientsPage-1)*CLIENTS_PAGE_SIZE, clientsPage*CLIENTS_PAGE_SIZE);
+  qs('#clients-grid').innerHTML = pageData.length ? pageData.map(c => `
     <div class="client-card" onclick="openClientProfile('${esc(c.name).replace(/'/g, "\\'")}')">
       <h4>${esc(c.name)}</h4>
       <p class="text-sm text-muted">${esc(c.phone || 'بدون رقم')}</p>
       <div class="info-row"><span>الطلبات: ${c.orders}</span><span>الإجمالي: ${fmtJ(c.total)}</span></div>
       <div class="info-row"><span class="text-red">المتبقي: ${fmtJ(c.remaining)}</span></div>
     </div>`).join('') : '<div class="empty-state">لا يوجد عملاء</div>';
+  renderPagination('clients-pagination', total, clientsPage, CLIENTS_PAGE_SIZE, 'setClientsPage');
 }
-const debouncedRenderClients = debounce(renderClients, 250);
+const debouncedRenderClients = debounce(() => { clientsPage = 1; renderClients(); }, 250);
 
 function openClientProfile(name) {
   const txs = transactions.filter(t => t.client === name).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -3296,15 +3376,20 @@ function renderProducts() {
     const blob = normalizeUiSearch([p.name, p.code, p.supplier].join(' '));
     return tokens.every(t => blob.includes(t));
   });
-  qs('#prod-table tbody').innerHTML = data.length ? data.map(p => `
+  const PROD_PAGE_SIZE = 30;
+  const total = data.length;
+  if (prodPage > Math.ceil(total / PROD_PAGE_SIZE) || total === 0) prodPage = 1;
+  const pageData = data.slice((prodPage-1)*PROD_PAGE_SIZE, prodPage*PROD_PAGE_SIZE);
+  qs('#prod-table tbody').innerHTML = pageData.length ? pageData.map(p => `
     <tr><td><input type="checkbox" class="prod-chk" value="${esc(p._id)}" onchange="updateProdBulkBar()"></td>
       <td>${esc(p.code || '-')}</td><td>${esc(p.name)}</td><td>${esc(p.supplier || '-')}</td><td>${fmtJ(p.sellPrice)}</td><td>${fmtJ(p.buyPrice)}</td>
       <td>${fmtN(p.minStock)}</td><td>${fmtN(p.openingBalance)}</td>
       <td><div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu"><div class="dd-item" onclick="openProductModal('${esc(p._id)}')">✏️ تعديل</div><div class="dd-divider"></div><div class="dd-item danger" onclick="deleteProduct('${esc(p._id)}')">🗑️ حذف</div></div></div></td>
     </tr>`).join('') : '<tr><td colspan="9" class="empty-state">لا توجد أصناف</td></tr>';
+  renderPagination('prod-pagination', total, prodPage, PROD_PAGE_SIZE, 'setProdPage');
   updateProdBulkBar();
 }
-const debouncedRenderProducts = debounce(renderProducts, 250);
+const debouncedRenderProducts = debounce(() => { prodPage = 1; renderProducts(); }, 250);
 
 function openProductModal(id) {
   const p = id ? products.find(x => x._id === id) : null;
@@ -3539,7 +3624,11 @@ function renderExpenses() {
     <div class="kpi"><div class="kpi-val text-orange">${fmtJ(thisMonth)}</div><div class="kpi-label">هذا الشهر (معتمد)</div></div>
     <div class="kpi"><div class="kpi-val text-blue">${fmtJ(filteredTotal)}</div><div class="kpi-label">النتائج المعروضة</div></div>
     <div class="kpi"><div class="kpi-val text-purple">${pendingCount}</div><div class="kpi-label">في انتظار الموافقة</div></div>`;
-  qs('#exp-table tbody').innerHTML = data.length ? data.map(e => {
+  const EXP_PAGE_SIZE = 30;
+  const total = data.length;
+  if (expPage > Math.ceil(total / EXP_PAGE_SIZE) || total === 0) expPage = 1;
+  const pageData = data.slice((expPage-1)*EXP_PAGE_SIZE, expPage*EXP_PAGE_SIZE);
+  qs('#exp-table tbody').innerHTML = pageData.length ? pageData.map(e => {
     const isPending = e.status === 'معلق';
     const approveActions = isAdmin() && isPending ? `<div class="dd-item" onclick="approveExpense('${esc(e._id)}')">✅ اعتماد</div><div class="dd-item danger" onclick="rejectExpense('${esc(e._id)}')">❌ رفض</div><div class="dd-divider"></div>` : '';
     const editAction = isPending ? `<div class="dd-item" onclick="openExpenseModal('${esc(e._id)}')">✏️ تعديل</div>` : '';
@@ -3549,12 +3638,13 @@ function renderExpenses() {
       <td><div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu">${approveActions}${editAction}<div class="dd-item danger" onclick="deleteExpense('${esc(e._id)}')">🗑️ حذف</div></div></div></td>
     </tr>`;
   }).join('') : '<tr><td colspan="8" class="empty-state">لا توجد مصاريف</td></tr>';
+  renderPagination('exp-pagination', total, expPage, EXP_PAGE_SIZE, 'setExpPage');
 }
-const debouncedRenderExpenses = debounce(renderExpenses, 250);
+const debouncedRenderExpenses = debounce(() => { expPage = 1; renderExpenses(); }, 250);
 
 function clearExpFilters() {
   qs('#exp-from').value = ''; qs('#exp-to').value = ''; qs('#exp-cat-filter').value = ''; qs('#exp-acc-filter').value = ''; qs('#exp-search').value = '';
-  renderExpenses();
+  expPage = 1; renderExpenses();
 }
 
 const EXP_CATEGORIES = ['اعلانات', 'تغليف', 'موصلات وتنقل', 'اشتراكات', 'مرتبات', 'اخرى'];
@@ -4132,18 +4222,28 @@ function renderVaultTable() {
     const c = colors[s] || 'var(--muted)';
     return `<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:600;background:${c}15;color:${c}">${esc(s)}</span>`;
   };
-  qs('#vault-table tbody').innerHTML = data.length ? data.map(v => `
+  const VAULT_PAGE_SIZE = 50;
+  const total = data.length;
+  if (vaultPage > Math.ceil(total / VAULT_PAGE_SIZE)) vaultPage = 1;
+  const start = (vaultPage - 1) * VAULT_PAGE_SIZE;
+  const pageData = data.slice(start, start + VAULT_PAGE_SIZE);
+  qs('#vault-table tbody').innerHTML = pageData.length ? pageData.map(v => `
     <tr><td>${fmtDate(v.date || v.createdAt)}</td>
+      <td style="font-size:.75rem;color:var(--muted);white-space:nowrap">${v.createdAt ? fmtDateTime(v.createdAt) : '-'}</td>
       ${formatVaultAmountCellHtml(v)}
       <td>${srcBadge(v.source)}</td>
       <td style="font-weight:600;direction:ltr">${v.ref ? '#' + esc(v.ref) : '-'}</td>
       <td>${esc(segLabel(v.seg))}</td><td>${esc(v.method || '-')}</td><td>${esc(v.desc || '-')}</td>
-    </tr>`).join('') : '<tr><td colspan="7" class="empty-state">لا توجد سجلات</td></tr>';
+    </tr>`).join('') : '<tr><td colspan="8" class="empty-state">لا توجد سجلات</td></tr>';
+  renderPagination('vault-pagination', total, vaultPage, VAULT_PAGE_SIZE, 'setVaultPage');
 }
 async function addVaultEntry() {
   const body = { amount: Number(qs('#vault-amount').value) || 0, seg: qs('#vault-seg').value, method: qs('#vault-method').value, desc: qs('#vault-desc').value, date: new Date().toISOString() };
   if (!body.amount) { toast('أدخل المبلغ', true); return; }
   if (body.method === 'سحب') body.amount = -Math.abs(body.amount);
+  const segLabel = {cash:'كاش',vodafone:'فودافون كاش',instapay:'Instapay',bank:'تحويل بنكي'}[body.seg] || body.seg;
+  const confirmed = confirm(`تأكيد التسوية اليدوية\n\nالعملية: ${body.method}\nالمبلغ: ${fmtN(Math.abs(body.amount))} ج\nالحساب: ${segLabel}\nالوصف: ${body.desc || '—'}\n\nهل تريد تطبيق هذا التعديل على رصيد الخزنة؟`);
+  if (!confirmed) return;
   try { await api('/vault', { method: 'POST', body: JSON.stringify(body) }); toast('تم تسجيل الحركة'); qs('#vault-amount').value = ''; qs('#vault-desc').value = ''; settings = await api('/settings').catch(() => settings); renderVaultSegs(); await loadVaultLog(); }
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
