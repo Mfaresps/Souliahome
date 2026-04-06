@@ -29,6 +29,9 @@ export class Expense {
   @Prop({ default: 'معلق' })
   status: string;
 
+  @Prop({ default: '' })
+  expenseNo: string;
+
   @Prop()
   approvedBy: string;
 
