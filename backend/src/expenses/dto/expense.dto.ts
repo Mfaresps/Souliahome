@@ -28,6 +28,10 @@ export class CreateExpenseDto {
   @IsString()
   @IsOptional()
   readonly account?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly expenseNo?: string;
 }
 
 export class UpdateExpenseDto {
