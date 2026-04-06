@@ -461,7 +461,7 @@ export class TransactionsService {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) throw new NotFoundException('الحركة غير موجودة');
     if (tx.cancelled) throw new BadRequestException('الحركة ملغية بالفعل');
-    if (tx.archived) throw new BadRequestException('الحركة مؤرشفة');
+    if (tx.archived) throw new BadRequestException('الحركة مجمدة');
     if (tx.payStatus !== 'معلق') {
       throw new BadRequestException(
         'طلب الإلغاء مسموح فقط للحركات المعلقة — الحركة المكتملة لا يمكن إلغاؤها',
@@ -592,7 +592,7 @@ export class TransactionsService {
     // Reverse vault entries — non-blocking so archive always completes
     this.reverseVaultForTransaction(
       tx,
-      `أرشفة بواسطة ${archivedBy || 'النظام'}`,
+      `تجميد بواسطة ${archivedBy || 'النظام'}`,
     ).catch((err) =>
       console.error(`[archive] vault reverse failed for ${id}:`, err),
     );
@@ -620,7 +620,7 @@ export class TransactionsService {
       )
       .exec();
     // Reverse vault entries per transaction — non-blocking
-    const reason = `أرشفة جماعية بواسطة ${archivedBy || 'النظام'}`;
+    const reason = `تجميد جماعي بواسطة ${archivedBy || 'النظام'}`;
     for (const tx of docs) {
       this.reverseVaultForTransaction(tx, reason).catch((err) =>
         console.error(`[bulk-archive] vault reverse failed for ${String(tx._id)}:`, err),
@@ -635,7 +635,7 @@ export class TransactionsService {
       throw new NotFoundException('الحركة غير موجودة');
     }
     if (!tx.archived) {
-      throw new BadRequestException('الحركة ليست مؤرشفة');
+      throw new BadRequestException('الحركة ليست مجمدة');
     }
     // Unarchive first — guaranteed
     const restored = await this.transactionModel
@@ -1040,7 +1040,7 @@ export class TransactionsService {
           tx.depMethod,
           `${reason} — عكس ديبوزت #${txRef} — ${tx.client || ''}`,
           today,
-          'أرشفة',
+          'تجميد',
           txRef,
         );
       }
@@ -1054,7 +1054,7 @@ export class TransactionsService {
             tx.collectMethod,
             `${reason} — عكس تحصيل #${txRef} — ${tx.client || ''}`,
             today,
-            'أرشفة',
+            'تجميد',
             txRef,
           );
         }
@@ -1069,7 +1069,7 @@ export class TransactionsService {
             tx.depMethod,
             `${reason} — عكس مشتريات #${txRef} — ${tx.client || ''}`,
             today,
-            'أرشفة',
+            'تجميد',
             txRef,
           );
         }
@@ -1085,7 +1085,7 @@ export class TransactionsService {
             tx.collectMethod,
             `${reason} — عكس دفع متبقي مشتريات #${txRef} — ${tx.client || ''}`,
             today,
-            'أرشفة',
+            'تجميد',
             txRef,
           );
         }
@@ -1097,7 +1097,7 @@ export class TransactionsService {
             tx.depMethod,
             `${reason} — عكس رد مرتجع #${txRef} — ${tx.client || ''}`,
             today,
-            'أرشفة',
+            'تجميد',
             txRef,
           );
         }
@@ -1110,7 +1110,7 @@ export class TransactionsService {
           tx.depMethod,
           `${reason} — عكس رد مرتجع #${txRef} — ${tx.client || ''}`,
           today,
-          'أرشفة',
+          'تجميد',
           txRef,
         );
       }
