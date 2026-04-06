@@ -2772,13 +2772,36 @@ function renderMovements() {
     ...data.map(tx => ({ k: 'tx', tx, sk: tx.date || '' })),
     ...retRows.map(r => ({ k: 'ret', r, sk: r.createdAt || '' })),
   ].sort((a, b) => (b.sk || '').localeCompare(a.sk || ''));
+
+  // Calculate KPIs
+  const allTx = data.filter(row => row.k === 'tx').map(r => r.tx);
+  const totalRevenue = allTx.filter(t => t.type === 'مبيعات').reduce((s, t) => s + (t.total || 0), 0);
+  const totalPurchases = allTx.filter(t => t.type === 'مشتريات').reduce((s, t) => s + (t.total || 0), 0);
+  const totalRemaining = allTx.reduce((s, t) => s + (t.remaining || 0), 0);
+  const pendingCount = allTx.filter(t => t.payStatus === 'معلق').length;
+  const completedCount = allTx.filter(t => t.payStatus === 'مكتمل').length;
+  const cancelledCount = allTx.filter(t => t.cancelled || t.payStatus === 'ملغي').length;
+
+  // Render KPI strip
+  const kpiEl = qs('#mov-kpi-strip');
+  if (kpiEl) {
+    kpiEl.innerHTML = `
+      <div class="kpi"><div class="kpi-val text-green">${fmtJ(totalRevenue)}</div><div class="kpi-label">المبيعات</div></div>
+      <div class="kpi"><div class="kpi-val text-blue">${fmtJ(totalPurchases)}</div><div class="kpi-label">المشتريات</div></div>
+      <div class="kpi"><div class="kpi-val text-red">${fmtJ(totalRemaining)}</div><div class="kpi-label">متبقي</div></div>
+      <div class="kpi"><div class="kpi-val text-orange">${pendingCount}</div><div class="kpi-label">معلق</div></div>
+      <div class="kpi"><div class="kpi-val text-blue">${completedCount}</div><div class="kpi-label">مكتمل</div></div>
+      <div class="kpi"><div class="kpi-val text-gray">${cancelledCount}</div><div class="kpi-label">ملغي</div></div>
+    `;
+  }
+
   if (!merged.length) {
-    qs('#mov-table tbody').innerHTML = '<tr><td colspan="11" class="empty-state">لا توجد حركات أو طلبات مطابقة</td></tr>';
+    qs('#mov-table tbody').innerHTML = '<tr><td colspan="11" style="padding: 40px 16px; text-align: center; color: var(--muted);">📋 لا توجد حركات تطابق البحث</td></tr>';
     const pagEl = qs('#mov-pagination'); if (pagEl) pagEl.innerHTML = '';
     updateMovementSelectionActions();
     return;
   }
-  const MOV_PAGE_SIZE = 30;
+  const MOV_PAGE_SIZE = 20;
   const total = merged.length;
   if (movPage > Math.ceil(total / MOV_PAGE_SIZE)) movPage = 1;
   const pageData = merged.slice((movPage-1)*MOV_PAGE_SIZE, movPage*MOV_PAGE_SIZE);
