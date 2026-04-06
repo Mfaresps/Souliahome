@@ -29,8 +29,15 @@ export class ExpensesService {
     return expense;
   }
 
+  private generateExpenseNo(): string {
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).substring(2, 4).toUpperCase();
+    return `EXP-${ts}${rand}`;
+  }
+
   async create(dto: CreateExpenseDto): Promise<ExpenseDocument> {
-    return this.expenseModel.create({ ...dto, status: 'معلق' });
+    const expenseNo = dto.expenseNo || this.generateExpenseNo();
+    return this.expenseModel.create({ ...dto, status: 'معلق', expenseNo });
   }
 
   /**
@@ -111,9 +118,20 @@ export class ExpensesService {
   }
 
   async remove(id: string): Promise<void> {
-    const result = await this.expenseModel.findByIdAndDelete(id).exec();
-    if (!result) {
+    const expense = await this.expenseModel.findById(id).exec();
+    if (!expense) {
       throw new NotFoundException('المصروف غير موجود');
     }
+    if (expense.status === 'معتمد') {
+      throw new BadRequestException('لا يمكن حذف مصروف معتمد من المدير');
+    }
+    await this.expenseModel.findByIdAndDelete(id).exec();
+  }
+
+  async bulkRemovePending(ids: string[]): Promise<number> {
+    const result = await this.expenseModel
+      .deleteMany({ _id: { $in: ids }, status: 'معلق' })
+      .exec();
+    return result.deletedCount || 0;
   }
 }
