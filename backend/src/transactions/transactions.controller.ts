@@ -90,7 +90,7 @@ export class TransactionsController {
   ) {
     const archivedBy = req.user.name || req.user.username || '';
     const count = await this.transactionsService.bulkRemove(dto.ids, archivedBy);
-    return { message: `تم أرشفة ${count} حركة`, deletedCount: count };
+    return { message: `تم تجميد ${count} حركة`, deletedCount: count };
   }
 
   @Post(':id/restore')
@@ -188,6 +188,6 @@ export class TransactionsController {
   ) {
     const archivedBy = req.user.name || req.user.username || '';
     await this.transactionsService.remove(id, archivedBy);
-    return { message: 'تم أرشفة الحركة' };
+    return { message: 'تم تجميد الحركة' };
   }
 }
