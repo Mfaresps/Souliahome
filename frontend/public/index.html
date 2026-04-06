@@ -1586,11 +1586,12 @@ function statusBadge(status, tx) {
   if (status === 'مكتمل') return '<span class="badge badge-green">مكتمل</span>';
   if (status === 'ملغي') return '<span class="badge badge-red">ملغي</span>';
   if (status === 'معلق') {
-    // For purchases with remaining: show مديون
-    if (tx && tx.type === 'مشتريات' && (tx.remaining || 0) > 0) {
-      return '<span class="badge badge-red">مديون للمورد</span>';
+    if (tx && tx.type === 'مشتريات') {
+      return (tx.remaining || 0) > 0
+        ? '<span class="badge badge-red">مديون للمورد</span>'
+        : '<span class="badge badge-green">مكتمل</span>';
     }
-    return '<span class="badge badge-orange">في انتظار التحصيل من الشحن</span>';
+    return '<span class="badge badge-orange">في انتظار التحصيل</span>';
   }
   return `<span class="badge">${esc(status)}</span>`;
 }
@@ -2188,16 +2189,19 @@ function showClientInvoicesForReturn(clientName) {
       const daysLeft = RETURN_REQUEST_MAX_DAYS - diffDays;
       const isExpired = daysLeft <= 0;
       const alreadyDone = hasReturnOrExchangeForInvoice(tx._id);
-      const blocked = isExpired || alreadyDone;
-      const borderColor = alreadyDone ? 'var(--muted)' : isExpired ? 'var(--red)' : daysLeft <= 3 ? 'var(--orange)' : 'var(--green)';
+      const isPending = tx.payStatus === 'معلق';
+      const blocked = isExpired || alreadyDone || isPending;
+      const borderColor = alreadyDone ? 'var(--muted)' : isPending ? 'var(--orange)' : isExpired ? 'var(--red)' : daysLeft <= 3 ? 'var(--orange)' : 'var(--green)';
       let daysText = isExpired ? '<span class="badge badge-red">انتهت مدة الاسترجاع</span>' : `<span class="badge badge-green">متبقي ${daysLeft} يوم</span>`;
       if (alreadyDone) daysText = '<span class="badge badge-red">تم استرجاع/استبدال مسبقاً</span>';
+      if (isPending) daysText = '<span class="badge badge-orange">معلق — لا يمكن الاسترجاع</span>';
       return `<div class="card" style="padding:12px;border-right:3px solid ${borderColor};cursor:${blocked ? 'not-allowed' : 'pointer'};opacity:${blocked ? '.55' : '1'}" ${blocked ? '' : `onclick="selectReturnInvoice('${esc(tx._id)}')"` }>
         <div class="flex-between">
           <div>
             <strong>${tx.ref ? '#' + esc(tx.ref) : '-'}</strong> <span class="text-muted text-sm">— ${fmtDate(tx.date)}</span>
             <div class="text-sm" style="margin-top:4px">${(tx.items || []).map(it => esc(it.name)).join(' · ')}</div>
             ${alreadyDone ? '<div class="text-xs text-muted" style="margin-top:6px">لا يُسمح إلا بعملية واحدة لكل فاتورة</div>' : ''}
+            ${isPending ? '<div class="text-xs" style="margin-top:6px;color:var(--orange)">الطلب معلق — يجب اكتمال التحصيل قبل الاسترجاع</div>' : ''}
           </div>
           <div style="text-align:left">
             <div style="font-weight:700">${fmtJ(tx.total)}</div>
@@ -2208,6 +2212,8 @@ function showClientInvoicesForReturn(clientName) {
     }).join('')}</div>`;
 }
 function selectReturnInvoice(txId) {
+  const txCheck = transactions.find(t => t._id === txId);
+  if (txCheck && txCheck.payStatus === 'معلق') { toast('لا يمكن الاسترجاع — الطلب معلق في انتظار التحصيل', true); return; }
   if (hasReturnOrExchangeForInvoice(txId)) { toast('تم تسجيل استرجاع أو استبدال لهذه الفاتورة — مسموح طلب واحد فقط', true); return; }
   selectedRetTxId = txId;
   const tx = transactions.find(t => t._id === txId);
@@ -2376,6 +2382,7 @@ async function saveReturnRequest() {
   if (!validateTx()) return;
   const tx = transactions.find(t => t._id === selectedRetTxId);
   if (!tx) { toast('اختر فاتورة', true); return; }
+  if (tx.payStatus === 'معلق') { toast('لا يمكن إتمام الاسترجاع — الطلب الأصلي معلق في انتظار التحصيل', true); return; }
   const retItems = selectedRetItems.filter(it => it.selected).map(it => ({
     code: it.code, name: it.name, qty: it.retQty, price: it.price, total: it.retQty * it.price
   }));
@@ -2612,14 +2619,14 @@ function renderMovementTxRow(tx) {
           <div class="dd-divider"></div>
           ${editItem}
           <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')">🖨️ طباعة / PDF</div>
-          ${(tx.remaining || 0) > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')">${isExchangeSalePendingCollect(tx) ? '💰 تحصيل فرق الاستبدال' : '💰 تحصيل'}</div>` : ''}
+          ${(tx.remaining || 0) > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')">${isExchangeSalePendingCollect(tx) ? '💰 تحصيل فرق الاستبدال' : tx.type === 'مشتريات' ? '💸 سداد المتبقي للمورد' : '💰 تحصيل'}</div>` : ''}
           ${tx.type === 'مبيعات' && !tx.cancelled && isAdmin() ? `<div class="dd-item" onclick="openPostDiscountModal('${esc(tx._id)}')">💲 خصم بعد البيع</div>` : ''}
           ${tx.payStatus !== 'ملغي' && !tx.cancelled && tx.payStatus !== 'مكتمل' ? (
             isExchangeSalePendingCollect(tx)
               ? `<div class="dd-divider"></div><div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🚫 إلغاء <span class="text-xs">(مقفول)</span></div>`
               : tx.cancelRequest && tx.cancelRequest.status === 'معلق'
                 ? `<div class="dd-divider"></div><div class="dd-item" style="opacity:.7;cursor:default" onclick="event.stopPropagation()">⏳ طلب رد الديبوزيت — معلق</div>`
-                : `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')">🚫 ${tx.payStatus === 'معلق' ? 'طلب رد الديبوزيت وإلغاء' : 'إلغاء'}</div>`
+                : `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')">🚫 ${tx.payStatus === 'معلق' && tx.type !== 'مشتريات' ? 'طلب رد الديبوزيت وإلغاء' : 'إلغاء'}</div>`
           ) : ''}
           ${isAdmin() ? (isExchangeSalePendingCollect(tx) ? `<div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🧊 تجميد <span class="text-xs">(مقفول)</span></div>` : `<div class="dd-item danger" onclick="archiveMovement('${esc(tx._id)}')">🧊 تجميد</div>`) : ''}
         </div>
@@ -2942,24 +2949,63 @@ function openCollectMovement(id) {
   const isPurchase = tx.type === 'مشتريات';
   const collectDef = String(tx.depMethod || 'كاش').trim() || 'كاش';
   const collectOpts = RET_VAULT_SEGMENTS.map(v => `<option value="${esc(v)}"${v === collectDef ? ' selected' : ''}>${esc(v)}</option>`).join('');
-  const supplierName = tx.client || '—';
-  const title = isPurchase ? `💸 سداد المتبقي للمورد` : `تحصيل المتبقي (${fmtJ(tx.remaining)})`;
-  const btnLabel = isPurchase ? '💸 سداد المتبقي' : 'تحصيل';
-  const hint = isPurchase ? 'الحساب الذي سيتم الخصم منه' : 'طريقة التحصيل (قسم الخزنة)';
-  openModal(`<h3>${title}</h3>
-    ${isPurchase ? `<div style="padding:12px;background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.18);border-radius:10px;margin-bottom:14px;font-size:.85rem">
-      <div style="font-weight:700;margin-bottom:4px">📦 المورد: ${esc(supplierName)}</div>
-      <div>المبلغ المتبقي: <strong style="color:var(--red)">${fmtJ(tx.remaining)}</strong></div>
-      <div style="margin-top:4px;font-size:.78rem;color:var(--muted)">سيتم خصم هذا المبلغ من الخزنة المحددة</div>
-    </div>` : ''}
-    <div class="form-group"><label>${hint}</label><select id="collect-method">${collectOpts}</select></div>
-    <div class="form-group"><label>ملاحظات</label><input type="text" id="collect-note" placeholder="${isPurchase ? 'ملاحظة السداد...' : ''}"></div>
-    <div class="flex gap-8 mt-16"><button class="btn btn-danger" onclick="doCollectMovement('${esc(id)}')">${btnLabel}</button><button class="btn btn-outline" onclick="closeModal()">إلغاء</button></div>`);
+
+  if (isPurchase) {
+    const remaining = tx.remaining || 0;
+    openModal(`<h3>💸 سداد المبلغ للمورد</h3>
+      <div style="padding:12px;background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.18);border-radius:10px;margin-bottom:16px;font-size:.85rem">
+        <div style="font-weight:700;margin-bottom:4px">📦 المورد: ${esc(tx.client || '—')}</div>
+        <div>إجمالي الفاتورة: <strong>${fmtJ(tx.total)}</strong></div>
+        <div>المبلغ المتبقي: <strong style="color:var(--red)">${fmtJ(remaining)}</strong></div>
+      </div>
+      <div class="form-group">
+        <label>المبلغ المراد سداده *</label>
+        <input type="number" id="collect-amount" min="1" max="${remaining}" value="${remaining}" placeholder="أدخل المبلغ" oninput="updateCollectPreview('${esc(id)}',${remaining})">
+        <div class="field-hint">أدخل المبلغ الجزئي أو اتركه كاملاً للسداد الكامل</div>
+      </div>
+      <div id="collect-preview" style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:12px;font-size:.83rem">
+        <span style="color:var(--green);font-weight:700">✅ سيتم السداد بالكامل</span>
+      </div>
+      <div class="form-group"><label>الحساب (السحب من)</label><select id="collect-method">${collectOpts}</select></div>
+      <div class="form-group"><label>ملاحظات</label><input type="text" id="collect-note" placeholder="ملاحظة السداد..."></div>
+      <div class="flex gap-8 mt-16">
+        <button class="btn btn-danger" onclick="doCollectMovement('${esc(id)}')">💸 تأكيد السداد</button>
+        <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+      </div>`);
+  } else {
+    openModal(`<h3>تحصيل المتبقي (${fmtJ(tx.remaining)})</h3>
+      <div class="form-group"><label>طريقة التحصيل</label><select id="collect-method">${collectOpts}</select></div>
+      <div class="form-group"><label>ملاحظات</label><input type="text" id="collect-note"></div>
+      <div class="flex gap-8 mt-16">
+        <button class="btn btn-primary" onclick="doCollectMovement('${esc(id)}')">تحصيل</button>
+        <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+      </div>`);
+  }
+}
+function updateCollectPreview(txId, totalRemaining) {
+  const amount = Number(qs('#collect-amount')?.value) || 0;
+  const el = qs('#collect-preview'); if (!el) return;
+  if (amount <= 0) { el.innerHTML = '<span style="color:var(--red)">أدخل مبلغاً صحيحاً</span>'; return; }
+  if (amount > totalRemaining) { el.innerHTML = `<span style="color:var(--red)">⚠️ المبلغ أكبر من المتبقي (${fmtJ(totalRemaining)})</span>`; return; }
+  const newRemaining = totalRemaining - amount;
+  if (newRemaining === 0) {
+    el.innerHTML = `<span style="color:var(--green);font-weight:700">✅ سيتم السداد بالكامل — المتبقي سيصبح 0</span>`;
+  } else {
+    el.innerHTML = `<span style="color:var(--orange)">⚠️ سداد جزئي — سيبقى متبقي: <strong style="color:var(--red)">${fmtJ(newRemaining)}</strong></span>`;
+  }
 }
 async function doCollectMovement(id) {
   try {
-    await api('/transactions/' + id + '/collect', { method: 'POST', body: JSON.stringify({ collectMethod: qs('#collect-method').value, collectNote: qs('#collect-note')?.value || '' }) });
-    toast('تم التحصيل'); closeModal();
+    const tx = transactions.find(t => t._id === id);
+    const isPurchase = tx?.type === 'مشتريات';
+    const body = { collectMethod: qs('#collect-method').value, collectNote: qs('#collect-note')?.value || '' };
+    if (isPurchase) {
+      const amt = Number(qs('#collect-amount')?.value) || 0;
+      if (!amt || amt <= 0) { toast('أدخل مبلغاً صحيحاً', true); return; }
+      body.collectAmount = amt;
+    }
+    await api('/transactions/' + id + '/collect', { method: 'POST', body: JSON.stringify(body) });
+    toast(isPurchase ? 'تم السداد بنجاح' : 'تم التحصيل'); closeModal();
     transactions = await api('/transactions').catch(() => transactions);
     renderMovements(); buildSidebar(); buildNotifications();
     syncVaultState();
@@ -3346,8 +3392,15 @@ function buildEditHistorySection(tx) {
 function showInvoiceDetail(id) {
   const tx = transactions.find(t => t._id === id);
   if (!tx) return;
+  const isPurchase = tx.type === 'مشتريات';
   const statusClass = tx.cancelled || tx.payStatus === 'ملغي' ? 'cancelled' : tx.payStatus === 'مكتمل' ? 'paid' : 'pending';
-  let statusText = tx.cancelled || tx.payStatus === 'ملغي' ? '🚫 ملغي' : tx.payStatus === 'مكتمل' ? '✅ مكتمل — تم الدفع بالكامل' : '⏳ في انتظار التحصيل من شركة الشحن';
+  let statusText = tx.cancelled || tx.payStatus === 'ملغي'
+    ? '🚫 ملغي'
+    : tx.payStatus === 'مكتمل'
+      ? '✅ مكتمل — تم السداد بالكامل'
+      : isPurchase
+        ? `⚠️ مديون للمورد — المتبقي: ${fmtJ(tx.remaining || 0)}`
+        : '⏳ في انتظار التحصيل من شركة الشحن';
   if (isExchangeSalePendingCollect(tx)) {
     statusText = `⏳ انتظار التحصيل من الشحن — فرق استبدال: على العميل دفع ${fmtJ(tx.remaining)} لإتمام العملية ثم التحصيل من هنا`;
   }
@@ -3373,11 +3426,11 @@ function showInvoiceDetail(id) {
         <div class="inv-field"><span class="inv-label">${tx.type === 'مشتريات' ? 'اسم المورد' : 'اسم العميل'}</span><span class="inv-value">${esc(tx.client || '-')}</span></div>
         <div class="inv-field"><span class="inv-label">الهاتف</span><span class="inv-value" dir="ltr">${esc(tx.phone || '-')}</span></div>
         <div class="inv-field"><span class="inv-label">الموظف</span><span class="inv-value">${esc(tx.employee || '-')}</span></div>
-        ${tx.shipCo ? `<div class="inv-field"><span class="inv-label">شركة الشحن</span><span class="inv-value">${esc(tx.shipCo)}</span></div>` : ''}
-        ${tx.depMethod ? `<div class="inv-field"><span class="inv-label">${tx.type === 'مرتجع' ? 'قسم الخزنة (خصم الرد للعميل)' : 'طريقة دفع الديبوزت'}</span><span class="inv-value">${esc(tx.depMethod)}</span></div>` : ''}
-        ${tx.payment ? `<div class="inv-field"><span class="inv-label">طريقة دفع المتبقي</span><span class="inv-value">${esc(tx.payment)}</span></div>` : ''}
-        ${tx.collectMethod ? `<div class="inv-field"><span class="inv-label">طريقة التحصيل</span><span class="inv-value">${esc(tx.collectMethod)}</span></div>` : ''}
-        ${tx.collectedAt ? `<div class="inv-field"><span class="inv-label">تاريخ التحصيل</span><span class="inv-value">${esc(tx.collectedAt)}</span></div>` : ''}
+        ${!isPurchase && tx.shipCo ? `<div class="inv-field"><span class="inv-label">شركة الشحن</span><span class="inv-value">${esc(tx.shipCo)}</span></div>` : ''}
+        ${tx.depMethod ? `<div class="inv-field"><span class="inv-label">${tx.type === 'مرتجع' ? 'قسم الخزنة (خصم الرد للعميل)' : isPurchase ? 'طريقة الدفع للمورد' : 'طريقة دفع الديبوزت'}</span><span class="inv-value">${esc(tx.depMethod)}</span></div>` : ''}
+        ${!isPurchase && tx.payment ? `<div class="inv-field"><span class="inv-label">طريقة دفع المتبقي</span><span class="inv-value">${esc(tx.payment)}</span></div>` : ''}
+        ${tx.collectMethod ? `<div class="inv-field"><span class="inv-label">${isPurchase ? 'طريقة سداد المتبقي' : 'طريقة التحصيل'}</span><span class="inv-value">${esc(tx.collectMethod)}</span></div>` : ''}
+        ${tx.collectedAt ? `<div class="inv-field"><span class="inv-label">${isPurchase ? 'تاريخ السداد' : 'تاريخ التحصيل'}</span><span class="inv-value">${esc(tx.collectedAt)}</span></div>` : ''}
       </div>
       <table class="inv-items-tbl">
         <thead><tr><th>#</th><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
@@ -3388,8 +3441,8 @@ function showInvoiceDetail(id) {
         ${tx.discount ? `<div class="inv-row"><span>الخصم</span><span style="color:var(--red)">- ${fmtJ(tx.discount)}</span></div>` : ''}
         ${tx.shipCost ? `<div class="inv-row"><span>تكلفة الشحن</span><span>+ ${fmtJ(tx.shipCost)}</span></div>` : ''}
         <div class="inv-row total-row"><span>الإجمالي النهائي</span><span>${fmtJ(tx.total)}</span></div>
-        <div class="inv-row"><span>${isMovExchangeSale(tx) ? 'فرق الاستبدال (المدفوع)' : 'الديبوزت (المدفوع)'}</span><span style="color:var(--green)">${fmtJ(exchangeSalePaidDisplayAmount(tx))}</span></div>
-        <div class="inv-row ${(tx.remaining || 0) > 0 ? 'danger' : ''}"><span>المتبقي</span><span>${fmtJ(tx.remaining)}</span></div>
+        <div class="inv-row"><span>${isMovExchangeSale(tx) ? 'فرق الاستبدال (المدفوع)' : isPurchase ? 'المدفوع للمورد' : 'الديبوزت (المدفوع)'}</span><span style="color:var(--green)">${fmtJ(exchangeSalePaidDisplayAmount(tx))}</span></div>
+        <div class="inv-row ${(tx.remaining || 0) > 0 ? 'danger' : ''}"><span>${isPurchase ? 'المتبقي للمورد' : 'المتبقي'}</span><span>${fmtJ(tx.remaining)}</span></div>
       </div>
       ${tx.notes ? `<div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:8px;font-size:.8rem"><strong>ملاحظات:</strong> ${esc(tx.notes)}</div>` : ''}
       ${tx.cancelReason ? `<div style="margin-top:8px;padding:10px;background:rgba(220,38,38,.06);border-radius:8px;font-size:.8rem;color:var(--red)"><strong>سبب الإلغاء:</strong> ${esc(tx.cancelReason)}</div>` : ''}
@@ -3397,7 +3450,7 @@ function showInvoiceDetail(id) {
     </div>
     <div class="inv-footer" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
       ${isExchangeSalePendingCollect(tx) ? `<button class="btn btn-primary btn-sm" onclick="closeInvoiceDetail();openCollectMovement('${esc(tx._id)}')">💰 تحصيل فرق الاستبدال (${fmtJ(tx.remaining)})</button>` : ''}
-      ${(tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx) ? `<button class="btn btn-primary btn-sm" onclick="closeInvoiceDetail();openCollectMovement('${esc(tx._id)}')">💰 تحصيل المتبقي</button>` : ''}
+      ${(tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx) ? `<button class="btn ${isPurchase ? 'btn-danger' : 'btn-primary'} btn-sm" onclick="closeInvoiceDetail();openCollectMovement('${esc(tx._id)}')">${isPurchase ? '💸 سداد المتبقي للمورد' : '💰 تحصيل المتبقي'}</button>` : ''}
       <button class="btn btn-outline btn-sm" onclick="closeInvoiceDetail();printInvoice('${esc(tx._id)}')">🖨️ طباعة</button>
       <button class="btn btn-outline btn-sm" onclick="closeInvoiceDetail()">إغلاق</button>
     </div>`;
