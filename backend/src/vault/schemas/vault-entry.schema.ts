@@ -40,6 +40,12 @@ export class VaultEntry {
 
   @Prop({ default: 0 })
   balance: number;
+
+  @Prop({ default: '' })
+  employee: string;
+
+  @Prop({ default: '' })
+  txNo: string;
 }
 
 export const VaultEntrySchema = SchemaFactory.createForClass(VaultEntry);
