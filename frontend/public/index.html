@@ -468,15 +468,36 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 
 <!-- Movements -->
 <div class="page" id="page-movements">
+<!-- Tab bar -->
+<div class="flex gap-8 mb-16" style="border-bottom:2px solid var(--border);padding-bottom:8px">
+  <button class="tab-btn active" id="mov-tab-list" onclick="switchMovTab('list',this)">📋 سجل الحركات</button>
+  <button class="tab-btn" id="mov-tab-archive" onclick="switchMovTab('archive',this)">🗂️ الأرشيف</button>
+</div>
+
+<!-- Active transactions panel -->
+<div id="mov-panel-list">
 <div class="flex-between mb-16">
 <h2 class="page-title" style="margin-bottom:0" data-i18n="movements">سجل الحركات</h2>
 <div class="flex gap-8" style="flex-wrap:wrap">
 <button class="btn btn-outline btn-sm" onclick="exportMovementsExcel()">📥 تصدير Excel</button>
 <button class="btn btn-outline btn-sm" id="mov-return-from-selection-btn" style="display:none" onclick="openMovementReturnShortcut(false)">📤 طلب استرجاع للمحدد</button>
 <button class="btn btn-primary btn-sm" id="mov-exchange-from-selection-btn" style="display:none" onclick="openMovementReturnShortcut(true)">🔁 طلب استبدال للمحدد</button>
-<button class="btn btn-danger btn-sm" id="bulk-del-btn" style="display:none" onclick="bulkDeleteMovements()">🗑 حذف المحدد</button>
 </div>
 </div>
+
+<!-- Bulk selection bar (shown when items selected) -->
+<div id="mov-bulk-bar" style="display:none;background:var(--primary);color:#fff;border-radius:var(--radius);padding:10px 16px;margin-bottom:12px;flex-wrap:wrap;gap:10px;align-items:center" class="flex">
+  <span id="mov-bulk-info" style="font-size:.88rem;font-weight:700"></span>
+  <div style="flex:1"></div>
+  <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="exportSelectedExcel()">📥 Excel المحدد</button>
+  <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="bulkPrintPDF()">🖨️ طباعة PDF</button>
+  <button class="btn btn-sm" id="mov-return-from-selection-btn2" style="display:none;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="openMovementReturnShortcut(false)">📤 استرجاع</button>
+  <button class="btn btn-sm" id="mov-exchange-from-selection-btn2" style="display:none;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="openMovementReturnShortcut(true)">🔁 استبدال</button>
+  <button class="btn btn-sm" id="bulk-cancel-btn" style="display:none;background:rgba(220,38,38,.7);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="bulkCancelMovements()">🚫 إلغاء المحدد</button>
+  <button class="btn btn-sm" id="bulk-del-btn" style="background:rgba(220,38,38,.7);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="bulkArchiveMovements()">🗂️ أرشفة المحدد</button>
+  <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="clearMovSelection()">✕ إلغاء التحديد</button>
+</div>
+
 <div class="filter-bar">
 <input type="date" id="mov-from" style="width:150px" onchange="renderMovements()">
 <input type="date" id="mov-to" style="width:150px" onchange="renderMovements()">
@@ -491,7 +512,18 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <button class="tab-btn" onclick="setMovFilter('ملغي',this,'status')">ملغي</button>
 <div class="search-input"><input type="text" id="mov-search" placeholder="بحث..." oninput="debouncedRenderMovements()"></div>
 </div>
-<div class="overflow-x"><table id="mov-table"><thead><tr><th><input type="checkbox" class="checkbox" onchange="toggleAllMov(this)"></th><th>التاريخ</th><th>النوع</th><th>العميل/المورد</th><th>المرجع</th><th>الموظف</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody></tbody></table></div>
+<div class="overflow-x"><table id="mov-table"><thead><tr><th><input type="checkbox" class="checkbox" onchange="toggleAllMov(this)"></th><th>التاريخ والوقت</th><th>النوع</th><th>العميل/المورد</th><th>المرجع</th><th>الموظف</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody></tbody></table></div>
+</div><!-- end mov-panel-list -->
+
+<!-- Archive panel -->
+<div id="mov-panel-archive" style="display:none">
+<div class="flex-between mb-16">
+  <h2 class="page-title" style="margin-bottom:0">🗂️ الأرشيف — الحركات المحذوفة</h2>
+  <button class="btn btn-outline btn-sm" onclick="loadArchivedMovements()">🔄 تحديث</button>
+</div>
+<p class="text-muted" style="font-size:.85rem;margin-bottom:12px">الحركات المؤرشفة لا تؤثر على المخزون أو الخزنة. يمكن استعادتها وإعادة تفعيلها.</p>
+<div class="overflow-x"><table id="archive-table"><thead><tr><th>التاريخ</th><th>النوع</th><th>العميل/المورد</th><th>المرجع</th><th>الموظف</th><th>الإجمالي</th><th>تاريخ الأرشفة</th><th>بواسطة</th><th>إجراءات</th></tr></thead><tbody id="archive-tbody"><tr><td colspan="9" class="empty-state">جارٍ التحميل...</td></tr></tbody></table></div>
+</div><!-- end mov-panel-archive -->
 </div>
 
 <!-- Clients -->
@@ -1041,6 +1073,16 @@ function fmtDate(d) {
   const y = new Date(new Date(t).getTime() - 86400000).toISOString().slice(0, 10);
   if (str === y) return 'أمس';
   return str;
+}
+function fmtDateTime(d) {
+  if (!d) return '-';
+  try {
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return fmtDate(d);
+    const dateStr = dt.toLocaleDateString('ar-EG', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    const timeStr = dt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    return `${dateStr} — ${timeStr}`;
+  } catch (_) { return fmtDate(d); }
 }
 
 function toast(msg, isError = false) {
@@ -1931,22 +1973,47 @@ function isSaleEligibleForReturnShortcut(tx) {
   return diffDays <= RETURN_REQUEST_MAX_DAYS;
 }
 function updateMovementSelectionActions() {
-  const delBtn = qs('#bulk-del-btn');
+  const n = selectedMovIds.size;
+  const bulkBar = qs('#mov-bulk-bar');
   const retBtn = qs('#mov-return-from-selection-btn');
   const exchBtn = qs('#mov-exchange-from-selection-btn');
-  const n = selectedMovIds.size;
-  if (delBtn) delBtn.style.display = n > 0 ? 'inline-flex' : 'none';
+  const retBtn2 = qs('#mov-return-from-selection-btn2');
+  const exchBtn2 = qs('#mov-exchange-from-selection-btn2');
+  const bulkCancelBtn = qs('#bulk-cancel-btn');
+
+  if (bulkBar) bulkBar.style.display = n > 0 ? 'flex' : 'none';
+  if (retBtn) retBtn.style.display = 'none';
+  if (exchBtn) exchBtn.style.display = 'none';
+
+  if (n > 0) {
+    const selectedTxs = [...selectedMovIds].map(id => transactions.find(t => t._id === id)).filter(Boolean);
+    const totalVal = selectedTxs.reduce((s, t) => s + (t.total || 0), 0);
+    const infoEl = qs('#mov-bulk-info');
+    if (infoEl) infoEl.textContent = `✓ ${n} حركة محددة — الإجمالي: ${fmtJ(totalVal)}`;
+
+    // Show bulk cancel only if admin and at least one non-cancelled tx
+    const hasCancellable = selectedTxs.some(t => !t.cancelled && t.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(t));
+    if (bulkCancelBtn) bulkCancelBtn.style.display = isAdmin() && hasCancellable ? 'inline-flex' : 'none';
+  }
+
   const canTx = hasPerm('transaction');
   if (n !== 1 || !canTx) {
-    if (retBtn) retBtn.style.display = 'none';
-    if (exchBtn) exchBtn.style.display = 'none';
+    if (retBtn2) retBtn2.style.display = 'none';
+    if (exchBtn2) exchBtn2.style.display = 'none';
     return;
   }
   const id = [...selectedMovIds][0];
   const tx = transactions.find(t => t._id === id);
   const ok = isSaleEligibleForReturnShortcut(tx);
-  if (retBtn) retBtn.style.display = ok ? 'inline-flex' : 'none';
-  if (exchBtn) exchBtn.style.display = ok ? 'inline-flex' : 'none';
+  if (retBtn2) retBtn2.style.display = ok ? 'inline-flex' : 'none';
+  if (exchBtn2) exchBtn2.style.display = ok ? 'inline-flex' : 'none';
+}
+function clearMovSelection() {
+  selectedMovIds.clear();
+  qsa('#mov-table tbody .checkbox').forEach(b => { b.checked = false; });
+  const allCb = qs('#mov-table thead .checkbox');
+  if (allCb) allCb.checked = false;
+  updateMovementSelectionActions();
 }
 function openMovementReturnShortcut(asExchange) {
   if (!hasPerm('transaction')) { toast('ليس لديك صلاحية حركة جديدة', true); return; }
@@ -2380,11 +2447,23 @@ function renderMovementTxRow(tx) {
   const vaultHint = (tx.type === 'مرتجع' && String(tx.depMethod || '').trim())
     ? `<div class="text-xs text-muted" style="margin-top:4px">🏦 خصم من: <strong>${esc(tx.depMethod)}</strong></div>`
     : '';
+  const isCompleted = tx.payStatus === 'مكتمل' && !tx.cancelled;
+  const isCancelledOrLocked = tx.cancelled || tx.payStatus === 'ملغي';
+  const editLocked = isExchangeSalePendingCollect(tx) || isCompleted || isCancelledOrLocked;
+  const editItem = editLocked
+    ? `<div class="dd-item" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation()">✏️ تعديل <span class="text-xs">(${isExchangeSalePendingCollect(tx) ? 'مقفول' : isCancelledOrLocked ? 'ملغي' : 'مكتمل'})</span></div>`
+    : `<div class="dd-item" onclick="openEditMovement('${esc(tx._id)}')">✏️ تعديل</div>`;
+  // Full timestamp display
+  const createdAt = tx.createdAt || tx.date;
+  const dateCell = `<div style="font-size:.82rem;font-weight:600">${fmtDate(tx.date)}</div><div class="text-xs text-muted" style="margin-top:2px">${fmtDateTime(createdAt)}</div>`;
   return `<tr>
     <td><input type="checkbox" class="checkbox" value="${esc(tx._id)}" ${selectedMovIds.has(tx._id) ? 'checked' : ''} onchange="toggleMovCheck('${esc(tx._id)}',this.checked)"></td>
-    <td>${fmtDate(tx.date)}</td>
+    <td>${dateCell}</td>
     <td>${movementKindBadge(tx)}${vaultHint}</td>
-    <td>${tx.client ? `<a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" style="color:var(--primary);font-weight:600;text-decoration:none;cursor:pointer">${esc(tx.client)}</a>${(tx.editHistory && tx.editHistory.length) ? '<span class="badge-edited" title="تم التعديل" onclick="event.stopPropagation();showInvoiceDetail(\''+esc(tx._id)+'\')">✎ معدّل</span>' : ''}` : '-'}</td>
+    <td>
+      <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" style="color:var(--primary);font-weight:600;text-decoration:none;cursor:pointer">${tx.client ? esc(tx.client) : '<span style="color:var(--muted);font-weight:400">بدون اسم</span>'}</a>
+      ${(tx.editHistory && tx.editHistory.length) ? '<span class="badge-edited" title="تم التعديل" onclick="event.stopPropagation();showInvoiceDetail(\''+esc(tx._id)+'\')">✎ معدّل</span>' : ''}
+    </td>
     <td>${movementRefCell(tx)}</td>
     <td>${esc(tx.employee || '-')}</td>
     <td>${fmtJ(tx.total)}</td>
@@ -2395,12 +2474,14 @@ function renderMovementTxRow(tx) {
       <div class="actions-dd">
         <button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button>
         <div class="dd-menu">
-          ${isExchangeSalePendingCollect(tx) ? `<div class="dd-item" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">✏️ تعديل <span class="text-xs">(مقفول)</span></div>` : `<div class="dd-item" onclick="openEditMovement('${esc(tx._id)}')">✏️ تعديل</div>`}
-          <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')">🖨️ طباعة</div>
+          <div class="dd-item" onclick="showInvoiceDetail('${esc(tx._id)}')">📋 فتح الفاتورة</div>
+          <div class="dd-divider"></div>
+          ${editItem}
+          <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')">🖨️ طباعة / PDF</div>
           ${(tx.remaining || 0) > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')">${isExchangeSalePendingCollect(tx) ? '💰 تحصيل فرق الاستبدال' : '💰 تحصيل'}</div>` : ''}
           ${tx.type === 'مبيعات' && !tx.cancelled && isAdmin() ? `<div class="dd-item" onclick="openPostDiscountModal('${esc(tx._id)}')">💲 خصم بعد البيع</div>` : ''}
           ${tx.payStatus !== 'ملغي' && !tx.cancelled ? (isExchangeSalePendingCollect(tx) ? `<div class="dd-divider"></div><div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🚫 إلغاء <span class="text-xs">(مقفول)</span></div>` : `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')">🚫 إلغاء</div>`) : ''}
-          ${isAdmin() ? (isExchangeSalePendingCollect(tx) ? `<div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🗑️ حذف <span class="text-xs">(مقفول)</span></div>` : `<div class="dd-item danger" onclick="deleteMovement('${esc(tx._id)}')">🗑️ حذف</div>`) : ''}
+          ${isAdmin() ? (isExchangeSalePendingCollect(tx) ? `<div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🗑️ أرشفة <span class="text-xs">(مقفول)</span></div>` : `<div class="dd-item danger" onclick="archiveMovement('${esc(tx._id)}')">🗂️ أرشفة</div>`) : ''}
         </div>
       </div>
     </td>
@@ -2729,25 +2810,131 @@ async function doApplyPostDiscount(txId) {
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 
-async function deleteMovement(id) {
+async function archiveMovement(id) {
   const tx = transactions.find(t => t._id === id);
   if (tx && isExchangeSalePendingCollect(tx)) { toastExchangePendingLocked(); return; }
-  if (!confirm('هل تريد حذف هذه الحركة؟')) return;
-  try { await api('/transactions/' + id, { method: 'DELETE' }); toast('تم الحذف'); transactions = await api('/transactions').catch(() => transactions); renderMovements(); buildSidebar(); }
+  if (!confirm('سيتم نقل هذه الحركة إلى الأرشيف. لن تؤثر على المخزون أو الخزنة ويمكن استعادتها لاحقاً.\nهل تريد المتابعة؟')) return;
+  try {
+    await api('/transactions/' + id, { method: 'DELETE' });
+    toast('تم أرشفة الحركة');
+    transactions = await api('/transactions').catch(() => transactions);
+    renderMovements(); buildSidebar();
+  }
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
-async function bulkDeleteMovements() {
-  if (!selectedMovIds.size || !confirm(`حذف ${selectedMovIds.size} حركة؟`)) return;
-  try { await api('/transactions/bulk-delete', { method: 'POST', body: JSON.stringify({ ids: [...selectedMovIds] }) }); toast('تم الحذف'); selectedMovIds.clear(); transactions = await api('/transactions').catch(() => transactions); renderMovements(); buildSidebar(); }
+// Keep deleteMovement as alias for backward compatibility
+async function deleteMovement(id) { return archiveMovement(id); }
+
+async function bulkArchiveMovements() {
+  if (!selectedMovIds.size || !confirm(`سيتم أرشفة ${selectedMovIds.size} حركة. يمكن استعادتها لاحقاً من تبويب الأرشيف.\nهل تريد المتابعة؟`)) return;
+  try {
+    await api('/transactions/bulk-delete', { method: 'POST', body: JSON.stringify({ ids: [...selectedMovIds] }) });
+    toast('تم الأرشفة');
+    selectedMovIds.clear();
+    transactions = await api('/transactions').catch(() => transactions);
+    renderMovements(); buildSidebar();
+  }
   catch (e) { toast('خطأ: ' + e.message, true); }
+}
+// Keep bulkDeleteMovements as alias
+async function bulkDeleteMovements() { return bulkArchiveMovements(); }
+
+async function bulkCancelMovements() {
+  const ids = [...selectedMovIds];
+  const cancellable = ids.filter(id => {
+    const tx = transactions.find(t => t._id === id);
+    return tx && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx);
+  });
+  if (!cancellable.length) { toast('لا توجد حركات قابلة للإلغاء في التحديد', true); return; }
+  const reason = prompt(`سيتم إلغاء ${cancellable.length} حركة.\nأدخل سبب الإلغاء:`);
+  if (!reason || !reason.trim()) return;
+  let done = 0, errors = 0;
+  for (const id of cancellable) {
+    try {
+      await api('/transactions/' + id + '/cancel', {
+        method: 'POST',
+        body: JSON.stringify({ cancelReason: reason.trim(), cancelledBy: currentUser?.name || currentUser?.username || '' }),
+      });
+      done++;
+    } catch (_) { errors++; }
+  }
+  toast(`تم إلغاء ${done} حركة${errors ? ' — فشل ' + errors : ''}`);
+  selectedMovIds.clear();
+  transactions = await api('/transactions').catch(() => transactions);
+  renderMovements(); buildSidebar(); syncVaultState();
 }
 
-function exportMovementsExcel() {
-  const data = transactions.map(tx => ({
+let archivedMovements = [];
+async function loadArchivedMovements() {
+  const tbody = qs('#archive-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="empty-state">⏳ جارٍ التحميل...</td></tr>';
+  try {
+    archivedMovements = await api('/transactions/archived');
+    renderArchivedMovements();
+  } catch (e) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="empty-state">خطأ: ${esc(e.message)}</td></tr>`;
+  }
+}
+function renderArchivedMovements() {
+  const tbody = qs('#archive-tbody');
+  if (!tbody) return;
+  if (!archivedMovements.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">لا توجد حركات مؤرشفة</td></tr>';
+    return;
+  }
+  tbody.innerHTML = archivedMovements.map(tx => `<tr>
+    <td><div style="font-size:.82rem">${fmtDate(tx.date)}</div></td>
+    <td>${movementKindBadge(tx)}</td>
+    <td>${esc(tx.client || '-')}</td>
+    <td><span style="font-size:.82rem;color:var(--muted)">${tx.ref ? '#' + esc(tx.ref) : '-'}</span></td>
+    <td>${esc(tx.employee || '-')}</td>
+    <td>${fmtJ(tx.total)}</td>
+    <td><div class="text-xs">${tx.archivedAt ? fmtDateTime(tx.archivedAt) : '-'}</div></td>
+    <td><span class="text-xs">${esc(tx.archivedBy || '-')}</span></td>
+    <td>
+      <div class="flex gap-8">
+        <button class="btn btn-outline btn-sm" onclick="restoreMovement('${esc(tx._id)}')">♻️ استعادة</button>
+        <button class="btn btn-sm" style="background:var(--red);color:#fff;font-size:.75rem" onclick="hardDeleteMovement('${esc(tx._id)}')">🗑 حذف نهائي</button>
+      </div>
+    </td>
+  </tr>`).join('');
+}
+async function restoreMovement(id) {
+  if (!confirm('سيتم استعادة الحركة وإعادة تفعيلها. ستعود للتأثير على المخزون والخزنة.\nهل تريد المتابعة؟')) return;
+  try {
+    await api('/transactions/' + id + '/restore', { method: 'POST' });
+    toast('تم استعادة الحركة');
+    archivedMovements = archivedMovements.filter(t => t._id !== id);
+    renderArchivedMovements();
+    transactions = await api('/transactions').catch(() => transactions);
+    buildSidebar();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+async function hardDeleteMovement(id) {
+  if (!isAdmin()) { toast('هذه العملية للمدير فقط', true); return; }
+  if (!confirm('⚠️ حذف نهائي — لا يمكن التراجع عن هذا الإجراء!\nهل أنت متأكد تماماً؟')) return;
+  if (!confirm('تأكيد مرة ثانية: سيتم حذف الحركة نهائياً من قاعدة البيانات.')) return;
+  // For hard delete, we archive then delete — but we don't have a hard delete endpoint.
+  // Instead, inform admin to use the clearAll or DB tools.
+  toast('للحذف النهائي، تواصل مع مسؤول النظام', true);
+}
+
+function switchMovTab(tab, btn) {
+  qsa('#page-movements .tab-btn[id^="mov-tab"]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  qs('#mov-panel-list').style.display = tab === 'list' ? 'block' : 'none';
+  qs('#mov-panel-archive').style.display = tab === 'archive' ? 'block' : 'none';
+  if (tab === 'archive') loadArchivedMovements();
+}
+
+function txToExcelRow(tx) {
+  return {
     'التاريخ': (tx.date || '').slice(0, 10),
+    'التوقيت': tx.createdAt ? fmtDateTime(tx.createdAt) : '',
     'نوع العرض': movementDisplayKindLabel(tx),
     'نوع النظام': tx.type,
     'العميل': tx.client,
+    'الهاتف': tx.phone || '',
     'مرجع الفاتورة': movementBaseRef(tx.ref || '') || tx.ref || '',
     'مرجع العملية': tx.ref,
     'الموظف': tx.employee,
@@ -2755,25 +2942,62 @@ function exportMovementsExcel() {
     'المدفوع': exchangeSalePaidDisplayAmount(tx),
     'المتبقي': tx.remaining,
     'الحالة': isExchangeSalePendingCollect(tx) ? 'معلق (فرق استبدال — للشركة)' : tx.payStatus,
-  }));
+  };
+}
+function exportMovementsExcel() {
+  const data = transactions.map(txToExcelRow);
   writeExcel(data, 'الحركات', 'movements_' + today());
+}
+function exportSelectedExcel() {
+  if (!selectedMovIds.size) { toast('لم يتم تحديد أي حركات', true); return; }
+  const selected = [...selectedMovIds].map(id => transactions.find(t => t._id === id)).filter(Boolean);
+  const data = selected.map(txToExcelRow);
+  writeExcel(data, 'الحركات المحددة', 'selected_movements_' + today());
+  toast(`تم تصدير ${selected.length} حركة`);
+}
+function buildInvoiceHtml(tx) {
+  const itemsHtml = (tx.items || []).map((it, i) => `<tr><td>${i+1}</td><td>${esc(it.name || '')}</td><td>${it.qty}</td><td>${fmtJ(it.price)}</td><td>${fmtJ(it.total)}</td></tr>`).join('');
+  return `<div class="invoice-page" style="page-break-after:always;font-family:'Cairo',sans-serif;padding:24px;max-width:700px;margin:0 auto;direction:rtl">
+    <div style="text-align:center;margin-bottom:16px;border-bottom:2px solid #00311e;padding-bottom:12px">
+      <h2 style="color:#00311e;margin:0">Soulia</h2>
+      <p style="margin:4px 0;color:#555">فاتورة ${esc(tx.type)}</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;font-size:13px">
+      <div><strong>التاريخ:</strong> ${esc((tx.date || '').slice(0, 10))}</div>
+      <div><strong>المرجع:</strong> ${tx.ref ? '#' + esc(tx.ref) : '-'}</div>
+      <div><strong>العميل:</strong> ${esc(tx.client || '-')}</div>
+      <div><strong>الهاتف:</strong> ${esc(tx.phone || '-')}</div>
+      <div><strong>الموظف:</strong> ${esc(tx.employee || '-')}</div>
+      <div><strong>الحالة:</strong> ${esc(tx.payStatus || '-')}</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px">
+      <thead><tr style="background:#00311e;color:#fff"><th style="padding:6px;text-align:right">#</th><th style="padding:6px;text-align:right">الصنف</th><th style="padding:6px;text-align:right">الكمية</th><th style="padding:6px;text-align:right">السعر</th><th style="padding:6px;text-align:right">الإجمالي</th></tr></thead>
+      <tbody>${itemsHtml}</tbody>
+    </table>
+    <div style="text-align:left;font-size:13px">
+      ${tx.discount ? `<div>الخصم: <span style="color:red">- ${fmtJ(tx.discount)}</span></div>` : ''}
+      ${tx.shipCost ? `<div>الشحن: + ${fmtJ(tx.shipCost)}</div>` : ''}
+      <div style="font-size:16px;font-weight:700;margin-top:8px">الإجمالي: ${fmtJ(tx.total)}</div>
+      <div>المدفوع: <span style="color:green">${fmtJ(exchangeSalePaidDisplayAmount(tx))}</span></div>
+      ${(tx.remaining || 0) > 0 ? `<div>المتبقي: <span style="color:red">${fmtJ(tx.remaining)}</span></div>` : ''}
+    </div>
+    ${tx.notes ? `<div style="margin-top:12px;padding:8px;background:#f0f4f2;border-radius:6px;font-size:12px"><strong>ملاحظات:</strong> ${esc(tx.notes)}</div>` : ''}
+  </div>`;
+}
+function bulkPrintPDF() {
+  if (!selectedMovIds.size) { toast('لم يتم تحديد أي حركات', true); return; }
+  const selected = [...selectedMovIds].map(id => transactions.find(t => t._id === id)).filter(Boolean);
+  const w = window.open('', '_blank');
+  const allHtml = selected.map(tx => buildInvoiceHtml(tx)).join('');
+  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet"><style>*{box-sizing:border-box}body{margin:0;padding:0;font-family:'Cairo',sans-serif}@media print{.invoice-page{page-break-after:always}}</style></head><body>${allHtml}<script>setTimeout(()=>window.print(),500)<\/script></body></html>`);
+  w.document.close();
+  toast(`جارٍ طباعة ${selected.length} فاتورة`);
 }
 
 function printInvoice(id) {
   const tx = transactions.find(t => t._id === id); if (!tx) return;
   const w = window.open('', '_blank');
-  const itemsHtml = (tx.items || []).map(it => `<tr><td>${esc(it.name || '')}</td><td>${it.qty}</td><td>${fmtJ(it.price)}</td><td>${fmtJ(it.total)}</td></tr>`).join('');
-  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><style>body{font-family:'Cairo',sans-serif;padding:20px;font-size:13px}table{width:100%;border-collapse:collapse;margin:16px 0}th,td{border:1px solid #ddd;padding:8px;text-align:right}th{background:#f5f5f5}.header{text-align:center;margin-bottom:20px}.total{text-align:left;margin-top:16px;font-size:16px;font-weight:bold}</style></head><body>
-    <div class="header"><h2>Soulia</h2><p>فاتورة ${esc(tx.type)}</p></div>
-    <p><strong>التاريخ:</strong> ${esc((tx.date || '').slice(0, 10))}</p>
-    <p><strong>العميل:</strong> ${esc(tx.client || '-')} | <strong>الهاتف:</strong> ${esc(tx.phone || '-')}</p>
-    <p><strong>المرجع:</strong> ${esc(tx.ref || '-')}</p>
-    <table><thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead><tbody>${itemsHtml}</tbody></table>
-    ${tx.discount ? `<p>الخصم: ${fmtJ(tx.discount)}</p>` : ''}
-    ${tx.shipCost ? `<p>الشحن: ${fmtJ(tx.shipCost)}</p>` : ''}
-    <div class="total">الإجمالي: ${fmtJ(tx.total)}</div>
-    <p>المدفوع: ${fmtJ(exchangeSalePaidDisplayAmount(tx))} | المتبقي: ${fmtJ(tx.remaining)}</p>
-    <script>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet"><style>*{box-sizing:border-box}body{margin:0;font-family:'Cairo',sans-serif}</style></head><body>${buildInvoiceHtml(tx)}<script>setTimeout(()=>window.print(),400)<\/script></body></html>`);
   w.document.close();
 }
 
@@ -2891,7 +3115,7 @@ function showInvoiceDetail(id) {
     <div class="inv-body">
       <div class="inv-status-strip ${statusClass}">${statusText}</div>
       <div class="inv-meta">
-        <div class="inv-field"><span class="inv-label">التاريخ</span><span class="inv-value">${fmtDate(tx.date)}</span></div>
+        <div class="inv-field"><span class="inv-label">التاريخ والوقت</span><span class="inv-value">${fmtDateTime(tx.createdAt || tx.date)}</span></div>
         <div class="inv-field"><span class="inv-label">الرقم المرجعي</span><span class="inv-value" style="direction:ltr">${tx.ref ? '#' + esc(tx.ref) : '-'}</span></div>
         <div class="inv-field"><span class="inv-label">اسم العميل</span><span class="inv-value">${esc(tx.client || '-')}</span></div>
         <div class="inv-field"><span class="inv-label">الهاتف</span><span class="inv-value" dir="ltr">${esc(tx.phone || '-')}</span></div>
