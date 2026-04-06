@@ -49,10 +49,10 @@ export class ComplaintsController {
   @Post()
   async create(
     @Body() dto: CreateComplaintDto,
-    @Req() req: { user: { name: string; username: string; sub: string } },
+    @Req() req: { user: { name: string; username: string; userId: string } },
   ) {
     const submittedBy = req.user.name || req.user.username;
-    const submittedById = req.user.sub;
+    const submittedById = req.user.userId;
     return this.complaintsService.create(dto, submittedBy, submittedById);
   }
 
