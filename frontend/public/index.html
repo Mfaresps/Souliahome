@@ -495,7 +495,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
   </div>
 
   <!-- KPI Summary Cards -->
-  <div id="mov-kpi-strip" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;"></div>
+  <div id="mov-kpi-strip" class="kpi-strip" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;"></div>
 
   <!-- Bulk selection bar (shown when items selected) -->
   <div id="mov-bulk-bar" style="display: none; background: var(--primary); color: #fff; border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; align-items: center;" class="flex">
@@ -2774,7 +2774,7 @@ function renderMovements() {
   ].sort((a, b) => (b.sk || '').localeCompare(a.sk || ''));
 
   // Calculate KPIs
-  const allTx = data.filter(row => row.k === 'tx').map(r => r.tx);
+  const allTx = data;
   const totalRevenue = allTx.filter(t => t.type === 'مبيعات').reduce((s, t) => s + (t.total || 0), 0);
   const totalPurchases = allTx.filter(t => t.type === 'مشتريات').reduce((s, t) => s + (t.total || 0), 0);
   const totalRemaining = allTx.reduce((s, t) => s + (t.remaining || 0), 0);
@@ -3168,22 +3168,112 @@ function updateCollectPreview(txId, totalRemaining) {
     el.innerHTML = `<span style="color:var(--orange)">⚠️ سداد جزئي — سيبقى متبقي: <strong style="color:var(--red)">${fmtJ(newRemaining)}</strong></span>`;
   }
 }
+
+/** احصل على رصيد الحساب/القسم في الخزنة */
+function getVaultBalance(segmentLabel) {
+  if (!settings) return 0;
+  switch (segmentLabel) {
+    case 'كاش': return settings.vaultCash || 0;
+    case 'فودافون كاش': return settings.vaultVodafone || 0;
+    case 'Instapay': return settings.vaultInstapay || 0;
+    case 'تحويل بنكي': return settings.vaultBank || 0;
+    default: return 0;
+  }
+}
+
+/** تسجيل محاولة دفع فاشلة في السجل */
+function logFailedPaymentAttempt(reason, details) {
+  const timestamp = new Date().toISOString();
+  const log = { timestamp, reason, details, userId: currentUser?._id, userName: currentUser?.name };
+  console.warn('[Failed Payment Attempt]', log);
+}
+
 async function doCollectMovement(id) {
   try {
+    const btn = event?.target;
     const tx = transactions.find(t => t._id === id);
+    if (!tx) { toast('خطأ: الحركة غير موجودة', true); return; }
+    
     const isPurchase = tx?.type === 'مشتريات';
-    const body = { collectMethod: qs('#collect-method').value, collectNote: qs('#collect-note')?.value || '' };
+    const collectMethod = qs('#collect-method')?.value;
+    const collectNote = qs('#collect-note')?.value || '';
+    
+    // ===== التحقق الأساسي =====
+    if (!collectMethod) { toast('اختر الحساب أولاً', true); return; }
+    
+    // ===== التحقق الخاص بالمشتريات (سداد المورد) =====
+    let amountToDeduct = 0;
     if (isPurchase) {
       const amt = Number(qs('#collect-amount')?.value) || 0;
       if (!amt || amt <= 0) { toast('أدخل مبلغاً صحيحاً', true); return; }
-      body.collectAmount = amt;
+      if (amt > (tx.remaining || 0)) { toast('المبلغ أكبر من المتبقي', true); return; }
+      amountToDeduct = amt;
+    } else {
+      // للتحصيل (مبيعات)، المبلغ = المتبقي
+      amountToDeduct = tx.remaining || 0;
     }
+    
+    // ===== التحقق الحاسم: الرصيد كافٍ في الحساب ؟ =====
+    const currentBalance = getVaultBalance(collectMethod);
+    if (amountToDeduct > currentBalance) {
+      const shortage = amountToDeduct - currentBalance;
+      const failMsg = `الرصيد غير كافي في "${collectMethod}": الرصيد الحالي ${fmtJ(currentBalance)}, لكن تحتاج ${fmtJ(amountToDeduct)} (نقص ${fmtJ(shortage)})`;
+      toast(failMsg, true);
+      
+      // ===== تسجيل محاولة فاشلة =====
+      logFailedPaymentAttempt('insufficient_balance', {
+        txId: id,
+        txType: tx.type,
+        txRef: tx.ref,
+        client: tx.client,
+        amount: amountToDeduct,
+        vault: collectMethod,
+        currentBalance: currentBalance,
+        shortage: shortage
+      });
+      return;
+    }
+    
+    // ===== منع الضغط المزدوج =====
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+      btn.textContent = '⏳ جاري المعالجة...';
+    }
+    
+    // ===== إرسال الطلب =====
+    const body = { collectMethod, collectNote };
+    if (isPurchase) body.collectAmount = amountToDeduct;
+    
     await api('/transactions/' + id + '/collect', { method: 'POST', body: JSON.stringify(body) });
-    toast(isPurchase ? 'تم السداد بنجاح' : 'تم التحصيل'); closeModal();
+    
+    toast(isPurchase ? 'تم السداد بنجاح ✅' : 'تم التحصيل ✅');
+    closeModal();
+    
+    // ===== تحديث البيانات =====
     transactions = await api('/transactions').catch(() => transactions);
+    settings = await api('/settings').catch(() => settings);
     renderMovements(); buildSidebar(); buildNotifications();
     syncVaultState();
-  } catch (e) { toast('خطأ: ' + e.message, true); }
+    
+  } catch (e) {
+    const btn = event?.target;
+    if (btn) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.textContent = isPurchase ? '💸 تأكيد السداد' : '💰 تحصيل';
+    }
+    
+    const errorMsg = e.message || 'خطأ غير معروف';
+    toast(`خطأ: ${errorMsg}`, true);
+    
+    // ===== تسجيل الخطأ =====
+    logFailedPaymentAttempt('api_error', {
+      txId: id,
+      error: errorMsg,
+      timestamp: new Date().toISOString()
+    });
+  }
 }
 
 function openPostDiscountModal(txId) {
@@ -3229,14 +3319,51 @@ async function doApplyPostDiscount(txId) {
   const notes = qs('#post-disc-notes')?.value || '';
   if (!amount || amount <= 0) { toast('أدخل مبلغ الخصم', true); return; }
   if (!vaultAccount) { toast('اختر قسم الخزنة', true); return; }
+  
+  // ===== التحقق من الرصيد قبل تطبيق الخصم =====
+  const currentBalance = getVaultBalance(vaultAccount);
+  if (amount > currentBalance) {
+    const shortage = amount - currentBalance;
+    const failMsg = `الرصيد غير كافي في "${vaultAccount}": الرصيد الحالي ${fmtJ(currentBalance)}, لكن تحتاج ${fmtJ(amount)} (نقص ${fmtJ(shortage)})`;
+    toast(failMsg, true);
+    logFailedPaymentAttempt('post_discount_insufficient_balance', {
+      txId: txId,
+      amount: amount,
+      vault: vaultAccount,
+      currentBalance: currentBalance,
+      shortage: shortage
+    });
+    return;
+  }
+  
+  const btn = event?.target;
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.textContent = '⏳ جاري التطبيق...';
+  }
+  
   try {
     await api('/transactions/' + txId + '/post-discount', { method: 'POST', body: JSON.stringify({ amount, vaultAccount, notes }) });
     toast('✅ تم تطبيق الخصم وخصم المبلغ من الخزنة');
     closeModal();
     transactions = await api('/transactions').catch(() => transactions);
+    settings = await api('/settings').catch(() => settings);
     buildNotifications(); buildSidebar(); renderMovements();
     syncVaultState();
-  } catch (e) { toast('خطأ: ' + e.message, true); }
+  } catch (e) { 
+    const btn = event?.target;
+    if (btn) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.textContent = '💲 تطبيق الخصم';
+    }
+    toast('خطأ: ' + e.message, true);
+    logFailedPaymentAttempt('post_discount_api_error', {
+      txId: txId,
+      error: e.message
+    });
+  }
 }
 
 async function archiveMovement(id) {
@@ -3398,6 +3525,7 @@ function buildInvoiceHtml(tx) {
     <tr style="background:${i%2===0?'#fff':'#f8fafb'}">
       <td style="padding:8px 10px;text-align:center;border-bottom:1px solid #e2e8e4">${i+1}</td>
       <td style="padding:8px 10px;border-bottom:1px solid #e2e8e4;font-weight:500">${esc(it.name || '')}</td>
+      <td style="padding:8px 10px;text-align:center;border-bottom:1px solid #e2e8e4;font-size:11px;color:#6b8c78">${esc(it.code || '-')}</td>
       <td style="padding:8px 10px;text-align:center;border-bottom:1px solid #e2e8e4">${it.qty}</td>
       <td style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e8e4">${fmtJ(it.price)}</td>
       <td style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e8e4;font-weight:700;color:#00311e">${fmtJ(it.total)}</td>
@@ -3437,6 +3565,7 @@ function buildInvoiceHtml(tx) {
         <tr style="background:#00311e;color:#fff">
           <th style="padding:10px;text-align:center;width:40px">#</th>
           <th style="padding:10px;text-align:right">الصنف</th>
+          <th style="padding:10px;text-align:center;width:80px">الكود</th>
           <th style="padding:10px;text-align:center;width:70px">الكمية</th>
           <th style="padding:10px;text-align:left;width:100px">السعر</th>
           <th style="padding:10px;text-align:left;width:110px">الإجمالي</th>
@@ -3584,6 +3713,7 @@ function showInvoiceDetail(id) {
     <tr>
       <td style="color:var(--muted)">${i + 1}</td>
       <td style="font-weight:600">${esc(it.name || '')}</td>
+      <td style="color:var(--muted);font-size:.75rem" dir="ltr">${esc(it.code || '-')}</td>
       <td>${fmtN(it.qty)}</td>
       <td>${fmtJ(it.price)}</td>
       <td style="font-weight:600">${fmtJ(it.total)}</td>
@@ -3609,7 +3739,7 @@ function showInvoiceDetail(id) {
         ${tx.collectedAt ? `<div class="inv-field"><span class="inv-label">${isPurchase ? 'تاريخ السداد' : 'تاريخ التحصيل'}</span><span class="inv-value">${esc(tx.collectedAt)}</span></div>` : ''}
       </div>
       <table class="inv-items-tbl">
-        <thead><tr><th>#</th><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+        <thead><tr><th>#</th><th>الصنف</th><th>الكود</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
         <tbody>${itemsRows}</tbody>
       </table>
       <div class="inv-summary">
@@ -3931,7 +4061,7 @@ function openSupplierInvoices(supplierName) {
     <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;font-size:.82rem">
       <div><span class="text-muted">إجمالي المشتريات: </span><strong>${fmtJ(totalPurchased)}</strong></div>
       <div><span class="text-muted">المدفوع: </span><strong class="text-green">${fmtJ(totalPaid)}</strong></div>
-      ${totalRemaining > 0 ? `<div><span class="text-muted">المديونية: </span><strong class="text-red">${fmtJ(totalRemaining)}</strong> (${debtCount} فاتورة)</div>` : '<div><span class="badge badge-green">تم السداد بالكامل</span></div>'}
+      ${totalRemaining > 0 ? `<div><span class="text-muted">المديونية: </span><strong class="text-red">${fmtJ(totalRemaining)}</strong> (${debtCount} فاتورة)</div>` : (txs.length > 0 ? '<div><span class="badge badge-green">تم السداد بالكامل</span></div>' : '')}
     </div>
     <div class="overflow-x">
       <table style="width:100%;font-size:.82rem;border-collapse:collapse">
@@ -4031,7 +4161,8 @@ function renderExpenses() {
     
     const approveActions = isAdmin() && isPending ? `<div class="dd-item" onclick="approveExpense('${esc(e._id)}')">✅ اعتماد</div><div class="dd-item danger" onclick="rejectExpense('${esc(e._id)}')">❌ رفض</div><div class="dd-divider"></div>` : '';
     const editAction = isPending ? `<div class="dd-item" onclick="openExpenseModal('${esc(e._id)}')">✏️ تعديل</div>` : '';
-    const deleteAction = e.status !== 'معتمد' ? `<div class="dd-item danger" onclick="deleteExpense('${esc(e._id)}')">🗑️ حذف</div>` : '';
+    const printAction = `<div class="dd-item" onclick="printExpenseDetails('${esc(e._id)}')">🞨 طباعة التفاصيل</div>`;
+    const deleteAction = e.status !== 'معتمد' ? `<div class="dd-item danger" onclick="deleteExpenseWithPassword('${esc(e._id)}')">🗑️ حذف</div>` : '';
     
     return `<tr style="border-bottom: 1px solid var(--border); transition: background 0.2s; ${isPending ? 'background: var(--primary-pale); opacity: 0.95;' : ''}">
       <td style="width: 40px; text-align: center; padding: 12px 8px;"><input type="checkbox" class="exp-chk" value="${esc(e._id)}" ${!isPending ? 'disabled' : ''}></td>
@@ -4042,7 +4173,7 @@ function renderExpenses() {
       <td style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--red);">${fmtJ(e.amount)}</td>
       <td style="padding: 12px 16px; text-align: center;"><span style="background: ${statusInfo.bg}; color: ${statusInfo.color}; padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">${statusInfo.icon} ${esc(e.status || 'معلق')}</span></td>
       <td style="padding: 12px 16px; color: var(--muted); font-size: 0.9rem;">${esc(e.employee || '-')}</td>
-      <td style="width: 60px; text-align: center; padding: 12px 8px;"><div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu">${approveActions}${editAction}${deleteAction}</div></div></td>
+      <td style="width: 60px; text-align: center; padding: 12px 8px;"><div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu">${approveActions}${printAction}${editAction}${deleteAction}</div></div></td>
     </tr>`;
   }).join('') : '<tr><td colspan="9" style="padding: 40px 16px; text-align: center; color: var(--muted);">📋 لا توجد مصاريف تطابق البحث</td></tr>';
   
@@ -4101,6 +4232,186 @@ async function deleteExpense(id) {
   if (!confirm('حذف هذا المصروف؟')) return;
   try { await api('/expenses/' + id, { method: 'DELETE' }); toast('تم الحذف'); expenses = await api('/expenses').catch(() => expenses); renderExpenses(); }
   catch (e) { toast('خطأ: ' + e.message, true); }
+}
+
+async function deleteExpenseWithPassword(id) {
+  const exp = expenses.find(x => x._id === id);
+  if (exp && exp.status === 'معتمد') { toast('لا يمكن حذف مصروف معتمد', true); return; }
+  
+  let pass = '';
+  openModal(`
+    <h3>🔐 التحقق من الخزنة</h3>
+    <p style="color: var(--muted); margin-bottom: 16px;">يجب إدخال رقم السر للخزنة لحذف المصروف <strong>${esc(exp?.desc || 'المصروف')}</strong></p>
+    <div class="form-group">
+      <label>رقم السر *</label>
+      <input type="password" id="del-pass-input" placeholder="أدخل رقم السر" style="width: 100%;">
+    </div>
+    <div class="flex gap-8 mt-16">
+      <button class="btn btn-danger" onclick="confirmDeleteExpenseWithPassword('${esc(id)}', qs('#del-pass-input').value)">🗑️ حذف نهائي</button>
+      <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+    </div>
+  `);
+  setTimeout(() => qs('#del-pass-input')?.focus(), 100);
+}
+
+async function confirmDeleteExpenseWithPassword(id, password) {
+  if (!password) { toast('يجب إدخال رقم السر', true); return; }
+  try {
+    // التحقق من كلمة السر أولاً
+    await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password }) });
+    // إذا صح الرقم، نقوم بالحذف
+    await api('/expenses/' + id, { method: 'DELETE' });
+    toast('✅ تم حذف المصروف بعد التحقق من كلمة السر');
+    closeModal();
+    expenses = await api('/expenses').catch(() => expenses);
+    renderExpenses();
+  } catch (e) { 
+    toast('❌ رقم السر غير صحيح أو حدث خطأ: ' + e.message, true);
+  }
+}
+
+function printExpenseDetails(id) {
+  const exp = expenses.find(e => e._id === id);
+  if (!exp) return;
+  
+  const statusColors = {
+    'معتمد': { bg: '#10b981', color: '#fff' },
+    'معلق': { bg: '#f59e0b', color: '#fff' },
+    'مرفوض': { bg: '#ef4444', color: '#fff' }
+  };
+  
+  const statusInfo = statusColors[exp.status] || statusColors['معلق'];
+  
+  const approvalInfo = exp.approvedAt && exp.approvedBy ? `
+    <div style="margin-top: 12px; padding: 12px; background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 4px;">
+      <div style="font-size: 0.85rem; color: #047857; line-height: 1.6;">
+        <div><strong>✅ جرى الاعتماد</strong></div>
+        <div>التاريخ والوقت: <strong>${fmtDateTime(exp.approvedAt)}</strong></div>
+        <div>معتمد من قبل: <strong>${esc(exp.approvedBy)}</strong></div>
+        ${exp.approvalNotes ? `<div>الملاحظات: <strong>${esc(exp.approvalNotes)}</strong></div>` : ''}
+      </div>
+    </div>
+  ` : '';
+  
+  const html = `
+    <!DOCTYPE html>
+    <html dir="rtl" lang="ar">
+    <head>
+      <meta charset="UTF-8">
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+      <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Cairo', sans-serif; background: #f5f5f5; padding: 20px; }
+        .expense-slip { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 3px solid #00311e; }
+        .header h1 { margin: 0; color: #00311e; font-size: 28px; font-weight: 900; }
+        .status-badge { background: ${statusInfo.bg}; color: ${statusInfo.color}; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 14px; }
+        .field-group { margin-bottom: 16px; }
+        .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .field-label { font-size: 11px; color: #6b8c78; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+        .field-value { font-size: 14px; color: #0f1f16; font-weight: 500; }
+        .amount-box { background: linear-gradient(135deg, #00311e 0%, #1e5145 100%); color: #fff; padding: 20px 16px; border-radius: 10px; margin: 20px 0; }
+        .amount-label { font-size: 12px; opacity: 0.8; margin-bottom: 4px; }
+        .amount-value { font-size: 32px; font-weight: 900; }
+        .info-section { background: #f8fafb; border: 1px solid #e2e8e4; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+        .info-title { font-size: 11px; color: #6b8c78; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
+        .info-text { font-size: 13px; color: #0f1f16; line-height: 1.6; }
+        .footer { margin-top: 24px; padding-top: 14px; border-top: 1px solid #e2e8e4; text-align: center; font-size: 11px; color: #6b8c78; }
+        @media print { body { padding: 0; background: #fff; } .expense-slip { box-shadow: none; } }
+      </style>
+    </head>
+    <body>
+      <div class="expense-slip">
+        <div class="header">
+          <div>
+            <h1>Soulia</h1>
+            <p style="margin: 4px 0 0; color: #6b8c78; font-size: 13px;">نظام إدارة المصاريف</p>
+          </div>
+          <div class="status-badge">${esc(exp.status)}</div>
+        </div>
+        
+        <div class="field-row">
+          <div>
+            <div class="field-label">رقم المصروف</div>
+            <div class="field-value">${exp.expenseNo ? '#' + esc(exp.expenseNo) : '-'}</div>
+          </div>
+          <div>
+            <div class="field-label">التاريخ</div>
+            <div class="field-value">${fmtDate(exp.date)}</div>
+          </div>
+        </div>
+        
+        <div class="field-group">
+          <div class="field-label">الوصف / البيان</div>
+          <div class="field-value">${esc(exp.desc || '-')}</div>
+        </div>
+        
+        <div class="field-row">
+          <div>
+            <div class="field-label">الفئة</div>
+            <div class="field-value">${esc(exp.category || '-')}</div>
+          </div>
+          <div>
+            <div class="field-label">الحساب / المصدر</div>
+            <div class="field-value">${esc(exp.account || '-')}</div>
+          </div>
+        </div>
+        
+        <div class="amount-box">
+          <div class="amount-label">المبلغ الكلي</div>
+          <div class="amount-value">${fmtJ(exp.amount)}</div>
+        </div>
+        
+        <div class="field-row">
+          <div>
+            <div class="field-label">المسجل من قبل</div>
+            <div class="field-value">${esc(exp.employee || '-')}</div>
+          </div>
+          <div>
+            <div class="field-label">تاريخ الإنشاء</div>
+            <div class="field-value">${fmtDateTime(exp.createdAt || exp.date)}</div>
+          </div>
+        </div>
+        
+        ${exp.status === 'معتمد' ? `
+        <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 10px; padding: 14px; margin: 16px 0;">
+          <div class="field-label" style="color: #155724; margin-bottom: 8px;">معلومات الاعتماد</div>
+          <div style="font-size: 13px; color: #155724; line-height: 1.6;">
+            <div>✅ <strong>تم الاعتماد بواسطة:</strong> ${esc(exp.approvedBy || '-')}</div>
+            <div style="margin-top: 4px;"><strong>التاريخ والوقت:</strong> ${fmtDateTime(exp.approvedAt || exp.date)}</div>
+            ${exp.approvalNotes ? `<div style="margin-top: 4px;"><strong>ملاحظات الاعتماد:</strong> ${esc(exp.approvalNotes)}</div>` : ''}
+          </div>
+        </div>
+        ` : (exp.status === 'مرفوض' ? `
+        <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 10px; padding: 14px; margin: 16px 0;">
+          <div class="field-label" style="color: #721c24; margin-bottom: 8px;">معلومات الرفض</div>
+          <div style="font-size: 13px; color: #721c24; line-height: 1.6;">
+            <div>❌ <strong>تم الرفض بواسطة:</strong> ${esc(exp.rejectedBy || '-')}</div>
+            <div style="margin-top: 4px;"><strong>التاريخ والوقت:</strong> ${fmtDateTime(exp.rejectedAt || exp.date)}</div>
+            ${exp.rejectionReason ? `<div style="margin-top: 4px;"><strong>سبب الرفض:</strong> ${esc(exp.rejectionReason)}</div>` : ''}
+          </div>
+        </div>
+        ` : '')}
+        
+        ${exp.notes ? `
+        <div class="info-section">
+          <div class="info-title">ملاحظات إضافية</div>
+          <div class="info-text">${esc(exp.notes)}</div>
+        </div>
+        ` : ''}
+        
+        <div class="footer">
+          تم طباعة هذا المستند من نظام Soulia في ${new Date().toLocaleDateString('ar-EG')} الساعة ${new Date().toLocaleTimeString('ar-EG')}
+        </div>
+      </div>
+      <script>setTimeout(() => window.print(), 400)</script>
+    </body>
+    </html>
+  `;
+  
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
 }
 async function bulkDeleteExpenses() {
   const ids = Array.from(document.querySelectorAll('.exp-chk:checked')).map(c => c.value);
