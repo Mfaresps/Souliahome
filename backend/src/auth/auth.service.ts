@@ -39,6 +39,10 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('اسم المستخدم أو كلمة المرور غلط');
     }
+    if (user.isActive === false) {
+      throw new UnauthorizedException('هذا الحساب معطل، تواصل مع المدير');
+    }
+    await this.usersService.updateLastLogin(user._id.toString());
     const payload = { sub: user._id.toString(), username: user.username };
     return {
       accessToken: this.jwtService.sign(payload),

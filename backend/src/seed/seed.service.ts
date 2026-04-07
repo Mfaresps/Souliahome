@@ -193,9 +193,10 @@ export class SeedService {
   private async seedUsers(): Promise<void> {
     const count = await this.usersService.countUsers();
     if (count > 0) {
-      this.logger.log('Users already seeded, skipping.');
+      this.logger.log(`Found ${count} existing users, skipping seed.`);
       return;
     }
+    this.logger.log('No users found, seeding default users...');
     try {
       for (const userData of DEFAULT_USERS) {
         try {

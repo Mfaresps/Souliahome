@@ -1,4 +1,5 @@
 import { Module, OnModuleInit } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CoreModule } from './core/core.module';
@@ -17,10 +18,11 @@ import { SeedService } from './seed/seed.service';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRoot(
       process.env.MONGODB_URI || 'mongodb://localhost:27017/soulia',
     ),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 10 }]),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     CoreModule,
     AuthModule,
     UsersModule,

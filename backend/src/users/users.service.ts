@@ -12,7 +12,7 @@ export class UsersService {
   ) {}
 
   async findAll(): Promise<UserDocument[]> {
-    return this.userModel.find().select('-password').sort({ createdAt: 1 }).exec();
+    return this.userModel.find().select('-password').sort({ role: 1, createdAt: 1 }).exec();
   }
 
   async findByUsername(username: string): Promise<UserDocument | null> {
@@ -34,7 +34,9 @@ export class UsersService {
 
   async updateUser(id: string, data: UpdateUserDto): Promise<UserDocument> {
     const update: Record<string, unknown> = { ...data };
-    if (data.password) {
+    // Don't allow changing username via update
+    delete update.username;
+    if (data.password && data.password.length >= 6) {
       update.password = await bcrypt.hash(data.password, 10);
     } else {
       delete update.password;
@@ -56,7 +58,24 @@ export class UsersService {
     }
   }
 
+  async toggleActive(id: string, isActive: boolean): Promise<UserDocument> {
+    const user = await this.userModel
+      .findByIdAndUpdate(id, { isActive }, { new: true })
+      .select('-password')
+      .exec();
+    if (!user) throw new NotFoundException('المستخدم غير موجود');
+    return user;
+  }
+
+  async updateLastLogin(id: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(id, { lastLogin: new Date() }).exec();
+  }
+
   async countUsers(): Promise<number> {
     return this.userModel.countDocuments().exec();
+  }
+
+  async deleteAllUsers(): Promise<void> {
+    await this.userModel.deleteMany({}).exec();
   }
 }

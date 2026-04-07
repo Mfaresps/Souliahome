@@ -271,11 +271,34 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 #clients-grid table tbody tr:hover{background:var(--surface2)}
 #clients-grid table tbody tr[style*="var(--primary-pale)"] {background:var(--primary-pale)}
 #clients-grid table tbody tr:hover:not([style*="var(--primary-pale)"]) {background:rgba(102,126,234,.05)}
-.user-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center}
-.user-card .user-avatar{width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;margin:0 auto 10px}
-.user-card h4{font-size:.95rem}
-.user-card .role-badge{font-size:.72rem;margin-top:4px}
-.user-card .perms{font-size:.7rem;color:var(--muted);margin-top:6px;line-height:1.6}
+.user-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px 20px;text-align:center;position:relative;transition:all .2s ease;overflow:hidden}
+.user-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.08);transform:translateY(-2px)}
+.user-card.inactive{opacity:.55;filter:grayscale(.3)}
+.user-card .user-status-dot{position:absolute;top:16px;left:16px;width:10px;height:10px;border-radius:50%;border:2px solid var(--surface)}
+.user-card .user-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;margin:0 auto 12px;box-shadow:0 4px 12px rgba(0,0,0,.12);position:relative}
+.user-card h4{font-size:1rem;font-weight:700;margin-bottom:2px}
+.user-card .user-username{font-size:.78rem;color:var(--muted);margin-bottom:6px;direction:ltr;font-family:monospace}
+.user-card .role-badge{margin:8px 0}
+.user-card .user-meta{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.8rem;color:var(--muted);margin:6px 0}
+.user-card .user-meta svg,.user-card .user-meta span.icon{font-size:.9rem}
+.user-card .perms-wrap{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin:10px 0}
+.user-card .perm-tag{font-size:.68rem;padding:2px 8px;border-radius:20px;background:var(--primary-pale);color:var(--primary);font-weight:500}
+.user-card .user-actions{display:flex;gap:6px;justify-content:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.user-card .user-actions .btn-sm{font-size:.75rem;padding:5px 12px;border-radius:8px;cursor:pointer;transition:all .15s;border:1px solid var(--border);background:var(--surface2);color:var(--text)}
+.user-card .user-actions .btn-sm:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+.user-card .user-actions .btn-sm.danger{color:var(--red)}
+.user-card .user-actions .btn-sm.danger:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.user-card .last-login{font-size:.7rem;color:var(--muted);margin-top:6px}
+.user-modal-form .form-section{margin-bottom:20px}
+.user-modal-form .form-section-title{font-size:.85rem;font-weight:700;color:var(--primary);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--primary-pale);display:flex;align-items:center;gap:6px}
+.user-modal-form .perms-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.user-modal-form .perm-label{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all .15s;border:1px solid var(--border);font-size:.82rem}
+.user-modal-form .perm-label:hover{background:var(--primary-pale);border-color:var(--primary)}
+.user-modal-form .perm-label input:checked+span{color:var(--primary);font-weight:600}
+.pass-strength{height:4px;border-radius:2px;margin-top:4px;transition:all .3s}
+.pass-strength.weak{background:var(--red);width:33%}
+.pass-strength.medium{background:#f59e0b;width:66%}
+.pass-strength.strong{background:#10b981;width:100%}
 .chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
 .chart-box canvas{max-height:280px}
 .vault-locked{text-align:center;padding:60px 20px}
@@ -1087,7 +1110,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="card mb-24">
 <h4 class="mb-16">كلمة مرور الخزنة</h4>
 <div class="flex gap-8">
-<input type="password" id="set-vault-pass" placeholder="كلمة المرور الجديدة" style="max-width:300px">
+<div style="position:relative;display:inline-block;max-width:300px;width:100%"><input type="password" id="set-vault-pass" placeholder="كلمة المرور الجديدة" style="max-width:300px;padding-left:36px"><button type="button" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--muted);transition:all .2s" onclick="togglePassField(event)" title="إظهار/إخفاء كلمة المرور">👁️</button></div>
 <button class="btn btn-primary btn-sm" onclick="saveVaultPass()">حفظ</button>
 </div>
 </div>
@@ -1111,7 +1134,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="form-group"><label>الاسم</label><input type="text" id="prof-name" readonly></div>
 <div class="form-group"><label>اسم المستخدم</label><input type="text" id="prof-username" readonly></div>
 <div class="form-group"><label>الهاتف</label><input type="text" id="prof-phone"></div>
-<div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" id="prof-password" placeholder="اتركه فارغاً لعدم التغيير"></div>
+<div class="form-group"><label>كلمة المرور الجديدة</label><div style="position:relative"><input type="password" id="prof-password" placeholder="اتركه فارغاً لعدم التغيير" style="padding-left:36px"><button type="button" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--muted);transition:all .2s" onclick="togglePassField(event)" title="إظهار/إخفاء كلمة المرور">👁️</button></div></div>
 <div class="form-group"><label>الصورة (رابط)</label><input type="text" id="prof-avatar" placeholder="رابط الصورة"></div>
 <button class="btn btn-primary w-full mt-16" onclick="saveProfile()">حفظ التعديلات</button>
 </div>
@@ -1371,10 +1394,12 @@ async function api(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
   if (token) headers['Authorization'] = 'Bearer ' + token;
   const res = await fetch(API_BASE + path, { ...options, headers });
-  if (res.status === 401) { doLogout(); throw new Error('غير مصرح'); }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     const msg = Array.isArray(err.message) ? err.message.join(', ') : (err.message || 'خطأ في الطلب');
+    if (res.status === 401 && !path.startsWith('/auth/login')) {
+      doLogout();
+    }
     throw new Error(msg);
   }
   const text = await res.text();
@@ -5926,54 +5951,147 @@ function renderUsers() {
   }
   qs('#users-grid').innerHTML = users.map(u => {
     const avatarUrl = sanitizeUrl(u.avatar);
-    return `<div class="user-card">
+    const isOnline = onlineUsers[u._id]?.status === 'online';
+    const isInactive = u.isActive === false;
+    const isSuperAdmin = u.username === 'admin';
+    const lastLoginText = u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('ar-EG', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : 'لم يسجل دخول';
+    const roleMap = { admin: { label: 'مدير', cls: 'badge-purple' }, viewer: { label: 'مشاهد', cls: 'badge-orange' }, staff: { label: 'موظف', cls: 'badge-blue' } };
+    const role = roleMap[u.role] || roleMap.staff;
+    return `<div class="user-card ${isInactive ? 'inactive' : ''}">
+      <div class="user-status-dot" style="background:${isOnline ? '#10b981' : '#9ca3af'}" title="${isOnline ? 'متصل' : 'غير متصل'}"></div>
       <div class="user-avatar">${avatarUrl ? `<img src="${esc(avatarUrl)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.parentNode.textContent='${esc((u.name || u.username || '?').slice(0, 2))}'">` : esc((u.name || u.username || '?').slice(0, 2))}</div>
-      <h4>${esc(u.name || u.username)}</h4>
-      <div class="role-badge">${u.role === 'admin' ? '<span class="badge badge-purple">مدير</span>' : (u.role === 'viewer' ? '<span class="badge badge-orange">مشاهد</span>' : '<span class="badge badge-blue">موظف</span>')}</div>
-      <p class="text-sm text-muted">${esc(u.phone || '')}</p>
-      <div class="perms">${(u.perms || []).map(p => esc(PERMS_AR[p] || p)).join(' · ')}</div>
-      <div class="flex gap-8 mt-16" style="justify-content:center">
-        <div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu"><div class="dd-item" onclick="openUserModal('${esc(u._id)}')">✏️ تعديل</div>${u.username !== 'admin' ? `<div class="dd-divider"></div><div class="dd-item danger" onclick="deleteUser('${esc(u._id)}')">🗑️ حذف</div>` : ''}</div></div>
+      <h4>${esc(u.name || u.username)}${isSuperAdmin ? ' ⭐' : ''}</h4>
+      <div class="user-username">@${esc(u.username)}</div>
+      <div class="role-badge"><span class="badge ${role.cls}">${role.label}</span>${isInactive ? ' <span class="badge" style="background:#fee2e2;color:#dc2626;font-size:.65rem">معطّل</span>' : ''}</div>
+      ${u.phone ? `<div class="user-meta"><span class="icon">📞</span> ${esc(u.phone)}</div>` : ''}
+      <div class="last-login">آخر دخول: ${lastLoginText}</div>
+      <div class="perms-wrap">${(u.perms || []).slice(0, 6).map(p => `<span class="perm-tag">${esc(PERMS_AR[p] || p)}</span>`).join('')}${(u.perms || []).length > 6 ? `<span class="perm-tag" style="background:var(--surface2);color:var(--muted)">+${(u.perms || []).length - 6}</span>` : ''}</div>
+      <div class="user-actions">
+        <button class="btn-sm" onclick="openUserModal('${esc(u._id)}')">✏️ تعديل</button>
+        ${!isSuperAdmin ? `<button class="btn-sm" onclick="toggleUserActive('${esc(u._id)}',${isInactive})">${isInactive ? '✅ تفعيل' : '⛔ تعطيل'}</button>` : ''}
+        ${!isSuperAdmin ? `<button class="btn-sm danger" onclick="deleteUser('${esc(u._id)}')">🗑️</button>` : ''}
       </div>
     </div>`;
   }).join('');
 }
+async function toggleUserActive(id, currentlyInactive) {
+  const action = currentlyInactive ? 'activate' : 'deactivate';
+  const msg = currentlyInactive ? 'تفعيل هذا المستخدم؟' : 'تعطيل هذا المستخدم؟ لن يستطيع تسجيل الدخول';
+  if (!confirm(msg)) return;
+  try {
+    await api('/users/' + id + '/' + action, { method: 'POST' });
+    toast(currentlyInactive ? 'تم تفعيل المستخدم' : 'تم تعطيل المستخدم');
+    users = await api('/users').catch(() => users);
+    renderUsers();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
 function openUserModal(id) {
   const u = id ? users.find(x => x._id === id) : null;
-  // Only super admin can create roles; only super admin can edit super admin account
   if (u && u.username === 'admin' && currentUser?.username !== 'admin') {
     toast('لا يمكن تعديل حساب السوبر أدمن', true); return;
   }
-  openModal(`<h3>${u ? 'تعديل مستخدم' : 'إضافة مستخدم'}</h3>
-    <div class="grid grid-2 gap-12">
-      <div class="form-group"><label>اسم المستخدم</label><input type="text" id="um-username" value="${esc(u?.username || '')}" ${u ? 'readonly' : ''}></div>
-      <div class="form-group"><label>الاسم الكامل</label><input type="text" id="um-name" value="${esc(u?.name || '')}"></div>
-      <div class="form-group"><label>كلمة المرور</label><input type="password" id="um-password" placeholder="${u ? 'اتركه فارغاً' : 'كلمة المرور'}"></div>
-      <div class="form-group"><label>الهاتف</label><input type="text" id="um-phone" value="${esc(u?.phone || '')}"></div>
-      <div class="form-group"><label>الصورة (رابط)</label><input type="text" id="um-avatar" value="${esc(u?.avatar || '')}"></div>
-      <div class="form-group"><label>الدور</label><select id="um-role"><option value="staff" ${u?.role === 'staff' || (!u || u?.role === 'employee') ? 'selected' : ''}>موظف</option><option value="viewer" ${u?.role === 'viewer' ? 'selected' : ''}>مشاهد</option><option value="admin" ${u?.role === 'admin' ? 'selected' : ''}>مدير</option></select></div>
-    </div>
-    <div class="form-group mt-16"><label>الصلاحيات</label>
-      <div class="grid grid-3 gap-8 mt-8">
-        ${PERMS.map(p => `<label class="flex gap-8 text-sm" style="cursor:pointer"><input type="checkbox" class="perm-cb" value="${p}" ${u?.perms?.includes(p) ? 'checked' : ''}> ${esc(PERMS_AR[p])}</label>`).join('')}
+  const roleOptions = [
+    { value: 'staff', label: '👤 موظف — يتعامل مع المبيعات والعملاء' },
+    { value: 'viewer', label: '👁️ مشاهد — يطّلع فقط بدون تعديل' },
+    { value: 'admin', label: '🛡️ مدير — صلاحيات كاملة' },
+  ];
+  openModal(`<div class="user-modal-form">
+    <h3 style="margin-bottom:20px;font-size:1.2rem">${u ? '✏️ تعديل مستخدم' : '➕ إضافة مستخدم جديد'}</h3>
+    <div class="form-section">
+      <div class="form-section-title">👤 معلومات الحساب</div>
+      <div class="grid grid-2 gap-12">
+        <div class="form-group"><label>اسم المستخدم <span style="color:var(--red)">*</span></label><input type="text" id="um-username" value="${esc(u?.username || '')}" ${u ? 'readonly style="background:var(--surface2);color:var(--muted)"' : 'placeholder="مثال: ahmed_sales"'}></div>
+        <div class="form-group"><label>الاسم الكامل <span style="color:var(--red)">*</span></label><input type="text" id="um-name" value="${esc(u?.name || '')}" placeholder="الاسم كما يظهر في النظام"></div>
+        <div class="form-group"><label>كلمة المرور ${u ? '' : '<span style="color:var(--red)">*</span>'}</label><div style="position:relative"><input type="password" id="um-password" placeholder="${u ? 'اتركه فارغاً إذا لا تريد التغيير' : 'أدخل كلمة مرور قوية'}" oninput="checkPassStrength(this.value)" style="padding-left:36px"><button type="button" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--muted);transition:all .2s" onclick="togglePassField(event)" title="إظهار/إخفاء كلمة المرور">👁️</button></div><div id="pass-strength-bar" class="pass-strength" style="display:none"></div><div id="pass-strength-text" style="font-size:.7rem;margin-top:2px"></div></div>
+        <div class="form-group"><label>الهاتف</label><input type="tel" id="um-phone" value="${esc(u?.phone || '')}" placeholder="01xxxxxxxxx"></div>
       </div>
     </div>
-    <div class="flex gap-8 mt-16"><button class="btn btn-primary" onclick="saveUser('${id || ''}')">${u ? 'تحديث' : 'إضافة'}</button><button class="btn btn-outline" onclick="closeModal()">إلغاء</button></div>`);
+    <div class="form-section">
+      <div class="form-section-title">🖼️ الصورة</div>
+      <div class="form-group"><input type="text" id="um-avatar" value="${esc(u?.avatar || '')}" placeholder="رابط الصورة (اختياري)"></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">🛡️ الدور والصلاحيات</div>
+      <div class="form-group"><label>الدور <span style="color:var(--red)">*</span></label><select id="um-role" onchange="autoSetPerms()">
+        ${roleOptions.map(r => `<option value="${r.value}" ${u?.role === r.value || (!u && r.value === 'staff') ? 'selected' : ''}>${r.label}</option>`).join('')}
+      </select></div>
+      <div style="margin-top:12px"><label style="font-weight:600;font-size:.85rem">الصلاحيات</label>
+        <div style="margin:6px 0 8px"><button class="btn-sm" style="font-size:.72rem;padding:3px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--surface2)" onclick="qsa('.perm-cb').forEach(c=>c.checked=true)">تحديد الكل</button> <button class="btn-sm" style="font-size:.72rem;padding:3px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--surface2)" onclick="qsa('.perm-cb').forEach(c=>c.checked=false)">إلغاء الكل</button></div>
+        <div class="perms-grid">
+          ${PERMS.map(p => `<label class="perm-label"><input type="checkbox" class="perm-cb" value="${p}" ${u?.perms?.includes(p) ? 'checked' : ''}> <span>${esc(PERMS_AR[p])}</span></label>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-8" style="justify-content:flex-end;padding-top:16px;border-top:1px solid var(--border)">
+      <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveUser('${id || ''}')">${u ? '💾 حفظ التعديلات' : '➕ إضافة المستخدم'}</button>
+    </div>
+  </div>`, 'max-width:640px');
+}
+function togglePassField(e) {
+  e.preventDefault();
+  const input = e.target.previousElementSibling;
+  const btn = e.target;
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁️';
+  }
+}
+function checkPassStrength(val) {
+  const bar = qs('#pass-strength-bar');
+  const txt = qs('#pass-strength-text');
+  if (!val) { bar.style.display = 'none'; txt.textContent = ''; return; }
+  bar.style.display = 'block';
+  let score = 0;
+  if (val.length >= 6) score++;
+  if (val.length >= 8) score++;
+  if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  if (score <= 2) { bar.className = 'pass-strength weak'; txt.textContent = '⚠️ ضعيفة'; txt.style.color = 'var(--red)'; }
+  else if (score <= 3) { bar.className = 'pass-strength medium'; txt.textContent = '⚡ متوسطة'; txt.style.color = '#f59e0b'; }
+  else { bar.className = 'pass-strength strong'; txt.textContent = '✅ قوية'; txt.style.color = '#10b981'; }
+}
+function autoSetPerms() {
+  const role = qs('#um-role').value;
+  const salesPerms = ['dashboard','transaction','inventory','movements','clients','products','complaints','expenses'];
+  const accountPerms = ['dashboard','transaction','inventory','movements','reports','vault','expenses','suppliers'];
+  if (role === 'admin') { qsa('.perm-cb').forEach(c => c.checked = true); }
+  else if (role === 'viewer') { qsa('.perm-cb').forEach(c => c.checked = ['dashboard','inventory','reports'].includes(c.value)); }
+  else { qsa('.perm-cb').forEach(c => c.checked = salesPerms.includes(c.value)); }
 }
 async function saveUser(id) {
   const perms = qsa('.perm-cb:checked').map(cb => cb.value);
-  const body = { username: qs('#um-username').value, name: qs('#um-name').value, phone: qs('#um-phone').value, avatar: qs('#um-avatar').value, role: qs('#um-role').value, perms };
-  const pass = qs('#um-password').value; if (pass) body.password = pass;
+  const body = { username: qs('#um-username').value.trim(), name: qs('#um-name').value.trim(), phone: qs('#um-phone').value.trim(), avatar: qs('#um-avatar').value.trim(), role: qs('#um-role').value, perms };
+  const pass = qs('#um-password').value;
+  if (pass) body.password = pass;
   if (!body.username) { toast('اسم المستخدم مطلوب', true); return; }
-  if (!id && !pass) { toast('كلمة المرور مطلوبة', true); return; }
-  try { if (id) await api('/users/' + id, { method: 'PUT', body: JSON.stringify(body) }); else await api('/users', { method: 'POST', body: JSON.stringify(body) }); toast(id ? 'تم التحديث' : 'تم الإضافة'); closeModal(); users = await api('/users').catch(() => users); renderUsers(); }
-  catch (e) { toast('خطأ: ' + e.message, true); }
+  if (!body.name) { toast('الاسم الكامل مطلوب', true); return; }
+  if (!id && !pass) { toast('كلمة المرور مطلوبة للمستخدم الجديد', true); return; }
+  if (pass && pass.length < 6) { toast('كلمة المرور يجب أن تكون 6 أحرف على الأقل', true); return; }
+  if (perms.length === 0) { toast('يجب اختيار صلاحية واحدة على الأقل', true); return; }
+  try {
+    if (id) await api('/users/' + id, { method: 'PUT', body: JSON.stringify(body) });
+    else await api('/users', { method: 'POST', body: JSON.stringify(body) });
+    toast(id ? 'تم تحديث المستخدم بنجاح' : 'تم إضافة المستخدم بنجاح');
+    closeModal();
+    users = await api('/users').catch(() => users);
+    renderUsers();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function deleteUser(id) {
-  const u = users.find(x => x._id === id); if (u && u.username === 'admin') { toast('لا يمكن حذف المدير الرئيسي', true); return; }
-  if (!confirm('حذف هذا المستخدم؟')) return;
-  try { await api('/users/' + id, { method: 'DELETE' }); toast('تم الحذف'); users = await api('/users').catch(() => users); renderUsers(); }
-  catch (e) { toast('خطأ: ' + e.message, true); }
+  const u = users.find(x => x._id === id);
+  if (u && u.username === 'admin') { toast('لا يمكن حذف المدير الرئيسي', true); return; }
+  if (!confirm(`هل أنت متأكد من حذف "${u?.name || u?.username}"?\nلا يمكن التراجع عن هذا الإجراء`)) return;
+  try {
+    await api('/users/' + id, { method: 'DELETE' });
+    toast('تم حذف المستخدم');
+    users = await api('/users').catch(() => users);
+    renderUsers();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 
 /* Settings */

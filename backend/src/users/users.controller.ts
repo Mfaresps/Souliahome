@@ -9,6 +9,7 @@ import {
   Req,
   UseGuards,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
@@ -57,12 +58,43 @@ export class UsersController {
 
   @Roles('admin')
   @Delete(':id')
-  async remove(@Param('id') id: string) {
+  async remove(
+    @Param('id') id: string,
+    @Req() req: { user: { username: string } },
+  ) {
     const user = await this.usersService.findById(id);
     if (user && user.username === 'admin') {
       throw new ForbiddenException('لا يمكن حذف المدير الرئيسي');
     }
+    if (user && user.username === req.user?.username) {
+      throw new ForbiddenException('لا يمكنك حذف حسابك الخاص');
+    }
     await this.usersService.removeUser(id);
     return { message: 'تم حذف المستخدم' };
+  }
+
+  @Roles('admin')
+  @Post(':id/activate')
+  async activate(
+    @Param('id') id: string,
+    @Req() req: { user: { username: string } },
+  ) {
+    const user = await this.usersService.findById(id);
+    if (!user) throw new BadRequestException('المستخدم غير موجود');
+    if (user.username === 'admin') throw new ForbiddenException('لا يمكن تعديل المدير الرئيسي');
+    return this.usersService.toggleActive(id, true);
+  }
+
+  @Roles('admin')
+  @Post(':id/deactivate')
+  async deactivate(
+    @Param('id') id: string,
+    @Req() req: { user: { username: string } },
+  ) {
+    const user = await this.usersService.findById(id);
+    if (!user) throw new BadRequestException('المستخدم غير موجود');
+    if (user.username === 'admin') throw new ForbiddenException('لا يمكن تعطيل المدير الرئيسي');
+    if (user.username === req.user?.username) throw new ForbiddenException('لا يمكنك تعطيل حسابك الخاص');
+    return this.usersService.toggleActive(id, false);
   }
 }

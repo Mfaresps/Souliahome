@@ -25,6 +25,12 @@ export class User {
 
   @Prop({ type: [String], default: [] })
   perms: string[];
+
+  @Prop({ default: true })
+  isActive: boolean;
+
+  @Prop()
+  lastLogin: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
