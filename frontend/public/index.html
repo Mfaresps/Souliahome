@@ -2837,14 +2837,15 @@ function openEditMovement(id) {
   editTxItems = (tx.items || []).map(it => ({ name: it.name || '', code: it.code || '', qty: it.qty || 1, price: it.price || 0, productId: it.productId || '' }));
   const shipCoOpts = getShipCompanyOptions();
   const isSale = tx.type === 'مبيعات';
-  const refRetailEdit = tx.type === 'مبيعات' || tx.type === 'مشتريات';
+  const isPurchase = tx.type === 'مشتريات';
+  const refRetailEdit = isSale || isPurchase;
   openModal(`
-    <h3>تعديل الحركة</h3>
+    <h3>تعديل الحركة ${isPurchase ? '(مشتريات)' : ''}</h3>
     <div class="grid grid-2 gap-12">
-      <div class="form-group"><label>العميل</label><input type="text" id="edit-tx-client" value="${esc(tx.client || '')}"></div>
+      <div class="form-group"><label>${isPurchase ? 'المورد' : 'العميل'}</label><input type="text" id="edit-tx-client" value="${esc(tx.client || '')}"></div>
       <div class="form-group"><label>الهاتف</label><input type="text" id="edit-tx-phone" value="${esc(tx.phone || '')}"></div>
-      <div class="form-group"><label>المرجع</label><input type="text" id="edit-tx-ref" value="${esc(tx.ref || '')}" ${refRetailEdit ? 'inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"' : ''}></div>
-      <div class="form-group"><label>الديبوزت</label><input type="number" id="edit-tx-deposit" value="${tx.deposit || 0}" oninput="recalcEditTx()"></div>
+      <div class="form-group"><label>${isPurchase ? 'رقم الفاتورة' : 'المرجع'}</label><input type="text" id="edit-tx-ref" value="${esc(tx.ref || '')}" ${refRetailEdit ? 'inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"' : ''}></div>
+      <div class="form-group"><label>${isPurchase ? 'العربون (المدفوع مقدماً)' : 'الديبوزت'}</label><input type="number" id="edit-tx-deposit" value="${tx.deposit || 0}" oninput="recalcEditTx()"></div>
       ${isSale ? `<div class="form-group"><label>شركة الشحن</label><select id="edit-tx-shipco" onchange="recalcEditTx()"><option value="">بدون شحن</option>${shipCoOpts}</select></div>
       <div class="form-group"><label>المنطقة</label><select id="edit-tx-zone" onchange="recalcEditTx()"><option value="cairo" ${tx.shipZone === 'cairo' ? 'selected' : ''}>القاهرة</option><option value="gov" ${tx.shipZone === 'gov' ? 'selected' : ''}>المحافظات</option></select></div>
       <div class="form-group"><label>تكلفة الشحن</label><input type="number" id="edit-tx-shipcost" value="${tx.shipCost || 0}" min="0" oninput="recalcEditTx()"></div>
@@ -2910,34 +2911,49 @@ function recalcEditTx() {
     const rowEl = document.querySelector(`.edit-row-total[data-row="${i}"]`);
     if (rowEl) rowEl.textContent = fmtJ(it.qty * it.price);
   });
+  const origTx = transactions.find(t => t._id === editTxId);
+  const isPurTx = origTx?.type === 'مشتريات';
+  const isSaleTx = origTx?.type === 'مبيعات';
   const itemsTotal = editTxItems.reduce((s, it) => s + (it.qty * it.price), 0);
   const discount = Number(qs('#edit-tx-discount')?.value) || 0;
-  const shipCost = Number(qs('#edit-tx-shipcost')?.value) || 0;
+  const shipCost = isPurTx ? 0 : (Number(qs('#edit-tx-shipcost')?.value) || 0);
   const total = itemsTotal - discount + shipCost;
   const deposit = Number(qs('#edit-tx-deposit')?.value) || 0;
-  const remaining = total - deposit;
+  const remaining = Math.max(0, total - deposit);
   const el = qs('#edit-tx-summary');
   if (!el) return;
-  // Vault delta hint for deposit changes
-  const origTx = transactions.find(t => t._id === editTxId);
   const origDeposit = Number(origTx?.deposit) || 0;
   const depositDelta = deposit - origDeposit;
   const depMethod = String(origTx?.depMethod || '').trim() || 'الخزنة';
-  const isSaleTx = origTx?.type === 'مبيعات';
   let vaultDeltaHtml = '';
   if (isSaleTx && Math.abs(depositDelta) > 0) {
     vaultDeltaHtml = depositDelta > 0
       ? `<div style="margin-top:6px;padding:7px 10px;background:rgba(22,163,74,.08);border-radius:8px;font-size:.78rem;border-right:3px solid var(--green)">🔺 سيُضاف <strong style="color:var(--green)">${fmtJ(depositDelta)}</strong> للخزنة (${esc(depMethod)}) بعد الحفظ</div>`
       : `<div style="margin-top:6px;padding:7px 10px;background:rgba(220,38,38,.06);border-radius:8px;font-size:.78rem;border-right:3px solid var(--red)">🔻 سيُخصم <strong style="color:var(--red)">${fmtJ(Math.abs(depositDelta))}</strong> من الخزنة (${esc(depMethod)}) بعد الحفظ</div>`;
   }
-  el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>إجمالي الأصناف</span><strong>${fmtJ(itemsTotal)}</strong></div>
-    ${discount ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الخصم</span><span style="color:var(--red)">- ${fmtJ(discount)}</span></div>` : ''}
-    ${shipCost ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>تكلفة الشحن</span><span>+ ${fmtJ(shipCost)}</span></div>` : ''}
-    <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:2px solid var(--border);font-size:1rem"><strong>الإجمالي النهائي</strong><strong style="color:var(--primary)">${fmtJ(total)}</strong></div>
-    <div style="display:flex;justify-content:space-between;margin-top:4px"><span>الديبوزت${isSaleTx && depMethod ? ` <span class="text-xs text-muted">(${esc(depMethod)})</span>` : ''}</span><span style="color:var(--green)">${fmtJ(deposit)}</span></div>
-    <div style="display:flex;justify-content:space-between;margin-top:4px"><span>المتبقي</span><strong style="color:${remaining > 0 ? 'var(--red)' : 'var(--green)'}">${fmtJ(remaining)}</strong></div>
-    ${vaultDeltaHtml}`;
+  if (isPurTx && Math.abs(depositDelta) > 0) {
+    vaultDeltaHtml = depositDelta > 0
+      ? `<div style="margin-top:6px;padding:7px 10px;background:rgba(220,38,38,.06);border-radius:8px;font-size:.78rem;border-right:3px solid var(--red)">🔻 سيُخصم <strong style="color:var(--red)">${fmtJ(depositDelta)}</strong> إضافي من الخزنة (${esc(depMethod)}) — زيادة عربون</div>`
+      : `<div style="margin-top:6px;padding:7px 10px;background:rgba(22,163,74,.08);border-radius:8px;font-size:.78rem;border-right:3px solid var(--green)">🔺 سيُرد <strong style="color:var(--green)">${fmtJ(Math.abs(depositDelta))}</strong> للخزنة (${esc(depMethod)}) — تخفيض عربون</div>`;
+  }
+  if (isPurTx) {
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>إجمالي الأصناف</span><strong>${fmtJ(itemsTotal)}</strong></div>
+      ${discount ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الخصم</span><span style="color:var(--red)">- ${fmtJ(discount)}</span></div>` : ''}
+      <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:2px solid var(--border);font-size:1rem"><strong>الإجمالي النهائي</strong><strong style="color:var(--primary)">${fmtJ(total)}</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px"><span>العربون (المدفوع مقدماً) <span class="text-xs text-muted">(${esc(depMethod)})</span></span><span style="color:var(--green)">${fmtJ(deposit)}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px"><span>المتبقي للمورد</span><strong style="color:${remaining > 0 ? 'var(--red)' : 'var(--green)'}">${remaining > 0 ? fmtJ(remaining) : '✅ مدفوع بالكامل'}</strong></div>
+      ${vaultDeltaHtml}`;
+  } else {
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>إجمالي الأصناف</span><strong>${fmtJ(itemsTotal)}</strong></div>
+      ${discount ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الخصم</span><span style="color:var(--red)">- ${fmtJ(discount)}</span></div>` : ''}
+      ${shipCost ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>تكلفة الشحن</span><span>+ ${fmtJ(shipCost)}</span></div>` : ''}
+      <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:2px solid var(--border);font-size:1rem"><strong>الإجمالي النهائي</strong><strong style="color:var(--primary)">${fmtJ(total)}</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px"><span>الديبوزت${isSaleTx && depMethod ? ` <span class="text-xs text-muted">(${esc(depMethod)})</span>` : ''}</span><span style="color:var(--green)">${fmtJ(deposit)}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px"><span>المتبقي</span><strong style="color:${remaining > 0 ? 'var(--red)' : 'var(--green)'}">${fmtJ(remaining)}</strong></div>
+      ${vaultDeltaHtml}`;
+  }
 }
 
 async function saveEditMovement(id) {
@@ -2979,18 +2995,38 @@ async function saveEditMovement(id) {
       if (!confirmed) return;
     }
   }
+  const isPurchaseEdit = tx.type === 'مشتريات';
+  const newRemaining = Math.max(0, total - deposit);
   const body = { client: qs('#edit-tx-client').value, phone: qs('#edit-tx-phone').value, ref: editRef,
-    deposit, discount, shipCost, notes: qs('#edit-tx-notes').value, items: newItems, itemsTotal,
-    total, remaining: total - deposit, payStatus: deposit >= total ? 'مكتمل' : 'معلق' };
+    deposit, discount, notes: qs('#edit-tx-notes').value, items: newItems, itemsTotal,
+    total, remaining: newRemaining, payStatus: newRemaining <= 0 ? 'مكتمل' : 'معلق' };
   if (tx.type === 'مبيعات') {
+    body.shipCost = shipCost;
     body.shipCo = qs('#edit-tx-shipco')?.value || tx.shipCo || '';
     body.shipZone = qs('#edit-tx-zone')?.value || tx.shipZone || '';
     body.payment = qs('#edit-tx-payment')?.value || tx.payment || '';
+  }
+  // Purchase deposit change confirmation
+  if (isPurchaseEdit) {
+    const origDeposit = tx.deposit || 0;
+    const depositDelta = Math.abs(deposit - origDeposit);
+    if (depositDelta > 0) {
+      const direction = deposit > origDeposit ? 'خصم إضافي' : 'رد';
+      const depMethod = String(tx.depMethod || 'كاش').trim();
+      const confirmed = confirm(
+        `⚠️ تأكيد تعديل العربون\n\n` +
+        `العربون سيتغير من ${fmtJ(origDeposit)} إلى ${fmtJ(deposit)}\n` +
+        `(${direction} ${fmtJ(depositDelta)} من/إلى خزنة: ${depMethod})\n\n` +
+        `هل تريد المتابعة؟`
+      );
+      if (!confirmed) return;
+    }
   }
   try {
     await api('/transactions/' + id, { method: 'PUT', body: JSON.stringify(body) });
     toast('تم تحديث الحركة'); closeModal();
     transactions = await api('/transactions').catch(() => transactions);
+    try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
     renderMovements(); buildSidebar(); buildNotifications();
     syncVaultState();
   } catch (e) { toast('خطأ: ' + e.message, true); }
@@ -3357,6 +3393,7 @@ function exportSelectedExcel() {
   toast(`تم تصدير ${selected.length} حركة`);
 }
 function buildInvoiceHtml(tx) {
+  const isPur = tx.type === 'مشتريات';
   const itemsHtml = (tx.items || []).map((it, i) => `
     <tr style="background:${i%2===0?'#fff':'#f8fafb'}">
       <td style="padding:8px 10px;text-align:center;border-bottom:1px solid #e2e8e4">${i+1}</td>
@@ -3365,8 +3402,9 @@ function buildInvoiceHtml(tx) {
       <td style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e8e4">${fmtJ(it.price)}</td>
       <td style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e8e4;font-weight:700;color:#00311e">${fmtJ(it.total)}</td>
     </tr>`).join('');
-  const payStatusColor = tx.payStatus === 'مكتمل' ? '#16a34a' : tx.payStatus === 'ملغي' ? '#dc2626' : '#e65100';
-  const paid = exchangeSalePaidDisplayAmount(tx);
+  const purStatusLabel = isPur ? ((tx.remaining || 0) > 0 ? 'مديون للمورد' : 'مكتمل') : tx.payStatus;
+  const payStatusColor = (tx.payStatus === 'مكتمل' || (isPur && (tx.remaining || 0) <= 0)) ? '#16a34a' : tx.payStatus === 'ملغي' ? '#dc2626' : '#dc2626';
+  const paid = isPur ? ((tx.total || 0) - (tx.remaining || 0)) : exchangeSalePaidDisplayAmount(tx);
   return `<div class="invoice-page" style="page-break-after:always;font-family:'Cairo',sans-serif;padding:32px;max-width:720px;margin:0 auto;direction:rtl;background:#fff;border:1px solid #e2e8e4;border-radius:12px">
     <!-- Header -->
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:20px;border-bottom:3px solid #00311e">
@@ -3390,7 +3428,7 @@ function buildInvoiceHtml(tx) {
         <div style="font-size:11px;color:#6b8c78;font-weight:700;margin-bottom:8px;text-transform:uppercase">تفاصيل الفاتورة</div>
         <div style="font-size:12px;margin-bottom:3px">📅 <strong>التاريخ:</strong> ${esc((tx.date || '').slice(0, 10))}</div>
         <div style="font-size:12px;margin-bottom:3px">👤 <strong>الموظف:</strong> ${esc(tx.employee || '—')}</div>
-        <div style="font-size:12px"><span style="background:${payStatusColor}20;color:${payStatusColor};padding:2px 8px;border-radius:6px;font-weight:700;font-size:11px">${esc(tx.payStatus || '—')}</span></div>
+        <div style="font-size:12px"><span style="background:${payStatusColor}20;color:${payStatusColor};padding:2px 8px;border-radius:6px;font-weight:700;font-size:11px">${esc(isPur ? purStatusLabel : (tx.payStatus || '—'))}</span></div>
       </div>
     </div>
     <!-- Items Table -->
@@ -3410,11 +3448,11 @@ function buildInvoiceHtml(tx) {
     <div style="display:flex;justify-content:flex-end">
       <div style="min-width:280px;border:1px solid #e2e8e4;border-radius:10px;overflow:hidden">
         ${tx.discount ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#fff7ed;font-size:13px"><span>الخصم</span><span style="color:#dc2626;font-weight:600">- ${fmtJ(tx.discount)}</span></div>` : ''}
-        ${tx.shipCost ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#f8fafb;font-size:13px;border-top:1px solid #e2e8e4"><span>تكلفة الشحن</span><span style="font-weight:600">+ ${fmtJ(tx.shipCost)}</span></div>` : ''}
+        ${!isPur && tx.shipCost ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#f8fafb;font-size:13px;border-top:1px solid #e2e8e4"><span>تكلفة الشحن</span><span style="font-weight:600">+ ${fmtJ(tx.shipCost)}</span></div>` : ''}
         <div style="display:flex;justify-content:space-between;padding:12px 16px;background:#00311e;color:#fff;font-size:15px;font-weight:700"><span>الإجمالي</span><span>${fmtJ(tx.total)}</span></div>
-        ${paid > 0 ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#f0fdf4;font-size:13px;border-top:1px solid #e2e8e4"><span>المدفوع</span><span style="color:#16a34a;font-weight:600">${fmtJ(paid)}</span></div>` : ''}
-        ${(tx.remaining || 0) > 0 ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#fef2f2;font-size:13px;border-top:1px solid #fecaca"><span>المتبقي</span><span style="color:#dc2626;font-weight:700">${fmtJ(tx.remaining)}</span></div>` : ''}
-        ${tx.payment ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#f8fafb;font-size:12px;border-top:1px solid #e2e8e4;color:#6b8c78"><span>طريقة الدفع</span><span>${esc(tx.payment)}</span></div>` : ''}
+        ${paid > 0 ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#f0fdf4;font-size:13px;border-top:1px solid #e2e8e4"><span>${isPur ? 'المدفوع للمورد' : 'المدفوع'}</span><span style="color:#16a34a;font-weight:600">${fmtJ(paid)}</span></div>` : ''}
+        ${(tx.remaining || 0) > 0 ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#fef2f2;font-size:13px;border-top:1px solid #fecaca"><span>${isPur ? 'المتبقي للمورد' : 'المتبقي'}</span><span style="color:#dc2626;font-weight:700">${fmtJ(tx.remaining)}</span></div>` : ''}
+        ${tx.depMethod ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#f8fafb;font-size:12px;border-top:1px solid #e2e8e4;color:#6b8c78"><span>${isPur ? 'طريقة الدفع للمورد' : 'طريقة الدفع'}</span><span>${esc(tx.depMethod)}</span></div>` : ''}
       </div>
     </div>
     ${tx.notes ? `<div style="margin-top:16px;padding:12px 16px;background:#f8fafb;border:1px solid #e2e8e4;border-radius:10px;font-size:12px;color:#6b8c78"><strong style="color:#0f1f16">📝 ملاحظات:</strong> ${esc(tx.notes)}</div>` : ''}
@@ -3830,13 +3868,20 @@ function getSupplierPurchases(supplierName) {
     (t.client || '').trim() === (supplierName || '').trim()
   );
 }
+function getSupplierTotalPaid(txs) {
+  return txs.reduce((sum, t) => {
+    if (t.cancelled) return sum;
+    return sum + ((t.total || 0) - (t.remaining || 0));
+  }, 0);
+}
 function renderSuppliers() {
   qs('#suppliers-grid').innerHTML = suppliers.length ? suppliers.map(s => {
     const txs = getSupplierPurchases(s.name);
-    const totalPurchased = txs.reduce((sum, t) => sum + (t.total || 0), 0);
-    const totalPaid = txs.reduce((sum, t) => sum + (t.deposit || 0), 0);
-    const totalRemaining = txs.reduce((sum, t) => sum + (t.remaining || 0), 0);
-    const pendingCount = txs.filter(t => t.payStatus === 'معلق' && !t.cancelled).length;
+    const activeTxs = txs.filter(t => !t.cancelled);
+    const totalPurchased = activeTxs.reduce((sum, t) => sum + (t.total || 0), 0);
+    const totalPaid = getSupplierTotalPaid(txs);
+    const totalRemaining = activeTxs.reduce((sum, t) => sum + (t.remaining || 0), 0);
+    const pendingCount = activeTxs.filter(t => t.payStatus === 'معلق' && (t.remaining || 0) > 0).length;
     return `
     <div class="supplier-card">
       <h4>${esc(s.name)}</h4>
@@ -3847,8 +3892,8 @@ function renderSuppliers() {
         <div style="display:flex;justify-content:space-between"><span class="text-muted">الفواتير:</span><strong>${txs.length}</strong></div>
         <div style="display:flex;justify-content:space-between"><span class="text-muted">إجمالي المشتريات:</span><strong>${fmtJ(totalPurchased)}</strong></div>
         <div style="display:flex;justify-content:space-between"><span class="text-muted">المدفوع:</span><strong class="text-green">${fmtJ(totalPaid)}</strong></div>
-        ${totalRemaining > 0 ? `<div style="display:flex;justify-content:space-between"><span class="text-muted">المتبقي:</span><strong class="text-red">${fmtJ(totalRemaining)}</strong></div>` : ''}
-        ${pendingCount > 0 ? `<div style="margin-top:4px"><span class="badge badge-orange">${pendingCount} معلقة</span></div>` : ''}
+        ${totalRemaining > 0 ? `<div style="display:flex;justify-content:space-between"><span class="text-muted">المتبقي (مديون):</span><strong class="text-red">${fmtJ(totalRemaining)}</strong></div>` : ''}
+        ${pendingCount > 0 ? `<div style="margin-top:4px"><span class="badge badge-red">${pendingCount} مديون</span></div>` : `<div style="margin-top:4px"><span class="badge badge-green">تم السداد بالكامل</span></div>`}
       </div>` : '<p class="text-xs text-muted" style="margin-top:8px">لا توجد فواتير</p>'}
       <div class="flex gap-8 mt-16" style="justify-content:center;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" onclick="openSupplierInvoices('${esc(s.name)}')">📋 الفواتير</button>
@@ -3859,20 +3904,26 @@ function renderSuppliers() {
 }
 function openSupplierInvoices(supplierName) {
   const txs = getSupplierPurchases(supplierName).sort((a, b) => new Date(b.date) - new Date(a.date));
-  const totalPurchased = txs.reduce((s, t) => s + (t.total || 0), 0);
-  const totalPaid = txs.reduce((s, t) => s + (t.deposit || 0), 0);
-  const totalRemaining = txs.reduce((s, t) => s + (t.remaining || 0), 0);
+  const activeTxs = txs.filter(t => !t.cancelled);
+  const totalPurchased = activeTxs.reduce((s, t) => s + (t.total || 0), 0);
+  const totalPaid = getSupplierTotalPaid(txs);
+  const totalRemaining = activeTxs.reduce((s, t) => s + (t.remaining || 0), 0);
+  const debtCount = activeTxs.filter(t => (t.remaining || 0) > 0).length;
   const rows = txs.length ? txs.map(t => {
-    const statusColor = t.cancelled ? '#ef4444' : t.payStatus === 'مكتمل' ? '#22c55e' : '#f59e0b';
-    const statusLabel = t.cancelled ? 'ملغي' : t.payStatus || '-';
+    const txPaid = t.cancelled ? 0 : ((t.total || 0) - (t.remaining || 0));
+    const statusColor = t.cancelled ? '#ef4444' : t.payStatus === 'مكتمل' ? '#22c55e' : '#ef4444';
+    const statusLabel = t.cancelled ? 'ملغي' : (t.remaining || 0) > 0 ? 'مديون' : 'مكتمل';
     return `<tr style="${t.cancelled ? 'opacity:.6;text-decoration:line-through' : ''}">
       <td>${esc(t.date ? t.date.slice(0,10) : '-')}</td>
       <td><strong>#${esc(t.ref || '-')}</strong></td>
       <td>${fmtJ(t.total)}</td>
-      <td class="text-green">${fmtJ(t.deposit || 0)}</td>
+      <td class="text-green">${fmtJ(txPaid)}</td>
       <td class="${(t.remaining || 0) > 0 ? 'text-red' : ''}">${fmtJ(t.remaining || 0)}</td>
       <td><span style="color:${statusColor};font-weight:600;font-size:.75rem">${esc(statusLabel)}</span></td>
-      <td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:.72rem" onclick="closeModal();showInvoiceDetail('${esc(t._id)}')">عرض</button></td>
+      <td>
+        <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:.72rem" onclick="closeModal();showInvoiceDetail('${esc(t._id)}')">عرض</button>
+        ${!t.cancelled && (t.remaining || 0) > 0 ? `<button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:.72rem;margin-right:4px" onclick="closeModal();openCollectMovement('${esc(t._id)}')">💸 سداد</button>` : ''}
+      </td>
     </tr>`;
   }).join('') : `<tr><td colspan="7" class="empty-state">لا توجد فواتير لهذا المورد</td></tr>`;
   openModal(`
@@ -3880,7 +3931,7 @@ function openSupplierInvoices(supplierName) {
     <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;font-size:.82rem">
       <div><span class="text-muted">إجمالي المشتريات: </span><strong>${fmtJ(totalPurchased)}</strong></div>
       <div><span class="text-muted">المدفوع: </span><strong class="text-green">${fmtJ(totalPaid)}</strong></div>
-      ${totalRemaining > 0 ? `<div><span class="text-muted">المتبقي: </span><strong class="text-red">${fmtJ(totalRemaining)}</strong></div>` : ''}
+      ${totalRemaining > 0 ? `<div><span class="text-muted">المديونية: </span><strong class="text-red">${fmtJ(totalRemaining)}</strong> (${debtCount} فاتورة)</div>` : '<div><span class="badge badge-green">تم السداد بالكامل</span></div>'}
     </div>
     <div class="overflow-x">
       <table style="width:100%;font-size:.82rem;border-collapse:collapse">
