@@ -196,9 +196,17 @@ export class SeedService {
       this.logger.log('Users already seeded, skipping.');
       return;
     }
-    for (const userData of DEFAULT_USERS) {
-      await this.usersService.createUser(userData);
-      this.logger.log(`Seeded user: ${userData.username}`);
+    try {
+      for (const userData of DEFAULT_USERS) {
+        try {
+          await this.usersService.createUser(userData);
+          this.logger.log(`Seeded user: ${userData.username}`);
+        } catch (err) {
+          this.logger.error(`Failed to seed user ${userData.username}: ${err.message}`);
+        }
+      }
+    } catch (err) {
+      this.logger.error(`Seed error: ${err.message}`);
     }
   }
 

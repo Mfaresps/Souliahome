@@ -85,6 +85,17 @@ export class CreateTransactionDto {
   @IsNotEmpty()
   readonly employee: string;
 
+  @IsArray()
+  @IsOptional()
+  readonly comments?: Array<{
+    id: number;
+    text: string;
+    type: string;
+    employee: string;
+    timestamp: string;
+    createdAt: string;
+  }>;
+
   @IsString()
   @IsOptional()
   readonly shipCo?: string;
@@ -189,6 +200,17 @@ export class UpdateTransactionDto {
   @Min(0)
   @IsOptional()
   readonly itemsTotal?: number;
+
+  @IsArray()
+  @IsOptional()
+  readonly comments?: Array<{
+    id: number;
+    text: string;
+    type: string;
+    employee: string;
+    timestamp: string;
+    createdAt: string;
+  }>;
 }
 
 export class CancelTransactionDto {

@@ -126,6 +126,17 @@ export class Transaction {
     reviewedAt?: string;
     rejectedReason?: string;
   } | null;
+
+  /** Employee comments on transaction */
+  @Prop({ type: [Object], default: [] })
+  comments: Array<{
+    id: number;
+    text: string;
+    type: string; // 'عام' | 'تنبيه' | 'ملاحظة' | 'أسئلة'
+    employee: string;
+    timestamp: string;
+    createdAt: string;
+  }>;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);

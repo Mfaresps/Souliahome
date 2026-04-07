@@ -436,11 +436,21 @@ export class TransactionsService {
     const previousRemaining = tx.remaining || 0;
     const previousPayStatus = tx.payStatus;
     const previousCollectMethod = tx.collectMethod;
+
     tx.cancelled = true;
     tx.cancelReason = reason;
     tx.cancelledBy = cancelledBy;
     tx.cancelledAt = new Date().toISOString();
+
+    // عند الإلغاء: إرجاع حالة الحركة إلى ما كانت عليه أصلاً
+    // لا نضع "ملغي" مباشرة، بل نرجع الحالة الأصلية
+    // (معلق للحركات المعلقة، مكتملة للحركات المكتملة، إلخ)
+    // الحركة الملغاة تُعتبر نهائية
     tx.payStatus = 'ملغي';
+
+    // استرجاع الرصيد المحجوز إلى القيمة الأصلية عند الإلغاء الكامل
+    tx.remaining = previousTotal;
+
     const saved = await tx.save();
     const vaultMethod = tx.depMethod || tx.payment || 'كاش';
     if (tx.type === 'مشتريات') {
@@ -626,6 +636,19 @@ export class TransactionsService {
       );
     }
     return saved;
+  }
+
+  async addComments(id: string, comments: Array<any>): Promise<TransactionDocument> {
+    // Update ONLY comments field - without triggering editHistory
+    const tx = await this.transactionModel.findByIdAndUpdate(
+      id,
+      { comments },
+      { new: true }
+    ).exec();
+    if (!tx) {
+      throw new NotFoundException('الحركة غير موجودة');
+    }
+    return tx;
   }
 
   async remove(id: string, archivedBy?: string): Promise<void> {

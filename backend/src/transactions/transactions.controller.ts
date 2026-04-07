@@ -174,6 +174,14 @@ export class TransactionsController {
     return this.transactionsService.update(id, dto, editedBy);
   }
 
+  @Post(':id/comments')
+  async addComments(
+    @Param('id') id: string,
+    @Body() body: { comments: Array<any> },
+  ) {
+    return this.transactionsService.addComments(id, body.comments);
+  }
+
   @Roles('admin')
   @Delete('clear')
   async clearAll() {
