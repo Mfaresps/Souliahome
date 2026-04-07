@@ -5832,7 +5832,7 @@ function renderVaultTable() {
 
   qs('#vault-table tbody').innerHTML = pageData.length ? pageData.map(v => `
     <tr style="cursor:pointer" onclick="openVaultTransactionDetail('${v._id}')">
-      <td style="font-size:.75rem;color:var(--muted)">${v.txNo ? `<span style="font-size:.68rem;font-weight:600;color:var(--primary);direction:ltr">${esc(v.txNo)}</span>` : '-'}</td>
+      <td style="font-weight:700;color:var(--primary);font-size:.8rem;direction:ltr">${v.txNo ? esc(v.txNo) : `<span style="color:#999">—</span>`}</td>
       <td>${fmtDate(v.date || v.createdAt)}</td>
       <td style="font-size:.75rem;color:var(--muted);white-space:nowrap">${v.createdAt ? fmtDateTime(v.createdAt) : '-'}</td>
       ${formatVaultAmountCellHtml(v)}
@@ -5842,7 +5842,7 @@ function renderVaultTable() {
       <td>${esc(segLabel(v.seg))}</td>
       <td>${statusBadge(v.status || 'completed')}</td>
       <td>${esc(v.method || '-')}</td>
-      <td style="font-size:.78rem;color:var(--muted)">${esc(v.employee || '-')}</td>
+      <td style="font-weight:600;color:var(--accent);font-size:.8rem">${v.employee ? esc(v.employee) : `<span style="color:#999">—</span>`}</td>
       <td>${esc(v.desc || '-')}</td>
       <td class="vault-justif-col" style="font-size:.72rem;color:var(--muted);max-width:180px;white-space:normal;line-height:1.4">${v.accountingJustification ? `<span title="${esc(v.accountingJustification)}">${esc(v.accountingJustification.substring(0,60))}${v.accountingJustification.length > 60 ? '…' : ''}</span>` : '-'}</td>
     </tr>`).join('') : '<tr><td colspan="13" class="empty-state">لا توجد سجلات</td></tr>';

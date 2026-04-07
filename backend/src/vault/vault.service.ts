@@ -61,10 +61,31 @@ export class VaultService {
     return this.vaultModel.find(filter).sort({ createdAt: -1 }).exec();
   }
 
-  private generateTxNo(): string {
-    const ts = Date.now().toString(36).toUpperCase();
-    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
-    return `V${ts}${rand}`;
+  private async generateTxNo(source?: string): Promise<string> {
+    // Map source to prefix
+    const prefixes: Record<string, string> = {
+      'ديبوزت مبيعات': 'SAL',
+      'تحصيل': 'SAL',
+      'مبيعات': 'SAL',
+      'مشتريات': 'PUR',
+      'دفع مشتريات': 'PUR',
+      'مصروف': 'EXP',
+      'رد مرتجع': 'RET',
+      'مرتجع': 'RET',
+      'إلغاء': 'CAN',
+      'خصم بعدي': 'DIS',
+      'يدوي': 'MAN',
+    };
+
+    const prefix = prefixes[source || ''] || 'TXN';
+
+    // Get count of transactions with same prefix
+    const count = await this.vaultModel.countDocuments({
+      txNo: { $regex: `^${prefix}-` },
+    });
+
+    const nextNumber = (count + 1).toString().padStart(3, '0');
+    return `${prefix}-${nextNumber}`;
   }
 
   async getSegmentBalance(seg: string): Promise<number> {
@@ -105,6 +126,7 @@ export class VaultService {
       dto.seg,
       dto.amount,
     );
+    const txNo = await this.generateTxNo('يدوي');
     return this.vaultModel.create({
       date,
       desc,
@@ -119,7 +141,7 @@ export class VaultService {
       balBank: settings.vaultBank,
       balance: settings.vaultBalance,
       employee: employee || dto.employee || '',
-      txNo: this.generateTxNo(),
+      txNo,
       accountingJustification: dto.accountingJustification || '',
       entityLabel: dto.entityLabel || '',
     });
@@ -133,6 +155,7 @@ export class VaultService {
     source = '',
     ref = '',
     entityContext?: { customer?: string; supplier?: string; category?: string; itemCount?: number },
+    employee = '',
   ): Promise<VaultEntryDocument> {
     const seg = resolveVaultSegmentFromPaymentMethod(method);
     // Block any deduction if balance is insufficient
@@ -158,6 +181,7 @@ export class VaultService {
     );
 
     const entityLabel = entityContext?.customer || entityContext?.supplier || '';
+    const txNo = await this.generateTxNo(source);
 
     return this.vaultModel.create({
       date,
@@ -176,6 +200,8 @@ export class VaultService {
       transactionType: source,
       accountingJustification,
       entityLabel,
+      employee: employee || '',
+      txNo,
     });
   }
 

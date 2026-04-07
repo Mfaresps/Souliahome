@@ -14,6 +14,7 @@ import {
 import { CreateReturnRequestDto } from './dto/return-request.dto';
 import { TransactionsService } from '../transactions/transactions.service';
 import { ExpensesService } from '../expenses/expenses.service';
+import { VaultService } from '../vault/vault.service';
 
 const MAX_RETURN_DAYS = 14;
 
@@ -66,6 +67,7 @@ export class ReturnsService {
     private readonly returnModel: Model<ReturnRequestDocument>,
     private readonly transactionsService: TransactionsService,
     private readonly expensesService: ExpensesService,
+    private readonly vaultService: VaultService,
   ) {}
 
   /** قيمة المرتجع النقدية = مجموع بنود الأصناف فقط (لا شحن ولا خصم على مستوى الفاتورة). */
@@ -250,6 +252,9 @@ export class ReturnsService {
         throw new BadRequestException('قيمة أصناف المرتجع في الطلب غير صالحة');
       }
       const exTotal = Math.round(ret.exchangeTotal || 0);
+      const net = Math.round(exTotal - returnTotal);
+
+      // Create return transaction (مرتجع)
       const returnTx = {
         date: returnDate,
         type: 'مرتجع' as const,
@@ -257,10 +262,10 @@ export class ReturnsService {
         phone: ret.phone || '',
         ref: `${ret.originalRef}-RET`,
         notes:
-          `استبدال — مرتجع: ${ret.reason}${ret.reasonDetails ? ' — ' + ret.reasonDetails : ''} | قيمة المرتجع ${returnTotal} ج | بدائل ${exTotal} ج` +
-          ` | المخزن: إعادة أصناف المرتجع (قيمة نقدية 0 على هذه الحركة؛ مبلغ الأصناف ${returnTotal} ج يُدخل في الفرق مع البدائل فقط — بدون شحن)`,
+          `استبدال — مرتجع: ${ret.reason}${ret.reasonDetails ? ' — ' + ret.reasonDetails : ''} | قيمة المرتجع ${returnTotal} ج | بدائل ${exTotal} ج | الفرق: ${net > 0 ? 'على العميل ' + net : net < 0 ? 'لصالح العميل ' + Math.abs(net) : 'صفر'} ج` +
+          ` | المخزن: إعادة أصناف المرتجع`,
         items: ret.items,
-        total: 0,
+        total: returnTotal,
         itemsTotal: returnTotal,
         employee: approvedBy,
         deposit: 0,
@@ -272,7 +277,8 @@ export class ReturnsService {
         shipCost: 0,
       };
       await this.transactionsService.create(returnTx as never);
-      const net = Math.round(exTotal - returnTotal);
+
+      // Create exchange/sale transaction (مبيعات)
       const customerOwesCompany = net > 0;
       const saleRemaining = customerOwesCompany ? net : 0;
       const salePayComplete = !customerOwesCompany;
@@ -283,12 +289,12 @@ export class ReturnsService {
         phone: ret.phone || '',
         ref: `${ret.originalRef}-EXC`,
         notes:
-          `بيع استبدال — مقابل مرتجع ${ret.originalRef} | المخزن: خصم كميات البدائل كمبيعات` +
-          (customerOwesCompany
-            ? ` | فرق لصالح الشركة (بدائل أغلى من المرتجع): على العميل ${net} ج — تقريب لأقرب جنيه — حركة آجل معلقة حتى التحصيل للخزنة — إيداع التحصيل في قسم: ${collectAccount}`
+          `بيع استبدال — مقابل مرتجع ${ret.originalRef} | قيمة المرتجع: ${returnTotal} ج | قيمة البدائل: ${exTotal} ج` +
+          (net > 0
+            ? ` | الفرق لصالح الشركة: ${net} ج (على العميل)`
             : net < 0
-              ? ` | فرق لصالح العميل (مرتجع أغلى من البدائل): ${Math.abs(net)} ج — تقريب — طلب مصروف معلق؛ عند اعتماد المصروف يُخصم من الخزنة (${refundAccount})`
-              : ` | لا فرق نقدي تقريباً بين المرتجع والبدائل`),
+              ? ` | الفرق لصالح العميل: ${Math.abs(net)} ج`
+              : ` | لا فرق نقدي`),
         items: ret.exchangeItems,
         total: exTotal,
         itemsTotal: exTotal,
@@ -304,23 +310,38 @@ export class ReturnsService {
         discount: 0,
       };
       await this.transactionsService.create(saleTx as never);
-      if (net < 0) {
-        const dateStr = returnDate.split('T')[0];
-        const refundAmount = Math.abs(Math.round(net));
-        await this.expensesService.createApproved(
-          {
-            date: dateStr,
-            desc: `رد فرق استبدال للعميل ${ret.client} — مرجع ${ret.originalRef}`,
-            category: 'اخرى',
-            amount: refundAmount,
-            employee: approvedBy,
-            notes: `خصم فوري من قسم الخزنة (${refundAccount}) بموافقة اعتماد طلب الاستبدال — مرجع ${ret.originalRef}-EXC`,
-            account: refundAccount,
-          },
+
+      // Handle price difference vault entries
+      const dateStr = returnDate.split('T')[0];
+
+      if (net > 0) {
+        // Customer owes company - collect additional payment
+        await this.vaultService.addSystemEntry(
+          net,
+          collectAccount,
+          `تحصيل فرق استبدال — العميل ${ret.client} يدفع ${net} ج`,
+          dateStr,
+          'تحصيل',
+          `${ret.originalRef}-EXC`,
+          { customer: ret.client },
+          approvedBy,
+        );
+      } else if (net < 0) {
+        // Company owes customer - refund difference
+        const refundAmount = Math.abs(net);
+        await this.vaultService.addSystemEntry(
+          -refundAmount,
+          refundAccount,
+          `رد فرق استبدال — العميل ${ret.client} يستحق ${refundAmount} ج`,
+          dateStr,
+          'رد مرتجع',
+          `${ret.originalRef}-EXC`,
+          { customer: ret.client },
           approvedBy,
         );
       }
     } else {
+      // Simple return (not exchange)
       const refundTotal = this.sumReturnItemsTotal(ret.items);
       if (refundTotal <= 0) {
         throw new BadRequestException(
@@ -334,10 +355,9 @@ export class ReturnsService {
         phone: ret.phone || '',
         ref: ret.originalRef + '-RET',
         notes:
-          `مرتجع معتمد (طلب كان معلقاً): ${ret.reason}${ret.reasonDetails ? ' — ' + ret.reasonDetails : ''}` +
-          ` | المخزن: إعادة كميات الأصناف المرتجعة` +
-          ` | الخزنة: خصم ${refundTotal} ج من (${refundAccount}) رداً للعميل — مبلغ الأصناف المرتجعة فقط (بدون شحن ولا خصم فاتورة)` +
-          ` | قسم السحب حسب اختيار الطلب (ليس شراء)`,
+          `مرتجع معتمد: ${ret.reason}${ret.reasonDetails ? ' — ' + ret.reasonDetails : ''}` +
+          ` | قيمة المرتجع: ${refundTotal} ج` +
+          ` | المخزن: إعادة الأصناف | الخزنة: خصم ${refundTotal} ج من ${refundAccount}`,
         items: ret.items,
         total: refundTotal,
         itemsTotal: refundTotal,
@@ -351,6 +371,19 @@ export class ReturnsService {
         shipCost: 0,
       };
       await this.transactionsService.create(returnTx as never);
+
+      // Create vault entry for refund
+      const dateStr = returnDate.split('T')[0];
+      await this.vaultService.addSystemEntry(
+        -refundTotal,
+        refundAccount,
+        `رد مرتجع — العميل ${ret.client} يستحق ${refundTotal} ج`,
+        dateStr,
+        'رد مرتجع',
+        ret.originalRef + '-RET',
+        { customer: ret.client },
+        approvedBy,
+      );
     }
     return saved;
   }
