@@ -1,10 +1,10 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { VaultEntry, VaultEntryDocument } from './schemas/vault-entry.schema';
 import { SettingsService } from '../settings/settings.service';
 import { resolveVaultSegmentFromPaymentMethod } from './vault-segment.util';
-import { CreateVaultEntryDto } from './dto/vault.dto';
+import { CreateVaultEntryDto, UpdateVaultEntryDto } from './dto/vault.dto';
 
 @Injectable()
 export class VaultService {
@@ -119,6 +119,175 @@ export class VaultService {
       balInstapay: settings.vaultInstapay,
       balBank: settings.vaultBank,
       balance: settings.vaultBalance,
+      status: 'completed',
+      transactionType: source,
     });
+  }
+
+  async getById(id: string): Promise<VaultEntryDocument> {
+    const entry = await this.vaultModel.findById(id).exec();
+    if (!entry) throw new NotFoundException('المعاملة غير موجودة');
+    return entry;
+  }
+
+  async updateEntry(id: string, dto: UpdateVaultEntryDto, editor: string): Promise<VaultEntryDocument> {
+    const entry = await this.getById(id);
+    const changes: Record<string, { oldValue: unknown; newValue: unknown }> = {};
+
+    // Track changes
+    if (dto.desc !== undefined && dto.desc !== entry.desc) {
+      changes.desc = { oldValue: entry.desc, newValue: dto.desc };
+      entry.desc = dto.desc;
+    }
+    if (dto.notes !== undefined && dto.notes !== entry.notes) {
+      changes.notes = { oldValue: entry.notes, newValue: dto.notes };
+      entry.notes = dto.notes;
+    }
+    if (dto.status !== undefined && dto.status !== entry.status) {
+      changes.status = { oldValue: entry.status, newValue: dto.status };
+      entry.status = dto.status;
+    }
+    if (dto.frozenReason !== undefined && dto.frozenReason !== entry.frozenReason) {
+      changes.frozenReason = { oldValue: entry.frozenReason, newValue: dto.frozenReason };
+      entry.frozenReason = dto.frozenReason;
+    }
+
+    // Handle amount changes (adjust vault balance)
+    if (dto.amount !== undefined && dto.amount !== entry.amount) {
+      const amountDiff = dto.amount - entry.amount;
+      changes.amount = { oldValue: entry.amount, newValue: dto.amount };
+
+      // Only adjust if not frozen/cancelled
+      if (entry.status !== 'frozen' && entry.status !== 'cancelled') {
+        try {
+          await this.settingsService.adjustVaultBalance(entry.seg, amountDiff);
+          entry.amount = dto.amount;
+        } catch (err) {
+          throw new BadRequestException(`لا يمكن تعديل المبلغ: رصيد غير كافٍ`);
+        }
+      }
+    }
+
+    // Rebuild edit history if it doesn't exist
+    if (!entry.editHistory) {
+      entry.editHistory = [];
+    }
+
+    // Add edit record
+    entry.editHistory.push({
+      editor,
+      editedAt: new Date().toISOString(),
+      changes,
+    });
+
+    return entry.save();
+  }
+
+  async freezeEntry(id: string, reason: string, freezer: string): Promise<VaultEntryDocument> {
+    const entry = await this.getById(id);
+    if (entry.status === 'frozen') throw new BadRequestException('المعاملة مجمدة بالفعل');
+    if (entry.status === 'cancelled') throw new BadRequestException('لا يمكن تجميد معاملة ملغاة');
+
+    entry.status = 'frozen';
+    entry.frozenReason = reason;
+    if (!entry.editHistory) entry.editHistory = [];
+    entry.editHistory.push({
+      editor: freezer,
+      editedAt: new Date().toISOString(),
+      changes: { status: { oldValue: 'completed', newValue: 'frozen' }, reason: { oldValue: '', newValue: reason } },
+    });
+    return entry.save();
+  }
+
+  async cancelEntry(id: string, canceller: string, reason?: string): Promise<VaultEntryDocument> {
+    const entry = await this.getById(id);
+    if (entry.status === 'cancelled') throw new BadRequestException('المعاملة ملغاة بالفعل');
+
+    const oldStatus = entry.status;
+    entry.status = 'cancelled';
+    if (reason) entry.notes = `ملغاة: ${reason}`;
+
+    // Reverse amount if it was completed
+    if (oldStatus === 'completed') {
+      try {
+        await this.settingsService.adjustVaultBalance(entry.seg, -entry.amount);
+      } catch (err) {
+        throw new BadRequestException('خطأ في استرجاع المبلغ');
+      }
+    }
+
+    if (!entry.editHistory) entry.editHistory = [];
+    entry.editHistory.push({
+      editor: canceller,
+      editedAt: new Date().toISOString(),
+      changes: { status: { oldValue: oldStatus, newValue: 'cancelled' }, reason: { oldValue: '', newValue: reason || '' } },
+    });
+    return entry.save();
+  }
+
+  async approveEntry(id: string, approver: string): Promise<VaultEntryDocument> {
+    const entry = await this.getById(id);
+    if (entry.isApproved) throw new BadRequestException('المعاملة موافق عليها بالفعل');
+
+    entry.isApproved = true;
+    entry.approvedBy = approver;
+    if (!entry.editHistory) entry.editHistory = [];
+    entry.editHistory.push({
+      editor: approver,
+      editedAt: new Date().toISOString(),
+      changes: { isApproved: { oldValue: false, newValue: true } },
+    });
+    return entry.save();
+  }
+
+  async searchAndFilter(filters: {
+    from?: string;
+    to?: string;
+    seg?: string;
+    employee?: string;
+    status?: string;
+    transactionType?: string;
+  }): Promise<VaultEntryDocument[]> {
+    const query: Record<string, unknown> = {};
+
+    if (filters.from || filters.to) {
+      query.date = {};
+      if (filters.from) (query.date as Record<string, string>).$gte = filters.from;
+      if (filters.to) (query.date as Record<string, string>).$lte = filters.to;
+    }
+    if (filters.seg) query.seg = filters.seg;
+    if (filters.employee) query.employee = filters.employee;
+    if (filters.status) query.status = filters.status;
+    if (filters.transactionType) query.transactionType = filters.transactionType;
+
+    return this.vaultModel.find(query).sort({ createdAt: -1 }).exec();
+  }
+
+  async getStatistics(seg?: string): Promise<{
+    totalIncome: number;
+    totalExpense: number;
+    totalTransactions: number;
+    frozenTransactions: number;
+    cancelledTransactions: number;
+    pendingApprovals: number;
+  }> {
+    const query: Record<string, unknown> = { status: { $ne: 'cancelled' } };
+    if (seg) query.seg = seg;
+
+    const entries = await this.vaultModel.find(query).exec();
+    const totalIncome = entries.filter((e) => e.amount > 0).reduce((s, e) => s + e.amount, 0);
+    const totalExpense = Math.abs(entries.filter((e) => e.amount < 0).reduce((s, e) => s + e.amount, 0));
+    const frozenTransactions = entries.filter((e) => e.status === 'frozen').length;
+    const cancelledTransactions = await this.vaultModel.countDocuments({ status: 'cancelled' });
+    const pendingApprovals = entries.filter((e) => e.requiresApproval && !e.isApproved).length;
+
+    return {
+      totalIncome,
+      totalExpense,
+      totalTransactions: entries.length,
+      frozenTransactions,
+      cancelledTransactions,
+      pendingApprovals,
+    };
   }
 }
