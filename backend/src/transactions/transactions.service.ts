@@ -376,23 +376,33 @@ export class TransactionsService {
         }
       } else if (
         existing.type === 'مشتريات' &&
-        this.transactionAddsSupplierPurchases(existing) &&
-        dto.total !== undefined
+        this.transactionAddsSupplierPurchases(existing)
       ) {
-        // مشتريات: total change → vault delta (purchases are paid in full)
+        // مشتريات: handle total and/or deposit changes
         const oldTotal = existing.total || 0;
-        const newTotal = Number(dto.total) || 0;
-        const totalDelta = newTotal - oldTotal;
-        if (totalDelta !== 0 && depMethod) {
-          const direction = totalDelta > 0 ? 'زيادة قيمة مشتريات' : 'تخفيض قيمة مشتريات';
+        const newTotal = dto.total !== undefined ? (Number(dto.total) || 0) : oldTotal;
+        const newDeposit = dto.deposit !== undefined ? (Number(dto.deposit) || 0) : oldDeposit;
+        const depositDelta = newDeposit - oldDeposit;
+
+        // Vault: adjust for deposit change (more paid upfront or less)
+        if (depositDelta !== 0 && depMethod) {
+          const direction = depositDelta > 0 ? 'زيادة عربون مشتريات' : 'تخفيض عربون مشتريات';
           await this.vaultService.addSystemEntry(
-            -totalDelta, // negative: purchases withdraw from vault
+            -depositDelta, // negative = more paid to supplier, positive = refund
             depMethod,
-            `${direction} #${txRef} — ${existing.client || ''} | قبل: ${oldTotal} ج — بعد: ${newTotal} ج | بواسطة: ${editedBy}`,
+            `${direction} #${txRef} — ${existing.client || ''} | قبل: ${oldDeposit} ج — بعد: ${newDeposit} ج | بواسطة: ${editedBy}`,
             txDate,
             'تعديل مشتريات',
             txRef,
           );
+        }
+
+        // Recalculate remaining and payStatus after edit
+        const newRemaining = Math.max(0, newTotal - newDeposit);
+        if (tx) {
+          tx.remaining = newRemaining;
+          tx.payStatus = newRemaining <= 0 ? 'مكتمل' : 'معلق';
+          await tx.save();
         }
       }
     }
@@ -421,6 +431,10 @@ export class TransactionsService {
     cancelledBy: string,
   ): Promise<TransactionDocument> {
     const previousDeposit = tx.deposit || 0;
+    const previousTotal = tx.total || 0;
+    const previousRemaining = tx.remaining || 0;
+    const previousPayStatus = tx.payStatus;
+    const previousCollectMethod = tx.collectMethod;
     tx.cancelled = true;
     tx.cancelReason = reason;
     tx.cancelledBy = cancelledBy;
@@ -429,19 +443,26 @@ export class TransactionsService {
     const saved = await tx.save();
     const vaultMethod = tx.depMethod || tx.payment || 'كاش';
     if (tx.type === 'مشتريات') {
-      // Return money to vault: deposit paid upfront + remaining if already collected
-      const paidAmount =
-        tx.payStatus === 'ملغي' && tx.collectedAt
-          ? (tx.total || 0) // fully collected before cancel
-          : previousDeposit; // only deposit was paid
-      const totalRefund = tx.collectMethod
-        ? (tx.total || 0) // collected = was fully paid
-        : previousDeposit;
-      if (totalRefund > 0) {
+      // Calculate total actually paid = total - remaining at time of cancel
+      const totalPaidToSupplier = previousTotal - previousRemaining;
+      // Refund deposit portion (paid at creation) to deposit vault account
+      if (previousDeposit > 0) {
         await this.vaultService.addSystemEntry(
-          totalRefund, // positive: money returned from supplier
+          previousDeposit,
           vaultMethod,
-          `إلغاء مشتريات #${tx.ref || tx._id} — ${tx.client || ''} (بواسطة: ${cancelledBy})`,
+          `إلغاء مشتريات — رد العربون #${tx.ref || tx._id} — ${tx.client || ''} (بواسطة: ${cancelledBy})`,
+          new Date().toISOString().split('T')[0],
+          'إلغاء',
+          tx.ref || String(tx._id),
+        );
+      }
+      // Refund any additional payments made via collect (partial or full)
+      const additionalPaid = totalPaidToSupplier - previousDeposit;
+      if (additionalPaid > 0 && previousCollectMethod) {
+        await this.vaultService.addSystemEntry(
+          additionalPaid,
+          previousCollectMethod,
+          `إلغاء مشتريات — رد المسدد #${tx.ref || tx._id} — ${tx.client || ''} (بواسطة: ${cancelledBy})`,
           new Date().toISOString().split('T')[0],
           'إلغاء',
           tx.ref || String(tx._id),
