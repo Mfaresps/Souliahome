@@ -480,39 +480,20 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <!-- Transaction (new) -->
 <div class="page" id="page-transaction">
 <h2 class="page-title" data-i18n="transaction">حركة جديدة</h2>
-<div class="type-selector-cards" id="tx-type-selector">
-  <!-- Sales Card -->
-  <button class="tx-type-card active" data-type="مبيعات" onclick="setTxType('مبيعات')" style="grid-column:1">
-    <div class="tx-type-icon">🛒</div>
-    <div class="tx-type-title">مبيعات</div>
-    <div class="tx-type-desc">بيع أصناف للعميل</div>
-  </button>
-
-  <!-- Purchases Card -->
-  <button class="tx-type-card" data-type="مشتريات" onclick="setTxType('مشتريات')" style="grid-column:2">
-    <div class="tx-type-icon">📦</div>
-    <div class="tx-type-title">مشتريات</div>
-    <div class="tx-type-desc">شراء أصناف من المورد</div>
-  </button>
-
-  <!-- Returns/Exchange Card -->
-  <div class="tx-type-card" data-type="مرتجع" style="grid-column:3;padding:0;display:flex;flex-direction:column;position:relative" id="return-exchange-card">
-    <button class="tx-return-tab active" data-mode="return" onclick="switchReturnMode('return')" style="flex:1;border-radius:12px 12px 0 0;border-bottom:1px solid var(--border)">
-      <div class="tx-type-icon" style="margin-bottom:6px">📤</div>
-      <div class="tx-type-title" style="font-size:.95rem">مرتجع</div>
-      <div class="tx-type-desc" style="font-size:.75rem">إعادة أصناف للمخزن</div>
-    </button>
-    <button class="tx-return-tab" data-mode="exchange" onclick="switchReturnMode('exchange')" style="flex:1;border-radius:0 0 12px 12px">
-      <div class="tx-type-icon" style="margin-bottom:6px">🔁</div>
-      <div class="tx-type-title" style="font-size:.95rem">استبدال</div>
-      <div class="tx-type-desc" style="font-size:.75rem">تغيير الأصناف</div>
-    </button>
-  </div>
+<div class="type-selector" id="tx-type-selector">
+<button class="type-btn active" data-type="مبيعات" onclick="setTxType('مبيعات')">مبيعات</button>
+<button class="type-btn" data-type="مشتريات" onclick="setTxType('مشتريات')">مشتريات</button>
+<div class="type-return-group">
+<button class="type-btn" data-type="مرتجع" onclick="setTxType('مرتجع')">مرتجع</button>
+<div id="ret-exchange-mode-wrap" class="ret-exchange-mode-wrap" aria-hidden="true">
+<span class="ret-mode-hint">تبديل</span>
+<label class="ret-switch-label" title="تفعيل وضع استبدال الأصناف">
+<input type="checkbox" id="ret-exchange-toggle" class="ret-exchange-toggle" onchange="setRetExchangeMode(this.checked)">
+<span class="ret-switch-track"></span>
+</label>
+<span id="ret-exchange-mode-text" class="text-sm" style="font-weight:600;color:var(--muted)">إرجاع فقط</span>
 </div>
-
-<!-- Return/Exchange Mode Indicator -->
-<div id="return-mode-indicator" style="display:none;padding:12px;margin-bottom:16px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:8px;font-size:.9rem;color:#8b5cf6;font-weight:600">
-  <span id="ret-mode-text">وضع الإرجاع: </span><span id="ret-mode-label">إعادة الأصناف فقط</span>
+</div>
 </div>
 <div class="grid grid-2 mb-16" id="tx-fields"></div>
 <div id="tx-items-section">
@@ -2067,32 +2048,21 @@ function initTxPage() {
 
 function setTxType(type, opts) {
   txType = type;
-  // Update card buttons (new UI)
-  qsa('#tx-type-selector .tx-type-card').forEach(b => b.classList.toggle('active', b.dataset.type === type));
-  // Also update old type-btn for compatibility
   qsa('#tx-type-selector .type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
-
-  const isReturn = type === 'مرتجع';
-
-  // Show/hide return mode indicator
-  const indicator = qs('#return-mode-indicator');
-  if (indicator) {
-    indicator.style.display = isReturn ? 'block' : 'none';
-    if (isReturn) {
-      const label = qs('#ret-mode-label');
-      if (label) {
-        label.textContent = retIsExchange ? 'استبدال الأصناف (عميل سيختار بدائل)' : 'إعادة الأصناف فقط';
-      }
-    }
+  const exchWrap = qs('#ret-exchange-mode-wrap');
+  if (exchWrap) {
+    const isReturn = type === 'مرتجع';
+    exchWrap.classList.toggle('visible', isReturn);
+    exchWrap.setAttribute('aria-hidden', isReturn ? 'false' : 'true');
   }
-
   if (type !== 'مرتجع') resetReturnExchangeToggle();
+  const isReturn = type === 'مرتجع';
   const itemsSec = qs('#tx-items-section');
   if (itemsSec) itemsSec.style.display = isReturn ? 'none' : 'block';
   const sumWrap = qs('#tx-summary');
   if (sumWrap) sumWrap.style.display = isReturn ? 'none' : '';
   const saveBtn = qs('#tx-save-btn');
-  if (saveBtn) saveBtn.textContent = isReturn ? (retIsExchange ? '📤 إرسال طلب استبدال' : '📤 إرسال طلب إرجاع') : '💾 حفظ الحركة';
+  if (saveBtn) saveBtn.textContent = isReturn ? (retIsExchange ? '📤 إرسال طلب الاستبدال (مرة واحدة)' : '📤 طلب استرجاع') : '💾 حفظ الحركة';
   renderTxFields(); calcTxSummary();
   if (isReturn && !opts?.skipReturnReset) {
     selectedRetTxId = '';
@@ -2430,40 +2400,16 @@ function filterReturnClients(q) {
 let selectedRetTxId = '';
 let selectedRetItems = [];
 let retIsExchange = false;
-function switchReturnMode(mode) {
-  retIsExchange = (mode === 'exchange');
-  if (!retIsExchange) retExchangeItems = [{ productId: '', qty: 1, price: 0 }];
-
-  // Update tab buttons
-  qsa('.tx-return-tab').forEach(btn => btn.classList.remove('active'));
-  qs(`.tx-return-tab[data-mode="${mode}"]`)?.classList.add('active');
-
-  // Update indicator
-  const indicator = qs('#return-mode-indicator');
-  const label = qs('#ret-mode-label');
-  if (indicator && label) {
-    if (retIsExchange) {
-      indicator.style.display = 'block';
-      label.textContent = 'استبدال الأصناف (عميل سيختار بدائل)';
-    } else {
-      indicator.style.display = 'block';
-      label.textContent = 'إعادة الأصناف فقط';
-    }
-  }
-
-  // Update save button
-  const saveBtn = qs('#tx-save-btn');
-  if (saveBtn && txType === 'مرتجع') {
-    saveBtn.textContent = retIsExchange ? '📤 إرسال طلب استبدال' : '📤 إرسال طلب إرجاع';
-  }
-
-  // Trigger UI updates
-  syncReturnReasonAndExchangeUI();
-  if (txType === 'مرتجع' && selectedRetItems.length) renderReturnItems();
-}
-
 function setRetExchangeMode(checked) {
-  switchReturnMode(checked ? 'exchange' : 'return');
+  retIsExchange = checked;
+  const retExCb = qs('#ret-exchange-toggle');
+  if (retExCb) retExCb.checked = !!checked;
+  if (!checked) retExchangeItems = [{ productId: '', qty: 1, price: 0 }];
+  syncRetExchangeLabel();
+  const saveBtn = qs('#tx-save-btn');
+  if (saveBtn && txType === 'مرتجع') saveBtn.textContent = checked ? '📤 إرسال طلب الاستبدال (مرة واحدة)' : '📤 طلب استرجاع';
+  if (txType === 'مرتجع') syncReturnReasonAndExchangeUI();
+  if (txType === 'مرتجع' && selectedRetItems.length) renderReturnItems();
 }
 function syncRetExchangeLabel() {
   const labelEl = qs('#ret-exchange-mode-text');
@@ -4995,108 +4941,6 @@ function printExpenseDetails(id) {
         .info-text { font-size: 13px; color: #0f1f16; line-height: 1.6; }
         .footer { margin-top: 24px; padding-top: 14px; border-top: 1px solid #e2e8e4; text-align: center; font-size: 11px; color: #6b8c78; }
         @media print { body { padding: 0; background: #fff; } .expense-slip { box-shadow: none; } }
-
-        /* Transaction Type Cards */
-        .type-selector-cards {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
-          margin-bottom: 20px;
-        }
-        .tx-type-card {
-          position: relative;
-          padding: 20px;
-          border: 2px solid var(--border);
-          border-radius: 12px;
-          background: var(--surface);
-          cursor: pointer;
-          transition: all 0.3s ease;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          font-family: inherit;
-          color: inherit;
-        }
-        .tx-type-card:hover {
-          border-color: var(--primary);
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        .tx-type-card.active {
-          border-color: var(--primary);
-          background: rgba(34,197,94,0.08);
-          box-shadow: 0 0 0 3px rgba(34,197,94,0.1);
-        }
-        .tx-type-icon {
-          font-size: 2.5rem;
-          margin-bottom: 12px;
-          display: block;
-        }
-        .tx-type-title {
-          font-size: 1.1rem;
-          font-weight: 700;
-          color: var(--text);
-          margin-bottom: 6px;
-        }
-        .tx-type-desc {
-          font-size: 0.85rem;
-          color: var(--muted);
-          line-height: 1.4;
-        }
-
-        /* Return/Exchange Tabs */
-        .tx-return-tab {
-          padding: 16px 12px;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          font-family: inherit;
-          color: var(--muted);
-          transition: all 0.3s ease;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-        }
-        .tx-return-tab:hover {
-          color: var(--text);
-          background: var(--surface2);
-        }
-        .tx-return-tab.active {
-          color: var(--primary);
-          background: rgba(34,197,94,0.06);
-          border-top: 2px solid var(--primary);
-          border-bottom: 2px solid var(--primary);
-        }
-        .tx-return-tab.active .tx-type-icon {
-          transform: scale(1.1);
-        }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-          .type-selector-cards {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-        @media (max-width: 640px) {
-          .type-selector-cards {
-            grid-template-columns: 1fr;
-          }
-          .tx-type-card {
-            padding: 16px;
-          }
-          .tx-type-icon {
-            font-size: 2rem;
-            margin-bottom: 8px;
-          }
-          .tx-type-title {
-            font-size: 1rem;
-          }
-          .tx-return-tab {
-            padding: 12px 8px;
-          }
-        }
       </style>
     </head>
     <body>
