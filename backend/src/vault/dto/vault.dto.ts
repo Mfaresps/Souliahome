@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsEnum, IsBoolean } from 'class-validator';
 
 export class CreateVaultEntryDto {
   @IsNumber()
@@ -23,6 +23,60 @@ export class CreateVaultEntryDto {
   @IsString()
   @IsOptional()
   readonly employee?: string;
+
+  @IsEnum(['completed', 'pending', 'frozen', 'cancelled'])
+  @IsOptional()
+  readonly status?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly transactionType?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly customer?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly supplier?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly notes?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly ref?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  readonly requiresApproval?: boolean;
+}
+
+export class UpdateVaultEntryDto {
+  @IsString()
+  @IsOptional()
+  readonly desc?: string;
+
+  @IsNumber()
+  @IsOptional()
+  readonly amount?: number;
+
+  @IsEnum(['completed', 'pending', 'frozen', 'cancelled'])
+  @IsOptional()
+  readonly status?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly notes?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly frozenReason?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  readonly isApproved?: boolean;
 }
 
 export class VerifyPasswordDto {
