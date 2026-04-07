@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
+import { ReferenceDetailService } from './reference-detail.service';
 import {
   CreateTransactionDto,
   UpdateTransactionDto,
@@ -31,6 +32,7 @@ import { ExpensesService } from '../expenses/expenses.service';
 export class TransactionsController {
   constructor(
     private readonly transactionsService: TransactionsService,
+    private readonly referenceDetailService: ReferenceDetailService,
     private readonly expensesService: ExpensesService,
   ) {}
 
@@ -70,6 +72,16 @@ export class TransactionsController {
   @Get('archived')
   async findArchived() {
     return this.transactionsService.findArchived();
+  }
+
+  @Get('reference/:ref')
+  async getReferenceDetails(@Param('ref') ref: string) {
+    return this.referenceDetailService.getDetailsByReference(ref);
+  }
+
+  @Get('reference-search/:partial')
+  async searchReferences(@Param('partial') partial: string) {
+    return this.referenceDetailService.searchReferences(partial);
   }
 
   @Get(':id')

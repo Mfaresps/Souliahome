@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Transaction, TransactionSchema } from './schemas/transaction.schema';
+import { ReturnRequest, ReturnRequestSchema } from '../returns/schemas/return-request.schema';
 import { TransactionsService } from './transactions.service';
+import { ReferenceDetailService } from './reference-detail.service';
 import { TransactionsController } from './transactions.controller';
 import { ProductsModule } from '../products/products.module';
 import { ExpensesModule } from '../expenses/expenses.module';
@@ -11,13 +13,14 @@ import { VaultModule } from '../vault/vault.module';
   imports: [
     MongooseModule.forFeature([
       { name: Transaction.name, schema: TransactionSchema },
+      { name: ReturnRequest.name, schema: ReturnRequestSchema },
     ]),
     ProductsModule,
     ExpensesModule,
     VaultModule,
   ],
   controllers: [TransactionsController],
-  providers: [TransactionsService],
+  providers: [TransactionsService, ReferenceDetailService],
   exports: [TransactionsService],
 })
 export class TransactionsModule {}
