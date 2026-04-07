@@ -4,6 +4,9 @@ import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 
+// In-memory user status tracker
+const usersStatus: Record<string, { status: 'online' | 'offline'; lastSeen: Date }> = {};
+
 export interface LoginResponse {
   accessToken: string;
   user: {
@@ -49,5 +52,29 @@ export class AuthService {
         perms: user.perms || [],
       },
     };
+  }
+
+  async setUserStatus(
+    userId: string,
+    status: 'online' | 'offline',
+  ): Promise<{ message: string }> {
+    usersStatus[userId] = {
+      status,
+      lastSeen: new Date(),
+    };
+    return { message: `تم تحديث الحالة إلى ${status === 'online' ? 'متصل' : 'غير متصل'}` };
+  }
+
+  async getUsersStatus(): Promise<{
+    online: Record<string, { status: string; lastSeen: string }>;
+  }> {
+    const online: Record<string, { status: string; lastSeen: string }> = {};
+    for (const [userId, status] of Object.entries(usersStatus)) {
+      online[userId] = {
+        status: status.status,
+        lastSeen: status.lastSeen.toISOString(),
+      };
+    }
+    return { online };
   }
 }
