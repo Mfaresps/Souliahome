@@ -5292,7 +5292,38 @@ function exportReportData() {
 function renderVaultPage() {
   if (!settings) settings = {};
   if (!vaultUnlocked) { qs('#vault-locked').style.display = 'block'; qs('#vault-content').style.display = 'none'; }
-  else { qs('#vault-locked').style.display = 'none'; qs('#vault-content').style.display = 'block'; renderVaultSegs(); loadVaultLog(); }
+  else { qs('#vault-locked').style.display = 'none'; qs('#vault-content').style.display = 'block'; renderVaultSegs(); loadVaultStats(); loadVaultLog(); }
+}
+async function loadVaultStats() {
+  try {
+    const stats = await api('/vault/statistics');
+    const statsHtml = `
+      <div class="stat-card card">
+        <div class="stat-val text-green">${fmtJ(stats.totalIncome || 0)}</div>
+        <div class="stat-label">إجمالي الدخل</div>
+      </div>
+      <div class="stat-card card">
+        <div class="stat-val text-red">${fmtJ(stats.totalExpense || 0)}</div>
+        <div class="stat-label">إجمالي المصاريف</div>
+      </div>
+      <div class="stat-card card">
+        <div class="stat-val text-blue">${stats.totalTransactions || 0}</div>
+        <div class="stat-label">إجمالي المعاملات</div>
+      </div>
+      <div class="stat-card card">
+        <div class="stat-val text-orange">${stats.frozenTransactions || 0}</div>
+        <div class="stat-label">معاملات مجمدة</div>
+      </div>
+      <div class="stat-card card">
+        <div class="stat-val" style="color:#666">${stats.pendingApprovals || 0}</div>
+        <div class="stat-label">بانتظار الموافقة</div>
+      </div>
+    `;
+    const statsEl = qs('#vault-stats');
+    if (statsEl) statsEl.innerHTML = statsHtml;
+  } catch (e) {
+    console.error('خطأ في تحميل إحصائيات الخزنة:', e);
+  }
 }
 
 /** Refreshes settings (vault balances) from server and, if vault page is open/unlocked, re-renders it in real time */
