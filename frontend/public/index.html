@@ -7320,6 +7320,218 @@ function exportComplaintsExcel() {
   XLSX.writeFile(wb, `complaints_${today()}.xlsx`);
 }
 
+/* Smart Product Card */
+let productCardData = null;
+let productCardFilter = 'all'; // all, sales, purchases, returns
+
+async function showProductCard() {
+  const searchInput = prompt('ابحث عن المنتج (الكود أو الاسم):');
+  if (!searchInput?.trim()) return;
+
+  try {
+    toast('جاري التحميل...', false);
+    const data = await api(`/products/analytics/card/${encodeURIComponent(searchInput.trim())}`);
+    productCardData = data;
+    productCardFilter = 'all';
+    renderProductCard();
+    toast('');
+  } catch (e) {
+    toast('خطأ: ' + e.message, true);
+  }
+}
+
+function renderProductCard() {
+  if (!productCardData) return;
+
+  const data = productCardData;
+  const perf = data.performance;
+  const rankColor = perf.rank === 'Successful' ? 'var(--green)' : perf.rank === 'Average' ? 'var(--orange)' : 'var(--red)';
+  const rankEmoji = perf.rank === 'Successful' ? '🌟' : perf.rank === 'Average' ? '⚠️' : '📉';
+
+  const html = `
+    <button class="inv-close" onclick="closeProductCard()" style="position:absolute;top:12px;right:12px;z-index:1">✕</button>
+    <div style="padding:20px;max-height:85vh;overflow-y:auto">
+      <!-- Header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:12px">
+        <div>
+          <h2 style="margin:0;color:var(--primary);font-size:1.6rem">${esc(data.product.name)}</h2>
+          <div style="font-size:.9rem;color:var(--muted);margin-top:4px">
+            <strong>الكود:</strong> ${esc(data.product.code)} ·
+            <strong>سعر البيع:</strong> ${fmtJ(data.product.sellPrice)} ·
+            <strong>سعر الشراء:</strong> ${fmtJ(data.product.buyPrice)}
+          </div>
+        </div>
+        <div style="text-align:left;padding:12px;background:var(--surface2);border-radius:8px;border-right:3px solid ${rankColor}">
+          <div style="font-size:1.1rem;font-weight:700;color:${rankColor}">${rankEmoji} ${esc(perf.rank)}</div>
+          <div style="font-size:.85rem;color:var(--muted);margin-top:6px">${esc(perf.reason)}</div>
+          <div style="font-size:1rem;font-weight:700;color:var(--primary);margin-top:6px">نقاط الأداء: ${perf.score}%</div>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">
+        <div style="padding:14px;background:var(--surface2);border-radius:8px;border-right:3px solid var(--green)">
+          <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">🛒 فواتير المبيعات</div>
+          <div style="font-weight:700;color:var(--green);font-size:1.3rem">${data.summary.totalSaleInvoices}</div>
+          <div style="font-size:.85rem;color:var(--text);margin-top:4px">الكمية: ${fmtN(data.summary.totalQuantitySold)}</div>
+          <div style="font-size:.85rem;color:var(--green);font-weight:600;margin-top:4px">${fmtJ(data.summary.totalRevenueFromSales)}</div>
+        </div>
+        <div style="padding:14px;background:var(--surface2);border-radius:8px;border-right:3px solid var(--blue)">
+          <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">📦 فواتير الشراء</div>
+          <div style="font-weight:700;color:var(--blue);font-size:1.3rem">${data.summary.totalPurchaseInvoices}</div>
+          <div style="font-size:.85rem;color:var(--text);margin-top:4px">الكمية: ${fmtN(data.summary.totalQuantityPurchased)}</div>
+          <div style="font-size:.85rem;color:var(--blue);font-weight:600;margin-top:4px">${fmtJ(data.summary.totalCostFromPurchases)}</div>
+        </div>
+        <div style="padding:14px;background:var(--surface2);border-radius:8px;border-right:3px solid var(--red)">
+          <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">🔄 المرتجعات</div>
+          <div style="font-weight:700;color:var(--red);font-size:1.3rem">${data.summary.totalReturnInvoices}</div>
+          <div style="font-size:.85rem;color:var(--text);margin-top:4px">الكمية: ${fmtN(data.summary.totalQuantityReturned)}</div>
+          <div style="font-size:.85rem;color:var(--red);font-weight:600;margin-top:4px">−${fmtJ(data.summary.totalLossFromReturns)}</div>
+        </div>
+        <div style="padding:14px;background:var(--surface2);border-radius:8px;border-right:3px solid var(--accent)">
+          <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">💰 هامش الربح</div>
+          <div style="font-weight:700;color:var(--accent);font-size:1.3rem">${data.summary.profitMargin}%</div>
+          <div style="font-size:.85rem;color:var(--text);margin-top:4px">صافي الربح</div>
+          <div style="font-size:.85rem;color:var(--accent);font-weight:600;margin-top:4px">${fmtJ(data.summary.totalRevenueFromSales - data.summary.totalCostFromPurchases)}</div>
+        </div>
+      </div>
+
+      <!-- Tabs for invoice types -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:8px">
+        <button class="${productCardFilter === 'all' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}" onclick="setProductCardFilter('all')">
+          📊 الكل (${data.invoices.sales.length + data.invoices.purchases.length + data.invoices.returns.length})
+        </button>
+        <button class="${productCardFilter === 'sales' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}" onclick="setProductCardFilter('sales')">
+          🛒 مبيعات (${data.invoices.sales.length})
+        </button>
+        <button class="${productCardFilter === 'purchases' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}" onclick="setProductCardFilter('purchases')">
+          📦 شراء (${data.invoices.purchases.length})
+        </button>
+        <button class="${productCardFilter === 'returns' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}" onclick="setProductCardFilter('returns')">
+          🔄 مرتجع (${data.invoices.returns.length})
+        </button>
+      </div>
+
+      <!-- Invoices Table -->
+      ${renderProductCardInvoices()}
+
+      <!-- Actions -->
+      <div style="display:flex;gap:8px;margin-top:20px;padding-top:12px;border-top:1px solid var(--border)">
+        <button class="btn btn-primary btn-sm" onclick="exportProductCard()">📥 تصدير Excel</button>
+        <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ طباعة</button>
+        <button class="btn btn-outline btn-sm" onclick="closeProductCard()">إغلاق</button>
+      </div>
+    </div>
+  `;
+
+  openModal(html, 'max-width:900px;max-height:90vh');
+}
+
+function renderProductCardInvoices() {
+  if (!productCardData) return '';
+
+  const invoices = productCardFilter === 'all'
+    ? [...productCardData.invoices.sales, ...productCardData.invoices.purchases, ...productCardData.invoices.returns]
+    : productCardFilter === 'sales'
+    ? productCardData.invoices.sales
+    : productCardFilter === 'purchases'
+    ? productCardData.invoices.purchases
+    : productCardData.invoices.returns;
+
+  if (!invoices.length) {
+    return '<div style="padding:20px;text-align:center;color:var(--muted)">لا توجد فواتير من هذا النوع</div>';
+  }
+
+  const typeColor = (type) => type === 'sales' ? 'var(--green)' : type === 'purchase' ? 'var(--blue)' : 'var(--red)';
+  const typeLabel = (type) => type === 'sales' ? '🛒 مبيعات' : type === 'purchase' ? '📦 شراء' : '🔄 مرتجع';
+
+  return `
+    <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse;font-size:.9rem">
+        <thead style="background:var(--surface2)">
+          <tr>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">النوع</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">الرقم المرجعي</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">العميل</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">التاريخ</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">الكمية</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">السعر</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">الإجمالي</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">الحالة</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${invoices.map(inv => `
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:10px;color:${typeColor(inv.type)};font-weight:600">${typeLabel(inv.type)}</td>
+              <td style="padding:10px;font-weight:600;direction:ltr">#${esc(inv.ref)}</td>
+              <td style="padding:10px">${esc(inv.client)}</td>
+              <td style="padding:10px">${fmtDate(inv.date)}</td>
+              <td style="padding:10px;text-align:center">${fmtN(inv.quantity)}</td>
+              <td style="padding:10px;text-align:left">${fmtJ(inv.unitPrice)}</td>
+              <td style="padding:10px;font-weight:600;color:${typeColor(inv.type)}">${fmtJ(inv.totalPrice)}</td>
+              <td style="padding:10px"><span class="badge" style="font-size:.7rem">${esc(inv.status)}</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function setProductCardFilter(filter) {
+  productCardFilter = filter;
+  renderProductCard();
+}
+
+function exportProductCard() {
+  if (!productCardData) return;
+  const data = productCardData;
+  const allInvoices = [
+    ...data.invoices.sales.map(inv => ({
+      'النوع': 'مبيعات',
+      'الرقم المرجعي': inv.ref,
+      'العميل': inv.client,
+      'التاريخ': inv.date,
+      'الكمية': inv.quantity,
+      'السعر': inv.unitPrice,
+      'الإجمالي': inv.totalPrice,
+      'الحالة': inv.status,
+    })),
+    ...data.invoices.purchases.map(inv => ({
+      'النوع': 'شراء',
+      'الرقم المرجعي': inv.ref,
+      'العميل': inv.client,
+      'التاريخ': inv.date,
+      'الكمية': inv.quantity,
+      'السعر': inv.unitPrice,
+      'الإجمالي': inv.totalPrice,
+      'الحالة': inv.status,
+    })),
+    ...data.invoices.returns.map(inv => ({
+      'النوع': 'مرتجع',
+      'الرقم المرجعي': inv.ref,
+      'العميل': inv.client,
+      'التاريخ': inv.date,
+      'الكمية': inv.quantity,
+      'السعر': inv.unitPrice,
+      'الإجمالي': inv.totalPrice,
+      'الحالة': inv.status,
+    })),
+  ];
+
+  const ws = XLSX.utils.json_to_sheet(allInvoices);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'الفواتير');
+  XLSX.writeFile(wb, `product_${data.product.code}_${today()}.xlsx`);
+  toast('تم تصدير البيانات بنجاح');
+}
+
+function closeProductCard() {
+  qs('#modal-overlay').classList.remove('active');
+  productCardData = null;
+}
+
 /* Init */
 (async function init() {
   const isAuthed = await checkAuth();
