@@ -46,6 +46,14 @@ export class CreateVaultEntryDto {
 
   @IsString()
   @IsOptional()
+  readonly accountingJustification?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly entityLabel?: string;
+
+  @IsString()
+  @IsOptional()
   readonly ref?: string;
 
   @IsBoolean()
@@ -69,6 +77,10 @@ export class UpdateVaultEntryDto {
   @IsString()
   @IsOptional()
   readonly notes?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly accountingJustification?: string;
 
   @IsString()
   @IsOptional()

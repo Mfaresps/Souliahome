@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { VaultEntry, VaultEntryDocument } from './schemas/vault-entry.schema';
 import { SettingsService } from '../settings/settings.service';
 import { resolveVaultSegmentFromPaymentMethod } from './vault-segment.util';
+import { generateVaultTexts } from './vault-description.util';
 import { CreateVaultEntryDto, UpdateVaultEntryDto } from './dto/vault.dto';
 
 @Injectable()
@@ -119,6 +120,8 @@ export class VaultService {
       balance: settings.vaultBalance,
       employee: employee || dto.employee || '',
       txNo: this.generateTxNo(),
+      accountingJustification: dto.accountingJustification || '',
+      entityLabel: dto.entityLabel || '',
     });
   }
 
@@ -129,6 +132,7 @@ export class VaultService {
     date: string,
     source = '',
     ref = '',
+    entityContext?: { customer?: string; supplier?: string; category?: string; itemCount?: number },
   ): Promise<VaultEntryDocument> {
     const seg = resolveVaultSegmentFromPaymentMethod(method);
     // Block any deduction if balance is insufficient
@@ -142,9 +146,22 @@ export class VaultService {
       }
     }
     const settings = await this.settingsService.adjustVaultBalance(seg, amount);
+
+    // Generate smart description and accounting justification
+    const { desc: finalDesc, justification: accountingJustification } = generateVaultTexts(
+      amount,
+      method,
+      desc,
+      source,
+      ref,
+      entityContext,
+    );
+
+    const entityLabel = entityContext?.customer || entityContext?.supplier || '';
+
     return this.vaultModel.create({
       date,
-      desc,
+      desc: finalDesc,
       amount,
       seg,
       method,
@@ -157,6 +174,8 @@ export class VaultService {
       balance: settings.vaultBalance,
       status: 'completed',
       transactionType: source,
+      accountingJustification,
+      entityLabel,
     });
   }
 
@@ -386,6 +405,173 @@ export class VaultService {
       frozenTransactions,
       cancelledTransactions,
       pendingApprovals,
+    };
+  }
+
+  async getAnalytics(days = 30, seg?: string): Promise<any> {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const fromStr = startDate.toISOString().split('T')[0];
+    const toStr = endDate.toISOString().split('T')[0];
+
+    // Previous period for trend
+    const prevEnd = new Date(startDate);
+    prevEnd.setDate(prevEnd.getDate() - 1);
+    const prevStart = new Date(prevEnd);
+    prevStart.setDate(prevStart.getDate() - days);
+    const prevFromStr = prevStart.toISOString().split('T')[0];
+    const prevToStr = prevEnd.toISOString().split('T')[0];
+
+    const query = { status: { $ne: 'cancelled' }, ...(seg ? { seg } : {}) };
+    const currentEntries = await this.vaultModel
+      .find({ ...query, date: { $gte: fromStr, $lte: toStr } })
+      .exec();
+    const prevEntries = await this.vaultModel
+      .find({ ...query, date: { $gte: prevFromStr, $lte: prevToStr } })
+      .exec();
+
+    // Calculate metrics
+    const currentNet = currentEntries.reduce((s, e) => s + e.amount, 0);
+    const prevNet = prevEntries.reduce((s, e) => s + e.amount, 0);
+
+    const dailyByDate: Record<string, number> = {};
+    currentEntries.forEach((e) => {
+      dailyByDate[e.date] = (dailyByDate[e.date] || 0) + e.amount;
+    });
+
+    const daysWithEntries = Object.keys(dailyByDate).length || 1;
+    const dailyAverage = currentNet / daysWithEntries;
+    const cashVelocity = currentEntries.reduce((s, e) => s + Math.abs(e.amount), 0) / days;
+
+    // Best and worst days
+    let bestDay = { date: '', net: 0 };
+    let worstDay = { date: '', net: 0 };
+    Object.entries(dailyByDate).forEach(([date, net]) => {
+      if (net > bestDay.net) bestDay = { date, net };
+      if (net < worstDay.net) worstDay = { date, net };
+    });
+
+    // Trend
+    const trendPct = prevNet !== 0 ? ((currentNet - prevNet) / Math.abs(prevNet)) * 100 : 0;
+    const trendDirection = currentNet > prevNet ? 'up' : currentNet < prevNet ? 'down' : 'flat';
+
+    // Module breakdown
+    const moduleMap: Record<string, { totalIn: number; totalOut: number; count: number }> = {};
+    currentEntries.forEach((e) => {
+      const source = e.source || 'يدوي';
+      if (!moduleMap[source]) {
+        moduleMap[source] = { totalIn: 0, totalOut: 0, count: 0 };
+      }
+      moduleMap[source].count++;
+      if (e.amount > 0) moduleMap[source].totalIn += e.amount;
+      else moduleMap[source].totalOut += Math.abs(e.amount);
+    });
+
+    const totalAbsFlow = currentEntries.reduce((s, e) => s + Math.abs(e.amount), 0) || 1;
+    const moduleBreakdown = Object.entries(moduleMap).map(([source, { totalIn, totalOut, count }]) => ({
+      source,
+      totalIn,
+      totalOut,
+      count,
+      pct: (((totalIn + totalOut) / totalAbsFlow) * 100).toFixed(2),
+    }));
+
+    // Top entities
+    const entityMap: Record<string, { total: number; count: number }> = {};
+    currentEntries.forEach((e) => {
+      const label = e.entityLabel || 'داخلي';
+      if (label && label.length > 0) {
+        if (!entityMap[label]) entityMap[label] = { total: 0, count: 0 };
+        entityMap[label].total += Math.abs(e.amount);
+        entityMap[label].count++;
+      }
+    });
+
+    const topEntities = Object.entries(entityMap)
+      .sort(([, a], [, b]) => b.total - a.total)
+      .slice(0, 10)
+      .map(([label, { total, count }]) => ({ entityLabel: label, total, count }));
+
+    // Current balances
+    const settings = await this.settingsService.getSettings();
+
+    return {
+      dailyAverage,
+      monthlyNet: currentNet,
+      lastMonthNet: prevNet,
+      trendDirection,
+      trendPct: Math.abs(trendPct).toFixed(1),
+      bestDay,
+      worstDay,
+      cashVelocity,
+      moduleBreakdown,
+      topEntities,
+      segmentBalances: {
+        cash: settings.vaultCash || 0,
+        vodafone: settings.vaultVodafone || 0,
+        instapay: settings.vaultInstapay || 0,
+        bank: settings.vaultBank || 0,
+        total: settings.vaultBalance || 0,
+      },
+    };
+  }
+
+  async getCashFlow(days = 30, seg?: string): Promise<any> {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const fromStr = startDate.toISOString().split('T')[0];
+    const toStr = endDate.toISOString().split('T')[0];
+
+    const query = { status: { $ne: 'cancelled' }, ...(seg ? { seg } : {}) };
+    const entries = await this.vaultModel
+      .find({ ...query, date: { $gte: fromStr, $lte: toStr } })
+      .exec();
+
+    // Build daily aggregates
+    const dailyByDate: Record<string, { inflow: number; outflow: number }> = {};
+    entries.forEach((e) => {
+      if (!dailyByDate[e.date]) {
+        dailyByDate[e.date] = { inflow: 0, outflow: 0 };
+      }
+      if (e.amount > 0) dailyByDate[e.date].inflow += e.amount;
+      else dailyByDate[e.date].outflow += Math.abs(e.amount);
+    });
+
+    // Fill missing days
+    const allDates = [];
+    for (let i = 0; i < days; i++) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toISOString().split('T')[0];
+      allDates.push(dateStr);
+      if (!dailyByDate[dateStr]) {
+        dailyByDate[dateStr] = { inflow: 0, outflow: 0 };
+      }
+    }
+
+    // Build output arrays
+    const labels = allDates;
+    const inflow = allDates.map((d) => dailyByDate[d].inflow);
+    const outflow = allDates.map((d) => dailyByDate[d].outflow);
+    const net = allDates.map((d) => dailyByDate[d].inflow - dailyByDate[d].outflow);
+
+    // Running balance
+    let cumulative = 0;
+    const runningBalance = net.map((n) => {
+      cumulative += n;
+      return cumulative;
+    });
+
+    return {
+      labels,
+      inflow,
+      outflow,
+      net,
+      runningBalance,
     };
   }
 }

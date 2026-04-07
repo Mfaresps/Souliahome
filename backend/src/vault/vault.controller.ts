@@ -49,6 +49,16 @@ export class VaultController {
     });
   }
 
+  @Get('analytics')
+  async getAnalytics(@Query('days') days?: string, @Query('seg') seg?: string) {
+    return this.vaultService.getAnalytics(Number(days) || 30, seg);
+  }
+
+  @Get('cashflow')
+  async getCashFlow(@Query('days') days?: string, @Query('seg') seg?: string) {
+    return this.vaultService.getCashFlow(Number(days) || 30, seg);
+  }
+
   @Get(':id')
   async getById(@Param('id') id: string) {
     return this.vaultService.getById(id);
