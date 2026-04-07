@@ -374,6 +374,18 @@ body{background:#fff;color:#000}
 #calc-grid button.calc-clear{color:var(--red);font-weight:700}
 #calc-grid button.calc-zero{grid-column:span 2}
 body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
+/* Treasury KPI Panel Responsive */
+@media (max-width:1200px) { #vault-kpi-cards { grid-template-columns: repeat(2, 1fr) !important; } }
+@media (max-width:768px) {
+  #vault-kpi-cards { grid-template-columns: repeat(2, 1fr) !important; }
+  #vault-kpi-panel .grid-2 { grid-template-columns: 1fr !important; }
+}
+/* Vault Justification Column Mobile Hide */
+.vault-justif-col { display: table-cell; }
+@media (max-width:900px) { .vault-justif-col { display: none; } }
+/* Dashboard Treasury Widget */
+#dash-treasury-widget .stat-val { font-size: 1.1rem; }
+#dash-treasury-widget .stat-card { padding: 14px; }
 </style>
 </head>
 <body>
@@ -447,6 +459,14 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 </div>
 
 <div class="grid grid-7 mb-24" id="dash-stats"></div>
+<!-- TREASURY POSITION WIDGET -->
+<div class="card mb-24" id="dash-treasury-widget" style="display:none">
+<div class="flex-between mb-8">
+<h4 style="margin:0">💰 الوضع النقدي</h4>
+<span id="dash-treasury-trend" style="font-size:.85rem;font-weight:600"></span>
+</div>
+<div class="grid grid-5 gap-12" id="dash-treasury-segs"></div>
+</div>
 <div class="grid grid-2 mb-24">
 <div class="card"><h4 class="mb-8" data-i18n="topSellers">الأكثر مبيعاً</h4><div class="overflow-x"><table id="dash-top-sellers"><thead><tr><th data-i18n="product">الصنف</th><th data-i18n="qty">الكمية</th><th data-i18n="total">الإجمالي</th></tr></thead><tbody></tbody></table></div></div>
 <div class="card"><h4 class="mb-8" data-i18n="lowSellers">الأقل مبيعاً</h4><div class="overflow-x"><table id="dash-low-sellers"><thead><tr><th data-i18n="product">الصنف</th><th data-i18n="qty">الكمية</th><th data-i18n="total">الإجمالي</th></tr></thead><tbody></tbody></table></div></div>
@@ -1047,6 +1067,30 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <button class="btn btn-outline btn-sm" onclick="exportVaultExcel()">📥 تصدير Excel</button>
 </div>
 <div class="seg-cards" id="vault-segs"></div>
+<!-- TREASURY KPI ANALYTICS PANEL -->
+<div id="vault-kpi-panel" style="display:none">
+<div class="grid grid-4 gap-12 mb-16" id="vault-kpi-cards"></div>
+<div class="grid grid-2 gap-16 mb-24">
+<div class="card">
+<div class="flex-between mb-12">
+<h4 style="margin:0">التدفق النقدي</h4>
+<div class="flex gap-8">
+<button class="btn btn-sm btn-outline" onclick="setCashflowDays(30)" id="cf-btn-30">30 يوم</button>
+<button class="btn btn-sm btn-outline" onclick="setCashflowDays(60)" id="cf-btn-60">60 يوم</button>
+<button class="btn btn-sm btn-outline" onclick="setCashflowDays(90)" id="cf-btn-90">90 يوم</button>
+</div>
+</div>
+<canvas id="vault-cashflow-chart" height="200"></canvas>
+</div>
+<div class="card">
+<h4 class="mb-12">توزيع مصادر السيولة</h4>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center">
+<canvas id="vault-source-chart" height="200"></canvas>
+<div id="vault-source-legend" style="font-size:.78rem"></div>
+</div>
+</div>
+</div>
+</div>
 <div class="grid grid-5 gap-12 mb-24" id="vault-stats" style="gap:12px"></div>
 <div class="card mb-24">
 <h4 class="mb-16">تسوية يدوية</h4>
@@ -1056,6 +1100,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="form-group"><label>الطريقة</label><select id="vault-method"><option value="إضافة">إضافة</option><option value="سحب">سحب</option></select></div>
 <div class="form-group"><label>الوصف</label><input type="text" id="vault-desc"></div>
 </div>
+<div class="form-group mt-12"><label>المبرر المحاسبي (اختياري)</label><input type="text" id="vault-justification" placeholder="كيف يؤثر على الخزنة؟"></div>
 <button class="btn btn-primary btn-sm mt-16" onclick="addVaultEntry()">تأكيد</button>
 </div>
 <div class="card">
@@ -1074,7 +1119,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <input type="date" id="vault-to" style="width:130px" onchange="vaultPage=1;loadVaultLog()">
 </div>
 </div>
-<div class="overflow-x"><table id="vault-table"><thead><tr><th>رقم المعاملة</th><th>التاريخ</th><th>التوقيت</th><th>المبلغ</th><th>الرصيد الكلي</th><th>المصدر</th><th>#المرجع</th><th>القسم</th><th>الحالة</th><th>الطريقة</th><th>الموظف</th><th>الوصف</th></tr></thead><tbody></tbody></table></div>
+<div class="overflow-x"><table id="vault-table"><thead><tr><th>رقم المعاملة</th><th>التاريخ</th><th>التوقيت</th><th>المبلغ</th><th>الرصيد الكلي</th><th>المصدر</th><th>#المرجع</th><th>القسم</th><th>الحالة</th><th>الطريقة</th><th>الموظف</th><th>الوصف</th><th class="vault-justif-col">الإثبات المحاسبي</th></tr></thead><tbody></tbody></table></div>
 <div id="vault-pagination"></div>
 </div>
 </div>
@@ -1859,6 +1904,7 @@ async function loadDashboard() {
     renderDashTable('#dash-low-stock tbody', (d.lowStockItems || []).slice(0, 10), r => `<td>${esc(r.name)}</td><td>${fmtN(r.current != null ? r.current : r.stock)}</td><td>${fmtN(r.minStock || r.min)}</td>`);
     renderDashTable('#dash-recent tbody', (d.recentTransactions || []).slice(0, 10), r => `<td>${fmtDate(r.date)}</td><td>${movementKindBadgeCompact(r)}</td><td>${esc(r.client || '-')}</td><td>${fmtJ(r.total)}</td><td>${movementStatusCell(r)}</td>`);
   } catch (e) { qs('#dash-stats').innerHTML = `<div class="empty-state">خطأ في تحميل البيانات: ${esc(e.message)}</div>`; }
+  loadDashboardTreasury();
 }
 
 function renderDashTable(sel, data, rowFn) {
@@ -5661,7 +5707,7 @@ function exportReportData() {
 function renderVaultPage() {
   if (!settings) settings = {};
   if (!vaultUnlocked) { qs('#vault-locked').style.display = 'block'; qs('#vault-content').style.display = 'none'; }
-  else { qs('#vault-locked').style.display = 'none'; qs('#vault-content').style.display = 'block'; renderVaultSegs(); loadVaultStats(); loadVaultLog(); }
+  else { qs('#vault-locked').style.display = 'none'; qs('#vault-content').style.display = 'block'; renderVaultSegs(); loadVaultStats(); loadVaultLog(); loadVaultAnalytics(); }
 }
 async function loadVaultStats() {
   try {
@@ -5798,7 +5844,8 @@ function renderVaultTable() {
       <td>${esc(v.method || '-')}</td>
       <td style="font-size:.78rem;color:var(--muted)">${esc(v.employee || '-')}</td>
       <td>${esc(v.desc || '-')}</td>
-    </tr>`).join('') : '<tr><td colspan="12" class="empty-state">لا توجد سجلات</td></tr>';
+      <td class="vault-justif-col" style="font-size:.72rem;color:var(--muted);max-width:180px;white-space:normal;line-height:1.4">${v.accountingJustification ? `<span title="${esc(v.accountingJustification)}">${esc(v.accountingJustification.substring(0,60))}${v.accountingJustification.length > 60 ? '…' : ''}</span>` : '-'}</td>
+    </tr>`).join('') : '<tr><td colspan="13" class="empty-state">لا توجد سجلات</td></tr>';
   renderPagination('vault-pagination', total, vaultPage, VAULT_PAGE_SIZE, 'setVaultPage');
 }
 
@@ -5853,6 +5900,11 @@ function openVaultTransactionDetail(txId) {
       <label style="color:var(--muted);font-size:.85rem;display:block;margin-bottom:4px">الوصف:</label>
       <p style="margin:0">${esc(tx.desc || '—')}</p>
     </div>
+    ${tx.accountingJustification ? `
+      <div style="margin-bottom:16px;padding:12px;background:#eff6ff;border-radius:6px;border-right:3px solid #1565c0">
+        <label style="color:#1565c0;font-size:.85rem;display:block;margin-bottom:4px">الإثبات المحاسبي:</label>
+        <p style="margin:0;font-size:.85rem">${esc(tx.accountingJustification)}</p>
+      </div>` : ''}
     ${tx.notes ? `<div style="margin-bottom:16px;padding:12px;background:#fef3c7;border-radius:6px"><strong>ملاحظات:</strong><br>${esc(tx.notes)}</div>` : ''}
     ${editHistoryHtml}
     <div style="display:flex;gap:8px;margin-top:16px">${actions}
@@ -5922,7 +5974,7 @@ async function cancelVaultTransaction(txId) {
   }
 }
 async function addVaultEntry() {
-  const body = { amount: Number(qs('#vault-amount').value) || 0, seg: qs('#vault-seg').value, method: qs('#vault-method').value, desc: qs('#vault-desc').value, date: new Date().toISOString(), employee: currentUser?.name || currentUser?.username || '' };
+  const body = { amount: Number(qs('#vault-amount').value) || 0, seg: qs('#vault-seg').value, method: qs('#vault-method').value, desc: qs('#vault-desc').value, accountingJustification: qs('#vault-justification').value || '', date: new Date().toISOString(), employee: currentUser?.name || currentUser?.username || '' };
   if (!body.amount) { toast('أدخل المبلغ', true); return; }
   if (body.method === 'سحب') body.amount = -Math.abs(body.amount);
   // Balance check for withdrawal
@@ -5938,10 +5990,175 @@ async function addVaultEntry() {
   const segLabel2 = {cash:'كاش',vodafone:'فودافون كاش',instapay:'Instapay',bank:'تحويل بنكي'}[body.seg] || body.seg;
   const confirmed = confirm(`تأكيد التسوية اليدوية\n\nالعملية: ${body.method}\nالمبلغ: ${fmtN(Math.abs(body.amount))} ج\nالحساب: ${segLabel2}\nالوصف: ${body.desc || '—'}\nالموظف: ${body.employee}\n\nهل تريد تطبيق هذا التعديل على رصيد الخزنة؟`);
   if (!confirmed) return;
-  try { await api('/vault', { method: 'POST', body: JSON.stringify(body) }); toast('تم تسجيل الحركة'); qs('#vault-amount').value = ''; qs('#vault-desc').value = ''; settings = await api('/settings').catch(() => settings); renderVaultSegs(); await loadVaultLog(); }
+  try { await api('/vault', { method: 'POST', body: JSON.stringify(body) }); toast('تم تسجيل الحركة'); qs('#vault-amount').value = ''; qs('#vault-desc').value = ''; qs('#vault-justification').value = ''; settings = await api('/settings').catch(() => settings); renderVaultSegs(); await loadVaultLog(); }
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
 function exportVaultExcel() { writeExcel(vaultLog.map(v => ({ 'التاريخ': (v.date||v.createdAt||'').slice(0,10), 'المبلغ': normalizeVaultSignedAmount(v), 'المصدر': v.source||'-', '#المرجع': v.ref ? '#'+v.ref : '-', 'القسم': v.seg, 'الطريقة': v.method, 'الوصف': v.desc })), 'الخزنة', 'vault_' + today()); }
+
+/* ==================== VAULT TREASURY ANALYTICS ==================== */
+let vaultAnalytics = null;
+let vaultCashflow = null;
+let vaultCharts = { cashflow: null, source: null };
+let cashflowDays = 30;
+
+async function loadVaultAnalytics() {
+  try {
+    const [analytics, cashflow] = await Promise.all([
+      api('/vault/analytics?days=' + cashflowDays),
+      api('/vault/cashflow?days=' + cashflowDays)
+    ]);
+    vaultAnalytics = analytics;
+    vaultCashflow = cashflow;
+    renderVaultKpiCards();
+    renderVaultCashflowChart();
+    renderVaultSourceChart();
+    qs('#vault-kpi-panel').style.display = 'block';
+  } catch(e) {
+    console.error('فشل تحميل تحليلات الخزنة:', e);
+  }
+}
+
+function renderVaultKpiCards() {
+  const a = vaultAnalytics;
+  if (!a) return;
+  const trendArrow = a.trendDirection === 'up' ? '↑' : a.trendDirection === 'down' ? '↓' : '→';
+  const trendColor = a.trendDirection === 'up' ? 'text-green' : a.trendDirection === 'down' ? 'text-red' : '';
+  const html = [
+    { label: 'صافي الشهر الحالي', val: fmtJ(a.monthlyNet), color: a.monthlyNet >= 0 ? 'text-green' : 'text-red' },
+    { label: `الاتجاه (${cashflowDays} يوم)`, val: `${trendArrow} ${Math.abs(parseFloat(a.trendPct)).toFixed(1)}%`, color: trendColor },
+    { label: 'متوسط يومي', val: fmtJ(a.dailyAverage), color: '' },
+    { label: 'سرعة دوران السيولة', val: fmtJ(a.cashVelocity) + '/يوم', color: 'text-blue' },
+  ].map(s => `<div class="stat-card card">
+    <div class="stat-val ${s.color}">${esc(s.val)}</div>
+    <div class="stat-label">${esc(s.label)}</div>
+  </div>`).join('');
+  qs('#vault-kpi-cards').innerHTML = html;
+}
+
+function renderVaultCashflowChart() {
+  const ctx = qs('#vault-cashflow-chart');
+  if (!ctx || !vaultCashflow) return;
+  if (vaultCharts.cashflow) vaultCharts.cashflow.destroy();
+
+  vaultCharts.cashflow = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: vaultCashflow.labels,
+      datasets: [
+        {
+          label: 'دخل',
+          data: vaultCashflow.inflow,
+          borderColor: '#16a34a',
+          backgroundColor: 'rgba(22,163,74,0.08)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 2
+        },
+        {
+          label: 'خروج',
+          data: vaultCashflow.outflow,
+          borderColor: '#dc2626',
+          backgroundColor: 'rgba(220,38,38,0.08)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 2
+        },
+        {
+          label: 'صافي',
+          data: vaultCashflow.net,
+          borderColor: '#1565c0',
+          borderDash: [5,5],
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 10, font: { size: 10 } } },
+        y: { beginAtZero: false }
+      }
+    }
+  });
+}
+
+function renderVaultSourceChart() {
+  const ctx = qs('#vault-source-chart');
+  if (!ctx || !vaultAnalytics) return;
+  if (vaultCharts.source) vaultCharts.source.destroy();
+
+  const mb = vaultAnalytics.moduleBreakdown || [];
+  const top = mb.slice(0, 7);
+  const palette = ['#16a34a','#dc2626','#1565c0','#f59e0b','#6d28d9','#e65100','#10b981'];
+
+  vaultCharts.source = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: top.map(m => m.source || 'أخرى'),
+      datasets: [{
+        data: top.map(m => Math.abs(m.totalIn - m.totalOut)),
+        backgroundColor: palette.slice(0, top.length),
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      cutout: '60%'
+    }
+  });
+
+  // Legend with pct
+  qs('#vault-source-legend').innerHTML = top.map((m, i) =>
+    `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+      <span style="width:10px;height:10px;border-radius:50%;background:${palette[i]};flex-shrink:0"></span>
+      <span>${esc(m.source)}</span>
+      <span style="color:var(--muted);margin-right:auto">${parseFloat(m.pct).toFixed(1)}%</span>
+    </div>`
+  ).join('');
+}
+
+function setCashflowDays(n) {
+  cashflowDays = n;
+  ['30','60','90'].forEach(d => {
+    const btn = qs('#cf-btn-' + d);
+    if (btn) {
+      btn.style.background = d == n ? 'var(--accent)' : '';
+      btn.style.color = d == n ? '#fff' : '';
+    }
+  });
+  loadVaultAnalytics();
+}
+
+async function loadDashboardTreasury() {
+  if (!hasPerm('vault')) return;
+  try {
+    const [analytics] = await Promise.all([
+      api('/vault/analytics?days=30')
+    ]);
+    const bal = [
+      { label: 'كاش', val: settings.vaultCash || 0, icon: '💵' },
+      { label: 'فودافون كاش', val: settings.vaultVodafone || 0, icon: '📱' },
+      { label: 'Instapay', val: settings.vaultInstapay || 0, icon: '📲' },
+      { label: 'تحويل بنكي', val: settings.vaultBank || 0, icon: '🏦' },
+      { label: 'الإجمالي', val: settings.vaultBalance || 0, icon: '💰', highlight: true },
+    ];
+    qs('#dash-treasury-segs').innerHTML = bal.map(b =>
+      `<div class="stat-card card" style="${b.highlight ? 'background:var(--primary-pale)' : ''}">
+        <div>${b.icon}</div>
+        <div class="stat-val ${b.highlight ? '' : 'text-green'}" style="${b.highlight ? 'color:var(--accent)' : ''}">${fmtJ(b.val)}</div>
+        <div class="stat-label">${esc(b.label)}</div>
+      </div>`
+    ).join('');
+    const trendArrow = analytics.trendDirection === 'up' ? '↑ ' : analytics.trendDirection === 'down' ? '↓ ' : '';
+    const trendColor = analytics.trendDirection === 'up' ? '#16a34a' : analytics.trendDirection === 'down' ? '#dc2626' : '#888';
+    qs('#dash-treasury-trend').innerHTML = `<span style="color:${trendColor}">${trendArrow}${Math.abs(parseFloat(analytics.trendPct)).toFixed(1)}% مقارنة بالشهر الماضي</span>`;
+    qs('#dash-treasury-widget').style.display = 'block';
+  } catch(_) {}  // silently skip if vault not accessible
+}
 
 /* Users */
 function renderUsers() {
