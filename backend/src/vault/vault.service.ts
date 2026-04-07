@@ -14,6 +14,42 @@ export class VaultService {
     private readonly settingsService: SettingsService,
   ) {}
 
+  // Helper: sync vault transaction status to original transaction
+  private async syncTransactionStatus(vaultEntry: VaultEntryDocument, newStatus: string): Promise<void> {
+    if (!vaultEntry.ref) return;
+
+    try {
+      // Get transaction model from the same mongoose connection
+      const transactionModel = this.vaultModel.db.model('Transaction');
+      if (!transactionModel) return;
+
+      // Find transaction by reference number
+      const transaction = await transactionModel.findOne({ ref: vaultEntry.ref }).exec();
+      if (!transaction) return;
+
+      // Map vault status to transaction payStatus with descriptive messages
+      let newPayStatus = transaction.payStatus;
+      if (newStatus === 'frozen') {
+        newPayStatus = 'تم تجميد الحركة في الخزنة'; // Transaction frozen in vault
+      } else if (newStatus === 'completed') {
+        newPayStatus = 'مكتملة'; // Completed
+      } else if (newStatus === 'cancelled') {
+        newPayStatus = 'تم رفض المعاملة من الخزنة'; // Transaction rejected from vault
+      }
+
+      if (newPayStatus !== transaction.payStatus) {
+        await transactionModel.findByIdAndUpdate(
+          transaction._id,
+          { payStatus: newPayStatus },
+          { new: true }
+        ).exec();
+      }
+    } catch (err) {
+      // Log but don't throw - sync failure shouldn't block the operation
+      console.error('Failed to sync transaction status:', err);
+    }
+  }
+
   async findAll(from?: string, to?: string): Promise<VaultEntryDocument[]> {
     const filter: Record<string, unknown> = {};
     if (from || to) {
@@ -188,6 +224,16 @@ export class VaultService {
     if (entry.status === 'frozen') throw new BadRequestException('المعاملة مجمدة بالفعل');
     if (entry.status === 'cancelled') throw new BadRequestException('لا يمكن تجميد معاملة ملغاة');
 
+    // إذا كانت المعاملة مكتملة (المبلغ دخل الخزنة)، نسترجع المبلغ
+    if (entry.status === 'completed' && entry.amount !== 0) {
+      try {
+        await this.settingsService.adjustVaultBalance(entry.seg, -entry.amount);
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        throw new BadRequestException(`فشل استرجاع المبلغ من الخزنة: ${errMsg}`);
+      }
+    }
+
     entry.status = 'frozen';
     entry.frozenReason = reason;
     if (!entry.editHistory) entry.editHistory = [];
@@ -196,7 +242,54 @@ export class VaultService {
       editedAt: new Date().toISOString(),
       changes: { status: { oldValue: 'completed', newValue: 'frozen' }, reason: { oldValue: '', newValue: reason } },
     });
-    return entry.save();
+    const saved = await entry.save();
+
+    // Sync status to original transaction
+    await this.syncTransactionStatus(saved, 'frozen');
+
+    return saved;
+  }
+
+  async unfreezeEntry(id: string, unfreezer: string): Promise<VaultEntryDocument> {
+    const entry = await this.getById(id);
+    if (entry.status !== 'frozen') throw new BadRequestException('المعاملة ليست مجمدة');
+
+    // Check if the entry was 'completed' when it was frozen (by looking at editHistory)
+    // We only restore balance if it was originally completed (and thus had balance adjusted when frozen)
+    let wasCompletedBeforeFreeze = false;
+    if (entry.editHistory && entry.editHistory.length > 0) {
+      const freezeRecord = entry.editHistory.find(
+        (h) => h.changes?.status?.newValue === 'frozen'
+      );
+      wasCompletedBeforeFreeze = freezeRecord?.changes?.status?.oldValue === 'completed';
+    }
+
+    // إعادة المبلغ للخزنة عند التحرير (فقط إذا كانت المعاملة مكتملة قبل التجميد)
+    if (wasCompletedBeforeFreeze && entry.amount !== 0) {
+      try {
+        await this.settingsService.adjustVaultBalance(entry.seg, entry.amount);
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        throw new BadRequestException(`فشل إعادة المبلغ للخزنة: ${errMsg}`);
+      }
+    }
+
+    const oldFrozenReason = entry.frozenReason;
+    entry.status = 'completed';
+    entry.frozenReason = '';
+    if (!entry.editHistory) entry.editHistory = [];
+    entry.editHistory.push({
+      editor: unfreezer,
+      editedAt: new Date().toISOString(),
+      changes: { status: { oldValue: 'frozen', newValue: 'completed' }, frozenReason: { oldValue: oldFrozenReason, newValue: '' } },
+    });
+
+    const saved = await entry.save();
+
+    // Sync status to original transaction
+    await this.syncTransactionStatus(saved, 'completed');
+
+    return saved;
   }
 
   async cancelEntry(id: string, canceller: string, reason?: string): Promise<VaultEntryDocument> {
@@ -222,7 +315,12 @@ export class VaultService {
       editedAt: new Date().toISOString(),
       changes: { status: { oldValue: oldStatus, newValue: 'cancelled' }, reason: { oldValue: '', newValue: reason || '' } },
     });
-    return entry.save();
+    const saved = await entry.save();
+
+    // Sync status to original transaction
+    await this.syncTransactionStatus(saved, 'cancelled');
+
+    return saved;
   }
 
   async approveEntry(id: string, approver: string): Promise<VaultEntryDocument> {

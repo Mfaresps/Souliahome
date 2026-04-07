@@ -87,6 +87,16 @@ export class VaultController {
   }
 
   @Roles('admin')
+  @Post(':id/unfreeze')
+  async unfreezeEntry(
+    @Param('id') id: string,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const unfreezer = req.user?.name || req.user?.username || '';
+    return this.vaultService.unfreezeEntry(id, unfreezer);
+  }
+
+  @Roles('admin')
   @Post(':id/cancel')
   async cancelEntry(
     @Param('id') id: string,
