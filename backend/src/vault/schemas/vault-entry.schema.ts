@@ -46,6 +46,45 @@ export class VaultEntry {
 
   @Prop({ default: '' })
   txNo: string;
+
+  // Enhanced Fields
+  @Prop({ default: 'completed', enum: ['completed', 'pending', 'frozen', 'cancelled'] })
+  status: string;
+
+  @Prop({ default: '' })
+  transactionType: string;
+
+  @Prop({ default: '' })
+  customer: string;
+
+  @Prop({ default: '' })
+  supplier: string;
+
+  @Prop({ default: '' })
+  notes: string;
+
+  @Prop({ type: Object, default: null })
+  editHistory: Array<{
+    editor: string;
+    editedAt: string;
+    changes: Record<string, { oldValue: unknown; newValue: unknown }>;
+  }>;
+
+  @Prop({ default: null })
+  frozenReason: string;
+
+  @Prop({ default: false })
+  requiresApproval: boolean;
+
+  @Prop({ default: false })
+  isApproved: boolean;
+
+  @Prop({ default: '' })
+  approvedBy: string;
 }
 
 export const VaultEntrySchema = SchemaFactory.createForClass(VaultEntry);
+VaultEntrySchema.index({ date: 1, seg: 1 });
+VaultEntrySchema.index({ status: 1 });
+VaultEntrySchema.index({ employee: 1 });
+VaultEntrySchema.index({ ref: 1 });
