@@ -81,6 +81,13 @@ export class VaultEntry {
 
   @Prop({ default: '' })
   approvedBy: string;
+
+  // ربط مع الحركة الأصلية (إن وجدت)
+  @Prop({ default: null })
+  linkedTransactionId: string;
+
+  @Prop({ default: '' })
+  linkedTransactionRef: string;
 }
 
 export const VaultEntrySchema = SchemaFactory.createForClass(VaultEntry);
