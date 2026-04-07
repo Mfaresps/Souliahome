@@ -29,6 +29,7 @@ export interface InventoryItem {
   purchases: number;
   returnsToStock: number;
   returnRefs: string;
+  returnDates: string;
   sales: number;
   current: number;
   status: 'ok' | 'low' | 'zero';
@@ -721,6 +722,7 @@ export class TransactionsService {
       let sales = 0;
       let returnsToStock = 0;
       const returnRefSet = new Set<string>();
+      const returnDateSet = new Set<string>();
       const productCodeNorm = String(product.code || '').trim();
       transactions.forEach((tx) => {
         tx.items.forEach((item) => {
@@ -734,6 +736,10 @@ export class TransactionsService {
             const refStr = String(tx.ref || '').trim();
             if (refStr) {
               returnRefSet.add(refStr);
+            }
+            const dateStr = tx.date ? String(tx.date).split('T')[0] : '';
+            if (dateStr) {
+              returnDateSet.add(dateStr);
             }
           } else if (tx.type === 'مبيعات' || tx.type === 'مرتجع مشتريات') {
             sales += item.qty;
@@ -762,6 +768,7 @@ export class TransactionsService {
         purchases,
         returnsToStock,
         returnRefs: [...returnRefSet].sort().join('، '),
+        returnDates: [...returnDateSet].sort().join('، '),
         sales,
         current,
         status,
