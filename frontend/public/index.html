@@ -1891,19 +1891,41 @@ async function loadDashboard() {
   qs('#dash-stats').innerHTML = '<div class="loading-spinner"></div>';
   try {
     const d = await api('/transactions/dashboard');
-    qs('#dash-stats').innerHTML = [
-      { label: 'عدد الأصناف', val: fmtN(d.totalProducts), color: 'text-blue' },
-      { label: 'أصناف منخفضة', val: fmtN(d.lowStockCount), color: 'text-orange' },
-      { label: 'إجمالي المبيعات', val: fmtJ(d.totalSales), color: 'text-green' },
-      { label: 'إجمالي المشتريات', val: fmtJ(d.totalPurchases), color: 'text-red' },
-      { label: 'صافي الربح', val: fmtJ(d.netProfit), color: 'text-purple' },
-      { label: 'الديون', val: fmtJ(d.totalRemaining), color: 'text-orange' },
-      { label: 'المصاريف', val: fmtJ(d.totalExpenses), color: 'text-red' },
-    ].map(s => `<div class="card stat-card"><div class="stat-label">${esc(s.label)}</div><div class="stat-val ${s.color}">${esc(s.val)}</div></div>`).join('');
-    renderDashTable('#dash-top-sellers tbody', (d.topSellers || []).slice(0, 10), r => `<td>${esc(r.name || r._id)}</td><td>${fmtN(r.qty || r.totalQty)}</td><td>${fmtJ(r.total || r.totalRevenue)}</td>`);
-    renderDashTable('#dash-low-sellers tbody', (d.lowSellers || []).slice(0, 10), r => `<td>${esc(r.name || r._id)}</td><td>${fmtN(r.qty || r.totalQty)}</td><td>${fmtJ(r.total || r.totalRevenue)}</td>`);
-    renderDashTable('#dash-low-stock tbody', (d.lowStockItems || []).slice(0, 10), r => `<td>${esc(r.name)}</td><td>${fmtN(r.current != null ? r.current : r.stock)}</td><td>${fmtN(r.minStock || r.min)}</td>`);
-    renderDashTable('#dash-recent tbody', (d.recentTransactions || []).slice(0, 10), r => `<td>${fmtDate(r.date)}</td><td>${movementKindBadgeCompact(r)}</td><td>${esc(r.client || '-')}</td><td>${fmtJ(r.total)}</td><td>${movementStatusCell(r)}</td>`);
+
+    const stats = [
+      { label: 'عدد الأصناف', val: fmtN(d.totalProducts), icon: '📦', color: '#3b82f6', bgColor: '#f0f7ff' },
+      { label: 'أصناف منخفضة', val: fmtN(d.lowStockCount), icon: '⚠️', color: '#f59e0b', bgColor: '#fffbeb' },
+      { label: 'إجمالي المبيعات', val: fmtJ(d.totalSales), icon: '📈', color: '#10b981', bgColor: '#f0fdf4' },
+      { label: 'إجمالي المشتريات', val: fmtJ(d.totalPurchases), icon: '📦', color: '#0066cc', bgColor: '#f0f7ff' },
+      { label: 'صافي الربح', val: fmtJ(d.netProfit), icon: '💎', color: '#6d28d9', bgColor: '#faf5ff' },
+      { label: 'الديون', val: fmtJ(d.totalRemaining), icon: '⏳', color: '#f97316', bgColor: '#fff7ed' },
+      { label: 'المصاريف', val: fmtJ(d.totalExpenses), icon: '💸', color: '#dc2626', bgColor: '#fef2f2' },
+    ];
+
+    qs('#dash-stats').innerHTML = stats.map(s => `
+      <div class="card" style="
+        background:${s.bgColor};
+        border-left:4px solid ${s.color};
+        padding:18px;
+        border-radius:8px;
+        transition:all .3s;
+        cursor:default;
+        box-shadow:0 2px 4px rgba(0,0,0,.05)
+      ">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px;font-weight:600;text-transform:uppercase">${esc(s.label)}</div>
+            <div style="font-size:1.5rem;font-weight:800;color:${s.color}">${esc(s.val)}</div>
+          </div>
+          <div style="font-size:2rem;opacity:.6">${s.icon}</div>
+        </div>
+      </div>
+    `).join('');
+
+    renderDashTable('#dash-top-sellers tbody', (d.topSellers || []).slice(0, 10), r => `<td style="color:var(--green);font-weight:600">${esc(r.name || r._id)}</td><td>${fmtN(r.qty || r.totalQty)}</td><td style="font-weight:700;color:var(--primary)">${fmtJ(r.total || r.totalRevenue)}</td>`);
+    renderDashTable('#dash-low-sellers tbody', (d.lowSellers || []).slice(0, 10), r => `<td style="color:var(--muted)">${esc(r.name || r._id)}</td><td>${fmtN(r.qty || r.totalQty)}</td><td style="color:var(--muted)">${fmtJ(r.total || r.totalRevenue)}</td>`);
+    renderDashTable('#dash-low-stock tbody', (d.lowStockItems || []).slice(0, 10), r => `<td style="color:var(--orange);font-weight:600">⚠️ ${esc(r.name)}</td><td>${fmtN(r.current != null ? r.current : r.stock)}</td><td style="color:var(--red);font-weight:700">${fmtN(r.minStock || r.min)}</td>`);
+    renderDashTable('#dash-recent tbody', (d.recentTransactions || []).slice(0, 10), r => `<td style="font-size:.9rem">${fmtDate(r.date)}</td><td>${movementKindBadgeCompact(r)}</td><td style="font-weight:500">${esc(r.client || '-')}</td><td style="font-weight:700;color:var(--primary)">${fmtJ(r.total)}</td><td>${movementStatusCell(r)}</td>`);
   } catch (e) { qs('#dash-stats').innerHTML = `<div class="empty-state">خطأ في تحميل البيانات: ${esc(e.message)}</div>`; }
   loadDashboardTreasury();
 }
@@ -4894,6 +4916,8 @@ function renderExpenses() {
   const cat = qs('#exp-cat-filter')?.value; const acc = qs('#exp-acc-filter')?.value;
   const search = qs('#exp-search')?.value?.toLowerCase() || '';
   let data = expenses.filter(e => {
+    // عرض المصاريف المعتمدة فقط في الصفحة الرئيسية
+    if (e.status !== 'معتمد') return false;
     if (from && e.date && e.date.slice(0, 10) < from) return false;
     if (to && e.date && e.date.slice(0, 10) > to) return false;
     if (cat && e.category !== cat) return false;
@@ -5633,7 +5657,50 @@ function exportHubExcel() {
 /* Reports */
 let currentReportData = null;
 
+/* Reports Security */
+let reportsUnlocked = false;
+
+function unlockReports() {
+  openModal(`
+    <div style="text-align:center">
+      <div style="font-size:3rem;margin-bottom:16px">🔐</div>
+      <h3 style="margin:0 0 12px 0;color:var(--primary)">التقارير محمية</h3>
+      <p style="color:var(--muted);margin:0 0 20px 0">أدخل رقم السر للخزنة للوصول إلى التقارير والأرقام الكاملة</p>
+
+      <div class="form-group" style="max-width:300px;margin:0 auto 20px">
+        <input type="password" id="reports-pass-input" placeholder="رقم السر..."
+          style="width:100%;padding:12px;border:2px solid var(--border);border-radius:8px;font-size:1rem"
+          onkeydown="if(event.key==='Enter')verifyReportsPassword()">
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button class="btn btn-primary" onclick="verifyReportsPassword()">فتح التقارير</button>
+        <button class="btn btn-outline" onclick="closeModal();reportsUnlocked=false">إلغاء</button>
+      </div>
+    </div>
+  `, 'max-width:400px;text-align:center');
+  setTimeout(() => qs('#reports-pass-input')?.focus(), 100);
+}
+
+async function verifyReportsPassword() {
+  const password = qs('#reports-pass-input')?.value;
+  if (!password) { toast('أدخل رقم السر', true); return; }
+
+  try {
+    await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password }) });
+    reportsUnlocked = true;
+    closeModal();
+    loadReports();
+    toast('✅ تم فتح التقارير');
+  } catch (e) {
+    toast('❌ رقم السر غير صحيح', true);
+    qs('#reports-pass-input').value = '';
+    qs('#reports-pass-input')?.focus();
+  }
+}
+
 async function loadReports() {
+  if (!reportsUnlocked) { unlockReports(); return; }
   qs('#rep-stats').innerHTML = '<div style="grid-column:1/-1;display:flex;justify-content:center;padding:40px"><div class="loading-spinner"></div></div>';
   const from = qs('#rep-from')?.value;
   const to = qs('#rep-to')?.value;
@@ -6312,7 +6379,7 @@ async function loadDashboardTreasury() {
     const trendArrow = analytics.trendDirection === 'up' ? '↑ ' : analytics.trendDirection === 'down' ? '↓ ' : '';
     const trendColor = analytics.trendDirection === 'up' ? '#16a34a' : analytics.trendDirection === 'down' ? '#dc2626' : '#888';
     qs('#dash-treasury-trend').innerHTML = `<span style="color:${trendColor}">${trendArrow}${Math.abs(parseFloat(analytics.trendPct)).toFixed(1)}% مقارنة بالشهر الماضي</span>`;
-    qs('#dash-treasury-widget').style.display = 'block';
+    // qs('#dash-treasury-widget').style.display = 'block'; // مخفي - معلومات سرية للخزنة
   } catch(_) {}  // silently skip if vault not accessible
 }
 
