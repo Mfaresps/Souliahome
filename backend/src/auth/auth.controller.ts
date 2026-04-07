@@ -29,4 +29,30 @@ export class AuthController {
       perms: user.perms || [],
     };
   }
+
+  @Post('set-status')
+  async setStatus(
+    @Req() req: Request,
+    @Body() body: { status: 'online' | 'offline'; userId?: string },
+  ) {
+    try {
+      const user = req.user as Record<string, unknown> | undefined;
+      const userId = body.userId || (user?.sub as string);
+      if (!userId) {
+        return { message: 'No userId provided' };
+      }
+      return this.authService.setUserStatus(userId, body.status);
+    } catch (err) {
+      return { message: 'Status updated', error: err.message };
+    }
+  }
+
+  @Get('users-status')
+  async getUsersStatus() {
+    try {
+      return this.authService.getUsersStatus();
+    } catch (err) {
+      return { online: {}, error: err.message };
+    }
+  }
 }
