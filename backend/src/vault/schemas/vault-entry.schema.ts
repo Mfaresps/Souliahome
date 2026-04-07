@@ -63,6 +63,12 @@ export class VaultEntry {
   @Prop({ default: '' })
   notes: string;
 
+  @Prop({ default: '' })
+  accountingJustification: string;
+
+  @Prop({ default: '' })
+  entityLabel: string;
+
   @Prop({ type: Object, default: null })
   editHistory: Array<{
     editor: string;
@@ -92,6 +98,7 @@ export class VaultEntry {
 
 export const VaultEntrySchema = SchemaFactory.createForClass(VaultEntry);
 VaultEntrySchema.index({ date: 1, seg: 1 });
+VaultEntrySchema.index({ date: 1, source: 1, transactionType: 1 });
 VaultEntrySchema.index({ status: 1 });
 VaultEntrySchema.index({ employee: 1 });
 VaultEntrySchema.index({ ref: 1 });
