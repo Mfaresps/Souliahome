@@ -9,20 +9,117 @@ const ALL_PERMS = [
   'complaints', 'reports', 'vault', 'users', 'settings',
 ];
 
+const SALES_PERMS = [
+  'dashboard', 'transaction', 'inventory', 'movements',
+  'clients', 'products', 'complaints', 'expenses',
+];
+
+const ACCOUNTING_PERMS = [
+  'dashboard', 'transaction', 'inventory', 'movements',
+  'reports', 'vault', 'expenses', 'suppliers',
+];
+
 const DEFAULT_USERS = [
+  // المديرين (Admins)
   {
     username: 'admin',
-    password: 'admin123',
-    name: 'المدير',
+    password: 'Fares@2024',
+    name: 'Fares',
     role: 'admin',
+    phone: '+966501234567',
     perms: ALL_PERMS,
   },
   {
-    username: 'staff',
-    password: 'staff123',
-    name: 'موظف المبيعات',
+    username: 'admin2',
+    password: 'Admin2@2024',
+    name: 'محمد الإدارة',
+    role: 'admin',
+    phone: '+966501234568',
+    perms: ALL_PERMS,
+  },
+  
+  // موظفو المبيعات (Sales Reps)
+  {
+    username: 'sales_1',
+    password: 'Sales1@2024',
+    name: 'أحمد المبيعات',
     role: 'staff',
-    perms: ['dashboard', 'transaction', 'inventory', 'movements', 'clients', 'products', 'expenses'],
+    phone: '+966501234569',
+    perms: SALES_PERMS,
+  },
+  {
+    username: 'sales_2',
+    password: 'Sales2@2024',
+    name: 'علي الممثل',
+    role: 'staff',
+    phone: '+966501234570',
+    perms: SALES_PERMS,
+  },
+  {
+    username: 'sales_3',
+    password: 'Sales3@2024',
+    name: 'سارة المبيعات',
+    role: 'staff',
+    phone: '+966501234571',
+    perms: SALES_PERMS,
+  },
+  {
+    username: 'sales_4',
+    password: 'Sales4@2024',
+    name: 'فاطمة العروض',
+    role: 'staff',
+    phone: '+966501234572',
+    perms: SALES_PERMS,
+  },
+  {
+    username: 'sales_5',
+    password: 'Sales5@2024',
+    name: 'عمر التسويق',
+    role: 'staff',
+    phone: '+966501234573',
+    perms: SALES_PERMS,
+  },
+  
+  // المحاسبين (Accountants)
+  {
+    username: 'accountant_1',
+    password: 'Account1@2024',
+    name: 'خالد المحاسب',
+    role: 'staff',
+    phone: '+966501234574',
+    perms: ACCOUNTING_PERMS,
+  },
+  {
+    username: 'accountant_2',
+    password: 'Account2@2024',
+    name: 'نور المالية',
+    role: 'staff',
+    phone: '+966501234575',
+    perms: ACCOUNTING_PERMS,
+  },
+  {
+    username: 'accountant_3',
+    password: 'Account3@2024',
+    name: 'ليلى الحسابات',
+    role: 'staff',
+    phone: '+966501234576',
+    perms: ACCOUNTING_PERMS,
+  },
+  {
+    username: 'accountant_4',
+    password: 'Account4@2024',
+    name: 'يوسف الحسابي',
+    role: 'staff',
+    phone: '+966501234577',
+    perms: ACCOUNTING_PERMS,
+  },
+  {
+    username: 'accountant_5',
+    password: 'Account5@2024',
+    name: 'هند الإحصائي',
+    role: 'staff',
+    phone: '+966501234578',
+    perms: ACCOUNTING_PERMS,
   },
 ];
 
