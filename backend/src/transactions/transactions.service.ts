@@ -595,6 +595,11 @@ export class TransactionsService {
     const newRemaining = Math.max(0, totalRemaining - payAmount);
     const isFullyPaid = newRemaining === 0;
 
+    // ===== التحقق الحاسم: الرصيد كافٍ؟ (للمشتريات فقط) =====
+    if (isPurchase && payAmount > 0) {
+      await this.vaultService.assertSufficientBalance(dto.collectMethod, payAmount);
+    }
+
     tx.remaining = newRemaining;
     tx.payStatus = isFullyPaid ? 'مكتمل' : 'معلق';
     if (isFullyPaid && payAmount > 0 && /-EXC$/i.test(String(tx.ref || ''))) {
@@ -946,6 +951,10 @@ export class TransactionsService {
     if (tx.type !== 'مبيعات') throw new BadRequestException('الخصم البعدي يُطبَّق على فواتير المبيعات فقط');
     const discountAmount = Math.round(amount);
     if (discountAmount <= 0) throw new BadRequestException('مبلغ الخصم يجب أن يكون أكبر من صفر');
+    
+    // Check vault balance before applying discount
+    await this.vaultService.assertSufficientBalance(vaultAccount, discountAmount);
+    
     const historyEntry = {
       editedAt: new Date().toISOString(),
       editedBy: appliedBy,
