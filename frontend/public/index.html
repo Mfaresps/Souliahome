@@ -260,10 +260,14 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 .supplier-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center}
 .supplier-card h4{font-size:.95rem;margin-bottom:4px}
 .supplier-card p{font-size:.78rem;color:var(--muted)}
-.client-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .2s}
-.client-card:hover{border-color:var(--accent);box-shadow:0 2px 12px rgba(0,0,0,.06)}
-.client-card h4{font-size:.9rem;margin-bottom:6px}
+.client-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;transition:all .25s;display:flex;flex-direction:column}
+.client-card:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(102,126,234,.12);transform:translateY(-2px)}
+.client-card h4{font-size:.95rem;margin:0;font-weight:600;line-height:1.3}
 .client-card .info-row{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-top:4px}
+#clients-grid table tbody tr{transition:all .2s}
+#clients-grid table tbody tr:hover{background:var(--surface2)}
+#clients-grid table tbody tr[style*="var(--primary-pale)"] {background:var(--primary-pale)}
+#clients-grid table tbody tr:hover:not([style*="var(--primary-pale)"]) {background:rgba(102,126,234,.05)}
 .user-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center}
 .user-card .user-avatar{width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;margin:0 auto 10px}
 .user-card h4{font-size:.95rem}
@@ -588,10 +592,11 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 
 <!-- Clients -->
 <div class="page" id="page-clients">
+<h2 class="page-title" data-i18n="clients">العملاء</h2>
+<div class="grid grid-4 gap-12 mb-24" id="clients-stats" style="gap:12px"></div>
 <div class="flex-between mb-16" style="flex-wrap:wrap;gap:10px">
-<h2 class="page-title" style="margin-bottom:0" data-i18n="clients">العملاء</h2>
 <div class="flex gap-8" style="flex-wrap:wrap;align-items:center">
-  <div class="search-input"><input type="text" id="clients-search" placeholder="بحث عملاء..." oninput="debouncedRenderClients()"></div>
+  <div class="search-input"><input type="text" id="clients-search" placeholder="🔍 بحث عملاء..." oninput="debouncedRenderClients()"></div>
   <select id="clients-order-filter" style="width:150px" onchange="debouncedRenderClients()">
     <option value="orders">ترتيب: الأكثر طلبات</option>
     <option value="total">ترتيب: الأعلى مبيعات</option>
@@ -603,14 +608,20 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
     <option value="1">لديهم متبقي</option>
     <option value="0">لا متبقي</option>
   </select>
+</div>
+<div class="flex gap-8" style="flex-wrap:wrap;align-items:center">
+  <select id="clients-view-mode" style="width:140px" onchange="clientsPage=1;renderClients()">
+    <option value="grid">📊 عرض الشبكة</option>
+    <option value="list">📋 عرض القائمة</option>
+  </select>
   <button class="btn btn-outline btn-sm" onclick="exportClientsExcel()">📥 تصدير Excel</button>
   <button class="btn btn-outline btn-sm" onclick="exportClientsCsv()">📄 تصدير CSV</button>
 </div>
 </div>
-<div id="clients-sel-bar" style="display:none;margin-bottom:10px;padding:8px 14px;background:var(--primary-pale);border-radius:8px;font-size:.85rem">
-  تم تحديد <strong id="clients-sel-count">0</strong> عميل
-  <button class="btn btn-outline btn-sm" style="margin-right:8px" onclick="deselectAllClients()">إلغاء التحديد</button>
-  <button class="btn btn-primary btn-sm" onclick="exportSelectedClientsExcel()">📥 تصدير المحددين</button>
+<div id="clients-sel-bar" style="display:none;margin-bottom:10px;padding:10px 14px;background:var(--primary-pale);border-radius:8px;font-size:.85rem;border-left:4px solid var(--primary)">
+  ✅ تم تحديد <strong id="clients-sel-count">0</strong> عميل
+  <button class="btn btn-outline btn-sm" style="margin-right:8px;margin-top:8px" onclick="deselectAllClients()">إلغاء التحديد</button>
+  <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="exportSelectedClientsExcel()">📥 تصدير المحددين</button>
 </div>
 <div class="grid grid-3" id="clients-grid"></div>
 <div id="clients-pagination"></div>
@@ -904,26 +915,59 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <!-- Reports -->
 <div class="page" id="page-reports">
 <h2 class="page-title" data-i18n="reports">التقارير</h2>
-<div class="filter-bar mb-16">
-<button class="tab-btn active" onclick="setReportPeriod('today',this)">اليوم</button>
-<button class="tab-btn" onclick="setReportPeriod('week',this)">الأسبوع</button>
-<button class="tab-btn" onclick="setReportPeriod('month',this)">الشهر</button>
-<button class="tab-btn" onclick="setReportPeriod('year',this)">السنة</button>
-<button class="tab-btn" onclick="setReportPeriod('all',this)">الكل</button>
-<input type="date" id="rep-from" style="width:150px" onchange="loadReports()">
-<input type="date" id="rep-to" style="width:150px" onchange="loadReports()">
+<div class="filter-bar mb-16" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+  <button class="tab-btn active" onclick="setReportPeriod('today',this)">اليوم</button>
+  <button class="tab-btn" onclick="setReportPeriod('week',this)">الأسبوع</button>
+  <button class="tab-btn" onclick="setReportPeriod('month',this)">الشهر</button>
+  <button class="tab-btn" onclick="setReportPeriod('year',this)">السنة</button>
+  <button class="tab-btn" onclick="setReportPeriod('all',this)">الكل</button>
+  <div style="border-right:1px solid var(--border);height:24px;margin:0 8px"></div>
+  <input type="date" id="rep-from" style="width:140px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text)" onchange="loadReports()">
+  <span style="color:var(--muted)">إلى</span>
+  <input type="date" id="rep-to" style="width:140px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text)" onchange="loadReports()">
+  <button class="btn btn-outline btn-sm" onclick="exportReportData()">تصدير</button>
 </div>
-<div class="grid grid-6 mb-24" id="rep-stats"></div>
+
+<!-- KPI Cards -->
+<div class="grid grid-6 mb-24" id="rep-stats" style="gap:12px"></div>
+
+<!-- Main Charts -->
 <div class="grid grid-2 mb-24">
-<div class="chart-box"><h4 class="mb-8">الأكثر مبيعاً</h4><canvas id="chart-top"></canvas></div>
-<div class="chart-box"><h4 class="mb-8">الأقل مبيعاً</h4><canvas id="chart-low"></canvas></div>
+  <div class="card"><h3 style="margin-bottom:12px;font-size:.95rem;color:var(--muted)">المبيعات والمشتريات</h3><canvas id="chart-salesvspurch"></canvas></div>
+  <div class="card"><h3 style="margin-bottom:12px;font-size:.95rem;color:var(--muted)">الأرباح والمصاريف</h3><canvas id="chart-profit"></canvas></div>
 </div>
+
 <div class="grid grid-2 mb-24">
-<div class="chart-box"><h4 class="mb-8">المبيعات مقابل المشتريات</h4><canvas id="chart-salesvspurch"></canvas></div>
-<div class="chart-box"><h4 class="mb-8">صافي الربح</h4><canvas id="chart-profit"></canvas></div>
+  <div class="card"><h3 style="margin-bottom:12px;font-size:.95rem;color:var(--muted)">الأكثر مبيعاً</h3><canvas id="chart-top"></canvas></div>
+  <div class="card"><h3 style="margin-bottom:12px;font-size:.95rem;color:var(--muted)">المنتجات الراكدة (مبيعات قليلة)</h3><canvas id="chart-low"></canvas></div>
 </div>
-<div class="card"><h4 class="mb-8">أرباح الأصناف</h4><div class="overflow-x"><table id="rep-profit-table"><thead><tr><th>#</th><th>الصنف</th><th>الكمية المباعة</th><th>الإيراد</th><th>التكلفة</th><th>الربح</th><th>هامش الربح</th></tr></thead><tbody></tbody></table></div></div>
+
+<!-- Profit Table -->
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <h3 style="font-size:.95rem;color:var(--muted)">تحليل الأصناف</h3>
+    <div style="font-size:.9rem;color:var(--muted)"><input type="text" id="profit-search" placeholder="بحث عن صنف..." style="padding:4px 8px;width:200px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)" oninput="filterProfitTable()"></div>
+  </div>
+  <div class="overflow-x">
+    <table id="rep-profit-table" style="width:100%;border-collapse:collapse;font-size:.9rem">
+      <thead>
+        <tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
+          <th style="padding:8px;text-align:right">#</th>
+          <th style="padding:8px;text-align:right">الصنف</th>
+          <th style="padding:8px;text-align:center">الكمية</th>
+          <th style="padding:8px;text-align:right">الإيراد</th>
+          <th style="padding:8px;text-align:right">التكلفة</th>
+          <th style="padding:8px;text-align:right">الربح</th>
+          <th style="padding:8px;text-align:center">الهامش %</th>
+          <th style="padding:8px;text-align:center">الحالة</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </div>
+</div>
+
 
 <!-- Vault -->
 <div class="page" id="page-vault">
@@ -1071,7 +1115,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <script>
 const qs = (s, p) => (p || document).querySelector(s);
 const qsa = (s, p) => [...(p || document).querySelectorAll(s)];
-const API_BASE = 'https://titten-record-psychiatry-salaries.trycloudflare.com/api';
+const API_BASE = 'http://localhost:3000/api';
 
 function esc(str) {
   if (str == null) return '';
@@ -1522,7 +1566,12 @@ function navigateTo(page, updateHash = true) {
   const el = qs('#page-' + page); if (el) el.classList.add('active');
   qsa('#sidebar .nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
   if (updateHash && location.hash !== '#' + page) history.pushState(null, '', '#' + page);
-  onPageEnter(page);
+  try {
+    onPageEnter(page);
+  } catch (e) {
+    console.error('خطأ في تحميل الصفحة:', e);
+    toast('خطأ في تحميل الصفحة: ' + e.message, true);
+  }
 }
 function handleHashChange() {
   const hash = location.hash.slice(1);
@@ -1546,9 +1595,9 @@ function goCreateTransaction(txKind) {
   setTimeout(() => setTxType(txKind), 0);
 }
 
-async function onPageEnter(page) {
+function onPageEnter(page) {
   switch (page) {
-    case 'dashboard': await loadDashboard(); break;
+    case 'dashboard': loadDashboard().catch(e => toast('خطأ: ' + e.message, true)); break;
     case 'transaction': {
       const pmr = pendingMovementReturn;
       pendingMovementReturn = null;
@@ -1556,22 +1605,50 @@ async function onPageEnter(page) {
       if (pmr) applyReturnRequestPrefill(pmr.txId, pmr.asExchange);
       break;
     }
-    case 'inventory': await loadInventory(); break;
+    case 'inventory': loadInventory().catch(e => toast('خطأ: ' + e.message, true)); break;
     case 'movements': renderMovements(); break;
     case 'clients': renderClients(); break;
     case 'products': renderProducts(); break;
     case 'suppliers': renderSuppliers(); break;
     case 'expenses': renderExpenses(); break;
-    case 'complaints': await loadComplaints(); break;
+    case 'complaints': loadComplaints().catch(e => toast('خطأ: ' + e.message, true)); break;
     case 'approvals':
       renderApprovals();
       if (apprActiveTab === 'hub') renderHistoryHub();
       break;
-    case 'reports': await loadReports(); break;
-    case 'vault': renderVaultPage(); break;
-    case 'users': renderUsers(); break;
-    case 'settings': renderSettings(); break;
-    case 'profile': renderProfile(); break;
+    case 'reports': loadReports().catch(e => toast('خطأ: ' + e.message, true)); break;
+    case 'vault': {
+      if (!settings || Object.keys(settings).length === 0) {
+        api('/settings').then(s => { settings = s; renderVaultPage(); }).catch(() => { settings = {}; renderVaultPage(); });
+      } else {
+        renderVaultPage();
+      }
+      break;
+    }
+    case 'users': {
+      if (!users || users.length === 0) {
+        api('/users').then(u => { users = u; renderUsers(); }).catch(() => { users = []; renderUsers(); });
+      } else {
+        renderUsers();
+      }
+      break;
+    }
+    case 'settings': {
+      if (!settings || Object.keys(settings).length === 0) {
+        api('/settings').then(s => { settings = s; renderSettings(); }).catch(() => { settings = {}; renderSettings(); });
+      } else {
+        renderSettings();
+      }
+      break;
+    }
+    case 'profile': {
+      if (!currentUser) {
+        api('/auth/me').then(me => { if (me) currentUser = me; renderProfile(); }).catch(() => { renderProfile(); });
+      } else {
+        renderProfile();
+      }
+      break;
+    }
   }
 }
 
@@ -2601,11 +2678,14 @@ function renderInventory() {
   const invReturnCell = (r) => {
     const q = Number(r.returnsToStock) || 0;
     const refs = String(r.returnRefs || '').trim();
+    const dates = String(r.returnDates || '').trim();
     const refParts = refs ? refs.split('،').map(s => s.trim()).filter(Boolean) : [];
-    const refLine = refParts.length
-      ? `<div class="text-xs text-muted" style="max-width:220px;line-height:1.35;word-break:break-word" title="${esc(refs)}">${esc(refParts.map(p => '#' + p).join('، '))}</div>`
-      : (q > 0 ? '<div class="text-xs text-muted">بدون مرجع</div>' : '');
-    return `<td style="vertical-align:top"><div style="font-weight:700;color:#6d28d9">${fmtN(q)}</div>${refLine}</td>`;
+    const dateParts = dates ? dates.split('،').map(s => s.trim()).filter(Boolean) : [];
+    const hasData = refParts.length > 0 || dateParts.length > 0;
+    if (q === 0) {
+      return `<td style="vertical-align:top"><div style="font-weight:700;color:#6d28d9">0</div></td>`;
+    }
+    return `<td style="vertical-align:top"><div style="font-weight:700;color:#6d28d9;cursor:pointer;user-select:none" onclick="showReturnDetails('${esc(r.code || r.name)}', '${esc(refs)}', '${esc(dates)}')" title="اضغط لعرض التفاصيل">${fmtN(q)}</div></td>`;
   };
   const INV_PAGE_SIZE = 30;
   const total = data.length;
@@ -2623,8 +2703,34 @@ function renderInventory() {
 const debouncedRenderInventory = debounce(() => { invPage = 1; renderInventory(); }, 250);
 
 function exportInventoryExcel() {
-  const data = inventoryCache.map(r => ({ 'الكود': r.code, 'الصنف': r.name, 'سعر البيع': r.sellPrice, 'سعر الشراء': r.buyPrice, 'الحد الأدنى': r.minStock, 'الرصيد الافتتاحي': r.openingBalance, 'المشتريات (مورد)': r.purchases, 'إرجاع للمخزن (كمية)': r.returnsToStock ?? 0, 'مراجع الإرجاع/الاستبدال': r.returnRefs || '', 'المبيعات': r.sales, 'الحالي': r.current }));
+  const data = inventoryCache.map(r => ({ 'الكود': r.code, 'الصنف': r.name, 'سعر البيع': r.sellPrice, 'سعر الشراء': r.buyPrice, 'الحد الأدنى': r.minStock, 'الرصيد الافتتاحي': r.openingBalance, 'المشتريات (مورد)': r.purchases, 'إرجاع للمخزن (كمية)': r.returnsToStock ?? 0, 'مراجع الإرجاع/الاستبدال': r.returnRefs || '', 'تواريخ المرتجعات': r.returnDates || '', 'المبيعات': r.sales, 'الحالي': r.current }));
   writeExcel(data, 'المخزن', 'inventory_' + today());
+}
+
+function showReturnDetails(productCode, refs, dates) {
+  const refParts = refs ? refs.split('،').map(s => s.trim()).filter(Boolean) : [];
+  const dateParts = dates ? dates.split('،').map(s => s.trim()).filter(Boolean) : [];
+  
+  let detailsHtml = `<h3 style="margin-bottom:12px">تفاصيل المرتجعات</h3>
+    <div style="margin-bottom:12px;color:var(--muted)"><strong>الصنف:</strong> ${esc(productCode)}</div>`;
+  
+  if (refParts.length === 0 && dateParts.length === 0) {
+    detailsHtml += '<div class="text-muted">لا توجد تفاصيل مرتجعات لهذا الصنف</div>';
+  } else {
+    detailsHtml += '<table style="width:100%;border-collapse:collapse;font-size:.9rem"><thead><tr style="background:var(--surface2)"><th style="padding:8px;border-bottom:1px solid var(--border);text-align:right">الكود المرجعي</th><th style="padding:8px;border-bottom:1px solid var(--border);text-align:right">التاريخ</th></tr></thead><tbody>';
+    
+    for (let i = 0; i < Math.max(refParts.length, dateParts.length); i++) {
+      const ref = refParts[i] ? '#' + esc(refParts[i]) : '-';
+      const date = dateParts[i] ? esc(dateParts[i]) : '-';
+      detailsHtml += `<tr><td style="padding:8px;border-bottom:1px solid var(--border)">${ref}</td><td style="padding:8px;border-bottom:1px solid var(--border)">${date}</td></tr>`;
+    }
+    
+    detailsHtml += '</tbody></table>';
+  }
+  
+  detailsHtml += '<div style="margin-top:16px;display:flex;justify-content:flex-end"><button class="btn btn-outline" onclick="closeModal()">إغلاق</button></div>';
+  
+  openModal(detailsHtml);
 }
 
 /* Movements */
@@ -3773,12 +3879,14 @@ function renderClients() {
   const tokens = normalizeUiSearch(qs('#clients-search')?.value || '').split(/\s+/).filter(Boolean);
   const orderF = qs('#clients-order-filter')?.value || 'orders';
   const hasRemaining = qs('#clients-has-remaining')?.value || '';
+  const viewMode = qs('#clients-view-mode')?.value || 'grid';
   const clientMap = {};
   transactions.forEach(tx => {
     if (!tx.client) return;
-    if (!clientMap[tx.client]) clientMap[tx.client] = { name: tx.client, phone: tx.phone || '', orders: 0, total: 0, remaining: 0 };
+    if (!clientMap[tx.client]) clientMap[tx.client] = { name: tx.client, phone: tx.phone || '', orders: 0, total: 0, remaining: 0, lastTx: null };
     clientMap[tx.client].orders++; clientMap[tx.client].total += (tx.total || 0); clientMap[tx.client].remaining += (tx.remaining || 0);
     if (!clientMap[tx.client].phone && tx.phone) clientMap[tx.client].phone = tx.phone;
+    if (!clientMap[tx.client].lastTx || tx.date > clientMap[tx.client].lastTx) clientMap[tx.client].lastTx = tx.date;
   });
   let clients = Object.values(clientMap);
   if (tokens.length) clients = clients.filter(c => {
@@ -3791,24 +3899,124 @@ function renderClients() {
   else if (orderF === 'remaining') clients.sort((a, b) => b.remaining - a.remaining);
   else if (orderF === 'name') clients.sort((a, b) => a.name.localeCompare(b.name));
   else clients.sort((a, b) => b.orders - a.orders);
-  const CLIENTS_PAGE_SIZE = 30;
+  const CLIENTS_PAGE_SIZE = viewMode === 'list' ? 20 : 30;
   const total = clients.length;
   if (clientsPage > Math.ceil(total / CLIENTS_PAGE_SIZE) || total === 0) clientsPage = 1;
   const pageData = clients.slice((clientsPage-1)*CLIENTS_PAGE_SIZE, clientsPage*CLIENTS_PAGE_SIZE);
-  qs('#clients-grid').innerHTML = pageData.length ? pageData.map(c => {
-    const isSelected = selectedClientNames.has(c.name);
-    return `<div class="client-card" style="${isSelected ? 'border:2px solid var(--accent);background:var(--primary-pale)' : ''}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-        <h4 style="cursor:pointer;flex:1" onclick="openClientProfile('${esc(c.name).replace(/'/g, "\\'")}')">${esc(c.name)}</h4>
-        <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleClientSelect('${esc(c.name).replace(/'/g, "\\'")}',this.checked)" style="width:16px;height:16px;cursor:pointer">
-      </div>
-      <p class="text-sm text-muted">${esc(c.phone || 'بدون رقم')}</p>
-      <div class="info-row"><span>الطلبات: ${c.orders}</span><span>الإجمالي: ${fmtJ(c.total)}</span></div>
-      <div class="info-row"><span class="text-red">المتبقي: ${fmtJ(c.remaining)}</span></div>
-    </div>`;
-  }).join('') : '<div class="empty-state">لا يوجد عملاء</div>';
+  const containerEl = qs('#clients-grid');
+  if (viewMode === 'list') {
+    containerEl.style.display = 'block'; containerEl.className = '';
+    containerEl.innerHTML = pageData.length ? `<table style="width:100%;border-collapse:collapse">
+      <thead style="background:var(--surface2)">
+        <tr style="border-bottom:2px solid var(--border)">
+          <th style="padding:12px;text-align:right;font-weight:600;font-size:.85rem;color:var(--muted)">#</th>
+          <th style="padding:12px;text-align:right;font-weight:600;font-size:.85rem;color:var(--muted)">الاسم</th>
+          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">الهاتف</th>
+          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">الطلبات</th>
+          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">الإجمالي</th>
+          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">المسدد</th>
+          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">النسبة</th>
+          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">الحالة</th>
+          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">آخر حركة</th>
+          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${pageData.map((c, idx) => {
+          const isSelected = selectedClientNames.has(c.name);
+          const paid = c.total - c.remaining;
+          const paymentRate = c.total > 0 ? (paid / c.total * 100).toFixed(0) : 0;
+          const hasDebt = c.remaining > 0;
+          const rowNum = (clientsPage - 1) * CLIENTS_PAGE_SIZE + idx + 1;
+          const statusHtml = hasDebt ? `<span class="badge badge-red" style="font-size:.75rem">مديون</span>` : '<span class="badge badge-green" style="font-size:.75rem">مسدد</span>';
+          const lastDate = c.lastTx ? fmtDate(c.lastTx) : '—';
+          return `<tr style="border-bottom:1px solid var(--border);${isSelected ? 'background:var(--primary-pale)' : ''}" onclick="toggleClientSelect('${esc(c.name).replace(/'/g, "\\'")}', !${isSelected})" style="cursor:pointer">
+            <td style="padding:12px;text-align:right;font-weight:600;color:var(--primary);font-size:.9rem">${rowNum}</td>
+            <td style="padding:12px;text-align:right"><strong onclick="event.stopPropagation();openClientProfile('${esc(c.name).replace(/'/g, "\\'")}')" style="cursor:pointer;color:var(--primary)">${esc(c.name)}</strong></td>
+            <td style="padding:12px;text-align:center;color:var(--muted);font-size:.85rem">${esc(c.phone || '—')}</td>
+            <td style="padding:12px;text-align:center;font-weight:600">${c.orders}</td>
+            <td style="padding:12px;text-align:center;color:var(--primary);font-weight:600">${fmtJ(c.total)}</td>
+            <td style="padding:12px;text-align:center;color:#10b981;font-weight:600">${fmtJ(paid)}</td>
+            <td style="padding:12px;text-align:center;color:var(--primary);font-weight:600">${paymentRate}%</td>
+            <td style="padding:12px;text-align:center">${statusHtml}</td>
+            <td style="padding:12px;text-align:center;color:var(--muted);font-size:.85rem">${lastDate}</td>
+            <td style="padding:12px;text-align:center"><input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleClientSelect('${esc(c.name).replace(/'/g, "\\'")}',this.checked);event.stopPropagation()" style="width:16px;height:16px;cursor:pointer" onclick="event.stopPropagation()"></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>` : '<div class="empty-state">لا يوجد عملاء</div>';
+  } else {
+    containerEl.style.display = 'grid'; containerEl.className = 'grid grid-3';
+    containerEl.innerHTML = pageData.length ? pageData.map((c, idx) => {
+      const isSelected = selectedClientNames.has(c.name);
+      const paid = c.total - c.remaining;
+      const paymentRate = c.total > 0 ? (paid / c.total * 100).toFixed(0) : 0;
+      const hasDebt = c.remaining > 0;
+      const rowNum = (clientsPage - 1) * CLIENTS_PAGE_SIZE + idx + 1;
+      const statusBadge = hasDebt ? `<span class="badge badge-red">مديون: ${fmtJ(c.remaining)}</span>` : '<span class="badge badge-green">مسدد</span>';
+      const lastDate = c.lastTx ? fmtDate(c.lastTx) : '—';
+      return `<div class="client-card" style="${isSelected ? 'border:2px solid var(--accent);background:var(--primary-pale)' : 'border:1px solid var(--border)'}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;flex:1">
+            <span style="background:var(--primary);color:white;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0">${rowNum}</span>
+            <div style="flex:1;min-width:0">
+              <h4 style="cursor:pointer;margin-bottom:2px;color:var(--primary);word-break:break-word" onclick="openClientProfile('${esc(c.name).replace(/'/g, "\\'")}')">${esc(c.name)}</h4>
+              <p class="text-sm text-muted" style="word-break:break-word">${esc(c.phone || '📞 بدون رقم')}</p>
+            </div>
+          </div>
+          <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleClientSelect('${esc(c.name).replace(/'/g, "\\'")}',this.checked)" style="width:18px;height:18px;cursor:pointer;flex-shrink:0">
+        </div>
+        <div style="margin-bottom:8px">${statusBadge}</div>
+        <div style="background:var(--surface2);padding:8px 10px;border-radius:6px;margin-bottom:8px;font-size:.75rem">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div><span style="color:var(--muted)">الطلبات:</span> <strong>${c.orders}</strong></div>
+            <div><span style="color:var(--muted)">الإجمالي:</span> <strong style="color:var(--primary)">${fmtJ(c.total)}</strong></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div><span style="color:var(--muted)">المسدد:</span> <strong style="color:#10b981">${fmtJ(paid)}</strong></div>
+            <div><span style="color:var(--muted)">النسبة:</span> <strong style="color:var(--primary)">${paymentRate}%</strong></div>
+          </div>
+        </div>
+        <div style="font-size:.75rem;color:var(--muted);text-align:center;padding-top:6px;border-top:1px solid var(--border)">آخر حركة: ${lastDate}</div>
+      </div>`;
+    }).join('') : '<div class="empty-state">لا يوجد عملاء</div>';
+  }
   renderPagination('clients-pagination', total, clientsPage, CLIENTS_PAGE_SIZE, 'setClientsPage');
+  renderClientsStats();
   updateClientsSelBar();
+}
+function renderClientsStats() {
+  const clientMap = {};
+  transactions.forEach(tx => {
+    if (!tx.client) return;
+    if (!clientMap[tx.client]) clientMap[tx.client] = { total: 0, remaining: 0 };
+    clientMap[tx.client].total += (tx.total || 0); clientMap[tx.client].remaining += (tx.remaining || 0);
+  });
+  const clients = Object.values(clientMap);
+  const totalClients = clients.length;
+  const totalSales = clients.reduce((s, c) => s + c.total, 0);
+  const totalRemaining = clients.reduce((s, c) => s + c.remaining, 0);
+  const totalPaid = totalSales - totalRemaining;
+  const collectionRate = totalSales > 0 ? (totalPaid / totalSales * 100).toFixed(1) : 0;
+  const debtorClients = clients.filter(c => c.remaining > 0).length;
+  qs('#clients-stats').innerHTML = `
+    <div class="stat-card card">
+      <div class="stat-val">${totalClients}</div>
+      <div class="stat-label">إجمالي العملاء</div>
+    </div>
+    <div class="stat-card card">
+      <div class="stat-val text-green">${fmtJ(totalSales)}</div>
+      <div class="stat-label">إجمالي المبيعات</div>
+    </div>
+    <div class="stat-card card">
+      <div class="stat-val text-blue">${fmtJ(totalPaid)}</div>
+      <div class="stat-label">المحصل: ${collectionRate}%</div>
+    </div>
+    <div class="stat-card card">
+      <div class="stat-val text-red">${debtorClients > 0 ? `${debtorClients}` : '✓'}</div>
+      <div class="stat-label">${debtorClients > 0 ? 'عملاء مديونين' : 'الكل مسدد'}</div>
+    </div>
+  `;
 }
 function toggleClientSelect(name, checked) {
   if (checked) selectedClientNames.add(name); else selectedClientNames.delete(name);
@@ -4404,7 +4612,7 @@ function printExpenseDetails(id) {
           تم طباعة هذا المستند من نظام Soulia في ${new Date().toLocaleDateString('ar-EG')} الساعة ${new Date().toLocaleTimeString('ar-EG')}
         </div>
       </div>
-      <script>setTimeout(() => window.print(), 400)</script>
+      <script>setTimeout(() => window.print(), 400)<\/script>
     </body>
     </html>
   `;
@@ -4517,7 +4725,8 @@ function renderExpenseApprovalCard(e) {
   const statusBadge = expStatusBadge(e.status || 'معلق');
   const actions = isPending && isAdmin() ? `<div class="flex gap-8"><button class="btn btn-primary btn-sm" onclick="approveExpenseFromAppr('${esc(e._id)}')">✅ اعتماد وخصم</button><button class="btn btn-danger btn-sm" onclick="rejectExpenseFromAppr('${esc(e._id)}')">❌ رفض</button></div>` : '';
   const approvedInfo = e.approvedBy ? `<div class="text-xs text-muted" style="margin-top:4px">بواسطة: ${esc(e.approvedBy)} ${e.approvedAt ? '- ' + fmtDate(e.approvedAt) : ''}</div>` : '';
-  return `<div class="card mb-16" style="${isPending ? 'border-right:4px solid var(--orange)' : e.status === 'معتمد' ? 'border-right:4px solid var(--green)' : 'border-right:4px solid var(--red)'}">
+  const borderStyle = isPending ? 'border-right:4px solid var(--orange)' : (e.status === 'معتمد' ? 'border-right:4px solid var(--green)' : 'border-right:4px solid var(--red)');
+  return `<div class="card mb-16" style="${borderStyle}">
     <div class="flex-between">
       <div>
         <div class="flex gap-8" style="align-items:center"><span class="badge badge-blue" style="font-size:.65rem">مصروف</span><strong style="font-size:1rem">${esc(e.desc || '-')}</strong>${statusBadge}</div>
@@ -4558,7 +4767,7 @@ function renderCancelRequestApprovalCard(tx) {
         <div class="flex gap-8" style="align-items:center;flex-wrap:wrap">
           <span class="badge" style="background:rgba(220,38,38,.12);color:var(--red);font-size:.65rem">🚫 طلب رد الديبوزيت وإلغاء</span>
           <strong style="font-size:.95rem">حركة #${esc(tx.ref || tx._id)}</strong>
-          <span style="font-size:.75rem;font-weight:600;color:${statusColor}">${statusLabel}</span>
+          <span style="font-size:.75rem;font-weight:600;color:' + statusColor + '">${statusLabel}</span>
         </div>
         <div class="text-sm text-muted" style="margin-top:6px">
           ${tx.client ? `👤 ${esc(tx.client)}` : ''} ${tx.phone ? `· 📞 ${esc(tx.phone)}` : ''}
@@ -4628,9 +4837,10 @@ function renderReturnApprovalCard(r) {
   const diffLine = isEx ? `<div class="text-sm" style="margin-top:4px">الفرق: <strong>${fmtJ(Math.abs(diff))}</strong> ${diff > 0 ? '<span class="text-green">(للعميل — علينا)</span>' : diff < 0 ? '<span class="text-orange">(على العميل — للشركة)</span>' : '<span class="text-muted">(لا فرق)</span>'} — بدائل: ${fmtJ(r.exchangeTotal || 0)}</div>${diffHint}` : '';
   const vr = String(r.vaultRefundAccount || '').trim();
   const vc = String(r.vaultCollectAccount || '').trim();
-  const vaultLine = (vr || vc) ? `<div class="text-xs" style="margin-top:8px;padding:8px;background:var(--surface2);border-radius:8px;line-height:1.5">${vr ? `<div>🔻 <strong>سحب/رد للعميل من:</strong> ${esc(vr)}</div>` : ''}${vc ? `<div style="margin-top:${vr ? '4px' : '0'}">🔺 <strong>إيداع تحصيل الفرق (للشركة) في:</strong> ${esc(vc)}</div>` : ''}</div>` : '';
+  const vaultLine = (vr || vc) ? '<div class="text-xs" style="margin-top:8px;padding:8px;background:var(--surface2);border-radius:8px;line-height:1.5">' + (vr ? '<div>🔻 <strong>سحب/رد للعميل من:</strong> ' + esc(vr) + '</div>' : '') + (vc ? '<div style="margin-top:' + (vr ? '4px' : '0') + '">🔺 <strong>إيداع تحصيل الفرق (للشركة) في:</strong> ' + esc(vc) + '</div>' : '') + '</div>' : '';
   const daysInfo = r.daysRemaining ? `<span class="badge badge-green" style="font-size:.6rem">متبقي ${r.daysRemaining} يوم</span>` : '';
-  return `<div class="card mb-16" style="${isPending ? 'border-right:4px solid var(--purple)' : r.status === 'معتمد' ? 'border-right:4px solid var(--green)' : 'border-right:4px solid var(--red)'}">
+  const borderStyle = isPending ? 'border-right:4px solid var(--purple)' : (r.status === 'معتمد' ? 'border-right:4px solid var(--green)' : 'border-right:4px solid var(--red)');
+  return `<div class="card mb-16" style="${borderStyle}">
     <div class="flex-between">
       <div>
         <div class="flex gap-8" style="align-items:center;flex-wrap:wrap">${typeBadge}<strong style="font-size:1rem">${esc(r.client)}</strong>${statusBadge} ${daysInfo}</div>
@@ -4850,60 +5060,237 @@ function exportHubExcel() {
 }
 
 /* Reports */
+let currentReportData = null;
+
 async function loadReports() {
-  qs('#rep-stats').innerHTML = '<div class="loading-spinner"></div>';
-  const from = qs('#rep-from')?.value; const to = qs('#rep-to')?.value;
-  let params = ''; if (from) params += '?from=' + from; if (to) params += (params ? '&' : '?') + 'to=' + to;
+  qs('#rep-stats').innerHTML = '<div style="grid-column:1/-1;display:flex;justify-content:center;padding:40px"><div class="loading-spinner"></div></div>';
+  const from = qs('#rep-from')?.value;
+  const to = qs('#rep-to')?.value;
+  let params = '';
+  if (from) params += '?from=' + from;
+  if (to) params += (params ? '&' : '?') + 'to=' + to;
   try {
     const r = await api('/transactions/reports' + params);
-    qs('#rep-stats').innerHTML = [
-      { label: 'المبيعات', val: fmtJ(r.totalSales), color: 'text-green' },
-      { label: 'المشتريات', val: fmtJ(r.totalPurchases), color: 'text-blue' },
-      { label: 'المحصل', val: fmtJ(r.totalDeposit), color: 'text-green' },
-      { label: 'المتبقي', val: fmtJ(r.totalRemaining), color: 'text-orange' },
-      { label: 'صافي الربح', val: fmtJ(r.netProfit), color: 'text-purple' },
-      { label: 'المصاريف', val: fmtJ(r.expenseTotal), color: 'text-red' },
-    ].map(s => `<div class="card stat-card"><div class="stat-label">${esc(s.label)}</div><div class="stat-val ${s.color}">${esc(s.val)}</div></div>`).join('');
-    renderReportCharts(r); renderProfitTable(r.productProfits || []);
-  } catch (e) { qs('#rep-stats').innerHTML = `<div class="empty-state">خطأ: ${esc(e.message)}</div>`; }
+    currentReportData = r;
+    renderReportKPIs(r);
+    renderReportCharts(r);
+    renderProfitTable(r.productProfits || []);
+    qs('#profit-search').value = '';
+  } catch (e) {
+    qs('#rep-stats').innerHTML = `<div style="grid-column:1/-1" class="empty-state">❌ خطأ: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderReportKPIs(r) {
+  const kpis = [
+    { label: '📈 المبيعات', val: fmtJ(r.totalSales), color: '#10b981', bgColor: '#f0fdf4', hint: 'إجمالي المبيعات' },
+    { label: '📦 المشتريات', val: fmtJ(r.totalPurchases), color: '#0066cc', bgColor: '#f0f7ff', hint: 'إجمالي المشتريات' },
+    { label: '✅ المحصل', val: fmtJ(r.totalDeposit), color: '#059669', bgColor: '#ecfdf5', hint: 'المبالغ المحصلة من العملاء' },
+    { label: '⏳ المتبقي', val: fmtJ(r.totalRemaining), color: '#f59e0b', bgColor: '#fffbeb', hint: 'المبالغ المتبقية على العملاء' },
+    { label: '💰 الربح الصافي', val: fmtJ(r.netProfit), color: '#6d28d9', bgColor: '#f5f3ff', hint: 'الربح بعد خصم المصاريف' },
+    { label: '💸 المصاريف', val: fmtJ(r.expenseTotal), color: '#dc2626', bgColor: '#fef2f2', hint: 'إجمالي المصاريف' },
+  ];
+  qs('#rep-stats').innerHTML = kpis.map(k => `
+    <div class="card" style="background:${k.bgColor};border-left:3px solid ${k.color};padding:12px;cursor:help" title="${k.hint}">
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:6px">${esc(k.label)}</div>
+      <div style="font-size:1.1rem;font-weight:700;color:${k.color}">${esc(k.val)}</div>
+    </div>
+  `).join('');
+}
+
+function renderPerformanceMetrics(r) {
+  // Removed: was taking up space without adding much value
 }
 
 function setReportPeriod(period, btn) {
-  const now = new Date(); let from, to = today();
+  const now = new Date();
+  let from, to = today();
   switch (period) {
-    case 'today': from = today(); break;
-    case 'week': { const d = new Date(now); d.setDate(d.getDate() - 7); from = d.toISOString().slice(0, 10); break; }
-    case 'month': { const d = new Date(now); d.setMonth(d.getMonth() - 1); from = d.toISOString().slice(0, 10); break; }
-    case 'year': { const d = new Date(now); d.setFullYear(d.getFullYear() - 1); from = d.toISOString().slice(0, 10); break; }
-    case 'all': from = ''; to = ''; break;
+    case 'today':
+      from = today();
+      break;
+    case 'week': {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 7);
+      from = d.toISOString().slice(0, 10);
+      break;
+    }
+    case 'month': {
+      const d = new Date(now);
+      d.setMonth(d.getMonth() - 1);
+      from = d.toISOString().slice(0, 10);
+      break;
+    }
+    case 'year': {
+      const d = new Date(now);
+      d.setFullYear(d.getFullYear() - 1);
+      from = d.toISOString().slice(0, 10);
+      break;
+    }
+    case 'all':
+      from = '';
+      to = '';
+      break;
   }
-  qs('#rep-from').value = from; qs('#rep-to').value = to;
-  qsa('#page-reports .tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); loadReports();
+  qs('#rep-from').value = from;
+  qs('#rep-to').value = to;
+  qsa('#page-reports .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadReports();
 }
 
 function renderReportCharts(r) {
-  Object.values(reportCharts).forEach(c => c.destroy()); reportCharts = {};
+  Object.values(reportCharts).forEach(c => c.destroy());
+  reportCharts = {};
   const isDark = document.body.classList.contains('dark-mode');
-  const textColor = isDark ? '#e8f5ee' : '#0f1f16'; const gridColor = isDark ? '#2a3d2e' : '#d8e4dd';
-  const defaultOpts = { responsive: true, plugins: { legend: { labels: { color: textColor, font: { family: 'Cairo' } } } }, scales: { x: { ticks: { color: textColor }, grid: { color: gridColor } }, y: { ticks: { color: textColor }, grid: { color: gridColor } } } };
+  const textColor = isDark ? '#e8f5ee' : '#0f1f16';
+  const gridColor = isDark ? '#2a3d2e' : '#d8e4dd';
+  
+  const defaultOpts = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        labels: { color: textColor, font: { family: 'Cairo', size: 10 }, padding: 10 },
+        display: true
+      }
+    },
+    scales: {
+      x: { ticks: { color: textColor, font: { size: 9 } }, grid: { color: gridColor, drawBorder: false } },
+      y: { ticks: { color: textColor, font: { size: 9 } }, grid: { color: gridColor, drawBorder: false } }
+    }
+  };
+  
   const pp = r.productProfits || [];
-  const topItems = [...pp].sort((a, b) => (b.qty || 0) - (a.qty || 0)).slice(0, 8);
-  const lowItems = [...pp].sort((a, b) => (a.qty || 0) - (b.qty || 0)).slice(0, 8);
-  reportCharts.top = new Chart(qs('#chart-top'), { type: 'bar', data: { labels: topItems.map(i => i.name), datasets: [{ label: 'الكمية', data: topItems.map(i => i.qty || 0), backgroundColor: '#16a34a' }] }, options: { ...defaultOpts } });
-  reportCharts.low = new Chart(qs('#chart-low'), { type: 'bar', data: { labels: lowItems.map(i => i.name), datasets: [{ label: 'الكمية', data: lowItems.map(i => i.qty || 0), backgroundColor: '#dc2626' }] }, options: { ...defaultOpts } });
-  reportCharts.salesvspurch = new Chart(qs('#chart-salesvspurch'), { type: 'bar', data: { labels: ['المبيعات', 'المشتريات', 'الفرق'], datasets: [{ label: 'المبلغ', data: [r.totalSales || 0, r.totalPurchases || 0, (r.totalSales || 0) - (r.totalPurchases || 0)], backgroundColor: ['#16a34a', '#1565c0', '#6d28d9'] }] }, options: { ...defaultOpts } });
-  reportCharts.profit = new Chart(qs('#chart-profit'), { type: 'bar', data: { labels: ['إجمالي الربح', 'صافي الربح', 'المصاريف'], datasets: [{ label: 'المبلغ', data: [r.grossProfit || 0, r.netProfit || 0, r.expenseTotal || 0], backgroundColor: ['#16a34a', '#6d28d9', '#dc2626'] }] }, options: { ...defaultOpts } });
+  const topItems = [...pp].sort((a, b) => (b.qty || 0) - (a.qty || 0)).slice(0, 10);
+  const lowItems = [...pp].sort((a, b) => (a.qty || 0) - (b.qty || 0)).slice(0, 10);
+  
+  // Top Sellers
+  reportCharts.top = new Chart(qs('#chart-top'), {
+    type: 'bar',
+    data: {
+      labels: topItems.map(i => i.name.length > 15 ? i.name.substring(0, 12) + '...' : i.name),
+      datasets: [{
+        label: 'الكمية المباعة',
+        data: topItems.map(i => i.qty || 0),
+        backgroundColor: '#16a34a',
+        borderRadius: 5,
+        borderSkipped: false
+      }]
+    },
+    options: { ...defaultOpts, indexAxis: 'y' }
+  });
+  
+  
+  // Stagnant Products (Low Sellers)
+  reportCharts.low = new Chart(qs('#chart-low'), {
+    type: 'bar',
+    data: {
+      labels: lowItems.map(i => i.name.length > 15 ? i.name.substring(0, 12) + '...' : i.name),
+      datasets: [{
+        label: 'الكمية المباعة',
+        data: lowItems.map(i => i.qty || 0),
+        backgroundColor: '#dc2626',
+        borderRadius: 5,
+        borderSkipped: false
+      }]
+    },
+    options: { ...defaultOpts, indexAxis: 'y' }
+  });
+  
+  // Sales vs Purchases
+  reportCharts.salesvspurch = new Chart(qs('#chart-salesvspurch'), {
+    type: 'bar',
+    data: {
+      labels: ['المبيعات', 'المشتريات', 'الفرق'],
+      datasets: [{
+        label: 'المبلغ',
+        data: [r.totalSales || 0, r.totalPurchases || 0, (r.totalSales || 0) - (r.totalPurchases || 0)],
+        backgroundColor: ['#16a34a', '#1565c0', '#6d28d9'],
+        borderRadius: 5,
+        borderSkipped: false
+      }]
+    },
+    options: defaultOpts
+  });
+  
+  // Profit Analysis
+  const expenseTotal = r.expenseTotal || 0;
+  reportCharts.profit = new Chart(qs('#chart-profit'), {
+    type: 'bar',
+    data: {
+      labels: ['إجمالي الربح', 'صافي الربح', 'المصاريف'],
+      datasets: [{
+        label: 'المبلغ',
+        data: [r.grossProfit || 0, r.netProfit || 0, expenseTotal],
+        backgroundColor: ['#16a34a', '#6d28d9', '#dc2626'],
+        borderRadius: 5,
+        borderSkipped: false
+      }]
+    },
+    options: defaultOpts
+  });
 }
 
 function renderProfitTable(pp) {
-  qs('#rep-profit-table tbody').innerHTML = pp.length ? pp.map((p, i) => {
+  const tbody = qs('#rep-profit-table tbody');
+  tbody.innerHTML = pp.length ? pp.map((p, i) => {
     const margin = p.rev > 0 ? ((p.profit / p.rev) * 100).toFixed(1) : '0.0';
-    return `<tr><td>${i + 1}</td><td>${esc(p.name)}</td><td>${fmtN(p.qty)}</td><td>${fmtJ(p.rev)}</td><td>${fmtJ(p.cost)}</td><td class="${(p.profit || 0) >= 0 ? 'text-green' : 'text-red'}">${fmtJ(p.profit)}</td><td>${margin}%</td></tr>`;
-  }).join('') : '<tr><td colspan="7" class="empty-state">لا توجد بيانات</td></tr>';
+    const profitColor = (p.profit || 0) >= 0 ? '#10b981' : '#dc2626';
+    const profitIcon = (p.profit || 0) >= 0 ? '📈' : '📉';
+    const marginLevel = margin >= 30 ? '🟢' : margin >= 20 ? '🟡' : '🔴';
+    const stars = p.rev > 100000 ? '⭐⭐⭐' : p.rev > 50000 ? '⭐⭐' : p.rev > 10000 ? '⭐' : '';
+    return `
+      <tr style="border-bottom:1px solid var(--border);transition:background .2s;font-size:.85rem" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <td style="padding:6px;text-align:center;color:var(--muted)" title="رقم تسلسلي">${i + 1}</td>
+        <td style="padding:6px;font-weight:600" title="اسم الصنف">${esc(p.name)}</td>
+        <td style="padding:6px;text-align:center" title="كمية الصنف المباع">${fmtN(p.qty)}</td>
+        <td style="padding:6px;text-align:right;color:#0066cc;font-weight:500" title="إجمالي المبيعات (السعر × الكمية)">${fmtJ(p.rev)}</td>
+        <td style="padding:6px;text-align:right;color:var(--muted)" title="التكلفة الكلية (سعر الشراء × الكمية)">${fmtJ(p.cost)}</td>
+        <td style="padding:6px;text-align:right;color:${profitColor};font-weight:600" title="الربح = الإيراد - التكلفة">${profitIcon} ${fmtJ(p.profit)}</td>
+        <td style="padding:6px;text-align:center" title="هامش الربح = (الربح ÷ الإيراد) × 100">${marginLevel} ${margin}%</td>
+        <td style="padding:6px;text-align:center;color:var(--muted)" title="تصنيف الأداء حسب الإيراد الكلي">${stars}</td>
+      </tr>
+    `;
+  }).join('') : '<tr><td colspan="8" class="empty-state">لا توجد بيانات</td></tr>';
+}
+
+function filterProfitTable() {
+  if (!currentReportData) return;
+  const query = normalizeUiSearch(qs('#profit-search')?.value || '');
+  const filtered = (currentReportData.productProfits || []).filter(p => normalizeUiSearch(p.name).includes(query));
+  renderProfitTable(filtered);
+}
+
+function exportReportData() {
+  if (!currentReportData) { toast('لا توجد بيانات للتصدير', true); return; }
+  const r = currentReportData;
+  const data = [
+    { 'المؤشر': 'المبيعات', 'القيمة': r.totalSales },
+    { 'المؤشر': 'المشتريات', 'القيمة': r.totalPurchases },
+    { 'المؤشر': 'المحصل', 'القيمة': r.totalDeposit },
+    { 'المؤشر': 'المتبقي', 'القيمة': r.totalRemaining },
+    { 'المؤشر': 'الربح الصافي', 'القيمة': r.netProfit },
+    { 'المؤشر': 'المصاريف', 'القيمة': r.expenseTotal },
+    { 'المؤشر': 'عدد الحركات', 'القيمة': r.transactionCount },
+    {},
+    ...((r.productProfits || []).slice(0, 20).map((p, i) => ({
+      'الترتيب': i + 1,
+      'الصنف': p.name,
+      'الكمية': p.qty,
+      'الإيراد': p.rev,
+      'التكلفة': p.cost,
+      'الربح': p.profit,
+      'الهامش %': ((p.profit / p.rev) * 100).toFixed(1)
+    })))
+  ];
+  writeExcel(data, 'تقارير', 'reports_' + today());
+  toast('✅ تم تصدير التقرير بنجاح');
 }
 
 /* Vault */
 function renderVaultPage() {
+  if (!settings) settings = {};
   if (!vaultUnlocked) { qs('#vault-locked').style.display = 'block'; qs('#vault-content').style.display = 'none'; }
   else { qs('#vault-locked').style.display = 'none'; qs('#vault-content').style.display = 'block'; renderVaultSegs(); loadVaultLog(); }
 }
@@ -4933,9 +5320,14 @@ function renderVaultSegs() {
 async function loadVaultLog() {
   const from = qs('#vault-from')?.value; const to = qs('#vault-to')?.value;
   let params = ''; if (from) params += '?from=' + from; if (to) params += (params ? '&' : '?') + 'to=' + to;
-  qs('#vault-table tbody').innerHTML = '<tr><td colspan="7"><div class="loading-spinner"></div></td></tr>';
+  qs('#vault-table tbody').innerHTML = '<tr><td colspan="11"><div class="loading-spinner"></div></td></tr>';
   try { vaultLog = await api('/vault' + params); renderVaultTable(); }
-  catch (e) { toast('خطأ: ' + e.message, true); qs('#vault-table tbody').innerHTML = '<tr><td colspan="7" class="empty-state">خطأ في التحميل</td></tr>'; }
+  catch (e) { 
+    vaultLog = [];
+    const errMsg = e.message || 'فشل تحميل السجل';
+    toast('خطأ: ' + errMsg, true); 
+    qs('#vault-table tbody').innerHTML = '<tr><td colspan="11" class="empty-state">خطأ في التحميل: ' + esc(errMsg) + '</td></tr>'; 
+  }
 }
 function isVaultReturnRefundSource(source) {
   const s = String(source || '');
@@ -4961,16 +5353,18 @@ function renderVaultTable() {
   const vaultSearch = (qs('#vault-log-search')?.value || '').trim().toLowerCase();
   if (vaultSearch) {
     data = data.filter(v => {
-      const blob = [v.desc, v.ref, v.source, v.method, v.txNo, v.employee].join(' ').toLowerCase();
+      const blob = [(v.desc || ''), (v.ref || ''), (v.source || ''), (v.method || ''), (v.txNo || ''), (v.employee || '')].join(' ').toLowerCase();
       return blob.includes(vaultSearch);
     });
   }
   const segLabel = (s) => ({cash:'كاش',vodafone:'فودافون كاش',instapay:'Instapay',bank:'تحويل بنكي'}[s] || s || '-');
   const srcBadge = (s) => {
     if (!s) return '<span style="color:var(--muted)">-</span>';
-    const colors = {'ديبوزت مبيعات':'var(--green)','تحصيل':'var(--primary)','مشتريات':'var(--orange)','مرتجع':'var(--red)','رد مرتجع':'var(--red)','إلغاء':'var(--red)','مصروف':'var(--red)','يدوي':'var(--muted)'};
-    const c = colors[s] || 'var(--muted)';
-    return `<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:600;background:${c}15;color:${c}">${esc(s)}</span>`;
+    const colors = {'ديبوزت مبيعات':'#10b981','تحصيل':'#0066cc','مشتريات':'#f59e0b','مرتجع':'#ef4444','رد مرتجع':'#ef4444','إلغاء':'#ef4444','مصروف':'#ef4444','يدوي':'#999'};
+    const c = colors[s] || '#999';
+    const bgColor = c.startsWith('#') ? c + '20' : c;
+    const styleStr = 'display:inline-block;padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:600;background:' + bgColor + ';color:' + c;
+    return '<span style="' + styleStr + '">' + esc(s) + '</span>';
   };
   const VAULT_PAGE_SIZE = 50;
   const total = data.length;
@@ -5016,7 +5410,11 @@ function exportVaultExcel() { writeExcel(vaultLog.map(v => ({ 'التاريخ': 
 
 /* Users */
 function renderUsers() {
-  qs('#users-grid').innerHTML = users.length ? users.map(u => {
+  if (!users || users.length === 0) {
+    qs('#users-grid').innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:40px">لا يوجد مستخدمون في النظام</div>';
+    return;
+  }
+  qs('#users-grid').innerHTML = users.map(u => {
     const avatarUrl = sanitizeUrl(u.avatar);
     return `<div class="user-card">
       <div class="user-avatar">${avatarUrl ? `<img src="${esc(avatarUrl)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.parentNode.textContent='${esc((u.name || u.username || '?').slice(0, 2))}'">` : esc((u.name || u.username || '?').slice(0, 2))}</div>
@@ -5028,7 +5426,7 @@ function renderUsers() {
         <div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu"><div class="dd-item" onclick="openUserModal('${esc(u._id)}')">✏️ تعديل</div>${u.username !== 'admin' ? `<div class="dd-divider"></div><div class="dd-item danger" onclick="deleteUser('${esc(u._id)}')">🗑️ حذف</div>` : ''}</div></div>
       </div>
     </div>`;
-  }).join('') : '<div class="empty-state">لا يوجد مستخدمون</div>';
+  }).join('');
 }
 function openUserModal(id) {
   const u = id ? users.find(x => x._id === id) : null;
@@ -5070,6 +5468,7 @@ async function deleteUser(id) {
 
 /* Settings */
 function renderSettings() {
+  if (!settings) settings = {};
   const companies = settings.shipCos || [];
   qs('#set-cairo-price').value = settings.cairoPrice || 0;
   qs('#set-gov-price').value = settings.govPrice || 0;
@@ -5087,25 +5486,43 @@ async function saveDefaultPrices() {
   settings.govPrice = Number(qs('#set-gov-price').value) || 0;
   await saveSettings();
 }
-async function updateShipPrice(i, field, val) { if (!settings.shipCos) return; settings.shipCos[i][field] = Number(val) || 0; await saveSettings(); }
+async function updateShipPrice(i, field, val) { 
+  if (!settings.shipCos) return; 
+  settings.shipCos[i][field] = Number(val) || 0; 
+  await saveSettings(); 
+}
 async function addShipCompany() {
   const name = qs('#new-ship-name').value.trim(); const cairo = Number(qs('#new-ship-cairo').value) || 0; const gov = Number(qs('#new-ship-gov').value) || 0;
   if (!name) { toast('اسم الشركة مطلوب', true); return; }
   if (!settings.shipCos) settings.shipCos = [];
-  settings.shipCos.push({ name, cairo, gov }); await saveSettings();
-  qs('#new-ship-name').value = ''; qs('#new-ship-cairo').value = ''; qs('#new-ship-gov').value = ''; renderSettings();
+  settings.shipCos.push({ name, cairo, gov }); 
+  await saveSettings();
+  qs('#new-ship-name').value = ''; qs('#new-ship-cairo').value = ''; qs('#new-ship-gov').value = ''; 
+  renderSettings();
 }
-async function removeShipCompany(i) { if (!confirm('حذف شركة الشحن؟')) return; settings.shipCos.splice(i, 1); await saveSettings(); renderSettings(); }
+async function removeShipCompany(i) { 
+  if (!confirm('حذف شركة الشحن؟')) return; 
+  if (!settings.shipCos) return;
+  settings.shipCos.splice(i, 1); 
+  await saveSettings(); 
+  renderSettings(); 
+}
 async function saveVaultPass() {
   const pass = qs('#set-vault-pass').value; if (!pass) { toast('أدخل كلمة المرور', true); return; }
   try { await api('/settings', { method: 'PUT', body: JSON.stringify({ vaultPass: pass }) }); qs('#set-vault-pass').value = ''; toast('تم حفظ كلمة المرور'); }
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function saveSettings() {
+  if (!settings) settings = {};
   const payload = { ...settings };
   delete payload.vaultPass; delete payload._id; delete payload.__v; delete payload.createdAt; delete payload.updatedAt;
-  try { settings = await api('/settings', { method: 'PUT', body: JSON.stringify(payload) }); toast('تم حفظ الإعدادات'); }
-  catch (e) { toast('خطأ: ' + e.message, true); }
+  try { 
+    settings = await api('/settings', { method: 'PUT', body: JSON.stringify(payload) }); 
+    toast('تم حفظ الإعدادات'); 
+  }
+  catch (e) { 
+    toast('خطأ في الحفظ: ' + e.message, true); 
+  }
 }
 
 function toggleDarkMode() {
@@ -5123,7 +5540,15 @@ function changeLang(lang) {
 
 /* Profile */
 function renderProfile() {
-  if (!currentUser) return;
+  if (!currentUser) {
+    qs('#profile-avatar').innerHTML = '؟';
+    qs('#prof-name').value = '';
+    qs('#prof-username').value = '';
+    qs('#prof-phone').value = '';
+    qs('#prof-avatar').value = '';
+    qs('#prof-password').value = '';
+    return;
+  }
   const avatarUrl = sanitizeUrl(currentUser.avatar);
   qs('#profile-avatar').innerHTML = avatarUrl ? `<img src="${esc(avatarUrl)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">` : esc((currentUser.name || currentUser.username || '?').slice(0, 2));
   qs('#prof-name').value = currentUser.name || '';
@@ -5133,12 +5558,19 @@ function renderProfile() {
   qs('#prof-password').value = '';
 }
 async function saveProfile() {
+  if (!currentUser) { toast('خطأ: لم يتم تحميل ملف المستخدم', true); return; }
   const body = { phone: qs('#prof-phone').value, avatar: qs('#prof-avatar').value };
   const pass = qs('#prof-password').value; if (pass) body.password = pass;
   try {
-    await api('/users/' + (currentUser.id || currentUser._id), { method: 'PUT', body: JSON.stringify(body) });
-    if (body.phone) currentUser.phone = body.phone; if (body.avatar) currentUser.avatar = body.avatar;
-    localStorage.setItem('user', JSON.stringify(currentUser)); toast('تم حفظ التعديلات'); updateHeader(); renderProfile();
+    const userId = currentUser.id || currentUser._id;
+    if (!userId) { toast('خطأ: لا يمكن تحديد معرف المستخدم', true); return; }
+    await api('/users/' + userId, { method: 'PUT', body: JSON.stringify(body) });
+    if (body.phone) currentUser.phone = body.phone; 
+    if (body.avatar) currentUser.avatar = body.avatar;
+    localStorage.setItem('user', JSON.stringify(currentUser)); 
+    toast('تم حفظ التعديلات'); 
+    updateHeader(); 
+    renderProfile();
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 
@@ -5806,13 +6238,7 @@ async function resolveComplaint(id) {
     if (res.surveyToken) {
       const link = `${location.origin}/survey.html?token=${res.surveyToken}`;
       closeModal();
-      openModal(`<h3 style="margin-bottom:12px">رابط استبيان العميل</h3>
-        <p style="margin-bottom:12px;color:var(--muted)">شارك هذا الرابط مع العميل لتقييم تجربته:</p>
-        <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;word-break:break-all;font-size:.85rem;user-select:all;margin-bottom:16px">${esc(link)}</div>
-        <div class="flex gap-8" style="justify-content:flex-end">
-          <button class="btn btn-outline" onclick="closeModal()">إغلاق</button>
-          <button class="btn btn-primary" onclick="navigator.clipboard.writeText('${esc(link)}').then(()=>toast('تم نسخ الرابط'))">📋 نسخ الرابط</button>
-        </div>`);
+      openModal('<h3 style="margin-bottom:12px">رابط استبيان العميل</h3><p style="margin-bottom:12px;color:var(--muted)">شارك هذا الرابط مع العميل لتقييم تجربته:</p><div style="background:var(--surface2);border-radius:var(--radius);padding:12px;word-break:break-all;font-size:.85rem;user-select:all;margin-bottom:16px">' + esc(link) + '</div><div class="flex gap-8" style="justify-content:flex-end"><button class="btn btn-outline" onclick="closeModal()">إغلاق</button><button class="btn btn-primary" onclick="navigator.clipboard.writeText(' + "'" + esc(link) + "'" + ').then(()=>toast("تم نسخ الرابط"))">📋 نسخ الرابط</button></div>');
     } else {
       closeModal();
     }
@@ -5834,22 +6260,22 @@ function viewComplaint(id) {
   const surveyLink = c.surveyToken
     ? `${location.origin}/survey.html?token=${c.surveyToken}` : null;
   openModal(`<h3 style="margin-bottom:4px">${esc(c.complaintNo)}</h3>
-    <div style="margin-bottom:14px">${statusBadge} ${c.managerAction ? `<span class="badge badge-blue">${esc(c.managerAction)}</span>` : ''}</div>
+    <div style="margin-bottom:14px">${statusBadge} ${c.managerAction ? '<span class="badge badge-blue">' + esc(c.managerAction) + '</span>' : ''}</div>
     <table style="width:100%;font-size:.88rem;border-collapse:collapse">
       <tr><td style="padding:5px 8px;color:var(--muted);width:140px">الموظف المقدِّم</td><td>${esc(c.submittedBy)}</td></tr>
       <tr><td style="padding:5px 8px;color:var(--muted)">العميل</td><td>${esc(c.clientName || '—')}</td></tr>
       <tr><td style="padding:5px 8px;color:var(--muted)">الطلب</td><td>${esc(c.transactionRef || '—')}</td></tr>
       <tr><td style="padding:5px 8px;color:var(--muted)">تاريخ التقديم</td><td>${(c.createdAt||'').slice(0,16).replace('T',' ')}</td></tr>
       <tr><td style="padding:5px 8px;color:var(--muted)">الوصف</td><td style="white-space:pre-wrap">${esc(c.description)}</td></tr>
-      ${c.resolvedBy ? `<tr><td style="padding:5px 8px;color:var(--muted)">المُعالِج</td><td>${esc(c.resolvedBy)}</td></tr>` : ''}
-      ${c.resolvedAt ? `<tr><td style="padding:5px 8px;color:var(--muted)">تاريخ المعالجة</td><td>${(c.resolvedAt||'').slice(0,16).replace('T',' ')}</td></tr>` : ''}
-      ${c.actionNote ? `<tr><td style="padding:5px 8px;color:var(--muted)">ملاحظات</td><td style="white-space:pre-wrap">${esc(c.actionNote)}</td></tr>` : ''}
+      ${c.resolvedBy ? '<tr><td style="padding:5px 8px;color:var(--muted)">المُعالِج</td><td>' + esc(c.resolvedBy) + '</td></tr>' : ''}
+      ${c.resolvedAt ? '<tr><td style="padding:5px 8px;color:var(--muted)">تاريخ المعالجة</td><td>' + (c.resolvedAt||'').slice(0,16).replace('T',' ') + '</td></tr>' : ''}
+      ${c.actionNote ? '<tr><td style="padding:5px 8px;color:var(--muted)">ملاحظات</td><td style="white-space:pre-wrap">' + esc(c.actionNote) + '</td></tr>' : ''}
       <tr><td style="padding:5px 8px;color:var(--muted)">تقييم العميل</td><td>${ratingHtml}</td></tr>
-      ${c.surveyComment ? `<tr><td style="padding:5px 8px;color:var(--muted)">تعليق العميل</td><td style="white-space:pre-wrap">${esc(c.surveyComment)}</td></tr>` : ''}
-      ${surveyLink ? `<tr><td style="padding:5px 8px;color:var(--muted)">رابط الاستبيان</td><td style="word-break:break-all;font-size:.8rem">${esc(surveyLink)}</td></tr>` : ''}
+      ${c.surveyComment ? '<tr><td style="padding:5px 8px;color:var(--muted)">تعليق العميل</td><td style="white-space:pre-wrap">' + esc(c.surveyComment) + '</td></tr>' : ''}
+      ${surveyLink ? '<tr><td style="padding:5px 8px;color:var(--muted)">رابط الاستبيان</td><td style="word-break:break-all;font-size:.8rem">' + esc(surveyLink) + '</td></tr>' : ''}
     </table>
     <div class="flex gap-8" style="margin-top:16px;justify-content:flex-end">
-      ${surveyLink && !c.surveyCompletedAt ? `<button class="btn btn-outline" onclick="navigator.clipboard.writeText('${esc(surveyLink)}').then(()=>toast('تم النسخ'))">📋 نسخ رابط الاستبيان</button>` : ''}
+      ${surveyLink && !c.surveyCompletedAt ? '<button class="btn btn-outline" onclick="navigator.clipboard.writeText(' + "'" + esc(surveyLink) + "'" + ').then(()=>toast("تم النسخ"))">📋 نسخ رابط الاستبيان</button>' : ''}
       <button class="btn btn-outline" onclick="closeModal()">إغلاق</button>
     </div>`);
 }
