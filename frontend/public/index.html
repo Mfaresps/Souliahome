@@ -135,6 +135,9 @@ body.dark-mode .history-detail-item.removed{background:rgba(248,113,113,.08)}
 #login-page p{color:#6b8c78;font-size:.85rem;margin-bottom:24px}
 #login-page input{margin-bottom:14px}
 #login-page .btn-primary{width:100%;padding:12px}
+.login-pass-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.2rem;padding:4px 8px;color:#666;transition:all .2s;user-select:none}
+.login-pass-toggle:hover{color:#333;transform:translateY(-50%) scale(1.15)}
+.login-pass-toggle:active{transform:translateY(-50%) scale(0.95)}
 #header{position:fixed;top:0;right:0;left:0;height:var(--header-h);background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:100;gap:16px}
 #header .logo{font-size:1.3rem;font-weight:900;letter-spacing:1px;cursor:pointer;user-select:none}
 #header .logo:hover{opacity:.92}
@@ -357,7 +360,10 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <p>نظام إدارة المخازن</p>
 <div id="login-error" style="color:#dc2626;font-size:.82rem;margin-bottom:10px;display:none"></div>
 <input type="text" id="login-user" placeholder="اسم المستخدم">
-<input type="password" id="login-pass" placeholder="كلمة المرور">
+<div style="position:relative;margin-bottom:14px">
+  <input type="password" id="login-pass" placeholder="كلمة المرور" style="width:100%;padding-right:36px">
+  <button type="button" id="login-pass-toggle" class="login-pass-toggle" onclick="toggleLoginPassword()" title="إظهار/إخفاء كلمة المرور">👁️</button>
+</div>
 <button class="btn btn-primary" onclick="doLogin()">تسجيل الدخول</button>
 </div>
 </div>
@@ -408,6 +414,15 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 </div>
 </div>
 </div>
+
+<!-- Users Online Status -->
+<div class="card mb-16">
+<h4 class="mb-12" style="display:flex;align-items:center;gap:8px">👥 حالة المستخدمين <span id="online-count" style="font-size:.85rem;color:var(--muted)">(جاري التحديث)</span></h4>
+<div id="users-status-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">
+<div style="text-align:center;padding:20px;color:var(--muted);font-size:.85rem">جاري تحميل المستخدمين...</div>
+</div>
+</div>
+
 <div class="grid grid-7 mb-24" id="dash-stats"></div>
 <div class="grid grid-2 mb-24">
 <div class="card"><h4 class="mb-8" data-i18n="topSellers">الأكثر مبيعاً</h4><div class="overflow-x"><table id="dash-top-sellers"><thead><tr><th data-i18n="product">الصنف</th><th data-i18n="qty">الكمية</th><th data-i18n="total">الإجمالي</th></tr></thead><tbody></tbody></table></div></div>
@@ -452,6 +467,31 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 </div>
 </div>
 <div class="tx-summary" id="tx-summary"></div>
+
+<!-- Comments Section -->
+<div id="tx-comments-section" style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
+  <h4 class="mb-12">💬 التعليقات</h4>
+
+  <!-- Add Comment Form -->
+  <div style="display:grid;grid-template-columns:1fr 140px;gap:8px;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:1fr 100px;gap:8px">
+      <input type="text" id="tx-comment-text" placeholder="أضف تعليق..." style="padding:8px 12px;border:1px solid var(--border);border-radius:6px">
+      <select id="tx-comment-type" style="padding:8px 8px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+        <option value="عام">📝 عام</option>
+        <option value="تنبيه">⚠️ تنبيه</option>
+        <option value="ملاحظة">📌 ملاحظة</option>
+        <option value="أسئلة">❓ أسئلة</option>
+      </select>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="addTxComment()" style="white-space:nowrap">إضافة</button>
+  </div>
+
+  <!-- Comments List -->
+  <div id="tx-comments-list" style="max-height:250px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:0;background:var(--surface2)">
+    <div style="padding:12px;text-align:center;color:var(--muted);font-size:.85rem">لا توجد تعليقات</div>
+  </div>
+</div>
+
 <div class="flex gap-8 mt-16">
 <button class="btn btn-primary" id="tx-save-btn" onclick="saveTx()">💾 حفظ الحركة</button>
 <button class="btn btn-outline" onclick="resetTx()">مسح</button>
@@ -984,6 +1024,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <button class="btn btn-outline btn-sm" onclick="exportVaultExcel()">📥 تصدير Excel</button>
 </div>
 <div class="seg-cards" id="vault-segs"></div>
+<div class="grid grid-5 gap-12 mb-24" id="vault-stats" style="gap:12px"></div>
 <div class="card mb-24">
 <h4 class="mb-16">تسوية يدوية</h4>
 <div class="grid grid-4 gap-12">
@@ -995,15 +1036,22 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <button class="btn btn-primary btn-sm mt-16" onclick="addVaultEntry()">تأكيد</button>
 </div>
 <div class="card">
-<div class="flex-between mb-16">
-<h4>سجل الخزنة</h4>
+<div class="flex-between mb-16" style="flex-wrap:wrap;gap:10px">
+<h4 style="margin:0">سجل الخزنة</h4>
 <div class="flex gap-8" style="flex-wrap:wrap">
-<input type="text" id="vault-log-search" placeholder="🔍 بحث في السجل..." style="width:200px" oninput="vaultPage=1;renderVaultTable()">
-<input type="date" id="vault-from" style="width:140px" onchange="vaultPage=1;loadVaultLog()">
-<input type="date" id="vault-to" style="width:140px" onchange="vaultPage=1;loadVaultLog()">
+<input type="text" id="vault-log-search" placeholder="🔍 بحث..." style="width:160px" oninput="vaultPage=1;renderVaultTable()">
+<select id="vault-status-filter" style="width:130px" onchange="vaultPage=1;renderVaultTable()">
+  <option value="">كل الحالات</option>
+  <option value="completed">مكتملة</option>
+  <option value="pending">قيد الانتظار</option>
+  <option value="frozen">مجمدة</option>
+  <option value="cancelled">ملغاة</option>
+</select>
+<input type="date" id="vault-from" style="width:130px" onchange="vaultPage=1;loadVaultLog()">
+<input type="date" id="vault-to" style="width:130px" onchange="vaultPage=1;loadVaultLog()">
 </div>
 </div>
-<div class="overflow-x"><table id="vault-table"><thead><tr><th>رقم المعاملة</th><th>التاريخ</th><th>التوقيت</th><th>المبلغ</th><th>الرصيد الكلي</th><th>المصدر</th><th>#المرجع</th><th>القسم</th><th>الطريقة</th><th>الموظف</th><th>الوصف</th></tr></thead><tbody></tbody></table></div>
+<div class="overflow-x"><table id="vault-table"><thead><tr><th>رقم المعاملة</th><th>التاريخ</th><th>التوقيت</th><th>المبلغ</th><th>الرصيد الكلي</th><th>المصدر</th><th>#المرجع</th><th>القسم</th><th>الحالة</th><th>الطريقة</th><th>الموظف</th><th>الوصف</th></tr></thead><tbody></tbody></table></div>
 <div id="vault-pagination"></div>
 </div>
 </div>
@@ -1115,7 +1163,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <script>
 const qs = (s, p) => (p || document).querySelector(s);
 const qsa = (s, p) => [...(p || document).querySelectorAll(s)];
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = '/api';
 
 function esc(str) {
   if (str == null) return '';
@@ -1186,6 +1234,7 @@ window.addEventListener('scroll', closeAllMenus, true);
 window.addEventListener('resize', closeAllMenus);
 
 let currentUser = null;
+let onlineUsers = {}; // Track online status: { userId: { lastSeen, status } }
 let products = [], transactions = [], suppliers = [], expenses = [], settings = {}, users = [], vaultLog = [], inventoryCache = [], returnRequests = [], complaints = [];
 let cmpTabFilter = 'all';
 let currentPage = 'dashboard';
@@ -1198,6 +1247,7 @@ let txType = 'مبيعات';
 let txItems = [];
 let txDiscount = 0;
 let txDiscountType = 'fixed';
+let txComments = []; // Array of {text, type, employee, timestamp}
 let selectedMovIds = new Set();
 /** يُعبأ من سجل الحركات ثم يُستهلك عند دخول صفحة «حركة جديدة» */
 let pendingMovementReturn = null;
@@ -1332,6 +1382,18 @@ async function api(path, options = {}) {
 }
 
 /* Auth */
+function toggleLoginPassword() {
+  const passInput = qs('#login-pass');
+  const toggle = qs('#login-pass-toggle');
+  if (passInput.type === 'password') {
+    passInput.type = 'text';
+    toggle.textContent = '🙈';
+  } else {
+    passInput.type = 'password';
+    toggle.textContent = '👁️';
+  }
+}
+
 async function doLogin() {
   const username = qs('#login-user').value.trim();
   const password = qs('#login-pass').value;
@@ -1348,9 +1410,15 @@ async function doLogin() {
   }
 }
 
-function doLogout() {
+async function doLogout() {
+  // Mark user as offline
+  try {
+    await api('/auth/set-status', { method: 'POST', body: JSON.stringify({ status: 'offline' }) });
+  } catch (e) { console.error('Failed to set offline status:', e); }
+
   localStorage.removeItem('token'); localStorage.removeItem('user');
   currentUser = null;
+  onlineUsers = {};
   qs('#app').style.display = 'none'; qs('#login-page').style.display = 'flex';
   qs('#login-user').value = ''; qs('#login-pass').value = '';
 }
@@ -1375,6 +1443,24 @@ async function checkAuth() {
 async function showApp() {
   qs('#login-page').style.display = 'none'; qs('#app').style.display = 'block';
   updateHeader(); buildSidebar(); await loadAllData();
+
+  // Mark user as online
+  if (currentUser) {
+    try {
+      await api('/auth/set-status', { method: 'POST', body: JSON.stringify({ status: 'online' }) });
+    } catch (e) { console.error('Failed to set status:', e); }
+
+    const userName = currentUser.name || currentUser.username || '';
+    const welcomeMsg = `مرحباً يا ${userName}`;
+    toast(welcomeMsg);
+  }
+
+  // Sync users status initially
+  await syncUsersStatus();
+
+  // Sync users status every 10 seconds
+  setInterval(() => { syncUsersStatus(); }, 10000);
+
   const hash = location.hash.slice(1);
   const validPages = [...NAV_ITEMS.map(n => n.id), 'profile'];
   const startPage = (hash && validPages.includes(hash) && (hash === 'profile' || hasPerm(NAV_ITEMS.find(n => n.id === hash)?.perm))) ? hash : findFirstAllowedPage();
@@ -1392,14 +1478,73 @@ function updateHeader() {
   const dayNames = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
   const dayName = dayNames[now.getDay()];
   const formatted = now.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
-  qs('#header-date').textContent = dayName + '، ' + formatted;
+
+  // Greeting based on time of day
+  const hour = now.getHours();
+  const greeting = hour >= 12 ? 'مساء الخير يا' : 'صباح الخير يا';
+  const userName = currentUser ? (currentUser.name || currentUser.username || '').split(' ')[0] : '';
+  const greetingText = userName ? greeting + ' ' + userName : '';
+
+  qs('#header-date').textContent = (greetingText ? greetingText + ' • ' : '') + dayName + '، ' + formatted;
+
+  // Update user status on dashboard
+  renderUsersStatus();
+}
+
+// ===== Users Online Status System =====
+async function syncUsersStatus() {
+  try {
+    const res = await api('/auth/users-status');
+    if (res && res.online) {
+      onlineUsers = res.online; // {userId: {lastSeen, status}}
+      renderUsersStatus();
+    }
+  } catch (e) {
+    console.error('Failed to sync users status:', e);
+  }
+}
+
+function renderUsersStatus() {
+  const grid = qs('#users-status-grid');
+  if (!grid || !users || users.length === 0) return;
+
+  const onlineCount = users.filter(u => {
+    const status = onlineUsers[u._id];
+    return status && status.status === 'online';
+  }).length;
+
+  qs('#online-count').textContent = `(${onlineCount} متصل${onlineCount === 1 ? '' : 'ين'})`;
+
+  grid.innerHTML = users.map(u => {
+    const status = onlineUsers[u._id] || { status: 'offline', lastSeen: null };
+    const isOnline = status.status === 'online';
+    const isCurrentUser = currentUser && currentUser._id === u._id;
+    const avatar = u.avatar ? `<img src="${sanitizeUrl(u.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.style.display='none'">` : (u.name || u.username || '?').slice(0, 2);
+    const lastSeenText = !isOnline && status.lastSeen ? `• ${new Date(status.lastSeen).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}` : '';
+
+    return `
+      <div style="padding:12px;border:1px solid var(--border);border-radius:8px;text-align:center;background:${isCurrentUser ? 'var(--primary-pale)' : 'var(--surface2)'}">
+        <div style="position:relative;margin-bottom:8px">
+          <div style="width:50px;height:50px;margin:0 auto;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;overflow:hidden">
+            ${avatar}
+          </div>
+          <div style="position:absolute;bottom:0;right:0;width:14px;height:14px;border-radius:50%;background:${isOnline ? '#10b981' : '#9ca3af'};border:2px solid white"></div>
+        </div>
+        <div style="font-weight:600;font-size:.85rem;word-break:break-word;margin-bottom:4px">${esc(u.name || u.username)}</div>
+        <div style="font-size:.75rem;color:var(--muted)">
+          ${isOnline ? '<span style="color:#10b981;font-weight:600">🟢 متصل</span>' : `<span style="color:#9ca3af">⚪ غير متصل</span> ${lastSeenText}`}
+        </div>
+        ${isCurrentUser ? '<div style="margin-top:6px;font-size:.7rem;padding:2px 6px;background:var(--primary);color:white;border-radius:4px;display:inline-block">أنت</div>' : ''}
+      </div>
+    `;
+  }).join('');
 }
 
 function buildSidebar() {
   const sb = qs('#sidebar');
   const navLabel = (n) => currentLang === 'en' ? (n.labelEn || n.label) : n.label;
   const pendingExpCount = expenses.filter(e => e.status === 'معلق').length;
-  const pendingTxCount = transactions.filter(t => t.payStatus === 'معلق' && !t.cancelled).length;
+  const pendingTxCount = transactions.filter(t => isStatusPending(t.payStatus) && !t.cancelled).length;
   const pendingCmpCount = complaints.filter(c => c.status === 'معلق').length;
   const pendingCancelCount = transactions.filter(t => t.cancelRequest && t.cancelRequest.status === 'معلق').length;
   const totalApprovalsBadge = pendingExpCount + pendingCancelCount;
@@ -1495,12 +1640,12 @@ function buildNotifications() {
   }
   // Vault: exchange sales pending collection
   if (currentUser?.role === 'admin') {
-    const pendingCollect = (transactions || []).filter(t => t.type === 'مبيعات' && !t.cancelled && t.payStatus === 'معلق' && (t.remaining || 0) > 0 && /(-EXC)$/i.test(String(t.ref || '')));
+    const pendingCollect = (transactions || []).filter(t => t.type === 'مبيعات' && !t.cancelled && isStatusPending(t.payStatus) && (t.remaining || 0) > 0 && /(-EXC)$/i.test(String(t.ref || '')));
     pendingCollect.forEach(t => {
       notifs.push({ id: 'exc-collect-' + t._id, icon: '💰', type: 'info', title: `فرق استبدال بانتظار التحصيل`, desc: `${t.client} — متبقي ${fmtJ(t.remaining)} (فاتورة #${t.ref || '-'})`, page: 'movements', ts: t.createdAt || '' });
     });
     // Pending collection on regular sales
-    const pendingRegular = (transactions || []).filter(t => t.type === 'مبيعات' && !t.cancelled && t.payStatus === 'معلق' && (t.remaining || 0) > 0 && !/(-EXC)$/i.test(String(t.ref || '')));
+    const pendingRegular = (transactions || []).filter(t => t.type === 'مبيعات' && !t.cancelled && isStatusPending(t.payStatus) && (t.remaining || 0) > 0 && !/(-EXC)$/i.test(String(t.ref || '')));
     if (pendingRegular.length > 0) {
       const totalRemaining = pendingRegular.reduce((s, t) => s + (t.remaining || 0), 0);
       notifs.push({ id: 'sales-pending-all', icon: '⏳', type: 'info', title: `${pendingRegular.length} فاتورة بانتظار التحصيل`, desc: `إجمالي المتبقي: ${fmtJ(totalRemaining)}`, page: 'movements' });
@@ -1712,7 +1857,7 @@ function isMovPlainReturn(tx) {
   return tx.type === 'مرتجع' && !isMovExchangeReturn(tx);
 }
 function isExchangeSalePendingCollect(tx) {
-  if (!tx || tx.cancelled || tx.payStatus === 'ملغي') return false;
+  if (!tx || tx.cancelled || isStatusCancelled(tx.payStatus)) return false;
   return tx.type === 'مبيعات' && /-EXC$/i.test(String(tx.ref || '')) && tx.payStatus === 'معلق' && (tx.remaining || 0) > 0;
 }
 function exchangeSalePaidDisplayAmount(tx) {
@@ -1775,7 +1920,12 @@ function movementKindBadgeCompact(tx) {
 
 function statusBadge(status, tx) {
   if (!status) return '-';
-  if (status === 'مكتمل') return '<span class="badge badge-green">مكتمل</span>';
+  // Custom vault operation statuses
+  if (status === 'تم تجميد الحركة في الخزنة') return '<span class="badge badge-blue">❄️ تم تجميد الحركة في الخزنة</span>';
+  if (status === 'تم رفض المعاملة من الخزنة') return '<span class="badge badge-red">🚫 تم رفض المعاملة من الخزنة</span>';
+
+  // Standard statuses
+  if (status === 'مكتمل' || status === 'مكتملة') return '<span class="badge badge-green">✓ مكتملة</span>';
   if (status === 'ملغي') return '<span class="badge badge-red">ملغي</span>';
   if (status === 'معلق') {
     if (tx && tx.type === 'مشتريات') {
@@ -1787,6 +1937,25 @@ function statusBadge(status, tx) {
   }
   return `<span class="badge">${esc(status)}</span>`;
 }
+
+// ===== Status Helper Functions =====
+function isStatusPending(status) {
+  return status === 'معلق';
+}
+function isStatusCompleted(status) {
+  return status === 'مكتمل' || status === 'مكتملة';
+}
+function isStatusCancelled(status) {
+  return status === 'ملغي' || status === 'تم رفض المعاملة من الخزنة';
+}
+function isStatusFrozen(status) {
+  return status === 'تم تجميد الحركة في الخزنة';
+}
+function isStatusNotCollectable(status) {
+  // Transaction cannot be collected if it's cancelled, frozen, or rejected
+  return isStatusCancelled(status) || isStatusFrozen(status) || status === 'تم رفض المعاملة من الخزنة';
+}
+
 /** حالة صف سجل الحركات — فرق استبدال للشركة تُعرض دائماً كمعلق بوضوح */
 function movementStatusCell(tx) {
   if (isExchangeSalePendingCollect(tx)) {
@@ -1801,9 +1970,9 @@ function movementStatusCell(tx) {
 
 /* Transaction Page */
 function initTxPage() {
-  txItems = [{ productId: '', qty: 1, price: 0 }]; txDiscount = 0; txDiscountType = 'fixed';
+  txItems = [{ productId: '', qty: 1, price: 0 }]; txDiscount = 0; txDiscountType = 'fixed'; txComments = [];
   resetReturnExchangeToggle();
-  renderTxFields(); renderTxItems(); calcTxSummary();
+  renderTxFields(); renderTxItems(); calcTxSummary(); renderTxComments();
 }
 
 function setTxType(type, opts) {
@@ -2273,7 +2442,7 @@ function hasReturnOrExchangeForInvoice(txId) {
   return (returnRequests || []).some(r => String(r.originalTransactionId) === id && (r.status === 'معلق' || r.status === 'معتمد'));
 }
 function isSaleEligibleForReturnShortcut(tx) {
-  if (!tx || tx.type !== 'مبيعات' || tx.cancelled || tx.payStatus === 'ملغي') return false;
+  if (!tx || tx.type !== 'مبيعات' || tx.cancelled || isStatusCancelled(tx.payStatus)) return false;
   // Cannot request return/exchange for a pending (not fully paid) transaction
   if (tx.payStatus === 'معلق' || (tx.remaining || 0) > 0) return false;
   if (!(tx.client || '').trim()) return false;
@@ -2527,6 +2696,60 @@ function validateTx() {
   return valid;
 }
 
+// ===== Transaction Comments System =====
+function addTxComment() {
+  const text = qs('#tx-comment-text').value.trim();
+  const type = qs('#tx-comment-type').value;
+
+  if (!text) { toast('أدخل نص التعليق', true); return; }
+
+  const comment = {
+    id: Date.now(), // Unique ID
+    text,
+    type,
+    employee: currentUser ? (currentUser.name || currentUser.username) : 'مجهول',
+    timestamp: new Date().toISOString(),
+    createdAt: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true })
+  };
+
+  txComments.push(comment);
+  qs('#tx-comment-text').value = '';
+  renderTxComments();
+}
+
+function removeTxComment(commentId) {
+  txComments = txComments.filter(c => c.id !== commentId);
+  renderTxComments();
+}
+
+function renderTxComments() {
+  const container = qs('#tx-comments-list');
+  if (!container) return;
+
+  if (txComments.length === 0) {
+    container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--muted);font-size:.85rem">لا توجد تعليقات</div>';
+    return;
+  }
+
+  const typeIcons = { 'عام': '📝', 'تنبيه': '⚠️', 'ملاحظة': '📌', 'أسئلة': '❓' };
+  const typeColors = { 'عام': '#6b7280', 'تنبيه': '#ef4444', 'ملاحظة': '#3b82f6', 'أسئلة': '#f59e0b' };
+
+  container.innerHTML = txComments.map(c => `
+    <div style="padding:10px 12px;border-bottom:1px solid var(--border);position:relative">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
+          <span style="font-size:1rem">${typeIcons[c.type] || '💬'}</span>
+          <strong style="color:var(--primary);font-size:.85rem">${esc(c.employee)}</strong>
+          <span style="color:var(--muted);font-size:.75rem">${c.createdAt}</span>
+        </div>
+        <button class="btn-icon" onclick="removeTxComment(${c.id})" style="flex-shrink:0;color:var(--red);font-size:.8rem;opacity:.6;padding:0;border:none;background:none;cursor:pointer">✕</button>
+      </div>
+      <div style="margin-left:24px;color:var(--text);font-size:.85rem;line-height:1.4;word-break:break-word">${esc(c.text)}</div>
+      <div style="margin-left:24px;margin-top:4px;display:inline-block;padding:2px 8px;background:rgba(${typeColors[c.type] === '#ef4444' ? '239,68,68' : typeColors[c.type] === '#3b82f6' ? '59,130,246' : '245,158,11'},0.1);border-radius:4px;font-size:.7rem;color:${typeColors[c.type] || '#6b7280'};font-weight:600">${c.type}</div>
+    </div>
+  `).join('');
+}
+
 async function saveTx() {
   if (txType === 'مرتجع') { await saveReturnRequest(); return; }
   const validItems = txItems.filter(it => it.productId);
@@ -2544,7 +2767,8 @@ async function saveTx() {
   const body = { date: new Date().toISOString(), type: txType, items, itemsTotal, discount, total,
     client: qs('#tx-client')?.value || '', phone: qs('#tx-phone')?.value || '',
     ref: (qs('#tx-ref')?.value || '').trim(), notes: qs('#tx-notes')?.value || '',
-    employee: currentUser?.name || currentUser?.username || '' };
+    employee: currentUser?.name || currentUser?.username || '',
+    comments: txComments.length > 0 ? txComments : [] };
   if (txType === 'مبيعات') {
     Object.assign(body, { shipCo: qs('#tx-shipco')?.value || '', shipZone: txShipZone, shipCost, deposit,
       remaining: total - deposit, depMethod: qs('#tx-dep-method')?.value || '',
@@ -2805,12 +3029,34 @@ function renderMovementReturnRequestRow(r) {
     </td>
   </tr>`;
 }
+function getVaultEntryStatusBadge(txId) {
+  // ابحث عن معاملات الخزنة المرتبطة بهذه الحركة
+  if (!Array.isArray(vaultLog)) return '';
+  const vaultEntries = vaultLog.filter(v => v.ref && v.ref.includes(txId));
+  if (!vaultEntries.length) return '';
+
+  // إذا كانت أي معاملة مجمدة، عرض badge
+  const frozenEntry = vaultEntries.find(v => v.status === 'frozen');
+  if (frozenEntry) {
+    return `<div class="text-xs" style="margin-top:4px;padding:3px 8px;background:#ef444420;color:#ef4444;border-radius:4px;font-weight:600">❄️ معاملة خزنة مجمدة</div>`;
+  }
+
+  // إذا كانت بانتظار الموافقة
+  const pendingEntry = vaultEntries.find(v => v.status === 'pending');
+  if (pendingEntry) {
+    return `<div class="text-xs" style="margin-top:4px;padding:3px 8px;background:#f59e0b20;color:#f59e0b;border-radius:4px;font-weight:600">⏳ معاملة خزنة معلقة</div>`;
+  }
+
+  return '';
+}
+
 function renderMovementTxRow(tx) {
   const vaultHint = (tx.type === 'مرتجع' && String(tx.depMethod || '').trim())
     ? `<div class="text-xs text-muted" style="margin-top:4px">🏦 خصم من: <strong>${esc(tx.depMethod)}</strong></div>`
     : '';
-  const isCompleted = tx.payStatus === 'مكتمل' && !tx.cancelled;
-  const isCancelledOrLocked = tx.cancelled || tx.payStatus === 'ملغي';
+  const vaultStatusBadge = getVaultEntryStatusBadge(tx._id);
+  const isCompleted = isStatusCompleted(tx.payStatus) && !tx.cancelled;
+  const isCancelledOrLocked = tx.cancelled || isStatusCancelled(tx.payStatus);
   const editLocked = isExchangeSalePendingCollect(tx) || isCompleted || isCancelledOrLocked;
   const editItem = editLocked
     ? `<div class="dd-item" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation()">✏️ تعديل <span class="text-xs">(${isExchangeSalePendingCollect(tx) ? 'مقفول' : isCancelledOrLocked ? 'ملغي' : 'مكتمل'})</span></div>`
@@ -2818,12 +3064,14 @@ function renderMovementTxRow(tx) {
   // Full timestamp display
   const createdAt = tx.createdAt || tx.date;
   const dateCell = `<div style="font-size:.82rem;font-weight:600">${fmtDate(tx.date)}</div><div class="text-xs text-muted" style="margin-top:2px">${fmtDateTime(createdAt)}</div>`;
-  return `<tr>
+  const rowStyle = isCancelledOrLocked ? 'style="opacity:0.6;text-decoration:line-through"' : '';
+  return `<tr ${rowStyle}>
     <td><input type="checkbox" class="checkbox" value="${esc(tx._id)}" ${selectedMovIds.has(tx._id) ? 'checked' : ''} onchange="toggleMovCheck('${esc(tx._id)}',this.checked)"></td>
     <td>${dateCell}</td>
-    <td>${movementKindBadge(tx)}${vaultHint}</td>
+    <td>${movementKindBadge(tx)}${vaultStatusBadge}${vaultHint}</td>
     <td>
       <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" style="color:var(--primary);font-weight:600;text-decoration:none;cursor:pointer">${tx.client ? esc(tx.client) : '<span style="color:var(--muted);font-weight:400">بدون اسم</span>'}</a>
+      ${(tx.comments && tx.comments.length) ? `<span class="badge-edited" title="يحتوي على ${tx.comments.length} تعليق" onclick="event.stopPropagation();showInvoiceDetail('${esc(tx._id)}')" style="background:rgba(59,130,246,.15);color:#3b82f6;cursor:pointer">💬 ${tx.comments.length}</span>` : ''}
       ${(tx.editHistory && tx.editHistory.length) ? '<span class="badge-edited" title="تم التعديل" onclick="event.stopPropagation();showInvoiceDetail(\''+esc(tx._id)+'\')">✎ معدّل</span>' : ''}
     </td>
     <td>${movementRefCell(tx)}</td>
@@ -2842,7 +3090,7 @@ function renderMovementTxRow(tx) {
           <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')">🖨️ طباعة / PDF</div>
           ${(tx.remaining || 0) > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')">${isExchangeSalePendingCollect(tx) ? '💰 تحصيل فرق الاستبدال' : tx.type === 'مشتريات' ? '💸 سداد المتبقي للمورد' : '💰 تحصيل'}</div>` : ''}
           ${tx.type === 'مبيعات' && !tx.cancelled && isAdmin() ? `<div class="dd-item" onclick="openPostDiscountModal('${esc(tx._id)}')">💲 خصم بعد البيع</div>` : ''}
-          ${tx.payStatus !== 'ملغي' && !tx.cancelled && tx.payStatus !== 'مكتمل' ? (
+          ${!isStatusCancelled(tx.payStatus) && !tx.cancelled && !isStatusCompleted(tx.payStatus) ? (
             isExchangeSalePendingCollect(tx)
               ? `<div class="dd-divider"></div><div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🚫 إلغاء <span class="text-xs">(مقفول)</span></div>`
               : tx.cancelRequest && tx.cancelRequest.status === 'معلق'
@@ -2884,7 +3132,7 @@ function renderMovements() {
   const totalRevenue = allTx.filter(t => t.type === 'مبيعات').reduce((s, t) => s + (t.total || 0), 0);
   const totalPurchases = allTx.filter(t => t.type === 'مشتريات').reduce((s, t) => s + (t.total || 0), 0);
   const totalRemaining = allTx.reduce((s, t) => s + (t.remaining || 0), 0);
-  const pendingCount = allTx.filter(t => t.payStatus === 'معلق').length;
+  const pendingCount = allTx.filter(t => isStatusPending(t.payStatus)).length;
   const completedCount = allTx.filter(t => t.payStatus === 'مكتمل').length;
   const cancelledCount = allTx.filter(t => t.cancelled || t.payStatus === 'ملغي').length;
 
@@ -2937,10 +3185,11 @@ let editTxItems = [];
 let editTxId = '';
 function openEditMovement(id) {
   const tx = transactions.find(t => t._id === id); if (!tx) return;
-  if (tx.cancelled || tx.payStatus === 'ملغي') { toast('لا يمكن تعديل حركة ملغاة', true); return; }
+  if (tx.cancelled || isStatusCancelled(tx.payStatus)) { toast('لا يمكن تعديل حركة ملغاة', true); return; }
   if (isExchangeSalePendingCollect(tx)) { toastExchangePendingLocked(); return; }
   editTxId = id;
   editTxItems = (tx.items || []).map(it => ({ name: it.name || '', code: it.code || '', qty: it.qty || 1, price: it.price || 0, productId: it.productId || '' }));
+  txComments = (tx.comments || []).slice(); // Load existing comments
   const shipCoOpts = getShipCompanyOptions();
   const isSale = tx.type === 'مبيعات';
   const isPurchase = tx.type === 'مشتريات';
@@ -3144,7 +3393,7 @@ function openCancelMovement(id) {
   if (isExchangeSalePendingCollect(tx)) { toastExchangePendingLocked(); return; }
 
   // Completed transactions cannot be cancelled
-  if (tx.payStatus === 'مكتمل') {
+  if (isStatusCompleted(tx.payStatus)) {
     toast('لا يمكن إلغاء حركة مكتملة — يمكن فقط إلغاء الحركات المعلقة', true);
     return;
   }
@@ -3318,26 +3567,29 @@ async function doCollectMovement(id) {
       // للتحصيل (مبيعات)، المبلغ = المتبقي
       amountToDeduct = tx.remaining || 0;
     }
-    
-    // ===== التحقق الحاسم: الرصيد كافٍ في الحساب ؟ =====
-    const currentBalance = getVaultBalance(collectMethod);
-    if (amountToDeduct > currentBalance) {
-      const shortage = amountToDeduct - currentBalance;
-      const failMsg = `الرصيد غير كافي في "${collectMethod}": الرصيد الحالي ${fmtJ(currentBalance)}, لكن تحتاج ${fmtJ(amountToDeduct)} (نقص ${fmtJ(shortage)})`;
-      toast(failMsg, true);
-      
-      // ===== تسجيل محاولة فاشلة =====
-      logFailedPaymentAttempt('insufficient_balance', {
-        txId: id,
-        txType: tx.type,
-        txRef: tx.ref,
-        client: tx.client,
-        amount: amountToDeduct,
-        vault: collectMethod,
-        currentBalance: currentBalance,
-        shortage: shortage
-      });
-      return;
+
+    // ===== فحص الرصيد: فقط للمشتريات (سداد للمورد) =====
+    // للمبيعات (تحصيل)، المبلغ يدخل الخزنة، لا نحتاج رصيد كافي
+    if (isPurchase) {
+      const currentBalance = getVaultBalance(collectMethod);
+      if (amountToDeduct > currentBalance) {
+        const shortage = amountToDeduct - currentBalance;
+        const failMsg = `الرصيد غير كافي في "${collectMethod}": الرصيد الحالي ${fmtJ(currentBalance)}, لكن تحتاج ${fmtJ(amountToDeduct)} (نقص ${fmtJ(shortage)})`;
+        toast(failMsg, true);
+
+        // ===== تسجيل محاولة فاشلة =====
+        logFailedPaymentAttempt('insufficient_balance', {
+          txId: id,
+          txType: tx.type,
+          txRef: tx.ref,
+          client: tx.client,
+          amount: amountToDeduct,
+          vault: collectMethod,
+          currentBalance: currentBalance,
+          shortage: shortage
+        });
+        return;
+      }
     }
     
     // ===== منع الضغط المزدوج =====
@@ -3475,7 +3727,7 @@ async function doApplyPostDiscount(txId) {
 async function archiveMovement(id) {
   const tx = transactions.find(t => t._id === id);
   if (tx && isExchangeSalePendingCollect(tx)) { toastExchangePendingLocked(); return; }
-  if (tx && (tx.cancelled || tx.payStatus === 'ملغي')) { toast('لا يمكن تجميد حركة ملغاة', true); return; }
+  if (tx && (tx.cancelled || isStatusCancelled(tx.payStatus))) { toast('لا يمكن تجميد حركة ملغاة', true); return; }
   if (!confirm('سيتم تجميد هذه الحركة. لن تؤثر على المخزون أو الخزنة ويمكن فك التجميد لاحقاً.\nهل تريد المتابعة؟')) return;
   try {
     await api('/transactions/' + id, { method: 'DELETE' });
@@ -3637,7 +3889,7 @@ function buildInvoiceHtml(tx) {
       <td style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e8e4;font-weight:700;color:#00311e">${fmtJ(it.total)}</td>
     </tr>`).join('');
   const purStatusLabel = isPur ? ((tx.remaining || 0) > 0 ? 'مديون للمورد' : 'مكتمل') : tx.payStatus;
-  const payStatusColor = (tx.payStatus === 'مكتمل' || (isPur && (tx.remaining || 0) <= 0)) ? '#16a34a' : tx.payStatus === 'ملغي' ? '#dc2626' : '#dc2626';
+  const payStatusColor = (isStatusCompleted(tx.payStatus) || (isPur && (tx.remaining || 0) <= 0)) ? '#16a34a' : isStatusCancelled(tx.payStatus) ? '#dc2626' : '#dc2626';
   const paid = isPur ? ((tx.total || 0) - (tx.remaining || 0)) : exchangeSalePaidDisplayAmount(tx);
   return `<div class="invoice-page" style="page-break-after:always;font-family:'Cairo',sans-serif;padding:32px;max-width:720px;margin:0 auto;direction:rtl;background:#fff;border:1px solid #e2e8e4;border-radius:12px">
     <!-- Header -->
@@ -3742,6 +3994,50 @@ function diffItems(oldItems, newItems) {
   });
   return details;
 }
+function buildCommentsSection(tx) {
+  const typeIcons = { 'عام': '📝', 'تنبيه': '⚠️', 'ملاحظة': '📌', 'أسئلة': '❓' };
+  const typeColors = { 'عام': '#6b7280', 'تنبيه': '#ef4444', 'ملاحظة': '#3b82f6', 'أسئلة': '#f59e0b' };
+
+  const commentsHtml = (tx.comments || []).map(c => `
+    <div style="padding:10px;border-bottom:1px solid var(--border);background:var(--surface2)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
+          <span style="font-size:.9rem">${typeIcons[c.type] || '💬'}</span>
+          <strong style="color:var(--primary);font-size:.85rem">${esc(c.employee || '؟')}</strong>
+          <span style="color:var(--muted);font-size:.75rem">${c.createdAt || 'بدون وقت'}</span>
+        </div>
+        <span style="display:inline-block;padding:2px 8px;background:rgba(${typeColors[c.type] === '#ef4444' ? '239,68,68' : typeColors[c.type] === '#3b82f6' ? '59,130,246' : '245,158,11'},0.1);border-radius:4px;font-size:.7rem;color:${typeColors[c.type] || '#6b7280'};font-weight:600;flex-shrink:0">${c.type}</span>
+      </div>
+      <div style="color:var(--text);font-size:.85rem;line-height:1.4;word-break:break-word;margin-left:24px">${esc(c.text)}</div>
+    </div>
+  `).join('');
+
+  return `
+    <div style="margin-top:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <div style="padding:10px 12px;background:var(--primary);color:white;font-weight:600;font-size:.9rem">💬 التعليقات (${(tx.comments || []).length})</div>
+
+      <!-- Add Comment Form -->
+      <div style="padding:12px;border-bottom:1px solid var(--border);background:var(--surface1)">
+        <div style="display:grid;grid-template-columns:1fr 100px;gap:8px;margin-bottom:8px">
+          <input type="text" id="inv-comment-text-${esc(tx._id)}" placeholder="أضف تعليق جديد..." style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+          <select id="inv-comment-type-${esc(tx._id)}" style="padding:8px 8px;border:1px solid var(--border);border-radius:6px;font-size:.8rem">
+            <option value="عام">📝 عام</option>
+            <option value="تنبيه">⚠️ تنبيه</option>
+            <option value="ملاحظة">📌 ملاحظة</option>
+            <option value="أسئلة">❓ أسئلة</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="addInvoiceComment('${esc(tx._id)}')" style="width:100%">إضافة تعليق</button>
+      </div>
+
+      <!-- Comments List -->
+      <div style="max-height:300px;overflow-y:auto">
+        ${commentsHtml || '<div style="padding:12px;text-align:center;color:var(--muted);font-size:.85rem">لا توجد تعليقات بعد</div>'}
+      </div>
+    </div>
+  `;
+}
+
 function buildEditHistorySection(tx) {
   if (!tx.editHistory || !tx.editHistory.length) return '';
   const history = tx.editHistory;
@@ -3804,10 +4100,10 @@ function showInvoiceDetail(id) {
   const tx = transactions.find(t => t._id === id);
   if (!tx) return;
   const isPurchase = tx.type === 'مشتريات';
-  const statusClass = tx.cancelled || tx.payStatus === 'ملغي' ? 'cancelled' : tx.payStatus === 'مكتمل' ? 'paid' : 'pending';
-  let statusText = tx.cancelled || tx.payStatus === 'ملغي'
+  const statusClass = tx.cancelled || isStatusCancelled(tx.payStatus) ? 'cancelled' : isStatusCompleted(tx.payStatus) ? 'paid' : 'pending';
+  let statusText = tx.cancelled || isStatusCancelled(tx.payStatus)
     ? '🚫 ملغي'
-    : tx.payStatus === 'مكتمل'
+    : isStatusCompleted(tx.payStatus)
       ? '✅ مكتمل — تم السداد بالكامل'
       : isPurchase
         ? `⚠️ مديون للمورد — المتبقي: ${fmtJ(tx.remaining || 0)}`
@@ -3858,6 +4154,7 @@ function showInvoiceDetail(id) {
       </div>
       ${tx.notes ? `<div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:8px;font-size:.8rem"><strong>ملاحظات:</strong> ${esc(tx.notes)}</div>` : ''}
       ${tx.cancelReason ? `<div style="margin-top:8px;padding:10px;background:rgba(220,38,38,.06);border-radius:8px;font-size:.8rem;color:var(--red)"><strong>سبب الإلغاء:</strong> ${esc(tx.cancelReason)}</div>` : ''}
+      ${buildCommentsSection(tx)}
       ${buildEditHistorySection(tx)}
     </div>
     <div class="inv-footer" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
@@ -3869,6 +4166,47 @@ function showInvoiceDetail(id) {
   qs('#inv-detail-content').innerHTML = html;
   qs('#inv-detail-overlay').classList.add('active');
 }
+async function addInvoiceComment(txId) {
+  const textInput = qs(`#inv-comment-text-${txId}`);
+  const typeSelect = qs(`#inv-comment-type-${txId}`);
+  const text = textInput?.value?.trim();
+  const type = typeSelect?.value || 'عام';
+
+  if (!text) { toast('أدخل نص التعليق', true); return; }
+
+  const newComment = {
+    id: Date.now(),
+    text,
+    type,
+    employee: currentUser ? (currentUser.name || currentUser.username) : 'مجهول',
+    timestamp: new Date().toISOString(),
+    createdAt: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true })
+  };
+
+  try {
+    const tx = transactions.find(t => t._id === txId);
+    if (!tx) { toast('خطأ: لم يتم العثور على الحركة', true); return; }
+
+    // Add comment to transaction (locally)
+    if (!tx.comments) tx.comments = [];
+    tx.comments.push(newComment);
+
+    // Update transaction on server - COMMENTS ONLY (لا تحسب كتعديل)
+    await api(`/transactions/${txId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ comments: tx.comments })
+    });
+
+    toast('✅ تم إضافة التعليق بنجاح');
+    textInput.value = '';
+
+    // Refresh invoice detail without updating edit history
+    showInvoiceDetail(txId);
+  } catch (e) {
+    toast('❌ خطأ: ' + e.message, true);
+  }
+}
+
 function closeInvoiceDetail() {
   qs('#inv-detail-overlay').classList.remove('active');
 }
@@ -4069,7 +4407,12 @@ function openClientProfile(name) {
       <div class="stat-card card"><div class="stat-val text-red">${fmtJ(remaining)}</div><div class="stat-label">المتبقي</div></div>
     </div>
     <div class="overflow-x"><table><thead><tr><th>التاريخ</th><th>النوع</th><th>المرجع</th><th>الإجمالي</th><th>المتبقي</th><th>الحالة</th></tr></thead><tbody>
-    ${txs.map(t => `<tr><td>${fmtDate(t.date)}</td><td>${typeBadge(t.type)}</td><td>${esc(t.ref || '-')}</td><td>${fmtJ(t.total)}</td><td>${fmtJ(t.remaining)}</td><td>${statusBadge(t.payStatus)}</td></tr>`).join('')}
+    ${txs.map(t => {
+      const isCancelled = isStatusCancelled(t.payStatus) || t.cancelled;
+      const rowStyle = isCancelled ? 'style="opacity:0.6;text-decoration:line-through"' : '';
+      const commentBadge = (t.comments && t.comments.length) ? `<span style="display:inline-block;margin-right:4px;padding:2px 6px;background:rgba(59,130,246,.15);color:#3b82f6;border-radius:4px;font-size:.7rem;font-weight:600;cursor:pointer" title="${t.comments.length} تعليق" onclick="event.stopPropagation()">💬 ${t.comments.length}</span>` : '';
+      return `<tr ${rowStyle}><td>${fmtDate(t.date)}</td><td>${typeBadge(t.type)}</td><td>${esc(t.ref || '-')}</td><td>${fmtJ(t.total)}</td><td>${fmtJ(t.remaining)}</td><td>${commentBadge}${statusBadge(t.payStatus)}</td></tr>`;
+    }).join('')}
     </tbody></table></div>`, 'max-width:700px');
 }
 
@@ -4219,7 +4562,7 @@ function renderSuppliers() {
     const totalPurchased = activeTxs.reduce((sum, t) => sum + (t.total || 0), 0);
     const totalPaid = getSupplierTotalPaid(txs);
     const totalRemaining = activeTxs.reduce((sum, t) => sum + (t.remaining || 0), 0);
-    const pendingCount = activeTxs.filter(t => t.payStatus === 'معلق' && (t.remaining || 0) > 0).length;
+    const pendingCount = activeTxs.filter(t => isStatusPending(t.payStatus) && (t.remaining || 0) > 0).length;
     return `
     <div class="supplier-card">
       <h4>${esc(s.name)}</h4>
@@ -4248,10 +4591,11 @@ function openSupplierInvoices(supplierName) {
   const totalRemaining = activeTxs.reduce((s, t) => s + (t.remaining || 0), 0);
   const debtCount = activeTxs.filter(t => (t.remaining || 0) > 0).length;
   const rows = txs.length ? txs.map(t => {
-    const txPaid = t.cancelled ? 0 : ((t.total || 0) - (t.remaining || 0));
-    const statusColor = t.cancelled ? '#ef4444' : t.payStatus === 'مكتمل' ? '#22c55e' : '#ef4444';
-    const statusLabel = t.cancelled ? 'ملغي' : (t.remaining || 0) > 0 ? 'مديون' : 'مكتمل';
-    return `<tr style="${t.cancelled ? 'opacity:.6;text-decoration:line-through' : ''}">
+    const isCancelledOrRejected = t.cancelled || isStatusCancelled(t.payStatus);
+    const txPaid = isCancelledOrRejected ? 0 : ((t.total || 0) - (t.remaining || 0));
+    const statusColor = isCancelledOrRejected ? '#ef4444' : isStatusCompleted(t.payStatus) ? '#22c55e' : '#ef4444';
+    const statusLabel = isCancelledOrRejected ? 'ملغي' : (t.remaining || 0) > 0 ? 'مديون' : 'مكتمل';
+    return `<tr style="${isCancelledOrRejected ? 'opacity:.6;text-decoration:line-through' : ''}">
       <td>${esc(t.date ? t.date.slice(0,10) : '-')}</td>
       <td><strong>#${esc(t.ref || '-')}</strong></td>
       <td>${fmtJ(t.total)}</td>
@@ -4260,7 +4604,7 @@ function openSupplierInvoices(supplierName) {
       <td><span style="color:${statusColor};font-weight:600;font-size:.75rem">${esc(statusLabel)}</span></td>
       <td>
         <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:.72rem" onclick="closeModal();showInvoiceDetail('${esc(t._id)}')">عرض</button>
-        ${!t.cancelled && (t.remaining || 0) > 0 ? `<button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:.72rem;margin-right:4px" onclick="closeModal();openCollectMovement('${esc(t._id)}')">💸 سداد</button>` : ''}
+        ${!isCancelledOrRejected && (t.remaining || 0) > 0 ? `<button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:.72rem;margin-right:4px" onclick="closeModal();openCollectMovement('${esc(t._id)}')">💸 سداد</button>` : ''}
       </td>
     </tr>`;
   }).join('') : `<tr><td colspan="7" class="empty-state">لا توجد فواتير لهذا المورد</td></tr>`;
@@ -5380,15 +5724,26 @@ function formatVaultAmountCellHtml(v) {
 }
 function renderVaultTable() {
   let data = Array.isArray(vaultLog) ? vaultLog : [];
-  // Search filter
   const vaultSearch = (qs('#vault-log-search')?.value || '').trim().toLowerCase();
+  const statusFilter = qs('#vault-status-filter')?.value || '';
+
   if (vaultSearch) {
     data = data.filter(v => {
-      const blob = [(v.desc || ''), (v.ref || ''), (v.source || ''), (v.method || ''), (v.txNo || ''), (v.employee || '')].join(' ').toLowerCase();
+      const blob = [(v.desc || ''), (v.ref || ''), (v.source || ''), (v.method || ''), (v.txNo || ''), (v.employee || ''), (v.customer || ''), (v.supplier || '')].join(' ').toLowerCase();
       return blob.includes(vaultSearch);
     });
   }
+  if (statusFilter) {
+    data = data.filter(v => v.status === statusFilter);
+  }
+
   const segLabel = (s) => ({cash:'كاش',vodafone:'فودافون كاش',instapay:'Instapay',bank:'تحويل بنكي'}[s] || s || '-');
+  const statusBadge = (s) => {
+    const colors = { completed: '#10b981', pending: '#f59e0b', frozen: '#ef4444', cancelled: '#6b7280' };
+    const labels = { completed: 'مكتملة', pending: 'قيد الانتظار', frozen: 'مجمدة', cancelled: 'ملغاة' };
+    const c = colors[s] || '#999';
+    return `<span style="display:inline-block;padding:3px 8px;border-radius:4px;font-size:.7rem;font-weight:600;background:${c}20;color:${c}">${labels[s] || s}</span>`;
+  };
   const srcBadge = (s) => {
     if (!s) return '<span style="color:var(--muted)">-</span>';
     const colors = {'ديبوزت مبيعات':'#10b981','تحصيل':'#0066cc','مشتريات':'#f59e0b','مرتجع':'#ef4444','رد مرتجع':'#ef4444','إلغاء':'#ef4444','مصروف':'#ef4444','يدوي':'#999'};
@@ -5397,13 +5752,15 @@ function renderVaultTable() {
     const styleStr = 'display:inline-block;padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:600;background:' + bgColor + ';color:' + c;
     return '<span style="' + styleStr + '">' + esc(s) + '</span>';
   };
+
   const VAULT_PAGE_SIZE = 50;
   const total = data.length;
   if (vaultPage > Math.ceil(total / VAULT_PAGE_SIZE)) vaultPage = 1;
   const start = (vaultPage - 1) * VAULT_PAGE_SIZE;
   const pageData = data.slice(start, start + VAULT_PAGE_SIZE);
+
   qs('#vault-table tbody').innerHTML = pageData.length ? pageData.map(v => `
-    <tr>
+    <tr style="cursor:pointer" onclick="openVaultTransactionDetail('${v._id}')">
       <td style="font-size:.75rem;color:var(--muted)">${v.txNo ? `<span style="font-size:.68rem;font-weight:600;color:var(--primary);direction:ltr">${esc(v.txNo)}</span>` : '-'}</td>
       <td>${fmtDate(v.date || v.createdAt)}</td>
       <td style="font-size:.75rem;color:var(--muted);white-space:nowrap">${v.createdAt ? fmtDateTime(v.createdAt) : '-'}</td>
@@ -5411,11 +5768,133 @@ function renderVaultTable() {
       <td style="font-weight:700;color:var(--primary)">${fmtJ(v.balance || 0)}</td>
       <td>${srcBadge(v.source)}</td>
       <td style="font-weight:600;direction:ltr">${v.ref ? '#' + esc(v.ref) : '-'}</td>
-      <td>${esc(segLabel(v.seg))}</td><td>${esc(v.method || '-')}</td>
+      <td>${esc(segLabel(v.seg))}</td>
+      <td>${statusBadge(v.status || 'completed')}</td>
+      <td>${esc(v.method || '-')}</td>
       <td style="font-size:.78rem;color:var(--muted)">${esc(v.employee || '-')}</td>
       <td>${esc(v.desc || '-')}</td>
-    </tr>`).join('') : '<tr><td colspan="11" class="empty-state">لا توجد سجلات</td></tr>';
+    </tr>`).join('') : '<tr><td colspan="12" class="empty-state">لا توجد سجلات</td></tr>';
   renderPagination('vault-pagination', total, vaultPage, VAULT_PAGE_SIZE, 'setVaultPage');
+}
+
+function openVaultTransactionDetail(txId) {
+  const tx = (Array.isArray(vaultLog) ? vaultLog : []).find(t => t._id === txId);
+  if (!tx) { toast('المعاملة غير موجودة', true); return; }
+
+  const statusColors = { completed: '#10b981', pending: '#f59e0b', frozen: '#ef4444', cancelled: '#6b7280' };
+  const statusLabels = { completed: 'مكتملة', pending: 'قيد الانتظار', frozen: 'مجمدة', cancelled: 'ملغاة' };
+
+  const statusHtml = `<span style="display:inline-block;padding:4px 12px;border-radius:6px;font-weight:600;background:${statusColors[tx.status] || '#999'}20;color:${statusColors[tx.status] || '#999'}">${statusLabels[tx.status] || tx.status}</span>`;
+
+  let editHistoryHtml = '';
+  if (tx.editHistory && Array.isArray(tx.editHistory) && tx.editHistory.length > 0) {
+    editHistoryHtml = `<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <h4 style="margin-bottom:8px;font-size:.9rem">سجل التعديلات:</h4>
+      ${tx.editHistory.map((edit, i) => `
+        <div style="font-size:.78rem;margin-bottom:8px;padding:8px;background:var(--surface2);border-radius:4px">
+          <strong>${edit.editor}</strong> — ${fmtDateTime(edit.editedAt)}<br>
+          ${Object.entries(edit.changes || {}).map(([field, change]) => `<span style="color:var(--muted)">تم تغيير ${field}: من ${JSON.stringify(change.oldValue)} إلى ${JSON.stringify(change.newValue)}</span><br>`).join('')}
+        </div>
+      `).join('')}
+    </div>`;
+  }
+
+  let actions = '';
+  if (tx.status === 'completed') {
+    actions = `
+    <button class="btn btn-sm btn-outline" onclick="freezeVaultTransaction('${txId}')">❄️ تجميد</button>
+    <button class="btn btn-sm btn-outline" onclick="cancelVaultTransaction('${txId}')">🗑️ إلغاء</button>
+  `;
+  } else if (tx.status === 'frozen') {
+    actions = `
+    <button class="btn btn-sm btn-primary" onclick="unfreezeVaultTransaction('${txId}')">🔓 تحرير</button>
+    <button class="btn btn-sm btn-outline" onclick="cancelVaultTransaction('${txId}')">🗑️ إلغاء</button>
+  `;
+  }
+
+  openModal(`<h3 style="margin-bottom:12px">تفاصيل المعاملة #${esc(tx.txNo || '—')}</h3>
+    <div style="margin-bottom:12px">${statusHtml}</div>
+    <div class="grid grid-2 gap-12 mb-16">
+      <div><label style="color:var(--muted);font-size:.85rem">التاريخ:</label><strong>${fmtDate(tx.date || tx.createdAt)}</strong></div>
+      <div><label style="color:var(--muted);font-size:.85rem">التوقيت:</label><strong>${fmtDateTime(tx.createdAt)}</strong></div>
+      <div><label style="color:var(--muted);font-size:.85rem">القسم:</label><strong>${({cash:'كاش',vodafone:'فودافون كاش',instapay:'Instapay',bank:'تحويل بنكي'})[tx.seg] || tx.seg}</strong></div>
+      <div><label style="color:var(--muted);font-size:.85rem">الطريقة:</label><strong>${esc(tx.method || '—')}</strong></div>
+      <div><label style="color:var(--muted);font-size:.85rem">المبلغ:</label><strong>${formatVaultAmountCellHtml(tx).match(/>(.+?)<\/td>/)?.[1] || ''}</strong></div>
+      <div><label style="color:var(--muted);font-size:.85rem">الرصيد:</label><strong>${fmtJ(tx.balance || 0)}</strong></div>
+      <div><label style="color:var(--muted);font-size:.85rem">الموظف:</label><strong>${esc(tx.employee || '—')}</strong></div>
+      <div><label style="color:var(--muted);font-size:.85rem">المرجع:</label><strong>#${esc(tx.ref || '—')}</strong></div>
+    </div>
+    <div style="margin-bottom:16px;padding:12px;background:var(--surface2);border-radius:6px">
+      <label style="color:var(--muted);font-size:.85rem;display:block;margin-bottom:4px">الوصف:</label>
+      <p style="margin:0">${esc(tx.desc || '—')}</p>
+    </div>
+    ${tx.notes ? `<div style="margin-bottom:16px;padding:12px;background:#fef3c7;border-radius:6px"><strong>ملاحظات:</strong><br>${esc(tx.notes)}</div>` : ''}
+    ${editHistoryHtml}
+    <div style="display:flex;gap:8px;margin-top:16px">${actions}
+      <button class="btn btn-outline" onclick="closeModal()" style="margin-left:auto">إغلاق</button>
+    </div>`);
+}
+
+async function freezeVaultTransaction(txId) {
+  const reason = prompt('سبب التجميد:');
+  if (!reason) return;
+  try {
+    await api(`/vault/${txId}/freeze`, { method: 'POST', body: JSON.stringify({ reason }) });
+    toast('✅ تم تجميد المعاملة — الخزنة متوقفة عن التأثر');
+    closeModal();
+
+    // ===== مزامنة الخزنة والحركات =====
+    settings = await api('/settings').catch(() => settings);
+    transactions = await api('/transactions').catch(() => transactions);
+    renderVaultSegs();
+    loadVaultStats();
+    await loadVaultLog();
+    renderClients();
+  } catch (e) {
+    toast('❌ خطأ: ' + e.message, true);
+  }
+}
+
+async function unfreezeVaultTransaction(txId) {
+  const confirmed = confirm('⚠️ هل تريد تحرير هذه المعاملة من التجميد؟\n(سيعود المبلغ للخزنة فوراً)');
+  if (!confirmed) return;
+  try {
+    await api(`/vault/${txId}/unfreeze`, { method: 'POST' });
+    toast('✅ تم تحرير المعاملة — عادت للخزنة بنجاح');
+    closeModal();
+
+    // ===== مزامنة الخزنة والحركات =====
+    settings = await api('/settings').catch(() => settings);
+    transactions = await api('/transactions').catch(() => transactions);
+    renderVaultSegs();
+    loadVaultStats();
+    await loadVaultLog();
+    renderClients();
+  } catch (e) {
+    toast('❌ خطأ: ' + e.message, true);
+  }
+}
+
+async function cancelVaultTransaction(txId) {
+  const reason = prompt('سبب الإلغاء:');
+  if (!reason) return;
+  const confirmed = confirm('⚠️ تحذير: هل تأكد إلغاء هذه المعاملة؟\n(سيتم استرجاع المبلغ للخزنة)');
+  if (!confirmed) return;
+  try {
+    await api(`/vault/${txId}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) });
+    toast('✅ تم إلغاء المعاملة — تم استرجاع المبلغ');
+    closeModal();
+
+    // ===== مزامنة الخزنة والحركات =====
+    settings = await api('/settings').catch(() => settings);
+    transactions = await api('/transactions').catch(() => transactions);
+    renderVaultSegs();
+    loadVaultStats();
+    await loadVaultLog();
+    renderClients();
+  } catch (e) {
+    toast('❌ خطأ: ' + e.message, true);
+  }
 }
 async function addVaultEntry() {
   const body = { amount: Number(qs('#vault-amount').value) || 0, seg: qs('#vault-seg').value, method: qs('#vault-method').value, desc: qs('#vault-desc').value, date: new Date().toISOString(), employee: currentUser?.name || currentUser?.username || '' };
