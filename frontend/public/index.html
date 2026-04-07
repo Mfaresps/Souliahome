@@ -1976,7 +1976,7 @@ function movementRefCell(tx) {
   let tag = '';
   if (/(-RET)$/i.test(r)) tag = isMovExchangeReturn(tx) ? 'استبدال · إرجاع' : 'استرجاع';
   else if (/(-EXC)$/i.test(r)) tag = 'استبدال · بديل';
-  return `<div><a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" style="color:var(--accent);font-weight:700;text-decoration:none">#${esc(base)}</a>${tag ? ` <span class="badge" style="font-size:.58rem;vertical-align:middle;background:var(--primary-pale);color:var(--primary)">${tag}</span>` : ''}</div><div class="text-xs text-muted" style="margin-top:3px">مرجع العملية: #${esc(r)}</div>`;
+  return `<div><a href="#" data-reference-ref="${esc(base)}" style="color:var(--accent);font-weight:700;text-decoration:none;cursor:pointer" title="انقر لعرض تفاصيل شاملة">#${esc(base)}</a>${tag ? ` <span class="badge" style="font-size:.58rem;vertical-align:middle;background:var(--primary-pale);color:var(--primary)">${tag}</span>` : ''}</div><div class="text-xs text-muted" style="margin-top:3px">مرجع العملية: <span data-reference-ref="${esc(r)}" style="cursor:pointer;font-weight:600" title="انقر لعرض التفاصيل">#${esc(r)}</span></div>`;
 }
 function movementKindBadgeCompact(tx) {
   if (isMovExchangeReturn(tx)) return `<span class="badge" style="background:#6d28d926;color:#6d28d9;font-size:.65rem">استبدال</span>`;
@@ -4280,6 +4280,161 @@ async function addInvoiceComment(txId) {
 
 function closeInvoiceDetail() {
   qs('#inv-detail-overlay').classList.remove('active');
+}
+
+/* Reference Number Detail View */
+async function showReferenceDetail(ref) {
+  try {
+    const refStr = String(ref || '').replace(/^#/, '').trim();
+    if (!refStr) { toast('رقم مرجع غير صحيح', true); return; }
+
+    toast('جاري التحميل...', false);
+    const data = await api(`/transactions/reference/${refStr}`);
+
+    const html = `
+      <button class="inv-close" onclick="closeReferenceDetail()" style="position:absolute;top:12px;right:12px;z-index:1">✕</button>
+      <div style="padding:20px;max-height:85vh;overflow-y:auto">
+        <!-- Header -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:12px">
+          <div>
+            <h2 style="margin:0;color:var(--primary);font-size:1.8rem">الرقم المرجعي <span style="direction:ltr;font-family:monospace">#${esc(data.ref)}</span></h2>
+            <div style="font-size:.9rem;color:var(--muted);margin-top:4px">عميل: <strong>${esc(data.customer.name)}</strong> · هاتف: <strong>${esc(data.customer.phone || '-')}</strong></div>
+          </div>
+          <div style="text-align:left">
+            <div style="font-size:1.2rem;font-weight:700;color:var(--green)">الصافي: ${fmtJ(data.summary.netAmount)}</div>
+            <div style="font-size:.85rem;color:var(--muted);margin-top:4px">${data.summary.transactionCount} معاملة · ${data.summary.returnCount} إرجاع</div>
+          </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">
+          <div style="padding:12px;background:var(--surface2);border-radius:8px;border-right:3px solid var(--green)">
+            <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px">إجمالي المبيعات</div>
+            <div style="font-weight:700;color:var(--green)">${fmtJ(data.summary.totalSales)}</div>
+          </div>
+          <div style="padding:12px;background:var(--surface2);border-radius:8px;border-right:3px solid var(--orange)">
+            <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px">المرتجعات</div>
+            <div style="font-weight:700;color:var(--orange)">${fmtJ(data.summary.totalReturns)}</div>
+          </div>
+          <div style="padding:12px;background:var(--surface2);border-radius:8px;border-right:3px solid var(--blue)">
+            <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px">المدفوع</div>
+            <div style="font-weight:700;color:var(--blue)">${fmtJ(data.summary.totalPaid)}</div>
+          </div>
+          <div style="padding:12px;background:var(--surface2);border-radius:8px;border-right:3px solid ${data.summary.totalRemaining > 0 ? 'var(--red)' : 'var(--green)'}">
+            <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px">المتبقي</div>
+            <div style="font-weight:700;color:${data.summary.totalRemaining > 0 ? 'var(--red)' : 'var(--green)'}">${fmtJ(data.summary.totalRemaining)}</div>
+          </div>
+        </div>
+
+        <!-- Transactions Section -->
+        ${data.allTransactions.length ? `
+          <div style="margin-bottom:20px">
+            <h3 style="margin:0 0 12px 0;font-size:1.1rem;color:var(--text)">المعاملات (${data.allTransactions.length})</h3>
+            <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+              <table style="width:100%;border-collapse:collapse;font-size:.9rem">
+                <thead style="background:var(--surface2)">
+                  <tr>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">النوع</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">التاريخ</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">الإجمالي</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">الديبوزت</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">المتبقي</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">الحالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${data.allTransactions.map(t => `
+                    <tr style="border-bottom:1px solid var(--border)">
+                      <td style="padding:10px">${esc(t.type)}</td>
+                      <td style="padding:10px">${fmtDate(t.date)}</td>
+                      <td style="padding:10px;font-weight:600">${fmtJ(t.total)}</td>
+                      <td style="padding:10px;color:var(--green)">${fmtJ(t.deposit)}</td>
+                      <td style="padding:10px;color:${t.remaining > 0 ? 'var(--red)' : 'var(--green)'}">${fmtJ(t.remaining)}</td>
+                      <td style="padding:10px"><span class="badge" style="font-size:.7rem">${esc(t.status)}</span></td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Returns Section -->
+        ${data.relatedReturns.length ? `
+          <div style="margin-bottom:20px">
+            <h3 style="margin:0 0 12px 0;font-size:1.1rem;color:var(--text)">المرتجعات والاستبدالات (${data.relatedReturns.length})</h3>
+            <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+              <table style="width:100%;border-collapse:collapse;font-size:.9rem">
+                <thead style="background:var(--surface2)">
+                  <tr>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">النوع</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">المبلغ</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">الفرق</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">الحالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${data.relatedReturns.map(r => `
+                    <tr style="border-bottom:1px solid var(--border)">
+                      <td style="padding:10px">${r.requestKind === 'exchange' ? '🔁 استبدال' : '📤 مرتجع'}</td>
+                      <td style="padding:10px;font-weight:600">${fmtJ(r.total)}</td>
+                      <td style="padding:10px">${r.priceDifference ? (r.priceDifference > 0 ? '<span style="color:var(--blue)">+' : '<span style="color:var(--orange)">') + fmtJ(Math.abs(r.priceDifference)) + '</span>' : '-'}</td>
+                      <td style="padding:10px"><span class="badge" style="font-size:.7rem;background:${r.status === 'معتمد' ? 'rgba(34,197,94,.2);color:var(--green)' : r.status === 'معلق' ? 'rgba(251,146,60,.2);color:var(--orange)' : 'rgba(220,38,38,.2);color:var(--red)'}">${esc(r.status)}</span></td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Timeline -->
+        ${data.timeline.length ? `
+          <div style="margin-bottom:20px">
+            <h3 style="margin:0 0 12px 0;font-size:1.1rem;color:var(--text)">السجل الزمني</h3>
+            <div style="border-left:3px solid var(--primary);padding-left:16px">
+              ${data.timeline.map((event, i) => `
+                <div style="margin-bottom:16px;position:relative;padding-left:12px">
+                  <div style="position:absolute;left:-21px;width:16px;height:16px;background:var(--primary);border-radius:50%;border:3px solid var(--bg);top:2px"></div>
+                  <div style="font-size:.85rem;color:var(--muted)">${fmtDate(event.date)}</div>
+                  <div style="font-weight:600;margin:4px 0;color:var(--text)">${esc(event.description)}</div>
+                  <div style="font-size:.8rem;color:var(--muted)">${esc(event.type)} · ${fmtJ(event.amount)}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Actions -->
+        <div style="display:flex;gap:8px;margin-top:20px;padding-top:12px;border-top:1px solid var(--border)">
+          ${data.primaryTransaction ? `<button class="btn btn-primary btn-sm" onclick="closeReferenceDetail();showInvoiceDetail('${esc(data.primaryTransaction._id)}')">📋 فتح الفاتورة الأساسية</button>` : ''}
+          <button class="btn btn-outline btn-sm" onclick="closeReferenceDetail()">إغلاق</button>
+        </div>
+      </div>
+    `;
+
+    openModal(html, 'max-width:800px;max-height:90vh');
+    toast('');
+  } catch (e) {
+    toast('خطأ: ' + e.message, true);
+  }
+}
+
+function closeReferenceDetail() {
+  qs('#modal-overlay').classList.remove('active');
+}
+
+// Global: Make all reference numbers clickable by adding data attribute
+function initReferenceClickHandlers() {
+  document.addEventListener('click', (e) => {
+    // Check if clicked element is a reference number
+    const el = e.target.closest('[data-reference-ref]');
+    if (el) {
+      e.preventDefault();
+      const ref = el.getAttribute('data-reference-ref');
+      if (ref) showReferenceDetail(ref);
+    }
+  });
 }
 
 /* Clients */
@@ -7168,7 +7323,10 @@ function exportComplaintsExcel() {
 /* Init */
 (async function init() {
   const isAuthed = await checkAuth();
-  if (isAuthed) { showApp(); }
+  if (isAuthed) {
+    showApp();
+    initReferenceClickHandlers();
+  }
   else { qs('#login-page').style.display = 'flex'; }
 })();
 </script>
