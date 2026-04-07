@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
+import { ProductAnalyticsService } from './product-analytics.service';
 import {
   CreateProductDto,
   UpdateProductDto,
@@ -21,11 +22,24 @@ import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 @UseGuards(JwtAuthGuard)
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly analyticsService: ProductAnalyticsService,
+  ) {}
 
   @Get()
   async findAll() {
     return this.productsService.findAll();
+  }
+
+  @Get('analytics/card/:productCodeOrName')
+  async getProductCard(@Param('productCodeOrName') productCodeOrName: string) {
+    return this.analyticsService.getProductAnalytics(productCodeOrName);
+  }
+
+  @Get('analytics/search/:partial')
+  async searchProductsForAnalytics(@Param('partial') partial: string) {
+    return this.analyticsService.searchProducts(partial);
   }
 
   @Get(':id')
