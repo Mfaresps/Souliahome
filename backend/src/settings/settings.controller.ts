@@ -40,4 +40,10 @@ export class SettingsController {
     }
     return { valid: true };
   }
+
+  @Roles('admin')
+  @Post('reset-all-data')
+  async resetAllData() {
+    return await this.settingsService.resetAllData();
+  }
 }

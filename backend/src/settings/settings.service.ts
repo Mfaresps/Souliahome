@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Settings, SettingsDocument } from './schemas/settings.schema';
 import { UpdateSettingsDto } from './dto/settings.dto';
+import { Connection } from 'mongoose';
 
 const DEFAULT_SHIP_COS = [
   { name: 'Bosta', cairo: 110, gov: 150 },
@@ -15,6 +16,7 @@ export class SettingsService {
   constructor(
     @InjectModel(Settings.name)
     private readonly settingsModel: Model<SettingsDocument>,
+    private readonly connection: Connection,
   ) {}
 
   async getSettings(): Promise<SettingsDocument> {
@@ -77,5 +79,34 @@ export class SettingsService {
       (settings.vaultInstapay || 0) +
       (settings.vaultBank || 0);
     return settings.save();
+  }
+
+  async resetAllData() {
+    const collections = [
+      'transactions',
+      'vaultentries',
+      'clients',
+      'returnrequests',
+      'expenses',
+      'complaints',
+    ];
+
+    const results = {};
+    for (const collectionName of collections) {
+      try {
+        const result = await this.connection
+          .collection(collectionName)
+          .deleteMany({});
+        results[collectionName] = result.deletedCount;
+      } catch (e) {
+        results[collectionName] = 0;
+      }
+    }
+
+    return {
+      success: true,
+      message: 'تم مسح جميع البيانات بنجاح',
+      deleted: results,
+    };
   }
 }
