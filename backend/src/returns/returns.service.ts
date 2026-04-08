@@ -20,13 +20,6 @@ const MAX_RETURN_DAYS = 14;
 
 const RETURN_REASONS = ['تلف الشحنة', 'شحنة خاطئة', 'سبب آخر'] as const;
 
-const EXCHANGE_REASONS = [
-  'مقاس أو لون مختلف',
-  'رغبة العميل بصنف آخر',
-  'عيب مصنع',
-  'سبب آخر',
-] as const;
-
 const VAULT_AR_LABELS = [
   'كاش',
   'فودافون كاش',
@@ -144,55 +137,28 @@ export class ReturnsService {
         'لا يُسمح إلا بعملية استرجاع أو استبدال واحدة لكل فاتورة — يوجد طلب سابق لهذه الفاتورة',
       );
     }
-    const kind = dto.requestKind === 'exchange' ? 'exchange' : 'return';
-    if (kind === 'return') {
-      if (!RETURN_REASONS.includes(dto.reason as (typeof RETURN_REASONS)[number])) {
-        throw new BadRequestException('سبب الاسترجاع غير صالح');
-      }
-    } else {
-      if (!EXCHANGE_REASONS.includes(dto.reason as (typeof EXCHANGE_REASONS)[number])) {
-        throw new BadRequestException('سبب الاستبدال غير صالح');
-      }
-      if (!dto.exchangeItems?.length) {
-        throw new BadRequestException('أضف صنفاً بديلاً واحداً على الأقل');
-      }
+    // فقط الاسترجاع العادي (Return) متاح
+    if (!RETURN_REASONS.includes(dto.reason as (typeof RETURN_REASONS)[number])) {
+      throw new BadRequestException('سبب الاسترجاع غير صالح');
     }
-    const exchangeTotal =
-      kind === 'exchange'
-        ? Math.round(
-            dto.exchangeItems!.reduce((s, it) => s + it.total, 0),
-          )
-        : 0;
+
     const returnTotalFromItems = this.sumReturnItemsTotal(dto.items);
     if (returnTotalFromItems <= 0) {
       throw new BadRequestException(
         'قيمة المرتجع يجب أن تُحسب من الأصناف المختارة (مجموع البنود)',
       );
     }
-    const priceDifference =
-      kind === 'exchange' ? returnTotalFromItems - exchangeTotal : 0;
-    const needsRefundVault =
-      kind === 'return' ||
-      (kind === 'exchange' && returnTotalFromItems > exchangeTotal);
-    const needsCollectVault =
-      kind === 'exchange' && exchangeTotal > returnTotalFromItems;
-    if (needsRefundVault && !vaultRefundAccount) {
+
+    // تحديد حساب الخزنة للرد
+    if (!vaultRefundAccount) {
       const dep = normalizeVaultAccountLabel(String(tx.depMethod || '').trim());
       if (dep) {
         vaultRefundAccount = dep;
       }
     }
-    if (needsCollectVault && !vaultCollectAccount) {
-      vaultCollectAccount = 'كاش';
-    }
-    if (needsRefundVault && !vaultRefundAccount) {
+    if (!vaultRefundAccount) {
       throw new BadRequestException(
         'حدد قسم الخزنة الذي يُسحب منه مبلغ الرد للعميل (كاش، فودافون كاش، Instapay، أو تحويل بنكي)',
-      );
-    }
-    if (needsCollectVault && !vaultCollectAccount) {
-      throw new BadRequestException(
-        'حدد قسم الخزنة الذي يُودَع فيه مبلغ تحصيل الفرق لصالح الشركة',
       );
     }
     return this.returnModel.create({
@@ -205,12 +171,12 @@ export class ReturnsService {
       total: returnTotalFromItems,
       reason: dto.reason,
       reasonDetails: dto.reasonDetails,
-      requestKind: kind,
-      exchangeItems: kind === 'exchange' ? dto.exchangeItems! : [],
-      exchangeTotal: kind === 'exchange' ? exchangeTotal : 0,
-      priceDifference,
-      vaultRefundAccount: needsRefundVault ? vaultRefundAccount! : '',
-      vaultCollectAccount: needsCollectVault ? vaultCollectAccount! : '',
+      requestKind: 'return', // فقط الاسترجاع العادي
+      exchangeItems: [],
+      exchangeTotal: 0,
+      priceDifference: 0,
+      vaultRefundAccount: vaultRefundAccount!,
+      vaultCollectAccount: '',
       requestedBy,
       status: 'معلق',
       daysRemaining,
@@ -229,162 +195,61 @@ export class ReturnsService {
     if (ret.status !== 'معلق') {
       throw new BadRequestException('الطلب ليس معلقاً');
     }
-    ret.status = 'معتمد';
-    ret.approvedBy = approvedBy;
-    ret.approvedAt = new Date().toISOString();
-    const saved = await ret.save();
+
     const returnDate = new Date().toISOString();
     const originalTx = await this.transactionsService.findById(
       String(ret.originalTransactionId),
     );
     const refundSegStored = String(ret.vaultRefundAccount || '').trim();
-    const collectSegStored = String(ret.vaultCollectAccount || '').trim();
     const refundAccount =
       normalizeVaultAccountLabel(refundSegStored) ||
       normalizeVaultAccountLabel(String(originalTx.depMethod || '').trim()) ||
       'كاش';
-    const collectAccount =
-      normalizeVaultAccountLabel(collectSegStored) || 'كاش';
-    const isExchange = ret.requestKind === 'exchange' && ret.exchangeItems?.length;
-    if (isExchange) {
-      const returnTotal = this.sumReturnItemsTotal(ret.items);
-      if (returnTotal <= 0) {
-        throw new BadRequestException('قيمة أصناف المرتجع في الطلب غير صالحة');
-      }
-      const exTotal = Math.round(ret.exchangeTotal || 0);
-      const net = Math.round(exTotal - returnTotal);
 
-      // Create return transaction (مرتجع)
-      const returnTx = {
-        date: returnDate,
-        type: 'مرتجع' as const,
-        client: ret.client,
-        phone: ret.phone || '',
-        ref: `${ret.originalRef}-RET`,
-        notes:
-          `استبدال — مرتجع: ${ret.reason}${ret.reasonDetails ? ' — ' + ret.reasonDetails : ''} | قيمة المرتجع ${returnTotal} ج | بدائل ${exTotal} ج | الفرق: ${net > 0 ? 'على العميل ' + net : net < 0 ? 'لصالح العميل ' + Math.abs(net) : 'صفر'} ج` +
-          ` | المخزن: إعادة أصناف المرتجع`,
-        items: ret.items,
-        total: returnTotal,
-        itemsTotal: returnTotal,
-        employee: approvedBy,
-        deposit: 0,
-        remaining: 0,
-        depMethod: refundAccount,
-        payment: 'كاش',
-        payStatus: 'مكتمل',
-        discount: 0,
-        shipCost: 0,
-      };
-      await this.transactionsService.create(returnTx as never);
+    // ✅ CRITICAL VALIDATION: Check vault balance BEFORE approval
+    const refundTotal = this.sumReturnItemsTotal(ret.items);
+    if (refundTotal > 0) {
+      await this.vaultService.assertSufficientBalance(refundAccount, refundTotal);
+    }
 
-      // Create exchange/sale transaction (مبيعات)
-      const customerOwesCompany = net > 0;
-      const saleRemaining = customerOwesCompany ? net : 0;
-      const salePayComplete = !customerOwesCompany;
-      const saleTx = {
-        date: returnDate,
-        type: 'مبيعات' as const,
-        client: ret.client,
-        phone: ret.phone || '',
-        ref: `${ret.originalRef}-EXC`,
-        notes:
-          `بيع استبدال — مقابل مرتجع ${ret.originalRef} | قيمة المرتجع: ${returnTotal} ج | قيمة البدائل: ${exTotal} ج` +
-          (net > 0
-            ? ` | الفرق لصالح الشركة: ${net} ج (على العميل)`
-            : net < 0
-              ? ` | الفرق لصالح العميل: ${Math.abs(net)} ج`
-              : ` | لا فرق نقدي`),
-        items: ret.exchangeItems,
-        total: exTotal,
-        itemsTotal: exTotal,
-        employee: approvedBy,
-        shipCo: '',
-        shipZone: 'cairo',
-        shipCost: 0,
-        deposit: 0,
-        remaining: saleRemaining,
-        depMethod: customerOwesCompany ? collectAccount : 'كاش',
-        payment: customerOwesCompany ? 'آجل' : 'كاش',
-        payStatus: salePayComplete ? 'مكتمل' : 'معلق',
-        discount: 0,
-      };
-      await this.transactionsService.create(saleTx as never);
+    // ✅ Only after validation passes, update status
+    ret.status = 'معتمد';
+    ret.approvedBy = approvedBy;
+    ret.approvedAt = new Date().toISOString();
+    const saved = await ret.save();
 
-      // Handle price difference vault entries
-      const dateStr = returnDate.split('T')[0];
-
-      if (net > 0) {
-        // Customer owes company - collect additional payment
-        await this.vaultService.addSystemEntry(
-          net,
-          collectAccount,
-          `تحصيل فرق استبدال — العميل ${ret.client} يدفع ${net} ج`,
-          dateStr,
-          'تحصيل',
-          `${ret.originalRef}-EXC`,
-          { customer: ret.client },
-          approvedBy,
-        );
-      } else if (net < 0) {
-        // Company owes customer - refund difference
-        const refundAmount = Math.abs(net);
-        await this.vaultService.addSystemEntry(
-          -refundAmount,
-          refundAccount,
-          `رد فرق استبدال — العميل ${ret.client} يستحق ${refundAmount} ج`,
-          dateStr,
-          'رد مرتجع',
-          `${ret.originalRef}-EXC`,
-          { customer: ret.client },
-          approvedBy,
-        );
-      }
-    } else {
-      // Simple return (not exchange)
-      const refundTotal = this.sumReturnItemsTotal(ret.items);
-      if (refundTotal <= 0) {
-        throw new BadRequestException(
-          'لا يمكن اعتماد الاسترجاع دون أصناف بقيمة صالحة للرد',
-        );
-      }
-      const returnTx = {
-        date: returnDate,
-        type: 'مرتجع' as const,
-        client: ret.client,
-        phone: ret.phone || '',
-        ref: ret.originalRef + '-RET',
-        notes:
-          `مرتجع معتمد: ${ret.reason}${ret.reasonDetails ? ' — ' + ret.reasonDetails : ''}` +
-          ` | قيمة المرتجع: ${refundTotal} ج` +
-          ` | المخزن: إعادة الأصناف | الخزنة: خصم ${refundTotal} ج من ${refundAccount}`,
-        items: ret.items,
-        total: refundTotal,
-        itemsTotal: refundTotal,
-        employee: approvedBy,
-        deposit: 0,
-        remaining: 0,
-        depMethod: refundAccount,
-        payment: 'كاش',
-        payStatus: 'مكتمل',
-        discount: 0,
-        shipCost: 0,
-      };
-      await this.transactionsService.create(returnTx as never);
-
-      // Create vault entry for refund
-      const dateStr = returnDate.split('T')[0];
-      await this.vaultService.addSystemEntry(
-        -refundTotal,
-        refundAccount,
-        `رد مرتجع — العميل ${ret.client} يستحق ${refundTotal} ج`,
-        dateStr,
-        'رد مرتجع',
-        ret.originalRef + '-RET',
-        { customer: ret.client },
-        approvedBy,
+    // معالجة المرتجع العادي (لا استبدال)
+    if (refundTotal <= 0) {
+      throw new BadRequestException(
+        'لا يمكن اعتماد الاسترجاع دون أصناف بقيمة صالحة للرد',
       );
     }
+
+    const returnTx = {
+      date: returnDate,
+      type: 'مرتجع' as const,
+      client: ret.client,
+      phone: ret.phone || '',
+      ref: ret.originalRef + '-RET',
+      notes:
+        `مرتجع معتمد: ${ret.reason}${ret.reasonDetails ? ' — ' + ret.reasonDetails : ''}` +
+        ` | قيمة المرتجع: ${refundTotal} ج` +
+        ` | المخزن: إعادة الأصناف | الخزنة: خصم ${refundTotal} ج من ${refundAccount}`,
+      items: ret.items,
+      total: refundTotal,
+      itemsTotal: refundTotal,
+      employee: approvedBy,
+      deposit: 0,
+      remaining: 0,
+      depMethod: refundAccount,
+      payment: 'كاش',
+      payStatus: 'مكتمل',
+      discount: 0,
+      shipCost: 0,
+    };
+    await this.transactionsService.create(returnTx as never);
+    // Note: Vault entry for refund is automatically created by transactionsService.recordVaultForTransaction()
+    // DO NOT add another vault entry here - this was causing double deduction!
     return saved;
   }
 
