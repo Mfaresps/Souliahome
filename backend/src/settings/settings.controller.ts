@@ -3,10 +3,16 @@ import {
   Get,
   Put,
   Post,
+  Delete,
   Body,
   UseGuards,
   UnauthorizedException,
+  Res,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { SettingsService } from './settings.service';
 import { UpdateSettingsDto } from './dto/settings.dto';
@@ -42,8 +48,67 @@ export class SettingsController {
   }
 
   @Roles('admin')
+  @Post('backup')
+  async createBackup() {
+    return await this.settingsService.createBackup();
+  }
+
+  @Roles('admin')
+  @Get('backups')
+  async getBackups() {
+    return await this.settingsService.getBackupList();
+  }
+
+  @Roles('admin')
+  @UseGuards(ThrottlerGuard)
   @Post('reset-all-data')
-  async resetAllData() {
+  async resetAllData(@Body('password') password: string) {
+    const isValid = await this.settingsService.verifyVaultPassword(password);
+    if (!isValid) {
+      throw new UnauthorizedException('كلمة المرور خاطئة - لا يمكن مسح البيانات');
+    }
     return await this.settingsService.resetAllData();
+  }
+
+  @Roles('admin')
+  @UseGuards(ThrottlerGuard)
+  @Post('restore-backup')
+  async restoreBackup(@Body('filename') filename: string, @Body('password') password: string) {
+    const isValid = await this.settingsService.verifyVaultPassword(password);
+    if (!isValid) {
+      throw new UnauthorizedException('كلمة المرور خاطئة - لا يمكن استرجاع البيانات');
+    }
+    return await this.settingsService.restoreBackup(filename);
+  }
+
+  @Roles('admin')
+  @Get('download-backup/:filename')
+  async downloadBackup(@Res() res: Response, @Body('filename') filename: string) {
+    return await this.settingsService.downloadBackup(res, filename);
+  }
+
+  @Roles('admin')
+  @Delete('backups')
+  async deleteAllBackups(@Body('password') password: string) {
+    const isValid = await this.settingsService.verifyVaultPassword(password);
+    if (!isValid) {
+      throw new UnauthorizedException('كلمة المرور خاطئة');
+    }
+    return await this.settingsService.deleteAllBackups();
+  }
+
+  @Roles('admin')
+  @UseGuards(ThrottlerGuard)
+  @Post('upload-backup')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadBackup(
+    @UploadedFile() file: any,
+    @Body('password') password: string,
+  ) {
+    const isValid = await this.settingsService.verifyVaultPassword(password);
+    if (!isValid) {
+      throw new UnauthorizedException('كلمة المرور خاطئة');
+    }
+    return await this.settingsService.uploadBackup(file);
   }
 }
