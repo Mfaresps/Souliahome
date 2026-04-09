@@ -1256,7 +1256,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <script>
 const qs = (s, p) => (p || document).querySelector(s);
 const qsa = (s, p) => [...(p || document).querySelectorAll(s)];
-const API_BASE = '/api';
+const API_BASE = 'http://localhost:3000/api';
 
 function esc(str) {
   if (str == null) return '';
@@ -2755,7 +2755,6 @@ function validateTx() {
       const el = qs('#err-ret-reason');
       if (el) el.textContent = 'اختر سبب الاسترجاع';
       valid = false;
-    }
     }
   } else if (txType === 'مشتريات') {
     if (!qs('#tx-supplier')?.value) { toast('اختر المورد', true); valid = false; }

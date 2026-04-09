@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 4001;
 
 // Proxy /api requests to backend FIRST
 app.use('/api/', createProxyMiddleware({
-  target: 'http://localhost:4000',
+  target: 'http://localhost:3000',
   changeOrigin: true,
   pathRewrite: {
     '^/api': '/api'

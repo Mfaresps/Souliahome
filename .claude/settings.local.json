@@ -8,7 +8,18 @@
       "Bash(\"/c/Program Files/nodejs/node.exe\" -e \"require\\('net'\\).createConnection\\(27017,'localhost'\\).on\\('connect',\\(\\)=>{console.log\\('mongo up'\\);process.exit\\(0\\)}\\).on\\('error',\\(\\)=>{console.log\\('mongo down'\\);process.exit\\(1\\)}\\)\")",
       "Bash(powershell.exe -Command \"winget install MongoDB.Server --accept-source-agreements --accept-package-agreements\")",
       "Bash(\"/c/Program Files/nodejs/npm.cmd\" install)",
-      "Bash(cmd.exe /c \"set PATH=C:\\\\Program Files\\\\nodejs\\\\;%PATH% && cd D:\\\\website\\\\Souliahome\\\\backend && npm install\")"
+      "Bash(cmd.exe /c \"set PATH=C:\\\\Program Files\\\\nodejs\\\\;%PATH% && cd D:\\\\website\\\\Souliahome\\\\backend && npm install\")",
+      "Bash(npm run:*)",
+      "Bash(echo \"Backend PID: $!\")",
+      "Bash(npm start:*)",
+      "Bash(echo \"Frontend PID: $!\")",
+      "Read(//private/tmp/**)",
+      "Bash(npm install:*)",
+      "Bash(pkill -f \"node server.js\")",
+      "Bash(pkill -f \"nest start\")",
+      "Bash(lsof -ti:3000)",
+      "Bash(xargs kill:*)",
+      "Bash(lsof -ti:4001)"
     ]
   }
 }

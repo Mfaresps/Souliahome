@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel, InjectConnection } from '@nestjs/mongoose';
-import { Model, Connection } from 'mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model } from 'mongoose';
 import { Settings, SettingsDocument } from './schemas/settings.schema';
 import { UpdateSettingsDto } from './dto/settings.dto';
 import * as fs from 'fs';
@@ -17,8 +17,7 @@ export class SettingsService {
   constructor(
     @InjectModel(Settings.name)
     private readonly settingsModel: Model<SettingsDocument>,
-    @InjectConnection()
-    private readonly connection: Connection,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   async getSettings(): Promise<SettingsDocument> {
