@@ -756,9 +756,10 @@ export class TransactionsService {
             // Supplier purchases: add to purchases count
             purchases += item.qty;
           } else if (this.transactionAddsReturnToStock(tx)) {
-            // Customer returns: add to stock AND subtract from sales (because it reverses a prior sale)
+            // Customer returns: add to stock
+            // Formula: current = opening + purchases + returns - sales
+            // where sales = direct sales only (not reduced by returns)
             returnsToStock += item.qty;
-            sales -= item.qty; // IMPORTANT: returns reduce the sales count
             const refStr = String(tx.ref || '').trim();
             if (refStr) {
               returnRefSet.add(refStr);
@@ -768,13 +769,11 @@ export class TransactionsService {
               returnDateSet.add(dateStr);
             }
           } else if (tx.type === 'مبيعات') {
-            // Sales: add to sales count (removed 'مرتجع مشتريات' since it's handled above as returnsToStock)
+            // Sales: add to sales count (direct sales only)
             sales += item.qty;
           }
         });
       });
-      // Ensure sales never goes negative (all returns have been processed)
-      sales = Math.max(0, sales);
       const openingBal = Math.max(
         0,
         Math.floor(Number(product.openingBalance) || 0),

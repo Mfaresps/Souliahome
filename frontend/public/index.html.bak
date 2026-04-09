@@ -2877,6 +2877,7 @@ async function saveReturnRequest() {
     code: it.code, name: it.name, qty: it.retQty, price: it.price, total: it.retQty * it.price
   }));
   const returnTotal = retItems.reduce((s, it) => s + it.total, 0);
+  const refundSeg = qs('#ret-vault-refund')?.value || '';
   const body = {
     originalTransactionId: String(tx._id),
     originalRef: tx.ref || '',
