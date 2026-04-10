@@ -121,6 +121,24 @@ body.dark-mode .history-detail-item.removed{background:rgba(248,113,113,.08)}
 .overflow-x{overflow-x:auto}
 .page-title{font-size:1.3rem;font-weight:700;margin-bottom:4px}
 .page-subtitle{font-size:.8rem;color:var(--muted);margin-bottom:20px}
+/* Settings page — organized sections, responsive two-column top */
+.settings-page-inner{max-width:1080px;margin:0 auto}
+.settings-section-label{font-size:.7rem;font-weight:700;letter-spacing:.35px;color:var(--muted);margin-bottom:8px;padding:0 4px;display:flex;align-items:center;gap:6px}
+.settings-section-label svg{width:14px;height:14px;opacity:.85;flex-shrink:0}
+.settings-top-grid{display:grid;grid-template-columns:minmax(260px,320px) minmax(0,1fr);gap:20px;align-items:start;margin-bottom:8px}
+@media(max-width:960px){.settings-top-grid{grid-template-columns:1fr}}
+.settings-stack{display:flex;flex-direction:column;gap:18px}
+.settings-card{border-radius:14px;padding:18px 20px;transition:box-shadow .2s ease;border:1px solid var(--border);background:var(--surface)}
+.settings-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.05)}
+body.dark-mode .settings-card:hover{box-shadow:0 4px 24px rgba(0,0,0,.25)}
+.settings-data-row{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;margin-top:4px}
+@media(max-width:780px){.settings-data-row{grid-template-columns:1fr}}
+.settings-pref-body{display:flex;flex-direction:column;gap:14px}
+.settings-price-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.settings-price-grid{grid-template-columns:1fr}}
+.settings-ship-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.settings-ship-add input[type="text"]{flex:1;min-width:140px}
+.settings-ship-add input[type="number"]{max-width:120px}
 .page-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:20px}
 .page-header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex-shrink:0}
 .filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
@@ -178,11 +196,13 @@ body.dark-mode .history-detail-item.removed{background:rgba(248,113,113,.08)}
 .search-empty{padding:20px;text-align:center;color:var(--muted);font-size:.85rem}
 .search-hint{padding:8px 14px;font-size:.7rem;color:var(--muted);text-align:center;border-top:1px solid var(--border);background:var(--surface2)}
 .search-loading{padding:20px;text-align:center;color:var(--muted);font-size:.85rem}
-#header .header-actions{display:flex;align-items:center;gap:12px}
+#header .header-actions{display:flex;align-items:center;gap:10px}
+#header .lang-switch{min-width:90px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#fff;font-size:.82rem;outline:none;cursor:pointer;appearance:none}
+#header .lang-switch option{color:#000}
 #header .user-info{display:flex;align-items:center;gap:8px;font-size:.85rem;cursor:pointer;user-select:none;border-radius:10px;padding:4px 8px;margin:-4px -8px;transition:background .15s,opacity .15s}
 #header .user-info:hover{background:rgba(255,255,255,.12)}
 #header .avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem}
-#header button{color:#fff;opacity:.8;transition:opacity .2s}
+#header button{color:#fff;opacity:.78;transition:opacity .2s}
 #header button:hover{opacity:1}
 .notif-wrap{position:relative}
 .notif-btn{position:relative;background:none;border:none;cursor:pointer;font-size:1.2rem;padding:4px}
@@ -249,6 +269,25 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 #sidebar .nav-item.active{color:var(--accent);border-right-color:var(--accent);background:var(--primary-pale)}
 #sidebar .nav-item svg{width:18px;height:18px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 #main{margin-top:var(--header-h);margin-right:var(--sidebar-w);padding:24px;min-height:calc(100vh - var(--header-h));transition:margin-right .3s}
+/* English (LTR): mirror shell layout — sidebar left, content flows left-to-right */
+[dir="ltr"] #sidebar{right:auto;left:0;border-left:none;border-right:1px solid var(--border)}
+[dir="ltr"] #main{margin-right:0;margin-left:var(--sidebar-w);transition:margin-left .3s}
+[dir="ltr"] #sidebar .nav-item{border-right:none;border-left:3px solid transparent;text-align:left}
+[dir="ltr"] #sidebar .nav-item.active{border-left-color:var(--accent)}
+[dir="ltr"] th,[dir="ltr"] td{text-align:left}
+[dir="ltr"] .search-wrap svg{right:auto;left:11px}
+[dir="ltr"] .search-wrap input{padding-right:12px;padding-left:36px}
+[dir="ltr"] .search-input input{padding-right:12px;padding-left:34px}
+[dir="ltr"] #page-movements .mov-search-wrap svg{right:auto;left:12px}
+[dir="ltr"] #page-movements .mov-search-wrap input{padding-right:12px;padding-left:38px}
+[dir="ltr"] .dd-menu-portal .dd-item{text-align:left}
+[dir="ltr"] .bulk-bar{left:var(--sidebar-w);right:0}
+[dir="ltr"] .inv-detail .inv-close{left:auto;right:12px}
+[dir="ltr"] .inv-items-tbl th,[dir="ltr"] .inv-items-tbl td{text-align:left}
+[dir="ltr"] #header .header-search input{text-align:left}
+[dir="ltr"] .login-pass-toggle{right:auto;left:12px}
+[dir="ltr"] .notif-panel{left:auto;right:0}
+[dir="ltr"] .search-dropdown{right:auto;left:0}
 .page{display:none}
 .page.active{display:block}
 .type-selector{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
@@ -389,6 +428,10 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 #sidebar.open{transform:translateX(0)}
 #main{margin-right:0}
 .bulk-bar{right:0}
+[dir="ltr"] #sidebar{transform:translateX(-100%)}
+[dir="ltr"] #sidebar.open{transform:translateX(0)}
+[dir="ltr"] #main{margin-left:0}
+[dir="ltr"] .bulk-bar{left:0;right:0}
 .seg-cards{grid-template-columns:repeat(2,1fr)}
 .hamburger{display:block}
 }
@@ -479,6 +522,10 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="notif-list" id="notif-list"></div>
 </div>
 </div>
+<select id="header-lang" class="lang-switch" onchange="changeLang(this.value)" data-i18n-title="headerLangTitle" title="تغيير اللغة">
+  <option value="ar">العربية</option>
+  <option value="en">English</option>
+</select>
 <button onclick="toggleCalc()" title="الآلة الحاسبة" style="display:inline-flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 14h2M14 14h2M8 18h2M14 18h2"/><path d="M4 10h16"/></svg></button>
 <button onclick="toggleDarkMode()" title="الوضع الليلي" style="display:inline-flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg></button>
 <button onclick="doLogout()" title="تسجيل الخروج" style="display:inline-flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
@@ -492,22 +539,22 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <!-- Dashboard -->
 <div class="page" id="page-dashboard">
 <div class="page-header">
-<div><h2 class="page-title" data-i18n="dashboard">الرئيسية</h2><p class="page-subtitle">نظرة عامة على أداء المبيعات والمخزون والخزنة</p></div>
+<div><h2 class="page-title" data-i18n="dashboard">الرئيسية</h2><p class="page-subtitle" data-i18n="dashboardSubtitle">نظرة عامة على أداء المبيعات والمخزون والخزنة</p></div>
 <div class="actions-dd" style="flex-shrink:0">
-<button type="button" class="btn btn-primary" onclick="toggleActionMenu(event)">＋ إنشاء ▾</button>
+<button type="button" class="btn btn-primary" onclick="toggleActionMenu(event)" data-i18n="dashboardCreateBtn">＋ إنشاء ▾</button>
 <div class="dd-menu" style="display:none">
-<button type="button" class="dd-item" onclick="goCreateTransaction('مبيعات')"><span class="dd-icon"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg></span><span class="dd-label">مبيعات</span></button>
-<button type="button" class="dd-item" onclick="goCreateTransaction('مشتريات')"><span class="dd-icon"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg></span><span class="dd-label">مشتريات</span></button>
-<button type="button" class="dd-item" onclick="goCreateTransaction('مرتجع')"><span class="dd-icon"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg></span><span class="dd-label">مرتجعات</span></button>
+<button type="button" class="dd-item" onclick="goCreateTransaction('مبيعات')"><span class="dd-icon"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg></span><span class="dd-label" data-i18n="txSales">مبيعات</span></button>
+<button type="button" class="dd-item" onclick="goCreateTransaction('مشتريات')"><span class="dd-icon"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg></span><span class="dd-label" data-i18n="txPurchases">مشتريات</span></button>
+<button type="button" class="dd-item" onclick="goCreateTransaction('مرتجع')"><span class="dd-icon"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg></span><span class="dd-label" data-i18n="txReturns">مرتجعات</span></button>
 </div>
 </div>
 </div>
 
 <!-- Users Online Status -->
 <div class="card mb-16">
-<h4 class="mb-12" style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><circle cx="17" cy="9" r="2.5"/><path d="M21 21v-1.5a3 3 0 00-2.5-2.96"/></svg> حالة المستخدمين <span id="online-count" style="font-size:.85rem;color:var(--muted)">(جاري التحديث)</span></h4>
+<h4 class="mb-12" style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><circle cx="17" cy="9" r="2.5"/><path d="M21 21v-1.5a3 3 0 00-2.5-2.96"/></svg> <span data-i18n="userOnlineStatus">حالة المستخدمين</span> <span id="online-count" style="font-size:.85rem;color:var(--muted)" data-i18n="updating">(جاري التحديث)</span></h4>
 <div id="users-status-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">
-<div style="text-align:center;padding:20px;color:var(--muted);font-size:.85rem">جاري تحميل المستخدمين...</div>
+<div style="text-align:center;padding:20px;color:var(--muted);font-size:.85rem" data-i18n="loadingUsers">جاري تحميل المستخدمين...</div>
 </div>
 </div>
 
@@ -515,7 +562,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <!-- TREASURY POSITION WIDGET -->
 <div class="card mb-24" id="dash-treasury-widget" style="display:none">
 <div class="flex-between mb-8">
-<h4 style="margin:0"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> الوضع النقدي</h4>
+<h4 style="margin:0"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> <span data-i18n="treasuryPosition">الوضع النقدي</span></h4>
 <span id="dash-treasury-trend" style="font-size:.85rem;font-weight:600"></span>
 </div>
 <div class="grid grid-5 gap-12" id="dash-treasury-segs"></div>
@@ -533,12 +580,12 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <!-- Transaction (new) -->
 <div class="page" id="page-transaction">
 <h2 class="page-title" data-i18n="transaction">حركة جديدة</h2>
-<p class="page-subtitle">تسجيل مبيعات، مشتريات، أو طلب استرجاع</p>
+<p class="page-subtitle" data-i18n="transactionSubtitle">تسجيل مبيعات، مشتريات، أو طلب استرجاع</p>
 <div class="type-selector" id="tx-type-selector">
-<button class="type-btn active" data-type="مبيعات" onclick="setTxType('مبيعات')">مبيعات</button>
-<button class="type-btn" data-type="مشتريات" onclick="setTxType('مشتريات')">مشتريات</button>
+<button class="type-btn active" data-type="مبيعات" onclick="setTxType('مبيعات')" data-i18n="txSales">مبيعات</button>
+<button class="type-btn" data-type="مشتريات" onclick="setTxType('مشتريات')" data-i18n="txPurchases">مشتريات</button>
 <div class="type-return-group">
-<button class="type-btn" data-type="مرتجع" onclick="setTxType('مرتجع')">مرتجع</button>
+<button class="type-btn" data-type="مرتجع" onclick="setTxType('مرتجع')" data-i18n="txReturns">مرتجع</button>
 <!-- نظام الاستبدال تم حذفه - فقط الاسترجاع العادي متاح -->
 </div>
 </div>
@@ -547,12 +594,12 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <h4 class="mb-8" data-i18n="lineItems">الأصناف</h4>
 <div id="tx-items"></div>
 <div class="flex gap-8 mt-16 mb-8">
-<button class="btn btn-outline btn-sm" onclick="addTxItem()">+ إضافة صنف</button>
-<button class="btn btn-outline btn-sm" onclick="toggleProductSearch()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg> بحث أصناف</button>
-<button class="btn btn-outline btn-sm" onclick="openDiscountModal()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> خصم على الفاتورة</button>
+<button class="btn btn-outline btn-sm" onclick="addTxItem()" data-i18n="addProduct">+ إضافة صنف</button>
+<button class="btn btn-outline btn-sm" onclick="toggleProductSearch()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg> <span data-i18n="searchProducts">بحث أصناف</span></button>
+<button class="btn btn-outline btn-sm" onclick="openDiscountModal()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> <span data-i18n="invoiceDiscount">خصم على الفاتورة</span></button>
 </div>
 <div id="tx-product-search" style="display:none">
-<input type="text" placeholder="ابحث عن صنف..." oninput="filterTxProducts(this.value)" class="mb-8">
+<input type="text" placeholder="ابحث عن صنف..." data-i18n="searchProducts" data-i18n-attr="placeholder" oninput="filterTxProducts(this.value)" class="mb-8">
 <div class="product-search-panel" id="tx-ps-list"></div>
 </div>
 </div>
@@ -560,12 +607,12 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 
 <!-- Comments Section -->
 <div id="tx-comments-section" style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
-  <h4 class="mb-12"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> التعليقات</h4>
+  <h4 class="mb-12"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> <span data-i18n="comments">التعليقات</span></h4>
 
   <!-- Add Comment Form -->
   <div style="display:grid;grid-template-columns:1fr 140px;gap:8px;margin-bottom:16px">
     <div style="display:grid;grid-template-columns:1fr 100px;gap:8px">
-      <input type="text" id="tx-comment-text" placeholder="أضف تعليق..." style="padding:8px 12px;border:1px solid var(--border);border-radius:6px">
+      <input type="text" id="tx-comment-text" placeholder="أضف تعليق..." data-i18n="addComment" data-i18n-attr="placeholder" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px">
       <select id="tx-comment-type" style="padding:8px 8px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
         <option value="عام">📝 عام</option>
         <option value="تنبيه">⚠ تنبيه</option>
@@ -573,43 +620,43 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
         <option value="أسئلة">❓ أسئلة</option>
       </select>
     </div>
-    <button class="btn btn-outline btn-sm" onclick="addTxComment()" style="white-space:nowrap">إضافة</button>
+    <button class="btn btn-outline btn-sm" onclick="addTxComment()" style="white-space:nowrap" data-i18n="addCommentBtn">إضافة</button>
   </div>
 
   <!-- Comments List -->
   <div id="tx-comments-list" style="max-height:250px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:0;background:var(--surface2)">
-    <div style="padding:12px;text-align:center;color:var(--muted);font-size:.85rem">لا توجد تعليقات</div>
+    <div style="padding:12px;text-align:center;color:var(--muted);font-size:.85rem" data-i18n="noComments">لا توجد تعليقات</div>
   </div>
 </div>
 
 <div class="flex gap-8 mt-16">
-<button class="btn btn-primary" id="tx-save-btn" onclick="saveTx()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> حفظ الحركة</button>
-<button class="btn btn-outline" onclick="resetTx()">مسح</button>
+<button class="btn btn-primary" id="tx-save-btn" onclick="saveTx()" data-i18n="saveTransaction"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> حفظ الحركة</button>
+<button class="btn btn-outline" onclick="resetTx()" data-i18n="clearTransaction">مسح</button>
 </div>
 </div>
 
 <!-- Inventory -->
 <div class="page" id="page-inventory">
 <div class="page-header">
-  <div><h2 class="page-title" data-i18n="inventory">المخزن</h2><p class="page-subtitle">مراقبة الأرصدة وحالة المخزون لكل الأصناف</p></div>
+  <div><h2 class="page-title" data-i18n="inventory">المخزن</h2><p class="page-subtitle" data-i18n="inventorySubtitle">مراقبة الأرصدة وحالة المخزون لكل الأصناف</p></div>
   <div class="page-header-actions">
-    <button class="btn btn-outline btn-sm" onclick="exportInventoryExcel()" style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تصدير Excel</button>
+    <button class="btn btn-outline btn-sm" onclick="exportInventoryExcel()" style="display:flex;align-items:center;gap:6px" data-i18n="exportExcel"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تصدير Excel</button>
   </div>
 </div>
 <div id="inv-summary-cards" class="kpi-strip mb-20"></div>
 <div class="filter-card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
   <div style="display:flex;gap:6px;flex-wrap:wrap">
-    <button class="tab-btn active" data-filter="all" onclick="setInvFilter('all',this)">الكل</button>
-    <button class="tab-btn" data-filter="low" onclick="setInvFilter('low',this)">منخفض</button>
-    <button class="tab-btn" data-filter="ok" onclick="setInvFilter('ok',this)">متوفر</button>
-    <button class="tab-btn" data-filter="zero" onclick="setInvFilter('zero',this)">نفد</button>
+    <button class="tab-btn active" data-filter="all" onclick="setInvFilter('all',this)" data-i18n="filterAll">الكل</button>
+    <button class="tab-btn" data-filter="low" onclick="setInvFilter('low',this)" data-i18n="filterLow">منخفض</button>
+    <button class="tab-btn" data-filter="ok" onclick="setInvFilter('ok',this)" data-i18n="filterAvailable">متوفر</button>
+    <button class="tab-btn" data-filter="zero" onclick="setInvFilter('zero',this)" data-i18n="filterOutOfStock">نفد</button>
   </div>
   <div class="search-input" style="position:relative;flex:1;min-width:200px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-    <input type="text" placeholder="بحث في المخزن..." oninput="debouncedRenderInventory()" style="padding-right:36px;width:100%">
+    <input type="text" placeholder="بحث في المخزن..." data-i18n="searchInventory" data-i18n-attr="placeholder" oninput="debouncedRenderInventory()" style="padding-right:36px;width:100%">
   </div>
 </div>
 <div class="table-card">
-  <div class="overflow-x"><table id="inv-table"><thead><tr><th>الكود</th><th>الصنف</th><th>سعر البيع</th><th>سعر الشراء</th><th>الرصيد الافتتاحي</th><th title="من المورد فقط">المشتريات</th><th title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th>المبيعات</th><th>الرصيد الحالي</th><th>الحالة</th></tr></thead><tbody></tbody></table></div>
+  <div class="overflow-x"><table id="inv-table"><thead><tr><th data-i18n="colCode">الكود</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice">سعر الشراء</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colPurchases" data-i18n-title="colPurchasesTip" title="من المورد فقط">المشتريات</th><th data-i18n="colReturnToStock" data-i18n-title="colReturnToStockTip" title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th data-i18n="colSales">المبيعات</th><th data-i18n="colCurrentBal">الرصيد الحالي</th><th data-i18n="status">الحالة</th></tr></thead><tbody></tbody></table></div>
 </div>
 <div id="inv-pagination" style="margin-top:16px"></div>
 </div>
@@ -621,11 +668,11 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="mov-tab-bar">
   <button class="mov-main-tab active" id="mov-tab-list" onclick="switchMovTab('list',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
-    سجل الحركات
+    <span data-i18n="movements">سجل الحركات</span>
   </button>
   <button class="mov-main-tab" id="mov-tab-archive" onclick="switchMovTab('archive',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 7l-5 5-5-5"/><path d="M17 17l-5-5-5 5"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
-    الحركات المجمدة
+    <span data-i18n="movementsTabFrozen">الحركات المجمدة</span>
   </button>
 </div>
 
@@ -636,14 +683,14 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
   <div class="flex-between mb-16" style="flex-wrap:wrap;gap:12px">
     <div>
       <h2 class="page-title" style="margin-bottom:4px" data-i18n="movements">سجل الحركات</h2>
-      <p style="font-size:.8rem;color:var(--muted);margin:0">عرض وتتبع جميع حركات المبيعات والمشتريات والمرتجعات</p>
+      <p style="font-size:.8rem;color:var(--muted);margin:0" data-i18n="movementsListSubtitle">عرض وتتبع جميع حركات المبيعات والمشتريات والمرتجعات</p>
     </div>
     <div class="flex gap-8" style="flex-wrap:wrap;align-items:center">
-      <button class="btn btn-outline btn-sm" onclick="exportMovementsExcel()" style="display:flex;align-items:center;gap:6px">
+      <button class="btn btn-outline btn-sm" onclick="exportMovementsExcel()" style="display:flex;align-items:center;gap:6px" data-i18n="exportExcel">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         تصدير Excel
       </button>
-      <button class="btn btn-outline btn-sm" id="mov-return-from-selection-btn" style="display:none" onclick="openMovementReturnShortcut()">
+      <button class="btn btn-outline btn-sm" id="mov-return-from-selection-btn" style="display:none" onclick="openMovementReturnShortcut()" data-i18n="returnSelected">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>
         استرجاع المحدد
       </button>
@@ -660,12 +707,12 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
     <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);gap:5px;display:flex;align-items:center" onclick="exportSelectedExcel()">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg> Excel
     </button>
-    <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);gap:5px;display:flex;align-items:center" onclick="bulkPrintPDF()">
+    <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);gap:5px;display:flex;align-items:center" onclick="bulkPrintPDF()" data-i18n="bulkPrint">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة
     </button>
-    <button class="btn btn-sm" id="mov-return-from-selection-btn2" style="display:none;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="openMovementReturnShortcut()">استرجاع</button>
-    <button class="btn btn-sm" id="bulk-cancel-btn" style="display:none;background:rgba(220,38,38,.7);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="bulkCancelMovements()">إلغاء</button>
-    <button class="btn btn-sm" id="bulk-del-btn" style="background:rgba(220,38,38,.7);color:#fff;border:1px solid rgba(255,255,255,.3);gap:5px;display:flex;align-items:center" onclick="bulkArchiveMovements()">
+    <button class="btn btn-sm" id="mov-return-from-selection-btn2" style="display:none;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="openMovementReturnShortcut()" data-i18n="returnSelected">استرجاع</button>
+    <button class="btn btn-sm" id="bulk-cancel-btn" style="display:none;background:rgba(220,38,38,.7);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="bulkCancelMovements()" data-i18n="bulkCancel">إلغاء</button>
+    <button class="btn btn-sm" id="bulk-del-btn" style="background:rgba(220,38,38,.7);color:#fff;border:1px solid rgba(255,255,255,.3);gap:5px;display:flex;align-items:center" onclick="bulkArchiveMovements()" data-i18n="bulkFreeze">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 7l-5 5-5-5"/><path d="M17 17l-5-5-5 5"/><line x1="2" y1="12" x2="22" y2="12"/></svg> تجميد
     </button>
     <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="clearMovSelection()">✕</button>
@@ -680,27 +727,27 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
         <input type="text" id="mov-search" placeholder="بحث عميل، مرجع، هاتف، ملاحظات..." oninput="debouncedRenderMovements()">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
-        <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px">من</label>
+        <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px" data-i18n="movFrom">من</label>
         <input type="date" id="mov-from" style="padding:7px 10px;min-width:140px" onchange="movPage=1;renderMovements()">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
-        <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px">إلى</label>
+        <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px" data-i18n="movTo">إلى</label>
         <input type="date" id="mov-to" style="padding:7px 10px;min-width:140px" onchange="movPage=1;renderMovements()">
       </div>
     </div>
     <!-- Filter pills -->
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <span style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-left:4px">نوع:</span>
-      <button class="mov-type-pill active" onclick="setMovFilter('all',this)">الكل</button>
-      <button class="mov-type-pill pill-green" onclick="setMovFilter('مبيعات',this)">
+      <span style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-left:4px" data-i18n="movType">نوع</span>:
+      <button class="mov-type-pill active" onclick="setMovFilter('all',this)" data-i18n="filterAll">الكل</button>
+      <button class="mov-type-pill pill-green" onclick="setMovFilter('مبيعات',this)" data-i18n="txSales">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
         مبيعات
       </button>
-      <button class="mov-type-pill pill-blue" onclick="setMovFilter('مشتريات',this)">
+      <button class="mov-type-pill pill-blue" onclick="setMovFilter('مشتريات',this)" data-i18n="txPurchases">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>
         مشتريات
       </button>
-      <button class="mov-type-pill pill-orange" onclick="setMovFilter('مرتجع',this)">
+      <button class="mov-type-pill pill-orange" onclick="setMovFilter('مرتجع',this)" data-i18n="txReturns">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>
         مرتجع
       </button>
@@ -709,16 +756,16 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
         استرجاع
       </button>
       <div style="width:1px;height:22px;background:var(--border);margin:0 4px"></div>
-      <span style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-left:4px">حالة:</span>
-      <button class="mov-type-pill pill-check" onclick="setMovFilter('مكتمل',this,'status')">
+      <span style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-left:4px" data-i18n="movStatus">حالة</span>:
+      <button class="mov-type-pill pill-check" onclick="setMovFilter('مكتمل',this,'status')" data-i18n="movComplete">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
         مكتمل
       </button>
-      <button class="mov-type-pill pill-wait" onclick="setMovFilter('معلق',this,'status')">
+      <button class="mov-type-pill pill-wait" onclick="setMovFilter('معلق',this,'status')" data-i18n="movPending">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
         انتظار
       </button>
-      <button class="mov-type-pill pill-cancel" onclick="setMovFilter('ملغي',this,'status')">
+      <button class="mov-type-pill pill-cancel" onclick="setMovFilter('ملغي',this,'status')" data-i18n="movCanceled">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
         ملغي
       </button>
@@ -734,15 +781,15 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
             <th style="width:42px;text-align:center;padding:10px 8px">
               <input type="checkbox" class="checkbox" onchange="toggleAllMov(this)">
             </th>
-            <th>التاريخ</th>
-            <th>النوع</th>
-            <th>العميل / المورد</th>
-            <th style="text-align:center">المرجع</th>
-            <th>الموظف</th>
-            <th style="text-align:center">الإجمالي</th>
-            <th style="text-align:center">المدفوع</th>
-            <th style="text-align:center">المتبقي</th>
-            <th style="text-align:center">الحالة</th>
+            <th data-i18n="date">التاريخ</th>
+            <th data-i18n="type">النوع</th>
+            <th data-i18n="colClientSupplier">العميل / المورد</th>
+            <th style="text-align:center" data-i18n="colRef">المرجع</th>
+            <th data-i18n="colEmployee">الموظف</th>
+            <th style="text-align:center" data-i18n="total">الإجمالي</th>
+            <th style="text-align:center" data-i18n="colPaid">المدفوع</th>
+            <th style="text-align:center" data-i18n="colRemaining">المتبقي</th>
+            <th style="text-align:center" data-i18n="status">الحالة</th>
             <th style="width:52px;text-align:center"></th>
           </tr>
         </thead>
@@ -759,10 +806,10 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div id="mov-panel-archive" style="display:none">
   <div class="flex-between mb-16" style="flex-wrap:wrap;gap:12px">
     <div>
-      <h2 class="page-title" style="margin-bottom:4px">الحركات المجمدة</h2>
-      <p style="font-size:.8rem;color:var(--muted);margin:0">لا تؤثر على المخزون أو الخزنة — يمكن فك التجميد في أي وقت</p>
+      <h2 class="page-title" style="margin-bottom:4px" data-i18n="movementsFrozenTitle">الحركات المجمدة</h2>
+      <p style="font-size:.8rem;color:var(--muted);margin:0" data-i18n="movementsFrozenSubtitle">لا تؤثر على المخزون أو الخزنة — يمكن فك التجميد في أي وقت</p>
     </div>
-    <button class="btn btn-outline btn-sm" onclick="loadArchivedMovements()" style="display:flex;align-items:center;gap:6px">
+    <button class="btn btn-outline btn-sm" onclick="loadArchivedMovements()" style="display:flex;align-items:center;gap:6px" data-i18n="refresh">
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
       تحديث
     </button>
@@ -770,8 +817,8 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
   <div style="background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden">
     <div class="overflow-x">
       <table id="archive-table">
-        <thead><tr><th>التاريخ</th><th>النوع</th><th>العميل/المورد</th><th>المرجع</th><th>الموظف</th><th>الإجمالي</th><th>تاريخ التجميد</th><th>بواسطة</th><th>إجراءات</th></tr></thead>
-        <tbody id="archive-tbody"><tr><td colspan="9" class="empty-state">جارٍ التحميل...</td></tr></tbody>
+        <thead><tr><th data-i18n="date">التاريخ</th><th data-i18n="type">النوع</th><th data-i18n="colClientSupplierShort">العميل/المورد</th><th data-i18n="colRef">المرجع</th><th data-i18n="colEmployee">الموظف</th><th data-i18n="total">الإجمالي</th><th data-i18n="colFrozenAt">تاريخ التجميد</th><th data-i18n="colBy">بواسطة</th><th data-i18n="colActions">إجراءات</th></tr></thead>
+        <tbody id="archive-tbody"><tr><td colspan="9" class="empty-state" data-i18n="loading">جارٍ التحميل...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -782,7 +829,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <!-- Clients -->
 <div class="page" id="page-clients">
 <div class="page-header">
-  <div><h2 class="page-title" data-i18n="clients">العملاء</h2><p class="page-subtitle">إدارة بيانات العملاء وسجل مشترياتهم</p></div>
+  <div><h2 class="page-title" data-i18n="clients">العملاء</h2><p class="page-subtitle" data-i18n="clientsSubtitle">إدارة بيانات العملاء وسجل مشترياتهم</p></div>
 </div>
 <div class="kpi-strip mb-20" id="clients-stats"></div>
 <div class="filter-card">
@@ -823,7 +870,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <!-- Products -->
 <div class="page" id="page-products">
 <div class="page-header">
-<div><h2 class="page-title" data-i18n="products">الأصناف</h2><p class="page-subtitle">إدارة قائمة المنتجات وأسعارها ومستوياتها</p></div>
+<div><h2 class="page-title" data-i18n="products">الأصناف</h2><p class="page-subtitle" data-i18n="productsSubtitle">إدارة قائمة المنتجات وأسعارها ومستوياتها</p></div>
 <div class="flex gap-8">
 <button class="btn btn-primary btn-sm" onclick="showProductCard()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/></svg> كارت المنتج الذكي</button>
 <button class="btn btn-primary btn-sm" onclick="openProductModal()">+ إضافة صنف</button>
@@ -840,14 +887,14 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <button class="btn btn-outline btn-sm" onclick="deselectAllProducts()">✕ إلغاء التحديد</button>
 </div>
 </div>
-<div class="table-card"><div class="overflow-x"><table id="prod-table"><thead><tr><th><input type="checkbox" id="prod-select-all" onchange="toggleAllProducts(this.checked)"></th><th>الكود</th><th>الاسم</th><th>المورد</th><th>سعر البيع</th><th>سعر الشراء</th><th>الحد الأدنى</th><th>الرصيد الافتتاحي</th><th>إجراءات</th></tr></thead><tbody></tbody></table></div></div>
+<div class="table-card"><div class="overflow-x"><table id="prod-table"><thead><tr><th><input type="checkbox" id="prod-select-all" onchange="toggleAllProducts(this.checked)"></th><th data-i18n="colCode">الكود</th><th data-i18n="colName">الاسم</th><th data-i18n="colSupplier">المورد</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice">سعر الشراء</th><th data-i18n="minStock">الحد الأدنى</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colActions">إجراءات</th></tr></thead><tbody></tbody></table></div></div>
 <div id="prod-pagination" style="margin-top:16px"></div>
 </div>
 
 <!-- Suppliers -->
 <div class="page" id="page-suppliers">
 <div class="page-header">
-<div><h2 class="page-title" data-i18n="suppliers">الموردون</h2><p class="page-subtitle">قائمة موردي المنتجات وبياناتهم</p></div>
+<div><h2 class="page-title" data-i18n="suppliers">الموردون</h2><p class="page-subtitle" data-i18n="suppliersSubtitle">قائمة موردي المنتجات وبياناتهم</p></div>
 <div class="page-header-actions">
 <button class="btn btn-outline btn-sm" onclick="exportSuppliersExcel()" style="display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تصدير Excel</button>
 <button class="btn btn-primary btn-sm" onclick="openSupplierModal()">+ إضافة مورد</button>
@@ -861,7 +908,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
   <!-- Header Section -->
   <div style="margin-bottom: 24px;">
     <div class="flex-between mb-16">
-      <h2 class="page-title" style="margin-bottom: 0;" data-i18n="expenses"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg> المصاريف</h2>
+      <h2 class="page-title" style="margin-bottom:0;display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg><span data-i18n="expenses">المصاريف</span></h2>
       <div class="flex gap-8">
         <button class="btn btn-outline btn-sm" onclick="exportExpensesExcel()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تصدير Excel</button>
         <button class="btn btn-primary btn-sm" onclick="openExpenseModal()">+ إضافة مصروف</button>
@@ -924,14 +971,14 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
             <th style="width: 40px; text-align: center; padding: 12px 8px;">
               <input type="checkbox" id="exp-select-all" onchange="document.querySelectorAll('.exp-chk:not(:disabled)').forEach(c => c.checked = this.checked);">
             </th>
-            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);">التاريخ</th>
-            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);">الوصف</th>
-            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);">النوع</th>
-            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);">الحساب</th>
-            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--text);">المبلغ</th>
-            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--text);">الحالة</th>
-            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);">الموظف</th>
-            <th style="width: 60px; text-align: center; font-weight: 600; color: var(--text);">إجراء</th>
+            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);" data-i18n="date">التاريخ</th>
+            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);" data-i18n="colDescription">الوصف</th>
+            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);" data-i18n="type">النوع</th>
+            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);" data-i18n="colAccount">الحساب</th>
+            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--text);" data-i18n="colAmount">المبلغ</th>
+            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--text);" data-i18n="status">الحالة</th>
+            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);" data-i18n="colEmployee">الموظف</th>
+            <th style="width: 60px; text-align: center; font-weight: 600; color: var(--text);" data-i18n="colAction">إجراء</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -946,7 +993,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <!-- Complaints -->
 <div class="page" id="page-complaints">
 <div class="page-header">
-  <div><h2 class="page-title" id="complaints-section-title">خدمة العملاء وما بعد البيع</h2><p class="page-subtitle">متابعة الشكاوى وتقييمات العملاء وما بعد البيع</p></div>
+  <div><h2 class="page-title" id="complaints-section-title">خدمة العملاء وما بعد البيع</h2><p class="page-subtitle" data-i18n="complaintsSubtitle">متابعة الشكاوى وتقييمات العملاء وما بعد البيع</p></div>
   <div class="flex gap-8">
     <button class="btn btn-outline btn-sm" onclick="exportComplaintsExcel()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تصدير Excel</button>
     <button class="btn btn-primary btn-sm" onclick="openComplaintModal()">+ شكوى جديدة</button>
@@ -981,16 +1028,16 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="overflow-x">
   <table id="cmp-table">
     <thead><tr>
-      <th>رقم الشكوى</th>
-      <th>الموظف</th>
-      <th>العميل</th>
-      <th>الطلب</th>
-      <th>الوصف</th>
-      <th>الحالة</th>
-      <th>الإجراء</th>
-      <th>تاريخ التقديم</th>
-      <th>تقييم العميل</th>
-      <th>إجراءات</th>
+      <th data-i18n="colComplaintNo">رقم الشكوى</th>
+      <th data-i18n="colEmployee">الموظف</th>
+      <th data-i18n="client">العميل</th>
+      <th data-i18n="colOrder">الطلب</th>
+      <th data-i18n="colDescription">الوصف</th>
+      <th data-i18n="status">الحالة</th>
+      <th data-i18n="colAction">الإجراء</th>
+      <th data-i18n="colSubmittedAt">تاريخ التقديم</th>
+      <th data-i18n="colCustRating">تقييم العميل</th>
+      <th data-i18n="colActions">إجراءات</th>
     </tr></thead>
     <tbody id="cmp-tbody"></tbody>
   </table>
@@ -1019,7 +1066,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <!-- Approvals -->
 <div class="page" id="page-approvals">
 <div class="page-header">
-<div><h2 class="page-title">الموافقات والمتابعة</h2><p class="page-subtitle">مراجعة طلبات الاسترجاع والمصاريف وطلبات الإلغاء</p></div>
+<div><h2 class="page-title" data-i18n="approvalsPageTitle">الموافقات والمتابعة</h2><p class="page-subtitle" data-i18n="approvalsSubtitle">مراجعة طلبات الاسترجاع والمصاريف وطلبات الإلغاء</p></div>
 <div class="flex gap-8">
 <button class="btn btn-outline btn-sm" id="appr-export-hub-btn" onclick="exportHubExcel()" style="display:none"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تصدير Hub</button>
 </div>
@@ -1079,14 +1126,14 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
   <table id="hub-table">
     <thead>
       <tr>
-        <th>التاريخ والوقت</th>
-        <th>الإجراء</th>
-        <th>الفاتورة</th>
-        <th>العميل</th>
-        <th>بواسطة</th>
-        <th>التفاصيل</th>
-        <th>الخزنة</th>
-        <th>إجمالي الفاتورة</th>
+        <th data-i18n="colDateTime">التاريخ والوقت</th>
+        <th data-i18n="colAction">الإجراء</th>
+        <th data-i18n="colInvoice">الفاتورة</th>
+        <th data-i18n="client">العميل</th>
+        <th data-i18n="colBy">بواسطة</th>
+        <th data-i18n="colDetails">التفاصيل</th>
+        <th data-i18n="colVault">الخزنة</th>
+        <th data-i18n="colInvoiceTotal">إجمالي الفاتورة</th>
       </tr>
     </thead>
     <tbody id="hub-tbody"></tbody>
@@ -1098,7 +1145,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <!-- Reports -->
 <div class="page" id="page-reports">
 <div class="page-header">
-  <div><h2 class="page-title" data-i18n="reports">التقارير</h2><p class="page-subtitle">تحليل الأداء المالي والمبيعات والمخزون</p></div>
+  <div><h2 class="page-title" data-i18n="reports">التقارير</h2><p class="page-subtitle" data-i18n="reportsSubtitle">تحليل الأداء المالي والمبيعات والمخزون</p></div>
 </div>
 <div class="filter-card" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
   <button class="tab-btn active" onclick="setReportPeriod('today',this)">اليوم</button>
@@ -1137,14 +1184,14 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
     <table id="rep-profit-table" style="width:100%;border-collapse:collapse;font-size:.9rem">
       <thead>
         <tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
-          <th style="padding:8px;text-align:right">#</th>
-          <th style="padding:8px;text-align:right">الصنف</th>
-          <th style="padding:8px;text-align:center">الكمية</th>
-          <th style="padding:8px;text-align:right">الإيراد</th>
-          <th style="padding:8px;text-align:right">التكلفة</th>
-          <th style="padding:8px;text-align:right">الربح</th>
-          <th style="padding:8px;text-align:center">الهامش %</th>
-          <th style="padding:8px;text-align:center">الحالة</th>
+          <th style="padding:8px;text-align:right" data-i18n="colHash">#</th>
+          <th style="padding:8px;text-align:right" data-i18n="product">الصنف</th>
+          <th style="padding:8px;text-align:center" data-i18n="qty">الكمية</th>
+          <th style="padding:8px;text-align:right" data-i18n="colRevenue">الإيراد</th>
+          <th style="padding:8px;text-align:right" data-i18n="colCost">التكلفة</th>
+          <th style="padding:8px;text-align:right" data-i18n="colProfit">الربح</th>
+          <th style="padding:8px;text-align:center" data-i18n="colMargin">الهامش %</th>
+          <th style="padding:8px;text-align:center" data-i18n="status">الحالة</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -1157,7 +1204,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <!-- Vault -->
 <div class="page" id="page-vault">
 <h2 class="page-title" data-i18n="vault">الخزنة</h2>
-<p class="page-subtitle" style="margin-top:-12px;margin-bottom:16px">إدارة الرصيد النقدي وسجل جميع المعاملات المالية</p>
+<p class="page-subtitle" style="margin-top:-12px;margin-bottom:16px" data-i18n="vaultSubtitle">إدارة الرصيد النقدي وسجل جميع المعاملات المالية</p>
 <form id="vault-locked" class="vault-locked" onsubmit="event.preventDefault(); unlockVault();">
 <div class="vault-lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
 <h3>الخزنة محمية</h3>
@@ -1189,7 +1236,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="card">
 <h4 class="mb-12">توزيع مصادر السيولة</h4>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center">
-<canvas id="vault-source-chart" height="200"></canvas>
+<canvas id="vault-source-chart" height="500"></canvas>
 <div id="vault-source-legend" style="font-size:.78rem"></div>
 </div>
 </div>
@@ -1223,7 +1270,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <input type="date" id="vault-to" style="width:130px" onchange="vaultPage=1;loadVaultLog()">
 </div>
 </div>
-<div class="overflow-x"><table id="vault-table"><thead><tr><th>رقم المعاملة</th><th>التاريخ</th><th>التوقيت</th><th>المبلغ</th><th>الرصيد الكلي</th><th>المصدر</th><th>#المرجع</th><th>القسم</th><th>الحالة</th><th>الطريقة</th><th>الموظف</th><th>الوصف</th><th class="vault-justif-col">الإثبات المحاسبي</th></tr></thead><tbody></tbody></table></div>
+<div class="overflow-x"><table id="vault-table"><thead><tr><th data-i18n="colTxNo">رقم المعاملة</th><th data-i18n="date">التاريخ</th><th data-i18n="colTime">التوقيت</th><th data-i18n="colAmount">المبلغ</th><th data-i18n="colTotalBal">الرصيد الكلي</th><th data-i18n="colSource">المصدر</th><th data-i18n="colRefTag">#المرجع</th><th data-i18n="colSegment">القسم</th><th data-i18n="status">الحالة</th><th data-i18n="colMethod">الطريقة</th><th data-i18n="colEmployee">الموظف</th><th data-i18n="colDescription">الوصف</th><th class="vault-justif-col" data-i18n="colAccountingProof">الإثبات المحاسبي</th></tr></thead><tbody></tbody></table></div>
 <div id="vault-pagination"></div>
 </div>
 </div>
@@ -1232,7 +1279,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <!-- Users -->
 <div class="page" id="page-users">
 <div class="page-header">
-<div><h2 class="page-title" data-i18n="users">المستخدمون</h2><p class="page-subtitle">إدارة حسابات الموظفين وصلاحياتهم</p></div>
+<div><h2 class="page-title" data-i18n="users">المستخدمون</h2><p class="page-subtitle" data-i18n="usersSubtitle">إدارة حسابات الموظفين وصلاحياتهم</p></div>
 <button class="btn btn-primary btn-sm" onclick="openUserModal()">+ إضافة مستخدم</button>
 </div>
 <div class="grid grid-3" id="users-grid"></div>
@@ -1240,85 +1287,105 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 
 <!-- Settings -->
 <div class="page" id="page-settings">
+<div class="settings-page-inner">
+<div class="page-header" style="margin-bottom:22px">
+<div>
 <h2 class="page-title" data-i18n="settings">الإعدادات</h2>
-<p class="page-subtitle" style="margin-top:-12px;margin-bottom:24px">إعدادات النظام والشحن والمظهر والنسخ الاحتياطي</p>
-
-<div class="grid grid-2 gap-16 mb-24">
-<div class="card">
-<h4 class="mb-16" style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" style="width:1.1em;height:1.1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg> أسعار الشحن</h4>
-<div class="grid grid-1 gap-12 mb-16">
-<div class="form-group"><label>سعر القاهرة الافتراضي</label><input type="number" id="set-cairo-price" onchange="saveDefaultPrices()" placeholder="0"></div>
-<div class="form-group"><label>سعر المحافظات الافتراضي</label><input type="number" id="set-gov-price" onchange="saveDefaultPrices()" placeholder="0"></div>
+<p class="page-subtitle" style="margin-top:4px;margin-bottom:0" data-i18n="settingsSubtitle">ضبط المظهر، الشحن، الأمان، والنسخ الاحتياطي في مكان واحد</p>
 </div>
 </div>
 
-<div class="card">
-<h4 class="mb-16" style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" style="width:1.1em;height:1.1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> الأمان</h4>
-<div class="form-group"><label>كلمة مرور الخزنة</label><div style="position:relative;margin-top:8px"><input type="password" id="set-vault-pass" placeholder="كلمة المرور الجديدة" style="padding-left:36px;margin-bottom:8px;width:100%"><button type="button" style="position:absolute;left:8px;top:8px;background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--muted)" onclick="togglePassField(event)"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div><button class="btn btn-primary btn-sm" onclick="saveVaultPass()">حفظ</button></div>
+<div class="settings-top-grid">
+<div class="settings-stack">
+<div>
+<div class="settings-section-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span data-i18n="settingsSectionPrefs">المظهر واللغة</span></div>
+<div class="card settings-card">
+<div class="settings-pref-body">
+<label class="flex gap-8" style="cursor:pointer;align-items:center;font-weight:500"><input type="checkbox" id="set-dark" onchange="toggleDarkMode()" style="cursor:pointer;width:auto"> <span data-i18n="settingsDarkMode">الوضع الليلي</span></label>
+<div class="form-group" style="margin:0"><label data-i18n="settingsLangLabel">اللغة</label><select id="set-lang" style="width:100%;margin-top:6px" onchange="changeLang(this.value)"><option value="ar">العربية</option><option value="en">English</option></select></div>
+<p class="text-xs text-muted" style="margin:0;line-height:1.5" data-i18n="settingsLangHint">يُحفظ تلقائياً ويُطبّق على الجلسة الحالية.</p>
 </div>
 </div>
-
-<div class="card">
-<h4 class="mb-16" style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" style="width:1.1em;height:1.1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg> المظهر والعام</h4>
-<div class="flex gap-16" style="flex-direction:column">
-<label class="flex gap-8" style="cursor:pointer;align-items:center"><input type="checkbox" id="set-dark" onchange="toggleDarkMode()" style="cursor:pointer"> <span>الوضع الليلي</span></label>
-<div class="form-group" style="margin:0"><label>اللغة</label><select id="set-lang" style="width:100%;margin-top:8px" onchange="changeLang(this.value)"><option value="ar">العربية</option><option value="en">English</option></select></div>
 </div>
+<div>
+<div class="settings-section-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span data-i18n="settingsSectionSecurity">أمان الخزنة</span></div>
+<div class="card settings-card">
+<div class="form-group" style="margin-bottom:12px"><label>كلمة مرور الخزنة</label><p class="text-xs text-muted" style="margin:4px 0 8px">تُستخدم لفتح الخزنة وسجلاتها الحساسة.</p><div style="position:relative;margin-top:4px"><input type="password" id="set-vault-pass" placeholder="كلمة المرور الجديدة" style="padding-left:36px;margin-bottom:8px;width:100%"><button type="button" style="position:absolute;left:8px;top:8px;background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--muted)" onclick="togglePassField(event)"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div><button class="btn btn-primary btn-sm" onclick="saveVaultPass()">حفظ كلمة المرور</button></div>
 </div>
-
-<div class="card">
-<h4 class="mb-16" style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" style="width:1.1em;height:1.1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> شركات الشحن</h4>
-<div class="overflow-x"><table id="ship-table" style="font-size:.85rem"><thead><tr><th>الشركة</th><th>القاهرة</th><th>المحافظات</th><th>إجراءات</th></tr></thead><tbody></tbody></table></div>
-<div class="flex gap-8 mt-12" style="flex-wrap:wrap">
-<input type="text" id="new-ship-name" placeholder="اسم الشركة" style="flex:1;min-width:150px">
-<input type="number" id="new-ship-cairo" placeholder="القاهرة" style="max-width:120px">
-<input type="number" id="new-ship-gov" placeholder="المحافظات" style="max-width:120px">
-<button class="btn btn-primary btn-sm" onclick="addShipCompany()">إضافة</button>
 </div>
 </div>
 
-<!-- Backup & Restore Section -->
-<div class="card" style="border-left:3px solid var(--blue);background:rgba(21,101,192,.05)">
-<h4 class="mb-16" style="color:var(--blue)"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg> النسخ الاحتياطية والاسترجاع</h4>
-<div style="margin-bottom:16px">
-<button class="btn btn-primary" onclick="createBackupNow()" style="margin-left:8px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> إنشاء نسخة احتياطية الآن</button>
+<div class="settings-stack">
+<div>
+<div class="settings-section-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg><span data-i18n="settingsSectionShipPrices">أسعار الشحن الافتراضية</span></div>
+<div class="card settings-card">
+<p class="text-xs text-muted" style="margin:0 0 12px;line-height:1.5">تُستخدم عند عدم تحديد سعر خاص لشركة الشحن في الحركة.</p>
+<div class="settings-price-grid">
+<div class="form-group" style="margin-bottom:0"><label>سعر القاهرة الافتراضي</label><input type="number" id="set-cairo-price" onchange="saveDefaultPrices()" placeholder="0"></div>
+<div class="form-group" style="margin-bottom:0"><label>سعر المحافظات الافتراضي</label><input type="number" id="set-gov-price" onchange="saveDefaultPrices()" placeholder="0"></div>
+</div>
+</div>
+</div>
+<div>
+<div class="settings-section-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span data-i18n="settingsSectionShipCos">شركات الشحن</span></div>
+<div class="card settings-card">
+<div class="overflow-x"><table id="ship-table" style="font-size:.85rem"><thead><tr><th data-i18n="colCompany">الشركة</th><th data-i18n="colCairo">القاهرة</th><th data-i18n="colGovs">المحافظات</th><th data-i18n="colActions">إجراءات</th></tr></thead><tbody></tbody></table></div>
+<div class="settings-ship-add">
+<input type="text" id="new-ship-name" placeholder="اسم الشركة">
+<input type="number" id="new-ship-cairo" placeholder="القاهرة">
+<input type="number" id="new-ship-gov" placeholder="المحافظات">
+<button class="btn btn-primary btn-sm" onclick="addShipCompany()">إضافة شركة</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="settings-section-label mt-24" style="margin-top:28px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg><span data-i18n="settingsSectionData">النسخ الاحتياطي والبيانات</span></div>
+<div class="settings-data-row mb-24">
+<div class="card" style="border-inline-start:3px solid var(--blue);background:rgba(21,101,192,.05)">
+<h4 class="mb-12" style="color:var(--blue);display:flex;align-items:center;gap:8px;font-size:1rem"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.1em;height:1.1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> النسخ الاحتياطية والاسترجاع</h4>
+<p class="text-xs text-muted" style="margin:-4px 0 14px">أنشئ نسخة احتياطية، استرجع، أو انسخ الملفات خارجاً.</p>
+<div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:8px">
+<button class="btn btn-primary" onclick="createBackupNow()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> إنشاء نسخة الآن</button>
 <button class="btn btn-danger" onclick="clearAllBackups()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> حذف جميع النسخ</button>
 </div>
-<div style="margin-bottom:16px">
-<label style="display:block;margin-bottom:8px;font-weight:600">النسخ الاحتياطية المحفوظة:</label>
-<div style="display:flex;gap:8px;margin-bottom:8px">
-<select id="backup-select" style="flex:1">
+<div style="margin-bottom:14px">
+<label style="display:block;margin-bottom:6px;font-weight:600;font-size:.85rem">النسخ المحفوظة</label>
+<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+<select id="backup-select" style="flex:1;min-width:200px">
 <option value="">-- اختر نسخة احتياطية --</option>
 </select>
 <button class="btn btn-outline" onclick="loadBackupList(true)" style="min-width:100px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> تحديث</button>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn btn-primary" onclick="restoreBackupNow()" style="flex:1"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg> استرجاع</button>
-<button class="btn btn-outline" onclick="downloadBackupNow()" style="flex:1"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تحميل</button>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn btn-primary" onclick="restoreBackupNow()" style="flex:1;min-width:120px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg> استرجاع</button>
+<button class="btn btn-outline" onclick="downloadBackupNow()" style="flex:1;min-width:120px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تحميل</button>
 </div>
 </div>
-<div style="margin-bottom:16px;border-top:1px solid var(--border);padding-top:16px">
-<label style="display:block;margin-bottom:8px;font-weight:600">استيراد نسخة احتياطية:</label>
-<div style="display:flex;gap:8px">
-<input type="file" id="backup-upload" accept=".json" style="flex:1">
+<div style="border-top:1px solid var(--border);padding-top:14px">
+<label style="display:block;margin-bottom:6px;font-weight:600;font-size:.85rem">استيراد من ملف</label>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+<input type="file" id="backup-upload" accept=".json" style="flex:1;min-width:180px">
 <button class="btn btn-primary" onclick="uploadBackupFile()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> استيراد</button>
 </div>
-<small style="color:var(--muted);margin-top:8px;display:block"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> اختر ملف JSON تم تحميله مسبقاً</small>
+<small class="text-xs text-muted" style="margin-top:8px;display:block"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> ملف JSON سبق تصديره من النظام</small>
 </div>
 </div>
 
-<!-- Reset Data Section -->
-<div class="card" style="border-left:3px solid var(--red);background:rgba(220,38,38,.05)">
-<h4 class="mb-16" style="color:var(--red)"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> خطر - إعادة تعيين النظام</h4>
-<p style="color:var(--muted);font-size:.9rem;margin-bottom:12px">هذه العملية ستمسح جميع البيانات (الحركات، الخزنة، المرتجعات، المصاريف) مع إنشاء نسخة احتياطية تلقائياً. المنتجات والأصناف تبقى كما هي.</p>
-<button class="btn" style="background:var(--red);color:white;border:none" onclick="confirmResetAllData()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> مسح جميع البيانات</button>
+<div class="card" style="border-inline-start:3px solid var(--red);background:rgba(220,38,38,.05);display:flex;flex-direction:column;min-height:100%">
+<h4 class="mb-10" style="color:var(--red);display:flex;align-items:center;gap:8px;font-size:1rem"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.1em;height:1.1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> منطقة الخطر</h4>
+<p class="text-sm text-muted" style="margin-bottom:14px;line-height:1.55;flex:1">مسح العمليات والخزنة والمرتجعات والمصاريف مع إنشاء نسخة احتياطية تلقائياً. قائمة المنتجات لا تُمس.</p>
+<button class="btn" style="background:var(--red);color:white;border:none;align-self:flex-start" onclick="confirmResetAllData()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> مسح جميع البيانات</button>
+</div>
+</div>
 </div>
 </div>
 
 <!-- Profile -->
 <div class="page" id="page-profile">
 <h2 class="page-title" data-i18n="profile">الملف الشخصي</h2>
-<p class="page-subtitle" style="margin-top:-12px;margin-bottom:20px">تعديل بيانات حسابك الشخصي</p>
+<p class="page-subtitle" style="margin-top:-12px;margin-bottom:20px" data-i18n="profileSubtitle">تعديل بيانات حسابك الشخصي</p>
 <div class="profile-section card">
 <div class="profile-avatar" id="profile-avatar"></div>
 <div class="form-group"><label>الاسم</label><input type="text" id="prof-name" readonly></div>
@@ -1525,6 +1592,70 @@ const TRANSLATIONS = {
   date:{ar:'التاريخ',en:'Date'},type:{ar:'النوع',en:'Type'},client:{ar:'العميل',en:'Client'},
   status:{ar:'الحالة',en:'Status'},current:{ar:'الحالي',en:'Current'},minStock:{ar:'الحد الأدنى',en:'Min Stock'},
   lineItems:{ar:'الأصناف',en:'Line Items'},
+  settingsSubtitle:{ar:'ضبط المظهر، الشحن، الأمان، والنسخ الاحتياطي في مكان واحد',en:'Appearance, shipping, security, and backups in one place'},
+  settingsSectionPrefs:{ar:'المظهر واللغة',en:'Appearance & language'},
+  settingsSectionSecurity:{ar:'أمان الخزنة',en:'Vault security'},
+  settingsSectionShipPrices:{ar:'أسعار الشحن الافتراضية',en:'Default shipping prices'},
+  settingsSectionShipCos:{ar:'شركات الشحن',en:'Shipping companies'},
+  settingsSectionData:{ar:'النسخ الاحتياطي والبيانات',en:'Backups & data'},
+  dashboardSubtitle:{ar:'نظرة عامة على أداء المبيعات والمخزون والخزنة',en:'Overview of sales, inventory, and vault performance'},
+  transactionSubtitle:{ar:'تسجيل مبيعات، مشتريات، أو طلب استرجاع',en:'Record sales, purchases, or a return request'},
+  inventorySubtitle:{ar:'مراقبة الأرصدة وحالة المخزون لكل الأصناف',en:'Stock levels and status for every product'},
+  movementsListSubtitle:{ar:'عرض وتتبع جميع حركات المبيعات والمشتريات والمرتجعات',en:'View and track sales, purchases, and returns'},
+  movementsFrozenTitle:{ar:'الحركات المجمدة',en:'Frozen movements'},
+  movementsFrozenSubtitle:{ar:'لا تؤثر على المخزون أو الخزنة — يمكن فك التجميد في أي وقت',en:'Does not affect inventory or the vault — can be unfrozen anytime'},
+  movementsTabFrozen:{ar:'الحركات المجمدة',en:'Frozen'},
+  clientsSubtitle:{ar:'إدارة بيانات العملاء وسجل مشترياتهم',en:'Manage customers and their purchase history'},
+  productsSubtitle:{ar:'إدارة قائمة المنتجات وأسعارها ومستوياتها',en:'Manage products, prices, and stock levels'},
+  suppliersSubtitle:{ar:'قائمة موردي المنتجات وبياناتهم',en:'Suppliers and their details'},
+  complaintsPageTitle:{ar:'خدمة العملاء وما بعد البيع',en:'Customer service & after-sales'},
+  complaintsSubtitle:{ar:'متابعة الشكاوى وتقييمات العملاء وما بعد البيع',en:'Complaints, ratings, and after-sales follow-up'},
+  approvalsPageTitle:{ar:'الموافقات والمتابعة',en:'Approvals & follow-up'},
+  approvalsSubtitle:{ar:'مراجعة طلبات الاسترجاع والمصاريف وطلبات الإلغاء',en:'Review returns, expenses, and cancellation requests'},
+  reportsSubtitle:{ar:'تحليل الأداء المالي والمبيعات والمخزون',en:'Financial, sales, and inventory analytics'},
+  vaultSubtitle:{ar:'إدارة الرصيد النقدي وسجل جميع المعاملات المالية',en:'Cash balances and all treasury transactions'},
+  usersSubtitle:{ar:'إدارة حسابات الموظفين وصلاحياتهم',en:'Staff accounts and permissions'},
+  profileSubtitle:{ar:'تعديل بيانات حسابك الشخصي',en:'Edit your account details'},
+  settingsDarkMode:{ar:'الوضع الليلي',en:'Dark mode'},
+  settingsLangLabel:{ar:'اللغة',en:'Language'},
+  settingsLangHint:{ar:'يُحفظ تلقائياً ويُطبّق على الجلسة الحالية.',en:'Saved automatically and applied for this session.'},
+  headerLangTitle:{ar:'تغيير اللغة',en:'Change language'},
+  docTitle:{ar:'Soulia - إدارة المخازن',en:'Soulia — Warehouse management'},
+  colCode:{ar:'الكود',en:'Code'},colName:{ar:'الاسم',en:'Name'},colSupplier:{ar:'المورد',en:'Supplier'},
+  colSellPrice:{ar:'سعر البيع',en:'Sale price'},colBuyPrice:{ar:'سعر الشراء',en:'Purchase price'},
+  colOpeningBal:{ar:'الرصيد الافتتاحي',en:'Opening balance'},colPurchases:{ar:'المشتريات',en:'Purchases'},
+  colPurchasesTip:{ar:'من المورد فقط',en:'From supplier only'},colReturnToStock:{ar:'إرجاع للمخزن',en:'Return to stock'},
+  colReturnToStockTip:{ar:'استرجاع أو استبدال — إدخال للمخزن وليس شراء',en:'Return or exchange — stock in, not a purchase'},
+  colSales:{ar:'المبيعات',en:'Sales'},colCurrentBal:{ar:'الرصيد الحالي',en:'Current balance'},
+  colClientSupplier:{ar:'العميل / المورد',en:'Client / supplier'},colClientSupplierShort:{ar:'العميل/المورد',en:'Client/supplier'},
+  colRef:{ar:'المرجع',en:'Ref.'},colEmployee:{ar:'الموظف',en:'Employee'},colPaid:{ar:'المدفوع',en:'Paid'},colRemaining:{ar:'المتبقي',en:'Due'},
+  colFrozenAt:{ar:'تاريخ التجميد',en:'Frozen at'},colBy:{ar:'بواسطة',en:'By'},colActions:{ar:'إجراءات',en:'Actions'},colAction:{ar:'الإجراء',en:'Action'},
+  colAccount:{ar:'الحساب',en:'Account'},colAmount:{ar:'المبلغ',en:'Amount'},colDescription:{ar:'الوصف',en:'Description'},
+  colComplaintNo:{ar:'رقم الشكوى',en:'Complaint #'},colOrder:{ar:'الطلب',en:'Order'},colSubmittedAt:{ar:'تاريخ التقديم',en:'Submitted'},
+  colCustRating:{ar:'تقييم العميل',en:'Rating'},colDateTime:{ar:'التاريخ والوقت',en:'Date & time'},colInvoice:{ar:'الفاتورة',en:'Invoice'},
+  colVault:{ar:'الخزنة',en:'Vault'},colDetails:{ar:'التفاصيل',en:'Details'},colInvoiceTotal:{ar:'إجمالي الفاتورة',en:'Invoice total'},
+  colRevenue:{ar:'الإيراد',en:'Revenue'},colCost:{ar:'التكلفة',en:'Cost'},colProfit:{ar:'الربح',en:'Profit'},colMargin:{ar:'الهامش %',en:'Margin %'},
+  colTxNo:{ar:'رقم المعاملة',en:'Txn #'},colTime:{ar:'التوقيت',en:'Time'},colTotalBal:{ar:'الرصيد الكلي',en:'Total balance'},
+  colSource:{ar:'المصدر',en:'Source'},colRefTag:{ar:'#المرجع',en:'#Ref'},colRefNumber:{ar:'الرقم المرجعي',en:'Reference #'},colSegment:{ar:'القسم',en:'Segment'},colMethod:{ar:'الطريقة',en:'Method'},
+  colAccountingProof:{ar:'الإثبات المحاسبي',en:'Accounting entry'},colCompany:{ar:'الشركة',en:'Company'},colCairo:{ar:'القاهرة',en:'Cairo'},colGovs:{ar:'المحافظات',en:'Governorates'},
+  colPrice:{ar:'السعر',en:'Price'},colDeposit:{ar:'الديبوزت',en:'Deposit'},colDifference:{ar:'الفرق',en:'Difference'},
+  colPhone:{ar:'الهاتف',en:'Phone'},colOrders:{ar:'الطلبات',en:'Orders'},colPaidTotal:{ar:'المسدد',en:'Paid'},colRatio:{ar:'النسبة',en:'% paid'},
+  colLastMov:{ar:'آخر حركة',en:'Last txn'},colInvoiceNo:{ar:'رقم الفاتورة',en:'Invoice #'},colPayments:{ar:'السدادات',en:'Payments'},
+  colRefCode:{ar:'الكود المرجعي',en:'Ref. code'},colHash:{ar:'#',en:'#'},
+  dashboardCreateBtn:{ar:'＋ إنشاء ▾',en:'＋ Create'},userOnlineStatus:{ar:'حالة المستخدمين',en:'User Status'},
+  updating:{ar:'جاري التحديث',en:'Updating'},loadingUsers:{ar:'جاري تحميل المستخدمين...',en:'Loading users...'},
+  treasuryPosition:{ar:'الوضع النقدي',en:'Treasury Position'},txSales:{ar:'مبيعات',en:'Sales'},
+  txPurchases:{ar:'مشتريات',en:'Purchases'},txReturns:{ar:'مرتجعات',en:'Returns'},addProduct:{ar:'+ إضافة صنف',en:'+ Add product'},
+  searchProducts:{ar:'بحث أصناف',en:'Search products'},invoiceDiscount:{ar:'خصم على الفاتورة',en:'Invoice discount'},
+  comments:{ar:'التعليقات',en:'Comments'},addComment:{ar:'أضف تعليق...',en:'Add comment...'},addCommentBtn:{ar:'إضافة',en:'Add'},
+  noComments:{ar:'لا توجد تعليقات',en:'No comments'},saveTransaction:{ar:'حفظ الحركة',en:'Save Transaction'},
+  clearTransaction:{ar:'مسح',en:'Clear'},searchInventory:{ar:'بحث في المخزن...',en:'Search inventory...'},
+  exportExcel:{ar:'تصدير Excel',en:'Export Excel'},filterAll:{ar:'الكل',en:'All'},filterLow:{ar:'منخفض',en:'Low'},
+  filterAvailable:{ar:'متوفر',en:'Available'},filterOutOfStock:{ar:'نفد',en:'Out of Stock'},returnSelected:{ar:'استرجاع المحدد',en:'Return selected'},
+  movFrom:{ar:'من',en:'From'},movTo:{ar:'إلى',en:'To'},movType:{ar:'نوع',en:'Type'},movStatus:{ar:'حالة',en:'Status'},
+  movComplete:{ar:'مكتمل',en:'Complete'},movPending:{ar:'انتظار',en:'Pending'},movCanceled:{ar:'ملغي',en:'Canceled'},
+  bulkPrint:{ar:'طباعة',en:'Print'},bulkFreeze:{ar:'تجميد',en:'Freeze'},bulkCancel:{ar:'إلغاء',en:'Cancel'},
+  refresh:{ar:'تحديث',en:'Refresh'},loading:{ar:'جارٍ التحميل...',en:'Loading...'},
 };
 
 function t(key) {
@@ -1533,14 +1664,30 @@ function t(key) {
   return entry[currentLang] || entry.ar || key;
 }
 
+function refreshComplaintsSectionTitle() {
+  const titleEl = qs('#complaints-section-title');
+  if (!titleEl) return;
+  if (settings && settings.complaintsTitle) titleEl.textContent = settings.complaintsTitle;
+  else titleEl.textContent = t('complaintsPageTitle');
+}
+
 function applyLang() {
   qsa('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
-    el.textContent = t(key);
+    if (key) el.textContent = t(key);
+  });
+  qsa('[data-i18n-title]').forEach(el => {
+    const key = el.getAttribute('data-i18n-title');
+    if (key) el.title = t(key);
   });
   document.documentElement.lang = currentLang === 'en' ? 'en' : 'ar';
   document.documentElement.dir = currentLang === 'en' ? 'ltr' : 'rtl';
+  document.title = t('docTitle');
+  const headerLangEl = qs('#header-lang'); if (headerLangEl) headerLangEl.value = currentLang;
+  const settingsLangEl = qs('#set-lang'); if (settingsLangEl) settingsLangEl.value = currentLang;
   buildSidebar();
+  updateHeader();
+  refreshComplaintsSectionTitle();
 }
 
 function fmtN(n) { if (n == null || isNaN(n)) return '0'; return Number(n).toLocaleString('en-US'); }
@@ -1550,14 +1697,15 @@ function fmtDate(d) {
   if (!d) return '-';
   const str = typeof d === 'string' ? d.slice(0, 10) : d;
   const t = today();
-  if (str === t) return 'اليوم';
+  const loc = currentLang === 'en' ? 'en-US' : 'ar-EG';
+  if (str === t) return currentLang === 'en' ? 'Today' : 'اليوم';
   const y = new Date(new Date(t).getTime() - 86400000).toISOString().slice(0, 10);
-  if (str === y) return 'أمس';
+  if (str === y) return currentLang === 'en' ? 'Yesterday' : 'أمس';
   const parts = str.split('-').map(Number);
   if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
     try {
       const dt = new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
-      if (!isNaN(dt.getTime())) return dt.toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+      if (!isNaN(dt.getTime())) return dt.toLocaleDateString(loc, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
     } catch (_) {}
   }
   return str;
@@ -1566,6 +1714,15 @@ function fmtElapsed(isoStr) {
   if (!isoStr) return '';
   const diff = Date.now() - new Date(isoStr).getTime();
   const mins = Math.floor(diff / 60000);
+  if (currentLang === 'en') {
+    if (mins < 60) return `${mins} min ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs === 1 ? '1 hour ago' : `${hrs} hours ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 30) return days === 1 ? '1 day ago' : `${days} days ago`;
+    const months = Math.floor(days / 30);
+    return months === 1 ? '1 month ago' : `${months} months ago`;
+  }
   if (mins < 60) return `منذ ${mins} دقيقة`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `منذ ${hrs} ساعة`;
@@ -1579,8 +1736,9 @@ function fmtDateTime(d) {
   try {
     const dt = new Date(d);
     if (isNaN(dt.getTime())) return fmtDate(d);
-    const dateStr = dt.toLocaleDateString('ar-EG', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-    const timeStr = dt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    const loc = currentLang === 'en' ? 'en-US' : 'ar-EG';
+    const dateStr = dt.toLocaleDateString(loc, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    const timeStr = dt.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
     return `${dateStr} — ${timeStr}`;
   } catch (_) { return fmtDate(d); }
 }
@@ -1697,23 +1855,34 @@ function findFirstAllowedPage() { for (const item of NAV_ITEMS) { if (hasPerm(it
 
 function updateHeader() {
   if (!currentUser) return;
-  const initials = (currentUser.name || currentUser.username || '?').slice(0, 2);
-  qs('#header-avatar').textContent = initials;
+  const avatarUrl = sanitizeUrl(currentUser.avatar);
+  if (avatarUrl) {
+    qs('#header-avatar').innerHTML = `<img src="${esc(avatarUrl)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.parentNode.textContent='${esc((currentUser.name || currentUser.username || '?').slice(0, 2))}'">`;
+  } else {
+    const initials = (currentUser.name || currentUser.username || '?').slice(0, 2);
+    qs('#header-avatar').textContent = initials;
+  }
   qs('#header-name').textContent = currentUser.name || currentUser.username;
   const now = new Date();
-  const dayNames = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-  const dayName = dayNames[now.getDay()];
-  const formatted = now.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+  const loc = currentLang === 'en' ? 'en-US' : 'ar-EG';
+  const dayName = now.toLocaleDateString(loc, { weekday: 'long' });
+  const formatted = now.toLocaleDateString(loc, { year: 'numeric', month: 'long', day: 'numeric' });
 
-  // Greeting based on time of day
   const hour = now.getHours();
-  const greeting = hour >= 12 ? 'مساء الخير يا' : 'صباح الخير يا';
   const userName = currentUser ? (currentUser.name || currentUser.username || '').split(' ')[0] : '';
-  const greetingText = userName ? greeting + ' ' + userName : '';
+  let greetingText = '';
+  if (userName) {
+    if (currentLang === 'en') {
+      greetingText = hour >= 12 ? `Good afternoon, ${userName}` : `Good morning, ${userName}`;
+    } else {
+      const greeting = hour >= 12 ? 'مساء الخير يا' : 'صباح الخير يا';
+      greetingText = greeting + ' ' + userName;
+    }
+  }
 
-  qs('#header-date').textContent = (greetingText ? greetingText + ' • ' : '') + dayName + '، ' + formatted;
+  const sep = currentLang === 'en' ? ' · ' : ' • ';
+  qs('#header-date').textContent = (greetingText ? greetingText + sep : '') + dayName + (currentLang === 'en' ? ', ' : '، ') + formatted;
 
-  // Update user status on dashboard
   renderUsersStatus();
 }
 
@@ -1883,15 +2052,20 @@ function renderPagination(containerId, total, page, limit, fnName) {
   if (totalPages <= 1) { el.innerHTML = ''; return; }
   const start = (page - 1) * limit + 1;
   const end = Math.min(page * limit, total);
-  let html = `<span class="pag-info">${start}–${end} من ${fmtN(total)}</span>`;
-  html += `<button onclick="${fnName}(1)" ${page===1?'disabled':''}title="الأول">«</button>`;
-  html += `<button onclick="${fnName}(${page-1})" ${page===1?'disabled':''}title="السابق">‹</button>`;
+  const ofWord = currentLang === 'en' ? 'of' : 'من';
+  let html = `<span class="pag-info">${start}–${end} ${ofWord} ${fmtN(total)}</span>`;
+  const tFirst = currentLang === 'en' ? 'First' : 'الأول';
+  const tPrev = currentLang === 'en' ? 'Previous' : 'السابق';
+  const tNext = currentLang === 'en' ? 'Next' : 'التالي';
+  const tLast = currentLang === 'en' ? 'Last' : 'الأخير';
+  html += `<button onclick="${fnName}(1)" ${page===1?'disabled':''}title="${tFirst}">«</button>`;
+  html += `<button onclick="${fnName}(${page-1})" ${page===1?'disabled':''}title="${tPrev}">‹</button>`;
   const lo = Math.max(1, page-2), hi = Math.min(totalPages, page+2);
   if (lo > 1) { html += `<button onclick="${fnName}(1)">1</button>`; if (lo > 2) html += `<span class="pag-ellipsis">…</span>`; }
   for (let p = lo; p <= hi; p++) html += `<button class="${p===page?'active':''}" onclick="${fnName}(${p})">${p}</button>`;
   if (hi < totalPages) { if (hi < totalPages-1) html += `<span class="pag-ellipsis">…</span>`; html += `<button onclick="${fnName}(${totalPages})">${totalPages}</button>`; }
-  html += `<button onclick="${fnName}(${page+1})" ${page===totalPages?'disabled':''}title="التالي">›</button>`;
-  html += `<button onclick="${fnName}(${totalPages})" ${page===totalPages?'disabled':''}title="الأخير">»</button>`;
+  html += `<button onclick="${fnName}(${page+1})" ${page===totalPages?'disabled':''}title="${tNext}">›</button>`;
+  html += `<button onclick="${fnName}(${totalPages})" ${page===totalPages?'disabled':''}title="${tLast}">»</button>`;
   el.innerHTML = `<div class="pagination">${html}</div>`;
 }
 function setMovPage(p) { movPage=p; renderMovements(); }
@@ -3196,7 +3370,7 @@ function showReturnDetails(productCode, refs, dates) {
   if (refParts.length === 0 && dateParts.length === 0) {
     detailsHtml += '<div class="text-muted">لا توجد تفاصيل مرتجعات لهذا الصنف</div>';
   } else {
-    detailsHtml += '<table style="width:100%;border-collapse:collapse;font-size:.9rem"><thead><tr style="background:var(--surface2)"><th style="padding:8px;border-bottom:1px solid var(--border);text-align:right">الكود المرجعي</th><th style="padding:8px;border-bottom:1px solid var(--border);text-align:right">التاريخ</th></tr></thead><tbody>';
+    detailsHtml += '<table style="width:100%;border-collapse:collapse;font-size:.9rem"><thead><tr style="background:var(--surface2)"><th style="padding:8px;border-bottom:1px solid var(--border);text-align:right">' + t('colRefCode') + '</th><th style="padding:8px;border-bottom:1px solid var(--border);text-align:right">' + t('date') + '</th></tr></thead><tbody>';
     
     for (let i = 0; i < Math.max(refParts.length, dateParts.length); i++) {
       const ref = refParts[i] ? '#' + esc(refParts[i]) : '-';
@@ -4227,11 +4401,11 @@ function buildInvoiceHtml(tx) {
       <thead>
         <tr style="background:#00311e;color:#fff">
           <th style="padding:10px;text-align:center;width:40px">#</th>
-          <th style="padding:10px;text-align:right">الصنف</th>
-          <th style="padding:10px;text-align:center;width:80px">الكود</th>
-          <th style="padding:10px;text-align:center;width:70px">الكمية</th>
-          <th style="padding:10px;text-align:left;width:100px">السعر</th>
-          <th style="padding:10px;text-align:left;width:110px">الإجمالي</th>
+          <th style="padding:10px;text-align:right">${t('product')}</th>
+          <th style="padding:10px;text-align:center;width:80px">${t('colCode')}</th>
+          <th style="padding:10px;text-align:center;width:70px">${t('qty')}</th>
+          <th style="padding:10px;text-align:left;width:100px">${t('colPrice')}</th>
+          <th style="padding:10px;text-align:left;width:110px">${t('total')}</th>
         </tr>
       </thead>
       <tbody>${itemsHtml}</tbody>
@@ -4486,7 +4660,7 @@ function showInvoiceDetail(id) {
         ${tx.collectedAt ? `<div class="inv-field"><span class="inv-label">${isPurchase ? 'تاريخ السداد' : 'تاريخ التحصيل'}</span><span class="inv-value">${esc(tx.collectedAt)}</span></div>` : ''}
       </div>
       <table class="inv-items-tbl">
-        <thead><tr><th>#</th><th>الصنف</th><th>الكود</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+        <thead><tr><th>#</th><th>${t('product')}</th><th>${t('colCode')}</th><th>${t('qty')}</th><th>${t('colPrice')}</th><th>${t('total')}</th></tr></thead>
         <tbody>${itemsRows}</tbody>
       </table>
       <div class="inv-summary">
@@ -4609,12 +4783,12 @@ async function showReferenceDetail(ref) {
               <table style="width:100%;border-collapse:collapse;font-size:.9rem">
                 <thead style="background:var(--surface2)">
                   <tr>
-                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">النوع</th>
-                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">التاريخ</th>
-                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">الإجمالي</th>
-                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">الديبوزت</th>
-                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">المتبقي</th>
-                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">الحالة</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">${t('type')}</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">${t('date')}</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">${t('total')}</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">${t('colDeposit')}</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">${t('colRemaining')}</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">${t('status')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -4642,10 +4816,10 @@ async function showReferenceDetail(ref) {
               <table style="width:100%;border-collapse:collapse;font-size:.9rem">
                 <thead style="background:var(--surface2)">
                   <tr>
-                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">النوع</th>
-                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">المبلغ</th>
-                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">الفرق</th>
-                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">الحالة</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">${t('type')}</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">${t('colAmount')}</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">${t('colDifference')}</th>
+                    <th style="padding:10px;text-align:right;border-bottom:1px solid var(--border)">${t('status')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -4751,14 +4925,14 @@ function renderClients() {
       <thead style="background:var(--surface2)">
         <tr style="border-bottom:2px solid var(--border)">
           <th style="padding:12px;text-align:right;font-weight:600;font-size:.85rem;color:var(--muted)">#</th>
-          <th style="padding:12px;text-align:right;font-weight:600;font-size:.85rem;color:var(--muted)">الاسم</th>
-          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">الهاتف</th>
-          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">الطلبات</th>
-          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">الإجمالي</th>
-          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">المسدد</th>
-          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">النسبة</th>
-          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">الحالة</th>
-          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">آخر حركة</th>
+          <th style="padding:12px;text-align:right;font-weight:600;font-size:.85rem;color:var(--muted)">${t('colName')}</th>
+          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">${t('colPhone')}</th>
+          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">${t('colOrders')}</th>
+          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">${t('total')}</th>
+          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">${t('colPaidTotal')}</th>
+          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">${t('colRatio')}</th>
+          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">${t('status')}</th>
+          <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)">${t('colLastMov')}</th>
           <th style="padding:12px;text-align:center;font-weight:600;font-size:.85rem;color:var(--muted)"></th>
         </tr>
       </thead>
@@ -4913,7 +5087,7 @@ function openClientProfile(name) {
       <div class="stat-card card"><div class="stat-val text-green">${fmtJ(total)}</div><div class="stat-label">الإجمالي</div></div>
       <div class="stat-card card"><div class="stat-val text-red">${fmtJ(remaining)}</div><div class="stat-label">المتبقي</div></div>
     </div>
-    <div class="overflow-x"><table><thead><tr><th>التاريخ</th><th>النوع</th><th>المرجع</th><th>الإجمالي</th><th>المتبقي</th><th>الحالة</th></tr></thead><tbody>
+    <div class="overflow-x"><table><thead><tr><th>${t('date')}</th><th>${t('type')}</th><th>${t('colRef')}</th><th>${t('total')}</th><th>${t('colRemaining')}</th><th>${t('status')}</th></tr></thead><tbody>
     ${txs.map(t => {
       const isCancelled = isStatusCancelled(t.payStatus) || t.cancelled;
       const rowStyle = isCancelled ? 'style="opacity:0.6;text-decoration:line-through"' : '';
@@ -5128,13 +5302,13 @@ function openSupplierInvoices(supplierName) {
     <div class="overflow-x">
       <table style="width:100%;font-size:.82rem;border-collapse:collapse">
         <thead><tr style="background:var(--surface2)">
-          <th style="padding:6px 8px;text-align:right">التاريخ</th>
-          <th style="padding:6px 8px;text-align:right">رقم الفاتورة</th>
-          <th style="padding:6px 8px;text-align:right">الإجمالي</th>
-          <th style="padding:6px 8px;text-align:right">المدفوع</th>
-          <th style="padding:6px 8px;text-align:right">المتبقي</th>
-          <th style="padding:6px 8px;text-align:right"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.9em;height:.9em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg> السدادات</th>
-          <th style="padding:6px 8px;text-align:right">الحالة</th>
+          <th style="padding:6px 8px;text-align:right">${t('date')}</th>
+          <th style="padding:6px 8px;text-align:right">${t('colInvoiceNo')}</th>
+          <th style="padding:6px 8px;text-align:right">${t('total')}</th>
+          <th style="padding:6px 8px;text-align:right">${t('colPaid')}</th>
+          <th style="padding:6px 8px;text-align:right">${t('colRemaining')}</th>
+          <th style="padding:6px 8px;text-align:right"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.9em;height:.9em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg> ${t('colPayments')}</th>
+          <th style="padding:6px 8px;text-align:right">${t('status')}</th>
           <th style="padding:6px 8px;text-align:right"></th>
         </tr></thead>
         <tbody>${rows}</tbody>
@@ -7056,6 +7230,7 @@ function changeLang(lang) {
   currentLang = lang; settings.lang = lang;
   api('/settings', { method: 'PUT', body: JSON.stringify({ lang }) }).catch(() => {});
   applyLang();
+  if (typeof navigateTo === 'function' && typeof currentPage !== 'undefined') navigateTo(currentPage, false);
 }
 
 /* Profile */
@@ -7475,9 +7650,7 @@ async function loadComplaints() {
   try {
     complaints = await api('/complaints');
   } catch (_) { complaints = []; }
-  // apply section title from settings
-  const titleEl = qs('#complaints-section-title');
-  if (titleEl && settings.complaintsTitle) titleEl.textContent = settings.complaintsTitle;
+  refreshComplaintsSectionTitle();
   renderComplaints();
   renderCmpCharts();
   renderCmpNegAlert();
@@ -8136,14 +8309,14 @@ function renderProductCardInvoices() {
       <table style="width:100%;border-collapse:collapse;font-size:.9rem">
         <thead style="background:var(--surface2)">
           <tr>
-            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">النوع</th>
-            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">الرقم المرجعي</th>
-            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">العميل</th>
-            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">التاريخ</th>
-            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">الكمية</th>
-            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">السعر</th>
-            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">الإجمالي</th>
-            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">الحالة</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">${t('type')}</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">${t('colRefNumber')}</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">${t('client')}</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">${t('date')}</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">${t('qty')}</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">${t('colPrice')}</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">${t('total')}</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid var(--border)">${t('status')}</th>
           </tr>
         </thead>
         <tbody>
