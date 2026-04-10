@@ -3,7 +3,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 4001;
+const PORT = process.env.PORT || 8080;
 
 // Proxy /api requests to backend FIRST
 app.use('/api/', createProxyMiddleware({
