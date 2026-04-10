@@ -3,11 +3,17 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
+import { PresenceGateway } from './presence.gateway';
 import { Request } from 'express';
+import { UsersService } from '../users/users.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly presenceGateway: PresenceGateway,
+    private readonly usersService: UsersService,
+  ) {}
 
   @UseGuards(ThrottlerGuard)
   @Post('login')
@@ -47,12 +53,37 @@ export class AuthController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post('update-last-seen')
+  async updateLastSeen(@Req() req: Request) {
+    try {
+      const user = req.user as Record<string, unknown> | undefined;
+      const userId = user?.sub as string;
+      if (!userId) {
+        return { success: false, message: 'No userId' };
+      }
+      await this.usersService.updateLastSeen(userId);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }
+
   @Get('users-status')
   async getUsersStatus() {
     try {
-      return this.authService.getUsersStatus();
+      const onlineIds = this.presenceGateway.getOnlineUserIds();
+      const allUsers = await this.usersService.findAll();
+      const usersWithStatus = allUsers.map(u => ({
+        id: u._id.toString(),
+        username: u.username,
+        name: u.name,
+        isOnline: onlineIds.includes(u._id.toString()),
+        lastSeen: u.lastSeen ? new Date(u.lastSeen).toISOString() : null,
+      }));
+      return { users: usersWithStatus };
     } catch (err) {
-      return { online: {}, error: err.message };
+      return { users: [], error: err.message };
     }
   }
 }

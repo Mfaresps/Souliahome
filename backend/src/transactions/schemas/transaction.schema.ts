@@ -127,6 +127,17 @@ export class Transaction {
     rejectedReason?: string;
   } | null;
 
+  /** Payment history log */
+  @Prop({ type: [Object], default: [] })
+  payments: Array<{
+    amount: number;
+    method: string;
+    note: string;
+    date: string;
+    by: string;
+    remaining: number;
+  }>;
+
   /** Employee comments on transaction */
   @Prop({ type: [Object], default: [] })
   comments: Array<{

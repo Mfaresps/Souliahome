@@ -613,14 +613,25 @@ export class TransactionsService {
 
     tx.remaining = newRemaining;
     tx.payStatus = isFullyPaid ? 'مكتمل' : 'معلق';
-    if (isFullyPaid && payAmount > 0 && /-EXC$/i.test(String(tx.ref || ''))) {
-      tx.deposit = payAmount;
-    }
+    // تحديث المدفوع: إضافة المبلغ المسدد إلى الديبوزت الحالي
+    tx.deposit = (tx.deposit || 0) + payAmount;
     tx.collectMethod = dto.collectMethod;
     tx.collectNote = dto.collectNote || '';
     if (isFullyPaid) {
       tx.collectedAt = new Date().toISOString().split('T')[0];
     }
+
+    // سجل السدادات: إضافة سجل لكل عملية سداد
+    if (!tx.payments) tx.payments = [];
+    tx.payments.push({
+      amount: payAmount,
+      method: dto.collectMethod,
+      note: dto.collectNote || '',
+      date: new Date().toISOString(),
+      by: tx.employee || '',
+      remaining: newRemaining,
+    });
+
     const saved = await tx.save();
     if (payAmount > 0) {
       // مشتريات: deduct from vault; مبيعات: add to vault

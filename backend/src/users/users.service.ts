@@ -71,6 +71,10 @@ export class UsersService {
     await this.userModel.findByIdAndUpdate(id, { lastLogin: new Date() }).exec();
   }
 
+  async updateLastSeen(id: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(id, { lastSeen: new Date() }).exec();
+  }
+
   async countUsers(): Promise<number> {
     return this.userModel.countDocuments().exec();
   }

@@ -31,6 +31,9 @@ export class User {
 
   @Prop()
   lastLogin: Date;
+
+  @Prop({ type: Date })
+  lastSeen: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
