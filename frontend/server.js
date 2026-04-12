@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 8080;
 
 // Proxy /api requests to backend FIRST
 app.use('/api/', createProxyMiddleware({
-  target: 'http://localhost:3000',
+  target: 'https://api.soulia.com',
   changeOrigin: true,
   pathRewrite: {
     '^/api': '/api'
@@ -30,5 +30,5 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
-  console.log(`🔗 Proxy: /api -> http://localhost:3000`);
+  console.log(`🔗 Proxy: /api -> https://api.soulia.com`);
 });
