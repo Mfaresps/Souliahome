@@ -821,7 +821,15 @@ export class TransactionsService {
     const activeTx = transactions.filter((t) => !t.cancelled);
     const lowStockCount = inventory.filter((p) => p.status !== 'ok').length;
     const salesTx = activeTx.filter((t) => t.type === 'مبيعات');
-    const totalSales = salesTx.reduce((sum, t) => sum + t.total, 0);
+
+    // احسب المرتجعات المقبولة
+    const returnsModel = this.transactionModel.collection.db.collection('returnrequests');
+    const returns: any[] = await returnsModel.find({
+      status: 'معتمد'
+    }).toArray().catch(() => []);
+    const totalReturns = returns.reduce((s, r) => s + (Number(r.total) || 0), 0);
+
+    const totalSales = Math.max(0, salesTx.reduce((sum, t) => sum + t.total, 0) - totalReturns);
     const totalPurchases = activeTx
       .filter((t) => this.transactionAddsSupplierPurchases(t))
       .reduce((sum, t) => sum + t.total, 0);
@@ -889,7 +897,17 @@ export class TransactionsService {
     const pursTx = transactions.filter((t) =>
       this.transactionAddsSupplierPurchases(t),
     );
-    const totalSales = salesTx.reduce((s, t) => s + t.total, 0);
+
+    // احسب المرتجعات المقبولة
+    const returnsModel = this.transactionModel.collection.db.collection('returnrequests');
+    const returns: any[] = await returnsModel.find({
+      status: 'معتمد',
+      ...(from && { createdAt: { $gte: new Date(from) } }),
+      ...(to && { createdAt: { $lte: new Date(to) } })
+    }).toArray().catch(() => []);
+    const totalReturns = returns.reduce((s, r) => s + (Number(r.total) || 0), 0);
+
+    const totalSales = Math.max(0, salesTx.reduce((s, t) => s + t.total, 0) - totalReturns);
     const totalPurchases = pursTx.reduce((s, t) => s + t.total, 0);
     const totalDeposit = salesTx.reduce((s, t) => s + (t.deposit || 0), 0);
     const totalRemaining = salesTx.reduce(
