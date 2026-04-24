@@ -3566,7 +3566,7 @@ function renderMovementTxRow(tx) {
                 ? `<div class="dd-divider"></div><div class="dd-item" style="opacity:.7;cursor:default" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> طلب إلغاء معلق</div>`
                 : `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')">🚫 إلغاء</div>`
           ) : ''}
-          ${isAdmin() ? (isExchangeSalePendingCollect(tx) ? `<div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 7l-5 5-5-5"/><path d="M17 17l-5-5-5 5"/><line x1="2" y1="12" x2="22" y2="12"/></svg> تجميد <span class="text-xs">(مقفول)</span></div>` : `<div class="dd-item danger" onclick="archiveMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 7l-5 5-5-5"/><path d="M17 17l-5-5-5 5"/><line x1="2" y1="12" x2="22" y2="12"/></svg> تجميد</div>`) : ''}
+          ${isAdmin() && tx.cancelled ? `<div class="dd-item danger" onclick="archiveMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 7l-5 5-5-5"/><path d="M17 17l-5-5-5 5"/><line x1="2" y1="12" x2="22" y2="12"/></svg> تجميد</div>` : ''}
         </div>
       </div>
     </td>
@@ -4252,14 +4252,14 @@ async function doApplyPostDiscount(txId) {
 
 async function archiveMovement(id) {
   const tx = transactions.find(t => t._id === id);
-  if (tx && isExchangeSalePendingCollect(tx)) { toastExchangePendingLocked(); return; }
-  if (tx && (tx.cancelled || isStatusCancelled(tx.payStatus))) { toast('لا يمكن تجميد حركة ملغاة', true); return; }
-  if (!confirm('سيتم تجميد هذه الحركة. لن تؤثر على المخزون أو الخزنة ويمكن فك التجميد لاحقاً.\nهل تريد المتابعة؟')) return;
+  if (!tx) { toast('الحركة غير موجودة', true); return; }
+  if (!tx.cancelled) { toast('🔒 تجميد يقتصر على الحركات الملغاة فقط', true); return; }
+  if (!confirm('سيتم تجميد هذه الحركة الملغاة — لن تؤثر على المخزون أو الخزنة ويمكن فك التجميد لاحقاً.\nهل تريد المتابعة؟')) return;
   try {
     await api('/transactions/' + id, { method: 'DELETE' });
-    toast('🧊 تم تجميد الحركة وعكس تأثيرها على الخزنة والمخزون');
+    toast('✅ تم تجميد الحركة الملغاة بنجاح');
     transactions = await api('/transactions').catch(() => transactions);
-    renderMovements(); buildSidebar(); syncVaultState();
+    renderMovements(); buildSidebar();
   }
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
