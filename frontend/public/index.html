@@ -474,6 +474,12 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 /* Vault Justification Column Mobile Hide */
 .vault-justif-col { display: table-cell; }
 @media (max-width:900px) { .vault-justif-col { display: none; } }
+/* Vault Tabs */
+.vault-tab-btn { transition: all .2s; border-right-width: 3px !important; }
+.vault-tab-btn:hover { color: var(--text); background: var(--primary-pale); }
+.vault-tab-btn.active { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
+.vault-tab-content { animation: fadeIn .3s ease-in; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 /* Dashboard Treasury Widget */
 #dash-treasury-widget .stat-val { font-size: 1.1rem; }
 #dash-treasury-widget .stat-card { padding: 14px; }
@@ -1214,38 +1220,27 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <button type="submit" class="btn btn-primary">فتح الخزنة</button>
 </form>
 <div id="vault-content" style="display:none">
-<div class="flex-between mb-16">
+<div class="flex-between mb-16" style="align-items:flex-start;flex-wrap:wrap;gap:12px">
+<div class="flex gap-8" style="border-bottom:2px solid var(--border);flex-basis:100%">
+<button class="vault-tab-btn active" onclick="switchVaultTab('overview',this)" style="padding:12px 16px;border:none;background:none;cursor:pointer;font-weight:600;color:var(--text);border-bottom:3px solid transparent;border-bottom-color:transparent;margin-bottom:-2px">
+<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em;margin-right:6px" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> نظرة عامة
+</button>
+<button class="vault-tab-btn" onclick="switchVaultTab('analytics',this)" style="padding:12px 16px;border:none;background:none;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">
+<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em;margin-right:6px" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3"/><polyline points="12 12 20 7.5"/><polyline points="12 21 12 12"/><polyline points="4 7.5 12 12"/></svg> التحليلات
+</button>
+</div>
+<div style="flex-basis:100%;display:flex;gap:8px">
 <button class="btn btn-outline btn-sm" onclick="lockVault()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> قفل الخزنة</button>
 <button class="btn btn-outline btn-sm" onclick="exportVaultExcel()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تصدير Excel</button>
 </div>
+</div>
+
+<!-- Tab 1: Overview -->
+<div id="vault-tab-overview" class="vault-tab-content">
 <div class="seg-cards" id="vault-segs"></div>
-<!-- TREASURY KPI ANALYTICS PANEL -->
+<!-- KPI CARDS -->
 <div id="vault-kpi-panel" style="display:none">
-<div class="grid grid-4 gap-12 mb-16" id="vault-kpi-cards"></div>
-<div class="card mb-24">
-<h4 class="mb-16" style="display:flex;align-items:center;gap:10px">
-<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3"/><polyline points="12 12 20 7.5"/><polyline points="12 21 12 12"/><polyline points="4 7.5 12 12"/></svg>
-التحليلات والرسومات البيانية
-</h4>
-<div class="grid grid-2 gap-24">
-<div>
-<h5 style="margin:0 0 12px 0;font-size:.95rem;color:var(--muted)">التدفق النقدي</h5>
-<div class="flex gap-8 mb-12">
-<button class="btn btn-sm btn-outline" onclick="setCashflowDays(30)" id="cf-btn-30">30 يوم</button>
-<button class="btn btn-sm btn-outline" onclick="setCashflowDays(60)" id="cf-btn-60">60 يوم</button>
-<button class="btn btn-sm btn-outline" onclick="setCashflowDays(90)" id="cf-btn-90">90 يوم</button>
-</div>
-<canvas id="vault-cashflow-chart" height="300"></canvas>
-</div>
-<div>
-<h5 style="margin:0 0 12px 0;font-size:.95rem;color:var(--muted)">توزيع مصادر السيولة</h5>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center">
-<canvas id="vault-source-chart" height="300"></canvas>
-<div id="vault-source-legend" style="font-size:.78rem;line-height:1.8"></div>
-</div>
-</div>
-</div>
-</div>
+<div class="grid grid-4 gap-12 mb-24" id="vault-kpi-cards"></div>
 </div>
 <div class="grid grid-5 gap-12 mb-24" id="vault-stats" style="gap:12px"></div>
 <div class="card mb-24">
@@ -1279,6 +1274,37 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div id="vault-pagination"></div>
 </div>
 </div>
+<!-- End Tab 1: Overview -->
+</div>
+
+<!-- Tab 2: Analytics -->
+<div id="vault-tab-analytics" class="vault-tab-content" style="display:none">
+<div class="card">
+<h4 class="mb-16" style="display:flex;align-items:center;gap:10px">
+<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3"/><polyline points="12 12 20 7.5"/><polyline points="12 21 12 12"/><polyline points="4 7.5 12 12"/></svg>
+التحليلات والرسومات البيانية
+</h4>
+<div class="grid grid-2 gap-24">
+<div>
+<h5 style="margin:0 0 12px 0;font-size:.95rem;color:var(--muted)">التدفق النقدي</h5>
+<div class="flex gap-8 mb-12">
+<button class="btn btn-sm btn-outline" onclick="setCashflowDays(30)" id="cf-btn-30">30 يوم</button>
+<button class="btn btn-sm btn-outline" onclick="setCashflowDays(60)" id="cf-btn-60">60 يوم</button>
+<button class="btn btn-sm btn-outline" onclick="setCashflowDays(90)" id="cf-btn-90">90 يوم</button>
+</div>
+<canvas id="vault-cashflow-chart" height="300"></canvas>
+</div>
+<div>
+<h5 style="margin:0 0 12px 0;font-size:.95rem;color:var(--muted)">توزيع مصادر السيولة</h5>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center">
+<canvas id="vault-source-chart" height="300"></canvas>
+<div id="vault-source-legend" style="font-size:.78rem;line-height:1.8"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- End Tab 2: Analytics -->
 </div>
 
 <!-- Users -->
@@ -6473,6 +6499,27 @@ async function unlockVault() {
   catch (e) { toast('كلمة مرور خاطئة', true); }
 }
 function lockVault() { vaultUnlocked = false; renderVaultPage(); }
+
+function switchVaultTab(tabName, btn) {
+  // Hide all tabs
+  qsa('.vault-tab-content').forEach(el => el.style.display = 'none');
+  // Remove active class from all buttons
+  qsa('.vault-tab-btn').forEach(el => {
+    el.classList.remove('active');
+    el.style.color = 'var(--muted)';
+    el.style.borderBottomColor = 'transparent';
+  });
+  // Show selected tab
+  const tab = qs('#vault-tab-' + tabName);
+  if (tab) tab.style.display = 'block';
+  // Add active class to clicked button
+  if (btn) {
+    btn.classList.add('active');
+    btn.style.color = 'var(--text)';
+    btn.style.borderBottomColor = 'var(--accent)';
+  }
+}
+
 function renderVaultSegs() {
   const segs = [{ label: 'كاش', val: settings.vaultCash || 0, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>' }, { label: 'فودافون كاش', val: settings.vaultVodafone || 0, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>' }, { label: 'Instapay', val: settings.vaultInstapay || 0, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/><path d="M9.5 10l2.5 2.5 2.5-2.5"/></svg>' }, { label: 'تحويل بنكي', val: settings.vaultBank || 0, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M3 10h18M3 6l9-4 9 4"/><path d="M6 10v12M10 10v12M14 10v12M18 10v12"/></svg>' }];
   const totalBalance = segs.reduce((s, seg) => s + seg.val, 0);
