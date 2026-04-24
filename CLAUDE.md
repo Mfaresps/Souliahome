@@ -28,6 +28,11 @@ SOULIA is a comprehensive warehouse management system built with NestJS (backend
 #### 2. **Purchase Deposit Logic** (Critical Fix - Apr 24, 2026)
 **Business Rule**: When deposit = 0 or empty → Full amount is debt (not paid)
 
+**User Guidance** (Helper Text):
+- Label: "العربون (دفعة مقدمة)" (Earnest/Deposit - Advance Payment)
+- Helper: "اتركه 0 لاعتبار الكل ديناً للمورد — أدخل المبلغ المدفوع من الخزنة الآن"
+  - Translation: "Leave it 0 to consider the full amount as debt to supplier — Enter the amount paid from the vault now"
+
 **Frontend Calculation** (index.html:2859):
 ```javascript
 const dep = Number(qs('#tx-deposit')?.value) || 0;
