@@ -2603,7 +2603,7 @@ function renderTxFields() {
       <div class="form-group"><label>المورد *</label><select id="tx-supplier"><option value="">اختر مورد</option>${suppliers.map(s => `<option value="${esc(s.name)}">${esc(s.name)}</option>`).join('')}</select><div class="field-hint">المورد الذي تم الشراء منه</div></div>
       <div class="form-group"><label>رقم الفاتورة *</label><div class="input-with-prefix"><span class="prefix">#</span><input type="text" id="tx-ref" placeholder="أرقام فقط" inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"></div><div class="field-hint">رقم فاتورة المورد — إجباري وغير مكرر</div><div class="field-error" id="err-ref"></div></div>
       <div class="form-group"><label>حساب الدفع (السحب من) *</label><select id="tx-account"><option value="كاش">كاش</option><option value="فودافون كاش">فودافون كاش</option><option value="Instapay">Instapay</option><option value="تحويل بنكي">تحويل بنكي</option></select><div class="field-hint">حساب الخزنة الذي سيتم خصم العربون منه</div></div>
-      <div class="form-group"><label>العربون (دفعة مقدمة)</label><input type="number" id="tx-deposit" value="0" min="0" oninput="calcTxSummary()" placeholder="0"><div class="field-hint">اتركه 0 لدفع المبلغ كاملاً الآن — أدخل مبلغاً للدفع الجزئي</div></div>
+      <div class="form-group"><label>العربون (دفعة مقدمة)</label><input type="number" id="tx-deposit" value="0" min="0" oninput="calcTxSummary()" placeholder="0"><div class="field-hint">اتركه 0 لاعتبار الكل ديناً للمورد — أدخل المبلغ المدفوع من الخزنة الآن</div></div>
       <div class="form-group"><label>ملاحظات</label><input type="text" id="tx-notes" placeholder="أي ملاحظات إضافية"><div class="field-hint">اختياري</div></div>`;
   } else {
     html = `
