@@ -6159,8 +6159,6 @@ async function rejectCancelRequest(txId) {
 function renderReturnApprovalCard(r) {
   const isPending = r.status === 'معلق';
   const isEx = r.requestKind === 'exchange';
-  const isApproved = r.status === 'معتمد';
-  const isRejected = r.status === 'مرفوض';
   const statusBadge = r.status === 'معلق' ? '<span class="badge badge-orange">معلق</span>' : r.status === 'معتمد' ? '<span class="badge badge-green">معتمد</span>' : '<span class="badge badge-red">مرفوض</span>';
   const reasonBadge = `<span class="badge badge-purple">${esc(r.reason)}</span>`;
   const typeBadge = isEx ? '<span class="badge badge-purple" style="font-size:.65rem">استبدال</span>' : '<span class="badge badge-purple" style="font-size:.65rem">مرتجع</span>';
@@ -6182,155 +6180,28 @@ function renderReturnApprovalCard(r) {
   const vaultLine = (vr || vc) ? '<div class="text-xs" style="margin-top:8px;padding:8px;background:var(--surface2);border-radius:8px;line-height:1.5">' + (vr ? '<div><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 2 22 2 12 22 2 2"/></svg> <strong>سحب/رد للعميل من:</strong> ' + esc(vr) + '</div>' : '') + (vc ? '<div style="margin-top:' + (vr ? '4px' : '0') + '"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 2 22 22 2 22 12 2"/></svg> <strong>إيداع تحصيل الفرق (للشركة) في:</strong> ' + esc(vc) + '</div>' : '') + '</div>' : '';
   const daysInfo = r.daysRemaining ? `<span class="badge badge-green" style="font-size:.6rem">متبقي ${r.daysRemaining} يوم</span>` : '';
   const borderStyle = isPending ? 'border-right:4px solid var(--purple)' : (r.status === 'معتمد' ? 'border-right:4px solid var(--green)' : 'border-right:4px solid var(--red)');
-  // Improved return receipt rendering
-  const statusColor = isPending ? '#f59e0b' : isEx && isApproved ? '#10b981' : isRejected ? '#ef4444' : '#10b981';
-  const statusBg = isPending ? '#fff7ed' : isEx && isApproved ? '#f0fdf4' : isRejected ? '#fef2f2' : '#f0fdf4';
-  const statusText = isPending ? 'قيد المراجعة' : isEx && isApproved ? 'معتمد' : isRejected ? 'مرفوض' : 'معتمد';
-  const typeLabel = isEx ? '📦 استبدال منتجات' : '↩️ استرجاع أموال';
-
-  const itemsTable = (r.items || []).map((it, i) => `
-    <tr style="border-bottom:1px solid #e5e7eb">
-      <td style="padding:10px;text-align:right;font-size:.9rem;color:#666">${i+1}</td>
-      <td style="padding:10px;font-weight:600;color:#1f2937">${esc(it.name)}</td>
-      <td style="padding:10px;text-align:center;color:#666">${it.qty}</td>
-      <td style="padding:10px;text-align:right;color:#666">${fmtJ(it.price)}</td>
-      <td style="padding:10px;text-align:right;font-weight:600;color:#059669">${fmtJ(it.total)}</td>
-    </tr>
-  `).join('');
-
-  const exItemsHtml = isEx && (r.exchangeItems || []).length ? `
-    <div style="margin-top:16px;padding:12px;background:#fef3c7;border-radius:8px;border-right:3px solid #f59e0b">
-      <div style="font-weight:700;color:#92400e;font-size:.95rem">✓ بدائل مقترحة</div>
-      <div style="margin-top:8px;font-size:.85rem">
-        ${(r.exchangeItems || []).map(it => `<div style="color:#78350f">• ${esc(it.name)} (×${it.qty}) — ${fmtJ(it.total)}</div>`).join('')}
-      </div>
-    </div>
-  ` : '';
-
-  const vaultInfo = (() => {
-    const vr = String(r.vaultRefundAccount || '').trim();
-    const vc = String(r.vaultCollectAccount || '').trim();
-    if (!vr && !vc) return '';
-
-    let html = '<div style="margin-top:16px;padding:12px;background:#ecfdf5;border-radius:8px;border-right:3px solid #059669;font-size:.85rem">';
-    if (vr) {
-      html += `<div style="color:#065f46;margin-bottom:4px"><strong>🏦 رد المبلغ للعميل من:</strong></div>
-               <div style="color:#047857;font-weight:600;margin-left:24px">${esc(vr)}</div>`;
-    }
-    if (vc) {
-      html += `<div style="color:#065f46;margin-top:8px;margin-bottom:4px"><strong>🏦 تحصيل الفرق في:</strong></div>
-               <div style="color:#047857;font-weight:600;margin-left:24px">${esc(vc)}</div>`;
-    }
-    html += '</div>';
-    return html;
-  })();
-
-  const reasonHtml = `
-    <div style="margin-top:16px;padding:12px;background:#f3f4f6;border-radius:8px">
-      <div style="font-weight:700;color:#374151;font-size:.9rem">سبب الاسترجاع</div>
-      <div style="margin-top:6px;color:#6b7280;font-size:.85rem">${esc(r.reason)}</div>
-      ${r.reasonDetails ? `<div style="margin-top:4px;color:#6b7280;font-size:.85rem;font-style:italic">"${esc(r.reasonDetails)}"</div>` : ''}
-    </div>
-  `;
-
-  const diffLine = isEx ? (() => {
-    const diff = Number(r.priceDifference) || 0;
-    const diffColor = diff > 0 ? '#059669' : diff < 0 ? '#ef4444' : '#6b7280';
-    const diffLabel = diff > 0 ? '👈 يدفع للعميل' : diff < 0 ? '👉 يدفع العميل' : 'بدون فرق';
-    return `<div style="margin-top:12px;padding:12px;background:#f0f9ff;border-radius:8px;text-align:center">
-              <div style="font-size:.85rem;color:#0369a1">الفرق في السعر</div>
-              <div style="margin-top:4px;font-size:1.2rem;font-weight:700;color:${diffColor}">${fmtJ(Math.abs(diff))}</div>
-              <div style="margin-top:4px;font-size:.85rem;color:#0369a1">${diffLabel}</div>
-            </div>`;
-  })() : '';
-
-  const requestedByHtml = `
-    <div style="margin-top:16px;padding:8px;background:#f9fafb;border-radius:6px;font-size:.8rem;color:#6b7280">
-      <div>📋 طلب من: <strong>${esc(r.requestedBy || '-')}</strong></div>
-      <div style="margin-top:2px">📅 التاريخ: <strong>${fmtDate(r.createdAt)}</strong> في ${fmtDateTime(r.createdAt).split(' ')[1] || ''}</div>
-      ${isApproved && r.approvedBy ? `<div style="margin-top:2px;color:#059669">✅ اعتمده: <strong>${esc(r.approvedBy)}</strong> ${r.approvedAt ? '- ' + fmtDate(r.approvedAt) : ''}</div>` : ''}
-      ${isRejected && r.rejectedReason ? `<div style="margin-top:2px;color:#dc2626">❌ سبب الرفض: <strong>${esc(r.rejectedReason)}</strong></div>` : ''}
-    </div>
-  `;
-
-  const statusHtml = `<span style="display:inline-block;padding:6px 12px;background:${statusBg};color:${statusColor};border-radius:6px;font-weight:700;font-size:.85rem">${statusText}</span>`;
-
-  const originalTxHtml = `
-    <div style="padding:12px;background:#f3f4f6;border-radius:8px;font-size:.85rem;color:#374151">
-      <div>🧾 الفاتورة الأصلية</div>
-      <div style="margin-top:4px"><span style="color:#6b7280">الرقم:</span> <strong>#${esc(r.originalRef || '-')}</strong></div>
-      <div style="margin-top:2px"><span style="color:#6b7280">التاريخ:</span> <strong>${fmtDate(r.originalDate)}</strong></div>
-      ${r.daysRemaining ? `<div style="margin-top:4px;color:#059669">⏳ متبقي ${r.daysRemaining} يوم من فترة الاسترجاع</div>` : ''}
-    </div>
-  `;
-
-  const actions = isPending && isAdmin() ? `
-    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-danger btn-sm" onclick="rejectReturnFromAppr('${esc(r._id)}')" style="padding:8px 16px;background:#ef4444;color:white;border:none;border-radius:6px;cursor:pointer;font-size:.85rem;font-weight:600">
-        <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em;margin-left:4px" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
-        رفض الطلب
-      </button>
-      <button class="btn btn-primary btn-sm" onclick="approveReturnFromAppr('${esc(r._id)}')" style="padding:8px 16px;background:#10b981;color:white;border:none;border-radius:6px;cursor:pointer;font-size:.85rem;font-weight:600">
-        <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em;margin-left:4px" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-        ${isEx ? 'اعتماد الاستبدال' : 'اعتماد الاسترجاع'}
-      </button>
-    </div>
-  ` : isApproved ? `
-    <div style="margin-top:16px;padding:12px;background:#f0fdf4;border-radius:8px;text-align:center;color:#059669;font-weight:600;font-size:.9rem">
-      ✅ تمت الموافقة — نُفِّذ في السجل والمخزن
-    </div>
-  ` : '';
-
-  return `
-    <div style="background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)">
-      <div style="background:linear-gradient(135deg, #f97316 0%, #ea580c 100%);padding:20px;color:white">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="font-size:1.1rem;font-weight:700">${typeLabel}</div>
-            <div style="margin-top:4px;font-size:.9rem;opacity:.9">طلب استرجاع/استبدال</div>
-          </div>
-          <div style="text-align:left">${statusHtml}</div>
-        </div>
-      </div>
-      <div style="padding:20px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
-          <div>
-            <div style="font-size:.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;font-weight:700">العميل</div>
-            <div style="margin-top:6px;font-size:1.1rem;font-weight:700;color:#1f2937">${esc(r.client)}</div>
-            ${r.phone ? `<div style="margin-top:4px;font-size:.85rem;color:#6b7280">📱 ${esc(r.phone)}</div>` : ''}
-          </div>
-          <div>${originalTxHtml}</div>
-        </div>
-        <div style="margin-bottom:20px">
-          <div style="font-weight:700;color:#1f2937;margin-bottom:12px;font-size:.95rem">الأصناف المرتجعة</div>
-          <table style="width:100%;border-collapse:collapse;font-size:.9rem">
-            <thead>
-              <tr style="background:#f3f4f6;border-bottom:2px solid #e5e7eb">
-                <th style="padding:10px;text-align:right;font-weight:700;color:#374151;width:40px">#</th>
-                <th style="padding:10px;text-align:right;font-weight:700;color:#374151">الصنف</th>
-                <th style="padding:10px;text-align:center;font-weight:700;color:#374151;width:60px">الكمية</th>
-                <th style="padding:10px;text-align:right;font-weight:700;color:#374151;width:90px">السعر</th>
-                <th style="padding:10px;text-align:right;font-weight:700;color:#374151;width:100px">المجموع</th>
-              </tr>
-            </thead>
-            <tbody>${itemsTable}</tbody>
-            <tfoot>
-              <tr style="background:#f9fafb;font-weight:700;border-top:2px solid #e5e7eb">
-                <td colspan="4" style="padding:12px;text-align:right;color:#374151">إجمالي المرتجعات:</td>
-                <td style="padding:12px;text-align:right;color:#059669;font-size:1rem">${fmtJ(r.total)}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-        ${exItemsHtml}
+  return `<div class="card mb-16" style="${borderStyle}">
+    <div class="flex-between">
+      <div>
+        <div class="flex gap-8" style="align-items:center;flex-wrap:wrap">${typeBadge}<strong style="font-size:1rem">${esc(r.client)}</strong>${statusBadge} ${daysInfo}</div>
+        <div class="text-sm text-muted" style="margin-top:6px">الفاتورة: #${esc(r.originalRef || '-')} — ${fmtDate(r.originalDate)}</div>
+        <div class="text-sm" style="margin-top:4px">مرتجع: ${itemsList}</div>
+        ${exList ? `<div class="text-sm" style="margin-top:4px">بدائل: ${exList}</div>` : ''}
         ${diffLine}
-        ${reasonHtml}
-        ${vaultInfo}
-        ${requestedByHtml}
-        ${actions}
+        <div class="text-sm" style="margin-top:4px">السبب: ${reasonBadge} ${r.reasonDetails ? '<span class="text-muted">— ' + esc(r.reasonDetails) + '</span>' : ''}</div>
+        ${vaultLine}
+        <div class="text-xs text-muted" style="margin-top:4px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> بواسطة: ${esc(r.requestedBy || '-')} — ${fmtDate(r.createdAt)}</div>
+        ${doneHint}
+        ${r.rejectedReason ? `<div class="text-xs text-red" style="margin-top:4px">سبب الرفض: ${esc(r.rejectedReason)}</div>` : ''}
+        ${approvedInfo}
+      </div>
+      <div style="text-align:left">
+        <div style="font-size:1.3rem;font-weight:700;color:var(--purple)">${fmtJ(r.total)}</div>
+        ${!isEx ? '<div class="text-xs text-muted" style="margin-top:2px;text-align:left">مبلغ الرد للعميل: أصناف فقط — بدون شحن</div>' : ''}
+        <div style="margin-top:8px">${actions}</div>
       </div>
     </div>
-  `;
+  </div>`;
 }
 async function approveExpenseFromAppr(id) {
   if (!confirm('اعتماد هذا المصروف وخصمه من الخزنة؟')) return;
