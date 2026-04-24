@@ -667,11 +667,13 @@ export class TransactionsService {
     if (!tx) {
       throw new NotFoundException('الحركة غير موجودة');
     }
-    if (tx.cancelled || tx.payStatus === 'ملغي') {
-      throw new BadRequestException('لا يمكن تجميد حركة ملغاة');
+    // Freeze is only allowed for cancelled transactions (archiving purposes)
+    if (!tx.cancelled) {
+      throw new BadRequestException('🔒 تجميد يقتصر على الحركات الملغاة فقط');
     }
     this.assertNotExchangePendingCollect(tx);
-    // Archive first — guaranteed regardless of vault result
+    // Archive the cancelled transaction — does NOT reverse vault entries
+    // Freezing is just archiving for organization, not affecting vault
     await this.transactionModel
       .findByIdAndUpdate(id, {
         archived: true,
@@ -679,13 +681,6 @@ export class TransactionsService {
         archivedBy: archivedBy || '',
       })
       .exec();
-    // Reverse vault entries — non-blocking so archive always completes
-    this.reverseVaultForTransaction(
-      tx,
-      `تجميد بواسطة ${archivedBy || 'النظام'}`,
-    ).catch((err) =>
-      console.error(`[archive] vault reverse failed for ${id}:`, err),
-    );
   }
 
   async bulkRemove(ids: string[], archivedBy?: string): Promise<number> {
@@ -695,10 +690,19 @@ export class TransactionsService {
     const docs = await this.transactionModel
       .find({ _id: { $in: ids }, archived: { $ne: true } })
       .exec();
+
+    // Enforce: only cancelled transactions can be frozen
+    const nonCancelledTx = docs.find(tx => !tx.cancelled);
+    if (nonCancelledTx) {
+      throw new BadRequestException('تجميد يقتصر على الحركات الملغاة فقط');
+    }
+
     for (const tx of docs) {
       this.assertNotExchangePendingCollect(tx);
     }
-    // Archive all first — guaranteed
+
+    // Archive all cancelled transactions — does NOT reverse vault entries
+    // Freezing is just archiving for organization, not affecting vault
     const result = await this.transactionModel
       .updateMany(
         { _id: { $in: ids } },
@@ -709,13 +713,7 @@ export class TransactionsService {
         },
       )
       .exec();
-    // Reverse vault entries per transaction — non-blocking
-    const reason = `تجميد جماعي بواسطة ${archivedBy || 'النظام'}`;
-    for (const tx of docs) {
-      this.reverseVaultForTransaction(tx, reason).catch((err) =>
-        console.error(`[bulk-archive] vault reverse failed for ${String(tx._id)}:`, err),
-      );
-    }
+
     return result.modifiedCount;
   }
 
