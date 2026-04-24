@@ -5,6 +5,49 @@ SOULIA is a comprehensive warehouse management system built with NestJS (backend
 
 ---
 
+## Access Control & Security (Apr 25, 2026)
+
+### Admin-Only Features
+**Restricted Access**: Only users with `role === 'admin'` can access:
+
+#### 📊 Reports (التقارير)
+- Navigation item hidden from staff
+- Page inaccessible to non-admin users
+- Protected with password lock
+- Contains all financial analytics and performance data
+
+#### 💰 Sensitive Financial Data
+**Purchase Prices (سعر الشراء)**:
+- Hidden in Inventory table for staff
+- Excluded from Excel exports for staff
+- Only visible to admins
+- Implementation: `.inv-buyprice-col { display: none }` for non-admins
+
+**Stock Depletion Alerts** (🚨⚠️):
+- Only shown to admin users
+- Notifications for:
+  - Items out of stock (current = 0)
+  - Low stock items (current ≤ minStock)
+
+#### 🔔 Administrative Notifications (Admin Only)
+- **Expense Approvals**: معلق expenses
+- **Return Requests**: طلب استرجاع/استبدال معلق
+- **Cancellation Requests**: طلب إلغاء حركة معلق
+- **Collection Reminders**: فرق استبدال بانتظار التحصيل
+- **Complaints**: شكاوى معلقة
+
+### Implementation Details
+**Navigation Control** (`buildSidebar`, `findFirstAllowedPage`):
+- NAV_ITEMS entries can have `adminOnly: true` property
+- Items with `adminOnly: true` are filtered out for non-admin users
+- Access is controlled via `isAdmin()` check
+
+**Notification Filtering** (`buildNotifications`):
+- Stock alerts: Only built if `currentUser?.role === 'admin'`
+- All approval notifications: Already restricted with `currentUser?.role === 'admin'` checks
+
+---
+
 ## Transaction Management System
 
 ### Transaction Types
