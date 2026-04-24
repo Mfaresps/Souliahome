@@ -110,6 +110,26 @@ const rem = Math.max(0, total - paid);
 
 ---
 
+## Vault (Treasury) Section
+
+### Analytics & Charts Organization (Apr 25, 2026)
+**Unified Analytics Card**: All vault charts consolidated into single card with organized layout
+
+**Charts Included**:
+1. **التدفق النقدي (Cash Flow)**
+   - Time period filters: 30/60/90 days
+   - Shows inflow/outflow trends
+   - Height: 300px for better visibility
+
+2. **توزيع مصادر السيولة (Liquidity Distribution)**
+   - Shows distribution across vault segments (كاش, فودافون, Instapay, بنك)
+   - Legend alongside chart
+   - Color-coded by segment
+
+**Layout**: Full-width card with internal 2-column grid for side-by-side chart viewing
+
+---
+
 ## Dashboard & Reporting
 
 ### Expense Filtering (Apr 24, 2026)
