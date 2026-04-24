@@ -77,6 +77,26 @@ const rem = Math.max(0, total - paid);
 3. Manager reviews and approves/rejects
 4. Upon approval: Transaction marked cancelled, vault impact recorded
 
+### Freeze/Archive Functionality
+**Purpose**: Archive cancelled transactions for organization (similar to trash/archive)
+
+**When Available**: Only for cancelled transactions (tx.cancelled === true)
+- **Who**: Admin users only
+- **Where**: Action menu (⋮) in Movements table
+- **Label**: "تجميد" (Freeze)
+- **Condition**: Button appears only when transaction.cancelled === true
+
+**What Happens**:
+- Transaction moves to "الحركات المجمدة" (Frozen Transactions) section
+- Does NOT affect vault balance (no reverse operations)
+- Does NOT affect inventory
+- Transaction just becomes hidden from main view (archived)
+- Can be unfrozen later if needed
+
+**Confirmation Message**: 
+"سيتم تجميد هذه الحركة الملغاة — لا تؤثر على المخزون أو الخزنة ويمكن فك التجميد لاحقاً"
+(Translation: "This cancelled transaction will be frozen — does not affect inventory or vault and can be unfrozen later")
+
 ### Vault Messages (Purchase vs. Sales)
 **For Purchases** (مشتريات):
 - Color: Green (#10b981)
