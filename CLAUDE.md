@@ -112,8 +112,18 @@ const rem = Math.max(0, total - paid);
 
 ## Vault (Treasury) Section
 
-### Analytics & Charts Organization (Apr 25, 2026)
-**Unified Analytics Card**: All vault charts consolidated into single card with organized layout
+### Tab Organization System (Apr 25, 2026)
+**Vault Section Now Organized into Two Tabs**:
+
+#### Tab 1: نظرة عامة (Overview)
+- **Vault Segments**: 4-card display showing account balances (كاش, فودافون كاش, Instapay, تحويل بنكي)
+- **Total Balance**: Fifth card showing aggregate balance
+- **KPI Cards**: Key metrics (monthly net, trend, daily average, cash velocity)
+- **Manual Adjustment**: Form to manually add/withdraw funds with accounting justification
+- **Transaction Log**: Full audit trail table with filters and pagination
+
+#### Tab 2: التحليلات (Analytics)
+**Unified Analytics Card** with organized layout
 
 **Charts Included**:
 1. **التدفق النقدي (Cash Flow)**
@@ -127,6 +137,13 @@ const rem = Math.max(0, total - paid);
    - Color-coded by segment
 
 **Layout**: Full-width card with internal 2-column grid for side-by-side chart viewing
+
+### Tab Navigation Function
+**`switchVaultTab(tabName, btn)`** (index.html:6498)
+- Manages switching between Overview and Analytics tabs
+- Animates tab content with fade-in effect
+- Updates button styles (active state indicator with accent color)
+- Supports dynamic tab switching with visual feedback
 
 ---
 
