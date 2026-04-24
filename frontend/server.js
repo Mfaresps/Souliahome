@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 8080;
 
 // Proxy /api requests to backend FIRST
 app.use('/api/', createProxyMiddleware({
-  target: 'https://api.soulia.com',
+  target: 'http://localhost:4000',
   changeOrigin: true,
   pathRewrite: {
     '^/api': '/api'

@@ -161,10 +161,11 @@ body.dark-mode .settings-card:hover{box-shadow:0 4px 24px rgba(0,0,0,.25)}
 .search-input{max-width:280px;position:relative}
 .search-input input{padding-right:34px}
 .toast-container{position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px}
-.toast{background:var(--primary);color:#fff;padding:10px 24px;border-radius:var(--radius);font-size:.85rem;font-weight:600;animation:toastIn .3s ease,toastOut .3s ease 2.7s forwards;box-shadow:0 4px 20px rgba(0,0,0,.2)}
-.toast.error{background:var(--red)}
-@keyframes toastIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
-@keyframes toastOut{from{opacity:1}to{opacity:0}}
+.toast{background:var(--primary);color:#fff;padding:12px 20px;border-radius:8px;font-size:.9rem;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.15);display:flex;align-items:center;gap:10px;min-width:200px;max-width:400px}
+.toast.success{background:linear-gradient(135deg,#10b981 0%,#059669 100%)}
+.toast.error{background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%)}
+@keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(20px)}}
 #login-page{position:fixed;inset:0;background:linear-gradient(135deg,#00311e 0%,#1a5c3a 100%);display:flex;align-items:center;justify-content:center;z-index:2000}
 #login-page .login-box{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 #login-page h1{color:#00311e;font-size:2rem;margin-bottom:4px}
@@ -295,7 +296,7 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 .type-btn:hover{border-color:var(--accent);color:var(--accent)}
 .type-btn.active{border-color:var(--accent);background:var(--accent);color:#fff;box-shadow:0 3px 10px rgba(102,126,234,.3)}
 .type-return-group{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.tx-product-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.tx-product-row{display:flex;justify-content:space-between;gap:16px;padding:12px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg-alt)}
 .tx-product-row select,.tx-product-row input{flex:1}
 .tx-product-row .qty-wrap{display:flex;flex-direction:column;flex:0.7}
 .tx-product-row .qty-wrap label{font-size:.68rem;color:var(--muted);font-weight:600;margin-bottom:2px}
@@ -1443,7 +1444,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <script>
 const qs = (s, p) => (p || document).querySelector(s);
 const qsa = (s, p) => [...(p || document).querySelectorAll(s)];
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = 'http://localhost:4000/api';
 
 function esc(str) {
   if (str == null) return '';
@@ -1746,10 +1747,15 @@ function fmtDateTime(d) {
 function toast(msg, isError = false) {
   const c = qs('#toast-container');
   const d = document.createElement('div');
-  d.className = 'toast' + (isError ? ' error' : '');
-  d.textContent = msg;
+  d.className = 'toast' + (isError ? ' error' : ' success');
+  const icon = isError ? '❌' : '✅';
+  d.innerHTML = `<span>${icon}</span><span>${esc(msg)}</span>`;
+  d.style.animation = 'slideIn 0.3s ease-out';
   c.appendChild(d);
-  setTimeout(() => d.remove(), 3000);
+  setTimeout(() => {
+    d.style.animation = 'slideOut 0.3s ease-out forwards';
+    setTimeout(() => d.remove(), 300);
+  }, 3000);
 }
 
 function isAdmin() { return currentUser && currentUser.role === 'admin'; }
@@ -1891,7 +1897,7 @@ function connectSocket() {
   if (socket) return;
   const token = localStorage.getItem('token');
   if (!token) return;
-  socket = io('http://localhost:3000', { auth: { token } });
+  socket = io('http://localhost:4000', { auth: { token } });
   socket.on('users:status', (data) => {
     // Update from WebSocket with full user data including lastSeen
     if (data && data.users && Array.isArray(data.users)) {
@@ -2111,7 +2117,7 @@ function buildNotifications() {
   const pendingCancelReqs = (transactions || []).filter(tx => tx.cancelRequest && tx.cancelRequest.status === 'معلق');
   if (pendingCancelReqs.length > 0 && currentUser?.role === 'admin') {
     pendingCancelReqs.forEach(tx => {
-      notifs.push({ id: 'cancel-req-' + tx._id, icon: '🚫', type: 'urgent', title: `طلب رد الديبوزيت وإلغاء الحركة — بانتظار الموافقة`, desc: `${tx.client || 'بدون اسم'} — فاتورة #${tx.ref || '-'} (${fmtJ(tx.deposit || 0)} للرد)`, page: 'approvals', ts: tx.cancelRequest?.requestedAt || tx.createdAt || '' });
+      notifs.push({ id: 'cancel-req-' + tx._id, icon: '🚫', type: 'urgent', title: `طلب إلغاء حركة — في انتظار موافقة المدير`, desc: `${tx.client || 'بدون اسم'} — فاتورة #${tx.ref || '-'} (${fmtJ(tx.deposit || 0)} للرد)`, page: 'approvals', ts: tx.cancelRequest?.requestedAt || tx.createdAt || '' });
     });
   }
   // Vault: exchange sales pending collection
@@ -2550,7 +2556,7 @@ function movementStatusCell(tx) {
   }
   let base = statusBadge(tx.payStatus, tx);
   if (tx.cancelRequest && tx.cancelRequest.status === 'معلق') {
-    base += '<div class="text-xs" style="margin-top:4px;color:#b45309;font-weight:600"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> طلب رد الديبوزيت — انتظار المدير</div>';
+    base += '<div class="text-xs" style="margin-top:4px;color:#b45309;font-weight:600"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> طلب إلغاء معلق — بانتظار الموافقة</div>';
   }
   return base;
 }
@@ -2671,14 +2677,33 @@ function renderTxItems() {
     const stockInfo = txType === 'مبيعات' && item.productId
       ? `<div class="stock-info ${isOverStock ? 'stock-warning' : ''}" style="font-size:0.75rem;margin-top:2px;color:${isOverStock ? 'var(--red)' : 'var(--muted)'}">المتاح: ${effectiveAvailable}${isOverStock ? ' <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' : ''}</div>`
       : '';
+    const product = item.productId ? products.find(p => p._id === item.productId) : null;
+    const itemTotal = (item.qty || 0) * (item.price || 0);
     return `
     <div class="tx-product-row ${isOverStock ? 'row-stock-warning' : ''}">
-      <select onchange="txItemChanged(${i},'productId',this.value)" style="flex:2">
-        <option value="">اختر صنف</option>
-        ${products.map(p => `<option value="${esc(p._id)}" ${item.productId === p._id ? 'selected' : ''}>${esc(p.code ? p.code + ' - ' : '')}${esc(p.name)}</option>`).join('')}
-      </select>
-      <div class="qty-wrap"><label>الكمية</label><input type="number" value="${item.qty}" min="1" onchange="txItemChanged(${i},'qty',this.value)" style="${isOverStock ? 'border-color:var(--red);background:rgba(239,68,68,0.1)' : ''}">${stockInfo}</div>
-      <button class="btn-icon btn-danger" onclick="removeTxItem(${i})" style="flex-shrink:0">✕</button>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <select onchange="txItemChanged(${i},'productId',this.value)">
+          <option value="">اختر صنف</option>
+          ${products.map(p => `<option value="${esc(p._id)}" ${item.productId === p._id ? 'selected' : ''}>${esc(p.code ? p.code + ' - ' : '')}${esc(p.name)}</option>`).join('')}
+        </select>
+        ${product ? `<div style="font-size:0.85rem;color:var(--muted);font-weight:500">${esc(product.code || '-')} — ${esc(product.name)}</div>` : ''}
+        ${stockInfo}
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding-top:6px">
+        <div style="text-align:center;min-width:60px">
+          <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:2px">السعر</label>
+          <div style="font-weight:600;font-size:1rem">${fmtJ(item.price || 0)}</div>
+        </div>
+        <div style="text-align:center;min-width:60px">
+          <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:2px">الكمية</label>
+          <input type="number" value="${item.qty}" min="1" onchange="txItemChanged(${i},'qty',this.value)" style="width:100%;text-align:center;font-weight:600;${isOverStock ? 'border-color:var(--red);background:rgba(239,68,68,0.1)' : ''}">
+        </div>
+        <div style="text-align:center;min-width:70px">
+          <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:2px">الإجمالي</label>
+          <div style="font-weight:700;font-size:1rem;color:var(--primary)">${fmtJ(itemTotal)}</div>
+        </div>
+        <button class="btn-icon btn-danger" onclick="removeTxItem(${i})" style="flex-shrink:0;align-self:center">✕</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -2853,7 +2878,7 @@ function calcTxSummary() {
     ${txType === 'مبيعات' ? `<div class="row"><span>الشحن</span><span>${fmtJ(shipCost)}</span></div>` : ''}
     <div class="row total-row"><span>الإجمالي</span><span>${fmtJ(total)}</span></div>
     ${txType === 'مبيعات' ? `<div class="row"><span>الديبوزت</span><span>${fmtJ(deposit)}</span></div><div class="row"><span>المتبقي</span><span class="${remaining > 0 ? 'text-red' : 'text-green'}">${fmtJ(remaining)}</span></div>` : ''}
-    ${txType === 'مشتريات' ? (() => { const dep = Number(qs('#tx-deposit')?.value) || 0; const rem = Math.max(0, total - dep); const paid = dep > 0 ? dep : total; return `<div class="row"><span>العربون المدفوع الآن</span><span class="text-red">- ${fmtJ(paid)}</span></div>${rem > 0 ? `<div class="row"><span>المتبقي للمورد لاحقاً</span><span class="text-orange">${fmtJ(rem)}</span></div>` : '<div class="row"><span class="text-green"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> مدفوع بالكامل</span></div>'}`; })() : ''}`;
+    ${txType === 'مشتريات' ? (() => { const dep = Number(qs('#tx-deposit')?.value) || 0; const paid = dep > 0 ? dep : 0; const rem = Math.max(0, total - paid); return `<div class="row"><span>العربون المدفوع الآن</span><span class="text-red">- ${fmtJ(paid)}</span></div>${rem > 0 ? `<div class="row"><span>المتبقي للمورد لاحقاً</span><span class="text-orange">${fmtJ(rem)}</span></div>` : '<div class="row"><span class="text-green"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> مدفوع بالكامل</span></div>'}`; })() : ''}`;
   const payGroup = qs('#tx-payment-group');
   if (payGroup) {
     const isFullyPaid = remaining <= 0;
@@ -3208,44 +3233,59 @@ async function saveTx() {
   const validItems = txItems.filter(it => it.productId);
   if (!validItems.length) { toast('أضف صنف واحد على الأقل', true); return; }
   if (!validateTx()) return;
-  const items = validItems.map(it => {
-    const p = products.find(x => x._id === it.productId);
-    return { name: p?.name || '', code: p?.code || '', qty: it.qty, price: it.price, total: it.qty * it.price };
-  });
-  const itemsTotal = items.reduce((s, it) => s + it.total, 0);
-  const discount = getEffectiveDiscount();
-  const shipCost = txType === 'مبيعات' ? getShipCost() : 0;
-  const total = itemsTotal - discount + shipCost;
-  const deposit = Number(qs('#tx-deposit')?.value) || 0;
-  const body = { date: new Date().toISOString(), type: txType, items, itemsTotal, discount, total,
-    client: qs('#tx-client')?.value || '', phone: qs('#tx-phone')?.value || '',
-    ref: (qs('#tx-ref')?.value || '').trim(), notes: qs('#tx-notes')?.value || '',
-    employee: currentUser?.name || currentUser?.username || '',
-    comments: txComments.length > 0 ? txComments : [] };
-  if (txType === 'مبيعات') {
-    Object.assign(body, { shipCo: qs('#tx-shipco')?.value || '', shipZone: txShipZone, shipCost, deposit,
-      remaining: total - deposit, depMethod: qs('#tx-dep-method')?.value || '',
-      payment: qs('#tx-payment')?.value || '', payStatus: (total - deposit) <= 0 ? 'مكتمل' : 'معلق' });
-  } else if (txType === 'مشتريات') {
-    const account = qs('#tx-account')?.value || 'كاش';
-    const purDeposit = Number(qs('#tx-deposit')?.value) || 0;
-    const paidNow = purDeposit > 0 ? purDeposit : total; // 0 means pay full
-    const purRemaining = Math.max(0, total - paidNow);
-    body.client = qs('#tx-supplier')?.value || '';
-    body.payment = account;
-    body.depMethod = account;
-    body.deposit = paidNow;
-    body.remaining = purRemaining;
-    body.payStatus = purRemaining <= 0 ? 'مكتمل' : 'معلق';
-  }
+
+  const saveBtn = qs('#tx-save-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '0.6'; }
+
   try {
+    const items = validItems.map(it => {
+      const p = products.find(x => x._id === it.productId);
+      return { name: p?.name || '', code: p?.code || '', qty: it.qty, price: it.price, total: it.qty * it.price };
+    });
+    const itemsTotal = items.reduce((s, it) => s + it.total, 0);
+    const discount = getEffectiveDiscount();
+    const shipCost = txType === 'مبيعات' ? getShipCost() : 0;
+    const total = itemsTotal - discount + shipCost;
+    const deposit = Number(qs('#tx-deposit')?.value) || 0;
+    const body = { date: new Date().toISOString(), type: txType, items, itemsTotal, discount, total,
+      client: qs('#tx-client')?.value || '', phone: qs('#tx-phone')?.value || '',
+      ref: (qs('#tx-ref')?.value || '').trim(), notes: qs('#tx-notes')?.value || '',
+      employee: currentUser?.name || currentUser?.username || '',
+      comments: txComments.length > 0 ? txComments : [] };
+    if (txType === 'مبيعات') {
+      Object.assign(body, { shipCo: qs('#tx-shipco')?.value || '', shipZone: txShipZone, shipCost, deposit,
+        remaining: total - deposit, depMethod: qs('#tx-dep-method')?.value || '',
+        payment: qs('#tx-payment')?.value || '', payStatus: (total - deposit) <= 0 ? 'مكتمل' : 'معلق' });
+    } else if (txType === 'مشتريات') {
+      const account = qs('#tx-account')?.value || 'كاش';
+      const purDeposit = Number(qs('#tx-deposit')?.value) || 0;
+      const paidNow = purDeposit > 0 ? purDeposit : 0; // 0 means no payment made - full amount is debt
+      const purRemaining = Math.max(0, total - paidNow);
+      body.client = qs('#tx-supplier')?.value || '';
+      body.payment = account;
+      body.depMethod = account;
+      body.deposit = paidNow;
+      body.remaining = purRemaining;
+      body.payStatus = purRemaining <= 0 ? 'مكتمل' : 'معلق';
+    }
+
     await api('/transactions', { method: 'POST', body: JSON.stringify(body) });
-    toast('تم حفظ الحركة بنجاح');
+
+    // Show beautiful success message
+    const successMsg = txType === 'مشتريات'
+      ? 'تم حفظ حركة المشتريات بنجاح ✅'
+      : 'تم حفظ حركة المبيعات بنجاح ✅';
+    toast(successMsg);
+
     transactions = await api('/transactions').catch(() => transactions);
     try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
     buildNotifications(); buildSidebar();
     resetTx();
-  } catch (e) { toast('خطأ: ' + e.message, true); }
+  } catch (e) {
+    toast('خطأ: ' + e.message, true);
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = '1'; }
+  }
 }
 async function saveReturnRequest() {
   if (!validateTx()) return;
@@ -3523,8 +3563,8 @@ function renderMovementTxRow(tx) {
             isExchangeSalePendingCollect(tx)
               ? `<div class="dd-divider"></div><div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🚫 إلغاء <span class="text-xs">(مقفول)</span></div>`
               : tx.cancelRequest && tx.cancelRequest.status === 'معلق'
-                ? `<div class="dd-divider"></div><div class="dd-item" style="opacity:.7;cursor:default" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> طلب رد الديبوزيت — معلق</div>`
-                : `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')">🚫 ${tx.payStatus === 'معلق' && tx.type !== 'مشتريات' ? 'طلب رد الديبوزيت وإلغاء' : 'إلغاء'}</div>`
+                ? `<div class="dd-divider"></div><div class="dd-item" style="opacity:.7;cursor:default" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> طلب إلغاء معلق</div>`
+                : `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')">🚫 إلغاء</div>`
           ) : ''}
           ${isAdmin() ? (isExchangeSalePendingCollect(tx) ? `<div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 7l-5 5-5-5"/><path d="M17 17l-5-5-5 5"/><line x1="2" y1="12" x2="22" y2="12"/></svg> تجميد <span class="text-xs">(مقفول)</span></div>` : `<div class="dd-item danger" onclick="archiveMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 7l-5 5-5-5"/><path d="M17 17l-5-5-5 5"/><line x1="2" y1="12" x2="22" y2="12"/></svg> تجميد</div>`) : ''}
         </div>
@@ -3556,20 +3596,22 @@ function renderMovements() {
     ...retRows.map(r => ({ k: 'ret', r, sk: r.createdAt || '' })),
   ].sort((a, b) => (b.sk || '').localeCompare(a.sk || ''));
 
-  // Calculate KPIs
+  // Calculate KPIs (استبعاد الحركات الملغاة من الحسابات)
   const allTx = data;
+  const activeTx = allTx.filter(t => !t.cancelled); // استثناء الحركات الملغاة
+
   // Total Revenue: Sales + Returns (returns reduce revenue)
-  const salesRevenue = allTx.filter(t => t.type === 'مبيعات').reduce((s, t) => s + (t.total || 0), 0);
-  const returnsSales = allTx.filter(t => t.type === 'مرتجع مبيعات' || t.type === 'مرتجع').reduce((s, t) => s + (t.total || 0), 0);
+  const salesRevenue = activeTx.filter(t => t.type === 'مبيعات').reduce((s, t) => s + (t.total || 0), 0);
+  const returnsSales = activeTx.filter(t => t.type === 'مرتجع مبيعات' || t.type === 'مرتجع').reduce((s, t) => s + (t.total || 0), 0);
   const totalRevenue = Math.max(0, salesRevenue - returnsSales);
 
-  const totalPurchases = allTx.filter(t => t.type === 'مشتريات').reduce((s, t) => s + (t.total || 0), 0);
-  const totalRemaining = allTx.reduce((s, t) => s + (t.remaining || 0), 0);
-  const remainingSupplier = allTx.filter(t => t.type === 'مشتريات').reduce((s, t) => s + (t.remaining || 0), 0);
-  const remainingCollection = allTx.filter(t => t.type === 'مبيعات').reduce((s, t) => s + (t.remaining || 0), 0);
+  const totalPurchases = activeTx.filter(t => t.type === 'مشتريات').reduce((s, t) => s + (t.total || 0), 0);
+  const totalRemaining = activeTx.reduce((s, t) => s + (t.remaining || 0), 0);
+  const remainingSupplier = activeTx.filter(t => t.type === 'مشتريات').reduce((s, t) => s + (t.remaining || 0), 0);
+  const remainingCollection = activeTx.filter(t => t.type === 'مبيعات').reduce((s, t) => s + (t.remaining || 0), 0);
 
-  const pendingCount = allTx.filter(t => isStatusPending(t.payStatus)).length;
-  const completedCount = allTx.filter(t => t.payStatus === 'مكتمل').length;
+  const pendingCount = activeTx.filter(t => isStatusPending(t.payStatus)).length;
+  const completedCount = activeTx.filter(t => t.payStatus === 'مكتمل').length;
   const cancelledCount = allTx.filter(t => t.cancelled || t.payStatus === 'ملغي').length;
 
   // Render KPI strip
@@ -3857,33 +3899,33 @@ function openCancelMovement(id) {
   </div>`;
 
   const vaultWarning = deposit > 0 && depMethod
-    ? `<div style="margin-bottom:12px;padding:12px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.18);border-radius:10px;font-size:.83rem">
-        <div style="font-weight:700;color:var(--red);margin-bottom:6px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> تأثير على الخزنة عند الموافقة</div>
-        <div>سيُخصم <strong style="color:var(--red)">${fmtJ(deposit)}</strong> من خزنة <strong>${esc(depMethod)}</strong> (رد المبلغ المدفوع للعميل)</div>
+    ? `<div style="margin-bottom:12px;padding:12px;background:rgba(${tx.type === 'مشتريات' ? '16,185,129' : '220,38,38'},.08);border:1px solid rgba(${tx.type === 'مشتريات' ? '16,185,129' : '220,38,38'},.18);border-radius:10px;font-size:.83rem">
+        <div style="font-weight:700;color:${tx.type === 'مشتريات' ? '#10b981' : 'var(--red)'};margin-bottom:6px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> تأثير على الخزنة عند الاعتماد</div>
+        <div>${tx.type === 'مشتريات' ? `<strong style="color:#10b981">سيتم رد</strong> <strong style="color:#10b981">${fmtJ(deposit)}</strong> <strong style="color:#10b981">إلى خزنة</strong> <strong>${esc(depMethod)}</strong> <strong style="color:#10b981">عند الاعتماد</strong>` : `<strong style="color:var(--red)">سيتم خصم</strong> <strong style="color:var(--red)">${fmtJ(deposit)}</strong> <strong style="color:var(--red)">من خزنة</strong> <strong>${esc(depMethod)}</strong> <strong style="color:var(--red)">(رد الديبوزيت للعميل)</strong>`}</div>
       </div>` : '';
 
   if (isPending) {
     // Pending: employee submits cancel request → manager approves
-    openModal(`<h3>🚫 طلب رد الديبوزيت وإلغاء الحركة</h3>
+    openModal(`<h3>🚫 طلب إلغاء ${tx.type === 'مشتريات' ? 'حركة مشتريات' : 'حركة مبيعات'}</h3>
       <div style="padding:12px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:8px;margin-bottom:14px;font-size:.83rem">
-        <div style="font-weight:700;color:#b45309;margin-bottom:6px;display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.1em;height:1.1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> يحتاج موافقة المدير</div>
-        <div style="font-size:.8rem;color:#92400e">سيظهر في قسم الموافقات — لن يتم الرد والإلغاء إلا بعد اعتماد المدير</div>
+        <div style="font-weight:700;color:#b45309;margin-bottom:6px;display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.1em;height:1.1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> في انتظار موافقة المدير</div>
+        <div style="font-size:.8rem;color:#92400e">سيتم عرض هذا الطلب في قسم الموافقات ولن يتم تنفيذ الإلغاء إلا بعد اعتماد المدير</div>
       </div>
       ${txInfo}
       ${vaultWarning}
-      <div class="form-group"><label>سبب الطلب *</label><textarea id="cancel-reason" rows="3" placeholder="أدخل سبب طلب الرد والإلغاء..."></textarea></div>
+      <div class="form-group"><label>سبب الإلغاء *</label><textarea id="cancel-reason" rows="3" placeholder="وضّح السبب المؤدي لطلب الإلغاء..."></textarea></div>
       <div class="flex gap-8 mt-16">
         <button class="btn btn-danger" onclick="doRequestCancelMovement('${esc(id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> إرسال الطلب</button>
         <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
       </div>`);
   } else {
     // Non-pending non-completed: admin direct cancel
-    openModal(`<h3>🚫 إلغاء الحركة</h3>
+    openModal(`<h3>🚫 إلغاء ${tx.type === 'مشتريات' ? 'حركة مشتريات' : 'حركة مبيعات'}</h3>
       ${txInfo}
       ${vaultWarning}
-      <div class="form-group"><label>سبب الإلغاء *</label><textarea id="cancel-reason" rows="3" placeholder="أدخل سبب الإلغاء..."></textarea></div>
+      <div class="form-group"><label>سبب الإلغاء *</label><textarea id="cancel-reason" rows="3" placeholder="وضّح السبب المؤدي لإلغاء الحركة..."></textarea></div>
       <div class="flex gap-8 mt-16">
-        <button class="btn btn-danger" onclick="doCancelMovement('${esc(id)}')">تأكيد الإلغاء</button>
+        <button class="btn btn-danger" onclick="doCancelMovement('${esc(id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> تأكيد الإلغاء</button>
         <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
       </div>`);
   }
@@ -3897,23 +3939,28 @@ async function doRequestCancelMovement(id) {
       method: 'POST',
       body: JSON.stringify({ reason, requestedBy: currentUser?.name || currentUser?.username || '' }),
     });
-    toast('✅ تم إرسال طلب رد الديبوزيت وإلغاء الحركة — في انتظار موافقة المدير');
+    toast('✅ تم إرسال طلب الإلغاء بنجاح — في انتظار موافقة المدير');
     closeModal();
     transactions = await api('/transactions').catch(() => transactions);
     renderMovements(); buildSidebar(); buildNotifications();
-  } catch (e) { toast('خطأ: ' + e.message, true); }
+    // تحديث Dashboard
+    if (window.location.hash === '#page-dashboard') loadDashboard().catch(e => console.error('Dashboard update failed:', e));
+  } catch (e) { toast('❌ خطأ: ' + e.message, true); }
 }
 
 async function doCancelMovement(id) {
   const reason = (qs('#cancel-reason')?.value || '').trim();
   if (!reason) { toast('يجب إدخال سبب الإلغاء', true); return; }
   try {
+    const tx = transactions.find(t => t._id === id);
     await api('/transactions/' + id + '/cancel', { method: 'POST', body: JSON.stringify({ cancelReason: reason, cancelledBy: currentUser?.name || '' }) });
-    toast('تم إلغاء الحركة'); closeModal();
+    toast(`✅ تم إلغاء ${tx?.type === 'مشتريات' ? 'حركة المشتريات' : 'حركة المبيعات'} بنجاح`); closeModal();
     transactions = await api('/transactions').catch(() => transactions);
     renderMovements(); buildSidebar(); buildNotifications();
     syncVaultState();
-  } catch (e) { toast('خطأ: ' + e.message, true); }
+    // تحديث Dashboard و Reports
+    if (window.location.hash === '#page-dashboard') loadDashboard().catch(e => console.error('Dashboard update failed:', e));
+  } catch (e) { toast('❌ خطأ: ' + e.message, true); }
 }
 
 function openCollectMovement(id) {
@@ -5782,7 +5829,7 @@ function renderCancelRequestApprovalCard(tx) {
   const statusColor = isPending ? 'var(--orange)' : cr.status === 'معتمد' ? 'var(--green)' : 'var(--red)';
   const statusLabel = isPending ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> معلق' : cr.status === 'معتمد' ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> معتمد' : '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg> مرفوض';
   const vaultNote = deposit > 0 && depMethod
-    ? `<div class="text-xs" style="margin-top:4px;color:var(--red)"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg> سيُخصم <strong>${fmtJ(deposit)}</strong> من خزنة <strong>${esc(depMethod)}</strong> عند الاعتماد</div>` : '';
+    ? `<div class="text-xs" style="margin-top:4px;color:${tx.type === 'مشتريات' ? '#10b981' : 'var(--red)'}"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg> ${tx.type === 'مشتريات' ? `سيتم <strong>رد</strong> <strong>${fmtJ(deposit)}</strong> <strong>إلى</strong> خزنة <strong>${esc(depMethod)}</strong>` : `سيتم <strong>خصم</strong> <strong>${fmtJ(deposit)}</strong> <strong>من</strong> خزنة <strong>${esc(depMethod)}</strong>`} عند الاعتماد</div>` : '';
   const reviewInfo = cr.reviewedBy
     ? `<div class="text-xs text-muted" style="margin-top:4px">بواسطة: ${esc(cr.reviewedBy)} ${cr.reviewedAt ? '— ' + fmtDate(cr.reviewedAt) : ''}</div>` : '';
   const rejectedNote = cr.rejectedReason
@@ -5796,7 +5843,7 @@ function renderCancelRequestApprovalCard(tx) {
     <div class="flex-between" style="flex-wrap:wrap;gap:12px">
       <div style="flex:1;min-width:220px">
         <div class="flex gap-8" style="align-items:center;flex-wrap:wrap">
-          <span class="badge" style="background:rgba(220,38,38,.12);color:var(--red);font-size:.65rem">🚫 طلب رد الديبوزيت وإلغاء</span>
+          <span class="badge" style="background:rgba(220,38,38,.12);color:var(--red);font-size:.65rem">🚫 طلب إلغاء</span>
           <strong style="font-size:.95rem">حركة #${esc(tx.ref || tx._id)}</strong>
           <span style="font-size:.75rem;font-weight:600;color:' + statusColor + '">${statusLabel}</span>
         </div>
@@ -5822,10 +5869,15 @@ function renderCancelRequestApprovalCard(tx) {
 
 async function approveCancelRequest(txId) {
   if (!isAdmin()) { toast('هذا الإجراء للمدير فقط', true); return; }
-  if (!confirm('اعتماد طلب الإلغاء؟\n\nسيتم إلغاء الحركة وخصم المبلغ المدفوع من الخزنة تلقائياً.')) return;
+  const tx = transactions.find(t => t._id === txId);
+  const msg = tx?.type === 'مشتريات'
+    ? 'اعتماد طلب الإلغاء؟\n\nسيتم إلغاء الحركة ورد المبلغ المدفوع إلى الخزنة تلقائياً.'
+    : 'اعتماد طلب الإلغاء؟\n\nسيتم إلغاء الحركة وخصم المبلغ المدفوع من الخزنة تلقائياً.';
+  if (!confirm(msg)) return;
   try {
     await api('/transactions/' + txId + '/approve-cancel', { method: 'POST', body: '{}' });
-    toast('✅ تم اعتماد الإلغاء وخصم المبلغ من الخزنة');
+    const txt = tx?.type === 'مشتريات' ? '✅ تم اعتماد الإلغاء ورد المبلغ إلى الخزنة' : '✅ تم اعتماد الإلغاء وخصم المبلغ من الخزنة';
+    toast(txt);
     transactions = await api('/transactions').catch(() => transactions);
     renderApprovals(); renderMovements(); buildSidebar(); buildNotifications();
     syncVaultState();

@@ -50,7 +50,7 @@ export class TransactionsController {
   @Get('dashboard')
   async getDashboard() {
     const expenses = await this.expensesService.findAll();
-    const expenseTotal = expenses.reduce((s, e) => s + e.amount, 0);
+    const expenseTotal = expenses.filter(e => e.status === 'معتمد').reduce((s, e) => s + e.amount, 0);
     return this.transactionsService.getDashboard(expenseTotal);
   }
 
@@ -65,7 +65,7 @@ export class TransactionsController {
     let filteredExpenses = expenses;
     if (from) filteredExpenses = filteredExpenses.filter((e) => e.date >= from);
     if (to) filteredExpenses = filteredExpenses.filter((e) => e.date <= to);
-    const expenseTotal = filteredExpenses.reduce((s, e) => s + e.amount, 0);
+    const expenseTotal = filteredExpenses.filter(e => e.status === 'معتمد').reduce((s, e) => s + e.amount, 0);
     return this.transactionsService.getReports(from, to, expenseTotal);
   }
 
