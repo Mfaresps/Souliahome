@@ -663,7 +663,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
   </div>
 </div>
 <div class="table-card">
-  <div class="overflow-x"><table id="inv-table"><thead><tr><th data-i18n="colCode">الكود</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice">سعر الشراء</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colPurchases" data-i18n-title="colPurchasesTip" title="من المورد فقط">المشتريات</th><th data-i18n="colReturnToStock" data-i18n-title="colReturnToStockTip" title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th data-i18n="colSales">المبيعات</th><th data-i18n="colCurrentBal">الرصيد الحالي</th><th data-i18n="status">الحالة</th></tr></thead><tbody></tbody></table></div>
+  <div class="overflow-x"><table id="inv-table"><thead><tr><th data-i18n="colCode">الكود</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice" class="inv-buyprice-col">سعر الشراء</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colPurchases" data-i18n-title="colPurchasesTip" title="من المورد فقط">المشتريات</th><th data-i18n="colReturnToStock" data-i18n-title="colReturnToStockTip" title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th data-i18n="colSales">المبيعات</th><th data-i18n="colCurrentBal">الرصيد الحالي</th><th data-i18n="status">الحالة</th></tr></thead><tbody></tbody></table></div>
 </div>
 <div id="inv-pagination" style="margin-top:16px"></div>
 </div>
@@ -1601,7 +1601,7 @@ const NAV_ITEMS = [
   {id:'expenses',label:'المصاريف',labelEn:'Expenses',icon:NAV_ICONS.expenses,perm:'expenses'},
   {id:'complaints',label:'خدمة العملاء',labelEn:'Customer Service',icon:NAV_ICONS.complaints,perm:'complaints'},
   {id:'approvals',label:'الموافقات',labelEn:'Approvals',icon:NAV_ICONS.approvals,perm:'approvals'},
-  {id:'reports',label:'التقارير',labelEn:'Reports',icon:NAV_ICONS.reports,perm:'reports'},
+  {id:'reports',label:'التقارير',labelEn:'Reports',icon:NAV_ICONS.reports,perm:'reports',adminOnly:true},
   {id:'vault',label:'الخزنة',labelEn:'Vault',icon:NAV_ICONS.vault,perm:'vault'},
   {id:'users',label:'المستخدمون',labelEn:'Users',icon:NAV_ICONS.users,perm:'users'},
   {id:'settings',label:'الإعدادات',labelEn:'Settings',icon:NAV_ICONS.settings,perm:'settings'},
@@ -1887,7 +1887,7 @@ async function showApp() {
   navigateTo(startPage);
 }
 
-function findFirstAllowedPage() { for (const item of NAV_ITEMS) { if (hasPerm(item.perm)) return item.id; } return 'profile'; }
+function findFirstAllowedPage() { for (const item of NAV_ITEMS) { if (item.adminOnly && !isAdmin()) continue; if (hasPerm(item.perm)) return item.id; } return 'profile'; }
 
 function updateHeader() {
   if (!currentUser) return;
@@ -2055,7 +2055,7 @@ function buildSidebar() {
   const pendingCmpCount = complaints.filter(c => c.status === 'معلق').length;
   const pendingCancelCount = transactions.filter(t => t.cancelRequest && t.cancelRequest.status === 'معلق').length;
   const totalApprovalsBadge = pendingExpCount + pendingCancelCount;
-  sb.innerHTML = NAV_ITEMS.filter(n => hasPerm(n.perm)).map(n => {
+  sb.innerHTML = NAV_ITEMS.filter(n => (n.adminOnly && !isAdmin()) ? false : hasPerm(n.perm)).map(n => {
     let badge = '';
     if (n.id === 'approvals' && totalApprovalsBadge > 0) badge = ` <span class="badge badge-orange" style="margin-right:4px;font-size:.65rem">${totalApprovalsBadge}</span>`;
     if (n.id === 'movements' && pendingTxCount > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">${pendingTxCount}</span>`;
@@ -2116,14 +2116,17 @@ function setVaultPage(p) { vaultPage=p; renderVaultTable(); }
 let notifDismissed = JSON.parse(localStorage.getItem('notifDismissed') || '[]');
 function buildNotifications() {
   const notifs = [];
-  const inv = Array.isArray(inventoryCache) ? inventoryCache : [];
-  inv.forEach(item => {
-    if (item.current <= 0) {
-      notifs.push({ id: 'stock-out-' + item.code, icon: '🚨', type: 'urgent', title: `${item.name} — نفد من المخزن`, desc: `الكمية الحالية: 0 | الحد الأدنى: ${item.minStock || 0}`, page: 'inventory' });
-    } else if (item.current <= (item.minStock || 0)) {
-      notifs.push({ id: 'stock-low-' + item.code, icon: '⚠️', type: 'warning', title: `${item.name} — كمية منخفضة`, desc: `الكمية الحالية: ${item.current} | الحد الأدنى: ${item.minStock || 0}`, page: 'inventory' });
-    }
-  });
+  // Stock alerts — only for admin
+  if (currentUser?.role === 'admin') {
+    const inv = Array.isArray(inventoryCache) ? inventoryCache : [];
+    inv.forEach(item => {
+      if (item.current <= 0) {
+        notifs.push({ id: 'stock-out-' + item.code, icon: '🚨', type: 'urgent', title: `${item.name} — نفد من المخزن`, desc: `الكمية الحالية: 0 | الحد الأدنى: ${item.minStock || 0}`, page: 'inventory' });
+      } else if (item.current <= (item.minStock || 0)) {
+        notifs.push({ id: 'stock-low-' + item.code, icon: '⚠️', type: 'warning', title: `${item.name} — كمية منخفضة`, desc: `الكمية الحالية: ${item.current} | الحد الأدنى: ${item.minStock || 0}`, page: 'inventory' });
+      }
+    });
+  }
   const pendingExp = expenses.filter(e => e.status === 'معلق');
   if (pendingExp.length > 0 && currentUser?.role === 'admin') {
     pendingExp.forEach(exp => {
@@ -3416,17 +3419,31 @@ function renderInventory() {
   const pageData = data.slice((invPage-1)*INV_PAGE_SIZE, invPage*INV_PAGE_SIZE);
   qs('#inv-table tbody').innerHTML = pageData.length ? pageData.map(r => `
     <tr>
-      <td>${esc(r.code || '-')}</td><td style="font-weight:600">${esc(r.name)}</td><td>${fmtJ(r.sellPrice)}</td><td>${fmtJ(r.buyPrice)}</td>
+      <td>${esc(r.code || '-')}</td><td style="font-weight:600">${esc(r.name)}</td><td>${fmtJ(r.sellPrice)}</td><td class="inv-buyprice-col">${fmtJ(r.buyPrice)}</td>
       <td>${fmtN(r.openingBalance)}</td><td class="text-green">${fmtN(r.purchases)}</td>${invReturnCell(r)}<td class="text-blue">${fmtN(r.sales)}</td>
       <td>${stockBar(r)}</td>
       <td>${statusBadge(r)}</td>
     </tr>`).join('') : '<tr><td colspan="10" class="empty-state">لا توجد بيانات</td></tr>';
+  // Hide buy price column from staff
+  if (!isAdmin()) { qsa('.inv-buyprice-col').forEach(el => el.style.display = 'none'); }
   renderPagination('inv-pagination', total, invPage, INV_PAGE_SIZE, 'setInvPage');
 }
 const debouncedRenderInventory = debounce(() => { invPage = 1; renderInventory(); }, 250);
 
 function exportInventoryExcel() {
-  const data = inventoryCache.map(r => ({ 'الكود': r.code, 'الصنف': r.name, 'سعر البيع': r.sellPrice, 'سعر الشراء': r.buyPrice, 'الحد الأدنى': r.minStock, 'الرصيد الافتتاحي': r.openingBalance, 'المشتريات (مورد)': r.purchases, 'إرجاع للمخزن (كمية)': r.returnsToStock ?? 0, 'مراجع الإرجاع/الاستبدال': r.returnRefs || '', 'تواريخ المرتجعات': r.returnDates || '', 'المبيعات': r.sales, 'الحالي': r.current }));
+  const data = inventoryCache.map(r => {
+    const obj = { 'الكود': r.code, 'الصنف': r.name, 'سعر البيع': r.sellPrice };
+    if (isAdmin()) obj['سعر الشراء'] = r.buyPrice;
+    obj['الحد الأدنى'] = r.minStock;
+    obj['الرصيد الافتتاحي'] = r.openingBalance;
+    obj['المشتريات (مورد)'] = r.purchases;
+    obj['إرجاع للمخزن (كمية)'] = r.returnsToStock ?? 0;
+    obj['مراجع الإرجاع/الاستبدال'] = r.returnRefs || '';
+    obj['تواريخ المرتجعات'] = r.returnDates || '';
+    obj['المبيعات'] = r.sales;
+    obj['الحالي'] = r.current;
+    return obj;
+  });
   writeExcel(data, 'المخزن', 'inventory_' + today());
 }
 
