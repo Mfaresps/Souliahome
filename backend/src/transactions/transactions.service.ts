@@ -10,6 +10,10 @@ import {
   TransactionDocument,
 } from './schemas/transaction.schema';
 import {
+  ReturnRequest,
+  ReturnRequestDocument,
+} from '../returns/schemas/return-request.schema';
+import {
   CreateTransactionDto,
   UpdateTransactionDto,
   CancelTransactionDto,
@@ -44,6 +48,10 @@ export interface DashboardData {
   totalExpenses: number;
   grossProfit: number;
   netProfit: number;
+  totalShipping: number;
+  totalShipLoss: number;
+  returnCount: number;
+  totalReturns: number;
   lowStockItems: InventoryItem[];
   recentTransactions: TransactionDocument[];
   topSellers: { name: string; qty: number }[];
@@ -55,6 +63,8 @@ export class TransactionsService {
   constructor(
     @InjectModel(Transaction.name)
     private readonly transactionModel: Model<TransactionDocument>,
+    @InjectModel(ReturnRequest.name)
+    private readonly returnRequestModel: Model<ReturnRequestDocument>,
     private readonly productsService: ProductsService,
     private readonly vaultService: VaultService,
   ) {}
@@ -140,6 +150,24 @@ export class TransactionsService {
       }
     }
     const tx = await this.transactionModel.create(dto);
+
+    // Record initial deposit if paid
+    const deposit = (dto as unknown as { deposit?: number }).deposit || 0;
+    const depMethod = (dto as unknown as { depMethod?: string }).depMethod || 'كاش';
+    const employee = (dto as unknown as { employee?: string }).employee || '';
+
+    if (deposit > 0) {
+      if (!tx.deposits) tx.deposits = [];
+      tx.deposits.push({
+        amount: deposit,
+        method: depMethod,
+        note: 'ديبوزت أول - عند إنشاء الحركة',
+        date: new Date().toISOString(),
+        by: employee,
+      });
+      await tx.save();
+    }
+
     await this.recordVaultForTransaction(tx);
     return tx;
   }
@@ -326,11 +354,34 @@ export class TransactionsService {
         String(existing._id),
       );
     }
+
     const oldDeposit = existing.deposit || 0;
+    const oldTotal = existing.total || 0;
+    const oldDiscount = existing.discount || 0;
+    const oldShipCost = existing.shipCost || 0;
+
+    // 📊 حساب الفروقات
+    const newTotal = dto.total !== undefined ? (Number(dto.total) || 0) : oldTotal;
+    const newDeposit = dto.deposit !== undefined ? (Number(dto.deposit) || 0) : oldDeposit;
+    const newDiscount = dto.discount !== undefined ? (Number(dto.discount) || 0) : oldDiscount;
+    const newShipCost = dto.shipCost !== undefined ? (Number(dto.shipCost) || 0) : oldShipCost;
+
+    const totalDelta = newTotal - oldTotal;
+    const depositDelta = newDeposit - oldDeposit;
+    const discountDelta = newDiscount - oldDiscount;
+    const shipCostDelta = newShipCost - oldShipCost;
+
+    // 📝 بناء رسالة التعديل
+    const changes = [];
+    if (totalDelta !== 0) changes.push(`الإجمالي: ${oldTotal} ← ${newTotal}`);
+    if (depositDelta !== 0) changes.push(`الديبوزت: ${oldDeposit} ← ${newDeposit}`);
+    if (discountDelta !== 0) changes.push(`الخصم: ${oldDiscount} ← ${newDiscount}`);
+    if (shipCostDelta !== 0) changes.push(`الشحن: ${oldShipCost} ← ${newShipCost}`);
+
     const historyEntry = {
       editedAt: new Date().toISOString(),
       editedBy,
-      action: 'تعديل',
+      action: 'تعديل شامل',
       before: {
         client: existing.client,
         phone: existing.phone,
@@ -348,30 +399,58 @@ export class TransactionsService {
         payment: existing.payment,
         payStatus: existing.payStatus,
       },
+      after: {
+        total: newTotal,
+        deposit: newDeposit,
+        discount: newDiscount,
+        shipCost: newShipCost,
+        items: dto.items || existing.items,
+      },
+      changes,
+      totalDelta,
+      depositDelta,
+      discountDelta,
+      shipCostDelta,
     };
+
     const editHistory = [...(existing.editHistory || []), historyEntry];
     const tx = await this.transactionModel
       .findByIdAndUpdate(id, { ...dto, editHistory }, { new: true })
       .exec();
 
-    // Vault adjustment: synchronize vault with monetary changes on save
-    if (!existing.cancelled) {
+    // 📋 Record additional deposit if deposit increased during edit
+    if (depositDelta > 0 && tx) {
+      const depMethod = String(existing.depMethod || '').trim() || 'كاش';
+      if (!tx.deposits) tx.deposits = [];
+      tx.deposits.push({
+        amount: depositDelta,
+        method: depMethod,
+        note: `ديبوزت إضافي - من تعديل الحركة (${oldDeposit} → ${newDeposit})`,
+        date: new Date().toISOString(),
+        by: editedBy || 'مجهول',
+      });
+    }
+
+    // 💰 Vault adjustment: synchronize vault with monetary changes on save
+    if (!existing.cancelled && tx) {
       const txDate = this.formatTxDateForVault(existing);
       const txRef = existing.ref || String(existing._id);
       const depMethod = String(existing.depMethod || '').trim();
 
-      if (existing.type === 'مبيعات' && dto.deposit !== undefined) {
+      let vaultNote = '';
+
+      if (existing.type === 'مبيعات') {
         // مبيعات: deposit change → vault delta
-        const newDeposit = Number(dto.deposit) || 0;
-        const depositDelta = newDeposit - oldDeposit;
         if (depositDelta !== 0 && depMethod) {
-          const direction = depositDelta > 0 ? 'زيادة ديبوزت' : 'خصم ديبوزت';
+          const direction = depositDelta > 0 ? 'إضافة ديبوزت' : 'خصم ديبوزت';
+          vaultNote = `${direction} فاتورة #${txRef} — ${existing.client || ''} | قبل: ${oldDeposit} ج — بعد: ${newDeposit} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
+
           await this.vaultService.addSystemEntry(
             depositDelta,
             depMethod,
-            `${direction} فاتورة #${txRef} — ${existing.client || ''} | قبل: ${oldDeposit} ج — بعد: ${newDeposit} ج | بواسطة: ${editedBy}`,
+            vaultNote,
             txDate,
-            'تعديل ديبوزت',
+            'تعديل مبيعات',
             txRef,
           );
         }
@@ -380,18 +459,15 @@ export class TransactionsService {
         this.transactionAddsSupplierPurchases(existing)
       ) {
         // مشتريات: handle total and/or deposit changes
-        const oldTotal = existing.total || 0;
-        const newTotal = dto.total !== undefined ? (Number(dto.total) || 0) : oldTotal;
-        const newDeposit = dto.deposit !== undefined ? (Number(dto.deposit) || 0) : oldDeposit;
-        const depositDelta = newDeposit - oldDeposit;
-
         // Vault: adjust for deposit change (more paid upfront or less)
         if (depositDelta !== 0 && depMethod) {
           const direction = depositDelta > 0 ? 'زيادة عربون مشتريات' : 'تخفيض عربون مشتريات';
+          vaultNote = `${direction} #${txRef} — ${existing.client || ''} | قبل: ${oldDeposit} ج — بعد: ${newDeposit} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
+
           await this.vaultService.addSystemEntry(
             -depositDelta, // negative = more paid to supplier, positive = refund
             depMethod,
-            `${direction} #${txRef} — ${existing.client || ''} | قبل: ${oldDeposit} ج — بعد: ${newDeposit} ج | بواسطة: ${editedBy}`,
+            vaultNote,
             txDate,
             'تعديل مشتريات',
             txRef,
@@ -562,11 +638,16 @@ export class TransactionsService {
     if (!tx.cancelRequest || tx.cancelRequest.status !== 'معلق') {
       throw new BadRequestException('لا يوجد طلب إلغاء معلق لهذه الحركة');
     }
-    // Clear cancelRequest so transaction returns fully to normal state
+    // Mark as rejected — preserve the record for history, transaction stays unchanged
     const updated = await this.transactionModel
       .findByIdAndUpdate(
         id,
-        { cancelRequest: null },
+        {
+          'cancelRequest.status': 'مرفوض',
+          'cancelRequest.reviewedBy': reviewedBy || 'مدير',
+          'cancelRequest.reviewedAt': new Date().toISOString(),
+          ...(rejectedReason ? { 'cancelRequest.rejectedReason': rejectedReason } : {}),
+        },
         { new: true },
       )
       .exec();
@@ -611,22 +692,37 @@ export class TransactionsService {
       await this.vaultService.assertSufficientBalance(dto.collectMethod, payAmount);
     }
 
+    // حساب الشحن للمبيعات
+    const billedShip = !isPurchase ? (Number(tx.shipCost) || 0) : 0;
+    let shipExtra = 0; // الزيادة في الشحن الفعلي عن المحصل
+    if (!isPurchase && dto.actualShipCost !== undefined && dto.actualShipCost > 0) {
+      const actualShipCost = Number(dto.actualShipCost);
+      shipExtra = Math.max(0, actualShipCost - billedShip);
+      tx.actualShipCost = actualShipCost;
+      tx.shipLoss = (Number(tx.shipLoss) || 0) + shipExtra;
+    }
+
+    // الخزنة = المتبقي - الشحن المحصل - زيادة الشحن
+    // الشحن المحصل لا يدخل الخزنة (شركة الشحن تأخذه)
+    // الزيادة = خسارة إضافية على الشركة
+    const netVaultAmount = isPurchase ? payAmount : Math.max(0, payAmount - billedShip - shipExtra);
+
     tx.remaining = newRemaining;
     tx.payStatus = isFullyPaid ? 'مكتمل' : 'معلق';
-    // تحديث المدفوع: إضافة المبلغ المسدد إلى الديبوزت الحالي
-    tx.deposit = (tx.deposit || 0) + payAmount;
+    // المدفوع = الرقم الحقيقي الي دخل الخزنة
+    tx.deposit = (tx.deposit || 0) + (isPurchase ? payAmount : netVaultAmount);
     tx.collectMethod = dto.collectMethod;
     tx.collectNote = dto.collectNote || '';
     if (isFullyPaid) {
       tx.collectedAt = new Date().toISOString().split('T')[0];
     }
 
-    // سجل السدادات: إضافة سجل لكل عملية سداد
+    // سجل السدادات
     if (!tx.payments) tx.payments = [];
     tx.payments.push({
-      amount: payAmount,
+      amount: isPurchase ? payAmount : netVaultAmount,
       method: dto.collectMethod,
-      note: dto.collectNote || '',
+      note: dto.collectNote || (shipExtra > 0 ? `زيادة شحن: ${shipExtra} ج` : ''),
       date: new Date().toISOString(),
       by: tx.employee || '',
       remaining: newRemaining,
@@ -634,13 +730,13 @@ export class TransactionsService {
 
     const saved = await tx.save();
     if (payAmount > 0) {
-      // مشتريات: deduct from vault; مبيعات: add to vault
+      const vaultAmount = isPurchase ? -payAmount : netVaultAmount;
       await this.vaultService.addSystemEntry(
-        isPurchase ? -payAmount : payAmount,
+        vaultAmount,
         dto.collectMethod,
         isPurchase
           ? `سداد مشتريات #${tx.ref || tx._id} — ${tx.client || ''}${!isFullyPaid ? ` (جزئي — متبقي: ${newRemaining} ج)` : ' (مكتمل)'}`
-          : `تحصيل #${tx.ref || tx._id}`,
+          : `تحصيل #${tx.ref || tx._id} — صافي: ${netVaultAmount} ج${billedShip > 0 ? ` (شحن: ${billedShip} ج${shipExtra > 0 ? ` + زيادة: ${shipExtra} ج` : ''})` : ''}`,
         new Date().toISOString().split('T')[0],
         isPurchase ? 'مشتريات' : 'تحصيل',
         tx.ref || String(tx._id),
@@ -825,19 +921,19 @@ export class TransactionsService {
     // احسب المرتجعات المقبولة (مرة واحدة فقط)
     let totalReturns = 0;
     let returnedProfit = 0;
-    let approvedReturns: any[] = [];
+    let approvedReturns: ReturnRequestDocument[] = [];
     try {
-      const returnsModel = this.transactionModel.collection.db.collection('returnrequests');
-      approvedReturns = await returnsModel.find({
-        status: 'معتمد'
-      }).toArray();
+      approvedReturns = await this.returnRequestModel.find({ status: 'معتمد' }).exec();
       totalReturns = approvedReturns.reduce((s, r) => s + (Number(r.total) || 0), 0);
     } catch (e) {
       totalReturns = 0;
       approvedReturns = [];
     }
 
-    const totalSales = Math.max(0, salesTx.reduce((sum, t) => sum + t.total, 0) - totalReturns);
+    const totalShipping = salesTx.reduce((s, t) => s + (Number(t.shipCost) || 0), 0);
+    const totalShipLoss = salesTx.reduce((s, t) => s + (Number(t.shipLoss) || 0), 0);
+    const grossProductSales = salesTx.reduce((s, t) => s + (Number(t.itemsTotal) || t.total - (Number(t.shipCost) || 0)), 0);
+    const totalSales = Math.max(0, grossProductSales - totalReturns);
     const totalPurchases = activeTx
       .filter((t) => this.transactionAddsSupplierPurchases(t))
       .reduce((sum, t) => sum + t.total, 0);
@@ -869,7 +965,7 @@ export class TransactionsService {
       returnedProfit = 0;
     }
 
-    grossProfit = Math.max(0, grossProfit - returnedProfit);
+    grossProfit = Math.max(0, grossProfit - returnedProfit - totalShipLoss);
     const netProfit = grossProfit - expenseTotal;
     const salesMap: Record<string, number> = {};
     salesTx.forEach((tx) => {
@@ -900,6 +996,10 @@ export class TransactionsService {
       totalExpenses: expenseTotal,
       grossProfit,
       netProfit,
+      totalShipping,
+      totalShipLoss,
+      returnCount: approvedReturns.length,
+      totalReturns,
       lowStockItems,
       recentTransactions,
       topSellers,
@@ -925,16 +1025,15 @@ export class TransactionsService {
     // احسب المرتجعات المقبولة (مرة واحدة فقط)
     let totalReturns = 0;
     let returnedProfit = 0;
-    let approvedReturns: any[] = [];
+    let approvedReturns: ReturnRequestDocument[] = [];
     try {
-      const returnsModel = this.transactionModel.collection.db.collection('returnrequests');
       const returnQuery: any = { status: 'معتمد' };
-      if (from) returnQuery.createdAt = { $gte: new Date(from) };
-      if (to) {
-        if (!returnQuery.createdAt) returnQuery.createdAt = {};
-        returnQuery.createdAt.$lte = new Date(to);
+      if (from || to) {
+        returnQuery.createdAt = {};
+        if (from) returnQuery.createdAt.$gte = new Date(from + 'T00:00:00.000Z');
+        if (to) returnQuery.createdAt.$lte = new Date(to + 'T23:59:59.999Z');
       }
-      approvedReturns = await returnsModel.find(returnQuery).toArray();
+      approvedReturns = await this.returnRequestModel.find(returnQuery).exec();
       console.log(`[getReports] Found ${approvedReturns.length} approved returns`);
       totalReturns = approvedReturns.reduce((s, r) => s + (Number(r.total) || 0), 0);
       console.log(`[getReports] totalReturns: ${totalReturns}`);
@@ -944,7 +1043,12 @@ export class TransactionsService {
       approvedReturns = [];
     }
 
-    const totalSales = Math.max(0, salesTx.reduce((s, t) => s + t.total, 0) - totalReturns);
+    // الشحن: المحصل من العملاء والفرق المتحمل من الشركة
+    const totalShipping = salesTx.reduce((s, t) => s + (Number(t.shipCost) || 0), 0);
+    const totalShipLoss = salesTx.reduce((s, t) => s + (Number(t.shipLoss) || 0), 0);
+    // صافي المبيعات = إجمالي المنتجات فقط (بدون شحن) - المرتجعات
+    const grossProductSales = salesTx.reduce((s, t) => s + (Number(t.itemsTotal) || t.total - (Number(t.shipCost) || 0)), 0);
+    const totalSales = Math.max(0, grossProductSales - totalReturns);
     const totalPurchases = pursTx.reduce((s, t) => s + t.total, 0);
     const totalDeposit = salesTx.reduce((s, t) => s + (t.deposit || 0), 0);
     const totalRemaining = salesTx.reduce(
@@ -989,7 +1093,7 @@ export class TransactionsService {
       returnedProfit = 0;
     }
 
-    grossProfit = Math.max(0, grossProfit - returnedProfit);
+    grossProfit = Math.max(0, grossProfit - returnedProfit - totalShipLoss);
     console.log(`[getReports] Final grossProfit: ${grossProfit}`);
     const netProfit = grossProfit - expenseTotal;
     return {
@@ -1000,6 +1104,10 @@ export class TransactionsService {
       grossProfit,
       netProfit,
       expenseTotal,
+      totalShipping,
+      totalShipLoss,
+      returnCount: approvedReturns.length,
+      totalReturns,
       transactionCount: transactions.length,
       productProfits: Object.entries(prodProfitMap)
         .map(([name, data]) => ({ name, ...data }))

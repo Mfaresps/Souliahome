@@ -50,6 +50,9 @@ export class Transaction {
   deposit: number;
 
   @Prop({ default: 0 })
+  initialDeposit: number;
+
+  @Prop({ default: 0 })
   remaining: number;
 
   @Prop({ type: [Object], required: true })
@@ -81,6 +84,12 @@ export class Transaction {
 
   @Prop({ default: 0 })
   itemsTotal: number;
+
+  @Prop({ default: 0 })
+  actualShipCost: number;
+
+  @Prop({ default: 0 })
+  shipLoss: number;
 
   @Prop({ default: false })
   cancelled: boolean;
@@ -127,7 +136,17 @@ export class Transaction {
     rejectedReason?: string;
   } | null;
 
-  /** Payment history log */
+  /** Deposit history log - initial and additional deposits */
+  @Prop({ type: [Object], default: [] })
+  deposits: Array<{
+    amount: number;
+    method: string;
+    note: string;
+    date: string;
+    by: string;
+  }>;
+
+  /** Payment/Collection history log */
   @Prop({ type: [Object], default: [] })
   payments: Array<{
     amount: number;

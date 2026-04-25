@@ -45,6 +45,7 @@ export interface SummaryInfo {
   totalRemaining: number;
   transactionCount: number;
   returnCount: number;
+  shipCost: number;
 }
 
 export interface TimelineEvent {
@@ -202,6 +203,7 @@ export class ReferenceDetailService {
     const totalReturns = returnTxs.reduce((s, t) => s + (t.total || 0), 0);
     const totalPaid = salesTxs.reduce((s, t) => s + (t.deposit || 0), 0);
     const totalRemaining = salesTxs.reduce((s, t) => s + (t.remaining || 0), 0);
+    const shipCost = salesTxs.reduce((s, t) => s + (t.shipCost || 0), 0);
 
     return {
       totalSales,
@@ -211,6 +213,7 @@ export class ReferenceDetailService {
       totalRemaining,
       transactionCount: txs.length,
       returnCount: returns.length,
+      shipCost,
     };
   }
 

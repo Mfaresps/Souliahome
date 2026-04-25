@@ -43,6 +43,12 @@ export class ReturnRequest {
   @Prop({ required: true })
   total: number;
 
+  @Prop({ default: 0 })
+  itemsTotal: number;
+
+  @Prop({ default: 0 })
+  actualShipCost: number;
+
   @Prop({ default: 'return' })
   requestKind: string;
 

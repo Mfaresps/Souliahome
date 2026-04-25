@@ -142,10 +142,9 @@ export class ReturnsService {
       throw new BadRequestException('سبب الاسترجاع غير صالح');
     }
 
-    const returnTotalFromItems = this.sumReturnItemsTotal(dto.items);
-    if (returnTotalFromItems <= 0) {
+    if (!dto.total || dto.total <= 0) {
       throw new BadRequestException(
-        'قيمة المرتجع يجب أن تُحسب من الأصناف المختارة (مجموع البنود)',
+        'يجب تحديد مبلغ الرد للعميل',
       );
     }
 
@@ -163,12 +162,12 @@ export class ReturnsService {
     }
     return this.returnModel.create({
       originalTransactionId: dto.originalTransactionId,
-      originalRef: dto.originalRef,
+      originalRef: dto.originalRef || dto.originalTransactionId,
       originalDate: dto.originalDate,
       client: dto.client,
       phone: dto.phone,
       items: dto.items,
-      total: returnTotalFromItems,
+      total: dto.total,
       reason: dto.reason,
       reasonDetails: dto.reasonDetails,
       requestKind: 'return', // فقط الاسترجاع العادي
@@ -206,24 +205,19 @@ export class ReturnsService {
       normalizeVaultAccountLabel(String(originalTx.depMethod || '').trim()) ||
       'كاش';
 
-    // ✅ CRITICAL VALIDATION: Check vault balance BEFORE approval
-    const refundTotal = this.sumReturnItemsTotal(ret.items);
-    if (refundTotal > 0) {
-      await this.vaultService.assertSufficientBalance(refundAccount, refundTotal);
+    // ret.total = المبلغ اليدوي المحدد من الموظف
+    const refundTotal = Number(ret.total);
+    if (refundTotal <= 0) {
+      throw new BadRequestException('لا يمكن اعتماد الاسترجاع — مبلغ الرد غير صالح');
     }
 
-    // ✅ Only after validation passes, update status
+    // التحقق من رصيد الخزنة قبل الاعتماد
+    await this.vaultService.assertSufficientBalance(refundAccount, refundTotal);
+
     ret.status = 'معتمد';
     ret.approvedBy = approvedBy;
     ret.approvedAt = new Date().toISOString();
     const saved = await ret.save();
-
-    // معالجة المرتجع العادي (لا استبدال)
-    if (refundTotal <= 0) {
-      throw new BadRequestException(
-        'لا يمكن اعتماد الاسترجاع دون أصناف بقيمة صالحة للرد',
-      );
-    }
 
     const returnTx = {
       date: returnDate,
@@ -231,13 +225,9 @@ export class ReturnsService {
       client: ret.client,
       phone: ret.phone || '',
       ref: ret.originalRef + '-RET',
-      notes:
-        `مرتجع معتمد: ${ret.reason}${ret.reasonDetails ? ' — ' + ret.reasonDetails : ''}` +
-        ` | قيمة المرتجع: ${refundTotal} ج` +
-        ` | المخزن: إعادة الأصناف | الخزنة: خصم ${refundTotal} ج من ${refundAccount}`,
+      notes: `مرتجع معتمد: ${ret.reason}${ret.reasonDetails ? ' — ' + ret.reasonDetails : ''} | مبلغ الرد: ${refundTotal} ج من ${refundAccount}`,
       items: ret.items,
       total: refundTotal,
-      itemsTotal: refundTotal,
       employee: approvedBy,
       deposit: 0,
       remaining: 0,
@@ -248,8 +238,6 @@ export class ReturnsService {
       shipCost: 0,
     };
     await this.transactionsService.create(returnTx as never);
-    // Note: Vault entry for refund is automatically created by transactionsService.recordVaultForTransaction()
-    // DO NOT add another vault entry here - this was causing double deduction!
     return saved;
   }
 

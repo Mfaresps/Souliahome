@@ -1,0 +1,146 @@
+{
+  "timestamp": "2026-04-25T03:50:18.726Z",
+  "data": {
+    "transactions": [
+      {
+        "_id": "69ec2fc9167b1513ac6c459a",
+        "date": "2026-04-25T03:06:48.274Z",
+        "type": "مبيعات",
+        "client": "يحي",
+        "phone": "01008454587",
+        "ref": "1234",
+        "notes": "",
+        "payment": "كاش",
+        "deposit": 1950,
+        "remaining": 0,
+        "items": [
+          {
+            "name": "Baby Rest Basket",
+            "code": "Code 01",
+            "qty": 1,
+            "price": 2000,
+            "total": 2000
+          }
+        ],
+        "total": 2100,
+        "employee": "Fares",
+        "shipCo": "BOSTA",
+        "shipZone": "cairo",
+        "shipCost": 100,
+        "discount": 0,
+        "depMethod": "كاش",
+        "payStatus": "مكتمل",
+        "itemsTotal": 2000,
+        "actualShipCost": 150,
+        "shipLoss": 50,
+        "cancelled": false,
+        "editHistory": [],
+        "archived": false,
+        "cancelRequest": null,
+        "payments": [
+          {
+            "amount": 1950,
+            "method": "كاش",
+            "note": "شحن فعلي: 150 ج",
+            "date": "2026-04-25T03:07:20.364Z",
+            "by": "Fares",
+            "remaining": 0
+          }
+        ],
+        "comments": [],
+        "createdAt": "2026-04-25T03:06:49.306Z",
+        "updatedAt": "2026-04-25T03:07:20.364Z",
+        "__v": 1,
+        "collectMethod": "كاش",
+        "collectNote": "",
+        "collectedAt": "2026-04-25"
+      }
+    ],
+    "vaultentries": [
+      {
+        "_id": "69ec2fe8167b1513ac6c45af",
+        "date": "2026-04-25",
+        "desc": "تحصيل #1234 (شحن فعلي: 150 ج — صافي: 1950 ج)",
+        "amount": 1950,
+        "seg": "cash",
+        "method": "كاش",
+        "source": "تحصيل",
+        "ref": "1234",
+        "balCash": 1950,
+        "balVodafone": 0,
+        "balInstapay": 0,
+        "balBank": 0,
+        "balance": 1950,
+        "employee": "",
+        "txNo": "SAL-001",
+        "status": "completed",
+        "transactionType": "تحصيل",
+        "customer": "",
+        "supplier": "",
+        "notes": "",
+        "accountingJustification": "الخزنة (كاش) ترتفع 1950 ج — الفاتورة مكتملة — الإيراد المحقق",
+        "entityLabel": "",
+        "editHistory": null,
+        "frozenReason": null,
+        "requiresApproval": false,
+        "isApproved": false,
+        "approvedBy": "",
+        "linkedTransactionId": null,
+        "linkedTransactionRef": "",
+        "createdAt": "2026-04-25T03:07:20.368Z",
+        "updatedAt": "2026-04-25T03:07:20.368Z",
+        "__v": 0
+      }
+    ],
+    "clients": [],
+    "suppliers": [],
+    "returnrequests": [
+      {
+        "_id": "69ec3690167b1513ac6c47be",
+        "originalTransactionId": "69ec2fc9167b1513ac6c459a",
+        "originalRef": "1234",
+        "originalDate": "2026-04-25T03:06:48.274Z",
+        "client": "يحي",
+        "phone": "01008454587",
+        "items": [
+          {
+            "code": "Code 01",
+            "name": "Baby Rest Basket",
+            "qty": 1,
+            "price": 2000,
+            "total": 2000
+          }
+        ],
+        "total": 2000,
+        "itemsTotal": 0,
+        "actualShipCost": 0,
+        "requestKind": "return",
+        "exchangeItems": [],
+        "exchangeTotal": 0,
+        "priceDifference": 0,
+        "reason": "تلف الشحنة",
+        "reasonDetails": "",
+        "requestedBy": "Fares",
+        "status": "مرفوض",
+        "daysRemaining": 14,
+        "maxReturnDays": 14,
+        "vaultRefundAccount": "كاش",
+        "vaultCollectAccount": "",
+        "createdAt": "2026-04-25T03:35:44.053Z",
+        "updatedAt": "2026-04-25T03:44:58.591Z",
+        "__v": 0,
+        "approvedAt": "2026-04-25T03:44:58.591Z",
+        "approvedBy": "Fares",
+        "rejectedReason": "2"
+      }
+    ],
+    "expenses": [],
+    "complaints": []
+  },
+  "vault_balances": {
+    "vaultCash": 1950,
+    "vaultVodafone": 0,
+    "vaultInstapay": 0,
+    "vaultBank": 0
+  }
+}

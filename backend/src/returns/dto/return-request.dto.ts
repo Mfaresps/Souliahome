@@ -50,8 +50,8 @@ export class CreateReturnRequestDto {
   readonly originalTransactionId: string;
 
   @IsString()
-  @IsNotEmpty()
-  readonly originalRef: string;
+  @IsOptional()
+  readonly originalRef?: string;
 
   @IsString()
   @IsNotEmpty()

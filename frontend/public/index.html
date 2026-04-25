@@ -387,12 +387,16 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 .loading-spinner::after{content:'';display:inline-block;width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
-.kpi-strip .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;text-align:center;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden}
+.kpi-strip .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;text-align:center;transition:transform .15s,box-shadow .15s;position:relative;overflow:visible;cursor:default}
 .kpi-strip .kpi:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.08)}
-.kpi-strip .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--kpi-color,var(--accent))}
-.kpi-strip .kpi .kpi-icon{font-size:1.4rem;margin-bottom:6px;opacity:.8}
+.kpi-strip .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--kpi-color,var(--accent));border-radius:var(--radius) var(--radius) 0 0}
+.kpi-strip .kpi .kpi-icon{display:flex;align-items:center;justify-content:center;margin-bottom:8px;opacity:.85}
 .kpi-strip .kpi .kpi-val{font-size:1.25rem;font-weight:800;line-height:1.1}
 .kpi-strip .kpi .kpi-label{font-size:.7rem;color:var(--muted);margin-top:4px;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+/* Custom tooltip */
+.kpi-strip .kpi[data-tooltip]{position:relative}
+.kpi-strip .kpi[data-tooltip]:hover::after{content:attr(data-tooltip);position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);background:#1e293b;color:#f1f5f9;padding:7px 12px;border-radius:8px;font-size:.72rem;font-weight:500;white-space:normal;max-width:180px;text-align:center;z-index:9999;pointer-events:none;line-height:1.5;box-shadow:0 4px 16px rgba(0,0,0,.25);letter-spacing:.01em}
+.kpi-strip .kpi[data-tooltip]:hover::before{content:'';position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#1e293b;z-index:9999;pointer-events:none}
 /* Movements page enhancements */
 #page-movements .mov-filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px}
 #page-movements .mov-type-pill{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;font-size:.8rem;font-weight:600;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;white-space:nowrap;color:var(--muted)}
@@ -596,7 +600,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <!-- نظام الاستبدال تم حذفه - فقط الاسترجاع العادي متاح -->
 </div>
 </div>
-<div class="grid grid-2 mb-16" id="tx-fields"></div>
+<div class="grid grid-2 mb-16" id="tx-fields" style="gap:10px"></div>
 <div id="tx-items-section">
 <h4 class="mb-8" data-i18n="lineItems">الأصناف</h4>
 <div id="tx-items"></div>
@@ -1100,7 +1104,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div id="appr-tab-approvals-content">
 <div class="flex-between mb-16">
 <div class="flex gap-8" style="flex-wrap:wrap;align-items:center">
-<select id="appr-filter" style="width:170px" onchange="renderApprovals()"><option value="معلق">حالة: المعلقة</option><option value="معتمد">حالة: المعتمدة</option><option value="مرفوض">حالة: المرفوضة</option><option value="">حالة: الكل</option></select>
+<select id="appr-filter" style="width:170px" onchange="renderApprovals()"><option value="">حالة: الكل</option><option value="معلق">حالة: المعلقة</option><option value="معتمد">حالة: المعتمدة</option><option value="مرفوض">حالة: المرفوضة</option></select>
 <select id="appr-kind-filter" style="width:200px" onchange="renderApprovals()"><option value="">النوع: الكل</option><option value="return">النوع: استرجاع فقط</option><option value="expense">النوع: مصاريف فقط</option><option value="cancel">النوع: طلبات إلغاء فقط</option></select>
 </div>
 </div>
@@ -2358,6 +2362,8 @@ async function loadDashboard() {
       { id: 'lowstock', label: 'أصناف منخفضة', val: fmtN(d.lowStockCount), rawVal: d.lowStockCount, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>', color: '#f59e0b', bgColor: '#fffbeb' },
       { id: 'sales', label: 'إجمالي المبيعات', val: fmtJ(d.totalSales), rawVal: d.totalSales, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>', color: '#10b981', bgColor: '#f0fdf4' },
       { id: 'purchases', label: 'إجمالي المشتريات', val: fmtJ(d.totalPurchases), rawVal: d.totalPurchases, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>', color: '#0066cc', bgColor: '#f0f7ff' },
+      { id: 'returns', label: 'المرتجعات', val: `${d.returnCount || 0} • ${fmtJ(d.totalReturns || 0)}`, rawVal: d.totalReturns || 0, icon: '↩️', color: '#ea580c', bgColor: '#fef3f2' },
+      { id: 'shipping', label: 'الشحن', val: `${fmtJ(d.totalShipping||0)}${(d.totalShipLoss||0)>0?' (-'+fmtJ(d.totalShipLoss)+')':''}`, rawVal: d.totalShipping || 0, icon: '🚚', color: '#64748b', bgColor: '#f8fafc' },
       { id: 'profit', label: 'صافي الربح', val: fmtJ(d.netProfit), rawVal: d.netProfit, icon: '💎', color: '#6d28d9', bgColor: '#faf5ff' },
       { id: 'debts', label: 'الديون', val: fmtJ(d.totalRemaining), rawVal: d.totalRemaining, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>', color: '#f97316', bgColor: '#fff7ed' },
       { id: 'expenses', label: 'المصاريف', val: fmtJ(d.totalExpenses), rawVal: d.totalExpenses, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg>', color: '#dc2626', bgColor: '#fef2f2' },
@@ -2412,6 +2418,8 @@ async function revealDashboardStat(statId) {
       { id: 'lowstock', label: 'أصناف منخفضة', val: fmtN(d.lowStockCount), rawVal: d.lowStockCount, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>', color: '#f59e0b', bgColor: '#fffbeb' },
       { id: 'sales', label: 'إجمالي المبيعات', val: fmtJ(d.totalSales), rawVal: d.totalSales, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>', color: '#10b981', bgColor: '#f0fdf4' },
       { id: 'purchases', label: 'إجمالي المشتريات', val: fmtJ(d.totalPurchases), rawVal: d.totalPurchases, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>', color: '#0066cc', bgColor: '#f0f7ff' },
+      { id: 'returns', label: 'المرتجعات', val: `${d.returnCount || 0} • ${fmtJ(d.totalReturns || 0)}`, rawVal: d.totalReturns || 0, icon: '↩️', color: '#ea580c', bgColor: '#fef3f2' },
+      { id: 'shipping', label: 'الشحن', val: `${fmtJ(d.totalShipping||0)}${(d.totalShipLoss||0)>0?' (-'+fmtJ(d.totalShipLoss)+')':''}`, rawVal: d.totalShipping || 0, icon: '🚚', color: '#64748b', bgColor: '#f8fafc' },
       { id: 'profit', label: 'صافي الربح', val: fmtJ(d.netProfit), rawVal: d.netProfit, icon: '💎', color: '#6d28d9', bgColor: '#faf5ff' },
       { id: 'debts', label: 'الديون', val: fmtJ(d.totalRemaining), rawVal: d.totalRemaining, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>', color: '#f97316', bgColor: '#fff7ed' },
       { id: 'expenses', label: 'المصاريف', val: fmtJ(d.totalExpenses), rawVal: d.totalExpenses, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg>', color: '#dc2626', bgColor: '#fef2f2' },
@@ -2459,6 +2467,8 @@ async function verifyDashboardStatPassword(statId) {
       { id: 'lowstock', label: 'أصناف منخفضة', val: fmtN(d.lowStockCount), rawVal: d.lowStockCount, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>', color: '#f59e0b', bgColor: '#fffbeb' },
       { id: 'sales', label: 'إجمالي المبيعات', val: fmtJ(d.totalSales), rawVal: d.totalSales, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>', color: '#10b981', bgColor: '#f0fdf4' },
       { id: 'purchases', label: 'إجمالي المشتريات', val: fmtJ(d.totalPurchases), rawVal: d.totalPurchases, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>', color: '#0066cc', bgColor: '#f0f7ff' },
+      { id: 'returns', label: 'المرتجعات', val: `${d.returnCount || 0} • ${fmtJ(d.totalReturns || 0)}`, rawVal: d.totalReturns || 0, icon: '↩️', color: '#ea580c', bgColor: '#fef3f2' },
+      { id: 'shipping', label: 'الشحن', val: `${fmtJ(d.totalShipping||0)}${(d.totalShipLoss||0)>0?' (-'+fmtJ(d.totalShipLoss)+')':''}`, rawVal: d.totalShipping || 0, icon: '🚚', color: '#64748b', bgColor: '#f8fafc' },
       { id: 'profit', label: 'صافي الربح', val: fmtJ(d.netProfit), rawVal: d.netProfit, icon: '💎', color: '#6d28d9', bgColor: '#faf5ff' },
       { id: 'debts', label: 'الديون', val: fmtJ(d.totalRemaining), rawVal: d.totalRemaining, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>', color: '#f97316', bgColor: '#fff7ed' },
       { id: 'expenses', label: 'المصاريف', val: fmtJ(d.totalExpenses), rawVal: d.totalExpenses, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg>', color: '#dc2626', bgColor: '#fef2f2' },
@@ -2501,10 +2511,17 @@ function isExchangeSalePendingCollect(tx) {
   return tx.type === 'مبيعات' && /-EXC$/i.test(String(tx.ref || '')) && tx.payStatus === 'معلق' && (tx.remaining || 0) > 0;
 }
 function exchangeSalePaidDisplayAmount(tx) {
-  if (!isMovExchangeSale(tx)) return Number(tx.deposit) || 0;
-  const remaining = Number(tx.remaining) || 0;
-  if (remaining > 0) return remaining;
-  return Number(tx.deposit) || 0;
+  const amount = !isMovExchangeSale(tx)
+    ? Number(tx.deposit) || 0
+    : (Number(tx.remaining) || 0) > 0
+      ? Number(tx.remaining) || 0
+      : Number(tx.deposit) || 0;
+
+  const shipNote = tx.type === 'مبيعات' && (Number(tx.shipLoss) || 0) > 0
+    ? `<div class="text-xs text-muted" style="margin-top:3px">خصم شحن: ${fmtJ(Number(tx.shipLoss))}</div>`
+    : '';
+
+  return `<div>${fmtJ(amount)}${shipNote}</div>`;
 }
 function toastExchangePendingLocked() {
   toast('متبقي لصالح الشركة على استبدال — التعديل والإلغاء والحذف غير متاحين حتى تحصيل المبلغ من العميل', true);
@@ -2635,16 +2652,130 @@ function renderTxFields() {
   let html = '';
   if (txType === 'مبيعات') {
     html = `
-      <div class="form-group"><label>اسم العميل *</label><div class="ac-wrap" style="position:relative"><input type="text" id="tx-client" placeholder="الاسم الكامل للعميل" oninput="filterCustomerHistory(this.value)" autocomplete="off"><div class="ac-list" id="tx-client-history" style="position:absolute;top:100%;right:0;left:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;display:none;z-index:10;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div></div><div class="field-hint">اسم العميل كما يظهر في الفاتورة (ابدأ بالكتابة لعرض السجل)</div><div class="field-error" id="err-client"></div></div>
-      <div class="form-group"><label>الهاتف *</label><input type="tel" id="tx-phone" placeholder="01xxxxxxxxx" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'')"><div class="field-hint">رقم الهاتف المصري (11 رقم يبدأ بـ 01)</div><div class="field-error" id="err-phone"></div></div>
-      <div class="form-group"><label>الرقم المرجعي *</label><div class="input-with-prefix"><span class="prefix">#</span><input type="text" id="tx-ref" placeholder="أرقام فقط" inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"></div><div class="field-hint">أرقام فقط — لا يُقبل تكرار مرجع مسجّل في حركة قائمة</div><div class="field-error" id="err-ref"></div></div>
-      <div class="form-group"><label>شركة الشحن *</label><select id="tx-shipco" onchange="updateShipCost()"><option value="">اختر شركة الشحن</option>${getShipCompanyOptions()}</select><div class="field-hint">شركة الشحن المسؤولة عن التوصيل</div><div class="field-error" id="err-shipco"></div></div>
-      <div class="form-group"><label>منطقة الشحن</label><div class="shipping-zone-btns"><button class="zone-btn active" data-zone="cairo" onclick="setShipZone('cairo',this)">القاهرة</button><button class="zone-btn" data-zone="gov" onclick="setShipZone('gov',this)">المحافظات</button></div><div class="field-hint">تحدد سعر الشحن</div></div>
-      <div class="form-group"><label>طريقة دفع الديبوزت</label><select id="tx-dep-method"><option value="كاش">كاش</option><option value="فودافون كاش">فودافون كاش</option><option value="Instapay">Instapay</option><option value="تحويل بنكي">تحويل بنكي</option></select><div class="field-hint">الحساب الذي استلم الديبوزت</div></div>
-      <div class="form-group"><label>الديبوزت</label><input type="number" id="tx-deposit" value="0" min="0" oninput="calcTxSummary()" placeholder="0"><div class="field-hint">المبلغ المدفوع مقدماً</div></div>
-      <div class="form-group" id="tx-payment-group"><label>طريقة دفع المبلغ المتبقي</label><select id="tx-payment"><option value="كاش">كاش</option><option value="آجل">آجل</option><option value="فودافون كاش">فودافون كاش</option><option value="Instapay">Instapay</option><option value="تحويل بنكي">تحويل بنكي</option></select><div class="field-hint">كيف سيتم دفع الباقي عند التسليم</div></div>
-      <div class="form-group"><label>الموظف</label><input type="text" id="tx-emp" value="${esc(currentUser?.name || '')}" readonly><div class="field-hint">الموظف المسجل للحركة</div></div>
-      <div class="form-group"><label>ملاحظات</label><input type="text" id="tx-notes" placeholder="أي ملاحظات إضافية"><div class="field-hint">اختياري</div></div>`;
+    <!-- ═══════ صف 1: بيانات العميل + الشحن (جنباً لجنب) ═══════ -->
+    <div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+
+      <!-- كارد العميل -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+          <svg viewBox="0 0 24 24" style="width:15px;height:15px;color:var(--primary);flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg>
+          <span style="font-weight:700;font-size:.8rem;color:var(--primary)">بيانات العميل</span>
+        </div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label>اسم العميل <span style="color:var(--red)">*</span></label>
+          <div class="ac-wrap" style="position:relative">
+            <input type="text" id="tx-client" placeholder="الاسم الكامل" oninput="filterCustomerHistory(this.value)" autocomplete="off">
+            <div class="ac-list" id="tx-client-history" style="position:absolute;top:100%;right:0;left:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;display:none;z-index:10;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div>
+          </div>
+          <div class="field-hint">ابدأ بالكتابة لعرض السجل</div>
+          <div class="field-error" id="err-client"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>رقم الهاتف <span style="color:var(--red)">*</span></label>
+          <input type="tel" id="tx-phone" placeholder="01xxxxxxxxx" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+          <div class="field-hint">11 رقم يبدأ بـ 01</div>
+          <div class="field-error" id="err-phone"></div>
+        </div>
+      </div>
+
+      <!-- كارد الشحن -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+          <svg viewBox="0 0 24 24" style="width:15px;height:15px;color:#3b82f6;flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          <span style="font-weight:700;font-size:.8rem;color:#3b82f6">الشحن والتوصيل</span>
+        </div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label>الرقم المرجعي <span style="color:var(--red)">*</span></label>
+          <div class="input-with-prefix"><span class="prefix">#</span><input type="text" id="tx-ref" placeholder="أرقام فقط" inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"></div>
+          <div class="field-error" id="err-ref"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label>شركة الشحن <span style="color:var(--red)">*</span></label>
+          <select id="tx-shipco" onchange="updateShipCost()">
+            <option value="">اختر شركة الشحن</option>
+            ${getShipCompanyOptions()}
+          </select>
+          <div class="field-error" id="err-shipco"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>منطقة الشحن</label>
+          <div class="shipping-zone-btns">
+            <button class="zone-btn active" data-zone="cairo" onclick="setShipZone('cairo',this)">🏙 القاهرة</button>
+            <button class="zone-btn" data-zone="gov" onclick="setShipZone('gov',this)">🗺 المحافظات</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ كارد الدفع والديبوزت (عرض كامل) ═══════ -->
+    <div style="grid-column:1/-1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;color:var(--green);flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="1.5"/></svg>
+        <span style="font-weight:700;font-size:.8rem;color:var(--green)">الدفع والديبوزت</span>
+      </div>
+      <label style="display:block;font-size:.79rem;font-weight:600;color:var(--muted);margin-bottom:8px">طريقة دفع الديبوزت</label>
+      <select id="tx-dep-method" style="display:none">
+        <option value="Instapay">Instapay</option>
+        <option value="فودافون كاش">فودافون كاش</option>
+        <option value="كاش">كاش</option>
+        <option value="تحويل بنكي">تحويل بنكي</option>
+      </select>
+      <div id="dep-method-btns" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+        <button type="button" class="dep-method-btn" data-val="Instapay" onclick="selectDepMethod('Instapay',this)"
+          style="padding:10px 8px;border-radius:9px;border:2px solid #6366f1;background:rgba(99,102,241,.1);color:#4f46e5;font-weight:700;font-size:.8rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .15s;position:relative">
+          <span style="position:absolute;top:-8px;background:#6366f1;color:#fff;font-size:.57rem;padding:1px 6px;border-radius:20px;white-space:nowrap">الأكثر استخداماً</span>
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          <span>Instapay</span>
+        </button>
+        <button type="button" class="dep-method-btn" data-val="فودافون كاش" onclick="selectDepMethod('فودافون كاش',this)"
+          style="padding:10px 8px;border-radius:9px;border:2px solid var(--border);background:var(--surface);color:var(--text);font-weight:600;font-size:.8rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .15s;position:relative">
+          <span style="position:absolute;top:-8px;background:#e11d48;color:#fff;font-size:.57rem;padding:1px 6px;border-radius:20px;white-space:nowrap">شائع</span>
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.22 1.22 2 2 0 012.22 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.16 6.16l1.08-.55a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+          <span>فودافون كاش</span>
+        </button>
+        <button type="button" class="dep-method-btn" data-val="كاش" onclick="selectDepMethod('كاش',this)"
+          style="padding:10px 8px;border-radius:9px;border:2px solid var(--border);background:var(--surface);color:var(--text);font-weight:600;font-size:.8rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .15s">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="1.5"/></svg>
+          <span>كاش</span>
+        </button>
+        <button type="button" class="dep-method-btn" data-val="تحويل بنكي" onclick="selectDepMethod('تحويل بنكي',this)"
+          style="padding:10px 8px;border-radius:9px;border:2px solid var(--border);background:var(--surface);color:var(--text);font-weight:600;font-size:.8rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .15s">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M3 10h18M3 6l9-4 9 4"/><path d="M6 10v12M10 10v12M14 10v12M18 10v12"/></svg>
+          <span>تحويل بنكي</span>
+        </button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group" style="margin-bottom:0">
+          <label>قيمة الديبوزت</label>
+          <div style="position:relative">
+            <input type="number" id="tx-deposit" value="0" min="0" oninput="calcTxSummary()" placeholder="0" style="padding-left:32px">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.85rem;font-weight:600">ج</span>
+          </div>
+          <div class="field-hint">اتركه 0 إذا لم يدفع مقدماً</div>
+        </div>
+        <div class="form-group" id="tx-payment-group" style="margin-bottom:0">
+          <label>طريقة دفع المتبقي</label>
+          <select id="tx-payment">
+            <option value="كاش">كاش</option>
+            <option value="آجل">آجل</option>
+            <option value="فودافون كاش">فودافون كاش</option>
+            <option value="Instapay">Instapay</option>
+            <option value="تحويل بنكي">تحويل بنكي</option>
+          </select>
+          <div class="field-hint">كيف سيُسدَّد الباقي عند التسليم</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ صف إضافي: الموظف + ملاحظات ═══════ -->
+    <div class="form-group" style="margin-bottom:0">
+      <label>الموظف</label>
+      <input type="text" id="tx-emp" value="${esc(currentUser?.name || '')}" readonly style="background:var(--surface2);cursor:default;color:var(--muted)">
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <label>ملاحظات</label>
+      <input type="text" id="tx-notes" placeholder="أي ملاحظات إضافية — اختياري">
+    </div>`;
   } else if (txType === 'مشتريات') {
     html = `
       <div class="form-group"><label>المورد *</label><select id="tx-supplier"><option value="">اختر مورد</option>${suppliers.map(s => `<option value="${esc(s.name)}">${esc(s.name)}</option>`).join('')}</select><div class="field-hint">المورد الذي تم الشراء منه</div></div>
@@ -2655,10 +2786,10 @@ function renderTxFields() {
   } else {
     html = `
       <div class="card" style="grid-column:1/-1;padding:12px 14px;font-size:.82rem;background:var(--surface2);border-right:3px solid var(--accent);margin-bottom:4px">
-        <div style="font-weight:700;margin-bottom:6px">المخزن والخزنة — استرجاع فقط</div>
-        <p class="text-sm text-muted" style="margin:0;line-height:1.6">• الطلب يُسجَّل <strong>معلقاً</strong> حتى موافقة المدير — لا تغيير في المخزن أو الخزنة قبلها.<br>
-        • <strong>استرجاع</strong> بعد الاعتماد: تُعاد كميات الأصناف إلى <strong>المخزن</strong>، ويُخصم من <strong>قسم الخزنة الذي تختاره</strong> مبلغ <strong>قيمة الأصناف المرتجعة فقط</strong> (رداً للعميل) — <strong>ليس شراء</strong>، <strong>دون شحن</strong> ولا خصم فاتورة.<br>
-        • <strong>استبدال</strong>: إن كان للعميل فرق نقدي اختر <strong>قسم السحب</strong>؛ إن كان على العميل فرق لصالح الشركة اختر <strong>قسم الإيداع</strong> عند التحصيل. البدائل تُسجَّل كبيع وتُخصم من المخزن.</p>
+        <div style="font-weight:700;margin-bottom:6px">نظام الاسترجاع</div>
+        <p class="text-sm text-muted" style="margin:0;line-height:1.6">• اختر العميل ثم الفاتورة ثم الأصناف المرتجعة.<br>
+        • أدخل <strong>مبلغ الرد</strong> يدوياً — هذا المبلغ سيُخصم من الخزنة عند الموافقة.<br>
+        • الطلب يُسجَّل <strong>معلقاً</strong> حتى موافقة المدير.</p>
       </div>
       <div class="form-group" style="grid-column:1/-1"><label>العميل *</label><div class="ac-wrap"><input type="text" id="tx-client" placeholder="ابحث باسم العميل أو الرقم المرجعي..." oninput="filterReturnClients(this.value)" onfocus="filterReturnClients(this.value)" autocomplete="off"><div class="ac-list" id="ret-client-list"></div></div><div class="field-hint">اختر عميل مسجل مسبقاً لعرض فواتيره</div><div class="field-error" id="err-ret-client"></div></div>
       <div id="ret-invoices-section" style="grid-column:1/-1;display:none"></div>
@@ -2666,9 +2797,9 @@ function renderTxFields() {
       <div class="form-group" id="ret-reason-block"><label id="ret-reason-label">سبب الاسترجاع *</label><select id="ret-reason" onchange="toggleRetReasonDetails()"><option value="">اختر السبب</option></select><div class="field-error" id="err-ret-reason"></div></div>
       <div class="form-group" id="ret-reason-details-wrap" style="display:none"><label id="ret-reason-details-label">تفاصيل السبب</label><input type="text" id="ret-reason-details" placeholder=""></div>
       <div class="form-group" id="ret-vault-refund-wrap" style="grid-column:1/-1;display:none">
-        <label>قسم الخزنة — سحب قيمة الرد للعميل (خصم) *</label>
+        <label>قسم الخزنة — سحب مبلغ الرد *</label>
         <select id="ret-vault-refund">${RET_VAULT_SEGMENTS.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('')}</select>
-        <div class="field-hint">يُخصم من هذا القسم عند الاعتماد (استرجاع كامل) — <strong>ليس شراء</strong></div>
+        <div class="field-hint">مبلغ الرد سيُخصم من هذا القسم عند موافقة المدير</div>
       </div>
       
         <div id="ret-exchange-summary" class="mt-12 text-sm"></div>
@@ -2682,8 +2813,8 @@ function updateRetVaultAccountVisibility() {
   const wRef = qs('#ret-vault-refund-wrap');
   if (!wRef) return;
   if (txType !== 'مرتجع') { wRef.style.display = 'none'; return; }
-  const ret = getReturnTotal();
-  wRef.style.display = ret > 0 ? 'block' : 'none';
+  const hasSelected = selectedRetItems.some(it => it.selected);
+  wRef.style.display = hasSelected ? 'block' : 'none';
 }
 
 function getShipCompanyOptions() {
@@ -2899,6 +3030,33 @@ function applyDiscount() {
   const val = Number(qs('#disc-value')?.value) || 0;
   txDiscount = val;
   calcTxSummary(); closeModal(); toast('تم تطبيق الخصم');
+}
+
+function selectDepMethod(val, btn) {
+  // Update hidden select value
+  const sel = qs('#tx-dep-method');
+  if (sel) sel.value = val;
+  // Update button styles
+  const INSTAPAY_COLOR = '#4f46e5';
+  const VODAFONE_COLOR = '#e11d48';
+  const COLOR_MAP = { 'Instapay': INSTAPAY_COLOR, 'فودافون كاش': VODAFONE_COLOR };
+  qsa('#dep-method-btns .dep-method-btn').forEach(b => {
+    const isActive = b === btn;
+    const bVal = b.getAttribute('data-val');
+    const accentColor = COLOR_MAP[bVal];
+    if (isActive) {
+      b.style.border = `2px solid ${accentColor || 'var(--primary)'}`;
+      b.style.background = accentColor ? `rgba(${accentColor === INSTAPAY_COLOR ? '99,102,241' : '225,29,72'},.12)` : 'rgba(var(--primary-rgb),.1)';
+      b.style.color = accentColor || 'var(--primary)';
+      b.style.fontWeight = '700';
+    } else {
+      b.style.border = '2px solid var(--border)';
+      b.style.background = 'var(--surface2)';
+      b.style.color = 'var(--text)';
+      b.style.fontWeight = '600';
+    }
+  });
+  calcTxSummary();
 }
 
 function getEffectiveDiscount() {
@@ -3130,35 +3288,46 @@ function renderReturnItems() {
   const section = qs('#ret-items-section');
   if (!section) return;
   section.style.display = 'block';
+  const hasSelected = selectedRetItems.some(it => it.selected);
   section.innerHTML = `<h4 class="mb-8">اختر الأصناف المراد استرجاعها</h4>
     <div style="display:flex;flex-direction:column;gap:6px">${selectedRetItems.map((it, i) => `
       <div class="card" style="padding:10px;display:flex;align-items:center;gap:12px;border-right:3px solid ${it.selected ? 'var(--accent)' : 'var(--border)'}">
         <input type="checkbox" class="checkbox" ${it.selected ? 'checked' : ''} onchange="toggleRetItem(${i},this.checked)">
         <div style="flex:1">
           <strong>${esc(it.name)}</strong>
-          <div class="text-xs text-muted">الكمية الأصلية: ${fmtN(it.qty)} — السعر: ${fmtJ(it.price)}</div>
+          <div class="text-xs text-muted">الكمية: ${fmtN(it.qty)} — السعر: ${fmtJ(it.price)}</div>
         </div>
         <div style="width:100px">
           <label class="text-xs text-muted">كمية الإرجاع</label>
           <input type="number" value="${it.retQty}" min="1" max="${it.qty}" style="width:100%" onchange="updateRetQty(${i},this.value)" ${it.selected ? '' : 'disabled'}>
         </div>
-        <div style="width:80px;text-align:center;font-weight:700">${fmtJ(it.retQty * it.price)}</div>
       </div>`).join('')}</div>
-    <div style="margin-top:10px;padding:10px;background:var(--surface2);border-radius:var(--radius);font-weight:600;display:flex;flex-direction:column;gap:6px">
-      <div style="display:flex;justify-content:space-between;width:100%"><span>إجمالي المرتجع (أصناف فقط — بدون شحن)</span><span style="color:var(--red)">${fmtJ(getReturnTotal())}</span></div>
-      ${(() => {
-        const ret = getReturnTotal();
-        const refundSeg = qs('#ret-vault-refund')?.value || 'الخزنة';
-        return ret > 0
-          ? `<div style="display:flex;align-items:center;gap:6px;margin-top:4px;padding:8px;background:rgba(220,38,38,.06);border-radius:8px;font-size:.82rem"><span><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 2 22 2 12 22 2 2"/></svg> بعد الاعتماد: يُخصم <strong style="color:var(--red)">${fmtJ(ret)}</strong> من ${esc(refundSeg)} — رد للعميل (بدون شحن)</span></div>`
-          : '';
-      })()}
-    </div>`;
+    ${hasSelected ? `
+    <div style="margin-top:12px;padding:16px;background:var(--surface2);border-radius:var(--radius);border:2px solid var(--primary)">
+      <label style="font-weight:700;font-size:.95rem;display:block;margin-bottom:8px">مبلغ الرد للعميل *</label>
+      <input type="number" id="ret-manual-refund" min="0" placeholder="أدخل المبلغ الذي سيُرد للعميل" oninput="updateRetRefundPreview()" style="width:100%;font-weight:600;font-size:1.2rem;padding:12px;border:2px solid var(--primary);border-radius:8px;text-align:center">
+      <div class="field-hint" style="margin-top:6px">هذا المبلغ سيُخصم من الخزنة المختارة عند موافقة المدير</div>
+      <div id="ret-refund-preview" style="margin-top:8px;padding:8px;border-radius:6px;font-size:.85rem;min-height:20px"></div>
+    </div>` : '<div style="margin-top:10px;padding:12px;background:var(--surface2);border-radius:var(--radius);color:var(--muted);text-align:center">اختر أصناف للاسترجاع</div>'}`;
   updateRetVaultAccountVisibility();
 }
 function toggleRetItem(i, checked) { selectedRetItems[i].selected = checked; renderReturnItems(); }
 function updateRetQty(i, val) { selectedRetItems[i].retQty = Math.max(1, Math.min(selectedRetItems[i].qty, Number(val) || 1)); renderReturnItems(); }
 function getReturnTotal() { return selectedRetItems.filter(it => it.selected).reduce((s, it) => s + (it.retQty * it.price), 0); }
+function getNetRefund() {
+  return Number(qs('#ret-manual-refund')?.value) || 0;
+}
+function updateRetRefundPreview() {
+  const preview = qs('#ret-refund-preview');
+  if (!preview) return;
+  const manualRefund = Number(qs('#ret-manual-refund')?.value) || 0;
+  if (manualRefund > 0) {
+    preview.innerHTML = `<div style="display:flex;justify-content:space-between;font-weight:800;font-size:1.05rem;color:var(--red);background:rgba(220,38,38,.07);padding:8px;border-radius:6px"><span>سيُخصم من الخزنة</span><span>${fmtJ(manualRefund)} ج</span></div>`;
+  } else {
+    preview.innerHTML = '';
+  }
+  updateRetVaultAccountVisibility();
+}
 function toggleRetReasonDetails() {
   const wrap = qs('#ret-reason-details-wrap');
   if (wrap) wrap.style.display = qs('#ret-reason')?.value === 'سبب آخر' ? 'block' : 'none';
@@ -3207,6 +3376,12 @@ function validateTx() {
     if (!qs('#ret-reason')?.value) {
       const el = qs('#err-ret-reason');
       if (el) el.textContent = 'اختر سبب الاسترجاع';
+      valid = false;
+    }
+    // Validate manual refund amount
+    const manualRefund = Number(qs('#ret-manual-refund')?.value) || 0;
+    if (selectedRetItems.some(it => it.selected) && manualRefund <= 0) {
+      toast('أدخل مبلغ الرد للعميل', true);
       valid = false;
     }
   } else if (txType === 'مشتريات') {
@@ -3342,6 +3517,27 @@ function showTxConfirmation(body) {
     </div>`;
   }
 
+  // Reference number + deposit method row
+  const _showRef = body.ref && txType !== 'مشتريات';
+  const _showDep = txType === 'مبيعات' && body.depMethod;
+  if (_showRef || _showDep) {
+    summary += `<div style="display:grid;grid-template-columns:${_showRef && _showDep ? '1fr 1fr' : '1fr'};gap:10px;margin-bottom:16px">`;
+    if (_showRef) {
+      summary += `<div style="background:var(--bg);border-radius:8px;padding:12px;border-right:3px solid var(--accent)">
+        <div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:4px">الرقم المرجعي</div>
+        <div style="font-weight:700;color:var(--accent);font-size:1rem;direction:ltr">#${esc(body.ref)}</div>
+      </div>`;
+    }
+    if (_showDep) {
+      const _depColor = body.depMethod === 'Instapay' ? '#4f46e5' : body.depMethod === 'فودافون كاش' ? '#e11d48' : 'var(--green)';
+      summary += `<div style="background:var(--bg);border-radius:8px;padding:12px;border-right:3px solid ${_depColor}">
+        <div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:4px">طريقة دفع الديبوزت</div>
+        <div style="font-weight:700;color:${_depColor};font-size:.95rem">${esc(body.depMethod)}</div>
+      </div>`;
+    }
+    summary += `</div>`;
+  }
+
   summary += `<div style="margin-bottom:16px">
     <div style="font-weight:600;color:var(--primary);margin-bottom:8px">📝 الأصناف (${body.items.length})</div>
     <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:.85rem">
@@ -3420,42 +3616,129 @@ async function confirmTxSave() {
     pendingTxData = null;
   }
 }
+let _pendingReturnBody = null;
+let _pendingReturnHeaders = {};
+
 async function saveReturnRequest() {
   if (!validateTx()) return;
   const tx = transactions.find(t => t._id === selectedRetTxId);
   if (!tx) { toast('اختر فاتورة', true); return; }
-  if (tx.payStatus === 'معلق') { toast('لا يمكن إتمام الاسترجاع — الطلب الأصلي معلق في انتظار التحصيل', true); return; }
+  if ((tx.remaining || 0) > 0) { toast('لا يمكن إتمام الاسترجاع — الفاتورة الأصلية لم تُحصَّل بالكامل بعد', true); return; }
   const retItems = selectedRetItems.filter(it => it.selected).map(it => ({
     code: it.code, name: it.name, qty: it.retQty, price: it.price, total: it.retQty * it.price
   }));
-  const returnTotal = retItems.reduce((s, it) => s + it.total, 0);
-  const refundSeg = qs('#ret-vault-refund')?.value || '';
+  if (!retItems.length) { toast('اختر صنف واحد على الأقل', true); return; }
+  const refundAmount = Number(qs('#ret-manual-refund')?.value) || 0;
+  if (refundAmount <= 0) { toast('أدخل مبلغ الرد للعميل', true); return; }
+  const refundSeg = qs('#ret-vault-refund')?.value || 'كاش';
+  const reason = qs('#ret-reason')?.value || '';
+  const reasonDetails = qs('#ret-reason-details')?.value || '';
   const body = {
     originalTransactionId: String(tx._id),
-    originalRef: tx.ref || '',
+    originalRef: tx.ref || String(tx._id),
     originalDate: tx.date,
     client: tx.client,
     phone: tx.phone || '',
     items: retItems,
-    total: returnTotal,
-    reason: qs('#ret-reason')?.value || '',
-    reasonDetails: qs('#ret-reason-details')?.value || '',
+    total: refundAmount,
+    reason,
+    reasonDetails,
+    vaultRefundAccount: refundSeg,
   };
-  if (refundSeg) body.vaultRefundAccount = refundSeg;
-  const returnVaultHeaders = {};
-  if (refundSeg && RET_VAULT_TO_HEADER_CODE[refundSeg]) returnVaultHeaders['X-Soulia-Vault-Refund'] = RET_VAULT_TO_HEADER_CODE[refundSeg];
+  const headers = {};
+  if (RET_VAULT_TO_HEADER_CODE[refundSeg]) headers['X-Soulia-Vault-Refund'] = RET_VAULT_TO_HEADER_CODE[refundSeg];
+  _pendingReturnBody = body;
+  _pendingReturnHeaders = headers;
+  // Show confirmation dialog
+  const itemsHtml = retItems.map(it =>
+    `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:.85rem">
+      <span>${esc(it.name)} <span style="color:var(--muted)">×${it.qty}</span></span>
+      <span style="font-weight:600">${fmtJ(it.total)} ج</span>
+    </div>`
+  ).join('');
+  const html = `
+    <div style="padding:20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+        <div style="width:40px;height:40px;border-radius:50%;background:rgba(249,115,22,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" style="width:20px;height:20px;color:#f97316" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div>
+          <h3 style="margin:0;font-size:1.1rem">تأكيد طلب الاسترجاع</h3>
+          <div style="font-size:.85rem;color:var(--muted)">سيُرسَل الطلب في انتظار موافقة المدير</div>
+        </div>
+      </div>
+
+      <!-- تفاصيل العميل والفاتورة -->
+      <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.85rem">
+          <div><span style="color:var(--muted)">العميل:</span> <strong>${esc(tx.client || '-')}</strong></div>
+          <div><span style="color:var(--muted)">رقم الفاتورة:</span> <strong>${tx.ref ? '#' + esc(tx.ref) : '-'}</strong></div>
+          <div><span style="color:var(--muted)">السبب:</span> <strong>${esc(reason)}${reasonDetails ? ' — ' + esc(reasonDetails) : ''}</strong></div>
+          <div><span style="color:var(--muted)">الخزنة:</span> <strong>${esc(refundSeg)}</strong></div>
+        </div>
+      </div>
+
+      <!-- الأصناف -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:.8rem;font-weight:700;color:var(--muted);margin-bottom:6px">الأصناف المرتجعة</div>
+        <div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;max-height:160px;overflow-y:auto">
+          ${itemsHtml}
+        </div>
+      </div>
+
+      <!-- مبلغ الرد -->
+      <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:14px;margin-bottom:16px;text-align:center">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:4px">مبلغ الرد للعميل</div>
+        <div style="font-size:1.8rem;font-weight:800;color:var(--green)">${fmtJ(refundAmount)} ج</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:4px">يُخصم من خزنة <strong>${esc(refundSeg)}</strong> عند موافقة المدير</div>
+      </div>
+
+      <!-- تنبيه -->
+      <div style="background:rgba(59,130,246,.06);border-right:3px solid var(--blue);padding:10px 12px;border-radius:6px;font-size:.8rem;color:var(--text);margin-bottom:16px;line-height:1.6">
+        <strong>ما سيحدث عند موافقة المدير:</strong><br>
+        ✔ يُخصم <strong>${fmtJ(refundAmount)} ج</strong> من خزنة <strong>${esc(refundSeg)}</strong> (بشرط وجود رصيد كافٍ)<br>
+        ✔ تُرجع الأصناف إلى المخزن تلقائياً<br>
+        ✔ تُسجَّل حركة مرتجع في سجل الحركات
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" style="flex:1" onclick="confirmReturnRequest()">
+          <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+          إرسال طلب الاسترجاع
+        </button>
+        <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+      </div>
+    </div>
+  `;
+  openModal(html, 'max-width:520px');
+}
+
+async function confirmReturnRequest() {
+  if (!_pendingReturnBody) return;
+  const confirmBtn = qs('#modal-overlay button.btn-primary');
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.style.opacity = '0.6'; }
   try {
-    await api('/returns', { method: 'POST', body: JSON.stringify(body), headers: returnVaultHeaders });
-    toast('تم إرسال طلب استرجاع معلق — عند الموافقة يُرد للعميل قيمة الأصناف المختارة فقط (بدون شحن)');
+    await api('/returns', { method: 'POST', body: JSON.stringify(_pendingReturnBody), headers: _pendingReturnHeaders });
+    closeModal();
+    toast(`✅ تم إرسال طلب الاسترجاع — في انتظار موافقة المدير`);
     returnRequests = await api('/returns').catch(() => returnRequests);
     buildNotifications(); buildSidebar();
     renderMovements();
     resetTx();
-  } catch (e) { toast('خطأ: ' + e.message, true); }
+  } catch (e) {
+    if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.style.opacity = '1'; }
+    toast('خطأ: ' + e.message, true);
+  } finally {
+    _pendingReturnBody = null;
+    _pendingReturnHeaders = {};
+  }
 }
 
 function resetTx() {
   txItems = [{ productId: '', qty: 1, price: 0 }]; txDiscount = 0; txDiscountType = 'fixed';
+  // Clear manual refund field for return requests
+  const manualRefundField = qs('#ret-manual-refund');
+  if (manualRefundField) manualRefundField.value = '';
   renderTxFields(); renderTxItems(); calcTxSummary();
 }
 
@@ -3673,10 +3956,10 @@ function renderMovementTxRow(tx) {
   const vaultStatusBadge = getVaultEntryStatusBadge(tx._id);
   const isCompleted = isStatusCompleted(tx.payStatus) && !tx.cancelled;
   const isCancelledOrLocked = tx.cancelled || isStatusCancelled(tx.payStatus);
-  const editLocked = isExchangeSalePendingCollect(tx) || isCompleted || isCancelledOrLocked;
+  const editLocked = isExchangeSalePendingCollect(tx) || isCancelledOrLocked;
   const editItem = editLocked
-    ? `<div class="dd-item" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل <span class="text-xs">(${isExchangeSalePendingCollect(tx) ? 'مقفول' : isCancelledOrLocked ? 'ملغي' : 'مكتمل'})</span></div>`
-    : `<div class="dd-item" onclick="openEditMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</div>`;
+    ? `<div class="dd-item" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل <span class="text-xs">(${isExchangeSalePendingCollect(tx) ? 'مقفول' : 'ملغي'})</span></div>`
+    : `<div class="dd-item" onclick="openEditMovement('${esc(tx._id)}')" ${isCompleted ? 'style="color:var(--orange)"' : ''}><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل${isCompleted ? ' <span class="text-xs">(مكتمل)</span>' : ''}</div>`;
   // Full timestamp display
   const createdAt = tx.createdAt || tx.date;
   const dateCell = `<div style="font-size:.82rem;font-weight:600">${fmtDate(tx.date)}</div><div class="text-xs text-muted" style="margin-top:2px">${fmtDateTime(createdAt)}</div>`;
@@ -3693,7 +3976,7 @@ function renderMovementTxRow(tx) {
     <td>${movementRefCell(tx)}</td>
     <td>${esc(tx.employee || '-')}</td>
     <td>${fmtJ(tx.total)}</td>
-    <td>${fmtJ(exchangeSalePaidDisplayAmount(tx))}</td>
+    <td>${exchangeSalePaidDisplayAmount(tx)}</td>
     <td class="${(tx.remaining || 0) > 0 ? 'text-red' : ''}">${fmtJ(tx.remaining)}</td>
     <td>${movementStatusCell(tx)}</td>
     <td>
@@ -3747,10 +4030,20 @@ function renderMovements() {
   const allTx = data;
   const activeTx = allTx.filter(t => !t.cancelled); // استثناء الحركات الملغاة
 
-  // Total Revenue: Sales + Returns (returns reduce revenue)
-  const salesRevenue = activeTx.filter(t => t.type === 'مبيعات').reduce((s, t) => s + (t.total || 0), 0);
+  // إجمالي المبيعات = سعر المنتجات فقط (بدون الشحن)
+  const salesTx = activeTx.filter(t => t.type === 'مبيعات');
+  const productSalesTotal = salesTx.reduce((s, t) => s + Math.max(0, (t.total || 0) - (Number(t.shipCost) || 0)), 0);
+  // إجمالي الشحن المحصل من العملاء
+  const totalShipBilled = salesTx.reduce((s, t) => s + (Number(t.shipCost) || 0), 0);
+  // فرق الشحن (الزيادة في التكلفة الفعلية = خسارة)
+  const shipLossTotal = salesTx.reduce((s, t) => {
+    const billed = Number(t.shipCost) || 0;
+    const actual = Number(t.actualShipCost) || 0;
+    return s + Math.max(0, actual - billed);
+  }, 0);
   const returnsSales = activeTx.filter(t => t.type === 'مرتجع مبيعات' || t.type === 'مرتجع').reduce((s, t) => s + (t.total || 0), 0);
-  const totalRevenue = Math.max(0, salesRevenue - returnsSales);
+  // المبيعات = سعر المنتجات - فرق الشحن الزائد
+  const totalRevenue = productSalesTotal - shipLossTotal;
 
   const totalPurchases = activeTx.filter(t => t.type === 'مشتريات').reduce((s, t) => s + (t.total || 0), 0);
   const totalRemaining = activeTx.reduce((s, t) => s + (t.remaining || 0), 0);
@@ -3765,16 +4058,27 @@ function renderMovements() {
   const kpiEl = qs('#mov-kpi-strip');
   if (kpiEl) {
     const kpiData = [
-      { val: fmtJ(totalRevenue),       label: 'إجمالي المبيعات',    color: '#10b981', icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>' },
-      { val: fmtJ(totalPurchases),    label: 'إجمالي المشتريات',  color: '#3b82f6', icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>' },
-      { val: fmtJ(remainingCollection), label: 'متبقي تحصيل',      color: '#8b5cf6', icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3-8c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3 3 1.34 3 3z"/></svg>' },
-      { val: fmtJ(remainingSupplier),  label: 'متبقي للمورد',     color: '#f97316', icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 12l-3.5-3.5m3.5 3.5l3.5 3.5m-3.5-3.5L12.5 8.5m3.5 3.5L12.5 15.5"/><circle cx="12" cy="12" r="9"/></svg>' },
-      { val: pendingCount,             label: 'معلق',             color: '#f59e0b', icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>' },
-      { val: completedCount,           label: 'مكتمل',            color: '#10b981', icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>' },
-      { val: cancelledCount,           label: 'ملغي',             color: '#94a3b8', icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>' },
+      { val: fmtJ(totalRevenue),        label: 'إجمالي المبيعات',   color: '#10b981', tooltip: 'إجمالي إيرادات المبيعات بعد خصم تكلفة الشحن وفروق الشحن الزائدة',
+        icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 002 1.58h9.78a2 2 0 001.95-1.57l1.65-7.43H5.12"/></svg>' },
+      { val: `${fmtJ(totalShipBilled)}${shipLossTotal > 0 ? ' (-' + fmtJ(shipLossTotal) + ')' : ''}`, label: 'إجمالي الشحن', color: '#06b6d4', tooltip: 'إجمالي تكلفة الشحن المحصلة من العملاء — الرقم بين القوسين هو فرق الشحن الزائد عن المحصل',
+        icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>' },
+      { val: fmtJ(totalPurchases),      label: 'إجمالي المشتريات', color: '#3b82f6', tooltip: 'إجمالي قيمة فواتير المشتريات من الموردين (غير الملغاة)',
+        icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>' },
+      { val: fmtJ(returnsSales),        label: 'إجمالي المرتجعات', color: '#ef4444', tooltip: 'إجمالي قيمة المرتجعات المعتمدة — تُخصم من صافي المبيعات',
+        icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>' },
+      { val: fmtJ(remainingCollection), label: 'متبقي تحصيل',      color: '#8b5cf6', tooltip: 'مبالغ متبقية على العملاء لم تُحصَّل بعد — تحتاج متابعة',
+        icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h2M10 15h4"/></svg>' },
+      { val: fmtJ(remainingSupplier),   label: 'متبقي للمورد',     color: '#f97316', tooltip: 'مبالغ مستحقة الدفع للموردين ولم تُسدَّد بعد',
+        icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' },
+      { val: pendingCount,              label: 'معلق',             color: '#f59e0b', tooltip: 'عدد الحركات المعلقة — في انتظار اكتمال الدفع أو التحصيل',
+        icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 00-.586-1.414L12 12l-4.414 4.414A2 2 0 007 17.828V22M7 2v4.172a2 2 0 00.586 1.414L12 12l4.414-4.414A2 2 0 0017 6.172V2"/></svg>' },
+      { val: completedCount,            label: 'مكتمل',            color: '#10b981', tooltip: 'عدد الحركات المكتملة — تم سداد كامل المبلغ',
+        icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>' },
+      { val: cancelledCount,            label: 'ملغي',             color: '#94a3b8', tooltip: 'عدد الحركات الملغاة — لا تؤثر على الأرصدة أو المخزون',
+        icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>' },
     ];
     kpiEl.innerHTML = kpiData.map(k => `
-      <div class="kpi" style="--kpi-color:${k.color}">
+      <div class="kpi" style="--kpi-color:${k.color}" data-tooltip="${k.tooltip}">
         <div class="kpi-icon" style="color:${k.color}">${k.icon}</div>
         <div class="kpi-val" style="color:${k.color}">${k.val}</div>
         <div class="kpi-label">${k.label}</div>
@@ -3929,6 +4233,15 @@ function openEditMovement(id) {
   const tx = transactions.find(t => t._id === id); if (!tx) return;
   if (tx.cancelled || isStatusCancelled(tx.payStatus)) { toast('لا يمكن تعديل حركة ملغاة', true); return; }
   if (isExchangeSalePendingCollect(tx)) { toastExchangePendingLocked(); return; }
+
+  // ✅ السماح بالتعديل على أي حركة (مكتملة أو معلقة)
+  const isCompleted = isStatusCompleted(tx.payStatus);
+  const statusWarning = isCompleted
+    ? `<div style="padding:12px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:8px;margin-bottom:16px;font-size:.85rem;color:#047857">
+        <strong>⚠️ تنبيه:</strong> هذه الحركة <strong>مكتملة</strong>. التعديل عليها سيؤثر على الخزنة والمخزن وسيتم تسجيل التعديل بالكامل.
+      </div>`
+    : '';
+
   editTxId = id;
   editTxItems = (tx.items || []).map(it => ({ name: it.name || '', code: it.code || '', qty: it.qty || 1, price: it.price || 0, productId: it.productId || '' }));
   txComments = (tx.comments || []).slice(); // Load existing comments
@@ -3938,6 +4251,7 @@ function openEditMovement(id) {
   const refRetailEdit = isSale || isPurchase;
   openModal(`
     <h3>تعديل الحركة ${isPurchase ? '(مشتريات)' : ''}</h3>
+    ${statusWarning}
     <div class="grid grid-2 gap-12">
       <div class="form-group"><label>${isPurchase ? 'المورد' : 'العميل'}</label><input type="text" id="edit-tx-client" value="${esc(tx.client || '')}"></div>
       <div class="form-group"><label>الهاتف</label><input type="text" id="edit-tx-phone" value="${esc(tx.phone || '')}"></div>
@@ -4075,53 +4389,86 @@ async function saveEditMovement(id) {
   const deposit = Number(qs('#edit-tx-deposit').value) || 0;
   const total = itemsTotal - discount + shipCost;
   if (total <= 0 && tx.type === 'مبيعات') { toast('أدخل مبلغاً صحيحاً قبل الحفظ — الإجمالي يجب أن يكون أكبر من صفر', true); return; }
-  // Double confirmation for large deposit changes
+
+  // 📊 حساب الفروقات (قبل/بعد)
+  const origTotal = tx.total || 0;
+  const origDeposit = tx.deposit || 0;
+  const origDiscount = tx.discount || 0;
+  const origShipCost = tx.shipCost || 0;
+  const origItemsTotal = tx.itemsTotal || origTotal;
+
+  const totalDelta = total - origTotal;
+  const depositDelta = deposit - origDeposit;
+  const discountDelta = discount - origDiscount;
+  const shipCostDelta = shipCost - origShipCost;
+
+  // 💰 حساب تأثير الخزنة
+  let vaultDelta = 0;
+  let vaultNote = '';
   if (tx.type === 'مبيعات') {
-    const origDeposit = tx.deposit || 0;
-    const depositDelta = Math.abs(deposit - origDeposit);
-    const CONFIRM_THRESHOLD = 500;
-    if (depositDelta > CONFIRM_THRESHOLD) {
-      const direction = deposit > origDeposit ? 'إضافة' : 'خصم';
-      const depMethod = String(tx.depMethod || 'الخزنة').trim();
-      const confirmed = confirm(
-        `<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> تأكيد مزدوج — تغيير كبير في الديبوزت\n\n` +
-        `الديبوزت سيتغير من ${fmtJ(origDeposit)} إلى ${fmtJ(deposit)}\n` +
-        `(${direction} ${fmtJ(depositDelta)} في خزنة: ${depMethod})\n\n` +
-        `هل تريد المتابعة؟`
-      );
-      if (!confirmed) return;
+    // للمبيعات: الديبوزت يؤثر على الخزنة والإجمالي يؤثر على الديبوزت المتبقي
+    vaultDelta = depositDelta;
+    if (depositDelta !== 0) {
+      vaultNote = depositDelta > 0
+        ? `إضافة ${fmtJ(depositDelta)} ديبوزت من الخزنة`
+        : `استرجاع ${fmtJ(-depositDelta)} ديبوزت للعميل`;
+    }
+  } else if (tx.type === 'مشتريات') {
+    // للمشتريات: العربون يؤثر على الخزنة
+    vaultDelta = -depositDelta;
+    if (depositDelta !== 0) {
+      vaultNote = depositDelta > 0
+        ? `خصم ${fmtJ(depositDelta)} من الخزنة`
+        : `رد ${fmtJ(-depositDelta)} للخزنة`;
     }
   }
+
+  // 📋 ملخص التغييرات
+  const changes = [];
+  if (totalDelta !== 0) changes.push(`الإجمالي: ${fmtJ(origTotal)} ← ${fmtJ(total)}`);
+  if (depositDelta !== 0) changes.push(`الديبوزت: ${fmtJ(origDeposit)} ← ${fmtJ(deposit)}`);
+  if (discountDelta !== 0) changes.push(`الخصم: ${fmtJ(origDiscount)} ← ${fmtJ(discount)}`);
+  if (shipCostDelta !== 0) changes.push(`الشحن: ${fmtJ(origShipCost)} ← ${fmtJ(shipCost)}`);
+
+  // التحقق من تأثير الخزنة
+  let confirmMsg = '';
+  if (vaultDelta !== 0) {
+    confirmMsg = `⚠️ تأثير على الخزنة:\n${vaultNote}\n\n`;
+  }
+  if (changes.length > 0) {
+    confirmMsg += `📝 التغييرات:\n${changes.join('\n')}\n\n`;
+  }
+
+  if (confirmMsg) {
+    const confirmed = confirm(confirmMsg + `هل تريد المتابعة؟`);
+    if (!confirmed) return;
+  }
+
   const isPurchaseEdit = tx.type === 'مشتريات';
   const newRemaining = Math.max(0, total - deposit);
   const body = { client: qs('#edit-tx-client').value, phone: qs('#edit-tx-phone').value, ref: editRef,
     deposit, discount, notes: qs('#edit-tx-notes').value, items: newItems, itemsTotal,
-    total, remaining: newRemaining, payStatus: newRemaining <= 0 ? 'مكتمل' : 'معلق' };
+    total, remaining: newRemaining, payStatus: newRemaining <= 0 ? 'مكتمل' : 'معلق',
+    // 📊 معلومات التعديل للتسجيل
+    editInfo: {
+      before: { total: origTotal, deposit: origDeposit, discount: origDiscount, shipCost: origShipCost },
+      after: { total, deposit, discount, shipCost },
+      vaultDelta,
+      changes,
+      timestamp: new Date().toISOString(),
+      editedBy: currentUser?.name || currentUser?.username || 'مجهول'
+    }
+  };
   if (tx.type === 'مبيعات') {
     body.shipCost = shipCost;
     body.shipCo = qs('#edit-tx-shipco')?.value || tx.shipCo || '';
     body.shipZone = qs('#edit-tx-zone')?.value || tx.shipZone || '';
     body.payment = qs('#edit-tx-payment')?.value || tx.payment || '';
   }
-  // Purchase deposit change confirmation
-  if (isPurchaseEdit) {
-    const origDeposit = tx.deposit || 0;
-    const depositDelta = Math.abs(deposit - origDeposit);
-    if (depositDelta > 0) {
-      const direction = deposit > origDeposit ? 'خصم إضافي' : 'رد';
-      const depMethod = String(tx.depMethod || 'كاش').trim();
-      const confirmed = confirm(
-        `<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> تأكيد تعديل العربون\n\n` +
-        `العربون سيتغير من ${fmtJ(origDeposit)} إلى ${fmtJ(deposit)}\n` +
-        `(${direction} ${fmtJ(depositDelta)} من/إلى خزنة: ${depMethod})\n\n` +
-        `هل تريد المتابعة؟`
-      );
-      if (!confirmed) return;
-    }
-  }
+
   try {
     await api('/transactions/' + id, { method: 'PUT', body: JSON.stringify(body) });
-    toast('تم تحديث الحركة'); closeModal();
+    toast('✅ تم تحديث الحركة والخزنة والمخزن بنجاح'); closeModal();
     transactions = await api('/transactions').catch(() => transactions);
     try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
     renderMovements(); buildSidebar(); buildNotifications();
@@ -4250,13 +4597,56 @@ function openCollectMovement(id) {
         <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
       </div>`);
   } else {
+    const billedShip = Number(tx.shipCost) || 0;
+    const shipSection = billedShip > 0 ? `
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px;margin-bottom:14px">
+        <div style="font-size:.8rem;font-weight:700;color:#c2410c;margin-bottom:8px">🚚 تسوية الشحن</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;font-size:.8rem">
+          <div>شحن محصل من العميل: <strong>${fmtJ(billedShip)}</strong></div>
+          <div id="ship-diff-preview" style="color:var(--muted)">فرق الشحن: <strong>—</strong></div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label style="font-size:.8rem">تكلفة الشحن الفعلية للشركة الشاحنة (اختياري)</label>
+          <input type="number" id="collect-actual-ship" min="0" placeholder="اتركه فارغاً إن لم يكن هناك فرق" oninput="updateShipDiff(${billedShip},${tx.remaining || 0})">
+          <div class="field-hint">إذا كانت الشركة طلبت أكثر من ${fmtJ(billedShip)} — الفرق يُخصم من المبلغ الداخل للخزنة</div>
+        </div>
+      </div>` : '';
     openModal(`<h3>تحصيل المتبقي (${fmtJ(tx.remaining)})</h3>
+      ${shipSection}
+      <div id="collect-net-preview" style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:14px;font-size:.83rem">
+        <span style="color:var(--green);font-weight:700">✓ سيُضاف ${fmtJ(Math.max(0, (tx.remaining || 0) - billedShip))} إلى الخزنة</span>
+      </div>
       <div class="form-group"><label>طريقة التحصيل</label><select id="collect-method">${collectOpts}</select></div>
       <div class="form-group"><label>ملاحظات</label><input type="text" id="collect-note"></div>
       <div class="flex gap-8 mt-16">
         <button class="btn btn-primary" onclick="doCollectMovement('${esc(id)}')">تحصيل</button>
         <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
-      </div>`);
+      </div>`, 'max-width:500px');
+  }
+}
+function updateShipDiff(billedShip, remaining) {
+  const actual = Number(qs('#collect-actual-ship')?.value) || 0;
+  const shipExtra = Math.max(0, actual - billedShip); // الزيادة في الشحن
+  // الخزنة = المتبقي - الشحن المحصل - الزيادة
+  const netVault = Math.max(0, remaining - billedShip - shipExtra);
+  const diffEl = qs('#ship-diff-preview');
+  const previewEl = qs('#collect-net-preview');
+  if (diffEl) {
+    diffEl.innerHTML = actual > 0
+      ? `فرق الشحن: ${shipExtra > 0 ? `<strong style="color:#dc2626">+${fmtJ(shipExtra)} زيادة على الشركة</strong>` : '<strong style="color:var(--green)">لا يوجد فرق</strong>'}`
+      : `فرق الشحن: <strong style="color:var(--muted)">—</strong>`;
+  }
+  if (previewEl) {
+    if (actual > 0 && shipExtra > 0) {
+      previewEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:4px;font-weight:600">
+          <div style="display:flex;justify-content:space-between"><span>إجمالي الفاتورة</span><span>${fmtJ(remaining)}</span></div>
+          <div style="display:flex;justify-content:space-between;color:var(--muted)"><span>— الشحن المحصل</span><span>- ${fmtJ(billedShip)}</span></div>
+          <div style="display:flex;justify-content:space-between;color:#dc2626"><span>— زيادة الشحن (على الشركة)</span><span>- ${fmtJ(shipExtra)}</span></div>
+          <div style="display:flex;justify-content:space-between;border-top:2px solid var(--border);padding-top:6px;font-size:1.05rem;color:var(--green)"><span>💰 يدخل الخزنة</span><strong>${fmtJ(netVault)}</strong></div>
+        </div>`;
+    } else {
+      previewEl.innerHTML = `<span style="color:var(--green);font-weight:700">✓ سيُضاف ${fmtJ(Math.max(0, remaining - billedShip))} إلى الخزنة</span>`;
+    }
   }
 }
 function updateCollectPreview(txId, totalRemaining) {
@@ -4356,6 +4746,8 @@ async function doCollectMovement(id) {
       collectNote: collectNote,
       collectAmount: amountToDeduct
     };
+    const actualShip = Number(qs('#collect-actual-ship')?.value) || 0;
+    if (!isPurchase && actualShip > 0) body.actualShipCost = actualShip;
 
     await api('/transactions/' + id + '/collect', { method: 'POST', body: JSON.stringify(body) });
 
@@ -4364,22 +4756,34 @@ async function doCollectMovement(id) {
     if (txIndex >= 0) {
       const tx = transactions[txIndex];
 
-      // إضافة السداد إلى السجل
+      // إضافة السداد إلى السجل (match backend schema: method, note, not collectMethod/collectNote)
       if (!tx.payments) tx.payments = [];
+      const billedShip = !isPurchase ? (Number(tx.shipCost) || 0) : 0;
+      const actualShip = Number(qs('#collect-actual-ship')?.value) || 0;
+      const shipExtra = !isPurchase && actualShip > 0 ? Math.max(0, actualShip - billedShip) : 0;
+      const netVaultAmount = isPurchase ? amountToDeduct : Math.max(0, amountToDeduct - billedShip - shipExtra);
+
       tx.payments.push({
-        amount: amountToDeduct,
-        collectMethod: collectMethod,
-        collectNote: collectNote,
+        amount: netVaultAmount,
+        method: collectMethod,
+        note: collectNote || (shipExtra > 0 ? `زيادة شحن: ${shipExtra} ج` : ''),
         date: new Date().toISOString(),
-        by: currentUser?.name || 'مستخدم'
+        by: currentUser?.name || 'مستخدم',
+        remaining: Math.max(0, (tx.remaining || 0) - amountToDeduct)
       });
 
       // تحديث المتبقي والمدفوع
       tx.remaining = Math.max(0, (tx.remaining || 0) - amountToDeduct);
-      tx.deposit = ((tx.deposit || 0) + amountToDeduct);
+      tx.deposit = ((tx.deposit || 0) + netVaultAmount);
       tx.collectMethod = collectMethod;
       tx.collectNote = collectNote;
       tx.collectedAt = new Date().toISOString();
+
+      // تحديث تكلفة الشحن الفعلية إذا تم إدخالها
+      if (!isPurchase && actualShip > 0) {
+        tx.actualShipCost = actualShip;
+        tx.shipLoss = (Number(tx.shipLoss) || 0) + shipExtra;
+      }
 
       // إذا اكتمل السداد
       if (tx.remaining <= 0) {
@@ -4821,42 +5225,111 @@ function buildCommentsSection(tx) {
   `;
 }
 
+function buildDepositHistorySection(tx) {
+  if (!tx.deposits || !tx.deposits.length) return '';
+
+  const deposits = tx.deposits;
+  const totalDeposits = deposits.reduce((sum, d) => sum + (d.amount || 0), 0);
+
+  const rows = deposits.map((d, idx) => {
+    const amount = d.amount || 0;
+    const method = d.method || '-';
+    const note = d.note || '';
+    const date = d.date || '';
+    const dateObj = new Date(date);
+    const dateStr = dateObj.toLocaleDateString('ar-EG');
+    const timeStr = dateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+    return `
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:12px;text-align:right;color:var(--muted);font-size:.85rem">#${idx+1}</td>
+        <td style="padding:12px;text-align:right;font-weight:600;color:var(--green);font-size:.9rem">${fmtJ(amount)} ج</td>
+        <td style="padding:12px;text-align:right;font-size:.85rem">${esc(method)}</td>
+        <td style="padding:12px;text-align:right;color:var(--muted);font-size:.85rem">${dateStr}</td>
+        <td style="padding:12px;text-align:right;color:var(--muted);font-size:.85rem">${timeStr}</td>
+        <td style="padding:12px;text-align:right;font-size:.8rem;color:var(--text)">${esc(note)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <div style="margin-top:16px;padding:14px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid rgba(34,197,94,.3)">
+        <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.1em;height:1.1em;color:var(--green)" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
+        <h4 style="margin:0;font-size:.95rem;font-weight:700;color:var(--text)">سجل الدفعات (الديبوزتات)</h4>
+        <span style="margin-left:auto;background:var(--green);color:#fff;padding:4px 12px;border-radius:6px;font-size:.8rem;font-weight:600">${deposits.length} دفعة — ${fmtJ(totalDeposits)} ج</span>
+      </div>
+      <div style="overflow-x:auto;border:1px solid rgba(34,197,94,.2);border-radius:8px;background:#fff">
+        <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+          <thead>
+            <tr style="background:rgba(34,197,94,.08);border-bottom:2px solid rgba(34,197,94,.2)">
+              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text);width:40px">#</th>
+              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">المبلغ</th>
+              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">طريقة الدفع</th>
+              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">التاريخ</th>
+              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">الوقت</th>
+              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">ملاحظات</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
 function buildPaymentHistorySection(tx) {
   if (!tx.payments || !tx.payments.length) return '';
+
   const payments = tx.payments;
+  const totalPaid = payments.reduce((sum, p) => sum + (p.amount || p.collectAmount || 0), 0);
+
   const rows = payments.map((p, idx) => {
     const amount = p.amount || p.collectAmount || 0;
     const method = p.method || p.collectMethod || '-';
     const note = p.note || p.collectNote || '';
     const date = p.date || p.collectedAt || '';
-    const by = p.by || p.employee || '-';
+    const dateObj = new Date(date);
+    const dateStr = dateObj.toLocaleDateString('ar-EG');
+    const timeStr = dateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+
     return `
-      <div style="padding:10px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-        <div style="flex:1">
-          <div style="font-weight:600;color:var(--green);font-size:.9rem">+ ${fmtJ(amount)}</div>
-          <div style="font-size:.75rem;color:var(--muted);margin-top:4px">
-            <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.8em;height:.8em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> ${fmtDateTime(date)}
-          </div>
-          <div style="font-size:.75rem;color:var(--muted);margin-top:2px">
-            <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.8em;height:.8em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg> ${esc(method)}
-          </div>
-          <div style="font-size:.75rem;color:var(--muted);margin-top:2px">
-            <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.8em;height:.8em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg> ${esc(by)}
-          </div>
-          ${note ? `<div style="font-size:.75rem;background:var(--surface2);padding:4px 6px;border-radius:4px;margin-top:4px;color:var(--text)">📝 ${esc(note)}</div>` : ''}
-        </div>
-      </div>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:12px;text-align:right;color:var(--muted);font-size:.85rem">#${idx+1}</td>
+        <td style="padding:12px;text-align:right;font-weight:600;color:var(--blue);font-size:.9rem">${fmtJ(amount)} ج</td>
+        <td style="padding:12px;text-align:right;font-size:.85rem">${esc(method)}</td>
+        <td style="padding:12px;text-align:right;color:var(--muted);font-size:.85rem">${dateStr}</td>
+        <td style="padding:12px;text-align:right;color:var(--muted);font-size:.85rem">${timeStr}</td>
+        <td style="padding:12px;text-align:right;font-size:.8rem;color:var(--text)">${esc(note)}</td>
+      </tr>
     `;
   }).join('');
-  const totalPaid = payments.reduce((sum, p) => sum + (p.amount || p.collectAmount || 0), 0);
+
   return `
-    <div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:8px">
-      <h4 style="margin:0 0 12px 0;display:flex;align-items:center;gap:6px">
-        <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg> سجل السدادات
-        <span style="background:var(--accent);color:#fff;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:600;margin-left:auto">${payments.length} سداد — ${fmtJ(totalPaid)}</span>
-      </h4>
-      <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;max-height:300px;overflow-y:auto">
-        ${rows}
+    <div style="margin-top:16px;padding:14px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);border-radius:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid rgba(59,130,246,.3)">
+        <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.1em;height:1.1em;color:var(--blue)" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg>
+        <h4 style="margin:0;font-size:.95rem;font-weight:700;color:var(--text)">سجل التحصيل</h4>
+        <span style="margin-left:auto;background:var(--blue);color:#fff;padding:4px 12px;border-radius:6px;font-size:.8rem;font-weight:600">${payments.length} تحصيل — ${fmtJ(totalPaid)} ج</span>
+      </div>
+      <div style="overflow-x:auto;border:1px solid rgba(59,130,246,.2);border-radius:8px;background:#fff">
+        <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+          <thead>
+            <tr style="background:rgba(59,130,246,.08);border-bottom:2px solid rgba(59,130,246,.2)">
+              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text);width:40px">#</th>
+              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">المبلغ</th>
+              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">طريقة التحصيل</th>
+              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">التاريخ</th>
+              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">الوقت</th>
+              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">ملاحظات</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
       </div>
     </div>
   `;
@@ -4943,6 +5416,16 @@ function showInvoiceDetail(id) {
       <td>${fmtJ(it.price)}</td>
       <td style="font-weight:600">${fmtJ(it.total)}</td>
     </tr>`).join('');
+
+  // Payment breakdown: deposits array vs payments (collections) array
+  const _depositsArr = tx.deposits || [];
+  const _paymentsArr = tx.payments || [];
+  const _depositsTotal = _depositsArr.length > 0
+    ? _depositsArr.reduce((s, d) => s + (d.amount || 0), 0)
+    : (tx.deposit || 0);
+  const _paymentsTotal = _paymentsArr.reduce((s, p) => s + (p.amount || p.collectAmount || 0), 0);
+  const _totalCollected = _depositsTotal + _paymentsTotal;
+
   const html = `
     <button class="inv-close" onclick="closeInvoiceDetail()">✕</button>
     <div class="inv-header-strip">
@@ -4968,15 +5451,86 @@ function showInvoiceDetail(id) {
         <tbody>${itemsRows}</tbody>
       </table>
       <div class="inv-summary">
-        <div class="inv-row"><span>إجمالي الأصناف</span><span>${fmtJ(tx.itemsTotal || tx.total)}</span></div>
-        ${tx.discount ? `<div class="inv-row"><span>الخصم</span><span style="color:var(--red)">- ${fmtJ(tx.discount)}</span></div>` : ''}
-        ${tx.shipCost ? `<div class="inv-row"><span>تكلفة الشحن</span><span>+ ${fmtJ(tx.shipCost)}</span></div>` : ''}
-        <div class="inv-row total-row"><span>الإجمالي النهائي</span><span>${fmtJ(tx.total)}</span></div>
-        <div class="inv-row"><span>${isMovExchangeSale(tx) ? 'فرق الاستبدال (المدفوع)' : isPurchase ? 'المدفوع للمورد' : 'الديبوزت (المدفوع)'}</span><span style="color:var(--green)">${fmtJ(exchangeSalePaidDisplayAmount(tx))}</span></div>
-        <div class="inv-row ${(tx.remaining || 0) > 0 ? 'danger' : ''}"><span>${isPurchase ? 'المتبقي للمورد' : 'المتبقي'}</span><span>${fmtJ(tx.remaining)}</span></div>
+        ${!isPurchase ? `
+          <!-- ══ قيمة الفاتورة ══ -->
+          <div class="inv-row"><span>إجمالي الأصناف</span><span>${fmtJ(tx.itemsTotal || tx.total)}</span></div>
+          ${tx.discount ? `<div class="inv-row"><span>خصم</span><span style="color:var(--red)">- ${fmtJ(tx.discount)}</span></div>` : ''}
+          ${tx.shipCost ? `<div class="inv-row"><span>🚚 تكلفة الشحن</span><span>+ ${fmtJ(tx.shipCost)}</span></div>` : ''}
+          <div class="inv-row total-row"><span>صافي الفاتورة</span><span>${fmtJ(tx.total)}</span></div>
+
+          <!-- ══ تفصيل السداد والتحصيل ══ -->
+          <div style="margin:14px 0 8px;padding-top:12px;border-top:2px dashed var(--border)">
+            <div style="font-size:.75rem;font-weight:800;color:var(--muted);letter-spacing:.04em;margin-bottom:10px;text-align:right">
+              ▸ تفصيل السداد والتحصيل
+            </div>
+
+            ${isMovExchangeSale(tx) ? `
+              <div class="inv-row"><span>فرق الاستبدال المسدد</span><span style="color:var(--green);font-weight:600">${fmtJ(_depositsTotal)}</span></div>
+            ` : `
+              <!-- الديبوزت المسبق -->
+              <div class="inv-row" style="background:rgba(34,197,94,.04);padding:8px 10px;border-radius:6px;margin-bottom:4px">
+                <span style="display:flex;align-items:center;gap:6px">
+                  <svg viewBox="0 0 24 24" style="width:14px;height:14px;color:var(--green);flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
+                  الديبوزت المسبق (${_depositsArr.length > 1 ? _depositsArr.length + ' دفعات' : 'دفعة واحدة'})
+                </span>
+                <span style="color:var(--green);font-weight:700;font-size:1rem">${fmtJ(_depositsTotal)} ج</span>
+              </div>
+            `}
+
+            <!-- التحصيل من شركة الشحن -->
+            ${_paymentsTotal > 0 ? `
+              <div class="inv-row" style="background:rgba(59,130,246,.04);padding:8px 10px;border-radius:6px;margin-bottom:4px">
+                <span style="display:flex;align-items:center;gap:6px">
+                  <svg viewBox="0 0 24 24" style="width:14px;height:14px;color:var(--blue);flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="15" height="10" rx="1.5"/><path d="M16 9h3l3 4v3h-6z"/><circle cx="6.5" cy="18" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>
+                  التحصيل من شركة الشحن (${_paymentsArr.length} ${_paymentsArr.length === 1 ? 'عملية' : 'عمليات'})
+                </span>
+                <span style="color:var(--blue);font-weight:700;font-size:1rem">${fmtJ(_paymentsTotal)} ج</span>
+              </div>
+            ` : ''}
+
+            <!-- الإجمالي المسدد -->
+            <div class="inv-row total-row" style="margin-top:8px">
+              <span>إجمالي المسدد</span>
+              <span>${fmtJ(_totalCollected)} ج</span>
+            </div>
+
+            <!-- المتبقي -->
+            <div class="inv-row ${(tx.remaining || 0) > 0 ? 'danger' : ''}" style="font-weight:700">
+              <span>${(tx.remaining || 0) > 0 ? '⚠ المتبقي (غير محصل)' : '✓ المتبقي'}</span>
+              <span>${fmtJ(tx.remaining || 0)} ج</span>
+            </div>
+          </div>
+        ` : `
+          <!-- ══ منطقة المشتريات ══ -->
+          <div class="inv-row"><span>إجمالي الأصناف</span><span>${fmtJ(tx.itemsTotal || tx.total)}</span></div>
+          ${tx.discount ? `<div class="inv-row"><span>الخصم</span><span style="color:var(--red)">- ${fmtJ(tx.discount)}</span></div>` : ''}
+          <div class="inv-row total-row"><span>الإجمالي النهائي</span><span>${fmtJ(tx.total)}</span></div>
+
+          <div style="margin:14px 0 8px;padding-top:12px;border-top:2px dashed var(--border)">
+            <div style="font-size:.75rem;font-weight:800;color:var(--muted);letter-spacing:.04em;margin-bottom:10px">▸ تفصيل السداد للمورد</div>
+            <div class="inv-row" style="background:rgba(34,197,94,.04);padding:8px 10px;border-radius:6px;margin-bottom:4px">
+              <span>المدفوع للمورد (عربون)</span>
+              <span style="color:var(--green);font-weight:700">${fmtJ(_depositsTotal)} ج</span>
+            </div>
+            ${_paymentsTotal > 0 ? `
+              <div class="inv-row" style="background:rgba(59,130,246,.04);padding:8px 10px;border-radius:6px;margin-bottom:4px">
+                <span>سداد إضافي للمورد</span>
+                <span style="color:var(--blue);font-weight:700">${fmtJ(_paymentsTotal)} ج</span>
+              </div>
+            ` : ''}
+            <div class="inv-row total-row" style="margin-top:8px">
+              <span>إجمالي المدفوع</span><span>${fmtJ(_totalCollected)} ج</span>
+            </div>
+            <div class="inv-row ${(tx.remaining || 0) > 0 ? 'danger' : ''}" style="font-weight:700">
+              <span>${(tx.remaining || 0) > 0 ? '⚠ المتبقي للمورد' : '✓ المتبقي'}</span>
+              <span>${fmtJ(tx.remaining || 0)} ج</span>
+            </div>
+          </div>
+        `}
       </div>
       ${tx.notes ? `<div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:8px;font-size:.8rem"><strong>ملاحظات:</strong> ${esc(tx.notes)}</div>` : ''}
       ${tx.cancelReason ? `<div style="margin-top:8px;padding:10px;background:rgba(220,38,38,.06);border-radius:8px;font-size:.8rem;color:var(--red)"><strong>سبب الإلغاء:</strong> ${esc(tx.cancelReason)}</div>` : ''}
+      ${buildDepositHistorySection(tx)}
       ${buildPaymentHistorySection(tx)}
       ${buildCommentsSection(tx)}
       ${buildEditHistorySection(tx)}
@@ -5041,7 +5595,6 @@ async function showReferenceDetail(ref) {
     const refStr = String(ref || '').replace(/^#/, '').trim();
     if (!refStr) { toast('رقم مرجع غير صحيح', true); return; }
 
-    toast('جاري التحميل...', false);
     const data = await api(`/transactions/reference/${refStr}`);
 
     const html = `
@@ -5076,6 +5629,15 @@ async function showReferenceDetail(ref) {
           <div style="padding:12px;background:var(--surface2);border-radius:8px;border-right:3px solid ${data.summary.totalRemaining > 0 ? 'var(--red)' : 'var(--green)'}">
             <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px">المتبقي</div>
             <div style="font-weight:700;color:${data.summary.totalRemaining > 0 ? 'var(--red)' : 'var(--green)'}">${fmtJ(data.summary.totalRemaining)}</div>
+          </div>
+        </div>
+
+        <!-- شرح الصافي والشحن -->
+        <div style="margin-bottom:20px;padding:14px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:8px;font-size:.9rem">
+          <div style="color:var(--text);font-weight:600;margin-bottom:8px">📊 شرح الصافي والشحن:</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:.85rem">
+            <div><span style="color:var(--muted)">الصافي = </span><strong>إجمالي الفاتورة + الشحن الأساسي</strong></div>
+            <div><span style="color:var(--muted)">الشحن الأساسي = </span><strong>${fmtJ(data.summary.shipCost || 0)}</strong></div>
           </div>
         </div>
 
@@ -5167,7 +5729,6 @@ async function showReferenceDetail(ref) {
     `;
 
     openModal(html, 'max-width:800px;max-height:90vh');
-    toast('');
   } catch (e) {
     toast('خطأ: ' + e.message, true);
   }
@@ -5203,7 +5764,11 @@ function renderClients() {
     if (tx.type !== 'مبيعات') return;
     if (!tx.client) return;
     if (!clientMap[tx.client]) clientMap[tx.client] = { name: tx.client, phone: tx.phone || '', orders: 0, total: 0, remaining: 0, lastTx: null };
-    clientMap[tx.client].orders++; clientMap[tx.client].total += (tx.total || 0); clientMap[tx.client].remaining += (tx.remaining || 0);
+    // استخدم المبلغ الفعلي الداخل للخزنة (بعد خصم الشحن الفعلي)
+    const netAmount = Math.max(0, (tx.total || 0) - (Number(tx.actualShipCost) || 0));
+    clientMap[tx.client].orders++;
+    clientMap[tx.client].total += netAmount;
+    clientMap[tx.client].remaining += Math.max(0, (tx.remaining || 0) - (Number(tx.actualShipCost) || 0));
     if (!clientMap[tx.client].phone && tx.phone) clientMap[tx.client].phone = tx.phone;
     if (!clientMap[tx.client].lastTx || tx.date > clientMap[tx.client].lastTx) clientMap[tx.client].lastTx = tx.date;
   });
@@ -5311,19 +5876,30 @@ function renderClientsStats() {
     if (tx.type !== 'مبيعات') return;
     if (!tx.client) return;
     if (!clientMap[tx.client]) clientMap[tx.client] = { total: 0, remaining: 0 };
-    clientMap[tx.client].total += (tx.total || 0); clientMap[tx.client].remaining += (tx.remaining || 0);
+    // استخدم المبلغ الفعلي الداخل للخزنة (بعد خصم الشحن الفعلي)
+    const netAmount = Math.max(0, (tx.total || 0) - (Number(tx.actualShipCost) || 0));
+    clientMap[tx.client].total += netAmount;
+    clientMap[tx.client].remaining += Math.max(0, (tx.remaining || 0) - (Number(tx.actualShipCost) || 0));
   });
+
   const clients = Object.values(clientMap);
   const totalClients = clients.length;
+
+  // الإجمالي = ثمن الفاتورة الأصلية (مجموع المبالغ قبل خصم الشحن الفعلي)
+  const totalInvoice = transactions.filter(t => t.type === 'مبيعات').reduce((s, t) => s + (t.total || 0), 0);
+
+  // إجمالي المبيعات = المبلغ الفعلي الداخل للخزنة
   const totalSales = clients.reduce((s, c) => s + c.total, 0);
+
   const totalRemaining = clients.reduce((s, c) => s + c.remaining, 0);
   const totalPaid = totalSales - totalRemaining;
   const collectionRate = totalSales > 0 ? (totalPaid / totalSales * 100).toFixed(1) : 0;
   const debtorClients = clients.filter(c => c.remaining > 0).length;
+
   qs('#clients-stats').innerHTML = `
     <div class="stat-card card">
-      <div class="stat-val">${totalClients}</div>
-      <div class="stat-label">إجمالي العملاء</div>
+      <div class="stat-val text-blue">${fmtJ(totalInvoice)}</div>
+      <div class="stat-label">الفاتورة: ${collectionRate}%</div>
     </div>
     <div class="stat-card card">
       <div class="stat-val text-green">${fmtJ(totalSales)}</div>
@@ -5331,7 +5907,7 @@ function renderClientsStats() {
     </div>
     <div class="stat-card card">
       <div class="stat-val text-blue">${fmtJ(totalPaid)}</div>
-      <div class="stat-label">المحصل: ${collectionRate}%</div>
+      <div class="stat-label">المحصل</div>
     </div>
     <div class="stat-card card">
       <div class="stat-val text-red">${debtorClients > 0 ? `${debtorClients}` : '✓'}</div>
@@ -5357,7 +5933,11 @@ function getClientsData() {
     if (tx.type !== 'مبيعات') return;
     if (!tx.client) return;
     if (!clientMap[tx.client]) clientMap[tx.client] = { name: tx.client, phone: tx.phone || '', orders: 0, total: 0, remaining: 0 };
-    clientMap[tx.client].orders++; clientMap[tx.client].total += (tx.total || 0); clientMap[tx.client].remaining += (tx.remaining || 0);
+    // استخدم المبلغ الفعلي الداخل للخزنة (بعد خصم الشحن الفعلي)
+    const netAmount = Math.max(0, (tx.total || 0) - (Number(tx.actualShipCost) || 0));
+    clientMap[tx.client].orders++;
+    clientMap[tx.client].total += netAmount;
+    clientMap[tx.client].remaining += Math.max(0, (tx.remaining || 0) - (Number(tx.actualShipCost) || 0));
     if (!clientMap[tx.client].phone && tx.phone) clientMap[tx.client].phone = tx.phone;
   });
   return Object.values(clientMap);
@@ -5383,22 +5963,37 @@ const debouncedRenderClients = debounce(() => { clientsPage = 1; renderClients()
 
 function openClientProfile(name) {
   const txs = transactions.filter(t => t.client === name).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  const total = txs.reduce((s, t) => s + (t.total || 0), 0);
-  const remaining = txs.reduce((s, t) => s + (t.remaining || 0), 0);
+  const isReturnTx = t => t.type === 'مرتجع مبيعات' || t.type === 'مرتجع';
+  const salesTxs = txs.filter(t => t.type === 'مبيعات');
+  const returnTxs = txs.filter(t => isReturnTx(t));
+
+  // حساب المبيعات: المبلغ الفعلي الداخل للخزنة (بعد خصم الشحن الفعلي الكامل)
+  const salesTotal = salesTxs.reduce((s, t) => s + Math.max(0, (t.total || 0) - (Number(t.actualShipCost) || 0)), 0);
+  const totalActualShipping = salesTxs.reduce((s, t) => s + (Number(t.actualShipCost) || 0), 0);
+
+  const returnsTotal = returnTxs.reduce((s, t) => s + (t.total || 0), 0);
+  const netTotal = Math.max(0, salesTotal - returnsTotal);
+  const remaining = salesTxs.reduce((s, t) => s + (t.remaining || 0), 0);
+  const returnsRow = returnTxs.length ? `<div class="stat-card card" style="border-top:3px solid #ea580c"><div class="stat-val" style="color:#ea580c">↩️ ${returnTxs.length}</div><div class="stat-label">المرتجعات (${fmtJ(returnsTotal)})</div></div>` : '';
+  const shipRow = totalActualShipping > 0 ? `<div class="stat-card card" style="border-top:3px solid #06b6d4"><div class="stat-val" style="color:#06b6d4">🚚 ${fmtJ(totalActualShipping)}</div><div class="stat-label">الشحن الفعلي</div></div>` : '';
   openModal(`<h3>${esc(name)}</h3>
-    <div class="grid grid-3 gap-12 mb-16">
-      <div class="stat-card card"><div class="stat-val">${txs.length}</div><div class="stat-label">الطلبات</div></div>
-      <div class="stat-card card"><div class="stat-val text-green">${fmtJ(total)}</div><div class="stat-label">الإجمالي</div></div>
+    <div class="grid grid-${returnTxs.length || totalActualShipping > 0 ? 4 : 3} gap-12 mb-16">
+      <div class="stat-card card"><div class="stat-val">${salesTxs.length}</div><div class="stat-label">الطلبات</div></div>
+      <div class="stat-card card"><div class="stat-val text-green">${fmtJ(netTotal)}</div><div class="stat-label">الإجمالي الصافي</div></div>
+      ${returnsRow}
+      ${shipRow}
       <div class="stat-card card"><div class="stat-val text-red">${fmtJ(remaining)}</div><div class="stat-label">المتبقي</div></div>
     </div>
-    <div class="overflow-x"><table><thead><tr><th>${t('date')}</th><th>${t('type')}</th><th>${t('colRef')}</th><th>${t('total')}</th><th>${t('colRemaining')}</th><th>${t('status')}</th></tr></thead><tbody>
-    ${txs.map(t => {
-      const isCancelled = isStatusCancelled(t.payStatus) || t.cancelled;
+    <div class="overflow-x"><table><thead><tr><th>${t('date')}</th><th>${t('type')}</th><th>${t('colRef')}</th><th>الفاتورة</th><th>الصافي المدفوع</th><th>${t('colRemaining')}</th><th>${t('status')}</th></tr></thead><tbody>
+    ${txs.map(tx => {
+      const isCancelled = isStatusCancelled(tx.payStatus) || tx.cancelled;
       const rowStyle = isCancelled ? 'style="opacity:0.6;text-decoration:line-through"' : '';
-      const commentBadge = (t.comments && t.comments.length) ? `<span style="display:inline-block;margin-right:4px;padding:2px 6px;background:rgba(59,130,246,.15);color:#3b82f6;border-radius:4px;font-size:.7rem;font-weight:600;cursor:pointer" title="${t.comments.length} تعليق" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> ${t.comments.length}</span>` : '';
-      return `<tr ${rowStyle}><td>${fmtDate(t.date)}</td><td>${typeBadge(t.type)}</td><td>${esc(t.ref || '-')}</td><td>${fmtJ(t.total)}</td><td>${fmtJ(t.remaining)}</td><td>${commentBadge}${statusBadge(t.payStatus)}</td></tr>`;
+      const commentBadge = (tx.comments && tx.comments.length) ? `<span style="display:inline-block;margin-right:4px;padding:2px 6px;background:rgba(59,130,246,.15);color:#3b82f6;border-radius:4px;font-size:.7rem;font-weight:600;cursor:pointer" title="${tx.comments.length} تعليق" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> ${tx.comments.length}</span>` : '';
+      const netAmount = Math.max(0, (tx.total || 0) - (Number(tx.actualShipCost) || 0));
+      const shipNote = tx.type === 'مبيعات' && (Number(tx.actualShipCost) || 0) > 0 ? `<div style="font-size:.7rem;color:var(--muted);margin-top:2px">خصم شحن: ${fmtJ(Number(tx.actualShipCost))}</div>` : '';
+      return `<tr ${rowStyle}><td>${fmtDate(tx.date)}</td><td>${typeBadge(tx.type)}</td><td>${esc(tx.ref || '-')}</td><td>${fmtJ(tx.total)}</td><td><div>${fmtJ(netAmount)}</div>${shipNote}</td><td>${fmtJ(tx.remaining)}</td><td>${commentBadge}${statusBadge(tx.payStatus)}</td></tr>`;
     }).join('')}
-    </tbody></table></div>`, 'max-width:700px');
+    </tbody></table></div>`, 'max-width:800px');
 }
 
 /* Products */
@@ -6159,6 +6754,9 @@ async function rejectCancelRequest(txId) {
 function renderReturnApprovalCard(r) {
   const isPending = r.status === 'معلق';
   const isEx = r.requestKind === 'exchange';
+  // جلب الفاتورة الأصلية من الحركة الأصلية
+  const originalTx = transactions.find(t => t._id === r.originalTransactionId);
+  const originalInvoiceTotal = originalTx ? (originalTx.total || 0) : (r.total || 0);
   const statusBadge = r.status === 'معلق' ? '<span class="badge badge-orange">معلق</span>' : r.status === 'معتمد' ? '<span class="badge badge-green">معتمد</span>' : '<span class="badge badge-red">مرفوض</span>';
   const reasonBadge = `<span class="badge badge-purple">${esc(r.reason)}</span>`;
   const typeBadge = isEx ? '<span class="badge badge-purple" style="font-size:.65rem">استبدال</span>' : '<span class="badge badge-purple" style="font-size:.65rem">مرتجع</span>';
@@ -6172,7 +6770,7 @@ function renderReturnApprovalCard(r) {
     ? (diff > 0 ? '<div class="text-xs text-muted" style="margin-top:4px">بعد الاعتماد: المخزن +مرتجع / −بدائل؛ <strong>خصم فوري</strong> لفرق لصالح العميل من قسم الخزنة الذي اخترته + تسجيل مصروف معتمد</div>'
       : diff < 0 ? '<div class="text-xs text-muted" style="margin-top:4px">بعد الاعتماد: المخزن +مرتجع / −بدائل؛ حركة البديل <strong>معلقة</strong> حتى يدفع العميل الفرق ثم التحصيل يضيف للخزنة</div>'
       : '<div class="text-xs text-muted" style="margin-top:4px">بعد الاعتماد: تعديل مخزون فقط (مرتجع وبدائل بنفس القيمة التقريبية) دون فرق نقدي يُسجَّل</div>')
-    : (!isEx && r.status === 'معلق' ? '<div class="text-xs text-muted" style="margin-top:4px">طلب معلق — عند الاعتماد: إعادة أصناف للمخزن + خصم من الخزنة <strong>مجموع أسعار الأصناف المرتجعة فقط</strong> (بدون شحن) رداً للعميل</div>' : '');
+    : (!isEx && r.status === 'معلق' ? '<div class="text-xs text-muted" style="margin-top:4px">طلب معلق — عند الاعتماد: إعادة أصناف للمخزن + خصم من الخزنة <strong>المبلغ المحدد أعلاه</strong> رداً للعميل</div>' : '');
   const doneHint = r.status === 'معتمد' ? '<div class="text-xs" style="margin-top:6px;color:var(--green);font-weight:600">تمت الموافقة — مُنفَّذ في سجل الحركات والمخزن حسب النوع</div>' : '';
   const diffLine = isEx ? `<div class="text-sm" style="margin-top:4px">الفرق: <strong>${fmtJ(Math.abs(diff))}</strong> ${diff > 0 ? '<span class="text-green">(للعميل — علينا)</span>' : diff < 0 ? '<span class="text-orange">(على العميل — للشركة)</span>' : '<span class="text-muted">(لا فرق)</span>'} — بدائل: ${fmtJ(r.exchangeTotal || 0)}</div>${diffHint}` : '';
   const vr = String(r.vaultRefundAccount || '').trim();
@@ -6196,8 +6794,14 @@ function renderReturnApprovalCard(r) {
         ${approvedInfo}
       </div>
       <div style="text-align:left">
-        <div style="font-size:1.4rem;font-weight:700;color:#ea580c">${fmtJ(r.total)}</div>
-        ${!isEx ? '<div class="text-xs" style="margin-top:2px;text-align:left;color:#6b7280">💰 مبلغ الرد للعميل</div>' : '<div class="text-xs" style="margin-top:2px;text-align:left;color:#6b7280">🔄 قيمة الاستبدال</div>'}
+        <div style="background:var(--surface2);padding:10px;border-radius:8px;margin-top:8px">
+          <div style="font-size:.85rem;color:var(--muted);margin-bottom:4px">مبلغ الرد المحدد</div>
+          <div style="border:2px solid var(--primary);padding:8px;border-radius:6px;margin-bottom:6px">
+            <div style="font-size:1.4rem;font-weight:800;color:var(--green)">${fmtJ(Number(r.total) || 0)}</div>
+            <div style="font-size:.7rem;color:var(--muted);margin-top:4px">هذا المبلغ سيُخصم من قسم الخزنة المختار</div>
+          </div>
+        </div>
+        ${!isEx ? '<div class="text-xs" style="margin-top:6px;text-align:left;color:#6b7280">رد للعميل من الخزنة المحددة</div>' : '<div class="text-xs" style="margin-top:6px;text-align:left;color:#6b7280">قيمة الاستبدال</div>'}
         <div style="margin-top:8px">${actions}</div>
       </div>
     </div>
@@ -6219,10 +6823,10 @@ async function rejectExpenseFromAppr(id) {
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function approveReturnFromAppr(id) {
-  if (!confirm('اعتماد الطلب؟ يُنفَّذ مرة واحدة:\n• استرجاع: مخزن + خصم من الخزنة = قيمة الأصناف المرتجعة فقط (بدون شحن).\n• استبدال: مخزن + فرق سعر الأصناف: تحصيل أو مصروف معلق حسب الاتجاه.')) return;
+  if (!confirm('اعتماد طلب الاسترجاع؟\n\nسيتم خصم مبلغ الرد المحدد من الخزنة.')) return;
   try {
     await api('/returns/' + id + '/approve', { method: 'POST', body: '{}' });
-    toast('تم الاعتماد — راجع سجل الحركات والخزنة؛ الاسترجاع يظهر كحركة مرتجع، وفرق الاستبدال لصالح العميل يُخصم مباشرة ويُسجَّل كمصروف معتمد');
+    toast('تم اعتماد الاسترجاع — تم خصم مبلغ الرد من الخزنة');
     returnRequests = await api('/returns').catch(() => returnRequests);
     transactions = await api('/transactions').catch(() => transactions);
     expenses = await api('/expenses').catch(() => expenses);
@@ -6468,6 +7072,8 @@ function renderReportKPIs(r) {
   const kpis = [
     { label: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> المبيعات', val: fmtJ(r.totalSales), color: '#10b981', bgColor: '#f0fdf4', hint: 'إجمالي المبيعات' },
     { label: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg> المشتريات', val: fmtJ(r.totalPurchases), color: '#0066cc', bgColor: '#f0f7ff', hint: 'إجمالي المشتريات' },
+    { label: '↩️ المرتجعات', val: `${r.returnCount || 0} • ${fmtJ(r.totalReturns || 0)}`, color: '#ea580c', bgColor: '#fef3f2', hint: 'عدد المرتجعات والإجمالي' },
+    { label: '🚚 الشحن', val: `${fmtJ(r.totalShipping || 0)}${(r.totalShipLoss||0)>0?' — فرق: '+fmtJ(r.totalShipLoss):''}`, color: '#64748b', bgColor: '#f8fafc', hint: 'الشحن المحصل من العملاء — الفرق المتحمل من الشركة' },
     { label: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> المحصل', val: fmtJ(r.totalDeposit), color: '#059669', bgColor: '#ecfdf5', hint: 'المبالغ المحصلة من العملاء' },
     { label: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> المتبقي', val: fmtJ(r.totalRemaining), color: '#f59e0b', bgColor: '#fffbeb', hint: 'المبالغ المتبقية على العملاء' },
     { label: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> الربح الصافي', val: fmtJ(r.netProfit), color: '#6d28d9', bgColor: '#f5f3ff', hint: 'الربح بعد خصم المصاريف' },
