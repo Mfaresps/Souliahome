@@ -304,6 +304,10 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 .tx-product-row .stock-info{font-weight:600}
 .tx-product-row .stock-warning{color:var(--red);animation:pulse-warning 1.5s ease-in-out infinite}
 @keyframes pulse-warning{0%,100%{opacity:1}50%{opacity:0.6}}
+.tx-product-row .stock-available{color:#16a34a;display:inline-flex;align-items:center;gap:4px;animation:pulse-live 2.2s ease-in-out infinite}
+@keyframes pulse-live{0%,100%{opacity:1;text-shadow:0 0 0 #16a34a}50%{opacity:.72;text-shadow:0 0 6px rgba(22,163,74,.45)}}
+.stock-live-dot{width:6px;height:6px;border-radius:50%;background:#16a34a;display:inline-block;animation:dot-pulse 2.2s ease-in-out infinite;flex-shrink:0}
+@keyframes dot-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.6}}
 .input-with-prefix{position:relative;display:flex;align-items:center}
 .input-with-prefix .prefix{position:absolute;right:10px;font-weight:700;color:var(--muted);font-size:.9rem;pointer-events:none;z-index:1}
 .input-with-prefix input{padding-right:26px}
@@ -811,9 +815,9 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
             <th data-i18n="colClientSupplier">العميل / المورد</th>
             <th style="text-align:center" data-i18n="colRef">المرجع</th>
             <th data-i18n="colEmployee">الموظف</th>
-            <th style="text-align:center" data-i18n="total">الإجمالي</th>
-            <th style="text-align:center" data-i18n="colPaid">المدفوع</th>
-            <th style="text-align:center" data-i18n="colRemaining">المتبقي</th>
+            <th style="text-align:center">إجمالي الفاتورة</th>
+            <th style="text-align:center">المدفوع للخزنة</th>
+            <th style="text-align:center">باقي التحصيل</th>
             <th style="text-align:center" data-i18n="status">الحالة</th>
             <th style="width:52px;text-align:center"></th>
           </tr>
@@ -1817,7 +1821,7 @@ async function api(path, options = {}) {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     const msg = Array.isArray(err.message) ? err.message.join(', ') : (err.message || 'خطأ في الطلب');
-    if (res.status === 401 && !path.startsWith('/auth/login')) {
+    if (res.status === 401 && !path.startsWith('/auth/login') && !path.includes('verify-vault-password')) {
       doLogout();
     }
     throw new Error(msg);
@@ -2853,7 +2857,7 @@ function renderTxItems() {
     const effectiveAvailable = available !== null ? Math.max(0, available - otherItemsQty) : null;
     const isOverStock = txType === 'مبيعات' && item.productId && item.qty > effectiveAvailable;
     const stockInfo = txType === 'مبيعات' && item.productId
-      ? `<div class="stock-info ${isOverStock ? 'stock-warning' : ''}" style="font-size:0.75rem;margin-top:2px;color:${isOverStock ? 'var(--red)' : 'var(--muted)'}">المتاح: ${effectiveAvailable}${isOverStock ? ' <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' : ''}</div>`
+      ? `<div class="stock-info ${isOverStock ? 'stock-warning' : ''}" style="font-size:0.75rem;margin-top:3px">${isOverStock ? `<span style="color:var(--red)">المتاح: ${effectiveAvailable} <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>` : `<span class="stock-available"><span class="stock-live-dot"></span>المتاح: ${effectiveAvailable}</span>`}</div>`
       : '';
     const product = item.productId ? products.find(p => p._id === item.productId) : null;
     const itemTotal = (item.qty || 0) * (item.price || 0);
@@ -3975,7 +3979,10 @@ function renderMovementTxRow(tx) {
     </td>
     <td>${movementRefCell(tx)}</td>
     <td>${esc(tx.employee || '-')}</td>
-    <td>${fmtJ(tx.total)}</td>
+    <td>
+      <span style="font-weight:700">${fmtJ(tx.total)}</span>
+      ${tx.type === 'مبيعات' && (Number(tx.shipCost) || 0) > 0 ? `<div style="font-size:.7rem;color:var(--muted);margin-top:2px">شحن: ${fmtJ(Number(tx.actualShipCost || tx.shipCost))}</div>` : ''}
+    </td>
     <td>${exchangeSalePaidDisplayAmount(tx)}</td>
     <td class="${(tx.remaining || 0) > 0 ? 'text-red' : ''}">${fmtJ(tx.remaining)}</td>
     <td>${movementStatusCell(tx)}</td>
