@@ -822,16 +822,19 @@ export class TransactionsService {
     const lowStockCount = inventory.filter((p) => p.status !== 'ok').length;
     const salesTx = activeTx.filter((t) => t.type === 'مبيعات');
 
-    // احسب المرتجعات المقبولة
+    // احسب المرتجعات المقبولة (مرة واحدة فقط)
     let totalReturns = 0;
+    let returnedProfit = 0;
+    let approvedReturns: any[] = [];
     try {
       const returnsModel = this.transactionModel.collection.db.collection('returnrequests');
-      const returns: any[] = await returnsModel.find({
+      approvedReturns = await returnsModel.find({
         status: 'معتمد'
       }).toArray();
-      totalReturns = returns.reduce((s, r) => s + (Number(r.total) || 0), 0);
+      totalReturns = approvedReturns.reduce((s, r) => s + (Number(r.total) || 0), 0);
     } catch (e) {
       totalReturns = 0;
+      approvedReturns = [];
     }
 
     const totalSales = Math.max(0, salesTx.reduce((sum, t) => sum + t.total, 0) - totalReturns);
@@ -852,11 +855,8 @@ export class TransactionsService {
       });
     });
 
-    // اخصم ربح المنتجات المرتجعة من الربح الإجمالي
-    let returnedProfit = 0;
+    // اخصم ربح المنتجات المرتجعة من الربح الإجمالي (استخدم البيانات المجلوبة بالفعل)
     try {
-      const returnsModel = this.transactionModel.collection.db.collection('returnrequests');
-      const approvedReturns: any[] = await returnsModel.find({ status: 'معتمد' }).toArray();
       approvedReturns.forEach((ret) => {
         (ret.items || []).forEach((item: any) => {
           const p = products.find((x) => x.code === item.code);
@@ -922,8 +922,10 @@ export class TransactionsService {
       this.transactionAddsSupplierPurchases(t),
     );
 
-    // احسب المرتجعات المقبولة
+    // احسب المرتجعات المقبولة (مرة واحدة فقط)
     let totalReturns = 0;
+    let returnedProfit = 0;
+    let approvedReturns: any[] = [];
     try {
       const returnsModel = this.transactionModel.collection.db.collection('returnrequests');
       const returnQuery: any = { status: 'معتمد' };
@@ -932,11 +934,14 @@ export class TransactionsService {
         if (!returnQuery.createdAt) returnQuery.createdAt = {};
         returnQuery.createdAt.$lte = new Date(to);
       }
-      const returns: any[] = await returnsModel.find(returnQuery).toArray();
-      totalReturns = returns.reduce((s, r) => s + (Number(r.total) || 0), 0);
+      approvedReturns = await returnsModel.find(returnQuery).toArray();
+      console.log(`[getReports] Found ${approvedReturns.length} approved returns`);
+      totalReturns = approvedReturns.reduce((s, r) => s + (Number(r.total) || 0), 0);
+      console.log(`[getReports] totalReturns: ${totalReturns}`);
     } catch (e) {
-      // If returns collection doesn't exist, just use 0
+      console.error('[getReports] Error fetching returns:', e);
       totalReturns = 0;
+      approvedReturns = [];
     }
 
     const totalSales = Math.max(0, salesTx.reduce((s, t) => s + t.total, 0) - totalReturns);
@@ -968,17 +973,8 @@ export class TransactionsService {
       });
     });
 
-    // اخصم ربح المنتجات المرتجعة من الربح الإجمالي
-    let returnedProfit = 0;
+    // اخصم ربح المنتجات المرتجعة من الربح الإجمالي (استخدم البيانات المجلوبة بالفعل)
     try {
-      const returnsModel = this.transactionModel.collection.db.collection('returnrequests');
-      const returnQuery: any = { status: 'معتمد' };
-      if (from) returnQuery.createdAt = { $gte: new Date(from) };
-      if (to) {
-        if (!returnQuery.createdAt) returnQuery.createdAt = {};
-        returnQuery.createdAt.$lte = new Date(to);
-      }
-      const approvedReturns: any[] = await returnsModel.find(returnQuery).toArray();
       approvedReturns.forEach((ret) => {
         (ret.items || []).forEach((item: any) => {
           const p = products.find((x) => x.code === item.code);
@@ -987,11 +983,14 @@ export class TransactionsService {
           returnedProfit += profit;
         });
       });
+      console.log(`[getReports] returnedProfit: ${returnedProfit}`);
     } catch (e) {
+      console.error('[getReports] Error calculating returned profit:', e);
       returnedProfit = 0;
     }
 
     grossProfit = Math.max(0, grossProfit - returnedProfit);
+    console.log(`[getReports] Final grossProfit: ${grossProfit}`);
     const netProfit = grossProfit - expenseTotal;
     return {
       totalSales,
