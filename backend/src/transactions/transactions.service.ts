@@ -851,6 +851,25 @@ export class TransactionsService {
           (item.price - (product ? product.buyPrice : 0)) * item.qty;
       });
     });
+
+    // اخصم ربح المنتجات المرتجعة من الربح الإجمالي
+    let returnedProfit = 0;
+    try {
+      const returnsModel = this.transactionModel.collection.db.collection('returnrequests');
+      const approvedReturns: any[] = await returnsModel.find({ status: 'معتمد' }).toArray();
+      approvedReturns.forEach((ret) => {
+        (ret.items || []).forEach((item: any) => {
+          const p = products.find((x) => x.code === item.code);
+          const cost = p ? p.buyPrice : 0;
+          const profit = (item.price - cost) * item.qty;
+          returnedProfit += profit;
+        });
+      });
+    } catch (e) {
+      returnedProfit = 0;
+    }
+
+    grossProfit = Math.max(0, grossProfit - returnedProfit);
     const netProfit = grossProfit - expenseTotal;
     const salesMap: Record<string, number> = {};
     salesTx.forEach((tx) => {
@@ -948,6 +967,31 @@ export class TransactionsService {
         prodProfitMap[item.name].profit += profit;
       });
     });
+
+    // اخصم ربح المنتجات المرتجعة من الربح الإجمالي
+    let returnedProfit = 0;
+    try {
+      const returnsModel = this.transactionModel.collection.db.collection('returnrequests');
+      const returnQuery: any = { status: 'معتمد' };
+      if (from) returnQuery.createdAt = { $gte: new Date(from) };
+      if (to) {
+        if (!returnQuery.createdAt) returnQuery.createdAt = {};
+        returnQuery.createdAt.$lte = new Date(to);
+      }
+      const approvedReturns: any[] = await returnsModel.find(returnQuery).toArray();
+      approvedReturns.forEach((ret) => {
+        (ret.items || []).forEach((item: any) => {
+          const p = products.find((x) => x.code === item.code);
+          const cost = p ? p.buyPrice : 0;
+          const profit = (item.price - cost) * item.qty;
+          returnedProfit += profit;
+        });
+      });
+    } catch (e) {
+      returnedProfit = 0;
+    }
+
+    grossProfit = Math.max(0, grossProfit - returnedProfit);
     const netProfit = grossProfit - expenseTotal;
     return {
       totalSales,
