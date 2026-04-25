@@ -6180,24 +6180,24 @@ function renderReturnApprovalCard(r) {
   const vaultLine = (vr || vc) ? '<div class="text-xs" style="margin-top:8px;padding:8px;background:var(--surface2);border-radius:8px;line-height:1.5">' + (vr ? '<div><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 2 22 2 12 22 2 2"/></svg> <strong>سحب/رد للعميل من:</strong> ' + esc(vr) + '</div>' : '') + (vc ? '<div style="margin-top:' + (vr ? '4px' : '0') + '"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 2 22 22 2 22 12 2"/></svg> <strong>إيداع تحصيل الفرق (للشركة) في:</strong> ' + esc(vc) + '</div>' : '') + '</div>' : '';
   const daysInfo = r.daysRemaining ? `<span class="badge badge-green" style="font-size:.6rem">متبقي ${r.daysRemaining} يوم</span>` : '';
   const borderStyle = isPending ? 'border-right:4px solid var(--purple)' : (r.status === 'معتمد' ? 'border-right:4px solid var(--green)' : 'border-right:4px solid var(--red)');
-  return `<div class="card mb-16" style="${borderStyle}">
+  return `<div class="card mb-16" style="background:linear-gradient(135deg,rgba(249,115,22,.04),rgba(249,115,22,.02));${borderStyle}">
     <div class="flex-between">
       <div>
-        <div class="flex gap-8" style="align-items:center;flex-wrap:wrap">${typeBadge}<strong style="font-size:1rem">${esc(r.client)}</strong>${statusBadge} ${daysInfo}</div>
-        <div class="text-sm text-muted" style="margin-top:6px">الفاتورة: #${esc(r.originalRef || '-')} — ${fmtDate(r.originalDate)}</div>
-        <div class="text-sm" style="margin-top:4px">مرتجع: ${itemsList}</div>
-        ${exList ? `<div class="text-sm" style="margin-top:4px">بدائل: ${exList}</div>` : ''}
+        <div class="flex gap-8" style="align-items:center;flex-wrap:wrap"><span style="font-size:1.2rem">${isEx ? '🔄' : '↩️'}</span><strong style="font-size:1rem">${esc(r.client)}</strong>${statusBadge} ${daysInfo}</div>
+        <div class="text-sm text-muted" style="margin-top:6px">📋 الفاتورة الأصلية: #${esc(r.originalRef || '-')} — ${fmtDate(r.originalDate)}</div>
+        <div class="text-sm" style="margin-top:4px"><strong style="color:#ea580c">الأصناف المرتجعة:</strong> ${itemsList}</div>
+        ${exList ? `<div class="text-sm" style="margin-top:4px;color:#f59e0b"><strong>البدائل المقترحة:</strong> ${exList}</div>` : ''}
         ${diffLine}
-        <div class="text-sm" style="margin-top:4px">السبب: ${reasonBadge} ${r.reasonDetails ? '<span class="text-muted">— ' + esc(r.reasonDetails) + '</span>' : ''}</div>
+        <div class="text-sm" style="margin-top:4px"><strong>سبب الاسترجاع:</strong> ${reasonBadge} ${r.reasonDetails ? '<span class="text-muted">— ' + esc(r.reasonDetails) + '</span>' : ''}</div>
         ${vaultLine}
-        <div class="text-xs text-muted" style="margin-top:4px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> بواسطة: ${esc(r.requestedBy || '-')} — ${fmtDate(r.createdAt)}</div>
+        <div class="text-xs text-muted" style="margin-top:4px">📝 طلب من: ${esc(r.requestedBy || '-')} — ${fmtDate(r.createdAt)}</div>
         ${doneHint}
-        ${r.rejectedReason ? `<div class="text-xs text-red" style="margin-top:4px">سبب الرفض: ${esc(r.rejectedReason)}</div>` : ''}
+        ${r.rejectedReason ? `<div class="text-xs text-red" style="margin-top:4px">❌ سبب الرفض: ${esc(r.rejectedReason)}</div>` : ''}
         ${approvedInfo}
       </div>
       <div style="text-align:left">
-        <div style="font-size:1.3rem;font-weight:700;color:var(--purple)">${fmtJ(r.total)}</div>
-        ${!isEx ? '<div class="text-xs text-muted" style="margin-top:2px;text-align:left">مبلغ الرد للعميل: أصناف فقط — بدون شحن</div>' : ''}
+        <div style="font-size:1.4rem;font-weight:700;color:#ea580c">${fmtJ(r.total)}</div>
+        ${!isEx ? '<div class="text-xs" style="margin-top:2px;text-align:left;color:#6b7280">💰 مبلغ الرد للعميل</div>' : '<div class="text-xs" style="margin-top:2px;text-align:left;color:#6b7280">🔄 قيمة الاستبدال</div>'}
         <div style="margin-top:8px">${actions}</div>
       </div>
     </div>
