@@ -823,11 +823,16 @@ export class TransactionsService {
     const salesTx = activeTx.filter((t) => t.type === 'مبيعات');
 
     // احسب المرتجعات المقبولة
-    const returnsModel = this.transactionModel.collection.db.collection('returnrequests');
-    const returns: any[] = await returnsModel.find({
-      status: 'معتمد'
-    }).toArray().catch(() => []);
-    const totalReturns = returns.reduce((s, r) => s + (Number(r.total) || 0), 0);
+    let totalReturns = 0;
+    try {
+      const returnsModel = this.transactionModel.collection.db.collection('returnrequests');
+      const returns: any[] = await returnsModel.find({
+        status: 'معتمد'
+      }).toArray();
+      totalReturns = returns.reduce((s, r) => s + (Number(r.total) || 0), 0);
+    } catch (e) {
+      totalReturns = 0;
+    }
 
     const totalSales = Math.max(0, salesTx.reduce((sum, t) => sum + t.total, 0) - totalReturns);
     const totalPurchases = activeTx
@@ -899,13 +904,21 @@ export class TransactionsService {
     );
 
     // احسب المرتجعات المقبولة
-    const returnsModel = this.transactionModel.collection.db.collection('returnrequests');
-    const returns: any[] = await returnsModel.find({
-      status: 'معتمد',
-      ...(from && { createdAt: { $gte: new Date(from) } }),
-      ...(to && { createdAt: { $lte: new Date(to) } })
-    }).toArray().catch(() => []);
-    const totalReturns = returns.reduce((s, r) => s + (Number(r.total) || 0), 0);
+    let totalReturns = 0;
+    try {
+      const returnsModel = this.transactionModel.collection.db.collection('returnrequests');
+      const returnQuery: any = { status: 'معتمد' };
+      if (from) returnQuery.createdAt = { $gte: new Date(from) };
+      if (to) {
+        if (!returnQuery.createdAt) returnQuery.createdAt = {};
+        returnQuery.createdAt.$lte = new Date(to);
+      }
+      const returns: any[] = await returnsModel.find(returnQuery).toArray();
+      totalReturns = returns.reduce((s, r) => s + (Number(r.total) || 0), 0);
+    } catch (e) {
+      // If returns collection doesn't exist, just use 0
+      totalReturns = 0;
+    }
 
     const totalSales = Math.max(0, salesTx.reduce((s, t) => s + t.total, 0) - totalReturns);
     const totalPurchases = pursTx.reduce((s, t) => s + t.total, 0);
