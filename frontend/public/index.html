@@ -6764,24 +6764,37 @@ function switchMovTab(tab, btn) {
   if (tab === 'archive') loadArchivedMovements();
 }
 
+function stripHtml(val) {
+  if (typeof val !== 'string') return val;
+  const div = document.createElement('div');
+  div.innerHTML = val;
+  return div.textContent || div.innerText || '';
+}
+
 function txToExcelRow(tx, columns) {
+  const paidAmount = !isMovExchangeSale(tx)
+    ? Number(tx.deposit) || 0
+    : (Number(tx.remaining) || 0) > 0
+      ? Number(tx.remaining) || 0
+      : Number(tx.deposit) || 0;
+
   const baseRow = {
     'التاريخ': (tx.date || '').slice(0, 10),
-    'التوقيت': tx.createdAt ? fmtDateTime(tx.createdAt) : '',
-    'نوع العرض': movementDisplayKindLabel(tx),
-    'نوع النظام': tx.type,
-    'العميل/المورد': tx.client,
+    'التوقيت': tx.createdAt ? stripHtml(fmtDateTime(tx.createdAt)) : '',
+    'نوع العرض': stripHtml(movementDisplayKindLabel(tx)),
+    'نوع النظام': tx.type || '',
+    'العميل/المورد': tx.client || '',
     'الهاتف': tx.phone || '',
-    'مرجع الفاتورة': movementBaseRef(tx.ref || '') || tx.ref || '',
-    'مرجع العملية': tx.ref,
-    'الموظف': tx.employee,
-    'الإجمالي': tx.total,
-    'المدفوع': exchangeSalePaidDisplayAmount(tx),
-    'المتبقي': tx.remaining,
-    'الحالة': isExchangeSalePendingCollect(tx) ? 'انتظار التحصيل (فرق استبدال — للشركة)' : tx.payStatus === 'معلق' ? 'في انتظار التحصيل من شركة الشحن' : tx.payStatus,
+    'مرجع الفاتورة': stripHtml(movementBaseRef(tx.ref || '') || tx.ref || ''),
+    'مرجع العملية': tx.ref || '',
+    'الموظف': tx.employee || '',
+    'الإجمالي': tx.total || 0,
+    'المدفوع': paidAmount,
+    'المتبقي': tx.remaining || 0,
+    'الحالة': isExchangeSalePendingCollect(tx) ? 'انتظار التحصيل (فرق استبدال — للشركة)' : tx.payStatus === 'معلق' ? 'في انتظار التحصيل من شركة الشحن' : tx.payStatus || '',
     'طريقة الدفع': tx.depMethod || '',
     'الملاحظات': tx.notes || '',
-    'الأصناف': ((tx.items || []).map(it => `${it.name} (${it.qty} × ${it.price} = ${it.total})`).join('; ')) || '',
+    'الأصناف': ((tx.items || []).map(it => `${stripHtml(it.name || '')} (${it.qty} × ${it.price} = ${it.total})`).join('; ')) || '',
   };
   if (!columns) return baseRow;
   const filtered = {};
