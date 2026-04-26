@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" id="ip_Layer1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 200 200" style="enable-background:new 0 0 200 200;" xml:space="preserve">
+<style type="text/css">
+  .ip0{fill:#4F46E5;} .ip1{fill:#6366F1;} .ip2{fill:#818CF8;} .ip3{fill:#FFFFFF;} .ip4{fill:#C7D2FE;}
+</style>
+<circle class="ip0" cx="100" cy="100" r="100"/>
+<circle class="ip1" cx="100" cy="100" r="84"/>
+<!-- Arrow symbol representing instant payment/transfer -->
+<g transform="translate(100,100)">
+  <!-- Left arrow / send -->
+  <path class="ip3" d="M-38,-18 L-8,-18 L-8,-28 L18,0 L-8,28 L-8,18 L-38,18 Z"/>
+  <!-- Right arrow / receive -->
+  <path class="ip4" d="M8,-12 L38,-12 L38,12 L8,12 L8,22 L-18,0 L8,-22 Z" opacity="0.7"/>
+</g>
+<!-- "iP" text -->
+<text x="100" y="158" font-family="Arial,sans-serif" font-size="22" font-weight="800" fill="#FFFFFF" text-anchor="middle" letter-spacing="1">InstaPay</text>
+</svg>

@@ -49,6 +49,9 @@ tr:hover{background:var(--primary-pale)}
 .actions-dd .dd-menu{display:none}
 .dd-menu-portal{position:fixed;min-width:180px;background:var(--bg);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06);z-index:9000;padding:6px;opacity:0;transform:scale(.92) translateY(-4px);pointer-events:none;transition:opacity .18s ease,transform .18s ease;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);max-height:320px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
 body.dark-mode .dd-menu-portal{background:rgba(22,29,24,.92);box-shadow:0 12px 40px rgba(0,0,0,.4),0 2px 8px rgba(0,0,0,.2)}
+body.dark-mode .type-btn.active{background:var(--surface2);color:var(--accent);box-shadow:0 1px 6px rgba(0,0,0,.4)}
+body.dark-mode .tx-item-card{background:var(--surface2)}
+body.dark-mode .tx-summary{background:var(--surface2)}
 .dd-menu-portal.show{opacity:1;transform:scale(1) translateY(0);pointer-events:auto}
 .dd-menu-portal::-webkit-scrollbar{width:4px}
 .dd-menu-portal::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
@@ -170,7 +173,7 @@ body.dark-mode .settings-card:hover{box-shadow:0 4px 24px rgba(0,0,0,.25)}
 #login-page .login-box{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 #login-page h1{color:#00311e;font-size:2rem;margin-bottom:4px}
 #login-page p{color:#6b8c78;font-size:.85rem;margin-bottom:24px}
-#login-page input{margin-bottom:14px}
+#login-page input[type="text"],#login-page input[type="password"]{margin-bottom:14px}
 #login-page .btn-primary{width:100%;padding:12px}
 .login-pass-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.2rem;padding:4px 8px;color:#666;transition:all .2s;user-select:none}
 .login-pass-toggle:hover{color:#333;transform:translateY(-50%) scale(1.15)}
@@ -179,24 +182,39 @@ body.dark-mode .settings-card:hover{box-shadow:0 4px 24px rgba(0,0,0,.25)}
 #header .logo{font-size:1.3rem;font-weight:900;letter-spacing:1px;cursor:pointer;user-select:none}
 #header .logo:hover{opacity:.92}
 #header #header-date{font-size:.78rem;opacity:.85;font-weight:500;white-space:nowrap}
-#header .header-search{flex:1;max-width:400px;position:relative}
-#header .header-search input{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:7px 16px;font-size:.82rem;width:100%}
-#header .header-search input::placeholder{color:rgba(255,255,255,.5)}
-#header .header-search input:focus{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3);outline:none}
-.search-dropdown{position:absolute;top:calc(100% + 6px);right:0;left:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:200;max-height:min(72vh,620px);overflow-y:auto;display:none;color:var(--text)}
-.search-dropdown.active{display:block}
-.search-category{padding:6px 14px;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);background:var(--surface2)}
-.search-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--border)}
+/* ── Mobile search toggle (hidden on desktop) ── */
+.m-search-toggle{display:none;align-items:center;justify-content:center;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.14);border-radius:50%;width:34px;height:34px;min-width:34px;cursor:pointer;color:#fff;flex-shrink:0;transition:background .15s,border-color .15s}
+.m-search-toggle:hover{background:rgba(255,255,255,.18)}
+.m-search-toggle.active{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3)}
+/* ── Global Search Bar ── */
+#header .header-search{flex:1;max-width:420px;position:relative}
+#header .header-search .search-wrap{position:relative;display:flex;align-items:center;width:100%}
+#header .search-icon-btn{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4);pointer-events:none;line-height:0;flex-shrink:0}
+#header .header-search input{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.1);color:#fff;border-radius:24px;padding:8px 38px 8px 34px;font-size:.83rem;width:100%;transition:background .2s,border-color .2s,box-shadow .2s;-webkit-appearance:none}
+#header .header-search input::placeholder{color:rgba(255,255,255,.38)}
+#header .header-search input:focus{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.25);outline:none;box-shadow:0 0 0 3px rgba(255,255,255,.07)}
+#header .search-clear{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.45);background:none;border:none;cursor:pointer;line-height:0;display:none;padding:4px;border-radius:50%;transition:background .15s,color .15s}
+#header .search-clear:hover{color:#fff;background:rgba(255,255,255,.14)}
+#header .search-clear.visible{display:flex;align-items:center;justify-content:center}
+/* ── Search Dropdown ── */
+.search-dropdown{position:absolute;top:calc(100% + 8px);right:0;left:0;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,.16),0 2px 8px rgba(0,0,0,.06);z-index:200;max-height:min(72vh,600px);overflow-y:auto;display:none;color:var(--text);overflow:hidden}
+.search-dropdown.active{display:block;animation:searchDropIn .17s cubic-bezier(.4,0,.2,1)}
+@keyframes searchDropIn{from{opacity:0;transform:translateY(-5px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+.search-category{padding:7px 14px 6px;font-size:.67rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:6px}
+.search-category::before{content:'';display:inline-block;width:3px;height:10px;background:var(--accent);border-radius:2px;flex-shrink:0}
+.search-item{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;transition:background .12s,border-color .12s;border-bottom:1px solid var(--border);border-right:3px solid transparent}
 .search-item:last-child{border-bottom:none}
-.search-item:hover,.search-item.selected{background:var(--primary-pale)}
-.search-item .search-icon{font-size:1.2rem;flex-shrink:0;width:28px;text-align:center}
+.search-item:hover,.search-item.selected{background:var(--primary-pale);border-right-color:var(--accent)}
+.search-item .search-icon{font-size:1.1rem;flex-shrink:0;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--surface2)}
 .search-item .search-info{flex:1;min-width:0}
-.search-item .search-title{font-weight:600;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.search-item .search-subtitle{font-size:.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.search-item .search-meta{font-size:.72rem;color:var(--accent);font-weight:500;flex-shrink:0;text-align:left}
-.search-empty{padding:20px;text-align:center;color:var(--muted);font-size:.85rem}
-.search-hint{padding:8px 14px;font-size:.7rem;color:var(--muted);text-align:center;border-top:1px solid var(--border);background:var(--surface2)}
-.search-loading{padding:20px;text-align:center;color:var(--muted);font-size:.85rem}
+.search-item .search-title{font-weight:600;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.search-item .search-subtitle{font-size:.73rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.search-item .search-meta{font-size:.72rem;color:var(--accent);font-weight:600;white-space:nowrap;flex-shrink:0}
+.search-product-meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0}
+.search-empty{padding:28px 16px;text-align:center;color:var(--muted);font-size:.85rem}
+.search-hint{padding:8px 14px;font-size:.68rem;color:var(--muted);text-align:center;border-top:1px solid var(--border);background:var(--surface2);line-height:1.6}
+.search-loading{padding:22px;text-align:center;color:var(--muted);font-size:.83rem;display:flex;align-items:center;justify-content:center;gap:8px}
+.search-spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .65s linear infinite;flex-shrink:0}
 #header .header-actions{display:flex;align-items:center;gap:10px}
 #header .lang-switch{min-width:90px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#fff;font-size:.82rem;outline:none;cursor:pointer;appearance:none}
 #header .lang-switch option{color:#000}
@@ -311,9 +329,128 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 .input-with-prefix{position:relative;display:flex;align-items:center}
 .input-with-prefix .prefix{position:absolute;right:10px;font-weight:700;color:var(--muted);font-size:.9rem;pointer-events:none;z-index:1}
 .input-with-prefix input{padding-right:26px}
-.tx-summary{background:var(--surface2);border-radius:var(--radius);padding:16px;margin-top:16px}
-.tx-summary .row{display:flex;justify-content:space-between;padding:4px 0;font-size:.85rem}
-.tx-summary .total-row{font-weight:700;font-size:1rem;border-top:2px solid var(--border);padding-top:8px;margin-top:4px}
+/* ── Transaction Form Split Layout ── */
+.tx-page-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.tx-layout{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+.tx-form-col{min-width:0}
+.tx-summary-col{position:sticky;top:calc(72px + 16px)}
+.type-selector{display:flex;gap:5px;background:var(--surface2);padding:5px;border-radius:14px;margin-bottom:0;border:1px solid var(--border)}
+.type-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-weight:600;font-size:.83rem;border:none;cursor:pointer;transition:all .2s;color:var(--muted);background:transparent;white-space:nowrap}
+.type-btn:hover{color:var(--text);background:var(--surface)}
+.type-btn.active{background:#fff;color:var(--primary);box-shadow:0 1px 6px rgba(0,0,0,.12);font-weight:700}
+.tx-section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1.5px solid var(--border)}
+.tx-section-title{font-size:.88rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px}
+.tx-items-actions{display:flex;gap:6px;flex-wrap:wrap}
+.tx-action-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;font-size:.76rem;font-weight:600;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all .15s;white-space:nowrap}
+.tx-action-btn:hover{background:var(--primary-pale);border-color:var(--accent);color:var(--primary)}
+.tx-ps-wrap{background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px;animation:fadeIn .18s}
+.tx-ps-search-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tx-ps-input{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.85rem;background:var(--bg);outline:none;transition:border-color .15s}
+.tx-ps-input:focus{border-color:var(--accent)}
+.tx-ps-close{width:30px;height:30px;border-radius:8px;border:none;background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.tx-ps-close:hover{background:rgba(239,68,68,.12);color:var(--red)}
+/* Item cards */
+.tx-item-card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;transition:border-color .15s,box-shadow .15s}
+.tx-item-card:hover{border-color:var(--accent);box-shadow:0 2px 10px rgba(102,126,234,.08)}
+.tx-item-card.row-stock-warning{border-color:var(--red);background:rgba(239,68,68,.03)}
+.tx-item-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tx-item-num{width:22px;height:22px;border-radius:50%;background:var(--primary-pale);color:var(--primary);font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tx-item-select{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-size:.83rem;background:var(--bg);outline:none;transition:border-color .15s}
+.tx-item-select:focus{border-color:var(--accent)}
+.tx-item-remove{width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.tx-item-remove:hover{background:rgba(239,68,68,.1);color:var(--red)}
+.tx-item-info{font-size:.74rem;color:var(--muted);margin-bottom:8px;padding:0 30px;display:flex;align-items:center;gap:8px}
+.tx-item-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 30px}
+.tx-item-field{display:flex;flex-direction:column;gap:3px;align-items:center}
+.tx-item-label{font-size:.68rem;color:var(--muted);font-weight:600}
+.tx-item-val{font-weight:700;font-size:.95rem;text-align:center;color:var(--text)}
+.tx-item-qty-input{width:100%;text-align:center;border:1.5px solid var(--border);border-radius:8px;padding:6px;font-weight:700;font-size:.88rem;background:var(--bg);outline:none;transition:border-color .15s}
+.tx-item-qty-input:focus{border-color:var(--accent)}
+.tx-item-qty-input.stock-warn{border-color:var(--red);background:rgba(239,68,68,.08)}
+.tx-item-total{color:var(--primary)}
+.tx-item-stock{font-size:.72rem;margin-top:4px;padding:0 30px}
+/* Summary panel */
+.tx-summary{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-top:0}
+.tx-summary-hd{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light,#0d4a2f) 100%);padding:13px 16px;color:#fff;display:flex;align-items:center;gap:8px}
+.tx-summary-hd h4{font-size:.9rem;font-weight:700;margin:0;color:#fff}
+.tx-summary-body{padding:14px 16px}
+.tx-summary .row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:.84rem;border-bottom:1px solid var(--border)}
+.tx-summary .row:last-child{border-bottom:none}
+.tx-summary .total-row{font-weight:700;font-size:1rem;padding-top:10px;margin-top:4px;border-top:2px solid var(--border);border-bottom:none}
+.tx-save-area{padding:12px 16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+.tx-save-btn{width:100%;justify-content:center;gap:8px;font-size:.92rem;padding:11px;display:flex;align-items:center}
+.tx-comments-wrap{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-top:12px}
+.tx-comment-input-row{display:flex;gap:8px;align-items:center;margin:10px 0}
+.tx-comment-input{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.83rem;background:var(--bg);outline:none;transition:border-color .15s}
+.tx-comment-input:focus{border-color:var(--accent)}
+.tx-comment-type{border:1.5px solid var(--border);border-radius:8px;padding:7px 8px;font-size:.78rem;background:var(--bg);cursor:pointer}
+.tx-comments-list{max-height:180px;overflow-y:auto}
+/* ── Summary collapsible items ── */
+.sum-items-toggle{cursor:pointer;user-select:none}
+.sum-items-toggle:hover .sum-toggle-label{color:var(--primary)}
+#sum-chevron{transition:transform .22s cubic-bezier(.4,0,.2,1);flex-shrink:0;color:var(--muted)}
+.sum-inv-detail{background:var(--surface2);border-radius:8px;padding:8px 10px;margin:4px 0 8px;animation:fadeIn .18s}
+.sum-inv-row{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);font-size:.78rem}
+.sum-inv-row:last-child{border-bottom:none}
+.sum-inv-num{color:var(--muted);font-size:.68rem;min-width:16px}
+.sum-inv-name{flex:1;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sum-inv-qty{color:var(--muted);font-size:.73rem;white-space:nowrap}
+.sum-inv-price{color:var(--primary);font-weight:700;white-space:nowrap;text-align:left;min-width:62px}
+.sum-dep-method{font-size:.68rem;color:var(--muted);background:var(--surface2);border-radius:4px;padding:1px 6px;margin-right:4px;font-weight:600}
+/* ── Invoice note in summary col ── */
+.tx-inv-note-wrap{padding:8px 14px 4px;border-top:1px solid var(--border)}
+.tx-inv-note-label{font-size:.73rem;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:5px;margin-bottom:5px}
+#tx-inv-note{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-size:.81rem;resize:none;background:var(--bg);color:var(--text);outline:none;transition:border-color .15s;font-family:inherit;line-height:1.5;box-sizing:border-box}
+#tx-inv-note:focus{border-color:var(--accent)}
+/* ── Print/export button ── */
+.tx-action-row{display:flex;gap:8px}
+.tx-print-btn{display:flex;align-items:center;justify-content:center;gap:5px;padding:9px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2);color:var(--muted);font-size:.79rem;font-weight:600;cursor:pointer;transition:all .15s;flex:1}
+.tx-print-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-pale)}
+/* ── Empty item state ── */
+.tx-empty-state{border:2px dashed var(--border);border-radius:12px;padding:28px 20px;text-align:center;color:var(--muted);cursor:pointer;transition:border-color .2s,color .2s,background .2s;margin-top:4px;animation:fadeIn .25s}
+.tx-empty-state:hover{border-color:var(--accent);color:var(--primary);background:var(--primary-pale)}
+.tx-empty-icon{width:48px;height:48px;border-radius:50%;background:var(--surface2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto;transition:all .2s;animation:emptyPulse 2.4s ease-in-out infinite}
+.tx-empty-state:hover .tx-empty-icon{background:var(--primary-pale);border-color:var(--accent);transform:scale(1.08)}
+@keyframes emptyPulse{0%,100%{box-shadow:0 0 0 0 rgba(102,126,234,0)}50%{box-shadow:0 0 0 6px rgba(102,126,234,.12)}}
+/* ── Product Picker Modal ── */
+#tx-picker-overlay{position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .18s}
+#tx-picker-overlay.desktop{align-items:center}
+.tx-picker-panel{background:var(--surface);width:100%;max-width:520px;border-radius:20px 20px 0 0;max-height:88vh;display:flex;flex-direction:column;animation:slideUpSheet .24s cubic-bezier(.4,0,.2,1)}
+#tx-picker-overlay.desktop .tx-picker-panel{border-radius:18px;max-height:82vh;animation:fadeInScale .2s cubic-bezier(.4,0,.2,1)}
+@keyframes fadeInScale{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.tx-picker-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.tx-picker-header h3{font-size:1rem;font-weight:800;margin:0;color:var(--text)}
+.tx-picker-close{width:30px;height:30px;border-radius:50%;border:none;background:var(--surface2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;line-height:1;transition:all .15s}
+.tx-picker-close:hover{background:var(--border);color:var(--text)}
+.tx-picker-search-wrap{padding:12px 14px 8px;flex-shrink:0}
+.tx-picker-search-inner{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:9px 14px;transition:border-color .15s}
+.tx-picker-search-inner:focus-within{border-color:var(--accent)}
+.tx-picker-search-inner input{flex:1;border:none;background:transparent;outline:none;font-size:.88rem;color:var(--text);direction:rtl}
+.tx-picker-filters{display:flex;gap:6px;padding:0 14px 10px;flex-shrink:0}
+.tx-pf-btn{padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:.77rem;font-weight:600;cursor:pointer;background:var(--surface2);color:var(--muted);transition:all .15s;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.tx-pf-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.tx-pf-btn:not(.active):hover{border-color:var(--accent);color:var(--accent)}
+.tx-picker-list{flex:1;overflow-y:auto;padding:0 10px;overscroll-behavior:contain}
+.tx-picker-item{display:flex;align-items:center;gap:12px;padding:11px 8px;border-bottom:1px solid var(--border);transition:background .12s;border-radius:8px}
+.tx-picker-item:last-child{border-bottom:none}
+.tx-picker-item:hover{background:var(--surface2)}
+.tx-picker-item.out-of-stock{opacity:.55}
+.tx-picker-info{flex:1;min-width:0;text-align:right}
+.tx-picker-name{font-size:.88rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-picker-code{font-size:.72rem;color:var(--muted);margin-top:2px}
+.tx-picker-price{font-size:.88rem;font-weight:700;color:var(--primary);text-align:left;white-space:nowrap;flex-shrink:0;min-width:70px}
+.tx-picker-add{width:34px;height:34px;border-radius:50%;border:2px solid var(--primary);background:transparent;color:var(--primary);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;font-size:1.3rem;line-height:1}
+.tx-picker-add:hover,.tx-picker-add.added{background:var(--primary);color:#fff;transform:scale(1.08)}
+.tx-picker-add:active{transform:scale(.92)}
+.tx-picker-qty-ctrl{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.tx-picker-qty-ctrl button{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.tx-picker-qty-ctrl button:hover{border-color:var(--primary);color:var(--primary)}
+.tx-picker-qty-ctrl span{font-size:.85rem;font-weight:700;min-width:18px;text-align:center;color:var(--primary)}
+.tx-picker-stock{font-size:.68rem;margin-top:3px}
+.tx-picker-footer{padding:12px 14px;border-top:1px solid var(--border);flex-shrink:0;text-align:center}
+.tx-picker-new-btn{background:none;border:none;color:var(--primary);font-size:.85rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;transition:background .15s}
+.tx-picker-new-btn:hover{background:var(--primary-pale)}
+.tx-picker-empty{text-align:center;padding:32px 16px;color:var(--muted);font-size:.85rem}
 .supplier-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center}
 .supplier-card h4{font-size:.95rem;margin-bottom:4px}
 .supplier-card p{font-size:.78rem;color:var(--muted)}
@@ -376,7 +513,7 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 .shipping-zone-btns .zone-btn{padding:6px 16px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;font-size:.82rem;transition:all .2s}
 .shipping-zone-btns .zone-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .product-search-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:12px;max-height:200px;overflow-y:auto}
-.product-search-panel .ps-item{padding:6px 8px;cursor:pointer;border-radius:6px;font-size:.82rem;display:flex;justify-content:space-between;transition:background .15s}
+.product-search-panel .ps-item{padding:8px 10px;cursor:pointer;border-radius:8px;font-size:.82rem;display:flex;justify-content:space-between;align-items:center;gap:10px;transition:background .15s;border-bottom:1px solid var(--border)}.product-search-panel .ps-item:last-child{border-bottom:none}
 .product-search-panel .ps-item:hover{background:var(--primary-pale)}
 .field-hint{font-size:.68rem;color:var(--muted);margin-top:2px;font-style:italic}
 .ac-wrap{position:relative}
@@ -416,8 +553,14 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 #page-movements .mov-search-wrap{position:relative}
 #page-movements .mov-search-wrap svg{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;width:16px;height:16px}
 #page-movements .mov-search-wrap input{padding-right:38px;width:100%}
-#mov-table tbody tr{transition:background .12s}
+#mov-table tbody tr{transition:background .12s;cursor:pointer}
 #mov-table tbody tr:hover{background:var(--primary-pale)}
+#mov-table tbody tr.mov-row-selected{background:rgba(var(--primary-rgb),.07)!important}
+#mov-table tbody tr.mov-row-selected td:first-child{border-right:3px solid var(--primary)}
+#inv-table tbody tr{transition:background .12s;cursor:pointer}
+#inv-table tbody tr:hover{background:var(--primary-pale)}
+#inv-table tbody tr.inv-row-selected{background:rgba(var(--primary-rgb),.07)!important}
+#inv-table tbody tr.inv-row-selected td:first-child{border-right:3px solid var(--primary)}
 #mov-table tbody tr td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
 #mov-table tbody tr:last-child td{border-bottom:none}
 #mov-table thead th{padding:10px 14px;font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;background:var(--surface2);white-space:nowrap}
@@ -432,17 +575,259 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 .mov-tab-bar .mov-main-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .mov-tab-bar .mov-main-tab svg{width:16px;height:16px}
 .hamburger{display:none;background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;padding:4px}
+/* Mobile card lists: hidden by default, shown only on mobile */
+#mov-mobile-list{display:none}
+#vault-log-mobile-list{display:none}
+/* ══════════════════════════════════════════
+   MOBILE APP LAYOUT  (≤768px)
+══════════════════════════════════════════ */
 @media(max-width:768px){
-#sidebar{transform:translateX(100%)}
-#sidebar.open{transform:translateX(0)}
-#main{margin-right:0}
-.bulk-bar{right:0}
-[dir="ltr"] #sidebar{transform:translateX(-100%)}
-[dir="ltr"] #sidebar.open{transform:translateX(0)}
-[dir="ltr"] #main{margin-left:0}
-[dir="ltr"] .bulk-bar{left:0;right:0}
-.seg-cards{grid-template-columns:repeat(2,1fr)}
-.hamburger{display:block}
+  /* Sidebar slide-out */
+  #sidebar{transform:translateX(110%);box-shadow:-4px 0 24px rgba(0,0,0,.15)}
+  #sidebar.open{transform:translateX(0)}
+  #main{margin-right:0;padding:12px 12px;padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  .bulk-bar{right:0;bottom:64px}
+  [dir="ltr"] #sidebar{transform:translateX(-110%)}
+  [dir="ltr"] #sidebar.open{transform:translateX(0)}
+  [dir="ltr"] #main{margin-left:0}
+  [dir="ltr"] .bulk-bar{left:0;right:0}
+
+  /* Sidebar overlay */
+  #sidebar-overlay{backdrop-filter:blur(2px)}
+
+  /* Hamburger hidden — replaced by bottom nav */
+  .hamburger{display:none!important}
+
+  /* ── Header ── */
+  #header{padding:0 14px;gap:8px;height:56px;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+  :root{--header-h:56px}
+  #header-date{display:none!important}
+  #header-name{display:none!important}
+  #header .logo{font-size:1.15rem;font-weight:900;letter-spacing:.5px}
+  #header .header-actions{gap:4px}
+  #header button[onclick*="toggleCalc"]{display:none!important}
+  #header button[onclick*="toggleDarkMode"]{display:none!important}
+  #header .avatar{width:32px;height:32px;font-size:.8rem}
+  #header .notif-btn{padding:6px}
+  #header button{opacity:.9}
+  /* ── Search mobile: removed from header, becomes fixed overlay ── */
+  .m-search-toggle{display:flex!important}
+  #header .header-search{display:none}
+  /* When toggled open — fixed bar below header */
+  #header .header-search.m-search-open{
+    display:flex!important;
+    flex-direction:column;
+    position:fixed;
+    top:56px;left:0;right:0;
+    z-index:99;
+    background:var(--primary);
+    padding:10px 14px 10px;
+    max-width:none;
+    border-top:1px solid rgba(255,255,255,.08);
+    box-shadow:0 8px 28px rgba(0,0,0,.28);
+    animation:mSearchSlide .2s cubic-bezier(.4,0,.2,1)
+  }
+  @keyframes mSearchSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  #header .header-search.m-search-open .search-wrap{width:100%}
+  #header .header-search.m-search-open input{font-size:.85rem;padding:10px 38px 10px 34px;border-radius:12px;background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.22)}
+  #header .header-search.m-search-open input:focus{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.32);box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+  /* Dropdown inside mobile overlay */
+  #header .header-search.m-search-open .search-dropdown{position:relative;top:auto;left:auto;right:auto;margin-top:8px;border-radius:12px;max-height:calc(100svh - 130px);box-shadow:0 12px 40px rgba(0,0,0,.24);background:var(--surface)}
+  /* Search result items — wrap for product meta */
+  .search-category{padding:6px 12px 5px;font-size:.64rem}
+  .search-item{flex-wrap:wrap;padding:10px 12px;gap:8px;border-right-width:2px;align-items:flex-start}
+  .search-item .search-icon{width:30px;height:30px;font-size:1rem;border-radius:8px;flex-shrink:0;margin-top:2px}
+  .search-item .search-info{min-width:0;flex:1}
+  .search-item .search-title{font-size:.82rem}
+  .search-item .search-subtitle{font-size:.69rem}
+  .search-product-meta{width:100%;flex-direction:row!important;align-items:center!important;justify-content:flex-start;gap:8px;flex-wrap:wrap;padding-right:38px}
+  .search-product-meta > div{flex-direction:row!important;align-items:center;gap:6px}
+  .search-hint{font-size:.65rem;padding:7px 12px}
+  .search-empty{padding:20px 12px}
+  #header-lang{display:none!important}
+
+  /* ══ Bottom Navigation Bar — App Style ══ */
+  #mobile-bottom-nav{
+    display:flex;align-items:stretch;
+    position:fixed;bottom:0;left:0;right:0;
+    height:calc(62px + env(safe-area-inset-bottom,0px));
+    background:var(--surface);
+    border-top:1px solid var(--border);
+    z-index:200;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    box-shadow:0 -1px 0 var(--border),0 -8px 32px rgba(0,0,0,.08);
+  }
+  /* Each tab item */
+  #mobile-bottom-nav .m-nav-item{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:3px;cursor:pointer;border:none;background:none;
+    color:var(--muted);padding:6px 2px 8px;
+    -webkit-tap-highlight-color:transparent;
+    transition:color .18s;
+    position:relative;overflow:hidden;
+  }
+  /* Active indicator dot at top */
+  #mobile-bottom-nav .m-nav-dot{
+    position:absolute;top:0;left:50%;transform:translateX(-50%) scaleX(0);
+    width:20px;height:3px;
+    background:var(--accent);border-radius:0 0 4px 4px;
+    transition:transform .2s cubic-bezier(.4,0,.2,1);
+    transform-origin:center top;
+  }
+  #mobile-bottom-nav .m-nav-item.active .m-nav-dot{
+    transform:translateX(-50%) scaleX(1);
+  }
+  #mobile-bottom-nav .m-nav-item svg{
+    width:22px;height:22px;flex-shrink:0;
+    transition:transform .2s cubic-bezier(.34,1.56,.64,1),stroke .18s;
+  }
+  #mobile-bottom-nav .m-nav-item.active{color:var(--accent)}
+  #mobile-bottom-nav .m-nav-item.active svg{
+    transform:translateY(-1px) scale(1.1);
+    stroke:var(--accent);
+  }
+  #mobile-bottom-nav .m-nav-label{
+    font-size:.58rem;font-weight:700;letter-spacing:.02em;line-height:1;
+    transition:opacity .18s;
+  }
+  /* Tap ripple feel */
+  #mobile-bottom-nav .m-nav-item:active{background:var(--primary-pale)}
+  /* FAB — floating action button */
+  #mobile-bottom-nav .m-nav-fab{
+    flex:0 0 62px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(145deg,var(--primary-light) 0%,var(--primary) 100%);
+    border-radius:50%;width:52px;height:52px;
+    margin:auto;cursor:pointer;border:none;color:#fff;
+    box-shadow:0 6px 20px rgba(0,49,30,.4),0 2px 6px rgba(0,49,30,.2);
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1),box-shadow .15s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #mobile-bottom-nav .m-nav-fab:active{
+    transform:scale(.88);
+    box-shadow:0 2px 8px rgba(0,49,30,.3);
+  }
+  #mobile-bottom-nav .m-nav-fab svg{width:22px;height:22px;stroke-width:2.4}
+
+  /* ── Modals → Bottom Sheet ── */
+  .modal-overlay{align-items:flex-end!important}
+  .modal{
+    width:100%!important;max-width:100%!important;
+    border-radius:20px 20px 0 0!important;
+    max-height:92vh!important;
+    padding:20px 16px!important;
+    padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))!important;
+    animation:slideUpSheet .28s cubic-bezier(.4,0,.2,1)!important;
+  }
+  .modal::before{
+    content:'';display:block;width:40px;height:4px;
+    background:var(--border);border-radius:2px;
+    margin:0 auto 16px;
+  }
+  @keyframes slideUpSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+  /* ── Tables → hidden on mobile, replaced by cards ── */
+  .table-card,.overflow-x{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table th,table td{white-space:nowrap;padding:8px 10px!important;font-size:.78rem}
+  #mov-table th,#mov-table td{padding:8px 8px!important}
+  /* Hide desktop table, show mobile cards */
+  #mov-table-wrap{display:none!important}
+  #mov-mobile-list{display:flex;flex-direction:column;gap:10px;padding:12px}
+  #vault-log-table-wrap{display:none!important}
+  #vault-log-mobile-list{display:flex;flex-direction:column;gap:10px}
+  /* Vault manual form → 1 col stacked */
+  #vault-adjust-grid{grid-template-columns:1fr!important}
+  /* Vault tabs → horizontal scroll */
+  .vault-tab-btn{padding:10px 12px!important;font-size:.82rem!important}
+  /* Vault log search bar → full width stack */
+  #vault-log-search,#vault-status-filter,#vault-from,#vault-to{width:100%!important}
+  /* Movements filter top row → stack */
+  #page-movements .mov-filter-card > div:first-child{grid-template-columns:1fr!important}
+
+  /* ── KPI Strip → 2 columns ── */
+  .kpi-strip{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
+  .kpi-strip .kpi{padding:10px 12px}
+  .kpi-strip .kpi .kpi-val{font-size:1rem}
+
+  /* ── Cards → tighter padding ── */
+  .card{padding:14px!important;border-radius:12px!important}
+  .stat-card{padding:12px 10px!important}
+  .stat-card .stat-val{font-size:1.3rem}
+
+  /* ── Grids ── */
+  .seg-cards{grid-template-columns:repeat(2,1fr)!important}
+  .grid-2,.grid-3,.grid-4,.grid-5,.grid-6{grid-template-columns:1fr!important}
+  /* Dashboard KPI/stat cards: keep 2 columns */
+  #dash-stats{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
+  #dash-treasury-segs{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
+
+  /* ── Page header ── */
+  .page-title{font-size:1.15rem;font-weight:800}
+  .page-subtitle{font-size:.74rem;margin-bottom:12px}
+  .page-header{flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:14px}
+  .page-header-actions{width:100%;flex-wrap:wrap;gap:6px}
+  .page-header-actions .btn{flex:1;min-width:90px;font-size:.78rem;padding:8px 10px;justify-content:center}
+
+  /* ── Main content area ── */
+  #main{margin-right:0;padding:12px 12px;padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+
+  /* ── Forms ── */
+  .form-group label{font-size:.78rem}
+  input,select,textarea{font-size:16px!important}/* prevents iOS zoom */
+  #tx-fields{gap:8px!important}
+
+  /* ── Filter bars → horizontal scroll ── */
+  #page-movements .mov-filter-bar{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;padding-bottom:4px;gap:6px}
+  .mov-type-pill{white-space:nowrap;font-size:.74rem}
+  .filter-bar{flex-wrap:wrap;gap:8px}
+
+  /* ── Tx form: 2-col → 1-col ── */
+  #tx-fields > div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
+
+  /* ── Buttons touch-friendly ── */
+  .btn{min-height:42px;border-radius:10px}
+  .btn-sm{min-height:34px!important;font-size:.76rem!important}
+  .dd-toggle{min-width:36px;min-height:36px}
+
+  /* ── Table scrollable ── */
+  .table-card{border-radius:10px}
+  table th,table td{white-space:nowrap;padding:9px 10px!important;font-size:.77rem}
+
+  /* ── Tab bars → horizontal scroll ── */
+  .tab-bar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;gap:4px}
+  .tab-btn{white-space:nowrap;font-size:.75rem;padding:6px 12px}
+  .section-tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+  .section-tab-bar .s-tab{white-space:nowrap;padding:10px 14px;font-size:.8rem}
+
+  /* ── User status grid → 2 cols ── */
+  #users-status-grid{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
+
+  /* ── Toast: top-center ── */
+  .toast-container{top:64px;width:calc(100% - 24px);left:12px;transform:none}
+  .toast{width:100%;max-width:none;border-radius:10px;font-size:.83rem;padding:11px 14px}
+
+  /* ── Transaction form: single column ── */
+  .tx-layout{grid-template-columns:1fr!important;gap:12px}
+  .tx-summary-col{position:static}
+  .tx-page-top{flex-direction:column;gap:10px}
+  .type-selector{width:100%}
+  .type-btn{flex:1;justify-content:center;padding:8px 8px;font-size:.79rem;gap:4px}
+  .tx-item-grid{padding:0 26px;gap:6px}
+  .tx-item-info{padding:0 26px}
+  .tx-item-stock{padding:0 26px}
+  .tx-items-actions{gap:5px}
+  .tx-action-btn{padding:5px 10px;font-size:.73rem}
+}
+
+/* Very small screens */
+@media(max-width:380px){
+  #dash-stats{grid-template-columns:repeat(2,1fr)!important}
+  .kpi-strip .kpi .kpi-val{font-size:.9rem}
+  #mobile-bottom-nav .m-nav-label{font-size:.54rem}
+}
+
+/* Desktop — hide bottom nav */
+@media(min-width:769px){
+  #mobile-bottom-nav{display:none!important}
 }
 .print-only{display:none}
 @media print{
@@ -510,6 +895,18 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
     </svg>
   </button>
 </div>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;margin-top:-4px">
+  <label for="login-remember" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.84rem;color:#4a6b58;user-select:none">
+    <span style="position:relative;width:20px;height:20px;display:inline-block;flex-shrink:0">
+      <input type="checkbox" id="login-remember" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer;margin:0;z-index:1" onchange="updateRememberBox(this.checked)">
+      <span id="login-remember-box" style="position:absolute;inset:0;border-radius:5px;border:2px solid #b0c8bc;background:#fff;transition:all .18s;display:flex;align-items:center;justify-content:center"></span>
+    </span>
+    تذكرني
+  </label>
+  <span id="login-saved-badge" style="display:none;font-size:.72rem;color:#10b981;font-weight:600;background:#f0fdf4;padding:3px 10px;border-radius:20px;border:1px solid #bbf7d0">
+    ✓ محفوظ
+  </span>
+</div>
 <button class="btn btn-primary" onclick="doLogin()">تسجيل الدخول</button>
 </div>
 </div>
@@ -522,10 +919,19 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <span id="header-date"></span>
 </div>
 <div class="header-search">
-<input type="text" id="global-search" placeholder="بحث في كل الأقسام: صنف، عميل، مرجع، مورد…" oninput="debouncedGlobalSearch(this.value)" onkeydown="handleSearchKeydown(event)" autocomplete="off">
+<div class="search-wrap">
+  <svg class="search-icon-btn" viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="5.5"/><path d="M14 14l3.5 3.5"/></svg>
+  <input type="text" id="global-search" placeholder="بحث: صنف، عميل، مرجع، مورد…" oninput="debouncedGlobalSearch(this.value);toggleSearchClear(this.value)" onkeydown="handleSearchKeydown(event)" autocomplete="off" aria-label="بحث شامل">
+  <button class="search-clear" id="search-clear-btn" onclick="clearGlobalSearch()" title="مسح البحث" tabindex="-1" aria-label="مسح">
+    <svg viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/></svg>
+  </button>
+</div>
 <div class="search-dropdown" id="search-dropdown"></div>
 </div>
 <div class="header-actions">
+<button class="m-search-toggle" id="m-search-toggle" onclick="toggleMobileSearch()" aria-label="بحث">
+  <svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="5.5"/><path d="M14 14l3.5 3.5"/></svg>
+</button>
 <div class="user-info" onclick="goProfileFromHeader()" title="الملف الشخصي" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goProfileFromHeader();}">
 <div class="avatar" id="header-avatar"></div>
 <span id="header-name"></span>
@@ -549,6 +955,33 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 
 <nav id="sidebar"></nav>
 <div id="sidebar-overlay" style="display:none;position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.3)" onclick="closeSidebar()"></div>
+
+<!-- Mobile Bottom Navigation Bar -->
+<nav id="mobile-bottom-nav" style="display:none">
+  <button class="m-nav-item" id="mnav-dashboard" onclick="navigateTo('dashboard');updateMobileNav('dashboard')">
+    <span class="m-nav-dot"></span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    <span class="m-nav-label">الرئيسية</span>
+  </button>
+  <button class="m-nav-item" id="mnav-movements" onclick="navigateTo('movements');updateMobileNav('movements')">
+    <span class="m-nav-dot"></span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+    <span class="m-nav-label">الحركات</span>
+  </button>
+  <button class="m-nav-fab" onclick="navigateTo('transaction');setTimeout(()=>setTxType('مبيعات'),50);updateMobileNav('transaction')" title="حركة مبيعات جديدة">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+  <button class="m-nav-item" id="mnav-inventory" onclick="navigateTo('inventory');updateMobileNav('inventory')">
+    <span class="m-nav-dot"></span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+    <span class="m-nav-label">المخزن</span>
+  </button>
+  <button class="m-nav-item" id="mnav-more" onclick="toggleSidebar()">
+    <span class="m-nav-dot"></span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    <span class="m-nav-label">المزيد</span>
+  </button>
+</nav>
 
 <main id="main">
 <!-- Dashboard -->
@@ -593,61 +1026,155 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 </div>
 
 <!-- Transaction (new) -->
-<div class="page" id="page-transaction">
-<h2 class="page-title" data-i18n="transaction">حركة جديدة</h2>
-<p class="page-subtitle" data-i18n="transactionSubtitle">تسجيل مبيعات، مشتريات، أو طلب استرجاع</p>
-<div class="type-selector" id="tx-type-selector">
-<button class="type-btn active" data-type="مبيعات" onclick="setTxType('مبيعات')" data-i18n="txSales">مبيعات</button>
-<button class="type-btn" data-type="مشتريات" onclick="setTxType('مشتريات')" data-i18n="txPurchases">مشتريات</button>
-<div class="type-return-group">
-<button class="type-btn" data-type="مرتجع" onclick="setTxType('مرتجع')" data-i18n="txReturns">مرتجع</button>
-<!-- نظام الاستبدال تم حذفه - فقط الاسترجاع العادي متاح -->
-</div>
-</div>
-<div class="grid grid-2 mb-16" id="tx-fields" style="gap:10px"></div>
-<div id="tx-items-section">
-<h4 class="mb-8" data-i18n="lineItems">الأصناف</h4>
-<div id="tx-items"></div>
-<div class="flex gap-8 mt-16 mb-8">
-<button class="btn btn-outline btn-sm" onclick="addTxItem()" data-i18n="addProduct">+ إضافة صنف</button>
-<button class="btn btn-outline btn-sm" onclick="toggleProductSearch()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg> <span data-i18n="searchProducts">بحث أصناف</span></button>
-<button class="btn btn-outline btn-sm" onclick="openDiscountModal()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> <span data-i18n="invoiceDiscount">خصم على الفاتورة</span></button>
-</div>
-<div id="tx-product-search" style="display:none">
-<input type="text" placeholder="ابحث عن صنف..." data-i18n="searchProducts" data-i18n-attr="placeholder" oninput="filterTxProducts(this.value)" class="mb-8">
-<div class="product-search-panel" id="tx-ps-list"></div>
-</div>
-</div>
-<div class="tx-summary" id="tx-summary"></div>
+<div class="page" id="page-transaction" oninput="markTxDirty()" onchange="markTxDirty()">
 
-<!-- Comments Section -->
-<div id="tx-comments-section" style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
-  <h4 class="mb-12"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> <span data-i18n="comments">التعليقات</span></h4>
+<!-- ── Page Top: title + type selector ── -->
+<div class="tx-page-top">
+  <div>
+    <h2 class="page-title" data-i18n="transaction">حركة جديدة</h2>
+    <p class="page-subtitle" data-i18n="transactionSubtitle">تسجيل مبيعات، مشتريات، أو طلب استرجاع</p>
+  </div>
+  <div class="type-selector" id="tx-type-selector">
+    <button class="type-btn active" data-type="مبيعات" onclick="setTxType('مبيعات')">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+      مبيعات
+    </button>
+    <button class="type-btn" data-type="مشتريات" onclick="setTxType('مشتريات')">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>
+      مشتريات
+    </button>
+    <button class="type-btn" data-type="مرتجع" onclick="setTxType('مرتجع')">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>
+      مرتجع
+    </button>
+  </div>
+</div>
 
-  <!-- Add Comment Form -->
-  <div style="display:grid;grid-template-columns:1fr 140px;gap:8px;margin-bottom:16px">
-    <div style="display:grid;grid-template-columns:1fr 100px;gap:8px">
-      <input type="text" id="tx-comment-text" placeholder="أضف تعليق..." data-i18n="addComment" data-i18n-attr="placeholder" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px">
-      <select id="tx-comment-type" style="padding:8px 8px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-        <option value="عام">📝 عام</option>
-        <option value="تنبيه">⚠ تنبيه</option>
-        <option value="ملاحظة">📌 ملاحظة</option>
-        <option value="أسئلة">❓ أسئلة</option>
-      </select>
+<!-- ── Split Layout: form col + summary col ── -->
+<div class="tx-layout">
+
+  <!-- Left/Main: form fields + items + comments -->
+  <div class="tx-form-col">
+    <div class="card" style="padding:16px;margin-bottom:12px"><div class="grid grid-2" id="tx-fields" style="gap:12px"></div></div>
+
+    <!-- Items section -->
+    <div id="tx-items-section" class="card" style="padding:16px;margin-bottom:12px">
+      <div class="tx-section-head">
+        <span class="tx-section-title">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+          الأصناف
+        </span>
+        <div class="tx-items-actions">
+          <button class="tx-action-btn" onclick="openProductPicker()">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            إضافة صنف
+          </button>
+          <button class="tx-action-btn" onclick="openDiscountModal()">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            خصم
+          </button>
+        </div>
+      </div>
+
+      <div id="tx-items"></div>
     </div>
-    <button class="btn btn-outline btn-sm" onclick="addTxComment()" style="white-space:nowrap" data-i18n="addCommentBtn">إضافة</button>
+
+    <!-- Comments -->
+    <div id="tx-comments-section" class="tx-comments-wrap">
+      <div class="tx-section-head">
+        <span class="tx-section-title">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          التعليقات
+        </span>
+      </div>
+      <div class="tx-comment-input-row">
+        <input type="text" id="tx-comment-text" placeholder="أضف تعليق…" class="tx-comment-input">
+        <select id="tx-comment-type" class="tx-comment-type">
+          <option value="عام">📝 عام</option>
+          <option value="تنبيه">⚠ تنبيه</option>
+          <option value="ملاحظة">📌 ملاحظة</option>
+          <option value="أسئلة">❓ أسئلة</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="addTxComment()" style="white-space:nowrap;flex-shrink:0">إضافة</button>
+      </div>
+      <div id="tx-comments-list" class="tx-comments-list">
+        <div style="padding:14px;text-align:center;color:var(--muted);font-size:.83rem">لا توجد تعليقات</div>
+      </div>
+    </div>
   </div>
 
-  <!-- Comments List -->
-  <div id="tx-comments-list" style="max-height:250px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:0;background:var(--surface2)">
-    <div style="padding:12px;text-align:center;color:var(--muted);font-size:.85rem" data-i18n="noComments">لا توجد تعليقات</div>
+  <!-- Right: sticky summary + actions -->
+  <div class="tx-summary-col">
+    <div class="tx-summary-sticky">
+      <div class="tx-summary" id="tx-summary"></div>
+      <div class="tx-inv-note-wrap">
+        <div class="tx-inv-note-label">
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 2H5a1 1 0 00-1 1v10a1 1 0 001 1h6a1 1 0 001-1V3a1 1 0 00-1-1z"/><line x1="6" y1="6" x2="10" y2="6"/><line x1="6" y1="9" x2="10" y2="9"/><line x1="6" y1="12" x2="8" y2="12"/></svg>
+          ملاحظة على الفاتورة
+        </div>
+        <textarea id="tx-inv-note" rows="2" placeholder="ملاحظة تظهر في الفاتورة عند الطباعة…"></textarea>
+      </div>
+      <div class="tx-save-area">
+        <button class="btn btn-primary tx-save-btn" id="tx-save-btn" onclick="saveTx()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          حفظ الحركة
+        </button>
+        <div class="tx-action-row">
+          <button class="tx-print-btn" onclick="printTxInvoice()">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            طباعة / PDF
+          </button>
+          <button class="btn btn-outline" style="flex:1" onclick="resetTx()">مسح</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tx-layout -->
+</div>
+
+<!-- Unsaved Transaction Warning Modal -->
+<div id="tx-dirty-overlay" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--surface);border-radius:18px;padding:28px 26px;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:fadeInScale .2s cubic-bezier(.4,0,.2,1);text-align:center">
+    <div style="width:52px;height:52px;border-radius:50%;background:rgba(245,158,11,.12);border:2px solid rgba(245,158,11,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <h3 style="font-size:1.05rem;font-weight:800;margin-bottom:8px;color:var(--text)">الحركة لم تُحفظ بعد</h3>
+    <p style="font-size:.85rem;color:var(--muted);line-height:1.6;margin-bottom:22px">لديك بيانات غير محفوظة في نموذج الحركة.<br>هل تريد المغادرة والتخلي عن التغييرات؟</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button onclick="txDirtyConfirmLeave()" style="background:var(--red);color:#fff;border:none;border-radius:10px;padding:11px;font-size:.9rem;font-weight:700;cursor:pointer;width:100%">مغادرة بدون حفظ</button>
+      <button onclick="txDirtyCancel()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:11px;font-size:.9rem;font-weight:700;cursor:pointer;width:100%">إكمال الحركة</button>
+      <button onclick="txDirtyReset()" style="background:transparent;color:var(--muted);border:1.5px solid var(--border);border-radius:10px;padding:9px;font-size:.82rem;cursor:pointer;width:100%">مسح وخروج</button>
+    </div>
   </div>
 </div>
 
-<div class="flex gap-8 mt-16">
-<button class="btn btn-primary" id="tx-save-btn" onclick="saveTx()" data-i18n="saveTransaction"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> حفظ الحركة</button>
-<button class="btn btn-outline" onclick="resetTx()" data-i18n="clearTransaction">مسح</button>
-</div>
+<!-- Product Picker Modal -->
+<div id="tx-picker-overlay" style="display:none" onclick="if(event.target===this)closeProductPicker()">
+  <div class="tx-picker-panel">
+    <div class="tx-picker-header">
+      <button class="tx-picker-close" onclick="closeProductPicker()">
+        <svg viewBox="0 0 14 14" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/></svg>
+      </button>
+      <h3>اختر صنف</h3>
+    </div>
+    <div class="tx-picker-search-wrap">
+      <div class="tx-picker-search-inner">
+        <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="9" r="5.5"/><path d="M14 14l3 3"/></svg>
+        <input type="text" id="tx-picker-q" placeholder="ابحث عن صنف بالاسم أو الكود أو الباركود" oninput="filterTxPicker(this.value)">
+      </div>
+    </div>
+    <div class="tx-picker-filters">
+      <button class="tx-pf-btn active" id="txpf-all" onclick="setPickerFilter('all',this)">الكل</button>
+      <button class="tx-pf-btn" id="txpf-avail" onclick="setPickerFilter('avail',this)">
+        <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8l3 3 7-7"/></svg>
+        متوفر فقط
+      </button>
+    </div>
+    <div class="tx-picker-list" id="tx-picker-list">
+      <div class="tx-picker-empty">جارٍ التحميل…</div>
+    </div>
+  </div>
 </div>
 
 <!-- Transaction Confirmation Modal -->
@@ -685,7 +1212,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
   </div>
 </div>
 <div class="table-card">
-  <div class="overflow-x"><table id="inv-table"><thead><tr><th data-i18n="colCode">الكود</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice" class="inv-buyprice-col">سعر الشراء</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colPurchases" data-i18n-title="colPurchasesTip" title="من المورد فقط">المشتريات</th><th data-i18n="colReturnToStock" data-i18n-title="colReturnToStockTip" title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th data-i18n="colSales">المبيعات</th><th data-i18n="colCurrentBal">الرصيد الحالي</th><th data-i18n="status">الحالة</th></tr></thead><tbody></tbody></table></div>
+  <div class="overflow-x"><table id="inv-table"><thead><tr><th style="width:36px"><input type="checkbox" class="checkbox" id="inv-check-all" onchange="toggleAllInv(this)"></th><th data-i18n="colCode">الكود</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice" class="inv-buyprice-col">سعر الشراء</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colPurchases" data-i18n-title="colPurchasesTip" title="من المورد فقط">المشتريات</th><th data-i18n="colReturnToStock" data-i18n-title="colReturnToStockTip" title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th data-i18n="colSales">المبيعات</th><th data-i18n="colCurrentBal">الرصيد الحالي</th><th data-i18n="status">الحالة</th></tr></thead><tbody></tbody></table></div>
 </div>
 <div id="inv-pagination" style="margin-top:16px"></div>
 </div>
@@ -801,8 +1328,8 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
     </div>
   </div>
 
-  <!-- Table -->
-  <div style="background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)">
+  <!-- Desktop Table -->
+  <div id="mov-table-wrap" style="background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)">
     <div class="overflow-x">
       <table id="mov-table" style="width:100%;border-collapse:collapse">
         <thead>
@@ -826,6 +1353,8 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
       </table>
     </div>
   </div>
+  <!-- Mobile Cards -->
+  <div id="mov-mobile-list"></div>
 
   <!-- Pagination -->
   <div id="mov-pagination" style="margin-top:16px"></div>
@@ -1267,7 +1796,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="grid grid-5 gap-12 mb-24" id="vault-stats" style="gap:12px"></div>
 <div class="card mb-24">
 <h4 class="mb-16">تسوية يدوية</h4>
-<div class="grid grid-4 gap-12">
+<div class="grid grid-4 gap-12" id="vault-adjust-grid">
 <div class="form-group"><label>المبلغ</label><input type="number" id="vault-amount"></div>
 <div class="form-group"><label>القسم</label><select id="vault-seg"><option value="cash">كاش</option><option value="vodafone">فودافون كاش</option><option value="instapay">Instapay</option><option value="bank">تحويل بنكي</option></select></div>
 <div class="form-group"><label>الطريقة</label><select id="vault-method"><option value="إضافة">إضافة</option><option value="سحب">سحب</option></select></div>
@@ -1292,7 +1821,8 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <input type="date" id="vault-to" style="width:130px" onchange="vaultPage=1;loadVaultLog()">
 </div>
 </div>
-<div class="overflow-x"><table id="vault-table"><thead><tr><th data-i18n="colTxNo">رقم المعاملة</th><th data-i18n="date">التاريخ</th><th data-i18n="colTime">التوقيت</th><th data-i18n="colAmount">المبلغ</th><th data-i18n="colTotalBal">الرصيد الكلي</th><th data-i18n="colSource">المصدر</th><th data-i18n="colRefTag">#المرجع</th><th data-i18n="colSegment">القسم</th><th data-i18n="status">الحالة</th><th data-i18n="colMethod">الطريقة</th><th data-i18n="colEmployee">الموظف</th><th data-i18n="colDescription">الوصف</th><th class="vault-justif-col" data-i18n="colAccountingProof">الإثبات المحاسبي</th></tr></thead><tbody></tbody></table></div>
+<div id="vault-log-table-wrap" class="overflow-x"><table id="vault-table"><thead><tr><th data-i18n="colTxNo">رقم المعاملة</th><th data-i18n="date">التاريخ</th><th data-i18n="colTime">التوقيت</th><th data-i18n="colAmount">المبلغ</th><th data-i18n="colTotalBal">الرصيد الكلي</th><th data-i18n="colSource">المصدر</th><th data-i18n="colRefTag">#المرجع</th><th data-i18n="colSegment">القسم</th><th data-i18n="status">الحالة</th><th data-i18n="colMethod">الطريقة</th><th data-i18n="colEmployee">الموظف</th><th data-i18n="colDescription">الوصف</th><th class="vault-justif-col" data-i18n="colAccountingProof">الإثبات المحاسبي</th></tr></thead><tbody></tbody></table></div>
+<div id="vault-log-mobile-list"></div>
 <div id="vault-pagination"></div>
 </div>
 </div>
@@ -1581,6 +2111,8 @@ let txType = 'مبيعات';
 let txItems = [];
 let txDiscount = 0;
 let txDiscountType = 'fixed';
+let txDirty = false;
+let _pendingNavPage = null;
 let txComments = []; // Array of {text, type, employee, timestamp}
 let selectedMovIds = new Set();
 /** يُعبأ من سجل الحركات ثم يُستهلك عند دخول صفحة «حركة جديدة» */
@@ -1850,8 +2382,16 @@ async function doLogin() {
   const username = qs('#login-user').value.trim();
   const password = qs('#login-pass').value;
   if (!username || !password) { qs('#login-error').textContent = 'أدخل البيانات'; qs('#login-error').style.display = 'block'; return; }
+  const rememberMe = qs('#login-remember')?.checked;
   try {
     const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+    if (rememberMe) {
+      localStorage.setItem('rem_user', username);
+      localStorage.setItem('rem_pass', password);
+    } else {
+      localStorage.removeItem('rem_user');
+      localStorage.removeItem('rem_pass');
+    }
     localStorage.setItem('token', data.accessToken);
     localStorage.setItem('user', JSON.stringify(data.user));
     currentUser = data.user;
@@ -1862,13 +2402,49 @@ async function doLogin() {
   }
 }
 
+function loadRememberedLogin() {
+  const remUser = localStorage.getItem('rem_user');
+  const remPass = localStorage.getItem('rem_pass');
+  if (!remUser) return;
+  const userEl = qs('#login-user');
+  const passEl = qs('#login-pass');
+  const cb = qs('#login-remember');
+  const badge = qs('#login-saved-badge');
+  if (userEl) userEl.value = remUser;
+  if (passEl) passEl.value = remPass || '';
+  if (cb) { cb.checked = true; updateRememberBox(true); }
+  if (badge) badge.style.display = 'inline-block';
+}
+
+function updateRememberBox(checked) {
+  const box = qs('#login-remember-box');
+  if (!box) return;
+  if (checked) {
+    box.style.background = '#00311e';
+    box.style.borderColor = '#00311e';
+    box.innerHTML = `<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  } else {
+    box.style.background = '#fff';
+    box.style.borderColor = '#b0c8bc';
+    box.innerHTML = '';
+    const badge = qs('#login-saved-badge');
+    if (badge) badge.style.display = 'none';
+  }
+}
+
 async function doLogout() {
   disconnectSocket();
   localStorage.removeItem('token'); localStorage.removeItem('user');
   currentUser = null;
   onlineUsers = {};
   qs('#app').style.display = 'none'; qs('#login-page').style.display = 'flex';
-  qs('#login-user').value = ''; qs('#login-pass').value = '';
+  // Restore remembered credentials (or clear fields if none saved)
+  const remUser = localStorage.getItem('rem_user');
+  if (remUser) {
+    loadRememberedLogin();
+  } else {
+    qs('#login-user').value = ''; qs('#login-pass').value = '';
+  }
 }
 
 async function checkAuth() {
@@ -1890,7 +2466,7 @@ async function checkAuth() {
 
 async function showApp() {
   qs('#login-page').style.display = 'none'; qs('#app').style.display = 'block';
-  updateHeader(); buildSidebar(); await loadAllData();
+  updateHeader(); buildSidebar(); initMobileNav(); await loadAllData();
 
   // Connect socket for real-time presence
   connectSocket();
@@ -2073,14 +2649,17 @@ function buildSidebar() {
   const sb = qs('#sidebar');
   const navLabel = (n) => currentLang === 'en' ? (n.labelEn || n.label) : n.label;
   const pendingExpCount = expenses.filter(e => e.status === 'معلق').length;
-  const pendingTxCount = transactions.filter(t => isStatusPending(t.payStatus) && !t.cancelled).length;
   const pendingCmpCount = complaints.filter(c => c.status === 'معلق').length;
   const pendingCancelCount = transactions.filter(t => t.cancelRequest && t.cancelRequest.status === 'معلق').length;
-  const totalApprovalsBadge = pendingExpCount + pendingCancelCount;
+  const pendingReturnCount = isAdmin() ? (returnRequests || []).filter(r => r.status === 'معلق').length : 0;
+  const totalApprovalsBadge = (isAdmin() ? pendingExpCount + pendingCancelCount + pendingReturnCount : 0);
+  const _movTotal = transactions.filter(t => !t.cancelled).length;
+  const _movSeen = parseInt(localStorage.getItem('mov_seen_count') ?? '-1');
+  const newMovCount = _movSeen >= 0 ? Math.max(0, _movTotal - _movSeen) : 0;
   sb.innerHTML = NAV_ITEMS.filter(n => (n.adminOnly && !isAdmin()) ? false : hasPerm(n.perm)).map(n => {
     let badge = '';
     if (n.id === 'approvals' && totalApprovalsBadge > 0) badge = ` <span class="badge badge-orange" style="margin-right:4px;font-size:.65rem">${totalApprovalsBadge}</span>`;
-    if (n.id === 'movements' && pendingTxCount > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">${pendingTxCount}</span>`;
+    if (n.id === 'movements' && newMovCount > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">+${newMovCount}</span>`;
     if (n.id === 'complaints' && pendingCmpCount > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">${pendingCmpCount}</span>`;
     return `<a class="nav-item${currentPage === n.id ? ' active' : ''}" data-page="${n.id}" href="#${n.id}" onclick="handleNavClick(event,'${n.id}')"><span>${n.icon}</span><span>${esc(navLabel(n))}${badge}</span></a>`;
   }).join('') + `<a class="nav-item" data-page="profile" href="#profile" onclick="handleNavClick(event,'profile')"><span>${NAV_ICONS.profile}</span><span>${currentLang === 'en' ? 'Profile' : 'الملف الشخصي'}</span></a>`;
@@ -2100,6 +2679,18 @@ function toggleSidebar() {
 }
 function closeSidebar() {
   qs('#sidebar').classList.remove('open'); qs('#sidebar-overlay').style.display = 'none';
+}
+function updateMobileNav(page) {
+  qsa('#mobile-bottom-nav .m-nav-item').forEach(b => b.classList.remove('active'));
+  const map = { dashboard:'mnav-dashboard', movements:'mnav-movements', inventory:'mnav-inventory' };
+  if (map[page]) qs('#' + map[page])?.classList.add('active');
+}
+function initMobileNav() {
+  const nav = qs('#mobile-bottom-nav');
+  if (!nav) return;
+  const update = () => { nav.style.display = window.innerWidth <= 768 ? 'flex' : 'none'; };
+  update();
+  window.addEventListener('resize', update);
 }
 
 /* Pagination */
@@ -2243,10 +2834,21 @@ function goProfileFromHeader() {
   closeSidebar();
 }
 function navigateTo(page, updateHash = true) {
+  // Warn if leaving transaction page with unsaved changes
+  if (currentPage === 'transaction' && txDirty && page !== 'transaction') {
+    _pendingNavPage = { page, updateHash };
+    const overlay = qs('#tx-dirty-overlay');
+    if (overlay) { overlay.style.display = 'flex'; }
+    return;
+  }
+  _doNavigateTo(page, updateHash);
+}
+function _doNavigateTo(page, updateHash = true) {
   currentPage = page;
   qsa('.page').forEach(p => p.classList.remove('active'));
   const el = qs('#page-' + page); if (el) el.classList.add('active');
   qsa('#sidebar .nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
+  updateMobileNav(page);
   if (updateHash && location.hash !== '#' + page) history.pushState(null, '', '#' + page);
   try {
     onPageEnter(page);
@@ -2254,6 +2856,24 @@ function navigateTo(page, updateHash = true) {
     console.error('خطأ في تحميل الصفحة:', e);
     toast('خطأ في تحميل الصفحة: ' + e.message, true);
   }
+}
+function txDirtyConfirmLeave() {
+  qs('#tx-dirty-overlay').style.display = 'none';
+  txDirty = false;
+  if (_pendingNavPage) { _doNavigateTo(_pendingNavPage.page, _pendingNavPage.updateHash); _pendingNavPage = null; }
+}
+function txDirtyCancel() {
+  qs('#tx-dirty-overlay').style.display = 'none';
+  _pendingNavPage = null;
+}
+function txDirtyReset() {
+  qs('#tx-dirty-overlay').style.display = 'none';
+  txDirty = false;
+  resetTx();
+  if (_pendingNavPage) { _doNavigateTo(_pendingNavPage.page, _pendingNavPage.updateHash); _pendingNavPage = null; }
+}
+function markTxDirty() {
+  if (currentPage === 'transaction') txDirty = true;
 }
 function handleHashChange() {
   const hash = location.hash.slice(1);
@@ -2265,6 +2885,12 @@ function handleHashChange() {
   }
 }
 window.addEventListener('hashchange', handleHashChange);
+window.addEventListener('beforeunload', function(e) {
+  if (txDirty && currentPage === 'transaction') {
+    e.preventDefault();
+    e.returnValue = 'لديك حركة غير محفوظة. هل تريد المغادرة؟';
+  }
+});
 
 function goCreateTransaction(txKind) {
   closeAllMenus();
@@ -2288,7 +2914,11 @@ function onPageEnter(page) {
       break;
     }
     case 'inventory': loadInventory().catch(e => toast('خطأ: ' + e.message, true)); break;
-    case 'movements': renderMovements(); break;
+    case 'movements':
+      localStorage.setItem('mov_seen_count', String(transactions.filter(t => !t.cancelled).length));
+      renderMovements();
+      buildSidebar();
+      break;
     case 'clients': renderClients(); break;
     case 'products': renderProducts(); break;
     case 'suppliers': renderSuppliers(); break;
@@ -2348,6 +2978,10 @@ async function loadAllData() {
     if (settings.darkMode) document.body.classList.add('dark-mode');
     if (settings.lang) { currentLang = settings.lang; applyLang(); }
     try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
+    // Initialize movements seen-count baseline on first load if not set
+    if (localStorage.getItem('mov_seen_count') === null) {
+      localStorage.setItem('mov_seen_count', String(transactions.filter(t => !t.cancelled).length));
+    }
     buildNotifications();
   } catch (e) { toast('خطأ في تحميل البيانات: ' + e.message, true); }
 }
@@ -2631,7 +3265,7 @@ function movementStatusCell(tx) {
 
 /* Transaction Page */
 function initTxPage() {
-  txItems = [{ productId: '', qty: 1, price: 0 }]; txDiscount = 0; txDiscountType = 'fixed'; txComments = [];
+  txItems = []; txDiscount = 0; txDiscountType = 'fixed'; txComments = []; txDirty = false;
   renderTxFields(); renderTxItems(); calcTxSummary(); renderTxComments();
 }
 
@@ -2713,61 +3347,71 @@ function renderTxFields() {
 
     <!-- ═══════ كارد الدفع والديبوزت (عرض كامل) ═══════ -->
     <div style="grid-column:1/-1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px">
-      <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">
         <svg viewBox="0 0 24 24" style="width:15px;height:15px;color:var(--green);flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="1.5"/></svg>
         <span style="font-weight:700;font-size:.8rem;color:var(--green)">الدفع والديبوزت</span>
       </div>
-      <label style="display:block;font-size:.79rem;font-weight:600;color:var(--muted);margin-bottom:8px">طريقة دفع الديبوزت</label>
-      <select id="tx-dep-method" style="display:none">
-        <option value="Instapay">Instapay</option>
-        <option value="فودافون كاش">فودافون كاش</option>
-        <option value="كاش">كاش</option>
-        <option value="تحويل بنكي">تحويل بنكي</option>
-      </select>
-      <div id="dep-method-btns" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
-        <button type="button" class="dep-method-btn" data-val="Instapay" onclick="selectDepMethod('Instapay',this)"
-          style="padding:10px 8px;border-radius:9px;border:2px solid #6366f1;background:rgba(99,102,241,.1);color:#4f46e5;font-weight:700;font-size:.8rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .15s;position:relative">
-          <span style="position:absolute;top:-8px;background:#6366f1;color:#fff;font-size:.57rem;padding:1px 6px;border-radius:20px;white-space:nowrap">الأكثر استخداماً</span>
-          <svg viewBox="0 0 24 24" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          <span>Instapay</span>
-        </button>
-        <button type="button" class="dep-method-btn" data-val="فودافون كاش" onclick="selectDepMethod('فودافون كاش',this)"
-          style="padding:10px 8px;border-radius:9px;border:2px solid var(--border);background:var(--surface);color:var(--text);font-weight:600;font-size:.8rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .15s;position:relative">
-          <span style="position:absolute;top:-8px;background:#e11d48;color:#fff;font-size:.57rem;padding:1px 6px;border-radius:20px;white-space:nowrap">شائع</span>
-          <svg viewBox="0 0 24 24" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.22 1.22 2 2 0 012.22 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.16 6.16l1.08-.55a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-          <span>فودافون كاش</span>
-        </button>
-        <button type="button" class="dep-method-btn" data-val="كاش" onclick="selectDepMethod('كاش',this)"
-          style="padding:10px 8px;border-radius:9px;border:2px solid var(--border);background:var(--surface);color:var(--text);font-weight:600;font-size:.8rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .15s">
-          <svg viewBox="0 0 24 24" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="1.5"/></svg>
-          <span>كاش</span>
-        </button>
-        <button type="button" class="dep-method-btn" data-val="تحويل بنكي" onclick="selectDepMethod('تحويل بنكي',this)"
-          style="padding:10px 8px;border-radius:9px;border:2px solid var(--border);background:var(--surface);color:var(--text);font-weight:600;font-size:.8rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .15s">
-          <svg viewBox="0 0 24 24" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M3 10h18M3 6l9-4 9 4"/><path d="M6 10v12M10 10v12M14 10v12M18 10v12"/></svg>
-          <span>تحويل بنكي</span>
-        </button>
+
+      <!-- قيمة الديبوزت -->
+      <div class="form-group" style="margin-bottom:14px">
+        <label>قيمة الديبوزت المدفوع</label>
+        <div style="position:relative">
+          <input type="number" id="tx-deposit" value="" min="0" oninput="calcTxSummary();toggleDepMethodVisibility()" placeholder="0 — اتركه فارغاً إذا لم يدفع مقدماً" style="padding-left:32px">
+          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.85rem;font-weight:600">ج</span>
+        </div>
+        <div class="field-hint">اختياري — الديبوزت هو الدفعة المقدمة من العميل</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="form-group" style="margin-bottom:0">
-          <label>قيمة الديبوزت</label>
-          <div style="position:relative">
-            <input type="number" id="tx-deposit" value="0" min="0" oninput="calcTxSummary()" placeholder="0" style="padding-left:32px">
-            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.85rem;font-weight:600">ج</span>
-          </div>
-          <div class="field-hint">اتركه 0 إذا لم يدفع مقدماً</div>
+
+      <!-- طريقة دفع الديبوزت — تظهر فقط عند إدخال قيمة -->
+      <div id="dep-method-section" style="display:none;margin-bottom:14px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;animation:fadeIn .18s">
+        <label style="display:block;font-size:.79rem;font-weight:700;color:var(--text);margin-bottom:10px">
+          طريقة دفع الديبوزت <span style="color:var(--red)">*</span>
+        </label>
+        <select id="tx-dep-method" style="display:none">
+          <option value="">— اختر —</option>
+          <option value="Instapay">Instapay</option>
+          <option value="فودافون كاش">فودافون كاش</option>
+          <option value="كاش">كاش</option>
+          <option value="تحويل بنكي">تحويل بنكي</option>
+        </select>
+        <div id="dep-method-btns" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+          <button type="button" class="dep-method-btn" data-val="Instapay" onclick="selectDepMethod('Instapay',this)"
+            style="padding:10px 8px;border-radius:9px;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-weight:600;font-size:.8rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .15s;position:relative">
+            <span style="position:absolute;top:-8px;background:#6366f1;color:#fff;font-size:.57rem;padding:1px 6px;border-radius:20px;white-space:nowrap">الأكثر استخداماً</span>
+            <img src="/instapay.svg" style="width:32px;height:32px;object-fit:contain" alt="InstaPay">
+            <span>Instapay</span>
+          </button>
+          <button type="button" class="dep-method-btn" data-val="فودافون كاش" onclick="selectDepMethod('فودافون كاش',this)"
+            style="padding:10px 8px;border-radius:9px;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-weight:600;font-size:.8rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .15s;position:relative">
+            <span style="position:absolute;top:-8px;background:#e11d48;color:#fff;font-size:.57rem;padding:1px 6px;border-radius:20px;white-space:nowrap">شائع</span>
+            <img src="/vodafone.svg" style="width:36px;height:28px;object-fit:contain" alt="Vodafone Cash">
+            <span>فودافون كاش</span>
+          </button>
+          <button type="button" class="dep-method-btn" data-val="كاش" onclick="selectDepMethod('كاش',this)"
+            style="padding:10px 8px;border-radius:9px;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-weight:600;font-size:.8rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .15s">
+            <svg viewBox="0 0 24 24" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="1.5"/></svg>
+            <span>كاش</span>
+          </button>
+          <button type="button" class="dep-method-btn" data-val="تحويل بنكي" onclick="selectDepMethod('تحويل بنكي',this)"
+            style="padding:10px 8px;border-radius:9px;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-weight:600;font-size:.8rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .15s">
+            <svg viewBox="0 0 24 24" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M3 10h18M3 6l9-4 9 4"/><path d="M6 10v12M10 10v12M14 10v12M18 10v12"/></svg>
+            <span>تحويل بنكي</span>
+          </button>
         </div>
-        <div class="form-group" id="tx-payment-group" style="margin-bottom:0">
-          <label>طريقة دفع المتبقي</label>
-          <select id="tx-payment">
-            <option value="كاش">كاش</option>
-            <option value="آجل">آجل</option>
-            <option value="فودافون كاش">فودافون كاش</option>
-            <option value="Instapay">Instapay</option>
-            <option value="تحويل بنكي">تحويل بنكي</option>
-          </select>
-          <div class="field-hint">كيف سيُسدَّد الباقي عند التسليم</div>
-        </div>
+        <div id="err-dep-method" style="color:var(--red);font-size:.75rem;margin-top:6px"></div>
+      </div>
+
+      <!-- طريقة دفع المتبقي -->
+      <div class="form-group" id="tx-payment-group" style="margin-bottom:0">
+        <label>طريقة دفع المتبقي</label>
+        <select id="tx-payment">
+          <option value="كاش">كاش</option>
+          <option value="آجل">آجل</option>
+          <option value="فودافون كاش">فودافون كاش</option>
+          <option value="Instapay">Instapay</option>
+          <option value="تحويل بنكي">تحويل بنكي</option>
+        </select>
+        <div class="field-hint">كيف سيُسدَّد الباقي عند التسليم</div>
       </div>
     </div>
 
@@ -2841,51 +3485,71 @@ function getShipCost() {
 }
 
 function addTxItem(productId) {
-  const item = { productId: productId || '', qty: 1, price: 0 };
-  if (productId) { const p = products.find(x => x._id === productId); if (p) item.price = txType === 'مشتريات' ? (p.buyPrice || 0) : (p.sellPrice || 0); }
-  txItems.push(item); renderTxItems(); calcTxSummary();
+  if (!productId) { openProductPicker(); return; }
+  const p = products.find(x => x._id === productId);
+  const price = p ? (txType === 'مشتريات' ? (p.buyPrice || 0) : (p.sellPrice || 0)) : 0;
+  const existing = txItems.find(it => it.productId === productId);
+  if (existing) { existing.qty += 1; }
+  else { txItems.push({ productId, qty: 1, price }); }
+  renderTxItems(); calcTxSummary();
 }
 function removeTxItem(i) { txItems.splice(i, 1); renderTxItems(); calcTxSummary(); }
 
 function renderTxItems() {
+  if (!txItems.length) {
+    qs('#tx-items').innerHTML = `<div onclick="openProductPicker()" class="tx-empty-state">
+      <div class="tx-empty-icon">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+      <div style="font-size:.85rem;font-weight:600;margin-top:8px">إضافة صنف</div>
+      <div style="font-size:.74rem;margin-top:3px">اضغط لاختيار أصناف من قائمة المنتجات</div>
+    </div>`;
+    return;
+  }
   qs('#tx-items').innerHTML = txItems.map((item, i) => {
     const available = item.productId ? getProductAvailableStock(item.productId) : null;
     const otherItemsQty = txItems.reduce((sum, it, idx) => {
       if (idx !== i && it.productId === item.productId) return sum + (it.qty || 0);
       return sum;
     }, 0);
-    const effectiveAvailable = available !== null ? Math.max(0, available - otherItemsQty) : null;
-    const isOverStock = txType === 'مبيعات' && item.productId && item.qty > effectiveAvailable;
-    const stockInfo = txType === 'مبيعات' && item.productId
-      ? `<div class="stock-info ${isOverStock ? 'stock-warning' : ''}" style="font-size:0.75rem;margin-top:3px">${isOverStock ? `<span style="color:var(--red)">المتاح: ${effectiveAvailable} <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>` : `<span class="stock-available"><span class="stock-live-dot"></span>المتاح: ${effectiveAvailable}</span>`}</div>`
-      : '';
+    const effectiveAvailable = (available !== null && available >= 0) ? Math.max(0, available - otherItemsQty) : null;
+    const isOverStock = txType === 'مبيعات' && item.productId && effectiveAvailable !== null && item.qty > effectiveAvailable;
     const product = item.productId ? products.find(p => p._id === item.productId) : null;
     const itemTotal = (item.qty || 0) * (item.price || 0);
+    const stockRow = txType === 'مبيعات' && item.productId
+      ? isOverStock
+        ? `<div class="tx-item-stock"><span style="color:var(--red);display:inline-flex;align-items:center;gap:4px"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>يتجاوز المتاح: ${effectiveAvailable}</span></div>`
+        : `<div class="tx-item-stock"><span class="stock-available"><span class="stock-live-dot"></span>متاح: ${effectiveAvailable}</span></div>`
+      : '';
+    const productName = product ? product.name : 'صنف غير محدد';
+    const productCode = product ? (product.code || '') : '';
     return `
-    <div class="tx-product-row ${isOverStock ? 'row-stock-warning' : ''}">
-      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
-        <select onchange="txItemChanged(${i},'productId',this.value)">
-          <option value="">اختر صنف</option>
-          ${products.map(p => `<option value="${esc(p._id)}" ${item.productId === p._id ? 'selected' : ''}>${esc(p.code ? p.code + ' - ' : '')}${esc(p.name)}</option>`).join('')}
-        </select>
-        ${product ? `<div style="font-size:0.85rem;color:var(--muted);font-weight:500">${esc(product.code || '-')} — ${esc(product.name)}</div>` : ''}
-        ${stockInfo}
+    <div class="tx-item-card ${isOverStock ? 'row-stock-warning' : ''}">
+      <div class="tx-item-top">
+        <span class="tx-item-num">${i + 1}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:.88rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(productName)}</div>
+          ${productCode ? `<div style="font-size:.71rem;color:var(--muted);margin-top:1px">${esc(productCode)}</div>` : ''}
+        </div>
+        <button class="tx-item-remove" onclick="removeTxItem(${i})" title="حذف">
+          <svg viewBox="0 0 14 14" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/></svg>
+        </button>
       </div>
-      <div style="display:flex;gap:12px;align-items:flex-start;padding-top:6px">
-        <div style="text-align:center;min-width:60px">
-          <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:2px">السعر</label>
-          <div style="font-weight:600;font-size:1rem">${fmtJ(item.price || 0)}</div>
+      <div class="tx-item-grid">
+        <div class="tx-item-field">
+          <span class="tx-item-label">السعر</span>
+          <span class="tx-item-val">${fmtJ(item.price || 0)}</span>
         </div>
-        <div style="text-align:center;min-width:60px">
-          <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:2px">الكمية</label>
-          <input type="number" value="${item.qty}" min="1" onchange="txItemChanged(${i},'qty',this.value)" style="width:100%;text-align:center;font-weight:600;${isOverStock ? 'border-color:var(--red);background:rgba(239,68,68,0.1)' : ''}">
+        <div class="tx-item-field">
+          <span class="tx-item-label">الكمية</span>
+          <input type="number" value="${item.qty}" min="1" ${txType === 'مبيعات' && effectiveAvailable !== null && effectiveAvailable >= 0 ? `max="${effectiveAvailable}"` : ''} class="tx-item-qty-input${isOverStock ? ' stock-warn' : ''}" onchange="txItemChanged(${i},'qty',this.value)">
         </div>
-        <div style="text-align:center;min-width:70px">
-          <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:2px">الإجمالي</label>
-          <div style="font-weight:700;font-size:1rem;color:var(--primary)">${fmtJ(itemTotal)}</div>
+        <div class="tx-item-field">
+          <span class="tx-item-label">الإجمالي</span>
+          <span class="tx-item-val tx-item-total">${fmtJ(itemTotal)}</span>
         </div>
-        <button class="btn-icon btn-danger" onclick="removeTxItem(${i})" style="flex-shrink:0;align-self:center">✕</button>
       </div>
+      ${stockRow}
     </div>`;
   }).join('');
 }
@@ -2893,15 +3557,22 @@ function renderTxItems() {
 function getProductAvailableStock(productId) {
   const inv = Array.isArray(inventoryCache) ? inventoryCache : [];
   const p = products.find(x => x._id === productId);
-  if (!p) return 0;
-  const invItem = inv.find(r => r.code === p.code || r.name === p.name);
-  return invItem ? (invItem.current || 0) : 0;
+  if (!p) return -1; // -1 = unknown (not found in inventory list)
+  const normalize = s => String(s || '').trim().toLowerCase();
+  const pc = normalize(p.code), pn = normalize(p.name);
+  const invItem = inv.find(r =>
+    (pc && normalize(r.code) === pc) ||
+    (pn && normalize(r.name) === pn)
+  );
+  if (!invItem) return -1; // product exists but not in inventory list yet
+  return invItem.current ?? 0;
 }
 
 function validateItemStock(productId, requestedQty, itemIndex) {
   if (txType !== 'مبيعات') return true;
   if (!productId) return true;
   const available = getProductAvailableStock(productId);
+  if (available < 0) return true; // unknown stock — allow
   const otherItemsQty = txItems.reduce((sum, item, idx) => {
     if (idx !== itemIndex && item.productId === productId) return sum + (item.qty || 0);
     return sum;
@@ -2936,14 +3607,14 @@ function validateAllItemsStock() {
   return issues;
 }
 
-function txItemChanged(i, field, val) {
+function txItemChanged(i, field, val) { markTxDirty();
   if (field === 'productId') {
     txItems[i].productId = val;
     const p = products.find(x => x._id === val);
     if (p) txItems[i].price = txType === 'مشتريات' ? (p.buyPrice || 0) : (p.sellPrice || 0);
     if (txType === 'مبيعات' && val) {
       const available = getProductAvailableStock(val);
-      if (available <= 0) {
+      if (available === 0) {
         toast(`⚠️ تنبيه: "${p?.name || 'الصنف'}" غير متوفر في المخزن حالياً`, true);
       }
     }
@@ -2960,19 +3631,137 @@ function txItemChanged(i, field, val) {
   calcTxSummary();
 }
 
-function toggleProductSearch() {
-  const el = qs('#tx-product-search');
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
-  if (el.style.display === 'block') filterTxProducts('');
+function toggleProductSearch() { openProductPicker(); }
+
+let txPickerFilter = 'all';
+
+function openProductPicker() {
+  const overlay = qs('#tx-picker-overlay');
+  if (!overlay) return;
+  // Desktop: center; mobile: bottom sheet
+  if (window.innerWidth >= 769) overlay.classList.add('desktop');
+  else overlay.classList.remove('desktop');
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  txPickerFilter = 'all';
+  qsa('.tx-pf-btn').forEach(b => b.classList.remove('active'));
+  qs('#txpf-all')?.classList.add('active');
+  const qInput = qs('#tx-picker-q');
+  if (qInput) qInput.value = '';
+  if (!Array.isArray(inventoryCache) || inventoryCache.length === 0) {
+    api('/transactions/inventory').then(data => { inventoryCache = data; filterTxPicker(''); }).catch(() => {});
+  }
+  filterTxPicker('');
+  setTimeout(() => qs('#tx-picker-q')?.focus(), 120);
 }
-function filterTxProducts(q) {
+
+function closeProductPicker() {
+  const overlay = qs('#tx-picker-overlay');
+  if (overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function setPickerFilter(filter, btn) {
+  txPickerFilter = filter;
+  qsa('.tx-pf-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterTxPicker(qs('#tx-picker-q')?.value || '');
+}
+
+function filterTxPicker(q) {
   const tokens = normalizeUiSearch(q).split(/\s+/).filter(Boolean);
-  const list = products.filter(p => {
+  let list = products.filter(p => {
     const blob = normalizeUiSearch([p.name, p.code || ''].join(' '));
     return !tokens.length || tokens.every(t => blob.includes(t));
   });
-  qs('#tx-ps-list').innerHTML = list.map(p => `<div class="ps-item" onclick="addTxItem('${esc(p._id)}')"><span>${esc(p.code ? p.code + ' - ' : '')}${esc(p.name)}</span><span class="text-muted">${fmtJ(txType === 'مشتريات' ? p.buyPrice : p.sellPrice)}</span></div>`).join('');
+  if (txPickerFilter === 'avail') {
+    list = list.filter(p => {
+      const s = getProductAvailableStock(p._id);
+      return s === -1 || s > 0;
+    });
+  }
+  const listEl = qs('#tx-picker-list');
+  if (!listEl) return;
+  if (!list.length) { listEl.innerHTML = `<div class="tx-picker-empty">لا توجد أصناف مطابقة</div>`; return; }
+  listEl.innerHTML = list.map(p => {
+    const stock = getProductAvailableStock(p._id);
+    const price = txType === 'مشتريات' ? (p.buyPrice || 0) : (p.sellPrice || 0);
+    const existing = txItems.find(it => it.productId === p._id);
+    const qty = existing ? existing.qty : 0;
+    const isOut = stock === 0;
+    let stockBadge = '';
+    if (stock === 0) stockBadge = `<span class="tx-picker-stock" style="color:var(--red);font-weight:600">نفد من المخزن</span>`;
+    else if (stock > 0) stockBadge = `<span class="tx-picker-stock stock-available" style="gap:3px"><span class="stock-live-dot"></span>متوفر: ${fmtN(stock)}</span>`;
+    const addCtrl = qty > 0
+      ? `<div class="tx-picker-qty-ctrl">
+           <button onclick="pickerChangeQty('${esc(p._id)}',-1)" title="تقليل">
+             <svg viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="6" x2="10" y2="6"/></svg>
+           </button>
+           <span>${qty}</span>
+           <button onclick="pickerChangeQty('${esc(p._id)}',1)" title="زيادة" ${txType === 'مبيعات' && stock >= 0 && qty >= stock ? 'disabled style="opacity:.35;cursor:not-allowed"' : ''}>
+             <svg viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg>
+           </button>
+         </div>`
+      : `<button class="tx-picker-add${isOut && txType==='مبيعات' ? ' out' : ''}" onclick="pickerAddItem('${esc(p._id)}')" title="إضافة">
+           <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>
+         </button>`;
+    return `<div class="tx-picker-item${isOut && txType==='مبيعات' ? ' out-of-stock' : ''}">
+      <div class="tx-picker-info">
+        <div class="tx-picker-name">${esc(p.name)}</div>
+        ${p.code ? `<div class="tx-picker-code">${esc(p.code)}</div>` : ''}
+        ${stockBadge}
+      </div>
+      <div class="tx-picker-price">${fmtJ(price)}</div>
+      ${addCtrl}
+    </div>`;
+  }).join('');
 }
+
+function pickerAddItem(productId) { markTxDirty();
+  const p = products.find(x => x._id === productId);
+  if (!p) return;
+  const price = txType === 'مشتريات' ? (p.buyPrice || 0) : (p.sellPrice || 0);
+  const existing = txItems.find(it => it.productId === productId);
+  if (existing) {
+    if (txType === 'مبيعات') {
+      const stock = getProductAvailableStock(productId);
+      if (stock >= 0 && existing.qty >= stock) {
+        toast(`الكمية المتاحة من "${p.name}" هي ${stock} فقط`, true);
+        return;
+      }
+    }
+    existing.qty += 1;
+  } else {
+    txItems.push({ productId, qty: 1, price });
+  }
+  renderTxItems();
+  calcTxSummary();
+  filterTxPicker(qs('#tx-picker-q')?.value || '');
+}
+
+function pickerChangeQty(productId, delta) { markTxDirty();
+  const idx = txItems.findIndex(it => it.productId === productId);
+  if (idx === -1) return;
+  const newQty = txItems[idx].qty + delta;
+  if (newQty <= 0) {
+    txItems.splice(idx, 1);
+  } else {
+    if (delta > 0 && txType === 'مبيعات') {
+      const p = products.find(x => x._id === productId);
+      const stock = getProductAvailableStock(productId);
+      if (stock >= 0 && newQty > stock) {
+        toast(`الكمية المتاحة من "${p?.name || 'الصنف'}" هي ${stock} فقط`, true);
+        return;
+      }
+    }
+    txItems[idx].qty = newQty;
+  }
+  renderTxItems();
+  calcTxSummary();
+  filterTxPicker(qs('#tx-picker-q')?.value || '');
+}
+
+function filterTxProducts(q) { filterTxPicker(q); }
 
 function openDiscountModal() {
   const itemsTotal = txItems.reduce((s, it) => s + (it.qty * it.price), 0);
@@ -3060,7 +3849,31 @@ function selectDepMethod(val, btn) {
       b.style.fontWeight = '600';
     }
   });
+  const errEl = qs('#err-dep-method');
+  if (errEl) errEl.textContent = '';
   calcTxSummary();
+}
+
+function toggleDepMethodVisibility() {
+  const section = qs('#dep-method-section');
+  if (!section) return;
+  const deposit = Number(qs('#tx-deposit')?.value) || 0;
+  if (deposit > 0) {
+    section.style.display = 'block';
+  } else {
+    section.style.display = 'none';
+    // Reset selection when deposit cleared
+    const sel = qs('#tx-dep-method');
+    if (sel) sel.value = '';
+    qsa('#dep-method-btns .dep-method-btn').forEach(b => {
+      b.style.border = '2px solid var(--border)';
+      b.style.background = 'var(--surface2)';
+      b.style.color = 'var(--text)';
+      b.style.fontWeight = '600';
+    });
+    const errEl = qs('#err-dep-method');
+    if (errEl) errEl.textContent = '';
+  }
 }
 
 function getEffectiveDiscount() {
@@ -3081,19 +3894,209 @@ function calcTxSummary() {
   const deposit = Number(qs('#tx-deposit')?.value) || 0;
   const remaining = total - deposit;
   const discLabel = txDiscountType === 'percent' ? `الخصم (${txDiscount}%)` : 'الخصم';
+  const typeLabel = txType === 'مبيعات' ? 'مبيعات' : 'مشتريات';
+  const depMethod = qs('#tx-dep-method')?.value || '';
+  const depAccount = txType === 'مشتريات' ? (qs('#tx-account')?.value || '') : '';
+  const typeIcon = txType === 'مبيعات'
+    ? `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>`
+    : `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>`;
+
+  // Collapsible items breakdown
+  const validItems = txItems.filter(it => it.productId);
+  const itemsDetail = validItems.length ? `
+    <div class="sum-inv-detail" id="sum-items-detail" style="display:none">
+      ${validItems.map((it, i) => {
+        const p = products.find(x => x._id === it.productId);
+        const name = p ? p.name : 'صنف';
+        const lineTotal = it.qty * it.price;
+        return `<div class="sum-inv-row">
+          <span class="sum-inv-num">${i + 1}</span>
+          <span class="sum-inv-name">${esc(name)}</span>
+          <span class="sum-inv-qty">${it.qty} × ${fmtN(it.price)}</span>
+          <span class="sum-inv-price">${fmtJ(lineTotal)}</span>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  const chevronSvg = `<svg id="sum-chevron" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="4 6 8 10 12 6"/></svg>`;
+
+  // Payment rows
+  let paymentRows = '';
+  if (txType === 'مبيعات') {
+    if (deposit > 0) {
+      const methodBadge = depMethod ? `<span class="sum-dep-method">${esc(depMethod)}</span>` : '';
+      paymentRows = `
+        <div class="row"><span>الديبوزت المدفوع</span><span class="text-green" style="display:flex;align-items:center;gap:4px">${methodBadge}- ${fmtJ(deposit)}</span></div>
+        <div class="row"><span>المتبقي للتحصيل</span><span class="${remaining > 0 ? 'text-red' : 'text-green'}">${fmtJ(remaining)}</span></div>`;
+    } else {
+      paymentRows = `<div class="row" style="font-size:.78rem"><span style="color:var(--muted)">لا يوجد ديبوزت — الإجمالي بالكامل عند التسليم</span></div>`;
+    }
+  } else {
+    const dep = Number(qs('#tx-deposit')?.value) || 0;
+    const paid = dep > 0 ? dep : 0;
+    const rem = Math.max(0, total - paid);
+    const acctBadge = depAccount ? `<span class="sum-dep-method">${esc(depAccount)}</span>` : '';
+    paymentRows = `<div class="row"><span>العربون المدفوع الآن</span><span class="text-red" style="display:flex;align-items:center;gap:4px">${acctBadge}- ${fmtJ(paid)}</span></div>`;
+    paymentRows += rem > 0
+      ? `<div class="row"><span>المتبقي للمورد لاحقاً</span><span class="text-orange">${fmtJ(rem)}</span></div>`
+      : `<div class="row"><span class="text-green" style="display:flex;align-items:center;gap:4px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>مدفوع بالكامل</span></div>`;
+  }
+
   qs('#tx-summary').innerHTML = `
-    <div class="row"><span>إجمالي الأصناف</span><span>${fmtJ(itemsTotal)}</span></div>
-    <div class="row"><span>${esc(discLabel)}</span><span>${fmtJ(discount)}</span></div>
-    ${txType === 'مبيعات' ? `<div class="row"><span>الشحن</span><span>${fmtJ(shipCost)}</span></div>` : ''}
-    <div class="row total-row"><span>الإجمالي</span><span>${fmtJ(total)}</span></div>
-    ${txType === 'مبيعات' ? `<div class="row"><span>الديبوزت</span><span>${fmtJ(deposit)}</span></div><div class="row"><span>المتبقي</span><span class="${remaining > 0 ? 'text-red' : 'text-green'}">${fmtJ(remaining)}</span></div>` : ''}
-    ${txType === 'مشتريات' ? (() => { const dep = Number(qs('#tx-deposit')?.value) || 0; const paid = dep > 0 ? dep : 0; const rem = Math.max(0, total - paid); return `<div class="row"><span>العربون المدفوع الآن</span><span class="text-red">- ${fmtJ(paid)}</span></div>${rem > 0 ? `<div class="row"><span>المتبقي للمورد لاحقاً</span><span class="text-orange">${fmtJ(rem)}</span></div>` : '<div class="row"><span class="text-green"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> مدفوع بالكامل</span></div>'}`; })() : ''}`;
+    <div class="tx-summary-hd">${typeIcon}<h4>ملخص الحركة — ${typeLabel}</h4></div>
+    <div class="tx-summary-body">
+      <div class="row sum-items-toggle" onclick="toggleSummaryItems()" style="cursor:pointer">
+        <span class="sum-toggle-label" style="display:flex;align-items:center;gap:5px;transition:color .15s">
+          إجمالي الأصناف (${validItems.length})
+        </span>
+        <span style="display:flex;align-items:center;gap:6px">${fmtJ(itemsTotal)} ${chevronSvg}</span>
+      </div>
+      ${itemsDetail}
+      ${discount > 0 ? `<div class="row"><span>${esc(discLabel)}</span><span class="text-red">- ${fmtJ(discount)}</span></div>` : ''}
+      ${txType === 'مبيعات' && shipCost > 0 ? `<div class="row"><span>الشحن</span><span>+ ${fmtJ(shipCost)}</span></div>` : ''}
+      <div class="row total-row"><span>الإجمالي</span><span style="font-size:1.1rem">${fmtJ(total)}</span></div>
+      ${paymentRows}
+    </div>`;
+
   const payGroup = qs('#tx-payment-group');
   if (payGroup) {
     const isFullyPaid = remaining <= 0;
     payGroup.style.opacity = isFullyPaid ? '0.4' : '1';
     payGroup.style.pointerEvents = isFullyPaid ? 'none' : 'auto';
   }
+}
+
+function toggleSummaryItems() {
+  const detail = qs('#sum-items-detail');
+  const chevron = qs('#sum-chevron');
+  if (!detail) return;
+  const open = detail.style.display !== 'none';
+  detail.style.display = open ? 'none' : 'block';
+  if (chevron) chevron.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
+function printTxInvoice() {
+  const validItems = txItems.filter(it => it.productId);
+  if (!validItems.length) { toast('أضف أصناف أولاً قبل الطباعة', true); return; }
+  const discount = getEffectiveDiscount();
+  const shipCost = txType === 'مبيعات' ? getShipCost() : 0;
+  const itemsTotal = validItems.reduce((s, it) => s + it.qty * it.price, 0);
+  const total = itemsTotal - discount + shipCost;
+  const deposit = Number(qs('#tx-deposit')?.value) || 0;
+  const remaining = total - deposit;
+  const depMethod = qs('#tx-dep-method')?.value || qs('#tx-account')?.value || '';
+  const clientName = qs('#tx-client')?.value || qs('#tx-supplier')?.value || '—';
+  const clientPhone = qs('#tx-phone')?.value || '';
+  const ref = qs('#tx-ref')?.value || '';
+  const note = qs('#tx-inv-note')?.value || qs('#tx-notes')?.value || '';
+  const empName = currentUser?.name || currentUser?.username || '';
+  const dateStr = new Date().toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' });
+  const typeLabel = txType === 'مبيعات' ? 'فاتورة مبيعات' : 'فاتورة مشتريات';
+  const discLabel = txDiscountType === 'percent' ? `خصم (${txDiscount}%)` : 'خصم';
+  const shipCo = qs('#tx-shipco')?.value || '';
+
+  const itemsHtml = validItems.map((it, i) => {
+    const p = products.find(x => x._id === it.productId);
+    const name = p ? p.name : 'صنف';
+    const code = p?.code || '';
+    const lineTotal = it.qty * it.price;
+    return `<tr>
+      <td>${i + 1}</td>
+      <td><b>${name}</b>${code ? `<br><small style="color:#888">${code}</small>` : ''}</td>
+      <td>${it.qty}</td>
+      <td>${it.price.toLocaleString('ar-EG')} ج</td>
+      <td><b>${lineTotal.toLocaleString('ar-EG')} ج</b></td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8">
+  <title>${typeLabel}${ref ? ' #' + ref : ''}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#1a1a1a;background:#f5f5f5;padding:20px}
+    .page{background:#fff;max-width:720px;margin:0 auto;border-radius:12px;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.08)}
+    .inv-header{background:linear-gradient(135deg,#0f3d25 0%,#1a5c38 100%);color:#fff;padding:28px 32px;display:flex;justify-content:space-between;align-items:flex-start}
+    .inv-header h1{font-size:1.4rem;font-weight:800;letter-spacing:.5px}
+    .inv-header .sub{font-size:.8rem;opacity:.75;margin-top:4px}
+    .inv-meta{text-align:left}
+    .inv-meta .ref{font-size:1.1rem;font-weight:700}
+    .inv-meta .date{font-size:.8rem;opacity:.75;margin-top:4px}
+    .inv-body{padding:24px 32px}
+    .inv-parties{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid #f0f0f0}
+    .party-box h3{font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:8px;font-weight:700}
+    .party-box p{font-size:.95rem;font-weight:700;color:#1a1a1a}
+    .party-box .sub{font-size:.8rem;color:#666;margin-top:3px}
+    table{width:100%;border-collapse:collapse;font-size:.88rem}
+    thead tr{background:#f8f8f8;border-bottom:2px solid #e8e8e8}
+    th{padding:10px 12px;text-align:right;font-weight:700;font-size:.78rem;color:#555;white-space:nowrap}
+    th:last-child,td:last-child{text-align:left}
+    td{padding:10px 12px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+    tbody tr:last-child td{border-bottom:none}
+    tbody tr:hover{background:#fafafa}
+    .totals{margin-top:20px;border-top:2px solid #f0f0f0;padding-top:16px}
+    .tot-row{display:flex;justify-content:space-between;padding:5px 0;font-size:.88rem;color:#444}
+    .tot-row.bold{font-weight:800;font-size:1.05rem;color:#0f3d25;padding:10px 0 6px;border-top:2px solid #0f3d25;margin-top:6px}
+    .tot-row .method{font-size:.72rem;background:#f0f0f0;border-radius:4px;padding:1px 8px;color:#555;margin-right:6px}
+    .inv-note{margin-top:20px;padding:14px 16px;background:#f8fdf9;border-right:4px solid #0f3d25;border-radius:0 8px 8px 0;font-size:.83rem;color:#444;line-height:1.6}
+    .inv-note .label{font-size:.72rem;font-weight:700;color:#0f3d25;margin-bottom:4px}
+    .inv-footer{margin-top:28px;padding:16px 32px;background:#f8f8f8;display:flex;justify-content:space-between;align-items:center;font-size:.75rem;color:#888}
+    .inv-footer .emp{font-weight:600;color:#555}
+    .badge-paid{display:inline-block;background:#dcfce7;color:#166534;border:1px solid #bbf7d0;border-radius:20px;padding:2px 12px;font-size:.75rem;font-weight:700}
+    .badge-pending{display:inline-block;background:#fef9c3;color:#854d0e;border:1px solid #fef08a;border-radius:20px;padding:2px 12px;font-size:.75rem;font-weight:700}
+    @media print{body{background:#fff;padding:0}.page{box-shadow:none;border-radius:0;max-width:100%}}
+  </style></head><body>
+  <div class="page">
+    <div class="inv-header">
+      <div>
+        <h1>${typeLabel}</h1>
+        <div class="sub">نظام إدارة المخزون — SOULIA</div>
+      </div>
+      <div class="inv-meta">
+        ${ref ? `<div class="ref"># ${ref}</div>` : ''}
+        <div class="date">${dateStr}</div>
+        ${empName ? `<div class="date" style="margin-top:6px">الموظف: ${empName}</div>` : ''}
+      </div>
+    </div>
+    <div class="inv-body">
+      <div class="inv-parties">
+        <div class="party-box">
+          <h3>${txType === 'مبيعات' ? 'العميل' : 'المورد'}</h3>
+          <p>${clientName}</p>
+          ${clientPhone ? `<div class="sub">${clientPhone}</div>` : ''}
+        </div>
+        <div class="party-box">
+          <h3>حالة الفاتورة</h3>
+          ${remaining <= 0
+            ? '<span class="badge-paid">مكتمل الدفع</span>'
+            : `<span class="badge-pending">متبقي ${remaining.toLocaleString('ar-EG')} ج</span>`}
+          ${shipCo ? `<div class="sub" style="margin-top:8px">شركة الشحن: ${shipCo}</div>` : ''}
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+        <tbody>${itemsHtml}</tbody>
+      </table>
+      <div class="totals">
+        <div class="tot-row"><span>إجمالي الأصناف</span><span>${itemsTotal.toLocaleString('ar-EG')} ج</span></div>
+        ${discount > 0 ? `<div class="tot-row"><span>${discLabel}</span><span style="color:#ef4444">- ${discount.toLocaleString('ar-EG')} ج</span></div>` : ''}
+        ${shipCost > 0 ? `<div class="tot-row"><span>تكلفة الشحن</span><span>+ ${shipCost.toLocaleString('ar-EG')} ج</span></div>` : ''}
+        <div class="tot-row bold"><span>الإجمالي الكلي</span><span>${total.toLocaleString('ar-EG')} ج</span></div>
+        ${deposit > 0 ? `<div class="tot-row"><span>الديبوزت المدفوع${depMethod ? ` <span class="method">${depMethod}</span>` : ''}</span><span style="color:#16a34a">- ${deposit.toLocaleString('ar-EG')} ج</span></div>` : ''}
+        ${deposit > 0 ? `<div class="tot-row"><span>${txType === 'مبيعات' ? 'المتبقي للتحصيل' : 'المتبقي للمورد'}</span><span style="color:${remaining > 0 ? '#ef4444' : '#16a34a'}">${remaining.toLocaleString('ar-EG')} ج</span></div>` : ''}
+      </div>
+      ${note ? `<div class="inv-note"><div class="label">ملاحظة</div>${note}</div>` : ''}
+    </div>
+    <div class="inv-footer">
+      <span>تم الإنشاء بواسطة نظام SOULIA</span>
+      ${empName ? `<span class="emp">الموظف: ${empName}</span>` : ''}
+    </div>
+  </div>
+  <script>window.onload=()=>{window.print()}<\/script>
+  </body></html>`;
+
+  const win = window.open('', '_blank', 'width=800,height=700');
+  if (win) { win.document.write(html); win.document.close(); }
+  else toast('السماح بالنوافذ المنبثقة لطباعة الفاتورة', true);
 }
 
 function isValidPhone(phone) {
@@ -3363,9 +4366,16 @@ function validateTx() {
     else if (!/^\d+$/.test(saleRef)) { const el = qs('#err-ref'); if (el) el.textContent = 'أرقام فقط'; valid = false; }
     else if (isRetailRefTaken(saleRef, null)) { const el = qs('#err-ref'); if (el) el.textContent = 'مرجع مستخدم في حركة أخرى'; valid = false; }
     if (!qs('#tx-shipco')?.value) { const el = qs('#err-shipco'); if (el) el.textContent = 'اختر شركة شحن'; valid = false; }
-    const depMethod = qs('#tx-dep-method')?.value;
     const deposit = Number(qs('#tx-deposit')?.value) || 0;
-    if (depMethod && depMethod !== 'كاش' && deposit <= 0) { toast('الديبوزت يجب أن يكون أكبر من 0 عند اختيار طريقة دفع', true); valid = false; }
+    if (deposit > 0) {
+      const depMethod = qs('#tx-dep-method')?.value || '';
+      if (!depMethod) {
+        const errEl = qs('#err-dep-method');
+        if (errEl) errEl.textContent = 'اختر طريقة دفع الديبوزت';
+        toast('اختر طريقة دفع الديبوزت', true);
+        valid = false;
+      }
+    }
     const stockIssues = validateAllItemsStock();
     if (stockIssues.length > 0) {
       stockIssues.forEach(issue => toast(issue, true));
@@ -3475,7 +4485,7 @@ async function saveTx() {
     const deposit = Number(qs('#tx-deposit')?.value) || 0;
     const body = { date: new Date().toISOString(), type: txType, items, itemsTotal, discount, total,
       client: qs('#tx-client')?.value || '', phone: qs('#tx-phone')?.value || '',
-      ref: (qs('#tx-ref')?.value || '').trim(), notes: qs('#tx-notes')?.value || '',
+      ref: (qs('#tx-ref')?.value || '').trim(), notes: (qs('#tx-inv-note')?.value || qs('#tx-notes')?.value || '').trim(),
       employee: currentUser?.name || currentUser?.username || '',
       comments: txComments.length > 0 ? txComments : [] };
     if (txType === 'مبيعات') {
@@ -3604,6 +4614,7 @@ async function confirmTxSave() {
   try {
     await api('/transactions', { method: 'POST', body: JSON.stringify(pendingTxData) });
 
+    txDirty = false;
     const successMsg = pendingTxData.type === 'مشتريات'
       ? 'تم حفظ حركة المشتريات بنجاح ✅'
       : 'تم حفظ حركة المبيعات بنجاح ✅';
@@ -3723,6 +4734,7 @@ async function confirmReturnRequest() {
   if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.style.opacity = '0.6'; }
   try {
     await api('/returns', { method: 'POST', body: JSON.stringify(_pendingReturnBody), headers: _pendingReturnHeaders });
+    txDirty = false;
     closeModal();
     toast(`✅ تم إرسال طلب الاسترجاع — في انتظار موافقة المدير`);
     returnRequests = await api('/returns').catch(() => returnRequests);
@@ -3739,16 +4751,17 @@ async function confirmReturnRequest() {
 }
 
 function resetTx() {
-  txItems = [{ productId: '', qty: 1, price: 0 }]; txDiscount = 0; txDiscountType = 'fixed';
-  // Clear manual refund field for return requests
+  txItems = []; txDiscount = 0; txDiscountType = 'fixed'; txDirty = false;
   const manualRefundField = qs('#ret-manual-refund');
   if (manualRefundField) manualRefundField.value = '';
+  const invNote = qs('#tx-inv-note');
+  if (invNote) invNote.value = '';
   renderTxFields(); renderTxItems(); calcTxSummary();
 }
 
 /* Inventory */
 async function loadInventory() {
-  qs('#inv-table tbody').innerHTML = '<tr><td colspan="10"><div class="loading-spinner"></div></td></tr>';
+  qs('#inv-table tbody').innerHTML = '<tr><td colspan="11"><div class="loading-spinner"></div></td></tr>';
   try { inventoryCache = await api('/transactions/inventory'); }
   catch (e) { toast('خطأ في تحميل المخزن: ' + e.message, true); }
   renderInventory();
@@ -3804,13 +4817,17 @@ function renderInventory() {
   const total = data.length;
   if (invPage > Math.ceil(total / INV_PAGE_SIZE) || total === 0) invPage = 1;
   const pageData = data.slice((invPage-1)*INV_PAGE_SIZE, invPage*INV_PAGE_SIZE);
-  qs('#inv-table tbody').innerHTML = pageData.length ? pageData.map(r => `
-    <tr>
+  qs('#inv-table tbody').innerHTML = pageData.length ? pageData.map(r => {
+    const key = r.code || r.name;
+    const sel = selectedInvIds.has(key);
+    return `<tr class="${sel ? 'inv-row-selected' : ''}" onclick="handleInvRowClick(event,'${esc(key)}')">
+      <td><input type="checkbox" class="checkbox inv-check" value="${esc(key)}" ${sel ? 'checked' : ''} onclick="handleInvCheck(event,'${esc(key)}')"></td>
       <td>${esc(r.code || '-')}</td><td style="font-weight:600">${esc(r.name)}</td><td>${fmtJ(r.sellPrice)}</td><td class="inv-buyprice-col">${fmtJ(r.buyPrice)}</td>
       <td>${fmtN(r.openingBalance)}</td><td class="text-green">${fmtN(r.purchases)}</td>${invReturnCell(r)}<td class="text-blue">${fmtN(r.sales)}</td>
       <td>${stockBar(r)}</td>
       <td>${statusBadge(r)}</td>
-    </tr>`).join('') : '<tr><td colspan="10" class="empty-state">لا توجد بيانات</td></tr>';
+    </tr>`;
+  }).join('') : '<tr><td colspan="11" class="empty-state">لا توجد بيانات</td></tr>';
   // Hide buy price column from staff
   if (!isAdmin()) { qsa('.inv-buyprice-col').forEach(el => el.style.display = 'none'); }
   renderPagination('inv-pagination', total, invPage, INV_PAGE_SIZE, 'setInvPage');
@@ -3953,6 +4970,67 @@ function getVaultEntryStatusBadge(txId) {
   return '';
 }
 
+function renderMovMobileCard(tx) {
+  const isCancelled = tx.cancelled || isStatusCancelled(tx.payStatus);
+  const badgeHtml = movementKindBadge(tx);
+  const statusHtml = movementStatusCell(tx);
+  const rem = Number(tx.remaining) || 0;
+  const dep = exchangeSalePaidDisplayAmount(tx);
+  const hasShip = tx.type === 'مبيعات' && (Number(tx.shipCost) || 0) > 0;
+  return `<div onclick="showInvoiceDetail('${esc(tx._id)}')" style="background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:14px 16px;box-shadow:0 1px 6px rgba(0,0,0,.05);cursor:pointer;transition:box-shadow .15s;${isCancelled ? 'opacity:.65;' : ''}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${badgeHtml}</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">${statusHtml}
+        <div class="actions-dd" onclick="event.stopPropagation()">
+          <button class="dd-toggle" onclick="toggleActionMenu(event)" style="width:32px;height:32px">⋮</button>
+          <div class="dd-menu">
+            <div class="dd-item" onclick="showInvoiceDetail('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg> فتح الفاتورة</div>
+            ${!isCancelled ? `<div class="dd-item" onclick="openEditMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</div>` : ''}
+            <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة</div>
+            ${rem > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل</div>` : ''}
+            ${!isCancelled ? `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')">🚫 إلغاء</div>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="font-weight:700;font-size:.95rem;margin-bottom:4px;color:var(--text)">${tx.client ? esc(tx.client) : '<span style="color:var(--muted);font-weight:400">بدون اسم</span>'}</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--muted);margin-bottom:10px">
+      <span>${fmtDate(tx.date)}</span>
+      ${tx.ref ? `<span style="color:var(--border)">·</span><span style="color:var(--accent);font-weight:600">${esc(tx.ref)}</span>` : ''}
+      ${tx.employee ? `<span style="color:var(--border)">·</span><span>${esc(tx.employee)}</span>` : ''}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;background:var(--bg-alt);border-radius:8px;padding:10px 12px">
+      <div>
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:2px">الإجمالي</div>
+        <div style="font-weight:700;font-size:.9rem">${fmtJ(tx.total)}</div>
+        ${hasShip ? `<div style="font-size:.65rem;color:var(--muted)">شحن: ${fmtJ(Number(tx.actualShipCost || tx.shipCost))}</div>` : ''}
+      </div>
+      <div>
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:2px">المدفوع</div>
+        <div style="font-weight:600;font-size:.9rem">${dep}</div>
+      </div>
+      <div>
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:2px">المتبقي</div>
+        <div style="font-weight:700;font-size:.9rem;${rem > 0 ? 'color:var(--red)' : 'color:var(--green)'}">${fmtJ(rem)}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderRetMobileCard(r) {
+  const kindLabel = r.requestKind === 'exchange' ? 'استبدال' : 'استرجاع';
+  const statusColor = r.status === 'معتمد' ? '#10b981' : r.status === 'مرفوض' ? '#ef4444' : '#f59e0b';
+  return `<div onclick="showReturnRequestMovementDetail('${esc(r._id)}')" style="background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:14px 16px;box-shadow:0 1px 6px rgba(0,0,0,.05);cursor:pointer;border-right:4px solid #f59e0b">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700">${kindLabel}</span>
+      <span style="font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:20px;background:${statusColor}22;color:${statusColor}">${r.status}</span>
+    </div>
+    <div style="font-weight:700;font-size:.9rem;margin-bottom:4px">${r.client ? esc(r.client) : 'بدون اسم'}</div>
+    <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">${fmtDate(r.createdAt || '')} · ${esc(r.reason || '')}</div>
+    <div style="font-weight:700;font-size:.9rem;color:var(--red)">${fmtJ(r.total)} ج</div>
+  </div>`;
+}
+
 function renderMovementTxRow(tx) {
   const vaultHint = (tx.type === 'مرتجع' && String(tx.depMethod || '').trim())
     ? `<div class="text-xs text-muted" style="margin-top:4px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M3 10h18M3 6l9-4 9 4"/><path d="M6 10v12M10 10v12M14 10v12M18 10v12"/></svg> خصم من: <strong>${esc(tx.depMethod)}</strong></div>`
@@ -3967,9 +5045,10 @@ function renderMovementTxRow(tx) {
   // Full timestamp display
   const createdAt = tx.createdAt || tx.date;
   const dateCell = `<div style="font-size:.82rem;font-weight:600">${fmtDate(tx.date)}</div><div class="text-xs text-muted" style="margin-top:2px">${fmtDateTime(createdAt)}</div>`;
+  const isSelected = selectedMovIds.has(tx._id);
   const rowStyle = isCancelledOrLocked ? 'style="opacity:0.6;text-decoration:line-through"' : '';
-  return `<tr ${rowStyle}>
-    <td><input type="checkbox" class="checkbox mov-check" value="${esc(tx._id)}" ${selectedMovIds.has(tx._id) ? 'checked' : ''} onchange="toggleMovCheck('${esc(tx._id)}',this.checked)"></td>
+  return `<tr ${rowStyle} class="${isSelected ? 'mov-row-selected' : ''}" onclick="handleMovRowClick(event,'${esc(tx._id)}')">
+    <td><input type="checkbox" class="checkbox mov-check" value="${esc(tx._id)}" ${isSelected ? 'checked' : ''} onclick="handleMovCheck(event,'${esc(tx._id)}')"></td>
     <td>${dateCell}</td>
     <td>${movementKindBadge(tx)}${vaultStatusBadge}${vaultHint}</td>
     <td>
@@ -4103,6 +5182,14 @@ function renderMovements() {
   if (movPage > Math.ceil(total / MOV_PAGE_SIZE)) movPage = 1;
   const pageData = merged.slice((movPage-1)*MOV_PAGE_SIZE, movPage*MOV_PAGE_SIZE);
   qs('#mov-table tbody').innerHTML = pageData.map(row => row.k === 'tx' ? renderMovementTxRow(row.tx) : renderMovementReturnRequestRow(row.r)).join('');
+  const mobileList = qs('#mov-mobile-list');
+  if (mobileList) {
+    if (pageData.length === 0) {
+      mobileList.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--muted)"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px;opacity:.4"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg><div>لا توجد حركات</div></div>`;
+    } else {
+      mobileList.innerHTML = pageData.map(row => row.k === 'tx' ? renderMovMobileCard(row.tx) : renderRetMobileCard(row.r)).join('');
+    }
+  }
   renderPagination('mov-pagination', total, movPage, MOV_PAGE_SIZE, 'setMovPage');
   updateMovementSelectionActions();
 }
@@ -4217,14 +5304,78 @@ function selectCustomerFromHistory(clientName) {
 }
 
 let lastCheckedMovIdx = null;
+let lastCheckedInvIdx = null;
+let selectedInvIds = new Set();
 
-function toggleMovCheck(id, checked) {
-  if (checked) selectedMovIds.add(id);
-  else selectedMovIds.delete(id);
+function handleInvCheck(e, key) {
+  e.stopPropagation();
+  const allBoxes = [...qsa('#inv-table tbody .inv-check')];
+  const currentIdx = allBoxes.findIndex(b => b.value === key);
+  const checked = e.target.checked;
+  const applyOne = (b, val) => {
+    b.checked = val;
+    const row = b.closest('tr');
+    if (val) { selectedInvIds.add(b.value); row?.classList.add('inv-row-selected'); }
+    else { selectedInvIds.delete(b.value); row?.classList.remove('inv-row-selected'); }
+  };
+  if (e.shiftKey && lastCheckedInvIdx !== null && lastCheckedInvIdx !== currentIdx) {
+    const from = Math.min(lastCheckedInvIdx, currentIdx);
+    const to   = Math.max(lastCheckedInvIdx, currentIdx);
+    allBoxes.slice(from, to + 1).forEach(b => applyOne(b, checked));
+  } else {
+    applyOne(e.target, checked);
+  }
+  lastCheckedInvIdx = currentIdx;
+  const allCb = qs('#inv-check-all');
+  if (allCb) allCb.checked = allBoxes.length > 0 && allBoxes.every(b => b.checked);
+}
+
+function handleInvRowClick(e, key) {
+  if (e.target.closest('a,button,input,select')) return;
+  const cb = qs(`#inv-table .inv-check[value="${CSS.escape(key)}"]`);
+  if (!cb) return;
+  cb.checked = !cb.checked;
+  handleInvCheck({ target: cb, shiftKey: e.shiftKey, stopPropagation: () => {} }, key);
+}
+
+function toggleAllInv(cb) {
+  qsa('#inv-table tbody .inv-check').forEach(b => {
+    b.checked = cb.checked;
+    const row = b.closest('tr');
+    if (cb.checked) { selectedInvIds.add(b.value); row?.classList.add('inv-row-selected'); }
+    else { selectedInvIds.delete(b.value); row?.classList.remove('inv-row-selected'); }
+  });
+}
+
+function handleMovCheck(e, id) {
+  e.stopPropagation();
+  const allBoxes = [...qsa('#mov-table tbody .mov-check')];
+  const currentIdx = allBoxes.findIndex(b => b.value === id);
+  const checked = e.target.checked;
+  const applyOne = (b, val) => {
+    b.checked = val;
+    const row = b.closest('tr');
+    if (val) { selectedMovIds.add(b.value); row?.classList.add('mov-row-selected'); }
+    else { selectedMovIds.delete(b.value); row?.classList.remove('mov-row-selected'); }
+  };
+  if (e.shiftKey && lastCheckedMovIdx !== null && lastCheckedMovIdx !== currentIdx) {
+    const from = Math.min(lastCheckedMovIdx, currentIdx);
+    const to   = Math.max(lastCheckedMovIdx, currentIdx);
+    allBoxes.slice(from, to + 1).forEach(b => { if (!b.disabled) applyOne(b, checked); });
+  } else {
+    applyOne(e.target, checked);
+  }
+  lastCheckedMovIdx = currentIdx;
   updateMovementSelectionActions();
 }
 
-function toggleMovCheck(id, checked) { if (checked) selectedMovIds.add(id); else selectedMovIds.delete(id); updateMovementSelectionActions(); }
+function handleMovRowClick(e, id) {
+  if (e.target.closest('a,button,input,select,.dd-menu,.actions-dd,.badge-edited')) return;
+  const cb = qs(`#mov-table .mov-check[value="${CSS.escape(id)}"]`);
+  if (!cb || cb.disabled) return;
+  cb.checked = !cb.checked;
+  handleMovCheck({ target: cb, shiftKey: e.shiftKey, stopPropagation: () => {} }, id);
+}
 function toggleAllMov(cb) {
   qsa('#mov-table tbody .checkbox').forEach(b => {
     if (b.disabled) return;
@@ -7459,6 +8610,35 @@ function renderVaultTable() {
       <td>${esc(v.desc || '-')}</td>
       <td class="vault-justif-col" style="font-size:.72rem;color:var(--muted);max-width:180px;white-space:normal;line-height:1.4">${v.accountingJustification ? `<span title="${esc(v.accountingJustification)}">${esc(v.accountingJustification.substring(0,60))}${v.accountingJustification.length > 60 ? '…' : ''}</span>` : '-'}</td>
     </tr>`).join('') : '<tr><td colspan="13" class="empty-state">لا توجد سجلات</td></tr>';
+  const vaultMobileList = qs('#vault-log-mobile-list');
+  if (vaultMobileList) {
+    if (!pageData.length) {
+      vaultMobileList.innerHTML = `<div style="text-align:center;padding:32px;color:var(--muted)">لا توجد سجلات</div>`;
+    } else {
+      vaultMobileList.innerHTML = pageData.map(v => {
+        const isDeduct = v.type === 'debit' || Number(v.amount) < 0;
+        const amtAbs = Math.abs(Number(v.amount) || 0);
+        const amtColor = isDeduct ? '#ef4444' : '#10b981';
+        const amtSign = isDeduct ? '−' : '+';
+        const segMap = {cash:'كاش',vodafone:'فودافون كاش',instapay:'Instapay',bank:'تحويل بنكي'};
+        const segName = segMap[v.seg] || v.seg || '-';
+        return `<div onclick="openVaultTransactionDetail('${v._id}')" style="background:var(--surface);border-radius:12px;border:1px solid var(--border);padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;border-right:4px solid ${amtColor}">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
+              ${srcBadge(v.source)}
+              <span style="font-size:.7rem;color:var(--muted)">${segName}</span>
+            </div>
+            <div style="font-size:.8rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(v.desc || '-')}</div>
+            <div style="font-size:.72rem;color:var(--muted);margin-top:2px">${fmtDate(v.date || v.createdAt)}${v.ref ? ' · #' + esc(v.ref) : ''}${v.employee ? ' · ' + esc(v.employee) : ''}</div>
+          </div>
+          <div style="text-align:left;flex-shrink:0">
+            <div style="font-weight:700;font-size:1rem;color:${amtColor};direction:ltr">${amtSign}${fmtJ(amtAbs)}</div>
+            <div style="font-size:.72rem;color:var(--muted);text-align:center">رصيد: ${fmtJ(v.balance||0)}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
   renderPagination('vault-pagination', total, vaultPage, VAULT_PAGE_SIZE, 'setVaultPage');
 }
 
@@ -8348,7 +9528,9 @@ function handleEnterToSubmit(e) {
 
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
-    if (qs('#inv-detail-overlay').classList.contains('active')) closeInvoiceDetail();
+    if (qs('#tx-dirty-overlay')?.style.display === 'flex') txDirtyCancel();
+    else if (qs('#tx-picker-overlay')?.style.display !== 'none' && qs('#tx-picker-overlay')?.style.display) closeProductPicker();
+    else if (qs('#inv-detail-overlay').classList.contains('active')) closeInvoiceDetail();
     else if (qs('#modal-overlay').classList.contains('active')) closeModal();
   } else if (e.key === 'Enter') {
     handleEnterToSubmit(e);
@@ -8404,7 +9586,7 @@ async function handleGlobalSearch(q) {
     searchAbort.abort();
   }
   searchAbort = new AbortController();
-  openSearchDropdown('<div class="search-loading">جاري البحث...</div>');
+  openSearchDropdown('<div class="search-loading"><span class="search-spinner"></span>جاري البحث…</div>');
   try {
     const data = await api('/search?q=' + encodeURIComponent(raw), { signal: searchAbort.signal });
     searchAbort = null;
@@ -8454,10 +9636,37 @@ function renderSearchDropdown() {
     html += '<div class="search-category">' + esc(categories[type] || type) + '</div>';
     for (const item of items) {
       const isSelected = item._idx === searchSelectedIdx;
+      let metaHtml = item.meta ? '<span class="search-meta">' + esc(item.meta) + '</span>' : '';
+      if (item.type === 'product') {
+        const stock = getProductAvailableStock(item.id);
+        let stockBadge = '';
+        if (stock === -1) {
+          stockBadge = '<span style="font-size:.67rem;color:var(--muted);margin-top:2px;display:block">مخزون: —</span>';
+        } else if (stock === 0) {
+          stockBadge = '<span style="font-size:.7rem;font-weight:700;color:#ef4444;animation:pulse-warning 1.5s ease-in-out infinite;margin-top:2px;display:block">نفد من المخزن</span>';
+        } else {
+          stockBadge = '<span class="stock-available" style="font-size:.71rem;margin-top:3px;display:inline-flex;align-items:center;gap:4px"><span class="stock-live-dot"></span>متوفر: ' + fmtN(stock) + '</span>';
+        }
+        const sellMatch = item.meta ? item.meta.match(/بيع: ([\d,.]+)/) : null;
+        const buyMatch = item.meta ? item.meta.match(/شراء: ([\d,.]+)/) : null;
+        const sellPrice = sellMatch ? sellMatch[1] : '';
+        const buyPrice = buyMatch ? buyMatch[1] : '';
+        let priceRow = '';
+        if (sellPrice || buyPrice) {
+          priceRow = '<div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">';
+          if (isAdmin() && buyPrice) priceRow += '<span style="font-size:.66rem;color:var(--muted)">شراء: <b style="color:var(--text)">' + esc(buyPrice) + ' ج</b></span>';
+          if (sellPrice) priceRow += '<span class="search-meta" style="margin:0">' + esc(sellPrice) + ' ج</span>';
+          priceRow += '</div>';
+        }
+        metaHtml = '<div class="search-product-meta">'
+          + priceRow
+          + stockBadge
+          + '</div>';
+      }
       html += '<div class="search-item' + (isSelected ? ' selected' : '') + '" data-idx="' + item._idx + '" onmousedown="selectSearchResult(' + item._idx + ')">'
         + '<span class="search-icon">' + item.icon + '</span>'
         + '<div class="search-info"><div class="search-title">' + esc(item.title) + '</div><div class="search-subtitle">' + esc(item.subtitle) + '</div></div>'
-        + (item.meta ? '<span class="search-meta">' + esc(item.meta) + '</span>' : '')
+        + metaHtml
         + '</div>';
     }
   }
@@ -8470,8 +9679,10 @@ function selectSearchResult(idx) {
   if (!item) {
     return;
   }
-  closeSearchDropdown();
+  if (window.innerWidth <= 768) closeMobileSearch();
+  else closeSearchDropdown();
   qs('#global-search').value = '';
+  toggleSearchClear('');
   if (item.type === 'nav') {
     navigateTo(item.id);
     closeSidebar();
@@ -8506,15 +9717,51 @@ function handleSearchKeydown(e) {
     e.preventDefault();
     selectSearchResult(searchSelectedIdx);
   } else if (e.key === 'Escape') {
-    closeSearchDropdown();
+    if (window.innerWidth <= 768) closeMobileSearch();
+    else closeSearchDropdown();
   }
 }
 
 document.addEventListener('click', function(e) {
-  if (!e.target.closest('.header-search')) closeSearchDropdown();
+  if (!e.target.closest('.header-search') && !e.target.closest('#m-search-toggle')) {
+    closeSearchDropdown();
+    if (window.innerWidth <= 768) closeMobileSearch();
+  }
 });
 
 const debouncedGlobalSearch = debounce(handleGlobalSearch, 300);
+
+function toggleSearchClear(val) {
+  const btn = qs('#search-clear-btn');
+  if (btn) btn.classList.toggle('visible', String(val || '').length > 0);
+}
+function clearGlobalSearch() {
+  const inp = qs('#global-search');
+  if (inp) { inp.value = ''; inp.focus(); }
+  closeSearchDropdown();
+  toggleSearchClear('');
+}
+function toggleMobileSearch() {
+  const hs = qs('.header-search');
+  const btn = qs('#m-search-toggle');
+  if (hs.classList.contains('m-search-open')) {
+    closeMobileSearch();
+  } else {
+    hs.classList.add('m-search-open');
+    btn?.classList.add('active');
+    setTimeout(() => qs('#global-search')?.focus(), 80);
+  }
+}
+function closeMobileSearch() {
+  const hs = qs('.header-search');
+  const btn = qs('#m-search-toggle');
+  hs.classList.remove('m-search-open');
+  btn?.classList.remove('active');
+  closeSearchDropdown();
+  const inp = qs('#global-search');
+  if (inp) inp.value = '';
+  toggleSearchClear('');
+}
 
 /* Excel helper */
 function writeExcel(data, sheetName, fileName) {
@@ -9352,7 +10599,7 @@ function closeProductCard() {
     showApp();
     initReferenceClickHandlers();
   }
-  else { qs('#login-page').style.display = 'flex'; }
+  else { qs('#login-page').style.display = 'flex'; loadRememberedLogin(); }
 })();
 </script>
 </body>
