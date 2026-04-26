@@ -165,6 +165,79 @@ body.dark-mode .status-pending{color:#fbbf24}
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
 
+/* ═══════════════════════════════════════════════════════════
+   PRODUCTS — Mobile cards (hidden on desktop, shown on mobile)
+   ═══════════════════════════════════════════════════════════ */
+.prod-mobile-list{display:none}
+@media (max-width:768px){
+  .prod-table-card{display:none}
+  .prod-mobile-list{display:flex;flex-direction:column;gap:10px}
+  .prod-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;transition:box-shadow var(--motion-fast),border-color var(--motion-fast)}
+  .prod-card:active{transform:scale(.99)}
+  .prod-card-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+  .prod-card-check{flex-shrink:0;padding-top:2px}
+  .prod-card-check input{width:18px;height:18px}
+  .prod-card-name{flex:1;min-width:0}
+  .prod-card-title{font-weight:700;font-size:.92rem;color:var(--text);line-height:1.4;word-break:break-word}
+  .prod-card-code{font-size:.72rem;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+  .prod-status{flex-shrink:0;padding:3px 10px;border-radius:var(--r-pill);font-size:.7rem;font-weight:700}
+  .prod-status-ok{background:rgba(22,163,74,.12);color:var(--green)}
+  .prod-status-low{background:rgba(245,158,11,.16);color:#b45309}
+  .prod-status-zero{background:rgba(220,38,38,.12);color:var(--red)}
+  .prod-card-body{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px 0;border-top:1px dashed var(--border)}
+  .prod-card-cell{display:flex;flex-direction:column;gap:2px;align-items:center;text-align:center}
+  .prod-card-label{font-size:.66rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.02em}
+  .prod-card-val{font-size:.85rem;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+  .prod-card-actions{display:flex;gap:6px;padding-top:10px;border-top:1px dashed var(--border)}
+  .prod-card-actions .btn{flex:1;font-size:.78rem;padding:7px 10px}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SETTINGS — Mobile polish (additive)
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width:768px){
+  #page-settings .page-header{margin-bottom:14px}
+  #page-settings .page-title{font-size:1.3rem}
+  #page-settings .settings-section-label{font-size:.7rem;padding-bottom:4px;border-bottom:1px solid transparent}
+  #page-settings .settings-card{border-radius:var(--r-md);box-shadow:var(--shadow-xs)}
+  #page-settings .settings-card:active{transform:scale(.997)}
+  #page-settings .form-group{margin-bottom:10px}
+  #page-settings input[type="checkbox"]{width:20px!important;height:20px;flex-shrink:0}
+  #page-settings #settings-version-footer{margin-top:24px}
+  /* Subtle dividers between major settings groups */
+  #page-settings .settings-stack>div+div{position:relative}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOVEMENTS — Mobile filter panel polish
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width:768px){
+  #page-movements .mov-filter-card{padding:12px;border-radius:var(--r-md)}
+  #page-movements .mov-search-wrap input{font-size:.92rem}
+  #page-movements .mov-type-pill{font-size:.72rem;padding:6px 10px;border-radius:var(--r-pill);min-height:32px}
+  #page-movements .mov-type-pill svg{width:11px;height:11px}
+  /* Compact KPI strip on mobile */
+  #page-movements .kpi-strip{gap:8px;padding-bottom:6px}
+  #page-movements .kpi-strip .kpi{padding:10px 12px;min-width:130px}
+  #page-movements .kpi-strip .kpi-val{font-size:.95rem}
+  #page-movements .kpi-strip .kpi-label{font-size:.65rem;margin-top:2px}
+  /* Hide desktop table on mobile, show mobile cards (already exists) */
+  #page-movements #mov-table-wrap{display:none}
+  #page-movements #mov-mobile-list{display:flex;flex-direction:column;gap:8px}
+}
+@media (min-width:769px){
+  #page-movements #mov-mobile-list{display:none}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOUCH-FRIENDLY: bigger checkboxes, padding on dd-items
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width:768px){
+  input[type="checkbox"]{width:18px;height:18px;cursor:pointer}
+  .dd-menu-portal .dd-item{padding:11px 14px;font-size:.88rem}
+  .actions-dd .dd-toggle{width:38px;height:38px;font-size:1.2rem}
+}
+
 a{color:var(--accent);text-decoration:none}
 input,select,textarea,button{font-family:inherit;font-size:.875rem}
 input,select,textarea{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;color:var(--text);width:100%;outline:none;transition:border .2s}
@@ -1992,7 +2065,9 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <button class="btn btn-outline btn-sm" onclick="deselectAllProducts()">✕ إلغاء التحديد</button>
 </div>
 </div>
-<div class="table-card"><div class="overflow-x"><table id="prod-table"><thead><tr><th><input type="checkbox" id="prod-select-all" onchange="toggleAllProducts(this.checked)"></th><th data-i18n="colCode">الكود</th><th data-i18n="colName">الاسم</th><th data-i18n="colSupplier">المورد</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice">سعر الشراء</th><th data-i18n="minStock">الحد الأدنى</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colActions">إجراءات</th></tr></thead><tbody></tbody></table></div></div>
+<div class="table-card prod-table-card"><div class="overflow-x"><table id="prod-table"><thead><tr><th><input type="checkbox" id="prod-select-all" onchange="toggleAllProducts(this.checked)"></th><th data-i18n="colCode">الكود</th><th data-i18n="colName">الاسم</th><th data-i18n="colSupplier">المورد</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice">سعر الشراء</th><th data-i18n="minStock">الحد الأدنى</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colActions">إجراءات</th></tr></thead><tbody></tbody></table></div></div>
+<!-- Mobile cards list -->
+<div id="prod-mobile-list" class="prod-mobile-list"></div>
 <div id="prod-pagination" style="margin-top:16px"></div>
 </div>
 
@@ -8030,6 +8105,38 @@ function renderProducts() {
       <td>${fmtN(p.minStock)}</td><td>${fmtN(p.openingBalance)}</td>
       <td><div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu"><div class="dd-item" onclick="openProductModal('${esc(p._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</div><div class="dd-divider"></div><div class="dd-item danger" onclick="deleteProduct('${esc(p._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> حذف</div></div></div></td>
     </tr>`).join('') : '<tr><td colspan="9" class="empty-state">لا توجد أصناف</td></tr>';
+
+  // Mobile cards
+  const mobileEl = qs('#prod-mobile-list');
+  if (mobileEl) {
+    const isAdminUser = isAdmin();
+    mobileEl.innerHTML = pageData.length ? pageData.map(p => {
+      const stockInfo = inventoryCache.find(i => i.code === p.code);
+      const current = stockInfo ? stockInfo.current : (p.openingBalance || 0);
+      const status = current <= 0 ? 'نفد' : (current <= (p.minStock || 0) ? 'منخفض' : 'متوفر');
+      const statusClass = current <= 0 ? 'zero' : (current <= (p.minStock || 0) ? 'low' : 'ok');
+      return `<div class="prod-card" data-id="${esc(p._id)}">
+        <div class="prod-card-head">
+          <label class="prod-card-check"><input type="checkbox" class="prod-chk" value="${esc(p._id)}" onchange="updateProdBulkBar()"></label>
+          <div class="prod-card-name">
+            <div class="prod-card-title">${esc(p.name)}</div>
+            <div class="prod-card-code">${esc(p.code || '—')}</div>
+          </div>
+          <span class="prod-status prod-status-${statusClass}">${status}</span>
+        </div>
+        <div class="prod-card-body">
+          <div class="prod-card-cell"><span class="prod-card-label">السعر</span><span class="prod-card-val">${fmtJ(p.sellPrice)} ج</span></div>
+          <div class="prod-card-cell"><span class="prod-card-label">المخزون</span><span class="prod-card-val">${fmtN(current)}</span></div>
+          <div class="prod-card-cell"><span class="prod-card-label">الحد الأدنى</span><span class="prod-card-val">${fmtN(p.minStock)}</span></div>
+        </div>
+        <div class="prod-card-actions">
+          ${isAdminUser ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openProductModal('${esc(p._id)}')"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="event.stopPropagation();deleteProduct('${esc(p._id)}')"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> حذف</button>` : ''}
+        </div>
+      </div>`;
+    }).join('') : '<div class="empty-state" style="padding:32px;text-align:center;color:var(--muted)">لا توجد أصناف</div>';
+  }
+
   renderPagination('prod-pagination', total, prodPage, PROD_PAGE_SIZE, 'setProdPage');
   updateProdBulkBar();
 }
