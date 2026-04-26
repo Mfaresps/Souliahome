@@ -809,12 +809,22 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 .pass-strength.strong{background:#10b981;width:100%}
 .chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
 .chart-box canvas{max-height:280px}
-.vault-locked{text-align:center;padding:80px 20px;max-width:380px;margin:0 auto}
-.vault-locked .vault-lock-icon{width:72px;height:72px;background:var(--surface2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;border:1.5px solid var(--border)}
-.vault-locked .vault-lock-icon svg{width:32px;height:32px;color:var(--accent)}
+.vault-locked{text-align:center;padding:60px 20px;max-width:380px;margin:0 auto}
+.vault-locked .vault-lock-icon{width:64px;height:64px;background:var(--surface2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;border:1.5px solid var(--border)}
+.vault-locked .vault-lock-icon svg{width:28px;height:28px;color:var(--accent)}
 .vault-locked h3{font-size:1.1rem;font-weight:700;margin-bottom:6px}
 .vault-locked input{max-width:300px;margin:0 auto 12px;display:block;text-align:center}
-.seg-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px}
+.seg-cards{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:12px;
+  margin-bottom:16px;
+}
+.seg-cards .kpi{
+  padding:10px 12px;
+  text-align:center;
+  border-radius:10px;
+}
 .seg-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center}
 .seg-card .seg-val{font-size:1.4rem;font-weight:700;margin-top:4px}
 .seg-card .seg-label{font-size:.78rem;color:var(--muted)}
@@ -1258,7 +1268,11 @@ body.dark-mode .mov-status.ملغي{background:#450a0a;color:#f87171}
   .stat-card .stat-val{font-size:1.3rem}
 
   /* ── Grids ── */
-  .seg-cards{grid-template-columns:repeat(2,1fr)!important}
+  .seg-cards{grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin-bottom:12px!important}
+  #vault-kpi-cards{grid-template-columns:1fr!important}
+  #vault-stats{grid-template-columns:1fr!important;gap:8px!important;margin-bottom:12px!important}
+  #vault-adjust-grid{grid-template-columns:1fr!important;gap:8px!important}
+  .vault-tab-btn{padding:8px 10px!important;font-size:.80rem!important}
   .grid-2,.grid-3,.grid-4,.grid-5,.grid-6{grid-template-columns:1fr!important}
   /* Dashboard KPI/stat cards: keep 2 columns */
   #dash-stats{grid-template-columns:repeat(2,1fr)!important;gap:10px!important;width:100%;box-sizing:border-box}
@@ -2619,11 +2633,11 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div id="vault-content" style="display:none">
 <div class="flex-between mb-16" style="align-items:flex-start;flex-wrap:wrap;gap:12px">
 <div class="flex gap-8" style="border-bottom:2px solid var(--border);flex-basis:100%">
-<button class="vault-tab-btn active" onclick="switchVaultTab('overview',this)" style="padding:12px 16px;border:none;background:none;cursor:pointer;font-weight:600;color:var(--text);border-bottom:3px solid transparent;border-bottom-color:transparent;margin-bottom:-2px">
-<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em;margin-right:6px" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> نظرة عامة
+<button class="vault-tab-btn active" onclick="switchVaultTab('overview',this)" style="padding:9px 14px;border:none;background:none;cursor:pointer;font-weight:600;color:var(--text);border-bottom:3px solid transparent;border-bottom-color:transparent;margin-bottom:-2px;font-size:.85rem">
+<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:0.95em;height:0.95em;margin-right:5px" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> نظرة عامة
 </button>
-<button class="vault-tab-btn" onclick="switchVaultTab('analytics',this)" style="padding:12px 16px;border:none;background:none;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px">
-<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em;margin-right:6px" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3"/><polyline points="12 12 20 7.5"/><polyline points="12 21 12 12"/><polyline points="4 7.5 12 12"/></svg> التحليلات
+<button class="vault-tab-btn" onclick="switchVaultTab('analytics',this)" style="padding:9px 14px;border:none;background:none;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;font-size:.85rem">
+<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:0.95em;height:0.95em;margin-right:5px" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3"/><polyline points="12 12 20 7.5"/><polyline points="12 21 12 12"/><polyline points="4 7.5 12 12"/></svg> التحليلات
 </button>
 </div>
 <div style="flex-basis:100%;display:flex;gap:8px">
@@ -2637,34 +2651,34 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="seg-cards" id="vault-segs"></div>
 <!-- KPI CARDS -->
 <div id="vault-kpi-panel" style="display:none">
-<div class="grid grid-4 gap-12 mb-24" id="vault-kpi-cards"></div>
+<div class="grid grid-2 gap-12 mb-20" id="vault-kpi-cards"></div>
 </div>
-<div class="grid grid-5 gap-12 mb-24" id="vault-stats" style="gap:12px"></div>
-<div class="card mb-24">
-<h4 class="mb-16">تسوية يدوية</h4>
-<div class="grid grid-4 gap-12" id="vault-adjust-grid">
-<div class="form-group"><label>المبلغ</label><input type="number" id="vault-amount"></div>
-<div class="form-group"><label>القسم</label><select id="vault-seg"><option value="cash">كاش</option><option value="vodafone">فودافون كاش</option><option value="instapay">Instapay</option><option value="bank">تحويل بنكي</option></select></div>
-<div class="form-group"><label>الطريقة</label><select id="vault-method"><option value="إضافة">إضافة</option><option value="سحب">سحب</option></select></div>
-<div class="form-group"><label>الوصف</label><input type="text" id="vault-desc"></div>
+<div class="grid grid-3 gap-10 mb-20" id="vault-stats" style="gap:10px"></div>
+<div class="card mb-20">
+<h4 class="mb-12" style="font-size:.95rem">تسوية يدوية</h4>
+<div class="grid grid-2 gap-10" id="vault-adjust-grid">
+<div class="form-group"><label>المبلغ</label><input type="number" id="vault-amount" style="font-size:.88rem;padding:6px 8px"></div>
+<div class="form-group"><label>القسم</label><select id="vault-seg" style="font-size:.88rem;padding:6px 8px"><option value="cash">كاش</option><option value="vodafone">فودافون كاش</option><option value="instapay">Instapay</option><option value="bank">تحويل بنكي</option></select></div>
+<div class="form-group"><label>الطريقة</label><select id="vault-method" style="font-size:.88rem;padding:6px 8px"><option value="إضافة">إضافة</option><option value="سحب">سحب</option></select></div>
+<div class="form-group"><label>الوصف</label><input type="text" id="vault-desc" style="font-size:.88rem;padding:6px 8px"></div>
 </div>
-<div class="form-group mt-12"><label>المبرر المحاسبي (اختياري)</label><input type="text" id="vault-justification" placeholder="كيف يؤثر على الخزنة؟"></div>
-<button class="btn btn-primary btn-sm mt-16" onclick="addVaultEntry()">تأكيد</button>
+<div class="form-group" style="margin-top:8px"><label style="font-size:.85rem">المبرر المحاسبي (اختياري)</label><input type="text" id="vault-justification" placeholder="كيف يؤثر على الخزنة؟" style="font-size:.88rem;padding:6px 8px"></div>
+<button class="btn btn-primary btn-sm" style="margin-top:10px;padding:7px 12px;font-size:.85rem" onclick="addVaultEntry()">تأكيد</button>
 </div>
 <div class="card">
-<div class="flex-between mb-16" style="flex-wrap:wrap;gap:10px">
-<h4 style="margin:0">سجل الخزنة</h4>
-<div class="flex gap-8" style="flex-wrap:wrap">
-<input type="text" id="vault-log-search" placeholder="بحث..." style="width:160px" oninput="vaultPage=1;renderVaultTable()">
-<select id="vault-status-filter" style="width:130px" onchange="vaultPage=1;renderVaultTable()">
+<div class="flex-between mb-12" style="flex-wrap:wrap;gap:8px;align-items:center">
+<h4 style="margin:0;font-size:.95rem">سجل الخزنة</h4>
+<div class="flex gap-6" style="flex-wrap:wrap">
+<input type="text" id="vault-log-search" placeholder="بحث..." style="width:140px;font-size:.85rem;padding:5px 8px" oninput="vaultPage=1;renderVaultTable()">
+<select id="vault-status-filter" style="width:120px;font-size:.85rem;padding:5px 8px" onchange="vaultPage=1;renderVaultTable()">
   <option value="">كل الحالات</option>
   <option value="completed">مكتملة</option>
   <option value="pending">قيد الانتظار</option>
   <option value="frozen">مجمدة</option>
   <option value="cancelled">ملغاة</option>
 </select>
-<input type="date" id="vault-from" style="width:130px" onchange="vaultPage=1;loadVaultLog()">
-<input type="date" id="vault-to" style="width:130px" onchange="vaultPage=1;loadVaultLog()">
+<input type="date" id="vault-from" style="width:120px;font-size:.85rem;padding:5px 8px" onchange="vaultPage=1;loadVaultLog()">
+<input type="date" id="vault-to" style="width:120px;font-size:.85rem;padding:5px 8px" onchange="vaultPage=1;loadVaultLog()">
 </div>
 </div>
 <div id="vault-log-table-wrap" class="overflow-x"><table id="vault-table"><thead><tr><th data-i18n="colTxNo">رقم المعاملة</th><th data-i18n="date">التاريخ</th><th data-i18n="colTime">التوقيت</th><th data-i18n="colAmount">المبلغ</th><th data-i18n="colTotalBal">الرصيد الكلي</th><th data-i18n="colSource">المصدر</th><th data-i18n="colRefTag">#المرجع</th><th data-i18n="colSegment">القسم</th><th data-i18n="status">الحالة</th><th data-i18n="colMethod">الطريقة</th><th data-i18n="colEmployee">الموظف</th><th data-i18n="colDescription">الوصف</th><th class="vault-justif-col" data-i18n="colAccountingProof">الإثبات المحاسبي</th></tr></thead><tbody></tbody></table></div>
