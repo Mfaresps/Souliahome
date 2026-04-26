@@ -6764,13 +6764,13 @@ function switchMovTab(tab, btn) {
   if (tab === 'archive') loadArchivedMovements();
 }
 
-function txToExcelRow(tx) {
-  return {
+function txToExcelRow(tx, columns) {
+  const baseRow = {
     'التاريخ': (tx.date || '').slice(0, 10),
     'التوقيت': tx.createdAt ? fmtDateTime(tx.createdAt) : '',
     'نوع العرض': movementDisplayKindLabel(tx),
     'نوع النظام': tx.type,
-    'العميل': tx.client,
+    'العميل/المورد': tx.client,
     'الهاتف': tx.phone || '',
     'مرجع الفاتورة': movementBaseRef(tx.ref || '') || tx.ref || '',
     'مرجع العملية': tx.ref,
@@ -6779,18 +6779,133 @@ function txToExcelRow(tx) {
     'المدفوع': exchangeSalePaidDisplayAmount(tx),
     'المتبقي': tx.remaining,
     'الحالة': isExchangeSalePendingCollect(tx) ? 'انتظار التحصيل (فرق استبدال — للشركة)' : tx.payStatus === 'معلق' ? 'في انتظار التحصيل من شركة الشحن' : tx.payStatus,
+    'طريقة الدفع': tx.depMethod || '',
+    'الملاحظات': tx.notes || '',
+    'الأصناف': ((tx.items || []).map(it => `${it.name} (${it.qty} × ${it.price} = ${it.total})`).join('; ')) || '',
   };
+  if (!columns) return baseRow;
+  const filtered = {};
+  columns.forEach(col => {
+    if (col in baseRow) filtered[col] = baseRow[col];
+  });
+  return filtered;
 }
+
+function showExportModal(isSelected = false) {
+  const from = qs('#mov-from')?.value;
+  const to = qs('#mov-to')?.value;
+  const tokens = normalizeUiSearch(qs('#mov-search')?.value || '').split(/\s+/).filter(Boolean);
+
+  let exportData = transactions.filter(tx => {
+    if (from && tx.date && tx.date.slice(0, 10) < from) return false;
+    if (to && tx.date && tx.date.slice(0, 10) > to) return false;
+    if (movFilter === 'استرجاع') {
+      if (!isMovPlainReturn(tx)) return false;
+    } else if (movFilter === 'استبدال') {
+      if (!isMovExchangeReturn(tx) && !isMovExchangeSale(tx)) return false;
+    } else if (movFilter !== 'all' && !movStatusFilter && tx.type !== movFilter) return false;
+    if (movStatusFilter && tx.payStatus !== movStatusFilter) return false;
+    if (tokens.length) {
+      const blob = normalizeUiSearch([tx.client, tx.ref, movementBaseRef(tx.ref || ''), tx.phone, tx.notes, tx.type, tx.employee, String(tx.total || '')].join(' '));
+      if (!tokens.every(t => blob.includes(t))) return false;
+    }
+    return true;
+  });
+
+  if (isSelected) {
+    exportData = [...selectedMovIds].map(id => transactions.find(t => t._id === id)).filter(Boolean);
+  }
+
+  if (!exportData.length) {
+    toast('لا توجد حركات للتصدير', true);
+    return;
+  }
+
+  const columnOptions = [
+    { key: 'التاريخ', label: 'التاريخ', checked: true },
+    { key: 'التوقيت', label: 'التوقيت الكامل', checked: false },
+    { key: 'نوع العرض', label: 'نوع العرض', checked: true },
+    { key: 'نوع النظام', label: 'نوع النظام', checked: false },
+    { key: 'العميل/المورد', label: 'العميل/المورد', checked: true },
+    { key: 'الهاتف', label: 'الهاتف', checked: false },
+    { key: 'مرجع الفاتورة', label: 'مرجع الفاتورة', checked: true },
+    { key: 'مرجع العملية', label: 'مرجع العملية', checked: false },
+    { key: 'الموظف', label: 'الموظف', checked: true },
+    { key: 'الإجمالي', label: 'الإجمالي', checked: true },
+    { key: 'المدفوع', label: 'المدفوع', checked: true },
+    { key: 'المتبقي', label: 'المتبقي', checked: true },
+    { key: 'الحالة', label: 'الحالة', checked: true },
+    { key: 'طريقة الدفع', label: 'طريقة الدفع', checked: false },
+    { key: 'الملاحظات', label: 'الملاحظات', checked: false },
+    { key: 'الأصناف', label: 'الأصناف (مفصلة)', checked: true },
+  ];
+
+  const columnsHtml = columnOptions.map(col => `
+    <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer">
+      <input type="checkbox" value="${col.key}" ${col.checked ? 'checked' : ''} class="export-col-check">
+      <span style="font-size:.9rem">${col.label}</span>
+    </label>
+  `).join('');
+
+  openModal(`
+    <h3 style="margin-bottom:12px">تصدير الحركات</h3>
+    <div style="background:var(--primary-pale);border-radius:var(--radius);padding:12px;margin-bottom:16px;font-size:.85rem;border-left:4px solid var(--primary)">
+      <div style="font-weight:600;color:var(--primary);margin-bottom:4px">📊 ${exportData.length} حركة</div>
+      <div style="color:var(--text);font-size:.8rem">سيتم تصدير الحركات ${isSelected ? 'المحددة' : 'حسب المرشحات المطبقة'}</div>
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:.85rem;font-weight:600;color:var(--text);display:block;margin-bottom:8px">الأعمدة المراد تضمينها:</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;max-height:200px;overflow-y:auto">
+        ${columnsHtml}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="radio" name="export-format" value="excel" checked>
+        <span style="font-size:.9rem">📊 Excel (.xlsx)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="radio" name="export-format" value="csv">
+        <span style="font-size:.9rem">📄 CSV (.csv)</span>
+      </label>
+    </div>
+    <div class="flex gap-8" style="justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+      <button class="btn btn-primary" onclick="performExport('${isSelected ? 'selected' : 'filtered'}',${exportData.length})">تصدير الآن</button>
+    </div>
+  `);
+
+  window._exportData = exportData;
+}
+
+function performExport(type, count) {
+  const selectedCols = Array.from(qsa('.export-col-check:checked')).map(cb => cb.value);
+  if (!selectedCols.length) {
+    toast('يرجى تحديد عمود واحد على الأقل', true);
+    return;
+  }
+
+  const format = document.querySelector('input[name="export-format"]:checked')?.value || 'excel';
+  const data = window._exportData.map(tx => txToExcelRow(tx, selectedCols));
+
+  if (format === 'excel') {
+    writeExcel(data, 'الحركات المصدرة', (type === 'selected' ? 'selected_movements' : 'movements_filtered') + '_' + today());
+  } else {
+    writeCsv(data, (type === 'selected' ? 'selected_movements' : 'movements_filtered') + '_' + today());
+  }
+
+  closeModal();
+  toast(`تم تصدير ${count} حركة بنجاح ✅`);
+  window._exportData = null;
+}
+
 function exportMovementsExcel() {
-  const data = transactions.map(txToExcelRow);
-  writeExcel(data, 'الحركات', 'movements_' + today());
+  showExportModal(false);
 }
+
 function exportSelectedExcel() {
   if (!selectedMovIds.size) { toast('لم يتم تحديد أي حركات', true); return; }
-  const selected = [...selectedMovIds].map(id => transactions.find(t => t._id === id)).filter(Boolean);
-  const data = selected.map(txToExcelRow);
-  writeExcel(data, 'الحركات المحددة', 'selected_movements_' + today());
-  toast(`تم تصدير ${selected.length} حركة`);
+  showExportModal(true);
 }
 function buildInvoiceHtml(tx) {
   const isPur = tx.type === 'مشتريات';
@@ -10625,6 +10740,32 @@ function writeExcel(data, sheetName, fileName) {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
   XLSX.writeFile(wb, fileName + '.xlsx');
+}
+
+function writeCsv(data, fileName) {
+  if (!data.length) return;
+  const headers = Object.keys(data[0]);
+  const csvContent = [
+    headers.map(h => `"${String(h).replace(/"/g, '""')}"`).join(','),
+    ...data.map(row =>
+      headers.map(h => {
+        const val = row[h];
+        if (val === null || val === undefined) return '';
+        const str = String(val).replace(/"/g, '""');
+        return str.includes(',') || str.includes('\n') ? `"${str}"` : str;
+      }).join(',')
+    )
+  ].join('\n');
+
+  const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', fileName + '.csv');
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 /* Calculator */
