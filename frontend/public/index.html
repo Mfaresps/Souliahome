@@ -187,14 +187,14 @@ body.dark-mode .settings-card:hover{box-shadow:0 4px 24px rgba(0,0,0,.25)}
 .m-search-toggle:hover{background:rgba(255,255,255,.18)}
 .m-search-toggle.active{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3)}
 /* ── Global Search Bar ── */
-#header .header-search{flex:1;max-width:420px;position:relative}
+#header .header-search{flex:1;max-width:340px;position:relative}
 #header .header-search .search-wrap{position:relative;display:flex;align-items:center;width:100%}
-#header .search-icon-btn{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4);pointer-events:none;line-height:0;flex-shrink:0}
-#header .header-search input{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.1);color:#fff;border-radius:24px;padding:8px 38px 8px 34px;font-size:.83rem;width:100%;transition:background .2s,border-color .2s,box-shadow .2s;-webkit-appearance:none}
-#header .header-search input::placeholder{color:rgba(255,255,255,.38)}
-#header .header-search input:focus{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.25);outline:none;box-shadow:0 0 0 3px rgba(255,255,255,.07)}
-#header .search-clear{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.45);background:none;border:none;cursor:pointer;line-height:0;display:none;padding:4px;border-radius:50%;transition:background .15s,color .15s}
-#header .search-clear:hover{color:#fff;background:rgba(255,255,255,.14)}
+#header .search-icon-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4);pointer-events:none;line-height:0;flex-shrink:0;width:16px;height:16px}
+#header .header-search input{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:20px;padding:7px 30px 7px 32px;font-size:.8rem;width:100%;transition:background .2s,border-color .2s,box-shadow .2s;-webkit-appearance:none}
+#header .header-search input::placeholder{color:rgba(255,255,255,.35);font-size:.8rem}
+#header .header-search input:focus{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.22);outline:none;box-shadow:0 0 0 2px rgba(255,255,255,.05)}
+#header .search-clear{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4);background:none;border:none;cursor:pointer;line-height:0;display:none;padding:3px;border-radius:4px;transition:background .15s,color .15s;font-size:.85rem;width:18px;height:18px;flex-shrink:0}
+#header .search-clear:hover{color:rgba(255,255,255,.8);background:rgba(255,255,255,.12)}
 #header .search-clear.visible{display:flex;align-items:center;justify-content:center}
 /* ── Search Dropdown ── */
 .search-dropdown{position:absolute;top:calc(100% + 8px);right:0;left:0;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,.16),0 2px 8px rgba(0,0,0,.06);z-index:200;max-height:min(72vh,600px);overflow-y:auto;display:none;color:var(--text);overflow:hidden}
@@ -538,6 +538,51 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 .kpi-strip .kpi[data-tooltip]{position:relative}
 .kpi-strip .kpi[data-tooltip]:hover::after{content:attr(data-tooltip);position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);background:#1e293b;color:#f1f5f9;padding:7px 12px;border-radius:8px;font-size:.72rem;font-weight:500;white-space:normal;max-width:180px;text-align:center;z-index:9999;pointer-events:none;line-height:1.5;box-shadow:0 4px 16px rgba(0,0,0,.25);letter-spacing:.01em}
 .kpi-strip .kpi[data-tooltip]:hover::before{content:'';position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#1e293b;z-index:9999;pointer-events:none}
+/* ════════════════════════════════════════════════════════════
+   INVENTORY PAGE ENHANCEMENTS
+   ════════════════════════════════════════════════════════════ */
+#page-inventory .inv-kpi-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:16px;padding:0 0 8px 0}
+#page-inventory .inv-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;min-width:min-content;padding:0;width:fit-content;min-width:100%}
+#page-inventory .inv-kpi-grid .kpi{padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;border-top:4px solid var(--kpi-color,var(--accent));text-align:center;transition:all .18s ease;cursor:default}
+#page-inventory .inv-kpi-grid .kpi:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.08)}
+#page-inventory .inv-kpi-grid .kpi .kpi-icon{font-size:1.6rem;margin-bottom:6px;line-height:1}
+#page-inventory .inv-kpi-grid .kpi .kpi-val{font-size:1.1rem;font-weight:800;color:var(--kpi-color,var(--primary));margin:4px 0 2px 0}
+#page-inventory .inv-kpi-grid .kpi .kpi-label{font-size:.7rem;color:var(--muted);font-weight:600;letter-spacing:.3px;text-transform:uppercase;margin-top:4px}
+
+/* Inventory tab bar */
+#page-inventory .inv-tab-bar{display:flex;gap:6px;border-bottom:2px solid var(--border);padding-bottom:0;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+#page-inventory .inv-tab{display:flex;align-items:center;gap:5px;padding:10px 14px;font-size:.82rem;font-weight:600;border:none;background:none;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;border-radius:0;white-space:nowrap}
+#page-inventory .inv-tab:hover{color:var(--text);background:var(--primary-pale)}
+#page-inventory .inv-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+#page-inventory .inv-tab svg{width:14px;height:14px;flex-shrink:0}
+
+/* Inventory search & filter */
+#page-inventory .inv-filter-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+#page-inventory .inv-search-wrap{position:relative;flex:1;min-width:200px}
+#page-inventory .inv-search-wrap svg{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;width:15px;height:15px}
+#page-inventory .inv-search-input{padding-right:36px;width:100%;font-size:.85rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);padding:8px 36px 8px 12px}
+
+/* Inventory mobile cards */
+#page-inventory .inv-mobile-list{display:none}
+#page-inventory .inv-product-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;transition:all .2s ease;cursor:pointer}
+#page-inventory .inv-product-card:active{transform:scale(.98);background:var(--primary-pale)}
+#page-inventory .inv-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px}
+#page-inventory .inv-card-code{font-size:.75rem;font-weight:700;color:var(--text);font-family:monospace;background:var(--surface2);padding:2px 6px;border-radius:4px}
+#page-inventory .inv-card-name{font-size:.88rem;font-weight:700;color:var(--text);margin:8px 0 4px 0;flex:1}
+#page-inventory .inv-status-badge{display:inline-block;padding:3px 8px;border-radius:16px;font-size:.7rem;font-weight:700}
+#page-inventory .inv-status-badge.متوفر{background:#dcfce7;color:#15803d}
+#page-inventory .inv-status-badge.منخفض{background:#fff7ed;color:#c2410c}
+#page-inventory .inv-status-badge.نفد{background:#fee2e2;color:#dc2626}
+body.dark-mode #page-inventory .inv-status-badge.متوفر{background:#052e16;color:#4ade80}
+body.dark-mode #page-inventory .inv-status-badge.منخفض{background:#431407;color:#fb923c}
+body.dark-mode #page-inventory .inv-status-badge.نفد{background:#450a0a;color:#f87171}
+
+#page-inventory .inv-card-footer{display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:1px solid var(--border);padding-top:8px;margin-top:8px;font-size:.78rem}
+#page-inventory .inv-card-item{display:flex;justify-content:space-between;align-items:center}
+#page-inventory .inv-card-label{color:var(--muted);font-weight:600}
+#page-inventory .inv-card-val{color:var(--text);font-weight:700;text-align:right}
+#page-inventory .inv-card-val.accent{color:var(--accent);font-weight:800}
+
 /* Movements page enhancements */
 #page-movements .mov-filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px}
 #page-movements .mov-type-pill{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;font-size:.8rem;font-weight:600;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;white-space:nowrap;color:var(--muted)}
@@ -550,9 +595,27 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 #page-movements .mov-type-pill.pill-check.active{background:#10b981;border-color:#10b981}
 #page-movements .mov-type-pill.pill-wait.active{background:#f59e0b;border-color:#f59e0b}
 #page-movements .mov-type-pill.pill-cancel.active{background:#ef4444;border-color:#ef4444}
-#page-movements .mov-search-wrap{position:relative}
+#page-movements .mov-search-wrap{position:relative;flex:1;min-width:180px}
 #page-movements .mov-search-wrap svg{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;width:16px;height:16px}
-#page-movements .mov-search-wrap input{padding-right:38px;width:100%}
+#page-movements .mov-search-wrap input{padding-right:38px;width:100%;font-size:.85rem}
+/* KPI strip styling */
+#page-movements .kpi-strip{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:20px}
+#page-movements .kpi-strip .kpi{padding:14px 12px;position:relative;border-radius:10px;transition:all .18s ease}
+#page-movements .kpi-strip .kpi:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+#page-movements .kpi-strip .kpi::before{height:4px}
+#page-movements .kpi-strip .kpi .kpi-val{font-size:1.3rem;font-weight:800;margin:6px 0 0 0}
+#page-movements .kpi-strip .kpi .kpi-label{font-size:.72rem;letter-spacing:.5px;margin-top:6px;color:var(--muted);font-weight:600}
+/* Filter bar organization */
+#page-movements .mov-filter-card > div:first-child{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;gap:12px;align-items:end;margin-bottom:14px}
+#page-movements .mov-filter-card > div:last-child{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-start}
+/* Status badge colors */
+.mov-status{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.mov-status.مكتمل{background:#dcfce7;color:#15803d}
+.mov-status.معلق{background:#fff7ed;color:#c2410c}
+.mov-status.ملغي{background:#fee2e2;color:#dc2626}
+body.dark-mode .mov-status.مكتمل{background:#052e16;color:#4ade80}
+body.dark-mode .mov-status.معلق{background:#431407;color:#fb923c}
+body.dark-mode .mov-status.ملغي{background:#450a0a;color:#f87171}
 #mov-table tbody tr{transition:background .12s;cursor:pointer}
 #mov-table tbody tr:hover{background:var(--primary-pale)}
 #mov-table tbody tr.mov-row-selected{background:rgba(var(--primary-rgb),.07)!important}
@@ -621,18 +684,18 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
     top:56px;left:0;right:0;
     z-index:99;
     background:var(--primary);
-    padding:10px 14px 10px;
+    padding:8px 10px 8px;
     max-width:none;
     border-top:1px solid rgba(255,255,255,.08);
     box-shadow:0 8px 28px rgba(0,0,0,.28);
     animation:mSearchSlide .2s cubic-bezier(.4,0,.2,1)
   }
-  @keyframes mSearchSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes mSearchSlide{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
   #header .header-search.m-search-open .search-wrap{width:100%}
-  #header .header-search.m-search-open input{font-size:.85rem;padding:10px 38px 10px 34px;border-radius:12px;background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.22)}
-  #header .header-search.m-search-open input:focus{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.32);box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+  #header .header-search.m-search-open input{font-size:.8rem;padding:6px 28px 6px 30px;border-radius:18px;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.18)}
+  #header .header-search.m-search-open input:focus{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28);box-shadow:0 0 0 2px rgba(255,255,255,.06)}
   /* Dropdown inside mobile overlay */
-  #header .header-search.m-search-open .search-dropdown{position:relative;top:auto;left:auto;right:auto;margin-top:8px;border-radius:12px;max-height:calc(100svh - 130px);box-shadow:0 12px 40px rgba(0,0,0,.24);background:var(--surface)}
+  #header .header-search.m-search-open .search-dropdown{position:relative;top:auto;left:auto;right:auto;margin-top:6px;border-radius:12px;max-height:calc(100svh - 120px);box-shadow:0 12px 40px rgba(0,0,0,.24);background:var(--surface)}
   /* Search result items — wrap for product meta */
   .search-category{padding:6px 12px 5px;font-size:.64rem}
   .search-item{flex-wrap:wrap;padding:10px 12px;gap:8px;border-right-width:2px;align-items:flex-start}
@@ -741,7 +804,43 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
   /* Vault log search bar → full width stack */
   #vault-log-search,#vault-status-filter,#vault-from,#vault-to{width:100%!important}
   /* Movements filter top row → stack */
-  #page-movements .mov-filter-card > div:first-child{grid-template-columns:1fr!important}
+  #page-movements .mov-filter-card > div:first-child{grid-template-columns:1fr!important;gap:8px!important}
+  #page-movements .mov-search-wrap{min-width:auto!important}
+  #page-movements .mov-filter-card{padding:12px!important}
+  /* Movements mobile cards */
+  #mov-mobile-list{margin:0 -24px;padding:0 12px}
+  #mov-mobile-list .mov-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;transition:all .2s ease}
+  #mov-mobile-list .mov-card:active{transform:scale(.98);background:var(--primary-pale)}
+  #mov-mobile-list .mov-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px}
+  #mov-mobile-list .mov-card-date{font-size:.75rem;font-weight:700;color:var(--text)}
+  #mov-mobile-list .mov-card-sub{font-size:.68rem;color:var(--muted);margin-top:2px}
+  #mov-mobile-list .mov-card-type{display:inline-block;padding:2px 8px;border-radius:16px;font-size:.7rem;font-weight:700;background:var(--primary-pale);color:var(--primary)}
+  #mov-mobile-list .mov-card-client{font-size:.85rem;font-weight:700;color:var(--accent);margin:8px 0 6px 0}
+  #mov-mobile-list .mov-card-footer{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.78rem;border-top:1px solid var(--border);padding-top:8px}
+  #mov-mobile-list .mov-card-footer .mov-item{display:flex;justify-content:space-between}
+  #mov-mobile-list .mov-card-footer .mov-label{color:var(--muted);font-weight:600}
+  #mov-mobile-list .mov-card-footer .mov-val{color:var(--text);font-weight:700}
+
+  /* ── Inventory mobile ── */
+  #page-inventory .inv-kpi-scroll{margin:-24px -12px 12px -12px;padding:12px 12px 8px 12px}
+  #page-inventory .inv-kpi-grid{min-width:calc(100% + 24px);grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+  #page-inventory .inv-kpi-grid .kpi{padding:10px 10px;border-radius:8px}
+  #page-inventory .inv-kpi-grid .kpi .kpi-icon{font-size:1.3rem;margin-bottom:4px}
+  #page-inventory .inv-kpi-grid .kpi .kpi-val{font-size:.95rem}
+  #page-inventory .inv-kpi-grid .kpi .kpi-label{font-size:.65rem}
+  #page-inventory .inv-filter-bar{gap:8px}
+  #page-inventory .inv-search-wrap{min-width:auto}
+  #page-inventory .inv-search-input{font-size:.82rem;padding:7px 30px 7px 10px}
+  /* Hide table, show mobile cards */
+  #page-inventory .table-card{display:none!important}
+  #page-inventory .inv-mobile-list{display:flex;flex-direction:column;gap:8px}
+  #page-inventory .inv-product-card{border-radius:10px;padding:10px}
+  #page-inventory .inv-card-header{gap:6px}
+  #page-inventory .inv-card-code{font-size:.7rem;padding:2px 4px}
+  #page-inventory .inv-card-name{font-size:.82rem;margin:6px 0 4px 0}
+  #page-inventory .inv-card-footer{grid-template-columns:1fr 1fr;gap:6px}
+  #page-inventory .inv-card-footer .inv-card-item{font-size:.75rem}
+  #page-inventory .inv-card-label{font-size:.68rem}
 
   /* ── KPI Strip → 2 columns ── */
   .kpi-strip{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
@@ -1464,8 +1563,10 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
     </div>
   </div>
 
-  <!-- ── KPI Summary Grid ── -->
-  <div class="inv-kpi-grid" id="inv-summary-cards"></div>
+  <!-- ── KPI Summary Cards ── -->
+  <div class="inv-kpi-scroll">
+    <div id="inv-summary-cards" class="inv-kpi-grid"></div>
+  </div>
 
   <!-- ── Status Tab Bar ── -->
   <div class="inv-tab-bar">
@@ -1497,7 +1598,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 
   <!-- ── Desktop Table ── -->
   <div class="table-card">
-    <div class="overflow-x"><table id="inv-table"><thead><tr><th style="width:36px"><input type="checkbox" class="checkbox" id="inv-check-all" onchange="toggleAllInv(this)"></th><th data-i18n="colCode">الكود</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice" class="inv-buyprice-col">سعر الشراء</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colPurchases" data-i18n-title="colPurchasesTip" title="من المورد فقط">المشتريات</th><th data-i18n="colReturnToStock" data-i18n-title="colReturnToStockTip" title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th data-i18n="colSales">المبيعات</th><th data-i18n="colCurrentBal">الرصيد الحالي</th><th data-i18n="status">الحالة</th></tr></thead><tbody id="inv-tbody"></tbody></table></div>
+    <div class="overflow-x"><table id="inv-table"><thead><tr><th data-i18n="colCode">الكود</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice" class="inv-buyprice-col">سعر الشراء</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colPurchases" data-i18n-title="colPurchasesTip" title="من المورد فقط">المشتريات</th><th data-i18n="colReturnToStock" data-i18n-title="colReturnToStockTip" title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th data-i18n="colSales">المبيعات</th><th data-i18n="colCurrentBal">الرصيد الحالي</th><th data-i18n="status">الحالة</th></tr></thead><tbody id="inv-tbody"></tbody></table></div>
   </div>
 
   <!-- ── Mobile Card List ── -->
@@ -5091,6 +5192,8 @@ function renderInventory() {
   const inv = Array.isArray(inventoryCache) ? inventoryCache : [];
   const totalItems = inv.length;
   const totalStock = inv.reduce((s, r) => s + (r.current || 0), 0);
+  const totalValue = inv.reduce((s, r) => s + ((r.current || 0) * (r.sellPrice || 0)), 0);
+  const totalCost = inv.reduce((s, r) => s + ((r.current || 0) * (r.buyPrice || 0)), 0);
   const okCount = inv.filter(r => r.current > (r.minStock || 0)).length;
   const lowCount = inv.filter(r => r.current > 0 && r.current <= (r.minStock || 0)).length;
   const zeroCount = inv.filter(r => (r.current || 0) <= 0).length;
@@ -5098,32 +5201,23 @@ function renderInventory() {
   /* Render KPI cards */
   const kpiEl = qs('#inv-summary-cards');
   if (kpiEl) {
-    kpiEl.innerHTML = `
-      <div class="inv-kpi-card">
-        <div class="inv-kpi-icon blue">📦</div>
-        <div class="inv-kpi-val">${fmtN(totalItems)}</div>
-        <div class="inv-kpi-label">إجمالي الأصناف</div>
-      </div>
-      <div class="inv-kpi-card">
-        <div class="inv-kpi-icon blue">📊</div>
-        <div class="inv-kpi-val">${fmtN(totalStock)}</div>
-        <div class="inv-kpi-label">إجمالي المخزون</div>
-      </div>
-      <div class="inv-kpi-card">
-        <div class="inv-kpi-icon green">✓</div>
-        <div class="inv-kpi-val" style="color:#10b981">${fmtN(okCount)}</div>
-        <div class="inv-kpi-label">متوفر</div>
-      </div>
-      <div class="inv-kpi-card">
-        <div class="inv-kpi-icon orange">⚠</div>
-        <div class="inv-kpi-val" style="color:#f59e0b">${fmtN(lowCount)}</div>
-        <div class="inv-kpi-label">منخفض</div>
-      </div>
-      <div class="inv-kpi-card">
-        <div class="inv-kpi-icon red">✕</div>
-        <div class="inv-kpi-val" style="color:#ef4444">${fmtN(zeroCount)}</div>
-        <div class="inv-kpi-label">نفد</div>
-      </div>`;
+    const kpiData = [
+      { val: fmtN(totalItems), label: 'إجمالي الأصناف', color: '#3b82f6', icon: '📦' },
+      { val: fmtN(totalStock), label: 'إجمالي المخزون', color: '#06b6d4', icon: '📊' },
+    ];
+    if (isAdmin()) {
+      kpiData.push({ val: fmtJ(totalValue), label: 'قيمة البيع', color: '#10b981', icon: '💰' });
+      kpiData.push({ val: fmtJ(totalCost), label: 'قيمة الشراء', color: '#8b5cf6', icon: '📈' });
+    }
+    kpiData.push({ val: fmtN(okCount), label: 'متوفر', color: '#10b981', icon: '✓' });
+    kpiData.push({ val: fmtN(lowCount), label: 'منخفض', color: '#f59e0b', icon: '⚠' });
+    kpiData.push({ val: fmtN(zeroCount), label: 'نفد', color: '#ef4444', icon: '✕' });
+    kpiEl.innerHTML = kpiData.map(k => `
+      <div class="kpi" style="--kpi-color:${k.color}">
+        <div class="kpi-icon">${k.icon}</div>
+        <div class="kpi-val" style="color:${k.color}">${k.val}</div>
+        <div class="kpi-label">${k.label}</div>
+      </div>`).join('');
   }
 
   const tokens = normalizeUiSearch(qs('#inv-search-input')?.value || '').split(/\s+/).filter(Boolean);
@@ -5173,49 +5267,51 @@ function renderInventory() {
   if (tbody) {
     tbody.innerHTML = pageData.length ? pageData.map(r => {
       const key = r.code || r.name;
-      const sel = selectedInvIds.has(key);
-      return `<tr class="${sel ? 'inv-row-selected' : ''}" onclick="handleInvRowClick(event,'${esc(key)}')">
-        <td><input type="checkbox" class="checkbox inv-check" value="${esc(key)}" ${sel ? 'checked' : ''} onclick="handleInvCheck(event,'${esc(key)}')"></td>
+      return `<tr onclick="openInventoryDetail('${esc(key)}')">
         <td>${esc(r.code || '-')}</td><td style="font-weight:600">${esc(r.name)}</td><td>${fmtJ(r.sellPrice)}</td><td class="inv-buyprice-col">${fmtJ(r.buyPrice)}</td>
         <td>${fmtN(r.openingBalance)}</td><td class="text-green">${fmtN(r.purchases)}</td>${invReturnCell(r)}<td class="text-blue">${fmtN(r.sales)}</td>
         <td>${stockBar(r)}</td>
         <td>${statusBadgeOld(r)}</td>
       </tr>`;
-    }).join('') : '<tr><td colspan="11" class="empty-state">لا توجد بيانات</td></tr>';
+    }).join('') : '<tr><td colspan="10" class="empty-state">لا توجد بيانات</td></tr>';
   }
 
   /* Mobile Card List */
   const mobileList = qs('#inv-mobile-list');
   if (mobileList) {
+    const isAdminUser = isAdmin();
     mobileList.innerHTML = pageData.length ? pageData.map(r => {
       const key = r.code || r.name;
-      const statusClass = r.current <= 0 ? 'out-of-stock' : (r.current <= (r.minStock || 0) ? 'low-stock' : 'in-stock');
+      const status = r.current <= 0 ? 'نفد' : (r.current <= (r.minStock || 0) ? 'منخفض' : 'متوفر');
       const statusEmoji = r.current <= 0 ? '✕' : (r.current <= (r.minStock || 0) ? '⚠' : '✓');
-      return `<div class="inv-product-card">
+      return `<div class="inv-product-card" onclick="openInventoryDetail('${esc(key)}')">
         <div class="inv-card-header">
-          <div class="inv-card-icon" style="background:${r.current <= 0 ? '#fee2e2;color:#b91c1c' : r.current <= (r.minStock || 0) ? '#fef3c7;color:#92400e' : '#d1fae5;color:#047857'}">${statusEmoji}</div>
-          <div class="inv-card-info">
+          <div>
+            <div class="inv-card-code">${esc(r.code || '-')}</div>
             <div class="inv-card-name">${esc(r.name)}</div>
-            <div class="inv-card-code">#${esc(r.code || '-')}</div>
           </div>
-          <div class="inv-card-stock">
-            <div class="inv-card-stock-val">${fmtN(r.current)}</div>
-            <div class="inv-card-stock-label">المخزون</div>
-          </div>
+          <span class="inv-status-badge ${status}" style="flex-shrink:0">${status}</span>
         </div>
         <div class="inv-card-footer">
-          <div class="inv-card-meta">
-            <span class="inv-status-badge ${statusClass}"><span class="inv-status-dot"></span>${r.current <= 0 ? 'نفد' : r.current <= (r.minStock || 0) ? 'منخفض' : 'متوفر'}</span>
-            <span class="inv-card-price">${fmtJ(r.sellPrice)}</span>
+          ${isAdminUser ? `<div class="inv-card-item">
+            <span class="inv-card-label">السعر</span>
+            <span class="inv-card-val accent">${fmtJ(r.sellPrice)}</span>
+          </div>` : ''}
+          <div class="inv-card-item">
+            <span class="inv-card-label">الكمية</span>
+            <span class="inv-card-val">${fmtN(r.current)}</span>
           </div>
-          <button class="inv-detail-btn" onclick="openInventoryDetail('${esc(key)}')">التفاصيل</button>
+          <div class="inv-card-item">
+            <span class="inv-card-label">الحد الأدنى</span>
+            <span class="inv-card-val">${fmtN(r.minStock || 0)}</span>
+          </div>
+          ${isAdminUser ? `<div class="inv-card-item">
+            <span class="inv-card-label">القيمة</span>
+            <span class="inv-card-val">${fmtJ((r.current || 0) * (r.sellPrice || 0))}</span>
+          </div>` : ''}
         </div>
       </div>`;
-    }).join('') : `<div class="inv-empty">
-      <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>
-      <div class="inv-empty-title">لا توجد منتجات</div>
-      <div class="inv-empty-sub">لا توجد نتائج تطابق معايير البحث</div>
-    </div>`;
+    }).join('') : `<div style="text-align:center;padding:40px 20px;color:var(--muted)"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" style="margin-bottom:12px;opacity:.4"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg><div style="font-size:.95rem;font-weight:600">لا توجد منتجات</div></div>`;
   }
 
   // Hide buy price column from staff
@@ -5449,14 +5545,20 @@ function renderMovMobileCard(tx) {
   const rem = Number(tx.remaining) || 0;
   const dep = exchangeSalePaidDisplayAmount(tx);
   const hasShip = tx.type === 'مبيعات' && (Number(tx.shipCost) || 0) > 0;
-  return `<div onclick="showInvoiceDetail('${esc(tx._id)}')" style="background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:14px 16px;box-shadow:0 1px 6px rgba(0,0,0,.05);cursor:pointer;transition:box-shadow .15s;${isCancelled ? 'opacity:.65;' : ''}">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${badgeHtml}</div>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">${statusHtml}
+  const dateStr = (tx.date || '').slice(0, 10);
+  const timeStr = formatEditDateTime(tx.date || '');
+  return `<div class="mov-card${isCancelled ? ' mov-card-cancelled' : ''}" onclick="showInvoiceDetail('${esc(tx._id)}')">
+    <div class="mov-card-header">
+      <div style="flex:1">
+        <div class="mov-card-date">${dateStr}</div>
+        <div class="mov-card-sub">${timeStr}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        ${statusHtml}
         <div class="actions-dd" onclick="event.stopPropagation()">
           <button class="dd-toggle" onclick="toggleActionMenu(event)" style="width:32px;height:32px">⋮</button>
           <div class="dd-menu">
-            <div class="dd-item" onclick="showInvoiceDetail('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg> فتح الفاتورة</div>
+            <div class="dd-item" onclick="showInvoiceDetail('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg> فتح</div>
             ${!isCancelled ? `<div class="dd-item" onclick="openEditMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</div>` : ''}
             <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة</div>
             ${rem > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل</div>` : ''}
@@ -5465,26 +5567,22 @@ function renderMovMobileCard(tx) {
         </div>
       </div>
     </div>
-    <div style="font-weight:700;font-size:.95rem;margin-bottom:4px;color:var(--text)">${tx.client ? esc(tx.client) : '<span style="color:var(--muted);font-weight:400">بدون اسم</span>'}</div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--muted);margin-bottom:10px">
-      <span>${fmtDate(tx.date)}</span>
-      ${tx.ref ? `<span style="color:var(--border)">·</span><span style="color:var(--accent);font-weight:600">${esc(tx.ref)}</span>` : ''}
-      ${tx.employee ? `<span style="color:var(--border)">·</span><span>${esc(tx.employee)}</span>` : ''}
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;background:var(--bg-alt);border-radius:8px;padding:10px 12px">
-      <div>
-        <div style="font-size:.65rem;color:var(--muted);margin-bottom:2px">الإجمالي</div>
-        <div style="font-weight:700;font-size:.9rem">${fmtJ(tx.total)}</div>
-        ${hasShip ? `<div style="font-size:.65rem;color:var(--muted)">شحن: ${fmtJ(Number(tx.actualShipCost || tx.shipCost))}</div>` : ''}
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">${badgeHtml}</div>
+    <div class="mov-card-client">${tx.client ? esc(tx.client) : '<span style="color:var(--muted);font-weight:400">بدون اسم</span>'}</div>
+    <div class="mov-card-footer">
+      <div class="mov-item">
+        <span class="mov-label">الإجمالي</span>
+        <span class="mov-val">${fmtJ(tx.total)}</span>
       </div>
-      <div>
-        <div style="font-size:.65rem;color:var(--muted);margin-bottom:2px">المدفوع</div>
-        <div style="font-weight:600;font-size:.9rem">${dep}</div>
+      <div class="mov-item">
+        <span class="mov-label">المدفوع</span>
+        <span class="mov-val">${dep}</span>
       </div>
-      <div>
-        <div style="font-size:.65rem;color:var(--muted);margin-bottom:2px">المتبقي</div>
-        <div style="font-weight:700;font-size:.9rem;${rem > 0 ? 'color:var(--red)' : 'color:var(--green)'}">${fmtJ(rem)}</div>
+      <div class="mov-item">
+        <span class="mov-label">المتبقي</span>
+        <span class="mov-val" style="color:${rem > 0 ? 'var(--red)' : 'var(--green)'}">${fmtJ(rem)}</span>
       </div>
+      ${tx.ref ? `<div class="mov-item"><span class="mov-label">المرجع</span><span class="mov-val" style="color:var(--accent);font-weight:700">#${esc(tx.ref)}</span></div>` : ''}
     </div>
   </div>`;
 }
@@ -10410,9 +10508,9 @@ function renderSearchDropdown() {
         const sellPrice = sellMatch ? sellMatch[1] : '';
         const buyPrice = buyMatch ? buyMatch[1] : '';
         let priceRow = '';
-        if (sellPrice || buyPrice) {
+        if (isAdmin() && (sellPrice || buyPrice)) {
           priceRow = '<div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">';
-          if (isAdmin() && buyPrice) priceRow += '<span style="font-size:.66rem;color:var(--muted)">شراء: <b style="color:var(--text)">' + esc(buyPrice) + ' ج</b></span>';
+          if (buyPrice) priceRow += '<span style="font-size:.66rem;color:var(--muted)">شراء: <b style="color:var(--text)">' + esc(buyPrice) + ' ج</b></span>';
           if (sellPrice) priceRow += '<span class="search-meta" style="margin:0">' + esc(sellPrice) + ' ج</span>';
           priceRow += '</div>';
         }
@@ -10785,19 +10883,28 @@ function renderCmpNegAlert() {
 
 // Modals
 function openComplaintModal() {
-  const txOptions = transactions.filter(t => !t.cancelled && t.type === 'مبيعات')
+  const salesTx = transactions.filter(t => !t.cancelled && t.type === 'مبيعات');
+  const txOptions = salesTx
     .map(t => `<option value="${t._id}" data-ref="${esc(t.ref || t._id)}" data-client="${esc(t.client || '')}">${esc(t.ref || t._id)} — ${esc(t.client || '—')} (${fmtDate((t.date||'').slice(0,10))})</option>`)
     .join('');
   openModal(`<h3 style="margin-bottom:16px">شكوى جديدة</h3>
     <div class="form-group">
-      <label class="form-label">الطلب المرتبط (اختياري)</label>
+      <label class="form-label">البحث عن الحركة <span style="color:var(--muted);font-size:.8rem">(اختياري)</span></label>
+      <div style="position:relative">
+        <input type="text" id="cmp-tx-search" placeholder="ابحث برقم الفاتورة أو اسم العميل..." style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;color:var(--text);font-size:.85rem" oninput="filterCmpTransactions(this.value)">
+        <div id="cmp-tx-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);max-height:200px;overflow-y:auto;z-index:10">
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">الطلب المختار</label>
       <select id="cmp-tx-sel" style="width:100%" onchange="cmpTxChange(this)">
-        <option value="">— اختر طلباً —</option>${txOptions}
+        <option value="">— لم يتم اختيار —</option>${txOptions}
       </select>
     </div>
     <div class="form-group">
       <label class="form-label">اسم العميل</label>
-      <input type="text" id="cmp-client-input" class="form-input" placeholder="اسم العميل">
+      <input type="text" id="cmp-client-input" class="form-input" placeholder="سيتم ملأه تلقائياً من الحركة">
     </div>
     <div class="form-group">
       <label class="form-label">وصف الشكوى <span style="color:var(--red)">*</span></label>
@@ -10810,6 +10917,49 @@ function openComplaintModal() {
       <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
       <button class="btn btn-primary" onclick="saveComplaint()">حفظ وإرسال</button>
     </div>`);
+  // Store transactions for search
+  window._cmpTxList = salesTx;
+}
+
+function filterCmpTransactions(searchValue) {
+  const dropdown = qs('#cmp-tx-dropdown');
+  if (!dropdown || !window._cmpTxList) return;
+  const search = searchValue.toLowerCase().trim();
+  if (!search) {
+    dropdown.style.display = 'none';
+    return;
+  }
+  const filtered = window._cmpTxList.filter(t => {
+    const ref = (t.ref || t._id || '').toLowerCase();
+    const client = (t.client || '').toLowerCase();
+    return ref.includes(search) || client.includes(search);
+  });
+  if (filtered.length === 0) {
+    dropdown.style.display = 'none';
+    return;
+  }
+  dropdown.innerHTML = filtered
+    .map(t => `<div style="padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--primary-pale)'" onmouseout="this.style.background=''" onclick="selectCmpTx('${esc(t._id)}','${esc(t.client||'')}')">
+      <div style="font-weight:600;color:var(--text)">${esc(t.ref || t._id)}</div>
+      <div style="font-size:.8rem;color:var(--muted)">${esc(t.client || '—')} • ${fmtDate((t.date||'').slice(0,10))}</div>
+    </div>`)
+    .join('');
+  dropdown.style.display = 'block';
+}
+
+function selectCmpTx(txId, clientName) {
+  const sel = qs('#cmp-tx-sel');
+  const search = qs('#cmp-tx-search');
+  const dropdown = qs('#cmp-tx-dropdown');
+  if (sel) {
+    sel.value = txId;
+    const opt = sel.options[sel.selectedIndex];
+    const client = opt ? (opt.getAttribute('data-client') || '') : '';
+    const clientInput = qs('#cmp-client-input');
+    if (clientInput) clientInput.value = client;
+  }
+  if (search) search.value = '';
+  if (dropdown) dropdown.style.display = 'none';
 }
 
 function cmpTxChange(sel) {
