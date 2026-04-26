@@ -219,7 +219,29 @@ body.dark-mode .status-pending{color:#fbbf24}
 #page-movements .mov-filter-toggle .mov-filter-chevron{transition:transform var(--motion-base)}
 #page-movements .mov-filter-card.open .mov-filter-toggle .mov-filter-chevron{transform:rotate(180deg)}
 #page-movements .mov-filter-toggle .mov-filter-badge{background:var(--accent);color:#fff;font-size:.65rem;font-weight:800;min-width:18px;height:18px;border-radius:var(--r-pill);padding:0 5px;display:inline-flex;align-items:center;justify-content:center;line-height:1}
-#page-movements .mov-filter-dates{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+/* Filter groups and pills organization */
+#page-movements .mov-filter-pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px}
+#page-movements .mov-filter-group{display:flex;gap:4px;align-items:center}
+
+#page-movements .mov-filter-dates{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:10px;
+}
+#page-movements .mov-filter-dates > div{display:flex;flex-direction:column;gap:3px}
+#page-movements .mov-filter-dates label{
+  font-size:.68rem;
+  font-weight:700;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.2px;
+}
+#page-movements .mov-filter-dates input[type="date"]{
+  padding:6px 8px;
+  min-width:auto;
+  font-size:.82rem;
+}
 
 /* Desktop: show everything inline (no collapse) */
 @media (min-width:769px){
@@ -232,19 +254,39 @@ body.dark-mode .status-pending{color:#fbbf24}
 
 /* Mobile: collapsed by default, slides open with smooth animation */
 @media (max-width:768px){
-  #page-movements .mov-filter-card{padding:10px 12px;border-radius:var(--r-md);box-shadow:var(--shadow-sm)}
+  #page-movements .mov-filter-card{padding:9px;border-radius:var(--r-md);box-shadow:var(--shadow-sm)}
   #page-movements .mov-filter-toggle{display:inline-flex}
   #page-movements .mov-filter-body{max-height:0;overflow:hidden;transition:max-height var(--motion-slow),opacity var(--motion-base),margin-top var(--motion-base);opacity:0;margin-top:0}
-  #page-movements .mov-filter-card.open .mov-filter-body{max-height:600px;opacity:1;margin-top:10px}
-  #page-movements .mov-filter-dates{margin-top:0;gap:8px}
-  #page-movements .mov-filter-dates input[type="date"]{min-width:0!important;width:100%;font-size:.85rem}
-  #page-movements .mov-search-wrap input{font-size:.92rem;height:38px}
-  /* Filter pills layout — wrap and group nicely */
-  #page-movements .mov-filter-pills{gap:6px!important;padding-top:10px;border-top:1px dashed var(--border);margin-top:10px}
-  #page-movements .mov-filter-pills>span{font-size:.7rem!important;width:100%;margin:0 0 2px!important;display:block}
-  #page-movements .mov-filter-pills>div{display:none!important}
-  #page-movements .mov-type-pill{font-size:.72rem;padding:7px 12px;border-radius:var(--r-pill);min-height:32px;flex-shrink:0}
-  #page-movements .mov-type-pill svg{width:11px;height:11px}
+  #page-movements .mov-filter-card.open .mov-filter-body{max-height:800px;opacity:1;margin-top:8px}
+
+  /* Compact dates on mobile */
+  #page-movements .mov-filter-dates{
+    grid-template-columns:1fr;
+    gap:6px;
+    margin-top:8px;
+  }
+  #page-movements .mov-filter-dates label{font-size:.65rem}
+  #page-movements .mov-filter-dates input[type="date"]{
+    min-width:0!important;
+    width:100%;
+    font-size:.82rem;
+    padding:5px 6px;
+  }
+
+  /* Compact search */
+  #page-movements .mov-search-wrap input{font-size:.88rem;height:36px}
+
+  /* Compact filter pills on mobile */
+  #page-movements .mov-filter-pills{gap:4px!important;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+  #page-movements .mov-filter-group{gap:3px}
+  #page-movements .mov-type-pill{
+    font-size:.68rem;
+    padding:5px 9px;
+    border-radius:16px;
+    min-height:30px;
+    flex-shrink:0;
+  }
+  #page-movements .mov-type-pill svg{width:12px;height:12px}
   /* Compact KPI strip */
   #page-movements .kpi-strip{gap:8px;padding-bottom:6px}
   #page-movements .kpi-strip .kpi{padding:10px 12px;min-width:130px}
@@ -833,8 +875,24 @@ body.dark-mode #page-inventory .inv-status-badge.نفد{background:#450a0a;color
 #page-inventory .inv-card-val.accent{color:var(--accent);font-weight:800}
 
 /* Movements page enhancements */
-#page-movements .mov-filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:12px}
-#page-movements .mov-type-pill{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;font-size:.8rem;font-weight:600;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;white-space:nowrap;color:var(--muted)}
+#page-movements .mov-filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:12px}
+#page-movements .mov-type-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  padding:6px 11px;
+  border-radius:18px;
+  font-size:.75rem;
+  font-weight:600;
+  border:1px solid var(--border);
+  background:var(--surface);
+  cursor:pointer;
+  transition:all .15s;
+  white-space:nowrap;
+  color:var(--muted);
+  min-height:32px;
+}
 #page-movements .mov-type-pill:hover{border-color:var(--accent);color:var(--accent);background:var(--primary-pale)}
 #page-movements .mov-type-pill.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 2px 8px rgba(102,126,234,.3)}
 #page-movements .mov-type-pill.pill-green.active{background:#10b981;border-color:#10b981;box-shadow:0 2px 8px rgba(16,185,129,.3)}
@@ -2016,40 +2074,36 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
         <input type="date" id="mov-to" style="padding:7px 10px;min-width:140px" onchange="movPage=1;updateMovFilterBadge();renderMovements()">
       </div>
     </div>
-    <!-- Filter pills -->
-    <div class="mov-filter-pills" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <span style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-left:4px" data-i18n="movType">نوع</span>:
-      <button class="mov-type-pill active" onclick="setMovFilter('all',this)" data-i18n="filterAll">الكل</button>
-      <button class="mov-type-pill pill-green" onclick="setMovFilter('مبيعات',this)" data-i18n="txSales">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
-        مبيعات
-      </button>
-      <button class="mov-type-pill pill-blue" onclick="setMovFilter('مشتريات',this)" data-i18n="txPurchases">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>
-        مشتريات
-      </button>
-      <button class="mov-type-pill pill-orange" onclick="setMovFilter('مرتجع',this)" data-i18n="txReturns">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>
-        مرتجع
-      </button>
-      <button class="mov-type-pill pill-purple" onclick="setMovFilter('استرجاع',this)">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        استرجاع
-      </button>
-      <div style="width:1px;height:22px;background:var(--border);margin:0 4px"></div>
-      <span style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-left:4px" data-i18n="movStatus">حالة</span>:
-      <button class="mov-type-pill pill-check" onclick="setMovFilter('مكتمل',this,'status')" data-i18n="movComplete">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-        مكتمل
-      </button>
-      <button class="mov-type-pill pill-wait" onclick="setMovFilter('معلق',this,'status')" data-i18n="movPending">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-        انتظار
-      </button>
-      <button class="mov-type-pill pill-cancel" onclick="setMovFilter('ملغي',this,'status')" data-i18n="movCanceled">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
-        ملغي
-      </button>
+    <!-- Filter pills - Compact layout -->
+    <div class="mov-filter-pills">
+      <!-- Transaction Types -->
+      <div class="mov-filter-group">
+        <button class="mov-type-pill active" onclick="setMovFilter('all',this)" title="كل الحركات">الكل</button>
+        <button class="mov-type-pill pill-green" onclick="setMovFilter('مبيعات',this)" title="المبيعات">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+        </button>
+        <button class="mov-type-pill pill-blue" onclick="setMovFilter('مشتريات',this)" title="المشتريات">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>
+        </button>
+        <button class="mov-type-pill pill-orange" onclick="setMovFilter('مرتجع',this)" title="المرتجعات">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>
+        </button>
+        <button class="mov-type-pill pill-purple" onclick="setMovFilter('استرجاع',this)" title="الاسترجاع">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </button>
+      </div>
+      <!-- Status Filters -->
+      <div class="mov-filter-group">
+        <button class="mov-type-pill pill-check" onclick="setMovFilter('مكتمل',this,'status')" title="حركات مكتملة">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+        </button>
+        <button class="mov-type-pill pill-wait" onclick="setMovFilter('معلق',this,'status')" title="حركات معلقة">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        </button>
+        <button class="mov-type-pill pill-cancel" onclick="setMovFilter('ملغي',this,'status')" title="حركات ملغاة">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+        </button>
+      </div>
     </div>
     </div><!-- /mov-filter-body -->
   </div>
