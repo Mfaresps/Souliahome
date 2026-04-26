@@ -878,6 +878,115 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 #dash-treasury-widget .stat-card { padding: 14px; }
 
 /* ══════════════════════════════════════════
+   INVENTORY PAGE — Modern Redesign
+══════════════════════════════════════════ */
+/* Page Header */
+.inv-page-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.inv-title-icon{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;background:linear-gradient(135deg,var(--primary-light),var(--primary));border-radius:10px;color:#fff;flex-shrink:0}
+.inv-header-actions{display:flex;gap:10px;align-items:center;flex-shrink:0}
+
+/* KPI Grid */
+.inv-kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+.inv-kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:transform .2s,box-shadow .2s;cursor:default}
+.inv-kpi-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.inv-kpi-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:.95rem;margin-bottom:12px;flex-shrink:0}
+.inv-kpi-icon.green{background:#d1fae5;color:#047857}
+.inv-kpi-icon.orange{background:#fef3c7;color:#92400e}
+.inv-kpi-icon.red{background:#fee2e2;color:#b91c1c}
+.inv-kpi-icon.blue{background:#dbeafe;color:#0369a1}
+.inv-kpi-val{font-size:1.4rem;font-weight:800;color:var(--text);margin-bottom:4px}
+.inv-kpi-label{font-size:.74rem;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Tab Bar */
+.inv-tab-bar{display:flex;gap:6px;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+.inv-tab{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:none;background:none;color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .18s;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.inv-tab:hover{background:var(--primary-pale);color:var(--text)}
+.inv-tab.active{background:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(0,49,30,.25)}
+
+/* Search & Filter */
+.inv-filter-bar{display:flex;gap:10px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px}
+.inv-search-wrap{position:relative;flex:1}
+.inv-search-input{width:100%;padding:10px 40px 10px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:.88rem;font-family:inherit;transition:border-color .15s,box-shadow .15s;box-sizing:border-box}
+.inv-search-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(0,107,66,.1)}
+
+/* Desktop Table */
+.inv-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.inv-table{width:100%;border-collapse:collapse;min-width:700px}
+.inv-table thead{background:var(--surface2);position:sticky;top:0;z-index:10}
+.inv-table thead th{padding:12px 14px;text-align:right;font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap}
+.inv-table tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+.inv-table tbody tr:last-child{border-bottom:none}
+.inv-table tbody tr:hover{background:var(--primary-pale)}
+.inv-table tbody tr.inv-row-selected{background:rgba(0,107,66,.08)}
+.inv-table td{padding:13px 14px;font-size:.87rem;color:var(--text);vertical-align:middle}
+.inv-product-name{font-weight:700;color:var(--text)}
+.inv-product-code{font-size:.74rem;color:var(--muted);margin-top:2px}
+.inv-stock-amount{font-weight:800;font-size:.95rem;color:var(--red);text-align:center}
+.inv-status-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;font-size:.78rem;font-weight:700;white-space:nowrap}
+.inv-status-badge.in-stock{background:#d1fae5;color:#047857}
+.inv-status-badge.low-stock{background:#fef3c7;color:#92400e}
+.inv-status-badge.out-of-stock{background:#fee2e2;color:#b91c1c}
+.inv-status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:currentColor}
+
+/* Mobile Card List */
+.inv-mobile-list{display:none;flex-direction:column;gap:10px}
+.inv-product-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:box-shadow .2s;-webkit-tap-highlight-color:transparent}
+.inv-product-card:active{box-shadow:0 0 0 2px var(--primary)}
+.inv-card-header{display:flex;align-items:center;gap:12px;padding:14px;background:var(--surface)}
+.inv-card-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.inv-card-info{flex:1;min-width:0}
+.inv-card-name{font-weight:700;font-size:.92rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inv-card-code{font-size:.74rem;color:var(--muted);margin-top:1px}
+.inv-card-stock{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.inv-card-stock-val{font-weight:800;font-size:1.05rem;color:var(--red)}
+.inv-card-stock-label{font-size:.7rem;color:var(--muted);font-weight:600}
+.inv-card-footer{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);gap:8px;flex-wrap:wrap}
+.inv-card-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.inv-card-price{font-size:.82rem;font-weight:700;color:var(--text)}
+.inv-detail-btn{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.75rem;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.inv-detail-btn:active{background:var(--primary-pale)}
+
+/* Product Detail Modal */
+.inv-detail-hero{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);border-radius:14px;padding:20px;color:#fff;margin-bottom:18px;text-align:center;position:relative;overflow:hidden}
+.inv-detail-hero::before{content:'';position:absolute;top:-30px;left:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.07)}
+.inv-detail-hero-name{font-size:1.3rem;font-weight:900;letter-spacing:.5px;margin-bottom:6px}
+.inv-detail-hero-code{font-size:.85rem;opacity:.85;margin-bottom:12px}
+.inv-detail-hero-stock{font-size:2rem;font-weight:900;margin-bottom:4px}
+.inv-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.inv-detail-field{background:var(--surface2);border-radius:10px;padding:12px 14px}
+.inv-detail-field-label{font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.inv-detail-field-val{font-size:.92rem;font-weight:700;color:var(--text)}
+
+/* Expandable Details */
+.inv-expand-btn{padding:10px;background:none;border:none;cursor:pointer;color:var(--primary);font-weight:700;display:flex;align-items:center;gap:6px;transition:all .2s}
+.inv-expand-btn:hover{color:var(--text)}
+.inv-expand-btn svg{transition:transform .2s}
+.inv-expand-btn.expanded svg{transform:rotate(180deg)}
+
+/* Empty state */
+.inv-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;gap:12px;color:var(--muted)}
+.inv-empty svg{opacity:.3}
+.inv-empty-title{font-size:.95rem;font-weight:700;color:var(--text)}
+.inv-empty-sub{font-size:.82rem;color:var(--muted);text-align:center}
+
+/* Mobile Responsive */
+@media(max-width:768px){
+  .inv-kpi-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .inv-kpi-card{padding:12px}
+  .inv-kpi-val{font-size:1.1rem}
+  .inv-kpi-icon{width:36px;height:36px;font-size:.85rem;margin-bottom:8px}
+  .inv-table-wrap{display:none}
+  .inv-mobile-list{display:flex}
+  .inv-header-actions .btn:first-child{display:none}
+  .inv-tab{padding:7px 10px;font-size:.76rem;gap:4px}
+  .inv-detail-grid{grid-template-columns:1fr}
+}
+@media(max-width:380px){
+  .inv-kpi-grid{grid-template-columns:1fr 1fr}
+  .inv-kpi-val{font-size:.95rem}
+}
+
+/* ══════════════════════════════════════════
    EXPENSES PAGE — Modern Redesign
 ══════════════════════════════════════════ */
 /* Page Header */
@@ -1351,28 +1460,81 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 
 <!-- Inventory -->
 <div class="page" id="page-inventory">
-<div class="page-header">
-  <div><h2 class="page-title" data-i18n="inventory">المخزن</h2><p class="page-subtitle" data-i18n="inventorySubtitle">مراقبة الأرصدة وحالة المخزون لكل الأصناف</p></div>
-  <div class="page-header-actions">
-    <button class="btn btn-outline btn-sm" onclick="exportInventoryExcel()" style="display:flex;align-items:center;gap:6px" data-i18n="exportExcel"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تصدير Excel</button>
+
+  <!-- ── Page Header ── -->
+  <div class="inv-page-header">
+    <div>
+      <h2 class="page-title" style="margin-bottom:2px;display:flex;align-items:center;gap:10px">
+        <span class="inv-title-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>
+        </span>
+        <span data-i18n="inventory">المخزن</span>
+      </h2>
+      <p class="page-subtitle" style="margin:0" data-i18n="inventorySubtitle">مراقبة الأرصدة وحالة المخزون لكل الأصناف</p>
+    </div>
+    <div class="inv-header-actions">
+      <button class="btn btn-outline btn-sm" onclick="exportInventoryExcel()">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        تصدير
+      </button>
+    </div>
   </div>
-</div>
-<div id="inv-summary-cards" class="kpi-strip mb-20"></div>
-<div class="filter-card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-  <div style="display:flex;gap:6px;flex-wrap:wrap">
-    <button class="tab-btn active" data-filter="all" onclick="setInvFilter('all',this)" data-i18n="filterAll">الكل</button>
-    <button class="tab-btn" data-filter="low" onclick="setInvFilter('low',this)" data-i18n="filterLow">منخفض</button>
-    <button class="tab-btn" data-filter="ok" onclick="setInvFilter('ok',this)" data-i18n="filterAvailable">متوفر</button>
-    <button class="tab-btn" data-filter="zero" onclick="setInvFilter('zero',this)" data-i18n="filterOutOfStock">نفد</button>
+
+  <!-- ── KPI Summary Grid ── -->
+  <div class="inv-kpi-grid" id="inv-summary-cards"></div>
+
+  <!-- ── Status Tab Bar ── -->
+  <div class="inv-tab-bar">
+    <button class="inv-tab active" id="inv-tab-all" onclick="setInvFilter('all',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      الكل
+    </button>
+    <button class="inv-tab" id="inv-tab-ok" onclick="setInvFilter('ok',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+      متوفر
+    </button>
+    <button class="inv-tab" id="inv-tab-low" onclick="setInvFilter('low',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      منخفض
+    </button>
+    <button class="inv-tab" id="inv-tab-zero" onclick="setInvFilter('zero',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+      نفد
+    </button>
   </div>
-  <div class="search-input" style="position:relative;flex:1;min-width:200px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-    <input type="text" placeholder="بحث في المخزن..." data-i18n="searchInventory" data-i18n-attr="placeholder" oninput="debouncedRenderInventory()" style="padding-right:36px;width:100%">
+
+  <!-- ── Search & Filter Bar ── -->
+  <div class="inv-filter-bar">
+    <div class="inv-search-wrap">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="inv-search-input" placeholder="بحث بالاسم أو الكود..." oninput="debouncedRenderInventory()" class="inv-search-input" data-i18n="searchInventory" data-i18n-attr="placeholder">
+    </div>
   </div>
-</div>
-<div class="table-card">
-  <div class="overflow-x"><table id="inv-table"><thead><tr><th style="width:36px"><input type="checkbox" class="checkbox" id="inv-check-all" onchange="toggleAllInv(this)"></th><th data-i18n="colCode">الكود</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice" class="inv-buyprice-col">سعر الشراء</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colPurchases" data-i18n-title="colPurchasesTip" title="من المورد فقط">المشتريات</th><th data-i18n="colReturnToStock" data-i18n-title="colReturnToStockTip" title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th data-i18n="colSales">المبيعات</th><th data-i18n="colCurrentBal">الرصيد الحالي</th><th data-i18n="status">الحالة</th></tr></thead><tbody></tbody></table></div>
-</div>
-<div id="inv-pagination" style="margin-top:16px"></div>
+
+  <!-- ── Desktop Table ── -->
+  <div class="inv-table-wrap">
+    <table id="inv-table" class="inv-table">
+      <thead>
+        <tr>
+          <th style="width:36px;text-align:center"><input type="checkbox" id="inv-check-all" class="checkbox" onchange="toggleAllInv(this)"></th>
+          <th data-i18n="colCode">الكود</th>
+          <th data-i18n="product">الصنف</th>
+          <th data-i18n="colSellPrice">السعر</th>
+          <th data-i18n="colBuyPrice" class="inv-buyprice-col">سعر الشراء</th>
+          <th style="text-align:center" data-i18n="colCurrentBal">المخزون</th>
+          <th style="text-align:center" data-i18n="status">الحالة</th>
+          <th style="width:52px;text-align:center">التفاصيل</th>
+        </tr>
+      </thead>
+      <tbody id="inv-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- ── Mobile Card List ── -->
+  <div id="inv-mobile-list" class="inv-mobile-list"></div>
+
+  <!-- ── Pagination ── -->
+  <div id="inv-pagination" style="margin-top:16px"></div>
 </div>
 
 <!-- Movements -->
@@ -4947,7 +5109,13 @@ async function loadInventory() {
   renderInventory();
 }
 
-function setInvFilter(f, btn) { invFilter = f; invPage = 1; qsa('#page-inventory .tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderInventory(); }
+function setInvFilter(f, btn) {
+  invFilter = f;
+  invPage = 1;
+  qsa('#page-inventory .inv-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderInventory();
+}
 
 function renderInventory() {
   const inv = Array.isArray(inventoryCache) ? inventoryCache : [];
@@ -4956,61 +5124,208 @@ function renderInventory() {
   const okCount = inv.filter(r => r.current > (r.minStock || 0)).length;
   const lowCount = inv.filter(r => r.current > 0 && r.current <= (r.minStock || 0)).length;
   const zeroCount = inv.filter(r => (r.current || 0) <= 0).length;
-  const cardsEl = qs('#inv-summary-cards');
-  if (cardsEl) {
-    cardsEl.innerHTML = `
-      <div class="card stat-card"><div style="font-size:1.4rem"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg></div><div class="stat-val">${fmtN(totalItems)}</div><div class="stat-label">إجمالي الأصناف</div></div>
-      <div class="card stat-card"><div style="font-size:1.4rem"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div><div class="stat-val">${fmtN(totalStock)}</div><div class="stat-label">إجمالي المخزون</div></div>
-      <div class="card stat-card"><div style="font-size:1.4rem"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div><div class="stat-val text-green">${fmtN(okCount)}</div><div class="stat-label">متوفر</div></div>
-      <div class="card stat-card"><div style="font-size:1.4rem"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="stat-val text-orange">${fmtN(lowCount)}</div><div class="stat-label">منخفض</div></div>
-      <div class="card stat-card"><div style="font-size:1.4rem">🚫</div><div class="stat-val text-red">${fmtN(zeroCount)}</div><div class="stat-label">نفد</div></div>`;
+
+  /* Render KPI cards */
+  const kpiEl = qs('#inv-summary-cards');
+  if (kpiEl) {
+    kpiEl.innerHTML = `
+      <div class="inv-kpi-card">
+        <div class="inv-kpi-icon blue">📦</div>
+        <div class="inv-kpi-val">${fmtN(totalItems)}</div>
+        <div class="inv-kpi-label">إجمالي الأصناف</div>
+      </div>
+      <div class="inv-kpi-card">
+        <div class="inv-kpi-icon blue">📊</div>
+        <div class="inv-kpi-val">${fmtN(totalStock)}</div>
+        <div class="inv-kpi-label">إجمالي المخزون</div>
+      </div>
+      <div class="inv-kpi-card">
+        <div class="inv-kpi-icon green">✓</div>
+        <div class="inv-kpi-val" style="color:#10b981">${fmtN(okCount)}</div>
+        <div class="inv-kpi-label">متوفر</div>
+      </div>
+      <div class="inv-kpi-card">
+        <div class="inv-kpi-icon orange">⚠</div>
+        <div class="inv-kpi-val" style="color:#f59e0b">${fmtN(lowCount)}</div>
+        <div class="inv-kpi-label">منخفض</div>
+      </div>
+      <div class="inv-kpi-card">
+        <div class="inv-kpi-icon red">✕</div>
+        <div class="inv-kpi-val" style="color:#ef4444">${fmtN(zeroCount)}</div>
+        <div class="inv-kpi-label">نفد</div>
+      </div>`;
   }
-  const tokens = normalizeUiSearch(qs('#page-inventory .search-input input')?.value || '').split(/\s+/).filter(Boolean);
+
+  const tokens = normalizeUiSearch(qs('#inv-search-input')?.value || '').split(/\s+/).filter(Boolean);
   let data = inv.filter(r => {
     const blob = normalizeUiSearch([r.name, r.code, r.returnRefs || ''].join(' '));
     if (tokens.length && !tokens.every(t => blob.includes(t))) return false;
-    if (invFilter === 'low') return r.status === 'low' || r.status === 'منخفض';
-    if (invFilter === 'ok') return r.status === 'ok' || r.status === 'متوفر';
+    if (invFilter === 'low') return r.status === 'low' || r.status === 'منخفض' || (r.current > 0 && r.current <= (r.minStock || 0));
+    if (invFilter === 'ok') return r.status === 'ok' || r.status === 'متوفر' || (r.current > (r.minStock || 0));
     if (invFilter === 'zero') return (r.current || 0) <= 0;
     return true;
   });
-  const statusBadge = (r) => r.current <= 0 ? '<span class="badge badge-red">نفد</span>' : (r.current <= (r.minStock || 0) ? '<span class="badge badge-orange">منخفض</span>' : '<span class="badge badge-green">متوفر</span>');
-  const stockBar = (r) => {
-    const max = Math.max(r.openingBalance || 1, r.current || 1, r.minStock || 1) * 1.2;
-    const pct = Math.min(100, Math.max(0, ((r.current || 0) / max) * 100));
-    const color = r.current <= 0 ? 'var(--red)' : r.current <= (r.minStock || 0) ? 'var(--orange)' : 'var(--green)';
-    return `<div style="display:flex;align-items:center;gap:8px"><strong>${fmtN(r.current)}</strong><div style="flex:1;height:6px;background:var(--border);border-radius:3px;min-width:50px"><div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .3s"></div></div></div>`;
+  data.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+  const statusBadgeHtml = (r) => {
+    if (r.current <= 0) return `<span class="inv-status-badge out-of-stock"><span class="inv-status-dot"></span>نفد</span>`;
+    if (r.current <= (r.minStock || 0)) return `<span class="inv-status-badge low-stock"><span class="inv-status-dot"></span>منخفض</span>`;
+    return `<span class="inv-status-badge in-stock"><span class="inv-status-dot"></span>متوفر</span>`;
   };
-  const invReturnCell = (r) => {
-    const q = Number(r.returnsToStock) || 0;
-    const refs = String(r.returnRefs || '').trim();
-    const dates = String(r.returnDates || '').trim();
-    const refParts = refs ? refs.split('،').map(s => s.trim()).filter(Boolean) : [];
-    const dateParts = dates ? dates.split('،').map(s => s.trim()).filter(Boolean) : [];
-    const hasData = refParts.length > 0 || dateParts.length > 0;
-    if (q === 0) {
-      return `<td style="vertical-align:top"><div style="font-weight:700;color:#6d28d9">0</div></td>`;
-    }
-    return `<td style="vertical-align:top"><div style="font-weight:700;color:#6d28d9;cursor:pointer;user-select:none" onclick="showReturnDetails('${esc(r.code || r.name)}', '${esc(refs)}', '${esc(dates)}')" title="اضغط لعرض التفاصيل">${fmtN(q)}</div></td>`;
-  };
+
   const INV_PAGE_SIZE = 30;
   const total = data.length;
   if (invPage > Math.ceil(total / INV_PAGE_SIZE) || total === 0) invPage = 1;
   const pageData = data.slice((invPage-1)*INV_PAGE_SIZE, invPage*INV_PAGE_SIZE);
-  qs('#inv-table tbody').innerHTML = pageData.length ? pageData.map(r => {
-    const key = r.code || r.name;
-    const sel = selectedInvIds.has(key);
-    return `<tr class="${sel ? 'inv-row-selected' : ''}" onclick="handleInvRowClick(event,'${esc(key)}')">
-      <td><input type="checkbox" class="checkbox inv-check" value="${esc(key)}" ${sel ? 'checked' : ''} onclick="handleInvCheck(event,'${esc(key)}')"></td>
-      <td>${esc(r.code || '-')}</td><td style="font-weight:600">${esc(r.name)}</td><td>${fmtJ(r.sellPrice)}</td><td class="inv-buyprice-col">${fmtJ(r.buyPrice)}</td>
-      <td>${fmtN(r.openingBalance)}</td><td class="text-green">${fmtN(r.purchases)}</td>${invReturnCell(r)}<td class="text-blue">${fmtN(r.sales)}</td>
-      <td>${stockBar(r)}</td>
-      <td>${statusBadge(r)}</td>
-    </tr>`;
-  }).join('') : '<tr><td colspan="11" class="empty-state">لا توجد بيانات</td></tr>';
+
+  /* Desktop Table */
+  const tbody = qs('#inv-tbody');
+  if (tbody) {
+    tbody.innerHTML = pageData.length ? pageData.map(r => {
+      const key = r.code || r.name;
+      const sel = selectedInvIds.has(key);
+      const q = Number(r.returnsToStock) || 0;
+      const refs = String(r.returnRefs || '').trim();
+      const dates = String(r.returnDates || '').trim();
+      return `<tr class="${sel ? 'inv-row-selected' : ''}" onclick="handleInvRowClick(event,'${esc(key)}')">
+        <td style="text-align:center"><input type="checkbox" class="checkbox inv-check" value="${esc(key)}" ${sel ? 'checked' : ''} onclick="handleInvCheck(event,'${esc(key)}')"></td>
+        <td style="color:var(--muted);font-size:.85rem">${esc(r.code || '-')}</td>
+        <td>
+          <span class="inv-product-name">${esc(r.name)}</span>
+          ${refs ? `<span class="inv-product-code">返品参照: ${esc(refs)}</span>` : ''}
+        </td>
+        <td style="color:var(--red);font-weight:700">${fmtJ(r.sellPrice)}</td>
+        <td class="inv-buyprice-col" style="color:var(--muted);font-weight:700">${fmtJ(r.buyPrice)}</td>
+        <td class="inv-stock-amount">${fmtN(r.current)}</td>
+        <td style="text-align:center">${statusBadgeHtml(r)}</td>
+        <td style="text-align:center"><button class="inv-detail-btn" onclick="openInventoryDetail('${esc(key)}')">التفاصيل</button></td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="8"><div class="inv-empty">
+      <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>
+      <div class="inv-empty-title">لا توجد منتجات</div>
+      <div class="inv-empty-sub">لا توجد نتائج تطابق معايير البحث</div>
+    </div></td></tr>`;
+  }
+
+  /* Mobile Card List */
+  const mobileList = qs('#inv-mobile-list');
+  if (mobileList) {
+    mobileList.innerHTML = pageData.length ? pageData.map(r => {
+      const key = r.code || r.name;
+      const statusClass = r.current <= 0 ? 'out-of-stock' : (r.current <= (r.minStock || 0) ? 'low-stock' : 'in-stock');
+      const statusEmoji = r.current <= 0 ? '✕' : (r.current <= (r.minStock || 0) ? '⚠' : '✓');
+      return `<div class="inv-product-card">
+        <div class="inv-card-header">
+          <div class="inv-card-icon" style="background:${r.current <= 0 ? '#fee2e2;color:#b91c1c' : r.current <= (r.minStock || 0) ? '#fef3c7;color:#92400e' : '#d1fae5;color:#047857'}">${statusEmoji}</div>
+          <div class="inv-card-info">
+            <div class="inv-card-name">${esc(r.name)}</div>
+            <div class="inv-card-code">#${esc(r.code || '-')}</div>
+          </div>
+          <div class="inv-card-stock">
+            <div class="inv-card-stock-val">${fmtN(r.current)}</div>
+            <div class="inv-card-stock-label">المخزون</div>
+          </div>
+        </div>
+        <div class="inv-card-footer">
+          <div class="inv-card-meta">
+            <span class="inv-status-badge ${statusClass}"><span class="inv-status-dot"></span>${r.current <= 0 ? 'نفد' : r.current <= (r.minStock || 0) ? 'منخفض' : 'متوفر'}</span>
+            <span class="inv-card-price">${fmtJ(r.sellPrice)}</span>
+          </div>
+          <button class="inv-detail-btn" onclick="openInventoryDetail('${esc(key)}')">التفاصيل</button>
+        </div>
+      </div>`;
+    }).join('') : `<div class="inv-empty">
+      <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>
+      <div class="inv-empty-title">لا توجد منتجات</div>
+      <div class="inv-empty-sub">لا توجد نتائج تطابق معايير البحث</div>
+    </div>`;
+  }
+
   // Hide buy price column from staff
   if (!isAdmin()) { qsa('.inv-buyprice-col').forEach(el => el.style.display = 'none'); }
   renderPagination('inv-pagination', total, invPage, INV_PAGE_SIZE, 'setInvPage');
+}
+
+function openInventoryDetail(key) {
+  const r = inventoryCache.find(x => (x.code || x.name) === key);
+  if (!r) return;
+  const statusClass = r.current <= 0 ? 'out-of-stock' : (r.current <= (r.minStock || 0) ? 'low-stock' : 'in-stock');
+  const statusLabel = r.current <= 0 ? 'نفد' : (r.current <= (r.minStock || 0) ? 'منخفض' : 'متوفر');
+  const statusEmoji = r.current <= 0 ? '✕' : (r.current <= (r.minStock || 0) ? '⚠' : '✓');
+
+  const q = Number(r.returnsToStock) || 0;
+  const refs = String(r.returnRefs || '').trim();
+  const dates = String(r.returnDates || '').trim();
+  const refParts = refs ? refs.split('،').map(s => s.trim()).filter(Boolean) : [];
+  const dateParts = dates ? dates.split('،').map(s => s.trim()).filter(Boolean) : [];
+
+  let returnsHtml = '';
+  if (q > 0 && (refParts.length > 0 || dateParts.length > 0)) {
+    returnsHtml = `<div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px">
+      <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:10px">سجل المرتجعات</div>
+      <table style="width:100%;font-size:.85rem;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border)">
+            <th style="padding:6px;text-align:right;font-weight:700">المرجع</th>
+            <th style="padding:6px;text-align:right;font-weight:700">التاريخ</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Array.from({length:Math.max(refParts.length,dateParts.length)}).map((_,i)=>`
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:8px">${refParts[i] ? '#'+esc(refParts[i]) : '-'}</td>
+              <td style="padding:8px">${dateParts[i] ? esc(dateParts[i]) : '-'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }
+
+  openModal(`
+    <div class="inv-detail-hero">
+      <div style="font-size:2rem;margin-bottom:8px">📦</div>
+      <div class="inv-detail-hero-name">${esc(r.name)}</div>
+      <div class="inv-detail-hero-code">#${esc(r.code || '-')}</div>
+      <div class="inv-detail-hero-stock">${fmtN(r.current)}</div>
+      <span class="exp-detail-hero-badge" style="background:rgba(255,255,255,.2)">${statusEmoji} ${statusLabel}</span>
+    </div>
+    <div class="inv-detail-grid">
+      <div class="inv-detail-field">
+        <div class="inv-detail-field-label">سعر البيع</div>
+        <div class="inv-detail-field-val">${fmtJ(r.sellPrice)} ج.م</div>
+      </div>
+      ${isAdmin() ? `<div class="inv-detail-field">
+        <div class="inv-detail-field-label">سعر الشراء</div>
+        <div class="inv-detail-field-val">${fmtJ(r.buyPrice)} ج.م</div>
+      </div>` : ''}
+      <div class="inv-detail-field">
+        <div class="inv-detail-field-label">الحد الأدنى</div>
+        <div class="inv-detail-field-val">${fmtN(r.minStock)} وحدة</div>
+      </div>
+      <div class="inv-detail-field">
+        <div class="inv-detail-field-label">الرصيد الافتتاحي</div>
+        <div class="inv-detail-field-val">${fmtN(r.openingBalance)}</div>
+      </div>
+      <div class="inv-detail-field">
+        <div class="inv-detail-field-label">المشتريات</div>
+        <div class="inv-detail-field-val">${fmtN(r.purchases)}</div>
+      </div>
+      <div class="inv-detail-field">
+        <div class="inv-detail-field-label">المبيعات</div>
+        <div class="inv-detail-field-val">${fmtN(r.sales)}</div>
+      </div>
+      <div class="inv-detail-field">
+        <div class="inv-detail-field-label">المرتجع</div>
+        <div class="inv-detail-field-val">${fmtN(q)}</div>
+      </div>
+    </div>
+    ${returnsHtml}
+    <div class="flex gap-8" style="margin-top:16px">
+      <button class="btn btn-outline btn-sm" onclick="exportInventoryExcel()">تصدير</button>
+      <button class="btn btn-outline btn-sm" style="margin-right:auto" onclick="closeModal()">إغلاق</button>
+    </div>
+  `);
 }
 const debouncedRenderInventory = debounce(() => { invPage = 1; renderInventory(); }, 250);
 
