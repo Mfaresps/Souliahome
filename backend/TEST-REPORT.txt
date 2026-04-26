@@ -1,0 +1,545 @@
+═══════════════════════════════════════════════════════════════
+  SOULIA — AUTOMATED TEST EXECUTION REPORT
+═══════════════════════════════════════════════════════════════
+  Generated  : 2026-04-26T21:49:43.633Z
+  Status     : ✓ SUCCESS
+  Suites     : 16 (passed: 16, failed: 0)
+  Tests      : 316 (passed: 316, failed: 0, skipped: 0)
+  Wall time  : 0.00s
+═══════════════════════════════════════════════════════════════
+
+PER-SUITE SUMMARY
+---------------------------------------------------------------
+  ✓  [9/9 100%]  integration/transactions.service.spec.ts
+  ✓  [14/14 100%]  unit/auth-permissions.spec.ts
+  ✓  [10/10 100%]  unit/dashboard-kpi.spec.ts
+  ✓  [28/28 100%]  unit/edge-cases.spec.ts
+  ✓  [20/20 100%]  unit/export-formats.spec.ts
+  ✓  [31/31 100%]  unit/general.spec.ts
+  ✓  [13/13 100%]  unit/inventory-stock.spec.ts
+  ✓  [23/23 100%]  unit/invoice-log.spec.ts
+  ✓  [17/17 100%]  unit/purchases-extended.spec.ts
+  ✓  [20/20 100%]  unit/purchases.spec.ts
+  ✓  [23/23 100%]  unit/reports.spec.ts
+  ✓  [14/14 100%]  unit/returns-extended.spec.ts
+  ✓  [20/20 100%]  unit/returns.spec.ts
+  ✓  [24/24 100%]  unit/sales-extended.spec.ts
+  ✓  [25/25 100%]  unit/sales.spec.ts
+  ✓  [25/25 100%]  unit/vault-stock-sync.spec.ts
+
+DETAILED TEST RESULTS BY MODULE
+---------------------------------------------------------------
+
+▸ integration/transactions.service.spec.ts
+   ◆ TransactionsService (integration with mocks) › Reference validation
+     ✓ rejects sale without reference (36ms)
+     ✓ rejects sale with non-numeric reference (4ms)
+     ✓ rejects duplicate reference among non-cancelled (3ms)
+   ◆ TransactionsService (integration with mocks) › findById
+     ✓ throws NotFoundException for missing transaction (2ms)
+     ✓ returns transaction when found (3ms)
+   ◆ TransactionsService (integration with mocks) › findAll
+     ✓ returns all non-archived transactions (3ms)
+     ✓ applies pagination when page and limit are provided (2ms)
+   ◆ TransactionsService (integration with mocks) › Vault integration on create
+     ✓ checks vault balance for purchase deposits (2ms)
+     ✓ skips vault check when purchase deposit is 0 (2ms)
+
+▸ unit/auth-permissions.spec.ts
+   ◆ Auth & Permissions › Role identification
+     ✓ admin user has admin role (6ms)
+     ✓ staff user is not admin
+     ✓ manager has its own role
+   ◆ Auth & Permissions › Permission checks
+     ✓ admin has all permissions (2ms)
+     ✓ staff with explicit perm has that perm
+     ✓ staff without perm is denied
+   ◆ Auth & Permissions › Admin-only features (per CLAUDE.md)
+     ✓ reports requires admin (1ms)
+     ✓ purchase prices hidden for non-admin
+     ✓ stock depletion alerts admin-only
+   ◆ Auth & Permissions › Token & session
+     ✓ rejects request without token (8ms)
+     ✓ rejects expired token (logical)
+   ◆ Auth & Permissions › Vault password verification
+     ✓ correct password passes
+     ✓ wrong password fails
+     ✓ empty password is invalid (1ms)
+
+▸ unit/dashboard-kpi.spec.ts
+   ◆ Dashboard KPIs
+     ✓ correctly calculates all KPIs for a normal day (13ms)
+     ✓ skips pending expenses from KPI (1ms)
+     ✓ handles empty data (2ms)
+     ✓ excludes cancelled transactions from totals (1ms)
+     ✓ aggregates remaining balances across all active transactions (1ms)
+   ◆ Dashboard KPIs › Top sellers / low sellers
+     ✓ identifies top selling product
+     ✓ identifies low sellers (1ms)
+   ◆ Dashboard KPIs › Stock alerts
+     ✓ flags out-of-stock items (current = 0) (1ms)
+     ✓ flags low-stock items (current ≤ minStock) (1ms)
+     ✓ does not flag items above minStock (1ms)
+
+▸ unit/edge-cases.spec.ts
+   ◆ Edge Cases & Boundaries › Numerical edge cases
+     ✓ handles JS floating-point in money calculations (4ms)
+     ✓ handles MAX_SAFE_INTEGER as upper bound (1ms)
+     ✓ rejects NaN in totals (9ms)
+     ✓ rejects Infinity in totals (1ms)
+   ◆ Edge Cases & Boundaries › String edge cases
+     ✓ trims whitespace in customer name
+     ✓ handles empty string vs null vs undefined (1ms)
+     ✓ handles RTL/LTR mixed text
+     ✓ handles emoji in notes (UTF-16 surrogate pairs) (1ms)
+     ✓ handles very long notes (10k chars)
+   ◆ Edge Cases & Boundaries › Date edge cases
+     ✓ rejects invalid date string
+     ✓ handles leap year February 29
+     ✓ handles year boundary correctly
+     ✓ handles timezone offset correctly
+   ◆ Edge Cases & Boundaries › Array edge cases
+     ✓ handles empty array
+     ✓ handles array with single item (1ms)
+     ✓ handles deeply nested data structures
+   ◆ Edge Cases & Boundaries › Conversion edge cases
+     ✓ Number() coerces empty string to 0
+     ✓ Number() coerces whitespace to 0
+     ✓ Number() coerces null to 0 but undefined to NaN (1ms)
+     ✓ Number(value) || 0 handles all bad inputs
+   ◆ Edge Cases & Boundaries › Concurrency simulations
+     ✓ promise.all rejects all if one fails (1ms)
+     ✓ promise.allSettled returns all outcomes (1ms)
+   ◆ Edge Cases & Boundaries › Pagination edge cases
+     ✓ page 0 should default to 1
+     ✓ negative page defaults to 1 (1ms)
+     ✓ limit 0 returns all (no pagination)
+     ✓ skip calculation: (page-1) * limit
+   ◆ Edge Cases & Boundaries › SQL/NoSQL injection-style strings
+     ✓ strips brackets and special chars from search (1ms)
+     ✓ treats search input as plain text
+
+▸ unit/export-formats.spec.ts
+   ◆ Export formats › CSV generation
+     ✓ produces proper CSV with headers (7ms)
+     ✓ escapes commas in cells
+     ✓ escapes newlines in cells (1ms)
+     ✓ doubles quotes inside quoted cells
+     ✓ handles null/undefined as empty (1ms)
+     ✓ handles empty rows array (1ms)
+   ◆ Export formats › Excel-friendly UTF-8 BOM
+     ✓ prepends BOM marker for Arabic CSV (1ms)
+     ✓ Arabic characters preserved in CSV (1ms)
+   ◆ Export formats › Column selection
+     ✓ keeps only selected columns (1ms)
+     ✓ excludes columns not in selection (1ms)
+     ✓ preserves order of selection (1ms)
+     ✓ handles empty selection
+   ◆ Export formats › Item flattening for export
+     ✓ formats items as "Name (Qty × Price = Total)" (1ms)
+     ✓ handles single item
+     ✓ handles empty items list
+   ◆ Export formats › Strip HTML before export
+     ✓ removes div tags
+     ✓ removes nested tags (1ms)
+     ✓ removes class attributes
+     ✓ passes through non-string values (1ms)
+   ◆ Export formats › Sale to export row
+     ✓ contains all expected columns in Arabic (1ms)
+
+▸ unit/general.spec.ts
+   ◆ General — Error Handling & Data Consistency › Error handling
+     ✓ throws NotFoundException for missing transaction (18ms)
+     ✓ throws BadRequestException for duplicate reference (1ms)
+     ✓ rejects negative quantities
+     ✓ rejects negative prices
+     ✓ rejects zero quantity items (1ms)
+     ✓ handles invalid date format gracefully (1ms)
+     ✓ returns 401 equivalent for missing auth context (1ms)
+   ◆ General — Error Handling & Data Consistency › Data consistency across modules
+     ✓ sale + return: stock balance is restored
+     ✓ sale + cancellation: vault is restored
+     ✓ purchase + return to supplier: stock balance is restored (1ms)
+     ✓ partial collection updates remaining correctly
+     ✓ multiple collections eventually settle remaining to 0
+     ✓ over-collection caps remaining at 0 (no negative) (1ms)
+   ◆ General — Error Handling & Data Consistency › Reference number uniqueness
+     ✓ detects duplicate refs among non-cancelled txs
+     ✓ allows reusing a ref from a cancelled tx
+     ✓ treats whitespace-only refs as empty
+   ◆ General — Error Handling & Data Consistency › Cancellation rules
+     ✓ cancelled transactions have a reason (1ms)
+     ✓ cancellation requires reason (1ms)
+     ✓ archive only available for cancelled transactions
+     ✓ archive marks tx as archived without affecting stock/vault
+   ◆ General — Error Handling & Data Consistency › Edge cases
+     ✓ handles transaction with single item
+     ✓ handles transaction with many items (50+)
+     ✓ handles zero-balance vault gracefully (1ms)
+     ✓ handles transaction at exactly the return-window boundary
+     ✓ low stock threshold handles minStock = 0
+     ✓ handles unicode-normalized customer search (1ms)
+   ◆ General — Error Handling & Data Consistency › Concurrency safety (logical)
+     ✓ two parallel sales reduce stock independently
+     ✓ parallel sales should never let stock go negative (1ms)
+   ◆ General — Error Handling & Data Consistency › Database update integrity
+     ✓ every transaction has a timestamp (1ms)
+     ✓ every cash log entry has a timestamp
+     ✓ edit history is appended, never replaced
+
+▸ unit/inventory-stock.spec.ts
+   ◆ Inventory & Stock › Stock movement aggregation
+     ✓ correctly aggregates buy + sell (7ms)
+     ✓ handles full cycle: buy + sell + return
+     ✓ skips cancelled transactions in stock count (1ms)
+     ✓ handles purchase return (out)
+     ✓ zero initial stock with sales fails validation (1ms)
+   ◆ Inventory & Stock › Opening balance
+     ✓ opening balance defaults to 0
+     ✓ updates when admin sets opening balance
+   ◆ Inventory & Stock › Min-stock thresholds
+     ✓ default min stock is 10 per schema
+     ✓ custom min-stock per product (1ms)
+     ✓ classification: ok / low / zero (1ms)
+   ◆ Inventory & Stock › Stock value calculations
+     ✓ total stock value = current × sellPrice
+     ✓ total cost = current × buyPrice (1ms)
+     ✓ potential profit = sellValue - costValue
+
+▸ unit/invoice-log.spec.ts
+   ◆ Invoice Log Module › Retrieval by filters
+     ✓ filters by date range (inclusive) (9ms)
+     ✓ filters by single date (1ms)
+     ✓ returns empty for out-of-range dates
+     ✓ filters by exact customer name (1ms)
+     ✓ filters by partial customer name (2ms)
+     ✓ is case-insensitive in customer search (2ms)
+     ✓ filters by reference number (1ms)
+     ✓ filters by exact reference (1ms)
+   ◆ Invoice Log Module › Invoice detail integrity
+     ✓ preserves all required transaction fields (6ms)
+     ✓ preserves item details (code, name, qty, price, total) (4ms)
+     ✓ total in invoice equals total stored on transaction (1ms)
+     ✓ records initial deposit in deposits log
+   ◆ Invoice Log Module › Export functionality
+     ✓ strips HTML tags from cell values (1ms)
+     ✓ handles nested HTML in export values (1ms)
+     ✓ exports transaction to a flat row (1ms)
+     ✓ flattens items into a single string column (1ms)
+     ✓ produces a valid CSV with proper escaping (1ms)
+     ✓ escapes double quotes in CSV
+     ✓ handles empty data gracefully (1ms)
+     ✓ includes Arabic column headers
+   ◆ Invoice Log Module › Status display logic
+     ✓ marks completed sales as مكتمل (1ms)
+     ✓ marks pending sales as معلق
+     ✓ marks cancelled transactions correctly (2ms)
+
+▸ unit/purchases-extended.spec.ts
+   ◆ Purchases — Extended › Multi-payment purchase tracking
+     ✓ tracks initial deposit + later payments (5ms)
+     ✓ payment log entries include amount, date, and method (1ms)
+     ✓ final payment marks purchase complete (1ms)
+   ◆ Purchases — Extended › Supplier debt aggregation
+     ✓ totals debt across multiple unpaid purchases
+     ✓ excludes cancelled purchases from supplier debt (1ms)
+     ✓ returns zero when all purchases paid
+   ◆ Purchases — Extended › Tax-inclusive pricing
+     ✓ 14% Egyptian VAT calculation (1ms)
+     ✓ reverse VAT extraction from inclusive price
+     ✓ zero VAT for tax-exempt items (1ms)
+   ◆ Purchases — Extended › Purchase return-to-supplier flow
+     ✓ purchase return reduces stock
+     ✓ purchase return reduces supplier debt
+     ✓ purchase return type is مرتجع مشتريات (1ms)
+   ◆ Purchases — Extended › Purchase reference variants
+     ✓ accepts purchase ref with leading zeros
+     ✓ rejects purchase ref with letters (1ms)
+     ✓ detects supplier-return ref pattern
+   ◆ Purchases — Extended › Supplier metadata
+     ✓ records supplier phone
+     ✓ records purchase notes (1ms)
+
+▸ unit/purchases.spec.ts
+   ◆ Purchases Module › Purchase order creation
+     ✓ creates a purchase with required fields (6ms)
+     ✓ rejects a purchase missing the invoice reference (11ms)
+     ✓ records the supplier name correctly (1ms)
+   ◆ Purchases Module › Total amount calculation
+     ✓ calculates purchase total correctly (1ms)
+     ✓ applies tax to purchase total
+     ✓ handles purchase with single item
+   ◆ Purchases Module › Stock increment on purchase
+     ✓ increases stock by purchased quantity
+     ✓ only increments matching product codes
+     ✓ aggregates duplicate codes within one purchase (1ms)
+   ◆ Purchases Module › Deposit logic (0 = full debt rule)
+     ✓ treats deposit=0 as full debt to supplier
+     ✓ treats undefined deposit as full debt
+     ✓ records partial deposit as paid
+     ✓ marks fully paid when deposit equals total
+     ✓ clamps remaining to 0 when overpaid (1ms)
+   ◆ Purchases Module › Payment method recording
+     ✓ records the deposit method
+     ✓ defaults deposit method to كاش
+     ✓ accepts all valid payment methods (1ms)
+   ◆ Purchases Module › Vault sufficiency check (deposit from vault)
+     ✓ passes when vault balance covers the deposit
+     ✓ fails when vault balance is below deposit (1ms)
+     ✓ does not check vault when deposit is 0
+
+▸ unit/reports.spec.ts
+   ◆ Reports Module › Sales reports
+     ✓ returns all sales (excluding cancelled) (5ms)
+     ✓ total sales sums product price minus shipping (per CLAUDE.md)
+     ✓ groups sales by date range (1ms)
+     ✓ groups sales by customer
+     ✓ groups sales by product code
+     ✓ excludes cancelled sales from totals
+   ◆ Reports Module › Purchase reports
+     ✓ returns all purchases (excluding cancelled) (1ms)
+     ✓ totals purchases correctly
+     ✓ filters purchases by date range
+   ◆ Reports Module › Summary reports
+     ✓ builds an accurate summary (1ms)
+     ✓ returns deduct from net sales
+     ✓ summarizes empty data correctly
+   ◆ Reports Module › Cash reports
+     ✓ reports total inflow
+     ✓ reports total outflow
+     ✓ reports net cash movement
+     ✓ groups cash entries by source
+     ✓ cash log entries link back to source transactions via ref
+   ◆ Reports Module › Profit calculation
+     ✓ gross profit = sales - cost of goods sold
+     ✓ returns deduct profit (product price only, not shipping)
+     ✓ expenses reduce net profit (only approved ones, per CLAUDE.md) (1ms)
+   ◆ Reports Module › Report formatting & accuracy
+     ✓ rounds currency to 2 decimal places
+     ✓ handles missing values as zero in aggregations
+     ✓ counts and totals stay consistent (1ms)
+
+▸ unit/returns-extended.spec.ts
+   ◆ Returns — Extended › Exchange (استبدال) workflow
+     ✓ exchange = return + new sale combined (8ms)
+     ✓ exchange returns same value → no money exchange (1ms)
+     ✓ exchange refund when new value < returned
+     ✓ exchange ref uses -EXC suffix (1ms)
+     ✓ exchange creates two transactions: return + sale (2ms)
+   ◆ Returns — Extended › Partial returns
+     ✓ returns subset of original sale items
+     ✓ multiple partial returns until total qty exhausted (1ms)
+     ✓ rejects when cumulative returns exceed sold qty (1ms)
+   ◆ Returns — Extended › Return reasons & documentation
+     ✓ records return reason (1ms)
+     ✓ requires reason for return (13ms)
+     ✓ records who approved the return (1ms)
+   ◆ Returns — Extended › Return-to-vault refund logic
+     ✓ refund leaves vault when sales-return is approved
+     ✓ refund uses original payment method (1ms)
+     ✓ cash refund requires sufficient vault balance
+
+▸ unit/returns.spec.ts
+   ◆ Returns Module › Sales return (customer returns to us)
+     ✓ creates a return tied to original sale via -RET suffix (6ms)
+     ✓ extracts base reference from -RET suffix (1ms)
+     ✓ rejects return outside the 14-day window
+     ✓ accepts return within the 14-day window (1ms)
+     ✓ rejects return for items not in the original sale
+     ✓ rejects return qty greater than originally sold (14ms)
+   ◆ Returns Module › Stock adjustment on return
+     ✓ increases stock when customer returns goods (1ms)
+     ✓ decreases stock when returning goods to a supplier (1ms)
+     ✓ does not affect stock for unrelated products
+   ◆ Returns Module › Refund / credit calculation
+     ✓ calculates refund total = qty × price
+     ✓ returns zero refund for empty return list
+     ✓ does not include shipping in product-only refund
+   ◆ Returns Module › Return approval workflow
+     ✓ starts with معلق status when return is requested
+     ✓ transitions to معتمد when admin approves
+     ✓ transitions to مرفوض when admin rejects
+     ✓ only adjusts stock when status becomes معتمد
+   ◆ Returns Module › Credit note / invoice generation
+     ✓ generates a credit note for sales return
+     ✓ credit note total matches sum of returned items
+   ◆ Returns Module › Returns affect dashboard totals
+     ✓ returns are deducted from sales totals (per Apr 25, 2026 update)
+     ✓ returns deduct from profit (product price only)
+
+▸ unit/sales-extended.spec.ts
+   ◆ Sales — Extended › Boundary value testing
+     ✓ handles minimum sale amount (1) (4ms)
+     ✓ handles very large totals (1 million)
+     ✓ handles fractional prices correctly
+     ✓ rounds Arabic currency display to 2 decimals (1ms)
+     ✓ zero-price items still count toward item count
+   ◆ Sales — Extended › Multi-discount stacking
+     ✓ applies fixed then percent discount (1ms)
+     ✓ applies percent then fixed discount
+     ✓ caps stacked discounts at zero
+     ✓ handles 100% discount
+   ◆ Sales — Extended › Shipping cost variations
+     ✓ records both billed and actual shipping
+     ✓ computes shipping loss when actual > billed
+     ✓ zero shipping loss when actual ≤ billed
+     ✓ Cairo vs Governorate default pricing
+   ◆ Sales — Extended › Exchange sale logic
+     ✓ detects exchange sale by -EXC suffix
+     ✓ exchange sale with positive remaining is pending collection (1ms)
+     ✓ completed exchange has remaining=0
+   ◆ Sales — Extended › Multi-item sales aggregation
+     ✓ handles 100 different products in one sale
+     ✓ correctly aggregates same product across multiple lines (1ms)
+     ✓ different prices for same product on different lines stays separate
+   ◆ Sales — Extended › Post-sale discount
+     ✓ reduces total after sale is created
+     ✓ updates remaining when total decreases (1ms)
+     ✓ marks fully-paid when discount exceeds remaining
+   ◆ Sales — Extended › Customer auto-fill from history
+     ✓ matches customer by phone (1ms)
+     ✓ matches customer by name (case-insensitive)
+
+▸ unit/sales.spec.ts
+   ◆ Sales Module › Sale creation
+     ✓ builds a valid sale transaction with all required fields (10ms)
+     ✓ rejects a sale with missing reference number (18ms)
+     ✓ rejects a sale with non-numeric reference number (2ms)
+     ✓ rejects a sale with no items (2ms)
+   ◆ Sales Module › Total amount calculation
+     ✓ calculates items subtotal correctly
+     ✓ applies fixed discount to subtotal (1ms)
+     ✓ applies percent discount to subtotal
+     ✓ does not allow negative totals from over-discounting (1ms)
+     ✓ adds shipping cost on top of discounted subtotal
+     ✓ combines discount, tax and shipping correctly (1ms)
+     ✓ keeps total identical when no discount/tax/shipping
+   ◆ Sales Module › Payment & deposit recording
+     ✓ computes remaining as total minus deposit
+     ✓ treats empty deposit as zero (full debt)
+     ✓ marks remaining as zero when deposit covers total (1ms)
+     ✓ never returns negative remaining for over-deposit
+     ✓ records the correct payment method (1ms)
+     ✓ sets payStatus to معلق when remaining > 0
+     ✓ sets payStatus to مكتمل when fully paid (1ms)
+   ◆ Sales Module › Stock decrement on sale
+     ✓ reduces stock by sold quantity
+     ✓ rejects sale when stock is insufficient (3ms)
+     ✓ aggregates same-code items in a sale
+     ✓ only deducts the matching product code (1ms)
+   ◆ Sales Module › Invoice generation
+     ✓ generates an invoice with reference and client info (1ms)
+     ✓ invoice item totals match qty × price (1ms)
+     ✓ invoice total equals sum of item totals when no discount/shipping
+
+▸ unit/vault-stock-sync.spec.ts
+   ◆ Cash/Vault & Stock Synchronization › Vault segment resolution
+     ✓ resolves كاش method to كاش segment (4ms)
+     ✓ resolves فودافون كاش method to its segment
+     ✓ resolves Instapay method to its segment (1ms)
+     ✓ falls back to كاش for unknown methods
+     ✓ falls back to كاش when method is empty
+   ◆ Cash/Vault & Stock Synchronization › Cash deposits (sales bring cash IN)
+     ✓ increases vault balance on sale deposit
+     ✓ records deposit to correct segment
+     ✓ does not touch other segments when depositing (1ms)
+   ◆ Cash/Vault & Stock Synchronization › Cash withdrawals (purchases take cash OUT)
+     ✓ decreases vault balance on purchase deposit paid
+     ✓ throws on overdraft (purchase deposit > balance) (13ms)
+     ✓ allows withdrawal exactly equal to balance
+     ✓ skips vault check when deposit is 0 (1ms)
+   ◆ Cash/Vault & Stock Synchronization › Stock-Vault synchronization
+     ✓ sale: stock decreases AND cash increases atomically
+     ✓ purchase: stock increases AND cash decreases atomically (1ms)
+     ✓ return: customer return increases stock AND decreases cash (refund)
+     ✓ cancellation reverses both stock and vault entries
+   ◆ Cash/Vault & Stock Synchronization › Edge cases
+     ✓ rejects sale when stock is insufficient (1ms)
+     ✓ rejects vault withdrawal exceeding balance (1ms)
+     ✓ handles concurrent stock requests across different products independently (1ms)
+     ✓ low stock alert when current ≤ minStock
+     ✓ zero stock alert when current = 0
+   ◆ Cash/Vault & Stock Synchronization › Cash log recording
+     ✓ logs every sale deposit as a positive entry (1ms)
+     ✓ logs every purchase payment as a negative entry (1ms)
+     ✓ logs collections (تحصيل) when remaining balance is paid
+     ✓ refund entries for returns are negative
+
+═══════════════════════════════════════════════════════════════
+COVERAGE BAR BY SUITE
+---------------------------------------------------------------
+  integration/transactions.service  100%  ██████████████████████████████ 9/9
+  unit/auth-permissions             100%  ██████████████████████████████ 14/14
+  unit/dashboard-kpi                100%  ██████████████████████████████ 10/10
+  unit/edge-cases                   100%  ██████████████████████████████ 28/28
+  unit/export-formats               100%  ██████████████████████████████ 20/20
+  unit/general                      100%  ██████████████████████████████ 31/31
+  unit/inventory-stock              100%  ██████████████████████████████ 13/13
+  unit/invoice-log                  100%  ██████████████████████████████ 23/23
+  unit/purchases-extended           100%  ██████████████████████████████ 17/17
+  unit/purchases                    100%  ██████████████████████████████ 20/20
+  unit/reports                      100%  ██████████████████████████████ 23/23
+  unit/returns-extended             100%  ██████████████████████████████ 14/14
+  unit/returns                      100%  ██████████████████████████████ 20/20
+  unit/sales-extended               100%  ██████████████████████████████ 24/24
+  unit/sales                        100%  ██████████████████████████████ 25/25
+  unit/vault-stock-sync             100%  ██████████████████████████████ 25/25
+
+═══════════════════════════════════════════════════════════════
+FUNCTIONAL AREA COVERAGE
+---------------------------------------------------------------
+  ✓ Sales (creation, totals, stock, payment, invoice)
+       49 / 49 tests passing
+  ✓ Purchases (stock, deposit logic, supplier, vault)
+       37 / 37 tests passing
+  ✓ Returns (stock adjustment, refund, exchange)
+       34 / 34 tests passing
+  ✓ Cash/Vault & Stock Synchronization
+       25 / 25 tests passing
+  ✓ Invoice Log (filtering, retrieval, integrity)
+       23 / 23 tests passing
+  ✓ Reports (sales, purchases, profit, summaries)
+       23 / 23 tests passing
+  ✓ Inventory & Stock Movements
+       13 / 13 tests passing
+  ✓ Dashboard KPIs
+       10 / 10 tests passing
+  ✓ Auth & Permissions
+       14 / 14 tests passing
+  ✓ Export Formats (CSV/Excel)
+       20 / 20 tests passing
+  ✓ General (errors, edge cases, consistency)
+       31 / 31 tests passing
+  ✓ Integration (NestJS service-level)
+       9 / 9 tests passing
+
+═══════════════════════════════════════════════════════════════
+UNTESTED / FUTURE-WORK AREAS
+---------------------------------------------------------------
+  • End-to-end API tests (require running Mongo + supertest)
+  • Frontend (vanilla JS) — no Jest/Vitest setup yet
+  • Socket.IO real-time presence events
+  • File upload/backup restore actual binary handling
+  • PDF invoice generation visual output
+  • Time-zone-sensitive date boundaries (currently UTC)
+  • Throttling / rate-limit guards
+  • Mongoose validation hooks (covered indirectly via service tests)
+
+═══════════════════════════════════════════════════════════════
+DISCREPANCIES / NOTES
+---------------------------------------------------------------
+  ✓ No discrepancies detected — all calculation rules verified:
+    - Sales totals match qty × price + discount + tax + shipping
+    - Purchase deposit=0 → full debt rule enforced
+    - Returns deduct product price only from profit (not shipping)
+    - Returns deduct from net sales
+    - Approved expenses only counted in dashboard
+    - Stock cannot go negative
+    - Vault sufficiency checked before purchase deposit
+    - Reference numbers digits-only & unique among non-cancelled
+    - HTML stripped from exported cells
+    - CSV escaping handles commas, newlines, quotes
+
+═══════════════════════════════════════════════════════════════
+  RESULT: ALL TESTS PASSED ✓
+═══════════════════════════════════════════════════════════════
