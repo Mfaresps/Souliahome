@@ -2536,7 +2536,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 </div>
 
 <!-- System Version & Upload Info Footer -->
-<div style="margin-top:60px;padding:32px 0;border-top:1px solid var(--border);text-align:center" id="settings-version-footer"></div>
+<div style="margin-top:32px;padding:14px 0 18px;border-top:1px solid var(--border);text-align:center" id="settings-version-footer"></div>
 
 <!-- Profile -->
 <div class="page" id="page-profile">
@@ -10276,32 +10276,15 @@ function renderVersionFooter() {
   const lastUpdate = settings.lastVersionUpdate ? new Date(settings.lastVersionUpdate) : new Date();
   const lastUpload = settings.lastLiveUpload ? new Date(settings.lastLiveUpload) : new Date();
 
-  const updateDateStr = lastUpdate.toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '/');
-  const uploadDateStr = lastUpload.toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '/');
+  const updateDateStr = lastUpdate.toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const uploadDateStr = lastUpload.toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const uploadTimeStr = lastUpload.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
 
   footerEl.innerHTML = `
-    <div style="max-width:600px;margin:0 auto">
-      <div style="background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:20px 18px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <div style="padding:0 4px">
-            <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:6px">
-              <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:16px;height:16px;color:var(--primary)" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/><path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m5.08-5.08l4.24-4.24"/></svg>
-              <span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px">إصدار النظام</span>
-            </div>
-            <div style="font-size:1rem;font-weight:700;color:var(--primary);line-height:1.4">${esc(sysVersion)}</div>
-            <div style="font-size:.75rem;color:var(--muted);margin-top:3px;line-height:1.4">تاريخ التحديث<br>${esc(updateDateStr)}</div>
-          </div>
-          <div style="padding:0 4px;border-left:1px solid var(--border)">
-            <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:6px">
-              <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:16px;height:16px;color:var(--green)" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              <span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px">آخر رفع</span>
-            </div>
-            <div style="font-size:1rem;font-weight:700;color:var(--green);line-height:1.4">${esc(uploadDateStr)}</div>
-            <div style="font-size:.75rem;color:var(--muted);margin-top:3px;line-height:1.4">الساعة ${esc(uploadTimeStr)}</div>
-          </div>
-        </div>
-      </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 14px;font-size:.7rem;color:var(--muted);line-height:1.6;opacity:.8">
+      <span>إصدار النظام: <span style="color:var(--text);font-weight:600">${esc(sysVersion)}</span> · ${esc(updateDateStr)}</span>
+      <span style="opacity:.4">|</span>
+      <span>آخر رفع: <span style="color:var(--text);font-weight:600">${esc(uploadDateStr)}</span> · ${esc(uploadTimeStr)}</span>
     </div>
   `;
 }
