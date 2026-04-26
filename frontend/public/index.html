@@ -585,7 +585,7 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
   /* Sidebar slide-out */
   #sidebar{transform:translateX(110%);box-shadow:-4px 0 24px rgba(0,0,0,.15)}
   #sidebar.open{transform:translateX(0)}
-  #main{margin-right:0;padding:12px 12px;padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  #main{margin-right:0;padding:12px;padding-bottom:calc(72px + env(safe-area-inset-bottom,0px));box-sizing:border-box;max-width:100%;overflow-x:hidden}
   .bulk-bar{right:0;bottom:64px}
   [dir="ltr"] #sidebar{transform:translateX(-110%)}
   [dir="ltr"] #sidebar.open{transform:translateX(0)}
@@ -757,8 +757,11 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
   .seg-cards{grid-template-columns:repeat(2,1fr)!important}
   .grid-2,.grid-3,.grid-4,.grid-5,.grid-6{grid-template-columns:1fr!important}
   /* Dashboard KPI/stat cards: keep 2 columns */
-  #dash-stats{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
+  #dash-stats{grid-template-columns:repeat(2,1fr)!important;gap:10px!important;width:100%;box-sizing:border-box}
   #dash-treasury-segs{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
+  /* Prevent any page content from overflowing */
+  .page{max-width:100%;overflow-x:hidden}
+  .card{box-sizing:border-box;max-width:100%}
 
   /* ── Page header ── */
   .page-title{font-size:1.15rem;font-weight:800}
@@ -766,9 +769,6 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
   .page-header{flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:14px}
   .page-header-actions{width:100%;flex-wrap:wrap;gap:6px}
   .page-header-actions .btn{flex:1;min-width:90px;font-size:.78rem;padding:8px 10px;justify-content:center}
-
-  /* ── Main content area ── */
-  #main{margin-right:0;padding:12px 12px;padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 
   /* ── Forms ── */
   .form-group label{font-size:.78rem}
@@ -799,7 +799,7 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
   .section-tab-bar .s-tab{white-space:nowrap;padding:10px 14px;font-size:.8rem}
 
   /* ── User status grid → 2 cols ── */
-  #users-status-grid{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
+  #users-status-grid{grid-template-columns:repeat(2,1fr)!important;gap:8px!important;width:100%;box-sizing:border-box}
 
   /* ── Toast: top-center ── */
   .toast-container{top:64px;width:calc(100% - 24px);left:12px;transform:none}
@@ -876,6 +876,164 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 /* Dashboard Treasury Widget */
 #dash-treasury-widget .stat-val { font-size: 1.1rem; }
 #dash-treasury-widget .stat-card { padding: 14px; }
+
+/* ══════════════════════════════════════════
+   EXPENSES PAGE — Modern Redesign
+══════════════════════════════════════════ */
+/* Page Header */
+.exp-page-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.exp-title-icon{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;background:linear-gradient(135deg,var(--primary-light),var(--primary));border-radius:10px;color:#fff;flex-shrink:0}
+.exp-header-actions{display:flex;gap:10px;align-items:center;flex-shrink:0}
+
+/* KPI Summary Grid */
+.exp-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.exp-kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:transform .2s,box-shadow .2s;cursor:default;position:relative;overflow:hidden}
+.exp-kpi-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.1)}
+.exp-kpi-card::before{content:'';position:absolute;top:0;right:0;width:4px;height:100%;border-radius:0 16px 16px 0}
+.exp-kpi-card.kpi-green::before{background:linear-gradient(180deg,#10b981,#059669)}
+.exp-kpi-card.kpi-orange::before{background:linear-gradient(180deg,#f59e0b,#d97706)}
+.exp-kpi-card.kpi-blue::before{background:linear-gradient(180deg,#3b82f6,#2563eb)}
+.exp-kpi-card.kpi-red::before{background:linear-gradient(180deg,#ef4444,#dc2626)}
+.exp-kpi-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.exp-kpi-icon.green{background:#d1fae5;color:#059669}
+.exp-kpi-icon.orange{background:#fef3c7;color:#d97706}
+.exp-kpi-icon.blue{background:#dbeafe;color:#2563eb}
+.exp-kpi-icon.red{background:#fee2e2;color:#dc2626}
+.exp-kpi-body{flex:1;min-width:0}
+.exp-kpi-val{font-size:1.35rem;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:3px}
+.exp-kpi-label{font-size:.74rem;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exp-kpi-trend{font-size:.72rem;font-weight:700;margin-top:4px;display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px}
+.exp-kpi-trend.up{background:#d1fae5;color:#047857}
+.exp-kpi-trend.down{background:#fee2e2;color:#b91c1c}
+.exp-kpi-trend.neutral{background:var(--surface2);color:var(--muted)}
+
+/* Tab Bar */
+.exp-tab-bar{display:flex;gap:6px;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+.exp-tab{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:none;background:none;color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .18s;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.exp-tab:hover{background:var(--primary-pale);color:var(--text)}
+.exp-tab.active{background:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(0,49,30,.25)}
+.exp-tab-badge{background:rgba(255,255,255,.25);padding:1px 6px;border-radius:10px;font-size:.7rem;font-weight:700}
+.exp-tab:not(.active) .exp-tab-badge{background:var(--surface2);color:var(--muted)}
+
+/* Search & Filter Bar */
+.exp-filter-bar{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px}
+.exp-search-wrap{position:relative}
+.exp-search-input{width:100%;padding:10px 40px 10px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:.88rem;font-family:inherit;transition:border-color .15s,box-shadow .15s;box-sizing:border-box}
+.exp-search-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(0,107,66,.1)}
+.exp-filters-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.exp-filter-input{padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text);font-size:.83rem;font-family:inherit;transition:border-color .15s;flex:1;min-width:120px}
+.exp-filter-input:focus{outline:none;border-color:var(--primary)}
+
+/* Desktop Table */
+.exp-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.exp-table{width:100%;border-collapse:collapse;min-width:640px}
+.exp-table thead{background:var(--surface2);position:sticky;top:0;z-index:10}
+.exp-table thead th{padding:12px 14px;text-align:right;font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap}
+.exp-table tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+.exp-table tbody tr:last-child{border-bottom:none}
+.exp-table tbody tr:hover{background:var(--primary-pale)}
+.exp-table td{padding:13px 14px;font-size:.87rem;color:var(--text);vertical-align:middle}
+.exp-table tbody tr.exp-row-pending{background:rgba(245,158,11,.04)}
+.exp-row-desc{font-weight:600;color:var(--text);display:block;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exp-row-no{font-size:.72rem;color:var(--muted);margin-top:1px}
+
+/* Expense Category Badge */
+.exp-cat-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;font-size:.78rem;font-weight:600;background:var(--surface2);color:var(--muted)}
+.exp-cat-icon{width:24px;height:24px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+
+/* Status Badges */
+.exp-status{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;font-size:.78rem;font-weight:700;white-space:nowrap}
+.exp-status.approved{background:#d1fae5;color:#047857}
+.exp-status.pending{background:#fef3c7;color:#92400e}
+.exp-status.rejected{background:#fee2e2;color:#b91c1c}
+.exp-status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.exp-status.approved .exp-status-dot{background:#10b981}
+.exp-status.pending .exp-status-dot{background:#f59e0b}
+.exp-status.rejected .exp-status-dot{background:#ef4444}
+
+/* Amount cell */
+.exp-amount-cell{font-weight:700;font-size:.95rem;color:var(--red);text-align:center}
+
+/* Account chip */
+.exp-account-chip{display:inline-block;background:var(--surface2);border:1px solid var(--border);padding:3px 10px;border-radius:8px;font-size:.78rem;font-weight:600;color:var(--text)}
+
+/* Mobile Card List */
+.exp-mobile-list{display:none;flex-direction:column;gap:10px}
+.exp-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:box-shadow .2s;-webkit-tap-highlight-color:transparent}
+.exp-card:active{box-shadow:0 0 0 2px var(--primary)}
+.exp-card-top{display:flex;align-items:center;gap:12px;padding:14px 14px 10px}
+.exp-card-icon-wrap{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.exp-card-info{flex:1;min-width:0}
+.exp-card-title{font-weight:700;font-size:.92rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exp-card-sub{font-size:.74rem;color:var(--muted);margin-top:2px}
+.exp-card-amount{font-weight:800;font-size:1.05rem;color:var(--red);text-align:left;flex-shrink:0}
+.exp-card-footer{display:flex;align-items:center;justify-content:space-between;padding:8px 14px 12px;border-top:1px solid var(--border);gap:8px}
+.exp-card-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* Approval Timeline (inside detail) */
+.exp-timeline{display:flex;flex-direction:column;gap:0;padding:0}
+.exp-timeline-step{display:flex;align-items:flex-start;gap:12px;padding:10px 0;position:relative}
+.exp-timeline-step:not(:last-child)::after{content:'';position:absolute;right:15px;top:36px;width:2px;height:calc(100% - 12px);background:var(--border)}
+.exp-timeline-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid var(--border);background:var(--surface);z-index:1}
+.exp-timeline-dot.done{border-color:#10b981;background:#d1fae5;color:#047857}
+.exp-timeline-dot.waiting{border-color:#f59e0b;background:#fef3c7;color:#92400e}
+.exp-timeline-dot.todo{border-color:var(--border);background:var(--surface2);color:var(--muted)}
+.exp-timeline-body{flex:1}
+.exp-timeline-title{font-weight:700;font-size:.85rem;color:var(--text)}
+.exp-timeline-meta{font-size:.74rem;color:var(--muted);margin-top:2px}
+
+/* Expense Detail Modal */
+.exp-detail-hero{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);border-radius:14px;padding:20px;color:#fff;margin-bottom:20px;text-align:center;position:relative;overflow:hidden}
+.exp-detail-hero::before{content:'';position:absolute;top:-30px;left:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.07)}
+.exp-detail-hero-amount{font-size:2rem;font-weight:900;letter-spacing:.5px;margin-bottom:4px}
+.exp-detail-hero-desc{font-size:.9rem;opacity:.85;margin-bottom:8px}
+.exp-detail-hero-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 14px;border-radius:20px;font-size:.78rem;font-weight:700;background:rgba(255,255,255,.18)}
+.exp-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.exp-detail-field{background:var(--surface2);border-radius:10px;padding:12px 14px}
+.exp-detail-field-label{font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.exp-detail-field-val{font-size:.9rem;font-weight:700;color:var(--text)}
+
+/* Expense Form Modal */
+.exp-form-section{margin-bottom:16px}
+.exp-form-section-title{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.exp-attach-zone{border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:var(--surface2)}
+.exp-attach-zone:hover{border-color:var(--primary);background:var(--primary-pale)}
+.exp-attach-icon{width:40px;height:40px;background:var(--surface);border-radius:10px;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;color:var(--muted);border:1px solid var(--border)}
+.exp-attach-label{font-size:.83rem;font-weight:600;color:var(--text);margin-bottom:4px}
+.exp-attach-hint{font-size:.73rem;color:var(--muted)}
+.exp-toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:12px;padding:14px 16px}
+.exp-toggle-label{font-size:.88rem;font-weight:700;color:var(--text)}
+.exp-toggle-sub{font-size:.74rem;color:var(--muted);margin-top:2px}
+.exp-save-btn{width:100%;padding:14px;font-size:.95rem;font-weight:800;border-radius:12px;background:linear-gradient(135deg,var(--primary-light),var(--primary));color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;transition:opacity .15s,transform .1s;font-family:inherit}
+.exp-save-btn:hover{opacity:.92}
+.exp-save-btn:active{transform:scale(.98)}
+.exp-save-btn:disabled{opacity:.6;cursor:not-allowed}
+
+/* Empty state */
+.exp-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:52px 20px;gap:12px;color:var(--muted)}
+.exp-empty svg{opacity:.3}
+.exp-empty-title{font-size:.95rem;font-weight:700;color:var(--text)}
+.exp-empty-sub{font-size:.82rem;color:var(--muted);text-align:center}
+
+/* Mobile Responsive */
+@media(max-width:768px){
+  .exp-kpi-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .exp-kpi-card{padding:12px 14px;gap:10px}
+  .exp-kpi-val{font-size:1.1rem}
+  .exp-kpi-icon{width:38px;height:38px;border-radius:10px}
+  .exp-table-wrap{display:none}
+  .exp-mobile-list{display:flex}
+  .exp-filter-bar{padding:12px}
+  .exp-filters-row{flex-wrap:wrap}
+  .exp-filter-input{min-width:calc(50% - 4px);flex:none}
+  .exp-header-actions .btn:first-child{display:none}
+  .exp-tab{padding:7px 10px;font-size:.76rem;gap:4px}
+  .exp-detail-grid{grid-template-columns:1fr}
+}
+@media(max-width:380px){
+  .exp-kpi-grid{grid-template-columns:1fr 1fr}
+  .exp-kpi-val{font-size:.98rem}
+}
 </style>
 </head>
 <body>
@@ -1463,89 +1621,111 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 
 <!-- Expenses -->
 <div class="page" id="page-expenses">
-  <!-- Header Section -->
-  <div style="margin-bottom: 24px;">
-    <div class="flex-between mb-16">
-      <h2 class="page-title" style="margin-bottom:0;display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg><span data-i18n="expenses">المصاريف</span></h2>
-      <div class="flex gap-8">
-        <button class="btn btn-outline btn-sm" onclick="exportExpensesExcel()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تصدير Excel</button>
-        <button class="btn btn-primary btn-sm" onclick="openExpenseModal()">+ إضافة مصروف</button>
-      </div>
-    </div>
-    
-    <!-- KPI Cards -->
-    <div class="kpi-strip" id="exp-kpi-strip"></div>
-  </div>
 
-  <!-- Filter Section -->
-  <div class="filter-card">
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 12px;">
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted);">من تاريخ</label>
-        <input type="date" id="exp-from" style="width: 100%; padding: 8px 10px;" onchange="expPage=1;renderExpenses()">
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted);">إلى تاريخ</label>
-        <input type="date" id="exp-to" style="width: 100%; padding: 8px 10px;" onchange="expPage=1;renderExpenses()">
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted);">نوع المصروف</label>
-        <select id="exp-cat-filter" style="width: 100%; padding: 8px 10px;" onchange="expPage=1;renderExpenses()">
-          <option value="">كل الفئات</option>
-          <option value="اعلانات">اعلانات</option>
-          <option value="تغليف">تغليف</option>
-          <option value="موصلات وتنقل">موصلات وتنقل</option>
-          <option value="اشتراكات">اشتراكات</option>
-          <option value="مرتبات">مرتبات</option>
-          <option value="اخرى">اخرى</option>
-        </select>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <label style="font-size: 0.75rem; font-weight: 600; color: var(--muted);">الحساب</label>
-        <select id="exp-acc-filter" style="width: 100%; padding: 8px 10px;" onchange="expPage=1;renderExpenses()">
-          <option value="">كل الحسابات</option>
-          <option value="كاش">كاش</option>
-          <option value="فودافون كاش">فودافون كاش</option>
-          <option value="Instapay">Instapay</option>
-          <option value="تحويل بنكي">تحويل بنكي</option>
-        </select>
-      </div>
+  <!-- ── Page Header ── -->
+  <div class="exp-page-header">
+    <div>
+      <h2 class="page-title" style="margin-bottom:2px;display:flex;align-items:center;gap:10px">
+        <span class="exp-title-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg>
+        </span>
+        <span data-i18n="expenses">المصاريف</span>
+      </h2>
+      <p class="page-subtitle" style="margin:0">إدارة ومتابعة مصاريف الشركة</p>
     </div>
-    
-    <div style="display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end;">
-      <div class="search-input">
-        <input type="text" id="exp-search" placeholder="بحث حسب الوصف أو رقم المصروف..." oninput="debouncedRenderExpenses()" style="width: 100%;">
-      </div>
-      <button class="btn btn-outline btn-sm" onclick="clearExpFilters()">مسح الفلاتر</button>
+    <div class="exp-header-actions">
+      <button class="btn btn-outline btn-sm" onclick="exportExpensesExcel()">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        تصدير
+      </button>
+      <button class="btn btn-primary" onclick="openExpenseModal()" style="gap:6px">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        مصروف جديد
+      </button>
     </div>
   </div>
 
-  <!-- Table Section -->
-  <div style="background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden;">
-    <div class="overflow-x">
-      <table id="exp-table" style="width: 100%; border-collapse: collapse;">
-        <thead style="background: var(--surface2); position: sticky; top: 0; z-index: 10;">
-          <tr>
-            <th style="width: 40px; text-align: center; padding: 12px 8px;">
-              <input type="checkbox" id="exp-select-all" onchange="document.querySelectorAll('.exp-chk:not(:disabled)').forEach(c => c.checked = this.checked);">
-            </th>
-            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);" data-i18n="date">التاريخ</th>
-            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);" data-i18n="colDescription">الوصف</th>
-            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);" data-i18n="type">النوع</th>
-            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);" data-i18n="colAccount">الحساب</th>
-            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--text);" data-i18n="colAmount">المبلغ</th>
-            <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--text);" data-i18n="status">الحالة</th>
-            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text);" data-i18n="colEmployee">الموظف</th>
-            <th style="width: 60px; text-align: center; font-weight: 600; color: var(--text);" data-i18n="colAction">إجراء</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+  <!-- ── KPI Summary Cards ── -->
+  <div class="exp-kpi-grid" id="exp-kpi-strip"></div>
+
+  <!-- ── Status Tab Filter ── -->
+  <div class="exp-tab-bar">
+    <button class="exp-tab active" id="exp-tab-all" onclick="setExpTab('all',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      الكل
+    </button>
+    <button class="exp-tab" id="exp-tab-pending" onclick="setExpTab('معلق',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      في انتظار الموافقة
+    </button>
+    <button class="exp-tab" id="exp-tab-approved" onclick="setExpTab('معتمد',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+      المعتمدة
+    </button>
+    <button class="exp-tab" id="exp-tab-rejected" onclick="setExpTab('مرفوض',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+      المرفوضة
+    </button>
+  </div>
+
+  <!-- ── Search & Filter Bar ── -->
+  <div class="exp-filter-bar">
+    <div class="exp-search-wrap">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="exp-search" placeholder="بحث بالوصف أو رقم المصروف..." oninput="debouncedRenderExpenses()" class="exp-search-input">
+    </div>
+    <div class="exp-filters-row">
+      <input type="date" id="exp-from" title="من تاريخ" onchange="expPage=1;renderExpenses()" class="exp-filter-input">
+      <input type="date" id="exp-to" title="إلى تاريخ" onchange="expPage=1;renderExpenses()" class="exp-filter-input">
+      <select id="exp-cat-filter" onchange="expPage=1;renderExpenses()" class="exp-filter-input">
+        <option value="">كل الفئات</option>
+        <option value="إيجارات">إيجارات</option>
+        <option value="اعلانات">اعلانات</option>
+        <option value="تغليف">تغليف</option>
+        <option value="موصلات وتنقل">موصلات وتنقل</option>
+        <option value="اشتراكات">اشتراكات</option>
+        <option value="مرتبات">مرتبات</option>
+        <option value="كهرباء ومياه">كهرباء ومياه</option>
+        <option value="مستلزمات مكتبية">مستلزمات مكتبية</option>
+        <option value="ضيافة عملاء">ضيافة عملاء</option>
+        <option value="اخرى">اخرى</option>
+      </select>
+      <select id="exp-acc-filter" onchange="expPage=1;renderExpenses()" class="exp-filter-input">
+        <option value="">كل الحسابات</option>
+        <option value="كاش">كاش</option>
+        <option value="فودافون كاش">فودافون كاش</option>
+        <option value="Instapay">Instapay</option>
+        <option value="تحويل بنكي">تحويل بنكي</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="clearExpFilters()" style="white-space:nowrap;flex-shrink:0">مسح</button>
     </div>
   </div>
 
-  <!-- Pagination -->
-  <div id="exp-pagination" style="margin-top: 16px;"></div>
+  <!-- ── Desktop Table ── -->
+  <div class="exp-table-wrap">
+    <table id="exp-table" class="exp-table">
+      <thead>
+        <tr>
+          <th style="width:36px;text-align:center"><input type="checkbox" id="exp-select-all" onchange="document.querySelectorAll('.exp-chk:not(:disabled)').forEach(c=>c.checked=this.checked)"></th>
+          <th>التاريخ</th>
+          <th>المصروف</th>
+          <th>الفئة</th>
+          <th>الحساب</th>
+          <th>الموظف</th>
+          <th style="text-align:center">المبلغ</th>
+          <th style="text-align:center">الحالة</th>
+          <th style="width:52px;text-align:center">إجراء</th>
+        </tr>
+      </thead>
+      <tbody id="exp-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- ── Mobile Card List ── -->
+  <div id="exp-mobile-list" class="exp-mobile-list"></div>
+
+  <!-- ── Pagination ── -->
+  <div id="exp-pagination" style="margin-top:16px"></div>
 </div>
 
 <!-- Complaints -->
@@ -2026,7 +2206,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <script>
 const qs = (s, p) => (p || document).querySelector(s);
 const qsa = (s, p) => [...(p || document).querySelectorAll(s)];
-const API_BASE = 'http://localhost:4000/api';
+const API_BASE = '/api';
 
 function esc(str) {
   if (str == null) return '';
@@ -7404,13 +7584,119 @@ function expStatusBadge(status) {
   if (status === 'مرفوض') return '<span class="badge badge-red">مرفوض ✕</span>';
   return '<span class="badge badge-orange">معلق <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>';
 }
+/* ── Expense helpers ── */
+let expStatusFilter = 'all';
+function setExpTab(status, btn) {
+  expStatusFilter = status;
+  document.querySelectorAll('.exp-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  expPage = 1; renderExpenses();
+}
+
+const EXP_CAT_META = {
+  'إيجارات':        { emoji: '🏠', bg: '#dbeafe', color: '#1d4ed8' },
+  'اعلانات':        { emoji: '📢', bg: '#fce7f3', color: '#be185d' },
+  'تغليف':          { emoji: '📦', bg: '#fef3c7', color: '#92400e' },
+  'موصلات وتنقل':   { emoji: '🚗', bg: '#d1fae5', color: '#065f46' },
+  'اشتراكات':       { emoji: '📅', bg: '#ede9fe', color: '#5b21b6' },
+  'مرتبات':         { emoji: '💼', bg: '#e0f2fe', color: '#0369a1' },
+  'كهرباء ومياه':   { emoji: '⚡', bg: '#fef9c3', color: '#854d0e' },
+  'مستلزمات مكتبية':{ emoji: '🖊️', bg: '#f0fdf4', color: '#14532d' },
+  'ضيافة عملاء':    { emoji: '☕', bg: '#fff7ed', color: '#9a3412' },
+  'اخرى':           { emoji: '📋', bg: '#f1f5f9', color: '#475569' },
+};
+
+function getExpCatMeta(cat) {
+  return EXP_CAT_META[cat] || { emoji: '📋', bg: '#f1f5f9', color: '#475569' };
+}
+
+function buildExpActionsMenu(e) {
+  const isPending = e.status === 'معلق';
+  const approveActions = isAdmin() && isPending
+    ? `<div class="dd-item" onclick="approveExpense('${esc(e._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> اعتماد</div><div class="dd-item danger" onclick="rejectExpense('${esc(e._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg> رفض</div><div class="dd-divider"></div>`
+    : '';
+  const editAction = isPending
+    ? `<div class="dd-item" onclick="openExpenseModal('${esc(e._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</div>` : '';
+  const viewAction = `<div class="dd-item" onclick="openExpenseDetail('${esc(e._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> التفاصيل</div>`;
+  const printAction = `<div class="dd-item" onclick="printExpenseDetails('${esc(e._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة</div>`;
+  const deleteAction = e.status !== 'معتمد'
+    ? `<div class="dd-divider"></div><div class="dd-item danger" onclick="deleteExpenseWithPassword('${esc(e._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> حذف</div>` : '';
+  return `<div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu">${approveActions}${viewAction}${printAction}${editAction}${deleteAction}</div></div>`;
+}
+
 function renderExpenses() {
-  const from = qs('#exp-from')?.value; const to = qs('#exp-to')?.value;
-  const cat = qs('#exp-cat-filter')?.value; const acc = qs('#exp-acc-filter')?.value;
+  const from = qs('#exp-from')?.value;
+  const to = qs('#exp-to')?.value;
+  const cat = qs('#exp-cat-filter')?.value;
+  const acc = qs('#exp-acc-filter')?.value;
   const search = qs('#exp-search')?.value?.toLowerCase() || '';
+
+  /* KPI Counts (all expenses, unfiltered) */
+  const approved  = expenses.filter(e => e.status === 'معتمد');
+  const pending   = expenses.filter(e => e.status === 'معلق');
+  const rejected  = expenses.filter(e => e.status === 'مرفوض');
+  const nowMonth  = today().slice(0, 7);
+  const totalApproved  = approved.reduce((s, e) => s + (e.amount || 0), 0);
+  const totalThisMonth = approved.filter(e => (e.date || '').startsWith(nowMonth)).reduce((s, e) => s + (e.amount || 0), 0);
+  const lastMonth = new Date(); lastMonth.setMonth(lastMonth.getMonth() - 1);
+  const lastMonthStr = lastMonth.toISOString().slice(0, 7);
+  const totalLastMonth = approved.filter(e => (e.date || '').startsWith(lastMonthStr)).reduce((s, e) => s + (e.amount || 0), 0);
+  const monthTrend = lastMonth > 0 ? ((totalThisMonth - totalLastMonth) / (totalLastMonth || 1) * 100).toFixed(0) : 0;
+
+  /* Render KPI cards */
+  const trendHtml = (val) => {
+    if (val > 0) return `<span class="exp-kpi-trend up">▲ ${val}%</span>`;
+    if (val < 0) return `<span class="exp-kpi-trend down">▼ ${Math.abs(val)}%</span>`;
+    return `<span class="exp-kpi-trend neutral">— لا تغيير</span>`;
+  };
+  qs('#exp-kpi-strip').innerHTML = `
+    <div class="exp-kpi-card kpi-red">
+      <div class="exp-kpi-icon red"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg></div>
+      <div class="exp-kpi-body">
+        <div class="exp-kpi-val">${fmtJ(totalApproved)}</div>
+        <div class="exp-kpi-label">إجمالي المصاريف</div>
+        ${trendHtml(monthTrend)}
+      </div>
+    </div>
+    <div class="exp-kpi-card kpi-green">
+      <div class="exp-kpi-icon green"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+      <div class="exp-kpi-body">
+        <div class="exp-kpi-val">${fmtJ(totalThisMonth)}</div>
+        <div class="exp-kpi-label">هذا الشهر</div>
+        <span class="exp-kpi-trend neutral">${approved.filter(e=>(e.date||'').startsWith(nowMonth)).length} مصروف</span>
+      </div>
+    </div>
+    <div class="exp-kpi-card kpi-orange">
+      <div class="exp-kpi-icon orange"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+      <div class="exp-kpi-body">
+        <div class="exp-kpi-val">${fmtJ(pending.reduce((s,e)=>s+(e.amount||0),0))}</div>
+        <div class="exp-kpi-label">في انتظار الموافقة</div>
+        <span class="exp-kpi-trend neutral">${pending.length} طلب</span>
+      </div>
+    </div>
+    <div class="exp-kpi-card kpi-blue">
+      <div class="exp-kpi-icon blue"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+      <div class="exp-kpi-body">
+        <div class="exp-kpi-val">${fmtJ(rejected.reduce((s,e)=>s+(e.amount||0),0))}</div>
+        <div class="exp-kpi-label">المرفوضة</div>
+        <span class="exp-kpi-trend neutral">${rejected.length} مصروف</span>
+      </div>
+    </div>`;
+
+  /* Update tab badge counts */
+  const tabCounts = { all: expenses.length, 'معلق': pending.length, 'معتمد': approved.length, 'مرفوض': rejected.length };
+  ['all','معلق','معتمد','مرفوض'].forEach(s => {
+    const tabId = { all:'exp-tab-all','معلق':'exp-tab-pending','معتمد':'exp-tab-approved','مرفوض':'exp-tab-rejected' }[s];
+    const el = qs('#' + tabId);
+    if (!el) return;
+    let badge = el.querySelector('.exp-tab-badge');
+    if (!badge) { badge = document.createElement('span'); badge.className = 'exp-tab-badge'; el.appendChild(badge); }
+    badge.textContent = tabCounts[s];
+  });
+
+  /* Filter data */
   let data = expenses.filter(e => {
-    // عرض المصاريف المعتمدة فقط في الصفحة الرئيسية
-    if (e.status !== 'معتمد') return false;
+    if (expStatusFilter !== 'all' && e.status !== expStatusFilter) return false;
     if (from && e.date && e.date.slice(0, 10) < from) return false;
     if (to && e.date && e.date.slice(0, 10) > to) return false;
     if (cat && e.category !== cat) return false;
@@ -7419,60 +7705,81 @@ function renderExpenses() {
     return true;
   });
   data.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  const approved = expenses.filter(e => e.status === 'معتمد');
-  const totalAll = approved.reduce((s, e) => s + (e.amount || 0), 0);
-  const nowMonth = today().slice(0, 7);
-  const thisMonth = approved.filter(e => (e.date || '').startsWith(nowMonth)).reduce((s, e) => s + (e.amount || 0), 0);
-  const pendingCount = expenses.filter(e => e.status === 'معلق').length;
-  const filteredTotal = data.reduce((s, e) => s + (e.amount || 0), 0);
-  qs('#exp-kpi-strip').innerHTML = `
-    <div class="kpi"><div class="kpi-val text-red">${fmtJ(totalAll)}</div><div class="kpi-label">المصاريف المعتمدة</div></div>
-    <div class="kpi"><div class="kpi-val text-orange">${fmtJ(thisMonth)}</div><div class="kpi-label">هذا الشهر (معتمد)</div></div>
-    <div class="kpi"><div class="kpi-val text-blue">${fmtJ(filteredTotal)}</div><div class="kpi-label">النتائج المعروضة</div></div>
-    <div class="kpi"><div class="kpi-val text-purple">${pendingCount}</div><div class="kpi-label">في انتظار الموافقة</div></div>`;
+
   const EXP_PAGE_SIZE = 25;
   const total = data.length;
   if (expPage > Math.ceil(total / EXP_PAGE_SIZE) || total === 0) expPage = 1;
-  const pageData = data.slice((expPage-1)*EXP_PAGE_SIZE, expPage*EXP_PAGE_SIZE);
-  
-  const statusBadgeMap = {
-    'معلق': { bg: '#fff3cd', color: '#856404', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>' },
-    'معتمد': { bg: '#d4edda', color: '#155724', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>' },
-    'مرفوض': { bg: '#f8d7da', color: '#721c24', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>' }
+  const pageData = data.slice((expPage - 1) * EXP_PAGE_SIZE, expPage * EXP_PAGE_SIZE);
+
+  /* ── Desktop Table rows ── */
+  const statusHtml = (status) => {
+    if (status === 'معتمد') return `<span class="exp-status approved"><span class="exp-status-dot"></span>معتمد</span>`;
+    if (status === 'مرفوض') return `<span class="exp-status rejected"><span class="exp-status-dot"></span>مرفوض</span>`;
+    return `<span class="exp-status pending"><span class="exp-status-dot"></span>معلق</span>`;
   };
-  
-  const categoryIconMap = {
-    'اعلانات': '📢',
-    'تغليف': '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>',
-    'موصلات وتنقل': '🚗',
-    'اشتراكات': '📅',
-    'مرتبات': '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>',
-    'اخرى': '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>'
-  };
-  
-  qs('#exp-table tbody').innerHTML = pageData.length ? pageData.map(e => {
-    const isPending = e.status === 'معلق';
-    const statusInfo = statusBadgeMap[e.status] || statusBadgeMap['معلق'];
-    const categoryIcon = categoryIconMap[e.category] || '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>';
-    
-    const approveActions = isAdmin() && isPending ? `<div class="dd-item" onclick="approveExpense('${esc(e._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> اعتماد</div><div class="dd-item danger" onclick="rejectExpense('${esc(e._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg> رفض</div><div class="dd-divider"></div>` : '';
-    const editAction = isPending ? `<div class="dd-item" onclick="openExpenseModal('${esc(e._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</div>` : '';
-    const printAction = `<div class="dd-item" onclick="printExpenseDetails('${esc(e._id)}')">🞨 طباعة التفاصيل</div>`;
-    const deleteAction = e.status !== 'معتمد' ? `<div class="dd-item danger" onclick="deleteExpenseWithPassword('${esc(e._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> حذف</div>` : '';
-    
-    return `<tr style="border-bottom: 1px solid var(--border); transition: background 0.2s; ${isPending ? 'background: var(--primary-pale); opacity: 0.95;' : ''}">
-      <td style="width: 40px; text-align: center; padding: 12px 8px;"><input type="checkbox" class="exp-chk" value="${esc(e._id)}" ${!isPending ? 'disabled' : ''}></td>
-      <td style="padding: 12px 16px; white-space: nowrap; color: var(--muted); font-size: 0.9rem;">${fmtDate(e.date)}</td>
-      <td style="padding: 12px 16px; color: var(--text); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><strong>${esc(e.desc || '-')}</strong>${e.expenseNo ? `<br><span style="font-size: 0.75rem; color: var(--muted);">#${esc(e.expenseNo)}</span>` : ''}</td>
-      <td style="padding: 12px 16px; text-align: center;"><span style="font-size: 1.2rem;">${categoryIcon}</span> <span style="font-size: 0.85rem; color: var(--muted);">${esc(e.category || '-')}</span></td>
-      <td style="padding: 12px 16px; color: var(--text); font-size: 0.9rem;"><span style="background: var(--surface2); padding: 4px 10px; border-radius: 6px;">${esc(e.account || '-')}</span></td>
-      <td style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--red);">${fmtJ(e.amount)}</td>
-      <td style="padding: 12px 16px; text-align: center;"><span style="background: ${statusInfo.bg}; color: ${statusInfo.color}; padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">${statusInfo.icon} ${esc(e.status || 'معلق')}</span></td>
-      <td style="padding: 12px 16px; color: var(--muted); font-size: 0.9rem;">${esc(e.employee || '-')}</td>
-      <td style="width: 60px; text-align: center; padding: 12px 8px;"><div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu">${approveActions}${printAction}${editAction}${deleteAction}</div></div></td>
-    </tr>`;
-  }).join('') : '<tr><td colspan="9" style="padding: 40px 16px; text-align: center; color: var(--muted);"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg> لا توجد مصاريف تطابق البحث</td></tr>';
-  
+
+  const tbody = qs('#exp-tbody');
+  if (tbody) {
+    tbody.innerHTML = pageData.length ? pageData.map(e => {
+      const meta = getExpCatMeta(e.category);
+      return `<tr class="${e.status === 'معلق' ? 'exp-row-pending' : ''}">
+        <td style="text-align:center"><input type="checkbox" class="exp-chk" value="${esc(e._id)}" ${e.status === 'معتمد' ? 'disabled' : ''}></td>
+        <td style="white-space:nowrap;color:var(--muted);font-size:.83rem">${fmtDate(e.date)}</td>
+        <td>
+          <span class="exp-row-desc">${esc(e.desc || '-')}</span>
+          ${e.expenseNo ? `<span class="exp-row-no">#${esc(e.expenseNo)}</span>` : ''}
+        </td>
+        <td>
+          <span class="exp-cat-badge">
+            <span class="exp-cat-icon" style="background:${meta.bg};color:${meta.color}">${meta.emoji}</span>
+            ${esc(e.category || '-')}
+          </span>
+        </td>
+        <td><span class="exp-account-chip">${esc(e.account || '-')}</span></td>
+        <td style="color:var(--muted);font-size:.85rem">${esc(e.employee || '-')}</td>
+        <td class="exp-amount-cell">${fmtJ(e.amount)}</td>
+        <td style="text-align:center">${statusHtml(e.status)}</td>
+        <td style="text-align:center">${buildExpActionsMenu(e)}</td>
+      </tr>`;
+    }).join('') :
+    `<tr><td colspan="9"><div class="exp-empty">
+      <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+      <div class="exp-empty-title">لا توجد مصاريف</div>
+      <div class="exp-empty-sub">لا توجد نتائج تطابق معايير البحث الحالية</div>
+    </div></td></tr>`;
+  }
+
+  /* ── Mobile Cards ── */
+  const mobileList = qs('#exp-mobile-list');
+  if (mobileList) {
+    mobileList.innerHTML = pageData.length ? pageData.map(e => {
+      const meta = getExpCatMeta(e.category);
+      return `<div class="exp-card">
+        <div class="exp-card-top">
+          <div class="exp-card-icon-wrap" style="background:${meta.bg};color:${meta.color}">${meta.emoji}</div>
+          <div class="exp-card-info">
+            <div class="exp-card-title">${esc(e.desc || '-')}</div>
+            <div class="exp-card-sub">${esc(e.category || '-')}${e.expenseNo ? ' · #' + esc(e.expenseNo) : ''}</div>
+          </div>
+          <div class="exp-card-amount">${fmtJ(e.amount)}</div>
+        </div>
+        <div class="exp-card-footer">
+          <div class="exp-card-meta">
+            ${statusHtml(e.status)}
+            <span style="font-size:.75rem;color:var(--muted)">${fmtDate(e.date)}</span>
+            <span class="exp-account-chip" style="font-size:.72rem;padding:2px 8px">${esc(e.account || '-')}</span>
+          </div>
+          ${buildExpActionsMenu(e)}
+        </div>
+      </div>`;
+    }).join('') :
+    `<div class="exp-empty">
+      <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+      <div class="exp-empty-title">لا توجد مصاريف</div>
+      <div class="exp-empty-sub">لا توجد نتائج تطابق معايير البحث</div>
+    </div>`;
+  }
+
   renderPagination('exp-pagination', total, expPage, EXP_PAGE_SIZE, 'setExpPage');
 }
 const debouncedRenderExpenses = debounce(() => { expPage = 1; renderExpenses(); }, 250);
@@ -7482,30 +7789,189 @@ function clearExpFilters() {
   expPage = 1; renderExpenses();
 }
 
-const EXP_CATEGORIES = ['اعلانات', 'تغليف', 'موصلات وتنقل', 'اشتراكات', 'مرتبات', 'اخرى'];
+function openExpenseDetail(id) {
+  const e = expenses.find(x => x._id === id);
+  if (!e) return;
+  const meta = getExpCatMeta(e.category);
+  const statusClass = { 'معتمد': 'approved', 'مرفوض': 'rejected', 'معلق': 'pending' }[e.status] || 'pending';
+  const statusLabel = { 'معتمد': '✓ معتمد', 'مرفوض': '✕ مرفوض', 'معلق': '⏳ في انتظار الموافقة' }[e.status] || e.status;
+
+  /* Approval timeline */
+  const stepDone = (label, sub) => `<div class="exp-timeline-step">
+    <div class="exp-timeline-dot done"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg></div>
+    <div class="exp-timeline-body"><div class="exp-timeline-title">${label}</div><div class="exp-timeline-meta">${sub}</div></div>
+  </div>`;
+  const stepWait = (label, sub) => `<div class="exp-timeline-step">
+    <div class="exp-timeline-dot waiting"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l2 2"/></svg></div>
+    <div class="exp-timeline-body"><div class="exp-timeline-title">${label}</div><div class="exp-timeline-meta">${sub}</div></div>
+  </div>`;
+  const stepTodo = (label) => `<div class="exp-timeline-step">
+    <div class="exp-timeline-dot todo"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/></svg></div>
+    <div class="exp-timeline-body"><div class="exp-timeline-title" style="color:var(--muted)">${label}</div></div>
+  </div>`;
+
+  const createdStep = stepDone('تم الإنشاء', `${esc(e.employee || '-')} · ${fmtDate(e.date)}`);
+  let approvalStep = '';
+  if (e.status === 'معتمد' && e.approvedAt) approvalStep = stepDone('معتمد', `${esc(e.approvedBy || '-')} · ${fmtDateTime(e.approvedAt)}`);
+  else if (e.status === 'مرفوض') approvalStep = `<div class="exp-timeline-step"><div class="exp-timeline-dot" style="border-color:#ef4444;background:#fee2e2;color:#dc2626"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div><div class="exp-timeline-body"><div class="exp-timeline-title">مرفوض</div><div class="exp-timeline-meta">${fmtDate(e.updatedAt || e.date)}</div></div></div>`;
+  else approvalStep = stepWait('في انتظار الموافقة', 'المدير المسؤول');
+
+  openModal(`
+    <div class="exp-detail-hero">
+      <div style="font-size:2.2rem;margin-bottom:8px">${meta.emoji}</div>
+      <div class="exp-detail-hero-amount">${fmtJ(e.amount)} ج.م</div>
+      <div class="exp-detail-hero-desc">${esc(e.desc || '-')}</div>
+      <span class="exp-detail-hero-badge">${statusLabel}</span>
+    </div>
+    <div class="exp-detail-grid">
+      <div class="exp-detail-field"><div class="exp-detail-field-label">التاريخ</div><div class="exp-detail-field-val">${fmtDate(e.date)}</div></div>
+      <div class="exp-detail-field"><div class="exp-detail-field-label">رقم المصروف</div><div class="exp-detail-field-val">${esc(e.expenseNo || '-')}</div></div>
+      <div class="exp-detail-field"><div class="exp-detail-field-label">الفئة</div><div class="exp-detail-field-val">${meta.emoji} ${esc(e.category || '-')}</div></div>
+      <div class="exp-detail-field"><div class="exp-detail-field-label">الحساب</div><div class="exp-detail-field-val">${esc(e.account || '-')}</div></div>
+      <div class="exp-detail-field"><div class="exp-detail-field-label">الموظف</div><div class="exp-detail-field-val">${esc(e.employee || '-')}</div></div>
+      <div class="exp-detail-field"><div class="exp-detail-field-label">الحالة</div><div class="exp-detail-field-val"><span class="exp-status ${statusClass}"><span class="exp-status-dot"></span>${esc(e.status)}</span></div></div>
+      ${e.notes ? `<div class="exp-detail-field" style="grid-column:1/-1"><div class="exp-detail-field-label">ملاحظات</div><div class="exp-detail-field-val">${esc(e.notes)}</div></div>` : ''}
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">سجل الموافقات</div>
+      <div class="exp-timeline">${createdStep}${approvalStep}</div>
+    </div>
+    <div class="flex gap-8">
+      <button class="btn btn-outline btn-sm" onclick="printExpenseDetails('${esc(e._id)}')">طباعة</button>
+      ${e.status === 'معلق' ? `<button class="btn btn-outline btn-sm" onclick="closeModal();openExpenseModal('${esc(e._id)}')">تعديل</button>` : ''}
+      ${isAdmin() && e.status === 'معلق' ? `<button class="btn btn-primary btn-sm" onclick="closeModal();approveExpense('${esc(e._id)}')">اعتماد</button>` : ''}
+      <button class="btn btn-outline btn-sm" style="margin-right:auto" onclick="closeModal()">إغلاق</button>
+    </div>
+  `);
+}
+
+const EXP_CATEGORIES = ['إيجارات', 'اعلانات', 'تغليف', 'موصلات وتنقل', 'اشتراكات', 'مرتبات', 'كهرباء ومياه', 'مستلزمات مكتبية', 'ضيافة عملاء', 'اخرى'];
 function openExpenseModal(id) {
   const e = id ? expenses.find(x => x._id === id) : null;
   if (e && e.status === 'معتمد') { toast('لا يمكن تعديل مصروف معتمد', true); return; }
-  openModal(`<h3>${e ? 'تعديل مصروف' : 'إضافة مصروف'}</h3>
-    <div class="grid grid-2 gap-12">
-      <div class="form-group"><label>رقم المصروف *</label><input type="text" id="em-expno" value="${esc(e?.expenseNo || '')}" placeholder="EXP-..."></div>
-      <div class="form-group"><label>التاريخ</label><input type="date" id="em-date" value="${e?.date?.slice(0, 10) || today()}"></div>
-      <div class="form-group"><label>الوصف *</label><input type="text" id="em-desc" value="${esc(e?.desc || '')}"></div>
-      <div class="form-group"><label>نوع المصروف *</label><select id="em-cat">${EXP_CATEGORIES.map(c => `<option value="${esc(c)}" ${e?.category === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
-      <div class="form-group"><label>المبلغ *</label><input type="number" id="em-amount" value="${e?.amount || 0}" min="1"></div>
-      <div class="form-group"><label>خصم من حساب</label><select id="em-account"><option value="كاش" ${e?.account === 'كاش' ? 'selected' : ''}>كاش</option><option value="فودافون كاش" ${e?.account === 'فودافون كاش' ? 'selected' : ''}>فودافون كاش</option><option value="Instapay" ${e?.account === 'Instapay' ? 'selected' : ''}>Instapay</option><option value="تحويل بنكي" ${e?.account === 'تحويل بنكي' ? 'selected' : ''}>تحويل بنكي</option></select></div>
-      <div class="form-group"><label>ملاحظات</label><input type="text" id="em-notes" value="${esc(e?.notes || '')}"></div>
+  const isEdit = !!e;
+  openModal(`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--primary-light),var(--primary));display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+      </div>
+      <div>
+        <h3 style="margin:0;font-size:1.05rem">${isEdit ? 'تعديل المصروف' : 'إضافة مصروف جديد'}</h3>
+        <p style="margin:0;font-size:.78rem;color:var(--muted)">${isEdit ? 'تعديل بيانات المصروف' : 'سيتم إرساله للموافقة من المدير'}</p>
+      </div>
     </div>
-    <div class="flex gap-8 mt-16"><button class="btn btn-primary" onclick="saveExpense('${id || ''}')">${e ? 'تحديث' : 'إضافة'}</button><button class="btn btn-outline" onclick="closeModal()">إلغاء</button></div>`);
+
+    <div class="exp-form-section">
+      <div class="exp-form-section-title">المعلومات الأساسية</div>
+      <div class="grid grid-2 gap-12">
+        <div class="form-group">
+          <label>التاريخ</label>
+          <input type="date" id="em-date" value="${e?.date?.slice(0, 10) || today()}">
+        </div>
+        <div class="form-group">
+          <label>الفئة *</label>
+          <select id="em-cat">
+            <option value="">اختر الفئة</option>
+            ${EXP_CATEGORIES.map(c => `<option value="${esc(c)}" ${e?.category === c ? 'selected' : ''}>${getExpCatMeta(c).emoji} ${esc(c)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>الوصف *</label>
+          <input type="text" id="em-desc" value="${esc(e?.desc || '')}" placeholder="اكتب وصف المصروف...">
+        </div>
+      </div>
+    </div>
+
+    <div class="exp-form-section">
+      <div class="exp-form-section-title">التفاصيل المالية</div>
+      <div class="grid grid-2 gap-12">
+        <div class="form-group">
+          <label>المبلغ *</label>
+          <div style="position:relative">
+            <input type="number" id="em-amount" value="${e?.amount || ''}" min="0.01" step="0.01" placeholder="0.00" style="padding-left:40px">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--muted);font-size:.85rem">ج.م</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>طريقة الدفع</label>
+          <select id="em-account">
+            <option value="كاش" ${(!e || e.account === 'كاش') ? 'selected' : ''}>💵 كاش</option>
+            <option value="فودافون كاش" ${e?.account === 'فودافون كاش' ? 'selected' : ''}>📱 فودافون كاش</option>
+            <option value="Instapay" ${e?.account === 'Instapay' ? 'selected' : ''}>💳 Instapay</option>
+            <option value="تحويل بنكي" ${e?.account === 'تحويل بنكي' ? 'selected' : ''}>🏦 تحويل بنكي</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>رقم المصروف</label>
+          <input type="text" id="em-expno" value="${esc(e?.expenseNo || '')}" placeholder="EXP-00001">
+        </div>
+        <div class="form-group">
+          <label>ملاحظات</label>
+          <input type="text" id="em-notes" value="${esc(e?.notes || '')}" placeholder="أي ملاحظات إضافية...">
+        </div>
+      </div>
+    </div>
+
+    <div class="exp-form-section">
+      <div class="exp-form-section-title">المرفقات (اختياري)</div>
+      <div class="exp-attach-zone" onclick="qs('#em-file-input').click()">
+        <input type="file" id="em-file-input" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="handleExpAttachment(this)">
+        <div class="exp-attach-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="exp-attach-label">اضغط لرفع الملف</div>
+        <div class="exp-attach-hint">PDF، JPG، PNG — الحد الأقصى ٥ ميجابايت</div>
+      </div>
+      <div id="em-attach-preview" style="margin-top:8px;font-size:.8rem;color:var(--muted)"></div>
+    </div>
+
+    <div class="exp-form-section">
+      <div class="exp-toggle-row">
+        <div>
+          <div class="exp-toggle-label">تذكير بالموافقة</div>
+          <div class="exp-toggle-sub">إرسال تذكير في حال عدم الموافقة</div>
+        </div>
+        <label style="position:relative;display:inline-flex;align-items:center;cursor:pointer">
+          <input type="checkbox" id="em-reminder" style="width:0;height:0;opacity:0;position:absolute" ${!isEdit ? 'checked' : ''}>
+          <span id="em-reminder-track" style="display:block;width:44px;height:24px;border-radius:12px;background:${!isEdit ? 'var(--primary)' : 'var(--border)'};transition:background .2s;flex-shrink:0" onclick="this.style.background=qs('#em-reminder').checked?'var(--border)':'var(--primary)'">
+            <span style="display:block;width:18px;height:18px;border-radius:9px;background:#fff;margin:3px;transition:transform .2s;transform:${!isEdit ? 'translateX(-20px)' : 'translateX(0)'}"></span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <button class="exp-save-btn" id="em-save-btn" onclick="saveExpense('${id || ''}')">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      ${isEdit ? 'حفظ التعديلات' : 'حفظ المصروف'}
+    </button>
+  `);
+}
+
+function handleExpAttachment(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { toast('حجم الملف يتجاوز ٥ ميجابايت', true); input.value = ''; return; }
+  const preview = qs('#em-attach-preview');
+  if (preview) preview.innerHTML = `<span style="background:var(--surface2);padding:4px 10px;border-radius:8px;display:inline-flex;align-items:center;gap:6px">📎 ${esc(file.name)} <button onclick="qs('#em-file-input').value='';this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:1rem;padding:0;line-height:1">×</button></span>`;
 }
 async function saveExpense(id) {
-  const expenseNo = (qs('#em-expno')?.value || '').trim();
-  if (!expenseNo) { toast('رقم المصروف مطلوب', true); return; }
-  const body = { expenseNo, date: qs('#em-date').value, desc: qs('#em-desc').value, category: qs('#em-cat').value, amount: Number(qs('#em-amount').value) || 0, account: qs('#em-account').value, notes: qs('#em-notes').value, employee: currentUser?.name || currentUser?.username || '' };
+  const btn = qs('#em-save-btn');
+  const cat = (qs('#em-cat')?.value || '').trim();
+  if (!cat) { toast('الفئة مطلوبة', true); return; }
+  const expenseNo = (qs('#em-expno')?.value || '').trim() || ('EXP-' + Date.now().toString().slice(-5));
+  const body = { expenseNo, date: qs('#em-date').value, desc: qs('#em-desc').value, category: cat, amount: Number(qs('#em-amount').value) || 0, account: qs('#em-account').value, notes: qs('#em-notes').value, employee: currentUser?.name || currentUser?.username || '' };
   if (!body.desc) { toast('الوصف مطلوب', true); return; }
   if (!body.amount || body.amount <= 0) { toast('المبلغ مطلوب', true); return; }
-  try { if (id) await api('/expenses/' + id, { method: 'PUT', body: JSON.stringify(body) }); else await api('/expenses', { method: 'POST', body: JSON.stringify(body) }); toast(id ? 'تم التحديث' : 'تم الإضافة — في انتظار موافقة المدير'); closeModal(); expenses = await api('/expenses').catch(() => expenses); renderExpenses(); buildSidebar(); buildNotifications(); }
-  catch (e) { toast('خطأ: ' + e.message, true); }
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+  try {
+    if (id) await api('/expenses/' + id, { method: 'PUT', body: JSON.stringify(body) });
+    else await api('/expenses', { method: 'POST', body: JSON.stringify(body) });
+    toast(id ? 'تم حفظ التعديلات ✅' : 'تم إضافة المصروف — في انتظار موافقة المدير ✅');
+    closeModal();
+    expenses = await api('/expenses').catch(() => expenses);
+    renderExpenses(); buildSidebar(); buildNotifications();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+  finally { if (btn) { btn.disabled = false; btn.style.opacity = '1'; } }
 }
 async function approveExpense(id) {
   if (!confirm('اعتماد هذا المصروف وخصمه من الخزنة؟')) return;
