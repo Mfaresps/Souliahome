@@ -2298,96 +2298,98 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 
 <!-- Settings -->
 <div class="page" id="page-settings">
-<div class="settings-page-inner">
-<div class="page-header" style="margin-bottom:22px">
+<div class="settings-page-inner" style="padding:0 12px">
+<div class="page-header" style="margin-bottom:20px;margin-top:12px">
 <div>
 <h2 class="page-title" data-i18n="settings">الإعدادات</h2>
-<p class="page-subtitle" style="margin-top:4px;margin-bottom:0" data-i18n="settingsSubtitle">ضبط المظهر، الشحن، الأمان، والنسخ الاحتياطي في مكان واحد</p>
+<p class="page-subtitle" style="margin-top:4px;margin-bottom:0;font-size:.85rem" data-i18n="settingsSubtitle">ضبط المظهر، الشحن، الأمان، والنسخ الاحتياطي</p>
 </div>
 </div>
 
-<div class="settings-top-grid">
-<div class="settings-stack">
+<div class="settings-top-grid" style="gap:16px;margin-bottom:0">
+<div class="settings-stack" style="gap:16px">
 <div>
-<div class="settings-section-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span data-i18n="settingsSectionPrefs">المظهر واللغة</span></div>
-<div class="card settings-card">
-<div class="settings-pref-body">
-<label class="flex gap-8" style="cursor:pointer;align-items:center;font-weight:500"><input type="checkbox" id="set-dark" onchange="toggleDarkMode()" style="cursor:pointer;width:auto"> <span data-i18n="settingsDarkMode">الوضع الليلي</span></label>
-<div class="form-group" style="margin:0"><label data-i18n="settingsLangLabel">اللغة</label><select id="set-lang" style="width:100%;margin-top:6px" onchange="changeLang(this.value)"><option value="ar">العربية</option><option value="en">English</option></select></div>
-<p class="text-xs text-muted" style="margin:0;line-height:1.5" data-i18n="settingsLangHint">يُحفظ تلقائياً ويُطبّق على الجلسة الحالية.</p>
+<div class="settings-section-label" style="margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span data-i18n="settingsSectionPrefs">المظهر واللغة</span></div>
+<div class="card settings-card" style="padding:14px 16px">
+<div class="settings-pref-body" style="gap:12px">
+<label class="flex gap-8" style="cursor:pointer;align-items:center;font-weight:500;margin:0"><input type="checkbox" id="set-dark" onchange="toggleDarkMode()" style="cursor:pointer;width:auto;margin:0"> <span data-i18n="settingsDarkMode">الوضع الليلي</span></label>
+<div class="form-group" style="margin:0"><label data-i18n="settingsLangLabel" style="margin-bottom:6px">اللغة</label><select id="set-lang" style="width:100%;margin-top:0" onchange="changeLang(this.value)"><option value="ar">العربية</option><option value="en">English</option></select></div>
+<p class="text-xs text-muted" style="margin:0;line-height:1.4;font-size:.75rem" data-i18n="settingsLangHint">يُحفظ تلقائياً على الجلسة الحالية</p>
 </div>
 </div>
 </div>
-<div>
-<div class="settings-section-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span data-i18n="settingsSectionSecurity">أمان الخزنة</span></div>
-<div class="card settings-card">
-<div class="form-group" style="margin-bottom:12px"><label>كلمة مرور الخزنة</label><p class="text-xs text-muted" style="margin:4px 0 8px">تُستخدم لفتح الخزنة وسجلاتها الحساسة.</p><div style="position:relative;margin-top:4px"><input type="password" id="set-vault-pass" placeholder="كلمة المرور الجديدة" style="padding-left:36px;margin-bottom:8px;width:100%"><button type="button" style="position:absolute;left:8px;top:8px;background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--muted)" onclick="togglePassField(event)"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div><button class="btn btn-primary btn-sm" onclick="saveVaultPass()">حفظ كلمة المرور</button></div>
+<div style="margin-top:0">
+<div class="settings-section-label" style="margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span data-i18n="settingsSectionSecurity">أمان الخزنة</span></div>
+<div class="card settings-card" style="padding:14px 16px">
+<div class="form-group" style="margin-bottom:0"><label style="margin-bottom:6px">كلمة مرور الخزنة</label><p class="text-xs text-muted" style="margin:0 0 8px;font-size:.75rem">تُستخدم لفتح الخزنة وسجلاتها الحساسة</p><div style="position:relative;margin-bottom:8px"><input type="password" id="set-vault-pass" placeholder="كلمة المرور الجديدة" style="padding-left:32px;width:100%"><button type="button" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:.95rem;color:var(--muted);padding:4px" onclick="togglePassField(event)"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div><button class="btn btn-primary btn-sm" onclick="saveVaultPass()" style="align-self:flex-start">حفظ</button></div>
 </div>
 </div>
 </div>
 
-<div class="settings-stack">
+<div class="settings-stack" style="gap:16px">
 <div>
-<div class="settings-section-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg><span data-i18n="settingsSectionShipPrices">أسعار الشحن الافتراضية</span></div>
-<div class="card settings-card">
-<p class="text-xs text-muted" style="margin:0 0 12px;line-height:1.5">تُستخدم عند عدم تحديد سعر خاص لشركة الشحن في الحركة.</p>
+<div class="settings-section-label" style="margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg><span data-i18n="settingsSectionShipPrices">أسعار الشحن</span></div>
+<div class="card settings-card" style="padding:14px 16px">
+<p class="text-xs text-muted" style="margin:0 0 12px;line-height:1.4;font-size:.75rem">تُستخدم عند عدم تحديد سعر خاص في الحركة</p>
 <div class="settings-price-grid">
-<div class="form-group" style="margin-bottom:0"><label>سعر القاهرة الافتراضي</label><input type="number" id="set-cairo-price" onchange="saveDefaultPrices()" placeholder="0"></div>
-<div class="form-group" style="margin-bottom:0"><label>سعر المحافظات الافتراضي</label><input type="number" id="set-gov-price" onchange="saveDefaultPrices()" placeholder="0"></div>
+<div class="form-group" style="margin-bottom:0"><label style="margin-bottom:6px">سعر القاهرة</label><input type="number" id="set-cairo-price" onchange="saveDefaultPrices()" placeholder="0"></div>
+<div class="form-group" style="margin-bottom:0"><label style="margin-bottom:6px">سعر المحافظات</label><input type="number" id="set-gov-price" onchange="saveDefaultPrices()" placeholder="0"></div>
 </div>
 </div>
 </div>
 <div>
-<div class="settings-section-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span data-i18n="settingsSectionShipCos">شركات الشحن</span></div>
-<div class="card settings-card">
-<div class="overflow-x"><table id="ship-table" style="font-size:.85rem"><thead><tr><th data-i18n="colCompany">الشركة</th><th data-i18n="colCairo">القاهرة</th><th data-i18n="colGovs">المحافظات</th><th data-i18n="colActions">إجراءات</th></tr></thead><tbody></tbody></table></div>
-<div class="settings-ship-add">
-<input type="text" id="new-ship-name" placeholder="اسم الشركة">
-<input type="number" id="new-ship-cairo" placeholder="القاهرة">
-<input type="number" id="new-ship-gov" placeholder="المحافظات">
-<button class="btn btn-primary btn-sm" onclick="addShipCompany()">إضافة شركة</button>
+<div class="settings-section-label" style="margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span data-i18n="settingsSectionShipCos">شركات الشحن</span></div>
+<div class="card settings-card" style="padding:14px 16px">
+<div class="overflow-x" style="margin-bottom:12px"><table id="ship-table" style="font-size:.8rem"><thead><tr><th data-i18n="colCompany">الشركة</th><th data-i18n="colCairo">القاهرة</th><th data-i18n="colGovs">المحافظات</th><th data-i18n="colActions">إجراءات</th></tr></thead><tbody></tbody></table></div>
+<div class="settings-ship-add" style="flex-direction:column;align-items:stretch;gap:8px;padding-top:12px;margin-top:12px">
+<input type="text" id="new-ship-name" placeholder="اسم الشركة" style="flex:none">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<input type="number" id="new-ship-cairo" placeholder="القاهرة" style="flex:none">
+<input type="number" id="new-ship-gov" placeholder="المحافظات" style="flex:none">
+</div>
+<button class="btn btn-primary btn-sm" onclick="addShipCompany()" style="align-self:flex-start;width:100%">إضافة شركة</button>
 </div>
 </div>
 </div>
 </div>
 </div>
 
-<div class="settings-section-label mt-24" style="margin-top:28px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg><span data-i18n="settingsSectionData">النسخ الاحتياطي والبيانات</span></div>
-<div class="settings-data-row mb-24">
-<div class="card" style="border-inline-start:3px solid var(--blue);background:rgba(21,101,192,.05)">
-<h4 class="mb-12" style="color:var(--blue);display:flex;align-items:center;gap:8px;font-size:1rem"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.1em;height:1.1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> النسخ الاحتياطية والاسترجاع</h4>
-<p class="text-xs text-muted" style="margin:-4px 0 14px">أنشئ نسخة احتياطية، استرجع، أو انسخ الملفات خارجاً.</p>
-<div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:8px">
-<button class="btn btn-primary" onclick="createBackupNow()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> إنشاء نسخة الآن</button>
-<button class="btn btn-danger" onclick="clearAllBackups()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> حذف جميع النسخ</button>
+<div class="settings-section-label" style="margin-top:28px;margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg><span data-i18n="settingsSectionData">النسخ والبيانات</span></div>
+<div class="settings-data-row mb-24" style="grid-template-columns:1fr;gap:12px"
+<div class="card" style="border-inline-start:3px solid var(--blue);background:rgba(21,101,192,.05);padding:14px 16px">
+<h4 class="mb-12" style="color:var(--blue);display:flex;align-items:center;gap:8px;font-size:.95rem;margin:0 0 12px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> النسخ الاحتياطية</h4>
+<p class="text-xs text-muted" style="margin:0 0 12px;line-height:1.4;font-size:.75rem">أنشئ نسخة احتياطية أو استرجع البيانات</p>
+<div style="margin-bottom:12px;display:grid;grid-template-columns:1fr;gap:8px">
+<button class="btn btn-primary" onclick="createBackupNow()" style="justify-content:center"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> إنشاء نسخة الآن</button>
+<button class="btn btn-danger" onclick="clearAllBackups()" style="justify-content:center"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> حذف جميع النسخ</button>
 </div>
-<div style="margin-bottom:14px">
+<div style="margin-bottom:12px;padding-top:12px;border-top:1px solid var(--border)">
 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:.85rem">النسخ المحفوظة</label>
-<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-<select id="backup-select" style="flex:1;min-width:200px">
+<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:8px">
+<select id="backup-select" style="width:100%">
 <option value="">-- اختر نسخة احتياطية --</option>
 </select>
-<button class="btn btn-outline" onclick="loadBackupList(true)" style="min-width:100px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> تحديث</button>
+<button class="btn btn-outline" onclick="loadBackupList(true)" style="width:100%"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> تحديث</button>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<button class="btn btn-primary" onclick="restoreBackupNow()" style="flex:1;min-width:120px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg> استرجاع</button>
-<button class="btn btn-outline" onclick="downloadBackupNow()" style="flex:1;min-width:120px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تحميل</button>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<button class="btn btn-primary" onclick="restoreBackupNow()" style="justify-content:center"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg> استرجاع</button>
+<button class="btn btn-outline" onclick="downloadBackupNow()" style="justify-content:center"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تحميل</button>
 </div>
 </div>
-<div style="border-top:1px solid var(--border);padding-top:14px">
+<div style="border-top:1px solid var(--border);padding-top:12px;padding-bottom:0">
 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:.85rem">استيراد من ملف</label>
-<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-<input type="file" id="backup-upload" accept=".json" style="flex:1;min-width:180px">
-<button class="btn btn-primary" onclick="uploadBackupFile()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> استيراد</button>
+<div style="display:grid;grid-template-columns:1fr;gap:8px">
+<input type="file" id="backup-upload" accept=".json" style="width:100%">
+<button class="btn btn-primary" onclick="uploadBackupFile()" style="justify-content:center"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> استيراد</button>
 </div>
-<small class="text-xs text-muted" style="margin-top:8px;display:block"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> ملف JSON سبق تصديره من النظام</small>
+<small class="text-xs text-muted" style="margin-top:6px;display:block;font-size:.7rem"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.9em;height:.9em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> ملف JSON من النظام</small>
 </div>
 </div>
 
-<div class="card" style="border-inline-start:3px solid var(--red);background:rgba(220,38,38,.05);display:flex;flex-direction:column;min-height:100%">
-<h4 class="mb-10" style="color:var(--red);display:flex;align-items:center;gap:8px;font-size:1rem"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.1em;height:1.1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> منطقة الخطر</h4>
-<p class="text-sm text-muted" style="margin-bottom:14px;line-height:1.55;flex:1">مسح العمليات والخزنة والمرتجعات والمصاريف مع إنشاء نسخة احتياطية تلقائياً. قائمة المنتجات لا تُمس.</p>
-<button class="btn" style="background:var(--red);color:white;border:none;align-self:flex-start" onclick="confirmResetAllData()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> مسح جميع البيانات</button>
+<div class="card" style="border-inline-start:3px solid var(--red);background:rgba(220,38,38,.05);padding:14px 16px;margin-top:12px">
+<h4 style="color:var(--red);display:flex;align-items:center;gap:8px;font-size:.95rem;margin:0 0 10px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> منطقة الخطر</h4>
+<p class="text-sm text-muted" style="margin-bottom:12px;line-height:1.4;font-size:.8rem">مسح البيانات مع إنشاء نسخة احتياطية تلقائياً</p>
+<button class="btn" style="background:var(--red);color:white;border:none;width:100%;justify-content:center" onclick="confirmResetAllData()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> مسح جميع البيانات</button>
 </div>
 </div>
 </div>
