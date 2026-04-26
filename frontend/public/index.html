@@ -211,9 +211,33 @@ body.dark-mode .status-pending{color:#fbbf24}
 /* ═══════════════════════════════════════════════════════════
    MOVEMENTS — Compact collapsible filter panel
    ═══════════════════════════════════════════════════════════ */
-#page-movements .mov-filter-topbar{display:flex;align-items:center;gap:10px;margin-bottom:0}
-#page-movements .mov-filter-topbar .mov-search-wrap{flex:1;min-width:0}
-#page-movements .mov-filter-toggle{display:none;align-items:center;gap:6px;padding:9px 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-pill);font-size:.78rem;font-weight:700;color:var(--text);cursor:pointer;transition:all var(--motion-fast);flex-shrink:0;height:38px}
+#page-movements .mov-filter-topbar{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:0;
+}
+#page-movements .mov-filter-topbar .mov-search-wrap{
+  flex:1;
+  min-width:0;
+}
+#page-movements .mov-filter-toggle{
+  display:none;
+  align-items:center;
+  gap:6px;
+  padding:8px 12px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  border-radius:var(--r-pill);
+  font-size:.76rem;
+  font-weight:700;
+  color:var(--text);
+  cursor:pointer;
+  transition:all var(--motion-fast);
+  flex-shrink:0;
+  height:36px;
+  min-height:36px;
+}
 #page-movements .mov-filter-toggle:hover{border-color:var(--accent);color:var(--accent)}
 #page-movements .mov-filter-toggle:active{transform:scale(.97)}
 #page-movements .mov-filter-toggle .mov-filter-chevron{transition:transform var(--motion-base)}
@@ -243,21 +267,22 @@ body.dark-mode .status-pending{color:#fbbf24}
   font-size:.80rem;
 }
 
-/* Desktop: show everything inline (no collapse) */
+/* Desktop: Collapsible filter (same as mobile) */
 @media (min-width:769px){
-  #page-movements .mov-filter-topbar{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:end}
-  #page-movements .mov-filter-body{display:block!important}
-  #page-movements .mov-filter-toggle{display:none}
-  #page-movements .mov-filter-dates{display:contents}
-  #page-movements .mov-filter-pills{margin-top:14px}
+  #page-movements .mov-filter-topbar{display:flex;gap:12px;align-items:center}
+  #page-movements .mov-filter-toggle{display:inline-flex!important}
+  #page-movements .mov-filter-body{max-height:0;overflow:hidden;transition:max-height var(--motion-slow),opacity var(--motion-base),margin-top var(--motion-base);opacity:0;margin-top:0}
+  #page-movements .mov-filter-card.open .mov-filter-body{max-height:600px;opacity:1;margin-top:10px}
+  #page-movements .mov-filter-dates{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #page-movements .mov-filter-pills{margin-top:8px}
 }
 
 /* Mobile: collapsed by default, slides open with smooth animation */
 @media (max-width:768px){
   #page-movements .mov-filter-card{padding:9px;border-radius:var(--r-md);box-shadow:var(--shadow-sm)}
-  #page-movements .mov-filter-toggle{display:inline-flex}
+  #page-movements .mov-filter-toggle{display:inline-flex!important}
   #page-movements .mov-filter-body{max-height:0;overflow:hidden;transition:max-height var(--motion-slow),opacity var(--motion-base),margin-top var(--motion-base);opacity:0;margin-top:0}
-  #page-movements .mov-filter-card.open .mov-filter-body{max-height:800px;opacity:1;margin-top:8px}
+  #page-movements .mov-filter-card.open .mov-filter-body{max-height:900px;opacity:1;margin-top:8px}
 
   /* Compact dates on mobile */
   #page-movements .mov-filter-dates{
@@ -876,7 +901,14 @@ body.dark-mode #page-inventory .inv-status-badge.نفد{background:#450a0a;color
 #page-inventory .inv-card-val.accent{color:var(--accent);font-weight:800}
 
 /* Movements page enhancements */
-#page-movements .mov-filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:9px;margin-bottom:12px}
+#page-movements .mov-filter-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:9px;
+  margin-bottom:12px;
+  transition:all var(--motion-base);
+}
 #page-movements .mov-type-pill{
   display:inline-flex;
   align-items:center;
