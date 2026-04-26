@@ -209,19 +209,48 @@ body.dark-mode .status-pending{color:#fbbf24}
 }
 
 /* ═══════════════════════════════════════════════════════════
-   MOVEMENTS — Mobile filter panel polish
+   MOVEMENTS — Compact collapsible filter panel
    ═══════════════════════════════════════════════════════════ */
+#page-movements .mov-filter-topbar{display:flex;align-items:center;gap:10px;margin-bottom:0}
+#page-movements .mov-filter-topbar .mov-search-wrap{flex:1;min-width:0}
+#page-movements .mov-filter-toggle{display:none;align-items:center;gap:6px;padding:9px 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-pill);font-size:.78rem;font-weight:700;color:var(--text);cursor:pointer;transition:all var(--motion-fast);flex-shrink:0;height:38px}
+#page-movements .mov-filter-toggle:hover{border-color:var(--accent);color:var(--accent)}
+#page-movements .mov-filter-toggle:active{transform:scale(.97)}
+#page-movements .mov-filter-toggle .mov-filter-chevron{transition:transform var(--motion-base)}
+#page-movements .mov-filter-card.open .mov-filter-toggle .mov-filter-chevron{transform:rotate(180deg)}
+#page-movements .mov-filter-toggle .mov-filter-badge{background:var(--accent);color:#fff;font-size:.65rem;font-weight:800;min-width:18px;height:18px;border-radius:var(--r-pill);padding:0 5px;display:inline-flex;align-items:center;justify-content:center;line-height:1}
+#page-movements .mov-filter-dates{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+
+/* Desktop: show everything inline (no collapse) */
+@media (min-width:769px){
+  #page-movements .mov-filter-topbar{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:end}
+  #page-movements .mov-filter-body{display:block!important}
+  #page-movements .mov-filter-toggle{display:none}
+  #page-movements .mov-filter-dates{display:contents}
+  #page-movements .mov-filter-pills{margin-top:14px}
+}
+
+/* Mobile: collapsed by default, slides open with smooth animation */
 @media (max-width:768px){
-  #page-movements .mov-filter-card{padding:12px;border-radius:var(--r-md)}
-  #page-movements .mov-search-wrap input{font-size:.92rem}
-  #page-movements .mov-type-pill{font-size:.72rem;padding:6px 10px;border-radius:var(--r-pill);min-height:32px}
+  #page-movements .mov-filter-card{padding:10px 12px;border-radius:var(--r-md);box-shadow:var(--shadow-sm)}
+  #page-movements .mov-filter-toggle{display:inline-flex}
+  #page-movements .mov-filter-body{max-height:0;overflow:hidden;transition:max-height var(--motion-slow),opacity var(--motion-base),margin-top var(--motion-base);opacity:0;margin-top:0}
+  #page-movements .mov-filter-card.open .mov-filter-body{max-height:600px;opacity:1;margin-top:10px}
+  #page-movements .mov-filter-dates{margin-top:0;gap:8px}
+  #page-movements .mov-filter-dates input[type="date"]{min-width:0!important;width:100%;font-size:.85rem}
+  #page-movements .mov-search-wrap input{font-size:.92rem;height:38px}
+  /* Filter pills layout — wrap and group nicely */
+  #page-movements .mov-filter-pills{gap:6px!important;padding-top:10px;border-top:1px dashed var(--border);margin-top:10px}
+  #page-movements .mov-filter-pills>span{font-size:.7rem!important;width:100%;margin:0 0 2px!important;display:block}
+  #page-movements .mov-filter-pills>div{display:none!important}
+  #page-movements .mov-type-pill{font-size:.72rem;padding:7px 12px;border-radius:var(--r-pill);min-height:32px;flex-shrink:0}
   #page-movements .mov-type-pill svg{width:11px;height:11px}
-  /* Compact KPI strip on mobile */
+  /* Compact KPI strip */
   #page-movements .kpi-strip{gap:8px;padding-bottom:6px}
   #page-movements .kpi-strip .kpi{padding:10px 12px;min-width:130px}
   #page-movements .kpi-strip .kpi-val{font-size:.95rem}
   #page-movements .kpi-strip .kpi-label{font-size:.65rem;margin-top:2px}
-  /* Hide desktop table on mobile, show mobile cards (already exists) */
+  /* Hide desktop table on mobile, show mobile cards */
   #page-movements #mov-table-wrap{display:none}
   #page-movements #mov-mobile-list{display:flex;flex-direction:column;gap:8px}
 }
@@ -1895,24 +1924,35 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
   </div>
 
   <!-- Filter Card -->
-  <div class="mov-filter-card">
-    <!-- Top row: search + dates -->
-    <div style="display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:end;margin-bottom:14px">
+  <div class="mov-filter-card" id="mov-filter-card">
+    <!-- Compact top bar (always visible): search + collapse toggle -->
+    <div class="mov-filter-topbar">
       <div class="mov-search-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
         <input type="text" id="mov-search" placeholder="بحث عميل، مرجع، هاتف، ملاحظات..." oninput="debouncedRenderMovements()">
       </div>
+      <button class="mov-filter-toggle" onclick="toggleMovFilters(this)" aria-expanded="false" aria-controls="mov-filter-body">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+        <span>فلترة</span>
+        <span class="mov-filter-badge" id="mov-filter-badge" style="display:none">0</span>
+        <svg class="mov-filter-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+    </div>
+    <!-- Collapsible filter body -->
+    <div class="mov-filter-body" id="mov-filter-body">
+    <!-- Date row -->
+    <div class="mov-filter-dates">
       <div style="display:flex;flex-direction:column;gap:4px">
         <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px" data-i18n="movFrom">من</label>
-        <input type="date" id="mov-from" style="padding:7px 10px;min-width:140px" onchange="movPage=1;renderMovements()">
+        <input type="date" id="mov-from" style="padding:7px 10px;min-width:140px" onchange="movPage=1;updateMovFilterBadge();renderMovements()">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px" data-i18n="movTo">إلى</label>
-        <input type="date" id="mov-to" style="padding:7px 10px;min-width:140px" onchange="movPage=1;renderMovements()">
+        <input type="date" id="mov-to" style="padding:7px 10px;min-width:140px" onchange="movPage=1;updateMovFilterBadge();renderMovements()">
       </div>
     </div>
     <!-- Filter pills -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <div class="mov-filter-pills" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <span style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-left:4px" data-i18n="movType">نوع</span>:
       <button class="mov-type-pill active" onclick="setMovFilter('all',this)" data-i18n="filterAll">الكل</button>
       <button class="mov-type-pill pill-green" onclick="setMovFilter('مبيعات',this)" data-i18n="txSales">
@@ -1946,6 +1986,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
         ملغي
       </button>
     </div>
+    </div><!-- /mov-filter-body -->
   </div>
 
   <!-- Desktop Table -->
@@ -6003,7 +6044,32 @@ const debouncedRenderMovements = debounce(() => { movPage = 1; renderMovements()
 function setMovFilter(f, btn, type) {
   movPage = 1;
   if (type === 'status') { movStatusFilter = f; movFilter = 'all'; } else { movFilter = f; movStatusFilter = ''; }
-  qsa('#page-movements .mov-type-pill').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderMovements();
+  qsa('#page-movements .mov-type-pill').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+  updateMovFilterBadge();
+  renderMovements();
+}
+
+function toggleMovFilters(btn) {
+  const card = qs('#mov-filter-card');
+  if (!card) return;
+  const isOpen = card.classList.toggle('open');
+  if (btn) btn.setAttribute('aria-expanded', String(isOpen));
+}
+
+function updateMovFilterBadge() {
+  const badge = qs('#mov-filter-badge');
+  if (!badge) return;
+  let count = 0;
+  if (movFilter && movFilter !== 'all') count++;
+  if (movStatusFilter) count++;
+  if (qs('#mov-from')?.value) count++;
+  if (qs('#mov-to')?.value) count++;
+  if (count > 0) {
+    badge.textContent = String(count);
+    badge.style.display = 'inline-flex';
+  } else {
+    badge.style.display = 'none';
+  }
 }
 
 // Customer history auto-fill
