@@ -51,6 +51,15 @@ export class Settings {
 
   @Prop({ default: false })
   darkMode: boolean;
+
+  @Prop({ default: '2.4.0' })
+  systemVersion: string;
+
+  @Prop({ type: Date, default: () => new Date() })
+  lastVersionUpdate: Date;
+
+  @Prop({ type: Date, default: () => new Date() })
+  lastLiveUpload: Date;
 }
 
 export const SettingsSchema = SchemaFactory.createForClass(Settings);

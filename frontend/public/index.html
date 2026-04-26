@@ -2378,29 +2378,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 </div>
 
 <!-- System Version & Upload Info Footer -->
-<div style="margin-top:40px;padding-top:28px;border-top:1px solid var(--border)">
-<div style="background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:16px;text-align:center">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:0">
-<div>
-<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:4px">
-<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1rem;height:1rem" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/><circle cx="12" cy="12" r="3"/></svg>
-<span style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">إصدار النظام</span>
-</div>
-<div style="font-size:.9rem;font-weight:600;color:var(--text)">2.4.0</div>
-<div style="font-size:.75rem;color:var(--muted);margin-top:2px">تاريخ التحديث: 26/04/2026</div>
-</div>
-<div>
-<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:4px">
-<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1rem;height:1rem" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-<span style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">آخر رفع أونلاين</span>
-</div>
-<div style="font-size:.9rem;font-weight:600;color:var(--text)">26/04/2026</div>
-<div style="font-size:.75rem;color:var(--muted);margin-top:2px">الساعة: 22:15</div>
-</div>
-</div>
-</div>
-</div>
-</div>
+<div style="margin-top:40px;padding-top:28px;border-top:1px solid var(--border)" id="settings-version-footer"></div>
 
 <!-- Profile -->
 <div class="page" id="page-profile">
@@ -10126,8 +10104,46 @@ function renderSettings() {
     </tr>`).join('') : '<tr><td colspan="4" class="empty-state">لا توجد شركات شحن</td></tr>';
   qs('#set-dark').checked = document.body.classList.contains('dark-mode');
   qs('#set-lang').value = currentLang;
+  // Render version footer
+  renderVersionFooter();
   // Load backup list when settings page is rendered (silently, without notifications)
   loadBackupList(false).catch(() => {});
+}
+
+function renderVersionFooter() {
+  const footerEl = qs('#settings-version-footer');
+  if (!footerEl || !settings) return;
+
+  const sysVersion = settings.systemVersion || '2.4.0';
+  const lastUpdate = settings.lastVersionUpdate ? new Date(settings.lastVersionUpdate) : new Date();
+  const lastUpload = settings.lastLiveUpload ? new Date(settings.lastLiveUpload) : new Date();
+
+  const updateDateStr = lastUpdate.toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '/');
+  const uploadDateStr = lastUpload.toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '/');
+  const uploadTimeStr = lastUpload.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+
+  footerEl.innerHTML = `
+    <div style="background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:16px;text-align:center">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:0">
+        <div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:4px">
+            <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1rem;height:1rem" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/><circle cx="12" cy="12" r="3"/></svg>
+            <span style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">إصدار النظام</span>
+          </div>
+          <div style="font-size:.9rem;font-weight:600;color:var(--text)">${esc(sysVersion)}</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:2px">تاريخ التحديث: ${esc(updateDateStr)}</div>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:4px">
+            <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1rem;height:1rem" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">آخر رفع أونلاين</span>
+          </div>
+          <div style="font-size:.9rem;font-weight:600;color:var(--text)">${esc(uploadDateStr)}</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:2px">الساعة: ${esc(uploadTimeStr)}</div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 async function saveDefaultPrices() {
   settings.cairoPrice = Number(qs('#set-cairo-price').value) || 0;
