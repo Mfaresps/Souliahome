@@ -23,7 +23,148 @@ body.dark-mode{
 --accent:#4ade80;--text:#e8f5ee;--muted:#7faa8e;
 }
 html{font-size:14px}
-body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.01em}
+
+/* ═══════════════════════════════════════════════════════════
+   UNIFIED DESIGN SYSTEM — additive layer (Apr 2026)
+   Lifts visual quality across all pages without touching markup or logic.
+   Tokens: spacing, radius, shadows, typography, motion.
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
+  --space-5:20px; --space-6:24px; --space-8:32px; --space-10:40px;
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:20px; --r-pill:999px;
+  --shadow-xs:0 1px 2px rgba(15,31,22,.04);
+  --shadow-sm:0 1px 3px rgba(15,31,22,.06),0 1px 2px rgba(15,31,22,.04);
+  --shadow-md:0 4px 12px rgba(15,31,22,.06),0 2px 4px rgba(15,31,22,.04);
+  --shadow-lg:0 12px 28px rgba(15,31,22,.08),0 4px 10px rgba(15,31,22,.05);
+  --shadow-xl:0 20px 50px rgba(15,31,22,.12),0 8px 16px rgba(15,31,22,.06);
+  --ring-focus:0 0 0 3px rgba(45,122,79,.18);
+  --ease-out:cubic-bezier(0.16,1,0.3,1);
+  --ease-in-out:cubic-bezier(0.65,0,0.35,1);
+  --motion-fast:.15s var(--ease-out);
+  --motion-base:.22s var(--ease-out);
+  --motion-slow:.32s var(--ease-out);
+}
+body.dark-mode{
+  --shadow-xs:0 1px 2px rgba(0,0,0,.2);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.25),0 1px 2px rgba(0,0,0,.2);
+  --shadow-md:0 4px 12px rgba(0,0,0,.3),0 2px 4px rgba(0,0,0,.2);
+  --shadow-lg:0 12px 28px rgba(0,0,0,.4),0 4px 10px rgba(0,0,0,.25);
+  --shadow-xl:0 20px 50px rgba(0,0,0,.5),0 8px 16px rgba(0,0,0,.3);
+  --ring-focus:0 0 0 3px rgba(74,222,128,.25);
+}
+
+/* —— Form inputs: better focus rings & touch targets —— */
+input,select,textarea{transition:border-color var(--motion-fast),box-shadow var(--motion-fast),background var(--motion-fast)}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:var(--ring-focus)}
+input:hover:not(:focus):not(:disabled),select:hover:not(:focus):not(:disabled){border-color:var(--muted)}
+
+/* —— Buttons: smoother motion, better press feedback —— */
+.btn{transition:transform var(--motion-fast),background var(--motion-fast),box-shadow var(--motion-fast),opacity var(--motion-fast);will-change:transform}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+.btn:active{transform:translateY(0);box-shadow:none}
+.btn-primary{box-shadow:var(--shadow-xs)}
+.btn-primary:hover{box-shadow:var(--shadow-md)}
+.btn:focus-visible{outline:none;box-shadow:var(--ring-focus)}
+
+/* —— Cards: refined shadow & subtle hover lift —— */
+.card{transition:box-shadow var(--motion-base),transform var(--motion-base),border-color var(--motion-base)}
+.card:hover{box-shadow:var(--shadow-md)}
+
+/* —— Tables: cleaner spacing & smoother row hover —— */
+table{font-variant-numeric:tabular-nums}
+th{letter-spacing:.02em;text-transform:uppercase;font-size:.72rem}
+tr{transition:background var(--motion-fast)}
+tr:hover{background:var(--primary-pale)}
+body.dark-mode tr:hover{background:rgba(45,122,79,.08)}
+
+/* —— Headings: better line-height for Arabic —— */
+h1,h2,h3,h4,h5,h6{line-height:1.35;letter-spacing:-0.015em}
+.page-title{font-weight:800;letter-spacing:-0.02em}
+.page-subtitle{color:var(--muted);font-size:.85rem;line-height:1.5}
+
+/* —— Badges: pill-shaped with subtle bg —— */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:var(--r-pill);font-size:.72rem;font-weight:700;letter-spacing:.01em;line-height:1.4}
+
+/* —— KPI cards: glass-like polish —— */
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;transition:transform var(--motion-base),box-shadow var(--motion-base),border-color var(--motion-base);position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 0%,rgba(255,255,255,.04) 100%);pointer-events:none;border-radius:inherit}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--kpi-color,var(--accent))}
+.kpi-val{font-weight:800;font-size:1.25rem;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+.kpi-label{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px}
+
+/* —— Filter cards: elevated, pill filters polish —— */
+.filter-card{box-shadow:var(--shadow-sm);transition:box-shadow var(--motion-base)}
+.filter-card:focus-within{box-shadow:var(--shadow-md)}
+
+/* —— Pills (filter chips): smoother active state —— */
+.tab-btn,.mov-type-pill,.s-tab,.type-btn{transition:all var(--motion-fast);font-weight:600}
+.tab-btn:hover,.mov-type-pill:hover,.s-tab:hover{transform:translateY(-1px)}
+
+/* —— Modal: smoother enter/exit —— */
+.modal-overlay{transition:opacity var(--motion-base);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.modal{box-shadow:var(--shadow-xl);border-radius:var(--r-lg);transition:transform var(--motion-base),opacity var(--motion-base)}
+
+/* —— Toast: friendlier shape —— */
+.toast-container{display:flex;flex-direction:column;gap:8px}
+
+/* —— Sidebar: refined active state —— */
+.sidebar-item{transition:background var(--motion-fast),color var(--motion-fast),padding var(--motion-fast)}
+
+/* —— Header: subtle elevation —— */
+#header{box-shadow:var(--shadow-sm);transition:box-shadow var(--motion-base)}
+
+/* —— Dropdown menu: micro-interaction polish —— */
+.dd-menu-portal{box-shadow:var(--shadow-lg)}
+.dd-menu-portal .dd-item{transition:background var(--motion-fast),transform var(--motion-fast)}
+.dd-menu-portal .dd-item:hover{background:var(--primary-pale);transform:translateX(-2px)}
+
+/* —— Page transitions —— */
+.page{animation:pageEnter var(--motion-slow)}
+@keyframes pageEnter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* —— Scrollbar polish (desktop) —— */
+@media (min-width:769px){
+  *::-webkit-scrollbar{width:8px;height:8px}
+  *::-webkit-scrollbar-track{background:transparent}
+  *::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+  *::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+}
+
+/* —— Status color tokens (consistent badges across pages) —— */
+.status-completed{background:rgba(22,163,74,.12);color:var(--green)}
+.status-pending{background:rgba(245,158,11,.14);color:#b45309}
+.status-cancelled{background:rgba(220,38,38,.12);color:var(--red)}
+.status-info{background:rgba(21,101,192,.12);color:var(--blue)}
+body.dark-mode .status-pending{color:#fbbf24}
+
+/* —— Print/export buttons polish —— */
+.btn-outline{transition:all var(--motion-fast)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);background:var(--primary-pale)}
+
+/* —— Mobile: larger touch targets, better spacing —— */
+@media (max-width:768px){
+  html{font-size:14.5px}
+  .btn{min-height:38px;padding:9px 16px}
+  .btn-sm{min-height:32px;padding:6px 12px}
+  input,select,textarea{min-height:40px;font-size:.92rem}
+  .card{border-radius:var(--r-md)}
+  .kpi{padding:12px 14px}
+  .kpi-val{font-size:1.1rem}
+  .actions-dd .dd-toggle{width:36px;height:36px}
+  /* Ensure tappable targets meet 40px minimum */
+  .tab-btn,.mov-type-pill,.s-tab{min-height:34px}
+  /* Smooth horizontal scroll on KPI strips */
+  .kpi-strip,.inv-kpi-scroll{scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+  .kpi-strip>.kpi{scroll-snap-align:start}
+}
+
+/* —— Reduced-motion respect —— */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+
 a{color:var(--accent);text-decoration:none}
 input,select,textarea,button{font-family:inherit;font-size:.875rem}
 input,select,textarea{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;color:var(--text);width:100%;outline:none;transition:border .2s}
