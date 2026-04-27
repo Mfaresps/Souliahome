@@ -1735,6 +1735,53 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 #offline-banner svg{width:18px;height:18px;flex-shrink:0}
 @media(max-width:600px){#offline-banner{font-size:.78rem;padding:8px 12px;gap:8px}#offline-banner svg{width:16px;height:16px}}
 
+/* ─── Cash Pulse — money in/out micro-toast ─── */
+.cash-pulse{
+  position:absolute;top:-14px;left:50%;
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 11px;border-radius:999px;
+  font-size:.78rem;font-weight:800;letter-spacing:.2px;
+  white-space:nowrap;pointer-events:none;z-index:50;
+  font-variant-numeric:tabular-nums;
+  animation:cashPulseIn 1.9s cubic-bezier(.2,.7,.3,1) forwards;
+  box-shadow:0 6px 16px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.6) inset;
+}
+.cash-pulse svg{flex-shrink:0;opacity:.95}
+.cash-pulse-amt{font-weight:900}
+.cash-pulse-cur{font-weight:700;opacity:.85;font-size:.72rem}
+.cash-pulse-add{background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;box-shadow:0 6px 16px rgba(16,185,129,.35),0 0 0 1px rgba(255,255,255,.5) inset}
+.cash-pulse-sub{background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);color:#fff;box-shadow:0 6px 16px rgba(239,68,68,.35),0 0 0 1px rgba(255,255,255,.5) inset}
+.cash-pulse-out{animation:cashPulseOut .32s ease-in forwards !important}
+@keyframes cashPulseIn{
+  0%{opacity:0;transform:translate(-50%,4px) scale(.7)}
+  10%{opacity:1;transform:translate(-50%,-8px) scale(1.08)}
+  18%{opacity:1;transform:translate(-50%,-4px) scale(1)}
+  100%{opacity:1;transform:translate(-50%,-14px) scale(1)}
+}
+@keyframes cashPulseOut{
+  from{opacity:1;transform:translate(-50%,-14px) scale(1)}
+  to{opacity:0;transform:translate(-50%,-28px) scale(.92)}
+}
+.cash-glow-add{animation:cashGlowAdd .9s ease-out}
+.cash-glow-sub{animation:cashGlowSub .9s ease-out}
+@keyframes cashGlowAdd{
+  0%,100%{box-shadow:none}
+  40%{box-shadow:0 0 0 3px rgba(16,185,129,.18),0 8px 24px rgba(16,185,129,.25)}
+}
+@keyframes cashGlowSub{
+  0%,100%{box-shadow:none}
+  40%{box-shadow:0 0 0 3px rgba(239,68,68,.18),0 8px 24px rgba(239,68,68,.25)}
+}
+@media(max-width:480px){
+  .cash-pulse{font-size:.72rem;padding:4px 9px;top:-12px}
+  .cash-pulse-cur{font-size:.66rem}
+  .cash-pulse svg{width:12px;height:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .cash-pulse{animation:cashPulseIn .2s ease forwards}
+  .cash-glow-add,.cash-glow-sub{animation:none}
+}
+
 /* ─── Offline Queue (Pending Sync) ─── */
 #offline-fab{position:fixed;bottom:20px;left:20px;z-index:9000;background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);color:#fff;border:none;border-radius:999px;padding:10px 16px;cursor:pointer;display:flex;align-items:center;gap:8px;font-weight:700;font-size:.85rem;box-shadow:0 8px 24px rgba(217,119,6,.35);transition:transform .15s}
 #offline-fab:hover{transform:translateY(-2px)}
@@ -3674,6 +3721,70 @@ async function oqOnReconnect() {
   _oqLastPromptAt = now;
   const ok = confirm(`عاد الاتصال بالإنترنت.\nلديك ${cnt} معاملة معلقة.\nهل تريد مراجعتها وإرسالها الآن؟`);
   if (ok) navigateTo('pending-sync');
+}
+
+/* ─── Cash Pulse Notifications ─── */
+const _cashPulseQueues = new WeakMap(); // per-anchor queue
+function cashPulse(delta, anchorEl) {
+  if (!anchorEl || !delta || !isFinite(delta)) return;
+  const q = _cashPulseQueues.get(anchorEl) || [];
+  q.push(delta);
+  _cashPulseQueues.set(anchorEl, q);
+  if (q.length === 1) _cashPulseRun(anchorEl);
+}
+function _cashPulseRun(anchorEl) {
+  const q = _cashPulseQueues.get(anchorEl);
+  if (!q || !q.length) return;
+  const delta = q[0];
+  const isAdd = delta > 0;
+  const sign = isAdd ? '+' : '−';
+  const abs = Math.abs(delta);
+  // ensure anchor can host an absolutely positioned child
+  const cs = getComputedStyle(anchorEl);
+  if (cs.position === 'static') anchorEl.style.position = 'relative';
+  const el = document.createElement('div');
+  el.className = 'cash-pulse ' + (isAdd ? 'cash-pulse-add' : 'cash-pulse-sub');
+  el.innerHTML = `
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M5 9h.01M19 15h.01"/></svg>
+    <span class="cash-pulse-amt">${sign}${fmtJ(abs)}</span>
+    <span class="cash-pulse-cur">ج</span>
+  `;
+  anchorEl.appendChild(el);
+  // trigger glow on the anchor itself
+  anchorEl.classList.add(isAdd ? 'cash-glow-add' : 'cash-glow-sub');
+  setTimeout(() => anchorEl.classList.remove('cash-glow-add', 'cash-glow-sub'), 900);
+  setTimeout(() => {
+    el.classList.add('cash-pulse-out');
+    setTimeout(() => {
+      el.remove();
+      q.shift();
+      if (q.length) _cashPulseRun(anchorEl); else _cashPulseQueues.delete(anchorEl);
+    }, 320);
+  }, 2000);
+}
+
+let _lastVaultTotal = null;
+let _lastVaultBySeg = { cash: null, vodafone: null, instapay: null, bank: null };
+function detectVaultPulse() {
+  if (!settings) return;
+  const cash = Number(settings.vaultCash || 0);
+  const vod  = Number(settings.vaultVodafone || 0);
+  const ipy  = Number(settings.vaultInstapay || 0);
+  const bnk  = Number(settings.vaultBank || 0);
+  const total = cash + vod + ipy + bnk;
+  if (_lastVaultTotal !== null) {
+    const delta = total - _lastVaultTotal;
+    if (Math.abs(delta) >= 0.01) {
+      // Pulse on the vault total card (last seg-card) if visible
+      const totalCard = qs('#vault-segs .seg-card:last-child');
+      if (totalCard) cashPulse(delta, totalCard);
+      // Pulse on dashboard treasury widget if visible
+      const dashTotal = qs('#dash-treasury-segs .stat-card:last-child');
+      if (dashTotal) cashPulse(delta, dashTotal);
+    }
+  }
+  _lastVaultTotal = total;
+  _lastVaultBySeg = { cash, vodafone: vod, instapay: ipy, bank: bnk };
 }
 
 function isAdmin() { return currentUser && currentUser.role === 'admin'; }
@@ -10527,6 +10638,8 @@ function switchVaultTab(tabName, btn) {
 }
 
 function renderVaultSegs() {
+  // After DOM update, detect any total change vs. last render → pulse
+  setTimeout(() => detectVaultPulse(), 0);
   const segs = [{ label: 'كاش', val: settings.vaultCash || 0, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>' }, { label: 'فودافون كاش', val: settings.vaultVodafone || 0, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>' }, { label: 'Instapay', val: settings.vaultInstapay || 0, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/><path d="M9.5 10l2.5 2.5 2.5-2.5"/></svg>' }, { label: 'تحويل بنكي', val: settings.vaultBank || 0, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M3 10h18M3 6l9-4 9 4"/><path d="M6 10v12M10 10v12M14 10v12M18 10v12"/></svg>' }];
   const totalBalance = segs.reduce((s, seg) => s + seg.val, 0);
   qs('#vault-segs').innerHTML = segs.map(s => `<div class="seg-card"><div>${s.icon}</div><div class="seg-val">${fmtJ(s.val)}</div><div class="seg-label">${esc(s.label)}</div></div>`).join('') + `<div class="seg-card" style="background:var(--primary-pale);border-color:var(--accent)"><div><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg></div><div class="seg-val" style="color:var(--accent)">${fmtJ(totalBalance)}</div><div class="seg-label" style="font-weight:700">إجمالي الرصيد</div></div>`;
