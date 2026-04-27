@@ -213,7 +213,7 @@ export class SettingsService {
     };
   }
 
-  async downloadBackup(res: any, filename: string) {
+  downloadBackup(res: any, filename: string) {
     const backupDir = this.getBackupDir();
     const filepath = path.join(backupDir, filename);
 
@@ -225,13 +225,21 @@ export class SettingsService {
       return;
     }
 
-    const fileContent = fs.readFileSync(filepath);
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="soulia-${filename}"`,
-    );
-    res.send(fileContent);
+    try {
+      const fileContent = fs.readFileSync(filepath);
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="soulia-${filename}"`,
+      );
+      res.send(fileContent);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'خطأ في تحميل الملف',
+        error: error.message,
+      });
+    }
   }
 
   async deleteAllBackups(): Promise<{ success: boolean; message: string }> {

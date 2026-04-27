@@ -84,8 +84,8 @@ export class SettingsController {
 
   @Roles('admin')
   @Get('download-backup/:filename')
-  async downloadBackup(@Res() res: Response, @Param('filename') filename: string) {
-    return await this.settingsService.downloadBackup(res, filename);
+  downloadBackup(@Res() res: Response, @Param('filename') filename: string) {
+    this.settingsService.downloadBackup(res, filename);
   }
 
   @Roles('admin')
