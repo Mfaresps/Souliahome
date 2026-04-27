@@ -218,12 +218,18 @@ export class SettingsService {
     const filepath = path.join(backupDir, filename);
 
     if (!fs.existsSync(filepath)) {
-      res.status(404).json({ success: false, message: 'ملف النسخة الاحتياطية غير موجود' });
-      return;
+      return res.status(404).json({ success: false, message: 'ملف النسخة الاحتياطية غير موجود' });
     }
 
+    const stat = fs.statSync(filepath);
+    res.header('Content-Length', stat.size.toString());
     res.header('Content-Disposition', `attachment; filename="soulia-${filename}"`);
+
     const fileStream = fs.createReadStream(filepath);
+    fileStream.on('error', (error) => {
+      res.status(500).json({ success: false, message: 'خطأ في تحميل الملف' });
+    });
+
     fileStream.pipe(res);
   }
 
