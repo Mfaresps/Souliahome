@@ -1735,6 +1735,53 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 #offline-banner svg{width:18px;height:18px;flex-shrink:0}
 @media(max-width:600px){#offline-banner{font-size:.78rem;padding:8px 12px;gap:8px}#offline-banner svg{width:16px;height:16px}}
 
+/* ─── Required Field Validation ─── */
+.field-wrap{position:relative}
+input.is-invalid,select.is-invalid,textarea.is-invalid{
+  border-color:#ef4444 !important;
+  box-shadow:0 0 0 3px rgba(239,68,68,.12) !important;
+  background:#fef2f2 !important;
+  animation:fieldShake .35s cubic-bezier(.36,.07,.19,.97) both, fieldGlow 1.4s ease-out;
+}
+input.is-valid,select.is-valid,textarea.is-valid{
+  border-color:#10b981 !important;
+  box-shadow:0 0 0 3px rgba(16,185,129,.1) !important;
+}
+.field-error-msg{
+  display:inline-flex;align-items:center;gap:4px;
+  margin-top:4px;font-size:.72rem;font-weight:600;color:#dc2626;
+  opacity:0;transform:translateY(-2px);
+  transition:opacity .2s,transform .2s;
+  pointer-events:none;
+}
+.field-error-msg.show{opacity:1;transform:translateY(0)}
+.field-error-msg svg{width:12px;height:12px;flex-shrink:0}
+.field-success-icon{
+  position:absolute;top:50%;left:10px;transform:translateY(-50%);
+  width:16px;height:16px;color:#10b981;
+  opacity:0;transition:opacity .2s;pointer-events:none;z-index:2;
+}
+[dir="rtl"] .field-success-icon,html[dir="rtl"] .field-success-icon{left:auto;right:10px}
+.field-wrap.has-success .field-success-icon{opacity:1}
+.field-wrap.has-success input,.field-wrap.has-success select,.field-wrap.has-success textarea{padding-inline-start:34px}
+@keyframes fieldShake{
+  10%,90%{transform:translateX(-1px)}
+  20%,80%{transform:translateX(2px)}
+  30%,50%,70%{transform:translateX(-3px)}
+  40%,60%{transform:translateX(3px)}
+}
+@keyframes fieldGlow{
+  0%{box-shadow:0 0 0 6px rgba(239,68,68,.22)}
+  60%{box-shadow:0 0 0 4px rgba(239,68,68,.14)}
+  100%{box-shadow:0 0 0 3px rgba(239,68,68,.12)}
+}
+@media(prefers-reduced-motion:reduce){
+  input.is-invalid,select.is-invalid,textarea.is-invalid{animation:none}
+}
+@media(max-width:480px){
+  .field-error-msg{font-size:.68rem}
+}
+
 /* ─── Cash Pulse — money in/out micro-toast ─── */
 .cash-pulse{
   position:absolute;top:-14px;left:50%;
@@ -2893,7 +2940,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="card mb-20">
 <h4 class="mb-12" style="font-size:.95rem">تسوية يدوية</h4>
 <div class="grid grid-2 gap-10" id="vault-adjust-grid">
-<div class="form-group"><label>المبلغ</label><input type="number" id="vault-amount" style="font-size:.88rem;padding:6px 8px"></div>
+<div class="form-group"><label>المبلغ <span style="color:#ef4444">*</span></label><input type="number" id="vault-amount" required data-require-nonzero="true" style="font-size:.88rem;padding:6px 8px"></div>
 <div class="form-group"><label>القسم</label><select id="vault-seg" style="font-size:.88rem;padding:6px 8px"><option value="cash">كاش</option><option value="vodafone">فودافون كاش</option><option value="instapay">Instapay</option><option value="bank">تحويل بنكي</option></select></div>
 <div class="form-group"><label>الطريقة</label><select id="vault-method" style="font-size:.88rem;padding:6px 8px"><option value="إضافة">إضافة</option><option value="سحب">سحب</option></select></div>
 <div class="form-group"><label>الوصف</label><input type="text" id="vault-desc" style="font-size:.88rem;padding:6px 8px"></div>
@@ -3722,6 +3769,93 @@ async function oqOnReconnect() {
   const ok = confirm(`عاد الاتصال بالإنترنت.\nلديك ${cnt} معاملة معلقة.\nهل تريد مراجعتها وإرسالها الآن؟`);
   if (ok) navigateTo('pending-sync');
 }
+
+/* ─── Required Field Validation ─── */
+function _fieldValue(el) {
+  if (!el) return '';
+  if (el.type === 'checkbox' || el.type === 'radio') return el.checked ? '1' : '';
+  return (el.value == null ? '' : String(el.value)).trim();
+}
+function _fieldGetMsgEl(el) {
+  let msg = el._errorMsgEl;
+  if (msg && msg.isConnected) return msg;
+  msg = document.createElement('div');
+  msg.className = 'field-error-msg';
+  msg.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>مطلوب</span>';
+  // Insert right after the field (or its wrapper)
+  const host = el.closest('.field-wrap') || el;
+  host.parentNode.insertBefore(msg, host.nextSibling);
+  el._errorMsgEl = msg;
+  return msg;
+}
+function markInvalid(el, customMsg) {
+  if (!el) return;
+  el.classList.remove('is-valid');
+  // Restart shake by removing then re-adding the class on next frame
+  el.classList.remove('is-invalid');
+  void el.offsetWidth;
+  el.classList.add('is-invalid');
+  el.setAttribute('aria-invalid', 'true');
+  const msg = _fieldGetMsgEl(el);
+  if (customMsg) msg.querySelector('span').textContent = customMsg;
+  msg.classList.add('show');
+}
+function markValid(el) {
+  if (!el) return;
+  el.classList.remove('is-invalid');
+  el.removeAttribute('aria-invalid');
+  if (el._errorMsgEl) el._errorMsgEl.classList.remove('show');
+  // Only show green check if explicitly opted-in via data-show-success
+  if (el.dataset.showSuccess === 'true') el.classList.add('is-valid');
+}
+function clearValidation(el) {
+  if (!el) return;
+  el.classList.remove('is-invalid', 'is-valid');
+  el.removeAttribute('aria-invalid');
+  if (el._errorMsgEl) el._errorMsgEl.classList.remove('show');
+}
+function validateRequired(scopeEl) {
+  const scope = scopeEl || document;
+  const fields = scope.querySelectorAll('[required]:not([disabled]), [data-required="true"]:not([disabled])');
+  let firstInvalid = null;
+  let invalidCount = 0;
+  fields.forEach(el => {
+    if (el.offsetParent === null && el.type !== 'hidden') return; // skip hidden
+    const v = _fieldValue(el);
+    if (!v || (el.type === 'number' && Number(v) === 0 && el.dataset.requireNonzero === 'true')) {
+      markInvalid(el);
+      invalidCount++;
+      if (!firstInvalid) firstInvalid = el;
+    } else {
+      markValid(el);
+    }
+  });
+  if (firstInvalid) {
+    try { firstInvalid.focus({ preventScroll: false }); } catch(_) { firstInvalid.focus(); }
+    try { firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(_) {}
+  }
+  return { ok: invalidCount === 0, firstInvalid, invalidCount };
+}
+// Global delegated listeners — auto-validate on blur, recover on input/change
+document.addEventListener('blur', (e) => {
+  const el = e.target;
+  if (!el || !el.matches) return;
+  if (!(el.matches('[required], [data-required="true"]'))) return;
+  if (el.disabled) return;
+  if (!_fieldValue(el)) markInvalid(el);
+}, true);
+document.addEventListener('input', (e) => {
+  const el = e.target;
+  if (!el || !el.classList) return;
+  if (!el.classList.contains('is-invalid')) return;
+  if (_fieldValue(el)) markValid(el);
+}, true);
+document.addEventListener('change', (e) => {
+  const el = e.target;
+  if (!el || !el.classList) return;
+  if (!el.classList.contains('is-invalid')) return;
+  if (_fieldValue(el)) markValid(el);
+}, true);
 
 /* ─── Cash Pulse Notifications ─── */
 const _cashPulseQueues = new WeakMap(); // per-anchor queue
@@ -9501,14 +9635,14 @@ function openExpenseModal(id) {
         </div>
         <div class="form-group">
           <label>الفئة *</label>
-          <select id="em-cat">
+          <select id="em-cat" required>
             <option value="">اختر الفئة</option>
             ${EXP_CATEGORIES.map(c => `<option value="${esc(c)}" ${e?.category === c ? 'selected' : ''}>${getExpCatMeta(c).emoji} ${esc(c)}</option>`).join('')}
           </select>
         </div>
         <div class="form-group" style="grid-column:1/-1">
           <label>الوصف *</label>
-          <input type="text" id="em-desc" value="${esc(e?.desc || '')}" placeholder="اكتب وصف المصروف...">
+          <input type="text" id="em-desc" value="${esc(e?.desc || '')}" placeholder="اكتب وصف المصروف..." required>
         </div>
       </div>
     </div>
@@ -9519,7 +9653,7 @@ function openExpenseModal(id) {
         <div class="form-group">
           <label>المبلغ *</label>
           <div style="position:relative">
-            <input type="number" id="em-amount" value="${e?.amount || ''}" min="0.01" step="0.01" placeholder="0.00" style="padding-left:40px">
+            <input type="number" id="em-amount" value="${e?.amount || ''}" min="0.01" step="0.01" placeholder="0.00" style="padding-left:40px" required data-require-nonzero="true">
             <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--muted);font-size:.85rem">ج.م</span>
           </div>
         </div>
@@ -9587,12 +9721,11 @@ function handleExpAttachment(input) {
 }
 async function saveExpense(id) {
   const btn = qs('#em-save-btn');
+  const formScope = qs('#em-cat')?.closest('.exp-form-section')?.parentElement || document.getElementById('modal-overlay') || document;
+  if (!validateRequired(formScope).ok) { toast('يرجى إكمال الحقول المطلوبة', true); return; }
   const cat = (qs('#em-cat')?.value || '').trim();
-  if (!cat) { toast('الفئة مطلوبة', true); return; }
   const expenseNo = (qs('#em-expno')?.value || '').trim() || ('EXP-' + Date.now().toString().slice(-5));
   const body = { expenseNo, date: qs('#em-date').value, desc: qs('#em-desc').value, category: cat, amount: Number(qs('#em-amount').value) || 0, account: qs('#em-account').value, notes: qs('#em-notes').value, employee: currentUser?.name || currentUser?.username || '' };
-  if (!body.desc) { toast('الوصف مطلوب', true); return; }
-  if (!body.amount || body.amount <= 0) { toast('المبلغ مطلوب', true); return; }
   if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
   try {
     if (id) {
@@ -10884,8 +11017,10 @@ async function cancelVaultTransaction(txId) {
   }
 }
 async function addVaultEntry() {
+  const adjustCard = qs('#vault-amount')?.closest('.card');
+  if (adjustCard && !validateRequired(adjustCard).ok) { toast('يرجى إكمال الحقول المطلوبة', true); return; }
   const body = { amount: Number(qs('#vault-amount').value) || 0, seg: qs('#vault-seg').value, method: qs('#vault-method').value, desc: qs('#vault-desc').value, accountingJustification: qs('#vault-justification').value || '', date: new Date().toISOString(), employee: currentUser?.name || currentUser?.username || '' };
-  if (!body.amount) { toast('أدخل المبلغ', true); return; }
+  if (!body.amount) { markInvalid(qs('#vault-amount')); toast('أدخل المبلغ', true); return; }
   if (body.method === 'سحب') body.amount = -Math.abs(body.amount);
   // Balance check for withdrawal
   if (body.amount < 0) {
