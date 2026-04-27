@@ -1586,7 +1586,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 .fx-btn-count{background:rgba(255,255,255,.25);padding:1px 7px;border-radius:99px;font-size:.7rem;font-weight:800;min-width:18px;text-align:center}
 .fx-btn:not(.active) .fx-btn-count{background:var(--primary-pale);color:var(--primary)}
 .fx-sort-wrap{position:relative}
-.fx-sort-menu{position:absolute;top:calc(100% + 6px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:200px;z-index:50;padding:4px;opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .18s,transform .18s}
+.fx-sort-menu{position:absolute;top:calc(100% + 6px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.14);min-width:200px;z-index:300;padding:4px;opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .18s,transform .18s}
 .fx-sort-menu.show{opacity:1;transform:translateY(0);pointer-events:auto}
 .fx-sort-item{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:7px;cursor:pointer;font-size:.84rem;color:var(--text);transition:background .12s}
 .fx-sort-item:hover{background:var(--primary-pale)}
@@ -1640,22 +1640,24 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 .fx-toolbar-collapsible.expanded .fx-collapse-label::before{content:"إخفاء الفلاتر"}
 .fx-toolbar-collapsible .fx-collapse-label{font-size:0;line-height:1}
 .fx-toolbar-collapsible .fx-collapse-label::before{font-size:.72rem}
-.fx-toolbar-collapsible-body{overflow:hidden;display:flex;flex-direction:column;gap:10px;transition:max-height .3s cubic-bezier(.4,0,.2,1),opacity .25s,margin:.25s;max-height:1500px;opacity:1}
-.fx-toolbar-collapsible.collapsed .fx-toolbar-collapsible-body{max-height:0;opacity:0;margin:0;pointer-events:none}
+.fx-toolbar-collapsible-body{overflow:visible;display:flex;flex-direction:column;gap:10px;transition:max-height .3s cubic-bezier(.4,0,.2,1),opacity .25s,margin:.25s;max-height:1500px;opacity:1}
+.fx-toolbar-collapsible.collapsed .fx-toolbar-collapsible-body{max-height:0;overflow:hidden;opacity:0;margin:0;pointer-events:none}
 
 /* Compact summary line under movements toolbar */
 .mov-mini-summary{display:none;font-size:.78rem;color:var(--muted);font-weight:600;padding:6px 8px 0;border-top:1px dashed var(--border);margin-top:2px;flex-wrap:wrap;align-items:center;gap:4px 12px}
 .mov-mini-summary.show{display:flex}
 
 /* Date quick-filter dropdown */
-.fx-date-header{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 6px;font-size:.78rem;font-weight:700;color:var(--text);border-bottom:1px solid var(--border);margin-bottom:4px}
-.fx-date-clear-x{width:24px;height:24px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:inherit;font-size:.85rem;line-height:1;transition:all .15s}
+.fx-date-header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 8px;font-size:.82rem;font-weight:700;color:var(--text);border-bottom:1px solid var(--border);margin-bottom:4px}
+.fx-date-clear-x{height:26px;padding:0 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:inherit;font-size:.72rem;font-weight:700;line-height:1;transition:all .15s;white-space:nowrap}
 .fx-date-clear-x:hover{background:var(--red);color:#fff;border-color:var(--red)}
-.fx-date-presets{display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:2px}
-.fx-date-preset{display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:7px;cursor:pointer;font-size:.78rem;color:var(--text);transition:background .12s;border:1px solid transparent;background:none;text-align:start;font-family:inherit;width:100%}
-.fx-date-preset:hover{background:var(--primary-pale)}
-.fx-date-preset.active{background:var(--primary-pale);color:var(--primary);font-weight:700;border-color:rgba(0,107,66,.18)}
-.fx-date-preset-icon{font-size:.85rem;flex-shrink:0}
+.fx-date-presets{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px}
+.fx-date-preset{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:.82rem;color:var(--text);transition:background .12s,color .12s,border-color .12s;border:1.5px solid transparent;background:none;text-align:start;font-family:inherit;width:100%;font-weight:500}
+.fx-date-preset:hover{background:var(--primary-pale);color:var(--primary)}
+.fx-date-preset.active{background:var(--primary-pale);color:var(--primary);font-weight:700;border-color:rgba(0,107,66,.22)}
+.fx-date-preset svg{flex-shrink:0;color:var(--muted)}
+.fx-date-preset.active svg{color:var(--primary)}
+.fx-date-preset-icon{display:flex;align-items:center;flex-shrink:0}
 .fx-date-divider{height:1px;background:var(--border);margin:6px 6px}
 .fx-date-custom{padding:2px 6px 8px}
 .fx-date-custom-title{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:8px}
@@ -1682,14 +1684,16 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 .fx-btn-icon.active{background:var(--primary);border-color:var(--primary);color:#fff}
 .fx-btn-icon.active .fx-btn-count{background:rgba(255,255,255,.3);color:#fff}
 
-/* Date dropdown — desktop centered/RTL safe */
-#mov-date-menu{
-  position:absolute;top:calc(100% + 6px);inset-inline-end:0;left:auto;right:auto;
-  background:var(--surface);border:1px solid var(--border);border-radius:12px;
-  box-shadow:0 12px 32px rgba(0,0,0,.14);min-width:280px;z-index:80;padding:6px;
-}
-[dir=rtl] #mov-date-menu{inset-inline-end:0;inset-inline-start:auto}
+/* Date dropdown — uses JS-positioned (portal-style) via position:fixed on show */
 .fx-date-quick{position:relative}
+/* Sort menu z-index */
+#mov-sort-menu{z-index:300}
+/* Override for mov menus — will be positioned by JS on open */
+#mov-date-menu,#mov-sort-menu{
+  position:fixed;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  box-shadow:0 12px 32px rgba(0,0,0,.14);z-index:300;padding:6px;
+}
 
 /* === Mobile (≤640px) === */
 @media (max-width:640px){
@@ -1708,12 +1712,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
   .fx-mov-controls .fx-btn-icon{flex:1 1 0;min-width:0;padding:8px 6px;justify-content:center;height:36px}
   .fx-mov-controls .fx-btn-icon svg{width:13px;height:13px}
 
-  /* Date menu becomes full-width bottom sheet */
-  #mov-date-menu{
-    position:fixed !important;top:auto !important;left:8px !important;right:8px !important;
-    bottom:12px;width:auto !important;min-width:0 !important;max-height:65vh;overflow-y:auto;
-    box-shadow:0 -8px 24px rgba(0,0,0,.18);
-  }
+  /* Date/sort menus — positioned by JS (_positionFxMenu), no CSS override needed */
 
   .fx-results-count{font-size:.7rem;padding:2px 4px;flex:1 1 100%;text-align:center}
   .mov-mini-summary{font-size:.7rem;gap:3px 8px}
@@ -7694,12 +7693,12 @@ const FX_SORT_OPTIONS = {
     { id: 'date-asc',   label: 'الأقدم أولاً',          icon: '🕒' },
   ],
   mov: [
-    { id: 'date-desc',   label: 'الأحدث أولاً',         icon: '🆕' },
-    { id: 'date-asc',    label: 'الأقدم أولاً',         icon: '🕐' },
-    { id: 'amount-desc', label: 'الأعلى قيمة',          icon: '💰' },
-    { id: 'amount-asc',  label: 'الأقل قيمة',           icon: '💵' },
-    { id: 'client-asc',  label: 'العميل: أ → ي',        icon: '🔤' },
-    { id: 'client-desc', label: 'العميل: ي → أ',        icon: '🔤' },
+    { id: 'date-desc',   label: 'الأحدث أولاً',         icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>' },
+    { id: 'date-asc',    label: 'الأقدم أولاً',         icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h13M3 8h9m-9 4h9m5 4l-4 4m0 0l-4-4m4 4V8"/></svg>' },
+    { id: 'amount-desc', label: 'الأعلى قيمة',          icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>' },
+    { id: 'amount-asc',  label: 'الأقل قيمة',           icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>' },
+    { id: 'client-asc',  label: 'العميل: أ → ي',        icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
+    { id: 'client-desc', label: 'العميل: ي → أ',        icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
   ],
 };
 
@@ -7715,6 +7714,7 @@ function clearFxSearch(ctx) {
 
 function toggleFxSortMenu(ctx, e) {
   if (e) e.stopPropagation();
+  const btn = qs('#' + ctx + '-sort-btn');
   const menu = qs('#' + ctx + '-sort-menu');
   if (!menu) return;
   const isOpen = menu.classList.contains('show');
@@ -7722,16 +7722,19 @@ function toggleFxSortMenu(ctx, e) {
   if (isOpen) return;
   const opts = FX_SORT_OPTIONS[ctx];
   const current = fxState[ctx].sort;
-  menu.innerHTML = opts.map(o => `
+  const sortSvg = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>`;
+  menu.innerHTML = `<div class="fx-date-header">${sortSvg} ترتيب النتائج</div>` + opts.map(o => `
     <div class="fx-sort-item ${o.id === current ? 'active' : ''}" onclick="setFxSort('${ctx}','${o.id}')">
-      <span style="font-size:.85rem">${o.icon}</span>
-      <span>${o.label}</span>
+      <span class="fx-sort-icon" style="display:flex;align-items:center;flex-shrink:0;color:var(--muted)">${o.icon}</span>
+      <span style="flex:1">${o.label}</span>
       <svg class="fx-sort-check" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
     </div>`).join('');
+  if (btn) _positionFxMenu(btn, menu);
   menu.classList.add('show');
 }
 document.addEventListener('click', (e) => {
   if (e.target.closest('.fx-sort-wrap')) return;
+  if (e.target.closest('.fx-sort-menu')) return;
   qsa('.fx-sort-menu.show').forEach(m => m.classList.remove('show'));
 });
 
@@ -8753,29 +8756,68 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ===== Date quick-filter dropdown ===== */
+function _positionFxMenu(btn, menu) {
+  const r = btn.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const isMobile = vw <= 640;
+  if (isMobile) {
+    const navH = 72 + (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--safe-area-bottom') || '0') || 0);
+    menu.style.position = 'fixed';
+    menu.style.left = '8px';
+    menu.style.right = '8px';
+    menu.style.bottom = (navH + 6) + 'px';
+    menu.style.top = 'auto';
+    menu.style.width = 'auto';
+    menu.style.minWidth = '0';
+    menu.style.maxHeight = '55vh';
+    menu.style.overflowY = 'auto';
+    menu.style.borderRadius = '16px';
+  } else {
+    const menuW = 300;
+    let left = r.right - menuW;
+    if (left < 8) left = 8;
+    if (left + menuW > vw - 8) left = vw - menuW - 8;
+    menu.style.position = 'fixed';
+    menu.style.top = (r.bottom + 6) + 'px';
+    menu.style.left = left + 'px';
+    menu.style.right = 'auto';
+    menu.style.bottom = 'auto';
+    menu.style.width = menuW + 'px';
+    menu.style.minWidth = '0';
+    menu.style.maxHeight = '80vh';
+    menu.style.overflowY = 'auto';
+    menu.style.borderRadius = '12px';
+  }
+}
+
 function toggleMovDateMenu(e) {
   if (e) e.stopPropagation();
-  const wrap = qs('#mov-date-btn')?.parentElement;
-  if (!wrap) return;
+  const btn = qs('#mov-date-btn');
+  if (!btn) return;
   const menu = qs('#mov-date-menu');
   if (!menu) return;
   const isOpen = menu.classList.contains('show');
   qsa('.fx-sort-menu.show').forEach(m => m.classList.remove('show'));
   if (isOpen) return;
   const fs = fxState.mov;
+  const _svgCal = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+  const _svgSun = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+  const _svgBack = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>`;
+  const _svgWeek = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>`;
+  const _svgMonth = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><rect x="7" y="14" width="4" height="4" rx="1"/></svg>`;
   const presets = [
-    { id: 'today',     label: 'اليوم',         icon: '📅' },
-    { id: 'yesterday', label: 'أمس',           icon: '📆' },
-    { id: 'last7',     label: 'آخر ٧ أيام',    icon: '🗓️' },
-    { id: 'last30',    label: 'آخر ٣٠ يوم',    icon: '🗓️' },
-    { id: 'thisMonth', label: 'هذا الشهر',     icon: '📊' },
-    { id: 'lastMonth', label: 'الشهر الماضي',  icon: '📊' },
+    { id: 'today',     label: 'اليوم',         icon: _svgSun },
+    { id: 'yesterday', label: 'أمس',           icon: _svgBack },
+    { id: 'last7',     label: 'آخر ٧ أيام',    icon: _svgWeek },
+    { id: 'last30',    label: 'آخر ٣٠ يوم',    icon: _svgWeek },
+    { id: 'thisMonth', label: 'هذا الشهر',     icon: _svgMonth },
+    { id: 'lastMonth', label: 'الشهر الماضي',  icon: _svgMonth },
   ];
   const active = _movDateActivePreset();
   menu.innerHTML = `
     <div class="fx-date-header">
-      <span>📅 فلتر التاريخ</span>
-      ${(fs.dateFrom || fs.dateTo) ? `<button class="fx-date-clear-x" onclick="clearMovDate()" title="مسح">✕</button>` : ''}
+      <span style="display:flex;align-items:center;gap:6px">${_svgCal} فلتر التاريخ</span>
+      ${(fs.dateFrom || fs.dateTo) ? `<button class="fx-date-clear-x" onclick="clearMovDate()" title="مسح التاريخ" style="font-size:.7rem">مسح ✕</button>` : ''}
     </div>
     <div class="fx-date-presets">
       ${presets.map(p => `
@@ -8801,10 +8843,11 @@ function toggleMovDateMenu(e) {
         </label>
       </div>
     </div>`;
+  _positionFxMenu(btn, menu);
   menu.classList.add('show');
 }
 document.addEventListener('click', (e) => {
-  if (e.target.closest('.fx-date-quick')) return;
+  if (e.target.closest('.fx-date-quick') || e.target.closest('#mov-date-menu')) return;
   qs('#mov-date-menu')?.classList.remove('show');
 });
 
