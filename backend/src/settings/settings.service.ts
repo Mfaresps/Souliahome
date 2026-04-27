@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, StreamableFile } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
 import { Settings, SettingsDocument } from './schemas/settings.schema';
@@ -213,19 +213,18 @@ export class SettingsService {
     };
   }
 
-  async downloadBackupAsStream(filename: string): Promise<StreamableFile> {
+  async downloadBackupStream(res: any, filename: string): Promise<void> {
     const backupDir = this.getBackupDir();
     const filepath = path.join(backupDir, filename);
 
     if (!fs.existsSync(filepath)) {
-      throw new BadRequestException('ملف النسخة الاحتياطية غير موجود');
+      res.status(404).json({ success: false, message: 'ملف النسخة الاحتياطية غير موجود' });
+      return;
     }
 
-    const file = fs.createReadStream(filepath);
-    return new StreamableFile(file, {
-      type: 'application/json',
-      disposition: `attachment; filename="soulia-${filename}"`,
-    });
+    res.header('Content-Disposition', `attachment; filename="soulia-${filename}"`);
+    const fileStream = fs.createReadStream(filepath);
+    fileStream.pipe(res);
   }
 
   downloadBackup(res: any, filename: string) {

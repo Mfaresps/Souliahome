@@ -11,8 +11,9 @@ import {
   Res,
   UploadedFile,
   UseInterceptors,
-  StreamableFile,
+  Header,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -85,8 +86,9 @@ export class SettingsController {
 
   @Roles('admin')
   @Get('download-backup/:filename')
-  async downloadBackup(@Param('filename') filename: string): Promise<StreamableFile> {
-    return await this.settingsService.downloadBackupAsStream(filename);
+  @Header('Content-Type', 'application/json')
+  async downloadBackup(@Res() res: Response, @Param('filename') filename: string) {
+    await this.settingsService.downloadBackupStream(res, filename);
   }
 
   @Roles('admin')
