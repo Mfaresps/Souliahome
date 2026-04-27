@@ -681,9 +681,13 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 .tx-item-field{display:flex;flex-direction:column;gap:3px;align-items:center}
 .tx-item-label{font-size:.68rem;color:var(--muted);font-weight:600}
 .tx-item-val{font-weight:700;font-size:.95rem;text-align:center;color:var(--text)}
-.tx-item-qty-input{width:100%;text-align:center;border:1.5px solid var(--border);border-radius:8px;padding:6px;font-weight:700;font-size:.88rem;background:var(--bg);outline:none;transition:border-color .15s}
+.tx-item-qty-input{flex:1;text-align:center;border:1.5px solid var(--border);border-radius:8px;padding:6px;font-weight:700;font-size:.88rem;background:var(--bg);outline:none;transition:border-color .15s}
 .tx-item-qty-input:focus{border-color:var(--accent)}
 .tx-item-qty-input.stock-warn{border-color:var(--red);background:rgba(239,68,68,.08)}
+.qty-btn{background:var(--surface2);border:1.5px solid var(--border);border-radius:6px;padding:6px 8px;font-weight:700;font-size:.9rem;color:var(--text);cursor:pointer;transition:all .15s;min-width:32px}
+.qty-btn:hover{background:var(--border);transform:scale(1.05)}
+.qty-btn:active{transform:scale(0.95)}
+.qty-btn:focus{outline:none;box-shadow:var(--ring-focus)}
 .tx-item-total{color:var(--primary)}
 .tx-item-stock{font-size:.72rem;margin-top:4px;padding:0 30px}
 /* Summary panel */
@@ -5858,6 +5862,15 @@ function addTxItem(productId) {
 }
 function removeTxItem(i) { txItems.splice(i, 1); renderTxItems(); calcTxSummary(); }
 
+function adjustTxItemQty(i, delta) {
+  if (!txItems[i]) return;
+  const newQty = Math.max(1, (txItems[i].qty || 1) + delta);
+  if (!validateItemStock(txItems[i].productId, newQty, i)) return;
+  txItems[i].qty = newQty;
+  renderTxItems();
+  calcTxSummary();
+}
+
 function renderTxItems() {
   if (!txItems.length) {
     qs('#tx-items').innerHTML = `<div onclick="openProductPicker()" class="tx-empty-state">
@@ -5913,7 +5926,11 @@ function renderTxItems() {
         </div>
         <div class="tx-item-field">
           <span class="tx-item-label">الكمية</span>
-          <input type="number" value="${item.qty}" min="1" ${txType === 'مبيعات' && effectiveAvailable !== null && effectiveAvailable >= 0 ? `max="${effectiveAvailable}"` : ''} class="tx-item-qty-input${isOverStock ? ' stock-warn' : ''}" oninput="txItemChanged(${i},'qty',this.value)">
+          <div style="display:flex;align-items:center;gap:4px;width:100%">
+            <button type="button" class="qty-btn qty-btn-minus" onclick="adjustTxItemQty(${i},-1)" title="إنقاص">−</button>
+            <input type="number" value="${item.qty}" min="1" ${txType === 'مبيعات' && effectiveAvailable !== null && effectiveAvailable >= 0 ? `max="${effectiveAvailable}"` : ''} class="tx-item-qty-input${isOverStock ? ' stock-warn' : ''}" oninput="txItemChanged(${i},'qty',this.value)">
+            <button type="button" class="qty-btn qty-btn-plus" onclick="adjustTxItemQty(${i},1)" title="زيادة">+</button>
+          </div>
         </div>
         <div class="tx-item-field">
           <span class="tx-item-label">الإجمالي</span>
