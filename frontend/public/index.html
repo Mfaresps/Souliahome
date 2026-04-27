@@ -10219,7 +10219,7 @@ function buildDepositHistorySection(tx) {
     <div style="margin-top:16px;padding:14px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:10px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid rgba(34,197,94,.3)">
         <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.1em;height:1.1em;color:var(--green)" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
-        <h4 style="margin:0;font-size:.95rem;font-weight:700;color:var(--text)">سجل الدفعات (الديبوزتات)</h4>
+        <h4 style="margin:0;font-size:.95rem;font-weight:700;color:var(--text)">سجل العربونات (الدفعات المقدمة)</h4>
         <span style="margin-left:auto;background:var(--green);color:#fff;padding:4px 12px;border-radius:6px;font-size:.8rem;font-weight:600">${deposits.length} دفعة — ${fmtJ(totalDeposits)} ج</span>
       </div>
       <div style="overflow-x:auto;border:1px solid rgba(34,197,94,.2);border-radius:8px;background:#fff">
@@ -10246,6 +10246,7 @@ function buildDepositHistorySection(tx) {
 function buildPaymentHistorySection(tx) {
   if (!tx.payments || !tx.payments.length) return '';
 
+  const isPurchase = tx.type === 'مشتريات';
   const payments = tx.payments;
   const totalPaid = payments.reduce((sum, p) => sum + (p.amount || p.collectAmount || 0), 0);
 
@@ -10274,8 +10275,8 @@ function buildPaymentHistorySection(tx) {
     <div style="margin-top:16px;padding:14px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);border-radius:10px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid rgba(59,130,246,.3)">
         <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.1em;height:1.1em;color:var(--blue)" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg>
-        <h4 style="margin:0;font-size:.95rem;font-weight:700;color:var(--text)">سجل التحصيل</h4>
-        <span style="margin-left:auto;background:var(--blue);color:#fff;padding:4px 12px;border-radius:6px;font-size:.8rem;font-weight:600">${payments.length} تحصيل — ${fmtJ(totalPaid)} ج</span>
+        <h4 style="margin:0;font-size:.95rem;font-weight:700;color:var(--text)">${isPurchase ? 'سجل السداد' : 'سجل التحصيل'}</h4>
+        <span style="margin-left:auto;background:var(--blue);color:#fff;padding:4px 12px;border-radius:6px;font-size:.8rem;font-weight:600">${payments.length} ${isPurchase ? 'دفعة' : 'تحصيل'} — ${fmtJ(totalPaid)} ج</span>
       </div>
       <div style="overflow-x:auto;border:1px solid rgba(59,130,246,.2);border-radius:8px;background:#fff">
         <table style="width:100%;border-collapse:collapse;font-size:.85rem">
@@ -10283,7 +10284,7 @@ function buildPaymentHistorySection(tx) {
             <tr style="background:rgba(59,130,246,.08);border-bottom:2px solid rgba(59,130,246,.2)">
               <th style="padding:12px;text-align:right;font-weight:700;color:var(--text);width:40px">#</th>
               <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">المبلغ</th>
-              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">طريقة التحصيل</th>
+              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">${isPurchase ? 'طريقة السداد' : 'طريقة التحصيل'}</th>
               <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">التاريخ</th>
               <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">الوقت</th>
               <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">ملاحظات</th>
@@ -10472,12 +10473,12 @@ function showInvoiceDetail(id) {
           <div style="margin:14px 0 8px;padding-top:12px;border-top:2px dashed var(--border)">
             <div style="font-size:.75rem;font-weight:800;color:var(--muted);letter-spacing:.04em;margin-bottom:10px">▸ تفصيل السداد للمورد</div>
             <div class="inv-row" style="background:rgba(34,197,94,.04);padding:8px 10px;border-radius:6px;margin-bottom:4px">
-              <span>المدفوع للمورد (عربون)</span>
+              <span>العربون (المبلغ الأول المدفوع مقدماً)</span>
               <span style="color:var(--green);font-weight:700">${fmtJ(_depositsTotal)} ج</span>
             </div>
             ${_paymentsTotal > 0 ? `
               <div class="inv-row" style="background:rgba(59,130,246,.04);padding:8px 10px;border-radius:6px;margin-bottom:4px">
-                <span>سداد إضافي للمورد</span>
+                <span>السدادات الإضافية</span>
                 <span style="color:var(--blue);font-weight:700">${fmtJ(_paymentsTotal)} ج</span>
               </div>
             ` : ''}
@@ -10485,7 +10486,7 @@ function showInvoiceDetail(id) {
               <span>إجمالي المدفوع</span><span>${fmtJ(_totalCollected)} ج</span>
             </div>
             <div class="inv-row ${(tx.remaining || 0) > 0 ? 'danger' : ''}" style="font-weight:700">
-              <span>${(tx.remaining || 0) > 0 ? '⚠ المتبقي للمورد' : '✓ المتبقي'}</span>
+              <span>${(tx.remaining || 0) > 0 ? '⚠ المتبقي للمورد' : '✓ تم السداد بالكامل'}</span>
               <span>${fmtJ(tx.remaining || 0)} ج</span>
             </div>
           </div>
