@@ -1080,12 +1080,53 @@ body.dark-mode .mov-status.ملغي{background:#450a0a;color:#f87171}
 #inv-table tbody tr.inv-row-selected td:first-child{border-right:3px solid var(--primary)}
 #mov-table tbody tr td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
 #mov-table tbody tr:last-child td{border-bottom:none}
-#mov-table thead th{padding:10px 14px;font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;background:var(--surface2);white-space:nowrap}
+#mov-table thead th{padding:10px 14px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--surface2);white-space:nowrap;border-bottom:2px solid var(--border)}
+#mov-table thead th.col-secondary{color:rgba(var(--muted-rgb,100,116,139),.7);font-size:.68rem;letter-spacing:.3px}
+/* Table column hierarchy */
+.mov-col-employee{color:var(--muted)!important;font-size:.78rem!important;font-weight:500!important}
+.mov-col-ref a{color:var(--accent);font-weight:800;font-size:.88rem}
+.mov-col-total{font-weight:800;font-size:.9rem;color:var(--text)}
+.mov-col-paid{font-weight:600;font-size:.88rem;color:var(--text)}
+.mov-col-remaining-zero{color:var(--muted)!important;font-weight:500}
+.mov-col-remaining-pos{color:var(--red)!important;font-weight:700}
+/* Date cell */
 .mov-date-main{font-size:.85rem;font-weight:700;color:var(--text)}
 .mov-date-sub{font-size:.72rem;color:var(--muted);margin-top:2px}
+/* Client/Supplier cell */
 .mov-client-name{font-weight:700;color:var(--accent);font-size:.88rem;text-decoration:none}
 .mov-client-name:hover{text-decoration:underline}
+/* Amount cell */
 .mov-amount{font-weight:700;font-size:.9rem}
+/* Reference cell — right-aligned, prominent */
+#mov-table .col-ref{text-align:right;font-variant-numeric:tabular-nums}
+/* Type badges — consistent semantic colors */
+.badge-type-sales{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.badge-type-purchase{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
+.badge-type-return{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+.badge-type-exchange{background:#f3e8ff;color:#6d28d9;border:1px solid #ddd6fe}
+body.dark-mode .badge-type-sales{background:#052e16;color:#4ade80;border-color:#14532d}
+body.dark-mode .badge-type-purchase{background:#1e3a5f;color:#93c5fd;border-color:#1d4ed8}
+body.dark-mode .badge-type-return{background:#431407;color:#fb923c;border-color:#7c2d12}
+body.dark-mode .badge-type-exchange{background:#2e1065;color:#c4b5fd;border-color:#4c1d95}
+/* Status badges — refined */
+.badge-status-done{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.badge-status-pending{background:#fff7ed;color:#b45309;border:1px solid #fed7aa}
+.badge-status-cancelled{background:#fee2e2;color:#dc2626;border:1px solid #fecaca}
+.badge-status-debt{background:#fee2e2;color:#dc2626;border:1px solid #fecaca}
+.badge-status-wait{background:#fef9c3;color:#854d0e;border:1px solid #fde047}
+body.dark-mode .badge-status-done{background:#052e16;color:#4ade80;border-color:#14532d}
+body.dark-mode .badge-status-pending{background:#431407;color:#fb923c;border-color:#7c2d12}
+body.dark-mode .badge-status-cancelled{background:#450a0a;color:#f87171;border-color:#7f1d1d}
+body.dark-mode .badge-status-debt{background:#450a0a;color:#f87171;border-color:#7f1d1d}
+body.dark-mode .badge-status-wait{background:#422006;color:#fcd34d;border-color:#78350f}
+/* mini status dot for compact status display */
+.mov-status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:5px;flex-shrink:0;vertical-align:middle}
+.mov-status-dot.done{background:#10b981}
+.mov-status-dot.pending{background:#f59e0b}
+.mov-status-dot.cancelled{background:#ef4444}
+/* Cancel request pill indicator */
+.mov-cancel-req-pill{display:inline-flex;align-items:center;gap:3px;font-size:.65rem;font-weight:700;background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:10px;margin-top:3px;border:1px solid #fde68a}
+body.dark-mode .mov-cancel-req-pill{background:#422006;color:#fcd34d;border-color:#78350f}
 .mov-tab-bar{display:flex;gap:6px;border-bottom:2px solid var(--border);padding-bottom:0;margin-bottom:20px}
 .mov-tab-bar .mov-main-tab{display:flex;align-items:center;gap:7px;padding:10px 18px;font-size:.85rem;font-weight:600;border:none;background:none;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;border-radius:0}
 .mov-tab-bar .mov-main-tab:hover{color:var(--text);background:var(--primary-pale)}
@@ -2793,15 +2834,60 @@ input.is-valid,select.is-valid,textarea.is-valid{
             <th style="width:42px;text-align:center;padding:10px 8px">
               <input type="checkbox" class="checkbox" onchange="toggleAllMov(this)">
             </th>
-            <th data-i18n="date">التاريخ</th>
-            <th data-i18n="type">النوع</th>
-            <th data-i18n="colClientSupplier">العميل / المورد</th>
-            <th style="text-align:center" data-i18n="colRef">المرجع</th>
-            <th data-i18n="colEmployee">الموظف</th>
-            <th style="text-align:center">إجمالي الفاتورة</th>
-            <th style="text-align:center">المدفوع للخزنة</th>
-            <th style="text-align:center">باقي التحصيل</th>
-            <th style="text-align:center" data-i18n="status">الحالة</th>
+            <th data-i18n="date">
+              <span style="display:flex;align-items:center;gap:5px">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                التاريخ
+              </span>
+            </th>
+            <th data-i18n="type">
+              <span style="display:flex;align-items:center;gap:5px">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+                النوع
+              </span>
+            </th>
+            <th data-i18n="colClientSupplier">
+              <span style="display:flex;align-items:center;gap:5px">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                العميل / المورد
+              </span>
+            </th>
+            <th style="text-align:right" data-i18n="colRef">
+              <span style="display:flex;align-items:center;gap:5px">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                المرجع
+              </span>
+            </th>
+            <th class="col-secondary" data-i18n="colEmployee">
+              <span style="display:flex;align-items:center;gap:5px">
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                الموظف
+              </span>
+            </th>
+            <th style="text-align:center">
+              <span style="display:flex;align-items:center;justify-content:center;gap:5px">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+                الفاتورة
+              </span>
+            </th>
+            <th style="text-align:center">
+              <span style="display:flex;align-items:center;justify-content:center;gap:5px">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                المدفوع
+              </span>
+            </th>
+            <th style="text-align:center">
+              <span style="display:flex;align-items:center;justify-content:center;gap:5px">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                المتبقي
+              </span>
+            </th>
+            <th style="text-align:center" data-i18n="status">
+              <span style="display:flex;align-items:center;justify-content:center;gap:5px">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                الحالة
+              </span>
+            </th>
             <th style="width:52px;text-align:center"></th>
           </tr>
         </thead>
@@ -5500,9 +5586,9 @@ function renderDashTable(sel, data, rowFn) {
 function typeBadge(type) {
   if (!type) return '-';
   const t = esc(type);
-  if (type.includes('مبيعات')) return `<span class="badge badge-green">${t}</span>`;
-  if (type.includes('مشتريات')) return `<span class="badge badge-blue">${t}</span>`;
-  return `<span class="badge badge-orange">${t}</span>`;
+  if (type.includes('مبيعات')) return `<span class="badge badge-type-sales">${t}</span>`;
+  if (type.includes('مشتريات')) return `<span class="badge badge-type-purchase">${t}</span>`;
+  return `<span class="badge badge-type-return">${t}</span>`;
 }
 function isMovExchangeReturn(tx) {
   return tx.type === 'مرتجع' && (tx.notes || '').startsWith('استبدال —');
@@ -5543,17 +5629,17 @@ function movementDisplayKindLabel(tx) {
 }
 function movementKindBadge(tx) {
   if (isMovExchangeReturn(tx)) {
-    return `<span class="badge" style="background:#6d28d926;color:#6d28d9;font-weight:700">استبدال</span><div class="text-xs text-muted" style="margin-top:4px">إرجاع للمخزن</div>`;
+    return `<span class="badge badge-type-exchange">استبدال</span><div class="text-xs text-muted" style="margin-top:4px">إرجاع للمخزن</div>`;
   }
   if (isMovExchangeSale(tx)) {
     const pend = isExchangeSalePendingCollect(tx);
     const pendRow = pend
-      ? `<div style="margin-top:6px"><span class="badge badge-orange" style="font-weight:800">انتظار التحصيل</span><div class="text-xs" style="margin-top:4px;color:var(--orange);font-weight:600">في انتظار التحصيل من شركة الشحن — متبقي لصالح الشركة</div></div>`
+      ? `<div style="margin-top:5px"><span class="badge badge-status-wait" style="font-size:.65rem">انتظار التحصيل</span></div>`
       : '';
-    return `<span class="badge" style="background:#6d28d926;color:#6d28d9;font-weight:700">استبدال</span><div class="text-xs text-muted" style="margin-top:4px">تسليم بديل</div>${pendRow}`;
+    return `<span class="badge badge-type-exchange">استبدال</span><div class="text-xs text-muted" style="margin-top:4px">تسليم بديل</div>${pendRow}`;
   }
   if (tx.type === 'مرتجع') {
-    return `<span class="badge badge-orange" style="font-weight:700">استرجاع</span><div class="text-xs text-muted" style="margin-top:4px;font-size:.65rem">مرتجع</div>`;
+    return `<span class="badge badge-type-return">استرجاع</span>`;
   }
   return typeBadge(tx.type);
 }
@@ -5572,32 +5658,32 @@ function movementRefCell(tx) {
   return `<div><a href="#" data-reference-ref="${esc(base)}" style="color:var(--accent);font-weight:700;text-decoration:none;cursor:pointer" title="انقر لعرض تفاصيل شاملة">#${esc(base)}</a>${tag ? ` <span class="badge" style="font-size:.58rem;vertical-align:middle;background:var(--primary-pale);color:var(--primary)">${tag}</span>` : ''}</div><div class="text-xs text-muted" style="margin-top:3px">مرجع العملية: <span data-reference-ref="${esc(r)}" style="cursor:pointer;font-weight:600" title="انقر لعرض التفاصيل">#${esc(r)}</span></div>`;
 }
 function movementKindBadgeCompact(tx) {
-  if (isMovExchangeReturn(tx)) return `<span class="badge" style="background:#6d28d926;color:#6d28d9;font-size:.65rem">استبدال</span>`;
+  if (isMovExchangeReturn(tx)) return `<span class="badge badge-type-exchange" style="font-size:.65rem">استبدال</span>`;
   if (isMovExchangeSale(tx)) {
     return isExchangeSalePendingCollect(tx)
-      ? `<span class="badge" style="background:#6d28d926;color:#6d28d9;font-size:.65rem">استبدال</span> <span class="badge badge-orange" style="font-size:.6rem;font-weight:700">انتظار التحصيل</span>`
-      : `<span class="badge" style="background:#6d28d926;color:#6d28d9;font-size:.65rem">استبدال</span>`;
+      ? `<span class="badge badge-type-exchange" style="font-size:.65rem">استبدال</span> <span class="badge badge-status-wait" style="font-size:.6rem">انتظار</span>`
+      : `<span class="badge badge-type-exchange" style="font-size:.65rem">استبدال</span>`;
   }
-  if (tx.type === 'مرتجع') return `<span class="badge badge-orange" style="font-size:.65rem">استرجاع</span>`;
+  if (tx.type === 'مرتجع') return `<span class="badge badge-type-return" style="font-size:.65rem">استرجاع</span>`;
   return typeBadge(tx.type);
 }
 
 function statusBadge(status, tx) {
   if (!status) return '-';
   // Custom vault operation statuses
-  if (status === 'تم تجميد الحركة في الخزنة') return '<span class="badge badge-blue"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 7l-5 5-5-5"/><path d="M17 17l-5-5-5 5"/><line x1="2" y1="12" x2="22" y2="12"/></svg> تم تجميد الحركة في الخزنة</span>';
-  if (status === 'تم رفض المعاملة من الخزنة') return '<span class="badge badge-red">🚫 تم رفض المعاملة من الخزنة</span>';
+  if (status === 'تم تجميد الحركة في الخزنة') return '<span class="badge badge-type-purchase"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.9em;height:.9em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 7l-5 5-5-5"/><path d="M17 17l-5-5-5 5"/><line x1="2" y1="12" x2="22" y2="12"/></svg> مجمد</span>';
+  if (status === 'تم رفض المعاملة من الخزنة') return '<span class="badge badge-status-cancelled"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.9em;height:.9em" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg> مرفوض</span>';
 
   // Standard statuses
-  if (status === 'مكتمل' || status === 'مكتملة') return '<span class="badge badge-green">✓ مكتملة</span>';
-  if (status === 'ملغي') return '<span class="badge badge-red">ملغي</span>';
+  if (status === 'مكتمل' || status === 'مكتملة') return '<span class="badge badge-status-done"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.9em;height:.9em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> مكتمل</span>';
+  if (status === 'ملغي') return '<span class="badge badge-status-cancelled"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.9em;height:.9em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg> ملغي</span>';
   if (status === 'معلق') {
     if (tx && tx.type === 'مشتريات') {
       return (tx.remaining || 0) > 0
-        ? '<span class="badge badge-red">مديون للمورد</span>'
-        : '<span class="badge badge-green">مكتمل</span>';
+        ? '<span class="badge badge-status-debt"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.9em;height:.9em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> مديون للمورد</span>'
+        : '<span class="badge badge-status-done"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.9em;height:.9em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> مكتمل</span>';
     }
-    return '<span class="badge badge-orange">في انتظار التحصيل</span>';
+    return '<span class="badge badge-status-pending"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.9em;height:.9em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> معلق</span>';
   }
   return `<span class="badge">${esc(status)}</span>`;
 }
@@ -5623,11 +5709,11 @@ function isStatusNotCollectable(status) {
 /** حالة صف سجل الحركات — فرق استبدال للشركة تُعرض دائماً كمعلق بوضوح */
 function movementStatusCell(tx) {
   if (isExchangeSalePendingCollect(tx)) {
-    return '<span class="badge badge-orange" style="font-weight:800">انتظار التحصيل</span><div class="text-xs" style="margin-top:5px;color:var(--orange);font-weight:650;line-height:1.35">فرق استبدال — للشركة — في انتظار التحصيل من شركة الشحن</div>';
+    return '<span class="badge badge-status-wait"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.9em;height:.9em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> انتظار التحصيل</span><div class="text-xs text-muted" style="margin-top:4px;line-height:1.3">فرق استبدال — انتظار الشحن</div>';
   }
   let base = statusBadge(tx.payStatus, tx);
   if (tx.cancelRequest && tx.cancelRequest.status === 'معلق') {
-    base += '<div class="text-xs" style="margin-top:4px;color:#b45309;font-weight:600"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> طلب إلغاء معلق — بانتظار الموافقة</div>';
+    base += '<div class="mov-cancel-req-pill" style="margin-top:4px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.85em;height:.85em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> طلب إلغاء معلق</div>';
   }
   return base;
 }
@@ -8377,7 +8463,7 @@ function renderMovMobileCard(tx) {
       </div>
       <div class="mov-item">
         <span class="mov-label">المتبقي</span>
-        <span class="mov-val" style="color:${rem > 0 ? 'var(--red)' : 'var(--green)'}">${fmtJ(rem)}</span>
+        <span class="mov-val ${rem > 0 ? 'mov-col-remaining-pos' : 'mov-col-remaining-zero'}">${fmtJ(rem)}</span>
       </div>
       ${tx.ref ? `<div class="mov-item"><span class="mov-label">المرجع</span><span class="mov-val" style="color:var(--accent);font-weight:700">#${esc(tx.ref)}</span></div>` : ''}
     </div>
@@ -8386,15 +8472,16 @@ function renderMovMobileCard(tx) {
 
 function renderRetMobileCard(r) {
   const kindLabel = r.requestKind === 'exchange' ? 'استبدال' : 'استرجاع';
-  const statusColor = r.status === 'معتمد' ? '#10b981' : r.status === 'مرفوض' ? '#ef4444' : '#f59e0b';
-  return `<div onclick="showReturnRequestMovementDetail('${esc(r._id)}')" style="background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:14px 16px;box-shadow:0 1px 6px rgba(0,0,0,.05);cursor:pointer;border-right:4px solid #f59e0b">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700">${kindLabel}</span>
-      <span style="font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:20px;background:${statusColor}22;color:${statusColor}">${r.status}</span>
+  const kindClass = r.requestKind === 'exchange' ? 'badge-type-exchange' : 'badge-type-return';
+  const statusClass = r.status === 'معتمد' ? 'badge-status-done' : r.status === 'مرفوض' ? 'badge-status-cancelled' : 'badge-status-pending';
+  return `<div onclick="showReturnRequestMovementDetail('${esc(r._id)}')" class="mov-card" style="cursor:pointer;border-right:3px solid var(--orange)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px">
+      <span class="badge ${kindClass}" style="font-size:.7rem">${kindLabel}</span>
+      <span class="badge ${statusClass}" style="font-size:.7rem">${r.status}</span>
     </div>
-    <div style="font-weight:700;font-size:.9rem;margin-bottom:4px">${r.client ? esc(r.client) : 'بدون اسم'}</div>
-    <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">${fmtDate(r.createdAt || '')} · ${esc(r.reason || '')}</div>
-    <div style="font-weight:700;font-size:.9rem;color:var(--red)">${fmtJ(r.total)} ج</div>
+    <div style="font-weight:700;font-size:.88rem;margin-bottom:4px;color:var(--accent)">${r.client ? esc(r.client) : '—'}</div>
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:8px">${fmtDate(r.createdAt || '')} · ${esc(r.reason || '')}</div>
+    <div style="font-weight:800;font-size:.92rem;color:var(--red)">${fmtJ(r.total)} ج</div>
   </div>`;
 }
 
@@ -8415,24 +8502,25 @@ function renderMovementTxRow(tx) {
   const isSelected = selectedMovIds.has(tx._id);
   const rowStyle = isCancelledOrLocked ? 'style="opacity:0.6;text-decoration:line-through"' : '';
   const _rtFlash = _rtFlashIds.has(String(tx._id)) ? ' rt-flash' : '';
+  const remAmt = tx.remaining || 0;
   return `<tr ${rowStyle} class="${isSelected ? 'mov-row-selected' : ''}${_rtFlash}" onclick="handleMovRowClick(event,'${esc(tx._id)}')">
     <td><input type="checkbox" class="checkbox mov-check" value="${esc(tx._id)}" ${isSelected ? 'checked' : ''} onclick="handleMovCheck(event,'${esc(tx._id)}')"></td>
     <td>${dateCell}</td>
     <td>${movementKindBadge(tx)}${vaultStatusBadge}${vaultHint}</td>
     <td>
-      <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" style="color:var(--primary);font-weight:600;text-decoration:none;cursor:pointer">${tx.client ? esc(tx.client) : '<span style="color:var(--muted);font-weight:400">بدون اسم</span>'}</a>
-      ${(tx.comments && tx.comments.length) ? `<span class="badge-edited" title="يحتوي على ${tx.comments.length} تعليق" onclick="event.stopPropagation();showInvoiceDetail('${esc(tx._id)}')" style="background:rgba(59,130,246,.15);color:#3b82f6;cursor:pointer"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> ${tx.comments.length}</span>` : ''}
+      <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" class="mov-client-name">${tx.client ? esc(tx.client) : '<span style="color:var(--muted);font-weight:400">—</span>'}</a>
+      ${(tx.comments && tx.comments.length) ? `<span class="badge-edited" title="يحتوي على ${tx.comments.length} تعليق" onclick="event.stopPropagation();showInvoiceDetail('${esc(tx._id)}')" style="background:rgba(59,130,246,.12);color:#3b82f6;border:1px solid rgba(59,130,246,.25);cursor:pointer;font-size:.65rem"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.85em;height:.85em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> ${tx.comments.length}</span>` : ''}
       ${(tx.editHistory && tx.editHistory.length) ? '<span class="badge-edited" title="تم التعديل" onclick="event.stopPropagation();showInvoiceDetail(\''+esc(tx._id)+'\')">✎ معدّل</span>' : ''}
     </td>
-    <td>${movementRefCell(tx)}</td>
-    <td>${esc(tx.employee || '-')}</td>
-    <td>
-      <span style="font-weight:700">${fmtJ(tx.total)}</span>
-      ${tx.type === 'مبيعات' && (Number(tx.shipCost) || 0) > 0 ? `<div style="font-size:.7rem;color:var(--muted);margin-top:2px">شحن: ${fmtJ(Number(tx.actualShipCost || tx.shipCost))}</div>` : ''}
+    <td class="col-ref">${movementRefCell(tx)}</td>
+    <td class="mov-col-employee">${esc(tx.employee || '—')}</td>
+    <td style="text-align:center">
+      <span class="mov-col-total">${fmtJ(tx.total)}</span>
+      ${tx.type === 'مبيعات' && (Number(tx.shipCost) || 0) > 0 ? `<div style="font-size:.68rem;color:var(--muted);margin-top:2px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;width:.9em;height:.9em" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> ${fmtJ(Number(tx.actualShipCost || tx.shipCost))}</div>` : ''}
     </td>
-    <td>${exchangeSalePaidDisplayAmount(tx)}</td>
-    <td class="${(tx.remaining || 0) > 0 ? 'text-red' : ''}">${fmtJ(tx.remaining)}</td>
-    <td>${movementStatusCell(tx)}</td>
+    <td style="text-align:center"><span class="mov-col-paid">${exchangeSalePaidDisplayAmount(tx)}</span></td>
+    <td style="text-align:center"><span class="${remAmt > 0 ? 'mov-col-remaining-pos' : 'mov-col-remaining-zero'}">${fmtJ(remAmt)}</span></td>
+    <td style="text-align:center">${movementStatusCell(tx)}</td>
     <td>
       <div class="actions-dd">
         <button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button>
