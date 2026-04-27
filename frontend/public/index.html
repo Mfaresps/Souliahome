@@ -13626,14 +13626,28 @@ async function downloadBackupNow() {
   }
 
   try {
-    // Create a download link
-    const url = `/api/settings/download-backup/${filename}`;
+    const token = localStorage.getItem('token');
+    const response = await fetch(`/api/settings/download-backup/${filename}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(error.message || 'فشل في التحميل');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = `soulia-${filename}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
     toast('✓ تم تحميل النسخة الاحتياطية', false);
   } catch (e) {
     toast('❌ خطأ: ' + (e.message || 'فشل في التحميل'), true);
