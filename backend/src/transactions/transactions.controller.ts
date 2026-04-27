@@ -84,11 +84,6 @@ export class TransactionsController {
     return this.referenceDetailService.searchReferences(partial);
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.transactionsService.findById(id);
-  }
-
   @Post()
   async create(@Body() dto: CreateTransactionDto) {
     return this.transactionsService.create(dto);
@@ -114,6 +109,11 @@ export class TransactionsController {
     const deletedBy = req.user.name || req.user.username || '';
     await this.transactionsService.hardDelete(id, deletedBy);
     return { message: 'تم الحذف النهائي للحركة' };
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.transactionsService.findById(id);
   }
 
   @Post(':id/restore')
