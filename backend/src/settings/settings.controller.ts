@@ -5,6 +5,7 @@ import {
   Post,
   Delete,
   Body,
+  Param,
   UseGuards,
   UnauthorizedException,
   Res,
@@ -83,7 +84,7 @@ export class SettingsController {
 
   @Roles('admin')
   @Get('download-backup/:filename')
-  async downloadBackup(@Res() res: Response, @Body('filename') filename: string) {
+  async downloadBackup(@Res() res: Response, @Param('filename') filename: string) {
     return await this.settingsService.downloadBackup(res, filename);
   }
 
