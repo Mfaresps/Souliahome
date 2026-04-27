@@ -218,29 +218,25 @@ export class SettingsService {
       const backupDir = this.getBackupDir();
       const filepath = path.join(backupDir, filename);
 
-      console.log('[DEBUG] Attempting to download:', { filepath, exists: fs.existsSync(filepath) });
-
       if (!fs.existsSync(filepath)) {
         return res.status(404).json({
           success: false,
           message: 'ملف النسخة الاحتياطية غير موجود',
-          path: filepath,
         });
       }
 
       const fileContent = fs.readFileSync(filepath);
-      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Content-Length', fileContent.length);
       res.setHeader(
         'Content-Disposition',
         `attachment; filename="soulia-${filename}"`,
       );
-      res.send(fileContent);
+      res.end(fileContent);
     } catch (error) {
-      console.error('[ERROR] downloadBackup failed:', error);
       res.status(500).json({
         success: false,
         message: 'خطأ في تحميل الملف',
-        error: error.message,
       });
     }
   }
