@@ -1796,6 +1796,20 @@ input.is-valid,select.is-valid,textarea.is-valid{
 .cash-pulse svg{flex-shrink:0;opacity:.95}
 .cash-pulse-amt{font-weight:900}
 .cash-pulse-cur{font-weight:700;opacity:.85;font-size:.72rem}
+.cash-pulse-count{font-weight:800;font-size:.68rem;background:rgba(255,255,255,.25);padding:1px 6px;border-radius:99px;margin-inline-start:2px;letter-spacing:.5px}
+.cash-pulse-bump{animation:cashBump .35s cubic-bezier(.2,.8,.3,1.4)}
+@keyframes cashBump{
+  0%{transform:translate(-50%,-14px) scale(1)}
+  40%{transform:translate(-50%,-18px) scale(1.14)}
+  100%{transform:translate(-50%,-14px) scale(1)}
+}
+.cash-shake{animation:cashShake .35s cubic-bezier(.36,.07,.19,.97)}
+@keyframes cashShake{
+  10%,90%{transform:translateX(-1px)}
+  20%,80%{transform:translateX(1.5px)}
+  30%,50%,70%{transform:translateX(-2px)}
+  40%,60%{transform:translateX(2px)}
+}
 .cash-pulse-add{background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;box-shadow:0 6px 16px rgba(16,185,129,.35),0 0 0 1px rgba(255,255,255,.5) inset}
 .cash-pulse-sub{background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);color:#fff;box-shadow:0 6px 16px rgba(239,68,68,.35),0 0 0 1px rgba(255,255,255,.5) inset}
 .cash-pulse-out{animation:cashPulseOut .32s ease-in forwards !important}
@@ -1826,7 +1840,7 @@ input.is-valid,select.is-valid,textarea.is-valid{
 }
 @media(prefers-reduced-motion:reduce){
   .cash-pulse{animation:cashPulseIn .2s ease forwards}
-  .cash-glow-add,.cash-glow-sub{animation:none}
+  .cash-glow-add,.cash-glow-sub,.cash-shake,.cash-pulse-bump{animation:none}
 }
 
 /* ─── Offline Queue (Pending Sync) ─── */
@@ -3857,44 +3871,103 @@ document.addEventListener('change', (e) => {
   if (_fieldValue(el)) markValid(el);
 }, true);
 
-/* ─── Cash Pulse Notifications ─── */
-const _cashPulseQueues = new WeakMap(); // per-anchor queue
-function cashPulse(delta, anchorEl) {
-  if (!anchorEl || !delta || !isFinite(delta)) return;
-  const q = _cashPulseQueues.get(anchorEl) || [];
-  q.push(delta);
-  _cashPulseQueues.set(anchorEl, q);
-  if (q.length === 1) _cashPulseRun(anchorEl);
+/* ─── Cash Pulse Notifications (accumulating) ─── */
+const _cashPulseState = new WeakMap(); // anchor -> { sign, sum, count, el, timer, queue }
+const COALESCE_WINDOW_MS = 1200;
+const HOLD_AFTER_LAST_MS = 2000;
+const FADE_OUT_MS = 320;
+
+function _cashPlaySound(isAdd) {
+  if (localStorage.getItem('cash_pulse_sound') === 'off') return;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = window._cashAudioCtx || (window._cashAudioCtx = new Ctx());
+    if (ctx.state === 'suspended') ctx.resume();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = isAdd ? 880 : 360;   // higher = add, lower = sub
+    g.gain.value = 0;
+    o.connect(g); g.connect(ctx.destination);
+    const t = ctx.currentTime;
+    g.gain.linearRampToValueAtTime(0.06, t + 0.01);
+    o.frequency.exponentialRampToValueAtTime(isAdd ? 1320 : 240, t + 0.12);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    o.start(t); o.stop(t + 0.2);
+  } catch (_) {}
 }
-function _cashPulseRun(anchorEl) {
-  const q = _cashPulseQueues.get(anchorEl);
-  if (!q || !q.length) return;
-  const delta = q[0];
-  const isAdd = delta > 0;
+
+function _cashRenderBadge(state, isAdd) {
+  const el = state.el;
   const sign = isAdd ? '+' : '−';
-  const abs = Math.abs(delta);
-  // ensure anchor can host an absolutely positioned child
-  const cs = getComputedStyle(anchorEl);
-  if (cs.position === 'static') anchorEl.style.position = 'relative';
-  const el = document.createElement('div');
-  el.className = 'cash-pulse ' + (isAdd ? 'cash-pulse-add' : 'cash-pulse-sub');
+  const amt = fmtJ(Math.abs(state.sum));
+  const ct = state.count > 1 ? `<span class="cash-pulse-count">×${fmtJ(state.count)}</span>` : '';
   el.innerHTML = `
     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M5 9h.01M19 15h.01"/></svg>
-    <span class="cash-pulse-amt">${sign}${fmtJ(abs)}</span>
+    <span class="cash-pulse-amt">${sign}${amt}</span>
     <span class="cash-pulse-cur">ج</span>
+    ${ct}
   `;
-  anchorEl.appendChild(el);
-  // trigger glow on the anchor itself
-  anchorEl.classList.add(isAdd ? 'cash-glow-add' : 'cash-glow-sub');
-  setTimeout(() => anchorEl.classList.remove('cash-glow-add', 'cash-glow-sub'), 900);
-  setTimeout(() => {
+  // Bump animation on update
+  el.classList.remove('cash-pulse-bump');
+  void el.offsetWidth;
+  el.classList.add('cash-pulse-bump');
+}
+
+function cashPulse(delta, anchorEl) {
+  if (!anchorEl || !delta || !isFinite(delta)) return;
+  const isAdd = delta > 0;
+  const sign = isAdd ? 1 : -1;
+
+  let state = _cashPulseState.get(anchorEl);
+
+  // Sign change → finalise the previous badge immediately, then start fresh
+  if (state && state.sign !== sign) {
+    if (state.timer) clearTimeout(state.timer);
+    if (state.el) {
+      const old = state.el;
+      old.classList.add('cash-pulse-out');
+      setTimeout(() => { try { old.remove(); } catch(_) {} }, FADE_OUT_MS);
+    }
+    state = null;
+  }
+
+  // anchor must be positioned for absolute child
+  const cs = getComputedStyle(anchorEl);
+  if (cs.position === 'static') anchorEl.style.position = 'relative';
+
+  if (!state) {
+    const el = document.createElement('div');
+    el.className = 'cash-pulse ' + (isAdd ? 'cash-pulse-add' : 'cash-pulse-sub');
+    anchorEl.appendChild(el);
+    state = { sign, sum: 0, count: 0, el, timer: null };
+    _cashPulseState.set(anchorEl, state);
+  }
+
+  state.sum += delta;
+  state.count += 1;
+  _cashRenderBadge(state, isAdd);
+
+  // Shake the host card briefly + glow
+  anchorEl.classList.remove('cash-shake', 'cash-glow-add', 'cash-glow-sub');
+  void anchorEl.offsetWidth;
+  anchorEl.classList.add('cash-shake', isAdd ? 'cash-glow-add' : 'cash-glow-sub');
+  setTimeout(() => anchorEl.classList.remove('cash-shake', 'cash-glow-add', 'cash-glow-sub'), 900);
+
+  _cashPlaySound(isAdd);
+
+  // Reset hold timer — badge stays as long as movements keep arriving
+  if (state.timer) clearTimeout(state.timer);
+  state.timer = setTimeout(() => {
+    const el = state.el;
     el.classList.add('cash-pulse-out');
     setTimeout(() => {
-      el.remove();
-      q.shift();
-      if (q.length) _cashPulseRun(anchorEl); else _cashPulseQueues.delete(anchorEl);
-    }, 320);
-  }, 2000);
+      try { el.remove(); } catch(_) {}
+      const cur = _cashPulseState.get(anchorEl);
+      if (cur === state) _cashPulseState.delete(anchorEl);
+    }, FADE_OUT_MS);
+  }, HOLD_AFTER_LAST_MS);
 }
 
 let _lastVaultTotal = null;
