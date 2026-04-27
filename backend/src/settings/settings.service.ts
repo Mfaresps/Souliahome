@@ -214,18 +214,20 @@ export class SettingsService {
   }
 
   downloadBackup(res: any, filename: string) {
-    const backupDir = this.getBackupDir();
-    const filepath = path.join(backupDir, filename);
-
-    if (!fs.existsSync(filepath)) {
-      res.status(404).json({
-        success: false,
-        message: 'ملف النسخة الاحتياطية غير موجود',
-      });
-      return;
-    }
-
     try {
+      const backupDir = this.getBackupDir();
+      const filepath = path.join(backupDir, filename);
+
+      console.log('[DEBUG] Attempting to download:', { filepath, exists: fs.existsSync(filepath) });
+
+      if (!fs.existsSync(filepath)) {
+        return res.status(404).json({
+          success: false,
+          message: 'ملف النسخة الاحتياطية غير موجود',
+          path: filepath,
+        });
+      }
+
       const fileContent = fs.readFileSync(filepath);
       res.setHeader('Content-Type', 'application/json');
       res.setHeader(
@@ -234,6 +236,7 @@ export class SettingsService {
       );
       res.send(fileContent);
     } catch (error) {
+      console.error('[ERROR] downloadBackup failed:', error);
       res.status(500).json({
         success: false,
         message: 'خطأ في تحميل الملف',
