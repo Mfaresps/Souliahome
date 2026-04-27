@@ -710,9 +710,37 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 .sum-inv-row{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);font-size:.78rem}
 .sum-inv-row:last-child{border-bottom:none}
 .sum-inv-num{color:var(--muted);font-size:.68rem;min-width:16px}
-.sum-inv-name{flex:1;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sum-inv-name-wrap{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.sum-inv-name{color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sum-inv-code{font-size:.66rem;color:var(--muted);font-family:monospace;letter-spacing:.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sum-inv-qty{color:var(--muted);font-size:.73rem;white-space:nowrap}
 .sum-inv-price{color:var(--primary);font-weight:700;white-space:nowrap;text-align:left;min-width:62px}
+
+/* ===== Compact items list (large invoices) ===== */
+#tx-items{max-height:520px;overflow-y:auto;padding-inline-end:4px;scroll-behavior:smooth}
+#tx-items::-webkit-scrollbar{width:8px}
+#tx-items::-webkit-scrollbar-track{background:transparent}
+#tx-items::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+#tx-items::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+.tx-items-counter{position:sticky;top:0;background:linear-gradient(180deg,var(--bg) 80%,transparent);font-size:.72rem;color:var(--muted);font-weight:600;padding:4px 4px 8px;display:flex;align-items:center;justify-content:space-between;z-index:2}
+.tx-items-counter strong{color:var(--primary);font-weight:800}
+@media (min-width:769px){
+  /* Compact horizontal rows on desktop */
+  .tx-item-card.tx-item-compact{padding:8px 10px;margin-bottom:6px;display:grid;grid-template-columns:24px minmax(0,1fr) 90px 78px 90px 28px;align-items:center;gap:8px}
+  .tx-item-compact .tx-item-top{display:contents;margin:0}
+  .tx-item-compact .tx-item-num{margin:0}
+  .tx-item-compact .tx-item-name-block{min-width:0}
+  .tx-item-compact .tx-item-name-block .tx-item-prod-name{font-weight:700;font-size:.84rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tx-item-compact .tx-item-name-block .tx-item-prod-code{font-size:.68rem;color:var(--muted);font-family:monospace;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tx-item-compact .tx-item-grid{display:contents !important;padding:0}
+  .tx-item-compact .tx-item-field{display:flex;flex-direction:column;gap:2px;align-items:flex-start;padding:0}
+  .tx-item-compact .tx-item-field .tx-item-label{font-size:.62rem;color:var(--muted);font-weight:600}
+  .tx-item-compact .tx-item-field .tx-item-val{font-weight:700;font-size:.85rem}
+  .tx-item-compact .tx-item-field .tx-item-val.tx-item-total{color:var(--primary);font-size:.92rem}
+  .tx-item-compact .tx-item-qty-input{padding:4px 6px;font-size:.85rem;min-width:60px;text-align:center}
+  .tx-item-compact .tx-item-remove{width:24px;height:24px;justify-self:end}
+  .tx-item-compact .tx-item-stock{grid-column:1/-1;margin-top:4px;padding-inline-start:32px;font-size:.7rem}
+}
 .sum-dep-method{font-size:.68rem;color:var(--muted);background:var(--surface2);border-radius:4px;padding:1px 6px;margin-right:4px;font-weight:600}
 /* ── Invoice note in summary col ── */
 .tx-inv-note-wrap{padding:8px 14px 4px;border-top:1px solid var(--border)}
@@ -1495,6 +1523,182 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 .inv-product-name{font-weight:700;color:var(--text)}
 .inv-product-code{font-size:.74rem;color:var(--muted);margin-top:2px}
 
+/* ================ Unified Filter & Sort Toolbar (Inventory + Products) ================ */
+.fx-toolbar{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px;margin-bottom:14px;display:flex;flex-direction:column;gap:10px}
+.fx-toolbar-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.fx-search{position:relative;flex:1;min-width:220px}
+.fx-search input{width:100%;padding:10px 38px 10px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:.88rem;font-family:inherit;transition:border-color .15s,box-shadow .15s;box-sizing:border-box}
+.fx-search input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(0,107,66,.1)}
+.fx-search-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.fx-search-clear{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;border:none;background:var(--border);color:var(--text);cursor:pointer;display:none;align-items:center;justify-content:center;font-size:.85rem;line-height:1;padding:0;transition:background .15s}
+.fx-search-clear:hover{background:var(--red);color:#fff}
+.fx-search input:not(:placeholder-shown)+.fx-search-clear{display:flex}
+.fx-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .18s;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.fx-btn:hover{border-color:var(--primary);color:var(--primary)}
+.fx-btn.active{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(0,49,30,.25)}
+.fx-btn-count{background:rgba(255,255,255,.25);padding:1px 7px;border-radius:99px;font-size:.7rem;font-weight:800;min-width:18px;text-align:center}
+.fx-btn:not(.active) .fx-btn-count{background:var(--primary-pale);color:var(--primary)}
+.fx-sort-wrap{position:relative}
+.fx-sort-menu{position:absolute;top:calc(100% + 6px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:200px;z-index:50;padding:4px;opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .18s,transform .18s}
+.fx-sort-menu.show{opacity:1;transform:translateY(0);pointer-events:auto}
+.fx-sort-item{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:7px;cursor:pointer;font-size:.84rem;color:var(--text);transition:background .12s}
+.fx-sort-item:hover{background:var(--primary-pale)}
+.fx-sort-item.active{background:var(--primary-pale);color:var(--primary);font-weight:700}
+.fx-sort-item .fx-sort-check{margin-inline-start:auto;color:var(--primary);opacity:0;transition:opacity .15s}
+.fx-sort-item.active .fx-sort-check{opacity:1}
+.fx-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:0;transition:min-height .2s}
+.fx-chips.has-items{min-height:32px}
+.fx-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--primary-pale);border:1px solid rgba(0,107,66,.18);color:var(--primary);border-radius:99px;font-size:.76rem;font-weight:600;animation:fxChipIn .25s cubic-bezier(.2,.8,.3,1.2)}
+.fx-chip-x{cursor:pointer;width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.95rem;line-height:1;background:rgba(0,107,66,.15);transition:background .15s}
+.fx-chip-x:hover{background:var(--red);color:#fff}
+.fx-chip-reset{background:var(--bg);border:1px dashed var(--border);color:var(--muted)}
+.fx-chip-reset:hover{border-color:var(--red);color:var(--red)}
+@keyframes fxChipIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+.fx-results-count{font-size:.78rem;color:var(--muted);font-weight:600;margin-inline-start:auto;padding:0 6px}
+.fx-results-count strong{color:var(--primary);font-weight:800}
+
+/* Filter Drawer */
+.fx-drawer-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(2px);z-index:998;opacity:0;pointer-events:none;transition:opacity .25s}
+.fx-drawer-backdrop.show{opacity:1;pointer-events:auto}
+.fx-drawer{position:fixed;top:0;right:0;bottom:0;width:380px;max-width:92vw;background:var(--surface);box-shadow:-8px 0 24px rgba(0,0,0,.12);z-index:999;transform:translateX(100%);transition:transform .3s cubic-bezier(.2,.8,.3,1);display:flex;flex-direction:column}
+[dir=ltr] .fx-drawer{right:auto;left:0;transform:translateX(-100%);box-shadow:8px 0 24px rgba(0,0,0,.12)}
+.fx-drawer.show{transform:translateX(0)}
+.fx-drawer-header{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.fx-drawer-title{font-weight:800;font-size:1.05rem;color:var(--text);display:flex;align-items:center;gap:8px}
+.fx-drawer-close{width:32px;height:32px;border-radius:8px;border:none;background:var(--bg);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.fx-drawer-close:hover{background:var(--red);color:#fff}
+.fx-drawer-body{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:18px}
+.fx-drawer-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;background:var(--bg)}
+.fx-drawer-footer .btn{flex:1;justify-content:center}
+.fx-section{display:flex;flex-direction:column;gap:8px}
+.fx-section-label{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
+.fx-range{display:flex;gap:8px;align-items:center}
+.fx-range input[type=number]{flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:.85rem;font-family:inherit}
+.fx-range input[type=number]:focus{outline:none;border-color:var(--primary)}
+.fx-range-sep{color:var(--muted);font-size:.78rem}
+.fx-checkboxes{display:flex;flex-direction:column;gap:2px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px;background:var(--bg)}
+.fx-checkbox{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:.85rem;transition:background .12s}
+.fx-checkbox:hover{background:var(--primary-pale)}
+.fx-checkbox input{accent-color:var(--primary);cursor:pointer}
+.fx-checkbox-count{margin-inline-start:auto;font-size:.74rem;color:var(--muted);background:var(--surface);padding:1px 8px;border-radius:99px;font-weight:600}
+
+/* Collapsible toolbar */
+.fx-toolbar-collapsible{position:relative;padding-bottom:0}
+.fx-collapse-toggle{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:8px;padding:6px 12px;border-radius:8px;border:1px dashed var(--border);background:transparent;color:var(--muted);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.fx-collapse-toggle:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-pale);border-style:solid}
+.fx-collapse-toggle .fx-chevron{transition:transform .25s}
+.fx-toolbar-collapsible.collapsed .fx-collapse-toggle{margin-top:0}
+.fx-toolbar-collapsible.collapsed .fx-collapse-toggle .fx-chevron{transform:rotate(180deg)}
+.fx-toolbar-collapsible.collapsed .fx-collapse-label::before{content:"إظهار الفلاتر"}
+.fx-toolbar-collapsible.expanded .fx-collapse-label::before{content:"إخفاء الفلاتر"}
+.fx-toolbar-collapsible .fx-collapse-label{font-size:0;line-height:1}
+.fx-toolbar-collapsible .fx-collapse-label::before{font-size:.72rem}
+.fx-toolbar-collapsible-body{overflow:hidden;display:flex;flex-direction:column;gap:10px;transition:max-height .3s cubic-bezier(.4,0,.2,1),opacity .25s,margin:.25s;max-height:1500px;opacity:1}
+.fx-toolbar-collapsible.collapsed .fx-toolbar-collapsible-body{max-height:0;opacity:0;margin:0;pointer-events:none}
+
+/* Compact summary line under movements toolbar */
+.mov-mini-summary{display:none;font-size:.78rem;color:var(--muted);font-weight:600;padding:6px 8px 0;border-top:1px dashed var(--border);margin-top:2px;flex-wrap:wrap;align-items:center;gap:4px 12px}
+.mov-mini-summary.show{display:flex}
+
+/* Date quick-filter dropdown */
+.fx-date-header{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 6px;font-size:.78rem;font-weight:700;color:var(--text);border-bottom:1px solid var(--border);margin-bottom:4px}
+.fx-date-clear-x{width:24px;height:24px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:inherit;font-size:.85rem;line-height:1;transition:all .15s}
+.fx-date-clear-x:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.fx-date-presets{display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:2px}
+.fx-date-preset{display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:7px;cursor:pointer;font-size:.78rem;color:var(--text);transition:background .12s;border:1px solid transparent;background:none;text-align:start;font-family:inherit;width:100%}
+.fx-date-preset:hover{background:var(--primary-pale)}
+.fx-date-preset.active{background:var(--primary-pale);color:var(--primary);font-weight:700;border-color:rgba(0,107,66,.18)}
+.fx-date-preset-icon{font-size:.85rem;flex-shrink:0}
+.fx-date-divider{height:1px;background:var(--border);margin:6px 6px}
+.fx-date-custom{padding:2px 6px 8px}
+.fx-date-custom-title{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:8px}
+.fx-date-custom-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fx-date-custom-row label{display:flex;flex-direction:column;gap:4px}
+.fx-date-custom-row label > span{font-size:.7rem;color:var(--muted);font-weight:700}
+.fx-date-custom-row input{padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:.8rem;font-family:inherit;cursor:pointer;transition:border-color .15s}
+.fx-date-custom-row input:hover{border-color:var(--primary)}
+.fx-date-custom-row input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(0,107,66,.1)}
+.fx-date-custom-row input::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.6;transition:opacity .15s}
+.fx-date-custom-row input:hover::-webkit-calendar-picker-indicator{opacity:1}
+
+/* Movements toolbar — refined desktop + mobile */
+#mov-toolbar{padding:10px 12px}
+.fx-mov-tabs{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.fx-mov-tabs::-webkit-scrollbar{display:none}
+.fx-mov-tabs .fx-btn{flex:0 0 auto;padding:7px 12px;font-size:.78rem;white-space:nowrap;border-radius:8px}
+.fx-mov-tabs .fx-btn-count{font-size:.65rem;padding:1px 6px;min-width:16px;height:15px}
+.fx-mov-controls{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.fx-mov-controls .fx-search{flex:1 1 240px;min-width:0}
+.fx-mov-controls .fx-search input{padding:8px 34px 8px 12px;font-size:.82rem}
+.fx-mov-controls .fx-btn-icon{padding:8px 11px;font-size:.76rem;border-radius:8px;height:38px;display:inline-flex;align-items:center;gap:5px}
+.fx-mov-controls .fx-btn-icon svg{flex-shrink:0}
+.fx-btn-icon.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.fx-btn-icon.active .fx-btn-count{background:rgba(255,255,255,.3);color:#fff}
+
+/* Date dropdown — desktop centered/RTL safe */
+#mov-date-menu{
+  position:absolute;top:calc(100% + 6px);inset-inline-end:0;left:auto;right:auto;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  box-shadow:0 12px 32px rgba(0,0,0,.14);min-width:280px;z-index:80;padding:6px;
+}
+[dir=rtl] #mov-date-menu{inset-inline-end:0;inset-inline-start:auto}
+.fx-date-quick{position:relative}
+
+/* === Mobile (≤640px) === */
+@media (max-width:640px){
+  #mov-toolbar{padding:8px}
+  .fx-btn-text-mobile-hide{display:none}
+
+  /* Tabs: 2-column grid, compact */
+  .fx-mov-tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;overflow:visible}
+  .fx-mov-tabs .fx-btn{padding:8px 10px;font-size:.76rem;justify-content:center}
+  .fx-mov-tabs .fx-btn svg{width:13px;height:13px}
+  .fx-mov-tabs .fx-btn-text{flex:1;text-align:center}
+
+  /* Controls row: search full-width on top, action buttons below */
+  .fx-mov-controls{gap:6px}
+  .fx-mov-controls .fx-search{flex:1 1 100%;order:-1;width:100%}
+  .fx-mov-controls .fx-btn-icon{flex:1 1 0;min-width:0;padding:8px 6px;justify-content:center;height:36px}
+  .fx-mov-controls .fx-btn-icon svg{width:13px;height:13px}
+
+  /* Date menu becomes full-width bottom sheet */
+  #mov-date-menu{
+    position:fixed !important;top:auto !important;left:8px !important;right:8px !important;
+    bottom:12px;width:auto !important;min-width:0 !important;max-height:65vh;overflow-y:auto;
+    box-shadow:0 -8px 24px rgba(0,0,0,.18);
+  }
+
+  .fx-results-count{font-size:.7rem;padding:2px 4px;flex:1 1 100%;text-align:center}
+  .mov-mini-summary{font-size:.7rem;gap:3px 8px}
+  .mov-mini-summary .ms-total{flex:1 1 100%;margin-inline-start:0;text-align:center;padding-top:4px;border-top:1px dashed var(--border)}
+  .fx-collapse-toggle{padding:5px 10px;font-size:.7rem}
+}
+
+/* Tablet ≤900 */
+@media (max-width:900px) and (min-width:641px){
+  .fx-btn-text-mobile-hide{display:inline}
+  .fx-mov-controls .fx-btn-icon{padding:8px 10px}
+}
+.mov-mini-summary .ms-item{display:inline-flex;align-items:center;gap:4px}
+.mov-mini-summary .ms-num{color:var(--text);font-weight:800}
+.mov-mini-summary .ms-sep{color:var(--border);font-weight:400}
+.mov-mini-summary .ms-sales .ms-num{color:#10b981}
+.mov-mini-summary .ms-purchase .ms-num{color:#3b82f6}
+.mov-mini-summary .ms-return .ms-num{color:#f97316}
+.mov-mini-summary .ms-total{margin-inline-start:auto;color:var(--primary);font-weight:700}
+
+/* List item enter animation for sort/filter */
+.fx-fade-enter{animation:fxFadeEnter .28s cubic-bezier(.2,.8,.3,1) both}
+@keyframes fxFadeEnter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+@media (max-width:640px){
+  .fx-toolbar{padding:8px;border-radius:12px}
+  .fx-search{min-width:100%;flex:1 1 100%;order:-1}
+  .fx-btn{padding:8px 11px;font-size:.78rem}
+  .fx-drawer{width:100%;max-width:100%}
+  .fx-results-count{flex:1 1 100%;text-align:center;order:99;padding:4px 0 0}
+}
+
 /* Mobile Card List */
 .inv-mobile-list{display:none;flex-direction:column;gap:10px}
 .inv-product-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:box-shadow .2s;-webkit-tap-highlight-color:transparent}
@@ -1830,6 +2034,88 @@ input.is-valid,select.is-valid,textarea.is-valid{
   60%  {opacity:.45;transform:translate(-50%,-30px) scale(.96);filter:blur(.5px)}
   100% {opacity:0;transform:translate(-50%,-44px) scale(.88);filter:blur(2px)}
 }
+
+/* ===== Draft (مسودات) UI ===== */
+.tx-save-row{display:flex;gap:6px;align-items:stretch}
+.tx-save-row .tx-save-btn{flex:1}
+.tx-icon-btn{flex:0 0 auto;width:42px;height:42px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-family:inherit;transition:all .18s;-webkit-tap-highlight-color:transparent;position:relative;padding:0}
+.tx-icon-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-pale)}
+.tx-icon-btn:active{transform:scale(.95)}
+.tx-icon-btn-drafts{position:relative}
+.tx-icon-btn-badge{position:absolute;top:-5px;inset-inline-start:-5px;background:var(--red);color:#fff;border-radius:99px;font-size:.62rem;font-weight:800;min-width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 5px rgba(239,68,68,.4);border:1.5px solid var(--surface);line-height:1}
+/* Sidebar draft badge — مسودات محفوظة */
+.nav-draft-badge{display:inline-flex;align-items:center;gap:4px;margin-inline-start:6px;padding:2px 8px 2px 6px;border-radius:99px;background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);color:#92400e;font-size:.66rem;font-weight:800;line-height:1;box-shadow:0 1px 3px rgba(245,158,11,.25),inset 0 0 0 1px rgba(245,158,11,.35);vertical-align:middle;animation:navDraftIn .35s cubic-bezier(.2,.8,.3,1.2)}
+.nav-item.active .nav-draft-badge{background:linear-gradient(135deg,#fef9c3 0%,#fde68a 100%);box-shadow:0 1px 3px rgba(0,0,0,.18),inset 0 0 0 1px rgba(146,64,14,.4)}
+.nav-draft-dot{width:6px;height:6px;border-radius:50%;background:#f59e0b;box-shadow:0 0 0 0 rgba(245,158,11,.6);animation:navDraftPulse 1.8s infinite}
+.nav-draft-num{font-variant-numeric:tabular-nums}
+@keyframes navDraftPulse{
+  0%   {box-shadow:0 0 0 0 rgba(245,158,11,.65)}
+  60%  {box-shadow:0 0 0 6px rgba(245,158,11,0)}
+  100% {box-shadow:0 0 0 0 rgba(245,158,11,0)}
+}
+@keyframes navDraftIn{
+  from {opacity:0;transform:scale(.5) translateY(-3px)}
+  to   {opacity:1;transform:scale(1) translateY(0)}
+}
+.draft-status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);border:1px solid #f59e0b;color:#92400e;border-radius:99px;font-size:.74rem;font-weight:700;margin-bottom:8px;animation:fxChipIn .25s cubic-bezier(.2,.8,.3,1.2);align-self:flex-start}
+.draft-status-pill .draft-pill-x{cursor:pointer;width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:rgba(146,64,14,.18);font-size:.85rem;line-height:1}
+.draft-status-pill .draft-pill-x:hover{background:#dc2626;color:#fff}
+.draft-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:transform .18s,box-shadow .18s,border-color .18s;animation:fxFadeEnter .3s cubic-bezier(.2,.8,.3,1) both}
+.draft-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.08);border-color:var(--primary)}
+.draft-card.incomplete{border-color:#f59e0b;background:linear-gradient(180deg,rgba(254,243,199,.35),var(--surface))}
+.draft-card-head{display:flex;align-items:center;gap:10px}
+.draft-type-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem}
+.draft-type-sales{background:rgba(16,185,129,.15);color:#059669}
+.draft-type-purchase{background:rgba(99,102,241,.15);color:#4338ca}
+.draft-type-return{background:rgba(245,158,11,.15);color:#b45309}
+.draft-card-title{font-weight:700;font-size:.92rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.draft-card-sub{font-size:.74rem;color:var(--muted);margin-top:2px}
+.draft-card-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:.74rem}
+.draft-meta-cell{background:var(--bg);border-radius:7px;padding:6px 8px;text-align:center}
+.draft-meta-label{color:var(--muted);font-size:.68rem;margin-bottom:2px}
+.draft-meta-val{font-weight:700;color:var(--text)}
+.draft-card-flag{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;background:rgba(245,158,11,.15);color:#b45309;border-radius:99px;font-size:.68rem;font-weight:700;align-self:flex-start}
+.draft-card-actions{display:flex !important;gap:8px;margin-top:4px;width:100%}
+.draft-resume-btn{flex:1 1 auto !important;min-height:42px;background:var(--primary) !important;color:#fff !important;border:none !important;border-radius:9px;padding:10px 14px !important;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex !important;align-items:center;justify-content:center;gap:7px;transition:all .18s;box-shadow:0 2px 6px rgba(0,107,66,.25);width:auto}
+.draft-resume-btn:hover{background:#005233 !important;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,107,66,.35)}
+.draft-resume-btn:active{transform:translateY(0)}
+.draft-resume-btn svg{flex-shrink:0}
+.draft-delete-btn{flex:0 0 42px !important;width:42px !important;min-height:42px;background:var(--surface2);color:var(--red);border:1.5px solid var(--border);border-radius:9px;cursor:pointer;font-family:inherit;display:inline-flex !important;align-items:center;justify-content:center;transition:all .18s;padding:0}
+.draft-delete-btn:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.draft-empty-state{padding:50px 20px;text-align:center;color:var(--muted)}
+.draft-empty-state svg{margin:0 auto 14px;opacity:.4;display:block}
+.draft-empty-state h4{font-size:1rem;margin:0 0 6px;color:var(--text)}
+.draft-empty-state p{font-size:.82rem;margin:0;line-height:1.6}
+#drafts-drawer-list{display:flex;flex-direction:column;gap:10px}
+.draft-autosave-indicator{font-size:.7rem;color:var(--muted);display:inline-flex;align-items:center;gap:5px;opacity:0;transition:opacity .25s;margin-inline-start:auto}
+.draft-autosave-indicator.show{opacity:1}
+.draft-autosave-indicator .dot{width:6px;height:6px;border-radius:50%;background:#10b981;animation:rtPulse 1.4s infinite}
+
+/* ===== Real-time row highlight (Phase 1) ===== */
+.rt-flash{animation:rtFlash 2.4s ease-out}
+@keyframes rtFlash{
+  0%   {background:rgba(16,185,129,.28);box-shadow:inset 4px 0 0 #10b981}
+  60%  {background:rgba(16,185,129,.10)}
+  100% {background:transparent;box-shadow:none}
+}
+.rt-event-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:linear-gradient(135deg,#0f766e 0%,#10b981 100%);color:#fff;padding:10px 18px;border-radius:99px;font-size:.85rem;font-weight:700;box-shadow:0 8px 20px rgba(16,185,129,.35);z-index:9999;opacity:0;pointer-events:none;transition:opacity .25s,transform .35s cubic-bezier(.2,.8,.3,1.2);display:inline-flex;align-items:center;gap:8px;max-width:90vw}
+.rt-event-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Active sessions panel (admin) */
+.sess-panel{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:14px}
+.sess-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;transition:transform .18s,box-shadow .18s}
+.sess-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.sess-card-head{display:flex;align-items:center;gap:10px}
+.sess-avatar{width:38px;height:38px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;position:relative}
+.sess-avatar::after{content:'';position:absolute;bottom:-1px;right:-1px;width:11px;height:11px;background:#10b981;border:2px solid var(--surface);border-radius:50%;animation:rtPulse 2s infinite}
+@keyframes rtPulse{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.6)}50%{box-shadow:0 0 0 6px rgba(16,185,129,0)}}
+.sess-name{font-weight:700;font-size:.92rem;color:var(--text)}
+.sess-role{font-size:.72rem;color:var(--muted)}
+.sess-row{display:flex;align-items:center;gap:7px;font-size:.78rem;color:var(--muted)}
+.sess-row strong{color:var(--text);font-weight:600}
+.sess-row svg{flex-shrink:0;opacity:.7}
+.sess-ip{font-family:monospace;background:var(--bg);padding:2px 7px;border-radius:5px;font-size:.74rem}
+.sess-empty{padding:24px;text-align:center;color:var(--muted);font-size:.85rem;background:var(--bg);border-radius:10px;border:1px dashed var(--border)}
 .cash-glow-add{animation:cashGlowAdd 5.5s ease-out}
 .cash-glow-sub{animation:cashGlowSub 5.5s ease-out}
 @keyframes cashGlowAdd{
@@ -2202,10 +2488,20 @@ input.is-valid,select.is-valid,textarea.is-valid{
         <textarea id="tx-inv-note" rows="2" placeholder="ملاحظة تظهر في الفاتورة عند الطباعة…"></textarea>
       </div>
       <div class="tx-save-area">
-        <button class="btn btn-primary tx-save-btn" id="tx-save-btn" onclick="saveTx()">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-          حفظ الحركة
-        </button>
+        <div id="active-draft-pill" style="display:none"></div>
+        <div class="tx-save-row">
+          <button class="btn btn-primary tx-save-btn" id="tx-save-btn" onclick="saveTx()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            حفظ الحركة
+          </button>
+          <button class="tx-icon-btn" onclick="saveDraft(true)" type="button" aria-label="حفظ كمسودة" title="حفظ كمسودة">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14l4-2 4 2"/><circle cx="17" cy="17" r="4"/><path d="M17 15v2l1.5 1"/></svg>
+          </button>
+          <button class="tx-icon-btn tx-icon-btn-drafts" onclick="openDraftsDrawer()" type="button" aria-label="فتح قائمة المسودات" title="المسودات">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+            <span class="tx-icon-btn-badge" id="draft-count-badge" style="display:none">0</span>
+          </button>
+        </div>
         <div class="tx-action-row">
           <button class="tx-print-btn" onclick="printTxInvoice()">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -2213,6 +2509,7 @@ input.is-valid,select.is-valid,textarea.is-valid{
           </button>
           <button class="btn btn-outline" style="flex:1" onclick="resetTx()">مسح</button>
         </div>
+        <span class="draft-autosave-indicator" id="draft-autosave-ind"><span class="dot"></span>حُفظت المسودة تلقائياً</span>
       </div>
     </div>
   </div>
@@ -2229,9 +2526,13 @@ input.is-valid,select.is-valid,textarea.is-valid{
     <h3 style="font-size:1.05rem;font-weight:800;margin-bottom:8px;color:var(--text)">الحركة لم تُحفظ بعد</h3>
     <p style="font-size:.85rem;color:var(--muted);line-height:1.6;margin-bottom:22px">لديك بيانات غير محفوظة في نموذج الحركة.<br>هل تريد المغادرة والتخلي عن التغييرات؟</p>
     <div style="display:flex;flex-direction:column;gap:8px">
-      <button onclick="txDirtyConfirmLeave()" style="background:var(--red);color:#fff;border:none;border-radius:10px;padding:11px;font-size:.9rem;font-weight:700;cursor:pointer;width:100%">مغادرة بدون حفظ</button>
-      <button onclick="txDirtyCancel()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:11px;font-size:.9rem;font-weight:700;cursor:pointer;width:100%">إكمال الحركة</button>
-      <button onclick="txDirtyReset()" style="background:transparent;color:var(--muted);border:1.5px solid var(--border);border-radius:10px;padding:9px;font-size:.82rem;cursor:pointer;width:100%">مسح وخروج</button>
+      <button onclick="txDirtySaveDraftAndLeave()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:11px;font-size:.9rem;font-weight:700;cursor:pointer;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:7px">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14l4-2 4 2"/><circle cx="17" cy="17" r="4"/><path d="M17 15v2l1.5 1"/></svg>
+        حفظ كمسودة والخروج
+      </button>
+      <button onclick="txDirtyCancel()" style="background:var(--surface2);color:var(--text);border:1.5px solid var(--border);border-radius:10px;padding:11px;font-size:.9rem;font-weight:700;cursor:pointer;width:100%">إكمال الحركة</button>
+      <button onclick="txDirtyConfirmLeave()" style="background:transparent;color:var(--red);border:1.5px solid rgba(239,68,68,.3);border-radius:10px;padding:9px;font-size:.82rem;cursor:pointer;width:100%">مغادرة بدون حفظ</button>
+      <button onclick="txDirtyReset()" style="background:transparent;color:var(--muted);border:none;padding:6px;font-size:.78rem;cursor:pointer;width:100%">مسح وخروج</button>
     </div>
   </div>
 </div>
@@ -2305,32 +2606,46 @@ input.is-valid,select.is-valid,textarea.is-valid{
     <div id="inv-summary-cards" class="inv-kpi-grid"></div>
   </div>
 
-  <!-- ── Status Tab Bar ── -->
-  <div class="inv-tab-bar">
-    <button class="inv-tab active" id="inv-tab-all" onclick="setInvFilter('all',this)">
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      الكل
-    </button>
-    <button class="inv-tab" id="inv-tab-ok" onclick="setInvFilter('ok',this)">
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-      متوفر
-    </button>
-    <button class="inv-tab" id="inv-tab-low" onclick="setInvFilter('low',this)">
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      منخفض
-    </button>
-    <button class="inv-tab" id="inv-tab-zero" onclick="setInvFilter('zero',this)">
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
-      نفد
-    </button>
-  </div>
-
-  <!-- ── Search & Filter Bar ── -->
-  <div class="inv-filter-bar">
-    <div class="inv-search-wrap">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="text" id="inv-search-input" placeholder="بحث بالاسم أو الكود..." oninput="debouncedRenderInventory()" class="inv-search-input" data-i18n="searchInventory" data-i18n-attr="placeholder">
+  <!-- ── Unified Filter & Sort Toolbar ── -->
+  <div class="fx-toolbar" id="inv-toolbar">
+    <div class="fx-toolbar-row">
+      <button class="fx-btn active" data-status="all" onclick="setInvFilter('all',this)">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        الكل <span class="fx-btn-count" id="inv-count-all">0</span>
+      </button>
+      <button class="fx-btn" data-status="ok" onclick="setInvFilter('ok',this)">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+        متوفر <span class="fx-btn-count" id="inv-count-ok">0</span>
+      </button>
+      <button class="fx-btn" data-status="low" onclick="setInvFilter('low',this)">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        منخفض <span class="fx-btn-count" id="inv-count-low">0</span>
+      </button>
+      <button class="fx-btn" data-status="zero" onclick="setInvFilter('zero',this)">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+        نفد <span class="fx-btn-count" id="inv-count-zero">0</span>
+      </button>
     </div>
+    <div class="fx-toolbar-row">
+      <div class="fx-search">
+        <svg class="fx-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="inv-search-input" placeholder="بحث بالاسم أو الكود..." oninput="debouncedRenderInventory()">
+        <button class="fx-search-clear" onclick="clearFxSearch('inv')" type="button" aria-label="مسح">×</button>
+      </div>
+      <button class="fx-btn" onclick="openFxDrawer('inv')" id="inv-filter-btn">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        فلاتر <span class="fx-btn-count" id="inv-filter-active-count" style="display:none">0</span>
+      </button>
+      <div class="fx-sort-wrap">
+        <button class="fx-btn" onclick="toggleFxSortMenu('inv',event)" id="inv-sort-btn">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+          <span id="inv-sort-label">ترتيب أبجدي ↑</span>
+        </button>
+        <div class="fx-sort-menu" id="inv-sort-menu"></div>
+      </div>
+      <span class="fx-results-count" id="inv-results-count"></span>
+    </div>
+    <div class="fx-chips" id="inv-chips"></div>
   </div>
 
   <!-- ── Desktop Table ── -->
@@ -2402,76 +2717,66 @@ input.is-valid,select.is-valid,textarea.is-valid{
     <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="clearMovSelection()">✕</button>
   </div>
 
-  <!-- Filter Card -->
-  <div class="mov-filter-card" id="mov-filter-card">
-    <!-- Compact top bar (always visible): search + collapse toggle -->
-    <div class="mov-filter-topbar">
-      <div class="mov-search-wrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input type="text" id="mov-search" placeholder="بحث عميل، مرجع، هاتف، ملاحظات..." oninput="debouncedRenderMovements()">
+  <!-- Unified Filter & Sort Toolbar (collapsible) -->
+  <div class="fx-toolbar fx-toolbar-collapsible expanded" id="mov-toolbar">
+    <div class="fx-toolbar-collapsible-body">
+      <div class="fx-toolbar-row fx-mov-tabs">
+        <button class="fx-btn active" data-mov-type="all" onclick="setMovTypeTab('all',this)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          <span class="fx-btn-text">الكل</span> <span class="fx-btn-count" id="mov-count-all">0</span>
+        </button>
+        <button class="fx-btn" data-mov-type="مبيعات" onclick="setMovTypeTab('مبيعات',this)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+          <span class="fx-btn-text">مبيعات</span> <span class="fx-btn-count" id="mov-count-sales">0</span>
+        </button>
+        <button class="fx-btn" data-mov-type="مشتريات" onclick="setMovTypeTab('مشتريات',this)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/></svg>
+          <span class="fx-btn-text">مشتريات</span> <span class="fx-btn-count" id="mov-count-purchase">0</span>
+        </button>
+        <button class="fx-btn" data-mov-type="مرتجع" onclick="setMovTypeTab('مرتجع',this)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>
+          <span class="fx-btn-text">مرتجعات</span> <span class="fx-btn-count" id="mov-count-return">0</span>
+        </button>
       </div>
-      <button class="mov-filter-toggle" onclick="toggleMovFilters(this)" aria-expanded="false" aria-controls="mov-filter-body">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-        <span>فلترة</span>
-        <span class="mov-filter-badge" id="mov-filter-badge" style="display:none">0</span>
-        <svg class="mov-filter-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
+      <div class="fx-toolbar-row fx-mov-controls">
+        <div class="fx-search">
+          <svg class="fx-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="mov-search" placeholder="بحث عميل، مرجع، هاتف..." oninput="debouncedRenderMovements()">
+          <button class="fx-search-clear" onclick="clearFxSearch('mov')" type="button" aria-label="مسح">×</button>
+        </div>
+        <div class="fx-date-quick">
+          <button class="fx-btn fx-btn-icon" id="mov-date-btn" onclick="toggleMovDateMenu(event)" title="فلترة بالتاريخ" aria-label="فلترة بالتاريخ">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span class="fx-btn-text-mobile-hide" id="mov-date-label">التاريخ</span>
+            <span class="fx-btn-count" id="mov-date-active" style="display:none">●</span>
+          </button>
+          <div class="fx-sort-menu" id="mov-date-menu" style="min-width:280px"></div>
+        </div>
+        <button class="fx-btn fx-btn-icon" onclick="openFxDrawer('mov')" id="mov-filter-btn" title="فلاتر متقدمة" aria-label="فلاتر متقدمة">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          <span class="fx-btn-text-mobile-hide">فلاتر</span> <span class="fx-btn-count" id="mov-filter-active-count" style="display:none">0</span>
+        </button>
+        <div class="fx-sort-wrap">
+          <button class="fx-btn fx-btn-icon" onclick="toggleFxSortMenu('mov',event)" id="mov-sort-btn" title="الترتيب" aria-label="الترتيب">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+            <span class="fx-btn-text-mobile-hide" id="mov-sort-label">الأحدث</span>
+          </button>
+          <div class="fx-sort-menu" id="mov-sort-menu"></div>
+        </div>
+      </div>
+      <span class="fx-results-count" id="mov-results-count"></span>
+      <div class="fx-chips" id="mov-chips"></div>
+      <!-- Compact summary line -->
+      <div class="mov-mini-summary" id="mov-mini-summary"></div>
     </div>
-    <!-- Collapsible filter body -->
-    <div class="mov-filter-body" id="mov-filter-body">
-    <!-- Date row -->
-    <div class="mov-filter-dates">
-      <div style="display:flex;flex-direction:column;gap:2px">
-        <label style="font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.2px" data-i18n="movFrom">من</label>
-        <input type="date" id="mov-from" style="padding:5px 8px;min-width:120px;font-size:.82rem" onchange="movPage=1;updateMovFilterBadge();renderMovements()">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:2px">
-        <label style="font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.2px" data-i18n="movTo">إلى</label>
-        <input type="date" id="mov-to" style="padding:5px 8px;min-width:120px;font-size:.82rem" onchange="movPage=1;updateMovFilterBadge();renderMovements()">
-      </div>
-    </div>
-    <!-- Filter pills - Compact layout with labels -->
-    <div class="mov-filter-pills">
-      <!-- Transaction Types -->
-      <span style="font-size:.64rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.15px">نوع</span>:
-      <div class="mov-filter-group">
-        <button class="mov-type-pill active" onclick="setMovFilter('all',this)">الكل</button>
-        <button class="mov-type-pill pill-green" onclick="setMovFilter('مبيعات',this)">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
-          مبيعات
-        </button>
-        <button class="mov-type-pill pill-blue" onclick="setMovFilter('مشتريات',this)">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>
-          مشتريات
-        </button>
-        <button class="mov-type-pill pill-orange" onclick="setMovFilter('مرتجع',this)">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>
-          مرتجع
-        </button>
-        <button class="mov-type-pill pill-purple" onclick="setMovFilter('استرجاع',this)">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          استرجاع
-        </button>
-      </div>
-      <!-- Status Filters -->
-      <span style="font-size:.64rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.15px">حالة</span>:
-      <div class="mov-filter-group">
-        <button class="mov-type-pill pill-check" onclick="setMovFilter('مكتمل',this,'status')">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-          مكتمل
-        </button>
-        <button class="mov-type-pill pill-wait" onclick="setMovFilter('معلق',this,'status')">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-          انتظار
-        </button>
-        <button class="mov-type-pill pill-cancel" onclick="setMovFilter('ملغي',this,'status')">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
-          ملغي
-        </button>
-      </div>
-    </div>
-    </div><!-- /mov-filter-body -->
+    <!-- Collapse footer toggle -->
+    <button class="fx-collapse-toggle" onclick="toggleMovToolbar(this)" type="button" aria-label="إخفاء/إظهار الفلاتر">
+      <span class="fx-collapse-label"></span>
+      <svg class="fx-chevron" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
   </div>
+  <!-- Hidden inputs kept for backwards-compat (used by drawer to set values) -->
+  <input type="hidden" id="mov-from"><input type="hidden" id="mov-to">
 
   <!-- Desktop Table -->
   <div id="mov-table-wrap" style="background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)">
@@ -2581,14 +2886,89 @@ input.is-valid,select.is-valid,textarea.is-valid{
 <label class="btn btn-outline btn-sm" style="cursor:pointer"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> استيراد<input type="file" accept=".xlsx,.xls" style="display:none" onchange="importProductsExcel(event)"></label>
 </div>
 </div>
-<div class="filter-card" style="flex-wrap:wrap;gap:8px;display:flex;align-items:center">
-<div class="search-input"><input type="text" id="prod-search" placeholder="بحث أصناف..." oninput="debouncedRenderProducts()"></div>
-<div id="prod-bulk-bar" style="display:none;gap:8px;align-items:center" class="flex">
-<span id="prod-sel-count" style="font-size:.82rem;font-weight:600;color:var(--primary)"></span>
-<button class="btn btn-outline btn-sm" onclick="openBulkEditModal()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل جماعي</button>
-<button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="bulkDeleteProducts()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> حذف الكل</button>
-<button class="btn btn-outline btn-sm" onclick="deselectAllProducts()">✕ إلغاء التحديد</button>
+<div class="fx-toolbar" id="prod-toolbar">
+  <div class="fx-toolbar-row">
+    <button class="fx-btn active" data-status="all" onclick="setProdFilter('all',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      الكل <span class="fx-btn-count" id="prod-count-all">0</span>
+    </button>
+    <button class="fx-btn" data-status="ok" onclick="setProdFilter('ok',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+      متوفر <span class="fx-btn-count" id="prod-count-ok">0</span>
+    </button>
+    <button class="fx-btn" data-status="low" onclick="setProdFilter('low',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      منخفض <span class="fx-btn-count" id="prod-count-low">0</span>
+    </button>
+    <button class="fx-btn" data-status="zero" onclick="setProdFilter('zero',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+      نفد <span class="fx-btn-count" id="prod-count-zero">0</span>
+    </button>
+  </div>
+  <div class="fx-toolbar-row">
+    <div class="fx-search">
+      <svg class="fx-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="prod-search" placeholder="بحث بالاسم، الكود أو المورد..." oninput="debouncedRenderProducts()">
+      <button class="fx-search-clear" onclick="clearFxSearch('prod')" type="button" aria-label="مسح">×</button>
+    </div>
+    <button class="fx-btn" onclick="openFxDrawer('prod')" id="prod-filter-btn">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      فلاتر <span class="fx-btn-count" id="prod-filter-active-count" style="display:none">0</span>
+    </button>
+    <div class="fx-sort-wrap">
+      <button class="fx-btn" onclick="toggleFxSortMenu('prod',event)" id="prod-sort-btn">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+        <span id="prod-sort-label">ترتيب أبجدي ↑</span>
+      </button>
+      <div class="fx-sort-menu" id="prod-sort-menu"></div>
+    </div>
+    <span class="fx-results-count" id="prod-results-count"></span>
+  </div>
+  <div class="fx-chips" id="prod-chips"></div>
+  <div id="prod-bulk-bar" style="display:none;gap:8px;align-items:center;flex-wrap:wrap;padding-top:4px;border-top:1px dashed var(--border)" class="flex">
+    <span id="prod-sel-count" style="font-size:.82rem;font-weight:600;color:var(--primary)"></span>
+    <button class="btn btn-outline btn-sm" onclick="openBulkEditModal()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل جماعي</button>
+    <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="bulkDeleteProducts()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> حذف الكل</button>
+    <button class="btn btn-outline btn-sm" onclick="deselectAllProducts()">✕ إلغاء التحديد</button>
+  </div>
 </div>
+
+<!-- Drafts Drawer (shared across all transaction types) -->
+<div class="fx-drawer-backdrop" id="drafts-drawer-backdrop" onclick="closeDraftsDrawer()"></div>
+<div class="fx-drawer" id="drafts-drawer" role="dialog" aria-label="المسودات">
+  <div class="fx-drawer-header">
+    <div class="fx-drawer-title">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+      المسودات المحفوظة
+      <span style="font-size:.72rem;color:var(--muted);font-weight:500" id="drafts-drawer-count"></span>
+    </div>
+    <button class="fx-drawer-close" onclick="closeDraftsDrawer()" aria-label="إغلاق">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="fx-drawer-body" id="drafts-drawer-list"></div>
+  <div class="fx-drawer-footer" id="drafts-drawer-footer" style="display:none">
+    <button class="btn btn-outline" style="color:var(--red);border-color:var(--red)" onclick="clearAllDrafts()">🗑️ حذف الكل</button>
+  </div>
+</div>
+
+<!-- Filter Drawer (shared by inventory + products) -->
+<div class="fx-drawer-backdrop" id="fx-drawer-backdrop" onclick="closeFxDrawer()"></div>
+<div class="fx-drawer" id="fx-drawer" role="dialog" aria-label="فلاتر متقدمة">
+  <div class="fx-drawer-header">
+    <div class="fx-drawer-title">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      فلاتر متقدمة
+    </div>
+    <button class="fx-drawer-close" onclick="closeFxDrawer()" aria-label="إغلاق">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="fx-drawer-body" id="fx-drawer-body"></div>
+  <div class="fx-drawer-footer">
+    <button class="btn btn-outline" onclick="resetFxFilters()">إعادة تعيين</button>
+    <button class="btn btn-primary" onclick="closeFxDrawer()">تطبيق</button>
+  </div>
 </div>
 <div class="table-card prod-table-card"><div class="overflow-x"><table id="prod-table"><thead><tr><th><input type="checkbox" id="prod-select-all" onchange="toggleAllProducts(this.checked)"></th><th data-i18n="colCode">الكود</th><th data-i18n="colName">الاسم</th><th data-i18n="colSupplier">المورد</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice">سعر الشراء</th><th data-i18n="minStock">الحد الأدنى</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colActions">إجراءات</th></tr></thead><tbody></tbody></table></div></div>
 <!-- Mobile cards list -->
@@ -3072,6 +3452,16 @@ input.is-valid,select.is-valid,textarea.is-valid{
 <button class="btn btn-primary btn-sm" onclick="openUserModal()">+ إضافة مستخدم</button>
 </div>
 <div class="grid grid-3" id="users-grid"></div>
+
+<!-- Active Sessions (Admin Only) -->
+<div id="active-sessions-wrap" style="margin-top:24px">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--primary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+    <h3 style="margin:0;font-size:1rem;color:var(--text)">الجلسات النشطة الآن</h3>
+    <span style="font-size:.78rem;color:var(--muted)">— موقع كل مستخدم متصل</span>
+  </div>
+  <div id="active-sessions"></div>
+</div>
 </div>
 
 <!-- Settings -->
@@ -3309,12 +3699,22 @@ window.addEventListener('resize', closeAllMenus);
 let currentUser = null;
 let onlineUsers = {}; // Track online status: { userId: { lastSeen, status } }
 let socket = null; // Socket.IO connection
+let activeSessions = []; // Admin-only: active sessions with IP & geo
+const _rtFlashIds = new Set(); // tx ids that should briefly flash on render
 let products = [], transactions = [], suppliers = [], expenses = [], settings = {}, users = [], vaultLog = [], inventoryCache = [], returnRequests = [], complaints = [];
 let cmpTabFilter = 'all';
 let currentPage = 'dashboard';
 let movFilter = 'all';
 let movStatusFilter = '';
 let invFilter = 'all';
+let prodFilter = 'all';
+// Unified filter/sort state for inventory + products pages
+const fxState = {
+  inv: { sort: 'name-asc', supplier: new Set(), priceMin: '', priceMax: '', stockMin: '', stockMax: '' },
+  prod: { sort: 'name-asc', supplier: new Set(), sellMin: '', sellMax: '', buyMin: '', buyMax: '' },
+  mov: { sort: 'date-desc', employee: new Set(), method: new Set(), status: new Set(), dateFrom: '', dateTo: '', amountMin: '', amountMax: '' },
+};
+let _fxDrawerCtx = null; // 'inv' | 'prod' while drawer open
 // Pagination page state (30/page for tables, 50/page for vault)
 let movPage = 1, invPage = 1, prodPage = 1, expPage = 1, archivePage = 1, clientsPage = 1, vaultPage = 1;
 let txType = 'مبيعات';
@@ -3910,15 +4310,19 @@ document.addEventListener('blur', (e) => {
 document.addEventListener('input', (e) => {
   const el = e.target;
   if (!el || !el.classList) return;
+  if (el.closest('#page-transaction') && typeof autosaveDraftDebounced === 'function') autosaveDraftDebounced();
   if (!el.classList.contains('is-invalid')) return;
   if (_fieldValue(el)) markValid(el);
 }, true);
 document.addEventListener('change', (e) => {
   const el = e.target;
   if (!el || !el.classList) return;
+  if (el.closest('#page-transaction') && typeof autosaveDraftDebounced === 'function') autosaveDraftDebounced();
   if (!el.classList.contains('is-invalid')) return;
   if (_fieldValue(el)) markValid(el);
 }, true);
+// Initial draft badge on load
+window.addEventListener('DOMContentLoaded', () => { try { updateDraftBadge(); } catch(_) {} });
 
 /* ─── Cash Pulse Notifications (accumulating) ─── */
 const _cashPulseState = new WeakMap(); // anchor -> { sign, sum, count, el, timer, queue }
@@ -4068,8 +4472,13 @@ function cashPulse(delta, anchorEl) {
 }
 
 /* Fire pulse on every visible vault anchor (vault page + dashboard widget + sidebar nav). */
+let _lastCashPulse = { delta: 0, at: 0 };
 function cashPulseAll(delta) {
   if (!delta || !isFinite(delta) || Math.abs(delta) < 0.01) return;
+  // Dedup: ignore identical pulses fired within 1500ms (manual call + auto-detect overlap)
+  const now = Date.now();
+  if (Math.abs(delta - _lastCashPulse.delta) < 0.01 && now - _lastCashPulse.at < 1500) return;
+  _lastCashPulse = { delta, at: now };
   const anchors = [];
   const vaultTotal = qs('#vault-segs .seg-card:last-child');
   if (vaultTotal) anchors.push(vaultTotal);
@@ -4323,10 +4732,66 @@ function connectSocket() {
         };
       });
     }
+    if (data && Array.isArray(data.sessions)) {
+      activeSessions = data.sessions;
+      renderActiveSessions();
+    }
     renderUsersStatus();
     renderUsers();
   });
+
+  // ===== Real-time sync listeners (Phase 1) =====
+  socket.on('tx:created', async (payload) => {
+    try {
+      const tx = payload?.tx;
+      if (!tx) return;
+      // Avoid duplicate insert if locally created (matched by _id)
+      const exists = transactions.some(t => String(t._id) === String(tx._id));
+      if (!exists) {
+        transactions.unshift(tx);
+        _rtFlashIds.add(String(tx._id));
+        setTimeout(() => _rtFlashIds.delete(String(tx._id)), 3000);
+      }
+      _rtRefreshUI({ movements: true, sidebar: true, notifications: true });
+      _rtToastEvent(`✨ حركة ${tx.type} جديدة${payload.by ? ' بواسطة ' + payload.by : ''}`);
+    } catch(e) { console.warn('tx:created handler', e); }
+  });
+  socket.on('tx:updated', async (payload) => {
+    const tx = payload?.tx; if (!tx) return;
+    const i = transactions.findIndex(t => String(t._id) === String(tx._id));
+    if (i >= 0) transactions[i] = tx;
+    _rtFlashIds.add(String(tx._id));
+    setTimeout(() => _rtFlashIds.delete(String(tx._id)), 3000);
+    _rtRefreshUI({ movements: true });
+  });
+  socket.on('tx:cancelled', async (payload) => {
+    const tx = payload?.tx; if (!tx) return;
+    const i = transactions.findIndex(t => String(t._id) === String(tx._id));
+    if (i >= 0) transactions[i] = tx;
+    _rtRefreshUI({ movements: true, sidebar: true });
+    _rtToastEvent(`🚫 تم إلغاء حركة #${tx.ref || ''}`);
+  });
+  socket.on('vault:changed', async (payload) => {
+    try { settings = await api('/settings').catch(() => settings); } catch(_) {}
+    if (currentPage === 'vault') { try { await loadVaultLog(); } catch(_) {} renderVaultSegs?.(); }
+    if (currentPage === 'dashboard') { try { renderDashboard?.(); } catch(_) {} }
+    // cashPulse picks up settings delta automatically via detectVaultPulse
+    try { detectVaultPulse?.(); } catch(_) {}
+  });
+  socket.on('product:changed', async (payload) => {
+    try { products = await api('/products'); } catch(_) {}
+    if (currentPage === 'products') renderProducts?.();
+  });
+  socket.on('inventory:changed', async (payload) => {
+    try { inventoryCache = await api('/transactions/inventory'); } catch(_) {}
+    if (currentPage === 'inventory') renderInventory?.();
+    if (currentPage === 'products') renderProducts?.();
+    buildNotifications?.();
+  });
+
   socket.on('disconnect', () => { console.log('Socket disconnected'); });
+  // Heartbeat: keep server-side activity timestamp fresh
+  setInterval(() => { try { socket?.emit('activity'); } catch(_){} }, 30000);
 
   // Sync full user data (with lastSeen) periodically
   setInterval(() => { syncUsersStatus().catch(() => {}); }, 60000);
@@ -4334,6 +4799,100 @@ function connectSocket() {
 function disconnectSocket() {
   if (socket) { socket.disconnect(); socket = null; }
 }
+
+/* ===== Real-time helpers (Phase 1) ===== */
+function _rtRefreshUI(opts = {}) {
+  try {
+    if (opts.movements && currentPage === 'movements') renderMovements?.();
+    if (opts.sidebar) buildSidebar?.();
+    if (opts.notifications) buildNotifications?.();
+    if (currentPage === 'dashboard') renderDashboard?.();
+  } catch(_) {}
+}
+let _rtToastTimer = null;
+function _rtToastEvent(msg) {
+  let el = qs('#rt-event-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'rt-event-toast';
+    el.className = 'rt-event-toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  requestAnimationFrame(() => el.classList.add('show'));
+  if (_rtToastTimer) clearTimeout(_rtToastTimer);
+  _rtToastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+/* ===== Active sessions (admin) ===== */
+function renderActiveSessions() {
+  const container = qs('#active-sessions');
+  if (!container) return;
+  if (!isAdmin()) { container.innerHTML = ''; return; }
+  const sessions = Array.isArray(activeSessions) ? activeSessions : [];
+  if (sessions.length === 0) {
+    container.innerHTML = '<div class="sess-empty">لا توجد جلسات نشطة حالياً</div>';
+    return;
+  }
+  // Group by user (a user may have multiple tabs/devices)
+  const byUser = new Map();
+  sessions.forEach(s => {
+    const arr = byUser.get(s.userId) || [];
+    arr.push(s);
+    byUser.set(s.userId, arr);
+  });
+  const cards = [];
+  byUser.forEach((arr) => {
+    arr.forEach(s => {
+      const initials = (s.name || s.username || '?').slice(0, 2);
+      const loc = s.location;
+      const locText = loc
+        ? [loc.city, loc.region, loc.country].filter(Boolean).join('، ') || '—'
+        : 'جارٍ التحديد...';
+      const ago = _agoText(s.lastActivity || s.connectedAt);
+      const roleLabel = s.role === 'admin' ? '👑 مدير' : (s.role === 'staff' ? '🧑‍💼 موظف' : '👁️ مشاهد');
+      cards.push(`
+        <div class="sess-card">
+          <div class="sess-card-head">
+            <div class="sess-avatar">${esc(initials)}</div>
+            <div style="flex:1;min-width:0">
+              <div class="sess-name">${esc(s.name || s.username)}</div>
+              <div class="sess-role">${roleLabel}</div>
+            </div>
+          </div>
+          <div class="sess-row">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span><strong>${esc(locText)}</strong></span>
+          </div>
+          <div class="sess-row">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <span>${esc(s.device || '—')} · ${esc(s.browser || '')} ${esc(s.os ? '· ' + s.os : '')}</span>
+          </div>
+          <div class="sess-row">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15 15 0 014 10 15 15 0 01-4 10 15 15 0 01-4-10 15 15 0 014-10z"/></svg>
+            <span class="sess-ip">${esc(s.ip || '—')}</span>
+          </div>
+          <div class="sess-row">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            <span>نشاط: ${esc(ago)}</span>
+          </div>
+        </div>`);
+    });
+  });
+  container.innerHTML = `<div class="sess-panel">${cards.join('')}</div>`;
+}
+function _agoText(iso) {
+  if (!iso) return '—';
+  const t = new Date(iso).getTime();
+  if (!t || isNaN(t)) return '—';
+  const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (s < 5) return 'الآن';
+  if (s < 60) return `قبل ${fmtJ(s)} ثانية`;
+  if (s < 3600) return `قبل ${fmtJ(Math.floor(s/60))} دقيقة`;
+  if (s < 86400) return `قبل ${fmtJ(Math.floor(s/3600))} ساعة`;
+  return `قبل ${fmtJ(Math.floor(s/86400))} يوم`;
+}
+setInterval(() => { if (currentPage === 'users' && isAdmin()) renderActiveSessions(); }, 30000);
 async function syncUsersStatus() {
   try {
     const res = await api('/auth/users-status');
@@ -4440,12 +4999,18 @@ function buildSidebar() {
   const _movTotal = transactions.filter(t => !t.cancelled).length;
   const _movSeen = parseInt(localStorage.getItem('mov_seen_count') ?? '-1');
   const newMovCount = _movSeen >= 0 ? Math.max(0, _movTotal - _movSeen) : 0;
+  const draftCount = (typeof _readDrafts === 'function') ? _readDrafts().length : 0;
   sb.innerHTML = NAV_ITEMS.filter(n => (n.adminOnly && !isAdmin()) ? false : hasPerm(n.perm)).map(n => {
     let badge = '';
     if (n.id === 'approvals' && totalApprovalsBadge > 0) badge = ` <span class="badge badge-orange" style="margin-right:4px;font-size:.65rem">${totalApprovalsBadge}</span>`;
     if (n.id === 'movements' && newMovCount > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">+${newMovCount}</span>`;
     if (n.id === 'complaints' && pendingCmpCount > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">${pendingCmpCount}</span>`;
     if (n.id === 'pending-sync') badge = ` <span class="badge badge-orange oq-nav-badge" style="margin-right:4px;font-size:.65rem;display:none" id="oq-nav-badge"></span>`;
+    if (n.id === 'transaction' && draftCount > 0) {
+      const word = draftCount === 1 ? 'مسودة' : (draftCount === 2 ? 'مسودتان' : 'مسودات');
+      const arabicNum = String(draftCount).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+      badge = ` <span class="nav-draft-badge" title="لديك ${arabicNum} ${word} محفوظة — اضغط لفتح صفحة الحركات ثم زر المسودات"><span class="nav-draft-dot"></span><span class="nav-draft-num">+${arabicNum}</span></span>`;
+    }
     return `<a class="nav-item${currentPage === n.id ? ' active' : ''}" data-page="${n.id}" href="#${n.id}" onclick="handleNavClick(event,'${n.id}')"><span>${n.icon}</span><span>${esc(navLabel(n))}${badge}</span></a>`;
   }).join('') + `<a class="nav-item" data-page="profile" href="#profile" onclick="handleNavClick(event,'profile')"><span>${NAV_ICONS.profile}</span><span>${currentLang === 'en' ? 'Profile' : 'الملف الشخصي'}</span></a>`;
 }
@@ -4655,6 +5220,18 @@ function txDirtyReset() {
   qs('#tx-dirty-overlay').style.display = 'none';
   txDirty = false;
   resetTx();
+  if (_pendingNavPage) { _doNavigateTo(_pendingNavPage.page, _pendingNavPage.updateHash); _pendingNavPage = null; }
+}
+function txDirtySaveDraftAndLeave() {
+  const id = saveDraft(false);
+  if (!id) {
+    toast('لا يوجد محتوى لحفظه', true);
+    return;
+  }
+  qs('#tx-dirty-overlay').style.display = 'none';
+  // saveDraft already set txDirty=false; clear form & navigate
+  resetTx();
+  toast('💾 تم حفظ المسودة — اضغط زر "المسودات" للرجوع');
   if (_pendingNavPage) { _doNavigateTo(_pendingNavPage.page, _pendingNavPage.updateHash); _pendingNavPage = null; }
 }
 function markTxDirty() {
@@ -5191,13 +5768,13 @@ function renderTxFields() {
       <div class="form-group" id="tx-payment-group" style="margin-bottom:0">
         <label>طريقة دفع المتبقي</label>
         <select id="tx-payment">
+          <option value="تحويل بنكي" selected>تحويل بنكي</option>
+          <option value="Instapay">Instapay</option>
+          <option value="فودافون كاش">فودافون كاش</option>
           <option value="كاش">كاش</option>
           <option value="آجل">آجل</option>
-          <option value="فودافون كاش">فودافون كاش</option>
-          <option value="Instapay">Instapay</option>
-          <option value="تحويل بنكي">تحويل بنكي</option>
         </select>
-        <div class="field-hint">كيف سيُسدَّد الباقي عند التسليم</div>
+        <div class="field-hint">كيف سيُسدَّد الباقي عند التسليم — الافتراضي: تحويل بنكي</div>
       </div>
     </div>
 
@@ -5292,7 +5869,15 @@ function renderTxItems() {
     </div>`;
     return;
   }
-  qs('#tx-items').innerHTML = txItems.map((item, i) => {
+  // Compact rows when invoice has many items (>=4) and we're on desktop
+  const useCompact = txItems.length >= 4 && window.innerWidth >= 769;
+  const validCount = txItems.filter(it => it.productId).length;
+  const counterHtml = txItems.length >= 4
+    ? `<div class="tx-items-counter">
+         <span>الأصناف: <strong>${fmtN(validCount)}</strong> / ${fmtN(txItems.length)}</span>
+         <span>${useCompact ? '↕ يمكنك التمرير للأصناف الباقية' : ''}</span>
+       </div>` : '';
+  qs('#tx-items').innerHTML = counterHtml + txItems.map((item, i) => {
     const available = item.productId ? getProductAvailableStock(item.productId) : null;
     const otherItemsQty = txItems.reduce((sum, it, idx) => {
       if (idx !== i && it.productId === item.productId) return sum + (it.qty || 0);
@@ -5310,12 +5895,12 @@ function renderTxItems() {
     const productName = product ? product.name : 'صنف غير محدد';
     const productCode = product ? (product.code || '') : '';
     return `
-    <div class="tx-item-card ${isOverStock ? 'row-stock-warning' : ''}">
+    <div class="tx-item-card ${useCompact ? 'tx-item-compact' : ''} ${isOverStock ? 'row-stock-warning' : ''}">
       <div class="tx-item-top">
         <span class="tx-item-num">${i + 1}</span>
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:.88rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(productName)}</div>
-          ${productCode ? `<div style="font-size:.71rem;color:var(--muted);margin-top:1px">${esc(productCode)}</div>` : ''}
+        <div class="tx-item-name-block" style="flex:1;min-width:0">
+          <div class="tx-item-prod-name" style="font-weight:700;font-size:.88rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(productName)}</div>
+          ${productCode ? `<div class="tx-item-prod-code" style="font-size:.71rem;color:var(--muted);margin-top:1px">${esc(productCode)}</div>` : ''}
         </div>
         <button class="tx-item-remove" onclick="removeTxItem(${i})" title="حذف">
           <svg viewBox="0 0 14 14" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/></svg>
@@ -5328,7 +5913,7 @@ function renderTxItems() {
         </div>
         <div class="tx-item-field">
           <span class="tx-item-label">الكمية</span>
-          <input type="number" value="${item.qty}" min="1" ${txType === 'مبيعات' && effectiveAvailable !== null && effectiveAvailable >= 0 ? `max="${effectiveAvailable}"` : ''} class="tx-item-qty-input${isOverStock ? ' stock-warn' : ''}" onchange="txItemChanged(${i},'qty',this.value)">
+          <input type="number" value="${item.qty}" min="1" ${txType === 'مبيعات' && effectiveAvailable !== null && effectiveAvailable >= 0 ? `max="${effectiveAvailable}"` : ''} class="tx-item-qty-input${isOverStock ? ' stock-warn' : ''}" oninput="txItemChanged(${i},'qty',this.value)">
         </div>
         <div class="tx-item-field">
           <span class="tx-item-label">الإجمالي</span>
@@ -5412,9 +5997,36 @@ function txItemChanged(i, field, val) { markTxDirty();
       return;
     }
     txItems[i].qty = newQty;
+    _updateTxItemRowTotal(i);
   }
-  else if (field === 'price') { txItems[i].price = Number(val) || 0; }
+  else if (field === 'price') {
+    txItems[i].price = Number(val) || 0;
+    _updateTxItemRowTotal(i);
+  }
   calcTxSummary();
+}
+
+/** Update only the row's total cell + over-stock state — keeps input focus. */
+function _updateTxItemRowTotal(i) {
+  const it = txItems[i];
+  if (!it) return;
+  const cards = qsa('#tx-items .tx-item-card');
+  const card = cards[i];
+  if (!card) return;
+  const totalCell = card.querySelector('.tx-item-total');
+  if (totalCell) totalCell.textContent = fmtJ((Number(it.qty)||0) * (Number(it.price)||0));
+  // Refresh over-stock badge for sales
+  if (txType === 'مبيعات' && it.productId) {
+    const available = getProductAvailableStock(it.productId);
+    if (available !== null && available >= 0) {
+      const otherQty = txItems.reduce((s, x, idx) => idx !== i && x.productId === it.productId ? s + (Number(x.qty)||0) : s, 0);
+      const eff = Math.max(0, available - otherQty);
+      const isOver = (Number(it.qty)||0) > eff;
+      card.classList.toggle('row-stock-warning', isOver);
+      const qtyInp = card.querySelector('.tx-item-qty-input');
+      if (qtyInp) qtyInp.classList.toggle('stock-warn', isOver);
+    }
+  }
 }
 
 function toggleProductSearch() { openProductPicker(); }
@@ -5694,10 +6306,14 @@ function calcTxSummary() {
       ${validItems.map((it, i) => {
         const p = products.find(x => x._id === it.productId);
         const name = p ? p.name : 'صنف';
+        const code = p ? (p.code || '') : '';
         const lineTotal = it.qty * it.price;
         return `<div class="sum-inv-row">
           <span class="sum-inv-num">${i + 1}</span>
-          <span class="sum-inv-name">${esc(name)}</span>
+          <div class="sum-inv-name-wrap">
+            <span class="sum-inv-name">${esc(name)}</span>
+            ${code ? `<span class="sum-inv-code">${esc(code)}</span>` : ''}
+          </div>
           <span class="sum-inv-qty">${it.qty} × ${fmtN(it.price)}</span>
           <span class="sum-inv-price">${fmtJ(lineTotal)}</span>
         </div>`;
@@ -6422,6 +7038,8 @@ async function confirmTxSave() {
       } catch(_) {}
       transactions = await api('/transactions').catch(() => transactions);
       try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
+      // Draft was just completed → discard it
+      if (activeDraftId) deleteDraft(activeDraftId, true);
     }
     buildNotifications(); buildSidebar();
     resetTx();
@@ -6548,6 +7166,7 @@ async function confirmReturnRequest() {
       toast(`✅ تم إرسال طلب الاسترجاع — في انتظار موافقة المدير`);
       returnRequests = await api('/returns').catch(() => returnRequests);
     }
+    if (activeDraftId) deleteDraft(activeDraftId, true);
     buildNotifications(); buildSidebar();
     renderMovements();
     resetTx();
@@ -6566,7 +7185,364 @@ function resetTx() {
   if (manualRefundField) manualRefundField.value = '';
   const invNote = qs('#tx-inv-note');
   if (invNote) invNote.value = '';
+  // Detach any active draft when wiping the form
+  activeDraftId = null;
+  renderActiveDraftPill();
   renderTxFields(); renderTxItems(); calcTxSummary();
+}
+
+/* ============================================================
+   DRAFTS — quick local save so users can resume an in-progress
+   transaction (e.g. while restocking). All state in localStorage.
+   ============================================================ */
+const DRAFTS_KEY = 'soulia_tx_drafts_v1';
+const DRAFT_LIMIT = 20;
+const DRAFT_AUTOSAVE_MS = 4000;
+let activeDraftId = null;
+let _draftAutosaveTimer = null;
+
+function _readDrafts() {
+  try {
+    const raw = localStorage.getItem(DRAFTS_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch(_) { return []; }
+}
+function _writeDrafts(arr) {
+  try { localStorage.setItem(DRAFTS_KEY, JSON.stringify(arr.slice(0, DRAFT_LIMIT))); } catch(_) {}
+  updateDraftBadge();
+}
+function listDrafts() { return _readDrafts().sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0)); }
+
+/** Snapshot the current transaction form into a serializable object. */
+function serializeTxForm() {
+  const get = (sel) => qs(sel)?.value ?? '';
+  const snap = {
+    type: txType,
+    items: txItems.slice(),
+    discount: txDiscount,
+    discountType: txDiscountType,
+    invNote: get('#tx-inv-note'),
+    comments: Array.isArray(txComments) ? txComments.slice() : [],
+  };
+  if (txType === 'مبيعات') {
+    Object.assign(snap, {
+      client: get('#tx-client'), phone: get('#tx-phone'), ref: get('#tx-ref'),
+      shipCo: get('#tx-shipco'), shipZone: typeof txShipZone !== 'undefined' ? txShipZone : '',
+      shipCost: get('#tx-shipcost'), deposit: get('#tx-deposit'),
+      depMethod: get('#tx-dep-method'), payment: get('#tx-payment'),
+      notes: get('#tx-notes'),
+    });
+  } else if (txType === 'مشتريات') {
+    Object.assign(snap, {
+      supplier: get('#tx-supplier'), ref: get('#tx-ref'),
+      account: get('#tx-account'), deposit: get('#tx-deposit'),
+      notes: get('#tx-notes'),
+    });
+  } else if (txType === 'مرتجع') {
+    Object.assign(snap, {
+      client: get('#tx-client'), phone: get('#tx-phone'),
+      origRef: get('#tx-orig-ref'), reason: get('#tx-return-reason'),
+      manualRefund: get('#ret-manual-refund'),
+      notes: get('#tx-notes'),
+    });
+  }
+  return snap;
+}
+
+/** Restore a snapshot back into the form. Assumes type already switched. */
+function deserializeTxForm(snap) {
+  if (!snap || typeof snap !== 'object') return;
+  txItems = Array.isArray(snap.items) ? snap.items.slice() : [];
+  txDiscount = Number(snap.discount) || 0;
+  txDiscountType = snap.discountType || 'fixed';
+  txComments = Array.isArray(snap.comments) ? snap.comments.slice() : [];
+  renderTxFields();
+  renderTxItems();
+  // Defer DOM-bound fields until renderTxFields has populated them
+  setTimeout(() => {
+    const set = (sel, v) => { const el = qs(sel); if (el && v !== undefined && v !== null) el.value = v; };
+    set('#tx-inv-note', snap.invNote);
+    if (snap.type === 'مبيعات') {
+      set('#tx-client', snap.client); set('#tx-phone', snap.phone); set('#tx-ref', snap.ref);
+      set('#tx-shipco', snap.shipCo);
+      if (typeof snap.shipZone === 'string') { try { txShipZone = snap.shipZone; } catch(_) {} }
+      set('#tx-shipcost', snap.shipCost); set('#tx-deposit', snap.deposit);
+      set('#tx-dep-method', snap.depMethod); set('#tx-payment', snap.payment);
+      set('#tx-notes', snap.notes);
+    } else if (snap.type === 'مشتريات') {
+      set('#tx-supplier', snap.supplier); set('#tx-ref', snap.ref);
+      set('#tx-account', snap.account); set('#tx-deposit', snap.deposit);
+      set('#tx-notes', snap.notes);
+    } else if (snap.type === 'مرتجع') {
+      set('#tx-client', snap.client); set('#tx-phone', snap.phone);
+      set('#tx-orig-ref', snap.origRef); set('#tx-return-reason', snap.reason);
+      set('#ret-manual-refund', snap.manualRefund);
+      set('#tx-notes', snap.notes);
+    }
+    calcTxSummary();
+  }, 0);
+}
+
+/** Has the user actually entered anything worth saving? */
+function _draftHasContent(snap) {
+  if (!snap) return false;
+  if ((snap.items || []).some(it => it && it.productId)) return true;
+  const fieldKeys = ['client','phone','ref','supplier','origRef','reason','notes','invNote','deposit','manualRefund'];
+  return fieldKeys.some(k => String(snap[k] || '').trim() !== '');
+}
+
+/** Detect items where requested qty exceeds available stock — flagged in card. */
+function _draftIncompleteReason(snap) {
+  if (!snap || snap.type !== 'مبيعات') return '';
+  const inv = Array.isArray(inventoryCache) ? inventoryCache : [];
+  const issues = [];
+  (snap.items || []).forEach(it => {
+    if (!it.productId) return;
+    const p = (products || []).find(x => x._id === it.productId);
+    if (!p) return;
+    const stock = inv.find(r => r.code === p.code);
+    const have = stock ? Number(stock.current) || 0 : 0;
+    if (Number(it.qty) > have) issues.push(p.name);
+  });
+  return issues.length ? `كمية أكبر من المخزون: ${issues.slice(0,2).join('، ')}${issues.length>2?'…':''}` : '';
+}
+
+/**
+ * Save current form as draft.
+ * - When called from the manual "Save as Draft" button (showToast=true) and there's
+ *   no active draft yet → create a brand-new draft.
+ * - When called from autosave (showToast=false) and we have an active draft →
+ *   update that draft in place. This way the manual button always grows the list,
+ *   and autosave never duplicates.
+ */
+function saveDraft(showToast) {
+  const snap = serializeTxForm();
+  if (!_draftHasContent(snap)) {
+    if (showToast) toast('لا يوجد محتوى لحفظه — أضف صنفاً أو املأ بياناً واحداً على الأقل', true);
+    return null;
+  }
+  const drafts = _readDrafts();
+  const now = Date.now();
+  let id = activeDraftId;
+  // For autosave: update the active draft in place
+  if (!showToast && id) {
+    const i = drafts.findIndex(d => d.id === id);
+    if (i >= 0) {
+      drafts[i] = { ...drafts[i], snap, updatedAt: now };
+    } else {
+      id = null;
+    }
+  } else if (showToast) {
+    // Manual save: always create a new draft entry (so the user can stack drafts)
+    id = null;
+  }
+  if (!id) {
+    id = 'd_' + now.toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+    drafts.unshift({ id, snap, createdAt: now, updatedAt: now, by: currentUser?.name || currentUser?.username || '' });
+  }
+  _writeDrafts(drafts);
+  activeDraftId = id;
+  renderActiveDraftPill();
+  // After saving, the form is no longer "dirty unsaved" — leaving is safe.
+  // markTxDirty() will flip it back true if the user edits again.
+  txDirty = false;
+  if (showToast) {
+    const total = drafts.length;
+    const arabicTotal = String(total).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+    toast(`💾 تم الحفظ كمسودة جديدة (المجموع: ${arabicTotal})`);
+  }
+  return id;
+}
+
+function autosaveDraftDebounced() {
+  if (!activeDraftId) return; // only autosave once user has explicitly created the draft
+  if (_draftAutosaveTimer) clearTimeout(_draftAutosaveTimer);
+  _draftAutosaveTimer = setTimeout(() => {
+    saveDraft(false);
+    const ind = qs('#draft-autosave-ind');
+    if (ind) { ind.classList.add('show'); setTimeout(() => ind.classList.remove('show'), 1400); }
+  }, DRAFT_AUTOSAVE_MS);
+}
+
+function deleteDraft(id, silent) {
+  const drafts = _readDrafts().filter(d => d.id !== id);
+  _writeDrafts(drafts);
+  if (activeDraftId === id) {
+    activeDraftId = null;
+    renderActiveDraftPill();
+  }
+  if (!silent) renderDraftsDrawer();
+}
+
+function clearAllDrafts() {
+  if (!confirm('حذف جميع المسودات نهائياً؟')) return;
+  _writeDrafts([]);
+  activeDraftId = null;
+  renderActiveDraftPill();
+  renderDraftsDrawer();
+  toast('تم حذف جميع المسودات');
+}
+
+function loadDraft(id) {
+  const drafts = _readDrafts();
+  const d = drafts.find(x => x.id === id);
+  if (!d) { toast('المسودة غير موجودة', true); return; }
+  // Navigate first if on a different page; defer the rest
+  const _continue = () => {
+    // Switch type first so renderTxFields lays out the right form
+    if (d.snap.type && d.snap.type !== txType) {
+      try { setTxType(d.snap.type); } catch(_) { txType = d.snap.type; }
+    }
+    deserializeTxForm(d.snap);
+    // Resuming = consume the draft. Remove it from storage immediately.
+    const remaining = _readDrafts().filter(x => x.id !== id);
+    _writeDrafts(remaining);
+    activeDraftId = null;
+    renderActiveDraftPill();
+    closeDraftsDrawer();
+    // Treat the freshly-loaded form as a clean restored state.
+    // If the user edits it further, markTxDirty() will flip txDirty back to true.
+    setTimeout(() => { txDirty = false; }, 50);
+    toast('📋 تم استئناف المسودة وحذفها من القائمة');
+  };
+  if (currentPage !== 'transaction') {
+    // Force navigation without dirty-check (we're consuming a draft, not abandoning work)
+    txDirty = false;
+    try { navigateTo('transaction'); } catch(_) {}
+    setTimeout(_continue, 60);
+  } else {
+    _continue();
+  }
+}
+
+function updateDraftBadge() {
+  const drafts = _readDrafts();
+  const badge = qs('#draft-count-badge');
+  if (badge) {
+    if (drafts.length > 0) { badge.style.display = 'inline-flex'; badge.textContent = fmtN(drafts.length); }
+    else badge.style.display = 'none';
+  }
+  // Refresh sidebar so the "حركة جديدة" item shows/hides its draft badge
+  try { if (typeof buildSidebar === 'function' && qs('#sidebar')?.children.length) buildSidebar(); } catch(_) {}
+}
+
+function renderActiveDraftPill() {
+  const wrap = qs('#active-draft-pill');
+  if (!wrap) return;
+  if (!activeDraftId) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+  wrap.style.display = '';
+  wrap.innerHTML = `<span class="draft-status-pill">
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    تعديل مسودة محفوظة
+    <span class="draft-pill-x" onclick="detachActiveDraft()" title="فك الارتباط بالمسودة">×</span>
+  </span>`;
+}
+function detachActiveDraft() {
+  activeDraftId = null;
+  renderActiveDraftPill();
+}
+
+function _draftTypeMeta(t) {
+  if (t === 'مبيعات')   return { icon: '💳', cls: 'draft-type-sales',    label: 'مبيعات' };
+  if (t === 'مشتريات') return { icon: '📦', cls: 'draft-type-purchase', label: 'مشتريات' };
+  return                       { icon: '↩️', cls: 'draft-type-return',   label: 'مرتجع' };
+}
+function _draftAgo(ts) {
+  if (!ts) return '';
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (s < 30) return 'الآن';
+  if (s < 60) return `قبل ${fmtJ(s)} ثانية`;
+  if (s < 3600) return `قبل ${fmtJ(Math.floor(s/60))} دقيقة`;
+  if (s < 86400) return `قبل ${fmtJ(Math.floor(s/3600))} ساعة`;
+  return `قبل ${fmtJ(Math.floor(s/86400))} يوم`;
+}
+
+function _ensureDraftsDrawerInBody() {
+  // Move drawer + backdrop to <body> so nothing in the page tree can hide them
+  const drawer = document.getElementById('drafts-drawer');
+  const back = document.getElementById('drafts-drawer-backdrop');
+  if (drawer && drawer.parentElement !== document.body) document.body.appendChild(drawer);
+  if (back && back.parentElement !== document.body) document.body.appendChild(back);
+}
+function openDraftsDrawer() {
+  _ensureDraftsDrawerInBody();
+  const drawer = document.getElementById('drafts-drawer');
+  const back = document.getElementById('drafts-drawer-backdrop');
+  if (!drawer) { console.error('[drafts] drawer element not found'); toast('خطأ: لم يتم العثور على لوحة المسودات', true); return; }
+  renderDraftsDrawer();
+  // Force hard-visible inline styles in case any cascade layer hides the drawer.
+  drawer.style.cssText += ';display:flex;visibility:visible;opacity:1;z-index:10000';
+  if (back) back.style.cssText += ';display:block;visibility:visible;opacity:1;z-index:9999';
+  // Trigger transform animation on next frame
+  requestAnimationFrame(() => {
+    drawer.classList.add('show');
+    back?.classList.add('show');
+  });
+}
+function closeDraftsDrawer() {
+  const drawer = document.getElementById('drafts-drawer');
+  const back = document.getElementById('drafts-drawer-backdrop');
+  drawer?.classList.remove('show');
+  back?.classList.remove('show');
+  setTimeout(() => {
+    if (drawer && !drawer.classList.contains('show')) drawer.style.cssText = drawer.style.cssText.replace(/;?\s*(display|visibility|opacity|z-index):[^;]+/g, '');
+    if (back && !back.classList.contains('show')) back.style.cssText = back.style.cssText.replace(/;?\s*(display|visibility|opacity|z-index):[^;]+/g, '');
+  }, 350);
+}
+
+function renderDraftsDrawer() {
+  const list = qs('#drafts-drawer-list');
+  const cnt = qs('#drafts-drawer-count');
+  const footer = qs('#drafts-drawer-footer');
+  if (!list) return;
+  const drafts = listDrafts();
+  if (cnt) cnt.textContent = drafts.length ? `(${fmtJ(drafts.length)})` : '';
+  if (footer) footer.style.display = drafts.length ? 'flex' : 'none';
+  if (drafts.length === 0) {
+    list.innerHTML = `
+      <div class="draft-empty-state">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <h4>لا توجد مسودات بعد</h4>
+        <p>اضغط <strong>"حفظ كمسودة"</strong> أثناء إنشاء أي حركة لحفظها هنا والرجوع إليها لاحقاً.</p>
+      </div>`;
+    return;
+  }
+  list.innerHTML = drafts.map(d => {
+    const m = _draftTypeMeta(d.snap.type);
+    const items = (d.snap.items || []).filter(it => it.productId);
+    const itemsCount = items.length;
+    const total = items.reduce((s, it) => s + (Number(it.qty)||0) * (Number(it.price)||0), 0);
+    const who = d.snap.client || d.snap.supplier || '— بدون اسم —';
+    const ref = d.snap.ref ? `#${esc(d.snap.ref)}` : '';
+    const incomplete = _draftIncompleteReason(d.snap);
+    return `
+      <div class="draft-card${incomplete ? ' incomplete' : ''}">
+        <div class="draft-card-head">
+          <div class="draft-type-icon ${m.cls}">${m.icon}</div>
+          <div style="flex:1;min-width:0">
+            <div class="draft-card-title">${esc(who)} ${ref ? `<span style="color:var(--muted);font-weight:500;font-size:.78rem">${ref}</span>` : ''}</div>
+            <div class="draft-card-sub">${m.label} · ${esc(_draftAgo(d.updatedAt))}${d.by ? ' · ' + esc(d.by) : ''}</div>
+          </div>
+        </div>
+        <div class="draft-card-meta">
+          <div class="draft-meta-cell"><div class="draft-meta-label">أصناف</div><div class="draft-meta-val">${fmtN(itemsCount)}</div></div>
+          <div class="draft-meta-cell"><div class="draft-meta-label">الإجمالي</div><div class="draft-meta-val">${fmtJ(total)} ج</div></div>
+          <div class="draft-meta-cell"><div class="draft-meta-label">العربون</div><div class="draft-meta-val">${fmtJ(Number(d.snap.deposit)||0)} ج</div></div>
+        </div>
+        ${incomplete ? `<div class="draft-card-flag">⚠️ ${esc(incomplete)}</div>` : ''}
+        <div class="draft-card-actions">
+          <button class="draft-resume-btn" onclick="loadDraft('${esc(d.id)}')" type="button">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            استئناف الحركة
+          </button>
+          <button class="draft-delete-btn" onclick="deleteDraft('${esc(d.id)}')" type="button" title="حذف المسودة" aria-label="حذف">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 /* Inventory */
@@ -6580,9 +7556,400 @@ async function loadInventory() {
 function setInvFilter(f, btn) {
   invFilter = f;
   invPage = 1;
-  qsa('#page-inventory .inv-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  qsa('#inv-toolbar .fx-btn[data-status]').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
   renderInventory();
+}
+function setProdFilter(f, btn) {
+  prodFilter = f;
+  prodPage = 1;
+  qsa('#prod-toolbar .fx-btn[data-status]').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderProducts();
+}
+
+/* ===== Unified Filter/Sort UI helpers (inventory + products) ===== */
+const FX_SORT_OPTIONS = {
+  inv: [
+    { id: 'name-asc',   label: 'الاسم: أ → ي',          icon: '🔤' },
+    { id: 'name-desc',  label: 'الاسم: ي → أ',          icon: '🔤' },
+    { id: 'price-asc',  label: 'السعر: من الأقل',       icon: '💰' },
+    { id: 'price-desc', label: 'السعر: من الأعلى',      icon: '💰' },
+    { id: 'stock-asc',  label: 'المخزون: من الأقل',     icon: '📦' },
+    { id: 'stock-desc', label: 'المخزون: من الأعلى',    icon: '📦' },
+  ],
+  prod: [
+    { id: 'name-asc',   label: 'الاسم: أ → ي',          icon: '🔤' },
+    { id: 'name-desc',  label: 'الاسم: ي → أ',          icon: '🔤' },
+    { id: 'price-asc',  label: 'سعر البيع: من الأقل',   icon: '💰' },
+    { id: 'price-desc', label: 'سعر البيع: من الأعلى',  icon: '💰' },
+    { id: 'buy-asc',    label: 'سعر الشراء: من الأقل',  icon: '🛒' },
+    { id: 'buy-desc',   label: 'سعر الشراء: من الأعلى', icon: '🛒' },
+    { id: 'date-desc',  label: 'الأحدث أولاً',          icon: '🕒' },
+    { id: 'date-asc',   label: 'الأقدم أولاً',          icon: '🕒' },
+  ],
+  mov: [
+    { id: 'date-desc',   label: 'الأحدث أولاً',         icon: '🆕' },
+    { id: 'date-asc',    label: 'الأقدم أولاً',         icon: '🕐' },
+    { id: 'amount-desc', label: 'الأعلى قيمة',          icon: '💰' },
+    { id: 'amount-asc',  label: 'الأقل قيمة',           icon: '💵' },
+    { id: 'client-asc',  label: 'العميل: أ → ي',        icon: '🔤' },
+    { id: 'client-desc', label: 'العميل: ي → أ',        icon: '🔤' },
+  ],
+};
+
+function clearFxSearch(ctx) {
+  const sel = ctx === 'inv' ? '#inv-search-input' : (ctx === 'prod' ? '#prod-search' : '#mov-search');
+  const input = qs(sel);
+  if (!input) return;
+  input.value = '';
+  if (ctx === 'inv') { invPage = 1; renderInventory(); }
+  else if (ctx === 'prod') { prodPage = 1; renderProducts(); }
+  else { movPage = 1; renderMovements(); }
+}
+
+function toggleFxSortMenu(ctx, e) {
+  if (e) e.stopPropagation();
+  const menu = qs('#' + ctx + '-sort-menu');
+  if (!menu) return;
+  const isOpen = menu.classList.contains('show');
+  qsa('.fx-sort-menu.show').forEach(m => m.classList.remove('show'));
+  if (isOpen) return;
+  const opts = FX_SORT_OPTIONS[ctx];
+  const current = fxState[ctx].sort;
+  menu.innerHTML = opts.map(o => `
+    <div class="fx-sort-item ${o.id === current ? 'active' : ''}" onclick="setFxSort('${ctx}','${o.id}')">
+      <span style="font-size:.85rem">${o.icon}</span>
+      <span>${o.label}</span>
+      <svg class="fx-sort-check" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>`).join('');
+  menu.classList.add('show');
+}
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.fx-sort-wrap')) return;
+  qsa('.fx-sort-menu.show').forEach(m => m.classList.remove('show'));
+});
+
+function setFxSort(ctx, sortId) {
+  fxState[ctx].sort = sortId;
+  const opt = FX_SORT_OPTIONS[ctx].find(o => o.id === sortId);
+  const labelEl = qs('#' + ctx + '-sort-label');
+  if (labelEl && opt) labelEl.textContent = opt.label;
+  qsa('.fx-sort-menu.show').forEach(m => m.classList.remove('show'));
+  if (ctx === 'inv') { invPage = 1; renderInventory(); }
+  else if (ctx === 'prod') { prodPage = 1; renderProducts(); }
+  else { movPage = 1; renderMovements(); }
+}
+
+function _fxApplySort(ctx, arr) {
+  const sort = fxState[ctx].sort;
+  const cmp = (a, b, k) => {
+    const av = Number(a[k]) || 0, bv = Number(b[k]) || 0;
+    return av - bv;
+  };
+  const copy = arr.slice();
+  switch (sort) {
+    case 'name-asc':  copy.sort((a,b) => (a.name||'').localeCompare(b.name||'','ar')); break;
+    case 'name-desc': copy.sort((a,b) => (b.name||'').localeCompare(a.name||'','ar')); break;
+    case 'price-asc':  copy.sort((a,b) => cmp(a,b,'sellPrice')); break;
+    case 'price-desc': copy.sort((a,b) => cmp(b,a,'sellPrice')); break;
+    case 'buy-asc':  copy.sort((a,b) => cmp(a,b,'buyPrice')); break;
+    case 'buy-desc': copy.sort((a,b) => cmp(b,a,'buyPrice')); break;
+    case 'stock-asc':  copy.sort((a,b) => cmp(a,b,'current')); break;
+    case 'stock-desc': copy.sort((a,b) => cmp(b,a,'current')); break;
+    case 'date-desc': copy.sort((a,b) => (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'')); break;
+    case 'date-asc':  copy.sort((a,b) => (a.date||a.createdAt||'').localeCompare(b.date||b.createdAt||'')); break;
+    case 'amount-desc': copy.sort((a,b) => cmp(b,a,'total')); break;
+    case 'amount-asc':  copy.sort((a,b) => cmp(a,b,'total')); break;
+    case 'client-asc':  copy.sort((a,b) => (a.client||'').localeCompare(b.client||'','ar')); break;
+    case 'client-desc': copy.sort((a,b) => (b.client||'').localeCompare(a.client||'','ar')); break;
+  }
+  return copy;
+}
+
+function openFxDrawer(ctx) {
+  _fxDrawerCtx = ctx;
+  const body = qs('#fx-drawer-body');
+  if (!body) return;
+  const s = fxState[ctx];
+
+  // ===== Movements drawer (employees, methods, statuses, dates, amount) =====
+  if (ctx === 'mov') {
+    const txs = Array.isArray(transactions) ? transactions : [];
+    const employees = [...new Set(txs.map(t => (t.employee||'').trim()).filter(Boolean))].sort();
+    const empCounts = new Map();
+    txs.forEach(t => { const k=(t.employee||'').trim(); if (k) empCounts.set(k, (empCounts.get(k)||0)+1); });
+    const methods = ['كاش','فودافون كاش','Instapay','تحويل بنكي'];
+    const methodCounts = new Map();
+    txs.forEach(t => { [t.depMethod, t.collectMethod, t.payment].forEach(m => { const k=(m||'').trim(); if (k) methodCounts.set(k, (methodCounts.get(k)||0)+1); }); });
+    const statuses = ['مكتمل','معلق','ملغي'];
+    const statusCounts = new Map();
+    txs.forEach(t => { let st=t.payStatus||''; if (t.cancelled) st='ملغي'; if (st) statusCounts.set(st,(statusCounts.get(st)||0)+1); });
+    const empsHtml = employees.length ? employees.map(e => `
+      <label class="fx-checkbox">
+        <input type="checkbox" data-fx="employee" value="${esc(e)}" ${s.employee.has(e)?'checked':''}>
+        <span>${esc(e)}</span>
+        <span class="fx-checkbox-count">${fmtN(empCounts.get(e)||0)}</span>
+      </label>`).join('') : '<div style="padding:10px;color:var(--muted);font-size:.82rem;text-align:center">لا يوجد موظفون مسجلون</div>';
+    const methodsHtml = methods.map(m => `
+      <label class="fx-checkbox">
+        <input type="checkbox" data-fx="method" value="${esc(m)}" ${s.method.has(m)?'checked':''}>
+        <span>${esc(m)}</span>
+        <span class="fx-checkbox-count">${fmtN(methodCounts.get(m)||0)}</span>
+      </label>`).join('');
+    const statusesHtml = statuses.map(st => `
+      <label class="fx-checkbox">
+        <input type="checkbox" data-fx="status" value="${esc(st)}" ${s.status.has(st)?'checked':''}>
+        <span>${esc(st)}</span>
+        <span class="fx-checkbox-count">${fmtN(statusCounts.get(st)||0)}</span>
+      </label>`).join('');
+    body.innerHTML = `
+      <div class="fx-section">
+        <div class="fx-section-label">📅 نطاق التاريخ</div>
+        <div class="fx-range">
+          <input type="date" data-fx="dateFrom" value="${esc(s.dateFrom)}">
+          <span class="fx-range-sep">→</span>
+          <input type="date" data-fx="dateTo" value="${esc(s.dateTo)}">
+        </div>
+      </div>
+      <div class="fx-section">
+        <div class="fx-section-label">💰 نطاق المبلغ (ج)</div>
+        <div class="fx-range">
+          <input type="number" min="0" placeholder="من" data-fx="amountMin" value="${esc(s.amountMin)}">
+          <span class="fx-range-sep">→</span>
+          <input type="number" min="0" placeholder="إلى" data-fx="amountMax" value="${esc(s.amountMax)}">
+        </div>
+      </div>
+      <div class="fx-section">
+        <div class="fx-section-label">🏷️ الحالة</div>
+        <div class="fx-checkboxes">${statusesHtml}</div>
+      </div>
+      <div class="fx-section">
+        <div class="fx-section-label">👤 الموظف</div>
+        <div class="fx-checkboxes">${empsHtml}</div>
+      </div>
+      <div class="fx-section">
+        <div class="fx-section-label">💳 طريقة الدفع</div>
+        <div class="fx-checkboxes">${methodsHtml}</div>
+      </div>`;
+    body.querySelectorAll('input[data-fx]').forEach(inp => {
+      inp.addEventListener('input', () => _fxOnDrawerChange(inp));
+      inp.addEventListener('change', () => _fxOnDrawerChange(inp));
+    });
+    qs('#fx-drawer').classList.add('show');
+    qs('#fx-drawer-backdrop').classList.add('show');
+    return;
+  }
+
+  let suppliers = [];
+  if (ctx === 'prod') {
+    suppliers = [...new Set((products||[]).map(p => (p.supplier||'').trim()).filter(Boolean))].sort();
+  } else {
+    const codeToSup = new Map();
+    (products||[]).forEach(p => { if (p.code) codeToSup.set(String(p.code), p.supplier || ''); });
+    suppliers = [...new Set((inventoryCache||[]).map(r => codeToSup.get(String(r.code)) || '').filter(Boolean))].sort();
+  }
+  const supplierCounts = new Map();
+  if (ctx === 'prod') (products||[]).forEach(p => { const k = (p.supplier||'').trim(); if (k) supplierCounts.set(k, (supplierCounts.get(k)||0)+1); });
+  else {
+    const codeToSup = new Map();
+    (products||[]).forEach(p => { if (p.code) codeToSup.set(String(p.code), p.supplier || ''); });
+    (inventoryCache||[]).forEach(r => { const k = codeToSup.get(String(r.code)) || ''; if (k) supplierCounts.set(k, (supplierCounts.get(k)||0)+1); });
+  }
+  const supplierHtml = suppliers.length ? suppliers.map(sup => `
+    <label class="fx-checkbox">
+      <input type="checkbox" data-fx="supplier" value="${esc(sup)}" ${s.supplier.has(sup)?'checked':''}>
+      <span>${esc(sup)}</span>
+      <span class="fx-checkbox-count">${fmtN(supplierCounts.get(sup)||0)}</span>
+    </label>`).join('') : '<div style="padding:10px;color:var(--muted);font-size:.82rem;text-align:center">لا يوجد موردون</div>';
+
+  let html = '';
+  if (ctx === 'inv') {
+    html = `
+      <div class="fx-section">
+        <div class="fx-section-label">💰 نطاق سعر البيع (ج)</div>
+        <div class="fx-range">
+          <input type="number" min="0" placeholder="من" data-fx="priceMin" value="${esc(s.priceMin)}">
+          <span class="fx-range-sep">→</span>
+          <input type="number" min="0" placeholder="إلى" data-fx="priceMax" value="${esc(s.priceMax)}">
+        </div>
+      </div>
+      <div class="fx-section">
+        <div class="fx-section-label">📦 نطاق المخزون</div>
+        <div class="fx-range">
+          <input type="number" min="0" placeholder="من" data-fx="stockMin" value="${esc(s.stockMin)}">
+          <span class="fx-range-sep">→</span>
+          <input type="number" min="0" placeholder="إلى" data-fx="stockMax" value="${esc(s.stockMax)}">
+        </div>
+      </div>
+      <div class="fx-section">
+        <div class="fx-section-label">🏭 المورد</div>
+        <div class="fx-checkboxes">${supplierHtml}</div>
+      </div>`;
+  } else {
+    html = `
+      <div class="fx-section">
+        <div class="fx-section-label">💰 نطاق سعر البيع (ج)</div>
+        <div class="fx-range">
+          <input type="number" min="0" placeholder="من" data-fx="sellMin" value="${esc(s.sellMin)}">
+          <span class="fx-range-sep">→</span>
+          <input type="number" min="0" placeholder="إلى" data-fx="sellMax" value="${esc(s.sellMax)}">
+        </div>
+      </div>
+      <div class="fx-section">
+        <div class="fx-section-label">🛒 نطاق سعر الشراء (ج)</div>
+        <div class="fx-range">
+          <input type="number" min="0" placeholder="من" data-fx="buyMin" value="${esc(s.buyMin)}">
+          <span class="fx-range-sep">→</span>
+          <input type="number" min="0" placeholder="إلى" data-fx="buyMax" value="${esc(s.buyMax)}">
+        </div>
+      </div>
+      <div class="fx-section">
+        <div class="fx-section-label">🏭 المورد</div>
+        <div class="fx-checkboxes">${supplierHtml}</div>
+      </div>`;
+  }
+  body.innerHTML = html;
+  body.querySelectorAll('input[data-fx]').forEach(inp => {
+    inp.addEventListener('input', () => _fxOnDrawerChange(inp));
+    inp.addEventListener('change', () => _fxOnDrawerChange(inp));
+  });
+  qs('#fx-drawer').classList.add('show');
+  qs('#fx-drawer-backdrop').classList.add('show');
+}
+
+function _fxOnDrawerChange(inp) {
+  if (!_fxDrawerCtx) return;
+  const s = fxState[_fxDrawerCtx];
+  const k = inp.getAttribute('data-fx');
+  if (k === 'supplier') {
+    if (inp.checked) s.supplier.add(inp.value);
+    else s.supplier.delete(inp.value);
+  } else if (k === 'employee' || k === 'method' || k === 'status') {
+    if (inp.checked) s[k].add(inp.value);
+    else s[k].delete(inp.value);
+  } else {
+    s[k] = inp.value;
+  }
+  if (_fxDrawerCtx === 'inv') { invPage = 1; renderInventory(); }
+  else if (_fxDrawerCtx === 'prod') { prodPage = 1; renderProducts(); }
+  else if (_fxDrawerCtx === 'mov') { movPage = 1; renderMovements(); }
+}
+
+function closeFxDrawer() {
+  qs('#fx-drawer')?.classList.remove('show');
+  qs('#fx-drawer-backdrop')?.classList.remove('show');
+  _fxDrawerCtx = null;
+}
+
+function resetFxFilters() {
+  const ctx = _fxDrawerCtx;
+  if (!ctx) return;
+  if (ctx === 'inv') fxState.inv = { sort: fxState.inv.sort, supplier: new Set(), priceMin: '', priceMax: '', stockMin: '', stockMax: '' };
+  else if (ctx === 'prod') fxState.prod = { sort: fxState.prod.sort, supplier: new Set(), sellMin: '', sellMax: '', buyMin: '', buyMax: '' };
+  else if (ctx === 'mov') fxState.mov = { sort: fxState.mov.sort, employee: new Set(), method: new Set(), status: new Set(), dateFrom: '', dateTo: '', amountMin: '', amountMax: '' };
+  openFxDrawer(ctx); // re-render
+  if (ctx === 'inv') { invPage = 1; renderInventory(); }
+  else if (ctx === 'prod') { prodPage = 1; renderProducts(); }
+  else if (ctx === 'mov') { movPage = 1; renderMovements(); }
+}
+
+function fxResetAll(ctx) {
+  if (ctx === 'inv') {
+    invFilter = 'all';
+    fxState.inv = { sort: 'name-asc', supplier: new Set(), priceMin: '', priceMax: '', stockMin: '', stockMax: '' };
+    const sInp = qs('#inv-search-input'); if (sInp) sInp.value = '';
+    invPage = 1; renderInventory();
+  } else if (ctx === 'prod') {
+    prodFilter = 'all';
+    fxState.prod = { sort: 'name-asc', supplier: new Set(), sellMin: '', sellMax: '', buyMin: '', buyMax: '' };
+    const sInp = qs('#prod-search'); if (sInp) sInp.value = '';
+    prodPage = 1; renderProducts();
+  } else if (ctx === 'mov') {
+    movFilter = 'all'; movStatusFilter = '';
+    fxState.mov = { sort: 'date-desc', employee: new Set(), method: new Set(), status: new Set(), dateFrom: '', dateTo: '', amountMin: '', amountMax: '' };
+    const sInp = qs('#mov-search'); if (sInp) sInp.value = '';
+    movPage = 1; renderMovements();
+  }
+}
+
+function fxRemoveChip(ctx, kind, value) {
+  const s = fxState[ctx];
+  if (kind === 'status' && (ctx === 'inv' || ctx === 'prod')) { if (ctx === 'inv') invFilter = 'all'; else prodFilter = 'all'; }
+  else if (kind === 'movtype') { movFilter = 'all'; }
+  else if (kind === 'search') { const inp = qs(ctx === 'inv' ? '#inv-search-input' : (ctx === 'prod' ? '#prod-search' : '#mov-search')); if (inp) inp.value = ''; }
+  else if (kind === 'supplier') s.supplier.delete(value);
+  else if (kind === 'employee') s.employee.delete(value);
+  else if (kind === 'method') s.method.delete(value);
+  else if (kind === 'movstatus') s.status.delete(value);
+  else if (kind === 'range') { s[value+'Min'] = ''; s[value+'Max'] = ''; }
+  else if (kind === 'date') { s.dateFrom = ''; s.dateTo = ''; }
+  if (ctx === 'inv') { invPage = 1; renderInventory(); }
+  else if (ctx === 'prod') { prodPage = 1; renderProducts(); }
+  else if (ctx === 'mov') { movPage = 1; renderMovements(); }
+}
+
+function _fxBuildChips(ctx) {
+  const chips = [];
+  const s = fxState[ctx];
+  if (ctx === 'inv' || ctx === 'prod') {
+    const status = ctx === 'inv' ? invFilter : prodFilter;
+    const statusLabels = { ok: 'متوفر', low: 'منخفض', zero: 'نفد' };
+    if (status && status !== 'all') chips.push({ kind: 'status', value: status, label: 'الحالة: ' + statusLabels[status] });
+  } else if (ctx === 'mov') {
+    if (movFilter && movFilter !== 'all') chips.push({ kind: 'movtype', value: movFilter, label: 'النوع: ' + movFilter });
+  }
+  const searchSel = ctx === 'inv' ? '#inv-search-input' : (ctx === 'prod' ? '#prod-search' : '#mov-search');
+  const searchVal = (qs(searchSel)?.value || '').trim();
+  if (searchVal) chips.push({ kind: 'search', value: '', label: 'بحث: ' + searchVal });
+  if (s.supplier) s.supplier.forEach(sup => chips.push({ kind: 'supplier', value: sup, label: 'المورد: ' + sup }));
+  if (ctx === 'inv') {
+    if (s.priceMin || s.priceMax) chips.push({ kind: 'range', value: 'price', label: `السعر: ${s.priceMin||0} → ${s.priceMax||'∞'}` });
+    if (s.stockMin || s.stockMax) chips.push({ kind: 'range', value: 'stock', label: `المخزون: ${s.stockMin||0} → ${s.stockMax||'∞'}` });
+  } else if (ctx === 'prod') {
+    if (s.sellMin || s.sellMax) chips.push({ kind: 'range', value: 'sell', label: `سعر البيع: ${s.sellMin||0} → ${s.sellMax||'∞'}` });
+    if (s.buyMin || s.buyMax) chips.push({ kind: 'range', value: 'buy', label: `سعر الشراء: ${s.buyMin||0} → ${s.buyMax||'∞'}` });
+  } else if (ctx === 'mov') {
+    if (s.dateFrom || s.dateTo) chips.push({ kind: 'date', value: '', label: `التاريخ: ${s.dateFrom||'—'} → ${s.dateTo||'—'}` });
+    if (s.amountMin || s.amountMax) chips.push({ kind: 'range', value: 'amount', label: `المبلغ: ${s.amountMin||0} → ${s.amountMax||'∞'}` });
+    s.employee.forEach(e => chips.push({ kind: 'employee', value: e, label: 'الموظف: ' + e }));
+    s.method.forEach(m => chips.push({ kind: 'method', value: m, label: 'الطريقة: ' + m }));
+    s.status.forEach(st => chips.push({ kind: 'movstatus', value: st, label: 'الحالة: ' + st }));
+  }
+  const wrap = qs('#' + ctx + '-chips');
+  const btn = qs('#' + ctx + '-filter-active-count');
+  const advancedCount = chips.filter(c => c.kind !== 'status' && c.kind !== 'search' && c.kind !== 'movtype').length;
+  if (btn) {
+    if (advancedCount > 0) { btn.style.display = 'inline-block'; btn.textContent = fmtN(advancedCount); }
+    else btn.style.display = 'none';
+  }
+  if (!wrap) return;
+  if (chips.length === 0) { wrap.innerHTML = ''; wrap.classList.remove('has-items'); return; }
+  wrap.classList.add('has-items');
+  wrap.innerHTML = chips.map(c => `
+    <span class="fx-chip">
+      ${esc(c.label)}
+      <span class="fx-chip-x" onclick="fxRemoveChip('${ctx}','${c.kind}','${esc(String(c.value))}')">×</span>
+    </span>`).join('') + `<span class="fx-chip fx-chip-reset" onclick="fxResetAll('${ctx}')">↺ إعادة ضبط الكل</span>`;
+}
+
+function _fxMatchSupplier(ctx, row) {
+  const s = fxState[ctx];
+  if (s.supplier.size === 0) return true;
+  let sup = '';
+  if (ctx === 'prod') sup = (row.supplier||'').trim();
+  else {
+    const p = (products||[]).find(x => String(x.code) === String(row.code));
+    sup = (p?.supplier || '').trim();
+  }
+  return s.supplier.has(sup);
+}
+
+function _fxInRange(val, minS, maxS) {
+  const v = Number(val) || 0;
+  if (minS !== '' && v < Number(minS)) return false;
+  if (maxS !== '' && v > Number(maxS)) return false;
+  return true;
 }
 
 function renderInventory() {
@@ -6617,16 +7984,30 @@ function renderInventory() {
       </div>`).join('');
   }
 
+  // Update tab counts
+  const _setCount = (id, v) => { const el = qs('#' + id); if (el) el.textContent = fmtN(v); };
+  _setCount('inv-count-all', totalItems);
+  _setCount('inv-count-ok', okCount);
+  _setCount('inv-count-low', lowCount);
+  _setCount('inv-count-zero', zeroCount);
+
   const tokens = normalizeUiSearch(qs('#inv-search-input')?.value || '').split(/\s+/).filter(Boolean);
+  const fs = fxState.inv;
   let data = inv.filter(r => {
     const blob = normalizeUiSearch([r.name, r.code, r.returnRefs || ''].join(' '));
     if (tokens.length && !tokens.every(t => blob.includes(t))) return false;
-    if (invFilter === 'low') return r.status === 'low' || r.status === 'منخفض' || (r.current > 0 && r.current <= (r.minStock || 0));
-    if (invFilter === 'ok') return r.status === 'ok' || r.status === 'متوفر' || (r.current > (r.minStock || 0));
-    if (invFilter === 'zero') return (r.current || 0) <= 0;
+    if (invFilter === 'low' && !(r.status === 'low' || r.status === 'منخفض' || (r.current > 0 && r.current <= (r.minStock || 0)))) return false;
+    if (invFilter === 'ok'  && !(r.status === 'ok'  || r.status === 'متوفر' || (r.current > (r.minStock || 0)))) return false;
+    if (invFilter === 'zero' && !((r.current || 0) <= 0)) return false;
+    if (!_fxInRange(r.sellPrice, fs.priceMin, fs.priceMax)) return false;
+    if (!_fxInRange(r.current,   fs.stockMin, fs.stockMax)) return false;
+    if (!_fxMatchSupplier('inv', r)) return false;
     return true;
   });
-  data.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  data = _fxApplySort('inv', data);
+  _fxBuildChips('inv');
+  const _rcEl = qs('#inv-results-count');
+  if (_rcEl) _rcEl.innerHTML = `النتائج: <strong>${fmtN(data.length)}</strong> من ${fmtN(totalItems)}`;
 
   const statusBadgeHtml = (r) => {
     if (r.current <= 0) return `<span class="inv-status-badge out-of-stock"><span class="inv-status-dot"></span>نفد</span>`;
@@ -7014,7 +8395,8 @@ function renderMovementTxRow(tx) {
   const dateCell = `<div style="font-size:.82rem;font-weight:600">${fmtDate(tx.date)}</div><div class="text-xs text-muted" style="margin-top:2px">${fmtDateTime(createdAt)}</div>`;
   const isSelected = selectedMovIds.has(tx._id);
   const rowStyle = isCancelledOrLocked ? 'style="opacity:0.6;text-decoration:line-through"' : '';
-  return `<tr ${rowStyle} class="${isSelected ? 'mov-row-selected' : ''}" onclick="handleMovRowClick(event,'${esc(tx._id)}')">
+  const _rtFlash = _rtFlashIds.has(String(tx._id)) ? ' rt-flash' : '';
+  return `<tr ${rowStyle} class="${isSelected ? 'mov-row-selected' : ''}${_rtFlash}" onclick="handleMovRowClick(event,'${esc(tx._id)}')">
     <td><input type="checkbox" class="checkbox mov-check" value="${esc(tx._id)}" ${isSelected ? 'checked' : ''} onclick="handleMovCheck(event,'${esc(tx._id)}')"></td>
     <td>${dateCell}</td>
     <td>${movementKindBadge(tx)}${vaultStatusBadge}${vaultHint}</td>
@@ -7056,28 +8438,73 @@ function renderMovementTxRow(tx) {
   </tr>`;
 }
 function renderMovements() {
-  const from = qs('#mov-from')?.value; const to = qs('#mov-to')?.value;
+  // Update tab counts (across ALL transactions, before filters)
+  const _allTx = Array.isArray(transactions) ? transactions : [];
+  const _setCnt = (id, v) => { const el = qs('#' + id); if (el) el.textContent = fmtN(v); };
+  _setCnt('mov-count-all',      _allTx.length);
+  _setCnt('mov-count-sales',    _allTx.filter(t => t.type === 'مبيعات').length);
+  _setCnt('mov-count-purchase', _allTx.filter(t => t.type === 'مشتريات').length);
+  _setCnt('mov-count-return',   _allTx.filter(t => t.type === 'مرتجع' || t.type === 'مرتجع مبيعات' || t.type === 'مرتجع مشتريات').length);
+
+  const fs = fxState.mov;
+  // Sync hidden date inputs from advanced drawer for back-compat
+  const fromInp = qs('#mov-from'); if (fromInp) fromInp.value = fs.dateFrom || '';
+  const toInp = qs('#mov-to'); if (toInp) toInp.value = fs.dateTo || '';
+  const from = fs.dateFrom; const to = fs.dateTo;
   const tokens = normalizeUiSearch(qs('#mov-search')?.value || '').split(/\s+/).filter(Boolean);
+
   let data = transactions.filter(tx => {
     if (from && tx.date && tx.date.slice(0, 10) < from) return false;
     if (to && tx.date && tx.date.slice(0, 10) > to) return false;
-    if (movFilter === 'استرجاع') {
+    // Tab type filter (مبيعات/مشتريات/مرتجع)
+    if (movFilter === 'مرتجع') {
+      if (tx.type !== 'مرتجع' && tx.type !== 'مرتجع مبيعات' && tx.type !== 'مرتجع مشتريات') return false;
+    } else if (movFilter === 'استرجاع') {
       if (!isMovPlainReturn(tx)) return false;
     } else if (movFilter === 'استبدال') {
       if (!isMovExchangeReturn(tx) && !isMovExchangeSale(tx)) return false;
     } else if (movFilter !== 'all' && !movStatusFilter && tx.type !== movFilter) return false;
     if (movStatusFilter && tx.payStatus !== movStatusFilter) return false;
+    // Drawer filters
+    if (fs.amountMin !== '' && (Number(tx.total) || 0) < Number(fs.amountMin)) return false;
+    if (fs.amountMax !== '' && (Number(tx.total) || 0) > Number(fs.amountMax)) return false;
+    if (fs.employee.size > 0 && !fs.employee.has((tx.employee || '').trim())) return false;
+    if (fs.method.size > 0) {
+      const txMethods = [tx.depMethod, tx.collectMethod, tx.payment].map(m => (m||'').trim()).filter(Boolean);
+      if (!txMethods.some(m => fs.method.has(m))) return false;
+    }
+    if (fs.status.size > 0) {
+      let st = tx.payStatus || '';
+      if (tx.cancelled) st = 'ملغي';
+      if (!fs.status.has(st)) return false;
+    }
     if (tokens.length) {
       const blob = normalizeUiSearch([tx.client, tx.ref, movementBaseRef(tx.ref || ''), tx.phone, tx.notes, tx.type, tx.employee, String(tx.total || '')].join(' '));
       if (!tokens.every(t => blob.includes(t))) return false;
     }
     return true;
   });
+
+  // Apply sort
+  data = _fxApplySort('mov', data);
+  _fxBuildChips('mov');
+  try { _updateMovDateLabel(); } catch(_) {}
+
   const retRows = filterReturnRequestsForMovementsList();
-  const merged = [
-    ...data.map(tx => ({ k: 'tx', tx, sk: tx.date || '' })),
-    ...retRows.map(r => ({ k: 'ret', r, sk: r.createdAt || '' })),
-  ].sort((a, b) => (b.sk || '').localeCompare(a.sk || ''));
+  // Merge: if user picked a custom sort other than date-desc, respect it for txs and append return reqs at the end
+  const useDefaultMerge = fs.sort === 'date-desc';
+  let merged;
+  if (useDefaultMerge) {
+    merged = [
+      ...data.map(tx => ({ k: 'tx', tx, sk: tx.date || '' })),
+      ...retRows.map(r => ({ k: 'ret', r, sk: r.createdAt || '' })),
+    ].sort((a, b) => (b.sk || '').localeCompare(a.sk || ''));
+  } else {
+    merged = [
+      ...data.map(tx => ({ k: 'tx', tx })),
+      ...retRows.map(r => ({ k: 'ret', r })),
+    ];
+  }
 
   // Calculate KPIs (استبعاد الحركات الملغاة من الحسابات)
   const allTx = data;
@@ -7106,6 +8533,29 @@ function renderMovements() {
   const pendingCount = activeTx.filter(t => isStatusPending(t.payStatus)).length;
   const completedCount = activeTx.filter(t => t.payStatus === 'مكتمل').length;
   const cancelledCount = allTx.filter(t => t.cancelled || t.payStatus === 'ملغي').length;
+
+  // Compact summary line (excludes cancelled)
+  const _msEl = qs('#mov-mini-summary');
+  if (_msEl) {
+    const salesCount = salesTx.length;
+    const purchasesCount = activeTx.filter(t => t.type === 'مشتريات').length;
+    const returnsCount = activeTx.filter(t => t.type === 'مرتجع' || t.type === 'مرتجع مبيعات' || t.type === 'مرتجع مشتريات').length;
+    const totalActive = salesCount + purchasesCount + returnsCount;
+    if (totalActive > 0) {
+      _msEl.classList.add('show');
+      _msEl.innerHTML = `
+        <span class="ms-item ms-sales">المبيعات: <span class="ms-num">${fmtN(salesCount)}</span></span>
+        <span class="ms-sep">|</span>
+        <span class="ms-item ms-purchase">المشتريات: <span class="ms-num">${fmtN(purchasesCount)}</span></span>
+        <span class="ms-sep">|</span>
+        <span class="ms-item ms-return">المرتجعات: <span class="ms-num">${fmtN(returnsCount)}</span></span>
+        <span class="ms-total">الإجمالي: ${fmtN(totalActive)} حركة فعّالة${cancelledCount > 0 ? ` (${fmtN(cancelledCount)} ملغاة مستبعدة)` : ''}</span>`;
+    } else {
+      _msEl.classList.remove('show');
+    }
+  }
+  const _rcEl = qs('#mov-results-count');
+  if (_rcEl) _rcEl.innerHTML = `النتائج: <strong>${fmtN(data.length)}</strong> من ${fmtN(_allTx.length)}`;
 
   // Render KPI strip — All 9 metrics, fully responsive grid/scroll
   const kpiEl = qs('#mov-kpi-strip');
@@ -7165,9 +8615,165 @@ const debouncedRenderMovements = debounce(() => { movPage = 1; renderMovements()
 function setMovFilter(f, btn, type) {
   movPage = 1;
   if (type === 'status') { movStatusFilter = f; movFilter = 'all'; } else { movFilter = f; movStatusFilter = ''; }
-  qsa('#page-movements .mov-type-pill').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+  qsa('#page-movements .mov-type-pill').forEach(b => b.classList.remove('active')); if (btn) btn.classList.add('active');
   updateMovFilterBadge();
   renderMovements();
+}
+function setMovTypeTab(type, btn) {
+  movPage = 1;
+  movFilter = type;
+  movStatusFilter = '';
+  qsa('#mov-toolbar .fx-btn[data-mov-type]').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderMovements();
+}
+
+/* ===== Movements toolbar collapse ===== */
+function toggleMovToolbar(btn) {
+  const tb = qs('#mov-toolbar');
+  if (!tb) return;
+  const collapsed = tb.classList.toggle('collapsed');
+  tb.classList.toggle('expanded', !collapsed);
+  try { localStorage.setItem('mov_toolbar_collapsed', collapsed ? '1' : '0'); } catch(_) {}
+}
+window.addEventListener('DOMContentLoaded', () => {
+  try {
+    if (localStorage.getItem('mov_toolbar_collapsed') === '1') {
+      const tb = qs('#mov-toolbar');
+      if (tb) { tb.classList.add('collapsed'); tb.classList.remove('expanded'); }
+    }
+  } catch(_) {}
+});
+
+/* ===== Date quick-filter dropdown ===== */
+function toggleMovDateMenu(e) {
+  if (e) e.stopPropagation();
+  const wrap = qs('#mov-date-btn')?.parentElement;
+  if (!wrap) return;
+  const menu = qs('#mov-date-menu');
+  if (!menu) return;
+  const isOpen = menu.classList.contains('show');
+  qsa('.fx-sort-menu.show').forEach(m => m.classList.remove('show'));
+  if (isOpen) return;
+  const fs = fxState.mov;
+  const presets = [
+    { id: 'today',     label: 'اليوم',         icon: '📅' },
+    { id: 'yesterday', label: 'أمس',           icon: '📆' },
+    { id: 'last7',     label: 'آخر ٧ أيام',    icon: '🗓️' },
+    { id: 'last30',    label: 'آخر ٣٠ يوم',    icon: '🗓️' },
+    { id: 'thisMonth', label: 'هذا الشهر',     icon: '📊' },
+    { id: 'lastMonth', label: 'الشهر الماضي',  icon: '📊' },
+  ];
+  const active = _movDateActivePreset();
+  menu.innerHTML = `
+    <div class="fx-date-header">
+      <span>📅 فلتر التاريخ</span>
+      ${(fs.dateFrom || fs.dateTo) ? `<button class="fx-date-clear-x" onclick="clearMovDate()" title="مسح">✕</button>` : ''}
+    </div>
+    <div class="fx-date-presets">
+      ${presets.map(p => `
+        <button class="fx-date-preset ${p.id === active ? 'active' : ''}" onclick="applyMovDatePreset('${p.id}')">
+          <span class="fx-date-preset-icon">${p.icon}</span>
+          <span>${p.label}</span>
+        </button>`).join('')}
+    </div>
+    <div class="fx-date-divider"></div>
+    <div class="fx-date-custom">
+      <div class="fx-date-custom-title">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        نطاق مخصص — اختر من التقويم
+      </div>
+      <div class="fx-date-custom-row">
+        <label>
+          <span>من تاريخ</span>
+          <input type="date" id="mov-date-from-custom" value="${esc(fs.dateFrom||'')}" onchange="applyMovDateCustom()">
+        </label>
+        <label>
+          <span>إلى تاريخ</span>
+          <input type="date" id="mov-date-to-custom" value="${esc(fs.dateTo||'')}" onchange="applyMovDateCustom()">
+        </label>
+      </div>
+    </div>`;
+  menu.classList.add('show');
+}
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.fx-date-quick')) return;
+  qs('#mov-date-menu')?.classList.remove('show');
+});
+
+function _movDateActivePreset() {
+  const fs = fxState.mov;
+  if (!fs.dateFrom && !fs.dateTo) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const fmtD = (d) => d.toISOString().slice(0,10);
+  const sameDay = (a,b) => a === b;
+  const t = fmtD(today);
+  if (sameDay(fs.dateFrom, t) && sameDay(fs.dateTo, t)) return 'today';
+  const yd = new Date(today); yd.setDate(yd.getDate()-1);
+  if (sameDay(fs.dateFrom, fmtD(yd)) && sameDay(fs.dateTo, fmtD(yd))) return 'yesterday';
+  const d7 = new Date(today); d7.setDate(d7.getDate()-6);
+  if (sameDay(fs.dateFrom, fmtD(d7)) && sameDay(fs.dateTo, t)) return 'last7';
+  const d30 = new Date(today); d30.setDate(d30.getDate()-29);
+  if (sameDay(fs.dateFrom, fmtD(d30)) && sameDay(fs.dateTo, t)) return 'last30';
+  const mStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  if (sameDay(fs.dateFrom, fmtD(mStart)) && sameDay(fs.dateTo, t)) return 'thisMonth';
+  const lmStart = new Date(today.getFullYear(), today.getMonth()-1, 1);
+  const lmEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+  if (sameDay(fs.dateFrom, fmtD(lmStart)) && sameDay(fs.dateTo, fmtD(lmEnd))) return 'lastMonth';
+  return null;
+}
+
+function applyMovDatePreset(id) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const fmtD = (d) => d.toISOString().slice(0,10);
+  let from = '', to = '';
+  if (id === 'today') { from = to = fmtD(today); }
+  else if (id === 'yesterday') { const y = new Date(today); y.setDate(y.getDate()-1); from = to = fmtD(y); }
+  else if (id === 'last7') { const s = new Date(today); s.setDate(s.getDate()-6); from = fmtD(s); to = fmtD(today); }
+  else if (id === 'last30') { const s = new Date(today); s.setDate(s.getDate()-29); from = fmtD(s); to = fmtD(today); }
+  else if (id === 'thisMonth') { from = fmtD(new Date(today.getFullYear(), today.getMonth(), 1)); to = fmtD(today); }
+  else if (id === 'lastMonth') { from = fmtD(new Date(today.getFullYear(), today.getMonth()-1, 1)); to = fmtD(new Date(today.getFullYear(), today.getMonth(), 0)); }
+  fxState.mov.dateFrom = from;
+  fxState.mov.dateTo = to;
+  qs('#mov-date-menu')?.classList.remove('show');
+  _updateMovDateLabel();
+  movPage = 1; renderMovements();
+}
+
+function applyMovDateCustom() {
+  const f = qs('#mov-date-from-custom')?.value || '';
+  const t = qs('#mov-date-to-custom')?.value || '';
+  fxState.mov.dateFrom = f;
+  fxState.mov.dateTo = t;
+  _updateMovDateLabel();
+  movPage = 1; renderMovements();
+}
+function clearMovDate() {
+  fxState.mov.dateFrom = '';
+  fxState.mov.dateTo = '';
+  qs('#mov-date-menu')?.classList.remove('show');
+  _updateMovDateLabel();
+  movPage = 1; renderMovements();
+}
+function _updateMovDateLabel() {
+  const lbl = qs('#mov-date-label');
+  const ind = qs('#mov-date-active');
+  const btn = qs('#mov-date-btn');
+  const fs = fxState.mov;
+  const active = _movDateActivePreset();
+  const hasDate = !!(fs.dateFrom || fs.dateTo);
+  if (lbl) {
+    if (active) {
+      const map = { today:'اليوم', yesterday:'أمس', last7:'٧ أيام', last30:'٣٠ يوم', thisMonth:'هذا الشهر', lastMonth:'الشهر الماضي' };
+      lbl.textContent = map[active] || 'التاريخ';
+    } else if (hasDate) {
+      lbl.textContent = 'مخصص';
+    } else {
+      lbl.textContent = 'التاريخ';
+    }
+  }
+  if (ind) ind.style.display = hasDate ? 'inline-flex' : 'none';
+  if (btn) btn.classList.toggle('active', hasDate);
 }
 
 function toggleMovFilters(btn) {
@@ -8160,7 +9766,7 @@ function renderArchivedMovements() {
     <td>
       <div class="flex gap-8">
         <button class="btn btn-outline btn-sm" onclick="restoreMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg> فك التجميد</button>
-        <button class="btn btn-sm" style="background:var(--red);color:#fff;font-size:.75rem" onclick="hardDeleteMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> حذف نهائي</button>
+        ${isAdmin() ? `<button class="btn btn-sm" style="background:var(--red);color:#fff;font-size:.75rem" onclick="hardDeleteMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> حذف نهائي</button>` : ''}
       </div>
     </td>
   </tr>`).join('');
@@ -8180,11 +9786,81 @@ async function restoreMovement(id) {
 }
 async function hardDeleteMovement(id) {
   if (!isAdmin()) { toast('هذه العملية للمدير فقط', true); return; }
-  if (!confirm('⚠️ حذف نهائي — لا يمكن التراجع عن هذا الإجراء!\nهل أنت متأكد تماماً؟')) return;
-  if (!confirm('تأكيد مرة ثانية: سيتم حذف الحركة نهائياً من قاعدة البيانات.')) return;
-  // For hard delete, we archive then delete — but we don't have a hard delete endpoint.
-  // Instead, inform admin to use the clearAll or DB tools.
-  toast('للحذف النهائي، تواصل مع مسؤول النظام', true);
+  const tx = archivedMovements.find(t => t._id === id);
+  if (!tx) { toast('الحركة غير موجودة', true); return; }
+
+  const typeLabel = { 'مبيعات': '🛒 مبيعات', 'مشتريات': '📦 مشتريات', 'مرتجع': '↩️ مرتجع', 'مرتجع مبيعات': '↩️ مرتجع', 'مرتجع مشتريات': '↩️ مرتجع' }[tx.type] || tx.type;
+  const html = `
+    <div style="padding:20px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+        <div style="width:44px;height:44px;border-radius:50%;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" style="width:24px;height:24px;color:#ef4444" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 4 21 4 23 6 23 20a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+        </div>
+        <div>
+          <h3 style="margin:0;font-size:1rem;font-weight:700;color:#ef4444">حذف نهائي للحركة</h3>
+          <p style="margin:2px 0 0 0;font-size:.85rem;color:var(--muted)">⚠️ هذا الإجراء لا يمكن التراجع عنه</p>
+        </div>
+      </div>
+
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 12px;font-size:.85rem">
+          <span style="color:var(--muted);font-weight:600">التاريخ:</span>
+          <span style="font-weight:500">${esc(tx.date?.slice(0, 10) || '-')}</span>
+          <span style="color:var(--muted);font-weight:600">النوع:</span>
+          <span style="font-weight:500">${typeLabel}</span>
+          <span style="color:var(--muted);font-weight:600">العميل/المورد:</span>
+          <span style="font-weight:500">${esc(tx.client || '-')}</span>
+          <span style="color:var(--muted);font-weight:600">المرجع:</span>
+          <span style="font-weight:500">${tx.ref ? '#' + esc(tx.ref) : '-'}</span>
+          <span style="color:var(--muted);font-weight:600">الإجمالي:</span>
+          <span style="font-weight:700;color:#ef4444">${fmtJ(tx.total || 0)} ج</span>
+          <span style="color:var(--muted);font-weight:600">مجمدة بواسطة:</span>
+          <span style="font-weight:500">${esc(tx.archivedBy || '-')} — ${tx.archivedAt ? fmtDate(tx.archivedAt) : '-'}</span>
+        </div>
+      </div>
+
+      <div style="background:rgba(239,68,68,.08);border-left:3px solid #ef4444;border-radius:6px;padding:12px;margin-bottom:16px;font-size:.8rem;color:var(--text);line-height:1.6">
+        <strong>⚠️ تحذير حاسم:</strong><br>
+        • الحركة سيتم حذفها <strong>نهائياً</strong> من قاعدة البيانات<br>
+        • <strong>لا يمكن استرجاع</strong> الحركة بعد الحذف<br>
+        • الحركة مجمدة بالفعل (لا تؤثر على المخزون أو الخزنة)
+      </div>
+
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:.85rem;font-weight:600;margin-bottom:8px">التحقق برقم سر الخزنة *</label>
+        <input type="password" id="hd-pass-input" placeholder="أدخل رقم السر" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;font-family:monospace">
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button class="btn" style="flex:1;background:#ef4444;color:white;font-weight:600;border:none;cursor:pointer;padding:10px 16px;border-radius:8px" id="hd-confirm-btn" onclick="confirmHardDeleteMovement('${esc(id)}')">
+          حذف نهائي
+        </button>
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal()">إلغاء</button>
+      </div>
+    </div>
+  `;
+  openModal(html, 'max-width:480px');
+  setTimeout(() => qs('#hd-pass-input')?.focus(), 100);
+}
+
+async function confirmHardDeleteMovement(id) {
+  const password = qs('#hd-pass-input')?.value || '';
+  if (!password) { toast('أدخل رقم السر', true); return; }
+  const confirmBtn = qs('#hd-confirm-btn');
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.style.opacity = '0.6'; }
+  try {
+    await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password }) });
+    await api('/transactions/' + id + '/permanent', { method: 'DELETE' });
+    archivedMovements = archivedMovements.filter(t => t._id !== id);
+    renderArchivedMovements();
+    closeModal();
+    toast('✅ تم الحذف النهائي للحركة المجمدة');
+    buildNotifications();
+  } catch (e) {
+    toast('خطأ: ' + e.message, true);
+  } finally {
+    if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.style.opacity = '1'; }
+  }
 }
 
 function switchMovTab(tab, btn) {
@@ -9285,12 +10961,40 @@ function openClientProfile(name) {
 
 /* Products */
 function renderProducts() {
+  const allProducts = Array.isArray(products) ? products : [];
+  const invByCode = new Map();
+  (Array.isArray(inventoryCache) ? inventoryCache : []).forEach(r => { if (r.code) invByCode.set(String(r.code), r); });
+  const _statusOf = (p) => {
+    const inv = invByCode.get(String(p.code));
+    const cur = inv ? Number(inv.current) || 0 : Number(p.openingBalance) || 0;
+    if (cur <= 0) return 'zero';
+    if (cur <= (p.minStock || 0)) return 'low';
+    return 'ok';
+  };
+  // Tab counts (status by current stock vs minStock)
+  let okCount = 0, lowCount = 0, zeroCount = 0;
+  allProducts.forEach(p => { const st = _statusOf(p); if (st === 'ok') okCount++; else if (st === 'low') lowCount++; else zeroCount++; });
+  const _setCount = (id, v) => { const el = qs('#' + id); if (el) el.textContent = fmtN(v); };
+  _setCount('prod-count-all', allProducts.length);
+  _setCount('prod-count-ok', okCount);
+  _setCount('prod-count-low', lowCount);
+  _setCount('prod-count-zero', zeroCount);
+
   const tokens = normalizeUiSearch(qs('#prod-search')?.value || '').split(/\s+/).filter(Boolean);
-  let data = products;
-  if (tokens.length) data = data.filter(p => {
+  const fs = fxState.prod;
+  let data = allProducts.filter(p => {
     const blob = normalizeUiSearch([p.name, p.code, p.supplier].join(' '));
-    return tokens.every(t => blob.includes(t));
+    if (tokens.length && !tokens.every(t => blob.includes(t))) return false;
+    if (prodFilter !== 'all' && _statusOf(p) !== prodFilter) return false;
+    if (!_fxInRange(p.sellPrice, fs.sellMin, fs.sellMax)) return false;
+    if (!_fxInRange(p.buyPrice,  fs.buyMin,  fs.buyMax))  return false;
+    if (!_fxMatchSupplier('prod', p)) return false;
+    return true;
   });
+  data = _fxApplySort('prod', data);
+  _fxBuildChips('prod');
+  const _rcEl = qs('#prod-results-count');
+  if (_rcEl) _rcEl.innerHTML = `النتائج: <strong>${fmtN(data.length)}</strong> من ${fmtN(allProducts.length)}`;
   const PROD_PAGE_SIZE = 30;
   const total = data.length;
   if (prodPage > Math.ceil(total / PROD_PAGE_SIZE) || total === 0) prodPage = 1;
@@ -11437,6 +13141,16 @@ async function loadDashboardTreasury() {
 
 /* Users */
 function renderUsers() {
+  // Hide active sessions block for non-admins
+  const sessWrap = qs('#active-sessions-wrap');
+  if (sessWrap) sessWrap.style.display = isAdmin() ? '' : 'none';
+  if (isAdmin()) {
+    if (activeSessions.length === 0) {
+      api('/auth/active-sessions').then(r => { if (r?.sessions) { activeSessions = r.sessions; renderActiveSessions(); } }).catch(() => {});
+    } else {
+      renderActiveSessions();
+    }
+  }
   if (!users || users.length === 0) {
     qs('#users-grid').innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:40px">لا يوجد مستخدمون في النظام</div>';
     return;

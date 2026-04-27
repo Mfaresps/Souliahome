@@ -105,6 +105,17 @@ export class TransactionsController {
     return { message: `تم تجميد ${count} حركة`, deletedCount: count };
   }
 
+  @Roles('admin')
+  @Delete(':id/permanent')
+  async permanentDelete(
+    @Param('id') id: string,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const deletedBy = req.user.name || req.user.username || '';
+    await this.transactionsService.hardDelete(id, deletedBy);
+    return { message: 'تم الحذف النهائي للحركة' };
+  }
+
   @Post(':id/restore')
   async restore(@Param('id') id: string) {
     return this.transactionsService.restore(id);

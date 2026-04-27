@@ -21,6 +21,7 @@ import {
 } from './dto/transaction.dto';
 import { ProductsService } from '../products/products.service';
 import { VaultService } from '../vault/vault.service';
+import { PresenceGateway } from '../auth/presence.gateway';
 
 export interface InventoryItem {
   _id: string;
@@ -67,7 +68,12 @@ export class TransactionsService {
     private readonly returnRequestModel: Model<ReturnRequestDocument>,
     private readonly productsService: ProductsService,
     private readonly vaultService: VaultService,
+    private readonly presence: PresenceGateway,
   ) {}
+
+  private emit(event: string, payload: unknown): void {
+    try { this.presence?.emitEvent(event, payload); } catch { /* swallow */ }
+  }
 
   /**
    * Notes written when a pending return/exchange request is approved (ReturnsService).
@@ -130,6 +136,18 @@ export class TransactionsService {
       .exec();
   }
 
+  async hardDelete(id: string, deletedBy: string): Promise<void> {
+    const tx = await this.transactionModel.findById(id).exec();
+    if (!tx) {
+      throw new NotFoundException('الحركة غير موجودة');
+    }
+    if (!tx.archived) {
+      throw new BadRequestException('يمكن حذف الحركات المجمدة فقط');
+    }
+    await this.transactionModel.findByIdAndDelete(id).exec();
+    this.emit('tx:deleted', { id, deletedBy, type: tx.type, date: tx.date });
+  }
+
   async findById(id: string): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) {
@@ -169,6 +187,9 @@ export class TransactionsService {
     }
 
     await this.recordVaultForTransaction(tx);
+    this.emit('tx:created', { tx, by: employee });
+    this.emit('inventory:changed', { reason: 'tx:created', txId: String(tx._id) });
+    this.emit('vault:changed', { reason: 'tx:created', txId: String(tx._id) });
     return tx;
   }
 
@@ -566,6 +587,9 @@ export class TransactionsService {
         tx.ref || String(tx._id),
       );
     }
+    this.emit('tx:cancelled', { tx: saved, by: cancelledBy });
+    this.emit('inventory:changed', { reason: 'tx:cancelled', txId: String(saved._id) });
+    this.emit('vault:changed', { reason: 'tx:cancelled', txId: String(saved._id) });
     return saved;
   }
 
@@ -742,6 +766,8 @@ export class TransactionsService {
         tx.ref || String(tx._id),
       );
     }
+    this.emit('tx:updated', { tx: saved, action: 'collect' });
+    this.emit('vault:changed', { reason: 'tx:collect', txId: String(saved._id) });
     return saved;
   }
 
@@ -1243,8 +1269,8 @@ export class TransactionsService {
       }
     } else if (tx.type === 'مشتريات') {
       if (this.transactionAddsSupplierPurchases(tx)) {
-        // Record only the deposit (amount paid upfront). If fully paid, deposit = total.
-        const depositPaid = tx.deposit || tx.total || 0;
+        // Record only the deposit (amount paid upfront). 0 = full debt to supplier.
+        const depositPaid = Number(tx.deposit) || 0;
         if (depositPaid > 0) {
           await this.vaultService.addSystemEntry(
             -depositPaid,
@@ -1346,8 +1372,8 @@ export class TransactionsService {
       }
     } else if (tx.type === 'مشتريات') {
       if (this.transactionAddsSupplierPurchases(tx)) {
-        // Reverse deposit (upfront payment)
-        const depositPaid = tx.deposit || tx.total || 0;
+        // Reverse deposit (upfront payment). 0 = nothing was paid upfront.
+        const depositPaid = Number(tx.deposit) || 0;
         if (depositPaid > 0 && tx.depMethod) {
           await this.vaultService.addSystemEntry(
             depositPaid, // positive: reverses the negative deposit entry
