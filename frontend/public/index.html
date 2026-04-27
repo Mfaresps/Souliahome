@@ -1790,7 +1790,7 @@ input.is-valid,select.is-valid,textarea.is-valid{
   font-size:.78rem;font-weight:800;letter-spacing:.2px;
   white-space:nowrap;pointer-events:none;z-index:50;
   font-variant-numeric:tabular-nums;
-  animation:cashPulseIn 3.4s cubic-bezier(.2,.7,.3,1) forwards;
+  animation:cashPulseIn 5.5s cubic-bezier(.2,.7,.3,1) forwards;
   box-shadow:0 6px 16px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.6) inset;
 }
 .cash-pulse svg{flex-shrink:0;opacity:.95}
@@ -1815,26 +1815,36 @@ input.is-valid,select.is-valid,textarea.is-valid{
 .cash-pulse-out{animation:cashPulseOut .5s ease-in forwards !important}
 @keyframes cashPulseIn{
   0%{opacity:0;transform:translate(-50%,4px) scale(.7)}
-  6%{opacity:1;transform:translate(-50%,-8px) scale(1.08)}
-  12%{opacity:1;transform:translate(-50%,-4px) scale(1)}
-  100%{opacity:1;transform:translate(-50%,-16px) scale(1)}
+  4%{opacity:1;transform:translate(-50%,-8px) scale(1.08)}
+  8%{opacity:1;transform:translate(-50%,-4px) scale(1)}
+  100%{opacity:1;transform:translate(-50%,-18px) scale(1)}
 }
 @keyframes cashPulseOut{
   from{opacity:1;transform:translate(-50%,-16px) scale(1)}
   to{opacity:0;transform:translate(-50%,-32px) scale(.92)}
 }
-.cash-glow-add{animation:cashGlowAdd 2.4s ease-out}
-.cash-glow-sub{animation:cashGlowSub 2.4s ease-out}
+.cash-glow-add{animation:cashGlowAdd 5.5s ease-out}
+.cash-glow-sub{animation:cashGlowSub 5.5s ease-out}
 @keyframes cashGlowAdd{
   0%   {background-color:transparent;box-shadow:0 0 0 0 rgba(16,185,129,0)}
-  10%  {background-color:rgba(16,185,129,.22);box-shadow:0 0 0 5px rgba(16,185,129,.35),0 12px 36px rgba(16,185,129,.4)}
-  35%  {background-color:rgba(16,185,129,.18);box-shadow:0 0 0 4px rgba(16,185,129,.25),0 10px 30px rgba(16,185,129,.3)}
+  3%   {background-color:rgba(16,185,129,.30);box-shadow:0 0 0 6px rgba(16,185,129,.45),0 14px 40px rgba(16,185,129,.5)}
+  12%  {background-color:rgba(16,185,129,.18);box-shadow:0 0 0 3px rgba(16,185,129,.20),0 8px 24px rgba(16,185,129,.25)}
+  22%  {background-color:rgba(16,185,129,.28);box-shadow:0 0 0 5px rgba(16,185,129,.40),0 12px 34px rgba(16,185,129,.42)}
+  32%  {background-color:rgba(16,185,129,.16);box-shadow:0 0 0 3px rgba(16,185,129,.18),0 8px 22px rgba(16,185,129,.22)}
+  44%  {background-color:rgba(16,185,129,.24);box-shadow:0 0 0 4px rgba(16,185,129,.32),0 10px 28px rgba(16,185,129,.34)}
+  60%  {background-color:rgba(16,185,129,.18);box-shadow:0 0 0 3px rgba(16,185,129,.20),0 8px 22px rgba(16,185,129,.22)}
+  78%  {background-color:rgba(16,185,129,.14);box-shadow:0 0 0 2px rgba(16,185,129,.14),0 6px 16px rgba(16,185,129,.16)}
   100% {background-color:transparent;box-shadow:0 0 0 0 rgba(16,185,129,0)}
 }
 @keyframes cashGlowSub{
   0%   {background-color:transparent;box-shadow:0 0 0 0 rgba(239,68,68,0)}
-  10%  {background-color:rgba(239,68,68,.18);box-shadow:0 0 0 5px rgba(239,68,68,.3),0 12px 36px rgba(239,68,68,.35)}
-  35%  {background-color:rgba(239,68,68,.14);box-shadow:0 0 0 4px rgba(239,68,68,.22),0 10px 30px rgba(239,68,68,.28)}
+  3%   {background-color:rgba(239,68,68,.26);box-shadow:0 0 0 6px rgba(239,68,68,.40),0 14px 40px rgba(239,68,68,.42)}
+  12%  {background-color:rgba(239,68,68,.16);box-shadow:0 0 0 3px rgba(239,68,68,.18),0 8px 22px rgba(239,68,68,.22)}
+  22%  {background-color:rgba(239,68,68,.24);box-shadow:0 0 0 5px rgba(239,68,68,.34),0 12px 32px rgba(239,68,68,.36)}
+  32%  {background-color:rgba(239,68,68,.14);box-shadow:0 0 0 3px rgba(239,68,68,.16),0 8px 20px rgba(239,68,68,.20)}
+  44%  {background-color:rgba(239,68,68,.20);box-shadow:0 0 0 4px rgba(239,68,68,.26),0 10px 26px rgba(239,68,68,.28)}
+  60%  {background-color:rgba(239,68,68,.14);box-shadow:0 0 0 3px rgba(239,68,68,.16),0 8px 20px rgba(239,68,68,.20)}
+  78%  {background-color:rgba(239,68,68,.10);box-shadow:0 0 0 2px rgba(239,68,68,.12),0 6px 14px rgba(239,68,68,.14)}
   100% {background-color:transparent;box-shadow:0 0 0 0 rgba(239,68,68,0)}
 }
 @media(max-width:480px){
@@ -3877,9 +3887,9 @@ document.addEventListener('change', (e) => {
 
 /* ─── Cash Pulse Notifications (accumulating) ─── */
 const _cashPulseState = new WeakMap(); // anchor -> { sign, sum, count, el, timer, queue }
-const COALESCE_WINDOW_MS = 1800;
-const HOLD_AFTER_LAST_MS = 3500;
-const FADE_OUT_MS = 500;
+const COALESCE_WINDOW_MS = 2500;
+const HOLD_AFTER_LAST_MS = 5500;
+const FADE_OUT_MS = 600;
 
 function _cashPlaySound(isAdd) {
   if (localStorage.getItem('cash_pulse_sound') === 'off') return;
@@ -3888,17 +3898,64 @@ function _cashPlaySound(isAdd) {
     if (!Ctx) return;
     const ctx = window._cashAudioCtx || (window._cashAudioCtx = new Ctx());
     if (ctx.state === 'suspended') ctx.resume();
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = 'sine';
-    o.frequency.value = isAdd ? 880 : 360;   // higher = add, lower = sub
-    g.gain.value = 0;
-    o.connect(g); g.connect(ctx.destination);
-    const t = ctx.currentTime;
-    g.gain.linearRampToValueAtTime(0.06, t + 0.01);
-    o.frequency.exponentialRampToValueAtTime(isAdd ? 1320 : 240, t + 0.12);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-    o.start(t); o.stop(t + 0.2);
+    const t0 = ctx.currentTime;
+    const master = ctx.createGain();
+    master.gain.value = 0.18;
+    master.connect(ctx.destination);
+
+    if (isAdd) {
+      // Cash register "ka-ching" — short metallic click + bright chime
+      // 1) Metallic click (filtered noise burst)
+      const noiseLen = 0.06;
+      const noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * noiseLen), ctx.sampleRate);
+      const nd = noiseBuf.getChannelData(0);
+      for (let i = 0; i < nd.length; i++) nd[i] = (Math.random() * 2 - 1) * (1 - i / nd.length);
+      const noise = ctx.createBufferSource();
+      noise.buffer = noiseBuf;
+      const nFilter = ctx.createBiquadFilter();
+      nFilter.type = 'highpass'; nFilter.frequency.value = 2200;
+      const nGain = ctx.createGain();
+      nGain.gain.setValueAtTime(0.5, t0);
+      nGain.gain.exponentialRampToValueAtTime(0.01, t0 + noiseLen);
+      noise.connect(nFilter); nFilter.connect(nGain); nGain.connect(master);
+      noise.start(t0); noise.stop(t0 + noiseLen);
+
+      // 2) Two-tone bell chime (musical "ding")
+      [
+        { f: 1568, start: 0.04, dur: 0.55, vol: 0.55 }, // G6
+        { f: 2093, start: 0.06, dur: 0.50, vol: 0.40 }, // C7
+        { f: 2637, start: 0.08, dur: 0.45, vol: 0.30 }, // E7
+      ].forEach(n => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'triangle';
+        o.frequency.value = n.f;
+        const ts = t0 + n.start;
+        g.gain.setValueAtTime(0, ts);
+        g.gain.linearRampToValueAtTime(n.vol, ts + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, ts + n.dur);
+        o.connect(g); g.connect(master);
+        o.start(ts); o.stop(ts + n.dur + 0.02);
+      });
+    } else {
+      // Coin drop / vault close — descending dull thud
+      [
+        { f: 520, start: 0.00, dur: 0.18, vol: 0.55, type: 'sine' },
+        { f: 280, start: 0.05, dur: 0.30, vol: 0.45, type: 'sine' },
+        { f: 160, start: 0.10, dur: 0.40, vol: 0.35, type: 'triangle' },
+      ].forEach(n => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = n.type;
+        o.frequency.value = n.f;
+        const ts = t0 + n.start;
+        g.gain.setValueAtTime(0, ts);
+        g.gain.linearRampToValueAtTime(n.vol, ts + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, ts + n.dur);
+        o.connect(g); g.connect(master);
+        o.start(ts); o.stop(ts + n.dur + 0.02);
+      });
+    }
   } catch (_) {}
 }
 
@@ -3957,7 +4014,7 @@ function cashPulse(delta, anchorEl) {
   anchorEl.classList.remove('cash-shake', 'cash-glow-add', 'cash-glow-sub');
   void anchorEl.offsetWidth;
   anchorEl.classList.add('cash-shake', isAdd ? 'cash-glow-add' : 'cash-glow-sub');
-  setTimeout(() => anchorEl.classList.remove('cash-shake', 'cash-glow-add', 'cash-glow-sub'), 2400);
+  setTimeout(() => anchorEl.classList.remove('cash-shake', 'cash-glow-add', 'cash-glow-sub'), 5500);
 
   _cashPlaySound(isAdd);
 
