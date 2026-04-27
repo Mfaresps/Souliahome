@@ -15,7 +15,6 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { SettingsService } from './settings.service';
 import { UpdateSettingsDto } from './dto/settings.dto';
