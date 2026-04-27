@@ -3970,8 +3970,21 @@ function cashPulse(delta, anchorEl) {
   }, HOLD_AFTER_LAST_MS);
 }
 
+/* Fire pulse on every visible vault anchor (vault page + dashboard widget + sidebar nav). */
+function cashPulseAll(delta) {
+  if (!delta || !isFinite(delta) || Math.abs(delta) < 0.01) return;
+  const anchors = [];
+  const vaultTotal = qs('#vault-segs .seg-card:last-child');
+  if (vaultTotal) anchors.push(vaultTotal);
+  const dashTotal = qs('#dash-treasury-segs .stat-card:last-child');
+  if (dashTotal) anchors.push(dashTotal);
+  // Sidebar nav item — always visible, gives feedback no matter which page user is on
+  const navVault = qs('#sidebar .nav-item[data-page="vault"]');
+  if (navVault && !anchors.includes(navVault)) anchors.push(navVault);
+  anchors.forEach(a => cashPulse(delta, a));
+}
+
 let _lastVaultTotal = null;
-let _lastVaultBySeg = { cash: null, vodafone: null, instapay: null, bank: null };
 function detectVaultPulse() {
   if (!settings) return;
   const cash = Number(settings.vaultCash || 0);
@@ -3981,17 +3994,9 @@ function detectVaultPulse() {
   const total = cash + vod + ipy + bnk;
   if (_lastVaultTotal !== null) {
     const delta = total - _lastVaultTotal;
-    if (Math.abs(delta) >= 0.01) {
-      // Pulse on the vault total card (last seg-card) if visible
-      const totalCard = qs('#vault-segs .seg-card:last-child');
-      if (totalCard) cashPulse(delta, totalCard);
-      // Pulse on dashboard treasury widget if visible
-      const dashTotal = qs('#dash-treasury-segs .stat-card:last-child');
-      if (dashTotal) cashPulse(delta, dashTotal);
-    }
+    if (Math.abs(delta) >= 0.01) cashPulseAll(delta);
   }
   _lastVaultTotal = total;
-  _lastVaultBySeg = { cash, vodafone: vod, instapay: ipy, bank: bnk };
 }
 
 function isAdmin() { return currentUser && currentUser.role === 'admin'; }
@@ -6286,6 +6291,14 @@ async function confirmTxSave() {
         ? 'تم حفظ حركة المشتريات بنجاح ✅'
         : 'تم حفظ حركة المبيعات بنجاح ✅';
       toast(successMsg);
+      // Cash pulse: deposit moves real cash. Sales deposit = vault in (+), Purchase deposit = vault out (−)
+      try {
+        const dep = Number(pendingTxData.deposit) || 0;
+        if (dep > 0) {
+          const signed = pendingTxData.type === 'مشتريات' ? -dep : +dep;
+          cashPulseAll(signed);
+        }
+      } catch(_) {}
       transactions = await api('/transactions').catch(() => transactions);
       try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
     }
@@ -7766,6 +7779,15 @@ async function doCollectMovement(id) {
     if (!isPurchase && actualShip > 0) body.actualShipCost = actualShip;
 
     await api('/transactions/' + id + '/collect', { method: 'POST', body: JSON.stringify(body) });
+
+    // Cash pulse: sales collection adds to vault, purchase payment subtracts
+    try {
+      const billedShipForPulse = !isPurchase ? (Number((transactions.find(t => t._id === id) || {}).shipCost) || 0) : 0;
+      const actualShipForPulse = !isPurchase ? (Number(qs('#collect-actual-ship')?.value) || 0) : 0;
+      const shipExtraForPulse  = !isPurchase && actualShipForPulse > 0 ? Math.max(0, actualShipForPulse - billedShipForPulse) : 0;
+      const netVault = isPurchase ? -amountToDeduct : Math.max(0, amountToDeduct - billedShipForPulse - shipExtraForPulse);
+      if (netVault) cashPulseAll(netVault);
+    } catch(_) {}
 
     // ===== تحديث محلي فوري =====
     const txIndex = transactions.findIndex(t => t._id === id);
@@ -11118,6 +11140,7 @@ async function addVaultEntry() {
     if (result.queued) {
       toast('تم حفظ تسوية الخزنة مؤقتًا، ستتم مزامنتها عند عودة الاتصال بالإنترنت 📥');
     } else {
+      cashPulseAll(body.amount); // body.amount is already signed (+/-)
       toast('تم تسجيل الحركة');
       settings = await api('/settings').catch(() => settings);
       renderVaultSegs(); await loadVaultLog();
