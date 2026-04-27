@@ -780,21 +780,23 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 .tx-pf-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
 .tx-pf-btn:not(.active):hover{border-color:var(--accent);color:var(--accent)}
 .tx-picker-list{flex:1;overflow-y:auto;padding:0 10px;overscroll-behavior:contain}
-.tx-picker-item{display:flex;align-items:center;gap:12px;padding:11px 8px;border-bottom:1px solid var(--border);transition:background .12s;border-radius:8px}
+.tx-picker-item{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 12px;border-bottom:1px solid var(--border);transition:background .12s;border-radius:10px}
 .tx-picker-item:last-child{border-bottom:none}
 .tx-picker-item:hover{background:var(--surface2)}
 .tx-picker-item.out-of-stock{opacity:.55}
-.tx-picker-info{flex:1;min-width:0;text-align:right}
-.tx-picker-name{font-size:.88rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tx-picker-code{font-size:.72rem;color:var(--muted);margin-top:2px}
-.tx-picker-price{font-size:.88rem;font-weight:700;color:var(--primary);text-align:left;white-space:nowrap;flex-shrink:0;min-width:70px}
-.tx-picker-add{width:34px;height:34px;border-radius:50%;border:2px solid var(--primary);background:transparent;color:var(--primary);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;font-size:1.3rem;line-height:1}
-.tx-picker-add:hover,.tx-picker-add.added{background:var(--primary);color:#fff;transform:scale(1.08)}
-.tx-picker-add:active{transform:scale(.92)}
-.tx-picker-qty-ctrl{display:flex;align-items:center;gap:4px;flex-shrink:0}
-.tx-picker-qty-ctrl button{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center;transition:all .12s}
-.tx-picker-qty-ctrl button:hover{border-color:var(--primary);color:var(--primary)}
-.tx-picker-qty-ctrl span{font-size:.85rem;font-weight:700;min-width:18px;text-align:center;color:var(--primary)}
+.tx-picker-info{flex:1;min-width:0;text-align:right;display:flex;flex-direction:column;gap:3px}
+.tx-picker-name{font-size:.92rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-picker-code{font-size:.75rem;color:var(--muted)}
+.tx-picker-price{font-size:.95rem;font-weight:800;color:var(--primary);white-space:nowrap;flex-shrink:0}
+.tx-picker-add{width:40px;height:40px;border-radius:8px;border:2px solid var(--primary);background:var(--primary-pale);color:var(--primary);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;font-size:1.4rem;line-height:1;font-weight:700}
+.tx-picker-add:hover,.tx-picker-add.added{background:var(--primary);color:#fff;transform:scale(1.1)}
+.tx-picker-add:active{transform:scale(0.95)}
+.tx-picker-qty-ctrl{display:flex;align-items:center;gap:6px;flex-shrink:0;background:var(--primary-pale);padding:4px 8px;border-radius:8px}
+.tx-picker-qty-ctrl button{width:32px;height:32px;border-radius:6px;border:1.5px solid var(--primary);background:#fff;color:var(--primary);cursor:pointer;font-size:1.1rem;line-height:1;display:flex;align-items:center;justify-content:center;transition:all .15s;font-weight:700}
+.tx-picker-qty-ctrl button:hover{background:var(--primary);color:#fff;transform:scale(1.1)}
+.tx-picker-qty-ctrl button:active{transform:scale(0.95)}
+.tx-picker-qty-ctrl button:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.tx-picker-qty-ctrl span{font-size:.9rem;font-weight:800;min-width:24px;text-align:center;color:var(--primary)}
 .tx-picker-stock{font-size:.68rem;margin-top:3px}
 .tx-picker-footer{padding:12px 14px;border-top:1px solid var(--border);flex-shrink:0;text-align:center}
 .tx-picker-new-btn{background:none;border:none;color:var(--primary);font-size:.85rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;transition:background .15s}
