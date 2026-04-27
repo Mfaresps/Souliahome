@@ -1269,8 +1269,6 @@ body.dark-mode .mov-status.ملغي{background:#450a0a;color:#f87171}
 
   /* ── Grids ── */
   .seg-cards{grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin-bottom:12px!important}
-  #vault-kpi-cards{grid-template-columns:1fr!important}
-  #vault-stats{grid-template-columns:1fr!important;gap:8px!important;margin-bottom:12px!important}
   #vault-adjust-grid{grid-template-columns:1fr!important;gap:8px!important}
   .vault-tab-btn{padding:8px 10px!important;font-size:.80rem!important}
   .grid-2,.grid-3,.grid-4,.grid-5,.grid-6{grid-template-columns:1fr!important}
@@ -1376,8 +1374,6 @@ body{background:#fff;color:#000}
 #calc-grid button.calc-clear{color:var(--red);font-weight:700}
 #calc-grid button.calc-zero{grid-column:span 2}
 body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
-/* Treasury KPI Panel Responsive */
-@media (max-width:1200px) { #vault-kpi-cards { grid-template-columns: repeat(2, 1fr) !important; } }
 @media (max-width:768px) {
 #page-settings .settings-page-inner{padding:0 12px}
 #page-settings .settings-stack{gap:16px}
@@ -1387,19 +1383,68 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 #page-settings .form-group label{font-size:.85rem;margin-bottom:6px}
 #page-settings .form-group input,#page-settings .form-group select{padding:8px 10px;font-size:.85rem}
 }
-@media (max-width:640px) {
-  #vault-kpi-cards { grid-template-columns: repeat(2, 1fr) !important; }
-  #vault-kpi-panel .grid-2 { grid-template-columns: 1fr !important; }
-}
 /* Vault Justification Column Mobile Hide */
 .vault-justif-col { display: table-cell; }
 @media (max-width:900px) { .vault-justif-col { display: none; } }
-/* Vault Tabs */
-.vault-tab-btn { transition: all .2s; border-right-width: 3px !important; }
-.vault-tab-btn:hover { color: var(--text); background: var(--primary-pale); }
-.vault-tab-btn.active { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
+/* Vault Header & Toolbar — minimalist responsive */
+.vault-header { margin-bottom: 14px; }
+.vault-header-text .page-title { margin:0 0 2px; font-size:1.35rem; line-height:1.2; }
+.vault-header-text .page-subtitle { margin:0; font-size:.82rem; line-height:1.4; }
+.vault-toolbar {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  border-bottom:1px solid var(--border); margin-bottom:18px; flex-wrap:wrap;
+}
+.vault-tabs { display:flex; gap:4px; flex-wrap:nowrap; }
+.vault-tab-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:10px 14px; border:none; background:none; cursor:pointer;
+  font-weight:600; font-size:.88rem; color:var(--muted);
+  border-bottom:2px solid transparent; margin-bottom:-1px;
+  transition:color .15s, border-color .15s;
+}
+.vault-tab-btn svg { width:16px; height:16px; flex-shrink:0; }
+.vault-tab-btn:hover { color: var(--text); }
+.vault-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.vault-actions { display:flex; gap:6px; padding-bottom:6px; }
+.vault-actions .btn { display:inline-flex; align-items:center; gap:5px; }
 .vault-tab-content { animation: fadeIn .3s ease-in; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+/* Vault KPI grid — compact, consistent cards */
+.vault-kpi-grid {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+.vault-kpi-grid .stat-card {
+  padding:12px 10px;
+  border-radius:10px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  text-align:center;
+  display:flex; flex-direction:column; justify-content:center;
+  min-height:74px;
+}
+.vault-kpi-grid .stat-card .stat-val { font-size:1.05rem; font-weight:700; line-height:1.2; margin:0; }
+.vault-kpi-grid .stat-card .stat-label { font-size:.72rem; color:var(--muted); margin-top:4px; line-height:1.3; }
+@media (max-width:900px) {
+  .vault-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:480px) {
+  .vault-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .vault-kpi-grid .stat-card { padding:10px 8px; min-height:64px; }
+  .vault-kpi-grid .stat-card .stat-val { font-size:.95rem; }
+  .vault-kpi-grid .stat-card .stat-label { font-size:.68rem; }
+}
+@media (max-width:640px) {
+  .vault-header-text .page-title { font-size:1.15rem; }
+  .vault-header-text .page-subtitle { font-size:.75rem; }
+  .vault-toolbar { gap:8px; margin-bottom:14px; }
+  .vault-tabs { flex:1; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .vault-tabs::-webkit-scrollbar { display:none; }
+  .vault-tab-btn { padding:9px 10px; font-size:.82rem; white-space:nowrap; }
+  .vault-actions .vault-btn-label { display:none; }
+  .vault-actions .btn { padding:6px 9px; }
+}
 /* Dashboard Treasury Widget */
 #dash-treasury-widget .stat-val { font-size: 1.1rem; }
 #dash-treasury-widget .stat-card { padding: 14px; }
@@ -1654,9 +1699,111 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
   .exp-kpi-grid{grid-template-columns:1fr 1fr}
   .exp-kpi-val{font-size:.98rem}
 }
+/* ─── Splash Screen — minimalist dark green ─── */
+#splash-screen{position:fixed;inset:0;background:linear-gradient(160deg,#021810 0%,#04261a 50%,#073b2a 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:3000;animation:splashFadeOut .5s ease forwards;animation-delay:1.6s;overflow:hidden}
+#splash-screen .splash-stage{display:flex;flex-direction:column;align-items:center;gap:28px;opacity:0;transform:translateY(6px);animation:splashIn .55s cubic-bezier(.2,.7,.3,1) forwards}
+#splash-screen .splash-mark{width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,#10b981 0%,#34d399 100%);display:flex;align-items:center;justify-content:center;color:#02110a;font-size:2rem;font-weight:900;letter-spacing:-1px;box-shadow:0 8px 24px rgba(16,185,129,.35),0 0 0 1px rgba(16,185,129,.18)}
+#splash-screen .splash-name{color:#ecfdf5;font-size:1.5rem;font-weight:800;letter-spacing:.5px;margin-top:-4px}
+#splash-screen .splash-sub{color:#86bda3;font-size:.78rem;letter-spacing:.4px;margin-top:-22px}
+#splash-screen .splash-bar{width:220px;height:3px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;position:relative}
+#splash-screen .splash-bar-fill{position:absolute;top:0;left:0;height:100%;width:0;background:linear-gradient(90deg,#34d399,#10b981);border-radius:99px;box-shadow:0 0 12px rgba(16,185,129,.5);animation:splashFill 1.5s cubic-bezier(.4,0,.2,1) forwards}
+#splash-screen .splash-percent{color:#86bda3;font-size:.72rem;font-weight:600;letter-spacing:.5px;font-variant-numeric:tabular-nums}
+#splash-screen .splash-version{position:absolute;bottom:20px;left:0;right:0;text-align:center;color:#5a8a73;font-size:.68rem;letter-spacing:.5px;font-weight:500}
+@keyframes splashIn{to{opacity:1;transform:translateY(0)}}
+@keyframes splashFadeOut{to{opacity:0;visibility:hidden;pointer-events:none}}
+@keyframes splashFill{0%{width:0%}100%{width:100%}}
+@media(max-width:480px){
+  #splash-screen .splash-mark{width:60px;height:60px;border-radius:15px;font-size:1.7rem}
+  #splash-screen .splash-name{font-size:1.3rem}
+  #splash-screen .splash-sub{font-size:.72rem}
+  #splash-screen .splash-bar{width:180px}
+  #splash-screen .splash-version{bottom:16px;font-size:.62rem}
+}
+@media(prefers-reduced-motion:reduce){
+  #splash-screen .splash-bar-fill{animation:none;width:100%}
+}
+
+/* ─── Offline Banner ─── */
+#offline-banner{position:fixed;top:0;left:0;right:0;z-index:9998;background:linear-gradient(135deg,#dc2626 0%,#b91c1c 100%);color:#fff;padding:10px 16px;display:none;align-items:center;justify-content:center;gap:10px;font-size:.88rem;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.18);transform:translateY(-100%);transition:transform .3s ease}
+#offline-banner.show{display:flex;transform:translateY(0)}
+#offline-banner.online-restored{background:linear-gradient(135deg,#10b981 0%,#059669 100%)}
+#offline-banner svg{width:18px;height:18px;flex-shrink:0}
+@media(max-width:600px){#offline-banner{font-size:.78rem;padding:8px 12px;gap:8px}#offline-banner svg{width:16px;height:16px}}
+
+/* ─── Offline Queue (Pending Sync) ─── */
+#offline-fab{position:fixed;bottom:20px;left:20px;z-index:9000;background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);color:#fff;border:none;border-radius:999px;padding:10px 16px;cursor:pointer;display:flex;align-items:center;gap:8px;font-weight:700;font-size:.85rem;box-shadow:0 8px 24px rgba(217,119,6,.35);transition:transform .15s}
+#offline-fab:hover{transform:translateY(-2px)}
+#offline-fab svg{width:18px;height:18px}
+#offline-fab-badge{background:#fff;color:#d97706;border-radius:999px;min-width:22px;height:22px;display:none;align-items:center;justify-content:center;padding:0 6px;font-size:.72rem;font-weight:800}
+@media(max-width:600px){#offline-fab{bottom:80px;left:12px;padding:9px 12px;font-size:.78rem}.offline-fab-label{display:none}}
+
+.oq-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.oq-header-actions{display:flex;gap:8px;flex-wrap:wrap}
+.oq-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.oq-stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.oq-stat-card .oq-stat-val{font-size:1.5rem;font-weight:800;color:var(--accent)}
+.oq-stat-card .oq-stat-label{font-size:.78rem;color:var(--muted);margin-top:4px}
+.oq-stat-card.oq-stat-failed .oq-stat-val{color:#dc2626}
+.oq-stat-card.oq-stat-synced .oq-stat-val{color:#10b981}
+@media(max-width:520px){.oq-stats{grid-template-columns:1fr 1fr}.oq-stat-card.oq-stat-synced{grid-column:1/-1}}
+
+.oq-progress-track{height:8px;background:var(--surface2);border-radius:99px;overflow:hidden;margin-bottom:6px}
+.oq-progress-fill{height:100%;background:linear-gradient(90deg,#10b981,#059669);width:0%;transition:width .3s ease}
+.oq-progress-label{font-size:.8rem;color:var(--muted);text-align:center}
+
+.oq-row{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--surface)}
+.oq-row.oq-failed{border-color:#fecaca;background:#fef2f2}
+.oq-row.oq-syncing{border-color:#bfdbfe;background:#eff6ff}
+.oq-row.oq-synced{opacity:.78}
+.oq-row-main{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.oq-row-icon{font-size:1.5rem;line-height:1;flex-shrink:0}
+.oq-row-text{flex:1;min-width:0}
+.oq-row-title{font-weight:700;font-size:.92rem;margin-bottom:4px;word-break:break-word}
+.oq-row-meta{display:flex;flex-wrap:wrap;gap:10px;font-size:.74rem;color:var(--muted)}
+.oq-row-meta .oq-err{color:#b91c1c;font-weight:600}
+.oq-row-status{flex-shrink:0}
+.oq-row-actions{display:flex;gap:6px;margin-top:10px;justify-content:flex-end}
+@media(max-width:520px){.oq-row-icon{font-size:1.2rem}.oq-row-title{font-size:.85rem}.oq-row-meta{font-size:.7rem;gap:6px}.oq-row-actions .btn{flex:1}}
+
+/* ─── Device Info on User Cards ─── */
+.user-device-info{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.7rem;color:var(--muted);margin-top:4px;padding:4px 8px;background:var(--surface2);border-radius:6px;flex-wrap:wrap}
+.user-device-info .dev-icon{font-size:.95rem;line-height:1}
+.user-device-info .dev-current{background:var(--primary);color:#fff;padding:1px 6px;border-radius:4px;font-size:.62rem;font-weight:700}
+@media(max-width:480px){.user-device-info{font-size:.65rem;padding:3px 6px}}
 </style>
 </head>
 <body>
+<div id="splash-screen" aria-hidden="true" role="status" aria-label="جارٍ التحميل">
+  <div class="splash-stage">
+    <div class="splash-mark">S</div>
+    <div class="splash-name">Soulia</div>
+    <div class="splash-sub">نظام إدارة المبيعات والمخزون</div>
+    <div class="splash-bar" aria-hidden="true"><div class="splash-bar-fill"></div></div>
+    <div class="splash-percent" id="splash-percent">0%</div>
+  </div>
+  <div class="splash-version">الإصدار 1.0.0</div>
+</div>
+<script>
+(function(){
+  var el=document.getElementById('splash-percent');if(!el)return;
+  var start=performance.now(),dur=1500;
+  function tick(t){
+    var p=Math.min(100,Math.round(((t-start)/dur)*100));
+    el.textContent=p+'%';
+    if(p<100)requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
+<div id="offline-banner" role="alert" aria-live="polite">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0119 12.55"/><path d="M5 12.55a10.94 10.94 0 015.17-2.39"/><path d="M10.71 5.05A16 16 0 0122.58 9"/><path d="M1.42 9a15.91 15.91 0 014.7-2.88"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+  <span id="offline-banner-msg">⚠️ النظام غير متصل بالإنترنت. بعض الوظائف قد تكون غير متاحة مؤقتًا.</span>
+</div>
+<button id="offline-fab" onclick="navigateTo('pending-sync')" title="المعاملات المعلقة" style="display:none">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7"/><polyline points="21 4 21 10 15 10"/></svg>
+  <span class="offline-fab-label">المعلقة</span>
+  <span id="offline-fab-badge">0</span>
+</button>
 <div id="login-page" style="display:none">
 <div class="login-box">
 <h1>Soulia</h1>
@@ -2619,10 +2766,45 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 </div>
 
 
+<!-- Pending Sync (Offline Queue) -->
+<div class="page" id="page-pending-sync">
+  <div class="oq-header">
+    <div>
+      <h2 class="page-title">المعاملات المعلقة</h2>
+      <p class="page-subtitle">المعاملات المحفوظة محليًا أثناء انقطاع الاتصال — راجعها ثم أرسلها للسيرفر</p>
+    </div>
+    <div class="oq-header-actions">
+      <button class="btn btn-primary" id="oq-push-all-btn" onclick="oqPushAll()">📤 إرسال الكل</button>
+      <button class="btn btn-outline btn-sm" onclick="oqClearSynced()">مسح السجل</button>
+    </div>
+  </div>
+  <div class="oq-stats">
+    <div class="oq-stat-card"><div class="oq-stat-val" id="oq-stat-pending">0</div><div class="oq-stat-label">في الانتظار</div></div>
+    <div class="oq-stat-card oq-stat-failed"><div class="oq-stat-val" id="oq-stat-failed">0</div><div class="oq-stat-label">فشلت</div></div>
+    <div class="oq-stat-card oq-stat-synced"><div class="oq-stat-val" id="oq-stat-synced">0</div><div class="oq-stat-label">تمت المزامنة</div></div>
+  </div>
+  <div id="oq-progress" style="display:none">
+    <div class="oq-progress-track"><div class="oq-progress-fill" id="oq-progress-fill"></div></div>
+    <div class="oq-progress-label" id="oq-progress-label">جارٍ المزامنة…</div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h4 style="margin:0 0 10px;font-size:.95rem">قائمة المعاملات المعلقة</h4>
+    <div id="pending-sync-list"></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h4 style="margin:0 0 10px;font-size:.95rem">سجل آخر 50 معاملة تمت مزامنتها</h4>
+    <div id="pending-sync-history"></div>
+  </div>
+</div>
+
 <!-- Vault -->
 <div class="page" id="page-vault">
-<h2 class="page-title" data-i18n="vault">الخزنة</h2>
-<p class="page-subtitle" style="margin-top:-12px;margin-bottom:16px" data-i18n="vaultSubtitle">إدارة الرصيد النقدي وسجل جميع المعاملات المالية</p>
+<div class="vault-header">
+  <div class="vault-header-text">
+    <h2 class="page-title" data-i18n="vault">الخزنة</h2>
+    <p class="page-subtitle" data-i18n="vaultSubtitle">إدارة الرصيد النقدي وسجل المعاملات المالية</p>
+  </div>
+</div>
 <form id="vault-locked" class="vault-locked" onsubmit="event.preventDefault(); unlockVault();">
 <div class="vault-lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
 <h3>الخزنة محمية</h3>
@@ -2631,19 +2813,21 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <button type="submit" class="btn btn-primary">فتح الخزنة</button>
 </form>
 <div id="vault-content" style="display:none">
-<div class="flex-between mb-16" style="align-items:flex-start;flex-wrap:wrap;gap:12px">
-<div class="flex gap-8" style="border-bottom:2px solid var(--border);flex-basis:100%">
-<button class="vault-tab-btn active" onclick="switchVaultTab('overview',this)" style="padding:9px 14px;border:none;background:none;cursor:pointer;font-weight:600;color:var(--text);border-bottom:3px solid transparent;border-bottom-color:transparent;margin-bottom:-2px;font-size:.85rem">
-<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:0.95em;height:0.95em;margin-right:5px" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> نظرة عامة
-</button>
-<button class="vault-tab-btn" onclick="switchVaultTab('analytics',this)" style="padding:9px 14px;border:none;background:none;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;font-size:.85rem">
-<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:0.95em;height:0.95em;margin-right:5px" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3"/><polyline points="12 12 20 7.5"/><polyline points="12 21 12 12"/><polyline points="4 7.5 12 12"/></svg> التحليلات
-</button>
-</div>
-<div style="flex-basis:100%;display:flex;gap:8px">
-<button class="btn btn-outline btn-sm" onclick="lockVault()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> قفل الخزنة</button>
-<button class="btn btn-outline btn-sm" onclick="exportVaultExcel()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تصدير Excel</button>
-</div>
+<div class="vault-toolbar">
+  <div class="vault-tabs" role="tablist">
+    <button class="vault-tab-btn active" onclick="switchVaultTab('overview',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+      <span>نظرة عامة</span>
+    </button>
+    <button class="vault-tab-btn" onclick="switchVaultTab('analytics',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3"/><polyline points="12 12 20 7.5"/><polyline points="12 21 12 12"/><polyline points="4 7.5 12 12"/></svg>
+      <span>التحليلات</span>
+    </button>
+  </div>
+  <div class="vault-actions">
+    <button class="btn btn-outline btn-sm" onclick="lockVault()" title="قفل الخزنة" aria-label="قفل الخزنة"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span class="vault-btn-label"> قفل</span></button>
+    <button class="btn btn-outline btn-sm" onclick="exportVaultExcel()" title="تصدير Excel" aria-label="تصدير Excel"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="vault-btn-label"> تصدير</span></button>
+  </div>
 </div>
 
 <!-- Tab 1: Overview -->
@@ -2651,9 +2835,9 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 <div class="seg-cards" id="vault-segs"></div>
 <!-- KPI CARDS -->
 <div id="vault-kpi-panel" style="display:none">
-<div class="grid grid-2 gap-12 mb-20" id="vault-kpi-cards"></div>
+  <div class="vault-kpi-grid mb-16" id="vault-kpi-cards"></div>
 </div>
-<div class="grid grid-3 gap-10 mb-20" id="vault-stats" style="gap:10px"></div>
+<div class="vault-kpi-grid mb-16" id="vault-stats"></div>
 <div class="card mb-20">
 <h4 class="mb-12" style="font-size:.95rem">تسوية يدوية</h4>
 <div class="grid grid-2 gap-10" id="vault-adjust-grid">
@@ -3019,6 +3203,7 @@ const NAV_ITEMS = [
   {id:'expenses',label:'المصاريف',labelEn:'Expenses',icon:NAV_ICONS.expenses,perm:'expenses'},
   {id:'complaints',label:'خدمة العملاء',labelEn:'Customer Service',icon:NAV_ICONS.complaints,perm:'complaints'},
   {id:'approvals',label:'الموافقات',labelEn:'Approvals',icon:NAV_ICONS.approvals,perm:'approvals'},
+  {id:'pending-sync',label:'المعاملات المعلقة',labelEn:'Pending Sync',icon:'<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7"/><polyline points="21 4 21 10 15 10"/></svg>',perm:'transaction'},
   {id:'reports',label:'التقارير',labelEn:'Reports',icon:NAV_ICONS.reports,perm:'reports',adminOnly:true},
   {id:'vault',label:'الخزنة',labelEn:'Vault',icon:NAV_ICONS.vault,perm:'vault'},
   {id:'users',label:'المستخدمون',labelEn:'Users',icon:NAV_ICONS.users,perm:'users'},
@@ -3206,6 +3391,286 @@ function toast(msg, isError = false) {
   }, 3000);
 }
 
+/* ════════════════════════════════════════════════════════════════
+   OFFLINE QUEUE (Option B: drafts saved locally, user-confirmed bulk push)
+   Scope: creates only — sale, purchase, return, expense, vault adjustment.
+   Storage: IndexedDB. Server validates each draft on push (fresh stock/vault
+   check); failures keep the draft in the queue with the server's error.
+═══════════════════════════════════════════════════════════════ */
+const OQ_DB = 'soulia_offline_v1';
+const OQ_STORE = 'queue';
+let _oqDbPromise = null;
+function oqDb() {
+  if (_oqDbPromise) return _oqDbPromise;
+  _oqDbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open(OQ_DB, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(OQ_STORE)) {
+        const s = db.createObjectStore(OQ_STORE, { keyPath: 'id' });
+        s.createIndex('status', 'status', { unique: false });
+        s.createIndex('createdAt', 'createdAt', { unique: false });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return _oqDbPromise;
+}
+async function oqAll() {
+  const db = await oqDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OQ_STORE, 'readonly');
+    const req = tx.objectStore(OQ_STORE).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function oqPut(rec) {
+  const db = await oqDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OQ_STORE, 'readwrite');
+    tx.objectStore(OQ_STORE).put(rec);
+    tx.oncomplete = () => resolve(rec);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function oqDelete(id) {
+  const db = await oqDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OQ_STORE, 'readwrite');
+    tx.objectStore(OQ_STORE).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+function oqMakeId() { return 'oq_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
+async function oqEnqueue(type, payload, extra = {}) {
+  const rec = {
+    id: oqMakeId(),
+    type, // 'sale' | 'purchase' | 'return' | 'expense' | 'vault'
+    payload,
+    extra, // optional headers etc.
+    status: 'pending', // pending | syncing | failed | synced
+    error: '',
+    createdAt: Date.now(),
+    syncedAt: null,
+    employee: currentUser?.name || currentUser?.username || '',
+  };
+  await oqPut(rec);
+  oqUpdateBadges();
+  return rec;
+}
+async function oqPendingCount() {
+  const all = await oqAll();
+  return all.filter(r => r.status !== 'synced').length;
+}
+async function oqUpdateBadges() {
+  try {
+    const cnt = await oqPendingCount();
+    const badge = qs('#offline-fab-badge');
+    if (badge) {
+      if (cnt > 0) { badge.textContent = String(cnt); badge.style.display = 'flex'; }
+      else { badge.style.display = 'none'; }
+    }
+    const navBadge = qs('#oq-nav-badge');
+    if (navBadge) {
+      if (cnt > 0) { navBadge.textContent = String(cnt); navBadge.style.display = 'inline-block'; }
+      else { navBadge.style.display = 'none'; }
+    }
+    const fab = qs('#offline-fab');
+    if (fab) fab.style.display = (cnt > 0 || __isOffline) ? 'flex' : 'none';
+    if (currentPage === 'pending-sync') renderPendingSyncPage();
+  } catch (_) {}
+}
+
+// Detect "should I queue this?" — offline OR a fetch failure indicating server unreachable
+function isLikelyOffline() { return !navigator.onLine || __isOffline; }
+function isNetworkError(err) {
+  const msg = String(err?.message || err || '').toLowerCase();
+  return msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('load failed') || msg.includes('network request failed');
+}
+
+// Try to send; if network/offline → enqueue and return {queued:true}. Otherwise rethrow.
+async function trySendOrQueue(type, sendFn, payload, extra = {}) {
+  if (isLikelyOffline()) {
+    await oqEnqueue(type, payload, extra);
+    return { queued: true };
+  }
+  try {
+    const res = await sendFn();
+    return { queued: false, res };
+  } catch (e) {
+    if (isNetworkError(e)) {
+      await oqEnqueue(type, payload, extra);
+      return { queued: true };
+    }
+    throw e;
+  }
+}
+
+const OQ_TYPE_LABEL = { sale: 'مبيعات', purchase: 'مشتريات', return: 'استرجاع', expense: 'مصروف', vault: 'تسوية خزنة' };
+const OQ_TYPE_ICON  = { sale: '🛒', purchase: '📦', return: '↩️', expense: '💸', vault: '🏦' };
+
+async function oqPushOne(rec) {
+  rec.status = 'syncing'; rec.error = '';
+  await oqPut(rec); oqUpdateBadges();
+  try {
+    const headers = rec.extra && rec.extra.headers ? rec.extra.headers : {};
+    if (rec.type === 'sale' || rec.type === 'purchase') {
+      await api('/transactions', { method: 'POST', body: JSON.stringify(rec.payload), headers });
+    } else if (rec.type === 'return') {
+      await api('/returns', { method: 'POST', body: JSON.stringify(rec.payload), headers });
+    } else if (rec.type === 'expense') {
+      await api('/expenses', { method: 'POST', body: JSON.stringify(rec.payload), headers });
+    } else if (rec.type === 'vault') {
+      await api('/vault', { method: 'POST', body: JSON.stringify(rec.payload), headers });
+    } else {
+      throw new Error('نوع معاملة غير معروف: ' + rec.type);
+    }
+    rec.status = 'synced'; rec.syncedAt = Date.now();
+    await oqPut(rec);
+    return { ok: true };
+  } catch (e) {
+    rec.status = 'failed';
+    rec.error = String(e?.message || e || 'خطأ غير معروف');
+    await oqPut(rec);
+    return { ok: false, error: rec.error };
+  }
+}
+
+let _oqPushing = false;
+async function oqPushAll() {
+  if (_oqPushing) return;
+  _oqPushing = true;
+  try {
+    const all = await oqAll();
+    const queue = all.filter(r => r.status === 'pending' || r.status === 'failed');
+    if (!queue.length) { toast('لا توجد معاملات معلقة'); return; }
+    if (isLikelyOffline()) { toast('لا يوجد اتصال بالإنترنت — حاول لاحقًا', true); return; }
+    const bar = qs('#oq-progress'); const fill = qs('#oq-progress-fill'); const lbl = qs('#oq-progress-label');
+    if (bar) bar.style.display = 'block';
+    let done = 0, ok = 0, fail = 0;
+    for (const rec of queue) {
+      const r = await oqPushOne(rec);
+      done++;
+      if (r.ok) ok++; else fail++;
+      if (fill) fill.style.width = Math.round((done / queue.length) * 100) + '%';
+      if (lbl) lbl.textContent = `جارٍ المزامنة… ${done}/${queue.length}`;
+      oqUpdateBadges();
+      if (currentPage === 'pending-sync') renderPendingSyncPage();
+    }
+    if (bar) setTimeout(() => { bar.style.display = 'none'; if (fill) fill.style.width = '0%'; }, 1200);
+    if (ok > 0 && fail === 0) toast(`تم رفع البيانات بنجاح ✅ (${ok} معاملة)`);
+    else if (ok > 0 && fail > 0) toast(`تم رفع ${ok} — فشل ${fail}. راجع التفاصيل`, true);
+    else toast(`فشلت مزامنة ${fail} معاملة — راجع الأخطاء`, true);
+    // Refresh server-side data so UI reflects synced rows
+    try {
+      transactions = await api('/transactions').catch(() => transactions);
+      expenses = await api('/expenses').catch(() => expenses);
+      settings = await api('/settings').catch(() => settings);
+      buildSidebar(); buildNotifications();
+    } catch (_) {}
+  } finally {
+    _oqPushing = false;
+  }
+}
+
+async function oqDeleteRec(id) {
+  if (!confirm('حذف هذه المعاملة المعلقة نهائيًا؟')) return;
+  await oqDelete(id); oqUpdateBadges();
+}
+async function oqRetryRec(id) {
+  const all = await oqAll();
+  const rec = all.find(r => r.id === id);
+  if (!rec) return;
+  if (isLikelyOffline()) { toast('لا يوجد اتصال — حاول لاحقًا', true); return; }
+  await oqPushOne(rec);
+  oqUpdateBadges();
+  if (currentPage === 'pending-sync') renderPendingSyncPage();
+  try {
+    transactions = await api('/transactions').catch(() => transactions);
+    expenses = await api('/expenses').catch(() => expenses);
+    settings = await api('/settings').catch(() => settings);
+  } catch (_) {}
+}
+async function oqClearSynced() {
+  if (!confirm('مسح سجل المعاملات المكتملة؟')) return;
+  const all = await oqAll();
+  for (const r of all) if (r.status === 'synced') await oqDelete(r.id);
+  if (currentPage === 'pending-sync') renderPendingSyncPage();
+}
+
+function fmtOqDate(ts) { try { return new Date(ts).toLocaleString('ar-EG', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }); } catch(_) { return ''; } }
+function oqSummary(rec) {
+  try {
+    const p = rec.payload || {};
+    if (rec.type === 'sale' || rec.type === 'purchase') {
+      const itemCount = (p.items || []).length;
+      const who = p.client || (rec.type === 'purchase' ? 'مورد' : 'عميل');
+      return `${who} — ${itemCount} صنف — ${fmtJ(p.total || 0)} ج`;
+    }
+    if (rec.type === 'return') return `${p.client || 'عميل'} — ${fmtJ(p.total || 0)} ج`;
+    if (rec.type === 'expense') return `${p.category || 'مصروف'} — ${fmtJ(p.amount || 0)} ج`;
+    if (rec.type === 'vault') return `${p.method || ''} ${fmtJ(Math.abs(p.amount || 0))} ج — ${p.seg || ''}`;
+  } catch(_) {}
+  return '—';
+}
+
+async function renderPendingSyncPage() {
+  const wrap = qs('#pending-sync-list'); if (!wrap) return;
+  const all = await oqAll();
+  const pending = all.filter(r => r.status !== 'synced').sort((a,b) => b.createdAt - a.createdAt);
+  const synced  = all.filter(r => r.status === 'synced').sort((a,b) => (b.syncedAt||0) - (a.syncedAt||0)).slice(0, 50);
+  qs('#oq-stat-pending').textContent = String(pending.length);
+  qs('#oq-stat-failed').textContent  = String(pending.filter(r => r.status === 'failed').length);
+  qs('#oq-stat-synced').textContent  = String(synced.length);
+  const rowHtml = (rec, isHistory = false) => `
+    <div class="oq-row oq-${rec.status}">
+      <div class="oq-row-main">
+        <div class="oq-row-icon">${OQ_TYPE_ICON[rec.type] || '•'}</div>
+        <div class="oq-row-text">
+          <div class="oq-row-title">${esc(OQ_TYPE_LABEL[rec.type] || rec.type)} — ${esc(oqSummary(rec))}</div>
+          <div class="oq-row-meta">
+            <span>🕒 ${fmtOqDate(rec.createdAt)}</span>
+            ${rec.employee ? `<span>👤 ${esc(rec.employee)}</span>` : ''}
+            ${rec.status === 'failed' && rec.error ? `<span class="oq-err" title="${esc(rec.error)}">⚠️ ${esc(rec.error.slice(0, 80))}</span>` : ''}
+            ${rec.status === 'synced' && rec.syncedAt ? `<span style="color:#10b981">✅ ${fmtOqDate(rec.syncedAt)}</span>` : ''}
+          </div>
+        </div>
+        <div class="oq-row-status">
+          ${rec.status === 'pending' ? '<span class="badge" style="background:#fef3c7;color:#92400e">في الانتظار</span>' : ''}
+          ${rec.status === 'syncing' ? '<span class="badge" style="background:#dbeafe;color:#1e40af">جارٍ المزامنة…</span>' : ''}
+          ${rec.status === 'failed'  ? '<span class="badge" style="background:#fee2e2;color:#991b1b">فشل</span>' : ''}
+          ${rec.status === 'synced'  ? '<span class="badge" style="background:#d1fae5;color:#065f46">تمت المزامنة</span>' : ''}
+        </div>
+      </div>
+      ${!isHistory ? `<div class="oq-row-actions">
+        <button class="btn btn-sm btn-primary" onclick="oqRetryRec('${esc(rec.id)}')" ${isLikelyOffline() ? 'disabled' : ''}>إرسال</button>
+        <button class="btn btn-sm" onclick="oqDeleteRec('${esc(rec.id)}')">حذف</button>
+      </div>` : ''}
+    </div>`;
+  wrap.innerHTML = pending.length
+    ? pending.map(r => rowHtml(r, false)).join('')
+    : '<div class="empty-state" style="padding:30px">لا توجد معاملات معلقة 🎉</div>';
+  const histWrap = qs('#pending-sync-history');
+  if (histWrap) histWrap.innerHTML = synced.length
+    ? synced.map(r => rowHtml(r, true)).join('')
+    : '<div class="empty-state" style="padding:20px;font-size:.85rem">لا يوجد سجل بعد</div>';
+}
+
+// Hook: when connection returns, prompt the user (no silent push)
+let _oqLastPromptAt = 0;
+async function oqOnReconnect() {
+  const cnt = await oqPendingCount();
+  if (!cnt) return;
+  const now = Date.now();
+  if (now - _oqLastPromptAt < 30000) return; // throttle
+  _oqLastPromptAt = now;
+  const ok = confirm(`عاد الاتصال بالإنترنت.\nلديك ${cnt} معاملة معلقة.\nهل تريد مراجعتها وإرسالها الآن؟`);
+  if (ok) navigateTo('pending-sync');
+}
+
 function isAdmin() { return currentUser && currentUser.role === 'admin'; }
 function hasPerm(p) { if (isAdmin()) return true; return currentUser && currentUser.perms && currentUser.perms.includes(p); }
 
@@ -3389,7 +3854,12 @@ function connectSocket() {
   if (socket) return;
   const token = localStorage.getItem('token');
   if (!token) return;
-  socket = io('http://localhost:4000', { auth: { token } });
+  // On live: connect to same origin (HTTPS/HTTP) — proxy/reverse-proxy must forward /socket.io to backend.
+  // On localhost dev: explicitly hit backend on :4000.
+  const __socketUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://localhost:4000'
+    : location.origin;
+  socket = io(__socketUrl, { auth: { token, device: (typeof __myDevice !== 'undefined' ? __myDevice : null) } });
   socket.on('users:status', (data) => {
     // Update from WebSocket with full user data including lastSeen
     if (data && data.users && Array.isArray(data.users)) {
@@ -3501,9 +3971,10 @@ function renderUsersStatus() {
           ${isOnline ? '<span style="color:#10b981;font-weight:600">🟢 متصل</span>' : '<span style="color:#9ca3af">⚪ غير متصل</span>'}
         </div>
         ${lastSeenTime ? `<div style="font-size:.7rem;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:6px">
-          📷 ${formatLastSeen(lastSeenTime)}
+          🕒 آخر ظهور: ${formatLastSeen(lastSeenTime)}
         </div>` : ''}
-        ${isCurrentUser ? '<div style="font-size:.7rem;padding:2px 6px;background:var(--primary);color:white;border-radius:4px;display:inline-block">أنت</div>' : ''}
+        ${(isCurrentUser && typeof __myDevice !== 'undefined') ? `<div class="user-device-info" style="margin-top:4px"><span class="dev-icon">${__myDevice.icon}</span><span>${esc(__myDevice.label)}</span></div>` : ''}
+        ${isCurrentUser ? '<div style="font-size:.7rem;padding:2px 6px;background:var(--primary);color:white;border-radius:4px;display:inline-block;margin-top:4px">أنت</div>' : ''}
       </div>
     `;
   }).join('');
@@ -3525,6 +3996,7 @@ function buildSidebar() {
     if (n.id === 'approvals' && totalApprovalsBadge > 0) badge = ` <span class="badge badge-orange" style="margin-right:4px;font-size:.65rem">${totalApprovalsBadge}</span>`;
     if (n.id === 'movements' && newMovCount > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">+${newMovCount}</span>`;
     if (n.id === 'complaints' && pendingCmpCount > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">${pendingCmpCount}</span>`;
+    if (n.id === 'pending-sync') badge = ` <span class="badge badge-orange oq-nav-badge" style="margin-right:4px;font-size:.65rem;display:none" id="oq-nav-badge"></span>`;
     return `<a class="nav-item${currentPage === n.id ? ' active' : ''}" data-page="${n.id}" href="#${n.id}" onclick="handleNavClick(event,'${n.id}')"><span>${n.icon}</span><span>${esc(navLabel(n))}${badge}</span></a>`;
   }).join('') + `<a class="nav-item" data-page="profile" href="#profile" onclick="handleNavClick(event,'profile')"><span>${NAV_ICONS.profile}</span><span>${currentLang === 'en' ? 'Profile' : 'الملف الشخصي'}</span></a>`;
 }
@@ -3787,6 +4259,7 @@ function onPageEnter(page) {
     case 'products': renderProducts(); break;
     case 'suppliers': renderSuppliers(); break;
     case 'expenses': renderExpenses(); break;
+    case 'pending-sync': renderPendingSyncPage(); break;
     case 'complaints': loadComplaints().catch(e => toast('خطأ: ' + e.message, true)); break;
     case 'approvals':
       renderApprovals();
@@ -5476,16 +5949,23 @@ async function confirmTxSave() {
   closeTxConfirmModal();
 
   try {
-    await api('/transactions', { method: 'POST', body: JSON.stringify(pendingTxData) });
-
+    const oqType = pendingTxData.type === 'مشتريات' ? 'purchase' : 'sale';
+    const result = await trySendOrQueue(
+      oqType,
+      () => api('/transactions', { method: 'POST', body: JSON.stringify(pendingTxData) }),
+      pendingTxData
+    );
     txDirty = false;
-    const successMsg = pendingTxData.type === 'مشتريات'
-      ? 'تم حفظ حركة المشتريات بنجاح ✅'
-      : 'تم حفظ حركة المبيعات بنجاح ✅';
-    toast(successMsg);
-
-    transactions = await api('/transactions').catch(() => transactions);
-    try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
+    if (result.queued) {
+      toast('تم حفظ المعاملة مؤقتًا، ستتم مزامنتها عند عودة الاتصال بالإنترنت 📥');
+    } else {
+      const successMsg = pendingTxData.type === 'مشتريات'
+        ? 'تم حفظ حركة المشتريات بنجاح ✅'
+        : 'تم حفظ حركة المبيعات بنجاح ✅';
+      toast(successMsg);
+      transactions = await api('/transactions').catch(() => transactions);
+      try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
+    }
     buildNotifications(); buildSidebar();
     resetTx();
   } catch (e) {
@@ -5597,11 +6077,20 @@ async function confirmReturnRequest() {
   const confirmBtn = qs('#modal-overlay button.btn-primary');
   if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.style.opacity = '0.6'; }
   try {
-    await api('/returns', { method: 'POST', body: JSON.stringify(_pendingReturnBody), headers: _pendingReturnHeaders });
+    const result = await trySendOrQueue(
+      'return',
+      () => api('/returns', { method: 'POST', body: JSON.stringify(_pendingReturnBody), headers: _pendingReturnHeaders }),
+      _pendingReturnBody,
+      { headers: _pendingReturnHeaders }
+    );
     txDirty = false;
     closeModal();
-    toast(`✅ تم إرسال طلب الاسترجاع — في انتظار موافقة المدير`);
-    returnRequests = await api('/returns').catch(() => returnRequests);
+    if (result.queued) {
+      toast('تم حفظ طلب الاسترجاع مؤقتًا، ستتم مزامنته عند عودة الاتصال بالإنترنت 📥');
+    } else {
+      toast(`✅ تم إرسال طلب الاسترجاع — في انتظار موافقة المدير`);
+      returnRequests = await api('/returns').catch(() => returnRequests);
+    }
     buildNotifications(); buildSidebar();
     renderMovements();
     resetTx();
@@ -8990,12 +9479,30 @@ async function saveExpense(id) {
   if (!body.amount || body.amount <= 0) { toast('المبلغ مطلوب', true); return; }
   if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
   try {
-    if (id) await api('/expenses/' + id, { method: 'PUT', body: JSON.stringify(body) });
-    else await api('/expenses', { method: 'POST', body: JSON.stringify(body) });
-    toast(id ? 'تم حفظ التعديلات ✅' : 'تم إضافة المصروف — في انتظار موافقة المدير ✅');
-    closeModal();
-    expenses = await api('/expenses').catch(() => expenses);
-    renderExpenses(); buildSidebar(); buildNotifications();
+    if (id) {
+      // Edits go through online only (creates-only offline scope)
+      if (isLikelyOffline()) { toast('تعديل المصاريف يتطلب اتصالاً بالإنترنت', true); return; }
+      await api('/expenses/' + id, { method: 'PUT', body: JSON.stringify(body) });
+      toast('تم حفظ التعديلات ✅');
+      closeModal();
+      expenses = await api('/expenses').catch(() => expenses);
+      renderExpenses(); buildSidebar(); buildNotifications();
+    } else {
+      const result = await trySendOrQueue(
+        'expense',
+        () => api('/expenses', { method: 'POST', body: JSON.stringify(body) }),
+        body
+      );
+      if (result.queued) {
+        toast('تم حفظ المصروف مؤقتًا، ستتم مزامنته عند عودة الاتصال بالإنترنت 📥');
+      } else {
+        toast('تم إضافة المصروف — في انتظار موافقة المدير ✅');
+        expenses = await api('/expenses').catch(() => expenses);
+        renderExpenses();
+      }
+      closeModal();
+      buildSidebar(); buildNotifications();
+    }
   } catch (e) { toast('خطأ: ' + e.message, true); }
   finally { if (btn) { btn.disabled = false; btn.style.opacity = '1'; } }
 }
@@ -10275,8 +10782,21 @@ async function addVaultEntry() {
   const segLabel2 = {cash:'كاش',vodafone:'فودافون كاش',instapay:'Instapay',bank:'تحويل بنكي'}[body.seg] || body.seg;
   const confirmed = confirm(`تأكيد التسوية اليدوية\n\nالعملية: ${body.method}\nالمبلغ: ${fmtN(Math.abs(body.amount))} ج\nالحساب: ${segLabel2}\nالوصف: ${body.desc || '—'}\nالموظف: ${body.employee}\n\nهل تريد تطبيق هذا التعديل على رصيد الخزنة؟`);
   if (!confirmed) return;
-  try { await api('/vault', { method: 'POST', body: JSON.stringify(body) }); toast('تم تسجيل الحركة'); qs('#vault-amount').value = ''; qs('#vault-desc').value = ''; qs('#vault-justification').value = ''; settings = await api('/settings').catch(() => settings); renderVaultSegs(); await loadVaultLog(); }
-  catch (e) { toast('خطأ: ' + e.message, true); }
+  try {
+    const result = await trySendOrQueue(
+      'vault',
+      () => api('/vault', { method: 'POST', body: JSON.stringify(body) }),
+      body
+    );
+    qs('#vault-amount').value = ''; qs('#vault-desc').value = ''; qs('#vault-justification').value = '';
+    if (result.queued) {
+      toast('تم حفظ تسوية الخزنة مؤقتًا، ستتم مزامنتها عند عودة الاتصال بالإنترنت 📥');
+    } else {
+      toast('تم تسجيل الحركة');
+      settings = await api('/settings').catch(() => settings);
+      renderVaultSegs(); await loadVaultLog();
+    }
+  } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 function exportVaultExcel() { writeExcel(vaultLog.map(v => ({ 'التاريخ': (v.date||v.createdAt||'').slice(0,10), 'المبلغ': normalizeVaultSignedAmount(v), 'المصدر': v.source||'-', '#المرجع': v.ref ? '#'+v.ref : '-', 'القسم': v.seg, 'الطريقة': v.method, 'الوصف': v.desc })), 'الخزنة', 'vault_' + today()); }
 
@@ -10456,6 +10976,7 @@ function renderUsers() {
     const isOnline = onlineUsers[u._id]?.status === 'online';
     const isInactive = u.isActive === false;
     const isSuperAdmin = u.username === 'admin';
+    const isCurrentUser = currentUser && currentUser.id === u._id;
     const lastLoginText = u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('ar-EG', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : 'لم يسجل دخول';
     const roleMap = { admin: { label: 'مدير', cls: 'badge-purple' }, viewer: { label: 'مشاهد', cls: 'badge-orange' }, staff: { label: 'موظف', cls: 'badge-blue' } };
     const role = roleMap[u.role] || roleMap.staff;
@@ -10467,6 +10988,7 @@ function renderUsers() {
       <div class="role-badge"><span class="badge ${role.cls}">${role.label}</span>${isInactive ? ' <span class="badge" style="background:#fee2e2;color:#dc2626;font-size:.65rem">معطّل</span>' : ''}</div>
       ${u.phone ? `<div class="user-meta"><span class="icon">📞</span> ${esc(u.phone)}</div>` : ''}
       <div class="last-login">آخر دخول: ${lastLoginText}</div>
+      ${(isCurrentUser && __myDevice) ? `<div class="user-device-info" title="جهازك الحالي"><span class="dev-icon">${__myDevice.icon}</span><span>${esc(__myDevice.label)}</span><span class="dev-current">هذا الجهاز</span></div>` : ''}
       <div class="perms-wrap">${(u.perms || []).slice(0, 6).map(p => `<span class="perm-tag">${esc(PERMS_AR[p] || p)}</span>`).join('')}${(u.perms || []).length > 6 ? `<span class="perm-tag" style="background:var(--surface2);color:var(--muted)">+${(u.perms || []).length - 6}</span>` : ''}</div>
       <div class="user-actions">
         <button class="btn-sm" onclick="openUserModal('${esc(u._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</button>
@@ -12186,11 +12708,81 @@ function closeProductCard() {
 }
 
 /* Init */
+/* ─── Splash Screen ─── */
+function dismissSplash() {
+  const el = qs('#splash-screen');
+  if (!el) return;
+  setTimeout(() => { try { el.remove(); } catch(_) {} }, 2200);
+}
+
+/* ─── Device Detection ─── */
+function getDeviceInfo() {
+  const ua = navigator.userAgent || '';
+  let type = 'Desktop', icon = '💻';
+  if (/iPad|tablet|Tablet|Nexus 7|Nexus 10|SM-T|GT-P/i.test(ua)) { type = 'Tablet'; icon = '📋'; }
+  else if (/Mobi|Android|iPhone|iPod|BlackBerry|Windows Phone/i.test(ua)) { type = 'Mobile'; icon = '📱'; }
+  let browser = 'Browser';
+  if (/Edg\//.test(ua)) browser = 'Edge';
+  else if (/Chrome\//.test(ua) && !/OPR|Edg/.test(ua)) browser = 'Chrome';
+  else if (/Firefox\//.test(ua)) browser = 'Firefox';
+  else if (/Safari\//.test(ua) && !/Chrome/.test(ua)) browser = 'Safari';
+  let os = '';
+  if (/Windows NT/.test(ua)) os = 'Windows';
+  else if (/Mac OS X/.test(ua)) os = 'Mac';
+  else if (/Android/.test(ua)) os = 'Android';
+  else if (/iPhone|iPad|iPod/.test(ua)) os = 'iOS';
+  else if (/Linux/.test(ua)) os = 'Linux';
+  const label = `${type}${os ? ' · ' + os : ''} · ${browser}`;
+  return { type, icon, browser, os, label };
+}
+const __myDevice = getDeviceInfo();
+try { localStorage.setItem('soulia_device', JSON.stringify(__myDevice)); } catch(_){}
+
+/* ─── Offline / Network Alerts ─── */
+let __isOffline = false;
+let __pingTimer = null;
+function showOfflineBanner() {
+  if (__isOffline) return;
+  __isOffline = true;
+  const b = qs('#offline-banner');
+  if (!b) return;
+  b.classList.remove('online-restored');
+  qs('#offline-banner-msg').textContent = '⚠️ النظام غير متصل بالإنترنت. بعض الوظائف قد تكون غير متاحة مؤقتًا.';
+  b.classList.add('show');
+}
+function showOnlineBanner() {
+  if (!__isOffline) return;
+  __isOffline = false;
+  const b = qs('#offline-banner');
+  if (!b) return;
+  b.classList.add('online-restored');
+  qs('#offline-banner-msg').textContent = '✅ تم استعادة الاتصال بالإنترنت';
+  setTimeout(() => { b.classList.remove('show'); b.classList.remove('online-restored'); }, 2500);
+  try { oqOnReconnect && oqOnReconnect(); } catch(_) {}
+  try { oqUpdateBadges && oqUpdateBadges(); } catch(_) {}
+}
+async function pingBackend() {
+  if (!navigator.onLine) { showOfflineBanner(); return; }
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 4000);
+    const res = await fetch('/?_ping=' + Date.now(), { method: 'HEAD', signal: ctrl.signal, cache: 'no-store' }).catch(() => null);
+    clearTimeout(t);
+    if (!res || !res.ok) { showOfflineBanner(); } else { showOnlineBanner(); }
+  } catch(_) { showOfflineBanner(); }
+}
+window.addEventListener('online', () => { pingBackend(); });
+window.addEventListener('offline', () => { showOfflineBanner(); });
+__pingTimer = setInterval(() => { if (!navigator.onLine) showOfflineBanner(); else pingBackend(); }, 20000);
+
 (async function init() {
+  dismissSplash();
+  try { oqUpdateBadges(); } catch(_) {}
   const isAuthed = await checkAuth();
   if (isAuthed) {
     showApp();
     initReferenceClickHandlers();
+    try { const cnt = await oqPendingCount(); if (cnt > 0 && !isLikelyOffline()) setTimeout(() => oqOnReconnect(), 1500); } catch(_) {}
   }
   else { qs('#login-page').style.display = 'flex'; loadRememberedLogin(); }
 })();
