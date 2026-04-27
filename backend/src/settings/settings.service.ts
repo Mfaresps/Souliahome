@@ -214,31 +214,20 @@ export class SettingsService {
   }
 
   downloadBackup(res: any, filename: string) {
-    try {
-      const backupDir = this.getBackupDir();
-      const filepath = path.join(backupDir, filename);
+    const backupDir = this.getBackupDir();
+    const filepath = path.join(backupDir, filename);
 
-      if (!fs.existsSync(filepath)) {
-        return res.status(404).json({
-          success: false,
-          message: 'ملف النسخة الاحتياطية غير موجود',
-        });
-      }
-
-      const fileContent = fs.readFileSync(filepath);
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.setHeader('Content-Length', fileContent.length);
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="soulia-${filename}"`,
-      );
-      res.end(fileContent);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'خطأ في تحميل الملف',
-      });
+    if (!fs.existsSync(filepath)) {
+      res.status(404);
+      res.json({ success: false, message: 'ملف النسخة الاحتياطية غير موجود' });
+      return;
     }
+
+    const fileContent = fs.readFileSync(filepath);
+    res.header('Content-Type', 'application/json; charset=utf-8');
+    res.header('Content-Length', fileContent.length.toString());
+    res.header('Content-Disposition', `attachment; filename="soulia-${filename}"`);
+    res.send(fileContent);
   }
 
   async deleteAllBackups(): Promise<{ success: boolean; message: string }> {
