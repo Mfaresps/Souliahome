@@ -1790,7 +1790,7 @@ input.is-valid,select.is-valid,textarea.is-valid{
   font-size:.78rem;font-weight:800;letter-spacing:.2px;
   white-space:nowrap;pointer-events:none;z-index:50;
   font-variant-numeric:tabular-nums;
-  animation:cashPulseIn 1.9s cubic-bezier(.2,.7,.3,1) forwards;
+  animation:cashPulseIn 3.4s cubic-bezier(.2,.7,.3,1) forwards;
   box-shadow:0 6px 16px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.6) inset;
 }
 .cash-pulse svg{flex-shrink:0;opacity:.95}
@@ -1812,26 +1812,30 @@ input.is-valid,select.is-valid,textarea.is-valid{
 }
 .cash-pulse-add{background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;box-shadow:0 6px 16px rgba(16,185,129,.35),0 0 0 1px rgba(255,255,255,.5) inset}
 .cash-pulse-sub{background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);color:#fff;box-shadow:0 6px 16px rgba(239,68,68,.35),0 0 0 1px rgba(255,255,255,.5) inset}
-.cash-pulse-out{animation:cashPulseOut .32s ease-in forwards !important}
+.cash-pulse-out{animation:cashPulseOut .5s ease-in forwards !important}
 @keyframes cashPulseIn{
   0%{opacity:0;transform:translate(-50%,4px) scale(.7)}
-  10%{opacity:1;transform:translate(-50%,-8px) scale(1.08)}
-  18%{opacity:1;transform:translate(-50%,-4px) scale(1)}
-  100%{opacity:1;transform:translate(-50%,-14px) scale(1)}
+  6%{opacity:1;transform:translate(-50%,-8px) scale(1.08)}
+  12%{opacity:1;transform:translate(-50%,-4px) scale(1)}
+  100%{opacity:1;transform:translate(-50%,-16px) scale(1)}
 }
 @keyframes cashPulseOut{
-  from{opacity:1;transform:translate(-50%,-14px) scale(1)}
-  to{opacity:0;transform:translate(-50%,-28px) scale(.92)}
+  from{opacity:1;transform:translate(-50%,-16px) scale(1)}
+  to{opacity:0;transform:translate(-50%,-32px) scale(.92)}
 }
-.cash-glow-add{animation:cashGlowAdd .9s ease-out}
-.cash-glow-sub{animation:cashGlowSub .9s ease-out}
+.cash-glow-add{animation:cashGlowAdd 2.4s ease-out}
+.cash-glow-sub{animation:cashGlowSub 2.4s ease-out}
 @keyframes cashGlowAdd{
-  0%,100%{box-shadow:none}
-  40%{box-shadow:0 0 0 3px rgba(16,185,129,.18),0 8px 24px rgba(16,185,129,.25)}
+  0%   {background-color:transparent;box-shadow:0 0 0 0 rgba(16,185,129,0)}
+  10%  {background-color:rgba(16,185,129,.22);box-shadow:0 0 0 5px rgba(16,185,129,.35),0 12px 36px rgba(16,185,129,.4)}
+  35%  {background-color:rgba(16,185,129,.18);box-shadow:0 0 0 4px rgba(16,185,129,.25),0 10px 30px rgba(16,185,129,.3)}
+  100% {background-color:transparent;box-shadow:0 0 0 0 rgba(16,185,129,0)}
 }
 @keyframes cashGlowSub{
-  0%,100%{box-shadow:none}
-  40%{box-shadow:0 0 0 3px rgba(239,68,68,.18),0 8px 24px rgba(239,68,68,.25)}
+  0%   {background-color:transparent;box-shadow:0 0 0 0 rgba(239,68,68,0)}
+  10%  {background-color:rgba(239,68,68,.18);box-shadow:0 0 0 5px rgba(239,68,68,.3),0 12px 36px rgba(239,68,68,.35)}
+  35%  {background-color:rgba(239,68,68,.14);box-shadow:0 0 0 4px rgba(239,68,68,.22),0 10px 30px rgba(239,68,68,.28)}
+  100% {background-color:transparent;box-shadow:0 0 0 0 rgba(239,68,68,0)}
 }
 @media(max-width:480px){
   .cash-pulse{font-size:.72rem;padding:4px 9px;top:-12px}
@@ -3873,9 +3877,9 @@ document.addEventListener('change', (e) => {
 
 /* ─── Cash Pulse Notifications (accumulating) ─── */
 const _cashPulseState = new WeakMap(); // anchor -> { sign, sum, count, el, timer, queue }
-const COALESCE_WINDOW_MS = 1200;
-const HOLD_AFTER_LAST_MS = 2000;
-const FADE_OUT_MS = 320;
+const COALESCE_WINDOW_MS = 1800;
+const HOLD_AFTER_LAST_MS = 3500;
+const FADE_OUT_MS = 500;
 
 function _cashPlaySound(isAdd) {
   if (localStorage.getItem('cash_pulse_sound') === 'off') return;
@@ -3953,7 +3957,7 @@ function cashPulse(delta, anchorEl) {
   anchorEl.classList.remove('cash-shake', 'cash-glow-add', 'cash-glow-sub');
   void anchorEl.offsetWidth;
   anchorEl.classList.add('cash-shake', isAdd ? 'cash-glow-add' : 'cash-glow-sub');
-  setTimeout(() => anchorEl.classList.remove('cash-shake', 'cash-glow-add', 'cash-glow-sub'), 900);
+  setTimeout(() => anchorEl.classList.remove('cash-shake', 'cash-glow-add', 'cash-glow-sub'), 2400);
 
   _cashPlaySound(isAdd);
 
