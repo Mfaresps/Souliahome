@@ -1803,16 +1803,22 @@ input.is-valid,select.is-valid,textarea.is-valid{
   40%{transform:translate(-50%,-18px) scale(1.14)}
   100%{transform:translate(-50%,-14px) scale(1)}
 }
-.cash-shake{animation:cashShake .35s cubic-bezier(.36,.07,.19,.97)}
+.cash-shake{animation:cashShake .7s cubic-bezier(.36,.07,.19,.97)}
 @keyframes cashShake{
-  10%,90%{transform:translateX(-1px)}
-  20%,80%{transform:translateX(1.5px)}
-  30%,50%,70%{transform:translateX(-2px)}
-  40%,60%{transform:translateX(2px)}
+  0%,100%{transform:translate(0,0) rotate(0)}
+  8%{transform:translate(-3px,-1px) rotate(-.6deg)}
+  16%{transform:translate(3px,1px) rotate(.6deg)}
+  24%{transform:translate(-4px,1px) rotate(-.5deg)}
+  32%{transform:translate(4px,-1px) rotate(.5deg)}
+  44%{transform:translate(-3px,1px) rotate(-.4deg)}
+  56%{transform:translate(3px,-1px) rotate(.4deg)}
+  68%{transform:translate(-2px,0) rotate(-.2deg)}
+  80%{transform:translate(2px,0) rotate(.2deg)}
+  92%{transform:translate(-1px,0) rotate(0)}
 }
 .cash-pulse-add{background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;box-shadow:0 6px 16px rgba(16,185,129,.35),0 0 0 1px rgba(255,255,255,.5) inset}
 .cash-pulse-sub{background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);color:#fff;box-shadow:0 6px 16px rgba(239,68,68,.35),0 0 0 1px rgba(255,255,255,.5) inset}
-.cash-pulse-out{animation:cashPulseOut .5s ease-in forwards !important}
+.cash-pulse-out{animation:cashPulseOut 1.4s cubic-bezier(.4,0,.6,1) forwards !important}
 @keyframes cashPulseIn{
   0%{opacity:0;transform:translate(-50%,4px) scale(.7)}
   4%{opacity:1;transform:translate(-50%,-8px) scale(1.08)}
@@ -1820,8 +1826,9 @@ input.is-valid,select.is-valid,textarea.is-valid{
   100%{opacity:1;transform:translate(-50%,-18px) scale(1)}
 }
 @keyframes cashPulseOut{
-  from{opacity:1;transform:translate(-50%,-16px) scale(1)}
-  to{opacity:0;transform:translate(-50%,-32px) scale(.92)}
+  0%   {opacity:1;transform:translate(-50%,-18px) scale(1);filter:blur(0)}
+  60%  {opacity:.45;transform:translate(-50%,-30px) scale(.96);filter:blur(.5px)}
+  100% {opacity:0;transform:translate(-50%,-44px) scale(.88);filter:blur(2px)}
 }
 .cash-glow-add{animation:cashGlowAdd 5.5s ease-out}
 .cash-glow-sub{animation:cashGlowSub 5.5s ease-out}
@@ -1847,14 +1854,42 @@ input.is-valid,select.is-valid,textarea.is-valid{
   78%  {background-color:rgba(239,68,68,.10);box-shadow:0 0 0 2px rgba(239,68,68,.12),0 6px 14px rgba(239,68,68,.14)}
   100% {background-color:transparent;box-shadow:0 0 0 0 rgba(239,68,68,0)}
 }
+/* Persistent trail dot on the sidebar Vault icon */
+.cash-trail-dot{
+  position:absolute;top:6px;inset-inline-end:8px;
+  width:9px;height:9px;border-radius:50%;
+  pointer-events:none;z-index:5;
+  transition:opacity 2.5s ease-out, transform 2.5s ease-out, filter 2.5s ease-out;
+  opacity:1;
+}
+.cash-trail-dot::after{
+  content:'';position:absolute;inset:0;border-radius:50%;pointer-events:none;
+}
+.cash-trail-add{background:#10b981;box-shadow:0 0 12px rgba(16,185,129,.85),0 0 0 2px rgba(16,185,129,.3)}
+.cash-trail-add::after{animation:cashTrailRippleAdd 1.6s ease-out infinite}
+.cash-trail-sub{background:#ef4444;box-shadow:0 0 12px rgba(239,68,68,.85),0 0 0 2px rgba(239,68,68,.3)}
+.cash-trail-sub::after{animation:cashTrailRippleSub 1.6s ease-out infinite}
+.cash-trail-fade{opacity:0;transform:scale(.6);filter:blur(2px)}
+.cash-trail-fade::after{animation:none !important}
+@keyframes cashTrailRippleAdd{
+  0%   {box-shadow:0 0 0 0 rgba(16,185,129,.6)}
+  100% {box-shadow:0 0 0 12px rgba(16,185,129,0)}
+}
+@keyframes cashTrailRippleSub{
+  0%   {box-shadow:0 0 0 0 rgba(239,68,68,.6)}
+  100% {box-shadow:0 0 0 12px rgba(239,68,68,0)}
+}
+
 @media(max-width:480px){
   .cash-pulse{font-size:.72rem;padding:4px 9px;top:-12px}
   .cash-pulse-cur{font-size:.66rem}
   .cash-pulse svg{width:12px;height:12px}
+  .cash-trail-dot{width:7px;height:7px;top:4px;inset-inline-end:6px}
 }
 @media(prefers-reduced-motion:reduce){
   .cash-pulse{animation:cashPulseIn .2s ease forwards}
   .cash-glow-add,.cash-glow-sub,.cash-shake,.cash-pulse-bump{animation:none}
+  .cash-trail-dot::after{animation:none}
 }
 
 /* ─── Offline Queue (Pending Sync) ─── */
@@ -3889,7 +3924,8 @@ document.addEventListener('change', (e) => {
 const _cashPulseState = new WeakMap(); // anchor -> { sign, sum, count, el, timer, queue }
 const COALESCE_WINDOW_MS = 2500;
 const HOLD_AFTER_LAST_MS = 5500;
-const FADE_OUT_MS = 600;
+const FADE_OUT_MS = 1400;
+const TRAIL_AFTER_MS = 2800; // dot trail lingers on sidebar after fade
 
 function _cashPlaySound(isAdd) {
   if (localStorage.getItem('cash_pulse_sound') === 'off') return;
@@ -4043,6 +4079,30 @@ function cashPulseAll(delta) {
   const navVault = qs('#sidebar .nav-item[data-page="vault"]');
   if (navVault && !anchors.includes(navVault)) anchors.push(navVault);
   anchors.forEach(a => cashPulse(delta, a));
+  // Persistent trail dot on the sidebar Vault icon — lingers ~8s after badge fades
+  if (navVault) cashTrailDot(navVault, delta > 0);
+}
+
+let _cashTrailTimers = new WeakMap();
+function cashTrailDot(navEl, isAdd) {
+  const cs = getComputedStyle(navEl);
+  if (cs.position === 'static') navEl.style.position = 'relative';
+  let dot = navEl.querySelector('.cash-trail-dot');
+  if (!dot) {
+    dot = document.createElement('span');
+    dot.className = 'cash-trail-dot';
+    navEl.appendChild(dot);
+  }
+  dot.classList.remove('cash-trail-add', 'cash-trail-sub', 'cash-trail-fade');
+  void dot.offsetWidth;
+  dot.classList.add(isAdd ? 'cash-trail-add' : 'cash-trail-sub');
+  // schedule slow fade after the badge has lived its full life
+  const prev = _cashTrailTimers.get(navEl);
+  if (prev) { clearTimeout(prev.fade); clearTimeout(prev.remove); }
+  const totalLife = HOLD_AFTER_LAST_MS + FADE_OUT_MS + TRAIL_AFTER_MS;
+  const fadeT = setTimeout(() => { dot.classList.add('cash-trail-fade'); }, HOLD_AFTER_LAST_MS + FADE_OUT_MS);
+  const removeT = setTimeout(() => { try { dot.remove(); } catch(_){} _cashTrailTimers.delete(navEl); }, totalLife);
+  _cashTrailTimers.set(navEl, { fade: fadeT, remove: removeT });
 }
 
 let _lastVaultTotal = null;
