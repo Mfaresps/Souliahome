@@ -1027,46 +1027,84 @@ body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px
 .seg-card .seg-val{font-size:1.4rem;font-weight:700;margin-top:4px}
 .seg-card .seg-label{font-size:.78rem;color:var(--muted)}
 /* ===== Profile Page ===== */
-#page-profile .profile-page{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
-/* Hero card */
-#page-profile .profile-hero{background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%) !important;border-radius:16px;padding:28px 24px;display:flex;align-items:center;gap:20px;color:#fff !important;position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(45,122,79,.25)}
-#page-profile .profile-hero::after{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none}
-#page-profile .profile-hero-avatar{width:84px;height:84px;border-radius:50%;border:3px solid rgba(255,255,255,.45);background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:#fff;flex-shrink:0;overflow:hidden;position:relative;z-index:1;box-shadow:0 4px 12px rgba(0,0,0,.15)}
-#page-profile .profile-hero-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-#page-profile .profile-hero-info{flex:1;min-width:0;position:relative;z-index:1;color:#fff}
-#page-profile .profile-hero-name{font-size:1.3rem;font-weight:800;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
-#page-profile .profile-hero-username{font-size:.84rem;opacity:.85;margin-bottom:8px;color:#fff}
-#page-profile .profile-hero-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.35);padding:4px 12px;border-radius:99px;font-size:.72rem;font-weight:700;letter-spacing:.03em;color:#fff;backdrop-filter:blur(4px)}
-/* Info card */
-#page-profile .profile-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-#page-profile .profile-card-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface2)}
-#page-profile .profile-card-header svg{color:var(--primary);flex-shrink:0}
-#page-profile .profile-card-header h3{font-size:.92rem;font-weight:700;margin:0;color:var(--text)}
-#page-profile .profile-card-body{padding:20px;background:var(--surface)}
-#page-profile .profile-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-#page-profile .profile-info-item{display:flex;flex-direction:column;gap:4px;padding:13px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;transition:border-color .15s}
-#page-profile .profile-info-item:hover{border-color:var(--accent)}
-#page-profile .profile-info-item .pii-label{font-size:.68rem;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
-#page-profile .profile-info-item .pii-val{font-size:.92rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#page-profile .profile-info-item .pii-val.readonly{color:var(--text);opacity:.85}
-/* Form card */
-#page-profile .profile-form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-#page-profile .profile-section input[readonly]{background:var(--surface2);color:var(--text);cursor:default;opacity:.8}
-#page-profile .profile-section input[readonly]:focus{outline:none;border-color:var(--border)}
-#page-profile .profile-pass-toggle{position:absolute;inset-inline-start:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem;color:var(--muted);transition:color .15s;padding:4px}
-#page-profile .profile-pass-toggle:hover{color:var(--primary)}
-#page-profile .profile-avatar-preview{width:44px;height:44px;border-radius:50%;border:2px solid var(--border);object-fit:cover;margin-inline-start:10px;flex-shrink:0;background:var(--surface2);display:none}
-#page-profile .profile-avatar-preview.show{display:block}
-#page-profile .profile-save-btn{width:100%;margin-top:4px}
-/* Dark mode reinforcement — explicit so caches and overrides can't fight it */
-body.dark-mode #page-profile .profile-card{background:var(--surface);border-color:var(--border);box-shadow:0 1px 3px rgba(0,0,0,.3)}
-body.dark-mode #page-profile .profile-card-header{background:var(--surface2);border-color:var(--border)}
-body.dark-mode #page-profile .profile-card-body{background:var(--surface)}
-body.dark-mode #page-profile .profile-info-item{background:var(--surface2);border-color:var(--border)}
-body.dark-mode #page-profile .profile-section input[readonly]{background:var(--surface2)}
-@media(max-width:600px){
-  #page-profile .profile-hero{flex-direction:column;text-align:center;padding:22px 18px}
-  #page-profile .profile-info-grid,#page-profile .profile-form-row{grid-template-columns:1fr}
+/* ═══════════════════════ PROFILE PAGE v2 ═══════════════════════ */
+#page-profile .prof-wrap{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+/* Cover + avatar */
+#page-profile .prof-cover{border-radius:18px;overflow:hidden;position:relative;height:160px;background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%);box-shadow:0 8px 28px rgba(45,122,79,.22)}
+#page-profile .prof-cover-pattern{position:absolute;inset:0;opacity:.06;background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:22px 22px}
+#page-profile .prof-cover-actions{position:absolute;bottom:0;left:0;right:0;padding:14px 20px;display:flex;align-items:flex-end;gap:16px}
+#page-profile .prof-avatar-wrap{position:relative;flex-shrink:0}
+#page-profile .prof-avatar{width:96px;height:96px;border-radius:50%;border:4px solid #fff;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:2.1rem;font-weight:800;color:#fff;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.18);transition:transform .2s}
+#page-profile .prof-avatar:hover{transform:scale(1.04)}
+#page-profile .prof-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+#page-profile .prof-online-dot{position:absolute;bottom:6px;right:6px;width:14px;height:14px;border-radius:50%;background:#22c55e;border:2.5px solid #fff;box-shadow:0 0 0 2px rgba(34,197,94,.3)}
+#page-profile .prof-cover-name{color:#fff;flex:1;min-width:0}
+#page-profile .prof-cover-name h2{font-size:1.25rem;font-weight:800;margin:0 0 2px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.2)}
+#page-profile .prof-cover-name p{font-size:.8rem;color:rgba(255,255,255,.8);margin:0}
+#page-profile .prof-role-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);padding:4px 12px;border-radius:99px;font-size:.7rem;font-weight:700;color:#fff;backdrop-filter:blur(6px);white-space:nowrap;flex-shrink:0}
+/* KPI strip */
+#page-profile .prof-kpi-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+#page-profile .prof-kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:12px;transition:box-shadow .2s,transform .2s;cursor:default}
+#page-profile .prof-kpi:hover{box-shadow:0 4px 18px rgba(0,0,0,.08);transform:translateY(-2px)}
+#page-profile .prof-kpi-icon{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#page-profile .prof-kpi-body{min-width:0}
+#page-profile .prof-kpi-val{font-size:1.35rem;font-weight:800;color:var(--text);line-height:1.1}
+#page-profile .prof-kpi-lbl{font-size:.71rem;color:var(--muted);font-weight:600;margin-top:2px}
+/* Two-column layout */
+#page-profile .prof-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+/* Cards */
+#page-profile .prof-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+#page-profile .prof-card-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;background:var(--surface2)}
+#page-profile .prof-card-hd svg{color:var(--primary);flex-shrink:0}
+#page-profile .prof-card-hd h3{font-size:.88rem;font-weight:700;margin:0;color:var(--text)}
+#page-profile .prof-card-bd{padding:18px}
+/* Info rows */
+#page-profile .prof-info-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+#page-profile .prof-info-row:last-child{border-bottom:none;padding-bottom:0}
+#page-profile .prof-info-icon{width:32px;height:32px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#page-profile .prof-info-icon svg{color:var(--primary)}
+#page-profile .prof-info-body{flex:1;min-width:0}
+#page-profile .prof-info-lbl{font-size:.67rem;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+#page-profile .prof-info-val{font-size:.88rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Edit form */
+#page-profile .prof-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+#page-profile .prof-field:last-of-type{margin-bottom:0}
+#page-profile .prof-field label{font-size:.75rem;font-weight:700;color:var(--muted)}
+#page-profile .prof-field input{padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);font-size:.87rem;transition:border-color .15s,box-shadow .15s;outline:none}
+#page-profile .prof-field input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(45,122,79,.12)}
+#page-profile .prof-field input.err{border-color:var(--red)}
+#page-profile .prof-field .field-err{font-size:.7rem;color:var(--red);margin-top:2px;display:none}
+#page-profile .prof-field .field-err.show{display:block}
+/* Password strength */
+#page-profile .prof-pass-wrap{position:relative}
+#page-profile .prof-pass-eye{position:absolute;inset-inline-start:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;transition:color .15s}
+#page-profile .prof-pass-eye:hover{color:var(--primary)}
+#page-profile .prof-pass-strength{margin-top:6px;height:4px;border-radius:99px;background:var(--border);overflow:hidden}
+#page-profile .prof-pass-strength-bar{height:100%;border-radius:99px;transition:width .3s,background .3s}
+#page-profile .prof-pass-hint{font-size:.68rem;color:var(--muted);margin-top:3px}
+/* Avatar row */
+#page-profile .prof-avatar-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+#page-profile .prof-avatar-mini{width:46px;height:46px;border-radius:50%;border:2px solid var(--border);object-fit:cover;background:var(--surface2);display:none;flex-shrink:0}
+#page-profile .prof-avatar-mini.show{display:block}
+/* Activity log */
+#page-profile .prof-activity-list{display:flex;flex-direction:column;gap:0}
+#page-profile .prof-activity-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);animation:fadeSlideIn .25s ease}
+#page-profile .prof-activity-item:last-child{border-bottom:none}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#page-profile .prof-activity-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+#page-profile .prof-activity-body{flex:1;min-width:0}
+#page-profile .prof-activity-text{font-size:.82rem;color:var(--text);font-weight:500}
+#page-profile .prof-activity-time{font-size:.68rem;color:var(--muted);margin-top:2px}
+#page-profile .prof-empty{text-align:center;padding:24px;color:var(--muted);font-size:.83rem}
+/* Responsive */
+@media(max-width:680px){
+  #page-profile .prof-kpi-strip{grid-template-columns:1fr 1fr}
+  #page-profile .prof-cols{grid-template-columns:1fr}
+  #page-profile .prof-cover{height:130px}
+  #page-profile .prof-avatar{width:78px;height:78px}
+}
+@media(max-width:420px){
+  #page-profile .prof-kpi-strip{grid-template-columns:1fr}
 }
 /* legacy .profile-avatar used elsewhere */
 .profile-avatar{width:80px;height:80px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;margin:0 auto 16px}
@@ -4482,98 +4520,157 @@ body.dark-mode .dashboard-v2{
 
 <!-- Profile -->
 <div class="page" id="page-profile">
-<h2 class="page-title" data-i18n="profile" style="margin-bottom:4px">الملف الشخصي</h2>
-<p class="page-subtitle" data-i18n="profileSubtitle" style="margin-bottom:18px">تعديل بيانات حسابك الشخصي</p>
-<div class="profile-page">
+<div class="prof-wrap">
 
-  <!-- Hero banner -->
-  <div class="profile-hero">
-    <div class="profile-hero-avatar" id="profile-avatar"></div>
-    <div class="profile-hero-info">
-      <div class="profile-hero-name" id="profile-hero-name">—</div>
-      <div class="profile-hero-username" id="profile-hero-username">@—</div>
-      <div class="profile-hero-badge" id="profile-hero-badge">
-        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span id="profile-hero-role">—</span>
+  <!-- ── Cover / Hero ───────────────────────────── -->
+  <div class="prof-cover">
+    <div class="prof-cover-pattern"></div>
+    <div class="prof-cover-actions">
+      <div class="prof-avatar-wrap">
+        <div class="prof-avatar" id="prof-avatar-hero">
+          <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
+        </div>
+        <div class="prof-online-dot" id="prof-online-dot" style="display:none"></div>
+      </div>
+      <div class="prof-cover-name">
+        <h2 id="prof-cover-name">—</h2>
+        <p id="prof-cover-username">@—</p>
+      </div>
+      <div class="prof-role-badge" id="prof-role-badge">
+        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span id="prof-role-label">—</span>
       </div>
     </div>
   </div>
 
-  <!-- Account info (read-only) -->
-  <div class="profile-card">
-    <div class="profile-card-header">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
-      <h3>معلومات الحساب</h3>
+  <!-- ── KPI Strip ──────────────────────────────── -->
+  <div class="prof-kpi-strip" id="prof-kpi-strip">
+    <div class="prof-kpi">
+      <div class="prof-kpi-icon" style="background:rgba(16,185,129,.1)">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div class="prof-kpi-body">
+        <div class="prof-kpi-val" id="kpi-sales">—</div>
+        <div class="prof-kpi-lbl">حركات المبيعات</div>
+      </div>
     </div>
-    <div class="profile-card-body">
-      <div class="profile-info-grid">
-        <div class="profile-info-item">
-          <span class="pii-label">الاسم الكامل</span>
-          <span class="pii-val readonly" id="pii-name">—</span>
-        </div>
-        <div class="profile-info-item">
-          <span class="pii-label">اسم المستخدم</span>
-          <span class="pii-val readonly" id="pii-username">—</span>
-        </div>
-        <div class="profile-info-item">
-          <span class="pii-label">الصلاحية</span>
-          <span class="pii-val" id="pii-role">—</span>
-        </div>
-        <div class="profile-info-item">
-          <span class="pii-label">الهاتف</span>
-          <span class="pii-val" id="pii-phone">—</span>
-        </div>
+    <div class="prof-kpi">
+      <div class="prof-kpi-icon" style="background:rgba(59,130,246,.1)">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg>
+      </div>
+      <div class="prof-kpi-body">
+        <div class="prof-kpi-val" id="kpi-purchases">—</div>
+        <div class="prof-kpi-lbl">حركات الشراء</div>
+      </div>
+    </div>
+    <div class="prof-kpi">
+      <div class="prof-kpi-icon" style="background:rgba(168,85,247,.1)">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="prof-kpi-body">
+        <div class="prof-kpi-val" id="kpi-tx">—</div>
+        <div class="prof-kpi-lbl">إجمالي الحركات</div>
       </div>
     </div>
   </div>
 
-  <!-- Edit form -->
-  <div class="profile-card profile-section">
-    <div class="profile-card-header">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      <h3>تعديل البيانات</h3>
-    </div>
-    <div class="profile-card-body">
-      <div class="profile-form-row" style="margin-bottom:14px">
-        <div class="form-group" style="margin:0">
-          <label>الاسم</label>
-          <input type="text" id="prof-name" readonly>
+  <!-- ── Two-column: Info + Edit ───────────────── -->
+  <div class="prof-cols">
+
+    <!-- Account info -->
+    <div class="prof-card">
+      <div class="prof-card-hd">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
+        <h3>معلومات الحساب</h3>
+      </div>
+      <div class="prof-card-bd">
+        <div class="prof-info-row">
+          <div class="prof-info-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg></div>
+          <div class="prof-info-body"><div class="prof-info-lbl">الاسم الكامل</div><div class="prof-info-val" id="pi-name">—</div></div>
         </div>
-        <div class="form-group" style="margin:0">
-          <label>اسم المستخدم</label>
-          <input type="text" id="prof-username" readonly>
+        <div class="prof-info-row">
+          <div class="prof-info-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg></div>
+          <div class="prof-info-body"><div class="prof-info-lbl">اسم المستخدم</div><div class="prof-info-val" id="pi-username">—</div></div>
+        </div>
+        <div class="prof-info-row">
+          <div class="prof-info-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.1 2.18 2 2 0 012.07 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.08 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.9v2.02z"/></svg></div>
+          <div class="prof-info-body"><div class="prof-info-lbl">الهاتف</div><div class="prof-info-val" id="pi-phone">—</div></div>
+        </div>
+        <div class="prof-info-row">
+          <div class="prof-info-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div class="prof-info-body"><div class="prof-info-lbl">الصلاحية</div><div class="prof-info-val" id="pi-role">—</div></div>
+        </div>
+        <div class="prof-info-row">
+          <div class="prof-info-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <div class="prof-info-body"><div class="prof-info-lbl">آخر تسجيل دخول</div><div class="prof-info-val" id="pi-lastlogin">—</div></div>
         </div>
       </div>
-      <div class="profile-form-row" style="margin-bottom:14px">
-        <div class="form-group" style="margin:0">
-          <label>الهاتف</label>
-          <input type="text" id="prof-phone" placeholder="رقم الهاتف">
-        </div>
-        <div class="form-group" style="margin:0">
-          <label>كلمة المرور الجديدة</label>
-          <div style="position:relative">
-            <input type="password" id="prof-password" placeholder="اتركه فارغاً لعدم التغيير" style="padding-inline-start:36px">
-            <button type="button" class="profile-pass-toggle" onclick="togglePassField(event)" title="إظهار/إخفاء">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
+    </div>
+
+    <!-- Edit form -->
+    <div class="prof-card prof-edit-section">
+      <div class="prof-card-hd">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <h3>تعديل البيانات</h3>
+      </div>
+      <div class="prof-card-bd">
+        <!-- Avatar URL + preview -->
+        <div class="prof-avatar-row">
+          <img id="prof-avatar-mini" class="prof-avatar-mini" src="" alt="">
+          <div style="flex:1;min-width:0">
+            <div class="prof-field" style="margin-bottom:0">
+              <label>رابط الصورة الشخصية</label>
+              <input type="url" id="prof-avatar" placeholder="https://..." oninput="profPreviewAvatar(this.value)">
+            </div>
           </div>
         </div>
-      </div>
-      <div class="form-group" style="margin-bottom:18px">
-        <label>رابط الصورة الشخصية</label>
-        <div style="display:flex;align-items:center;gap:0">
-          <input type="text" id="prof-avatar" placeholder="https://..." oninput="previewProfileAvatar(this.value)" style="border-radius:8px 0 0 8px;flex:1">
-          <img id="prof-avatar-preview" class="profile-avatar-preview" src="" alt="preview" style="border-radius:0 8px 8px 0;border-inline-start:none;width:42px;height:42px">
+        <div class="prof-field">
+          <label>رقم الهاتف</label>
+          <input type="tel" id="prof-phone" placeholder="اختياري" oninput="profValidatePhone(this)">
+          <span class="field-err" id="prof-phone-err">رقم هاتف غير صالح</span>
         </div>
+        <div class="prof-field">
+          <label>كلمة المرور الجديدة <span style="font-weight:400;color:var(--muted)">(اتركها فارغة لعدم التغيير)</span></label>
+          <div class="prof-pass-wrap">
+            <input type="password" id="prof-password" placeholder="6 أحرف على الأقل" style="padding-inline-start:36px;width:100%;box-sizing:border-box" oninput="profPasswordStrength(this.value)">
+            <button type="button" class="prof-pass-eye" onclick="profTogglePass()" title="إظهار/إخفاء">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" id="prof-eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="prof-pass-strength"><div class="prof-pass-strength-bar" id="prof-pass-bar" style="width:0;background:#e5e7eb"></div></div>
+          <div class="prof-pass-hint" id="prof-pass-hint"></div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:4px" id="prof-save-btn" onclick="saveProfile()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="margin-inline-end:6px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+          حفظ التعديلات
+        </button>
       </div>
-      <button class="btn btn-primary profile-save-btn" onclick="saveProfile()">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="margin-inline-end:6px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        حفظ التعديلات
-      </button>
+    </div>
+  </div><!-- /prof-cols -->
+
+  <!-- ── Permissions ───────────────────────────── -->
+  <div class="prof-card" id="prof-perms-card" style="display:none">
+    <div class="prof-card-hd">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      <h3>الصلاحيات الممنوحة</h3>
+    </div>
+    <div class="prof-card-bd" id="prof-perms-body" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+  </div>
+
+  <!-- ── Activity Log ───────────────────────────── -->
+  <div class="prof-card">
+    <div class="prof-card-hd">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <h3>سجل النشاط الأخير</h3>
+    </div>
+    <div class="prof-card-bd">
+      <div class="prof-activity-list" id="prof-activity-list">
+        <div class="prof-empty">جارٍ التحميل...</div>
+      </div>
     </div>
   </div>
 
-</div>
+</div><!-- /prof-wrap -->
 </div>
 </main>
 </div>
@@ -15556,71 +15653,177 @@ function changeLang(lang) {
   if (typeof navigateTo === 'function' && typeof currentPage !== 'undefined') navigateTo(currentPage, false);
 }
 
-/* Profile */
+/* ═══════════════ PROFILE v2 ═══════════════ */
+const _ROLE_MAP = { admin: 'مدير', staff: 'موظف', manager: 'مدير فرعي', viewer: 'مشاهد' };
+const _ROLE_COLOR = { admin: '#10b981', staff: '#3b82f6', manager: '#f59e0b', viewer: '#8b5cf6' };
+
+function _profInitials(name) {
+  return (name || '?').trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+}
+
 function renderProfile() {
   const u = currentUser || {};
   const name = u.name || u.username || '';
-  const initials = (name || '?').trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const initials = _profInitials(name);
   const avatarUrl = u.avatar ? sanitizeUrl(u.avatar) : '';
-  const roleMap = { admin: 'مدير', staff: 'موظف', viewer: 'مشاهد' };
-  const roleLabel = roleMap[u.role] || u.role || '—';
+  const roleLabel = _ROLE_MAP[u.role] || u.role || '—';
+  const st = (id, v) => { const el = qs('#' + id); if (el) el.textContent = v; };
 
-  // Hero
-  const av = qs('#profile-avatar');
-  if (av) {
-    av.innerHTML = avatarUrl
-      ? `<img src="${esc(avatarUrl)}" onerror="this.parentElement.textContent='${esc(initials)}'">`
+  // Cover
+  const heroAvatar = qs('#prof-avatar-hero');
+  if (heroAvatar) {
+    heroAvatar.innerHTML = avatarUrl
+      ? `<img src="${esc(avatarUrl)}" onerror="this.parentElement.innerHTML='${esc(initials)}';" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
       : esc(initials);
   }
-  const setText = (id, v) => { const el = qs('#' + id); if (el) el.textContent = v; };
-  setText('profile-hero-name', u.name || u.username || '—');
-  setText('profile-hero-username', '@' + (u.username || '—'));
-  setText('profile-hero-role', roleLabel);
+  st('prof-cover-name', name || '—');
+  st('prof-cover-username', '@' + (u.username || '—'));
+  st('prof-role-label', roleLabel);
 
-  // Info grid
-  setText('pii-name', u.name || '—');
-  setText('pii-username', u.username || '—');
-  setText('pii-role', roleLabel);
-  setText('pii-phone', u.phone || 'غير محدد');
+  // Info panel
+  st('pi-name', name || '—');
+  st('pi-username', u.username || '—');
+  st('pi-phone', u.phone || 'غير محدد');
+  st('pi-role', roleLabel);
+  st('pi-lastlogin', u.lastLogin ? fmtDateTime(u.lastLogin) : 'غير متاح');
 
-  // Form inputs
-  const setVal = (id, v) => { const el = qs('#' + id); if (el) el.value = v; };
-  setVal('prof-name', u.name || '');
-  setVal('prof-username', u.username || '');
-  setVal('prof-phone', u.phone || '');
-  setVal('prof-avatar', u.avatar || '');
-  setVal('prof-password', '');
+  // Online dot
+  const dot = qs('#prof-online-dot');
+  if (dot) dot.style.display = 'block';
 
-  // Avatar preview
-  previewProfileAvatar(u.avatar || '');
+  // Edit form defaults
+  const sv = (id, v) => { const el = qs('#' + id); if (el) el.value = v || ''; };
+  sv('prof-avatar', u.avatar);
+  sv('prof-phone', u.phone);
+  sv('prof-password', '');
+  profPreviewAvatar(u.avatar || '');
+
+  // Permissions
+  const permsCard = qs('#prof-perms-card');
+  const permsBody = qs('#prof-perms-body');
+  if (permsBody && Array.isArray(u.perms) && u.perms.length) {
+    const PERM_LABELS = { sales:'المبيعات', purchases:'المشتريات', returns:'المرتجعات', expenses:'المصاريف', inventory:'المخزون', vault:'الخزنة', reports:'التقارير', settings:'الإعدادات', users:'المستخدمين' };
+    permsBody.innerHTML = u.perms.map(p => `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:99px;background:rgba(45,122,79,.08);border:1px solid rgba(45,122,79,.18);font-size:.75rem;font-weight:600;color:var(--primary)">${esc(PERM_LABELS[p] || p)}</span>`).join('');
+    if (permsCard) permsCard.style.display = '';
+  } else if (permsCard) permsCard.style.display = 'none';
+
+  // Load KPIs + activity
+  _loadProfileStats();
+  _buildProfileActivity();
 }
 
-function previewProfileAvatar(url) {
-  const img = qs('#prof-avatar-preview');
-  if (!img) return;
-  if (url && url.startsWith('http')) {
-    img.src = url;
-    img.classList.add('show');
-    img.onerror = () => img.classList.remove('show');
-  } else {
-    img.classList.remove('show');
+async function _loadProfileStats() {
+  try {
+    const stats = await api('/users/me/stats');
+    const st = (id, v) => { const el = qs('#' + id); if (el) el.textContent = v; };
+    st('kpi-sales', stats.salesCount ?? '—');
+    st('kpi-purchases', stats.purchasesCount ?? '—');
+    st('kpi-tx', stats.txCount ?? '—');
+  } catch (_) {}
+}
+
+function _buildProfileActivity() {
+  const list = qs('#prof-activity-list');
+  if (!list) return;
+  // Pull from local transaction data already loaded in-memory
+  const u = currentUser || {};
+  const empName = u.name || u.username || '';
+  const allTx = typeof transactions !== 'undefined' ? transactions : [];
+  const mine = allTx.filter(t => t.employee === empName).sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date)).slice(0, 8);
+  if (!mine.length) { list.innerHTML = '<div class="prof-empty">لا توجد نشاطات مسجلة بعد</div>'; return; }
+  const TYPE_COLOR = { 'مبيعات': '#10b981', 'مشتريات': '#3b82f6', 'مرتجع مبيعات': '#f59e0b', 'مرتجع مشتريات': '#f59e0b', 'مرتجع': '#8b5cf6' };
+  list.innerHTML = mine.map(t => `
+    <div class="prof-activity-item">
+      <div class="prof-activity-dot" style="background:${TYPE_COLOR[t.type] || 'var(--muted)'}"></div>
+      <div class="prof-activity-body">
+        <div class="prof-activity-text">${esc(t.type)} — ${esc(t.client || t.ref || '—')} — ${fmtJ(t.total)}</div>
+        <div class="prof-activity-time">${fmtDateTime(t.createdAt || t.date)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function profPreviewAvatar(url) {
+  const mini = qs('#prof-avatar-mini');
+  const hero = qs('#prof-avatar-hero');
+  const initials = _profInitials((currentUser?.name || currentUser?.username || '?'));
+  if (mini) {
+    if (url && url.startsWith('http')) {
+      mini.src = url;
+      mini.classList.add('show');
+      mini.onerror = () => mini.classList.remove('show');
+    } else mini.classList.remove('show');
+  }
+  if (hero) {
+    if (url && url.startsWith('http')) {
+      hero.innerHTML = `<img src="${esc(url)}" onerror="this.parentElement.innerHTML='${esc(initials)}';" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    } else hero.textContent = initials;
   }
 }
+
+function profValidatePhone(input) {
+  const err = qs('#prof-phone-err');
+  const val = input.value.trim();
+  const ok = !val || /^[\d\s\+\-\(\)]{7,15}$/.test(val);
+  input.classList.toggle('err', !ok);
+  if (err) err.classList.toggle('show', !ok);
+  return ok;
+}
+
+function profPasswordStrength(val) {
+  const bar = qs('#prof-pass-bar');
+  const hint = qs('#prof-pass-hint');
+  if (!bar) return;
+  if (!val) { bar.style.width = '0'; bar.style.background = '#e5e7eb'; if (hint) hint.textContent = ''; return; }
+  let score = 0;
+  if (val.length >= 6) score++;
+  if (val.length >= 10) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  const levels = [
+    { w: '20%', bg: '#ef4444', label: 'ضعيف جداً' },
+    { w: '40%', bg: '#f97316', label: 'ضعيف' },
+    { w: '60%', bg: '#eab308', label: 'متوسط' },
+    { w: '80%', bg: '#22c55e', label: 'جيد' },
+    { w: '100%', bg: '#10b981', label: 'قوي جداً' },
+  ];
+  const lvl = levels[Math.min(score - 1, 4)] || levels[0];
+  bar.style.width = lvl.w; bar.style.background = lvl.bg;
+  if (hint) { hint.textContent = lvl.label; hint.style.color = lvl.bg; }
+}
+
+function profTogglePass() {
+  const input = qs('#prof-password');
+  const icon = qs('#prof-eye-icon');
+  if (!input) return;
+  const isPass = input.type === 'password';
+  input.type = isPass ? 'text' : 'password';
+  if (icon) icon.innerHTML = isPass
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22"/><circle cx="12" cy="12" r="3"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+}
+
 async function saveProfile() {
   if (!currentUser) { toast('خطأ: لم يتم تحميل ملف المستخدم', true); return; }
-  const body = { phone: qs('#prof-phone').value, avatar: qs('#prof-avatar').value };
-  const pass = qs('#prof-password').value; if (pass) body.password = pass;
+  if (!profValidatePhone(qs('#prof-phone'))) { toast('رقم الهاتف غير صالح', true); return; }
+  const pass = (qs('#prof-password')?.value || '').trim();
+  if (pass && pass.length < 6) { toast('كلمة المرور يجب أن تكون 6 أحرف على الأقل', true); return; }
+  const body = { phone: (qs('#prof-phone')?.value || '').trim(), avatar: (qs('#prof-avatar')?.value || '').trim() };
+  if (pass) body.password = pass;
+  const btn = qs('#prof-save-btn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
   try {
-    const userId = currentUser.id || currentUser._id;
-    if (!userId) { toast('خطأ: لا يمكن تحديد معرف المستخدم', true); return; }
-    await api('/users/' + userId, { method: 'PUT', body: JSON.stringify(body) });
-    if (body.phone) currentUser.phone = body.phone; 
-    if (body.avatar) currentUser.avatar = body.avatar;
-    localStorage.setItem('user', JSON.stringify(currentUser)); 
-    toast('تم حفظ التعديلات'); 
-    updateHeader(); 
+    await api('/users/me', { method: 'PUT', body: JSON.stringify(body) });
+    if (body.phone !== undefined) currentUser.phone = body.phone;
+    if (body.avatar !== undefined) currentUser.avatar = body.avatar;
+    localStorage.setItem('user', JSON.stringify(currentUser));
+    if (qs('#prof-password')) qs('#prof-password').value = '';
+    profPasswordStrength('');
+    toast('تم حفظ التعديلات بنجاح');
+    updateHeader();
     renderProfile();
   } catch (e) { toast('خطأ: ' + e.message, true); }
+  finally { if (btn) { btn.disabled = false; btn.style.opacity = ''; } }
 }
 
 /* Modal */
@@ -15677,6 +15880,7 @@ function getEnterSubmitScopeRoot(el) {
     const vl = qs('#vault-locked');
     if (vl && window.getComputedStyle(vl).display !== 'none') return vaultLocked;
   }
+  if (el.closest('.prof-edit-section')) return el.closest('.prof-edit-section');
   if (el.closest('.profile-section')) return el.closest('.profile-section');
   const txPage = qs('#page-transaction');
   if (txPage && txPage.classList.contains('active') && el.closest('#page-transaction')) return txPage;
