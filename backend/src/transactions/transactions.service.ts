@@ -27,6 +27,7 @@ export interface InventoryItem {
   _id: string;
   code: string;
   name: string;
+  imageUrl: string;
   sellPrice: number;
   buyPrice: number;
   minStock: number;
@@ -920,6 +921,7 @@ export class TransactionsService {
         _id: product._id.toString(),
         code: product.code,
         name: product.name,
+        imageUrl: (product as { imageUrl?: string }).imageUrl || '',
         sellPrice: product.sellPrice,
         buyPrice: product.buyPrice,
         minStock: product.minStock,
@@ -1122,6 +1124,31 @@ export class TransactionsService {
     grossProfit = Math.max(0, grossProfit - returnedProfit - totalShipLoss);
     console.log(`[getReports] Final grossProfit: ${grossProfit}`);
     const netProfit = grossProfit - expenseTotal;
+
+    const orderCount = salesTx.length;
+    const avgOrderValue = orderCount > 0 ? Math.round(grossProductSales / orderCount) : 0;
+    const productProfits = Object.entries(prodProfitMap)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.profit - a.profit);
+    const bestByQty = [...productProfits].sort((a, b) => (b.qty || 0) - (a.qty || 0))[0];
+    const bestSellingProduct = bestByQty
+      ? { name: bestByQty.name, qty: bestByQty.qty, revenue: bestByQty.rev }
+      : null;
+
+    const series = this.buildDailySeries(salesTx, pursTx, from, to);
+
+    const customerMap: Record<string, { orders: number; revenue: number }> = {};
+    salesTx.forEach((tx) => {
+      const name = String(tx.client || '').trim() || 'بدون اسم';
+      if (!customerMap[name]) customerMap[name] = { orders: 0, revenue: 0 };
+      customerMap[name].orders += 1;
+      customerMap[name].revenue += Number(tx.itemsTotal) || (tx.total - (Number(tx.shipCost) || 0));
+    });
+    const topCustomers = Object.entries(customerMap)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+
     return {
       totalSales,
       totalPurchases,
@@ -1135,9 +1162,14 @@ export class TransactionsService {
       returnCount: approvedReturns.length,
       totalReturns,
       transactionCount: transactions.length,
-      productProfits: Object.entries(prodProfitMap)
-        .map(([name, data]) => ({ name, ...data }))
-        .sort((a, b) => b.profit - a.profit),
+      orderCount,
+      avgOrderValue,
+      bestSellingProduct,
+      series,
+      topCustomers,
+      from: from || '',
+      to: to || '',
+      productProfits,
       salesMap: salesTx.reduce(
         (acc: Record<string, number>, tx) => {
           tx.items.forEach((it) => {
@@ -1148,6 +1180,61 @@ export class TransactionsService {
         {},
       ),
     };
+  }
+
+  /**
+   * Daily-bucketed series of sales/purchases/profit between from..to (inclusive).
+   * If from/to omitted, covers min..max of input transactions; empty if no data.
+   */
+  private buildDailySeries(
+    salesTx: TransactionDocument[],
+    pursTx: TransactionDocument[],
+    from?: string,
+    to?: string,
+  ): Array<{ date: string; sales: number; purchases: number; orders: number }> {
+    const dayKey = (d: string | Date | undefined): string => {
+      if (!d) return '';
+      if (d instanceof Date) return d.toISOString().slice(0, 10);
+      const s = String(d);
+      return s.includes('T') ? s.slice(0, 10) : s.slice(0, 10);
+    };
+    const allKeys = [
+      ...salesTx.map((t) => dayKey(t.date)),
+      ...pursTx.map((t) => dayKey(t.date)),
+    ].filter(Boolean);
+    if (!from && !to && allKeys.length === 0) return [];
+    const minDay = from || allKeys.sort()[0];
+    const maxDay = to || allKeys.sort().slice(-1)[0];
+    if (!minDay || !maxDay) return [];
+
+    const buckets: Record<string, { sales: number; purchases: number; orders: number }> = {};
+    const start = new Date(minDay + 'T00:00:00.000Z');
+    const end = new Date(maxDay + 'T00:00:00.000Z');
+    // Cap series length at 366 days to keep payload bounded
+    const MAX_DAYS = 366;
+    let dayCount = 0;
+    for (let d = new Date(start); d <= end && dayCount < MAX_DAYS; d.setUTCDate(d.getUTCDate() + 1)) {
+      const k = d.toISOString().slice(0, 10);
+      buckets[k] = { sales: 0, purchases: 0, orders: 0 };
+      dayCount++;
+    }
+    salesTx.forEach((tx) => {
+      const k = dayKey(tx.date);
+      if (buckets[k]) {
+        const itemsTotal = Number(tx.itemsTotal) || (tx.total - (Number(tx.shipCost) || 0));
+        buckets[k].sales += itemsTotal;
+        buckets[k].orders += 1;
+      }
+    });
+    pursTx.forEach((tx) => {
+      const k = dayKey(tx.date);
+      if (buckets[k]) {
+        buckets[k].purchases += Number(tx.total) || 0;
+      }
+    });
+    return Object.entries(buckets)
+      .map(([date, v]) => ({ date, ...v }))
+      .sort((a, b) => a.date.localeCompare(b.date));
   }
 
   private sumTransactionItemsLineTotal(tx: TransactionDocument): number {

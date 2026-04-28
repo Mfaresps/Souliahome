@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Expense, ExpenseDocument } from './schemas/expense.schema';
 import { CreateExpenseDto, UpdateExpenseDto } from './dto/expense.dto';
 import { VaultService } from '../vault/vault.service';
@@ -122,13 +124,35 @@ export class ExpensesService {
     return expense.save();
   }
 
-  async remove(id: string): Promise<void> {
+  getAttachmentsDir(): string {
+    const dir = path.join(process.cwd(), 'uploads', 'expenses');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    return dir;
+  }
+
+  async remove(id: string, isAdmin = false): Promise<void> {
     const expense = await this.expenseModel.findById(id).exec();
     if (!expense) {
       throw new NotFoundException('المصروف غير موجود');
     }
     if (expense.status === 'معتمد') {
-      throw new BadRequestException('لا يمكن حذف مصروف معتمد من المدير');
+      if (!isAdmin) {
+        throw new BadRequestException('لا يمكن حذف مصروف معتمد — يحتاج صلاحية أدمن');
+      }
+      // Reverse vault deduction
+      await this.vaultService.addSystemEntry(
+        +(expense.amount || 0),
+        expense.account || 'كاش',
+        `إلغاء مصروف: ${expense.desc} (${expense.category || ''})`,
+        new Date().toISOString().split('T')[0],
+        'إلغاء مصروف',
+        String(expense._id),
+      );
+    }
+    // Delete attachment file if exists
+    if (expense.attachment) {
+      const filePath = path.join(this.getAttachmentsDir(), path.basename(expense.attachment));
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
     await this.expenseModel.findByIdAndDelete(id).exec();
   }

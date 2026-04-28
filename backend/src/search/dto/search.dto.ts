@@ -13,6 +13,7 @@ export interface SearchResultItem {
   readonly subtitle: string;
   readonly icon: string;
   readonly meta?: string;
+  readonly imageUrl?: string;
 }
 
 export interface SearchResponse {

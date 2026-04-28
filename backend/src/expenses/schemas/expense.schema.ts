@@ -37,6 +37,12 @@ export class Expense {
 
   @Prop()
   approvedAt: string;
+
+  @Prop()
+  attachment: string;
+
+  @Prop({ type: [String], default: [] })
+  descItems: string[];
 }
 
 export const ExpenseSchema = SchemaFactory.createForClass(Expense);

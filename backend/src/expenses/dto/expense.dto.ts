@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsArray, Min } from 'class-validator';
 
 export class CreateExpenseDto {
   @IsString()
@@ -32,6 +32,14 @@ export class CreateExpenseDto {
   @IsString()
   @IsOptional()
   readonly expenseNo?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly attachment?: string;
+
+  @IsArray()
+  @IsOptional()
+  readonly descItems?: string[];
 }
 
 export class UpdateExpenseDto {
@@ -63,6 +71,14 @@ export class UpdateExpenseDto {
   @IsString()
   @IsOptional()
   readonly account?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly attachment?: string;
+
+  @IsArray()
+  @IsOptional()
+  readonly descItems?: string[];
 }
 
 export class ApproveExpenseDto {

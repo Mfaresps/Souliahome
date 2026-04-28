@@ -4,10 +4,12 @@ import { Transaction, TransactionSchema } from './schemas/transaction.schema';
 import { ReturnRequest, ReturnRequestSchema } from '../returns/schemas/return-request.schema';
 import { TransactionsService } from './transactions.service';
 import { ReferenceDetailService } from './reference-detail.service';
+import { ReportsExportService } from './reports-export.service';
 import { TransactionsController } from './transactions.controller';
 import { ProductsModule } from '../products/products.module';
 import { ExpensesModule } from '../expenses/expenses.module';
 import { VaultModule } from '../vault/vault.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -18,9 +20,10 @@ import { VaultModule } from '../vault/vault.module';
     ProductsModule,
     ExpensesModule,
     VaultModule,
+    AuthModule,
   ],
   controllers: [TransactionsController],
-  providers: [TransactionsService, ReferenceDetailService],
+  providers: [TransactionsService, ReferenceDetailService, ReportsExportService],
   exports: [TransactionsService],
 })
 export class TransactionsModule {}

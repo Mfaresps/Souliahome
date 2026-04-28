@@ -3,13 +3,19 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
+import { PresenceGateway } from '../auth/presence.gateway';
 
 @Injectable()
 export class ProductsService {
   constructor(
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductDocument>,
+    private readonly presence: PresenceGateway,
   ) {}
+
+  private emit(event: string, payload: unknown): void {
+    try { this.presence?.emitEvent(event, payload); } catch { /* swallow */ }
+  }
 
   async findAll(): Promise<ProductDocument[]> {
     return this.productModel.find().sort({ code: 1 }).exec();
@@ -37,12 +43,15 @@ export class ProductsService {
       0,
       Math.floor(Number(dto.openingBalance ?? 0)),
     );
-    return this.productModel.create({
+    const created = await this.productModel.create({
       ...dto,
       code,
       name: String(dto.name || '').trim(),
       openingBalance,
     });
+    this.emit('product:changed', { action: 'created', product: created });
+    this.emit('inventory:changed', { reason: 'product:created', code });
+    return created;
   }
 
   async update(id: string, dto: UpdateProductDto): Promise<ProductDocument> {
@@ -65,6 +74,8 @@ export class ProductsService {
     if (!product) {
       throw new NotFoundException('الصنف غير موجود');
     }
+    this.emit('product:changed', { action: 'updated', product });
+    this.emit('inventory:changed', { reason: 'product:updated', code: product.code });
     return product;
   }
 
@@ -73,6 +84,8 @@ export class ProductsService {
     if (!result) {
       throw new NotFoundException('الصنف غير موجود');
     }
+    this.emit('product:changed', { action: 'deleted', id });
+    this.emit('inventory:changed', { reason: 'product:deleted', id });
   }
 
   async countProducts(): Promise<number> {
@@ -126,6 +139,7 @@ export class ProductsService {
       minStock?: number;
       openingBalance?: number;
       supplier?: string;
+      imageUrl?: string;
     }[],
   ): Promise<{ created: number; updated: number }> {
     let created = 0;

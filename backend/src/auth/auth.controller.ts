@@ -69,6 +69,16 @@ export class AuthController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('active-sessions')
+  getActiveSessions(@Req() req: Request) {
+    const user = req.user as Record<string, unknown> | undefined;
+    if (!user || user.role !== 'admin') {
+      return { sessions: [], error: 'forbidden' };
+    }
+    return { sessions: this.presenceGateway.getActiveSessions() };
+  }
+
   @Get('users-status')
   async getUsersStatus() {
     try {

@@ -8,12 +8,12 @@ import {
   Param,
   UseGuards,
   UnauthorizedException,
-  Res,
+  NotFoundException,
   UploadedFile,
   UseInterceptors,
-  Header,
+  StreamableFile,
+  Res,
 } from '@nestjs/common';
-import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { SettingsService } from './settings.service';
@@ -85,9 +85,15 @@ export class SettingsController {
 
   @Roles('admin')
   @Get('download-backup/:filename')
-  @Header('Content-Type', 'application/json')
-  async downloadBackup(@Res() res: Response, @Param('filename') filename: string) {
-    await this.settingsService.downloadBackupStream(res, filename);
+  async downloadBackup(@Param('filename') filename: string, @Res() res: any) {
+    const buffer = await this.settingsService.downloadBackupStream(filename);
+    if (!buffer) {
+      throw new NotFoundException('ملف النسخة الاحتياطية غير موجود');
+    }
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Length', buffer.length);
+    res.setHeader('Content-Disposition', `attachment; filename="soulia-${filename}"`);
+    res.send(buffer);
   }
 
   @Roles('admin')
@@ -100,7 +106,6 @@ export class SettingsController {
     return await this.settingsService.deleteAllBackups();
   }
 
-  @Roles('admin')
   @UseGuards(ThrottlerGuard)
   @Post('upload-backup')
   @UseInterceptors(FileInterceptor('file'))

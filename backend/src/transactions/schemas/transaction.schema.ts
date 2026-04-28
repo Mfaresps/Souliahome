@@ -157,6 +157,12 @@ export class Transaction {
     remaining: number;
   }>;
 
+  @Prop({ default: '' })
+  invoiceImageUrl: string;
+
+  @Prop({ type: [String], default: [] })
+  invoiceImages: string[];
+
   /** Employee comments on transaction */
   @Prop({ type: [Object], default: [] })
   comments: Array<{

@@ -5,6 +5,7 @@ import { Transaction, TransactionSchema } from '../transactions/schemas/transact
 import { ProductsService } from './products.service';
 import { ProductAnalyticsService } from './product-analytics.service';
 import { ProductsController } from './products.controller';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { ProductsController } from './products.controller';
       { name: Product.name, schema: ProductSchema },
       { name: Transaction.name, schema: TransactionSchema },
     ]),
+    AuthModule,
   ],
   controllers: [ProductsController],
   providers: [ProductsService, ProductAnalyticsService],

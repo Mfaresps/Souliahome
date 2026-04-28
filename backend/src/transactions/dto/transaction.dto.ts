@@ -126,6 +126,15 @@ export class CreateTransactionDto {
   @Min(0)
   @IsOptional()
   readonly itemsTotal?: number;
+
+  @IsString()
+  @IsOptional()
+  readonly invoiceImageUrl?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  readonly invoiceImages?: string[];
 }
 
 export class UpdateTransactionDto {
@@ -200,6 +209,15 @@ export class UpdateTransactionDto {
   @Min(0)
   @IsOptional()
   readonly itemsTotal?: number;
+
+  @IsString()
+  @IsOptional()
+  readonly invoiceImageUrl?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  readonly invoiceImages?: string[];
 
   @IsArray()
   @IsOptional()

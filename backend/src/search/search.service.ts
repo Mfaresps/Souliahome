@@ -78,7 +78,7 @@ export class SearchService {
     }
     const products = await this.productModel
       .find()
-      .select('name code supplier sellPrice buyPrice')
+      .select('name code supplier sellPrice buyPrice imageUrl')
       .limit(3000)
       .lean()
       .exec();
@@ -95,6 +95,7 @@ export class SearchService {
         subtitle: `كود: ${p.code}`,
         icon: '🏷️',
         meta: `بيع: ${p.sellPrice} | شراء: ${p.buyPrice}`,
+        imageUrl: p.imageUrl || '',
       });
       if (out.length >= MAX_RESULTS_PER_CATEGORY) {
         break;

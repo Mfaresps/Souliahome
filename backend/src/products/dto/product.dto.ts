@@ -41,6 +41,10 @@ export class CreateProductDto {
   @IsString()
   @IsOptional()
   readonly supplier?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly imageUrl?: string;
 }
 
 export class UpdateProductDto {
@@ -75,6 +79,10 @@ export class UpdateProductDto {
   @IsString()
   @IsOptional()
   readonly supplier?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly imageUrl?: string;
 }
 
 export class ImportProductItemDto {
@@ -103,6 +111,10 @@ export class ImportProductItemDto {
   @IsString()
   @IsOptional()
   readonly supplier?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly imageUrl?: string;
 }
 
 export class ImportProductsDto {

@@ -8,10 +8,13 @@ import {
   Param,
   Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { TransactionsService } from './transactions.service';
 import { ReferenceDetailService } from './reference-detail.service';
+import { ReportsExportService } from './reports-export.service';
 import {
   CreateTransactionDto,
   UpdateTransactionDto,
@@ -34,6 +37,7 @@ export class TransactionsController {
     private readonly transactionsService: TransactionsService,
     private readonly referenceDetailService: ReferenceDetailService,
     private readonly expensesService: ExpensesService,
+    private readonly reportsExportService: ReportsExportService,
   ) {}
 
   @Get()
@@ -67,6 +71,46 @@ export class TransactionsController {
     if (to) filteredExpenses = filteredExpenses.filter((e) => e.date <= to);
     const expenseTotal = filteredExpenses.filter(e => e.status === 'معتمد').reduce((s, e) => s + e.amount, 0);
     return this.transactionsService.getReports(from, to, expenseTotal);
+  }
+
+  @Roles('admin')
+  @Get('reports/export')
+  async exportReports(
+    @Res() res: Response,
+    @Query('format') format?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ): Promise<void> {
+    const expenses = await this.expensesService.findAll();
+    let filteredExpenses = expenses;
+    if (from) filteredExpenses = filteredExpenses.filter((e) => e.date >= from);
+    if (to) filteredExpenses = filteredExpenses.filter((e) => e.date <= to);
+    const expenseTotal = filteredExpenses
+      .filter((e) => e.status === 'معتمد')
+      .reduce((s, e) => s + e.amount, 0);
+    const report = await this.transactionsService.getReports(from, to, expenseTotal);
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    const baseName = `report_${from || 'all'}_${to || stamp}`;
+    const fmt = (format || 'excel').toLowerCase();
+
+    if (fmt === 'pdf') {
+      const buffer = await this.reportsExportService.buildPdf(report);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${baseName}.pdf"`);
+      res.setHeader('Content-Length', String(buffer.length));
+      res.end(buffer);
+      return;
+    }
+
+    const buffer = await this.reportsExportService.buildExcel(report);
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', `attachment; filename="${baseName}.xlsx"`);
+    res.setHeader('Content-Length', String(buffer.length));
+    res.end(buffer);
   }
 
   @Get('archived')

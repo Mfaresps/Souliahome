@@ -6,6 +6,7 @@ import { SettingsService } from '../settings/settings.service';
 import { resolveVaultSegmentFromPaymentMethod } from './vault-segment.util';
 import { generateVaultTexts } from './vault-description.util';
 import { CreateVaultEntryDto, UpdateVaultEntryDto } from './dto/vault.dto';
+import { PresenceGateway } from '../auth/presence.gateway';
 
 @Injectable()
 export class VaultService {
@@ -13,7 +14,12 @@ export class VaultService {
     @InjectModel(VaultEntry.name)
     private readonly vaultModel: Model<VaultEntryDocument>,
     private readonly settingsService: SettingsService,
+    private readonly presence: PresenceGateway,
   ) {}
+
+  private emit(event: string, payload: unknown): void {
+    try { this.presence?.emitEvent(event, payload); } catch { /* swallow */ }
+  }
 
   // Helper: sync vault transaction status to original transaction
   private async syncTransactionStatus(vaultEntry: VaultEntryDocument, newStatus: string): Promise<void> {
@@ -127,7 +133,7 @@ export class VaultService {
       dto.amount,
     );
     const txNo = await this.generateTxNo('يدوي');
-    return this.vaultModel.create({
+    const entry = await this.vaultModel.create({
       date,
       desc,
       amount: dto.amount,
@@ -145,6 +151,23 @@ export class VaultService {
       accountingJustification: dto.accountingJustification || '',
       entityLabel: dto.entityLabel || '',
     });
+    this.emit('vault:changed', {
+      reason: 'manual',
+      amount: dto.amount,
+      seg: dto.seg,
+      by: employee || dto.employee || '',
+      desc,
+      ref: '',
+      txNo,
+      balances: {
+        cash: settings.vaultCash || 0,
+        vodafone: settings.vaultVodafone || 0,
+        instapay: settings.vaultInstapay || 0,
+        bank: settings.vaultBank || 0,
+        total: settings.vaultBalance || 0,
+      },
+    });
+    return entry;
   }
 
   async addSystemEntry(
@@ -183,7 +206,7 @@ export class VaultService {
     const entityLabel = entityContext?.customer || entityContext?.supplier || '';
     const txNo = await this.generateTxNo(source);
 
-    return this.vaultModel.create({
+    const created = await this.vaultModel.create({
       date,
       desc: finalDesc,
       amount,
@@ -203,6 +226,25 @@ export class VaultService {
       employee: employee || '',
       txNo,
     });
+    this.emit('vault:changed', {
+      reason: 'system',
+      amount,
+      seg,
+      source,
+      ref,
+      txNo,
+      desc: finalDesc,
+      entityLabel,
+      employee: employee || '',
+      balances: {
+        cash: settings.vaultCash || 0,
+        vodafone: settings.vaultVodafone || 0,
+        instapay: settings.vaultInstapay || 0,
+        bank: settings.vaultBank || 0,
+        total: settings.vaultBalance || 0,
+      },
+    });
+    return created;
   }
 
   async getById(id: string): Promise<VaultEntryDocument> {

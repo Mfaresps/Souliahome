@@ -1,6 +1,7 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
+import { ObjectId } from 'mongodb';
 import { Settings, SettingsDocument } from './schemas/settings.schema';
 import { UpdateSettingsDto } from './dto/settings.dto';
 import * as fs from 'fs';
@@ -14,6 +15,8 @@ const DEFAULT_SHIP_COS = [
 
 @Injectable()
 export class SettingsService {
+  private readonly logger = new Logger(SettingsService.name);
+
   constructor(
     @InjectModel(Settings.name)
     private readonly settingsModel: Model<SettingsDocument>,
@@ -96,40 +99,41 @@ export class SettingsService {
   }
 
   async createBackup(): Promise<{ success: boolean; filename: string; message: string }> {
-    const backupDir = this.getBackupDir();
-    const timestamp = this.formatDateTime();
-    const filename = `backup_${timestamp}.json`;
-    const filepath = path.join(backupDir, filename);
+    try {
+      const backupDir = this.getBackupDir();
+      const timestamp = this.formatDateTime();
+      const filename = `backup_${timestamp}.json`;
+      const filepath = path.join(backupDir, filename);
 
-    const backupData = {
-      timestamp: new Date().toISOString(),
-      data: {
-        transactions: await this.connection.collection('transactions').find({}).toArray(),
-        vaultentries: await this.connection.collection('vaultentries').find({}).toArray(),
-        clients: await this.connection.collection('clients').find({}).toArray(),
-        suppliers: await this.connection.collection('suppliers').find({}).toArray(),
-        returnrequests: await this.connection.collection('returnrequests').find({}).toArray(),
-        expenses: await this.connection.collection('expenses').find({}).toArray(),
-        complaints: await this.connection.collection('complaints').find({}).toArray(),
-      },
-      vault_balances: {
-        vaultCash: (await this.settingsModel.findOne().exec())?.vaultCash || 0,
-        vaultVodafone: (await this.settingsModel.findOne().exec())?.vaultVodafone || 0,
-        vaultInstapay: (await this.settingsModel.findOne().exec())?.vaultInstapay || 0,
-        vaultBank: (await this.settingsModel.findOne().exec())?.vaultBank || 0,
-      },
-    };
+      const settings = await this.settingsModel.findOne().exec();
+      const backupData = {
+        timestamp: new Date().toISOString(),
+        data: {
+          transactions: await this.connection.collection('transactions').find({}).toArray(),
+          vaultentries: await this.connection.collection('vaultentries').find({}).toArray(),
+          clients: await this.connection.collection('clients').find({}).toArray(),
+          suppliers: await this.connection.collection('suppliers').find({}).toArray(),
+          returnrequests: await this.connection.collection('returnrequests').find({}).toArray(),
+          expenses: await this.connection.collection('expenses').find({}).toArray(),
+          complaints: await this.connection.collection('complaints').find({}).toArray(),
+        },
+        vault_balances: {
+          vaultCash: settings?.vaultCash || 0,
+          vaultVodafone: settings?.vaultVodafone || 0,
+          vaultInstapay: settings?.vaultInstapay || 0,
+          vaultBank: settings?.vaultBank || 0,
+        },
+      };
 
-    fs.writeFileSync(filepath, JSON.stringify(backupData, null, 2));
+      fs.writeFileSync(filepath, JSON.stringify(backupData, null, 2));
+      this.updateBackupRegistry(filename);
+      this.logger.log(`Backup created: ${filename}`);
 
-    // Update backup registry
-    this.updateBackupRegistry(filename);
-
-    return {
-      success: true,
-      filename,
-      message: `✓ تم إنشاء نسخة احتياطية: ${filename}`,
-    };
+      return { success: true, filename, message: `✓ تم إنشاء نسخة احتياطية: ${filename}` };
+    } catch (e: any) {
+      this.logger.error('createBackup failed', e?.stack || e?.message);
+      return { success: false, filename: '', message: `❌ فشل إنشاء النسخة الاحتياطية: ${e?.message || 'خطأ غير معروف'}` };
+    }
   }
 
   private updateBackupRegistry(filename: string): void {
@@ -213,24 +217,46 @@ export class SettingsService {
     };
   }
 
-  async downloadBackupStream(res: any, filename: string): Promise<void> {
+  async readBackupContent(filename: string): Promise<any | null> {
     const backupDir = this.getBackupDir();
-    const filepath = path.join(backupDir, filename);
+    const safeFilename = path.basename(filename);
+    const filepath = path.join(backupDir, safeFilename);
 
     if (!fs.existsSync(filepath)) {
-      return res.status(404).json({ success: false, message: 'ملف النسخة الاحتياطية غير موجود' });
+      return null;
     }
 
-    const stat = fs.statSync(filepath);
-    res.header('Content-Length', stat.size.toString());
-    res.header('Content-Disposition', `attachment; filename="soulia-${filename}"`);
+    try {
+      const raw = fs.readFileSync(filepath, 'utf8');
+      return JSON.parse(raw);
+    } catch (e: any) {
+      this.logger.error(`readBackupContent failed for ${safeFilename}: ${e?.message}`);
+      throw new BadRequestException('ملف النسخة الاحتياطية تالف أو غير صالح');
+    }
+  }
 
-    const fileStream = fs.createReadStream(filepath);
-    fileStream.on('error', (error) => {
-      res.status(500).json({ success: false, message: 'خطأ في تحميل الملف' });
-    });
+  async downloadBackupStream(filename: string): Promise<Buffer | null> {
+    const backupDir = this.getBackupDir();
+    let safeFilename = path.basename(filename);
 
-    fileStream.pipe(res);
+    // Remove 'soulia-' prefix if present
+    if (safeFilename.startsWith('soulia-')) {
+      safeFilename = safeFilename.substring(7);
+    }
+
+    const filepath = path.join(backupDir, safeFilename);
+
+    if (!fs.existsSync(filepath)) {
+      this.logger.warn(`Backup file not found: ${safeFilename}`);
+      return null;
+    }
+
+    try {
+      return fs.readFileSync(filepath);
+    } catch (e: any) {
+      this.logger.error(`downloadBackupStream failed for ${safeFilename}`, e?.message);
+      return null;
+    }
   }
 
   downloadBackup(res: any, filename: string) {
@@ -257,7 +283,7 @@ export class SettingsService {
     try {
       const files = fs.readdirSync(backupDir);
       for (const file of files) {
-        if (file !== 'registry.json' && file.startsWith('backup_')) {
+        if (file !== 'registry.json' && (file.startsWith('backup_') || file.startsWith('soulia-backup_'))) {
           const filepath = path.join(backupDir, file);
           fs.unlinkSync(filepath);
         }
@@ -287,99 +313,167 @@ export class SettingsService {
     }
 
     try {
-      // Validate JSON format
-      const backupData = JSON.parse(file.buffer.toString());
-      if (!backupData.data || !backupData.timestamp) {
+      // Validate JSON format with UTF-8 encoding
+      const fileContent = file.buffer.toString('utf8');
+      const backupData = JSON.parse(fileContent);
+
+      if (!backupData.data) {
         return {
           success: false,
-          message: 'صيغة الملف غير صحيحة - يجب أن يكون ملف نسخة احتياطية صحيح',
+          message: '❌ الملف غير صالح - لا يوجد حقل "data"',
         };
       }
 
-      // Save file to backups directory
+      if (!backupData.timestamp) {
+        return {
+          success: false,
+          message: '❌ الملف غير صالح - لا يوجد حقل "timestamp"',
+        };
+      }
+
+      if (typeof backupData.data !== 'object' || !Array.isArray(backupData.data.transactions)) {
+        return {
+          success: false,
+          message: '❌ صيغة الملف غير صحيحة - البنية الداخلية غير متوافقة',
+        };
+      }
+
+      // Extract filename, remove 'soulia-' prefix and use a clean standardized format
+      let filename = file.originalname || `backup_${this.formatDateTime()}.json`;
+
+      // Remove 'soulia-' prefix if present
+      if (filename.startsWith('soulia-')) {
+        filename = filename.substring(7); // Remove 'soulia-' (7 chars)
+      }
+
+      // Ensure it starts with 'backup_'
+      if (!filename.startsWith('backup_')) {
+        filename = `backup_${filename}`;
+      }
+
+      // Save file to backups directory with UTF-8 encoding
       const backupDir = this.getBackupDir();
-      const timestamp = this.formatDateTime();
-      const filename = `backup_imported_${timestamp}.json`;
       const filepath = path.join(backupDir, filename);
 
-      fs.writeFileSync(filepath, JSON.stringify(backupData, null, 2));
+      fs.writeFileSync(filepath, JSON.stringify(backupData, null, 2), 'utf8');
 
       // Update registry
       this.updateBackupRegistry(filename);
 
+      this.logger.log(`Backup uploaded: ${filename}`);
       return {
         success: true,
         message: `✓ تم استيراد النسخة الاحتياطية: ${filename}`,
         filename,
       };
-    } catch (e) {
+    } catch (e: any) {
+      this.logger.error('uploadBackup failed', e?.message);
       return {
         success: false,
-        message: '❌ خطأ في معالجة الملف - تأكد من أنه ملف نسخة احتياطية صحيح',
+        message: `❌ خطأ في معالجة الملف - ${e?.message || 'تأكد من أنه ملف نسخة احتياطية صحيح'}`,
       };
     }
   }
 
   async restoreBackup(filename: string) {
     const backupDir = this.getBackupDir();
-    const filepath = path.join(backupDir, filename);
 
-    if (!fs.existsSync(filepath)) {
-      return {
-        success: false,
-        message: 'ملف النسخة الاحتياطية غير موجود',
-      };
+    // Prevent path traversal and normalize filename
+    let safeFilename = path.basename(filename);
+
+    // Remove 'soulia-' prefix if present
+    if (safeFilename.startsWith('soulia-')) {
+      safeFilename = safeFilename.substring(7);
     }
 
-    const backupData = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+    const filepath = path.join(backupDir, safeFilename);
 
-    // Restore each collection
+    if (!fs.existsSync(filepath)) {
+      this.logger.warn(`Backup file not found: ${safeFilename} (searched for: ${filepath})`);
+      return { success: false, message: 'ملف النسخة الاحتياطية غير موجود' };
+    }
+
+    let backupData: any;
+    try {
+      const raw = fs.readFileSync(filepath, 'utf8');
+      backupData = JSON.parse(raw);
+    } catch (e: any) {
+      this.logger.error('Failed to parse backup file', e?.message);
+      return { success: false, message: 'ملف النسخة الاحتياطية تالف أو غير صالح' };
+    }
+
+    if (!backupData?.data || typeof backupData.data !== 'object') {
+      return { success: false, message: 'صيغة الملف غير صحيحة - لا يوجد حقل data' };
+    }
+
     const restoreResults: Record<string, number> = {};
 
-    // First, delete current data
+    // Step 1: Delete current data
     const collections = Object.keys(backupData.data);
     for (const collectionName of collections) {
       try {
         await this.connection.collection(collectionName).deleteMany({});
-      } catch (e) {
-        // Ignore delete errors
+      } catch (e: any) {
+        this.logger.warn(`Could not clear collection ${collectionName}: ${e?.message}`);
       }
     }
 
-    // Then, restore from backup
+    // Step 2: Restore each collection
     for (const [collectionName, docs] of Object.entries(backupData.data)) {
       try {
-        if (Array.isArray(docs) && docs.length > 0) {
-          await this.connection.collection(collectionName).insertMany(docs);
-          restoreResults[collectionName] = (docs as any[]).length;
-        } else {
+        if (!Array.isArray(docs) || docs.length === 0) {
           restoreResults[collectionName] = 0;
+          continue;
         }
-      } catch (e) {
-        restoreResults[collectionName] = 0;
+
+        const fixedDocs = (docs as any[]).map((doc: any) => {
+          const fixed: any = { ...doc };
+          // Convert _id string → ObjectId
+          if (fixed._id) {
+            const rawId = typeof fixed._id === 'string' ? fixed._id : fixed._id?.$oid;
+            if (rawId) {
+              try { fixed._id = new ObjectId(rawId); } catch { delete fixed._id; }
+            }
+          }
+          return fixed;
+        });
+
+        try {
+          await this.connection.collection(collectionName).insertMany(fixedDocs, { ordered: false });
+          restoreResults[collectionName] = fixedDocs.length;
+        } catch (bulkErr: any) {
+          // MongoBulkWriteError with partial success
+          const inserted = bulkErr?.result?.insertedCount ?? bulkErr?.insertedCount ?? 0;
+          this.logger.warn(`Partial restore on ${collectionName}: inserted=${inserted}, err=${bulkErr?.message}`);
+          restoreResults[collectionName] = inserted;
+        }
+      } catch (e: any) {
+        this.logger.error(`Failed to restore collection ${collectionName}`, e?.message);
+        restoreResults[collectionName] = -1;
       }
     }
 
-    // Restore vault balances
+    // Step 3: Restore vault balances
     try {
       const settings = await this.settingsModel.findOne().exec();
       if (settings && backupData.vault_balances) {
-        settings.vaultCash = backupData.vault_balances.vaultCash || 0;
-        settings.vaultVodafone = backupData.vault_balances.vaultVodafone || 0;
-        settings.vaultInstapay = backupData.vault_balances.vaultInstapay || 0;
-        settings.vaultBank = backupData.vault_balances.vaultBank || 0;
-        settings.vaultBalance = (settings.vaultCash || 0) + (settings.vaultVodafone || 0) +
-                               (settings.vaultInstapay || 0) + (settings.vaultBank || 0);
+        settings.vaultCash = Number(backupData.vault_balances.vaultCash) || 0;
+        settings.vaultVodafone = Number(backupData.vault_balances.vaultVodafone) || 0;
+        settings.vaultInstapay = Number(backupData.vault_balances.vaultInstapay) || 0;
+        settings.vaultBank = Number(backupData.vault_balances.vaultBank) || 0;
+        settings.vaultBalance = settings.vaultCash + settings.vaultVodafone + settings.vaultInstapay + settings.vaultBank;
         await settings.save();
         restoreResults['vault_balances'] = 1;
       }
-    } catch (e) {
+    } catch (e: any) {
+      this.logger.error('Failed to restore vault balances', e?.message);
       restoreResults['vault_balances'] = 0;
     }
 
+    this.logger.log(`Restore complete from ${safeFilename}: ${JSON.stringify(restoreResults)}`);
     return {
       success: true,
-      message: `✓ تم استرجاع البيانات بنجاح من: ${filename}`,
+      message: `✓ تم استرجاع البيانات بنجاح من: ${safeFilename}`,
       restored: restoreResults,
     };
   }
