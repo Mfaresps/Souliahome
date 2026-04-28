@@ -3769,43 +3769,6 @@ body.dark-mode .dashboard-v2{
   </div>
 </div>
 
-<!-- Drafts Drawer (shared across all transaction types) -->
-<div class="fx-drawer-backdrop" id="drafts-drawer-backdrop" onclick="closeDraftsDrawer()"></div>
-<div class="fx-drawer" id="drafts-drawer" role="dialog" aria-label="المسودات">
-  <div class="fx-drawer-header">
-    <div class="fx-drawer-title">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
-      المسودات المحفوظة
-      <span style="font-size:.72rem;color:var(--muted);font-weight:500" id="drafts-drawer-count"></span>
-    </div>
-    <button class="fx-drawer-close" onclick="closeDraftsDrawer()" aria-label="إغلاق">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-    </button>
-  </div>
-  <div class="fx-drawer-body" id="drafts-drawer-list"></div>
-  <div class="fx-drawer-footer" id="drafts-drawer-footer" style="display:none">
-    <button class="btn btn-outline" style="color:var(--red);border-color:var(--red)" onclick="clearAllDrafts()">🗑️ حذف الكل</button>
-  </div>
-</div>
-
-<!-- Filter Drawer (shared by inventory + products) -->
-<div class="fx-drawer-backdrop" id="fx-drawer-backdrop" onclick="closeFxDrawer()"></div>
-<div class="fx-drawer" id="fx-drawer" role="dialog" aria-label="فلاتر متقدمة">
-  <div class="fx-drawer-header">
-    <div class="fx-drawer-title">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-      فلاتر متقدمة
-    </div>
-    <button class="fx-drawer-close" onclick="closeFxDrawer()" aria-label="إغلاق">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-    </button>
-  </div>
-  <div class="fx-drawer-body" id="fx-drawer-body"></div>
-  <div class="fx-drawer-footer">
-    <button class="btn btn-outline" onclick="resetFxFilters()">إعادة تعيين</button>
-    <button class="btn btn-primary" onclick="closeFxDrawer()">تطبيق</button>
-  </div>
-</div>
 <!-- Grid view (default) -->
 <div id="prod-grid-view" class="prod-grid-view"></div>
 <!-- List view -->
@@ -4677,6 +4640,44 @@ body.dark-mode .dashboard-v2{
 
 <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
 <div class="modal" id="modal-content"></div>
+</div>
+
+<!-- Drafts Drawer (shared across all transaction types) -->
+<div class="fx-drawer-backdrop" id="drafts-drawer-backdrop" onclick="closeDraftsDrawer()"></div>
+<div class="fx-drawer" id="drafts-drawer" role="dialog" aria-label="المسودات">
+  <div class="fx-drawer-header">
+    <div class="fx-drawer-title">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+      المسودات المحفوظة
+      <span style="font-size:.72rem;color:var(--muted);font-weight:500" id="drafts-drawer-count"></span>
+    </div>
+    <button class="fx-drawer-close" onclick="closeDraftsDrawer()" aria-label="إغلاق">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="fx-drawer-body" id="drafts-drawer-list"></div>
+  <div class="fx-drawer-footer" id="drafts-drawer-footer" style="display:none">
+    <button class="btn btn-outline" style="color:var(--red);border-color:var(--red)" onclick="clearAllDrafts()">🗑️ حذف الكل</button>
+  </div>
+</div>
+
+<!-- Filter Drawer (shared by movements, inventory, products) -->
+<div class="fx-drawer-backdrop" id="fx-drawer-backdrop" onclick="closeFxDrawer()"></div>
+<div class="fx-drawer" id="fx-drawer" role="dialog" aria-label="فلاتر متقدمة">
+  <div class="fx-drawer-header">
+    <div class="fx-drawer-title">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      فلاتر متقدمة
+    </div>
+    <button class="fx-drawer-close" onclick="closeFxDrawer()" aria-label="إغلاق">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="fx-drawer-body" id="fx-drawer-body"></div>
+  <div class="fx-drawer-footer">
+    <button class="btn btn-outline" onclick="resetFxFilters()">إعادة تعيين</button>
+    <button class="btn btn-primary" onclick="closeFxDrawer()">تطبيق</button>
+  </div>
 </div>
 <div class="toast-container" id="toast-container"></div>
 
