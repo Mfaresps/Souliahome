@@ -1546,6 +1546,57 @@ body.dark-mode .mov-cancel-req-pill{background:#422006;color:#fcd34d;border-colo
 /* Mobile card lists: hidden by default, shown only on mobile */
 #mov-mobile-list{display:none}
 #vault-log-mobile-list{display:none}
+/* ── View Mode Toggle ── */
+.mov-view-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface)}
+.mov-view-btn{display:flex;align-items:center;justify-content:center;padding:6px 10px;border:none;background:none;cursor:pointer;color:var(--muted);transition:all .15s}
+.mov-view-btn:hover{background:var(--primary-pale);color:var(--accent)}
+.mov-view-btn.active{background:var(--accent);color:#fff}
+/* ── Grid View ── */
+#mov-grid-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px;padding:4px 0}
+.mov-grid-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;cursor:pointer;transition:transform .18s,box-shadow .18s;position:relative;overflow:hidden}
+.mov-grid-card::before{content:'';position:absolute;top:0;right:0;left:0;height:3px;border-radius:14px 14px 0 0;background:var(--gc-color,var(--accent))}
+.mov-grid-card:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,.1)}
+.mov-grid-card.is-cancelled{opacity:.55}
+.mov-grid-card.rt-flash{animation:rtflash .7s ease}
+.mgc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
+.mgc-avatar{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800;flex-shrink:0;color:#fff;letter-spacing:.5px}
+.mgc-meta{flex:1;min-width:0}
+.mgc-ref{font-size:.72rem;color:var(--muted);font-weight:600;margin-bottom:1px}
+.mgc-date{font-size:.7rem;color:var(--muted)}
+.mgc-badges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.mgc-client{font-size:.9rem;font-weight:700;color:var(--accent);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mgc-items-preview{background:var(--bg-alt,var(--primary-pale));border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:.75rem;color:var(--text);line-height:1.6;max-height:72px;overflow:hidden}
+.mgc-items-preview .mgci{display:flex;justify-content:space-between;gap:6px}
+.mgc-items-preview .mgci-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.mgc-items-preview .mgci-total{font-weight:700;flex-shrink:0}
+.mgc-more{font-size:.7rem;color:var(--accent);margin-top:4px;font-weight:600}
+.mgc-financials{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px}
+.mgc-fin-item{text-align:center;background:var(--bg-alt,var(--primary-pale));border-radius:8px;padding:6px 4px}
+.mgc-fin-label{font-size:.65rem;color:var(--muted);font-weight:600;margin-bottom:2px}
+.mgc-fin-val{font-size:.82rem;font-weight:800;color:var(--text)}
+.mgc-fin-val.is-red{color:var(--red)}
+.mgc-fin-val.is-green{color:#10b981}
+.mgc-actions{display:flex;gap:6px;border-top:1px solid var(--border);padding-top:10px;margin-top:2px}
+.mgc-action-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 4px;border:1px solid var(--border);border-radius:8px;background:none;cursor:pointer;font-size:.72rem;color:var(--muted);font-weight:600;transition:all .15s;white-space:nowrap}
+.mgc-action-btn:hover{background:var(--primary-pale);color:var(--accent);border-color:var(--accent)}
+.mgc-action-btn.is-danger:hover{background:#fee2e2;color:#dc2626;border-color:#fecaca}
+/* TAG system */
+.tx-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:700;cursor:pointer;transition:all .12s;border:1px solid transparent}
+.tx-tag:hover{opacity:.8;transform:scale(1.05)}
+.tx-tag .tag-del{opacity:0;font-size:.7rem;line-height:1;cursor:pointer;transition:opacity .12s;margin-right:-2px}
+.tx-tag:hover .tag-del{opacity:.7}
+.tx-tag-add{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:.68rem;font-weight:600;cursor:pointer;background:none;border:1px dashed var(--border);color:var(--muted);transition:all .12s}
+.tx-tag-add:hover{border-color:var(--accent);color:var(--accent);background:var(--primary-pale)}
+.tag-dropdown{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.14);padding:10px;min-width:220px;max-height:260px;overflow-y:auto}
+.tag-dropdown .tag-dd-title{font-size:.72rem;font-weight:700;color:var(--muted);padding:0 4px 8px 4px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.tag-dd-preset{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;margin:3px;border-radius:20px;font-size:.72rem;font-weight:700;cursor:pointer;transition:all .12s;border:1px solid transparent}
+.tag-dd-preset:hover{transform:scale(1.05);opacity:.85}
+.tag-dd-input-row{display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.tag-dd-input{flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-size:.78rem;background:var(--surface);color:var(--text);outline:none}
+.tag-dd-input:focus{border-color:var(--accent)}
+.tag-dd-save{padding:5px 10px;border-radius:8px;background:var(--accent);color:#fff;border:none;font-size:.75rem;font-weight:700;cursor:pointer}
+/* TAG filter row */
+.mov-tag-filter-row{display:flex;align-items:center;gap:8px;padding:6px 0 2px 0;flex-wrap:wrap;animation:fadeInDown .2s ease}
 /* ══════════════════════════════════════════
    MOBILE APP LAYOUT  (≤768px)
 ══════════════════════════════════════════ */
@@ -1729,6 +1780,10 @@ body.dark-mode .mov-cancel-req-pill{background:#422006;color:#fcd34d;border-colo
   #mov-mobile-list .mov-card-footer .mov-item{display:flex;justify-content:space-between}
   #mov-mobile-list .mov-card-footer .mov-label{color:var(--muted);font-weight:600}
   #mov-mobile-list .mov-card-footer .mov-val{color:var(--text);font-weight:700}
+
+  /* ── Grid view mobile ── */
+  #mov-grid-list{grid-template-columns:1fr!important;padding:0}
+  .mov-grid-card{padding:14px!important}
 
   /* ── Inventory mobile ── */
   #page-inventory .inv-kpi-scroll{margin:-24px -12px 12px -12px;padding:12px 12px 8px 12px}
@@ -3528,6 +3583,15 @@ body.dark-mode .dashboard-v2{
       <p style="font-size:.8rem;color:var(--muted);margin:0" data-i18n="movementsListSubtitle">عرض وتتبع جميع حركات المبيعات والمشتريات والمرتجعات</p>
     </div>
     <div class="flex gap-8" style="flex-wrap:wrap;align-items:center">
+      <!-- View Mode Toggle -->
+      <div class="mov-view-toggle" id="mov-view-toggle">
+        <button class="mov-view-btn active" id="mov-view-list-btn" onclick="setMovViewMode('list')" title="عرض قائمة">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </button>
+        <button class="mov-view-btn" id="mov-view-grid-btn" onclick="setMovViewMode('grid')" title="عرض بطاقات">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        </button>
+      </div>
       <button class="btn btn-outline btn-sm" onclick="exportMovementsExcel()" style="display:flex;align-items:center;gap:6px" data-i18n="exportExcel">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         تصدير Excel
@@ -3609,6 +3673,13 @@ body.dark-mode .dashboard-v2{
       </div>
       <span class="fx-results-count" id="mov-results-count"></span>
       <div class="fx-chips" id="mov-chips"></div>
+      <!-- TAG filter row -->
+      <div class="mov-tag-filter-row" id="mov-tag-filter-row" style="display:none">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.6"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        <span style="font-size:.75rem;color:var(--muted);font-weight:600">فلترة بـ TAG:</span>
+        <div id="mov-tag-filter-chips" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
+        <button class="fx-btn fx-btn-icon" onclick="setMovTagFilter('')" style="font-size:.7rem;padding:2px 8px;height:auto" title="إلغاء فلتر TAG">✕</button>
+      </div>
       <!-- Compact summary line -->
       <div class="mov-mini-summary" id="mov-mini-summary"></div>
     </div>
@@ -3684,6 +3755,12 @@ body.dark-mode .dashboard-v2{
                 الحالة
               </span>
             </th>
+            <th style="text-align:center;min-width:110px">
+              <span style="display:flex;align-items:center;justify-content:center;gap:5px">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                TAG
+              </span>
+            </th>
             <th style="width:52px;text-align:center"></th>
           </tr>
         </thead>
@@ -3691,6 +3768,8 @@ body.dark-mode .dashboard-v2{
       </table>
     </div>
   </div>
+  <!-- Grid View -->
+  <div id="mov-grid-list" style="display:none"></div>
   <!-- Mobile Cards -->
   <div id="mov-mobile-list"></div>
 
@@ -4982,6 +5061,43 @@ let cmpTabFilter = 'all';
 let currentPage = 'dashboard';
 let movFilter = 'all';
 let movStatusFilter = '';
+let movViewMode = 'list'; // 'list' | 'grid'
+let movTagFilter = '';    // active tag filter string
+// TAG storage: { txId: [{label, color, bg}] }
+const txTagsStore = (() => {
+  try { return JSON.parse(localStorage.getItem('soulia_tx_tags') || '{}'); } catch(_) { return {}; }
+})();
+function saveTxTagsStore() { try { localStorage.setItem('soulia_tx_tags', JSON.stringify(txTagsStore)); } catch(_) {} }
+function getTxTags(txId) { return (txTagsStore[String(txId)] || []).map(t => t.label || t); }
+function getTxTagObjects(txId) { return txTagsStore[String(txId)] || []; }
+function addTxTag(txId, label, color, bg) {
+  const id = String(txId);
+  if (!txTagsStore[id]) txTagsStore[id] = [];
+  if (txTagsStore[id].some(t => (t.label||t) === label)) return;
+  txTagsStore[id].push({ label, color, bg });
+  saveTxTagsStore();
+}
+function removeTxTag(txId, label) {
+  const id = String(txId);
+  if (!txTagsStore[id]) return;
+  txTagsStore[id] = txTagsStore[id].filter(t => (t.label||t) !== label);
+  if (!txTagsStore[id].length) delete txTagsStore[id];
+  saveTxTagsStore();
+}
+const TAG_PRESETS = [
+  { label: 'عاجل',          color: '#fff', bg: '#ef4444' },
+  { label: 'هدية',          color: '#fff', bg: '#a855f7' },
+  { label: 'متابعة',        color: '#fff', bg: '#f59e0b' },
+  { label: 'خصم خاص',       color: '#fff', bg: '#3b82f6' },
+  { label: 'VIP',           color: '#fff', bg: '#0891b2' },
+  { label: 'أولوية',        color: '#fff', bg: '#10b981' },
+  { label: 'شحن سريع',      color: '#fff', bg: '#6366f1' },
+  { label: 'جديد',          color: '#fff', bg: '#64748b' },
+  { label: 'Urgent',        color: '#fff', bg: '#dc2626' },
+  { label: 'Gift',          color: '#fff', bg: '#9333ea' },
+  { label: 'Follow-up',     color: '#fff', bg: '#d97706' },
+  { label: 'Special Discount', color: '#fff', bg: '#2563eb' },
+];
 let invFilter = 'all';
 let prodFilter = 'all';
 // Unified filter/sort state for inventory + products pages
@@ -6289,7 +6405,7 @@ function _rtToastEvent(msg) {
     el.className = 'rt-event-toast';
     document.body.appendChild(el);
   }
-  el.textContent = msg;
+  el.innerHTML = msg;
   requestAnimationFrame(() => el.classList.add('show'));
   if (_rtToastTimer) clearTimeout(_rtToastTimer);
   _rtToastTimer = setTimeout(() => el.classList.remove('show'), 3200);
@@ -10570,6 +10686,7 @@ function renderMovementTxRow(tx) {
     <td style="text-align:center"><span class="mov-col-paid">${exchangeSalePaidDisplayAmount(tx)}</span></td>
     <td style="text-align:center"><span class="${remAmt > 0 ? 'mov-col-remaining-pos' : 'mov-col-remaining-zero'}">${fmtJ(remAmt)}</span></td>
     <td style="text-align:center">${movementStatusCell(tx)}</td>
+    <td style="text-align:center;min-width:110px" onclick="event.stopPropagation()" data-tag-cell="${esc(tx._id)}">${renderTxTagsCell(tx._id)}</td>
     <td>
       <div class="actions-dd">
         <button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button>
@@ -10712,6 +10829,8 @@ function renderMovements() {
   }
   const _rcEl = qs('#mov-results-count');
   if (_rcEl) _rcEl.innerHTML = `النتائج: <strong>${fmtN(data.length)}</strong> من ${fmtN(_allTx.length)}`;
+  // Build TAG filter chips from store
+  try { _rebuildTagFilterRow(); } catch(_) {}
 
   // Render KPI strip — All 9 metrics, fully responsive grid/scroll
   const kpiEl = qs('#mov-kpi-strip');
@@ -10744,8 +10863,18 @@ function renderMovements() {
       </div>`).join('');
   }
 
+  // Apply TAG filter
+  if (movTagFilter) {
+    merged = merged.filter(row => {
+      const tags = row.k === 'tx' ? (getTxTags(row.tx._id)) : [];
+      return tags.includes(movTagFilter);
+    });
+  }
+
   if (!merged.length) {
-    qs('#mov-table tbody').innerHTML = '<tr><td colspan="11" style="padding: 40px 16px; text-align: center; color: var(--muted);"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg> لا توجد حركات تطابق البحث</td></tr>';
+    const emptyHtml = `<div style="text-align:center;padding:48px 20px;color:var(--muted)"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px;opacity:.4"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg><div>لا توجد حركات تطابق البحث</div></div>`;
+    qs('#mov-table tbody').innerHTML = `<tr><td colspan="12" style="padding:0">${emptyHtml}</td></tr>`;
+    const gridEl = qs('#mov-grid-list'); if (gridEl) gridEl.innerHTML = emptyHtml;
     const pagEl = qs('#mov-pagination'); if (pagEl) pagEl.innerHTML = '';
     updateMovementSelectionActions();
     return;
@@ -10754,13 +10883,25 @@ function renderMovements() {
   const total = merged.length;
   if (movPage > Math.ceil(total / MOV_PAGE_SIZE)) movPage = 1;
   const pageData = merged.slice((movPage-1)*MOV_PAGE_SIZE, movPage*MOV_PAGE_SIZE);
-  qs('#mov-table tbody').innerHTML = pageData.map(row => row.k === 'tx' ? renderMovementTxRow(row.tx) : renderMovementReturnRequestRow(row.r)).join('');
+
+  // Render correct view
+  const isGrid = movViewMode === 'grid';
+  const tableWrap = qs('#mov-table-wrap');
+  const gridList = qs('#mov-grid-list');
   const mobileList = qs('#mov-mobile-list');
-  if (mobileList) {
-    if (pageData.length === 0) {
-      mobileList.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--muted)"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px;opacity:.4"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg><div>لا توجد حركات</div></div>`;
-    } else {
-      mobileList.innerHTML = pageData.map(row => row.k === 'tx' ? renderMovMobileCard(row.tx) : renderRetMobileCard(row.r)).join('');
+  if (tableWrap) tableWrap.style.display = isGrid ? 'none' : '';
+  if (gridList) {
+    gridList.style.display = isGrid ? 'grid' : 'none';
+    if (isGrid) gridList.innerHTML = pageData.map(row => row.k === 'tx' ? renderMovGridCard(row.tx) : renderRetGridCard(row.r)).join('');
+  }
+  if (!isGrid) {
+    qs('#mov-table tbody').innerHTML = pageData.map(row => row.k === 'tx' ? renderMovementTxRow(row.tx) : renderMovementReturnRequestRow(row.r)).join('');
+    if (mobileList) {
+      if (pageData.length === 0) {
+        mobileList.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--muted)"><div>لا توجد حركات</div></div>`;
+      } else {
+        mobileList.innerHTML = pageData.map(row => row.k === 'tx' ? renderMovMobileCard(row.tx) : renderRetMobileCard(row.r)).join('');
+      }
     }
   }
   renderPagination('mov-pagination', total, movPage, MOV_PAGE_SIZE, 'setMovPage');
@@ -10784,6 +10925,226 @@ function setMovTypeTab(type, btn) {
   renderMovements();
 }
 
+/* ===== View Mode ===== */
+function setMovViewMode(mode) {
+  movViewMode = mode;
+  try { localStorage.setItem('soulia_mov_view', mode); } catch(_) {}
+  const listBtn = qs('#mov-view-list-btn'), gridBtn = qs('#mov-view-grid-btn');
+  if (listBtn) listBtn.classList.toggle('active', mode === 'list');
+  if (gridBtn) gridBtn.classList.toggle('active', mode === 'grid');
+  renderMovements();
+}
+// Restore view mode on load
+(function() {
+  try {
+    const saved = localStorage.getItem('soulia_mov_view');
+    if (saved === 'grid' || saved === 'list') movViewMode = saved;
+  } catch(_) {}
+})();
+
+/* ===== TAG system ===== */
+function renderTxTagsCell(txId) {
+  const tags = getTxTagObjects(txId);
+  const tagHtml = tags.map(tag => `
+    <span class="tx-tag" style="background:${esc(tag.bg)};color:${esc(tag.color)};border-color:${esc(tag.bg)}" title="${esc(tag.label)}">
+      ${esc(tag.label)}
+      <span class="tag-del" onclick="event.stopPropagation();deleteTxTag('${esc(txId)}','${esc(tag.label)}')">✕</span>
+    </span>`).join('');
+  return `<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center;align-items:center">
+    ${tagHtml}
+    <button class="tx-tag-add" onclick="event.stopPropagation();openTagDropdown('${esc(txId)}',this)" title="إضافة TAG">
+      <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      TAG
+    </button>
+  </div>`;
+}
+
+let _tagDd = null;
+function openTagDropdown(txId, anchorEl) {
+  closeTagDropdown();
+  const dd = document.createElement('div');
+  dd.className = 'tag-dropdown';
+  dd.innerHTML = `
+    <div class="tag-dd-title">
+      <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:4px"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      إضافة / اختيار TAG
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:2px">
+      ${TAG_PRESETS.map(p => `<span class="tag-dd-preset" style="background:${p.bg};color:${p.color}" onclick="applyTagFromDropdown('${esc(txId)}','${esc(p.label)}','${esc(p.color)}','${esc(p.bg)}')">${esc(p.label)}</span>`).join('')}
+    </div>
+    <div class="tag-dd-input-row">
+      <input class="tag-dd-input" id="tag-dd-custom-input" placeholder="TAG مخصص..." maxlength="20" onkeydown="if(event.key==='Enter'){saveCustomTag('${esc(txId)}');event.preventDefault()}">
+      <button class="tag-dd-save" onclick="saveCustomTag('${esc(txId)}')">إضافة</button>
+    </div>`;
+  document.body.appendChild(dd);
+  _tagDd = { el: dd, txId };
+  // Position
+  const r = anchorEl.getBoundingClientRect();
+  const ddW = 240, ddH = 200;
+  let top = r.bottom + 6, left = r.right - ddW;
+  if (left < 8) left = 8;
+  if (top + ddH > window.innerHeight - 8) top = r.top - ddH - 6;
+  dd.style.top = top + 'px';
+  dd.style.left = left + 'px';
+  setTimeout(() => { const inp = qs('#tag-dd-custom-input'); if (inp) inp.focus(); }, 50);
+  setTimeout(() => document.addEventListener('click', _tagDdOutside), 0);
+}
+function _tagDdOutside(e) {
+  if (_tagDd && !_tagDd.el.contains(e.target)) closeTagDropdown();
+}
+function closeTagDropdown() {
+  if (_tagDd) { _tagDd.el.remove(); _tagDd = null; document.removeEventListener('click', _tagDdOutside); }
+}
+function applyTagFromDropdown(txId, label, color, bg) {
+  addTxTag(txId, label, color, bg);
+  closeTagDropdown();
+  _refreshTagCell(txId);
+}
+function saveCustomTag(txId) {
+  const inp = qs('#tag-dd-custom-input'); if (!inp) return;
+  const label = inp.value.trim(); if (!label) return;
+  const colors = ['#3b82f6','#10b981','#f59e0b','#a855f7','#ef4444','#0891b2','#6366f1','#f97316'];
+  const bg = colors[Math.floor(Math.random() * colors.length)];
+  addTxTag(txId, label, '#fff', bg);
+  closeTagDropdown();
+  _refreshTagCell(txId);
+}
+function deleteTxTag(txId, label) {
+  removeTxTag(txId, label);
+  _refreshTagCell(txId);
+  // refresh TAG filter if active
+  if (movTagFilter === label) { movTagFilter = ''; renderMovements(); } else { _rebuildTagFilterRow(); }
+}
+function _refreshTagCell(txId) {
+  // Update all tag cells for this txId without full re-render
+  const cells = document.querySelectorAll(`[data-tag-cell="${CSS.escape(String(txId))}"]`);
+  cells.forEach(c => { c.innerHTML = renderTxTagsCell(txId); });
+  _rebuildTagFilterRow();
+}
+function _rebuildTagFilterRow() {
+  const allTagLabels = new Set(Object.values(txTagsStore).flat().map(t => t.label || t));
+  const row = qs('#mov-tag-filter-row');
+  const chips = qs('#mov-tag-filter-chips');
+  if (!row || !chips) return;
+  row.style.display = allTagLabels.size ? 'flex' : 'none';
+  chips.innerHTML = [...allTagLabels].map(label => {
+    const obj = Object.values(txTagsStore).flat().find(t => (t.label||t) === label);
+    const bg = obj?.bg || 'var(--accent)';
+    const isActive = movTagFilter === label;
+    return `<span class="tx-tag" style="background:${esc(bg)};color:#fff;border-color:${esc(bg)};${isActive?'box-shadow:0 0 0 2px '+esc(bg)+',0 0 0 4px #fff':'opacity:.75'}" onclick="setMovTagFilter('${esc(label)}')">${esc(label)}</span>`;
+  }).join('');
+}
+function setMovTagFilter(label) {
+  movTagFilter = movTagFilter === label ? '' : label;
+  movPage = 1;
+  renderMovements();
+  _rebuildTagFilterRow();
+}
+
+/* ===== Grid Card Render ===== */
+function _txTypeColor(type) {
+  if (type === 'مبيعات') return '#10b981';
+  if (type === 'مشتريات') return '#3b82f6';
+  if (type === 'مرتجع' || type === 'مرتجع مبيعات' || type === 'مرتجع مشتريات') return '#f97316';
+  return 'var(--accent)';
+}
+function _txTypeInitials(tx) {
+  if (tx.type === 'مبيعات') return 'ب';
+  if (tx.type === 'مشتريات') return 'ش';
+  if (tx.type && tx.type.includes('مرتجع')) return 'رج';
+  return '?';
+}
+function renderMovGridCard(tx) {
+  const isCancelled = tx.cancelled || isStatusCancelled(tx.payStatus);
+  const color = _txTypeColor(tx.type);
+  const rem = tx.remaining || 0;
+  const dep = exchangeSalePaidDisplayAmount(tx);
+  const tags = getTxTagObjects(tx._id);
+  const tagHtml = tags.map(tag => `<span class="tx-tag" style="background:${esc(tag.bg)};color:${esc(tag.color)};border-color:${esc(tag.bg)}">${esc(tag.label)}<span class="tag-del" onclick="event.stopPropagation();deleteTxTag('${esc(tx._id)}','${esc(tag.label)}')">✕</span></span>`).join('');
+  const _rtFlash = _rtFlashIds.has(String(tx._id)) ? ' rt-flash' : '';
+  const itemsPreview = (tx.items || []).slice(0, 3).map(it =>
+    `<div class="mgci"><span class="mgci-name">${esc(it.name||it.code||'—')}</span><span class="mgci-total">${fmtJ(it.total||0)}</span></div>`
+  ).join('');
+  const moreItems = (tx.items||[]).length > 3 ? `<div class="mgc-more">+${(tx.items.length-3)} ${currentLang==='en'?'more items':'أصناف أخرى'}</div>` : '';
+  return `<div class="mov-grid-card${isCancelled?' is-cancelled':''}${_rtFlash}" style="--gc-color:${color}" onclick="showInvoiceDetail('${esc(tx._id)}')">
+    <div class="mgc-header">
+      <div class="mgc-avatar" style="background:${color}">${_txTypeInitials(tx)}</div>
+      <div class="mgc-meta">
+        <div class="mgc-ref">${tx.ref ? '#'+esc(tx.ref) : '—'} · ${esc(tx.employee||'—')}</div>
+        <div class="mgc-date">${fmtDate(tx.date)} ${fmtDateTime(tx.createdAt||tx.date).split(' ').pop()||''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        ${movementKindBadge(tx)}
+        ${getVaultEntryStatusBadge(tx._id)}
+      </div>
+    </div>
+    <div class="mgc-client">${tx.client ? esc(tx.client) : '<span style="color:var(--muted);font-weight:400">بدون اسم</span>'}</div>
+    ${itemsPreview ? `<div class="mgc-items-preview">${itemsPreview}${moreItems}</div>` : ''}
+    <div class="mgc-financials">
+      <div class="mgc-fin-item">
+        <div class="mgc-fin-label">الإجمالي</div>
+        <div class="mgc-fin-val">${fmtJ(tx.total)}</div>
+      </div>
+      <div class="mgc-fin-item">
+        <div class="mgc-fin-label">المدفوع</div>
+        <div class="mgc-fin-val is-green">${dep}</div>
+      </div>
+      <div class="mgc-fin-item">
+        <div class="mgc-fin-label">المتبقي</div>
+        <div class="mgc-fin-val ${rem>0?'is-red':''}">${fmtJ(rem)}</div>
+      </div>
+    </div>
+    ${movementStatusCell(tx)}
+    <div style="margin:8px 0 4px 0;display:flex;gap:4px;flex-wrap:wrap;align-items:center" onclick="event.stopPropagation()">
+      ${tagHtml}
+      <button class="tx-tag-add" onclick="openTagDropdown('${esc(tx._id)}',this)" title="إضافة TAG">
+        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> TAG
+      </button>
+    </div>
+    <div class="mgc-actions" onclick="event.stopPropagation()">
+      <button class="mgc-action-btn" onclick="showInvoiceDetail('${esc(tx._id)}')">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        عرض
+      </button>
+      ${!isCancelled?`<button class="mgc-action-btn" onclick="openEditMovement('${esc(tx._id)}')">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        تعديل
+      </button>`:''}
+      <button class="mgc-action-btn" onclick="printInvoice('${esc(tx._id)}')">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        طباعة
+      </button>
+      ${rem>0&&!isCancelled?`<button class="mgc-action-btn" onclick="openCollectMovement('${esc(tx._id)}')">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        تحصيل
+      </button>`:''}
+      ${!isCancelled&&isAdmin()?`<button class="mgc-action-btn is-danger" onclick="openCancelMovement('${esc(tx._id)}')">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+        إلغاء
+      </button>`:''}
+    </div>
+  </div>`;
+}
+function renderRetGridCard(r) {
+  const kindLabel = r.requestKind === 'exchange' ? 'استبدال' : 'استرجاع';
+  return `<div class="mov-grid-card" style="--gc-color:#f97316;cursor:pointer" onclick="showReturnRequestMovementDetail('${esc(r._id)}')">
+    <div class="mgc-header">
+      <div class="mgc-avatar" style="background:#f97316">رج</div>
+      <div class="mgc-meta">
+        <div class="mgc-ref">${kindLabel}</div>
+        <div class="mgc-date">${fmtDate(r.createdAt||'')}</div>
+      </div>
+      <span class="badge badge-type-return" style="font-size:.7rem">${r.status}</span>
+    </div>
+    <div class="mgc-client">${r.client ? esc(r.client) : '—'}</div>
+    <div class="mgc-financials">
+      <div class="mgc-fin-item"><div class="mgc-fin-label">الإجمالي</div><div class="mgc-fin-val is-red">${fmtJ(r.total)}</div></div>
+      <div class="mgc-fin-item"><div class="mgc-fin-label">السبب</div><div class="mgc-fin-val" style="font-size:.7rem">${esc((r.reason||'').slice(0,12))}</div></div>
+      <div class="mgc-fin-item"><div class="mgc-fin-label">الحالة</div><div class="mgc-fin-val" style="font-size:.75rem">${esc(r.status)}</div></div>
+    </div>
+  </div>`;
+}
+
 /* ===== Movements toolbar collapse ===== */
 function toggleMovToolbar(btn) {
   const tb = qs('#mov-toolbar');
@@ -10798,6 +11159,12 @@ window.addEventListener('DOMContentLoaded', () => {
       const tb = qs('#mov-toolbar');
       if (tb) { tb.classList.add('collapsed'); tb.classList.remove('expanded'); }
     }
+  } catch(_) {}
+  // Restore view mode button state
+  try {
+    const listBtn = qs('#mov-view-list-btn'), gridBtn = qs('#mov-view-grid-btn');
+    if (listBtn) listBtn.classList.toggle('active', movViewMode === 'list');
+    if (gridBtn) gridBtn.classList.toggle('active', movViewMode === 'grid');
   } catch(_) {}
 });
 
