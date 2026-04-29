@@ -2997,7 +2997,7 @@ body.dark-mode .dashboard-v2{
 </script>
 <div id="offline-banner" role="alert" aria-live="polite">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0119 12.55"/><path d="M5 12.55a10.94 10.94 0 015.17-2.39"/><path d="M10.71 5.05A16 16 0 0122.58 9"/><path d="M1.42 9a15.91 15.91 0 014.7-2.88"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-  <span id="offline-banner-msg">⚠️ النظام غير متصل بالإنترنت. بعض الوظائف قد تكون غير متاحة مؤقتًا.</span>
+  <span id="offline-banner-msg" data-i18n="offlineBanner">النظام غير متصل بالإنترنت. بعض الوظائف قد تكون غير متاحة مؤقتًا.</span>
 </div>
 <button id="offline-fab" onclick="navigateTo('pending-sync')" title="المعاملات المعلقة" style="display:none">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7"/><polyline points="21 4 21 10 15 10"/></svg>
@@ -3306,10 +3306,10 @@ body.dark-mode .dashboard-v2{
       <div class="tx-comment-input-row">
         <input type="text" id="tx-comment-text" placeholder="أضف تعليق…" class="tx-comment-input">
         <select id="tx-comment-type" class="tx-comment-type">
-          <option value="عام">📝 عام</option>
-          <option value="تنبيه">⚠ تنبيه</option>
-          <option value="ملاحظة">📌 ملاحظة</option>
-          <option value="أسئلة">❓ أسئلة</option>
+          <option value="عام">عام</option>
+          <option value="تنبيه">تنبيه</option>
+          <option value="ملاحظة">ملاحظة</option>
+          <option value="أسئلة">أسئلة</option>
         </select>
         <button class="btn btn-outline btn-sm" onclick="addTxComment()" style="white-space:nowrap;flex-shrink:0">إضافة</button>
       </div>
@@ -3411,7 +3411,7 @@ body.dark-mode .dashboard-v2{
 <!-- Transaction Confirmation Modal -->
 <div class="modal-overlay" id="tx-confirm-modal">
   <div class="modal" style="max-width:600px">
-    <h3 style="text-align:center;margin-bottom:20px">📋 تأكيد الحركة</h3>
+    <h3 style="text-align:center;margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:8px"><span style="display:inline-flex;width:22px;height:22px;opacity:.75"><?xml version="1.0"?><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/></svg></span> <span data-i18n="confTxTitle">تأكيد الحركة</span></h3>
     <div id="tx-confirm-summary" style="background:var(--surface2);border-radius:12px;padding:20px;margin-bottom:20px;font-size:.9rem">
       <!-- Summary will be populated here -->
     </div>
@@ -4158,7 +4158,7 @@ body.dark-mode .dashboard-v2{
 <!-- Best Seller Highlight -->
 <div class="card mb-20" id="rep-best-seller-card" style="display:none;background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(22,163,74,.04));border:1px solid rgba(16,185,129,.25);padding:14px 18px">
   <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-    <div style="font-size:1.6rem">🏆</div>
+    <div style="font-size:1.6rem;display:flex;align-items:center"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg></div>
     <div style="flex:1;min-width:200px">
       <div style="color:var(--muted);font-size:.78rem;margin-bottom:4px">المنتج الأكثر مبيعاً في الفترة</div>
       <div id="rep-best-seller-name" style="font-size:1.05rem;font-weight:700;color:var(--text)"></div>
@@ -4177,7 +4177,7 @@ body.dark-mode .dashboard-v2{
 <!-- Trend Chart (Daily) -->
 <div class="card mb-20">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-    <h3 style="margin:0;font-size:.95rem;color:var(--muted)">📈 اتجاه المبيعات اليومي</h3>
+    <h3 style="margin:0;font-size:.95rem;color:var(--muted);display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg><span data-i18n="repDailySalesTrend">اتجاه المبيعات اليومي</span></h3>
     <div style="display:flex;gap:6px">
       <button class="btn btn-sm btn-outline rep-trend-btn active" data-trend="sales" onclick="setTrendMetric('sales',this)">المبيعات</button>
       <button class="btn btn-sm btn-outline rep-trend-btn" data-trend="purchases" onclick="setTrendMetric('purchases',this)">المشتريات</button>
@@ -4200,7 +4200,7 @@ body.dark-mode .dashboard-v2{
 
 <!-- Top Customers -->
 <div class="card mb-20">
-  <h3 style="font-size:.95rem;color:var(--muted);margin-bottom:12px">👥 أفضل العملاء</h3>
+  <h3 style="font-size:.95rem;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span data-i18n="repTopCustomers">أفضل العملاء</span></h3>
   <div class="overflow-x">
     <table id="rep-customers-table" style="width:100%;border-collapse:collapse;font-size:.9rem">
       <thead>
@@ -4251,7 +4251,7 @@ body.dark-mode .dashboard-v2{
       <p class="page-subtitle">المعاملات المحفوظة محليًا أثناء انقطاع الاتصال — راجعها ثم أرسلها للسيرفر</p>
     </div>
     <div class="oq-header-actions">
-      <button class="btn btn-primary" id="oq-push-all-btn" onclick="oqPushAll()">📤 إرسال الكل</button>
+      <button class="btn btn-primary" id="oq-push-all-btn" onclick="oqPushAll()" style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 2 11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span data-i18n="oqSendAll">إرسال الكل</span></button>
       <button class="btn btn-outline btn-sm" onclick="oqClearSynced()">مسح السجل</button>
     </div>
   </div>
@@ -4720,7 +4720,7 @@ body.dark-mode .dashboard-v2{
   </div>
   <div class="fx-drawer-body" id="drafts-drawer-list"></div>
   <div class="fx-drawer-footer" id="drafts-drawer-footer" style="display:none">
-    <button class="btn btn-outline" style="color:var(--red);border-color:var(--red)" onclick="clearAllDrafts()">🗑️ حذف الكل</button>
+    <button class="btn btn-outline" style="color:var(--red);border-color:var(--red);display:inline-flex;align-items:center;gap:6px" onclick="clearAllDrafts()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg><span data-i18n="deleteAll">حذف الكل</span></button>
   </div>
 </div>
 
@@ -5128,12 +5128,168 @@ const TRANSLATIONS = {
   movComplete:{ar:'مكتمل',en:'Complete'},movPending:{ar:'انتظار',en:'Pending'},movCanceled:{ar:'ملغي',en:'Canceled'},
   bulkPrint:{ar:'طباعة',en:'Print'},bulkFreeze:{ar:'تجميد',en:'Freeze'},bulkCancel:{ar:'إلغاء',en:'Cancel'},
   refresh:{ar:'تحديث',en:'Refresh'},loading:{ar:'جارٍ التحميل...',en:'Loading...'},
+  // Notifications & real-time
+  newTx:{ar:'حركة جديدة',en:'New transaction'},txCancelled:{ar:'تم إلغاء حركة',en:'Transaction cancelled'},
+  draftSaved:{ar:'تم الحفظ كمسودة',en:'Draft saved'},
+  stockAdded:{ar:'تمت إضافة مخزون',en:'Stock added'},stockDeducted:{ar:'تم خصم مخزون',en:'Stock deducted'},
+  stockAddedCancel:{ar:'إرجاع مخزون — إلغاء',en:'Stock restored — cancellation'},
+  stockDeductedCancel:{ar:'خصم مخزون — إلغاء',en:'Stock deducted — cancellation'},
+  stockUpdate:{ar:'تحديث مخزون',en:'Stock update'},
+  // Status labels
+  statusComplete:{ar:'مكتمل',en:'Complete'},statusPending:{ar:'معلق',en:'Pending'},
+  statusCancelled:{ar:'ملغي',en:'Cancelled'},statusFrozen:{ar:'مجمد',en:'Frozen'},
+  // Roles
+  roleAdmin:{ar:'مدير',en:'Admin'},roleStaff:{ar:'موظف',en:'Staff'},roleViewer:{ar:'مشاهد',en:'Viewer'},
+  // Transaction types
+  typeSale:{ar:'مبيعات',en:'Sale'},typePurchase:{ar:'مشتريات',en:'Purchase'},typeReturn:{ar:'مرتجع',en:'Return'},
+  typeReturnSale:{ar:'مرتجع مبيعات',en:'Sales return'},typeReturnPurchase:{ar:'مرتجع مشتريات',en:'Purchase return'},
+  // Filter labels
+  filterPriceAsc:{ar:'السعر: من الأقل',en:'Price: Low to high'},filterPriceDesc:{ar:'السعر: من الأعلى',en:'Price: High to low'},
+  filterStockAsc:{ar:'المخزون: من الأقل',en:'Stock: Low to high'},filterStockDesc:{ar:'المخزون: من الأعلى',en:'Stock: High to low'},
+  filterSellAsc:{ar:'سعر البيع: من الأقل',en:'Sale price: Low to high'},filterSellDesc:{ar:'سعر البيع: من الأعلى',en:'Sale price: High to low'},
+  filterBuyAsc:{ar:'سعر الشراء: من الأقل',en:'Buy price: Low to high'},filterBuyDesc:{ar:'سعر الشراء: من الأعلى',en:'Buy price: High to low'},
+  filterNewest:{ar:'الأحدث أولاً',en:'Newest first'},filterOldest:{ar:'الأقدم أولاً',en:'Oldest first'},
+  // Vault & cash
+  depositVault:{ar:'إيداع في الخزنة',en:'Vault deposit'},deductVault:{ar:'خصم من الخزنة',en:'Vault deduction'},
+  // Offline queue
+  oqSyncQueued:{ar:'تم حفظ العملية مؤقتًا — ستتم مزامنتها عند عودة الاتصال',en:'Saved locally — will sync when connection is restored'},
+  oqSyncSuccess:{ar:'تم رفع البيانات بنجاح',en:'Data synced successfully'},
+  oqSyncPartial:{ar:'تمت مزامنة جزئية',en:'Partial sync completed'},
+  oqNoPending:{ar:'لا توجد معاملات معلقة',en:'No pending transactions'},
+  oqNoInternet:{ar:'لا يوجد اتصال بالإنترنت — حاول لاحقاً',en:'No internet connection — try again later'},
+  oqDeleteConfirm:{ar:'حذف هذه المعاملة المعلقة نهائياً؟',en:'Permanently delete this pending transaction?'},
+  oqClearConfirm:{ar:'مسح سجل المعاملات المكتملة؟',en:'Clear completed transactions history?'},
+  oqEmpty:{ar:'لا توجد معاملات معلقة',en:'No pending transactions'},
+  // Draft
+  draftSavedNew:{ar:'تم الحفظ كمسودة جديدة',en:'Saved as new draft'},
+  // Pending approvals
+  pendingExpenses:{ar:'طلبات صرف معلقة',en:'Pending expense requests'},
+  pendingExpensesSub:{ar:'تنتظر موافقة الإدارة',en:'Awaiting management approval'},
+  pendingCancels:{ar:'طلبات إلغاء حركات',en:'Pending cancellation requests'},
+  pendingCancelsSub:{ar:'تنتظر القرار',en:'Awaiting review'},
+  pendingReturns:{ar:'طلبات استرجاع/استبدال',en:'Pending return/exchange requests'},
+  pendingReturnsSub:{ar:'تنتظر المعالجة',en:'Awaiting processing'},
+  // Activity log labels
+  actSale:{ar:'بيع',en:'Sale'},actPurchase:{ar:'شراء',en:'Purchase'},actReturn:{ar:'إرجاع',en:'Return'},
+  actExpense:{ar:'مصروف',en:'Expense'},actDeposit:{ar:'إيداع',en:'Deposit'},actWithdraw:{ar:'سحب',en:'Withdrawal'},
+  // Form errors & validation
+  errRequired:{ar:'مطلوب',en:'Required'},errPhone:{ar:'رقم هاتف غير صحيح',en:'Invalid phone number'},
+  errNumOnly:{ar:'أرقام فقط',en:'Numbers only'},errRefUsed:{ar:'مرجع مستخدم في حركة أخرى',en:'Ref already used in another transaction'},
+  errChooseShip:{ar:'اختر شركة شحن',en:'Select a shipping company'},errChooseReason:{ar:'اختر سبب الاسترجاع',en:'Select a return reason'},
+  errInvoiceRequired:{ar:'رقم الفاتورة مطلوب',en:'Invoice number is required'},
+  errRefNumUsed:{ar:'رقم مستخدم في حركة أخرى',en:'Number already used in another transaction'},
+  // Session panel
+  sessEmpty:{ar:'لا توجد جلسات نشطة حالياً',en:'No active sessions'},
+  // Toast messages
+  toastRevealSuccess:{ar:'تم عرض الرقم بنجاح',en:'Number revealed successfully'},
+  toastReturnRequest:{ar:'تم إرسال طلب الاسترجاع — في انتظار موافقة المدير',en:'Return request submitted — awaiting manager approval'},
+  toastSaveSale:{ar:'تم حفظ حركة المبيعات بنجاح',en:'Sale transaction saved successfully'},
+  toastSavePurchase:{ar:'تم حفظ حركة المشتريات بنجاح',en:'Purchase transaction saved successfully'},
+  toastSaveDraft:{ar:'تم حفظ المسودة — اضغط زر "المسودات" للرجوع',en:'Draft saved — tap "Drafts" to restore'},
+  toastWelcome:{ar:'مرحباً',en:'Welcome'},
+  // Inventory KPI labels
+  invTotalItems:{ar:'إجمالي الأصناف',en:'Total products'},invTotalStock:{ar:'إجمالي المخزون',en:'Total stock'},
+  invSaleValue:{ar:'قيمة البيع',en:'Sale value'},invCostValue:{ar:'قيمة الشراء',en:'Cost value'},
+  invAvailable:{ar:'متوفر',en:'Available'},invLow:{ar:'منخفض',en:'Low stock'},invOut:{ar:'نفد',en:'Out of stock'},
+  // Empty states
+  emptyProducts:{ar:'لا توجد أصناف مطابقة',en:'No matching products'},
+  emptyClients:{ar:'لا يوجد عملاء مطابقين',en:'No matching clients'},
+  emptyMovements:{ar:'لا توجد حركات',en:'No transactions'},
+  emptyNoPending:{ar:'لا توجد معاملات معلقة',en:'All caught up — no pending items'},
+  // Confirm dialog
+  confirmComplete:{ar:'مكتملة',en:'complete'},confirmTx:{ar:'هذه الحركة',en:'This transaction'},
+  // Stock warning
+  warnQtyUnavailable:{ar:'الكمية المطلوبة غير متوفرة',en:'Requested qty not available'},
+  warnQtyExceeds:{ar:'الكمية تتجاوز المتاح',en:'Qty exceeds available stock'},
+  warnProductUnavailable:{ar:'غير متوفر في المخزن حالياً',en:'Currently out of stock'},
+  // Items section
+  itemsSectionTitle:{ar:'الأصناف',en:'Line items'},
+  // Login
+  loginErrEmpty:{ar:'أدخل البيانات',en:'Please enter your credentials'},
+  loginErrWrong:{ar:'بيانات خاطئة',en:'Invalid credentials'},
+  // Time labels
+  timeNow:{ar:'الآن',en:'Just now'},
+  timeSecsAgo:{ar:'ثانية',en:'sec ago'},timeMinsAgo:{ar:'دقيقة',en:'min ago'},
+  timeHrsAgo:{ar:'ساعة',en:'hr ago'},timeDaysAgo:{ar:'يوم',en:'day ago'},
+  timeSince:{ar:'منذ',en:'ago'},
+  // Filter drawer labels
+  fxAmountRange:{ar:'نطاق المبلغ (ج)',en:'Amount range (EGP)'},
+  fxEmployee:{ar:'الموظف',en:'Employee'},fxSellPrice:{ar:'نطاق سعر البيع (ج)',en:'Sale price range (EGP)'},
+  fxStockRange:{ar:'نطاق المخزون',en:'Stock range'},fxBuyPrice:{ar:'نطاق سعر الشراء (ج)',en:'Buy price range (EGP)'},
+  // Confirmation modal
+  confTxType:{ar:'نوع الحركة',en:'Transaction type'},confClientSupplier:{ar:'العميل / المورد',en:'Client / supplier'},
+  confItems:{ar:'الأصناف',en:'Items'},
+  // Notification titles
+  notifStockOut:{ar:'نفد من المخزن',en:'Out of stock'},notifStockLow:{ar:'كمية منخفضة',en:'Low stock'},
+  notifExpPending:{ar:'مصروف بانتظار الموافقة',en:'Expense awaiting approval'},
+  notifComplaint:{ar:'شكوى جديدة',en:'New complaint'},notifReturnPending:{ar:'بانتظار الموافقة',en:'Awaiting approval'},
+  notifCancelReq:{ar:'طلب إلغاء حركة — في انتظار موافقة المدير',en:'Cancellation request — awaiting manager'},
+  notifExcCollect:{ar:'فرق استبدال بانتظار التحصيل',en:'Exchange difference pending collection'},
+  notifSalesPending:{ar:'فاتورة بانتظار التحصيل',en:'invoice(s) pending collection'},
+  noNotifications:{ar:'لا توجد إشعارات جديدة',en:'No new notifications'},
+  offlineBanner:{ar:'النظام غير متصل بالإنترنت. بعض الوظائف قد تكون غير متاحة مؤقتًا.',en:'System is offline. Some features may be temporarily unavailable.'},
+  oqSendAll:{ar:'إرسال الكل',en:'Send All'},
+  deleteAll:{ar:'حذف الكل',en:'Delete All'},
+  confTxTitle:{ar:'تأكيد الحركة',en:'Confirm Transaction'},
+  confTxType:{ar:'نوع الحركة',en:'Transaction Type'},
+  zoneCairo:{ar:'القاهرة',en:'Cairo'},
+  zoneGov:{ar:'المحافظات',en:'Governorates'},
+  repDailySalesTrend:{ar:'اتجاه المبيعات اليومي',en:'Daily Sales Trend'},
+  repTopCustomers:{ar:'أفضل العملاء',en:'Top Customers'},
 };
 
 function t(key) {
   const entry = TRANSLATIONS[key];
   if (!entry) return key;
   return entry[currentLang] || entry.ar || key;
+}
+
+/* ─── SVG Icon System (replaces emoji throughout the UI) ─── */
+const ICONS = {
+  // Status & alerts
+  warning:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  error:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+  success:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+  info:     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+  alarm:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><line x1="2" y1="5" x2="5" y2="8"/><line x1="22" y1="5" x2="19" y2="8"/></svg>`,
+  ban:      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`,
+  // Commerce
+  cart:     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`,
+  box:      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`,
+  money:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
+  wallet:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
+  bank:     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><rect x="3" y="10" width="2" height="8"/><rect x="7" y="10" width="2" height="8"/><rect x="11" y="10" width="2" height="8"/><rect x="15" y="10" width="2" height="8"/><rect x="19" y="10" width="2" height="8"/><rect x="1" y="18" width="22" height="2"/><polygon points="12 2 1 8 23 8"/></svg>`,
+  // Actions & navigation
+  arrowUp:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`,
+  arrowDown:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`,
+  upload:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>`,
+  save:     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13"/><polyline points="7 3 7 8 15 8"/></svg>`,
+  trash:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`,
+  returnArr:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>`,
+  target:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>`,
+  note:     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
+  pin:      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  question: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  // People & roles
+  user:     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+  users:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  crown:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><line x1="5" y1="20" x2="19" y2="20"/></svg>`,
+  eye:      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  staff:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="9" y1="14" x2="15" y2="14"/></svg>`,
+  // Analytics & data
+  chart:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,
+  barChart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`,
+  award:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>`,
+  clock:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  sparkle:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+  send:     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;width:1em;height:1em"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`,
+};
+/** Return an inline SVG icon by name. Falls back to empty string. */
+function ICON(name, opts) {
+  const svg = ICONS[name] || '';
+  if (!svg || !opts) return svg;
+  // opts: { size:'1.2em', color:'#333', style:'margin-right:4px' }
+  return svg.replace('style="', `style="${opts.style ? opts.style + ';' : ''}${opts.size ? 'width:' + opts.size + ';height:' + opts.size + ';' : ''}${opts.color ? 'color:' + opts.color + ';' : ''}`);
 }
 
 function refreshComplaintsSectionTitle() {
@@ -5219,8 +5375,8 @@ function toast(msg, isError = false) {
   const c = qs('#toast-container');
   const d = document.createElement('div');
   d.className = 'toast' + (isError ? ' error' : ' success');
-  const icon = isError ? '❌' : '✅';
-  d.innerHTML = `<span>${icon}</span><span>${esc(msg)}</span>`;
+  const icon = isError ? ICON('error') : ICON('success');
+  d.innerHTML = `<span style="display:inline-flex;align-items:center">${icon}</span><span>${esc(msg)}</span>`;
   d.style.animation = 'slideIn 0.3s ease-out';
   c.appendChild(d);
   setTimeout(() => {
@@ -5348,7 +5504,7 @@ async function trySendOrQueue(type, sendFn, payload, extra = {}) {
 }
 
 const OQ_TYPE_LABEL = { sale: 'مبيعات', purchase: 'مشتريات', return: 'استرجاع', expense: 'مصروف', vault: 'تسوية خزنة' };
-const OQ_TYPE_ICON  = { sale: '🛒', purchase: '📦', return: '↩️', expense: '💸', vault: '🏦' };
+const OQ_TYPE_ICON  = { sale: ICON('cart'), purchase: ICON('box'), return: ICON('returnArr'), expense: ICON('money'), vault: ICON('bank') };
 
 async function oqPushOne(rec) {
   rec.status = 'syncing'; rec.error = '';
@@ -5384,8 +5540,8 @@ async function oqPushAll() {
   try {
     const all = await oqAll();
     const queue = all.filter(r => r.status === 'pending' || r.status === 'failed');
-    if (!queue.length) { toast('لا توجد معاملات معلقة'); return; }
-    if (isLikelyOffline()) { toast('لا يوجد اتصال بالإنترنت — حاول لاحقًا', true); return; }
+    if (!queue.length) { toast(t('oqNoPending')); return; }
+    if (isLikelyOffline()) { toast(t('oqNoInternet'), true); return; }
     const bar = qs('#oq-progress'); const fill = qs('#oq-progress-fill'); const lbl = qs('#oq-progress-label');
     if (bar) bar.style.display = 'block';
     let done = 0, ok = 0, fail = 0;
@@ -5399,9 +5555,9 @@ async function oqPushAll() {
       if (currentPage === 'pending-sync') renderPendingSyncPage();
     }
     if (bar) setTimeout(() => { bar.style.display = 'none'; if (fill) fill.style.width = '0%'; }, 1200);
-    if (ok > 0 && fail === 0) toast(`تم رفع البيانات بنجاح ✅ (${ok} معاملة)`);
-    else if (ok > 0 && fail > 0) toast(`تم رفع ${ok} — فشل ${fail}. راجع التفاصيل`, true);
-    else toast(`فشلت مزامنة ${fail} معاملة — راجع الأخطاء`, true);
+    if (ok > 0 && fail === 0) toast(`${t('oqSyncSuccess')} (${ok})`);
+    else if (ok > 0 && fail > 0) toast(`${t('oqSyncPartial')}: ${ok} OK, ${fail} failed`, true);
+    else toast(`Sync failed — ${fail} error(s)`, true);
     // Refresh server-side data so UI reflects synced rows
     try {
       transactions = await api('/transactions').catch(() => transactions);
@@ -5415,14 +5571,14 @@ async function oqPushAll() {
 }
 
 async function oqDeleteRec(id) {
-  if (!confirm('حذف هذه المعاملة المعلقة نهائيًا؟')) return;
+  if (!confirm(t('oqDeleteConfirm'))) return;
   await oqDelete(id); oqUpdateBadges();
 }
 async function oqRetryRec(id) {
   const all = await oqAll();
   const rec = all.find(r => r.id === id);
   if (!rec) return;
-  if (isLikelyOffline()) { toast('لا يوجد اتصال — حاول لاحقًا', true); return; }
+  if (isLikelyOffline()) { toast(t('oqNoInternet'), true); return; }
   await oqPushOne(rec);
   oqUpdateBadges();
   if (currentPage === 'pending-sync') renderPendingSyncPage();
@@ -5463,38 +5619,39 @@ async function renderPendingSyncPage() {
   qs('#oq-stat-pending').textContent = String(pending.length);
   qs('#oq-stat-failed').textContent  = String(pending.filter(r => r.status === 'failed').length);
   qs('#oq-stat-synced').textContent  = String(synced.length);
+  const OQ_SVG_ICON = { sale: ICON('cart'), purchase: ICON('box'), return: ICON('returnArr'), expense: ICON('money'), vault: ICON('bank') };
   const rowHtml = (rec, isHistory = false) => `
     <div class="oq-row oq-${rec.status}">
       <div class="oq-row-main">
-        <div class="oq-row-icon">${OQ_TYPE_ICON[rec.type] || '•'}</div>
+        <div class="oq-row-icon">${OQ_SVG_ICON[rec.type] || ICON('info')}</div>
         <div class="oq-row-text">
           <div class="oq-row-title">${esc(OQ_TYPE_LABEL[rec.type] || rec.type)} — ${esc(oqSummary(rec))}</div>
           <div class="oq-row-meta">
-            <span>🕒 ${fmtOqDate(rec.createdAt)}</span>
-            ${rec.employee ? `<span>👤 ${esc(rec.employee)}</span>` : ''}
-            ${rec.status === 'failed' && rec.error ? `<span class="oq-err" title="${esc(rec.error)}">⚠️ ${esc(rec.error.slice(0, 80))}</span>` : ''}
-            ${rec.status === 'synced' && rec.syncedAt ? `<span style="color:#10b981">✅ ${fmtOqDate(rec.syncedAt)}</span>` : ''}
+            <span>${ICON('clock')} ${fmtOqDate(rec.createdAt)}</span>
+            ${rec.employee ? `<span>${ICON('user')} ${esc(rec.employee)}</span>` : ''}
+            ${rec.status === 'failed' && rec.error ? `<span class="oq-err" title="${esc(rec.error)}">${ICON('error')} ${esc(rec.error.slice(0, 80))}</span>` : ''}
+            ${rec.status === 'synced' && rec.syncedAt ? `<span style="color:#10b981">${ICON('success')} ${fmtOqDate(rec.syncedAt)}</span>` : ''}
           </div>
         </div>
         <div class="oq-row-status">
-          ${rec.status === 'pending' ? '<span class="badge" style="background:#fef3c7;color:#92400e">في الانتظار</span>' : ''}
-          ${rec.status === 'syncing' ? '<span class="badge" style="background:#dbeafe;color:#1e40af">جارٍ المزامنة…</span>' : ''}
-          ${rec.status === 'failed'  ? '<span class="badge" style="background:#fee2e2;color:#991b1b">فشل</span>' : ''}
-          ${rec.status === 'synced'  ? '<span class="badge" style="background:#d1fae5;color:#065f46">تمت المزامنة</span>' : ''}
+          ${rec.status === 'pending' ? `<span class="badge" style="background:#fef3c7;color:#92400e">${t('statusPending')}</span>` : ''}
+          ${rec.status === 'syncing' ? `<span class="badge" style="background:#dbeafe;color:#1e40af">${t('loading')}</span>` : ''}
+          ${rec.status === 'failed'  ? `<span class="badge" style="background:#fee2e2;color:#991b1b">Failed</span>` : ''}
+          ${rec.status === 'synced'  ? `<span class="badge" style="background:#d1fae5;color:#065f46">Synced</span>` : ''}
         </div>
       </div>
       ${!isHistory ? `<div class="oq-row-actions">
-        <button class="btn btn-sm btn-primary" onclick="oqRetryRec('${esc(rec.id)}')" ${isLikelyOffline() ? 'disabled' : ''}>إرسال</button>
-        <button class="btn btn-sm" onclick="oqDeleteRec('${esc(rec.id)}')">حذف</button>
+        <button class="btn btn-sm btn-primary" onclick="oqRetryRec('${esc(rec.id)}')" ${isLikelyOffline() ? 'disabled' : ''}>${t('send') || 'Send'}</button>
+        <button class="btn btn-sm" onclick="oqDeleteRec('${esc(rec.id)}')">${t('delete')}</button>
       </div>` : ''}
     </div>`;
   wrap.innerHTML = pending.length
     ? pending.map(r => rowHtml(r, false)).join('')
-    : '<div class="empty-state" style="padding:30px">لا توجد معاملات معلقة 🎉</div>';
+    : `<div class="empty-state" style="padding:30px">${t('emptyNoPending')}</div>`;
   const histWrap = qs('#pending-sync-history');
   if (histWrap) histWrap.innerHTML = synced.length
     ? synced.map(r => rowHtml(r, true)).join('')
-    : '<div class="empty-state" style="padding:20px;font-size:.85rem">لا يوجد سجل بعد</div>';
+    : `<div class="empty-state" style="padding:20px;font-size:.85rem">No history yet</div>`;
 }
 
 // Hook: when connection returns, prompt the user (no silent push)
@@ -5844,7 +6001,7 @@ function toggleLoginPassword() {
 async function doLogin() {
   const username = qs('#login-user').value.trim();
   const password = qs('#login-pass').value;
-  if (!username || !password) { qs('#login-error').textContent = 'أدخل البيانات'; qs('#login-error').style.display = 'block'; return; }
+  if (!username || !password) { qs('#login-error').textContent = t('loginErrEmpty'); qs('#login-error').style.display = 'block'; return; }
   const rememberMe = qs('#login-remember')?.checked;
   try {
     const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
@@ -5860,7 +6017,7 @@ async function doLogin() {
     currentUser = data.user;
     showApp();
   } catch (e) {
-    qs('#login-error').textContent = e.message || 'بيانات خاطئة';
+    qs('#login-error').textContent = e.message || t('loginErrWrong');
     qs('#login-error').style.display = 'block';
   }
 }
@@ -5936,7 +6093,7 @@ async function showApp() {
 
   if (currentUser) {
     const userName = currentUser.name || currentUser.username || '';
-    toast(`مرحباً يا ${userName}`);
+    toast(`${t('toastWelcome')}, ${userName}`);
   }
 
   // Sync users status initially (socket will take over after)
@@ -6037,7 +6194,7 @@ function connectSocket() {
         setTimeout(() => _rtFlashIds.delete(String(tx._id)), 3000);
       }
       _rtRefreshUI({ movements: true, sidebar: true, notifications: true });
-      _rtToastEvent(`✨ حركة ${tx.type} جديدة${payload.by ? ' بواسطة ' + payload.by : ''}`);
+      _rtToastEvent(`${ICON('sparkle')} ${t('newTx')}: ${tx.type}${payload.by ? ' · ' + payload.by : ''}`);
       requestAnimationFrame(() => bounceMovementsNav());
     } catch(e) { console.warn('tx:created handler', e); }
   });
@@ -6054,7 +6211,7 @@ function connectSocket() {
     const i = transactions.findIndex(t => String(t._id) === String(tx._id));
     if (i >= 0) transactions[i] = tx;
     _rtRefreshUI({ movements: true, sidebar: true });
-    _rtToastEvent(`🚫 تم إلغاء حركة #${tx.ref || ''}`);
+    _rtToastEvent(`${ICON('ban')} ${t('txCancelled')} #${tx.ref || ''}`);
     // Inventory notification for cancellation (items from tx)
     if (Array.isArray(tx.items) && tx.items.length) {
       showInvNotif(tx.type, tx.items, true, String(tx._id));
@@ -6279,9 +6436,9 @@ function _invNotifTitle(txType, direction, isCancellation) {
 }
 
 function _invNotifIcon(direction) {
-  if (direction === 'add')    return '📦';
-  if (direction === 'remove') return '🔻';
-  return 'ℹ️';
+  if (direction === 'add')    return ICON('box');
+  if (direction === 'remove') return ICON('arrowDown');
+  return ICON('info');
 }
 
 /**
@@ -6403,7 +6560,7 @@ function renderActiveSessions() {
         ? [loc.city, loc.region, loc.country].filter(Boolean).join('، ') || '—'
         : 'جارٍ التحديد...';
       const ago = _agoText(s.lastActivity || s.connectedAt);
-      const roleLabel = s.role === 'admin' ? '👑 مدير' : (s.role === 'staff' ? '🧑‍💼 موظف' : '👁️ مشاهد');
+      const roleLabel = s.role === 'admin' ? `${ICON('crown')} ${t('roleAdmin')}` : (s.role === 'staff' ? `${ICON('staff')} ${t('roleStaff')}` : `${ICON('eye')} ${t('roleViewer')}`);
       cards.push(`
         <div class="sess-card">
           <div class="sess-card-head">
@@ -6640,49 +6797,49 @@ function buildNotifications() {
     const inv = Array.isArray(inventoryCache) ? inventoryCache : [];
     inv.forEach(item => {
       if (item.current <= 0) {
-        notifs.push({ id: 'stock-out-' + item.code, icon: '🚨', type: 'urgent', title: `${item.name} — نفد من المخزن`, desc: `الكمية الحالية: 0 | الحد الأدنى: ${item.minStock || 0}`, page: 'inventory' });
+        notifs.push({ id: 'stock-out-' + item.code, icon: ICON('alarm'), type: 'urgent', title: `${item.name} — ${t('notifStockOut')}`, desc: `${currentLang==='en'?'Current: 0 | Min:':'الكمية الحالية: 0 | الحد الأدنى:'} ${item.minStock || 0}`, page: 'inventory' });
       } else if (item.current <= (item.minStock || 0)) {
-        notifs.push({ id: 'stock-low-' + item.code, icon: '⚠️', type: 'warning', title: `${item.name} — كمية منخفضة`, desc: `الكمية الحالية: ${item.current} | الحد الأدنى: ${item.minStock || 0}`, page: 'inventory' });
+        notifs.push({ id: 'stock-low-' + item.code, icon: ICON('warning'), type: 'warning', title: `${item.name} — ${t('notifStockLow')}`, desc: `${currentLang==='en'?'Current:':'الكمية الحالية:'} ${item.current} | ${currentLang==='en'?'Min:':'الحد الأدنى:'} ${item.minStock || 0}`, page: 'inventory' });
       }
     });
   }
   const pendingExp = expenses.filter(e => e.status === 'معلق');
   if (pendingExp.length > 0 && currentUser?.role === 'admin') {
     pendingExp.forEach(exp => {
-      notifs.push({ id: 'exp-pending-' + exp._id, icon: '💰', type: 'info', title: `مصروف بانتظار الموافقة`, desc: `${exp.desc || ''} — ${fmtJ(exp.amount)} (${exp.category || ''})`, page: 'approvals', ts: exp.createdAt || exp.date || '' });
+      notifs.push({ id: 'exp-pending-' + exp._id, icon: ICON('money'), type: 'info', title: t('notifExpPending'), desc: `${exp.desc || ''} — ${fmtJ(exp.amount)} (${exp.category || ''})`, page: 'approvals', ts: exp.createdAt || exp.date || '' });
     });
   }
   const pendingComplaints = (complaints || []).filter(c => c.status === 'معلق');
   if (pendingComplaints.length > 0 && currentUser?.role === 'admin') {
     pendingComplaints.forEach(c => {
-      notifs.push({ id: 'cmp-pending-' + c._id, icon: '🎯', type: 'warning', title: `شكوى جديدة: ${c.complaintNo}`, desc: `${c.submittedBy} — ${(c.description || '').slice(0, 60)}`, page: 'complaints', ts: c.createdAt || '' });
+      notifs.push({ id: 'cmp-pending-' + c._id, icon: ICON('target'), type: 'warning', title: `${t('notifComplaint')}: ${c.complaintNo}`, desc: `${c.submittedBy} — ${(c.description || '').slice(0, 60)}`, page: 'complaints', ts: c.createdAt || '' });
     });
   }
   const pendingReturns = (returnRequests || []).filter(r => r.status === 'معلق');
   if (pendingReturns.length > 0 && currentUser?.role === 'admin') {
     pendingReturns.forEach(ret => {
-      const kindLabel = ret.requestKind === 'exchange' ? 'استبدال' : 'استرجاع';
-      notifs.push({ id: 'ret-pending-' + ret._id, icon: '📦', type: 'warning', title: `طلب ${kindLabel} بانتظار الموافقة`, desc: `${ret.client} — ${fmtJ(ret.total)} (${ret.reason})`, page: 'approvals', ts: ret.createdAt || '' });
+      const kindLabel = ret.requestKind === 'exchange' ? (currentLang==='en'?'Exchange':'استبدال') : (currentLang==='en'?'Return':'استرجاع');
+      notifs.push({ id: 'ret-pending-' + ret._id, icon: ICON('box'), type: 'warning', title: `${t('notifReturnPending')}: ${kindLabel}`, desc: `${ret.client} — ${fmtJ(ret.total)} (${ret.reason})`, page: 'approvals', ts: ret.createdAt || '' });
     });
   }
   // Cancel requests pending manager approval
   const pendingCancelReqs = (transactions || []).filter(tx => tx.cancelRequest && tx.cancelRequest.status === 'معلق');
   if (pendingCancelReqs.length > 0 && currentUser?.role === 'admin') {
     pendingCancelReqs.forEach(tx => {
-      notifs.push({ id: 'cancel-req-' + tx._id, icon: '🚫', type: 'urgent', title: `طلب إلغاء حركة — في انتظار موافقة المدير`, desc: `${tx.client || 'بدون اسم'} — فاتورة #${tx.ref || '-'} (${fmtJ(tx.deposit || 0)} للرد)`, page: 'approvals', ts: tx.cancelRequest?.requestedAt || tx.createdAt || '' });
+      notifs.push({ id: 'cancel-req-' + tx._id, icon: ICON('ban'), type: 'urgent', title: t('notifCancelReq'), desc: `${tx.client || (currentLang==='en'?'No Name':'بدون اسم')} — ${currentLang==='en'?'Invoice':'فاتورة'} #${tx.ref || '-'} (${fmtJ(tx.deposit || 0)} ${currentLang==='en'?'to refund':'للرد'})`, page: 'approvals', ts: tx.cancelRequest?.requestedAt || tx.createdAt || '' });
     });
   }
   // Vault: exchange sales pending collection
   if (currentUser?.role === 'admin') {
     const pendingCollect = (transactions || []).filter(t => t.type === 'مبيعات' && !t.cancelled && isStatusPending(t.payStatus) && (t.remaining || 0) > 0 && /(-EXC)$/i.test(String(t.ref || '')));
     pendingCollect.forEach(t => {
-      notifs.push({ id: 'exc-collect-' + t._id, icon: '💰', type: 'info', title: `فرق استبدال بانتظار التحصيل`, desc: `${t.client} — متبقي ${fmtJ(t.remaining)} (فاتورة #${t.ref || '-'})`, page: 'movements', ts: t.createdAt || '' });
+      notifs.push({ id: 'exc-collect-' + t._id, icon: ICON('money'), type: 'info', title: t('notifExcCollect'), desc: `${t.client} — ${currentLang==='en'?'Remaining:':'متبقي'} ${fmtJ(t.remaining)} (${currentLang==='en'?'Invoice':'فاتورة'} #${t.ref || '-'})`, page: 'movements', ts: t.createdAt || '' });
     });
     // Pending collection on regular sales
     const pendingRegular = (transactions || []).filter(t => t.type === 'مبيعات' && !t.cancelled && isStatusPending(t.payStatus) && (t.remaining || 0) > 0 && !/(-EXC)$/i.test(String(t.ref || '')));
     if (pendingRegular.length > 0) {
       const totalRemaining = pendingRegular.reduce((s, t) => s + (t.remaining || 0), 0);
-      notifs.push({ id: 'sales-pending-all', icon: '⏳', type: 'info', title: `${pendingRegular.length} فاتورة بانتظار التحصيل`, desc: `إجمالي المتبقي: ${fmtJ(totalRemaining)}`, page: 'movements' });
+      notifs.push({ id: 'sales-pending-all', icon: ICON('clock'), type: 'info', title: `${pendingRegular.length} ${t('notifSalesPending')}`, desc: `${currentLang==='en'?'Total Remaining:':'إجمالي المتبقي:'} ${fmtJ(totalRemaining)}`, page: 'movements' });
     }
   }
   const NOTIF_PRIORITY = { urgent: 1, warning: 2, info: 3 };
@@ -6704,7 +6861,7 @@ function buildNotifications() {
         <div class="notif-desc">${esc(n.desc)}</div>
         ${n.ts ? `<div class="notif-time">${fmtDateTime(n.ts)}</div>` : ''}
       </div>
-    </div>`).join('') : '<div class="notif-empty">لا توجد إشعارات جديدة</div>';
+    </div>`).join('') : `<div class="notif-empty">${t('noNotifications')}</div>`;
 }
 function toggleNotifPanel(e) {
   e.stopPropagation();
@@ -6791,7 +6948,7 @@ function txDirtySaveDraftAndLeave() {
   qs('#tx-dirty-overlay').style.display = 'none';
   // saveDraft already set txDirty=false; clear form & navigate
   resetTx();
-  toast('💾 تم حفظ المسودة — اضغط زر "المسودات" للرجوع');
+  toast(t('draftSaved'));
   if (_pendingNavPage) { _doNavigateTo(_pendingNavPage.page, _pendingNavPage.updateHash); _pendingNavPage = null; }
 }
 function markTxDirty() {
@@ -7133,9 +7290,9 @@ function renderAdminBriefing() {
   const pendingEl = qs('#adb-pending');
   if (pendingEl) {
     const items = [];
-    if (pendingExpenses.length) items.push({ icon: '💵', title: 'طلبات صرف معلقة', sub: 'تنتظر موافقة الإدارة', count: pendingExpenses.length, urgent: false, page: 'expenses' });
-    if (pendingCancels.length) items.push({ icon: '🚫', title: 'طلبات إلغاء حركات', sub: 'تنتظر القرار', count: pendingCancels.length, urgent: true, page: 'movements' });
-    if (pendingReturns.length) items.push({ icon: '↩️', title: 'طلبات استرجاع/استبدال', sub: 'تنتظر المعالجة', count: pendingReturns.length, urgent: true, page: 'movements' });
+    if (pendingExpenses.length) items.push({ icon: ICON('money'), title: t('pendingExpenses'), sub: currentLang==='en'?'Awaiting management approval':'تنتظر موافقة الإدارة', count: pendingExpenses.length, urgent: false, page: 'expenses' });
+    if (pendingCancels.length) items.push({ icon: ICON('ban'), title: t('pendingCancels'), sub: currentLang==='en'?'Awaiting decision':'تنتظر القرار', count: pendingCancels.length, urgent: true, page: 'movements' });
+    if (pendingReturns.length) items.push({ icon: ICON('returnArr'), title: t('pendingReturns'), sub: currentLang==='en'?'Awaiting processing':'تنتظر المعالجة', count: pendingReturns.length, urgent: true, page: 'movements' });
     pendingEl.innerHTML = items.length
       ? items.map(it => `
           <div class="adb-pending-row ${it.urgent ? 'urgent' : ''}" onclick="closeAdminBriefing();navigateTo('${it.page}')">
@@ -7146,7 +7303,7 @@ function renderAdminBriefing() {
             </div>
             <span class="adb-pending-count">${fmtN(it.count)}</span>
           </div>`).join('')
-      : '<div class="adb-empty">لا توجد طلبات معلقة ✓</div>';
+      : `<div class="adb-empty">${ICON('success')} ${currentLang==='en'?'No pending requests':'لا توجد طلبات معلقة'}</div>`;
   }
 
   // ----- Returns -----
@@ -7167,7 +7324,7 @@ function renderAdminBriefing() {
         </div>
         ${pendingReturns.length ? `
         <div class="adb-cash-row" style="color:var(--red)">
-          <span class="adb-cash-label">⚠ بانتظار المعالجة</span>
+          <span class="adb-cash-label" style="display:inline-flex;align-items:center;gap:4px">${ICON('warning')} ${currentLang==='en'?'Awaiting processing':'بانتظار المعالجة'}</span>
           <span class="adb-cash-amt" style="color:var(--red)">${fmtN(pendingReturns.length)}</span>
         </div>` : ''}`;
     }
@@ -7177,10 +7334,10 @@ function renderAdminBriefing() {
   const activityEl = qs('#adb-activity');
   if (activityEl) {
     const tagOf = (t) => {
-      if (t.type === 'مبيعات') return { cls: 'sale', icon: '🛒', label: 'بيع' };
-      if (t.type === 'مشتريات') return { cls: 'purchase', icon: '📦', label: 'شراء' };
-      if (t.type === 'مرتجع') return { cls: 'return', icon: '↩', label: 'إرجاع' };
-      return { cls: 'sale', icon: '•', label: t.type || '' };
+      if (t.type === 'مبيعات') return { cls: 'sale', icon: ICON('cart'), label: currentLang==='en'?'Sale':'بيع' };
+      if (t.type === 'مشتريات') return { cls: 'purchase', icon: ICON('box'), label: currentLang==='en'?'Purchase':'شراء' };
+      if (t.type === 'مرتجع') return { cls: 'return', icon: ICON('returnArr'), label: currentLang==='en'?'Return':'إرجاع' };
+      return { cls: 'sale', icon: ICON('note'), label: t.type || '' };
     };
     const allActs = [];
     txInRange.forEach(t => {
@@ -7200,7 +7357,7 @@ function renderAdminBriefing() {
       ts: new Date(e.date || e.createdAt || 0).getTime(),
       date: e.date || e.createdAt,
       ref: '', title: e.description || e.category || 'مصروف',
-      tag: { cls: 'expense', icon: '💵', label: 'مصروف' },
+      tag: { cls: 'expense', icon: ICON('money'), label: currentLang==='en'?'Expense':'مصروف' },
       amount: e.amount || 0, flagged: false, meta: e.createdBy || '',
       type: 'exp', id: e._id
     }));
@@ -7208,7 +7365,7 @@ function renderAdminBriefing() {
       ts: new Date(v.date || v.createdAt || 0).getTime(),
       date: v.date || v.createdAt,
       ref: v.ref || '', title: v.notes || (v.amount >= 0 ? 'إيداع' : 'سحب'),
-      tag: { cls: 'cash', icon: v.amount >= 0 ? '⬆' : '⬇', label: v.amount >= 0 ? 'إيداع' : 'سحب' },
+      tag: { cls: 'cash', icon: v.amount >= 0 ? ICON('arrowUp') : ICON('arrowDown'), label: v.amount >= 0 ? (currentLang==='en'?'Deposit':'إيداع') : (currentLang==='en'?'Withdraw':'سحب') },
       amount: Math.abs(v.amount || 0), flagged: Math.abs(v.amount || 0) >= ADB_LARGE_TX_THRESHOLD,
       meta: v.createdBy || v.method || '', type: 'vault', id: v._id
     }));
@@ -7234,7 +7391,7 @@ function renderAdminBriefing() {
                 ${esc(a.title)}
                 ${refLabel ? `<span style="font-family:monospace;font-size:.7rem;color:var(--muted)">${esc(refLabel)}</span>` : ''}
               </span>
-              <span class="adb-activity-meta">${a.meta ? '👤 ' + esc(a.meta) : ''}</span>
+              <span class="adb-activity-meta" style="display:inline-flex;align-items:center;gap:3px">${a.meta ? ICON('user') + ' ' + esc(a.meta) : ''}</span>
             </div>
             <span class="adb-activity-amt" style="${a.flagged ? 'color:var(--red)' : ''}">${fmtJ(a.amount)}</span>
             <span class="adb-activity-time">${esc(time)}</span>
@@ -7371,9 +7528,9 @@ async function verifyDashboardStatPassword(statId) {
     closeModal();
     const d = await api('/transactions/dashboard');
     renderDashKpis(d);
-    toast('✅ تم عرض الرقم بنجاح');
+    toast(currentLang==='en'?'Stat revealed successfully':'تم عرض الرقم بنجاح');
   } catch (e) {
-    toast('🔐 رقم السر المدخل غير صحيح - تحقق من رقم السر وحاول مرة أخرى', true);
+    toast(currentLang==='en'?'Incorrect password — please try again':'رقم السر المدخل غير صحيح - تحقق من رقم السر وحاول مرة أخرى', true);
     qs('#stat-reveal-pass').value = '';
     qs('#stat-reveal-pass')?.focus();
   }
@@ -7593,8 +7750,8 @@ function renderTxFields() {
         <div class="form-group" style="margin-bottom:0">
           <label>منطقة الشحن</label>
           <div class="shipping-zone-btns">
-            <button class="zone-btn active" data-zone="cairo" onclick="setShipZone('cairo',this)">🏙 القاهرة</button>
-            <button class="zone-btn" data-zone="gov" onclick="setShipZone('gov',this)">🗺 المحافظات</button>
+            <button class="zone-btn active" data-zone="cairo" onclick="setShipZone('cairo',this)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="17"/><line x1="9" y1="14.5" x2="15" y2="14.5"/></svg> <span data-i18n="zoneCairo">القاهرة</span></button>
+            <button class="zone-btn" data-zone="gov" onclick="setShipZone('gov',this)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg> <span data-i18n="zoneGov">المحافظات</span></button>
           </div>
         </div>
       </div>
@@ -7901,7 +8058,7 @@ function validateItemStock(productId, requestedQty, itemIndex) {
     const maxCanOrder = Math.max(0, available - otherItemsQty);
     const p = products.find(x => x._id === productId);
     const productName = p ? p.name : 'الصنف';
-    toast(`⚠️ الكمية المطلوبة (${requestedQty}) غير متوفرة من "${productName}". الحد الأقصى المتاح: ${maxCanOrder}`, true);
+    toast(currentLang==='en'?`Requested qty (${requestedQty}) exceeds available stock for "${productName}". Max available: ${maxCanOrder}`:`الكمية المطلوبة (${requestedQty}) غير متوفرة من "${productName}". الحد الأقصى المتاح: ${maxCanOrder}`, true);
     return false;
   }
   return true;
@@ -7920,7 +8077,7 @@ function validateAllItemsStock() {
     if (totalQty > available) {
       const p = products.find(x => x._id === productId);
       const productName = p ? p.name : 'الصنف';
-      issues.push(`⚠️ الكمية المطلوبة (${totalQty}) من "${productName}" تتجاوز المتاح (${available})`);
+      issues.push(currentLang==='en'?`Requested qty (${totalQty}) for "${productName}" exceeds available stock (${available})`:`الكمية المطلوبة (${totalQty}) من "${productName}" تتجاوز المتاح (${available})`);
     }
   });
   return issues;
@@ -7934,7 +8091,7 @@ function txItemChanged(i, field, val) { markTxDirty();
     if (txType === 'مبيعات' && val) {
       const available = getProductAvailableStock(val);
       if (available === 0) {
-        toast(`⚠️ تنبيه: "${p?.name || 'الصنف'}" غير متوفر في المخزن حالياً`, true);
+        toast(currentLang==='en'?`Warning: "${p?.name || 'item'}" is currently out of stock`:`تنبيه: "${p?.name || 'الصنف'}" غير متوفر في المخزن حالياً`, true);
       }
     }
     renderTxItems();
@@ -8530,7 +8687,7 @@ function updateMovementSelectionActions() {
     const selectedTxs = [...selectedMovIds].map(id => transactions.find(t => t._id === id)).filter(Boolean);
     const totalVal = selectedTxs.reduce((s, t) => s + (t.total || 0), 0);
     const infoEl = qs('#mov-bulk-info');
-    if (infoEl) infoEl.textContent = `✓ ${n} حركة محددة — الإجمالي: ${fmtJ(totalVal)}`;
+    if (infoEl) infoEl.textContent = currentLang==='en'?`✓ ${n} selected — Total: ${fmtJ(totalVal)}`:`✓ ${n} حركة محددة — الإجمالي: ${fmtJ(totalVal)}`;
 
     // Show bulk cancel only if admin and at least one non-cancelled tx
     const hasCancellable = selectedTxs.some(t => !t.cancelled && t.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(t));
@@ -8908,14 +9065,14 @@ function showTxConfirmation(body) {
 
   let summary = `
     <div style="margin-bottom:16px">
-      <div style="font-weight:600;color:var(--primary);margin-bottom:8px">🔹 نوع الحركة</div>
-      <div style="color:var(--text);font-size:.95rem">${txType === 'مشتريات' ? '📦 مشتريات' : '💳 مبيعات'}</div>
+      <div style="font-weight:600;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:6px">${ICON('note')} <span data-i18n="confTxType">نوع الحركة</span></div>
+      <div style="color:var(--text);font-size:.95rem;display:flex;align-items:center;gap:6px">${txType === 'مشتريات' ? ICON('box') : ICON('cart')} ${txType === 'مشتريات' ? t('actPurchase') : t('actSale')}</div>
     </div>
   `;
 
   if (body.client) {
     summary += `<div style="margin-bottom:16px">
-      <div style="font-weight:600;color:var(--primary);margin-bottom:8px">👤 ${txType === 'مبيعات' ? 'العميل' : 'المورد'}</div>
+      <div style="font-weight:600;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:6px">${ICON('user')} ${txType === 'مبيعات' ? (currentLang==='en'?'Customer':'العميل') : (currentLang==='en'?'Supplier':'المورد')}</div>
       <div style="color:var(--text);font-size:.95rem">${esc(body.client)}</div>
     </div>`;
   }
@@ -8942,7 +9099,7 @@ function showTxConfirmation(body) {
   }
 
   summary += `<div style="margin-bottom:16px">
-    <div style="font-weight:600;color:var(--primary);margin-bottom:8px">📝 الأصناف (${body.items.length})</div>
+    <div style="font-weight:600;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:6px">${ICON('note')} <span>${t('confItems')} (${body.items.length})</span></div>
     <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:.85rem">
       ${body.items.map(it => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
         <span>${esc(it.name)}</span>
@@ -9009,12 +9166,9 @@ async function confirmTxSave() {
     );
     txDirty = false;
     if (result.queued) {
-      toast('تم حفظ المعاملة مؤقتًا، ستتم مزامنتها عند عودة الاتصال بالإنترنت 📥');
+      toast(t('oqSyncQueued'));
     } else {
-      const successMsg = pendingTxData.type === 'مشتريات'
-        ? 'تم حفظ حركة المشتريات بنجاح ✅'
-        : 'تم حفظ حركة المبيعات بنجاح ✅';
-      toast(successMsg);
+      toast(pendingTxData.type === 'مشتريات' ? t('toastSavePurchase') : t('toastSaveSale'));
       // Cash pulse: deposit moves real cash. Sales deposit = vault in (+), Purchase deposit = vault out (−)
       try {
         const dep = Number(pendingTxData.deposit) || 0;
@@ -9148,9 +9302,9 @@ async function confirmReturnRequest() {
     txDirty = false;
     closeModal();
     if (result.queued) {
-      toast('تم حفظ طلب الاسترجاع مؤقتًا، ستتم مزامنته عند عودة الاتصال بالإنترنت 📥');
+      toast(t('oqSyncQueued'));
     } else {
-      toast(`✅ تم إرسال طلب الاسترجاع — في انتظار موافقة المدير`);
+      toast(t('toastReturnRequest'));
       returnRequests = await api('/returns').catch(() => returnRequests);
     }
     if (activeDraftId) deleteDraft(activeDraftId, true);
@@ -9342,7 +9496,7 @@ function saveDraft(showToast) {
   if (showToast) {
     const total = drafts.length;
     const arabicTotal = String(total).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
-    toast(`💾 تم الحفظ كمسودة جديدة (المجموع: ${arabicTotal})`);
+    toast(currentLang==='en'?`Draft saved (${arabicTotal} total)`:`تم الحفظ كمسودة جديدة (المجموع: ${arabicTotal})`);
   }
   return id;
 }
@@ -9396,7 +9550,7 @@ function loadDraft(id) {
     // Treat the freshly-loaded form as a clean restored state.
     // If the user edits it further, markTxDirty() will flip txDirty back to true.
     setTimeout(() => { txDirty = false; }, 50);
-    toast('📋 تم استئناف المسودة وحذفها من القائمة');
+    toast(currentLang==='en'?'Draft restored and removed from list':'تم استئناف المسودة وحذفها من القائمة');
   };
   if (currentPage !== 'transaction') {
     // Force navigation without dirty-check (we're consuming a draft, not abandoning work)
@@ -9436,9 +9590,9 @@ function detachActiveDraft() {
 }
 
 function _draftTypeMeta(t) {
-  if (t === 'مبيعات')   return { icon: '💳', cls: 'draft-type-sales',    label: 'مبيعات' };
-  if (t === 'مشتريات') return { icon: '📦', cls: 'draft-type-purchase', label: 'مشتريات' };
-  return                       { icon: '↩️', cls: 'draft-type-return',   label: 'مرتجع' };
+  if (t === 'مبيعات')   return { icon: ICON('cart'),      cls: 'draft-type-sales',    label: t('actSale') };
+  if (t === 'مشتريات') return { icon: ICON('box'),       cls: 'draft-type-purchase', label: t('actPurchase') };
+  return                       { icon: ICON('returnArr'), cls: 'draft-type-return',   label: t('actReturn') };
 }
 function _draftAgo(ts) {
   if (!ts) return '';
@@ -9522,7 +9676,7 @@ function renderDraftsDrawer() {
           <div class="draft-meta-cell"><div class="draft-meta-label">الإجمالي</div><div class="draft-meta-val">${fmtJ(total)}</div></div>
           <div class="draft-meta-cell"><div class="draft-meta-label">العربون</div><div class="draft-meta-val">${fmtJ(Number(d.snap.deposit)||0)}</div></div>
         </div>
-        ${incomplete ? `<div class="draft-card-flag">⚠️ ${esc(incomplete)}</div>` : ''}
+        ${incomplete ? `<div class="draft-card-flag" style="display:flex;align-items:center;gap:4px">${ICON('warning')} ${esc(incomplete)}</div>` : ''}
         <div class="draft-card-actions">
           <button class="draft-resume-btn" onclick="loadDraft('${esc(d.id)}')" type="button">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -9562,22 +9716,22 @@ function setProdFilter(f, btn) {
 /* ===== Unified Filter/Sort UI helpers (inventory + products) ===== */
 const FX_SORT_OPTIONS = {
   inv: [
-    { id: 'name-asc',   label: 'الاسم: أ → ي',          icon: '🔤' },
-    { id: 'name-desc',  label: 'الاسم: ي → أ',          icon: '🔤' },
-    { id: 'price-asc',  label: 'السعر: من الأقل',       icon: '💰' },
-    { id: 'price-desc', label: 'السعر: من الأعلى',      icon: '💰' },
-    { id: 'stock-asc',  label: 'المخزون: من الأقل',     icon: '📦' },
-    { id: 'stock-desc', label: 'المخزون: من الأعلى',    icon: '📦' },
+    { id: 'name-asc',   label: 'الاسم: أ → ي',          icon: ICON('note') },
+    { id: 'name-desc',  label: 'الاسم: ي → أ',          icon: ICON('note') },
+    { id: 'price-asc',  label: 'السعر: من الأقل',       icon: ICON('money') },
+    { id: 'price-desc', label: 'السعر: من الأعلى',      icon: ICON('money') },
+    { id: 'stock-asc',  label: 'المخزون: من الأقل',     icon: ICON('box') },
+    { id: 'stock-desc', label: 'المخزون: من الأعلى',    icon: ICON('box') },
   ],
   prod: [
-    { id: 'name-asc',   label: 'الاسم: أ → ي',          icon: '🔤' },
-    { id: 'name-desc',  label: 'الاسم: ي → أ',          icon: '🔤' },
-    { id: 'price-asc',  label: 'سعر البيع: من الأقل',   icon: '💰' },
-    { id: 'price-desc', label: 'سعر البيع: من الأعلى',  icon: '💰' },
-    { id: 'buy-asc',    label: 'سعر الشراء: من الأقل',  icon: '🛒' },
-    { id: 'buy-desc',   label: 'سعر الشراء: من الأعلى', icon: '🛒' },
-    { id: 'date-desc',  label: 'الأحدث أولاً',          icon: '🕒' },
-    { id: 'date-asc',   label: 'الأقدم أولاً',          icon: '🕒' },
+    { id: 'name-asc',   label: 'الاسم: أ → ي',          icon: ICON('note') },
+    { id: 'name-desc',  label: 'الاسم: ي → أ',          icon: ICON('note') },
+    { id: 'price-asc',  label: 'سعر البيع: من الأقل',   icon: ICON('money') },
+    { id: 'price-desc', label: 'سعر البيع: من الأعلى',  icon: ICON('money') },
+    { id: 'buy-asc',    label: 'سعر الشراء: من الأقل',  icon: ICON('cart') },
+    { id: 'buy-desc',   label: 'سعر الشراء: من الأعلى', icon: ICON('cart') },
+    { id: 'date-desc',  label: 'الأحدث أولاً',          icon: ICON('clock') },
+    { id: 'date-asc',   label: 'الأقدم أولاً',          icon: ICON('clock') },
   ],
   mov: [
     { id: 'date-desc',   label: 'الأحدث أولاً',         icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>' },
@@ -9700,7 +9854,7 @@ function openFxDrawer(ctx) {
       </label>`).join('');
     body.innerHTML = `
       <div class="fx-section">
-        <div class="fx-section-label">📅 نطاق التاريخ</div>
+        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('clock')} نطاق التاريخ</div>
         <div class="fx-range">
           <input type="date" data-fx="dateFrom" value="${esc(s.dateFrom)}">
           <span class="fx-range-sep">→</span>
@@ -9708,7 +9862,7 @@ function openFxDrawer(ctx) {
         </div>
       </div>
       <div class="fx-section">
-        <div class="fx-section-label">💰 نطاق المبلغ (ج)</div>
+        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('money')} نطاق المبلغ (ج)</div>
         <div class="fx-range">
           <input type="number" min="0" placeholder="من" data-fx="amountMin" value="${esc(s.amountMin)}">
           <span class="fx-range-sep">→</span>
@@ -9716,15 +9870,15 @@ function openFxDrawer(ctx) {
         </div>
       </div>
       <div class="fx-section">
-        <div class="fx-section-label">🏷️ الحالة</div>
+        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('pin')} الحالة</div>
         <div class="fx-checkboxes">${statusesHtml}</div>
       </div>
       <div class="fx-section">
-        <div class="fx-section-label">👤 الموظف</div>
+        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('user')} الموظف</div>
         <div class="fx-checkboxes">${empsHtml}</div>
       </div>
       <div class="fx-section">
-        <div class="fx-section-label">💳 طريقة الدفع</div>
+        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('wallet')} طريقة الدفع</div>
         <div class="fx-checkboxes">${methodsHtml}</div>
       </div>`;
     body.querySelectorAll('input[data-fx]').forEach(inp => {
@@ -9762,7 +9916,7 @@ function openFxDrawer(ctx) {
   if (ctx === 'inv') {
     html = `
       <div class="fx-section">
-        <div class="fx-section-label">💰 نطاق سعر البيع (ج)</div>
+        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('money')} نطاق سعر البيع (ج)</div>
         <div class="fx-range">
           <input type="number" min="0" placeholder="من" data-fx="priceMin" value="${esc(s.priceMin)}">
           <span class="fx-range-sep">→</span>
@@ -9770,7 +9924,7 @@ function openFxDrawer(ctx) {
         </div>
       </div>
       <div class="fx-section">
-        <div class="fx-section-label">📦 نطاق المخزون</div>
+        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('box')} نطاق المخزون</div>
         <div class="fx-range">
           <input type="number" min="0" placeholder="من" data-fx="stockMin" value="${esc(s.stockMin)}">
           <span class="fx-range-sep">→</span>
@@ -9778,13 +9932,13 @@ function openFxDrawer(ctx) {
         </div>
       </div>
       <div class="fx-section">
-        <div class="fx-section-label">🏭 المورد</div>
+        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('bank')} المورد</div>
         <div class="fx-checkboxes">${supplierHtml}</div>
       </div>`;
   } else {
     html = `
       <div class="fx-section">
-        <div class="fx-section-label">💰 نطاق سعر البيع (ج)</div>
+        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('money')} نطاق سعر البيع (ج)</div>
         <div class="fx-range">
           <input type="number" min="0" placeholder="من" data-fx="sellMin" value="${esc(s.sellMin)}">
           <span class="fx-range-sep">→</span>
@@ -9792,7 +9946,7 @@ function openFxDrawer(ctx) {
         </div>
       </div>
       <div class="fx-section">
-        <div class="fx-section-label">🛒 نطاق سعر الشراء (ج)</div>
+        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('cart')} نطاق سعر الشراء (ج)</div>
         <div class="fx-range">
           <input type="number" min="0" placeholder="من" data-fx="buyMin" value="${esc(s.buyMin)}">
           <span class="fx-range-sep">→</span>
@@ -9800,7 +9954,7 @@ function openFxDrawer(ctx) {
         </div>
       </div>
       <div class="fx-section">
-        <div class="fx-section-label">🏭 المورد</div>
+        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('bank')} المورد</div>
         <div class="fx-checkboxes">${supplierHtml}</div>
       </div>`;
   }
@@ -9961,16 +10115,16 @@ function renderInventory() {
   const kpiEl = qs('#inv-summary-cards');
   if (kpiEl) {
     const kpiData = [
-      { val: fmtN(totalItems), label: 'إجمالي الأصناف', color: '#3b82f6', icon: '📦' },
-      { val: fmtN(totalStock), label: 'إجمالي المخزون', color: '#06b6d4', icon: '📊' },
+      { val: fmtN(totalItems), label: t('invTotalItems'), color: '#3b82f6', icon: ICON('box') },
+      { val: fmtN(totalStock), label: t('invTotalStock'), color: '#06b6d4', icon: ICON('barChart') },
     ];
     if (isAdmin()) {
-      kpiData.push({ val: fmtJ(totalValue), label: 'قيمة البيع', color: '#10b981', icon: '💰' });
-      kpiData.push({ val: fmtJ(totalCost), label: 'قيمة الشراء', color: '#8b5cf6', icon: '📈' });
+      kpiData.push({ val: fmtJ(totalValue), label: currentLang==='en'?'Sell Value':'قيمة البيع', color: '#10b981', icon: ICON('money') });
+      kpiData.push({ val: fmtJ(totalCost), label: currentLang==='en'?'Purchase Cost':'قيمة الشراء', color: '#8b5cf6', icon: ICON('chart') });
     }
-    kpiData.push({ val: fmtN(okCount), label: 'متوفر', color: '#10b981', icon: '✓' });
-    kpiData.push({ val: fmtN(lowCount), label: 'منخفض', color: '#f59e0b', icon: '⚠' });
-    kpiData.push({ val: fmtN(zeroCount), label: 'نفد', color: '#ef4444', icon: '✕' });
+    kpiData.push({ val: fmtN(okCount), label: currentLang==='en'?'In Stock':'متوفر', color: '#10b981', icon: ICON('success') });
+    kpiData.push({ val: fmtN(lowCount), label: currentLang==='en'?'Low':'منخفض', color: '#f59e0b', icon: ICON('warning') });
+    kpiData.push({ val: fmtN(zeroCount), label: currentLang==='en'?'Out':'نفد', color: '#ef4444', icon: ICON('error') });
     kpiEl.innerHTML = kpiData.map(k => `
       <div class="kpi" style="--kpi-color:${k.color}">
         <div class="kpi-icon">${k.icon}</div>
@@ -10057,7 +10211,7 @@ function renderInventory() {
     mobileList.innerHTML = pageData.length ? pageData.map(r => {
       const key = r.code || r.name;
       const status = r.current <= 0 ? 'نفد' : (r.current <= (r.minStock || 0) ? 'منخفض' : 'متوفر');
-      const statusEmoji = r.current <= 0 ? '✕' : (r.current <= (r.minStock || 0) ? '⚠' : '✓');
+      const statusEmoji = r.current <= 0 ? ICON('error') : (r.current <= (r.minStock || 0) ? ICON('warning') : ICON('success'));
       return `<div class="inv-product-card" onclick="openInventoryDetail('${esc(key)}')">
         <div class="inv-card-header">
           ${productThumbHtml(r.imageUrl, r.name, 'inv-card-thumb')}
@@ -10099,7 +10253,7 @@ function openInventoryDetail(key) {
   if (!r) return;
   const statusClass = r.current <= 0 ? 'out-of-stock' : (r.current <= (r.minStock || 0) ? 'low-stock' : 'in-stock');
   const statusLabel = r.current <= 0 ? 'نفد' : (r.current <= (r.minStock || 0) ? 'منخفض' : 'متوفر');
-  const statusEmoji = r.current <= 0 ? '✕' : (r.current <= (r.minStock || 0) ? '⚠' : '✓');
+  const statusEmoji = r.current <= 0 ? ICON('error') : (r.current <= (r.minStock || 0) ? ICON('warning') : ICON('success'));
 
   const q = Number(r.returnsToStock) || 0;
   const refs = String(r.returnRefs || '').trim();
@@ -10131,8 +10285,8 @@ function openInventoryDetail(key) {
   }
 
   const heroImg = r.imageUrl
-    ? `<img src="${esc(sanitizeUrl(r.imageUrl))}" alt="${esc(r.name)}" loading="lazy" onerror="this.parentElement.innerHTML='<div style=&quot;font-size:2.6rem&quot;>📦</div>'" style="width:100%;height:100%;object-fit:cover;border-radius:14px">`
-    : '<div style="font-size:2.6rem">📦</div>';
+    ? `<img src="${esc(sanitizeUrl(r.imageUrl))}" alt="${esc(r.name)}" loading="lazy" onerror="this.parentElement.innerHTML='<div style=&quot;display:flex;align-items:center;justify-content:center;opacity:.3&quot;>${ICON('box').replace(/"/g,'&quot;')}</div>'" style="width:100%;height:100%;object-fit:cover;border-radius:14px">`
+    : `<div style="display:flex;align-items:center;justify-content:center;opacity:.3">${ICON('box')}</div>`;
   openModal(`
     <div class="inv-detail-hero">
       <div style="width:96px;height:96px;border-radius:14px;margin:0 auto 12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid rgba(255,255,255,.3)">${heroImg}</div>
@@ -10428,10 +10582,10 @@ function renderMovementTxRow(tx) {
           ${tx.type === 'مبيعات' && !tx.cancelled && isAdmin() ? `<div class="dd-item" onclick="openPostDiscountModal('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> خصم بعد البيع</div>` : ''}
           ${!isStatusCancelled(tx.payStatus) && !tx.cancelled && !isStatusCompleted(tx.payStatus) ? (
             isExchangeSalePendingCollect(tx)
-              ? `<div class="dd-divider"></div><div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()">🚫 إلغاء <span class="text-xs">(مقفول)</span></div>`
+              ? `<div class="dd-divider"></div><div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()" style="display:flex;align-items:center;gap:5px">${ICON('ban')} إلغاء <span class="text-xs">(مقفول)</span></div>`
               : tx.cancelRequest && tx.cancelRequest.status === 'معلق'
                 ? `<div class="dd-divider"></div><div class="dd-item" style="opacity:.7;cursor:default" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> طلب إلغاء معلق</div>`
-                : `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')">🚫 إلغاء</div>`
+                : `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')" style="display:flex;align-items:center;gap:5px">${ICON('ban')} ${currentLang==='en'?'Cancel':'إلغاء'}</div>`
           ) : ''}
           ${isAdmin() && tx.cancelled ? `<div class="dd-item danger" onclick="archiveMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 7l-5 5-5-5"/><path d="M17 17l-5-5-5 5"/><line x1="2" y1="12" x2="22" y2="12"/></svg> تجميد</div>` : ''}
         </div>
@@ -10886,10 +11040,10 @@ function filterCustomerHistory(searchText) {
     return `<div onclick="selectCustomerFromHistory('${esc(customer.name)}')" style="padding:12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;display:flex;justify-content:space-between;align-items:center;gap:10px;hover:background:var(--primary-pale)">
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:.85rem;margin-bottom:2px">${esc(customer.name)}</div>
-        ${customer.phone ? `<div style="font-size:.75rem;color:var(--accent);margin-bottom:4px">📱 ${esc(customer.phone)}</div>` : ''}
+        ${customer.phone ? `<div style="font-size:.75rem;color:var(--accent);margin-bottom:4px;display:flex;align-items:center;gap:3px">${ICON('send')} ${esc(customer.phone)}</div>` : ''}
         <div style="font-size:.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${prodPreview}${prodCount > 2 ? ' +' + (prodCount - 2) : ''}</div>
       </div>
-      <div style="flex-shrink:0;font-size:.75rem;color:var(--accent)">📦 ${prodCount}</div>
+      <div style="flex-shrink:0;font-size:.75rem;color:var(--accent);display:flex;align-items:center;gap:3px">${ICON('box')} ${prodCount}</div>
     </div>`;
   }).join('');
   dropdown.style.display = 'block';
@@ -10940,7 +11094,7 @@ function selectCustomerFromHistory(clientName) {
 
   renderTxItems();
   calcTxSummary();
-  toast(`✓ تم تحميل ${recentProducts.length} أصناف من سجل "${clientName}"`);
+  toast(currentLang==='en'?`Loaded ${recentProducts.length} items from "${clientName}" history`:`تم تحميل ${recentProducts.length} أصناف من سجل "${clientName}"`);
 }
 
 let lastCheckedMovIdx = null;
@@ -11036,7 +11190,7 @@ function openEditMovement(id) {
   const isCompleted = isStatusCompleted(tx.payStatus);
   const statusWarning = isCompleted
     ? `<div style="padding:12px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:8px;margin-bottom:16px;font-size:.85rem;color:#047857">
-        <strong>⚠️ تنبيه:</strong> هذه الحركة <strong>مكتملة</strong>. التعديل عليها سيؤثر على الخزنة والمخزن وسيتم تسجيل التعديل بالكامل.
+        <strong style="display:inline-flex;align-items:center;gap:4px">${ICON('warning')} ${currentLang==='en'?'Warning:':'تنبيه:'}</strong> ${currentLang==='en'?'This transaction is <strong>completed</strong>. Editing it will affect the vault and inventory, and all changes will be fully logged.':'هذه الحركة <strong>مكتملة</strong>. التعديل عليها سيؤثر على الخزنة والمخزن وسيتم تسجيل التعديل بالكامل.'}
       </div>`
     : '';
 
@@ -11231,14 +11385,14 @@ async function saveEditMovement(id) {
   // التحقق من تأثير الخزنة
   let confirmMsg = '';
   if (vaultDelta !== 0) {
-    confirmMsg = `⚠️ تأثير على الخزنة:\n${vaultNote}\n\n`;
+    confirmMsg = `${currentLang==='en'?'Vault impact:':'تأثير على الخزنة:'}\n${vaultNote}\n\n`;
   }
   if (changes.length > 0) {
-    confirmMsg += `📝 التغييرات:\n${changes.join('\n')}\n\n`;
+    confirmMsg += `${currentLang==='en'?'Changes:':'التغييرات:'}\n${changes.join('\n')}\n\n`;
   }
 
   if (confirmMsg) {
-    const confirmed = confirm(confirmMsg + `هل تريد المتابعة؟`);
+    const confirmed = confirm(confirmMsg + (currentLang==='en'?'Do you want to proceed?':'هل تريد المتابعة؟'));
     if (!confirmed) return;
   }
 
@@ -11266,7 +11420,7 @@ async function saveEditMovement(id) {
 
   try {
     await api('/transactions/' + id, { method: 'PUT', body: JSON.stringify(body) });
-    toast('✅ تم تحديث الحركة والخزنة والمخزن بنجاح'); closeModal();
+    toast(currentLang==='en'?'Transaction, vault and inventory updated successfully':'تم تحديث الحركة والخزنة والمخزن بنجاح'); closeModal();
     transactions = await api('/transactions').catch(() => transactions);
     try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
     renderMovements(); buildSidebar(); buildNotifications();
@@ -11308,7 +11462,7 @@ function openCancelMovement(id) {
 
   if (isPending) {
     // Pending: employee submits cancel request → manager approves
-    openModal(`<h3>🚫 طلب إلغاء ${tx.type === 'مشتريات' ? 'حركة مشتريات' : 'حركة مبيعات'}</h3>
+    openModal(`<h3 style="display:flex;align-items:center;gap:8px">${ICON('ban')} ${currentLang==='en'?'Request to cancel':'طلب إلغاء'} ${tx.type === 'مشتريات' ? (currentLang==='en'?'purchase transaction':'حركة مشتريات') : (currentLang==='en'?'sale transaction':'حركة مبيعات')}</h3>
       <div style="padding:12px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:8px;margin-bottom:14px;font-size:.83rem">
         <div style="font-weight:700;color:#b45309;margin-bottom:6px;display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.1em;height:1.1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> في انتظار موافقة المدير</div>
         <div style="font-size:.8rem;color:#92400e">سيتم عرض هذا الطلب في قسم الموافقات ولن يتم تنفيذ الإلغاء إلا بعد اعتماد المدير</div>
@@ -11322,7 +11476,7 @@ function openCancelMovement(id) {
       </div>`);
   } else {
     // Non-pending non-completed: admin direct cancel
-    openModal(`<h3>🚫 إلغاء ${tx.type === 'مشتريات' ? 'حركة مشتريات' : 'حركة مبيعات'}</h3>
+    openModal(`<h3 style="display:flex;align-items:center;gap:8px">${ICON('ban')} ${currentLang==='en'?'Cancel':'إلغاء'} ${tx.type === 'مشتريات' ? (currentLang==='en'?'purchase transaction':'حركة مشتريات') : (currentLang==='en'?'sale transaction':'حركة مبيعات')}</h3>
       ${txInfo}
       ${vaultWarning}
       <div class="form-group"><label>سبب الإلغاء *</label><textarea id="cancel-reason" rows="3" placeholder="وضّح السبب المؤدي لإلغاء الحركة..."></textarea></div>
@@ -11341,13 +11495,13 @@ async function doRequestCancelMovement(id) {
       method: 'POST',
       body: JSON.stringify({ reason, requestedBy: currentUser?.name || currentUser?.username || '' }),
     });
-    toast('✅ تم إرسال طلب الإلغاء بنجاح — في انتظار موافقة المدير');
+    toast(currentLang==='en'?'Cancellation request sent — awaiting manager approval':'تم إرسال طلب الإلغاء بنجاح — في انتظار موافقة المدير');
     closeModal();
     transactions = await api('/transactions').catch(() => transactions);
     renderMovements(); buildSidebar(); buildNotifications();
     // تحديث Dashboard
     if (window.location.hash === '#page-dashboard') loadDashboard().catch(e => console.error('Dashboard update failed:', e));
-  } catch (e) { toast('❌ خطأ: ' + e.message, true); }
+  } catch (e) { toast((currentLang==='en'?'Error: ':'خطأ: ') + e.message, true); }
 }
 
 async function doCancelMovement(id) {
@@ -11356,13 +11510,13 @@ async function doCancelMovement(id) {
   try {
     const tx = transactions.find(t => t._id === id);
     await api('/transactions/' + id + '/cancel', { method: 'POST', body: JSON.stringify({ cancelReason: reason, cancelledBy: currentUser?.name || '' }) });
-    toast(`✅ تم إلغاء ${tx?.type === 'مشتريات' ? 'حركة المشتريات' : 'حركة المبيعات'} بنجاح`); closeModal();
+    toast(currentLang==='en'?`${tx?.type === 'مشتريات' ? 'Purchase' : 'Sale'} transaction cancelled successfully`:`تم إلغاء ${tx?.type === 'مشتريات' ? 'حركة المشتريات' : 'حركة المبيعات'} بنجاح`); closeModal();
     transactions = await api('/transactions').catch(() => transactions);
     renderMovements(); buildSidebar(); buildNotifications();
     syncVaultState();
     // تحديث Dashboard و Reports
     if (window.location.hash === '#page-dashboard') loadDashboard().catch(e => console.error('Dashboard update failed:', e));
-  } catch (e) { toast('❌ خطأ: ' + e.message, true); }
+  } catch (e) { toast((currentLang==='en'?'Error: ':'خطأ: ') + e.message, true); }
 }
 
 function openCollectMovement(id) {
@@ -11401,7 +11555,7 @@ function openCollectMovement(id) {
     const billedShip = Number(tx.shipCost) || 0;
     const shipSection = billedShip > 0 ? `
       <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px;margin-bottom:14px">
-        <div style="font-size:.8rem;font-weight:700;color:#c2410c;margin-bottom:8px">🚚 تسوية الشحن</div>
+        <div style="font-size:.8rem;font-weight:700;color:#c2410c;margin-bottom:8px;display:flex;align-items:center;gap:5px">${ICON('send')} ${currentLang==='en'?'Shipping Settlement':'تسوية الشحن'}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;font-size:.8rem">
           <div>شحن محصل من العميل: <strong>${fmtJ(billedShip)}</strong></div>
           <div id="ship-diff-preview" style="color:var(--muted)">فرق الشحن: <strong>—</strong></div>
@@ -11612,7 +11766,7 @@ async function doCollectMovement(id) {
       }
     }
 
-    toast(isPurchase ? 'تم السداد بنجاح ✅' : 'تم التحصيل ✅');
+    toast(isPurchase ? (currentLang==='en'?'Payment completed successfully':'تم السداد بنجاح') : (currentLang==='en'?'Collection completed':'تم التحصيل بنجاح'));
     closeModal();
 
     // ===== تحديث البيانات من الـ Backend =====
@@ -11710,7 +11864,7 @@ async function doApplyPostDiscount(txId) {
 
   try {
     await api('/transactions/' + txId + '/post-discount', { method: 'POST', body: JSON.stringify({ amount, vaultAccount, notes }) });
-    toast('✅ تم تطبيق الخصم وخصم المبلغ من الخزنة');
+    toast(currentLang==='en'?'Discount applied and deducted from vault':'تم تطبيق الخصم وخصم المبلغ من الخزنة');
     closeModal();
     transactions = await api('/transactions').catch(() => transactions);
     settings = await api('/settings').catch(() => settings);
@@ -11734,11 +11888,11 @@ async function doApplyPostDiscount(txId) {
 async function archiveMovement(id) {
   const tx = transactions.find(t => t._id === id);
   if (!tx) { toast('الحركة غير موجودة', true); return; }
-  if (!tx.cancelled) { toast('🔒 تجميد يقتصر على الحركات الملغاة فقط', true); return; }
+  if (!tx.cancelled) { toast(currentLang==='en'?'Freeze is only available for cancelled transactions':'تجميد يقتصر على الحركات الملغاة فقط', true); return; }
   if (!confirm('سيتم تجميد هذه الحركة الملغاة — لن تؤثر على المخزون أو الخزنة ويمكن فك التجميد لاحقاً.\nهل تريد المتابعة؟')) return;
   try {
     await api('/transactions/' + id, { method: 'DELETE' });
-    toast('✅ تم تجميد الحركة الملغاة بنجاح');
+    toast(currentLang==='en'?'Transaction frozen successfully':'تم تجميد الحركة الملغاة بنجاح');
     transactions = await api('/transactions').catch(() => transactions);
     renderMovements(); buildSidebar();
   }
@@ -11751,7 +11905,7 @@ async function bulkArchiveMovements() {
   if (!selectedMovIds.size || !confirm(`سيتم تجميد ${selectedMovIds.size} حركة. يمكن فك التجميد لاحقاً من قسم الحركات المجمدة.\nهل تريد المتابعة؟`)) return;
   try {
     await api('/transactions/bulk-delete', { method: 'POST', body: JSON.stringify({ ids: [...selectedMovIds] }) });
-    toast('🧊 تم تجميد الحركات وعكس تأثيرها على الخزنة والمخزون');
+    toast(currentLang==='en'?'Transactions frozen and their impact on vault & inventory reversed':'تم تجميد الحركات وعكس تأثيرها على الخزنة والمخزون');
     selectedMovIds.clear();
     transactions = await api('/transactions').catch(() => transactions);
     renderMovements(); buildSidebar(); syncVaultState();
@@ -11831,7 +11985,7 @@ async function restoreMovement(id) {
   if (!confirm('سيتم فك التجميد وإعادة تفعيل الحركة.\nستعود للتأثير على المخزون والخزنة تلقائياً.\n\nهل تريد المتابعة؟')) return;
   try {
     await api('/transactions/' + id + '/restore', { method: 'POST' });
-    toast('✅ تم فك التجميد وإعادة تفعيل الحركة — تمت المزامنة مع المخزون والخزنة');
+    toast(currentLang==='en'?'Transaction unfrozen and synced with inventory & vault':'تم فك التجميد وإعادة تفعيل الحركة — تمت المزامنة مع المخزون والخزنة');
     archivedMovements = archivedMovements.filter(t => t._id !== id);
     renderArchivedMovements();
     transactions = await api('/transactions').catch(() => transactions);
@@ -11844,7 +11998,7 @@ async function hardDeleteMovement(id) {
   const tx = archivedMovements.find(t => t._id === id);
   if (!tx) { toast('الحركة غير موجودة', true); return; }
 
-  const typeLabel = { 'مبيعات': '🛒 مبيعات', 'مشتريات': '📦 مشتريات', 'مرتجع': '↩️ مرتجع', 'مرتجع مبيعات': '↩️ مرتجع', 'مرتجع مشتريات': '↩️ مرتجع' }[tx.type] || tx.type;
+  const typeLabel = { 'مبيعات': `${ICON('cart')} ${t('actSale')}`, 'مشتريات': `${ICON('box')} ${t('actPurchase')}`, 'مرتجع': `${ICON('returnArr')} ${t('actReturn')}`, 'مرتجع مبيعات': `${ICON('returnArr')} ${t('actReturn')}`, 'مرتجع مشتريات': `${ICON('returnArr')} ${t('actReturn')}` }[tx.type] || tx.type;
   const html = `
     <div style="padding:20px">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
@@ -11853,7 +12007,7 @@ async function hardDeleteMovement(id) {
         </div>
         <div>
           <h3 style="margin:0;font-size:1rem;font-weight:700;color:#ef4444">حذف نهائي للحركة</h3>
-          <p style="margin:2px 0 0 0;font-size:.85rem;color:var(--muted)">⚠️ هذا الإجراء لا يمكن التراجع عنه</p>
+          <p style="margin:2px 0 0 0;font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:4px">${ICON('warning')} ${currentLang==='en'?'This action cannot be undone':'هذا الإجراء لا يمكن التراجع عنه'}</p>
         </div>
       </div>
 
@@ -11875,7 +12029,7 @@ async function hardDeleteMovement(id) {
       </div>
 
       <div style="background:rgba(239,68,68,.08);border-left:3px solid #ef4444;border-radius:6px;padding:12px;margin-bottom:16px;font-size:.8rem;color:var(--text);line-height:1.6">
-        <strong>⚠️ تحذير حاسم:</strong><br>
+        <span style="display:flex;align-items:center;gap:5px"><strong>${ICON('warning')} ${currentLang==='en'?'Critical warning:':'تحذير حاسم:'}</strong></span><br>
         • الحركة سيتم حذفها <strong>نهائياً</strong> من قاعدة البيانات<br>
         • <strong>لا يمكن استرجاع</strong> الحركة بعد الحذف<br>
         • الحركة مجمدة بالفعل (لا تؤثر على المخزون أو الخزنة)
@@ -11909,7 +12063,7 @@ async function confirmHardDeleteMovement(id) {
     archivedMovements = archivedMovements.filter(t => t._id !== id);
     renderArchivedMovements();
     closeModal();
-    toast('✅ تم الحذف النهائي للحركة المجمدة');
+    toast(currentLang==='en'?'Frozen transaction permanently deleted':'تم الحذف النهائي للحركة المجمدة');
     buildNotifications();
   } catch (e) {
     toast('خطأ: ' + e.message, true);
@@ -12025,7 +12179,7 @@ function showExportModal(isSelected = false) {
   openModal(`
     <h3 style="margin-bottom:12px">تصدير الحركات</h3>
     <div style="background:var(--primary-pale);border-radius:var(--radius);padding:12px;margin-bottom:16px;font-size:.85rem;border-left:4px solid var(--primary)">
-      <div style="font-weight:600;color:var(--primary);margin-bottom:4px">📊 ${exportData.length} حركة</div>
+      <div style="font-weight:600;color:var(--primary);margin-bottom:4px;display:flex;align-items:center;gap:5px">${ICON('barChart')} ${exportData.length} ${currentLang==='en'?'transactions':'حركة'}</div>
       <div style="color:var(--text);font-size:.8rem">سيتم تصدير الحركات ${isSelected ? 'المحددة' : 'حسب المرشحات المطبقة'}</div>
     </div>
     <div style="margin-bottom:16px">
@@ -12037,11 +12191,11 @@ function showExportModal(isSelected = false) {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
         <input type="radio" name="export-format" value="excel" checked>
-        <span style="font-size:.9rem">📊 Excel (.xlsx)</span>
+        <span style="font-size:.9rem;display:flex;align-items:center;gap:4px">${ICON('barChart')} Excel (.xlsx)</span>
       </label>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
         <input type="radio" name="export-format" value="csv">
-        <span style="font-size:.9rem">📄 CSV (.csv)</span>
+        <span style="font-size:.9rem;display:flex;align-items:center;gap:4px">${ICON('note')} CSV (.csv)</span>
       </label>
     </div>
     <div class="flex gap-8" style="justify-content:flex-end">
@@ -12070,7 +12224,7 @@ function performExport(type, count) {
   }
 
   closeModal();
-  toast(`تم تصدير ${count} حركة بنجاح ✅`);
+  toast(currentLang==='en'?`${count} transactions exported successfully`:`تم تصدير ${count} حركة بنجاح`);
   window._exportData = null;
 }
 
@@ -12113,11 +12267,11 @@ function buildInvoiceHtml(tx) {
       <div style="background:#f8fafb;border:1px solid #e2e8e4;border-radius:10px;padding:14px">
         <div style="font-size:11px;color:#6b8c78;font-weight:700;margin-bottom:8px;text-transform:uppercase">${tx.type === 'مشتريات' ? 'بيانات المورد' : 'بيانات العميل'}</div>
         <div style="font-size:14px;font-weight:700;color:#0f1f16;margin-bottom:4px">${esc(tx.client || '—')}</div>
-        ${tx.phone ? `<div style="font-size:12px;color:#6b8c78">📞 ${esc(tx.phone)}</div>` : ''}
+        ${tx.phone ? `<div style="font-size:12px;color:#6b8c78;display:flex;align-items:center;gap:3px">${ICON('send')} ${esc(tx.phone)}</div>` : ''}
       </div>
       <div style="background:#f8fafb;border:1px solid #e2e8e4;border-radius:10px;padding:14px">
         <div style="font-size:11px;color:#6b8c78;font-weight:700;margin-bottom:8px;text-transform:uppercase">تفاصيل الفاتورة</div>
-        <div style="font-size:12px;margin-bottom:3px">📅 <strong>التاريخ:</strong> ${esc((tx.date || '').slice(0, 10))}</div>
+        <div style="font-size:12px;margin-bottom:3px;display:flex;align-items:center;gap:3px">${ICON('clock')} <strong>${currentLang==='en'?'Date:':'التاريخ:'}</strong> ${esc((tx.date || '').slice(0, 10))}</div>
         <div style="font-size:12px;margin-bottom:3px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg> <strong>الموظف:</strong> ${esc(tx.employee || '—')}</div>
         <div style="font-size:12px"><span style="background:${payStatusColor}20;color:${payStatusColor};padding:2px 8px;border-radius:6px;font-weight:700;font-size:11px">${esc(isPur ? purStatusLabel : (tx.payStatus || '—'))}</span></div>
       </div>
@@ -12226,10 +12380,10 @@ function buildCommentsSection(tx) {
         <div style="display:grid;grid-template-columns:1fr 100px;gap:8px;margin-bottom:8px">
           <input type="text" id="inv-comment-text-${esc(tx._id)}" placeholder="أضف تعليق جديد..." style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
           <select id="inv-comment-type-${esc(tx._id)}" style="padding:8px 8px;border:1px solid var(--border);border-radius:6px;font-size:.8rem">
-            <option value="عام">📝 عام</option>
-            <option value="تنبيه">⚠ تنبيه</option>
-            <option value="ملاحظة">📌 ملاحظة</option>
-            <option value="أسئلة">❓ أسئلة</option>
+            <option value="عام">عام</option>
+            <option value="تنبيه">تنبيه</option>
+            <option value="ملاحظة">ملاحظة</option>
+            <option value="أسئلة">أسئلة</option>
           </select>
         </div>
         <button class="btn btn-primary btn-sm" onclick="addInvoiceComment('${esc(tx._id)}')" style="width:100%">إضافة تعليق</button>
@@ -12362,18 +12516,18 @@ function buildEditHistorySection(tx) {
     const details = [];
     const fieldDefs = [
       { key: 'client', label: 'اسم العميل', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg>' },
-      { key: 'phone', label: 'الهاتف', icon: '📞' },
-      { key: 'ref', label: 'الرقم المرجعي', icon: '🔖' },
+      { key: 'phone', label: 'الهاتف', icon: ICON('send') },
+      { key: 'ref', label: 'الرقم المرجعي', icon: ICON('pin') },
       { key: 'notes', label: 'الملاحظات', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' },
-      { key: 'payment', label: 'طريقة الدفع', icon: '💳' },
+      { key: 'payment', label: 'طريقة الدفع', icon: ICON('wallet') },
       { key: 'payStatus', label: 'حالة الدفع', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/></svg>' },
       { key: 'shipCo', label: 'شركة الشحن', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="15" height="10" rx="1.5"/><path d="M16 9h3l3 4v3h-6z"/><circle cx="6.5" cy="18" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>' },
-      { key: 'shipZone', label: 'منطقة الشحن', icon: '📍' },
+      { key: 'shipZone', label: 'منطقة الشحن', icon: ICON('target') },
     ];
     const moneyDefs = [
       { key: 'deposit', label: 'الديبوزت', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>' },
       { key: 'discount', label: 'الخصم', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>' },
-      { key: 'shipCost', label: 'تكلفة الشحن', icon: '🚛' },
+      { key: 'shipCost', label: 'تكلفة الشحن', icon: ICON('send') },
       { key: 'total', label: 'الإجمالي', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>' },
       { key: 'remaining', label: 'المتبقي', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>' },
       { key: 'itemsTotal', label: 'إجمالي الأصناف', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>' },
@@ -12402,7 +12556,7 @@ function buildEditHistorySection(tx) {
       : '<div style="color:var(--muted);font-size:.75rem;padding:4px 0">لا توجد تغييرات مسجلة</div>';
     const editorName = entry.editedBy ? `<span style="background:var(--primary-pale);color:var(--accent);padding:1px 8px;border-radius:10px;font-size:.7rem;font-weight:600">بواسطة: ${esc(entry.editedBy)}</span>` : '';
     return `<div class="history-entry">
-      <div class="history-date">🕒 التعديل ${entries.length - idx} — ${formatEditDateTime(entry.editedAt)} ${editorName}</div>
+      <div class="history-date" style="display:flex;align-items:center;gap:4px">${ICON('clock')} ${currentLang==='en'?'Edit':'التعديل'} ${entries.length - idx} — ${formatEditDateTime(entry.editedAt)} ${editorName}</div>
       ${detailsHtml}
     </div>`;
   }).join('');
@@ -12417,7 +12571,7 @@ function showInvoiceDetail(id) {
   const isPurchase = tx.type === 'مشتريات';
   const statusClass = tx.cancelled || isStatusCancelled(tx.payStatus) ? 'cancelled' : isStatusCompleted(tx.payStatus) ? 'paid' : 'pending';
   let statusText = tx.cancelled || isStatusCancelled(tx.payStatus)
-    ? '🚫 ملغي'
+    ? `${ICON('ban')} ${currentLang==='en'?'Cancelled':'ملغي'}`
     : isStatusCompleted(tx.payStatus)
       ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> مكتمل — تم السداد بالكامل'
       : isPurchase
@@ -12476,7 +12630,7 @@ function showInvoiceDetail(id) {
           <!-- ══ قيمة الفاتورة ══ -->
           <div class="inv-row"><span>إجمالي الأصناف</span><span>${fmtJ(tx.itemsTotal || tx.total)}</span></div>
           ${tx.discount ? `<div class="inv-row"><span>خصم</span><span style="color:var(--red)">- ${fmtJ(tx.discount)}</span></div>` : ''}
-          ${tx.shipCost ? `<div class="inv-row"><span>🚚 تكلفة الشحن</span><span>+ ${fmtJ(tx.shipCost)}</span></div>` : ''}
+          ${tx.shipCost ? `<div class="inv-row"><span style="display:flex;align-items:center;gap:3px">${ICON('send')} ${currentLang==='en'?'Shipping cost':'تكلفة الشحن'}</span><span>+ ${fmtJ(tx.shipCost)}</span></div>` : ''}
           <div class="inv-row total-row"><span>صافي الفاتورة</span><span>${fmtJ(tx.total)}</span></div>
 
           <!-- ══ تفصيل السداد والتحصيل ══ -->
@@ -12517,7 +12671,7 @@ function showInvoiceDetail(id) {
 
             <!-- المتبقي -->
             <div class="inv-row ${(tx.remaining || 0) > 0 ? 'danger' : ''}" style="font-weight:700">
-              <span>${(tx.remaining || 0) > 0 ? '⚠ المتبقي (غير محصل)' : '✓ المتبقي'}</span>
+              <span style="display:flex;align-items:center;gap:4px">${(tx.remaining || 0) > 0 ? ICON('warning') : ICON('success')} ${(tx.remaining || 0) > 0 ? (currentLang==='en'?'Remaining (uncollected)':'المتبقي (غير محصل)') : (currentLang==='en'?'Remaining':'المتبقي')}</span>
               <span>${fmtJ(tx.remaining || 0)}</span>
             </div>
           </div>
@@ -12546,7 +12700,7 @@ function showInvoiceDetail(id) {
               <span>إجمالي المدفوع</span><span>${fmtJ(_totalCollected)}</span>
             </div>
             <div class="inv-row ${(tx.remaining || 0) > 0 ? 'danger' : ''}" style="font-weight:700">
-              <span>${(tx.remaining || 0) > 0 ? '⚠ المتبقي للمورد' : '✓ تم السداد بالكامل'}</span>
+              <span style="display:flex;align-items:center;gap:4px">${(tx.remaining || 0) > 0 ? ICON('warning') : ICON('success')} ${(tx.remaining || 0) > 0 ? (currentLang==='en'?'Remaining for supplier':'المتبقي للمورد') : (currentLang==='en'?'Fully paid':'تم السداد بالكامل')}</span>
               <span>${fmtJ(tx.remaining || 0)}</span>
             </div>
           </div>
@@ -12613,13 +12767,13 @@ async function addInvoiceComment(txId) {
       body: JSON.stringify({ comments: tx.comments })
     });
 
-    toast('✅ تم إضافة التعليق بنجاح');
+    toast(currentLang==='en'?'Comment added successfully':'تم إضافة التعليق بنجاح');
     textInput.value = '';
 
     // Refresh invoice detail without updating edit history
     showInvoiceDetail(txId);
   } catch (e) {
-    toast('❌ خطأ: ' + e.message, true);
+    toast((currentLang==='en'?'Error: ':'خطأ: ') + e.message, true);
   }
 }
 
@@ -12672,7 +12826,7 @@ async function showReferenceDetail(ref) {
 
         <!-- شرح الصافي والشحن -->
         <div style="margin-bottom:20px;padding:14px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:8px;font-size:.9rem">
-          <div style="color:var(--text);font-weight:600;margin-bottom:8px">📊 شرح الصافي والشحن:</div>
+          <div style="color:var(--text);font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:5px">${ICON('barChart')} ${currentLang==='en'?'Net & Shipping breakdown:':'شرح الصافي والشحن:'}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:.85rem">
             <div><span style="color:var(--muted)">الصافي = </span><strong>إجمالي الفاتورة + الشحن الأساسي</strong></div>
             <div><span style="color:var(--muted)">الشحن الأساسي = </span><strong>${fmtJ(data.summary.shipCost || 0)}</strong></div>
@@ -12883,7 +13037,7 @@ function renderClients() {
             <span style="background:var(--primary);color:white;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0">${rowNum}</span>
             <div style="flex:1;min-width:0">
               <h4 style="cursor:pointer;margin-bottom:2px;color:var(--primary);word-break:break-word" onclick="openClientProfile('${esc(c.name).replace(/'/g, "\\'")}')">${esc(c.name)}</h4>
-              <p class="text-sm text-muted" style="word-break:break-word">${esc(c.phone || '📞 بدون رقم')}</p>
+              <p class="text-sm text-muted" style="word-break:break-word;display:flex;align-items:center;gap:3px">${c.phone ? `${ICON('send')} ${esc(c.phone)}` : `${ICON('send')} ${currentLang==='en'?'No phone':'بدون رقم'}`}</p>
             </div>
           </div>
           <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleClientSelect('${esc(c.name).replace(/'/g, "\\'")}',this.checked)" style="width:18px;height:18px;cursor:pointer;flex-shrink:0">
@@ -13416,20 +13570,20 @@ function setExpTab(status, btn) {
 }
 
 const EXP_CAT_META = {
-  'إيجارات':        { emoji: '🏠', bg: '#dbeafe', color: '#1d4ed8' },
-  'اعلانات':        { emoji: '📢', bg: '#fce7f3', color: '#be185d' },
-  'تغليف':          { emoji: '📦', bg: '#fef3c7', color: '#92400e' },
-  'موصلات وتنقل':   { emoji: '🚗', bg: '#d1fae5', color: '#065f46' },
-  'اشتراكات':       { emoji: '📅', bg: '#ede9fe', color: '#5b21b6' },
-  'مرتبات':         { emoji: '💼', bg: '#e0f2fe', color: '#0369a1' },
-  'كهرباء ومياه':   { emoji: '⚡', bg: '#fef9c3', color: '#854d0e' },
-  'مستلزمات مكتبية':{ emoji: '🖊️', bg: '#f0fdf4', color: '#14532d' },
-  'ضيافة عملاء':    { emoji: '☕', bg: '#fff7ed', color: '#9a3412' },
-  'اخرى':           { emoji: '📋', bg: '#f1f5f9', color: '#475569' },
+  'إيجارات':        { emoji: ICON('bank'),      bg: '#dbeafe', color: '#1d4ed8' },
+  'اعلانات':        { emoji: ICON('sparkle'),   bg: '#fce7f3', color: '#be185d' },
+  'تغليف':          { emoji: ICON('box'),        bg: '#fef3c7', color: '#92400e' },
+  'موصلات وتنقل':   { emoji: ICON('send'),       bg: '#d1fae5', color: '#065f46' },
+  'اشتراكات':       { emoji: ICON('clock'),      bg: '#ede9fe', color: '#5b21b6' },
+  'مرتبات':         { emoji: ICON('users'),      bg: '#e0f2fe', color: '#0369a1' },
+  'كهرباء ومياه':   { emoji: ICON('alarm'),      bg: '#fef9c3', color: '#854d0e' },
+  'مستلزمات مكتبية':{ emoji: ICON('note'),       bg: '#f0fdf4', color: '#14532d' },
+  'ضيافة عملاء':    { emoji: ICON('award'),      bg: '#fff7ed', color: '#9a3412' },
+  'اخرى':           { emoji: ICON('pin'),        bg: '#f1f5f9', color: '#475569' },
 };
 
 function getExpCatMeta(cat) {
-  return EXP_CAT_META[cat] || { emoji: '📋', bg: '#f1f5f9', color: '#475569' };
+  return EXP_CAT_META[cat] || { emoji: ICON('pin'), bg: '#f1f5f9', color: '#475569' };
 }
 
 function buildExpActionsMenu(e) {
@@ -13619,7 +13773,7 @@ async function openExpenseDetail(id) {
   try { e = await api('/expenses/' + id); } catch { /* استخدم النسخة المحلية */ }
   const meta = getExpCatMeta(e.category);
   const statusClass = { 'معتمد': 'approved', 'مرفوض': 'rejected', 'معلق': 'pending' }[e.status] || 'pending';
-  const statusLabel = { 'معتمد': '✓ معتمد', 'مرفوض': '✕ مرفوض', 'معلق': '⏳ في انتظار الموافقة' }[e.status] || e.status;
+  const statusLabel = { 'معتمد': `${ICON('success')} ${currentLang==='en'?'Approved':'معتمد'}`, 'مرفوض': `${ICON('error')} ${currentLang==='en'?'Rejected':'مرفوض'}`, 'معلق': `${ICON('clock')} ${currentLang==='en'?'Awaiting approval':'في انتظار الموافقة'}` }[e.status] || e.status;
 
   /* Approval timeline */
   const stepDone = (label, sub) => `<div class="exp-timeline-step">
@@ -13750,10 +13904,10 @@ function openExpenseModal(id) {
         <div class="form-group">
           <label>طريقة الدفع</label>
           <select id="em-account">
-            <option value="كاش" ${(!e || e.account === 'كاش') ? 'selected' : ''}>💵 كاش</option>
-            <option value="فودافون كاش" ${e?.account === 'فودافون كاش' ? 'selected' : ''}>📱 فودافون كاش</option>
-            <option value="Instapay" ${e?.account === 'Instapay' ? 'selected' : ''}>💳 Instapay</option>
-            <option value="تحويل بنكي" ${e?.account === 'تحويل بنكي' ? 'selected' : ''}>🏦 تحويل بنكي</option>
+            <option value="كاش" ${(!e || e.account === 'كاش') ? 'selected' : ''}>كاش</option>
+            <option value="فودافون كاش" ${e?.account === 'فودافون كاش' ? 'selected' : ''}>فودافون كاش</option>
+            <option value="Instapay" ${e?.account === 'Instapay' ? 'selected' : ''}>Instapay</option>
+            <option value="تحويل بنكي" ${e?.account === 'تحويل بنكي' ? 'selected' : ''}>تحويل بنكي</option>
           </select>
         </div>
         <div class="form-group">
@@ -13854,7 +14008,7 @@ async function saveExpense(id) {
       // Edits go through online only (creates-only offline scope)
       if (isLikelyOffline()) { toast('تعديل المصاريف يتطلب اتصالاً بالإنترنت', true); return; }
       await api('/expenses/' + id, { method: 'PUT', body: JSON.stringify(body) });
-      toast('تم حفظ التعديلات ✅');
+      toast(currentLang==='en'?'Changes saved successfully':'تم حفظ التعديلات بنجاح');
       closeModal();
       expenses = await api('/expenses').catch(() => expenses);
       renderExpenses(); buildSidebar(); buildNotifications();
@@ -13865,9 +14019,9 @@ async function saveExpense(id) {
         body
       );
       if (result.queued) {
-        toast('تم حفظ المصروف مؤقتًا، ستتم مزامنته عند عودة الاتصال بالإنترنت 📥');
+        toast(t('oqSyncQueued'));
       } else {
-        toast('تم إضافة المصروف — في انتظار موافقة المدير ✅');
+        toast(currentLang==='en'?'Expense added — awaiting manager approval':'تم إضافة المصروف — في انتظار موافقة المدير');
         expenses = await api('/expenses').catch(() => expenses);
         renderExpenses();
       }
@@ -13937,13 +14091,13 @@ async function confirmDeleteExpenseWithPassword(id) {
   try {
     await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password }) });
     await api('/expenses/' + id, { method: 'DELETE' });
-    toast('✅ تم حذف المصروف');
+    toast(currentLang==='en'?'Expense deleted':'تم حذف المصروف');
     closeModal();
     expenses = await api('/expenses').catch(() => expenses);
     renderExpenses();
     syncVaultState();
   } catch (e) {
-    toast('❌ ' + e.message, true);
+    toast(e.message, true);
   }
 }
 
@@ -14201,7 +14355,7 @@ function renderExpenseApprovalCard(e) {
         <div class="flex gap-8" style="align-items:center"><span class="badge badge-blue" style="font-size:.65rem">مصروف</span><strong style="font-size:1rem">${esc(e.desc || '-')}</strong>${statusBadge}</div>
         <div class="text-sm text-muted" style="margin-top:6px">${esc(e.category || '-')} · ${esc(e.employee || '-')}</div>
         <div class="text-sm" style="margin-top:4px">الحساب: <strong>${esc(e.account || 'كاش')}</strong></div>
-        <div class="text-xs text-muted" style="margin-top:4px">📅 تاريخ الطلب: ${fmtDate(e.createdAt || e.date)}</div>
+        <div class="text-xs text-muted" style="margin-top:4px;display:flex;align-items:center;gap:3px">${ICON('clock')} ${currentLang==='en'?'Request date:':'تاريخ الطلب:'} ${fmtDate(e.createdAt || e.date)}</div>
         ${e.notes ? `<div class="text-xs text-muted" style="margin-top:4px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> ${esc(e.notes)}</div>` : ''}
         ${approvedInfo}
       </div>
@@ -14234,18 +14388,18 @@ function renderCancelRequestApprovalCard(tx) {
     <div class="flex-between" style="flex-wrap:wrap;gap:12px">
       <div style="flex:1;min-width:220px">
         <div class="flex gap-8" style="align-items:center;flex-wrap:wrap">
-          <span class="badge" style="background:rgba(220,38,38,.12);color:var(--red);font-size:.65rem">🚫 طلب إلغاء</span>
+          <span class="badge" style="background:rgba(220,38,38,.12);color:var(--red);font-size:.65rem;display:inline-flex;align-items:center;gap:3px">${ICON('ban')} ${currentLang==='en'?'Cancel request':'طلب إلغاء'}</span>
           <strong style="font-size:.95rem">حركة #${esc(tx.ref || tx._id)}</strong>
           <span style="font-size:.75rem;font-weight:600;color:' + statusColor + '">${statusLabel}</span>
         </div>
         <div class="text-sm text-muted" style="margin-top:6px">
-          ${tx.client ? `<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg> ${esc(tx.client)}` : ''} ${tx.phone ? `· 📞 ${esc(tx.phone)}` : ''}
+          ${tx.client ? `<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg> ${esc(tx.client)}` : ''} ${tx.phone ? `· ${ICON('send')} ${esc(tx.phone)}` : ''}
         </div>
         <div class="text-sm" style="margin-top:4px">
           النوع: <strong>${esc(tx.type)}</strong> · الإجمالي: <strong>${fmtJ(tx.total)}</strong> · الديبوزت: <strong>${fmtJ(deposit)}</strong>
         </div>
         <div class="text-sm" style="margin-top:4px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> سبب الطلب: <strong>${esc(cr.reason)}</strong></div>
-        <div class="text-xs text-muted" style="margin-top:4px">📅 تاريخ الطلب: ${fmtDateTime(cr.requestedAt)} — بواسطة: ${esc(cr.requestedBy)}</div>
+        <div class="text-xs text-muted" style="margin-top:4px;display:flex;align-items:center;gap:3px">${ICON('clock')} ${currentLang==='en'?'Request date:':'تاريخ الطلب:'} ${fmtDateTime(cr.requestedAt)} — ${currentLang==='en'?'by':'بواسطة:'} ${esc(cr.requestedBy)}</div>
         ${vaultNote}
         ${reviewInfo}
         ${rejectedNote}
@@ -14267,7 +14421,7 @@ async function approveCancelRequest(txId) {
   if (!confirm(msg)) return;
   try {
     await api('/transactions/' + txId + '/approve-cancel', { method: 'POST', body: '{}' });
-    const txt = tx?.type === 'مشتريات' ? '✅ تم اعتماد الإلغاء ورد المبلغ إلى الخزنة' : '✅ تم اعتماد الإلغاء وخصم المبلغ من الخزنة';
+    const txt = tx?.type === 'مشتريات' ? (currentLang==='en'?'Cancellation approved — amount returned to vault':'تم اعتماد الإلغاء ورد المبلغ إلى الخزنة') : (currentLang==='en'?'Cancellation approved — amount deducted from vault':'تم اعتماد الإلغاء وخصم المبلغ من الخزنة');
     toast(txt);
     transactions = await api('/transactions').catch(() => transactions);
     renderApprovals(); renderMovements(); buildSidebar(); buildNotifications();
@@ -14320,16 +14474,16 @@ function renderReturnApprovalCard(r) {
   return `<div class="card mb-16" style="background:linear-gradient(135deg,rgba(249,115,22,.04),rgba(249,115,22,.02));${borderStyle}">
     <div class="flex-between">
       <div>
-        <div class="flex gap-8" style="align-items:center;flex-wrap:wrap"><span style="font-size:1.2rem">${isEx ? '🔄' : '↩️'}</span><strong style="font-size:1rem">${esc(r.client)}</strong>${statusBadge} ${daysInfo}</div>
-        <div class="text-sm text-muted" style="margin-top:6px">📋 الفاتورة الأصلية: #${esc(r.originalRef || '-')} — ${fmtDate(r.originalDate)}</div>
+        <div class="flex gap-8" style="align-items:center;flex-wrap:wrap"><span style="display:inline-flex;width:18px;height:18px">${isEx ? ICON('returnArr') : ICON('returnArr')}</span><strong style="font-size:1rem">${esc(r.client)}</strong>${statusBadge} ${daysInfo}</div>
+        <div class="text-sm text-muted" style="margin-top:6px;display:flex;align-items:center;gap:3px">${ICON('note')} ${currentLang==='en'?'Original invoice:':'الفاتورة الأصلية:'} #${esc(r.originalRef || '-')} — ${fmtDate(r.originalDate)}</div>
         <div class="text-sm" style="margin-top:4px"><strong style="color:#ea580c">الأصناف المرتجعة:</strong> ${itemsList}</div>
         ${exList ? `<div class="text-sm" style="margin-top:4px;color:#f59e0b"><strong>البدائل المقترحة:</strong> ${exList}</div>` : ''}
         ${diffLine}
         <div class="text-sm" style="margin-top:4px"><strong>سبب الاسترجاع:</strong> ${reasonBadge} ${r.reasonDetails ? '<span class="text-muted">— ' + esc(r.reasonDetails) + '</span>' : ''}</div>
         ${vaultLine}
-        <div class="text-xs text-muted" style="margin-top:4px">📝 طلب من: ${esc(r.requestedBy || '-')} — ${fmtDate(r.createdAt)}</div>
+        <div class="text-xs text-muted" style="margin-top:4px;display:flex;align-items:center;gap:3px">${ICON('user')} ${currentLang==='en'?'Requested by:':'طلب من:'} ${esc(r.requestedBy || '-')} — ${fmtDate(r.createdAt)}</div>
         ${doneHint}
-        ${r.rejectedReason ? `<div class="text-xs text-red" style="margin-top:4px">❌ سبب الرفض: ${esc(r.rejectedReason)}</div>` : ''}
+        ${r.rejectedReason ? `<div class="text-xs text-red" style="margin-top:4px;display:flex;align-items:center;gap:3px">${ICON('error')} ${currentLang==='en'?'Rejection reason:':'سبب الرفض:'} ${esc(r.rejectedReason)}</div>` : ''}
         ${approvedInfo}
       </div>
       <div style="text-align:left">
@@ -14572,16 +14726,16 @@ function unlockReports() {
 
 async function verifyReportsPassword() {
   const password = qs('#reports-pass-input')?.value;
-  if (!password) { toast('⚠️ يرجى إدخال رقم السر للوصول للتقارير', true); return; }
+  if (!password) { toast(currentLang==='en'?'Please enter the password to access reports':'يرجى إدخال رقم السر للوصول للتقارير', true); return; }
 
   try {
     await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password }) });
     reportsUnlocked = true;
     closeModal();
     loadReports();
-    toast('✅ تم فتح التقارير بنجاح - مرحباً بك في التقارير');
+    toast(currentLang==='en'?'Reports unlocked — welcome!':'تم فتح التقارير بنجاح - مرحباً بك في التقارير');
   } catch (e) {
-    toast('🔐 رقم السر غير صحيح - حاول مرة أخرى', true);
+    toast(currentLang==='en'?'Incorrect password — please try again':'رقم السر غير صحيح - حاول مرة أخرى', true);
     qs('#reports-pass-input').value = '';
     qs('#reports-pass-input')?.focus();
   }
@@ -14618,27 +14772,27 @@ function renderReportPeriodEcho(r, from, to) {
   if (!echo) return;
   const days = (r.series || []).length;
   const label = !from && !to ? 'كل الفترات' : `${from || '—'} → ${to || '—'}`;
-  echo.innerHTML = `📅 الفترة المعروضة: <strong style="color:var(--text)">${esc(label)}</strong>${days ? ` <span style="color:var(--muted)">— ${days} يوم</span>` : ''} <span style="color:var(--muted)">— ${r.transactionCount || 0} حركة</span>`;
+  echo.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px">${ICON('clock')} ${currentLang==='en'?'Shown period:':'الفترة المعروضة:'}</span> <strong style="color:var(--text)">${esc(label)}</strong>${days ? ` <span style="color:var(--muted)">— ${days} ${currentLang==='en'?'days':'يوم'}</span>` : ''} <span style="color:var(--muted)">— ${r.transactionCount || 0} ${currentLang==='en'?'transactions':'حركة'}</span>`;
 }
 
 function renderReportKPIs(r) {
   const kpis = [
-    { label: '💰 إجمالي المبيعات', val: fmtJ(r.totalSales), color: '#10b981', bgColor: 'rgba(16,185,129,.06)', hint: 'إجمالي المبيعات بعد المرتجعات' },
-    { label: '🧾 عدد الفواتير', val: fmtN(r.orderCount || 0), color: '#0066cc', bgColor: 'rgba(0,102,204,.06)', hint: 'عدد فواتير المبيعات في الفترة' },
-    { label: '📊 متوسط الفاتورة', val: fmtJ(r.avgOrderValue || 0), color: '#0891b2', bgColor: 'rgba(8,145,178,.06)', hint: 'متوسط قيمة الفاتورة الواحدة' },
-    { label: '💎 الربح الصافي', val: fmtJ(r.netProfit), color: '#6d28d9', bgColor: 'rgba(109,40,217,.06)', hint: 'الربح بعد خصم المصاريف' },
-    { label: '📈 الربح الإجمالي', val: fmtJ(r.grossProfit), color: '#16a34a', bgColor: 'rgba(22,163,74,.06)', hint: 'الربح قبل خصم المصاريف' },
-    { label: '🛒 المشتريات', val: fmtJ(r.totalPurchases), color: '#1565c0', bgColor: 'rgba(21,101,192,.06)', hint: 'إجمالي المشتريات من الموردين' },
-    { label: '📋 المصاريف', val: fmtJ(r.expenseTotal), color: '#dc2626', bgColor: 'rgba(220,38,38,.06)', hint: 'إجمالي المصاريف المعتمدة' },
-    { label: '↩️ المرتجعات', val: `${r.returnCount || 0} • ${fmtJ(r.totalReturns || 0)}`, color: '#ea580c', bgColor: 'rgba(234,88,12,.06)', hint: 'عدد المرتجعات والإجمالي' },
-    { label: '✅ المحصل', val: fmtJ(r.totalDeposit), color: '#059669', bgColor: 'rgba(5,150,105,.06)', hint: 'المبالغ المحصلة من العملاء' },
-    { label: '⏳ المتبقي', val: fmtJ(r.totalRemaining), color: '#f59e0b', bgColor: 'rgba(245,158,11,.06)', hint: 'المبالغ المتبقية على العملاء' },
-    { label: '🚚 الشحن المحصل', val: fmtJ(r.totalShipping || 0), color: '#64748b', bgColor: 'rgba(100,116,139,.06)', hint: 'الشحن المحصل من العملاء' },
-    { label: '📦 فرق الشحن', val: fmtJ(r.totalShipLoss || 0), color: '#9333ea', bgColor: 'rgba(147,51,234,.06)', hint: 'الفرق المتحمل من الشركة' },
+    { icon: ICON('money'), label: currentLang==='en'?'Total Sales':'إجمالي المبيعات', val: fmtJ(r.totalSales), color: '#10b981', bgColor: 'rgba(16,185,129,.06)', hint: 'إجمالي المبيعات بعد المرتجعات' },
+    { icon: ICON('note'),  label: currentLang==='en'?'Invoice Count':'عدد الفواتير', val: fmtN(r.orderCount || 0), color: '#0066cc', bgColor: 'rgba(0,102,204,.06)', hint: 'عدد فواتير المبيعات في الفترة' },
+    { icon: ICON('barChart'), label: currentLang==='en'?'Avg. Invoice':'متوسط الفاتورة', val: fmtJ(r.avgOrderValue || 0), color: '#0891b2', bgColor: 'rgba(8,145,178,.06)', hint: 'متوسط قيمة الفاتورة الواحدة' },
+    { icon: ICON('award'), label: currentLang==='en'?'Net Profit':'الربح الصافي', val: fmtJ(r.netProfit), color: '#6d28d9', bgColor: 'rgba(109,40,217,.06)', hint: 'الربح بعد خصم المصاريف' },
+    { icon: ICON('chart'), label: currentLang==='en'?'Gross Profit':'الربح الإجمالي', val: fmtJ(r.grossProfit), color: '#16a34a', bgColor: 'rgba(22,163,74,.06)', hint: 'الربح قبل خصم المصاريف' },
+    { icon: ICON('cart'),  label: currentLang==='en'?'Purchases':'المشتريات', val: fmtJ(r.totalPurchases), color: '#1565c0', bgColor: 'rgba(21,101,192,.06)', hint: 'إجمالي المشتريات من الموردين' },
+    { icon: ICON('money'), label: currentLang==='en'?'Expenses':'المصاريف', val: fmtJ(r.expenseTotal), color: '#dc2626', bgColor: 'rgba(220,38,38,.06)', hint: 'إجمالي المصاريف المعتمدة' },
+    { icon: ICON('returnArr'), label: currentLang==='en'?'Returns':'المرتجعات', val: `${r.returnCount || 0} • ${fmtJ(r.totalReturns || 0)}`, color: '#ea580c', bgColor: 'rgba(234,88,12,.06)', hint: 'عدد المرتجعات والإجمالي' },
+    { icon: ICON('success'), label: currentLang==='en'?'Collected':'المحصل', val: fmtJ(r.totalDeposit), color: '#059669', bgColor: 'rgba(5,150,105,.06)', hint: 'المبالغ المحصلة من العملاء' },
+    { icon: ICON('clock'), label: currentLang==='en'?'Remaining':'المتبقي', val: fmtJ(r.totalRemaining), color: '#f59e0b', bgColor: 'rgba(245,158,11,.06)', hint: 'المبالغ المتبقية على العملاء' },
+    { icon: ICON('send'),  label: currentLang==='en'?'Collected Shipping':'الشحن المحصل', val: fmtJ(r.totalShipping || 0), color: '#64748b', bgColor: 'rgba(100,116,139,.06)', hint: 'الشحن المحصل من العملاء' },
+    { icon: ICON('box'),   label: currentLang==='en'?'Ship Difference':'فرق الشحن', val: fmtJ(r.totalShipLoss || 0), color: '#9333ea', bgColor: 'rgba(147,51,234,.06)', hint: 'الفرق المتحمل من الشركة' },
   ];
   qs('#rep-stats').innerHTML = kpis.map(k => `
     <div class="rep-kpi-card" style="background:${k.bgColor};border-top:3px solid ${k.color};padding:12px 14px;border-radius:10px;border:1px solid var(--border);cursor:help" title="${esc(k.hint)}">
-      <div style="font-size:.75rem;color:var(--muted);margin-bottom:6px">${k.label}</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:5px">${k.icon} ${k.label}</div>
       <div style="font-size:1.05rem;font-weight:700;color:${k.color};direction:ltr;text-align:right;font-variant-numeric:tabular-nums">${esc(k.val)}</div>
     </div>
   `).join('');
@@ -14748,7 +14902,7 @@ async function downloadReportFile(format, ext) {
     const headers = {};
     if (token) headers['Authorization'] = 'Bearer ' + token;
     const url = API_BASE + '/transactions/reports/export?' + params.toString();
-    toast('⏳ جاري إنشاء التقرير...');
+    toast(currentLang==='en'?'Generating report...':'جاري إنشاء التقرير...');
     const res = await fetch(url, { headers });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -14763,9 +14917,9 @@ async function downloadReportFile(format, ext) {
     link.click();
     document.body.removeChild(link);
     setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-    toast('✅ تم تصدير التقرير بنجاح');
+    toast(currentLang==='en'?'Report exported successfully':'تم تصدير التقرير بنجاح');
   } catch (e) {
-    toast('❌ ' + (e.message || 'فشل التصدير'), true);
+    toast((e.message || (currentLang==='en'?'Export failed':'فشل التصدير')), true);
   }
 }
 
@@ -14909,7 +15063,7 @@ function renderProfitTable(pp) {
     const margin = p.rev > 0 ? ((p.profit / p.rev) * 100).toFixed(1) : '0.0';
     const profitColor = (p.profit || 0) >= 0 ? '#10b981' : '#dc2626';
     const profitIcon = (p.profit || 0) >= 0 ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>' : '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>';
-    const marginLevel = margin >= 30 ? '🟢' : margin >= 20 ? '🟡' : '🔴';
+    const marginLevel = margin >= 30 ? `<span style="color:#10b981">${ICON('success')}</span>` : margin >= 20 ? `<span style="color:#f59e0b">${ICON('warning')}</span>` : `<span style="color:#ef4444">${ICON('error')}</span>`;
     const stars = p.rev > 100000 ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' : p.rev > 50000 ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' : p.rev > 10000 ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' : '';
     return `
       <tr style="border-bottom:1px solid var(--border);transition:background .2s;font-size:.85rem" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
@@ -14956,7 +15110,7 @@ function exportReportData() {
     })))
   ];
   writeExcel(data, 'تقارير', 'reports_' + today());
-  toast('✅ تم تصدير التقرير بنجاح');
+  toast(currentLang==='en'?'Report exported successfully':'تم تصدير التقرير بنجاح');
 }
 
 /* Vault */
@@ -15010,16 +15164,16 @@ async function syncVaultState() {
 }
 async function unlockVault() {
   const pass = qs('#vault-pass-input').value;
-  if (!pass) { toast('⚠️ يرجى إدخال كلمة مرور الخزنة', true); return; }
+  if (!pass) { toast(currentLang==='en'?'Please enter the vault password':'يرجى إدخال كلمة مرور الخزنة', true); return; }
   try {
     await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password: pass }) });
     vaultUnlocked = true;
     qs('#vault-pass-input').value = '';
-    toast('✅ تم فتح الخزنة بنجاح');
+    toast(currentLang==='en'?'Vault unlocked successfully':'تم فتح الخزنة بنجاح');
     renderVaultPage();
   }
   catch (e) {
-    toast('🔐 كلمة المرور غير صحيحة - تحقق من الرقم وحاول مرة أخرى', true);
+    toast(currentLang==='en'?'Incorrect password — please try again':'كلمة المرور غير صحيحة - تحقق من الرقم وحاول مرة أخرى', true);
     qs('#vault-pass-input').value = '';
     qs('#vault-pass-input')?.focus();
   }
@@ -15236,7 +15390,7 @@ async function freezeVaultTransaction(txId) {
   if (!reason) return;
   try {
     await api(`/vault/${txId}/freeze`, { method: 'POST', body: JSON.stringify({ reason }) });
-    toast('✅ تم تجميد المعاملة — الخزنة متوقفة عن التأثر');
+    toast(currentLang==='en'?'Transaction frozen — vault no longer affected':'تم تجميد المعاملة — الخزنة متوقفة عن التأثر');
     closeModal();
 
     // ===== مزامنة الخزنة والحركات =====
@@ -15247,16 +15401,16 @@ async function freezeVaultTransaction(txId) {
     await loadVaultLog();
     renderClients();
   } catch (e) {
-    toast('❌ خطأ: ' + e.message, true);
+    toast((currentLang==='en'?'Error: ':'خطأ: ') + e.message, true);
   }
 }
 
 async function unfreezeVaultTransaction(txId) {
-  const confirmed = confirm('⚠️ هل تريد تحرير هذه المعاملة من التجميد؟\n(سيعود المبلغ للخزنة فوراً)');
+  const confirmed = confirm(currentLang==='en'?'Unfreeze this transaction? (amount will return to vault immediately)':'هل تريد تحرير هذه المعاملة من التجميد؟\n(سيعود المبلغ للخزنة فوراً)');
   if (!confirmed) return;
   try {
     await api(`/vault/${txId}/unfreeze`, { method: 'POST' });
-    toast('✅ تم تحرير المعاملة — عادت للخزنة بنجاح');
+    toast(currentLang==='en'?'Transaction unfrozen — returned to vault':'تم تحرير المعاملة — عادت للخزنة بنجاح');
     closeModal();
 
     // ===== مزامنة الخزنة والحركات =====
@@ -15267,18 +15421,18 @@ async function unfreezeVaultTransaction(txId) {
     await loadVaultLog();
     renderClients();
   } catch (e) {
-    toast('❌ خطأ: ' + e.message, true);
+    toast((currentLang==='en'?'Error: ':'خطأ: ') + e.message, true);
   }
 }
 
 async function cancelVaultTransaction(txId) {
-  const reason = prompt('سبب الإلغاء:');
+  const reason = prompt(currentLang==='en'?'Reason for cancellation:':'سبب الإلغاء:');
   if (!reason) return;
-  const confirmed = confirm('⚠️ تحذير: هل تأكد إلغاء هذه المعاملة؟\n(سيتم استرجاع المبلغ للخزنة)');
+  const confirmed = confirm(currentLang==='en'?'Warning: Confirm cancellation of this transaction? (amount will be returned to vault)':'تحذير: هل تأكد إلغاء هذه المعاملة؟\n(سيتم استرجاع المبلغ للخزنة)');
   if (!confirmed) return;
   try {
     await api(`/vault/${txId}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) });
-    toast('✅ تم إلغاء المعاملة — تم استرجاع المبلغ');
+    toast(currentLang==='en'?'Transaction cancelled — amount returned to vault':'تم إلغاء المعاملة — تم استرجاع المبلغ');
     closeModal();
 
     // ===== مزامنة الخزنة والحركات =====
@@ -15289,7 +15443,7 @@ async function cancelVaultTransaction(txId) {
     await loadVaultLog();
     renderClients();
   } catch (e) {
-    toast('❌ خطأ: ' + e.message, true);
+    toast((currentLang==='en'?'Error: ':'خطأ: ') + e.message, true);
   }
 }
 async function addVaultEntry() {
@@ -15319,10 +15473,10 @@ async function addVaultEntry() {
     );
     qs('#vault-amount').value = ''; qs('#vault-desc').value = ''; qs('#vault-justification').value = '';
     if (result.queued) {
-      toast('تم حفظ تسوية الخزنة مؤقتًا، ستتم مزامنتها عند عودة الاتصال بالإنترنت 📥');
+      toast(t('oqSyncQueued'));
     } else {
       cashPulseAll(body.amount); // body.amount is already signed (+/-)
-      toast('تم تسجيل الحركة');
+      toast(currentLang==='en'?'Vault entry recorded':'تم تسجيل الحركة');
       settings = await api('/settings').catch(() => settings);
       renderVaultSegs(); await loadVaultLog();
     }
@@ -15526,13 +15680,13 @@ function renderUsers() {
       <h4>${esc(u.name || u.username)}${isSuperAdmin ? ' <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' : ''}</h4>
       <div class="user-username">@${esc(u.username)}</div>
       <div class="role-badge"><span class="badge ${role.cls}">${role.label}</span>${isInactive ? ' <span class="badge" style="background:#fee2e2;color:#dc2626;font-size:.65rem">معطّل</span>' : ''}</div>
-      ${u.phone ? `<div class="user-meta"><span class="icon">📞</span> ${esc(u.phone)}</div>` : ''}
+      ${u.phone ? `<div class="user-meta" style="display:flex;align-items:center;gap:4px"><span class="icon" style="display:inline-flex">${ICON('send')}</span> ${esc(u.phone)}</div>` : ''}
       <div class="last-login">آخر دخول: ${lastLoginText}</div>
       ${(isCurrentUser && __myDevice) ? `<div class="user-device-info" title="جهازك الحالي"><span class="dev-icon">${__myDevice.icon}</span><span>${esc(__myDevice.label)}</span><span class="dev-current">هذا الجهاز</span></div>` : ''}
       <div class="perms-wrap">${(u.perms || []).slice(0, 6).map(p => `<span class="perm-tag">${esc(PERMS_AR[p] || p)}</span>`).join('')}${(u.perms || []).length > 6 ? `<span class="perm-tag" style="background:var(--surface2);color:var(--muted)">+${(u.perms || []).length - 6}</span>` : ''}</div>
       <div class="user-actions">
         <button class="btn-sm" onclick="openUserModal('${esc(u._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</button>
-        ${!isSuperAdmin ? `<button class="btn-sm" onclick="toggleUserActive('${esc(u._id)}',${isInactive})">${isInactive ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> تفعيل' : '⛔ تعطيل'}</button>` : ''}
+        ${!isSuperAdmin ? `<button class="btn-sm" onclick="toggleUserActive('${esc(u._id)}',${isInactive})">${isInactive ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> تفعيل' : '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> تعطيل'}</button>` : ''}
         ${!isSuperAdmin ? `<button class="btn-sm danger" onclick="deleteUser('${esc(u._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>` : ''}
       </div>
     </div>`;
@@ -15598,7 +15752,7 @@ function togglePassField(e) {
   const btn = e.target;
   if (input.type === 'password') {
     input.type = 'text';
-    btn.textContent = '🙈';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/></svg>';
   } else {
     input.type = 'password';
     btn.innerHTML = '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -15616,7 +15770,7 @@ function checkPassStrength(val) {
   if (/[0-9]/.test(val)) score++;
   if (/[^A-Za-z0-9]/.test(val)) score++;
   if (score <= 2) { bar.className = 'pass-strength weak'; txt.innerHTML = '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ضعيفة'; txt.style.color = 'var(--red)'; }
-  else if (score <= 3) { bar.className = 'pass-strength medium'; txt.textContent = '⚡ متوسطة'; txt.style.color = '#f59e0b'; }
+  else if (score <= 3) { bar.className = 'pass-strength medium'; txt.innerHTML = `${ICON('warning')} ${currentLang==='en'?'Medium':'متوسطة'}`; txt.style.color = '#f59e0b'; }
   else { bar.className = 'pass-strength strong'; txt.innerHTML = '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> قوية'; txt.style.color = '#10b981'; }
 }
 function autoSetPerms() {
@@ -15747,13 +15901,13 @@ async function createBackupNow() {
   try {
     const result = await api('/settings/backup', { method: 'POST' });
     if (result.success) {
-      toast('✓ ' + result.message, false);
+      toast(result.message, false);
       loadBackupList(false); // Update list silently
     } else {
-      toast('❌ فشل في إنشاء النسخة الاحتياطية', true);
+      toast(currentLang==='en'?'Failed to create backup':'فشل في إنشاء النسخة الاحتياطية', true);
     }
   } catch (e) {
-    toast('❌ خطأ: ' + (e.message || 'فشل في إنشاء النسخة'), true);
+    toast((currentLang==='en'?'Error: ':'خطأ: ') + (e.message || (currentLang==='en'?'Failed to create backup':'فشل في إنشاء النسخة')), true);
   }
 }
 
@@ -15773,17 +15927,16 @@ async function loadBackupList(showMessage = true) {
         select.appendChild(option);
       });
       if (showMessage) {
-        toast('✓ تم تحديث قائمة النسخ الاحتياطية', false);
+        toast(currentLang==='en'?'Backup list updated':'تم تحديث قائمة النسخ الاحتياطية', false);
       }
     } else {
-      // فقط اظهر الرسالة إذا طلب المستخدم ذلك (زر تحديث)
       if (showMessage) {
-        toast('لا توجد نسخ احتياطية محفوظة', false);
+        toast(currentLang==='en'?'No saved backups found':'لا توجد نسخ احتياطية محفوظة', false);
       }
     }
   } catch (e) {
     if (showMessage) {
-      toast('❌ خطأ في تحميل قائمة النسخ', true);
+      toast(currentLang==='en'?'Error loading backup list':'خطأ في تحميل قائمة النسخ', true);
     }
   }
 }
@@ -15793,11 +15946,13 @@ async function restoreBackupNow() {
   const filename = select.value;
 
   if (!filename) {
-    toast('⚠️ يجب اختيار نسخة احتياطية أولاً', true);
+    toast(currentLang==='en'?'Please select a backup first':'يجب اختيار نسخة احتياطية أولاً', true);
     return;
   }
 
-  const confirmMsg = `⚠️ تحذير!\n\nستقوم باستعادة النسخة:\n${filename}\n\nسيتم استبدال البيانات الحالية.\n\nأدخل كلمة السر الخزنة للتأكيد:`;
+  const confirmMsg = currentLang==='en'
+    ? `Warning!\n\nYou are about to restore:\n${filename}\n\nCurrent data will be replaced.\n\nEnter vault password to confirm:`
+    : `تحذير!\n\nستقوم باستعادة النسخة:\n${filename}\n\nسيتم استبدال البيانات الحالية.\n\nأدخل كلمة السر الخزنة للتأكيد:`;
   const password = prompt(confirmMsg);
 
   if (!password) {
@@ -15812,13 +15967,13 @@ async function restoreBackupNow() {
     });
 
     if (result.success) {
-      toast('✓ ' + result.message, false);
+      toast(result.message, false);
       setTimeout(() => location.reload(), 1500);
     } else {
-      toast('❌ ' + result.message, true);
+      toast(result.message, true);
     }
   } catch (e) {
-    toast('❌ خطأ: ' + (e.message || 'فشل في الاسترجاع'), true);
+    toast((currentLang==='en'?'Error: ':'خطأ: ') + (e.message || (currentLang==='en'?'Restore failed':'فشل في الاسترجاع')), true);
   }
 }
 
@@ -15827,7 +15982,7 @@ async function downloadBackupNow() {
   const filename = select.value;
 
   if (!filename) {
-    toast('⚠️ يجب اختيار نسخة احتياطية أولاً', true);
+    toast(currentLang==='en'?'Please select a backup first':'يجب اختيار نسخة احتياطية أولاً', true);
     return;
   }
 
@@ -15843,9 +15998,9 @@ async function downloadBackupNow() {
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
-    toast('✓ تم تحميل النسخة الاحتياطية', false);
+    toast(currentLang==='en'?'Backup downloaded successfully':'تم تحميل النسخة الاحتياطية', false);
   } catch (e) {
-    toast('❌ خطأ: ' + (e.message || 'فشل في التحميل'), true);
+    toast((currentLang==='en'?'Error: ':'خطأ: ') + (e.message || (currentLang==='en'?'Download failed':'فشل في التحميل')), true);
   }
 }
 
@@ -15854,7 +16009,7 @@ async function uploadBackupFile() {
   const file = fileInput.files?.[0];
 
   if (!file) {
-    toast('⚠️ يجب اختيار ملف أولاً', true);
+    toast(currentLang==='en'?'Please select a file first':'يجب اختيار ملف أولاً', true);
     return;
   }
 
@@ -15877,19 +16032,19 @@ async function uploadBackupFile() {
     const result = await response.json();
 
     if (result.success) {
-      toast('✓ ' + result.message, false);
+      toast(result.message, false);
       fileInput.value = '';
       loadBackupList(false); // Update list silently
     } else {
-      toast('❌ ' + result.message, true);
+      toast(result.message, true);
     }
   } catch (e) {
-    toast('❌ خطأ: ' + (e.message || 'فشل في الاستيراد'), true);
+    toast((currentLang==='en'?'Error: ':'خطأ: ') + (e.message || (currentLang==='en'?'Import failed':'فشل في الاستيراد')), true);
   }
 }
 
 async function clearAllBackups() {
-  const password = prompt('⚠️ هل أنت متأكد من حذف جميع النسخ الاحتياطية؟\n\nأدخل كلمة السر الخزنة للتأكيد:');
+  const password = prompt(currentLang==='en'?'Are you sure you want to delete all backups?\n\nEnter vault password to confirm:':'هل أنت متأكد من حذف جميع النسخ الاحتياطية؟\n\nأدخل كلمة السر الخزنة للتأكيد:');
   if (!password) {
     toast('تم إلغاء العملية', false);
     return;
@@ -15902,18 +16057,18 @@ async function clearAllBackups() {
     });
 
     if (result.success) {
-      toast('✓ ' + result.message, false);
+      toast(result.message, false);
       loadBackupList(false); // Update list silently
     } else {
-      toast('❌ ' + result.message, true);
+      toast(result.message, true);
     }
   } catch (e) {
-    toast('❌ خطأ: ' + (e.message || 'فشل في الحذف'), true);
+    toast((currentLang==='en'?'Error: ':'خطأ: ') + (e.message || (currentLang==='en'?'Delete failed':'فشل في الحذف')), true);
   }
 }
 
 async function confirmResetAllData() {
-  const password = prompt('⚠️ تحذير!\n\nهذه العملية ستمسح جميع البيانات بشكل نهائي.\nسيتم إنشاء نسخة احتياطية تلقائياً قبل المسح.\n\nأدخل كلمة السر الخزنة للتأكيد:');
+  const password = prompt(currentLang==='en'?'Warning!\n\nThis operation will permanently erase all data.\nA backup will be created automatically before deletion.\n\nEnter vault password to confirm:':'تحذير!\n\nهذه العملية ستمسح جميع البيانات بشكل نهائي.\nسيتم إنشاء نسخة احتياطية تلقائياً قبل المسح.\n\nأدخل كلمة السر الخزنة للتأكيد:');
   if (!password) {
     toast('تم إلغاء العملية', false);
     return;
@@ -15924,10 +16079,10 @@ async function confirmResetAllData() {
       method: 'POST',
       body: JSON.stringify({ password })
     });
-    toast('✓ ' + result.message, false);
+    toast(result.message, false);
     setTimeout(() => location.reload(), 1500);
   } catch (e) {
-    toast('❌ خطأ: ' + (e.message || 'فشل في مسح البيانات'), true);
+    toast((currentLang==='en'?'Error: ':'خطأ: ') + (e.message || (currentLang==='en'?'Data reset failed':'فشل في مسح البيانات')), true);
   }
 }
 
@@ -17435,9 +17590,9 @@ function dismissSplash() {
 /* ─── Device Detection ─── */
 function getDeviceInfo() {
   const ua = navigator.userAgent || '';
-  let type = 'Desktop', icon = '💻';
-  if (/iPad|tablet|Tablet|Nexus 7|Nexus 10|SM-T|GT-P/i.test(ua)) { type = 'Tablet'; icon = '📋'; }
-  else if (/Mobi|Android|iPhone|iPod|BlackBerry|Windows Phone/i.test(ua)) { type = 'Mobile'; icon = '📱'; }
+  let type = 'Desktop', icon = ICON('barChart');
+  if (/iPad|tablet|Tablet|Nexus 7|Nexus 10|SM-T|GT-P/i.test(ua)) { type = 'Tablet'; icon = ICON('note'); }
+  else if (/Mobi|Android|iPhone|iPod|BlackBerry|Windows Phone/i.test(ua)) { type = 'Mobile'; icon = ICON('send'); }
   let browser = 'Browser';
   if (/Edg\//.test(ua)) browser = 'Edge';
   else if (/Chrome\//.test(ua) && !/OPR|Edg/.test(ua)) browser = 'Chrome';
@@ -17464,7 +17619,7 @@ function showOfflineBanner() {
   const b = qs('#offline-banner');
   if (!b) return;
   b.classList.remove('online-restored');
-  qs('#offline-banner-msg').textContent = '⚠️ النظام غير متصل بالإنترنت. بعض الوظائف قد تكون غير متاحة مؤقتًا.';
+  qs('#offline-banner-msg').textContent = currentLang==='en'?'System is offline. Some features may be temporarily unavailable.':'النظام غير متصل بالإنترنت. بعض الوظائف قد تكون غير متاحة مؤقتًا.';
   b.classList.add('show');
 }
 function showOnlineBanner() {
@@ -17473,7 +17628,7 @@ function showOnlineBanner() {
   const b = qs('#offline-banner');
   if (!b) return;
   b.classList.add('online-restored');
-  qs('#offline-banner-msg').textContent = '✅ تم استعادة الاتصال بالإنترنت';
+  qs('#offline-banner-msg').textContent = currentLang==='en'?'Connection restored':'تم استعادة الاتصال بالإنترنت';
   setTimeout(() => { b.classList.remove('show'); b.classList.remove('online-restored'); }, 2500);
   try { oqOnReconnect && oqOnReconnect(); } catch(_) {}
   try { oqUpdateBadges && oqUpdateBadges(); } catch(_) {}
@@ -17830,7 +17985,7 @@ window.vaultNotifier = (function () {
     const refTag = payload.ref ? `#${payload.ref}` : (payload.txNo || '');
     const by = payload.by || payload.employee || '';
     const sign = isUp ? '+' : '−';
-    const icon = isUp ? '💰' : '💸';
+    const icon = isUp ? ICON('arrowUp') : ICON('arrowDown');
     const metaText = desc || sourceLabel || (isUp ? 'إيداع في الخزنة' : 'خصم من الخزنة');
 
     const el = document.createElement('div');
