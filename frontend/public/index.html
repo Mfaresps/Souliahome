@@ -2561,6 +2561,32 @@ input.is-valid,select.is-valid,textarea.is-valid{
 .rt-event-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:linear-gradient(135deg,#0f766e 0%,#10b981 100%);color:#fff;padding:10px 18px;border-radius:99px;font-size:.85rem;font-weight:700;box-shadow:0 8px 20px rgba(16,185,129,.35);z-index:9999;opacity:0;pointer-events:none;transition:opacity .25s,transform .35s cubic-bezier(.2,.8,.3,1.2);display:inline-flex;align-items:center;gap:8px;max-width:90vw}
 .rt-event-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* ── Inventory / Warehouse real-time notifications ── */
+#inv-notif-stack{position:fixed;bottom:24px;right:20px;display:flex;flex-direction:column-reverse;gap:8px;z-index:10000;pointer-events:none;max-width:min(360px,92vw)}
+.inv-notif{pointer-events:auto;display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:14px;font-size:.82rem;font-weight:600;color:#fff;box-shadow:0 6px 22px rgba(0,0,0,.18);opacity:0;transform:translateX(60px) scale(.95);transition:opacity .28s ease,transform .32s cubic-bezier(.2,.8,.3,1.1);max-width:100%;cursor:pointer;position:relative;overflow:hidden}
+.inv-notif.show{opacity:1;transform:translateX(0) scale(1)}
+.inv-notif.hide{opacity:0;transform:translateX(60px) scale(.9);transition:opacity .22s ease,transform .22s ease}
+.inv-notif.add{background:linear-gradient(135deg,#059669 0%,#10b981 100%);box-shadow:0 6px 22px rgba(16,185,129,.32)}
+.inv-notif.remove{background:linear-gradient(135deg,#dc2626 0%,#ef4444 100%);box-shadow:0 6px 22px rgba(239,68,68,.32)}
+.inv-notif.info{background:linear-gradient(135deg,#1d4ed8 0%,#3b82f6 100%);box-shadow:0 6px 22px rgba(59,130,246,.32)}
+.inv-notif-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+.inv-notif-body{display:flex;flex-direction:column;gap:2px;min-width:0}
+.inv-notif-title{font-size:.82rem;font-weight:700;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inv-notif-items{font-size:.76rem;opacity:.9;line-height:1.4;max-width:100%;overflow:hidden}
+.inv-notif-item-row{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inv-notif-more{font-size:.72rem;opacity:.75;margin-top:2px}
+.inv-notif-dismiss{position:absolute;top:6px;left:8px;font-size:.7rem;opacity:.65;background:none;border:none;color:inherit;cursor:pointer;padding:0;line-height:1}
+.inv-notif-dismiss:hover{opacity:1}
+/* Shimmer progress bar at bottom of notif */
+.inv-notif-bar{position:absolute;bottom:0;right:0;height:2px;width:100%;background:rgba(255,255,255,.35);transform-origin:right}
+@keyframes invBarShrink{from{transform:scaleX(1)} to{transform:scaleX(0)}}
+/* Qty badge bounce */
+@keyframes qtyPop{0%{transform:scale(1)} 40%{transform:scale(1.4)} 100%{transform:scale(1)}}
+.inv-qty-badge{display:inline-block;font-weight:800;animation:qtyPop .4s cubic-bezier(.34,1.56,.64,1)}
+/* Nav inventory icon pulse */
+@keyframes invPulse{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.55)} 60%{box-shadow:0 0 0 8px rgba(16,185,129,0)}}
+.inv-icon-pulse{animation:invPulse .8s ease-out}
+
 /* Active sessions panel (admin) */
 .sess-panel{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:14px}
 .sess-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;transition:transform .18s,box-shadow .18s}
@@ -4680,6 +4706,7 @@ body.dark-mode .dashboard-v2{
   </div>
 </div>
 <div class="toast-container" id="toast-container"></div>
+<div id="inv-notif-stack"></div>
 
 <!-- ════════════════ Admin Daily Briefing Modal (admins only) ════════════════ -->
 <div class="adb-overlay" id="adb-overlay" onclick="if(event.target===this)closeAdminBriefing()" aria-hidden="true">
@@ -5989,6 +6016,10 @@ function connectSocket() {
     if (i >= 0) transactions[i] = tx;
     _rtRefreshUI({ movements: true, sidebar: true });
     _rtToastEvent(`🚫 تم إلغاء حركة #${tx.ref || ''}`);
+    // Inventory notification for cancellation (items from tx)
+    if (Array.isArray(tx.items) && tx.items.length) {
+      showInvNotif(tx.type, tx.items, true, String(tx._id));
+    }
   });
   socket.on('vault:changed', async (payload) => {
     // Fast path: server-supplied balances → no API roundtrip needed
@@ -6010,6 +6041,10 @@ function connectSocket() {
     if (currentPage === 'inventory') renderInventory?.();
     if (currentPage === 'products') renderProducts?.();
     buildNotifications?.();
+    // Rich inventory notification — only for tx:created (cancellation handled in tx:cancelled)
+    if (payload?.reason === 'tx:created' && payload?.txType && Array.isArray(payload?.items) && payload.items.length) {
+      showInvNotif(payload.txType, payload.items, false, payload.txId);
+    }
   });
 
   socket.on('disconnect', () => { console.log('Socket disconnected'); });
@@ -6062,6 +6097,136 @@ function _rtToastEvent(msg) {
   requestAnimationFrame(() => el.classList.add('show'));
   if (_rtToastTimer) clearTimeout(_rtToastTimer);
   _rtToastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   INVENTORY REAL-TIME NOTIFICATION SYSTEM
+   Shows rich, color-coded toasts for stock add/remove events.
+   Green = added to stock, Red = deducted, Blue = info
+════════════════════════════════════════════════════════════════ */
+const _invNotifDuration = 5000; // ms before auto-dismiss
+
+/**
+ * Determine direction: does this tx type / cancellation ADD or REMOVE stock?
+ * Returns 'add' | 'remove' | 'info'
+ */
+function _invStockDirection(txType, isCancellation) {
+  // Normal (non-cancelled) transaction
+  if (!isCancellation) {
+    if (txType === 'مشتريات') return 'add';          // purchase → adds stock
+    if (txType === 'مبيعات') return 'remove';         // sale → removes stock
+    if (txType === 'مرتجع مبيعات' || txType === 'مرتجع') return 'add'; // customer return → adds back
+    if (txType === 'مرتجع مشتريات') return 'remove';  // supplier return → removes stock
+    return 'info';
+  }
+  // Cancellation reverses the original direction
+  if (txType === 'مشتريات') return 'remove';
+  if (txType === 'مبيعات') return 'add';
+  if (txType === 'مرتجع مبيعات' || txType === 'مرتجع') return 'remove';
+  if (txType === 'مرتجع مشتريات') return 'add';
+  return 'info';
+}
+
+function _invNotifTitle(txType, direction, isCancellation) {
+  if (direction === 'add')    return isCancellation ? `↩ إرجاع مخزون — إلغاء ${txType}` : `+ تمت إضافة مخزون — ${txType}`;
+  if (direction === 'remove') return isCancellation ? `↩ خصم مخزون — إلغاء ${txType}` : `− تم خصم مخزون — ${txType}`;
+  return `ℹ تحديث مخزون — ${txType}`;
+}
+
+function _invNotifIcon(direction) {
+  if (direction === 'add')    return '📦';
+  if (direction === 'remove') return '🔻';
+  return 'ℹ️';
+}
+
+/**
+ * Show a rich inventory notification.
+ * @param {string} txType  - e.g. 'مبيعات'
+ * @param {Array}  items   - [{name, qty}, ...]
+ * @param {boolean} isCancellation
+ * @param {string|null} txId  - optional, for click-to-view
+ */
+function showInvNotif(txType, items, isCancellation, txId) {
+  if (!Array.isArray(items) || items.length === 0) return;
+  const stack = qs('#inv-notif-stack');
+  if (!stack) return;
+
+  const direction = _invStockDirection(txType, isCancellation);
+  const icon = _invNotifIcon(direction);
+  const title = _invNotifTitle(txType, direction, isCancellation);
+
+  // Build items lines (max 3 shown, rest collapsed)
+  const MAX_SHOW = 3;
+  const shown = items.slice(0, MAX_SHOW);
+  const extra = items.length - MAX_SHOW;
+
+  const itemsHtml = shown.map(it => {
+    const qty = fmtN ? fmtN(it.qty) : it.qty;
+    const verb = direction === 'add' ? '+' : direction === 'remove' ? '−' : '•';
+    return `<div class="inv-notif-item-row">${verb} <span class="inv-qty-badge">${qty}</span> × ${esc(it.name)}</div>`;
+  }).join('');
+  const moreHtml = extra > 0 ? `<div class="inv-notif-more">+ ${extra} صنف آخر</div>` : '';
+
+  const el = document.createElement('div');
+  el.className = `inv-notif ${direction}`;
+  el.setAttribute('role', 'alert');
+  el.setAttribute('aria-live', 'polite');
+  el.innerHTML = `
+    <button class="inv-notif-dismiss" onclick="this.closest('.inv-notif')._dismiss()" aria-label="إغلاق">✕</button>
+    <div class="inv-notif-icon">${icon}</div>
+    <div class="inv-notif-body">
+      <div class="inv-notif-title">${esc(title)}</div>
+      <div class="inv-notif-items">${itemsHtml}${moreHtml}</div>
+    </div>
+    <div class="inv-notif-bar"></div>
+  `;
+
+  // Click to view transaction
+  if (txId) {
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', (e) => {
+      if (e.target.classList.contains('inv-notif-dismiss')) return;
+      // Navigate to movements page and open the transaction
+      if (typeof navigateTo === 'function') navigateTo('movements');
+      setTimeout(() => {
+        const tx = transactions?.find(t => String(t._id) === String(txId));
+        if (tx && typeof openTxDetail === 'function') openTxDetail(tx);
+      }, 300);
+      el._dismiss();
+    });
+  }
+
+  // Dismiss logic
+  el._dismiss = () => {
+    el.classList.add('hide');
+    clearTimeout(el._timer);
+    clearTimeout(el._barTimer);
+    setTimeout(() => el.remove(), 250);
+  };
+
+  stack.appendChild(el);
+  // Trigger show animation
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+
+  // Start progress bar animation
+  const bar = el.querySelector('.inv-notif-bar');
+  if (bar) {
+    bar.style.animation = `invBarShrink ${_invNotifDuration}ms linear forwards`;
+  }
+
+  // Auto-dismiss
+  el._timer = setTimeout(() => el._dismiss(), _invNotifDuration);
+
+  // Pulse the inventory nav icon if present
+  try {
+    const invNav = document.querySelector('#sidebar .nav-item[data-page="inventory"]');
+    if (invNav) {
+      invNav.classList.remove('inv-icon-pulse');
+      void invNav.offsetWidth;
+      invNav.classList.add('inv-icon-pulse');
+      setTimeout(() => invNav.classList.remove('inv-icon-pulse'), 900);
+    }
+  } catch(_) {}
 }
 
 /* ===== Active sessions (admin) ===== */

@@ -189,7 +189,12 @@ export class TransactionsService {
 
     await this.recordVaultForTransaction(tx);
     this.emit('tx:created', { tx, by: employee });
-    this.emit('inventory:changed', { reason: 'tx:created', txId: String(tx._id) });
+    this.emit('inventory:changed', {
+      reason: 'tx:created',
+      txId: String(tx._id),
+      txType: tx.type,
+      items: (tx.items || []).map((it) => ({ name: it.name, qty: it.qty })),
+    });
     this.emit('vault:changed', { reason: 'tx:created', txId: String(tx._id) });
     return tx;
   }
@@ -589,7 +594,12 @@ export class TransactionsService {
       );
     }
     this.emit('tx:cancelled', { tx: saved, by: cancelledBy });
-    this.emit('inventory:changed', { reason: 'tx:cancelled', txId: String(saved._id) });
+    this.emit('inventory:changed', {
+      reason: 'tx:cancelled',
+      txId: String(saved._id),
+      txType: saved.type,
+      items: (saved.items || []).map((it) => ({ name: it.name, qty: it.qty })),
+    });
     this.emit('vault:changed', { reason: 'tx:cancelled', txId: String(saved._id) });
     return saved;
   }
