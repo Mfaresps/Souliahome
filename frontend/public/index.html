@@ -2558,6 +2558,25 @@ input.is-valid,select.is-valid,textarea.is-valid{
   60%  {background:rgba(16,185,129,.10)}
   100% {background:transparent;box-shadow:none}
 }
+/* Highlight on navigate-to: stronger pulse + scroll indicator */
+.nav-highlight{animation:navHighlight 3s ease-out;outline:2px solid #10b981;outline-offset:2px;border-radius:6px}
+@keyframes navHighlight{
+  0%  {background:rgba(16,185,129,.35);outline-color:#10b981}
+  50% {background:rgba(16,185,129,.15);outline-color:rgba(16,185,129,.5)}
+  100%{background:transparent;outline-color:transparent}
+}
+.nav-highlight-inv{animation:navHighlight 3s ease-out;outline:2px solid #3b82f6;outline-offset:2px;border-radius:6px}
+@keyframes navHighlightInv{
+  0%  {background:rgba(59,130,246,.28);outline-color:#3b82f6}
+  50% {background:rgba(59,130,246,.12);outline-color:rgba(59,130,246,.4)}
+  100%{background:transparent;outline-color:transparent}
+}
+.nav-highlight-vault{animation:navHighlightVault 3s ease-out;outline:2px solid #f59e0b;outline-offset:2px;border-radius:6px}
+@keyframes navHighlightVault{
+  0%  {background:rgba(245,158,11,.25);outline-color:#f59e0b}
+  50% {background:rgba(245,158,11,.1);outline-color:rgba(245,158,11,.4)}
+  100%{background:transparent;outline-color:transparent}
+}
 .rt-event-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:linear-gradient(135deg,#0f766e 0%,#10b981 100%);color:#fff;padding:10px 18px;border-radius:99px;font-size:.85rem;font-weight:700;box-shadow:0 8px 20px rgba(16,185,129,.35);z-index:9999;opacity:0;pointer-events:none;transition:opacity .25s,transform .35s cubic-bezier(.2,.8,.3,1.2);display:inline-flex;align-items:center;gap:8px;max-width:90vw}
 .rt-event-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -6120,6 +6139,112 @@ function _rtToastEvent(msg) {
 }
 
 /* ════════════════════════════════════════════════════════════════
+   NAVIGATE + HIGHLIGHT HELPERS
+   Used by notification toasts and admin briefing rows to land on
+   the exact row/card and pulse it so the user knows where to look.
+════════════════════════════════════════════════════════════════ */
+
+/**
+ * Go to movements page, find the row for txId, scroll to it and highlight.
+ * @param {string} txId  - MongoDB _id of the transaction
+ * @param {number} [delay=320] - ms to wait after navigating before DOM query
+ */
+function goToTxAndHighlight(txId, delay) {
+  if (!txId) return;
+  delay = delay || 320;
+  if (typeof navigateTo === 'function') navigateTo('movements');
+  setTimeout(() => {
+    // Ensure it's in the rendered page
+    _rtFlashIds.add(String(txId));
+    if (typeof renderMovements === 'function') renderMovements();
+    requestAnimationFrame(() => {
+      // Find the row by checkbox value (each row has a .mov-check with value=txId)
+      const row = document.querySelector(`#mov-table .mov-check[value="${CSS.escape(String(txId))}"]`)?.closest('tr');
+      if (row) {
+        row.classList.remove('nav-highlight');
+        void row.offsetWidth;
+        row.classList.add('nav-highlight');
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => row.classList.remove('nav-highlight'), 3000);
+      }
+      setTimeout(() => _rtFlashIds.delete(String(txId)), 3500);
+    });
+  }, delay);
+}
+
+/**
+ * Go to inventory page, find the row/card for a product (by code or name),
+ * scroll to it and highlight.
+ * @param {string} productKey  - product code or name
+ * @param {number} [delay=320]
+ */
+function goToInventoryAndHighlight(productKey, delay) {
+  if (!productKey) return;
+  delay = delay || 320;
+  if (typeof navigateTo === 'function') navigateTo('inventory');
+  setTimeout(() => {
+    if (typeof renderInventory === 'function') renderInventory();
+    requestAnimationFrame(() => {
+      // Find the row by matching text content (product name) across desktop table and mobile cards
+      const rows = document.querySelectorAll('#inv-tbody tr, #inv-mobile-list .inv-product-card');
+      let target = null;
+      const key = String(productKey).toLowerCase();
+      rows.forEach(r => {
+        if (!target && r.textContent.toLowerCase().includes(key)) target = r;
+      });
+      if (target) {
+        target.classList.remove('nav-highlight-inv');
+        void target.offsetWidth;
+        target.classList.add('nav-highlight-inv');
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => target.classList.remove('nav-highlight-inv'), 3000);
+      }
+    });
+  }, delay);
+}
+
+/**
+ * Go to vault page and highlight the most recent vault log row matching txRef or txId.
+ * @param {string} txRef  - transaction ref or vault log id
+ * @param {number} [delay=320]
+ */
+function goToVaultAndHighlight(txRef, delay) {
+  if (typeof navigateTo === 'function') navigateTo('vault');
+  delay = delay || 320;
+  setTimeout(() => {
+    const doHighlight = () => requestAnimationFrame(() => _highlightVaultRow(txRef));
+    if (typeof loadVaultLog === 'function') {
+      loadVaultLog().then(() => {
+        if (typeof renderVaultTable === 'function') renderVaultTable();
+        doHighlight();
+      }).catch(doHighlight);
+    } else {
+      if (typeof renderVaultTable === 'function') renderVaultTable();
+      doHighlight();
+    }
+  }, delay);
+}
+
+function _highlightVaultRow(ref) {
+  // Vault table rows are in #vault-table tbody
+  const rows = document.querySelectorAll('#vault-table tbody tr');
+  let target = null;
+  if (ref) {
+    rows.forEach(r => {
+      if (!target && r.textContent.includes(String(ref))) target = r;
+    });
+  }
+  if (!target && rows.length > 0) target = rows[0]; // fallback: top row (most recent)
+  if (target) {
+    target.classList.remove('nav-highlight-vault');
+    void target.offsetWidth;
+    target.classList.add('nav-highlight-vault');
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => target.classList.remove('nav-highlight-vault'), 3000);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
    INVENTORY REAL-TIME NOTIFICATION SYSTEM
    Shows rich, color-coded toasts for stock add/remove events.
    Green = added to stock, Red = deducted, Blue = info
@@ -6201,20 +6326,15 @@ function showInvNotif(txType, items, isCancellation, txId) {
     <div class="inv-notif-bar"></div>
   `;
 
-  // Click to view transaction
-  if (txId) {
-    el.style.cursor = 'pointer';
-    el.addEventListener('click', (e) => {
-      if (e.target.classList.contains('inv-notif-dismiss')) return;
-      // Navigate to movements page and open the transaction
-      if (typeof navigateTo === 'function') navigateTo('movements');
-      setTimeout(() => {
-        const tx = transactions?.find(t => String(t._id) === String(txId));
-        if (tx && typeof openTxDetail === 'function') openTxDetail(tx);
-      }, 300);
-      el._dismiss();
-    });
-  }
+  // Click → go to inventory page and highlight the first product row
+  el.style.cursor = 'pointer';
+  el.addEventListener('click', (e) => {
+    if (e.target.classList.contains('inv-notif-dismiss')) return;
+    el._dismiss();
+    // Use first item name as search key for inventory highlight
+    const firstItemName = items[0]?.name || '';
+    goToInventoryAndHighlight(firstItemName, 350);
+  });
 
   // Dismiss logic
   el._dismiss = () => {
@@ -7098,11 +7218,15 @@ function renderAdminBriefing() {
       ? acts.map(a => {
           const time = a.date ? new Date(a.date).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
           const refLabel = a.ref ? `#${a.ref}` : '';
-          const action = a.type === 'tx' ? `closeAdminBriefing();navigateTo('movements')` :
-                         (a.type === 'exp' ? `closeAdminBriefing();navigateTo('expenses')` :
-                                              `closeAdminBriefing();navigateTo('vault')`);
+          const safeId = String(a.id || '').replace(/'/g, "\\'");
+          const safeRef = String(a.ref || '').replace(/'/g, "\\'");
+          const action = a.type === 'tx'
+            ? `closeAdminBriefing();goToTxAndHighlight('${safeId}',380)`
+            : (a.type === 'exp'
+              ? `closeAdminBriefing();navigateTo('expenses')`
+              : `closeAdminBriefing();goToVaultAndHighlight('${safeRef}',380)`);
           return `
-          <div class="adb-activity-row ${a.flagged ? 'flagged' : ''}" onclick="${action}" title="${a.flagged ? 'عملية بقيمة عالية' : ''}">
+          <div class="adb-activity-row ${a.flagged ? 'flagged' : ''}" onclick="${action}" title="${a.flagged ? 'عملية بقيمة عالية — اضغط للعرض' : 'اضغط للانتقال'}">
             <span class="adb-activity-icon">${a.tag.icon}</span>
             <div class="adb-activity-info">
               <span class="adb-activity-title">
@@ -17737,10 +17861,17 @@ window.vaultNotifier = (function () {
       e.stopPropagation();
       dismiss(item);
     });
-    // Click card to dismiss (and optionally navigate to vault)
+    // Click card → go to vault and highlight the matching log row
     el.addEventListener('click', () => {
       dismiss(item);
-      if (typeof navigateTo === 'function') try { navigateTo('vault'); } catch(_) {}
+      try {
+        const ref = payload.ref || payload.txNo || '';
+        if (typeof goToVaultAndHighlight === 'function') {
+          goToVaultAndHighlight(ref, 350);
+        } else if (typeof navigateTo === 'function') {
+          navigateTo('vault');
+        }
+      } catch(_) {}
     });
 
     stackEl.appendChild(el);
