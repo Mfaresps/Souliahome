@@ -16,6 +16,7 @@ interface ExceptionResponseBody {
   path: string;
 }
 
+
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
