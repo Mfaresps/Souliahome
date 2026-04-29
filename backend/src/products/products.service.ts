@@ -120,6 +120,12 @@ export class ProductsService {
     const result = await this.productModel
       .updateMany({ _id: { $in: ids } }, update)
       .exec();
+    
+    if (result.modifiedCount > 0) {
+      this.emit('product:changed', { action: 'bulk-updated', ids, count: result.modifiedCount });
+      this.emit('inventory:changed', { reason: 'product:bulk-updated', ids, count: result.modifiedCount });
+    }
+    
     return result.modifiedCount;
   }
 
@@ -127,6 +133,12 @@ export class ProductsService {
     const result = await this.productModel
       .deleteMany({ _id: { $in: ids } })
       .exec();
+    
+    if (result.deletedCount > 0) {
+      this.emit('product:changed', { action: 'bulk-deleted', ids, count: result.deletedCount });
+      this.emit('inventory:changed', { reason: 'product:bulk-deleted', ids, count: result.deletedCount });
+    }
+    
     return result.deletedCount;
   }
 
@@ -142,9 +154,15 @@ export class ProductsService {
       imageUrl?: string;
     }[],
   ): Promise<{ created: number; updated: number }> {
+    // #region agent log
+    fetch('http://127.0.0.1:7285/ingest/76d98979-170a-4e37-ae45-7d75cc90954a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a36edf'},body:JSON.stringify({sessionId:'a36edf',location:'products.service.ts:145',message:'importProducts called',data:{itemCount:items.length,items:items.slice(0,3)},timestamp:Date.now(),hypothesisId:'A,B,C,D,E'})}).catch(()=>{});
+    // #endregion
     let created = 0;
     let updated = 0;
     for (const item of items) {
+      // #region agent log
+      fetch('http://127.0.0.1:7285/ingest/76d98979-170a-4e37-ae45-7d75cc90954a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a36edf'},body:JSON.stringify({sessionId:'a36edf',location:'products.service.ts:159',message:'Processing item - BEFORE trim',data:{rawCode:item.code,rawCodeType:typeof item.code,rawName:item.name,rawNameType:typeof item.name,codeIsNull:item.code===null,codeIsUndefined:item.code===undefined,nameIsNull:item.name===null,nameIsUndefined:item.name===undefined},timestamp:Date.now(),hypothesisId:'A,C,D'})}).catch(()=>{});
+      // #endregion
       const code = String(item.code || '').trim();
       const openingBalance = Math.max(
         0,
@@ -156,15 +174,27 @@ export class ProductsService {
         name: String(item.name || '').trim(),
         openingBalance,
       };
+      // #region agent log
+      fetch('http://127.0.0.1:7285/ingest/76d98979-170a-4e37-ae45-7d75cc90954a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a36edf'},body:JSON.stringify({sessionId:'a36edf',location:'products.service.ts:170',message:'Row prepared - AFTER trim',data:{finalCode:row.code,finalCodeLength:row.code.length,finalName:row.name,finalNameLength:row.name.length,codeEmpty:row.code==='',nameEmpty:row.name===''},timestamp:Date.now(),hypothesisId:'A,C'})}).catch(()=>{});
+      // #endregion
       const existing = await this.findByCode(code);
       if (existing) {
         await this.productModel.findByIdAndUpdate(existing._id, row).exec();
         updated++;
       } else {
+        // #region agent log
+        fetch('http://127.0.0.1:7285/ingest/76d98979-170a-4e37-ae45-7d75cc90954a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a36edf'},body:JSON.stringify({sessionId:'a36edf',location:'products.service.ts:176',message:'Creating new product',data:{rowToCreate:row},timestamp:Date.now(),hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
         await this.productModel.create(row);
         created++;
       }
     }
+    
+    if (created > 0 || updated > 0) {
+      this.emit('product:changed', { action: 'imported', created, updated });
+      this.emit('inventory:changed', { reason: 'product:imported', created, updated });
+    }
+    
     return { created, updated };
   }
 }

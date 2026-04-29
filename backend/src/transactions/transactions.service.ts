@@ -22,6 +22,9 @@ import {
 import { ProductsService } from '../products/products.service';
 import { VaultService } from '../vault/vault.service';
 import { PresenceGateway } from '../auth/presence.gateway';
+// #region agent log
+import { debugLog } from '../debug-log.util';
+// #endregion
 
 export interface InventoryItem {
   _id: string;
@@ -188,6 +191,40 @@ export class TransactionsService {
     }
 
     await this.recordVaultForTransaction(tx);
+    // #region agent log
+    debugLog('transactions.service.ts:create', 'TX_CREATED', {
+      hypothesisId: 'H1,H4,H5',
+      id: String(tx._id),
+      type: tx.type,
+      ref: tx.ref,
+      client: tx.client,
+      total: tx.total,
+      itemsTotal: tx.itemsTotal,
+      shipCost: tx.shipCost,
+      deposit: tx.deposit,
+      remaining: tx.remaining,
+      payStatus: tx.payStatus,
+      depMethod: tx.depMethod,
+      collectMethod: tx.collectMethod,
+      itemsCount: (tx.items || []).length,
+      itemsSum: (tx.items || []).reduce((s, it) => s + (Number(it.total) || 0), 0),
+      dtoDeposit: deposit,
+      dtoDepMethod: depMethod,
+    });
+    // #endregion
+    // #region agent log
+    const inventoryImpact = tx.type === 'مبيعات' ? 'خصم من المخزن' :
+      tx.type === 'مشتريات' && this.transactionAddsSupplierPurchases(tx) ? 'إضافة للمخزن' :
+      this.transactionAddsReturnToStock(tx) ? 'إرجاع للمخزن' : 'لا يؤثر';
+    debugLog('transactions.service.ts:create', 'INVENTORY_IMPACT', {
+      hypothesisId: 'INV',
+      txId: String(tx._id),
+      type: tx.type,
+      ref: tx.ref,
+      inventoryImpact,
+      items: (tx.items || []).map((it) => ({ code: it.code, name: it.name, qty: it.qty })),
+    });
+    // #endregion
     this.emit('tx:created', { tx, by: employee });
     this.emit('inventory:changed', {
       reason: 'tx:created',
@@ -593,6 +630,39 @@ export class TransactionsService {
         tx.ref || String(tx._id),
       );
     }
+    // #region agent log
+    debugLog('transactions.service.ts:performCancellation', 'TX_CANCELLED', {
+      hypothesisId: 'H1,H3,H4,H6',
+      id: String(saved._id),
+      type: saved.type,
+      ref: saved.ref,
+      previousDeposit,
+      previousTotal,
+      previousRemaining,
+      previousPayStatus,
+      previousCollectMethod,
+      depMethod: tx.depMethod,
+      vaultMethodUsed: vaultMethod,
+      totalPaidToSupplier: saved.type === 'مشتريات' ? previousTotal - previousRemaining : null,
+      additionalPaid: saved.type === 'مشتريات' ? (previousTotal - previousRemaining) - previousDeposit : null,
+      newRemainingAfterCancel: saved.remaining,
+      newPayStatus: saved.payStatus,
+    });
+    // #endregion
+    // #region agent log
+    const cancelInventoryImpact = saved.type === 'مبيعات' ? 'إلغاء = إعادة للمخزن (لم يُخصم فعلياً لأن الحركة لم تكتمل)' :
+      saved.type === 'مشتريات' && this.transactionAddsSupplierPurchases(saved) ? 'إلغاء = خصم من المخزن (إن كانت أُضيفت)' :
+      'لا يؤثر';
+    debugLog('transactions.service.ts:performCancellation', 'INVENTORY_CANCEL_IMPACT', {
+      hypothesisId: 'INV',
+      txId: String(saved._id),
+      type: saved.type,
+      ref: saved.ref,
+      cancelInventoryImpact,
+      items: (saved.items || []).map((it) => ({ code: it.code, name: it.name, qty: it.qty })),
+      note: 'الحركات الملغاة لا تُحتسب في المخزن (cancelled: true)',
+    });
+    // #endregion
     this.emit('tx:cancelled', { tx: saved, by: cancelledBy });
     this.emit('inventory:changed', {
       reason: 'tx:cancelled',
@@ -777,6 +847,25 @@ export class TransactionsService {
         tx.ref || String(tx._id),
       );
     }
+    // #region agent log
+    debugLog('transactions.service.ts:collect', 'TX_COLLECTED', {
+      hypothesisId: 'H1,H4',
+      id: String(saved._id),
+      type: saved.type,
+      ref: saved.ref,
+      isPurchase,
+      payAmount,
+      billedShip,
+      shipExtra,
+      netVaultAmount,
+      vaultDelta: isPurchase ? -payAmount : netVaultAmount,
+      collectMethod: dto.collectMethod,
+      newDeposit: saved.deposit,
+      newRemaining: saved.remaining,
+      newPayStatus: saved.payStatus,
+      previousRemainingAtStart: totalRemaining,
+    });
+    // #endregion
     this.emit('tx:updated', { tx: saved, action: 'collect' });
     this.emit('vault:changed', { reason: 'tx:collect', txId: String(saved._id) });
     return saved;
@@ -927,6 +1016,22 @@ export class TransactionsService {
       } else if (current <= (product.minStock || 10)) {
         status = 'low';
       }
+      // #region agent log
+      if (purchases > 0 || sales > 0 || returnsToStock > 0) {
+        debugLog('transactions.service.ts:getInventory', 'INVENTORY_ITEM_CALC', {
+          hypothesisId: 'INV',
+          code: product.code,
+          name: product.name,
+          openingBalance: openingBal,
+          purchases,
+          returnsToStock,
+          sales,
+          current,
+          formula: `${openingBal} + ${purchases} + ${returnsToStock} - ${sales} = ${current}`,
+          status,
+        });
+      }
+      // #endregion
       return {
         _id: product._id.toString(),
         code: product.code,
@@ -1025,6 +1130,27 @@ export class TransactionsService {
       .sort({ createdAt: -1 })
       .limit(8)
       .exec();
+    // #region agent log
+    debugLog('transactions.service.ts:getDashboard', 'DASHBOARD_COMPUTED', {
+      hypothesisId: 'H2,H3,H6',
+      totalProducts: inventory.length,
+      lowStockCount,
+      totalSales,
+      grossProductSales,
+      totalPurchases,
+      totalRemaining,
+      totalExpenses: expenseTotal,
+      grossProfit,
+      netProfit,
+      totalShipping,
+      totalShipLoss,
+      returnCount: approvedReturns.length,
+      totalReturns,
+      returnedProfit,
+      activeTxCount: activeTx.length,
+      salesTxCount: salesTx.length,
+    });
+    // #endregion
     return {
       totalProducts: inventory.length,
       lowStockCount,
@@ -1328,6 +1454,19 @@ export class TransactionsService {
       'خصم بعدي',
       tx.ref || String(tx._id),
     );
+    // #region agent log
+    debugLog('transactions.service.ts:applyPostDiscount', 'POST_DISCOUNT_APPLIED', {
+      hypothesisId: 'H1,H3',
+      id: String(saved._id),
+      ref: saved.ref,
+      discountAmount,
+      vaultAccount,
+      newDiscount: saved.discount,
+      newTotal: saved.total,
+      newRemaining: saved.remaining,
+      newPayStatus: saved.payStatus,
+    });
+    // #endregion
     return saved;
   }
 

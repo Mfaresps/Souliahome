@@ -7,6 +7,9 @@ import { resolveVaultSegmentFromPaymentMethod } from './vault-segment.util';
 import { generateVaultTexts } from './vault-description.util';
 import { CreateVaultEntryDto, UpdateVaultEntryDto } from './dto/vault.dto';
 import { PresenceGateway } from '../auth/presence.gateway';
+// #region agent log
+import { debugLog } from '../debug-log.util';
+// #endregion
 
 @Injectable()
 export class VaultService {
@@ -226,6 +229,25 @@ export class VaultService {
       employee: employee || '',
       txNo,
     });
+    // #region agent log
+    debugLog('vault.service.ts:addSystemEntry', 'VAULT_ENTRY_CREATED', {
+      hypothesisId: 'H1,H3,H5',
+      txNo,
+      amount,
+      seg,
+      method,
+      source,
+      ref,
+      desc: finalDesc,
+      balanceAfter: {
+        cash: settings.vaultCash,
+        vodafone: settings.vaultVodafone,
+        instapay: settings.vaultInstapay,
+        bank: settings.vaultBank,
+        total: settings.vaultBalance,
+      },
+    });
+    // #endregion
     this.emit('vault:changed', {
       reason: 'system',
       amount,
@@ -456,16 +478,34 @@ export class VaultService {
     cancelledTransactions: number;
     pendingApprovals: number;
   }> {
-    const query: Record<string, unknown> = { status: { $ne: 'cancelled' } };
+    // Only count 'completed' entries for income/expense totals (exclude frozen & cancelled)
+    const query: Record<string, unknown> = { status: 'completed' };
     if (seg) query.seg = seg;
 
     const entries = await this.vaultModel.find(query).exec();
     const totalIncome = entries.filter((e) => e.amount > 0).reduce((s, e) => s + e.amount, 0);
     const totalExpense = Math.abs(entries.filter((e) => e.amount < 0).reduce((s, e) => s + e.amount, 0));
-    const frozenTransactions = entries.filter((e) => e.status === 'frozen').length;
+    // Count frozen/cancelled separately since we only queried 'completed' above
+    const frozenQuery: Record<string, unknown> = { status: 'frozen' };
+    if (seg) frozenQuery.seg = seg;
+    const frozenTransactions = await this.vaultModel.countDocuments(frozenQuery);
     const cancelledTransactions = await this.vaultModel.countDocuments({ status: 'cancelled' });
     const pendingApprovals = entries.filter((e) => e.requiresApproval && !e.isApproved).length;
 
+    // #region agent log
+    debugLog('vault.service.ts:getStatistics', 'STATISTICS_COMPUTED', {
+      hypothesisId: 'H3',
+      seg: seg || 'ALL',
+      totalIncome,
+      totalExpense,
+      net: totalIncome - totalExpense,
+      totalTransactions: entries.length,
+      frozenTransactions,
+      cancelledTransactions,
+      pendingApprovals,
+      filterApplied: 'status === completed (fixed)',
+    });
+    // #endregion
     return {
       totalIncome,
       totalExpense,
@@ -492,7 +532,8 @@ export class VaultService {
     const prevFromStr = prevStart.toISOString().split('T')[0];
     const prevToStr = prevEnd.toISOString().split('T')[0];
 
-    const query = { status: { $ne: 'cancelled' }, ...(seg ? { seg } : {}) };
+    // Only count 'completed' entries for analytics (exclude frozen & cancelled)
+    const query = { status: 'completed', ...(seg ? { seg } : {}) };
     const currentEntries = await this.vaultModel
       .find({ ...query, date: { $gte: fromStr, $lte: toStr } })
       .exec();
@@ -565,6 +606,29 @@ export class VaultService {
     // Current balances
     const settings = await this.settingsService.getSettings();
 
+    // #region agent log
+    debugLog('vault.service.ts:getAnalytics', 'ANALYTICS_COMPUTED', {
+      hypothesisId: 'H3',
+      windowDays: days,
+      seg: seg || 'ALL',
+      dateRange: { from: fromStr, to: toStr },
+      monthlyNet: currentNet,
+      lastMonthNet: prevNet,
+      dailyAverage,
+      cashVelocity,
+      currentEntriesCount: currentEntries.length,
+      segmentBalances: {
+        cash: settings.vaultCash || 0,
+        vodafone: settings.vaultVodafone || 0,
+        instapay: settings.vaultInstapay || 0,
+        bank: settings.vaultBank || 0,
+        total: settings.vaultBalance || 0,
+      },
+      sumOfAllEntriesAmount: currentEntries.reduce((s, e) => s + e.amount, 0),
+      sumPositive: currentEntries.filter((e) => e.amount > 0).reduce((s, e) => s + e.amount, 0),
+      sumNegative: currentEntries.filter((e) => e.amount < 0).reduce((s, e) => s + e.amount, 0),
+    });
+    // #endregion
     return {
       dailyAverage,
       monthlyNet: currentNet,
@@ -594,7 +658,8 @@ export class VaultService {
     const fromStr = startDate.toISOString().split('T')[0];
     const toStr = endDate.toISOString().split('T')[0];
 
-    const query = { status: { $ne: 'cancelled' }, ...(seg ? { seg } : {}) };
+    // Only count 'completed' entries for cash flow (exclude frozen & cancelled)
+    const query = { status: 'completed', ...(seg ? { seg } : {}) };
     const entries = await this.vaultModel
       .find({ ...query, date: { $gte: fromStr, $lte: toStr } })
       .exec();

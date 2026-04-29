@@ -10,6 +10,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { VaultService } from './vault.service';
+import { VaultBalanceService } from './vault-balance.service';
+import { MigrateBalancesService } from './migrate-balances.service';
 import { CreateVaultEntryDto, UpdateVaultEntryDto } from './dto/vault.dto';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
@@ -18,7 +20,11 @@ import { Roles } from '../core/decorators/roles.decorator';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('vault')
 export class VaultController {
-  constructor(private readonly vaultService: VaultService) {}
+  constructor(
+    private readonly vaultService: VaultService,
+    private readonly vaultBalanceService: VaultBalanceService,
+    private readonly migrateService: MigrateBalancesService,
+  ) {}
 
   @Get()
   async findAll(@Query('from') from?: string, @Query('to') to?: string) {
@@ -125,5 +131,48 @@ export class VaultController {
   ) {
     const approver = req.user?.name || req.user?.username || '';
     return this.vaultService.approveEntry(id, approver);
+  }
+
+  @Roles('admin')
+  @Get('balances/all')
+  async getAllBalances() {
+    return this.vaultBalanceService.getAllBalances();
+  }
+
+  @Roles('admin')
+  @Get('balances/:segment')
+  async getSegmentBalance(@Param('segment') segment: string) {
+    const balance = await this.vaultBalanceService.getSegmentBalance(segment);
+    return { segment, balance };
+  }
+
+  @Roles('admin')
+  @Post('migrate/from-settings')
+  async migrateFromSettings() {
+    return this.migrateService.migrateFromSettings();
+  }
+
+  @Roles('admin')
+  @Post('balances/recalculate')
+  async recalculateBalances() {
+    return this.vaultBalanceService.recalculateBalances();
+  }
+
+  @Roles('admin')
+  @Get('balances/verify')
+  async verifyIntegrity() {
+    return this.migrateService.verifyIntegrity();
+  }
+
+  @Roles('admin')
+  @Get('balances/history/:segment')
+  async getBalanceHistory(
+    @Param('segment') segment: string,
+    @Query('days') days?: string,
+  ) {
+    return this.vaultBalanceService.getBalanceHistory(
+      segment,
+      Number(days) || 30
+    );
   }
 }
