@@ -2077,29 +2077,52 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 .fx-results-count strong{color:var(--primary);font-weight:800}
 
 /* Filter Drawer */
-.fx-drawer-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(2px);z-index:998;opacity:0;pointer-events:none;transition:opacity .25s}
+.fx-drawer-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.4);backdrop-filter:blur(3px);z-index:998;opacity:0;pointer-events:none;transition:opacity .25s}
 .fx-drawer-backdrop.show{opacity:1;pointer-events:auto}
-.fx-drawer{position:fixed;top:0;right:0;bottom:0;width:380px;max-width:92vw;background:var(--surface);box-shadow:-8px 0 24px rgba(0,0,0,.12);z-index:999;transform:translateX(100%);transition:transform .3s cubic-bezier(.2,.8,.3,1);display:flex;flex-direction:column}
-[dir=ltr] .fx-drawer{right:auto;left:0;transform:translateX(-100%);box-shadow:8px 0 24px rgba(0,0,0,.12)}
+.fx-drawer{position:fixed;top:0;right:0;bottom:0;width:360px;max-width:94vw;background:#f8fafc;box-shadow:-12px 0 40px rgba(0,0,0,.14);z-index:999;transform:translateX(100%);transition:transform .3s cubic-bezier(.2,.8,.3,1);display:flex;flex-direction:column}
+body.dark-mode .fx-drawer{background:#1a1f2e}
+[dir=ltr] .fx-drawer{right:auto;left:0;transform:translateX(-100%);box-shadow:12px 0 40px rgba(0,0,0,.14)}
 .fx-drawer.show{transform:translateX(0)}
-.fx-drawer-header{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.fx-drawer-title{font-weight:800;font-size:1.05rem;color:var(--text);display:flex;align-items:center;gap:8px}
-.fx-drawer-close{width:32px;height:32px;border-radius:8px;border:none;background:var(--bg);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
-.fx-drawer-close:hover{background:var(--red);color:#fff}
-.fx-drawer-body{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:18px}
-.fx-drawer-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;background:var(--bg)}
-.fx-drawer-footer .btn{flex:1;justify-content:center}
-.fx-section{display:flex;flex-direction:column;gap:8px}
-.fx-section-label{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
-.fx-range{display:flex;gap:8px;align-items:center}
-.fx-range input[type=number]{flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:.85rem;font-family:inherit}
-.fx-range input[type=number]:focus{outline:none;border-color:var(--primary)}
-.fx-range-sep{color:var(--muted);font-size:.78rem}
-.fx-checkboxes{display:flex;flex-direction:column;gap:2px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px;background:var(--bg)}
-.fx-checkbox{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:.85rem;transition:background .12s}
+.fx-drawer-header{padding:14px 16px;background:var(--primary);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.fx-drawer-title{font-weight:800;font-size:.95rem;color:#fff;display:flex;align-items:center;gap:8px}
+.fx-drawer-close{width:30px;height:30px;border-radius:8px;border:none;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.fx-drawer-close:hover{background:rgba(255,255,255,.3)}
+.fx-drawer-body{flex:1;overflow-y:auto;padding:0;display:flex;flex-direction:column}
+.fx-drawer-footer{padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;background:#f8fafc}
+body.dark-mode .fx-drawer-footer{background:#1a1f2e}
+.fx-drawer-footer .btn{flex:1;justify-content:center;height:38px;font-size:.83rem}
+/* Sections */
+.fx-section{display:flex;flex-direction:column;gap:0;border-bottom:1px solid var(--border)}
+.fx-section-header{display:flex;align-items:center;gap:7px;padding:11px 16px;cursor:pointer;user-select:none;transition:background .12s;position:relative}
+.fx-section-header:hover{background:rgba(0,0,0,.02)}
+.fx-section-label{font-size:.75rem;font-weight:700;color:var(--primary);text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:6px;flex:1}
+.fx-section-label svg{opacity:.7}
+.fx-section-chevron{width:16px;height:16px;color:var(--muted);transition:transform .2s;flex-shrink:0}
+.fx-section-body{padding:0 16px 12px 16px;display:flex;flex-direction:column;gap:6px}
+.fx-section.collapsed .fx-section-body{display:none}
+.fx-section.collapsed .fx-section-chevron{transform:rotate(-90deg)}
+.fx-section-active-badge{display:none;width:7px;height:7px;border-radius:50%;background:var(--accent);position:absolute;top:10px;left:12px}
+.fx-section.has-active .fx-section-active-badge{display:block}
+/* Range inputs */
+.fx-range{display:flex;gap:6px;align-items:center}
+.fx-range input[type=number],.fx-range input[type=date]{flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font-size:.82rem;font-family:inherit;transition:border-color .12s}
+body.dark-mode .fx-range input{background:var(--surface)}
+.fx-range input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(var(--primary-rgb),.1)}
+.fx-range-sep{color:var(--muted);font-size:.8rem;flex-shrink:0}
+/* Checkbox list */
+.fx-checkboxes{display:flex;flex-direction:column;gap:1px;max-height:160px;overflow-y:auto;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.fx-checkbox{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-size:.82rem;background:#fff;transition:background .1s;color:var(--text)}
+body.dark-mode .fx-checkbox{background:var(--surface)}
 .fx-checkbox:hover{background:var(--primary-pale)}
-.fx-checkbox input{accent-color:var(--primary);cursor:pointer}
-.fx-checkbox-count{margin-inline-start:auto;font-size:.74rem;color:var(--muted);background:var(--surface);padding:1px 8px;border-radius:99px;font-weight:600}
+.fx-checkbox input{accent-color:var(--primary);cursor:pointer;width:15px;height:15px;flex-shrink:0}
+.fx-checkbox-label{flex:1;font-weight:500}
+.fx-checkbox input:checked ~ .fx-checkbox-label{font-weight:700;color:var(--primary)}
+.fx-checkbox-count{font-size:.7rem;color:var(--muted);background:#f1f5f9;padding:1px 7px;border-radius:99px;font-weight:700;min-width:24px;text-align:center;flex-shrink:0}
+body.dark-mode .fx-checkbox-count{background:var(--surface2)}
+/* WhatsApp button */
+.wa-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#25d366;border:none;cursor:pointer;flex-shrink:0;transition:transform .15s,box-shadow .15s;text-decoration:none}
+.wa-btn:hover{transform:scale(1.15);box-shadow:0 3px 12px rgba(37,211,102,.45)}
+.wa-btn svg{display:block}
 
 /* Collapsible toolbar */
 .fx-toolbar-collapsible{position:relative;padding-bottom:0}
@@ -9960,49 +9983,79 @@ function openFxDrawer(ctx) {
     const empsHtml = employees.length ? employees.map(e => `
       <label class="fx-checkbox">
         <input type="checkbox" data-fx="employee" value="${esc(e)}" ${s.employee.has(e)?'checked':''}>
-        <span>${esc(e)}</span>
+        <span class="fx-checkbox-label">${esc(e)}</span>
         <span class="fx-checkbox-count">${fmtN(empCounts.get(e)||0)}</span>
-      </label>`).join('') : '<div style="padding:10px;color:var(--muted);font-size:.82rem;text-align:center">لا يوجد موظفون مسجلون</div>';
+      </label>`).join('') : '<div style="padding:10px;color:var(--muted);font-size:.8rem;text-align:center">لا يوجد موظفون</div>';
     const methodsHtml = methods.map(m => `
       <label class="fx-checkbox">
         <input type="checkbox" data-fx="method" value="${esc(m)}" ${s.method.has(m)?'checked':''}>
-        <span>${esc(m)}</span>
+        <span class="fx-checkbox-label">${esc(m)}</span>
         <span class="fx-checkbox-count">${fmtN(methodCounts.get(m)||0)}</span>
       </label>`).join('');
     const statusesHtml = statuses.map(st => `
       <label class="fx-checkbox">
         <input type="checkbox" data-fx="status" value="${esc(st)}" ${s.status.has(st)?'checked':''}>
-        <span>${esc(st)}</span>
+        <span class="fx-checkbox-label">${esc(st)}</span>
         <span class="fx-checkbox-count">${fmtN(statusCounts.get(st)||0)}</span>
       </label>`).join('');
+    const _chevron = `<svg class="fx-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+    const _hasDate = s.dateFrom || s.dateTo;
+    const _hasAmt  = s.amountMin !== '' || s.amountMax !== '';
+    const _hasSt   = s.status.size > 0;
+    const _hasEmp  = s.employee.size > 0;
+    const _hasMeth = s.method.size > 0;
     body.innerHTML = `
-      <div class="fx-section">
-        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('clock')} نطاق التاريخ</div>
-        <div class="fx-range">
-          <input type="date" data-fx="dateFrom" value="${esc(s.dateFrom)}">
-          <span class="fx-range-sep">→</span>
-          <input type="date" data-fx="dateTo" value="${esc(s.dateTo)}">
+      <div class="fx-section${_hasDate?' has-active':''}">
+        <div class="fx-section-header" onclick="this.closest('.fx-section').classList.toggle('collapsed')">
+          <span class="fx-section-active-badge"></span>
+          <span class="fx-section-label"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> نطاق التاريخ</span>
+          ${_chevron}
+        </div>
+        <div class="fx-section-body">
+          <div class="fx-range">
+            <input type="date" data-fx="dateFrom" value="${esc(s.dateFrom)}" placeholder="من">
+            <span class="fx-range-sep">←</span>
+            <input type="date" data-fx="dateTo" value="${esc(s.dateTo)}" placeholder="إلى">
+          </div>
         </div>
       </div>
-      <div class="fx-section">
-        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('money')} نطاق المبلغ (ج)</div>
-        <div class="fx-range">
-          <input type="number" min="0" placeholder="من" data-fx="amountMin" value="${esc(s.amountMin)}">
-          <span class="fx-range-sep">→</span>
-          <input type="number" min="0" placeholder="إلى" data-fx="amountMax" value="${esc(s.amountMax)}">
+      <div class="fx-section${_hasAmt?' has-active':''}">
+        <div class="fx-section-header" onclick="this.closest('.fx-section').classList.toggle('collapsed')">
+          <span class="fx-section-active-badge"></span>
+          <span class="fx-section-label"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> نطاق المبلغ (ج)</span>
+          ${_chevron}
+        </div>
+        <div class="fx-section-body">
+          <div class="fx-range">
+            <input type="number" min="0" placeholder="من" data-fx="amountMin" value="${esc(s.amountMin)}">
+            <span class="fx-range-sep">←</span>
+            <input type="number" min="0" placeholder="إلى" data-fx="amountMax" value="${esc(s.amountMax)}">
+          </div>
         </div>
       </div>
-      <div class="fx-section">
-        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('pin')} الحالة</div>
-        <div class="fx-checkboxes">${statusesHtml}</div>
+      <div class="fx-section${_hasSt?' has-active':''}">
+        <div class="fx-section-header" onclick="this.closest('.fx-section').classList.toggle('collapsed')">
+          <span class="fx-section-active-badge"></span>
+          <span class="fx-section-label"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg> الحالة</span>
+          ${_chevron}
+        </div>
+        <div class="fx-section-body"><div class="fx-checkboxes">${statusesHtml}</div></div>
       </div>
-      <div class="fx-section">
-        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('user')} الموظف</div>
-        <div class="fx-checkboxes">${empsHtml}</div>
+      <div class="fx-section${_hasEmp?' has-active':''}">
+        <div class="fx-section-header" onclick="this.closest('.fx-section').classList.toggle('collapsed')">
+          <span class="fx-section-active-badge"></span>
+          <span class="fx-section-label"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> الموظف</span>
+          ${_chevron}
+        </div>
+        <div class="fx-section-body"><div class="fx-checkboxes">${empsHtml}</div></div>
       </div>
-      <div class="fx-section">
-        <div class="fx-section-label" style="display:flex;align-items:center;gap:5px">${ICON('wallet')} طريقة الدفع</div>
-        <div class="fx-checkboxes">${methodsHtml}</div>
+      <div class="fx-section${_hasMeth?' has-active':''}">
+        <div class="fx-section-header" onclick="this.closest('.fx-section').classList.toggle('collapsed')">
+          <span class="fx-section-active-badge"></span>
+          <span class="fx-section-label"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> طريقة الدفع</span>
+          ${_chevron}
+        </div>
+        <div class="fx-section-body"><div class="fx-checkboxes">${methodsHtml}</div></div>
       </div>`;
     body.querySelectorAll('input[data-fx]').forEach(inp => {
       inp.addEventListener('input', () => _fxOnDrawerChange(inp));
@@ -10680,7 +10733,10 @@ function renderMovementTxRow(tx) {
     <td>${dateCell}</td>
     <td>${movementKindBadge(tx)}${vaultStatusBadge}${vaultHint}</td>
     <td>
-      <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" class="mov-client-name">${tx.client ? esc(tx.client) : '<span style="color:var(--muted);font-weight:400">—</span>'}</a>
+      <div style="display:flex;align-items:center;gap:6px">
+        <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" class="mov-client-name">${tx.client ? esc(tx.client) : '<span style="color:var(--muted);font-weight:400">—</span>'}</a>
+        ${tx.type === 'مبيعات' && tx.phone ? `<a class="wa-btn" href="https://wa.me/${encodeURIComponent((tx.phone||'').replace(/\D/g,''))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="واتساب: ${esc(tx.phone)}" style="width:22px;height:22px"><svg viewBox="0 0 24 24" width="12" height="12" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>` : ''}
+      </div>
       ${(tx.comments && tx.comments.length) ? `<span class="badge-edited" title="يحتوي على ${tx.comments.length} تعليق" onclick="event.stopPropagation();showInvoiceDetail('${esc(tx._id)}')" style="background:rgba(59,130,246,.12);color:#3b82f6;border:1px solid rgba(59,130,246,.25);cursor:pointer;font-size:.65rem"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.85em;height:.85em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> ${tx.comments.length}</span>` : ''}
       ${(tx.editHistory && tx.editHistory.length) ? '<span class="badge-edited" title="تم التعديل" onclick="event.stopPropagation();showInvoiceDetail(\''+esc(tx._id)+'\')">✎ معدّل</span>' : ''}
     </td>
@@ -11101,7 +11157,10 @@ function renderMovGridCard(tx) {
         ${getVaultEntryStatusBadge(tx._id)}
       </div>
     </div>
-    <div class="mgc-client">${tx.client ? esc(tx.client) : '<span style="color:var(--muted);font-weight:400">بدون اسم</span>'}</div>
+    <div class="mgc-client" style="display:flex;align-items:center;gap:7px;overflow:hidden">
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tx.client ? esc(tx.client) : '<span style="color:var(--muted);font-weight:400">بدون اسم</span>'}</span>
+      ${tx.type === 'مبيعات' && tx.phone ? `<a class="wa-btn" href="https://wa.me/${encodeURIComponent((tx.phone||'').replace(/\D/g,''))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="واتساب: ${esc(tx.phone)}"><svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>` : ''}
+    </div>
     ${itemsPreview ? `<div class="mgc-items-preview">${itemsPreview}${moreItems}</div>` : ''}
     <div class="mgc-financials">
       <div class="mgc-fin-item">
