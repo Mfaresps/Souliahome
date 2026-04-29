@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Req,
   UseGuards,
   UnauthorizedException,
   NotFoundException,
@@ -34,8 +35,16 @@ export class SettingsController {
 
   @Roles('admin')
   @Put()
-  async updateSettings(@Body() dto: UpdateSettingsDto) {
-    const updated = await this.settingsService.updateSettings(dto);
+  async updateSettings(@Body() dto: UpdateSettingsDto, @Req() req: any) {
+    const updated = await this.settingsService.updateSettings(dto, req.body);
+    return this.settingsService.stripSensitive(updated);
+  }
+
+  @Roles('admin')
+  @Post('staff-discount/:enabled')
+  async setStaffDiscount(@Param('enabled') enabled: string) {
+    const value = enabled === 'true';
+    const updated = await this.settingsService.setStaffDiscount(value);
     return this.settingsService.stripSensitive(updated);
   }
 

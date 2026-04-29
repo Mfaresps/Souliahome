@@ -15,6 +15,17 @@ export class UsersService {
     return this.userModel.find().select('-password').sort({ role: 1, createdAt: 1 }).exec();
   }
 
+  async findMentionable(): Promise<{ _id: string; name: string; username: string; role: string; active: boolean }[]> {
+    const docs = await this.userModel.find({ isActive: { $ne: false } }).select('_id name username role isActive').lean().exec();
+    return docs.map(u => ({
+      _id: String(u._id),
+      name: u.name || '',
+      username: u.username || '',
+      role: u.role || 'staff',
+      active: u.isActive !== false,
+    }));
+  }
+
   async findByUsername(username: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ username }).exec();
   }

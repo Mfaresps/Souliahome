@@ -57,4 +57,8 @@ export class UpdateSettingsDto {
   @IsBoolean()
   @IsOptional()
   readonly darkMode?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  readonly staffDiscountEnabled?: boolean;
 }

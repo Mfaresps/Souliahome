@@ -58,6 +58,11 @@ export class UsersController {
     return this.usersService.updateUser(userId, safeDto);
   }
 
+  @Get('mentionable')
+  async mentionable() {
+    return this.usersService.findMentionable();
+  }
+
   @Roles('admin')
   @Get()
   async findAll() {

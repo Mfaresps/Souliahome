@@ -205,6 +205,19 @@ export class PresenceGateway
     }
   }
 
+  /** Emit an event only to sockets belonging to the given userId */
+  emitToUser(userId: string, event: string, payload: unknown): boolean {
+    if (!this.server || !userId) return false;
+    let delivered = false;
+    for (const u of this.connectedUsers.values()) {
+      if (u.userId === String(userId)) {
+        this.server.to(u.socketId).emit(event, payload);
+        delivered = true;
+      }
+    }
+    return delivered;
+  }
+
   private async broadcastOnlineUsers() {
     const onlineIds = this.getOnlineUserIds();
     const allUsers = await this.usersService.findAll();

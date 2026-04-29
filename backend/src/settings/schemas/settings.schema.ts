@@ -60,6 +60,9 @@ export class Settings {
 
   @Prop({ type: Date, default: () => new Date() })
   lastLiveUpload: Date;
+
+  @Prop({ default: false })
+  staffDiscountEnabled: boolean;
 }
 
 export const SettingsSchema = SchemaFactory.createForClass(Settings);

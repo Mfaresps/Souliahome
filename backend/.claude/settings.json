@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --enable-source-maps dist/main)",
+      "Bash(curl -s -X POST http://localhost:4000/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"Fares@2024\"}')",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s -X POST http://localhost:4000/api/auth/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"Fares@2024\"}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('staffDiscountEnabled:', d.get\\('staffDiscountEnabled', 'NOT FOUND'\\)\\); print\\('keys:', list\\(d.keys\\(\\)\\)\\)\")",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(nohup node *)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -X POST http://localhost:4000/api/auth/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"Test@123\"}')",
+      "Bash(python3 -c \"import sys,json; print\\('staffDiscountEnabled:', json.load\\(sys.stdin\\).get\\('staffDiscountEnabled'\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; print\\(json.load\\(sys.stdin\\).get\\('staffDiscountEnabled'\\)\\)\")",
+      "Bash(curl -s -X POST http://localhost:4000/api/auth/login -H 'Content-Type: application/json' -d '{\"username\":\"Donia\",\"password\":\"Test@123\"}')",
+      "Bash(taskkill /F /PID 51508)",
+      "Bash(node dist/main)",
+      "PowerShell(Stop-Process -Id 51508 -Force; Start-Sleep 3; Start-Process \"node\" -ArgumentList \"dist/main\" -WorkingDirectory \"d:\\\\website\\\\Souliahome\\\\backend\" -NoNewWindow; Start-Sleep 4; $r = Invoke-RestMethod -Uri \"http://localhost:4000/api/auth/login\" -Method POST -ContentType \"application/json\" -Body '{\"username\":\"admin\",\"password\":\"Test@123\"}'; $token = $r.accessToken; Write-Host \"Token OK: $\\($token.Substring\\(0,15\\)\\)...\"; $r2 = Invoke-RestMethod -Uri \"http://localhost:4000/api/settings/staff-discount/false\" -Method POST -Headers @{Authorization=\"Bearer $token\"}; Write-Host \"Set FALSE: staffDiscountEnabled=$\\($r2.staffDiscountEnabled\\)\")"
+    ]
+  }
+}

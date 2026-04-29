@@ -47,9 +47,16 @@ export class SettingsService {
     return this.stripSensitive(settings);
   }
 
-  async updateSettings(dto: UpdateSettingsDto): Promise<SettingsDocument> {
+  async updateSettings(dto: UpdateSettingsDto, rawBody?: Record<string, unknown>): Promise<SettingsDocument> {
     const settings = await this.getSettings();
     Object.assign(settings, dto);
+    return settings.save();
+  }
+
+  async setStaffDiscount(value: boolean): Promise<SettingsDocument> {
+    const settings = await this.getSettings();
+    settings.staffDiscountEnabled = value;
+    settings.markModified('staffDiscountEnabled');
     return settings.save();
   }
 
