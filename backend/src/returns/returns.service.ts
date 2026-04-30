@@ -15,6 +15,9 @@ import { CreateReturnRequestDto } from './dto/return-request.dto';
 import { TransactionsService } from '../transactions/transactions.service';
 import { ExpensesService } from '../expenses/expenses.service';
 import { VaultService } from '../vault/vault.service';
+// #region agent log
+import { debugLog } from '../debug-log.util';
+// #endregion
 
 const MAX_RETURN_DAYS = 14;
 
@@ -238,6 +241,20 @@ export class ReturnsService {
       shipCost: 0,
     };
     await this.transactionsService.create(returnTx as never);
+    // #region agent log
+    debugLog('returns.service.ts:approve', 'RETURN_APPROVED', {
+      hypothesisId: 'INV',
+      returnId: String(saved._id),
+      originalRef: ret.originalRef,
+      client: ret.client,
+      reason: ret.reason,
+      refundTotal,
+      refundAccount,
+      inventoryImpact: 'إضافة للمخزن (إرجاع من عميل)',
+      items: (ret.items || []).map((it: any) => ({ code: it.code, name: it.name, qty: it.qty })),
+      createdReturnTxRef: ret.originalRef + '-RET',
+    });
+    // #endregion
     return saved;
   }
 
@@ -257,6 +274,35 @@ export class ReturnsService {
     ret.approvedBy = approvedBy;
     ret.approvedAt = new Date().toISOString();
     ret.rejectedReason = rejectedReason;
+    return ret.save();
+  }
+
+  async updateVaultAccount(
+    id: string,
+    vaultRefundAccount?: string,
+    vaultCollectAccount?: string,
+  ): Promise<ReturnRequestDocument> {
+    const ret = await this.returnModel.findById(id).exec();
+    if (!ret) {
+      throw new NotFoundException('طلب الاسترجاع غير موجود');
+    }
+    if (ret.status !== 'معلق') {
+      throw new BadRequestException('لا يمكن تعديل الخزنة — الطلب ليس معلقاً');
+    }
+    if (vaultRefundAccount) {
+      const normalized = normalizeVaultAccountLabel(vaultRefundAccount);
+      if (!normalized) {
+        throw new BadRequestException('قسم الخزنة غير صالح');
+      }
+      ret.vaultRefundAccount = normalized;
+    }
+    if (vaultCollectAccount) {
+      const normalized = normalizeVaultAccountLabel(vaultCollectAccount);
+      if (!normalized) {
+        throw new BadRequestException('قسم الخزنة غير صالح');
+      }
+      ret.vaultCollectAccount = normalized;
+    }
     return ret.save();
   }
 }

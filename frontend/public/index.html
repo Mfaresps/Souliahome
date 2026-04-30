@@ -641,36 +641,212 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .pagination button:disabled{opacity:.35;cursor:not-allowed}
 .pagination .pag-info{font-size:.76rem;color:var(--muted);padding:0 6px;white-space:nowrap}
 .pagination .pag-ellipsis{font-size:.8rem;color:var(--muted);padding:0 4px}
-.inv-detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+/* ══════════════════════════════════════════════════════════════════════════════
+   INVOICE DETAIL MODAL - Premium Redesign
+   ══════════════════════════════════════════════════════════════════════════════ */
+.inv-detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s ease}
 .inv-detail-overlay.active{opacity:1;pointer-events:auto}
-.inv-detail{background:var(--bg);border-radius:16px;width:520px;max-width:94vw;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:invIn .25s ease;position:relative}
-@keyframes invIn{from{opacity:0;transform:scale(.93) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
-.inv-detail .inv-close{position:absolute;top:12px;left:12px;width:30px;height:30px;border-radius:50%;border:none;background:var(--surface2);color:var(--muted);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
-.inv-detail .inv-close:hover{background:var(--red);color:#fff}
-.inv-header-strip{background:var(--primary);color:#fff;padding:20px 24px;border-radius:16px 16px 0 0;text-align:center}
-.inv-header-strip.is-purchase{background:linear-gradient(135deg,#1565c0 0%,#2196f3 100%)}
-.inv-header-strip h3{margin:0 0 4px;font-size:1.15rem;font-weight:800;letter-spacing:.5px}
-.inv-header-strip .inv-type-tag{display:inline-block;padding:3px 14px;border-radius:20px;font-size:.72rem;font-weight:700;background:rgba(255,255,255,.2);margin-top:4px}
-.inv-body{padding:20px 24px}
-.inv-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-bottom:18px;font-size:.82rem}
-.inv-meta .inv-field{display:flex;flex-direction:column;gap:2px}
-.inv-meta .inv-field .inv-label{font-size:.7rem;color:var(--muted);font-weight:600}
-.inv-meta .inv-field .inv-value{font-weight:600}
-.inv-items-tbl{width:100%;border-collapse:collapse;margin:14px 0;font-size:.82rem}
-.inv-items-tbl th{background:var(--surface2);padding:8px 10px;text-align:right;font-weight:700;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
-.inv-items-tbl td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:right}
-.inv-items-tbl tr:last-child td{border-bottom:none}
-.inv-summary{display:flex;flex-direction:column;gap:6px;padding:14px 0;border-top:2px solid var(--border);margin-top:6px;font-size:.85rem}
-.inv-summary .inv-row{display:flex;justify-content:space-between;align-items:center}
-.inv-summary .inv-row.total-row{font-size:1.05rem;font-weight:800;color:var(--primary);padding-top:8px;border-top:1px dashed var(--border)}
-.inv-detail.is-purchase .inv-summary .inv-row.total-row{color:#2196f3}
-.inv-summary .inv-row.danger{color:var(--red)}
-.inv-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
-.inv-footer .btn{font-size:.78rem;padding:7px 16px}
-.inv-status-strip{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:8px;margin-bottom:14px;font-size:.82rem;font-weight:600}
-.inv-status-strip.paid{background:rgba(22,163,74,.08);color:var(--green)}
-.inv-status-strip.pending{background:rgba(230,81,0,.08);color:var(--orange)}
-.inv-status-strip.cancelled{background:rgba(220,38,38,.08);color:var(--red)}
+.inv-detail{background:var(--bg);border-radius:20px;width:580px;max-width:96vw;max-height:90vh;overflow:hidden;box-shadow:0 25px 80px rgba(0,0,0,.25),0 10px 30px rgba(0,0,0,.15);animation:invSlideIn .35s cubic-bezier(.16,1,.3,1);position:relative;display:flex;flex-direction:column}
+@keyframes invSlideIn{from{opacity:0;transform:translateY(30px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.inv-detail .inv-close{position:absolute;top:16px;left:16px;width:36px;height:36px;border-radius:12px;border:none;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;z-index:10;backdrop-filter:blur(8px)}
+.inv-detail .inv-close:hover{background:rgba(255,255,255,.25);transform:scale(1.05)}
+/* Premium Header */
+.inv-header{background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%);color:#fff;padding:28px 28px 20px;position:relative;overflow:hidden}
+.inv-header::before{content:'';position:absolute;top:-50%;right:-50%;width:100%;height:200%;background:radial-gradient(circle,rgba(255,255,255,.1) 0%,transparent 60%);pointer-events:none}
+.inv-header.is-purchase{background:linear-gradient(135deg,#1565c0 0%,#42a5f5 100%)}
+.inv-header.is-return{background:linear-gradient(135deg,#e65100 0%,#ff9800 100%)}
+.inv-header-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.inv-brand{font-size:1.4rem;font-weight:900;letter-spacing:1px;text-transform:uppercase;opacity:.95}
+.inv-type-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:.75rem;font-weight:700;background:rgba(255,255,255,.2);backdrop-filter:blur(4px)}
+.inv-number{font-size:2rem;font-weight:900;letter-spacing:1px;margin-bottom:4px;direction:ltr;display:inline-block}
+.inv-date{font-size:.82rem;opacity:.85;display:flex;align-items:center;gap:6px}
+/* Status Banner */
+.inv-status-banner{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 20px;font-size:.88rem;font-weight:700;position:relative}
+.inv-status-banner.paid{background:linear-gradient(90deg,rgba(22,163,74,.12) 0%,rgba(22,163,74,.06) 100%);color:#16a34a}
+.inv-status-banner.pending{background:linear-gradient(90deg,rgba(234,88,12,.12) 0%,rgba(234,88,12,.06) 100%);color:#ea580c}
+.inv-status-banner.cancelled{background:linear-gradient(90deg,rgba(220,38,38,.12) 0%,rgba(220,38,38,.06) 100%);color:#dc2626}
+.inv-status-banner svg{width:20px;height:20px;flex-shrink:0}
+.inv-status-banner .inv-progress-mini{flex:1;max-width:120px;height:6px;background:rgba(0,0,0,.08);border-radius:3px;overflow:hidden;margin-right:8px}
+.inv-status-banner .inv-progress-mini .bar{height:100%;background:currentColor;border-radius:3px;transition:width .4s ease}
+/* Invoice Body */
+.inv-body{flex:1;overflow-y:auto;padding:0;overscroll-behavior:contain}
+.inv-body-inner{padding:24px 28px}
+/* Document Info Bar */
+.inv-doc-bar{display:flex;flex-wrap:wrap;gap:12px;padding:14px 20px;background:var(--surface2);border-radius:12px;margin-bottom:20px;font-size:.82rem}
+.inv-doc-item{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)}
+.inv-doc-item svg{width:16px;height:16px;color:var(--muted);flex-shrink:0}
+.inv-doc-item .label{color:var(--muted);font-size:.72rem}
+.inv-doc-item .value{font-weight:700;color:var(--text)}
+.inv-doc-item.ref{cursor:pointer;transition:all .15s}
+.inv-doc-item.ref:hover{border-color:var(--accent);background:var(--primary-pale)}
+.inv-doc-item.ref .copy-icon{opacity:0;transition:opacity .15s;margin-right:4px}
+.inv-doc-item.ref:hover .copy-icon{opacity:1}
+/* Client/Supplier Card */
+.inv-party-card{display:flex;align-items:center;gap:16px;padding:18px 20px;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;margin-bottom:20px;transition:all .2s}
+.inv-party-card:hover{border-color:var(--accent);box-shadow:0 4px 20px rgba(0,0,0,.06)}
+.inv-party-card.is-purchase{border-color:rgba(33,150,243,.3)}
+.inv-party-card.is-purchase:hover{border-color:#2196f3;box-shadow:0 4px 20px rgba(33,150,243,.1)}
+.inv-party-avatar{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;flex-shrink:0}
+.inv-party-card.is-purchase .inv-party-avatar{background:linear-gradient(135deg,#1565c0 0%,#42a5f5 100%)}
+.inv-party-info{flex:1;min-width:0}
+.inv-party-label{font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.inv-party-name{font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inv-party-phone{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;color:var(--muted);padding:4px 10px;background:var(--surface2);border-radius:6px;direction:ltr}
+.inv-party-phone svg{width:14px;height:14px}
+.inv-party-extra{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.inv-party-badge{font-size:.7rem;padding:4px 10px;border-radius:6px;background:var(--surface2);color:var(--muted);font-weight:600}
+/* Enhanced Items Table */
+.inv-items-section{margin-bottom:20px}
+.inv-items-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.inv-items-title{font-size:.82rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+.inv-items-title svg{width:18px;height:18px;color:var(--muted)}
+.inv-items-count{font-size:.72rem;padding:3px 10px;background:var(--surface2);border-radius:10px;color:var(--muted);font-weight:600}
+.inv-items-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:.82rem;border:1.5px solid var(--border);border-radius:12px;overflow:hidden}
+.inv-items-tbl thead{position:sticky;top:0;z-index:1}
+.inv-items-tbl th{background:var(--surface2);padding:12px 14px;text-align:right;font-weight:700;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border)}
+.inv-items-tbl td{padding:12px 14px;border-bottom:1px solid var(--border);text-align:right;background:var(--bg);transition:background .12s}
+.inv-items-tbl tbody tr:nth-child(even) td{background:var(--surface)}
+.inv-items-tbl tbody tr:hover td{background:var(--primary-pale)}
+.inv-items-tbl tbody tr:last-child td{border-bottom:none}
+.inv-items-tbl .col-num{width:36px;color:var(--muted);font-size:.75rem;text-align:center}
+.inv-items-tbl .col-product{font-weight:600}
+.inv-items-tbl .col-code{font-family:'SF Mono',Monaco,monospace;font-size:.72rem;color:var(--muted);direction:ltr}
+.inv-items-tbl .col-qty{text-align:center;font-weight:600}
+.inv-items-tbl .col-price{direction:ltr;text-align:left}
+.inv-items-tbl .col-total{font-weight:700;color:var(--text);direction:ltr;text-align:left}
+.inv-items-tbl tfoot td{background:var(--surface2);font-weight:800;border-top:2px solid var(--border);padding:14px}
+.inv-items-tbl tfoot .grand-total{font-size:1.05rem;color:var(--primary)}
+.inv-detail.is-purchase .inv-items-tbl tfoot .grand-total{color:#2196f3}
+/* Financial Summary Section */
+.inv-summary-section{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px}
+.inv-summary-header{display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px dashed var(--border)}
+.inv-summary-header svg{width:20px;height:20px;color:var(--muted)}
+.inv-summary-header h4{margin:0;font-size:.88rem;font-weight:700;color:var(--text)}
+.inv-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.inv-summary-card{padding:14px;border-radius:10px;background:var(--bg);border:1px solid var(--border)}
+.inv-summary-card.highlight{background:linear-gradient(135deg,rgba(22,163,74,.06) 0%,rgba(22,163,74,.02) 100%);border-color:rgba(22,163,74,.2)}
+.inv-summary-card.danger{background:linear-gradient(135deg,rgba(220,38,38,.06) 0%,rgba(220,38,38,.02) 100%);border-color:rgba(220,38,38,.2)}
+.inv-summary-card .card-label{font-size:.72rem;color:var(--muted);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.inv-summary-card .card-label svg{width:14px;height:14px}
+.inv-summary-card .card-value{font-size:1.15rem;font-weight:800;color:var(--text)}
+.inv-summary-card.highlight .card-value{color:#16a34a}
+.inv-summary-card.danger .card-value{color:#dc2626}
+/* Progress Bar */
+.inv-progress{margin-top:16px;padding-top:16px;border-top:1px dashed var(--border)}
+.inv-progress-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:.78rem}
+.inv-progress-label .text{color:var(--muted);font-weight:600}
+.inv-progress-label .percent{font-weight:800;color:var(--text)}
+.inv-progress-bar{height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;position:relative}
+.inv-progress-bar .fill{height:100%;border-radius:5px;transition:width .5s cubic-bezier(.16,1,.3,1);position:relative}
+.inv-progress-bar .fill.green{background:linear-gradient(90deg,#16a34a 0%,#22c55e 100%)}
+.inv-progress-bar .fill.blue{background:linear-gradient(90deg,#2563eb 0%,#3b82f6 100%)}
+.inv-progress-bar .fill.orange{background:linear-gradient(90deg,#ea580c 0%,#f97316 100%)}
+.inv-progress-bar .fill::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.3) 50%,transparent 100%);animation:progressShine 2s infinite}
+@keyframes progressShine{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+/* Payment Breakdown */
+.inv-breakdown{margin-top:16px}
+.inv-breakdown-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg);border-radius:8px;margin-bottom:6px;font-size:.84rem;border:1px solid var(--border)}
+.inv-breakdown-row svg{width:16px;height:16px;margin-left:8px;flex-shrink:0}
+.inv-breakdown-row .label{display:flex;align-items:center;gap:6px;color:var(--text)}
+.inv-breakdown-row .amount{font-weight:700}
+.inv-breakdown-row.deposit{border-color:rgba(22,163,74,.2);background:rgba(22,163,74,.04)}
+.inv-breakdown-row.deposit .amount{color:#16a34a}
+.inv-breakdown-row.collection{border-color:rgba(59,130,246,.2);background:rgba(59,130,246,.04)}
+.inv-breakdown-row.collection .amount{color:#3b82f6}
+.inv-breakdown-row.discount{border-color:rgba(220,38,38,.2);background:rgba(220,38,38,.04)}
+.inv-breakdown-row.discount .amount{color:#dc2626}
+.inv-breakdown-row.shipping{border-color:rgba(139,92,246,.2);background:rgba(139,92,246,.04)}
+.inv-breakdown-row.shipping .amount{color:#8b5cf6}
+/* Payment Timeline */
+.inv-timeline{margin-top:20px}
+.inv-timeline-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface2);border-radius:10px 10px 0 0;cursor:pointer;transition:background .15s}
+.inv-timeline-header:hover{background:var(--surface)}
+.inv-timeline-header h5{margin:0;font-size:.82rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.inv-timeline-header h5 svg{width:16px;height:16px;color:var(--muted)}
+.inv-timeline-header .badge{font-size:.7rem;padding:3px 10px;background:var(--primary);color:#fff;border-radius:10px;font-weight:600}
+.inv-timeline-header .chevron{width:18px;height:18px;color:var(--muted);transition:transform .2s}
+.inv-timeline-header.expanded .chevron{transform:rotate(180deg)}
+.inv-timeline-body{border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow:hidden;max-height:0;transition:max-height .3s ease}
+.inv-timeline-body.expanded{max-height:500px}
+.inv-timeline-list{padding:12px 16px}
+.inv-timeline-item{display:flex;gap:12px;padding:10px 0;position:relative}
+.inv-timeline-item:not(:last-child){border-bottom:1px dashed var(--border)}
+.inv-timeline-item:not(:last-child)::before{content:'';position:absolute;right:7px;top:32px;bottom:-10px;width:2px;background:var(--border)}
+.inv-timeline-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.inv-timeline-dot.green{background:rgba(22,163,74,.15);border:2px solid #16a34a}
+.inv-timeline-dot.blue{background:rgba(59,130,246,.15);border:2px solid #3b82f6}
+.inv-timeline-content{flex:1;min-width:0}
+.inv-timeline-amount{font-weight:700;font-size:.9rem;margin-bottom:2px}
+.inv-timeline-meta{font-size:.75rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px}
+/* Collapsible Sections */
+.inv-section{margin-top:16px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.inv-section-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--surface);cursor:pointer;transition:background .15s;user-select:none}
+.inv-section-header:hover{background:var(--surface2)}
+.inv-section-header h5{margin:0;font-size:.85rem;font-weight:700;display:flex;align-items:center;gap:10px}
+.inv-section-header h5 svg{width:18px;height:18px;color:var(--muted)}
+.inv-section-header .section-badge{font-size:.7rem;padding:3px 10px;background:var(--accent);color:#fff;border-radius:10px;font-weight:600}
+.inv-section-header .section-chevron{width:20px;height:20px;color:var(--muted);transition:transform .25s}
+.inv-section-header.expanded .section-chevron{transform:rotate(180deg)}
+.inv-section-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.inv-section-body.expanded{max-height:1000px}
+.inv-section-content{padding:16px 18px;border-top:1px solid var(--border)}
+/* Notes Section */
+.inv-notes{padding:14px 18px;background:var(--surface);border-radius:10px;margin-top:16px;font-size:.84rem}
+.inv-notes-label{font-size:.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.inv-notes-label svg{width:14px;height:14px}
+.inv-notes-text{color:var(--text);line-height:1.5}
+.inv-notes.cancel-reason{background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.15)}
+.inv-notes.cancel-reason .inv-notes-label{color:#dc2626}
+/* Supplier Images */
+.inv-attachments{margin-top:16px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.inv-attachments-header{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.inv-attachments-header svg{width:18px;height:18px;color:var(--muted)}
+.inv-attachments-header span{font-size:.82rem;font-weight:700;color:var(--text)}
+.inv-attachments-header .count{font-size:.72rem;padding:2px 8px;background:var(--surface2);border-radius:8px;color:var(--muted);margin-right:auto}
+.inv-attachments-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.inv-attachment-item{border-radius:10px;overflow:hidden;border:1px solid var(--border);transition:all .2s;cursor:pointer}
+.inv-attachment-item:hover{border-color:var(--accent);box-shadow:0 4px 15px rgba(0,0,0,.1);transform:translateY(-2px)}
+.inv-attachment-item img{width:100%;height:100px;object-fit:cover;display:block}
+.inv-attachment-item .file-placeholder{height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--surface2);color:var(--muted)}
+.inv-attachment-item .file-placeholder svg{width:28px;height:28px}
+.inv-attachment-item .file-label{padding:8px;text-align:center;font-size:.72rem;color:var(--muted);background:var(--bg);border-top:1px solid var(--border)}
+/* Footer Actions */
+.inv-footer{padding:18px 28px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;align-items:center;background:var(--bg);flex-shrink:0}
+.inv-footer .btn{font-size:.82rem;padding:10px 20px;border-radius:10px;font-weight:600;display:inline-flex;align-items:center;gap:8px;transition:all .2s}
+.inv-footer .btn svg{width:16px;height:16px}
+.inv-footer .btn-primary{background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%);color:#fff;border:none;box-shadow:0 4px 15px rgba(var(--primary-rgb),.3)}
+.inv-footer .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(var(--primary-rgb),.4)}
+.inv-footer .btn-danger{background:linear-gradient(135deg,#dc2626 0%,#ef4444 100%);color:#fff;border:none}
+.inv-footer .btn-outline{background:var(--bg);color:var(--text);border:1.5px solid var(--border)}
+.inv-footer .btn-outline:hover{border-color:var(--accent);background:var(--primary-pale)}
+/* LTR Support */
+[dir="ltr"] .inv-detail .inv-close{left:auto;right:16px}
+[dir="ltr"] .inv-items-tbl th,[dir="ltr"] .inv-items-tbl td{text-align:left}
+[dir="ltr"] .inv-items-tbl .col-price,[dir="ltr"] .inv-items-tbl .col-total{text-align:right}
+[dir="ltr"] .inv-timeline-item:not(:last-child)::before{right:auto;left:7px}
+/* Mobile Responsive */
+@media(max-width:600px){
+.inv-detail{border-radius:20px 20px 0 0;max-height:95vh;margin-top:auto}
+.inv-header{padding:24px 20px 18px}
+.inv-number{font-size:1.5rem}
+.inv-body-inner{padding:20px}
+.inv-doc-bar{flex-direction:column;gap:8px}
+.inv-doc-item{width:100%}
+.inv-party-card{flex-direction:column;text-align:center;gap:12px}
+.inv-party-extra{align-items:center}
+.inv-summary-grid{grid-template-columns:1fr}
+.inv-footer{flex-wrap:wrap;padding:16px 20px}
+.inv-footer .btn{flex:1;justify-content:center;min-width:120px}
+}
+/* Print Styles */
+@media print{
+.inv-detail-overlay{background:none;position:static}
+.inv-detail{box-shadow:none;max-height:none;overflow:visible;width:100%;max-width:100%}
+.inv-close,.inv-footer{display:none!important}
+.inv-header{background:var(--primary)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.inv-body{overflow:visible}
+.inv-section-body{max-height:none!important}
+}
 #sidebar{position:fixed;top:var(--header-h);right:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;z-index:50;padding:12px 0;transition:transform .3s}
 #sidebar .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:.85rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;border-right:3px solid transparent;text-decoration:none}
 #sidebar .nav-item:hover{background:var(--primary-pale);color:var(--text)}
@@ -1100,84 +1276,174 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .seg-card .seg-val{font-size:1.4rem;font-weight:700;margin-top:4px}
 .seg-card .seg-label{font-size:.78rem;color:var(--muted)}
 /* ===== Profile Page ===== */
-/* ═══════════════════════ PROFILE PAGE v2 ═══════════════════════ */
-#page-profile .prof-wrap{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
-/* Cover + avatar */
-#page-profile .prof-cover{border-radius:18px;overflow:hidden;position:relative;height:160px;background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%);box-shadow:0 8px 28px rgba(45,122,79,.22)}
-#page-profile .prof-cover-pattern{position:absolute;inset:0;opacity:.06;background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:22px 22px}
-#page-profile .prof-cover-actions{position:absolute;bottom:0;left:0;right:0;padding:14px 20px;display:flex;align-items:flex-end;gap:16px}
-#page-profile .prof-avatar-wrap{position:relative;flex-shrink:0}
-#page-profile .prof-avatar{width:96px;height:96px;border-radius:50%;border:4px solid #fff;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:2.1rem;font-weight:800;color:#fff;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.18);transition:transform .2s}
-#page-profile .prof-avatar:hover{transform:scale(1.04)}
-#page-profile .prof-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-#page-profile .prof-online-dot{position:absolute;bottom:6px;right:6px;width:14px;height:14px;border-radius:50%;background:#22c55e;border:2.5px solid #fff;box-shadow:0 0 0 2px rgba(34,197,94,.3)}
-#page-profile .prof-cover-name{color:#fff;flex:1;min-width:0}
-#page-profile .prof-cover-name h2{font-size:1.25rem;font-weight:800;margin:0 0 2px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.2)}
-#page-profile .prof-cover-name p{font-size:.8rem;color:rgba(255,255,255,.8);margin:0}
-#page-profile .prof-role-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);padding:4px 12px;border-radius:99px;font-size:.7rem;font-weight:700;color:#fff;backdrop-filter:blur(6px);white-space:nowrap;flex-shrink:0}
-/* KPI strip */
-#page-profile .prof-kpi-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-#page-profile .prof-kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:12px;transition:box-shadow .2s,transform .2s;cursor:default}
-#page-profile .prof-kpi:hover{box-shadow:0 4px 18px rgba(0,0,0,.08);transform:translateY(-2px)}
-#page-profile .prof-kpi-icon{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-#page-profile .prof-kpi-body{min-width:0}
-#page-profile .prof-kpi-val{font-size:1.35rem;font-weight:800;color:var(--text);line-height:1.1}
-#page-profile .prof-kpi-lbl{font-size:.71rem;color:var(--muted);font-weight:600;margin-top:2px}
-/* Two-column layout */
-#page-profile .prof-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-/* Cards */
-#page-profile .prof-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)}
-#page-profile .prof-card-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;background:var(--surface2)}
-#page-profile .prof-card-hd svg{color:var(--primary);flex-shrink:0}
-#page-profile .prof-card-hd h3{font-size:.88rem;font-weight:700;margin:0;color:var(--text)}
-#page-profile .prof-card-bd{padding:18px}
-/* Info rows */
-#page-profile .prof-info-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
-#page-profile .prof-info-row:last-child{border-bottom:none;padding-bottom:0}
-#page-profile .prof-info-icon{width:32px;height:32px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-#page-profile .prof-info-icon svg{color:var(--primary)}
-#page-profile .prof-info-body{flex:1;min-width:0}
-#page-profile .prof-info-lbl{font-size:.67rem;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
-#page-profile .prof-info-val{font-size:.88rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* Edit form */
-#page-profile .prof-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
-#page-profile .prof-field:last-of-type{margin-bottom:0}
-#page-profile .prof-field label{font-size:.75rem;font-weight:700;color:var(--muted)}
-#page-profile .prof-field input{padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);font-size:.87rem;transition:border-color .15s,box-shadow .15s;outline:none}
-#page-profile .prof-field input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(45,122,79,.12)}
-#page-profile .prof-field input.err{border-color:var(--red)}
-#page-profile .prof-field .field-err{font-size:.7rem;color:var(--red);margin-top:2px;display:none}
-#page-profile .prof-field .field-err.show{display:block}
-/* Password strength */
-#page-profile .prof-pass-wrap{position:relative}
-#page-profile .prof-pass-eye{position:absolute;inset-inline-start:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;transition:color .15s}
-#page-profile .prof-pass-eye:hover{color:var(--primary)}
-#page-profile .prof-pass-strength{margin-top:6px;height:4px;border-radius:99px;background:var(--border);overflow:hidden}
-#page-profile .prof-pass-strength-bar{height:100%;border-radius:99px;transition:width .3s,background .3s}
-#page-profile .prof-pass-hint{font-size:.68rem;color:var(--muted);margin-top:3px}
-/* Avatar row */
-#page-profile .prof-avatar-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-#page-profile .prof-avatar-mini{width:46px;height:46px;border-radius:50%;border:2px solid var(--border);object-fit:cover;background:var(--surface2);display:none;flex-shrink:0}
-#page-profile .prof-avatar-mini.show{display:block}
-/* Activity log */
-#page-profile .prof-activity-list{display:flex;flex-direction:column;gap:0}
-#page-profile .prof-activity-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);animation:fadeSlideIn .25s ease}
-#page-profile .prof-activity-item:last-child{border-bottom:none}
-@keyframes fadeSlideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-#page-profile .prof-activity-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
-#page-profile .prof-activity-body{flex:1;min-width:0}
-#page-profile .prof-activity-text{font-size:.82rem;color:var(--text);font-weight:500}
-#page-profile .prof-activity-time{font-size:.68rem;color:var(--muted);margin-top:2px}
-#page-profile .prof-empty{text-align:center;padding:24px;color:var(--muted);font-size:.83rem}
+/* ═══════════════════════ PROFILE PAGE v3 - HIGH-END ═══════════════════════ */
+#page-myprofile{background:linear-gradient(180deg,var(--surface) 0%,var(--bg) 100%);min-height:100vh;position:relative;overflow-x:hidden}
+#page-myprofile::before{content:'';position:absolute;top:0;left:0;right:0;height:320px;background:linear-gradient(135deg,var(--primary) 0%,#1a5c3a 50%,var(--accent) 100%);z-index:0}
+#page-myprofile .prof-wrap{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:24px;padding:24px;position:relative;z-index:1}
+/* Animated background orbs */
+@keyframes profOrb1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-20px) scale(1.1)}}
+@keyframes profOrb2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-25px,15px) scale(0.9)}}
+@keyframes profOrb3{0%,100%{transform:translate(0,0)}50%{transform:translate(15px,25px)}}
+#page-myprofile .prof-orbs{position:absolute;top:0;left:0;right:0;height:320px;overflow:hidden;z-index:0;pointer-events:none}
+#page-myprofile .prof-orb{position:absolute;border-radius:50%;filter:blur(60px);opacity:0.4}
+#page-myprofile .prof-orb:nth-child(1){width:200px;height:200px;background:rgba(255,255,255,0.15);top:-50px;right:10%;animation:profOrb1 8s ease-in-out infinite}
+#page-myprofile .prof-orb:nth-child(2){width:150px;height:150px;background:rgba(16,185,129,0.2);top:80px;left:5%;animation:profOrb2 10s ease-in-out infinite}
+#page-myprofile .prof-orb:nth-child(3){width:100px;height:100px;background:rgba(59,130,246,0.15);top:20px;left:40%;animation:profOrb3 12s ease-in-out infinite}
+/* Hero Section with Glass Card */
+#page-myprofile .prof-hero{position:relative;margin-top:20px}
+#page-myprofile .prof-hero-card{background:rgba(255,255,255,0.12);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.2);border-radius:28px;padding:32px;display:flex;align-items:center;gap:28px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25)}
+body.dark-mode #page-myprofile .prof-hero-card{background:rgba(0,0,0,0.25);border-color:rgba(255,255,255,0.1)}
+/* Floating Avatar */
+#page-myprofile .prof-avatar-container{position:relative;flex-shrink:0}
+#page-myprofile .prof-avatar-ring{position:absolute;inset:-6px;border-radius:50%;background:conic-gradient(from 0deg,#10b981,#3b82f6,#8b5cf6,#ec4899,#f59e0b,#10b981);animation:profRingSpin 8s linear infinite;opacity:0.8}
+@keyframes profRingSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+#page-myprofile .prof-avatar{width:120px;height:120px;border-radius:50%;border:5px solid var(--bg);background:linear-gradient(135deg,var(--primary-light) 0%,var(--accent) 100%);display:flex;align-items:center;justify-content:center;font-size:2.8rem;font-weight:800;color:#fff;overflow:hidden;position:relative;z-index:1;box-shadow:0 20px 40px rgba(0,0,0,0.3);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+#page-myprofile .prof-avatar:hover{transform:scale(1.05) translateY(-4px)}
+#page-myprofile .prof-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+#page-myprofile .prof-online-indicator{position:absolute;bottom:8px;right:8px;width:20px;height:20px;border-radius:50%;background:#22c55e;border:4px solid var(--bg);z-index:2;box-shadow:0 0 0 3px rgba(34,197,94,0.3),0 0 20px rgba(34,197,94,0.4)}
+@keyframes profPulse{0%,100%{box-shadow:0 0 0 3px rgba(34,197,94,0.3),0 0 20px rgba(34,197,94,0.4)}50%{box-shadow:0 0 0 6px rgba(34,197,94,0.2),0 0 30px rgba(34,197,94,0.5)}}
+#page-myprofile .prof-online-indicator{animation:profPulse 2s ease-in-out infinite}
+/* Hero Info */
+#page-myprofile .prof-hero-info{flex:1;min-width:0;color:#fff}
+#page-myprofile .prof-hero-info h1{font-size:1.75rem;font-weight:800;margin:0 0 6px;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,0.1);line-height:1.2}
+#page-myprofile .prof-hero-info .prof-username{font-size:0.95rem;color:rgba(255,255,255,0.75);margin:0 0 16px;font-weight:500}
+#page-myprofile .prof-hero-badges{display:flex;flex-wrap:wrap;gap:10px}
+#page-myprofile .prof-badge{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:100px;font-size:0.78rem;font-weight:700;backdrop-filter:blur(10px);transition:all 0.3s ease}
+#page-myprofile .prof-badge-role{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:#fff}
+#page-myprofile .prof-badge-verified{background:rgba(34,197,94,0.2);border:1px solid rgba(34,197,94,0.4);color:#86efac}
+#page-myprofile .prof-badge svg{width:14px;height:14px}
+/* Hero Actions */
+#page-myprofile .prof-hero-actions{display:flex;flex-direction:column;gap:10px;flex-shrink:0}
+#page-myprofile .prof-action-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:14px;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);border:none;white-space:nowrap}
+#page-myprofile .prof-action-primary{background:#fff;color:var(--primary);box-shadow:0 10px 30px rgba(0,0,0,0.2)}
+#page-myprofile .prof-action-primary:hover{transform:translateY(-3px);box-shadow:0 15px 40px rgba(0,0,0,0.25)}
+#page-myprofile .prof-action-secondary{background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);backdrop-filter:blur(10px)}
+#page-myprofile .prof-action-secondary:hover{background:rgba(255,255,255,0.25);transform:translateY(-2px)}
+/* Stats Strip - Glass Cards */
+#page-myprofile .prof-stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:-30px}
+#page-myprofile .prof-stat{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;text-align:center;position:relative;overflow:hidden;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);cursor:default}
+#page-myprofile .prof-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--stat-color,var(--primary));opacity:0;transition:opacity 0.3s}
+#page-myprofile .prof-stat:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(0,0,0,0.1)}
+#page-myprofile .prof-stat:hover::before{opacity:1}
+#page-myprofile .prof-stat-icon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;transition:transform 0.3s}
+#page-myprofile .prof-stat:hover .prof-stat-icon{transform:scale(1.1)}
+#page-myprofile .prof-stat-val{font-size:1.8rem;font-weight:800;color:var(--text);line-height:1;margin-bottom:6px}
+#page-myprofile .prof-stat-lbl{font-size:0.75rem;color:var(--muted);font-weight:600;letter-spacing:0.02em}
+/* Main Grid */
+#page-myprofile .prof-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+/* Premium Cards */
+#page-myprofile .prof-card{background:var(--surface);border:1px solid var(--border);border-radius:24px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.04);transition:all 0.4s ease}
+#page-myprofile .prof-card:hover{box-shadow:0 12px 40px rgba(0,0,0,0.08)}
+#page-myprofile .prof-card-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,var(--surface) 0%,var(--surface2) 100%)}
+#page-myprofile .prof-card-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#page-myprofile .prof-card-icon svg{width:18px;height:18px}
+#page-myprofile .prof-card-title{font-size:0.95rem;font-weight:700;margin:0;color:var(--text)}
+#page-myprofile .prof-card-subtitle{font-size:0.72rem;color:var(--muted);margin-top:2px}
+#page-myprofile .prof-card-body{padding:24px}
+/* Info List - Modern Style */
+#page-myprofile .prof-info-list{display:flex;flex-direction:column;gap:4px}
+#page-myprofile .prof-info-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;transition:all 0.2s;cursor:default}
+#page-myprofile .prof-info-item:hover{background:var(--surface2)}
+#page-myprofile .prof-info-icon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform 0.3s}
+#page-myprofile .prof-info-item:hover .prof-info-icon{transform:scale(1.08)}
+#page-myprofile .prof-info-icon svg{width:16px;height:16px}
+#page-myprofile .prof-info-content{flex:1;min-width:0}
+#page-myprofile .prof-info-label{font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px}
+#page-myprofile .prof-info-value{font-size:0.92rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Edit Form - Premium Inputs */
+#page-myprofile .prof-form{display:flex;flex-direction:column;gap:20px}
+#page-myprofile .prof-form-group{display:flex;flex-direction:column;gap:8px}
+#page-myprofile .prof-form-label{font-size:0.78rem;font-weight:700;color:var(--text)}
+#page-myprofile .prof-form-sublabel{font-size:0.7rem;color:var(--muted);font-weight:500}
+#page-myprofile .prof-form-input{padding:14px 18px;border:2px solid var(--border);border-radius:14px;background:var(--bg);color:var(--text);font-size:0.9rem;font-weight:500;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);outline:none}
+#page-myprofile .prof-form-input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(45,122,79,0.12);transform:translateY(-1px)}
+#page-myprofile .prof-form-input::placeholder{color:var(--muted);font-weight:400}
+#page-myprofile .prof-form-input.error{border-color:var(--red);box-shadow:0 0 0 4px rgba(220,38,38,0.1)}
+#page-myprofile .prof-form-error{font-size:0.72rem;color:var(--red);font-weight:600;display:none}
+#page-myprofile .prof-form-error.show{display:block}
+/* Avatar Upload Preview */
+#page-myprofile .prof-avatar-upload{display:flex;align-items:center;gap:16px}
+#page-myprofile .prof-avatar-preview{width:64px;height:64px;border-radius:50%;border:3px solid var(--border);background:var(--surface2);overflow:hidden;flex-shrink:0;display:none;transition:all 0.3s}
+#page-myprofile .prof-avatar-preview.show{display:flex;align-items:center;justify-content:center}
+#page-myprofile .prof-avatar-preview img{width:100%;height:100%;object-fit:cover}
+/* Password Field */
+#page-myprofile .prof-pass-container{position:relative}
+#page-myprofile .prof-pass-toggle{position:absolute;inset-inline-start:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:6px;border-radius:8px;transition:all 0.2s}
+#page-myprofile .prof-pass-toggle:hover{color:var(--primary);background:var(--surface2)}
+#page-myprofile .prof-pass-meter{height:6px;border-radius:100px;background:var(--border);margin-top:10px;overflow:hidden}
+#page-myprofile .prof-pass-fill{height:100%;border-radius:100px;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+#page-myprofile .prof-pass-hint{font-size:0.72rem;color:var(--muted);margin-top:8px;font-weight:500}
+/* Save Button - Premium */
+#page-myprofile .prof-save-btn{display:flex;align-items:center;justify-content:center;gap:10px;padding:16px 28px;border-radius:16px;background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%);color:#fff;font-size:0.9rem;font-weight:700;border:none;cursor:pointer;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 10px 30px rgba(45,122,79,0.3)}
+#page-myprofile .prof-save-btn:hover{transform:translateY(-3px);box-shadow:0 15px 40px rgba(45,122,79,0.4)}
+#page-myprofile .prof-save-btn:active{transform:translateY(-1px)}
+#page-myprofile .prof-save-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+#page-myprofile .prof-save-btn svg{width:18px;height:18px}
+/* Permissions Card */
+#page-myprofile .prof-perms-grid{display:flex;flex-wrap:wrap;gap:10px}
+#page-myprofile .prof-perm-chip{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:100px;background:linear-gradient(135deg,rgba(45,122,79,0.08) 0%,rgba(45,122,79,0.04) 100%);border:1px solid rgba(45,122,79,0.15);font-size:0.8rem;font-weight:600;color:var(--primary);transition:all 0.3s}
+#page-myprofile .prof-perm-chip:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(45,122,79,0.15)}
+#page-myprofile .prof-perm-chip svg{width:14px;height:14px;opacity:0.7}
+/* Activity Timeline */
+#page-myprofile .prof-timeline{display:flex;flex-direction:column;gap:0}
+#page-myprofile .prof-timeline-item{display:flex;gap:16px;padding:18px 0;border-bottom:1px solid var(--border);animation:profSlideIn 0.4s cubic-bezier(0.34,1.56,0.64,1) backwards}
+#page-myprofile .prof-timeline-item:last-child{border-bottom:none}
+@keyframes profSlideIn{from{opacity:0;transform:translateX(-20px)}}
+#page-myprofile .prof-timeline-item:nth-child(1){animation-delay:0.05s}
+#page-myprofile .prof-timeline-item:nth-child(2){animation-delay:0.1s}
+#page-myprofile .prof-timeline-item:nth-child(3){animation-delay:0.15s}
+#page-myprofile .prof-timeline-item:nth-child(4){animation-delay:0.2s}
+#page-myprofile .prof-timeline-item:nth-child(5){animation-delay:0.25s}
+#page-myprofile .prof-timeline-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:4px;position:relative}
+#page-myprofile .prof-timeline-dot::after{content:'';position:absolute;top:16px;left:50%;transform:translateX(-50%);width:2px;height:calc(100% + 24px);background:var(--border)}
+#page-myprofile .prof-timeline-item:last-child .prof-timeline-dot::after{display:none}
+#page-myprofile .prof-timeline-content{flex:1;min-width:0}
+#page-myprofile .prof-timeline-text{font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:4px}
+#page-myprofile .prof-timeline-meta{font-size:0.75rem;color:var(--muted);font-weight:500}
+#page-myprofile .prof-empty{text-align:center;padding:40px 24px;color:var(--muted);font-size:0.88rem}
+#page-myprofile .prof-empty svg{width:48px;height:48px;opacity:0.3;margin-bottom:12px}
+/* Quick Actions Section */
+#page-myprofile .prof-quick-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:8px}
+#page-myprofile .prof-quick-btn{display:flex;align-items:center;gap:12px;padding:16px 20px;border-radius:16px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1)}
+#page-myprofile .prof-quick-btn:hover{background:var(--primary-pale);border-color:var(--primary);transform:translateY(-2px)}
+#page-myprofile .prof-quick-btn svg{width:20px;height:20px;color:var(--primary)}
+#page-myprofile .prof-quick-btn span{font-size:0.85rem;font-weight:600;color:var(--text)}
+/* Security Section */
+#page-myprofile .prof-security{display:flex;flex-direction:column;gap:16px}
+#page-myprofile .prof-security-item{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:16px;background:var(--surface2);border:1px solid var(--border)}
+#page-myprofile .prof-security-icon{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#page-myprofile .prof-security-icon svg{width:20px;height:20px}
+#page-myprofile .prof-security-info{flex:1}
+#page-myprofile .prof-security-title{font-size:0.88rem;font-weight:700;color:var(--text);margin-bottom:2px}
+#page-myprofile .prof-security-desc{font-size:0.75rem;color:var(--muted)}
+#page-myprofile .prof-security-status{padding:6px 14px;border-radius:100px;font-size:0.72rem;font-weight:700}
+#page-myprofile .prof-security-status.active{background:rgba(34,197,94,0.1);color:#16a34a}
+#page-myprofile .prof-security-status.inactive{background:rgba(220,38,38,0.1);color:#dc2626}
+/* Logout Button */
+#page-myprofile .prof-logout-btn{display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;border-radius:16px;background:linear-gradient(135deg,rgba(220,38,38,0.08) 0%,rgba(220,38,38,0.04) 100%);border:1px solid rgba(220,38,38,0.2);color:var(--red);font-size:0.88rem;font-weight:700;cursor:pointer;transition:all 0.3s;margin-top:8px}
+#page-myprofile .prof-logout-btn:hover{background:rgba(220,38,38,0.12);transform:translateY(-2px)}
+#page-myprofile .prof-logout-btn svg{width:18px;height:18px}
+/* Full width card */
+#page-myprofile .prof-card-full{grid-column:1/-1}
 /* Responsive */
-@media(max-width:680px){
-  #page-profile .prof-kpi-strip{grid-template-columns:1fr 1fr}
-  #page-profile .prof-cols{grid-template-columns:1fr}
-  #page-profile .prof-cover{height:130px}
-  #page-profile .prof-avatar{width:78px;height:78px}
+@media(max-width:800px){
+  #page-myprofile .prof-stats-strip{grid-template-columns:repeat(2,1fr)}
+  #page-myprofile .prof-grid{grid-template-columns:1fr}
+  #page-myprofile .prof-hero-card{flex-direction:column;text-align:center;padding:28px 24px}
+  #page-myprofile .prof-hero-badges{justify-content:center}
+  #page-myprofile .prof-hero-actions{flex-direction:row;width:100%}
+  #page-myprofile .prof-hero-actions .prof-action-btn{flex:1}
+}
+@media(max-width:540px){
+  #page-myprofile .prof-stats-strip{grid-template-columns:1fr 1fr;gap:12px}
+  #page-myprofile .prof-stat{padding:18px}
+  #page-myprofile .prof-stat-val{font-size:1.5rem}
+  #page-myprofile .prof-avatar{width:100px;height:100px;font-size:2.2rem}
+  #page-myprofile .prof-hero-info h1{font-size:1.4rem}
+  #page-myprofile .prof-quick-actions{grid-template-columns:1fr}
 }
 @media(max-width:420px){
-  #page-profile .prof-kpi-strip{grid-template-columns:1fr}
+  #page-myprofile .prof-stats-strip{grid-template-columns:1fr}
 }
 /* legacy .profile-avatar used elsewhere */
 .profile-avatar{width:80px;height:80px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;margin:0 auto 16px}
@@ -4772,11 +5038,6 @@ body.dark-mode .dashboard-v2{
 <!-- Tab 1: Overview -->
 <div id="vault-tab-overview" class="vault-tab-content">
 <div class="seg-cards" id="vault-segs"></div>
-<!-- KPI CARDS -->
-<div id="vault-kpi-panel" style="display:none">
-  <div class="vault-kpi-grid mb-16" id="vault-kpi-cards"></div>
-</div>
-<div class="vault-kpi-grid mb-16" id="vault-stats"></div>
 <div class="card mb-20">
 <h4 class="mb-12" style="font-size:.95rem">تسوية يدوية</h4>
 <div class="grid grid-2 gap-10" id="vault-adjust-grid">
@@ -5039,156 +5300,307 @@ body.dark-mode .dashboard-v2{
 </div><!-- /page-settings -->
 
 <!-- Profile -->
-<div class="page" id="page-profile">
+<div class="page" id="page-myprofile">
+<!-- Animated Background Orbs -->
+<div class="prof-orbs">
+  <div class="prof-orb"></div>
+  <div class="prof-orb"></div>
+  <div class="prof-orb"></div>
+</div>
+
 <div class="prof-wrap">
 
-  <!-- ── Cover / Hero ───────────────────────────── -->
-  <div class="prof-cover">
-    <div class="prof-cover-pattern"></div>
-    <div class="prof-cover-actions">
-      <div class="prof-avatar-wrap">
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- HERO SECTION - Glass Morphism Card                             -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div class="prof-hero">
+    <div class="prof-hero-card">
+      <!-- Animated Avatar with Ring -->
+      <div class="prof-avatar-container">
+        <div class="prof-avatar-ring"></div>
         <div class="prof-avatar" id="prof-avatar-hero">
-          <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
+          <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
         </div>
-        <div class="prof-online-dot" id="prof-online-dot" style="display:none"></div>
+        <div class="prof-online-indicator" id="prof-online-dot" style="display:none"></div>
       </div>
-      <div class="prof-cover-name">
-        <h2 id="prof-cover-name">—</h2>
-        <p id="prof-cover-username">@—</p>
-      </div>
-      <div class="prof-role-badge" id="prof-role-badge">
-        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span id="prof-role-label">—</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── KPI Strip ──────────────────────────────── -->
-  <div class="prof-kpi-strip" id="prof-kpi-strip">
-    <div class="prof-kpi">
-      <div class="prof-kpi-icon" style="background:rgba(16,185,129,.1)">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      </div>
-      <div class="prof-kpi-body">
-        <div class="prof-kpi-val" id="kpi-sales">—</div>
-        <div class="prof-kpi-lbl">حركات المبيعات</div>
-      </div>
-    </div>
-    <div class="prof-kpi">
-      <div class="prof-kpi-icon" style="background:rgba(59,130,246,.1)">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg>
-      </div>
-      <div class="prof-kpi-body">
-        <div class="prof-kpi-val" id="kpi-purchases">—</div>
-        <div class="prof-kpi-lbl">حركات الشراء</div>
-      </div>
-    </div>
-    <div class="prof-kpi">
-      <div class="prof-kpi-icon" style="background:rgba(168,85,247,.1)">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      </div>
-      <div class="prof-kpi-body">
-        <div class="prof-kpi-val" id="kpi-tx">—</div>
-        <div class="prof-kpi-lbl">إجمالي الحركات</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Two-column: Info + Edit ───────────────── -->
-  <div class="prof-cols">
-
-    <!-- Account info -->
-    <div class="prof-card">
-      <div class="prof-card-hd">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
-        <h3>معلومات الحساب</h3>
-      </div>
-      <div class="prof-card-bd">
-        <div class="prof-info-row">
-          <div class="prof-info-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg></div>
-          <div class="prof-info-body"><div class="prof-info-lbl">الاسم الكامل</div><div class="prof-info-val" id="pi-name">—</div></div>
-        </div>
-        <div class="prof-info-row">
-          <div class="prof-info-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg></div>
-          <div class="prof-info-body"><div class="prof-info-lbl">اسم المستخدم</div><div class="prof-info-val" id="pi-username">—</div></div>
-        </div>
-        <div class="prof-info-row">
-          <div class="prof-info-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.1 2.18 2 2 0 012.07 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.08 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.9v2.02z"/></svg></div>
-          <div class="prof-info-body"><div class="prof-info-lbl">الهاتف</div><div class="prof-info-val" id="pi-phone">—</div></div>
-        </div>
-        <div class="prof-info-row">
-          <div class="prof-info-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-          <div class="prof-info-body"><div class="prof-info-lbl">الصلاحية</div><div class="prof-info-val" id="pi-role">—</div></div>
-        </div>
-        <div class="prof-info-row">
-          <div class="prof-info-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-          <div class="prof-info-body"><div class="prof-info-lbl">آخر تسجيل دخول</div><div class="prof-info-val" id="pi-lastlogin">—</div></div>
+      
+      <!-- User Info -->
+      <div class="prof-hero-info">
+        <h1 id="prof-cover-name">—</h1>
+        <p class="prof-username" id="prof-cover-username">@—</p>
+        <div class="prof-hero-badges">
+          <span class="prof-badge prof-badge-role" id="prof-role-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span id="prof-role-label">—</span>
+          </span>
+          <span class="prof-badge prof-badge-verified" id="prof-verified-badge" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            حساب موثق
+          </span>
         </div>
       </div>
-    </div>
-
-    <!-- Edit form -->
-    <div class="prof-card prof-edit-section">
-      <div class="prof-card-hd">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        <h3>تعديل البيانات</h3>
-      </div>
-      <div class="prof-card-bd">
-        <!-- Avatar URL + preview -->
-        <div class="prof-avatar-row">
-          <img id="prof-avatar-mini" class="prof-avatar-mini" src="" alt="">
-          <div style="flex:1;min-width:0">
-            <div class="prof-field" style="margin-bottom:0">
-              <label>رابط الصورة الشخصية</label>
-              <input type="url" id="prof-avatar" placeholder="https://..." oninput="profPreviewAvatar(this.value)">
-            </div>
-          </div>
-        </div>
-        <div class="prof-field">
-          <label>رقم الهاتف</label>
-          <input type="tel" id="prof-phone" placeholder="اختياري" oninput="profValidatePhone(this)">
-          <span class="field-err" id="prof-phone-err">رقم هاتف غير صالح</span>
-        </div>
-        <div class="prof-field">
-          <label>كلمة المرور الجديدة <span style="font-weight:400;color:var(--muted)">(اتركها فارغة لعدم التغيير)</span></label>
-          <div class="prof-pass-wrap">
-            <input type="password" id="prof-password" placeholder="6 أحرف على الأقل" style="padding-inline-start:36px;width:100%;box-sizing:border-box" oninput="profPasswordStrength(this.value)">
-            <button type="button" class="prof-pass-eye" onclick="profTogglePass()" title="إظهار/إخفاء">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" id="prof-eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-          </div>
-          <div class="prof-pass-strength"><div class="prof-pass-strength-bar" id="prof-pass-bar" style="width:0;background:#e5e7eb"></div></div>
-          <div class="prof-pass-hint" id="prof-pass-hint"></div>
-        </div>
-        <button class="btn btn-primary" style="width:100%;margin-top:4px" id="prof-save-btn" onclick="saveProfile()">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="margin-inline-end:6px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
-          حفظ التعديلات
+      
+      <!-- Quick Actions -->
+      <div class="prof-hero-actions">
+        <button class="prof-action-btn prof-action-primary" onclick="document.querySelector('#prof-avatar').focus()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          تعديل الملف
+        </button>
+        <button class="prof-action-btn prof-action-secondary" onclick="navigateTo('settings')">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          الإعدادات
         </button>
       </div>
     </div>
-  </div><!-- /prof-cols -->
-
-  <!-- ── Permissions ───────────────────────────── -->
-  <div class="prof-card" id="prof-perms-card" style="display:none">
-    <div class="prof-card-hd">
-      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-      <h3>الصلاحيات الممنوحة</h3>
-    </div>
-    <div class="prof-card-bd" id="prof-perms-body" style="display:flex;flex-wrap:wrap;gap:8px"></div>
   </div>
 
-  <!-- ── Activity Log ───────────────────────────── -->
-  <div class="prof-card">
-    <div class="prof-card-hd">
-      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <h3>سجل النشاط الأخير</h3>
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- STATS STRIP - Premium Glass Cards                              -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div class="prof-stats-strip" id="prof-kpi-strip">
+    <div class="prof-stat" style="--stat-color:#10b981">
+      <div class="prof-stat-icon" style="background:linear-gradient(135deg,rgba(16,185,129,0.15) 0%,rgba(16,185,129,0.05) 100%)">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div class="prof-stat-val" id="kpi-sales">—</div>
+      <div class="prof-stat-lbl">حركات المبيعات</div>
     </div>
-    <div class="prof-card-bd">
-      <div class="prof-activity-list" id="prof-activity-list">
-        <div class="prof-empty">جارٍ التحميل...</div>
+    <div class="prof-stat" style="--stat-color:#3b82f6">
+      <div class="prof-stat-icon" style="background:linear-gradient(135deg,rgba(59,130,246,0.15) 0%,rgba(59,130,246,0.05) 100%)">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+      </div>
+      <div class="prof-stat-val" id="kpi-purchases">—</div>
+      <div class="prof-stat-lbl">حركات الشراء</div>
+    </div>
+    <div class="prof-stat" style="--stat-color:#8b5cf6">
+      <div class="prof-stat-icon" style="background:linear-gradient(135deg,rgba(139,92,246,0.15) 0%,rgba(139,92,246,0.05) 100%)">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="prof-stat-val" id="kpi-tx">—</div>
+      <div class="prof-stat-lbl">إجمالي الحركات</div>
+    </div>
+    <div class="prof-stat" style="--stat-color:#f59e0b">
+      <div class="prof-stat-icon" style="background:linear-gradient(135deg,rgba(245,158,11,0.15) 0%,rgba(245,158,11,0.05) 100%)">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div class="prof-stat-val" id="kpi-days">—</div>
+      <div class="prof-stat-lbl">أيام الانضمام</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- MAIN GRID - Two Column Layout                                  -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div class="prof-grid">
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- ACCOUNT INFO CARD                                           -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <div class="prof-card">
+      <div class="prof-card-header">
+        <div class="prof-card-icon" style="background:linear-gradient(135deg,rgba(45,122,79,0.12) 0%,rgba(45,122,79,0.04) 100%)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
+        </div>
+        <div>
+          <h3 class="prof-card-title">معلومات الحساب</h3>
+          <p class="prof-card-subtitle">البيانات الأساسية لحسابك</p>
+        </div>
+      </div>
+      <div class="prof-card-body">
+        <div class="prof-info-list">
+          <div class="prof-info-item">
+            <div class="prof-info-icon" style="background:linear-gradient(135deg,rgba(16,185,129,0.12) 0%,rgba(16,185,129,0.04) 100%)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
+            </div>
+            <div class="prof-info-content">
+              <div class="prof-info-label">الاسم الكامل</div>
+              <div class="prof-info-value" id="pi-name">—</div>
+            </div>
+          </div>
+          <div class="prof-info-item">
+            <div class="prof-info-icon" style="background:linear-gradient(135deg,rgba(59,130,246,0.12) 0%,rgba(59,130,246,0.04) 100%)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div class="prof-info-content">
+              <div class="prof-info-label">اسم المستخدم</div>
+              <div class="prof-info-value" id="pi-username">—</div>
+            </div>
+          </div>
+          <div class="prof-info-item">
+            <div class="prof-info-icon" style="background:linear-gradient(135deg,rgba(139,92,246,0.12) 0%,rgba(139,92,246,0.04) 100%)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.1 2.18 2 2 0 012.07 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.08 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.9v2.02z"/></svg>
+            </div>
+            <div class="prof-info-content">
+              <div class="prof-info-label">رقم الهاتف</div>
+              <div class="prof-info-value" id="pi-phone">—</div>
+            </div>
+          </div>
+          <div class="prof-info-item">
+            <div class="prof-info-icon" style="background:linear-gradient(135deg,rgba(245,158,11,0.12) 0%,rgba(245,158,11,0.04) 100%)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div class="prof-info-content">
+              <div class="prof-info-label">مستوى الصلاحية</div>
+              <div class="prof-info-value" id="pi-role">—</div>
+            </div>
+          </div>
+          <div class="prof-info-item">
+            <div class="prof-info-icon" style="background:linear-gradient(135deg,rgba(236,72,153,0.12) 0%,rgba(236,72,153,0.04) 100%)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="prof-info-content">
+              <div class="prof-info-label">آخر تسجيل دخول</div>
+              <div class="prof-info-value" id="pi-lastlogin">—</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- EDIT PROFILE CARD                                           -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <div class="prof-card prof-edit-section">
+      <div class="prof-card-header">
+        <div class="prof-card-icon" style="background:linear-gradient(135deg,rgba(59,130,246,0.12) 0%,rgba(59,130,246,0.04) 100%)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        <div>
+          <h3 class="prof-card-title">تعديل البيانات</h3>
+          <p class="prof-card-subtitle">قم بتحديث معلوماتك الشخصية</p>
+        </div>
+      </div>
+      <div class="prof-card-body">
+        <div class="prof-form">
+          <!-- Avatar Upload -->
+          <div class="prof-form-group">
+            <label class="prof-form-label">الصورة الشخصية</label>
+            <div class="prof-avatar-upload">
+              <div class="prof-avatar-preview" id="prof-avatar-mini">
+                <img src="" alt="">
+              </div>
+              <div style="flex:1">
+                <input type="url" id="prof-avatar" class="prof-form-input" placeholder="https://example.com/avatar.jpg" oninput="profPreviewAvatar(this.value)">
+              </div>
+            </div>
+          </div>
+          
+          <!-- Phone Number -->
+          <div class="prof-form-group">
+            <label class="prof-form-label">رقم الهاتف <span class="prof-form-sublabel">(اختياري)</span></label>
+            <input type="tel" id="prof-phone" class="prof-form-input" placeholder="01xxxxxxxxx" oninput="profValidatePhone(this)">
+            <span class="prof-form-error" id="prof-phone-err">رقم هاتف غير صالح</span>
+          </div>
+          
+          <!-- Password -->
+          <div class="prof-form-group">
+            <label class="prof-form-label">كلمة المرور الجديدة <span class="prof-form-sublabel">(اتركها فارغة لعدم التغيير)</span></label>
+            <div class="prof-pass-container">
+              <input type="password" id="prof-password" class="prof-form-input" placeholder="6 أحرف على الأقل" style="padding-inline-start:44px" oninput="profPasswordStrength(this.value)">
+              <button type="button" class="prof-pass-toggle" onclick="profTogglePass()" title="إظهار/إخفاء">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" id="prof-eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <div class="prof-pass-meter"><div class="prof-pass-fill" id="prof-pass-bar" style="width:0;background:#e5e7eb"></div></div>
+            <div class="prof-pass-hint" id="prof-pass-hint"></div>
+          </div>
+          
+          <!-- Save Button -->
+          <button class="prof-save-btn" id="prof-save-btn" onclick="saveProfile()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            حفظ التعديلات
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- PERMISSIONS CARD                                            -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <div class="prof-card" id="prof-perms-card" style="display:none">
+      <div class="prof-card-header">
+        <div class="prof-card-icon" style="background:linear-gradient(135deg,rgba(139,92,246,0.12) 0%,rgba(139,92,246,0.04) 100%)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        </div>
+        <div>
+          <h3 class="prof-card-title">الصلاحيات الممنوحة</h3>
+          <p class="prof-card-subtitle">الأقسام المتاحة لحسابك</p>
+        </div>
+      </div>
+      <div class="prof-card-body">
+        <div class="prof-perms-grid" id="prof-perms-body"></div>
+      </div>
+    </div>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- SECURITY CARD                                               -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <div class="prof-card">
+      <div class="prof-card-header">
+        <div class="prof-card-icon" style="background:linear-gradient(135deg,rgba(16,185,129,0.12) 0%,rgba(16,185,129,0.04) 100%)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div>
+          <h3 class="prof-card-title">الأمان والخصوصية</h3>
+          <p class="prof-card-subtitle">إعدادات حماية حسابك</p>
+        </div>
+      </div>
+      <div class="prof-card-body">
+        <div class="prof-security">
+          <div class="prof-security-item">
+            <div class="prof-security-icon" style="background:linear-gradient(135deg,rgba(34,197,94,0.12) 0%,rgba(34,197,94,0.04) 100%)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            </div>
+            <div class="prof-security-info">
+              <div class="prof-security-title">كلمة المرور</div>
+              <div class="prof-security-desc">تم تعيين كلمة مرور آمنة</div>
+            </div>
+            <span class="prof-security-status active">نشط</span>
+          </div>
+          <div class="prof-security-item">
+            <div class="prof-security-icon" style="background:linear-gradient(135deg,rgba(59,130,246,0.12) 0%,rgba(59,130,246,0.04) 100%)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 12 15 16 10"/></svg>
+            </div>
+            <div class="prof-security-info">
+              <div class="prof-security-title">حالة الجلسة</div>
+              <div class="prof-security-desc">أنت متصل حالياً</div>
+            </div>
+            <span class="prof-security-status active">متصل</span>
+          </div>
+        </div>
+        
+        <!-- Logout Button -->
+        <button class="prof-logout-btn" onclick="doLogout()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          تسجيل الخروج
+        </button>
+      </div>
+    </div>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- ACTIVITY LOG CARD - Full Width                              -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <div class="prof-card prof-card-full">
+      <div class="prof-card-header">
+        <div class="prof-card-icon" style="background:linear-gradient(135deg,rgba(245,158,11,0.12) 0%,rgba(245,158,11,0.04) 100%)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div>
+          <h3 class="prof-card-title">سجل النشاط الأخير</h3>
+          <p class="prof-card-subtitle">آخر الحركات والعمليات التي قمت بها</p>
+        </div>
+      </div>
+      <div class="prof-card-body">
+        <div class="prof-timeline" id="prof-activity-list">
+          <div class="prof-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div>جارٍ تحميل النشاطات...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /prof-grid -->
 
 </div><!-- /prof-wrap -->
 </div>
@@ -6678,8 +7090,8 @@ async function showApp() {
   await syncUsersStatus();
 
   const hash = location.hash.slice(1);
-  const validPages = [...NAV_ITEMS.map(n => n.id), 'profile'];
-  const startPage = (hash && validPages.includes(hash) && (hash === 'profile' || hasPerm(NAV_ITEMS.find(n => n.id === hash)?.perm))) ? hash : findFirstAllowedPage();
+  const validPages = [...NAV_ITEMS.map(n => n.id), 'myprofile'];
+  const startPage = (hash && validPages.includes(hash) && (hash === 'myprofile' || hasPerm(NAV_ITEMS.find(n => n.id === hash)?.perm))) ? hash : findFirstAllowedPage();
   navigateTo(startPage);
 
   // Auto-open the admin daily briefing for admins (respects "defer today" pref)
@@ -6690,7 +7102,7 @@ async function showApp() {
   checkMentionAlertOnLogin();
 }
 
-function findFirstAllowedPage() { for (const item of NAV_ITEMS) { if (item.adminOnly && !isAdmin()) continue; if (hasPerm(item.perm)) return item.id; } return 'profile'; }
+function findFirstAllowedPage() { for (const item of NAV_ITEMS) { if (item.adminOnly && !isAdmin()) continue; if (hasPerm(item.perm)) return item.id; } return 'myprofile'; }
 
 function updateHeader() {
   if (!currentUser) return;
@@ -7337,7 +7749,7 @@ function buildSidebar() {
       badge = ` <span class="nav-draft-badge" title="لديك ${arabicNum} ${word} محفوظة — اضغط لفتح صفحة الحركات ثم زر المسودات"><span class="nav-draft-dot"></span><span class="nav-draft-num">+${arabicNum}</span></span>`;
     }
     return `<a class="nav-item${currentPage === n.id ? ' active' : ''}" data-page="${n.id}" href="#${n.id}" onclick="handleNavClick(event,'${n.id}')"><span>${n.icon}</span><span>${esc(navLabel(n))}${badge}</span></a>`;
-  }).join('') + `<a class="nav-item" data-page="profile" href="#profile" onclick="handleNavClick(event,'profile')"><span>${NAV_ICONS.profile}</span><span>${currentLang === 'en' ? 'Profile' : 'الملف الشخصي'}</span></a>`;
+  }).join('') + `<a class="nav-item" data-page="myprofile" href="#myprofile" onclick="handleNavClick(event,'myprofile')"><span>${NAV_ICONS.profile}</span><span>${currentLang === 'en' ? 'Profile' : 'الملف الشخصي'}</span></a>`;
 }
 function handleNavClick(e, page) {
   if (!e.ctrlKey && !e.metaKey && e.button !== 1) {
@@ -7927,7 +8339,7 @@ function goHomeFromLogo() {
   closeSidebar();
 }
 function goProfileFromHeader() {
-  navigateTo('profile');
+  navigateTo('myprofile');
   closeSidebar();
 }
 function navigateTo(page, updateHash = true) {
@@ -7947,7 +8359,8 @@ function _doNavigateTo(page, updateHash = true) {
   }
   currentPage = page;
   qsa('.page').forEach(p => p.classList.remove('active'));
-  const el = qs('#page-' + page); if (el) el.classList.add('active');
+  const el = qs('#page-' + page);
+  if (el) el.classList.add('active');
   qsa('#sidebar .nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
   updateMobileNav(page);
   if (updateHash && location.hash !== '#' + page) history.pushState(null, '', '#' + page);
@@ -7991,8 +8404,8 @@ function markTxDirty() {
 function handleHashChange() {
   const hash = location.hash.slice(1);
   if (hash && hash !== currentPage) {
-    const validPages = [...NAV_ITEMS.map(n => n.id), 'profile'];
-    if (validPages.includes(hash) && (hash === 'profile' || hasPerm(NAV_ITEMS.find(n => n.id === hash)?.perm))) {
+    const validPages = [...NAV_ITEMS.map(n => n.id), 'myprofile'];
+    if (validPages.includes(hash) && (hash === 'myprofile' || hasPerm(NAV_ITEMS.find(n => n.id === hash)?.perm))) {
       navigateTo(hash, false);
     }
   }
@@ -8068,7 +8481,7 @@ function onPageEnter(page) {
       }
       break;
     }
-    case 'profile': {
+    case 'myprofile': {
       renderProfile();
       // If currentUser is missing or stale, refresh in the background and re-render
       api('/auth/me').then(me => {
@@ -14105,57 +14518,6 @@ function diffItems(oldItems, newItems) {
   });
   return details;
 }
-function buildCommentsSection(tx) {
-  const myName = currentUser?.name || currentUser?.username || '';
-  const comments = tx.comments || [];
-
-  const commentsHtml = comments.map(c => {
-    const isMine = c.employee === myName;
-    const actions = isMine ? `
-      <div class="tx-cmt-actions">
-        <button class="tx-cmt-btn" title="تعديل" onclick="startEditInvComment('${esc(tx._id)}',${c.id})">${_EDIT_SVG}</button>
-        <button class="tx-cmt-btn del" title="حذف" onclick="deleteInvComment('${esc(tx._id)}',${c.id})">${_DEL_SVG}</button>
-      </div>` : '';
-    return `<div class="inv-cmt-item" id="inv-cmt-${c.id}">
-      <div class="tx-cmt-avatar">${_cmtInitials(c.employee)}</div>
-      <div class="tx-cmt-body">
-        <div class="tx-cmt-meta">
-          <span class="tx-cmt-author">${esc(c.employee || '؟')}</span>
-          <span class="tx-cmt-time">${c.createdAt || ''}</span>
-          <span class="tx-cmt-tag" style="${_cmtTagStyle(c.type)}">${esc(c.type)}</span>
-        </div>
-        <div class="tx-cmt-text" data-comment-id="${c.id}">${renderMentionText(c.text)}</div>
-      </div>
-      ${actions}
-    </div>`;
-  }).join('');
-
-  return `
-    <div class="inv-cmt-wrap">
-      <div class="inv-cmt-head">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        التعليقات
-        <span style="margin-right:auto;background:rgba(255,255,255,.22);border-radius:10px;font-size:.72rem;padding:1px 8px">${comments.length}</span>
-      </div>
-      <div class="inv-cmt-form">
-        <div class="inv-cmt-input-row">
-          <input type="text" id="inv-comment-text-${esc(tx._id)}" placeholder="أضف تعليق… @ للإشارة" class="inv-cmt-input" oninput="onMentionInput(this,'${esc(tx._id)}')" onkeydown="onMentionKey(event,'${esc(tx._id)}')">
-          <select id="inv-comment-type-${esc(tx._id)}" class="inv-cmt-type">
-            <option value="عام">عام</option>
-            <option value="تنبيه">تنبيه</option>
-            <option value="ملاحظة">ملاحظة</option>
-            <option value="أسئلة">أسئلة</option>
-          </select>
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="addInvoiceComment('${esc(tx._id)}')" style="width:100%">إضافة تعليق</button>
-      </div>
-      <div class="inv-cmt-list" id="inv-cmt-list-${esc(tx._id)}">
-        ${commentsHtml || '<div style="padding:16px;text-align:center;color:var(--muted);font-size:.83rem">لا توجد تعليقات بعد</div>'}
-      </div>
-    </div>
-  `;
-}
-
 async function startEditInvComment(txId, commentId) {
   const tx = transactions.find(t => t._id === txId);
   const cmt = (tx?.comments || []).find(c => c.id === commentId);
@@ -14197,349 +14559,216 @@ async function deleteInvComment(txId, commentId) {
   } catch(e) { toast('خطأ في الحذف', true); }
   showInvoiceDetail(txId);
 }
-
-function buildDepositHistorySection(tx) {
-  if (!tx.deposits || !tx.deposits.length) return '';
-
-  const deposits = tx.deposits;
-  const totalDeposits = deposits.reduce((sum, d) => sum + (d.amount || 0), 0);
-
-  const rows = deposits.map((d, idx) => {
-    const amount = d.amount || 0;
-    const method = d.method || '-';
-    const note = d.note || '';
-    const date = d.date || '';
-    const dateObj = new Date(date);
-    const dateStr = dateObj.toLocaleDateString('ar-EG');
-    const timeStr = dateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
-
-    return `
-      <tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:12px;text-align:right;color:var(--muted);font-size:.85rem">#${idx+1}</td>
-        <td style="padding:12px;text-align:right;font-weight:600;color:var(--green);font-size:.9rem">${fmtJ(amount)}</td>
-        <td style="padding:12px;text-align:right;font-size:.85rem">${esc(method)}</td>
-        <td style="padding:12px;text-align:right;color:var(--muted);font-size:.85rem">${dateStr}</td>
-        <td style="padding:12px;text-align:right;color:var(--muted);font-size:.85rem">${timeStr}</td>
-        <td style="padding:12px;text-align:right;font-size:.8rem;color:var(--text)">${esc(note)}</td>
-      </tr>
-    `;
-  }).join('');
-
-  return `
-    <div style="margin-top:16px;padding:14px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:10px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid rgba(34,197,94,.3)">
-        <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.1em;height:1.1em;color:var(--green)" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
-        <h4 style="margin:0;font-size:.95rem;font-weight:700;color:var(--text)">سجل العربونات (الدفعات المقدمة)</h4>
-        <span style="margin-left:auto;background:var(--green);color:#fff;padding:4px 12px;border-radius:6px;font-size:.8rem;font-weight:600">${deposits.length} دفعة — ${fmtJ(totalDeposits)}</span>
-      </div>
-      <div style="overflow-x:auto;border:1px solid rgba(34,197,94,.2);border-radius:8px;background:#fff">
-        <table style="width:100%;border-collapse:collapse;font-size:.85rem">
-          <thead>
-            <tr style="background:rgba(34,197,94,.08);border-bottom:2px solid rgba(34,197,94,.2)">
-              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text);width:40px">#</th>
-              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">المبلغ</th>
-              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">طريقة الدفع</th>
-              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">التاريخ</th>
-              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">الوقت</th>
-              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">ملاحظات</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `;
-}
-
-function buildPaymentHistorySection(tx) {
-  if (!tx.payments || !tx.payments.length) return '';
-
-  const isPurchase = tx.type === 'مشتريات';
-  const payments = tx.payments;
-  const totalPaid = payments.reduce((sum, p) => sum + (p.amount || p.collectAmount || 0), 0);
-
-  const rows = payments.map((p, idx) => {
-    const amount = p.amount || p.collectAmount || 0;
-    const method = p.method || p.collectMethod || '-';
-    const note = p.note || p.collectNote || '';
-    const date = p.date || p.collectedAt || '';
-    const dateObj = new Date(date);
-    const dateStr = dateObj.toLocaleDateString('ar-EG');
-    const timeStr = dateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
-
-    return `
-      <tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:12px;text-align:right;color:var(--muted);font-size:.85rem">#${idx+1}</td>
-        <td style="padding:12px;text-align:right;font-weight:600;color:var(--blue);font-size:.9rem">${fmtJ(amount)}</td>
-        <td style="padding:12px;text-align:right;font-size:.85rem">${esc(method)}</td>
-        <td style="padding:12px;text-align:right;color:var(--muted);font-size:.85rem">${dateStr}</td>
-        <td style="padding:12px;text-align:right;color:var(--muted);font-size:.85rem">${timeStr}</td>
-        <td style="padding:12px;text-align:right;font-size:.8rem;color:var(--text)">${esc(note)}</td>
-      </tr>
-    `;
-  }).join('');
-
-  return `
-    <div style="margin-top:16px;padding:14px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);border-radius:10px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid rgba(59,130,246,.3)">
-        <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.1em;height:1.1em;color:var(--blue)" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg>
-        <h4 style="margin:0;font-size:.95rem;font-weight:700;color:var(--text)">${isPurchase ? 'سجل السداد' : 'سجل التحصيل'}</h4>
-        <span style="margin-left:auto;background:var(--blue);color:#fff;padding:4px 12px;border-radius:6px;font-size:.8rem;font-weight:600">${payments.length} ${isPurchase ? 'دفعة' : 'تحصيل'} — ${fmtJ(totalPaid)}</span>
-      </div>
-      <div style="overflow-x:auto;border:1px solid rgba(59,130,246,.2);border-radius:8px;background:#fff">
-        <table style="width:100%;border-collapse:collapse;font-size:.85rem">
-          <thead>
-            <tr style="background:rgba(59,130,246,.08);border-bottom:2px solid rgba(59,130,246,.2)">
-              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text);width:40px">#</th>
-              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">المبلغ</th>
-              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">${isPurchase ? 'طريقة السداد' : 'طريقة التحصيل'}</th>
-              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">التاريخ</th>
-              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">الوقت</th>
-              <th style="padding:12px;text-align:right;font-weight:700;color:var(--text)">ملاحظات</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `;
-}
-function buildEditHistorySection(tx) {
-  if (!tx.editHistory || !tx.editHistory.length) return '';
-  const history = tx.editHistory;
-  const entries = history.map((entry, i) => {
-    const b = entry.before || {};
-    const after = (i < history.length - 1) ? (history[i + 1].before || {}) : tx;
-    const details = [];
-    const fieldDefs = [
-      { key: 'client', label: 'اسم العميل', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg>' },
-      { key: 'phone', label: 'الهاتف', icon: ICON('send') },
-      { key: 'ref', label: 'الرقم المرجعي', icon: ICON('pin') },
-      { key: 'notes', label: 'الملاحظات', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' },
-      { key: 'payment', label: 'طريقة الدفع', icon: ICON('wallet') },
-      { key: 'payStatus', label: 'حالة الدفع', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/></svg>' },
-      { key: 'shipCo', label: 'شركة الشحن', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="15" height="10" rx="1.5"/><path d="M16 9h3l3 4v3h-6z"/><circle cx="6.5" cy="18" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>' },
-      { key: 'shipZone', label: 'منطقة الشحن', icon: ICON('target') },
-    ];
-    const moneyDefs = [
-      { key: 'deposit', label: 'الديبوزت', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>' },
-      { key: 'discount', label: 'الخصم', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>' },
-      { key: 'shipCost', label: 'تكلفة الشحن', icon: ICON('send') },
-      { key: 'total', label: 'الإجمالي', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>' },
-      { key: 'remaining', label: 'المتبقي', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>' },
-      { key: 'itemsTotal', label: 'إجمالي الأصناف', icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>' },
-    ];
-    fieldDefs.forEach(fd => {
-      const oldVal = b[fd.key] ?? '';
-      const newVal = after[fd.key] ?? '';
-      if (oldVal !== newVal) {
-        details.push({ type: 'change', icon: fd.icon, text: `تغيير ${fd.label}: <span class="old-val">${esc(String(oldVal)) || '(فارغ)'}</span> <span class="arrow-sep">←</span> <span class="new-val">${esc(String(newVal)) || '(فارغ)'}</span>` });
-      }
-    });
-    moneyDefs.forEach(fd => {
-      const oldVal = b[fd.key] ?? 0;
-      const newVal = after[fd.key] ?? 0;
-      if (Number(oldVal) !== Number(newVal)) {
-        details.push({ type: 'change', icon: fd.icon, text: `تغيير ${fd.label}: <span class="old-val">${fmtJ(oldVal)}</span> <span class="arrow-sep">←</span> <span class="new-val">${fmtJ(newVal)}</span>` });
-      }
-    });
-    const itemChanges = diffItems(b.items, after.items);
-    details.push(...itemChanges);
-    return { editedAt: entry.editedAt, editedBy: entry.editedBy || '', details };
-  });
-  const rows = [...entries].reverse().map((entry, idx) => {
-    const detailsHtml = entry.details.length
-      ? `<ul class="history-detail-list">${entry.details.map(d => `<li class="history-detail-item ${d.type}"><span class="detail-icon">${d.icon}</span><span class="detail-text">${d.text}</span></li>`).join('')}</ul>`
-      : '<div style="color:var(--muted);font-size:.75rem;padding:4px 0">لا توجد تغييرات مسجلة</div>';
-    const editorName = entry.editedBy ? `<span style="background:var(--primary-pale);color:var(--accent);padding:1px 8px;border-radius:10px;font-size:.7rem;font-weight:600">بواسطة: ${esc(entry.editedBy)}</span>` : '';
-    return `<div class="history-entry">
-      <div class="history-date" style="display:flex;align-items:center;gap:4px">${ICON('clock')} ${currentLang==='en'?'Edit':'التعديل'} ${entries.length - idx} — ${formatEditDateTime(entry.editedAt)} ${editorName}</div>
-      ${detailsHtml}
-    </div>`;
-  }).join('');
-  return `<div class="edit-history-section">
-    <h4><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> سجل التعديلات <span class="badge-edited" style="cursor:default">${entries.length} تعديل</span></h4>
-    ${rows}
-  </div>`;
-}
 function showInvoiceDetail(id, highlightCommentId) {
   const tx = transactions.find(t => t._id === id);
   if (!tx) return;
   window._highlightCommentId = highlightCommentId || null;
   const isPurchase = tx.type === 'مشتريات';
+  const isReturn = tx.type === 'مرتجع';
   const statusClass = tx.cancelled || isStatusCancelled(tx.payStatus) ? 'cancelled' : isStatusCompleted(tx.payStatus) ? 'paid' : 'pending';
-  let statusText = tx.cancelled || isStatusCancelled(tx.payStatus)
-    ? `${ICON('ban')} ${currentLang==='en'?'Cancelled':'ملغي'}`
-    : isStatusCompleted(tx.payStatus)
-      ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> مكتمل — تم السداد بالكامل'
-      : isPurchase
-        ? `<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> مديون للمورد — المتبقي: ${fmtJ(tx.remaining || 0)}`
-        : '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> في انتظار التحصيل من شركة الشحن';
-  if (isExchangeSalePendingCollect(tx)) {
-    statusText = `<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> انتظار التحصيل من الشحن — فرق استبدال: على العميل دفع ${fmtJ(tx.remaining)} لإتمام العملية ثم التحصيل من هنا`;
+  const _depositsArr = tx.deposits || [];
+  const _paymentsArr = tx.payments || [];
+  const _depositsTotal = _depositsArr.reduce((s, d) => s + (d.amount || 0), 0) || (tx.deposit || 0);
+  const _paymentsTotal = _paymentsArr.reduce((s, p) => s + (p.amount || p.collectAmount || 0), 0);
+  const _totalCollected = Math.max(0, (tx.total || 0) - (tx.remaining || 0));
+  const _paymentPercent = tx.total > 0 ? Math.min(100, Math.round((_totalCollected / tx.total) * 100)) : 0;
+  const _clientInitials = (tx.client || '؟').split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '؟';
+  const _invNumber = tx.ref ? `#${tx.ref}` : `INV-${tx._id?.slice(-6) || '000000'}`;
+  const _dateObj = new Date(tx.createdAt || tx.date);
+  const _dateFormatted = _dateObj.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const _timeFormatted = _dateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const _statusIcon = statusClass === 'paid' 
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+    : statusClass === 'cancelled'
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+  let _statusText = '';
+  if (tx.cancelled || isStatusCancelled(tx.payStatus)) {
+    _statusText = 'ملغي';
+  } else if (isStatusCompleted(tx.payStatus)) {
+    _statusText = isPurchase ? 'تم السداد بالكامل' : 'مكتمل — تم التحصيل';
+  } else if (isExchangeSalePendingCollect(tx)) {
+    _statusText = `انتظار تحصيل فرق الاستبدال: ${fmtJ(tx.remaining)}`;
+  } else if (isPurchase) {
+    _statusText = `مديون للمورد — المتبقي: ${fmtJ(tx.remaining || 0)}`;
+  } else {
+    _statusText = `في انتظار التحصيل — المتبقي: ${fmtJ(tx.remaining || 0)}`;
   }
   const itemsRows = (tx.items || []).map((it, i) => `
     <tr>
-      <td style="color:var(--muted)">${i + 1}</td>
-      <td style="font-weight:600">${esc(it.name || '')}</td>
-      <td style="color:var(--muted);font-size:.75rem" dir="ltr">${esc(it.code || '-')}</td>
-      <td>${fmtN(it.qty)}</td>
-      <td>${fmtJ(it.price)}</td>
-      <td style="font-weight:600">${fmtJ(it.total)}</td>
+      <td class="col-num">${i + 1}</td>
+      <td class="col-product">${esc(it.name || '')}</td>
+      <td class="col-code">${esc(it.code || '-')}</td>
+      <td class="col-qty">${fmtN(it.qty)}</td>
+      <td class="col-price">${fmtJ(it.price)}</td>
+      <td class="col-total">${fmtJ(it.total)}</td>
     </tr>`).join('');
-
-  // Payment breakdown: deposits array vs payments (collections) array
-  const _depositsArr = tx.deposits || [];
-  const _paymentsArr = tx.payments || [];
-  // العربون الأصلي فقط (أول دفعة عند الشراء) — لا يشمل السدادات اللاحقة
-  const _depositsTotal = _depositsArr.length > 0
-    ? (_depositsArr[0]?.amount || 0)
-    : (tx.deposit && _paymentsArr.length === 0 ? tx.deposit : 0);
-  const _paymentsTotal = _paymentsArr.reduce((s, p) => s + (p.amount || p.collectAmount || 0), 0);
-  // الإجمالي الحقيقي المدفوع = إجمالي الفاتورة - المتبقي
-  const _totalCollected = Math.max(0, (tx.total || 0) - (tx.remaining || 0));
-
+  const itemsTotal = (tx.items || []).reduce((s, it) => s + (it.total || 0), 0);
   const html = `
-    <button class="inv-close" onclick="closeInvoiceDetail()">✕</button>
-    <div class="inv-header-strip${isPurchase ? ' is-purchase' : ''}">
-      <h3>Soulia</h3>
-      <div class="inv-type-tag">${esc(tx.type)}</div>
+    <button class="inv-close" onclick="closeInvoiceDetail()" aria-label="إغلاق">✕</button>
+    <!-- Premium Header -->
+    <div class="inv-header${isPurchase ? ' is-purchase' : ''}${isReturn ? ' is-return' : ''}">
+      <div class="inv-header-top">
+        <div class="inv-brand">SOULIA</div>
+        <div class="inv-type-badge">
+          ${isPurchase ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>' : isReturn ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>' : '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>'}
+          ${esc(tx.type)}
+        </div>
+      </div>
+      <div class="inv-number" dir="ltr">${esc(_invNumber)}</div>
+      <div class="inv-date">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        ${_dateFormatted} · ${_timeFormatted}
+      </div>
     </div>
+    <!-- Status Banner -->
+    <div class="inv-status-banner ${statusClass}">
+      ${_statusIcon}
+      <span>${_statusText}</span>
+      ${statusClass === 'pending' && _paymentPercent > 0 ? `<div class="inv-progress-mini"><div class="bar" style="width:${_paymentPercent}%"></div></div>` : ''}
+    </div>
+    <!-- Body -->
     <div class="inv-body">
-      <div class="inv-status-strip ${statusClass}">${statusText}</div>
-      <div class="inv-meta">
-        <div class="inv-field"><span class="inv-label">التاريخ والوقت</span><span class="inv-value">${fmtDateTime(tx.createdAt || tx.date)}</span></div>
-        <div class="inv-field"><span class="inv-label">الرقم المرجعي</span><span class="inv-value" style="direction:ltr;display:inline-flex;align-items:center;gap:8px${isPurchase ? ';color:#2196f3' : ''}">${tx.ref ? '#' + esc(tx.ref) : '-'}${(()=>{ if(!isPurchase) return ''; const _u=(Array.isArray(tx.invoiceImages)&&tx.invoiceImages[0])||tx.invoiceImageUrl||''; const _cnt=Array.isArray(tx.invoiceImages)&&tx.invoiceImages.length>1?` (${tx.invoiceImages.length})`:''; return _u?`<a href="${esc(sanitizeUrl(_u))}" target="_blank" style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--primary);font-size:.7rem;font-weight:600;text-decoration:none;white-space:nowrap;flex-shrink:0">📎 فاتورة${_cnt}</a>`:''; })()}</span></div>
-        <div class="inv-field"><span class="inv-label">${tx.type === 'مشتريات' ? 'اسم المورد' : 'اسم العميل'}</span><span class="inv-value"${isPurchase ? ' style="color:#2196f3"' : ''}>${esc(tx.client || '-')}</span></div>
-        <div class="inv-field"><span class="inv-label">الهاتف</span><span class="inv-value" dir="ltr">${esc(tx.phone || '-')}</span></div>
-        <div class="inv-field"><span class="inv-label">الموظف</span><span class="inv-value">${esc(tx.employee || '-')}</span></div>
-        ${!isPurchase && tx.shipCo ? `<div class="inv-field"><span class="inv-label">شركة الشحن</span><span class="inv-value">${esc(tx.shipCo)}</span></div>` : ''}
-        ${tx.depMethod ? `<div class="inv-field"><span class="inv-label">${tx.type === 'مرتجع' ? 'قسم الخزنة (خصم الرد للعميل)' : isPurchase ? 'طريقة الدفع للمورد' : 'طريقة دفع الديبوزت'}</span><span class="inv-value">${esc(tx.depMethod)}</span></div>` : ''}
-        ${!isPurchase && tx.payment ? `<div class="inv-field"><span class="inv-label">طريقة دفع المتبقي</span><span class="inv-value">${esc(tx.payment)}</span></div>` : ''}
-        ${tx.collectMethod ? `<div class="inv-field"><span class="inv-label">${isPurchase ? 'طريقة سداد المتبقي' : 'طريقة التحصيل'}</span><span class="inv-value">${esc(tx.collectMethod)}</span></div>` : ''}
-        ${tx.collectedAt ? `<div class="inv-field"><span class="inv-label">${isPurchase ? 'تاريخ السداد' : 'تاريخ التحصيل'}</span><span class="inv-value">${esc(tx.collectedAt)}</span></div>` : ''}
+      <div class="inv-body-inner">
+        <!-- Document Info Bar -->
+        <div class="inv-doc-bar">
+          <div class="inv-doc-item ref" onclick="navigator.clipboard.writeText('${esc(tx.ref || '')}');toast('تم نسخ الرقم المرجعي')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z" rx="2"/><path d="M9 9h6"/><path d="M9 13h6"/><path d="M9 17h4"/></svg>
+            <div><span class="label">المرجع</span><span class="value" dir="ltr">${tx.ref ? '#' + esc(tx.ref) : '-'}</span></div>
+            <svg class="copy-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </div>
+          <div class="inv-doc-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg>
+            <div><span class="label">الموظف</span><span class="value">${esc(tx.employee || '-')}</span></div>
+          </div>
+          ${!isPurchase && tx.shipCo ? `
+          <div class="inv-doc-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="15" height="10" rx="1.5"/><path d="M16 9h3l3 4v3h-6z"/><circle cx="6.5" cy="18" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>
+            <div><span class="label">الشحن</span><span class="value">${esc(tx.shipCo)}</span></div>
+          </div>` : ''}
+        </div>
+        <!-- Client/Supplier Card -->
+        <div class="inv-party-card${isPurchase ? ' is-purchase' : ''}">
+          <div class="inv-party-avatar">${_clientInitials}</div>
+          <div class="inv-party-info">
+            <div class="inv-party-label">${isPurchase ? 'المورد' : 'العميل'}</div>
+            <div class="inv-party-name">${esc(tx.client || '-')}</div>
+            ${tx.phone ? `<div class="inv-party-phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>${esc(tx.phone)}</div>` : ''}
+          </div>
+          <div class="inv-party-extra">
+            ${tx.depMethod ? `<div class="inv-party-badge">${esc(tx.depMethod)}</div>` : ''}
+            ${tx.payment && !isPurchase ? `<div class="inv-party-badge">${esc(tx.payment)}</div>` : ''}
+          </div>
+        </div>
+        <!-- Items Table -->
+        <div class="inv-items-section">
+          <div class="inv-items-header">
+            <div class="inv-items-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>
+              الأصناف
+            </div>
+            <div class="inv-items-count">${(tx.items || []).length} صنف</div>
+          </div>
+          <table class="inv-items-tbl">
+            <thead>
+              <tr>
+                <th class="col-num">#</th>
+                <th>${t('product')}</th>
+                <th>${t('colCode')}</th>
+                <th class="col-qty">${t('qty')}</th>
+                <th class="col-price">${t('colPrice')}</th>
+                <th class="col-total">${t('total')}</th>
+              </tr>
+            </thead>
+            <tbody>${itemsRows}</tbody>
+            <tfoot>
+              <tr>
+                <td colspan="5" style="text-align:left">إجمالي الأصناف</td>
+                <td class="grand-total">${fmtJ(itemsTotal)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <!-- Financial Summary -->
+        <div class="inv-summary-section">
+          <div class="inv-summary-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            <h4>الملخص المالي</h4>
+          </div>
+          <div class="inv-summary-grid">
+            <div class="inv-summary-card">
+              <div class="card-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                إجمالي الفاتورة
+              </div>
+              <div class="card-value">${fmtJ(tx.total || 0)}</div>
+            </div>
+            <div class="inv-summary-card ${(tx.remaining || 0) > 0 ? 'danger' : 'highlight'}">
+              <div class="card-label">
+                ${(tx.remaining || 0) > 0 ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'}
+                ${(tx.remaining || 0) > 0 ? (isPurchase ? 'المتبقي للمورد' : 'المتبقي للتحصيل') : 'تم السداد'}
+              </div>
+              <div class="card-value">${fmtJ(tx.remaining || 0)}</div>
+            </div>
+          </div>
+          <!-- Payment Breakdown -->
+          <div class="inv-breakdown">
+            ${tx.discount ? `<div class="inv-breakdown-row discount"><span class="label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>خصم</span><span class="amount">- ${fmtJ(tx.discount)}</span></div>` : ''}
+            ${tx.shipCost && !isPurchase ? `<div class="inv-breakdown-row shipping"><span class="label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="15" height="10" rx="1.5"/><path d="M16 9h3l3 4v3h-6z"/><circle cx="6.5" cy="18" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>تكلفة الشحن</span><span class="amount">+ ${fmtJ(tx.shipCost)}</span></div>` : ''}
+            ${_depositsTotal > 0 ? `<div class="inv-breakdown-row deposit"><span class="label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>${isPurchase ? 'العربون المدفوع' : 'الديبوزت المسبق'}</span><span class="amount">${fmtJ(_depositsTotal)}</span></div>` : ''}
+            ${_paymentsTotal > 0 ? `<div class="inv-breakdown-row collection"><span class="label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg>${isPurchase ? 'السدادات الإضافية' : 'التحصيل من الشحن'}</span><span class="amount">${fmtJ(_paymentsTotal)}</span></div>` : ''}
+          </div>
+          <!-- Progress Bar -->
+          <div class="inv-progress">
+            <div class="inv-progress-label">
+              <span class="text">نسبة السداد</span>
+              <span class="percent">${_paymentPercent}%</span>
+            </div>
+            <div class="inv-progress-bar">
+              <div class="fill ${_paymentPercent >= 100 ? 'green' : _paymentPercent > 0 ? 'blue' : 'orange'}" style="width:${_paymentPercent}%"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Notes -->
+        ${tx.notes ? `<div class="inv-notes"><div class="inv-notes-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>ملاحظات</div><div class="inv-notes-text">${esc(tx.notes)}</div></div>` : ''}
+        ${tx.cancelReason ? `<div class="inv-notes cancel-reason"><div class="inv-notes-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>سبب الإلغاء</div><div class="inv-notes-text">${esc(tx.cancelReason)}</div></div>` : ''}
+        <!-- Supplier Attachments -->
+        ${(()=>{
+          const imgs = Array.isArray(tx.invoiceImages) && tx.invoiceImages.length ? tx.invoiceImages : (tx.invoiceImageUrl ? [tx.invoiceImageUrl] : []);
+          if (!imgs.length) return '';
+          return `<div class="inv-attachments">
+            <div class="inv-attachments-header">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>فواتير المورد</span>
+              <span class="count">${imgs.length}</span>
+            </div>
+            <div class="inv-attachments-grid">
+              ${imgs.map((u, i) => /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(u)
+                ? `<a href="${esc(sanitizeUrl(u))}" target="_blank" class="inv-attachment-item"><img src="${esc(sanitizeUrl(u))}" alt="فاتورة ${i+1}" onerror="this.parentElement.style.display='none'"><div class="file-label">فاتورة ${i+1}</div></a>`
+                : `<a href="${esc(sanitizeUrl(u))}" target="_blank" class="inv-attachment-item"><div class="file-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF</div><div class="file-label">فاتورة ${i+1}</div></a>`
+              ).join('')}
+            </div>
+          </div>`;
+        })()}
+        <!-- Payment Timeline -->
+        ${buildPaymentTimelineSection(tx)}
+        <!-- Comments Section -->
+        ${buildInvCommentsSection(tx)}
+        <!-- Edit History Section -->
+        ${buildInvEditHistorySection(tx)}
       </div>
-      <table class="inv-items-tbl">
-        <thead><tr><th>#</th><th>${t('product')}</th><th>${t('colCode')}</th><th>${t('qty')}</th><th>${t('colPrice')}</th><th>${t('total')}</th></tr></thead>
-        <tbody>${itemsRows}</tbody>
-      </table>
-      <div class="inv-summary">
-        ${!isPurchase ? `
-          <!-- ══ قيمة الفاتورة ══ -->
-          <div class="inv-row"><span>إجمالي الأصناف</span><span>${fmtJ(tx.itemsTotal || tx.total)}</span></div>
-          ${tx.discount ? `<div class="inv-row"><span>خصم</span><span style="color:var(--red)">- ${fmtJ(tx.discount)}</span></div>` : ''}
-          ${tx.shipCost ? `<div class="inv-row"><span style="display:flex;align-items:center;gap:3px">${ICON('send')} ${currentLang==='en'?'Shipping cost':'تكلفة الشحن'}</span><span>+ ${fmtJ(tx.shipCost)}</span></div>` : ''}
-          <div class="inv-row total-row"><span>صافي الفاتورة</span><span>${fmtJ(tx.total)}</span></div>
-
-          <!-- ══ تفصيل السداد والتحصيل ══ -->
-          <div style="margin:14px 0 8px;padding-top:12px;border-top:2px dashed var(--border)">
-            <div style="font-size:.75rem;font-weight:800;color:var(--muted);letter-spacing:.04em;margin-bottom:10px;text-align:right">
-              ▸ تفصيل السداد والتحصيل
-            </div>
-
-            ${isMovExchangeSale(tx) ? `
-              <div class="inv-row"><span>فرق الاستبدال المسدد</span><span style="color:var(--green);font-weight:600">${fmtJ(_depositsTotal)}</span></div>
-            ` : `
-              <!-- الديبوزت المسبق -->
-              <div class="inv-row" style="background:rgba(34,197,94,.04);padding:8px 10px;border-radius:6px;margin-bottom:4px">
-                <span style="display:flex;align-items:center;gap:6px">
-                  <svg viewBox="0 0 24 24" style="width:14px;height:14px;color:var(--green);flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
-                  الديبوزت المسبق (${_depositsArr.length > 1 ? _depositsArr.length + ' دفعات' : 'دفعة واحدة'})
-                </span>
-                <span style="color:var(--green);font-weight:700;font-size:1rem">${fmtJ(_depositsTotal)}</span>
-              </div>
-            `}
-
-            <!-- التحصيل من شركة الشحن -->
-            ${_paymentsTotal > 0 ? `
-              <div class="inv-row" style="background:rgba(59,130,246,.04);padding:8px 10px;border-radius:6px;margin-bottom:4px">
-                <span style="display:flex;align-items:center;gap:6px">
-                  <svg viewBox="0 0 24 24" style="width:14px;height:14px;color:var(--blue);flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="15" height="10" rx="1.5"/><path d="M16 9h3l3 4v3h-6z"/><circle cx="6.5" cy="18" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>
-                  التحصيل من شركة الشحن (${_paymentsArr.length} ${_paymentsArr.length === 1 ? 'عملية' : 'عمليات'})
-                </span>
-                <span style="color:var(--blue);font-weight:700;font-size:1rem">${fmtJ(_paymentsTotal)}</span>
-              </div>
-            ` : ''}
-
-            <!-- الإجمالي المسدد -->
-            <div class="inv-row total-row" style="margin-top:8px">
-              <span>إجمالي المسدد</span>
-              <span>${fmtJ(_totalCollected)}</span>
-            </div>
-
-            <!-- المتبقي -->
-            <div class="inv-row ${(tx.remaining || 0) > 0 ? 'danger' : ''}" style="font-weight:700">
-              <span style="display:flex;align-items:center;gap:4px">${(tx.remaining || 0) > 0 ? ICON('warning') : ICON('success')} ${(tx.remaining || 0) > 0 ? (currentLang==='en'?'Remaining (uncollected)':'المتبقي (غير محصل)') : (currentLang==='en'?'Remaining':'المتبقي')}</span>
-              <span>${fmtJ(tx.remaining || 0)}</span>
-            </div>
-          </div>
-        ` : `
-          <!-- ══ منطقة المشتريات ══ -->
-          <div class="inv-row"><span>إجمالي الأصناف</span><span>${fmtJ(tx.itemsTotal || tx.total)}</span></div>
-          ${tx.discount ? `<div class="inv-row"><span>الخصم</span><span style="color:var(--red)">- ${fmtJ(tx.discount)}</span></div>` : ''}
-          <div class="inv-row total-row"><span>الإجمالي النهائي</span><span>${fmtJ(tx.total)}</span></div>
-
-          <div style="margin:14px 0 8px;padding-top:12px;border-top:2px dashed var(--border)">
-            <div style="font-size:.75rem;font-weight:800;color:var(--muted);letter-spacing:.04em;margin-bottom:10px">▸ تفصيل السداد للمورد</div>
-            <div class="inv-row" style="background:${_depositsTotal > 0 ? 'rgba(34,197,94,.04)' : 'rgba(156,163,175,.06)'};padding:8px 10px;border-radius:6px;margin-bottom:4px">
-              <span style="display:flex;align-items:center;gap:6px">
-                ${_depositsTotal > 0 ? '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'}
-                ${_depositsTotal > 0 ? 'العربون (المبلغ الأول المدفوع عند الشراء)' : 'العربون — لم يُدفع مقدماً (كل المبلغ ديناً)'}
-              </span>
-              <span style="font-weight:700;color:${_depositsTotal > 0 ? 'var(--green)' : 'var(--muted)'}">${_depositsTotal > 0 ? fmtJ(_depositsTotal) : '0 EGP'}</span>
-            </div>
-            ${_paymentsTotal > 0 ? `
-              <div class="inv-row" style="background:rgba(59,130,246,.04);padding:8px 10px;border-radius:6px;margin-bottom:4px">
-                <span>السدادات الإضافية</span>
-                <span style="color:var(--blue);font-weight:700">${fmtJ(_paymentsTotal)}</span>
-              </div>
-            ` : ''}
-            <div class="inv-row total-row" style="margin-top:8px">
-              <span>إجمالي المدفوع</span><span>${fmtJ(_totalCollected)}</span>
-            </div>
-            <div class="inv-row ${(tx.remaining || 0) > 0 ? 'danger' : ''}" style="font-weight:700">
-              <span style="display:flex;align-items:center;gap:4px">${(tx.remaining || 0) > 0 ? ICON('warning') : ICON('success')} ${(tx.remaining || 0) > 0 ? (currentLang==='en'?'Remaining for supplier':'المتبقي للمورد') : (currentLang==='en'?'Fully paid':'تم السداد بالكامل')}</span>
-              <span>${fmtJ(tx.remaining || 0)}</span>
-            </div>
-          </div>
-        `}
-      </div>
-      ${tx.notes ? `<div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:8px;font-size:.8rem"><strong>ملاحظات:</strong> ${esc(tx.notes)}</div>` : ''}
-      ${tx.cancelReason ? `<div style="margin-top:8px;padding:10px;background:rgba(220,38,38,.06);border-radius:8px;font-size:.8rem;color:var(--red)"><strong>سبب الإلغاء:</strong> ${esc(tx.cancelReason)}</div>` : ''}
-      ${(()=>{
-        const imgs = Array.isArray(tx.invoiceImages) && tx.invoiceImages.length ? tx.invoiceImages : (tx.invoiceImageUrl ? [tx.invoiceImageUrl] : []);
-        if (!imgs.length) return '';
-        const imgRender = (u, i) => /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(u)
-          ? `<div style="flex:1;min-width:160px"><a href="${esc(u)}" target="_blank"><img src="${esc(u)}" alt="فاتورة ${i+1}" style="width:100%;max-height:260px;border-radius:8px;object-fit:contain;background:var(--surface2);display:block;border:1px solid var(--border)" onerror="this.style.display='none'"></a><div style="text-align:center;font-size:.7rem;color:var(--muted);margin-top:4px">فاتورة ${i+1}</div></div>`
-          : `<div style="flex:1;min-width:160px"><a href="${esc(u)}" target="_blank" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:18px 12px;border:1px solid var(--border);border-radius:8px;font-size:.8rem;color:var(--primary);background:var(--surface2);text-align:center;text-decoration:none"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>فاتورة ${i+1}</a></div>`;
-        return `<div style="margin-top:14px;padding:14px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            <span style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">فواتير المورد (${imgs.length})</span>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:10px">${imgs.map((u,i) => imgRender(u,i)).join('')}</div>
-        </div>`;
-      })()}
-      ${buildDepositHistorySection(tx)}
-      ${buildPaymentHistorySection(tx)}
-      ${buildCommentsSection(tx)}
-      ${buildEditHistorySection(tx)}
     </div>
-    <div class="inv-footer" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-      ${isExchangeSalePendingCollect(tx) ? `<button class="btn btn-primary btn-sm" onclick="closeInvoiceDetail();openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل فرق الاستبدال (${fmtJ(tx.remaining)})</button>` : ''}
-      ${(tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx) ? `<button class="btn ${isPurchase ? 'btn-danger' : 'btn-primary'} btn-sm" onclick="closeInvoiceDetail();openCollectMovement('${esc(tx._id)}')">${isPurchase ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg> سداد المتبقي للمورد' : '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل المتبقي'}</button>` : ''}
-      <button class="btn btn-outline btn-sm" onclick="closeInvoiceDetail();printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة</button>
-      <button class="btn btn-outline btn-sm" onclick="closeInvoiceDetail()">إغلاق</button>
+    <!-- Footer Actions -->
+    <div class="inv-footer">
+      ${isExchangeSalePendingCollect(tx) ? `<button class="btn btn-primary" onclick="closeInvoiceDetail();openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg>تحصيل فرق الاستبدال (${fmtJ(tx.remaining)})</button>` : ''}
+      ${(tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx) ? `<button class="btn ${isPurchase ? 'btn-danger' : 'btn-primary'}" onclick="closeInvoiceDetail();openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${isPurchase ? '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>' : '<circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/>'}</svg>${isPurchase ? 'سداد المتبقي للمورد' : 'تحصيل المتبقي'}</button>` : ''}
+      <button class="btn btn-outline" onclick="closeInvoiceDetail();printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>طباعة</button>
+      <button class="btn btn-outline" onclick="closeInvoiceDetail()">إغلاق</button>
     </div>`;
   const _invEl = qs('#inv-detail-content');
   _invEl.classList.toggle('is-purchase', isPurchase);
   _invEl.innerHTML = html;
   qs('#inv-detail-overlay').classList.add('active');
-  // Scroll to + highlight a specific comment if requested (from mention notification)
   if (window._highlightCommentId) {
     setTimeout(() => {
       const cid = window._highlightCommentId;
@@ -14547,11 +14776,161 @@ function showInvoiceDetail(id, highlightCommentId) {
       const el = _invEl.querySelector(`[data-comment-id="${cid}"]`);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.closest('div[style*="border-bottom"]')?.classList.add('comment-mention-highlight');
-        setTimeout(() => el.closest('div[style*="border-bottom"]')?.classList.remove('comment-mention-highlight'), 4000);
+        el.closest('.inv-cmt-item')?.classList.add('comment-mention-highlight');
+        setTimeout(() => el.closest('.inv-cmt-item')?.classList.remove('comment-mention-highlight'), 4000);
       }
     }, 200);
   }
+}
+function buildPaymentTimelineSection(tx) {
+  const deposits = tx.deposits || [];
+  const payments = tx.payments || [];
+  const isPurchase = tx.type === 'مشتريات';
+  const allEvents = [];
+  deposits.forEach(d => {
+    allEvents.push({ type: 'deposit', amount: d.amount || 0, method: d.method || '-', date: d.date, note: d.note || '' });
+  });
+  payments.forEach(p => {
+    allEvents.push({ type: 'payment', amount: p.amount || p.collectAmount || 0, method: p.method || p.collectMethod || '-', date: p.date || p.collectedAt, note: p.note || p.collectNote || '' });
+  });
+  if (!allEvents.length) return '';
+  allEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+  const totalAmount = allEvents.reduce((s, e) => s + e.amount, 0);
+  const timelineId = 'inv-timeline-' + (tx._id || Date.now());
+  const items = allEvents.map(e => {
+    const dateObj = new Date(e.date);
+    const dateStr = dateObj.toLocaleDateString('ar-EG');
+    const timeStr = dateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const isDeposit = e.type === 'deposit';
+    return `<div class="inv-timeline-item">
+      <div class="inv-timeline-dot ${isDeposit ? 'green' : 'blue'}"></div>
+      <div class="inv-timeline-content">
+        <div class="inv-timeline-amount" style="color:${isDeposit ? '#16a34a' : '#3b82f6'}">${fmtJ(e.amount)}</div>
+        <div class="inv-timeline-meta">
+          <span>${isDeposit ? (isPurchase ? 'عربون' : 'ديبوزت') : (isPurchase ? 'سداد' : 'تحصيل')}</span>
+          <span>·</span>
+          <span>${esc(e.method)}</span>
+          <span>·</span>
+          <span>${dateStr} ${timeStr}</span>
+          ${e.note ? `<span>·</span><span>${esc(e.note)}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="inv-timeline">
+    <div class="inv-timeline-header" onclick="this.classList.toggle('expanded');this.nextElementSibling.classList.toggle('expanded')">
+      <h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${isPurchase ? 'سجل السداد' : 'سجل المدفوعات'}</h5>
+      <span class="badge">${allEvents.length} · ${fmtJ(totalAmount)}</span>
+      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="inv-timeline-body">
+      <div class="inv-timeline-list">${items}</div>
+    </div>
+  </div>`;
+}
+function buildInvCommentsSection(tx) {
+  const myName = currentUser?.name || currentUser?.username || '';
+  const comments = tx.comments || [];
+  const commentsHtml = comments.map(c => {
+    const isMine = c.employee === myName;
+    const actions = isMine ? `<div class="tx-cmt-actions"><button class="tx-cmt-btn" title="تعديل" onclick="startEditInvComment('${esc(tx._id)}',${c.id})">${_EDIT_SVG}</button><button class="tx-cmt-btn del" title="حذف" onclick="deleteInvComment('${esc(tx._id)}',${c.id})">${_DEL_SVG}</button></div>` : '';
+    return `<div class="inv-cmt-item" id="inv-cmt-${c.id}">
+      <div class="tx-cmt-avatar">${_cmtInitials(c.employee)}</div>
+      <div class="tx-cmt-body">
+        <div class="tx-cmt-meta"><span class="tx-cmt-author">${esc(c.employee || '؟')}</span><span class="tx-cmt-time">${c.createdAt || ''}</span><span class="tx-cmt-tag" style="${_cmtTagStyle(c.type)}">${esc(c.type)}</span></div>
+        <div class="tx-cmt-text" data-comment-id="${c.id}">${renderMentionText(c.text)}</div>
+      </div>
+      ${actions}
+    </div>`;
+  }).join('');
+  const sectionId = 'inv-comments-' + (tx._id || Date.now());
+  return `<div class="inv-section">
+    <div class="inv-section-header" onclick="this.classList.toggle('expanded');this.nextElementSibling.classList.toggle('expanded')">
+      <h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>التعليقات</h5>
+      <span class="section-badge">${comments.length}</span>
+      <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="inv-section-body">
+      <div class="inv-section-content">
+        <div class="inv-cmt-form">
+          <div class="inv-cmt-input-row">
+            <input type="text" id="inv-comment-text-${esc(tx._id)}" placeholder="أضف تعليق… @ للإشارة" class="inv-cmt-input" oninput="onMentionInput(this,'${esc(tx._id)}')" onkeydown="onMentionKey(event,'${esc(tx._id)}')">
+            <select id="inv-comment-type-${esc(tx._id)}" class="inv-cmt-type">
+              <option value="عام">عام</option>
+              <option value="تنبيه">تنبيه</option>
+              <option value="ملاحظة">ملاحظة</option>
+              <option value="أسئلة">أسئلة</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="addInvoiceComment('${esc(tx._id)}')" style="width:100%">إضافة تعليق</button>
+        </div>
+        <div class="inv-cmt-list" id="inv-cmt-list-${esc(tx._id)}">
+          ${commentsHtml || '<div style="padding:16px;text-align:center;color:var(--muted);font-size:.83rem">لا توجد تعليقات بعد</div>'}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function buildInvEditHistorySection(tx) {
+  if (!tx.editHistory || !tx.editHistory.length) return '';
+  const history = tx.editHistory;
+  const entries = history.map((entry, i) => {
+    const b = entry.before || {};
+    const after = (i < history.length - 1) ? (history[i + 1].before || {}) : tx;
+    const details = [];
+    const fieldDefs = [
+      { key: 'client', label: 'اسم العميل' },
+      { key: 'phone', label: 'الهاتف' },
+      { key: 'ref', label: 'الرقم المرجعي' },
+      { key: 'notes', label: 'الملاحظات' },
+      { key: 'payment', label: 'طريقة الدفع' },
+      { key: 'payStatus', label: 'حالة الدفع' },
+      { key: 'shipCo', label: 'شركة الشحن' },
+      { key: 'shipZone', label: 'منطقة الشحن' },
+    ];
+    const moneyDefs = [
+      { key: 'deposit', label: 'الديبوزت' },
+      { key: 'discount', label: 'الخصم' },
+      { key: 'shipCost', label: 'تكلفة الشحن' },
+      { key: 'total', label: 'الإجمالي' },
+      { key: 'remaining', label: 'المتبقي' },
+      { key: 'itemsTotal', label: 'إجمالي الأصناف' },
+    ];
+    fieldDefs.forEach(fd => {
+      const oldVal = b[fd.key] ?? '';
+      const newVal = after[fd.key] ?? '';
+      if (oldVal !== newVal) {
+        details.push(`<span class="old-val">${esc(String(oldVal)) || '(فارغ)'}</span> ← <span class="new-val">${esc(String(newVal)) || '(فارغ)'}</span> :${fd.label}`);
+      }
+    });
+    moneyDefs.forEach(fd => {
+      const oldVal = b[fd.key] ?? 0;
+      const newVal = after[fd.key] ?? 0;
+      if (Number(oldVal) !== Number(newVal)) {
+        details.push(`<span class="old-val">${fmtJ(oldVal)}</span> ← <span class="new-val">${fmtJ(newVal)}</span> :${fd.label}`);
+      }
+    });
+    const itemChanges = diffItems(b.items, after.items);
+    details.push(...itemChanges.map(ic => ic.text));
+    return { editedAt: entry.editedAt, editedBy: entry.editedBy || '', details };
+  });
+  const rows = [...entries].reverse().map((entry, idx) => {
+    const detailsHtml = entry.details.length
+      ? `<ul class="history-detail-list">${entry.details.map(d => `<li class="history-detail-item">${d}</li>`).join('')}</ul>`
+      : '<div style="color:var(--muted);font-size:.75rem;padding:4px 0">لا توجد تغييرات مسجلة</div>';
+    const editorName = entry.editedBy ? `<span style="background:var(--primary-pale);color:var(--accent);padding:1px 8px;border-radius:10px;font-size:.7rem;font-weight:600">بواسطة: ${esc(entry.editedBy)}</span>` : '';
+    return `<div class="history-entry"><div class="history-date">${ICON('clock')} التعديل ${entries.length - idx} — ${formatEditDateTime(entry.editedAt)} ${editorName}</div>${detailsHtml}</div>`;
+  }).join('');
+  return `<div class="inv-section">
+    <div class="inv-section-header" onclick="this.classList.toggle('expanded');this.nextElementSibling.classList.toggle('expanded')">
+      <h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>سجل التعديلات</h5>
+      <span class="section-badge">${entries.length}</span>
+      <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="inv-section-body">
+      <div class="inv-section-content">${rows}</div>
+    </div>
+  </div>`;
 }
 async function addInvoiceComment(txId) {
   const textInput = qs(`#inv-comment-text-${txId}`);
@@ -15150,12 +15529,28 @@ function openProductModal(id) {
 async function saveProduct(id) {
   const body = { code: qs('#pm-code').value, name: qs('#pm-name').value, supplier: qs('#pm-supplier')?.value || '', sellPrice: Number(qs('#pm-sell').value) || 0, buyPrice: Number(qs('#pm-buy').value) || 0, minStock: Number(qs('#pm-min').value) || 0, openingBalance: Number(qs('#pm-opening').value) || 0, imageUrl: qs('#pm-image')?.value?.trim() || '' };
   if (!body.name) { toast('اسم الصنف مطلوب', true); return; }
-  try { if (id) await api('/products/' + id, { method: 'PUT', body: JSON.stringify(body) }); else await api('/products', { method: 'POST', body: JSON.stringify(body) }); toast(id ? 'تم التحديث' : 'تم الإضافة'); closeModal(); products = await api('/products').catch(() => products); renderProducts(); }
+  try { 
+    if (id) await api('/products/' + id, { method: 'PUT', body: JSON.stringify(body) }); 
+    else await api('/products', { method: 'POST', body: JSON.stringify(body) }); 
+    toast(id ? 'تم التحديث' : 'تم الإضافة'); 
+    closeModal(); 
+    products = await api('/products').catch(() => products); 
+    // Refresh inventory cache to reflect product changes in cards
+    try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
+    renderProducts(); 
+  }
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function deleteProduct(id) {
   if (!confirm('حذف هذا الصنف؟')) return;
-  try { await api('/products/' + id, { method: 'DELETE' }); toast('تم الحذف'); products = await api('/products').catch(() => products); renderProducts(); }
+  try { 
+    await api('/products/' + id, { method: 'DELETE' }); 
+    toast('تم الحذف'); 
+    products = await api('/products').catch(() => products); 
+    // Refresh inventory cache to reflect product deletion in cards
+    try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
+    renderProducts(); 
+  }
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
 function getSelectedProductIds() {
@@ -15205,7 +15600,10 @@ async function executeBulkEdit() {
   try {
     const res = await api('/products/bulk-update', { method: 'POST', body: JSON.stringify(body) });
     toast(res.message || 'تم التعديل'); closeModal();
-    products = await api('/products').catch(() => products); renderProducts();
+    products = await api('/products').catch(() => products); 
+    // Refresh inventory cache to reflect bulk changes in cards
+    try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
+    renderProducts();
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function bulkDeleteProducts() {
@@ -15215,7 +15613,10 @@ async function bulkDeleteProducts() {
   try {
     const res = await api('/products/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) });
     toast(res.message || 'تم الحذف');
-    products = await api('/products').catch(() => products); renderProducts();
+    products = await api('/products').catch(() => products); 
+    // Refresh inventory cache to reflect bulk deletions in cards
+    try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
+    renderProducts();
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 
@@ -15237,7 +15638,10 @@ function importProductsExcel(event) {
         minStock: Number(r['الحد الأدنى'] || r.minStock) || 0,
         openingBalance: Number(r['الرصيد الافتتاحي'] || r.openingBalance) || 0
       }));
-      await api('/products/import', { method: 'POST', body: JSON.stringify({ items }) }); toast('تم استيراد ' + items.length + ' صنف'); products = await api('/products').catch(() => products); renderProducts();
+      await api('/products/import', { method: 'POST', body: JSON.stringify({ items }) }); toast('تم استيراد ' + items.length + ' صنف'); products = await api('/products').catch(() => products); 
+      // Refresh inventory cache to reflect imported products in cards
+      try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
+      renderProducts();
     } catch (err) { toast('خطأ في الاستيراد: ' + err.message, true); }
   };
   reader.readAsArrayBuffer(file); event.target.value = '';
@@ -16277,7 +16681,15 @@ function renderReturnApprovalCard(r) {
   const diffLine = isEx ? `<div class="text-sm" style="margin-top:4px">الفرق: <strong>${fmtJ(Math.abs(diff))}</strong> ${diff > 0 ? '<span class="text-green">(للعميل — علينا)</span>' : diff < 0 ? '<span class="text-orange">(على العميل — للشركة)</span>' : '<span class="text-muted">(لا فرق)</span>'} — بدائل: ${fmtJ(r.exchangeTotal || 0)}</div>${diffHint}` : '';
   const vr = String(r.vaultRefundAccount || '').trim();
   const vc = String(r.vaultCollectAccount || '').trim();
-  const vaultLine = (vr || vc) ? '<div class="text-xs" style="margin-top:8px;padding:8px;background:var(--surface2);border-radius:8px;line-height:1.5">' + (vr ? '<div><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 2 22 2 12 22 2 2"/></svg> <strong>سحب/رد للعميل من:</strong> ' + esc(vr) + '</div>' : '') + (vc ? '<div style="margin-top:' + (vr ? '4px' : '0') + '"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 2 22 22 2 22 12 2"/></svg> <strong>إيداع تحصيل الفرق (للشركة) في:</strong> ' + esc(vc) + '</div>' : '') + '</div>' : '';
+  const vaultRefundOpts = RET_VAULT_SEGMENTS.map(v => `<option value="${esc(v)}"${v === vr ? ' selected' : ''}>${esc(v)}</option>`).join('');
+  const vaultCollectOpts = RET_VAULT_SEGMENTS.map(v => `<option value="${esc(v)}"${v === vc ? ' selected' : ''}>${esc(v)}</option>`).join('');
+  const vaultRefundEditable = isPending && isAdmin()
+    ? `<select onchange="updateReturnVault('${esc(r._id)}', this.value, 'refund')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);font-size:.75rem;cursor:pointer">${vaultRefundOpts}</select>`
+    : `<span>${esc(vr)}</span>`;
+  const vaultCollectEditable = isPending && isAdmin() && isEx
+    ? `<select onchange="updateReturnVault('${esc(r._id)}', this.value, 'collect')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);font-size:.75rem;cursor:pointer">${vaultCollectOpts}</select>`
+    : `<span>${esc(vc)}</span>`;
+  const vaultLine = (vr || vc) ? '<div class="text-xs" style="margin-top:8px;padding:8px;background:var(--surface2);border-radius:8px;line-height:1.5">' + (vr ? '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 2 22 2 12 22 2 2"/></svg> <strong>سحب/رد للعميل من:</strong> ' + vaultRefundEditable + '</div>' : '') + (vc ? '<div style="margin-top:' + (vr ? '4px' : '0') + ';display:flex;align-items:center;gap:6px;flex-wrap:wrap"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 2 22 22 2 22 12 2"/></svg> <strong>إيداع تحصيل الفرق (للشركة) في:</strong> ' + vaultCollectEditable + '</div>' : '') + '</div>' : '';
   const daysInfo = r.daysRemaining ? `<span class="badge badge-green" style="font-size:.6rem">متبقي ${r.daysRemaining} يوم</span>` : '';
   const borderStyle = isPending ? 'border-right:4px solid var(--purple)' : (r.status === 'معتمد' ? 'border-right:4px solid var(--green)' : 'border-right:4px solid var(--red)');
   return `<div class="card mb-16" style="background:linear-gradient(135deg,rgba(249,115,22,.04),rgba(249,115,22,.02));${borderStyle}">
@@ -16338,12 +16750,23 @@ async function approveReturnFromAppr(id) {
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function rejectReturnFromAppr(id) {
-  const reason = prompt('سبب رفض الاسترجاع (اختياري):') || '';
+  const reason = prompt('سبب رفض الاسترجاع (اختياري):');
+  if (reason === null) return; // user pressed cancel
   try {
-    await api('/returns/' + id + '/reject', { method: 'POST', body: JSON.stringify({ rejectedReason: reason }) });
+    await api('/returns/' + id + '/reject', { method: 'POST', body: JSON.stringify({ rejectedReason: reason.trim() }) });
     toast('تم رفض طلب الاسترجاع');
     returnRequests = await api('/returns').catch(() => returnRequests);
     renderApprovals(); renderMovements(); buildSidebar(); buildNotifications();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+
+async function updateReturnVault(id, value, type) {
+  try {
+    const body = type === 'refund' ? { vaultRefundAccount: value } : { vaultCollectAccount: value };
+    await api('/returns/' + id + '/update-vault', { method: 'POST', body: JSON.stringify(body) });
+    toast('تم تغيير قسم الخزنة');
+    returnRequests = await api('/returns').catch(() => returnRequests);
+    renderApprovals();
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 
@@ -16931,38 +17354,7 @@ function renderVaultPage() {
   // If lock is disabled in settings, treat as unlocked automatically
   if (isLockDisabled('vault')) vaultUnlocked = true;
   if (!vaultUnlocked) { qs('#vault-locked').style.display = 'block'; qs('#vault-content').style.display = 'none'; }
-  else { qs('#vault-locked').style.display = 'none'; qs('#vault-content').style.display = 'block'; renderVaultSegs(); loadVaultStats(); loadVaultLog(); loadVaultAnalytics(); }
-}
-async function loadVaultStats() {
-  try {
-    const stats = await api('/vault/statistics');
-    const statsHtml = `
-      <div class="stat-card card">
-        <div class="stat-val text-green">${fmtJ(stats.totalIncome || 0)}</div>
-        <div class="stat-label">إجمالي الدخل</div>
-      </div>
-      <div class="stat-card card">
-        <div class="stat-val text-red">${fmtJ(stats.totalExpense || 0)}</div>
-        <div class="stat-label">إجمالي المصاريف</div>
-      </div>
-      <div class="stat-card card">
-        <div class="stat-val text-blue">${stats.totalTransactions || 0}</div>
-        <div class="stat-label">إجمالي المعاملات</div>
-      </div>
-      <div class="stat-card card">
-        <div class="stat-val text-orange">${stats.frozenTransactions || 0}</div>
-        <div class="stat-label">معاملات مجمدة</div>
-      </div>
-      <div class="stat-card card">
-        <div class="stat-val" style="color:#666">${stats.pendingApprovals || 0}</div>
-        <div class="stat-label">بانتظار الموافقة</div>
-      </div>
-    `;
-    const statsEl = qs('#vault-stats');
-    if (statsEl) statsEl.innerHTML = statsHtml;
-  } catch (e) {
-    console.error('خطأ في تحميل إحصائيات الخزنة:', e);
-  }
+  else { qs('#vault-locked').style.display = 'none'; qs('#vault-content').style.display = 'block'; renderVaultSegs(); loadVaultLog(); loadVaultAnalytics(); }
 }
 
 /** Refreshes settings (vault balances) from server and, if vault page is open/unlocked, re-renders it in real time */
@@ -17357,7 +17749,6 @@ async function freezeVaultTransaction(txId) {
     settings = await api('/settings').catch(() => settings);
     transactions = await api('/transactions').catch(() => transactions);
     renderVaultSegs();
-    loadVaultStats();
     await loadVaultLog();
     renderClients();
   } catch (e) {
@@ -17377,7 +17768,6 @@ async function unfreezeVaultTransaction(txId) {
     settings = await api('/settings').catch(() => settings);
     transactions = await api('/transactions').catch(() => transactions);
     renderVaultSegs();
-    loadVaultStats();
     await loadVaultLog();
     renderClients();
   } catch (e) {
@@ -17399,7 +17789,6 @@ async function cancelVaultTransaction(txId) {
     settings = await api('/settings').catch(() => settings);
     transactions = await api('/transactions').catch(() => transactions);
     renderVaultSegs();
-    loadVaultStats();
     await loadVaultLog();
     renderClients();
   } catch (e) {
@@ -17458,30 +17847,11 @@ async function loadVaultAnalytics() {
     ]);
     vaultAnalytics = analytics;
     vaultCashflow = cashflow;
-    renderVaultKpiCards();
     renderVaultCashflowChart();
     renderVaultSourceChart();
-    qs('#vault-kpi-panel').style.display = 'block';
   } catch(e) {
     console.error('فشل تحميل تحليلات الخزنة:', e);
   }
-}
-
-function renderVaultKpiCards() {
-  const a = vaultAnalytics;
-  if (!a) return;
-  const trendArrow = a.trendDirection === 'up' ? '↑' : a.trendDirection === 'down' ? '↓' : '→';
-  const trendColor = a.trendDirection === 'up' ? 'text-green' : a.trendDirection === 'down' ? 'text-red' : '';
-  const html = [
-    { label: 'صافي الشهر الحالي', val: fmtJ(a.monthlyNet), color: a.monthlyNet >= 0 ? 'text-green' : 'text-red' },
-    { label: `الاتجاه (${cashflowDays} يوم)`, val: `${trendArrow} ${Math.abs(parseFloat(a.trendPct)).toFixed(1)}%`, color: trendColor },
-    { label: 'متوسط يومي', val: fmtJ(a.dailyAverage), color: '' },
-    { label: 'سرعة دوران السيولة', val: fmtJ(a.cashVelocity) + '/يوم', color: 'text-blue' },
-  ].map(s => `<div class="stat-card card">
-    <div class="stat-val ${s.color}">${s.val}</div>
-    <div class="stat-label">${esc(s.label)}</div>
-  </div>`).join('');
-  qs('#vault-kpi-cards').innerHTML = html;
 }
 
 function renderVaultCashflowChart() {
@@ -18106,7 +18476,7 @@ function _renderProfileInner() {
   const roleLabel = _ROLE_MAP[u.role] || u.role || '—';
   const st = (id, v) => { const el = qs('#' + id); if (el) el.textContent = v; };
 
-  // Cover
+  // Hero Avatar with animated ring
   const heroAvatar = qs('#prof-avatar-hero');
   if (heroAvatar) {
     heroAvatar.innerHTML = avatarUrl
@@ -18117,6 +18487,12 @@ function _renderProfileInner() {
   st('prof-cover-username', '@' + (u.username || '—'));
   st('prof-role-label', roleLabel);
 
+  // Verified badge for admin
+  const verifiedBadge = qs('#prof-verified-badge');
+  if (verifiedBadge) {
+    verifiedBadge.style.display = u.role === 'admin' ? 'inline-flex' : 'none';
+  }
+
   // Info panel
   st('pi-name', name || '—');
   st('pi-username', u.username || '—');
@@ -18124,7 +18500,7 @@ function _renderProfileInner() {
   st('pi-role', roleLabel);
   st('pi-lastlogin', u.lastLogin ? fmtDateTime(u.lastLogin) : 'غير متاح');
 
-  // Online dot
+  // Online indicator with pulse animation
   const dot = qs('#prof-online-dot');
   if (dot) dot.style.display = 'block';
 
@@ -18135,16 +18511,17 @@ function _renderProfileInner() {
   sv('prof-password', '');
   profPreviewAvatar(u.avatar || '');
 
-  // Permissions
+  // Permissions with premium chip design
   const permsCard = qs('#prof-perms-card');
   const permsBody = qs('#prof-perms-body');
   if (permsBody && Array.isArray(u.perms) && u.perms.length) {
-    const PERM_LABELS = { sales:'المبيعات', purchases:'المشتريات', returns:'المرتجعات', expenses:'المصاريف', inventory:'المخزون', vault:'الخزنة', reports:'التقارير', settings:'الإعدادات', users:'المستخدمين' };
-    permsBody.innerHTML = u.perms.map(p => `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:99px;background:rgba(45,122,79,.08);border:1px solid rgba(45,122,79,.18);font-size:.75rem;font-weight:600;color:var(--primary)">${esc(PERM_LABELS[p] || p)}</span>`).join('');
+    const PERM_LABELS = { sales:'المبيعات', purchases:'المشتريات', returns:'المرتجعات', expenses:'المصاريف', inventory:'المخزون', vault:'الخزنة', reports:'التقارير', settings:'الإعدادات', users:'المستخدمين', dashboard:'الرئيسية', transaction:'الحركات', products:'المنتجات', clients:'العملاء', suppliers:'الموردين', movements:'سجل الحركات', complaints:'الشكاوى', approvals:'الموافقات' };
+    const PERM_ICONS = { sales:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', purchases:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>', returns:'<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>', expenses:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', inventory:'<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>', vault:'<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v3"/>', reports:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>', settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>', users:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>' };
+    permsBody.innerHTML = u.perms.map(p => `<span class="prof-perm-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">${PERM_ICONS[p] || '<circle cx="12" cy="12" r="10"/>'}</svg>${esc(PERM_LABELS[p] || p)}</span>`).join('');
     if (permsCard) permsCard.style.display = '';
   } else if (permsCard) permsCard.style.display = 'none';
 
-  // Load KPIs + activity
+  // Load KPIs + activity with smooth animations
   _loadProfileStats();
   _buildProfileActivity();
 }
@@ -18153,10 +18530,26 @@ async function _loadProfileStats() {
   try {
     const stats = await api('/users/me/stats');
     const st = (id, v) => { const el = qs('#' + id); if (el) el.textContent = v; };
-    st('kpi-sales', stats.salesCount ?? '—');
-    st('kpi-purchases', stats.purchasesCount ?? '—');
-    st('kpi-tx', stats.txCount ?? '—');
-  } catch (_) {}
+    st('kpi-sales', fmtJ(stats.salesCount ?? 0));
+    st('kpi-purchases', fmtJ(stats.purchasesCount ?? 0));
+    st('kpi-tx', fmtJ(stats.txCount ?? 0));
+    // Calculate days since joining
+    const u = currentUser || {};
+    if (u.createdAt) {
+      const joined = new Date(u.createdAt);
+      const now = new Date();
+      const days = Math.floor((now - joined) / (1000 * 60 * 60 * 24));
+      st('kpi-days', fmtJ(days));
+    } else {
+      st('kpi-days', '—');
+    }
+  } catch (_) {
+    const st = (id, v) => { const el = qs('#' + id); if (el) el.textContent = v; };
+    st('kpi-sales', '—');
+    st('kpi-purchases', '—');
+    st('kpi-tx', '—');
+    st('kpi-days', '—');
+  }
 }
 
 function _buildProfileActivity() {
@@ -18167,33 +18560,47 @@ function _buildProfileActivity() {
   const empName = u.name || u.username || '';
   const allTx = typeof transactions !== 'undefined' ? transactions : [];
   const mine = allTx.filter(t => t.employee === empName).sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date)).slice(0, 8);
-  if (!mine.length) { list.innerHTML = '<div class="prof-empty">لا توجد نشاطات مسجلة بعد</div>'; return; }
+  if (!mine.length) {
+    list.innerHTML = `<div class="prof-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 15h8"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/></svg>
+      <div>لا توجد نشاطات مسجلة بعد</div>
+    </div>`;
+    return;
+  }
   const TYPE_COLOR = { 'مبيعات': '#10b981', 'مشتريات': '#3b82f6', 'مرتجع مبيعات': '#f59e0b', 'مرتجع مشتريات': '#f59e0b', 'مرتجع': '#8b5cf6' };
+  const TYPE_ICON = { 'مبيعات': 'تم بيع', 'مشتريات': 'تم شراء', 'مرتجع مبيعات': 'مرتجع من', 'مرتجع مشتريات': 'مرتجع إلى', 'مرتجع': 'مرتجع' };
   list.innerHTML = mine.map(t => `
-    <div class="prof-activity-item">
-      <div class="prof-activity-dot" style="background:${TYPE_COLOR[t.type] || 'var(--muted)'}"></div>
-      <div class="prof-activity-body">
-        <div class="prof-activity-text">${esc(t.type)} — ${esc(t.client || t.ref || '—')} — ${fmtJ(t.total)}</div>
-        <div class="prof-activity-time">${fmtDateTime(t.createdAt || t.date)}</div>
+    <div class="prof-timeline-item">
+      <div class="prof-timeline-dot" style="background:${TYPE_COLOR[t.type] || 'var(--muted)'}"></div>
+      <div class="prof-timeline-content">
+        <div class="prof-timeline-text">${esc(TYPE_ICON[t.type] || t.type)} — ${esc(t.client || t.ref || '—')} — <span style="color:var(--primary);font-weight:700">${fmtJ(t.total)} ج.م</span></div>
+        <div class="prof-timeline-meta">${fmtDateTime(t.createdAt || t.date)}</div>
       </div>
     </div>`).join('');
 }
 
 function profPreviewAvatar(url) {
-  const mini = qs('#prof-avatar-mini');
+  const miniWrap = qs('#prof-avatar-mini');
   const hero = qs('#prof-avatar-hero');
   const initials = _profInitials((currentUser?.name || currentUser?.username || '?'));
-  if (mini) {
+  // Mini preview in edit form
+  if (miniWrap) {
+    const img = miniWrap.querySelector('img');
     if (url && url.startsWith('http')) {
-      mini.src = url;
-      mini.classList.add('show');
-      mini.onerror = () => mini.classList.remove('show');
-    } else mini.classList.remove('show');
+      if (img) img.src = url;
+      miniWrap.classList.add('show');
+      if (img) img.onerror = () => miniWrap.classList.remove('show');
+    } else {
+      miniWrap.classList.remove('show');
+    }
   }
+  // Hero avatar with ring animation
   if (hero) {
     if (url && url.startsWith('http')) {
       hero.innerHTML = `<img src="${esc(url)}" onerror="if(this.parentElement)this.parentElement.innerHTML='${esc(initials)}';" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-    } else hero.textContent = initials;
+    } else {
+      hero.textContent = initials;
+    }
   }
 }
 
@@ -18201,7 +18608,7 @@ function profValidatePhone(input) {
   const err = qs('#prof-phone-err');
   const val = input.value.trim();
   const ok = !val || /^[\d\s\+\-\(\)]{7,15}$/.test(val);
-  input.classList.toggle('err', !ok);
+  input.classList.toggle('error', !ok);
   if (err) err.classList.toggle('show', !ok);
   return ok;
 }
