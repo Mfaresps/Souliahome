@@ -16441,7 +16441,15 @@ function renderReturnApprovalCard(r) {
   const diffLine = isEx ? `<div class="text-sm" style="margin-top:4px">الفرق: <strong>${fmtJ(Math.abs(diff))}</strong> ${diff > 0 ? '<span class="text-green">(للعميل — علينا)</span>' : diff < 0 ? '<span class="text-orange">(على العميل — للشركة)</span>' : '<span class="text-muted">(لا فرق)</span>'} — بدائل: ${fmtJ(r.exchangeTotal || 0)}</div>${diffHint}` : '';
   const vr = String(r.vaultRefundAccount || '').trim();
   const vc = String(r.vaultCollectAccount || '').trim();
-  const vaultLine = (vr || vc) ? '<div class="text-xs" style="margin-top:8px;padding:8px;background:var(--surface2);border-radius:8px;line-height:1.5">' + (vr ? '<div><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 2 22 2 12 22 2 2"/></svg> <strong>سحب/رد للعميل من:</strong> ' + esc(vr) + '</div>' : '') + (vc ? '<div style="margin-top:' + (vr ? '4px' : '0') + '"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 2 22 22 2 22 12 2"/></svg> <strong>إيداع تحصيل الفرق (للشركة) في:</strong> ' + esc(vc) + '</div>' : '') + '</div>' : '';
+  const vaultRefundOpts = RET_VAULT_SEGMENTS.map(v => `<option value="${esc(v)}"${v === vr ? ' selected' : ''}>${esc(v)}</option>`).join('');
+  const vaultCollectOpts = RET_VAULT_SEGMENTS.map(v => `<option value="${esc(v)}"${v === vc ? ' selected' : ''}>${esc(v)}</option>`).join('');
+  const vaultRefundEditable = isPending && isAdmin()
+    ? `<select onchange="updateReturnVault('${esc(r._id)}', this.value, 'refund')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);font-size:.75rem;cursor:pointer">${vaultRefundOpts}</select>`
+    : `<span>${esc(vr)}</span>`;
+  const vaultCollectEditable = isPending && isAdmin() && isEx
+    ? `<select onchange="updateReturnVault('${esc(r._id)}', this.value, 'collect')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);font-size:.75rem;cursor:pointer">${vaultCollectOpts}</select>`
+    : `<span>${esc(vc)}</span>`;
+  const vaultLine = (vr || vc) ? '<div class="text-xs" style="margin-top:8px;padding:8px;background:var(--surface2);border-radius:8px;line-height:1.5">' + (vr ? '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 2 22 2 12 22 2 2"/></svg> <strong>سحب/رد للعميل من:</strong> ' + vaultRefundEditable + '</div>' : '') + (vc ? '<div style="margin-top:' + (vr ? '4px' : '0') + ';display:flex;align-items:center;gap:6px;flex-wrap:wrap"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 2 22 22 2 22 12 2"/></svg> <strong>إيداع تحصيل الفرق (للشركة) في:</strong> ' + vaultCollectEditable + '</div>' : '') + '</div>' : '';
   const daysInfo = r.daysRemaining ? `<span class="badge badge-green" style="font-size:.6rem">متبقي ${r.daysRemaining} يوم</span>` : '';
   const borderStyle = isPending ? 'border-right:4px solid var(--purple)' : (r.status === 'معتمد' ? 'border-right:4px solid var(--green)' : 'border-right:4px solid var(--red)');
   return `<div class="card mb-16" style="background:linear-gradient(135deg,rgba(249,115,22,.04),rgba(249,115,22,.02));${borderStyle}">
@@ -16509,6 +16517,16 @@ async function rejectReturnFromAppr(id) {
     toast('تم رفض طلب الاسترجاع');
     returnRequests = await api('/returns').catch(() => returnRequests);
     renderApprovals(); renderMovements(); buildSidebar(); buildNotifications();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+
+async function updateReturnVault(id, value, type) {
+  try {
+    const body = type === 'refund' ? { vaultRefundAccount: value } : { vaultCollectAccount: value };
+    await api('/returns/' + id + '/update-vault', { method: 'POST', body: JSON.stringify(body) });
+    toast('تم تغيير قسم الخزنة');
+    returnRequests = await api('/returns').catch(() => returnRequests);
+    renderApprovals();
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 

@@ -92,4 +92,17 @@ export class ReturnsController {
     const approvedBy = req.user.name || req.user.username;
     return this.returnsService.reject(id, approvedBy, dto.rejectedReason);
   }
+
+  @Roles('admin')
+  @Post(':id/update-vault')
+  async updateVault(
+    @Param('id') id: string,
+    @Body() body: { vaultRefundAccount?: string; vaultCollectAccount?: string },
+  ) {
+    return this.returnsService.updateVaultAccount(
+      id,
+      body.vaultRefundAccount,
+      body.vaultCollectAccount,
+    );
+  }
 }

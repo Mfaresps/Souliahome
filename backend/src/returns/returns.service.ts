@@ -276,4 +276,33 @@ export class ReturnsService {
     ret.rejectedReason = rejectedReason;
     return ret.save();
   }
+
+  async updateVaultAccount(
+    id: string,
+    vaultRefundAccount?: string,
+    vaultCollectAccount?: string,
+  ): Promise<ReturnRequestDocument> {
+    const ret = await this.returnModel.findById(id).exec();
+    if (!ret) {
+      throw new NotFoundException('طلب الاسترجاع غير موجود');
+    }
+    if (ret.status !== 'معلق') {
+      throw new BadRequestException('لا يمكن تعديل الخزنة — الطلب ليس معلقاً');
+    }
+    if (vaultRefundAccount) {
+      const normalized = normalizeVaultAccountLabel(vaultRefundAccount);
+      if (!normalized) {
+        throw new BadRequestException('قسم الخزنة غير صالح');
+      }
+      ret.vaultRefundAccount = normalized;
+    }
+    if (vaultCollectAccount) {
+      const normalized = normalizeVaultAccountLabel(vaultCollectAccount);
+      if (!normalized) {
+        throw new BadRequestException('قسم الخزنة غير صالح');
+      }
+      ret.vaultCollectAccount = normalized;
+    }
+    return ret.save();
+  }
 }
