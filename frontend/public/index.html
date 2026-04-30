@@ -672,7 +672,7 @@ body.dark-mode .profile-trigger:hover{background:rgba(255,255,255,.14)}
 .profile-trigger .avatar{width:30px!important;height:30px!important;font-size:.8rem!important}
 .profile-trigger .pt-caret{width:14px;height:14px;opacity:.75;transition:transform .2s}
 .profile-trigger[aria-expanded="true"] .pt-caret{transform:rotate(180deg)}
-.profile-menu{position:absolute;top:calc(100% + 10px);left:0;min-width:260px;max-width:calc(100vw - 16px);background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.06);padding:6px;z-index:300;opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .18s ease,transform .18s ease}
+.profile-menu{position:fixed;top:auto;bottom:auto;right:16px;left:auto;min-width:260px;max-width:calc(100vw - 32px);background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.06);padding:6px;z-index:300;opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .18s ease,transform .18s ease;max-height:calc(100vh - 80px);overflow-y:auto}
 [dir="rtl"] .profile-menu{left:0;right:auto}
 .profile-menu.open{opacity:1;transform:translateY(0);pointer-events:auto}
 body.dark-mode .profile-menu{background:rgba(22,29,24,.98);box-shadow:0 16px 48px rgba(0,0,0,.4),0 2px 8px rgba(0,0,0,.2)}
@@ -4417,7 +4417,17 @@ body.dark-mode .dashboard-v2{
 
   <!-- ── Desktop Table ── -->
   <div class="table-card">
-    <div class="overflow-x"><table id="inv-table"><thead><tr><th style="width:60px">صورة</th><th data-i18n="colCode">الكود</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice" class="inv-buyprice-col">سعر الشراء</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colPurchases" data-i18n-title="colPurchasesTip" title="من المورد فقط">المشتريات</th><th data-i18n="colReturnToStock" data-i18n-title="colReturnToStockTip" title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th data-i18n="colSales">المبيعات</th><th data-i18n="colCurrentBal">الرصيد الحالي</th><th data-i18n="status">الحالة</th></tr></thead><tbody id="inv-tbody"></tbody></table></div>
+    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+        <input type="checkbox" id="inv-select-all" onchange="toggleInvSelectAll(this)">
+        <span style="font-size:0.9rem;font-weight:500">تحديد الكل</span>
+      </label>
+      <button class="btn btn-danger btn-sm" id="inv-batch-delete-btn" onclick="batchDeleteInvItems()" style="display:none;margin-right:auto">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+        حذف المحدد (<span id="inv-selected-count">0</span>)
+      </button>
+    </div>
+    <div class="overflow-x"><table id="inv-table"><thead><tr><th style="width:40px"><input type="checkbox" class="inv-select-checkbox" onchange="updateInvSelectAll()"></th><th style="width:60px">صورة</th><th data-i18n="colCode">الكود</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice" class="inv-buyprice-col">سعر الشراء</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colPurchases" data-i18n-title="colPurchasesTip" title="من المورد فقط">المشتريات</th><th data-i18n="colReturnToStock" data-i18n-title="colReturnToStockTip" title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th data-i18n="colSales">المبيعات</th><th data-i18n="colCurrentBal">الرصيد الحالي</th><th data-i18n="status">الحالة</th></tr></thead><tbody id="inv-tbody"></tbody></table></div>
   </div>
 
   <!-- ── Mobile Card List ── -->
@@ -4454,14 +4464,14 @@ body.dark-mode .dashboard-v2{
     <div class="flex gap-8" style="flex-wrap:wrap;align-items:center">
       <!-- View Mode Toggle -->
       <div class="mov-view-toggle" id="mov-view-toggle">
-        <button class="mov-view-btn active" id="mov-view-list-btn" onclick="setMovViewMode('list')" title="عرض قائمة">
+        <button class="mov-view-btn active" id="mov-view-list-btn" onclick="setMovViewMode('list')" title="عرض قائمة" data-i18n="movViewList">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
         </button>
-        <button class="mov-view-btn" id="mov-view-grid-btn" onclick="setMovViewMode('grid')" title="عرض بطاقات">
+        <button class="mov-view-btn" id="mov-view-grid-btn" onclick="setMovViewMode('grid')" title="عرض بطاقات" data-i18n="movViewCard">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         </button>
       </div>
-      <button class="mov-view-btn" id="mov-cols-btn" type="button" onclick="toggleMovColsMenu(event)" title="الأعمدة" aria-label="إعدادات الأعمدة" style="border:1px solid var(--border);border-radius:8px;padding:6px 10px;background:var(--surface);cursor:pointer">
+      <button class="mov-view-btn" id="mov-cols-btn" type="button" onclick="toggleMovColsMenu(event)" title="الأعمدة" aria-label="إعدادات الأعمدة" data-i18n="movColumns" style="border:1px solid var(--border);border-radius:8px;padding:6px 10px;background:var(--surface);cursor:pointer">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
       </button>
       <button class="btn btn-outline btn-sm" onclick="exportMovementsExcel()" style="display:flex;align-items:center;gap:6px" data-i18n="exportExcel">
@@ -4520,23 +4530,23 @@ body.dark-mode .dashboard-v2{
       <div class="fx-toolbar-row fx-mov-controls">
         <div class="fx-search">
           <svg class="fx-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" id="mov-search" placeholder="بحث عميل، مرجع، هاتف..." oninput="debouncedRenderMovements()">
+          <input type="text" id="mov-search" placeholder="بحث عميل، مرجع، هاتف..." data-i18n-placeholder="movSearch" oninput="debouncedRenderMovements()">
           <button class="fx-search-clear" onclick="clearFxSearch('mov')" type="button" aria-label="مسح">×</button>
         </div>
         <div class="fx-date-quick">
-          <button class="fx-btn fx-btn-icon" id="mov-date-btn" onclick="toggleMovDateMenu(event)" title="فلترة بالتاريخ" aria-label="فلترة بالتاريخ">
+          <button class="fx-btn fx-btn-icon" id="mov-date-btn" onclick="toggleMovDateMenu(event)" title="فلترة بالتاريخ" aria-label="فلترة بالتاريخ" data-i18n="movDateFilter">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            <span class="fx-btn-text-mobile-hide" id="mov-date-label">التاريخ</span>
+            <span class="fx-btn-text-mobile-hide" id="mov-date-label" data-i18n="date">التاريخ</span>
             <span class="fx-btn-count" id="mov-date-active" style="display:none">●</span>
           </button>
           <div class="fx-sort-menu" id="mov-date-menu" style="min-width:280px"></div>
         </div>
-        <button class="fx-btn fx-btn-icon" onclick="openFxDrawer('mov')" id="mov-filter-btn" title="فلاتر متقدمة" aria-label="فلاتر متقدمة">
+        <button class="fx-btn fx-btn-icon" onclick="openFxDrawer('mov')" id="mov-filter-btn" title="فلاتر متقدمة" aria-label="فلاتر متقدمة" data-i18n="movAdvFilters">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-          <span class="fx-btn-text-mobile-hide">فلاتر</span> <span class="fx-btn-count" id="mov-filter-active-count" style="display:none">0</span>
+          <span class="fx-btn-text-mobile-hide" data-i18n="movAdvFilters">فلاتر</span> <span class="fx-btn-count" id="mov-filter-active-count" style="display:none">0</span>
         </button>
         <div class="fx-sort-wrap">
-          <button class="fx-btn fx-btn-icon" onclick="toggleFxSortMenu('mov',event)" id="mov-sort-btn" title="الترتيب" aria-label="الترتيب">
+          <button class="fx-btn fx-btn-icon" onclick="toggleFxSortMenu('mov',event)" id="mov-sort-btn" title="الترتيب" aria-label="الترتيب" data-i18n="movSort">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
             <span class="fx-btn-text-mobile-hide" id="mov-sort-label">الأحدث</span>
           </button>
@@ -6220,6 +6230,8 @@ const TAG_PRESETS = [
 ];
 let invFilter = 'all';
 let prodFilter = 'all';
+let invSelectedItems = new Set();
+let invLastSelectedKey = null;
 // Unified filter/sort state for inventory + products pages
 const fxState = {
   inv: { sort: 'name-asc', supplier: new Set(), priceMin: '', priceMax: '', stockMin: '', stockMax: '' },
@@ -6365,6 +6377,9 @@ const TRANSLATIONS = {
   movFrom:{ar:'من',en:'From'},movTo:{ar:'إلى',en:'To'},movType:{ar:'نوع',en:'Type'},movStatus:{ar:'حالة',en:'Status'},
   movComplete:{ar:'مكتمل',en:'Complete'},movPending:{ar:'انتظار',en:'Pending'},movCanceled:{ar:'ملغي',en:'Canceled'},
   bulkPrint:{ar:'طباعة',en:'Print'},bulkFreeze:{ar:'أرشفة',en:'Archive'},bulkCancel:{ar:'إلغاء',en:'Cancel'},
+  movViewList:{ar:'عرض قائمة',en:'List view'},movViewCard:{ar:'عرض بطاقات',en:'Card view'},movColumns:{ar:'الأعمدة',en:'Columns'},
+  movSearch:{ar:'بحث عميل، مرجع، هاتف...',en:'Search customer, reference, phone...'},movDateFilter:{ar:'فلترة بالتاريخ',en:'Filter by date'},
+  movAdvFilters:{ar:'فلاتر متقدمة',en:'Advanced filters'},movSort:{ar:'الترتيب',en:'Sort'},
   refresh:{ar:'تحديث',en:'Refresh'},loading:{ar:'جارٍ التحميل...',en:'Loading...'},
   // Notifications & real-time
   newTx:{ar:'حركة جديدة',en:'New transaction'},txCancelled:{ar:'تم إلغاء حركة',en:'Transaction cancelled'},
@@ -6545,6 +6560,10 @@ function applyLang() {
   qsa('[data-i18n-title]').forEach(el => {
     const key = el.getAttribute('data-i18n-title');
     if (key) el.title = t(key);
+  });
+  qsa('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (key) el.placeholder = t(key);
   });
   document.documentElement.lang = currentLang === 'en' ? 'en' : 'ar';
   document.documentElement.dir = currentLang === 'en' ? 'ltr' : 'rtl';
@@ -11857,6 +11876,7 @@ async function loadInventory() {
 function setInvFilter(f, btn) {
   invFilter = f;
   invPage = 1;
+  invSelectedItems.clear();
   qsa('#inv-toolbar .fx-btn[data-status]').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   renderInventory();
@@ -12419,14 +12439,16 @@ function renderInventory() {
   if (tbody) {
     tbody.innerHTML = pageData.length ? pageData.map(r => {
       const key = r.code || r.name;
-      return `<tr onclick="openInventoryDetail('${esc(key)}')">
-        <td>${productThumbHtml(r.imageUrl, r.name, 'inv-thumb')}</td>
-        <td>${esc(r.code || '-')}</td><td style="font-weight:600">${esc(r.name)}</td><td>${fmtJ(r.sellPrice)}</td><td class="inv-buyprice-col">${fmtJ(r.buyPrice)}</td>
-        <td>${fmtN(r.openingBalance)}</td><td class="text-green">${fmtN(r.purchases)}</td>${invReturnCell(r)}<td class="text-blue">${fmtN(r.sales)}</td>
-        <td>${stockBar(r)}</td>
-        <td>${statusBadgeOld(r)}</td>
+      const isSelected = invSelectedItems.has(key);
+      return `<tr class="inv-row" data-key="${esc(key)}" style="${isSelected ? 'background:var(--primary-pale)' : ''}">
+        <td style="text-align:center;padding:8px" onclick="event.stopPropagation();toggleInvItem('${esc(key)}',event)"><input type="checkbox" class="inv-item-checkbox" ${isSelected ? 'checked' : ''}></td>
+        <td onclick="openInventoryDetail('${esc(key)}')">${productThumbHtml(r.imageUrl, r.name, 'inv-thumb')}</td>
+        <td onclick="openInventoryDetail('${esc(key)}')">${esc(r.code || '-')}</td><td onclick="openInventoryDetail('${esc(key)}')" style="font-weight:600">${esc(r.name)}</td><td onclick="openInventoryDetail('${esc(key)}')">${fmtJ(r.sellPrice)}</td><td class="inv-buyprice-col" onclick="openInventoryDetail('${esc(key)}')">${fmtJ(r.buyPrice)}</td>
+        <td onclick="openInventoryDetail('${esc(key)}')">${fmtN(r.openingBalance)}</td><td class="text-green" onclick="openInventoryDetail('${esc(key)}')">${fmtN(r.purchases)}</td><td onclick="openInventoryDetail('${esc(key)}')">${invReturnCell(r).replace(/<td[^>]*>|<\/td>/g, '')}</td><td class="text-blue" onclick="openInventoryDetail('${esc(key)}')">${fmtN(r.sales)}</td>
+        <td onclick="openInventoryDetail('${esc(key)}')">${stockBar(r)}</td>
+        <td onclick="openInventoryDetail('${esc(key)}')">${statusBadgeOld(r)}</td>
       </tr>`;
-    }).join('') : '<tr><td colspan="11" class="empty-state">لا توجد بيانات</td></tr>';
+    }).join('') : '<tr><td colspan="13" class="empty-state">لا توجد بيانات</td></tr>';
   }
 
   /* Mobile Card List */
@@ -12471,6 +12493,7 @@ function renderInventory() {
   // Hide buy price column from staff
   if (!isAdmin()) { qsa('.inv-buyprice-col').forEach(el => el.style.display = 'none'); }
   renderPagination('inv-pagination', total, invPage, INV_PAGE_SIZE, 'setInvPage');
+  updateInvSelectUI();
 }
 
 function openInventoryDetail(key) {
@@ -12558,6 +12581,98 @@ function openInventoryDetail(key) {
   `);
 }
 const debouncedRenderInventory = debounce(() => { invPage = 1; renderInventory(); }, 250);
+
+function updateInvSelectUI() {
+  const allCheckboxes = qsa('#inv-tbody input.inv-item-checkbox');
+  const checkedCount = Array.from(allCheckboxes).filter(c => c.checked).length;
+  qs('#inv-selected-count').textContent = checkedCount;
+  qs('#inv-select-all').checked = checkedCount > 0 && checkedCount === allCheckboxes.length;
+  qs('#inv-batch-delete-btn').style.display = checkedCount > 0 ? 'flex' : 'none';
+}
+
+function toggleInvItem(key, event) {
+  if (event.ctrlKey || event.metaKey) {
+    // Ctrl+Click: toggle individual item
+    if (invSelectedItems.has(key)) {
+      invSelectedItems.delete(key);
+    } else {
+      invSelectedItems.add(key);
+    }
+    invLastSelectedKey = key;
+  } else if (event.shiftKey && invLastSelectedKey) {
+    // Shift+Click: select range
+    const inv = inventoryCache;
+    const currentIdx = inv.findIndex(r => (r.code || r.name) === key);
+    const lastIdx = inv.findIndex(r => (r.code || r.name) === invLastSelectedKey);
+    if (currentIdx !== -1 && lastIdx !== -1) {
+      const [start, end] = currentIdx < lastIdx ? [currentIdx, lastIdx] : [lastIdx, currentIdx];
+      for (let i = start; i <= end; i++) {
+        const itemKey = inv[i].code || inv[i].name;
+        invSelectedItems.add(itemKey);
+      }
+    }
+    invLastSelectedKey = key;
+  } else {
+    // Regular click: toggle single item
+    if (invSelectedItems.has(key)) {
+      invSelectedItems.delete(key);
+    } else {
+      invSelectedItems.add(key);
+    }
+    invLastSelectedKey = key;
+  }
+  renderInventory();
+}
+
+function toggleInvSelectAll(checkbox) {
+  if (checkbox.checked) {
+    const inv = inventoryCache || [];
+    inv.forEach(r => invSelectedItems.add(r.code || r.name));
+  } else {
+    invSelectedItems.clear();
+  }
+  renderInventory();
+}
+
+function updateInvSelectAll() {
+  const headerCheckbox = qs('.inv-select-checkbox');
+  const itemCheckboxes = qsa('#inv-tbody input.inv-item-checkbox');
+  const checkedCount = Array.from(itemCheckboxes).filter(c => c.checked).length;
+  headerCheckbox.checked = checkedCount > 0 && checkedCount === itemCheckboxes.length;
+  headerCheckbox.indeterminate = checkedCount > 0 && checkedCount < itemCheckboxes.length;
+  qs('#inv-selected-count').textContent = invSelectedItems.size;
+  qs('#inv-batch-delete-btn').style.display = invSelectedItems.size > 0 ? 'flex' : 'none';
+}
+
+function batchDeleteInvItems() {
+  if (invSelectedItems.size === 0) {
+    toast('لم يتم تحديد أي أصناف', true);
+    return;
+  }
+  const count = invSelectedItems.size;
+  const msg = `سيتم حذف ${count} صنف${count > 1 ? '' : ''}. هل أنت متأكد؟`;
+  if (!confirm(msg)) return;
+
+  const selectedCodes = Array.from(invSelectedItems);
+  fetch(`${apiBase}/products/batch-delete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ codes: selectedCodes }),
+    credentials: 'include'
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.error) {
+      toast(d.error, true);
+    } else {
+      invSelectedItems.clear();
+      invPage = 1;
+      loadInventoryData();
+      toast(`تم حذف ${count} صنف بنجاح ✅`);
+    }
+  })
+  .catch(e => toast('خطأ: ' + e.message, true));
+}
 
 function exportInventoryExcel() {
   const data = inventoryCache.map(r => {
@@ -16224,16 +16339,18 @@ function importProductsExcel(event) {
   reader.onload = async function(e) {
     try {
       const wb = XLSX.read(e.target.result, { type: 'array' }); const ws = wb.Sheets[wb.SheetNames[0]]; const rows = XLSX.utils.sheet_to_json(ws);
-      const items = rows.map(r => ({
-        code: r['الكود'] || r.code || '',
-        name: r['الاسم'] || r.name || '',
+      const allItems = rows.map(r => ({
+        code: String(r['الكود'] ?? r.code ?? '').trim(),
+        name: String(r['الاسم'] ?? r.name ?? '').trim(),
         supplier: r['المورد'] || r.supplier || '',
         imageUrl: r['رابط الصورة'] || r['الصورة'] || r.imageUrl || r.image || '',
-        sellPrice: Number(r['سعر البيع'] || r.sellPrice) || 0,
-        buyPrice: Number(r['سعر الشراء'] || r.buyPrice) || 0,
-        minStock: Number(r['الحد الأدنى'] || r.minStock) || 0,
-        openingBalance: Number(r['الرصيد الافتتاحي'] || r.openingBalance) || 0
+        sellPrice: Number(r['سعر البيع'] ?? r.sellPrice) || 0,
+        buyPrice: Number(r['سعر الشراء'] ?? r.buyPrice) || 0,
+        minStock: Number(r['الحد الأدنى'] ?? r.minStock) || 0,
+        openingBalance: Number(r['الرصيد الافتتاحي'] ?? r.openingBalance) || 0
       }));
+      const items = allItems.filter(r => r.code && r.name);
+      if (!items.length) { toast('لا يوجد بيانات صالحة في الملف — تأكد من وجود أعمدة الكود والاسم', true); return; }
       await api('/products/import', { method: 'POST', body: JSON.stringify({ items }) }); toast('تم استيراد ' + items.length + ' صنف'); products = await api('/products').catch(() => products); 
       // Refresh inventory cache to reflect imported products in cards
       try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
@@ -18982,19 +19099,35 @@ async function uploadBackupFile() {
     formData.append('file', file);
     formData.append('password', password);
 
+    const token = localStorage.getItem('token');
     const response = await fetch('/api/settings/upload-backup', {
       method: 'POST',
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {},
       body: formData,
     });
 
     const result = await response.json();
 
-    if (result.success) {
-      toast(result.message, false);
-      fileInput.value = '';
-      loadBackupList(false); // Update list silently
-    } else {
+    if (!result.success) {
       toast(result.message, true);
+      return;
+    }
+
+    // File uploaded successfully — now restore the data from it
+    toast('جارٍ استعادة البيانات...', false);
+
+    const restoreResult = await api('/settings/restore-backup', {
+      method: 'POST',
+      body: JSON.stringify({ filename: result.filename, password }),
+    });
+
+    if (restoreResult.success) {
+      toast('✅ تم استيراد واستعادة البيانات بنجاح', false);
+      fileInput.value = '';
+      loadBackupList(false);
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      toast(restoreResult.message || '❌ فشل في استعادة البيانات', true);
     }
   } catch (e) {
     toast((currentLang==='en'?'Error: ':'خطأ: ') + (e.message || (currentLang==='en'?'Import failed':'فشل في الاستيراد')), true);
@@ -19072,6 +19205,17 @@ function toggleProfileMenu(e) {
   const isOpen = menu.classList.toggle('open');
   trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
   if (isOpen) {
+    const triggerRect = trigger.getBoundingClientRect();
+    const menuHeight = menu.offsetHeight || 350;
+    const spaceBelow = window.innerHeight - triggerRect.bottom - 10;
+    const spaceAbove = triggerRect.top - 10;
+    if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+      menu.style.top = 'auto';
+      menu.style.bottom = (window.innerHeight - triggerRect.top + 10) + 'px';
+    } else {
+      menu.style.bottom = 'auto';
+      menu.style.top = (triggerRect.bottom + 10) + 'px';
+    }
     const first = menu.querySelector('[role^="menuitem"]');
     if (first) setTimeout(() => first.focus(), 50);
   }
