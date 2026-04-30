@@ -32,6 +32,12 @@ export class FollowUp {
   @Prop({ default: '' })
   comment: string;
 
+  @Prop({ default: '' })
+  reasonOther: string; // free-text reason when reason === 'أخرى'
+
+  @Prop({ default: '' })
+  resolution: string; // free-text resolution method when status === 'تم حل المشكلة'
+
   @Prop({ type: [String], default: [] })
   tags: string[];
 

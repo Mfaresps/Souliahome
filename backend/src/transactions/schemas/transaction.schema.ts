@@ -128,6 +128,8 @@ export class Transaction {
   @Prop({ type: Object, default: null })
   cancelRequest: {
     requestedBy: string;
+    requestedById?: string;
+    requestedByUsername?: string;
     reason: string;
     requestedAt: string;
     status: string; // 'معلق' | 'معتمد' | 'مرفوض'

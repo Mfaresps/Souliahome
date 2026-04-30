@@ -289,10 +289,22 @@ export class RequestCancelDto {
   @IsString()
   @IsNotEmpty()
   readonly requestedBy: string;
+
+  @IsString()
+  @IsOptional()
+  readonly requestedById?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly requestedByUsername?: string;
 }
 
 export class ReviewCancelDto {
   @IsString()
   @IsOptional()
   readonly rejectedReason?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly vaultAccount?: string;
 }

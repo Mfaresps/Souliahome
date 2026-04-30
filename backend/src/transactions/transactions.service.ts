@@ -22,6 +22,7 @@ import {
 import { ProductsService } from '../products/products.service';
 import { VaultService } from '../vault/vault.service';
 import { PresenceGateway } from '../auth/presence.gateway';
+import { MentionsService } from '../mentions/mentions.service';
 // #region agent log
 import { debugLog } from '../debug-log.util';
 // #endregion
@@ -73,6 +74,7 @@ export class TransactionsService {
     private readonly productsService: ProductsService,
     private readonly vaultService: VaultService,
     private readonly presence: PresenceGateway,
+    private readonly mentionsService: MentionsService,
   ) {}
 
   private emit(event: string, payload: unknown): void {
@@ -678,6 +680,8 @@ export class TransactionsService {
     id: string,
     reason: string,
     requestedBy: string,
+    requestedById?: string,
+    requestedByUsername?: string,
   ): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) throw new NotFoundException('الحركة غير موجودة');
@@ -698,6 +702,8 @@ export class TransactionsService {
         {
           cancelRequest: {
             requestedBy,
+            requestedById: requestedById || '',
+            requestedByUsername: requestedByUsername || '',
             reason,
             requestedAt: new Date().toISOString(),
             status: 'معلق',
@@ -712,6 +718,7 @@ export class TransactionsService {
   async approveCancel(
     id: string,
     reviewedBy: string,
+    vaultAccount?: string,
   ): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) throw new NotFoundException('الحركة غير موجودة');
@@ -719,6 +726,22 @@ export class TransactionsService {
       throw new BadRequestException('لا يوجد طلب إلغاء معلق لهذه الحركة');
     }
     if (tx.cancelled) throw new BadRequestException('الحركة ملغية بالفعل');
+    // Override deposit method with admin-selected vault account (refund/deduction account)
+    const chosenVault = (vaultAccount || '').trim();
+    if (chosenVault) {
+      tx.depMethod = chosenVault;
+      await tx.save();
+    }
+    // Capture requester info before mutating cancelRequest
+    const requester = tx.cancelRequest as unknown as {
+      requestedBy?: string;
+      requestedById?: string;
+      requestedByUsername?: string;
+      reason?: string;
+    };
+    const reqId = requester.requestedById || '';
+    const reqUsername = requester.requestedByUsername || '';
+    const reqName = requester.requestedBy || '';
     // Mark cancel request as approved
     await this.transactionModel
       .findByIdAndUpdate(id, {
@@ -728,9 +751,27 @@ export class TransactionsService {
       })
       .exec();
     // Perform actual cancellation + vault debit
-    const reason = tx.cancelRequest.reason || 'موافقة المدير';
-    const requestedBy = tx.cancelRequest.requestedBy || reviewedBy;
-    return this.performCancellation(tx, reason, requestedBy);
+    const reason = requester.reason || 'موافقة المدير';
+    const requestedBy = reqName || reviewedBy;
+    const result = await this.performCancellation(tx, reason, requestedBy);
+    // Notify requester (if known)
+    if (reqId || reqUsername) {
+      try {
+        await this.mentionsService.create({
+          targetUserId: reqId || '',
+          targetUsername: (reqUsername || '').toLowerCase(),
+          targetName: reqName,
+          fromUserId: 'system',
+          fromName: reviewedBy || 'مدير',
+          txId: String(tx._id),
+          txRef: tx.ref || '',
+          commentId: 0,
+          commentText: `تمت الموافقة على طلب إلغاء حركة #${tx.ref || tx._id}${chosenVault ? ` — تم الخصم من خزنة ${chosenVault}` : ''}`,
+        });
+        this.emit('mentions:changed', { targetUserId: reqId, targetUsername: reqUsername });
+      } catch { /* swallow */ }
+    }
+    return result;
   }
 
   async rejectCancel(
@@ -743,6 +784,14 @@ export class TransactionsService {
     if (!tx.cancelRequest || tx.cancelRequest.status !== 'معلق') {
       throw new BadRequestException('لا يوجد طلب إلغاء معلق لهذه الحركة');
     }
+    const requester = tx.cancelRequest as unknown as {
+      requestedBy?: string;
+      requestedById?: string;
+      requestedByUsername?: string;
+    };
+    const reqId = requester.requestedById || '';
+    const reqUsername = requester.requestedByUsername || '';
+    const reqName = requester.requestedBy || '';
     // Mark as rejected — preserve the record for history, transaction stays unchanged
     const updated = await this.transactionModel
       .findByIdAndUpdate(
@@ -756,6 +805,23 @@ export class TransactionsService {
         { new: true },
       )
       .exec();
+    // Notify requester
+    if (reqId || reqUsername) {
+      try {
+        await this.mentionsService.create({
+          targetUserId: reqId || '',
+          targetUsername: (reqUsername || '').toLowerCase(),
+          targetName: reqName,
+          fromUserId: 'system',
+          fromName: reviewedBy || 'مدير',
+          txId: String(tx._id),
+          txRef: tx.ref || '',
+          commentId: 0,
+          commentText: `تم رفض طلب إلغاء حركة #${tx.ref || tx._id}${rejectedReason ? ` — السبب: ${rejectedReason}` : ''}`,
+        });
+        this.emit('mentions:changed', { targetUserId: reqId, targetUsername: reqUsername });
+      } catch { /* swallow */ }
+    }
     return updated!;
   }
 

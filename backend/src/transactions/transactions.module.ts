@@ -10,6 +10,7 @@ import { ProductsModule } from '../products/products.module';
 import { ExpensesModule } from '../expenses/expenses.module';
 import { VaultModule } from '../vault/vault.module';
 import { AuthModule } from '../auth/auth.module';
+import { MentionsModule } from '../mentions/mentions.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AuthModule } from '../auth/auth.module';
     ExpensesModule,
     VaultModule,
     AuthModule,
+    MentionsModule,
   ],
   controllers: [TransactionsController],
   providers: [TransactionsService, ReferenceDetailService, ReportsExportService],

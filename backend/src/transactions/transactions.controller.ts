@@ -174,6 +174,8 @@ export class TransactionsController {
       id,
       dto.reason,
       dto.requestedBy,
+      dto.requestedById,
+      dto.requestedByUsername,
     );
   }
 
@@ -181,10 +183,11 @@ export class TransactionsController {
   @Post(':id/approve-cancel')
   async approveCancel(
     @Param('id') id: string,
+    @Body() dto: ReviewCancelDto,
     @Req() req: { user: { name: string; username: string } },
   ) {
     const reviewedBy = req.user.name || req.user.username || '';
-    return this.transactionsService.approveCancel(id, reviewedBy);
+    return this.transactionsService.approveCancel(id, reviewedBy, dto?.vaultAccount);
   }
 
   @Roles('admin')
