@@ -12478,7 +12478,6 @@ function renderInventory() {
   // Hide buy price column from staff
   if (!isAdmin()) { qsa('.inv-buyprice-col').forEach(el => el.style.display = 'none'); }
   renderPagination('inv-pagination', total, invPage, INV_PAGE_SIZE, 'setInvPage');
-  updateInvSelectUI();
 }
 
 function openInventoryDetail(key) {
@@ -12566,15 +12565,6 @@ function openInventoryDetail(key) {
   `);
 }
 const debouncedRenderInventory = debounce(() => { invPage = 1; renderInventory(); }, 250);
-
-function updateInvSelectUI() {
-  const allCheckboxes = qsa('#inv-tbody input.inv-item-checkbox');
-  const checkedCount = Array.from(allCheckboxes).filter(c => c.checked).length;
-  qs('#inv-selected-count').textContent = checkedCount;
-  qs('#inv-select-all').checked = checkedCount > 0 && checkedCount === allCheckboxes.length;
-  qs('#inv-batch-delete-btn').style.display = checkedCount > 0 ? 'flex' : 'none';
-}
-
 
 function exportInventoryExcel() {
   const data = inventoryCache.map(r => {
