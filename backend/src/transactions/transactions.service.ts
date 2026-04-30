@@ -232,7 +232,7 @@ export class TransactionsService {
       txType: tx.type,
       items: (tx.items || []).map((it) => ({ name: it.name, qty: it.qty })),
     });
-    this.emit('vault:changed', { reason: 'tx:created', txId: String(tx._id) });
+    // vault:changed is already emitted by vaultService.addSystemEntry with full payload (amount, seg, balances)
     return tx;
   }
 
@@ -1475,6 +1475,10 @@ export class TransactionsService {
   ): Promise<void> {
     const txRef = tx.ref || String(tx._id);
     const txDate = this.formatTxDateForVault(tx);
+    const emp = (tx as unknown as { employee?: string }).employee || '';
+    const entityCtx = tx.client
+      ? (tx.type === 'مشتريات' ? { supplier: tx.client } : { customer: tx.client })
+      : undefined;
     if (tx.type === 'مبيعات' && (tx.deposit || 0) > 0) {
       await this.vaultService.addSystemEntry(
         tx.deposit,
@@ -1483,6 +1487,8 @@ export class TransactionsService {
         txDate,
         'ديبوزت مبيعات',
         txRef,
+        entityCtx,
+        emp,
       );
       // If collected, also record the collected remaining
       if (
@@ -1490,7 +1496,6 @@ export class TransactionsService {
         tx.collectMethod &&
         (tx.deposit || 0) < (tx.total || 0)
       ) {
-        // collected = total - deposit
         const collectedAmount = (tx.total || 0) - (tx.deposit || 0);
         if (collectedAmount > 0) {
           await this.vaultService.addSystemEntry(
@@ -1500,12 +1505,13 @@ export class TransactionsService {
             txDate,
             'تحصيل',
             txRef,
+            entityCtx,
+            emp,
           );
         }
       }
     } else if (tx.type === 'مشتريات') {
       if (this.transactionAddsSupplierPurchases(tx)) {
-        // Record only the deposit (amount paid upfront). 0 = full debt to supplier.
         const depositPaid = Number(tx.deposit) || 0;
         if (depositPaid > 0) {
           await this.vaultService.addSystemEntry(
@@ -1515,9 +1521,10 @@ export class TransactionsService {
             txDate,
             'مشتريات',
             txRef,
+            entityCtx,
+            emp,
           );
         }
-        // If مكتمل and has a collectMethod, the remaining was paid via collect — record that too
         if (
           tx.payStatus === 'مكتمل' &&
           tx.collectMethod &&
@@ -1531,6 +1538,8 @@ export class TransactionsService {
             txDate,
             'دفع مشتريات',
             txRef,
+            entityCtx,
+            emp,
           );
         }
       } else {
@@ -1545,6 +1554,8 @@ export class TransactionsService {
           txDate,
           'رد مرتجع',
           txRef,
+          entityCtx,
+          emp,
         );
       }
     } else if (tx.type === 'مرتجع' || tx.type === 'مرتجع مبيعات') {
@@ -1559,6 +1570,8 @@ export class TransactionsService {
         txDate,
         'رد مرتجع',
         txRef,
+        entityCtx,
+        emp,
       );
     }
   }
