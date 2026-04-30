@@ -32,6 +32,9 @@ export class FollowUp {
   @Prop({ default: '' })
   comment: string;
 
+  @Prop({ type: [String], default: [] })
+  tags: string[];
+
   @Prop({ default: false })
   notified: boolean; // whether notification was sent for this reason
 }

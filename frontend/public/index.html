@@ -3201,6 +3201,12 @@ input.is-valid,select.is-valid,textarea.is-valid{
   50% {background:rgba(245,158,11,.1);outline-color:rgba(245,158,11,.4)}
   100%{background:transparent;outline-color:transparent}
 }
+.nav-highlight-fu{animation:navHighlightFu 3s ease-out;outline:2px solid #f59e0b;outline-offset:2px;border-radius:6px}
+@keyframes navHighlightFu{
+  0%  {background:rgba(234,179,8,.3);outline-color:#f59e0b}
+  50% {background:rgba(234,179,8,.1);outline-color:rgba(234,179,8,.4)}
+  100%{background:transparent;outline-color:transparent}
+}
 .rt-event-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:linear-gradient(135deg,#0f766e 0%,#10b981 100%);color:#fff;padding:10px 18px;border-radius:99px;font-size:.85rem;font-weight:700;box-shadow:0 8px 20px rgba(16,185,129,.35);z-index:9999;opacity:0;pointer-events:none;transition:opacity .25s,transform .35s cubic-bezier(.2,.8,.3,1.2);display:inline-flex;align-items:center;gap:8px;max-width:90vw}
 .rt-event-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -4788,6 +4794,7 @@ body.dark-mode .dashboard-v2{
       <path d="M13.29 2.68A7.36 7.36 0 0 0 8 .5a7.44 7.44 0 0 0-6.41 11.15l-1 3.85 3.94-1a7.4 7.4 0 0 0 3.55.9H8a7.44 7.44 0 0 0 5.29-12.72zM8 14.12a6.12 6.12 0 0 1-3.15-.87l-.22-.13-2.34.61.62-2.28-.14-.23a6.18 6.18 0 0 1 9.6-7.65 6.12 6.12 0 0 1 1.81 4.37A6.19 6.19 0 0 1 8 14.12z"/>
     </svg>
     متابعة الطلبات
+    <span id="fu-tab-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:.65rem;padding:1px 6px;font-weight:700;min-width:18px;text-align:center"></span>
   </button>
   <button id="main-tab-cmp" onclick="switchMainTab('cmp')"
     style="display:inline-flex;align-items:center;gap:7px;padding:10px 20px;font-size:.88rem;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted);transition:all .2s">
@@ -4812,12 +4819,12 @@ body.dark-mode .dashboard-v2{
     <!-- Search -->
     <div style="position:relative;flex:1;min-width:140px;max-width:260px">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="fu-search" placeholder="بحث..." style="width:100%;height:28px;font-size:.78rem;padding:0 28px 0 8px;box-sizing:border-box;border:1px solid var(--border);border-radius:7px;background:var(--bg)" oninput="renderFollowUps()">
+      <input type="text" id="fu-search" placeholder="بحث..." style="width:100%;height:28px;font-size:.78rem;padding:0 28px 0 8px;box-sizing:border-box;border:1px solid var(--border);border-radius:7px;background:var(--bg)" oninput="_fuFilterChange()">
     </div>
     <!-- Status filter with icon -->
     <div style="position:relative">
       <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:7px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
-      <select id="fu-status-filter" style="height:28px;font-size:.78rem;padding:0 26px 0 8px;border:1px solid var(--border);border-radius:7px;background:var(--bg);appearance:none;cursor:pointer" onchange="renderFollowUps()">
+      <select id="fu-status-filter" style="height:28px;font-size:.78rem;padding:0 26px 0 8px;border:1px solid var(--border);border-radius:7px;background:var(--bg);appearance:none;cursor:pointer" onchange="_fuFilterChange()">
         <option value="">الحالة</option>
         <option value="قيد المتابعة">قيد المتابعة</option>
         <option value="تمت المتابعة">تمت المتابعة</option>
@@ -4829,16 +4836,16 @@ body.dark-mode .dashboard-v2{
     <!-- User filter with icon -->
     <div style="position:relative">
       <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:7px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      <select id="fu-user-filter" style="height:28px;font-size:.78rem;padding:0 26px 0 8px;border:1px solid var(--border);border-radius:7px;background:var(--bg);appearance:none;cursor:pointer" onchange="renderFollowUps()">
+      <select id="fu-user-filter" style="height:28px;font-size:.78rem;padding:0 26px 0 8px;border:1px solid var(--border);border-radius:7px;background:var(--bg);appearance:none;cursor:pointer" onchange="_fuFilterChange()">
         <option value="">المسؤول</option>
       </select>
     </div>
     <!-- Date range -->
     <div style="display:flex;align-items:center;gap:4px">
       <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <input type="date" id="fu-from" style="height:28px;font-size:.75rem;padding:0 6px;border:1px solid var(--border);border-radius:7px;background:var(--bg);width:120px" onchange="renderFollowUps()">
+      <input type="date" id="fu-from" style="height:28px;font-size:.75rem;padding:0 6px;border:1px solid var(--border);border-radius:7px;background:var(--bg);width:120px" onchange="_fuFilterChange()">
       <span style="font-size:.72rem;color:var(--muted)">—</span>
-      <input type="date" id="fu-to" style="height:28px;font-size:.75rem;padding:0 6px;border:1px solid var(--border);border-radius:7px;background:var(--bg);width:120px" onchange="renderFollowUps()">
+      <input type="date" id="fu-to" style="height:28px;font-size:.75rem;padding:0 6px;border:1px solid var(--border);border-radius:7px;background:var(--bg);width:120px" onchange="_fuFilterChange()">
     </div>
     <!-- Clear btn -->
     <button onclick="clearFuFilters()" title="مسح الفلاتر" style="height:28px;width:28px;padding:0;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -4863,6 +4870,7 @@ body.dark-mode .dashboard-v2{
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               السبب
             </th>
+            <th style="padding:8px 12px;font-weight:600;font-size:.72rem;color:var(--muted)">الوسوم</th>
             <th style="padding:8px 12px;font-weight:600;font-size:.72rem;color:var(--muted)">الحالة</th>
             <th style="padding:8px 12px;font-weight:600;font-size:.72rem;color:var(--muted)">
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -4881,6 +4889,7 @@ body.dark-mode .dashboard-v2{
       </table>
     </div>
   </div>
+  <div id="fu-pagination" style="padding:10px 16px;display:flex;justify-content:flex-end;border-top:1px solid var(--border)"></div>
 </div>
 
 <!-- ═══════════════════════════════════════
@@ -7306,12 +7315,21 @@ function connectSocket() {
 
   socket.on('disconnect', () => { console.log('Socket disconnected'); });
 
-  socket.on('followup:changed', () => {
-    if (qs('#fu-orders-section')?.style.display !== 'none') loadFollowUps();
+  socket.on('followup:changed', async (payload) => {
+    try { followUps = await api('/followups'); } catch(_) {}
+    if (qs('#fu-orders-section')?.style.display !== 'none') { renderFuKpi(); renderFollowUps(); }
+    if (payload?.action==='delete' && payload?.id) {
+      notifDismissed = notifDismissed.filter(n=>!n.includes(payload.id));
+      localStorage.setItem('notifDismissed', JSON.stringify(notifDismissed));
+    }
+    _fuUpdateBadges();
+    buildNotifications();
   });
   socket.on('followup:notify', (payload) => {
     if (typeof toast === 'function') toast(`متابعة طلب #${payload.orderRef||''}: ${payload.reason||''}`);
-    if (qs('#fu-orders-section')?.style.display !== 'none') loadFollowUps();
+    if (qs('#fu-orders-section')?.style.display !== 'none') { renderFuKpi(); renderFollowUps(); }
+    _fuUpdateBadges();
+    buildNotifications();
   });
 
   // Heartbeat: keep server-side activity timestamp fresh
@@ -7952,7 +7970,9 @@ function buildSidebar() {
     let badge = '';
     if (n.id === 'approvals' && totalApprovalsBadge > 0) badge = ` <span class="badge badge-orange" style="margin-right:4px;font-size:.65rem">${totalApprovalsBadge}</span>`;
     if (n.id === 'movements' && newMovCount > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">+${newMovCount}</span>`;
-    if (n.id === 'complaints' && pendingCmpCount > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">${pendingCmpCount}</span>`;
+    const fuUnseenCount = typeof _fuUnseenCount === 'function' ? _fuUnseenCount() : 0;
+    const totalComplaintsBadge = pendingCmpCount + fuUnseenCount;
+    if (n.id === 'complaints' && totalComplaintsBadge > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">${totalComplaintsBadge}</span>`;
     if (n.id === 'pending-sync') badge = ` <span class="badge badge-orange oq-nav-badge" style="margin-right:4px;font-size:.65rem;display:none" id="oq-nav-badge"></span>`;
     if (n.id === 'transaction' && draftCount > 0) {
       const word = draftCount === 1 ? 'مسودة' : (draftCount === 2 ? 'مسودتان' : 'مسودات');
@@ -8079,6 +8099,22 @@ function buildNotifications() {
       notifs.push({ id: 'sales-pending-all', icon: ICON('clock'), type: 'info', title: `${pendingRegular.length} ${t('notifSalesPending')}`, desc: `${currentLang==='en'?'Total Remaining:':'إجمالي المتبقي:'} ${fmtJ(totalRemaining)}`, page: 'movements' });
     }
   }
+  // Follow-up unseen items (all users)
+  if (Array.isArray(followUps)) {
+    const fuSeenIds = _fuGetSeenIds();
+    followUps.filter(f => !fuSeenIds.includes(String(f._id)) && f.status !== 'تمت المتابعة').forEach(f => {
+      notifs.push({
+        id: 'fu-unseen-' + f._id,
+        icon: ICON('clock'),
+        type: 'info',
+        title: `متابعة طلب #${f.orderRef}`,
+        desc: `${f.responsibleName} — ${(f.reason||'').slice(0,60)}`,
+        page: 'complaints',
+        fuId: String(f._id),
+        ts: f.createdAt || '',
+      });
+    });
+  }
   const NOTIF_PRIORITY = { urgent: 1, warning: 2, info: 3 };
   notifs.sort((a, b) => {
     const pd = (NOTIF_PRIORITY[a.type] || 9) - (NOTIF_PRIORITY[b.type] || 9);
@@ -8102,7 +8138,7 @@ function buildNotifications() {
   const list = qs('#notif-list');
   if (!list) return;
   list.innerHTML = visible.length ? visible.map(n => `
-    <div class="notif-item ${n.type}" onclick="onNotifClick('${esc(n.page)}','${esc(n.id)}')">
+    <div class="notif-item ${n.type}" onclick="onNotifClick('${esc(n.page)}','${esc(n.id)}'${n.fuId?`,'${esc(n.fuId)}'`:''})">
       <div class="notif-icon">${n.icon}</div>
       <div class="notif-body">
         <div class="notif-title">${esc(n.title)}</div>
@@ -8122,8 +8158,13 @@ function toggleNotifPanel(e) {
     refreshMentionsFromServer().then(() => switchNotifTab(window._notifTab));
   }
 }
-function onNotifClick(page, notifId) {
+function onNotifClick(page, notifId, fuId) {
   qs('#notif-panel').classList.remove('show');
+  if (!notifDismissed.includes(notifId)) {
+    notifDismissed.push(notifId);
+    localStorage.setItem('notifDismissed', JSON.stringify(notifDismissed));
+  }
+  if (fuId) { goToFuAndHighlight(fuId); return; }
   navigateTo(page);
 }
 function clearNotifications() {
@@ -19417,6 +19458,7 @@ function switchMainTab(tab) {
   const btnNewFu = qs('#btn-new-fu');
 
   if (tab === 'fu') {
+    _fuPage = 1;
     fuSection.style.display = 'block';
     cmpSection.style.display = 'none';
     btnFu.style.borderBottomColor = 'var(--primary)';
@@ -19427,6 +19469,8 @@ function switchMainTab(tab) {
     if (btnNewCmp) btnNewCmp.style.display = 'none';
     if (btnNewFu) btnNewFu.style.display = '';
     loadFollowUps();
+    _fuMarkAllSeen();
+    _fuUpdateBadges();
   } else {
     fuSection.style.display = 'none';
     cmpSection.style.display = 'block';
@@ -19814,11 +19858,30 @@ const FU_STATUS_STYLES = {
   'لم يتم الحل':   { bg:'#fff1f2', color:'#be123c', dot:'#f43f5e' },
 };
 
+let _fuPage = 1;
+const FU_PAGE_SIZE = 20;
+const FU_SEEN_KEY = 'fu_seen_ids';
+const FU_TAG_PALETTE = [
+  { label:'عاجل', bg:'#fee2e2', color:'#dc2626' },
+  { label:'مرتجع', bg:'#fef3c7', color:'#d97706' },
+  { label:'ضمان', bg:'#dbeafe', color:'#2563eb' },
+  { label:'توصيل', bg:'#d1fae5', color:'#059669' },
+  { label:'تالف', bg:'#fae8ff', color:'#9333ea' },
+];
+
+function _fuGetSeenIds() { try { return JSON.parse(localStorage.getItem(FU_SEEN_KEY)||'[]'); } catch(_){return[];} }
+function _fuSaveSeenIds(arr) { localStorage.setItem(FU_SEEN_KEY, JSON.stringify(arr)); }
+function _fuUnseenCount() { const s = _fuGetSeenIds(); return followUps.filter(f => !s.includes(String(f._id)) && f.status !== 'تمت المتابعة').length; }
+function _fuMarkAllSeen() { const s = _fuGetSeenIds(); followUps.forEach(f => { const id=String(f._id); if(!s.includes(id)) s.push(id); }); _fuSaveSeenIds(s); }
+function _fuUpdateBadges() { const count = _fuUnseenCount(); const b = qs('#fu-tab-badge'); if (b) { b.textContent = count; b.style.display = count > 0 ? 'inline-block' : 'none'; } buildSidebar(); }
+
 async function loadFollowUps() {
   try { followUps = await api('/followups'); } catch(_) { followUps = []; }
+  _fuPage = 1;
   renderFuKpi();
   renderFollowUps();
   populateFuUserFilter();
+  _fuUpdateBadges();
 }
 
 function renderFuKpi() {
@@ -19875,25 +19938,52 @@ function renderFollowUps() {
 
   const tbody = qs('#fu-tbody');
   if (!tbody) return;
+
+  // Pagination
+  const totalF = data.length;
+  if (_fuPage > Math.ceil(totalF/FU_PAGE_SIZE) || totalF === 0) _fuPage = 1;
+  const pageData = data.slice((_fuPage-1)*FU_PAGE_SIZE, _fuPage*FU_PAGE_SIZE);
+
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">لا توجد متابعات</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">لا توجد متابعات</td></tr>';
+    renderPagination('fu-pagination', totalF, _fuPage, FU_PAGE_SIZE, 'setFuPage');
     return;
   }
 
   const WA_PATH = `M11.42 9.49c-.19-.09-1.1-.54-1.27-.61s-.29-.09-.42.1-.48.6-.59.73-.21.14-.4 0a5.13 5.13 0 0 1-1.49-.92 5.25 5.25 0 0 1-1-1.29c-.11-.18 0-.28.08-.38s.18-.21.28-.32a1.39 1.39 0 0 0 .18-.31.38.38 0 0 0 0-.33c0-.09-.42-1-.58-1.37s-.3-.32-.41-.32h-.4a.72.72 0 0 0-.5.23 2.1 2.1 0 0 0-.65 1.55A3.59 3.59 0 0 0 5 8.2 8.32 8.32 0 0 0 8.19 11c.44.19.78.3 1.05.39a2.53 2.53 0 0 0 1.17.07 1.93 1.93 0 0 0 1.26-.88 1.67 1.67 0 0 0 .11-.88c-.05-.07-.17-.12-.36-.21zM13.29 2.68A7.36 7.36 0 0 0 8 .5a7.44 7.44 0 0 0-6.41 11.15l-1 3.85 3.94-1a7.4 7.4 0 0 0 3.55.9H8a7.44 7.44 0 0 0 5.29-12.72zM8 14.12a6.12 6.12 0 0 1-3.15-.87l-.22-.13-2.34.61.62-2.28-.14-.23a6.18 6.18 0 0 1 9.6-7.65 6.12 6.12 0 0 1 1.81 4.37A6.19 6.19 0 0 1 8 14.12z`;
 
-  tbody.innerHTML = data.map(f => {
+  tbody.innerHTML = pageData.map(f => {
     const fId = String(f._id);
+    const _tx = (!f.clientName || !f.clientPhone) ? transactions.find(t => t._id === f.transactionId || t.ref === f.orderRef) : null;
+    const resolvedName = f.clientName || _tx?.clientName || '';
+    const resolvedPhone = f.clientPhone || _tx?.clientPhone || '';
+    const seenIds = _fuGetSeenIds();
+    const isUnseen = !seenIds.includes(fId) && f.status !== 'تمت المتابعة';
+
     const st = FU_STATUS_STYLES[f.status] || { bg:'#f3f4f6', color:'#6b7280', dot:'#9ca3af' };
     const P = 'padding:6px 10px;vertical-align:middle;white-space:nowrap';
 
-    const waIcon = f.clientPhone
-      ? `<a href="https://wa.me/${f.clientPhone.replace(/\D/g,'')}" target="_blank" rel="noopener" title="${esc(f.clientPhone)}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#dcfce7;color:#16a34a;text-decoration:none;transition:transform .15s" onmouseenter="this.style.transform='scale(1.18)'" onmouseleave="this.style.transform='scale(1)'">
+    const waIcon = resolvedPhone
+      ? `<a href="https://wa.me/${resolvedPhone.replace(/\D/g,'')}" target="_blank" rel="noopener" title="${esc(resolvedPhone)}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#dcfce7;color:#16a34a;text-decoration:none;transition:transform .15s" onmouseenter="this.style.transform='scale(1.18)'" onmouseleave="this.style.transform='scale(1)'">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="#16a34a"><path d="${WA_PATH}"/></svg>
         </a>`
       : `<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--bg-alt)">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="#9ca3af" opacity=".5"><path d="${WA_PATH}"/></svg>
         </span>`;
+
+    const reasonHtml = f.reason
+      ? `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#fef9c3;color:#854d0e;font-size:.74rem;font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle" title="${esc(f.reason)}">${esc(f.reason)}</span>`
+      : `<span style="color:var(--muted);font-size:.74rem">—</span>`;
+
+    const tagsHtml = (Array.isArray(f.tags) && f.tags.length)
+      ? f.tags.map(tag => {
+          const palette = FU_TAG_PALETTE.find(p => p.label === tag);
+          const bg = palette?.bg || '#e5e7eb';
+          const color = palette?.color || '#374151';
+          return `<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:10px;background:${bg};color:${color};font-size:.68rem;font-weight:700;white-space:nowrap">${esc(tag)}<button onclick="event.stopPropagation();removeFuTag('${fId}','${esc(tag)}')" style="border:none;background:none;cursor:pointer;padding:0;color:inherit;line-height:1;font-size:.75rem;opacity:.7">&times;</button></span>`;
+        }).join(' ')
+      : '';
+    const addTagBtn = `<button onclick="event.stopPropagation();openFuTagPopover('${fId}',this)" title="إضافة وسم" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1px dashed var(--border);background:none;cursor:pointer;color:var(--muted);font-size:.75rem">+</button>`;
 
     const statusSel = `<div style="display:inline-flex;align-items:center;gap:4px;background:${st.bg};border-radius:16px;padding:2px 8px 2px 4px">
       <span style="width:6px;height:6px;border-radius:50%;background:${st.dot};flex-shrink:0"></span>
@@ -19909,20 +19999,26 @@ function renderFollowUps() {
     const editBtn = `<button onclick="openFuModal('${fId}')" title="تعديل" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;border:none;cursor:pointer;background:var(--bg-alt);color:var(--muted)">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     </button>`;
+    const delBtn = `<button onclick="deleteFuItem('${fId}')" title="حذف" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;border:none;cursor:pointer;background:var(--bg-alt);color:#dc2626">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+    </button>`;
 
-    const rowStyle = `border-bottom:1px solid var(--border);${f.status==='تمت المتابعة'?'opacity:.55':''}`;
+    const rowStyle = `border-bottom:1px solid var(--border);${f.status==='تمت المتابعة'?'opacity:.55':''}${isUnseen?' border-inline-end:3px solid var(--primary)':''}`;
     return `<tr id="fu-row-${fId}" style="${rowStyle}" onmouseenter="this.style.background='var(--bg-alt)'" onmouseleave="this.style.background=''">
       <td style="${P};font-size:.82rem">
-        <span style="font-weight:700;color:var(--primary)">#${esc(f.orderRef)}</span>${f.clientName?` <span style="color:var(--muted);font-size:.74rem">· ${esc(f.clientName)}</span>`:''}
+        <span style="font-weight:700;color:var(--primary)">#${esc(f.orderRef)}</span>${resolvedName?` <span style="color:var(--muted);font-size:.74rem">· ${esc(resolvedName)}</span>`:''}
       </td>
       <td style="${P};text-align:center">${waIcon}</td>
-      <td style="${P};font-size:.78rem;color:var(--muted);max-width:150px;overflow:hidden;text-overflow:ellipsis" title="${esc(f.reason||'')}">${esc(f.reason||'—')}</td>
+      <td style="${P};font-size:.78rem">${reasonHtml}</td>
+      <td style="${P};font-size:.74rem">${tagsHtml}${tagsHtml?' ':''}<span style="opacity:0.7">${addTagBtn}</span></td>
       <td style="${P}">${statusSel}</td>
       <td style="${P};font-size:.72rem;color:var(--muted)">${fmtElapsed(f.updatedAt||f.createdAt||'')}</td>
-      <td style="${P};text-align:center"><div style="display:flex;align-items:center;gap:4px;justify-content:center">${commentBtn}${editBtn}</div></td>
+      <td style="${P};text-align:center"><div style="display:flex;align-items:center;gap:4px;justify-content:center">${commentBtn}${editBtn}${delBtn}</div></td>
       <td style="${P};font-size:.78rem;color:var(--text)">${esc(f.responsibleName||'—')}</td>
     </tr>`;
   }).join('');
+
+  renderPagination('fu-pagination', totalF, _fuPage, FU_PAGE_SIZE, 'setFuPage');
 }
 
 async function updateFuStatus(id, status) {
@@ -19936,12 +20032,91 @@ async function updateFuStatus(id, status) {
 }
 
 function clearFuFilters() {
+  _fuPage = 1;
   qs('#fu-search').value = '';
   qs('#fu-status-filter').value = '';
   qs('#fu-user-filter').value = '';
   qs('#fu-from').value = '';
   qs('#fu-to').value = '';
   renderFollowUps();
+}
+
+function _fuFilterChange() { _fuPage=1; renderFollowUps(); }
+function setFuPage(p) { _fuPage=p; renderFollowUps(); }
+
+async function deleteFuItem(id) {
+  if (!confirm('هل تريد حذف هذا السجل نهائياً؟')) return;
+  try {
+    await api(`/followups/${id}`, {method:'DELETE'});
+    followUps = followUps.filter(f=>f._id!==id);
+    _fuSaveSeenIds(_fuGetSeenIds().filter(x=>x!==id));
+    renderFuKpi(); renderFollowUps(); _fuUpdateBadges();
+    toast('تم الحذف');
+  } catch(e) { toast(e.message,true); }
+}
+
+function openFuTagPopover(fuId, anchorEl) {
+  qs('#fu-tag-popover')?.remove();
+  const f = followUps.find(x=>x._id===fuId);
+  const existing = Array.isArray(f?.tags) ? f.tags : [];
+  const rect = anchorEl.getBoundingClientRect();
+  const popover = document.createElement('div');
+  popover.id = 'fu-tag-popover';
+  popover.style.cssText = `position:fixed;z-index:9999;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:180px;top:${rect.bottom+4}px;right:${document.documentElement.clientWidth-rect.right}px`;
+  const available = FU_TAG_PALETTE.filter(p=>!existing.includes(p.label));
+  popover.innerHTML = `<div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;font-weight:600">إضافة وسم</div>
+    ${available.map(p=>`<div onclick="addFuTag('${fuId}','${esc(p.label)}')" style="padding:5px 8px;cursor:pointer;border-radius:6px;display:flex;align-items:center;gap:6px;font-size:.78rem" onmouseenter="this.style.background='var(--bg-alt)'" onmouseleave="this.style.background=''">
+      <span style="width:10px;height:10px;border-radius:50%;background:${p.bg};border:1.5px solid ${p.color};flex-shrink:0"></span>
+      <span style="color:${p.color};font-weight:600">${esc(p.label)}</span></div>`).join('')}
+    ${!available.length?'<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:4px">جميع الوسوم مضافة</div>':''}
+    <hr style="margin:6px 0;border-color:var(--border)">
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">وسم مخصص</div>
+    <div style="display:flex;gap:4px">
+      <input id="fu-tag-custom-input" type="text" maxlength="20" placeholder="اكتب وسماً..." style="flex:1;height:26px;font-size:.75rem;padding:0 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
+      <button onclick="addFuTag('${fuId}',qs('#fu-tag-custom-input').value.trim())" style="height:26px;padding:0 8px;font-size:.75rem;border:none;border-radius:6px;background:var(--primary);color:#fff;cursor:pointer">+</button>
+    </div>`;
+  document.body.appendChild(popover);
+  setTimeout(()=>document.addEventListener('click',_fuCloseTagPopover,{once:true}),0);
+}
+function _fuCloseTagPopover(e) { if(!e.target.closest('#fu-tag-popover')) qs('#fu-tag-popover')?.remove(); }
+
+async function addFuTag(id, tag) {
+  qs('#fu-tag-popover')?.remove();
+  if (!tag) return;
+  const f = followUps.find(x=>x._id===id); if(!f) return;
+  const newTags = [...new Set([...(f.tags||[]),tag])];
+  try {
+    const updated = await api(`/followups/${id}`,{method:'PATCH',body:JSON.stringify({tags:newTags})});
+    const idx = followUps.findIndex(x=>x._id===id);
+    if(idx!==-1) followUps[idx]={...followUps[idx],...updated};
+    renderFollowUps();
+  } catch(e){toast(e.message,true);}
+}
+async function removeFuTag(id, tag) {
+  const f = followUps.find(x=>x._id===id); if(!f) return;
+  const newTags = (f.tags||[]).filter(t=>t!==tag);
+  try {
+    const updated = await api(`/followups/${id}`,{method:'PATCH',body:JSON.stringify({tags:newTags})});
+    const idx = followUps.findIndex(x=>x._id===id);
+    if(idx!==-1) followUps[idx]={...followUps[idx],...updated};
+    renderFollowUps();
+  } catch(e){toast(e.message,true);}
+}
+
+function goToFuAndHighlight(fuId) {
+  navigateTo('complaints');
+  setTimeout(()=>{
+    if(typeof switchMainTab==='function') switchMainTab('fu');
+    setTimeout(()=>{
+      const row = qs(`#fu-row-${fuId}`);
+      if(row){
+        row.classList.remove('nav-highlight-fu'); void row.offsetWidth;
+        row.classList.add('nav-highlight-fu');
+        row.scrollIntoView({behavior:'smooth',block:'center'});
+        setTimeout(()=>row.classList.remove('nav-highlight-fu'),3000);
+      }
+    },400);
+  },320);
 }
 
 // Live search for sales transactions in fu modal
@@ -20077,6 +20252,9 @@ async function saveFuItem() {
     } else {
       savedDoc = await api('/followups', { method:'POST', body: JSON.stringify({ orderRef, transactionId, clientName, clientPhone, responsibleId, responsibleName, reason, status, comment }) });
       followUps.unshift(savedDoc);
+      // Mark creator as seen immediately
+      const s = _fuGetSeenIds();
+      if (savedDoc?._id && !s.includes(String(savedDoc._id))) { s.push(String(savedDoc._id)); _fuSaveSeenIds(s); }
       toast('تمت الإضافة ✅');
     }
 

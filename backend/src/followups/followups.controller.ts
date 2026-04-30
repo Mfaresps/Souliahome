@@ -50,6 +50,7 @@ export class FollowUpsController {
   @Delete(':id')
   async remove(@Param('id') id: string) {
     await this.service.remove(id);
+    try { this.presence.emitEvent('followup:changed', { action: 'delete', id }); } catch (_) {}
     return { ok: true };
   }
 }

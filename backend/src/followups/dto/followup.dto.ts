@@ -1,4 +1,4 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsArray } from 'class-validator';
 
 export class CreateFollowUpDto {
   @IsString() orderRef: string;
@@ -10,6 +10,7 @@ export class CreateFollowUpDto {
   @IsOptional() @IsString() reason?: string;
   @IsOptional() @IsString() status?: string;
   @IsOptional() @IsString() comment?: string;
+  @IsOptional() @IsArray() tags?: string[];
 }
 
 export class UpdateFollowUpDto {
@@ -18,4 +19,5 @@ export class UpdateFollowUpDto {
   @IsOptional() @IsString() reason?: string;
   @IsOptional() @IsString() status?: string;
   @IsOptional() @IsString() comment?: string;
+  @IsOptional() @IsArray() tags?: string[];
 }
