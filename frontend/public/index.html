@@ -3422,7 +3422,7 @@ body.dark-mode .txn-card{
 @media(max-width:600px){
   .txn-card{padding:7px 10px 6px;border-radius:10px}
 }
-/* coloured left accent bar — palette: sale=green stock, purchase=blue stock, cancel=amber */
+/* coloured left accent bar — palette: sale=green, purchase=blue, cancel=amber, return=purple, collect=teal */
 .txn-card::before{
   content:'';position:absolute;right:0;top:10px;bottom:10px;
   width:3px;border-radius:2px 0 0 2px;
@@ -3430,6 +3430,8 @@ body.dark-mode .txn-card{
 .txn-card.sale::before{background:linear-gradient(180deg,#66bb6a,#4CAF50)}
 .txn-card.purchase::before{background:linear-gradient(180deg,#42a5f5,#2196F3)}
 .txn-card.cancel::before{background:linear-gradient(180deg,#fbbf24,#d97706)}
+.txn-card.return::before{background:linear-gradient(180deg,#c084fc,#9333ea)}
+.txn-card.collect::before{background:linear-gradient(180deg,#34d399,#059669)}
 /* ── header row ── */
 .txn-head{display:flex;align-items:center;gap:7px;margin-bottom:7px}
 .txn-badge{
@@ -3440,9 +3442,13 @@ body.dark-mode .txn-card{
 .txn-badge.sale{background:rgba(76,175,80,.14);color:#2e7d32;border:1px solid rgba(76,175,80,.35)}
 .txn-badge.purchase{background:rgba(33,150,243,.14);color:#1565c0;border:1px solid rgba(33,150,243,.35)}
 .txn-badge.cancel{background:rgba(217,119,6,.14);color:#a16207;border:1px solid rgba(217,119,6,.35)}
+.txn-badge.return{background:rgba(147,51,234,.12);color:#7c3aed;border:1px solid rgba(147,51,234,.3)}
+.txn-badge.collect{background:rgba(5,150,105,.12);color:#047857;border:1px solid rgba(5,150,105,.3)}
 body.dark-mode .txn-badge.sale{color:#81c784;background:rgba(76,175,80,.18)}
 body.dark-mode .txn-badge.purchase{color:#64b5f6;background:rgba(33,150,243,.18)}
 body.dark-mode .txn-badge.cancel{color:#fbbf24;background:rgba(251,191,36,.18)}
+body.dark-mode .txn-badge.return{color:#c084fc;background:rgba(147,51,234,.2)}
+body.dark-mode .txn-badge.collect{color:#34d399;background:rgba(5,150,105,.2)}
 .txn-ref{font-size:.68rem;color:rgba(15,30,22,.45);direction:ltr;flex-shrink:0;font-variant-numeric:tabular-nums}
 .txn-client{font-size:.68rem;color:rgba(15,30,22,.6);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:start;font-weight:600}
 .txn-dismiss{background:none;border:none;color:rgba(15,30,22,.35);cursor:pointer;padding:2px 4px;font-size:.85rem;line-height:1;border-radius:6px;flex-shrink:0;transition:color .15s}
@@ -3528,6 +3534,8 @@ body.dark-mode .txn-bar{background:rgba(255,255,255,.08)}
 .txn-card.sale .txn-bar-fill{background:linear-gradient(90deg,#388e3c,#66bb6a)}
 .txn-card.purchase .txn-bar-fill{background:linear-gradient(90deg,#1976d2,#42a5f5)}
 .txn-card.cancel .txn-bar-fill{background:linear-gradient(90deg,#d97706,#fbbf24)}
+.txn-card.return .txn-bar-fill{background:linear-gradient(90deg,#7c3aed,#c084fc)}
+.txn-card.collect .txn-bar-fill{background:linear-gradient(90deg,#047857,#34d399)}
 @keyframes txnBarShrink{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 /* ── nav bounce ── */
 @keyframes txnNavBounce{0%,100%{transform:scale(1)}35%{transform:scale(1.25)}65%{transform:scale(.92)}}
@@ -7564,9 +7572,9 @@ function connectSocket() {
     _rtFlashIds.add(String(tx._id));
     setTimeout(() => _rtFlashIds.delete(String(tx._id)), 3000);
     _rtRefreshUI({ movements: true });
-    // vault card is shown via vault:changed; just refresh sidebar for collect
     if (payload?.action === 'collect') {
       _rtRefreshUI({ sidebar: true });
+      try { window.txNotifier?.onTxCollect(tx, payload.action); } catch(_) {}
     }
   });
   socket.on('tx:cancelled', async (payload) => {
@@ -7900,10 +7908,12 @@ window.txNotifier = (function () {
     const v = Math.abs(Number(n) || 0);
     return v.toLocaleString('en-US') + ' ج';
   }
-  function _cardType(txType, isCancellation) {
+  function _cardType(txType, isCancellation, isCollect) {
     if (isCancellation) return 'cancel';
+    if (isCollect) return 'collect';
     if (txType === 'مبيعات') return 'sale';
     if (txType === 'مشتريات') return 'purchase';
+    if (txType === 'مرتجع') return 'return';
     return 'sale';
   }
 
@@ -7915,6 +7925,28 @@ window.txNotifier = (function () {
     card.el.classList.add('is-out');
     setTimeout(() => { try { card.el.remove(); } catch(_){} }, instant ? 0 : 240);
     _cards.delete(card.txId);
+  }
+
+  /* ── hover pause helpers ── */
+  function _pauseCard(card) {
+    if (!card || card._dismissed || card._paused) return;
+    card._paused = true;
+    clearTimeout(card._timer);
+    card._pausedAt = Date.now();
+    const fill = card.el.querySelector('.txn-bar-fill');
+    if (fill) fill.style.animationPlayState = 'paused';
+  }
+  function _resumeCard(card) {
+    if (!card || card._dismissed || !card._paused) return;
+    card._paused = false;
+    const elapsed = Date.now() - (card._pausedAt || Date.now());
+    const remaining = Math.max(0, (card._ttl || TTL) - elapsed);
+    const fill = card.el.querySelector('.txn-bar-fill');
+    if (fill) {
+      fill.style.animationDuration = remaining + 'ms';
+      fill.style.animationPlayState = 'running';
+    }
+    card._timer = setTimeout(() => _dismiss(card), remaining);
   }
 
   /* ── nav bounce ── */
@@ -7930,19 +7962,21 @@ window.txNotifier = (function () {
      Never both. opts.kind = 'stock' | 'vault'
   */
   function _show(opts) {
-    const { cardId, kind, txType, ref, client, items, isCancellation,
-            vaultAmount, vaultSeg, vaultBalances, isPartial, newRemaining } = opts;
+    const { cardId, kind, txType, ref, client, items, isCancellation, isCollect,
+            vaultAmount, vaultSeg, vaultBalances, isPartial, newRemaining, txId: navTxId } = opts;
 
     if (_cards.has(cardId)) return; // dedupe
 
-    const type  = _cardType(txType, isCancellation);
-    const isAdd = type === 'purchase';
+    const type  = _cardType(txType, isCancellation, isCollect);
+    const isAdd = type === 'purchase' || type === 'return';
     const safeItems = Array.isArray(items) ? items : [];
 
     const badgeLabel =
       isCancellation ? 'إلغاء' :
+      isCollect      ? 'تحصيل' :
       txType === 'مبيعات'   ? 'بيع' :
-      txType === 'مشتريات'  ? 'شراء' : (txType || '');
+      txType === 'مشتريات'  ? 'شراء' :
+      txType === 'مرتجع'    ? 'مرتجع' : (txType || '');
 
     const clientShort = client ? (String(client).length > 18 ? String(client).slice(0,18) + '…' : client) : '';
 
@@ -8002,9 +8036,13 @@ window.txNotifier = (function () {
     _stack().appendChild(el);
     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('is-in')));
 
-    const card = { txId: cardId, el, _timer: null, _dismissed: false };
+    const card = { txId: cardId, el, _timer: null, _dismissed: false, _paused: false, _ttl: TTL };
     card._timer = setTimeout(() => _dismiss(card), TTL);
     _cards.set(cardId, card);
+
+    // hover pause
+    el.addEventListener('mouseenter', () => _pauseCard(card));
+    el.addEventListener('mouseleave', () => _resumeCard(card));
 
     // dismiss button
     el.querySelector('.txn-dismiss').addEventListener('click', e => {
@@ -8012,13 +8050,16 @@ window.txNotifier = (function () {
       _dismiss(card);
     });
 
-    // click card → navigate by kind
+    // click card → navigate by kind; for tx-based cards go directly to the row
     el.addEventListener('click', e => {
       if (e.target.closest('.txn-dismiss')) return;
       _dismiss(card);
       try {
+        const tid = navTxId || null;
         if (kind === 'stock' && safeItems.length > 0 && typeof goToInventoryAndHighlight === 'function') {
           goToInventoryAndHighlight(safeItems[0]?.name || '', 300);
+        } else if (tid && typeof goToTxAndHighlight === 'function') {
+          goToTxAndHighlight(tid, 300);
         } else if (typeof navigateTo === 'function') {
           navigateTo(kind === 'vault' ? 'vault' : 'movements');
         }
@@ -8073,24 +8114,52 @@ window.txNotifier = (function () {
       kind: 'stock',
       txType: tx.type,
       ref: tx.ref || '',
-      client: tx.client || '',
+      client: tx.client || tx.supplier || '',
       items,
       isCancellation: false,
+      txId,
     });
   }
 
   /** Called from tx:cancelled — stock card showing the reverse */
   function onTxCancelled(tx) {
     if (!tx) return;
+    const txId = String(tx._id);
     const items = (tx.items || []).map(it => ({ name: it.name, qty: it.qty }));
     _show({
-      cardId: String(tx._id) + '_cancel_stock',
+      cardId: txId + '_cancel_stock',
       kind: 'stock',
       txType: tx.type,
       ref: tx.ref || '',
-      client: tx.client || '',
+      client: tx.client || tx.supplier || '',
       items,
       isCancellation: true,
+      txId,
+    });
+  }
+
+  /** Called from tx:updated (collect / undo-payment) — shows a collect vault card */
+  function onTxCollect(tx, action) {
+    if (!tx) return;
+    const txId = String(tx._id);
+    const collected = Number(tx.collected) || Number(tx.paidAmount) || 0;
+    const remaining = Number(tx.remaining) || 0;
+    if (!collected) return;
+    const cardId = txId + '_collect_' + Date.now();
+    _show({
+      cardId,
+      kind: 'vault',
+      txType: tx.type,
+      ref: tx.ref || '',
+      client: tx.client || tx.supplier || '',
+      items: [],
+      isCancellation: false,
+      isCollect: true,
+      vaultAmount: collected,
+      vaultSeg: tx.collectMethod || tx.payMethod || '',
+      isPartial: remaining > 0,
+      newRemaining: remaining,
+      txId,
     });
   }
 
@@ -8112,6 +8181,7 @@ window.txNotifier = (function () {
       || (payload.isPurchase ? 'مشتريات' : (effectiveAmount > 0 ? 'مبيعات' : 'مشتريات'));
     const isPartial = !!payload.isPartial;
     const newRemaining = Number(payload.newRemaining) || 0;
+    const isCollect = payload.reason === 'tx:collect';
     const client = payload.entityLabel || payload.client || payload.desc || '';
     _show({
       cardId,
@@ -8121,21 +8191,40 @@ window.txNotifier = (function () {
       client,
       items: [],
       isCancellation: false,
+      isCollect,
       vaultAmount: effectiveAmount,
       vaultSeg: payload.seg || payload.collectMethod,
       vaultBalances: payload.balances,
       isPartial,
       newRemaining,
+      txId,
     });
   }
 
   function init() { _loadMute(); }
 
-  return { init, onTxCreated, onTxCancelled, onVaultChanged, setMuted, isMuted };
+  return { init, onTxCreated, onTxCancelled, onTxCollect, onVaultChanged, setMuted, isMuted };
 })();
 
 /* backward-compat stub so old calls don't throw */
 function showInvNotif() {}
+
+/* ── Debug / test helper — call from browser console: testTxNotifier() ── */
+window.testTxNotifier = function(type) {
+  const t = type || 'sale';
+  if (t === 'vault' || t === 'cash') {
+    window.txNotifier?.onVaultChanged({ reason:'manual', amount: t==='cash' ? -500 : 1200, seg:'cash', txNo:'TST-001', desc:'اختبار خزنة', entityLabel:'اختبار' });
+  } else if (t === 'purchase') {
+    window.txNotifier?.onTxCreated({ _id:'test_pur_'+Date.now(), type:'مشتريات', ref:'P-TEST', supplier:'مورد تجريبي', items:[{name:'صنف ألفا',qty:10},{name:'صنف بيتا',qty:5}] });
+  } else if (t === 'return') {
+    window.txNotifier?.onTxCreated({ _id:'test_ret_'+Date.now(), type:'مرتجع', ref:'R-TEST', client:'عميل تجريبي', items:[{name:'صنف مرتجع',qty:2}] });
+  } else if (t === 'cancel') {
+    window.txNotifier?.onTxCancelled({ _id:'test_can_'+Date.now(), type:'مبيعات', ref:'CAN-TEST', client:'عميل تجريبي', items:[{name:'صنف ملغي',qty:3}] });
+  } else {
+    // default: sale
+    window.txNotifier?.onTxCreated({ _id:'test_sale_'+Date.now(), type:'مبيعات', ref:'S-TEST', client:'عميل تجريبي', items:[{name:'صنف مبيعات',qty:7},{name:'صنف ثانوي',qty:1}] });
+  }
+};
 
 /* ===== Active sessions (admin) ===== */
 function renderActiveSessions() {
@@ -15915,7 +16004,7 @@ function showExportModal(isSelected = false) {
       </div>
 
       <!-- Scrollable content area -->
-      <div style="flex:1;overflow-y:auto;overflow-x:hidden;padding-right:8px;margin-right:-8px;min-height:0;max-height:calc(90vh - 220px)">
+      <div style="flex:1;overflow-y:auto;overflow-x:hidden;padding-right:8px;margin-right:-8px;min-height:0">
         <!-- Transaction type filter (only for non-selected exports) -->
         ${isSelected ? '' : `
         <div style="margin-bottom:14px">
