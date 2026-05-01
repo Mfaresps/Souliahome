@@ -173,6 +173,18 @@ export class VaultService {
     return entry;
   }
 
+  async deleteLastEntryByRef(ref: string): Promise<boolean> {
+    try {
+      const result = await this.vaultModel.findOneAndDelete(
+        { ref, source: 'تحصيل' },
+        { sort: { date: -1, createdAt: -1 } }
+      ).exec();
+      return !!result;
+    } catch (error) {
+      return false;
+    }
+  }
+
   async addSystemEntry(
     amount: number,
     method: string,

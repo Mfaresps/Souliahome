@@ -226,15 +226,6 @@ export class TransactionsController {
     return this.transactionsService.reverseCollect(id, reversedBy);
   }
 
-  @Post(':id/undo-all-collections')
-  async undoAllCollections(
-    @Param('id') id: string,
-    @Req() req: { user: { name: string; username: string } },
-  ) {
-    const undoBy = req.user?.name || req.user?.username || 'مجهول';
-    return this.transactionsService.undoAllCollections(id, undoBy);
-  }
-
   @Roles('admin')
   @Post(':id/post-discount')
   async applyPostDiscount(

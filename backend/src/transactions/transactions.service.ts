@@ -1022,86 +1022,14 @@ export class TransactionsService {
 
     const saved = await tx.save();
 
-    // تسجيل الحركة العكسية في لوج الخزنة
-    await this.vaultService.addSystemEntry(
-      vaultDelta,
-      vaultMethod,
-      `تراجع تحصيل #${txRef} — ${tx.client || ''} | ${reversedAmount} ج | بواسطة: ${reversedBy}`,
-      new Date().toISOString().split('T')[0],
-      'تراجع تحصيل',
-      txRef,
-    );
+    // حذف آخر سجل تحصيل من الخزنة (بدون إضافة سجل عكسي)
+    await this.vaultService.deleteLastEntryByRef(txRef);
 
     this.emit('tx:updated', { tx: saved, action: 'reverse-collect' });
     this.emit('vault:changed', { reason: 'tx:reverse-collect', txId: String(saved._id) });
     return { tx: saved, reversedAmount, vaultMethod };
   }
 
-  async undoAllCollections(
-    id: string,
-    undoBy: string,
-  ): Promise<{ tx: TransactionDocument; totalReversed: number }> {
-    const tx = await this.transactionModel.findById(id).exec();
-    if (!tx) throw new NotFoundException('الحركة غير موجودة');
-    if (tx.cancelled) throw new BadRequestException('لا يمكن التراجع على حركة ملغية');
-
-    const payments = tx.payments || [];
-    if (!payments.length) throw new BadRequestException('لا يوجد تحصيل مسجل لهذه الحركة');
-
-    const txRef = tx.ref || String(tx._id);
-    let totalReversed = 0;
-    const reversalDetails: Array<{ amount: number; method: string; date: string }> = [];
-
-    // عكس كل دفعة من الآخر للأول
-    for (const payment of [...payments].reverse()) {
-      const amount = Number(payment.amount) || 0;
-      const method = String(payment.method || 'كاش');
-      const isPurchase = tx.type === 'مشتريات';
-      const vaultDelta = isPurchase ? amount : -amount;
-
-      // تحقق من كفاية الرصيد للمبيعات
-      if (!isPurchase && amount > 0) {
-        await this.vaultService.assertSufficientBalance(method, amount);
-      }
-
-      // سجل كل عملية عكس
-      await this.vaultService.addSystemEntry(
-        vaultDelta,
-        method,
-        `UNDO تحصيل #${txRef} — ${tx.client || ''} | ${amount} ج`,
-        new Date().toISOString().split('T')[0],
-        'UNDO تحصيل',
-        txRef,
-      );
-
-      totalReversed += amount;
-      reversalDetails.push({ amount, method, date: payment.date });
-    }
-
-    // إعادة الحركة للحالة الأصلية (كأنها لم تُحصَّل أبداً)
-    const totalCollected = payments.reduce((sum, p) => sum + (Number(p.collectedAmount) || Number(p.amount) || 0), 0);
-    tx.remaining = (Number(tx.remaining) || 0) + totalCollected;
-    tx.payStatus = 'معلق';
-    tx.deposit = Math.max(0, (Number(tx.deposit) || 0) - totalCollected);
-    tx.payments = [];
-    tx.set('collectedAt', undefined);
-    tx.collectMethod = undefined;
-    tx.collectNote = undefined;
-
-    tx.editHistory = [...(tx.editHistory || []), {
-      editedAt: new Date().toISOString(),
-      editedBy: undoBy,
-      action: 'UNDO كامل للتحصيلات',
-      note: `إلغاء كل التحصيلات (${payments.length} عملية) — إجمالي: ${totalReversed} ج`,
-      details: reversalDetails,
-    }];
-
-    const saved = await tx.save();
-    this.emit('tx:updated', { tx: saved, action: 'undo-all-collections' });
-    this.emit('vault:changed', { reason: 'tx:undo-all-collections', txId: String(saved._id) });
-
-    return { tx: saved, totalReversed };
-  }
 
   async addComments(id: string, comments: Array<any>): Promise<TransactionDocument> {
     // Update ONLY comments field - without triggering editHistory
