@@ -12751,7 +12751,7 @@ function renderMovMobileCard(tx) {
             ${!isCancelled ? `<div class="dd-item" onclick="openEditMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</div>` : ''}
             <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة</div>
             ${rem > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل</div>` : ''}
-            ${tx.type === 'مبيعات' && (tx.payments||[]).length > 0 && !tx.cancelled && isAdmin() ? `<div class="dd-item" style="color:var(--orange)" onclick="openReverseCollect('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.4 7.4 11.5 4 18 5.5"/><path d="M21 17v-6h-6"/><path d="M21 11c-2.4 5.6-8.5 9-15 7.5"/></svg> تراجع عند التحصيل</div>` : ''}
+            ${tx.type === 'مبيعات' && (tx.payments||[]).length > 0 && !tx.cancelled && isAdmin() ? `<div class="dd-item" style="color:var(--orange)" onclick="openUndoAllCollections('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.4 7.4 11.5 4 18 5.5"/><path d="M21 17v-6h-6"/><path d="M21 11c-2.4 5.6-8.5 9-15 7.5"/></svg> UNDO جميع التحصيلات</div>` : ''}
             ${!isCancelled ? `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg> إلغاء</div>` : ''}
           </div>
         </div>
@@ -14898,61 +14898,67 @@ async function doCollectMovement(id) {
   }
 }
 
-function openReverseCollect(id) {
+function openUndoAllCollections(id) {
   const tx = transactions.find(t => t._id === id);
   if (!tx) return;
   const payments = tx.payments || [];
   if (!payments.length) { toast('لا يوجد تحصيل مسجل لهذه الحركة', true); return; }
-  const last = payments[payments.length - 1];
-  const amount = last.amount;
-  const method = last.method || tx.collectMethod || 'الخزنة';
-  const isPurchase = tx.type === 'مشتريات';
-  const amtFmt = fmtN(amount) + ' EGP';
-  const vaultDirection = isPurchase
-    ? `سيُضاف <strong style="color:var(--green)">${amtFmt}</strong> إلى خزنة ${esc(method)} (رد من المورد)`
-    : `سيُخصم <strong style="color:var(--red)">${amtFmt}</strong> من خزنة ${esc(method)} (إعادة للعميل)`;
+
+  const totalCollected = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const paymentsList = payments.map((p, i) => `
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:.8rem">#${i + 1}: ${fmtN(p.amount)} EGP (${p.method || 'غير محدد'})</span>
+      <span style="font-size:.75rem;color:var(--muted)">${p.date ? new Date(p.date).toLocaleDateString('ar-EG') : '—'}</span>
+    </div>
+  `).join('');
 
   const overlay = document.createElement('div');
-  overlay.id = 'reverse-collect-overlay';
+  overlay.id = 'undo-all-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s ease';
   overlay.innerHTML = `
-    <div style="background:var(--surface);border-radius:14px;padding:24px;max-width:420px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:slideUp .2s ease">
+    <div style="background:var(--surface);border-radius:14px;padding:24px;max-width:500px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:slideUp .2s ease;max-height:80vh;overflow-y:auto">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
-        <div style="width:38px;height:38px;border-radius:10px;background:rgba(249,115,22,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg viewBox="0 0 24 24" style="width:20px;height:20px;color:#f97316" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.4 7.4 11.5 4 18 5.5"/><path d="M21 17v-6h-6"/><path d="M21 11c-2.4 5.6-8.5 9-15 7.5"/></svg>
+        <div style="width:38px;height:38px;border-radius:10px;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" style="width:20px;height:20px;color:#dc2626" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.4 7.4 11.5 4 18 5.5"/><path d="M21 17v-6h-6"/><path d="M21 11c-2.4 5.6-8.5 9-15 7.5"/></svg>
         </div>
         <div>
-          <div style="font-size:1rem;font-weight:700">تراجع عند التحصيل</div>
+          <div style="font-size:1rem;font-weight:700">UNDO جميع التحصيلات</div>
           <div style="font-size:.78rem;color:var(--muted)">${tx.type} ${tx.ref ? '#' + tx.ref : ''} — ${esc(tx.client || '')}</div>
         </div>
       </div>
-      <div style="margin-bottom:14px;padding:10px 14px;border-radius:8px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.25)">
-        <div style="font-size:.75rem;font-weight:700;color:#c2410c;margin-bottom:5px">آخر تحصيل مسجل</div>
-        <div style="font-size:.88rem;font-weight:600">${fmtN(amount)} EGP — ${esc(method)}</div>
-        ${last.date ? `<div style="font-size:.72rem;color:var(--muted);margin-top:2px">${new Date(last.date).toLocaleDateString('ar-EG')}</div>` : ''}
+
+      <div style="margin-bottom:14px;padding:10px 14px;border-radius:8px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25)">
+        <div style="font-size:.75rem;font-weight:700;color:#dc2626;margin-bottom:8px">⚠️ تحذير</div>
+        <div style="font-size:.8rem;line-height:1.5">
+          سيتم <strong>إلغاء جميع التحصيلات</strong> (${payments.length} عملية) والعودة بالحركة إلى حالة <strong>معلق</strong> كاملة.<br>
+          سيتم تسجيل هذا في سجل الخزنة والحركة.
+        </div>
       </div>
-      <div style="margin-bottom:14px;padding:10px 14px;border-radius:8px;${isPurchase ? 'background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25)' : 'background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.25)'}">
-        <div style="font-size:.75rem;font-weight:700;color:${isPurchase ? '#15803d' : '#dc2626'};margin-bottom:4px">تأثير الخزنة</div>
-        <div style="font-size:.85rem">${vaultDirection}</div>
+
+      <div style="margin-bottom:14px;padding:10px 14px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);max-height:150px;overflow-y:auto">
+        <div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:8px">التحصيلات المسجلة:</div>
+        ${paymentsList}
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-top:2px solid var(--border);margin-top:8px;font-weight:700;font-size:.9rem">
+          <span>الإجمالي:</span>
+          <span>${fmtJ(totalCollected)} EGP</span>
+        </div>
       </div>
-      <div style="font-size:.8rem;color:var(--muted);margin-bottom:18px;padding:8px 12px;background:var(--surface2);border-radius:7px">
-        ستعود الحركة إلى حالة <strong>معلق</strong> والمتبقي سيرتفع بمقدار ${fmtN(amount)} EGP — ويُسجَّل في لوج الخزنة.
-      </div>
+
       <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button onclick="document.getElementById('reverse-collect-overlay').remove()" style="padding:9px 20px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:.88rem;cursor:pointer;font-weight:600">إلغاء</button>
-        <button onclick="doReverseCollect('${esc(id)}')" style="padding:9px 22px;border-radius:8px;border:none;background:#f97316;color:#fff;font-size:.88rem;cursor:pointer;font-weight:700">تأكيد التراجع</button>
+        <button onclick="document.getElementById('undo-all-overlay').remove()" style="padding:9px 20px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:.88rem;cursor:pointer;font-weight:600">إلغاء</button>
+        <button onclick="doUndoAllCollections('${esc(id)}')" style="padding:9px 22px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-size:.88rem;cursor:pointer;font-weight:700">تأكيد UNDO</button>
       </div>
     </div>`;
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
 }
 
-async function doReverseCollect(id) {
-  const overlay = document.getElementById('reverse-collect-overlay');
-  const btn = overlay?.querySelector('button[onclick*="doReverseCollect"]');
-  if (btn) { btn.disabled = true; btn.textContent = 'جارٍ التراجع…'; }
+async function doUndoAllCollections(id) {
+  const overlay = document.getElementById('undo-all-overlay');
+  const btn = overlay?.querySelector('button[onclick*="doUndoAllCollections"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري الإلغاء…'; }
   try {
-    const res = await api('/transactions/' + id + '/reverse-collect', { method: 'POST', body: '{}' });
+    const res = await api('/transactions/' + id + '/undo-all-collections', { method: 'POST', body: '{}' });
     overlay?.remove();
     // تحديث كامل للبيانات
     transactions = await api('/transactions').catch(() => transactions);
@@ -14967,13 +14973,11 @@ async function doReverseCollect(id) {
         setTimeout(() => showInvoiceDetail(id), 200);
       }
     }
-    const amount = res.reversedAmount || 0;
-    const method = res.vaultMethod || '';
-    const isPurchase = transactions.find(t => t._id === id)?.type === 'مشتريات';
-    toast(`تم التراجع عن التحصيل — ${fmtN(amount)} EGP ${isPurchase ? 'مُردودة للخزنة' : 'مخصومة من الخزنة'} (${method})`);
-    setTimeout(() => toast('تم تحديث لوج الخزنة والتقارير تلقائياً'), 1800);
+    const amount = res.totalReversed || 0;
+    toast(`تم إلغاء جميع التحصيلات — إجمالي ${fmtN(amount)} EGP عُكِست`);
+    setTimeout(() => toast('الحركة عادت لحالة معلق — سجل الخزنة تم تحديثه تلقائياً'), 1800);
   } catch (e) {
-    if (btn) { btn.disabled = false; btn.textContent = 'تأكيد التراجع'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'تأكيد UNDO'; }
     toast('خطأ: ' + e.message, true);
   }
 }
