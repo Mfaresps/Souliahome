@@ -916,7 +916,8 @@ export class TransactionsService {
       note: dto.collectNote || (shipExtra > 0 ? `زيادة شحن: ${shipExtra} ج` : ''),
       date: new Date().toISOString(),
       by: tx.employee || '',
-      remaining: newRemaining,
+      remaining: totalRemaining,
+      collectedAmount: payAmount,
     });
 
     const saved = await tx.save();
@@ -973,10 +974,12 @@ export class TransactionsService {
     // المبلغ الفعلي الذي دخل/خرج من الخزنة
     const reversedAmount = Number(lastPayment.amount) || 0;
     const vaultMethod = String(lastPayment.method || tx.collectMethod || 'كاش');
+    // المبلغ المحصل من العميل (للمبيعات قد يختلف عن الدخل الفعلي للخزنة بسبب الشحن)
+    const collectedAmount = Number(lastPayment.collectedAmount) || reversedAmount;
     // المتبقي قبل التحصيل محفوظ في سجل الدفعة
     const remainingBefore = typeof lastPayment.remaining === 'number'
-      ? lastPayment.remaining + reversedAmount
-      : (tx.remaining || 0) + reversedAmount;
+      ? lastPayment.remaining
+      : (tx.remaining || 0) + collectedAmount;
 
     const isPurchase = tx.type === 'مشتريات';
     const txRef = tx.ref || String(tx._id);
@@ -994,8 +997,8 @@ export class TransactionsService {
     // إعادة الحالة كما كانت تماماً
     tx.remaining = remainingBefore;
     tx.payStatus = remainingBefore > 0 ? 'معلق' : 'مكتمل';
-    // إعادة الـ deposit: نخصم ما أضافه التحصيل
-    tx.deposit = Math.max(0, (Number(tx.deposit) || 0) - reversedAmount);
+    // إعادة الـ deposit: نخصم المبلغ المحصل (للمبيعات يختلف عن دخل الخزنة بسبب الشحن)
+    tx.deposit = Math.max(0, (Number(tx.deposit) || 0) - collectedAmount);
     // حذف آخر دفعة
     tx.payments = payments.slice(0, -1);
     // مسح collectedAt إذا عادت لمعلق

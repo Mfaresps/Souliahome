@@ -14836,7 +14836,8 @@ async function doCollectMovement(id) {
         note: collectNote || (shipExtra > 0 ? `زيادة شحن: ${shipExtra} EGP` : ''),
         date: new Date().toISOString(),
         by: currentUser?.name || 'مستخدم',
-        remaining: Math.max(0, (tx.remaining || 0) - amountToDeduct)
+        remaining: tx.remaining || 0,
+        collectedAmount: amountToDeduct
       });
 
       // تحديث المتبقي والمدفوع
