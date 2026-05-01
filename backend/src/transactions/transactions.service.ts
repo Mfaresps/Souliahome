@@ -501,16 +501,26 @@ export class TransactionsService {
     if (!existing.cancelled && tx) {
       const txDate = this.formatTxDateForVault(existing);
       const txRef = existing.ref || String(existing._id);
-      const depMethod = String(existing.depMethod || '').trim();
-
-      let vaultNote = '';
+      const depMethod = String(existing.depMethod || existing.payment || '').trim();
+      const isCompleted = existing.payStatus === 'مكتمل';
 
       if (existing.type === 'مبيعات') {
-        // مبيعات: deposit change → vault delta
-        if (depositDelta !== 0 && depMethod) {
+        // حركة مكتملة: العميل دفع الإجمالي كاملاً → تغيير الإجمالي يؤثر على الخزنة
+        if (isCompleted && totalDelta !== 0 && depMethod) {
+          const direction = totalDelta > 0 ? 'زيادة إجمالي مبيعات' : 'تخفيض إجمالي مبيعات';
+          const vaultNote = `${direction} فاتورة #${txRef} — ${existing.client || ''} | قبل: ${oldTotal} ج — بعد: ${newTotal} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
+          await this.vaultService.addSystemEntry(
+            totalDelta,
+            depMethod,
+            vaultNote,
+            txDate,
+            'تعديل مبيعات',
+            txRef,
+          );
+        } else if (!isCompleted && depositDelta !== 0 && depMethod) {
+          // حركة معلقة: فقط الديبوزت دخل الخزنة
           const direction = depositDelta > 0 ? 'إضافة ديبوزت' : 'خصم ديبوزت';
-          vaultNote = `${direction} فاتورة #${txRef} — ${existing.client || ''} | قبل: ${oldDeposit} ج — بعد: ${newDeposit} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
-
+          const vaultNote = `${direction} فاتورة #${txRef} — ${existing.client || ''} | قبل: ${oldDeposit} ج — بعد: ${newDeposit} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
           await this.vaultService.addSystemEntry(
             depositDelta,
             depMethod,
@@ -524,14 +534,24 @@ export class TransactionsService {
         existing.type === 'مشتريات' &&
         this.transactionAddsSupplierPurchases(existing)
       ) {
-        // مشتريات: handle total and/or deposit changes
-        // Vault: adjust for deposit change (more paid upfront or less)
-        if (depositDelta !== 0 && depMethod) {
-          const direction = depositDelta > 0 ? 'زيادة عربون مشتريات' : 'تخفيض عربون مشتريات';
-          vaultNote = `${direction} #${txRef} — ${existing.client || ''} | قبل: ${oldDeposit} ج — بعد: ${newDeposit} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
-
+        // حركة مكتملة: دُفع للمورد كاملاً → تغيير الإجمالي يؤثر على الخزنة
+        if (isCompleted && totalDelta !== 0 && depMethod) {
+          const direction = totalDelta > 0 ? 'زيادة إجمالي مشتريات' : 'تخفيض إجمالي مشتريات';
+          const vaultNote = `${direction} #${txRef} — ${existing.client || ''} | قبل: ${oldTotal} ج — بعد: ${newTotal} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
           await this.vaultService.addSystemEntry(
-            -depositDelta, // negative = more paid to supplier, positive = refund
+            -totalDelta, // مشتريات: زيادة الإجمالي = خصم إضافي من الخزنة
+            depMethod,
+            vaultNote,
+            txDate,
+            'تعديل مشتريات',
+            txRef,
+          );
+        } else if (!isCompleted && depositDelta !== 0 && depMethod) {
+          // حركة معلقة: فقط العربون خرج من الخزنة
+          const direction = depositDelta > 0 ? 'زيادة عربون مشتريات' : 'تخفيض عربون مشتريات';
+          const vaultNote = `${direction} #${txRef} — ${existing.client || ''} | قبل: ${oldDeposit} ج — بعد: ${newDeposit} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
+          await this.vaultService.addSystemEntry(
+            -depositDelta,
             depMethod,
             vaultNote,
             txDate,
@@ -540,7 +560,7 @@ export class TransactionsService {
           );
         }
 
-        // Recalculate remaining and payStatus after edit
+        // إعادة حساب المتبقي وحالة الدفع
         const newRemaining = Math.max(0, newTotal - newDeposit);
         if (tx) {
           tx.remaining = newRemaining;
@@ -935,6 +955,79 @@ export class TransactionsService {
     this.emit('tx:updated', { tx: saved, action: 'collect' });
     this.emit('vault:changed', { reason: 'tx:collect', txId: String(saved._id) });
     return saved;
+  }
+
+  async reverseCollect(
+    id: string,
+    reversedBy: string,
+  ): Promise<{ tx: TransactionDocument; reversedAmount: number; vaultMethod: string }> {
+    const tx = await this.transactionModel.findById(id).exec();
+    if (!tx) throw new NotFoundException('الحركة غير موجودة');
+    if (tx.cancelled) throw new BadRequestException('لا يمكن التراجع على حركة ملغية');
+
+    const payments = tx.payments || [];
+    if (!payments.length) throw new BadRequestException('لا يوجد تحصيل مسجل لهذه الحركة');
+
+    // آخر عملية تحصيل
+    const lastPayment = payments[payments.length - 1];
+    // المبلغ الفعلي الذي دخل/خرج من الخزنة
+    const reversedAmount = Number(lastPayment.amount) || 0;
+    const vaultMethod = String(lastPayment.method || tx.collectMethod || 'كاش');
+    // المتبقي قبل التحصيل محفوظ في سجل الدفعة
+    const remainingBefore = typeof lastPayment.remaining === 'number'
+      ? lastPayment.remaining + reversedAmount
+      : (tx.remaining || 0) + reversedAmount;
+
+    const isPurchase = tx.type === 'مشتريات';
+    const txRef = tx.ref || String(tx._id);
+
+    // الحركة العكسية في الخزنة:
+    // مبيعات: التحصيل أضاف للخزنة → العكس يخصم منها
+    // مشتريات: التحصيل خصم من الخزنة → العكس يضيف إليها
+    const vaultDelta = isPurchase ? reversedAmount : -reversedAmount;
+
+    // تحقق من كفاية الرصيد للمبيعات (سنخصم من الخزنة)
+    if (!isPurchase && reversedAmount > 0) {
+      await this.vaultService.assertSufficientBalance(vaultMethod, reversedAmount);
+    }
+
+    // إعادة الحالة كما كانت تماماً
+    tx.remaining = remainingBefore;
+    tx.payStatus = remainingBefore > 0 ? 'معلق' : 'مكتمل';
+    // إعادة الـ deposit: نخصم ما أضافه التحصيل
+    tx.deposit = Math.max(0, (Number(tx.deposit) || 0) - reversedAmount);
+    // حذف آخر دفعة
+    tx.payments = payments.slice(0, -1);
+    // مسح collectedAt إذا عادت لمعلق
+    if (tx.payStatus === 'معلق') {
+      tx.set('collectedAt', undefined);
+    }
+
+    tx.editHistory = [...(tx.editHistory || []), {
+      editedAt: new Date().toISOString(),
+      editedBy: reversedBy,
+      action: 'تراجع تحصيل',
+      reversedAmount,
+      vaultMethod,
+      remainingAfter: remainingBefore,
+      note: `تراجع عن تحصيل ${reversedAmount} ج (${vaultMethod})`,
+    }];
+
+    const saved = await tx.save();
+
+    // تسجيل الحركة العكسية في لوج الخزنة
+    await this.vaultService.addSystemEntry(
+      vaultDelta,
+      vaultMethod,
+      `تراجع تحصيل #${txRef} — ${tx.client || ''} | ${reversedAmount} ج | بواسطة: ${reversedBy}`,
+      new Date().toISOString().split('T')[0],
+      'تراجع تحصيل',
+      txRef,
+    );
+
+    this.emit('tx:updated', { tx: saved, action: 'reverse-collect' });
+    this.emit('vault:changed', { reason: 'tx:reverse-collect', txId: String(saved._id) });
+    return { tx: saved, reversedAmount, vaultMethod };
   }
 
   async addComments(id: string, comments: Array<any>): Promise<TransactionDocument> {

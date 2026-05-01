@@ -133,12 +133,25 @@ export class ProductsService {
     const result = await this.productModel
       .deleteMany({ _id: { $in: ids } })
       .exec();
-    
+
     if (result.deletedCount > 0) {
       this.emit('product:changed', { action: 'bulk-deleted', ids, count: result.deletedCount });
       this.emit('inventory:changed', { reason: 'product:bulk-deleted', ids, count: result.deletedCount });
     }
-    
+
+    return result.deletedCount;
+  }
+
+  async batchDeleteByCodes(codes: string[]): Promise<number> {
+    const result = await this.productModel
+      .deleteMany({ code: { $in: codes } })
+      .exec();
+
+    if (result.deletedCount > 0) {
+      this.emit('product:changed', { action: 'batch-deleted-by-code', codes, count: result.deletedCount });
+      this.emit('inventory:changed', { reason: 'product:batch-deleted', codes, count: result.deletedCount });
+    }
+
     return result.deletedCount;
   }
 

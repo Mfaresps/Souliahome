@@ -2514,6 +2514,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 .vault-actions .btn { display:inline-flex; align-items:center; gap:5px; }
 .vault-tab-content { animation: fadeIn .3s ease-in; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 /* Vault KPI grid — compact, consistent cards */
 .vault-kpi-grid {
   display:grid;
@@ -2810,7 +2811,8 @@ body.dark-mode .mov-type-inline.t-exchange{background:#2e1065;color:#c4b5fd;bord
 .fx-toolbar-collapsible.expanded .fx-collapse-label::before{content:"إخفاء الفلاتر"}
 .fx-toolbar-collapsible .fx-collapse-label{font-size:0;line-height:1}
 .fx-toolbar-collapsible .fx-collapse-label::before{font-size:.72rem}
-.fx-toolbar-collapsible-body{overflow:visible;display:flex;flex-direction:column;gap:10px;transition:max-height .3s cubic-bezier(.4,0,.2,1),opacity .25s,margin:.25s;max-height:1500px;opacity:1}
+.fx-toolbar-collapsible-body{overflow:visible;display:flex;flex-direction:column;gap:10px;transition:max-height .3s cubic-bezier(.4,0,.2,1),opacity .25s,margin:.25s;max-height:
+  ;opacity:1}
 .fx-toolbar-collapsible.collapsed .fx-toolbar-collapsible-body{max-height:0;overflow:hidden;opacity:0;margin:0;pointer-events:none}
 
 /* Compact summary line under movements toolbar */
@@ -10272,7 +10274,15 @@ function openProductPicker() {
 
 function closeProductPicker() {
   const overlay = qs('#tx-picker-overlay');
-  if (overlay) overlay.style.display = 'none';
+  if (overlay) {
+    overlay.style.display = 'none';
+    // أعد الـ oninput الأصلي إذا كنا في edit mode
+    if (overlay._editMode) {
+      const qInput = qs('#tx-picker-q');
+      if (qInput) qInput.oninput = () => filterTxPicker(qInput.value);
+      overlay._editMode = false;
+    }
+  }
   document.body.style.overflow = '';
 }
 
@@ -10280,7 +10290,10 @@ function setPickerFilter(filter, btn) {
   txPickerFilter = filter;
   qsa('.tx-pf-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  filterTxPicker(qs('#tx-picker-q')?.value || '');
+  const overlay = qs('#tx-picker-overlay');
+  const q = qs('#tx-picker-q')?.value || '';
+  if (overlay?._editMode) filterEditPicker(q);
+  else filterTxPicker(q);
 }
 
 function filterTxPicker(q) {
@@ -12738,6 +12751,7 @@ function renderMovMobileCard(tx) {
             ${!isCancelled ? `<div class="dd-item" onclick="openEditMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</div>` : ''}
             <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة</div>
             ${rem > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل</div>` : ''}
+            ${tx.type === 'مبيعات' && (tx.payments||[]).length > 0 && !tx.cancelled && isAdmin() ? `<div class="dd-item" style="color:var(--orange)" onclick="openReverseCollect('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.4 7.4 11.5 4 18 5.5"/><path d="M21 17v-6h-6"/><path d="M21 11c-2.4 5.6-8.5 9-15 7.5"/></svg> تراجع عند التحصيل</div>` : ''}
             ${!isCancelled ? `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg> إلغاء</div>` : ''}
           </div>
         </div>
@@ -13038,6 +13052,7 @@ function renderMovementTxRow(tx) {
           <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة / PDF</div>
           ${(tx.remaining || 0) > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')">${isExchangeSalePendingCollect(tx) ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل فرق الاستبدال' : tx.type === 'مشتريات' ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg> سداد المتبقي للمورد' : '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل'}</div>` : ''}
           ${tx.type === 'مبيعات' && !tx.cancelled && isAdmin() ? `<div class="dd-item" onclick="openPostDiscountModal('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> خصم بعد البيع</div>` : ''}
+          ${tx.type === 'مبيعات' && (tx.payments||[]).length > 0 && !tx.cancelled && isAdmin() ? `<div class="dd-item" style="color:var(--orange)" onclick="openReverseCollect('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.4 7.4 11.5 4 18 5.5"/><path d="M21 17v-6h-6"/><path d="M21 11c-2.4 5.6-8.5 9-15 7.5"/></svg> تراجع عند التحصيل</div>` : ''}
           ${!isStatusCancelled(tx.payStatus) && !tx.cancelled && !isStatusCompleted(tx.payStatus) ? (
             isExchangeSalePendingCollect(tx)
               ? `<div class="dd-divider"></div><div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()" style="display:flex;align-items:center;gap:5px">${ICON('ban')} إلغاء <span class="text-xs">(مقفول)</span></div>`
@@ -13969,6 +13984,50 @@ function toggleAllMov(cb) {
 
 let editTxItems = [];
 let editTxId = '';
+
+function showEditConfirmDialog({ changes, vaultDelta, vaultNote, tx }) {
+  return new Promise(resolve => {
+    const typeLabel = tx.type === 'مشتريات' ? 'مشتريات' : tx.type === 'مبيعات' ? 'مبيعات' : tx.type || '';
+    const refLabel = tx.ref ? `#${tx.ref}` : tx._id?.slice(-6) || '';
+    const vaultHtml = vaultDelta !== 0 ? `
+      <div style="margin-bottom:12px;padding:10px 14px;border-radius:8px;${vaultDelta > 0 ? 'background:rgba(22,163,74,.09);border:1px solid rgba(22,163,74,.25)' : 'background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.25)'}">
+        <div style="font-size:.75rem;font-weight:700;letter-spacing:.04em;color:${vaultDelta > 0 ? '#15803d' : '#dc2626'};margin-bottom:4px">تأثير الخزنة</div>
+        <div style="font-size:.88rem;font-weight:600;color:${vaultDelta > 0 ? '#15803d' : '#dc2626'}">${vaultNote}</div>
+      </div>` : '';
+    const changesHtml = changes.length ? `
+      <div style="margin-bottom:12px">
+        <div style="font-size:.75rem;font-weight:700;letter-spacing:.04em;color:var(--muted);margin-bottom:6px">التغييرات</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          ${changes.map(c => `<div style="display:flex;align-items:center;gap:6px;font-size:.83rem;background:var(--surface2);padding:6px 10px;border-radius:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--primary);flex-shrink:0;display:inline-block"></span>${c}</div>`).join('')}
+        </div>
+      </div>` : '';
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s ease';
+    overlay.innerHTML = `
+      <div style="background:var(--surface);border-radius:14px;padding:24px;max-width:420px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:slideUp .2s ease">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+          <div style="width:38px;height:38px;border-radius:10px;background:rgba(245,158,11,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg viewBox="0 0 24 24" style="width:20px;height:20px;color:#d97706" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div>
+            <div style="font-size:1rem;font-weight:700">تأكيد حفظ التعديلات</div>
+            <div style="font-size:.78rem;color:var(--muted)">${typeLabel} ${refLabel}</div>
+          </div>
+        </div>
+        ${vaultHtml}${changesHtml}
+        <div style="font-size:.82rem;color:var(--muted);margin-bottom:18px;padding:8px 12px;background:var(--surface2);border-radius:7px">سيتم تحديث الحركة والخزنة والمخزن فور الحفظ — لا يمكن التراجع تلقائياً.</div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button id="edit-confirm-cancel" style="padding:9px 20px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:.88rem;cursor:pointer;font-weight:600">إلغاء</button>
+          <button id="edit-confirm-ok" style="padding:9px 22px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-size:.88rem;cursor:pointer;font-weight:700">تأكيد الحفظ</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#edit-confirm-ok').onclick = () => { document.body.removeChild(overlay); resolve(true); };
+    overlay.querySelector('#edit-confirm-cancel').onclick = () => { document.body.removeChild(overlay); resolve(false); };
+    overlay.addEventListener('click', e => { if (e.target === overlay) { document.body.removeChild(overlay); resolve(false); } });
+  });
+}
+
 function openEditMovement(id) {
   const tx = transactions.find(t => t._id === id); if (!tx) return;
   if (tx.cancelled || isStatusCancelled(tx.payStatus)) { toast('لا يمكن تعديل حركة ملغاة', true); return; }
@@ -13994,19 +14053,22 @@ function openEditMovement(id) {
     ${statusWarning}
     <div class="grid grid-2 gap-12">
       <div class="form-group"><label>${isPurchase ? 'المورد' : 'العميل'}</label><input type="text" id="edit-tx-client" value="${esc(tx.client || '')}"></div>
-      <div class="form-group"><label>الهاتف</label><input type="text" id="edit-tx-phone" value="${esc(tx.phone || '')}"></div>
+      <div class="form-group"><label>الهاتف</label><input type="tel" id="edit-tx-phone" value="${esc(tx.phone || '')}" placeholder="01xxxxxxxxx" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'')"><div class="field-hint" style="font-size:.72rem;color:var(--muted);margin-top:3px">11 رقم يبدأ بـ 01</div></div>
       <div class="form-group"><label>${isPurchase ? 'رقم الفاتورة' : 'المرجع'}</label><input type="text" id="edit-tx-ref" value="${esc(tx.ref || '')}" ${refRetailEdit ? 'inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"' : ''}></div>
-      <div class="form-group"><label>${isPurchase ? 'العربون (المدفوع مقدماً)' : 'الديبوزت'}</label><input type="number" id="edit-tx-deposit" value="${tx.deposit || 0}" oninput="recalcEditTx()"></div>
+      <div class="form-group"><label>${isPurchase ? 'العربون (المدفوع مقدماً)' : 'الديبوزت'}</label><input type="text" inputmode="numeric" id="edit-tx-deposit" value="${tx.deposit || 0}" oninput="this.value=this.value.replace(/[^0-9.]/g,'');recalcEditTx()"></div>
       ${isSale ? `<div class="form-group"><label>شركة الشحن</label><select id="edit-tx-shipco" onchange="recalcEditTx()"><option value="">بدون شحن</option>${shipCoOpts}</select></div>
       <div class="form-group"><label>المنطقة</label><select id="edit-tx-zone" onchange="recalcEditTx()"><option value="cairo" ${tx.shipZone === 'cairo' ? 'selected' : ''}>القاهرة</option><option value="gov" ${tx.shipZone === 'gov' ? 'selected' : ''}>المحافظات</option></select></div>
-      <div class="form-group"><label>تكلفة الشحن</label><input type="number" id="edit-tx-shipcost" value="${tx.shipCost || 0}" min="0" oninput="recalcEditTx()"></div>
+      <div class="form-group"><label>تكلفة الشحن</label><input type="text" inputmode="numeric" id="edit-tx-shipcost" value="${tx.shipCost || 0}" oninput="this.value=this.value.replace(/[^0-9.]/g,'');recalcEditTx()"></div>
       <div class="form-group"><label>طريقة الدفع</label><select id="edit-tx-payment"><option value="كاش" ${tx.payment === 'كاش' ? 'selected' : ''}>كاش</option><option value="آجل" ${tx.payment === 'آجل' ? 'selected' : ''}>آجل</option><option value="فودافون كاش" ${tx.payment === 'فودافون كاش' ? 'selected' : ''}>فودافون كاش</option><option value="Instapay" ${tx.payment === 'Instapay' ? 'selected' : ''}>Instapay</option><option value="تحويل بنكي" ${tx.payment === 'تحويل بنكي' ? 'selected' : ''}>تحويل بنكي</option></select></div>` : ''}
-      <div class="form-group"><label>الخصم</label><input type="number" id="edit-tx-discount" value="${tx.discount || 0}" min="0" oninput="recalcEditTx()"></div>
       <div class="form-group"><label>ملاحظات</label><input type="text" id="edit-tx-notes" value="${esc(tx.notes || '')}"></div>
+      <input type="hidden" id="edit-tx-discount" value="${tx.discount || 0}">
     </div>
-    <div class="flex-between mt-16 mb-8">
+    <div class="flex-between mt-16 mb-8" style="align-items:center">
       <h4 style="margin:0">الأصناف</h4>
-      <button class="btn btn-outline btn-sm" onclick="addEditTxItem()">+ إضافة صنف</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline btn-sm" onclick="openEditDiscountPct()" style="font-size:.78rem">٪ خصم %</button>
+        <button class="btn btn-primary btn-sm" onclick="openEditProductPicker()">+ إضافة صنف</button>
+      </div>
     </div>
     <div id="edit-tx-items"></div>
     <div id="edit-tx-summary" style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:var(--radius);font-size:.85rem"></div>
@@ -14019,43 +14081,255 @@ function openEditMovement(id) {
 function renderEditTxItems() {
   const container = qs('#edit-tx-items');
   if (!container) return;
-  container.innerHTML = editTxItems.map((it, i) => {
-    const prodOpts = products.map(p => `<option value="${esc(p._id)}" ${it.productId === p._id ? 'selected' : ''}>${esc(p.code ? p.code + ' - ' : '')}${esc(p.name)}</option>`).join('');
-    const matched = products.find(p => p._id === it.productId);
-    const showSelect = !it.name || matched;
-    return `<div class="tx-product-row" style="align-items:flex-end">
-      ${showSelect ? `<select onchange="editTxItemChanged(${i},'productId',this.value)" style="flex:2">
-        <option value="">اختر صنف</option>${prodOpts}
-        ${it.name && !matched ? `<option value="" selected>${esc(it.name)}</option>` : ''}
-      </select>` : `<div style="flex:2;display:flex;align-items:center;gap:4px"><span style="font-weight:600;font-size:.82rem">${esc(it.name)}</span></div>`}
-      <div style="flex:0.7"><label style="font-size:.68rem;color:var(--muted);font-weight:600">الكمية</label><input type="number" value="${it.qty}" min="1" onchange="editTxItemChanged(${i},'qty',this.value)" oninput="editTxItemChanged(${i},'qty',this.value)"></div>
-      <div style="flex:1"><label style="font-size:.68rem;color:var(--muted);font-weight:600">السعر</label><input type="number" value="${it.price}" min="0" onchange="editTxItemChanged(${i},'price',this.value)" oninput="editTxItemChanged(${i},'price',this.value)"></div>
-      <div style="flex:0.7;text-align:center"><label style="font-size:.68rem;color:var(--muted);font-weight:600">الإجمالي</label><div class="edit-row-total" data-row="${i}" style="font-weight:700;font-size:.88rem;padding:6px 0">${fmtJ(it.qty * it.price)}</div></div>
-      <button class="btn-icon btn-danger" onclick="removeEditTxItem(${i})" style="flex-shrink:0;margin-bottom:4px" title="حذف">✕</button>
+  const tx = transactions.find(t => t._id === editTxId);
+  const isSale = tx?.type === 'مبيعات';
+  if (!editTxItems.length) {
+    container.innerHTML = `<div onclick="openEditProductPicker()" class="tx-empty-state">
+      <div class="tx-empty-icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+      <div style="font-size:.85rem;font-weight:600;margin-top:8px">إضافة صنف</div>
+      <div style="font-size:.74rem;margin-top:3px">اضغط لاختيار أصناف من قائمة المنتجات</div>
     </div>`;
-  }).join('') || '<div style="text-align:center;padding:16px;color:var(--muted);font-size:.85rem">لا توجد أصناف — أضف صنف جديد</div>';
+    return;
+  }
+  const headerHtml = `<div class="tx-items-thead">
+    <span>الصورة</span><span>المنتج</span><span>السعر</span><span>الكمية</span><span>الإجمالي</span><span></span>
+  </div>`;
+  const rowsHtml = editTxItems.map((it, i) => {
+    const product = it.productId ? products.find(p => p._id === it.productId) : null;
+    const itemTotal = (it.qty || 0) * (it.price || 0);
+    const productName = product ? product.name : (it.name || 'صنف غير محدد');
+    const productCode = product ? (product.code || '') : (it.code || '');
+    const imgUrl = product?.imageUrl ? sanitizeUrl(product.imageUrl) : '';
+    const imgHtml = imgUrl ? `<img src="${esc(imgUrl)}" alt="${esc(productName)}" loading="lazy" onerror="_txImgFallback(this)">` : PRODUCT_FALLBACK_SVG;
+    const available = it.productId ? getProductAvailableStock(it.productId) : null;
+    const isOverStock = isSale && it.productId && available !== null && available >= 0 && it.qty > available;
+    let stockBadge = '';
+    if (isSale && it.productId && available !== null) {
+      if (available === 0 || isOverStock) stockBadge = `<span class="tx-item-stock-badge warn"><span class="dot"></span>${isOverStock ? 'يتجاوز المتاح' : 'غير متاح'} (${available})</span>`;
+      else if (available > 0) stockBadge = `<span class="tx-item-stock-badge"><span class="dot"></span>متاح: ${available}</span>`;
+    }
+    return `
+    <div class="tx-item-card${isOverStock ? ' row-stock-warning' : ''}">
+      <div class="tx-item-img-wrap">${imgHtml}<span class="tx-item-num-badge">${i + 1}</span></div>
+      <div class="tx-item-info">
+        <div class="tx-item-name" title="${esc(productName)}">${esc(productName)}</div>
+        <div class="tx-item-meta">${productCode ? `<span class="tx-item-code">${esc(productCode)}</span>` : ''}${stockBadge}</div>
+      </div>
+      <div class="tx-item-price">
+        <input type="text" inputmode="numeric" value="${it.price}" style="width:70px;text-align:center;border:1.5px solid var(--border);border-radius:7px;padding:5px 6px;font-size:.85rem;font-weight:600;background:var(--surface2)" oninput="editTxItemChanged(${i},'price',this.value.replace(/[^0-9.]/g,''))" aria-label="السعر">
+      </div>
+      <div class="tx-item-qty">
+        <button type="button" class="qty-btn" onclick="adjustEditTxItemQty(${i},-1)" title="إنقاص">−</button>
+        <input type="text" inputmode="numeric" value="${it.qty}" style="width:44px;text-align:center;border:1.5px solid var(--border);border-radius:7px;padding:5px 4px;font-size:.88rem;font-weight:700" oninput="editTxItemChanged(${i},'qty',this.value.replace(/[^0-9]/g,''))" aria-label="الكمية">
+        <button type="button" class="qty-btn" onclick="adjustEditTxItemQty(${i},1)" title="زيادة">+</button>
+      </div>
+      <div class="tx-item-subtotal">${fmtJ(itemTotal)}</div>
+      <button class="tx-item-remove" onclick="removeEditTxItem(${i})" title="حذف الصنف">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+  container.innerHTML = `<div class="tx-items-table">${headerHtml}${rowsHtml}</div>`;
 }
 function editTxItemChanged(i, field, val) {
-  if (field === 'productId') {
-    editTxItems[i].productId = val;
-    const p = products.find(x => x._id === val);
-    if (p) {
-      editTxItems[i].name = p.name; editTxItems[i].code = p.code || '';
-      const tx = transactions.find(t => t._id === editTxId);
-      editTxItems[i].price = (tx && tx.type === 'مشتريات') ? (p.buyPrice || 0) : (p.sellPrice || 0);
-    }
-    renderEditTxItems();
-  } else if (field === 'qty') { editTxItems[i].qty = Math.max(1, Number(val) || 1); }
-  else if (field === 'price') { editTxItems[i].price = Number(val) || 0; }
+  if (field === 'qty') { editTxItems[i].qty = Math.max(1, parseInt(val) || 1); }
+  else if (field === 'price') { editTxItems[i].price = parseFloat(val) || 0; }
+  const rowEl = document.querySelector(`.edit-row-total[data-row="${i}"]`);
+  if (rowEl) rowEl.textContent = fmtJT(editTxItems[i].qty * editTxItems[i].price);
+  const subtotalEls = qs('#edit-tx-items')?.querySelectorAll('.tx-item-subtotal');
+  if (subtotalEls?.[i]) subtotalEls[i].innerHTML = fmtJ(editTxItems[i].qty * editTxItems[i].price);
   recalcEditTx();
 }
-function addEditTxItem() {
-  editTxItems.push({ name: '', code: '', qty: 1, price: 0, productId: '' });
+function adjustEditTxItemQty(i, delta) {
+  editTxItems[i].qty = Math.max(1, (editTxItems[i].qty || 1) + delta);
   renderEditTxItems(); recalcEditTx();
 }
 function removeEditTxItem(i) {
   editTxItems.splice(i, 1);
   renderEditTxItems(); recalcEditTx();
+}
+function openEditProductPicker() {
+  const tx = transactions.find(t => t._id === editTxId);
+  const savedType = txType;
+  txType = tx?.type || txType;
+  const overlay = qs('#tx-picker-overlay');
+  if (!overlay) return;
+  if (window.innerWidth >= 769) overlay.classList.add('desktop');
+  else overlay.classList.remove('desktop');
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  txPickerFilter = 'all';
+  qsa('.tx-pf-btn').forEach(b => b.classList.remove('active'));
+  qs('#txpf-all')?.classList.add('active');
+  const qInput = qs('#tx-picker-q');
+  if (qInput) qInput.value = '';
+  // اعادة توجيه الـ picker لـ editTxItems بدلاً من txItems
+  overlay._editMode = true;
+  overlay._savedType = savedType;
+  if (!Array.isArray(inventoryCache) || inventoryCache.length === 0) {
+    api('/transactions/inventory').then(data => { inventoryCache = data; filterEditPicker(''); }).catch(() => {});
+  }
+  filterEditPicker('');
+  setTimeout(() => qs('#tx-picker-q')?.focus(), 120);
+  // Override oninput
+  if (qInput) qInput.oninput = () => filterEditPicker(qInput.value);
+}
+function filterEditPicker(q) {
+  const tx = transactions.find(t => t._id === editTxId);
+  const isSale = tx?.type === 'مبيعات';
+  const isPurchase = tx?.type === 'مشتريات';
+  const tokens = normalizeUiSearch(q).split(/\s+/).filter(Boolean);
+  let list = products.filter(p => {
+    const blob = normalizeUiSearch([p.name, p.code || ''].join(' '));
+    return !tokens.length || tokens.every(t => blob.includes(t));
+  });
+  if (txPickerFilter === 'avail') list = list.filter(p => { const s = getProductAvailableStock(p._id); return s === -1 || s > 0; });
+  const listEl = qs('#tx-picker-list');
+  if (!listEl) return;
+  if (!list.length) { listEl.innerHTML = `<div class="tx-picker-empty">لا توجد أصناف مطابقة</div>`; return; }
+  listEl.innerHTML = list.map(p => {
+    const stock = getProductAvailableStock(p._id);
+    const price = isPurchase ? (p.buyPrice || 0) : (p.sellPrice || 0);
+    const existing = editTxItems.find(it => it.productId === p._id);
+    const qty = existing ? existing.qty : 0;
+    const isOut = stock === 0;
+    let stockBadge = '';
+    if (stock === 0) stockBadge = `<span class="tx-picker-stock" style="color:var(--red);font-weight:600">نفد من المخزن</span>`;
+    else if (stock > 0) stockBadge = `<span class="tx-picker-stock stock-available" style="gap:3px"><span class="stock-live-dot"></span>متوفر: ${fmtN(stock)}</span>`;
+    const addCtrl = qty > 0
+      ? `<div class="tx-picker-qty-ctrl">
+           <button onclick="editPickerChangeQty('${esc(p._id)}',-1)"><svg viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="6" x2="10" y2="6"/></svg></button>
+           <span>${qty}</span>
+           <button onclick="editPickerChangeQty('${esc(p._id)}',1)" ${isSale && stock >= 0 && qty >= stock ? 'disabled style="opacity:.35;cursor:not-allowed"' : ''}><svg viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg></button>
+         </div>`
+      : `<button class="tx-picker-add${isOut && isSale ? ' out' : ''}" onclick="editPickerAddItem('${esc(p._id)}')"><svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg></button>`;
+    const pickerImg = p.imageUrl ? `<img src="${esc(sanitizeUrl(p.imageUrl))}" alt="${esc(p.name)}" loading="lazy" onerror="_txImgFallback(this)">` : PRODUCT_FALLBACK_SVG;
+    return `<div class="tx-picker-item${isOut && isSale ? ' out-of-stock' : ''}">
+      <div class="tx-picker-thumb">${pickerImg}</div>
+      <div class="tx-picker-info">
+        <div class="tx-picker-name">${esc(p.name)}</div>
+        ${p.code ? `<div class="tx-picker-code">${esc(p.code)}</div>` : ''}
+        ${stockBadge}
+      </div>
+      <div class="tx-picker-price">${fmtJ(price)}</div>
+      ${addCtrl}
+    </div>`;
+  }).join('');
+}
+function editPickerAddItem(productId) {
+  const p = products.find(x => x._id === productId); if (!p) return;
+  const tx = transactions.find(t => t._id === editTxId);
+  const price = tx?.type === 'مشتريات' ? (p.buyPrice || 0) : (p.sellPrice || 0);
+  const existing = editTxItems.find(it => it.productId === productId);
+  if (existing) {
+    const stock = getProductAvailableStock(productId);
+    if (tx?.type === 'مبيعات' && stock >= 0 && existing.qty >= stock) { toast(`الكمية المتاحة من "${p.name}" هي ${stock} فقط`, true); return; }
+    existing.qty += 1;
+  } else {
+    editTxItems.push({ productId, name: p.name, code: p.code || '', qty: 1, price });
+  }
+  renderEditTxItems(); recalcEditTx();
+  filterEditPicker(qs('#tx-picker-q')?.value || '');
+}
+function editPickerChangeQty(productId, delta) {
+  const idx = editTxItems.findIndex(it => it.productId === productId);
+  if (idx === -1) return;
+  const newQty = editTxItems[idx].qty + delta;
+  if (newQty <= 0) { editTxItems.splice(idx, 1); }
+  else {
+    const tx = transactions.find(t => t._id === editTxId);
+    if (delta > 0 && tx?.type === 'مبيعات') {
+      const stock = getProductAvailableStock(productId);
+      if (stock >= 0 && newQty > stock) { toast(`الكمية المتاحة هي ${stock} فقط`, true); return; }
+    }
+    editTxItems[idx].qty = newQty;
+  }
+  renderEditTxItems(); recalcEditTx();
+  filterEditPicker(qs('#tx-picker-q')?.value || '');
+}
+let editDiscountType = 'fixed';
+function _closeEditDiscOverlay() {
+  const el = document.getElementById('edit-disc-overlay');
+  if (el) el.remove();
+}
+function _openEditDiscOverlay(html) {
+  _closeEditDiscOverlay();
+  const overlay = document.createElement('div');
+  overlay.id = 'edit-disc-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `<div style="background:var(--surface);border-radius:14px;padding:24px;max-width:380px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:slideUp .2s ease">${html}</div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) _closeEditDiscOverlay(); });
+  document.body.appendChild(overlay);
+}
+function openEditDiscountPct() {
+  if (!isAdmin() && !isStaffDiscountAllowed()) {
+    _openEditDiscOverlay(`
+      <h3 style="margin:0 0 12px">خصم على الفاتورة</h3>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">يحتاج تطبيق الخصم إذن المدير — أدخل كلمة مرور المدير للمتابعة</p>
+      <div class="form-group"><label>كلمة مرور المدير</label><input type="password" id="edit-disc-admin-pass" autofocus style="width:100%"></div>
+      <div class="flex gap-8 mt-16">
+        <button class="btn btn-primary" onclick="verifyEditDiscountAdmin()">تأكيد</button>
+        <button class="btn btn-outline" onclick="_closeEditDiscOverlay()">إلغاء</button>
+      </div>`);
+  } else {
+    showEditDiscountForm();
+  }
+}
+function verifyEditDiscountAdmin() {
+  const pass = qs('#edit-disc-admin-pass')?.value;
+  if (!pass) { toast('أدخل كلمة المرور', true); return; }
+  api('/auth/login', { method: 'POST', body: JSON.stringify({ username: 'admin', password: pass }) })
+    .then(() => { _closeEditDiscOverlay(); showEditDiscountForm(); })
+    .catch(() => toast('كلمة مرور خاطئة', true));
+}
+function showEditDiscountForm() {
+  const itemsTotal = editTxItems.reduce((s, it) => s + (it.qty * it.price), 0);
+  const curDisc = Number(qs('#edit-tx-discount')?.value) || 0;
+  editDiscountType = 'fixed';
+  _openEditDiscOverlay(`
+    <h3 style="margin:0 0 16px">خصم على الفاتورة</h3>
+    <div class="flex gap-8 mb-16">
+      <button class="tab-btn active" onclick="setEditDiscType('fixed',this)">مبلغ ثابت</button>
+      <button class="tab-btn" onclick="setEditDiscType('percent',this)">نسبة %</button>
+    </div>
+    <div class="form-group">
+      <label id="edit-disc-label">مبلغ الخصم</label>
+      <input type="text" inputmode="numeric" id="edit-disc-value" value="${curDisc || ''}" placeholder="0" autofocus style="width:100%;font-size:1.1rem;text-align:center" oninput="this.value=this.value.replace(/[^0-9.]/g,'');updateEditDiscPreview(${itemsTotal})">
+    </div>
+    <div class="text-sm text-muted" id="edit-disc-preview" style="margin-bottom:8px">إجمالي الأصناف: ${fmtJT(itemsTotal)}</div>
+    <div class="flex gap-8 mt-16">
+      <button class="btn btn-primary" onclick="applyEditDiscount(${itemsTotal})">تطبيق</button>
+      <button class="btn btn-outline" onclick="removeEditDiscount()">إزالة الخصم</button>
+    </div>`);
+}
+function setEditDiscType(type, btn) {
+  editDiscountType = type;
+  document.querySelectorAll('#edit-disc-overlay .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  qs('#edit-disc-label').textContent = type === 'percent' ? 'النسبة (%)' : 'مبلغ الخصم';
+  const itemsTotal = editTxItems.reduce((s, it) => s + (it.qty * it.price), 0);
+  updateEditDiscPreview(itemsTotal);
+}
+function updateEditDiscPreview(itemsTotal) {
+  const val = parseFloat(qs('#edit-disc-value')?.value) || 0;
+  const disc = editDiscountType === 'percent' ? Math.round(itemsTotal * Math.min(val, 100) / 100) : val;
+  const el = qs('#edit-disc-preview');
+  if (el) el.textContent = `إجمالي الأصناف: ${fmtJT(itemsTotal)} | الخصم: ${fmtJT(disc)} | بعد الخصم: ${fmtJT(Math.max(0, itemsTotal - disc))}`;
+}
+function applyEditDiscount(itemsTotal) {
+  const val = parseFloat(qs('#edit-disc-value')?.value) || 0;
+  if (!val && val !== 0) { toast('أدخل قيمة صحيحة للخصم', true); return; }
+  const discAmount = editDiscountType === 'percent' ? Math.round(itemsTotal * Math.min(val, 100) / 100) : val;
+  const discInput = qs('#edit-tx-discount');
+  if (discInput) { discInput.value = discAmount; recalcEditTx(); }
+  _closeEditDiscOverlay();
+  toast(editDiscountType === 'percent' ? `تم تطبيق خصم ${val}% = ${fmtN(discAmount)} EGP` : `تم تطبيق خصم ${fmtN(discAmount)} EGP`);
+}
+function removeEditDiscount() {
+  const discInput = qs('#edit-tx-discount');
+  if (discInput) { discInput.value = 0; recalcEditTx(); }
+  _closeEditDiscOverlay();
+  toast('تم إزالة الخصم');
 }
 function recalcEditTx() {
   editTxItems.forEach((it, i) => {
@@ -14069,7 +14343,12 @@ function recalcEditTx() {
   const discount = Number(qs('#edit-tx-discount')?.value) || 0;
   const shipCost = isPurTx ? 0 : (Number(qs('#edit-tx-shipcost')?.value) || 0);
   const total = itemsTotal - discount + shipCost;
-  const deposit = Number(qs('#edit-tx-deposit')?.value) || 0;
+  const depInput = qs('#edit-tx-deposit');
+  let deposit = Number(depInput?.value) || 0;
+  if (deposit > total && total > 0) {
+    deposit = total;
+    if (depInput) depInput.value = total;
+  }
   const remaining = Math.max(0, total - deposit);
   const el = qs('#edit-tx-summary');
   if (!el) return;
@@ -14091,8 +14370,8 @@ function recalcEditTx() {
     el.innerHTML = `
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>إجمالي الأصناف</span><strong>${fmtJ(itemsTotal)}</strong></div>
       ${discount ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الخصم</span><span style="color:var(--red)">- ${fmtJ(discount)}</span></div>` : ''}
-      <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:2px solid var(--border);font-size:1rem"><strong>الإجمالي النهائي</strong><strong style="color:var(--primary)">${fmtJ(total)}</strong></div>
-      <div style="display:flex;justify-content:space-between;margin-top:4px"><span>العربون (المدفوع مقدماً) <span class="text-xs text-muted">(${esc(depMethod)})</span></span><span style="color:var(--green)">${fmtJ(deposit)}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>العربون (المدفوع مقدماً) <span class="text-xs text-muted">(${esc(depMethod)})</span></span><span style="color:var(--green)">${fmtJ(deposit)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:2px solid var(--border);font-size:1rem;margin-bottom:4px"><strong>الإجمالي النهائي</strong><strong style="color:var(--primary)">${fmtJ(total)}</strong></div>
       <div style="display:flex;justify-content:space-between;margin-top:4px"><span>المتبقي للمورد</span><strong style="color:${remaining > 0 ? 'var(--red)' : 'var(--green)'}">${remaining > 0 ? fmtJ(remaining) : '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> مدفوع بالكامل'}</strong></div>
       ${vaultDeltaHtml}`;
   } else {
@@ -14100,8 +14379,8 @@ function recalcEditTx() {
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>إجمالي الأصناف</span><strong>${fmtJ(itemsTotal)}</strong></div>
       ${discount ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الخصم</span><span style="color:var(--red)">- ${fmtJ(discount)}</span></div>` : ''}
       ${shipCost ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>تكلفة الشحن</span><span>+ ${fmtJ(shipCost)}</span></div>` : ''}
-      <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:2px solid var(--border);font-size:1rem"><strong>الإجمالي النهائي</strong><strong style="color:var(--primary)">${fmtJ(total)}</strong></div>
-      <div style="display:flex;justify-content:space-between;margin-top:4px"><span>الديبوزت${isSaleTx && depMethod ? ` <span class="text-xs text-muted">(${esc(depMethod)})</span>` : ''}</span><span style="color:var(--green)">${fmtJ(deposit)}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الديبوزت${isSaleTx && depMethod ? ` <span class="text-xs text-muted">(${esc(depMethod)})</span>` : ''}</span><span style="color:var(--green)">${fmtJ(deposit)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:2px solid var(--border);font-size:1rem;margin-bottom:4px"><strong>الإجمالي النهائي</strong><strong style="color:var(--primary)">${fmtJ(total)}</strong></div>
       <div style="display:flex;justify-content:space-between;margin-top:4px"><span>المتبقي</span><strong style="color:${remaining > 0 ? 'var(--red)' : 'var(--green)'}">${fmtJ(remaining)}</strong></div>
       ${vaultDeltaHtml}`;
   }
@@ -14119,6 +14398,10 @@ async function saveEditMovement(id) {
     if (editRef && !/^\d+$/.test(editRef)) { toast('المرجع أرقام فقط', true); return; }
     if (editRef && isRetailRefTaken(editRef, id)) { toast('المرجع مستخدم في حركة أخرى', true); return; }
   }
+  const editPhone = (qs('#edit-tx-phone')?.value || '').trim();
+  if (editPhone && (!/^\d{11}$/.test(editPhone) || !editPhone.startsWith('01'))) {
+    toast('رقم الهاتف غير صحيح — يجب أن يكون 11 رقماً يبدأ بـ 01', true); return;
+  }
   const newItems = validItems.map(it => {
     const p = it.productId ? products.find(x => x._id === it.productId) : null;
     return { name: p?.name || it.name, code: p?.code || it.code || '', qty: it.qty, price: it.price, total: it.qty * it.price };
@@ -14126,9 +14409,10 @@ async function saveEditMovement(id) {
   const itemsTotal = newItems.reduce((s, it) => s + it.total, 0);
   const discount = Number(qs('#edit-tx-discount')?.value) || 0;
   const shipCost = Number(qs('#edit-tx-shipcost')?.value) || 0;
-  const deposit = Number(qs('#edit-tx-deposit').value) || 0;
+  let deposit = Number(qs('#edit-tx-deposit').value) || 0;
   const total = itemsTotal - discount + shipCost;
   if (total <= 0 && tx.type === 'مبيعات') { toast('أدخل مبلغاً صحيحاً قبل الحفظ — الإجمالي يجب أن يكون أكبر من صفر', true); return; }
+  if (deposit > total && total > 0) { deposit = total; }
 
   // 📊 حساب الفروقات (قبل/بعد)
   const origTotal = tx.total || 0;
@@ -14180,7 +14464,7 @@ async function saveEditMovement(id) {
   }
 
   if (confirmMsg) {
-    const confirmed = confirm(confirmMsg + (currentLang==='en'?'Do you want to proceed?':'هل تريد المتابعة؟'));
+    const confirmed = await showEditConfirmDialog({ changes, vaultDelta, vaultNote, tx });
     if (!confirmed) return;
   }
 
@@ -14208,11 +14492,27 @@ async function saveEditMovement(id) {
 
   try {
     await api('/transactions/' + id, { method: 'PUT', body: JSON.stringify(body) });
-    toast(currentLang==='en'?'Transaction, vault and inventory updated successfully':'تم تحديث الحركة والخزنة والمخزن بنجاح'); closeModal();
+    closeModal();
     transactions = await api('/transactions').catch(() => transactions);
     try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
     renderMovements(); buildSidebar(); buildNotifications();
     syncVaultState();
+    // إشعار بالتحديث — نص بسيط بدون HTML
+    const fmtPlain = n => fmtN(n) + ' EGP';
+    const plainChanges = [];
+    if (totalDelta !== 0) plainChanges.push(`الإجمالي: ${fmtPlain(origTotal)} ← ${fmtPlain(total)}`);
+    if (depositDelta !== 0) plainChanges.push(`الديبوزت: ${fmtPlain(origDeposit)} ← ${fmtPlain(deposit)}`);
+    if (discountDelta !== 0) plainChanges.push(`الخصم: ${fmtPlain(origDiscount)} ← ${fmtPlain(discount)}`);
+    if (shipCostDelta !== 0) plainChanges.push(`الشحن: ${fmtPlain(origShipCost)} ← ${fmtPlain(shipCost)}`);
+    const notifMsg = plainChanges.length
+      ? `تم تعديل الحركة #${tx.ref || tx._id?.slice(-4)} — ${plainChanges.join(' | ')}`
+      : `تم تعديل الحركة #${tx.ref || tx._id?.slice(-4)} بنجاح`;
+    toast(notifMsg);
+    // إشعار المخزن إذا تغيرت الأصناف أو الكميات
+    const itemsChanged = JSON.stringify(validItems.map(i=>({name:i.name,qty:i.qty,price:i.price}))) !== JSON.stringify((tx.items||[]).map(i=>({name:i.name,qty:i.qty,price:i.price})));
+    if (itemsChanged) {
+      setTimeout(() => toast('تم تحديث المخزن تلقائياً بناءً على تعديل الأصناف'), 1800);
+    }
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 
@@ -14585,6 +14885,86 @@ async function doCollectMovement(id) {
       error: errorMsg,
       timestamp: new Date().toISOString()
     });
+  }
+}
+
+function openReverseCollect(id) {
+  const tx = transactions.find(t => t._id === id);
+  if (!tx) return;
+  const payments = tx.payments || [];
+  if (!payments.length) { toast('لا يوجد تحصيل مسجل لهذه الحركة', true); return; }
+  const last = payments[payments.length - 1];
+  const amount = last.amount;
+  const method = last.method || tx.collectMethod || 'الخزنة';
+  const isPurchase = tx.type === 'مشتريات';
+  const amtFmt = fmtN(amount) + ' EGP';
+  const vaultDirection = isPurchase
+    ? `سيُضاف <strong style="color:var(--green)">${amtFmt}</strong> إلى خزنة ${esc(method)} (رد من المورد)`
+    : `سيُخصم <strong style="color:var(--red)">${amtFmt}</strong> من خزنة ${esc(method)} (إعادة للعميل)`;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'reverse-collect-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s ease';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:14px;padding:24px;max-width:420px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:slideUp .2s ease">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+        <div style="width:38px;height:38px;border-radius:10px;background:rgba(249,115,22,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" style="width:20px;height:20px;color:#f97316" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.4 7.4 11.5 4 18 5.5"/><path d="M21 17v-6h-6"/><path d="M21 11c-2.4 5.6-8.5 9-15 7.5"/></svg>
+        </div>
+        <div>
+          <div style="font-size:1rem;font-weight:700">تراجع عند التحصيل</div>
+          <div style="font-size:.78rem;color:var(--muted)">${tx.type} ${tx.ref ? '#' + tx.ref : ''} — ${esc(tx.client || '')}</div>
+        </div>
+      </div>
+      <div style="margin-bottom:14px;padding:10px 14px;border-radius:8px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.25)">
+        <div style="font-size:.75rem;font-weight:700;color:#c2410c;margin-bottom:5px">آخر تحصيل مسجل</div>
+        <div style="font-size:.88rem;font-weight:600">${fmtN(amount)} EGP — ${esc(method)}</div>
+        ${last.date ? `<div style="font-size:.72rem;color:var(--muted);margin-top:2px">${new Date(last.date).toLocaleDateString('ar-EG')}</div>` : ''}
+      </div>
+      <div style="margin-bottom:14px;padding:10px 14px;border-radius:8px;${isPurchase ? 'background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25)' : 'background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.25)'}">
+        <div style="font-size:.75rem;font-weight:700;color:${isPurchase ? '#15803d' : '#dc2626'};margin-bottom:4px">تأثير الخزنة</div>
+        <div style="font-size:.85rem">${vaultDirection}</div>
+      </div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:18px;padding:8px 12px;background:var(--surface2);border-radius:7px">
+        ستعود الحركة إلى حالة <strong>معلق</strong> والمتبقي سيرتفع بمقدار ${fmtN(amount)} EGP — ويُسجَّل في لوج الخزنة.
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="document.getElementById('reverse-collect-overlay').remove()" style="padding:9px 20px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:.88rem;cursor:pointer;font-weight:600">إلغاء</button>
+        <button onclick="doReverseCollect('${esc(id)}')" style="padding:9px 22px;border-radius:8px;border:none;background:#f97316;color:#fff;font-size:.88rem;cursor:pointer;font-weight:700">تأكيد التراجع</button>
+      </div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+async function doReverseCollect(id) {
+  const overlay = document.getElementById('reverse-collect-overlay');
+  const btn = overlay?.querySelector('button[onclick*="doReverseCollect"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'جارٍ التراجع…'; }
+  try {
+    const res = await api('/transactions/' + id + '/reverse-collect', { method: 'POST', body: '{}' });
+    overlay?.remove();
+    // تحديث كامل للبيانات
+    transactions = await api('/transactions').catch(() => transactions);
+    try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
+    renderMovements(); buildSidebar(); buildNotifications();
+    syncVaultState();
+    // تحديث الفاتورة إذا كانت مفتوحة
+    const invoiceModal = qs('#invoice-detail-modal') || qs('[id*="invoice"]');
+    if (invoiceModal && invoiceModal.style.display !== 'none') {
+      const updatedTx = transactions.find(t => t._id === id);
+      if (updatedTx && typeof showInvoiceDetail === 'function') {
+        setTimeout(() => showInvoiceDetail(id), 200);
+      }
+    }
+    const amount = res.reversedAmount || 0;
+    const method = res.vaultMethod || '';
+    const isPurchase = transactions.find(t => t._id === id)?.type === 'مشتريات';
+    toast(`تم التراجع عن التحصيل — ${fmtN(amount)} EGP ${isPurchase ? 'مُردودة للخزنة' : 'مخصومة من الخزنة'} (${method})`);
+    setTimeout(() => toast('تم تحديث لوج الخزنة والتقارير تلقائياً'), 1800);
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'تأكيد التراجع'; }
+    toast('خطأ: ' + e.message, true);
   }
 }
 
@@ -15192,7 +15572,10 @@ function showInvoiceDetail(id, highlightCommentId) {
   const statusClass = tx.cancelled || isStatusCancelled(tx.payStatus) ? 'cancelled' : isStatusCompleted(tx.payStatus) ? 'paid' : 'pending';
   const _depositsArr = tx.deposits || [];
   const _paymentsArr = tx.payments || [];
-  const _depositsTotal = _depositsArr.reduce((s, d) => s + (d.amount || 0), 0) || (tx.deposit || 0);
+  const _depositsArrSum = _depositsArr.reduce((s, d) => s + (d.amount || 0), 0);
+  // tx.deposit accumulates both initial deposit + collection payments, so only fall back to it
+  // when no payments have been collected yet (otherwise _paymentsTotal already covers collections)
+  const _depositsTotal = _depositsArrSum || (_paymentsArr.length === 0 ? (tx.deposit || 0) : 0);
   const _paymentsTotal = _paymentsArr.reduce((s, p) => s + (p.amount || p.collectAmount || 0), 0);
   const _totalCollected = Math.max(0, (tx.total || 0) - (tx.remaining || 0));
   const _paymentPercent = tx.total > 0 ? Math.min(100, Math.round((_totalCollected / tx.total) * 100)) : 0;
@@ -15300,8 +15683,8 @@ function showInvoiceDetail(id, highlightCommentId) {
           </div>
           ${(tx.remaining || 0) > 0 || _depositsTotal > 0 || _paymentsTotal > 0 ? `
           <div class="inv-breakdown">
-            ${_depositsTotal > 0 ? `<div class="inv-breakdown-row deposit"><span class="label">${isPurchase ? 'العربون المدفوع' : 'الديبوزت المسبق'}</span><span class="amount">${fmtJ(_depositsTotal)}</span></div>` : ''}
-            ${_paymentsTotal > 0 ? `<div class="inv-breakdown-row collection"><span class="label">${isPurchase ? 'السدادات الإضافية' : 'التحصيل من الشحن'}</span><span class="amount">${fmtJ(_paymentsTotal)}</span></div>` : ''}
+            ${_depositsTotal > 0 ? `<div class="inv-breakdown-row deposit"><span class="label">${isPurchase ? 'العربون المدفوع' : 'الديبوزت المسبق'}${tx.depMethod ? ` · ${tx.depMethod}` : ''}</span><span class="amount">${fmtJ(_depositsTotal)}</span></div>` : ''}
+            ${_paymentsTotal > 0 ? `<div class="inv-breakdown-row collection"><span class="label" style="font-size:0.9rem"><span>${isPurchase ? 'السدادات الإضافية' : `التحصيل من ${tx.shipCo || 'الشحن'}`}</span>${tx.collectMethod ? `<span style="display:block;font-size:0.85rem;color:#666;margin-top:2px">· ${tx.collectMethod}</span>` : ''}</span><span class="amount">${fmtJ(_paymentsTotal)}</span></div>` : ''}
             ${(tx.remaining || 0) > 0 ? `<div class="inv-breakdown-row discount"><span class="label">${isPurchase ? 'المتبقي للمورد' : 'المتبقي للتحصيل'}</span><span class="amount">${fmtJ(tx.remaining || 0)}</span></div>` : ''}
           </div>` : ''}
         </div>

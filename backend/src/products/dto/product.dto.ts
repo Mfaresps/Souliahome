@@ -87,25 +87,27 @@ export class UpdateProductDto {
 
 export class ImportProductItemDto {
   @IsString()
+  @IsNotEmpty()
   readonly code: string;
 
   @IsString()
+  @IsNotEmpty()
   readonly name: string;
 
-  @IsNumber()
   @IsOptional()
+  @Type(() => Number)
   readonly sellPrice?: number;
 
-  @IsNumber()
   @IsOptional()
+  @Type(() => Number)
   readonly buyPrice?: number;
 
-  @IsNumber()
   @IsOptional()
+  @Type(() => Number)
   readonly minStock?: number;
 
-  @IsNumber()
   @IsOptional()
+  @Type(() => Number)
   readonly openingBalance?: number;
 
   @IsString()

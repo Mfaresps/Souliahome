@@ -217,6 +217,15 @@ export class TransactionsController {
     return this.transactionsService.collect(id, dto);
   }
 
+  @Post(':id/reverse-collect')
+  async reverseCollect(
+    @Param('id') id: string,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const reversedBy = req.user?.name || req.user?.username || 'مجهول';
+    return this.transactionsService.reverseCollect(id, reversedBy);
+  }
+
   @Roles('admin')
   @Post(':id/post-discount')
   async applyPostDiscount(

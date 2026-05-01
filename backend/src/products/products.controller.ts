@@ -70,6 +70,12 @@ export class ProductsController {
     return { message: `تم حذف ${count} صنف`, deletedCount: count };
   }
 
+  @Post('batch-delete')
+  async batchDelete(@Body() body: { codes: string[] }) {
+    const count = await this.productsService.batchDeleteByCodes(body.codes);
+    return { message: `تم حذف ${count} صنف`, deletedCount: count };
+  }
+
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
     return this.productsService.update(id, dto);
