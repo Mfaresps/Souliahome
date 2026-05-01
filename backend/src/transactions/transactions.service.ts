@@ -883,6 +883,18 @@ export class TransactionsService {
       await this.vaultService.assertSufficientBalance(dto.collectMethod, payAmount);
     }
 
+    // لقطة الحالة قبل التحصيل — تُحفظ في سجل الدفعة لاستخدامها في التراجع (UNDO)
+    const snapshotBefore = {
+      deposit: Number(tx.deposit) || 0,
+      remaining: Number(tx.remaining) || 0,
+      payStatus: tx.payStatus || 'معلق',
+      collectMethod: tx.collectMethod || '',
+      collectNote: tx.collectNote || '',
+      collectedAt: tx.collectedAt || '',
+      actualShipCost: Number(tx.actualShipCost) || 0,
+      shipLoss: Number(tx.shipLoss) || 0,
+    };
+
     // حساب الشحن للمبيعات
     const billedShip = !isPurchase ? (Number(tx.shipCost) || 0) : 0;
     let shipExtra = 0; // الزيادة في الشحن الفعلي عن المحصل
@@ -894,7 +906,7 @@ export class TransactionsService {
     }
 
     // الشحن يُخصم من التحصيل الأول فقط - تحقق من التحصيلات السابقة
-    const alreadyDeductedShip = !isPurchase ? (tx.payments || []).reduce((sum, p) => sum + Math.min(billedShip, Math.max(0, (p.collectedAmount || p.amount) - (p.amount || 0))), 0) : 0;
+    const alreadyDeductedShip = !isPurchase ? (tx.payments || []).reduce((sum, p: any) => sum + Math.min(billedShip, Math.max(0, ((p.collectedAmount || p.amount) - (p.amount || 0)))), 0) : 0;
     const remainingShipToDeduct = Math.max(0, billedShip - alreadyDeductedShip);
 
     // الخزنة = المتبقي - الشحن المحصل (الجزء المتبقي فقط) - زيادة الشحن
@@ -914,6 +926,7 @@ export class TransactionsService {
 
     // سجل السدادات
     if (!tx.payments) tx.payments = [];
+    const vaultDelta = isPurchase ? -payAmount : netVaultAmount;
     tx.payments.push({
       amount: isPurchase ? payAmount : netVaultAmount,
       method: dto.collectMethod,
@@ -922,7 +935,11 @@ export class TransactionsService {
       by: tx.employee || '',
       remaining: totalRemaining,
       collectedAmount: payAmount,
-    });
+      // لقطة لاستخدام التراجع (UNDO) — ترجع كل شيء كما كان قبل التحصيل
+      vaultDelta,
+      shipExtra,
+      snapshotBefore,
+    } as any);
 
     const saved = await tx.save();
     if (payAmount > 0) {
@@ -964,7 +981,7 @@ export class TransactionsService {
 
   async reverseCollect(
     id: string,
-    reversedBy: string,
+    _reversedBy: string,
   ): Promise<{ tx: TransactionDocument; reversedAmount: number; vaultMethod: string }> {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) throw new NotFoundException('الحركة غير موجودة');
@@ -974,51 +991,63 @@ export class TransactionsService {
     if (!payments.length) throw new BadRequestException('لا يوجد تحصيل مسجل لهذه الحركة');
 
     // آخر عملية تحصيل
-    const lastPayment = payments[payments.length - 1];
-    // المبلغ الفعلي الذي دخل/خرج من الخزنة
-    const reversedAmount = Number(lastPayment.amount) || 0;
-    const vaultMethod = String(lastPayment.method || tx.collectMethod || 'كاش');
-    // المبلغ المحصل من العميل (للمبيعات قد يختلف عن الدخل الفعلي للخزنة بسبب الشحن)
-    const collectedAmount = Number(lastPayment.collectedAmount) || reversedAmount;
-    // المتبقي قبل التحصيل محفوظ في سجل الدفعة
-    const remainingBefore = typeof lastPayment.remaining === 'number'
-      ? lastPayment.remaining
-      : (tx.remaining || 0) + collectedAmount;
-
+    const lastPayment: any = payments[payments.length - 1];
     const isPurchase = tx.type === 'مشتريات';
     const txRef = tx.ref || String(tx._id);
 
-    // الحركة العكسية في الخزنة:
-    // مبيعات: التحصيل أضاف للخزنة → العكس يخصم منها
-    // مشتريات: التحصيل خصم من الخزنة → العكس يضيف إليها
-    const vaultDelta = isPurchase ? reversedAmount : -reversedAmount;
+    // المبلغ الذي دخل/خرج من الخزنة فعلياً عند التحصيل
+    const reversedAmount = Number(lastPayment.amount) || 0;
+    const vaultMethod = String(lastPayment.method || tx.collectMethod || 'كاش');
 
-    // تحقق من كفاية الرصيد للمبيعات (سنخصم من الخزنة)
-    if (!isPurchase && reversedAmount > 0) {
+    // اللقطة المحفوظة وقت التحصيل — مصدر الحقيقة للتراجع
+    // (للسجلات القديمة قبل إضافة اللقطة، نُعيد الحساب من البيانات المتاحة)
+    const snap = lastPayment.snapshotBefore as undefined | {
+      deposit: number;
+      remaining: number;
+      payStatus: string;
+      collectMethod: string;
+      collectNote: string;
+      collectedAt: string;
+      actualShipCost: number;
+      shipLoss: number;
+    };
+
+    // عكس المبيعات = إرجاع المال للخزنة (لا خصم) — لا حاجة للتحقق من الرصيد
+    // عكس المشتريات = خصم ما أُعيد للخزنة — نتحقق من الرصيد
+    if (isPurchase && reversedAmount > 0) {
       await this.vaultService.assertSufficientBalance(vaultMethod, reversedAmount);
     }
 
-    // إعادة الحالة كما كانت تماماً
-    tx.remaining = remainingBefore;
-    tx.payStatus = remainingBefore > 0 ? 'معلق' : 'مكتمل';
-    // إعادة الـ deposit: نخصم المبلغ المحصل (للمبيعات يختلف عن دخل الخزنة بسبب الشحن)
-    tx.deposit = Math.max(0, (Number(tx.deposit) || 0) - collectedAmount);
-    // حذف آخر دفعة
-    tx.payments = payments.slice(0, -1);
-    // مسح collectedAt إذا عادت لمعلق
-    if (tx.payStatus === 'معلق') {
-      tx.set('collectedAt', undefined);
+    // ===== UNDO كامل: إعادة كل الحقول كما كانت قبل التحصيل =====
+    if (snap) {
+      tx.deposit = snap.deposit;
+      tx.remaining = snap.remaining;
+      tx.payStatus = snap.payStatus;
+      tx.collectMethod = snap.collectMethod;
+      tx.collectNote = snap.collectNote;
+      tx.actualShipCost = snap.actualShipCost;
+      tx.shipLoss = snap.shipLoss;
+      if (snap.collectedAt) {
+        tx.collectedAt = snap.collectedAt;
+      } else {
+        tx.set('collectedAt', undefined);
+      }
+    } else {
+      // مسار توافقي للسجلات القديمة (قبل إضافة snapshotBefore)
+      const remainingBefore = typeof lastPayment.remaining === 'number'
+        ? lastPayment.remaining
+        : (tx.remaining || 0) + reversedAmount;
+      tx.remaining = remainingBefore;
+      tx.payStatus = remainingBefore > 0 ? 'معلق' : 'مكتمل';
+      // إنقاص ما أُضيف فعلياً للـ deposit وقت التحصيل = reversedAmount
+      tx.deposit = Math.max(0, (Number(tx.deposit) || 0) - reversedAmount);
+      if (tx.payStatus === 'معلق') {
+        tx.set('collectedAt', undefined);
+      }
     }
 
-    tx.editHistory = [...(tx.editHistory || []), {
-      editedAt: new Date().toISOString(),
-      editedBy: reversedBy,
-      action: 'تراجع تحصيل',
-      reversedAmount,
-      vaultMethod,
-      remainingAfter: remainingBefore,
-      note: `تراجع عن تحصيل ${reversedAmount} ج (${vaultMethod})`,
-    }];
+    // حذف آخر دفعة — UNDO صامت بلا أي سجل (كأن التحصيل لم يحدث)
+    tx.payments = payments.slice(0, -1);
 
     const saved = await tx.save();
 

@@ -1,0 +1,109 @@
+{
+  "timestamp": "2026-05-01T02:34:36.981Z",
+  "data": {
+    "transactions": [
+      {
+        "_id": "69f40f957dce17ab3d06b284",
+        "date": "2026-05-01T02:27:32.914Z",
+        "type": "مبيعات",
+        "client": "محمد",
+        "phone": "01008454587",
+        "ref": "1234",
+        "notes": "",
+        "payment": "تحويل بنكي",
+        "deposit": 500,
+        "initialDeposit": 0,
+        "remaining": 600,
+        "items": [
+          {
+            "name": "Alba Soft cushions Beige",
+            "code": "CUS-45-ALB-BEI",
+            "qty": 5,
+            "price": 200,
+            "total": 1000
+          }
+        ],
+        "total": 1100,
+        "employee": "Fares",
+        "shipCo": "BOSTA",
+        "shipZone": "cairo",
+        "shipCost": 100,
+        "discount": 0,
+        "depMethod": "Instapay",
+        "payStatus": "معلق",
+        "itemsTotal": 1000,
+        "actualShipCost": 0,
+        "shipLoss": 0,
+        "cancelled": false,
+        "editHistory": [],
+        "archived": false,
+        "cancelRequest": null,
+        "deposits": [
+          {
+            "amount": 500,
+            "method": "Instapay",
+            "note": "ديبوزت أول - عند إنشاء الحركة",
+            "date": "2026-05-01T02:27:33.670Z",
+            "by": "Fares"
+          }
+        ],
+        "payments": [],
+        "invoiceImageUrl": "",
+        "invoiceImages": [],
+        "comments": [],
+        "createdAt": "2026-05-01T02:27:33.668Z",
+        "updatedAt": "2026-05-01T02:28:10.437Z",
+        "__v": 3,
+        "collectMethod": "",
+        "collectNote": ""
+      }
+    ],
+    "vaultentries": [
+      {
+        "_id": "69f40f957dce17ab3d06b28a",
+        "date": "2026-05-01",
+        "desc": "ديبوزت مبيعات #1234 — محمد",
+        "amount": 500,
+        "seg": "instapay",
+        "method": "Instapay",
+        "source": "ديبوزت مبيعات",
+        "ref": "1234",
+        "balCash": 0,
+        "balVodafone": 0,
+        "balInstapay": 500,
+        "balBank": 0,
+        "balance": 500,
+        "employee": "Fares",
+        "txNo": "SAL-001",
+        "status": "completed",
+        "transactionType": "ديبوزت مبيعات",
+        "customer": "",
+        "supplier": "",
+        "notes": "",
+        "accountingJustification": "الخزنة (Instapay) ترتفع 500 ج — الإيراد المحتمل يرتفع — المخزون لم يُخصم بعد",
+        "entityLabel": "محمد",
+        "editHistory": null,
+        "frozenReason": null,
+        "requiresApproval": false,
+        "isApproved": false,
+        "approvedBy": "",
+        "linkedTransactionId": null,
+        "linkedTransactionRef": "",
+        "createdAt": "2026-05-01T02:27:33.676Z",
+        "updatedAt": "2026-05-01T02:27:33.676Z",
+        "__v": 0
+      }
+    ],
+    "clients": [],
+    "suppliers": [],
+    "returnrequests": [],
+    "expenses": [],
+    "complaints": []
+  },
+  "vault_balances": {
+    "vaultCash": 0,
+    "vaultVodafone": 0,
+    "vaultInstapay": 500,
+    "vaultBank": 450
+  }
+}

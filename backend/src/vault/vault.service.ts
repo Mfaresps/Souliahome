@@ -175,11 +175,19 @@ export class VaultService {
 
   async deleteLastEntryByRef(ref: string): Promise<boolean> {
     try {
-      const result = await this.vaultModel.findOneAndDelete(
-        { ref, source: 'تحصيل' },
+      const entry = await this.vaultModel.findOne(
+        { ref, source: { $in: ['تحصيل', 'مشتريات'] } },
+        null,
         { sort: { date: -1, createdAt: -1 } }
       ).exec();
-      return !!result;
+      if (!entry) return false;
+
+      // عكس الرصيد: المبلغ الذي أُضيف وقت التحصيل يُخصم الآن (والعكس)
+      const seg = entry.seg || resolveVaultSegmentFromPaymentMethod(entry.method || 'كاش');
+      await this.settingsService.adjustVaultBalance(seg, -entry.amount);
+
+      await entry.deleteOne();
+      return true;
     } catch (error) {
       return false;
     }
