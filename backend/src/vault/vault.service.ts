@@ -202,6 +202,7 @@ export class VaultService {
     ref = '',
     entityContext?: { customer?: string; supplier?: string; category?: string; itemCount?: number },
     employee = '',
+    meta?: Record<string, unknown>,
   ): Promise<VaultEntryDocument> {
     const seg = resolveVaultSegmentFromPaymentMethod(method);
     // Block any deduction if balance is insufficient
@@ -285,6 +286,7 @@ export class VaultService {
         bank: settings.vaultBank || 0,
         total: settings.vaultBalance || 0,
       },
+      ...(meta || {}),
     });
     return created;
   }

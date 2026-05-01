@@ -183,6 +183,7 @@ export class TransactionsService {
     if (deposit > 0) {
       if (!tx.deposits) tx.deposits = [];
       tx.deposits.push({
+        id: this.genPaymentId(),
         amount: deposit,
         method: depMethod,
         note: 'ديبوزت أول - عند إنشاء الحركة',
@@ -489,6 +490,7 @@ export class TransactionsService {
       const depMethod = String(existing.depMethod || '').trim() || 'كاش';
       if (!tx.deposits) tx.deposits = [];
       tx.deposits.push({
+        id: this.genPaymentId(),
         amount: depositDelta,
         method: depMethod,
         note: `ديبوزت إضافي - من تعديل الحركة (${oldDeposit} → ${newDeposit})`,
@@ -928,6 +930,7 @@ export class TransactionsService {
     if (!tx.payments) tx.payments = [];
     const vaultDelta = isPurchase ? -payAmount : netVaultAmount;
     tx.payments.push({
+      id: this.genPaymentId(),
       amount: isPurchase ? payAmount : netVaultAmount,
       method: dto.collectMethod,
       note: dto.collectNote || (shipExtra > 0 ? `زيادة شحن: ${shipExtra} ج` : ''),
@@ -953,6 +956,9 @@ export class TransactionsService {
         new Date().toISOString().split('T')[0],
         isPurchase ? 'مشتريات' : 'تحصيل',
         tx.ref || String(tx._id),
+        isPurchase ? { supplier: tx.client || '' } : { customer: tx.client || '' },
+        tx.employee || '',
+        { txId: String(saved._id), isPurchase, payAmount, isPartial: !isFullyPaid, newRemaining, client: tx.client || '' },
       );
     }
     // #region agent log
@@ -975,7 +981,15 @@ export class TransactionsService {
     });
     // #endregion
     this.emit('tx:updated', { tx: saved, action: 'collect' });
-    this.emit('vault:changed', { reason: 'tx:collect', txId: String(saved._id) });
+    if (isPurchase && isFullyPaid) {
+      // purchase fully paid — inventory was already committed at creation, just notify
+      this.emit('inventory:changed', {
+        reason: 'tx:collect:completed',
+        txId: String(saved._id),
+        txType: saved.type,
+        items: (saved.items || []).map((it) => ({ name: it.name, qty: it.qty })),
+      });
+    }
     return saved;
   }
 
@@ -1059,6 +1073,186 @@ export class TransactionsService {
     return { tx: saved, reversedAmount, vaultMethod };
   }
 
+  /** Generate a stable id for a payment/deposit entry. */
+  private genPaymentId(): string {
+    return `pay_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  /**
+   * Lazily backfill ids on legacy deposits/payments so old records can be targeted by Undo.
+   * Returns true if any change was made.
+   */
+  private backfillPaymentIds(tx: TransactionDocument): boolean {
+    let changed = false;
+    (tx.deposits || []).forEach((d: any) => {
+      if (!d.id) { d.id = this.genPaymentId(); changed = true; }
+    });
+    (tx.payments || []).forEach((p: any) => {
+      if (!p.id) { p.id = this.genPaymentId(); changed = true; }
+    });
+    if (changed) {
+      tx.markModified('deposits');
+      tx.markModified('payments');
+    }
+    return changed;
+  }
+
+  /**
+   * Undo a specific payment OR deposit by id.
+   * - If targeting the most recent non-reversed payment, performs the full snapshot restore (same as reverseCollect).
+   * - Otherwise, performs a partial reversal: subtracts amount from deposit, adds to remaining,
+   *   marks the entry as reversed (kept for audit), and writes a reverse vault entry.
+   * Concurrency: uses Mongoose document version (__v) for optimistic locking.
+   */
+  async undoSpecificPayment(
+    txId: string,
+    paymentId: string,
+    undoBy: string,
+    reason?: string,
+  ): Promise<{ tx: TransactionDocument; reversedAmount: number; vaultMethod: string; mode: 'full' | 'partial' | 'deposit' }> {
+    const tx = await this.transactionModel.findById(txId).exec();
+    if (!tx) throw new NotFoundException('الحركة غير موجودة');
+    if (tx.cancelled) throw new BadRequestException('لا يمكن التراجع على حركة ملغاة');
+
+    this.backfillPaymentIds(tx);
+
+    const payments = (tx.payments || []) as any[];
+    const deposits = (tx.deposits || []) as any[];
+
+    const paymentIdx = payments.findIndex((p) => p.id === paymentId);
+    const depositIdx = paymentIdx === -1 ? deposits.findIndex((d) => d.id === paymentId) : -1;
+
+    if (paymentIdx === -1 && depositIdx === -1) {
+      throw new NotFoundException('الدفعة المستهدفة غير موجودة');
+    }
+
+    const isPurchase = tx.type === 'مشتريات';
+    const txRef = tx.ref || String(tx._id);
+    const expectedVersion = (tx as any).__v;
+
+    // ---------- DEPOSIT UNDO ----------
+    if (depositIdx !== -1) {
+      const dep = deposits[depositIdx];
+      if (dep.reversed) throw new BadRequestException('هذه الدفعة سبق التراجع عنها');
+      const amount = Number(dep.amount) || 0;
+      const method = String(dep.method || tx.depMethod || 'كاش');
+
+      // Sales deposit: money was added to vault → undoing removes it (need balance check)
+      // Purchase deposit: money was deducted from vault → undoing returns it (no check)
+      if (!isPurchase && amount > 0) {
+        await this.vaultService.assertSufficientBalance(method, amount);
+      }
+
+      tx.deposit = Math.max(0, (Number(tx.deposit) || 0) - amount);
+      tx.remaining = (Number(tx.remaining) || 0) + amount;
+      tx.payStatus = tx.remaining > 0 ? 'معلق' : 'مكتمل';
+      dep.reversed = true;
+      dep.reversedAt = new Date().toISOString();
+      dep.reversedBy = undoBy;
+      if (reason) dep.reversalReason = reason;
+      tx.markModified('deposits');
+
+      const saved = await this.saveWithVersion(tx, expectedVersion);
+
+      // Reverse vault entry (audit trail). Sales deposit was +amount → record -amount; purchase was -amount → record +amount.
+      const reverseAmount = isPurchase ? amount : -amount;
+      if (amount > 0) {
+        await this.vaultService.addSystemEntry(
+          reverseAmount,
+          method,
+          `تراجع عن ديبوزت — ${tx.type} #${txRef}${reason ? ` — ${reason}` : ''}`,
+          new Date().toISOString().split('T')[0],
+          'إلغاء',
+          txRef,
+          isPurchase ? { supplier: tx.client || '' } : { customer: tx.client || '' },
+          undoBy,
+          { txId: String(saved._id), undoOf: paymentId, kind: 'deposit-undo' },
+        );
+      }
+
+      this.emit('tx:updated', { tx: saved, action: 'undo-payment' });
+      return { tx: saved, reversedAmount: amount, vaultMethod: method, mode: 'deposit' };
+    }
+
+    // ---------- PAYMENT UNDO ----------
+    const pay = payments[paymentIdx];
+    if (pay.reversed) throw new BadRequestException('هذه الدفعة سبق التراجع عنها');
+
+    const amount = Number(pay.amount) || 0;
+    const method = String(pay.method || tx.collectMethod || 'كاش');
+    const isLastActive =
+      paymentIdx === payments.length - 1 ||
+      payments.slice(paymentIdx + 1).every((p) => p.reversed);
+
+    // Purchase payment: money was deducted from vault → undoing returns it (no check)
+    // Sales collection: money was added to vault → undoing removes it (need balance check)
+    if (!isPurchase && amount > 0) {
+      await this.vaultService.assertSufficientBalance(method, amount);
+    }
+
+    if (isLastActive && pay.snapshotBefore) {
+      // Full snapshot restore — most recent live payment
+      const snap = pay.snapshotBefore;
+      tx.deposit = snap.deposit;
+      tx.remaining = snap.remaining;
+      tx.payStatus = snap.payStatus;
+      tx.collectMethod = snap.collectMethod;
+      tx.collectNote = snap.collectNote;
+      tx.actualShipCost = snap.actualShipCost;
+      tx.shipLoss = snap.shipLoss;
+      if (snap.collectedAt) tx.collectedAt = snap.collectedAt;
+      else tx.set('collectedAt', undefined);
+    } else {
+      // Partial reversal — older payment, do not touch later payments
+      tx.deposit = Math.max(0, (Number(tx.deposit) || 0) - amount);
+      tx.remaining = (Number(tx.remaining) || 0) + amount;
+      tx.payStatus = tx.remaining > 0 ? 'معلق' : 'مكتمل';
+      if (tx.payStatus === 'معلق') tx.set('collectedAt', undefined);
+    }
+
+    pay.reversed = true;
+    pay.reversedAt = new Date().toISOString();
+    pay.reversedBy = undoBy;
+    if (reason) pay.reversalReason = reason;
+    tx.markModified('payments');
+
+    const saved = await this.saveWithVersion(tx, expectedVersion);
+
+    // Reverse vault entry (audit trail). Purchase payment was -amount → record +amount; sales was +amount → record -amount.
+    const reverseAmount = isPurchase ? amount : -amount;
+    if (amount > 0) {
+      await this.vaultService.addSystemEntry(
+        reverseAmount,
+        method,
+        `تراجع عن دفعة — ${tx.type} #${txRef}${reason ? ` — ${reason}` : ''}`,
+        new Date().toISOString().split('T')[0],
+        'إلغاء',
+        txRef,
+        isPurchase ? { supplier: tx.client || '' } : { customer: tx.client || '' },
+        undoBy,
+        { txId: String(saved._id), undoOf: paymentId, kind: 'payment-undo' },
+      );
+    }
+
+    this.emit('tx:updated', { tx: saved, action: 'undo-payment' });
+    this.emit('vault:changed', { reason: 'tx:undo-payment', txId: String(saved._id) });
+    return { tx: saved, reversedAmount: amount, vaultMethod: method, mode: isLastActive ? 'full' : 'partial' };
+  }
+
+  /** Save with optimistic concurrency check on document version. */
+  private async saveWithVersion(
+    tx: TransactionDocument,
+    expectedVersion: number | undefined,
+  ): Promise<TransactionDocument> {
+    if (expectedVersion !== undefined) {
+      const fresh = await this.transactionModel.findById(tx._id).select('__v').lean().exec();
+      if (fresh && (fresh as any).__v !== expectedVersion) {
+        throw new BadRequestException('تم تعديل الحركة من جلسة أخرى — أعد التحميل وحاول مرة أخرى');
+      }
+    }
+    return tx.save();
+  }
+
 
   async addComments(id: string, comments: Array<any>): Promise<TransactionDocument> {
     // Update ONLY comments field - without triggering editHistory
@@ -1070,6 +1264,23 @@ export class TransactionsService {
     if (!tx) {
       throw new NotFoundException('الحركة غير موجودة');
     }
+    return tx;
+  }
+
+  async updateTags(id: string, tags: string[]): Promise<TransactionDocument> {
+    const tx = await this.transactionModel.findByIdAndUpdate(
+      id,
+      { tags },
+      { new: true }
+    ).exec();
+    if (!tx) {
+      throw new NotFoundException('الحركة غير موجودة');
+    }
+    this.presence.emitEvent('tx:updated', {
+      txId: id,
+      action: 'tags',
+      tx,
+    });
     return tx;
   }
 

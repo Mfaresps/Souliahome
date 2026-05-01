@@ -410,7 +410,9 @@ body.dark-mode .history-detail-item.removed{background:rgba(248,113,113,.08)}
 .history-detail-item .arrow-sep{color:var(--muted);margin:0 2px}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
 .modal-overlay.active{opacity:1;pointer-events:auto}
-.modal{background:var(--bg);border-radius:var(--radius);padding:24px;width:90%;max-width:560px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);background-image:none !important}
+.modal{background:var(--bg);border-radius:var(--radius);padding:24px;width:90vw;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);background-image:none !important;box-sizing:border-box;display:flex;flex-direction:column}
+@media(max-width:768px){.modal{width:95vw;max-height:95vh;padding:16px}}
+@media(max-width:480px){.modal{padding:12px}}
 .modal h3{margin-bottom:16px;font-size:1.1rem}
 .form-group{margin-bottom:14px}
 .form-group label{display:block;font-size:.8rem;font-weight:600;margin-bottom:4px;color:var(--muted)}
@@ -2020,6 +2022,12 @@ body.dark-mode #page-transaction textarea:hover:not(:focus){background:#273344;b
 body.dark-mode #page-transaction input:focus,
 body.dark-mode #page-transaction select:focus,
 body.dark-mode #page-transaction textarea:focus{background:#0f172a;border-color:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.15)}
+/* Disable number input spinner (scroll wheel) globally */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type="number"]{-moz-appearance:textfield}
+/* Prevent scroll wheel on all number inputs */
+input[type="number"]{scroll-behavior:auto}
 /* Compact checkbox in movements table — uniform alignment */
 #mov-table .checkbox{width:14px;height:14px;cursor:pointer;margin:0;vertical-align:middle}
 #mov-table thead th:first-child,#mov-table tbody td:first-child{padding:6px 6px;width:36px;text-align:center!important}
@@ -2125,6 +2133,9 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
   .tag-dropdown{width:calc(100vw - 24px);max-width:280px;padding:7px}
   .tag-dd-preset{font-size:.66rem;padding:3px 7px}
 }
+/* Input error shake */
+@keyframes inputShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.input-error{border-color:#ef4444!important;box-shadow:0 0 0 2px rgba(239,68,68,.18)!important;animation:inputShake .3s ease}
 /* TAG filter row */
 .mov-tag-filter-row{display:flex;align-items:center;gap:8px;padding:6px 0 2px 0;flex-wrap:wrap;animation:fadeInDown .2s ease}
 /* ══════════════════════════════════════════
@@ -2510,9 +2521,19 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 .vault-tab-btn svg { width:16px; height:16px; flex-shrink:0; }
 .vault-tab-btn:hover { color: var(--text); }
 .vault-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
-.vault-actions { display:flex; gap:6px; padding-bottom:6px; }
+.vault-actions { display:flex; gap:6px; padding-bottom:6px; align-items:center; }
 .vault-actions .btn { display:inline-flex; align-items:center; gap:5px; }
 .vault-tab-content { animation: fadeIn .3s ease-in; }
+/* Vault sync button & timestamp */
+#vault-sync-btn svg { transition: transform .6s ease; }
+#vault-sync-btn.syncing svg { animation: vaultSpinIcon .7s linear infinite; }
+@keyframes vaultSpinIcon { to { transform: rotate(360deg); } }
+#vault-last-sync {
+  font-size:.72rem; color:var(--muted); text-align:center;
+  margin-top:14px; padding:6px 0; opacity:.75;
+  transition: opacity .3s;
+}
+#vault-last-sync.just-updated { opacity:1; color:var(--accent); }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 /* Vault KPI grid — compact, consistent cards */
@@ -3340,6 +3361,22 @@ input.is-valid,select.is-valid,textarea.is-valid{
   50% {background:rgba(234,179,8,.1);outline-color:rgba(234,179,8,.4)}
   100%{background:transparent;outline-color:transparent}
 }
+/* ── Notification panel enhancements ───────────────────────────── */
+.nav-highlight-notif{animation:navHighlightNotif 3s ease-out;outline:2px solid #f59e0b;outline-offset:3px;border-radius:6px;z-index:1;position:relative}
+@keyframes navHighlightNotif{
+  0%  {background:rgba(245,158,11,.35);outline-color:#f59e0b;box-shadow:0 0 0 4px rgba(245,158,11,.18)}
+  55% {background:rgba(245,158,11,.14);outline-color:rgba(245,158,11,.5)}
+  100%{background:transparent;outline-color:transparent;box-shadow:none}
+}
+.notif-last-updated{font-size:.6rem;color:var(--muted);padding:3px 16px 6px;opacity:.75;display:flex;align-items:center;gap:4px}
+.notif-filter-bar{display:flex;gap:4px;padding:5px 12px 5px;border-bottom:1px solid var(--border)}
+.notif-filter-btn{font-size:.64rem;font-weight:600;padding:2px 8px;border-radius:99px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+.notif-filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.notif-filter-btn.f-urgent.active{background:#dc2626;border-color:#dc2626}
+.notif-filter-btn.f-warning.active{background:#d97706;border-color:#d97706}
+.notif-filter-btn.f-info.active{background:#1d4ed8;border-color:#1d4ed8}
+.notif-item.unread-notif{background:rgba(16,185,129,.04)}
+.notif-item.unread-notif .notif-title::after{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:5px;vertical-align:middle;flex-shrink:0}
 .rt-event-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:linear-gradient(135deg,#0f766e 0%,#10b981 100%);color:#fff;padding:10px 18px;border-radius:99px;font-size:.85rem;font-weight:700;box-shadow:0 8px 20px rgba(16,185,129,.35);z-index:9999;opacity:0;pointer-events:none;transition:opacity .25s,transform .35s cubic-bezier(.2,.8,.3,1.2);display:inline-flex;align-items:center;gap:8px;max-width:90vw}
 .rt-event-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -3428,6 +3465,7 @@ body.dark-mode .txn-dismiss:hover{color:rgba(255,255,255,.9)}
 .txn-vault-amount.credit{color:#4CAF50}
 .txn-vault-amount.debit{color:#E63946}
 .txn-vault-seg{font-size:.68rem;color:rgba(15,30,22,.5);margin-top:1px}
+.txn-partial-note{font-size:.68rem;color:#F59E0B;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block}
 body.dark-mode .txn-vault{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.05)}
 body.dark-mode .txn-vault-icon{color:#fff}
 body.dark-mode .txn-vault-label{color:rgba(255,255,255,.55)}
@@ -3975,12 +4013,24 @@ body.dark-mode .dashboard-v2{
 <div class="notif-header" style="flex-direction:column;gap:0;padding:0">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 0">
     <span style="font-weight:700;font-size:.9rem">الإشعارات</span>
-    <span class="notif-clear" onclick="clearNotifications()">مسح الكل</span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="notif-clear" onclick="clearNotifications()">مسح الكل</span>
+    </div>
   </div>
-  <div style="display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 16px;margin-top:6px">
+  <div id="notif-last-updated" class="notif-last-updated" style="display:none">
+    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span id="notif-last-updated-text"></span>
+  </div>
+  <div style="display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 16px;margin-top:4px">
     <button id="notif-tab-all" onclick="switchNotifTab('all')" style="background:none;border:none;border-bottom:2.5px solid var(--accent);margin-bottom:-1px;padding:7px 12px 6px;font-size:.8rem;font-weight:700;color:var(--accent);cursor:pointer;transition:all .15s">التحديثات</button>
     <button id="notif-tab-mentions" onclick="switchNotifTab('mentions')" style="background:none;border:none;border-bottom:2.5px solid transparent;margin-bottom:-1px;padding:7px 12px 6px;font-size:.8rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s">الإشارات <span id="notif-mention-count" style="display:none;background:#7c3aed;color:#fff;border-radius:10px;font-size:.62rem;padding:1px 6px;margin-right:2px;vertical-align:middle">0</span></button>
     <button id="notif-tab-stock" onclick="switchNotifTab('stock')" style="background:none;border:none;border-bottom:2.5px solid transparent;margin-bottom:-1px;padding:7px 12px 6px;font-size:.8rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s">المخزن <span id="notif-stock-count" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:.62rem;padding:1px 6px;margin-right:2px;vertical-align:middle">0</span></button>
+  </div>
+  <div class="notif-filter-bar" id="notif-filter-bar" style="display:none">
+    <button class="notif-filter-btn active" id="nfb-all" onclick="setNotifFilter('all')">الكل</button>
+    <button class="notif-filter-btn f-urgent" id="nfb-urgent" onclick="setNotifFilter('urgent')">🔴 عاجل</button>
+    <button class="notif-filter-btn f-warning" id="nfb-warning" onclick="setNotifFilter('warning')">🟡 تحذير</button>
+    <button class="notif-filter-btn f-info" id="nfb-info" onclick="setNotifFilter('info')">🔵 معلومات</button>
   </div>
 </div>
 <div class="notif-list" id="notif-list"></div>
@@ -5477,6 +5527,7 @@ body.dark-mode .dashboard-v2{
     </button>
   </div>
   <div class="vault-actions">
+    <button id="vault-sync-btn" class="btn btn-outline btn-sm" onclick="syncVaultAll()" title="تحديث البيانات" aria-label="تحديث البيانات"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg><span class="vault-btn-label"> تحديث</span></button>
     <button class="btn btn-outline btn-sm" onclick="lockVault()" title="قفل الخزنة" aria-label="قفل الخزنة"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span class="vault-btn-label"> قفل</span></button>
     <button class="btn btn-outline btn-sm" onclick="exportVaultExcel()" title="تصدير Excel" aria-label="تصدير Excel"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="vault-btn-label"> تصدير</span></button>
   </div>
@@ -5548,6 +5599,7 @@ body.dark-mode .dashboard-v2{
 </div>
 </div>
 <!-- End Tab 2: Analytics -->
+<div id="vault-last-sync"></div>
 </div>
 
 <!-- Users -->
@@ -5690,6 +5742,15 @@ body.dark-mode .dashboard-v2{
       </div>
     </div>
   </div>
+</div>
+
+<!-- إدارة TAGs -->
+<div id="tag-mgmt-section" style="margin-top:28px;display:none">
+  <div class="settings-section-label" style="margin-bottom:12px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+    <span>إدارة TAGs</span>
+  </div>
+  <div class="card settings-card" style="padding:16px 18px" id="tag-mgmt-card"></div>
 </div>
 
 <!-- النسخ والبيانات -->
@@ -6182,42 +6243,66 @@ let currentPage = 'dashboard';
 let movFilter = 'all';
 let movStatusFilter = '';
 let movViewMode = 'list'; // 'list' | 'grid'
-let movTagFilter = '';    // active tag filter string
-// TAG storage: { txId: [{label, color, bg}] }
-const txTagsStore = (() => {
-  try { return JSON.parse(localStorage.getItem('soulia_tx_tags') || '{}'); } catch(_) { return {}; }
-})();
-function saveTxTagsStore() { try { localStorage.setItem('soulia_tx_tags', JSON.stringify(txTagsStore)); } catch(_) {} }
-function getTxTags(txId) { return (txTagsStore[String(txId)] || []).map(t => t.label || t); }
-function getTxTagObjects(txId) { return txTagsStore[String(txId)] || []; }
-function addTxTag(txId, label, color, bg) {
-  const id = String(txId);
-  if (!txTagsStore[id]) txTagsStore[id] = [];
-  if (txTagsStore[id].some(t => (t.label||t) === label)) return;
-  txTagsStore[id].push({ label, color, bg });
-  saveTxTagsStore();
+let movTagFilter = '';
+let masterTags = [];
+
+async function loadMasterTags() {
+  try { masterTags = await api('/tags'); } catch(_) { masterTags = []; }
 }
-function removeTxTag(txId, label) {
-  const id = String(txId);
-  if (!txTagsStore[id]) return;
-  txTagsStore[id] = txTagsStore[id].filter(t => (t.label||t) !== label);
-  if (!txTagsStore[id].length) delete txTagsStore[id];
-  saveTxTagsStore();
+
+function getTxTags(txId) {
+  const tx = transactions.find(t => String(t._id) === String(txId));
+  return tx ? (tx.tags || []) : [];
 }
-const TAG_PRESETS = [
-  { label: 'عاجل',          color: '#fff', bg: '#ef4444' },
-  { label: 'هدية',          color: '#fff', bg: '#a855f7' },
-  { label: 'متابعة',        color: '#fff', bg: '#f59e0b' },
-  { label: 'خصم خاص',       color: '#fff', bg: '#3b82f6' },
-  { label: 'VIP',           color: '#fff', bg: '#0891b2' },
-  { label: 'أولوية',        color: '#fff', bg: '#10b981' },
-  { label: 'شحن سريع',      color: '#fff', bg: '#6366f1' },
-  { label: 'جديد',          color: '#fff', bg: '#64748b' },
-  { label: 'Urgent',        color: '#fff', bg: '#dc2626' },
-  { label: 'Gift',          color: '#fff', bg: '#9333ea' },
-  { label: 'Follow-up',     color: '#fff', bg: '#d97706' },
-  { label: 'Special Discount', color: '#fff', bg: '#2563eb' },
-];
+
+function getTxTagObjects(txId) {
+  return getTxTags(txId).map(label => {
+    const master = masterTags.find(t => t.name === label);
+    return { label, color: master?.color || '#fff', bg: master?.bg || 'var(--accent)' };
+  });
+}
+
+async function addTxTag(txId, label, color, bg) {
+  const tx = transactions.find(t => String(t._id) === String(txId));
+  if (!tx) return;
+  const currentTags = tx.tags || [];
+  if (currentTags.includes(label)) return;
+  const newTags = [...currentTags, label];
+
+  try {
+    // First, ensure master tag exists
+    if (!masterTags.find(t => t.name === label)) {
+      const newMaster = await api('/tags', { method: 'POST', body: JSON.stringify({ name: label, color, bg }) });
+      masterTags.push(newMaster);
+    }
+
+    // Then update transaction tags
+    await api(`/transactions/${txId}/tags`, { method: 'PATCH', body: JSON.stringify({ tags: newTags }) });
+
+    // Only update UI after successful API calls
+    tx.tags = newTags;
+    _refreshTagCell(txId);
+    _rebuildTagFilterRow();
+    toast('تم إضافة TAG');
+  } catch(e) {
+    toast('فشل إضافة TAG: ' + e.message, true);
+  }
+}
+
+async function removeTxTag(txId, label) {
+  const tx = transactions.find(t => String(t._id) === String(txId));
+  if (!tx) return;
+  const currentTags = tx.tags || [];
+  const newTags = currentTags.filter(l => l !== label);
+
+  try {
+    await api(`/transactions/${txId}/tags`, { method: 'PATCH', body: JSON.stringify({ tags: newTags }) });
+    tx.tags = newTags;
+    toast('تم إزالة TAG');
+  } catch(e) {
+    toast('فشل إزالة TAG: ' + e.message, true);
+  }
+}
 let invFilter = 'all';
 let prodFilter = 'all';
 // Unified filter/sort state for inventory + products pages
@@ -7365,6 +7450,13 @@ async function showApp() {
   }
   // Check for unread mentions since last session
   checkMentionAlertOnLogin();
+
+  // Disable scroll wheel on all number inputs
+  document.addEventListener('wheel', (e) => {
+    if (e.target.tagName === 'INPUT' && e.target.type === 'number') {
+      e.preventDefault();
+    }
+  }, { passive: false });
 }
 
 function findFirstAllowedPage() { for (const item of NAV_ITEMS) { if (item.adminOnly && !isAdmin()) continue; if (hasPerm(item.perm)) return item.id; } return 'userhub'; }
@@ -7460,6 +7552,7 @@ function connectSocket() {
       }
       _rtRefreshUI({ movements: true, sidebar: true, notifications: true });
       requestAnimationFrame(() => bounceMovementsNav());
+      _updateNotifTimestamp?.();
       // unified tx notification card (vault + inventory)
       try { window.txNotifier?.onTxCreated(tx, payload.by); } catch(_) {}
     } catch(e) { console.warn('tx:created handler', e); }
@@ -7471,6 +7564,10 @@ function connectSocket() {
     _rtFlashIds.add(String(tx._id));
     setTimeout(() => _rtFlashIds.delete(String(tx._id)), 3000);
     _rtRefreshUI({ movements: true });
+    // vault card is shown via vault:changed; just refresh sidebar for collect
+    if (payload?.action === 'collect') {
+      _rtRefreshUI({ sidebar: true });
+    }
   });
   socket.on('tx:cancelled', async (payload) => {
     const tx = payload?.tx; if (!tx) return;
@@ -7509,6 +7606,7 @@ function connectSocket() {
     if (currentPage === 'inventory') renderInventory?.();
     if (currentPage === 'products') renderProducts?.();
     buildNotifications?.();
+    _updateNotifTimestamp?.();
   });
 
   // Real-time mention delivery — shows toast + updates panel/badge instantly
@@ -7561,12 +7659,14 @@ function connectSocket() {
     }
     _fuUpdateBadges();
     buildNotifications();
+    _updateNotifTimestamp?.();
   });
   socket.on('followup:notify', (payload) => {
     if (typeof toast === 'function') toast(`متابعة طلب #${payload.orderRef||''}: ${payload.reason||''}`);
     if (qs('#fu-orders-section')?.style.display !== 'none') { renderFuKpi(); renderFollowUps(); }
     _fuUpdateBadges();
     buildNotifications();
+    _updateNotifTimestamp?.();
   });
 
   // Heartbeat: keep server-side activity timestamp fresh
@@ -7831,7 +7931,7 @@ window.txNotifier = (function () {
   */
   function _show(opts) {
     const { cardId, kind, txType, ref, client, items, isCancellation,
-            vaultAmount, vaultSeg, vaultBalances } = opts;
+            vaultAmount, vaultSeg, vaultBalances, isPartial, newRemaining } = opts;
 
     if (_cards.has(cardId)) return; // dedupe
 
@@ -7852,12 +7952,15 @@ window.txNotifier = (function () {
       const sign     = vaultAmount > 0 ? '+' : '−';
       const cls      = vaultAmount > 0 ? 'credit' : 'debit';
       const segLabel = SEG_LABEL[vaultSeg] || vaultSeg || '';
+      const partialHtml = isPartial && newRemaining > 0
+        ? `<div class="txn-partial-note">دفعة جزئية — متبقي: ${_fmt(newRemaining)}</div>`
+        : '';
       bodyHtml = `
         <div class="txn-section-head">
           <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>
           <span>الخزنة</span>
         </div>
-        ${_vaultRowHtml(vaultAmount, sign, cls, segLabel)}`;
+        ${_vaultRowHtml(vaultAmount, sign, cls, segLabel)}${partialHtml}`;
     } else {
       // stock card
       const itemCls  = isAdd ? 'stock-add' : 'stock-sub';
@@ -7995,24 +8098,34 @@ window.txNotifier = (function () {
   function onVaultChanged(payload) {
     if (!payload) return;
     const amount = Number(payload.amount) || 0;
-    if (!amount) return;
+    // For tx:collect events the vault amount is embedded in payload fields
+    const payAmount = Number(payload.payAmount) || 0;
+    const effectiveAmount = amount || (payload.isPurchase ? -payAmount : payAmount);
+    if (!effectiveAmount) return;
     const txId = payload.txId ? String(payload.txId) : null;
-    const cardId = (txId || 'manual_' + Date.now()) + '_vault';
-    // Infer txType from sign for color-coding when source is missing
-    // sale → cash IN (+), purchase → cash OUT (−)
+    // For collect payments, append timestamp to allow multiple payments on same tx
+    const suffix = payload.isPartial !== undefined && txId
+      ? '_vault_' + (payload.isPartial ? 'partial_' + Date.now() : 'full')
+      : '_vault';
+    const cardId = (txId || 'manual_' + Date.now()) + suffix;
     const txType = payload.source
-      || (amount > 0 ? 'مبيعات' : 'مشتريات');
+      || (payload.isPurchase ? 'مشتريات' : (effectiveAmount > 0 ? 'مبيعات' : 'مشتريات'));
+    const isPartial = !!payload.isPartial;
+    const newRemaining = Number(payload.newRemaining) || 0;
+    const client = payload.entityLabel || payload.client || payload.desc || '';
     _show({
       cardId,
       kind: 'vault',
       txType,
       ref: payload.ref || payload.txNo || '',
-      client: payload.entityLabel || payload.desc || '',
+      client,
       items: [],
       isCancellation: false,
-      vaultAmount: amount,
-      vaultSeg: payload.seg,
+      vaultAmount: effectiveAmount,
+      vaultSeg: payload.seg || payload.collectMethod,
       vaultBalances: payload.balances,
+      isPartial,
+      newRemaining,
     });
   }
 
@@ -8280,60 +8393,131 @@ function setArchivePage(p) { archivePage=p; renderArchivedMovements(); }
 function setClientsPage(p) { clientsPage=p; renderClients(); }
 function setVaultPage(p) { vaultPage=p; renderVaultTable(); }
 
-/* Notifications */
+/* ═══════════════════════════════════════════════════════════════
+   NOTIFICATIONS — enhanced with unread state, deep-link highlight,
+   filter bar, and "last updated" timestamp
+   ══════════════════════════════════════════════════════════════ */
 let notifDismissed = JSON.parse(localStorage.getItem('notifDismissed') || '[]');
+let _notifReadIds  = JSON.parse(localStorage.getItem('notifReadIds')  || '[]');
+let _notifFilter   = 'all'; // 'all' | 'urgent' | 'warning' | 'info'
+let _notifLastUpdatedAt = null;
+
+/** Mark a notification id as read (persisted) */
+function _markNotifRead(id) {
+  if (!_notifReadIds.includes(id)) {
+    _notifReadIds.push(id);
+    localStorage.setItem('notifReadIds', JSON.stringify(_notifReadIds));
+  }
+}
+
+/** Update the "last updated" line — legacy: hidden */
+function _updateNotifTimestamp() {
+  _notifLastUpdatedAt = new Date();
+  const el = qs('#notif-last-updated');
+  if (el) el.style.display = 'none';
+}
+
+/** Show/hide the filter bar based on current tab — legacy: always hidden */
+function _syncFilterBar(tab) {
+  const bar = qs('#notif-filter-bar');
+  if (bar) bar.style.display = 'none';
+}
+
+/** Set the active filter and re-render — legacy: filter is always 'all' */
+function setNotifFilter(f) {
+  _notifFilter = 'all';
+  ['all','urgent','warning','info'].forEach(k => {
+    const btn = qs('#nfb-' + k);
+    if (btn) btn.classList.toggle('active', k === 'all');
+  });
+  const tab = window._notifTab || 'all';
+  if (tab === 'stock') renderStockNotifsList();
+  else buildNotifications();
+}
+
 function buildStockNotifs() {
   const list = [];
   if (currentUser?.role !== 'admin') return list;
   const inv = Array.isArray(inventoryCache) ? inventoryCache : [];
   inv.forEach(item => {
     if (item.current <= 0) {
-      list.push({ id: 'stock-out-' + item.code, icon: ICON('alarm'), type: 'urgent', title: `${item.name} — ${t('notifStockOut')}`, desc: `${currentLang==='en'?'Current: 0 | Min:':'الكمية الحالية: 0 | الحد الأدنى:'} ${item.minStock || 0}`, page: 'inventory' });
+      list.push({ id: 'stock-out-' + item.code, icon: ICON('alarm'), type: 'urgent',
+        title: `${item.name} — ${t('notifStockOut')}`,
+        desc: `${currentLang==='en'?'Current: 0 | Min:':'الكمية الحالية: 0 | الحد الأدنى:'} ${item.minStock || 0}`,
+        page: 'inventory', refType: 'inventory', refKey: item.name });
     } else if (item.current <= (item.minStock || 0)) {
-      list.push({ id: 'stock-low-' + item.code, icon: ICON('warning'), type: 'warning', title: `${item.name} — ${t('notifStockLow')}`, desc: `${currentLang==='en'?'Current:':'الكمية الحالية:'} ${item.current} | ${currentLang==='en'?'Min:':'الحد الأدنى:'} ${item.minStock || 0}`, page: 'inventory' });
+      list.push({ id: 'stock-low-' + item.code, icon: ICON('warning'), type: 'warning',
+        title: `${item.name} — ${t('notifStockLow')}`,
+        desc: `${currentLang==='en'?'Current:':'الكمية الحالية:'} ${item.current} | ${currentLang==='en'?'Min:':'الحد الأدنى:'} ${item.minStock || 0}`,
+        page: 'inventory', refType: 'inventory', refKey: item.name });
     }
   });
   return list;
 }
+
 function buildNotifications() {
+  _updateNotifTimestamp();
   const notifs = [];
   const pendingExp = expenses.filter(e => e.status === 'معلق');
   if (pendingExp.length > 0 && currentUser?.role === 'admin') {
     pendingExp.forEach(exp => {
-      notifs.push({ id: 'exp-pending-' + exp._id, icon: ICON('money'), type: 'info', title: t('notifExpPending'), desc: `${exp.desc || ''} — ${fmtJ(exp.amount)} (${exp.category || ''})`, page: 'approvals', ts: exp.createdAt || exp.date || '' });
+      notifs.push({ id: 'exp-pending-' + exp._id, icon: ICON('money'), type: 'info',
+        title: t('notifExpPending'),
+        desc: `${exp.desc || ''} — ${fmtJ(exp.amount)} (${exp.category || ''})`,
+        page: 'approvals', ts: exp.createdAt || exp.date || '',
+        refType: 'approvals' });
     });
   }
   const pendingComplaints = (complaints || []).filter(c => c.status === 'معلق');
   if (pendingComplaints.length > 0 && currentUser?.role === 'admin') {
     pendingComplaints.forEach(c => {
-      notifs.push({ id: 'cmp-pending-' + c._id, icon: ICON('target'), type: 'warning', title: `${t('notifComplaint')}: ${c.complaintNo}`, desc: `${c.submittedBy} — ${(c.description || '').slice(0, 60)}`, page: 'complaints', ts: c.createdAt || '' });
+      notifs.push({ id: 'cmp-pending-' + c._id, icon: ICON('target'), type: 'warning',
+        title: `${t('notifComplaint')}: ${c.complaintNo}`,
+        desc: `${c.submittedBy} — ${(c.description || '').slice(0, 60)}`,
+        page: 'complaints', ts: c.createdAt || '',
+        refType: 'complaint', refId: String(c._id) });
     });
   }
   const pendingReturns = (returnRequests || []).filter(r => r.status === 'معلق');
   if (pendingReturns.length > 0 && currentUser?.role === 'admin') {
     pendingReturns.forEach(ret => {
       const kindLabel = ret.requestKind === 'exchange' ? (currentLang==='en'?'Exchange':'استبدال') : (currentLang==='en'?'Return':'استرجاع');
-      notifs.push({ id: 'ret-pending-' + ret._id, icon: ICON('box'), type: 'warning', title: `${t('notifReturnPending')}: ${kindLabel}`, desc: `${ret.client} — ${fmtJ(ret.total)} (${ret.reason})`, page: 'approvals', ts: ret.createdAt || '' });
+      notifs.push({ id: 'ret-pending-' + ret._id, icon: ICON('box'), type: 'warning',
+        title: `${t('notifReturnPending')}: ${kindLabel}`,
+        desc: `${ret.client} — ${fmtJ(ret.total)} (${ret.reason})`,
+        page: 'approvals', ts: ret.createdAt || '',
+        refType: 'approvals' });
     });
   }
   // Cancel requests pending manager approval
   const pendingCancelReqs = (transactions || []).filter(tx => tx.cancelRequest && tx.cancelRequest.status === 'معلق');
   if (pendingCancelReqs.length > 0 && currentUser?.role === 'admin') {
     pendingCancelReqs.forEach(tx => {
-      notifs.push({ id: 'cancel-req-' + tx._id, icon: ICON('ban'), type: 'urgent', title: t('notifCancelReq'), desc: `${tx.client || (currentLang==='en'?'No Name':'بدون اسم')} — ${currentLang==='en'?'Invoice':'فاتورة'} #${tx.ref || '-'} (${fmtJ(tx.deposit || 0)} ${currentLang==='en'?'to refund':'للرد'})`, page: 'approvals', ts: tx.cancelRequest?.requestedAt || tx.createdAt || '' });
+      notifs.push({ id: 'cancel-req-' + tx._id, icon: ICON('ban'), type: 'urgent',
+        title: t('notifCancelReq'),
+        desc: `${tx.client || (currentLang==='en'?'No Name':'بدون اسم')} — ${currentLang==='en'?'Invoice':'فاتورة'} #${tx.ref || '-'} (${fmtJ(tx.deposit || 0)} ${currentLang==='en'?'to refund':'للرد'})`,
+        page: 'movements', ts: tx.cancelRequest?.requestedAt || tx.createdAt || '',
+        refType: 'tx', refId: String(tx._id) });
     });
   }
   // Vault: exchange sales pending collection
   if (currentUser?.role === 'admin') {
-    const pendingCollect = (transactions || []).filter(t => t.type === 'مبيعات' && !t.cancelled && isStatusPending(t.payStatus) && (t.remaining || 0) > 0 && /(-EXC)$/i.test(String(t.ref || '')));
-    pendingCollect.forEach(t => {
-      notifs.push({ id: 'exc-collect-' + t._id, icon: ICON('money'), type: 'info', title: t('notifExcCollect'), desc: `${t.client} — ${currentLang==='en'?'Remaining:':'متبقي'} ${fmtJ(t.remaining)} (${currentLang==='en'?'Invoice':'فاتورة'} #${t.ref || '-'})`, page: 'movements', ts: t.createdAt || '' });
+    const pendingCollect = (transactions || []).filter(tx => tx.type === 'مبيعات' && !tx.cancelled && isStatusPending(tx.payStatus) && (tx.remaining || 0) > 0 && /(-EXC)$/i.test(String(tx.ref || '')));
+    pendingCollect.forEach(tx => {
+      notifs.push({ id: 'exc-collect-' + tx._id, icon: ICON('money'), type: 'info',
+        title: t('notifExcCollect'),
+        desc: `${tx.client} — ${currentLang==='en'?'Remaining:':'متبقي'} ${fmtJ(tx.remaining)} (${currentLang==='en'?'Invoice':'فاتورة'} #${tx.ref || '-'})`,
+        page: 'movements', ts: tx.createdAt || '',
+        refType: 'tx', refId: String(tx._id) });
     });
-    // Pending collection on regular sales
-    const pendingRegular = (transactions || []).filter(t => t.type === 'مبيعات' && !t.cancelled && isStatusPending(t.payStatus) && (t.remaining || 0) > 0 && !/(-EXC)$/i.test(String(t.ref || '')));
+    // Pending collection on regular sales (grouped)
+    const pendingRegular = (transactions || []).filter(tx => tx.type === 'مبيعات' && !tx.cancelled && isStatusPending(tx.payStatus) && (tx.remaining || 0) > 0 && !/(-EXC)$/i.test(String(tx.ref || '')));
     if (pendingRegular.length > 0) {
-      const totalRemaining = pendingRegular.reduce((s, t) => s + (t.remaining || 0), 0);
-      notifs.push({ id: 'sales-pending-all', icon: ICON('clock'), type: 'info', title: `${pendingRegular.length} ${t('notifSalesPending')}`, desc: `${currentLang==='en'?'Total Remaining:':'إجمالي المتبقي:'} ${fmtJ(totalRemaining)}`, page: 'movements' });
+      const totalRemaining = pendingRegular.reduce((s, tx) => s + (tx.remaining || 0), 0);
+      notifs.push({ id: 'sales-pending-all', icon: ICON('clock'), type: 'info',
+        title: `${pendingRegular.length} ${t('notifSalesPending')}`,
+        desc: `${currentLang==='en'?'Total Remaining:':'إجمالي المتبقي:'} ${fmtJ(totalRemaining)}`,
+        page: 'movements', refType: 'movements' });
     }
   }
   // Follow-up unseen items (all users)
@@ -8349,6 +8533,7 @@ function buildNotifications() {
         page: 'complaints',
         fuId: String(f._id),
         ts: f.createdAt || '',
+        refType: 'fu', refId: String(f._id),
       });
     });
   }
@@ -8359,10 +8544,12 @@ function buildNotifications() {
     return (b.ts || '').localeCompare(a.ts || '');
   });
   const visible = notifs.filter(n => !notifDismissed.includes(n.id));
-  const stockVisible = buildStockNotifs().filter(n => !notifDismissed.includes(n.id));
+
+  const stockAll = buildStockNotifs();
+  const stockVisible = stockAll.filter(n => !notifDismissed.includes(n.id));
   const badge = qs('#notif-badge');
   const unreadMentions = (typeof buildMentionNotifsList === 'function') ? buildMentionNotifsList().filter(m => !m.read).length : 0;
-  const totalBadge = visible.length + unreadMentions + stockVisible.length;
+  const totalBadge = notifs.filter(n => !notifDismissed.includes(n.id)).length + unreadMentions + stockVisible.length;
   if (badge) badge.textContent = totalBadge > 0 ? totalBadge : '';
   const stockCountEl = qs('#notif-stock-count');
   if (stockCountEl) {
@@ -8374,16 +8561,21 @@ function buildNotifications() {
   if (tab !== 'all') return;
   const list = qs('#notif-list');
   if (!list) return;
-  list.innerHTML = visible.length ? visible.map(n => `
-    <div class="notif-item ${n.type}" onclick="onNotifClick('${esc(n.page)}','${esc(n.id)}'${n.fuId?`,'${esc(n.fuId)}'`:''})">
+  list.innerHTML = visible.length ? visible.map(n => {
+    const isUnread = !_notifReadIds.includes(n.id);
+    const refAttrs = n.refId ? `data-ref-id="${esc(n.refId)}" data-ref-type="${esc(n.refType||'')}"` : `data-ref-type="${esc(n.refType||'')}"`;
+    return `<div class="notif-item ${n.type}${isUnread?' unread-notif':''}" ${refAttrs}
+      onclick="onNotifClick('${esc(n.page)}','${esc(n.id)}'${n.fuId?`,'${esc(n.fuId)}'`:''}${n.refId?`,'${esc(n.refType||'')}','${esc(n.refId)}'`:''})" >
       <div class="notif-icon">${n.icon}</div>
       <div class="notif-body">
         <div class="notif-title">${esc(n.title)}</div>
         <div class="notif-desc">${n.desc}</div>
         ${n.ts ? `<div class="notif-time">${fmtDateTime(n.ts)}</div>` : ''}
       </div>
-    </div>`).join('') : `<div class="notif-empty">${t('noNotifications')}</div>`;
+    </div>`;
+  }).join('') : `<div class="notif-empty">${t('noNotifications')}</div>`;
 }
+
 function toggleNotifPanel(e) {
   e.stopPropagation();
   const panel = qs('#notif-panel');
@@ -8391,18 +8583,38 @@ function toggleNotifPanel(e) {
   panel.classList.toggle('show');
   if (willShow) {
     window._notifTab = window._notifTab || 'all';
+    _syncFilterBar(window._notifTab);
     refreshMentionsFromServer().then(() => switchNotifTab(window._notifTab));
   }
 }
-function onNotifClick(page, notifId, fuId) {
+
+/**
+ * Highlight any page element after navigation.
+ * refType: 'tx' → movements row/card by tx._id
+ *          'inventory' → inventory row by product name key
+ *          'fu' → follow-up row by fu _id
+ *          'approvals' | 'complaints' | 'movements' → no extra highlight (page is enough)
+ */
+/** Legacy: highlight disabled — navigation to page is sufficient */
+function _highlightNotifTarget(refType, refId) { }
+
+function onNotifClick(page, notifId, fuId, refType, refId) {
   qs('#notif-panel').classList.remove('show');
+  // Dismiss
   if (!notifDismissed.includes(notifId)) {
     notifDismissed.push(notifId);
     localStorage.setItem('notifDismissed', JSON.stringify(notifDismissed));
   }
+  // Mark as read
+  _markNotifRead(notifId);
+  // Navigate + highlight
   if (fuId) { goToFuAndHighlight(fuId); return; }
   navigateTo(page);
+  if (refType && (refType === 'tx' || refType === 'inventory' || refType === 'fu')) {
+    _highlightNotifTarget(refType, refId);
+  }
 }
+
 function clearNotifications() {
   const currentTab = window._notifTab || 'all';
   if (currentTab === 'mentions') {
@@ -8413,8 +8625,8 @@ function clearNotifications() {
   const items = list?.querySelectorAll('.notif-item') || [];
   items.forEach(el => {
     const onclick = el.getAttribute('onclick') || '';
-    const match = onclick.match(/onNotifClick\('.*?','(.*?)'\)/);
-    if (match) notifDismissed.push(match[1]);
+    const match = onclick.match(/onNotifClick\('.*?','(.*?)'/);
+    if (match) { notifDismissed.push(match[1]); _markNotifRead(match[1]); }
   });
   localStorage.setItem('notifDismissed', JSON.stringify(notifDismissed));
   buildNotifications();
@@ -8740,7 +8952,7 @@ function switchNotifTab(tab) {
   if (tabAll) { tabAll.style.borderBottomColor = tab === 'all' ? 'var(--accent)' : 'transparent'; tabAll.style.color = tab === 'all' ? 'var(--accent)' : 'var(--muted)'; }
   if (tabMen) { tabMen.style.borderBottomColor = tab === 'mentions' ? '#7c3aed' : 'transparent'; tabMen.style.color = tab === 'mentions' ? '#7c3aed' : 'var(--muted)'; }
   if (tabStk) { tabStk.style.borderBottomColor = tab === 'stock' ? '#ef4444' : 'transparent'; tabStk.style.color = tab === 'stock' ? '#ef4444' : 'var(--muted)'; }
-
+  _syncFilterBar(tab);
   if (tab === 'mentions') {
     renderMentionNotifsList();
     refreshMentionsFromServer();
@@ -8759,14 +8971,17 @@ function renderStockNotifsList() {
     list.innerHTML = `<div class="notif-empty">${currentLang==='en'?'No stock alerts':'لا توجد تنبيهات للمخزن'}</div>`;
     return;
   }
-  list.innerHTML = items.map(n => `
-    <div class="notif-item ${n.type}" onclick="onNotifClick('${esc(n.page)}','${esc(n.id)}')">
+  list.innerHTML = items.map(n => {
+    const isUnread = !_notifReadIds.includes(n.id);
+    return `<div class="notif-item ${n.type}${isUnread?' unread-notif':''}"
+      onclick="onNotifClick('${esc(n.page)}','${esc(n.id)}','','inventory','${esc(n.refKey||'')}')">
       <div class="notif-icon">${n.icon}</div>
       <div class="notif-body">
         <div class="notif-title">${esc(n.title)}</div>
         <div class="notif-desc">${n.desc}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function renderMentionNotifsList() {
@@ -9119,14 +9334,15 @@ function onPageEnter(page) {
 
 async function loadAllData() {
   try {
-    const [p, tx, s, e, st, u, mentionable] = await Promise.all([
+    const [p, tx, s, e, st, u, mentionable, tags] = await Promise.all([
       api('/products').catch(() => []), api('/transactions').catch(() => []),
       api('/suppliers').catch(() => []), api('/expenses').catch(() => []),
       api('/settings').catch(() => ({})),
       hasPerm('users') ? api('/users').catch(() => []) : Promise.resolve([]),
       api('/users/mentionable').catch(() => []),
+      api('/tags').catch(() => []),
     ]);
-    products = p; transactions = tx; suppliers = s; expenses = e; settings = st || {};
+    products = p; transactions = tx; suppliers = s; expenses = e; settings = st || {}; masterTags = tags;
     // Admins get full user list; others get the lightweight mentionable list for @mentions
     users = u && u.length ? u : mentionable;
     try { returnRequests = await api('/returns'); } catch (_) { returnRequests = []; }
@@ -9143,6 +9359,31 @@ async function loadAllData() {
     if (localStorage.getItem('mov_seen_count') === null) {
       localStorage.setItem('mov_seen_count', String(transactions.filter(t => !t.cancelled).length));
     }
+    // One-time migration: migrate tags from localStorage to API
+    try {
+      const oldStore = JSON.parse(localStorage.getItem('soulia_tx_tags') || 'null');
+      if (oldStore && typeof oldStore === 'object') {
+        const entries = Object.entries(oldStore);
+        for (const [txId, tagObjs] of entries) {
+          const labels = Array.isArray(tagObjs) ? tagObjs.map(t => t.label || t) : [];
+          if (labels.length) {
+            try {
+              await api(`/transactions/${txId}/tags`, { method: 'PATCH', body: JSON.stringify({ tags: labels }) });
+              for (const t of tagObjs) {
+                if (t.label && !masterTags.find(m => m.name === t.label)) {
+                  try {
+                    const m = await api('/tags', { method: 'POST', body: JSON.stringify({ name: t.label, color: t.color || '#fff', bg: t.bg || 'var(--accent)' }) });
+                    masterTags.push(m);
+                  } catch(_) {}
+                }
+              }
+            } catch(_) {}
+          }
+        }
+        localStorage.removeItem('soulia_tx_tags');
+        transactions = await api('/transactions').catch(() => transactions);
+      }
+    } catch(_) {}
     // Load mentions from backend (per-user, persists across devices)
     await refreshMentionsFromServer();
     buildNotifications();
@@ -12749,6 +12990,7 @@ function renderMovMobileCard(tx) {
             <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة</div>
             ${rem > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل</div>` : ''}
             ${tx.type === 'مبيعات' && (tx.payments||[]).length > 0 && !tx.cancelled && isAdmin() ? `<div class="dd-item" style="color:var(--orange)" onclick="openReverseCollect('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.4 7.4 11.5 4 18 5.5"/><path d="M21 17v-6h-6"/><path d="M21 11c-2.4 5.6-8.5 9-15 7.5"/></svg> تراجع عند التحصيل</div>` : ''}
+            ${((tx.payments||[]).length > 0 || (tx.deposits||[]).length > 0) && !tx.cancelled && isAdmin() ? `<div class="dd-item" style="color:#f97316" onclick="openUndoPaymentSelector('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 010 8h-3"/></svg> تراجع عن دفعة محددة</div>` : ''}
             ${!isCancelled ? `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg> إلغاء</div>` : ''}
           </div>
         </div>
@@ -13049,6 +13291,7 @@ function renderMovementTxRow(tx) {
           <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة / PDF</div>
           ${(tx.remaining || 0) > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')">${isExchangeSalePendingCollect(tx) ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل فرق الاستبدال' : tx.type === 'مشتريات' ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg> سداد المتبقي للمورد' : '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل'}</div>` : ''}
           ${tx.type === 'مبيعات' && !tx.cancelled && isAdmin() ? `<div class="dd-item" onclick="openPostDiscountModal('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> خصم بعد البيع</div>` : ''}
+          ${((tx.payments||[]).length > 0 || (tx.deposits||[]).length > 0) && !tx.cancelled && isAdmin() ? `<div class="dd-item" style="color:#f97316" onclick="openUndoPaymentSelector('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 010 8h-3"/></svg> تراجع عن دفعة محددة</div>` : ''}
           ${tx.type === 'مبيعات' && (tx.payments||[]).length > 0 && !tx.cancelled && isAdmin() ? `<div class="dd-item" style="color:var(--orange)" onclick="openReverseCollect('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.4 7.4 11.5 4 18 5.5"/><path d="M21 17v-6h-6"/><path d="M21 11c-2.4 5.6-8.5 9-15 7.5"/></svg> تراجع عند التحصيل</div>` : ''}
           ${!isStatusCancelled(tx.payStatus) && !tx.cancelled && !isStatusCompleted(tx.payStatus) ? (
             isExchangeSalePendingCollect(tx)
@@ -13351,7 +13594,7 @@ function openTagDropdown(txId, anchorEl) {
       ${en?'Add / pick TAG':'إضافة / اختيار TAG'}
     </div>
     <div class="tag-dd-presets">
-      ${TAG_PRESETS.map(p => `<span class="tag-dd-preset" style="background:${p.bg};color:${p.color}" onclick="applyTagFromDropdown('${esc(txId)}','${esc(p.label)}','${esc(p.color)}','${esc(p.bg)}')">${esc(p.label)}</span>`).join('')}
+      ${masterTags.map(p => `<span class="tag-dd-preset" style="background:${esc(p.bg)};color:${esc(p.color)}" onclick="applyTagFromDropdown('${esc(txId)}','${esc(p.name)}','${esc(p.color)}','${esc(p.bg)}')">${esc(p.name)}</span>`).join('')}
     </div>
     <div class="tag-dd-input-row">
       <input class="tag-dd-input" id="tag-dd-custom-input" placeholder="${en?'Custom TAG…':'TAG مخصص…'}" maxlength="20" onkeydown="if(event.key==='Enter'){saveCustomTag('${esc(txId)}');event.preventDefault()}">
@@ -13378,22 +13621,22 @@ function closeTagDropdown() {
     window.removeEventListener('resize', _positionTagDd);
   }
 }
-function applyTagFromDropdown(txId, label, color, bg) {
-  addTxTag(txId, label, color, bg);
+async function applyTagFromDropdown(txId, label, color, bg) {
+  await addTxTag(txId, label, color, bg);
   closeTagDropdown();
-  _refreshTagCell(txId);
 }
-function saveCustomTag(txId) {
+async function saveCustomTag(txId) {
   const inp = qs('#tag-dd-custom-input'); if (!inp) return;
-  const label = inp.value.trim(); if (!label) return;
+  const label = inp.value.trim();
+  if (!label) { inp.focus(); inp.style.borderColor = 'var(--red,#ef4444)'; setTimeout(() => inp.style.borderColor = '', 1200); return; }
+  if (label.length > 50) { toast('اسم TAG لا يجوز أن يتجاوز ٥٠ حرفاً', true); return; }
   const colors = ['#3b82f6','#10b981','#f59e0b','#a855f7','#ef4444','#0891b2','#6366f1','#f97316'];
   const bg = colors[Math.floor(Math.random() * colors.length)];
-  addTxTag(txId, label, '#fff', bg);
+  await addTxTag(txId, label, '#fff', bg);
   closeTagDropdown();
-  _refreshTagCell(txId);
 }
-function deleteTxTag(txId, label) {
-  removeTxTag(txId, label);
+async function deleteTxTag(txId, label) {
+  await removeTxTag(txId, label);
   _refreshTagCell(txId);
   // refresh TAG filter if active
   if (movTagFilter === label) { movTagFilter = ''; renderMovements(); } else { _rebuildTagFilterRow(); }
@@ -13405,14 +13648,14 @@ function _refreshTagCell(txId) {
   _rebuildTagFilterRow();
 }
 function _rebuildTagFilterRow() {
-  const allTagLabels = new Set(Object.values(txTagsStore).flat().map(t => t.label || t));
+  const allTagLabels = new Set(transactions.flatMap(tx => tx.tags || []));
   const row = qs('#mov-tag-filter-row');
   const chips = qs('#mov-tag-filter-chips');
   if (!row || !chips) return;
   row.style.display = allTagLabels.size ? 'flex' : 'none';
   chips.innerHTML = [...allTagLabels].map(label => {
-    const obj = Object.values(txTagsStore).flat().find(t => (t.label||t) === label);
-    const bg = obj?.bg || 'var(--accent)';
+    const master = masterTags.find(t => t.name === label);
+    const bg = master?.bg || 'var(--accent)';
     const isActive = movTagFilter === label;
     return `<span class="tx-tag" style="background:${esc(bg)};color:#fff;border-color:${esc(bg)};${isActive?'box-shadow:0 0 0 2px '+esc(bg)+',0 0 0 4px #fff':'opacity:.75'}" onclick="setMovTagFilter('${esc(label)}')">${esc(label)}</span>`;
   }).join('');
@@ -14025,25 +14268,104 @@ function showEditConfirmDialog({ changes, vaultDelta, vaultNote, tx }) {
   });
 }
 
+function _buildEditSupplierField(tx) {
+  const cur = esc(tx.client || '');
+  const opts = suppliers.map(s => `<option value="${esc(s.name)}">${esc(s.name)}${s.phone ? ' — ' + esc(s.phone) : ''}</option>`).join('');
+  return `
+    <div class="ac-wrap" style="position:relative">
+      <input type="text" id="edit-tx-client" value="${cur}" autocomplete="off" placeholder="ابحث باسم المورد..." oninput="_filterEditSupplierList(this.value)" onfocus="_filterEditSupplierList(this.value)" style="width:100%">
+      <div id="edit-sup-list" style="display:none;position:absolute;top:100%;right:0;left:0;z-index:200;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;margin-top:3px"></div>
+    </div>`;
+}
+function _filterEditSupplierList(q) {
+  const list = qs('#edit-sup-list'); if (!list) return;
+  const lower = (q || '').trim().toLowerCase();
+  const filtered = lower ? suppliers.filter(s => (s.name||'').toLowerCase().includes(lower) || (s.phone||'').includes(lower)) : suppliers;
+  if (!filtered.length) { list.style.display = 'none'; return; }
+  list.style.display = 'block';
+  list.innerHTML = filtered.slice(0, 10).map(s => `
+    <div onclick="_selectEditSupplier('${esc(s.name)}','${esc(s.phone||'')}')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <div style="font-size:.86rem;font-weight:600">${esc(s.name)}</div>
+      ${s.phone ? `<div style="font-size:.75rem;color:var(--muted)">${esc(s.phone)}</div>` : ''}
+    </div>`).join('');
+}
+function _selectEditSupplier(name, phone) {
+  const inp = qs('#edit-tx-client'); if (inp) inp.value = name;
+  const ph = qs('#edit-tx-phone');
+  if (ph && phone && !ph.value) ph.value = phone;
+  else if (ph && phone) ph.value = phone;
+  const list = qs('#edit-sup-list'); if (list) list.style.display = 'none';
+}
+function _buildEditInvoiceImages(tx) {
+  const imgs = Array.isArray(tx.invoiceImages) && tx.invoiceImages.length
+    ? tx.invoiceImages : (tx.invoiceImageUrl ? [tx.invoiceImageUrl] : []);
+  return `
+    <div class="form-group" style="grid-column:1/-1">
+      <label>فواتير المورد <span style="font-weight:400;color:var(--muted)">(اختياري)</span></label>
+      <div id="edit-tx-invoice-imgs-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">
+        ${imgs.map(u => _buildEditInvoiceImgRowHtml(u)).join('')}
+      </div>
+      <button type="button" onclick="_addEditInvoiceImgRow()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px dashed var(--border);border-radius:8px;background:none;color:var(--muted);cursor:pointer;font-size:.83rem;transition:border-color .15s,color .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        إضافة رابط فاتورة
+      </button>
+    </div>`;
+}
+function _buildEditInvoiceImgRowHtml(url) {
+  const u = esc(url || '');
+  return `<div class="edit-invoice-img-row" style="display:flex;flex-direction:column;gap:6px;padding:10px;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <input type="url" class="edit-invoice-img-url" placeholder="https://... رابط صورة الفاتورة" value="${u}" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-size:.82rem" oninput="_updateEditInvoiceImgPreview(this)">
+      <button type="button" onclick="this.closest('.edit-invoice-img-row').remove()" style="flex-shrink:0;width:28px;height:28px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:center">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="edit-invoice-img-preview" style="min-height:0">${url ? _editInvoiceImgPreviewHtml(url) : ''}</div>
+  </div>`;
+}
+function _addEditInvoiceImgRow() {
+  const list = qs('#edit-tx-invoice-imgs-list'); if (!list) return;
+  const div = document.createElement('div');
+  div.innerHTML = _buildEditInvoiceImgRowHtml('');
+  list.appendChild(div.firstElementChild);
+}
+function _updateEditInvoiceImgPreview(input) {
+  const url = (input.value || '').trim();
+  const box = input.closest('.edit-invoice-img-row')?.querySelector('.edit-invoice-img-preview');
+  if (!box) return;
+  box.innerHTML = _editInvoiceImgPreviewHtml(url);
+}
+function _editInvoiceImgPreviewHtml(url) {
+  if (!url || !url.startsWith('http')) return '';
+  const isImg = /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(url);
+  if (isImg) return `<a href="${esc(url)}" target="_blank"><img src="${esc(url)}" alt="فاتورة" style="max-width:100%;max-height:140px;border-radius:6px;border:1px solid var(--border);object-fit:contain;background:var(--surface);display:block" onerror="this.parentElement.innerHTML='<span style=&quot;font-size:.75rem;color:var(--red)&quot;>⚠ تعذّر تحميل الصورة</span>'"></a>`;
+  return `<a href="${esc(url)}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:.78rem;color:var(--primary);padding:4px 8px;border-radius:6px;background:var(--surface)"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> عرض المرفق</a>`;
+}
+
 function openEditMovement(id) {
   const tx = transactions.find(t => t._id === id); if (!tx) return;
   if (tx.cancelled || isStatusCancelled(tx.payStatus)) { toast('لا يمكن تعديل حركة ملغاة', true); return; }
   if (isExchangeSalePendingCollect(tx)) { toastExchangePendingLocked(); return; }
   if (isStatusCompleted(tx.payStatus)) { toast('لا يمكن تعديل حركة مكتملة', true); return; }
-  const statusWarning = '';
 
   editTxId = id;
   editTxItems = (tx.items || []).map(it => ({ name: it.name || '', code: it.code || '', qty: it.qty || 1, price: it.price || 0, productId: it.productId || '' }));
-  txComments = (tx.comments || []).slice(); // Load existing comments
+  txComments = (tx.comments || []).slice();
   const shipCoOpts = getShipCompanyOptions();
   const isSale = tx.type === 'مبيعات';
   const isPurchase = tx.type === 'مشتريات';
   const refRetailEdit = isSale || isPurchase;
+
+  const supplierField = isPurchase ? `
+    <div class="form-group"><label>المورد</label>${_buildEditSupplierField(tx)}</div>` :
+    `<div class="form-group"><label>العميل</label><input type="text" id="edit-tx-client" value="${esc(tx.client || '')}"></div>`;
+
+  const invoiceImagesSection = isPurchase ? _buildEditInvoiceImages(tx) : '';
+
   openModal(`
     <h3>تعديل الحركة ${isPurchase ? '(مشتريات)' : ''}</h3>
-    ${statusWarning}
     <div class="grid grid-2 gap-12">
-      <div class="form-group"><label>${isPurchase ? 'المورد' : 'العميل'}</label><input type="text" id="edit-tx-client" value="${esc(tx.client || '')}"></div>
+      ${supplierField}
       <div class="form-group"><label>الهاتف</label><input type="tel" id="edit-tx-phone" value="${esc(tx.phone || '')}" placeholder="01xxxxxxxxx" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'')"><div class="field-hint" style="font-size:.72rem;color:var(--muted);margin-top:3px">11 رقم يبدأ بـ 01</div></div>
       <div class="form-group"><label>${isPurchase ? 'رقم الفاتورة' : 'المرجع'}</label><input type="text" id="edit-tx-ref" value="${esc(tx.ref || '')}" ${refRetailEdit ? 'inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"' : ''}></div>
       <div class="form-group"><label>${isPurchase ? 'العربون (المدفوع مقدماً)' : 'الديبوزت'}</label><input type="text" inputmode="numeric" id="edit-tx-deposit" value="${tx.deposit || 0}" oninput="this.value=this.value.replace(/[^0-9.]/g,'');recalcEditTx()"></div>
@@ -14053,6 +14375,7 @@ function openEditMovement(id) {
       <div class="form-group"><label>طريقة الدفع</label><select id="edit-tx-payment"><option value="كاش" ${tx.payment === 'كاش' ? 'selected' : ''}>كاش</option><option value="آجل" ${tx.payment === 'آجل' ? 'selected' : ''}>آجل</option><option value="فودافون كاش" ${tx.payment === 'فودافون كاش' ? 'selected' : ''}>فودافون كاش</option><option value="Instapay" ${tx.payment === 'Instapay' ? 'selected' : ''}>Instapay</option><option value="تحويل بنكي" ${tx.payment === 'تحويل بنكي' ? 'selected' : ''}>تحويل بنكي</option></select></div>` : ''}
       <div class="form-group"><label>ملاحظات</label><input type="text" id="edit-tx-notes" value="${esc(tx.notes || '')}"></div>
       <input type="hidden" id="edit-tx-discount" value="${tx.discount || 0}">
+      ${invoiceImagesSection}
     </div>
     <div class="flex-between mt-16 mb-8" style="align-items:center">
       <h4 style="margin:0">الأصناف</h4>
@@ -14067,7 +14390,17 @@ function openEditMovement(id) {
       <button class="btn btn-primary" onclick="saveEditMovement('${esc(id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> حفظ التعديلات</button>
       <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
     </div>`, 'max-width:700px');
-  setTimeout(() => { const sel = qs('#edit-tx-shipco'); if (sel) sel.value = tx.shipCo || ''; renderEditTxItems(); recalcEditTx(); }, 50);
+  setTimeout(() => {
+    const sel = qs('#edit-tx-shipco'); if (sel) sel.value = tx.shipCo || '';
+    // Close supplier dropdown on outside click
+    document.addEventListener('click', function _closeSup(e) {
+      if (!e.target.closest('#edit-sup-list') && e.target.id !== 'edit-tx-client') {
+        const l = qs('#edit-sup-list'); if (l) l.style.display = 'none';
+        document.removeEventListener('click', _closeSup);
+      }
+    });
+    renderEditTxItems(); recalcEditTx();
+  }, 50);
 }
 function renderEditTxItems() {
   const container = qs('#edit-tx-items');
@@ -14479,6 +14812,11 @@ async function saveEditMovement(id) {
     body.shipCo = qs('#edit-tx-shipco')?.value || tx.shipCo || '';
     body.shipZone = qs('#edit-tx-zone')?.value || tx.shipZone || '';
     body.payment = qs('#edit-tx-payment')?.value || tx.payment || '';
+  }
+  if (tx.type === 'مشتريات') {
+    const editedImgs = Array.from(qsa('#edit-tx-invoice-imgs-list .edit-invoice-img-url')).map(i => i.value.trim()).filter(Boolean);
+    body.invoiceImages = editedImgs;
+    if (editedImgs.length) body.invoiceImageUrl = editedImgs[0];
   }
 
   try {
@@ -14966,6 +15304,123 @@ async function doReverseCollect(id) {
   }
 }
 
+// === Undo specific payment / deposit (audit-trail aware) ===
+function openUndoPaymentSelector(id) {
+  const tx = transactions.find(t => t._id === id);
+  if (!tx) return;
+  const deposits = (tx.deposits || []).map((d, i) => ({ ...d, _kind: 'deposit', _idx: i }));
+  const payments = (tx.payments || []).map((p, i) => ({ ...p, _kind: 'payment', _idx: i }));
+  const all = [...deposits, ...payments].filter(e => Number(e.amount) > 0);
+  if (!all.length) { toast('لا يوجد دفعات أو ديبوزتات مسجلة', true); return; }
+
+  // Sort chronological
+  all.sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
+
+  const rows = all.map((e) => {
+    const isReversed = !!e.reversed;
+    const kindLabel = e._kind === 'deposit' ? 'ديبوزت' : 'دفعة';
+    const kindColor = e._kind === 'deposit' ? '#0ea5e9' : '#10b981';
+    const dateStr = e.date ? new Date(e.date).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+    const reversedBadge = isReversed
+      ? `<span style="font-size:.7rem;padding:2px 8px;border-radius:6px;background:rgba(239,68,68,.12);color:#dc2626;font-weight:700">تم التراجع</span>`
+      : '';
+    const undoBtn = isReversed || !e.id
+      ? (isReversed
+          ? `<span style="font-size:.72rem;color:var(--muted)">${e.reversedBy ? 'بواسطة ' + esc(e.reversedBy) : ''}</span>`
+          : `<span style="font-size:.72rem;color:var(--muted)">سجل قديم — غير قابل للتراجع المستقل</span>`)
+      : `<button onclick="confirmUndoPayment('${esc(id)}','${esc(e.id)}','${esc(e._kind)}',${Number(e.amount)},'${esc(e.method || '')}')" style="padding:6px 14px;border-radius:7px;border:none;background:#f97316;color:#fff;font-size:.78rem;cursor:pointer;font-weight:700">تراجع</button>`;
+    return `
+      <div style="display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px;border-radius:9px;background:${isReversed ? 'rgba(239,68,68,.04)' : 'var(--surface2)'};border:1px solid ${isReversed ? 'rgba(239,68,68,.2)' : 'var(--border)'};${isReversed ? 'opacity:.75' : ''}">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+          <span style="font-size:.7rem;padding:2px 9px;border-radius:6px;background:${kindColor}22;color:${kindColor};font-weight:700">${kindLabel}</span>
+          ${reversedBadge}
+        </div>
+        <div style="min-width:0">
+          <div style="font-size:.92rem;font-weight:700">${fmtN(e.amount)} EGP <span style="font-size:.78rem;font-weight:500;color:var(--muted)">— ${esc(e.method || 'كاش')}</span></div>
+          <div style="font-size:.74rem;color:var(--muted);margin-top:2px">${dateStr}${e.by ? ' • ' + esc(e.by) : ''}</div>
+          ${e.note ? `<div style="font-size:.72rem;color:var(--muted);margin-top:2px;font-style:italic">${esc(e.note)}</div>` : ''}
+        </div>
+        <div>${undoBtn}</div>
+      </div>`;
+  }).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'undo-payment-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .15s ease';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:14px;padding:22px;max-width:560px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:slideUp .2s ease">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-shrink:0">
+        <div style="width:38px;height:38px;border-radius:10px;background:rgba(249,115,22,.12);display:flex;align-items:center;justify-content:center">
+          <svg viewBox="0 0 24 24" style="width:20px;height:20px;color:#f97316" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.4 7.4 11.5 4 18 5.5"/><path d="M21 17v-6h-6"/><path d="M21 11c-2.4 5.6-8.5 9-15 7.5"/></svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:1rem;font-weight:700">تراجع عن دفعة محددة</div>
+          <div style="font-size:.78rem;color:var(--muted)">${esc(tx.type)} ${tx.ref ? '#' + esc(tx.ref) : ''} — ${esc(tx.client || '')}</div>
+        </div>
+      </div>
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px;padding:10px 12px;background:var(--surface2);border-radius:7px;line-height:1.6;flex-shrink:0">
+        اختر دفعة أو ديبوزت للتراجع عنه. المبلغ سيُرجع للحالة الأصلية وسيُسجَّل في الخزنة كقيد عكسي للمراجعة.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;padding-left:4px">
+        ${rows}
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px;flex-shrink:0">
+        <button onclick="document.getElementById('undo-payment-overlay').remove()" style="padding:9px 20px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:.88rem;cursor:pointer;font-weight:600">إغلاق</button>
+      </div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function confirmUndoPayment(txId, paymentId, kind, amount, method) {
+  const tx = transactions.find(t => t._id === txId);
+  if (!tx) return;
+  const isPurchase = tx.type === 'مشتريات';
+  const vaultMsg = isPurchase
+    ? `<span style="color:#10b981">سيتم <strong>رد ${fmtN(amount)} EGP</strong> إلى خزنة ${esc(method)}</span>`
+    : `<span style="color:var(--red)">سيتم <strong>خصم ${fmtN(amount)} EGP</strong> من خزنة ${esc(method)}</span>`;
+
+  const modal = document.createElement('div');
+  modal.id = 'confirm-undo-overlay';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .15s ease';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border-radius:14px;padding:22px;max-width:420px;width:100%;animation:slideUp .2s ease">
+      <div style="font-size:1rem;font-weight:700;margin-bottom:10px">تأكيد التراجع</div>
+      <div style="font-size:.85rem;line-height:1.7;margin-bottom:12px">${vaultMsg}</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">سبب التراجع (اختياري)</div>
+      <input id="undo-reason" type="text" placeholder="مثال: تم بالخطأ" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:.85rem;margin-bottom:14px" />
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="document.getElementById('confirm-undo-overlay').remove()" style="padding:9px 18px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:.85rem;cursor:pointer;font-weight:600">إلغاء</button>
+        <button id="confirm-undo-btn" onclick="doUndoPayment('${esc(txId)}','${esc(paymentId)}')" style="padding:9px 22px;border-radius:8px;border:none;background:#f97316;color:#fff;font-size:.85rem;cursor:pointer;font-weight:700">تأكيد</button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+async function doUndoPayment(txId, paymentId) {
+  const btn = document.getElementById('confirm-undo-btn');
+  const reasonInput = document.getElementById('undo-reason');
+  const reason = reasonInput ? reasonInput.value.trim() : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري التراجع…'; }
+  try {
+    await api(`/transactions/${txId}/payments/${encodeURIComponent(paymentId)}/undo`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+    document.getElementById('confirm-undo-overlay')?.remove();
+    document.getElementById('undo-payment-overlay')?.remove();
+    transactions = await api('/transactions').catch(() => transactions);
+    try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
+    renderMovements(); buildSidebar(); buildNotifications();
+    syncVaultState();
+    toast('تم التراجع عن الدفعة بنجاح ✅');
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'تأكيد'; }
+    toast('خطأ: ' + e.message, true);
+  }
+}
+
 function openPostDiscountModal(txId) {
   const tx = transactions.find(t => t._id === txId);
   if (!tx) return;
@@ -15278,112 +15733,440 @@ function txToExcelRow(tx, columns) {
   return filtered;
 }
 
-function showExportModal(isSelected = false) {
+/* ═══════════════════════════════════════════════════════════════════
+   ADVANCED EXPORT SYSTEM
+   ═══════════════════════════════════════════════════════════════════ */
+
+const EXPORT_ALL_COLUMNS = [
+  { key: 'التاريخ',         label: 'التاريخ',              checked: true,  numeric: false },
+  { key: 'التوقيت',         label: 'التوقيت الكامل',        checked: false, numeric: false },
+  { key: 'نوع العرض',       label: 'نوع الحركة',            checked: true,  numeric: false },
+  { key: 'نوع النظام',      label: 'نوع النظام (داخلي)',    checked: false, numeric: false },
+  { key: 'العميل/المورد',   label: 'العميل / المورد',       checked: true,  numeric: false },
+  { key: 'الهاتف',          label: 'الهاتف',                checked: false, numeric: false },
+  { key: 'مرجع الفاتورة',   label: 'رقم الفاتورة',         checked: true,  numeric: false },
+  { key: 'مرجع العملية',    label: 'مرجع العملية',          checked: false, numeric: false },
+  { key: 'الموظف',          label: 'الموظف',                checked: true,  numeric: false },
+  { key: 'الإجمالي',        label: 'الإجمالي',              checked: true,  numeric: true  },
+  { key: 'المدفوع',         label: 'المدفوع',               checked: true,  numeric: true  },
+  { key: 'المتبقي',         label: 'المتبقي',               checked: true,  numeric: true  },
+  { key: 'الحالة',          label: 'حالة الدفع',            checked: true,  numeric: false },
+  { key: 'طريقة الدفع',     label: 'طريقة الدفع',          checked: false, numeric: false },
+  { key: 'الملاحظات',       label: 'الملاحظات',             checked: false, numeric: false },
+  { key: 'الأصناف',         label: 'الأصناف (مفصلة)',      checked: true,  numeric: false },
+];
+
+const EXPORT_PRESETS_KEY = 'soulia_export_presets_v1';
+
+function loadExportPresets() {
+  try { return JSON.parse(localStorage.getItem(EXPORT_PRESETS_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function saveExportPreset(name, cols) {
+  const presets = loadExportPresets();
+  presets[name] = cols;
+  localStorage.setItem(EXPORT_PRESETS_KEY, JSON.stringify(presets));
+}
+
+function deleteExportPreset(name) {
+  const presets = loadExportPresets();
+  delete presets[name];
+  localStorage.setItem(EXPORT_PRESETS_KEY, JSON.stringify(presets));
+}
+
+function getExportModalColOrder() {
+  return Array.from(qsa('#export-col-list .export-col-item')).map(el => el.dataset.key);
+}
+
+function renderExportColList(cols) {
+  const list = qs('#export-col-list');
+  if (!list) return;
+  list.innerHTML = cols.map((col, idx) => `
+    <div class="export-col-item" data-key="${col.key}" draggable="true"
+         style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:grab;user-select:none;transition:background .12s"
+         ondragstart="exportDragStart(event,${idx})" ondragover="exportDragOver(event)" ondrop="exportDrop(event,${idx})" ondragend="exportDragEnd()">
+      <span style="color:var(--muted);font-size:1rem;cursor:grab">⠿</span>
+      <input type="checkbox" class="export-col-check" value="${col.key}" ${col.checked ? 'checked' : ''}
+             style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer"
+             onchange="updateExportCount()">
+      <span style="flex:1;font-size:.88rem;font-weight:500">${col.label}</span>
+      ${col.numeric ? '<span style="font-size:.7rem;background:var(--primary-pale);color:var(--primary);padding:1px 6px;border-radius:4px;font-weight:600">رقمي</span>' : ''}
+    </div>
+  `).join('');
+  attachExportDragHandlers();
+}
+
+let _exportDragSrcIdx = -1;
+function exportDragStart(e, idx) {
+  _exportDragSrcIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.style.opacity = '0.5';
+}
+function exportDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+function exportDragEnd() {
+  qsa('#export-col-list .export-col-item').forEach(el => el.style.opacity = '1');
+}
+function exportDrop(e, targetIdx) {
+  e.preventDefault();
+  if (_exportDragSrcIdx === targetIdx) return;
+  const items = Array.from(qsa('#export-col-list .export-col-item'));
+  const src = items[_exportDragSrcIdx];
+  const target = items[targetIdx];
+  if (!src || !target) return;
+  const list = qs('#export-col-list');
+  if (_exportDragSrcIdx < targetIdx) {
+    list.insertBefore(src, target.nextSibling);
+  } else {
+    list.insertBefore(src, target);
+  }
+}
+function attachExportDragHandlers() {}
+
+function updateExportCount() {
+  const checked = qsa('#export-col-list .export-col-check:checked').length;
+  const el = qs('#export-selected-count');
+  if (el) el.textContent = checked + ' عمود محدد';
+}
+
+function applyExportPreset(name) {
+  const presets = loadExportPresets();
+  const cols = presets[name];
+  if (!cols) return;
+  const items = Array.from(qsa('#export-col-list .export-col-item'));
+  items.forEach(item => {
+    const cb = item.querySelector('.export-col-check');
+    if (cb) cb.checked = cols.includes(cb.value);
+  });
+  updateExportCount();
+}
+
+function saveCurrentExportPreset() {
+  const name = prompt('اسم الإعداد المحفوظ:');
+  if (!name || !name.trim()) return;
+  const cols = Array.from(qsa('#export-col-list .export-col-check:checked')).map(cb => cb.value);
+  saveExportPreset(name.trim(), cols);
+  toast('تم حفظ الإعداد: ' + name.trim());
+  refreshExportPresetList();
+}
+
+function refreshExportPresetList() {
+  const el = qs('#export-preset-list');
+  if (!el) return;
+  const presets = loadExportPresets();
+  const names = Object.keys(presets);
+  if (!names.length) { el.innerHTML = '<span style="color:var(--muted);font-size:.8rem">لا توجد إعدادات محفوظة</span>'; return; }
+  el.innerHTML = names.map(n => `
+    <span style="display:inline-flex;align-items:center;gap:4px;background:var(--primary-pale);color:var(--primary);border-radius:6px;padding:3px 10px;font-size:.8rem;font-weight:600;cursor:pointer"
+          onclick="applyExportPreset('${n.replace(/'/g,'\\\'')}')" title="تطبيق">
+      ${n}
+      <span onclick="event.stopPropagation();deleteExportPreset('${n.replace(/'/g,'\\\'').replace(/"/g,'&quot;')}');refreshExportPresetList()" title="حذف"
+            style="color:var(--red);font-weight:900;font-size:.9rem;line-height:1;padding:0 2px">×</span>
+    </span>
+  `).join('');
+}
+
+function getFilteredExportData(txTypeFilter) {
   const from = qs('#mov-from')?.value;
   const to = qs('#mov-to')?.value;
   const tokens = normalizeUiSearch(qs('#mov-search')?.value || '').split(/\s+/).filter(Boolean);
-
-  let exportData = transactions.filter(tx => {
+  return transactions.filter(tx => {
     if (from && tx.date && tx.date.slice(0, 10) < from) return false;
     if (to && tx.date && tx.date.slice(0, 10) > to) return false;
-    if (movFilter === 'استرجاع') {
-      if (!isMovPlainReturn(tx)) return false;
-    } else if (movFilter === 'استبدال') {
-      if (!isMovExchangeReturn(tx) && !isMovExchangeSale(tx)) return false;
-    } else if (movFilter !== 'all' && !movStatusFilter && tx.type !== movFilter) return false;
-    if (movStatusFilter && tx.payStatus !== movStatusFilter) return false;
+    if (txTypeFilter === 'مبيعات' && tx.type !== 'مبيعات') return false;
+    if (txTypeFilter === 'مشتريات' && tx.type !== 'مشتريات') return false;
+    if (txTypeFilter === 'مرتجع' && tx.type !== 'مرتجع') return false;
+    if (txTypeFilter === 'all') {
+      if (movFilter === 'استرجاع') { if (!isMovPlainReturn(tx)) return false; }
+      else if (movFilter === 'استبدال') { if (!isMovExchangeReturn(tx) && !isMovExchangeSale(tx)) return false; }
+      else if (movFilter !== 'all' && !movStatusFilter && tx.type !== movFilter) return false;
+      if (movStatusFilter && tx.payStatus !== movStatusFilter) return false;
+    }
     if (tokens.length) {
       const blob = normalizeUiSearch([tx.client, tx.ref, movementBaseRef(tx.ref || ''), tx.phone, tx.notes, tx.type, tx.employee, String(tx.total || '')].join(' '));
       if (!tokens.every(t => blob.includes(t))) return false;
     }
     return true;
   });
+}
 
-  if (isSelected) {
-    exportData = [...selectedMovIds].map(id => transactions.find(t => t._id === id)).filter(Boolean);
-  }
+function showExportModal(isSelected = false) {
+  let previewData = isSelected
+    ? [...selectedMovIds].map(id => transactions.find(t => t._id === id)).filter(Boolean)
+    : getFilteredExportData('all');
 
-  if (!exportData.length) {
+  if (!previewData.length && !isSelected) {
     toast('لا توجد حركات للتصدير', true);
     return;
   }
 
-  const columnOptions = [
-    { key: 'التاريخ', label: 'التاريخ', checked: true },
-    { key: 'التوقيت', label: 'التوقيت الكامل', checked: false },
-    { key: 'نوع العرض', label: 'نوع العرض', checked: true },
-    { key: 'نوع النظام', label: 'نوع النظام', checked: false },
-    { key: 'العميل/المورد', label: 'العميل/المورد', checked: true },
-    { key: 'الهاتف', label: 'الهاتف', checked: false },
-    { key: 'مرجع الفاتورة', label: 'مرجع الفاتورة', checked: true },
-    { key: 'مرجع العملية', label: 'مرجع العملية', checked: false },
-    { key: 'الموظف', label: 'الموظف', checked: true },
-    { key: 'الإجمالي', label: 'الإجمالي', checked: true },
-    { key: 'المدفوع', label: 'المدفوع', checked: true },
-    { key: 'المتبقي', label: 'المتبقي', checked: true },
-    { key: 'الحالة', label: 'الحالة', checked: true },
-    { key: 'طريقة الدفع', label: 'طريقة الدفع', checked: false },
-    { key: 'الملاحظات', label: 'الملاحظات', checked: false },
-    { key: 'الأصناف', label: 'الأصناف (مفصلة)', checked: true },
-  ];
-
-  const columnsHtml = columnOptions.map(col => `
-    <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer">
-      <input type="checkbox" value="${col.key}" ${col.checked ? 'checked' : ''} class="export-col-check">
-      <span style="font-size:.9rem">${col.label}</span>
-    </label>
-  `).join('');
+  const cols = EXPORT_ALL_COLUMNS.map(c => ({ ...c }));
+  const presets = loadExportPresets();
+  const presetNames = Object.keys(presets);
 
   openModal(`
-    <h3 style="margin-bottom:12px">تصدير الحركات</h3>
-    <div style="background:var(--primary-pale);border-radius:var(--radius);padding:12px;margin-bottom:16px;font-size:.85rem;border-left:4px solid var(--primary)">
-      <div style="font-weight:600;color:var(--primary);margin-bottom:4px;display:flex;align-items:center;gap:5px">${ICON('barChart')} ${exportData.length} ${currentLang==='en'?'transactions':'حركة'}</div>
-      <div style="color:var(--text);font-size:.8rem">سيتم تصدير الحركات ${isSelected ? 'المحددة' : 'حسب المرشحات المطبقة'}</div>
-    </div>
-    <div style="margin-bottom:16px">
-      <label style="font-size:.85rem;font-weight:600;color:var(--text);display:block;margin-bottom:8px">الأعمدة المراد تضمينها:</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;max-height:200px;overflow-y:auto">
-        ${columnsHtml}
+    <div style="display:flex;flex-direction:column;height:100%;width:100%;box-sizing:border-box;max-width:640px">
+      <!-- Header (sticky) -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0">
+        <h3 style="font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:6px;margin:0">
+          ${ICON('barChart')} تصدير الحركات
+        </h3>
+        <button onclick="closeModal()" style="background:none;border:none;cursor:pointer;font-size:1.3rem;color:var(--muted);line-height:1;flex-shrink:0">×</button>
       </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-        <input type="radio" name="export-format" value="excel" checked>
-        <span style="font-size:.9rem;display:flex;align-items:center;gap:4px">${ICON('barChart')} Excel (.xlsx)</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-        <input type="radio" name="export-format" value="csv">
-        <span style="font-size:.9rem;display:flex;align-items:center;gap:4px">${ICON('note')} CSV (.csv)</span>
-      </label>
-    </div>
-    <div class="flex gap-8" style="justify-content:flex-end">
-      <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
-      <button class="btn btn-primary" onclick="performExport('${isSelected ? 'selected' : 'filtered'}',${exportData.length})">تصدير الآن</button>
+
+      <!-- Scrollable content area -->
+      <div style="flex:1;overflow-y:auto;overflow-x:hidden;padding-right:8px;margin-right:-8px;min-height:0;max-height:calc(90vh - 220px)">
+        <!-- Transaction type filter (only for non-selected exports) -->
+        ${isSelected ? '' : `
+        <div style="margin-bottom:14px">
+          <label style="font-size:.83rem;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">نوع الحركات</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            ${[['all','الكل'],['مبيعات','مبيعات'],['مشتريات','مشتريات'],['مرتجع','مرتجع']].map(([v,l]) => `
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:5px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;transition:all .12s"
+                     onclick="updateExportTypeFilter(this)" data-val="${v}">
+                <input type="radio" name="export-tx-type" value="${v}" ${v==='all'?'checked':''} style="accent-color:var(--primary)">
+                <span>${l}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>`}
+
+        <!-- Summary info bar -->
+        <div id="export-info-bar" style="background:var(--primary-pale);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:.85rem;border-left:4px solid var(--primary);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <span style="font-weight:600;color:var(--primary);display:flex;align-items:center;gap:5px">
+            ${ICON('barChart')} <span id="export-tx-count">${previewData.length}</span> حركة سيتم تصديرها
+          </span>
+          <span style="font-size:.78rem;color:var(--muted)">${isSelected ? 'الحركات المحددة' : 'حسب المرشحات الحالية'}</span>
+        </div>
+
+        <!-- Summary header toggle -->
+        <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <input type="checkbox" id="export-add-summary" checked style="width:15px;height:15px;accent-color:var(--primary);flex-shrink:0">
+          <label for="export-add-summary" style="font-size:.85rem;cursor:pointer">إضافة رأس ملخص في الملف (النوع، عدد السجلات، تاريخ التصدير)</label>
+        </div>
+
+        <!-- Column selection with drag-to-reorder -->
+        <div style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+            <label style="font-size:.83rem;font-weight:600;color:var(--muted)">الأعمدة (اسحب لإعادة الترتيب)</label>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <span id="export-selected-count" style="font-size:.78rem;color:var(--primary);font-weight:600;white-space:nowrap">${cols.filter(c=>c.checked).length} عمود محدد</span>
+              <button onclick="qsa('#export-col-list .export-col-check').forEach(cb=>cb.checked=true);updateExportCount()"
+                      style="font-size:.75rem;background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;color:var(--text);white-space:nowrap">الكل</button>
+              <button onclick="qsa('#export-col-list .export-col-check').forEach(cb=>cb.checked=false);updateExportCount()"
+                      style="font-size:.75rem;background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer;color:var(--text);white-space:nowrap">لا شيء</button>
+            </div>
+          </div>
+          <div id="export-col-list" style="display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto;padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--surface)"></div>
+        </div>
+
+        <!-- Presets -->
+        <div style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px">
+            <label style="font-size:.83rem;font-weight:600;color:var(--muted)">الإعدادات المحفوظة</label>
+            <button onclick="saveCurrentExportPreset()"
+                    style="font-size:.78rem;background:var(--primary-pale);color:var(--primary);border:1px solid var(--primary);border-radius:6px;padding:3px 10px;cursor:pointer;font-weight:600;white-space:nowrap">
+              + حفظ الحالي
+            </button>
+          </div>
+          <div id="export-preset-list" style="display:flex;gap:6px;flex-wrap:wrap;min-height:24px;overflow-x:auto;padding-bottom:4px"></div>
+        </div>
+
+      </div>
+
+      <!-- Format & Actions (sticky footer) -->
+      <div style="flex-shrink:0;border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+        <!-- Format -->
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;flex:1;min-width:140px;font-size:.88rem;transition:all .12s;white-space:nowrap" id="fmt-excel-label">
+            <input type="radio" name="export-format" value="excel" checked style="accent-color:var(--primary);flex-shrink:0" onchange="qs('#fmt-excel-label').style.borderColor='var(--primary)';qs('#fmt-csv-label').style.borderColor='var(--border)'">
+            <span>📊 Excel (.xlsx)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;flex:1;min-width:140px;font-size:.88rem;transition:all .12s;white-space:nowrap" id="fmt-csv-label">
+            <input type="radio" name="export-format" value="csv" style="accent-color:var(--primary);flex-shrink:0" onchange="qs('#fmt-csv-label').style.borderColor='var(--primary)';qs('#fmt-excel-label').style.borderColor='var(--border)'">
+            <span>📄 CSV (.csv)</span>
+          </label>
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+          <button class="btn btn-outline" onclick="closeModal()" style="white-space:nowrap">إلغاء</button>
+          <button class="btn btn-primary" id="export-do-btn" onclick="performExport('${isSelected ? 'selected' : 'filtered'}')" style="white-space:nowrap">
+            ${ICON('barChart')} تصدير الآن
+          </button>
+        </div>
+      </div>
     </div>
   `);
 
-  window._exportData = exportData;
+  renderExportColList(cols);
+  refreshExportPresetList();
+  window._exportRawData = { isSelected, allData: previewData };
 }
 
-function performExport(type, count) {
-  const selectedCols = Array.from(qsa('.export-col-check:checked')).map(cb => cb.value);
+function updateExportTypeFilter(labelEl) {
+  const val = labelEl.dataset.val;
+  const data = val === 'all' ? getFilteredExportData('all') : getFilteredExportData(val);
+  const countEl = qs('#export-tx-count');
+  if (countEl) countEl.textContent = data.length;
+  window._exportRawData = { isSelected: false, allData: data, txType: val };
+}
+
+function performExport(type) {
+  const orderedKeys = getExportModalColOrder();
+  const checkedKeys = new Set(Array.from(qsa('#export-col-list .export-col-check:checked')).map(cb => cb.value));
+  const selectedCols = orderedKeys.filter(k => checkedKeys.has(k));
+
   if (!selectedCols.length) {
     toast('يرجى تحديد عمود واحد على الأقل', true);
     return;
   }
 
-  const format = document.querySelector('input[name="export-format"]:checked')?.value || 'excel';
-  const data = window._exportData.map(tx => txToExcelRow(tx, selectedCols));
+  const rawInfo = window._exportRawData || {};
+  const exportData = rawInfo.allData || [];
+  if (!exportData.length) { toast('لا توجد بيانات للتصدير', true); return; }
 
-  if (format === 'excel') {
-    writeExcel(data, 'الحركات المصدرة', (type === 'selected' ? 'selected_movements' : 'movements_filtered') + '_' + today());
-  } else {
-    writeCsv(data, (type === 'selected' ? 'selected_movements' : 'movements_filtered') + '_' + today());
+  const format = document.querySelector('input[name="export-format"]:checked')?.value || 'excel';
+  const addSummary = qs('#export-add-summary')?.checked !== false;
+  const txType = rawInfo.txType || (type === 'selected' ? 'محددة' : 'الكل');
+  const rows = exportData.map(tx => txToExcelRow(tx, selectedCols));
+
+  const typeLabel = { 'مبيعات': 'Sales', 'مشتريات': 'Purchases', 'مرتجع': 'Returns', 'all': 'All', 'الكل': 'All', 'محددة': 'Selected' }[txType] || txType;
+  const sheetName = (typeLabel + '_' + today()).slice(0, 31);
+  const fileName = (type === 'selected' ? 'selected' : typeLabel.toLowerCase()) + '_movements_' + today();
+
+  const doBtn = qs('#export-do-btn');
+  if (doBtn) { doBtn.disabled = true; doBtn.style.opacity = '0.6'; doBtn.textContent = 'جارٍ التصدير...'; }
+
+  try {
+    if (format === 'excel') {
+      writeExcelFormatted(rows, selectedCols, sheetName, fileName, { addSummary, txType, count: exportData.length });
+    } else {
+      writeCsv(rows, fileName);
+    }
+    closeModal();
+    toast(`تم تصدير ${exportData.length} حركة بنجاح ✅`);
+  } catch(e) {
+    toast('خطأ أثناء التصدير: ' + e.message, true);
+    if (doBtn) { doBtn.disabled = false; doBtn.style.opacity = '1'; doBtn.innerHTML = ICON('barChart') + ' تصدير الآن'; }
+  }
+  window._exportRawData = null;
+}
+
+function writeExcelFormatted(rows, colKeys, sheetName, fileName, opts = {}) {
+  const { addSummary = true, txType = 'الكل', count = rows.length } = opts;
+  const SUMMARY_ROWS = addSummary ? 3 : 0;
+
+  /* numeric columns */
+  const numericKeys = new Set(EXPORT_ALL_COLUMNS.filter(c => c.numeric).map(c => c.key));
+
+  /* build worksheet data array */
+  const wsData = [];
+  if (addSummary) {
+    wsData.push([`نوع الحركات: ${txType}`]);
+    wsData.push([`عدد السجلات: ${count}`]);
+    wsData.push([`تاريخ التصدير: ${new Date().toLocaleString('ar-EG')}`]);
+  }
+  /* header row */
+  const headerRow = colKeys.map(k => {
+    const def = EXPORT_ALL_COLUMNS.find(c => c.key === k);
+    return def ? def.label : k;
+  });
+  wsData.push(headerRow);
+  /* data rows */
+  rows.forEach(row => {
+    wsData.push(colKeys.map(k => {
+      const v = row[k];
+      if (numericKeys.has(k)) return typeof v === 'number' ? v : (Number(v) || 0);
+      return v ?? '';
+    }));
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  /* column widths (AutoFit approximation) */
+  const colWidths = colKeys.map(k => {
+    const header = (EXPORT_ALL_COLUMNS.find(c => c.key === k)?.label || k).length;
+    const maxData = rows.reduce((mx, row) => {
+      const v = String(row[k] ?? '');
+      return Math.max(mx, Math.min(v.length, 60));
+    }, 0);
+    return { wch: Math.max(header + 2, maxData + 2, 10) };
+  });
+  ws['!cols'] = colWidths;
+
+  /* merge summary rows across all columns */
+  if (addSummary && colKeys.length > 1) {
+    ws['!merges'] = ws['!merges'] || [];
+    for (let r = 0; r < 3; r++) {
+      ws['!merges'].push({ s: { r, c: 0 }, e: { r, c: colKeys.length - 1 } });
+    }
   }
 
-  closeModal();
-  toast(currentLang==='en'?`${count} transactions exported successfully`:`تم تصدير ${count} حركة بنجاح`);
-  window._exportData = null;
+  /* AutoFilter on header row */
+  const headerRowIdx = SUMMARY_ROWS;
+  const lastCol = XLSX.utils.encode_col(colKeys.length - 1);
+  ws['!autofilter'] = { ref: `A${headerRowIdx + 1}:${lastCol}${headerRowIdx + 1}` };
+
+  /* row heights: taller for data rows with long text */
+  const rowHeights = [];
+  if (addSummary) for (let i = 0; i < 3; i++) rowHeights.push({ hpt: 18 });
+  rowHeights.push({ hpt: 22 }); /* header */
+  rows.forEach(row => {
+    const hasLong = colKeys.some(k => String(row[k] ?? '').length > 80);
+    rowHeights.push({ hpt: hasLong ? 40 : 18 });
+  });
+  ws['!rows'] = rowHeights;
+
+  /* cell styles via SheetJS cell objects */
+  const enc = XLSX.utils.encode_cell;
+
+  /* summary rows: italic muted style (plain text) */
+  if (addSummary) {
+    for (let r = 0; r < 3; r++) {
+      const addr = enc({ r, c: 0 });
+      if (ws[addr]) {
+        ws[addr].s = { font: { italic: true, sz: 10 }, fill: { fgColor: { rgb: 'F0F4F2' } }, alignment: { horizontal: 'right', wrapText: false } };
+      }
+    }
+  }
+
+  /* header row: bold + background */
+  colKeys.forEach((_, ci) => {
+    const addr = enc({ r: headerRowIdx, c: ci });
+    if (!ws[addr]) return;
+    ws[addr].s = {
+      font: { bold: true, sz: 11, color: { rgb: 'FFFFFF' } },
+      fill: { patternType: 'solid', fgColor: { rgb: '00311E' } },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: false },
+      border: { bottom: { style: 'thin', color: { rgb: 'AAAAAA' } } },
+    };
+  });
+
+  /* data rows: alternating colors + number format + wrap */
+  rows.forEach((row, ri) => {
+    const dataRowIdx = headerRowIdx + 1 + ri;
+    const isEven = ri % 2 === 0;
+    const bgRgb = isEven ? 'FFFFFF' : 'F4F7F5';
+    colKeys.forEach((k, ci) => {
+      const addr = enc({ r: dataRowIdx, c: ci });
+      if (!ws[addr]) return;
+      const isNum = numericKeys.has(k);
+      ws[addr].s = {
+        fill: { patternType: 'solid', fgColor: { rgb: bgRgb } },
+        alignment: { horizontal: isNum ? 'right' : 'right', vertical: 'top', wrapText: true, readingOrder: 2 },
+        numFmt: isNum ? '#,##0.00' : undefined,
+        border: { bottom: { style: 'hair', color: { rgb: 'DDDDDD' } } },
+      };
+      if (isNum && ws[addr].t === 'n') {
+        ws[addr].z = '#,##0.00';
+      }
+    });
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
+  XLSX.writeFile(wb, fileName + '.xlsx');
 }
 
 function exportMovementsExcel() {
@@ -18370,7 +19153,7 @@ function renderVaultPage() {
   // If lock is disabled in settings, treat as unlocked automatically
   if (isLockDisabled('vault')) vaultUnlocked = true;
   if (!vaultUnlocked) { qs('#vault-locked').style.display = 'block'; qs('#vault-content').style.display = 'none'; }
-  else { qs('#vault-locked').style.display = 'none'; qs('#vault-content').style.display = 'block'; renderVaultSegs(); loadVaultLog(); loadVaultAnalytics(); }
+  else { qs('#vault-locked').style.display = 'none'; qs('#vault-content').style.display = 'block'; renderVaultSegs(); loadVaultLog(); loadVaultAnalytics(); const lsEl = qs('#vault-last-sync'); if (lsEl && !lsEl.textContent) lsEl.textContent = 'جارٍ التحميل...'; }
 }
 
 /** Refreshes settings (vault balances) from server and, if vault page is open/unlocked, re-renders it in real time */
@@ -18579,12 +19362,38 @@ async function loadVaultLog() {
   const from = qs('#vault-from')?.value; const to = qs('#vault-to')?.value;
   let params = ''; if (from) params += '?from=' + from; if (to) params += (params ? '&' : '?') + 'to=' + to;
   qs('#vault-table tbody').innerHTML = '<tr><td colspan="11"><div class="loading-spinner"></div></td></tr>';
-  try { vaultLog = await api('/vault' + params); renderVaultTable(); }
-  catch (e) { 
+  try { vaultLog = await api('/vault' + params); renderVaultTable(); _updateVaultSyncTime(); }
+  catch (e) {
     vaultLog = [];
     const errMsg = e.message || 'فشل تحميل السجل';
-    toast('خطأ: ' + errMsg, true); 
-    qs('#vault-table tbody').innerHTML = '<tr><td colspan="11" class="empty-state">خطأ في التحميل: ' + esc(errMsg) + '</td></tr>'; 
+    toast('خطأ: ' + errMsg, true);
+    qs('#vault-table tbody').innerHTML = '<tr><td colspan="11" class="empty-state">خطأ في التحميل: ' + esc(errMsg) + '</td></tr>';
+  }
+}
+
+function _updateVaultSyncTime() {
+  const el = qs('#vault-last-sync'); if (!el) return;
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+  el.textContent = 'آخر تحديث: ' + hh + ':' + mm + ':' + ss;
+  el.classList.add('just-updated');
+  setTimeout(() => el.classList.remove('just-updated'), 2000);
+}
+
+async function syncVaultAll() {
+  const btn = qs('#vault-sync-btn');
+  if (btn) { btn.disabled = true; btn.classList.add('syncing'); }
+  try {
+    await Promise.all([
+      api('/settings').then(s => { if (s) settings = s; }).catch(() => {}),
+      loadVaultLog()
+    ]);
+    renderVaultSegs();
+    if (typeof loadVaultAnalytics === 'function') loadVaultAnalytics();
+  } finally {
+    if (btn) { btn.disabled = false; btn.classList.remove('syncing'); }
   }
 }
 function isVaultReturnRefundSource(source) {
@@ -19179,6 +19988,77 @@ function renderSettings() {
   loadBackupList(false).catch(() => {});
   _initLockTogglesUI();
   annRenderSettingsUI();
+  renderTagMgmt();
+}
+
+function renderTagMgmt() {
+  const section = qs('#tag-mgmt-section');
+  const card = qs('#tag-mgmt-card');
+  if (!section || !card) return;
+  section.style.display = isAdmin() ? 'block' : 'none';
+  if (!isAdmin()) return;
+
+  const tagsHtml = masterTags.length
+    ? masterTags.map(t => `
+        <span class="tx-tag" style="background:${esc(t.bg)};color:${esc(t.color)};border-color:${esc(t.bg)};gap:6px">
+          ${esc(t.name)}
+          <span class="tag-del" onclick="deleteMasterTag('${esc(t._id)}','${esc(t.name)}')" title="حذف TAG">✕</span>
+        </span>`).join('')
+    : '<span style="color:var(--muted);font-size:.8rem">لا توجد TAGs في قائمة الأساسية</span>';
+
+  card.innerHTML = `
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;min-height:32px;align-items:center">${tagsHtml}</div>
+    <div style="display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--border);align-items:center">
+      <input type="text" id="new-master-tag-name" placeholder="اسم TAG جديد" maxlength="20" style="flex:1">
+      <input type="color" id="new-master-tag-bg" value="#3b82f6" title="لون الخلفية" style="width:36px;height:34px;border:1px solid var(--border);border-radius:6px;padding:2px;cursor:pointer;background:none">
+      <button class="btn btn-primary btn-sm" onclick="addMasterTag()">إضافة</button>
+    </div>`;
+}
+
+async function addMasterTag() {
+  const nameEl = qs('#new-master-tag-name');
+  const bgEl = qs('#new-master-tag-bg');
+  const name = nameEl?.value.trim();
+
+  // Inline validation
+  if (!name) {
+    nameEl?.focus();
+    nameEl?.classList.add('input-error');
+    setTimeout(() => nameEl?.classList.remove('input-error'), 1500);
+    return;
+  }
+  if (name.length > 50) {
+    toast('اسم TAG لا يجوز أن يتجاوز ٥٠ حرفاً', true); return;
+  }
+  if (masterTags.find(t => t.name === name)) {
+    toast(`TAG "${name}" موجود بالفعل`); return;
+  }
+
+  const bg = bgEl?.value || '#3b82f6';
+  const btn = qs('[onclick="addMasterTag()"]');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+  try {
+    const created = await api('/tags', { method: 'POST', body: JSON.stringify({ name, color: '#fff', bg }) });
+    if (!masterTags.find(t => t.name === created.name)) masterTags.push(created);
+    if (nameEl) nameEl.value = '';
+    renderTagMgmt();
+    toast('تم إضافة TAG ✅');
+  } catch(e) {
+    toast('خطأ: ' + (e.message || 'فشل الاتصال بالخادم'), true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  }
+}
+
+async function deleteMasterTag(id, name) {
+  if (!confirm(`هل تريد حذف TAG "${name}" من القائمة الأساسية؟\nالحركات المرتبطة به ستحتفظ بالاسم.`)) return;
+  try {
+    await api(`/tags/${id}`, { method: 'DELETE' });
+    masterTags = masterTags.filter(t => String(t._id) !== String(id));
+    renderTagMgmt();
+    _rebuildTagFilterRow();
+    toast('تم حذف TAG');
+  } catch(e) { toast('فشل الحذف: ' + e.message, true); }
 }
 
 function renderVersionFooter() {
@@ -19206,10 +20086,10 @@ async function saveDefaultPrices() {
   settings.govPrice = Number(qs('#set-gov-price').value) || 0;
   await saveSettings();
 }
-async function updateShipPrice(i, field, val) { 
-  if (!settings.shipCos) return; 
-  settings.shipCos[i][field] = Number(val) || 0; 
-  await saveSettings(); 
+async function updateShipPrice(i, field, val) {
+  if (!settings.shipCos) return;
+  settings.shipCos[i][field] = Number(val) || 0;
+  await saveSettings();
 }
 async function addShipCompany() {
   const name = qs('#new-ship-name').value.trim(); const cairo = Number(qs('#new-ship-cairo').value) || 0; const gov = Number(qs('#new-ship-gov').value) || 0;
@@ -20172,11 +21052,43 @@ function closeMobileSearch() {
   toggleSearchClear('');
 }
 
-/* Excel helper */
+/* Excel helper — simple variant used by non-movements exports */
 function writeExcel(data, sheetName, fileName) {
-  const ws = XLSX.utils.json_to_sheet(data);
+  if (!data.length) return;
+  const colKeys = Object.keys(data[0]);
+  const wsData = [colKeys, ...data.map(row => colKeys.map(k => row[k] ?? ''))];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  /* column widths */
+  ws['!cols'] = colKeys.map(k => {
+    const maxLen = data.reduce((mx, row) => Math.max(mx, String(row[k] ?? '').length), k.length);
+    return { wch: Math.min(Math.max(maxLen + 2, 10), 60) };
+  });
+
+  /* AutoFilter */
+  ws['!autofilter'] = { ref: `A1:${XLSX.utils.encode_col(colKeys.length - 1)}1` };
+
+  /* header bold */
+  colKeys.forEach((_, ci) => {
+    const addr = XLSX.utils.encode_cell({ r: 0, c: ci });
+    if (ws[addr]) ws[addr].s = {
+      font: { bold: true, sz: 11, color: { rgb: 'FFFFFF' } },
+      fill: { patternType: 'solid', fgColor: { rgb: '00311E' } },
+      alignment: { horizontal: 'center', vertical: 'center' },
+    };
+  });
+
+  /* alternating rows */
+  data.forEach((_, ri) => {
+    const bgRgb = ri % 2 === 0 ? 'FFFFFF' : 'F4F7F5';
+    colKeys.forEach((_, ci) => {
+      const addr = XLSX.utils.encode_cell({ r: ri + 1, c: ci });
+      if (ws[addr]) ws[addr].s = { fill: { patternType: 'solid', fgColor: { rgb: bgRgb } }, alignment: { wrapText: true, readingOrder: 2 } };
+    });
+  });
+
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
   XLSX.writeFile(wb, fileName + '.xlsx');
 }
 

@@ -14,12 +14,13 @@ if (fs.existsSync(envPath)) {
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:4000';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:4000';
 
 // Serve runtime config to the frontend
+// Browser uses relative /api paths so requests go through this proxy — never expose the internal backend URL
 app.get('/config.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
-  res.send(`window.__ENV__ = { API_BASE_URL: "${API_BASE_URL}" };`);
+  res.send(`window.__ENV__ = { API_BASE_URL: "" };`);
 });
 
 // Proxy /api requests to backend

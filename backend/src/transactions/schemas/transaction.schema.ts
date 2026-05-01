@@ -141,22 +141,32 @@ export class Transaction {
   /** Deposit history log - initial and additional deposits */
   @Prop({ type: [Object], default: [] })
   deposits: Array<{
+    id?: string;
     amount: number;
     method: string;
     note: string;
     date: string;
     by: string;
+    reversed?: boolean;
+    reversedAt?: string;
+    reversedBy?: string;
+    reversalReason?: string;
   }>;
 
   /** Payment/Collection history log */
   @Prop({ type: [Object], default: [] })
   payments: Array<{
+    id?: string;
     amount: number;
     method: string;
     note: string;
     date: string;
     by: string;
     remaining: number;
+    reversed?: boolean;
+    reversedAt?: string;
+    reversedBy?: string;
+    reversalReason?: string;
   }>;
 
   @Prop({ default: '' })
@@ -175,6 +185,9 @@ export class Transaction {
     timestamp: string;
     createdAt: string;
   }>;
+
+  @Prop({ type: [String], default: [] })
+  tags: string[];
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);

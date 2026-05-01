@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -227,6 +228,18 @@ export class TransactionsController {
   }
 
   @Roles('admin')
+  @Post(':id/payments/:paymentId/undo')
+  async undoPayment(
+    @Param('id') id: string,
+    @Param('paymentId') paymentId: string,
+    @Body() body: { reason?: string },
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const undoBy = req.user?.name || req.user?.username || 'مجهول';
+    return this.transactionsService.undoSpecificPayment(id, paymentId, undoBy, body?.reason);
+  }
+
+  @Roles('admin')
   @Post(':id/post-discount')
   async applyPostDiscount(
     @Param('id') id: string,
@@ -259,6 +272,14 @@ export class TransactionsController {
     @Body() body: { comments: Array<any> },
   ) {
     return this.transactionsService.addComments(id, body.comments);
+  }
+
+  @Patch(':id/tags')
+  async updateTags(
+    @Param('id') id: string,
+    @Body() body: { tags: string[] },
+  ) {
+    return this.transactionsService.updateTags(id, body.tags);
   }
 
   @Roles('admin')
