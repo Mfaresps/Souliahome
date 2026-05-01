@@ -14655,14 +14655,16 @@ function openCollectMovement(id) {
         </div>
         <div class="form-group" style="margin-bottom:0">
           <label style="font-size:.8rem">تكلفة الشحن الفعلية للشركة الشاحنة (اختياري)</label>
-          <input type="number" id="collect-actual-ship" min="0" placeholder="اتركه فارغاً إن لم يكن هناك فرق" oninput="updateShipDiff(${billedShip},${tx.remaining || 0})">
+          <input type="number" id="collect-actual-ship" min="0" placeholder="اتركه فارغاً إن لم يكن هناك فرق" oninput="updateShipDiff(${billedShip},${tx.remaining || 0},'${esc(id)}')">
           <div class="field-hint">إذا كانت الشركة طلبت أكثر من ${fmtJ(billedShip)} — الفرق يُخصم من المبلغ الداخل للخزنة</div>
         </div>
       </div>` : '';
+    const alreadyDeductedShip = (tx.payments || []).reduce((sum, p) => sum + Math.min(billedShip, Math.max(0, p.collectedAmount - (p.amount || 0))), 0);
+    const remainingShipToDeduct = Math.max(0, billedShip - alreadyDeductedShip);
     openModal(`<h3>تحصيل المتبقي (${fmtJ(tx.remaining)})</h3>
       ${shipSection}
       <div id="collect-net-preview" style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:14px;font-size:.83rem">
-        <span style="color:var(--green);font-weight:700">✓ سيُضاف ${fmtJ(Math.max(0, (tx.remaining || 0) - billedShip))} إلى الخزنة</span>
+        <span style="color:var(--green);font-weight:700">✓ سيُضاف ${fmtJ(Math.max(0, (tx.remaining || 0) - remainingShipToDeduct))} إلى الخزنة</span>
       </div>
       <div class="form-group"><label>طريقة التحصيل</label><select id="collect-method" onchange="syncPaymentMethod()">${collectOpts}</select></div>
       <div class="form-group"><label>ملاحظات</label><input type="text" id="collect-note"></div>
@@ -14682,11 +14684,15 @@ function syncPaymentMethod() {
   const targetBtn = qsa('#dep-method-btns .dep-method-btn').find(b => b.getAttribute('data-val') === collectMethod);
   if (targetBtn) selectDepMethod(collectMethod, targetBtn);
 }
-function updateShipDiff(billedShip, remaining) {
+function updateShipDiff(billedShip, remaining, txId) {
+  const tx = txId ? transactions.find(t => t._id === txId) : null;
   const actual = Number(qs('#collect-actual-ship')?.value) || 0;
   const shipExtra = Math.max(0, actual - billedShip); // الزيادة في الشحن
-  // الخزنة = المتبقي - الشحن المحصل - الزيادة
-  const netVault = Math.max(0, remaining - billedShip - shipExtra);
+  // احسب الشحن الذي تم خصمه بالفعل من التحصيلات السابقة
+  const alreadyDeductedShip = tx ? (tx.payments || []).reduce((sum, p) => sum + Math.min(billedShip, Math.max(0, p.collectedAmount - (p.amount || 0))), 0) : 0;
+  const remainingShipToDeduct = Math.max(0, billedShip - alreadyDeductedShip);
+  // الخزنة = المتبقي - الشحن المتبقي - الزيادة
+  const netVault = Math.max(0, remaining - remainingShipToDeduct - shipExtra);
   const diffEl = qs('#ship-diff-preview');
   const previewEl = qs('#collect-net-preview');
   if (diffEl) {
@@ -14698,12 +14704,12 @@ function updateShipDiff(billedShip, remaining) {
     if (actual > 0 && shipExtra > 0) {
       previewEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:4px;font-weight:600">
           <div style="display:flex;justify-content:space-between"><span>إجمالي الفاتورة</span><span>${fmtJ(remaining)}</span></div>
-          <div style="display:flex;justify-content:space-between;color:var(--muted)"><span>— الشحن المحصل</span><span>- ${fmtJ(billedShip)}</span></div>
+          ${remainingShipToDeduct > 0 ? `<div style="display:flex;justify-content:space-between;color:var(--muted)"><span>— الشحن المحصل</span><span>- ${fmtJ(remainingShipToDeduct)}</span></div>` : ''}
           <div style="display:flex;justify-content:space-between;color:#dc2626"><span>— زيادة الشحن (على الشركة)</span><span>- ${fmtJ(shipExtra)}</span></div>
           <div style="display:flex;justify-content:space-between;border-top:2px solid var(--border);padding-top:6px;font-size:1.05rem;color:var(--green)"><span>💰 يدخل الخزنة</span><strong>${fmtJ(netVault)}</strong></div>
         </div>`;
     } else {
-      previewEl.innerHTML = `<span style="color:var(--green);font-weight:700">✓ سيُضاف ${fmtJ(Math.max(0, remaining - billedShip))} إلى الخزنة</span>`;
+      previewEl.innerHTML = `<span style="color:var(--green);font-weight:700">✓ سيُضاف ${fmtJ(Math.max(0, remaining - remainingShipToDeduct))} إلى الخزنة</span>`;
     }
   }
 }
@@ -14828,7 +14834,10 @@ async function doCollectMovement(id) {
       const billedShip = !isPurchase ? (Number(tx.shipCost) || 0) : 0;
       const actualShip = Number(qs('#collect-actual-ship')?.value) || 0;
       const shipExtra = !isPurchase && actualShip > 0 ? Math.max(0, actualShip - billedShip) : 0;
-      const netVaultAmount = isPurchase ? amountToDeduct : Math.max(0, amountToDeduct - billedShip - shipExtra);
+      // الشحن يُخصم من التحصيل الأول فقط - تحقق من التحصيلات السابقة
+      const alreadyDeductedShip = !isPurchase ? (tx.payments || []).reduce((sum, p) => sum + Math.min(billedShip, Math.max(0, p.collectedAmount - (p.amount || 0))), 0) : 0;
+      const remainingShipToDeduct = Math.max(0, billedShip - alreadyDeductedShip);
+      const netVaultAmount = isPurchase ? amountToDeduct : Math.max(0, amountToDeduct - remainingShipToDeduct - shipExtra);
 
       tx.payments.push({
         amount: netVaultAmount,

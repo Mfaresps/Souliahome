@@ -893,10 +893,14 @@ export class TransactionsService {
       tx.shipLoss = (Number(tx.shipLoss) || 0) + shipExtra;
     }
 
-    // الخزنة = المتبقي - الشحن المحصل - زيادة الشحن
+    // الشحن يُخصم من التحصيل الأول فقط - تحقق من التحصيلات السابقة
+    const alreadyDeductedShip = !isPurchase ? (tx.payments || []).reduce((sum, p) => sum + Math.min(billedShip, Math.max(0, (p.collectedAmount || p.amount) - (p.amount || 0))), 0) : 0;
+    const remainingShipToDeduct = Math.max(0, billedShip - alreadyDeductedShip);
+
+    // الخزنة = المتبقي - الشحن المحصل (الجزء المتبقي فقط) - زيادة الشحن
     // الشحن المحصل لا يدخل الخزنة (شركة الشحن تأخذه)
     // الزيادة = خسارة إضافية على الشركة
-    const netVaultAmount = isPurchase ? payAmount : Math.max(0, payAmount - billedShip - shipExtra);
+    const netVaultAmount = isPurchase ? payAmount : Math.max(0, payAmount - remainingShipToDeduct - shipExtra);
 
     tx.remaining = newRemaining;
     tx.payStatus = isFullyPaid ? 'مكتمل' : 'معلق';
