@@ -1,0 +1,431 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   COLLECT BUTTON HIGHLIGHT EFFECTS
+   Professional visual distinction for the "تحصيل" (Collect) action button
+   Responsive, accessible, and maintains Soulia design system
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   BASE: Collect button styling with gradient background
+   ───────────────────────────────────────────────────────────────────────── */
+.btn-collect {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(5, 150, 105, 0.24);
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.btn-collect:hover {
+  background: linear-gradient(135deg, #047857 0%, #059669 100%);
+  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.32);
+  transform: translateY(-2px);
+}
+
+.btn-collect:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.24);
+}
+
+.btn-collect:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3), 0 4px 16px rgba(5, 150, 105, 0.24);
+}
+
+/* Dark mode adjustments */
+body.dark-mode .btn-collect {
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.28);
+}
+
+body.dark-mode .btn-collect:hover {
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.36);
+}
+
+body.dark-mode .btn-collect:focus-visible {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35), 0 4px 16px rgba(16, 185, 129, 0.28);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   GLOW EFFECT: Animated gradient border/shadow
+   ───────────────────────────────────────────────────────────────────────── */
+.btn-collect::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #059669 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  animation: collectGlow 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes collectGlow {
+  0% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   PULSE SHADOW: Subtle outer glow that pulses
+   ───────────────────────────────────────────────────────────────────────── */
+.btn-collect {
+  animation: collectShadowPulse 3s ease-in-out infinite;
+}
+
+@keyframes collectShadowPulse {
+  0%, 100% {
+    box-shadow: 0 4px 16px rgba(5, 150, 105, 0.24),
+                0 0 20px rgba(16, 185, 129, 0);
+  }
+  50% {
+    box-shadow: 0 8px 24px rgba(5, 150, 105, 0.32),
+                0 0 32px rgba(16, 185, 129, 0.24);
+  }
+}
+
+body.dark-mode .btn-collect {
+  animation: collectShadowPulseDark 3s ease-in-out infinite;
+}
+
+@keyframes collectShadowPulseDark {
+  0%, 100% {
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.28),
+                0 0 20px rgba(52, 211, 153, 0);
+  }
+  50% {
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.36),
+                0 0 32px rgba(52, 211, 153, 0.24);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   SHIMMER EFFECT (Optional): Subtle light reflection across button
+   ───────────────────────────────────────────────────────────────────────── */
+.btn-collect::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 20%,
+    rgba(255, 255, 255, 0.1) 60%,
+    transparent 100%);
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  animation: collectShimmer 3s ease-in-out infinite;
+}
+
+@keyframes collectShimmer {
+  0% {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MICRO-INTERACTION: Scale and lift on hover (enhanced)
+   ───────────────────────────────────────────────────────────────────────── */
+.btn-collect {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-collect:hover {
+  transform: translateY(-3px) scale(1.04);
+}
+
+.btn-collect:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   RESPONSIVE ADJUSTMENTS
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Tablet: Slightly reduced animation intensity */
+@media (max-width: 768px) {
+  .btn-collect::before {
+    animation: collectGlow 3s ease-in-out infinite;
+  }
+
+  .btn-collect {
+    animation: collectShadowPulse 3.5s ease-in-out infinite;
+  }
+
+  body.dark-mode .btn-collect {
+    animation: collectShadowPulseDark 3.5s ease-in-out infinite;
+  }
+
+  .btn-collect:hover {
+    transform: translateY(-2px) scale(1.02);
+  }
+}
+
+/* Mobile: Minimal animation (reduce motion for performance) */
+@media (max-width: 480px) {
+  .btn-collect::before {
+    animation: none;
+    display: none;
+  }
+
+  .btn-collect::after {
+    animation: none;
+    display: none;
+  }
+
+  .btn-collect {
+    animation: collectShadowPulseLight 4s ease-in-out infinite;
+    box-shadow: 0 3px 12px rgba(5, 150, 105, 0.2);
+  }
+
+  body.dark-mode .btn-collect {
+    animation: collectShadowPulseLight 4s ease-in-out infinite;
+    box-shadow: 0 3px 12px rgba(16, 185, 129, 0.24);
+  }
+
+  .btn-collect:hover {
+    transform: translateY(-1px) scale(1.01);
+  }
+
+  /* Subtle pulse for mobile instead of complex animations */
+  @keyframes collectShadowPulseLight {
+    0%, 100% {
+      box-shadow: 0 3px 12px rgba(5, 150, 105, 0.2);
+    }
+    50% {
+      box-shadow: 0 4px 16px rgba(5, 150, 105, 0.28);
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ACCESSIBILITY: Reduced motion support (respects prefers-reduced-motion)
+   ───────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .btn-collect::before {
+    animation: none;
+  }
+
+  .btn-collect::after {
+    animation: none;
+  }
+
+  .btn-collect {
+    animation: none;
+  }
+
+  body.dark-mode .btn-collect {
+    animation: none;
+  }
+
+  .btn-collect,
+  .btn-collect:hover,
+  .btn-collect:active {
+    transition: none;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   BADGE INDICATOR: Optional visual badge for new/pending collections
+   ───────────────────────────────────────────────────────────────────────── */
+.btn-collect.has-pending::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+  animation: badgePulse 2s ease-in-out infinite;
+  z-index: 10;
+}
+
+body.dark-mode .btn-collect.has-pending::after {
+  border-color: #161d18;
+}
+
+@keyframes badgePulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   HIGHLIGHT ANIMATION: Temporary highlight on page load or new transaction
+   ───────────────────────────────────────────────────────────────────────── */
+.btn-collect.highlight-flash {
+  animation: collectHighlightFlash 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) 1;
+}
+
+@keyframes collectHighlightFlash {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 16px rgba(5, 150, 105, 0.24);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   DISABLED STATE: Reduce effects when button is disabled
+   ───────────────────────────────────────────────────────────────────────── */
+.btn-collect:disabled,
+.btn-collect[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  animation: none;
+}
+
+.btn-collect:disabled::before,
+.btn-collect[disabled]::before,
+.btn-collect:disabled::after,
+.btn-collect[disabled]::after {
+  animation: none;
+  display: none;
+}
+
+.btn-collect:disabled:hover,
+.btn-collect[disabled]:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.12);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   IN-MODAL STYLING: Collect button inside modal dialogs
+   ───────────────────────────────────────────────────────────────────────── */
+.modal-overlay .btn-collect {
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.26);
+}
+
+.modal-overlay .btn-collect:hover {
+  box-shadow: 0 10px 28px rgba(5, 150, 105, 0.34);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ACTION DROPDOWN COMPATIBILITY
+   ───────────────────────────────────────────────────────────────────────── */
+.dd-item.collect-action {
+  color: #059669;
+  font-weight: 600;
+  position: relative;
+  overflow: hidden;
+}
+
+.dd-item.collect-action::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: linear-gradient(180deg, #10b981, #059669);
+  border-radius: 2px 0 0 2px;
+  opacity: 0;
+  animation: collectDDHighlight 2s ease-in-out infinite;
+}
+
+@keyframes collectDDHighlight {
+  0%, 100% {
+    opacity: 0;
+    height: 60%;
+  }
+  50% {
+    opacity: 1;
+    height: 80%;
+  }
+}
+
+.dd-item.collect-action:hover {
+  background: rgba(5, 150, 105, 0.12);
+}
+
+.dd-item.collect-action:hover::before {
+  animation: none;
+  opacity: 1;
+  height: 80%;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   SUCCESS STATE: After successful collection
+   ───────────────────────────────────────────────────────────────────────── */
+.btn-collect.success {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  animation: collectSuccess 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes collectSuccess {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   LOADING STATE: While collection is processing
+   ───────────────────────────────────────────────────────────────────────── */
+.btn-collect.loading {
+  position: relative;
+  color: transparent;
+  pointer-events: none;
+}
+
+.btn-collect.loading::after {
+  content: '';
+  position: absolute;
+  inset: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: collectSpinner 0.8s linear infinite;
+}
+
+@keyframes collectSpinner {
+  to {
+    transform: rotate(360deg);
+  }
+}

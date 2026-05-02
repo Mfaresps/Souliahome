@@ -27,6 +27,9 @@ interface ConnectedUser {
 
 const geoCache = new Map<string, ConnectedUser['location']>();
 
+// Latest published banner config — persists in-process so new connections receive it
+let latestBannerCfg: unknown = null;
+
 function fetchGeo(ip: string): Promise<ConnectedUser['location']> {
   return new Promise((resolve) => {
     if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
@@ -161,6 +164,27 @@ export class PresenceGateway
       client.on('activity', () => {
         const cur = this.connectedUsers.get(client.id);
         if (cur) cur.lastActivity = new Date().toISOString();
+      });
+
+      // Banner publish: admin emits banner:publish → server stores + rebroadcasts to all clients
+      client.on('banner:publish', (cfg: unknown) => {
+        const sender = this.connectedUsers.get(client.id);
+        if (!sender || sender.role !== 'admin') return; // only admins may publish
+        if (!cfg || typeof cfg !== 'object') return;
+        latestBannerCfg = cfg;
+        this.server.emit('banner:changed', cfg);
+      });
+
+      // Send current banner state to the newly connected client immediately
+      if (latestBannerCfg) {
+        client.emit('banner:changed', latestBannerCfg);
+      }
+
+      // Allow any authenticated client to request current banner state
+      client.on('banner:request', () => {
+        if (latestBannerCfg) {
+          client.emit('banner:changed', latestBannerCfg);
+        }
       });
     } catch {
       client.disconnect();
