@@ -18,6 +18,8 @@ export interface ProductInvoice {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  discountShare: number;
+  netTotal: number;
   status: string;
 }
 
@@ -46,6 +48,11 @@ export interface ProductAnalytics {
     totalRevenueFromSales: number;
     totalCostFromPurchases: number;
     totalLossFromReturns: number;
+    totalDiscounts: number;
+    netRevenue: number;
+    netQuantitySold: number;
+    avgBuyPrice: number;
+    netProfit: number;
     profitMargin: number;
   };
   performance: ProductPerformance;
@@ -120,6 +127,13 @@ export class ProductAnalyticsService {
         invoiceType = 'return';
       }
 
+      const itemTotal = item.total || 0;
+      const txItemsTotal = (tx.itemsTotal || 0) || (tx.items || []).reduce((s, i) => s + (i.total || 0), 0);
+      const txDiscount = tx.discount || 0;
+      // Distribute discount proportionally by item share of invoice total
+      const discountShare = txItemsTotal > 0 ? (itemTotal / txItemsTotal) * txDiscount : 0;
+      const netTotal = itemTotal - discountShare;
+
       const invoice: ProductInvoice = {
         type: invoiceType,
         ref: tx.ref || tx._id.toString().slice(-8),
@@ -128,7 +142,9 @@ export class ProductAnalyticsService {
         phone: tx.phone,
         quantity: item.qty || 0,
         unitPrice: item.price || 0,
-        totalPrice: item.total || 0,
+        totalPrice: itemTotal,
+        discountShare,
+        netTotal,
         status: tx.payStatus || 'pending',
       };
 
@@ -141,21 +157,30 @@ export class ProductAnalyticsService {
       }
     });
 
-    // Calculate summary metrics
+    // Calculate summary metrics (use netTotal which already has discount deducted)
     const totalQuantitySold = saleInvoices.reduce((sum, inv) => sum + inv.quantity, 0);
     const totalQuantityPurchased = purchaseInvoices.reduce((sum, inv) => sum + inv.quantity, 0);
     const totalQuantityReturned = returnInvoices.reduce((sum, inv) => sum + inv.quantity, 0);
-    const totalRevenueFromSales = saleInvoices.reduce((sum, inv) => sum + inv.totalPrice, 0);
-    const totalCostFromPurchases = purchaseInvoices.reduce((sum, inv) => sum + inv.totalPrice, 0);
-    const totalLossFromReturns = returnInvoices.reduce((sum, inv) => sum + inv.totalPrice, 0);
+    const totalRevenueFromSales = saleInvoices.reduce((sum, inv) => sum + inv.netTotal, 0);
+    const totalCostFromPurchases = purchaseInvoices.reduce((sum, inv) => sum + inv.netTotal, 0);
+    const totalLossFromReturns = returnInvoices.reduce((sum, inv) => sum + inv.netTotal, 0);
+    const totalDiscounts = saleInvoices.reduce((sum, inv) => sum + inv.discountShare, 0);
+
+    // Net figures after accounting for returns
+    const netQuantitySold = Math.max(0, totalQuantitySold - totalQuantityReturned);
+    const netRevenue = Math.max(0, totalRevenueFromSales - totalLossFromReturns);
+
+    // Use avg buy price from actual purchase invoices when available, fallback to product.buyPrice
+    const avgBuyPrice =
+      totalQuantityPurchased > 0
+        ? totalCostFromPurchases / totalQuantityPurchased
+        : product.buyPrice || 0;
+    const netCost = netQuantitySold * avgBuyPrice;
+    const netProfit = netRevenue - netCost;
 
     const profitMargin =
-      totalRevenueFromSales > 0
-        ? Math.round(
-            ((totalRevenueFromSales - totalCostFromPurchases) /
-              totalRevenueFromSales) *
-              100,
-          )
+      netRevenue > 0
+        ? Math.round((netProfit / netRevenue) * 100)
         : 0;
 
     // Calculate performance
@@ -184,6 +209,11 @@ export class ProductAnalyticsService {
         totalRevenueFromSales,
         totalCostFromPurchases,
         totalLossFromReturns,
+        totalDiscounts,
+        netRevenue,
+        netQuantitySold,
+        avgBuyPrice,
+        netProfit,
         profitMargin,
       },
       performance,

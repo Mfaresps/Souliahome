@@ -437,7 +437,7 @@ body.dark-mode .history-detail-item.removed{background:rgba(248,113,113,.08)}
 .flex{display:flex;align-items:center}
 .flex-between{display:flex;align-items:center;justify-content:space-between}
 .gap-8{gap:8px}.gap-12{gap:12px}.gap-16{gap:16px}
-.mb-8{margin-bottom:8px}.mb-16{margin-bottom:16px}.mb-24{margin-bottom:24px}
+.mb-8{margin-bottom:8px}.mb-12{margin-bottom:12px}.mb-14{margin-bottom:14px}.mb-16{margin-bottom:16px}.mb-20{margin-bottom:20px}.mb-24{margin-bottom:24px}
 .mt-16{margin-top:16px}.mt-24{margin-top:24px}
 .text-muted{color:var(--muted)}.text-sm{font-size:.8rem}.text-xs{font-size:.72rem}
 .text-green{color:var(--green)}.text-red{color:var(--red)}.text-blue{color:var(--blue)}.text-orange{color:var(--orange)}.text-purple{color:var(--purple)}
@@ -1031,6 +1031,9 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .pagination button:disabled{opacity:.35;cursor:not-allowed}
 .pagination .pag-info{font-size:.76rem;color:var(--muted);padding:0 6px;white-space:nowrap}
 .pagination .pag-ellipsis{font-size:.8rem;color:var(--muted);padding:0 4px}
+.pagination .pag-perpage{display:flex;align-items:center;gap:5px;margin-inline-start:6px;padding-inline-start:10px;border-inline-start:1px solid var(--border)}
+.pagination .pag-perpage select{height:28px;border-radius:6px;font-family:inherit}
+@media(max-width:500px){.pagination{gap:3px}.pagination .pag-perpage{margin-inline-start:0;padding-inline-start:0;border:none;width:100%;justify-content:center}}
 /* ══════════════════════════════════════════════════════════════════════════════
    INVOICE DETAIL MODAL — Clean, Premium Redesign (Apr 30, 2026)
    ══════════════════════════════════════════════════════════════════════════════ */
@@ -1171,38 +1174,38 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .inv-breakdown-row.shipping{border-color:#e9d5ff;background:#faf5ff}
 .inv-breakdown-row.shipping .amount{color:#7c3aed}
 /* Payment Timeline */
-.inv-timeline{margin-top:20px}
-.inv-timeline-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface2);border-radius:10px 10px 0 0;cursor:pointer;transition:background .15s}
-.inv-timeline-header:hover{background:var(--surface)}
-.inv-timeline-header h5{margin:0;font-size:.82rem;font-weight:700;display:flex;align-items:center;gap:8px}
-.inv-timeline-header h5 svg{width:16px;height:16px;color:var(--muted)}
-.inv-timeline-header .badge{font-size:.7rem;padding:3px 10px;background:var(--primary);color:#fff;border-radius:10px;font-weight:600}
-.inv-timeline-header .chevron{width:18px;height:18px;color:var(--muted);transition:transform .2s}
+.inv-timeline{margin-top:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.inv-timeline-header{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:var(--surface);cursor:pointer;transition:background .15s;user-select:none}
+.inv-timeline-header:hover{background:var(--surface2)}
+.inv-timeline-header h5{margin:0;font-size:.82rem;font-weight:500;display:flex;align-items:center;gap:7px;color:var(--text)}
+.inv-timeline-header h5 svg{width:15px;height:15px;color:#2f5d3f;flex-shrink:0}
+.inv-timeline-header .badge{font-size:.7rem;padding:2px 8px;background:#2f5d3f;color:#fff;border-radius:10px;font-weight:600}
+.inv-timeline-header .chevron{width:15px;height:15px;color:var(--muted);transition:transform .2s;flex-shrink:0}
 .inv-timeline-header.expanded .chevron{transform:rotate(180deg)}
-.inv-timeline-body{border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow:hidden;max-height:0;transition:max-height .3s ease}
-.inv-timeline-body.expanded{max-height:500px}
-.inv-timeline-list{padding:12px 16px}
-.inv-timeline-item{display:flex;gap:12px;padding:10px 0;position:relative}
+.inv-timeline-body{overflow:hidden;max-height:0;transition:max-height .3s ease;border-top:0}
+.inv-timeline-body.expanded{max-height:500px;border-top:1px solid var(--border)}
+.inv-timeline-list{padding:8px 12px}
+.inv-timeline-item{display:flex;gap:10px;padding:7px 0;position:relative}
 .inv-timeline-item:not(:last-child){border-bottom:1px dashed var(--border)}
-.inv-timeline-item:not(:last-child)::before{content:'';position:absolute;right:7px;top:32px;bottom:-10px;width:2px;background:var(--border)}
-.inv-timeline-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.inv-timeline-item:not(:last-child)::before{content:'';position:absolute;right:6px;top:26px;bottom:-7px;width:2px;background:var(--border)}
+.inv-timeline-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:2px}
 .inv-timeline-dot.green{background:rgba(22,163,74,.15);border:2px solid #16a34a}
 .inv-timeline-dot.blue{background:rgba(59,130,246,.15);border:2px solid #3b82f6}
 .inv-timeline-content{flex:1;min-width:0}
-.inv-timeline-amount{font-weight:700;font-size:.9rem;margin-bottom:2px}
-.inv-timeline-meta{font-size:.75rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px}
+.inv-timeline-amount{font-weight:700;font-size:.83rem;margin-bottom:1px}
+.inv-timeline-meta{font-size:.72rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px}
 /* Collapsible Sections */
-.inv-section{margin-top:16px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.inv-section-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--surface);cursor:pointer;transition:background .15s;user-select:none}
+.inv-section{margin-top:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.inv-section-header{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:var(--surface);cursor:pointer;transition:background .15s;user-select:none}
 .inv-section-header:hover{background:var(--surface2)}
-.inv-section-header h5{margin:0;font-size:.85rem;font-weight:700;display:flex;align-items:center;gap:10px}
-.inv-section-header h5 svg{width:18px;height:18px;color:var(--muted)}
-.inv-section-header .section-badge{font-size:.7rem;padding:3px 10px;background:var(--accent);color:#fff;border-radius:10px;font-weight:600}
-.inv-section-header .section-chevron{width:20px;height:20px;color:var(--muted);transition:transform .25s}
+.inv-section-header h5{margin:0;font-size:.82rem;font-weight:500;display:flex;align-items:center;gap:7px;color:var(--text)}
+.inv-section-header h5 svg{width:15px;height:15px;color:#2f5d3f;flex-shrink:0}
+.inv-section-header .section-badge{font-size:.7rem;padding:2px 8px;background:#2f5d3f;color:#fff;border-radius:10px;font-weight:600}
+.inv-section-header .section-chevron{width:15px;height:15px;color:var(--muted);transition:transform .25s;flex-shrink:0}
 .inv-section-header.expanded .section-chevron{transform:rotate(180deg)}
-.inv-section-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
-.inv-section-body.expanded{max-height:1000px}
-.inv-section-content{padding:16px 18px;border-top:1px solid var(--border)}
+.inv-section-body{max-height:0;overflow:hidden;transition:max-height .3s ease;border-top:0}
+.inv-section-body.expanded{max-height:1000px;border-top:1px solid var(--border)}
+.inv-section-content{padding:10px 12px}
 /* Notes Section */
 .inv-notes{padding:14px 18px;background:var(--surface);border-radius:10px;margin-top:16px;font-size:.84rem}
 .inv-notes-label{font-size:.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
@@ -1357,6 +1360,7 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .tx-items-actions{display:flex;gap:6px;flex-wrap:wrap}
 .tx-action-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;font-size:.76rem;font-weight:600;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all .15s;white-space:nowrap}
 .tx-action-btn:hover{background:var(--primary-pale);border-color:var(--accent);color:var(--primary)}
+.btn-pulse-warn{animation:pulse-warning .5s ease 3;border-color:var(--red)!important;color:var(--red)!important;background:rgba(239,68,68,.07)!important}
 .tx-ps-wrap{background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px;animation:fadeIn .18s}
 .tx-ps-search-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .tx-ps-input{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.85rem;background:var(--bg);outline:none;transition:border-color .15s}
@@ -1459,11 +1463,13 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .tx-comments-wrap{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:0;margin-top:12px;overflow:hidden}
 .tx-comments-head{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--primary);color:#fff;font-weight:600;font-size:.88rem}
 .tx-comment-form{padding:12px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:8px;position:relative}
-.tx-comment-input-row{display:grid;grid-template-columns:1fr 90px auto;gap:8px;align-items:stretch;width:100%}
-.tx-comment-input{border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:.85rem;background:var(--bg);color:var(--text);outline:none;transition:border-color .15s;min-width:0;width:100%}
+.tx-comment-input-row{display:grid;grid-template-columns:1fr 32px;gap:6px;align-items:center;width:100%}
+.tx-comment-input{border:1.5px solid var(--border);border-radius:8px;padding:4px 10px;font-size:.9em;height:32px;box-sizing:border-box;background:var(--bg);color:var(--text);outline:none;transition:border-color .15s;min-width:0;width:100%}
 .tx-comment-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--primary-pale)}
-.tx-comment-type{border:1.5px solid var(--border);border-radius:8px;padding:6px 8px;font-size:.8rem;background:var(--bg);color:var(--text);width:100%;cursor:pointer}
-.tx-comment-add-btn{padding:8px 16px;font-size:.82rem;white-space:nowrap}
+.tx-comment-type{border:1.5px solid var(--border);border-radius:8px;padding:4px 6px;font-size:.78rem;height:32px;box-sizing:border-box;background:var(--bg);color:var(--text);width:100%;cursor:pointer}
+.tx-comment-add-btn{width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;background:#2f5d3f;color:#fff;border:none;border-radius:4px;cursor:pointer;flex-shrink:0;transition:background .15s;margin-right:0}
+.tx-comment-add-btn:hover{background:#234a30}
+.tx-comment-add-btn svg{display:block;pointer-events:none}
 .tx-comments-list{max-height:min(260px,42vh);overflow-y:auto;overscroll-behavior:contain}
 /* Comment card */
 .tx-cmt{display:flex;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);transition:background .12s;position:relative}
@@ -1486,11 +1492,14 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 /* Invoice detail comments */
 .inv-cmt-wrap{margin-top:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .inv-cmt-head{padding:10px 14px;background:var(--primary);color:#fff;font-weight:600;font-size:.88rem;display:flex;align-items:center;gap:8px}
-.inv-cmt-form{padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:8px;position:relative}
-.inv-cmt-input-row{display:flex;gap:8px}
-.inv-cmt-input{flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.84rem;background:var(--bg);outline:none;transition:border-color .15s}
+.inv-cmt-form{padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface);position:relative}
+.inv-cmt-input-row{display:grid;grid-template-columns:1fr 32px;gap:6px;align-items:center}
+.inv-cmt-input{flex:1;padding:4px 10px;height:32px;box-sizing:border-box;border:1.5px solid var(--border);border-radius:8px;font-size:.9em;background:var(--bg);outline:none;transition:border-color .15s;min-width:0}
 .inv-cmt-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--primary-pale)}
-.inv-cmt-type{width:80px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:.78rem;background:var(--bg);flex-shrink:0}
+.inv-cmt-type{height:32px;box-sizing:border-box;padding:4px 6px;border:1.5px solid var(--border);border-radius:8px;font-size:.78rem;background:var(--bg);flex-shrink:0}
+.inv-cmt-send-btn{width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;background:#2f5d3f;color:#fff;border:none;border-radius:4px;cursor:pointer;flex-shrink:0;transition:background .15s}
+.inv-cmt-send-btn:hover{background:#234a30}
+.inv-cmt-send-btn svg{display:block;pointer-events:none}
 .inv-cmt-list{max-height:300px;overflow-y:auto;overscroll-behavior:contain}
 .inv-cmt-item{display:flex;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);transition:background .12s}
 .inv-cmt-item:last-child{border-bottom:none}
@@ -1512,13 +1521,8 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .mention-alert-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .mention-alert-footer{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
 @media(max-width:540px){
-  .tx-comment-input-row{grid-template-columns:1fr 1fr;grid-template-areas:"input input" "type btn"}
-  .tx-comment-input{grid-area:input}
-  .tx-comment-type{grid-area:type;font-size:.78rem}
-  .tx-comment-add-btn{grid-area:btn;width:100%}
-  .inv-cmt-input-row{flex-wrap:wrap}
-  .inv-cmt-input{flex:1 1 100%;width:100%}
-  .inv-cmt-type{flex:1 1 auto;width:auto;font-size:.74rem}
+  .tx-comment-input-row{grid-template-columns:1fr 32px}
+  .inv-cmt-input-row{grid-template-columns:1fr 32px}
   .tx-cmt-actions,.inv-cmt-item .tx-cmt-actions{opacity:1}
 }
 /* ── Summary collapsible items ── */
@@ -2801,6 +2805,61 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 /* Vault Justification Column Mobile Hide */
 .vault-justif-col { display: table-cell; }
 @media (max-width:900px) { .vault-justif-col { display: none; } }
+/* Vault filter card */
+.vault-filter-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.vault-filter-title{display:flex;align-items:center;gap:7px;font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:10px}
+.vault-filter-title svg{width:15px;height:15px;color:#2f5d3f;flex-shrink:0}
+.vault-filter-title small{font-size:.75rem;font-weight:400;color:var(--muted);margin-right:4px}
+.vault-filter-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;align-items:end}
+.vault-filter-row-2{display:grid;grid-template-columns:auto 1fr 1fr auto auto;gap:8px;align-items:end;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.vault-filter-label{display:block;font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:3px}
+.vault-filter-input{width:100%;box-sizing:border-box;height:30px;font-size:.82rem;padding:0 8px;border:1.5px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
+.vault-filter-input:focus{border-color:#2f5d3f}
+.vault-quick-btns{display:flex;gap:4px;flex-wrap:wrap}
+.vault-quick-btn{height:24px;padding:0 8px;font-size:.72rem;font-weight:600;border:1.5px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s}
+.vault-quick-btn:hover,.vault-quick-btn.active{border-color:#2f5d3f;color:#2f5d3f;background:rgba(47,93,63,.07)}
+.vault-search-btn{height:30px;padding:0 14px;font-size:.82rem;font-weight:600;background:#2f5d3f;color:#fff;border:none;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .15s;white-space:nowrap}
+.vault-search-btn:hover{background:#234a30}
+.vault-reset-btn{height:30px;padding:0 10px;font-size:.82rem;background:transparent;color:var(--muted);border:1.5px solid var(--border);border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .15s;white-space:nowrap}
+.vault-reset-btn:hover{border-color:var(--text);color:var(--text)}
+/* Vault records header bar */
+.vault-records-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.vault-records-title{display:flex;align-items:center;gap:7px;font-size:.88rem;font-weight:700}
+.vault-records-title svg{width:15px;height:15px;color:#2f5d3f}
+.vault-records-count{font-size:.75rem;color:var(--muted);font-weight:400}
+.vault-records-actions{display:flex;gap:6px;align-items:center}
+/* Vault table compact */
+#vault-table th{padding:7px 10px;font-size:.75rem}
+#vault-table td{padding:6px 10px;font-size:.78rem}
+#vault-table tbody tr:nth-child(even){background:var(--surface)}
+#vault-table tbody tr:nth-child(odd){background:var(--bg)}
+#vault-table tbody tr:hover{background:var(--primary-pale)!important}
+/* Vault settle form */
+.vault-settle-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.vault-settle-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.vault-settle-title{display:flex;align-items:center;gap:7px;font-size:.85rem;font-weight:700}
+.vault-settle-title svg{width:15px;height:15px;color:#2f5d3f}
+.vault-settle-body{margin-top:12px}
+.vault-settle-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;min-width:0}
+.vault-settle-field label{display:block;font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:3px}
+.vault-settle-field input,.vault-settle-field select{width:100%;box-sizing:border-box;height:30px;font-size:.82rem;padding:0 8px;border:1.5px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
+.vault-settle-field input:focus,.vault-settle-field select:focus{border-color:#2f5d3f}
+.vault-settle-full{margin-top:8px}
+.vault-settle-full label{display:block;font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:3px}
+.vault-settle-full input{width:100%;box-sizing:border-box;height:30px;font-size:.82rem;padding:0 8px;border:1.5px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
+.vault-settle-full input:focus{border-color:#2f5d3f}
+.vault-settle-confirm-btn{height:30px;min-width:36px;padding:0 10px;display:flex;align-items:center;justify-content:center;gap:5px;background:#2f5d3f;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:.82rem;font-weight:600;transition:background .15s;white-space:nowrap;flex-shrink:0}
+.vault-settle-confirm-btn:hover{background:#234a30}
+@media(max-width:860px) and (min-width:701px){
+  .vault-settle-grid{grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .vault-settle-grid .vault-settle-confirm-btn{grid-column:1/-1;height:34px}
+}
+@media(max-width:700px){
+  .vault-settle-grid{grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto}
+  .vault-filter-row{grid-template-columns:1fr 1fr}
+  .vault-filter-row-2{grid-template-columns:1fr 1fr;grid-template-rows:auto auto}
+  .vault-quick-btns{order:2;grid-column:1/-1}
+}
 /* Vault Header & Toolbar — minimalist responsive */
 .vault-header { margin-bottom: 14px; }
 .vault-header-text .page-title { margin:0 0 2px; font-size:1.35rem; line-height:1.2; }
@@ -4192,6 +4251,42 @@ body.dark-mode .dashboard-v2{
 @keyframes ptrSpin{to{transform:rotate(360deg)}}
 @media(min-width:761px){.ptr-host .ptr-indicator{display:none!important}}
 
+/* ═══ CUSTOM MODAL DIALOG ═══ */
+#soulia-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;transition:opacity .2s ease;pointer-events:none}
+#soulia-modal-overlay.active{opacity:1;pointer-events:all}
+#soulia-modal{background:var(--bg);border:1px solid var(--border);border-radius:18px;width:100%;max-width:440px;box-shadow:0 24px 60px rgba(0,0,0,.18);transform:translateY(16px) scale(.97);transition:transform .22s cubic-bezier(.34,1.56,.64,1),opacity .2s ease;opacity:0;overflow:hidden}
+#soulia-modal-overlay.active #soulia-modal{transform:translateY(0) scale(1);opacity:1}
+#soulia-modal-header{display:flex;align-items:center;gap:12px;padding:20px 22px 16px;border-bottom:1px solid var(--border)}
+#soulia-modal-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+#soulia-modal-icon.warn{background:rgba(230,81,0,.1);color:var(--orange)}
+#soulia-modal-icon.danger{background:rgba(220,38,38,.1);color:var(--red)}
+#soulia-modal-icon.info{background:var(--primary-pale);color:var(--accent)}
+#soulia-modal-icon.success{background:rgba(22,163,74,.1);color:var(--green)}
+#soulia-modal-title{font-size:1rem;font-weight:700;color:var(--text);flex:1}
+#soulia-modal-body{padding:18px 22px}
+#soulia-modal-rows{display:flex;flex-direction:column;gap:0}
+.sm-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:.875rem}
+.sm-row:last-child{border-bottom:none}
+.sm-key{color:var(--muted);font-weight:500}
+.sm-val{color:var(--text);font-weight:600;text-align:left}
+#soulia-modal-question{margin-top:14px;font-size:.875rem;color:var(--text);font-weight:500;line-height:1.6}
+#soulia-modal-prompt-wrap{margin-top:12px}
+#soulia-modal-input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-family:'Cairo',sans-serif;font-size:.88rem;outline:none;transition:border-color .15s,box-shadow .15s}
+#soulia-modal-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(45,122,79,.12)}
+#soulia-modal-input.sm-err{border-color:var(--red)}
+#soulia-modal-errmsg{font-size:.72rem;color:var(--red);margin-top:5px;display:none}
+#soulia-modal-errmsg.show{display:block}
+#soulia-modal-footer{display:flex;gap:10px;padding:14px 22px 20px;justify-content:flex-end}
+.sm-btn{padding:10px 22px;border-radius:10px;font-family:'Cairo',sans-serif;font-size:.875rem;font-weight:700;border:1px solid transparent;cursor:pointer;transition:background .15s,border-color .15s,transform .1s,opacity .15s}
+.sm-btn:active{transform:scale(.97)}
+.sm-btn-cancel{background:transparent;color:var(--text);border-color:var(--border)}
+.sm-btn-cancel:hover{background:var(--surface2)}
+.sm-btn-confirm{background:var(--primary);color:#fff}
+.sm-btn-confirm:hover{background:var(--accent)}
+.sm-btn-confirm.danger{background:var(--red)}
+.sm-btn-confirm.danger:hover{background:#b91c1c}
+@media(max-width:480px){#soulia-modal{border-radius:14px}#soulia-modal-footer{flex-direction:column-reverse}#soulia-modal-footer .sm-btn{width:100%;text-align:center}}
+
 </style>
 </head>
 <body>
@@ -4633,14 +4728,8 @@ body.dark-mode .dashboard-v2{
       </div>
       <div class="tx-comment-form">
         <div class="tx-comment-input-row">
-          <input type="text" id="tx-comment-text" placeholder="أضف تعليق… اكتب @ للإشارة" class="tx-comment-input" oninput="onMentionInput(this,'__tx__')" onkeydown="onMentionKey(event,'__tx__')">
-          <select id="tx-comment-type" class="tx-comment-type">
-            <option value="عام">عام</option>
-            <option value="تنبيه">تنبيه</option>
-            <option value="ملاحظة">ملاحظة</option>
-            <option value="أسئلة">أسئلة</option>
-          </select>
-          <button class="btn btn-primary tx-comment-add-btn" onclick="addTxComment()">إضافة</button>
+          <input type="text" id="tx-comment-text" placeholder="أضف تعليق… اكتب @ للإشارة" class="tx-comment-input" oninput="onMentionInput(this,'__tx__')" onkeydown="onMentionKey(event,'__tx__');if(event.key==='Enter'&&!_mentionDropdown){event.preventDefault();addTxComment()}">
+          <button class="tx-comment-add-btn" onclick="addTxComment()" title="إرسال التعليق"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
         </div>
       </div>
       <div id="tx-comments-list" class="tx-comments-list">
@@ -5892,34 +5981,125 @@ body.dark-mode .dashboard-v2{
 <!-- Tab 1: Overview -->
 <div id="vault-tab-overview" class="vault-tab-content">
 <div class="seg-cards" id="vault-segs"></div>
-<div class="card mb-20">
-<h4 class="mb-12" style="font-size:.95rem">تسوية يدوية</h4>
-<div class="grid grid-2 gap-10" id="vault-adjust-grid">
-<div class="form-group"><label>المبلغ <span style="color:#ef4444">*</span></label><input type="number" id="vault-amount" required data-require-nonzero="true" style="font-size:.88rem;padding:6px 8px"></div>
-<div class="form-group"><label>القسم</label><select id="vault-seg" style="font-size:.88rem;padding:6px 8px"><option value="cash">كاش</option><option value="vodafone">فودافون كاش</option><option value="instapay">Instapay</option><option value="bank">تحويل بنكي</option></select></div>
-<div class="form-group"><label>الطريقة</label><select id="vault-method" style="font-size:.88rem;padding:6px 8px"><option value="إضافة">إضافة</option><option value="سحب">سحب</option></select></div>
-<div class="form-group"><label>الوصف</label><input type="text" id="vault-desc" style="font-size:.88rem;padding:6px 8px"></div>
+<!-- Manual Settlement Card -->
+<div class="vault-settle-card mb-14">
+  <div class="vault-settle-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.vault-settle-chevron').style.transform=this.nextElementSibling.style.display==='none'?'rotate(0deg)':'rotate(180deg)'">
+    <div class="vault-settle-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      تسوية يدوية
+      <small style="font-size:.72rem;font-weight:400;color:var(--muted)">قم بتسوية أرصدة الخزنة يدوياً عند الحاجة</small>
+    </div>
+    <svg class="vault-settle-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform .2s;color:var(--muted)"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>
+  <div class="vault-settle-body">
+    <div class="vault-settle-grid" id="vault-adjust-grid">
+      <div class="vault-settle-field"><label>المبلغ <span style="color:#ef4444">*</span></label><input type="number" id="vault-amount" required data-require-nonzero="true" placeholder="0.00"></div>
+      <div class="vault-settle-field"><label>القسم</label><select id="vault-seg"><option value="cash">كاش</option><option value="vodafone">فودافون كاش</option><option value="instapay">Instapay</option><option value="bank">تحويل بنكي</option></select></div>
+      <div class="vault-settle-field"><label>الطريقة</label><select id="vault-method"><option value="إضافة">إضافة</option><option value="سحب">سحب</option></select></div>
+      <div class="vault-settle-field"><label>الوصف</label><input type="text" id="vault-desc" placeholder="وصف مختصر..."></div>
+      <button class="vault-settle-confirm-btn" onclick="addVaultEntry()" title="تأكيد التسوية">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        تأكيد
+      </button>
+    </div>
+    <div class="vault-settle-full">
+      <label>المبرر المحاسبي <span style="color:var(--muted);font-weight:400">(اختياري)</span></label>
+      <input type="text" id="vault-justification" placeholder="كيف يؤثر على الخزنة؟">
+    </div>
+  </div>
 </div>
-<div class="form-group" style="margin-top:8px"><label style="font-size:.85rem">المبرر المحاسبي (اختياري)</label><input type="text" id="vault-justification" placeholder="كيف يؤثر على الخزنة؟" style="font-size:.88rem;padding:6px 8px"></div>
-<button class="btn btn-primary btn-sm" style="margin-top:10px;padding:7px 12px;font-size:.85rem" onclick="addVaultEntry()">تأكيد</button>
+
+<!-- Cash Records Card -->
+<div class="card" style="padding:14px 16px">
+<!-- Filter Card -->
+<div class="vault-filter-card">
+  <div class="vault-filter-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+    تصفية السجلات
+    <small>ابحث وفلتر السجلات حسب احتياجاتك</small>
+  </div>
+  <div class="vault-filter-row">
+    <div>
+      <span class="vault-filter-label">البحث</span>
+      <input type="text" id="vault-log-search" class="vault-filter-input" placeholder="ابحث برقم المعاملة أو الوصف أو أي كلمة..." oninput="vaultPage=1;renderVaultTable()">
+    </div>
+    <div>
+      <span class="vault-filter-label">الحالة</span>
+      <select id="vault-status-filter" class="vault-filter-input" onchange="vaultPage=1;renderVaultTable()">
+        <option value="">كل الحالات</option>
+        <option value="completed">مكتملة</option>
+        <option value="pending">قيد الانتظار</option>
+        <option value="frozen">مجمدة</option>
+        <option value="cancelled">ملغاة</option>
+      </select>
+    </div>
+    <div>
+      <span class="vault-filter-label">القسم</span>
+      <select id="vault-seg-filter" class="vault-filter-input" onchange="vaultPage=1;renderVaultTable()">
+        <option value="">كل الأقسام</option>
+        <option value="cash">كاش</option>
+        <option value="vodafone">فودافون كاش</option>
+        <option value="instapay">Instapay</option>
+        <option value="bank">تحويل بنكي</option>
+      </select>
+    </div>
+    <div>
+      <span class="vault-filter-label">نوع الحركة</span>
+      <select id="vault-source-filter" class="vault-filter-input" onchange="vaultPage=1;renderVaultTable()">
+        <option value="">كل الأنواع</option>
+        <option value="ديبوزت مبيعات">مبيعات</option>
+        <option value="مشتريات">مشتريات</option>
+        <option value="مرتجع">مرتجع</option>
+        <option value="مصروف">مصروف</option>
+        <option value="تحصيل">تحصيل</option>
+        <option value="يدوي">يدوي</option>
+      </select>
+    </div>
+  </div>
+  <div class="vault-filter-row-2">
+    <div style="display:flex;flex-direction:column;gap:3px">
+      <span class="vault-filter-label" style="visibility:hidden">‎</span>
+      <div class="vault-quick-btns">
+        <button class="vault-quick-btn" onclick="setVaultQuickDate('today',this)">اليوم</button>
+        <button class="vault-quick-btn" onclick="setVaultQuickDate('yesterday',this)">أمس</button>
+        <button class="vault-quick-btn" onclick="setVaultQuickDate('7d',this)">آخر 7 أيام</button>
+        <button class="vault-quick-btn" onclick="setVaultQuickDate('30d',this)">آخر 30 يوم</button>
+        <button class="vault-quick-btn active" onclick="setVaultQuickDate('month',this)">هذا الشهر</button>
+      </div>
+    </div>
+    <div>
+      <span class="vault-filter-label">من تاريخ</span>
+      <input type="date" id="vault-from" class="vault-filter-input" onchange="vaultPage=1;_clearVaultQuickBtns();loadVaultLog()">
+    </div>
+    <div>
+      <span class="vault-filter-label">إلى تاريخ</span>
+      <input type="date" id="vault-to" class="vault-filter-input" onchange="vaultPage=1;_clearVaultQuickBtns();loadVaultLog()">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:3px">
+      <span class="vault-filter-label" style="visibility:hidden">‎</span>
+      <button class="vault-search-btn" onclick="vaultPage=1;loadVaultLog()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        بحث
+      </button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:3px">
+      <span class="vault-filter-label" style="visibility:hidden">‎</span>
+      <button class="vault-reset-btn" onclick="resetVaultFilters()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        إعادة تعيين
+      </button>
+    </div>
+  </div>
 </div>
-<div class="card">
-<div class="flex-between mb-12" style="flex-wrap:wrap;gap:8px;align-items:center">
-<h4 style="margin:0;font-size:.95rem">سجل الخزنة</h4>
-<div class="flex gap-6" style="flex-wrap:wrap">
-<input type="text" id="vault-log-search" placeholder="بحث..." style="width:140px;font-size:.85rem;padding:5px 8px" oninput="vaultPage=1;renderVaultTable()">
-<select id="vault-status-filter" style="width:120px;font-size:.85rem;padding:5px 8px" onchange="vaultPage=1;renderVaultTable()">
-  <option value="">كل الحالات</option>
-  <option value="completed">مكتملة</option>
-  <option value="pending">قيد الانتظار</option>
-  <option value="frozen">مجمدة</option>
-  <option value="cancelled">ملغاة</option>
-</select>
-<input type="date" id="vault-from" style="width:120px;font-size:.85rem;padding:5px 8px" onchange="vaultPage=1;loadVaultLog()">
-<input type="date" id="vault-to" style="width:120px;font-size:.85rem;padding:5px 8px" onchange="vaultPage=1;loadVaultLog()">
+<!-- Records header -->
+<div class="vault-records-bar">
+  <div class="vault-records-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    سجل الخزنة
+    <span class="vault-records-count" id="vault-records-count"></span>
+  </div>
 </div>
-</div>
-<div id="vault-log-table-wrap" class="overflow-x"><table id="vault-table"><thead><tr><th data-i18n="colTxNo">رقم المعاملة</th><th data-i18n="date">التاريخ</th><th data-i18n="colTime">التوقيت</th><th data-i18n="colAmount">المبلغ</th><th data-i18n="colTotalBal">الرصيد الكلي</th><th data-i18n="colSource">المصدر</th><th data-i18n="colRefTag">#المرجع</th><th data-i18n="colSegment">القسم</th><th data-i18n="status">الحالة</th><th data-i18n="colMethod">الطريقة</th><th data-i18n="colEmployee">الموظف</th><th data-i18n="colDescription">الوصف</th><th class="vault-justif-col" data-i18n="colAccountingProof">الإثبات المحاسبي</th></tr></thead><tbody></tbody></table></div>
+<div id="vault-log-table-wrap" class="overflow-x"><table id="vault-table"><thead><tr><th data-i18n="colTxNo">رقم المعاملة</th><th>التاريخ والوقت</th><th data-i18n="colAmount">المبلغ</th><th>نوع الحركة</th><th data-i18n="colMethod">طريقة الدفع</th><th data-i18n="colSegment">القسم</th><th data-i18n="status">الحالة</th><th data-i18n="colDescription">الوصف</th><th data-i18n="colEmployee">الموظف</th><th data-i18n="colSource">المصدر</th><th class="vault-justif-col" data-i18n="colAccountingProof">الإثبات المحاسبي</th></tr></thead><tbody></tbody></table></div>
 <div id="vault-log-mobile-list"></div>
 <div id="vault-pagination"></div>
 </div>
@@ -6434,6 +6614,29 @@ body.dark-mode .dashboard-v2{
   </div>
 </div>
 <div class="toast-container" id="toast-container"></div>
+
+<!-- Custom Modal Dialog -->
+<div id="soulia-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="soulia-modal-title">
+  <div id="soulia-modal">
+    <div id="soulia-modal-header">
+      <div id="soulia-modal-icon" class="info">❓</div>
+      <div id="soulia-modal-title"></div>
+    </div>
+    <div id="soulia-modal-body">
+      <div id="soulia-modal-rows"></div>
+      <div id="soulia-modal-question"></div>
+      <div id="soulia-modal-prompt-wrap" style="display:none">
+        <input id="soulia-modal-input" type="text" autocomplete="off"/>
+        <div id="soulia-modal-errmsg"></div>
+      </div>
+    </div>
+    <div id="soulia-modal-footer">
+      <button class="sm-btn sm-btn-cancel" id="soulia-modal-cancel">إلغاء</button>
+      <button class="sm-btn sm-btn-confirm" id="soulia-modal-confirm">تأكيد</button>
+    </div>
+  </div>
+</div>
+
 <!-- Shared top-right notification stack: vault + inventory toasts -->
 <div id="rt-notif-stack"></div>
 <div id="inv-notif-stack"></div>
@@ -6781,6 +6984,7 @@ const fxState = {
 let _fxDrawerCtx = null; // 'inv' | 'prod' while drawer open
 // Pagination page state (30/page for tables, 50/page for vault)
 let movPage = 1, invPage = 1, prodPage = 1, expPage = 1, archivePage = 1, clientsPage = 1, vaultPage = 1;
+let movPerPage = 20, vaultPerPage = 50;
 let txType = 'مبيعات';
 let txItems = [];
 let txDiscount = 0;
@@ -7190,6 +7394,108 @@ function toast(msg, isError = false) {
 }
 
 /* ════════════════════════════════════════════════════════════════
+   CUSTOM MODAL ENGINE — replaces all native confirm/prompt/alert
+   ════════════════════════════════════════════════════════════════ */
+(function(){
+  let _resolve = null;
+  let _isPrompt = false;
+
+  const overlay  = () => document.getElementById('soulia-modal-overlay');
+  const modal    = () => document.getElementById('soulia-modal');
+  const elTitle  = () => document.getElementById('soulia-modal-title');
+  const elIcon   = () => document.getElementById('soulia-modal-icon');
+  const elRows   = () => document.getElementById('soulia-modal-rows');
+  const elQ      = () => document.getElementById('soulia-modal-question');
+  const elPWrap  = () => document.getElementById('soulia-modal-prompt-wrap');
+  const elInput  = () => document.getElementById('soulia-modal-input');
+  const elErr    = () => document.getElementById('soulia-modal-errmsg');
+  const elConfirm= () => document.getElementById('soulia-modal-confirm');
+  const elCancel = () => document.getElementById('soulia-modal-cancel');
+
+  function _close(value) {
+    overlay().classList.remove('active');
+    setTimeout(() => {
+      elPWrap().style.display = 'none';
+      elInput().value = '';
+      elInput().classList.remove('sm-err');
+      elErr().classList.remove('show');
+      elRows().innerHTML = '';
+    }, 220);
+    if (_resolve) { _resolve(value); _resolve = null; }
+  }
+
+  function _open({ title, icon='info', rows=[], question='', confirmLabel='تأكيد', cancelLabel='إلغاء', danger=false, prompt=false, placeholder='', required=false }) {
+    _isPrompt = prompt;
+
+    elTitle().textContent = title;
+    elIcon().className = icon;
+    const iconMap = { warn:'⚠️', danger:'🗑️', info:'ℹ️', success:'✅' };
+    elIcon().textContent = iconMap[icon] || '❓';
+
+    elRows().innerHTML = rows.map(([k,v]) =>
+      `<div class="sm-row"><span class="sm-key">${esc(k)}</span><span class="sm-val">${esc(String(v))}</span></div>`
+    ).join('');
+
+    elQ().textContent = question;
+    elQ().style.display = question ? '' : 'none';
+
+    elPWrap().style.display = prompt ? '' : 'none';
+    if (prompt) {
+      elInput().placeholder = placeholder;
+      elInput().setAttribute('data-required', required ? '1' : '');
+      setTimeout(() => elInput().focus(), 250);
+    }
+
+    elConfirm().textContent = confirmLabel;
+    elConfirm().className = 'sm-btn sm-btn-confirm' + (danger ? ' danger' : '');
+    elCancel().textContent = cancelLabel;
+    elCancel().style.display = cancelLabel ? '' : 'none';
+
+    overlay().classList.add('active');
+    return new Promise(res => { _resolve = res; });
+  }
+
+  // Wire buttons
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('soulia-modal-confirm').addEventListener('click', () => {
+      if (_isPrompt) {
+        const val = elInput().value.trim();
+        const req = elInput().getAttribute('data-required') === '1';
+        if (req && !val) {
+          elInput().classList.add('sm-err');
+          elErr().textContent = 'هذا الحقل مطلوب';
+          elErr().classList.add('show');
+          return;
+        }
+        _close(val || null);
+      } else {
+        _close(true);
+      }
+    });
+    document.getElementById('soulia-modal-cancel').addEventListener('click', () => _close(_isPrompt ? null : false));
+    document.getElementById('soulia-modal-overlay').addEventListener('click', e => {
+      if (e.target === document.getElementById('soulia-modal-overlay')) _close(_isPrompt ? null : false);
+    });
+    document.addEventListener('keydown', e => {
+      if (!overlay().classList.contains('active')) return;
+      if (e.key === 'Escape') _close(_isPrompt ? null : false);
+      if (e.key === 'Enter' && !_isPrompt) _close(true);
+    });
+  });
+
+  // Public API
+  window.showConfirm = function(question, { title='تأكيد', icon='warn', rows=[], confirmLabel='تأكيد', cancelLabel='إلغاء', danger=false }={}) {
+    return _open({ title, icon, rows, question, confirmLabel, cancelLabel, danger, prompt:false });
+  };
+  window.showPrompt = function(question, { title='إدخال', placeholder='', required=false, icon='info' }={}) {
+    return _open({ title, icon, rows:[], question, confirmLabel:'موافق', cancelLabel:'إلغاء', prompt:true, placeholder, required });
+  };
+  window.showAlert = function(message, { title='تنبيه', icon='info' }={}) {
+    return _open({ title, icon, rows:[], question:message, confirmLabel:'حسناً', cancelLabel:'', prompt:false }).then(() => {});
+  };
+})();
+
+/* ════════════════════════════════════════════════════════════════
    OFFLINE QUEUE (Option B: drafts saved locally, user-confirmed bulk push)
    Scope: creates only — sale, purchase, return, expense, vault adjustment.
    Storage: IndexedDB. Server validates each draft on push (fresh stock/vault
@@ -7375,7 +7681,7 @@ async function oqPushAll() {
 }
 
 async function oqDeleteRec(id) {
-  if (!confirm(t('oqDeleteConfirm'))) return;
+  if (!await showConfirm(t('oqDeleteConfirm'), { title: 'تأكيد الحذف', icon: 'danger', danger: true })) return;
   await oqDelete(id); oqUpdateBadges();
 }
 async function oqRetryRec(id) {
@@ -7393,7 +7699,7 @@ async function oqRetryRec(id) {
   } catch (_) {}
 }
 async function oqClearSynced() {
-  if (!confirm('مسح سجل المعاملات المكتملة؟')) return;
+  if (!await showConfirm('مسح سجل المعاملات المكتملة؟', { title: 'تأكيد المسح', icon: 'danger', danger: true })) return;
   const all = await oqAll();
   for (const r of all) if (r.status === 'synced') await oqDelete(r.id);
   if (currentPage === 'pending-sync') renderPendingSyncPage();
@@ -7466,7 +7772,7 @@ async function oqOnReconnect() {
   const now = Date.now();
   if (now - _oqLastPromptAt < 30000) return; // throttle
   _oqLastPromptAt = now;
-  const ok = confirm(`عاد الاتصال بالإنترنت.\nلديك ${cnt} معاملة معلقة.\nهل تريد مراجعتها وإرسالها الآن؟`);
+  const ok = await showConfirm('هل تريد مراجعتها وإرسالها الآن؟', { title: `عاد الاتصال — ${cnt} معاملة معلقة`, icon: 'info' });
   if (ok) navigateTo('pending-sync');
 }
 
@@ -9054,36 +9360,71 @@ function initMobileNav() {
 }
 
 /* Pagination */
-function renderPagination(containerId, total, page, limit, fnName) {
+function renderPagination(containerId, total, page, limit, fnName, perPageOptions, setPerPageFn) {
   const el = qs('#' + containerId);
   if (!el) return;
-  const totalPages = Math.ceil(total / limit);
-  if (totalPages <= 1) { el.innerHTML = ''; return; }
+  const totalPages = Math.ceil(total / limit) || 1;
   const start = (page - 1) * limit + 1;
   const end = Math.min(page * limit, total);
   const ofWord = currentLang === 'en' ? 'of' : 'من';
-  let html = `<span class="pag-info">${start}–${end} ${ofWord} ${fmtN(total)}</span>`;
-  const tFirst = currentLang === 'en' ? 'First' : 'الأول';
-  const tPrev = currentLang === 'en' ? 'Previous' : 'السابق';
-  const tNext = currentLang === 'en' ? 'Next' : 'التالي';
-  const tLast = currentLang === 'en' ? 'Last' : 'الأخير';
-  html += `<button onclick="${fnName}(1)" ${page===1?'disabled':''}title="${tFirst}">«</button>`;
-  html += `<button onclick="${fnName}(${page-1})" ${page===1?'disabled':''}title="${tPrev}">‹</button>`;
-  const lo = Math.max(1, page-2), hi = Math.min(totalPages, page+2);
-  if (lo > 1) { html += `<button onclick="${fnName}(1)">1</button>`; if (lo > 2) html += `<span class="pag-ellipsis">…</span>`; }
-  for (let p = lo; p <= hi; p++) html += `<button class="${p===page?'active':''}" onclick="${fnName}(${p})">${p}</button>`;
-  if (hi < totalPages) { if (hi < totalPages-1) html += `<span class="pag-ellipsis">…</span>`; html += `<button onclick="${fnName}(${totalPages})">${totalPages}</button>`; }
-  html += `<button onclick="${fnName}(${page+1})" ${page===totalPages?'disabled':''}title="${tNext}">›</button>`;
-  html += `<button onclick="${fnName}(${totalPages})" ${page===totalPages?'disabled':''}title="${tLast}">»</button>`;
+  const rowsLabel = currentLang === 'en' ? 'Rows:' : 'صفوف:';
+  // Always show when perPageOptions provided (even single page), hide nav if single page
+  if (totalPages <= 1 && !perPageOptions) { el.innerHTML = ''; return; }
+  let html = `<span class="pag-info">${total > 0 ? start + '–' + end : '0'} ${ofWord} ${fmtN(total)}</span>`;
+  if (perPageOptions && setPerPageFn) {
+    const opts = perPageOptions.map(v => `<option value="${v}"${v===limit?' selected':''}>${v}</option>`).join('');
+    html += `<span class="pag-perpage"><label style="color:var(--muted);font-size:.78rem">${rowsLabel}</label><select onchange="${setPerPageFn}(+this.value)" style="font-size:.78rem;padding:2px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);cursor:pointer">${opts}</select></span>`;
+  }
+  if (totalPages > 1) {
+    const tFirst = currentLang === 'en' ? 'First' : 'الأول';
+    const tPrev = currentLang === 'en' ? 'Previous' : 'السابق';
+    const tNext = currentLang === 'en' ? 'Next' : 'التالي';
+    const tLast = currentLang === 'en' ? 'Last' : 'الأخير';
+    html += `<button onclick="${fnName}(1)" ${page===1?'disabled':''}title="${tFirst}">«</button>`;
+    html += `<button onclick="${fnName}(${page-1})" ${page===1?'disabled':''}title="${tPrev}">‹</button>`;
+    const lo = Math.max(1, page-2), hi = Math.min(totalPages, page+2);
+    if (lo > 1) { html += `<button onclick="${fnName}(1)">1</button>`; if (lo > 2) html += `<span class="pag-ellipsis">…</span>`; }
+    for (let p = lo; p <= hi; p++) html += `<button class="${p===page?'active':''}" onclick="${fnName}(${p})">${p}</button>`;
+    if (hi < totalPages) { if (hi < totalPages-1) html += `<span class="pag-ellipsis">…</span>`; html += `<button onclick="${fnName}(${totalPages})">${totalPages}</button>`; }
+    html += `<button onclick="${fnName}(${page+1})" ${page===totalPages?'disabled':''}title="${tNext}">›</button>`;
+    html += `<button onclick="${fnName}(${totalPages})" ${page===totalPages?'disabled':''}title="${tLast}">»</button>`;
+  }
   el.innerHTML = `<div class="pagination">${html}</div>`;
 }
 function setMovPage(p) { movPage=p; renderMovements(); }
+function setMovPerPage(v) { movPerPage=v; movPage=1; renderMovements(); }
 function setInvPage(p) { invPage=p; renderInventory(); }
 function setProdPage(p) { prodPage=p; renderProducts(); }
 function setExpPage(p) { expPage=p; renderExpenses(); }
 function setArchivePage(p) { archivePage=p; renderArchivedMovements(); }
 function setClientsPage(p) { clientsPage=p; renderClients(); }
 function setVaultPage(p) { vaultPage=p; renderVaultTable(); }
+function setVaultPerPage(v) { vaultPerPage=v; vaultPage=1; renderVaultTable(); }
+function _clearVaultQuickBtns() { qs('.vault-quick-btns')?.querySelectorAll('.vault-quick-btn').forEach(b=>b.classList.remove('active')); }
+function setVaultQuickDate(range, btn) {
+  _clearVaultQuickBtns();
+  btn.classList.add('active');
+  const now = new Date();
+  const fmt = d => d.toISOString().slice(0,10);
+  const fromEl = qs('#vault-from'), toEl = qs('#vault-to');
+  if (!fromEl || !toEl) return;
+  if (range === 'today') { fromEl.value = toEl.value = fmt(now); }
+  else if (range === 'yesterday') { const y = new Date(now); y.setDate(y.getDate()-1); fromEl.value = toEl.value = fmt(y); }
+  else if (range === '7d') { const s = new Date(now); s.setDate(s.getDate()-6); fromEl.value = fmt(s); toEl.value = fmt(now); }
+  else if (range === '30d') { const s = new Date(now); s.setDate(s.getDate()-29); fromEl.value = fmt(s); toEl.value = fmt(now); }
+  else if (range === 'month') { const s = new Date(now.getFullYear(), now.getMonth(), 1); fromEl.value = fmt(s); toEl.value = fmt(now); }
+  vaultPage = 1; loadVaultLog();
+}
+function resetVaultFilters() {
+  ['vault-log-search','vault-status-filter','vault-source-filter','vault-seg-filter'].forEach(id => { const el = qs('#'+id); if(el) el.value = ''; });
+  const now = new Date(); const fmt = d => d.toISOString().slice(0,10);
+  const s = new Date(now.getFullYear(), now.getMonth(), 1);
+  const fromEl = qs('#vault-from'), toEl = qs('#vault-to');
+  if (fromEl) fromEl.value = fmt(s); if (toEl) toEl.value = fmt(now);
+  _clearVaultQuickBtns();
+  qs('.vault-quick-btns')?.querySelector('[onclick*="month"]')?.classList.add('active');
+  vaultPage = 1; loadVaultLog();
+}
 
 /* ═══════════════════════════════════════════════════════════════
    NOTIFICATIONS — enhanced with unread state, deep-link highlight,
@@ -10882,7 +11223,8 @@ function renderTxFields() {
     </div>`;
   } else if (txType === 'مشتريات') {
     html = `
-      <div class="form-group"><label>المورد *</label><select id="tx-supplier"><option value="">اختر مورد</option>${suppliers.map(s => `<option value="${esc(s.name)}">${esc(s.name)}</option>`).join('')}</select><div class="field-hint">المورد الذي تم الشراء منه</div></div>
+      <div class="form-group"><label>المورد *</label><select id="tx-supplier" onchange="_onNewSupplierChange(this)"><option value="">اختر مورد</option>${suppliers.map(s => `<option value="${esc(s.name)}" data-phone="${esc(s.phone||'')}">${esc(s.name)}</option>`).join('')}</select><div class="field-hint">المورد الذي تم الشراء منه</div><div class="field-error" id="err-supplier"></div></div>
+      <div class="form-group"><label>هاتف المورد</label><input type="tel" id="tx-phone" placeholder="يُملأ تلقائياً عند اختيار المورد" maxlength="11" readonly tabindex="-1" style="background:var(--surface2);color:var(--muted);cursor:default;pointer-events:none"><div class="field-hint">يُحدَّث تلقائياً — غير قابل للتعديل</div></div>
       <div class="form-group"><label>رقم الفاتورة *</label><div class="input-with-prefix"><span class="prefix">#</span><input type="text" id="tx-ref" placeholder="أرقام فقط" inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"></div><div class="field-hint">رقم فاتورة المورد — إجباري وغير مكرر</div><div class="field-error" id="err-ref"></div></div>
       <div class="form-group" style="grid-column:1/-1">
         <label>فواتير المورد <span style="font-weight:400;color:var(--muted)">(اختياري — يمكن إضافة أكثر من فاتورة)</span></label>
@@ -11363,10 +11705,16 @@ function showDiscountForm(itemsTotal) {
     <div class="text-sm text-muted" id="disc-preview">إجمالي الأصناف: ${fmtJ(itemsTotal)}</div>
     <div class="flex gap-8 mt-16">
       <button class="btn btn-primary" onclick="applyDiscount()">تطبيق</button>
-      <button class="btn btn-outline" onclick="txDiscount=0;txDiscountType='fixed';calcTxSummary();closeModal()">إزالة الخصم</button>
+      <button class="btn btn-outline" onclick="_removeTxDiscount()">إزالة الخصم</button>
     </div>`);
 }
 
+function _removeTxDiscount() {
+  const hasDiscount = txDiscount > 0;
+  txDiscount = 0; txDiscountType = 'fixed';
+  calcTxSummary(); closeModal();
+  toast(hasDiscount ? 'تم حذف الخصم بنجاح ✓' : 'لا يوجد خصم لإزالته');
+}
 function setDiscType(type, btn) {
   txDiscountType = type;
   qsa('#modal-content .tab-btn').forEach(b => b.classList.remove('active'));
@@ -12000,7 +12348,7 @@ function validateTx() {
       valid = false;
     }
   } else if (txType === 'مشتريات') {
-    if (!qs('#tx-supplier')?.value) { toast('اختر المورد', true); valid = false; }
+    if (!qs('#tx-supplier')?.value) { const errEl = qs('#err-supplier'); if (errEl) errEl.textContent = 'يجب اختيار مورد من القائمة قبل الحفظ'; toast('اختر المورد من القائمة', true); valid = false; }
     const purRef = qs('#tx-ref')?.value?.trim() || '';
     if (!purRef) { const el = qs('#err-ref'); if (el) el.textContent = 'رقم الفاتورة مطلوب'; valid = false; }
     else if (!/^\d+$/.test(purRef)) { const el = qs('#err-ref'); if (el) el.textContent = 'أرقام فقط'; valid = false; }
@@ -12008,6 +12356,16 @@ function validateTx() {
     const purDeposit = Number(qs('#tx-deposit')?.value) || 0;
     const purItemsTotal = txItems.reduce((s, it) => s + (it.qty * it.price), 0);
     if (purDeposit > purItemsTotal) { toast('العربون لا يمكن أن يتجاوز إجمالي الفاتورة', true); valid = false; }
+  }
+  // Items required for sales + purchases
+  if ((txType === 'مبيعات' || txType === 'مشتريات') && !txItems.length) {
+    toast('أضف صنفاً واحداً على الأقل قبل حفظ الفاتورة', true);
+    const addBtn = qs('.tx-action-btn');
+    if (addBtn) {
+      addBtn.classList.add('btn-pulse-warn');
+      setTimeout(() => addBtn.classList.remove('btn-pulse-warn'), 1600);
+    }
+    valid = false;
   }
   return valid;
 }
@@ -12635,8 +12993,8 @@ function deleteDraft(id, silent) {
   if (!silent) renderDraftsDrawer();
 }
 
-function clearAllDrafts() {
-  if (!confirm('حذف جميع المسودات نهائياً؟')) return;
+async function clearAllDrafts() {
+  if (!await showConfirm('حذف جميع المسودات نهائياً؟', { title: 'تأكيد الحذف', icon: 'danger', danger: true })) return;
   _writeDrafts([]);
   activeDraftId = null;
   renderActiveDraftPill();
@@ -14168,7 +14526,7 @@ function renderMovements() {
     updateMovementSelectionActions();
     return;
   }
-  const MOV_PAGE_SIZE = 20;
+  const MOV_PAGE_SIZE = movPerPage;
   const total = merged.length;
   if (movPage > Math.ceil(total / MOV_PAGE_SIZE)) movPage = 1;
   const pageData = merged.slice((movPage-1)*MOV_PAGE_SIZE, movPage*MOV_PAGE_SIZE);
@@ -14199,7 +14557,7 @@ function renderMovements() {
     qs('#mov-table tbody').innerHTML = pageData.map(row => row.k === 'tx' ? renderMovementTxRow(row.tx) : renderMovementReturnRequestRow(row.r)).join('');
     try { applyMovColsVisibility(); } catch(_) {}
   }
-  renderPagination('mov-pagination', total, movPage, MOV_PAGE_SIZE, 'setMovPage');
+  renderPagination('mov-pagination', total, movPage, MOV_PAGE_SIZE, 'setMovPage', [10,20,50,100], 'setMovPerPage');
   updateMovementSelectionActions();
 }
 const debouncedRenderMovements = debounce(() => { movPage = 1; renderMovements(); }, 250);
@@ -14937,23 +15295,100 @@ function showEditConfirmDialog({ changes, vaultDelta, vaultNote, tx }) {
   return new Promise(resolve => {
     const typeLabel = tx.type === 'مشتريات' ? 'مشتريات' : tx.type === 'مبيعات' ? 'مبيعات' : tx.type || '';
     const refLabel = tx.ref ? `#${tx.ref}` : tx._id?.slice(-6) || '';
+
+    // Strip HTML tags to get plain text (for label column)
+    const _stripHtml = s => s.replace(/<[^>]*>/g, '').trim();
+
+    // Parse "label: old ← new" into { label, oldVal, newVal }
+    // oldVal/newVal may contain fmtJ() HTML — kept as-is for innerHTML rendering
+    const _parseChange = c => {
+      const text = typeof c === 'string' ? c : (c.text || '');
+      const sepIdx = text.indexOf('←');
+      if (sepIdx !== -1) {
+        const right = text.slice(0, sepIdx).trim();   // "label: old"
+        const newVal = text.slice(sepIdx + 1).trim();
+        const colonIdx = right.lastIndexOf(':');
+        if (colonIdx !== -1) {
+          return { label: _stripHtml(right.slice(0, colonIdx).trim()), oldVal: right.slice(colonIdx + 1).trim(), newVal };
+        }
+      }
+      // For added/removed items — no before/after split
+      const colonIdx = text.indexOf(':');
+      if (colonIdx !== -1) return { label: _stripHtml(text.slice(0, colonIdx).trim()), oldVal: null, newVal: text.slice(colonIdx + 1).trim() };
+      return { label: _stripHtml(text), oldVal: null, newVal: '—' };
+    };
+
+    const _rowBg = t => {
+      if (t === 'added')     return 'rgba(22,163,74,.07)';
+      if (t === 'removed')   return 'rgba(220,38,38,.07)';
+      if (t === 'financial') return 'rgba(217,119,6,.06)';
+      if (t === 'modified')  return 'rgba(124,58,237,.05)';
+      return 'transparent';
+    };
+    const _dotColor = t => {
+      if (t === 'added')     return '#16a34a';
+      if (t === 'removed')   return '#dc2626';
+      if (t === 'financial') return '#d97706';
+      if (t === 'modified')  return '#7c3aed';
+      return 'var(--muted)';
+    };
+    const _typeBadge = t => {
+      if (t === 'added')     return `<span style="font-size:.65rem;font-weight:700;color:#16a34a;background:rgba(22,163,74,.12);padding:1px 5px;border-radius:10px;white-space:nowrap">+ إضافة</span>`;
+      if (t === 'removed')   return `<span style="font-size:.65rem;font-weight:700;color:#dc2626;background:rgba(220,38,38,.1);padding:1px 5px;border-radius:10px;white-space:nowrap">− حذف</span>`;
+      if (t === 'financial') return `<span style="font-size:.65rem;font-weight:700;color:#d97706;background:rgba(217,119,6,.1);padding:1px 5px;border-radius:10px;white-space:nowrap">＄ مالي</span>`;
+      if (t === 'modified')  return `<span style="font-size:.65rem;font-weight:700;color:#7c3aed;background:rgba(124,58,237,.09);padding:1px 5px;border-radius:10px;white-space:nowrap">✎ تعديل</span>`;
+      return `<span style="font-size:.65rem;font-weight:700;color:var(--muted);background:var(--surface2);padding:1px 5px;border-radius:10px;white-space:nowrap">ℹ معلومات</span>`;
+    };
+
+    const normalizedChanges = changes.map(c => typeof c === 'string' ? { type: 'info', text: c } : c);
+
+    // Build change rows matching the invoice change log style (inline old ← new)
+    const changeItems = normalizedChanges.map(c => {
+      const { label, oldVal, newVal } = _parseChange(c);
+      const bg = _rowBg(c.type);
+      const dot = _dotColor(c.type);
+      let valueHtml;
+      if (c.type === 'removed') {
+        // existed before, gone after → show old value in red, after = —
+        valueHtml = `<span style="color:#dc2626;text-decoration:line-through">${newVal}</span> ← <span style="color:var(--muted)">—</span>`;
+      } else if (c.type === 'added') {
+        // new item → before = —, after = green
+        valueHtml = `<span style="color:var(--muted)">—</span> ← <span style="color:#16a34a;font-weight:600">${newVal}</span>`;
+      } else if (oldVal !== null) {
+        // modified / financial / info with before→after
+        valueHtml = `<span style="color:#dc2626;text-decoration:line-through">${oldVal}</span> ← <span style="color:#16a34a;font-weight:600">${newVal}</span>`;
+      } else {
+        valueHtml = `<span style="color:var(--text)">${newVal}</span>`;
+      }
+      return `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:7px 10px;background:${bg};border-bottom:1px solid var(--border);flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+          <span style="width:6px;height:6px;border-radius:50%;background:${dot};display:inline-block;flex-shrink:0"></span>
+          <span style="font-size:.8rem;font-weight:600;color:var(--text)">${esc(label)}</span>
+          ${_typeBadge(c.type)}
+        </div>
+        <div style="font-size:.8rem;text-align:left;word-break:break-word">${valueHtml}</div>
+      </div>`;
+    }).join('');
+
+    const changesHtml = normalizedChanges.length ? `
+      <div style="margin-bottom:14px">
+        <div style="font-size:.75rem;font-weight:700;letter-spacing:.04em;color:var(--muted);margin-bottom:8px">التغييرات (${normalizedChanges.length})</div>
+        <div style="border-radius:8px;border:1px solid var(--border);max-height:280px;overflow-y:auto">
+          ${changeItems}
+        </div>
+      </div>` : `<div style="margin-bottom:12px;padding:8px 12px;border-radius:7px;background:var(--surface2);font-size:.82rem;color:var(--muted);text-align:center">لا توجد تغييرات مسجّلة — هل تريد الحفظ؟</div>`;
+
     const vaultHtml = vaultDelta !== 0 ? `
       <div style="margin-bottom:12px;padding:10px 14px;border-radius:8px;${vaultDelta > 0 ? 'background:rgba(22,163,74,.09);border:1px solid rgba(22,163,74,.25)' : 'background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.25)'}">
         <div style="font-size:.75rem;font-weight:700;letter-spacing:.04em;color:${vaultDelta > 0 ? '#15803d' : '#dc2626'};margin-bottom:4px">تأثير الخزنة</div>
         <div style="font-size:.88rem;font-weight:600;color:${vaultDelta > 0 ? '#15803d' : '#dc2626'}">${vaultNote}</div>
       </div>` : '';
-    const changesHtml = changes.length ? `
-      <div style="margin-bottom:12px">
-        <div style="font-size:.75rem;font-weight:700;letter-spacing:.04em;color:var(--muted);margin-bottom:6px">التغييرات</div>
-        <div style="display:flex;flex-direction:column;gap:5px">
-          ${changes.map(c => `<div style="display:flex;align-items:center;gap:6px;font-size:.83rem;background:var(--surface2);padding:6px 10px;border-radius:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--primary);flex-shrink:0;display:inline-block"></span>${c}</div>`).join('')}
-        </div>
-      </div>` : '';
+
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s ease';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s ease';
     overlay.innerHTML = `
-      <div style="background:var(--surface);border-radius:14px;padding:24px;max-width:420px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:slideUp .2s ease">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <div style="background:var(--surface);border-radius:14px;padding:22px 20px 20px;max-width:500px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:slideUp .2s ease">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
           <div style="width:38px;height:38px;border-radius:10px;background:rgba(245,158,11,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <svg viewBox="0 0 24 24" style="width:20px;height:20px;color:#d97706" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           </div>
@@ -14963,10 +15398,10 @@ function showEditConfirmDialog({ changes, vaultDelta, vaultNote, tx }) {
           </div>
         </div>
         ${vaultHtml}${changesHtml}
-        <div style="font-size:.82rem;color:var(--muted);margin-bottom:18px;padding:8px 12px;background:var(--surface2);border-radius:7px">سيتم تحديث الحركة والخزنة والمخزن فور الحفظ — لا يمكن التراجع تلقائياً.</div>
-        <div style="display:flex;gap:10px;justify-content:flex-end">
-          <button id="edit-confirm-cancel" style="padding:9px 20px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:.88rem;cursor:pointer;font-weight:600">إلغاء</button>
-          <button id="edit-confirm-ok" style="padding:9px 22px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-size:.88rem;cursor:pointer;font-weight:700">تأكيد الحفظ</button>
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:16px;padding:8px 12px;background:var(--surface2);border-radius:7px">سيتم تحديث الحركة والخزنة والمخزن فور الحفظ — لا يمكن التراجع تلقائياً.</div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+          <button id="edit-confirm-cancel" style="flex:1;min-width:110px;padding:10px 16px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:.88rem;cursor:pointer;font-weight:600">إلغاء</button>
+          <button id="edit-confirm-ok" style="flex:1;min-width:110px;padding:10px 16px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-size:.88rem;cursor:pointer;font-weight:700">تأكيد الحفظ</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
@@ -14978,31 +15413,25 @@ function showEditConfirmDialog({ changes, vaultDelta, vaultNote, tx }) {
 
 function _buildEditSupplierField(tx) {
   const cur = esc(tx.client || '');
-  const opts = suppliers.map(s => `<option value="${esc(s.name)}">${esc(s.name)}${s.phone ? ' — ' + esc(s.phone) : ''}</option>`).join('');
-  return `
-    <div class="ac-wrap" style="position:relative">
-      <input type="text" id="edit-tx-client" value="${cur}" autocomplete="off" placeholder="ابحث باسم المورد..." oninput="_filterEditSupplierList(this.value)" onfocus="_filterEditSupplierList(this.value)" style="width:100%">
-      <div id="edit-sup-list" style="display:none;position:absolute;top:100%;right:0;left:0;z-index:200;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;margin-top:3px"></div>
-    </div>`;
+  const opts = suppliers.map(s => `<option value="${esc(s.name)}" data-phone="${esc(s.phone||'')}" ${s.name === tx.client ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+  return `<select id="edit-tx-client" onchange="_onEditSupplierChange(this)" style="width:100%">
+      <option value="">اختر مورد</option>
+      ${opts}
+    </select>`;
 }
-function _filterEditSupplierList(q) {
-  const list = qs('#edit-sup-list'); if (!list) return;
-  const lower = (q || '').trim().toLowerCase();
-  const filtered = lower ? suppliers.filter(s => (s.name||'').toLowerCase().includes(lower) || (s.phone||'').includes(lower)) : suppliers;
-  if (!filtered.length) { list.style.display = 'none'; return; }
-  list.style.display = 'block';
-  list.innerHTML = filtered.slice(0, 10).map(s => `
-    <div onclick="_selectEditSupplier('${esc(s.name)}','${esc(s.phone||'')}')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
-      <div style="font-size:.86rem;font-weight:600">${esc(s.name)}</div>
-      ${s.phone ? `<div style="font-size:.75rem;color:var(--muted)">${esc(s.phone)}</div>` : ''}
-    </div>`).join('');
-}
-function _selectEditSupplier(name, phone) {
-  const inp = qs('#edit-tx-client'); if (inp) inp.value = name;
+function _onEditSupplierChange(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const phone = opt ? (opt.dataset.phone || '') : '';
   const ph = qs('#edit-tx-phone');
-  if (ph && phone && !ph.value) ph.value = phone;
-  else if (ph && phone) ph.value = phone;
-  const list = qs('#edit-sup-list'); if (list) list.style.display = 'none';
+  if (ph) ph.value = phone;
+}
+function _onNewSupplierChange(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const phone = opt ? (opt.dataset.phone || '') : '';
+  const ph = qs('#tx-phone');
+  if (ph && phone) ph.value = phone;
+  const err = qs('#err-supplier');
+  if (err) err.textContent = '';
 }
 function _buildEditInvoiceImages(tx) {
   const imgs = Array.isArray(tx.invoiceImages) && tx.invoiceImages.length
@@ -15066,7 +15495,7 @@ function openEditMovement(id) {
 
   const supplierField = isPurchase ? `
     <div class="form-group"><label>المورد</label>${_buildEditSupplierField(tx)}</div>` :
-    `<div class="form-group"><label>العميل</label><input type="text" id="edit-tx-client" value="${esc(tx.client || '')}"></div>`;
+    `<div class="form-group"><label>العميل <span style="color:var(--red)">*</span></label><input type="text" id="edit-tx-client" value="${esc(tx.client || '')}" oninput="qs('#err-edit-client')&&(qs('#err-edit-client').textContent='');this.style.borderColor=''"><div class="field-error" id="err-edit-client"></div></div>`;
 
   const invoiceImagesSection = isPurchase ? _buildEditInvoiceImages(tx) : '';
 
@@ -15074,7 +15503,7 @@ function openEditMovement(id) {
     <h3>تعديل الحركة ${isPurchase ? '(مشتريات)' : ''}</h3>
     <div class="grid grid-2 gap-12">
       ${supplierField}
-      <div class="form-group"><label>الهاتف</label><input type="tel" id="edit-tx-phone" value="${esc(tx.phone || '')}" placeholder="01xxxxxxxxx" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'')"><div class="field-hint" style="font-size:.72rem;color:var(--muted);margin-top:3px">11 رقم يبدأ بـ 01</div></div>
+      <div class="form-group"><label>الهاتف${isSale ? ` <span style="color:var(--red)">*</span>` : ''}</label><input type="tel" id="edit-tx-phone" value="${esc(tx.phone || '')}" placeholder="${isPurchase ? 'يُملأ تلقائياً عند اختيار المورد' : '01xxxxxxxxx'}" maxlength="11" ${isPurchase ? 'readonly tabindex="-1" style="background:var(--surface2);color:var(--muted);cursor:default;pointer-events:none"' : `oninput="this.value=this.value.replace(/[^0-9]/g,'');qs('#err-edit-phone')&&(qs('#err-edit-phone').textContent='');this.style.borderColor=''"`}><div class="field-hint" style="font-size:.72rem;color:var(--muted);margin-top:3px">${isPurchase ? 'يُحدَّث تلقائياً — غير قابل للتعديل' : '11 رقم يبدأ بـ 01'}</div><div class="field-error" id="err-edit-phone"></div></div>
       <div class="form-group"><label>${isPurchase ? 'رقم الفاتورة' : 'المرجع'}</label><input type="text" id="edit-tx-ref" value="${esc(tx.ref || '')}" ${refRetailEdit ? 'inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"' : ''}></div>
       <div class="form-group"><label>${isPurchase ? 'العربون (المدفوع مقدماً)' : 'الديبوزت'}</label><input type="text" inputmode="numeric" id="edit-tx-deposit" value="${tx.deposit || 0}" oninput="this.value=this.value.replace(/[^0-9.]/g,'');recalcEditTx()"></div>
       ${isSale ? `<div class="form-group"><label>شركة الشحن</label><select id="edit-tx-shipco" onchange="recalcEditTx()"><option value="">بدون شحن</option>${shipCoOpts}</select></div>
@@ -15100,13 +15529,6 @@ function openEditMovement(id) {
     </div>`, 'max-width:700px');
   setTimeout(() => {
     const sel = qs('#edit-tx-shipco'); if (sel) sel.value = tx.shipCo || '';
-    // Close supplier dropdown on outside click
-    document.addEventListener('click', function _closeSup(e) {
-      if (!e.target.closest('#edit-sup-list') && e.target.id !== 'edit-tx-client') {
-        const l = qs('#edit-sup-list'); if (l) l.style.display = 'none';
-        document.removeEventListener('click', _closeSup);
-      }
-    });
     renderEditTxItems(); recalcEditTx();
   }, 50);
 }
@@ -15359,9 +15781,10 @@ function applyEditDiscount(itemsTotal) {
 }
 function removeEditDiscount() {
   const discInput = qs('#edit-tx-discount');
+  const hasDiscount = Number(discInput?.value) > 0;
   if (discInput) { discInput.value = 0; recalcEditTx(); }
   _closeEditDiscOverlay();
-  toast('تم إزالة الخصم');
+  toast(hasDiscount ? 'تم حذف الخصم بنجاح ✓' : 'لا يوجد خصم لإزالته');
 }
 function recalcEditTx() {
   editTxItems.forEach((it, i) => {
@@ -15421,9 +15844,43 @@ function recalcEditTx() {
 async function saveEditMovement(id) {
   const tx = transactions.find(t => t._id === id); if (!tx) return;
   if (isExchangeSalePendingCollect(tx)) { toastExchangePendingLocked(); return; }
-  if (!editTxItems.length) { toast('أدخل مبلغاً صحيحاً قبل الحفظ', true); return; }
   const validItems = editTxItems.filter(it => it.name || it.productId);
-  if (!validItems.length) { toast('أدخل مبلغاً صحيحاً قبل الحفظ — اختر صنف واحد على الأقل', true); return; }
+  if (!validItems.length) {
+    toast('أضف صنفاً واحداً على الأقل قبل حفظ الفاتورة', true);
+    const addBtn = qs('#edit-tx-items')?.closest('.modal-body, [role="dialog"], form, div')?.querySelector?.('.btn-primary.btn-sm') || document.querySelector('[onclick="openEditProductPicker()"]');
+    if (addBtn) {
+      addBtn.classList.add('btn-pulse-warn');
+      setTimeout(() => addBtn.classList.remove('btn-pulse-warn'), 1600);
+    }
+    return;
+  }
+  if (tx.type === 'مشتريات' && !qs('#edit-tx-client')?.value) { toast('يجب اختيار مورد من القائمة قبل الحفظ', true); qs('#edit-tx-client')?.focus(); return; }
+  // Sales: validate customer name + phone (both required)
+  if (tx.type === 'مبيعات') {
+    let editValid = true;
+    const clientEl = qs('#edit-tx-client');
+    const clientVal = (clientEl?.value || '').trim();
+    if (!clientVal) {
+      if (clientEl) clientEl.style.borderColor = 'var(--red)';
+      const errEl = qs('#err-edit-client');
+      if (errEl) errEl.textContent = 'اسم العميل مطلوب';
+      editValid = false;
+    }
+    const phoneEl = qs('#edit-tx-phone');
+    const phoneVal = (phoneEl?.value || '').trim();
+    if (!phoneVal) {
+      if (phoneEl) phoneEl.style.borderColor = 'var(--red)';
+      const errEl = qs('#err-edit-phone');
+      if (errEl) errEl.textContent = 'رقم الهاتف مطلوب';
+      editValid = false;
+    } else if (!/^\d{11}$/.test(phoneVal) || !phoneVal.startsWith('01')) {
+      if (phoneEl) phoneEl.style.borderColor = 'var(--red)';
+      const errEl = qs('#err-edit-phone');
+      if (errEl) errEl.textContent = 'رقم الهاتف غير صحيح — 11 رقماً يبدأ بـ 01';
+      editValid = false;
+    }
+    if (!editValid) { toast('يرجى تصحيح الحقول المطلوبة', true); return; }
+  }
   const editRef = (qs('#edit-tx-ref')?.value || '').trim();
   if (tx.type === 'مبيعات' || tx.type === 'مشتريات') {
     if (tx.type === 'مبيعات' && !editRef) { toast('المرجع مطلوب', true); return; }
@@ -15431,7 +15888,7 @@ async function saveEditMovement(id) {
     if (editRef && isRetailRefTaken(editRef, id)) { toast('المرجع مستخدم في حركة أخرى', true); return; }
   }
   const editPhone = (qs('#edit-tx-phone')?.value || '').trim();
-  if (editPhone && (!/^\d{11}$/.test(editPhone) || !editPhone.startsWith('01'))) {
+  if (tx.type !== 'مبيعات' && editPhone && (!/^\d{11}$/.test(editPhone) || !editPhone.startsWith('01'))) {
     toast('رقم الهاتف غير صحيح — يجب أن يكون 11 رقماً يبدأ بـ 01', true); return;
   }
   const newItems = validItems.map(it => {
@@ -15479,26 +15936,74 @@ async function saveEditMovement(id) {
     }
   }
 
-  // 📋 ملخص التغييرات
+  // 📋 ملخص التغييرات الشامل
   const changes = [];
-  if (totalDelta !== 0) changes.push(`الإجمالي: ${fmtJ(origTotal)} ← ${fmtJ(total)}`);
-  if (depositDelta !== 0) changes.push(`الديبوزت: ${fmtJ(origDeposit)} ← ${fmtJ(deposit)}`);
-  if (discountDelta !== 0) changes.push(`الخصم: ${fmtJ(origDiscount)} ← ${fmtJ(discount)}`);
-  if (shipCostDelta !== 0) changes.push(`الشحن: ${fmtJ(origShipCost)} ← ${fmtJ(shipCost)}`);
 
-  // التحقق من تأثير الخزنة
-  let confirmMsg = '';
-  if (vaultDelta !== 0) {
-    confirmMsg = `${currentLang==='en'?'Vault impact:':'تأثير على الخزنة:'}\n${vaultNote}\n\n`;
-  }
-  if (changes.length > 0) {
-    confirmMsg += `${currentLang==='en'?'Changes:':'التغييرات:'}\n${changes.join('\n')}\n\n`;
+  // تغييرات معلومات العميل / المورد
+  const newClient = (qs('#edit-tx-client')?.value || '').trim();
+  const newPhone = (qs('#edit-tx-phone')?.value || '').trim();
+  const newRef = editRef;
+  const origClient = (tx.client || '').trim();
+  const origPhone = (tx.phone || '').trim();
+  const origRef = (tx.ref || '').trim();
+  if (newClient !== origClient) changes.push({ type: 'info', text: `${tx.type === 'مشتريات' ? 'المورد' : 'العميل'}: "${origClient || '—'}" ← "${newClient || '—'}"` });
+  if (newPhone !== origPhone) changes.push({ type: 'info', text: `الهاتف: ${origPhone || '—'} ← ${newPhone || '—'}` });
+  if (newRef !== origRef) changes.push({ type: 'info', text: `${tx.type === 'مشتريات' ? 'رقم الفاتورة' : 'المرجع'}: ${origRef || '—'} ← ${newRef || '—'}` });
+
+  // تغييرات طريقة الدفع وبيانات الشحن (مبيعات فقط)
+  if (tx.type === 'مبيعات') {
+    const newPayment = qs('#edit-tx-payment')?.value || '';
+    const newShipCo = qs('#edit-tx-shipco')?.value || '';
+    const newShipZone = qs('#edit-tx-zone')?.value || '';
+    if (newPayment !== (tx.payment || '')) changes.push({ type: 'info', text: `طريقة الدفع: ${tx.payment || '—'} ← ${newPayment || '—'}` });
+    if (newShipCo !== (tx.shipCo || '')) changes.push({ type: 'info', text: `شركة الشحن: ${tx.shipCo || 'بدون شحن'} ← ${newShipCo || 'بدون شحن'}` });
+    if (newShipZone !== (tx.shipZone || '')) {
+      const zoneLabel = z => z === 'cairo' ? 'القاهرة' : z === 'gov' ? 'المحافظات' : z || '—';
+      changes.push({ type: 'info', text: `المنطقة: ${zoneLabel(tx.shipZone)} ← ${zoneLabel(newShipZone)}` });
+    }
   }
 
-  if (confirmMsg) {
-    const confirmed = await showEditConfirmDialog({ changes, vaultDelta, vaultNote, tx });
-    if (!confirmed) return;
-  }
+  // تغييرات الملاحظات
+  const newNotes = (qs('#edit-tx-notes')?.value || '').trim();
+  const origNotes = (tx.notes || '').trim();
+  if (newNotes !== origNotes) changes.push({ type: 'info', text: `الملاحظات: "${origNotes || '—'}" ← "${newNotes || '—'}"` });
+
+  // تغييرات الأصناف
+  const origItems = tx.items || [];
+  const origItemMap = {};
+  origItems.forEach(it => { const k = it.productId || it.name; if (k) origItemMap[k] = it; });
+  const newItemMap = {};
+  newItems.forEach(it => { const k = it.productId || it.name; if (k) newItemMap[k] = it; });
+
+  // أصناف محذوفة
+  origItems.forEach(it => {
+    const k = it.productId || it.name;
+    if (k && !newItemMap[k]) changes.push({ type: 'removed', text: `حُذف: ${it.name || it.code || k} (${it.qty} × ${fmtJ(it.price)})` });
+  });
+  // أصناف مضافة أو معدّلة
+  newItems.forEach(it => {
+    const k = it.productId || it.name;
+    const orig = k ? origItemMap[k] : null;
+    if (!orig) {
+      changes.push({ type: 'added', text: `أُضيف: ${it.name || it.code || k} (${it.qty} × ${fmtJ(it.price)})` });
+    } else {
+      if (orig.qty !== it.qty) changes.push({ type: 'modified', text: `${it.name}: الكمية ${fmtJ(orig.qty)} ← ${fmtJ(it.qty)}` });
+      if (orig.price !== it.price) changes.push({ type: 'modified', text: `${it.name}: السعر ${fmtJ(orig.price)} ← ${fmtJ(it.price)}` });
+    }
+  });
+
+  // تغييرات مالية
+  if (discountDelta !== 0) changes.push({ type: 'financial', text: `الخصم: ${fmtJ(origDiscount)} ← ${fmtJ(discount)}` });
+  if (shipCostDelta !== 0) changes.push({ type: 'financial', text: `تكلفة الشحن: ${fmtJ(origShipCost)} ← ${fmtJ(shipCost)}` });
+  if (depositDelta !== 0) changes.push({ type: 'financial', text: `${tx.type === 'مشتريات' ? 'العربون' : 'الديبوزت'}: ${fmtJ(origDeposit)} ← ${fmtJ(deposit)}` });
+  if (totalDelta !== 0) changes.push({ type: 'financial', text: `الإجمالي: ${fmtJ(origTotal)} ← ${fmtJ(total)}` });
+
+  // دائماً أظهر نافذة التأكيد لمراجعة التغييرات قبل الحفظ
+  const confirmed = await showEditConfirmDialog({ changes, vaultDelta, vaultNote, tx });
+  if (!confirmed) return;
+
+  // نسخة نصية للتسجيل فقط
+  const confirmMsg = changes.map(c => c.text).join('\n');
 
   const isPurchaseEdit = tx.type === 'مشتريات';
   const newRemaining = Math.max(0, total - deposit);
@@ -15510,7 +16015,7 @@ async function saveEditMovement(id) {
       before: { total: origTotal, deposit: origDeposit, discount: origDiscount, shipCost: origShipCost },
       after: { total, deposit, discount, shipCost },
       vaultDelta,
-      changes,
+      changes: changes.map(c => c.text || c),
       timestamp: new Date().toISOString(),
       editedBy: currentUser?.name || currentUser?.username || 'مجهول'
     }
@@ -15534,16 +16039,11 @@ async function saveEditMovement(id) {
     try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
     renderMovements(); buildSidebar(); buildNotifications();
     syncVaultState();
-    // إشعار بالتحديث — نص بسيط بدون HTML
-    const fmtPlain = n => fmtN(n) + ' EGP';
-    const plainChanges = [];
-    if (totalDelta !== 0) plainChanges.push(`الإجمالي: ${fmtPlain(origTotal)} ← ${fmtPlain(total)}`);
-    if (depositDelta !== 0) plainChanges.push(`الديبوزت: ${fmtPlain(origDeposit)} ← ${fmtPlain(deposit)}`);
-    if (discountDelta !== 0) plainChanges.push(`الخصم: ${fmtPlain(origDiscount)} ← ${fmtPlain(discount)}`);
-    if (shipCostDelta !== 0) plainChanges.push(`الشحن: ${fmtPlain(origShipCost)} ← ${fmtPlain(shipCost)}`);
-    const notifMsg = plainChanges.length
-      ? `تم تعديل الحركة #${tx.ref || tx._id?.slice(-4)} — ${plainChanges.join(' | ')}`
-      : `تم تعديل الحركة #${tx.ref || tx._id?.slice(-4)} بنجاح`;
+    const _stripHtml = s => s.replace(/<[^>]*>/g, '');
+    const financialChanges = changes.filter(c => c.type === 'financial');
+    const notifMsg = financialChanges.length
+      ? `تم تعديل الحركة #${tx.ref || tx._id?.slice(-4)} — ${financialChanges.map(c => _stripHtml(c.text)).join(' | ')}`
+      : `تم تعديل الحركة #${tx.ref || tx._id?.slice(-4)} بنجاح (${changes.length} تغيير)`;
     toast(notifMsg);
     // إشعار المخزن إذا تغيرت الأصناف أو الكميات
     const itemsChanged = JSON.stringify(validItems.map(i=>({name:i.name,qty:i.qty,price:i.price}))) !== JSON.stringify((tx.items||[]).map(i=>({name:i.name,qty:i.qty,price:i.price})));
@@ -16223,7 +16723,7 @@ async function archiveMovement(id) {
   const tx = transactions.find(t => t._id === id);
   if (!tx) { toast('الحركة غير موجودة', true); return; }
   if (!tx.cancelled) { toast(currentLang==='en'?'Archive is only available for cancelled transactions':'الأرشفة تقتصر على الحركات الملغاة فقط', true); return; }
-  if (!confirm('سيتم أرشفة هذه الحركة الملغاة — لن تؤثر على المخزون أو الخزنة، وستظهر في قسم الأرشيف.\nهل تريد المتابعة؟')) return;
+  if (!await showConfirm('سيتم أرشفة هذه الحركة الملغاة — لن تؤثر على المخزون أو الخزنة، وستظهر في قسم الأرشيف. هل تريد المتابعة؟', { title: 'أرشفة الحركة', icon: 'warn' })) return;
   try {
     await api('/transactions/' + id, { method: 'DELETE' });
     toast(currentLang==='en'?'Transaction archived successfully':'تم أرشفة الحركة الملغاة بنجاح');
@@ -16236,10 +16736,11 @@ async function archiveMovement(id) {
 async function deleteMovement(id) { return archiveMovement(id); }
 
 async function bulkArchiveMovements() {
-  if (!selectedMovIds.size || !confirm(`سيتم أرشفة ${selectedMovIds.size} حركة، وستظهر في قسم الأرشيف.\nهل تريد المتابعة؟`)) return;
+  if (!selectedMovIds.size) return;
+  if (!await showConfirm(`سيتم أرشفة ${selectedMovIds.size} حركة، وستظهر في قسم الأرشيف. هل تريد المتابعة؟`, { title: 'أرشفة مجمّعة', icon: 'warn' })) return;
   try {
     await api('/transactions/bulk-delete', { method: 'POST', body: JSON.stringify({ ids: [...selectedMovIds] }) });
-    toast(currentLang==='en'?'Transactions archived and their impact on vault & inventory reversed':'تم أرشفة الحركات وعكس تأثيرها على الخزنة والمخزون');
+    toast(currentLang==='en'?'Transactions archived and their impact on vault & inventory reversed':'تم أرشفة الحركات ');
     selectedMovIds.clear();
     transactions = await api('/transactions').catch(() => transactions);
     renderMovements(); buildSidebar(); syncVaultState();
@@ -16256,7 +16757,7 @@ async function bulkCancelMovements() {
     return tx && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx);
   });
   if (!cancellable.length) { toast('لا توجد حركات قابلة للإلغاء في التحديد', true); return; }
-  const reason = prompt(`سيتم إلغاء ${cancellable.length} حركة.\nأدخل سبب الإلغاء:`);
+  const reason = await showPrompt('أدخل سبب الإلغاء:', { title: `إلغاء ${cancellable.length} حركة`, icon: 'warn', required: true });
   if (!reason || !reason.trim()) return;
   let done = 0, errors = 0;
   for (const id of cancellable) {
@@ -16549,8 +17050,8 @@ function applyExportPreset(name) {
   updateExportCount();
 }
 
-function saveCurrentExportPreset() {
-  const name = prompt('اسم الإعداد المحفوظ:');
+async function saveCurrentExportPreset() {
+  const name = await showPrompt('اسم الإعداد المحفوظ:', { title: 'حفظ الإعداد', icon: 'info', required: true });
   if (!name || !name.trim()) return;
   const cols = Array.from(qsa('#export-col-list .export-col-check:checked')).map(cb => cb.value);
   saveExportPreset(name.trim(), cols);
@@ -17328,15 +17829,9 @@ function buildInvCommentsSection(tx) {
       <div class="inv-section-content">
         <div class="inv-cmt-form">
           <div class="inv-cmt-input-row">
-            <input type="text" id="inv-comment-text-${esc(tx._id)}" placeholder="أضف تعليق… @ للإشارة" class="inv-cmt-input" oninput="onMentionInput(this,'${esc(tx._id)}')" onkeydown="onMentionKey(event,'${esc(tx._id)}')">
-            <select id="inv-comment-type-${esc(tx._id)}" class="inv-cmt-type">
-              <option value="عام">عام</option>
-              <option value="تنبيه">تنبيه</option>
-              <option value="ملاحظة">ملاحظة</option>
-              <option value="أسئلة">أسئلة</option>
-            </select>
+            <input type="text" id="inv-comment-text-${esc(tx._id)}" placeholder="أضف تعليق… @ للإشارة" class="inv-cmt-input" oninput="onMentionInput(this,'${esc(tx._id)}')" onkeydown="onMentionKey(event,'${esc(tx._id)}');if(event.key==='Enter'&&!_mentionDropdown){event.preventDefault();addInvoiceComment('${esc(tx._id)}')}">
+            <button class="inv-cmt-send-btn" onclick="addInvoiceComment('${esc(tx._id)}')" title="إرسال التعليق"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="addInvoiceComment('${esc(tx._id)}')" style="width:100%">إضافة تعليق</button>
         </div>
         <div class="inv-cmt-list" id="inv-cmt-list-${esc(tx._id)}">
           ${commentsHtml || '<div style="padding:16px;text-align:center;color:var(--muted);font-size:.83rem">لا توجد تعليقات بعد</div>'}
@@ -18025,7 +18520,7 @@ async function saveProduct(id) {
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function deleteProduct(id) {
-  if (!confirm('حذف هذا الصنف؟')) return;
+  if (!await showConfirm('هل أنت متأكد من حذف هذا الصنف؟', { title: 'حذف الصنف', icon: 'danger', danger: true })) return;
   try { 
     await api('/products/' + id, { method: 'DELETE' }); 
     toast('تم الحذف'); 
@@ -18092,7 +18587,7 @@ async function executeBulkEdit() {
 async function bulkDeleteProducts() {
   const ids = getSelectedProductIds();
   if (!ids.length) { toast('لم يتم تحديد أصناف', true); return; }
-  if (!confirm(`هل أنت متأكد من حذف ${ids.length} صنف؟`)) return;
+  if (!await showConfirm(`هل أنت متأكد من حذف ${ids.length} صنف؟`, { title: 'حذف مجمّع', icon: 'danger', danger: true })) return;
   try {
     const res = await api('/products/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) });
     toast(res.message || 'تم الحذف');
@@ -18246,7 +18741,7 @@ async function saveSupplier(id) {
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function deleteSupplier(id) {
-  if (!confirm('حذف هذا المورد؟')) return;
+  if (!await showConfirm('هل أنت متأكد من حذف هذا المورد؟', { title: 'حذف المورد', icon: 'danger', danger: true })) return;
   try { await api('/suppliers/' + id, { method: 'DELETE' }); toast('تم الحذف'); suppliers = await api('/suppliers').catch(() => suppliers); renderSuppliers(); }
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
@@ -18730,7 +19225,7 @@ async function saveExpense(id) {
   finally { if (btn) { btn.disabled = false; btn.style.opacity = '1'; } }
 }
 async function approveExpense(id) {
-  if (!confirm('اعتماد هذا المصروف وخصمه من الخزنة؟')) return;
+  if (!await showConfirm('اعتماد هذا المصروف وخصمه من الخزنة؟', { title: 'اعتماد المصروف', icon: 'warn' })) return;
   try {
     await api('/expenses/' + id + '/approve', { method: 'POST', body: '{}' });
     toast('تم اعتماد المصروف وخصمه من الخزنة');
@@ -18740,7 +19235,7 @@ async function approveExpense(id) {
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function rejectExpense(id) {
-  if (!confirm('رفض هذا المصروف؟')) return;
+  if (!await showConfirm('رفض هذا المصروف؟', { title: 'رفض المصروف', icon: 'warn', danger: true })) return;
   try { await api('/expenses/' + id + '/reject', { method: 'POST', body: '{}' }); toast('تم رفض المصروف'); expenses = await api('/expenses').catch(() => expenses); renderExpenses(); buildSidebar(); buildNotifications(); }
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
@@ -18750,7 +19245,7 @@ async function deleteExpense(id) {
   if (exp.status === 'معتمد' && currentUser?.role !== 'admin') {
     toast('لا يمكن حذف مصروف معتمد — يحتاج صلاحية أدمن', true); return;
   }
-  if (!confirm('حذف هذا المصروف؟')) return;
+  if (!await showConfirm('حذف هذا المصروف؟', { title: 'حذف المصروف', icon: 'danger', danger: true })) return;
   try {
     await api('/expenses/' + id, { method: 'DELETE' });
     toast('تم الحذف');
@@ -18947,7 +19442,7 @@ async function bulkDeleteExpenses() {
   if (!ids.length) { toast('لم يتم تحديد مصاريف', true); return; }
   const pendingIds = ids.filter(id => { const e = expenses.find(x => x._id === id); return e && e.status === 'معلق'; });
   if (!pendingIds.length) { toast('المصاريف المحددة ليست في حالة معلق', true); return; }
-  if (!confirm(`حذف ${pendingIds.length} مصروف معلق؟`)) return;
+  if (!await showConfirm(`حذف ${pendingIds.length} مصروف معلق؟`, { title: 'حذف مجمّع', icon: 'danger', danger: true })) return;
   try {
     await api('/expenses/bulk-delete', { method: 'POST', body: JSON.stringify({ ids: pendingIds }) });
     toast(`تم حذف ${pendingIds.length} مصروف`);
@@ -19159,7 +19654,7 @@ async function confirmApproveCancel(txId) {
 
 async function rejectCancelRequest(txId) {
   if (!isAdmin()) { toast('هذا الإجراء للمدير فقط', true); return; }
-  const reason = prompt('سبب رفض طلب الإلغاء (اختياري):') ?? null;
+  const reason = await showPrompt('سبب رفض طلب الإلغاء (اختياري):', { title: 'رفض طلب الإلغاء', icon: 'warn' });
   if (reason === null) return; // user pressed cancel
   try {
     await api('/transactions/' + txId + '/reject-cancel', {
@@ -19237,7 +19732,7 @@ function renderReturnApprovalCard(r) {
   </div>`;
 }
 async function approveExpenseFromAppr(id) {
-  if (!confirm('اعتماد هذا المصروف وخصمه من الخزنة؟')) return;
+  if (!await showConfirm('اعتماد هذا المصروف وخصمه من الخزنة؟', { title: 'اعتماد المصروف', icon: 'warn' })) return;
   try {
     await api('/expenses/' + id + '/approve', { method: 'POST', body: '{}' });
     toast('تم اعتماد المصروف وخصمه من الخزنة');
@@ -19247,12 +19742,12 @@ async function approveExpenseFromAppr(id) {
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function rejectExpenseFromAppr(id) {
-  if (!confirm('رفض هذا المصروف؟')) return;
+  if (!await showConfirm('رفض هذا المصروف؟', { title: 'رفض المصروف', icon: 'warn', danger: true })) return;
   try { await api('/expenses/' + id + '/reject', { method: 'POST', body: '{}' }); toast('تم رفض المصروف'); expenses = await api('/expenses').catch(() => expenses); renderApprovals(); buildSidebar(); buildNotifications(); }
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function approveReturnFromAppr(id) {
-  if (!confirm('اعتماد طلب الاسترجاع؟\n\nسيتم خصم مبلغ الرد المحدد من الخزنة.')) return;
+  if (!await showConfirm('سيتم خصم مبلغ الرد المحدد من الخزنة.', { title: 'اعتماد طلب الاسترجاع', icon: 'warn' })) return;
   try {
     await api('/returns/' + id + '/approve', { method: 'POST', body: '{}' });
     toast('تم اعتماد الاسترجاع — تم خصم مبلغ الرد من الخزنة');
@@ -19265,7 +19760,7 @@ async function approveReturnFromAppr(id) {
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 async function rejectReturnFromAppr(id) {
-  const reason = prompt('سبب رفض الاسترجاع (اختياري):');
+  const reason = await showPrompt('سبب رفض الاسترجاع (اختياري):', { title: 'رفض طلب الاسترجاع', icon: 'warn' });
   if (reason === null) return; // user pressed cancel
   try {
     await api('/returns/' + id + '/reject', { method: 'POST', body: JSON.stringify({ rejectedReason: reason.trim() }) });
@@ -20134,6 +20629,8 @@ function renderVaultTable() {
   let data = Array.isArray(vaultLog) ? vaultLog : [];
   const vaultSearch = (qs('#vault-log-search')?.value || '').trim().toLowerCase();
   const statusFilter = qs('#vault-status-filter')?.value || '';
+  const sourceFilter = qs('#vault-source-filter')?.value || '';
+  const segFilter = qs('#vault-seg-filter')?.value || '';
 
   if (vaultSearch) {
     data = data.filter(v => {
@@ -20141,9 +20638,9 @@ function renderVaultTable() {
       return blob.includes(vaultSearch);
     });
   }
-  if (statusFilter) {
-    data = data.filter(v => v.status === statusFilter);
-  }
+  if (statusFilter) data = data.filter(v => v.status === statusFilter);
+  if (sourceFilter) data = data.filter(v => (v.source || '') === sourceFilter);
+  if (segFilter) data = data.filter(v => (v.seg || '') === segFilter);
 
   const segLabel = (s) => ({cash:'كاش',vodafone:'فودافون كاش',instapay:'Instapay',bank:'تحويل بنكي'}[s] || s || '-');
   const statusBadge = (s) => {
@@ -20161,28 +20658,29 @@ function renderVaultTable() {
     return '<span style="' + styleStr + '">' + esc(s) + '</span>';
   };
 
-  const VAULT_PAGE_SIZE = 50;
+  const VAULT_PAGE_SIZE = vaultPerPage;
   const total = data.length;
   if (vaultPage > Math.ceil(total / VAULT_PAGE_SIZE)) vaultPage = 1;
   const start = (vaultPage - 1) * VAULT_PAGE_SIZE;
   const pageData = data.slice(start, start + VAULT_PAGE_SIZE);
 
+  const countEl = qs('#vault-records-count');
+  if (countEl) countEl.textContent = total ? `إجمالي الحركات: ${total} حركة` : '';
+
   qs('#vault-table tbody').innerHTML = pageData.length ? pageData.map(v => `
     <tr style="cursor:pointer" onclick="openVaultTransactionDetail('${v._id}')">
-      <td style="font-weight:700;color:var(--primary);font-size:.8rem;direction:ltr">${v.txNo ? esc(v.txNo) : `<span style="color:#999">—</span>`}</td>
-      <td>${fmtDate(v.date || v.createdAt)}</td>
-      <td style="font-size:.75rem;color:var(--muted);white-space:nowrap">${v.createdAt ? fmtDateTime(v.createdAt) : '-'}</td>
+      <td style="font-weight:700;color:var(--primary);direction:ltr">${v.txNo ? esc(v.txNo) : `<span style="color:#999">—</span>`}</td>
+      <td style="white-space:nowrap"><div style="font-size:.78rem">${fmtDate(v.date || v.createdAt)}</div><div style="font-size:.7rem;color:var(--muted)">${v.createdAt ? fmtDateTime(v.createdAt) : ''}</div></td>
       ${formatVaultAmountCellHtml(v)}
-      <td style="font-weight:700;color:var(--primary)">${fmtJ(v.balance || 0)}</td>
       <td>${srcBadge(v.source)}</td>
-      <td style="font-weight:600;direction:ltr">${v.ref ? '#' + esc(v.ref) : '-'}</td>
+      <td>${esc(v.method || '-')}</td>
       <td>${esc(segLabel(v.seg))}</td>
       <td>${statusBadge(v.status || 'completed')}</td>
-      <td>${esc(v.method || '-')}</td>
-      <td style="font-weight:600;color:var(--accent);font-size:.8rem">${v.employee ? esc(v.employee) : `<span style="color:#999">—</span>`}</td>
-      <td>${esc(v.desc || '-')}</td>
-      <td class="vault-justif-col" style="font-size:.72rem;color:var(--muted);max-width:180px;white-space:normal;line-height:1.4">${v.accountingJustification ? `<span title="${esc(v.accountingJustification)}">${esc(v.accountingJustification.substring(0,60))}${v.accountingJustification.length > 60 ? '…' : ''}</span>` : '-'}</td>
-    </tr>`).join('') : '<tr><td colspan="13" class="empty-state">لا توجد سجلات</td></tr>';
+      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(v.desc||'')}">${esc(v.desc || '—')}</td>
+      <td style="color:var(--accent);font-weight:600">${v.employee ? esc(v.employee) : `<span style="color:#999">—</span>`}</td>
+      <td style="font-weight:600;direction:ltr;color:var(--muted)">${v.ref ? '#' + esc(v.ref) : '—'}</td>
+      <td class="vault-justif-col" style="font-size:.7rem;color:var(--muted);max-width:160px;white-space:normal;line-height:1.4">${v.accountingJustification ? `<span title="${esc(v.accountingJustification)}">${esc(v.accountingJustification.substring(0,50))}${v.accountingJustification.length > 50 ? '…' : ''}</span>` : '—'}</td>
+    </tr>`).join('') : '<tr><td colspan="11" class="empty-state">لا توجد سجلات</td></tr>';
   const vaultMobileList = qs('#vault-log-mobile-list');
   if (vaultMobileList) {
     if (!pageData.length) {
@@ -20212,7 +20710,7 @@ function renderVaultTable() {
       }).join('');
     }
   }
-  renderPagination('vault-pagination', total, vaultPage, VAULT_PAGE_SIZE, 'setVaultPage');
+  renderPagination('vault-pagination', total, vaultPage, VAULT_PAGE_SIZE, 'setVaultPage', [10,25,50,100], 'setVaultPerPage');
 }
 
 function openVaultTransactionDetail(txId) {
@@ -20279,7 +20777,7 @@ function openVaultTransactionDetail(txId) {
 }
 
 async function freezeVaultTransaction(txId) {
-  const reason = prompt('سبب التجميد:');
+  const reason = await showPrompt('سبب التجميد:', { title: 'تجميد المعاملة', icon: 'warn', required: true });
   if (!reason) return;
   try {
     await api(`/vault/${txId}/freeze`, { method: 'POST', body: JSON.stringify({ reason }) });
@@ -20298,7 +20796,7 @@ async function freezeVaultTransaction(txId) {
 }
 
 async function unfreezeVaultTransaction(txId) {
-  const confirmed = confirm(currentLang==='en'?'Unfreeze this transaction? (amount will return to vault immediately)':'هل تريد تحرير هذه المعاملة من التجميد؟\n(سيعود المبلغ للخزنة فوراً)');
+  const confirmed = await showConfirm(currentLang==='en'?'Amount will return to vault immediately.':'سيعود المبلغ للخزنة فوراً.', { title: currentLang==='en'?'Unfreeze Transaction':'تحرير المعاملة من التجميد', icon: 'warn' });
   if (!confirmed) return;
   try {
     await api(`/vault/${txId}/unfreeze`, { method: 'POST' });
@@ -20317,9 +20815,9 @@ async function unfreezeVaultTransaction(txId) {
 }
 
 async function cancelVaultTransaction(txId) {
-  const reason = prompt(currentLang==='en'?'Reason for cancellation:':'سبب الإلغاء:');
+  const reason = await showPrompt(currentLang==='en'?'Reason for cancellation:':'سبب الإلغاء:', { title: currentLang==='en'?'Cancel Transaction':'إلغاء المعاملة', icon: 'warn', required: true });
   if (!reason) return;
-  const confirmed = confirm(currentLang==='en'?'Warning: Confirm cancellation of this transaction? (amount will be returned to vault)':'تحذير: هل تأكد إلغاء هذه المعاملة؟\n(سيتم استرجاع المبلغ للخزنة)');
+  const confirmed = await showConfirm(currentLang==='en'?'Amount will be returned to vault.':'سيتم استرجاع المبلغ للخزنة.', { title: currentLang==='en'?'Confirm Cancellation':'تأكيد الإلغاء', icon: 'danger', danger: true });
   if (!confirmed) return;
   try {
     await api(`/vault/${txId}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) });
@@ -20353,7 +20851,17 @@ async function addVaultEntry() {
     }
   }
   const segLabel2 = {cash:'كاش',vodafone:'فودافون كاش',instapay:'Instapay',bank:'تحويل بنكي'}[body.seg] || body.seg;
-  const confirmed = confirm(`تأكيد التسوية اليدوية\n\nالعملية: ${body.method}\nالمبلغ: ${fmtN(Math.abs(body.amount))} EGP\nالحساب: ${segLabel2}\nالوصف: ${body.desc || '—'}\nالموظف: ${body.employee}\n\nهل تريد تطبيق هذا التعديل على رصيد الخزنة؟`);
+  const confirmed = await showConfirm('هل تريد تطبيق هذا التعديل على رصيد الخزنة؟', {
+    title: 'تأكيد التسوية اليدوية',
+    icon: 'warn',
+    rows: [
+      ['العملية', body.method],
+      ['المبلغ', fmtN(Math.abs(body.amount)) + ' EGP'],
+      ['الحساب', segLabel2],
+      ['الوصف', body.desc || '—'],
+      ['الموظف', body.employee],
+    ]
+  });
   if (!confirmed) return;
   try {
     const result = await trySendOrQueue(
@@ -20566,7 +21074,7 @@ function renderUsers() {
 async function toggleUserActive(id, currentlyInactive) {
   const action = currentlyInactive ? 'activate' : 'deactivate';
   const msg = currentlyInactive ? 'تفعيل هذا المستخدم؟' : 'تعطيل هذا المستخدم؟ لن يستطيع تسجيل الدخول';
-  if (!confirm(msg)) return;
+  if (!await showConfirm(msg, { title: currentlyInactive ? 'تفعيل المستخدم' : 'تعطيل المستخدم', icon: 'warn', danger: !currentlyInactive })) return;
   try {
     await api('/users/' + id + '/' + action, { method: 'POST' });
     toast(currentlyInactive ? 'تم تفعيل المستخدم' : 'تم تعطيل المستخدم');
@@ -20674,7 +21182,7 @@ async function saveUser(id) {
 async function deleteUser(id) {
   const u = users.find(x => x._id === id);
   if (u && u.username === 'admin') { toast('لا يمكن حذف المدير الرئيسي', true); return; }
-  if (!confirm(`هل أنت متأكد من حذف "${u?.name || u?.username}"?\nلا يمكن التراجع عن هذا الإجراء`)) return;
+  if (!await showConfirm('لا يمكن التراجع عن هذا الإجراء.', { title: `حذف "${u?.name || u?.username}"`, icon: 'danger', danger: true })) return;
   try {
     await api('/users/' + id, { method: 'DELETE' });
     toast('تم حذف المستخدم');
@@ -20767,7 +21275,7 @@ async function addMasterTag() {
 }
 
 async function deleteMasterTag(id, name) {
-  if (!confirm(`هل تريد حذف TAG "${name}" من القائمة الأساسية؟\nالحركات المرتبطة به ستحتفظ بالاسم.`)) return;
+  if (!await showConfirm('الحركات المرتبطة به ستحتفظ بالاسم.', { title: `حذف TAG "${name}"`, icon: 'danger', danger: true })) return;
   try {
     await api(`/tags/${id}`, { method: 'DELETE' });
     masterTags = masterTags.filter(t => String(t._id) !== String(id));
@@ -20816,8 +21324,8 @@ async function addShipCompany() {
   qs('#new-ship-name').value = ''; qs('#new-ship-cairo').value = ''; qs('#new-ship-gov').value = ''; 
   renderSettings();
 }
-async function removeShipCompany(i) { 
-  if (!confirm('حذف شركة الشحن؟')) return; 
+async function removeShipCompany(i) {
+  if (!await showConfirm('حذف شركة الشحن؟', { title: 'حذف شركة الشحن', icon: 'danger', danger: true })) return; 
   if (!settings.shipCos) return;
   settings.shipCos.splice(i, 1); 
   await saveSettings(); 
@@ -20894,10 +21402,10 @@ async function restoreBackupNow() {
     return;
   }
 
-  const confirmMsg = currentLang==='en'
-    ? `Warning!\n\nYou are about to restore:\n${filename}\n\nCurrent data will be replaced.\n\nEnter vault password to confirm:`
-    : `تحذير!\n\nستقوم باستعادة النسخة:\n${filename}\n\nسيتم استبدال البيانات الحالية.\n\nأدخل كلمة السر الخزنة للتأكيد:`;
-  const password = prompt(confirmMsg);
+  const password = await showPrompt(
+    currentLang==='en'?'Enter vault password to confirm:':'أدخل كلمة السر الخزنة للتأكيد:',
+    { title: currentLang==='en'?`Restore backup: ${filename}`:`استعادة النسخة: ${filename}`, icon: 'danger', required: true, placeholder: currentLang==='en'?'Password':'كلمة السر' }
+  );
 
   if (!password) {
     toast('تم إلغاء العملية', false);
@@ -20957,7 +21465,7 @@ async function uploadBackupFile() {
     return;
   }
 
-  const password = prompt('أدخل كلمة السر الخزنة للتأكيد:');
+  const password = await showPrompt('أدخل كلمة السر الخزنة للتأكيد:', { title: 'رفع نسخة احتياطية', icon: 'danger', required: true, placeholder: 'كلمة السر' });
   if (!password) {
     toast('تم إلغاء العملية', false);
     return;
@@ -21004,7 +21512,10 @@ async function uploadBackupFile() {
 }
 
 async function clearAllBackups() {
-  const password = prompt(currentLang==='en'?'Are you sure you want to delete all backups?\n\nEnter vault password to confirm:':'هل أنت متأكد من حذف جميع النسخ الاحتياطية؟\n\nأدخل كلمة السر الخزنة للتأكيد:');
+  const password = await showPrompt(
+    currentLang==='en'?'Enter vault password to confirm:':'أدخل كلمة السر الخزنة للتأكيد:',
+    { title: currentLang==='en'?'Delete all backups':'حذف جميع النسخ الاحتياطية', icon: 'danger', required: true, placeholder: currentLang==='en'?'Password':'كلمة السر' }
+  );
   if (!password) {
     toast('تم إلغاء العملية', false);
     return;
@@ -21028,7 +21539,10 @@ async function clearAllBackups() {
 }
 
 async function confirmResetAllData() {
-  const password = prompt(currentLang==='en'?'Warning!\n\nThis operation will permanently erase all data.\nA backup will be created automatically before deletion.\n\nEnter vault password to confirm:':'تحذير!\n\nهذه العملية ستمسح جميع البيانات بشكل نهائي.\nسيتم إنشاء نسخة احتياطية تلقائياً قبل المسح.\n\nأدخل كلمة السر الخزنة للتأكيد:');
+  const password = await showPrompt(
+    currentLang==='en'?'Enter vault password to confirm:':'أدخل كلمة السر الخزنة للتأكيد:',
+    { title: currentLang==='en'?'⚠️ Reset ALL data':'⚠️ مسح جميع البيانات', icon: 'danger', required: true, placeholder: currentLang==='en'?'Password':'كلمة السر' }
+  );
   if (!password) {
     toast('تم إلغاء العملية', false);
     return;
@@ -22633,7 +23147,7 @@ function copySurveyLink(token) {
 }
 
 async function deleteComplaint(id) {
-  if (!confirm('هل تريد حذف هذه الشكوى؟')) return;
+  if (!await showConfirm('هل تريد حذف هذه الشكوى؟', { title: 'حذف الشكوى', icon: 'danger', danger: true })) return;
   try {
     await api(`/complaints/${id}`, { method: 'DELETE' });
     toast('تم الحذف');
@@ -22910,7 +23424,7 @@ function _fuFilterChange() { _fuPage=1; renderFollowUps(); }
 function setFuPage(p) { _fuPage=p; renderFollowUps(); }
 
 async function deleteFuItem(id) {
-  if (!confirm('هل تريد حذف هذا السجل نهائياً؟')) return;
+  if (!await showConfirm('هل تريد حذف هذا السجل نهائياً؟', { title: 'حذف السجل', icon: 'danger', danger: true })) return;
   try {
     await api(`/followups/${id}`, {method:'DELETE'});
     followUps = followUps.filter(f=>f._id!==id);
@@ -23482,8 +23996,12 @@ function renderProductCard() {
         <div style="padding:14px;background:var(--surface2);border-radius:8px;border-right:3px solid var(--accent)">
           <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> هامش الربح</div>
           <div style="font-weight:700;color:var(--accent);font-size:1.3rem">${data.summary.profitMargin}%</div>
-          <div style="font-size:.85rem;color:var(--text);margin-top:4px">صافي الربح</div>
-          <div style="font-size:.85rem;color:var(--accent);font-weight:600;margin-top:4px">${fmtJ(data.summary.totalRevenueFromSales - data.summary.totalCostFromPurchases)}</div>
+          <div style="font-size:.8rem;color:var(--muted);margin-top:6px">صافي الربح</div>
+          <div style="font-size:.95rem;color:${data.summary.netProfit >= 0 ? 'var(--accent)' : 'var(--red)'};font-weight:700;margin-top:2px">${fmtJ(data.summary.netProfit)}</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:5px;line-height:1.6">
+            يشمل المعلق · بعد المرتجعات${data.summary.totalDiscounts > 0 ? ` · خصم −${fmtJ(data.summary.totalDiscounts)}` : ''}
+          </div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:2px">صافي الكمية: ${fmtN(data.summary.netQuantitySold)} · سعر شراء: ${fmtJ(data.summary.avgBuyPrice)}</div>
         </div>
       </div>
 
