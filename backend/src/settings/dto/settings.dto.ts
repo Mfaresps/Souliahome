@@ -5,7 +5,42 @@ import {
   IsBoolean,
   IsArray,
   Min,
+  IsIn,
 } from 'class-validator';
+
+export class DiscountCodeDto {
+  @IsString()
+  @IsOptional()
+  readonly id?: string;
+
+  @IsString()
+  readonly code: string;
+
+  @IsString()
+  @IsOptional()
+  readonly description?: string;
+
+  @IsIn(['percent', 'fixed'])
+  readonly type: string;
+
+  @IsNumber()
+  @Min(0)
+  readonly value: number;
+
+  @IsOptional()
+  readonly startDate?: string | null;
+
+  @IsOptional()
+  readonly endDate?: string | null;
+
+  @IsBoolean()
+  @IsOptional()
+  readonly active?: boolean;
+
+  @IsString()
+  @IsOptional()
+  readonly createdBy?: string;
+}
 
 export class UpdateSettingsDto {
   @IsNumber()
@@ -61,4 +96,33 @@ export class UpdateSettingsDto {
   @IsBoolean()
   @IsOptional()
   readonly staffDiscountEnabled?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  readonly printIncludePolicy?: boolean;
+
+  @IsString()
+  @IsOptional()
+  readonly printPolicySales?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly printPolicyPurchase?: string;
+
+  @IsNumber()
+  @Min(8)
+  @IsOptional()
+  readonly printPolicyFontSize?: number;
+
+  @IsString()
+  @IsOptional()
+  readonly printPolicyFontWeight?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  readonly printPolicyHighlight?: boolean;
+
+  @IsArray()
+  @IsOptional()
+  readonly discountCodes?: DiscountCodeDto[];
 }

@@ -116,6 +116,18 @@ export class CreateTransactionDto {
 
   @IsString()
   @IsOptional()
+  readonly discountCodeId?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly discountCode?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly discountCodeType?: string;
+
+  @IsString()
+  @IsOptional()
   readonly depMethod?: string;
 
   @IsString()
@@ -196,6 +208,18 @@ export class UpdateTransactionDto {
   @Min(0)
   @IsOptional()
   readonly discount?: number;
+
+  @IsString()
+  @IsOptional()
+  readonly discountCodeId?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly discountCode?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly discountCodeType?: string;
 
   @IsString()
   @IsOptional()

@@ -1133,6 +1133,8 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .inv-summary-card .sum-line .lbl{color:#64748b;font-weight:500}
 .inv-summary-card .sum-line .val{color:#0f172a;font-weight:700;direction:ltr}
 .inv-summary-card .sum-line.discount .lbl,.inv-summary-card .sum-line.discount .val{color:#dc2626}
+@keyframes discPulse{0%{background:transparent}20%{background:rgba(220,38,38,.13);border-radius:6px}80%{background:rgba(220,38,38,.09);border-radius:6px}100%{background:transparent}}
+.disc-highlight-pulse{animation:discPulse 2s ease forwards;outline:2px solid rgba(220,38,38,.35);outline-offset:3px;border-radius:6px}
 .inv-summary-card .card-label{font-size:.78rem;color:#64748b;font-weight:600}
 .inv-summary-card .card-label svg{display:none}
 .inv-summary-card .card-value{font-size:1.3rem;font-weight:800;color:#1e3a8a;letter-spacing:-.5px;direction:ltr}
@@ -3067,6 +3069,76 @@ body.dark-mode .fx-checkbox-count{background:var(--surface2)}
 .mov-edited-mini{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;background:#fef3c7;color:#92400e;cursor:pointer;flex-shrink:0;transition:all .12s}
 .mov-edited-mini:hover{background:#fde68a}
 body.dark-mode .mov-edited-mini{background:#422006;color:#fcd34d}
+/* Discount indicator badge on movement rows */
+/* ── Discount badge — premium redesign ── */
+.mov-discount-ic{
+  display:inline-flex;align-items:center;gap:0;
+  border-radius:24px;overflow:hidden;
+  cursor:pointer;border:1px solid rgba(16,185,129,.22);
+  line-height:1;transition:all .18s cubic-bezier(.4,0,.2,1);
+  white-space:nowrap;direction:ltr;
+  box-shadow:0 1px 3px rgba(16,185,129,.08);
+  font-size:0;/* children set their own size */
+}
+.mov-discount-ic:hover,.mov-discount-ic:focus{
+  border-color:rgba(16,185,129,.5);
+  box-shadow:0 2px 8px rgba(16,185,129,.22);
+  transform:translateY(-1px);outline:none;
+}
+.mov-discount-ic:active{transform:translateY(0);box-shadow:none}
+/* left pill — icon + amount */
+.mov-discount-ic .disc-amt-pill{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:3px 7px 3px 6px;
+  background:rgba(16,185,129,.1);
+  color:#047857;
+  font-size:.72rem;font-weight:700;letter-spacing:.2px;
+  border-radius:0;
+}
+.mov-discount-ic .disc-amt-pill svg{flex-shrink:0;opacity:.9}
+/* right pill — code name (only when code present) */
+.mov-discount-ic .disc-code-pill{
+  display:inline-flex;align-items:center;
+  padding:3px 8px 3px 6px;
+  background:#047857;
+  color:#fff;
+  font-size:.68rem;font-weight:700;letter-spacing:.5px;
+  font-family:monospace;
+  border-radius:0;
+  max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.mov-discount-ic .disc-code-sep{
+  width:1px;height:14px;background:rgba(16,185,129,.3);flex-shrink:0;align-self:center;
+}
+.mov-discount-ic:hover .disc-code-pill{background:#065f46}
+.mov-discount-ic:hover .disc-amt-pill{background:rgba(16,185,129,.16);color:#065f46}
+/* multi-code: each code pill */
+.mov-discount-ic .disc-multi-codes{
+  display:inline-flex;align-items:center;gap:0;
+  background:#047857;padding:3px 8px 3px 6px;border-radius:0;
+}
+.mov-discount-ic .disc-multi-codes .dc-cn{
+  font-size:.65rem;font-weight:700;font-family:monospace;color:#fff;letter-spacing:.4px;
+}
+.mov-discount-ic .disc-multi-codes .dc-sep{
+  color:rgba(255,255,255,.5);font-size:.6rem;margin:0 3px;font-family:sans-serif;
+}
+body.dark-mode .mov-discount-ic{border-color:rgba(52,211,153,.25);box-shadow:0 1px 3px rgba(52,211,153,.08)}
+body.dark-mode .mov-discount-ic .disc-amt-pill{background:rgba(52,211,153,.12);color:#34d399}
+body.dark-mode .mov-discount-ic .disc-code-pill{background:#065f46;color:#a7f3d0}
+body.dark-mode .mov-discount-ic .disc-multi-codes{background:#065f46}
+body.dark-mode .mov-discount-ic:hover .disc-amt-pill{background:rgba(52,211,153,.2);color:#6ee7b7}
+body.dark-mode .mov-discount-ic:hover .disc-code-pill{background:#047857}
+/* Discount filter pill active state */
+.mov-type-pill.discount-active{background:rgba(16,185,129,.12);color:#059669;border-color:rgba(16,185,129,.35)}
+body.dark-mode .mov-type-pill.discount-active{background:rgba(16,185,129,.18);color:#34d399}
+/* Bulk discount modal */
+.bulk-discount-modal{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);backdrop-filter:blur(2px)}
+.bulk-discount-panel{background:var(--surface);border-radius:var(--radius);padding:28px;max-width:440px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(0,0,0,.2);border:1px solid var(--border)}
+.bulk-discount-panel h3{margin:0 0 16px;font-size:1rem;font-weight:700;color:var(--text)}
+.bulk-discount-panel .bd-info{background:var(--bg-alt);border-radius:8px;padding:10px 14px;font-size:.8rem;color:var(--muted);margin-bottom:16px;line-height:1.6}
+.bulk-discount-panel .bd-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.bulk-discount-panel .bd-actions button{flex:1;min-width:120px}
 /* Shopify-style date cell — single line, weekday + time */
 .mov-date-shopify{font-size:.78rem;color:var(--text);white-space:nowrap;font-weight:400;line-height:1.2;unicode-bidi:isolate}
 .mov-date-shopify .ds-time{color:var(--muted);font-size:.72rem;margin-inline-start:4px;unicode-bidi:isolate}
@@ -4053,10 +4125,12 @@ body.dark-mode .dashboard-v2{
 
 /* KPI grid */
 .dashboard-v2 .ds-kpi-grid{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;
+  display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px;
 }
-@media(max-width:1100px){.dashboard-v2 .ds-kpi-grid{grid-template-columns:repeat(2,1fr);gap:12px}}
-@media(max-width:520px){.dashboard-v2 .ds-kpi-grid{grid-template-columns:1fr;gap:12px}}
+@media(max-width:1200px){.dashboard-v2 .ds-kpi-grid{grid-template-columns:repeat(4,1fr);gap:12px}}
+@media(max-width:900px){.dashboard-v2 .ds-kpi-grid{grid-template-columns:repeat(3,1fr);gap:12px}}
+@media(max-width:600px){.dashboard-v2 .ds-kpi-grid{grid-template-columns:repeat(2,1fr);gap:10px}}
+@media(max-width:380px){.dashboard-v2 .ds-kpi-grid{grid-template-columns:1fr;gap:10px}}
 
 .dashboard-v2 .ds-kpi{
   position:relative;background:var(--ds-surface);border:1px solid var(--ds-border);
@@ -4076,15 +4150,110 @@ body.dark-mode .dashboard-v2{
   width:14px;height:14px;color:var(--ds-muted);opacity:.6;flex-shrink:0;
 }
 .dashboard-v2 .ds-kpi-value{
-  font-size:22px;font-weight:600;color:var(--ds-text);
+  font-size:20px;font-weight:700;color:var(--ds-text);
   font-variant-numeric:tabular-nums;line-height:1.2;
   word-break:break-word;
 }
+@media(max-width:900px){.dashboard-v2 .ds-kpi-value{font-size:18px}}
+@media(max-width:600px){.dashboard-v2 .ds-kpi-value{font-size:16px}}
 .dashboard-v2 .ds-kpi-value.is-hidden{color:var(--ds-muted);letter-spacing:.1em}
 .dashboard-v2 .ds-kpi-alert{
   position:absolute;top:14px;inset-inline-end:14px;
   width:8px;height:8px;border-radius:50%;background:var(--ds-alert);
 }
+
+/* KPI colour accents */
+.dashboard-v2 .ds-kpi[data-color="green"]  { border-top:3px solid #16a34a; }
+.dashboard-v2 .ds-kpi[data-color="blue"]   { border-top:3px solid #2563eb; }
+.dashboard-v2 .ds-kpi[data-color="purple"] { border-top:3px solid #7c3aed; }
+.dashboard-v2 .ds-kpi[data-color="red"]    { border-top:3px solid #dc2626; }
+.dashboard-v2 .ds-kpi[data-color="amber"]  { border-top:3px solid #d97706; }
+.dashboard-v2 .ds-kpi[data-color="teal"]   { border-top:3px solid #0d9488; }
+.dashboard-v2 .ds-kpi[data-color="rose"]   { border-top:3px solid #e11d48; }
+.dashboard-v2 .ds-kpi[data-color="slate"]  { border-top:3px solid #64748b; }
+.dashboard-v2 .ds-kpi[data-color="orange"] { border-top:3px solid #ea580c; }
+
+.dashboard-v2 .ds-kpi[data-color="green"]  .ds-kpi-value { color:#16a34a; }
+.dashboard-v2 .ds-kpi[data-color="blue"]   .ds-kpi-value { color:#2563eb; }
+.dashboard-v2 .ds-kpi[data-color="purple"] .ds-kpi-value { color:#7c3aed; }
+.dashboard-v2 .ds-kpi[data-color="red"]    .ds-kpi-value { color:#dc2626; }
+.dashboard-v2 .ds-kpi[data-color="amber"]  .ds-kpi-value { color:#d97706; }
+.dashboard-v2 .ds-kpi[data-color="teal"]   .ds-kpi-value { color:#0d9488; }
+.dashboard-v2 .ds-kpi[data-color="rose"]   .ds-kpi-value { color:#e11d48; }
+.dashboard-v2 .ds-kpi[data-color="slate"]  .ds-kpi-value { color:#64748b; }
+.dashboard-v2 .ds-kpi[data-color="orange"] .ds-kpi-value { color:#ea580c; }
+/* keep hidden-state muted regardless of colour */
+.dashboard-v2 .ds-kpi-value.is-hidden { color:var(--ds-muted) !important; }
+
+/* Info button on each KPI card (global — works on Dashboard + Reports) */
+.ds-kpi-info-btn {
+  display:inline-flex;align-items:center;justify-content:center;
+  width:20px;height:20px;border-radius:50%;
+  background:transparent;border:1.5px solid var(--border,#e2e8f0);
+  color:var(--muted,#94a3b8);cursor:pointer;flex-shrink:0;
+  transition:background .15s,color .15s,border-color .15s;
+  font-size:11px;font-weight:700;line-height:1;
+}
+.ds-kpi-info-btn:hover{background:var(--bg-alt,#f7f8fa);color:var(--text-2,#475569);border-color:var(--accent,#16a34a)}
+
+/* Source module badge */
+.dashboard-v2 .ds-kpi-footer{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  margin-top:2px;
+}
+.dashboard-v2 .ds-kpi-source{
+  font-size:10px;color:var(--ds-muted);
+  display:flex;align-items:center;gap:4px;
+  white-space:nowrap;
+}
+.dashboard-v2 .ds-kpi-source svg{width:10px;height:10px;flex-shrink:0}
+
+/* KPI Explain Overlay */
+#ds-explain-overlay{
+  position:fixed;inset:0;z-index:9000;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.45);
+  opacity:0;pointer-events:none;
+  transition:opacity .18s ease;
+}
+#ds-explain-overlay.active{opacity:1;pointer-events:all}
+#ds-explain-card{
+  background:var(--surface,#fff);border-radius:14px;
+  padding:24px 26px;max-width:380px;width:calc(100% - 32px);
+  box-shadow:0 16px 48px rgba(0,0,0,.18);
+  transform:translateY(10px);
+  transition:transform .18s ease;
+  position:relative;
+  border-top:4px solid var(--ds-explain-color,#16a34a);
+}
+#ds-explain-overlay.active #ds-explain-card{transform:translateY(0)}
+#ds-explain-card .dse-icon{
+  width:40px;height:40px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--ds-explain-soft,rgba(22,163,74,.1));
+  margin-bottom:14px;
+}
+#ds-explain-card .dse-icon svg{width:20px;height:20px;color:var(--ds-explain-color,#16a34a)}
+#ds-explain-card .dse-title{font-size:16px;font-weight:700;color:var(--text,#0f172a);margin:0 0 4px}
+#ds-explain-card .dse-module{
+  font-size:11px;color:var(--ds-explain-color,#16a34a);
+  font-weight:600;margin-bottom:12px;
+  display:inline-flex;align-items:center;gap:4px;
+}
+#ds-explain-card .dse-divider{height:1px;background:var(--border,#e2e8f0);margin:12px 0}
+#ds-explain-card .dse-rows{display:flex;flex-direction:column;gap:10px}
+#ds-explain-card .dse-row{display:flex;flex-direction:column;gap:2px}
+#ds-explain-card .dse-row-label{font-size:11px;font-weight:600;color:var(--muted,#94a3b8);text-transform:uppercase;letter-spacing:.04em}
+#ds-explain-card .dse-row-val{font-size:13px;color:var(--text,#0f172a);line-height:1.5}
+#ds-explain-card .dse-close{
+  position:absolute;top:14px;inset-inline-end:14px;
+  width:28px;height:28px;border-radius:50%;
+  background:var(--bg-alt,#f7f8fa);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;color:var(--muted,#94a3b8);
+  font-size:16px;line-height:1;
+}
+#ds-explain-card .dse-close:hover{background:var(--border,#e2e8f0);color:var(--text,#0f172a)}
+body.dark-mode #ds-explain-card{background:#1a2620;}
 
 /* Online users */
 .dashboard-v2 details.ds-disclosure{
@@ -4984,6 +5153,12 @@ body.dark-mode .dashboard-v2{
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة
     </button>
     <button class="btn btn-sm" id="mov-return-from-selection-btn2" style="display:none;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="openMovementReturnShortcut()" data-i18n="returnSelected">استرجاع</button>
+    <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);gap:5px;display:flex;align-items:center" onclick="openBulkTagModal()">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> TAG
+    </button>
+    <button class="btn btn-sm" id="bulk-discount-btn" style="background:rgba(16,185,129,.75);color:#fff;border:1px solid rgba(255,255,255,.3);gap:5px;display:flex;align-items:center" onclick="openBulkDiscountModal()">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> خصم مجمّع
+    </button>
     <button class="btn btn-sm" id="bulk-cancel-btn" style="display:none;background:rgba(220,38,38,.7);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="bulkCancelMovements()" data-i18n="bulkCancel">إلغاء</button>
     <button class="btn btn-sm" id="bulk-del-btn" style="background:rgba(220,38,38,.7);color:#fff;border:1px solid rgba(255,255,255,.3);gap:5px;display:flex;align-items:center" onclick="bulkArchiveMovements()" data-i18n="bulkFreeze">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg> أرشفة
@@ -5010,6 +5185,10 @@ body.dark-mode .dashboard-v2{
         <button class="fx-btn" data-mov-type="مرتجع" onclick="setMovTypeTab('مرتجع',this)">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>
           <span class="fx-btn-text">مرتجعات</span> <span class="fx-btn-count" id="mov-count-return">0</span>
+        </button>
+        <button class="fx-btn mov-type-pill" id="mov-discount-filter-pill" onclick="toggleMovDiscountFilter(this)" title="عرض الحركات ذات الخصم فقط" style="gap:5px">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          <span class="fx-btn-text">لها خصم</span>
         </button>
       </div>
       <div class="fx-toolbar-row fx-mov-controls">
@@ -5132,6 +5311,12 @@ body.dark-mode .dashboard-v2{
               <span style="display:flex;align-items:center;justify-content:center;gap:5px">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                 TAG
+              </span>
+            </th>
+            <th data-col="discount" style="text-align:center">
+              <span style="display:flex;align-items:center;justify-content:center;gap:4px">
+                <svg viewBox="0 0 376 376" width="12" height="12" fill="currentColor"><path d="M306.4,127c0-5.9-3.6-14.1-7.9-18.1L195.9,3c-4.3-4-11.4-4-15.8,0L77.6,108.9c-4.3,4-7.9,12.2-7.9,18.1L69.7,365.3c0,5.9,4.8,10.8,10.8,10.8l215.2,0c5.9,0,10.8-4.8,10.8-10.8V127z M188.4,44.9c12.9,0,23.4,10.5,23.4,23.4s-10.5,23.4-23.4,23.4s-23.4-10.5-23.4-23.4S175.5,44.9,188.4,44.9z M271.4,352.6l-166.8,0c-5.9,0-10.8-4.8-10.8-10.8l0-194.1c0-5.9,4.8-10.8,10.8-10.8l166.8,0c5.9,0,10.8,4.8,10.8,10.8v194.1C282.2,347.7,277.3,352.6,271.4,352.6z"/><path d="M180.4,234.1c4.5-4.9,7-11.4,7-18.4c0-13.3-9.5-26.8-27.7-26.8c-8.5,0-15.6,2.9-20.7,8.4c-4.5,4.9-6.9,11.4-6.9,18.4c0,13.3,9.5,26.8,27.6,26.8C168.1,242.5,175.3,239.6,180.4,234.1z M159.6,201.3c10,0,14.5,7.4,14.5,14.4c0,3.8-1.3,7.2-3.6,9.8c-2.6,2.9-6.3,4.4-10.8,4.4c-10.2,0-14.9-7.4-14.9-14.4C144.9,208.4,149.4,201.3,159.6,201.3z"/><path d="M225.8,199.2c-1.7,0-3.9,1.1-5,2.3l-82.5,91.8c-1.1,1.2-0.7,2.2,1,2.2h11.7c1.7,0,3.9-1,5-2.2l82.4-92.1c1.1-1.2,0.7-2.2-1-2.2L225.8,199.2z"/><path d="M216.9,252.7c-8.3,0-15.3,2.9-20.3,8.3c-4.4,4.8-6.8,11.2-6.8,18.1c0,13.1,9.3,26.3,27.1,26.3c8.3,0,15.4-2.9,20.4-8.3c4.4-4.8,6.8-11.2,6.8-18.1C244.1,266,234.7,252.7,216.9,252.7z M217,293.3c-10,0-14.5-7.5-14.5-14.4c0-3.8,1.3-7.3,3.6-9.8c2.6-2.9,6.3-4.4,10.8-4.4c9.9,0,14.5,7.5,14.5,14.4c0,3.8-1.3,7.3-3.6,9.8C225.2,291.8,221.5,293.3,217,293.3z"/></svg>
+                الخصم
               </span>
             </th>
             <th data-col="employee" class="col-secondary">
@@ -5910,6 +6095,37 @@ body.dark-mode .dashboard-v2{
     </table>
   </div>
 </div>
+
+<!-- Discount Codes Report -->
+<div class="card" id="rep-discount-codes-section" style="margin-top:20px;display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="width:32px;height:32px;border-radius:8px;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#047857" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      </span>
+      <h3 style="font-size:.95rem;color:var(--text);margin:0;font-weight:600">أداء أكواد الخصم</h3>
+    </div>
+    <span id="rep-dc-period-label" style="font-size:.8rem;color:var(--muted)"></span>
+  </div>
+  <div class="overflow-x">
+    <table id="rep-discount-codes-table" style="width:100%;border-collapse:collapse;font-size:.88rem">
+      <thead>
+        <tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
+          <th style="padding:8px 10px;text-align:right">#</th>
+          <th style="padding:8px 10px;text-align:right">الكود</th>
+          <th style="padding:8px 10px;text-align:right">الوصف</th>
+          <th style="padding:8px 10px;text-align:center">النوع</th>
+          <th style="padding:8px 10px;text-align:center">مرات الاستخدام</th>
+          <th style="padding:8px 10px;text-align:right">إجمالي الخصم</th>
+          <th style="padding:8px 10px;text-align:right">إجمالي قيمة الطلبات</th>
+          <th style="padding:8px 10px;text-align:center">الحالة</th>
+        </tr>
+      </thead>
+      <tbody id="rep-discount-codes-tbody"></tbody>
+    </table>
+  </div>
+  <div id="rep-dc-empty" style="display:none;text-align:center;padding:28px;color:var(--muted);font-size:.88rem">لا توجد أكواد خصم مُستخدمة في هذه الفترة</div>
+</div>
 </div>
 
 
@@ -6400,6 +6616,88 @@ body.dark-mode .dashboard-v2{
   <div class="card settings-card" style="padding:16px 18px" id="tag-mgmt-card"></div>
 </div>
 
+<!-- إعدادات الطباعة -->
+<div style="margin-top:28px">
+  <div class="settings-section-label" style="margin-bottom:12px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    <span>إعدادات الطباعة والفاتورة</span>
+  </div>
+  <div class="card settings-card" style="padding:16px 18px">
+
+    <!-- تضمين صفحة السياسة -->
+    <label class="lock-toggle-row" style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);cursor:pointer">
+      <span class="lock-toggle-info">
+        <span class="lock-toggle-title">تضمين صفحة السياسة عند الطباعة</span>
+        <span class="lock-toggle-sub">تُطبع صفحة ثانية بسياسة البيع أو الشراء بعد كل فاتورة</span>
+      </span>
+      <span class="lock-switch"><input type="checkbox" id="set-print-policy" onchange="savePrintPolicySetting()"><span class="lock-switch-slider"></span></span>
+    </label>
+
+    <!-- تنسيق صفحة السياسة -->
+    <div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+      <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px">تنسيق بنود السياسة</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="form-group" style="margin:0">
+          <label style="margin-bottom:5px;font-size:.8rem">حجم الخط (px)</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="range" id="set-policy-font-size" min="8" max="14" step="1" value="10"
+              oninput="qs('#policy-font-size-val').textContent=this.value" onchange="savePrintPolicySetting()"
+              style="flex:1">
+            <span id="policy-font-size-val" style="font-size:.78rem;color:var(--muted);min-width:24px;text-align:center">10</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label style="margin-bottom:5px;font-size:.8rem">وزن الخط</label>
+          <select id="set-policy-font-weight" onchange="savePrintPolicySetting()" style="width:100%;font-size:.82rem">
+            <option value="normal">عادي</option>
+            <option value="500">متوسط</option>
+            <option value="600">شبه عريض</option>
+            <option value="bold">عريض</option>
+          </select>
+        </div>
+      </div>
+      <label class="lock-toggle-row" style="cursor:pointer">
+        <span class="lock-toggle-info">
+          <span class="lock-toggle-title" style="font-size:.85rem">تمييز بنود السياسة</span>
+          <span class="lock-toggle-sub">إضافة خلفية خضراء فاتحة وحد جانبي لكل بند لتبرزه بصرياً</span>
+        </span>
+        <span class="lock-switch"><input type="checkbox" id="set-policy-highlight" onchange="savePrintPolicySetting()"><span class="lock-switch-slider"></span></span>
+      </label>
+    </div>
+
+    <!-- نص سياسة المبيعات -->
+    <div class="form-group" style="margin-bottom:14px">
+      <label style="margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        سياسة المبيعات والمرتجعات والاستبدال
+      </label>
+      <p class="text-xs text-muted" style="margin:0 0 6px;font-size:.72rem">سطر واحد لكل بند — تُرقَّم تلقائياً في صفحة السياسة</p>
+      <textarea id="set-policy-sales" rows="5" style="width:100%;resize:vertical;font-size:.82rem;line-height:1.6;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;color:var(--text);background:var(--surface)" placeholder="البضاعة المباعة لا تُرد ولا تُستبدل إلا بعيب مصنعي ثابت.
+يُشترط الاحتفاظ بالفاتورة لأي طلب استبدال أو استرجاع.
+مدة الضمان وفقاً لسياسة الشركة.
+الاسترجاع خلال ٧ أيام من تاريخ الشراء فقط."></textarea>
+    </div>
+
+    <!-- نص سياسة المشتريات -->
+    <div class="form-group" style="margin-bottom:16px">
+      <label style="margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        سياسة المشتريات
+      </label>
+      <p class="text-xs text-muted" style="margin:0 0 6px;font-size:.72rem">سطر واحد لكل بند — تُرقَّم تلقائياً في صفحة السياسة</p>
+      <textarea id="set-policy-purchase" rows="5" style="width:100%;resize:vertical;font-size:.82rem;line-height:1.6;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;color:var(--text);background:var(--surface)" placeholder="يُرجى مراجعة البضاعة عند الاستلام والتأكد من مطابقتها للطلب.
+أي اعتراض على الكميات أو الأسعار يجب إبلاغه خلال ٤٨ ساعة.
+تُعتبر هذه الفاتورة مستنداً رسمياً للمعاملة التجارية.
+يحق للشركة رفض البضاعة التالفة عند التسليم."></textarea>
+    </div>
+
+    <button class="btn btn-primary btn-sm" onclick="savePrintPolicySetting()" style="align-self:flex-start">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      حفظ إعدادات الطباعة
+    </button>
+  </div>
+</div>
+
 <!-- النسخ والبيانات -->
 <div style="margin-top:28px">
   <div class="settings-section-label" style="margin-bottom:12px">
@@ -6479,6 +6777,56 @@ body.dark-mode .dashboard-v2{
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:inline-block;vertical-align:middle;margin-left:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
         مسح جميع البيانات
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Discount Codes Management (Admin Only) -->
+<div id="discount-codes-section" style="margin-top:28px;display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div class="settings-section-label" style="margin-bottom:0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l6-6"/><circle cx="9.5" cy="8.5" r="1.5"/><circle cx="14.5" cy="15.5" r="1.5"/><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+      <span>أكواد الخصم</span>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openAddDiscountCodeModal()" style="display:flex;align-items:center;gap:5px">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      كود جديد
+    </button>
+  </div>
+  <div class="card settings-card" style="padding:0;overflow:hidden">
+    <!-- Filter Bar -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <input type="text" id="dc-filter-q" placeholder="بحث بالكود أو الوصف…" style="flex:1;min-width:140px;font-size:.82rem" oninput="renderDiscountCodes()">
+      <select id="dc-filter-type" onchange="renderDiscountCodes()" style="font-size:.82rem;padding:6px 10px">
+        <option value="">كل الأنواع</option>
+        <option value="percent">نسبة %</option>
+        <option value="fixed">مبلغ ثابت</option>
+      </select>
+      <select id="dc-filter-status" onchange="renderDiscountCodes()" style="font-size:.82rem;padding:6px 10px">
+        <option value="">كل الحالات</option>
+        <option value="active">مفعل</option>
+        <option value="inactive">معطل</option>
+        <option value="expired">منتهي</option>
+      </select>
+    </div>
+    <!-- Codes Table -->
+    <div id="dc-table-wrap" style="overflow-x:auto">
+      <table style="width:100%;font-size:.82rem;border-collapse:collapse" id="dc-table">
+        <thead>
+          <tr style="background:var(--bg-alt);text-align:right">
+            <th style="padding:10px 14px;font-weight:600;color:var(--muted);white-space:nowrap">الكود</th>
+            <th style="padding:10px 14px;font-weight:600;color:var(--muted)">النوع</th>
+            <th style="padding:10px 14px;font-weight:600;color:var(--muted)">القيمة</th>
+            <th style="padding:10px 14px;font-weight:600;color:var(--muted)">الصلاحية</th>
+            <th style="padding:10px 14px;font-weight:600;color:var(--muted)">الاستخدام</th>
+            <th style="padding:10px 14px;font-weight:600;color:var(--muted)">الحالة</th>
+            <th style="padding:10px 14px;font-weight:600;color:var(--muted)">إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="dc-table-body">
+          <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">جار التحميل…</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -6614,6 +6962,62 @@ body.dark-mode .dashboard-v2{
   </div>
 </div>
 <div class="toast-container" id="toast-container"></div>
+
+<!-- KPI Explain Overlay -->
+<div id="ds-explain-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this)closeDsExplain()">
+  <div id="ds-explain-card">
+    <button class="dse-close" onclick="closeDsExplain()" aria-label="إغلاق">✕</button>
+    <div class="dse-icon"><svg id="dse-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></svg></div>
+    <div class="dse-title" id="dse-title"></div>
+    <div class="dse-module" id="dse-module"></div>
+    <div class="dse-divider"></div>
+    <div class="dse-rows" id="dse-rows"></div>
+  </div>
+</div>
+
+<!-- Bulk TAG Modal -->
+<div id="bulk-tag-modal" style="display:none" class="bulk-discount-modal" onclick="if(event.target===this)closeBulkTagModal()">
+  <div class="bulk-discount-panel">
+    <h3>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:6px"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      إضافة TAG لـ <span id="bulk-tag-count"></span> حركة
+    </h3>
+    <div class="bd-info">اختر TAG جاهزاً أو أدخل مخصصاً — سيُضاف لجميع الحركات المحددة دفعة واحدة.</div>
+    <div id="bulk-tag-presets" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="bulk-tag-input" placeholder="TAG مخصص..." maxlength="30"
+        style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;background:var(--bg-alt);color:var(--text)"
+        onkeydown="if(event.key==='Enter'){applyBulkTag();event.preventDefault()}">
+      <button class="btn btn-primary" onclick="applyBulkTag()" style="padding:8px 16px">تطبيق</button>
+    </div>
+    <div class="bd-actions" style="margin-top:14px">
+      <button class="btn btn-outline" onclick="closeBulkTagModal()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Discount Modal -->
+<div id="bulk-discount-modal" style="display:none" class="bulk-discount-modal" onclick="if(event.target===this)closeBulkDiscountModal()">
+  <div class="bulk-discount-panel">
+    <h3>
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:6px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      خصم مجمّع على الحركات المحددة
+    </h3>
+    <div class="bd-info" id="bulk-discount-info"></div>
+    <div>
+      <label style="font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">مبلغ الخصم (يُطبّق على كل حركة)</label>
+      <input type="number" id="bulk-discount-amount" min="0" step="0.01" placeholder="أدخل مبلغ الخصم..." style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;background:var(--bg-alt);color:var(--text);box-sizing:border-box">
+      <div style="font-size:.73rem;color:var(--muted);margin-top:5px">اتركه ٠ لحذف الخصم من الحركات المحددة (إزالة الخصم)</div>
+    </div>
+    <div class="bd-actions">
+      <button class="btn btn-primary" onclick="executeBulkDiscount()" style="background:#10b981;border-color:#059669">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        تطبيق
+      </button>
+      <button class="btn btn-outline" onclick="closeBulkDiscountModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
 
 <!-- Custom Modal Dialog -->
 <div id="soulia-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="soulia-modal-title">
@@ -6914,6 +7318,7 @@ let movFilter = 'all';
 let movStatusFilter = '';
 let movViewMode = 'list'; // 'list' | 'grid'
 let movTagFilter = '';
+let movDiscountFilter = false;
 let masterTags = [];
 
 async function loadMasterTags() {
@@ -6979,7 +7384,7 @@ let prodFilter = 'all';
 const fxState = {
   inv: { sort: 'name-asc', supplier: new Set(), priceMin: '', priceMax: '', stockMin: '', stockMax: '' },
   prod: { sort: 'name-asc', supplier: new Set(), sellMin: '', sellMax: '', buyMin: '', buyMax: '' },
-  mov: { sort: 'date-desc', employee: new Set(), method: new Set(), status: new Set(), dateFrom: '', dateTo: '', amountMin: '', amountMax: '' },
+  mov: { sort: 'date-desc', employee: new Set(), method: new Set(), status: new Set(), dateFrom: '', dateTo: '', amountMin: '', amountMax: '', discountOnly: false, discountCode: '' },
 };
 let _fxDrawerCtx = null; // 'inv' | 'prod' while drawer open
 // Pagination page state (30/page for tables, 50/page for vault)
@@ -6989,6 +7394,10 @@ let txType = 'مبيعات';
 let txItems = [];
 let txDiscount = 0;
 let txDiscountType = 'fixed';
+let txAppliedCodeId = '';
+let txAppliedCode = '';
+// Multi-code support: array of {id, code, type, value, computedAmt}
+let txAppliedCodes = [];
 let txDirty = false;
 let _pendingNavPage = null;
 let txComments = []; // Array of {text, type, employee, timestamp}
@@ -10805,17 +11214,132 @@ const DS_KPI_ICONS = {
   debts:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
   expenses:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg>',
   returns:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>',
+  shipping:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
+  discount:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+  collected: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+};
+
+/* explain metadata per KPI — shown in the info overlay */
+const DS_KPI_META = {
+  sales: {
+    color: '#16a34a', soft: 'rgba(22,163,74,.1)',
+    module: 'المبيعات',
+    rows: [
+      { label: 'طريقة الحساب', val: 'Σ itemsTotal (pre-discount) − المرتجعات المعتمدة' },
+      { label: 'السعر المستخدم', val: 'itemsTotal = Σ(الكمية × سعر الصنف) قبل خصم الفاتورة' },
+      { label: 'يشمل', val: 'المبيعات النشطة وغير الملغاة فقط' },
+      { label: 'لا يشمل', val: 'رسوم الشحن — الخصومات المطبقة — الفواتير الملغاة' },
+      { label: 'المصدر', val: 'جدول الحركات — حقل itemsTotal' },
+    ],
+  },
+  profit: {
+    color: '#2563eb', soft: 'rgba(37,99,235,.1)',
+    module: 'المبيعات + المخزن + المصاريف',
+    rows: [
+      { label: 'طريقة الحساب', val: 'Σ (سعر صنف الفاتورة − سعر الشراء) × الكمية − ربح المرتجعات − خسارة الشحن − المصاريف المعتمدة' },
+      { label: 'السعر المستخدم', val: 'item.price من الفاتورة (post-discount على مستوى الصنف)' },
+      { label: 'يُخصم منه', val: 'ربح أصناف المرتجعات المعتمدة + فرق الشحن الفعلي' },
+      { label: 'لا يشمل', val: 'خصم الفاتورة الكلي (discount) لا يُخصم مرة أخرى من الربح' },
+      { label: 'المصدر', val: 'المبيعات + سعر الشراء من المخزن + المصاريف' },
+    ],
+  },
+  purchases: {
+    color: '#7c3aed', soft: 'rgba(124,58,237,.1)',
+    module: 'المشتريات',
+    rows: [
+      { label: 'طريقة الحساب', val: 'Σ total لفواتير المشتريات من الموردين النشطة' },
+      { label: 'يشمل', val: 'فواتير المشتريات العادية من الموردين فقط' },
+      { label: 'لا يشمل', val: 'حركات الاسترجاع للمخزن (ref ينتهي بـ -RET) — الفواتير الملغاة والمجمدة' },
+      { label: 'المصدر', val: 'جدول الحركات — نوع: مشتريات (بدون -RET)' },
+    ],
+  },
+  debts: {
+    color: '#dc2626', soft: 'rgba(220,38,38,.1)',
+    module: 'جميع الحركات',
+    rows: [
+      { label: 'طريقة الحساب', val: 'Σ remaining على كل الحركات النشطة (مبيعات + مشتريات + مرتجعات)' },
+      { label: 'يشمل', val: 'ديون العملاء + ديون الموردين + أي حركة بها رصيد متبقٍ' },
+      { label: 'لا يشمل', val: 'الحركات الملغاة — الحركات المسددة بالكامل (remaining = 0)' },
+      { label: 'ملاحظة', val: 'أشمل من نظير التقارير الذي يحسب مبيعات فقط' },
+      { label: 'المصدر', val: 'جدول الحركات — حقل remaining (activeTx كاملة)' },
+    ],
+  },
+  expenses: {
+    color: '#ea580c', soft: 'rgba(234,88,12,.1)',
+    module: 'المصاريف',
+    rows: [
+      { label: 'طريقة الحساب', val: 'Σ amount للمصاريف ذات الحالة "معتمد" — بدون فلتر تاريخ' },
+      { label: 'يشمل', val: 'كل فئات المصاريف المعتمدة من كل الفترات' },
+      { label: 'لا يشمل', val: 'المصاريف المعلقة أو المرفوضة' },
+      { label: 'المصدر', val: 'وحدة المصاريف — الحالة: معتمد' },
+    ],
+  },
+  returns: {
+    color: '#e11d48', soft: 'rgba(225,29,72,.1)',
+    module: 'طلبات الاسترجاع',
+    rows: [
+      { label: 'طريقة الحساب', val: 'عدد وΣ total لطلبات الاسترجاع ذات الحالة "معتمد"' },
+      { label: 'السعر المستخدم', val: 'r.total من جدول ReturnRequest (قيمة الأصناف المرتجعة)' },
+      { label: 'يشمل', val: 'المرتجعات المعتمدة فقط — بدون فلتر تاريخ في الـ Dashboard' },
+      { label: 'لا يشمل', val: 'الطلبات المعلقة أو المرفوضة' },
+      { label: 'المصدر', val: 'جدول ReturnRequest — الحالة: معتمد' },
+    ],
+  },
+  shipping: {
+    color: '#0d9488', soft: 'rgba(13,148,136,.1)',
+    module: 'المبيعات',
+    rows: [
+      { label: 'طريقة الحساب', val: 'Σ shipCost على فواتير المبيعات النشطة' },
+      { label: 'يشمل', val: 'رسوم الشحن المحصلة من العميل كما أُدخلت في الفاتورة' },
+      { label: 'لا يشمل', val: 'فرق الشحن الفعلي (shipLoss) — يُعرض كبطاقة منفصلة في التقارير' },
+      { label: 'المصدر', val: 'جدول الحركات — حقل shipCost' },
+    ],
+  },
+  collected: {
+    color: '#16a34a', soft: 'rgba(22,163,74,.1)',
+    module: 'المبيعات',
+    rows: [
+      { label: 'طريقة الحساب', val: 'Σ deposit على فواتير المبيعات النشطة' },
+      { label: 'يشمل', val: 'الدفعة المقدمة (العربون) المسجلة وقت إنشاء الفاتورة' },
+      { label: 'لا يشمل', val: 'دفعات الاستلام اللاحقة — المبالغ المتبقية' },
+      { label: 'ملاحظة', val: 'deposit رقم مستقل لا يرتبط بالخصم (pre/post-discount لا ينطبق)' },
+      { label: 'المصدر', val: 'جدول الحركات — حقل deposit' },
+    ],
+  },
+  discounts: {
+    color: '#d97706', soft: 'rgba(217,119,6,.1)',
+    module: 'المبيعات',
+    rows: [
+      { label: 'طريقة الحساب', val: 'Σ discount على فواتير المبيعات النشطة' },
+      { label: 'يشمل', val: 'خصم الفاتورة المدخل وقت الإنشاء (حقل discount)' },
+      { label: 'لا يشمل', val: 'الخصومات البعدية (post-discount) المطبقة من صفحة إدارة الحركة' },
+      { label: 'العلاقة بالمبيعات', val: 'total = itemsTotal − discount + shipCost' },
+      { label: 'المصدر', val: 'جدول الحركات — حقل discount' },
+    ],
+  },
+  lowstock: {
+    color: '#64748b', soft: 'rgba(100,116,139,.1)',
+    module: 'المخزن',
+    rows: [
+      { label: 'طريقة الحساب', val: 'عدد الأصناف ذات الحالة low أو zero في المخزن' },
+      { label: 'يشمل', val: 'الأصناف التي المخزون الحالي ≤ الحد الأدنى (minStock) أو = صفر' },
+      { label: 'المصدر', val: 'وحدة المخزن — حالة: low أو zero' },
+    ],
+  },
 };
 
 function buildDashKpis(d) {
   return [
-    { id: 'sales',     label: 'إجمالي المبيعات', val: fmtJ(d.totalSales),     icon: DS_KPI_ICONS.sales },
-    { id: 'profit',    label: 'صافي الربح',       val: fmtJ(d.netProfit),      icon: DS_KPI_ICONS.profit },
-    { id: 'lowstock',  label: 'أصناف منخفضة',    val: fmtN(d.lowStockCount),  icon: DS_KPI_ICONS.lowstock, alert: (d.lowStockCount || 0) > 0 },
-    { id: 'debts',     label: 'الديون',            val: fmtJ(d.totalRemaining), icon: DS_KPI_ICONS.debts },
-    { id: 'expenses',  label: 'المصاريف',          val: fmtJ(d.totalExpenses),  icon: DS_KPI_ICONS.expenses },
-    { id: 'returns',   label: 'المرتجعات',         val: `${fmtN(d.returnCount || 0)} • ${fmtJ(d.totalReturns || 0)}`, icon: DS_KPI_ICONS.returns },
-    { id: 'purchases', label: 'إجمالي المشتريات', val: fmtJ(d.totalPurchases), icon: DS_KPI_ICONS.purchases },
+    { id: 'sales',     color:'green',  label: 'إجمالي المبيعات',   val: fmtJ(d.totalSales),                                              icon: DS_KPI_ICONS.sales,     source: 'المبيعات' },
+    { id: 'profit',    color:'blue',   label: 'صافي الربح',         val: fmtJ(d.netProfit),                                               icon: DS_KPI_ICONS.profit,    source: 'المبيعات + المخزن' },
+    { id: 'purchases', color:'purple', label: 'إجمالي المشتريات',  val: fmtJ(d.totalPurchases),                                          icon: DS_KPI_ICONS.purchases, source: 'المشتريات' },
+    { id: 'debts',     color:'red',    label: 'المتبقي / الديون',   val: fmtJ(d.totalRemaining),                                          icon: DS_KPI_ICONS.debts,     source: 'الحركات' },
+    { id: 'expenses',  color:'orange', label: 'المصاريف المعتمدة', val: fmtJ(d.totalExpenses),                                           icon: DS_KPI_ICONS.expenses,  source: 'المصاريف' },
+    { id: 'returns',   color:'rose',   label: 'المرتجعات',          val: `${fmtN(d.returnCount || 0)} فاتورة • ${fmtJ(d.totalReturns || 0)}`, icon: DS_KPI_ICONS.returns, source: 'المرتجعات', alert: (d.returnCount || 0) > 0 },
+    { id: 'shipping',  color:'teal',   label: 'شحن محصل',           val: fmtJ(d.totalShipping || 0),                                      icon: DS_KPI_ICONS.shipping,  source: 'المبيعات' },
+    { id: 'collected', color:'green',  label: 'عربون محصل',         val: fmtJ(d.totalDeposit || 0),                                       icon: DS_KPI_ICONS.collected, source: 'المبيعات' },
+    { id: 'discounts', color:'amber',  label: 'خصومات العملاء',    val: fmtJ(d.totalDiscounts || 0),                                     icon: DS_KPI_ICONS.discount,  source: 'المبيعات' },
+    { id: 'lowstock',  color:'slate',  label: 'أصناف منخفضة',      val: fmtN(d.lowStockCount),                                           icon: DS_KPI_ICONS.lowstock,  source: 'المخزن', alert: (d.lowStockCount || 0) > 0 },
   ];
 }
 
@@ -10827,17 +11351,64 @@ function renderDashKpis(d) {
   qs('#dash-stats').innerHTML = kpis.map(s => {
     const isRevealed = revealedStats[s.id];
     const displayVal = isRevealed ? s.val : '••••••';
+    const meta = DS_KPI_META[s.id] || {};
+    const color = meta.color || '#16a34a';
     return `
-      <div class="ds-kpi" onclick="revealDashboardStat('${s.id}')">
+      <div class="ds-kpi" data-color="${s.color || ''}" onclick="revealDashboardStat('${s.id}')">
         ${s.alert ? '<span class="ds-kpi-alert" aria-hidden="true"></span>' : ''}
         <div class="ds-kpi-head">
           <span class="ds-kpi-label">${s.icon}<span>${esc(s.label)}</span></span>
-          ${isRevealed ? DS_EYE_OPEN : DS_EYE_OFF}
+          <div style="display:flex;align-items:center;gap:6px">
+            <button class="ds-kpi-info-btn" title="تفاصيل الحقل" onclick="event.stopPropagation();openDsExplain('${s.id}')">i</button>
+            ${isRevealed ? DS_EYE_OPEN : DS_EYE_OFF}
+          </div>
         </div>
         <div class="ds-kpi-value${isRevealed ? '' : ' is-hidden'}">${isRevealed ? displayVal : esc(displayVal)}</div>
+        <div class="ds-kpi-footer">
+          <span class="ds-kpi-source">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            ${esc(s.source || '')}
+          </span>
+        </div>
       </div>
     `;
   }).join('');
+}
+
+function openDsExplain(id) {
+  const meta = DS_KPI_META[id];
+  const kpi  = buildDashKpis({}).find(k => k.id === id);
+  if (!meta || !kpi) return;
+
+  const overlay = qs('#ds-explain-overlay');
+  const card    = qs('#ds-explain-card');
+
+  card.style.setProperty('--ds-explain-color', meta.color);
+  card.style.setProperty('--ds-explain-soft',  meta.soft);
+
+  qs('#dse-icon-svg').innerHTML = kpi.icon.replace(/<\/?svg[^>]*>/g, '');
+  qs('#dse-title').textContent  = kpi.label;
+  qs('#dse-module').innerHTML   =
+    `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${esc(meta.module)}`;
+
+  qs('#dse-rows').innerHTML = (meta.rows || []).map(r => `
+    <div class="dse-row">
+      <span class="dse-row-label">${esc(r.label)}</span>
+      <span class="dse-row-val">${esc(r.val)}</span>
+    </div>
+  `).join('');
+
+  overlay.classList.add('active');
+  document.addEventListener('keydown', _dsExplainKeyClose);
+}
+
+function closeDsExplain() {
+  qs('#ds-explain-overlay')?.classList.remove('active');
+  document.removeEventListener('keydown', _dsExplainKeyClose);
+}
+
+function _dsExplainKeyClose(e) {
+  if (e.key === 'Escape') closeDsExplain();
 }
 
 function dsTypeChip(type) {
@@ -11062,7 +11633,7 @@ function movementStatusCell(tx) {
 
 /* Transaction Page */
 function initTxPage() {
-  txItems = []; txDiscount = 0; txDiscountType = 'fixed'; txComments = []; txDirty = false;
+  txItems = []; txDiscount = 0; txDiscountType = 'fixed'; txAppliedCodeId = ''; txAppliedCode = ''; txAppliedCodes = []; txComments = []; txDirty = false;
   renderTxFields(); renderTxItems(); calcTxSummary(); renderTxComments();
 }
 
@@ -11694,24 +12265,117 @@ function verifyDiscountAdmin() {
     .catch(() => toast('كلمة مرور خاطئة', true));
 }
 
+function _txCodesTotal(itemsTotal) {
+  return txAppliedCodes.reduce((s, c) => s + (c.type === 'percent' ? Math.round(itemsTotal * c.value / 100) : c.value), 0);
+}
+
 function showDiscountForm(itemsTotal) {
+  const manualDisc = txAppliedCodes.length === 0 ? txDiscount : 0;
   openModal(`
-    <h3>خصم على الفاتورة</h3>
+    <h3 style="margin-bottom:14px">خصم على الفاتورة</h3>
+    <div id="disc-codes-section"></div>
     <div class="flex gap-8 mb-16">
       <button class="tab-btn ${txDiscountType === 'fixed' ? 'active' : ''}" onclick="setDiscType('fixed',this)">مبلغ ثابت</button>
       <button class="tab-btn ${txDiscountType === 'percent' ? 'active' : ''}" onclick="setDiscType('percent',this)">نسبة %</button>
     </div>
-    <div class="form-group"><label id="disc-label">${txDiscountType === 'percent' ? 'النسبة (%)' : 'مبلغ الخصم'}</label><input type="number" id="disc-value" value="${txDiscount}" min="0" oninput="updateDiscPreview()"></div>
-    <div class="text-sm text-muted" id="disc-preview">إجمالي الأصناف: ${fmtJ(itemsTotal)}</div>
+    <div class="form-group"><label id="disc-label">${txDiscountType === 'percent' ? 'النسبة (%)' : 'خصم يدوي إضافي'}</label><input type="number" id="disc-value" value="${manualDisc || ''}" min="0" placeholder="0" oninput="updateDiscPreview()"></div>
+    <div id="disc-preview" style="font-size:.82rem;color:var(--muted);margin-bottom:8px"></div>
     <div class="flex gap-8 mt-16">
       <button class="btn btn-primary" onclick="applyDiscount()">تطبيق</button>
-      <button class="btn btn-outline" onclick="_removeTxDiscount()">إزالة الخصم</button>
+      <button class="btn btn-outline" onclick="_removeTxDiscount()">إزالة الكل</button>
     </div>`);
+  _rebuildNewDiscSection(itemsTotal);
+  updateDiscPreview();
+}
+
+function toggleDiscountCode(id, code, type, value) {
+  const itemsTotal = txItems.reduce((s, it) => s + (it.qty * it.price), 0);
+  // Ignore dummy IDs used for refresh-only calls
+  if (!id.startsWith('__dummy')) {
+    const idx = txAppliedCodes.findIndex(c => c.id === id);
+    if (idx >= 0) txAppliedCodes.splice(idx, 1);
+    else txAppliedCodes.push({ id, code, type, value });
+  }
+  _rebuildNewDiscSection(itemsTotal);
+  updateDiscPreview();
+}
+
+function removeAppliedCode(id) {
+  txAppliedCodes = txAppliedCodes.filter(c => c.id !== id);
+  const itemsTotal = txItems.reduce((s, it) => s + (it.qty * it.price), 0);
+  _rebuildNewDiscSection(itemsTotal);
+  updateDiscPreview();
+}
+
+function clearAllAppliedCodes() {
+  txAppliedCodes = [];
+  const itemsTotal = txItems.reduce((s, it) => s + (it.qty * it.price), 0);
+  _rebuildNewDiscSection(itemsTotal);
+  updateDiscPreview();
+}
+
+function _rebuildNewDiscSection(itemsTotal) {
+  const sec = qs('#disc-codes-section');
+  if (!sec) return;
+  const now = new Date();
+  const activeCodes = (settings.discountCodes || []).filter(c => {
+    if (!c.active) return false;
+    if (c.startDate && new Date(c.startDate) > now) return false;
+    if (c.endDate && new Date(c.endDate) < now) return false;
+    return true;
+  });
+  if (!activeCodes.length) { sec.innerHTML = ''; return; }
+  const codesTotal = _txCodesTotal(itemsTotal);
+  sec.innerHTML = `<div style="margin-bottom:16px">
+    <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+      <span>أكواد متاحة <span style="font-weight:400;font-size:.72rem">(يمكن اختيار أكثر من كود)</span></span>
+      ${txAppliedCodes.length ? `<span style="color:var(--primary);font-size:.72rem;cursor:pointer" onclick="clearAllAppliedCodes()">مسح الكل</span>` : ''}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto" id="disc-codes-list">
+      ${activeCodes.map(c => {
+        const isActive = txAppliedCodes.some(ac => ac.id === c.id);
+        const discAmt = c.type === 'percent' ? Math.round(itemsTotal * c.value / 100) : c.value;
+        return `<div class="disc-code-chip${isActive?' active':''}" data-code-id="${esc(c.id)}" onclick="toggleDiscountCode('${esc(c.id)}','${esc(c.code)}','${c.type}',${c.value})" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;border:1.5px solid ${isActive?'var(--primary)':'var(--border)'};background:${isActive?'rgba(var(--primary-rgb),.08)':'var(--surface2)'};cursor:pointer;transition:all .15s">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:18px;height:18px;border-radius:4px;border:2px solid ${isActive?'var(--primary)':'var(--border)'};background:${isActive?'var(--primary)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">${isActive?'<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}</span>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <span style="font-weight:700;font-size:.88rem;letter-spacing:.5px;font-family:monospace;color:${isActive?'var(--primary)':'var(--text)'}">${esc(c.code)}</span>
+              ${c.description?`<span style="font-size:.72rem;color:var(--muted)">${esc(c.description)}</span>`:''}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+            <span style="font-size:.82rem;font-weight:700;color:var(--green)">-${c.type==='percent'?c.value+'%':fmtJ(c.value)}</span>
+            ${c.type==='percent'&&itemsTotal>0?`<span style="font-size:.7rem;color:var(--muted)">= ${fmtJ(discAmt)} ج</span>`:''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    ${txAppliedCodes.length ? `<div id="disc-applied-summary" style="margin-top:10px;padding:8px 12px;border-radius:8px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2)">
+      <div style="font-size:.75rem;font-weight:600;color:#047857;margin-bottom:5px">الأكواد المطبقة (${txAppliedCodes.length}):</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">${txAppliedCodes.map(ac=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:10px;background:rgba(16,185,129,.15);color:#047857;font-size:.75rem;font-weight:700;font-family:monospace;border:1px solid rgba(16,185,129,.3)">${esc(ac.code)}<span onclick="removeAppliedCode('${esc(ac.id)}')" style="cursor:pointer;opacity:.7;font-family:sans-serif;font-weight:400;font-size:.85rem" title="إزالة">×</span></span>`).join('')}</div>
+      <div style="margin-top:6px;font-size:.78rem;color:#047857;font-weight:600">إجمالي الخصم من الأكواد: <span style="color:#dc2626">− ${fmtJ(codesTotal)} ج</span></div>
+    </div>` : ''}
+    <div style="height:1px;background:var(--border);margin:14px 0"></div>
+    <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:8px">أو أضف خصم يدوي إضافي</div>
+  </div>`;
+}
+
+function selectDiscountCode(id, code, type, value) {
+  // Legacy single-select kept for compatibility — now delegates to toggle
+  toggleDiscountCode(id, code, type, value);
+}
+
+function clearAppliedCode() {
+  txAppliedCodes = [];
+  txAppliedCodeId = '';
+  txAppliedCode = '';
+  const badge = qs('#disc-code-applied-badge');
+  if (badge) badge.style.display = 'none';
 }
 
 function _removeTxDiscount() {
   const hasDiscount = txDiscount > 0;
-  txDiscount = 0; txDiscountType = 'fixed';
+  txDiscount = 0; txDiscountType = 'fixed'; txAppliedCodeId = ''; txAppliedCode = ''; txAppliedCodes = [];
   calcTxSummary(); closeModal();
   toast(hasDiscount ? 'تم حذف الخصم بنجاح ✓' : 'لا يوجد خصم لإزالته');
 }
@@ -11724,16 +12388,46 @@ function setDiscType(type, btn) {
 }
 
 function updateDiscPreview() {
-  const val = Number(qs('#disc-value')?.value) || 0;
+  const manualVal = Number(qs('#disc-value')?.value) || 0;
   const itemsTotal = txItems.reduce((s, it) => s + (it.qty * it.price), 0);
-  const disc = txDiscountType === 'percent' ? Math.round(itemsTotal * val / 100) : val;
-  qs('#disc-preview').textContent = `إجمالي الأصناف: ${fmtJT(itemsTotal)} | الخصم: ${fmtJT(disc)} | بعد الخصم: ${fmtJT(itemsTotal - disc)}`;
+  const codesDisc = _txCodesTotal(itemsTotal);
+  const manualDisc = txDiscountType === 'percent' ? Math.round(itemsTotal * manualVal / 100) : manualVal;
+  const totalDisc = codesDisc + manualDisc;
+  const prevEl = qs('#disc-preview');
+  if (!prevEl) return;
+  if (txAppliedCodes.length && manualDisc > 0) {
+    prevEl.innerHTML = `إجمالي الأصناف: <strong>${fmtJT(itemsTotal)}</strong> | خصم الأكواد: <span style="color:#dc2626">-${fmtJT(codesDisc)}</span> | خصم يدوي: <span style="color:#dc2626">-${fmtJT(manualDisc)}</span> | <strong>إجمالي الخصم: ${fmtJT(totalDisc)}</strong> | بعد الخصم: <strong style="color:var(--primary)">${fmtJT(itemsTotal - totalDisc)}</strong>`;
+  } else {
+    prevEl.innerHTML = `إجمالي الأصناف: <strong>${fmtJT(itemsTotal)}</strong> | الخصم: <span style="color:#dc2626">-${fmtJT(totalDisc)}</span> | بعد الخصم: <strong style="color:var(--primary)">${fmtJT(itemsTotal - totalDisc)}</strong>`;
+  }
 }
 
 function applyDiscount() {
-  const val = Number(qs('#disc-value')?.value) || 0;
-  txDiscount = val;
-  calcTxSummary(); closeModal(); toast('تم تطبيق الخصم');
+  const manualVal = Number(qs('#disc-value')?.value) || 0;
+  const itemsTotal = txItems.reduce((s, it) => s + (it.qty * it.price), 0);
+  const codesDisc = _txCodesTotal(itemsTotal);
+  const manualDisc = txDiscountType === 'percent' ? Math.round(itemsTotal * manualVal / 100) : manualVal;
+  // Store combined discount; keep legacy vars for single-code compat
+  txDiscount = txAppliedCodes.length > 0 ? 0 : manualVal; // manual-only value stored for percent recalc
+  if (txAppliedCodes.length === 0 && manualVal > 0) {
+    txDiscountType = txDiscountType; // keep
+  } else if (txAppliedCodes.length > 0) {
+    // Combined total becomes the effective discount (stored as fixed)
+    txDiscount = codesDisc + manualDisc;
+    txDiscountType = 'fixed';
+  }
+  // Update legacy single-code refs for display/save
+  if (txAppliedCodes.length === 1 && manualDisc === 0) {
+    txAppliedCodeId = txAppliedCodes[0].id;
+    txAppliedCode = txAppliedCodes[0].code;
+  } else if (txAppliedCodes.length > 1) {
+    txAppliedCodeId = txAppliedCodes.map(c => c.id).join(',');
+    txAppliedCode = txAppliedCodes.map(c => c.code).join('+');
+  } else {
+    txAppliedCodeId = '';
+    txAppliedCode = '';
+  }
+  calcTxSummary(); closeModal(); toast('تم تطبيق الخصم ✓');
 }
 
 function selectDepMethod(val, btn) {
@@ -11789,6 +12483,10 @@ function toggleDepMethodVisibility() {
 
 function getEffectiveDiscount() {
   const itemsTotal = txItems.reduce((s, it) => s + (it.qty * it.price), 0);
+  if (txAppliedCodes.length > 0) {
+    // When codes are active, txDiscount holds the already-resolved fixed amount
+    return txDiscountType === 'fixed' ? txDiscount : Math.round(itemsTotal * txDiscount / 100);
+  }
   return txDiscountType === 'percent' ? Math.round(itemsTotal * txDiscount / 100) : txDiscount;
 }
 
@@ -11804,7 +12502,11 @@ function calcTxSummary() {
   const total = itemsTotal - discount + shipCost;
   const deposit = Number(qs('#tx-deposit')?.value) || 0;
   const remaining = total - deposit;
-  const discLabel = txDiscountType === 'percent' ? `الخصم (${txDiscount}%)` : 'الخصم';
+  const discLabel = txAppliedCodes.length > 1
+    ? `خصم [${txAppliedCodes.map(c => c.code).join(' + ')}]`
+    : txAppliedCode
+    ? `خصم [${txAppliedCode}]${txDiscountType === 'percent' ? ` (${txDiscount}%)` : ''}`
+    : txDiscountType === 'percent' ? `الخصم (${txDiscount}%)` : 'الخصم';
   const typeLabel = txType === 'مبيعات' ? 'مبيعات' : 'مشتريات';
   const depMethod = qs('#tx-dep-method')?.value || '';
   const depAccount = txType === 'مشتريات' ? (qs('#tx-account')?.value || '') : '';
@@ -11898,7 +12600,7 @@ function printTxInvoice() {
   const itemsTotal = validItems.reduce((s, it) => s + it.qty * it.price, 0);
   const total = itemsTotal - discount + shipCost;
   const deposit = Number(qs('#tx-deposit')?.value) || 0;
-  const remaining = total - deposit;
+  const remaining = Math.max(0, total - deposit);
   const depMethod = qs('#tx-dep-method')?.value || qs('#tx-account')?.value || '';
   const clientName = qs('#tx-client')?.value || qs('#tx-supplier')?.value || '—';
   const clientPhone = qs('#tx-phone')?.value || '';
@@ -11906,110 +12608,217 @@ function printTxInvoice() {
   const note = qs('#tx-inv-note')?.value || qs('#tx-notes')?.value || '';
   const empName = currentUser?.name || currentUser?.username || '';
   const dateStr = new Date().toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' });
-  const typeLabel = txType === 'مبيعات' ? 'فاتورة مبيعات' : 'فاتورة مشتريات';
-  const discLabel = txDiscountType === 'percent' ? `خصم (${txDiscount}%)` : 'خصم';
+  const timeStr = new Date().toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' });
+  const isSales = txType === 'مبيعات';
+  const typeLabel = isSales ? 'فاتورة مبيعات' : 'فاتورة مشتريات';
+  const discLabel = txDiscountType === 'percent' ? `خصم ${txDiscount}%` : 'خصم';
   const shipCo = qs('#tx-shipco')?.value || '';
+  const includePolicyPage = settings?.printIncludePolicy !== false;
+  const pFontSize   = Number(settings?.printPolicyFontSize)  || 10;
+  const pFontWeight = settings?.printPolicyFontWeight        || 'normal';
+  const pHighlight  = settings?.printPolicyHighlight         !== false;
+  const policyText = isSales
+    ? (settings?.printPolicySales    || 'البضاعة المباعة لا تُرد ولا تُستبدل إلا بعيب مصنعي ثابت.\nيُشترط الاحتفاظ بالفاتورة لأي طلب استبدال أو استرجاع.\nمدة الضمان وفقاً لسياسة الشركة.')
+    : (settings?.printPolicyPurchase || 'يُرجى مراجعة البضاعة عند الاستلام والتأكد من مطابقتها للطلب.\nأي اعتراض على الكميات أو الأسعار يجب إبلاغه خلال ٤٨ ساعة من الاستلام.\nتُعتبر هذه الفاتورة مستنداً رسمياً للمعاملة التجارية.');
+  const policyTitle = isSales ? 'سياسة المبيعات والمرتجعات والاستبدال' : 'سياسة المشتريات';
 
   const itemsHtml = validItems.map((it, i) => {
     const p = products.find(x => x._id === it.productId);
     const name = p ? p.name : 'صنف';
     const code = p?.code || '';
     const lineTotal = it.qty * it.price;
-    return `<tr>
-      <td>${i + 1}</td>
-      <td><b>${name}</b>${code ? `<br><small style="color:#888">${code}</small>` : ''}</td>
-      <td>${it.qty}</td>
-      <td>${it.price.toLocaleString('ar-EG')} <span class='amt-cur'>EGP</span></td>
-      <td><b>${lineTotal.toLocaleString('ar-EG')} <span class='amt-cur'>EGP</span></b></td>
+    const bg = i % 2 === 0 ? '#ffffff' : '#f9fafb';
+    return `<tr style="background:${bg}">
+      <td style="text-align:center;color:#aaa;font-size:9px">${i + 1}</td>
+      <td>${name}${code ? `<div style="font-size:9px;color:#bbb;margin-top:1px">${code}</div>` : ''}</td>
+      <td style="text-align:center;font-weight:600">${it.qty}</td>
+      <td style="text-align:left;font-variant-numeric:tabular-nums">${it.price.toLocaleString('ar-EG')}</td>
+      <td style="text-align:left;font-weight:700;color:#0f3d25;font-variant-numeric:tabular-nums">${lineTotal.toLocaleString('ar-EG')}</td>
     </tr>`;
   }).join('');
 
-  const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8">
-  <title>${typeLabel}${ref ? ' #' + ref : ''}</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#1a1a1a;background:#f5f5f5;padding:20px}
-    .page{background:#fff;max-width:720px;margin:0 auto;border-radius:12px;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.08)}
-    .inv-header{background:linear-gradient(135deg,#0f3d25 0%,#1a5c38 100%);color:#fff;padding:28px 32px;display:flex;justify-content:space-between;align-items:flex-start}
-    .inv-header h1{font-size:1.4rem;font-weight:800;letter-spacing:.5px}
-    .inv-header .sub{font-size:.8rem;opacity:.75;margin-top:4px}
-    .inv-meta{text-align:left}
-    .inv-meta .ref{font-size:1.1rem;font-weight:700}
-    .inv-meta .date{font-size:.8rem;opacity:.75;margin-top:4px}
-    .inv-body{padding:24px 32px}
-    .inv-parties{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid #f0f0f0}
-    .party-box h3{font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:8px;font-weight:700}
-    .party-box p{font-size:.95rem;font-weight:700;color:#1a1a1a}
-    .party-box .sub{font-size:.8rem;color:#666;margin-top:3px}
-    table{width:100%;border-collapse:collapse;font-size:.88rem}
-    thead tr{background:#f8f8f8;border-bottom:2px solid #e8e8e8}
-    th{padding:10px 12px;text-align:right;font-weight:700;font-size:.78rem;color:#555;white-space:nowrap}
-    th:last-child,td:last-child{text-align:left}
-    td{padding:10px 12px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
-    tbody tr:last-child td{border-bottom:none}
-    tbody tr:hover{background:#fafafa}
-    .totals{margin-top:20px;border-top:2px solid #f0f0f0;padding-top:16px}
-    .tot-row{display:flex;justify-content:space-between;padding:5px 0;font-size:.88rem;color:#444}
-    .tot-row.bold{font-weight:800;font-size:1.05rem;color:#0f3d25;padding:10px 0 6px;border-top:2px solid #0f3d25;margin-top:6px}
-    .tot-row .method{font-size:.72rem;background:#f0f0f0;border-radius:4px;padding:1px 8px;color:#555;margin-right:6px}
-    .inv-note{margin-top:20px;padding:14px 16px;background:#f8fdf9;border-right:4px solid #0f3d25;border-radius:0 8px 8px 0;font-size:.83rem;color:#444;line-height:1.6}
-    .inv-note .label{font-size:.72rem;font-weight:700;color:#0f3d25;margin-bottom:4px}
-    .inv-footer{margin-top:28px;padding:16px 32px;background:#f8f8f8;display:flex;justify-content:space-between;align-items:center;font-size:.75rem;color:#888}
-    .inv-footer .emp{font-weight:600;color:#555}
-    .badge-paid{display:inline-block;background:#dcfce7;color:#166534;border:1px solid #bbf7d0;border-radius:20px;padding:2px 12px;font-size:.75rem;font-weight:700}
-    .badge-pending{display:inline-block;background:#fef9c3;color:#854d0e;border:1px solid #fef08a;border-radius:20px;padding:2px 12px;font-size:.75rem;font-weight:700}
-    @media print{body{background:#fff;padding:0}.page{box-shadow:none;border-radius:0;max-width:100%}}
-  </style></head><body>
-  <div class="page">
-    <div class="inv-header">
-      <div>
-        <h1>${typeLabel}</h1>
-        <div class="sub">نظام إدارة المخزون — SOULIA</div>
-      </div>
-      <div class="inv-meta">
-        ${ref ? `<div class="ref"># ${ref}</div>` : ''}
-        <div class="date">${dateStr}</div>
-        ${empName ? `<div class="date" style="margin-top:6px">الموظف: ${empName}</div>` : ''}
-      </div>
+  const policyItems = policyText.split('\n').filter(l => l.trim()).map((l, i) => {
+    const txt = l.trim();
+    const hlStyle = pHighlight ? 'background:#f0fdf4;border-right:3px solid #0f3d25;padding-right:8px;border-radius:0 3px 3px 0;' : '';
+    return `<li style="font-size:${pFontSize}px;font-weight:${pFontWeight};line-height:1.7;${hlStyle}padding:4px 8px 4px ${pHighlight ? '0' : '4px'};counter-increment:policy-item">
+      <span style="display:inline-block;min-width:18px;font-size:9px;font-weight:700;color:#0f3d25;margin-left:6px">${i + 1}.</span>${txt}
+    </li>`;
+  }).join('');
+
+  const depMethodLabel = depMethod
+    ? ({ 'كاش': 'كاش', 'فودافون كاش': 'فودافون كاش', 'Instapay': 'InstaPay', 'تحويل بنكي': 'تحويل بنكي' }[depMethod] || depMethod)
+    : '';
+
+  const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head>
+<meta charset="UTF-8">
+<title>${typeLabel}${ref ? ' – ' + ref : ''}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Cairo',sans-serif;font-size:11px;color:#1a1a1a;background:#e8e8e8;padding:20px}
+/* ── Page shell ── */
+.page{background:#fff;width:210mm;max-width:100%;margin:0 auto 20px;box-shadow:0 4px 20px rgba(0,0,0,.12);page-break-after:always}
+.page:last-child{page-break-after:auto;margin-bottom:0}
+/* ── Header ── */
+.hdr{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 14px;border-bottom:2.5px solid #0f3d25}
+.logo-block .logo{font-size:22px;font-weight:900;color:#0f3d25;letter-spacing:-.5px;line-height:1}
+.logo-block .tagline{font-size:8.5px;color:#999;letter-spacing:.4px;margin-top:1px}
+.hdr-meta{text-align:left;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.inv-type-badge{background:#0f3d25;color:#fff;font-size:9.5px;font-weight:700;padding:3px 12px;border-radius:4px;letter-spacing:.3px}
+.hdr-ref{font-size:11px;font-weight:700;color:#0f3d25}
+.hdr-date{font-size:9px;color:#999}
+/* ── Info bar ── */
+.info-bar{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #ebebeb}
+.info-cell{padding:10px 24px}
+.info-cell:first-child{border-left:1px solid #ebebeb}
+.info-lbl{font-size:7.5px;font-weight:700;color:#bbb;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
+.info-val{font-size:11.5px;font-weight:700;color:#111;line-height:1.3}
+.info-sub{font-size:9px;color:#888;margin-top:2px;line-height:1.4}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;padding:2px 9px;border-radius:20px}
+.b-ok{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.b-pend{background:#fef9c3;color:#92400e;border:1px solid #fde68a}
+/* ── Items table ── */
+.tbl-wrap{padding:16px 24px 0}
+.tbl-title{font-size:8px;font-weight:700;color:#bbb;letter-spacing:.4px;text-transform:uppercase;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:10.5px}
+thead tr{background:#0f3d25;color:#fff}
+th{padding:8px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.15px;white-space:nowrap}
+th:first-child{text-align:center;width:26px}
+th:nth-child(3),th:nth-child(4){text-align:center;width:52px}
+th:nth-child(5),th:last-child{text-align:left}
+td{padding:7px 10px;border-bottom:1px solid #f2f2f2;vertical-align:middle;line-height:1.35}
+td:first-child{text-align:center}
+td:nth-child(3),td:nth-child(4){text-align:center}
+tbody tr:last-child td{border-bottom:none}
+/* ── Totals ── */
+.totals-area{display:flex;justify-content:flex-end;padding:14px 24px 0}
+.totals-box{min-width:240px;border:1px solid #e8e8e8;border-radius:6px;overflow:hidden;font-size:10.5px}
+.t-row{display:flex;justify-content:space-between;align-items:center;padding:6px 14px;border-bottom:1px solid #f2f2f2}
+.t-row:last-child{border-bottom:none}
+.t-row.grand{background:#0f3d25;color:#fff;font-size:12.5px;font-weight:800;padding:10px 14px}
+.t-row.dep-row{background:#f0fdf4}
+.t-row.rem-row{background:#fff5f5}
+.t-lbl{color:#555}
+.t-val{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.t-val.g{color:#15803d}.t-val.r{color:#dc2626}
+.dep-badge{font-size:8px;font-weight:600;background:#0f3d25;color:#fff;border-radius:3px;padding:1px 6px;margin-right:5px;vertical-align:middle}
+/* ── Notes ── */
+.note-wrap{margin:12px 24px 0;padding:9px 12px 9px 9px;background:#f8fdf9;border-right:3px solid #0f3d25;border-radius:0 4px 4px 0;font-size:10px;color:#444;line-height:1.65}
+.note-lbl{font-size:7.5px;font-weight:700;color:#0f3d25;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+/* ── Footer ── */
+.inv-foot{display:flex;justify-content:space-between;align-items:center;padding:9px 24px;margin-top:16px;border-top:1px solid #ebebeb;font-size:8px;color:#bbb}
+.inv-foot-emp{font-weight:600;color:#888}
+/* ── Policy page ── */
+.pol-page{padding:32px}
+.pol-hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:2.5px solid #0f3d25;margin-bottom:24px}
+.pol-hdr .logo{font-size:18px;font-weight:900;color:#0f3d25;letter-spacing:-.5px}
+.pol-hdr .tagline{font-size:8px;color:#999;margin-top:2px}
+.pol-hdr-right{text-align:left}
+.pol-hdr-right .pol-title{font-size:14px;font-weight:800;color:#111;line-height:1.2}
+.pol-hdr-right .pol-sub{font-size:9px;color:#999;margin-top:3px}
+.pol-section-title{font-size:11px;font-weight:800;color:#0f3d25;padding-bottom:6px;border-bottom:1px solid #e8e8e8;margin-bottom:14px}
+.pol-list{list-style:none;padding:0;display:flex;flex-direction:column;gap:4px;counter-reset:policy-item}
+.pol-foot{display:flex;justify-content:space-between;margin-top:28px;padding-top:10px;border-top:1px solid #ebebeb;font-size:8px;color:#bbb}
+@media print{
+  body{background:#fff;padding:0}
+  .page{box-shadow:none;width:100%;max-width:100%;margin-bottom:0}
+}
+</style></head><body>
+<!-- PAGE 1 — INVOICE -->
+<div class="page">
+  <div class="hdr">
+    <div class="logo-block">
+      <div class="logo">SOULIA</div>
+      <div class="tagline">نظام إدارة المخازن</div>
     </div>
-    <div class="inv-body">
-      <div class="inv-parties">
-        <div class="party-box">
-          <h3>${txType === 'مبيعات' ? 'العميل' : 'المورد'}</h3>
-          <p>${clientName}</p>
-          ${clientPhone ? `<div class="sub">${clientPhone}</div>` : ''}
-        </div>
-        <div class="party-box">
-          <h3>حالة الفاتورة</h3>
-          ${remaining <= 0
-            ? '<span class="badge-paid">مكتمل الدفع</span>'
-            : `<span class="badge-pending">متبقي ${remaining.toLocaleString('ar-EG')} <span class='amt-cur'>EGP</span></span>`}
-          ${shipCo ? `<div class="sub" style="margin-top:8px">شركة الشحن: ${shipCo}</div>` : ''}
-        </div>
-      </div>
-      <table>
-        <thead><tr><th>#</th><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
-        <tbody>${itemsHtml}</tbody>
-      </table>
-      <div class="totals">
-        <div class="tot-row"><span>إجمالي الأصناف</span><span>${itemsTotal.toLocaleString('ar-EG')} <span class='amt-cur'>EGP</span></span></div>
-        ${discount > 0 ? `<div class="tot-row"><span>${discLabel}</span><span style="color:#ef4444">- ${discount.toLocaleString('ar-EG')} <span class='amt-cur'>EGP</span></span></div>` : ''}
-        ${shipCost > 0 ? `<div class="tot-row"><span>تكلفة الشحن</span><span>+ ${shipCost.toLocaleString('ar-EG')} <span class='amt-cur'>EGP</span></span></div>` : ''}
-        <div class="tot-row bold"><span>الإجمالي الكلي</span><span>${total.toLocaleString('ar-EG')} <span class='amt-cur'>EGP</span></span></div>
-        ${deposit > 0 ? `<div class="tot-row"><span>الديبوزت المدفوع${depMethod ? ` <span class="method">${depMethod}</span>` : ''}</span><span style="color:#16a34a">- ${deposit.toLocaleString('ar-EG')} <span class='amt-cur'>EGP</span></span></div>` : ''}
-        ${deposit > 0 ? `<div class="tot-row"><span>${txType === 'مبيعات' ? 'المتبقي للتحصيل' : 'المتبقي للمورد'}</span><span style="color:${remaining > 0 ? '#ef4444' : '#16a34a'}">${remaining.toLocaleString('ar-EG')} ج</span></div>` : ''}
-      </div>
-      ${note ? `<div class="inv-note"><div class="label">ملاحظة</div>${note}</div>` : ''}
-    </div>
-    <div class="inv-footer">
-      <span>تم الإنشاء بواسطة نظام SOULIA</span>
-      ${empName ? `<span class="emp">الموظف: ${empName}</span>` : ''}
+    <div class="hdr-meta">
+      <span class="inv-type-badge">${typeLabel}</span>
+      ${ref ? `<span class="hdr-ref"># ${ref}</span>` : ''}
+      <span class="hdr-date">${dateStr} — ${timeStr}</span>
     </div>
   </div>
-  <script>window.onload=()=>{window.print()}<\/script>
-  </body></html>`;
+  <div class="info-bar">
+    <div class="info-cell">
+      <div class="info-lbl">${isSales ? 'بيانات العميل' : 'بيانات المورد'}</div>
+      <div class="info-val">${clientName}</div>
+      ${clientPhone ? `<div class="info-sub">${clientPhone}</div>` : ''}
+      ${empName   ? `<div class="info-sub">الموظف: ${empName}</div>` : ''}
+    </div>
+    <div class="info-cell">
+      <div class="info-lbl">حالة الدفع</div>
+      <div style="margin:2px 0 4px">
+        ${remaining <= 0
+          ? '<span class="badge b-ok">✓ مكتمل الدفع</span>'
+          : `<span class="badge b-pend">متبقي ${remaining.toLocaleString('ar-EG')} ج.م</span>`}
+      </div>
+      ${shipCo ? `<div class="info-sub">شركة الشحن: ${shipCo}</div>` : ''}
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <div class="tbl-title">تفاصيل الأصناف</div>
+    <table>
+      <thead><tr>
+        <th>#</th>
+        <th>اسم الصنف</th>
+        <th>الكمية</th>
+        <th>سعر الوحدة</th>
+        <th>الإجمالي (ج.م)</th>
+      </tr></thead>
+      <tbody>${itemsHtml}</tbody>
+    </table>
+  </div>
+  <div class="totals-area">
+    <div class="totals-box">
+      <div class="t-row"><span class="t-lbl">إجمالي الأصناف</span><span class="t-val">${itemsTotal.toLocaleString('ar-EG')}</span></div>
+      ${discount > 0 ? `<div class="t-row"><span class="t-lbl">${discLabel}</span><span class="t-val r">− ${discount.toLocaleString('ar-EG')}</span></div>` : ''}
+      ${shipCost > 0 ? `<div class="t-row"><span class="t-lbl">تكلفة الشحن</span><span class="t-val">+ ${shipCost.toLocaleString('ar-EG')}</span></div>` : ''}
+      <div class="t-row grand"><span>${isSales ? 'إجمالي الفاتورة' : 'إجمالي المشتريات'}</span><span>${total.toLocaleString('ar-EG')} ج.م</span></div>
+      ${deposit > 0
+        ? `<div class="t-row dep-row">
+             <span class="t-lbl">${isSales ? 'المبلغ المدفوع' : 'العربون المدفوع'}${depMethodLabel ? `<span class="dep-badge">${depMethodLabel}</span>` : ''}</span>
+             <span class="t-val g">− ${deposit.toLocaleString('ar-EG')}</span>
+           </div>`
+        : `<div class="t-row"><span class="t-lbl" style="color:#bbb;font-size:9px">لا يوجد دفعة مقدمة — ${isSales ? 'يُحصَّل عند التسليم' : 'المبلغ بالكامل للمورد لاحقاً'}</span></div>`}
+      ${deposit > 0 && remaining > 0
+        ? `<div class="t-row rem-row"><span class="t-lbl">${isSales ? 'المتبقي للتحصيل' : 'المتبقي للمورد'}</span><span class="t-val r">${remaining.toLocaleString('ar-EG')} ج.م</span></div>`
+        : deposit > 0
+          ? `<div class="t-row dep-row"><span class="t-lbl" style="color:#15803d;font-weight:700">✓ مدفوع بالكامل</span></div>`
+          : ''}
+    </div>
+  </div>
+  ${note ? `<div class="note-wrap"><div class="note-lbl">ملاحظات</div>${note}</div>` : ''}
+  <div class="inv-foot">
+    <span>تم الإصدار بواسطة نظام SOULIA — ${dateStr}</span>
+    ${empName ? `<span class="inv-foot-emp">الموظف: ${empName}</span>` : ''}
+  </div>
+</div>
+${includePolicyPage ? `
+<!-- PAGE 2 — POLICY -->
+<div class="page" style="page-break-before:always">
+  <div class="pol-page">
+    <div class="pol-hdr">
+      <div>
+        <div class="logo">SOULIA</div>
+        <div class="tagline">نظام إدارة المخازن</div>
+      </div>
+      <div class="pol-hdr-right">
+        <div class="pol-title">${policyTitle}</div>
+        <div class="pol-sub">${ref ? `مرفقة بالفاتورة # ${ref} — ` : ''}${dateStr}</div>
+      </div>
+    </div>
+    <div class="pol-section-title">${policyTitle}</div>
+    <ol class="pol-list">${policyItems}</ol>
+    <div class="pol-foot">
+      <span>SOULIA — نظام إدارة المخازن والمبيعات</span>
+      <span>${dateStr}</span>
+    </div>
+  </div>
+</div>` : ''}
+<script>window.onload=()=>{window.print()}<\/script>
+</body></html>`;
 
-  const win = window.open('', '_blank', 'width=800,height=700');
+  const win = window.open('', '_blank', 'width=860,height=780');
   if (win) { win.document.write(html); win.document.close(); }
   else toast('السماح بالنوافذ المنبثقة لطباعة الفاتورة', true);
 }
@@ -12494,7 +13303,10 @@ async function saveTx() {
       client: qs('#tx-client')?.value || '', phone: qs('#tx-phone')?.value || '',
       ref: (qs('#tx-ref')?.value || '').trim(), notes: (qs('#tx-inv-note')?.value || qs('#tx-notes')?.value || '').trim(),
       employee: currentUser?.name || currentUser?.username || '',
-      comments: txComments.length > 0 ? txComments : [] };
+      comments: txComments.length > 0 ? txComments : [],
+      discountCodeId: txAppliedCodes.length > 0 ? txAppliedCodes.map(c => c.id).join(',') : (txAppliedCodeId || ''),
+      discountCode: txAppliedCodes.length > 0 ? txAppliedCodes.map(c => c.code).join('+') : (txAppliedCode || ''),
+      discountCodeType: txAppliedCodes.length > 0 ? txAppliedCodes.map(c => c.type).join(',') : (txAppliedCodeId ? txDiscountType : '') };
     if (txType === 'مبيعات') {
       Object.assign(body, { shipCo: qs('#tx-shipco')?.value || '', shipZone: txShipZone, shipCost, deposit,
         remaining: total - deposit, depMethod: qs('#tx-dep-method')?.value || '',
@@ -12632,6 +13444,22 @@ async function confirmTxSave() {
       toast(t('oqSyncQueued'));
     } else {
       toast(pendingTxData.type === 'مشتريات' ? t('toastSavePurchase') : t('toastSaveSale'));
+      // Record discount code usage for all applied codes
+      if (pendingTxData.discountCodeId) {
+        const savedRef = result?.ref || pendingTxData.ref || '';
+        const savedId = result?._id || '';
+        const codeIds = pendingTxData.discountCodeId.split(',').filter(Boolean);
+        const codeNames = (pendingTxData.discountCode || '').split('+').filter(Boolean);
+        const totalDisc = pendingTxData.discount || 0;
+        const perCodeAmt = codeIds.length > 0 ? Math.round(totalDisc / codeIds.length) : totalDisc;
+        codeIds.forEach((cid, i) => {
+          api(`/settings/discount-codes/${cid}/record-usage`, {
+            method: 'POST',
+            body: JSON.stringify({ txRef: savedRef, txId: savedId, client: pendingTxData.client || '', amount: perCodeAmt })
+          }).catch(() => {});
+        });
+        api('/settings').then(s => { settings = s; }).catch(() => {});
+      }
       // Cash pulse: deposit moves real cash. Sales deposit = vault in (+), Purchase deposit = vault out (−)
       try {
         const dep = Number(pendingTxData.deposit) || 0;
@@ -12793,7 +13621,7 @@ async function confirmReturnRequest() {
 }
 
 function resetTx() {
-  txItems = []; txDiscount = 0; txDiscountType = 'fixed'; txDirty = false;
+  txItems = []; txDiscount = 0; txDiscountType = 'fixed'; txAppliedCodeId = ''; txAppliedCode = ''; txAppliedCodes = []; txDirty = false;
   const manualRefundField = qs('#ret-manual-refund');
   if (manualRefundField) manualRefundField.value = '';
   const invNote = qs('#tx-inv-note');
@@ -12838,6 +13666,9 @@ function serializeTxForm() {
     items: txItems.slice(),
     discount: txDiscount,
     discountType: txDiscountType,
+    appliedCodeId: txAppliedCodeId,
+    appliedCode: txAppliedCode,
+    appliedCodes: txAppliedCodes.slice(),
     invNote: get('#tx-inv-note'),
     comments: Array.isArray(txComments) ? txComments.slice() : [],
   };
@@ -12873,6 +13704,9 @@ function deserializeTxForm(snap) {
   txItems = Array.isArray(snap.items) ? snap.items.slice() : [];
   txDiscount = Number(snap.discount) || 0;
   txDiscountType = snap.discountType || 'fixed';
+  txAppliedCodeId = snap.appliedCodeId || '';
+  txAppliedCode = snap.appliedCode || '';
+  txAppliedCodes = Array.isArray(snap.appliedCodes) ? snap.appliedCodes.slice() : [];
   txComments = Array.isArray(snap.comments) ? snap.comments.slice() : [];
   renderTxFields();
   renderTxItems();
@@ -13322,6 +14156,7 @@ function openFxDrawer(ctx) {
     const _hasSt   = s.status.size > 0;
     const _hasEmp  = s.employee.size > 0;
     const _hasMeth = s.method.size > 0;
+    const _hasDisc = !!s.discountOnly || !!s.discountCode;
     body.innerHTML = `
       <div class="fx-section${_hasDate?' has-active':''}">
         <div class="fx-section-header" onclick="this.closest('.fx-section').classList.toggle('collapsed')">
@@ -13374,6 +14209,25 @@ function openFxDrawer(ctx) {
           ${_chevron}
         </div>
         <div class="fx-section-body"><div class="fx-checkboxes">${methodsHtml}</div></div>
+      </div>
+      <div class="fx-section${_hasDisc?' has-active':''}">
+        <div class="fx-section-header" onclick="this.closest('.fx-section').classList.toggle('collapsed')">
+          <span class="fx-section-active-badge"></span>
+          <span class="fx-section-label"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> الخصم</span>
+          ${_chevron}
+        </div>
+        <div class="fx-section-body">
+          <label class="fx-checkbox">
+            <input type="checkbox" data-fx="discountOnly" ${s.discountOnly?'checked':''}>
+            <span class="fx-checkbox-label">عرض الحركات ذات الخصم فقط</span>
+            <span class="fx-checkbox-count">${fmtN(txs.filter(t => Number(t.discount) > 0).length)}</span>
+          </label>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:6px;position:relative">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" data-fx="discountCode" value="${esc(s.discountCode||'')}" placeholder="فلتر باسم الكود..." style="flex:1;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.82rem;background:var(--bg);color:var(--text);outline:none;font-family:inherit" oninput="_fxOnDrawerChange(this)">
+            ${s.discountCode?`<button onclick="fxState.mov.discountCode='';this.closest('.fx-section-body').querySelector('[data-fx=discountCode]').value='';movPage=1;renderMovements();" style="position:absolute;left:6px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:1rem;line-height:1;padding:0">×</button>`:''}
+          </div>
+        </div>
       </div>`;
     body.querySelectorAll('input[data-fx]').forEach(inp => {
       inp.addEventListener('input', () => _fxOnDrawerChange(inp));
@@ -13510,6 +14364,11 @@ function _fxOnDrawerChange(inp) {
   } else if (k === 'employee' || k === 'method' || k === 'status') {
     if (inp.checked) s[k].add(inp.value);
     else s[k].delete(inp.value);
+  } else if (k === 'discountOnly') {
+    s.discountOnly = !!inp.checked;
+    movDiscountFilter = s.discountOnly;
+  } else if (k === 'discountCode') {
+    s.discountCode = inp.value.trim();
   } else {
     s[k] = inp.value;
   }
@@ -13529,7 +14388,7 @@ function resetFxFilters() {
   if (!ctx) return;
   if (ctx === 'inv') fxState.inv = { sort: fxState.inv.sort, supplier: new Set(), priceMin: '', priceMax: '', stockMin: '', stockMax: '' };
   else if (ctx === 'prod') fxState.prod = { sort: fxState.prod.sort, supplier: new Set(), sellMin: '', sellMax: '', buyMin: '', buyMax: '' };
-  else if (ctx === 'mov') fxState.mov = { sort: fxState.mov.sort, employee: new Set(), method: new Set(), status: new Set(), dateFrom: '', dateTo: '', amountMin: '', amountMax: '' };
+  else if (ctx === 'mov') fxState.mov = { sort: fxState.mov.sort, employee: new Set(), method: new Set(), status: new Set(), dateFrom: '', dateTo: '', amountMin: '', amountMax: '', discountOnly: false, discountCode: '' };
   openFxDrawer(ctx); // re-render
   if (ctx === 'inv') { invPage = 1; renderInventory(); }
   else if (ctx === 'prod') { prodPage = 1; renderProducts(); }
@@ -13549,7 +14408,8 @@ function fxResetAll(ctx) {
     prodPage = 1; renderProducts();
   } else if (ctx === 'mov') {
     movFilter = 'all'; movStatusFilter = '';
-    fxState.mov = { sort: 'date-desc', employee: new Set(), method: new Set(), status: new Set(), dateFrom: '', dateTo: '', amountMin: '', amountMax: '' };
+    fxState.mov = { sort: 'date-desc', employee: new Set(), method: new Set(), status: new Set(), dateFrom: '', dateTo: '', amountMin: '', amountMax: '', discountOnly: false, discountCode: '' };
+    movDiscountFilter = false;
     const sInp = qs('#mov-search'); if (sInp) sInp.value = '';
     movPage = 1; renderMovements();
   }
@@ -13564,6 +14424,8 @@ function fxRemoveChip(ctx, kind, value) {
   else if (kind === 'employee') s.employee.delete(value);
   else if (kind === 'method') s.method.delete(value);
   else if (kind === 'movstatus') s.status.delete(value);
+  else if (kind === 'discountOnly') { s.discountOnly = false; movDiscountFilter = false; }
+  else if (kind === 'discountCode') { s.discountCode = ''; }
   else if (kind === 'range') { s[value+'Min'] = ''; s[value+'Max'] = ''; }
   else if (kind === 'date') { s.dateFrom = ''; s.dateTo = ''; }
   if (ctx === 'inv') { invPage = 1; renderInventory(); }
@@ -13597,6 +14459,8 @@ function _fxBuildChips(ctx) {
     s.employee.forEach(e => chips.push({ kind: 'employee', value: e, label: 'الموظف: ' + e }));
     s.method.forEach(m => chips.push({ kind: 'method', value: m, label: 'الطريقة: ' + m }));
     s.status.forEach(st => chips.push({ kind: 'movstatus', value: st, label: 'الحالة: ' + st }));
+    if (s.discountOnly) chips.push({ kind: 'discountOnly', value: '', label: 'لها خصم فقط' });
+    if (s.discountCode) chips.push({ kind: 'discountCode', value: s.discountCode, label: 'كود الخصم: ' + s.discountCode });
   }
   const wrap = qs('#' + ctx + '-chips');
   const btn = qs('#' + ctx + '-filter-active-count');
@@ -14050,7 +14914,7 @@ function renderMovMobileCard(tx) {
       <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" class="mov-client-name">${tx.client ? esc(tx.client) : '<span style="color:var(--muted)">بدون اسم</span>'}</a>
       ${tx.ref ? `<span class="mov-card-ref">#${esc(tx.ref)}</span>` : ''}
     </div>
-    <div class="mov-card-statusrow">${statusHtml}<span class="mov-card-emp">${esc(tx.employee || '—')}</span></div>
+    <div class="mov-card-statusrow">${statusHtml}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}<span class="mov-card-emp">${esc(tx.employee || '—')}</span></div>
     <div class="mov-card-grid">
       <div class="mov-item"><span class="mov-label">الإجمالي</span><span class="mov-val mov-col-total">${fmtJ(tx.total)}</span></div>
       <div class="mov-item"><span class="mov-label">المدفوع</span><span class="mov-val mov-col-paid">${dep}</span></div>
@@ -14080,6 +14944,36 @@ function renderRetMobileCard(r) {
 function _movItemsCount(tx) {
   if (!Array.isArray(tx.items)) return 0;
   return tx.items.reduce((s, it) => s + (Number(it.qty) || 0), 0) || tx.items.length;
+}
+function _movDiscountBadge(tx) {
+  const disc = Number(tx.discount) || 0;
+  if (!disc) return '<span style="color:var(--muted)">—</span>';
+  const itemsBase = Number(tx.itemsTotal) || 0;
+  const base = itemsBase > 0 ? itemsBase : (Number(tx.total) || 0) + disc;
+  const pct = base > 0 ? Math.round((disc / base) * 100) : 0;
+  const codeStr = (tx.discountCode || '').trim();
+  const codeNames = codeStr ? codeStr.split('+').map(n => n.trim()).filter(Boolean) : [];
+  // Amount label: show percent if calculable, else raw amount — never append % twice
+  const amtLabel = pct > 0 ? `${pct}%` : `${fmtN(disc)} ج`;
+  const tooltip = codeNames.length
+    ? `${codeNames.length > 1 ? 'أكواد' : 'كود'}: ${codeNames.join(' + ')} — خصم ${fmtN(disc)} ج${pct > 0 ? ` (${pct}%)` : ''}`
+    : `خصم ${amtLabel}`;
+  // Premium SVG discount tag icon
+  const discIcon = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`;
+  let inner;
+  if (codeNames.length > 1) {
+    // Multi-code: left pill = amount, right pill = CODE1 · CODE2
+    inner = `<span class="disc-amt-pill">${discIcon}−${amtLabel}</span><span class="disc-code-sep"></span><span class="disc-multi-codes">${
+      codeNames.map(n => `<span class="dc-cn">${esc(n)}</span>`).join('<span class="dc-sep">·</span>')
+    }</span>`;
+  } else if (codeNames.length === 1) {
+    // Single code: left pill = amount, right pill = CODE
+    inner = `<span class="disc-amt-pill">${discIcon}−${amtLabel}</span><span class="disc-code-sep"></span><span class="disc-code-pill">${esc(codeNames[0])}</span>`;
+  } else {
+    // No code: simple pill — amount only, no duplicate symbol
+    inner = `<span class="disc-amt-pill">${discIcon}−${amtLabel}</span>`;
+  }
+  return `<span class="mov-discount-ic" title="${esc(tooltip)}" aria-label="${esc(tooltip)}" onclick="event.stopPropagation();showInvoiceDetailWithDiscountHighlight('${esc(tx._id)}')" tabindex="0" role="button">${inner}</span>`;
 }
 function _movItemsCell(tx) {
   const count = _movItemsCount(tx);
@@ -14314,7 +15208,7 @@ function renderMovementTxRow(tx) {
     <td data-col="ref" class="col-ref">${movementRefCell(tx)}</td>
     <td data-col="date">${dateCell}</td>
     <td data-col="client">
-      <div style="display:flex;align-items:center;gap:6px">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" class="mov-client-name">${tx.client ? esc(tx.client) : '<span style="color:var(--muted)">—</span>'}</a>
         ${commentIcon}
         ${mentionIcon}
@@ -14329,6 +15223,7 @@ function renderMovementTxRow(tx) {
     <td data-col="type" style="text-align:center;white-space:nowrap">${movementKindBadgeCompact(tx)}</td>
     <td data-col="status" style="text-align:center;white-space:nowrap">${movementStatusCell(tx)}${vaultStatusBadge}${vaultHint}</td>
     <td data-col="tag" style="text-align:center;min-width:110px" onclick="event.stopPropagation()" data-tag-cell="${esc(tx._id)}">${renderTxTagsCell(tx._id)}</td>
+    <td data-col="discount" style="text-align:center;white-space:nowrap">${_movDiscountBadge(tx)}</td>
     <td data-col="employee" class="mov-col-employee">${esc(tx.employee || '—')}</td>
     <td>
       <div class="actions-dd">
@@ -14401,11 +15296,21 @@ function renderMovements() {
       const blob = normalizeUiSearch([tx.client, tx.ref, movementBaseRef(tx.ref || ''), tx.phone, tx.notes, tx.type, tx.employee, String(tx.total || '')].join(' '));
       if (!tokens.every(t => blob.includes(t))) return false;
     }
+    if (movDiscountFilter || fs.discountOnly) {
+      if (!(Number(tx.discount) > 0)) return false;
+    }
+    if (fs.discountCode) {
+      const needle = fs.discountCode.toLowerCase();
+      if (!(tx.discountCode || '').toLowerCase().includes(needle)) return false;
+    }
     return true;
   });
 
   // Apply sort
   data = _fxApplySort('mov', data);
+  // Sync discount pill visual state
+  const _discPill = qs('#mov-discount-filter-pill');
+  if (_discPill) _discPill.classList.toggle('active', !!(movDiscountFilter || fxState.mov.discountOnly));
   _fxBuildChips('mov');
   try { _updateMovDateLabel(); } catch(_) {}
 
@@ -14733,6 +15638,14 @@ function setMovTagFilter(label) {
   _rebuildTagFilterRow();
 }
 
+function toggleMovDiscountFilter(btn) {
+  movDiscountFilter = !movDiscountFilter;
+  fxState.mov.discountOnly = movDiscountFilter;
+  if (btn) btn.classList.toggle('active', movDiscountFilter);
+  movPage = 1;
+  renderMovements();
+}
+
 /* ===== Grid Card Render ===== */
 function _txTypeColor(type) {
   if (type === 'مبيعات') return '#4caf50';
@@ -14815,11 +15728,11 @@ function renderMovGridCard(tx) {
         <div class="mgc-date">${_fmtCardDate(tx.date, tx.createdAt)}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-        ${movementKindBadge(tx)}
+        <div style="display:flex;align-items:center;gap:5px">${movementKindBadge(tx)}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}</div>
         ${getVaultEntryStatusBadge(tx._id)}
       </div>
     </div>
-    <div class="mgc-client" style="display:flex;align-items:center;gap:7px;overflow:hidden">
+    <div class="mgc-client" style="display:flex;align-items:center;gap:7px;overflow:hidden;flex-wrap:wrap">
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tx.client ? esc(tx.client) : '<span style="color:var(--muted)">بدون اسم</span>'}</span>
       ${tx.type === 'مبيعات' && tx.phone ? `<a class="wa-btn" href="https://wa.me/${encodeURIComponent((tx.phone||'').replace(/\D/g,''))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="واتساب: ${esc(tx.phone)}"><svg viewBox="0 0 512 512" width="13" height="13" preserveAspectRatio="xMidYMid meet"><path fill="#25d366" d="M373.3 306.8c-6.4-3.2-37.7-18.5-43.5-20.7-5.8-2.1-10.1-3.2-14.3 3.3-4.2 6.3-16.4 20.6-20.2 24.8-3.7 4.2-7.4 4.5-13.7 1.7-6.4-3.2-26.9-9.9-51.3-31.7-19-16.9-31.7-37.7-35.4-44.2-3.7-6.3-.4-9.9 2.8-13.1 2.9-2.9 6.4-7.3 9.7-11.2 3.1-3.8 4.1-6.4 6.3-10.6 2.1-4.5 1-8-.6-11.2s-14.3-34.6-19.7-47.1c-5.1-12.4-10.4-10.8-14.3-10.8-3.7-.3-7.9-.3-12.2-.3-4.2 0-11.2 1.6-17 7.7-5.8 6.4-22.3 21.7-22.3 52.8s22.8 61.2 26 65.7c3.2 4.2 44.9 68.2 108.8 95.7 15.3 6.4 27.1 10.3 36.3 13.4 15.3 4.8 29.2 4.2 40.2 2.6 12.2-2 37.7-15.4 43-30.4 5.4-15.1 5.4-27.6 3.8-30.4-1.6-2.9-5.7-4.5-12.2-7.3zM257.3 464h-.3c-37.8 0-75.3-10.3-107.9-29.4l-7.7-4.6-80 20.8L82.9 373l-5.2-8c-21.1-33.6-32.3-72.3-32.3-112.2 0-116.2 95.1-210.9 212.1-210.9 56.7 0 109.8 22.1 149.8 62.1 40 39.7 62.1 92.8 62.1 149.2-.1 116.1-95.2 210.8-212.1 210.8M437.7 73.6C389.1 26.6 325.1 0 257 0 116.6 0 2.2 113.8 2.2 253.7c0 44.7 11.7 88.3 34 126.8L0 512l135.2-35.3c37.2 20.1 79.2 30.8 121.8 30.9h.1c140.5 0 254.8-113.8 254.9-253.8 0-67.7-26.4-131.5-74.6-179.4z"/></svg></a>` : ''}
       ${(tx.comments && tx.comments.length) ? `<a class="mov-comment-ic" href="#" onclick="event.preventDefault();event.stopPropagation();showInvoiceDetail('${esc(tx._id)}')" title="${tx.comments.length} تعليق"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></a>` : ''}
@@ -15289,6 +16202,7 @@ function toggleAllMov(cb) {
 }
 
 let editTxItems = [];
+let editAppliedCodes = []; // multi-code for edit modal
 let editTxId = '';
 
 function showEditConfirmDialog({ changes, vaultDelta, vaultNote, tx }) {
@@ -15488,6 +16402,17 @@ function openEditMovement(id) {
   editTxId = id;
   editTxItems = (tx.items || []).map(it => ({ name: it.name || '', code: it.code || '', qty: it.qty || 1, price: it.price || 0, productId: it.productId || '' }));
   txComments = (tx.comments || []).slice();
+  // Init editAppliedCodes from stored comma-separated codes
+  editAppliedCodes = [];
+  if (tx.discountCodeId) {
+    const ids = tx.discountCodeId.split(',').filter(Boolean);
+    const codes = (tx.discountCode || '').split('+').filter(Boolean);
+    const types = (tx.discountCodeType || '').split(',').filter(Boolean);
+    ids.forEach((cid, i) => {
+      const settingsCode = (settings.discountCodes || []).find(c => c.id === cid);
+      editAppliedCodes.push({ id: cid, code: codes[i] || cid, type: types[i] || 'fixed', value: settingsCode?.value || 0 });
+    });
+  }
   const shipCoOpts = getShipCompanyOptions();
   const isSale = tx.type === 'مبيعات';
   const isPurchase = tx.type === 'مشتريات';
@@ -15512,6 +16437,9 @@ function openEditMovement(id) {
       <div class="form-group"><label>طريقة الدفع</label><select id="edit-tx-payment"><option value="كاش" ${tx.payment === 'كاش' ? 'selected' : ''}>كاش</option><option value="آجل" ${tx.payment === 'آجل' ? 'selected' : ''}>آجل</option><option value="فودافون كاش" ${tx.payment === 'فودافون كاش' ? 'selected' : ''}>فودافون كاش</option><option value="Instapay" ${tx.payment === 'Instapay' ? 'selected' : ''}>Instapay</option><option value="تحويل بنكي" ${tx.payment === 'تحويل بنكي' ? 'selected' : ''}>تحويل بنكي</option></select></div>` : ''}
       <div class="form-group"><label>ملاحظات</label><input type="text" id="edit-tx-notes" value="${esc(tx.notes || '')}"></div>
       <input type="hidden" id="edit-tx-discount" value="${tx.discount || 0}">
+      <input type="hidden" id="edit-tx-discount-code-id" value="${tx.discountCodeId || ''}">
+      <input type="hidden" id="edit-tx-discount-code" value="${tx.discountCode || ''}">
+      <input type="hidden" id="edit-tx-discount-code-type" value="${tx.discountCodeType || ''}">
       ${invoiceImagesSection}
     </div>
     <div class="flex-between mt-16 mb-8" style="align-items:center">
@@ -15736,25 +16664,122 @@ function verifyEditDiscountAdmin() {
     .then(() => { _closeEditDiscOverlay(); showEditDiscountForm(); })
     .catch(() => toast('كلمة مرور خاطئة', true));
 }
+function _editCodesTotal(itemsTotal) {
+  return editAppliedCodes.reduce((s, c) => s + (c.type === 'percent' ? Math.round(itemsTotal * c.value / 100) : c.value), 0);
+}
+
+function _rebuildEditDiscSection(itemsTotal) {
+  const sec = qs('#edit-disc-codes-section');
+  if (!sec) return;
+  const now = new Date();
+  const activeCodes = (settings.discountCodes || []).filter(c => {
+    if (!c.active) return false;
+    if (c.startDate && new Date(c.startDate) > now) return false;
+    if (c.endDate && new Date(c.endDate) < now) return false;
+    return true;
+  });
+  if (!activeCodes.length) { sec.innerHTML = ''; return; }
+  sec.innerHTML = `<div style="margin-bottom:16px">
+    <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+      <span>أكواد متاحة <span style="font-weight:400;font-size:.72rem">(يمكن اختيار أكثر من كود)</span></span>
+      ${editAppliedCodes.length ? `<span style="color:var(--primary);font-size:.72rem;cursor:pointer" onclick="clearAllEditAppliedCodes()">مسح الكل</span>` : ''}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto" id="edit-disc-codes-list">
+      ${activeCodes.map(c => {
+        const isActive = editAppliedCodes.some(ac => ac.id === c.id);
+        const discAmt = c.type === 'percent' ? Math.round(itemsTotal * c.value / 100) : c.value;
+        return `<div class="edit-disc-code-chip${isActive?' active':''}" data-id="${esc(c.id)}" onclick="toggleEditDiscountCode('${esc(c.id)}','${esc(c.code)}','${c.type}',${c.value},${itemsTotal})" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;border:1.5px solid ${isActive?'var(--primary)':'var(--border)'};background:${isActive?'rgba(var(--primary-rgb),.08)':'var(--surface2)'};cursor:pointer;transition:all .15s">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:18px;height:18px;border-radius:4px;border:2px solid ${isActive?'var(--primary)':'var(--border)'};background:${isActive?'var(--primary)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">${isActive?'<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}</span>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <span style="font-weight:700;font-size:.88rem;letter-spacing:.5px;font-family:monospace;color:${isActive?'var(--primary)':'var(--text)'}">${esc(c.code)}</span>
+              ${c.description?`<span style="font-size:.72rem;color:var(--muted)">${esc(c.description)}</span>`:''}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+            <span style="font-size:.82rem;font-weight:700;color:var(--green)">-${c.type==='percent'?c.value+'%':fmtJ(c.value)}</span>
+            ${c.type==='percent'&&itemsTotal>0?`<span style="font-size:.7rem;color:var(--muted)">= ${fmtJ(discAmt)} ج</span>`:''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    ${editAppliedCodes.length ? `<div style="margin-top:10px;padding:8px 12px;border-radius:8px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2)">
+      <div style="font-size:.75rem;font-weight:600;color:#047857;margin-bottom:5px">الأكواد المطبقة (${editAppliedCodes.length}):</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">${editAppliedCodes.map(ac=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:10px;background:rgba(16,185,129,.15);color:#047857;font-size:.75rem;font-weight:700;font-family:monospace;border:1px solid rgba(16,185,129,.3)">${esc(ac.code)}<span onclick="removeEditAppliedCode('${esc(ac.id)}',${itemsTotal})" style="cursor:pointer;opacity:.7;font-family:sans-serif;font-weight:400;font-size:.85rem" title="إزالة">×</span></span>`).join('')}</div>
+      <div style="margin-top:6px;font-size:.78rem;color:#047857;font-weight:600">إجمالي الخصم من الأكواد: <span style="color:#dc2626">− ${fmtJ(_editCodesTotal(itemsTotal))} ج</span></div>
+    </div>` : ''}
+    <div style="height:1px;background:var(--border);margin:12px 0"></div>
+    <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:8px">أو أضف خصم يدوي إضافي</div>
+  </div>`;
+}
+
 function showEditDiscountForm() {
   const itemsTotal = editTxItems.reduce((s, it) => s + (it.qty * it.price), 0);
   const curDisc = Number(qs('#edit-tx-discount')?.value) || 0;
+  const manualDisc = editAppliedCodes.length === 0 ? curDisc : 0;
   editDiscountType = 'fixed';
+
+  const now = new Date();
+  const activeCodes = (settings.discountCodes || []).filter(c => {
+    if (!c.active) return false;
+    if (c.startDate && new Date(c.startDate) > now) return false;
+    if (c.endDate && new Date(c.endDate) < now) return false;
+    return true;
+  });
+
+  const initialCodesHtml = activeCodes.length ? `<div id="edit-disc-codes-section"></div>` : '<div id="edit-disc-codes-section"></div>';
+
   _openEditDiscOverlay(`
-    <h3 style="margin:0 0 16px">خصم على الفاتورة</h3>
+    <h3 style="margin:0 0 14px">خصم على الفاتورة</h3>
+    ${initialCodesHtml}
     <div class="flex gap-8 mb-16">
       <button class="tab-btn active" onclick="setEditDiscType('fixed',this)">مبلغ ثابت</button>
       <button class="tab-btn" onclick="setEditDiscType('percent',this)">نسبة %</button>
     </div>
     <div class="form-group">
-      <label id="edit-disc-label">مبلغ الخصم</label>
-      <input type="text" inputmode="numeric" id="edit-disc-value" value="${curDisc || ''}" placeholder="0" autofocus style="width:100%;font-size:1.1rem;text-align:center" oninput="this.value=this.value.replace(/[^0-9.]/g,'');updateEditDiscPreview(${itemsTotal})">
+      <label id="edit-disc-label">خصم يدوي</label>
+      <input type="text" inputmode="numeric" id="edit-disc-value" value="${manualDisc || ''}" placeholder="0" autofocus style="width:100%;font-size:1.1rem;text-align:center" oninput="this.value=this.value.replace(/[^0-9.]/g,'');updateEditDiscPreview(${itemsTotal})">
     </div>
-    <div class="text-sm text-muted" id="edit-disc-preview" style="margin-bottom:8px">إجمالي الأصناف: ${fmtJT(itemsTotal)}</div>
+    <div class="text-sm text-muted" id="edit-disc-preview" style="margin-bottom:8px"></div>
     <div class="flex gap-8 mt-16">
       <button class="btn btn-primary" onclick="applyEditDiscount(${itemsTotal})">تطبيق</button>
-      <button class="btn btn-outline" onclick="removeEditDiscount()">إزالة الخصم</button>
+      <button class="btn btn-outline" onclick="removeEditDiscount()">إزالة الكل</button>
     </div>`);
+  _rebuildEditDiscSection(itemsTotal);
+  updateEditDiscPreview(itemsTotal);
+}
+
+function toggleEditDiscountCode(id, code, type, value, itemsTotal) {
+  const idx = editAppliedCodes.findIndex(c => c.id === id);
+  if (idx >= 0) editAppliedCodes.splice(idx, 1);
+  else editAppliedCodes.push({ id, code, type, value });
+  _rebuildEditDiscSection(itemsTotal);
+  updateEditDiscPreview(itemsTotal);
+}
+
+function removeEditAppliedCode(id, itemsTotal) {
+  editAppliedCodes = editAppliedCodes.filter(c => c.id !== id);
+  _rebuildEditDiscSection(itemsTotal);
+  updateEditDiscPreview(itemsTotal);
+}
+
+function clearAllEditAppliedCodes() {
+  const it = editTxItems.reduce((s, x) => s + (x.qty * x.price), 0);
+  editAppliedCodes = [];
+  _rebuildEditDiscSection(it);
+  updateEditDiscPreview(it);
+}
+
+function selectEditDiscountCode(id, code, type, value, itemsTotal) {
+  // Legacy single-select — now delegates to multi-toggle
+  toggleEditDiscountCode(id, code, type, value, itemsTotal);
+}
+
+function _clearEditDiscCode() {
+  editAppliedCodes = [];
+  const it = editTxItems.reduce((s, x) => s + (x.qty * x.price), 0);
+  _rebuildEditDiscSection(it);
+  updateEditDiscPreview(it);
 }
 function setEditDiscType(type, btn) {
   editDiscountType = type;
@@ -15765,24 +16790,52 @@ function setEditDiscType(type, btn) {
   updateEditDiscPreview(itemsTotal);
 }
 function updateEditDiscPreview(itemsTotal) {
-  const val = parseFloat(qs('#edit-disc-value')?.value) || 0;
-  const disc = editDiscountType === 'percent' ? Math.round(itemsTotal * Math.min(val, 100) / 100) : val;
+  const manualVal = parseFloat(qs('#edit-disc-value')?.value) || 0;
+  const codesDisc = _editCodesTotal(itemsTotal);
+  const manualDisc = editDiscountType === 'percent' ? Math.round(itemsTotal * Math.min(manualVal, 100) / 100) : manualVal;
+  const totalDisc = codesDisc + manualDisc;
   const el = qs('#edit-disc-preview');
-  if (el) el.textContent = `إجمالي الأصناف: ${fmtJT(itemsTotal)} | الخصم: ${fmtJT(disc)} | بعد الخصم: ${fmtJT(Math.max(0, itemsTotal - disc))}`;
+  if (!el) return;
+  if (editAppliedCodes.length && manualDisc > 0) {
+    el.innerHTML = `إجمالي الأصناف: <strong>${fmtJT(itemsTotal)}</strong> | خصم الأكواد: <span style="color:#dc2626">-${fmtJT(codesDisc)}</span> | خصم يدوي: <span style="color:#dc2626">-${fmtJT(manualDisc)}</span> | <strong>إجمالي الخصم: ${fmtJT(totalDisc)}</strong> | بعد الخصم: <strong style="color:var(--primary)">${fmtJT(Math.max(0, itemsTotal - totalDisc))}</strong>`;
+  } else {
+    el.innerHTML = `إجمالي الأصناف: <strong>${fmtJT(itemsTotal)}</strong> | الخصم: <span style="color:#dc2626">-${fmtJT(totalDisc)}</span> | بعد الخصم: <strong style="color:var(--primary)">${fmtJT(Math.max(0, itemsTotal - totalDisc))}</strong>`;
+  }
 }
 function applyEditDiscount(itemsTotal) {
-  const val = parseFloat(qs('#edit-disc-value')?.value) || 0;
-  if (!val && val !== 0) { toast('أدخل قيمة صحيحة للخصم', true); return; }
-  const discAmount = editDiscountType === 'percent' ? Math.round(itemsTotal * Math.min(val, 100) / 100) : val;
+  const manualVal = parseFloat(qs('#edit-disc-value')?.value) || 0;
+  const codesDisc = _editCodesTotal(itemsTotal);
+  const manualDisc = editDiscountType === 'percent' ? Math.round(itemsTotal * Math.min(manualVal, 100) / 100) : manualVal;
+  const totalDisc = codesDisc + manualDisc;
   const discInput = qs('#edit-tx-discount');
-  if (discInput) { discInput.value = discAmount; recalcEditTx(); }
+  if (discInput) { discInput.value = totalDisc; recalcEditTx(); }
+  // Write combined multi-code data to hidden inputs
+  const idInp = qs('#edit-tx-discount-code-id');
+  const codeInp = qs('#edit-tx-discount-code');
+  const typeInp = qs('#edit-tx-discount-code-type');
+  if (editAppliedCodes.length > 0) {
+    if (idInp) idInp.value = editAppliedCodes.map(c => c.id).join(',');
+    if (codeInp) codeInp.value = editAppliedCodes.map(c => c.code).join('+');
+    if (typeInp) typeInp.value = editAppliedCodes.map(c => c.type).join(',');
+  } else {
+    if (idInp) idInp.value = '';
+    if (codeInp) codeInp.value = '';
+    if (typeInp) typeInp.value = '';
+  }
   _closeEditDiscOverlay();
-  toast(editDiscountType === 'percent' ? `تم تطبيق خصم ${val}% = ${fmtN(discAmount)} EGP` : `تم تطبيق خصم ${fmtN(discAmount)} EGP`);
+  const label = editAppliedCodes.length > 1 ? `[${editAppliedCodes.map(c=>c.code).join(' + ')}]`
+    : editAppliedCodes.length === 1 ? `كود [${editAppliedCodes[0].code}]`
+    : editDiscountType === 'percent' ? `${manualVal}%` : `${fmtN(totalDisc)} ج`;
+  toast(`تم تطبيق خصم ${label} ✅`);
 }
 function removeEditDiscount() {
   const discInput = qs('#edit-tx-discount');
   const hasDiscount = Number(discInput?.value) > 0;
   if (discInput) { discInput.value = 0; recalcEditTx(); }
+  editAppliedCodes = [];
+  const idInp = qs('#edit-tx-discount-code-id'); if (idInp) idInp.value = '';
+  const codeInp = qs('#edit-tx-discount-code'); if (codeInp) codeInp.value = '';
+  const typeInp = qs('#edit-tx-discount-code-type'); if (typeInp) typeInp.value = '';
   _closeEditDiscOverlay();
   toast(hasDiscount ? 'تم حذف الخصم بنجاح ✓' : 'لا يوجد خصم لإزالته');
 }
@@ -15821,10 +16874,13 @@ function recalcEditTx() {
       ? `<div style="margin-top:6px;padding:7px 10px;background:rgba(220,38,38,.06);border-radius:8px;font-size:.78rem;border-right:3px solid var(--red)"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 2 22 2 12 22 2 2"/></svg> سيُخصم <strong style="color:var(--red)">${fmtJ(depositDelta)}</strong> إضافي من الخزنة (${esc(depMethod)}) — زيادة عربون</div>`
       : `<div style="margin-top:6px;padding:7px 10px;background:rgba(22,163,74,.08);border-radius:8px;font-size:.78rem;border-right:3px solid var(--green)"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 2 22 22 2 22 12 2"/></svg> سيُرد <strong style="color:var(--green)">${fmtJ(Math.abs(depositDelta))}</strong> للخزنة (${esc(depMethod)}) — تخفيض عربون</div>`;
   }
+  const editCodeName = qs('#edit-tx-discount-code')?.value || '';
+  const _editCodeNames = editCodeName ? editCodeName.split('+').filter(Boolean) : [];
+  const discLabel = _editCodeNames.length > 1 ? `خصم [${_editCodeNames.join(' + ')}]` : _editCodeNames.length === 1 ? `خصم [${esc(_editCodeNames[0])}]` : 'الخصم';
   if (isPurTx) {
     el.innerHTML = `
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>إجمالي الأصناف</span><strong>${fmtJ(itemsTotal)}</strong></div>
-      ${discount ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الخصم</span><span style="color:var(--red)">- ${fmtJ(discount)}</span></div>` : ''}
+      ${discount ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${discLabel}</span><span style="color:var(--red)">- ${fmtJ(discount)}</span></div>` : ''}
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>العربون (المدفوع مقدماً) <span class="text-xs text-muted">(${esc(depMethod)})</span></span><span style="color:var(--green)">${fmtJ(deposit)}</span></div>
       <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:2px solid var(--border);font-size:1rem;margin-bottom:4px"><strong>الإجمالي النهائي</strong><strong style="color:var(--primary)">${fmtJ(total)}</strong></div>
       <div style="display:flex;justify-content:space-between;margin-top:4px"><span>المتبقي للمورد</span><strong style="color:${remaining > 0 ? 'var(--red)' : 'var(--green)'}">${remaining > 0 ? fmtJ(remaining) : '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> مدفوع بالكامل'}</strong></div>
@@ -15832,7 +16888,7 @@ function recalcEditTx() {
   } else {
     el.innerHTML = `
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>إجمالي الأصناف</span><strong>${fmtJ(itemsTotal)}</strong></div>
-      ${discount ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الخصم</span><span style="color:var(--red)">- ${fmtJ(discount)}</span></div>` : ''}
+      ${discount ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${discLabel}</span><span style="color:var(--red)">- ${fmtJ(discount)}</span></div>` : ''}
       ${shipCost ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>تكلفة الشحن</span><span>+ ${fmtJ(shipCost)}</span></div>` : ''}
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الديبوزت${isSaleTx && depMethod ? ` <span class="text-xs text-muted">(${esc(depMethod)})</span>` : ''}</span><span style="color:var(--green)">${fmtJ(deposit)}</span></div>
       <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:2px solid var(--border);font-size:1rem;margin-bottom:4px"><strong>الإجمالي النهائي</strong><strong style="color:var(--primary)">${fmtJ(total)}</strong></div>
@@ -16007,8 +17063,15 @@ async function saveEditMovement(id) {
 
   const isPurchaseEdit = tx.type === 'مشتريات';
   const newRemaining = Math.max(0, total - deposit);
+  const editDiscCodeId = qs('#edit-tx-discount-code-id')?.value || '';
+  const editDiscCode = qs('#edit-tx-discount-code')?.value || '';
+  const editDiscCodeType = qs('#edit-tx-discount-code-type')?.value || '';
   const body = { client: qs('#edit-tx-client').value, phone: qs('#edit-tx-phone').value, ref: editRef,
-    deposit, discount, notes: qs('#edit-tx-notes').value, items: newItems, itemsTotal,
+    deposit, discount,
+    discountCodeId: editDiscCodeId,
+    discountCode: editDiscCode,
+    discountCodeType: editDiscCodeType,
+    notes: qs('#edit-tx-notes').value, items: newItems, itemsTotal,
     total, remaining: newRemaining, payStatus: newRemaining <= 0 ? 'مكتمل' : 'معلق',
     // 📊 معلومات التعديل للتسجيل
     editInfo: {
@@ -16034,6 +17097,20 @@ async function saveEditMovement(id) {
 
   try {
     await api('/transactions/' + id, { method: 'PUT', body: JSON.stringify(body) });
+    // Record discount code usage for any newly added codes (not in original)
+    if (editDiscCodeId && editDiscCodeId !== (tx.discountCodeId || '')) {
+      const newCodeIds = editDiscCodeId.split(',').filter(Boolean);
+      const origCodeIds = (tx.discountCodeId || '').split(',').filter(Boolean);
+      const addedIds = newCodeIds.filter(cid => !origCodeIds.includes(cid));
+      const perCodeAmt = addedIds.length > 0 ? Math.round(discount / newCodeIds.length) : discount;
+      addedIds.forEach(cid => {
+        api(`/settings/discount-codes/${cid}/record-usage`, {
+          method: 'POST',
+          body: JSON.stringify({ txRef: tx.ref || '', txId: id, client: body.client || '', amount: perCodeAmt })
+        }).catch(() => {});
+      });
+      if (addedIds.length) api('/settings').then(s => { settings = s; }).catch(() => {});
+    }
     closeModal();
     transactions = await api('/transactions').catch(() => transactions);
     try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
@@ -16775,6 +17852,110 @@ async function bulkCancelMovements() {
   renderMovements(); buildSidebar(); syncVaultState();
 }
 
+function openBulkTagModal() {
+  if (!selectedMovIds.size) { toast('لم يتم تحديد أي حركات', true); return; }
+  const modal = qs('#bulk-tag-modal');
+  if (!modal) return;
+  const countEl = qs('#bulk-tag-count');
+  if (countEl) countEl.textContent = fmtN(selectedMovIds.size);
+  const presetsEl = qs('#bulk-tag-presets');
+  if (presetsEl) {
+    presetsEl.innerHTML = (masterTags || []).map(p =>
+      `<span class="tag-dd-preset" style="background:${esc(p.bg)};color:${esc(p.color)};cursor:pointer;padding:4px 10px;border-radius:20px;font-size:.78rem;font-weight:600"
+        onclick="applyBulkTag('${esc(p.name)}','${esc(p.color)}','${esc(p.bg)}')">${esc(p.name)}</span>`
+    ).join('');
+  }
+  const inp = qs('#bulk-tag-input');
+  if (inp) inp.value = '';
+  modal.style.display = 'flex';
+  setTimeout(() => { if (inp) inp.focus(); }, 80);
+}
+function closeBulkTagModal() {
+  const modal = qs('#bulk-tag-modal');
+  if (modal) modal.style.display = 'none';
+}
+async function applyBulkTag(label, color, bg) {
+  if (!label) {
+    const inp = qs('#bulk-tag-input');
+    label = (inp?.value || '').trim();
+    if (!label) { if (inp) { inp.style.borderColor = 'var(--red,#ef4444)'; setTimeout(() => inp.style.borderColor = '', 1200); } return; }
+    const palette = ['#3b82f6','#10b981','#f59e0b','#a855f7','#ef4444','#0891b2','#6366f1','#f97316'];
+    bg = palette[Math.floor(Math.random() * palette.length)];
+    color = '#fff';
+  }
+  const ids = [...selectedMovIds];
+  closeBulkTagModal();
+  let done = 0, errors = 0;
+  for (const id of ids) {
+    try { await addTxTag(id, label, color, bg); done++; } catch (_) { errors++; }
+  }
+  toast(`تم إضافة TAG "${label}" لـ ${done} حركة${errors ? ' — فشل ' + errors : ''}`);
+  renderMovements();
+}
+
+function openBulkDiscountModal() {
+  if (!selectedMovIds.size) { toast('لم يتم تحديد أي حركات', true); return; }
+  const modal = qs('#bulk-discount-modal');
+  const infoEl = qs('#bulk-discount-info');
+  const amtInp = qs('#bulk-discount-amount');
+  if (!modal) return;
+  const selected = [...selectedMovIds].map(id => transactions.find(t => t._id === id)).filter(Boolean);
+  const withDisc = selected.filter(t => Number(t.discount) > 0);
+  if (infoEl) {
+    infoEl.innerHTML = `
+      <div>الحركات المحددة: <strong>${fmtN(selected.length)}</strong></div>
+      <div>منها لها خصم حالياً: <strong>${fmtN(withDisc.length)}</strong></div>
+      <div style="margin-top:4px;font-size:.74rem">أدخل مبلغاً لتطبيقه على جميع الحركات المحددة، أو <strong>٠</strong> لإزالة الخصم منها.</div>`;
+  }
+  if (amtInp) amtInp.value = '';
+  modal.style.display = 'flex';
+  setTimeout(() => { if (amtInp) amtInp.focus(); }, 80);
+}
+function closeBulkDiscountModal() {
+  const modal = qs('#bulk-discount-modal');
+  if (modal) modal.style.display = 'none';
+}
+async function executeBulkDiscount() {
+  const amtInp = qs('#bulk-discount-amount');
+  const discountAmt = Number(amtInp?.value ?? 0) || 0;
+  const ids = [...selectedMovIds];
+  if (!ids.length) { toast('لم يتم تحديد أي حركات', true); return; }
+
+  const isRemoval = discountAmt === 0;
+  const label = isRemoval
+    ? `هل تريد إزالة الخصم من ${ids.length} حركة محددة؟`
+    : `هل تريد تطبيق خصم ${fmtJ(discountAmt)} على ${ids.length} حركة محددة؟`;
+  const confirmed = await showConfirm(label, { title: 'تأكيد الخصم المجمّع', icon: isRemoval ? 'warn' : 'info' });
+  if (!confirmed) return;
+
+  closeBulkDiscountModal();
+  let done = 0, errors = 0;
+  for (const id of ids) {
+    try {
+      await api('/transactions/' + id, {
+        method: 'PUT',
+        body: JSON.stringify({ discount: discountAmt }),
+      });
+      // Update local cache immediately
+      const tx = transactions.find(t => t._id === id);
+      if (tx) tx.discount = discountAmt;
+      done++;
+    } catch (_) { errors++; }
+  }
+  const msg = isRemoval
+    ? `تم إزالة الخصم من ${done} حركة${errors ? ' — فشل ' + errors : ''}`
+    : `تم تطبيق الخصم على ${done} حركة${errors ? ' — فشل ' + errors : ''}`;
+  toast(msg);
+  // Log audit trail entry locally in editHistory for affected transactions
+  transactions.filter(t => ids.includes(t._id)).forEach(tx => {
+    if (!tx.editHistory) tx.editHistory = [];
+    tx.editHistory.push({ field: 'discount', value: discountAmt, by: currentUser?.name || currentUser?.username || '', at: new Date().toISOString() });
+  });
+  selectedMovIds.clear();
+  renderMovements();
+  updateMovementSelectionActions();
+}
+
 let archivedMovements = [];
 async function loadArchivedMovements() {
   const tbody = qs('#archive-tbody');
@@ -17386,81 +18567,199 @@ function exportSelectedExcel() {
   if (!selectedMovIds.size) { toast('لم يتم تحديد أي حركات', true); return; }
   showExportModal(true);
 }
+function _invoiceSharedCss() {
+  const pFontSize   = Number(settings?.printPolicyFontSize)  || 10;
+  const pFontWeight = settings?.printPolicyFontWeight        || 'normal';
+  const pHighlight  = settings?.printPolicyHighlight         !== false;
+  const hlExtra = pHighlight
+    ? 'background:#f0fdf4;border-right:3px solid #0f3d25;padding-right:8px;border-radius:0 3px 3px 0;'
+    : '';
+  return `@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Cairo',sans-serif;font-size:11px;color:#1a1a1a;background:#e8e8e8;padding:20px}
+.page{background:#fff;width:210mm;max-width:100%;margin:0 auto 20px;box-shadow:0 4px 20px rgba(0,0,0,.12);page-break-after:always}
+.page:last-child{page-break-after:auto;margin-bottom:0}
+.hdr{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 14px;border-bottom:2.5px solid #0f3d25}
+.logo-block .logo{font-size:22px;font-weight:900;color:#0f3d25;letter-spacing:-.5px;line-height:1}
+.logo-block .tagline{font-size:8.5px;color:#999;letter-spacing:.4px;margin-top:1px}
+.hdr-meta{text-align:left;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.inv-type-badge{background:#0f3d25;color:#fff;font-size:9.5px;font-weight:700;padding:3px 12px;border-radius:4px;letter-spacing:.3px}
+.hdr-ref{font-size:11px;font-weight:700;color:#0f3d25}
+.hdr-date{font-size:9px;color:#999}
+.info-bar{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #ebebeb}
+.info-cell{padding:10px 24px}
+.info-cell:first-child{border-left:1px solid #ebebeb}
+.info-lbl{font-size:7.5px;font-weight:700;color:#bbb;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
+.info-val{font-size:11.5px;font-weight:700;color:#111;line-height:1.3}
+.info-sub{font-size:9px;color:#888;margin-top:2px;line-height:1.4}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;padding:2px 9px;border-radius:20px}
+.b-ok{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.b-pend{background:#fef9c3;color:#92400e;border:1px solid #fde68a}
+.b-cancel{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.tbl-wrap{padding:16px 24px 0}
+.tbl-title{font-size:8px;font-weight:700;color:#bbb;letter-spacing:.4px;text-transform:uppercase;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:10.5px}
+thead tr{background:#0f3d25;color:#fff}
+th{padding:8px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.15px;white-space:nowrap}
+th:first-child{text-align:center;width:26px}
+th:nth-child(3){text-align:center;width:60px}
+th:nth-child(4){text-align:center;width:52px}
+th:nth-child(5),th:last-child{text-align:left}
+td{padding:7px 10px;border-bottom:1px solid #f2f2f2;vertical-align:middle;line-height:1.35}
+td:first-child{text-align:center;color:#aaa;font-size:9.5px}
+td:nth-child(3),td:nth-child(4){text-align:center}
+tbody tr:last-child td{border-bottom:none}
+.totals-area{display:flex;justify-content:flex-end;padding:14px 24px 0}
+.totals-box{min-width:240px;border:1px solid #e8e8e8;border-radius:6px;overflow:hidden;font-size:10.5px}
+.t-row{display:flex;justify-content:space-between;align-items:center;padding:6px 14px;border-bottom:1px solid #f2f2f2}
+.t-row:last-child{border-bottom:none}
+.t-row.grand{background:#0f3d25;color:#fff;font-size:12.5px;font-weight:800;padding:10px 14px}
+.t-row.dep-row{background:#f0fdf4}
+.t-row.rem-row{background:#fff5f5}
+.t-lbl{color:#555}
+.t-val{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.t-val.g{color:#15803d}.t-val.r{color:#dc2626}
+.dep-badge{font-size:8px;font-weight:600;background:#0f3d25;color:#fff;border-radius:3px;padding:1px 6px;margin-right:5px;vertical-align:middle}
+.note-wrap{margin:12px 24px 0;padding:9px 12px 9px 9px;background:#f8fdf9;border-right:3px solid #0f3d25;border-radius:0 4px 4px 0;font-size:10px;color:#444;line-height:1.65}
+.note-lbl{font-size:7.5px;font-weight:700;color:#0f3d25;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+.inv-foot{display:flex;justify-content:space-between;align-items:center;padding:9px 24px;margin-top:16px;border-top:1px solid #ebebeb;font-size:8px;color:#bbb}
+.inv-foot-emp{font-weight:600;color:#888}
+.pol-page{padding:32px}
+.pol-hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:2.5px solid #0f3d25;margin-bottom:24px}
+.pol-hdr .logo{font-size:18px;font-weight:900;color:#0f3d25;letter-spacing:-.5px}
+.pol-hdr .tagline{font-size:8px;color:#999;margin-top:2px}
+.pol-hdr-right{text-align:left}
+.pol-hdr-right .pol-title{font-size:14px;font-weight:800;color:#111;line-height:1.2}
+.pol-hdr-right .pol-sub{font-size:9px;color:#999;margin-top:3px}
+.pol-section-title{font-size:11px;font-weight:800;color:#0f3d25;padding-bottom:6px;border-bottom:1px solid #e8e8e8;margin-bottom:14px}
+.pol-list{list-style:none;padding:0;display:flex;flex-direction:column;gap:4px;counter-reset:policy-item}
+.pol-list li{font-size:${pFontSize}px;font-weight:${pFontWeight};line-height:1.7;${hlExtra}padding:4px 8px 4px 4px;counter-increment:policy-item}
+.pol-list li .num{display:inline-block;min-width:18px;font-size:9px;font-weight:700;color:#0f3d25;margin-left:6px}
+.pol-foot{display:flex;justify-content:space-between;margin-top:28px;padding-top:10px;border-top:1px solid #ebebeb;font-size:8px;color:#bbb}
+@media print{body{background:#fff;padding:0}.page{box-shadow:none;width:100%;max-width:100%;margin-bottom:0}}`;
+}
+
 function buildInvoiceHtml(tx) {
-  const isPur = tx.type === 'مشتريات';
-  const itemsHtml = (tx.items || []).map((it, i) => `
-    <tr style="background:${i%2===0?'#fff':'#f8fafb'}">
-      <td style="padding:8px 10px;text-align:center;border-bottom:1px solid #e2e8e4">${i+1}</td>
-      <td style="padding:8px 10px;border-bottom:1px solid #e2e8e4;font-weight:500">${esc(it.name || '')}</td>
-      <td style="padding:8px 10px;text-align:center;border-bottom:1px solid #e2e8e4;font-size:11px;color:#6b8c78">${esc(it.code || '-')}</td>
-      <td style="padding:8px 10px;text-align:center;border-bottom:1px solid #e2e8e4">${it.qty}</td>
-      <td style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e8e4">${fmtJ(it.price)}</td>
-      <td style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e8e4;font-weight:700;color:#00311e">${fmtJ(it.total)}</td>
-    </tr>`).join('');
+  const isPur  = tx.type === 'مشتريات';
+  const isSales = tx.type === 'مبيعات';
+  const itemsHtml = (tx.items || []).map((it, i) => {
+    const bg = i % 2 === 0 ? '#ffffff' : '#f9fafb';
+    return `<tr style="background:${bg}">
+      <td>${i+1}</td>
+      <td>${esc(it.name || '')}${it.code ? `<div style="font-size:9px;color:#bbb;margin-top:1px">${esc(it.code)}</div>` : ''}</td>
+      <td style="font-size:9px;color:#aaa">${esc(it.code || '—')}</td>
+      <td style="font-weight:600">${it.qty}</td>
+      <td style="font-variant-numeric:tabular-nums">${fmtJ(it.price)}</td>
+      <td style="font-weight:700;color:#0f3d25;font-variant-numeric:tabular-nums">${fmtJ(it.total)}</td>
+    </tr>`;
+  }).join('');
+
   const purStatusLabel = isPur ? ((tx.remaining || 0) > 0 ? 'مديون للمورد' : 'مكتمل') : tx.payStatus;
-  const payStatusColor = (isStatusCompleted(tx.payStatus) || (isPur && (tx.remaining || 0) <= 0)) ? '#16a34a' : isStatusCancelled(tx.payStatus) ? '#dc2626' : '#dc2626';
+  const isCompleted = isStatusCompleted(tx.payStatus) || (isPur && (tx.remaining || 0) <= 0);
+  const isCancelled = isStatusCancelled(tx.payStatus);
+  const statusCls = isCompleted ? 'b-ok' : isCancelled ? 'b-cancel' : 'b-pend';
+  const statusLabel = esc(isPur ? purStatusLabel : (tx.payStatus || '—'));
   const paid = isPur ? ((tx.total || 0) - (tx.remaining || 0)) : exchangeSalePaidDisplayAmount(tx);
-  return `<div class="invoice-page" style="page-break-after:always;font-family:'Cairo',sans-serif;padding:32px;max-width:720px;margin:0 auto;direction:rtl;background:#fff;border:1px solid #e2e8e4;border-radius:12px">
-    <!-- Header -->
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:20px;border-bottom:3px solid #00311e">
-      <div>
-        <h1 style="color:#00311e;margin:0;font-size:28px;font-weight:900;letter-spacing:-0.5px">Soulia</h1>
-        <p style="margin:4px 0 0;color:#6b8c78;font-size:13px">نظام إدارة المخازن</p>
-      </div>
-      <div style="text-align:left">
-        <div style="background:#00311e;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700">فاتورة ${esc(tx.type)}</div>
-        <div style="margin-top:8px;font-size:12px;color:#6b8c78">${tx.ref ? 'رقم: <strong style="color:#00311e">#'+esc(tx.ref)+'</strong>' : ''}</div>
-      </div>
+  const dateStr = (tx.date || '').slice(0, 10);
+  const typeLabel = `فاتورة ${esc(tx.type)}`;
+  const includePolicyPage = settings?.printIncludePolicy !== false;
+  const pFontSize   = Number(settings?.printPolicyFontSize)  || 10;
+  const pFontWeight = settings?.printPolicyFontWeight        || 'normal';
+  const pHighlight  = settings?.printPolicyHighlight         !== false;
+  const policyText = isSales
+    ? (settings?.printPolicySales    || 'البضاعة المباعة لا تُرد ولا تُستبدل إلا بعيب مصنعي ثابت.\nيُشترط الاحتفاظ بالفاتورة لأي طلب استبدال أو استرجاع.\nمدة الضمان وفقاً لسياسة الشركة.')
+    : (settings?.printPolicyPurchase || 'يُرجى مراجعة البضاعة عند الاستلام والتأكد من مطابقتها للطلب.\nأي اعتراض على الكميات أو الأسعار يجب إبلاغه خلال ٤٨ ساعة من الاستلام.\nتُعتبر هذه الفاتورة مستنداً رسمياً للمعاملة التجارية.');
+  const policyTitle = isSales ? 'سياسة المبيعات والمرتجعات والاستبدال' : 'سياسة المشتريات';
+  const policyItems = policyText.split('\n').filter(l => l.trim()).map((l, i) => {
+    const hlStyle = pHighlight ? 'background:#f0fdf4;border-right:3px solid #0f3d25;padding-right:8px;border-radius:0 3px 3px 0;' : '';
+    return `<li style="font-size:${pFontSize}px;font-weight:${pFontWeight};line-height:1.7;${hlStyle}padding:4px 8px 4px 4px">
+      <span class="num">${i+1}.</span>${l.trim()}
+    </li>`;
+  }).join('');
+  const depMethodLabel = tx.depMethod
+    ? ({ 'كاش':'كاش','فودافون كاش':'فودافون كاش','Instapay':'InstaPay','تحويل بنكي':'تحويل بنكي' }[tx.depMethod] || esc(tx.depMethod))
+    : '';
+
+  return `<div class="page">
+  <div class="hdr">
+    <div class="logo-block">
+      <div class="logo">SOULIA</div>
+      <div class="tagline">نظام إدارة المخازن</div>
     </div>
-    <!-- Info Grid -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
-      <div style="background:#f8fafb;border:1px solid #e2e8e4;border-radius:10px;padding:14px">
-        <div style="font-size:11px;color:#6b8c78;font-weight:700;margin-bottom:8px;text-transform:uppercase">${tx.type === 'مشتريات' ? 'بيانات المورد' : 'بيانات العميل'}</div>
-        <div style="font-size:14px;font-weight:700;color:#0f1f16;margin-bottom:4px">${esc(tx.client || '—')}</div>
-        ${tx.phone ? `<div style="font-size:12px;color:#6b8c78;display:flex;align-items:center;gap:3px">${ICON('send')} ${esc(tx.phone)}</div>` : ''}
-      </div>
-      <div style="background:#f8fafb;border:1px solid #e2e8e4;border-radius:10px;padding:14px">
-        <div style="font-size:11px;color:#6b8c78;font-weight:700;margin-bottom:8px;text-transform:uppercase">تفاصيل الفاتورة</div>
-        <div style="font-size:12px;margin-bottom:3px;display:flex;align-items:center;gap:3px">${ICON('clock')} <strong>${currentLang==='en'?'Date:':'التاريخ:'}</strong> ${esc((tx.date || '').slice(0, 10))}</div>
-        <div style="font-size:12px;margin-bottom:3px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg> <strong>الموظف:</strong> ${esc(tx.employee || '—')}</div>
-        <div style="font-size:12px"><span style="background:${payStatusColor}20;color:${payStatusColor};padding:2px 8px;border-radius:6px;font-weight:700;font-size:11px">${esc(isPur ? purStatusLabel : (tx.payStatus || '—'))}</span></div>
-      </div>
+    <div class="hdr-meta">
+      <span class="inv-type-badge">${typeLabel}</span>
+      ${tx.ref ? `<span class="hdr-ref"># ${esc(tx.ref)}</span>` : ''}
+      <span class="hdr-date">${dateStr}</span>
     </div>
-    <!-- Items Table -->
-    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px;border:1px solid #e2e8e4;border-radius:10px;overflow:hidden">
-      <thead>
-        <tr style="background:#00311e;color:#fff">
-          <th style="padding:10px;text-align:center;width:40px">#</th>
-          <th style="padding:10px;text-align:right">${t('product')}</th>
-          <th style="padding:10px;text-align:center;width:80px">${t('colCode')}</th>
-          <th style="padding:10px;text-align:center;width:70px">${t('qty')}</th>
-          <th style="padding:10px;text-align:left;width:100px">${t('colPrice')}</th>
-          <th style="padding:10px;text-align:left;width:110px">${t('total')}</th>
-        </tr>
-      </thead>
+  </div>
+  <div class="info-bar">
+    <div class="info-cell">
+      <div class="info-lbl">${isPur ? 'بيانات المورد' : 'بيانات العميل'}</div>
+      <div class="info-val">${esc(tx.client || '—')}</div>
+      ${tx.phone ? `<div class="info-sub">${esc(tx.phone)}</div>` : ''}
+      <div class="info-sub">الموظف: ${esc(tx.employee || '—')}</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-lbl">حالة الدفع</div>
+      <div style="margin:2px 0 4px"><span class="badge ${statusCls}">${statusLabel}</span></div>
+      ${tx.depMethod ? `<div class="info-sub">طريقة الدفع: ${esc(tx.depMethod)}</div>` : ''}
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <div class="tbl-title">تفاصيل الأصناف</div>
+    <table>
+      <thead><tr>
+        <th>#</th><th>اسم الصنف</th><th>الكود</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي (ج.م)</th>
+      </tr></thead>
       <tbody>${itemsHtml}</tbody>
     </table>
-    <!-- Financial Summary -->
-    <div style="display:flex;justify-content:flex-end">
-      <div style="min-width:280px;border:1px solid #e2e8e4;border-radius:10px;overflow:hidden">
-        ${tx.discount ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#fff7ed;font-size:13px"><span>الخصم</span><span style="color:#dc2626;font-weight:600">- ${fmtJ(tx.discount)}</span></div>` : ''}
-        ${!isPur && tx.shipCost ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#f8fafb;font-size:13px;border-top:1px solid #e2e8e4"><span>تكلفة الشحن</span><span style="font-weight:600">+ ${fmtJ(tx.shipCost)}</span></div>` : ''}
-        <div style="display:flex;justify-content:space-between;padding:12px 16px;background:#00311e;color:#fff;font-size:15px;font-weight:700"><span>الإجمالي</span><span>${fmtJ(tx.total)}</span></div>
-        ${paid > 0 ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#f0fdf4;font-size:13px;border-top:1px solid #e2e8e4"><span>${isPur ? 'المدفوع للمورد' : 'المدفوع'}</span><span style="color:#16a34a;font-weight:600">${fmtJ(paid)}</span></div>` : ''}
-        ${(tx.remaining || 0) > 0 ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#fef2f2;font-size:13px;border-top:1px solid #fecaca"><span>${isPur ? 'المتبقي للمورد' : 'المتبقي'}</span><span style="color:#dc2626;font-weight:700">${fmtJ(tx.remaining)}</span></div>` : ''}
-        ${tx.depMethod ? `<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#f8fafb;font-size:12px;border-top:1px solid #e2e8e4;color:#6b8c78"><span>${isPur ? 'طريقة الدفع للمورد' : 'طريقة الدفع'}</span><span>${esc(tx.depMethod)}</span></div>` : ''}
+  </div>
+  <div class="totals-area">
+    <div class="totals-box">
+      ${tx.discount ? `<div class="t-row"><span class="t-lbl">الخصم${tx.discountCode ? (tx.discountCode.includes('+') ? tx.discountCode.split('+').filter(Boolean).map(n => ` <span style="display:inline-block;margin-right:2px;padding:1px 5px;border-radius:8px;background:#d1fae5;color:#047857;font-size:8px;font-weight:700;border:1px solid #a7f3d0;font-family:monospace;letter-spacing:.3px">${esc(n.trim())}</span>`).join('') : ` <span style="display:inline-block;margin-right:4px;padding:1px 5px;border-radius:8px;background:#d1fae5;color:#047857;font-size:8px;font-weight:700;border:1px solid #a7f3d0;font-family:monospace;letter-spacing:.3px">${esc(tx.discountCode)}</span>`) : ''}</span><span class="t-val r">− ${fmtJ(tx.discount)}</span></div>` : ''}
+      ${!isPur && tx.shipCost ? `<div class="t-row"><span class="t-lbl">تكلفة الشحن</span><span class="t-val">+ ${fmtJ(tx.shipCost)}</span></div>` : ''}
+      <div class="t-row grand"><span>${isPur ? 'إجمالي المشتريات' : 'إجمالي الفاتورة'}</span><span>${fmtJ(tx.total)} ج.م</span></div>
+      ${paid > 0
+        ? `<div class="t-row dep-row">
+             <span class="t-lbl">${isPur ? 'المدفوع للمورد' : 'المبلغ المدفوع'}${depMethodLabel ? `<span class="dep-badge">${depMethodLabel}</span>` : ''}</span>
+             <span class="t-val g">${fmtJ(paid)}</span>
+           </div>`
+        : `<div class="t-row"><span class="t-lbl" style="color:#bbb;font-size:9px">لا يوجد دفعة مقدمة — ${isPur ? 'المبلغ بالكامل للمورد لاحقاً' : 'يُحصَّل عند التسليم'}</span></div>`}
+      ${(tx.remaining || 0) > 0
+        ? `<div class="t-row rem-row"><span class="t-lbl">${isPur ? 'المتبقي للمورد' : 'المتبقي للتحصيل'}</span><span class="t-val r">${fmtJ(tx.remaining)} ج.م</span></div>`
+        : paid > 0
+          ? `<div class="t-row dep-row"><span class="t-lbl" style="color:#15803d;font-weight:700">✓ مدفوع بالكامل</span></div>`
+          : ''}
+    </div>
+  </div>
+  ${tx.notes ? `<div class="note-wrap"><div class="note-lbl">ملاحظات</div>${esc(tx.notes)}</div>` : ''}
+  <div class="inv-foot">
+    <span>تم الإصدار بواسطة نظام SOULIA — ${dateStr}</span>
+    ${tx.employee ? `<span class="inv-foot-emp">الموظف: ${esc(tx.employee)}</span>` : ''}
+  </div>
+</div>
+${includePolicyPage ? `<div class="page" style="page-break-before:always">
+  <div class="pol-page">
+    <div class="pol-hdr">
+      <div><div class="logo">SOULIA</div><div class="tagline">نظام إدارة المخازن</div></div>
+      <div class="pol-hdr-right">
+        <div class="pol-title">${policyTitle}</div>
+        <div class="pol-sub">${tx.ref ? `مرفقة بالفاتورة # ${esc(tx.ref)} — ` : ''}${dateStr}</div>
       </div>
     </div>
-    ${tx.notes ? `<div style="margin-top:16px;padding:12px 16px;background:#f8fafb;border:1px solid #e2e8e4;border-radius:10px;font-size:12px;color:#6b8c78"><strong style="color:#0f1f16"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> ملاحظات:</strong> ${esc(tx.notes)}</div>` : ''}
-    <div style="margin-top:20px;padding-top:14px;border-top:1px solid #e2e8e4;text-align:center;font-size:11px;color:#6b8c78">شكراً لتعاملكم معنا — Soulia Inventory System</div>
-  </div>`;
+    <div class="pol-section-title">${policyTitle}</div>
+    <ol class="pol-list">${policyItems}</ol>
+    <div class="pol-foot"><span>SOULIA — نظام إدارة المخازن والمبيعات</span><span>${dateStr}</span></div>
+  </div>
+</div>` : ''}`;
 }
+
 function bulkPrintPDF() {
   if (!selectedMovIds.size) { toast('لم يتم تحديد أي حركات', true); return; }
   const selected = [...selectedMovIds].map(id => transactions.find(t => t._id === id)).filter(Boolean);
   const w = window.open('', '_blank');
   const allHtml = selected.map(tx => buildInvoiceHtml(tx)).join('');
-  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet"><style>*{box-sizing:border-box}body{margin:0;padding:0;font-family:'Cairo',sans-serif}@media print{.invoice-page{page-break-after:always}}</style></head><body>${allHtml}<script>setTimeout(()=>window.print(),500)<\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><style>${_invoiceSharedCss()}</style></head><body>${allHtml}<script>setTimeout(()=>window.print(),500)<\/script></body></html>`);
   w.document.close();
   toast(`جارٍ طباعة ${selected.length} فاتورة`);
 }
@@ -17468,7 +18767,7 @@ function bulkPrintPDF() {
 function printInvoice(id) {
   const tx = transactions.find(t => t._id === id); if (!tx) return;
   const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet"><style>*{box-sizing:border-box}body{margin:0;font-family:'Cairo',sans-serif}</style></head><body>${buildInvoiceHtml(tx)}<script>setTimeout(()=>window.print(),400)<\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><style>${_invoiceSharedCss()}</style></head><body>${buildInvoiceHtml(tx)}<script>setTimeout(()=>window.print(),400)<\/script></body></html>`);
   w.document.close();
 }
 
@@ -17664,7 +18963,7 @@ function showInvoiceDetail(id, highlightCommentId) {
             <div class="inv-summary-card">
               <div class="sum-line"><span class="lbl">إجمالي الأصناف</span><span class="val">${fmtJ(itemsTotal)}</span></div>
               ${tx.shipCost && !isPurchase ? `<div class="sum-line"><span class="lbl">تكلفة الشحن</span><span class="val">${fmtJ(tx.shipCost)}</span></div>` : ''}
-              ${tx.discount ? `<div class="sum-line discount"><span class="lbl">خصم</span><span class="val">- ${fmtJ(tx.discount)}</span></div>` : ''}
+              ${tx.discount ? `<div class="sum-line discount"><span class="lbl">خصم${tx.discountCode ? (tx.discountCode.includes('+') ? tx.discountCode.split('+').filter(Boolean).map(n => ` <span style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:12px;background:rgba(16,185,129,.1);color:#047857;font-size:.72rem;font-weight:600;border:1px solid rgba(16,185,129,.25);vertical-align:middle;font-family:monospace">${esc(n.trim())}</span>`).join('') : ` <span style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:12px;background:rgba(16,185,129,.1);color:#047857;font-size:.72rem;font-weight:600;border:1px solid rgba(16,185,129,.25);vertical-align:middle;font-family:monospace">${esc(tx.discountCode)}</span>`) : ''}</span><span class="val">- ${fmtJ(tx.discount)}</span></div>` : ''}
             </div>
             <div class="inv-summary-card highlight">
               <div class="card-label">الإجمالي الكلي</div>
@@ -17728,6 +19027,25 @@ function showInvoiceDetail(id, highlightCommentId) {
     window._highlightCommentId = null;
     setTimeout(() => highlightInvComment(cid), 200);
   }
+  if (window._highlightDiscount) {
+    window._highlightDiscount = false;
+    setTimeout(() => highlightInvDiscount(), 280);
+  }
+}
+function showInvoiceDetailWithDiscountHighlight(id) {
+  window._highlightDiscount = true;
+  showInvoiceDetail(id);
+}
+function highlightInvDiscount() {
+  const invEl = qs('#inv-detail-content');
+  if (!invEl) return;
+  const discRow = invEl.querySelector('.sum-line.discount');
+  if (!discRow) return;
+  discRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  discRow.classList.remove('disc-highlight-pulse');
+  void discRow.offsetWidth;
+  discRow.classList.add('disc-highlight-pulse');
+  setTimeout(() => discRow.classList.remove('disc-highlight-pulse'), 2200);
 }
 function highlightInvComment(commentId) {
   const overlay = qs('#inv-detail-overlay');
@@ -20005,6 +21323,7 @@ async function loadReports() {
     renderTopCustomers(r);
     renderProfitTable(r.productProfits || []);
     qs('#profit-search').value = '';
+    renderDiscountCodesReport(from, to);
   } catch (e) {
     qs('#rep-stats').innerHTML = `<div style="grid-column:1/-1" class="empty-state"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg> خطأ: ${esc(e.message)}</div>`;
   }
@@ -20018,27 +21337,197 @@ function renderReportPeriodEcho(r, from, to) {
   echo.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px">${ICON('clock')} ${currentLang==='en'?'Shown period:':'الفترة المعروضة:'}</span> <strong style="color:var(--text)">${esc(label)}</strong>${days ? ` <span style="color:var(--muted)">— ${days} ${currentLang==='en'?'days':'يوم'}</span>` : ''} <span style="color:var(--muted)">— ${r.transactionCount || 0} ${currentLang==='en'?'transactions':'حركة'}</span>`;
 }
 
+const REP_KPI_META = {
+  rep_sales: {
+    color:'#10b981', soft:'rgba(16,185,129,.1)',
+    module:'المبيعات',
+    rows:[
+      { label:'طريقة الحساب', val:'Σ itemsTotal − المرتجعات المعتمدة' },
+      { label:'السعر المستخدم', val:'itemsTotal (pre-discount) = Σ(الكمية × سعر الصنف) قبل خصم الفاتورة' },
+      { label:'يشمل', val:'المبيعات النشطة غير الملغاة في الفترة المختارة' },
+      { label:'لا يشمل', val:'رسوم الشحن — الخصومات المطبقة — الفواتير الملغاة' },
+      { label:'المصدر', val:'جدول الحركات — حقل itemsTotal' },
+    ],
+  },
+  rep_orders: {
+    color:'#0066cc', soft:'rgba(0,102,204,.1)',
+    module:'المبيعات',
+    rows:[
+      { label:'طريقة الحساب', val:'salesTx.length — عدد سجلات المبيعات في الفترة' },
+      { label:'يشمل', val:'كل فواتير المبيعات النشطة وغير الملغاة' },
+      { label:'لا يشمل', val:'الفواتير الملغاة والمجمدة — المشتريات — المرتجعات' },
+      { label:'المصدر', val:'جدول الحركات — نوع: مبيعات' },
+    ],
+  },
+  rep_avg: {
+    color:'#0891b2', soft:'rgba(8,145,178,.1)',
+    module:'المبيعات',
+    rows:[
+      { label:'طريقة الحساب', val:'grossProductSales ÷ عدد الفواتير (مقرّب لأقرب جنيه)' },
+      { label:'السعر المستخدم', val:'itemsTotal (pre-discount) — نفس أساس إجمالي المبيعات' },
+      { label:'لا يشمل', val:'رسوم الشحن لا تدخل في حساب المتوسط' },
+      { label:'المصدر', val:'جدول الحركات — حقل itemsTotal' },
+    ],
+  },
+  rep_netprofit: {
+    color:'#6d28d9', soft:'rgba(109,40,217,.1)',
+    module:'المبيعات + المخزن + المصاريف',
+    rows:[
+      { label:'طريقة الحساب', val:'الربح الإجمالي − إجمالي المصاريف المعتمدة في الفترة' },
+      { label:'الربح الإجمالي يشمل', val:'خصم ربح أصناف المرتجعات المعتمدة + خسارة الشحن' },
+      { label:'المصاريف', val:'مفلترة بنفس فترة التقرير + الحالة: معتمد فقط' },
+      { label:'المصدر', val:'المبيعات + سعر الشراء من المخزن + المصاريف' },
+    ],
+  },
+  rep_grossprofit: {
+    color:'#16a34a', soft:'rgba(22,163,74,.1)',
+    module:'المبيعات + المخزن',
+    rows:[
+      { label:'طريقة الحساب', val:'Σ (item.price − سعر الشراء) × الكمية لكل صنف مباع' },
+      { label:'السعر المستخدم', val:'item.price = سعر الصنف في الفاتورة (post-discount على مستوى الصنف)' },
+      { label:'يُخصم منه', val:'ربح أصناف المرتجعات المعتمدة (item.price − buyPrice) × qty + shipLoss' },
+      { label:'لا يشمل', val:'خصم الفاتورة الكلي (discount) — لا يُطرح مرة أخرى' },
+      { label:'المصدر', val:'أصناف الفواتير + سعر الشراء من المخزن' },
+    ],
+  },
+  rep_purchases: {
+    color:'#1565c0', soft:'rgba(21,101,192,.1)',
+    module:'المشتريات',
+    rows:[
+      { label:'طريقة الحساب', val:'Σ total لفواتير المشتريات من الموردين في الفترة' },
+      { label:'يشمل', val:'المشتريات العادية من الموردين فقط' },
+      { label:'لا يشمل', val:'حركات إرجاع المخزون (-RET) — الفواتير الملغاة والمجمدة' },
+      { label:'المصدر', val:'جدول الحركات — نوع: مشتريات (بدون -RET)' },
+    ],
+  },
+  rep_expenses: {
+    color:'#dc2626', soft:'rgba(220,38,38,.1)',
+    module:'المصاريف',
+    rows:[
+      { label:'طريقة الحساب', val:'Σ amount للمصاريف المعتمدة مفلترة بتاريخ الفترة' },
+      { label:'يشمل', val:'كل فئات المصاريف ذات الحالة "معتمد" في الفترة المختارة' },
+      { label:'لا يشمل', val:'المصاريف المعلقة أو المرفوضة' },
+      { label:'المصدر', val:'وحدة المصاريف — الحالة: معتمد + فلتر التاريخ' },
+    ],
+  },
+  rep_returns: {
+    color:'#ea580c', soft:'rgba(234,88,12,.1)',
+    module:'طلبات الاسترجاع',
+    rows:[
+      { label:'طريقة الحساب', val:'عدد وΣ r.total لطلبات الاسترجاع المعتمدة في الفترة' },
+      { label:'السعر المستخدم', val:'r.total من جدول ReturnRequest — قيمة الأصناف المرتجعة' },
+      { label:'فلتر التاريخ', val:'مبني على createdAt (تاريخ الطلب) لا تاريخ الفاتورة الأصلية' },
+      { label:'لا يشمل', val:'الطلبات المعلقة أو المرفوضة' },
+      { label:'المصدر', val:'جدول ReturnRequest — الحالة: معتمد' },
+    ],
+  },
+  rep_collected: {
+    color:'#059669', soft:'rgba(5,150,105,.1)',
+    module:'المبيعات',
+    rows:[
+      { label:'طريقة الحساب', val:'Σ deposit على فواتير المبيعات في الفترة' },
+      { label:'يشمل', val:'الدفعة المقدمة (العربون) المسجلة وقت إنشاء الفاتورة' },
+      { label:'لا يشمل', val:'دفعات الاستلام اللاحقة — المبالغ المتبقية' },
+      { label:'ملاحظة', val:'deposit رقم مستقل — لا علاقة له بـ pre/post discount' },
+      { label:'المصدر', val:'جدول الحركات — حقل deposit' },
+    ],
+  },
+  rep_remaining: {
+    color:'#f59e0b', soft:'rgba(245,158,11,.1)',
+    module:'المبيعات فقط',
+    rows:[
+      { label:'طريقة الحساب', val:'Σ remaining على فواتير المبيعات في الفترة' },
+      { label:'يشمل', val:'ديون العملاء على المبيعات النشطة فقط' },
+      { label:'فرق عن الـ Dashboard', val:'Dashboard يحسب remaining على كل الحركات (مبيعات + مشتريات) — هنا مبيعات فقط' },
+      { label:'المصدر', val:'جدول الحركات — حقل remaining (salesTx فقط)' },
+    ],
+  },
+  rep_shipping: {
+    color:'#64748b', soft:'rgba(100,116,139,.1)',
+    module:'المبيعات',
+    rows:[
+      { label:'طريقة الحساب', val:'Σ shipCost على فواتير المبيعات في الفترة' },
+      { label:'يشمل', val:'رسوم الشحن المحصلة من العميل كما أُدخلت في الفاتورة' },
+      { label:'لا يشمل', val:'فرق الشحن الفعلي (shipLoss) — يُعرض في البطاقة التالية' },
+      { label:'المصدر', val:'جدول الحركات — حقل shipCost' },
+    ],
+  },
+  rep_shiploss: {
+    color:'#9333ea', soft:'rgba(147,51,234,.1)',
+    module:'المبيعات',
+    rows:[
+      { label:'طريقة الحساب', val:'Σ shipLoss = (التكلفة الفعلية للشحن − shipCost المحصل) على المبيعات' },
+      { label:'يُخصم من', val:'الربح الإجمالي تلقائياً (grossProfit −= totalShipLoss)' },
+      { label:'ملاحظة', val:'قيمة موجبة = الشركة تحملت فرق الشحن الزائد' },
+      { label:'المصدر', val:'جدول الحركات — حقل shipLoss' },
+    ],
+  },
+};
+
 function renderReportKPIs(r) {
   const kpis = [
-    { icon: ICON('money'), label: currentLang==='en'?'Total Sales':'إجمالي المبيعات', val: fmtJ(r.totalSales), color: '#10b981', bgColor: 'rgba(16,185,129,.06)', hint: 'إجمالي المبيعات بعد المرتجعات' },
-    { icon: ICON('note'),  label: currentLang==='en'?'Invoice Count':'عدد الفواتير', val: fmtN(r.orderCount || 0), color: '#0066cc', bgColor: 'rgba(0,102,204,.06)', hint: 'عدد فواتير المبيعات في الفترة' },
-    { icon: ICON('barChart'), label: currentLang==='en'?'Avg. Invoice':'متوسط الفاتورة', val: fmtJ(r.avgOrderValue || 0), color: '#0891b2', bgColor: 'rgba(8,145,178,.06)', hint: 'متوسط قيمة الفاتورة الواحدة' },
-    { icon: ICON('award'), label: currentLang==='en'?'Net Profit':'الربح الصافي', val: fmtJ(r.netProfit), color: '#6d28d9', bgColor: 'rgba(109,40,217,.06)', hint: 'الربح بعد خصم المصاريف' },
-    { icon: ICON('chart'), label: currentLang==='en'?'Gross Profit':'الربح الإجمالي', val: fmtJ(r.grossProfit), color: '#16a34a', bgColor: 'rgba(22,163,74,.06)', hint: 'الربح قبل خصم المصاريف' },
-    { icon: ICON('cart'),  label: currentLang==='en'?'Purchases':'المشتريات', val: fmtJ(r.totalPurchases), color: '#1565c0', bgColor: 'rgba(21,101,192,.06)', hint: 'إجمالي المشتريات من الموردين' },
-    { icon: ICON('money'), label: currentLang==='en'?'Expenses':'المصاريف', val: fmtJ(r.expenseTotal), color: '#dc2626', bgColor: 'rgba(220,38,38,.06)', hint: 'إجمالي المصاريف المعتمدة' },
-    { icon: ICON('returnArr'), label: currentLang==='en'?'Returns':'المرتجعات', val: `${r.returnCount || 0} • ${fmtJ(r.totalReturns || 0)}`, color: '#ea580c', bgColor: 'rgba(234,88,12,.06)', hint: 'عدد المرتجعات والإجمالي' },
-    { icon: ICON('success'), label: currentLang==='en'?'Collected':'المحصل', val: fmtJ(r.totalDeposit), color: '#059669', bgColor: 'rgba(5,150,105,.06)', hint: 'المبالغ المحصلة من العملاء' },
-    { icon: ICON('clock'), label: currentLang==='en'?'Remaining':'المتبقي', val: fmtJ(r.totalRemaining), color: '#f59e0b', bgColor: 'rgba(245,158,11,.06)', hint: 'المبالغ المتبقية على العملاء' },
-    { icon: ICON('send'),  label: currentLang==='en'?'Collected Shipping':'الشحن المحصل', val: fmtJ(r.totalShipping || 0), color: '#64748b', bgColor: 'rgba(100,116,139,.06)', hint: 'الشحن المحصل من العملاء' },
-    { icon: ICON('box'),   label: currentLang==='en'?'Ship Difference':'فرق الشحن', val: fmtJ(r.totalShipLoss || 0), color: '#9333ea', bgColor: 'rgba(147,51,234,.06)', hint: 'الفرق المتحمل من الشركة' },
+    { id:'rep_sales',      icon:ICON('money'),     label:'إجمالي المبيعات',  val:fmtJ(r.totalSales),           color:'#10b981' },
+    { id:'rep_orders',     icon:ICON('note'),      label:'عدد الفواتير',     val:fmtN(r.orderCount || 0),      color:'#0066cc' },
+    { id:'rep_avg',        icon:ICON('barChart'),  label:'متوسط الفاتورة',   val:fmtJ(r.avgOrderValue || 0),   color:'#0891b2' },
+    { id:'rep_netprofit',  icon:ICON('award'),     label:'الربح الصافي',     val:fmtJ(r.netProfit),            color:'#6d28d9' },
+    { id:'rep_grossprofit',icon:ICON('chart'),     label:'الربح الإجمالي',   val:fmtJ(r.grossProfit),          color:'#16a34a' },
+    { id:'rep_purchases',  icon:ICON('cart'),      label:'المشتريات',        val:fmtJ(r.totalPurchases),       color:'#1565c0' },
+    { id:'rep_expenses',   icon:ICON('money'),     label:'المصاريف',         val:fmtJ(r.expenseTotal),         color:'#dc2626' },
+    { id:'rep_returns',    icon:ICON('returnArr'), label:'المرتجعات',        val:`${r.returnCount||0} • ${fmtJ(r.totalReturns||0)}`, color:'#ea580c' },
+    { id:'rep_collected',  icon:ICON('success'),   label:'المحصل (عربون)',  val:fmtJ(r.totalDeposit),         color:'#059669' },
+    { id:'rep_remaining',  icon:ICON('clock'),     label:'المتبقي',          val:fmtJ(r.totalRemaining),       color:'#f59e0b' },
+    { id:'rep_shipping',   icon:ICON('send'),      label:'الشحن المحصل',    val:fmtJ(r.totalShipping || 0),   color:'#64748b' },
+    { id:'rep_shiploss',   icon:ICON('box'),       label:'فرق الشحن',        val:fmtJ(r.totalShipLoss || 0),   color:'#9333ea' },
   ];
-  qs('#rep-stats').innerHTML = kpis.map(k => `
-    <div class="rep-kpi-card" style="background:${k.bgColor};border-top:3px solid ${k.color};padding:12px 14px;border-radius:10px;border:1px solid var(--border);cursor:help" title="${esc(k.hint)}">
-      <div style="font-size:.75rem;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:5px">${k.icon} ${k.label}</div>
+  qs('#rep-stats').innerHTML = kpis.map(k => {
+    const meta = REP_KPI_META[k.id] || {};
+    const soft = meta.soft || 'rgba(0,0,0,.04)';
+    return `
+    <div class="rep-kpi-card" style="background:${soft};border-top:3px solid ${k.color};padding:12px 14px;border-radius:10px;border:1px solid var(--border);position:relative;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+        <div style="font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:5px">${k.icon} ${esc(k.label)}</div>
+        <button class="ds-kpi-info-btn" title="تفاصيل الحقل" onclick="openRepKpiExplain('${k.id}')" style="flex-shrink:0">i</button>
+      </div>
       <div style="font-size:1.05rem;font-weight:700;color:${k.color};font-variant-numeric:tabular-nums">${k.val}</div>
-    </div>
-  `).join('');
+      <div style="font-size:.68rem;color:var(--muted);display:flex;align-items:center;gap:3px">
+        <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        ${esc(meta.module || '')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openRepKpiExplain(id) {
+  const meta = REP_KPI_META[id];
+  if (!meta) return;
+  const kpiLabel = {
+    rep_sales:'إجمالي المبيعات', rep_orders:'عدد الفواتير', rep_avg:'متوسط الفاتورة',
+    rep_netprofit:'الربح الصافي', rep_grossprofit:'الربح الإجمالي', rep_purchases:'المشتريات',
+    rep_expenses:'المصاريف', rep_returns:'المرتجعات', rep_collected:'المحصل (عربون)',
+    rep_remaining:'المتبقي', rep_shipping:'الشحن المحصل', rep_shiploss:'فرق الشحن',
+  }[id] || id;
+  const iconSvg = {
+    rep_sales:DS_KPI_ICONS.sales, rep_orders:DS_KPI_ICONS.debts, rep_avg:DS_KPI_ICONS.sales,
+    rep_netprofit:DS_KPI_ICONS.profit, rep_grossprofit:DS_KPI_ICONS.profit, rep_purchases:DS_KPI_ICONS.purchases,
+    rep_expenses:DS_KPI_ICONS.expenses, rep_returns:DS_KPI_ICONS.returns, rep_collected:DS_KPI_ICONS.collected,
+    rep_remaining:DS_KPI_ICONS.debts, rep_shipping:DS_KPI_ICONS.shipping, rep_shiploss:DS_KPI_ICONS.shipping,
+  }[id] || DS_KPI_ICONS.sales;
+
+  const overlay = qs('#ds-explain-overlay');
+  const card    = qs('#ds-explain-card');
+  card.style.setProperty('--ds-explain-color', meta.color);
+  card.style.setProperty('--ds-explain-soft',  meta.soft);
+  qs('#dse-icon-svg').innerHTML = iconSvg.replace(/<\/?svg[^>]*>/g, '');
+  qs('#dse-title').textContent  = kpiLabel;
+  qs('#dse-module').innerHTML   =
+    `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${esc(meta.module)}`;
+  qs('#dse-rows').innerHTML = (meta.rows || []).map(ro => `
+    <div class="dse-row">
+      <span class="dse-row-label">${esc(ro.label)}</span>
+      <span class="dse-row-val">${esc(ro.val)}</span>
+    </div>`).join('');
+  overlay.classList.add('active');
+  document.addEventListener('keydown', _dsExplainKeyClose);
 }
 
 function renderBestSellerCard(r) {
@@ -20332,6 +21821,88 @@ function filterProfitTable() {
   renderProfitTable(filtered);
 }
 
+function renderDiscountCodesReport(from, to) {
+  const section = qs('#rep-discount-codes-section');
+  if (!section) return;
+  const codes = settings?.discountCodes || [];
+  if (!codes.length) { section.style.display = 'none'; return; }
+
+  // Filter transactions by date range
+  let txs = (transactions || []).filter(t => !t.cancelled && t.discountCode && Number(t.discount) > 0);
+  if (from) txs = txs.filter(t => (t.date || t.createdAt || '').slice(0, 10) >= from);
+  if (to) txs = txs.filter(t => (t.date || t.createdAt || '').slice(0, 10) <= to);
+
+  // Build per-code stats from actual transactions
+  const codeStats = new Map();
+  txs.forEach(t => {
+    const name = (t.discountCode || '').trim();
+    if (!name) return;
+    if (!codeStats.has(name)) codeStats.set(name, { usageCount: 0, totalDiscount: 0, totalOrderValue: 0 });
+    const s = codeStats.get(name);
+    s.usageCount++;
+    s.totalDiscount += Number(t.discount) || 0;
+    s.totalOrderValue += Number(t.total) || 0;
+  });
+
+  // Build rows: codes that appear in transactions + show all active codes with 0 usage
+  const rows = [];
+  codes.forEach(c => {
+    const s = codeStats.get(c.code) || { usageCount: 0, totalDiscount: 0, totalOrderValue: 0 };
+    rows.push({ code: c, ...s });
+  });
+  // Also include codes in transactions that no longer exist in settings
+  codeStats.forEach((s, codeName) => {
+    if (!codes.find(c => c.code === codeName)) {
+      rows.push({ code: { code: codeName, description: '', type: '', value: 0, active: false }, ...s });
+    }
+  });
+  rows.sort((a, b) => b.usageCount - a.usageCount || b.totalDiscount - a.totalDiscount);
+
+  const usedRows = rows.filter(r => r.usageCount > 0);
+  const periodLabel = qs('#rep-dc-period-label');
+  if (periodLabel) {
+    const count = usedRows.length;
+    const totalDisc = usedRows.reduce((s, r) => s + r.totalDiscount, 0);
+    periodLabel.textContent = count ? `${count} كود نشط — خصم إجمالي: ${fmtJ(totalDisc)} ج` : '';
+  }
+
+  section.style.display = '';
+  const empty = qs('#rep-dc-empty');
+  const tbody = qs('#rep-discount-codes-tbody');
+  if (!rows.length || !usedRows.length) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  tbody.innerHTML = rows.map((r, i) => {
+    const c = r.code;
+    const typeLabel = c.type === 'percent' ? `${c.value}%` : c.type === 'fixed' ? `${fmtJ(c.value)} ج` : '—';
+    const typeBadge = c.type === 'percent'
+      ? `<span style="padding:2px 7px;border-radius:10px;background:rgba(8,145,178,.1);color:#0369a1;font-size:.75rem;font-weight:600">${typeLabel}</span>`
+      : c.type === 'fixed'
+      ? `<span style="padding:2px 7px;border-radius:10px;background:rgba(109,40,217,.1);color:#7c3aed;font-size:.75rem;font-weight:600">${typeLabel}</span>`
+      : `<span style="color:var(--muted);font-size:.78rem">—</span>`;
+    const activeBadge = c.active
+      ? `<span style="padding:2px 7px;border-radius:10px;background:rgba(16,185,129,.1);color:#047857;font-size:.75rem;font-weight:600">نشط</span>`
+      : `<span style="padding:2px 7px;border-radius:10px;background:rgba(239,68,68,.08);color:#dc2626;font-size:.75rem;font-weight:500">متوقف</span>`;
+    const usageColor = r.usageCount > 10 ? '#16a34a' : r.usageCount > 3 ? '#0891b2' : r.usageCount > 0 ? 'var(--text)' : 'var(--muted)';
+    return `<tr style="border-bottom:1px solid var(--border);transition:background .2s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <td style="padding:8px 10px;text-align:center;color:var(--muted);font-size:.8rem">${i + 1}</td>
+      <td style="padding:8px 10px">
+        <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;background:rgba(16,185,129,.08);color:#047857;font-size:.8rem;font-weight:700;border:1px solid rgba(16,185,129,.2);font-family:monospace;letter-spacing:.4px">${esc(c.code)}</span>
+      </td>
+      <td style="padding:8px 10px;color:var(--muted);font-size:.82rem">${esc(c.description || '—')}</td>
+      <td style="padding:8px 10px;text-align:center">${typeBadge}</td>
+      <td style="padding:8px 10px;text-align:center;font-weight:700;font-size:.92rem;color:${usageColor}">${fmtN(r.usageCount)}</td>
+      <td style="padding:8px 10px;text-align:right;color:#dc2626;font-weight:600">${r.totalDiscount > 0 ? '− ' + fmtJ(r.totalDiscount) : '<span style="color:var(--muted)">—</span>'}</td>
+      <td style="padding:8px 10px;text-align:right;color:#0066cc;font-weight:500">${r.totalOrderValue > 0 ? fmtJ(r.totalOrderValue) : '<span style="color:var(--muted)">—</span>'}</td>
+      <td style="padding:8px 10px;text-align:center">${activeBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
 function exportReportData() {
   if (!currentReportData) { toast('لا توجد بيانات للتصدير', true); return; }
   const r = currentReportData;
@@ -20438,6 +22009,7 @@ const MOV_COLS = [
   { id:'type',      i18n:'type',              ar:'النوع',          en:'Type' },
   { id:'status',    i18n:'status',            ar:'الحالة',         en:'Status' },
   { id:'tag',       i18n:null,                ar:'TAG',           en:'Tag' },
+  { id:'discount',  i18n:null,                ar:'الخصم',          en:'Discount' },
   { id:'employee',  i18n:'colEmployee',       ar:'الموظف',         en:'Employee' },
 ];
 function _getHiddenMovCols() {
@@ -21197,6 +22769,29 @@ function renderSettings() {
   const companies = settings.shipCos || [];
   qs('#set-cairo-price').value = settings.cairoPrice || 0;
   qs('#set-gov-price').value = settings.govPrice || 0;
+  // ── Print / policy settings ──────────────────────────────
+  const ppEl = qs('#set-print-policy');
+  if (ppEl) ppEl.checked = (settings.printIncludePolicy !== false);
+
+  const pSales = qs('#set-policy-sales');
+  if (pSales) pSales.value = settings.printPolicySales ?? '';
+
+  const pPur = qs('#set-policy-purchase');
+  if (pPur) pPur.value = settings.printPolicyPurchase ?? '';
+
+  const pFsEl = qs('#set-policy-font-size');
+  if (pFsEl) {
+    const fv = String(settings.printPolicyFontSize ?? 10);
+    pFsEl.value = fv;
+    const lbl = qs('#policy-font-size-val');
+    if (lbl) lbl.textContent = fv;
+  }
+
+  const pFwEl = qs('#set-policy-font-weight');
+  if (pFwEl) pFwEl.value = settings.printPolicyFontWeight ?? 'normal';
+
+  const pHlEl = qs('#set-policy-highlight');
+  if (pHlEl) pHlEl.checked = (settings.printPolicyHighlight !== false);
   qs('#ship-table tbody').innerHTML = companies.length ? companies.map((c, i) => `
     <tr><td>${esc(c.name)}</td>
       <td><input type="number" value="${c.cairo || c.cairoPrice || 0}" style="width:100px" onchange="updateShipPrice(${i},'cairo',this.value)"></td>
@@ -21213,6 +22808,308 @@ function renderSettings() {
   _initLockTogglesUI();
   annRenderSettingsUI();
   renderTagMgmt();
+  renderDiscountCodesSection();
+}
+
+// ─── Discount Codes Management ───────────────────────────────────────────────
+
+function renderDiscountCodesSection() {
+  const section = qs('#discount-codes-section');
+  if (!section) return;
+  section.style.display = isAdmin() ? 'block' : 'none';
+  if (!isAdmin()) return;
+  renderDiscountCodes();
+}
+
+function renderDiscountCodes() {
+  const tbody = qs('#dc-table-body');
+  if (!tbody) return;
+  const q = (qs('#dc-filter-q')?.value || '').trim().toLowerCase();
+  const typeFilter = qs('#dc-filter-type')?.value || '';
+  const statusFilter = qs('#dc-filter-status')?.value || '';
+  const now = new Date();
+  const codes = (settings.discountCodes || []).filter(c => {
+    if (q && !c.code.toLowerCase().includes(q) && !(c.description || '').toLowerCase().includes(q)) return false;
+    if (typeFilter && c.type !== typeFilter) return false;
+    if (statusFilter) {
+      const expired = c.endDate && new Date(c.endDate) < now;
+      if (statusFilter === 'active' && (!c.active || expired)) return false;
+      if (statusFilter === 'inactive' && c.active) return false;
+      if (statusFilter === 'expired' && !expired) return false;
+    }
+    return true;
+  });
+
+  if (!codes.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--muted);font-size:.85rem">لا توجد أكواد خصم${q || typeFilter || statusFilter ? ' تطابق الفلتر' : ''}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = codes.map(c => {
+    const expired = c.endDate && new Date(c.endDate) < now;
+    const notStarted = c.startDate && new Date(c.startDate) > now;
+    let statusBadge;
+    if (expired) {
+      statusBadge = `<span class="badge" style="background:rgba(239,68,68,.1);color:#ef4444;font-size:.72rem">منتهي</span>`;
+    } else if (!c.active) {
+      statusBadge = `<span class="badge" style="background:rgba(156,163,175,.12);color:var(--muted);font-size:.72rem">معطل</span>`;
+    } else if (notStarted) {
+      statusBadge = `<span class="badge" style="background:rgba(245,158,11,.1);color:#d97706;font-size:.72rem">لم يبدأ</span>`;
+    } else {
+      statusBadge = `<span class="badge badge-status-collected" style="font-size:.72rem">مفعل</span>`;
+    }
+    const valDisplay = c.type === 'percent' ? `${c.value}%` : fmtJ(c.value) + ' ج';
+    const startFmt = c.startDate ? new Date(c.startDate).toLocaleDateString('ar-EG') : '—';
+    const endFmt = c.endDate ? new Date(c.endDate).toLocaleDateString('ar-EG') : '—';
+    const validRange = c.startDate || c.endDate ? `${startFmt} → ${endFmt}` : 'بلا تاريخ';
+    return `<tr style="border-bottom:1px solid var(--border);transition:background .1s" onmouseenter="this.style.background='var(--bg-alt)'" onmouseleave="this.style.background=''">
+      <td style="padding:10px 14px">
+        <span style="font-weight:700;letter-spacing:.5px;font-family:monospace;color:var(--primary)">${esc(c.code)}</span>
+        ${c.description ? `<div style="font-size:.73rem;color:var(--muted);margin-top:2px">${esc(c.description)}</div>` : ''}
+      </td>
+      <td style="padding:10px 14px;color:var(--muted);font-size:.82rem">${c.type === 'percent' ? 'نسبة %' : 'مبلغ ثابت'}</td>
+      <td style="padding:10px 14px;font-weight:700;color:var(--green)">${valDisplay}</td>
+      <td style="padding:10px 14px;font-size:.78rem;color:var(--muted)">${validRange}</td>
+      <td style="padding:10px 14px;text-align:center">
+        <span style="font-weight:700">${c.usageCount || 0}</span>
+        ${c.usageCount > 0 ? `<button class="btn-icon" style="margin-inline-start:4px;font-size:.72rem;color:var(--primary)" onclick="showCodeUsageHistory('${esc(c.id)}')" title="تفاصيل الاستخدام">📋</button>` : ''}
+      </td>
+      <td style="padding:10px 14px">${statusBadge}</td>
+      <td style="padding:10px 14px">
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn btn-outline btn-sm" style="font-size:.75rem;padding:4px 8px" onclick="openEditDiscountCodeModal('${esc(c.id)}')">تعديل</button>
+          <button class="btn btn-sm" style="font-size:.75rem;padding:4px 8px;background:${c.active ? 'rgba(245,158,11,.1)' : 'rgba(16,185,129,.1)'};color:${c.active ? '#d97706' : '#059669'};border:1px solid ${c.active ? 'rgba(245,158,11,.25)' : 'rgba(16,185,129,.25)'}" onclick="toggleDiscountCodeActive('${esc(c.id)}',${!c.active})">${c.active ? 'تعطيل' : 'تفعيل'}</button>
+          <button class="btn-icon btn-danger" style="font-size:.82rem" onclick="deleteDiscountCode('${esc(c.id)}','${esc(c.code)}')" title="حذف">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openAddDiscountCodeModal() {
+  openModal(`
+    <h3 style="margin-bottom:16px">إضافة كود خصم جديد</h3>
+    <div class="form-group">
+      <label>الكود <span style="color:var(--red)">*</span></label>
+      <input type="text" id="dc-new-code" placeholder="مثال: SUMMER25" maxlength="30" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+      <div class="field-hint">أحرف وأرقام فقط، بدون مسافات</div>
+    </div>
+    <div class="form-group">
+      <label>الوصف (اختياري)</label>
+      <input type="text" id="dc-new-desc" placeholder="مثال: خصم الصيف 2026" maxlength="80">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group" style="margin-bottom:0">
+        <label>نوع الخصم <span style="color:var(--red)">*</span></label>
+        <select id="dc-new-type" onchange="updateDcValueLabel()">
+          <option value="percent">نسبة (%)</option>
+          <option value="fixed">مبلغ ثابت (ج)</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label id="dc-new-value-label">القيمة (%) <span style="color:var(--red)">*</span></label>
+        <input type="number" id="dc-new-value" min="0" placeholder="0">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+      <div class="form-group" style="margin-bottom:0">
+        <label>تاريخ البدء</label>
+        <input type="date" id="dc-new-start">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>تاريخ الانتهاء</label>
+        <input type="date" id="dc-new-end">
+      </div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:14px;cursor:pointer;font-weight:500">
+      <input type="checkbox" id="dc-new-active" checked style="width:auto;margin:0">
+      تفعيل الكود فور الإضافة
+    </label>
+    <div class="flex gap-8 mt-16">
+      <button class="btn btn-primary" onclick="saveNewDiscountCode()">إضافة</button>
+      <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+    </div>`);
+}
+
+function updateDcValueLabel() {
+  const type = qs('#dc-new-type')?.value || 'percent';
+  const lbl = qs('#dc-new-value-label');
+  if (lbl) lbl.innerHTML = `القيمة ${type === 'percent' ? '(%)' : '(ج)'} <span style="color:var(--red)">*</span>`;
+}
+
+async function saveNewDiscountCode() {
+  const code = (qs('#dc-new-code')?.value || '').trim().toUpperCase();
+  const desc = (qs('#dc-new-desc')?.value || '').trim();
+  const type = qs('#dc-new-type')?.value || 'percent';
+  const value = Number(qs('#dc-new-value')?.value) || 0;
+  const startDate = qs('#dc-new-start')?.value || null;
+  const endDate = qs('#dc-new-end')?.value || null;
+  const active = qs('#dc-new-active')?.checked !== false;
+
+  if (!code) { toast('أدخل الكود', true); return; }
+  if (!/^[A-Z0-9_-]+$/.test(code)) { toast('الكود يجب أن يحتوي على أحرف إنجليزية وأرقام فقط', true); return; }
+  if (value <= 0) { toast('أدخل قيمة الخصم', true); return; }
+  if (type === 'percent' && value > 100) { toast('نسبة الخصم لا تتجاوز 100%', true); return; }
+
+  try {
+    const codes = await api('/settings/discount-codes', {
+      method: 'POST',
+      body: JSON.stringify({ code, description: desc, type, value, startDate, endDate, active })
+    });
+    settings.discountCodes = codes;
+    renderDiscountCodes();
+    closeModal();
+    toast('تم إضافة الكود بنجاح ✅');
+  } catch (e) {
+    toast('خطأ: ' + (e.message || 'فشل الحفظ'), true);
+  }
+}
+
+function openEditDiscountCodeModal(id) {
+  const c = (settings.discountCodes || []).find(x => x.id === id);
+  if (!c) { toast('الكود غير موجود', true); return; }
+  openModal(`
+    <h3 style="margin-bottom:16px">تعديل كود الخصم</h3>
+    <div class="form-group">
+      <label>الكود <span style="color:var(--red)">*</span></label>
+      <input type="text" id="dc-edit-code" value="${esc(c.code)}" maxlength="30" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+    </div>
+    <div class="form-group">
+      <label>الوصف</label>
+      <input type="text" id="dc-edit-desc" value="${esc(c.description || '')}" maxlength="80">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group" style="margin-bottom:0">
+        <label>نوع الخصم</label>
+        <select id="dc-edit-type" onchange="updateDcEditValueLabel()">
+          <option value="percent"${c.type==='percent'?' selected':''}>نسبة (%)</option>
+          <option value="fixed"${c.type==='fixed'?' selected':''}>مبلغ ثابت (ج)</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label id="dc-edit-value-label">القيمة ${c.type==='percent'?'(%)':'(ج)'}</label>
+        <input type="number" id="dc-edit-value" value="${c.value}" min="0">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+      <div class="form-group" style="margin-bottom:0">
+        <label>تاريخ البدء</label>
+        <input type="date" id="dc-edit-start" value="${c.startDate ? c.startDate.slice(0,10) : ''}">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>تاريخ الانتهاء</label>
+        <input type="date" id="dc-edit-end" value="${c.endDate ? c.endDate.slice(0,10) : ''}">
+      </div>
+    </div>
+    <div class="flex gap-8 mt-16">
+      <button class="btn btn-primary" onclick="saveEditDiscountCode('${esc(id)}')">حفظ</button>
+      <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+    </div>`);
+}
+
+function updateDcEditValueLabel() {
+  const type = qs('#dc-edit-type')?.value || 'percent';
+  const lbl = qs('#dc-edit-value-label');
+  if (lbl) lbl.textContent = `القيمة ${type === 'percent' ? '(%)' : '(ج)'}`;
+}
+
+async function saveEditDiscountCode(id) {
+  const code = (qs('#dc-edit-code')?.value || '').trim().toUpperCase();
+  const desc = (qs('#dc-edit-desc')?.value || '').trim();
+  const type = qs('#dc-edit-type')?.value || 'percent';
+  const value = Number(qs('#dc-edit-value')?.value) || 0;
+  const startDate = qs('#dc-edit-start')?.value || null;
+  const endDate = qs('#dc-edit-end')?.value || null;
+
+  if (!code) { toast('أدخل الكود', true); return; }
+  if (!/^[A-Z0-9_-]+$/.test(code)) { toast('الكود يجب أن يحتوي على أحرف إنجليزية وأرقام فقط', true); return; }
+  if (value <= 0) { toast('أدخل قيمة الخصم', true); return; }
+  if (type === 'percent' && value > 100) { toast('نسبة الخصم لا تتجاوز 100%', true); return; }
+
+  try {
+    const codes = await api(`/settings/discount-codes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ code, description: desc, type, value, startDate, endDate })
+    });
+    settings.discountCodes = codes;
+    renderDiscountCodes();
+    closeModal();
+    toast('تم تحديث الكود بنجاح ✅');
+  } catch (e) {
+    toast('خطأ: ' + (e.message || 'فشل الحفظ'), true);
+  }
+}
+
+async function toggleDiscountCodeActive(id, active) {
+  try {
+    const codes = await api(`/settings/discount-codes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ active })
+    });
+    settings.discountCodes = codes;
+    renderDiscountCodes();
+    toast(active ? 'تم تفعيل الكود ✅' : 'تم تعطيل الكود');
+  } catch (e) {
+    toast('خطأ: ' + (e.message || 'فشل التحديث'), true);
+  }
+}
+
+async function deleteDiscountCode(id, code) {
+  if (!confirm(`هل تريد حذف كود الخصم "${code}"؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+  try {
+    const res = await api(`/settings/discount-codes/${id}`, { method: 'DELETE' });
+    settings.discountCodes = res.discountCodes;
+    renderDiscountCodes();
+    toast('تم حذف الكود بنجاح');
+  } catch (e) {
+    toast('خطأ: ' + (e.message || 'فشل الحذف'), true);
+  }
+}
+
+function showCodeUsageHistory(id) {
+  const c = (settings.discountCodes || []).find(x => x.id === id);
+  if (!c) return;
+  const history = c.usageHistory || [];
+  const histHtml = history.length ? `
+    <div style="max-height:320px;overflow-y:auto;margin-top:12px">
+      <table style="width:100%;font-size:.8rem;border-collapse:collapse">
+        <thead><tr style="background:var(--bg-alt)">
+          <th style="padding:8px;text-align:right">الفاتورة</th>
+          <th style="padding:8px;text-align:right">العميل</th>
+          <th style="padding:8px;text-align:right">الخصم</th>
+          <th style="padding:8px;text-align:right">التاريخ</th>
+          <th style="padding:8px;text-align:right">بواسطة</th>
+        </tr></thead>
+        <tbody>
+          ${history.map(h => `<tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:8px;font-weight:600;color:var(--primary)">${h.txRef ? '#' + esc(h.txRef) : '—'}</td>
+            <td style="padding:8px">${esc(h.client || '—')}</td>
+            <td style="padding:8px;color:var(--green);font-weight:600">${fmtJ(h.amount || 0)}</td>
+            <td style="padding:8px;color:var(--muted);font-size:.75rem">${h.at ? new Date(h.at).toLocaleDateString('ar-EG') : '—'}</td>
+            <td style="padding:8px;color:var(--muted)">${esc(h.by || '—')}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>` : '<p style="color:var(--muted);font-size:.85rem;margin-top:12px">لم يُستخدم هذا الكود بعد</p>';
+
+  const auditHtml = (c.auditLog || []).length ? `
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:8px">سجل التعديلات</div>
+      <div style="display:flex;flex-direction:column;gap:4px;max-height:120px;overflow-y:auto">
+        ${c.auditLog.map(a => `<div style="font-size:.75rem;color:var(--muted);display:flex;gap:8px">
+          <span style="color:var(--text);font-weight:500">${esc(a.action)}</span>
+          <span>بواسطة ${esc(a.by)}</span>
+          <span>${a.at ? new Date(a.at).toLocaleDateString('ar-EG') : ''}</span>
+        </div>`).join('')}
+      </div>
+    </div>` : '';
+
+  openModal(`
+    <h3 style="margin-bottom:4px">كود: <span style="color:var(--primary)">${esc(c.code)}</span></h3>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:0">استُخدم ${c.usageCount || 0} مرة</p>
+    ${histHtml}
+    ${auditHtml}
+    <div class="flex gap-8 mt-16"><button class="btn btn-outline" onclick="closeModal()">إغلاق</button></div>`);
 }
 
 function renderTagMgmt() {
@@ -21340,13 +23237,35 @@ async function saveSettings() {
   if (!settings) settings = {};
   const payload = { ...settings };
   delete payload.vaultPass; delete payload._id; delete payload.__v; delete payload.createdAt; delete payload.updatedAt;
-  try { 
-    settings = await api('/settings', { method: 'PUT', body: JSON.stringify(payload) }); 
-    toast('تم حفظ الإعدادات'); 
+  try {
+    const saved = await api('/settings', { method: 'PUT', body: JSON.stringify(payload) });
+    // Merge: keep local values for any key the server may have omitted (e.g. empty-string fields on old documents)
+    settings = Object.assign({}, settings, saved);
+    toast('تم حفظ الإعدادات');
   }
-  catch (e) { 
-    toast('خطأ في الحفظ: ' + e.message, true); 
+  catch (e) {
+    toast('خطأ في الحفظ: ' + e.message, true);
   }
+}
+
+async function savePrintPolicySetting() {
+  if (!settings) settings = {};
+  // Read all values from DOM before saving so they survive the merge
+  const incl   = !!(qs('#set-print-policy')?.checked);
+  const sales  = qs('#set-policy-sales')?.value ?? '';
+  const pur    = qs('#set-policy-purchase')?.value ?? '';
+  const fs     = Number(qs('#set-policy-font-size')?.value)  || 10;
+  const fw     = qs('#set-policy-font-weight')?.value        || 'normal';
+  const hl     = !!(qs('#set-policy-highlight')?.checked);
+  settings.printIncludePolicy   = incl;
+  settings.printPolicySales     = sales;
+  settings.printPolicyPurchase  = pur;
+  settings.printPolicyFontSize  = fs;
+  settings.printPolicyFontWeight = fw;
+  settings.printPolicyHighlight  = hl;
+  await saveSettings();
+  // Re-populate the DOM from the now-merged settings object
+  renderSettings();
 }
 
 async function createBackupNow() {

@@ -58,6 +58,8 @@ export interface DashboardData {
   totalShipLoss: number;
   returnCount: number;
   totalReturns: number;
+  totalDiscounts: number;
+  totalDeposit: number;
   lowStockItems: InventoryItem[];
   recentTransactions: TransactionDocument[];
   topSellers: { name: string; qty: number }[];
@@ -1484,6 +1486,8 @@ export class TransactionsService {
       (sum, t) => sum + (t.remaining || 0),
       0,
     );
+    const totalDiscounts = salesTx.reduce((s, t) => s + (Number(t.discount) || 0), 0);
+    const totalDeposit = salesTx.reduce((s, t) => s + (Number(t.deposit) || 0), 0);
     const products = await this.productsService.findAll();
     let grossProfit = 0;
     salesTx.forEach((tx) => {
@@ -1564,6 +1568,8 @@ export class TransactionsService {
       totalShipLoss,
       returnCount: approvedReturns.length,
       totalReturns,
+      totalDiscounts,
+      totalDeposit,
       lowStockItems,
       recentTransactions,
       topSellers,

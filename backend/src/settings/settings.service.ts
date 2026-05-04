@@ -1,11 +1,12 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
 import { ObjectId } from 'mongodb';
 import { Settings, SettingsDocument } from './schemas/settings.schema';
-import { UpdateSettingsDto } from './dto/settings.dto';
+import { UpdateSettingsDto, DiscountCodeDto } from './dto/settings.dto';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 
 const DEFAULT_SHIP_COS = [
   { name: 'Bosta', cairo: 110, gov: 150 },
@@ -48,9 +49,13 @@ export class SettingsService {
   }
 
   async updateSettings(dto: UpdateSettingsDto, rawBody?: Record<string, unknown>): Promise<SettingsDocument> {
-    const settings = await this.getSettings();
-    Object.assign(settings, dto);
-    return settings.save();
+    const existing = await this.getSettings();
+    const updated = await this.settingsModel.findByIdAndUpdate(
+      existing._id,
+      { $set: dto as Record<string, unknown> },
+      { new: true, upsert: false },
+    ).exec();
+    return updated ?? existing;
   }
 
   async setStaffDiscount(value: boolean): Promise<SettingsDocument> {
@@ -90,6 +95,134 @@ export class SettingsService {
       (settings.vaultInstapay || 0) +
       (settings.vaultBank || 0);
     return settings.save();
+  }
+
+  async getDiscountCodes(): Promise<SettingsDocument['discountCodes']> {
+    const settings = await this.getSettings();
+    return settings.discountCodes || [];
+  }
+
+  async addDiscountCode(dto: DiscountCodeDto, by: string): Promise<SettingsDocument> {
+    const settings = await this.getSettings();
+    const codes = settings.discountCodes || [];
+
+    const upper = dto.code.trim().toUpperCase();
+    if (codes.some(c => c.code.toUpperCase() === upper)) {
+      throw new BadRequestException(`كود الخصم "${upper}" موجود مسبقاً`);
+    }
+
+    const now = new Date().toISOString();
+    const newCode = {
+      id: crypto.randomUUID(),
+      code: upper,
+      description: dto.description || '',
+      type: dto.type,
+      value: dto.value,
+      startDate: dto.startDate || null,
+      endDate: dto.endDate || null,
+      active: dto.active !== false,
+      usageCount: 0,
+      createdBy: by,
+      createdAt: now,
+      auditLog: [{ action: 'created', by, at: now }],
+      usageHistory: [],
+    };
+
+    codes.push(newCode as any);
+    settings.discountCodes = codes;
+    settings.markModified('discountCodes');
+    return settings.save();
+  }
+
+  async updateDiscountCode(id: string, dto: Partial<DiscountCodeDto>, by: string): Promise<SettingsDocument> {
+    const settings = await this.getSettings();
+    const codes = settings.discountCodes || [];
+    const idx = codes.findIndex(c => c.id === id);
+    if (idx === -1) throw new NotFoundException('كود الخصم غير موجود');
+
+    const now = new Date().toISOString();
+    const existing = codes[idx] as any;
+
+    if (dto.code !== undefined) {
+      const upper = dto.code.trim().toUpperCase();
+      if (codes.some((c, i) => i !== idx && c.code.toUpperCase() === upper)) {
+        throw new BadRequestException(`كود الخصم "${upper}" موجود مسبقاً`);
+      }
+      existing.code = upper;
+    }
+    if (dto.description !== undefined) existing.description = dto.description;
+    if (dto.type !== undefined) existing.type = dto.type;
+    if (dto.value !== undefined) existing.value = dto.value;
+    if (dto.startDate !== undefined) existing.startDate = dto.startDate || null;
+    if (dto.endDate !== undefined) existing.endDate = dto.endDate || null;
+    if (dto.active !== undefined) {
+      const prevActive = existing.active;
+      existing.active = dto.active;
+      if (prevActive !== dto.active) {
+        existing.auditLog = existing.auditLog || [];
+        existing.auditLog.push({ action: dto.active ? 'activated' : 'deactivated', by, at: now });
+      }
+    }
+
+    existing.auditLog = existing.auditLog || [];
+    if (Object.keys(dto).some(k => k !== 'active')) {
+      existing.auditLog.push({ action: 'updated', by, at: now });
+    }
+
+    codes[idx] = existing;
+    settings.discountCodes = codes;
+    settings.markModified('discountCodes');
+    return settings.save();
+  }
+
+  async deleteDiscountCode(id: string, by: string): Promise<SettingsDocument> {
+    const settings = await this.getSettings();
+    const codes = settings.discountCodes || [];
+    const idx = codes.findIndex(c => c.id === id);
+    if (idx === -1) throw new NotFoundException('كود الخصم غير موجود');
+
+    codes.splice(idx, 1);
+    settings.discountCodes = codes;
+    settings.markModified('discountCodes');
+    return settings.save();
+  }
+
+  async recordDiscountUsage(
+    codeId: string,
+    usage: { txRef: string; txId: string; client: string; amount: number; by: string },
+  ): Promise<void> {
+    const settings = await this.getSettings();
+    const codes = settings.discountCodes || [];
+    const idx = codes.findIndex(c => c.id === codeId);
+    if (idx === -1) return;
+
+    const entry = codes[idx] as any;
+    entry.usageCount = (entry.usageCount || 0) + 1;
+    entry.usageHistory = entry.usageHistory || [];
+    entry.usageHistory.push({ ...usage, at: new Date().toISOString() });
+    codes[idx] = entry;
+    settings.discountCodes = codes;
+    settings.markModified('discountCodes');
+    await settings.save();
+  }
+
+  async validateDiscountCode(code: string): Promise<{ valid: boolean; data?: any; message?: string }> {
+    const settings = await this.getSettings();
+    const codes = settings.discountCodes || [];
+    const found = (codes as any[]).find(c => c.code.toUpperCase() === code.toUpperCase());
+
+    if (!found) return { valid: false, message: 'كود الخصم غير موجود' };
+    if (!found.active) return { valid: false, message: 'كود الخصم غير مفعل' };
+
+    const now = new Date();
+    if (found.startDate && new Date(found.startDate) > now) {
+      return { valid: false, message: 'كود الخصم لم يبدأ بعد' };
+    }
+    if (found.endDate && new Date(found.endDate) < now) {
+      return { valid: false, message: 'كود الخصم منتهي الصلاحية' };
+    }
+
+    return { valid: true, data: found };
   }
 
   private getBackupDir(): string {

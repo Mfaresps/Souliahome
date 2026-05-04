@@ -76,6 +76,15 @@ export class Transaction {
   @Prop({ default: 0 })
   discount: number;
 
+  @Prop({ default: '' })
+  discountCodeId: string; // ID of applied discount code (empty if manual)
+
+  @Prop({ default: '' })
+  discountCode: string; // Code string for display (e.g. "SUMMER15")
+
+  @Prop({ default: '' })
+  discountCodeType: string; // 'percent' | 'fixed' | '' (for code-applied discounts)
+
   @Prop()
   depMethod: string;
 

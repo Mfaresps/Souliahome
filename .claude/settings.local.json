@@ -24,7 +24,8 @@
       "Bash(curl -s \"http://localhost:3000/api/auth/users-status\")",
       "WebFetch(domain:www.svgrepo.com)",
       "Bash(curl -s \"https://www.svgrepo.com/svg/529813/dashboard-square\")",
-      "Bash(npx nest:*)"
+      "Bash(npx nest:*)",
+      "PowerShell(\\(Get-Content 'D:\\\\website\\\\Souliahome\\\\frontend\\\\public\\\\index.html' | Measure-Object -Line\\).Lines)"
     ]
   }
 }

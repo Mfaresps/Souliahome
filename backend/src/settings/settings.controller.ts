@@ -18,7 +18,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { SettingsService } from './settings.service';
-import { UpdateSettingsDto } from './dto/settings.dto';
+import { UpdateSettingsDto, DiscountCodeDto } from './dto/settings.dto';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
@@ -127,5 +127,56 @@ export class SettingsController {
       throw new UnauthorizedException('كلمة المرور خاطئة');
     }
     return await this.settingsService.uploadBackup(file);
+  }
+
+  // ─── Discount Codes ───────────────────────────────────────────────────────
+
+  @Get('discount-codes')
+  async getDiscountCodes() {
+    return this.settingsService.getDiscountCodes();
+  }
+
+  @Roles('admin')
+  @Post('discount-codes')
+  async addDiscountCode(@Body() dto: DiscountCodeDto, @Req() req: any) {
+    const by = req.user?.name || req.user?.username || 'admin';
+    const updated = await this.settingsService.addDiscountCode(dto, by);
+    return updated.discountCodes;
+  }
+
+  @Roles('admin')
+  @Put('discount-codes/:id')
+  async updateDiscountCode(
+    @Param('id') id: string,
+    @Body() dto: Partial<DiscountCodeDto>,
+    @Req() req: any,
+  ) {
+    const by = req.user?.name || req.user?.username || 'admin';
+    const updated = await this.settingsService.updateDiscountCode(id, dto, by);
+    return updated.discountCodes;
+  }
+
+  @Roles('admin')
+  @Delete('discount-codes/:id')
+  async deleteDiscountCode(@Param('id') id: string, @Req() req: any) {
+    const by = req.user?.name || req.user?.username || 'admin';
+    const updated = await this.settingsService.deleteDiscountCode(id, by);
+    return { success: true, discountCodes: updated.discountCodes };
+  }
+
+  @Post('discount-codes/validate')
+  async validateDiscountCode(@Body('code') code: string) {
+    return this.settingsService.validateDiscountCode(code);
+  }
+
+  @Post('discount-codes/:id/record-usage')
+  async recordDiscountUsage(
+    @Param('id') id: string,
+    @Body() body: { txRef: string; txId: string; client: string; amount: number },
+    @Req() req: any,
+  ) {
+    const by = req.user?.name || req.user?.username || '';
+    await this.settingsService.recordDiscountUsage(id, { ...body, by });
+    return { success: true };
   }
 }
