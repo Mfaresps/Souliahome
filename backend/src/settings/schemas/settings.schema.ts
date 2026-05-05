@@ -67,6 +67,47 @@ export class DiscountCode {
   }>;
 }
 
+export class DiscountBundle {
+  @Prop({ required: true })
+  id: string; // UUID
+
+  @Prop({ required: true })
+  name: string; // Bundle display name, e.g. "باقة الصيف"
+
+  @Prop({ default: '' })
+  description: string;
+
+  @Prop({ type: [String], default: [] })
+  productIds: string[]; // all product IDs that form the full bundle
+
+  @Prop({ required: true })
+  discountCodeId: string; // ID of the DiscountCode to suggest
+
+  @Prop({ default: true })
+  active: boolean;
+
+  @Prop({ default: false })
+  allowPartial: boolean; // true → suggest partial code for partial selection
+
+  @Prop({ default: null, type: String })
+  partialDiscountCodeId: string | null; // optional separate code for partial match
+
+  @Prop({ default: 1 })
+  priority: number; // higher = preferred when bundles overlap
+
+  @Prop({ default: 1 })
+  minQty: number; // kept for backward compat; superseded by productMinQtys when present
+
+  @Prop({ type: Object, default: {} })
+  productMinQtys: Record<string, number>; // per-product minimum qty { [productId]: minQty }
+
+  @Prop({ default: '' })
+  createdBy: string;
+
+  @Prop({ default: '' })
+  createdAt: string;
+}
+
 @Schema({ timestamps: true })
 export class Settings {
   @Prop({ default: 110 })
@@ -137,6 +178,9 @@ export class Settings {
 
   @Prop({ type: [Object], default: [] })
   discountCodes: DiscountCode[];
+
+  @Prop({ type: [Object], default: [] })
+  discountBundles: DiscountBundle[];
 }
 
 export const SettingsSchema = SchemaFactory.createForClass(Settings);

@@ -1,0 +1,393 @@
+{
+  "timestamp": "2026-05-05T03:57:23.278Z",
+  "data": {
+    "transactions": [
+      {
+        "_id": "69f96115d1557f63b4f37692",
+        "date": "2026-05-05T03:16:36.712Z",
+        "type": "مبيعات",
+        "client": "محمد فارس",
+        "phone": "01042277004",
+        "ref": "324",
+        "notes": "",
+        "payment": "تحويل بنكي",
+        "deposit": 500,
+        "initialDeposit": 0,
+        "remaining": 19400,
+        "items": [
+          {
+            "name": "س",
+            "code": "CUS-45-ALB-BEI",
+            "qty": 98,
+            "price": 200,
+            "total": 19600
+          },
+          {
+            "name": "س",
+            "code": "CUS-45-ALB-BEI",
+            "qty": 1,
+            "price": 200,
+            "total": 200
+          }
+        ],
+        "total": 19900,
+        "employee": "Fares",
+        "shipCo": "BOSTA",
+        "shipZone": "cairo",
+        "shipCost": 100,
+        "discount": 0,
+        "discountCodeId": "",
+        "discountCode": "",
+        "discountCodeType": "",
+        "depMethod": "",
+        "payStatus": "معلق",
+        "itemsTotal": 19800,
+        "actualShipCost": 0,
+        "shipLoss": 0,
+        "cancelled": false,
+        "editHistory": [
+          {
+            "editedAt": "2026-05-05T03:17:33.550Z",
+            "editedBy": "Fares",
+            "action": "تعديل شامل",
+            "before": {
+              "client": "محمد فارس",
+              "phone": "01042277004",
+              "ref": "324",
+              "deposit": 0,
+              "remaining": 300,
+              "notes": "",
+              "items": [
+                {
+                  "name": "Alba Soft cushions Beige",
+                  "code": "CUS-45-ALB-BEI",
+                  "qty": 1,
+                  "price": 200,
+                  "total": 200
+                }
+              ],
+              "total": 300,
+              "itemsTotal": 200,
+              "discount": 0,
+              "shipCost": 100,
+              "shipCo": "BOSTA",
+              "shipZone": "cairo",
+              "payment": "تحويل بنكي",
+              "payStatus": "معلق"
+            },
+            "after": {
+              "total": 5500,
+              "deposit": 0,
+              "discount": 0,
+              "shipCost": 100,
+              "items": [
+                {
+                  "name": "Alba Soft cushions Beige",
+                  "code": "CUS-45-ALB-BEI",
+                  "qty": 27,
+                  "price": 200,
+                  "total": 5400
+                }
+              ]
+            },
+            "changes": [
+              "الإجمالي: 300 ← 5500"
+            ],
+            "totalDelta": 5200,
+            "depositDelta": 0,
+            "discountDelta": 0,
+            "shipCostDelta": 0
+          },
+          {
+            "editedAt": "2026-05-05T03:18:19.740Z",
+            "editedBy": "Fares",
+            "action": "تعديل شامل",
+            "before": {
+              "client": "محمد فارس",
+              "phone": "01042277004",
+              "ref": "324",
+              "deposit": 0,
+              "remaining": 5500,
+              "notes": "",
+              "items": [
+                {
+                  "name": "Alba Soft cushions Beige",
+                  "code": "CUS-45-ALB-BEI",
+                  "qty": 27,
+                  "price": 200,
+                  "total": 5400
+                }
+              ],
+              "total": 5500,
+              "itemsTotal": 5400,
+              "discount": 0,
+              "shipCost": 100,
+              "shipCo": "BOSTA",
+              "shipZone": "cairo",
+              "payment": "تحويل بنكي",
+              "payStatus": "معلق"
+            },
+            "after": {
+              "total": 20100,
+              "deposit": 500,
+              "discount": 0,
+              "shipCost": 100,
+              "items": [
+                {
+                  "name": "Alba Soft cushions Beige",
+                  "code": "CUS-45-ALB-BEI",
+                  "qty": 100,
+                  "price": 200,
+                  "total": 20000
+                }
+              ]
+            },
+            "changes": [
+              "الإجمالي: 5500 ← 20100",
+              "الديبوزت: 0 ← 500"
+            ],
+            "totalDelta": 14600,
+            "depositDelta": 500,
+            "discountDelta": 0,
+            "shipCostDelta": 0
+          },
+          {
+            "editedAt": "2026-05-05T03:26:40.031Z",
+            "editedBy": "Fares",
+            "action": "تعديل شامل",
+            "before": {
+              "client": "محمد فارس",
+              "phone": "01042277004",
+              "ref": "324",
+              "deposit": 500,
+              "remaining": 19600,
+              "notes": "",
+              "items": [
+                {
+                  "name": "Alba Soft cushions Beige",
+                  "code": "CUS-45-ALB-BEI",
+                  "qty": 100,
+                  "price": 200,
+                  "total": 20000
+                }
+              ],
+              "total": 20100,
+              "itemsTotal": 20000,
+              "discount": 0,
+              "shipCost": 100,
+              "shipCo": "BOSTA",
+              "shipZone": "cairo",
+              "payment": "تحويل بنكي",
+              "payStatus": "معلق"
+            },
+            "after": {
+              "total": 19900,
+              "deposit": 500,
+              "discount": 0,
+              "shipCost": 100,
+              "items": [
+                {
+                  "name": "Alba Soft cushions Beige",
+                  "code": "CUS-45-ALB-BEI",
+                  "qty": 98,
+                  "price": 200,
+                  "total": 19600
+                },
+                {
+                  "name": "Alba Soft cushions Beige",
+                  "code": "CUS-45-ALB-BEI",
+                  "qty": 1,
+                  "price": 200,
+                  "total": 200
+                }
+              ]
+            },
+            "changes": [
+              "الإجمالي: 20100 ← 19900"
+            ],
+            "totalDelta": -200,
+            "depositDelta": 0,
+            "discountDelta": 0,
+            "shipCostDelta": 0
+          }
+        ],
+        "archived": false,
+        "cancelRequest": null,
+        "deposits": [],
+        "payments": [],
+        "invoiceImageUrl": "",
+        "invoiceImages": [],
+        "comments": [],
+        "tags": [],
+        "createdAt": "2026-05-05T03:16:37.331Z",
+        "updatedAt": "2026-05-05T03:52:28.018Z",
+        "__v": 0
+      },
+      {
+        "_id": "69f96646d1557f63b4f3790f",
+        "date": "2026-05-05T03:38:46.095Z",
+        "type": "مبيعات",
+        "client": "wagt",
+        "phone": "01152903045",
+        "ref": "32",
+        "notes": "",
+        "payment": "تحويل بنكي",
+        "deposit": 4,
+        "initialDeposit": 0,
+        "remaining": 2616,
+        "items": [
+          {
+            "name": "Alba Soft cushions Mint green",
+            "code": "CUS-45-ALB-MIN",
+            "qty": 14,
+            "price": 180,
+            "total": 2520
+          }
+        ],
+        "total": 2620,
+        "employee": "Fares",
+        "shipCo": "BOSTA",
+        "shipZone": "cairo",
+        "shipCost": 100,
+        "discount": 0,
+        "discountCodeId": "",
+        "discountCode": "",
+        "discountCodeType": "",
+        "depMethod": "Instapay",
+        "payStatus": "معلق",
+        "itemsTotal": 2520,
+        "actualShipCost": 0,
+        "shipLoss": 0,
+        "cancelled": false,
+        "editHistory": [],
+        "archived": false,
+        "cancelRequest": null,
+        "deposits": [
+          {
+            "id": "pay_mos2wre2_niz4sn",
+            "amount": 4,
+            "method": "Instapay",
+            "note": "ديبوزت أول - عند إنشاء الحركة",
+            "date": "2026-05-05T03:38:46.826Z",
+            "by": "Fares"
+          }
+        ],
+        "payments": [],
+        "invoiceImageUrl": "",
+        "invoiceImages": [],
+        "comments": [],
+        "tags": [],
+        "createdAt": "2026-05-05T03:38:46.825Z",
+        "updatedAt": "2026-05-05T03:38:46.827Z",
+        "__v": 1
+      }
+    ],
+    "vaultentries": [
+      {
+        "_id": "69f9617bd1557f63b4f376d3",
+        "date": "2026-05-05",
+        "desc": "إضافة ديبوزت فاتورة #324 — محمد فارس | قبل: 0 ج — بعد: 500 ج | الإجمالي: 5500 ← 20100 | الديبوزت: 0 ← 500 | بواسطة: Fares",
+        "amount": 500,
+        "seg": "bank",
+        "method": "تحويل بنكي",
+        "source": "تعديل مبيعات",
+        "ref": "324",
+        "balCash": 0,
+        "balVodafone": 0,
+        "balInstapay": 0,
+        "balBank": 500,
+        "balance": 500,
+        "employee": "",
+        "txNo": "TXN-001",
+        "status": "completed",
+        "transactionType": "تعديل مبيعات",
+        "customer": "",
+        "supplier": "",
+        "notes": "",
+        "accountingJustification": "",
+        "entityLabel": "",
+        "editHistory": null,
+        "frozenReason": null,
+        "requiresApproval": false,
+        "isApproved": false,
+        "approvedBy": "",
+        "linkedTransactionId": null,
+        "linkedTransactionRef": "",
+        "createdAt": "2026-05-05T03:18:19.748Z",
+        "updatedAt": "2026-05-05T03:18:19.748Z",
+        "__v": 0
+      },
+      {
+        "_id": "69f96646d1557f63b4f37915",
+        "date": "2026-05-05",
+        "desc": "ديبوزت مبيعات #32 — wagt",
+        "amount": 4,
+        "seg": "instapay",
+        "method": "Instapay",
+        "source": "ديبوزت مبيعات",
+        "ref": "32",
+        "balCash": 0,
+        "balVodafone": 0,
+        "balInstapay": 4,
+        "balBank": 500,
+        "balance": 504,
+        "employee": "Fares",
+        "txNo": "SAL-001",
+        "status": "completed",
+        "transactionType": "ديبوزت مبيعات",
+        "customer": "",
+        "supplier": "",
+        "notes": "",
+        "accountingJustification": "الخزنة (Instapay) ترتفع 4 ج — الإيراد المحتمل يرتفع — المخزون لم يُخصم بعد",
+        "entityLabel": "wagt",
+        "editHistory": null,
+        "frozenReason": null,
+        "requiresApproval": false,
+        "isApproved": false,
+        "approvedBy": "",
+        "linkedTransactionId": null,
+        "linkedTransactionRef": "",
+        "createdAt": "2026-05-05T03:38:46.831Z",
+        "updatedAt": "2026-05-05T03:38:46.831Z",
+        "__v": 0
+      }
+    ],
+    "clients": [],
+    "suppliers": [],
+    "returnrequests": [],
+    "expenses": [],
+    "complaints": []
+  },
+  "vault_balances": {
+    "vaultCash": 0,
+    "vaultVodafone": 0,
+    "vaultInstapay": 4,
+    "vaultBank": 500
+  },
+  "offers": {
+    "discountCodes": [
+      {
+        "id": "09b18f12-1961-4336-901c-9b988bf09775",
+        "code": "CODE15",
+        "description": "CODE15",
+        "type": "percent",
+        "value": 50,
+        "startDate": null,
+        "endDate": null,
+        "active": true,
+        "usageCount": 0,
+        "createdBy": "Fares",
+        "createdAt": "2026-05-05T03:19:09.510Z",
+        "auditLog": [
+          {
+            "action": "created",
+            "by": "Fares",
+            "at": "2026-05-05T03:19:09.510Z"
+          }
+        ],
+        "usageHistory": []
+      }
+    ],
+    "discountBundles": []
+  }
+}

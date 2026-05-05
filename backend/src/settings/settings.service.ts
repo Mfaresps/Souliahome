@@ -3,7 +3,7 @@ import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
 import { ObjectId } from 'mongodb';
 import { Settings, SettingsDocument } from './schemas/settings.schema';
-import { UpdateSettingsDto, DiscountCodeDto } from './dto/settings.dto';
+import { UpdateSettingsDto, DiscountCodeDto, DiscountBundleDto } from './dto/settings.dto';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
@@ -13,6 +13,75 @@ const DEFAULT_SHIP_COS = [
   { name: 'J&T Express', cairo: 110, gov: 150 },
   { name: 'Mylerz', cairo: 110, gov: 150 },
 ];
+
+/** Apply default values for fields added after the backup was created */
+function def<T>(obj: any, key: string, value: T): void {
+  if (obj[key] === undefined || obj[key] === null) obj[key] = value;
+}
+
+function migrateDoc(collection: string, doc: any): void {
+  if (collection === 'transactions') {
+    def(doc, 'deposit', 0);
+    def(doc, 'initialDeposit', 0);
+    def(doc, 'remaining', 0);
+    def(doc, 'itemsTotal', 0);
+    def(doc, 'discount', 0);
+    def(doc, 'discountCodeId', '');
+    def(doc, 'discountCode', '');
+    def(doc, 'discountCodeType', '');
+    def(doc, 'shipCost', 0);
+    def(doc, 'actualShipCost', 0);
+    def(doc, 'shipLoss', 0);
+    def(doc, 'payment', '');
+    def(doc, 'payStatus', 'معلق');
+    def(doc, 'cancelled', false);
+    def(doc, 'archived', false);
+    def(doc, 'editHistory', []);
+    def(doc, 'deposits', []);
+    def(doc, 'payments', []);
+    def(doc, 'comments', []);
+    def(doc, 'tags', []);
+    def(doc, 'invoiceImageUrl', '');
+    def(doc, 'invoiceImages', []);
+    def(doc, 'cancelRequest', null);
+    // Normalise items
+    if (Array.isArray(doc.items)) {
+      doc.items = doc.items.map((it: any) => ({
+        productId: it.productId ?? '',
+        code: it.code ?? '',
+        name: it.name ?? '',
+        qty: it.qty ?? 1,
+        price: it.price ?? 0,
+        total: it.total ?? (it.qty ?? 1) * (it.price ?? 0),
+      }));
+    }
+    return;
+  }
+
+  if (collection === 'products') {
+    def(doc, 'sellPrice', 0);
+    def(doc, 'buyPrice', 0);
+    def(doc, 'minStock', 10);
+    def(doc, 'openingBalance', 0);
+    def(doc, 'supplier', '');
+    def(doc, 'imageUrl', '');
+    return;
+  }
+
+  if (collection === 'expenses') {
+    def(doc, 'status', 'معتمد');
+    def(doc, 'amount', 0);
+    def(doc, 'category', '');
+    def(doc, 'note', '');
+    return;
+  }
+
+  if (collection === 'users') {
+    def(doc, 'role', 'staff');
+    def(doc, 'active', true);
+    return;
+  }
+}
 
 @Injectable()
 export class SettingsService {
@@ -225,6 +294,68 @@ export class SettingsService {
     return { valid: true, data: found };
   }
 
+  async getDiscountBundles(): Promise<SettingsDocument['discountBundles']> {
+    const settings = await this.getSettings();
+    return settings.discountBundles || [];
+  }
+
+  async addDiscountBundle(dto: DiscountBundleDto, by: string): Promise<SettingsDocument> {
+    const settings = await this.getSettings();
+    const bundles = settings.discountBundles || [];
+    const now = new Date().toISOString();
+    bundles.push({
+      id: crypto.randomUUID(),
+      name: dto.name,
+      description: dto.description || '',
+      productIds: dto.productIds || [],
+      discountCodeId: dto.discountCodeId,
+      active: dto.active !== false,
+      allowPartial: dto.allowPartial || false,
+      partialDiscountCodeId: dto.partialDiscountCodeId || null,
+      priority: dto.priority ?? 1,
+      minQty: dto.minQty ?? 1,
+      productMinQtys: dto.productMinQtys ?? {},
+      createdBy: by,
+      createdAt: now,
+    } as any);
+    settings.discountBundles = bundles;
+    settings.markModified('discountBundles');
+    return settings.save();
+  }
+
+  async updateDiscountBundle(id: string, dto: Partial<DiscountBundleDto>, by: string): Promise<SettingsDocument> {
+    const settings = await this.getSettings();
+    const bundles = settings.discountBundles || [];
+    const idx = bundles.findIndex((b: any) => b.id === id);
+    if (idx === -1) throw new NotFoundException('الباقة غير موجودة');
+    const b = bundles[idx] as any;
+    if (dto.name !== undefined) b.name = dto.name;
+    if (dto.description !== undefined) b.description = dto.description;
+    if (dto.productIds !== undefined) b.productIds = dto.productIds;
+    if (dto.discountCodeId !== undefined) b.discountCodeId = dto.discountCodeId;
+    if (dto.active !== undefined) b.active = dto.active;
+    if (dto.allowPartial !== undefined) b.allowPartial = dto.allowPartial;
+    if (dto.partialDiscountCodeId !== undefined) b.partialDiscountCodeId = dto.partialDiscountCodeId || null;
+    if (dto.priority !== undefined) b.priority = dto.priority;
+    if (dto.minQty !== undefined) b.minQty = dto.minQty;
+    if (dto.productMinQtys !== undefined) b.productMinQtys = dto.productMinQtys;
+    bundles[idx] = b;
+    settings.discountBundles = bundles;
+    settings.markModified('discountBundles');
+    return settings.save();
+  }
+
+  async deleteDiscountBundle(id: string): Promise<SettingsDocument> {
+    const settings = await this.getSettings();
+    const bundles = settings.discountBundles || [];
+    const idx = bundles.findIndex((b: any) => b.id === id);
+    if (idx === -1) throw new NotFoundException('الباقة غير موجودة');
+    bundles.splice(idx, 1);
+    settings.discountBundles = bundles;
+    settings.markModified('discountBundles');
+    return settings.save();
+  }
+
   private getBackupDir(): string {
     const dir = path.join(process.cwd(), 'backups');
     if (!fs.existsSync(dir)) {
@@ -262,6 +393,10 @@ export class SettingsService {
           vaultVodafone: settings?.vaultVodafone || 0,
           vaultInstapay: settings?.vaultInstapay || 0,
           vaultBank: settings?.vaultBank || 0,
+        },
+        offers: {
+          discountCodes: (settings?.discountCodes as any[]) || [],
+          discountBundles: (settings?.discountBundles as any[]) || [],
         },
       };
 
@@ -333,7 +468,7 @@ export class SettingsService {
       }
     }
 
-    // Step 3: Reset vault balances
+    // Step 3: Reset vault balances and clear offers
     try {
       const settings = await this.settingsModel.findOne().exec();
       if (settings) {
@@ -342,11 +477,17 @@ export class SettingsService {
         settings.vaultInstapay = 0;
         settings.vaultBank = 0;
         settings.vaultBalance = 0;
+        settings.discountCodes = [];
+        settings.discountBundles = [];
+        settings.markModified('discountCodes');
+        settings.markModified('discountBundles');
         await settings.save();
         results['vault_balances_reset'] = 1;
+        results['offers_cleared'] = 1;
       }
     } catch (e) {
       results['vault_balances_reset'] = 0;
+      results['offers_cleared'] = 0;
     }
 
     return {
@@ -575,6 +716,8 @@ export class SettingsService {
               try { fixed._id = new ObjectId(rawId); } catch { delete fixed._id; }
             }
           }
+          // Apply schema migrations so restored docs match current schema
+          migrateDoc(collectionName, fixed);
           return fixed;
         });
 
@@ -593,21 +736,36 @@ export class SettingsService {
       }
     }
 
-    // Step 3: Restore vault balances
+    // Step 3: Restore vault balances and offers
     try {
       const settings = await this.settingsModel.findOne().exec();
-      if (settings && backupData.vault_balances) {
-        settings.vaultCash = Number(backupData.vault_balances.vaultCash) || 0;
-        settings.vaultVodafone = Number(backupData.vault_balances.vaultVodafone) || 0;
-        settings.vaultInstapay = Number(backupData.vault_balances.vaultInstapay) || 0;
-        settings.vaultBank = Number(backupData.vault_balances.vaultBank) || 0;
-        settings.vaultBalance = settings.vaultCash + settings.vaultVodafone + settings.vaultInstapay + settings.vaultBank;
+      if (settings) {
+        if (backupData.vault_balances) {
+          settings.vaultCash = Number(backupData.vault_balances.vaultCash) || 0;
+          settings.vaultVodafone = Number(backupData.vault_balances.vaultVodafone) || 0;
+          settings.vaultInstapay = Number(backupData.vault_balances.vaultInstapay) || 0;
+          settings.vaultBank = Number(backupData.vault_balances.vaultBank) || 0;
+          settings.vaultBalance = settings.vaultCash + settings.vaultVodafone + settings.vaultInstapay + settings.vaultBank;
+          restoreResults['vault_balances'] = 1;
+        }
+        if (backupData.offers) {
+          if (Array.isArray(backupData.offers.discountCodes)) {
+            settings.discountCodes = backupData.offers.discountCodes;
+            settings.markModified('discountCodes');
+            restoreResults['discountCodes'] = backupData.offers.discountCodes.length;
+          }
+          if (Array.isArray(backupData.offers.discountBundles)) {
+            settings.discountBundles = backupData.offers.discountBundles;
+            settings.markModified('discountBundles');
+            restoreResults['discountBundles'] = backupData.offers.discountBundles.length;
+          }
+        }
         await settings.save();
-        restoreResults['vault_balances'] = 1;
       }
     } catch (e: any) {
-      this.logger.error('Failed to restore vault balances', e?.message);
+      this.logger.error('Failed to restore vault balances / offers', e?.message);
       restoreResults['vault_balances'] = 0;
+      restoreResults['offers'] = 0;
     }
 
     this.logger.log(`Restore complete from ${safeFilename}: ${JSON.stringify(restoreResults)}`);

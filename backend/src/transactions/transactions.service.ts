@@ -79,6 +79,56 @@ export class TransactionsService {
     private readonly mentionsService: MentionsService,
   ) {}
 
+  // ── Concurrent edit lock: txId → { user, since } ──
+  private readonly _editLocks = new Map<string, { user: string; since: number }>();
+  private readonly _LOCK_TTL_MS = 5 * 60 * 1000; // 5 minutes auto-expire
+
+  acquireEditLock(txId: string, user: string): void {
+    const existing = this._editLocks.get(txId);
+    if (existing && user !== existing.user && Date.now() - existing.since < this._LOCK_TTL_MS) {
+      throw new BadRequestException(
+        `هذه الحركة قيد التعديل حالياً بواسطة "${existing.user}" — يُرجى الانتظار حتى ينتهي من التعديل`
+      );
+    }
+    this._editLocks.set(txId, { user, since: Date.now() });
+  }
+
+  releaseEditLock(txId: string, user: string): void {
+    const existing = this._editLocks.get(txId);
+    if (existing && existing.user === user) {
+      this._editLocks.delete(txId);
+    }
+  }
+
+  getEditLockStatus(txId: string): { locked: boolean; user?: string } {
+    const existing = this._editLocks.get(txId);
+    if (!existing || Date.now() - existing.since >= this._LOCK_TTL_MS) {
+      if (existing) this._editLocks.delete(txId);
+      return { locked: false };
+    }
+    return { locked: true, user: existing.user };
+  }
+
+  // ── Duplicate submission guard: fingerprint → timestamp ──
+  private readonly _recentSubmissions = new Map<string, number>();
+  private readonly _SUBMIT_DEDUP_MS = 15000; // 15 seconds
+
+  private assertNotDuplicateSubmission(type: string, ref: string, clientName: string, total: number, user: string): void {
+    const key = `${user}|${type}|${ref}|${clientName}|${total}`;
+    const lastAt = this._recentSubmissions.get(key);
+    if (lastAt && Date.now() - lastAt < this._SUBMIT_DEDUP_MS) {
+      throw new BadRequestException(
+        'تم رصد إرسال مكرر — تم تسجيل نفس الحركة للتو. انتظر لحظة قبل إعادة المحاولة'
+      );
+    }
+    this._recentSubmissions.set(key, Date.now());
+    // Prune old entries to prevent unbounded growth
+    if (this._recentSubmissions.size > 500) {
+      const cutoff = Date.now() - this._SUBMIT_DEDUP_MS * 2;
+      this._recentSubmissions.forEach((ts, k) => { if (ts < cutoff) this._recentSubmissions.delete(k); });
+    }
+  }
+
   private emit(event: string, payload: unknown): void {
     try { this.presence?.emitEvent(event, payload); } catch { /* swallow */ }
   }
@@ -165,6 +215,14 @@ export class TransactionsService {
   }
 
   async create(dto: CreateTransactionDto): Promise<TransactionDocument> {
+    const employee = (dto as unknown as { employee?: string }).employee || '';
+    this.assertNotDuplicateSubmission(
+      dto.type,
+      String(dto.ref ?? ''),
+      String((dto as unknown as { client?: string }).client ?? ''),
+      Number((dto as unknown as { total?: number }).total) || 0,
+      employee,
+    );
     await this.assertRetailRefForPersist(dto.type, dto.ref, undefined);
     await this.assertOutboundWithinAvailableStock(dto.type, dto.items);
     // For purchases: check vault balance covers the deposit/upfront payment
@@ -180,7 +238,6 @@ export class TransactionsService {
     // Record initial deposit if paid
     const deposit = (dto as unknown as { deposit?: number }).deposit || 0;
     const depMethod = (dto as unknown as { depMethod?: string }).depMethod || 'كاش';
-    const employee = (dto as unknown as { employee?: string }).employee || '';
 
     if (deposit > 0) {
       if (!tx.deposits) tx.deposits = [];
@@ -1486,7 +1543,18 @@ export class TransactionsService {
       (sum, t) => sum + (t.remaining || 0),
       0,
     );
-    const totalDiscounts = salesTx.reduce((s, t) => s + (Number(t.discount) || 0), 0);
+    const totalDiscounts = salesTx.reduce((s, t) => {
+      // Use stored discount if present; otherwise infer from itemsTotal vs total
+      const stored = Number(t.discount) || 0;
+      if (stored > 0) return s + stored;
+      const items = Number(t.itemsTotal) || 0;
+      const ship  = Number(t.shipCost)   || 0;
+      if (items > 0) {
+        const inferred = Math.max(0, items - (t.total - ship));
+        return s + inferred;
+      }
+      return s;
+    }, 0);
     const totalDeposit = salesTx.reduce((s, t) => s + (Number(t.deposit) || 0), 0);
     const products = await this.productsService.findAll();
     let grossProfit = 0;

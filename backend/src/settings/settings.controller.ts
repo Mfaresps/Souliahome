@@ -18,7 +18,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { SettingsService } from './settings.service';
-import { UpdateSettingsDto, DiscountCodeDto } from './dto/settings.dto';
+import { UpdateSettingsDto, DiscountCodeDto, DiscountBundleDto } from './dto/settings.dto';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
@@ -178,5 +178,39 @@ export class SettingsController {
     const by = req.user?.name || req.user?.username || '';
     await this.settingsService.recordDiscountUsage(id, { ...body, by });
     return { success: true };
+  }
+
+  // ─── Discount Bundles ─────────────────────────────────────────────────────
+
+  @Get('discount-bundles')
+  async getDiscountBundles() {
+    return this.settingsService.getDiscountBundles();
+  }
+
+  @Roles('admin')
+  @Post('discount-bundles')
+  async addDiscountBundle(@Body() dto: DiscountBundleDto, @Req() req: any) {
+    const by = req.user?.name || req.user?.username || 'admin';
+    const updated = await this.settingsService.addDiscountBundle(dto, by);
+    return updated.discountBundles;
+  }
+
+  @Roles('admin')
+  @Put('discount-bundles/:id')
+  async updateDiscountBundle(
+    @Param('id') id: string,
+    @Body() dto: Partial<DiscountBundleDto>,
+    @Req() req: any,
+  ) {
+    const by = req.user?.name || req.user?.username || 'admin';
+    const updated = await this.settingsService.updateDiscountBundle(id, dto, by);
+    return updated.discountBundles;
+  }
+
+  @Roles('admin')
+  @Delete('discount-bundles/:id')
+  async deleteDiscountBundle(@Param('id') id: string) {
+    const updated = await this.settingsService.deleteDiscountBundle(id);
+    return { success: true, discountBundles: updated.discountBundles };
   }
 }

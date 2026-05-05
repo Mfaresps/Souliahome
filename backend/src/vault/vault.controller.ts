@@ -165,6 +165,12 @@ export class VaultController {
   }
 
   @Roles('admin')
+  @Get('integrity')
+  async checkBalanceIntegrity() {
+    return this.vaultService.assertBalanceIntegrity();
+  }
+
+  @Roles('admin')
   @Get('balances/history/:segment')
   async getBalanceHistory(
     @Param('segment') segment: string,

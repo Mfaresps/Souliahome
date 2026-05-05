@@ -118,16 +118,52 @@ export class VaultService {
     }
   }
 
+  /** Verifies stored vaultBalance == sum of the four segment balances. Logs mismatch but does not throw. */
+  async assertBalanceIntegrity(): Promise<{ ok: boolean; stored: number; computed: number; delta: number }> {
+    const s = await this.settingsService.getSettings();
+    const computed = (s.vaultCash || 0) + (s.vaultVodafone || 0) + (s.vaultInstapay || 0) + (s.vaultBank || 0);
+    const stored = s.vaultBalance || 0;
+    const delta = Math.abs(computed - stored);
+    if (delta > 0.01) {
+      debugLog('vault.service.ts:assertBalanceIntegrity', 'BALANCE_INTEGRITY_MISMATCH', { stored, computed, delta });
+    }
+    return { ok: delta <= 0.01, stored, computed, delta };
+  }
+
   async addEntry(dto: CreateVaultEntryDto, employee?: string): Promise<VaultEntryDocument> {
     const date = dto.date || new Date().toISOString().split('T')[0];
     const desc = dto.desc || 'تعديل يدوي';
-    // Check sufficient balance before withdrawal
+
+    // ── 1. Amount format & range guard ──
+    if (typeof dto.amount !== 'number' || isNaN(dto.amount)) {
+      throw new BadRequestException('المبلغ غير صحيح — يجب أن يكون رقماً صحيحاً');
+    }
+    if (dto.amount === 0) {
+      throw new BadRequestException('المبلغ يجب أن يكون أكبر من صفر');
+    }
+
+    // ── 2. Duplicate detection: same seg + signed amount + desc within 15 s ──
+    const fifteenSecondsAgo = new Date(Date.now() - 15000);
+    const duplicate = await this.vaultModel.findOne({
+      seg: dto.seg,
+      amount: dto.amount,
+      desc,
+      source: 'يدوي',
+      createdAt: { $gte: fifteenSecondsAgo },
+    }).exec();
+    if (duplicate) {
+      throw new BadRequestException(
+        'تم اكتشاف حركة مكررة — نفس المبلغ والقسم والوصف سُجِّلا للتو. انتظر لحظة قبل إعادة الإرسال'
+      );
+    }
+
+    // ── 3. Balance sufficiency for withdrawals ──
     if (dto.amount < 0) {
       const currentBalance = await this.getSegmentBalance(dto.seg);
       if (currentBalance + dto.amount < 0) {
         const segLabel: Record<string, string> = { cash: 'كاش', vodafone: 'فودافون كاش', instapay: 'Instapay', bank: 'تحويل بنكي' };
         throw new BadRequestException(
-          `رصيد ${segLabel[dto.seg] || dto.seg} غير كافٍ — الرصيد الحالي: ${currentBalance} ج`
+          `رصيد ${segLabel[dto.seg] || dto.seg} غير كافٍ — الرصيد الحالي: ${currentBalance} ج والمطلوب: ${Math.abs(dto.amount)} ج`
         );
       }
     }

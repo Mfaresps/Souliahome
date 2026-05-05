@@ -76,6 +76,12 @@ export class ProductsController {
     return { message: `تم حذف ${count} صنف`, deletedCount: count };
   }
 
+  @Post('sync-product-refs')
+  async syncProductRefs() {
+    const result = await this.productsService.syncProductRefs();
+    return { message: `تم تحديث ${result.txUpdated} حركة و ${result.itemsPatched} صنف`, ...result };
+  }
+
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
     return this.productsService.update(id, dto);

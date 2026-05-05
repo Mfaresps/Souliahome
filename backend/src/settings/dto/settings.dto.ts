@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsBoolean,
   IsArray,
+  IsObject,
   Min,
   IsIn,
 } from 'class-validator';
@@ -40,6 +41,50 @@ export class DiscountCodeDto {
   @IsString()
   @IsOptional()
   readonly createdBy?: string;
+}
+
+export class DiscountBundleDto {
+  @IsString()
+  @IsOptional()
+  readonly id?: string;
+
+  @IsString()
+  readonly name: string;
+
+  @IsString()
+  @IsOptional()
+  readonly description?: string;
+
+  @IsArray()
+  readonly productIds: string[];
+
+  @IsString()
+  readonly discountCodeId: string;
+
+  @IsBoolean()
+  @IsOptional()
+  readonly active?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  readonly allowPartial?: boolean;
+
+  @IsString()
+  @IsOptional()
+  readonly partialDiscountCodeId?: string | null;
+
+  @IsNumber()
+  @IsOptional()
+  readonly priority?: number;
+
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  readonly minQty?: number;
+
+  @IsObject()
+  @IsOptional()
+  readonly productMinQtys?: Record<string, number>;
 }
 
 export class UpdateSettingsDto {

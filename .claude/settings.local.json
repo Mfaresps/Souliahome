@@ -25,7 +25,13 @@
       "WebFetch(domain:www.svgrepo.com)",
       "Bash(curl -s \"https://www.svgrepo.com/svg/529813/dashboard-square\")",
       "Bash(npx nest:*)",
-      "PowerShell(\\(Get-Content 'D:\\\\website\\\\Souliahome\\\\frontend\\\\public\\\\index.html' | Measure-Object -Line\\).Lines)"
+      "PowerShell(\\(Get-Content 'D:\\\\website\\\\Souliahome\\\\frontend\\\\public\\\\index.html' | Measure-Object -Line\\).Lines)",
+      "Bash(Get-ChildItem -Path \"d:\\\\website\\\\Souliahome\\\\backend\\\\src\" -Recurse -File)",
+      "Bash(Select-Object FullName)",
+      "Bash(Format-Table -AutoSize)",
+      "PowerShell(Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"d:\\\\website\\\\Souliahome\\\\frontend\"; node server.js' -WindowStyle Normal)",
+      "PowerShell(Start-Process cmd -ArgumentList '/k', 'cd /d \"d:\\\\website\\\\Souliahome\\\\backend\" && npm run start:dev' -WindowStyle Minimized)",
+      "PowerShell(Start-Process cmd -ArgumentList '/k', 'cd /d \"d:\\\\website\\\\Souliahome\\\\frontend\" && node server.js' -WindowStyle Minimized)"
     ]
   }
 }

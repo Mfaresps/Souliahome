@@ -161,6 +161,31 @@ export class TransactionsController {
     return this.transactionsService.findById(id);
   }
 
+  @Get(':id/lock-status')
+  async getLockStatus(@Param('id') id: string) {
+    return this.transactionsService.getEditLockStatus(id);
+  }
+
+  @Post(':id/lock')
+  async acquireLock(
+    @Param('id') id: string,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const user = req.user?.name || req.user?.username || 'مستخدم';
+    this.transactionsService.acquireEditLock(id, user);
+    return { ok: true, user };
+  }
+
+  @Post(':id/unlock')
+  async releaseLock(
+    @Param('id') id: string,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const user = req.user?.name || req.user?.username || 'مستخدم';
+    this.transactionsService.releaseEditLock(id, user);
+    return { ok: true };
+  }
+
   @Post(':id/restore')
   async restore(@Param('id') id: string) {
     return this.transactionsService.restore(id);
@@ -263,7 +288,13 @@ export class TransactionsController {
     @Req() req: { user: { name: string; username: string } },
   ) {
     const editedBy = req.user.name || req.user.username || '';
-    return this.transactionsService.update(id, dto, editedBy);
+    // Acquire lock — throws if another user already holds it
+    this.transactionsService.acquireEditLock(id, editedBy);
+    try {
+      return await this.transactionsService.update(id, dto, editedBy);
+    } finally {
+      this.transactionsService.releaseEditLock(id, editedBy);
+    }
   }
 
   @Post(':id/comments')

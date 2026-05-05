@@ -129,7 +129,12 @@ export class ProductAnalyticsService {
 
       const itemTotal = item.total || 0;
       const txItemsTotal = (tx.itemsTotal || 0) || (tx.items || []).reduce((s, i) => s + (i.total || 0), 0);
-      const txDiscount = tx.discount || 0;
+      // Use stored discount; if missing, infer from itemsTotal vs (total - shipCost)
+      let txDiscount = Number(tx.discount) || 0;
+      if (txDiscount === 0 && txItemsTotal > 0) {
+        const ship = Number((tx as any).shipCost) || 0;
+        txDiscount = Math.max(0, txItemsTotal - (tx.total - ship));
+      }
       // Distribute discount proportionally by item share of invoice total
       const discountShare = txItemsTotal > 0 ? (itemTotal / txItemsTotal) * txDiscount : 0;
       const netTotal = itemTotal - discountShare;

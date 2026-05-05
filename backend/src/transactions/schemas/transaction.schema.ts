@@ -4,6 +4,9 @@ import { HydratedDocument } from 'mongoose';
 export type TransactionDocument = HydratedDocument<Transaction>;
 
 export class TransactionItem {
+  @Prop({ default: '' })
+  productId: string;
+
   @Prop({ required: true })
   code: string;
 

@@ -13,6 +13,10 @@ import { Type } from 'class-transformer';
 
 export class TransactionItemDto {
   @IsString()
+  @IsOptional()
+  readonly productId?: string;
+
+  @IsString()
   @IsNotEmpty()
   readonly code: string;
 
