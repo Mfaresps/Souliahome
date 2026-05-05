@@ -158,6 +158,12 @@ export class Settings {
   @Prop({ default: false })
   staffDiscountEnabled: boolean;
 
+  @Prop({ default: 200 })
+  highValueDiscountLimit: number;
+
+  @Prop({ default: 10 })
+  highValueDiscountOtpTtlMin: number;
+
   @Prop({ default: true })
   printIncludePolicy: boolean;
 

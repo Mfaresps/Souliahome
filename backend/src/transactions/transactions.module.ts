@@ -11,6 +11,8 @@ import { ExpensesModule } from '../expenses/expenses.module';
 import { VaultModule } from '../vault/vault.module';
 import { AuthModule } from '../auth/auth.module';
 import { MentionsModule } from '../mentions/mentions.module';
+import { DiscountOtpModule } from '../discount-otp/discount-otp.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { MentionsModule } from '../mentions/mentions.module';
     VaultModule,
     AuthModule,
     MentionsModule,
+    DiscountOtpModule,
+    SettingsModule,
   ],
   controllers: [TransactionsController],
   providers: [TransactionsService, ReferenceDetailService, ReportsExportService],

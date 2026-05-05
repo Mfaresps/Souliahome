@@ -53,7 +53,7 @@ export class SettingsController {
   async verifyVaultPassword(@Body('password') password: string) {
     const isValid = await this.settingsService.verifyVaultPassword(password);
     if (!isValid) {
-      throw new UnauthorizedException('كلمة المرور غلط');
+      throw new UnauthorizedException('Incorrect password');
     }
     return { valid: true };
   }

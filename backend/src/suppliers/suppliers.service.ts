@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Supplier, SupplierDocument } from './schemas/supplier.schema';
@@ -24,12 +24,30 @@ export class SuppliersService {
   }
 
   async create(dto: CreateSupplierDto): Promise<SupplierDocument> {
-    return this.supplierModel.create(dto);
+    const normalizedName = dto.name.trim();
+    const existing = await this.supplierModel
+      .findOne({ name: { $regex: `^${normalizedName}$`, $options: 'i' } })
+      .exec();
+    if (existing) {
+      throw new ConflictException('المورد موجود بالفعل. يرجى تحديث السجل الموجود.');
+    }
+    return this.supplierModel.create({ ...dto, name: normalizedName });
   }
 
   async update(id: string, dto: UpdateSupplierDto): Promise<SupplierDocument> {
+    const updateData: Partial<UpdateSupplierDto> = { ...dto };
+    if (updateData.name) {
+      const normalizedName = updateData.name.trim();
+      const existing = await this.supplierModel
+        .findOne({ name: { $regex: `^${normalizedName}$`, $options: 'i' }, _id: { $ne: id } })
+        .exec();
+      if (existing) {
+        throw new ConflictException('يوجد مورد آخر بهذا الاسم بالفعل.');
+      }
+      updateData.name = normalizedName;
+    }
     const supplier = await this.supplierModel
-      .findByIdAndUpdate(id, dto, { new: true })
+      .findByIdAndUpdate(id, updateData, { new: true })
       .exec();
     if (!supplier) {
       throw new NotFoundException('المورد غير موجود');

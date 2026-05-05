@@ -130,6 +130,13 @@ export class CreateTransactionDto {
   @IsOptional()
   readonly discountCodeType?: string;
 
+  @IsOptional()
+  readonly manualDiscount?: number;
+
+  @IsString()
+  @IsOptional()
+  readonly manualDiscountType?: string;
+
   @IsString()
   @IsOptional()
   readonly depMethod?: string;
@@ -151,6 +158,10 @@ export class CreateTransactionDto {
   @IsString({ each: true })
   @IsOptional()
   readonly invoiceImages?: string[];
+
+  @IsString()
+  @IsOptional()
+  readonly highValueDiscountOtpId?: string;
 }
 
 export class UpdateTransactionDto {
@@ -224,6 +235,13 @@ export class UpdateTransactionDto {
   @IsString()
   @IsOptional()
   readonly discountCodeType?: string;
+
+  @IsOptional()
+  readonly manualDiscount?: number;
+
+  @IsString()
+  @IsOptional()
+  readonly manualDiscountType?: string;
 
   @IsString()
   @IsOptional()

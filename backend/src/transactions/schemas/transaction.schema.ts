@@ -88,6 +88,12 @@ export class Transaction {
   @Prop({ default: '' })
   discountCodeType: string; // 'percent' | 'fixed' | '' (for code-applied discounts)
 
+  @Prop({ default: 0 })
+  manualDiscount: number; // Separate manual discount amount (stored directly, not inferred)
+
+  @Prop({ default: '' })
+  manualDiscountType: string; // 'fixed' | 'percent' (for display label only)
+
   @Prop()
   depMethod: string;
 

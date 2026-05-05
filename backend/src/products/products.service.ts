@@ -129,7 +129,7 @@ export class ProductsService {
 
     for (const tx of txDocs) {
       let changed = false;
-      for (const item of tx.items as Array<Record<string, unknown>>) {
+      for (const item of tx.items as unknown as Array<Record<string, unknown>>) {
         const matchById = item['productId'] === productId;
         const matchByOldName = oldName && item['name'] === oldName;
         const matchByOldCode = oldCode && item['code'] === oldCode;
@@ -256,7 +256,7 @@ export class ProductsService {
 
       for (const tx of txDocs) {
         let changed = false;
-        for (const item of tx.items as Array<Record<string, unknown>>) {
+        for (const item of tx.items as unknown as Array<Record<string, unknown>>) {
           if (item['code'] === currentCode || item['name'] === currentName || item['productId'] === pid) {
             if (item['productId'] !== pid) { item['productId'] = pid; changed = true; itemsPatched++; }
             if (item['name'] !== currentName) { item['name'] = currentName; changed = true; }

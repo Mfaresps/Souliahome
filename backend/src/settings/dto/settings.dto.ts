@@ -142,6 +142,16 @@ export class UpdateSettingsDto {
   @IsOptional()
   readonly staffDiscountEnabled?: boolean;
 
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly highValueDiscountLimit?: number;
+
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  readonly highValueDiscountOtpTtlMin?: number;
+
   @IsBoolean()
   @IsOptional()
   readonly printIncludePolicy?: boolean;

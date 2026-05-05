@@ -552,6 +552,19 @@ body.dark-mode .settings-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.2)}
   .rep-filter .rep-actions{margin-inline-start:0!important;justify-content:flex-end}
   .rep-filter .rep-custom input[type=date]{flex:1;min-width:0}
 }
+/* ── Report Section Tabs ── */
+.rep-section-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin:12px 0 0;overflow-x:auto;scrollbar-width:none}
+.rep-section-tabs::-webkit-scrollbar{display:none}
+.rep-sec-tab{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;font-size:.86rem;font-weight:600;font-family:'Cairo',sans-serif;border:none;background:none;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s,background .15s;border-radius:0;white-space:nowrap}
+.rep-sec-tab:hover{color:var(--text);background:var(--primary-pale)}
+.rep-sec-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.rep-tab-panel{display:none;animation:repTabIn .2s var(--ease-out)}
+.rep-tab-panel.active{display:block}
+@keyframes repTabIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){
+  .rep-sec-tab{padding:8px 14px;font-size:.8rem;gap:5px}
+  .rep-sec-tab svg{display:none}
+}
 .tab-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
 .section-tab-bar{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
 .section-tab-bar .s-tab{display:flex;align-items:center;gap:7px;padding:10px 18px;font-size:.85rem;font-weight:600;border:none;background:none;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;border-radius:0;white-space:nowrap}
@@ -5087,9 +5100,10 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             إضافة صنف
           </button>
-          <button class="tx-action-btn" onclick="openDiscountModal()">
+          <button id="tx-disc-btn" class="tx-action-btn" onclick="openDiscountModal()" title="">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
             خصم
+            <svg id="tx-disc-lock-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="display:none;opacity:.7;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
           </button>
           <button class="tx-action-btn tx-offers-btn" id="tx-show-offers-btn" onclick="showAllOffers()" style="display:none" title="عرض جميع الأكواد المتاحة">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -5222,6 +5236,31 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <div style="display:flex;gap:10px;justify-content:center">
       <button class="btn btn-primary" onclick="confirmTxSave()" style="flex:1">✓ تأكيد الحفظ</button>
       <button class="btn btn-outline" onclick="closeTxConfirmModal()" style="flex:1">✕ إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- High-value discount OTP modal -->
+<div class="modal-overlay" id="hv-otp-modal">
+  <div class="modal" style="max-width:440px">
+    <h3 style="text-align:center;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px">
+      <span style="display:inline-flex;width:22px;height:22px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></span>
+      كود تحقق خصم مرتفع
+    </h3>
+    <p style="text-align:center;color:var(--muted);font-size:.85rem;margin:0 0 14px">
+      الخصم يتجاوز الحد المسموح. تم إرسال كود رباعي للمدير عبر التنبيهات.
+    </p>
+    <div id="hv-otp-info" style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:.85rem;color:var(--text)"></div>
+    <input type="text" id="hv-otp-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
+      placeholder="••••" autocomplete="off"
+      style="width:100%;text-align:center;font-size:1.6rem;letter-spacing:.6em;padding:12px;font-weight:700;border:1px solid var(--border);border-radius:10px;margin-bottom:10px" />
+    <div id="hv-otp-msg" style="text-align:center;font-size:.85rem;min-height:18px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" id="hv-otp-submit" onclick="submitHighValueOtp()" style="flex:1">تحقق وتطبيق</button>
+      <button class="btn btn-outline" onclick="closeHighValueOtpModal()" style="flex:1">إلغاء</button>
+    </div>
+    <div style="text-align:center;margin-top:8px">
+      <button class="btn btn-link btn-sm" onclick="resendHighValueOtp()" style="font-size:.8rem">طلب كود جديد</button>
     </div>
   </div>
 </div>
@@ -6138,6 +6177,26 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 </div>
 <div class="kpi-strip" id="appr-kpi" style="grid-template-columns:repeat(auto-fit,minmax(128px,1fr))"></div>
 <div id="appr-list"></div>
+
+<!-- High-value discount OTP audit log -->
+<div class="card" style="margin-top:18px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+    <h3 style="margin:0;display:flex;align-items:center;gap:8px">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      سجل أكواد التحقق (الخصم المرتفع)
+    </h3>
+    <div style="display:flex;gap:8px">
+      <select id="otp-audit-status" style="width:160px" onchange="renderOtpAudit()">
+        <option value="">الحالة: الكل</option>
+        <option value="used">مستخدم</option>
+        <option value="unused">غير مستخدم</option>
+        <option value="expired">منتهي</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="renderOtpAudit()">تحديث</button>
+    </div>
+  </div>
+  <div id="otp-audit-list"><div class="empty-state">لم يتم التحميل بعد</div></div>
+</div>
 </div>
 <!-- History Hub content -->
 <div id="appr-tab-hub-content" style="display:none">
@@ -6195,8 +6254,8 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   <div><h2 class="page-title" data-i18n="reports">التقارير</h2><p class="page-subtitle" data-i18n="reportsSubtitle">تحليل الأداء المالي والمبيعات والمخزون</p></div>
 </div>
 
-<!-- Period Filter Bar -->
-<div class="filter-card rep-filter" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<!-- Global Filter Bar (shared across all tabs) -->
+<div class="filter-card rep-filter" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:0">
   <div class="rep-presets" style="display:flex;gap:6px;flex-wrap:wrap">
     <button class="tab-btn active" data-rep-preset="today" onclick="setReportPeriod('today',this)">اليوم</button>
     <button class="tab-btn" data-rep-preset="week" onclick="setReportPeriod('week',this)">الأسبوع</button>
@@ -6223,127 +6282,176 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 </div>
 
 <!-- Period Echo -->
-<div id="rep-period-echo" style="margin:10px 0 14px;color:var(--muted);font-size:.85rem"></div>
+<div id="rep-period-echo" style="margin:8px 0 0;color:var(--muted);font-size:.85rem"></div>
 
-<!-- KPI Cards -->
-<div class="grid grid-4 mb-20 rep-kpi-grid" id="rep-stats" style="gap:12px"></div>
+<!-- Report Section Tabs -->
+<div class="rep-section-tabs" role="tablist">
+  <button class="rep-sec-tab active" data-rep-tab="kpis" onclick="switchReportTab('kpis',this)" role="tab" aria-selected="true">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    مؤشرات الأداء
+  </button>
+  <button class="rep-sec-tab" data-rep-tab="charts" onclick="switchReportTab('charts',this)" role="tab" aria-selected="false">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    المبيعات والمشتريات
+  </button>
+  <button class="rep-sec-tab" data-rep-tab="discounts" onclick="switchReportTab('discounts',this)" role="tab" aria-selected="false">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+    أكواد الخصم
+  </button>
+</div>
 
-<!-- Best Seller Highlight -->
-<div class="card mb-20" id="rep-best-seller-card" style="display:none;background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(22,163,74,.04));border:1px solid rgba(16,185,129,.25);padding:14px 18px">
-  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-    <div style="font-size:1.6rem;display:flex;align-items:center"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg></div>
-    <div style="flex:1;min-width:200px">
-      <div style="color:var(--muted);font-size:.78rem;margin-bottom:4px">المنتج الأكثر مبيعاً في الفترة</div>
-      <div id="rep-best-seller-name" style="font-size:1.05rem;font-weight:700;color:var(--text)"></div>
+<!-- ── TAB 1: KPI Cards ── -->
+<div class="rep-tab-panel active" id="rep-panel-kpis">
+  <div class="grid grid-4 mb-20 rep-kpi-grid" id="rep-stats" style="gap:12px;margin-top:16px"></div>
+
+  <!-- Best Seller Highlight -->
+  <div class="card mb-20" id="rep-best-seller-card" style="display:none;background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(22,163,74,.04));border:1px solid rgba(16,185,129,.25);padding:14px 18px">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="font-size:1.6rem;display:flex;align-items:center"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg></div>
+      <div style="flex:1;min-width:200px">
+        <div style="color:var(--muted);font-size:.78rem;margin-bottom:4px">المنتج الأكثر مبيعاً في الفترة</div>
+        <div id="rep-best-seller-name" style="font-size:1.05rem;font-weight:700;color:var(--text)"></div>
+      </div>
+      <div style="text-align:end">
+        <div style="color:var(--muted);font-size:.78rem">الكمية</div>
+        <div id="rep-best-seller-qty" style="font-size:1.1rem;font-weight:700;color:#16a34a"></div>
+      </div>
+      <div style="text-align:end">
+        <div style="color:var(--muted);font-size:.78rem">الإيراد</div>
+        <div id="rep-best-seller-rev" style="font-size:1.1rem;font-weight:700;color:#0066cc"></div>
+      </div>
     </div>
-    <div style="text-align:end">
-      <div style="color:var(--muted);font-size:.78rem">الكمية</div>
-      <div id="rep-best-seller-qty" style="font-size:1.1rem;font-weight:700;color:#16a34a"></div>
+  </div>
+
+  <!-- Item Analysis Table -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <h3 style="font-size:.95rem;color:var(--muted);margin:0">تحليل الأصناف</h3>
+      <input type="text" id="profit-search" placeholder="بحث عن صنف..." style="padding:4px 8px;width:200px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.85rem" oninput="filterProfitTable()">
     </div>
-    <div style="text-align:end">
-      <div style="color:var(--muted);font-size:.78rem">الإيراد</div>
-      <div id="rep-best-seller-rev" style="font-size:1.1rem;font-weight:700;color:#0066cc"></div>
+    <div class="overflow-x">
+      <table id="rep-profit-table" style="width:100%;border-collapse:collapse;font-size:.9rem">
+        <thead>
+          <tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
+            <th style="padding:8px;text-align:right" data-i18n="colHash">#</th>
+            <th style="padding:8px;text-align:right" data-i18n="product">الصنف</th>
+            <th style="padding:8px;text-align:center" data-i18n="qty">الكمية</th>
+            <th style="padding:8px;text-align:right" data-i18n="colRevenue">الإيراد</th>
+            <th style="padding:8px;text-align:right" data-i18n="colCost">التكلفة</th>
+            <th style="padding:8px;text-align:right" data-i18n="colProfit">الربح</th>
+            <th style="padding:8px;text-align:center" data-i18n="colMargin">الهامش %</th>
+            <th style="padding:8px;text-align:center" data-i18n="status">الحالة</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
   </div>
 </div>
 
-<!-- Trend Chart (Daily) -->
-<div class="card mb-20">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-    <h3 style="margin:0;font-size:.95rem;color:var(--muted);display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg><span data-i18n="repDailySalesTrend">اتجاه المبيعات اليومي</span></h3>
-    <div style="display:flex;gap:6px">
-      <button class="btn btn-sm btn-outline rep-trend-btn active" data-trend="sales" onclick="setTrendMetric('sales',this)">المبيعات</button>
-      <button class="btn btn-sm btn-outline rep-trend-btn" data-trend="purchases" onclick="setTrendMetric('purchases',this)">المشتريات</button>
-      <button class="btn btn-sm btn-outline rep-trend-btn" data-trend="orders" onclick="setTrendMetric('orders',this)">عدد الفواتير</button>
+<!-- ── TAB 2: Sales & Purchases ── -->
+<div class="rep-tab-panel" id="rep-panel-charts">
+  <!-- Daily Trend -->
+  <div class="card mb-16" style="margin-top:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <h3 style="margin:0;font-size:.95rem;color:var(--muted);display:flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        <span data-i18n="repDailySalesTrend">اتجاه المبيعات اليومي</span>
+      </h3>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-sm btn-outline rep-trend-btn active" data-trend="sales" onclick="setTrendMetric('sales',this)">المبيعات</button>
+        <button class="btn btn-sm btn-outline rep-trend-btn" data-trend="purchases" onclick="setTrendMetric('purchases',this)">المشتريات</button>
+        <button class="btn btn-sm btn-outline rep-trend-btn" data-trend="orders" onclick="setTrendMetric('orders',this)">عدد الفواتير</button>
+      </div>
+    </div>
+    <div style="position:relative;height:300px"><canvas id="chart-trend"></canvas></div>
+  </div>
+
+  <!-- Comparison Charts -->
+  <div class="grid grid-2 mb-16">
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:.95rem;color:var(--muted)">المبيعات والمشتريات</h3>
+      <div style="position:relative;height:240px"><canvas id="chart-salesvspurch"></canvas></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:.95rem;color:var(--muted)">الأرباح والمصاريف</h3>
+      <div style="position:relative;height:240px"><canvas id="chart-profit"></canvas></div>
     </div>
   </div>
-  <div style="position:relative;height:280px"><canvas id="chart-trend"></canvas></div>
-</div>
 
-<!-- Comparison Charts -->
-<div class="grid grid-2 mb-20">
-  <div class="card"><h3 style="margin-bottom:12px;font-size:.95rem;color:var(--muted)">المبيعات والمشتريات</h3><div style="position:relative;height:240px"><canvas id="chart-salesvspurch"></canvas></div></div>
-  <div class="card"><h3 style="margin-bottom:12px;font-size:.95rem;color:var(--muted)">الأرباح والمصاريف</h3><div style="position:relative;height:240px"><canvas id="chart-profit"></canvas></div></div>
-</div>
-
-<div class="grid grid-2 mb-20">
-  <div class="card"><h3 style="margin-bottom:12px;font-size:.95rem;color:var(--muted)">الأكثر مبيعاً</h3><div style="position:relative;height:280px"><canvas id="chart-top"></canvas></div></div>
-  <div class="card"><h3 style="margin-bottom:12px;font-size:.95rem;color:var(--muted)">المنتجات الراكدة (مبيعات قليلة)</h3><div style="position:relative;height:280px"><canvas id="chart-low"></canvas></div></div>
-</div>
-
-<!-- Top Customers -->
-<div class="card mb-20">
-  <h3 style="font-size:.95rem;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span data-i18n="repTopCustomers">أفضل العملاء</span></h3>
-  <div class="overflow-x">
-    <table id="rep-customers-table" style="width:100%;border-collapse:collapse;font-size:.9rem">
-      <thead>
-        <tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
-          <th style="padding:8px;text-align:right">#</th>
-          <th style="padding:8px;text-align:right">العميل</th>
-          <th style="padding:8px;text-align:center">عدد الفواتير</th>
-          <th style="padding:8px;text-align:right">الإيراد</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Profit Table -->
-<div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-    <h3 style="font-size:.95rem;color:var(--muted);margin:0">تحليل الأصناف</h3>
-    <div style="font-size:.9rem;color:var(--muted)"><input type="text" id="profit-search" placeholder="بحث عن صنف..." style="padding:4px 8px;width:200px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)" oninput="filterProfitTable()"></div>
-  </div>
-  <div class="overflow-x">
-    <table id="rep-profit-table" style="width:100%;border-collapse:collapse;font-size:.9rem">
-      <thead>
-        <tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
-          <th style="padding:8px;text-align:right" data-i18n="colHash">#</th>
-          <th style="padding:8px;text-align:right" data-i18n="product">الصنف</th>
-          <th style="padding:8px;text-align:center" data-i18n="qty">الكمية</th>
-          <th style="padding:8px;text-align:right" data-i18n="colRevenue">الإيراد</th>
-          <th style="padding:8px;text-align:right" data-i18n="colCost">التكلفة</th>
-          <th style="padding:8px;text-align:right" data-i18n="colProfit">الربح</th>
-          <th style="padding:8px;text-align:center" data-i18n="colMargin">الهامش %</th>
-          <th style="padding:8px;text-align:center" data-i18n="status">الحالة</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Discount Codes Report -->
-<div class="card" id="rep-discount-codes-section" style="margin-top:20px;display:none">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="width:32px;height:32px;border-radius:8px;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#047857" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-      </span>
-      <h3 style="font-size:.95rem;color:var(--text);margin:0;font-weight:600">أداء أكواد الخصم</h3>
+  <!-- Top / Low Sellers -->
+  <div class="grid grid-2 mb-16">
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:.95rem;color:var(--muted)">الأكثر مبيعاً</h3>
+      <div style="position:relative;height:280px"><canvas id="chart-top"></canvas></div>
     </div>
-    <span id="rep-dc-period-label" style="font-size:.8rem;color:var(--muted)"></span>
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:.95rem;color:var(--muted)">المنتجات الراكدة (مبيعات قليلة)</h3>
+      <div style="position:relative;height:280px"><canvas id="chart-low"></canvas></div>
+    </div>
   </div>
-  <div class="overflow-x">
-    <table id="rep-discount-codes-table" style="width:100%;border-collapse:collapse;font-size:.88rem">
-      <thead>
-        <tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
-          <th style="padding:8px 10px;text-align:right">#</th>
-          <th style="padding:8px 10px;text-align:right">الكود</th>
-          <th style="padding:8px 10px;text-align:right">الوصف</th>
-          <th style="padding:8px 10px;text-align:center">النوع</th>
-          <th style="padding:8px 10px;text-align:center">مرات الاستخدام</th>
-          <th style="padding:8px 10px;text-align:right">إجمالي الخصم</th>
-          <th style="padding:8px 10px;text-align:right">إجمالي قيمة الطلبات</th>
-          <th style="padding:8px 10px;text-align:center">الحالة</th>
-        </tr>
-      </thead>
-      <tbody id="rep-discount-codes-tbody"></tbody>
-    </table>
+
+  <!-- Top Customers -->
+  <div class="card">
+    <h3 style="font-size:.95rem;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      <span data-i18n="repTopCustomers">أفضل العملاء</span>
+    </h3>
+    <div class="overflow-x">
+      <table id="rep-customers-table" style="width:100%;border-collapse:collapse;font-size:.9rem">
+        <thead>
+          <tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
+            <th style="padding:8px;text-align:right">#</th>
+            <th style="padding:8px;text-align:right">العميل</th>
+            <th style="padding:8px;text-align:center">عدد الفواتير</th>
+            <th style="padding:8px;text-align:right">الإيراد</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
-  <div id="rep-dc-empty" style="display:none;text-align:center;padding:28px;color:var(--muted);font-size:.88rem">لا توجد أكواد خصم مُستخدمة في هذه الفترة</div>
 </div>
+
+<!-- ── TAB 3: Discount Codes ── -->
+<div class="rep-tab-panel" id="rep-panel-discounts">
+  <div class="card" id="rep-discount-codes-section" style="margin-top:16px;display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:32px;height:32px;border-radius:8px;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#047857" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        </span>
+        <h3 style="font-size:.95rem;color:var(--text);margin:0;font-weight:600">أداء أكواد الخصم</h3>
+      </div>
+      <span id="rep-dc-period-label" style="font-size:.8rem;color:var(--muted)"></span>
+    </div>
+    <div class="overflow-x">
+      <table id="rep-discount-codes-table" style="width:100%;border-collapse:collapse;font-size:.88rem">
+        <thead>
+          <tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
+            <th style="padding:8px 10px;text-align:right">#</th>
+            <th style="padding:8px 10px;text-align:right">الكود</th>
+            <th style="padding:8px 10px;text-align:right">الوصف</th>
+            <th style="padding:8px 10px;text-align:center">النوع</th>
+            <th style="padding:8px 10px;text-align:center">مرات الاستخدام</th>
+            <th style="padding:8px 10px;text-align:right">إجمالي الخصم</th>
+            <th style="padding:8px 10px;text-align:right">إجمالي قيمة الطلبات</th>
+            <th style="padding:8px 10px;text-align:center">الحالة</th>
+          </tr>
+        </thead>
+        <tbody id="rep-discount-codes-tbody"></tbody>
+      </table>
+    </div>
+    <div id="rep-dc-empty" style="display:none;text-align:center;padding:28px;color:var(--muted);font-size:.88rem">لا توجد أكواد خصم مُستخدمة في هذه الفترة</div>
+  </div>
+  <div id="rep-discount-no-codes" style="display:none;margin-top:16px" class="card">
+    <div style="text-align:center;padding:40px;color:var(--muted)">
+      <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px;opacity:.4"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      <div style="font-size:.95rem">لا توجد أكواد خصم مُعرَّفة بعد</div>
+    </div>
+  </div>
+</div>
+
 </div>
 
 
@@ -6803,6 +6911,13 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
             </span>
             <span class="lock-switch"><input type="checkbox" id="set-staff-discount-enabled" onchange="toggleLockSetting('staffDiscount', this.checked)"><span class="lock-switch-slider"></span></span>
           </label>
+          <div class="lock-toggle-row" style="margin-top:10px;align-items:center">
+            <span class="lock-toggle-info">
+              <span class="lock-toggle-title">حد الخصم المرتفع (يحتاج كود تحقق OTP)</span>
+              <span class="lock-toggle-sub">أي خصم أعلى من هذا الحد يتطلب كود تحقق رباعي يصل المدير عبر التنبيهات</span>
+            </span>
+            <input type="number" id="set-high-value-discount-limit" min="0" step="1" style="width:110px;text-align:center" onchange="saveHighValueDiscountLimit(this.value)" />
+          </div>
           <label class="lock-toggle-row" style="margin-top:10px">
             <span class="lock-toggle-info">
               <span class="lock-toggle-title">ملخص الإدارة اليومي عند الدخول</span>
@@ -6997,6 +7112,37 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
           <span>إدارة TAGs</span>
         </div>
         <div class="settings-card" id="tag-mgmt-card"></div>
+      </div>
+
+      <!-- Discount Audit Log (admin only) -->
+      <div id="disc-audit-log-section" style="display:none;margin-top:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+          <div class="settings-section-label" style="margin-bottom:0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <span>سجل خصومات الباقات (مراجعة)</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="_clearBundleAuditLog()" style="font-size:.75rem;color:var(--muted)">مسح السجل</button>
+            <button class="btn btn-outline btn-sm" onclick="renderDiscAuditLog()" style="font-size:.75rem">تحديث</button>
+          </div>
+        </div>
+        <div id="disc-audit-log-body" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface2)">
+          <table style="width:100%;border-collapse:collapse;font-size:.78rem">
+            <thead>
+              <tr style="background:var(--bg-alt);position:sticky;top:0;z-index:1">
+                <th style="padding:8px 10px;text-align:right;font-weight:600;color:var(--muted);white-space:nowrap">التاريخ والوقت</th>
+                <th style="padding:8px 10px;text-align:right;font-weight:600;color:var(--muted)">الموظف</th>
+                <th style="padding:8px 10px;text-align:right;font-weight:600;color:var(--muted)">الإجراء</th>
+                <th style="padding:8px 10px;text-align:right;font-weight:600;color:var(--muted)">الكود / الباقة</th>
+                <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--muted)">المبلغ</th>
+                <th style="padding:8px 10px;text-align:right;font-weight:600;color:var(--muted)">الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="disc-audit-log-rows">
+              <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:.8rem">لا يوجد سجل بعد — ستظهر هنا كل محاولات الخصم على الباقات</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- placeholder when neither is shown (non-admin) -->
@@ -7813,6 +7959,29 @@ let txManualDiscount = 0;
 let txManualDiscountType = 'fixed'; // 'fixed' | 'percent' (stored for display label only)
 // Smart discount suggestion engine state
 let _discSuggestions = []; // current computed suggestions [{bundleId,bundleName,codeId,code,type,value,matchedProductIds,totalProducts,isFull,discountAmt,priority,partialMissing}]
+// ── Bundle-discount permission & audit system ────────────────────────────────
+let _bundleDiscAuditLog = []; // [{ts,employee,action,bundleId,bundleName,code,amount,status,reason}]
+function getHighValueDiscountLimit() { return Number(settings?.highValueDiscountLimit ?? 200); }
+
+function _canApplyBundleDiscount() {
+  // Admins always allowed; staff need the global staff-discount setting ON
+  return isAdmin() || isStaffDiscountAllowed();
+}
+
+function _logBundleDiscAction(action, opts = {}) {
+  _bundleDiscAuditLog.unshift({
+    ts: new Date().toISOString(),
+    employee: currentUser?.name || currentUser?.username || 'غير معروف',
+    action,               // 'applied' | 'removed' | 'denied' | 'approved' | 'pending_approval'
+    bundleId:   opts.bundleId   || '',
+    bundleName: opts.bundleName || '',
+    code:       opts.code       || '',
+    amount:     opts.amount     || 0,
+    status:     opts.status     || action,
+    reason:     opts.reason     || '',
+  });
+  if (_bundleDiscAuditLog.length > 200) _bundleDiscAuditLog.length = 200;
+}
 let txDirty = false;
 let _pendingNavPage = null;
 let txComments = []; // Array of {text, type, employee, timestamp}
@@ -12137,6 +12306,7 @@ function movementStatusCell(tx) {
 function initTxPage() {
   txItems = []; txDiscount = 0; txDiscountType = 'fixed'; txAppliedCodeId = ''; txAppliedCode = ''; txAppliedCodes = []; txComments = []; txDirty = false; _discSuggestions = []; _dsbDismissed = false;
   renderTxFields(); renderTxItems(); calcTxSummary(); renderTxComments();
+  _refreshDiscBtnLock();
 }
 
 function setTxType(type, opts) {
@@ -12910,7 +13080,8 @@ function filterTxProducts(q) { filterTxPicker(q); }
 
 function openDiscountModal() {
   const itemsTotal = txItems.reduce((s, it) => s + (it.qty * it.price), 0);
-  if (!isAdmin() && !isStaffDiscountAllowed()) {
+  if (!_canApplyBundleDiscount()) {
+    _logBundleDiscAction('denied', { reason: 'غير مصرح — محاولة فتح نافذة الخصم', amount: 0 });
     openModal(`
       <h3>خصم على الفاتورة</h3>
       <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">يحتاج تطبيق الخصم إذن المدير — أدخل كلمة مرور المدير للمتابعة</p>
@@ -13011,6 +13182,11 @@ function removeSummaryManualDisc() {
 
 // Inline edit manual discount from the summary card
 function startEditManualDisc() {
+  if (!_canApplyBundleDiscount()) {
+    _logBundleDiscAction('denied', { reason: 'محاولة تعديل خصم يدوي مباشرة من الملخص بدون صلاحية', amount: 0 });
+    toast('غير مصرح لك بتعديل الخصم اليدوي', true);
+    return;
+  }
   const row = qs('#sum-manual-disc-row');
   if (!row) return;
   const cur = txManualDiscount || 0;
@@ -13032,9 +13208,24 @@ function commitManualDiscEdit() {
   const itemsTotal = txItems.reduce((s, it) => s + (it.qty * it.price), 0);
   const codesDisc = _txCodesTotal(itemsTotal);
   if (val + codesDisc > itemsTotal) { toast('الخصم يتجاوز إجمالي الأصناف', true); return; }
+  // High-value gate — requires OTP from manager
+  if (val > getHighValueDiscountLimit()) {
+    calcTxSummary(); // restore display first
+    _logBundleDiscAction('pending_approval', { amount: val, reason: `خصم يدوي عالي القيمة من الملخص (${fmtN(val)} ج) — يحتاج كود تحقق` });
+    openHighValueOtpFlow(val, itemsTotal, () => {
+      txManualDiscount = val;
+      txManualDiscountType = 'fixed';
+      _syncDiscountFromCodes(itemsTotal);
+      _logBundleDiscAction('approved', { amount: val, reason: 'تم تطبيق الخصم بعد التحقق بكود OTP' });
+      calcTxSummary();
+      toast('تم تطبيق الخصم بعد التحقق ✓');
+    });
+    return;
+  }
   txManualDiscount = val;
   txManualDiscountType = 'fixed';
   _syncDiscountFromCodes(itemsTotal);
+  _logBundleDiscAction('applied', { amount: val });
   calcTxSummary();
   if (val > 0) toast('تم تحديث الخصم اليدوي ✓');
 }
@@ -13223,12 +13414,38 @@ function applyDiscount() {
   }
   if (rawTotal <= 0) { toast('أدخل قيمة خصم أكبر من صفر', true); return; }
 
+  // ── Permission gate ──
+  if (!_canApplyBundleDiscount()) {
+    _logBundleDiscAction('denied', { reason: 'محاولة تطبيق خصم يدوي بدون صلاحية', amount: manualDisc });
+    toast('غير مصرح لك بتطبيق خصم يدوي على هذه الباقة', true);
+    closeModal(); return;
+  }
+
+  // ── High-value approval gate (OTP-based) ──
+  if (manualDisc > getHighValueDiscountLimit()) {
+    const _discType = txDiscountType;
+    _logBundleDiscAction('pending_approval', { amount: manualDisc, reason: `خصم عالي القيمة (${fmtN(manualDisc)} ج) — يحتاج كود تحقق OTP` });
+    closeModal();
+    openHighValueOtpFlow(manualDisc, itemsTotal, () => {
+      txManualDiscount = manualDisc;
+      txManualDiscountType = _discType;
+      _syncDiscountFromCodes(itemsTotal);
+      _logBundleDiscAction('approved', { amount: manualDisc, reason: 'تم تطبيق الخصم بعد التحقق بكود OTP' });
+      calcTxSummary();
+      toast('تم تطبيق الخصم بعد التحقق ✓');
+    });
+    return;
+  }
+
   // ── Store separately so summary can display two distinct rows ──
   txManualDiscount = manualDisc;
   txManualDiscountType = txDiscountType; // keep type label for display
   _syncDiscountFromCodes(itemsTotal);
+  _logBundleDiscAction('applied', { amount: manualDisc });
   calcTxSummary(); closeModal(); toast('تم تطبيق الخصم ✓');
 }
+
+// Removed: _confirmHighValueDiscount — replaced by OTP flow (openHighValueOtpFlow)
 
 // ══════════════════════════════════════════════════════════════════
 // SMART DISCOUNT SUGGESTION ENGINE
@@ -13495,6 +13712,18 @@ function _dsbRemoveCode(codeId, code) {
 
 /** Apply a suggested discount code instantly. */
 function _applySuggestion(codeId, code, type, value, bundleId) {
+  // ── Permission gate ──
+  if (!_canApplyBundleDiscount()) {
+    const bundleObj = (settings.discountBundles || []).find(b => b.id === bundleId);
+    _logBundleDiscAction('denied', {
+      bundleId, bundleName: bundleObj?.name || '',
+      code, amount: Number(value),
+      reason: 'غير مصرح — محاولة تطبيق كود باقة بدون صلاحية',
+    });
+    toast('غير مصرح لك بتطبيق خصم يدوي على هذه الباقة', true);
+    return;
+  }
+
   // Check validity again at apply time
   const now = new Date();
   const codeObj = (settings.discountCodes || []).find(c => c.id === codeId);
@@ -13504,6 +13733,28 @@ function _applySuggestion(codeId, code, type, value, bundleId) {
 
   const alreadyIdx = txAppliedCodes.findIndex(c => c.id === codeId);
   if (alreadyIdx >= 0) { toast('الكود مُطبَّق بالفعل ✓'); return; }
+
+  const _itemsTotal = txItems.reduce((s, it) => s + (it.qty * it.price), 0);
+  const discAmt = codeObj.type === 'percent' ? Math.round(_itemsTotal * codeObj.value / 100) : codeObj.value;
+  const bundleObj = (settings.discountBundles || []).find(b => b.id === bundleId);
+
+  // ── High-value gate (OTP-based) ──
+  if (discAmt > getHighValueDiscountLimit()) {
+    const _itemsTotalSnap = _itemsTotal;
+    _logBundleDiscAction('pending_approval', {
+      bundleId, bundleName: bundleObj?.name || '',
+      code, amount: discAmt, reason: `خصم باقة عالي القيمة (${fmtN(discAmt)} ج) — يحتاج كود تحقق OTP`,
+    });
+    openHighValueOtpFlow(discAmt, _itemsTotalSnap, () => {
+      _doApplySuggestion(codeId, code, type, value, bundleId, discAmt, bundleObj, true);
+    });
+    return;
+  }
+
+  _doApplySuggestion(codeId, code, type, value, bundleId, discAmt, bundleObj);
+}
+
+function _doApplySuggestion(codeId, code, type, value, bundleId, discAmt, bundleObj, adminApproved = false) {
   txAppliedCodes.push({ id: codeId, code, type, value: Number(value) });
   // Sync legacy single-code references for save compatibility
   if (txAppliedCodes.length === 1) {
@@ -13517,6 +13768,11 @@ function _applySuggestion(codeId, code, type, value, bundleId) {
   const _itemsTotal = txItems.reduce((s, it) => s + (it.qty * it.price), 0);
   txDiscount = _txCodesTotal(_itemsTotal);
   txDiscountType = 'fixed';
+  _logBundleDiscAction(adminApproved ? 'approved' : 'applied', {
+    bundleId, bundleName: bundleObj?.name || '',
+    code, amount: discAmt,
+    reason: adminApproved ? 'وافق المدير على خصم باقة عالي القيمة' : '',
+  });
   calcTxSummary();
   renderTxItems(); // refresh spark badges to show applied state
   _renderDiscountSuggestionBanner();
@@ -14100,15 +14356,18 @@ function printTxInvoice() {
   const timeStr = new Date().toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' });
   const isSales = txType === 'مبيعات';
   const typeLabel = isSales ? 'فاتورة مبيعات' : 'فاتورة مشتريات';
-  const discLabel = txDiscountType === 'percent' ? `خصم ${txDiscount}%` : 'خصم';
+  const discCodePills = txAppliedCodes.length > 0
+    ? txAppliedCodes.map(c => `<span style="display:inline-block;margin-right:3px;padding:1px 5px;border-radius:8px;background:#d1fae5;color:#047857;font-size:8px;font-weight:700;border:1px solid #a7f3d0;font-family:monospace;letter-spacing:.3px">${c.code}</span>`).join('')
+    : `<span class="disc-manual-label">مخصص</span>`;
+  const discLabel = `الخصم ${discCodePills}`;
   const shipCo = qs('#tx-shipco')?.value || '';
   const includePolicyPage = settings?.printIncludePolicy !== false;
   const pFontSize   = Number(settings?.printPolicyFontSize)  || 10;
   const pFontWeight = settings?.printPolicyFontWeight        || 'normal';
   const pHighlight  = settings?.printPolicyHighlight         !== false;
   const policyText = isSales
-    ? (settings?.printPolicySales    || 'البضاعة المباعة لا تُرد ولا تُستبدل إلا بعيب مصنعي ثابت.\nيُشترط الاحتفاظ بالفاتورة لأي طلب استبدال أو استرجاع.\nمدة الضمان وفقاً لسياسة الشركة.')
-    : (settings?.printPolicyPurchase || 'يُرجى مراجعة البضاعة عند الاستلام والتأكد من مطابقتها للطلب.\nأي اعتراض على الكميات أو الأسعار يجب إبلاغه خلال ٤٨ ساعة من الاستلام.\nتُعتبر هذه الفاتورة مستنداً رسمياً للمعاملة التجارية.');
+    ? (settings?.printPolicySales    || '##سياسة الاسترجاع والاستبدال\nالبضاعة المباعة لا تُرد ولا تُستبدل إلا بعيب مصنعي ثابت.\nيُشترط الاحتفاظ بالفاتورة لأي طلب استبدال أو استرجاع.\n##الضمان\nمدة الضمان وفقاً لسياسة الشركة.')
+    : (settings?.printPolicyPurchase || '##سياسة الاستلام\nيُرجى مراجعة البضاعة عند الاستلام والتأكد من مطابقتها للطلب.\n##الاعتراض على الفاتورة\nأي اعتراض على الكميات أو الأسعار يجب إبلاغه خلال ٤٨ ساعة من الاستلام.\nتُعتبر هذه الفاتورة مستنداً رسمياً للمعاملة التجارية.');
   const policyTitle = isSales ? 'سياسة المبيعات والمرتجعات والاستبدال' : 'سياسة المشتريات';
 
   const itemsHtml = validItems.map((it, i) => {
@@ -14126,12 +14385,13 @@ function printTxInvoice() {
     </tr>`;
   }).join('');
 
-  const policyItems = policyText.split('\n').filter(l => l.trim()).map((l, i) => {
+  const policyItems = policyText.split('\n').filter(l => l.trim()).map(l => {
     const txt = l.trim();
-    const hlStyle = pHighlight ? 'background:#f0fdf4;border-right:3px solid #0f3d25;padding-right:8px;border-radius:0 3px 3px 0;' : '';
-    return `<li style="font-size:${pFontSize}px;font-weight:${pFontWeight};line-height:1.7;${hlStyle}padding:4px 8px 4px ${pHighlight ? '0' : '4px'};counter-increment:policy-item">
-      <span style="display:inline-block;min-width:18px;font-size:9px;font-weight:700;color:#0f3d25;margin-left:6px">${i + 1}.</span>${txt}
-    </li>`;
+    if (txt.startsWith('##')) {
+      const title = txt.slice(2).trim();
+      return `<div class="pol-item-headline" dir="auto">${title}</div>`;
+    }
+    return `<div class="pol-item-body" style="font-size:${pFontSize}px;font-weight:${pFontWeight}" dir="auto">${txt}</div>`;
   }).join('');
 
   const depMethodLabel = depMethod
@@ -14174,12 +14434,18 @@ table{width:100%;border-collapse:collapse;font-size:10.5px}
 thead tr{background:#0f3d25;color:#fff}
 th{padding:8px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.15px;white-space:nowrap}
 th:first-child{text-align:center;width:26px}
-th:nth-child(3),th:nth-child(4){text-align:center;width:52px}
-th:nth-child(5),th:last-child{text-align:left}
+th:nth-child(3){text-align:center;width:52px}
+th:nth-child(4){text-align:center;width:48px}
+th:nth-child(5){text-align:right;width:90px}
+th:last-child{text-align:right;width:100px}
 td{padding:7px 10px;border-bottom:1px solid #f2f2f2;vertical-align:middle;line-height:1.35}
 td:first-child{text-align:center}
 td:nth-child(3),td:nth-child(4){text-align:center}
+td:nth-child(5),td:last-child{text-align:right;white-space:nowrap}
 tbody tr:last-child td{border-bottom:none}
+.amt-num{font-variant-numeric:tabular-nums;direction:ltr;display:inline-block}
+.amt-cur{font-size:8.5px;color:#888;margin-right:2px}
+.disc-manual-label{display:inline-block;margin-right:5px;padding:2px 7px;border-radius:4px;background:#f1f5f9;color:#64748b;font-size:8px;font-weight:700;border:1px solid #e2e8f0;font-family:'Cairo',sans-serif;letter-spacing:.2px;vertical-align:middle}
 /* ── Totals ── */
 .totals-area{display:flex;justify-content:flex-end;padding:14px 24px 0}
 .totals-box{min-width:240px;border:1px solid #e8e8e8;border-radius:6px;overflow:hidden;font-size:10.5px}
@@ -14207,7 +14473,9 @@ tbody tr:last-child td{border-bottom:none}
 .pol-hdr-right .pol-title{font-size:14px;font-weight:800;color:#111;line-height:1.2}
 .pol-hdr-right .pol-sub{font-size:9px;color:#999;margin-top:3px}
 .pol-section-title{font-size:11px;font-weight:800;color:#0f3d25;padding-bottom:6px;border-bottom:1px solid #e8e8e8;margin-bottom:14px}
-.pol-list{list-style:none;padding:0;display:flex;flex-direction:column;gap:4px;counter-reset:policy-item}
+.pol-list{padding:0;display:flex;flex-direction:column;gap:0}
+.pol-item-headline{font-size:11px;font-weight:800;color:#0f3d25;padding:14px 0 4px;line-height:1.3;border-bottom:1px solid #e8e8e8;margin-bottom:6px}
+.pol-item-body{line-height:1.75;padding:2px 0;color:#333}
 .pol-foot{display:flex;justify-content:space-between;margin-top:28px;padding-top:10px;border-top:1px solid #ebebeb;font-size:8px;color:#bbb}
 @media print{
   body{background:#fff;padding:0}
@@ -14218,8 +14486,17 @@ tbody tr:last-child td{border-bottom:none}
 <div class="page">
   <div class="hdr">
     <div class="logo-block">
-      <div class="logo">SOULIA</div>
-      <div class="tagline">نظام إدارة المخازن</div>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 576" height="38" style="display:block" fill="#0f3d25">
+        <g transform="translate(0,576) scale(0.1,-0.1)">
+          <path d="M14900 5436 c-327 -70 -542 -311 -528 -591 10 -201 158 -359 423-451 75 -26 91 -28 240 -29 138 0 171 3 239 23 222 64 366 193 405 363 16 68 13 218 -5 280 -41 141 -152 276 -276 337 -139 68 -357 98 -498 68z"/>
+          <path d="M5645 5424 c-429 -33 -747 -132 -1017 -315 -200 -137 -389 -361 -505-599 -214 -443 -294 -939 -280 -1755 17 -1002 154 -1495 516 -1855 318 -318 705 -453 1328 -467 459 -10 765 40 1038 171 536 257 850 730 964 1451 92 588 93 1281 0 1846 -81 497 -286 897 -586 1141 -322 262 -673 373 -1208 382 -110 2 -222 2 -250 0z m345 -1085 c248 -40 395 -247 445 -625 43 -332 41 -1015 -6-1354 -69 -506 -250 -800 -524 -851 -75 -14 -234 -6 -301 15 -225 70 -376 333-428 746 -46 367 -41 1025 10 1365 53 349 171 557 367 651 121 57 287 78 437 53z"/>
+          <path d="M1720 5405 c-440 -57 -799 -224 -1076 -499 -178 -177 -278 -337 -354-565 -86 -257 -93 -562 -19 -784 96 -291 393 -629 789 -899 52 -36 257 -161 455 -278 483 -286 631 -386 700 -477 111 -145 44 -269 -175 -324 -83 -21 -326-19 -423 4 -264 62 -420 250 -493 597 -14 63 -35 138 -48 165 -66 144 -276 246 -481 231 -349 -23 -556 -337 -516 -783 33 -366 157 -645 391 -873 238-232 596 -394 1003 -454 395 -58 734 -37 1042 65 768 254 1187 942 1015 1667-83 350 -359 689 -795 977 -61 40 -261 158 -445 261 -594 332 -709 430 -710 599 0 151 108 251 295 274 203 25 373 -37 475 -173 49 -66 71 -112 105 -216 54 -170 137 -290 228 -329 68 -29 153 -44 257 -44 163 0 275 45 381 153 110 112 157 233 166 432 13 271 -63 549 -203 745 -185 259 -511 443 -914 514 -150 27 -496 35 -650 14z"/>
+          <path d="M17675 5403 c-592 -38 -979 -177 -1227 -441 -113 -120 -162 -250-163 -427 0 -94 2 -105 33 -168 64 -130 195 -241 342 -289 119 -39 370 -27 650 32 209 44 313 53 582 48 223 -4 248 -6 301 -27 32 -12 76 -37 99 -54 80-62 134 -205 126 -333 -4 -65 -24 -68 -108 -13 -157 103 -276 132 -535 131-548 0 -980 -153 -1292 -455 -170 -165 -293 -364 -373 -604 -123 -370 -145-847 -55 -1203 78 -310 205 -540 410 -745 202 -203 445 -334 733 -396 141 -30 415 -37 537 -14 214 40 437 168 646 371 91 89 120 101 155 67 25 -25 50 -88 64 -158 39 -202 104 -283 273 -337 88 -28 352 -36 456 -14 218 46 354 187 416 430 42 167 50 406 50 1576 0 809 -3 1084 -13 1180 -73 680 -216 1055 -521 1361 -208 209 -440 337 -751 414 -231 58 -570 85 -835 68z m436 -2497 c148-32 293 -135 349 -250 42 -85 53 -157 54 -331 0 -126 -3 -162 -22 -228 -71-248 -241 -420 -472 -478 -88 -22 -271 -18 -355 8 -169 53 -300 186 -357 363-26 82 -28 267 -4 378 31 143 116 302 207 389 134 126 397 192 600 149z"/>
+          <path d="M12744 5385 c-300 -65 -509 -409 -574 -944 -23 -194 -32 -774 -27-1901 4 -1010 6 -1167 21 -1250 81 -471 275 -715 656 -826 255 -74 665 -85 907 -24 275 70 384 229 387 565 1 155 -9 214 -55 311 -88 187 -285 279 -493 230 -93 -22 -123 -1 -152 106 -21 78 -28 284 -15 428 7 69 16 280 21 470 5 190 17 446 27 570 26 335 26 1452 0 1619 -22 137 -66 281 -115 374 -47 91-154 205 -224 239 -100 48 -237 61 -364 33z"/>
+          <path d="M10890 5374 c-199 -52 -339 -198 -397 -414 -16 -56 -18 -112 -18-425 0 -198 7 -459 14 -580 17 -271 19 -862 2 -1050 -52 -611 -170 -983 -369-1167 -88 -81 -146 -101 -282 -96 -95 3 -112 6 -172 36 -142 69 -227 228 -267 498 -35 232 -38 741 -11 1604 19 574 -1 852 -77 1095 -64 203 -183 364 -323 435 -102 52 -294 70 -401 37 -255 -77 -425 -455 -469 -1037 -5 -74 -15 -520-22 -990 -13 -918 -8 -1130 32 -1436 84 -645 307 -1073 694 -1331 245 -164 543 -234 936 -220 193 7 304 25 426 68 165 58 274 132 345 236 35 50 67 67 103 54 13 -5 68 -45 124 -88 180 -140 305 -193 457 -193 144 0 222 35 319 142 118 129 195 339 221 603 24 243 37 3164 15 3400 -29 307 -110 517 -260 667-87 88 -161 129 -276 153 -88 19 -272 18 -344 -1z"/>
+          <path d="M14961 4259 c-41 -6 -115 -23 -165 -39 -204 -66 -331 -199 -388 -407-20 -75 -22 -106 -29 -763 -4 -377 -7 -1018 -8 -1425 -1 -812 4 -891 55 -1019 53 -133 181 -237 349 -282 94 -25 353 -31 435 -9 225 58 378 226 452 495 l23 85 0 1490 0 1490 -23 59 c-62 164 -183 273 -345 311 -83 19 -264 26 -356 14z"/>
+        </g>
+      </svg>
     </div>
     <div class="hdr-meta">
       <span class="inv-type-badge">${typeLabel}</span>
@@ -14232,14 +14509,13 @@ tbody tr:last-child td{border-bottom:none}
       <div class="info-lbl">${isSales ? 'بيانات العميل' : 'بيانات المورد'}</div>
       <div class="info-val">${clientName}</div>
       ${clientPhone ? `<div class="info-sub">${clientPhone}</div>` : ''}
-      ${empName   ? `<div class="info-sub">الموظف: ${empName}</div>` : ''}
     </div>
     <div class="info-cell">
       <div class="info-lbl">حالة الدفع</div>
       <div style="margin:2px 0 4px">
         ${remaining <= 0
           ? '<span class="badge b-ok">✓ مكتمل الدفع</span>'
-          : `<span class="badge b-pend">متبقي ${remaining.toLocaleString('ar-EG')} ج.م</span>`}
+          : `<span class="badge b-pend">متبقي ${remaining.toLocaleString('ar-EG')}</span>`}
       </div>
       ${shipCo ? `<div class="info-sub">شركة الشحن: ${shipCo}</div>` : ''}
     </div>
@@ -14252,7 +14528,7 @@ tbody tr:last-child td{border-bottom:none}
         <th>اسم الصنف</th>
         <th>الكمية</th>
         <th>سعر الوحدة</th>
-        <th>الإجمالي (ج.م)</th>
+        <th>الإجمالي</th>
       </tr></thead>
       <tbody>${itemsHtml}</tbody>
     </table>
@@ -14262,7 +14538,7 @@ tbody tr:last-child td{border-bottom:none}
       <div class="t-row"><span class="t-lbl">إجمالي الأصناف</span><span class="t-val">${itemsTotal.toLocaleString('ar-EG')}</span></div>
       ${discount > 0 ? `<div class="t-row"><span class="t-lbl">${discLabel}</span><span class="t-val r">− ${discount.toLocaleString('ar-EG')}</span></div>` : ''}
       ${shipCost > 0 ? `<div class="t-row"><span class="t-lbl">تكلفة الشحن</span><span class="t-val">+ ${shipCost.toLocaleString('ar-EG')}</span></div>` : ''}
-      <div class="t-row grand"><span>${isSales ? 'إجمالي الفاتورة' : 'إجمالي المشتريات'}</span><span>${total.toLocaleString('ar-EG')} ج.م</span></div>
+      <div class="t-row grand"><span>${isSales ? 'إجمالي الفاتورة' : 'إجمالي المشتريات'}</span><span>${total.toLocaleString('ar-EG')}</span></div>
       ${deposit > 0
         ? `<div class="t-row dep-row">
              <span class="t-lbl">${isSales ? 'المبلغ المدفوع' : 'العربون المدفوع'}${depMethodLabel ? `<span class="dep-badge">${depMethodLabel}</span>` : ''}</span>
@@ -14270,7 +14546,7 @@ tbody tr:last-child td{border-bottom:none}
            </div>`
         : `<div class="t-row"><span class="t-lbl" style="color:#bbb;font-size:9px">لا يوجد دفعة مقدمة — ${isSales ? 'يُحصَّل عند التسليم' : 'المبلغ بالكامل للمورد لاحقاً'}</span></div>`}
       ${deposit > 0 && remaining > 0
-        ? `<div class="t-row rem-row"><span class="t-lbl">${isSales ? 'المتبقي للتحصيل' : 'المتبقي للمورد'}</span><span class="t-val r">${remaining.toLocaleString('ar-EG')} ج.م</span></div>`
+        ? `<div class="t-row rem-row"><span class="t-lbl">${isSales ? 'المتبقي للتحصيل' : 'المتبقي للمورد'}</span><span class="t-val r">${remaining.toLocaleString('ar-EG')}</span></div>`
         : deposit > 0
           ? `<div class="t-row dep-row"><span class="t-lbl" style="color:#15803d;font-weight:700">✓ مدفوع بالكامل</span></div>`
           : ''}
@@ -14278,8 +14554,8 @@ tbody tr:last-child td{border-bottom:none}
   </div>
   ${note ? `<div class="note-wrap"><div class="note-lbl">ملاحظات</div>${note}</div>` : ''}
   <div class="inv-foot">
-    <span>تم الإصدار بواسطة نظام SOULIA — ${dateStr}</span>
-    ${empName ? `<span class="inv-foot-emp">الموظف: ${empName}</span>` : ''}
+    <span>تم الإصدار بواسطة SOULIA — ${dateStr}</span>
+    <span class="inv-foot-emp">مسجل العملية: ${empName || '—'}</span>
   </div>
 </div>
 ${includePolicyPage ? `
@@ -14287,19 +14563,16 @@ ${includePolicyPage ? `
 <div class="page" style="page-break-before:always">
   <div class="pol-page">
     <div class="pol-hdr">
-      <div>
-        <div class="logo">SOULIA</div>
-        <div class="tagline">نظام إدارة المخازن</div>
-      </div>
+      <div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 576" height="32" style="display:block" fill="#0f3d25"><g transform="translate(0,576) scale(0.1,-0.1)"><path d="M14900 5436 c-327 -70 -542 -311 -528 -591 10 -201 158 -359 423-451 75 -26 91 -28 240 -29 138 0 171 3 239 23 222 64 366 193 405 363 16 68 13 218 -5 280 -41 141 -152 276 -276 337 -139 68 -357 98 -498 68z"/><path d="M5645 5424 c-429 -33 -747 -132 -1017 -315 -200 -137 -389 -361 -505-599 -214 -443 -294 -939 -280 -1755 17 -1002 154 -1495 516 -1855 318 -318 705 -453 1328 -467 459 -10 765 40 1038 171 536 257 850 730 964 1451 92 588 93 1281 0 1846 -81 497 -286 897 -586 1141 -322 262 -673 373 -1208 382 -110 2 -222 2 -250 0z m345 -1085 c248 -40 395 -247 445 -625 43 -332 41 -1015 -6-1354 -69 -506 -250 -800 -524 -851 -75 -14 -234 -6 -301 15 -225 70 -376 333-428 746 -46 367 -41 1025 10 1365 53 349 171 557 367 651 121 57 287 78 437 53z"/><path d="M1720 5405 c-440 -57 -799 -224 -1076 -499 -178 -177 -278 -337 -354-565 -86 -257 -93 -562 -19 -784 96 -291 393 -629 789 -899 52 -36 257 -161 455 -278 483 -286 631 -386 700 -477 111 -145 44 -269 -175 -324 -83 -21 -326-19 -423 4 -264 62 -420 250 -493 597 -14 63 -35 138 -48 165 -66 144 -276 246 -481 231 -349 -23 -556 -337 -516 -783 33 -366 157 -645 391 -873 238-232 596 -394 1003 -454 395 -58 734 -37 1042 65 768 254 1187 942 1015 1667-83 350 -359 689 -795 977 -61 40 -261 158 -445 261 -594 332 -709 430 -710 599 0 151 108 251 295 274 203 25 373 -37 475 -173 49 -66 71 -112 105 -216 54 -170 137 -290 228 -329 68 -29 153 -44 257 -44 163 0 275 45 381 153 110 112 157 233 166 432 13 271 -63 549 -203 745 -185 259 -511 443 -914 514 -150 27 -496 35 -650 14z"/><path d="M17675 5403 c-592 -38 -979 -177 -1227 -441 -113 -120 -162 -250-163 -427 0 -94 2 -105 33 -168 64 -130 195 -241 342 -289 119 -39 370 -27 650 32 209 44 313 53 582 48 223 -4 248 -6 301 -27 32 -12 76 -37 99 -54 80-62 134 -205 126 -333 -4 -65 -24 -68 -108 -13 -157 103 -276 132 -535 131-548 0 -980 -153 -1292 -455 -170 -165 -293 -364 -373 -604 -123 -370 -145-847 -55 -1203 78 -310 205 -540 410 -745 202 -203 445 -334 733 -396 141 -30 415 -37 537 -14 214 40 437 168 646 371 91 89 120 101 155 67 25 -25 50 -88 64 -158 39 -202 104 -283 273 -337 88 -28 352 -36 456 -14 218 46 354 187 416 430 42 167 50 406 50 1576 0 809 -3 1084 -13 1180 -73 680 -216 1055 -521 1361 -208 209 -440 337 -751 414 -231 58 -570 85 -835 68z m436 -2497 c148-32 293 -135 349 -250 42 -85 53 -157 54 -331 0 -126 -3 -162 -22 -228 -71-248 -241 -420 -472 -478 -88 -22 -271 -18 -355 8 -169 53 -300 186 -357 363-26 82 -28 267 -4 378 31 143 116 302 207 389 134 126 397 192 600 149z"/><path d="M12744 5385 c-300 -65 -509 -409 -574 -944 -23 -194 -32 -774 -27-1901 4 -1010 6 -1167 21 -1250 81 -471 275 -715 656 -826 255 -74 665 -85 907 -24 275 70 384 229 387 565 1 155 -9 214 -55 311 -88 187 -285 279 -493 230 -93 -22 -123 -1 -152 106 -21 78 -28 284 -15 428 7 69 16 280 21 470 5 190 17 446 27 570 26 335 26 1452 0 1619 -22 137 -66 281 -115 374 -47 91-154 205 -224 239 -100 48 -237 61 -364 33z"/><path d="M10890 5374 c-199 -52 -339 -198 -397 -414 -16 -56 -18 -112 -18-425 0 -198 7 -459 14 -580 17 -271 19 -862 2 -1050 -52 -611 -170 -983 -369-1167 -88 -81 -146 -101 -282 -96 -95 3 -112 6 -172 36 -142 69 -227 228 -267 498 -35 232 -38 741 -11 1604 19 574 -1 852 -77 1095 -64 203 -183 364 -323 435 -102 52 -294 70 -401 37 -255 -77 -425 -455 -469 -1037 -5 -74 -15 -520-22 -990 -13 -918 -8 -1130 32 -1436 84 -645 307 -1073 694 -1331 245 -164 543 -234 936 -220 193 7 304 25 426 68 165 58 274 132 345 236 35 50 67 67 103 54 13 -5 68 -45 124 -88 180 -140 305 -193 457 -193 144 0 222 35 319 142 118 129 195 339 221 603 24 243 37 3164 15 3400 -29 307 -110 517 -260 667-87 88 -161 129 -276 153 -88 19 -272 18 -344 -1z"/><path d="M14961 4259 c-41 -6 -115 -23 -165 -39 -204 -66 -331 -199 -388 -407-20 -75 -22 -106 -29 -763 -4 -377 -7 -1018 -8 -1425 -1 -812 4 -891 55 -1019 53 -133 181 -237 349 -282 94 -25 353 -31 435 -9 225 58 378 226 452 495 l23 85 0 1490 0 1490 -23 59 c-62 164 -183 273 -345 311 -83 19 -264 26 -356 14z"/></g></svg></div>
       <div class="pol-hdr-right">
         <div class="pol-title">${policyTitle}</div>
         <div class="pol-sub">${ref ? `مرفقة بالفاتورة # ${ref} — ` : ''}${dateStr}</div>
       </div>
     </div>
     <div class="pol-section-title">${policyTitle}</div>
-    <ol class="pol-list">${policyItems}</ol>
+    <div class="pol-list">${policyItems}</div>
     <div class="pol-foot">
-      <span>SOULIA — نظام إدارة المخازن والمبيعات</span>
+      <span>SOULIA</span>
       <span>${dateStr}</span>
     </div>
   </div>
@@ -14818,6 +15091,9 @@ function _assertNotDuplicateTxSubmit(body) {
   _txSubmitHistory.set(fp, Date.now());
 }
 
+let _pendingHighValueOtpId = '';
+let _pendingHighValueOtpAmount = 0;
+
 async function saveTx() {
   if (txType === 'مرتجع') { await saveReturnRequest(); return; }
   // Auto-merge any remaining duplicates before validation (silent — already shown in UI)
@@ -14826,6 +15102,28 @@ async function saveTx() {
   const validItems = txItems.filter(it => it.productId);
   if (!validItems.length) { toast('أضف صنف واحد على الأقل', true); return; }
   if (!validateTx()) return;
+
+  // High-value discount OTP gate
+  try {
+    const _discRaw = getEffectiveDiscount();
+    const _itemsTot = validItems.reduce((s, it) => s + (Number(it.qty)||0) * (Number(it.price)||0), 0);
+    const _disc = Math.min(Math.max(0, _discRaw), _itemsTot);
+    const _limit = Number(settings?.highValueDiscountLimit ?? 200);
+    if (_disc > _limit) {
+      // If OTP not yet validated for this exact discount amount → open OTP flow
+      if (!_pendingHighValueOtpId || Math.abs(_pendingHighValueOtpAmount - _disc) > 0.5) {
+        await openHighValueOtpFlow(_disc, _itemsTot);
+        return; // openHighValueOtpFlow re-invokes saveTx() on success
+      }
+    } else {
+      // Discount under threshold — clear any stale OTP
+      _pendingHighValueOtpId = '';
+      _pendingHighValueOtpAmount = 0;
+    }
+  } catch (e) {
+    toast(e?.message || 'فشل التحقق من حد الخصم', true);
+    return;
+  }
 
   try {
     const items = validItems.map(it => {
@@ -14864,7 +15162,10 @@ async function saveTx() {
       comments: txComments.length > 0 ? txComments : [],
       discountCodeId: txAppliedCodes.length > 0 ? txAppliedCodes.map(c => c.id).join(',') : (txAppliedCodeId || ''),
       discountCode: txAppliedCodes.length > 0 ? txAppliedCodes.map(c => c.code).join('+') : (txAppliedCode || ''),
-      discountCodeType: txAppliedCodes.length > 0 ? txAppliedCodes.map(c => c.type).join(',') : (txAppliedCodeId ? txDiscountType : '') };
+      discountCodeType: txAppliedCodes.length > 0 ? txAppliedCodes.map(c => c.type).join(',') : (txAppliedCodeId ? txDiscountType : ''),
+      manualDiscount: txManualDiscount || 0,
+      manualDiscountType: txManualDiscountType || 'fixed',
+      highValueDiscountOtpId: _pendingHighValueOtpId || '' };
     if (txType === 'مبيعات') {
       const saleRemaining = Math.max(0, total - deposit);
       Object.assign(body, { shipCo: qs('#tx-shipco')?.value || '', shipZone: txShipZone, shipCost, deposit,
@@ -15003,6 +15304,8 @@ async function confirmTxSave() {
       pendingTxData
     );
     txDirty = false;
+    _pendingHighValueOtpId = '';
+    _pendingHighValueOtpAmount = 0;
     if (result.queued) {
       toast(t('oqSyncQueued'));
     } else {
@@ -15183,6 +15486,16 @@ async function confirmReturnRequest() {
   }
 }
 
+function _refreshDiscBtnLock() {
+  const btn  = qs('#tx-disc-btn');
+  const lock = qs('#tx-disc-lock-icon');
+  if (!btn || !lock) return;
+  const allowed = _canApplyBundleDiscount();
+  lock.style.display = allowed ? 'none' : 'inline-block';
+  btn.title = allowed ? '' : 'غير مصرح لك بتطبيق خصم يدوي — يحتاج إذن المدير';
+  btn.style.opacity = allowed ? '' : '0.7';
+}
+
 function resetTx() {
   txItems = []; txDiscount = 0; txDiscountType = 'fixed'; txAppliedCodeId = ''; txAppliedCode = ''; txAppliedCodes = []; txManualDiscount = 0; txManualDiscountType = 'fixed'; txDirty = false; _discSuggestions = []; _dsbDismissed = false;
   const manualRefundField = qs('#ret-manual-refund');
@@ -15195,6 +15508,7 @@ function resetTx() {
   activeDraftId = null;
   renderActiveDraftPill();
   renderTxFields(); renderTxItems(); calcTxSummary();
+  _refreshDiscBtnLock();
 }
 
 /* ============================================================
@@ -18210,6 +18524,7 @@ async function openEditMovement(id) {
   // Init editAppliedCodes from stored comma-separated codes
   editAppliedCodes = [];
   editManualDiscount = 0;
+  editManualDiscountType = 'fixed';
   if (tx.discountCodeId) {
     const ids = tx.discountCodeId.split(',').filter(Boolean);
     const codes = (tx.discountCode || '').split('+').filter(Boolean);
@@ -18219,11 +18534,15 @@ async function openEditMovement(id) {
       editAppliedCodes.push({ id: cid, code: codes[i] || cid, type: types[i] || 'fixed', value: settingsCode?.value || 0 });
     });
   }
-  // Reconstruct manual discount = total stored discount - code discount
-  if (Number(tx.discount) > 0) {
+  // Use stored manualDiscount directly; fall back to inferring from total - codes for legacy records
+  if (tx.manualDiscount !== undefined && tx.manualDiscount !== null) {
+    editManualDiscount = Number(tx.manualDiscount) || 0;
+    editManualDiscountType = tx.manualDiscountType || 'fixed';
+  } else if (Number(tx.discount) > 0) {
     const _initItemsTotal = (tx.items || []).reduce((s, it) => s + ((it.qty || 1) * (it.price || 0)), 0);
     const _initCodeDisc = editAppliedCodes.reduce((s, c) => s + (c.type === 'percent' ? Math.round(_initItemsTotal * c.value / 100) : c.value), 0);
     editManualDiscount = Math.max(0, Number(tx.discount) - _initCodeDisc);
+    editManualDiscountType = 'fixed';
   }
   const shipCoOpts = getShipCompanyOptions(tx.shipCo || '');
   const isSale = tx.type === 'مبيعات';
@@ -18529,6 +18848,7 @@ function editPickerChangeQty(productId, delta) {
   filterEditPicker(qs('#tx-picker-q')?.value || '');
 }
 let editDiscountType = 'fixed';
+let editManualDiscountType = 'fixed'; // persists across overlay open/close
 function _closeEditDiscOverlay() {
   const el = document.getElementById('edit-disc-overlay');
   if (el) el.remove();
@@ -18614,9 +18934,9 @@ function _rebuildEditDiscSection(itemsTotal) {
 
 function showEditDiscountForm() {
   const itemsTotal = editTxItems.reduce((s, it) => s + (it.qty * it.price), 0);
-  const curDisc = Number(qs('#edit-tx-discount')?.value) || 0;
-  const manualDisc = editAppliedCodes.length === 0 ? curDisc : 0;
-  editDiscountType = 'fixed';
+  // Restore saved manual discount and type (pre-fill from state, not from hidden input)
+  const manualDisc = editManualDiscount || 0;
+  editDiscountType = editManualDiscountType || 'fixed';
 
   const now = new Date();
   const activeCodes = (settings.discountCodes || []).filter(c => {
@@ -18626,17 +18946,21 @@ function showEditDiscountForm() {
     return true;
   });
 
+  const isPercent = editDiscountType === 'percent';
+  const fixedActive = isPercent ? '' : ' active';
+  const pctActive = isPercent ? ' active' : '';
+  const discLabel = isPercent ? 'النسبة (%)' : 'خصم يدوي';
   const initialCodesHtml = activeCodes.length ? `<div id="edit-disc-codes-section"></div>` : '<div id="edit-disc-codes-section"></div>';
 
   _openEditDiscOverlay(`
     <h3 style="margin:0 0 14px">خصم على الفاتورة</h3>
     ${initialCodesHtml}
     <div class="flex gap-8 mb-16">
-      <button class="tab-btn active" onclick="setEditDiscType('fixed',this)">مبلغ ثابت</button>
-      <button class="tab-btn" onclick="setEditDiscType('percent',this)">نسبة %</button>
+      <button class="tab-btn${fixedActive}" onclick="setEditDiscType('fixed',this)">مبلغ ثابت</button>
+      <button class="tab-btn${pctActive}" onclick="setEditDiscType('percent',this)">نسبة %</button>
     </div>
     <div class="form-group">
-      <label id="edit-disc-label">خصم يدوي</label>
+      <label id="edit-disc-label">${discLabel}</label>
       <input type="text" inputmode="numeric" id="edit-disc-value" value="${manualDisc || ''}" placeholder="0" autofocus style="width:100%;font-size:1.1rem;text-align:center" oninput="this.value=this.value.replace(/[^0-9.]/g,'');updateEditDiscPreview(${itemsTotal})">
     </div>
     <div class="text-sm text-muted" id="edit-disc-preview" style="margin-bottom:8px"></div>
@@ -18721,6 +19045,7 @@ function applyEditDiscount(itemsTotal) {
   if (totalDisc <= 0) { toast('أدخل قيمة خصم أكبر من صفر', true); return; }
   const discInput = qs('#edit-tx-discount');
   editManualDiscount = manualDisc;
+  editManualDiscountType = editDiscountType;
   if (discInput) { discInput.value = totalDisc; recalcEditTx(); }
   // Write combined multi-code data to hidden inputs
   const idInp = qs('#edit-tx-discount-code-id');
@@ -18747,6 +19072,7 @@ function removeEditDiscount() {
   const hasDiscount = Number(discInput?.value) > 0;
   if (discInput) { discInput.value = 0; recalcEditTx(); }
   editManualDiscount = 0;
+  editManualDiscountType = 'fixed';
   editAppliedCodes = [];
   const idInp = qs('#edit-tx-discount-code-id'); if (idInp) idInp.value = '';
   const codeInp = qs('#edit-tx-discount-code'); if (codeInp) codeInp.value = '';
@@ -18754,6 +19080,35 @@ function removeEditDiscount() {
   _closeEditDiscOverlay();
   _editDsbDismissed = false; _renderEditDiscountSuggestionBanner();
   toast(hasDiscount ? 'تم حذف الخصم بنجاح ✓' : 'لا يوجد خصم لإزالته');
+}
+function removeEditSummaryCode(codeId) {
+  editAppliedCodes = editAppliedCodes.filter(c => c.id !== codeId);
+  const it = editTxItems.reduce((s, x) => s + (x.qty * x.price), 0);
+  const newTotal = _editCodesTotal(it) + (editManualDiscount || 0);
+  const discInput = qs('#edit-tx-discount');
+  if (discInput) discInput.value = Math.min(newTotal, it);
+  const idInp = qs('#edit-tx-discount-code-id');
+  const codeInp = qs('#edit-tx-discount-code');
+  const typeInp = qs('#edit-tx-discount-code-type');
+  if (editAppliedCodes.length > 0) {
+    if (idInp) idInp.value = editAppliedCodes.map(c => c.id).join(',');
+    if (codeInp) codeInp.value = editAppliedCodes.map(c => c.code).join('+');
+    if (typeInp) typeInp.value = editAppliedCodes.map(c => c.type).join(',');
+  } else {
+    if (idInp) idInp.value = '';
+    if (codeInp) codeInp.value = '';
+    if (typeInp) typeInp.value = '';
+  }
+  recalcEditTx();
+  toast('تم إزالة الكود ✓');
+}
+function removeEditSummaryManualDisc() {
+  editManualDiscount = 0;
+  const it = editTxItems.reduce((s, x) => s + (x.qty * x.price), 0);
+  const discInput = qs('#edit-tx-discount');
+  if (discInput) discInput.value = Math.min(_editCodesTotal(it), it);
+  recalcEditTx();
+  toast('تم حذف الخصم اليدوي ✓');
 }
 function recalcEditTx() {
   editTxItems.forEach((it, i) => {
@@ -18826,12 +19181,26 @@ function recalcEditTx() {
   const hasCodeDisc = editAppliedCodes.length > 0 && codeDiscAmt > 0;
   const hasManualDisc = manualDiscAmt > 0;
 
-  const discRowHtml = hasCodeDisc && hasManualDisc
-    ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${codeDiscLabel}</span><span style="color:var(--red)">- ${fmtJ(codeDiscAmt)}</span></div>
-       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${manualDiscLabel}</span><span style="color:var(--red)">- ${fmtJ(manualDiscAmt)}</span></div>
-       <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:.78rem;color:var(--muted)"><span>إجمالي الخصم</span><span style="color:var(--red)">- ${fmtJ(discount)}</span></div>`
-    : hasCodeDisc
-    ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${codeDiscLabel}</span><span style="color:var(--red)">- ${fmtJ(codeDiscAmt)}</span></div>`
+  const _editCancelBtn = (onclick, title) => `<span onclick="${onclick}" title="${title}" style="cursor:pointer;width:16px;height:16px;border-radius:50%;background:rgba(220,38,38,.12);color:#dc2626;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;line-height:1;flex-shrink:0;margin-inline-start:4px">×</span>`;
+  const codeRowsHtml = editAppliedCodes.map(ac => {
+    const it = editTxItems.reduce((s, x) => s + (x.qty * x.price), 0);
+    const discAmt = ac.type === 'percent' ? Math.round(it * ac.value / 100) : ac.value;
+    const pct = ac.type === 'percent' ? ` -${ac.value}%` : '';
+    const _ePill2 = c => `<span style="background:rgba(16,185,129,.12);color:#065f46;border-radius:4px;padding:1px 6px;font-size:.72rem;font-weight:700;letter-spacing:.02em">${esc(c)}</span>`;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <span style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${_eDiscSvg} ${_ePill2(ac.code + pct)} ${_editCancelBtn(`removeEditSummaryCode('${esc(ac.id)}')`, 'إزالة الكود')}</span>
+      <span style="color:var(--red)">- ${fmtJ(discAmt)}</span></div>`;
+  }).join('');
+  const manualRowHtml = hasManualDisc
+    ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px" id="edit-sum-manual-disc-row">
+        <span style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${manualDiscLabel} ${_editCancelBtn('removeEditSummaryManualDisc()', 'حذف الخصم اليدوي')}</span>
+        <span style="color:var(--red)">- ${fmtJ(manualDiscAmt)}</span></div>`
+    : '';
+  const discTotalRow = (hasCodeDisc && hasManualDisc)
+    ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:.78rem;color:var(--muted)"><span>إجمالي الخصم</span><span style="color:var(--red)">- ${fmtJ(discount)}</span></div>`
+    : '';
+  const discRowHtml = (hasCodeDisc || hasManualDisc)
+    ? codeRowsHtml + manualRowHtml + discTotalRow
     : discount > 0
     ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${plainDiscLabel}</span><span style="color:var(--red)">- ${fmtJ(discount)}</span></div>`
     : '';
@@ -19041,6 +19410,8 @@ async function saveEditMovement(id) {
     discountCodeId: editDiscCodeId,
     discountCode: editDiscCode,
     discountCodeType: editDiscCodeType,
+    manualDiscount: editManualDiscount || 0,
+    manualDiscountType: editManualDiscountType || 'fixed',
     notes: qs('#edit-tx-notes').value, ...(itemsChanged ? { items: newItems, itemsTotal } : { itemsTotal }),
     total, remaining: newRemaining, payStatus: newRemaining <= 0 ? 'مكتمل' : 'معلق',
     // 📊 معلومات التعديل للتسجيل
@@ -19895,7 +20266,7 @@ async function executeBulkDiscount() {
   const isRemoval = discountAmt === 0;
   const label = isRemoval
     ? `هل تريد إزالة الخصم من ${ids.length} حركة محددة؟`
-    : `هل تريد تطبيق خصم ${fmtJ(discountAmt)} على ${ids.length} حركة محددة؟`;
+    : `هل تريد تطبيق خصم ${fmtJT(discountAmt)} على ${ids.length} حركة محددة؟`;
   const confirmed = await showConfirm(label, { title: 'تأكيد الخصم المجمّع', icon: isRemoval ? 'warn' : 'info' });
   if (!confirmed) return;
 
@@ -20573,13 +20944,18 @@ table{width:100%;border-collapse:collapse;font-size:10.5px}
 thead tr{background:#0f3d25;color:#fff}
 th{padding:8px 10px;text-align:right;font-size:9px;font-weight:600;letter-spacing:.15px;white-space:nowrap}
 th:first-child{text-align:center;width:26px}
-th:nth-child(3){text-align:center;width:60px}
-th:nth-child(4){text-align:center;width:52px}
-th:nth-child(5),th:last-child{text-align:left}
+th:nth-child(3){text-align:center;width:64px}
+th:nth-child(4){text-align:center;width:48px}
+th:nth-child(5){text-align:right;width:90px}
+th:last-child{text-align:right;width:100px}
 td{padding:7px 10px;border-bottom:1px solid #f2f2f2;vertical-align:middle;line-height:1.35}
 td:first-child{text-align:center;color:#aaa;font-size:9.5px}
 td:nth-child(3),td:nth-child(4){text-align:center}
+td:nth-child(5),td:last-child{text-align:right;white-space:nowrap}
 tbody tr:last-child td{border-bottom:none}
+.amt-num{font-variant-numeric:tabular-nums;direction:ltr;display:inline-block}
+.amt-cur{font-size:8.5px;color:#888;margin-right:2px}
+.disc-manual-label{display:inline-block;margin-right:5px;padding:2px 7px;border-radius:4px;background:#f1f5f9;color:#64748b;font-size:8px;font-weight:700;border:1px solid #e2e8f0;font-family:'Cairo',sans-serif;letter-spacing:.2px;vertical-align:middle}
 .totals-area{display:flex;justify-content:flex-end;padding:14px 24px 0}
 .totals-box{min-width:240px;border:1px solid #e8e8e8;border-radius:6px;overflow:hidden;font-size:10.5px}
 .t-row{display:flex;justify-content:space-between;align-items:center;padding:6px 14px;border-bottom:1px solid #f2f2f2}
@@ -20603,9 +20979,9 @@ tbody tr:last-child td{border-bottom:none}
 .pol-hdr-right .pol-title{font-size:14px;font-weight:800;color:#111;line-height:1.2}
 .pol-hdr-right .pol-sub{font-size:9px;color:#999;margin-top:3px}
 .pol-section-title{font-size:11px;font-weight:800;color:#0f3d25;padding-bottom:6px;border-bottom:1px solid #e8e8e8;margin-bottom:14px}
-.pol-list{list-style:none;padding:0;display:flex;flex-direction:column;gap:4px;counter-reset:policy-item}
-.pol-list li{font-size:${pFontSize}px;font-weight:${pFontWeight};line-height:1.7;${hlExtra}padding:4px 8px 4px 4px;counter-increment:policy-item}
-.pol-list li .num{display:inline-block;min-width:18px;font-size:9px;font-weight:700;color:#0f3d25;margin-left:6px}
+.pol-list{padding:0;display:flex;flex-direction:column;gap:0}
+.pol-item-headline{font-size:11px;font-weight:800;color:#0f3d25;padding:14px 0 4px;line-height:1.3;border-bottom:1px solid #e8e8e8;margin-bottom:6px}
+.pol-item-body{line-height:1.75;padding:2px 0;color:#333}
 .pol-foot{display:flex;justify-content:space-between;margin-top:28px;padding-top:10px;border-top:1px solid #ebebeb;font-size:8px;color:#bbb}
 @media print{body{background:#fff;padding:0}.page{box-shadow:none;width:100%;max-width:100%;margin-bottom:0}}`;
 }
@@ -20638,14 +21014,16 @@ function buildInvoiceHtml(tx) {
   const pFontWeight = settings?.printPolicyFontWeight        || 'normal';
   const pHighlight  = settings?.printPolicyHighlight         !== false;
   const policyText = isSales
-    ? (settings?.printPolicySales    || 'البضاعة المباعة لا تُرد ولا تُستبدل إلا بعيب مصنعي ثابت.\nيُشترط الاحتفاظ بالفاتورة لأي طلب استبدال أو استرجاع.\nمدة الضمان وفقاً لسياسة الشركة.')
-    : (settings?.printPolicyPurchase || 'يُرجى مراجعة البضاعة عند الاستلام والتأكد من مطابقتها للطلب.\nأي اعتراض على الكميات أو الأسعار يجب إبلاغه خلال ٤٨ ساعة من الاستلام.\nتُعتبر هذه الفاتورة مستنداً رسمياً للمعاملة التجارية.');
+    ? (settings?.printPolicySales    || '##سياسة الاسترجاع والاستبدال\nالبضاعة المباعة لا تُرد ولا تُستبدل إلا بعيب مصنعي ثابت.\nيُشترط الاحتفاظ بالفاتورة لأي طلب استبدال أو استرجاع.\n##الضمان\nمدة الضمان وفقاً لسياسة الشركة.')
+    : (settings?.printPolicyPurchase || '##سياسة الاستلام\nيُرجى مراجعة البضاعة عند الاستلام والتأكد من مطابقتها للطلب.\n##الاعتراض على الفاتورة\nأي اعتراض على الكميات أو الأسعار يجب إبلاغه خلال ٤٨ ساعة من الاستلام.\nتُعتبر هذه الفاتورة مستنداً رسمياً للمعاملة التجارية.');
   const policyTitle = isSales ? 'سياسة المبيعات والمرتجعات والاستبدال' : 'سياسة المشتريات';
-  const policyItems = policyText.split('\n').filter(l => l.trim()).map((l, i) => {
-    const hlStyle = pHighlight ? 'background:#f0fdf4;border-right:3px solid #0f3d25;padding-right:8px;border-radius:0 3px 3px 0;' : '';
-    return `<li style="font-size:${pFontSize}px;font-weight:${pFontWeight};line-height:1.7;${hlStyle}padding:4px 8px 4px 4px">
-      <span class="num">${i+1}.</span>${l.trim()}
-    </li>`;
+  const policyItems = policyText.split('\n').filter(l => l.trim()).map(l => {
+    const txt = l.trim();
+    if (txt.startsWith('##')) {
+      const title = txt.slice(2).trim();
+      return `<div class="pol-item-headline" dir="auto">${title}</div>`;
+    }
+    return `<div class="pol-item-body" style="font-size:${pFontSize}px;font-weight:${pFontWeight}" dir="auto">${txt}</div>`;
   }).join('');
   const depMethodLabel = tx.depMethod
     ? ({ 'كاش':'كاش','فودافون كاش':'فودافون كاش','Instapay':'InstaPay','تحويل بنكي':'تحويل بنكي' }[tx.depMethod] || esc(tx.depMethod))
@@ -20654,8 +21032,17 @@ function buildInvoiceHtml(tx) {
   return `<div class="page">
   <div class="hdr">
     <div class="logo-block">
-      <div class="logo">SOULIA</div>
-      <div class="tagline">نظام إدارة المخازن</div>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 576" height="38" style="display:block" fill="#0f3d25">
+        <g transform="translate(0,576) scale(0.1,-0.1)">
+          <path d="M14900 5436 c-327 -70 -542 -311 -528 -591 10 -201 158 -359 423-451 75 -26 91 -28 240 -29 138 0 171 3 239 23 222 64 366 193 405 363 16 68 13 218 -5 280 -41 141 -152 276 -276 337 -139 68 -357 98 -498 68z"/>
+          <path d="M5645 5424 c-429 -33 -747 -132 -1017 -315 -200 -137 -389 -361 -505-599 -214 -443 -294 -939 -280 -1755 17 -1002 154 -1495 516 -1855 318 -318 705 -453 1328 -467 459 -10 765 40 1038 171 536 257 850 730 964 1451 92 588 93 1281 0 1846 -81 497 -286 897 -586 1141 -322 262 -673 373 -1208 382 -110 2 -222 2 -250 0z m345 -1085 c248 -40 395 -247 445 -625 43 -332 41 -1015 -6-1354 -69 -506 -250 -800 -524 -851 -75 -14 -234 -6 -301 15 -225 70 -376 333-428 746 -46 367 -41 1025 10 1365 53 349 171 557 367 651 121 57 287 78 437 53z"/>
+          <path d="M1720 5405 c-440 -57 -799 -224 -1076 -499 -178 -177 -278 -337 -354-565 -86 -257 -93 -562 -19 -784 96 -291 393 -629 789 -899 52 -36 257 -161 455 -278 483 -286 631 -386 700 -477 111 -145 44 -269 -175 -324 -83 -21 -326-19 -423 4 -264 62 -420 250 -493 597 -14 63 -35 138 -48 165 -66 144 -276 246 -481 231 -349 -23 -556 -337 -516 -783 33 -366 157 -645 391 -873 238-232 596 -394 1003 -454 395 -58 734 -37 1042 65 768 254 1187 942 1015 1667-83 350 -359 689 -795 977 -61 40 -261 158 -445 261 -594 332 -709 430 -710 599 0 151 108 251 295 274 203 25 373 -37 475 -173 49 -66 71 -112 105 -216 54 -170 137 -290 228 -329 68 -29 153 -44 257 -44 163 0 275 45 381 153 110 112 157 233 166 432 13 271 -63 549 -203 745 -185 259 -511 443 -914 514 -150 27 -496 35 -650 14z"/>
+          <path d="M17675 5403 c-592 -38 -979 -177 -1227 -441 -113 -120 -162 -250-163 -427 0 -94 2 -105 33 -168 64 -130 195 -241 342 -289 119 -39 370 -27 650 32 209 44 313 53 582 48 223 -4 248 -6 301 -27 32 -12 76 -37 99 -54 80-62 134 -205 126 -333 -4 -65 -24 -68 -108 -13 -157 103 -276 132 -535 131-548 0 -980 -153 -1292 -455 -170 -165 -293 -364 -373 -604 -123 -370 -145-847 -55 -1203 78 -310 205 -540 410 -745 202 -203 445 -334 733 -396 141 -30 415 -37 537 -14 214 40 437 168 646 371 91 89 120 101 155 67 25 -25 50 -88 64 -158 39 -202 104 -283 273 -337 88 -28 352 -36 456 -14 218 46 354 187 416 430 42 167 50 406 50 1576 0 809 -3 1084 -13 1180 -73 680 -216 1055 -521 1361 -208 209 -440 337 -751 414 -231 58 -570 85 -835 68z m436 -2497 c148-32 293 -135 349 -250 42 -85 53 -157 54 -331 0 -126 -3 -162 -22 -228 -71-248 -241 -420 -472 -478 -88 -22 -271 -18 -355 8 -169 53 -300 186 -357 363-26 82 -28 267 -4 378 31 143 116 302 207 389 134 126 397 192 600 149z"/>
+          <path d="M12744 5385 c-300 -65 -509 -409 -574 -944 -23 -194 -32 -774 -27-1901 4 -1010 6 -1167 21 -1250 81 -471 275 -715 656 -826 255 -74 665 -85 907 -24 275 70 384 229 387 565 1 155 -9 214 -55 311 -88 187 -285 279 -493 230 -93 -22 -123 -1 -152 106 -21 78 -28 284 -15 428 7 69 16 280 21 470 5 190 17 446 27 570 26 335 26 1452 0 1619 -22 137 -66 281 -115 374 -47 91-154 205 -224 239 -100 48 -237 61 -364 33z"/>
+          <path d="M10890 5374 c-199 -52 -339 -198 -397 -414 -16 -56 -18 -112 -18-425 0 -198 7 -459 14 -580 17 -271 19 -862 2 -1050 -52 -611 -170 -983 -369-1167 -88 -81 -146 -101 -282 -96 -95 3 -112 6 -172 36 -142 69 -227 228 -267 498 -35 232 -38 741 -11 1604 19 574 -1 852 -77 1095 -64 203 -183 364 -323 435 -102 52 -294 70 -401 37 -255 -77 -425 -455 -469 -1037 -5 -74 -15 -520-22 -990 -13 -918 -8 -1130 32 -1436 84 -645 307 -1073 694 -1331 245 -164 543 -234 936 -220 193 7 304 25 426 68 165 58 274 132 345 236 35 50 67 67 103 54 13 -5 68 -45 124 -88 180 -140 305 -193 457 -193 144 0 222 35 319 142 118 129 195 339 221 603 24 243 37 3164 15 3400 -29 307 -110 517 -260 667-87 88 -161 129 -276 153 -88 19 -272 18 -344 -1z"/>
+          <path d="M14961 4259 c-41 -6 -115 -23 -165 -39 -204 -66 -331 -199 -388 -407-20 -75 -22 -106 -29 -763 -4 -377 -7 -1018 -8 -1425 -1 -812 4 -891 55 -1019 53 -133 181 -237 349 -282 94 -25 353 -31 435 -9 225 58 378 226 452 495 l23 85 0 1490 0 1490 -23 59 c-62 164 -183 273 -345 311 -83 19 -264 26 -356 14z"/>
+        </g>
+      </svg>
     </div>
     <div class="hdr-meta">
       <span class="inv-type-badge">${typeLabel}</span>
@@ -20668,7 +21055,6 @@ function buildInvoiceHtml(tx) {
       <div class="info-lbl">${isPur ? 'بيانات المورد' : 'بيانات العميل'}</div>
       <div class="info-val">${esc(tx.client || '—')}</div>
       ${tx.phone ? `<div class="info-sub">${esc(tx.phone)}</div>` : ''}
-      <div class="info-sub">الموظف: ${esc(tx.employee || '—')}</div>
     </div>
     <div class="info-cell">
       <div class="info-lbl">حالة الدفع</div>
@@ -20680,16 +21066,16 @@ function buildInvoiceHtml(tx) {
     <div class="tbl-title">تفاصيل الأصناف</div>
     <table>
       <thead><tr>
-        <th>#</th><th>اسم الصنف</th><th>الكود</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي (ج.م)</th>
+        <th>#</th><th>اسم الصنف</th><th>الكود</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th>
       </tr></thead>
       <tbody>${itemsHtml}</tbody>
     </table>
   </div>
   <div class="totals-area">
     <div class="totals-box">
-      ${tx.discount ? `<div class="t-row"><span class="t-lbl">الخصم${tx.discountCode ? (tx.discountCode.includes('+') ? tx.discountCode.split('+').filter(Boolean).map(n => ` <span style="display:inline-block;margin-right:2px;padding:1px 5px;border-radius:8px;background:#d1fae5;color:#047857;font-size:8px;font-weight:700;border:1px solid #a7f3d0;font-family:monospace;letter-spacing:.3px">${esc(n.trim())}</span>`).join('') : ` <span style="display:inline-block;margin-right:4px;padding:1px 5px;border-radius:8px;background:#d1fae5;color:#047857;font-size:8px;font-weight:700;border:1px solid #a7f3d0;font-family:monospace;letter-spacing:.3px">${esc(tx.discountCode)}</span>`) : ''}</span><span class="t-val r">− ${fmtJ(tx.discount)}</span></div>` : ''}
+      ${tx.discount ? `<div class="t-row"><span class="t-lbl">الخصم${tx.discountCode ? (tx.discountCode.includes('+') ? tx.discountCode.split('+').filter(Boolean).map(n => ` <span style="display:inline-block;margin-right:2px;padding:1px 5px;border-radius:8px;background:#d1fae5;color:#047857;font-size:8px;font-weight:700;border:1px solid #a7f3d0;font-family:monospace;letter-spacing:.3px">${esc(n.trim())}</span>`).join('') : ` <span style="display:inline-block;margin-right:4px;padding:1px 5px;border-radius:8px;background:#d1fae5;color:#047857;font-size:8px;font-weight:700;border:1px solid #a7f3d0;font-family:monospace;letter-spacing:.3px">${esc(tx.discountCode)}</span>`) : `<span class="disc-manual-label">مخصص</span>`}</span><span class="t-val r">− ${fmtJ(tx.discount)}</span></div>` : ''}
       ${!isPur && tx.shipCost ? `<div class="t-row"><span class="t-lbl">تكلفة الشحن</span><span class="t-val">+ ${fmtJ(tx.shipCost)}</span></div>` : ''}
-      <div class="t-row grand"><span>${isPur ? 'إجمالي المشتريات' : 'إجمالي الفاتورة'}</span><span>${fmtJ(tx.total)} ج.م</span></div>
+      <div class="t-row grand"><span>${isPur ? 'إجمالي المشتريات' : 'إجمالي الفاتورة'}</span><span>${fmtJ(tx.total)}</span></div>
       ${paid > 0
         ? `<div class="t-row dep-row">
              <span class="t-lbl">${isPur ? 'المدفوع للمورد' : 'المبلغ المدفوع'}${depMethodLabel ? `<span class="dep-badge">${depMethodLabel}</span>` : ''}</span>
@@ -20697,7 +21083,7 @@ function buildInvoiceHtml(tx) {
            </div>`
         : `<div class="t-row"><span class="t-lbl" style="color:#bbb;font-size:9px">لا يوجد دفعة مقدمة — ${isPur ? 'المبلغ بالكامل للمورد لاحقاً' : 'يُحصَّل عند التسليم'}</span></div>`}
       ${(tx.remaining || 0) > 0
-        ? `<div class="t-row rem-row"><span class="t-lbl">${isPur ? 'المتبقي للمورد' : 'المتبقي للتحصيل'}</span><span class="t-val r">${fmtJ(tx.remaining)} ج.م</span></div>`
+        ? `<div class="t-row rem-row"><span class="t-lbl">${isPur ? 'المتبقي للمورد' : 'المتبقي للتحصيل'}</span><span class="t-val r">${fmtJ(tx.remaining)}</span></div>`
         : paid > 0
           ? `<div class="t-row dep-row"><span class="t-lbl" style="color:#15803d;font-weight:700">✓ مدفوع بالكامل</span></div>`
           : ''}
@@ -20705,22 +21091,22 @@ function buildInvoiceHtml(tx) {
   </div>
   ${tx.notes ? `<div class="note-wrap"><div class="note-lbl">ملاحظات</div>${esc(tx.notes)}</div>` : ''}
   <div class="inv-foot">
-    <span>تم الإصدار بواسطة نظام SOULIA — ${dateStr}</span>
-    ${tx.employee ? `<span class="inv-foot-emp">الموظف: ${esc(tx.employee)}</span>` : ''}
+    <span>تم الإصدار بواسطة SOULIA — ${dateStr}</span>
+    <span class="inv-foot-emp">مسجل العملية: ${esc(tx.employee || '—')}</span>
   </div>
 </div>
 ${includePolicyPage ? `<div class="page" style="page-break-before:always">
   <div class="pol-page">
     <div class="pol-hdr">
-      <div><div class="logo">SOULIA</div><div class="tagline">نظام إدارة المخازن</div></div>
+      <div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 576" height="32" style="display:block" fill="#0f3d25"><g transform="translate(0,576) scale(0.1,-0.1)"><path d="M14900 5436 c-327 -70 -542 -311 -528 -591 10 -201 158 -359 423-451 75 -26 91 -28 240 -29 138 0 171 3 239 23 222 64 366 193 405 363 16 68 13 218 -5 280 -41 141 -152 276 -276 337 -139 68 -357 98 -498 68z"/><path d="M5645 5424 c-429 -33 -747 -132 -1017 -315 -200 -137 -389 -361 -505-599 -214 -443 -294 -939 -280 -1755 17 -1002 154 -1495 516 -1855 318 -318 705 -453 1328 -467 459 -10 765 40 1038 171 536 257 850 730 964 1451 92 588 93 1281 0 1846 -81 497 -286 897 -586 1141 -322 262 -673 373 -1208 382 -110 2 -222 2 -250 0z m345 -1085 c248 -40 395 -247 445 -625 43 -332 41 -1015 -6-1354 -69 -506 -250 -800 -524 -851 -75 -14 -234 -6 -301 15 -225 70 -376 333-428 746 -46 367 -41 1025 10 1365 53 349 171 557 367 651 121 57 287 78 437 53z"/><path d="M1720 5405 c-440 -57 -799 -224 -1076 -499 -178 -177 -278 -337 -354-565 -86 -257 -93 -562 -19 -784 96 -291 393 -629 789 -899 52 -36 257 -161 455 -278 483 -286 631 -386 700 -477 111 -145 44 -269 -175 -324 -83 -21 -326-19 -423 4 -264 62 -420 250 -493 597 -14 63 -35 138 -48 165 -66 144 -276 246 -481 231 -349 -23 -556 -337 -516 -783 33 -366 157 -645 391 -873 238-232 596 -394 1003 -454 395 -58 734 -37 1042 65 768 254 1187 942 1015 1667-83 350 -359 689 -795 977 -61 40 -261 158 -445 261 -594 332 -709 430 -710 599 0 151 108 251 295 274 203 25 373 -37 475 -173 49 -66 71 -112 105 -216 54 -170 137 -290 228 -329 68 -29 153 -44 257 -44 163 0 275 45 381 153 110 112 157 233 166 432 13 271 -63 549 -203 745 -185 259 -511 443 -914 514 -150 27 -496 35 -650 14z"/><path d="M17675 5403 c-592 -38 -979 -177 -1227 -441 -113 -120 -162 -250-163 -427 0 -94 2 -105 33 -168 64 -130 195 -241 342 -289 119 -39 370 -27 650 32 209 44 313 53 582 48 223 -4 248 -6 301 -27 32 -12 76 -37 99 -54 80-62 134 -205 126 -333 -4 -65 -24 -68 -108 -13 -157 103 -276 132 -535 131-548 0 -980 -153 -1292 -455 -170 -165 -293 -364 -373 -604 -123 -370 -145-847 -55 -1203 78 -310 205 -540 410 -745 202 -203 445 -334 733 -396 141 -30 415 -37 537 -14 214 40 437 168 646 371 91 89 120 101 155 67 25 -25 50 -88 64 -158 39 -202 104 -283 273 -337 88 -28 352 -36 456 -14 218 46 354 187 416 430 42 167 50 406 50 1576 0 809 -3 1084 -13 1180 -73 680 -216 1055 -521 1361 -208 209 -440 337 -751 414 -231 58 -570 85 -835 68z m436 -2497 c148-32 293 -135 349 -250 42 -85 53 -157 54 -331 0 -126 -3 -162 -22 -228 -71-248 -241 -420 -472 -478 -88 -22 -271 -18 -355 8 -169 53 -300 186 -357 363-26 82 -28 267 -4 378 31 143 116 302 207 389 134 126 397 192 600 149z"/><path d="M12744 5385 c-300 -65 -509 -409 -574 -944 -23 -194 -32 -774 -27-1901 4 -1010 6 -1167 21 -1250 81 -471 275 -715 656 -826 255 -74 665 -85 907 -24 275 70 384 229 387 565 1 155 -9 214 -55 311 -88 187 -285 279 -493 230 -93 -22 -123 -1 -152 106 -21 78 -28 284 -15 428 7 69 16 280 21 470 5 190 17 446 27 570 26 335 26 1452 0 1619 -22 137 -66 281 -115 374 -47 91-154 205 -224 239 -100 48 -237 61 -364 33z"/><path d="M10890 5374 c-199 -52 -339 -198 -397 -414 -16 -56 -18 -112 -18-425 0 -198 7 -459 14 -580 17 -271 19 -862 2 -1050 -52 -611 -170 -983 -369-1167 -88 -81 -146 -101 -282 -96 -95 3 -112 6 -172 36 -142 69 -227 228 -267 498 -35 232 -38 741 -11 1604 19 574 -1 852 -77 1095 -64 203 -183 364 -323 435 -102 52 -294 70 -401 37 -255 -77 -425 -455 -469 -1037 -5 -74 -15 -520-22 -990 -13 -918 -8 -1130 32 -1436 84 -645 307 -1073 694 -1331 245 -164 543 -234 936 -220 193 7 304 25 426 68 165 58 274 132 345 236 35 50 67 67 103 54 13 -5 68 -45 124 -88 180 -140 305 -193 457 -193 144 0 222 35 319 142 118 129 195 339 221 603 24 243 37 3164 15 3400 -29 307 -110 517 -260 667-87 88 -161 129 -276 153 -88 19 -272 18 -344 -1z"/><path d="M14961 4259 c-41 -6 -115 -23 -165 -39 -204 -66 -331 -199 -388 -407-20 -75 -22 -106 -29 -763 -4 -377 -7 -1018 -8 -1425 -1 -812 4 -891 55 -1019 53 -133 181 -237 349 -282 94 -25 353 -31 435 -9 225 58 378 226 452 495 l23 85 0 1490 0 1490 -23 59 c-62 164 -183 273 -345 311 -83 19 -264 26 -356 14z"/></g></svg></div>
       <div class="pol-hdr-right">
         <div class="pol-title">${policyTitle}</div>
         <div class="pol-sub">${tx.ref ? `مرفقة بالفاتورة # ${esc(tx.ref)} — ` : ''}${dateStr}</div>
       </div>
     </div>
     <div class="pol-section-title">${policyTitle}</div>
-    <ol class="pol-list">${policyItems}</ol>
-    <div class="pol-foot"><span>SOULIA — نظام إدارة المخازن والمبيعات</span><span>${dateStr}</span></div>
+    <div class="pol-list">${policyItems}</div>
+    <div class="pol-foot"><span>SOULIA</span><span>${dateStr}</span></div>
   </div>
 </div>` : ''}`;
 }
@@ -22062,19 +22448,31 @@ function openSupplierInvoices(supplierName) {
 function openSupplierModal(id) {
   const s = id ? suppliers.find(x => x._id === id) : null;
   openModal(`<h3>${s ? 'تعديل مورد' : 'إضافة مورد'}</h3>
-    <div class="form-group"><label>الاسم</label><input type="text" id="sm-name" value="${esc(s?.name || '')}"></div>
+    <div class="form-group"><label>الاسم *</label><input type="text" id="sm-name" value="${esc(s?.name || '')}" placeholder="اسم المورد"></div>
     <div class="form-group"><label>الهاتف</label><input type="text" id="sm-phone" value="${esc(s?.phone || '')}"></div>
     <div class="form-group"><label>العنوان</label><input type="text" id="sm-address" value="${esc(s?.address || '')}"></div>
     <div class="form-group"><label>البريد</label><input type="email" id="sm-email" value="${esc(s?.email || '')}"></div>
     <div class="form-group"><label>الأصناف</label><input type="text" id="sm-products" value="${esc(s?.products || '')}"></div>
     <div class="form-group"><label>ملاحظات</label><textarea id="sm-notes">${esc(s?.notes || '')}</textarea></div>
-    <div class="flex gap-8 mt-16"><button class="btn btn-primary" onclick="saveSupplier('${id || ''}')">${s ? 'تحديث' : 'إضافة'}</button><button class="btn btn-outline" onclick="closeModal()">إلغاء</button></div>`);
+    <div class="flex gap-8 mt-16"><button class="btn btn-primary" id="sm-save-btn" onclick="saveSupplier('${id || ''}')">${s ? 'تحديث' : 'إضافة'}</button><button class="btn btn-outline" onclick="closeModal()">إلغاء</button></div>`);
 }
 async function saveSupplier(id) {
-  const body = { name: qs('#sm-name').value, phone: qs('#sm-phone').value, address: qs('#sm-address').value, email: qs('#sm-email').value, products: qs('#sm-products').value, notes: qs('#sm-notes').value };
+  const body = { name: (qs('#sm-name').value || '').trim(), phone: qs('#sm-phone').value, address: qs('#sm-address').value, email: qs('#sm-email').value, products: qs('#sm-products').value, notes: qs('#sm-notes').value };
   if (!body.name) { toast('اسم المورد مطلوب', true); return; }
-  try { if (id) await api('/suppliers/' + id, { method: 'PUT', body: JSON.stringify(body) }); else await api('/suppliers', { method: 'POST', body: JSON.stringify(body) }); toast(id ? 'تم التحديث' : 'تم الإضافة'); closeModal(); suppliers = await api('/suppliers').catch(() => suppliers); renderSuppliers(); }
-  catch (e) { toast('خطأ: ' + e.message, true); }
+  // Client-side duplicate check
+  const duplicate = suppliers.find(s => s.name.trim().toLowerCase() === body.name.toLowerCase() && s._id !== id);
+  if (duplicate) { toast('المورد موجود بالفعل. يرجى تحديث السجل الموجود.', true); return; }
+  const btn = qs('#sm-save-btn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+  try {
+    if (id) await api('/suppliers/' + id, { method: 'PUT', body: JSON.stringify(body) });
+    else await api('/suppliers', { method: 'POST', body: JSON.stringify(body) });
+    toast(id ? 'تم تحديث بيانات المورد بنجاح ✅' : 'تم إضافة المورد بنجاح ✅');
+    closeModal();
+    suppliers = await api('/suppliers').catch(() => suppliers);
+    renderSuppliers();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+  finally { if (btn) { btn.disabled = false; btn.style.opacity = ''; } }
 }
 async function deleteSupplier(id) {
   if (!await showConfirm('هل أنت متأكد من حذف هذا المورد؟', { title: 'حذف المورد', icon: 'danger', danger: true })) return;
@@ -22796,12 +23194,55 @@ function clearApprFilters() {
   qs('#appr-act-from').value = ''; qs('#appr-act-to').value = '';
   renderApprovals();
 }
+async function renderOtpAudit() {
+  const wrap = qs('#otp-audit-list');
+  if (!wrap) return;
+  if (!isAdmin()) { wrap.innerHTML = '<div class="empty-state">للمدير فقط</div>'; return; }
+  const status = qs('#otp-audit-status')?.value || '';
+  wrap.innerHTML = '<div class="empty-state">جارٍ التحميل…</div>';
+  try {
+    const qs_ = status ? ('?status=' + encodeURIComponent(status)) : '';
+    const rows = await api('/discount-otp' + qs_);
+    if (!rows.length) { wrap.innerHTML = '<div class="empty-state">لا توجد سجلات</div>'; return; }
+    wrap.innerHTML = `
+      <div style="overflow-x:auto"><table class="data-table" style="width:100%;font-size:.85rem">
+        <thead><tr>
+          <th>الكود</th><th>الحالة</th><th>الخصم</th><th>الحد</th>
+          <th>الموظف</th><th>العميل</th><th>الفاتورة</th>
+          <th>أنشئ</th><th>استخدم في</th><th>محاولات</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r => {
+            const statusColor = r.status === 'used' ? 'var(--green)' : r.status === 'expired' ? 'var(--muted)' : 'var(--orange)';
+            const statusLabel = r.status === 'used' ? 'مستخدم ✓' : r.status === 'expired' ? 'منتهي' : r.status === 'unused' ? 'غير مستخدم' : r.status;
+            return `<tr>
+              <td style="font-family:monospace;font-weight:700;letter-spacing:.2em">${esc(r.otp || '')}</td>
+              <td style="color:${statusColor};font-weight:600">${statusLabel}</td>
+              <td>${fmtJ(r.discountAmount || 0)}</td>
+              <td style="color:var(--muted)">${fmtJ(r.thresholdAtRequest || 0)}</td>
+              <td>${esc(r.requestedByName || r.requestedByUsername || '-')}</td>
+              <td>${esc(r.client || '-')}</td>
+              <td>${r.txRef ? '#' + esc(r.txRef) : '-'}</td>
+              <td style="color:var(--muted);font-size:.78rem">${r.createdAt ? fmtDateTime(r.createdAt) : '-'}</td>
+              <td style="color:var(--muted);font-size:.78rem">${r.usedAt ? fmtDateTime(r.usedAt) : '-'}</td>
+              <td>${r.attempts || 0}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table></div>`;
+  } catch (e) {
+    wrap.innerHTML = '<div class="empty-state">فشل التحميل: ' + esc(e?.message || '') + '</div>';
+  }
+}
+
 function renderApprovals() {
   if (!isAdmin()) {
     qs('#appr-list').innerHTML = '<div class="empty-state">هذا القسم للمدير فقط</div>';
     qs('#appr-kpi').innerHTML = '';
     return;
   }
+  // Refresh OTP audit log alongside approvals
+  renderOtpAudit();
   const filter = qs('#appr-filter')?.value || '';
   const kindFilter = qs('#appr-kind-filter')?.value || '';
   const dateFrom = qs('#appr-from')?.value || '';
@@ -23334,14 +23775,19 @@ async function loadReports() {
     const r = await api('/transactions/reports' + params);
     currentReportData = r;
     renderReportPeriodEcho(r, from, to);
+    // Always render KPI tab (always visible on load)
     renderReportKPIs(r);
     renderBestSellerCard(r);
-    renderReportCharts(r);
-    renderTrendChart(r);
-    renderTopCustomers(r);
     renderProfitTable(r.productProfits || []);
-    qs('#profit-search').value = '';
-    renderDiscountCodesReport(from, to);
+    if (qs('#profit-search')) qs('#profit-search').value = '';
+    // Lazy-render active tab sections
+    if (activeReportTab === 'charts') {
+      renderReportCharts(r);
+      renderTrendChart(r);
+      renderTopCustomers(r);
+    } else if (activeReportTab === 'discounts') {
+      renderDiscountCodesReport(from, to);
+    }
   } catch (e) {
     qs('#rep-stats').innerHTML = `<div style="grid-column:1/-1" class="empty-state"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg> خطأ: ${esc(e.message)}</div>`;
   }
@@ -23631,6 +24077,30 @@ function onReportRangeChange() {
   loadReports();
 }
 
+let activeReportTab = 'kpis';
+
+function switchReportTab(tab, btn) {
+  activeReportTab = tab;
+  qsa('#page-reports .rep-sec-tab').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+  qsa('#page-reports .rep-tab-panel').forEach(p => p.classList.remove('active'));
+  if (btn) { btn.classList.add('active'); btn.setAttribute('aria-selected','true'); }
+  const panel = qs('#rep-panel-' + tab);
+  if (panel) panel.classList.add('active');
+
+  // Lazy-render charts only when charts tab becomes visible
+  if (tab === 'charts' && currentReportData) {
+    renderReportCharts(currentReportData);
+    renderTrendChart(currentReportData);
+    renderTopCustomers(currentReportData);
+  }
+  // Lazy-render discount codes when that tab becomes visible
+  if (tab === 'discounts') {
+    const from = qs('#rep-from')?.value || '';
+    const to = qs('#rep-to')?.value || '';
+    renderDiscountCodesReport(from, to);
+  }
+}
+
 async function exportReportExcel() {
   if (!reportsUnlocked && !isLockDisabled('reports')) { unlockReports(); return; }
   reportsUnlocked = true;
@@ -23841,9 +24311,15 @@ function filterProfitTable() {
 
 function renderDiscountCodesReport(from, to) {
   const section = qs('#rep-discount-codes-section');
+  const noCodes = qs('#rep-discount-no-codes');
   if (!section) return;
   const codes = settings?.discountCodes || [];
-  if (!codes.length) { section.style.display = 'none'; return; }
+  if (!codes.length) {
+    section.style.display = 'none';
+    if (noCodes) noCodes.style.display = '';
+    return;
+  }
+  if (noCodes) noCodes.style.display = 'none';
 
   // Filter transactions by date range
   let txs = (transactions || []).filter(t => !t.cancelled && t.discountCode && Number(t.discount) > 0);
@@ -24128,9 +24604,109 @@ function _initLockTogglesUI() {
   const v = qs('#set-vault-lock-enabled'); if (v) v.checked = !isLockDisabled('vault');
   const r = qs('#set-reports-lock-enabled'); if (r) r.checked = !isLockDisabled('reports');
   const sd = qs('#set-staff-discount-enabled'); if (sd) sd.checked = !!(settings?.staffDiscountEnabled ?? isStaffDiscountAllowed());
+  const hvd = qs('#set-high-value-discount-limit'); if (hvd) hvd.value = Number(settings?.highValueDiscountLimit ?? 200);
   const adb = qs('#set-adb-autoshow-enabled'); if (adb) { try { adb.checked = localStorage.getItem(LOCK_KEYS.adbAutoShow) !== '0'; } catch(_) { adb.checked = true; } }
 }
 window.addEventListener('DOMContentLoaded', _initLockTogglesUI);
+
+async function saveHighValueDiscountLimit(val) {
+  const n = Math.max(0, Number(val) || 0);
+  try {
+    const saved = await api('/settings', { method: 'PUT', body: JSON.stringify({ highValueDiscountLimit: n }) });
+    settings = saved || settings || {};
+    if (settings) settings.highValueDiscountLimit = n;
+    toast('تم حفظ حد الخصم المرتفع');
+  } catch (e) {
+    toast('فشل حفظ الحد: ' + (e?.message || ''), true);
+  }
+}
+
+// ── High-value discount OTP flow ─────────────────────────────────────────────
+// _hvOtpCtx.onSuccess: optional callback invoked after a valid OTP is entered.
+// When set, the OTP modal returns control to that callback instead of
+// re-invoking saveTx() (used by the apply-discount gates).
+let _hvOtpCtx = { discount: 0, itemsTotal: 0, otpId: '', expiresAt: '', onSuccess: null };
+
+async function openHighValueOtpFlow(discount, itemsTotal, onSuccess) {
+  _hvOtpCtx = { discount, itemsTotal, otpId: '', expiresAt: '', onSuccess: typeof onSuccess === 'function' ? onSuccess : null };
+  const client = qs('#tx-client')?.value || qs('#tx-supplier')?.value || '';
+  try {
+    const res = await api('/discount-otp/request', {
+      method: 'POST',
+      body: JSON.stringify({ discountAmount: discount, itemsTotal, client, txType })
+    });
+    _hvOtpCtx.otpId = res.otpId;
+    _hvOtpCtx.expiresAt = res.expiresAt;
+    const expDate = new Date(res.expiresAt);
+    const expStr = expDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    qs('#hv-otp-info').innerHTML = `
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>قيمة الخصم</span><strong>${fmtJ(discount)} ج</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الحد الحالي</span><strong>${fmtJ(res.threshold)} ج</strong></div>
+      <div style="display:flex;justify-content:space-between"><span>صالح حتى</span><strong>${expStr}</strong></div>`;
+    qs('#hv-otp-input').value = '';
+    qs('#hv-otp-msg').textContent = '';
+    qs('#hv-otp-msg').style.color = '';
+    qs('#hv-otp-modal').classList.add('active');
+    setTimeout(() => qs('#hv-otp-input')?.focus(), 50);
+  } catch (e) {
+    toast('فشل طلب كود التحقق: ' + (e?.message || ''), true);
+  }
+}
+
+function closeHighValueOtpModal() {
+  qs('#hv-otp-modal').classList.remove('active');
+}
+
+async function resendHighValueOtp() {
+  await openHighValueOtpFlow(_hvOtpCtx.discount, _hvOtpCtx.itemsTotal);
+}
+
+async function submitHighValueOtp() {
+  const otp = (qs('#hv-otp-input')?.value || '').trim();
+  if (!/^\d{4}$/.test(otp)) {
+    qs('#hv-otp-msg').textContent = 'أدخل 4 أرقام';
+    qs('#hv-otp-msg').style.color = 'var(--red)';
+    return;
+  }
+  const btn = qs('#hv-otp-submit');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+  try {
+    const res = await api('/discount-otp/validate', {
+      method: 'POST',
+      body: JSON.stringify({ otpId: _hvOtpCtx.otpId, otp })
+    });
+    if (res.valid) {
+      _pendingHighValueOtpId = _hvOtpCtx.otpId;
+      _pendingHighValueOtpAmount = _hvOtpCtx.discount;
+      const cb = _hvOtpCtx.onSuccess;
+      qs('#hv-otp-msg').textContent = '✓ تم التحقق';
+      qs('#hv-otp-msg').style.color = 'var(--green)';
+      setTimeout(() => {
+        closeHighValueOtpModal();
+        if (cb) {
+          // Apply-time gate: caller handles its own follow-up.
+          // _pendingHighValueOtpId is kept so saveTx can attach it
+          // when the transaction is finally saved — the backend
+          // accepts an already-validated OTP for the same amount.
+          try { cb(); } catch (e) { toast('خطأ بعد التحقق: ' + (e?.message || ''), true); }
+        } else {
+          // Save-time gate: re-invoke saveTx so the OTP id rides along.
+          saveTx();
+        }
+      }, 350);
+    } else {
+      qs('#hv-otp-msg').textContent = res.message || 'الكود غير صحيح';
+      qs('#hv-otp-msg').style.color = 'var(--red)';
+      qs('#hv-otp-input').value = '';
+      qs('#hv-otp-input').focus();
+    }
+  } catch (e) {
+    qs('#hv-otp-msg').textContent = 'خطأ: ' + (e?.message || '');
+    qs('#hv-otp-msg').style.color = 'var(--red)';
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+  }
+}
 
 /* ── Settings v2: tab switching & search ── */
 function stgSwitchTab(tabName, btn) {
@@ -24197,13 +24773,49 @@ function stgRefreshPromoTab() {
   const dcEl = qs('#discount-codes-section');
   const dbEl = qs('#discount-bundles-section');
   const tagEl = qs('#tag-mgmt-section');
+  const alEl = qs('#disc-audit-log-section');
   const ph = qs('#stg-promo-placeholder');
   const hasContent = isAdm;
   if (dcEl) dcEl.style.display = isAdm ? '' : 'none';
   if (dbEl) dbEl.style.display = isAdm ? '' : 'none';
   if (tagEl) tagEl.style.display = isAdm ? '' : 'none';
+  if (alEl) alEl.style.display = isAdm ? '' : 'none';
   if (ph) ph.style.display = hasContent ? 'none' : '';
-  if (isAdm) renderDiscountBundles();
+  if (isAdm) { renderDiscountBundles(); renderDiscAuditLog(); }
+}
+
+function renderDiscAuditLog() {
+  const tbody = qs('#disc-audit-log-rows');
+  if (!tbody) return;
+  if (!_bundleDiscAuditLog.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:.8rem">لا يوجد سجل بعد — ستظهر هنا كل محاولات الخصم على الباقات</td></tr>`;
+    return;
+  }
+  const actionLabel = { applied: 'تطبيق', removed: 'إزالة', denied: 'مرفوض', approved: 'موافقة', pending_approval: 'ينتظر موافقة' };
+  const actionColor = { applied: '#059669', removed: '#6b7280', denied: '#dc2626', approved: '#2563eb', pending_approval: '#d97706' };
+  tbody.innerHTML = _bundleDiscAuditLog.map(e => {
+    const d = new Date(e.ts);
+    const dateStr = d.toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const timeStr = d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    const codePart = [e.code, e.bundleName].filter(Boolean).join(' / ') || '—';
+    const col = actionColor[e.action] || 'var(--muted)';
+    const lbl = actionLabel[e.action] || e.action;
+    return `<tr style="border-top:1px solid var(--border)">
+      <td style="padding:7px 10px;white-space:nowrap;color:var(--muted)">${dateStr} ${timeStr}</td>
+      <td style="padding:7px 10px;font-weight:600">${esc(e.employee)}</td>
+      <td style="padding:7px 10px"><span style="background:${col}1a;color:${col};border-radius:4px;padding:2px 7px;font-size:.72rem;font-weight:700">${esc(lbl)}</span></td>
+      <td style="padding:7px 10px;color:var(--text)">${esc(codePart)}</td>
+      <td style="padding:7px 10px;text-align:left;direction:ltr;font-variant-numeric:tabular-nums">${e.amount > 0 ? fmtJ(e.amount) + ' ج' : '—'}</td>
+      <td style="padding:7px 10px;font-size:.75rem;color:var(--muted)">${esc(e.reason || '—')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function _clearBundleAuditLog() {
+  if (!confirm('سيتم مسح كل سجل الخصومات من الذاكرة — هل أنت متأكد؟')) return;
+  _bundleDiscAuditLog = [];
+  renderDiscAuditLog();
+  toast('تم مسح سجل الخصومات');
 }
 
 function switchVaultTab(tabName, btn) {

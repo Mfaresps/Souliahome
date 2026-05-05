@@ -17,6 +17,7 @@ import { ComplaintsModule } from './complaints/complaints.module';
 import { MentionsModule } from './mentions/mentions.module';
 import { FollowUpsModule } from './followups/followups.module';
 import { TagsModule } from './tags/tags.module';
+import { DiscountOtpModule } from './discount-otp/discount-otp.module';
 import { SeedService } from './seed/seed.service';
 
 @Module({
@@ -41,6 +42,7 @@ import { SeedService } from './seed/seed.service';
     MentionsModule,
     FollowUpsModule,
     TagsModule,
+    DiscountOtpModule,
   ],
   providers: [SeedService],
 })

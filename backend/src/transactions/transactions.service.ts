@@ -23,6 +23,8 @@ import { ProductsService } from '../products/products.service';
 import { VaultService } from '../vault/vault.service';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { MentionsService } from '../mentions/mentions.service';
+import { DiscountOtpService } from '../discount-otp/discount-otp.service';
+import { SettingsService } from '../settings/settings.service';
 // #region agent log
 import { debugLog } from '../debug-log.util';
 // #endregion
@@ -77,6 +79,8 @@ export class TransactionsService {
     private readonly vaultService: VaultService,
     private readonly presence: PresenceGateway,
     private readonly mentionsService: MentionsService,
+    private readonly discountOtpService: DiscountOtpService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   // ── Concurrent edit lock: txId → { user, since } ──
@@ -216,6 +220,16 @@ export class TransactionsService {
 
   async create(dto: CreateTransactionDto): Promise<TransactionDocument> {
     const employee = (dto as unknown as { employee?: string }).employee || '';
+    // High-value discount OTP enforcement
+    const discountAmt = Number((dto as unknown as { discount?: number }).discount) || 0;
+    if (discountAmt > 0) {
+      const settings = await this.settingsService.getSettings();
+      const limit = Number(settings.highValueDiscountLimit ?? 200);
+      if (discountAmt > limit) {
+        const otpId = (dto as unknown as { highValueDiscountOtpId?: string }).highValueDiscountOtpId || '';
+        await this.discountOtpService.assertOtpForTransaction(otpId, discountAmt);
+      }
+    }
     this.assertNotDuplicateSubmission(
       dto.type,
       String(dto.ref ?? ''),
@@ -234,6 +248,16 @@ export class TransactionsService {
       }
     }
     const tx = await this.transactionModel.create(dto);
+
+    // Link OTP to created transaction (audit trail)
+    const otpIdForLink = (dto as unknown as { highValueDiscountOtpId?: string }).highValueDiscountOtpId || '';
+    if (otpIdForLink && discountAmt > 0) {
+      try {
+        await this.discountOtpService.attachToTransaction(otpIdForLink, String(tx._id), tx.ref || '');
+      } catch {
+        // non-fatal
+      }
+    }
 
     // Record initial deposit if paid
     const deposit = (dto as unknown as { deposit?: number }).deposit || 0;

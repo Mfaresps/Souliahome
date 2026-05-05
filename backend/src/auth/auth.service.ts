@@ -30,14 +30,14 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<LoginResponse> {
     const user = await this.usersService.findByUsername(loginDto.username);
     if (!user) {
-      throw new UnauthorizedException('اسم المستخدم أو كلمة المرور غلط');
+      throw new UnauthorizedException('Incorrect username or password');
     }
     const isPasswordValid = await bcrypt.compare(
       loginDto.password,
       user.password,
     );
     if (!isPasswordValid) {
-      throw new UnauthorizedException('اسم المستخدم أو كلمة المرور غلط');
+      throw new UnauthorizedException('Incorrect username or password    ');
     }
     if (user.isActive === false) {
       throw new UnauthorizedException('هذا الحساب معطل، تواصل مع المدير');
