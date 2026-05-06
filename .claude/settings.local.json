@@ -31,7 +31,10 @@
       "Bash(Format-Table -AutoSize)",
       "PowerShell(Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"d:\\\\website\\\\Souliahome\\\\frontend\"; node server.js' -WindowStyle Normal)",
       "PowerShell(Start-Process cmd -ArgumentList '/k', 'cd /d \"d:\\\\website\\\\Souliahome\\\\backend\" && npm run start:dev' -WindowStyle Minimized)",
-      "PowerShell(Start-Process cmd -ArgumentList '/k', 'cd /d \"d:\\\\website\\\\Souliahome\\\\frontend\" && node server.js' -WindowStyle Minimized)"
+      "PowerShell(Start-Process cmd -ArgumentList '/k', 'cd /d \"d:\\\\website\\\\Souliahome\\\\frontend\" && node server.js' -WindowStyle Minimized)",
+      "Bash(python3 -)",
+      "PowerShell(Get-Process -Id 32088)",
+      "PowerShell(wmic process where \"ProcessId=32088\" get CommandLine)"
     ]
   }
 }

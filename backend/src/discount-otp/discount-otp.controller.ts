@@ -17,6 +17,7 @@ export class DiscountOtpController {
       itemsTotal?: number;
       client?: string;
       txType?: string;
+      txRef?: string;
     },
     @Req() req: any,
   ) {
@@ -26,6 +27,7 @@ export class DiscountOtpController {
       itemsTotal: Number(body.itemsTotal) || 0,
       client: body.client || '',
       txType: body.txType || '',
+      txRef: body.txRef || '',
       requestedById: user.userId || '',
       requestedByName: user.name || '',
       requestedByUsername: user.username || '',

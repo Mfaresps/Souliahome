@@ -206,6 +206,29 @@ export class Transaction {
 
   @Prop({ type: [String], default: [] })
   tags: string[];
+
+  /** Pick-Up tracking: Pending | Picked-Up | Delivered */
+  @Prop({ default: 'Pending' })
+  pickupStatus: string;
+
+  @Prop()
+  pickupDate: string;
+
+  @Prop()
+  pickupBy: string;
+
+  /** Unique batch reference assigned when a group of orders are confirmed for pick-up */
+  @Prop()
+  pickupRef: string;
+
+  /** Audit log for pick-up actions */
+  @Prop({ type: [Object], default: [] })
+  pickupHistory: Array<{
+    action: string;      // 'pickup' | 'undo' | 'delivered'
+    date: string;
+    by: string;
+    note?: string;
+  }>;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);

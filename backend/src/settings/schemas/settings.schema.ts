@@ -158,6 +158,9 @@ export class Settings {
   @Prop({ default: false })
   staffDiscountEnabled: boolean;
 
+  @Prop({ default: true })
+  otpEnabled: boolean;
+
   @Prop({ default: 200 })
   highValueDiscountLimit: number;
 

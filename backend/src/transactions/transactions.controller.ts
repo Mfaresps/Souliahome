@@ -130,8 +130,11 @@ export class TransactionsController {
   }
 
   @Post()
-  async create(@Body() dto: CreateTransactionDto) {
-    return this.transactionsService.create(dto);
+  async create(
+    @Body() dto: CreateTransactionDto,
+    @Req() req: { user?: { role?: string } },
+  ) {
+    return this.transactionsService.create(dto, req.user?.role);
   }
 
   @Roles('admin')
@@ -156,8 +159,43 @@ export class TransactionsController {
     return { message: 'تم الحذف النهائي للحركة' };
   }
 
+  // ─── Pick-Up endpoints (must be BEFORE @Get(':id') to avoid routing conflict) ──
+
+  @Get('pickup-orders')
+  async getPickupOrders() {
+    return this.transactionsService.findPickupOrders();
+  }
+
+  @Post('pickup-orders/confirm')
+  async confirmPickup(
+    @Body() body: { ids: string[]; date?: string },
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const by = req.user.name || req.user.username || 'مستخدم';
+    return this.transactionsService.confirmPickup(body.ids, by, body.date);
+  }
+
+  @Post('pickup-orders/undo')
+  async undoPickup(
+    @Body() body: { ids: string[] },
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const by = req.user.name || req.user.username || 'مستخدم';
+    return this.transactionsService.undoPickup(body.ids, by);
+  }
+
+  @Post('pickup-orders/add-to-run')
+  async addToPickupRun(
+    @Body() body: { id: string; pickupRef: string; date?: string },
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const by = req.user.name || req.user.username || 'مستخدم';
+    return this.transactionsService.addToPickupRun(body.id, body.pickupRef, by, body.date);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
+    if (id === 'pickup-orders') return this.transactionsService.findPickupOrders();
     return this.transactionsService.findById(id);
   }
 
@@ -239,8 +277,10 @@ export class TransactionsController {
   async collect(
     @Param('id') id: string,
     @Body() dto: CollectTransactionDto,
+    @Req() req: { user: { name: string; username: string } },
   ) {
-    return this.transactionsService.collect(id, dto);
+    const by = req.user?.name || req.user?.username || 'مستخدم';
+    return this.transactionsService.collect(id, dto, by);
   }
 
   @Post(':id/reverse-collect')
@@ -311,6 +351,26 @@ export class TransactionsController {
     @Body() body: { tags: string[] },
   ) {
     return this.transactionsService.updateTags(id, body.tags);
+  }
+
+  @Post(':id/pickup-delivered')
+  async markPickupDelivered(
+    @Param('id') id: string,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const by = req.user.name || req.user.username || 'مستخدم';
+    await this.transactionsService.markPickupDelivered(id, by);
+    return { ok: true };
+  }
+
+  @Post(':id/pickup-revert-delivered')
+  async revertPickupDelivered(
+    @Param('id') id: string,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const by = req.user.name || req.user.username || 'مستخدم';
+    await this.transactionsService.revertPickupDelivered(id, by);
+    return { ok: true };
   }
 
   @Roles('admin')

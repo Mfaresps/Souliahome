@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, isValidObjectId } from 'mongoose';
 import {
   Transaction,
   TransactionDocument,
@@ -211,6 +211,9 @@ export class TransactionsService {
   }
 
   async findById(id: string): Promise<TransactionDocument> {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('معرّف الحركة غير صالح');
+    }
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) {
       throw new NotFoundException('الحركة غير موجودة');
@@ -218,16 +221,19 @@ export class TransactionsService {
     return tx;
   }
 
-  async create(dto: CreateTransactionDto): Promise<TransactionDocument> {
+  async create(dto: CreateTransactionDto, callerRole?: string): Promise<TransactionDocument> {
     const employee = (dto as unknown as { employee?: string }).employee || '';
-    // High-value discount OTP enforcement
+    // High-value discount OTP enforcement (admin is exempt; skip entirely when otpEnabled=false)
     const discountAmt = Number((dto as unknown as { discount?: number }).discount) || 0;
-    if (discountAmt > 0) {
+    if (discountAmt > 0 && callerRole !== 'admin') {
       const settings = await this.settingsService.getSettings();
-      const limit = Number(settings.highValueDiscountLimit ?? 200);
-      if (discountAmt > limit) {
-        const otpId = (dto as unknown as { highValueDiscountOtpId?: string }).highValueDiscountOtpId || '';
-        await this.discountOtpService.assertOtpForTransaction(otpId, discountAmt);
+      const otpEnabled = settings.otpEnabled !== false; // default true
+      if (otpEnabled) {
+        const limit = Number(settings.highValueDiscountLimit ?? 200);
+        if (discountAmt > limit) {
+          const otpId = (dto as unknown as { highValueDiscountOtpId?: string }).highValueDiscountOtpId || '';
+          await this.discountOtpService.assertOtpForTransaction(otpId, discountAmt);
+        }
       }
     }
     this.assertNotDuplicateSubmission(
@@ -933,6 +939,7 @@ export class TransactionsService {
   async collect(
     id: string,
     dto: CollectTransactionDto,
+    by = 'مستخدم',
   ): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) {
@@ -1073,6 +1080,10 @@ export class TransactionsService {
         items: (saved.items || []).map((it) => ({ name: it.name, qty: it.qty })),
       });
     }
+    // Auto-transition Picked-Up → Delivered on full payment for sales orders
+    if (!isPurchase && isFullyPaid && saved.pickupStatus === 'Picked-Up') {
+      await this.markPickupDelivered(String(saved._id), by);
+    }
     return saved;
   }
 
@@ -1153,6 +1164,10 @@ export class TransactionsService {
 
     this.emit('tx:updated', { tx: saved, action: 'reverse-collect' });
     this.emit('vault:changed', { reason: 'tx:reverse-collect', txId: String(saved._id) });
+    // Auto-revert Delivered → Picked-Up when payment is reversed on a sales order
+    if (!isPurchase && saved.pickupStatus === 'Delivered') {
+      await this.revertPickupDelivered(String(saved._id), _reversedBy);
+    }
     return { tx: saved, reversedAmount, vaultMethod };
   }
 
@@ -2173,5 +2188,99 @@ export class TransactionsService {
         );
       }
     }
+  }
+
+  // ─── Pick-Up Management ───────────────────────────────────────────────────
+
+  /** Return all sales transactions eligible for pick-up tracking */
+  async findPickupOrders(): Promise<TransactionDocument[]> {
+    return this.transactionModel
+      .find({ type: 'مبيعات', cancelled: { $ne: true }, archived: { $ne: true } })
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
+  /** Generate a unique Pick-Up batch reference: PU-YYYYMMDD-XXXXX */
+  private genPickupRef(): string {
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const rand = Math.random().toString(36).slice(2, 7).toUpperCase();
+    return `PU-${date}-${rand}`;
+  }
+
+  /** Confirm pick-up for one or more transaction IDs */
+  async confirmPickup(ids: string[], by: string, date?: string): Promise<{ updated: number; pickupRef: string }> {
+    const validIds = ids.filter(id => isValidObjectId(id));
+    if (!validIds.length) return { updated: 0, pickupRef: '' };
+    const now = date || new Date().toISOString().slice(0, 10);
+    const batchRef = this.genPickupRef();
+    const historyEntry = { action: 'pickup', date: now, by, pickupRef: batchRef };
+    const result = await this.transactionModel.updateMany(
+      { _id: { $in: validIds }, type: 'مبيعات', cancelled: { $ne: true }, pickupStatus: { $ne: 'Delivered' } },
+      {
+        $set: { pickupStatus: 'Picked-Up', pickupDate: now, pickupBy: by, pickupRef: batchRef },
+        $push: { pickupHistory: historyEntry },
+      },
+    );
+    this.emit('pickup:updated', { ids: validIds, action: 'pickup', pickupRef: batchRef });
+    return { updated: result.modifiedCount, pickupRef: batchRef };
+  }
+
+  /** Undo pick-up for one or more transaction IDs */
+  async undoPickup(ids: string[], by: string): Promise<{ updated: number }> {
+    const validIds = ids.filter(id => isValidObjectId(id));
+    if (!validIds.length) return { updated: 0 };
+    const now = new Date().toISOString().slice(0, 10);
+    const historyEntry = { action: 'undo', date: now, by };
+    const result = await this.transactionModel.updateMany(
+      { _id: { $in: validIds }, type: 'مبيعات', pickupStatus: 'Picked-Up' },
+      {
+        $set: { pickupStatus: 'Pending', pickupDate: null, pickupBy: null, pickupRef: null },
+        $push: { pickupHistory: historyEntry },
+      },
+    );
+    this.emit('pickup:updated', { ids: validIds, action: 'undo' });
+    return { updated: result.modifiedCount };
+  }
+
+  /** Add a single pending order to an existing pickup run */
+  async addToPickupRun(id: string, pickupRef: string, by: string, date?: string): Promise<{ updated: number }> {
+    if (!isValidObjectId(id) || !pickupRef) return { updated: 0 };
+    const now = date || new Date().toISOString().slice(0, 10);
+    const historyEntry = { action: 'pickup', date: now, by, pickupRef };
+    const result = await this.transactionModel.updateOne(
+      { _id: id, type: 'مبيعات', cancelled: { $ne: true }, pickupStatus: { $in: ['Pending', null] } },
+      {
+        $set: { pickupStatus: 'Picked-Up', pickupDate: now, pickupBy: by, pickupRef },
+        $push: { pickupHistory: historyEntry },
+      },
+    );
+    this.emit('pickup:updated', { ids: [id], action: 'pickup', pickupRef });
+    return { updated: result.modifiedCount };
+  }
+
+  /** Mark pick-up orders as delivered (called when payment is fully collected) */
+  async markPickupDelivered(id: string, by: string): Promise<void> {
+    const now = new Date().toISOString().slice(0, 10);
+    await this.transactionModel.updateOne(
+      { _id: id, pickupStatus: 'Picked-Up' },
+      {
+        $set: { pickupStatus: 'Delivered' },
+        $push: { pickupHistory: { action: 'delivered', date: now, by } },
+      },
+    );
+    this.emit('pickup:updated', { ids: [id], action: 'delivered' });
+  }
+
+  /** Revert delivered → picked-up when payment is reversed */
+  async revertPickupDelivered(id: string, by: string): Promise<void> {
+    const now = new Date().toISOString().slice(0, 10);
+    await this.transactionModel.updateOne(
+      { _id: id, pickupStatus: 'Delivered' },
+      {
+        $set: { pickupStatus: 'Picked-Up' },
+        $push: { pickupHistory: { action: 'revert-delivered', date: now, by } },
+      },
+    );
+    this.emit('pickup:updated', { ids: [id], action: 'revert-delivered' });
   }
 }

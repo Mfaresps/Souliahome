@@ -35,16 +35,16 @@ export class SuppliersService {
   }
 
   async update(id: string, dto: UpdateSupplierDto): Promise<SupplierDocument> {
-    const updateData: Partial<UpdateSupplierDto> = { ...dto };
-    if (updateData.name) {
-      const normalizedName = updateData.name.trim();
+    const updateData: Record<string, unknown> = { ...dto };
+    if (updateData['name']) {
+      const normalizedName = String(updateData['name']).trim();
       const existing = await this.supplierModel
         .findOne({ name: { $regex: `^${normalizedName}$`, $options: 'i' }, _id: { $ne: id } })
         .exec();
       if (existing) {
         throw new ConflictException('يوجد مورد آخر بهذا الاسم بالفعل.');
       }
-      updateData.name = normalizedName;
+      updateData['name'] = normalizedName;
     }
     const supplier = await this.supplierModel
       .findByIdAndUpdate(id, updateData, { new: true })

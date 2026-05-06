@@ -11,6 +11,7 @@ interface RequestArgs {
   itemsTotal: number;
   client: string;
   txType: string;
+  txRef: string;
   requestedById: string;
   requestedByName: string;
   requestedByUsername: string;
@@ -41,12 +42,36 @@ export class DiscountOtpService {
   }
 
   async requestOtp(args: RequestArgs): Promise<{ otpId: string; expiresAt: string; threshold: number }> {
+    const settings = await this.settingsService.getSettings();
+    if (settings.otpEnabled === false) {
+      throw new BadRequestException('نظام OTP معطل — لا يوجد حد للخصم حالياً');
+    }
+
+    // Mandatory field validation
+    if (!args.client || !args.client.trim()) {
+      throw new BadRequestException('اسم العميل مطلوب قبل طلب كود التحقق');
+    }
+    if (!args.txRef || !args.txRef.trim()) {
+      throw new BadRequestException('رقم الفاتورة مطلوب قبل طلب كود التحقق');
+    }
+
     const threshold = await this.getThreshold();
     if (!(args.discountAmount > threshold)) {
       throw new BadRequestException('قيمة الخصم لا تتجاوز الحد المسموح');
     }
-    const ttlMin = await this.getTtlMin();
+
+    // txRef uniqueness: block if same ref already has an active (unused/not-expired) OTP
     const now = new Date();
+    const existingActive = await this.otpModel.findOne({
+      txRef: args.txRef.trim(),
+      status: 'unused',
+      expiresAt: { $gt: now.toISOString() },
+    }).exec();
+    if (existingActive) {
+      throw new BadRequestException(`رقم الفاتورة #${args.txRef} له كود تحقق نشط بالفعل — انتظر انتهاء صلاحيته أو اطلب كوداً جديداً`);
+    }
+
+    const ttlMin = await this.getTtlMin();
     const expiresAt = new Date(now.getTime() + ttlMin * 60 * 1000);
     const otp = this.generateOtp();
 
@@ -56,6 +81,7 @@ export class DiscountOtpService {
       itemsTotal: args.itemsTotal,
       client: args.client,
       txType: args.txType,
+      txRef: args.txRef || '',
       requestedById: args.requestedById,
       requestedByName: args.requestedByName,
       requestedByUsername: args.requestedByUsername,
@@ -72,10 +98,12 @@ export class DiscountOtpService {
       const admins = users.filter((u: any) => u.role === 'admin');
       const expiresStr = expiresAt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
       const text =
-        `🔐 كود تحقق خصم مرتفع: ${otp}\n` +
-        `طلب من: ${args.requestedByName || args.requestedByUsername || 'موظف'}\n` +
-        `قيمة الخصم: ${args.discountAmount} ج.م (الحد: ${threshold})\n` +
-        `العميل: ${args.client || '-'} — صالح حتى ${expiresStr}`;
+        `🔐 كود التحقق: ${otp}` +
+        `\nالموظف: ${args.requestedByName || args.requestedByUsername || 'موظف'}` +
+        `\nالعميل: ${args.client || '-'}` +
+        `\nالفاتورة: ${args.txRef || '-'}` +
+        `\nالخصم: ${args.discountAmount} ج.م (الحد: ${threshold} ج.م)` +
+        `\nصالح حتى: ${expiresStr}`;
       const rows = admins.map((a: any) => ({
         targetUserId: String(a._id),
         targetUsername: (a.username || '').toLowerCase(),

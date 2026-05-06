@@ -2354,7 +2354,9 @@ body.dark-mode .mov-status.ملغي{background:#450a0a;color:#f87171}
 #mov-table .mov-col-remaining-zero{display:inline-block;text-align:center}
 #mov-table thead th.col-secondary{color:rgba(var(--muted-rgb,100,116,139),.7);font-size:.68rem;letter-spacing:.3px}
 /* Table column hierarchy */
-.mov-col-employee{color:var(--muted)!important;font-size:.78rem!important;font-weight:400!important}
+.mov-col-employee{color:rgba(var(--muted-rgb,100,116,139),.5)!important;font-size:.7rem!important;font-weight:300!important;opacity:.65}
+.mov-emp-initials{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(var(--muted-rgb,100,116,139),.15);color:rgba(var(--muted-rgb,100,116,139),.6);font-size:.65rem;font-weight:500;letter-spacing:.02em;flex-shrink:0}
+.mov-pickup-filter-pill.active{background:color-mix(in srgb,var(--primary) 12%,transparent);border-color:var(--primary)}
 .mov-col-ref a{color:var(--text);font-weight:500;font-size:.85rem}
 /* Financial columns — semantic weights & colors
    Hierarchy: Total (boldest, primary) > Remaining (status-driven) > Paid (success) > Ship (muted) */
@@ -4273,6 +4275,80 @@ body.dark-mode .txn-bar{background:rgba(255,255,255,.08)}
 #offline-fab-badge{background:#fff;color:#d97706;border-radius:999px;min-width:22px;height:22px;display:none;align-items:center;justify-content:center;padding:0 6px;font-size:.72rem;font-weight:800}
 @media(max-width:600px){#offline-fab{bottom:80px;left:12px;padding:9px 12px;font-size:.78rem}.offline-fab-label{display:none}}
 
+/* ── Pick-Up Orders ── */
+.pu-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.pu-table th{background:var(--bg-alt);padding:10px 14px;text-align:right;font-weight:600;font-size:.74rem;color:var(--muted);border-bottom:2px solid var(--border);white-space:nowrap;letter-spacing:.03em;text-transform:uppercase}
+.pu-table td{padding:0;border-bottom:1px solid var(--border);vertical-align:middle}
+.pu-run-row td{padding:11px 14px;transition:background .15s}
+.pu-run-row:hover td{background:var(--bg-alt)}
+.pu-run-row.pu-run-open td{background:color-mix(in srgb,var(--primary) 5%,transparent);border-bottom:none}
+.pu-run-row.pu-run-open:hover td{background:color-mix(in srgb,var(--primary) 8%,transparent)}
+/* chevron */
+.pu-chevron{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;background:var(--border);transition:transform .22s cubic-bezier(.4,0,.2,1),background .15s;color:var(--muted);flex-shrink:0}
+.pu-run-open .pu-chevron{transform:rotate(90deg);background:color-mix(in srgb,var(--primary) 15%,transparent);color:var(--primary)}
+/* expand panel */
+.pu-detail-row>td{padding:0!important;border-bottom:none!important;border-top:none!important}
+.pu-detail-panel{background:var(--surface);margin:0 0 2px;border-bottom:2px solid color-mix(in srgb,var(--primary) 30%,transparent);animation:puSlideDown .22s cubic-bezier(.4,0,.2,1)}
+@keyframes puSlideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+/* panel top bar */
+.pu-panel-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:color-mix(in srgb,var(--primary) 6%,transparent);border-top:2px solid color-mix(in srgb,var(--primary) 25%,transparent);flex-wrap:wrap;gap:10px}
+.pu-panel-bar-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pu-panel-tag{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.pu-panel-tag.tag-green{background:#d1fae5;color:#065f46;border-color:#a7f3d0}
+.pu-panel-tag.tag-amber{background:#fff3cd;color:#b45309;border-color:#fde68a}
+.pu-panel-tag.tag-blue{background:color-mix(in srgb,var(--primary) 10%,transparent);color:var(--primary);border-color:color-mix(in srgb,var(--primary) 25%,transparent)}
+[data-theme=dark] .pu-panel-tag.tag-green{background:#064e3b;color:#34d399;border-color:#065f46}
+[data-theme=dark] .pu-panel-tag.tag-amber{background:#451a03;color:#fbbf24;border-color:#78350f}
+/* inner orders table */
+.pu-orders-table{width:100%;border-collapse:collapse;font-size:.83rem}
+.pu-orders-table th{padding:9px 20px;text-align:right;font-weight:600;font-size:.71rem;color:var(--muted);background:var(--bg-alt);border-bottom:1px solid var(--border);white-space:nowrap;letter-spacing:.03em;text-transform:uppercase}
+.pu-orders-table td{padding:11px 20px;border-bottom:1px solid var(--border);vertical-align:middle}
+.pu-orders-table tbody tr:last-child td{border-bottom:none}
+.pu-orders-table tbody tr{transition:background .12s}
+.pu-orders-table tbody tr:hover td{background:color-mix(in srgb,var(--primary) 4%,transparent)}
+/* ref chip */
+.pu-ref-chip{display:inline-flex;align-items:center;gap:4px;background:color-mix(in srgb,var(--accent) 8%,transparent);color:var(--accent);font-weight:700;font-size:.79rem;padding:4px 10px;border-radius:6px;font-family:monospace;cursor:pointer;border:1px solid color-mix(in srgb,var(--accent) 18%,transparent);transition:background .15s,box-shadow .15s;letter-spacing:.01em}
+.pu-ref-chip:hover{background:color-mix(in srgb,var(--accent) 16%,transparent);box-shadow:0 1px 4px color-mix(in srgb,var(--accent) 15%,transparent)}
+/* order ref pill inside detail */
+.pu-order-ref{font-weight:700;color:var(--accent);font-family:monospace;font-size:.8rem}
+/* badges */
+.pu-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:.73rem;font-weight:600;white-space:nowrap}
+.pu-badge-pending{background:#f3f4f6;color:#6b7280}
+.pu-badge-collected{background:#fff3cd;color:#b45309}
+.pu-badge-delivered{background:#d1fae5;color:#065f46}
+[data-theme=dark] .pu-badge-pending{background:#374151;color:#9ca3af}
+[data-theme=dark] .pu-badge-collected{background:#451a03;color:#fbbf24}
+[data-theme=dark] .pu-badge-delivered{background:#064e3b;color:#34d399}
+.pu-date-btn{background:none;border:none;cursor:pointer;color:var(--accent);font-size:.82rem;padding:0;text-decoration:underline dotted}
+/* run meta chips */
+.pu-run-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pu-run-chip{display:inline-flex;align-items:center;gap:4px;font-size:.74rem;color:var(--muted);background:var(--bg-alt);padding:2px 8px;border-radius:20px;border:1px solid var(--border)}
+@media(max-width:700px){.pu-table th:nth-child(5),.pu-table td:nth-child(5),.pu-table th:nth-child(6),.pu-table td:nth-child(6){display:none}}
+/* ── Pick-Up KPIs & Filter Bar ── */
+.pu-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:520px){.pu-kpis{grid-template-columns:repeat(2,1fr)}}
+.pu-kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.pu-kpi-card .pu-kpi-label{font-size:.72rem;color:var(--muted);font-weight:500;letter-spacing:.02em;text-transform:uppercase}
+.pu-kpi-card .pu-kpi-val{font-size:1.6rem;font-weight:800;line-height:1.1;color:var(--text)}
+.pu-kpi-card .pu-kpi-sub{font-size:.74rem;color:var(--muted);margin-top:1px}
+.pu-kpi-card.pu-kpi-delivered{border-top:3px solid #10b981}
+.pu-kpi-card.pu-kpi-delivered .pu-kpi-val{color:#10b981}
+.pu-kpi-card.pu-kpi-pickedup{border-top:3px solid #d97706}
+.pu-kpi-card.pu-kpi-pickedup .pu-kpi-val{color:#d97706}
+.pu-kpi-card.pu-kpi-pending{border-top:3px solid #9ca3af}
+.pu-kpi-card.pu-kpi-pending .pu-kpi-val{color:#6b7280}
+.pu-kpi-card.pu-kpi-amount{border-top:3px solid var(--primary)}
+.pu-kpi-card.pu-kpi-amount .pu-kpi-val{color:var(--primary);font-size:1.15rem}
+/* filter bar */
+.pu-filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.pu-filter-bar input,.pu-filter-bar select{height:36px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);padding:0 10px;font-size:.84rem;outline:none;transition:border .2s;box-sizing:border-box}
+.pu-filter-bar input:focus,.pu-filter-bar select:focus{border-color:var(--primary)}
+.pu-filter-bar .pu-search-wrap{flex:1;min-width:180px;position:relative}
+.pu-filter-bar .pu-search-wrap svg{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted)}
+.pu-filter-bar .pu-search-wrap input{width:100%;padding-right:32px}
+.pu-date-range{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.pu-date-range-label{font-size:.8rem;color:var(--muted);white-space:nowrap}
+.pu-date-range input[type=date]{width:140px}
 .oq-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .oq-header-actions{display:flex;gap:8px;flex-wrap:wrap}
 .oq-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
@@ -5445,6 +5521,19 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
           <span class="fx-btn-text">لها خصم</span>
         </button>
+        <!-- Pick-Up status filter pills -->
+        <div style="display:flex;align-items:center;gap:4px;border-right:1px solid var(--border);padding-right:8px;margin-right:2px">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          <button class="fx-btn mov-pickup-filter-pill" data-pu-val="Pending" onclick="setMovPickupFilter('Pending')" title="Pending فقط" style="gap:4px;padding:4px 8px">
+            <span class="pu-badge pu-badge-pending" style="font-size:.68rem;padding:1px 6px">معلق</span>
+          </button>
+          <button class="fx-btn mov-pickup-filter-pill" data-pu-val="Picked-Up" onclick="setMovPickupFilter('Picked-Up')" title="Picked-Up فقط" style="gap:4px;padding:4px 8px">
+            <span class="pu-badge pu-badge-collected" style="font-size:.68rem;padding:1px 6px">Picked-Up</span>
+          </button>
+          <button class="fx-btn mov-pickup-filter-pill" data-pu-val="Delivered" onclick="setMovPickupFilter('Delivered')" title="Delivered فقط" style="gap:4px;padding:4px 8px">
+            <span class="pu-badge pu-badge-delivered" style="font-size:.68rem;padding:1px 6px">Delivered</span>
+          </button>
+        </div>
       </div>
       <div class="fx-toolbar-row fx-mov-controls">
         <div class="fx-search">
@@ -5576,8 +5665,14 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
                 الخصم
               </span>
             </th>
-            <th data-col="employee" class="col-secondary">
-              <span style="display:flex;align-items:center;gap:5px">
+            <th data-col="pickup" style="text-align:center;white-space:nowrap">
+              <span style="display:flex;align-items:center;justify-content:center;gap:5px">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                Pick-Up
+              </span>
+            </th>
+            <th data-col="employee" class="col-secondary" style="text-align:center">
+              <span style="display:flex;align-items:center;justify-content:center;gap:5px">
                 <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
                 <span data-i18n="colEmployee">الموظف</span>
               </span>
@@ -6455,6 +6550,309 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 </div>
 
 
+<!-- Pick-Up Orders -->
+<div class="page" id="page-pickup-orders">
+  <div class="pu-header flex-between" style="flex-wrap:wrap;gap:12px;margin-bottom:20px">
+    <div>
+      <h2 class="page-title">Pick-Up Orders</h2>
+      <p class="page-subtitle">إنشاء وتتبع عمليات استلام شركات الشحن للطلبات</p>
+    </div>
+    <div class="flex gap-8" style="flex-wrap:wrap;align-items:center">
+      <button class="btn btn-outline btn-sm" onclick="exportPickupExcel()" style="display:flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        تصدير Excel
+      </button>
+      <button class="btn btn-outline btn-sm" onclick="openPickupBulkModal()" style="display:flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h10"/></svg>
+        إدخال مجمّع
+      </button>
+      <button class="btn btn-outline btn-sm" onclick="openPuEditModal('')" style="display:flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        تعديل عملية
+      </button>
+      <button class="btn btn-primary btn-sm" onclick="openCreatePickupModal()" style="display:flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        إنشاء Pick-Up
+      </button>
+    </div>
+  </div>
+
+  <!-- Pick-Up KPIs -->
+  <div class="pu-kpis" id="pu-kpis-row">
+    <div class="pu-kpi-card">
+      <span class="pu-kpi-label">إجمالي العمليات</span>
+      <span class="pu-kpi-val" id="pu-kpi-total">—</span>
+    </div>
+    <div class="pu-kpi-card pu-kpi-delivered">
+      <span class="pu-kpi-label">Delivered</span>
+      <span class="pu-kpi-val" id="pu-kpi-delivered">—</span>
+      <span class="pu-kpi-sub" id="pu-kpi-delivered-amt"></span>
+    </div>
+    <div class="pu-kpi-card pu-kpi-pickedup">
+      <span class="pu-kpi-label">Picked-Up</span>
+      <span class="pu-kpi-val" id="pu-kpi-pickedup">—</span>
+      <span class="pu-kpi-sub" id="pu-kpi-pickedup-amt"></span>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="pu-filter-bar">
+    <div class="pu-search-wrap">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="pu-search" placeholder="بحث برقم مرجع، تليفون، اسم عميل…" oninput="_pickupPage=1;renderPickupRuns()" autocomplete="off">
+    </div>
+    <div class="pu-date-range">
+      <span class="pu-date-range-label">من</span>
+      <input type="date" id="pu-filter-date-from" onchange="_pickupPage=1;renderPickupRuns()">
+      <span class="pu-date-range-label">إلى</span>
+      <input type="date" id="pu-filter-date-to" onchange="_pickupPage=1;renderPickupRuns()">
+    </div>
+    <select id="pu-filter-shipco" onchange="_pickupPage=1;renderPickupRuns()">
+      <option value="all">كل شركات الشحن</option>
+    </select>
+    <button class="btn btn-outline btn-sm" onclick="clearPickupFilters()" style="white-space:nowrap;height:36px">مسح</button>
+  </div>
+
+  <!-- Pickup Runs Table -->
+  <div class="card" style="overflow:hidden;padding:0">
+    <div style="overflow-x:auto">
+    <table class="pu-table" id="pu-runs-table">
+      <thead>
+        <tr>
+          <th style="width:44px;padding-right:8px"></th>
+          <th>رقم العملية</th>
+          <th>التاريخ</th>
+          <th>شركة الشحن</th>
+          <th>الطلبات</th>
+          <th>الإجمالي</th>
+          <th style="width:40px"></th>
+        </tr>
+      </thead>
+      <tbody id="pu-runs-body"></tbody>
+    </table>
+    </div>
+    <div id="pu-empty" style="display:none;text-align:center;padding:52px 20px;color:var(--muted)">
+      <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 12px;display:block;opacity:.35"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      <div style="font-size:.9rem;font-weight:600;margin-bottom:4px">لا توجد عمليات Pick-Up</div>
+      <div style="font-size:.8rem">أنشئ أول عملية استلام باستخدام الزر أعلاه</div>
+    </div>
+    <div id="pu-pagination" style="padding:10px 16px;border-top:1px solid var(--border)"></div>
+  </div>
+</div>
+
+<!-- إنشاء Pick-Up Modal — اختيار الأوردرات من النظام -->
+<div id="pu-create-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closePuCreateModal()">
+  <div style="background:var(--surface);border-radius:16px;width:95%;max-width:640px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden">
+
+    <!-- Header -->
+    <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;background:var(--primary);border-radius:10px;display:flex;align-items:center;justify-content:center">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:.98rem">إنشاء أمر Pick-Up جديد</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-top:1px">اختر الطلبات المراد استلامها</div>
+        </div>
+      </div>
+      <button onclick="closePuCreateModal()" style="background:var(--bg-alt);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:1rem;color:var(--muted);display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+
+    <!-- Search + filter -->
+    <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center">
+      <div style="flex:1;position:relative">
+        <svg style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="pu-create-search" placeholder="بحث برقم الطلب أو اسم العميل..." style="width:100%;padding:7px 32px 7px 10px;border:1px solid var(--border);border-radius:8px;font-size:.84rem;background:var(--bg);color:var(--text);box-sizing:border-box" oninput="filterPuCreateList()">
+      </div>
+      <select id="pu-create-filter-shipco" style="width:130px;flex-shrink:0;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;background:var(--bg);color:var(--text)" onchange="filterPuCreateList()">
+        <option value="all">كل الشركات</option>
+      </select>
+    </div>
+
+    <!-- Select-all bar -->
+    <div style="padding:8px 20px;border-bottom:1px solid var(--border);background:var(--bg-alt);display:flex;align-items:center;justify-content:space-between">
+      <label style="display:flex;align-items:center;gap:8px;font-size:.83rem;cursor:pointer;font-weight:600;color:var(--text)">
+        <input type="checkbox" id="pu-create-check-all" onchange="puCreateToggleAll(this.checked)" style="width:15px;height:15px;accent-color:var(--primary)">
+        تحديد الكل
+      </label>
+      <span id="pu-create-selected-count" style="font-size:.82rem;color:var(--primary);font-weight:700;background:color-mix(in srgb,var(--primary) 12%,transparent);padding:3px 10px;border-radius:20px"></span>
+    </div>
+
+    <!-- Column headers -->
+    <div style="padding:5px 16px;border-bottom:2px solid var(--border);background:var(--bg-alt);display:grid;grid-template-columns:20px 60px minmax(100px,1fr) 36px 88px 82px 82px 76px;align-items:center;gap:6px;direction:rtl;font-size:.71rem;color:var(--muted);font-weight:700">
+      <span></span>
+      <span>المرجع</span>
+      <span>الاسم</span>
+      <span style="text-align:center">عدد</span>
+      <span>الفاتورة</span>
+      <span style="color:#059669">المدفوع</span>
+      <span style="color:var(--red)">المتبقي</span>
+      <span>الشحن / الحالة</span>
+    </div>
+
+    <!-- Orders list -->
+    <div id="pu-create-list" style="flex:1;overflow-y:auto;min-height:200px;max-height:340px"></div>
+
+    <!-- Footer -->
+    <div style="padding:14px 20px;border-top:1px solid var(--border);background:var(--bg-alt)">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <label style="font-size:.84rem;color:var(--muted);white-space:nowrap">تاريخ الاستلام</label>
+          <input type="date" id="pu-create-date" style="flex:1;padding:7px 11px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;background:var(--bg);color:var(--text)">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:160px">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/></svg>
+          <label style="font-size:.84rem;color:var(--muted);white-space:nowrap">شركة الشحن</label>
+          <input type="text" id="pu-create-shipco" placeholder="اختياري" style="flex:1;padding:7px 11px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;background:var(--bg);color:var(--text)">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-outline btn-sm" onclick="closePuCreateModal()" style="padding:8px 18px">إلغاء</button>
+        <button class="btn btn-primary btn-sm" id="pu-create-confirm-btn" onclick="submitCreatePickup()" style="padding:8px 20px;display:flex;align-items:center;gap:6px">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          إنشاء أمر الاستلام
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- إدخال مجمع Modal — إدخال الـ refs نصياً مع preview -->
+<div id="pu-bulk-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closePuBulkModal()">
+  <div style="background:var(--surface);border-radius:16px;width:95%;max-width:560px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden">
+
+    <!-- Header -->
+    <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;background:var(--primary);border-radius:10px;display:flex;align-items:center;justify-content:center">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h10"/></svg>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:.98rem">إدخال مجمّع — أرقام مرجعية</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-top:1px">أدخل أرقام الطلبات سطراً بسطر أو مفصولة بفاصلة</div>
+        </div>
+      </div>
+      <button onclick="closePuBulkModal()" style="background:var(--bg-alt);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:1rem;color:var(--muted);display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:16px 20px;overflow-y:auto;flex:1">
+      <textarea id="pu-bulk-input" rows="7" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:.9rem;font-family:monospace;background:var(--bg);color:var(--text);resize:vertical;box-sizing:border-box;direction:ltr;outline:none;transition:border-color .15s" placeholder="INV-001&#10;INV-002&#10;INV-003" oninput="previewBulkPickup()" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+
+      <!-- Preview قبل التأكيد -->
+      <div id="pu-bulk-preview" style="display:none;margin-top:12px;max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;background:var(--bg-alt)">
+        <div style="padding:8px 14px;font-size:.78rem;font-weight:700;color:var(--muted);border-bottom:1px solid var(--border);letter-spacing:.04em">معاينة الطلبات</div>
+        <div id="pu-bulk-preview-body" style="padding:8px 14px"></div>
+      </div>
+
+      <!-- Date -->
+      <div style="margin-top:14px;display:flex;align-items:center;gap:10px;background:var(--bg-alt);border-radius:10px;padding:10px 14px">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <label style="font-size:.85rem;color:var(--muted);white-space:nowrap;font-weight:600">تاريخ الاستلام</label>
+        <input type="date" id="pu-bulk-date" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;background:var(--bg);color:var(--text)">
+      </div>
+
+      <div id="pu-bulk-result" style="margin-top:12px;display:none"></div>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:14px 20px;border-top:1px solid var(--border);background:var(--bg-alt);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0">
+      <button class="btn btn-outline btn-sm" onclick="closePuBulkModal()" style="padding:8px 18px">إلغاء</button>
+      <button class="btn btn-primary btn-sm" id="pu-bulk-confirm-btn" onclick="runBulkPickup()" style="padding:8px 20px;display:flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        تأكيد الاستلام
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- تعديل أمر Pick-Up Modal — إضافة/حذف أوردرات من عملية موجودة -->
+<div id="pu-edit-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closePuEditModal()">
+  <div style="background:var(--surface);border-radius:16px;width:95%;max-width:680px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden">
+
+    <!-- Header -->
+    <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:.98rem">تعديل أمر Pick-Up</div>
+          <div id="pu-edit-ref-label" style="font-size:.78rem;color:var(--muted);margin-top:1px">ابحث برقم العملية لتعديل الأوردرات</div>
+        </div>
+      </div>
+      <button onclick="closePuEditModal()" style="background:var(--bg-alt);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:1rem;color:var(--muted);display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+
+    <!-- Search by pickupRef -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;gap:8px">
+      <input type="text" id="pu-edit-ref-input" placeholder="رقم العملية (مثال: PU-20260505-XXXXX)" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;font-family:monospace;background:var(--bg);color:var(--text);direction:ltr;outline:none;transition:border-color .15s" oninput="onPuEditRefInput()" onkeydown="if(event.key==='Enter')loadPuEditRun()" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      <button class="btn btn-outline btn-sm" onclick="loadPuEditRun()" style="padding:8px 16px;white-space:nowrap">بحث</button>
+    </div>
+
+    <!-- Date edit row (shown after run is loaded) -->
+    <div id="pu-edit-date-row" style="display:none;padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg-alt);align-items:center;gap:10px">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <label style="font-size:.83rem;color:var(--muted);white-space:nowrap;font-weight:600">تاريخ الاستلام</label>
+      <input type="date" id="pu-edit-date-val" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:.84rem;background:var(--bg);color:var(--text)">
+      <button class="btn btn-primary btn-sm" onclick="savePuEditDate()" style="padding:6px 14px;white-space:nowrap;display:flex;align-items:center;gap:5px">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        حفظ التاريخ
+      </button>
+    </div>
+
+    <!-- Body: two columns — current orders | pending to add -->
+    <div id="pu-edit-body" style="flex:1;overflow-y:auto;min-height:180px;display:none">
+
+      <!-- Current orders in this run -->
+      <div style="padding:10px 16px 6px;font-size:.78rem;font-weight:700;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg-alt);display:flex;align-items:center;justify-content:space-between">
+        <span>الأوردرات في هذه العملية</span>
+        <span id="pu-edit-run-count" style="font-size:.75rem;color:var(--primary)"></span>
+      </div>
+      <div id="pu-edit-current-list" style="max-height:240px;overflow-y:auto"></div>
+
+      <!-- Add more orders -->
+      <div style="padding:10px 16px 6px;font-size:.78rem;font-weight:700;color:var(--muted);border-top:2px solid var(--border);background:var(--bg-alt);display:flex;align-items:center;gap:8px">
+        <span>إضافة أوردرات معلقة</span>
+        <input type="text" id="pu-edit-add-search" placeholder="بحث بالاسم أو الرقم..." style="flex:1;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;background:var(--bg);color:var(--text)" oninput="filterPuEditAddList()">
+      </div>
+      <div id="pu-edit-add-list" style="max-height:200px;overflow-y:auto"></div>
+
+    </div>
+
+    <!-- Empty state -->
+    <div id="pu-edit-empty" style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.9rem;padding:40px">
+      أدخل رقم العملية وانقر بحث
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:12px 16px;border-top:1px solid var(--border);background:var(--bg-alt);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0">
+      <button class="btn btn-outline btn-sm" onclick="closePuEditModal()" style="padding:8px 18px">إغلاق</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Pick-Up Date Edit Modal -->
+<div id="pu-date-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closePuDateModal()">
+  <div class="modal-box" style="max-width:340px;width:95%">
+    <div class="modal-header">
+      <h3 style="margin:0;font-size:1rem">تعديل تاريخ الاستلام</h3>
+      <button class="modal-close" onclick="closePuDateModal()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px">
+      <input type="date" id="pu-date-edit-val" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;background:var(--bg);color:var(--text);box-sizing:border-box">
+    </div>
+    <div class="modal-footer" style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline btn-sm" onclick="closePuDateModal()">إلغاء</button>
+      <button class="btn btn-primary btn-sm" onclick="savePuDateEdit()">حفظ</button>
+    </div>
+  </div>
+</div>
+
 <!-- Pending Sync (Offline Queue) -->
 <div class="page" id="page-pending-sync">
   <div class="oq-header">
@@ -6904,19 +7302,31 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
             </span>
             <span class="lock-switch"><input type="checkbox" id="set-reports-lock-enabled" onchange="toggleLockSetting('reports', this.checked)"><span class="lock-switch-slider"></span></span>
           </label>
+          <!-- Level 1: Master toggle for staff discounts -->
           <label class="lock-toggle-row" style="margin-top:10px">
             <span class="lock-toggle-info">
               <span class="lock-toggle-title">السماح للموظفين بالخصم</span>
-              <span class="lock-toggle-sub">عند التعطيل يحتاج الموظف كلمة سر المدير لتطبيق خصم</span>
+              <span class="lock-toggle-sub">عند التعطيل: الموظفون لا يستطيعون تطبيق أي خصم (رسالة: تواصل مع المدير) — عند التفعيل: يظهر خيارات OTP والحد</span>
             </span>
-            <span class="lock-switch"><input type="checkbox" id="set-staff-discount-enabled" onchange="toggleLockSetting('staffDiscount', this.checked)"><span class="lock-switch-slider"></span></span>
+            <span class="lock-switch"><input type="checkbox" id="set-staff-discount-enabled" onchange="updateStaffDiscountSettings(this.checked)"><span class="lock-switch-slider"></span></span>
           </label>
-          <div class="lock-toggle-row" style="margin-top:10px;align-items:center">
-            <span class="lock-toggle-info">
-              <span class="lock-toggle-title">حد الخصم المرتفع (يحتاج كود تحقق OTP)</span>
-              <span class="lock-toggle-sub">أي خصم أعلى من هذا الحد يتطلب كود تحقق رباعي يصل المدير عبر التنبيهات</span>
-            </span>
-            <input type="number" id="set-high-value-discount-limit" min="0" step="1" style="width:110px;text-align:center" onchange="saveHighValueDiscountLimit(this.value)" />
+
+          <!-- Level 2 & 3: Show only if staff discounts are enabled -->
+          <div id="staff-discount-controls" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+            <label class="lock-toggle-row">
+              <span class="lock-toggle-info">
+                <span class="lock-toggle-title">تفعيل نظام OTP للخصم المرتفع</span>
+                <span class="lock-toggle-sub">عند التعطيل: خصومات حرة بلا حد — عند التفعيل: الخصومات > الحد تحتاج كود OTP</span>
+              </span>
+              <span class="lock-switch"><input type="checkbox" id="set-otp-enabled" onchange="saveOtpEnabled(this.checked)"><span class="lock-switch-slider"></span></span>
+            </label>
+            <div class="lock-toggle-row" style="margin-top:10px;align-items:center;opacity:0.8">
+              <span class="lock-toggle-info">
+                <span class="lock-toggle-title">حد الخصم المرتفع (ج.م)</span>
+                <span class="lock-toggle-sub">الخصومات ≤ هذا الحد تطبق مباشرة — الخصومات > الحد تحتاج OTP</span>
+              </span>
+              <input type="number" id="set-high-value-discount-limit" min="0" step="1" style="width:110px;text-align:center" onchange="saveHighValueDiscountLimit(this.value)" />
+            </div>
           </div>
           <label class="lock-toggle-row" style="margin-top:10px">
             <span class="lock-toggle-info">
@@ -7870,6 +8280,7 @@ let cmpTabFilter = 'all';
 let currentPage = 'dashboard';
 let movFilter = 'all';
 let movStatusFilter = '';
+let movPickupFilter = ''; // '' | 'Pending' | 'Picked-Up' | 'Delivered'
 let movViewMode = 'list'; // 'list' | 'grid'
 let movTagFilter = '';
 let movDiscountFilter = false;
@@ -7962,6 +8373,8 @@ let _discSuggestions = []; // current computed suggestions [{bundleId,bundleName
 // ── Bundle-discount permission & audit system ────────────────────────────────
 let _bundleDiscAuditLog = []; // [{ts,employee,action,bundleId,bundleName,code,amount,status,reason}]
 function getHighValueDiscountLimit() { return Number(settings?.highValueDiscountLimit ?? 200); }
+// OTP مطلوب فقط إذا: النظام مفعّل + المستخدم ليس admin
+function _isOtpRequired() { return settings?.otpEnabled !== false && !isAdmin(); }
 
 function _canApplyBundleDiscount() {
   // Admins always allowed; staff need the global staff-discount setting ON
@@ -8027,6 +8440,7 @@ const NAV_ITEMS = [
   {id:'complaints',label:'خدمة العملاء',labelEn:'Customer Service',icon:NAV_ICONS.complaints,perm:'complaints'},
   {id:'approvals',label:'الموافقات',labelEn:'Approvals',icon:NAV_ICONS.approvals,perm:'approvals'},
   {id:'pending-sync',label:'المعاملات المعلقة',labelEn:'Pending Sync',icon:'<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7"/><polyline points="21 4 21 10 15 10"/></svg>',perm:'transaction'},
+  {id:'pickup-orders',label:'Pick-Up Orders',labelEn:'Pick-Up Orders',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',perm:'movements'},
   {id:'reports',label:'التقارير',labelEn:'Reports',icon:NAV_ICONS.reports,perm:'reports',adminOnly:true},
   {id:'vault',label:'الخزنة',labelEn:'Vault',icon:NAV_ICONS.vault,perm:'vault'},
   {id:'users',label:'المستخدمون',labelEn:'Users',icon:NAV_ICONS.users,perm:'users'},
@@ -8040,6 +8454,7 @@ const TRANSLATIONS = {
   suppliers:{ar:'الموردون',en:'Suppliers'},expenses:{ar:'المصاريف',en:'Expenses'},
   reports:{ar:'التقارير',en:'Reports'},vault:{ar:'الخزنة',en:'Vault'},
   users:{ar:'المستخدمون',en:'Users'},settings:{ar:'الإعدادات',en:'Settings'},
+  'pickup-orders':{ar:'Pick-Up Orders',en:'Pick-Up Orders'},
   profile:{ar:'UserHub',en:'UserHub'},
   save:{ar:'حفظ',en:'Save'},cancel:{ar:'إلغاء',en:'Cancel'},delete:{ar:'حذف',en:'Delete'},
   edit:{ar:'تعديل',en:'Edit'},search:{ar:'بحث',en:'Search'},all:{ar:'الكل',en:'All'},
@@ -11103,8 +11518,57 @@ function renderMentionNotifsList() {
   }
   list.innerHTML = mentions.map(m => {
     const ago = _timeAgo(m.ts);
-    const snippet = m.commentText.length > 50 ? m.commentText.slice(0, 50) + '…' : m.commentText;
+    const isOtp = m.fromName === 'نظام التحقق';
     const isFu = Array.isArray(followUps) && followUps.some(f => String(f._id) === String(m.txId));
+
+    if (isOtp) {
+      // Format: "🔐 كود التحقق: XXXX\nالموظف: Y\nالعميل: Z\nالفاتورة: N\nالخصم: A ج.م (الحد: B)\nصالح حتى: T"
+      const otpLines = m.commentText.split('\n');
+      const getOtpVal = (prefix) => {
+        const ln = otpLines.find(l => l.startsWith(prefix));
+        if (!ln) return '';
+        const idx = ln.indexOf(':');
+        return idx !== -1 ? ln.slice(idx + 1).trim() : '';
+      };
+      const otpCode    = (otpLines[0] || '').replace(/.*:\s*/, '').trim();
+      const employee   = getOtpVal('الموظف');
+      const clientName = getOtpVal('العميل');
+      const refNum     = getOtpVal('الفاتورة');
+      const discLine   = getOtpVal('الخصم').replace(/\s*ج\.?م?\.?\s*/g, '').trim();
+      const validLine  = getOtpVal('صالح حتى');
+      const unreadDot  = m.read ? '' : '<span style="width:6px;height:6px;border-radius:50%;background:#e11d48;display:inline-block;vertical-align:middle;margin-right:2px"></span>';
+      const row = (label, val, valStyle = '') => val
+        ? `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:.72rem;padding:2px 0">
+             <span style="color:var(--muted);flex-shrink:0">${label}</span>
+             <strong style="color:var(--text);text-align:left;${valStyle}">${val}</strong>
+           </div>`
+        : '';
+      return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})" style="cursor:pointer;padding:10px 12px;${m.read ? '' : 'background:rgba(225,29,72,.045)'}">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:30px;height:30px;border-radius:9px;background:rgba(225,29,72,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#e11d48" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <span style="font-size:.68rem;font-weight:700;color:#e11d48">كود تحقق خصم ${unreadDot}</span>
+              <span style="font-size:.6rem;color:var(--muted)">${ago}</span>
+            </div>
+            <div style="background:rgba(225,29,72,.07);border:1.5px solid rgba(225,29,72,.2);border-radius:8px;padding:6px 10px;margin-bottom:8px;text-align:center">
+              <span style="font-family:monospace;font-size:1.15rem;font-weight:800;letter-spacing:.35em;color:#e11d48;direction:ltr;display:block">${esc(otpCode) || '—'}</span>
+            </div>
+            <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:1px">
+              ${row('الموظف', esc(employee))}
+              ${row('العميل', esc(clientName))}
+              ${refNum && refNum !== '-' ? row('رقم الفاتورة', `<span style="color:var(--accent)">#${esc(refNum)}</span>`) : ''}
+              ${discLine ? row('قيمة الخصم', `<span style="color:#e11d48">${esc(discLine)}</span>`) : ''}
+              ${validLine ? row('صالح حتى', esc(validLine)) : ''}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    const snippet = m.commentText.length > 50 ? m.commentText.slice(0, 50) + '…' : m.commentText;
     const context = isFu
       ? `متابعة طلب <strong>#${esc(String(m.txRef || m.txId))}</strong>`
       : `حركة <strong>#${esc(String(m.txRef || m.txId))}</strong>`;
@@ -11391,6 +11855,7 @@ function onPageEnter(page) {
     case 'products': renderProducts(); break;
     case 'suppliers': renderSuppliers(); break;
     case 'expenses': renderExpenses(); break;
+    case 'pickup-orders': loadPickupOrders().catch(e => toast('خطأ: ' + e.message, true)); break;
     case 'pending-sync': renderPendingSyncPage(); break;
     case 'complaints':
       // Always land on Follow-up Orders tab first
@@ -12730,7 +13195,7 @@ function renderTxItems() {
         </div>
       </div>
       <div class="tx-item-price">
-        <input type="text" inputmode="decimal" value="${item.price || 0}" class="tx-item-price-input" oninput="txItemChanged(${i},'price',this.value)" aria-label="السعر">
+        <span class="tx-item-price-input" style="pointer-events:none;user-select:none;display:inline-flex;align-items:center;justify-content:center;min-width:70px">${fmtJ(item.price || 0)}</span>
       </div>
       <div class="tx-item-qty">
         <button type="button" class="qty-btn" onclick="adjustTxItemQty(${i},-1)" title="إنقاص" aria-label="إنقاص">−</button>
@@ -13083,12 +13548,10 @@ function openDiscountModal() {
   if (!_canApplyBundleDiscount()) {
     _logBundleDiscAction('denied', { reason: 'غير مصرح — محاولة فتح نافذة الخصم', amount: 0 });
     openModal(`
-      <h3>خصم على الفاتورة</h3>
-      <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">يحتاج تطبيق الخصم إذن المدير — أدخل كلمة مرور المدير للمتابعة</p>
-      <div class="form-group"><label>كلمة مرور المدير</label><input type="password" id="disc-admin-pass" autofocus></div>
-      <div class="flex gap-8 mt-16">
-        <button class="btn btn-primary" onclick="verifyDiscountAdmin()">تأكيد</button>
-        <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+      <h3>الخصم غير مفعّل</h3>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:16px">الخصم غير مفعّل حالياً في النظام. تواصل مع المدير لتفعيله.</p>
+      <div style="text-align:center">
+        <button class="btn btn-outline" onclick="closeModal()">إغلاق</button>
       </div>`);
   } else {
     showDiscountForm(itemsTotal);
@@ -13184,7 +13647,7 @@ function removeSummaryManualDisc() {
 function startEditManualDisc() {
   if (!_canApplyBundleDiscount()) {
     _logBundleDiscAction('denied', { reason: 'محاولة تعديل خصم يدوي مباشرة من الملخص بدون صلاحية', amount: 0 });
-    toast('غير مصرح لك بتعديل الخصم اليدوي', true);
+    toast('الخصم غير مفعّل حالياً - تواصل مع المدير', true);
     return;
   }
   const row = qs('#sum-manual-disc-row');
@@ -13208,8 +13671,9 @@ function commitManualDiscEdit() {
   const itemsTotal = txItems.reduce((s, it) => s + (it.qty * it.price), 0);
   const codesDisc = _txCodesTotal(itemsTotal);
   if (val + codesDisc > itemsTotal) { toast('الخصم يتجاوز إجمالي الأصناف', true); return; }
-  // High-value gate — requires OTP from manager
-  if (val > getHighValueDiscountLimit()) {
+  // High-value gate — requires OTP from manager only if exceeds limit (staff only, when OTP enabled)
+  // Discounts <= limit apply directly without OTP
+  if (_isOtpRequired() && val > getHighValueDiscountLimit()) {
     calcTxSummary(); // restore display first
     _logBundleDiscAction('pending_approval', { amount: val, reason: `خصم يدوي عالي القيمة من الملخص (${fmtN(val)} ج) — يحتاج كود تحقق` });
     openHighValueOtpFlow(val, itemsTotal, () => {
@@ -13417,12 +13881,12 @@ function applyDiscount() {
   // ── Permission gate ──
   if (!_canApplyBundleDiscount()) {
     _logBundleDiscAction('denied', { reason: 'محاولة تطبيق خصم يدوي بدون صلاحية', amount: manualDisc });
-    toast('غير مصرح لك بتطبيق خصم يدوي على هذه الباقة', true);
+    toast('الخصم غير مفعّل حالياً - تواصل مع المدير', true);
     closeModal(); return;
   }
 
-  // ── High-value approval gate (OTP-based) ──
-  if (manualDisc > getHighValueDiscountLimit()) {
+  // ── High-value approval gate (OTP-based, staff only, when OTP enabled) ──
+  if (_isOtpRequired() && manualDisc > getHighValueDiscountLimit()) {
     const _discType = txDiscountType;
     _logBundleDiscAction('pending_approval', { amount: manualDisc, reason: `خصم عالي القيمة (${fmtN(manualDisc)} ج) — يحتاج كود تحقق OTP` });
     closeModal();
@@ -13720,7 +14184,7 @@ function _applySuggestion(codeId, code, type, value, bundleId) {
       code, amount: Number(value),
       reason: 'غير مصرح — محاولة تطبيق كود باقة بدون صلاحية',
     });
-    toast('غير مصرح لك بتطبيق خصم يدوي على هذه الباقة', true);
+    toast('الخصم غير مفعّل حالياً - تواصل مع المدير', true);
     return;
   }
 
@@ -13738,8 +14202,8 @@ function _applySuggestion(codeId, code, type, value, bundleId) {
   const discAmt = codeObj.type === 'percent' ? Math.round(_itemsTotal * codeObj.value / 100) : codeObj.value;
   const bundleObj = (settings.discountBundles || []).find(b => b.id === bundleId);
 
-  // ── High-value gate (OTP-based) ──
-  if (discAmt > getHighValueDiscountLimit()) {
+  // ── High-value gate (OTP-based, staff only, when OTP enabled) ──
+  if (_isOtpRequired() && discAmt > getHighValueDiscountLimit()) {
     const _itemsTotalSnap = _itemsTotal;
     _logBundleDiscAction('pending_approval', {
       bundleId, bundleName: bundleObj?.name || '',
@@ -15103,20 +15567,20 @@ async function saveTx() {
   if (!validItems.length) { toast('أضف صنف واحد على الأقل', true); return; }
   if (!validateTx()) return;
 
-  // High-value discount OTP gate
+  // High-value discount OTP gate (staff only, when OTP enabled)
   try {
     const _discRaw = getEffectiveDiscount();
     const _itemsTot = validItems.reduce((s, it) => s + (Number(it.qty)||0) * (Number(it.price)||0), 0);
     const _disc = Math.min(Math.max(0, _discRaw), _itemsTot);
     const _limit = Number(settings?.highValueDiscountLimit ?? 200);
-    if (_disc > _limit) {
+    if (_isOtpRequired() && _disc > _limit) {
       // If OTP not yet validated for this exact discount amount → open OTP flow
       if (!_pendingHighValueOtpId || Math.abs(_pendingHighValueOtpAmount - _disc) > 0.5) {
         await openHighValueOtpFlow(_disc, _itemsTot);
         return; // openHighValueOtpFlow re-invokes saveTx() on success
       }
     } else {
-      // Discount under threshold — clear any stale OTP
+      // Discount under threshold or admin/otp-disabled — clear any stale OTP
       _pendingHighValueOtpId = '';
       _pendingHighValueOtpAmount = 0;
     }
@@ -16750,6 +17214,13 @@ function getVaultEntryStatusBadge(txId) {
   return '';
 }
 
+function _empInitials(name) {
+  if (!name || name === '—') return '—';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return esc(parts[0].slice(0,1).toUpperCase() + parts[1].slice(0,1).toUpperCase());
+  return esc(name.slice(0,2));
+}
+
 function renderMovMobileCard(tx) {
   const isCancelled = tx.cancelled || isStatusCancelled(tx.payStatus);
   const typeBadge = _txTypeInlineBadge(tx);
@@ -16791,7 +17262,7 @@ function renderMovMobileCard(tx) {
       <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" class="mov-client-name">${tx.client ? esc(tx.client) : '<span style="color:var(--muted)">بدون اسم</span>'}</a>
       ${tx.ref ? `<span class="mov-card-ref">#${esc(tx.ref)}</span>` : ''}
     </div>
-    <div class="mov-card-statusrow">${statusHtml}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}<span class="mov-card-emp">${esc(tx.employee || '—')}</span></div>
+    <div class="mov-card-statusrow">${statusHtml}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : ''}<span class="mov-card-emp mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span></div>
     <div class="mov-card-grid">
       <div class="mov-item"><span class="mov-label">الإجمالي</span><span class="mov-val mov-col-total">${fmtJ(tx.total)}</span></div>
       <div class="mov-item"><span class="mov-label">المدفوع</span><span class="mov-val mov-col-paid">${dep}</span></div>
@@ -17202,7 +17673,8 @@ function renderMovementTxRow(tx) {
     <td data-col="status" style="text-align:center;white-space:nowrap">${movementStatusCell(tx)}${vaultStatusBadge}${vaultHint}</td>
     <td data-col="tag" style="text-align:center;min-width:110px" onclick="event.stopPropagation()" data-tag-cell="${esc(tx._id)}">${renderTxTagsCell(tx._id)}</td>
     <td data-col="discount" style="text-align:center;white-space:nowrap">${_movDiscountBadge(tx)}</td>
-    <td data-col="employee" class="mov-col-employee">${esc(tx.employee || '—')}</td>
+    <td data-col="pickup" style="text-align:center;white-space:nowrap">${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : '<span style="color:var(--muted);font-size:.8rem">—</span>'}</td>
+    <td data-col="employee" class="mov-col-employee" style="text-align:center"><span class="mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span></td>
     <td>
       <div class="actions-dd">
         <button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button>
@@ -17269,6 +17741,10 @@ function renderMovements() {
       if (!isMovExchangeReturn(tx) && !isMovExchangeSale(tx)) return false;
     } else if (movFilter !== 'all' && !movStatusFilter && tx.type !== movFilter) return false;
     if (movStatusFilter && tx.payStatus !== movStatusFilter) return false;
+    if (movPickupFilter) {
+      if (tx.type !== 'مبيعات') return false;
+      if ((tx.pickupStatus || 'Pending') !== movPickupFilter) return false;
+    }
     // Drawer filters
     if (fs.amountMin !== '' && (Number(tx.total) || 0) < Number(fs.amountMin)) return false;
     if (fs.amountMax !== '' && (Number(tx.total) || 0) > Number(fs.amountMax)) return false;
@@ -17472,6 +17948,8 @@ function renderMovements() {
     qs('#mov-table tbody').innerHTML = pageData.map(row => row.k === 'tx' ? renderMovementTxRow(row.tx) : renderMovementReturnRequestRow(row.r)).join('');
     try { applyMovColsVisibility(); } catch(_) {}
   }
+  // Sync pickup filter pill active states
+  qsa('.mov-pickup-filter-pill').forEach(b => b.classList.toggle('active', b.dataset.puVal === movPickupFilter));
   renderPagination('mov-pagination', total, movPage, MOV_PAGE_SIZE, 'setMovPage', [10,20,50,100], 'setMovPerPage');
   updateMovementSelectionActions();
 }
@@ -17482,6 +17960,14 @@ function setMovFilter(f, btn, type) {
   if (type === 'status') { movStatusFilter = f; movFilter = 'all'; } else { movFilter = f; movStatusFilter = ''; }
   qsa('#page-movements .mov-type-pill').forEach(b => b.classList.remove('active')); if (btn) btn.classList.add('active');
   updateMovFilterBadge();
+  renderMovements();
+}
+function setMovPickupFilter(val) {
+  movPickupFilter = movPickupFilter === val ? '' : val;
+  movPage = 1;
+  qsa('.mov-pickup-filter-pill').forEach(b => {
+    b.classList.toggle('active', b.dataset.puVal === movPickupFilter);
+  });
   renderMovements();
 }
 function setMovTypeTab(type, btn) {
@@ -17793,12 +18279,13 @@ function renderMovGridCard(tx) {
     <div class="mgc-header">
       <div class="mgc-avatar" style="background:${color};animation:mgcAvatarPop .35s cubic-bezier(.2,.8,.3,1.1) both" onclick="event.stopPropagation();showInvoiceDetail('${esc(tx._id)}')" title="${esc(tx.type)}">${_txTypeIcon(tx)}</div>
       <div class="mgc-meta">
-        <div class="mgc-ref">${tx.ref ? '#'+esc(tx.ref) : '—'} · ${esc(tx.employee||'—')}</div>
+        <div class="mgc-ref">${tx.ref ? '#'+esc(tx.ref) : '—'} · <span class="mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span></div>
         <div class="mgc-date">${_fmtCardDate(tx.date, tx.createdAt)}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <div style="display:flex;align-items:center;gap:5px">${movementKindBadge(tx)}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}</div>
         ${getVaultEntryStatusBadge(tx._id)}
+        ${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : ''}
       </div>
     </div>
     <div class="mgc-client" style="display:flex;align-items:center;gap:7px;overflow:hidden;flex-wrap:wrap">
@@ -19822,6 +20309,11 @@ async function doCollectMovement(id) {
       if (tx.remaining <= 0) {
         tx.remaining = 0;
         tx.payStatus = 'مكتمل';
+        // Auto-advance pickup to Delivered when fully paid
+        if (!isPurchase && tx.pickupStatus === 'Picked-Up') {
+          api('/transactions/' + id + '/pickup-delivered', { method: 'POST', body: '{}' }).catch(() => {});
+          tx.pickupStatus = 'Delivered';
+        }
       }
     }
 
@@ -19911,6 +20403,11 @@ async function doReverseCollect(id) {
   try {
     const res = await api('/transactions/' + id + '/reverse-collect', { method: 'POST', body: '{}' });
     overlay?.remove();
+    // Revert pickup delivered → محصّل if applicable
+    const _revTx = transactions.find(t => t._id === id);
+    if (_revTx && _revTx.pickupStatus === 'Delivered') {
+      api('/transactions/' + id + '/pickup-revert-delivered', { method: 'POST', body: '{}' }).catch(() => {});
+    }
     // تحديث كامل للبيانات
     transactions = await api('/transactions').catch(() => transactions);
     try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
@@ -21338,6 +21835,7 @@ function showInvoiceDetail(id, highlightCommentId) {
         <div class="inv-meta-chips">
           <span class="meta-chip"><span class="k">الدفع</span><span class="v">${esc(tx.depMethod || tx.payment || (isPurchase ? 'تحويل بنكي' : 'نقدي'))}</span></span>
           <span class="meta-chip"><span class="k">الموظف</span><span class="v">${esc(tx.employee || '-')}</span></span>
+          ${!isPurchase && !isReturn ? `<span class="meta-chip"><span class="k">Pick-Up Status</span><span class="v">${_puStatusBadge(tx.pickupStatus || 'Pending')}</span></span>${tx.pickupDate ? `<span class="meta-chip"><span class="k">Pick-Up Date</span><span class="v">${esc(tx.pickupDate)}</span></span>` : ''}` : ''}
           ${tx.notes ? `<span class="meta-chip note"><span class="k">ملاحظة</span><span class="v">${esc(tx.notes)}</span></span>` : ''}
         </div>
         ${tx.cancelReason ? `<div class="inv-notes cancel-reason"><div class="inv-notes-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>سبب الإلغاء</div><div class="inv-notes-text">${esc(tx.cancelReason)}</div></div>` : ''}
@@ -24504,6 +25002,7 @@ const MOV_COLS = [
   { id:'status',    i18n:'status',            ar:'الحالة',         en:'Status' },
   { id:'tag',       i18n:null,                ar:'TAG',           en:'Tag' },
   { id:'discount',  i18n:null,                ar:'الخصم',          en:'Discount' },
+  { id:'pickup',    i18n:null,                ar:'Pick-Up',        en:'Pick-Up' },
   { id:'employee',  i18n:'colEmployee',       ar:'الموظف',         en:'Employee' },
 ];
 function _getHiddenMovCols() {
@@ -24604,8 +25103,11 @@ function _initLockTogglesUI() {
   const v = qs('#set-vault-lock-enabled'); if (v) v.checked = !isLockDisabled('vault');
   const r = qs('#set-reports-lock-enabled'); if (r) r.checked = !isLockDisabled('reports');
   const sd = qs('#set-staff-discount-enabled'); if (sd) sd.checked = !!(settings?.staffDiscountEnabled ?? isStaffDiscountAllowed());
+  const otp = qs('#set-otp-enabled'); if (otp) otp.checked = settings?.otpEnabled !== false;
   const hvd = qs('#set-high-value-discount-limit'); if (hvd) hvd.value = Number(settings?.highValueDiscountLimit ?? 200);
   const adb = qs('#set-adb-autoshow-enabled'); if (adb) { try { adb.checked = localStorage.getItem(LOCK_KEYS.adbAutoShow) !== '0'; } catch(_) { adb.checked = true; } }
+  // Show/hide OTP controls based on staff discount enabled
+  _updateOtpControlsVisibility();
 }
 window.addEventListener('DOMContentLoaded', _initLockTogglesUI);
 
@@ -24621,6 +25123,38 @@ async function saveHighValueDiscountLimit(val) {
   }
 }
 
+async function updateStaffDiscountSettings(enabled) {
+  try {
+    const saved = await api('/settings', { method: 'PUT', body: JSON.stringify({ staffDiscountEnabled: !!enabled }) });
+    settings = saved || settings || {};
+    if (settings) settings.staffDiscountEnabled = !!enabled;
+    toast(enabled ? 'تم السماح للموظفين بالخصم' : 'تم تعطيل الخصم للموظفين');
+    // Show/hide OTP controls based on staff discount enabled
+    _updateOtpControlsVisibility();
+  } catch (e) {
+    toast('فشل حفظ الإعداد: ' + (e?.message || ''), true);
+  }
+}
+
+function _updateOtpControlsVisibility() {
+  const enabled = settings?.staffDiscountEnabled ?? false;
+  const container = qs('#staff-discount-controls');
+  if (container) {
+    container.style.display = enabled ? 'block' : 'none';
+  }
+}
+
+async function saveOtpEnabled(enabled) {
+  try {
+    const saved = await api('/settings', { method: 'PUT', body: JSON.stringify({ otpEnabled: !!enabled }) });
+    settings = saved || settings || {};
+    if (settings) settings.otpEnabled = !!enabled;
+    toast(enabled ? 'تم تفعيل نظام OTP' : 'تم تعطيل نظام OTP');
+  } catch (e) {
+    toast('فشل حفظ الإعداد: ' + (e?.message || ''), true);
+  }
+}
+
 // ── High-value discount OTP flow ─────────────────────────────────────────────
 // _hvOtpCtx.onSuccess: optional callback invoked after a valid OTP is entered.
 // When set, the OTP modal returns control to that callback instead of
@@ -24628,20 +25162,45 @@ async function saveHighValueDiscountLimit(val) {
 let _hvOtpCtx = { discount: 0, itemsTotal: 0, otpId: '', expiresAt: '', onSuccess: null };
 
 async function openHighValueOtpFlow(discount, itemsTotal, onSuccess) {
-  _hvOtpCtx = { discount, itemsTotal, otpId: '', expiresAt: '', onSuccess: typeof onSuccess === 'function' ? onSuccess : null };
-  const client = qs('#tx-client')?.value || qs('#tx-supplier')?.value || '';
+  // ── Validate required fields before issuing OTP ──
+  const client = (qs('#tx-client')?.value || qs('#tx-supplier')?.value || '').trim();
+  const txRef  = (qs('#tx-ref')?.value || '').trim();
+
+  if (!client) {
+    const el = qs('#err-client');
+    if (el) { el.textContent = 'مطلوب قبل طلب كود التحقق'; el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    toast('أدخل اسم العميل أولاً قبل طلب كود التحقق', true);
+    return;
+  }
+  if (!txRef) {
+    const el = qs('#err-ref');
+    if (el) { el.textContent = 'مطلوب قبل طلب كود التحقق'; el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    toast('أدخل الرقم المرجعي أولاً قبل طلب كود التحقق', true);
+    return;
+  }
+  if (isRetailRefTaken(txRef, null)) {
+    const el = qs('#err-ref');
+    if (el) { el.textContent = 'هذا الرقم المرجعي مستخدم في حركة أخرى'; el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    toast('الرقم المرجعي #' + txRef + ' مستخدم مسبقاً — اختر رقماً آخر', true);
+    return;
+  }
+
+  _hvOtpCtx = { discount, itemsTotal, otpId: '', expiresAt: '', onSuccess: typeof onSuccess === 'function' ? onSuccess : null, client, txRef, txType };
   try {
     const res = await api('/discount-otp/request', {
       method: 'POST',
-      body: JSON.stringify({ discountAmount: discount, itemsTotal, client, txType })
+      body: JSON.stringify({ discountAmount: discount, itemsTotal, client, txRef, txType })
     });
     _hvOtpCtx.otpId = res.otpId;
     _hvOtpCtx.expiresAt = res.expiresAt;
     const expDate = new Date(res.expiresAt);
     const expStr = expDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    const userName = (currentUser?.name || currentUser?.username || '').trim();
     qs('#hv-otp-info').innerHTML = `
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>قيمة الخصم</span><strong>${fmtJ(discount)} ج</strong></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الحد الحالي</span><strong>${fmtJ(res.threshold)} ج</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الموظف</span><strong>${esc(userName) || '—'}</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>العميل</span><strong>${esc(client) || '—'}</strong></div>
+      ${txRef ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>رقم الفاتورة</span><strong style="color:var(--accent)">#${esc(txRef)}</strong></div>` : ''}
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>قيمة الخصم</span><strong style="color:#e11d48">${fmtJ(discount)} ج</strong></div>
       <div style="display:flex;justify-content:space-between"><span>صالح حتى</span><strong>${expStr}</strong></div>`;
     qs('#hv-otp-input').value = '';
     qs('#hv-otp-msg').textContent = '';
@@ -24658,7 +25217,39 @@ function closeHighValueOtpModal() {
 }
 
 async function resendHighValueOtp() {
-  await openHighValueOtpFlow(_hvOtpCtx.discount, _hvOtpCtx.itemsTotal);
+  if (!_hvOtpCtx.client) {
+    toast('بيانات العميل فقدت — أغلق وأعد المحاولة', true);
+    return;
+  }
+  const discount = _hvOtpCtx.discount;
+  const itemsTotal = _hvOtpCtx.itemsTotal;
+  const client = _hvOtpCtx.client;
+  const txRef = _hvOtpCtx.txRef;
+  const txType = _hvOtpCtx.txType;
+
+  try {
+    const res = await api('/discount-otp/request', {
+      method: 'POST',
+      body: JSON.stringify({ discountAmount: discount, itemsTotal, client, txRef, txType })
+    });
+    _hvOtpCtx.otpId = res.otpId;
+    _hvOtpCtx.expiresAt = res.expiresAt;
+    const expDate = new Date(res.expiresAt);
+    const expStr = expDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    const userName2 = (currentUser?.name || currentUser?.username || '').trim();
+    qs('#hv-otp-info').innerHTML = `
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الموظف</span><strong>${esc(userName2) || '—'}</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>العميل</span><strong>${esc(client) || '—'}</strong></div>
+      ${txRef ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>رقم الفاتورة</span><strong style="color:var(--accent)">#${esc(txRef)}</strong></div>` : ''}
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>قيمة الخصم</span><strong style="color:#e11d48">${fmtJ(discount)} ج</strong></div>
+      <div style="display:flex;justify-content:space-between"><span>صالح حتى</span><strong>${expStr}</strong></div>`;
+    qs('#hv-otp-input').value = '';
+    qs('#hv-otp-msg').textContent = '';
+    qs('#hv-otp-msg').style.color = '';
+    toast('تم إرسال كود جديد للمدير ✓');
+  } catch (e) {
+    toast('فشل طلب الكود الجديد: ' + (e?.message || ''), true);
+  }
 }
 
 async function submitHighValueOtp() {
@@ -29540,6 +30131,986 @@ window.vaultNotifier = {
   setMuted(v) { window.txNotifier?.setMuted(v); },
   isMuted()   { return window.txNotifier?.isMuted() ?? false; },
 };
+
+// ════════════════════════════════════════════════════════════════
+//  PICK-UP ORDERS MODULE  (Runs-based view)
+// ════════════════════════════════════════════════════════════════
+let _pickupOrders = [];       // all sales orders cache
+let _pickupRuns = [];         // grouped by pickupRef
+let _pickupPage = 1;
+const _PICKUP_PAGE_SIZE = 20;
+let _puDateEditId = null;
+let _puCreateSelected = new Set();
+let _puCreateAllOrders = [];  // pending orders for create modal
+
+// ── KPI renderer ───────────────────────────────────────────────
+function _puRenderKPIs() {
+  // Count individual orders by pickupStatus across all orders (including Pending)
+  const all       = _pickupOrders;
+  const delivered = all.filter(o => o.pickupStatus === 'Delivered');
+  const pickedUp  = all.filter(o => o.pickupStatus === 'Picked-Up');
+  const totalRuns = _pickupRuns.length;
+
+  const setText = (id, val) => { const el = qs('#' + id); if (el) el.textContent = val; };
+  const setHtml = (id, val) => { const el = qs('#' + id); if (el) el.innerHTML  = val; };
+  setText('pu-kpi-total',         fmtN(totalRuns));
+  setText('pu-kpi-delivered',     fmtN(delivered.length));
+  setHtml('pu-kpi-delivered-amt', fmtJ(delivered.reduce((s,o)=>s+(o.total||0),0)));
+  setText('pu-kpi-pickedup',      fmtN(pickedUp.length));
+  setHtml('pu-kpi-pickedup-amt',  fmtJ(pickedUp.reduce((s,o)=>s+(o.total||0),0)));
+}
+
+// ── Group orders into "runs" by pickupRef ──────────────────────
+function _buildPickupRuns(orders) {
+  const runsMap = new Map();
+  // Orders that have been picked up → group by pickupRef
+  orders.filter(o => o.pickupStatus && o.pickupStatus !== 'Pending').forEach(o => {
+    const ref = o.pickupRef || '__no_ref__';
+    if (!runsMap.has(ref)) {
+      runsMap.set(ref, {
+        pickupRef: o.pickupRef || '—',
+        pickupDate: o.pickupDate || '',
+        pickupBy: o.pickupBy || o.employee || '—',
+        shipCo: o.shipCo || '',
+        orders: [],
+      });
+    }
+    runsMap.get(ref).orders.push(o);
+  });
+  // Sort runs by date desc
+  return [...runsMap.values()].sort((a, b) => (b.pickupDate || '').localeCompare(a.pickupDate || ''));
+}
+
+// ── Populate shipco filter ─────────────────────────────────────
+function _puPopulateShipCoFilter() {
+  const sel = qs('#pu-filter-shipco');
+  if (!sel) return;
+  const companies = [...new Set(_pickupOrders.map(o => o.shipCo).filter(Boolean))].sort();
+  const current = sel.value;
+  sel.innerHTML = `<option value="all">كل شركات الشحن</option>` +
+    companies.map(c => `<option value="${esc(c)}"${c === current ? ' selected' : ''}>${esc(c)}</option>`).join('');
+}
+
+// ── Filter runs ────────────────────────────────────────────────
+function _puFilterRuns() {
+  const search    = (qs('#pu-search')?.value || '').trim().toLowerCase();
+  const dateFrom  = qs('#pu-filter-date-from')?.value || '';
+  const dateTo    = qs('#pu-filter-date-to')?.value   || '';
+  const filterShip = qs('#pu-filter-shipco')?.value || 'all';
+  return _pickupRuns.filter(run => {
+    if (dateFrom && run.pickupDate < dateFrom) return false;
+    if (dateTo   && run.pickupDate > dateTo)   return false;
+    if (filterShip !== 'all' && run.shipCo !== filterShip) return false;
+    if (search) {
+      const hay = `${run.pickupRef} ${run.pickupBy} ${run.shipCo} ${run.orders.map(o=>`${o.ref} ${o.client} ${o.phone||o.clientPhone||''}`).join(' ')}`.toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+}
+
+// ── Status badge helpers ───────────────────────────────────────
+function _puStatusBadge(status) {
+  const map = {
+    'Pending':   ['pu-badge-pending',   'معلق'],
+    'Picked-Up': ['pu-badge-collected', 'Picked-Up'],
+    'Delivered': ['pu-badge-delivered', 'Delivered'],
+  };
+  const [cls, label] = map[status] || ['pu-badge-pending', status || 'معلق'];
+  return `<span class="pu-badge ${cls}">${label}</span>`;
+}
+function _puPayBadge(ps) {
+  if (ps === 'مكتمل') return `<span class="badge badge-green" style="font-size:.72rem">مكتمل</span>`;
+  return `<span class="badge badge-orange" style="font-size:.72rem">معلق</span>`;
+}
+
+// ── Main render — Runs table ───────────────────────────────────
+function renderPickupRuns() {
+  _pickupRuns = _buildPickupRuns(_pickupOrders);
+  _puRenderKPIs();
+  const filtered   = _puFilterRuns();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / _PICKUP_PAGE_SIZE));
+  if (_pickupPage > totalPages) _pickupPage = totalPages;
+  const slice = filtered.slice((_pickupPage - 1) * _PICKUP_PAGE_SIZE, _pickupPage * _PICKUP_PAGE_SIZE);
+
+  const tbody = qs('#pu-runs-body');
+  const empty  = qs('#pu-empty');
+  if (!tbody) return;
+
+  if (slice.length === 0) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+  } else {
+    if (empty) empty.style.display = 'none';
+    tbody.innerHTML = slice.map((run, i) => {
+      const totalAmt   = run.orders.reduce((s, o) => s + (o.total||0), 0);
+      const shipcos    = [...new Set(run.orders.map(o => o.shipCo).filter(Boolean))];
+      const delivered  = run.orders.filter(o => o.pickupStatus === 'Delivered').length;
+      const pickedUp   = run.orders.filter(o => o.pickupStatus === 'Picked-Up').length;
+      const runKey     = `run-${i}`;
+      const svgChev    = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+      const svgTruck   = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`;
+      const svgCheck   = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+      const svgCal     = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+      const svgUser    = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+      return `
+        <tr class="pu-run-row" id="run-header-${runKey}" onclick="toggleRunExpand('${runKey}')" style="cursor:pointer">
+          <td style="padding:13px 8px 13px 16px;width:44px">
+            <span class="pu-chevron" id="expand-icon-${runKey}">${svgChev}</span>
+          </td>
+          <td>
+            <span class="pu-ref-chip" onclick="event.stopPropagation();openPuEditModal('${esc(run.pickupRef)}')" title="تعديل العملية">
+              ${esc(run.pickupRef)}
+            </span>
+          </td>
+          <td style="color:var(--text);font-size:.84rem;white-space:nowrap">${run.pickupDate || '<span style="color:var(--muted)">—</span>'}</td>
+          <td>
+            ${shipcos.length
+              ? shipcos.map(s=>`<span class="pu-run-chip">${svgTruck}${esc(s)}</span>`).join(' ')
+              : `<span style="color:var(--muted);font-size:.82rem">—</span>`}
+          </td>
+          <td>
+            <span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 8px;border-radius:6px;background:color-mix(in srgb,var(--primary) 10%,transparent);color:var(--primary);font-weight:800;font-size:.8rem">${fmtN(run.orders.length)}</span>
+          </td>
+          <td style="font-weight:700;font-size:.88rem;white-space:nowrap">${fmtJ(totalAmt)}</td>
+          <td style="padding-left:12px;padding-right:8px">
+            <button class="btn btn-outline btn-sm" style="padding:5px 9px;font-size:.8rem;border-radius:6px;line-height:1" onclick="event.stopPropagation();toggleRunMenu(event,'${esc(run.pickupRef)}')">⋮</button>
+          </td>
+        </tr>
+        <tr class="pu-detail-row" id="${runKey}" style="display:none">
+          <td colspan="7">
+            <div class="pu-detail-panel">
+
+              <!-- Panel header bar -->
+              <div class="pu-panel-bar">
+                <div class="pu-panel-bar-left">
+                  <span style="font-weight:700;font-size:.88rem;color:var(--text)">${esc(run.pickupRef)}</span>
+                  ${run.pickupDate ? `<span class="pu-panel-tag">${svgCal} ${run.pickupDate}</span>` : ''}
+                  ${run.pickupBy  ? `<span class="pu-panel-tag">${svgUser} ${esc(run.pickupBy)}</span>` : ''}
+                  ${shipcos.map(s=>`<span class="pu-panel-tag tag-blue">${svgTruck} ${esc(s)}</span>`).join('')}
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                  ${delivered ? `<span class="pu-panel-tag tag-green">${svgCheck} ${fmtN(delivered)} Delivered</span>` : ''}
+                  ${pickedUp  ? `<span class="pu-panel-tag tag-amber">${svgTruck} ${fmtN(pickedUp)} Picked-Up</span>` : ''}
+                  <span class="pu-panel-tag tag-blue" style="font-weight:700">${fmtJ(totalAmt)}</span>
+                  <button class="btn btn-outline btn-sm" style="padding:4px 12px;font-size:.78rem;border-radius:6px" onclick="event.stopPropagation();openPuEditModal('${esc(run.pickupRef)}')">
+                    <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left:4px"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    تعديل
+                  </button>
+                </div>
+              </div>
+
+              <!-- Orders table -->
+              <table class="pu-orders-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>رقم الطلب</th>
+                    <th>العميل</th>
+                    <th>المبلغ</th>
+                    <th>الدفع</th>
+                    <th>الحالة</th>
+                    <th style="width:64px"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${run.orders.map((o, oi) => `
+                    <tr>
+                      <td style="color:var(--muted);font-size:.75rem;font-weight:600;width:32px">${fmtN(oi+1)}</td>
+                      <td><span class="pu-order-ref">${esc(o.ref||'—')}</span></td>
+                      <td>
+                        <div style="font-weight:500;font-size:.85rem">${esc(o.client||'—')}</div>
+                        ${o.phone||o.clientPhone ? `<div style="font-size:.72rem;color:var(--muted);direction:ltr;margin-top:1px">${esc(o.phone||o.clientPhone)}</div>` : ''}
+                      </td>
+                      <td style="white-space:nowrap">
+                        <div style="font-weight:700;font-size:.86rem">${fmtJ(o.total||0)}</div>
+                        ${o.remaining > 0 ? `<div style="font-size:.7rem;color:var(--red);margin-top:1px">متبقي ${fmtJT(o.remaining)}</div>` : ''}
+                      </td>
+                      <td>${_puPayBadge(o.payStatus)}</td>
+                      <td>${_puStatusBadge(o.pickupStatus||'Pending')}</td>
+                      <td>
+                        <button class="btn btn-outline btn-sm" style="padding:4px 12px;font-size:.76rem;border-radius:6px" onclick="showInvoiceDetail('${esc(o._id)}')">عرض</button>
+                      </td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>
+
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  // Pagination
+  const pg = qs('#pu-pagination');
+  if (pg) {
+    if (totalPages <= 1) { pg.innerHTML = ''; return; }
+    pg.innerHTML = `<div class="flex gap-8" style="justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" ${_pickupPage<=1?'disabled':''} onclick="_pickupPage--;renderPickupRuns()">السابق</button>
+      <span style="font-size:.84rem;color:var(--muted);align-self:center">صفحة ${fmtN(_pickupPage)} من ${fmtN(totalPages)}</span>
+      <button class="btn btn-outline btn-sm" ${_pickupPage>=totalPages?'disabled':''} onclick="_pickupPage++;renderPickupRuns()">التالي</button>
+    </div>`;
+  }
+}
+
+function toggleRunExpand(id) {
+  const detailRow = qs('#' + id);
+  const headerRow = qs('#run-header-' + id);
+  if (!detailRow) return;
+  const isOpen = detailRow.style.display !== 'none';
+  // Close all other open panels
+  qsa('.pu-detail-row').forEach(r => { if (r.id !== id) r.style.display = 'none'; });
+  qsa('.pu-run-row.pu-run-open').forEach(r => { if (r.id !== 'run-header-' + id) r.classList.remove('pu-run-open'); });
+  // Toggle this one
+  detailRow.style.display = isOpen ? 'none' : 'table-row';
+  if (headerRow) headerRow.classList.toggle('pu-run-open', !isOpen);
+}
+
+// ── Run action menu ────────────────────────────────────────────
+function toggleRunMenu(e, pickupRef) {
+  e.stopPropagation();
+  qsa('.pu-action-menu').forEach(m => m.remove());
+  const btn  = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  const menu = document.createElement('div');
+  menu.className = 'pu-action-menu';
+  menu.style.cssText = `position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.15);min-width:190px;overflow:hidden`;
+  const menuH = 130; // approximate menu height for viewport clamping
+  const topRaw = rect.bottom + 4;
+  const top = Math.min(topRaw, window.innerHeight - menuH - 8);
+  const rightRaw = window.innerWidth - rect.right;
+  const right = Math.max(8, Math.min(rightRaw, window.innerWidth - 200));
+  menu.style.top   = Math.max(8, top) + 'px';
+  menu.style.right = right + 'px';
+  const svgEdit   = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+  const svgUndo   = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg>`;
+  const svgExport = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg>`;
+  const svgDelete = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:#dc2626"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`;
+  menu.innerHTML = `
+    <button class="btn" style="display:flex;align-items:center;gap:8px;width:100%;text-align:right;padding:9px 14px;background:none;border:none;cursor:pointer;font-size:.85rem;direction:rtl" data-run-action="edit" data-run-ref="${esc(pickupRef)}">${svgEdit} تعديل العملية</button>
+    <button class="btn" style="display:flex;align-items:center;gap:8px;width:100%;text-align:right;padding:9px 14px;background:none;border:none;border-top:1px solid var(--border);cursor:pointer;font-size:.85rem;direction:rtl" data-run-action="undo" data-run-ref="${esc(pickupRef)}">${svgUndo} تراجع عن الاستلام</button>
+    <button class="btn" style="display:flex;align-items:center;gap:8px;width:100%;text-align:right;padding:9px 14px;background:none;border:none;border-top:1px solid var(--border);cursor:pointer;font-size:.85rem;direction:rtl" data-run-action="export" data-run-ref="${esc(pickupRef)}">${svgExport} تصدير العملية</button>
+    <button class="btn" style="display:flex;align-items:center;gap:8px;width:100%;text-align:right;padding:9px 14px;background:none;border:none;border-top:1px solid var(--border);cursor:pointer;font-size:.85rem;direction:rtl;color:#dc2626" data-run-action="delete" data-run-ref="${esc(pickupRef)}">${svgDelete} حذف العملية</button>
+  `;
+  menu.addEventListener('click', ev => {
+    const b = ev.target.closest('[data-run-action]');
+    if (!b) return;
+    ev.stopPropagation();
+    menu.remove();
+    if (b.dataset.runAction === 'edit') openPuEditModal(b.dataset.runRef);
+    else if (b.dataset.runAction === 'undo') undoPickupRun(b.dataset.runRef);
+    else if (b.dataset.runAction === 'export') exportPickupRun(b.dataset.runRef);
+    else if (b.dataset.runAction === 'delete') deletePickupRun(b.dataset.runRef);
+  });
+  document.body.appendChild(menu);
+  setTimeout(() => document.addEventListener('click', () => menu.remove(), {once:true}), 0);
+}
+
+async function undoPickupRun(pickupRef) {
+  const run = _pickupRuns.find(r => r.pickupRef === pickupRef);
+  if (!run) return;
+  const ids = run.orders.map(o => o._id);
+  if (!confirm(`تراجع عن عملية الاستلام "${pickupRef}" وإعادة ${ids.length} طلب لحالة معلق؟`)) return;
+  try {
+    await api('/transactions/pickup-orders/undo', { method:'POST', body: JSON.stringify({ ids }) });
+    toast('تم التراجع عن عملية الاستلام');
+    await loadPickupOrders();
+  } catch(e) { toast('خطأ: ' + e.message, true); }
+}
+
+function deletePickupRun(pickupRef) {
+  const run = _pickupRuns.find(r => r.pickupRef === pickupRef);
+  if (!run) return;
+  const ids = run.orders.map(o => o._id);
+  const orderCount = ids.length;
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(2px)';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--surface);border-radius:18px;width:95%;max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,.35);overflow:hidden;direction:rtl';
+
+  // Header bar
+  const header = document.createElement('div');
+  header.style.cssText = 'background:#fee2e2;padding:20px 22px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #fca5a5';
+  header.innerHTML = `
+    <div style="width:38px;height:38px;background:#dc2626;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+    </div>
+    <div>
+      <div style="font-weight:700;font-size:.98rem;color:#991b1b">حذف عملية الاستلام</div>
+      <div style="font-size:.75rem;color:#b91c1c;margin-top:1px;font-family:monospace">${esc(pickupRef)}</div>
+    </div>`;
+
+  // Body
+  const body = document.createElement('div');
+  body.style.cssText = 'padding:20px 22px';
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;background:var(--bg-alt);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span style="font-size:.87rem;color:var(--text)">سيتم إعادة <strong style="color:#dc2626">${orderCount} طلب</strong> لحالة <strong>معلق</strong> وإلغاء تأثير العملية تماماً</span>
+    </div>
+    <p style="margin:0;font-size:.84rem;color:var(--muted)">لا يمكن التراجع عن هذا الإجراء. هل أنت متأكد؟</p>`;
+
+  // Footer
+  const footer = document.createElement('div');
+  footer.style.cssText = 'padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;background:var(--bg-alt)';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'btn btn-outline btn-sm';
+  cancelBtn.style.cssText = 'padding:8px 20px';
+  cancelBtn.textContent = 'إلغاء';
+  cancelBtn.onclick = () => modal.remove();
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.className = 'btn btn-sm';
+  confirmBtn.style.cssText = 'padding:8px 20px;background:#dc2626;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px';
+  confirmBtn.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> تأكيد الحذف`;
+  confirmBtn.onclick = async () => {
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'جاري الحذف...';
+    try {
+      await api('/transactions/pickup-orders/undo', { method:'POST', body: JSON.stringify({ ids }) });
+      modal.remove();
+      toast('تم حذف العملية وإعادة الطلبات لحالة معلق');
+      await loadPickupOrders();
+    } catch(e) {
+      modal.remove();
+      toast('خطأ: ' + e.message, true);
+    }
+  };
+
+  footer.appendChild(cancelBtn);
+  footer.appendChild(confirmBtn);
+  box.appendChild(header);
+  box.appendChild(body);
+  box.appendChild(footer);
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+// ── تعديل أمر Pick-Up ─────────────────────────────────────────
+let _puEditCurrentRun = null;   // run object currently being edited
+let _puEditPendingOrders = [];  // all pending orders (for the add-list)
+
+function openPuEditModal(pickupRef) {
+  const modal = qs('#pu-edit-modal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  modal.classList.add('active');
+  const inp = qs('#pu-edit-ref-input');
+  if (inp) inp.value = pickupRef || '';
+  _puEditCurrentRun = null;
+  _puEditPendingOrders = [];
+  const dateRow = qs('#pu-edit-date-row');
+  if (dateRow) dateRow.style.display = 'none';
+  _renderPuEditEmpty('أدخل رقم العملية وانقر بحث');
+  if (pickupRef) loadPuEditRun();
+}
+
+function closePuEditModal() {
+  const modal = qs('#pu-edit-modal');
+  if (modal) { modal.style.display = 'none'; modal.classList.remove('active'); }
+  const dateRow = qs('#pu-edit-date-row');
+  if (dateRow) dateRow.style.display = 'none';
+  _puEditCurrentRun = null;
+}
+
+function onPuEditRefInput() {
+  // clear body when user types a new ref
+  _renderPuEditEmpty('أدخل رقم العملية وانقر بحث');
+}
+
+function _renderPuEditEmpty(msg) {
+  const body  = qs('#pu-edit-body');
+  const empty = qs('#pu-edit-empty');
+  if (body)  body.style.display  = 'none';
+  if (empty) { empty.style.display = 'flex'; empty.textContent = msg; }
+}
+
+async function loadPuEditRun() {
+  const ref = (qs('#pu-edit-ref-input')?.value || '').trim();
+  if (!ref) return toast('أدخل رقم العملية', true);
+
+  _renderPuEditEmpty('جاري التحميل...');
+
+  try {
+    // Reload all orders to get fresh data
+    const all = await api('/transactions/pickup-orders');
+    _pickupOrders = all;
+
+    // Find the run
+    const runs = _buildPickupRuns(all);
+    const run  = runs.find(r => r.pickupRef.toLowerCase() === ref.toLowerCase());
+    if (!run) {
+      _renderPuEditEmpty(`لم يُعثر على عملية بالرقم "${ref}"`);
+      return;
+    }
+    _puEditCurrentRun = run;
+
+    // Pending orders not in this run
+    const runIds = new Set(run.orders.map(o => o._id));
+    _puEditPendingOrders = all.filter(o => (o.pickupStatus || 'Pending') === 'Pending' && !runIds.has(o._id));
+
+    const label = qs('#pu-edit-ref-label');
+    if (label) label.textContent = `عملية: ${run.pickupRef} · ${run.pickupDate || ''}`;
+
+    _renderPuEditBody();
+  } catch(e) {
+    _renderPuEditEmpty('خطأ في التحميل: ' + e.message);
+  }
+}
+
+function _renderPuEditBody() {
+  const body  = qs('#pu-edit-body');
+  const empty = qs('#pu-edit-empty');
+  if (!body || !_puEditCurrentRun) return;
+  empty.style.display = 'none';
+  body.style.display  = 'block';
+
+  // Show date row with current run date
+  const dateRow = qs('#pu-edit-date-row');
+  if (dateRow) {
+    dateRow.style.display = 'flex';
+    const dateInp = qs('#pu-edit-date-val');
+    if (dateInp) dateInp.value = _puEditCurrentRun.pickupDate || '';
+  }
+
+  const cnt = qs('#pu-edit-run-count');
+  if (cnt) cnt.textContent = `${_puEditCurrentRun.orders.length} طلب`;
+
+  _renderPuEditCurrentList();
+  _renderPuEditAddList();
+}
+
+async function savePuEditDate() {
+  if (!_puEditCurrentRun) return;
+  const date = qs('#pu-edit-date-val')?.value;
+  if (!date) return toast('اختر تاريخاً', true);
+  const ids = _puEditCurrentRun.orders.map(o => o._id);
+  if (!ids.length) return toast('لا توجد أوردرات في هذه العملية', true);
+  try {
+    await api('/transactions/pickup-orders/confirm', { method:'POST', body: JSON.stringify({ ids, date }) });
+    _puEditCurrentRun.pickupDate = date;
+    const label = qs('#pu-edit-ref-label');
+    if (label) label.textContent = `عملية: ${_puEditCurrentRun.pickupRef} · ${date}`;
+    toast('تم تحديث تاريخ الاستلام');
+    loadPickupOrders();
+  } catch(e) { toast('خطأ: ' + e.message, true); }
+}
+
+function _puEditOrderRow(o, action, type) {
+  const qty = (o.items || []).reduce((s, i) => s + (i.qty || 0), 0);
+  const svgRemove = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg>`;
+  const svgAdd    = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+  const btnStyle  = type === 'remove'
+    ? 'background:#fee2e2;border:1px solid #fca5a5;color:#dc2626'
+    : 'background:#dcfce7;border:1px solid #86efac;color:#16a34a';
+  const btnLabel  = type === 'remove' ? `${svgRemove} حذف` : `${svgAdd} إضافة`;
+  return `<div style="display:grid;grid-template-columns:1fr 50px 90px auto;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--border);direction:rtl">
+    <div style="min-width:0">
+      <span style="font-weight:700;color:var(--accent);font-family:monospace;font-size:.82rem">${esc(o.ref||'—')}</span>
+      <span style="font-size:.85rem;color:var(--text);margin-right:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(o.client||'—')}</span>
+    </div>
+    <span style="font-size:.8rem;color:var(--muted);text-align:center">${fmtN(qty)}</span>
+    <span style="font-size:.81rem;font-weight:700;white-space:nowrap">${fmtJ(o.total||0)}</span>
+    <button class="btn btn-sm" style="padding:4px 10px;${btnStyle};border-radius:6px;font-size:.78rem;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px" data-pu-action="${type}" data-pu-id="${esc(o._id)}">${btnLabel}</button>
+  </div>`;
+}
+
+function _renderPuEditCurrentList() {
+  const el = qs('#pu-edit-current-list');
+  if (!el || !_puEditCurrentRun) return;
+  if (!_puEditCurrentRun.orders.length) {
+    el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:.85rem">لا توجد أوردرات في هذه العملية</div>`;
+    return;
+  }
+  el.innerHTML = _puEditCurrentRun.orders.map(o => _puEditOrderRow(o, null, 'remove')).join('');
+}
+
+function _renderPuEditAddList() {
+  const el     = qs('#pu-edit-add-list');
+  if (!el) return;
+  const search = (qs('#pu-edit-add-search')?.value || '').toLowerCase();
+  const filtered = _puEditPendingOrders.filter(o => {
+    if (!search) return true;
+    return `${o.ref||''} ${o.client||''}`.toLowerCase().includes(search);
+  });
+  if (!filtered.length) {
+    el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:.85rem">${search ? 'لا نتائج مطابقة' : 'لا توجد طلبات معلقة للإضافة'}</div>`;
+    return;
+  }
+  el.innerHTML = filtered.map(o => _puEditOrderRow(o, null, 'add')).join('');
+}
+
+function filterPuEditAddList() {
+  _renderPuEditAddList();
+}
+
+// Delegated click handler for pu-edit add/remove buttons
+(function() {
+  function _puEditDelegate(e) {
+    const btn = e.target.closest('[data-pu-action]');
+    if (!btn) return;
+    const id = btn.dataset.puId;
+    if (btn.dataset.puAction === 'remove') puEditRemoveOrder(id);
+    else if (btn.dataset.puAction === 'add') puEditAddOrder(id);
+  }
+  document.addEventListener('click', _puEditDelegate);
+})();
+
+async function puEditRemoveOrder(id) {
+  if (!_puEditCurrentRun) return;
+  const o = _puEditCurrentRun.orders.find(x => x._id === id);
+  if (!o) return;
+  try {
+    // Undo pickup for this single order (reverts to Pending)
+    await api('/transactions/pickup-orders/undo', { method:'POST', body: JSON.stringify({ ids: [id] }) });
+    // Move from current list to pending list
+    _puEditCurrentRun.orders = _puEditCurrentRun.orders.filter(x => x._id !== id);
+    o.pickupStatus = 'Pending'; o.pickupRef = null;
+    _puEditPendingOrders.unshift(o);
+    const cnt = qs('#pu-edit-run-count');
+    if (cnt) cnt.textContent = `${_puEditCurrentRun.orders.length} طلب`;
+    _renderPuEditCurrentList();
+    _renderPuEditAddList();
+    toast('تم حذف الأوردر من العملية');
+    // Refresh main table in background
+    loadPickupOrders();
+  } catch(e) { toast('خطأ: ' + e.message, true); }
+}
+
+async function puEditAddOrder(id) {
+  if (!_puEditCurrentRun) return;
+  const o = _puEditPendingOrders.find(x => x._id === id);
+  if (!o) return;
+  try {
+    // Add order to existing pickup run with pickupRef
+    await api('/transactions/pickup-orders/confirm', {
+      method: 'POST',
+      body: JSON.stringify({
+        ids: [id],
+        pickupRef: _puEditCurrentRun.pickupRef,
+        date: _puEditCurrentRun.pickupDate
+      }),
+    });
+    // Move from pending list to current list
+    _puEditPendingOrders = _puEditPendingOrders.filter(x => x._id !== id);
+    o.pickupStatus = 'Picked-Up';
+    o.pickupRef = _puEditCurrentRun.pickupRef;
+    o.pickupDate = _puEditCurrentRun.pickupDate;
+    _puEditCurrentRun.orders.push(o);
+    const cnt = qs('#pu-edit-run-count');
+    if (cnt) cnt.textContent = `${_puEditCurrentRun.orders.length} طلب`;
+    _renderPuEditCurrentList();
+    _renderPuEditAddList();
+    toast('تمت إضافة الأوردر للعملية بنجاح');
+    loadPickupOrders();
+  } catch(e) { toast('خطأ: ' + e.message, true); }
+}
+
+function exportPickupRun(pickupRef) {
+  const run = _pickupRuns.find(r => r.pickupRef === pickupRef);
+  if (!run || !run.orders.length) return toast('لا توجد بيانات', true);
+  const rows = [['رقم الطلب','العميل','الإجمالي','المتبقي','حالة الدفع','شركة الشحن','الحالة']];
+  run.orders.forEach(o => {
+    rows.push([o.ref||'',o.client||'',o.total||0,o.remaining||0,o.payStatus||'',o.shipCo||'',o.pickupStatus||'']);
+  });
+  if (typeof XLSX !== 'undefined') {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Pickup Run');
+    XLSX.writeFile(wb, `pickup_run_${pickupRef}.xlsx`);
+  } else {
+    toast('مكتبة التصدير غير محملة', true);
+  }
+}
+
+// ── Load from API ──────────────────────────────────────────────
+async function loadPickupOrders() {
+  try {
+    _pickupOrders = await api('/transactions/pickup-orders');
+    _pickupPage = 1;
+    _puPopulateShipCoFilter();
+    renderPickupRuns();
+    // Sync pickupStatus back into the global transactions array so movements table updates
+    if (Array.isArray(transactions)) {
+      _pickupOrders.forEach(pu => {
+        const tx = transactions.find(t => t._id === pu._id);
+        if (tx) {
+          tx.pickupStatus = pu.pickupStatus;
+          tx.pickupRef    = pu.pickupRef;
+          tx.pickupDate   = pu.pickupDate;
+          tx.pickupBy     = pu.pickupBy;
+        }
+      });
+      if (typeof renderMovements === 'function' && currentPage === 'movements') renderMovements();
+    }
+  } catch(e) {
+    toast('خطأ في تحميل البيانات: ' + e.message, true);
+  }
+}
+
+// ── إنشاء Pick-Up Modal ────────────────────────────────────────
+async function openCreatePickupModal() {
+  _puCreateSelected.clear();
+
+  // Show modal immediately with loading state
+  const modal = qs('#pu-create-modal');
+  if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
+  const container = qs('#pu-create-list');
+  if (container) container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);font-size:.88rem">جاري التحميل...</div>`;
+
+  // Reset controls
+  const dateEl = qs('#pu-create-date');
+  if (dateEl) dateEl.value = new Date().toISOString().slice(0,10);
+  const search = qs('#pu-create-search');
+  if (search) search.value = '';
+  const shipSel = qs('#pu-create-filter-shipco');
+  if (shipSel) shipSel.value = 'all';
+  const cnt = qs('#pu-create-selected-count');
+  if (cnt) cnt.textContent = '';
+
+  // Always fetch fresh orders from API
+  try {
+    const all = await api('/transactions/pickup-orders');
+    _pickupOrders = all;
+    _puCreateAllOrders = all.filter(o => (o.pickupStatus || 'Pending') === 'Pending');
+  } catch(e) {
+    if (container) container.innerHTML = `<div style="text-align:center;padding:30px;color:var(--red);font-size:.88rem">خطأ في تحميل الطلبات: ${esc(e.message)}</div>`;
+    return;
+  }
+
+  // Populate shipco filter
+  if (shipSel) {
+    const cos = [...new Set(_puCreateAllOrders.map(o => o.shipCo).filter(Boolean))].sort();
+    shipSel.innerHTML = `<option value="all">كل شركات الشحن</option>` +
+      cos.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  }
+
+  _puBuildCreateList();
+}
+
+function closePuCreateModal() {
+  const modal = qs('#pu-create-modal');
+  if (modal) { modal.style.display = 'none'; modal.classList.remove('active'); }
+  _puCreateSelected.clear();
+}
+
+function filterPuCreateList() {
+  _puBuildCreateList();
+}
+
+// Builds the list DOM from scratch (only on search/filter change)
+function _puBuildCreateList() {
+  const search     = (qs('#pu-create-search')?.value || '').toLowerCase();
+  const shipFilter = qs('#pu-create-filter-shipco')?.value || 'all';
+  const filtered   = _puCreateAllOrders.filter(o => {
+    if (shipFilter !== 'all' && (o.shipCo || '') !== shipFilter) return false;
+    if (search) {
+      const hay = `${o.ref||''} ${o.client||''}`.toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const container = qs('#pu-create-list');
+  if (!container) return;
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);font-size:.88rem">لا توجد طلبات معلقة مطابقة</div>`;
+  } else {
+    container.innerHTML = filtered.map(o => {
+      const checked = _puCreateSelected.has(o._id);
+      const qty     = (o.items || []).reduce((s, i) => s + (i.qty || 0), 0);
+      const bg      = checked ? 'background:color-mix(in srgb,var(--primary) 6%,var(--surface));' : '';
+      const paid = (o.total||0) - (o.remaining||0);
+      return `<label data-pu-order-id="${esc(o._id)}" style="display:grid;grid-template-columns:20px 60px minmax(100px,1fr) 36px 88px 82px 82px 76px;align-items:center;gap:6px;padding:8px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;direction:rtl;${bg}">
+        <input type="checkbox" data-id="${esc(o._id)}" ${checked ? 'checked' : ''} onchange="puCreateRowCheck(this)" style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary);justify-self:center">
+        <span style="font-weight:700;color:var(--accent);font-family:monospace;font-size:.82rem;white-space:nowrap">${esc(o.ref || '—')}</span>
+        <span style="font-weight:600;font-size:.85rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(o.client || '')}">${esc(o.client || '—')}</span>
+        <span style="font-size:.8rem;color:var(--muted);text-align:center;white-space:nowrap">${fmtN(qty)}</span>
+        <span style="font-size:.81rem;font-weight:700;color:var(--text);white-space:nowrap">${fmtJ(o.total || 0)}</span>
+        <span style="font-size:.8rem;color:#059669;white-space:nowrap">${paid > 0 ? fmtJ(paid) : '<span style="color:var(--muted)">—</span>'}</span>
+        <span style="font-size:.8rem;white-space:nowrap">${o.remaining > 0 ? `<span style="color:var(--red)">${fmtJ(o.remaining)}</span>` : '<span style="color:var(--muted)">—</span>'}</span>
+        <div style="display:flex;align-items:center;gap:3px;white-space:nowrap;overflow:hidden">
+          ${o.shipCo ? `<span style="font-size:.69rem;background:var(--bg-alt);border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:44px" title="${esc(o.shipCo)}">${esc(o.shipCo)}</span>` : ''}
+          ${_puPayBadge(o.payStatus)}
+        </div>
+      </label>`;
+    }).join('');
+  }
+
+  _puUpdateCreateHeader(filtered);
+}
+
+// Updates only the header checkbox + count without rebuilding the list
+function _puUpdateCreateHeader(filtered) {
+  if (!filtered) {
+    const search     = (qs('#pu-create-search')?.value || '').toLowerCase();
+    const shipFilter = qs('#pu-create-filter-shipco')?.value || 'all';
+    filtered = _puCreateAllOrders.filter(o => {
+      if (shipFilter !== 'all' && (o.shipCo || '') !== shipFilter) return false;
+      if (search) { const hay = `${o.ref||''} ${o.client||''}`.toLowerCase(); if (!hay.includes(search)) return false; }
+      return true;
+    });
+  }
+  const allChecked = filtered.length > 0 && filtered.every(o => _puCreateSelected.has(o._id));
+  const someChecked = filtered.some(o => _puCreateSelected.has(o._id));
+  const allCb = qs('#pu-create-check-all');
+  if (allCb) {
+    allCb.checked = allChecked;
+    allCb.indeterminate = !allChecked && someChecked;
+  }
+  const cnt = qs('#pu-create-selected-count');
+  if (cnt) cnt.innerHTML = _puCreateSelected.size > 0 ? `${fmtN(_puCreateSelected.size)} طلب محدد` : '';
+}
+
+// Checkbox change — updates Set + label background without re-rendering
+function puCreateRowCheck(cb) {
+  const id = cb.dataset.id;
+  if (!id) return;
+  if (cb.checked) _puCreateSelected.add(id);
+  else _puCreateSelected.delete(id);
+  // Update only this row's background
+  const label = cb.closest('label[data-pu-order-id]');
+  if (label) label.style.background = cb.checked ? 'color-mix(in srgb,var(--primary) 6%,var(--surface))' : '';
+  _puUpdateCreateHeader();
+}
+
+function puCreateToggleAll(checked) {
+  const search     = (qs('#pu-create-search')?.value || '').toLowerCase();
+  const shipFilter = qs('#pu-create-filter-shipco')?.value || 'all';
+  const visible    = _puCreateAllOrders.filter(o => {
+    if (shipFilter !== 'all' && (o.shipCo || '') !== shipFilter) return false;
+    if (search) { const hay = `${o.ref||''} ${o.client||''}`.toLowerCase(); if (!hay.includes(search)) return false; }
+    return true;
+  });
+  visible.forEach(o => {
+    if (checked) _puCreateSelected.add(o._id);
+    else _puCreateSelected.delete(o._id);
+  });
+  // Update all visible checkboxes + backgrounds without full rebuild
+  qsa('#pu-create-list label[data-pu-order-id]').forEach(label => {
+    const oid = label.dataset.puOrderId;
+    const cb  = label.querySelector('input[type=checkbox]');
+    if (!cb) return;
+    const isVisible = visible.some(o => o._id === oid);
+    if (isVisible) {
+      cb.checked = checked;
+      label.style.background = checked ? 'color-mix(in srgb,var(--primary) 6%,var(--surface))' : '';
+    }
+  });
+  _puUpdateCreateHeader(visible);
+}
+
+async function submitCreatePickup() {
+  const ids = [..._puCreateSelected];
+  if (!ids.length) return toast('حدد طلباً واحداً على الأقل', true);
+  const date = qs('#pu-create-date')?.value || new Date().toISOString().slice(0, 10);
+  if (!date) return toast('حدد تاريخ الاستلام', true);
+
+  const btn = qs('#pu-create-confirm-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري الإنشاء...'; }
+
+  try {
+    const res = await api('/transactions/pickup-orders/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ ids, date }),
+    });
+    const ref = res.pickupRef || '';
+    const cnt = res.updated || ids.length;
+    toast(`✅ تم إنشاء أمر الاستلام · ${fmtN(cnt)} طلب · ${ref}`);
+    closePuCreateModal();
+    await loadPickupOrders();
+  } catch(e) {
+    toast('خطأ: ' + e.message, true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> إنشاء أمر الاستلام`;
+    }
+  }
+}
+
+// ── إدخال مجمع Modal ──────────────────────────────────────────
+function openPickupBulkModal() {
+  const modal = qs('#pu-bulk-modal');
+  if (!modal) return;
+  const inp = qs('#pu-bulk-input');
+  if (inp) inp.value = '';
+  const dt = qs('#pu-bulk-date');
+  if (dt) dt.value = new Date().toISOString().slice(0,10);
+  const preview = qs('#pu-bulk-preview');
+  if (preview) preview.style.display = 'none';
+  const res = qs('#pu-bulk-result');
+  if (res) res.style.display = 'none';
+  modal.style.display = 'flex';
+  modal.classList.add('active');
+}
+
+function closePuBulkModal() {
+  const modal = qs('#pu-bulk-modal');
+  if (modal) { modal.style.display = 'none'; modal.classList.remove('active'); }
+}
+
+function previewBulkPickup() {
+  const raw = qs('#pu-bulk-input')?.value || '';
+  const refs = raw.split(/[\n,،\s]+/).map(s => s.trim()).filter(Boolean);
+  const preview = qs('#pu-bulk-preview');
+  const previewBody = qs('#pu-bulk-preview-body');
+  if (!preview || !previewBody) return;
+  if (!refs.length || !_pickupOrders.length) { preview.style.display = 'none'; return; }
+
+  const seen = new Set();
+  const results = refs.map(ref => {
+    if (seen.has(ref.toLowerCase())) return null;
+    seen.add(ref.toLowerCase());
+    const tx = _pickupOrders.find(o => (o.ref||'').toLowerCase() === ref.toLowerCase());
+    if (!tx) return {ref, status:'notfound'};
+    if ((tx.pickupStatus||'Pending') === 'Delivered') return {ref, tx, status:'delivered'};
+    return {ref, tx, status:'ok'};
+  }).filter(Boolean);
+
+  const ok     = results.filter(r => r.status === 'ok');
+  const nf     = results.filter(r => r.status === 'notfound');
+  const done   = results.filter(r => r.status === 'delivered');
+
+  previewBody.innerHTML = [
+    ...ok.map(r   => `<div style="padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center"><span style="color:#059669">✅</span> <span style="font-weight:600;color:var(--accent)">${esc(r.ref)}</span> <span style="color:var(--muted);font-size:.8rem">${esc(r.tx.client||'')}</span> <span style="margin-right:auto;font-size:.8rem">${fmtJ(r.tx.total||0)}</span></div>`),
+    ...done.map(r  => `<div style="padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center"><span style="color:var(--muted)">⬛</span> <span style="color:var(--muted)">${esc(r.ref)}</span> <span style="font-size:.78rem;color:var(--muted)">تم التسليم مسبقاً</span></div>`),
+    ...nf.map(r    => `<div style="padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center"><span style="color:#dc2626">❌</span> <span style="color:#dc2626">${esc(r.ref)}</span> <span style="font-size:.78rem;color:var(--muted)">غير موجود</span></div>`),
+  ].join('') || '<div style="color:var(--muted);font-size:.83rem">لا نتائج</div>';
+
+  preview.style.display = 'block';
+}
+
+async function runBulkPickup() {
+  const raw  = qs('#pu-bulk-input')?.value || '';
+  const date = qs('#pu-bulk-date')?.value || new Date().toISOString().slice(0,10);
+  const refs = raw.split(/[\n,،\s]+/).map(s => s.trim()).filter(Boolean);
+  if (!refs.length) return toast('أدخل أرقام الطلبات أولاً', true);
+
+  const btn = qs('#pu-bulk-confirm-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري المعالجة...'; }
+
+  try {
+    _pickupOrders = await api('/transactions/pickup-orders');
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> تأكيد الاستلام'; }
+    return toast('خطأ في تحميل الطلبات: ' + e.message, true);
+  }
+
+  const matched = [], notFound = [], alreadyDone = [];
+  const duplicate = new Set();
+  refs.forEach(ref => {
+    if (duplicate.has(ref.toLowerCase())) return;
+    duplicate.add(ref.toLowerCase());
+    const tx = _pickupOrders.find(o => (o.ref||'').toLowerCase() === ref.toLowerCase());
+    if (!tx) { notFound.push(ref); return; }
+    if ((tx.pickupStatus||'Pending') === 'Delivered') { alreadyDone.push(ref); return; }
+    matched.push(tx._id);
+  });
+
+  let updatedCount = 0, batchRef = '';
+  if (matched.length) {
+    try {
+      const res = await api('/transactions/pickup-orders/confirm', { method:'POST', body: JSON.stringify({ ids: matched, date }) });
+      updatedCount = res.updated ?? matched.length;
+      batchRef = res.pickupRef || '';
+    } catch(e) {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> تأكيد الاستلام'; }
+      return toast('خطأ: ' + e.message, true);
+    }
+  }
+
+  const resEl = qs('#pu-bulk-result');
+  if (resEl) {
+    resEl.style.display = 'block';
+    resEl.innerHTML = `
+      <div style="background:var(--bg-alt);border-radius:8px;padding:12px;font-size:.85rem;line-height:1.8">
+        ${updatedCount > 0 ? `<div style="color:#059669;font-weight:600">✅ تم تأكيد الاستلام لـ ${fmtN(updatedCount)} طلب</div>` : ''}
+        ${batchRef ? `<div style="color:var(--accent);font-weight:700">📦 Pickup Ref: <span style="font-family:monospace">${esc(batchRef)}</span></div>` : ''}
+        ${alreadyDone.length ? `<div style="color:var(--muted)">⬛ تم التسليم مسبقاً (${fmtN(alreadyDone.length)}): ${alreadyDone.join('، ')}</div>` : ''}
+        ${notFound.length ? `<div style="color:#dc2626">❌ غير موجود (${fmtN(notFound.length)}): ${notFound.join('، ')}</div>` : ''}
+        ${matched.length === 0 && notFound.length === refs.length ? `<div style="color:#dc2626">لم يُعثر على أي طلب مطابق</div>` : ''}
+      </div>`;
+  }
+
+  const preview = qs('#pu-bulk-preview');
+  if (preview) preview.style.display = 'none';
+  if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> تأكيد الاستلام'; }
+  renderPickupRuns();
+}
+
+// ── Date Edit Modal ────────────────────────────────────────────
+function openPuDateModal(id, currentDate) {
+  _puDateEditId = id;
+  const modal = qs('#pu-date-modal');
+  if (!modal) return;
+  const val = qs('#pu-date-edit-val');
+  if (val) val.value = currentDate || new Date().toISOString().slice(0,10);
+  modal.style.display = 'flex';
+  modal.classList.add('active');
+}
+
+function closePuDateModal() {
+  const modal = qs('#pu-date-modal');
+  if (modal) { modal.style.display = 'none'; modal.classList.remove('active'); }
+  _puDateEditId = null;
+}
+
+async function savePuDateEdit() {
+  if (!_puDateEditId) return;
+  const date = qs('#pu-date-edit-val')?.value;
+  if (!date) return toast('اختر تاريخاً', true);
+  try {
+    await api('/transactions/pickup-orders/confirm', { method:'POST', body: JSON.stringify({ ids: [_puDateEditId], date }) });
+    toast('تم تحديث التاريخ');
+    closePuDateModal();
+    await loadPickupOrders();
+  } catch(e) { toast('خطأ: ' + e.message, true); }
+}
+
+// ── Filters clear ──────────────────────────────────────────────
+function clearPickupFilters() {
+  const s = qs('#pu-search');           if (s)  s.value  = '';
+  const fc = qs('#pu-filter-shipco');   if (fc) fc.value = 'all';
+  const fd1 = qs('#pu-filter-date-from'); if (fd1) fd1.value = '';
+  const fd2 = qs('#pu-filter-date-to');   if (fd2) fd2.value = '';
+  _pickupPage = 1;
+  renderPickupRuns();
+}
+
+// ── Excel Export (all runs) ─────────────────────────────────────
+function exportPickupExcel() {
+  if (!_pickupRuns.length) return toast('لا توجد بيانات للتصدير', true);
+  const rows = [['Pickup Ref','تاريخ الاستلام','شركة الشحن','عدد الطلبات','الإجمالي','الموظف']];
+  _pickupRuns.forEach(run => {
+    const total = run.orders.reduce((s,o)=>s+(o.total||0),0);
+    const ships = [...new Set(run.orders.map(o=>o.shipCo).filter(Boolean))].join('، ');
+    rows.push([run.pickupRef, run.pickupDate||'', ships, run.orders.length, total, run.pickupBy]);
+  });
+  rows.push([]);
+  rows.push(['=== تفاصيل الطلبات ===']);
+  rows.push(['Pickup Ref','رقم الطلب','العميل','الإجمالي','المتبقي','حالة الدفع','شركة الشحن','الحالة']);
+  _pickupRuns.forEach(run => {
+    run.orders.forEach(o => {
+      rows.push([run.pickupRef, o.ref||'', o.client||'', o.total||0, o.remaining||0, o.payStatus||'', o.shipCo||'', o.pickupStatus||'']);
+    });
+  });
+  if (typeof XLSX !== 'undefined') {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Pickup Runs');
+    XLSX.writeFile(wb, `pickup_runs_${new Date().toISOString().slice(0,10)}.xlsx`);
+  } else {
+    toast('مكتبة التصدير غير محملة', true);
+  }
+}
+
+// Legacy stubs to avoid runtime errors if called from elsewhere
+function renderPickupOrders() { renderPickupRuns(); }
+function clearPickupSelection() {}
 </script>
 </body>
 </html>
