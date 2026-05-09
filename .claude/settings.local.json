@@ -34,7 +34,8 @@
       "PowerShell(Start-Process cmd -ArgumentList '/k', 'cd /d \"d:\\\\website\\\\Souliahome\\\\frontend\" && node server.js' -WindowStyle Minimized)",
       "Bash(python3 -)",
       "PowerShell(Get-Process -Id 32088)",
-      "PowerShell(wmic process where \"ProcessId=32088\" get CommandLine)"
+      "PowerShell(wmic process where \"ProcessId=32088\" get CommandLine)",
+      "Bash(curl -s http://localhost:8080/ -o nul -w \"%{http_code}\")"
     ]
   }
 }

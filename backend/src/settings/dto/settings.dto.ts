@@ -142,6 +142,10 @@ export class UpdateSettingsDto {
   @IsOptional()
   readonly staffDiscountEnabled?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  readonly otpEnabled?: boolean;
+
   @IsNumber()
   @Min(0)
   @IsOptional()

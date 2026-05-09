@@ -166,13 +166,22 @@ export class TransactionsController {
     return this.transactionsService.findPickupOrders();
   }
 
-  @Post('pickup-orders/confirm')
-  async confirmPickup(
-    @Body() body: { ids: string[]; date?: string },
+  @Post('pickup-orders/preparing')
+  async setPickupPreparing(
+    @Body() body: { ids: string[]; prepRef: string },
     @Req() req: { user: { name: string; username: string } },
   ) {
     const by = req.user.name || req.user.username || 'مستخدم';
-    return this.transactionsService.confirmPickup(body.ids, by, body.date);
+    return this.transactionsService.setPickupPreparing(body.ids, by, body.prepRef);
+  }
+
+  @Post('pickup-orders/confirm')
+  async confirmPickup(
+    @Body() body: { ids: string[]; date?: string; suggestedRef?: string },
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const by = req.user.name || req.user.username || 'مستخدم';
+    return this.transactionsService.confirmPickup(body.ids, by, body.date, body.suggestedRef);
   }
 
   @Post('pickup-orders/undo')
@@ -191,6 +200,14 @@ export class TransactionsController {
   ) {
     const by = req.user.name || req.user.username || 'مستخدم';
     return this.transactionsService.addToPickupRun(body.id, body.pickupRef, by, body.date);
+  }
+
+  @Patch('pickup-orders/:id/prep-check')
+  async setPrepChecked(
+    @Param('id') id: string,
+    @Body() body: { prepChecked: boolean },
+  ) {
+    return this.transactionsService.setPrepChecked(id, body.prepChecked);
   }
 
   @Get(':id')

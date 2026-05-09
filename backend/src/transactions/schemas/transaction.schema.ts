@@ -207,7 +207,7 @@ export class Transaction {
   @Prop({ type: [String], default: [] })
   tags: string[];
 
-  /** Pick-Up tracking: Pending | Picked-Up | Delivered */
+  /** Pick-Up tracking: Pending | Preparing | Ready | Delivered */
   @Prop({ default: 'Pending' })
   pickupStatus: string;
 
@@ -224,11 +224,15 @@ export class Transaction {
   /** Audit log for pick-up actions */
   @Prop({ type: [Object], default: [] })
   pickupHistory: Array<{
-    action: string;      // 'pickup' | 'undo' | 'delivered'
+    action: string;      // 'preparing' | 'ready' | 'undo' | 'delivered' | 'revert-delivered'
     date: string;
     by: string;
     note?: string;
   }>;
+
+  /** Preparation tick: true when this order has been marked ready within its prep group */
+  @Prop({ default: false })
+  prepChecked: boolean;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
