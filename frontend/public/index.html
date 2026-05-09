@@ -14606,7 +14606,7 @@ function applyDiscount() {
     : manualVal;
   const rawTotal = codesDisc + manualDisc;
   if (rawTotal > itemsTotal) {
-    toast(`الخصم الكلي (${fmtN(rawTotal)} ج) يتجاوز إجمالي الأصناف (${fmtN(itemsTotal)} ج) — لا يُقبل`, true);
+    toast(`الخصم الكلي (${fmtN(rawTotal)}) يتجاوز إجمالي الأصناف (${fmtN(itemsTotal)}) — لا يُقبل`, true);
     return;
   }
   if (rawTotal <= 0) { toast('أدخل قيمة خصم أكبر من صفر', true); return; }
@@ -15464,7 +15464,7 @@ function showAllOffers() {
   const rows = _discSuggestions.map(s => {
     const applied = txAppliedCodes.some(ac => ac.id === s.codeId);
     const tooltip = s.isFull
-      ? (s.type === 'percent' ? `خصم ${s.value}٪ = − ${fmtJ(s.discountAmt)} ج` : `خصم ثابت − ${fmtJ(s.discountAmt)} ج`)
+      ? (s.type === 'percent' ? `خصم ${s.value}٪ = − ${fmtJ(s.discountAmt)}` : `خصم ثابت − ${fmtJ(s.discountAmt)}`)
       : `باقة جزئية ${s.matchedProductIds.length}/${s.totalProducts} — أضف: ${(s.partialMissing||[]).slice(0,3).join('، ')}`;
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:9px;background:var(--surface2);border:1.5px solid ${applied?'rgba(16,185,129,.4)':'var(--border)'};gap:10px;flex-wrap:wrap">
       <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:0">
@@ -15645,8 +15645,8 @@ function calcTxSummary() {
       const depErrMsg = depositInvalidFormat
         ? `⚠ صيغة الديبوزت غير صحيحة — أرقام فقط`
         : depositNegative
-        ? `⚠ الديبوزت (${fmtJ(depositRaw)} ج) لا يمكن أن يكون سالباً — يجب تصحيحه قبل الحفظ`
-        : `⚠ الديبوزت (${fmtJ(depositRaw)} ج) يتجاوز الإجمالي (${fmtJ(total)} ج) — يجب تصحيحه قبل الحفظ`;
+        ? `⚠ الديبوزت (${fmtJ(depositRaw)}) لا يمكن أن يكون سالباً — يجب تصحيحه قبل الحفظ`
+        : `⚠ الديبوزت (${fmtJ(depositRaw)}) يتجاوز الإجمالي (${fmtJ(total)}) — يجب تصحيحه قبل الحفظ`;
       paymentRows = `<div style="margin-top:6px;padding:8px 10px;background:rgba(220,38,38,.08);border-radius:8px;border-right:3px solid var(--red);font-size:.8rem;color:#dc2626;font-weight:600">
         ${depErrMsg}
       </div>`;
@@ -15666,8 +15666,8 @@ function calcTxSummary() {
       const purErrMsg = depositInvalidFormat
         ? `⚠ صيغة العربون غير صحيحة — أرقام فقط`
         : depositNegative
-        ? `⚠ العربون (${fmtJ(depositRaw)} ج) لا يمكن أن يكون سالباً — يجب تصحيحه قبل الحفظ`
-        : `⚠ العربون (${fmtJ(depositRaw)} ج) يتجاوز الإجمالي (${fmtJ(total)} ج) — يجب تصحيحه قبل الحفظ`;
+        ? `⚠ العربون (${fmtJ(depositRaw)}) لا يمكن أن يكون سالباً — يجب تصحيحه قبل الحفظ`
+        : `⚠ العربون (${fmtJ(depositRaw)}) يتجاوز الإجمالي (${fmtJ(total)}) — يجب تصحيحه قبل الحفظ`;
       paymentRows = `<div style="margin-top:6px;padding:8px 10px;background:rgba(220,38,38,.08);border-radius:8px;border-right:3px solid var(--red);font-size:.8rem;color:#dc2626;font-weight:600">
         ${purErrMsg}
       </div>`;
@@ -15680,7 +15680,7 @@ function calcTxSummary() {
   }
 
   const discWarnRow = discountExceedsItems
-    ? `<div style="margin-top:4px;padding:7px 10px;background:rgba(220,38,38,.08);border-radius:8px;border-right:3px solid var(--red);font-size:.79rem;color:#dc2626;font-weight:600">⚠ الخصم (${fmtJ(discount)} ج) يساوي أو يتجاوز إجمالي الأصناف — سيُطبَّق كامل الإجمالي</div>`
+    ? `<div style="margin-top:4px;padding:7px 10px;background:rgba(220,38,38,.08);border-radius:8px;border-right:3px solid var(--red);font-size:.79rem;color:#dc2626;font-weight:600">⚠ الخصم (${fmtJ(discount)}) يساوي أو يتجاوز إجمالي الأصناف — سيُطبَّق كامل الإجمالي</div>`
     : '';
 
   qs('#tx-summary').innerHTML = `
@@ -16543,7 +16543,7 @@ async function saveTx() {
     const discountRaw = getEffectiveDiscount();
     // Hard cap: discount ≤ itemsTotal, cannot be negative
     if (discountRaw > itemsTotal) {
-      toast(`الخصم (${fmtN(discountRaw)} ج) يتجاوز إجمالي الأصناف (${fmtN(itemsTotal)} ج) — لا يُقبل`, true);
+      toast(`الخصم (${fmtN(discountRaw)}) يتجاوز إجمالي الأصناف (${fmtN(itemsTotal)}) — لا يُقبل`, true);
       return;
     }
     const discount = Math.min(Math.max(0, discountRaw), itemsTotal);
@@ -16560,7 +16560,7 @@ async function saveTx() {
       return;
     }
     if (depositRaw > total) {
-      toast(`الديبوزت / العربون (${fmtN(depositRaw)} ج) يتجاوز الإجمالي (${fmtN(total)} ج) — لا يُقبل`, true);
+      toast(`الديبوزت / العربون (${fmtN(depositRaw)}) يتجاوز الإجمالي (${fmtN(total)}) — لا يُقبل`, true);
       return;
     }
     const deposit = Math.min(depositRaw, total);
@@ -20606,10 +20606,10 @@ function recalcEditTx() {
 
   // ── Validation error banners ──
   const discErrHtml = discountRaw > itemsTotal && itemsTotal > 0
-    ? `<div style="padding:7px 10px;background:rgba(220,38,38,.09);border-radius:8px;border-right:3px solid var(--red);font-size:.79rem;color:#dc2626;font-weight:600;margin-bottom:6px">⚠ الخصم (${fmtJ(discountRaw)} ج) يتجاوز إجمالي الأصناف (${fmtJ(itemsTotal)} ج) — يجب تصحيحه</div>`
+    ? `<div style="padding:7px 10px;background:rgba(220,38,38,.09);border-radius:8px;border-right:3px solid var(--red);font-size:.79rem;color:#dc2626;font-weight:600;margin-bottom:6px">⚠ الخصم (${fmtJ(discountRaw)}) يتجاوز إجمالي الأصناف (${fmtJ(itemsTotal)}) — يجب تصحيحه</div>`
     : '';
   const depErrHtml = depositExceedsTotal
-    ? `<div style="padding:7px 10px;background:rgba(220,38,38,.09);border-radius:8px;border-right:3px solid var(--red);font-size:.79rem;color:#dc2626;font-weight:600;margin-bottom:6px">⚠ ${isPurTx ? 'العربون' : 'الديبوزت'} (${fmtJ(depositRaw)} ج) يتجاوز الإجمالي (${fmtJ(total)} ج) — يجب تصحيحه قبل الحفظ</div>`
+    ? `<div style="padding:7px 10px;background:rgba(220,38,38,.09);border-radius:8px;border-right:3px solid var(--red);font-size:.79rem;color:#dc2626;font-weight:600;margin-bottom:6px">⚠ ${isPurTx ? 'العربون' : 'الديبوزت'} (${fmtJ(depositRaw)}) يتجاوز الإجمالي (${fmtJ(total)}) — يجب تصحيحه قبل الحفظ</div>`
     : '';
 
   const origDeposit = Number(origTx?.deposit) || 0;
