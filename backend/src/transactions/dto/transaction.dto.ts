@@ -162,6 +162,10 @@ export class CreateTransactionDto {
   @IsString()
   @IsOptional()
   readonly highValueDiscountOtpId?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly purchaseOtpId?: string;
 }
 
 export class UpdateTransactionDto {

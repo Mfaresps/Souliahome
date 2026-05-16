@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
 import { Transaction, TransactionDocument } from '../transactions/schemas/transaction.schema';
+import { PresenceGateway } from '../auth/presence.gateway';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')
@@ -26,6 +27,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     @InjectModel(Transaction.name) private readonly txModel: Model<TransactionDocument>,
+    private readonly presenceGateway: PresenceGateway,
   ) {}
 
   @Get('me/stats')
@@ -136,6 +138,8 @@ export class UsersController {
     if (!user) throw new BadRequestException('المستخدم غير موجود');
     if (user.username === 'admin') throw new ForbiddenException('لا يمكن تعطيل المدير الرئيسي');
     if (user.username === req.user?.username) throw new ForbiddenException('لا يمكنك تعطيل حسابك الخاص');
-    return this.usersService.toggleActive(id, false);
+    const result = await this.usersService.toggleActive(id, false);
+    this.presenceGateway.emitToUser(id, 'user:force-logout', { reason: 'تم تعطيل حسابك من قِبل المدير' });
+    return result;
   }
 }

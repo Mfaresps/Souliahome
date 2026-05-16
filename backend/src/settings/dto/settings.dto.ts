@@ -158,6 +158,10 @@ export class UpdateSettingsDto {
 
   @IsBoolean()
   @IsOptional()
+  readonly purchaseOtpEnabled?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
   readonly printIncludePolicy?: boolean;
 
   @IsString()

@@ -245,6 +245,13 @@ export class TransactionsService {
     );
     await this.assertRetailRefForPersist(dto.type, dto.ref, undefined);
     await this.assertOutboundWithinAvailableStock(dto.type, dto.items);
+    // Purchase OTP enforcement (staff only, when purchaseOtpEnabled=true)
+    if (dto.type === 'مشتريات' && callerRole !== 'admin') {
+      const purchaseSettings = await this.settingsService.getSettings();
+      if (purchaseSettings.purchaseOtpEnabled) {
+        await this.discountOtpService.assertPurchaseOtp(dto.purchaseOtpId || '');
+      }
+    }
     // For purchases: check vault balance covers the deposit/upfront payment
     if (dto.type === 'مشتريات') {
       const depositPaid = (dto as unknown as { deposit?: number }).deposit || 0;
@@ -255,11 +262,19 @@ export class TransactionsService {
     }
     const tx = await this.transactionModel.create(dto);
 
-    // Link OTP to created transaction (audit trail)
+    // Link discount OTP to created transaction (audit trail)
     const otpIdForLink = (dto as unknown as { highValueDiscountOtpId?: string }).highValueDiscountOtpId || '';
     if (otpIdForLink && discountAmt > 0) {
       try {
         await this.discountOtpService.attachToTransaction(otpIdForLink, String(tx._id), tx.ref || '');
+      } catch {
+        // non-fatal
+      }
+    }
+    // Link purchase OTP to created transaction (audit trail)
+    if (dto.purchaseOtpId && dto.type === 'مشتريات') {
+      try {
+        await this.discountOtpService.attachToTransaction(dto.purchaseOtpId, String(tx._id), tx.ref || '');
       } catch {
         // non-fatal
       }
@@ -2222,7 +2237,7 @@ export class TransactionsService {
         $push: { pickupHistory: { action: 'preparing', date: now, by, pickupRef: prepRef } },
       },
     );
-    this.emit('pickup:updated', { ids: validIds, action: 'preparing', pickupRef: prepRef });
+    this.emit('pickup:updated', { ids: validIds, action: 'preparing', pickupRef: prepRef, by });
     return { updated: result.modifiedCount };
   }
 
@@ -2294,6 +2309,8 @@ export class TransactionsService {
   async setPrepChecked(id: string, prepChecked: boolean): Promise<{ ok: boolean }> {
     if (!isValidObjectId(id)) return { ok: false };
     await this.transactionModel.updateOne({ _id: id }, { $set: { prepChecked } });
+    const tx = await this.transactionModel.findById(id).select('pickupRef').lean();
+    this.emit('pickup:updated', { ids: [id], action: 'prepCheck', prepChecked, pickupRef: tx?.pickupRef || null });
     return { ok: true };
   }
 

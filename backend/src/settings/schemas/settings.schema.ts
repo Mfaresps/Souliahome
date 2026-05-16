@@ -167,6 +167,9 @@ export class Settings {
   @Prop({ default: 10 })
   highValueDiscountOtpTtlMin: number;
 
+  @Prop({ default: false })
+  purchaseOtpEnabled: boolean;
+
   @Prop({ default: true })
   printIncludePolicy: boolean;
 

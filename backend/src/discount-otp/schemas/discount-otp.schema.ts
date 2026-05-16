@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import mongoose from 'mongoose';
 
 export type DiscountOtpDocument = HydratedDocument<DiscountOtp>;
 
@@ -19,6 +20,37 @@ export class DiscountOtp {
 
   @Prop({ default: '' })
   txType: string;
+
+  @Prop({ default: 'discount' })
+  kind: string; // 'discount' | 'purchase' | 'delete-product' | 'delete-supplier' | 'vault-access' | 'add-product' | 'edit-tx'
+
+  @Prop({ type: [Object], default: [] })
+  purchaseItems: Array<{ name: string; qty: number; price: number; total: number }>;
+
+  @Prop({ type: [String], default: [] })
+  importItemNames: string[];
+
+  // edit-tx OTP fields
+  @Prop({ default: '' })
+  editTxId: string;
+
+  @Prop({ default: '' })
+  editTxType: string; // 'مبيعات' | 'مشتريات'
+
+  @Prop({ type: [String], default: [] })
+  editChanges: string[];
+
+  @Prop({ type: mongoose.Schema.Types.Mixed, default: {} })
+  editPayload: Record<string, any>; // the full update body to apply on approval
+
+  @Prop({ default: '' })
+  editStatus: string; // '' | 'approved' | 'rejected'
+
+  @Prop({ default: '' })
+  editReviewedBy: string;
+
+  @Prop({ default: '' })
+  editReviewedAt: string;
 
   @Prop({ default: '' })
   requestedById: string;

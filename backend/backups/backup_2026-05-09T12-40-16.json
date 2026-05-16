@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-05-09T02:44:42.822Z",
+  "timestamp": "2026-05-09T12:40:16.730Z",
   "data": {
     "transactions": [
       {
@@ -1284,11 +1284,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T08:09:28.960Z",
-        "updatedAt": "2026-05-03T08:09:28.978Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
-        "discountCodeType": ""
+        "discountCodeType": "",
+        "pickupBy": null,
+        "pickupDate": null,
+        "pickupHistory": [
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          }
+        ],
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f703903a70dab49675739e",
@@ -1343,11 +1360,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T08:13:04.263Z",
-        "updatedAt": "2026-05-03T08:13:04.270Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
-        "discountCodeType": ""
+        "discountCodeType": "",
+        "pickupBy": null,
+        "pickupDate": null,
+        "pickupHistory": [
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          }
+        ],
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f705fe3a70dab496757420",
@@ -1402,11 +1436,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T08:23:26.234Z",
-        "updatedAt": "2026-05-03T08:23:26.252Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
-        "discountCodeType": ""
+        "discountCodeType": "",
+        "pickupBy": null,
+        "pickupDate": null,
+        "pickupHistory": [
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          }
+        ],
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f707093a70dab496757457",
@@ -1461,7 +1512,7 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T08:27:53.308Z",
-        "updatedAt": "2026-05-09T00:01:38.986Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
@@ -1471,9 +1522,9 @@
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-VL0QU"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
@@ -1537,11 +1588,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T08:30:52.468Z",
-        "updatedAt": "2026-05-03T08:30:52.493Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
-        "discountCodeType": ""
+        "discountCodeType": "",
+        "pickupBy": null,
+        "pickupDate": null,
+        "pickupHistory": [
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          }
+        ],
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f708d63a70dab4967574bf",
@@ -1596,11 +1664,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T08:35:34.377Z",
-        "updatedAt": "2026-05-03T08:35:34.387Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
-        "discountCodeType": ""
+        "discountCodeType": "",
+        "pickupBy": null,
+        "pickupDate": null,
+        "pickupHistory": [
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          }
+        ],
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f709b53a70dab496757522",
@@ -1655,11 +1740,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T08:39:17.914Z",
-        "updatedAt": "2026-05-03T08:39:17.922Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
-        "discountCodeType": ""
+        "discountCodeType": "",
+        "pickupBy": null,
+        "pickupDate": null,
+        "pickupHistory": [
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          }
+        ],
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f70a9a3a70dab496757556",
@@ -1722,11 +1824,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T08:43:06.577Z",
-        "updatedAt": "2026-05-03T08:43:06.607Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
-        "discountCodeType": ""
+        "discountCodeType": "",
+        "pickupBy": null,
+        "pickupDate": null,
+        "pickupHistory": [
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          }
+        ],
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f70c083a70dab496757595",
@@ -1789,11 +1908,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T08:49:12.170Z",
-        "updatedAt": "2026-05-03T08:49:12.175Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
-        "discountCodeType": ""
+        "discountCodeType": "",
+        "pickupBy": null,
+        "pickupDate": null,
+        "pickupHistory": [
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          }
+        ],
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f713f83a70dab496757656",
@@ -1848,23 +1984,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T09:23:04.853Z",
-        "updatedAt": "2026-05-09T02:42:56.950Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "638-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "638-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f715ba3a70dab4967576a0",
@@ -1919,7 +2060,7 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T09:30:34.997Z",
-        "updatedAt": "2026-05-09T02:42:56.950Z",
+        "updatedAt": "2026-05-09T03:41:04.513Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
@@ -1931,11 +2072,34 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "638-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          },
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "347-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          },
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "516-09MAY"
           }
         ],
-        "pickupRef": "638-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": "516-09MAY",
+        "pickupStatus": "Picked-Up",
+        "prepChecked": false
       },
       {
         "_id": "69f7164f3a70dab4967576cb",
@@ -1990,23 +2154,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T09:33:03.400Z",
-        "updatedAt": "2026-05-09T02:42:56.950Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "638-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "638-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f716e43a70dab4967576f3",
@@ -2077,23 +2246,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T09:35:32.232Z",
-        "updatedAt": "2026-05-09T02:42:56.950Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "638-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "638-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f717f43a70dab49675772c",
@@ -2164,23 +2338,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T09:40:04.247Z",
-        "updatedAt": "2026-05-09T02:42:56.950Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "638-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "638-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f718df3a70dab496757761",
@@ -2275,23 +2454,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T09:43:59.252Z",
-        "updatedAt": "2026-05-09T02:42:56.950Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "638-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "638-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f719ec3a70dab49675779d",
@@ -2346,23 +2530,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T09:48:28.302Z",
-        "updatedAt": "2026-05-09T02:42:56.950Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "638-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "638-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f71a7a3a70dab4967577c6",
@@ -2425,23 +2614,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T09:50:50.150Z",
-        "updatedAt": "2026-05-09T02:42:56.950Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "638-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "638-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f71afa3a70dab4967577eb",
@@ -2504,23 +2698,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T09:52:58.242Z",
-        "updatedAt": "2026-05-09T02:42:56.950Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "638-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "638-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f71b673a70dab496757810",
@@ -2583,23 +2782,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T09:54:47.436Z",
-        "updatedAt": "2026-05-09T02:42:56.950Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "638-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "638-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f71bf13a70dab496757844",
@@ -2670,23 +2874,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T09:57:05.724Z",
-        "updatedAt": "2026-05-09T02:42:56.950Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "638-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "638-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f71c383a70dab496757861",
@@ -2741,23 +2950,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T09:58:16.269Z",
-        "updatedAt": "2026-05-09T02:42:56.950Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "638-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "638-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f71c9c3a70dab496757884",
@@ -2836,23 +3050,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T09:59:56.278Z",
-        "updatedAt": "2026-05-09T02:36:12.417Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "627-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "627-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f71d183a70dab4967578aa",
@@ -2931,23 +3150,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T10:02:00.822Z",
-        "updatedAt": "2026-05-09T02:42:56.950Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "638-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "638-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f71d8f3a70dab4967578cf",
@@ -3026,23 +3250,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T10:03:59.144Z",
-        "updatedAt": "2026-05-09T02:36:12.417Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "627-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "627-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f71e4a3a70dab4967578ff",
@@ -3121,23 +3350,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T10:07:06.947Z",
-        "updatedAt": "2026-05-09T02:36:19.362Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "864-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "864-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f71eae3a70dab496757922",
@@ -3192,23 +3426,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T10:08:46.783Z",
-        "updatedAt": "2026-05-09T02:36:12.417Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "627-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "627-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f71f3a3a70dab496757948",
@@ -3271,23 +3510,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T10:11:06.646Z",
-        "updatedAt": "2026-05-09T02:42:56.950Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "638-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "638-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f71fc63a70dab496757970",
@@ -3358,23 +3602,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T10:13:26.541Z",
-        "updatedAt": "2026-05-09T02:36:12.417Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "627-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "627-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f7202f3a70dab496757992",
@@ -3437,23 +3686,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T10:15:11.877Z",
-        "updatedAt": "2026-05-09T02:26:27.762Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "133-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "133-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f720a03a70dab4967579b7",
@@ -3516,23 +3770,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T10:17:04.990Z",
-        "updatedAt": "2026-05-09T02:26:27.762Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "133-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "133-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f721013a70dab4967579d6",
@@ -3595,23 +3854,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T10:18:41.624Z",
-        "updatedAt": "2026-05-09T02:26:27.762Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "133-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "133-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f721a63a70dab496757a03",
@@ -3690,34 +3954,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T10:21:26.256Z",
-        "updatedAt": "2026-05-09T02:36:12.417Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-GWPQO"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
             "date": "2026-05-09",
             "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "627-09MAY"
           }
         ],
-        "pickupRef": "627-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f7223a3a70dab496757a2c",
@@ -3788,34 +4046,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T10:23:54.684Z",
-        "updatedAt": "2026-05-09T02:31:23.020Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-GWPQO"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
             "date": "2026-05-09",
             "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "210-09MAY"
           }
         ],
-        "pickupRef": "210-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f722cd3a70dab496757a54",
@@ -3878,34 +4130,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T10:26:21.434Z",
-        "updatedAt": "2026-05-09T02:31:23.020Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-GWPQO"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
             "date": "2026-05-09",
             "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "210-09MAY"
           }
         ],
-        "pickupRef": "210-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f723cd3a70dab496757a8c",
@@ -3976,34 +4222,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T10:30:37.779Z",
-        "updatedAt": "2026-05-09T02:31:23.020Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-VL0QU"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
             "date": "2026-05-09",
             "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "210-09MAY"
           }
         ],
-        "pickupRef": "210-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f724503a70dab496757ab5",
@@ -4066,34 +4306,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T10:32:48.538Z",
-        "updatedAt": "2026-05-09T02:31:23.020Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-GWPQO"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
             "date": "2026-05-09",
             "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "210-09MAY"
           }
         ],
-        "pickupRef": "210-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f74d1e3a70dab4967583c5",
@@ -4236,23 +4470,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T13:26:54.936Z",
-        "updatedAt": "2026-05-09T02:31:23.020Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "210-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "210-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f755cb3a70dab4967585c7",
@@ -4315,23 +4554,51 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T14:03:55.405Z",
-        "updatedAt": "2026-05-09T02:31:23.020Z",
+        "updatedAt": "2026-05-09T03:38:27.630Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "210-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          },
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "775-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          },
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "476-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "210-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending",
+        "prepChecked": false
       },
       {
         "_id": "69f7565b3a70dab4967585fc",
@@ -4386,23 +4653,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T14:06:19.504Z",
-        "updatedAt": "2026-05-09T02:31:23.020Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "210-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "210-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f756e33a70dab496758635",
@@ -4465,23 +4737,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T14:08:35.560Z",
-        "updatedAt": "2026-05-09T02:31:23.020Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "210-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "210-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f758643a70dab49675869c",
@@ -4560,34 +4837,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T14:15:00.275Z",
-        "updatedAt": "2026-05-09T02:31:23.020Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-MFYX6"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "210-09MAY"
+            "pickupRef": "972-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "210-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f7599b3a70dab4967586ea",
@@ -4642,45 +4913,39 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T14:20:11.288Z",
-        "updatedAt": "2026-05-09T02:31:23.020Z",
+        "updatedAt": "2026-05-09T03:32:00.775Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-O5FJ3"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-MFYX6"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares"
           },
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "210-09MAY"
+            "pickupRef": "722-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "210-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f75bee3a70dab4967587a1",
@@ -4821,45 +5086,39 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T14:38:01.026Z",
-        "updatedAt": "2026-05-09T02:42:56.950Z",
+        "updatedAt": "2026-05-09T03:32:00.775Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-O5FJ3"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-MFYX6"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares"
           },
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "638-09MAY"
+            "pickupRef": "722-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "638-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f75f493a70dab49675889f",
@@ -4930,35 +5189,39 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T14:44:25.225Z",
-        "updatedAt": "2026-05-09T02:31:23.020Z",
+        "updatedAt": "2026-05-09T03:32:00.775Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-O5FJ3"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares"
           },
           {
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "210-09MAY"
+            "pickupRef": "722-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "210-09MAY",
-        "pickupStatus": "Picked-Up",
-        "prepChecked": true
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f7602d3a70dab4967588e5",
@@ -5029,80 +5292,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T14:48:13.342Z",
-        "updatedAt": "2026-05-09T02:31:23.020Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-06",
-            "by": "Fares",
-            "pickupRef": "PU-20260506-TIQAR"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-06",
-            "by": "Fares",
-            "pickupRef": "PU-20260506-684IP"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-13",
-            "by": "Fares",
-            "pickupRef": "PU-20260506-FLZZ0"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-O5FJ3"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-MFYX6"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "362-09MAY"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
             "date": "2026-05-09",
             "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "210-09MAY"
           }
         ],
-        "pickupRef": "210-09MAY",
-        "pickupStatus": "Picked-Up",
-        "prepChecked": true
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f761563a70dab49675892d",
@@ -5157,80 +5368,28 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T14:53:10.668Z",
-        "updatedAt": "2026-05-09T02:20:06.751Z",
+        "updatedAt": "2026-05-09T03:05:34.785Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-06",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260506-TIQAR"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-06",
-            "by": "Fares",
-            "pickupRef": "PU-20260506-684IP"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-13",
-            "by": "Fares",
-            "pickupRef": "PU-20260506-FLZZ0"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-6HTQ3"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-1VTUH"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
             "date": "2026-05-09",
             "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "347-09MAY"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-09",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "824-09MAY"
           }
         ],
-        "pickupRef": "824-09MAY",
-        "pickupStatus": "Picked-Up",
-        "prepChecked": false
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f762443a70dab496758980",
@@ -5293,53 +5452,19 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T14:57:08.339Z",
-        "updatedAt": "2026-05-09T02:20:06.751Z",
+        "updatedAt": "2026-05-09T03:32:00.775Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-06",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260506-TIQAR"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-06",
-            "by": "Fares",
-            "pickupRef": "PU-20260506-684IP"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-13",
-            "by": "Fares",
-            "pickupRef": "PU-20260506-FLZZ0"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-6HTQ3"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-1VTUH"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
@@ -5350,34 +5475,16 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "896-09MAY"
+            "pickupRef": "722-09MAY"
           },
           {
             "action": "undo",
             "date": "2026-05-09",
             "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "347-09MAY"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-09",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "824-09MAY"
           }
         ],
-        "pickupRef": "824-09MAY",
-        "pickupStatus": "Picked-Up",
-        "prepChecked": false
+        "pickupRef": null,
+        "pickupStatus": "Pending"
       },
       {
         "_id": "69f762d43a70dab4967589bb",
@@ -5432,30 +5539,19 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T14:59:32.845Z",
-        "updatedAt": "2026-05-09T01:43:38.279Z",
+        "updatedAt": "2026-05-09T03:40:41.396Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-6HTQ3"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-1VTUH"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
@@ -5466,33 +5562,17 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "386-09MAY"
+            "pickupRef": "391-09MAY"
           },
           {
             "action": "undo",
             "date": "2026-05-09",
             "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "347-09MAY"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-09",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "717-09MAY"
           }
         ],
-        "pickupRef": "717-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending",
+        "prepChecked": false
       },
       {
         "_id": "69f7640b3a70dab496758a0f",
@@ -5563,30 +5643,19 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T15:04:43.816Z",
-        "updatedAt": "2026-05-09T01:43:38.279Z",
+        "updatedAt": "2026-05-09T03:40:35.410Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-6HTQ3"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-1VTUH"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
@@ -5597,7 +5666,7 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "292-09MAY"
+            "pickupRef": "722-09MAY"
           },
           {
             "action": "undo",
@@ -5608,11 +5677,17 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "717-09MAY"
+            "pickupRef": "747-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "717-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending",
+        "prepChecked": false
       },
       {
         "_id": "69f7648a3a70dab496758a3f",
@@ -5675,41 +5750,19 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T15:06:50.518Z",
-        "updatedAt": "2026-05-09T01:43:38.279Z",
+        "updatedAt": "2026-05-09T03:33:04.987Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-2HFMZ"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-MFYX6"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-1VTUH"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
@@ -5720,7 +5773,7 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "292-09MAY"
+            "pickupRef": "722-09MAY"
           },
           {
             "action": "undo",
@@ -5731,11 +5784,17 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "717-09MAY"
+            "pickupRef": "253-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "717-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": null,
+        "pickupStatus": "Pending",
+        "prepChecked": false
       },
       {
         "_id": "69f765743a70dab496758a81",
@@ -5916,41 +5975,19 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T15:18:53.480Z",
-        "updatedAt": "2026-05-09T01:43:38.279Z",
+        "updatedAt": "2026-05-09T03:40:37.763Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-2HFMZ"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-MFYX6"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-ZNJGB"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
@@ -5961,7 +5998,7 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "120-09MAY"
+            "pickupRef": "406-09MAY"
           },
           {
             "action": "undo",
@@ -5972,11 +6009,16 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "717-09MAY"
+            "pickupRef": "214-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "717-09MAY",
-        "pickupStatus": "Picked-Up",
+        "pickupRef": null,
+        "pickupStatus": "Pending",
         "prepChecked": false
       },
       {
@@ -6048,7 +6090,7 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T15:20:36.729Z",
-        "updatedAt": "2026-05-09T02:20:06.751Z",
+        "updatedAt": "2026-05-09T03:46:13.524Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
@@ -6058,31 +6100,9 @@
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-2HFMZ"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-MFYX6"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-1VTUH"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
@@ -6093,7 +6113,7 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "292-09MAY"
+            "pickupRef": "476-09MAY"
           },
           {
             "action": "undo",
@@ -6104,11 +6124,12 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "824-09MAY"
+            "pickupRef": "516-09MAY"
           }
         ],
-        "pickupRef": "824-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": "516-09MAY",
+        "pickupStatus": "Picked-Up",
+        "prepChecked": false
       },
       {
         "_id": "69f7686f3a70dab496758b60",
@@ -6179,7 +6200,7 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T15:23:27.766Z",
-        "updatedAt": "2026-05-09T01:43:38.279Z",
+        "updatedAt": "2026-05-09T03:46:13.168Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
@@ -6189,31 +6210,9 @@
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-2HFMZ"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-G6IRD"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-ZNJGB"
+            "pickupRef": "451-09MAY"
           },
           {
             "action": "undo",
@@ -6224,7 +6223,7 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "292-09MAY"
+            "pickupRef": "476-09MAY"
           },
           {
             "action": "undo",
@@ -6235,11 +6234,12 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "717-09MAY"
+            "pickupRef": "516-09MAY"
           }
         ],
-        "pickupRef": "717-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": "516-09MAY",
+        "pickupStatus": "Picked-Up",
+        "prepChecked": false
       },
       {
         "_id": "69f768ec3a70dab496758b94",
@@ -6294,7 +6294,7 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T15:25:32.614Z",
-        "updatedAt": "2026-05-09T01:16:07.994Z",
+        "updatedAt": "2026-05-09T03:46:12.931Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
@@ -6304,31 +6304,9 @@
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-08",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260508-2HFMZ"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-G6IRD"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-ZNJGB"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
@@ -6339,7 +6317,7 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "292-09MAY"
+            "pickupRef": "406-09MAY"
           },
           {
             "action": "undo",
@@ -6350,11 +6328,23 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "483-09MAY"
+            "pickupRef": "476-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          },
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "516-09MAY"
           }
         ],
-        "pickupRef": "483-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": "516-09MAY",
+        "pickupStatus": "Picked-Up",
+        "prepChecked": false
       },
       {
         "_id": "69f78ed43a70dab4967590d4",
@@ -6417,189 +6407,20 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T18:07:16.962Z",
-        "updatedAt": "2026-05-09T01:41:44.155Z",
+        "updatedAt": "2026-05-09T03:46:12.622Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
+        "prepChecked": false,
         "pickupBy": "Fares",
         "pickupDate": "2026-05-09",
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-05",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260505-KA5IX"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-21",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-TQFD9"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-G6IRD"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-IEJ5U"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-78DKW"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-ELW6O"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-P8W8X"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-V93WE"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-DNA8J"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-Q0118"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-6R7WW"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-4L1WL"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-WE1TF"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-6T37G"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-QMM3B"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-C4BPK"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-OZ3PW"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-M51T6"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-Z26JJ"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-042PF"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-NNSIC"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-9RZ19"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-MD9X6"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-BTDD3"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-8PKYD"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-ZNJGB"
+            "pickupRef": "451-09MAY"
           },
           {
             "action": "undo",
@@ -6610,7 +6431,7 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "292-09MAY"
+            "pickupRef": "476-09MAY"
           },
           {
             "action": "undo",
@@ -6621,10 +6442,10 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "625-09MAY"
+            "pickupRef": "516-09MAY"
           }
         ],
-        "pickupRef": "625-09MAY",
+        "pickupRef": "516-09MAY",
         "pickupStatus": "Picked-Up"
       },
       {
@@ -6696,7 +6517,7 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T18:10:39.438Z",
-        "updatedAt": "2026-05-09T01:43:38.279Z",
+        "updatedAt": "2026-05-09T03:46:12.235Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
@@ -6706,53 +6527,9 @@
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-05",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260505-KTXBP"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-21",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-TQFD9"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-G6IRD"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-EXNB2"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-ZNJGB"
+            "pickupRef": "451-09MAY"
           },
           {
             "action": "undo",
@@ -6763,7 +6540,7 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "292-09MAY"
+            "pickupRef": "476-09MAY"
           },
           {
             "action": "undo",
@@ -6774,12 +6551,12 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "717-09MAY"
+            "pickupRef": "516-09MAY"
           }
         ],
-        "pickupRef": "717-09MAY",
+        "pickupRef": "516-09MAY",
         "pickupStatus": "Picked-Up",
-        "prepChecked": true
+        "prepChecked": false
       },
       {
         "_id": "69f791163a70dab496759172",
@@ -6834,7 +6611,7 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T18:16:54.571Z",
-        "updatedAt": "2026-05-09T01:33:10.823Z",
+        "updatedAt": "2026-05-09T03:43:29.278Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
@@ -6844,230 +6621,9 @@
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-01-05",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260505-XTC1X"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-01-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260505-921KS"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-01-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260505-QL2F6"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-01-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260505-BJBHT"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-PTN52"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-REDMJ"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-21",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-TQFD9"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-G6IRD"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-IEJ5U"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-78DKW"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-ELW6O"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-P8W8X"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-V93WE"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-DNA8J"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-Q0118"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-6R7WW"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-4L1WL"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-WE1TF"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-6T37G"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-QMM3B"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-C4BPK"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-OZ3PW"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-M51T6"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-Z26JJ"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-042PF"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-NNSIC"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-9RZ19"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-MD9X6"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-BTDD3"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-8PKYD"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-EXNB2"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-1VTUH"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
@@ -7078,7 +6634,7 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "292-09MAY"
+            "pickupRef": "406-09MAY"
           },
           {
             "action": "undo",
@@ -7089,11 +6645,34 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "937-09MAY"
+            "pickupRef": "476-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          },
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "747-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          },
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "183-09MAY"
           }
         ],
-        "pickupRef": "937-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": "183-09MAY",
+        "pickupStatus": "Picked-Up",
+        "prepChecked": false
       },
       {
         "_id": "69f7916e3a70dab49675919d",
@@ -7148,7 +6727,7 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T18:18:22.113Z",
-        "updatedAt": "2026-05-09T01:21:58.853Z",
+        "updatedAt": "2026-05-09T03:41:04.513Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
@@ -7158,93 +6737,9 @@
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-01-05",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260505-XTC1X"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-01-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260505-921KS"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-01-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260505-QL2F6"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-01-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260505-BJBHT"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-PTN52"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-F3307"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-REDMJ"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-21",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-TQFD9"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-MFYX6"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-1VTUH"
+            "pickupRef": "127-09MAY"
           },
           {
             "action": "undo",
@@ -7255,7 +6750,7 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "292-09MAY"
+            "pickupRef": "214-09MAY"
           },
           {
             "action": "undo",
@@ -7266,11 +6761,12 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "343-09MAY"
+            "pickupRef": "516-09MAY"
           }
         ],
-        "pickupRef": "343-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": "516-09MAY",
+        "pickupStatus": "Picked-Up",
+        "prepChecked": false
       },
       {
         "_id": "69f792063a70dab4967591d4",
@@ -7325,96 +6821,19 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T18:20:54.705Z",
-        "updatedAt": "2026-05-09T01:14:56.861Z",
+        "updatedAt": "2026-05-09T03:46:24.726Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
+        "pickupBy": null,
+        "pickupDate": null,
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-05",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260505-ZEBMC"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-O5FJ3"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-GZHRG"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-REDMJ"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-21",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-TQFD9"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-MFYX6"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-Z7E5I"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-1VTUH"
+            "pickupRef": "127-09MAY"
           },
           {
             "action": "undo",
@@ -7425,7 +6844,7 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "292-09MAY"
+            "pickupRef": "476-09MAY"
           },
           {
             "action": "undo",
@@ -7436,11 +6855,27 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "393-09MAY"
+            "pickupRef": "516-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          },
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "516-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
           }
         ],
-        "pickupRef": "393-09MAY",
-        "pickupStatus": "Picked-Up",
+        "pickupRef": null,
+        "pickupStatus": "Pending",
         "prepChecked": false
       },
       {
@@ -7496,7 +6931,7 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T18:22:32.183Z",
-        "updatedAt": "2026-05-09T01:33:10.823Z",
+        "updatedAt": "2026-05-09T03:41:04.513Z",
         "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
@@ -7506,119 +6941,9 @@
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-05",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260505-CRB1H"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-UCIRI"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-6O56W"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-PTN52"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-F3307"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-GZHRG"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-REDMJ"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-ZYHCS"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-UKVAC"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-Z7E5I"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-27WH4"
+            "pickupRef": "127-09MAY"
           },
           {
             "action": "undo",
@@ -7629,7 +6954,7 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "292-09MAY"
+            "pickupRef": "476-09MAY"
           },
           {
             "action": "undo",
@@ -7640,7 +6965,7 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "818-09MAY"
+            "pickupRef": "747-09MAY"
           },
           {
             "action": "undo",
@@ -7651,11 +6976,12 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "937-09MAY"
+            "pickupRef": "516-09MAY"
           }
         ],
-        "pickupRef": "937-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": "516-09MAY",
+        "pickupStatus": "Picked-Up",
+        "prepChecked": false
       },
       {
         "_id": "69f7aca23a70dab49675972d",
@@ -7666,9 +6992,9 @@
         "ref": "1841",
         "notes": "Sallo15",
         "payment": "تحويل بنكي",
-        "deposit": 500,
+        "deposit": 3166,
         "initialDeposit": 0,
-        "remaining": 2765,
+        "remaining": 0,
         "items": [
           {
             "productId": "",
@@ -7702,7 +7028,7 @@
         "shipCost": 99,
         "discount": 938,
         "depMethod": "Instapay",
-        "payStatus": "معلق",
+        "payStatus": "مكتمل",
         "itemsTotal": 4104,
         "actualShipCost": 0,
         "shipLoss": 0,
@@ -7720,14 +7046,37 @@
             "by": "Hassan Ammar"
           }
         ],
-        "payments": [],
+        "payments": [
+          {
+            "id": "pay_moxrjpd1_gj5a2n",
+            "amount": 2666,
+            "method": "تحويل بنكي",
+            "note": "",
+            "date": "2026-05-09T03:07:18.949Z",
+            "by": "Hassan Ammar",
+            "remaining": 2765,
+            "collectedAmount": 2765,
+            "vaultDelta": 2666,
+            "shipExtra": 0,
+            "snapshotBefore": {
+              "deposit": 500,
+              "remaining": 2765,
+              "payStatus": "معلق",
+              "collectMethod": "",
+              "collectNote": "",
+              "collectedAt": "",
+              "actualShipCost": 0,
+              "shipLoss": 0
+            }
+          }
+        ],
         "invoiceImageUrl": "",
         "invoiceImages": [],
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T20:14:26.026Z",
-        "updatedAt": "2026-05-09T01:34:40.564Z",
-        "__v": 1,
+        "updatedAt": "2026-05-09T03:07:18.957Z",
+        "__v": 2,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
@@ -7736,200 +7085,24 @@
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260505-OY67N"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-05",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260505-QBFKJ"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-05",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260505-Q9LJE"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-UCIRI"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-9M74K"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-15",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-WEPGK"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-PTN52"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-HRIL7"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-4YRTR"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-GZHRG"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-57ZZW"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-ZYHCS"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-UKVAC"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-Z7E5I"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-27WH4"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-09",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260509-LOIQA"
+            "pickupRef": "127-09MAY"
           },
           {
-            "action": "undo",
+            "action": "delivered",
             "date": "2026-05-09",
             "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "639-09MAY"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-09",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "634-09MAY"
           }
         ],
-        "pickupRef": "634-09MAY",
-        "pickupStatus": "Picked-Up"
+        "pickupRef": "127-09MAY",
+        "pickupStatus": "Delivered",
+        "collectMethod": "تحويل بنكي",
+        "collectNote": "",
+        "collectedAt": "2026-05-09",
+        "manualDiscount": 0,
+        "manualDiscountType": "",
+        "prepChecked": false
       },
       {
         "_id": "69f7ad2a3a70dab496759761",
@@ -7992,8 +7165,8 @@
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T20:16:42.332Z",
-        "updatedAt": "2026-05-09T01:35:50.326Z",
-        "__v": 3,
+        "updatedAt": "2026-05-09T03:41:04.513Z",
+        "__v": 1,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
@@ -8002,151 +7175,9 @@
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-05",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260505-OY67N"
-          },
-          {
-            "action": "delivered",
-            "date": "2026-05-05",
-            "by": "Fares"
-          },
-          {
-            "action": "revert-delivered",
-            "date": "2026-05-05",
-            "by": "Fares"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-UCIRI"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-3PKQG"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-TXBIA"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-O5FJ3"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-HRIL7"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-4YRTR"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-GZHRG"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-57ZZW"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-ZYHCS"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-UKVAC"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-GMV7L"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-6NUQZ"
+            "pickupRef": "972-09MAY"
           },
           {
             "action": "undo",
@@ -8157,7 +7188,7 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260509-LOIQA"
+            "pickupRef": "476-09MAY"
           },
           {
             "action": "undo",
@@ -8168,7 +7199,7 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "991-09MAY"
+            "pickupRef": "747-09MAY"
           },
           {
             "action": "undo",
@@ -8179,15 +7210,12 @@
             "action": "pickup",
             "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "213-09MAY"
+            "pickupRef": "516-09MAY"
           }
         ],
-        "pickupRef": "213-09MAY",
+        "pickupRef": "516-09MAY",
         "pickupStatus": "Picked-Up",
-        "collectMethod": "",
-        "collectNote": "",
-        "manualDiscount": 0,
-        "manualDiscountType": ""
+        "prepChecked": false
       },
       {
         "_id": "69f7ae073a70dab496759802",
@@ -8198,9 +7226,9 @@
         "ref": "1846",
         "notes": "Sallo15",
         "payment": "تحويل بنكي",
-        "deposit": 714,
+        "deposit": 200,
         "initialDeposit": 0,
-        "remaining": 0,
+        "remaining": 613,
         "items": [
           {
             "productId": "",
@@ -8218,7 +7246,7 @@
         "shipCost": 99,
         "discount": 126,
         "depMethod": "Instapay",
-        "payStatus": "مكتمل",
+        "payStatus": "معلق",
         "itemsTotal": 840,
         "actualShipCost": 0,
         "shipLoss": 0,
@@ -8236,1705 +7264,66 @@
             "by": "Hassan Ammar"
           }
         ],
-        "payments": [
-          {
-            "id": "pay_mot4b042_srv16s",
-            "amount": 514,
-            "method": "تحويل بنكي",
-            "note": "",
-            "date": "2026-05-05T21:05:37.107Z",
-            "by": "Hassan Ammar",
-            "remaining": 613,
-            "collectedAmount": 613,
-            "vaultDelta": 514,
-            "shipExtra": 0,
-            "snapshotBefore": {
-              "deposit": 200,
-              "remaining": 613,
-              "payStatus": "معلق",
-              "collectMethod": "",
-              "collectNote": "",
-              "collectedAt": "",
-              "actualShipCost": 0,
-              "shipLoss": 0
-            }
-          }
-        ],
+        "payments": [],
         "invoiceImageUrl": "",
         "invoiceImages": [],
         "comments": [],
         "tags": [],
         "createdAt": "2026-05-03T20:20:23.414Z",
-        "updatedAt": "2026-05-05T21:05:37.123Z",
-        "__v": 2,
+        "updatedAt": "2026-05-09T03:41:04.513Z",
+        "__v": 3,
         "discountCodeId": "",
         "discountCode": "",
         "discountCodeType": "",
         "pickupBy": "Fares",
-        "pickupDate": "2026-05-05",
+        "pickupDate": "2026-05-09",
         "pickupHistory": [
           {
             "action": "pickup",
-            "date": "2026-05-05",
+            "date": "2026-05-09",
             "by": "Fares",
-            "pickupRef": "PU-20260505-FLQT3"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-05",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260505-CN25N"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260505-NMGY9"
+            "pickupRef": "518-09MAY"
           },
           {
             "action": "delivered",
-            "date": "2026-05-05",
+            "date": "2026-05-09",
             "by": "Fares"
+          },
+          {
+            "action": "revert-delivered",
+            "date": "2026-05-09",
+            "by": "Fares"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          },
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "747-09MAY"
+          },
+          {
+            "action": "undo",
+            "date": "2026-05-09",
+            "by": "Fares"
+          },
+          {
+            "action": "pickup",
+            "date": "2026-05-09",
+            "by": "Fares",
+            "pickupRef": "516-09MAY"
           }
         ],
-        "pickupRef": "PU-20260505-NMGY9",
-        "pickupStatus": "Delivered",
-        "collectMethod": "تحويل بنكي",
+        "pickupRef": "516-09MAY",
+        "pickupStatus": "Picked-Up",
+        "collectMethod": "",
         "collectNote": "",
-        "collectedAt": "2026-05-05",
         "manualDiscount": 0,
-        "manualDiscountType": ""
-      },
-      {
-        "_id": "69fe06a3a177ec1dda9ca694",
-        "date": "2026-05-08T15:52:02.380Z",
-        "type": "مبيعات",
-        "client": "yasser glala",
-        "phone": "01206556566",
-        "ref": "3555",
-        "notes": "",
-        "payment": "تحويل بنكي",
-        "deposit": 500,
-        "initialDeposit": 0,
-        "remaining": 2270,
-        "items": [
-          {
-            "productId": "69f3cb523e05b1b6d235d5f8",
-            "name": "Terra Red Basket XL",
-            "code": "Code 05",
-            "qty": 1,
-            "price": 1420,
-            "total": 1420
-          },
-          {
-            "productId": "69f3cb523e05b1b6d235d5fb",
-            "name": "Terra Red Basket M",
-            "code": "Code 06",
-            "qty": 1,
-            "price": 1250,
-            "total": 1250
-          },
-          {
-            "productId": "69f3cb523e05b1b6d235d5e6",
-            "code": "CUS-K-YS",
-            "name": "Sunburst Stripe Cushion",
-            "qty": 1,
-            "price": 720,
-            "total": 720
-          }
-        ],
-        "total": 3490,
-        "employee": "Hassan Ammar",
-        "shipCo": "BOSTA",
-        "shipZone": "cairo",
-        "shipCost": 100,
-        "discount": 0,
-        "discountCodeId": "",
-        "discountCode": "",
-        "discountCodeType": "",
-        "manualDiscount": 33,
-        "manualDiscountType": "fixed",
-        "depMethod": "Instapay",
-        "payStatus": "معلق",
-        "itemsTotal": 2670,
-        "actualShipCost": 0,
-        "shipLoss": 0,
-        "cancelled": false,
-        "editHistory": [
-          {
-            "editedAt": "2026-05-08T15:54:07.867Z",
-            "editedBy": "Fares",
-            "action": "تعديل شامل",
-            "before": {
-              "client": "yasser glala",
-              "phone": "01206556566",
-              "ref": "3555",
-              "deposit": 500,
-              "remaining": 2980,
-              "notes": "",
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5f8",
-                  "name": "Terra Red Basket XL",
-                  "code": "Code 05",
-                  "qty": 1,
-                  "price": 1420,
-                  "total": 1420
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fb",
-                  "name": "Terra Red Basket M",
-                  "code": "Code 06",
-                  "qty": 1,
-                  "price": 1250,
-                  "total": 1250
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fe",
-                  "name": "Terra Red Basket S",
-                  "code": "Code 07",
-                  "qty": 1,
-                  "price": 760,
-                  "total": 760
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d65b",
-                  "name": "White circle coaster",
-                  "code": "Code 38",
-                  "qty": 1,
-                  "price": 380,
-                  "total": 380
-                }
-              ],
-              "total": 3480,
-              "itemsTotal": 3810,
-              "discount": 430,
-              "shipCost": 100,
-              "shipCo": "BOSTA",
-              "shipZone": "cairo",
-              "payment": "تحويل بنكي",
-              "payStatus": "معلق"
-            },
-            "after": {
-              "total": 3100,
-              "deposit": 500,
-              "discount": 430,
-              "shipCost": 100,
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5f8",
-                  "name": "Terra Red Basket XL",
-                  "code": "Code 05",
-                  "qty": 1,
-                  "price": 1420,
-                  "total": 1420
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fb",
-                  "name": "Terra Red Basket M",
-                  "code": "Code 06",
-                  "qty": 1,
-                  "price": 1250,
-                  "total": 1250
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fe",
-                  "name": "Terra Red Basket S",
-                  "code": "Code 07",
-                  "qty": 1,
-                  "price": 760,
-                  "total": 760
-                }
-              ]
-            },
-            "changes": [
-              "الإجمالي: 3480 ← 3100"
-            ],
-            "totalDelta": -380,
-            "depositDelta": 0,
-            "discountDelta": 0,
-            "shipCostDelta": 0
-          },
-          {
-            "editedAt": "2026-05-08T15:54:57.806Z",
-            "editedBy": "Fares",
-            "action": "تعديل شامل",
-            "before": {
-              "client": "yasser glala",
-              "phone": "01206556566",
-              "ref": "3555",
-              "deposit": 500,
-              "remaining": 2600,
-              "notes": "",
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5f8",
-                  "name": "Terra Red Basket XL",
-                  "code": "Code 05",
-                  "qty": 1,
-                  "price": 1420,
-                  "total": 1420
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fb",
-                  "name": "Terra Red Basket M",
-                  "code": "Code 06",
-                  "qty": 1,
-                  "price": 1250,
-                  "total": 1250
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fe",
-                  "name": "Terra Red Basket S",
-                  "code": "Code 07",
-                  "qty": 1,
-                  "price": 760,
-                  "total": 760
-                }
-              ],
-              "total": 3100,
-              "itemsTotal": 3430,
-              "discount": 430,
-              "shipCost": 100,
-              "shipCo": "BOSTA",
-              "shipZone": "cairo",
-              "payment": "تحويل بنكي",
-              "payStatus": "معلق"
-            },
-            "after": {
-              "total": 1680,
-              "deposit": 500,
-              "discount": 430,
-              "shipCost": 100,
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fb",
-                  "name": "Terra Red Basket M",
-                  "code": "Code 06",
-                  "qty": 1,
-                  "price": 1250,
-                  "total": 1250
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fe",
-                  "name": "Terra Red Basket S",
-                  "code": "Code 07",
-                  "qty": 1,
-                  "price": 760,
-                  "total": 760
-                }
-              ]
-            },
-            "changes": [
-              "الإجمالي: 3100 ← 1680"
-            ],
-            "totalDelta": -1420,
-            "depositDelta": 0,
-            "discountDelta": 0,
-            "shipCostDelta": 0
-          },
-          {
-            "editedAt": "2026-05-08T15:57:54.560Z",
-            "editedBy": "Fares",
-            "action": "تعديل شامل",
-            "before": {
-              "client": "yasser glala",
-              "phone": "01206556566",
-              "ref": "3555",
-              "deposit": 500,
-              "remaining": 1180,
-              "notes": "",
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fb",
-                  "name": "Terra Red Basket M",
-                  "code": "Code 06",
-                  "qty": 1,
-                  "price": 1250,
-                  "total": 1250
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fe",
-                  "name": "Terra Red Basket S",
-                  "code": "Code 07",
-                  "qty": 1,
-                  "price": 760,
-                  "total": 760
-                }
-              ],
-              "total": 1680,
-              "itemsTotal": 2010,
-              "discount": 430,
-              "shipCost": 100,
-              "shipCo": "BOSTA",
-              "shipZone": "cairo",
-              "payment": "تحويل بنكي",
-              "payStatus": "معلق"
-            },
-            "after": {
-              "total": 2110,
-              "deposit": 500,
-              "discount": 0,
-              "shipCost": 100,
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fb",
-                  "name": "Terra Red Basket M",
-                  "code": "Code 06",
-                  "qty": 1,
-                  "price": 1250,
-                  "total": 1250
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fe",
-                  "name": "Terra Red Basket S",
-                  "code": "Code 07",
-                  "qty": 1,
-                  "price": 760,
-                  "total": 760
-                }
-              ]
-            },
-            "changes": [
-              "الإجمالي: 1680 ← 2110",
-              "الخصم: 430 ← 0"
-            ],
-            "totalDelta": 430,
-            "depositDelta": 0,
-            "discountDelta": -430,
-            "shipCostDelta": 0
-          },
-          {
-            "editedAt": "2026-05-08T15:58:52.168Z",
-            "editedBy": "Fares",
-            "action": "تعديل شامل",
-            "before": {
-              "client": "yasser glala",
-              "phone": "01206556566",
-              "ref": "3555",
-              "deposit": 500,
-              "remaining": 1610,
-              "notes": "",
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fb",
-                  "name": "Terra Red Basket M",
-                  "code": "Code 06",
-                  "qty": 1,
-                  "price": 1250,
-                  "total": 1250
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fe",
-                  "name": "Terra Red Basket S",
-                  "code": "Code 07",
-                  "qty": 1,
-                  "price": 760,
-                  "total": 760
-                }
-              ],
-              "total": 2110,
-              "itemsTotal": 2010,
-              "discount": 0,
-              "shipCost": 100,
-              "shipCo": "BOSTA",
-              "shipZone": "cairo",
-              "payment": "تحويل بنكي",
-              "payStatus": "معلق"
-            },
-            "after": {
-              "total": 1817,
-              "deposit": 500,
-              "discount": 463,
-              "shipCost": 100,
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fe",
-                  "name": "Terra Red Basket S",
-                  "code": "Code 07",
-                  "qty": 1,
-                  "price": 760,
-                  "total": 760
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5f8",
-                  "name": "Terra Red Basket XL",
-                  "code": "Code 05",
-                  "qty": 1,
-                  "price": 1420,
-                  "total": 1420
-                }
-              ]
-            },
-            "changes": [
-              "الإجمالي: 2110 ← 1817",
-              "الخصم: 0 ← 463"
-            ],
-            "totalDelta": -293,
-            "depositDelta": 0,
-            "discountDelta": 463,
-            "shipCostDelta": 0
-          },
-          {
-            "editedAt": "2026-05-08T16:20:28.078Z",
-            "editedBy": "Fares",
-            "action": "تعديل شامل",
-            "before": {
-              "client": "yasser glala",
-              "phone": "01206556566",
-              "ref": "3555",
-              "deposit": 500,
-              "remaining": 1317,
-              "notes": "",
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fe",
-                  "name": "Terra Red Basket S",
-                  "code": "Code 07",
-                  "qty": 1,
-                  "price": 760,
-                  "total": 760
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5f8",
-                  "name": "Terra Red Basket XL",
-                  "code": "Code 05",
-                  "qty": 1,
-                  "price": 1420,
-                  "total": 1420
-                }
-              ],
-              "total": 1817,
-              "itemsTotal": 2180,
-              "discount": 463,
-              "shipCost": 100,
-              "shipCo": "BOSTA",
-              "shipZone": "cairo",
-              "payment": "تحويل بنكي",
-              "payStatus": "معلق"
-            },
-            "after": {
-              "total": 3100,
-              "deposit": 500,
-              "discount": 430,
-              "shipCost": 100,
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fe",
-                  "name": "Terra Red Basket S",
-                  "code": "Code 07",
-                  "qty": 1,
-                  "price": 760,
-                  "total": 760
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5f8",
-                  "name": "Terra Red Basket XL",
-                  "code": "Code 05",
-                  "qty": 1,
-                  "price": 1420,
-                  "total": 1420
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fb",
-                  "name": "Terra Red Basket M",
-                  "code": "Code 06",
-                  "qty": 1,
-                  "price": 1250,
-                  "total": 1250
-                }
-              ]
-            },
-            "changes": [
-              "الإجمالي: 1817 ← 3100",
-              "الخصم: 463 ← 430"
-            ],
-            "totalDelta": 1283,
-            "depositDelta": 0,
-            "discountDelta": -33,
-            "shipCostDelta": 0
-          },
-          {
-            "editedAt": "2026-05-08T16:20:47.209Z",
-            "editedBy": "Fares",
-            "action": "تعديل شامل",
-            "before": {
-              "client": "yasser glala",
-              "phone": "01206556566",
-              "ref": "3555",
-              "deposit": 500,
-              "remaining": 2600,
-              "notes": "",
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fe",
-                  "name": "Terra Red Basket S",
-                  "code": "Code 07",
-                  "qty": 1,
-                  "price": 760,
-                  "total": 760
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5f8",
-                  "name": "Terra Red Basket XL",
-                  "code": "Code 05",
-                  "qty": 1,
-                  "price": 1420,
-                  "total": 1420
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fb",
-                  "name": "Terra Red Basket M",
-                  "code": "Code 06",
-                  "qty": 1,
-                  "price": 1250,
-                  "total": 1250
-                }
-              ],
-              "total": 3100,
-              "itemsTotal": 3430,
-              "discount": 430,
-              "shipCost": 100,
-              "shipCo": "BOSTA",
-              "shipZone": "cairo",
-              "payment": "تحويل بنكي",
-              "payStatus": "معلق"
-            },
-            "after": {
-              "total": 2770,
-              "deposit": 500,
-              "discount": 0,
-              "shipCost": 100,
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5f8",
-                  "name": "Terra Red Basket XL",
-                  "code": "Code 05",
-                  "qty": 1,
-                  "price": 1420,
-                  "total": 1420
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fb",
-                  "name": "Terra Red Basket M",
-                  "code": "Code 06",
-                  "qty": 1,
-                  "price": 1250,
-                  "total": 1250
-                }
-              ]
-            },
-            "changes": [
-              "الإجمالي: 3100 ← 2770",
-              "الخصم: 430 ← 0"
-            ],
-            "totalDelta": -330,
-            "depositDelta": 0,
-            "discountDelta": -430,
-            "shipCostDelta": 0
-          },
-          {
-            "editedAt": "2026-05-08T22:21:00.595Z",
-            "editedBy": "Fares",
-            "action": "تعديل شامل",
-            "before": {
-              "client": "yasser glala",
-              "phone": "01206556566",
-              "ref": "3555",
-              "deposit": 500,
-              "remaining": 2270,
-              "notes": "",
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5f8",
-                  "name": "Terra Red Basket XL",
-                  "code": "Code 05",
-                  "qty": 1,
-                  "price": 1420,
-                  "total": 1420
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fb",
-                  "name": "Terra Red Basket M",
-                  "code": "Code 06",
-                  "qty": 1,
-                  "price": 1250,
-                  "total": 1250
-                }
-              ],
-              "total": 2770,
-              "itemsTotal": 2670,
-              "discount": 0,
-              "shipCost": 100,
-              "shipCo": "BOSTA",
-              "shipZone": "cairo",
-              "payment": "تحويل بنكي",
-              "payStatus": "معلق"
-            },
-            "after": {
-              "total": 3490,
-              "deposit": 500,
-              "discount": 0,
-              "shipCost": 100,
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5f8",
-                  "name": "Terra Red Basket XL",
-                  "code": "Code 05",
-                  "qty": 1,
-                  "price": 1420,
-                  "total": 1420
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5fb",
-                  "name": "Terra Red Basket M",
-                  "code": "Code 06",
-                  "qty": 1,
-                  "price": 1250,
-                  "total": 1250
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5e6",
-                  "code": "CUS-K-YS",
-                  "name": "Sunburst Stripe Cushion",
-                  "qty": 1,
-                  "price": 720,
-                  "total": 720
-                }
-              ]
-            },
-            "changes": [
-              "الإجمالي: 2770 ← 3490"
-            ],
-            "totalDelta": 720,
-            "depositDelta": 0,
-            "discountDelta": 0,
-            "shipCostDelta": 0
-          }
-        ],
-        "archived": false,
-        "cancelRequest": null,
-        "deposits": [
-          {
-            "id": "pay_mox3fbfk_7mhbkj",
-            "amount": 500,
-            "method": "Instapay",
-            "note": "ديبوزت أول - عند إنشاء الحركة",
-            "date": "2026-05-08T15:52:03.488Z",
-            "by": "Hassan Ammar"
-          }
-        ],
-        "payments": [],
-        "invoiceImageUrl": "",
-        "invoiceImages": [],
-        "comments": [],
-        "tags": [],
-        "pickupStatus": "Picked-Up",
-        "pickupHistory": [
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-DA08P"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-10",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-AMK17"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-UCIRI"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-YBRRJ"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-TXBIA"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-QY3H2"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-9WVZP"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-15",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-WEPGK"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-PTN52"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-F3307"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-39LBK"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-HRIL7"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-4YRTR"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-GZHRG"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-57ZZW"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-ZYHCS"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-UKVAC"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-5L08C"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-EWL4B"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-D29F0"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-4TIU2"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-6NUQZ"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-09",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-22",
-            "by": "Fares",
-            "pickupRef": "PU-20260509-4IND0"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-09",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "PU-20260509-LOIQA"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-09",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "360-09MAY"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-09",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "937-09MAY"
-          }
-        ],
-        "createdAt": "2026-05-08T15:52:03.471Z",
-        "updatedAt": "2026-05-09T01:33:10.823Z",
-        "__v": 1,
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
-        "pickupRef": "937-09MAY"
-      },
-      {
-        "_id": "69fe0dd4a177ec1dda9caab7",
-        "date": "2026-05-08T16:22:43.044Z",
-        "type": "مبيعات",
-        "client": "sara aaaa",
-        "phone": "01042277004",
-        "ref": "3223",
-        "notes": "",
-        "payment": "تحويل بنكي",
-        "deposit": 200,
-        "initialDeposit": 0,
-        "remaining": 759,
-        "items": [
-          {
-            "productId": "69f3cb523e05b1b6d235d5cb",
-            "name": "Comfort Cushion Burgundy",
-            "code": "CUS-CC-B",
-            "qty": 1,
-            "price": 260,
-            "total": 260
-          },
-          {
-            "productId": "69f3cb523e05b1b6d235d5d7",
-            "name": "Earth Blend Cushion",
-            "code": "CUS-K-EB",
-            "qty": 1,
-            "price": 599,
-            "total": 599
-          }
-        ],
-        "total": 959,
-        "employee": "Fares",
-        "shipCo": "BOSTA",
-        "shipZone": "cairo",
-        "shipCost": 100,
-        "discount": 0,
-        "discountCodeId": "",
-        "discountCode": "",
-        "discountCodeType": "",
-        "manualDiscount": 0,
-        "manualDiscountType": "fixed",
-        "depMethod": "Instapay",
-        "payStatus": "معلق",
-        "itemsTotal": 859,
-        "actualShipCost": 0,
-        "shipLoss": 0,
-        "cancelled": false,
-        "editHistory": [
-          {
-            "editedAt": "2026-05-08T16:23:32.803Z",
-            "editedBy": "Fares",
-            "action": "تعديل شامل",
-            "before": {
-              "client": "sara gmal",
-              "phone": "01042277004",
-              "ref": "3223",
-              "deposit": 200,
-              "remaining": 2598,
-              "notes": "",
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5cb",
-                  "name": "Comfort Cushion Burgundy",
-                  "code": "CUS-CC-B",
-                  "qty": 1,
-                  "price": 260,
-                  "total": 260
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5ce",
-                  "name": "Stripe Harmony Cushion",
-                  "code": "CUS-K-BS",
-                  "qty": 1,
-                  "price": 650,
-                  "total": 650
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5d1",
-                  "name": "Geometric Star Cushion",
-                  "code": "CUS-K-BWGS",
-                  "qty": 1,
-                  "price": 690,
-                  "total": 690
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5d4",
-                  "name": "Classic Stripe Cushion",
-                  "code": "CUS-K-CS",
-                  "qty": 1,
-                  "price": 499,
-                  "total": 499
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5d7",
-                  "name": "Earth Blend Cushion",
-                  "code": "CUS-K-EB",
-                  "qty": 1,
-                  "price": 599,
-                  "total": 599
-                }
-              ],
-              "total": 2798,
-              "itemsTotal": 2698,
-              "discount": 0,
-              "shipCost": 100,
-              "shipCo": "BOSTA",
-              "shipZone": "cairo",
-              "payment": "تحويل بنكي",
-              "payStatus": "معلق"
-            },
-            "after": {
-              "total": 360,
-              "deposit": 200,
-              "discount": 0,
-              "shipCost": 100,
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5cb",
-                  "name": "Comfort Cushion Burgundy",
-                  "code": "CUS-CC-B",
-                  "qty": 1,
-                  "price": 260,
-                  "total": 260
-                }
-              ]
-            },
-            "changes": [
-              "الإجمالي: 2798 ← 360"
-            ],
-            "totalDelta": -2438,
-            "depositDelta": 0,
-            "discountDelta": 0,
-            "shipCostDelta": 0
-          },
-          {
-            "editedAt": "2026-05-08T16:24:08.346Z",
-            "editedBy": "Fares",
-            "action": "تعديل شامل",
-            "before": {
-              "client": "sara gmal",
-              "phone": "01042277004",
-              "ref": "3223",
-              "deposit": 200,
-              "remaining": 160,
-              "notes": "",
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5cb",
-                  "name": "Comfort Cushion Burgundy",
-                  "code": "CUS-CC-B",
-                  "qty": 1,
-                  "price": 260,
-                  "total": 260
-                }
-              ],
-              "total": 360,
-              "itemsTotal": 260,
-              "discount": 0,
-              "shipCost": 100,
-              "shipCo": "BOSTA",
-              "shipZone": "cairo",
-              "payment": "تحويل بنكي",
-              "payStatus": "معلق"
-            },
-            "after": {
-              "total": 859,
-              "deposit": 200,
-              "discount": 0,
-              "shipCost": 100,
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5cb",
-                  "name": "Comfort Cushion Burgundy",
-                  "code": "CUS-CC-B",
-                  "qty": 1,
-                  "price": 260,
-                  "total": 260
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5d4",
-                  "name": "Classic Stripe Cushion",
-                  "code": "CUS-K-CS",
-                  "qty": 1,
-                  "price": 499,
-                  "total": 499
-                }
-              ]
-            },
-            "changes": [
-              "الإجمالي: 360 ← 859"
-            ],
-            "totalDelta": 499,
-            "depositDelta": 0,
-            "discountDelta": 0,
-            "shipCostDelta": 0
-          },
-          {
-            "editedAt": "2026-05-08T16:24:25.960Z",
-            "editedBy": "Fares",
-            "action": "تعديل شامل",
-            "before": {
-              "client": "sara gmal",
-              "phone": "01042277004",
-              "ref": "3223",
-              "deposit": 200,
-              "remaining": 659,
-              "notes": "",
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5cb",
-                  "name": "Comfort Cushion Burgundy",
-                  "code": "CUS-CC-B",
-                  "qty": 1,
-                  "price": 260,
-                  "total": 260
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5d4",
-                  "name": "Classic Stripe Cushion",
-                  "code": "CUS-K-CS",
-                  "qty": 1,
-                  "price": 499,
-                  "total": 499
-                }
-              ],
-              "total": 859,
-              "itemsTotal": 759,
-              "discount": 0,
-              "shipCost": 100,
-              "shipCo": "BOSTA",
-              "shipZone": "cairo",
-              "payment": "تحويل بنكي",
-              "payStatus": "معلق"
-            },
-            "after": {
-              "total": 859,
-              "deposit": 200,
-              "discount": 0,
-              "shipCost": 100,
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5cb",
-                  "name": "Comfort Cushion Burgundy",
-                  "code": "CUS-CC-B",
-                  "qty": 1,
-                  "price": 260,
-                  "total": 260
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5d4",
-                  "name": "Classic Stripe Cushion",
-                  "code": "CUS-K-CS",
-                  "qty": 1,
-                  "price": 499,
-                  "total": 499
-                }
-              ]
-            },
-            "changes": [],
-            "totalDelta": 0,
-            "depositDelta": 0,
-            "discountDelta": 0,
-            "shipCostDelta": 0
-          },
-          {
-            "editedAt": "2026-05-08T16:24:55.784Z",
-            "editedBy": "Fares",
-            "action": "تعديل شامل",
-            "before": {
-              "client": "sara gmal",
-              "phone": "01042277004",
-              "ref": "3223",
-              "deposit": 200,
-              "remaining": 659,
-              "notes": "",
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5cb",
-                  "name": "Comfort Cushion Burgundy",
-                  "code": "CUS-CC-B",
-                  "qty": 1,
-                  "price": 260,
-                  "total": 260
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5d4",
-                  "name": "Classic Stripe Cushion",
-                  "code": "CUS-K-CS",
-                  "qty": 1,
-                  "price": 499,
-                  "total": 499
-                }
-              ],
-              "total": 859,
-              "itemsTotal": 759,
-              "discount": 0,
-              "shipCost": 100,
-              "shipCo": "BOSTA",
-              "shipZone": "cairo",
-              "payment": "تحويل بنكي",
-              "payStatus": "معلق"
-            },
-            "after": {
-              "total": 959,
-              "deposit": 200,
-              "discount": 0,
-              "shipCost": 100,
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5cb",
-                  "name": "Comfort Cushion Burgundy",
-                  "code": "CUS-CC-B",
-                  "qty": 1,
-                  "price": 260,
-                  "total": 260
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5d7",
-                  "name": "Earth Blend Cushion",
-                  "code": "CUS-K-EB",
-                  "qty": 1,
-                  "price": 599,
-                  "total": 599
-                }
-              ]
-            },
-            "changes": [
-              "الإجمالي: 859 ← 959"
-            ],
-            "totalDelta": 100,
-            "depositDelta": 0,
-            "discountDelta": 0,
-            "shipCostDelta": 0
-          },
-          {
-            "editedAt": "2026-05-09T00:05:33.302Z",
-            "editedBy": "Fares",
-            "action": "تعديل شامل",
-            "before": {
-              "client": "sara gmal",
-              "phone": "01042277004",
-              "ref": "3223",
-              "deposit": 200,
-              "remaining": 759,
-              "notes": "",
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5cb",
-                  "name": "Comfort Cushion Burgundy",
-                  "code": "CUS-CC-B",
-                  "qty": 1,
-                  "price": 260,
-                  "total": 260
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5d7",
-                  "name": "Earth Blend Cushion",
-                  "code": "CUS-K-EB",
-                  "qty": 1,
-                  "price": 599,
-                  "total": 599
-                }
-              ],
-              "total": 959,
-              "itemsTotal": 859,
-              "discount": 0,
-              "shipCost": 100,
-              "shipCo": "BOSTA",
-              "shipZone": "cairo",
-              "payment": "تحويل بنكي",
-              "payStatus": "معلق"
-            },
-            "after": {
-              "total": 959,
-              "deposit": 200,
-              "discount": 0,
-              "shipCost": 100,
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5cb",
-                  "name": "Comfort Cushion Burgundy",
-                  "code": "CUS-CC-B",
-                  "qty": 1,
-                  "price": 260,
-                  "total": 260
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5d7",
-                  "name": "Earth Blend Cushion",
-                  "code": "CUS-K-EB",
-                  "qty": 1,
-                  "price": 599,
-                  "total": 599
-                }
-              ]
-            },
-            "changes": [],
-            "totalDelta": 0,
-            "depositDelta": 0,
-            "discountDelta": 0,
-            "shipCostDelta": 0
-          },
-          {
-            "editedAt": "2026-05-09T00:05:39.373Z",
-            "editedBy": "Fares",
-            "action": "تعديل شامل",
-            "before": {
-              "client": "sara gmal",
-              "phone": "01042277004",
-              "ref": "3223",
-              "deposit": 200,
-              "remaining": 759,
-              "notes": "",
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5cb",
-                  "name": "Comfort Cushion Burgundy",
-                  "code": "CUS-CC-B",
-                  "qty": 1,
-                  "price": 260,
-                  "total": 260
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5d7",
-                  "name": "Earth Blend Cushion",
-                  "code": "CUS-K-EB",
-                  "qty": 1,
-                  "price": 599,
-                  "total": 599
-                }
-              ],
-              "total": 959,
-              "itemsTotal": 859,
-              "discount": 0,
-              "shipCost": 100,
-              "shipCo": "BOSTA",
-              "shipZone": "cairo",
-              "payment": "تحويل بنكي",
-              "payStatus": "معلق"
-            },
-            "after": {
-              "total": 959,
-              "deposit": 200,
-              "discount": 0,
-              "shipCost": 100,
-              "items": [
-                {
-                  "productId": "69f3cb523e05b1b6d235d5cb",
-                  "name": "Comfort Cushion Burgundy",
-                  "code": "CUS-CC-B",
-                  "qty": 1,
-                  "price": 260,
-                  "total": 260
-                },
-                {
-                  "productId": "69f3cb523e05b1b6d235d5d7",
-                  "name": "Earth Blend Cushion",
-                  "code": "CUS-K-EB",
-                  "qty": 1,
-                  "price": 599,
-                  "total": 599
-                }
-              ]
-            },
-            "changes": [],
-            "totalDelta": 0,
-            "depositDelta": 0,
-            "discountDelta": 0,
-            "shipCostDelta": 0
-          }
-        ],
-        "archived": false,
-        "cancelRequest": null,
-        "deposits": [
-          {
-            "id": "pay_mox4irlu_2htwb7",
-            "amount": 200,
-            "method": "Instapay",
-            "note": "ديبوزت أول - عند إنشاء الحركة",
-            "date": "2026-05-08T16:22:44.034Z",
-            "by": "Fares"
-          }
-        ],
-        "payments": [],
-        "invoiceImageUrl": "",
-        "invoiceImages": [],
-        "comments": [],
-        "tags": [],
-        "pickupStatus": "Picked-Up",
-        "pickupHistory": [
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-F4US9"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-UCIRI"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-05",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-ZWRJI"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-TXBIA"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-9WVZP"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-O5FJ3"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-F3307"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-39LBK"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-HRIL7"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-4YRTR"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-GZHRG"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-57ZZW"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-ZYHCS"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-UKVAC"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-5L08C"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-EWL4B"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-D29F0"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-4TIU2"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-08",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-08",
-            "by": "Fares",
-            "pickupRef": "PU-20260508-6NUQZ"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-09",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-22",
-            "by": "Fares",
-            "pickupRef": "PU-20260509-4IND0"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-09",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "PU-20260509-LOIQA"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-09",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "347-09MAY"
-          },
-          {
-            "action": "undo",
-            "date": "2026-05-09",
-            "by": "Fares"
-          },
-          {
-            "action": "pickup",
-            "date": "2026-05-09",
-            "by": "Fares",
-            "pickupRef": "734-09MAY"
-          }
-        ],
-        "createdAt": "2026-05-08T16:22:44.032Z",
-        "updatedAt": "2026-05-09T01:24:07.623Z",
-        "__v": 1,
-        "pickupBy": "Fares",
-        "pickupDate": "2026-05-09",
-        "pickupRef": "734-09MAY"
+        "manualDiscountType": "",
+        "prepChecked": false
       }
     ],
     "vaultentries": [
@@ -12387,28 +9776,28 @@
         "__v": 0
       },
       {
-        "_id": "69fa5ba1eda9d347a2cd0990",
-        "date": "2026-05-05",
-        "desc": "تحصيل #1846 — صافي: 514 ج (شحن: 99 ج)",
-        "amount": 514,
+        "_id": "69fea4e6d80c47317cacfb06",
+        "date": "2026-05-09",
+        "desc": "تحصيل #1841 — صافي: 2666 ج (شحن: 99 ج)",
+        "amount": 2666,
         "seg": "bank",
         "method": "تحويل بنكي",
         "source": "تحصيل",
-        "ref": "1846",
+        "ref": "1841",
         "balCash": 310000,
         "balVodafone": 12402,
         "balInstapay": 25668,
-        "balBank": 225328,
-        "balance": 573398,
+        "balBank": 227994,
+        "balance": 576064,
         "employee": "Hassan Ammar",
-        "txNo": "SAL-066",
+        "txNo": "SAL-067",
         "status": "completed",
         "transactionType": "تحصيل",
         "customer": "",
         "supplier": "",
         "notes": "",
-        "accountingJustification": "الخزنة (تحويل بنكي) ترتفع 514 ج — الفاتورة مكتملة — الإيراد المحقق",
-        "entityLabel": "MENATALLAH MOHAMED ABDEL",
+        "accountingJustification": "الخزنة (تحويل بنكي) ترتفع 2666 ج — الفاتورة مكتملة — الإيراد المحقق",
+        "entityLabel": "Dina Ashraf",
         "editHistory": null,
         "frozenReason": null,
         "requiresApproval": false,
@@ -12416,76 +9805,8 @@
         "approvedBy": "",
         "linkedTransactionId": null,
         "linkedTransactionRef": "",
-        "createdAt": "2026-05-05T21:05:37.119Z",
-        "updatedAt": "2026-05-05T21:05:37.119Z",
-        "__v": 0
-      },
-      {
-        "_id": "69fe06a3a177ec1dda9ca69a",
-        "date": "2026-05-08",
-        "desc": "ديبوزت مبيعات #3555 — yasser glala",
-        "amount": 500,
-        "seg": "instapay",
-        "method": "Instapay",
-        "source": "ديبوزت مبيعات",
-        "ref": "3555",
-        "balCash": 310000,
-        "balVodafone": 12402,
-        "balInstapay": 26168,
-        "balBank": 225328,
-        "balance": 573898,
-        "employee": "Hassan Ammar",
-        "txNo": "SAL-067",
-        "status": "completed",
-        "transactionType": "ديبوزت مبيعات",
-        "customer": "",
-        "supplier": "",
-        "notes": "",
-        "accountingJustification": "الخزنة (Instapay) ترتفع 500 ج — الإيراد المحتمل يرتفع — المخزون لم يُخصم بعد",
-        "entityLabel": "yasser glala",
-        "editHistory": null,
-        "frozenReason": null,
-        "requiresApproval": false,
-        "isApproved": false,
-        "approvedBy": "",
-        "linkedTransactionId": null,
-        "linkedTransactionRef": "",
-        "createdAt": "2026-05-08T15:52:03.506Z",
-        "updatedAt": "2026-05-08T15:52:03.506Z",
-        "__v": 0
-      },
-      {
-        "_id": "69fe0dd4a177ec1dda9caabd",
-        "date": "2026-05-08",
-        "desc": "ديبوزت مبيعات #3223 — sara gmal",
-        "amount": 200,
-        "seg": "instapay",
-        "method": "Instapay",
-        "source": "ديبوزت مبيعات",
-        "ref": "3223",
-        "balCash": 310000,
-        "balVodafone": 12402,
-        "balInstapay": 26368,
-        "balBank": 225328,
-        "balance": 574098,
-        "employee": "Fares",
-        "txNo": "SAL-068",
-        "status": "completed",
-        "transactionType": "ديبوزت مبيعات",
-        "customer": "",
-        "supplier": "",
-        "notes": "",
-        "accountingJustification": "الخزنة (Instapay) ترتفع 200 ج — الإيراد المحتمل يرتفع — المخزون لم يُخصم بعد",
-        "entityLabel": "sara gmal",
-        "editHistory": null,
-        "frozenReason": null,
-        "requiresApproval": false,
-        "isApproved": false,
-        "approvedBy": "",
-        "linkedTransactionId": null,
-        "linkedTransactionRef": "",
-        "createdAt": "2026-05-08T16:22:44.042Z",
-        "updatedAt": "2026-05-08T16:22:44.042Z",
+        "createdAt": "2026-05-09T03:07:18.954Z",
+        "updatedAt": "2026-05-09T03:07:18.954Z",
         "__v": 0
       }
     ],
@@ -12638,61 +9959,44 @@
   "vault_balances": {
     "vaultCash": 310000,
     "vaultVodafone": 12402,
-    "vaultInstapay": 26368,
-    "vaultBank": 225328
+    "vaultInstapay": 25668,
+    "vaultBank": 227480
   },
   "offers": {
     "discountCodes": [
       {
-        "id": "4c01501a-ec09-4fcb-aa83-d2346a16f9ef",
+        "id": "94e712a8-72a3-4a69-a7df-5b8f450cbfc0",
         "code": "TERRASET",
-        "description": "",
+        "description": "خصم علي الثلاث قطه",
         "type": "fixed",
         "value": 430,
         "startDate": null,
         "endDate": null,
         "active": true,
-        "usageCount": 2,
+        "usageCount": 0,
         "createdBy": "Fares",
-        "createdAt": "2026-05-05T19:09:37.328Z",
+        "createdAt": "2026-05-09T12:38:39.377Z",
         "auditLog": [
           {
             "action": "created",
             "by": "Fares",
-            "at": "2026-05-05T19:09:37.328Z"
+            "at": "2026-05-09T12:38:39.377Z"
           }
         ],
-        "usageHistory": [
-          {
-            "txRef": "3555",
-            "txId": "",
-            "client": "yasser glala",
-            "amount": 430,
-            "by": "Hassan Ammar",
-            "at": "2026-05-08T15:52:03.704Z"
-          },
-          {
-            "txRef": "3555",
-            "txId": "69fe06a3a177ec1dda9ca694",
-            "client": "yasser glala",
-            "amount": 463,
-            "by": "Fares",
-            "at": "2026-05-08T15:58:52.182Z"
-          }
-        ]
+        "usageHistory": []
       }
     ],
     "discountBundles": [
       {
-        "id": "9dfd47b0-6b08-45b6-8b3c-3610b99b4f56",
-        "name": "Terra set",
-        "description": "Terra offer",
+        "id": "e840a37a-ede4-4b35-a800-db2a904a3261",
+        "name": "3 Terra set",
+        "description": "",
         "productIds": [
           "69f3cb523e05b1b6d235d5f8",
           "69f3cb523e05b1b6d235d5fb",
           "69f3cb523e05b1b6d235d5fe"
         ],
-        "discountCodeId": "4c01501a-ec09-4fcb-aa83-d2346a16f9ef",
+        "discountCodeId": "94e712a8-72a3-4a69-a7df-5b8f450cbfc0",
         "active": true,
         "allowPartial": false,
         "partialDiscountCodeId": null,
@@ -12704,7 +10008,7 @@
           "69f3cb523e05b1b6d235d5fe": 1
         },
         "createdBy": "Fares",
-        "createdAt": "2026-05-05T19:09:59.640Z"
+        "createdAt": "2026-05-09T12:39:20.475Z"
       }
     ]
   }
