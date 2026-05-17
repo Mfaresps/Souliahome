@@ -50,6 +50,16 @@ export class User {
 
   @Prop({ default: '' })
   lockedBy: string; // 'system' or admin userId
+
+  // TOTP 2FA fields
+  @Prop({ default: null })
+  totpSecret: string;
+
+  @Prop({ default: false })
+  totpEnabled: boolean;
+
+  @Prop({ type: [String], default: [] })
+  trustedDevices: string[]; // array of device tokens
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { PresenceGateway } from './presence.gateway';
 import { Request } from 'express';
 import { UsersService } from '../users/users.service';
+import { TotpService } from './totp.service';
 
 @Controller('auth')
 export class AuthController {
@@ -13,6 +14,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly presenceGateway: PresenceGateway,
     private readonly usersService: UsersService,
+    private readonly totpService: TotpService,
   ) {}
 
   @UseGuards(ThrottlerGuard)
@@ -96,5 +98,92 @@ export class AuthController {
     } catch (err) {
       return { users: [], error: err.message };
     }
+  }
+
+  // ─── TOTP 2FA Endpoints ───────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Post('totp/setup')
+  async totpSetup(@Req() req: Request) {
+    const user = req.user as Record<string, unknown>;
+    return this.totpService.generateSetup(user.userId as string);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('totp/confirm')
+  async totpConfirm(@Req() req: Request, @Body() body: { token: string }) {
+    const user = req.user as Record<string, unknown>;
+    await this.totpService.confirmSetup(user.userId as string, body.token);
+    return { success: true };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('totp/disable')
+  async totpDisable(@Req() req: Request) {
+    const user = req.user as Record<string, unknown>;
+    await this.totpService.disableTotp(user.userId as string);
+    return { success: true };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('totp/revoke-devices')
+  async revokeDevices(@Req() req: Request) {
+    const user = req.user as Record<string, unknown>;
+    await this.totpService.revokeTrustedDevices(user.userId as string);
+    return { success: true };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('totp/global-status')
+  async getGlobal2faStatus(@Req() req: Request) {
+    const user = req.user as Record<string, unknown>;
+    if (user.role !== 'admin') return { error: 'forbidden' };
+    const enabled = await this.totpService.getGlobal2faStatus();
+    return { enabled };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('totp/global-toggle')
+  async toggleGlobal2fa(@Req() req: Request, @Body() body: { enabled: boolean }) {
+    const user = req.user as Record<string, unknown>;
+    if (user.role !== 'admin') return { error: 'forbidden' };
+    await this.totpService.setGlobal2fa(body.enabled);
+    return { success: true, enabled: body.enabled };
+  }
+
+  @Post('totp/verify')
+  async totpVerify(@Body() body: { userId: string; token: string; deviceToken?: string; trustDevice?: boolean }) {
+    return this.authService.verifyTotpStep(body.userId, body.token, body.deviceToken, body.trustDevice);
+  }
+
+  // Used during forced setup flow (admin first login) — no JWT yet
+  @Post('totp/setup-confirm')
+  async totpSetupConfirm(@Body() body: { userId: string; token: string }) {
+    await this.totpService.confirmSetup(body.userId, body.token);
+    return { success: true };
+  }
+
+  // Used during forced setup flow (admin first login) — no JWT yet
+  @Post('totp/setup-init')
+  async totpSetupInit(@Body() body: { userId: string }) {
+    return this.totpService.generateSetup(body.userId);
+  }
+
+  // Step 1: verify username exists and has TOTP enabled → returns userId
+  @Post('forgot-password/verify-username')
+  async forgotVerifyUsername(@Body() body: { username: string }) {
+    return this.authService.forgotVerifyUsername(body.username);
+  }
+
+  // Step 2: verify TOTP code → returns a reset token
+  @Post('forgot-password/verify-totp')
+  async forgotVerifyTotp(@Body() body: { userId: string; token: string }) {
+    return this.authService.forgotVerifyTotp(body.userId, body.token);
+  }
+
+  // Step 3: set new password using reset token
+  @Post('forgot-password/reset')
+  async forgotReset(@Body() body: { resetToken: string; newPassword: string }) {
+    return this.authService.forgotReset(body.resetToken, body.newPassword);
   }
 }

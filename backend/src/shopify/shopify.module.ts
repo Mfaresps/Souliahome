@@ -1,0 +1,24 @@
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ShopifyController } from './shopify.controller';
+import { ShopifyService } from './shopify.service';
+import {
+  Transaction,
+  TransactionSchema,
+} from '../transactions/schemas/transaction.schema';
+import {
+  Product,
+  ProductSchema,
+} from '../products/schemas/product.schema';
+
+@Module({
+  imports: [
+    MongooseModule.forFeature([
+      { name: Transaction.name, schema: TransactionSchema },
+      { name: Product.name, schema: ProductSchema },
+    ]),
+  ],
+  controllers: [ShopifyController],
+  providers: [ShopifyService],
+})
+export class ShopifyModule {}

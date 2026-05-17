@@ -193,6 +193,9 @@ export class Settings {
 
   @Prop({ type: [Object], default: [] })
   discountBundles: DiscountBundle[];
+
+  @Prop({ default: false })
+  global2faEnabled: boolean;
 }
 
 export const SettingsSchema = SchemaFactory.createForClass(Settings);

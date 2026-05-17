@@ -5320,6 +5320,8 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 
   <button class="lfp-btn-login" onclick="doLogin()" style="width:60%">Sign In</button>
 
+  <button type="button" onclick="openForgotPassword()" style="margin-top:12px;background:none;border:none;cursor:pointer;font-size:.8rem;color:#6b8c78;text-decoration:underline;padding:0">نسيت كلمة المرور؟</button>
+
   <!-- Mobile-only: inline quote bar at bottom -->
   <div id="mobile-quote-bar" style="display:none">
     <p id="mobile-quote-text"></p>
@@ -5853,6 +5855,74 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <div style="display:flex;gap:10px;justify-content:center">
       <button class="btn btn-primary" onclick="confirmTxSave()" style="flex:1">✓ تأكيد الحفظ</button>
       <button class="btn btn-outline" onclick="closeTxConfirmModal()" style="flex:1">✕ إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div id="forgot-password-overlay" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px)">
+  <div style="background:var(--bg,#fff);border-radius:20px;padding:36px 32px;width:100%;max-width:420px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="font-size:44px;margin-bottom:8px">🔑</div>
+    <h2 style="font-size:1.15rem;font-weight:700;color:var(--text,#1a2e22);margin:0 0 6px">استرداد كلمة المرور</h2>
+    <p id="fp-subtitle" style="color:#6b8c78;font-size:0.85rem;margin:0 0 20px;line-height:1.6">أدخل اسم المستخدم الخاص بحساب المدير</p>
+
+    <!-- Step 1: username -->
+    <div id="fp-step-1">
+      <div style="margin-bottom:14px;text-align:right">
+        <label style="display:block;font-size:.8rem;font-weight:600;color:#2d4a38;margin-bottom:6px">اسم المستخدم</label>
+        <input type="text" id="fp-username" placeholder="أدخل اسم المستخدم" autocomplete="off"
+          style="width:100%;padding:11px 14px;border:1.5px solid #dde6e0;border-radius:10px;font-size:.93rem;color:#1a2e22;background:#f8faf9;box-sizing:border-box;outline:none"
+          onkeydown="if(event.key==='Enter')fpStep1()">
+      </div>
+      <div id="fp-error-1" style="color:#dc2626;font-size:.83rem;margin-bottom:10px;display:none"></div>
+      <button onclick="fpStep1()" id="fp-btn-1"
+        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:10px">
+        التالي
+      </button>
+      <button onclick="closeForgotPassword()"
+        style="width:100%;padding:10px;background:transparent;border:1px solid #dde6e0;border-radius:12px;font-size:.9rem;color:#6b8c78;cursor:pointer">
+        إلغاء
+      </button>
+    </div>
+
+    <!-- Step 2: TOTP -->
+    <div id="fp-step-2" style="display:none">
+      <p style="font-size:.83rem;color:#6b8c78;margin:0 0 16px">افتح تطبيق <strong>Google Authenticator</strong> وأدخل الرمز المكوّن من 6 أرقام</p>
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;direction:ltr">
+        ${[0,1,2,3,4,5].map(i => `<input id="fp-digit-${i}" type="text" inputmode="numeric" maxlength="1"
+          style="width:44px;height:54px;text-align:center;font-size:1.4rem;font-weight:700;border:2px solid #dde6e0;border-radius:10px;background:#f8faf9;color:#1a2e22;outline:none"
+          oninput="fpDigitInput(this,${i})" onkeydown="fpDigitKeydown(event,${i})">`).join('')}
+      </div>
+      <div id="fp-error-2" style="color:#dc2626;font-size:.83rem;margin-bottom:10px;display:none"></div>
+      <button onclick="fpStep2()" id="fp-btn-2"
+        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:10px">
+        تحقق
+      </button>
+      <button onclick="closeForgotPassword()"
+        style="width:100%;padding:10px;background:transparent;border:1px solid #dde6e0;border-radius:12px;font-size:.9rem;color:#6b8c78;cursor:pointer">
+        إلغاء
+      </button>
+    </div>
+
+    <!-- Step 3: new password -->
+    <div id="fp-step-3" style="display:none">
+      <div style="margin-bottom:14px;text-align:right">
+        <label style="display:block;font-size:.8rem;font-weight:600;color:#2d4a38;margin-bottom:6px">كلمة المرور الجديدة</label>
+        <input type="password" id="fp-newpass" placeholder="6 أحرف على الأقل" autocomplete="new-password"
+          style="width:100%;padding:11px 14px;border:1.5px solid #dde6e0;border-radius:10px;font-size:.93rem;color:#1a2e22;background:#f8faf9;box-sizing:border-box;outline:none"
+          onkeydown="if(event.key==='Enter')fpStep3()">
+      </div>
+      <div style="margin-bottom:14px;text-align:right">
+        <label style="display:block;font-size:.8rem;font-weight:600;color:#2d4a38;margin-bottom:6px">تأكيد كلمة المرور</label>
+        <input type="password" id="fp-newpass-confirm" placeholder="أعد الكتابة للتأكيد" autocomplete="new-password"
+          style="width:100%;padding:11px 14px;border:1.5px solid #dde6e0;border-radius:10px;font-size:.93rem;color:#1a2e22;background:#f8faf9;box-sizing:border-box;outline:none"
+          onkeydown="if(event.key==='Enter')fpStep3()">
+      </div>
+      <div id="fp-error-3" style="color:#dc2626;font-size:.83rem;margin-bottom:10px;display:none"></div>
+      <button onclick="fpStep3()" id="fp-btn-3"
+        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:10px">
+        حفظ كلمة المرور
+      </button>
     </div>
   </div>
 </div>
@@ -8751,6 +8821,27 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
             </span>
             <span class="lock-switch"><input type="checkbox" id="set-adb-autoshow-enabled" onchange="toggleLockSetting('adbAutoShow', this.checked)"><span class="lock-switch-slider"></span></span>
           </label>
+
+          <!-- ─── التحقق بخطوتين (2FA) ─── -->
+          <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
+            <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px">🔐 التحقق بخطوتين (Google Authenticator)</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px">حماية إضافية عند تسجيل الدخول من جهاز جديد — تطبق على حساب المدير دائماً</div>
+            <label class="lock-toggle-row">
+              <span class="lock-toggle-info">
+                <span class="lock-toggle-title">تفعيل 2FA لجميع الموظفين</span>
+                <span class="lock-toggle-sub">عند التفعيل: كل موظف يحتاج Google Authenticator عند الدخول من جهاز جديد</span>
+              </span>
+              <span class="lock-switch"><input type="checkbox" id="set-global-2fa-enabled" onchange="saveGlobal2fa(this.checked)"><span class="lock-switch-slider"></span></span>
+            </label>
+            <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-sm btn-outline" onclick="openTotpSetupModal()" style="font-size:12px">
+                📱 إعداد Google Authenticator لحسابي
+              </button>
+              <button class="btn btn-sm btn-outline" id="btn-revoke-my-devices" onclick="revokeMyTrustedDevices()" style="font-size:12px;color:var(--red)">
+                🗑 إلغاء ثقة الأجهزة المحفوظة
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -11103,8 +11194,25 @@ async function doLogin() {
   errEl.style.display = 'none';
 
   const rememberMe = qs('#login-remember')?.checked;
+  const deviceToken = localStorage.getItem('device_token') || '';
   try {
-    const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+    const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ username, password, deviceToken }) });
+
+    if (data.requireTotp) {
+      if (data.requireTotpSetup) {
+        // Admin hasn't set up TOTP yet — force setup before proceeding
+        _totpLoginUserId = data.userId;
+        _totpLoginRemember = rememberMe;
+        localStorage.setItem('token', ''); // no token yet
+        // Store credentials temporarily so we can finish login after setup
+        _pendingTotpSetupCredentials = { username, password, rememberMe };
+        openTotpSetupModal();
+      } else {
+        _showTotpVerifyScreen(data.userId, username, password, rememberMe);
+      }
+      return;
+    }
+
     if (rememberMe) {
       localStorage.setItem('rem_user', username);
       localStorage.setItem('rem_pass', password);
@@ -11122,7 +11230,6 @@ async function doLogin() {
       _showLockedAccountBanner(msg);
       errEl.style.display = 'none';
     } else {
-      // Highlight remaining attempts count if present in the message
       const formatted = msg.replace(/تبقى (\d+) محاولة/g, 'تبقى <strong style="color:#dc2626;font-size:1.05em">$1</strong> محاولة');
       errEl.innerHTML = formatted;
       errEl.style.display = 'block';
@@ -11130,6 +11237,347 @@ async function doLogin() {
   } finally {
     if (btn) { btn.disabled = false; btn.style.opacity = ''; }
   }
+}
+
+// ─── TOTP Verify Screen (step 2 of login) ────────────────────────────────────
+let _totpLoginUserId = null;
+let _totpLoginRemember = false;
+let _pendingTotpSetupCredentials = null;
+
+function _showTotpVerifyScreen(userId, username, password, rememberMe) {
+  _totpLoginUserId = userId;
+  _totpLoginRemember = rememberMe;
+
+  let overlay = qs('#totp-verify-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'totp-verify-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px)';
+    overlay.innerHTML = `
+      <div style="background:var(--bg,#fff);border-radius:20px;padding:36px 32px;width:100%;max-width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+        <div style="font-size:48px;margin-bottom:8px">🔐</div>
+        <h2 style="font-size:1.2rem;font-weight:700;color:var(--text);margin:0 0 6px">التحقق بخطوتين</h2>
+        <p style="color:var(--muted);font-size:0.88rem;margin:0 0 20px;line-height:1.6">
+          افتح تطبيق <strong>Google Authenticator</strong> وأدخل الرمز المكوّن من 6 أرقام
+        </p>
+        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;direction:ltr">
+          ${[0,1,2,3,4,5].map(i => `<input id="totp-digit-${i}" type="text" inputmode="numeric" maxlength="1"
+            style="width:44px;height:54px;text-align:center;font-size:1.4rem;font-weight:700;border:2px solid var(--border);border-radius:10px;background:var(--bg-alt);color:var(--text);outline:none"
+            oninput="totpDigitInput(this,${i})" onkeydown="totpDigitKeydown(event,${i})">`).join('')}
+        </div>
+        <div id="totp-verify-error" style="color:#dc2626;font-size:0.85rem;margin-bottom:12px;display:none;min-height:20px"></div>
+        <label style="display:flex;align-items:center;gap:8px;justify-content:center;font-size:0.85rem;color:var(--muted);margin-bottom:16px;cursor:pointer">
+          <input type="checkbox" id="totp-trust-device" style="width:16px;height:16px;accent-color:var(--accent)">
+          تذكر هذا الجهاز (لا تسألني مجدداً)
+        </label>
+        <button onclick="submitTotpVerify()" id="totp-verify-btn"
+          style="width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),var(--accent-dark,#0ea5e9));color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer">
+          تحقق
+        </button>
+        <button onclick="qs('#totp-verify-overlay').remove();_totpLoginUserId=null"
+          style="width:100%;margin-top:10px;padding:10px;background:transparent;border:1px solid var(--border);border-radius:12px;font-size:0.9rem;color:var(--muted);cursor:pointer">
+          رجوع
+        </button>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
+  setTimeout(() => { const f = qs('#totp-digit-0'); if (f) f.focus(); }, 100);
+}
+
+function totpDigitInput(el, idx) {
+  el.value = el.value.replace(/\D/g, '').slice(-1);
+  if (el.value && idx < 5) qs(`#totp-digit-${idx+1}`)?.focus();
+  if (idx === 5 && el.value) submitTotpVerify();
+}
+
+function totpDigitKeydown(e, idx) {
+  if (e.key === 'Backspace' && !qs(`#totp-digit-${idx}`).value && idx > 0) {
+    qs(`#totp-digit-${idx-1}`)?.focus();
+  }
+  if (e.key === 'ArrowLeft' && idx > 0) qs(`#totp-digit-${idx-1}`)?.focus();
+  if (e.key === 'ArrowRight' && idx < 5) qs(`#totp-digit-${idx+1}`)?.focus();
+}
+
+async function submitTotpVerify() {
+  const token = [0,1,2,3,4,5].map(i => qs(`#totp-digit-${i}`)?.value || '').join('');
+  if (token.length < 6) return;
+  const errEl = qs('#totp-verify-error');
+  const btn = qs('#totp-verify-btn');
+  const trustDevice = qs('#totp-trust-device')?.checked;
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+  if (errEl) errEl.style.display = 'none';
+  try {
+    const data = await api('/auth/totp/verify', {
+      method: 'POST',
+      body: JSON.stringify({ userId: _totpLoginUserId, token, trustDevice })
+    });
+    if (data.deviceToken) localStorage.setItem('device_token', data.deviceToken);
+    qs('#totp-verify-overlay')?.remove();
+    if (_totpLoginRemember) {
+      localStorage.setItem('rem_user', qs('#login-user')?.value || '');
+      localStorage.setItem('rem_pass', qs('#login-pass')?.value || '');
+    }
+    localStorage.setItem('token', data.accessToken);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    currentUser = data.user;
+    showApp();
+  } catch(e) {
+    if (errEl) { errEl.textContent = e.message || 'رمز التحقق غير صحيح'; errEl.style.display = 'block'; }
+    [0,1,2,3,4,5].forEach(i => { const d = qs(`#totp-digit-${i}`); if (d) d.value = ''; });
+    qs('#totp-digit-0')?.focus();
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  }
+}
+
+// ─── TOTP Setup Modal (scan QR) ───────────────────────────────────────────────
+async function openTotpSetupModal() {
+  const isForcedSetup = !!_pendingTotpSetupCredentials;
+  const token = localStorage.getItem('token');
+  if (!token && !isForcedSetup) return;
+
+  // Check if already enabled
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const alreadyEnabled = user.totpEnabled;
+
+  let modal = qs('#totp-setup-modal');
+  if (modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'totp-setup-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px)';
+  modal.innerHTML = `
+    <div style="background:var(--bg,#fff);border-radius:20px;padding:32px 28px;width:100%;max-width:440px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto">
+      <div style="font-size:44px;margin-bottom:8px">📱</div>
+      <h2 style="font-size:1.15rem;font-weight:700;color:var(--text);margin:0 0 6px">إعداد Google Authenticator</h2>
+      <div id="totp-setup-body">
+        <p style="color:var(--muted);font-size:0.85rem;margin:0 0 16px;line-height:1.6">جارٍ تحميل رمز QR...</p>
+      </div>
+      ${!isForcedSetup ? `<button onclick="qs('#totp-setup-modal').remove()"
+        style="width:100%;margin-top:14px;padding:10px;background:transparent;border:1px solid var(--border);border-radius:12px;font-size:0.9rem;color:var(--muted);cursor:pointer">
+        إغلاق
+      </button>` : `<p style="margin-top:12px;font-size:0.8rem;color:var(--muted)">يجب إكمال الإعداد لتسجيل الدخول</p>`}
+    </div>`;
+  document.body.appendChild(modal);
+
+  try {
+    const setupEndpoint = isForcedSetup
+      ? '/auth/totp/setup-init'
+      : '/auth/totp/setup';
+    const setupBody = isForcedSetup
+      ? JSON.stringify({ userId: _totpLoginUserId })
+      : undefined;
+    const data = await api(setupEndpoint, { method: 'POST', body: setupBody });
+    const body = qs('#totp-setup-body');
+    body.innerHTML = `
+      <p style="color:var(--muted);font-size:0.85rem;margin:0 0 12px;line-height:1.6">
+        امسح هذا الرمز بتطبيق <strong>Google Authenticator</strong> أو أي تطبيق TOTP
+      </p>
+      <img src="${data.qrCode}" style="width:200px;height:200px;border-radius:12px;border:3px solid var(--border);margin-bottom:14px">
+      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:16px">أو أدخل الرمز يدوياً: <code style="background:var(--bg-alt);padding:3px 8px;border-radius:6px;font-size:0.85rem;letter-spacing:2px">${data.secret}</code></p>
+      <p style="font-size:0.88rem;color:var(--text);font-weight:600;margin-bottom:10px">أدخل الرمز من التطبيق للتأكيد:</p>
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;direction:ltr">
+        ${[0,1,2,3,4,5].map(i => `<input id="totp-setup-digit-${i}" type="text" inputmode="numeric" maxlength="1"
+          style="width:42px;height:52px;text-align:center;font-size:1.3rem;font-weight:700;border:2px solid var(--border);border-radius:10px;background:var(--bg-alt);color:var(--text);outline:none"
+          oninput="totpSetupDigitInput(this,${i})" onkeydown="totpSetupDigitKeydown(event,${i})">`).join('')}
+      </div>
+      <div id="totp-setup-error" style="color:#dc2626;font-size:0.85rem;margin-bottom:10px;display:none"></div>
+      <button onclick="confirmTotpSetup()" id="totp-setup-confirm-btn"
+        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer">
+        تأكيد وتفعيل
+      </button>
+      ${alreadyEnabled ? `<button onclick="disableTotp()" style="width:100%;margin-top:8px;padding:10px;background:transparent;border:1px solid #dc2626;border-radius:12px;font-size:0.88rem;color:#dc2626;cursor:pointer">تعطيل التحقق بخطوتين</button>` : ''}`;
+    setTimeout(() => qs('#totp-setup-digit-0')?.focus(), 100);
+  } catch(e) {
+    const alreadyActive = e.message?.includes('مفعّل بالفعل');
+    qs('#totp-setup-body').innerHTML = `
+      <p style="color:#dc2626;margin-bottom:${alreadyActive ? '14px' : '0'}">${e.message || 'حدث خطأ'}</p>
+      ${alreadyActive ? `<button onclick="disableTotp()" style="width:100%;padding:10px;background:transparent;border:1px solid #dc2626;border-radius:12px;font-size:0.88rem;color:#dc2626;cursor:pointer">تعطيل التحقق بخطوتين وإعادة الإعداد</button>` : ''}`;
+  }
+}
+
+function totpSetupDigitInput(el, idx) {
+  el.value = el.value.replace(/\D/g, '').slice(-1);
+  if (el.value && idx < 5) qs(`#totp-setup-digit-${idx+1}`)?.focus();
+  if (idx === 5 && el.value) confirmTotpSetup();
+}
+
+function totpSetupDigitKeydown(e, idx) {
+  if (e.key === 'Backspace' && !qs(`#totp-setup-digit-${idx}`)?.value && idx > 0) qs(`#totp-setup-digit-${idx-1}`)?.focus();
+}
+
+async function confirmTotpSetup() {
+  const token = [0,1,2,3,4,5].map(i => qs(`#totp-setup-digit-${i}`)?.value || '').join('');
+  if (token.length < 6) return;
+  const errEl = qs('#totp-setup-error');
+  const btn = qs('#totp-setup-confirm-btn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+  if (errEl) errEl.style.display = 'none';
+  try {
+    const confirmEndpoint = _pendingTotpSetupCredentials ? '/auth/totp/setup-confirm' : '/auth/totp/confirm';
+    const confirmBody = _pendingTotpSetupCredentials
+      ? JSON.stringify({ userId: _totpLoginUserId, token })
+      : JSON.stringify({ token });
+    await api(confirmEndpoint, { method: 'POST', body: confirmBody });
+    qs('#totp-setup-modal')?.remove();
+    toast('تم تفعيل التحقق بخطوتين بنجاح ✅');
+
+    // If setup was triggered during login flow, re-login to get the TOTP verify step
+    if (_pendingTotpSetupCredentials) {
+      const { username, password, rememberMe } = _pendingTotpSetupCredentials;
+      _pendingTotpSetupCredentials = null;
+      const loginData = await api('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+      if (loginData.requireTotp) {
+        _showTotpVerifyScreen(loginData.userId, username, password, rememberMe);
+      }
+      return;
+    }
+
+    // Normal setup from settings — update cached user
+    const u = JSON.parse(localStorage.getItem('user') || '{}');
+    u.totpEnabled = true;
+    localStorage.setItem('user', JSON.stringify(u));
+    currentUser = u;
+  } catch(e) {
+    if (errEl) { errEl.textContent = e.message || 'رمز غير صحيح'; errEl.style.display = 'block'; }
+    [0,1,2,3,4,5].forEach(i => { const d = qs(`#totp-setup-digit-${i}`); if (d) d.value = ''; });
+    qs('#totp-setup-digit-0')?.focus();
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  }
+}
+
+async function disableTotp() {
+  if (!confirm('هل تريد تعطيل التحقق بخطوتين؟')) return;
+  try {
+    await api('/auth/totp/disable', { method: 'POST' });
+    qs('#totp-setup-modal')?.remove();
+    toast('تم تعطيل التحقق بخطوتين');
+    const u = JSON.parse(localStorage.getItem('user') || '{}');
+    u.totpEnabled = false;
+    localStorage.setItem('user', JSON.stringify(u));
+    currentUser = u;
+  } catch(e) { toast(e.message || 'حدث خطأ', true); }
+}
+
+// ─── Forgot Password Flow ─────────────────────────────────────────────────────
+let _fpUserId = null;
+let _fpResetToken = null;
+
+function openForgotPassword() {
+  _fpUserId = null;
+  _fpResetToken = null;
+  const overlay = qs('#forgot-password-overlay');
+  overlay.style.display = 'flex';
+  qs('#fp-step-1').style.display = 'block';
+  qs('#fp-step-2').style.display = 'none';
+  qs('#fp-step-3').style.display = 'none';
+  qs('#fp-username').value = '';
+  qs('#fp-error-1').style.display = 'none';
+  qs('#fp-subtitle').textContent = 'أدخل اسم المستخدم الخاص بحساب المدير';
+  setTimeout(() => qs('#fp-username')?.focus(), 100);
+}
+
+function closeForgotPassword() {
+  qs('#forgot-password-overlay').style.display = 'none';
+}
+
+async function fpStep1() {
+  const username = qs('#fp-username').value.trim();
+  const errEl = qs('#fp-error-1');
+  const btn = qs('#fp-btn-1');
+  if (!username) { errEl.textContent = 'أدخل اسم المستخدم'; errEl.style.display = 'block'; return; }
+  btn.disabled = true; btn.style.opacity = '0.6';
+  errEl.style.display = 'none';
+  try {
+    const data = await api('/auth/forgot-password/verify-username', { method: 'POST', body: JSON.stringify({ username }) });
+    _fpUserId = data.userId;
+    qs('#fp-step-1').style.display = 'none';
+    qs('#fp-step-2').style.display = 'block';
+    qs('#fp-subtitle').textContent = 'أدخل رمز Google Authenticator للتحقق من هويتك';
+    [0,1,2,3,4,5].forEach(i => { const d = qs(`#fp-digit-${i}`); if (d) d.value = ''; });
+    setTimeout(() => qs('#fp-digit-0')?.focus(), 100);
+  } catch(e) {
+    errEl.textContent = e.message || 'حدث خطأ';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.style.opacity = '';
+  }
+}
+
+function fpDigitInput(el, idx) {
+  el.value = el.value.replace(/\D/g, '').slice(-1);
+  if (el.value && idx < 5) qs(`#fp-digit-${idx+1}`)?.focus();
+  if (idx === 5 && el.value) fpStep2();
+}
+
+function fpDigitKeydown(e, idx) {
+  if (e.key === 'Backspace' && !qs(`#fp-digit-${idx}`)?.value && idx > 0) qs(`#fp-digit-${idx-1}`)?.focus();
+  if (e.key === 'ArrowLeft' && idx > 0) qs(`#fp-digit-${idx-1}`)?.focus();
+  if (e.key === 'ArrowRight' && idx < 5) qs(`#fp-digit-${idx+1}`)?.focus();
+}
+
+async function fpStep2() {
+  const token = [0,1,2,3,4,5].map(i => qs(`#fp-digit-${i}`)?.value || '').join('');
+  if (token.length < 6) return;
+  const errEl = qs('#fp-error-2');
+  const btn = qs('#fp-btn-2');
+  btn.disabled = true; btn.style.opacity = '0.6';
+  errEl.style.display = 'none';
+  try {
+    const data = await api('/auth/forgot-password/verify-totp', { method: 'POST', body: JSON.stringify({ userId: _fpUserId, token }) });
+    _fpResetToken = data.resetToken;
+    qs('#fp-step-2').style.display = 'none';
+    qs('#fp-step-3').style.display = 'block';
+    qs('#fp-subtitle').textContent = 'أدخل كلمة المرور الجديدة';
+    qs('#fp-newpass').value = '';
+    qs('#fp-newpass-confirm').value = '';
+    setTimeout(() => qs('#fp-newpass')?.focus(), 100);
+  } catch(e) {
+    errEl.textContent = e.message || 'رمز التحقق غير صحيح';
+    errEl.style.display = 'block';
+    [0,1,2,3,4,5].forEach(i => { const d = qs(`#fp-digit-${i}`); if (d) d.value = ''; });
+    qs('#fp-digit-0')?.focus();
+  } finally {
+    btn.disabled = false; btn.style.opacity = '';
+  }
+}
+
+async function fpStep3() {
+  const newpass = qs('#fp-newpass').value;
+  const confirm = qs('#fp-newpass-confirm').value;
+  const errEl = qs('#fp-error-3');
+  const btn = qs('#fp-btn-3');
+  errEl.style.display = 'none';
+  if (newpass.length < 6) { errEl.textContent = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'; errEl.style.display = 'block'; return; }
+  if (newpass !== confirm) { errEl.textContent = 'كلمتا المرور غير متطابقتين'; errEl.style.display = 'block'; return; }
+  btn.disabled = true; btn.style.opacity = '0.6';
+  try {
+    await api('/auth/forgot-password/reset', { method: 'POST', body: JSON.stringify({ resetToken: _fpResetToken, newPassword: newpass }) });
+    closeForgotPassword();
+    toast('تم تغيير كلمة المرور بنجاح ✅ — سجّل دخولك الآن');
+  } catch(e) {
+    errEl.textContent = e.message || 'حدث خطأ';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.style.opacity = '';
+  }
+}
+
+async function revokeMyTrustedDevices() {
+  if (!confirm('سيتم إلغاء ثقة جميع الأجهزة المحفوظة — ستحتاج إدخال رمز التحقق في كل جهاز مجدداً')) return;
+  try {
+    await api('/auth/totp/revoke-devices', { method: 'POST' });
+    localStorage.removeItem('device_token');
+    toast('تم إلغاء ثقة الأجهزة بنجاح');
+  } catch(e) { toast(e.message || 'حدث خطأ', true); }
+}
+
+async function saveGlobal2fa(enabled) {
+  try {
+    await api('/auth/totp/global-toggle', { method: 'POST', body: JSON.stringify({ enabled }) });
+    if (settings) settings.global2faEnabled = enabled;
+    toast(enabled ? 'تم تفعيل 2FA لجميع الموظفين' : 'تم تعطيل 2FA للموظفين');
+  } catch(e) { toast(e.message || 'حدث خطأ', true); }
 }
 
 function _showLockedAccountBanner(msg) {
@@ -29495,6 +29943,7 @@ function _initLockTogglesUI() {
   const otp = qs('#set-otp-enabled'); if (otp) otp.checked = settings?.otpEnabled !== false;
   const hvd = qs('#set-high-value-discount-limit'); if (hvd) hvd.value = Number(settings?.highValueDiscountLimit ?? 200);
   const potp = qs('#set-purchase-otp-enabled'); if (potp) potp.checked = !!(settings?.purchaseOtpEnabled);
+  const g2fa = qs('#set-global-2fa-enabled'); if (g2fa) g2fa.checked = !!(settings?.global2faEnabled);
   const adb = qs('#set-adb-autoshow-enabled'); if (adb) { try { adb.checked = localStorage.getItem(LOCK_KEYS.adbAutoShow) !== '0'; } catch(_) { adb.checked = true; } }
   // Show/hide OTP controls based on staff discount enabled
   _updateOtpControlsVisibility();
