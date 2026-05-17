@@ -24,7 +24,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
     if (user.isActive === false) {
-      throw new UnauthorizedException('هذا الحساب معطل، تواصل مع المدير');
+      throw new UnauthorizedException(
+        `🔒 تم تعطيل هذا الحساب — ${user.lockReason || 'تواصل مع المدير لإعادة التفعيل'}`,
+      );
     }
     return {
       userId: payload.sub,

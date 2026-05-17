@@ -28,6 +28,24 @@ export class Product {
 
   @Prop({ default: '' })
   imageUrl: string;
+
+  /** Edit request submitted by employee, pending manager approval */
+  @Prop({ type: Object, default: null })
+  editRequest: {
+    requestedBy: string;
+    requestedById?: string;
+    requestedByUsername?: string;
+    requestedAt: string;
+    status: string; // 'معلق' | 'معتمد' | 'مرفوض'
+    changes: {
+      field: string;
+      oldValue: unknown;
+      newValue: unknown;
+    }[];
+    reviewedBy?: string;
+    reviewedAt?: string;
+    rejectedReason?: string;
+  } | null;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

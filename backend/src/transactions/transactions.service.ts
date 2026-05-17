@@ -88,20 +88,14 @@ export class TransactionsService {
   private readonly _LOCK_TTL_MS = 5 * 60 * 1000; // 5 minutes auto-expire
 
   acquireEditLock(txId: string, user: string): void {
-    const existing = this._editLocks.get(txId);
-    if (existing && user !== existing.user && Date.now() - existing.since < this._LOCK_TTL_MS) {
-      throw new BadRequestException(
-        `هذه الحركة قيد التعديل حالياً بواسطة "${existing.user}" — يُرجى الانتظار حتى ينتهي من التعديل`
-      );
-    }
     this._editLocks.set(txId, { user, since: Date.now() });
+    const initials = user.trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('');
+    this.emit('tx:editing', { txId, user, initials });
   }
 
-  releaseEditLock(txId: string, user: string): void {
-    const existing = this._editLocks.get(txId);
-    if (existing && existing.user === user) {
-      this._editLocks.delete(txId);
-    }
+  releaseEditLock(txId: string): void {
+    this._editLocks.delete(txId);
+    this.emit('tx:editing-done', { txId });
   }
 
   getEditLockStatus(txId: string): { locked: boolean; user?: string } {
@@ -505,6 +499,7 @@ export class TransactionsService {
     id: string,
     dto: UpdateTransactionDto,
     editedBy = '',
+    approvedBy = '',
   ): Promise<TransactionDocument> {
     const existing = await this.transactionModel.findById(id).exec();
     if (!existing) {
@@ -552,6 +547,7 @@ export class TransactionsService {
     const historyEntry = {
       editedAt: new Date().toISOString(),
       editedBy,
+      approvedBy,
       action: 'تعديل شامل',
       before: {
         client: existing.client,

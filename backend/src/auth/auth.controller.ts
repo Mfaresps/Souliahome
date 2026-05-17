@@ -17,8 +17,9 @@ export class AuthController {
 
   @UseGuards(ThrottlerGuard)
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto, @Req() req: Request) {
+    const ip = (req.headers as Record<string, string>)['x-forwarded-for'] || (req as any).ip || '';
+    return this.authService.login(loginDto, ip);
   }
 
   @UseGuards(JwtAuthGuard)

@@ -34,6 +34,19 @@ export class User {
 
   @Prop({ type: Date })
   lastSeen: Date;
+
+  // Security lockout fields
+  @Prop({ default: 0 })
+  loginAttempts: number;
+
+  @Prop({ type: Date, default: null })
+  lockedAt: Date;
+
+  @Prop({ default: '' })
+  lockReason: string;
+
+  @Prop({ default: '' })
+  lockedBy: string; // 'system' or admin userId
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

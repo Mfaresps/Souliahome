@@ -232,12 +232,8 @@ export class TransactionsController {
   }
 
   @Post(':id/unlock')
-  async releaseLock(
-    @Param('id') id: string,
-    @Req() req: { user: { name: string; username: string } },
-  ) {
-    const user = req.user?.name || req.user?.username || 'مستخدم';
-    this.transactionsService.releaseEditLock(id, user);
+  async releaseLock(@Param('id') id: string) {
+    this.transactionsService.releaseEditLock(id);
     return { ok: true };
   }
 
@@ -343,14 +339,16 @@ export class TransactionsController {
     @Param('id') id: string,
     @Body() dto: UpdateTransactionDto,
     @Req() req: { user: { name: string; username: string } },
+    @Query('editedBy') editedByOverride?: string,
+    @Query('approvedBy') approvedByOverride?: string,
   ) {
-    const editedBy = req.user.name || req.user.username || '';
-    // Acquire lock — throws if another user already holds it
+    const approvedBy = approvedByOverride || '';
+    const editedBy = editedByOverride || req.user.name || req.user.username || '';
     this.transactionsService.acquireEditLock(id, editedBy);
     try {
-      return await this.transactionsService.update(id, dto, editedBy);
+      return await this.transactionsService.update(id, dto, editedBy, approvedBy);
     } finally {
-      this.transactionsService.releaseEditLock(id, editedBy);
+      this.transactionsService.releaseEditLock(id);
     }
   }
 

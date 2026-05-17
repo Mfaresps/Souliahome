@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
 import { Transaction, TransactionDocument } from '../transactions/schemas/transaction.schema';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 import { PresenceGateway } from '../auth/presence.gateway';
+import { MentionsService } from '../mentions/mentions.service';
 
 @Injectable()
 export class ProductsService {
@@ -14,6 +15,7 @@ export class ProductsService {
     @InjectModel(Transaction.name)
     private readonly transactionModel: Model<TransactionDocument>,
     private readonly presence: PresenceGateway,
+    private readonly mentionsService: MentionsService,
   ) {}
 
   private emit(event: string, payload: unknown): void {
@@ -273,6 +275,135 @@ export class ProductsService {
 
     this.emit('product:refs-synced', { txUpdated, itemsPatched });
     return { txUpdated, itemsPatched };
+  }
+
+  async requestProductEdit(
+    id: string,
+    dto: {
+      requestedBy: string;
+      requestedById?: string;
+      requestedByUsername?: string;
+      changes: Record<string, unknown>;
+    },
+  ): Promise<ProductDocument> {
+    const product = await this.productModel.findById(id).exec();
+    if (!product) throw new NotFoundException('الصنف غير موجود');
+    if (product.editRequest && product.editRequest.status === 'معلق') {
+      throw new BadRequestException('يوجد طلب تعديل معلق بالفعل لهذا الصنف');
+    }
+
+    const FIELD_LABELS: Record<string, string> = {
+      sellPrice: 'سعر البيع',
+      buyPrice: 'سعر الشراء',
+      minStock: 'الحد الأدنى',
+      openingBalance: 'الرصيد الافتتاحي',
+      supplier: 'المورد',
+      name: 'الاسم',
+      code: 'الكود',
+      imageUrl: 'رابط الصورة',
+    };
+
+    const changes = Object.entries(dto.changes)
+      .filter(([field]) => FIELD_LABELS[field] !== undefined)
+      .map(([field, newValue]) => ({
+        field,
+        label: FIELD_LABELS[field] || field,
+        oldValue: (product as unknown as Record<string, unknown>)[field],
+        newValue,
+      }));
+
+    if (!changes.length) throw new BadRequestException('لا توجد تغييرات مطلوبة');
+
+    product.editRequest = {
+      requestedBy: dto.requestedBy,
+      requestedById: dto.requestedById,
+      requestedByUsername: dto.requestedByUsername,
+      requestedAt: new Date().toISOString(),
+      status: 'معلق',
+      changes,
+    } as typeof product.editRequest;
+    product.markModified('editRequest');
+    await product.save();
+
+    this.emit('product:changed', { action: 'edit-requested', id });
+    return product;
+  }
+
+  async approveProductEdit(id: string, reviewedBy: string): Promise<ProductDocument> {
+    const product = await this.productModel.findById(id).exec();
+    if (!product) throw new NotFoundException('الصنف غير موجود');
+    const req = product.editRequest;
+    if (!req || req.status !== 'معلق') throw new BadRequestException('لا يوجد طلب تعديل معلق');
+
+    const patch: Record<string, unknown> = {};
+    for (const change of req.changes as Array<{ field: string; newValue: unknown }>) {
+      patch[change.field] = change.newValue;
+    }
+    if (patch.openingBalance !== undefined) {
+      patch.openingBalance = Math.max(0, Math.floor(Number(patch.openingBalance)));
+    }
+
+    req.status = 'معتمد';
+    req.reviewedBy = reviewedBy;
+    req.reviewedAt = new Date().toISOString();
+    product.markModified('editRequest');
+
+    Object.assign(product, patch);
+    for (const key of Object.keys(patch)) product.markModified(key);
+    await product.save();
+
+    if (req.requestedById || req.requestedByUsername) {
+      await this.mentionsService.create({
+        targetUserId: req.requestedById || '',
+        targetUsername: req.requestedByUsername,
+        targetName: req.requestedBy,
+        fromUserId: 'system',
+        fromName: reviewedBy,
+        txId: String(product._id),
+        txRef: product.name,
+        commentId: 0,
+        commentText: `تمت الموافقة على طلب تعديل الصنف "${product.name}"`,
+        read: false,
+      });
+      this.emit('mentions:changed', { targetUserId: req.requestedById });
+    }
+
+    this.emit('product:changed', { action: 'edit-approved', id });
+    this.emit('inventory:changed', { reason: 'product:edit-approved', code: product.code });
+    return product;
+  }
+
+  async rejectProductEdit(id: string, reviewedBy: string, rejectedReason?: string): Promise<ProductDocument> {
+    const product = await this.productModel.findById(id).exec();
+    if (!product) throw new NotFoundException('الصنف غير موجود');
+    const req = product.editRequest;
+    if (!req || req.status !== 'معلق') throw new BadRequestException('لا يوجد طلب تعديل معلق');
+
+    req.status = 'مرفوض';
+    req.reviewedBy = reviewedBy;
+    req.reviewedAt = new Date().toISOString();
+    if (rejectedReason) req.rejectedReason = rejectedReason;
+    product.markModified('editRequest');
+    await product.save();
+
+    if (req.requestedById || req.requestedByUsername) {
+      await this.mentionsService.create({
+        targetUserId: req.requestedById || '',
+        targetUsername: req.requestedByUsername,
+        targetName: req.requestedBy,
+        fromUserId: 'system',
+        fromName: reviewedBy,
+        txId: String(product._id),
+        txRef: product.name,
+        commentId: 0,
+        commentText: `تم رفض طلب تعديل الصنف "${product.name}"${rejectedReason ? ` — السبب: ${rejectedReason}` : ''}`,
+        read: false,
+      });
+      this.emit('mentions:changed', { targetUserId: req.requestedById });
+    }
+
+    this.emit('product:changed', { action: 'edit-rejected', id });
+    return product;
   }
 
   async importProducts(

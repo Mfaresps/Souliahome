@@ -159,3 +159,35 @@ export class BulkDeleteProductDto {
   @IsArray()
   readonly ids: string[];
 }
+
+export class RequestProductEditDto {
+  @IsString()
+  @IsNotEmpty()
+  readonly requestedBy: string;
+
+  @IsString()
+  @IsOptional()
+  readonly requestedById?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly requestedByUsername?: string;
+
+  @IsOptional()
+  readonly changes?: {
+    sellPrice?: number;
+    buyPrice?: number;
+    minStock?: number;
+    openingBalance?: number;
+    supplier?: string;
+    name?: string;
+    code?: string;
+    imageUrl?: string;
+  };
+}
+
+export class ReviewProductEditDto {
+  @IsString()
+  @IsOptional()
+  readonly rejectedReason?: string;
+}

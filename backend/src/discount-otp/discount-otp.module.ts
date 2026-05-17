@@ -7,6 +7,7 @@ import { SettingsModule } from '../settings/settings.module';
 import { MentionsModule } from '../mentions/mentions.module';
 import { UsersModule } from '../users/users.module';
 import { AuthModule } from '../auth/auth.module';
+import { SecurityAuditModule } from '../security-audit/security-audit.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AuthModule } from '../auth/auth.module';
     MentionsModule,
     UsersModule,
     AuthModule,
+    SecurityAuditModule,
   ],
   controllers: [DiscountOtpController],
   providers: [DiscountOtpService],

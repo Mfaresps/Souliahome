@@ -30,6 +30,9 @@ export class DiscountOtp {
   @Prop({ type: [String], default: [] })
   importItemNames: string[];
 
+  @Prop({ type: [String], default: [] })
+  deleteProductNames: string[];
+
   // edit-tx OTP fields
   @Prop({ default: '' })
   editTxId: string;

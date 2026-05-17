@@ -243,8 +243,20 @@ export class DiscountOtpController {
 
   @Roles('admin')
   @Get()
-  async list(@Query('status') status?: string) {
-    return this.otpService.list({ status });
+  async list(
+    @Query('status') status?: string,
+    @Query('kind') kind?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('employee') employee?: string,
+  ) {
+    return this.otpService.list({ status, kind, dateFrom, dateTo, employee });
+  }
+
+  @Roles('admin')
+  @Get('stats')
+  async stats() {
+    return this.otpService.stats();
   }
 
   @Get('threshold')

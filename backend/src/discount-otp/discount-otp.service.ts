@@ -5,6 +5,9 @@ import { DiscountOtp, DiscountOtpDocument } from './schemas/discount-otp.schema'
 import { SettingsService } from '../settings/settings.service';
 import { MentionsService } from '../mentions/mentions.service';
 import { UsersService } from '../users/users.service';
+import { SecurityAuditService } from '../security-audit/security-audit.service';
+
+const MAX_OTP_ATTEMPTS = 5;
 
 interface RequestArgs {
   discountAmount: number;
@@ -77,6 +80,7 @@ export class DiscountOtpService {
     private readonly settingsService: SettingsService,
     private readonly mentionsService: MentionsService,
     private readonly usersService: UsersService,
+    private readonly auditService: SecurityAuditService,
   ) {}
 
   private generateOtp(): string {
@@ -199,7 +203,42 @@ export class DiscountOtpService {
     if (String(otp).trim() !== String(doc.otp)) {
       doc.attempts = (doc.attempts || 0) + 1;
       await doc.save();
-      return { valid: false, message: 'الكود غير صحيح' };
+
+      // Lock the requester's account after too many wrong OTP entries
+      if (doc.attempts >= MAX_OTP_ATTEMPTS && doc.requestedById) {
+        const requester = await this.usersService.findById(doc.requestedById).catch(() => null);
+        if (requester && requester.isActive !== false) {
+          const lockReason = `تم تعطيل الحساب بعد ${MAX_OTP_ATTEMPTS} محاولات إدخال كود OTP خاطئة`;
+          await this.usersService.lockAccount(doc.requestedById, lockReason, 'system');
+          await this.auditService.log({
+            userId: doc.requestedById,
+            username: doc.requestedByUsername || requester.username,
+            violationType: 'otp_violation',
+            action: lockReason,
+            detail: `نوع الكود: ${doc.kind}`,
+          });
+          // Notify admins
+          const allUsers = await this.usersService.findAll();
+          const admins = allUsers.filter(u => u.role === 'admin');
+          if (admins.length) {
+            await this.mentionsService.createMany(
+              admins.map(a => ({
+                targetUserId: a._id.toString(),
+                targetUsername: a.username,
+                targetName: a.name,
+                fromUserId: 'system',
+                fromName: 'نظام الأمان',
+                commentText: `🚨 تم تعطيل حساب "${requester.name || requester.username}" بعد ${MAX_OTP_ATTEMPTS} محاولات إدخال كود OTP خاطئة (نوع: ${doc.kind})`,
+                read: false,
+              })),
+            );
+          }
+          return { valid: false, message: `🔒 تم تعطيل حسابك بعد ${MAX_OTP_ATTEMPTS} محاولات خاطئة — تواصل مع المدير` };
+        }
+      }
+
+      const remaining = MAX_OTP_ATTEMPTS - doc.attempts;
+      return { valid: false, message: remaining > 0 ? `الكود غير صحيح — تبقى ${remaining} محاولة` : 'الكود غير صحيح' };
     }
 
     doc.status = 'used';
@@ -393,6 +432,10 @@ export class DiscountOtpService {
       ? `حذف ${args.count} صنف (جماعي)`
       : `حذف صنف: ${args.productName}${args.productCode ? ' [' + args.productCode + ']' : ''}`;
 
+    const deleteProductNames = args.isBulk
+      ? args.productName.split('،\n').map(s => s.trim()).filter(Boolean)
+      : args.productName ? [args.productName] : [];
+
     const doc = await this.otpModel.create({
       otp,
       discountAmount: 0,
@@ -408,6 +451,7 @@ export class DiscountOtpService {
       status: 'unused',
       attempts: 0,
       kind: 'delete-product',
+      deleteProductNames,
     });
 
     try {
@@ -718,13 +762,12 @@ export class DiscountOtpService {
     return doc;
   }
 
-  async approveEditTx(otpId: string, reviewedBy: string): Promise<{ payload: Record<string, any>; txId: string }> {
+  async approveEditTx(otpId: string, reviewedBy: string): Promise<{ payload: Record<string, any>; txId: string; requestedByName: string; reviewedBy: string }> {
     const doc = await this.otpModel.findById(otpId).exec();
     if (!doc) throw new BadRequestException('طلب التعديل غير موجود');
     if (doc.kind !== 'edit-tx') throw new BadRequestException('نوع الطلب غير صحيح');
     if (doc.editStatus === 'approved') throw new BadRequestException('تمت الموافقة مسبقاً');
     if (doc.editStatus === 'rejected') throw new BadRequestException('تم الرفض مسبقاً');
-    // Mark OTP as used and approved
     doc.status = 'used';
     doc.usedAt = new Date().toISOString();
     doc.editStatus = 'approved';
@@ -733,7 +776,30 @@ export class DiscountOtpService {
     const payload = doc.editPayload || {};
     const txId = doc.editTxId || '';
     await doc.save();
-    return { payload, txId };
+    // Notify requesting employee
+    try {
+      if (doc.requestedById) {
+        const txRef = doc.txRef || doc.editTxId || '';
+        const typeLabel = doc.editTxType === 'مشتريات' ? 'مشتريات' : 'مبيعات';
+        const text =
+          `✅ تمت الموافقة على طلب تعديل حركة ${typeLabel}` +
+          (txRef ? ` (#${txRef})` : '') +
+          `\nتمت المراجعة بواسطة: ${reviewedBy || 'المدير'}` +
+          `\nتم تطبيق التعديل على الحركة بنجاح.`;
+        await this.mentionsService.createMany([{
+          targetUserId: doc.requestedById,
+          targetUsername: doc.requestedByUsername || '',
+          targetName: doc.requestedByName || '',
+          fromUserId: 'system',
+          fromName: reviewedBy || 'المدير',
+          txId: txId || String(doc._id),
+          txRef: txRef,
+          commentId: 0,
+          commentText: text,
+        }]);
+      }
+    } catch { /* notification failure must not break approval */ }
+    return { payload, txId, requestedByName: doc.requestedByName || doc.requestedByUsername || '', reviewedBy };
   }
 
   async rejectEditTx(otpId: string, reviewedBy: string): Promise<void> {
@@ -745,16 +811,74 @@ export class DiscountOtpService {
     doc.editReviewedBy = reviewedBy;
     doc.editReviewedAt = new Date().toISOString();
     await doc.save();
+    // Notify requesting employee
+    try {
+      if (doc.requestedById) {
+        const txRef = doc.txRef || doc.editTxId || '';
+        const typeLabel = doc.editTxType === 'مشتريات' ? 'مشتريات' : 'مبيعات';
+        const text =
+          `❌ تم رفض طلب تعديل حركة ${typeLabel}` +
+          (txRef ? ` (#${txRef})` : '') +
+          `\nتمت المراجعة بواسطة: ${reviewedBy || 'المدير'}` +
+          `\nيرجى التواصل مع المدير للمزيد من التفاصيل.`;
+        await this.mentionsService.createMany([{
+          targetUserId: doc.requestedById,
+          targetUsername: doc.requestedByUsername || '',
+          targetName: doc.requestedByName || '',
+          fromUserId: 'system',
+          fromName: reviewedBy || 'المدير',
+          txId: String(doc._id),
+          txRef: txRef,
+          commentId: 0,
+          commentText: text,
+        }]);
+      }
+    } catch { /* notification failure must not break rejection */ }
   }
 
   async getEditTxOtp(otpId: string): Promise<DiscountOtpDocument | null> {
     return this.otpModel.findById(otpId).exec();
   }
 
-  async list(filter?: { status?: string }): Promise<DiscountOtpDocument[]> {
+  async list(filter?: {
+    status?: string;
+    kind?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    employee?: string;
+  }): Promise<DiscountOtpDocument[]> {
     const q: Record<string, unknown> = {};
     if (filter?.status) q.status = filter.status;
+    if (filter?.kind) q.kind = filter.kind;
+    if (filter?.dateFrom || filter?.dateTo) {
+      const range: Record<string, string> = {};
+      if (filter.dateFrom) range['$gte'] = filter.dateFrom;
+      if (filter.dateTo) range['$lte'] = filter.dateTo + 'T23:59:59.999Z';
+      q.createdAt = range;
+    }
+    if (filter?.employee) {
+      const regex = { $regex: filter.employee, $options: 'i' };
+      q['$or'] = [{ requestedByName: regex }, { requestedByUsername: regex }];
+    }
     return this.otpModel.find(q).sort({ createdAt: -1 }).limit(500).exec();
+  }
+
+  async stats(): Promise<Record<string, number>> {
+    const all = await this.otpModel.find({}).select('status attempts kind').lean().exec();
+    const result: Record<string, number> = {
+      total: all.length,
+      used: 0,
+      unused: 0,
+      expired: 0,
+      failedAttempts: 0,
+    };
+    for (const r of all) {
+      if (r.status === 'used') result.used++;
+      else if (r.status === 'expired') result.expired++;
+      else result.unused++;
+      result.failedAttempts += r.attempts || 0;
+    }
+    return result;
   }
 
   async getImportItemNames(otpId: string): Promise<{ names: string[] }> {

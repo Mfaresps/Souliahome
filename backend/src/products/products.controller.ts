@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { ProductAnalyticsService } from './product-analytics.service';
@@ -16,8 +17,12 @@ import {
   ImportProductsDto,
   BulkUpdateProductDto,
   BulkDeleteProductDto,
+  RequestProductEditDto,
+  ReviewProductEditDto,
 } from './dto/product.dto';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
+import { RolesGuard } from '../core/guards/roles.guard';
+import { Roles } from '../core/decorators/roles.decorator';
 
 @UseGuards(JwtAuthGuard)
 @Controller('products')
@@ -80,6 +85,32 @@ export class ProductsController {
   async syncProductRefs() {
     const result = await this.productsService.syncProductRefs();
     return { message: `تم تحديث ${result.txUpdated} حركة و ${result.itemsPatched} صنف`, ...result };
+  }
+
+  @Post(':id/request-edit')
+  async requestEdit(@Param('id') id: string, @Body() dto: RequestProductEditDto) {
+    return this.productsService.requestProductEdit(id, {
+      requestedBy: dto.requestedBy,
+      requestedById: dto.requestedById,
+      requestedByUsername: dto.requestedByUsername,
+      changes: dto.changes || {},
+    });
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Post(':id/approve-edit')
+  async approveEdit(@Param('id') id: string, @Request() req: { user: { name?: string; username?: string } }) {
+    const reviewedBy = req.user?.name || req.user?.username || 'المدير';
+    return this.productsService.approveProductEdit(id, reviewedBy);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Post(':id/reject-edit')
+  async rejectEdit(@Param('id') id: string, @Body() dto: ReviewProductEditDto, @Request() req: { user: { name?: string; username?: string } }) {
+    const reviewedBy = req.user?.name || req.user?.username || 'المدير';
+    return this.productsService.rejectProductEdit(id, reviewedBy, dto.rejectedReason);
   }
 
   @Put(':id')

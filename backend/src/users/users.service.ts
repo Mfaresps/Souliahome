@@ -86,6 +86,51 @@ export class UsersService {
     await this.userModel.findByIdAndUpdate(id, { lastSeen: new Date() }).exec();
   }
 
+  async incrementLoginAttempts(id: string): Promise<number> {
+    const user = await this.userModel
+      .findByIdAndUpdate(id, { $inc: { loginAttempts: 1 } }, { new: true })
+      .exec();
+    return user?.loginAttempts ?? 0;
+  }
+
+  async resetLoginAttempts(id: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(id, { loginAttempts: 0 }).exec();
+  }
+
+  async lockAccount(id: string, reason: string, lockedBy = 'system'): Promise<UserDocument> {
+    const user = await this.userModel
+      .findByIdAndUpdate(
+        id,
+        { isActive: false, lockedAt: new Date(), lockReason: reason, lockedBy },
+        { new: true },
+      )
+      .select('-password')
+      .exec();
+    if (!user) throw new NotFoundException('المستخدم غير موجود');
+    return user;
+  }
+
+  async unlockAccount(id: string, adminId: string): Promise<UserDocument> {
+    const user = await this.userModel
+      .findByIdAndUpdate(
+        id,
+        { isActive: true, loginAttempts: 0, lockedAt: null, lockReason: '', lockedBy: adminId },
+        { new: true },
+      )
+      .select('-password')
+      .exec();
+    if (!user) throw new NotFoundException('المستخدم غير موجود');
+    return user;
+  }
+
+  async findLockedUsers(): Promise<UserDocument[]> {
+    return this.userModel
+      .find({ isActive: false, lockedAt: { $ne: null } })
+      .select('-password')
+      .sort({ lockedAt: -1 })
+      .exec();
+  }
+
   async countUsers(): Promise<number> {
     return this.userModel.countDocuments().exec();
   }

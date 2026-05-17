@@ -1029,7 +1029,7 @@ body.dark-mode #header button{color:#7faa8e}
 .notif-btn{position:relative;background:none;border:none;cursor:pointer;font-size:1.2rem;padding:4px}
 .notif-badge{position:absolute;top:-2px;right:-4px;min-width:16px;height:16px;background:var(--red);color:#fff;font-size:.62rem;font-weight:700;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;line-height:1;pointer-events:none}
 .notif-badge:empty{display:none}
-.notif-panel{position:absolute;top:calc(100% + 10px);left:0;width:360px;max-height:420px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);z-index:300;display:none;overflow:hidden;color:var(--text)}
+.notif-panel{position:absolute;top:calc(100% + 10px);left:0;width:360px;max-height:480px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);z-index:300;display:none;flex-direction:column;overflow:hidden;color:var(--text)}
 @media(max-width:760px){
   .notif-panel{
     position:fixed;
@@ -1040,18 +1040,18 @@ body.dark-mode #header button{color:#7faa8e}
     border-radius:12px;
     transform:none;
   }
-  .notif-list{max-height:calc(70vh - 80px)}
+  .notif-list{max-height:calc(70vh - 130px)}
   .notif-item{padding:7px 10px;gap:7px}
   .notif-item .notif-icon{width:26px;height:26px;font-size:.95rem}
   .notif-item .notif-title{font-size:.78rem}
   .notif-item .notif-desc{font-size:.68rem}
 }
-.notif-panel.show{display:block;animation:notifIn .2s ease}
+.notif-panel.show{display:flex;animation:notifIn .2s ease}
 @keyframes notifIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.notif-header{padding:0;font-weight:700;font-size:.85rem;border-bottom:1px solid var(--border);display:flex;flex-direction:column}
+.notif-header{padding:0;font-weight:700;font-size:.85rem;border-bottom:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
 .notif-header .notif-clear{font-size:.68rem;font-weight:500;color:var(--muted);cursor:pointer;transition:color .15s}
 .notif-header .notif-clear:hover{color:var(--red)}
-.notif-list{max-height:310px;overflow-y:auto;overscroll-behavior:contain}
+.notif-list{flex:1;overflow-y:auto;overscroll-behavior:contain;min-height:0}
 .notif-item{display:flex;align-items:flex-start;gap:8px;padding:8px 12px;cursor:pointer;transition:background .12s;border-bottom:1px solid var(--border)}
 .notif-item:last-child{border-bottom:none}
 .notif-item:hover{background:var(--primary-pale)}
@@ -1065,6 +1065,91 @@ body.dark-mode #header button{color:#7faa8e}
 .notif-item.info .notif-icon{background:rgba(21,101,192,.1);color:var(--blue)}
 .notif-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:.85rem}
 body.dark-mode .notif-panel{background:rgba(22,29,24,.96);box-shadow:0 12px 40px rgba(0,0,0,.4)}
+/* ── Notification Center button inside panel ─────────────── */
+.notif-footer{padding:8px 12px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.notif-center-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--accent);font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s,box-shadow .15s}
+.notif-center-btn:hover{background:var(--primary-pale);box-shadow:var(--shadow-sm)}
+body.dark-mode .notif-footer{background:rgba(22,29,24,.98)}
+body.dark-mode .notif-center-btn{background:rgba(45,122,79,.08);border-color:rgba(45,122,79,.3)}
+/* ── Notification Center Modal ───────────────────────────── */
+.nc-overlay{position:fixed;inset:0;background:rgba(15,23,42,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .25s ease}
+.nc-overlay.active{opacity:1;pointer-events:auto}
+.nc-modal{background:var(--bg);border-radius:18px;width:860px;max-width:100%;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(15,23,42,.25);animation:ncSlideIn .3s cubic-bezier(.16,1,.3,1);overflow:hidden}
+@keyframes ncSlideIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.nc-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.nc-head-title{font-size:1.05rem;font-weight:800;color:var(--text);letter-spacing:-.02em}
+.nc-head-subtitle{font-size:.75rem;color:var(--muted);margin-top:1px}
+.nc-close{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .15s}
+.nc-close:hover{background:var(--surface2);color:var(--text)}
+.nc-body{display:flex;flex:1;min-height:0;overflow:hidden}
+.nc-sidebar{width:200px;flex-shrink:0;border-inline-end:1px solid var(--border);overflow-y:auto;overscroll-behavior:contain;background:var(--surface);padding:8px;min-height:0}
+.nc-main{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;background:var(--bg)}
+/* OTP copy button */
+.otp-copy-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;border:1px solid currentColor;opacity:.55;cursor:pointer;background:none;vertical-align:middle;margin-inline-start:6px;transition:opacity .15s,background .15s;flex-shrink:0}
+.otp-copy-btn:hover{opacity:1;background:rgba(0,0,0,.06)}
+.otp-copy-btn.copied{opacity:1;color:var(--green) !important}
+/* NC mention card */
+.nc-mention-card{padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;border-radius:0}
+.nc-mention-card:first-child{border-radius:10px 10px 0 0}
+.nc-mention-card:last-child{border-bottom:none;border-radius:0 0 10px 10px}
+.nc-mention-card:hover{background:var(--surface)}
+.nc-otp-box{border-radius:9px;padding:7px 12px;margin:6px 0;text-align:center}
+.nc-otp-code{font-family:monospace;font-size:1.3rem;font-weight:800;letter-spacing:.4em;direction:ltr;display:flex;align-items:center;justify-content:center;gap:4px}
+.nc-info-grid{background:var(--surface);border-radius:8px;padding:7px 10px;display:flex;flex-direction:column;gap:3px;margin-top:4px}
+.nc-info-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:.73rem;padding:2px 0;border-bottom:1px solid var(--border)}
+.nc-info-row:last-child{border-bottom:none}
+.nc-info-row .nc-lbl{color:var(--muted);white-space:nowrap;flex-shrink:0}
+.nc-info-row .nc-val{font-weight:700;color:var(--text);text-align:start;word-break:break-word}
+.nc-filter-group{padding:8px 8px 2px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.nc-filter-btn{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border:none;background:none;font-family:inherit;font-size:.79rem;font-weight:600;color:var(--text);cursor:pointer;border-radius:8px;margin:1px 0;transition:background .12s,color .12s;text-align:right}
+.nc-filter-btn:hover{background:var(--surface2)}
+.nc-filter-btn.active{background:var(--primary-pale);color:var(--accent)}
+.nc-filter-btn .nc-f-count{margin-inline-start:auto;background:var(--surface2);color:var(--muted);border-radius:10px;font-size:.64rem;padding:1px 7px;font-weight:700}
+.nc-filter-btn.active .nc-f-count{background:var(--accent);color:#fff}
+.nc-list{padding:6px}
+.nc-time-label{padding:8px 10px 4px;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);opacity:.7}
+.nc-item{display:flex;align-items:flex-start;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;transition:background .12s,box-shadow .12s;margin-bottom:1px;border:1px solid transparent}
+.nc-item:hover{background:var(--surface);border-color:var(--border)}
+.nc-item.selected{background:var(--primary-pale);border-color:var(--accent)}
+.nc-item-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;background:var(--surface2)}
+.nc-item.urgent .nc-item-icon{background:rgba(220,38,38,.1);color:var(--red)}
+.nc-item.warning .nc-item-icon{background:rgba(230,81,0,.1);color:var(--orange)}
+.nc-item.info .nc-item-icon{background:rgba(21,101,192,.1);color:var(--blue)}
+.nc-item-body{flex:1;min-width:0}
+.nc-item-title{font-size:.79rem;font-weight:700;margin-bottom:2px;color:var(--text)}
+.nc-item-desc{font-size:.71rem;color:var(--muted);line-height:1.5;white-space:pre-line;word-break:break-word}
+.nc-item-time{font-size:.62rem;color:var(--muted);margin-top:2px}
+.nc-unread-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:5px}
+.nc-detail{padding:22px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;color:var(--muted);text-align:center;font-size:.85rem}
+.nc-detail.has-content{align-items:flex-start;justify-content:flex-start;text-align:right}
+.nc-detail-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.35rem;margin-bottom:10px}
+.nc-detail-icon.urgent{background:rgba(220,38,38,.1);color:var(--red)}
+.nc-detail-icon.warning{background:rgba(230,81,0,.1);color:var(--orange)}
+.nc-detail-icon.info{background:rgba(21,101,192,.1);color:var(--blue)}
+.nc-detail-title{font-size:.98rem;font-weight:800;color:var(--text);margin-bottom:8px;line-height:1.3}
+.nc-detail-desc{font-size:.83rem;color:var(--muted);line-height:1.6;margin-bottom:16px}
+.nc-detail-meta{background:var(--surface);border-radius:10px;padding:12px 14px;width:100%;margin-bottom:16px;border:1px solid var(--border)}
+.nc-detail-meta-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;font-size:.77rem;border-bottom:1px solid var(--border)}
+.nc-detail-meta-row:last-child{border-bottom:none}
+.nc-detail-meta-row .label{color:var(--muted);font-weight:500}
+.nc-detail-meta-row .value{font-weight:700;color:var(--text)}
+.nc-detail-actions{display:flex;gap:8px;flex-wrap:wrap}
+.nc-detail-go-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:9px;border:none;background:var(--accent);color:#fff;font-size:.81rem;font-weight:700;font-family:inherit;cursor:pointer;transition:background .15s,transform .15s}
+.nc-detail-go-btn:hover{background:var(--primary);transform:translateY(-1px)}
+.nc-detail-dismiss-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:.81rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s}
+.nc-detail-dismiss-btn:hover{border-color:var(--red);color:var(--red)}
+.nc-empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;color:var(--muted);gap:10px;padding:20px}
+.nc-empty-icon{font-size:2.2rem;opacity:.3}
+.nc-empty-text{font-size:.83rem}
+@media(max-width:760px){
+  .nc-modal{border-radius:14px;max-height:95vh;width:100%}
+  .nc-body{flex-direction:column}
+  .nc-sidebar{width:100%;border-inline-end:none;border-bottom:1px solid var(--border);max-height:auto;display:flex;flex-wrap:nowrap;gap:4px;padding:6px 8px;overflow-x:auto;overflow-y:hidden}
+  .nc-filter-group{display:none}
+  .nc-filter-btn{width:auto;padding:5px 10px;font-size:.74rem;white-space:nowrap}
+  .nc-filter-btn .nc-f-count{display:none}
+  .nc-detail{padding:16px}
+}
 /* ── Mention system ─────────────────────────────────────────── */
 .mention-dropdown{position:fixed;z-index:10000;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 10px 28px rgba(15,23,42,.15);min-width:200px;max-width:280px;max-height:220px;overflow-y:auto;animation:mentionIn .15s ease}
 @keyframes mentionIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
@@ -2365,6 +2450,10 @@ body.dark-mode .mov-status.ملغي{background:#450a0a;color:#f87171}
 /* Table column hierarchy */
 .mov-col-employee{color:rgba(var(--muted-rgb,100,116,139),.5)!important;font-size:.7rem!important;font-weight:300!important;opacity:.65}
 .mov-emp-initials{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(var(--muted-rgb,100,116,139),.15);color:rgba(var(--muted-rgb,100,116,139),.6);font-size:.65rem;font-weight:500;letter-spacing:.02em;flex-shrink:0}
+/* Presence badge — glowing avatar shown next to employee when someone is editing */
+.presence-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;font-size:.6rem;font-weight:700;letter-spacing:.03em;flex-shrink:0;box-shadow:0 0 0 2px var(--bg,#fff),0 0 8px 2px rgba(249,115,22,.55);animation:presencePulse 2s ease-in-out infinite}
+@keyframes presencePulse{0%,100%{box-shadow:0 0 0 2px var(--bg,#fff),0 0 8px 2px rgba(249,115,22,.55)}50%{box-shadow:0 0 0 2px var(--bg,#fff),0 0 14px 5px rgba(249,115,22,.8)}}
+.mov-col-employee-wrap{display:inline-flex;align-items:center;gap:5px}
 .mov-pickup-filter-pill.active{background:color-mix(in srgb,var(--primary) 12%,transparent);border-color:var(--primary)}
 .mov-pickup-filter-pill.active .pu-badge-pickedup{background:var(--primary);color:#fff;border-color:var(--primary)}
 .mov-pickup-filter-pill.active .pu-badge-prep{background:var(--primary);color:#fff;border-color:var(--primary)}
@@ -2999,7 +3088,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 .vault-settle-title{display:flex;align-items:center;gap:7px;font-size:.85rem;font-weight:700}
 .vault-settle-title svg{width:15px;height:15px;color:#2f5d3f}
 .vault-settle-body{margin-top:12px}
-.vault-settle-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;min-width:0}
+.vault-settle-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:start;min-width:0}
 .vault-settle-field label{display:block;font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:3px}
 .vault-settle-field input,.vault-settle-field select{width:100%;box-sizing:border-box;height:30px;font-size:.82rem;padding:0 8px;border:1.5px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
 .vault-settle-field input:focus,.vault-settle-field select:focus{border-color:#2f5d3f}
@@ -3007,7 +3096,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 .vault-settle-full label{display:block;font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:3px}
 .vault-settle-full input{width:100%;box-sizing:border-box;height:30px;font-size:.82rem;padding:0 8px;border:1.5px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
 .vault-settle-full input:focus{border-color:#2f5d3f}
-.vault-settle-confirm-btn{height:30px;min-width:36px;padding:0 10px;display:flex;align-items:center;justify-content:center;gap:5px;background:#2f5d3f;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:.82rem;font-weight:600;transition:background .15s;white-space:nowrap;flex-shrink:0}
+.vault-settle-confirm-btn{height:30px;min-width:36px;padding:0 10px;display:flex;align-items:center;justify-content:center;gap:5px;background:#2f5d3f;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:.82rem;font-weight:600;transition:background .15s;white-space:nowrap;flex-shrink:0;margin-top:calc(.72rem + 3px + 3px)}
 .vault-settle-confirm-btn:hover{background:#234a30}
 @media(max-width:860px) and (min-width:701px){
   .vault-settle-grid{grid-template-columns:1fr 1fr 1fr;gap:8px}
@@ -3041,6 +3130,8 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 .vault-actions { display:flex; gap:6px; padding-bottom:6px; align-items:center; }
 .vault-actions .btn { display:inline-flex; align-items:center; gap:5px; }
 .vault-tab-content { animation: fadeIn .3s ease-in; }
+.vault-countdown-wrap{display:inline-flex;align-items:center;gap:5px;font-size:.78rem;font-weight:600;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:7px;padding:4px 9px;white-space:nowrap}
+.vault-countdown-num{font-variant-numeric:tabular-nums;letter-spacing:.03em;color:#92400e}
 /* Vault sync button & timestamp */
 #vault-sync-btn svg { transition: transform .6s ease; }
 #vault-sync-btn.syncing svg { animation: vaultSpinIcon .7s linear infinite; }
@@ -4388,13 +4479,19 @@ body.dark-mode .txn-bar{background:rgba(255,255,255,.08)}
 [data-theme=dark] .pu-col-pending .pu-col-count{background:#374151;color:#9ca3af}
 [data-theme=dark] .pu-col-ready   .pu-col-count{background:#451a03;color:#fbbf24}
 /* per-column search */
-.pu-board-col-search{padding:8px 10px;background:var(--surface);border-left:1.5px solid var(--border);border-right:1.5px solid var(--border);border-bottom:1px solid var(--border);position:relative}
+.pu-board-col-search{padding:8px 10px;background:var(--surface);border-left:1.5px solid var(--border);border-right:1.5px solid var(--border);border-bottom:1px solid var(--border);position:relative;flex-shrink:0}
 .pu-col-ready .pu-board-col-search{border-left-color:color-mix(in srgb,#d97706 30%,var(--border));border-right-color:color-mix(in srgb,#d97706 30%,var(--border));border-bottom-color:color-mix(in srgb,#d97706 20%,var(--border))}
 .pu-board-col-search input{width:100%;padding:6px 30px 6px 8px;border:1px solid var(--border);border-radius:7px;font-size:.82rem;background:var(--bg);color:var(--text);box-sizing:border-box;outline:none;transition:border .2s}
 .pu-board-col-search input:focus{border-color:var(--primary)}
 .pu-board-col-search svg{position:absolute;right:18px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted)}
-/* column body — no fixed scroll, expands with content */
-.pu-board-col-body{overflow-x:hidden;border:1.5px solid var(--border);border-top:none;border-radius:0 0 12px 12px;background:var(--bg-alt);padding:8px;display:flex;flex-direction:column;gap:10px}
+/* column body — scrollable, fills remaining height */
+.pu-board-col-body{overflow-x:hidden;overflow-y:auto;flex:1 1 0;min-height:0;border:1.5px solid var(--border);border-top:none;border-radius:0 0 12px 12px;background:var(--bg-alt);padding:8px;display:flex;flex-direction:column;gap:10px}
+/* fixed action bar above pending col body (always visible, no scroll dependency) */
+.pu-pending-actions-bar{display:flex;flex-direction:column;gap:6px;flex-shrink:0;padding:6px 8px;background:var(--bg-alt);border-left:1.5px solid var(--border);border-right:1.5px solid var(--border)}
+.pu-pt-create-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px 14px;background:var(--primary);color:#fff;border:none;border-radius:9px;font-size:.84rem;font-weight:700;cursor:pointer;text-align:center;transition:background .18s;box-shadow:0 2px 8px rgba(37,99,235,.18)}
+.pu-pt-create-btn:hover{background:color-mix(in srgb,var(--primary) 85%,#000)}
+.pu-pt-bulk-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:7px 14px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:9px;font-size:.81rem;font-weight:600;cursor:pointer;text-align:center;transition:background .18s,color .18s}
+.pu-pt-bulk-btn:hover{background:var(--bg-alt);color:var(--text)}
 .pu-col-ready .pu-board-col-body{border-color:color-mix(in srgb,#d97706 30%,var(--border))}
 /* drag-over highlight */
 .pu-board-col-body{transition:background .18s,outline .18s,box-shadow .18s}
@@ -5258,16 +5355,41 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   </div>
   <div class="notif-filter-bar" id="notif-filter-bar" style="display:none">
     <button class="notif-filter-btn active" id="nfb-all" onclick="setNotifFilter('all')">الكل</button>
-    <button class="notif-filter-btn f-urgent" id="nfb-urgent" onclick="setNotifFilter('urgent')">🔴 عاجل</button>
-    <button class="notif-filter-btn f-warning" id="nfb-warning" onclick="setNotifFilter('warning')">🟡 تحذير</button>
-    <button class="notif-filter-btn f-info" id="nfb-info" onclick="setNotifFilter('info')">🔵 معلومات</button>
+    <button class="notif-filter-btn f-urgent" id="nfb-urgent" onclick="setNotifFilter('urgent')"><svg viewBox="0 0 24 24" width="10" height="10" fill="#dc2626" stroke="none"><circle cx="12" cy="12" r="10"/></svg> عاجل</button>
+    <button class="notif-filter-btn f-warning" id="nfb-warning" onclick="setNotifFilter('warning')"><svg viewBox="0 0 24 24" width="10" height="10" fill="#d97706" stroke="none"><circle cx="12" cy="12" r="10"/></svg> تحذير</button>
+    <button class="notif-filter-btn f-info" id="nfb-info" onclick="setNotifFilter('info')"><svg viewBox="0 0 24 24" width="10" height="10" fill="#2563eb" stroke="none"><circle cx="12" cy="12" r="10"/></svg> معلومات</button>
   </div>
 </div>
 <div class="notif-list" id="notif-list"></div>
+<div class="notif-footer">
+  <button class="notif-center-btn" onclick="qs('#notif-panel')?.classList.remove('show');openNotifCenter()">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    <span style="color:var(--accent);font-weight:700">عرض كل الإشعارات</span>
+  </button>
+</div>
 </div>
 </div>
 </div>
 </header>
+
+<!-- ═══ Notification Center Modal ═══ -->
+<div class="nc-overlay" id="nc-overlay" onclick="if(event.target===this)closeNotifCenter()">
+  <div class="nc-modal" role="dialog" aria-modal="true" aria-label="مركز الإشعارات">
+    <div class="nc-head">
+      <div>
+        <div class="nc-head-title">مركز الإشعارات</div>
+        <div class="nc-head-subtitle" id="nc-subtitle">جميع الإشعارات</div>
+      </div>
+      <button class="nc-close" onclick="closeNotifCenter()" title="إغلاق">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="nc-body">
+      <div class="nc-sidebar" id="nc-sidebar"></div>
+      <div class="nc-main" id="nc-main"></div>
+    </div>
+  </div>
+</div>
 <div id="announcement-bar" class="ann-hidden" role="marquee" aria-live="polite">
   <div class="ann-inner">
     <span class="ann-dot"></span>
@@ -6766,14 +6888,14 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 <div class="section-tab-bar">
   <button class="s-tab active" id="appr-tab-approvals-btn" onclick="switchApprTab('approvals',this)"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> الموافقات</button>
   <button class="s-tab" id="appr-tab-hub-btn" onclick="switchApprTab('hub',this)"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg> سجل التعديلات (Hub)</button>
-  <button class="s-tab" id="appr-tab-otp-btn" onclick="switchApprTab('otp',this)"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> سجل التحقق</button>
+  <button class="s-tab" id="appr-tab-otp-btn" onclick="switchApprTab('otp',this)"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> سجل عمليات التحقق</button>
 </div>
 <!-- Approvals content -->
 <div id="appr-tab-approvals-content">
 <div class="flex-between mb-16">
 <div class="flex gap-8" style="flex-wrap:wrap;align-items:center">
 <select id="appr-filter" style="width:170px" onchange="renderApprovals()"><option value="">حالة: الكل</option><option value="معلق">حالة: المعلقة</option><option value="معتمد">حالة: المعتمدة</option><option value="مرفوض">حالة: المرفوضة</option></select>
-<select id="appr-kind-filter" style="width:200px" onchange="renderApprovals()"><option value="">النوع: الكل</option><option value="return">النوع: استرجاع فقط</option><option value="expense">النوع: مصاريف فقط</option><option value="cancel">النوع: طلبات إلغاء فقط</option></select>
+<select id="appr-kind-filter" style="width:200px" onchange="renderApprovals()"><option value="">النوع: الكل</option><option value="return">النوع: استرجاع فقط</option><option value="expense">النوع: مصاريف فقط</option><option value="cancel">النوع: طلبات إلغاء فقط</option><option value="product-edit">النوع: تعديل أصناف فقط</option></select>
 </div>
 </div>
 <div class="filter-card" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
@@ -6824,7 +6946,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         <th data-i18n="colAction">الإجراء</th>
         <th data-i18n="colInvoice">الفاتورة</th>
         <th data-i18n="client">العميل</th>
-        <th data-i18n="colBy">بواسطة</th>
+        <th data-i18n="colBy">المنفّذ / الموافق</th>
         <th data-i18n="colDetails">التفاصيل</th>
         <th data-i18n="colVault">الخزنة</th>
         <th data-i18n="colInvoiceTotal">إجمالي الفاتورة</th>
@@ -6837,24 +6959,77 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 </div>
 <!-- OTP Audit content -->
 <div id="appr-tab-otp-content" style="display:none">
-<div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-    <h3 style="margin:0;display:flex;align-items:center;gap:8px">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-      سجل أكواد التحقق (الخصم المرتفع)
-    </h3>
-    <div style="display:flex;gap:8px">
-      <select id="otp-audit-status" style="width:160px" onchange="renderOtpAudit()">
-        <option value="">الحالة: الكل</option>
+
+<!-- OTP Audit Header -->
+<div class="card" style="margin-bottom:14px">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark,#4338ca) 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      </div>
+      <div>
+        <h3 style="margin:0;font-size:1rem;font-weight:700">سجل عمليات التحقق</h3>
+        <div style="font-size:.78rem;color:var(--muted)">جميع طلبات OTP الحساسة — مبيعات، مشتريات، خزنة، منتجات، تعديلات</div>
+      </div>
+    </div>
+    <button class="btn btn-outline btn-sm" style="gap:6px;display:flex;align-items:center" onclick="renderOtpAudit()">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+      تحديث
+    </button>
+  </div>
+</div>
+
+<!-- OTP Filters -->
+<div class="card" style="margin-bottom:14px;padding:12px 16px">
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;align-items:end">
+    <div>
+      <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px">نوع العملية</label>
+      <select id="otp-audit-kind" style="width:100%;font-size:.8rem" onchange="renderOtpAudit()">
+        <option value="">الكل</option>
+        <option value="discount">خصم مرتفع</option>
+        <option value="purchase">مشتريات</option>
+        <option value="edit-tx">تعديل حركة</option>
+        <option value="vault-access">دخول الخزنة</option>
+        <option value="add-product">إضافة صنف</option>
+        <option value="delete-product">حذف صنف</option>
+        <option value="delete-supplier">حذف مورد</option>
+        <option value="import-products">استيراد أصناف</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px">الحالة</label>
+      <select id="otp-audit-status" style="width:100%;font-size:.8rem" onchange="renderOtpAudit()">
+        <option value="">الكل</option>
         <option value="used">مستخدم</option>
         <option value="unused">غير مستخدم</option>
-        <option value="expired">منتهي</option>
+        <option value="expired">منتهي الصلاحية</option>
       </select>
-      <button class="btn btn-outline btn-sm" onclick="renderOtpAudit()">تحديث</button>
+    </div>
+    <div>
+      <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px">بحث بكود OTP</label>
+      <input type="text" id="otp-audit-code" placeholder="أدخل الكود…" maxlength="6" style="width:100%;font-family:monospace;font-size:.82rem;letter-spacing:.1em" oninput="otpCodeSearch()">
+    </div>
+    <div>
+      <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px">من تاريخ</label>
+      <input type="date" id="otp-audit-from" style="width:100%;font-size:.8rem" onchange="renderOtpAudit()">
+    </div>
+    <div>
+      <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px">إلى تاريخ</label>
+      <input type="date" id="otp-audit-to" style="width:100%;font-size:.8rem" onchange="renderOtpAudit()">
+    </div>
+    <div>
+      <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px">الموظف</label>
+      <input type="text" id="otp-audit-emp" placeholder="اسم أو يوزر…" style="width:100%;font-size:.8rem" oninput="renderOtpAuditDebounced()">
+    </div>
+    <div style="display:flex;align-items:flex-end">
+      <button class="btn btn-outline btn-sm" style="width:100%;font-size:.78rem" onclick="clearOtpAuditFilters()">مسح الفلاتر</button>
     </div>
   </div>
-  <div id="otp-audit-list"><div class="empty-state">لم يتم التحميل بعد</div></div>
 </div>
+
+<!-- OTP Results -->
+<div id="otp-audit-list"><div class="empty-state">لم يتم التحميل بعد</div></div>
+
 </div>
 
 <!-- Reports -->
@@ -7204,6 +7379,16 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         <div class="pu-board-col-search">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="pu-pending-search" placeholder="بحث في المعلقة…" oninput="renderPickupBoard()" autocomplete="off">
+        </div>
+        <div class="pu-pending-actions-bar" id="pu-pending-actions-bar">
+          <button class="pu-pt-create-btn" id="pu-pt-create-btn-static" onclick="if(_puPendingSelected.size>0)puPtMoveSelected();else toast('حدد طلبات من القائمة أولاً ثم اضغط الزر',true)">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+            إنشاء مجموعة تحضير
+          </button>
+          <button class="pu-pt-bulk-btn" onclick="openPuBulkModal()">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            إدخال بأرقام المراجع
+          </button>
         </div>
         <div class="pu-board-col-body" id="pu-pending-col"
           ondragover="puBoardDragOver(event,'pending')"
@@ -7830,6 +8015,11 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     </button>
   </div>
   <div class="vault-actions">
+    <div id="vault-countdown-wrap" class="vault-countdown-wrap" style="display:none">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      <span>سيُغلق بعد</span>
+      <span id="vault-countdown-display" class="vault-countdown-num">05:00</span>
+    </div>
     <button id="vault-sync-btn" class="btn btn-outline btn-sm" onclick="syncVaultAll()" title="تحديث البيانات" aria-label="تحديث البيانات"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg><span class="vault-btn-label"> تحديث</span></button>
     <button class="btn btn-outline btn-sm" onclick="lockVault()" title="قفل الخزنة" aria-label="قفل الخزنة"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span class="vault-btn-label"> قفل</span></button>
     <button class="btn btn-outline btn-sm" onclick="exportVaultExcel()" title="تصدير Excel" aria-label="تصدير Excel"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="vault-btn-label"> تصدير</span></button>
@@ -7840,7 +8030,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 <div id="vault-tab-overview" class="vault-tab-content">
 <div class="seg-cards" id="vault-segs"></div>
 <!-- Manual Settlement Card -->
-<div class="vault-settle-card mb-14">
+<div class="vault-settle-card mb-14" id="vault-settle-card">
   <div class="vault-settle-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.vault-settle-chevron').style.transform=this.nextElementSibling.style.display==='none'?'rotate(0deg)':'rotate(180deg)'">
     <div class="vault-settle-title">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
@@ -8016,6 +8206,43 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <span style="font-size:.78rem;color:var(--muted)">— موقع كل مستخدم متصل</span>
   </div>
   <div id="active-sessions"></div>
+</div>
+
+<!-- Security Incidents Panel (Admin Only) -->
+<div id="security-panel-wrap" style="margin-top:32px;display:none">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    <h3 style="margin:0;font-size:1rem;color:var(--text)">الحوادث الأمنية والحسابات المُعطَّلة</h3>
+    <button onclick="loadSecurityPanel()" style="margin-right:auto;background:none;border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:.8rem;cursor:pointer;color:var(--text)">تحديث</button>
+  </div>
+
+  <!-- Locked Users -->
+  <div style="margin-bottom:20px">
+    <h4 style="font-size:.88rem;color:#dc2626;margin:0 0 10px;display:flex;align-items:center;gap:6px">
+      🔒 الحسابات المُعطَّلة
+    </h4>
+    <div id="locked-users-list"></div>
+  </div>
+
+  <!-- Audit Log -->
+  <div>
+    <h4 style="font-size:.88rem;color:var(--text);margin:0 0 10px;display:flex;align-items:center;gap:6px">
+      📋 سجل الأحداث الأمنية
+    </h4>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:.83rem">
+        <thead>
+          <tr style="background:var(--bg-alt);text-align:right">
+            <th style="padding:8px 12px;border-bottom:1px solid var(--border)">المستخدم</th>
+            <th style="padding:8px 12px;border-bottom:1px solid var(--border)">نوع الحادثة</th>
+            <th style="padding:8px 12px;border-bottom:1px solid var(--border)">التفاصيل</th>
+            <th style="padding:8px 12px;border-bottom:1px solid var(--border)">الوقت</th>
+          </tr>
+        </thead>
+        <tbody id="security-audit-tbody"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 </div>
 
@@ -8976,8 +9203,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     </div>
     <div class="mention-alert-list" id="mention-alert-list"></div>
     <div class="mention-alert-footer">
-      <button class="btn btn-outline btn-sm" onclick="markAllMentionsRead();closeMentionAlert()" style="font-size:.78rem">تحديد الكل كمقروء ✓</button>
-      <button class="btn btn-primary btn-sm" onclick="closeMentionAlert();switchNotifTab('mentions');qs('#notif-panel')?.classList.add('show')" style="font-size:.78rem">عرض كل الإشارات ←</button>
+      <button class="btn btn-primary btn-sm" onclick="closeMentionAlert();openNotifCenter();setTimeout(()=>_setNcTab('mentions'),100)" style="font-size:.78rem">عرض كل الإشارات ←</button>
     </div>
   </div>
 </div>
@@ -9075,7 +9301,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
               الإشارات الجديدة
               <span class="adb-pill" id="adb-mentions-count" style="background:rgba(139,92,246,.15);color:#7c3aed">0</span>
             </span>
-            <button class="adb-card-link" style="color:#7c3aed" onclick="closeAdminBriefing();qs('#notif-badge')?.click();switchNotifTab('mentions')">عرض الكل ←</button>
+            <button class="adb-card-link" style="color:#7c3aed" onclick="closeAdminBriefing();openNotifCenter();setTimeout(()=>_setNcTab('mentions'),100)">عرض الكل ←</button>
           </header>
           <div class="adb-card-body adb-activity-body" id="adb-mentions"></div>
         </article>
@@ -9225,6 +9451,7 @@ let onlineUsers = {}; // Track online status: { userId: { lastSeen, status } }
 let socket = null; // Socket.IO connection
 let activeSessions = []; // Admin-only: active sessions with IP & geo
 const _rtFlashIds = new Set(); // tx ids that should briefly flash on render
+const _activeEditors = new Map(); // txId → { user, initials } — real-time presence
 let products = [], transactions = [], suppliers = [], expenses = [], settings = {}, users = [], vaultLog = [], inventoryCache = [], returnRequests = [], complaints = [];
 let cmpTabFilter = 'all';
 let currentPage = 'dashboard';
@@ -10494,7 +10721,13 @@ async function api(path, options = {}) {
     const err = await res.json().catch(() => ({}));
     const msg = Array.isArray(err.message) ? err.message.join(', ') : (err.message || 'خطأ في الطلب');
     if (res.status === 401 && !path.startsWith('/auth/login') && !path.includes('verify-vault-password')) {
-      doLogout();
+      // Show locked-account banner if the error contains the lock emoji, otherwise plain logout
+      if (msg && msg.includes('🔒')) {
+        doLogout();
+        setTimeout(() => _showLockedAccountBanner(msg), 400);
+      } else {
+        doLogout();
+      }
     }
     throw new Error(msg);
   }
@@ -10619,7 +10852,13 @@ function toggleLoginPassword() {
 async function doLogin() {
   const username = qs('#login-user').value.trim();
   const password = qs('#login-pass').value;
-  if (!username || !password) { qs('#login-error').textContent = t('loginErrEmpty'); qs('#login-error').style.display = 'block'; return; }
+  const errEl = qs('#login-error');
+  if (!username || !password) { errEl.textContent = t('loginErrEmpty'); errEl.style.display = 'block'; return; }
+
+  const btn = qs('.lfp-btn-login');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+  errEl.style.display = 'none';
+
   const rememberMe = qs('#login-remember')?.checked;
   try {
     const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
@@ -10635,9 +10874,47 @@ async function doLogin() {
     currentUser = data.user;
     showApp();
   } catch (e) {
-    qs('#login-error').textContent = e.message || t('loginErrWrong');
-    qs('#login-error').style.display = 'block';
+    const msg = e.message || t('loginErrWrong');
+    if (msg.includes('🔒')) {
+      _showLockedAccountBanner(msg);
+      errEl.style.display = 'none';
+    } else {
+      errEl.innerHTML = msg;
+      errEl.style.display = 'block';
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
   }
+}
+
+function _showLockedAccountBanner(msg) {
+  let overlay = qs('#locked-account-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'locked-account-overlay';
+    overlay.style.cssText = `
+      position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);padding:16px;
+    `;
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:16px;padding:32px 28px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <div style="font-size:48px;margin-bottom:12px;">🔒</div>
+        <h2 style="color:#dc2626;font-size:1.25rem;font-weight:700;margin:0 0 10px">تم تعطيل الحساب</h2>
+        <p id="locked-account-msg" style="color:#374151;font-size:0.95rem;line-height:1.6;margin:0 0 20px"></p>
+        <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:12px 16px;margin-bottom:20px;text-align:right;font-size:0.88rem;color:#92400e;line-height:1.6;">
+          📞 تواصل مع المدير لإعادة تفعيل حسابك
+        </div>
+        <button onclick="qs('#locked-account-overlay').remove()"
+          style="background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;border:none;border-radius:10px;padding:10px 28px;font-size:0.95rem;cursor:pointer;font-weight:600;">
+          حسناً
+        </button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  }
+  const msgEl = qs('#locked-account-msg');
+  if (msgEl) msgEl.textContent = msg.replace('🔒', '').trim();
+  overlay.style.display = 'flex';
 }
 
 function loadRememberedLogin() {
@@ -10857,6 +11134,16 @@ function connectSocket() {
       try { window.txNotifier?.onTxCollect(tx, payload.action); } catch(_) {}
     }
   });
+  socket.on('tx:editing', (payload) => {
+    if (!payload?.txId) return;
+    _activeEditors.set(String(payload.txId), { user: payload.user || '', initials: payload.initials || '??' });
+    _refreshEditingBadges();
+  });
+  socket.on('tx:editing-done', (payload) => {
+    if (!payload?.txId) return;
+    _activeEditors.delete(String(payload.txId));
+    _refreshEditingBadges();
+  });
   socket.on('tx:cancelled', async (payload) => {
     const tx = payload?.tx; if (!tx) return;
     const i = transactions.findIndex(t => String(t._id) === String(tx._id));
@@ -11029,6 +11316,14 @@ function connectSocket() {
         // Sync local prep groups
         const alreadyHave = _puPrepGroups.some(g => g.prepRef === pickupRef);
         const groupOrders = ids.map(id => _pickupOrders.find(o => String(o._id) === id)).filter(Boolean);
+
+        // If orders not in local cache and pickup board is visible → full reload to sync
+        if (!groupOrders.length && currentPage === 'pickup-orders') {
+          if (typeof loadPickupOrders === 'function') loadPickupOrders();
+          _rtToastEvent?.(`📦 قيد التحضير: ${fmtN(ids.length)} طلب → ${pickupRef}`);
+          return;
+        }
+
         if (!alreadyHave && groupOrders.length) {
           _puPrepGroups.push({
             prepRef: pickupRef, note: '', by: by || '',
@@ -11046,7 +11341,7 @@ function connectSocket() {
         }
 
         // DOM: remove rows from pending col, insert/update prep group card
-        if (qs('#pu-board-section') && _puBoardView === 'board') {
+        if (currentPage === 'pickup-orders' && _puBoardView === 'board') {
           const prepCol = qs('#pu-prep-col');
           ids.forEach(id => {
             const row = qs(`.pu-pt-row[data-oid="${CSS.escape(id)}"]`);
@@ -11091,7 +11386,7 @@ function connectSocket() {
         })).filter(g => g.orders.length > 0);
         _puSavePrepGroups();
 
-        if (qs('#pu-board-section') && _puBoardView === 'board') {
+        if (currentPage === 'pickup-orders' && _puBoardView === 'board') {
           const pendingCol = qs('#pu-pending-col');
           // Remove affected cards from prep/ready cols
           ids.forEach(id => {
@@ -11157,7 +11452,7 @@ function connectSocket() {
         })).filter(g => g.orders.length > 0);
         _puSavePrepGroups();
 
-        if (qs('#pu-board-section') && _puBoardView === 'board') {
+        if (currentPage === 'pickup-orders' && _puBoardView === 'board') {
           const readyCol = qs('#pu-ready-col');
           // Slide out the prep group card that moved
           const prepCard = qs(`#pu-prep-col .pu-group[data-group-key="${CSS.escape(pickupRef)}"]`);
@@ -11179,7 +11474,7 @@ function connectSocket() {
             _puUpdateColCount('pu-prep-col');
             _puUpdateColCount('pu-ready-col');
           });
-        } else if (qs('#pu-board-section') && _puBoardView === 'table') {
+        } else if (currentPage === 'pickup-orders' && _puBoardView === 'table') {
           renderPickupRuns?.();
         }
         _rtToastEvent?.(`✅ جاهز للاستلام: ${pickupRef}`);
@@ -11195,7 +11490,7 @@ function connectSocket() {
             if (tx) tx.pickupStatus = 'Delivered';
           }
         });
-        if (qs('#pu-board-section') && _puBoardView === 'board') {
+        if (currentPage === 'pickup-orders' && _puBoardView === 'board') {
           ids.forEach(id => {
             const card = document.querySelector(`[data-order-id="${CSS.escape(id)}"]`);
             if (card) {
@@ -11218,7 +11513,7 @@ function connectSocket() {
             if (tx) tx.pickupStatus = 'Ready';
           }
         });
-        if (qs('#pu-board-section') && _puBoardView === 'board') {
+        if (currentPage === 'pickup-orders' && _puBoardView === 'board') {
           ids.forEach(id => {
             const card = document.querySelector(`[data-order-id="${CSS.escape(id)}"]`);
             if (card) { card.style.opacity = '1'; _puFlash(card); }
@@ -11333,6 +11628,26 @@ function connectSocket() {
 }
 function disconnectSocket() {
   if (socket) { socket.disconnect(); socket = null; }
+}
+
+/* ===== Presence: refresh editing badges without full re-render ===== */
+function _refreshEditingBadges() {
+  // Update existing rendered rows — avoids full table re-render
+  document.querySelectorAll('[data-presence-tx]').forEach(el => {
+    const txId = el.getAttribute('data-presence-tx');
+    const editor = _activeEditors.get(txId);
+    if (editor) {
+      el.innerHTML = _buildPresenceBadge(editor.initials, editor.user);
+      el.style.display = '';
+    } else {
+      el.innerHTML = '';
+      el.style.display = 'none';
+    }
+  });
+}
+
+function _buildPresenceBadge(initials, userName) {
+  return `<span class="presence-badge" title="${esc(userName)} يعدّل الآن">${esc(initials)}</span>`;
 }
 
 /* ===== Real-time helpers (Phase 1) ===== */
@@ -12048,7 +12363,8 @@ function buildSidebar() {
   const pendingCmpCount = complaints.filter(c => c.status === 'معلق').length;
   const pendingCancelCount = transactions.filter(t => t.cancelRequest && t.cancelRequest.status === 'معلق').length;
   const pendingReturnCount = isAdmin() ? (returnRequests || []).filter(r => r.status === 'معلق').length : 0;
-  const totalApprovalsBadge = (isAdmin() ? pendingExpCount + pendingCancelCount + pendingReturnCount : 0);
+  const pendingProductEditCount = isAdmin() ? (products || []).filter(p => p.editRequest && p.editRequest.status === 'معلق').length : 0;
+  const totalApprovalsBadge = (isAdmin() ? pendingExpCount + pendingCancelCount + pendingReturnCount + pendingProductEditCount : 0);
   const _movTotal = transactions.filter(t => !t.cancelled).length;
   const _movSeen = parseInt(localStorage.getItem('mov_seen_count') ?? '-1');
   const newMovCount = _movSeen >= 0 ? Math.max(0, _movTotal - _movSeen) : 0;
@@ -12303,6 +12619,17 @@ function buildNotifications() {
         refType: 'tx', refId: String(tx._id) });
     });
   }
+  // Product edit requests pending manager approval
+  const pendingProductEdits = (products || []).filter(p => p.editRequest && p.editRequest.status === 'معلق');
+  if (pendingProductEdits.length > 0 && currentUser?.role === 'admin') {
+    pendingProductEdits.forEach(p => {
+      notifs.push({ id: 'product-edit-' + p._id, icon: ICON('edit'), type: 'urgent',
+        title: 'طلب تعديل صنف — في انتظار موافقة المدير',
+        desc: `${p.name} (${p.code}) — بواسطة: ${p.editRequest.requestedBy}`,
+        page: 'approvals', ts: p.editRequest.requestedAt || '',
+        refType: 'approvals' });
+    });
+  }
   // Vault: exchange sales pending collection
   if (currentUser?.role === 'admin') {
     const pendingCollect = (transactions || []).filter(tx => tx.type === 'مبيعات' && !tx.cancelled && isStatusPending(tx.payStatus) && (tx.remaining || 0) > 0 && /(-EXC)$/i.test(String(tx.ref || '')));
@@ -12439,6 +12766,450 @@ document.addEventListener('click', function(e) {
   if (!e.target.closest('.notif-wrap')) { const p = qs('#notif-panel'); if (p) p.classList.remove('show'); }
   if (!e.target.closest('.mention-dropdown')) closeMentionDropdown();
 });
+
+/* ═══════════════════════════════════════════════════════════════
+   NOTIFICATION CENTER MODAL
+   ══════════════════════════════════════════════════════════════ */
+let _ncTab = 'updates'; // 'updates' | 'mentions' | 'stock'
+let _ncSelectedId = null;
+let _ncAllNotifs = []; // updates tab
+let _ncAllMentions = []; // mentions tab
+let _ncAllStock = []; // stock tab
+
+function _stripHtml(html) {
+  const d = document.createElement('div'); d.innerHTML = html; return d.textContent || d.innerText || '';
+}
+
+function _buildNcUpdates() {
+  const notifs = [];
+  const pendingExp = expenses.filter(e => e.status === 'معلق');
+  if (pendingExp.length > 0 && currentUser?.role === 'admin') {
+    pendingExp.forEach(exp => {
+      notifs.push({ id: 'exp-pending-' + exp._id, icon: ICON('money'), type: 'info',
+        title: t('notifExpPending'), desc: `${exp.desc || ''} — ${_stripHtml(fmtJ(exp.amount))} (${exp.category || ''})`,
+        page: 'approvals', ts: exp.createdAt || exp.date || '', refType: 'approvals' });
+    });
+  }
+  const pendingComplaints = (complaints || []).filter(c => c.status === 'معلق');
+  if (pendingComplaints.length > 0 && currentUser?.role === 'admin') {
+    pendingComplaints.forEach(c => {
+      notifs.push({ id: 'cmp-pending-' + c._id, icon: ICON('target'), type: 'warning',
+        title: `${t('notifComplaint')}: ${c.complaintNo}`, desc: `${c.submittedBy} — ${(c.description || '').slice(0, 80)}`,
+        page: 'complaints', ts: c.createdAt || '', refType: 'complaint', refId: String(c._id) });
+    });
+  }
+  const pendingReturns = (returnRequests || []).filter(r => r.status === 'معلق');
+  if (pendingReturns.length > 0 && currentUser?.role === 'admin') {
+    pendingReturns.forEach(ret => {
+      const kindLabel = ret.requestKind === 'exchange' ? 'استبدال' : 'استرجاع';
+      notifs.push({ id: 'ret-pending-' + ret._id, icon: ICON('box'), type: 'warning',
+        title: `${t('notifReturnPending')}: ${kindLabel}`, desc: `${ret.client} — ${_stripHtml(fmtJ(ret.total))} (${ret.reason})`,
+        page: 'approvals', ts: ret.createdAt || '', refType: 'approvals' });
+    });
+  }
+  const pendingCancelReqs = (transactions || []).filter(tx => tx.cancelRequest && tx.cancelRequest.status === 'معلق');
+  if (pendingCancelReqs.length > 0 && currentUser?.role === 'admin') {
+    pendingCancelReqs.forEach(tx => {
+      notifs.push({ id: 'cancel-req-' + tx._id, icon: ICON('ban'), type: 'urgent',
+        title: t('notifCancelReq'), desc: `${tx.client || 'بدون اسم'} — فاتورة #${tx.ref || '-'} (${_stripHtml(fmtJ(tx.deposit || 0))} للرد)`,
+        page: 'movements', ts: tx.cancelRequest?.requestedAt || tx.createdAt || '', refType: 'tx', refId: String(tx._id) });
+    });
+  }
+  if (currentUser?.role === 'admin') {
+    const pendingCollect = (transactions || []).filter(tx => tx.type === 'مبيعات' && !tx.cancelled && isStatusPending(tx.payStatus) && (tx.remaining || 0) > 0 && /(-EXC)$/i.test(String(tx.ref || '')));
+    pendingCollect.forEach(tx => {
+      notifs.push({ id: 'exc-collect-' + tx._id, icon: ICON('money'), type: 'info',
+        title: t('notifExcCollect'), desc: `${tx.client} — متبقي ${_stripHtml(fmtJ(tx.remaining))} (فاتورة #${tx.ref || '-'})`,
+        page: 'movements', ts: tx.createdAt || '', refType: 'tx', refId: String(tx._id) });
+    });
+    const pendingRegular = (transactions || []).filter(tx => tx.type === 'مبيعات' && !tx.cancelled && isStatusPending(tx.payStatus) && (tx.remaining || 0) > 0 && !/(-EXC)$/i.test(String(tx.ref || '')));
+    if (pendingRegular.length > 0) {
+      const totalRemaining = pendingRegular.reduce((s, tx) => s + (tx.remaining || 0), 0);
+      notifs.push({ id: 'sales-pending-all', icon: ICON('clock'), type: 'info',
+        title: `${pendingRegular.length} ${t('notifSalesPending')}`, desc: `إجمالي المتبقي: ${_stripHtml(fmtJ(totalRemaining))}`,
+        page: 'movements', refType: 'movements' });
+    }
+  }
+  if (Array.isArray(followUps)) {
+    const fuSeenIds = _fuGetSeenIds();
+    followUps.filter(f => !fuSeenIds.includes(String(f._id)) && (f.status !== 'تم حل المشكلة' && f.status !== 'تمت المتابعة')).forEach(f => {
+      notifs.push({ id: 'fu-unseen-' + f._id, icon: ICON('clock'), type: 'info',
+        title: `متابعة طلب #${f.orderRef}`, desc: `${f.responsibleName} — ${(f.reason||'').slice(0,80)}`,
+        page: 'complaints', fuId: String(f._id), ts: f.createdAt || '', refType: 'fu', refId: String(f._id) });
+    });
+  }
+  const NOTIF_PRIORITY = { urgent: 1, warning: 2, info: 3 };
+  notifs.sort((a, b) => {
+    const pd = (NOTIF_PRIORITY[a.type] || 9) - (NOTIF_PRIORITY[b.type] || 9);
+    if (pd !== 0) return pd;
+    return (b.ts || '').localeCompare(a.ts || '');
+  });
+  return notifs;
+}
+
+function openNotifCenter() {
+  qs('#notif-panel')?.classList.remove('show');
+  _ncTab = 'updates';
+  _ncSelectedId = null;
+  _ncAllNotifs = _buildNcUpdates();
+  _ncAllStock = buildStockNotifs ? buildStockNotifs() : [];
+  _ncAllMentions = buildMentionNotifsList ? buildMentionNotifsList() : [];
+  refreshMentionsFromServer().then(() => { _ncAllMentions = buildMentionNotifsList ? buildMentionNotifsList() : []; _renderNcTabBar(); });
+  _renderNcTabBar();
+  _renderNcContent();
+  qs('#nc-overlay')?.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeNotifCenter() {
+  qs('#nc-overlay')?.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function _renderNcTabBar() {
+  const sidebar = qs('#nc-sidebar');
+  if (!sidebar) return;
+  const tabs = [
+    { key: 'updates', label: 'التحديثات', icon: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>', count: _ncAllNotifs.length },
+    { key: 'mentions', label: 'الإشارات', icon: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"/></svg>', count: _ncAllMentions.filter(m=>!m.read).length },
+    { key: 'stock', label: 'المخزن', icon: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>', count: _ncAllStock.length },
+  ];
+  sidebar.innerHTML = `<div class="nc-filter-group">القسم</div>` +
+    tabs.map(tb => `
+      <button class="nc-filter-btn${_ncTab === tb.key ? ' active' : ''}" onclick="_setNcTab('${tb.key}')">
+        ${tb.icon}
+        <span>${tb.label}</span>
+        ${tb.count > 0 ? `<span class="nc-f-count">${tb.count}</span>` : ''}
+      </button>`).join('');
+}
+
+function _setNcTab(key) {
+  _ncTab = key;
+  _ncSelectedId = null;
+  _renderNcTabBar();
+  _renderNcContent();
+}
+
+function _renderNcContent() {
+  const main = qs('#nc-main');
+  if (!main) return;
+  if (_ncTab === 'updates') _renderNcUpdatesList(main);
+  else if (_ncTab === 'mentions') _renderNcMentionsList(main);
+  else if (_ncTab === 'stock') _renderNcStockList(main);
+}
+
+function _ncItemHtml(n, isSelected) {
+  const isUnread = !_notifReadIds.includes(n.id);
+  const typeColor = { urgent: 'var(--red)', warning: 'var(--orange)', info: 'var(--blue)' };
+  return `<div class="nc-item ${n.type}${isSelected ? ' selected' : ''}" onclick="_selectNcItem('${esc(n.id)}')">
+    ${isUnread ? '<div class="nc-unread-dot"></div>' : '<div style="width:7px;flex-shrink:0"></div>'}
+    <div class="nc-item-icon">${n.icon}</div>
+    <div class="nc-item-body">
+      <div class="nc-item-title">${esc(n.title)}</div>
+      <div class="nc-item-desc">${esc(n.desc)}</div>
+      ${n.ts ? `<div class="nc-item-time">${fmtDateTime(n.ts)}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function _ncGroupByTime(items, getTsFn) {
+  const now = new Date();
+  const todayStr = now.toDateString();
+  const yest = new Date(now); yest.setDate(yest.getDate()-1);
+  const yestStr = yest.toDateString();
+  const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate()-7);
+  const groups = [
+    { key: 'new', label: 'جديد', items: [] },
+    { key: 'today', label: 'اليوم', items: [] },
+    { key: 'yesterday', label: 'أمس', items: [] },
+    { key: 'week', label: 'هذا الأسبوع', items: [] },
+    { key: 'older', label: 'أقدم', items: [] },
+  ];
+  const thirtyMin = 30 * 60 * 1000;
+  items.forEach(item => {
+    const ts = getTsFn(item);
+    if (!ts) { groups[4].items.push(item); return; }
+    const d = new Date(ts);
+    const diff = now - d;
+    if (diff < thirtyMin) groups[0].items.push(item);
+    else if (d.toDateString() === todayStr) groups[1].items.push(item);
+    else if (d.toDateString() === yestStr) groups[2].items.push(item);
+    else if (d >= weekAgo) groups[3].items.push(item);
+    else groups[4].items.push(item);
+  });
+  return groups.filter(g => g.items.length > 0);
+}
+
+function _renderNcUpdatesList(main) {
+  const subtitle = qs('#nc-subtitle');
+  if (subtitle) subtitle.textContent = _ncAllNotifs.length > 0 ? `${_ncAllNotifs.length} إشعار` : 'لا توجد إشعارات';
+  if (!_ncAllNotifs.length) {
+    main.innerHTML = `<div class="nc-empty-state"><div class="nc-empty-icon"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="opacity:.25"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div><div class="nc-empty-text">لا توجد تحديثات</div></div>`;
+    return;
+  }
+  const groups = _ncGroupByTime(_ncAllNotifs, n => n.ts);
+  main.innerHTML = `<div class="nc-list">${groups.map(g =>
+    `<div class="nc-time-label">${g.label}</div>` +
+    g.items.map(n => _ncItemHtml(n, _ncSelectedId === n.id)).join('')
+  ).join('')}</div>`;
+}
+
+/* ── Copy OTP helper ── */
+function _ncCopyCode(code, btn) {
+  navigator.clipboard?.writeText(code).then(() => {
+    btn.classList.add('copied');
+    const orig = btn.innerHTML;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 1800);
+  }).catch(() => {});
+}
+const _COPY_SVG = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`;
+
+function _ncOtpBox(code, color) {
+  return `<div class="nc-otp-box" style="background:${color}14;border:1.5px solid ${color}35">
+    <div style="font-size:.58rem;font-weight:700;color:${color};margin-bottom:4px;letter-spacing:.04em">كود التحقق</div>
+    <div class="nc-otp-code" style="color:${color}">
+      <span style="letter-spacing:.4em">${esc(code)}</span>
+      <button class="otp-copy-btn" style="color:${color}" onclick="event.stopPropagation();_ncCopyCode('${esc(code)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
+    </div>
+  </div>`;
+}
+
+function _ncInfoRow(label, val) {
+  if (!val) return '';
+  return `<div class="nc-info-row"><span class="nc-lbl">${label}</span><span class="nc-val">${val}</span></div>`;
+}
+
+function _ncMentionCardHtml(m) {
+  const ago = _timeAgo(m.ts);
+  const isUnread = !m.read;
+  const clickAttr = `onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})"`;
+  const baseStyle = `cursor:pointer;${isUnread ? 'background:rgba(124,58,237,.035)' : ''}`;
+  const unreadBar = isUnread ? `<div style="position:absolute;inset-inline-start:0;top:0;bottom:0;width:3px;border-radius:2px;background:#7c3aed"></div>` : '';
+
+  const _gv = (lines, prefix) => { const l = lines.find(x => x.trimStart().startsWith(prefix)); return l ? l.slice(l.indexOf(':')+1).trim() : ''; };
+  const _items = (lines) => lines.filter(l => l.trimStart().startsWith('•')).map(l => l.replace(/^\s*•\s*/,'').trim());
+  const _itemsHtml = (items, max=4) => items.length ? `<div style="padding:2px 0">${items.slice(0,max).map(it=>`<div style="font-size:.71rem;color:var(--text);padding:2px 0;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it)}</div>`).join('')}${items.length>max?`<div style="font-size:.65rem;color:var(--muted);padding-top:2px">...و${items.length-max} أخرى</div>`:''}</div>` : '';
+
+  // ── Discount OTP ──
+  if (m.fromName === 'نظام التحقق') {
+    const lines = m.commentText.split('\n');
+    const code = (lines[0]||'').replace(/.*:\s*/,'').trim();
+    const color = '#e11d48';
+    return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:.73rem;font-weight:800;color:${color};display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> كود تحقق خصم</span>
+        <span style="font-size:.62rem;color:var(--muted)">${ago}</span>
+      </div>
+      ${code ? _ncOtpBox(code, color) : ''}
+      <div class="nc-info-grid">
+        ${_ncInfoRow('الموظف', esc(_gv(lines,'الموظف')))}
+        ${_ncInfoRow('العميل', esc(_gv(lines,'العميل')))}
+        ${_gv(lines,'الفاتورة')&&_gv(lines,'الفاتورة')!=='-' ? _ncInfoRow('الفاتورة', `<span style="color:var(--accent)">#${esc(_gv(lines,'الفاتورة'))}</span>`) : ''}
+        ${_gv(lines,'الخصم') ? _ncInfoRow('قيمة الخصم', `<strong style="color:${color}">${esc(_gv(lines,'الخصم').replace(/\s*ج\.?م?\.?\s*/g,'').trim())} ج.م</strong>`) : ''}
+        ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted)">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
+      </div></div>`;
+  }
+
+  // ── Delete OTP ──
+  if (m.fromName === 'نظام الحماية') {
+    const lines = m.commentText.split('\n');
+    const code = _gv(lines,'🔐 كود التحقق');
+    const isSupplier = lines[0]?.includes('مورد');
+    const title = isSupplier ? 'طلب حذف مورد — موافقة مطلوبة' : 'طلب حذف صنف — موافقة مطلوبة';
+    const color = '#ef4444';
+    return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:.73rem;font-weight:800;color:${color};display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg> ${title}</span>
+        <span style="font-size:.62rem;color:var(--muted)">${ago}</span>
+      </div>
+      ${code ? _ncOtpBox(code, color) : ''}
+      <div class="nc-info-grid">
+        ${_ncInfoRow('الموظف', esc(_gv(lines,'الموظف')))}
+        ${isSupplier ? _ncInfoRow('المورد', `<strong>${esc(_gv(lines,'المورد'))}</strong>`) : ''}
+        ${_itemsHtml(_items(lines))}
+        ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted)">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
+      </div></div>`;
+  }
+
+  // ── Vault OTP ──
+  if (m.fromName === 'نظام الخزنة') {
+    const lines = m.commentText.split('\n');
+    const code = _gv(lines,'🔐 كود التحقق');
+    const color = '#0ea5e9';
+    return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:.73rem;font-weight:800;color:${color};display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg> طلب دخول الخزنة — موافقة مطلوبة</span>
+        <span style="font-size:.62rem;color:var(--muted)">${ago}</span>
+      </div>
+      ${code ? _ncOtpBox(code, color) : ''}
+      <div class="nc-info-grid">
+        ${_ncInfoRow('الموظف', esc(_gv(lines,'الموظف')))}
+        ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted)">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
+      </div></div>`;
+  }
+
+  // ── Purchase OTP ──
+  if (m.fromName === 'نظام المشتريات') {
+    const lines = m.commentText.split('\n');
+    const code = _gv(lines,'🔐 كود التحقق');
+    const color = '#d97706';
+    return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:.73rem;font-weight:800;color:${color};display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg> طلب شراء — موافقة مطلوبة</span>
+        <span style="font-size:.62rem;color:var(--muted)">${ago}</span>
+      </div>
+      ${code ? _ncOtpBox(code, color) : ''}
+      <div class="nc-info-grid">
+        ${_ncInfoRow('الموظف', esc(_gv(lines,'الموظف')))}
+        ${_ncInfoRow('المورد', `<strong>${esc(_gv(lines,'المورد'))}</strong>`)}
+        ${_gv(lines,'رقم الفاتورة')&&_gv(lines,'رقم الفاتورة')!=='-' ? _ncInfoRow('الفاتورة', `<span style="color:var(--accent)">#${esc(_gv(lines,'رقم الفاتورة'))}</span>`) : ''}
+        ${_itemsHtml(_items(lines))}
+        ${_gv(lines,'الإجمالي') ? _ncInfoRow('الإجمالي', `<strong style="color:var(--primary)">${esc(_gv(lines,'الإجمالي').replace(/\s*ج\.?م?\.?\s*/g,'').trim())} ج.م</strong>`) : ''}
+        ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted)">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
+      </div></div>`;
+  }
+
+  // ── Import OTP ──
+  if (m.fromName === 'نظام الاستيراد') {
+    const lines = m.commentText.split('\n');
+    const code = _gv(lines,'🔐 كود التحقق');
+    const color = '#8b5cf6';
+    return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:.73rem;font-weight:800;color:${color};display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> طلب استيراد أصناف — موافقة مطلوبة</span>
+        <span style="font-size:.62rem;color:var(--muted)">${ago}</span>
+      </div>
+      ${code ? _ncOtpBox(code, color) : ''}
+      <div class="nc-info-grid">
+        ${_ncInfoRow('الموظف', esc(_gv(lines,'الموظف')))}
+        ${_gv(lines,'عدد الأصناف') ? _ncInfoRow('عدد الأصناف', `<strong style="color:var(--primary)">${esc(_gv(lines,'عدد الأصناف'))}</strong>`) : ''}
+        ${_itemsHtml(_items(lines), 3)}
+        ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted)">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
+      </div></div>`;
+  }
+
+  // ── Regular mention ──
+  const rawTxt = _stripHtml((m.commentText || '').replace(/\s*EGP\s*/gi, ' ')).replace(/\s{2,}/g, ' ').trim();
+  // Remove OTP codes and long hex IDs from preview text
+  const txt = rawTxt
+    .replace(/🔐\s*كود التحقق\s*[:\-]?\s*\d+/g, '')
+    .replace(/كود التحقق\s*[:\-]?\s*\d+/g, '')
+    .replace(/#[a-f0-9]{10,}/gi, id => `#${id.slice(1,9)}…`)
+    .replace(/\s{2,}/g, ' ').trim();
+  const shortRef = m.txId ? `#${String(m.txId).slice(-6)}` : '';
+  const color = '#7c3aed';
+  return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="width:28px;height:28px;border-radius:8px;background:rgba(124,58,237,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"/></svg>
+        </div>
+        <div>
+          <div style="font-size:.78rem;font-weight:700;color:var(--text);line-height:1.2">${esc(m.fromName||'')} <span style="color:${color}">أشار إليك</span>${shortRef ? ` <span style="font-size:.67rem;font-weight:500;color:var(--muted)">${esc(shortRef)}</span>` : ''}</div>
+        </div>
+      </div>
+      <span style="font-size:.62rem;color:var(--muted);white-space:nowrap;margin-inline-start:8px">${ago}</span>
+    </div>
+    ${txt ? `<div style="font-size:.73rem;color:var(--muted);line-height:1.5;padding:3px 0 1px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${esc(txt)}</div>` : ''}
+  </div>`;
+}
+
+function _renderNcMentionsList(main) {
+  const subtitle = qs('#nc-subtitle');
+  const unread = _ncAllMentions.filter(m => !m.read).length;
+  if (subtitle) subtitle.textContent = _ncAllMentions.length > 0 ? `${_ncAllMentions.length} إشارة${unread > 0 ? ` — ${unread} غير مقروءة` : ''}` : 'لا توجد إشارات';
+  if (!_ncAllMentions.length) {
+    main.innerHTML = `<div class="nc-empty-state"><div class="nc-empty-icon"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="opacity:.25"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"/></svg></div><div class="nc-empty-text">لا توجد إشارات بعد</div></div>`;
+    return;
+  }
+  const groups = _ncGroupByTime(_ncAllMentions, m => m.ts);
+  main.innerHTML = groups.map(g =>
+    `<div class="nc-time-label">${g.label}</div>` +
+    g.items.map(m => _ncMentionCardHtml(m)).join('')
+  ).join('');
+}
+
+function _renderNcStockList(main) {
+  const subtitle = qs('#nc-subtitle');
+  if (subtitle) subtitle.textContent = _ncAllStock.length > 0 ? `${_ncAllStock.length} تنبيه مخزن` : 'لا توجد تنبيهات';
+  if (!_ncAllStock.length) {
+    main.innerHTML = `<div class="nc-empty-state"><div class="nc-empty-icon"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="opacity:.25"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div><div class="nc-empty-text">المخزن في حالة جيدة</div></div>`;
+    return;
+  }
+  const groups = _ncGroupByTime(_ncAllStock, n => n.ts);
+  main.innerHTML = `<div class="nc-list">${groups.map(g =>
+    `<div class="nc-time-label">${g.label}</div>` +
+    g.items.map(n => _ncItemHtml(n, _ncSelectedId === n.id)).join('')
+  ).join('')}</div>`;
+}
+
+function _selectNcItem(id) {
+  _ncSelectedId = id;
+  let n = null;
+  if (_ncTab === 'updates') n = _ncAllNotifs.find(x => x.id === id);
+  else if (_ncTab === 'stock') n = _ncAllStock.find(x => x.id === id);
+  if (n) _markNotifRead(id);
+  _renderNcContent();
+  if (n) _renderNcDetail(n);
+}
+
+function _renderNcDetail(n) {
+  const main = qs('#nc-main');
+  if (!main || !n) return;
+  const pageMap = { movements: 'الحركات', approvals: 'الموافقات', complaints: 'الشكاوى', inventory: 'المخزن', dashboard: 'الرئيسية' };
+  const isDismissed = notifDismissed.includes(n.id);
+  const existing = main.querySelector('.nc-detail-pane');
+  if (existing) existing.remove();
+  const pane = document.createElement('div');
+  pane.className = 'nc-detail has-content nc-detail-pane';
+  pane.style.cssText = 'border-top:1px solid var(--border);animation:notifIn .18s ease';
+  pane.innerHTML = `
+    <div class="nc-detail-icon ${n.type}">${n.icon}</div>
+    <div class="nc-detail-title">${esc(n.title)}</div>
+    <div class="nc-detail-desc">${esc(n.desc)}</div>
+    ${n.ts ? `<div class="nc-detail-meta">
+      <div class="nc-detail-meta-row"><span class="label">وقت الإشعار</span><span class="value">${fmtDateTime(n.ts)}</span></div>
+      ${n.page ? `<div class="nc-detail-meta-row"><span class="label">القسم</span><span class="value">${pageMap[n.page] || n.page}</span></div>` : ''}
+    </div>` : ''}
+    <div class="nc-detail-actions">
+      <button class="nc-detail-go-btn" onclick="_ncNavigate('${esc(n.page||'')}','${esc(n.id)}','${esc(n.fuId||'')}','${esc(n.refType||'')}','${esc(n.refId||'')}')">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        انتقل إلى ${pageMap[n.page] || n.page || 'الصفحة'}
+      </button>
+      ${!isDismissed ? `<button class="nc-detail-dismiss-btn" onclick="_ncDismiss('${esc(n.id)}')">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        تجاهل
+      </button>` : '<span style="font-size:.75rem;color:var(--muted)">تم التجاهل</span>'}
+    </div>`;
+  main.appendChild(pane);
+  pane.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function _ncNavigate(page, notifId, fuId, refType, refId) {
+  closeNotifCenter();
+  if (!notifDismissed.includes(notifId)) {
+    notifDismissed.push(notifId);
+    localStorage.setItem('notifDismissed', JSON.stringify(notifDismissed));
+  }
+  _markNotifRead(notifId);
+  if (fuId) { goToFuAndHighlight(fuId); return; }
+  navigateTo(page);
+}
+
+function _ncDismiss(notifId) {
+  if (!notifDismissed.includes(notifId)) {
+    notifDismissed.push(notifId);
+    localStorage.setItem('notifDismissed', JSON.stringify(notifDismissed));
+  }
+  _markNotifRead(notifId);
+  _ncAllNotifs = _buildNcUpdates();
+  _ncAllStock = buildStockNotifs ? buildStockNotifs() : [];
+  _ncSelectedId = null;
+  _renderNcTabBar();
+  _renderNcContent();
+  buildNotifications();
+}
 
 /* ═══════════════════════════════════════════════════════════════
    MENTION SYSTEM
@@ -12836,7 +13607,10 @@ function renderMentionNotifsList() {
             </div>
             <div style="background:rgba(225,29,72,.07);border:1.5px solid rgba(225,29,72,.2);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
               <div style="font-size:.58rem;color:#e11d48;font-weight:600;margin-bottom:2px">كود التحقق</div>
-              <span style="font-family:monospace;font-size:1.15rem;font-weight:800;letter-spacing:.35em;color:#e11d48;direction:ltr;display:block">${esc(otpCode) || '—'}</span>
+              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
+                <span style="font-family:monospace;font-size:1.15rem;font-weight:800;letter-spacing:.35em;color:#e11d48">${esc(otpCode) || '—'}</span>
+                ${otpCode ? `<button class="otp-copy-btn" style="color:#e11d48" onclick="event.stopPropagation();_ncCopyCode('${esc(otpCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>` : ''}
+              </div>
             </div>
             <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
               ${_otpRow('الموظف', esc(employee))}
@@ -12881,7 +13655,10 @@ function renderMentionNotifsList() {
             </div>
             ${delCode ? `<div style="background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.25);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
               <div style="font-size:.58rem;color:#ef4444;font-weight:600;margin-bottom:2px">كود التحقق</div>
-              <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:#ef4444;direction:ltr;display:block">${esc(delCode)}</span>
+              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
+                <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:#ef4444">${esc(delCode)}</span>
+                <button class="otp-copy-btn" style="color:#ef4444" onclick="event.stopPropagation();_ncCopyCode('${esc(delCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
+              </div>
             </div>` : ''}
             <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
               ${_otpRow('الموظف', esc(delEmp))}
@@ -12924,7 +13701,10 @@ function renderMentionNotifsList() {
             </div>
             ${vCode ? `<div style="background:rgba(14,165,233,.08);border:1.5px solid rgba(14,165,233,.25);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
               <div style="font-size:.58rem;color:#0ea5e9;font-weight:600;margin-bottom:2px">كود التحقق</div>
-              <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:#0ea5e9;direction:ltr;display:block">${esc(vCode)}</span>
+              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
+                <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:#0ea5e9">${esc(vCode)}</span>
+                <button class="otp-copy-btn" style="color:#0ea5e9" onclick="event.stopPropagation();_ncCopyCode('${esc(vCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
+              </div>
             </div>` : ''}
             <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
               ${_otpRow('الموظف', esc(vEmp))}
@@ -12967,7 +13747,10 @@ function renderMentionNotifsList() {
             </div>
             ${purCode ? `<div style="background:rgba(245,158,11,.1);border:1.5px solid rgba(245,158,11,.3);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
               <div style="font-size:.58rem;color:#d97706;font-weight:600;margin-bottom:2px">كود التحقق</div>
-              <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:#d97706;direction:ltr;display:block">${esc(purCode)}</span>
+              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
+                <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:#d97706">${esc(purCode)}</span>
+                <button class="otp-copy-btn" style="color:#d97706" onclick="event.stopPropagation();_ncCopyCode('${esc(purCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
+              </div>
             </div>` : ''}
             <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
               ${_otpRow('الموظف', esc(purEmp))}
@@ -13023,7 +13806,10 @@ function renderMentionNotifsList() {
             </div>
             ${impCode ? `<div style="background:rgba(139,92,246,.08);border:1.5px solid rgba(139,92,246,.25);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
               <div style="font-size:.58rem;color:#8b5cf6;font-weight:600;margin-bottom:2px">كود التحقق</div>
-              <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:#8b5cf6;direction:ltr;display:block">${esc(impCode)}</span>
+              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
+                <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:#8b5cf6">${esc(impCode)}</span>
+                <button class="otp-copy-btn" style="color:#8b5cf6" onclick="event.stopPropagation();_ncCopyCode('${esc(impCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
+              </div>
             </div>` : ''}
             <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
               ${_otpRow('الموظف', esc(impEmp))}
@@ -13086,7 +13872,7 @@ function renderMentionNotifsList() {
             </div>
             ${etChanges.length ? `<div style="background:var(--surface2);border-radius:7px;padding:6px 8px;margin-bottom:6px">
               <div style="font-size:.65rem;font-weight:700;color:var(--muted);margin-bottom:4px">التغييرات المطلوبة</div>
-              ${etChanges.slice(0,4).map(c=>`<div style="font-size:.72rem;color:var(--text);padding:1px 0">• ${esc(c)}</div>`).join('')}
+              ${etChanges.slice(0,4).map(c=>`<div style="font-size:.72rem;color:var(--text);padding:1px 0">• ${esc(c.replace(/<[^>]*>/g,''))}</div>`).join('')}
               ${etChanges.length > 4 ? `<div style="font-size:.68rem;color:var(--muted)">... و${etChanges.length - 4} تغييرات أخرى</div>` : ''}
             </div>` : ''}
             <div style="text-align:center;margin-top:4px">
@@ -13097,10 +13883,40 @@ function renderMentionNotifsList() {
       </div>`;
     }
 
-    const snippet = m.commentText.length > 60 ? m.commentText.slice(0, 60) + '…' : m.commentText;
+    // System approval / rejection notification for edit-tx requests
+    const isEditApproved = m.commentText.startsWith('✅ تمت الموافقة على طلب تعديل');
+    const isEditRejected = m.commentText.startsWith('❌ تم رفض طلب تعديل');
+    if (isEditApproved || isEditRejected) {
+      const lines = m.commentText.split('\n');
+      const titleLine = lines[0] || '';
+      const detailLines = lines.slice(1).filter(Boolean);
+      const accentColor = isEditApproved ? '#10b981' : '#ef4444';
+      const bgColor = isEditApproved ? 'rgba(16,185,129,.07)' : 'rgba(239,68,68,.07)';
+      const borderColor = isEditApproved ? 'rgba(16,185,129,.25)' : 'rgba(239,68,68,.25)';
+      const unreadDot = m.read ? '' : `<span style="width:6px;height:6px;border-radius:50%;background:${accentColor};display:inline-block;vertical-align:middle;margin-right:3px"></span>`;
+      return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" style="padding:10px 12px;${m.read ? '' : `background:${bgColor}`}">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:32px;height:32px;border-radius:10px;background:${bgColor};border:1px solid ${borderColor};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:1.1rem">${isEditApproved ? '✅' : '❌'}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
+              <span style="font-size:.72rem;font-weight:700;color:${accentColor};line-height:1.3">${unreadDot}${esc(titleLine)}</span>
+              <span style="font-size:.62rem;color:var(--muted);white-space:nowrap;flex-shrink:0">${ago}</span>
+            </div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;display:flex;flex-direction:column;gap:3px">
+              ${detailLines.map(l => `<div style="font-size:.73rem;color:var(--muted);line-height:1.4">${esc(l)}</div>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    const _cleanSnippet = (t) => t.replace(/🔐\s*كود التحقق\s*[:\-]?\s*\d+/g,'').replace(/كود التحقق\s*[:\-]?\s*\d+/g,'').replace(/\s{2,}/g,' ').trim();
+    const rawSnippet = _cleanSnippet(m.commentText);
+    const snippet = rawSnippet.length > 60 ? rawSnippet.slice(0, 60) + '…' : rawSnippet;
+    const _shortId = (id) => id ? `#${String(id).slice(-6)}` : '';
     const context = isFu
-      ? `متابعة طلب <strong>#${esc(String(m.txRef || m.txId))}</strong>`
-      : `حركة <strong>#${esc(String(m.txRef || m.txId))}</strong>`;
+      ? `متابعة طلب <strong>${esc(_shortId(m.txRef || m.txId))}</strong>`
+      : `حركة <strong>${esc(_shortId(m.txRef || m.txId))}</strong>`;
     return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})" style="${m.read ? '' : 'background:rgba(139,92,246,.05)'}">
       <div class="notif-icon">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"/></svg>
@@ -13241,14 +14057,16 @@ async function openEditTxOtpReviewModal(otpDocId, mentionId) {
   const typeColor = details.txType === 'مشتريات' ? '#10b981' : 'var(--primary)';
   const expStr = details.expiresAt ? new Date(details.expiresAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '—';
   const createdStr = details.createdAt ? fmtDateTime(details.createdAt) : '—';
+  const _stripHtmlTags = s => String(s).replace(/<[^>]*>/g, '');
   const changesHtml = (details.changes || []).map((c, i) => {
-    const isRemoved = String(c).startsWith('حُذف');
-    const isAdded   = String(c).startsWith('أُضيف');
-    const isFin     = String(c).startsWith('الخصم') || String(c).startsWith('الإجمالي') || String(c).startsWith('تكلفة') || String(c).startsWith('الديبوزت') || String(c).startsWith('العربون');
+    const plain = _stripHtmlTags(c);
+    const isRemoved = plain.startsWith('حُذف');
+    const isAdded   = plain.startsWith('أُضيف');
+    const isFin     = plain.startsWith('الخصم') || plain.startsWith('الإجمالي') || plain.startsWith('تكلفة') || plain.startsWith('الديبوزت') || plain.startsWith('العربون');
     const dotColor  = isRemoved ? '#ef4444' : isAdded ? '#10b981' : isFin ? '#f59e0b' : 'var(--muted)';
     return `<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;${i < (details.changes.length - 1) ? 'border-bottom:1px solid var(--border)' : ''}">
       <span style="width:7px;height:7px;border-radius:50%;background:${dotColor};flex-shrink:0;margin-top:5px"></span>
-      <span style="font-size:.78rem;color:var(--text);line-height:1.4">${esc(c)}</span>
+      <span style="font-size:.78rem;color:var(--text);line-height:1.4">${esc(plain)}</span>
     </div>`;
   }).join('');
 
@@ -13358,7 +14176,9 @@ async function doApproveEditTx(otpDocId, txId) {
   const applyTxId = approveRes.txId || txId;
   if (!applyTxId) { toast('تعذر تحديد الحركة المطلوب تعديلها', true); return; }
   try {
-    await api(`/transactions/${applyTxId}`, { method: 'PUT', body: JSON.stringify(approveRes.payload || {}) });
+    const editedByParam = encodeURIComponent(approveRes.requestedByName || '');
+    const approvedByParam = encodeURIComponent(approveRes.reviewedBy || currentUser?.name || currentUser?.username || '');
+    await api(`/transactions/${applyTxId}?editedBy=${editedByParam}&approvedBy=${approvedByParam}`, { method: 'PUT', body: JSON.stringify(approveRes.payload || {}) });
     closeModal();
     transactions = await api('/transactions').catch(() => transactions);
     try { inventoryCache = await api('/transactions/inventory'); } catch(_) {}
@@ -13457,7 +14277,7 @@ function showMentionAlert(mentions) {
     return `<div class="mention-alert-item" onclick="closeMentionAlert();onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})">
       <div class="mention-alert-avatar">OTP</div>
       <div class="notif-body">
-        <div class="notif-title"><strong>${esc(m.fromName)}</strong> <span style="font-weight:400;color:var(--muted)">أشار إليك في</span> ${ctxLabel} <span style="font-family:monospace;font-size:.74rem;color:#7c3aed;background:rgba(124,58,237,.08);padding:1px 5px;border-radius:4px">#${esc(String(m.txRef || m.txId))}</span></div>
+        <div class="notif-title"><strong>${esc(m.fromName)}</strong> <span style="font-weight:400;color:var(--muted)">أشار إليك في</span> ${ctxLabel} <span style="font-size:.74rem;color:#7c3aed;background:rgba(124,58,237,.08);padding:1px 5px;border-radius:4px">#${esc(String(m.txRef || m.txId).slice(-6))}</span></div>
         ${snippet ? `<div class="notif-desc" style="font-style:italic">💬 ${esc(snippet)}</div>` : ''}
         <div class="notif-time">${_timeAgo(m.ts)}</div>
       </div>
@@ -13992,8 +14812,8 @@ function renderAdminBriefing() {
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"/></svg>
           </span>
           <div class="adb-activity-info">
-            <span class="adb-activity-title"><strong>${esc(m.fromName)}</strong> أشار إليك في <span style="font-family:monospace;font-size:.7rem;color:var(--muted)">#${esc(String(m.txRef || m.txId))}</span></span>
-            <span class="adb-activity-meta" style="font-style:italic">"${esc(snippet)}"</span>
+            <span class="adb-activity-title"><strong>${esc(m.fromName)}</strong> أشار إليك${m.txRef ? ` <span style="color:var(--muted);font-size:.7rem">#${esc(String(m.txRef).slice(-6))}</span>` : ''}</span>
+            <span class="adb-activity-meta" style="font-style:italic">"${esc(snippet.replace(/🔐\s*كود التحقق\s*[:\-]?\s*\d+/g,'').replace(/كود التحقق\s*[:\-]?\s*\d+/g,'').trim())}"</span>
           </div>
           <span class="adb-activity-time">${ago}</span>
         </div>`;
@@ -19253,7 +20073,7 @@ function renderMovMobileCard(tx) {
       <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" class="mov-client-name">${tx.client ? esc(tx.client) : '<span style="color:var(--muted)">بدون اسم</span>'}</a>
       ${tx.ref ? `<span class="mov-card-ref">#${esc(tx.ref)}</span>` : ''}
     </div>
-    <div class="mov-card-statusrow">${statusHtml}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : ''}<span class="mov-card-emp mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span></div>
+    <div class="mov-card-statusrow">${statusHtml}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : ''}<span class="mov-card-emp mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span><span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div>
     <div class="mov-card-grid">
       <div class="mov-item"><span class="mov-label">الإجمالي</span><span class="mov-val mov-col-total">${fmtJ(tx.total)}</span></div>
       <div class="mov-item"><span class="mov-label">المدفوع</span><span class="mov-val mov-col-paid">${dep}</span></div>
@@ -19665,7 +20485,7 @@ function renderMovementTxRow(tx) {
     <td data-col="tag" style="text-align:center;min-width:110px" onclick="event.stopPropagation()" data-tag-cell="${esc(tx._id)}">${renderTxTagsCell(tx._id)}</td>
     <td data-col="discount" style="text-align:center;white-space:nowrap">${_movDiscountBadge(tx)}</td>
     <td data-col="pickup" style="text-align:center;white-space:nowrap">${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : '<span style="color:var(--muted);font-size:.8rem">—</span>'}</td>
-    <td data-col="employee" class="mov-col-employee" style="text-align:center"><span class="mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span></td>
+    <td data-col="employee" class="mov-col-employee" style="text-align:center"><div class="mov-col-employee-wrap"><span class="mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span><span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div></td>
     <td>
       <div class="actions-dd">
         <button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button>
@@ -19947,6 +20767,7 @@ function renderMovements() {
   qsa('.mov-pickup-filter-pill').forEach(b => b.classList.toggle('active', b.dataset.puVal === movPickupFilter));
   renderPagination('mov-pagination', total, movPage, MOV_PAGE_SIZE, 'setMovPage', [10,20,50,100], 'setMovPerPage');
   updateMovementSelectionActions();
+  requestAnimationFrame(() => _refreshEditingBadges());
 }
 const debouncedRenderMovements = debounce(() => { movPage = 1; renderMovements(); }, 250);
 
@@ -20301,7 +21122,7 @@ function renderMovGridCard(tx) {
     <div class="mgc-header">
       <div class="mgc-avatar" style="background:${color};animation:mgcAvatarPop .35s cubic-bezier(.2,.8,.3,1.1) both" onclick="event.stopPropagation();showInvoiceDetail('${esc(tx._id)}')" title="${esc(tx.type)}">${_txTypeIcon(tx)}</div>
       <div class="mgc-meta">
-        <div class="mgc-ref">${tx.ref ? '#'+esc(tx.ref) : '—'} · <span class="mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span></div>
+        <div class="mgc-ref">${tx.ref ? '#'+esc(tx.ref) : '—'} · <span class="mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span><span data-presence-tx="${esc(tx._id)}" style="display:none;margin-right:4px"></span></div>
         <div class="mgc-date">${_fmtCardDate(tx.date, tx.createdAt)}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
@@ -20987,6 +21808,12 @@ function releaseEditMovementLock(id) {
   const lockId = id || _currentEditLockId;
   if (!lockId) return;
   _currentEditLockId = null;
+  // Remove badge immediately — don't wait for socket round-trip
+  _activeEditors.delete(String(lockId));
+  document.querySelectorAll(`[data-presence-tx="${lockId}"]`).forEach(el => {
+    el.innerHTML = '';
+    el.style.display = 'none';
+  });
   api(`/transactions/${lockId}/unlock`, { method: 'POST' }).catch(() => {});
 }
 
@@ -21136,21 +21963,39 @@ function renderEditTxItems() {
     const productName = product ? product.name : (it.name || 'صنف غير محدد');
     const productCode = product ? (product.code || '') : (it.code || '');
     const imgUrl = product?.imageUrl ? sanitizeUrl(product.imageUrl) : '';
-    const available = resolvedProductId ? getProductAvailableStock(resolvedProductId) : null;
-    const isOverStock = isSale && resolvedProductId && available !== null && available >= 0 && it.qty > available;
+    const rawAvailable = resolvedProductId ? getProductAvailableStock(resolvedProductId) : null;
+    // When editing an existing sale, the original qty of this product is already deducted from
+    // inventory. Add it back so we compare against "what would be available if this edit hadn't happened".
+    const originalTx = transactions.find(t => t._id === editTxId);
+    const originalQtyForProduct = resolvedProductId && originalTx?.items
+      ? (originalTx.items.filter(oi => {
+          const op = products.find(p => p._id === (oi.productId || '') || p.code === (oi.code || '') || p.name === (oi.name || ''));
+          return (oi.productId && oi.productId === resolvedProductId) || (op && op._id === resolvedProductId);
+        }).reduce((s, oi) => s + (oi.qty || 0), 0))
+      : 0;
+    const available = (rawAvailable !== null && rawAvailable >= 0) ? rawAvailable + originalQtyForProduct : rawAvailable;
+    // Subtract qty of same product in other rows of the edit form
+    const otherEditRowsQty = editTxItems.reduce((s, x, idx) => {
+      const xProd = x.productId ? products.find(p => p._id === x.productId) : null;
+      const xId = x.productId || xProd?._id || '';
+      return (idx !== i && xId === resolvedProductId) ? s + (x.qty || 0) : s;
+    }, 0);
+    const effectiveEditAvailable = (available !== null && available >= 0) ? Math.max(0, available - otherEditRowsQty) : null;
+    const isOverStock = isSale && resolvedProductId && effectiveEditAvailable !== null && it.qty > effectiveEditAvailable;
     const _eAvatarColors = ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6'];
     const _eAvatarHue = product ? (_eAvatarColors[(product.code || product.name || '').charCodeAt(0) % _eAvatarColors.length] || '#10b981') : '#10b981';
     const _eInitials = productName.split(/\s+/).slice(0,2).map(w => w[0]?.toUpperCase() || '').join('');
-    const eStockRing = isSale && available !== null
-      ? (available === 0 || isOverStock ? 'box-shadow:0 0 0 2.5px var(--red,#ef4444)' : 'box-shadow:0 0 0 2.5px #10b981')
+    const eStockRing = isSale && effectiveEditAvailable !== null
+      ? (effectiveEditAvailable === 0 || isOverStock ? 'box-shadow:0 0 0 2.5px var(--red,#ef4444)' : 'box-shadow:0 0 0 2.5px #10b981')
       : '';
     const imgHtml = imgUrl
       ? `<img src="${esc(imgUrl)}" alt="${esc(productName)}" loading="lazy" style="border-radius:8px;object-fit:cover;width:100%;height:100%;${eStockRing}" onerror="_txImgFallback(this)">`
       : `<div style="width:100%;height:100%;border-radius:8px;background:${_eAvatarHue}22;display:flex;align-items:center;justify-content:center;${eStockRing}"><span style="font-size:1.05rem;font-weight:800;color:${_eAvatarHue};letter-spacing:-.5px">${_eInitials || '؟'}</span></div>`;
     let stockBadge = '';
-    if (isSale && resolvedProductId && available !== null) {
-      if (available === 0 || isOverStock) stockBadge = `<span class="tx-item-stock-badge warn"><span class="dot"></span>${isOverStock ? 'يتجاوز المتاح' : 'غير متاح'} (${available})</span>`;
-      else if (available > 0) stockBadge = `<span class="tx-item-stock-badge"><span class="dot"></span>متاح: ${available}</span>`;
+    if (isSale && resolvedProductId && rawAvailable !== null) {
+      if (isOverStock) stockBadge = `<span class="tx-item-stock-badge warn"><span class="dot"></span>يتجاوز المتاح (${rawAvailable})</span>`;
+      else if (rawAvailable === 0) stockBadge = `<span class="tx-item-stock-badge warn"><span class="dot"></span>غير متاح (0)</span>`;
+      else stockBadge = `<span class="tx-item-stock-badge"><span class="dot"></span>متاح: ${rawAvailable}</span>`;
     }
     return `
     <div class="tx-item-card${isOverStock ? ' row-stock-warning' : ''}">
@@ -21881,25 +22726,25 @@ async function saveEditMovement(id) {
   // أصناف محذوفة
   origItems.forEach(it => {
     const k = it.productId || it.name;
-    if (k && !newItemMap[k]) changes.push({ type: 'removed', text: `حُذف: ${it.name || it.code || k} (${it.qty} × ${fmtJ(it.price)})` });
+    if (k && !newItemMap[k]) changes.push({ type: 'removed', text: `حُذف: ${it.name || it.code || k} (${it.qty} × ${fmtJT(it.price)})` });
   });
   // أصناف مضافة أو معدّلة
   newItems.forEach(it => {
     const k = it.productId || it.name;
     const orig = k ? origItemMap[k] : null;
     if (!orig) {
-      changes.push({ type: 'added', text: `أُضيف: ${it.name || it.code || k} (${it.qty} × ${fmtJ(it.price)})` });
+      changes.push({ type: 'added', text: `أُضيف: ${it.name || it.code || k} (${it.qty} × ${fmtJT(it.price)})` });
     } else {
-      if (orig.qty !== it.qty) changes.push({ type: 'modified', text: `${it.name}: الكمية ${fmtJ(orig.qty)} ← ${fmtJ(it.qty)}` });
-      if (orig.price !== it.price) changes.push({ type: 'modified', text: `${it.name}: السعر ${fmtJ(orig.price)} ← ${fmtJ(it.price)}` });
+      if (orig.qty !== it.qty) changes.push({ type: 'modified', text: `${it.name}: الكمية ${fmtN(orig.qty)} ← ${fmtN(it.qty)}` });
+      if (orig.price !== it.price) changes.push({ type: 'modified', text: `${it.name}: السعر ${fmtJT(orig.price)} ← ${fmtJT(it.price)}` });
     }
   });
 
   // تغييرات مالية
-  if (discountDelta !== 0) changes.push({ type: 'financial', text: `الخصم: ${fmtJ(origDiscount)} ← ${fmtJ(discount)}` });
-  if (shipCostDelta !== 0) changes.push({ type: 'financial', text: `تكلفة الشحن: ${fmtJ(origShipCost)} ← ${fmtJ(shipCost)}` });
-  if (depositDelta !== 0) changes.push({ type: 'financial', text: `${tx.type === 'مشتريات' ? 'العربون' : 'الديبوزت'}: ${fmtJ(origDeposit)} ← ${fmtJ(deposit)}` });
-  if (totalDelta !== 0) changes.push({ type: 'financial', text: `الإجمالي: ${fmtJ(origTotal)} ← ${fmtJ(total)}` });
+  if (discountDelta !== 0) changes.push({ type: 'financial', text: `الخصم: ${fmtJT(origDiscount)} ← ${fmtJT(discount)}` });
+  if (shipCostDelta !== 0) changes.push({ type: 'financial', text: `تكلفة الشحن: ${fmtJT(origShipCost)} ← ${fmtJT(shipCost)}` });
+  if (depositDelta !== 0) changes.push({ type: 'financial', text: `${tx.type === 'مشتريات' ? 'العربون' : 'الديبوزت'}: ${fmtJT(origDeposit)} ← ${fmtJT(deposit)}` });
+  if (totalDelta !== 0) changes.push({ type: 'financial', text: `الإجمالي: ${fmtJT(origTotal)} ← ${fmtJT(total)}` });
 
   // دائماً أظهر نافذة التأكيد لمراجعة التغييرات قبل الحفظ
   const confirmed = await showEditConfirmDialog({ changes, vaultDelta, vaultNote, tx });
@@ -22015,7 +22860,8 @@ async function _applyEditTxBody(id, body, tx, changes, editDiscCodeId) {
 function showEditTxOtpPendingModal({ tx, otpId, expiresAt, changes }) {
   const typeLabel = tx.type === 'مشتريات' ? 'مشتريات' : 'مبيعات';
   const expStr = new Date(expiresAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-  const changesList = changes.slice(0, 8).map(c => `<li style="padding:2px 0;font-size:.78rem;color:var(--text)">${esc(c.text || c)}</li>`).join('');
+  const _stripHtml = s => String(s).replace(/<[^>]*>/g, '');
+  const changesList = changes.slice(0, 8).map(c => `<li style="padding:2px 0;font-size:.78rem;color:var(--text)">${esc(_stripHtml(c.text || c))}</li>`).join('');
   const moreChanges = changes.length > 8 ? `<li style="color:var(--muted);font-size:.75rem">... و${changes.length - 8} تغييرات أخرى</li>` : '';
   openModal(`
     <div style="text-align:center;margin-bottom:16px">
@@ -24148,14 +24994,15 @@ function buildInvEditHistorySection(tx) {
     });
     const itemChanges = diffItems(b.items, after.items);
     details.push(...itemChanges.map(ic => ic.text));
-    return { editedAt: entry.editedAt, editedBy: entry.editedBy || '', details };
+    return { editedAt: entry.editedAt, editedBy: entry.editedBy || '', approvedBy: entry.approvedBy || '', details };
   });
   const rows = [...entries].reverse().map((entry, idx) => {
     const detailsHtml = entry.details.length
       ? `<ul class="history-detail-list">${entry.details.map(d => `<li class="history-detail-item">${d}</li>`).join('')}</ul>`
       : '<div style="color:var(--muted);font-size:.75rem;padding:4px 0">لا توجد تغييرات مسجلة</div>';
-    const editorName = entry.editedBy ? `<span style="background:var(--primary-pale);color:var(--accent);padding:1px 8px;border-radius:10px;font-size:.7rem;font-weight:600">بواسطة: ${esc(entry.editedBy)}</span>` : '';
-    return `<div class="history-entry"><div class="history-date">${ICON('clock')} التعديل ${entries.length - idx} — ${formatEditDateTime(entry.editedAt)} ${editorName}</div>${detailsHtml}</div>`;
+    const editorBadge = entry.editedBy ? `<span style="background:var(--primary-pale);color:var(--accent);padding:1px 8px;border-radius:10px;font-size:.7rem;font-weight:600">✏️ عدّل: ${esc(entry.editedBy)}</span>` : '';
+    const approverBadge = entry.approvedBy ? `<span style="background:#d1fae5;color:#065f46;padding:1px 8px;border-radius:10px;font-size:.7rem;font-weight:600">✅ وافق: ${esc(entry.approvedBy)}</span>` : '';
+    return `<div class="history-entry"><div class="history-date">${ICON('clock')} التعديل ${entries.length - idx} — ${formatEditDateTime(entry.editedAt)} ${editorBadge} ${approverBadge}</div>${detailsHtml}</div>`;
   }).join('');
   return `<div class="inv-section">
     <div class="inv-section-header" onclick="this.classList.toggle('expanded');this.nextElementSibling.classList.toggle('expanded')">
@@ -24833,7 +25680,49 @@ async function saveProduct(id) {
     return;
   }
 
+  // Staff editing an existing product: send edit request for admin approval
+  if (id && !isAdmin()) {
+    await _doRequestProductEdit(id, body);
+    return;
+  }
+
   await _doSaveProduct(id, body);
+}
+
+async function _doRequestProductEdit(id, newValues) {
+  const existing = products.find(p => p._id === id);
+  if (!existing) { toast('الصنف غير موجود', true); return; }
+  const SENSITIVE = ['sellPrice', 'buyPrice', 'openingBalance'];
+  const changes = {};
+  for (const [k, v] of Object.entries(newValues)) {
+    if (String(existing[k] ?? '') !== String(v ?? '')) changes[k] = v;
+  }
+  if (!Object.keys(changes).length) { toast('لا توجد تغييرات'); closeModal(); return; }
+  const hasSensitive = SENSITIVE.some(f => changes[f] !== undefined);
+  const saveBtn = qs('#pm-save-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '0.6'; }
+  try {
+    await api('/products/' + id + '/request-edit', {
+      method: 'POST',
+      body: JSON.stringify({
+        requestedBy: currentUser?.name || currentUser?.username || 'موظف',
+        requestedById: currentUser?._id || '',
+        requestedByUsername: currentUser?.username || '',
+        changes,
+      }),
+    });
+    toast(hasSensitive
+      ? 'تم إرسال طلب التعديل — في انتظار موافقة المدير ✅'
+      : 'تم إرسال طلب التعديل — في انتظار موافقة المدير ✅');
+    closeModal();
+    products = await api('/products').catch(() => products);
+    renderProducts();
+  } catch (e) {
+    const msg = e.message || '';
+    if (msg.includes('معلق بالفعل')) toast('يوجد طلب تعديل معلق بالفعل لهذا الصنف', true);
+    else toast('خطأ: ' + msg, true);
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = ''; }
+  }
 }
 
 async function _doSaveProduct(id, body) {
@@ -25048,7 +25937,7 @@ function renderSuppliers() {
       </div>` : '<p class="text-xs text-muted" style="margin-top:8px">لا توجد فواتير</p>'}
       <div class="flex gap-8 mt-16" style="justify-content:center;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" onclick="openSupplierInvoices('${esc(s.name)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg> الفواتير</button>
-        <div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu"><div class="dd-item" onclick="openSupplierModal('${esc(s._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</div></div></div>
+        <div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu"><div class="dd-item" onclick="openSupplierModal('${esc(s._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</div><div class="dd-item danger" onclick="deleteSupplier('${esc(s._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> حذف</div></div></div>
       </div>
     </div>`;
   }).join('') : '<div class="empty-state">لا يوجد موردون</div>';
@@ -25954,42 +26843,297 @@ function clearApprFilters() {
   qs('#appr-act-from').value = ''; qs('#appr-act-to').value = '';
   renderApprovals();
 }
+// ── OTP Audit helpers ────────────────────────────────────────────────────
+const OTP_KIND_META = {
+  discount:         { label: 'خصم مرتفع',     color: '#d97706', bg: '#fef3c7',
+    svg: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1" fill="currentColor"/></svg>' },
+  purchase:         { label: 'مشتريات',        color: '#2563eb', bg: '#dbeafe',
+    svg: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.97-1.67l1.38-7.33H6"/></svg>' },
+  'edit-tx':        { label: 'تعديل حركة',     color: '#7c3aed', bg: '#ede9fe',
+    svg: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' },
+  'vault-access':   { label: 'دخول الخزنة',    color: '#dc2626', bg: '#fee2e2',
+    svg: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>' },
+  'add-product':    { label: 'إضافة صنف',      color: '#059669', bg: '#d1fae5',
+    svg: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' },
+  'delete-product': { label: 'حذف صنف',        color: '#b91c1c', bg: '#fee2e2',
+    svg: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>' },
+  'delete-supplier':{ label: 'حذف مورد',       color: '#b91c1c', bg: '#fee2e2',
+    svg: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>' },
+  'import-products':{ label: 'استيراد أصناف',  color: '#0369a1', bg: '#e0f2fe',
+    svg: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' },
+};
+function otpKindMeta(kind) {
+  return OTP_KIND_META[kind] || { label: kind || 'غير محدد', color: 'var(--primary)', bg: 'var(--bg-alt)',
+    svg: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>' };
+}
+// Strip HTML tags from editChanges strings (they may contain <span> formatting)
+function stripHtml(s) { return String(s || '').replace(/<[^>]*>/g, '').replace(/\s+/g,' ').trim(); }
+
+function otpStatusBadge(status) {
+  if (status === 'used')    return '<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:20px;font-size:.7rem;font-weight:600;background:#d1fae5;color:#065f46"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>مستخدم</span>';
+  if (status === 'expired') return '<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:20px;font-size:.7rem;font-weight:600;background:#f3f4f6;color:#6b7280"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>منتهي</span>';
+  return '<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:20px;font-size:.7rem;font-weight:600;background:#fef3c7;color:#92400e"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>بانتظار</span>';
+}
+
+// SVG icons used inline in table cells
+const _svgUser = '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+const _svgRef  = '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>';
+const _svgWarn = '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+
+function _stripEgp(s) { return (s || '').replace(/\s*EGP\s*/gi, ' ').replace(/\s{2,}/g, ' ').trim(); }
+function _otpDetailText(r) {
+  if (r.kind === 'discount') {
+    const parts = [];
+    if (r.client) parts.push(esc(r.client));
+    if (r.txRef) parts.push('#' + esc(r.txRef));
+    if (r.discountAmount) parts.push('خصم ' + fmtJ(r.discountAmount) + ' ج.م');
+    return parts.join(' · ');
+  }
+  if (r.kind === 'purchase') {
+    const parts = [];
+    if (r.client) parts.push(esc(_stripEgp(r.client)));
+    if (r.txRef) parts.push('#' + esc(_stripEgp(r.txRef)));
+    if (r.itemsTotal) parts.push(fmtJ(r.itemsTotal) + ' ج.م');
+    if (r.purchaseItems?.length) parts.push(r.purchaseItems.length + ' صنف');
+    return parts.join(' · ');
+  }
+  if (r.kind === 'edit-tx') {
+    const parts = [];
+    if (r.editTxType) parts.push(esc(r.editTxType));
+    if (r.txRef) parts.push('#' + esc(r.txRef));
+    if (r.editChanges?.length) parts.push(r.editChanges.length + ' تغيير');
+    if (r.editStatus === 'approved') parts.push('✔ موافق');
+    else if (r.editStatus === 'rejected') parts.push('✘ مرفوض');
+    return parts.join(' · ');
+  }
+  if (r.kind === 'vault-access') return 'طلب دخول الخزنة';
+  if (r.kind === 'delete-product') {
+    const client = _stripEgp(r.client);
+    const isBulk = client.includes('(جماعي)') || (!r.txRef && /حذف \d+/.test(client));
+    const names = (r.deleteProductNames || []).map(n => _stripEgp(n)).filter(n => n && !/^EGP$/i.test(n));
+    if (isBulk) {
+      const count = names.length || client.match(/\d+/)?.[0] || '?';
+      const preview = names.slice(0, 2).join('، ');
+      return `حذف ${fmtJ(count)} صنف` + (preview ? ` — ${esc(preview)}` + (names.length > 2 ? '…' : '') : '');
+    }
+    const name = names[0] || client.replace(/^حذف صنف:\s*/, '').replace(/\[[^\]]*\]$/, '').trim();
+    const parts = [];
+    if (name) parts.push(esc(name));
+    if (r.txRef) parts.push('كود: ' + esc(r.txRef));
+    return parts.join(' · ') || esc(client || '-');
+  }
+  if (r.kind === 'import-products') {
+    const count = r.importItemNames?.length || 0;
+    if (count) return 'استيراد ' + fmtJ(count) + ' صنف — ' + esc(r.importItemNames.slice(0, 2).join('، ')) + (count > 2 ? '…' : '');
+    return esc(_stripEgp(r.client) || 'استيراد أصناف');
+  }
+  if (r.client) return esc(_stripEgp(r.client)) + (r.txRef ? ' · ' + esc(_stripEgp(r.txRef)) : '');
+  return '-';
+}
+
+// Collapsed detail rows — hidden by default, toggled by clicking the main row
+function _otpDetailRows(r, idx) {
+  const hasDetail = (r.kind === 'edit-tx' && r.editChanges?.length) ||
+                    (r.kind === 'purchase' && r.purchaseItems?.length) ||
+                    (r.kind === 'discount' && (r.client || r.txRef)) ||
+                    r.kind === 'vault-access' ||
+                    r.kind === 'delete-product' ||
+                    (r.kind === 'import-products' && r.importItemNames?.length);
+  if (!hasDetail) return '';
+
+  let inner = '';
+  if (r.kind === 'edit-tx' && r.editChanges?.length) {
+    inner = r.editChanges.map(c =>
+      `<div style="display:flex;align-items:flex-start;gap:6px;padding:2px 0;font-size:.73rem;color:var(--muted)">
+        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><polyline points="9 18 15 12 9 6"/></svg>
+        <span>${esc(stripHtml(c))}</span>
+      </div>`).join('');
+    if (r.editReviewedBy)
+      inner += `<div style="margin-top:5px;font-size:.72rem;color:${r.editStatus==='approved'?'#059669':'#dc2626'}">
+        ${r.editStatus==='approved'?'✔ وافق عليه':'✘ رفضه'}: ${esc(r.editReviewedBy)}${r.editReviewedAt ? ' — ' + fmtDateTime(r.editReviewedAt) : ''}
+      </div>`;
+  } else if (r.kind === 'purchase' && r.purchaseItems?.length) {
+    inner = r.purchaseItems.map(it =>
+      `<div style="display:flex;justify-content:space-between;font-size:.73rem;color:var(--muted);padding:1px 0">
+        <span>${esc(it.name)}</span><span>${it.qty} × ${fmtJ(it.price)} ج.م</span>
+      </div>`).join('');
+  } else if (r.kind === 'discount') {
+    const lines = [];
+    if (r.client) lines.push(`العميل: <b>${esc(r.client)}</b>`);
+    if (r.txRef) lines.push(`الفاتورة: <b>#${esc(r.txRef)}</b>`);
+    if (r.discountAmount) lines.push(`الخصم: <b>${fmtJ(r.discountAmount)}</b> ج.م`);
+    if (r.thresholdAtRequest) lines.push(`الحد المسموح: ${fmtJ(r.thresholdAtRequest)} ج.م`);
+    inner = lines.map(l => `<div style="font-size:.73rem;color:var(--muted);padding:1px 0">${l}</div>`).join('');
+  } else if (r.kind === 'vault-access') {
+    inner = `<div style="font-size:.73rem;color:var(--muted)">طلب دخول قسم الخزنة — ${esc(r.requestedByName || r.requestedByUsername || '')}</div>`;
+  } else if (r.kind === 'delete-product') {
+    const client = _stripEgp(r.client);
+    const isBulk = client.includes('(جماعي)') || (!r.txRef && /حذف \d+/.test(client));
+    const names = (r.deleteProductNames || []).map(n => _stripEgp(n)).filter(n => n && !/^EGP$/i.test(n));
+    if (isBulk) {
+      if (names.length) {
+        inner = `<div style="font-size:.72rem;color:#b91c1c;font-weight:600;margin-bottom:4px">الأصناف المحذوفة (${fmtJ(names.length)}):</div>` +
+          names.map(n => `<div style="display:flex;align-items:center;gap:5px;font-size:.73rem;color:var(--muted);padding:1px 0">
+            <span style="width:5px;height:5px;border-radius:50%;background:#b91c1c;flex-shrink:0;display:inline-block"></span>
+            <span>${esc(n)}</span>
+          </div>`).join('');
+      } else {
+        inner = `<div style="font-size:.73rem;color:var(--muted)">${esc(client || 'حذف أصناف جماعي')}</div>`;
+      }
+    } else {
+      const name = names[0] || client.replace(/^حذف صنف:\s*/, '').replace(/\[[^\]]*\]$/, '').trim() || '';
+      const codeMatch = client.match(/\[([^\]]+)\]/);
+      const code = codeMatch?.[1] || r.txRef || '';
+      const lines = [];
+      if (name) lines.push(`اسم الصنف: <b>${esc(name)}</b>`);
+      if (code) lines.push(`كود الصنف: <b style="font-family:monospace">${esc(code)}</b>`);
+      lines.push(`<span style="color:#b91c1c;font-weight:600">⚠ تم حذف هذا الصنف نهائياً من المخزون</span>`);
+      inner = lines.map(l => `<div style="font-size:.73rem;color:var(--muted);padding:2px 0">${l}</div>`).join('');
+    }
+  } else if (r.kind === 'import-products' && r.importItemNames?.length) {
+    const names = r.importItemNames;
+    inner = `<div style="font-size:.72rem;color:#0369a1;font-weight:600;margin-bottom:4px">الأصناف المستوردة (${fmtJ(names.length)} صنف):</div>` +
+      names.map((n, i) => `<div style="display:flex;align-items:center;gap:5px;font-size:.73rem;color:var(--muted);padding:1px 0">
+        <span style="font-size:.68rem;color:#0369a1;font-weight:700;min-width:16px;text-align:left">${fmtJ(i + 1)}.</span>
+        <span>${esc(n)}</span>
+      </div>`).join('');
+  }
+
+  return `<tr id="otp-detail-${idx}" style="display:none;background:var(--bg-alt)">
+    <td colspan="8" style="padding:6px 14px 8px 42px;border-bottom:2px solid var(--border)">${inner}</td>
+  </tr>`;
+}
+
+let _otpAuditAllRows = [];
+let _otpAuditPage = 1;
+const OTP_PAGE_SIZE = 30;
+
+function renderOtpTablePage() {
+  const wrap = qs('#otp-audit-list');
+  const otpSearch = qs('#otp-audit-code')?.value?.trim().toLowerCase() || '';
+  let rows = _otpAuditAllRows;
+  if (otpSearch) rows = rows.filter(r => (r.otp || '').includes(otpSearch));
+  const total = rows.length;
+  const pages = Math.max(1, Math.ceil(total / OTP_PAGE_SIZE));
+  _otpAuditPage = Math.min(_otpAuditPage, pages);
+  const slice = rows.slice((_otpAuditPage - 1) * OTP_PAGE_SIZE, _otpAuditPage * OTP_PAGE_SIZE);
+
+  if (!slice.length) { wrap.innerHTML = '<div class="empty-state">لا توجد سجلات مطابقة</div>'; return; }
+
+  const _svgChev = '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+  const thead = `<thead><tr style="font-size:.72rem;color:var(--muted);background:var(--bg-alt)">
+    <th style="width:26px;padding:6px 6px"></th>
+    <th style="padding:6px 8px">النوع</th>
+    <th style="padding:6px 8px;font-family:monospace">كود OTP</th>
+    <th style="padding:6px 8px">الحالة</th>
+    <th style="padding:6px 8px">الموظف</th>
+    <th style="padding:6px 8px">التفاصيل</th>
+    <th style="padding:6px 8px">أُنشئ</th>
+    <th style="padding:6px 8px">استُخدم</th>
+  </tr></thead>`;
+
+  let tbody = '';
+  const pageOffset = (_otpAuditPage - 1) * OTP_PAGE_SIZE;
+  for (let i = 0; i < slice.length; i++) {
+    const r = slice[i];
+    const idx = pageOffset + i;
+    const m = otpKindMeta(r.kind || 'discount');
+    const warn = (r.attempts || 0) > 0
+      ? `<span style="margin-right:4px;display:inline-flex;align-items:center;gap:2px;color:#ef4444;font-size:.68rem">${_svgWarn}${r.attempts}</span>` : '';
+    const hasDetail = (r.kind === 'edit-tx' && r.editChanges?.length) ||
+                      (r.kind === 'purchase' && r.purchaseItems?.length) ||
+                      (r.kind === 'discount' && (r.client || r.txRef)) ||
+                      r.kind === 'vault-access' ||
+                      r.kind === 'delete-product' ||
+                      (r.kind === 'import-products' && r.importItemNames?.length);
+    const chevCell = hasDetail
+      ? `<td id="otp-chev-${idx}" style="padding:5px 6px;text-align:center;color:var(--muted);transition:transform .2s;cursor:pointer">${_svgChev}</td>`
+      : `<td style="padding:5px 6px"></td>`;
+    const clickHandler = hasDetail ? `onclick="toggleOtpDetail(${idx})"` : '';
+    tbody += `<tr style="font-size:.78rem;border-bottom:1px solid var(--border);cursor:${hasDetail?'pointer':'default'};transition:background .1s" ${clickHandler} onmouseover="this.style.background='var(--bg-alt)'" onmouseout="this.style.background=''">
+      ${chevCell}
+      <td style="padding:5px 8px">
+        <div style="display:inline-flex;align-items:center;gap:5px;font-weight:600;color:${m.color};white-space:nowrap">
+          <span style="width:22px;height:22px;border-radius:6px;background:${m.bg};display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${m.svg}</span>
+          ${m.label}
+        </div>
+      </td>
+      <td style="padding:5px 8px">
+        <span style="font-family:monospace;font-size:.8rem;font-weight:700;letter-spacing:.1em;background:var(--bg-alt);padding:1px 6px;border-radius:4px;border:1px solid var(--border)">${esc(r.otp || '—')}</span>
+      </td>
+      <td style="padding:5px 8px;white-space:nowrap">${otpStatusBadge(r.status)}${warn}</td>
+      <td style="padding:5px 8px;color:var(--text);white-space:nowrap;font-size:.76rem">
+        <span style="display:inline-flex;align-items:center;gap:3px">${_svgUser}${esc(r.requestedByName || r.requestedByUsername || '-')}</span>
+      </td>
+      <td style="padding:5px 8px;color:var(--muted);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.76rem">${_otpDetailText(r)}</td>
+      <td style="padding:5px 8px;color:var(--muted);white-space:nowrap;font-size:.7rem">${r.createdAt ? fmtDateTime(r.createdAt) : '-'}</td>
+      <td style="padding:5px 8px;color:${r.usedAt ? '#059669' : 'var(--muted)'};white-space:nowrap;font-size:.7rem">${r.usedAt ? fmtDateTime(r.usedAt) : '—'}</td>
+    </tr>
+    ${_otpDetailRows(r, idx)}`;
+  }
+
+  const pager = pages > 1 ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 4px;font-size:.78rem;color:var(--muted)">
+    <span>${total} سجل — صفحة ${_otpAuditPage} من ${pages}</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-outline btn-xs" ${_otpAuditPage<=1?'disabled':''} onclick="_otpAuditPage--;renderOtpTablePage()">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="btn btn-outline btn-xs" ${_otpAuditPage>=pages?'disabled':''} onclick="_otpAuditPage++;renderOtpTablePage()">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </div>` : '';
+
+  wrap.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">${thead}<tbody>${tbody}</tbody></table></div>${pager}`;
+}
+
+let _otpAuditDebTimer = null;
+function renderOtpAuditDebounced() {
+  clearTimeout(_otpAuditDebTimer);
+  _otpAuditDebTimer = setTimeout(renderOtpAudit, 380);
+}
+function otpCodeSearch() {
+  _otpAuditPage = 1;
+  renderOtpTablePage();
+}
+function toggleOtpDetail(idx) {
+  const row = document.getElementById('otp-detail-' + idx);
+  const chev = document.getElementById('otp-chev-' + idx);
+  if (!row) return;
+  const open = row.style.display !== 'none';
+  row.style.display = open ? 'none' : '';
+  if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
+}
+function clearOtpAuditFilters() {
+  ['otp-audit-kind','otp-audit-status','otp-audit-from','otp-audit-to','otp-audit-emp','otp-audit-code']
+    .forEach(id => { const el = qs('#' + id); if (el) el.value = ''; });
+  renderOtpAudit();
+}
+
 async function renderOtpAudit() {
   const wrap = qs('#otp-audit-list');
   if (!wrap) return;
   if (!isAdmin()) { wrap.innerHTML = '<div class="empty-state">للمدير فقط</div>'; return; }
-  const status = qs('#otp-audit-status')?.value || '';
-  wrap.innerHTML = '<div class="empty-state">جارٍ التحميل…</div>';
+
+  const status   = qs('#otp-audit-status')?.value || '';
+  const kind     = qs('#otp-audit-kind')?.value   || '';
+  const dateFrom = qs('#otp-audit-from')?.value   || '';
+  const dateTo   = qs('#otp-audit-to')?.value     || '';
+  const employee = qs('#otp-audit-emp')?.value?.trim() || '';
+
+  wrap.innerHTML = '<div class="empty-state" style="padding:20px">جارٍ التحميل…</div>';
+
   try {
-    const qs_ = status ? ('?status=' + encodeURIComponent(status)) : '';
-    const rows = await api('/discount-otp' + qs_);
-    if (!rows.length) { wrap.innerHTML = '<div class="empty-state">لا توجد سجلات</div>'; return; }
-    wrap.innerHTML = `
-      <div style="overflow-x:auto"><table class="data-table" style="width:100%;font-size:.85rem">
-        <thead><tr>
-          <th>الكود</th><th>الحالة</th><th>الخصم</th><th>الحد</th>
-          <th>الموظف</th><th>العميل</th><th>الفاتورة</th>
-          <th>أنشئ</th><th>استخدم في</th><th>محاولات</th>
-        </tr></thead>
-        <tbody>
-          ${rows.map(r => {
-            const statusColor = r.status === 'used' ? 'var(--green)' : r.status === 'expired' ? 'var(--muted)' : 'var(--orange)';
-            const statusLabel = r.status === 'used' ? 'مستخدم ✓' : r.status === 'expired' ? 'منتهي' : r.status === 'unused' ? 'غير مستخدم' : r.status;
-            return `<tr>
-              <td style="font-family:monospace;font-weight:700;letter-spacing:.2em">${esc(r.otp || '')}</td>
-              <td style="color:${statusColor};font-weight:600">${statusLabel}</td>
-              <td>${fmtJ(r.discountAmount || 0)}</td>
-              <td style="color:var(--muted)">${fmtJ(r.thresholdAtRequest || 0)}</td>
-              <td>${esc(r.requestedByName || r.requestedByUsername || '-')}</td>
-              <td>${esc(r.client || '-')}</td>
-              <td>${r.txRef ? '#' + esc(r.txRef) : '-'}</td>
-              <td style="color:var(--muted);font-size:.78rem">${r.createdAt ? fmtDateTime(r.createdAt) : '-'}</td>
-              <td style="color:var(--muted);font-size:.78rem">${r.usedAt ? fmtDateTime(r.usedAt) : '-'}</td>
-              <td>${r.attempts || 0}</td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table></div>`;
+    const params = new URLSearchParams();
+    if (status)   params.set('status', status);
+    if (kind)     params.set('kind', kind);
+    if (dateFrom) params.set('dateFrom', dateFrom);
+    if (dateTo)   params.set('dateTo', dateTo);
+    if (employee) params.set('employee', employee);
+    const qs_ = params.toString() ? '?' + params.toString() : '';
+    _otpAuditAllRows = await api('/discount-otp' + qs_);
+    _otpAuditPage = 1;
+    renderOtpTablePage();
   } catch (e) {
     wrap.innerHTML = '<div class="empty-state">فشل التحميل: ' + esc(e?.message || '') + '</div>';
   }
@@ -26001,8 +27145,6 @@ function renderApprovals() {
     qs('#appr-kpi').innerHTML = '';
     return;
   }
-  // Refresh OTP audit log alongside approvals
-  renderOtpAudit();
   const filter = qs('#appr-filter')?.value || '';
   const kindFilter = qs('#appr-kind-filter')?.value || '';
   const dateFrom = qs('#appr-from')?.value || '';
@@ -26011,56 +27153,66 @@ function renderApprovals() {
   const actTo = qs('#appr-act-to')?.value || '';
   const allExpenses = expenses || [];
   const allReturns = returnRequests || [];
-  // Cancel requests derived from transactions
   const allCancelReqs = (transactions || []).filter(tx => tx.cancelRequest && tx.cancelRequest.status);
+  const allProductEdits = (products || []).filter(p => p.editRequest && p.editRequest.status);
   const pendingExp = allExpenses.filter(e => e.status === 'معلق');
   const pendingRet = allReturns.filter(r => r.status === 'معلق');
   const pendingCancel = allCancelReqs.filter(tx => tx.cancelRequest.status === 'معلق');
+  const pendingProductEdits = allProductEdits.filter(p => p.editRequest.status === 'معلق');
   const approvedExp = allExpenses.filter(e => e.status === 'معتمد');
   const approvedRet = allReturns.filter(r => r.status === 'معتمد');
-  const rejectedAll = allExpenses.filter(e => e.status === 'مرفوض').length + allReturns.filter(r => r.status === 'مرفوض').length + allCancelReqs.filter(tx => tx.cancelRequest.status === 'مرفوض').length;
+  const rejectedAll = allExpenses.filter(e => e.status === 'مرفوض').length + allReturns.filter(r => r.status === 'مرفوض').length + allCancelReqs.filter(tx => tx.cancelRequest.status === 'مرفوض').length + allProductEdits.filter(p => p.editRequest.status === 'مرفوض').length;
   qs('#appr-kpi').innerHTML = `
-    <div class="kpi"><div class="kpi-val text-orange">${pendingExp.length + pendingRet.length + pendingCancel.length}</div><div class="kpi-label">معلقة</div></div>
+    <div class="kpi"><div class="kpi-val text-orange">${pendingExp.length + pendingRet.length + pendingCancel.length + pendingProductEdits.length}</div><div class="kpi-label">معلقة</div></div>
     <div class="kpi"><div class="kpi-val text-orange">${fmtJ(pendingExp.reduce((s, e) => s + (e.amount || 0), 0))}</div><div class="kpi-label">مصاريف معلقة</div></div>
     <div class="kpi"><div class="kpi-val text-purple">${pendingRet.length}</div><div class="kpi-label">مرتجع/استبدال معلق</div></div>
     <div class="kpi"><div class="kpi-val text-red" style="font-size:1.1rem">${pendingCancel.length}</div><div class="kpi-label">طلبات إلغاء</div></div>
+    <div class="kpi"><div class="kpi-val text-blue" style="font-size:1.1rem">${pendingProductEdits.length}</div><div class="kpi-label">تعديل أصناف</div></div>
     <div class="kpi"><div class="kpi-val text-green">${approvedExp.length + approvedRet.length}</div><div class="kpi-label">معتمدة (إجمالي)</div></div>
     <div class="kpi"><div class="kpi-val text-red">${rejectedAll}</div><div class="kpi-label">مرفوضة</div></div>`;
   let expData = allExpenses;
-  if (kindFilter === 'return' || kindFilter === 'cancel') expData = [];
+  if (kindFilter === 'return' || kindFilter === 'cancel' || kindFilter === 'product-edit') expData = [];
   if (filter) expData = expData.filter(e => e.status === filter);
   if (dateFrom) expData = expData.filter(e => ((e.createdAt || e.date || '') + '').slice(0, 10) >= dateFrom);
   if (dateTo) expData = expData.filter(e => ((e.createdAt || e.date || '') + '').slice(0, 10) <= dateTo);
   if (actFrom) expData = expData.filter(e => e.approvedAt && e.approvedAt.slice(0, 10) >= actFrom);
   if (actTo) expData = expData.filter(e => e.approvedAt && e.approvedAt.slice(0, 10) <= actTo);
   let retData = allReturns;
-  if (kindFilter === 'expense' || kindFilter === 'cancel') retData = [];
+  if (kindFilter === 'expense' || kindFilter === 'cancel' || kindFilter === 'product-edit') retData = [];
   if (filter) retData = retData.filter(r => r.status === filter);
   if (dateFrom) retData = retData.filter(r => ((r.createdAt || r.originalDate || '') + '').slice(0, 10) >= dateFrom);
   if (dateTo) retData = retData.filter(r => ((r.createdAt || r.originalDate || '') + '').slice(0, 10) <= dateTo);
   if (actFrom) retData = retData.filter(r => r.approvedAt && r.approvedAt.slice(0, 10) >= actFrom);
   if (actTo) retData = retData.filter(r => r.approvedAt && r.approvedAt.slice(0, 10) <= actTo);
   let cancelData = allCancelReqs;
-  if (kindFilter === 'expense' || kindFilter === 'return') cancelData = [];
+  if (kindFilter === 'expense' || kindFilter === 'return' || kindFilter === 'product-edit') cancelData = [];
   if (filter) cancelData = cancelData.filter(tx => tx.cancelRequest.status === filter);
   if (dateFrom) cancelData = cancelData.filter(tx => (tx.cancelRequest.requestedAt || '').slice(0, 10) >= dateFrom);
   if (dateTo) cancelData = cancelData.filter(tx => (tx.cancelRequest.requestedAt || '').slice(0, 10) <= dateTo);
   if (actFrom) cancelData = cancelData.filter(tx => tx.cancelRequest.reviewedAt && tx.cancelRequest.reviewedAt.slice(0, 10) >= actFrom);
   if (actTo) cancelData = cancelData.filter(tx => tx.cancelRequest.reviewedAt && tx.cancelRequest.reviewedAt.slice(0, 10) <= actTo);
+  let productEditData = allProductEdits;
+  if (kindFilter && kindFilter !== 'product-edit') productEditData = [];
+  if (filter) productEditData = productEditData.filter(p => p.editRequest.status === filter);
+  if (dateFrom) productEditData = productEditData.filter(p => (p.editRequest.requestedAt || '').slice(0, 10) >= dateFrom);
+  if (dateTo) productEditData = productEditData.filter(p => (p.editRequest.requestedAt || '').slice(0, 10) <= dateTo);
+  if (actFrom) productEditData = productEditData.filter(p => p.editRequest.reviewedAt && p.editRequest.reviewedAt.slice(0, 10) >= actFrom);
+  if (actTo) productEditData = productEditData.filter(p => p.editRequest.reviewedAt && p.editRequest.reviewedAt.slice(0, 10) <= actTo);
   const combined = [
     ...expData.map(e => ({ ...e, _type: 'expense' })),
     ...retData.map(r => ({ ...r, _type: 'return' })),
     ...cancelData.map(tx => ({ ...tx, _type: 'cancel', _status: tx.cancelRequest.status, _sortDate: tx.cancelRequest.reviewedAt || tx.cancelRequest.requestedAt || '' })),
+    ...productEditData.map(p => ({ ...p, _type: 'product-edit', _status: p.editRequest.status, _sortDate: p.editRequest.reviewedAt || p.editRequest.requestedAt || '' })),
   ].sort((a, b) => {
     const pendingFirst = !filter || filter === 'معلق';
-    const aStatus = a._type === 'cancel' ? a._status : a.status;
-    const bStatus = b._type === 'cancel' ? b._status : b.status;
+    const aStatus = (a._type === 'cancel' || a._type === 'product-edit') ? a._status : a.status;
+    const bStatus = (b._type === 'cancel' || b._type === 'product-edit') ? b._status : b.status;
     if (pendingFirst) {
       if (aStatus === 'معلق' && bStatus !== 'معلق') return -1;
       if (bStatus === 'معلق' && aStatus !== 'معلق') return 1;
     }
-    const sortA = (a._type === 'cancel' ? a._sortDate : (a.approvedAt || a.createdAt || a.date || '')) + '';
-    const sortB = (b._type === 'cancel' ? b._sortDate : (b.approvedAt || b.createdAt || b.date || '')) + '';
+    const sortA = ((a._type === 'cancel' || a._type === 'product-edit') ? a._sortDate : (a.approvedAt || a.createdAt || a.date || '')) + '';
+    const sortB = ((b._type === 'cancel' || b._type === 'product-edit') ? b._sortDate : (b.approvedAt || b.createdAt || b.date || '')) + '';
     return sortB.localeCompare(sortA);
   });
   if (!combined.length) {
@@ -26070,6 +27222,7 @@ function renderApprovals() {
   qs('#appr-list').innerHTML = combined.map(item => {
     if (item._type === 'expense') return renderExpenseApprovalCard(item);
     if (item._type === 'cancel') return renderCancelRequestApprovalCard(item);
+    if (item._type === 'product-edit') return renderProductEditApprovalCard(item);
     return renderReturnApprovalCard(item);
   }).join('');
 }
@@ -26140,6 +27293,95 @@ function renderCancelRequestApprovalCard(tx) {
       </div>
     </div>
   </div>`;
+}
+
+function renderProductEditApprovalCard(p) {
+  const er = p.editRequest;
+  const isPending = er.status === 'معلق';
+  const statusColor = isPending ? 'var(--orange)' : er.status === 'معتمد' ? 'var(--green)' : 'var(--red)';
+  const statusLabel = isPending ? `${ICON('clock')} معلق` : er.status === 'معتمد' ? `${ICON('success')} معتمد` : `${ICON('error')} مرفوض`;
+  const FIELD_LABELS = { sellPrice: 'سعر البيع', buyPrice: 'سعر الشراء', minStock: 'الحد الأدنى', openingBalance: 'الرصيد الافتتاحي', supplier: 'المورد', name: 'الاسم', code: 'الكود', imageUrl: 'رابط الصورة' };
+  const changesHtml = (er.changes || []).map(c => {
+    const label = c.label || FIELD_LABELS[c.field] || c.field;
+    const isSensitive = ['sellPrice', 'buyPrice', 'openingBalance'].includes(c.field);
+    return `<div style="display:flex;gap:6px;align-items:center;margin-top:4px;font-size:.82rem">
+      <span style="font-weight:600;${isSensitive ? 'color:var(--orange)' : ''}">${esc(label)}:</span>
+      <span style="text-decoration:line-through;color:var(--muted)">${esc(String(c.oldValue ?? ''))}</span>
+      <span style="color:var(--muted)">→</span>
+      <span style="font-weight:700;color:var(--primary)">${esc(String(c.newValue ?? ''))}</span>
+    </div>`;
+  }).join('');
+  const reviewInfo = er.reviewedBy ? `<div class="text-xs text-muted" style="margin-top:4px">بواسطة: ${esc(er.reviewedBy)} ${er.reviewedAt ? '— ' + fmtDate(er.reviewedAt) : ''}</div>` : '';
+  const rejectedNote = er.rejectedReason ? `<div class="text-xs" style="margin-top:4px;color:var(--red)">سبب الرفض: ${esc(er.rejectedReason)}</div>` : '';
+  const actions = isPending && isAdmin() ? `<div class="flex gap-8 mt-8">
+    <button class="btn btn-primary btn-sm" onclick="approveProductEditRequest('${esc(p._id)}')">${ICON('success')} اعتماد التعديل</button>
+    <button class="btn btn-danger btn-sm" onclick="rejectProductEditRequest('${esc(p._id)}')">${ICON('error')} رفض</button>
+  </div>` : '';
+  return `<div class="card mb-16" style="border-right:4px solid ${statusColor}">
+    <div class="flex-between" style="flex-wrap:wrap;gap:12px">
+      <div style="flex:1;min-width:220px">
+        <div class="flex gap-8" style="align-items:center;flex-wrap:wrap">
+          <span class="badge badge-blue" style="font-size:.65rem">تعديل صنف</span>
+          <strong style="font-size:.95rem">${esc(p.name)} <span style="font-size:.8rem;color:var(--muted)">(${esc(p.code)})</span></strong>
+          <span style="font-size:.75rem;font-weight:600;color:${statusColor}">${statusLabel}</span>
+        </div>
+        <div style="margin-top:8px;background:var(--bg-alt);padding:10px;border-radius:8px">${changesHtml}</div>
+        <div class="text-xs text-muted" style="margin-top:6px;display:flex;align-items:center;gap:3px">${ICON('clock')} تاريخ الطلب: ${fmtDateTime(er.requestedAt)} — بواسطة: ${esc(er.requestedBy)}</div>
+        ${reviewInfo}
+        ${rejectedNote}
+        ${actions}
+      </div>
+      <div style="text-align:center">
+        ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" style="width:56px;height:56px;border-radius:8px;border:1.5px solid var(--border);object-fit:cover" onerror="this.style.display='none'">` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+async function approveProductEditRequest(productId) {
+  if (!isAdmin()) { toast('هذا الإجراء للمدير فقط', true); return; }
+  const p = products.find(x => x._id === productId);
+  if (!p || !p.editRequest) { toast('الصنف غير موجود', true); return; }
+  const FIELD_LABELS = { sellPrice: 'سعر البيع', buyPrice: 'سعر الشراء', minStock: 'الحد الأدنى', openingBalance: 'الرصيد الافتتاحي', supplier: 'المورد', name: 'الاسم', code: 'الكود', imageUrl: 'رابط الصورة' };
+  const changesPreview = (p.editRequest.changes || []).map(c => {
+    const label = c.label || FIELD_LABELS[c.field] || c.field;
+    return `<div style="font-size:.82rem;margin-top:4px"><strong>${esc(label)}:</strong> <span style="text-decoration:line-through;color:var(--muted)">${esc(String(c.oldValue ?? ''))}</span> → <strong style="color:var(--primary)">${esc(String(c.newValue ?? ''))}</strong></div>`;
+  }).join('');
+  const confirmed = await showConfirm(`
+    <div style="font-size:.9rem;font-weight:600;margin-bottom:8px">الصنف: ${esc(p.name)}</div>
+    <div style="font-size:.85rem;color:var(--muted);margin-bottom:10px">بواسطة: ${esc(p.editRequest.requestedBy)}</div>
+    <div style="background:var(--bg-alt);padding:10px;border-radius:8px">${changesPreview}</div>
+  `, { title: 'اعتماد طلب تعديل الصنف', icon: 'success' });
+  if (!confirmed) return;
+  try {
+    await api('/products/' + productId + '/approve-edit', { method: 'POST', body: '{}' });
+    toast('تم اعتماد تعديل الصنف ✅');
+    products = await api('/products').catch(() => products);
+    renderApprovals(); renderProducts(); buildSidebar(); buildNotifications();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+
+async function rejectProductEditRequest(productId) {
+  if (!isAdmin()) { toast('هذا الإجراء للمدير فقط', true); return; }
+  const reason = await new Promise(resolve => {
+    openModal(`<h3>${ICON('error')} رفض طلب تعديل الصنف</h3>
+      <div class="form-group">
+        <label>سبب الرفض <span style="color:var(--muted);font-size:.8rem">(اختياري)</span></label>
+        <textarea id="reject-product-edit-reason" rows="3" style="width:100%;resize:vertical" placeholder="اكتب سبب الرفض..."></textarea>
+      </div>
+      <div class="flex gap-8 mt-16">
+        <button class="btn btn-danger" onclick="window._rejectProductEditResolve(qs('#reject-product-edit-reason').value||'')">تأكيد الرفض</button>
+        <button class="btn btn-outline" onclick="window._rejectProductEditResolve(null)">إلغاء</button>
+      </div>`);
+    window._rejectProductEditResolve = (v) => { closeModal(); resolve(v); };
+  });
+  if (reason === null) return;
+  try {
+    await api('/products/' + productId + '/reject-edit', { method: 'POST', body: JSON.stringify({ rejectedReason: reason }) });
+    toast('تم رفض طلب التعديل');
+    products = await api('/products').catch(() => products);
+    renderApprovals(); renderProducts(); buildSidebar(); buildNotifications();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 
 async function approveCancelRequest(txId) {
@@ -26349,6 +27591,7 @@ function buildHubEntries() {
         action: entry.action || 'تعديل',
         editedAt: entry.editedAt || '',
         editedBy: entry.editedBy || '-',
+        approvedBy: entry.approvedBy || '',
         before: entry.before || {},
         discountApplied: entry.discountApplied,
         vaultAccount: entry.vaultAccount || tx.depMethod || '',
@@ -26431,7 +27674,10 @@ function renderHistoryHub() {
       <td>${actionBadge}</td>
       <td>${refCell}</td>
       <td>${esc(entry.txClient || '-')}</td>
-      <td><span style="background:var(--primary-pale);color:var(--accent);padding:1px 8px;border-radius:10px;font-size:.72rem;font-weight:600">${esc(entry.editedBy)}</span></td>
+      <td>
+        <span style="background:var(--primary-pale);color:var(--accent);padding:1px 8px;border-radius:10px;font-size:.72rem;font-weight:600;display:inline-block;margin-bottom:2px">✏️ ${esc(entry.editedBy)}</span>
+        ${entry.approvedBy ? `<br><span style="background:#d1fae5;color:#065f46;padding:1px 8px;border-radius:10px;font-size:.72rem;font-weight:600;display:inline-block">✅ ${esc(entry.approvedBy)}</span>` : ''}
+      </td>
       <td style="max-width:220px;font-size:.76rem;line-height:1.5">${details}</td>
       <td>${vaultHtml}</td>
       <td>${fmtJ(entry.txTotal)}</td>
@@ -26469,7 +27715,8 @@ function exportHubExcel() {
     'مرجع الفاتورة': entry.txRef || '-',
     'نوع الحركة': entry.txType,
     'العميل': entry.txClient,
-    'بواسطة': entry.editedBy,
+    'المنفّذ (طلب التعديل)': entry.editedBy,
+    'الموافق': entry.approvedBy || '-',
     'الخزنة': entry.vaultAccount || '-',
     'التفاصيل': buildHubRowDetails(entry).replace(/<[^>]+>/g, ''),
     'إجمالي الفاتورة': entry.txTotal,
@@ -27191,7 +28438,7 @@ function renderVaultPage() {
   // If lock is disabled in settings, treat as unlocked automatically
   if (isLockDisabled('vault')) vaultUnlocked = true;
   if (!vaultUnlocked) { qs('#vault-locked').style.display = 'block'; qs('#vault-content').style.display = 'none'; }
-  else { qs('#vault-locked').style.display = 'none'; qs('#vault-content').style.display = 'block'; renderVaultSegs(); loadVaultLog(); loadVaultAnalytics(); const lsEl = qs('#vault-last-sync'); if (lsEl && !lsEl.textContent) lsEl.textContent = 'جارٍ التحميل...'; }
+  else { qs('#vault-locked').style.display = 'none'; qs('#vault-content').style.display = 'block'; const sc = qs('#vault-settle-card'); if (sc) sc.style.display = isAdmin() ? '' : 'none'; if (isAdmin()) _stopVaultCountdown(); renderVaultSegs(); loadVaultLog(); loadVaultAnalytics(); const lsEl = qs('#vault-last-sync'); if (lsEl && !lsEl.textContent) lsEl.textContent = 'جارٍ التحميل...'; }
 }
 
 /** Refreshes settings (vault balances) from server and, if vault page is open/unlocked, re-renders it in real time */
@@ -27239,11 +28486,13 @@ async function unlockVault() {
     qs('#vault-pass-input')?.focus();
   }
 }
-function lockVault() { _clearVaultExpireTimer(); vaultUnlocked = false; renderVaultPage(); }
+function lockVault() { _clearVaultExpireTimer(); _stopVaultCountdown(); vaultUnlocked = false; renderVaultPage(); }
 
 /* ── Vault Access OTP ── */
 let _vaultOtpCtx = { otpId: '', expiresAt: '' };
 let _vaultExpireTimer = null;
+let _vaultCountdownInterval = null;
+let _vaultCountdownEnd = 0;
 
 function _startVaultExpireTimer(expiresAt) {
   if (_vaultExpireTimer) clearTimeout(_vaultExpireTimer);
@@ -27253,10 +28502,50 @@ function _startVaultExpireTimer(expiresAt) {
     _vaultExpireTimer = null;
     if (vaultUnlocked) {
       vaultUnlocked = false;
+      _stopVaultCountdown();
       toast('انتهت مدة صلاحية كود الخزنة — تم إغلاق الخزنة تلقائياً', true);
       if (currentPage === 'vault') renderVaultPage();
     }
   }, ms);
+}
+
+function _startVaultCountdown() {
+  _stopVaultCountdown();
+  _vaultCountdownEnd = Date.now() + 5 * 60 * 1000;
+  _updateVaultCountdownDisplay();
+  _vaultCountdownInterval = setInterval(() => {
+    const rem = _vaultCountdownEnd - Date.now();
+    if (rem <= 0) {
+      _stopVaultCountdown();
+      if (vaultUnlocked) {
+        vaultUnlocked = false;
+        toast('انتهت مدة جلسة الخزنة — تم الإغلاق تلقائياً', true);
+        if (currentPage === 'vault') renderVaultPage();
+      }
+      return;
+    }
+    _updateVaultCountdownDisplay();
+  }, 1000);
+  const wrap = qs('#vault-countdown-wrap');
+  if (wrap) wrap.style.display = 'inline-flex';
+}
+
+function _stopVaultCountdown() {
+  if (_vaultCountdownInterval) { clearInterval(_vaultCountdownInterval); _vaultCountdownInterval = null; }
+  const wrap = qs('#vault-countdown-wrap');
+  if (wrap) wrap.style.display = 'none';
+}
+
+function _updateVaultCountdownDisplay() {
+  const el = qs('#vault-countdown-display');
+  if (!el) return;
+  const rem = Math.max(0, _vaultCountdownEnd - Date.now());
+  const m = String(Math.floor(rem / 60000)).padStart(2, '0');
+  const s = String(Math.floor((rem % 60000) / 1000)).padStart(2, '0');
+  el.textContent = m + ':' + s;
+  const wrap = qs('#vault-countdown-wrap');
+  if (wrap) wrap.style.color = rem < 60000 ? '#dc2626' : '#b45309';
+  if (el) el.style.color = rem < 60000 ? '#dc2626' : '#92400e';
 }
 
 function _clearVaultExpireTimer() {
@@ -27313,6 +28602,7 @@ async function submitVaultOtp() {
         _vaultOtpCtx = { otpId: '', expiresAt: '' };
         vaultUnlocked = true;
         _startVaultExpireTimer(savedExpiry);
+        _startVaultCountdown();
         toast('تم فتح الخزنة بنجاح ✓');
         renderVaultPage();
       }, 350);
@@ -28774,6 +30064,11 @@ function renderUsers() {
   // Hide active sessions block for non-admins
   const sessWrap = qs('#active-sessions-wrap');
   if (sessWrap) sessWrap.style.display = isAdmin() ? '' : 'none';
+  const secPanel = qs('#security-panel-wrap');
+  if (secPanel) {
+    secPanel.style.display = isAdmin() ? '' : 'none';
+    if (isAdmin()) loadSecurityPanel();
+  }
   if (isAdmin()) {
     if (activeSessions.length === 0) {
       api('/auth/active-sessions').then(r => { if (r?.sessions) { activeSessions = r.sessions; renderActiveSessions(); } }).catch(() => {});
@@ -28812,6 +30107,80 @@ function renderUsers() {
     </div>`;
   }).join('');
 }
+async function loadSecurityPanel() {
+  const [lockedRes, logsRes] = await Promise.all([
+    api('/security-audit/locked-users').catch(() => []),
+    api('/security-audit/logs').catch(() => []),
+  ]);
+
+  // Render locked users
+  const lockedEl = qs('#locked-users-list');
+  if (lockedEl) {
+    if (!lockedRes || lockedRes.length === 0) {
+      lockedEl.innerHTML = '<p style="color:var(--muted);font-size:.85rem;margin:0;padding:10px">لا توجد حسابات مُعطَّلة حالياً ✅</p>';
+    } else {
+      lockedEl.innerHTML = lockedRes.map(u => {
+        const lockedAt = u.lockedAt ? new Date(u.lockedAt).toLocaleString('ar-EG') : '—';
+        return `<div style="background:#fff5f5;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span style="font-size:1.3rem">🔒</span>
+          <div style="flex:1;min-width:180px">
+            <div style="font-weight:600;color:#111">${esc(u.name || u.username)} <span style="font-size:.78rem;color:#6b7280">@${esc(u.username)}</span></div>
+            <div style="font-size:.8rem;color:#6b7280;margin-top:2px">سبب التعطيل: ${esc(u.lockReason || '—')}</div>
+            <div style="font-size:.78rem;color:#9ca3af;margin-top:2px">وقت التعطيل: ${lockedAt}</div>
+          </div>
+          <button onclick="adminUnlockUser('${esc(u._id)}','${esc(u.name || u.username)}')"
+            style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;padding:7px 18px;font-size:.83rem;cursor:pointer;font-weight:600;white-space:nowrap">
+            🔓 إلغاء التعطيل
+          </button>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Render audit log
+  const tbody = qs('#security-audit-tbody');
+  if (tbody) {
+    if (!logsRes || logsRes.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="padding:16px;text-align:center;color:var(--muted)">لا توجد أحداث أمنية</td></tr>';
+    } else {
+      const violationLabel = {
+        failed_login: '❌ دخول فاشل',
+        account_locked: '🔒 تعطيل حساب',
+        otp_violation: '⚠️ انتهاك OTP',
+        vault_violation: '🏦 انتهاك خزنة',
+        unauthorized_access: '🚫 وصول غير مصرح',
+        settings_tampering: '⚙️ تعديل إعدادات',
+        account_unlocked: '✅ إلغاء تعطيل',
+      };
+      tbody.innerHTML = logsRes.slice(0, 100).map(log => {
+        const ts = log.createdAt ? new Date(log.createdAt).toLocaleString('ar-EG') : '—';
+        const vLabel = violationLabel[log.violationType] || log.violationType;
+        const rowColor = log.violationType === 'account_locked' ? '#fef2f2' : log.violationType === 'account_unlocked' ? '#f0fdf4' : '';
+        return `<tr style="border-bottom:1px solid var(--border);${rowColor ? 'background:' + rowColor : ''}">
+          <td style="padding:8px 12px;font-weight:500">${esc(log.username)}</td>
+          <td style="padding:8px 12px">${vLabel}</td>
+          <td style="padding:8px 12px;color:var(--muted);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(log.action)}">${esc(log.action)}</td>
+          <td style="padding:8px 12px;color:var(--muted);white-space:nowrap;font-size:.78rem">${ts}</td>
+        </tr>`;
+      }).join('');
+    }
+  }
+}
+
+async function adminUnlockUser(userId, displayName) {
+  const confirmed = await showConfirm(
+    `هل تريد إلغاء تعطيل حساب "${displayName}"؟ تأكد من مراجعة سبب التعطيل أولاً.`,
+    { title: '🔓 إلغاء تعطيل الحساب', icon: 'warn', danger: false }
+  );
+  if (!confirmed) return;
+  try {
+    await api('/security-audit/unlock/' + userId, { method: 'POST', body: JSON.stringify({ reason: 'أُلغي التعطيل بواسطة المدير' }) });
+    toast(`تم إلغاء تعطيل حساب "${displayName}" بنجاح ✅`);
+    users = await api('/users').catch(() => users);
+    renderUsers();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+
 async function toggleUserActive(id, currentlyInactive) {
   const action = currentlyInactive ? 'activate' : 'deactivate';
   const msg = currentlyInactive ? 'تفعيل هذا المستخدم؟' : 'تعطيل هذا المستخدم؟ لن يستطيع تسجيل الدخول';
@@ -33749,19 +35118,13 @@ function renderPickupBoard() {
     pendingCol.innerHTML = '';
     // Flatten all pending orders from filtered groups into compact rows
     const allPendingOrders = pendingFiltered.flatMap(g => g.orders);
-    // "Create Prep Group" primary action button
-    const createBtn = document.createElement('button');
-    createBtn.className = 'pu-pt-create-btn';
-    const selCount2 = allPendingOrders.filter(o => _puPendingSelected.has(String(o._id))).length;
-    createBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg> ${selCount2 > 0 ? `إنشاء مجموعة تحضير (${fmtN(selCount2)} محدد)` : 'إنشاء مجموعة تحضير'}`;
-    createBtn.onclick = () => { if (_puPendingSelected.size > 0) puPtMoveSelected(); else toast('حدد طلبات من القائمة أولاً ثم اضغط الزر', true); };
-    pendingCol.appendChild(createBtn);
-    // "Bulk entry by ref" secondary button
-    const bulkBtn = document.createElement('button');
-    bulkBtn.className = 'pu-pt-bulk-btn';
-    bulkBtn.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> إدخال بأرقام المراجع`;
-    bulkBtn.onclick = () => openPuBulkModal();
-    pendingCol.appendChild(bulkBtn);
+    // Update static create-btn label to reflect selection count
+    const staticCreateBtn = qs('#pu-pt-create-btn-static');
+    if (staticCreateBtn) {
+      const selCount2 = allPendingOrders.filter(o => _puPendingSelected.has(String(o._id))).length;
+      const svgPart = staticCreateBtn.innerHTML.split('</svg>')[0] + '</svg>';
+      staticCreateBtn.innerHTML = svgPart + ' ' + (selCount2 > 0 ? `إنشاء مجموعة تحضير (${fmtN(selCount2)} محدد)` : 'إنشاء مجموعة تحضير');
+    }
 
     if (allPendingOrders.length === 0) {
       const emptyDiv = document.createElement('div');

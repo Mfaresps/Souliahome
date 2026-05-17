@@ -7,6 +7,8 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PresenceGateway } from './presence.gateway';
 import { UsersModule } from '../users/users.module';
+import { MentionsModule } from '../mentions/mentions.module';
+import { SecurityAuditModule } from '../security-audit/security-audit.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { UsersModule } from '../users/users.module';
         signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN') || '24h' },
       }),
     }),
+    MentionsModule,
+    SecurityAuditModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, PresenceGateway],
