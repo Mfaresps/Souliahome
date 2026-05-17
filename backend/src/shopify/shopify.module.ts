@@ -10,12 +10,17 @@ import {
   Product,
   ProductSchema,
 } from '../products/schemas/product.schema';
+import {
+  ShopifyOrder,
+  ShopifyOrderSchema,
+} from './schemas/shopify-order.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Transaction.name, schema: TransactionSchema },
       { name: Product.name, schema: ProductSchema },
+      { name: ShopifyOrder.name, schema: ShopifyOrderSchema },
     ]),
   ],
   controllers: [ShopifyController],
