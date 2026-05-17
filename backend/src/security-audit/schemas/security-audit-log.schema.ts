@@ -10,7 +10,8 @@ export type ViolationType =
   | 'vault_violation'
   | 'unauthorized_access'
   | 'settings_tampering'
-  | 'account_unlocked';
+  | 'account_unlocked'
+  | 'export_excel';
 
 @Schema({ timestamps: true })
 export class SecurityAuditLog {

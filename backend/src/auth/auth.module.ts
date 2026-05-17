@@ -23,7 +23,7 @@ import { SecurityAuditModule } from '../security-audit/security-audit.module';
         signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN') || '24h' },
       }),
     }),
-    MentionsModule,
+    forwardRef(() => MentionsModule),
     SecurityAuditModule,
   ],
   controllers: [AuthController],

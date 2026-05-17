@@ -309,6 +309,10 @@ export class CollectTransactionDto {
   @Min(0)
   @IsOptional()
   readonly actualShipCost?: number;
+
+  @IsString()
+  @IsOptional()
+  readonly otpId?: string;
 }
 
 export class BulkDeleteDto {

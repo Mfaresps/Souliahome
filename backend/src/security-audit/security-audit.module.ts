@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SecurityAuditLog, SecurityAuditLogSchema } from './schemas/security-audit-log.schema';
 import { SecurityAuditService } from './security-audit.service';
@@ -11,8 +11,8 @@ import { MentionsModule } from '../mentions/mentions.module';
     MongooseModule.forFeature([
       { name: SecurityAuditLog.name, schema: SecurityAuditLogSchema },
     ]),
-    UsersModule,
-    MentionsModule,
+    forwardRef(() => UsersModule),
+    forwardRef(() => MentionsModule),
   ],
   controllers: [SecurityAuditController],
   providers: [SecurityAuditService],

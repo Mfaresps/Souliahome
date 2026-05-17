@@ -137,6 +137,39 @@ export class DiscountOtpController {
     return { ok: true };
   }
 
+  @Post('supplier-pay-request')
+  async requestSupplierPayOtp(
+    @Body()
+    body: {
+      supplier: string;
+      txId: string;
+      txRef?: string;
+      amount: number;
+      remaining: number;
+      payMethod: string;
+    },
+    @Req() req: any,
+  ) {
+    const user = req.user || {};
+    return this.otpService.requestSupplierPayOtp({
+      supplier: body.supplier || '',
+      txId: body.txId || '',
+      txRef: body.txRef || '',
+      amount: Number(body.amount) || 0,
+      remaining: Number(body.remaining) || 0,
+      payMethod: body.payMethod || '',
+      requestedById: user.userId || '',
+      requestedByName: user.name || '',
+      requestedByUsername: user.username || '',
+    });
+  }
+
+  @Post('assert-supplier-pay')
+  async assertSupplierPayOtp(@Body() body: { otpId: string; amount: number }) {
+    await this.otpService.assertSupplierPayOtp(body.otpId, Number(body.amount) || 0);
+    return { ok: true };
+  }
+
   @Post('vault-access-request')
   async requestVaultAccessOtp(@Req() req: any) {
     const user = req.user || {};
@@ -179,6 +212,26 @@ export class DiscountOtpController {
   @Post('assert-add-product')
   async assertAddProductOtp(@Body() body: { otpId: string }) {
     await this.otpService.assertAddProductOtp(body.otpId);
+    return { ok: true };
+  }
+
+  @Post('export-excel-request')
+  async requestExportExcelOtp(
+    @Body() body: { exportLabel?: string },
+    @Req() req: any,
+  ) {
+    const user = req.user || {};
+    return this.otpService.requestExportExcelOtp({
+      exportLabel: body.exportLabel || 'تصدير بيانات',
+      requestedById: user.userId || '',
+      requestedByName: user.name || '',
+      requestedByUsername: user.username || '',
+    });
+  }
+
+  @Post('assert-export-excel')
+  async assertExportExcelOtp(@Body() body: { otpId: string }) {
+    await this.otpService.assertExportExcelOtp(body.otpId);
     return { ok: true };
   }
 

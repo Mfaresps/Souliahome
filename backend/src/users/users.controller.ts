@@ -20,6 +20,7 @@ import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
 import { Transaction, TransactionDocument } from '../transactions/schemas/transaction.schema';
 import { PresenceGateway } from '../auth/presence.gateway';
+import { SecurityAuditService } from '../security-audit/security-audit.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')
@@ -28,6 +29,7 @@ export class UsersController {
     private readonly usersService: UsersService,
     @InjectModel(Transaction.name) private readonly txModel: Model<TransactionDocument>,
     private readonly presenceGateway: PresenceGateway,
+    private readonly auditService: SecurityAuditService,
   ) {}
 
   @Get('me/stats')
@@ -120,26 +122,40 @@ export class UsersController {
   @Post(':id/activate')
   async activate(
     @Param('id') id: string,
-    @Req() req: { user: { username: string } },
+    @Req() req: any,
   ) {
     const user = await this.usersService.findById(id);
     if (!user) throw new BadRequestException('المستخدم غير موجود');
     if (user.username === 'admin') throw new ForbiddenException('لا يمكن تعديل المدير الرئيسي');
-    return this.usersService.toggleActive(id, true);
+    const result = await this.usersService.unlockAccount(id, req.user?.userId || req.user?.sub || 'admin');
+    this.auditService.log({
+      userId: id,
+      username: user.username,
+      violationType: 'account_unlocked',
+      action: `تم تفعيل الحساب بواسطة المدير ${req.user?.name || req.user?.username || 'admin'}`,
+    }).catch(() => null);
+    return result;
   }
 
   @Roles('admin')
   @Post(':id/deactivate')
   async deactivate(
     @Param('id') id: string,
-    @Req() req: { user: { username: string } },
+    @Req() req: any,
   ) {
     const user = await this.usersService.findById(id);
     if (!user) throw new BadRequestException('المستخدم غير موجود');
     if (user.username === 'admin') throw new ForbiddenException('لا يمكن تعطيل المدير الرئيسي');
     if (user.username === req.user?.username) throw new ForbiddenException('لا يمكنك تعطيل حسابك الخاص');
-    const result = await this.usersService.toggleActive(id, false);
+    const adminName = req.user?.name || req.user?.username || 'admin';
+    const result = await this.usersService.lockAccount(id, `تم التعطيل يدوياً بواسطة المدير ${adminName}`, req.user?.userId || req.user?.sub || 'admin');
     this.presenceGateway.emitToUser(id, 'user:force-logout', { reason: 'تم تعطيل حسابك من قِبل المدير' });
+    this.auditService.log({
+      userId: id,
+      username: user.username,
+      violationType: 'account_locked',
+      action: `تم تعطيل الحساب يدوياً بواسطة المدير ${adminName}`,
+    }).catch(() => null);
     return result;
   }
 }

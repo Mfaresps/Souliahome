@@ -5,6 +5,7 @@ import { Transaction, TransactionSchema } from '../transactions/schemas/transact
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { AuthModule } from '../auth/auth.module';
+import { SecurityAuditModule } from '../security-audit/security-audit.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { AuthModule } from '../auth/auth.module';
       { name: Transaction.name, schema: TransactionSchema },
     ]),
     forwardRef(() => AuthModule),
+    forwardRef(() => SecurityAuditModule),
   ],
   controllers: [UsersController],
   providers: [UsersService],

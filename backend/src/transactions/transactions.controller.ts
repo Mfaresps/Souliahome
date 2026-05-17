@@ -11,6 +11,8 @@ import {
   Req,
   Res,
   UseGuards,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { TransactionsService } from './transactions.service';
@@ -52,6 +54,7 @@ export class TransactionsController {
     );
   }
 
+  @Roles('admin')
   @Get('dashboard')
   async getDashboard() {
     const expenses = await this.expensesService.findAll();
@@ -224,11 +227,17 @@ export class TransactionsController {
   @Post(':id/lock')
   async acquireLock(
     @Param('id') id: string,
-    @Req() req: { user: { name: string; username: string } },
+    @Req() req: { user: { userId: string; name: string; username: string } },
   ) {
-    const user = req.user?.name || req.user?.username || 'مستخدم';
-    this.transactionsService.acquireEditLock(id, user);
-    return { ok: true, user };
+    const requestingUser = req.user?.name || req.user?.username || 'مستخدم';
+    const result = this.transactionsService.tryAcquireEditLock(id, requestingUser, req.user?.userId);
+    if (!result.ok) {
+      throw new HttpException(
+        { message: `هذه الحركة قيد التعديل بواسطة ${result.lockedBy} — حاول لاحقاً`, lockedBy: result.lockedBy },
+        HttpStatus.CONFLICT,
+      );
+    }
+    return { ok: true, user: requestingUser };
   }
 
   @Post(':id/unlock')

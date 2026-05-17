@@ -105,6 +105,9 @@ export class PresenceGateway
   // Map socketId -> user info
   private connectedUsers = new Map<string, ConnectedUser>();
 
+  // Map socketId -> txId being edited (for cleanup on disconnect)
+  private editingLocks = new Map<string, string>();
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
@@ -192,6 +195,11 @@ export class PresenceGateway
   }
 
   handleDisconnect(client: Socket) {
+    const lockedTxId = this.editingLocks.get(client.id);
+    if (lockedTxId) {
+      this.editingLocks.delete(client.id);
+      this.server.emit('tx:editing-done', { txId: lockedTxId });
+    }
     this.connectedUsers.delete(client.id);
     this.broadcastOnlineUsers();
   }
@@ -226,6 +234,23 @@ export class PresenceGateway
   emitEvent(event: string, payload: unknown) {
     if (this.server) {
       this.server.emit(event, payload);
+    }
+    // Track which socket holds which tx edit lock for disconnect cleanup
+    if (event === 'tx:editing' && payload && typeof payload === 'object' && 'txId' in payload) {
+      const txId = String((payload as { txId: string }).txId);
+      const userId = (payload as { userId?: string }).userId;
+      for (const [socketId, u] of this.connectedUsers) {
+        if (userId && u.userId === userId) {
+          this.editingLocks.set(socketId, txId);
+          break;
+        }
+      }
+    }
+    if (event === 'tx:editing-done' && payload && typeof payload === 'object' && 'txId' in payload) {
+      const txId = String((payload as { txId: string }).txId);
+      for (const [socketId, lockedId] of this.editingLocks) {
+        if (lockedId === txId) this.editingLocks.delete(socketId);
+      }
     }
   }
 

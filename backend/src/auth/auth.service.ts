@@ -6,7 +6,7 @@ import { MentionsService } from '../mentions/mentions.service';
 import { SecurityAuditService } from '../security-audit/security-audit.service';
 import { LoginDto } from './dto/login.dto';
 
-const MAX_LOGIN_ATTEMPTS = 5;
+const MAX_LOGIN_ATTEMPTS = 4;
 
 // In-memory user status tracker
 const usersStatus: Record<string, { status: 'online' | 'offline'; lastSeen: Date }> = {};

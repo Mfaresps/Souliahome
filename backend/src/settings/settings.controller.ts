@@ -22,11 +22,23 @@ import { UpdateSettingsDto, DiscountCodeDto, DiscountBundleDto } from './dto/set
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
+import { UsersService } from '../users/users.service';
+import { SecurityAuditService } from '../security-audit/security-audit.service';
+import { PresenceGateway } from '../auth/presence.gateway';
+
+const MAX_VAULT_ATTEMPTS = 4;
+// In-memory per-user vault attempt counter (resets on success or server restart)
+const vaultAttempts = new Map<string, number>();
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('settings')
 export class SettingsController {
-  constructor(private readonly settingsService: SettingsService) {}
+  constructor(
+    private readonly settingsService: SettingsService,
+    private readonly usersService: UsersService,
+    private readonly auditService: SecurityAuditService,
+    private readonly presenceGateway: PresenceGateway,
+  ) {}
 
   @Get()
   async getSettings() {
@@ -50,11 +62,48 @@ export class SettingsController {
 
   @UseGuards(ThrottlerGuard)
   @Post('verify-vault-password')
-  async verifyVaultPassword(@Body('password') password: string) {
+  async verifyVaultPassword(@Body('password') password: string, @Req() req: any) {
     const isValid = await this.settingsService.verifyVaultPassword(password);
+
     if (!isValid) {
-      throw new UnauthorizedException('Incorrect password');
+      const userId: string = req.user?.userId || req.user?.sub || '';
+      const username: string = req.user?.username || '';
+      const attempts = (vaultAttempts.get(userId) ?? 0) + 1;
+      vaultAttempts.set(userId, attempts);
+
+      this.auditService.log({
+        userId,
+        username,
+        violationType: 'vault_violation',
+        action: `كلمة سر الخزنة خاطئة — المحاولة ${attempts} من ${MAX_VAULT_ATTEMPTS}`,
+        ipAddress: req.ip || '',
+      }).catch(() => null);
+
+      if (attempts >= MAX_VAULT_ATTEMPTS) {
+        vaultAttempts.delete(userId);
+        const user = await this.usersService.findById(userId).catch(() => null);
+        if (user && user.isActive !== false) {
+          const lockReason = `تم تعطيل الحساب بعد ${MAX_VAULT_ATTEMPTS} محاولات إدخال كلمة سر الخزنة خاطئة`;
+          await this.usersService.lockAccount(userId, lockReason, 'system');
+          this.presenceGateway.emitToUser(userId, 'user:force-logout', { reason: lockReason });
+          this.auditService.log({
+            userId,
+            username,
+            violationType: 'account_locked',
+            action: lockReason,
+            ipAddress: req.ip || '',
+          }).catch(() => null);
+        }
+        throw new UnauthorizedException(`🔒 تم تعطيل حسابك بعد ${MAX_VAULT_ATTEMPTS} محاولات خاطئة — تواصل مع المدير`);
+      }
+
+      const remaining = MAX_VAULT_ATTEMPTS - attempts;
+      throw new UnauthorizedException(`كلمة سر الخزنة غير صحيحة — تبقى ${remaining} محاولة قبل تعطيل الحساب`);
     }
+
+    // Success — reset counter
+    const userId: string = req.user?.userId || req.user?.sub || '';
+    if (userId) vaultAttempts.delete(userId);
     return { valid: true };
   }
 

@@ -22,7 +22,7 @@ export class DiscountOtp {
   txType: string;
 
   @Prop({ default: 'discount' })
-  kind: string; // 'discount' | 'purchase' | 'delete-product' | 'delete-supplier' | 'vault-access' | 'add-product' | 'edit-tx'
+  kind: string; // 'discount' | 'purchase' | 'delete-product' | 'delete-supplier' | 'vault-access' | 'add-product' | 'edit-tx' | 'supplier-pay'
 
   @Prop({ type: [Object], default: [] })
   purchaseItems: Array<{ name: string; qty: number; price: number; total: number }>;

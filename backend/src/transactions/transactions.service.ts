@@ -87,10 +87,21 @@ export class TransactionsService {
   private readonly _editLocks = new Map<string, { user: string; since: number }>();
   private readonly _LOCK_TTL_MS = 5 * 60 * 1000; // 5 minutes auto-expire
 
-  acquireEditLock(txId: string, user: string): void {
+  tryAcquireEditLock(txId: string, user: string, userId?: string): { ok: boolean; lockedBy?: string } {
+    const existing = this._editLocks.get(txId);
+    if (existing && Date.now() - existing.since < this._LOCK_TTL_MS && existing.user !== user) {
+      return { ok: false, lockedBy: existing.user };
+    }
     this._editLocks.set(txId, { user, since: Date.now() });
     const initials = user.trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('');
-    this.emit('tx:editing', { txId, user, initials });
+    this.emit('tx:editing', { txId, user, initials, userId });
+    return { ok: true };
+  }
+
+  acquireEditLock(txId: string, user: string, userId?: string): void {
+    this._editLocks.set(txId, { user, since: Date.now() });
+    const initials = user.trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('');
+    this.emit('tx:editing', { txId, user, initials, userId });
   }
 
   releaseEditLock(txId: string): void {
@@ -984,6 +995,11 @@ export class TransactionsService {
     // ===== التحقق الحاسم: الرصيد كافٍ؟ (للمشتريات فقط) =====
     if (isPurchase && payAmount > 0) {
       await this.vaultService.assertSufficientBalance(dto.collectMethod, payAmount);
+    }
+
+    // ===== التحقق من OTP لسداد المورد (للمشتريات فقط) =====
+    if (isPurchase) {
+      await this.discountOtpService.assertSupplierPayOtp(dto.otpId || '', payAmount);
     }
 
     // لقطة الحالة قبل التحصيل — تُحفظ في سجل الدفعة لاستخدامها في التراجع (UNDO)

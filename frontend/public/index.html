@@ -2463,7 +2463,7 @@ body.dark-mode .mov-status.ملغي{background:#450a0a;color:#f87171}
 /* Financial columns — semantic weights & colors
    Hierarchy: Total (boldest, primary) > Remaining (status-driven) > Paid (success) > Ship (muted) */
 .amt-num{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.amt-cur{font-size:.72em;font-weight:500;color:var(--muted);margin-inline-start:3px;letter-spacing:.02em;vertical-align:.05em}
+.amt-cur{font-size:.72em;font-weight:500;color:var(--muted);margin-inline-end:3px;letter-spacing:.02em;vertical-align:.05em}
 .mov-col-total .amt-cur,.mov-col-paid .amt-cur,.mov-col-remaining-pos .amt-cur{color:inherit;opacity:.7}
 .mov-col-total{font-weight:700;font-size:.9rem;color:var(--text);font-variant-numeric:tabular-nums}
 .mov-col-paid{font-weight:600;font-size:.86rem;color:#15803d;font-variant-numeric:tabular-nums}
@@ -5494,8 +5494,53 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   </div>
 </details>
 
-<!-- Primary tables: Recent + Low stock -->
-<div class="ds-row-2">
+<!-- Staff-only section: Recent + Picked-Up (hidden for admin) -->
+<div id="dash-staff-section" style="display:none">
+  <div class="ds-row-2">
+    <div class="ds-card">
+      <h4 class="ds-section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+        آخر أوردرات
+      </h4>
+      <div class="overflow-x">
+        <table class="ds-table" id="dash-staff-recent">
+          <thead><tr>
+            <th data-i18n="date">التاريخ</th>
+            <th data-i18n="type">النوع</th>
+            <th data-i18n="client">العميل</th>
+            <th class="ds-num" data-i18n="total">الإجمالي</th>
+            <th data-i18n="status">الحالة</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="ds-card-foot"><a class="ds-link" href="#movements" onclick="event.preventDefault();navigateTo('movements')">عرض الكل ›</a></div>
+    </div>
+    <div class="ds-card">
+      <h4 class="ds-section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        تم تسليمها لشركة الشحن Picked-Up
+        <span id="dash-pickedup-count" style="margin-right:6px;font-size:.75rem;background:var(--accent);color:#fff;border-radius:99px;padding:1px 8px"></span>
+      </h4>
+      <div class="overflow-x">
+        <table class="ds-table" id="dash-staff-pickedup">
+          <thead><tr>
+            <th data-i18n="date">التاريخ</th>
+            <th data-i18n="client">العميل</th>
+            <th class="ds-num" data-i18n="total">الإجمالي</th>
+            <th>Ref</th>
+            <th data-i18n="status">الحالة</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="ds-card-foot"><a class="ds-link" href="#movements" onclick="event.preventDefault();navigateTo('movements')">عرض الكل ›</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- Primary tables: Recent + Low stock (hidden for admin, kept for legacy) -->
+<div class="ds-row-2" id="dash-admin-tables" style="display:none">
   <div class="ds-card">
     <h4 class="ds-section-title">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
@@ -5534,8 +5579,8 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   </div>
 </div>
 
-<!-- More details (collapsed) -->
-<details class="ds-disclosure">
+<!-- More details (collapsed, hidden for admin) -->
+<details class="ds-disclosure" id="dash-more-details" style="display:none">
   <summary>
     <span style="display:flex;align-items:center;gap:8px">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ds-text-2)"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
@@ -5949,6 +5994,58 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     </div>
     <div style="text-align:center;margin-top:8px">
       <button class="btn btn-link btn-sm" onclick="resendVaultOtp()" style="font-size:.8rem">طلب كود جديد</button>
+    </div>
+  </div>
+</div>
+
+<!-- Supplier Pay OTP modal -->
+<div class="modal-overlay" id="supplier-pay-otp-modal">
+  <div class="modal" style="max-width:460px">
+    <h3 style="text-align:center;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px">
+      <span style="display:inline-flex;width:22px;height:22px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></span>
+      كود تحقق سداد المورد
+    </h3>
+    <p style="text-align:center;color:var(--muted);font-size:.85rem;margin:0 0 14px">
+      سداد المبلغ للمورد يحتاج موافقة المدير. تم إرسال كود رباعي للمدير عبر التنبيهات.
+    </p>
+    <div id="supplier-pay-otp-info" style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:.85rem;color:var(--text)"></div>
+    <div id="supplier-pay-otp-input-wrap" style="display:none">
+      <input type="text" id="supplier-pay-otp-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
+        placeholder="••••" autocomplete="off"
+        style="width:100%;text-align:center;font-size:1.6rem;letter-spacing:.6em;padding:12px;font-weight:700;border:1px solid var(--border);border-radius:10px;margin-bottom:10px" />
+    </div>
+    <div id="supplier-pay-otp-msg" style="text-align:center;font-size:.85rem;min-height:18px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-danger" id="supplier-pay-otp-submit" onclick="_supplierPayRevealOrSubmit()" style="flex:1">تحقق وتأكيد السداد</button>
+      <button class="btn btn-outline" onclick="closeSupplierPayOtpModal()" style="flex:1">إلغاء</button>
+    </div>
+    <div style="text-align:center;margin-top:8px">
+      <button class="btn btn-link btn-sm" onclick="resendSupplierPayOtp()" style="font-size:.8rem">طلب كود جديد</button>
+    </div>
+  </div>
+</div>
+
+<!-- Export Excel OTP modal -->
+<div class="modal-overlay" id="export-otp-modal">
+  <div class="modal" style="max-width:440px">
+    <h3 style="text-align:center;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px">
+      <span style="display:inline-flex;width:22px;height:22px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></span>
+      كود تحقق تصدير البيانات
+    </h3>
+    <p style="text-align:center;color:var(--muted);font-size:.85rem;margin:0 0 14px">
+      تصدير البيانات يحتاج موافقة المدير. تم إرسال كود رباعي للمدير عبر التنبيهات.
+    </p>
+    <div id="export-otp-info" style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:.85rem;color:var(--text)"></div>
+    <input type="text" id="export-otp-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
+      placeholder="••••" autocomplete="off"
+      style="width:100%;text-align:center;font-size:1.6rem;letter-spacing:.6em;padding:12px;font-weight:700;border:1px solid var(--border);border-radius:10px;margin-bottom:10px" />
+    <div id="export-otp-msg" style="text-align:center;font-size:.85rem;min-height:18px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" id="export-otp-submit" onclick="submitExportOtp()" style="flex:1">تحقق وتصدير</button>
+      <button class="btn btn-outline" onclick="closeExportOtpModal()" style="flex:1">إلغاء</button>
+    </div>
+    <div style="text-align:center;margin-top:8px">
+      <button class="btn btn-link btn-sm" onclick="resendExportOtp()" style="font-size:.8rem">طلب كود جديد</button>
     </div>
   </div>
 </div>
@@ -6994,6 +7091,8 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         <option value="delete-product">حذف صنف</option>
         <option value="delete-supplier">حذف مورد</option>
         <option value="import-products">استيراد أصناف</option>
+        <option value="export-excel">التصدير</option>
+        <option value="supplier-pay">سداد المورد</option>
       </select>
     </div>
     <div>
@@ -8219,7 +8318,8 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   <!-- Locked Users -->
   <div style="margin-bottom:20px">
     <h4 style="font-size:.88rem;color:#dc2626;margin:0 0 10px;display:flex;align-items:center;gap:6px">
-      🔒 الحسابات المُعطَّلة
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      الحسابات المُعطَّلة
     </h4>
     <div id="locked-users-list"></div>
   </div>
@@ -8227,7 +8327,8 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   <!-- Audit Log -->
   <div>
     <h4 style="font-size:.88rem;color:var(--text);margin:0 0 10px;display:flex;align-items:center;gap:6px">
-      📋 سجل الأحداث الأمنية
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      سجل الأحداث الأمنية
     </h4>
     <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:.83rem">
@@ -8242,6 +8343,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         <tbody id="security-audit-tbody"></tbody>
       </table>
     </div>
+    <div id="security-audit-pagination" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;font-size:.82rem"></div>
   </div>
 </div>
 </div>
@@ -9916,11 +10018,11 @@ function applyLang() {
 function fmtN(n) { if (n == null || isNaN(n)) return '0'; return Number(n).toLocaleString('en-US'); }
 function fmtJ(n) {
   const num = fmtN(n);
-  return `<span class="amt-num">${num}</span> <span class="amt-cur">EGP</span>`;
+  return `<span class="amt-cur">EGP</span> <span class="amt-num">${num}</span>`;
 }
 function fmtJT(n) {
   // Plain-text version for toast / textContent contexts
-  return fmtN(n) + ' EGP';
+  return 'EGP ' + fmtN(n);
 }
 
 // ── Field Info Tooltip helper ──
@@ -10073,7 +10175,7 @@ function toast(msg, isError = false) {
       `<div class="sm-row"><span class="sm-key">${esc(k)}</span><span class="sm-val">${esc(String(v))}</span></div>`
     ).join('');
 
-    elQ().textContent = question;
+    elQ().innerHTML = question;
     elQ().style.display = question ? '' : 'none';
 
     elPWrap().style.display = prompt ? '' : 'none';
@@ -10720,8 +10822,8 @@ async function api(path, options = {}) {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     const msg = Array.isArray(err.message) ? err.message.join(', ') : (err.message || 'خطأ في الطلب');
-    if (res.status === 401 && !path.startsWith('/auth/login') && !path.includes('verify-vault-password')) {
-      // Show locked-account banner if the error contains the lock emoji, otherwise plain logout
+    if (res.status === 401 && !path.startsWith('/auth/login')) {
+      // Only logout on 401 from non-login endpoints (expired token or mid-session deactivation)
       if (msg && msg.includes('🔒')) {
         doLogout();
         setTimeout(() => _showLockedAccountBanner(msg), 400);
@@ -10879,7 +10981,9 @@ async function doLogin() {
       _showLockedAccountBanner(msg);
       errEl.style.display = 'none';
     } else {
-      errEl.innerHTML = msg;
+      // Highlight remaining attempts count if present in the message
+      const formatted = msg.replace(/تبقى (\d+) محاولة/g, 'تبقى <strong style="color:#dc2626;font-size:1.05em">$1</strong> محاولة');
+      errEl.innerHTML = formatted;
       errEl.style.display = 'block';
     }
   } finally {
@@ -11100,8 +11204,8 @@ function connectSocket() {
 
   socket.on('user:force-logout', (data) => {
     const reason = data?.reason || 'تم تعطيل حسابك';
-    toast(reason, true);
-    setTimeout(() => doLogout(), 1500);
+    doLogout();
+    setTimeout(() => _showLockedAccountBanner('🔒 ' + reason), 400);
   });
 
   // ===== Real-time sync listeners (Phase 1) =====
@@ -11252,6 +11356,11 @@ function connectSocket() {
         ensureTxFresh(payload.txId, payload.commentId).then(() => {
           showInvoiceDetail(payload.txId, payload.commentId);
         });
+      }
+
+      // Reload security panel if a security-system mention arrives (account locked/unlocked)
+      if (payload.fromUserId === 'system' && isAdmin() && qs('#security-panel-wrap')?.style.display !== 'none') {
+        setTimeout(() => loadSecurityPanel(), 600);
       }
     } catch(e) { console.warn('mention:new handler', e); }
   });
@@ -12989,7 +13098,18 @@ function _ncMentionCardHtml(m) {
 
   const _gv = (lines, prefix) => { const l = lines.find(x => x.trimStart().startsWith(prefix)); return l ? l.slice(l.indexOf(':')+1).trim() : ''; };
   const _items = (lines) => lines.filter(l => l.trimStart().startsWith('•')).map(l => l.replace(/^\s*•\s*/,'').trim());
-  const _itemsHtml = (items, max=4) => items.length ? `<div style="padding:2px 0">${items.slice(0,max).map(it=>`<div style="font-size:.71rem;color:var(--text);padding:2px 0;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it)}</div>`).join('')}${items.length>max?`<div style="font-size:.65rem;color:var(--muted);padding-top:2px">...و${items.length-max} أخرى</div>`:''}</div>` : '';
+  const _itemsHtml = (items, max=4) => {
+    if (!items.length) return '';
+    const uid = 'itx_' + Math.random().toString(36).slice(2,8);
+    const rowHtml = it => `<div style="font-size:.71rem;color:var(--text);padding:2px 0;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it)}</div>`;
+    const visibleRows = items.slice(0, max).map(rowHtml).join('');
+    const hiddenRows = items.length > max ? items.slice(max).map(rowHtml).join('') : '';
+    const moreBtn = items.length > max
+      ? `<div id="${uid}_more" style="font-size:.65rem;color:var(--accent);padding-top:3px;cursor:pointer;text-decoration:underline" onclick="event.stopPropagation();(function(){var h=document.getElementById('${uid}_hidden');var b=document.getElementById('${uid}_more');if(h&&b){h.style.display='block';b.style.display='none';}})()">...و${items.length-max} أخرى — اضغط لعرض الكل</div>`
+      : '';
+    const hiddenDiv = hiddenRows ? `<div id="${uid}_hidden" style="display:none">${hiddenRows}</div>` : '';
+    return `<div style="padding:2px 0">${visibleRows}${hiddenDiv}${moreBtn}</div>`;
+  };
 
   // ── Discount OTP ──
   if (m.fromName === 'نظام التحقق') {
@@ -13006,7 +13126,26 @@ function _ncMentionCardHtml(m) {
         ${_ncInfoRow('الموظف', esc(_gv(lines,'الموظف')))}
         ${_ncInfoRow('العميل', esc(_gv(lines,'العميل')))}
         ${_gv(lines,'الفاتورة')&&_gv(lines,'الفاتورة')!=='-' ? _ncInfoRow('الفاتورة', `<span style="color:var(--accent)">#${esc(_gv(lines,'الفاتورة'))}</span>`) : ''}
-        ${_gv(lines,'الخصم') ? _ncInfoRow('قيمة الخصم', `<strong style="color:${color}">${esc(_gv(lines,'الخصم').replace(/\s*ج\.?م?\.?\s*/g,'').trim())} ج.م</strong>`) : ''}
+        ${_gv(lines,'الخصم') ? _ncInfoRow('قيمة الخصم', `<strong style="color:${color}">EGP ${esc(_gv(lines,'الخصم').replace(/\s*ج\.?م?\.?\s*/g,'').trim())}</strong>`) : ''}
+        ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted);direction:ltr;display:inline-block">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
+      </div></div>`;
+  }
+
+  // ── Add Product OTP ──
+  if (m.fromName === 'نظام إضافة الأصناف') {
+    const lines = m.commentText.split('\n');
+    const code = _gv(lines,'🔐 كود التحقق');
+    const apLabel = lines.find(l => l.startsWith('إضافة صنف:')) || '';
+    const color = '#10b981';
+    return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:.73rem;font-weight:800;color:${color};display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg> طلب إضافة صنف — موافقة مطلوبة</span>
+        <span style="font-size:.62rem;color:var(--muted)">${ago}</span>
+      </div>
+      ${code ? _ncOtpBox(code, color) : ''}
+      <div class="nc-info-grid">
+        ${_ncInfoRow('الموظف', esc(_gv(lines,'الموظف')))}
+        ${apLabel ? _ncInfoRow('الصنف', `<strong>${esc(apLabel.replace('إضافة صنف: ', ''))}</strong>`) : ''}
         ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted)">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
       </div></div>`;
   }
@@ -13015,6 +13154,22 @@ function _ncMentionCardHtml(m) {
   if (m.fromName === 'نظام الحماية') {
     const lines = m.commentText.split('\n');
     const code = _gv(lines,'🔐 كود التحقق');
+    // Legacy add-product OTPs were saved with fromName='نظام الحماية' before the fix
+    if (lines[0]?.includes('➕') || lines[0]?.includes('إضافة صنف')) {
+      const apLabel = lines.find(l => l.startsWith('إضافة صنف:')) || '';
+      const color = '#10b981';
+      return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:.73rem;font-weight:800;color:${color};display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg> طلب إضافة صنف — موافقة مطلوبة</span>
+          <span style="font-size:.62rem;color:var(--muted)">${ago}</span>
+        </div>
+        ${code ? _ncOtpBox(code, color) : ''}
+        <div class="nc-info-grid">
+          ${_ncInfoRow('الموظف', esc(_gv(lines,'الموظف')))}
+          ${apLabel ? _ncInfoRow('الصنف', `<strong>${esc(apLabel.replace('إضافة صنف: ', ''))}</strong>`) : ''}
+          ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted)">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
+        </div></div>`;
+    }
     const isSupplier = lines[0]?.includes('مورد');
     const title = isSupplier ? 'طلب حذف مورد — موافقة مطلوبة' : 'طلب حذف صنف — موافقة مطلوبة';
     const color = '#ef4444';
@@ -13065,8 +13220,8 @@ function _ncMentionCardHtml(m) {
         ${_ncInfoRow('المورد', `<strong>${esc(_gv(lines,'المورد'))}</strong>`)}
         ${_gv(lines,'رقم الفاتورة')&&_gv(lines,'رقم الفاتورة')!=='-' ? _ncInfoRow('الفاتورة', `<span style="color:var(--accent)">#${esc(_gv(lines,'رقم الفاتورة'))}</span>`) : ''}
         ${_itemsHtml(_items(lines))}
-        ${_gv(lines,'الإجمالي') ? _ncInfoRow('الإجمالي', `<strong style="color:var(--primary)">${esc(_gv(lines,'الإجمالي').replace(/\s*ج\.?م?\.?\s*/g,'').trim())} ج.م</strong>`) : ''}
-        ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted)">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
+        ${_gv(lines,'الإجمالي') ? _ncInfoRow('الإجمالي', `<strong style="color:var(--primary)">EGP ${esc(_gv(lines,'الإجمالي').replace(/\s*ج\.?م?\.?\s*/g,'').trim())}</strong>`) : ''}
+        ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted);direction:ltr;display:inline-block">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
       </div></div>`;
   }
 
@@ -13616,8 +13771,49 @@ function renderMentionNotifsList() {
               ${_otpRow('الموظف', esc(employee))}
               ${_otpRow('العميل', esc(clientName))}
               ${refNum && refNum !== '-' ? _otpRow('رقم الفاتورة', `<span style="color:var(--accent)">#${esc(refNum)}</span>`) : ''}
-              ${discLine ? _otpRow('قيمة الخصم', `<strong style="color:#e11d48">${esc(discLine)} ج.م</strong>`) : ''}
-              ${validLine ? _otpRow('صالح حتى', esc(validLine)) : ''}
+              ${discLine ? _otpRow('قيمة الخصم', `<strong style="color:#e11d48">EGP ${esc(discLine.replace(/\s*ج\.?م?\.?\s*/g,'').split('(')[0].trim())}</strong>`) : ''}
+              ${validLine ? _otpRow('صالح حتى', `<span style="direction:ltr;display:inline-block">${esc(validLine)}</span>`) : ''}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // ── Add Product OTP ──
+    if (m.fromName === 'نظام إضافة الأصناف') {
+      const apLines = m.commentText.split('\n');
+      const getApVal = (prefix) => {
+        const ln = apLines.find(l => l.trimStart().startsWith(prefix));
+        if (!ln) return '';
+        const idx = ln.indexOf(':');
+        return idx !== -1 ? ln.slice(idx + 1).trim() : '';
+      };
+      const apCode  = getApVal('🔐 كود التحقق');
+      const apEmp   = getApVal('الموظف');
+      const apValid = getApVal('صالح حتى');
+      const apLabel = apLines.find(l => l.startsWith('إضافة صنف:')) || '';
+      const apColor = '#10b981';
+      const unreadDot = m.read ? '' : `<span style="width:6px;height:6px;border-radius:50%;background:${apColor};display:inline-block;vertical-align:middle;margin-right:3px"></span>`;
+      const addIcon = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${apColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>`;
+      return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})" style="cursor:pointer;padding:10px 12px;${m.read ? '' : `background:rgba(16,185,129,.04)`}">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:32px;height:32px;border-radius:10px;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${addIcon}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
+              <span style="font-size:.7rem;font-weight:700;color:${apColor};white-space:nowrap">${unreadDot}طلب إضافة صنف — موافقة مطلوبة</span>
+              <span style="font-size:.62rem;color:var(--muted);white-space:nowrap">${ago}</span>
+            </div>
+            ${apCode ? `<div style="background:rgba(16,185,129,.08);border:1.5px solid rgba(16,185,129,.25);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
+              <div style="font-size:.58rem;color:${apColor};font-weight:600;margin-bottom:2px">كود التحقق</div>
+              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
+                <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:${apColor}">${esc(apCode)}</span>
+                <button class="otp-copy-btn" style="color:${apColor}" onclick="event.stopPropagation();_ncCopyCode('${esc(apCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
+              </div>
+            </div>` : ''}
+            <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
+              ${_otpRow('الموظف', esc(apEmp))}
+              ${apLabel ? _otpRow('الصنف', `<strong style="color:var(--text)">${esc(apLabel.replace('إضافة صنف: ', ''))}</strong>`) : ''}
+              ${apValid ? _otpRow('صالح حتى', esc(apValid)) : ''}
             </div>
           </div>
         </div>
@@ -13627,6 +13823,45 @@ function renderMentionNotifsList() {
     const isDelOtp = m.fromName === 'نظام الحماية';
     if (isDelOtp) {
       const delLines = m.commentText.split('\n');
+      // Legacy add-product OTPs were saved with fromName='نظام الحماية' before the fix
+      if (delLines[0]?.includes('➕') || delLines[0]?.includes('إضافة صنف')) {
+        const getApVal2 = (prefix) => {
+          const ln = delLines.find(l => l.trimStart().startsWith(prefix));
+          if (!ln) return '';
+          const idx = ln.indexOf(':');
+          return idx !== -1 ? ln.slice(idx + 1).trim() : '';
+        };
+        const apCode2  = getApVal2('🔐 كود التحقق');
+        const apEmp2   = getApVal2('الموظف');
+        const apValid2 = getApVal2('صالح حتى');
+        const apLabel2 = delLines.find(l => l.startsWith('إضافة صنف:')) || '';
+        const apColor2 = '#10b981';
+        const unreadDot2 = m.read ? '' : `<span style="width:6px;height:6px;border-radius:50%;background:${apColor2};display:inline-block;vertical-align:middle;margin-right:3px"></span>`;
+        const addIcon2 = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${apColor2}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>`;
+        return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})" style="cursor:pointer;padding:10px 12px;${m.read ? '' : `background:rgba(16,185,129,.04)`}">
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="width:32px;height:32px;border-radius:10px;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${addIcon2}</div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
+                <span style="font-size:.7rem;font-weight:700;color:${apColor2};white-space:nowrap">${unreadDot2}طلب إضافة صنف — موافقة مطلوبة</span>
+                <span style="font-size:.62rem;color:var(--muted);white-space:nowrap">${ago}</span>
+              </div>
+              ${apCode2 ? `<div style="background:rgba(16,185,129,.08);border:1.5px solid rgba(16,185,129,.25);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
+                <div style="font-size:.58rem;color:${apColor2};font-weight:600;margin-bottom:2px">كود التحقق</div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
+                  <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:${apColor2}">${esc(apCode2)}</span>
+                  <button class="otp-copy-btn" style="color:${apColor2}" onclick="event.stopPropagation();_ncCopyCode('${esc(apCode2)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
+                </div>
+              </div>` : ''}
+              <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
+                ${_otpRow('الموظف', esc(apEmp2))}
+                ${apLabel2 ? _otpRow('الصنف', `<strong style="color:var(--text)">${esc(apLabel2.replace('إضافة صنف: ', ''))}</strong>`) : ''}
+                ${apValid2 ? _otpRow('صالح حتى', esc(apValid2)) : ''}
+              </div>
+            </div>
+          </div>
+        </div>`;
+      }
       const getDelVal = (prefix) => {
         const ln = delLines.find(l => l.trimStart().startsWith(prefix));
         if (!ln) return '';
@@ -13761,8 +13996,8 @@ function renderMentionNotifsList() {
                 ${purItems.map(it => `<div style="font-size:.7rem;color:var(--text);padding:1px 0;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it)}</div>`).join('')}
                 ${moreMatch ? `<div style="font-size:.65rem;color:var(--muted);padding-top:2px">${esc(moreMatch.trim())}</div>` : ''}
               </div>` : ''}
-              ${purTotal ? _otpRow('الإجمالي', `<strong style="color:var(--primary)">${esc(purTotal)} ج.م</strong>`) : ''}
-              ${purValid ? _otpRow('صالح حتى', esc(purValid)) : ''}
+              ${purTotal ? _otpRow('الإجمالي', `<strong style="color:var(--primary)">EGP ${esc(purTotal)}</strong>`) : ''}
+              ${purValid ? _otpRow('صالح حتى', `<span style="direction:ltr;display:inline-block">${esc(purValid)}</span>`) : ''}
             </div>
           </div>
         </div>
@@ -13818,6 +14053,98 @@ function renderMentionNotifsList() {
             </div>
             <div style="margin-top:6px;text-align:center">
               <span style="font-size:.7rem;color:#8b5cf6;text-decoration:underline;cursor:pointer">اضغط لمعاينة الأصناف ◂</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // ── Supplier Pay OTP ──
+    if (m.fromName === 'نظام سداد الموردين') {
+      const spLines = m.commentText.split('\n');
+      const getSpVal = (prefix) => {
+        const ln = spLines.find(l => l.trimStart().startsWith(prefix));
+        if (!ln) return '';
+        const idx = ln.indexOf(':');
+        return idx !== -1 ? ln.slice(idx + 1).trim() : '';
+      };
+      const spCode    = getSpVal('🔐 كود التحقق');
+      const spEmp     = getSpVal('الموظف');
+      const spSup     = getSpVal('المورد');
+      const spRef     = getSpVal('الفاتورة').replace(/^#/, '');
+      const spAmount  = getSpVal('المبلغ المراد سداده').replace(/^EGP\s*/i, '').trim();
+      const spMethod  = getSpVal('طريقة السداد');
+      const spValidStr = getSpVal('صالح حتى');
+      const spColor   = '#b45309';
+      const spUid     = `sp-cd-${m.id}`;
+      const unreadDot = m.read ? '' : `<span style="width:6px;height:6px;border-radius:50%;background:${spColor};display:inline-block;vertical-align:middle;margin-right:3px"></span>`;
+      const spIcon = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${spColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`;
+      return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})" style="cursor:pointer;padding:10px 12px;${m.read ? '' : `background:rgba(180,83,9,.04)`}" data-sp-valid="${esc(spValidStr)}" data-sp-uid="${spUid}">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:32px;height:32px;border-radius:10px;background:rgba(180,83,9,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${spIcon}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
+              <span style="font-size:.7rem;font-weight:700;color:${spColor};white-space:nowrap">${unreadDot}طلب سداد مورد — موافقة مطلوبة</span>
+              <span style="font-size:.62rem;color:var(--muted);white-space:nowrap">${ago}</span>
+            </div>
+            ${spCode ? `<div style="background:rgba(180,83,9,.09);border:1.5px solid rgba(180,83,9,.28);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
+              <div style="font-size:.58rem;color:${spColor};font-weight:600;margin-bottom:2px">كود التحقق</div>
+              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
+                <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:${spColor}">${esc(spCode)}</span>
+                <button class="otp-copy-btn" style="color:${spColor}" onclick="event.stopPropagation();_ncCopyCode('${esc(spCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
+              </div>
+            </div>` : ''}
+            <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
+              ${_otpRow('الموظف', esc(spEmp))}
+              ${spSup ? _otpRow('المورد', `<strong style="color:var(--accent)">${esc(spSup)}</strong>`) : ''}
+              ${spRef ? _otpRow('الفاتورة', `<span style="color:var(--accent)">#${esc(spRef)}</span>`) : ''}
+              ${spAmount ? _otpRow('المبلغ', `<strong style="color:var(--red)">EGP ${esc(spAmount)}</strong>`) : ''}
+              ${spMethod ? _otpRow('طريقة السداد', esc(spMethod)) : ''}
+              ${spValidStr ? `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.72rem;padding:2px 0">
+                <span style="color:var(--muted);white-space:nowrap;flex-shrink:0">صالح حتى</span>
+                <span id="${spUid}" style="font-variant-numeric:tabular-nums;font-weight:700;direction:ltr;color:var(--muted)">--:--</span>
+              </div>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // ── Export Excel OTP ──
+    if (m.fromName === 'نظام التصدير') {
+      const exLines = m.commentText.split('\n');
+      const getExVal = (prefix) => {
+        const ln = exLines.find(l => l.trimStart().startsWith(prefix));
+        if (!ln) return '';
+        const idx = ln.indexOf(':');
+        return idx !== -1 ? ln.slice(idx + 1).trim() : '';
+      };
+      const exCode  = getExVal('🔐 كود التحقق');
+      const exEmp   = getExVal('الموظف');
+      const exLabel = getExVal('التصدير');
+      const exValid = getExVal('صالح حتى');
+      const exColor = '#0369a1';
+      const unreadDot = m.read ? '' : `<span style="width:6px;height:6px;border-radius:50%;background:${exColor};display:inline-block;vertical-align:middle;margin-right:3px"></span>`;
+      const exIcon = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${exColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+      return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})" style="cursor:pointer;padding:10px 12px;${m.read ? '' : `background:rgba(3,105,161,.04)`}">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:32px;height:32px;border-radius:10px;background:rgba(3,105,161,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${exIcon}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
+              <span style="font-size:.7rem;font-weight:700;color:${exColor};white-space:nowrap">${unreadDot}طلب تصدير Excel — موافقة مطلوبة</span>
+              <span style="font-size:.62rem;color:var(--muted);white-space:nowrap">${ago}</span>
+            </div>
+            ${exCode ? `<div style="background:rgba(3,105,161,.08);border:1.5px solid rgba(3,105,161,.25);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
+              <div style="font-size:.58rem;color:${exColor};font-weight:600;margin-bottom:2px">كود التحقق</div>
+              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
+                <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:${exColor}">${esc(exCode)}</span>
+                <button class="otp-copy-btn" style="color:${exColor}" onclick="event.stopPropagation();_ncCopyCode('${esc(exCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
+              </div>
+            </div>` : ''}
+            <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
+              ${_otpRow('الموظف', esc(exEmp))}
+              ${exLabel ? _otpRow('التصدير', `<strong style="color:var(--text)">${esc(exLabel)}</strong>`) : ''}
+              ${exValid ? _otpRow('صالح حتى', `<span style="direction:ltr;display:inline-block">${esc(exValid)}</span>`) : ''}
             </div>
           </div>
         </div>
@@ -13928,6 +14255,42 @@ function renderMentionNotifsList() {
       </div>
     </div>`;
   }).join('');
+  _startNotifOtpCountdowns();
+}
+
+let _notifCountdownInterval = null;
+function _startNotifOtpCountdowns() {
+  clearInterval(_notifCountdownInterval);
+  const tick = () => {
+    const list = qs('#notif-list');
+    if (!list || !qs('#notif-panel')?.classList.contains('show')) {
+      clearInterval(_notifCountdownInterval);
+      return;
+    }
+    list.querySelectorAll('[data-sp-valid]').forEach(card => {
+      const validStr = card.dataset.spValid;
+      const uid = card.dataset.spUid;
+      if (!validStr || !uid) return;
+      const el = document.getElementById(uid);
+      if (!el) return;
+      const expiry = new Date(validStr);
+      if (isNaN(expiry.getTime())) { el.textContent = validStr; return; }
+      const diff = Math.floor((expiry - Date.now()) / 1000);
+      if (diff <= 0) {
+        el.textContent = 'انتهت الصلاحية';
+        el.style.color = 'var(--red)';
+        el.style.fontWeight = '700';
+      } else {
+        const mm = String(Math.floor(diff / 60)).padStart(2, '0');
+        const ss = String(diff % 60).padStart(2, '0');
+        el.textContent = `${mm}:${ss}`;
+        el.style.color = diff <= 30 ? '#ef4444' : 'var(--muted)';
+        el.style.fontWeight = '700';
+      }
+    });
+  };
+  tick();
+  _notifCountdownInterval = setInterval(tick, 1000);
 }
 
 async function onMentionNotifClick(mentionId, txId, commentId) {
@@ -15051,12 +15414,15 @@ const DS_EYE_OPEN = '<svg class="ds-kpi-eye" viewBox="0 0 24 24" fill="none" str
 const DS_EYE_OFF  = '<svg class="ds-kpi-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M6.7 6.7C3.7 8.8 2 12 2 12s4 7 11 7c2 0 3.8-.5 5.3-1.3M11 5.06A11 11 0 0112 5c7 0 11 7 11 7a18 18 0 01-3 4"/><path d="M14 14.24A3 3 0 019.88 9.87"/></svg>';
 
 function renderDashKpis(d) {
+  if (!isAdmin()) {
+    qs('#dash-stats').style.display = 'none';
+    return;
+  }
+  qs('#dash-stats').style.display = '';
   const kpis = buildDashKpis(d);
   qs('#dash-stats').innerHTML = kpis.map(s => {
-    const isRevealed = revealedStats[s.id];
+    const isRevealed = revealedStats[s.id] !== false;
     const displayVal = isRevealed ? s.val : '••••••';
-    const meta = DS_KPI_META[s.id] || {};
-    const color = meta.color || '#16a34a';
     return `
       <div class="ds-kpi" data-color="${s.color || ''}" onclick="revealDashboardStat('${s.id}')">
         ${s.alert ? '<span class="ds-kpi-alert" aria-hidden="true"></span>' : ''}
@@ -15127,72 +15493,65 @@ function dsStatusCell(tx) {
   return `<span class="ds-status"><span class="ds-dot"></span>${esc(s || '-')}</span>`;
 }
 
+function _renderStaffDashboard(adminMode) {
+  const staffSec = qs('#dash-staff-section');
+  if (staffSec) staffSec.style.display = '';
+
+  const myName = (!adminMode && currentUser) ? (currentUser.name || currentUser.username || '') : '';
+  const allTx = transactions || [];
+
+  // آخر أوردرات — للموظف: حركاته فقط | للأدمن: كل الحركات
+  const recentList = allTx
+    .filter(t => !t.cancelled && (!myName || (t.employee || '') === myName))
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 10);
+
+  renderDashTable('#dash-staff-recent tbody', recentList, r =>
+    `<td>${fmtDate(r.date)}</td><td>${dsTypeChip(r.type)}</td><td>${esc(r.client || '-')}</td><td class="ds-num">${fmtJ(r.total)}</td><td>${dsStatusCell(r)}</td>`);
+
+  // تم تسليمها Picked-Up — all sales with pickupStatus = 'Ready'
+  const pickedUp = allTx
+    .filter(t => !t.cancelled && t.type === 'مبيعات' && (t.pickupStatus === 'Ready' || t.pickupStatus === 'Picked-Up'))
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const countEl = qs('#dash-pickedup-count');
+  if (countEl) countEl.textContent = pickedUp.length > 0 ? String(pickedUp.length) : '';
+
+  renderDashTable('#dash-staff-pickedup tbody', pickedUp, r =>
+    `<td>${fmtDate(r.date)}</td><td>${esc(r.client || '-')}</td><td class="ds-num">${fmtJ(r.total)}</td><td><span style="font-size:.75rem;color:var(--muted)">${esc(r.ref || '-')}</span></td><td>${_puStatusBadge(r.pickupStatus || 'Ready')}</td>`);
+}
+
 async function loadDashboard() {
+  if (!isAdmin()) {
+    renderDashKpis({});
+    loadDashboardTreasury();
+    _renderStaffDashboard(false);
+    return;
+  }
+  // Admin: show unified orders section, hide old tables
   qs('#dash-stats').innerHTML = '<div class="ds-empty">جاري التحميل...</div>';
   try {
     const d = await api('/transactions/dashboard');
     renderDashKpis(d);
-
     renderDashTable('#dash-top-sellers tbody', (d.topSellers || []).slice(0, 10), r =>
       `<td>${esc(r.name || r._id)}</td><td class="ds-num">${fmtN(r.qty || r.totalQty)}</td><td class="ds-num">${fmtJ(r.total || r.totalRevenue)}</td>`);
     renderDashTable('#dash-low-sellers tbody', (d.lowSellers || []).slice(0, 10), r =>
       `<td>${esc(r.name || r._id)}</td><td class="ds-num">${fmtN(r.qty || r.totalQty)}</td><td class="ds-num">${fmtJ(r.total || r.totalRevenue)}</td>`);
-    renderDashTable('#dash-low-stock tbody', (d.lowStockItems || []).slice(0, 5), r => {
-      const cur = r.current != null ? r.current : r.stock;
-      const isZero = (cur || 0) <= 0;
-      return `<td><span class="ds-status ${isZero ? 'is-alert' : 'is-pending'}"><span class="ds-dot"></span>${esc(r.name)}</span></td><td class="ds-num">${fmtN(cur)}</td><td class="ds-num">${fmtN(r.minStock || r.min)}</td>`;
-    });
-    renderDashTable('#dash-recent tbody', (d.recentTransactions || []).slice(0, 5), r =>
-      `<td>${fmtDate(r.date)}</td><td>${dsTypeChip(r.type)}</td><td>${esc(r.client || '-')}</td><td class="ds-num">${fmtJ(r.total)}</td><td>${dsStatusCell(r)}</td>`);
   } catch (e) { qs('#dash-stats').innerHTML = `<div class="ds-empty">خطأ في تحميل البيانات: ${esc(e.message)}</div>`; }
   loadDashboardTreasury();
+  _renderStaffDashboard(true);
 }
 
 async function revealDashboardStat(statId) {
-  if (revealedStats[statId]) {
+  if (!isAdmin()) return;
+  // Admin toggle: hidden by default means key is absent; set false to hide, delete to show
+  if (revealedStats[statId] === false) {
     delete revealedStats[statId];
-    const d = await api('/transactions/dashboard');
-    renderDashKpis(d);
-    return;
+  } else {
+    revealedStats[statId] = false;
   }
-
-  openModal(`
-    <div style="text-align:center">
-      <div style="font-size:2.5rem;margin-bottom:16px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><circle cx="12" cy="16" r="1"/></svg></div>
-      <h3 style="margin:0 0 12px 0;color:var(--primary)">عرض الرقم</h3>
-      <p style="color:var(--muted);margin:0 0 20px 0">أدخل رقم السر للخزنة لعرض هذا الرقم</p>
-
-      <div class="form-group" style="max-width:300px;margin:0 auto 20px">
-        <input type="password" id="stat-reveal-pass" placeholder="رقم السر..."
-          style="width:100%;padding:12px;border:2px solid var(--border);border-radius:8px;font-size:1rem"
-          onkeydown="if(event.key==='Enter')verifyDashboardStatPassword('${statId}')">
-      </div>
-
-      <div style="display:flex;gap:8px;justify-content:center">
-        <button class="btn btn-primary" onclick="verifyDashboardStatPassword('${statId}')">عرض الرقم</button>
-        <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
-      </div>
-    </div>
-  `, 'max-width:400px;text-align:center');
-  setTimeout(() => qs('#stat-reveal-pass')?.focus(), 100);
-}
-
-async function verifyDashboardStatPassword(statId) {
-  const password = qs('#stat-reveal-pass')?.value;
-  if (!password) { toast('أدخل رقم السر', true); return; }
-
-  try {
-    await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password }) });
-    revealedStats[statId] = true;
-    closeModal();
-    const d = await api('/transactions/dashboard');
-    renderDashKpis(d);
-    toast(currentLang==='en'?'Stat revealed successfully':'تم عرض الرقم بنجاح');
-  } catch (e) {
-    toast(currentLang==='en'?'Incorrect password — please try again':'رقم السر المدخل غير صحيح - تحقق من رقم السر وحاول مرة أخرى', true);
-    qs('#stat-reveal-pass').value = '';
-    qs('#stat-reveal-pass')?.focus();
-  }
+  const d = await api('/transactions/dashboard');
+  renderDashKpis(d);
 }
 
 function renderDashTable(sel, data, rowFn) {
@@ -19883,9 +20242,8 @@ function openInventoryDetail(key) {
 const debouncedRenderInventory = debounce(() => { invPage = 1; renderInventory(); }, 250);
 
 function exportInventoryExcel() {
-  const data = inventoryCache.map(r => {
+  const buildData = () => inventoryCache.map(r => {
     const obj = { 'الكود': r.code, 'الصنف': r.name, 'رابط الصورة': r.imageUrl || '', 'سعر البيع': r.sellPrice };
-    if (isAdmin()) obj['سعر الشراء'] = r.buyPrice;
     obj['الحد الأدنى'] = r.minStock;
     obj['الرصيد الافتتاحي'] = r.openingBalance;
     obj['المشتريات (مورد)'] = r.purchases;
@@ -19896,6 +20254,9 @@ function exportInventoryExcel() {
     obj['الحالي'] = r.current;
     return obj;
   });
+  if (!isAdmin()) { requireExportOtp('تصدير المخزن', () => writeExcel(buildData(), 'المخزن', 'inventory_' + today())); return; }
+  const data = buildData();
+  if (isAdmin()) data.forEach((obj, i) => { obj['سعر الشراء'] = inventoryCache[i]?.buyPrice; });
   writeExcel(data, 'المخزن', 'inventory_' + today());
 }
 
@@ -21672,24 +22033,31 @@ function showEditConfirmDialog({ changes, vaultDelta, vaultNote, tx }) {
       const dot = _dotColor(c.type);
       let valueHtml;
       if (c.type === 'removed') {
-        // existed before, gone after → show old value in red, after = —
-        valueHtml = `<span style="color:#dc2626;text-decoration:line-through">${newVal}</span> ← <span style="color:var(--muted)">—</span>`;
+        valueHtml = `<div style="display:flex;gap:4px;align-items:stretch;flex-wrap:wrap">
+          <span style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.25);border-radius:4px;padding:2px 6px;color:#dc2626;text-decoration:line-through;font-size:.78rem">${newVal}</span>
+          <span style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--muted);font-size:.78rem">—</span>
+        </div>`;
       } else if (c.type === 'added') {
-        // new item → before = —, after = green
-        valueHtml = `<span style="color:var(--muted)">—</span> ← <span style="color:#16a34a;font-weight:600">${newVal}</span>`;
+        valueHtml = `<div style="display:flex;gap:4px;align-items:stretch;flex-wrap:wrap">
+          <span style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--muted);font-size:.78rem">—</span>
+          <span style="background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.25);border-radius:4px;padding:2px 6px;color:#16a34a;font-weight:600;font-size:.78rem">${newVal}</span>
+        </div>`;
       } else if (oldVal !== null) {
-        // modified / financial / info with before→after
-        valueHtml = `<span style="color:#dc2626;text-decoration:line-through">${oldVal}</span> ← <span style="color:#16a34a;font-weight:600">${newVal}</span>`;
+        valueHtml = `<div style="display:flex;gap:4px;align-items:stretch;flex-wrap:wrap">
+          <span style="background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:4px;padding:2px 6px;color:#dc2626;text-decoration:line-through;font-size:.78rem">${oldVal}</span>
+          <span style="display:flex;align-items:center;color:var(--muted);font-size:.65rem">▼</span>
+          <span style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:4px;padding:2px 6px;color:#16a34a;font-weight:600;font-size:.78rem">${newVal}</span>
+        </div>`;
       } else {
-        valueHtml = `<span style="color:var(--text)">${newVal}</span>`;
+        valueHtml = `<span style="font-size:.78rem;color:var(--text)">${newVal}</span>`;
       }
-      return `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:7px 10px;background:${bg};border-bottom:1px solid var(--border);flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+      return `<div style="padding:7px 10px;background:${bg};border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">
           <span style="width:6px;height:6px;border-radius:50%;background:${dot};display:inline-block;flex-shrink:0"></span>
           <span style="font-size:.8rem;font-weight:600;color:var(--text)">${esc(label)}</span>
           ${_typeBadge(c.type)}
         </div>
-        <div style="font-size:.8rem;text-align:left;word-break:break-word">${valueHtml}</div>
+        <div style="padding-right:11px">${valueHtml}</div>
       </div>`;
     }).join('');
 
@@ -23179,6 +23547,21 @@ async function doCollectMovement(id) {
       }
     }
     
+    // ===== للمشتريات: طلب كود OTP أولاً =====
+    if (isPurchase) {
+      const tx2 = transactions.find(t => t._id === id);
+      await openSupplierPayOtpFlow(
+        id,
+        tx2?.client || '',
+        tx2?.ref || '',
+        amountToDeduct,
+        tx2?.remaining || 0,
+        collectMethod,
+        collectNote
+      );
+      return; // OTP flow will call _doCollectWithOtp on success
+    }
+
     // ===== منع الضغط المزدوج =====
     if (btn) {
       btn.disabled = true;
@@ -23282,6 +23665,60 @@ async function doCollectMovement(id) {
       error: errorMsg,
       timestamp: new Date().toISOString()
     });
+  }
+}
+
+async function _doCollectWithOtp(id, otpId, collectNote) {
+  const tx = transactions.find(t => t._id === id);
+  if (!tx) { toast('خطأ: الحركة غير موجودة', true); return; }
+
+  const collectMethod = _supplierPayOtpCtx.payMethod;
+  const amountToDeduct = _supplierPayOtpCtx.amount;
+
+  try {
+    const body = {
+      collectMethod,
+      collectNote: collectNote || '',
+      collectAmount: amountToDeduct,
+      otpId
+    };
+    await api('/transactions/' + id + '/collect', { method: 'POST', body: JSON.stringify(body) });
+
+    // Cash pulse: purchase payment subtracts from vault
+    try { cashPulseAll(-amountToDeduct); } catch(_) {}
+
+    // ===== تحديث محلي فوري =====
+    const txIndex = transactions.findIndex(t => t._id === id);
+    if (txIndex >= 0) {
+      const t2 = transactions[txIndex];
+      if (!t2.payments) t2.payments = [];
+      t2.payments.push({
+        amount: amountToDeduct,
+        method: collectMethod,
+        note: collectNote || '',
+        date: new Date().toISOString(),
+        by: currentUser?.name || 'مستخدم',
+        remaining: t2.remaining || 0,
+        collectedAmount: amountToDeduct
+      });
+      t2.remaining = Math.max(0, (t2.remaining || 0) - amountToDeduct);
+      t2.deposit = ((t2.deposit || 0) + amountToDeduct);
+      t2.collectMethod = collectMethod;
+      t2.collectNote = collectNote || '';
+      t2.collectedAt = new Date().toISOString();
+      if (t2.remaining <= 0) { t2.remaining = 0; t2.payStatus = 'مكتمل'; }
+    }
+
+    toast('تم السداد بنجاح ✅');
+    closeModal();
+    _pendingSupplierPayOtpId = '';
+
+    transactions = await api('/transactions').catch(() => transactions);
+    settings = await api('/settings').catch(() => settings);
+    renderMovements(); buildSidebar(); buildNotifications();
+    syncVaultState();
+  } catch (e) {
+    toast('خطأ: ' + (e?.message || 'حدث خطأ أثناء السداد'), true);
   }
 }
 
@@ -23848,7 +24285,7 @@ async function confirmHardDeleteMovement(id) {
     toast(currentLang==='en'?'Frozen transaction permanently deleted':'تم الحذف النهائي للحركة المجمدة');
     buildNotifications();
   } catch (e) {
-    toast('خطأ: ' + e.message, true);
+    if (!e.message?.includes('🔒')) toast('خطأ: ' + e.message, true);
   } finally {
     if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.style.opacity = '1'; }
   }
@@ -24339,11 +24776,13 @@ function writeExcelFormatted(rows, colKeys, sheetName, fileName, opts = {}) {
 }
 
 function exportMovementsExcel() {
+  if (!isAdmin()) { requireExportOtp('تصدير الحركات', () => showExportModal(false)); return; }
   showExportModal(false);
 }
 
 function exportSelectedExcel() {
   if (!selectedMovIds.size) { toast('لم يتم تحديد أي حركات', true); return; }
+  if (!isAdmin()) { requireExportOtp('تصدير الحركات المحددة', () => showExportModal(true)); return; }
   showExportModal(true);
 }
 function _invoiceSharedCss() {
@@ -25410,12 +25849,14 @@ function getClientsData() {
   return Object.values(clientMap);
 }
 function exportClientsExcel() {
-  const data = getClientsData().map(c => ({ 'الاسم': c.name, 'الهاتف': c.phone, 'الطلبات': c.orders, 'الإجمالي': c.total, 'المتبقي': c.remaining }));
-  writeExcel(data, 'العملاء', 'clients_' + today());
+  const doExport = () => writeExcel(getClientsData().map(c => ({ 'الاسم': c.name, 'الهاتف': c.phone, 'الطلبات': c.orders, 'الإجمالي': c.total, 'المتبقي': c.remaining })), 'العملاء', 'clients_' + today());
+  if (!isAdmin()) { requireExportOtp('تصدير العملاء', doExport); return; }
+  doExport();
 }
 function exportSelectedClientsExcel() {
   const data = getClientsData().filter(c => selectedClientNames.has(c.name)).map(c => ({ 'الاسم': c.name, 'الهاتف': c.phone, 'الطلبات': c.orders, 'الإجمالي': c.total, 'المتبقي': c.remaining }));
   if (!data.length) { toast('لا يوجد عملاء محددين', true); return; }
+  if (!isAdmin()) { requireExportOtp('تصدير العملاء المحددين', () => writeExcel(data, 'العملاء_المحددين', 'clients_selected_' + today())); return; }
   writeExcel(data, 'العملاء_المحددين', 'clients_selected_' + today());
 }
 function exportClientsCsv() {
@@ -25670,6 +26111,7 @@ async function saveProduct(id) {
 
   // Staff adding a new product: require admin OTP approval
   if (!id && !isAdmin()) {
+    closeModal();
     openAddProductOtpFlow({
       productName: body.name,
       productCode: body.code,
@@ -25861,7 +26303,11 @@ async function bulkDeleteProducts() {
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 
-function exportProductsExcel() { writeExcel(products.map(p => ({ 'الكود': p.code, 'الاسم': p.name, 'رابط الصورة': p.imageUrl || '', 'المورد': p.supplier || '', 'سعر البيع': p.sellPrice, 'سعر الشراء': p.buyPrice, 'الحد الأدنى': p.minStock, 'الرصيد الافتتاحي': p.openingBalance })), 'الأصناف', 'products_' + today()); }
+function exportProductsExcel() {
+  const doExport = () => writeExcel(products.map(p => ({ 'الكود': p.code, 'الاسم': p.name, 'رابط الصورة': p.imageUrl || '', 'المورد': p.supplier || '', 'سعر البيع': p.sellPrice, 'سعر الشراء': p.buyPrice, 'الحد الأدنى': p.minStock, 'الرصيد الافتتاحي': p.openingBalance })), 'الأصناف', 'products_' + today());
+  if (!isAdmin()) { requireExportOtp('تصدير الأصناف', doExport); return; }
+  doExport();
+}
 
 function importProductsExcel(event) {
   const file = event.target.files[0]; if (!file) return;
@@ -26128,7 +26574,11 @@ async function submitDeleteSupplierOtp() {
     if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
   }
 }
-function exportSuppliersExcel() { writeExcel(suppliers.map(s => ({ 'الاسم': s.name, 'الهاتف': s.phone, 'العنوان': s.address, 'البريد': s.email, 'الأصناف': s.products, 'ملاحظات': s.notes })), 'الموردون', 'suppliers_' + today()); }
+function exportSuppliersExcel() {
+  const doExport = () => writeExcel(suppliers.map(s => ({ 'الاسم': s.name, 'الهاتف': s.phone, 'العنوان': s.address, 'البريد': s.email, 'الأصناف': s.products, 'ملاحظات': s.notes })), 'الموردون', 'suppliers_' + today());
+  if (!isAdmin()) { requireExportOtp('تصدير الموردين', doExport); return; }
+  doExport();
+}
 
 /* Expenses */
 function expStatusBadge(status) {
@@ -26167,13 +26617,18 @@ function buildExpActionsMenu(e) {
   const approveActions = isAdmin() && isPending
     ? `<div class="dd-item" onclick="approveExpense('${esc(e._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> اعتماد</div><div class="dd-item danger" onclick="rejectExpense('${esc(e._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg> رفض</div><div class="dd-divider"></div>`
     : '';
-  const editAction = isPending
+  const canEdit = isPending && (isAdmin() || e.employee === (currentUser?.name || currentUser?.username));
+  const editAction = canEdit
     ? `<div class="dd-item" onclick="openExpenseModal('${esc(e._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</div>` : '';
-  const viewAction = `<div class="dd-item" onclick="openExpenseDetail('${esc(e._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> التفاصيل</div>`;
-  const printAction = `<div class="dd-item" onclick="printExpenseDetails('${esc(e._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة</div>`;
-  const canDelete = e.status !== 'معتمد' || isAdmin();
+  const isOwner = isAdmin() || e.employee === (currentUser?.name || currentUser?.username);
+  const viewAction = isOwner ? `<div class="dd-item" onclick="openExpenseDetail('${esc(e._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> التفاصيل</div>` : '';
+  const canPrint = isOwner;
+  const printAction = canPrint ? `<div class="dd-item" onclick="printExpenseDetails('${esc(e._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة</div>` : '';
+  const canDelete = isOwner && (e.status !== 'معتمد' || isAdmin());
   const deleteAction = canDelete
     ? `<div class="dd-divider"></div><div class="dd-item danger" onclick="deleteExpenseWithPassword('${esc(e._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> حذف${e.status === 'معتمد' ? ' (إلغاء اعتماد)' : ''}</div>` : '';
+  const hasAnyAction = approveActions || viewAction || printAction || editAction || deleteAction;
+  if (!hasAnyAction) return '';
   return `<div class="actions-dd"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu">${approveActions}${viewAction}${printAction}${editAction}${deleteAction}</div></div>`;
 }
 
@@ -26196,13 +26651,19 @@ function renderExpenses() {
   const totalLastMonth = approved.filter(e => (e.date || '').startsWith(lastMonthStr)).reduce((s, e) => s + (e.amount || 0), 0);
   const monthTrend = lastMonth > 0 ? ((totalThisMonth - totalLastMonth) / (totalLastMonth || 1) * 100).toFixed(0) : 0;
 
-  /* Render KPI cards */
+  /* Render KPI cards — admin only */
+  const kpiStrip = qs('#exp-kpi-strip');
   const trendHtml = (val) => {
     if (val > 0) return `<span class="exp-kpi-trend up">▲ ${val}%</span>`;
     if (val < 0) return `<span class="exp-kpi-trend down">▼ ${Math.abs(val)}%</span>`;
     return `<span class="exp-kpi-trend neutral">— لا تغيير</span>`;
   };
-  qs('#exp-kpi-strip').innerHTML = `
+  if (!isAdmin()) {
+    kpiStrip.innerHTML = '';
+    kpiStrip.style.display = 'none';
+  } else {
+    kpiStrip.style.display = '';
+    kpiStrip.innerHTML = `
     <div class="exp-kpi-card kpi-red">
       <div class="exp-kpi-icon red"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg></div>
       <div class="exp-kpi-body">
@@ -26235,6 +26696,7 @@ function renderExpenses() {
         <span class="exp-kpi-trend neutral">${rejected.length} مصروف</span>
       </div>
     </div>`;
+  }
 
   /* Update tab badge counts */
   const tabCounts = { all: expenses.length, 'معلق': pending.length, 'معتمد': approved.length, 'مرفوض': rejected.length };
@@ -26290,7 +26752,7 @@ function renderExpenses() {
         </td>
         <td><span class="exp-account-chip">${esc(e.account || '-')}</span></td>
         <td style="color:var(--muted);font-size:.85rem">${esc(e.employee || '-')}</td>
-        <td class="exp-amount-cell">${fmtJ(e.amount)}</td>
+        <td class="exp-amount-cell">${(isAdmin() || e.employee === (currentUser?.name || currentUser?.username)) ? fmtJ(e.amount) : '<span style="letter-spacing:.15em;color:var(--muted);font-size:.95em">••••</span>'}</td>
         <td style="text-align:center">${statusHtml(e.status)}</td>
         <td style="text-align:center">${buildExpActionsMenu(e)}</td>
       </tr>`;
@@ -26314,7 +26776,7 @@ function renderExpenses() {
             <div class="exp-card-title">${esc(e.desc || '-')}</div>
             <div class="exp-card-sub">${esc(e.category || '-')}${e.expenseNo ? ' · #' + esc(e.expenseNo) : ''}</div>
           </div>
-          <div class="exp-card-amount">${fmtJ(e.amount)}</div>
+          <div class="exp-card-amount">${(isAdmin() || e.employee === (currentUser?.name || currentUser?.username)) ? fmtJ(e.amount) : '<span style="letter-spacing:.15em;color:var(--muted);font-size:.95em">••••</span>'}</div>
         </div>
         <div class="exp-card-footer">
           <div class="exp-card-meta">
@@ -26374,7 +26836,7 @@ async function openExpenseDetail(id) {
   openModal(`
     <div class="exp-detail-hero">
       <div style="font-size:2.2rem;margin-bottom:8px">${meta.emoji}</div>
-      <div class="exp-detail-hero-amount">${fmtJ(e.amount)}</div>
+      <div class="exp-detail-hero-amount">${(isAdmin() || e.employee === (currentUser?.name || currentUser?.username)) ? fmtJ(e.amount) : '<span style="letter-spacing:.2em;font-size:1.3rem;color:var(--muted)">••••</span>'}</div>
       <div class="exp-detail-hero-desc">${esc(e.desc || '-')}</div>
       <span class="exp-detail-hero-badge">${statusLabel}</span>
     </div>
@@ -26405,11 +26867,11 @@ async function openExpenseDetail(id) {
       <div class="exp-timeline">${createdStep}${approvalStep}</div>
     </div>
     <div class="flex gap-8" style="flex-wrap:wrap">
-      <button class="btn btn-outline btn-sm" onclick="printExpenseDetails('${esc(e._id)}')">طباعة</button>
-      ${e.status === 'معلق' ? `<button class="btn btn-outline btn-sm" onclick="closeModal();openExpenseModal('${esc(e._id)}')">تعديل</button>` : ''}
+      ${(isAdmin() || e.employee === (currentUser?.name || currentUser?.username)) ? `<button class="btn btn-outline btn-sm" onclick="printExpenseDetails('${esc(e._id)}')">طباعة</button>` : ''}
+      ${e.status === 'معلق' && (isAdmin() || e.employee === (currentUser?.name || currentUser?.username)) ? `<button class="btn btn-outline btn-sm" onclick="closeModal();openExpenseModal('${esc(e._id)}')">تعديل</button>` : ''}
       ${isAdmin() && e.status === 'معلق' ? `<button class="btn btn-primary btn-sm" onclick="closeModal();approveExpense('${esc(e._id)}')">اعتماد</button>` : ''}
-      ${isAdmin() ? `<button class="btn btn-danger btn-sm" style="margin-right:auto" onclick="closeModal();deleteExpenseWithPassword('${esc(e._id)}')">حذف${e.status === 'معتمد' ? ' (إلغاء اعتماد)' : ''}</button>` : '<button class="btn btn-outline btn-sm" style="margin-right:auto" onclick="closeModal()">إغلاق</button>'}
-      ${isAdmin() ? `<button class="btn btn-outline btn-sm" onclick="closeModal()">إغلاق</button>` : ''}
+      ${(isAdmin() || (e.employee === (currentUser?.name || currentUser?.username) && e.status !== 'معتمد')) ? `<button class="btn btn-danger btn-sm" style="margin-right:auto" onclick="closeModal();deleteExpenseWithPassword('${esc(e._id)}')">حذف${e.status === 'معتمد' ? ' (إلغاء اعتماد)' : ''}</button>` : '<button class="btn btn-outline btn-sm" style="margin-right:auto" onclick="closeModal()">إغلاق</button>'}
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">إغلاق</button>
     </div>
   `);
 }
@@ -26673,7 +27135,7 @@ async function confirmDeleteExpenseWithPassword(id) {
     renderExpenses();
     syncVaultState();
   } catch (e) {
-    toast(e.message, true);
+    if (!e.message?.includes('🔒')) toast(e.message, true);
   }
 }
 
@@ -26833,7 +27295,11 @@ async function bulkDeleteExpenses() {
     renderExpenses();
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
-function exportExpensesExcel() { writeExcel(expenses.map(e => ({ 'التاريخ': (e.date||'').slice(0,10), 'الوصف': e.desc, 'الفئة': e.category, 'الحساب': e.account, 'المبلغ': e.amount, 'الحالة': e.status, 'الموظف': e.employee, 'ملاحظات': e.notes })), 'المصاريف', 'expenses_' + today()); }
+function exportExpensesExcel() {
+  const doExport = () => writeExcel(expenses.map(e => ({ 'التاريخ': (e.date||'').slice(0,10), 'الوصف': e.desc, 'الفئة': e.category, 'الحساب': e.account, 'المبلغ': e.amount, 'الحالة': e.status, 'الموظف': e.employee, 'ملاحظات': e.notes })), 'المصاريف', 'expenses_' + today());
+  if (!isAdmin()) { requireExportOtp('تصدير المصاريف', doExport); return; }
+  doExport();
+}
 
 /* Approvals */
 function clearApprFilters() {
@@ -26861,6 +27327,10 @@ const OTP_KIND_META = {
     svg: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>' },
   'import-products':{ label: 'استيراد أصناف',  color: '#0369a1', bg: '#e0f2fe',
     svg: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' },
+  'export-excel':   { label: 'التصدير',         color: '#16a34a', bg: '#dcfce7',
+    svg: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>' },
+  'supplier-pay':   { label: 'سداد المورد',      color: '#0891b2', bg: '#cffafe',
+    svg: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>' },
 };
 function otpKindMeta(kind) {
   return OTP_KIND_META[kind] || { label: kind || 'غير محدد', color: 'var(--primary)', bg: 'var(--bg-alt)',
@@ -26943,11 +27413,28 @@ function _otpDetailRows(r, idx) {
 
   let inner = '';
   if (r.kind === 'edit-tx' && r.editChanges?.length) {
-    inner = r.editChanges.map(c =>
-      `<div style="display:flex;align-items:flex-start;gap:6px;padding:2px 0;font-size:.73rem;color:var(--muted)">
-        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><polyline points="9 18 15 12 9 6"/></svg>
-        <span>${esc(stripHtml(c))}</span>
-      </div>`).join('');
+    inner = r.editChanges.map(c => {
+      const plain = stripHtml(c);
+      const arrowMatch = plain.match(/^(.+?):\s*(.+?)\s*←\s*(.+)$/);
+      if (arrowMatch) {
+        const [, label, oldVal, newVal] = arrowMatch;
+        return `<div style="padding:3px 0;font-size:.73rem;border-bottom:1px solid var(--border)">
+          <span style="color:var(--muted);font-size:.68rem">${esc(label.trim())}</span>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap">
+            <span style="color:#dc2626;background:rgba(220,38,38,.08);padding:1px 6px;border-radius:4px;text-decoration:line-through;font-size:.72rem">${esc(oldVal.trim())}</span>
+            <span style="color:var(--muted);font-size:.75rem">→</span>
+            <span style="color:#059669;background:rgba(5,150,105,.08);padding:1px 6px;border-radius:4px;font-weight:600;font-size:.72rem">${esc(newVal.trim())}</span>
+          </div>
+        </div>`;
+      }
+      const isRemoved = plain.startsWith('حُذف');
+      const isAdded = plain.startsWith('أُضيف');
+      const color = isRemoved ? '#dc2626' : isAdded ? '#059669' : 'var(--muted)';
+      return `<div style="display:flex;align-items:flex-start;gap:6px;padding:3px 0;font-size:.73rem;border-bottom:1px solid var(--border)">
+        <span style="width:6px;height:6px;border-radius:50%;background:${color};flex-shrink:0;margin-top:4px"></span>
+        <span style="color:var(--text)">${esc(plain)}</span>
+      </div>`;
+    }).join('');
     if (r.editReviewedBy)
       inner += `<div style="margin-top:5px;font-size:.72rem;color:${r.editStatus==='approved'?'#059669':'#dc2626'}">
         ${r.editStatus==='approved'?'✔ وافق عليه':'✘ رفضه'}: ${esc(r.editReviewedBy)}${r.editReviewedAt ? ' — ' + fmtDateTime(r.editReviewedAt) : ''}
@@ -27304,11 +27791,13 @@ function renderProductEditApprovalCard(p) {
   const changesHtml = (er.changes || []).map(c => {
     const label = c.label || FIELD_LABELS[c.field] || c.field;
     const isSensitive = ['sellPrice', 'buyPrice', 'openingBalance'].includes(c.field);
-    return `<div style="display:flex;gap:6px;align-items:center;margin-top:4px;font-size:.82rem">
-      <span style="font-weight:600;${isSensitive ? 'color:var(--orange)' : ''}">${esc(label)}:</span>
-      <span style="text-decoration:line-through;color:var(--muted)">${esc(String(c.oldValue ?? ''))}</span>
-      <span style="color:var(--muted)">→</span>
-      <span style="font-weight:700;color:var(--primary)">${esc(String(c.newValue ?? ''))}</span>
+    return `<div style="margin-top:6px;font-size:.82rem">
+      <div style="font-weight:600;margin-bottom:3px;${isSensitive ? 'color:var(--orange)' : ''}">${esc(label)}</div>
+      <div style="display:flex;gap:6px;align-items:stretch">
+        <div style="flex:1;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:5px;padding:3px 7px;text-decoration:line-through;color:var(--muted);font-size:.8rem">${esc(String(c.oldValue ?? ''))}</div>
+        <div style="display:flex;align-items:center;color:var(--muted);font-size:.7rem;padding:0 1px">▼</div>
+        <div style="flex:1;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:5px;padding:3px 7px;font-weight:700;color:#059669;font-size:.8rem">${esc(String(c.newValue ?? ''))}</div>
+      </div>
     </div>`;
   }).join('');
   const reviewInfo = er.reviewedBy ? `<div class="text-xs text-muted" style="margin-top:4px">بواسطة: ${esc(er.reviewedBy)} ${er.reviewedAt ? '— ' + fmtDate(er.reviewedAt) : ''}</div>` : '';
@@ -27345,7 +27834,14 @@ async function approveProductEditRequest(productId) {
   const FIELD_LABELS = { sellPrice: 'سعر البيع', buyPrice: 'سعر الشراء', minStock: 'الحد الأدنى', openingBalance: 'الرصيد الافتتاحي', supplier: 'المورد', name: 'الاسم', code: 'الكود', imageUrl: 'رابط الصورة' };
   const changesPreview = (p.editRequest.changes || []).map(c => {
     const label = c.label || FIELD_LABELS[c.field] || c.field;
-    return `<div style="font-size:.82rem;margin-top:4px"><strong>${esc(label)}:</strong> <span style="text-decoration:line-through;color:var(--muted)">${esc(String(c.oldValue ?? ''))}</span> → <strong style="color:var(--primary)">${esc(String(c.newValue ?? ''))}</strong></div>`;
+    return `<div style="margin-top:6px;font-size:.82rem">
+      <div style="font-weight:600;margin-bottom:3px">${esc(label)}</div>
+      <div style="display:flex;gap:6px;align-items:stretch">
+        <div style="flex:1;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:5px;padding:3px 7px;text-decoration:line-through;color:var(--muted)">${esc(String(c.oldValue ?? ''))}</div>
+        <div style="display:flex;align-items:center;color:var(--muted);font-size:.7rem;padding:0 1px">▼</div>
+        <div style="flex:1;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:5px;padding:3px 7px;font-weight:700;color:#059669">${esc(String(c.newValue ?? ''))}</div>
+      </div>
+    </div>`;
   }).join('');
   const confirmed = await showConfirm(`
     <div style="font-size:.9rem;font-weight:600;margin-bottom:8px">الصنف: ${esc(p.name)}</div>
@@ -27707,21 +28203,25 @@ function buildHubRowDetails(entry) {
 }
 
 function exportHubExcel() {
-  const allEntries = buildHubEntries();
-  const data = allEntries.map(entry => ({
-    'التاريخ': (entry.editedAt || '').slice(0, 10),
-    'الوقت': formatEditDateTime(entry.editedAt),
-    'الإجراء': entry.action,
-    'مرجع الفاتورة': entry.txRef || '-',
-    'نوع الحركة': entry.txType,
-    'العميل': entry.txClient,
-    'المنفّذ (طلب التعديل)': entry.editedBy,
-    'الموافق': entry.approvedBy || '-',
-    'الخزنة': entry.vaultAccount || '-',
-    'التفاصيل': buildHubRowDetails(entry).replace(/<[^>]+>/g, ''),
-    'إجمالي الفاتورة': entry.txTotal,
-  }));
-  writeExcel(data, 'سجل التعديلات', 'history_hub_' + today());
+  const doExport = () => {
+    const allEntries = buildHubEntries();
+    const data = allEntries.map(entry => ({
+      'التاريخ': (entry.editedAt || '').slice(0, 10),
+      'الوقت': formatEditDateTime(entry.editedAt),
+      'الإجراء': entry.action,
+      'مرجع الفاتورة': entry.txRef || '-',
+      'نوع الحركة': entry.txType,
+      'العميل': entry.txClient,
+      'المنفّذ (طلب التعديل)': entry.editedBy,
+      'الموافق': entry.approvedBy || '-',
+      'الخزنة': entry.vaultAccount || '-',
+      'التفاصيل': buildHubRowDetails(entry).replace(/<[^>]+>/g, ''),
+      'إجمالي الفاتورة': entry.txTotal,
+    }));
+    writeExcel(data, 'سجل التعديلات', 'history_hub_' + today());
+  };
+  if (!isAdmin()) { requireExportOtp('تصدير سجل التعديلات', doExport); return; }
+  doExport();
 }
 
 /* Reports */
@@ -27763,7 +28263,8 @@ async function verifyReportsPassword() {
     loadReports();
     toast(currentLang==='en'?'Reports unlocked — welcome!':'تم فتح التقارير بنجاح - مرحباً بك في التقارير');
   } catch (e) {
-    toast(currentLang==='en'?'Incorrect password — please try again':'رقم السر غير صحيح - حاول مرة أخرى', true);
+    if (e.message?.includes('🔒')) return;
+    toast(e.message || (currentLang==='en'?'Incorrect password — please try again':'رقم السر غير صحيح - حاول مرة أخرى'), true);
     qs('#reports-pass-input').value = '';
     qs('#reports-pass-input')?.focus();
   }
@@ -28481,7 +28982,8 @@ async function unlockVault() {
     }
   }
   catch (e) {
-    toast(currentLang==='en'?'Incorrect password — please try again':'كلمة المرور غير صحيحة - تحقق من الرقم وحاول مرة أخرى', true);
+    if (e.message?.includes('🔒')) return;
+    toast(e.message || (currentLang==='en'?'Incorrect password — please try again':'كلمة المرور غير صحيحة - تحقق من الرقم وحاول مرة أخرى'), true);
     qs('#vault-pass-input').value = '';
     qs('#vault-pass-input')?.focus();
   }
@@ -28618,6 +29120,260 @@ async function submitVaultOtp() {
   } finally {
     if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
   }
+}
+
+/* ── Supplier Pay OTP ─────────────────────────────────────────── */
+let _supplierPayOtpCtx = { otpId: '', expiresAt: '', txId: '', supplier: '', txRef: '', amount: 0, remaining: 0, payMethod: '', collectNote: '' };
+let _pendingSupplierPayOtpId = '';
+let _supplierPayCountdownTimer = null;
+let _supplierPayInputRevealed = false;
+
+function _supplierPayCountdownTick() {
+  const el = qs('#supplier-pay-countdown');
+  if (!el || !_supplierPayOtpCtx.expiresAt) return;
+  const diff = Math.floor((new Date(_supplierPayOtpCtx.expiresAt) - Date.now()) / 1000);
+  if (diff <= 0) {
+    el.textContent = 'انتهت الصلاحية';
+    el.style.color = 'var(--red)';
+    clearInterval(_supplierPayCountdownTimer);
+    _supplierPayCountdownTimer = null;
+    return;
+  }
+  const m = String(Math.floor(diff / 60)).padStart(2, '0');
+  const s = String(diff % 60).padStart(2, '0');
+  el.textContent = `${m}:${s}`;
+  el.style.color = diff <= 30 ? 'var(--red)' : 'var(--muted)';
+}
+
+function _startSupplierPayCountdown() {
+  clearInterval(_supplierPayCountdownTimer);
+  _supplierPayCountdownTick();
+  _supplierPayCountdownTimer = setInterval(_supplierPayCountdownTick, 1000);
+}
+
+function _renderSupplierPayOtpInfo() {
+  const el = qs('#supplier-pay-otp-info');
+  if (!el) return;
+  const userName = (currentUser?.name || currentUser?.username || '').trim();
+  el.innerHTML =
+    `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الموظف</span><strong>${esc(userName) || '—'}</strong></div>` +
+    `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>المورد</span><strong style="color:var(--accent)">${esc(_supplierPayOtpCtx.supplier) || '—'}</strong></div>` +
+    (_supplierPayOtpCtx.txRef ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الفاتورة</span><strong>#${esc(_supplierPayOtpCtx.txRef)}</strong></div>` : '') +
+    `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>المبلغ المراد سداده</span><strong style="color:var(--red)">EGP ${fmtJ(_supplierPayOtpCtx.amount)}</strong></div>` +
+    `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>طريقة السداد</span><strong>${esc(_supplierPayOtpCtx.payMethod)}</strong></div>` +
+    (_supplierPayOtpCtx.expiresAt ? `<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--muted)">صالح حتى</span><span id="supplier-pay-countdown" style="font-variant-numeric:tabular-nums;font-weight:700;direction:ltr">--:--</span></div>` : '');
+  if (_supplierPayOtpCtx.expiresAt) _startSupplierPayCountdown();
+}
+
+function _supplierPayRevealOrSubmit() {
+  const wrap = qs('#supplier-pay-otp-input-wrap');
+  if (!_supplierPayInputRevealed) {
+    _supplierPayInputRevealed = true;
+    if (wrap) wrap.style.display = 'block';
+    setTimeout(() => qs('#supplier-pay-otp-input')?.focus(), 50);
+    return;
+  }
+  submitSupplierPayOtp();
+}
+
+async function openSupplierPayOtpFlow(txId, supplier, txRef, amount, remaining, payMethod, collectNote) {
+  if (!supplier) { toast('اسم المورد مطلوب', true); return; }
+  if (!amount || amount <= 0) { toast('المبلغ غير صحيح', true); return; }
+  _supplierPayOtpCtx = { otpId: '', expiresAt: '', txId, supplier, txRef, amount, remaining, payMethod, collectNote: collectNote || '' };
+  try {
+    const res = await api('/discount-otp/supplier-pay-request', {
+      method: 'POST',
+      body: JSON.stringify({ supplier, txId, txRef, amount, remaining, payMethod })
+    });
+    _supplierPayOtpCtx.otpId = res.otpId;
+    _supplierPayOtpCtx.expiresAt = res.expiresAt;
+    _supplierPayInputRevealed = false;
+    const wrap = qs('#supplier-pay-otp-input-wrap');
+    if (wrap) wrap.style.display = 'none';
+    qs('#supplier-pay-otp-input').value = '';
+    qs('#supplier-pay-otp-msg').textContent = '';
+    qs('#supplier-pay-otp-msg').style.color = '';
+    _renderSupplierPayOtpInfo();
+    qs('#supplier-pay-otp-modal').classList.add('active');
+  } catch (e) {
+    toast('فشل طلب كود التحقق: ' + (e?.message || ''), true);
+  }
+}
+
+function closeSupplierPayOtpModal() {
+  qs('#supplier-pay-otp-modal').classList.remove('active');
+  clearInterval(_supplierPayCountdownTimer);
+  _supplierPayCountdownTimer = null;
+  _supplierPayInputRevealed = false;
+}
+
+async function resendSupplierPayOtp() {
+  if (!_supplierPayOtpCtx.supplier) { toast('بيانات المورد فقدت — أغلق وأعد المحاولة', true); return; }
+  try {
+    const res = await api('/discount-otp/supplier-pay-request', {
+      method: 'POST',
+      body: JSON.stringify({
+        supplier: _supplierPayOtpCtx.supplier,
+        txId: _supplierPayOtpCtx.txId,
+        txRef: _supplierPayOtpCtx.txRef,
+        amount: _supplierPayOtpCtx.amount,
+        remaining: _supplierPayOtpCtx.remaining,
+        payMethod: _supplierPayOtpCtx.payMethod
+      })
+    });
+    _supplierPayOtpCtx.otpId = res.otpId;
+    _supplierPayOtpCtx.expiresAt = res.expiresAt;
+    _supplierPayInputRevealed = false;
+    const wrap = qs('#supplier-pay-otp-input-wrap');
+    if (wrap) wrap.style.display = 'none';
+    qs('#supplier-pay-otp-input').value = '';
+    qs('#supplier-pay-otp-msg').textContent = '';
+    qs('#supplier-pay-otp-msg').style.color = '';
+    _renderSupplierPayOtpInfo();
+    toast('تم إرسال كود جديد للمدير ✓');
+  } catch (e) {
+    toast('فشل طلب الكود الجديد: ' + (e?.message || ''), true);
+  }
+}
+
+async function submitSupplierPayOtp() {
+  const otp = (qs('#supplier-pay-otp-input')?.value || '').trim();
+  if (!/^\d{4}$/.test(otp)) {
+    qs('#supplier-pay-otp-msg').textContent = 'أدخل 4 أرقام';
+    qs('#supplier-pay-otp-msg').style.color = 'var(--red)';
+    return;
+  }
+  const btn = qs('#supplier-pay-otp-submit');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+  try {
+    const res = await api('/discount-otp/validate', {
+      method: 'POST',
+      body: JSON.stringify({ otpId: _supplierPayOtpCtx.otpId, otp })
+    });
+    if (res.valid) {
+      _pendingSupplierPayOtpId = _supplierPayOtpCtx.otpId;
+      qs('#supplier-pay-otp-msg').textContent = '✓ تم التحقق — جارٍ إتمام السداد';
+      qs('#supplier-pay-otp-msg').style.color = 'var(--green)';
+      setTimeout(() => {
+        closeSupplierPayOtpModal();
+        _doCollectWithOtp(_supplierPayOtpCtx.txId, _pendingSupplierPayOtpId, _supplierPayOtpCtx.collectNote);
+      }, 350);
+    } else {
+      qs('#supplier-pay-otp-msg').textContent = res.message || 'الكود غير صحيح';
+      qs('#supplier-pay-otp-msg').style.color = 'var(--red)';
+      qs('#supplier-pay-otp-input').value = '';
+      qs('#supplier-pay-otp-input').focus();
+    }
+  } catch (e) {
+    qs('#supplier-pay-otp-msg').textContent = 'خطأ: ' + (e?.message || '');
+    qs('#supplier-pay-otp-msg').style.color = 'var(--red)';
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+  }
+}
+
+/* ── Export Excel OTP ─────────────────────────────────────────── */
+let _exportOtpCtx = { otpId: '', expiresAt: '', label: '', callback: null };
+
+function _renderExportOtpInfo() {
+  const el = qs('#export-otp-info');
+  if (!el) return;
+  const exp = _exportOtpCtx.expiresAt ? new Date(_exportOtpCtx.expiresAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
+  el.innerHTML =
+    `<div style="margin-bottom:4px">الموظف: <strong>${currentUser?.name || currentUser?.username || 'موظف'}</strong></div>` +
+    `<div style="margin-bottom:4px">التصدير: <strong>${_exportOtpCtx.label || 'بيانات'}</strong></div>` +
+    (exp ? `<div style="color:var(--muted)">صالح حتى: ${exp}</div>` : '');
+}
+
+async function openExportOtpFlow(label, callback) {
+  _exportOtpCtx = { otpId: '', expiresAt: '', label, callback };
+  try {
+    const res = await api('/discount-otp/export-excel-request', {
+      method: 'POST',
+      body: JSON.stringify({ exportLabel: label })
+    });
+    _exportOtpCtx.otpId = res.otpId;
+    _exportOtpCtx.expiresAt = res.expiresAt;
+    _renderExportOtpInfo();
+    const inp = qs('#export-otp-input');
+    if (inp) inp.value = '';
+    const msg = qs('#export-otp-msg');
+    if (msg) { msg.textContent = ''; msg.style.color = ''; }
+    qs('#export-otp-modal').classList.add('active');
+  } catch (e) {
+    toast('فشل طلب كود التصدير: ' + (e?.message || ''), true);
+  }
+}
+
+function closeExportOtpModal() {
+  qs('#export-otp-modal').classList.remove('active');
+  _exportOtpCtx = { otpId: '', expiresAt: '', label: '', callback: null };
+}
+
+async function resendExportOtp() {
+  try {
+    const res = await api('/discount-otp/export-excel-request', {
+      method: 'POST',
+      body: JSON.stringify({ exportLabel: _exportOtpCtx.label || 'بيانات' })
+    });
+    _exportOtpCtx.otpId = res.otpId;
+    _exportOtpCtx.expiresAt = res.expiresAt;
+    _renderExportOtpInfo();
+    const inp = qs('#export-otp-input');
+    if (inp) inp.value = '';
+    const msg = qs('#export-otp-msg');
+    if (msg) { msg.textContent = ''; msg.style.color = ''; }
+    toast('تم إرسال كود جديد للمدير ✓');
+  } catch (e) {
+    toast('فشل طلب الكود الجديد: ' + (e?.message || ''), true);
+  }
+}
+
+async function submitExportOtp() {
+  const otp = (qs('#export-otp-input')?.value || '').trim();
+  if (!/^\d{4}$/.test(otp)) {
+    qs('#export-otp-msg').textContent = 'أدخل 4 أرقام';
+    qs('#export-otp-msg').style.color = 'var(--red)';
+    return;
+  }
+  const btn = qs('#export-otp-submit');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+  try {
+    const res = await api('/discount-otp/validate', {
+      method: 'POST',
+      body: JSON.stringify({ otpId: _exportOtpCtx.otpId, otp })
+    });
+    if (res.valid) {
+      qs('#export-otp-msg').textContent = '✓ تم التحقق — جارٍ التصدير';
+      qs('#export-otp-msg').style.color = 'var(--green)';
+      try {
+        await api('/discount-otp/assert-export-excel', {
+          method: 'POST',
+          body: JSON.stringify({ otpId: _exportOtpCtx.otpId })
+        });
+      } catch (_) {}
+      setTimeout(() => {
+        const cb = _exportOtpCtx.callback;
+        closeExportOtpModal();
+        if (typeof cb === 'function') cb();
+      }, 350);
+    } else {
+      qs('#export-otp-msg').textContent = res.message || 'الكود غير صحيح';
+      qs('#export-otp-msg').style.color = 'var(--red)';
+      qs('#export-otp-input').value = '';
+      qs('#export-otp-input').focus();
+    }
+  } catch (e) {
+    qs('#export-otp-msg').textContent = 'خطأ: ' + (e?.message || '');
+    qs('#export-otp-msg').style.color = 'var(--red)';
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+  }
+}
+
+function requireExportOtp(label, callback) {
+  if (isAdmin()) { callback(); return; }
+  openExportOtpFlow(label, callback);
 }
 
 /* ── Lock toggles (vault / reports / staffDiscount) ─────────── */
@@ -28833,6 +29589,23 @@ async function savePurchaseOtpEnabled(enabled) {
 // When set, the OTP modal returns control to that callback instead of
 // re-invoking saveTx() (used by the apply-discount gates).
 let _hvOtpCtx = { discount: 0, itemsTotal: 0, otpId: '', expiresAt: '', onSuccess: null };
+let _hvOtpTimer = null;
+let _purOtpTimer = null;
+
+function _startOtpCountdown(expiresAt, elId, onExpire) {
+  const el = qs(elId);
+  if (!el) return;
+  const end = new Date(expiresAt).getTime();
+  const tick = () => {
+    const rem = Math.max(0, Math.floor((end - Date.now()) / 1000));
+    const m = String(Math.floor(rem / 60)).padStart(2, '0');
+    const s = String(rem % 60).padStart(2, '0');
+    el.textContent = m + ':' + s;
+    if (rem <= 0) { if (onExpire) onExpire(); }
+  };
+  tick();
+  return setInterval(tick, 1000);
+}
 
 async function openHighValueOtpFlow(discount, itemsTotal, onSuccess) {
   // ── Validate required fields before issuing OTP ──
@@ -28866,15 +29639,20 @@ async function openHighValueOtpFlow(discount, itemsTotal, onSuccess) {
     });
     _hvOtpCtx.otpId = res.otpId;
     _hvOtpCtx.expiresAt = res.expiresAt;
-    const expDate = new Date(res.expiresAt);
-    const expStr = expDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
     const userName = (currentUser?.name || currentUser?.username || '').trim();
     qs('#hv-otp-info').innerHTML = `
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الموظف</span><strong>${esc(userName) || '—'}</strong></div>
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>العميل</span><strong>${esc(client) || '—'}</strong></div>
       ${txRef ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>رقم الفاتورة</span><strong style="color:var(--accent)">#${esc(txRef)}</strong></div>` : ''}
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>قيمة الخصم</span><strong style="color:#e11d48">${fmtJ(discount)} ج</strong></div>
-      <div style="display:flex;justify-content:space-between"><span>صالح حتى</span><strong>${expStr}</strong></div>`;
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>قيمة الخصم</span><strong style="color:#e11d48">${fmtJ(discount)}</strong></div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span>صالح حتى</span><strong id="hv-otp-countdown" style="font-variant-numeric:tabular-nums;direction:ltr;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:5px;padding:1px 8px;font-size:.85rem">00:00</strong></div>`;
+    if (_hvOtpTimer) clearInterval(_hvOtpTimer);
+    _hvOtpTimer = _startOtpCountdown(res.expiresAt, '#hv-otp-countdown', () => {
+      clearInterval(_hvOtpTimer);
+      qs('#hv-otp-countdown').style.color = '#dc2626';
+      qs('#hv-otp-countdown').style.background = 'rgba(220,38,38,.1)';
+      qs('#hv-otp-countdown').style.borderColor = 'rgba(220,38,38,.3)';
+    });
     qs('#hv-otp-input').value = '';
     qs('#hv-otp-msg').textContent = '';
     qs('#hv-otp-msg').style.color = '';
@@ -28886,6 +29664,7 @@ async function openHighValueOtpFlow(discount, itemsTotal, onSuccess) {
 }
 
 function closeHighValueOtpModal() {
+  if (_hvOtpTimer) { clearInterval(_hvOtpTimer); _hvOtpTimer = null; }
   qs('#hv-otp-modal').classList.remove('active');
 }
 
@@ -28907,15 +29686,19 @@ async function resendHighValueOtp() {
     });
     _hvOtpCtx.otpId = res.otpId;
     _hvOtpCtx.expiresAt = res.expiresAt;
-    const expDate = new Date(res.expiresAt);
-    const expStr = expDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
     const userName2 = (currentUser?.name || currentUser?.username || '').trim();
     qs('#hv-otp-info').innerHTML = `
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الموظف</span><strong>${esc(userName2) || '—'}</strong></div>
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>العميل</span><strong>${esc(client) || '—'}</strong></div>
       ${txRef ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>رقم الفاتورة</span><strong style="color:var(--accent)">#${esc(txRef)}</strong></div>` : ''}
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>قيمة الخصم</span><strong style="color:#e11d48">${fmtJ(discount)} ج</strong></div>
-      <div style="display:flex;justify-content:space-between"><span>صالح حتى</span><strong>${expStr}</strong></div>`;
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>قيمة الخصم</span><strong style="color:#e11d48">${fmtJ(discount)}</strong></div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span>صالح حتى</span><strong id="hv-otp-countdown" style="font-variant-numeric:tabular-nums;direction:ltr;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:5px;padding:1px 8px;font-size:.85rem">00:00</strong></div>`;
+    if (_hvOtpTimer) clearInterval(_hvOtpTimer);
+    _hvOtpTimer = _startOtpCountdown(res.expiresAt, '#hv-otp-countdown', () => {
+      clearInterval(_hvOtpTimer);
+      const cd = qs('#hv-otp-countdown');
+      if (cd) { cd.style.color = '#dc2626'; cd.style.background = 'rgba(220,38,38,.1)'; cd.style.borderColor = 'rgba(220,38,38,.3)'; }
+    });
     qs('#hv-otp-input').value = '';
     qs('#hv-otp-msg').textContent = '';
     qs('#hv-otp-msg').style.color = '';
@@ -29012,8 +29795,6 @@ async function openPurchaseOtpFlow() {
 }
 
 function _renderPurOtpInfo() {
-  const expDate = new Date(_purOtpCtx.expiresAt);
-  const expStr = expDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
   const userName = (currentUser?.name || currentUser?.username || '').trim();
   const itemsHtml = (_purOtpCtx.items || []).slice(0, 4).map(it =>
     `<div style="display:flex;justify-content:space-between;font-size:.78rem;padding:2px 0;border-bottom:1px solid var(--border)">
@@ -29029,11 +29810,18 @@ function _renderPurOtpInfo() {
     <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>المورد</span><strong style="color:var(--accent)">${esc(_purOtpCtx.supplier) || '—'}</strong></div>
     ${_purOtpCtx.txRef ? `<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>رقم الفاتورة</span><strong>#${esc(_purOtpCtx.txRef)}</strong></div>` : ''}
     <div style="margin-bottom:6px">${itemsHtml}${moreItems}</div>
-    <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الإجمالي</span><strong style="color:var(--primary)">${fmtJ(_purOtpCtx.itemsTotal)} ج</strong></div>
-    <div style="display:flex;justify-content:space-between"><span>صالح حتى</span><strong>${expStr}</strong></div>`;
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الإجمالي</span><strong style="color:var(--primary)">${fmtJ(_purOtpCtx.itemsTotal)}</strong></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span>صالح حتى</span><strong id="pur-otp-countdown" style="font-variant-numeric:tabular-nums;direction:ltr;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:5px;padding:1px 8px;font-size:.85rem">00:00</strong></div>`;
+  if (_purOtpTimer) clearInterval(_purOtpTimer);
+  _purOtpTimer = _startOtpCountdown(_purOtpCtx.expiresAt, '#pur-otp-countdown', () => {
+    clearInterval(_purOtpTimer);
+    const cd = qs('#pur-otp-countdown');
+    if (cd) { cd.style.color = '#dc2626'; cd.style.background = 'rgba(220,38,38,.1)'; cd.style.borderColor = 'rgba(220,38,38,.3)'; }
+  });
 }
 
 function closePurchaseOtpModal() {
+  if (_purOtpTimer) { clearInterval(_purOtpTimer); _purOtpTimer = null; }
   qs('#pur-otp-modal').classList.remove('active');
 }
 
@@ -29911,7 +30699,11 @@ async function addVaultEntry() {
     toast('خطأ: ' + e.message, true);
   }
 }
-function exportVaultExcel() { writeExcel(vaultLog.map(v => ({ 'التاريخ': (v.date||v.createdAt||'').slice(0,10), 'المبلغ': normalizeVaultSignedAmount(v), 'المصدر': v.source||'-', '#المرجع': v.ref ? '#'+v.ref : '-', 'القسم': v.seg, 'الطريقة': v.method, 'الوصف': v.desc })), 'الخزنة', 'vault_' + today()); }
+function exportVaultExcel() {
+  const doExport = () => writeExcel(vaultLog.map(v => ({ 'التاريخ': (v.date||v.createdAt||'').slice(0,10), 'المبلغ': normalizeVaultSignedAmount(v), 'المصدر': v.source||'-', '#المرجع': v.ref ? '#'+v.ref : '-', 'القسم': v.seg, 'الطريقة': v.method, 'الوصف': v.desc })), 'الخزنة', 'vault_' + today());
+  if (!isAdmin()) { requireExportOtp('تصدير الخزنة', doExport); return; }
+  doExport();
+}
 
 /* ==================== VAULT TREASURY ANALYTICS ==================== */
 let vaultAnalytics = null;
@@ -30107,6 +30899,58 @@ function renderUsers() {
     </div>`;
   }).join('');
 }
+let _securityLogs = [];
+let _securityLogPage = 0;
+const _SEC_PAGE_SIZE = 10;
+
+const _VIOLATION_ICON = {
+  failed_login:       `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+  account_locked:     `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`,
+  otp_violation:      `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  vault_violation:    `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><circle cx="12" cy="14" r="2"/></svg>`,
+  unauthorized_access:`<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`,
+  settings_tampering: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`,
+  account_unlocked:   `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>`,
+};
+const _VIOLATION_LABEL = {
+  failed_login: 'دخول فاشل', account_locked: 'تعطيل حساب', otp_violation: 'انتهاك OTP',
+  vault_violation: 'انتهاك خزنة', unauthorized_access: 'وصول غير مصرح',
+  settings_tampering: 'تعديل إعدادات', account_unlocked: 'إلغاء تعطيل',
+};
+
+function _renderSecurityLogPage() {
+  const tbody = qs('#security-audit-tbody');
+  const pagEl = qs('#security-audit-pagination');
+  if (!tbody) return;
+  if (!_securityLogs.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="padding:16px;text-align:center;color:var(--muted)">لا توجد أحداث أمنية</td></tr>';
+    if (pagEl) pagEl.innerHTML = '';
+    return;
+  }
+  const totalPages = Math.ceil(_securityLogs.length / _SEC_PAGE_SIZE);
+  _securityLogPage = Math.max(0, Math.min(_securityLogPage, totalPages - 1));
+  const slice = _securityLogs.slice(_securityLogPage * _SEC_PAGE_SIZE, (_securityLogPage + 1) * _SEC_PAGE_SIZE);
+  tbody.innerHTML = slice.map(log => {
+    const ts = log.createdAt ? new Date(log.createdAt).toLocaleString('ar-EG') : '—';
+    const icon = _VIOLATION_ICON[log.violationType] || '';
+    const label = _VIOLATION_LABEL[log.violationType] || log.violationType;
+    const rowBg = log.violationType === 'account_locked' ? '#fef2f2' : log.violationType === 'account_unlocked' ? '#f0fdf4' : '';
+    return `<tr style="border-bottom:1px solid var(--border);${rowBg ? 'background:' + rowBg : ''}">
+      <td style="padding:8px 12px;font-weight:500">${esc(log.username)}</td>
+      <td style="padding:8px 12px"><span style="display:inline-flex;align-items:center;gap:4px">${icon}${esc(label)}</span></td>
+      <td style="padding:8px 12px;color:var(--muted);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(log.action)}">${esc(log.action)}</td>
+      <td style="padding:8px 12px;color:var(--muted);white-space:nowrap;font-size:.78rem">${ts}</td>
+    </tr>`;
+  }).join('');
+  if (pagEl) {
+    const btnStyle = (disabled) => `background:${disabled?'var(--bg-alt)':'var(--surface)'};border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:.78rem;cursor:${disabled?'default':'pointer'};color:${disabled?'var(--muted)':'var(--text)'};`;
+    pagEl.innerHTML = totalPages <= 1 ? '' :
+      `<button style="${btnStyle(_securityLogPage===0)}" onclick="_securityLogPage=Math.max(0,_securityLogPage-1);_renderSecurityLogPage()" ${_securityLogPage===0?'disabled':''}>السابق</button>
+       <span style="color:var(--muted)">${_securityLogPage+1} / ${totalPages}</span>
+       <button style="${btnStyle(_securityLogPage>=totalPages-1)}" onclick="_securityLogPage=Math.min(${totalPages-1},_securityLogPage+1);_renderSecurityLogPage()" ${_securityLogPage>=totalPages-1?'disabled':''}>التالي</button>`;
+  }
+}
+
 async function loadSecurityPanel() {
   const [lockedRes, logsRes] = await Promise.all([
     api('/security-audit/locked-users').catch(() => []),
@@ -30117,54 +30961,31 @@ async function loadSecurityPanel() {
   const lockedEl = qs('#locked-users-list');
   if (lockedEl) {
     if (!lockedRes || lockedRes.length === 0) {
-      lockedEl.innerHTML = '<p style="color:var(--muted);font-size:.85rem;margin:0;padding:10px">لا توجد حسابات مُعطَّلة حالياً ✅</p>';
+      lockedEl.innerHTML = '<p style="color:var(--muted);font-size:.85rem;margin:0;padding:10px">لا توجد حسابات مُعطَّلة حالياً</p>';
     } else {
       lockedEl.innerHTML = lockedRes.map(u => {
         const lockedAt = u.lockedAt ? new Date(u.lockedAt).toLocaleString('ar-EG') : '—';
         return `<div style="background:#fff5f5;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <span style="font-size:1.3rem">🔒</span>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
           <div style="flex:1;min-width:180px">
             <div style="font-weight:600;color:#111">${esc(u.name || u.username)} <span style="font-size:.78rem;color:#6b7280">@${esc(u.username)}</span></div>
             <div style="font-size:.8rem;color:#6b7280;margin-top:2px">سبب التعطيل: ${esc(u.lockReason || '—')}</div>
             <div style="font-size:.78rem;color:#9ca3af;margin-top:2px">وقت التعطيل: ${lockedAt}</div>
           </div>
           <button onclick="adminUnlockUser('${esc(u._id)}','${esc(u.name || u.username)}')"
-            style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;padding:7px 18px;font-size:.83rem;cursor:pointer;font-weight:600;white-space:nowrap">
-            🔓 إلغاء التعطيل
+            style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;padding:7px 18px;font-size:.83rem;cursor:pointer;font-weight:600;white-space:nowrap">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>
+            إلغاء التعطيل
           </button>
         </div>`;
       }).join('');
     }
   }
 
-  // Render audit log
-  const tbody = qs('#security-audit-tbody');
-  if (tbody) {
-    if (!logsRes || logsRes.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="padding:16px;text-align:center;color:var(--muted)">لا توجد أحداث أمنية</td></tr>';
-    } else {
-      const violationLabel = {
-        failed_login: '❌ دخول فاشل',
-        account_locked: '🔒 تعطيل حساب',
-        otp_violation: '⚠️ انتهاك OTP',
-        vault_violation: '🏦 انتهاك خزنة',
-        unauthorized_access: '🚫 وصول غير مصرح',
-        settings_tampering: '⚙️ تعديل إعدادات',
-        account_unlocked: '✅ إلغاء تعطيل',
-      };
-      tbody.innerHTML = logsRes.slice(0, 100).map(log => {
-        const ts = log.createdAt ? new Date(log.createdAt).toLocaleString('ar-EG') : '—';
-        const vLabel = violationLabel[log.violationType] || log.violationType;
-        const rowColor = log.violationType === 'account_locked' ? '#fef2f2' : log.violationType === 'account_unlocked' ? '#f0fdf4' : '';
-        return `<tr style="border-bottom:1px solid var(--border);${rowColor ? 'background:' + rowColor : ''}">
-          <td style="padding:8px 12px;font-weight:500">${esc(log.username)}</td>
-          <td style="padding:8px 12px">${vLabel}</td>
-          <td style="padding:8px 12px;color:var(--muted);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(log.action)}">${esc(log.action)}</td>
-          <td style="padding:8px 12px;color:var(--muted);white-space:nowrap;font-size:.78rem">${ts}</td>
-        </tr>`;
-      }).join('');
-    }
-  }
+  // Render audit log with pagination
+  _securityLogs = logsRes || [];
+  _securityLogPage = 0;
+  _renderSecurityLogPage();
 }
 
 async function adminUnlockUser(userId, displayName) {
@@ -33096,26 +33917,30 @@ async function deleteComplaint(id) {
 }
 
 function exportComplaintsExcel() {
-  if (typeof XLSX === 'undefined') { toast('مكتبة التصدير غير محملة', true); return; }
-  const rows = complaints.map(c => ({
-    'رقم الشكوى': c.complaintNo,
-    'الموظف': c.submittedBy,
-    'العميل': c.clientName || '',
-    'الطلب': c.transactionRef || '',
-    'الوصف': c.description,
-    'الحالة': c.status,
-    'الإجراء': c.managerAction || '',
-    'ملاحظات': c.actionNote || '',
-    'المُعالِج': c.resolvedBy || '',
-    'تاريخ المعالجة': (c.resolvedAt || '').slice(0, 16).replace('T', ' '),
-    'تقييم العميل': c.surveyRating || '',
-    'تعليق العميل': c.surveyComment || '',
-    'تاريخ التقديم': (c.createdAt || '').slice(0, 16).replace('T', ' '),
-  }));
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Complaints');
-  XLSX.writeFile(wb, `complaints_${today()}.xlsx`);
+  const doExport = () => {
+    if (typeof XLSX === 'undefined') { toast('مكتبة التصدير غير محملة', true); return; }
+    const rows = complaints.map(c => ({
+      'رقم الشكوى': c.complaintNo,
+      'الموظف': c.submittedBy,
+      'العميل': c.clientName || '',
+      'الطلب': c.transactionRef || '',
+      'الوصف': c.description,
+      'الحالة': c.status,
+      'الإجراء': c.managerAction || '',
+      'ملاحظات': c.actionNote || '',
+      'المُعالِج': c.resolvedBy || '',
+      'تاريخ المعالجة': (c.resolvedAt || '').slice(0, 16).replace('T', ' '),
+      'تقييم العميل': c.surveyRating || '',
+      'تعليق العميل': c.surveyComment || '',
+      'تاريخ التقديم': (c.createdAt || '').slice(0, 16).replace('T', ' '),
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Complaints');
+    XLSX.writeFile(wb, `complaints_${today()}.xlsx`);
+  };
+  if (!isAdmin()) { requireExportOtp('تصدير الشكاوى', doExport); return; }
+  doExport();
 }
 
 /* ===== FOLLOW-UP ORDERS ===== */
@@ -34033,45 +34858,49 @@ function setProductCardFilter(filter) {
 
 function exportProductCard() {
   if (!productCardData) return;
-  const data = productCardData;
-  const allInvoices = [
-    ...data.invoices.sales.map(inv => ({
-      'النوع': 'مبيعات',
-      'الرقم المرجعي': inv.ref,
-      'العميل': inv.client,
-      'التاريخ': inv.date,
-      'الكمية': inv.quantity,
-      'السعر': inv.unitPrice,
-      'الإجمالي': inv.totalPrice,
-      'الحالة': inv.status,
-    })),
-    ...data.invoices.purchases.map(inv => ({
-      'النوع': 'شراء',
-      'الرقم المرجعي': inv.ref,
-      'العميل': inv.client,
-      'التاريخ': inv.date,
-      'الكمية': inv.quantity,
-      'السعر': inv.unitPrice,
-      'الإجمالي': inv.totalPrice,
-      'الحالة': inv.status,
-    })),
-    ...data.invoices.returns.map(inv => ({
-      'النوع': 'مرتجع',
-      'الرقم المرجعي': inv.ref,
-      'العميل': inv.client,
-      'التاريخ': inv.date,
-      'الكمية': inv.quantity,
-      'السعر': inv.unitPrice,
-      'الإجمالي': inv.totalPrice,
-      'الحالة': inv.status,
-    })),
-  ];
-
-  const ws = XLSX.utils.json_to_sheet(allInvoices);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'الفواتير');
-  XLSX.writeFile(wb, `product_${data.product.code}_${today()}.xlsx`);
-  toast('تم تصدير البيانات بنجاح');
+  const doExport = () => {
+    const data = productCardData;
+    if (!data) return;
+    const allInvoices = [
+      ...data.invoices.sales.map(inv => ({
+        'النوع': 'مبيعات',
+        'الرقم المرجعي': inv.ref,
+        'العميل': inv.client,
+        'التاريخ': inv.date,
+        'الكمية': inv.quantity,
+        'السعر': inv.unitPrice,
+        'الإجمالي': inv.totalPrice,
+        'الحالة': inv.status,
+      })),
+      ...data.invoices.purchases.map(inv => ({
+        'النوع': 'شراء',
+        'الرقم المرجعي': inv.ref,
+        'العميل': inv.client,
+        'التاريخ': inv.date,
+        'الكمية': inv.quantity,
+        'السعر': inv.unitPrice,
+        'الإجمالي': inv.totalPrice,
+        'الحالة': inv.status,
+      })),
+      ...data.invoices.returns.map(inv => ({
+        'النوع': 'مرتجع',
+        'الرقم المرجعي': inv.ref,
+        'العميل': inv.client,
+        'التاريخ': inv.date,
+        'الكمية': inv.quantity,
+        'السعر': inv.unitPrice,
+        'الإجمالي': inv.totalPrice,
+        'الحالة': inv.status,
+      })),
+    ];
+    const ws = XLSX.utils.json_to_sheet(allInvoices);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'الفواتير');
+    XLSX.writeFile(wb, `product_${data.product.code}_${today()}.xlsx`);
+    toast('تم تصدير البيانات بنجاح');
+  };
+  if (!isAdmin()) { requireExportOtp('تصدير كارت الصنف', doExport); return; }
+  doExport();
 }
 
 function closeProductCard() {
@@ -37788,27 +38617,31 @@ function clearPickupFilters() {
 // ── Excel Export (all runs) ─────────────────────────────────────
 function exportPickupExcel() {
   if (!_pickupRuns.length) return toast('لا توجد بيانات للتصدير', true);
-  const rows = [['Pickup Ref','تاريخ الاستلام','شركة الشحن','عدد الطلبات','الإجمالي','الموظف']];
-  _pickupRuns.forEach(run => {
-    const total = run.orders.reduce((s,o)=>s+(o.total||0),0);
-    const ships = [...new Set(run.orders.map(o=>o.shipCo).filter(Boolean))].join('، ');
-    rows.push([run.pickupRef, run.pickupDate||'', ships, run.orders.length, total, run.pickupBy]);
-  });
-  rows.push([]);
-  rows.push(['=== تفاصيل الطلبات ===']);
-  rows.push(['Pickup Ref','رقم الطلب','العميل','الإجمالي','المتبقي','حالة الدفع','شركة الشحن','الحالة']);
-  _pickupRuns.forEach(run => {
-    run.orders.forEach(o => {
-      rows.push([run.pickupRef, o.ref||'', o.client||'', o.total||0, o.remaining||0, o.payStatus||'', o.shipCo||'', o.pickupStatus||'']);
+  const doExport = () => {
+    const rows = [['Pickup Ref','تاريخ الاستلام','شركة الشحن','عدد الطلبات','الإجمالي','الموظف']];
+    _pickupRuns.forEach(run => {
+      const total = run.orders.reduce((s,o)=>s+(o.total||0),0);
+      const ships = [...new Set(run.orders.map(o=>o.shipCo).filter(Boolean))].join('، ');
+      rows.push([run.pickupRef, run.pickupDate||'', ships, run.orders.length, total, run.pickupBy]);
     });
-  });
-  if (typeof XLSX !== 'undefined') {
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Pickup Runs');
-    XLSX.writeFile(wb, `pickup_runs_${new Date().toISOString().slice(0,10)}.xlsx`);
-  } else {
-    toast('مكتبة التصدير غير محملة', true);
-  }
+    rows.push([]);
+    rows.push(['=== تفاصيل الطلبات ===']);
+    rows.push(['Pickup Ref','رقم الطلب','العميل','الإجمالي','المتبقي','حالة الدفع','شركة الشحن','الحالة']);
+    _pickupRuns.forEach(run => {
+      run.orders.forEach(o => {
+        rows.push([run.pickupRef, o.ref||'', o.client||'', o.total||0, o.remaining||0, o.payStatus||'', o.shipCo||'', o.pickupStatus||'']);
+      });
+    });
+    if (typeof XLSX !== 'undefined') {
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Pickup Runs');
+      XLSX.writeFile(wb, `pickup_runs_${new Date().toISOString().slice(0,10)}.xlsx`);
+    } else {
+      toast('مكتبة التصدير غير محملة', true);
+    }
+  };
+  if (!isAdmin()) { requireExportOtp('تصدير سجل الاستلام', doExport); return; }
+  doExport();
 }
 
 // Legacy stubs to avoid runtime errors if called from elsewhere

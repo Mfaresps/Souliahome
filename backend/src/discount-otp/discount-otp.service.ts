@@ -7,7 +7,7 @@ import { MentionsService } from '../mentions/mentions.service';
 import { UsersService } from '../users/users.service';
 import { SecurityAuditService } from '../security-audit/security-audit.service';
 
-const MAX_OTP_ATTEMPTS = 5;
+const MAX_OTP_ATTEMPTS = 4;
 
 interface RequestArgs {
   discountAmount: number;
@@ -56,6 +56,18 @@ interface DeleteSupplierOtpArgs {
   requestedByUsername: string;
 }
 
+interface SupplierPayOtpArgs {
+  supplier: string;
+  txId: string;
+  txRef: string;
+  amount: number;
+  remaining: number;
+  payMethod: string;
+  requestedById: string;
+  requestedByName: string;
+  requestedByUsername: string;
+}
+
 interface VaultAccessOtpArgs {
   requestedById: string;
   requestedByName: string;
@@ -67,6 +79,13 @@ interface AddProductOtpArgs {
   productCode: string;
   sellPrice: number;
   buyPrice: number;
+  requestedById: string;
+  requestedByName: string;
+  requestedByUsername: string;
+}
+
+interface ExportExcelOtpArgs {
+  exportLabel: string;
   requestedById: string;
   requestedByName: string;
   requestedByUsername: string;
@@ -152,13 +171,13 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
       const text =
         `🔐 كود التحقق: ${otp}` +
         `\nالموظف: ${args.requestedByName || args.requestedByUsername || 'موظف'}` +
         `\nالعميل: ${args.client || '-'}` +
         `\nالفاتورة: ${args.txRef || '-'}` +
-        `\nالخصم: ${args.discountAmount} ج.م (الحد: ${threshold} ج.م)` +
+        `\nالخصم: EGP ${args.discountAmount} (الحد: EGP ${threshold})` +
         `\nصالح حتى: ${expiresStr}`;
       const rows = admins.map((a: any) => ({
         targetUserId: String(a._id),
@@ -307,10 +326,10 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
       const itemsText = (args.items || [])
         .slice(0, 5)
-        .map(it => `  • ${it.name}: ${it.qty} × ${it.price} = ${it.total} ج.م`)
+        .map(it => `  • ${it.name}: ${it.qty} × ${it.price} = EGP ${it.total}`)
         .join('\n');
       const moreItems = (args.items || []).length > 5 ? `\n  ... و${(args.items || []).length - 5} أصناف أخرى` : '';
       const text =
@@ -320,7 +339,7 @@ export class DiscountOtpService {
         `\nالمورد: ${args.supplier}` +
         `${args.txRef ? `\nرقم الفاتورة: ${args.txRef}` : ''}` +
         `\nالأصناف:\n${itemsText}${moreItems}` +
-        `\nالإجمالي: ${args.itemsTotal} ج.م` +
+        `\nالإجمالي: EGP ${args.itemsTotal}` +
         `\nصالح حتى: ${expiresStr}`;
 
       const rows = admins.map((a: any) => ({
@@ -381,7 +400,7 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
       const names = args.itemNames || [];
       const shownNames = names.slice(0, 10).map(n => `• ${n}`).join('\n');
       const moreNames = names.length > 10 ? `\n... و${names.length - 10} أصناف أخرى` : '';
@@ -457,7 +476,7 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
       let namesBlock = '';
       if (args.isBulk && args.productName) {
         const names = args.productName.split('،\n').filter(Boolean);
@@ -525,7 +544,7 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
       const text =
         `🗑️ طلب حذف مورد يحتاج موافقتك` +
         `\n🔐 كود التحقق: ${otp}` +
@@ -559,6 +578,82 @@ export class DiscountOtpService {
     if (doc.status !== 'used') throw new BadRequestException('كود التحقق لم يتم التحقق منه');
   }
 
+  async requestSupplierPayOtp(args: SupplierPayOtpArgs): Promise<{ otpId: string; expiresAt: string }> {
+    if (!args.supplier || !args.supplier.trim()) {
+      throw new BadRequestException('اسم المورد مطلوب قبل طلب كود التحقق');
+    }
+    if (!args.amount || args.amount <= 0) {
+      throw new BadRequestException('المبلغ غير صحيح');
+    }
+
+    const now = new Date();
+    const ttlMin = await this.getTtlMin();
+    const expiresAt = new Date(now.getTime() + ttlMin * 60 * 1000);
+    const otp = this.generateOtp();
+
+    const doc = await this.otpModel.create({
+      otp,
+      discountAmount: 0,
+      itemsTotal: args.amount,
+      client: args.supplier,
+      txType: 'supplier-pay',
+      txRef: args.txRef || '',
+      requestedById: args.requestedById,
+      requestedByName: args.requestedByName,
+      requestedByUsername: args.requestedByUsername,
+      createdAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      status: 'unused',
+      attempts: 0,
+      thresholdAtRequest: 0,
+      kind: 'supplier-pay',
+      editTxId: args.txId,
+    });
+
+    try {
+      const users = await this.usersService.findAll();
+      const admins = users.filter((u: any) => u.role === 'admin');
+      const text =
+        `💳 طلب سداد مبلغ للمورد يحتاج موافقتك` +
+        `\n🔐 كود التحقق: ${otp}` +
+        `\nالموظف: ${args.requestedByName || args.requestedByUsername || 'موظف'}` +
+        `\nالمورد: ${args.supplier}` +
+        (args.txRef ? `\nالفاتورة: #${args.txRef}` : '') +
+        `\nالمبلغ المراد سداده: EGP ${args.amount}` +
+        `\nإجمالي المتبقي: EGP ${args.remaining}` +
+        `\nطريقة السداد: ${args.payMethod}` +
+        `\nصالح حتى: ${expiresAt.toISOString()}`;
+
+      const rows = admins.map((a: any) => ({
+        targetUserId: String(a._id),
+        targetUsername: (a.username || '').toLowerCase(),
+        targetName: a.name || '',
+        fromUserId: 'system',
+        fromName: 'نظام سداد الموردين',
+        txId: String(doc._id),
+        txRef: args.txRef || '',
+        commentId: 0,
+        commentText: text,
+      }));
+      await this.mentionsService.createMany(rows);
+    } catch {
+      // notification failure must not break OTP creation
+    }
+
+    return { otpId: String(doc._id), expiresAt: expiresAt.toISOString() };
+  }
+
+  async assertSupplierPayOtp(otpId: string, amount: number): Promise<void> {
+    if (!otpId) throw new BadRequestException('يلزم كود تحقق لسداد المبلغ للمورد');
+    const doc = await this.otpModel.findById(otpId).exec();
+    if (!doc) throw new BadRequestException('كود التحقق غير موجود');
+    if (doc.kind !== 'supplier-pay') throw new BadRequestException('نوع كود التحقق غير صحيح');
+    if (doc.status !== 'used') throw new BadRequestException('كود التحقق لم يتم التحقق منه بعد');
+    if (Math.abs((doc.itemsTotal || 0) - amount) > 0.5) {
+      throw new BadRequestException('المبلغ لا يطابق كود التحقق');
+    }
+  }
+
   async requestVaultAccessOtp(args: VaultAccessOtpArgs): Promise<{ otpId: string; expiresAt: string }> {
     const now = new Date();
     const ttlMin = await this.getTtlMin();
@@ -585,7 +680,7 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
       const text =
         `🔐 طلب دخول الخزنة يحتاج موافقتك` +
         `\n🔐 كود التحقق: ${otp}` +
@@ -646,7 +741,7 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
       const text =
         `➕ طلب إضافة صنف يحتاج موافقتك` +
         `\n🔐 كود التحقق: ${otp}` +
@@ -659,7 +754,7 @@ export class DiscountOtpService {
         targetUsername: (a.username || '').toLowerCase(),
         targetName: a.name || '',
         fromUserId: 'system',
-        fromName: 'نظام الحماية',
+        fromName: 'نظام إضافة الأصناف',
         txId: String(doc._id),
         txRef: args.productCode || '',
         commentId: 0,
@@ -679,6 +774,73 @@ export class DiscountOtpService {
     if (!doc) throw new BadRequestException('كود التحقق غير موجود');
     if (doc.kind !== 'add-product') throw new BadRequestException('نوع كود التحقق غير صحيح');
     if (doc.status !== 'used') throw new BadRequestException('كود التحقق لم يتم التحقق منه');
+  }
+
+  async requestExportExcelOtp(args: ExportExcelOtpArgs): Promise<{ otpId: string; expiresAt: string }> {
+    const now = new Date();
+    const ttlMin = await this.getTtlMin();
+    const expiresAt = new Date(now.getTime() + ttlMin * 60 * 1000);
+    const otp = this.generateOtp();
+
+    const doc = await this.otpModel.create({
+      otp,
+      discountAmount: 0,
+      itemsTotal: 0,
+      client: args.exportLabel,
+      txType: 'export-excel',
+      txRef: '',
+      requestedById: args.requestedById,
+      requestedByName: args.requestedByName,
+      requestedByUsername: args.requestedByUsername,
+      createdAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      status: 'unused',
+      attempts: 0,
+      kind: 'export-excel',
+    });
+
+    try {
+      const users = await this.usersService.findAll();
+      const admins = users.filter((u: any) => u.role === 'admin');
+      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const text =
+        `📊 طلب تصدير Excel يحتاج موافقتك` +
+        `\n🔐 كود التحقق: ${otp}` +
+        `\nالموظف: ${args.requestedByName || args.requestedByUsername || 'موظف'}` +
+        `\nالتصدير: ${args.exportLabel}` +
+        `\nصالح حتى: ${expiresStr}`;
+      const rows = admins.map((a: any) => ({
+        targetUserId: String(a._id),
+        targetUsername: (a.username || '').toLowerCase(),
+        targetName: a.name || '',
+        fromUserId: 'system',
+        fromName: 'نظام التصدير',
+        txId: String(doc._id),
+        txRef: '',
+        commentId: 0,
+        commentText: text,
+      }));
+      await this.mentionsService.createMany(rows);
+    } catch {
+      // notification failure must not break OTP creation
+    }
+
+    return { otpId: String(doc._id), expiresAt: expiresAt.toISOString() };
+  }
+
+  async assertExportExcelOtp(otpId: string): Promise<void> {
+    if (!otpId) throw new BadRequestException('يلزم كود تحقق لتصدير البيانات');
+    const doc = await this.otpModel.findById(otpId).exec();
+    if (!doc) throw new BadRequestException('كود التحقق غير موجود');
+    if (doc.kind !== 'export-excel') throw new BadRequestException('نوع كود التحقق غير صحيح');
+    if (doc.status !== 'used') throw new BadRequestException('كود التحقق لم يتم التحقق منه');
+    await this.auditService.log({
+      userId: doc.requestedById,
+      username: doc.requestedByUsername,
+      violationType: 'export_excel',
+      action: `تصدير Excel: ${doc.client || 'بيانات'}`,
+      detail: `otpId: ${otpId} — تم التحقق وبدء التصدير`,
+    });
   }
 
   async requestEditTxOtp(args: {
@@ -722,7 +884,7 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
       const changesText = (args.changes || []).slice(0, 8).map(c => `  • ${c}`).join('\n');
       const moreChanges = (args.changes || []).length > 8 ? `\n  ... و${(args.changes || []).length - 8} تغييرات أخرى` : '';
       const text =
