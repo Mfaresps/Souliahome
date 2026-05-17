@@ -306,6 +306,7 @@ export class ShopifyService {
           qty: item.quantity || 1,
           price: product ? (product as any).sellPrice : shopifyPrice,
           total: (product ? (product as any).sellPrice : shopifyPrice) * (item.quantity || 1),
+          imageUrl: product ? ((product as any).imageUrl || '') : '',
           shopifyPrice,
           shopifyName: item.title || item.name || '',
           warnings,

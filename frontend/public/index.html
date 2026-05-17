@@ -1446,6 +1446,10 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 #sidebar .nav-item:hover{background:var(--primary-pale);color:var(--text)}
 #sidebar .nav-item.active{color:var(--accent);border-right-color:var(--accent);background:var(--primary-pale)}
 #sidebar .nav-item svg{width:18px;height:18px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#sidebar .nav-item[data-page="shopify-orders"] svg{stroke:none!important}
+#sidebar .nav-item[data-page="shopify-orders"] svg path:nth-child(1){fill:#95BF47!important}
+#sidebar .nav-item[data-page="shopify-orders"] svg path:nth-child(2){fill:#5E8E3E!important}
+#sidebar .nav-item[data-page="shopify-orders"] svg path:nth-child(3){fill:#fff!important}
 #main{margin-top:var(--header-h);margin-right:var(--sidebar-w);padding:24px;min-height:calc(100vh - var(--header-h));transition:margin-right .3s}
 /* English (LTR): mirror shell layout — sidebar left, content flows left-to-right */
 [dir="ltr"] #sidebar{right:auto;left:0;border-left:none;border-right:1px solid var(--border)}
@@ -2448,7 +2452,9 @@ body.dark-mode .mov-status.ملغي{background:#450a0a;color:#f87171}
 #mov-table thead th.col-secondary{color:rgba(var(--muted-rgb,100,116,139),.7);font-size:.68rem;letter-spacing:.3px}
 /* Table column hierarchy */
 .mov-col-employee{color:rgba(var(--muted-rgb,100,116,139),.5)!important;font-size:.7rem!important;font-weight:300!important;opacity:.65}
-.mov-emp-initials{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(var(--muted-rgb,100,116,139),.15);color:rgba(var(--muted-rgb,100,116,139),.6);font-size:.65rem;font-weight:500;letter-spacing:.02em;flex-shrink:0}
+.mov-emp-initials{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(var(--muted-rgb,100,116,139),.15);color:rgba(var(--muted-rgb,100,116,139),.6);font-size:.65rem;font-weight:500;letter-spacing:.02em;flex-shrink:0;overflow:hidden}
+.mov-emp-initials svg{width:16px;height:16px;flex-shrink:0;filter:grayscale(1) opacity(.45);transition:filter .2s}
+.mov-emp-initials:hover svg{filter:grayscale(0) opacity(1)}
 /* Presence badge — glowing avatar shown next to employee when someone is editing */
 .presence-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;font-size:.6rem;font-weight:700;letter-spacing:.03em;flex-shrink:0;box-shadow:0 0 0 2px var(--bg,#fff),0 0 8px 2px rgba(249,115,22,.55);animation:presencePulse 2s ease-in-out infinite}
 @keyframes presencePulse{0%,100%{box-shadow:0 0 0 2px var(--bg,#fff),0 0 8px 2px rgba(249,115,22,.55)}50%{box-shadow:0 0 0 2px var(--bg,#fff),0 0 14px 5px rgba(249,115,22,.8)}}
@@ -8266,7 +8272,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 <div class="page" id="page-shopify-orders">
   <div class="flex-between" style="flex-wrap:wrap;gap:10px;margin-bottom:16px">
     <div>
-      <h2 style="margin:0;font-size:1.3rem">أوردرات Shopify</h2>
+      <h2 style="margin:0;font-size:1.3rem;display:flex;align-items:center;gap:8px">أوردرات <svg viewBox="0 0 108.44 122.88" height="22" width="20" style="display:block;flex-shrink:0" xmlns="http://www.w3.org/2000/svg"><style>.sh0{fill-rule:evenodd;clip-rule:evenodd;fill:#95BF47}.sh1{fill-rule:evenodd;clip-rule:evenodd;fill:#5E8E3E}.sh2{fill-rule:evenodd;clip-rule:evenodd;fill:#FFFFFF}</style><path class="sh0" d="M94.98,23.66c-0.09-0.62-0.63-0.96-1.08-1c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.72-0.72-2.13-0.5-2.68-0.34c-0.01,0-1.37,0.43-3.68,1.14c-0.38-1.25-0.95-2.78-1.76-4.32c-2.6-4.97-6.42-7.6-11.03-7.61c-0.01,0-0.01,0-0.02,0c-0.32,0-0.64,0.03-0.96,0.06c-0.14-0.16-0.27-0.32-0.42-0.48c-2.01-2.15-4.58-3.19-7.67-3.1c-5.95,0.17-11.88,4.47-16.69,12.11c-3.38,5.37-5.96,12.12-6.69,17.35c-6.83,2.12-11.61,3.6-11.72,3.63c-3.45,1.08-3.56,1.19-4.01,4.44C9.03,39.99,0,109.8,0,109.8l75.65,13.08l32.79-8.15C108.44,114.73,95.06,24.28,94.98,23.66z M66.52,16.63c-1.74,0.54-3.72,1.15-5.87,1.82c-0.04-3.01-0.4-7.21-1.81-10.83C63.36,8.47,65.58,13.58,66.52,16.63z M56.69,19.68c-3.96,1.23-8.29,2.57-12.63,3.91c1.22-4.67,3.54-9.33,6.38-12.38c1.06-1.14,2.54-2.4,4.29-3.12C56.38,11.52,56.73,16.39,56.69,19.68z M48.58,3.97c1.4-0.03,2.57,0.28,3.58,0.94C50.55,5.74,49,6.94,47.54,8.5c-3.78,4.06-6.68,10.35-7.83,16.43c-3.6,1.11-7.13,2.21-10.37,3.21C31.38,18.58,39.4,4.23,48.58,3.97z"/><path class="sh1" d="M93.9,22.66c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.27-0.27-0.63-0.41-1.02-0.47l0,108.68l32.78-8.15c0,0-13.38-90.44-13.46-91.06C94.9,23.04,94.35,22.7,93.9,22.66z"/><path class="sh2" d="M57.48,39.52l-3.81,14.25c0,0-4.25-1.93-9.28-1.62c-7.38,0.47-7.46,5.12-7.39,6.29c0.4,6.37,17.16,7.76,18.11,22.69c0.74,11.74-6.23,19.77-16.27,20.41c-12.05,0.76-18.69-6.35-18.69-6.35l2.55-10.86c0,0,6.68,5.04,12.02,4.7c3.49-0.22,4.74-3.06,4.61-5.07c-0.52-8.31-14.18-7.82-15.04-21.48c-0.73-11.49,6.82-23.14,23.48-24.19C54.2,37.88,57.48,39.52,57.48,39.52z"/></svg></h2>
       <p style="margin:4px 0 0;color:var(--text-muted);font-size:.85rem">مراجعة الأوردرات القادمة من المتجر قبل إضافتها للحركات</p>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
@@ -8275,13 +8281,49 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         تحديث
       </button>
       <div style="display:flex;gap:4px;background:var(--bg-alt);border-radius:8px;padding:3px">
-        <button id="shopify-tab-pending" class="btn btn-sm active-tab" onclick="switchShopifyTab('pending')" style="font-size:.78rem">بانتظار المراجعة <span id="shopify-pending-count" style="background:var(--accent);color:#fff;border-radius:99px;padding:1px 7px;font-size:.72rem;margin-right:4px">0</span></button>
+        <button id="shopify-tab-pending" class="btn btn-sm active-tab" onclick="switchShopifyTab('pending')" style="font-size:.78rem">بانتظار تأكيد العميل <span id="shopify-pending-count" style="background:var(--accent);color:#fff;border-radius:99px;padding:1px 7px;font-size:.72rem;margin-right:4px">0</span></button>
         <button id="shopify-tab-all" class="btn btn-sm" onclick="switchShopifyTab('all')" style="font-size:.78rem">الكل</button>
       </div>
     </div>
   </div>
-  <div style="margin-bottom:12px">
-    <input id="shopify-search" type="text" placeholder="بحث برقم الأوردر..." oninput="renderShopifyOrders()" style="width:100%;max-width:320px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-size:.9rem;box-sizing:border-box;direction:ltr">
+  <!-- KPI Stats Cards -->
+  <div id="shopify-kpi-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+    <div class="shopify-kpi-card" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 6px rgba(0,0,0,.06)">
+      <div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#95BF47,#5E8E3E);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </div>
+      <div>
+        <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:2px">أوردرات اليوم</div>
+        <div id="shopify-kpi-today" style="font-size:1.6rem;font-weight:700;line-height:1;color:var(--text)">—</div>
+        <div id="shopify-kpi-today-label" style="font-size:.7rem;color:var(--text-muted);margin-top:3px">—</div>
+      </div>
+    </div>
+    <div class="shopify-kpi-card" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 6px rgba(0,0,0,.06)">
+      <div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#6366f1,#4f46e5);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 9h18v4H3z"/><path d="M3 15h18v4H3z"/></svg>
+      </div>
+      <div>
+        <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:2px">أوردرات الأسبوع</div>
+        <div id="shopify-kpi-week" style="font-size:1.6rem;font-weight:700;line-height:1;color:var(--text)">—</div>
+      </div>
+    </div>
+    <div class="shopify-kpi-card" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 6px rgba(0,0,0,.06)">
+      <div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div>
+        <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:2px">أوردرات الشهر</div>
+        <div id="shopify-kpi-month" style="font-size:1.6rem;font-weight:700;line-height:1;color:var(--text)">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Bar -->
+  <div style="margin-bottom:16px">
+    <div style="position:relative;width:100%;max-width:340px">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="shopify-search" type="text" placeholder="بحث برقم الأوردر..." oninput="renderShopifyOrders()" style="width:100%;padding:10px 38px 10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-size:.9rem;box-sizing:border-box;direction:ltr;transition:border-color .2s;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
   </div>
   <div id="shopify-orders-table-wrap"></div>
 </div>
@@ -9967,7 +10009,7 @@ const NAV_ICONS = {
 const NAV_ITEMS = [
   {id:'dashboard',label:'الرئيسية',labelEn:'Dashboard',icon:NAV_ICONS.dashboard,perm:'dashboard'},
   {id:'transaction',label:'حركة جديدة',labelEn:'New Transaction',icon:NAV_ICONS.transaction,perm:'transaction'},
-  {id:'shopify-orders',label:'أوردرات Shopify',labelEn:'Shopify Orders',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>',perm:'movements',adminOnly:true},
+  {id:'shopify-orders',label:'أوردرات Shopify',labelEn:'Shopify Orders',icon:'<svg viewBox="0 0 108.44 122.88" xmlns="http://www.w3.org/2000/svg"><path fill="#95BF47" fill-rule="evenodd" clip-rule="evenodd" d="M94.98,23.66c-0.09-0.62-0.63-0.96-1.08-1c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.72-0.72-2.13-0.5-2.68-0.34c-0.01,0-1.37,0.43-3.68,1.14c-0.38-1.25-0.95-2.78-1.76-4.32c-2.6-4.97-6.42-7.6-11.03-7.61c-0.01,0-0.01,0-0.02,0c-0.32,0-0.64,0.03-0.96,0.06c-0.14-0.16-0.27-0.32-0.42-0.48c-2.01-2.15-4.58-3.19-7.67-3.1c-5.95,0.17-11.88,4.47-16.69,12.11c-3.38,5.37-5.96,12.12-6.69,17.35c-6.83,2.12-11.61,3.6-11.72,3.63c-3.45,1.08-3.56,1.19-4.01,4.44C9.03,39.99,0,109.8,0,109.8l75.65,13.08l32.79-8.15C108.44,114.73,95.06,24.28,94.98,23.66zM66.52,16.63c-1.74,0.54-3.72,1.15-5.87,1.82c-0.04-3.01-0.4-7.21-1.81-10.83C63.36,8.47,65.58,13.58,66.52,16.63zM56.69,19.68c-3.96,1.23-8.29,2.57-12.63,3.91c1.22-4.67,3.54-9.33,6.38-12.38c1.06-1.14,2.54-2.4,4.29-3.12C56.38,11.52,56.73,16.39,56.69,19.68zM48.58,3.97c1.4-0.03,2.57,0.28,3.58,0.94C50.55,5.74,49,6.94,47.54,8.5c-3.78,4.06-6.68,10.35-7.83,16.43c-3.6,1.11-7.13,2.21-10.37,3.21C31.38,18.58,39.4,4.23,48.58,3.97z"/><path fill="#5E8E3E" fill-rule="evenodd" clip-rule="evenodd" d="M93.9,22.66c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.27-0.27-0.63-0.41-1.02-0.47l0,108.68l32.78-8.15c0,0-13.38-90.44-13.46-91.06C94.9,23.04,94.35,22.7,93.9,22.66z"/><path fill="#FFFFFF" fill-rule="evenodd" clip-rule="evenodd" d="M57.48,39.52l-3.81,14.25c0,0-4.25-1.93-9.28-1.62c-7.38,0.47-7.46,5.12-7.39,6.29c0.4,6.37,17.16,7.76,18.11,22.69c0.74,11.74-6.23,19.77-16.27,20.41c-12.05,0.76-18.69-6.35-18.69-6.35l2.55-10.86c0,0,6.68,5.04,12.02,4.7c3.49-0.22,4.74-3.06,4.61-5.07c-0.52-8.31-14.18-7.82-15.04-21.48c-0.73-11.49,6.82-23.14,23.48-24.19C54.2,37.88,57.48,39.52,57.48,39.52z"/></svg>',perm:'movements',adminOnly:true},
   {id:'inventory',label:'المخزن',labelEn:'Inventory',icon:NAV_ICONS.inventory,perm:'inventory'},
   {id:'movements',label:'سجل الحركات',labelEn:'Movements',icon:NAV_ICONS.movements,perm:'movements'},
   {id:'clients',label:'العملاء',labelEn:'Clients',icon:NAV_ICONS.clients,perm:'clients'},
@@ -20616,8 +20658,11 @@ function getVaultEntryStatusBadge(txId) {
   return '';
 }
 
+const _SHOPIFY_LOGO_SVG = `<svg viewBox="0 0 108.44 122.88" width="16" height="16" style="display:block" xmlns="http://www.w3.org/2000/svg"><style>.sh0{fill-rule:evenodd;clip-rule:evenodd;fill:#95BF47}.sh1{fill-rule:evenodd;clip-rule:evenodd;fill:#5E8E3E}.sh2{fill-rule:evenodd;clip-rule:evenodd;fill:#FFFFFF}</style><path class="sh0" d="M94.98,23.66c-0.09-0.62-0.63-0.96-1.08-1c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.72-0.72-2.13-0.5-2.68-0.34c-0.01,0-1.37,0.43-3.68,1.14c-0.38-1.25-0.95-2.78-1.76-4.32c-2.6-4.97-6.42-7.6-11.03-7.61c-0.01,0-0.01,0-0.02,0c-0.32,0-0.64,0.03-0.96,0.06c-0.14-0.16-0.27-0.32-0.42-0.48c-2.01-2.15-4.58-3.19-7.67-3.1c-5.95,0.17-11.88,4.47-16.69,12.11c-3.38,5.37-5.96,12.12-6.69,17.35c-6.83,2.12-11.61,3.6-11.72,3.63c-3.45,1.08-3.56,1.19-4.01,4.44C9.03,39.99,0,109.8,0,109.8l75.65,13.08l32.79-8.15C108.44,114.73,95.06,24.28,94.98,23.66z M66.52,16.63c-1.74,0.54-3.72,1.15-5.87,1.82c-0.04-3.01-0.4-7.21-1.81-10.83C63.36,8.47,65.58,13.58,66.52,16.63z M56.69,19.68c-3.96,1.23-8.29,2.57-12.63,3.91c1.22-4.67,3.54-9.33,6.38-12.38c1.06-1.14,2.54-2.4,4.29-3.12C56.38,11.52,56.73,16.39,56.69,19.68z M48.58,3.97c1.4-0.03,2.57,0.28,3.58,0.94C50.55,5.74,49,6.94,47.54,8.5c-3.78,4.06-6.68,10.35-7.83,16.43c-3.6,1.11-7.13,2.21-10.37,3.21C31.38,18.58,39.4,4.23,48.58,3.97z"/><path class="sh1" d="M93.9,22.66c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.27-0.27-0.63-0.41-1.02-0.47l0,108.68l32.78-8.15c0,0-13.38-90.44-13.46-91.06C94.9,23.04,94.35,22.7,93.9,22.66z"/><path class="sh2" d="M57.48,39.52l-3.81,14.25c0,0-4.25-1.93-9.28-1.62c-7.38,0.47-7.46,5.12-7.39,6.29c0.4,6.37,17.16,7.76,18.11,22.69c0.74,11.74-6.23,19.77-16.27,20.41c-12.05,0.76-18.69-6.35-18.69-6.35l2.55-10.86c0,0,6.68,5.04,12.02,4.7c3.49-0.22,4.74-3.06,4.61-5.07c-0.52-8.31-14.18-7.82-15.04-21.48c-0.73-11.49,6.82-23.14,23.48-24.19C54.2,37.88,57.48,39.52,57.48,39.52z"/></svg>`;
+
 function _empInitials(name) {
   if (!name || name === '—') return '—';
+  if (/^shopify\b/i.test(name.trim())) return _SHOPIFY_LOGO_SVG;
   const parts = name.trim().split(/\s+/);
   if (parts.length >= 2) return esc(parts[0].slice(0,1).toUpperCase() + parts[1].slice(0,1).toUpperCase());
   return esc(name.slice(0,2));
@@ -39235,6 +39280,27 @@ function renderShopifyOrders() {
   const el = qs('#shopify-pending-count');
   if (el) el.textContent = pending.length;
 
+  // KPI calculations
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfWeek = new Date(startOfDay); startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const todayCount = _shopifyOrders.filter(o => new Date(o.createdAt) >= startOfDay).length;
+  const weekCount = _shopifyOrders.filter(o => new Date(o.createdAt) >= startOfWeek).length;
+  const monthCount = _shopifyOrders.filter(o => new Date(o.createdAt) >= startOfMonth).length;
+  const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const todayLabel = `${now.getDate()} ${monthNames[now.getMonth()]}`;
+  const weekStart = `${startOfWeek.getDate()} ${monthNames[startOfWeek.getMonth()]}`;
+  const weekEnd = `${now.getDate()} ${monthNames[now.getMonth()]}`;
+  const monthLabel = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+
+  const kToday = qs('#shopify-kpi-today'); if (kToday) kToday.textContent = todayCount;
+  const kWeek = qs('#shopify-kpi-week'); if (kWeek) kWeek.textContent = weekCount;
+  const kMonth = qs('#shopify-kpi-month'); if (kMonth) kMonth.textContent = monthCount;
+  const lToday = qs('#shopify-kpi-today-label'); if (lToday) lToday.textContent = todayLabel;
+  const lWeek = qs('#shopify-kpi-week-label'); if (lWeek) lWeek.textContent = `${weekStart} – ${weekEnd}`;
+  const lMonth = qs('#shopify-kpi-month-label'); if (lMonth) lMonth.textContent = monthLabel;
+
   const searchQ = (qs('#shopify-search')?.value || '').trim().toLowerCase();
   let data = _shopifyTab === 'pending' ? pending : _shopifyOrders;
   if (searchQ) data = data.filter(o => String(o.ref || '').toLowerCase().includes(searchQ));
@@ -39242,7 +39308,7 @@ function renderShopifyOrders() {
   if (!data.length) {
     wrap.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
       <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" style="opacity:.3;margin-bottom:12px"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-      <div>${_shopifyTab === 'pending' ? 'لا توجد أوردرات بانتظار المراجعة' : 'لا توجد أوردرات'}</div>
+      <div>${_shopifyTab === 'pending' ? 'لا توجد أوردرات بانتظار تأكيد العميل' : 'لا توجد أوردرات'}</div>
     </div>`;
     return;
   }
@@ -39268,31 +39334,50 @@ function renderShopifyOrders() {
             <td style="white-space:nowrap;font-size:.8rem;color:var(--text-muted)">${o.shopifyCreatedAt ? _fmtShopifyDate(o.shopifyCreatedAt, o.shopifyCreatedAt) : '<span style="color:var(--text-muted)">—</span>'}</td>
             <td>${o.client || '-'}</td>
             <td dir="ltr">${o.phone || '-'}</td>
-            <td>
-              <details style="cursor:pointer">
-                <summary style="font-size:.82rem;color:var(--accent)">
-                  ${o.items?.length || 0} أصناف
-                  ${(o.items||[]).some(i => !i.productId) ? '<span style="background:#ef444422;color:#ef4444;border-radius:99px;padding:1px 7px;font-size:.7rem;margin-right:4px">⚠️ منتجات غير معرّفة</span>' : ''}
-                </summary>
-                <div style="padding:8px 0;font-size:.8rem">
-                  ${(o.items||[]).map(i => `
-                    <div style="padding:4px 0;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);padding-bottom:4px">
-                      ${!i.productId ? '<span title="هذا المنتج غير موجود في المخزن - تأكد من SKU" style="color:#f59e0b;font-size:1rem">⚠️</span>' : '<span style="color:#10b981;font-size:1rem">✅</span>'}
-                      <div>
-                        <div>${i.name}</div>
-                        <div style="color:var(--text-muted);font-size:.75rem">كود: ${i.code} &nbsp;|&nbsp; الكمية المطلوبة: ${i.qty} &nbsp;|&nbsp; السعر: <b>${fmtJ(i.price)}</b>${i.productId && Array.isArray(inventoryCache) ? (() => { const inv = inventoryCache.find(p => p._id === i.productId || p.code === i.code); if (!inv) return ''; const ok = inv.current >= i.qty; return ` &nbsp;|&nbsp; <span style="color:${ok ? '#10b981' : '#ef4444'};font-weight:600">متاح: ${inv.current}</span>`; })() : ''}</div>
-                        ${!i.productId ? '<div style="color:#ef4444;font-size:.73rem;margin-top:2px">⚠️ غير موجود في المخزن — تأكد إن الـ SKU في Shopify = كود المنتج في النظام</div>' : ''}
-                        ${(i.warnings||[]).map(w => `<div style="color:#f59e0b;font-size:.72rem;margin-top:2px">⚠️ ${w}</div>`).join('')}
+            <td style="position:relative">
+              <div style="position:relative;display:inline-block">
+                <button onclick="_toggleShopifyItems(this)" style="background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;gap:5px;color:var(--accent);font-size:.82rem;font-family:inherit;white-space:nowrap">
+                  <svg class="sp-arrow" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .22s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
+                  ${o.items?.length || 0} ${o.items?.length === 1 ? 'صنف' : 'أصناف'}
+                  ${(o.items||[]).some(i => !i.productId) ? `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` : ''}
+                </button>
+                <div class="sp-items-panel" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:300;width:290px;background:var(--bg);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px #0003;padding:10px;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto">
+                  ${(o.items||[]).map(i => {
+                    const inv = i.productId && Array.isArray(inventoryCache) ? inventoryCache.find(p => p._id === i.productId || p.code === i.code) : null;
+                    const stockOk = inv ? inv.current >= i.qty : null;
+                    const imgSrc = i.imageUrl || i.image || '';
+                    return `
+                    <div style="background:var(--bg-alt);border-radius:9px;padding:9px 10px;border:1px solid var(--border)">
+                      <div style="display:flex;align-items:flex-start;gap:9px">
+                        <div style="width:38px;height:38px;border-radius:7px;background:var(--bg);border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden">
+                          ${imgSrc ? `<img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;border-radius:6px" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span style="display:none;align-items:center;justify-content:center;width:100%;height:100%"><svg viewBox='0 0 24 24' width='18' height='18' fill='none' stroke='currentColor' stroke-width='1.5'><rect x='3' y='3' width='18' height='18' rx='3'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg></span>` : `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`}
+                        </div>
+                        <div style="flex:1;min-width:0">
+                          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px">
+                            <span style="font-size:.82rem;font-weight:600;color:var(--text);line-height:1.3">${i.name}</span>
+                            ${!i.productId
+                              ? `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="غير موجود في المخزن" style="flex-shrink:0;margin-top:2px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
+                              : `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><polyline points="20 6 9 17 4 12"/></svg>`}
+                          </div>
+                          ${i.code ? `<div style="color:var(--text-muted);font-size:.71rem;margin-top:1px">${i.code}</div>` : ''}
+                          <div style="display:flex;align-items:center;gap:5px;margin-top:5px;flex-wrap:wrap">
+                            <span style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-size:.73rem;color:var(--text-muted)">${i.qty} ×</span>
+                            <span style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-size:.73rem;color:var(--text-muted)">${fmtJ(i.price)}</span>
+                            ${inv !== null ? `<span style="background:${stockOk ? '#10b98115' : '#ef444415'};border:1px solid ${stockOk ? '#10b98140' : '#ef444440'};border-radius:5px;padding:2px 7px;font-size:.73rem;color:${stockOk ? '#10b981' : '#ef4444'};font-weight:600">متاح: ${inv.current}</span>` : ''}
+                          </div>
+                          ${!i.productId ? `<div style="color:#ef4444;font-size:.7rem;margin-top:4px;line-height:1.4;word-break:break-word;white-space:normal;display:flex;align-items:flex-start;gap:3px"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>SKU غير متطابق مع النظام</span></div>` : ''}
+                          ${(i.warnings||[]).map(w => `<div style="color:#f59e0b;font-size:.7rem;margin-top:4px;line-height:1.4;word-break:break-word;white-space:normal;display:flex;align-items:flex-start;gap:3px"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>${w}</span></div>`).join('')}
+                        </div>
                       </div>
-                    </div>
-                  `).join('')}
+                    </div>`;
+                  }).join('')}
                 </div>
-              </details>
+              </div>
             </td>
             <td>${fmtJ(o.shipCost || 0)}</td>
             <td>${o.discount > 0 ? `<span style="color:#10b981;font-size:.82rem">${o.discountCode ? `<b>${o.discountCode}</b><br>` : ''}${o.discountType === 'percent' ? o.discountValue + '%' : fmtJ(o.discount)}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
             <td><b style="color:var(--accent)">${fmtJ(o.total)}</b></td>
-            <td>${_shopifyStatusBadge(o.status)}</td>
+            <td>${_shopifyStatusBadge(o.status, o.phone)}</td>
             <td>
               ${o.status === 'pending' ? `
                 <div style="display:flex;flex-direction:row;align-items:center;gap:6px;flex-wrap:nowrap">
@@ -39313,8 +39398,33 @@ function renderShopifyOrders() {
   </div>`;
 }
 
-function _shopifyStatusBadge(status) {
-  if (status === 'pending') return '<span style="background:#f59e0b22;color:#f59e0b;border-radius:99px;padding:2px 10px;font-size:.78rem">بانتظار المراجعة</span>';
+function _toggleShopifyItems(btn) {
+  const panel = btn.nextElementSibling;
+  const arrow = btn.querySelector('.sp-arrow');
+  const isOpen = panel.style.display === 'flex';
+  // close all other open panels
+  document.querySelectorAll('.sp-items-panel').forEach(p => { p.style.display = 'none'; });
+  document.querySelectorAll('.sp-arrow').forEach(a => { a.style.transform = ''; });
+  if (!isOpen) {
+    panel.style.display = 'flex';
+    if (arrow) arrow.style.transform = 'rotate(180deg)';
+  }
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.sp-items-panel') && !e.target.closest('button[onclick*="_toggleShopifyItems"]')) {
+    document.querySelectorAll('.sp-items-panel').forEach(p => { p.style.display = 'none'; });
+    document.querySelectorAll('.sp-arrow').forEach(a => { a.style.transform = ''; });
+  }
+});
+
+function _shopifyStatusBadge(status, phone) {
+  if (status === 'pending') {
+    const clean = (phone || '').replace(/\D/g, '');
+    const waUrl = clean ? `https://wa.me/${clean}` : '';
+    const tag = waUrl ? 'a' : 'span';
+    const extra = waUrl ? `href="${waUrl}" target="_blank" rel="noopener" title="فتح واتساب العميل"` : '';
+    return `<${tag} ${extra} style="display:inline-flex;align-items:center;gap:4px;background:#fef9ec;color:#b45309;border-radius:6px;padding:2px 8px;font-size:.72rem;${waUrl?'cursor:pointer;text-decoration:none;':''}"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="#b45309" viewBox="0 0 16 16"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/></svg>بانتظار تأكيد العميل</${tag}>`;
+  }
   if (status === 'approved') return '<span style="background:#10b98122;color:#10b981;border-radius:99px;padding:2px 10px;font-size:.78rem">تم القبول</span>';
   if (status === 'rejected') return '<span style="background:#ef444422;color:#ef4444;border-radius:99px;padding:2px 10px;font-size:.78rem">مرفوض</span>';
   return status;
@@ -39608,7 +39718,7 @@ function _renderShopifyEditItems() {
               style="width:100%;padding:7px 28px 7px 10px;border-radius:8px;border:1.5px solid #ef444460;background:var(--bg);font-size:.78rem;color:var(--text);outline:none;box-sizing:border-box;font-family:inherit"
               oninput="_shopifyInlineSearch(this,${idx})"
               onfocus="_shopifyInlineSearch(this,${idx})">
-            <div id="shopify-inline-picker-${idx}" style="display:none;position:absolute;z-index:100;left:0;right:0;margin-top:4px;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;max-height:200px;overflow-y:auto;background:var(--bg);box-shadow:0 8px 28px rgba(0,0,0,.14)"></div>
+            <div id="shopify-inline-picker-${idx}" style="display:none;position:fixed;z-index:9999;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;max-height:200px;overflow-y:auto;background:var(--bg);box-shadow:0 8px 28px rgba(0,0,0,.14)"></div>
           </div>
         </div>` : ''}
       </div>
@@ -39648,7 +39758,7 @@ function _shopifyEditItemChanged(idx, field, val) {
   _shopifyEditItems[idx][field] = val;
   _shopifyEditItems[idx].total = (_shopifyEditItems[idx].qty||1) * (_shopifyEditItems[idx].price||0);
   const sub = document.getElementById(`shopify-edit-subtotal-${idx}`);
-  if (sub) sub.textContent = fmtJ(_shopifyEditItems[idx].total);
+  if (sub) sub.innerHTML = fmtJ(_shopifyEditItems[idx].total);
   _updateShopifyEditSummary();
 }
 
@@ -39699,6 +39809,10 @@ function _shopifyInlineSearch(input, idx) {
   const q = input.value;
   const results = _shopifyPickerResults(q);
   if (!results.length && !q) { pickerEl.style.display = 'none'; return; }
+  const rect = input.getBoundingClientRect();
+  pickerEl.style.top = (rect.bottom + 4) + 'px';
+  pickerEl.style.left = rect.left + 'px';
+  pickerEl.style.width = rect.width + 'px';
   pickerEl.style.display = 'block';
   const key = 'inline_' + idx + '_' + (++_shopifyPickerCbId);
   _shopifyPickerCallbacks[key] = (prodId) => {

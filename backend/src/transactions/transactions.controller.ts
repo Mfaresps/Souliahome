@@ -216,6 +216,7 @@ export class TransactionsController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     if (id === 'pickup-orders') return this.transactionsService.findPickupOrders();
+    if (id === 'archived') return this.transactionsService.findArchived();
     return this.transactionsService.findById(id);
   }
 

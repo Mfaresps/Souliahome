@@ -58,6 +58,7 @@ export class ShopifyOrder {
     qty: number;
     price: number;
     total: number;
+    imageUrl: string;
   }>;
 
   @Prop({ default: 'pending' })
