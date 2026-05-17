@@ -577,7 +577,7 @@ body.dark-mode .settings-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.2)}
 .filter-label{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:4px}
 .search-input{max-width:280px;position:relative}
 .search-input input{padding-right:34px}
-.toast-container{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;display:flex;flex-direction:column;gap:6px;align-items:center}
+.toast-container{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:999999;display:flex;flex-direction:column;gap:6px;align-items:center}
 .toast{background:var(--primary);color:#fff;padding:8px 16px;border-radius:8px;font-size:.8rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.18);display:flex;align-items:center;gap:8px;min-width:160px;max-width:320px}
 .toast.success{background:linear-gradient(135deg,#10b981 0%,#059669 100%)}
 .toast.error{background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%)}
@@ -8280,6 +8280,9 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       </div>
     </div>
   </div>
+  <div style="margin-bottom:12px">
+    <input id="shopify-search" type="text" placeholder="بحث برقم الأوردر..." oninput="renderShopifyOrders()" style="width:100%;max-width:320px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-size:.9rem;box-sizing:border-box;direction:ltr">
+  </div>
   <div id="shopify-orders-table-wrap"></div>
 </div>
 
@@ -9964,6 +9967,7 @@ const NAV_ICONS = {
 const NAV_ITEMS = [
   {id:'dashboard',label:'الرئيسية',labelEn:'Dashboard',icon:NAV_ICONS.dashboard,perm:'dashboard'},
   {id:'transaction',label:'حركة جديدة',labelEn:'New Transaction',icon:NAV_ICONS.transaction,perm:'transaction'},
+  {id:'shopify-orders',label:'أوردرات Shopify',labelEn:'Shopify Orders',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>',perm:'movements',adminOnly:true},
   {id:'inventory',label:'المخزن',labelEn:'Inventory',icon:NAV_ICONS.inventory,perm:'inventory'},
   {id:'movements',label:'سجل الحركات',labelEn:'Movements',icon:NAV_ICONS.movements,perm:'movements'},
   {id:'clients',label:'العملاء',labelEn:'Clients',icon:NAV_ICONS.clients,perm:'clients'},
@@ -9974,7 +9978,6 @@ const NAV_ITEMS = [
   {id:'approvals',label:'الموافقات',labelEn:'Approvals',icon:NAV_ICONS.approvals,perm:'approvals'},
   {id:'pending-sync',label:'المعاملات المعلقة',labelEn:'Pending Sync',icon:'<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7"/><polyline points="21 4 21 10 15 10"/></svg>',perm:'transaction'},
   {id:'pickup-orders',label:'Pick-Up Orders',labelEn:'Pick-Up Orders',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',perm:'movements'},
-  {id:'shopify-orders',label:'أوردرات Shopify',labelEn:'Shopify Orders',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>',perm:'movements',adminOnly:true},
   {id:'reports',label:'التقارير',labelEn:'Reports',icon:NAV_ICONS.reports,perm:'reports',adminOnly:true},
   {id:'vault',label:'الخزنة',labelEn:'Vault',icon:NAV_ICONS.vault,perm:'vault'},
   {id:'users',label:'المستخدمون',labelEn:'Users',icon:NAV_ICONS.users,perm:'users'},
@@ -10270,6 +10273,7 @@ function applyLang() {
 }
 
 function fmtN(n) { if (n == null || isNaN(n)) return '0'; return Number(n).toLocaleString('en-US'); }
+function fmtRef(ref) { const r = (ref || '').trim(); if (!r) return ''; return r.startsWith('#') ? r : '#' + r; }
 function fmtJ(n) {
   const num = fmtN(n);
   return `<span class="amt-cur">EGP</span> <span class="amt-num">${num}</span>`;
@@ -13097,6 +13101,12 @@ function buildSidebar() {
     const totalComplaintsBadge = pendingCmpCount + fuUnseenCount;
     if (n.id === 'complaints' && totalComplaintsBadge > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">${totalComplaintsBadge}</span>`;
     if (n.id === 'pending-sync') badge = ` <span class="badge badge-orange oq-nav-badge" style="margin-right:4px;font-size:.65rem;display:none" id="oq-nav-badge"></span>`;
+    if (n.id === 'shopify-orders') {
+      const spTotal = (_shopifyOrders || []).filter(o => o.status === 'pending').length;
+      const spSeen = parseInt(localStorage.getItem('shopify_seen_count') ?? '-1');
+      const spNew = spSeen >= 0 ? Math.max(0, spTotal - spSeen) : 0;
+      if (spNew > 0) badge = ` <span class="badge badge-orange" style="margin-right:4px;font-size:.65rem">+${spNew}</span>`;
+    }
     if (n.id === 'transaction' && draftCount > 0) {
       const word = draftCount === 1 ? 'مسودة' : (draftCount === 2 ? 'مسودتان' : 'مسودات');
       const arabicNum = String(draftCount).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
@@ -14659,7 +14669,7 @@ async function openEditTxOtpReviewModal(otpDocId, mentionId) {
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:.72rem;color:var(--muted)">رقم المرجع</span>
-        <span style="font-size:.8rem;color:var(--accent);font-weight:700">${details.txRef ? '#' + esc(details.txRef) : '—'}</span>
+        <span style="font-size:.8rem;color:var(--accent);font-weight:700">${details.txRef ? esc(fmtRef(details.txRef)) : '—'}</span>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:.72rem;color:var(--muted)">الموظف</span>
@@ -15002,7 +15012,11 @@ function onPageEnter(page) {
     case 'suppliers': renderSuppliers(); break;
     case 'expenses': renderExpenses(); break;
     case 'pickup-orders': loadPickupOrders().catch(e => toast('خطأ: ' + e.message, true)); break;
-    case 'shopify-orders': loadShopifyOrders(); break;
+    case 'shopify-orders':
+      localStorage.setItem('shopify_seen_count', String((_shopifyOrders || []).filter(o => o.status === 'pending').length));
+      loadShopifyOrders();
+      buildSidebar();
+      break;
     case 'pending-sync': renderPendingSyncPage(); break;
     case 'complaints':
       // Always land on Follow-up Orders tab first
@@ -15446,7 +15460,7 @@ function renderAdminBriefing() {
     activityEl.innerHTML = acts.length
       ? acts.map(a => {
           const time = a.date ? new Date(a.date).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
-          const refLabel = a.ref ? `#${a.ref}` : '';
+          const refLabel = a.ref ? fmtRef(a.ref) : '';
           const safeId = String(a.id || '').replace(/'/g, "\\'");
           const safeRef = String(a.ref || '').replace(/'/g, "\\'");
           const action = a.type === 'tx'
@@ -15842,7 +15856,7 @@ function movementRefCell(tx) {
   let tag = '';
   if (/(-RET)$/i.test(r)) tag = isMovExchangeReturn(tx) ? 'استبدال · إرجاع' : 'استرجاع';
   else if (/(-EXC)$/i.test(r)) tag = 'استبدال · بديل';
-  return `<div><a href="#" data-reference-ref="${esc(base)}" style="color:var(--text);font-weight:500;text-decoration:none;cursor:pointer" title="انقر لعرض تفاصيل شاملة">#${esc(base)}</a>${tag ? ` <span class="badge" style="font-size:.58rem;vertical-align:middle;background:var(--primary-pale);color:var(--primary)">${tag}</span>` : ''}</div>`;
+  return `<div><a href="#" data-reference-ref="${esc(base.replace(/^#/, ''))}" style="color:var(--text);font-weight:500;text-decoration:none;cursor:pointer" title="انقر لعرض تفاصيل شاملة">${esc(fmtRef(base))}</a>${tag ? ` <span class="badge" style="font-size:.58rem;vertical-align:middle;background:var(--primary-pale);color:var(--primary)">${tag}</span>` : ''}</div>`;
 }
 function movementKindBadgeCompact(tx) {
   const en = currentLang === 'en';
@@ -18578,7 +18592,7 @@ function showClientInvoicesForReturn(clientName) {
       return `<div class="card" style="padding:12px;border-right:3px solid ${borderColor};cursor:${blocked ? 'not-allowed' : 'pointer'};opacity:${blocked ? '.55' : '1'}" ${blocked ? '' : `onclick="selectReturnInvoice('${esc(tx._id)}')"` }>
         <div class="flex-between">
           <div>
-            <strong>${tx.ref ? '#' + esc(tx.ref) : '-'}</strong> <span class="text-muted text-sm">— ${fmtDate(tx.date)}</span>
+            <strong>${tx.ref ? esc(fmtRef(tx.ref)) : '-'}</strong> <span class="text-muted text-sm">— ${fmtDate(tx.date)}</span>
             <div class="text-sm" style="margin-top:4px">${(tx.items || []).map(it => esc(it.name)).join(' · ')}</div>
             ${alreadyDone ? '<div class="text-xs text-muted" style="margin-top:6px">لا يُسمح إلا بعملية واحدة لكل فاتورة</div>' : ''}
             ${isPending ? '<div class="text-xs" style="margin-top:6px;color:var(--orange)">الطلب معلق — يجب اكتمال التحصيل قبل الاسترجاع</div>' : ''}
@@ -19259,7 +19273,7 @@ async function saveReturnRequest() {
       <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:14px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.85rem">
           <div><span style="color:var(--muted)">العميل:</span> <strong>${esc(tx.client || '-')}</strong></div>
-          <div><span style="color:var(--muted)">رقم الفاتورة:</span> <strong>${tx.ref ? '#' + esc(tx.ref) : '-'}</strong></div>
+          <div><span style="color:var(--muted)">رقم الفاتورة:</span> <strong>${tx.ref ? esc(fmtRef(tx.ref)) : '-'}</strong></div>
           <div><span style="color:var(--muted)">السبب:</span> <strong>${esc(reason)}${reasonDetails ? ' — ' + esc(reasonDetails) : ''}</strong></div>
           <div><span style="color:var(--muted)">الخزنة:</span> <strong>${esc(refundSeg)}</strong></div>
         </div>
@@ -19681,7 +19695,7 @@ function renderDraftsDrawer() {
     const itemsCount = items.length;
     const total = items.reduce((s, it) => s + (Number(it.qty)||0) * (Number(it.price)||0), 0);
     const who = d.snap.client || d.snap.supplier || '— بدون اسم —';
-    const ref = d.snap.ref ? `#${esc(d.snap.ref)}` : '';
+    const ref = d.snap.ref ? esc(fmtRef(d.snap.ref)) : '';
     const incomplete = _draftIncompleteReason(d.snap);
     return `
       <div class="draft-card${incomplete ? ' incomplete' : ''}">
@@ -23504,7 +23518,7 @@ function openCancelMovement(id) {
   const depMethod = String(tx.depMethod || '').trim();
 
   const txInfo = `<div style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:12px;font-size:.82rem">
-    <div><strong>${tx.type === 'مشتريات' ? 'المورد' : 'العميل'}:</strong> ${esc(tx.client || '-')} | <strong>المرجع:</strong> ${tx.ref ? '#' + esc(tx.ref) : '-'}</div>
+    <div><strong>${tx.type === 'مشتريات' ? 'المورد' : 'العميل'}:</strong> ${esc(tx.client || '-')} | <strong>المرجع:</strong> ${tx.ref ? esc(fmtRef(tx.ref)) : '-'}</div>
     <div style="margin-top:4px"><strong>الإجمالي:</strong> ${fmtJ(tx.total)} | <strong>الحالة:</strong> ${esc(tx.payStatus || '-')}</div>
   </div>`;
 
@@ -23965,7 +23979,7 @@ function openReverseCollect(id) {
         </div>
         <div>
           <div style="font-size:1rem;font-weight:700">تراجع عند التحصيل (UNDO)</div>
-          <div style="font-size:.78rem;color:var(--muted)">${tx.type} ${tx.ref ? '#' + tx.ref : ''} — ${esc(tx.client || '')}</div>
+          <div style="font-size:.78rem;color:var(--muted)">${tx.type} ${tx.ref ? fmtRef(tx.ref) : ''} — ${esc(tx.client || '')}</div>
         </div>
       </div>
       <div style="margin-bottom:14px;padding:12px 14px;border-radius:8px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.25)">
@@ -24072,7 +24086,7 @@ function openUndoPaymentSelector(id) {
         </div>
         <div style="flex:1;min-width:0">
           <div style="font-size:1rem;font-weight:700">تراجع عن دفعة محددة</div>
-          <div style="font-size:.78rem;color:var(--muted)">${esc(tx.type)} ${tx.ref ? '#' + esc(tx.ref) : ''} — ${esc(tx.client || '')}</div>
+          <div style="font-size:.78rem;color:var(--muted)">${esc(tx.type)} ${tx.ref ? esc(fmtRef(tx.ref)) : ''} — ${esc(tx.client || '')}</div>
         </div>
       </div>
       <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px;padding:10px 12px;background:var(--surface2);border-radius:7px;line-height:1.6;flex-shrink:0">
@@ -24416,7 +24430,7 @@ function renderArchivedMovements() {
     <td><div style="font-size:.82rem">${fmtDate(tx.date)}</div></td>
     <td>${movementKindBadge(tx)}</td>
     <td>${esc(tx.client || '-')}</td>
-    <td><span style="font-size:.82rem;color:var(--muted)">${tx.ref ? '#' + esc(tx.ref) : '-'}</span></td>
+    <td><span style="font-size:.82rem;color:var(--muted)">${tx.ref ? esc(fmtRef(tx.ref)) : '-'}</span></td>
     <td>${esc(tx.employee || '-')}</td>
     <td>${fmtJ(tx.total)}</td>
     <td><div class="text-xs">${tx.archivedAt ? fmtDateTime(tx.archivedAt) : '-'}</div></td>
@@ -24456,7 +24470,7 @@ async function hardDeleteMovement(id) {
           <span style="color:var(--muted);font-weight:600">العميل/المورد:</span>
           <span style="font-weight:500">${esc(tx.client || '-')}</span>
           <span style="color:var(--muted);font-weight:600">المرجع:</span>
-          <span style="font-weight:500">${tx.ref ? '#' + esc(tx.ref) : '-'}</span>
+          <span style="font-weight:500">${tx.ref ? esc(fmtRef(tx.ref)) : '-'}</span>
           <span style="color:var(--muted);font-weight:600">الإجمالي:</span>
           <span style="font-weight:700;color:#ef4444">${fmtJ(tx.total || 0)}</span>
           <span style="color:var(--muted);font-weight:600">مجمدة بواسطة:</span>
@@ -26599,7 +26613,10 @@ async function _doRequestProductEdit(id, newValues) {
   }
 }
 
+let _saveProductInProgress = false;
 async function _doSaveProduct(id, body) {
+  if (_saveProductInProgress) return;
+  _saveProductInProgress = true;
   const saveBtn = qs('#pm-save-btn');
   if (saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '0.6'; }
   try {
@@ -26617,6 +26634,8 @@ async function _doSaveProduct(id, body) {
     else if (msg.includes('الاسم موجود')) toast('الاسم مستخدم بالفعل — اختر اسماً مختلفاً', true);
     else toast('خطأ: ' + msg, true);
     if (saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = ''; }
+  } finally {
+    _saveProductInProgress = false;
   }
 }
 async function deleteProduct(id) {
@@ -27794,14 +27813,14 @@ function _otpDetailText(r) {
   if (r.kind === 'discount') {
     const parts = [];
     if (r.client) parts.push(esc(r.client));
-    if (r.txRef) parts.push('#' + esc(r.txRef));
+    if (r.txRef) parts.push(esc(fmtRef(r.txRef)));
     if (r.discountAmount) parts.push('خصم ' + fmtJ(r.discountAmount) + ' ج.م');
     return parts.join(' · ');
   }
   if (r.kind === 'purchase') {
     const parts = [];
     if (r.client) parts.push(esc(_stripEgp(r.client)));
-    if (r.txRef) parts.push('#' + esc(_stripEgp(r.txRef)));
+    if (r.txRef) parts.push(esc(fmtRef(_stripEgp(r.txRef))));
     if (r.itemsTotal) parts.push(fmtJ(r.itemsTotal) + ' ج.م');
     if (r.purchaseItems?.length) parts.push(r.purchaseItems.length + ' صنف');
     return parts.join(' · ');
@@ -27809,7 +27828,7 @@ function _otpDetailText(r) {
   if (r.kind === 'edit-tx') {
     const parts = [];
     if (r.editTxType) parts.push(esc(r.editTxType));
-    if (r.txRef) parts.push('#' + esc(r.txRef));
+    if (r.txRef) parts.push(esc(fmtRef(r.txRef)));
     if (r.editChanges?.length) parts.push(r.editChanges.length + ' تغيير');
     if (r.editStatus === 'approved') parts.push('✔ موافق');
     else if (r.editStatus === 'rejected') parts.push('✘ مرفوض');
@@ -28603,7 +28622,7 @@ function renderHistoryHub() {
     const vaultHtml = entry.vaultAccount
       ? `<span class="text-xs" style="background:var(--surface2);padding:2px 7px;border-radius:8px">${esc(entry.vaultAccount)}</span>` : '-';
     const details = buildHubRowDetails(entry);
-    const refCell = `<a href="#" onclick="event.preventDefault();navigateTo('movements');setTimeout(()=>showInvoiceDetail('${esc(entry.txId)}'),200)" style="color:var(--accent);font-weight:700">${entry.txRef ? '#' + esc(entry.txRef) : esc(entry.txId.slice(-6))}</a><div class="text-xs text-muted">${esc(entry.txType)}</div>`;
+    const refCell = `<a href="#" onclick="event.preventDefault();navigateTo('movements');setTimeout(()=>showInvoiceDetail('${esc(entry.txId)}'),200)" style="color:var(--accent);font-weight:700">${entry.txRef ? esc(fmtRef(entry.txRef)) : esc(entry.txId.slice(-6))}</a><div class="text-xs text-muted">${esc(entry.txType)}</div>`;
     return `<tr>
       <td style="white-space:nowrap"><div style="font-size:.75rem;font-weight:600">${(entry.editedAt||'').slice(0,10)}</div><div style="font-size:.68rem;color:var(--muted)">${formatEditDateTime(entry.editedAt)}</div></td>
       <td>${actionBadge}</td>
@@ -30930,7 +30949,7 @@ function renderVaultTable() {
       <td>${statusBadge(v.status || 'completed')}</td>
       <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(v.desc||'')}">${esc(v.desc || '—')}</td>
       <td style="color:var(--accent);font-weight:600">${v.employee ? esc(v.employee) : `<span style="color:#999">—</span>`}</td>
-      <td style="font-weight:600;direction:ltr;color:var(--muted)">${v.ref ? '#' + esc(v.ref) : '—'}</td>
+      <td style="font-weight:600;direction:ltr;color:var(--muted)">${v.ref ? esc(fmtRef(v.ref)) : '—'}</td>
       <td class="vault-justif-col" style="font-size:.7rem;color:var(--muted);max-width:160px;white-space:normal;line-height:1.4">${v.accountingJustification ? `<span title="${esc(v.accountingJustification)}">${esc(v.accountingJustification.substring(0,50))}${v.accountingJustification.length > 50 ? '…' : ''}</span>` : '—'}</td>
     </tr>`).join('') : '<tr><td colspan="11" class="empty-state">لا توجد سجلات</td></tr>';
   const vaultMobileList = qs('#vault-log-mobile-list');
@@ -32395,7 +32414,7 @@ function showCodeUsageHistory(id) {
         </tr></thead>
         <tbody>
           ${history.map(h => `<tr style="border-bottom:1px solid var(--border)">
-            <td style="padding:8px;font-weight:600;color:var(--primary)">${h.txRef ? '#' + esc(h.txRef) : '—'}</td>
+            <td style="padding:8px;font-weight:600;color:var(--primary)">${h.txRef ? esc(fmtRef(h.txRef)) : '—'}</td>
             <td style="padding:8px">${esc(h.client || '—')}</td>
             <td style="padding:8px;color:var(--green);font-weight:600">${fmtJ(h.amount || 0)}</td>
             <td style="padding:8px;color:var(--muted);font-size:.75rem">${h.at ? new Date(h.at).toLocaleDateString('ar-EG') : '—'}</td>
@@ -39176,10 +39195,26 @@ function clearPickupSelection() {}
 let _shopifyOrders = [];
 let _shopifyTab = 'pending';
 
+async function recalcShopifyOrders() {
+  if (!confirm('سيتم إعادة حساب إجماليات كل الأوردرات المعلقة بأسعار النظام الفعلية. متأكد؟')) return;
+  try {
+    const res = await api('/shopify/recalc-pending', { method: 'POST' });
+    toast(`تم إصلاح ${res.fixed} أوردر ✅`);
+    await loadShopifyOrders();
+  } catch (e) {
+    toast('خطأ: ' + e.message, true);
+  }
+}
+
 async function loadShopifyOrders() {
   try {
     _shopifyOrders = await api('/shopify/orders');
+    // Set baseline on first ever load so new orders after that trigger the badge
+    if (localStorage.getItem('shopify_seen_count') === null) {
+      localStorage.setItem('shopify_seen_count', String(_shopifyOrders.filter(o => o.status === 'pending').length));
+    }
     renderShopifyOrders();
+    buildSidebar();
   } catch(e) {
     console.error('خطأ في تحميل أوردرات Shopify', e);
   }
@@ -39200,7 +39235,9 @@ function renderShopifyOrders() {
   const el = qs('#shopify-pending-count');
   if (el) el.textContent = pending.length;
 
-  const data = _shopifyTab === 'pending' ? pending : _shopifyOrders;
+  const searchQ = (qs('#shopify-search')?.value || '').trim().toLowerCase();
+  let data = _shopifyTab === 'pending' ? pending : _shopifyOrders;
+  if (searchQ) data = data.filter(o => String(o.ref || '').toLowerCase().includes(searchQ));
 
   if (!data.length) {
     wrap.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
@@ -39214,10 +39251,12 @@ function renderShopifyOrders() {
     <table class="data-table" style="width:100%">
       <thead><tr>
         <th>رقم الأوردر</th>
+        <th>وقت الأوردر</th>
         <th>العميل</th>
         <th>الهاتف</th>
         <th>الأصناف</th>
         <th>الشحن</th>
+        <th>الخصم</th>
         <th>الإجمالي</th>
         <th>الحالة</th>
         <th>الإجراء</th>
@@ -39225,7 +39264,8 @@ function renderShopifyOrders() {
       <tbody>
         ${data.map(o => `
           <tr>
-            <td><b>${o.ref || '-'}</b></td>
+            <td><b>${o.ref ? fmtRef(String(o.ref).replace(/^#+/, '')) : '-'}</b></td>
+            <td style="white-space:nowrap;font-size:.8rem;color:var(--text-muted)">${o.shopifyCreatedAt ? _fmtShopifyDate(o.shopifyCreatedAt, o.shopifyCreatedAt) : '<span style="color:var(--text-muted)">—</span>'}</td>
             <td>${o.client || '-'}</td>
             <td dir="ltr">${o.phone || '-'}</td>
             <td>
@@ -39240,8 +39280,9 @@ function renderShopifyOrders() {
                       ${!i.productId ? '<span title="هذا المنتج غير موجود في المخزن - تأكد من SKU" style="color:#f59e0b;font-size:1rem">⚠️</span>' : '<span style="color:#10b981;font-size:1rem">✅</span>'}
                       <div>
                         <div>${i.name}</div>
-                        <div style="color:var(--text-muted);font-size:.75rem">كود: ${i.code} &nbsp;|&nbsp; الكمية: ${i.qty} &nbsp;|&nbsp; السعر: <b>${fmtJ(i.price)}</b></div>
+                        <div style="color:var(--text-muted);font-size:.75rem">كود: ${i.code} &nbsp;|&nbsp; الكمية المطلوبة: ${i.qty} &nbsp;|&nbsp; السعر: <b>${fmtJ(i.price)}</b>${i.productId && Array.isArray(inventoryCache) ? (() => { const inv = inventoryCache.find(p => p._id === i.productId || p.code === i.code); if (!inv) return ''; const ok = inv.current >= i.qty; return ` &nbsp;|&nbsp; <span style="color:${ok ? '#10b981' : '#ef4444'};font-weight:600">متاح: ${inv.current}</span>`; })() : ''}</div>
                         ${!i.productId ? '<div style="color:#ef4444;font-size:.73rem;margin-top:2px">⚠️ غير موجود في المخزن — تأكد إن الـ SKU في Shopify = كود المنتج في النظام</div>' : ''}
+                        ${(i.warnings||[]).map(w => `<div style="color:#f59e0b;font-size:.72rem;margin-top:2px">⚠️ ${w}</div>`).join('')}
                       </div>
                     </div>
                   `).join('')}
@@ -39249,11 +39290,20 @@ function renderShopifyOrders() {
               </details>
             </td>
             <td>${fmtJ(o.shipCost || 0)}</td>
+            <td>${o.discount > 0 ? `<span style="color:#10b981;font-size:.82rem">${o.discountCode ? `<b>${o.discountCode}</b><br>` : ''}${o.discountType === 'percent' ? o.discountValue + '%' : fmtJ(o.discount)}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
             <td><b style="color:var(--accent)">${fmtJ(o.total)}</b></td>
             <td>${_shopifyStatusBadge(o.status)}</td>
             <td>
               ${o.status === 'pending' ? `
-                <button class="btn btn-sm" style="background:var(--accent);color:#fff;font-size:.78rem" onclick="approveShopifyOrder('${o._id}')">📤 إرسال إلى سجل الحركات</button>
+                <div style="display:flex;flex-direction:row;align-items:center;gap:6px;flex-wrap:nowrap">
+                  <button class="btn btn-sm" style="background:var(--accent);color:#fff;font-size:.72rem;display:inline-flex;align-items:center;gap:5px;padding:5px 10px;white-space:nowrap" onclick="approveShopifyOrder('${o._id}')">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    إرسال إلى سجل الحركات
+                  </button>
+                  <button title="تعديل الأصناف" class="btn btn-sm" style="background:var(--bg-alt);color:var(--text);border:1.5px solid var(--border);padding:5px 7px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0" onclick="editShopifyOrder('${o._id}')">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                </div>
               ` : '-'}
             </td>
           </tr>
@@ -39276,6 +39326,7 @@ async function approveShopifyOrder(id) {
 
   // نافذة تأكيد مع حقل الديبوزت
   const modal = document.createElement('div');
+  modal.id = 'shopify-confirm-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:#0008;z-index:9999;display:flex;align-items:center;justify-content:center';
   modal.innerHTML = `
     <div style="background:var(--bg);border-radius:16px;padding:28px;width:360px;max-width:95vw;box-shadow:0 20px 60px #0004">
@@ -39284,14 +39335,16 @@ async function approveShopifyOrder(id) {
         <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--text-muted)">العميل</span><b>${order.client}</b></div>
         <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--text-muted)">الأصناف</span><b>${order.items?.length || 0} أصناف</b></div>
         <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--text-muted)">الشحن</span><b>${fmtJ(order.shipCost || 0)}</b></div>
+        ${order.discount > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--text-muted)">الخصم ${order.discountCode ? '(' + order.discountCode + ')' : ''}</span><b style="color:#10b981">- ${order.discountType === 'percent' ? order.discountValue + '%' : fmtJ(order.discount)}</b></div>` : ''}
         <div style="display:flex;justify-content:space-between;font-size:1rem;border-top:1px solid var(--border);padding-top:8px;margin-top:4px"><span>الإجمالي</span><b style="color:var(--accent)">${fmtJ(order.total)}</b></div>
       </div>
       <div style="margin-bottom:12px">
         <label style="font-size:.85rem;color:var(--text-muted);display:block;margin-bottom:6px">العربون المدفوع الآن (اتركه 0 لاعتبار الكل ديناً)</label>
-        <input id="shopify-deposit-inp" type="number" min="0" max="${order.total}" placeholder="0" style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-size:1rem;text-align:center;box-sizing:border-box" oninput="_updateShopifyRemaining(${order.total})">
+        <input id="shopify-deposit-inp" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0" style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-size:1rem;text-align:center;box-sizing:border-box" oninput="_updateShopifyRemaining(${order.total})">
+        <div id="shopify-deposit-err" style="color:var(--red);font-size:.78rem;margin-top:4px;min-height:16px;text-align:center"></div>
         <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:.85rem">
           <span style="color:var(--text-muted)">المتبقي</span>
-          <b id="shopify-remaining-lbl" style="color:var(--red)">${fmtJ(order.total)}</b>
+          <b id="shopify-remaining-lbl" style="color:var(--red)">${order.total.toLocaleString('en-US')} EGP</b>
         </div>
       </div>
       <div style="margin-bottom:16px">
@@ -39304,8 +39357,8 @@ async function approveShopifyOrder(id) {
         </select>
       </div>
       <div style="display:flex;gap:10px">
-        <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;cursor:pointer;font-size:.9rem">إلغاء</button>
-        <button id="shopify-approve-btn" onclick="_confirmApproveShopify('${id}')" style="flex:2;padding:10px;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:.9rem;font-weight:600">📤 إرسال إلى سجل الحركات</button>
+        <button onclick="document.getElementById('shopify-confirm-modal').remove()" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;cursor:pointer;font-size:.9rem">إلغاء</button>
+        <button id="shopify-approve-btn" onclick="_confirmApproveShopify('${id}')" style="flex:2;padding:10px;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:.9rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> إرسال إلى سجل الحركات</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -39314,22 +39367,57 @@ async function approveShopifyOrder(id) {
 }
 
 function _updateShopifyRemaining(total) {
-  const dep = Number(qs('#shopify-deposit-inp')?.value) || 0;
-  const rem = Math.max(0, total - dep);
+  const inp = qs('#shopify-deposit-inp');
+  const err = qs('#shopify-deposit-err');
+  if (!inp) return;
+
+  // إزالة أي حرف غير رقمي
+  let raw = inp.value.replace(/[^0-9]/g, '');
+  if (inp.value !== raw) inp.value = raw;
+
+  const dep = Number(raw) || 0;
+  let errMsg = '';
+
+  if (dep < 0) {
+    errMsg = 'لا يمكن إدخال قيمة سالبة';
+  } else if (dep > total) {
+    inp.value = String(total);
+    errMsg = `الحد الأقصى هو ${total.toLocaleString('en-US')} EGP`;
+  }
+
+  if (err) err.textContent = errMsg;
+
+  const finalDep = Math.min(Math.max(Number(inp.value) || 0, 0), total);
+  const rem = Math.max(0, total - finalDep);
   const lbl = qs('#shopify-remaining-lbl');
-  if (lbl) lbl.textContent = fmtJ(rem);
+  if (lbl) {
+    lbl.textContent = rem.toLocaleString('en-US') + ' EGP';
+    lbl.style.color = rem === 0 ? 'var(--accent)' : 'var(--red)';
+  }
 }
 
 async function _confirmApproveShopify(id) {
   const btn = qs('#shopify-approve-btn');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ جارٍ التحقق...'; }
 
-  const dep = Number(qs('#shopify-deposit-inp')?.value) || 0;
+  const rawDep = qs('#shopify-deposit-inp')?.value || '0';
+  if (/[^0-9]/.test(rawDep) && rawDep !== '') {
+    toast('❌ حقل العربون يقبل أرقاماً فقط', true);
+    if (btn) { btn.disabled = false; btn.textContent = '📤 إرسال إلى سجل الحركات'; }
+    return;
+  }
+  const dep = Math.max(0, Number(rawDep) || 0);
   const payment = qs('#shopify-payment-sel')?.value || 'كاش';
   const order = _shopifyOrders.find(o => o._id === id);
+  if (order && dep > order.total) {
+    toast(`❌ العربون (${dep.toLocaleString('en-US')}) أكبر من إجمالي الأوردر (${order.total.toLocaleString('en-US')})`, true);
+    if (btn) { btn.disabled = false; btn.textContent = '📤 إرسال إلى سجل الحركات'; }
+    return;
+  }
 
   // 1. تحقق من تكرار الرقم المرجعي
-  const dupRef = transactions.find(t => t.ref && order?.ref && t.ref === order.ref);
+  const _orderRefClean = String(order?.ref || '').replace(/^#+/, '');
+  const dupRef = transactions.find(t => t.ref && _orderRefClean && String(t.ref).replace(/^#+/, '') === _orderRefClean);
   if (dupRef) {
     toast(`❌ الرقم المرجعي ${order.ref} مكرر - يوجد حركة بنفس الرقم`, true);
     if (btn) { btn.disabled = false; btn.textContent = '📤 إرسال إلى سجل الحركات'; }
@@ -39340,25 +39428,40 @@ async function _confirmApproveShopify(id) {
   const missingItems = (order?.items || []).filter(i => !i.productId);
   if (missingItems.length) {
     const names = missingItems.map(i => `• ${i.name} (كود: ${i.code})`).join('\n');
-    const proceed = confirm(`⚠️ تحذير: ${missingItems.length} صنف غير موجود في المخزن:\n\n${names}\n\nهل تريد الإرسال على أي حال؟`);
-    if (!proceed) {
-      if (btn) { btn.disabled = false; btn.textContent = '📤 إرسال إلى سجل الحركات'; }
+    toast(`❌ لا يمكن الإرسال — ${missingItems.length} صنف غير موجود في المخزن:\n${names}`, true);
+    if (btn) { btn.disabled = false; btn.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> إرسال إلى سجل الحركات`; }
+    return;
+  }
+
+  // 3. تحقق من الكمية المتاحة في المخزن
+  if (Array.isArray(inventoryCache) && inventoryCache.length) {
+    const lowStockItems = [];
+    for (const item of (order?.items || [])) {
+      const inv = inventoryCache.find(p => p._id === item.productId || p.code === item.code);
+      if (inv && inv.current < item.qty) {
+        lowStockItems.push(`• ${item.name} — مطلوب: ${item.qty}، متاح: ${inv.current}`);
+      }
+    }
+    if (lowStockItems.length) {
+      toast(`❌ لا يمكن الإرسال — كمية غير كافية في المخزن:\n${lowStockItems.join('\n')}`, true);
+      if (btn) { btn.disabled = false; btn.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> إرسال إلى سجل الحركات`; }
       return;
     }
   }
 
-  // 3. إرسال
+  // 4. إرسال
+  const _btnHTML = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> إرسال إلى سجل الحركات`;
   try {
-    if (btn) btn.textContent = '⏳ جارٍ الإرسال...';
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ جارٍ الإرسال...'; }
     await api(`/shopify/orders/${id}/approve`, { method: 'PATCH', body: JSON.stringify({ deposit: dep, payment }), headers: {'Content-Type':'application/json'} });
-    document.querySelector('div[style*="position:fixed"][style*="z-index:9999"]')?.remove();
-    toast('تم الإرسال إلى سجل الحركات ✅');
+    document.getElementById('shopify-confirm-modal')?.remove();
+    toast('تم الإرسال إلى سجل الحركات بنجاح ✅');
     try { transactions = await api('/transactions'); } catch(_) {}
     if (typeof renderMovements === 'function') renderMovements();
     await loadShopifyOrders();
   } catch(e) {
     toast('حدث خطأ أثناء الإرسال', true);
-    if (btn) { btn.disabled = false; btn.textContent = '📤 إرسال إلى سجل الحركات'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = _btnHTML; }
   }
 }
 
@@ -39370,6 +39473,340 @@ async function rejectShopifyOrder(id) {
     await loadShopifyOrders();
   } catch(e) {
     toast('حدث خطأ أثناء الرفض', true);
+  }
+}
+
+// ===================== Shopify Edit Order Modal =====================
+let _shopifyEditId = null;
+let _shopifyEditItems = []; // deep copy of items being edited
+
+function editShopifyOrder(id) {
+  const order = _shopifyOrders.find(o => o._id === id);
+  if (!order) return;
+  _shopifyEditId = id;
+  _shopifyEditItems = order.items.map(i => ({ ...i }));
+
+  // ensure inventory loaded
+  if (!Array.isArray(inventoryCache) || !inventoryCache.length) {
+    api('/transactions/inventory').then(d => { inventoryCache = d; }).catch(() => {});
+  }
+
+  const existing = document.getElementById('shopify-edit-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'shopify-edit-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;animation:fadeIn .18s';
+  modal.innerHTML = `
+    <div style="background:var(--bg);border-radius:18px;width:660px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.25);overflow:hidden">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div>
+          <div style="font-size:1.05rem;font-weight:700">تعديل أصناف الأوردر</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-top:2px">${order.ref} — ${order.client}</div>
+        </div>
+        <button onclick="document.getElementById('shopify-edit-modal').remove()" style="width:32px;height:32px;border-radius:8px;border:1.5px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted)">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+        </button>
+      </div>
+
+      <!-- Items list -->
+      <div id="shopify-edit-items" style="flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:10px;overscroll-behavior:contain"></div>
+
+      <!-- Add product search -->
+      <div style="padding:12px 18px;border-top:1px solid var(--border);flex-shrink:0">
+        <div style="font-size:.8rem;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">إضافة صنف</div>
+        <div style="position:relative">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="shopify-edit-search" type="text" placeholder="ابحث بالاسم أو الكود..." autocomplete="off"
+            style="width:100%;padding:10px 36px 10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg-alt);font-size:.88rem;color:var(--text);outline:none;box-sizing:border-box;font-family:inherit"
+            oninput="_shopifyEditSearch(this.value)"
+            onfocus="if(this.value)_shopifyEditSearch(this.value)">
+        </div>
+        <div id="shopify-edit-picker" style="display:none;margin-top:8px;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;max-height:240px;overflow-y:auto;background:var(--bg);box-shadow:0 8px 32px rgba(0,0,0,.1)"></div>
+      </div>
+
+      <!-- Footer summary + save -->
+      <div style="padding:14px 18px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg-alt);display:flex;align-items:center;justify-content:space-between;gap:12px;direction:rtl">
+        <div style="display:flex;gap:8px">
+          <button id="shopify-edit-save-btn" onclick="_saveShopifyEdit()" style="padding:9px 22px;border-radius:9px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:.88rem;font-weight:700;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-family:inherit">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            حفظ التعديلات
+          </button>
+          <button onclick="document.getElementById('shopify-edit-modal').remove()" style="padding:9px 18px;border-radius:9px;border:1.5px solid var(--border);background:transparent;cursor:pointer;font-size:.88rem;color:var(--text);font-family:inherit">إلغاء</button>
+        </div>
+        <div id="shopify-edit-summary" style="font-size:.85rem;color:var(--muted);direction:rtl"></div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  _renderShopifyEditItems();
+
+  // close picker on outside mousedown (before click fires, so picker items still register their onclick)
+  document.addEventListener('mousedown', _shopifyEditOutsideClick);
+}
+
+function _shopifyEditOutsideClick(e) {
+  const picker = document.getElementById('shopify-edit-picker');
+  const search = document.getElementById('shopify-edit-search');
+  if (picker && !picker.contains(e.target) && e.target !== search) {
+    picker.style.display = 'none';
+  }
+  if (!document.getElementById('shopify-edit-modal')) {
+    document.removeEventListener('mousedown', _shopifyEditOutsideClick);
+  }
+}
+
+function _renderShopifyEditItems() {
+  const host = document.getElementById('shopify-edit-items');
+  if (!host) return;
+
+  if (!_shopifyEditItems.length) {
+    host.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:.88rem">لا توجد أصناف — أضف منتجات من الأسفل</div>`;
+    _updateShopifyEditSummary();
+    return;
+  }
+
+  host.innerHTML = _shopifyEditItems.map((item, idx) => {
+    const prod = Array.isArray(products) ? products.find(p => p._id === item.productId || p.code === item.code) : null;
+    const inv = Array.isArray(inventoryCache) ? inventoryCache.find(p => p._id === item.productId || p.code === item.code) : null;
+    const stock = inv ? inv.current : null;
+    const hasProduct = !!item.productId;
+    const isOverStock = hasProduct && stock !== null && item.qty > stock;
+    const imgUrl = prod?.imageUrl ? sanitizeUrl(prod.imageUrl) : '';
+    const _colors = ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6'];
+    const _hue = prod ? (_colors[(prod.code||prod.name||'').charCodeAt(0) % _colors.length]) : '#94a3b8';
+    const initials = (item.name||'').split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('');
+
+    const imgHtml = imgUrl
+      ? `<img src="${esc(imgUrl)}" alt="${esc(item.name)}" loading="lazy" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;border:2px solid ${hasProduct ? '#10b98133' : '#ef444433'}" onerror="this.style.display='none';this.nextSibling.style.display='flex'">`
+      : `<div style="width:44px;height:44px;border-radius:10px;background:${_hue}22;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid ${hasProduct ? '#10b98133' : '#ef444433'}"><span style="font-size:.95rem;font-weight:800;color:${_hue}">${initials||'؟'}</span></div>`;
+
+    const statusBadge = hasProduct
+      ? `<span style="background:#10b98118;color:#10b981;border-radius:99px;padding:1px 7px;font-size:.68rem;font-weight:700">✅ معرَّف</span>`
+      : `<span style="background:#ef444418;color:#ef4444;border-radius:99px;padding:1px 7px;font-size:.68rem;font-weight:700">⚠️ غير معرَّف</span>`;
+
+    const stockInfo = hasProduct && stock !== null
+      ? `<span style="font-size:.72rem;color:${isOverStock ? '#ef4444' : '#10b981'};font-weight:600">${isOverStock ? '⚠️ يتجاوز المتاح' : '✓'} متاح: ${stock}</span>`
+      : '';
+
+    return `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg-alt);border-radius:12px;border:1.5px solid ${hasProduct ? 'var(--border)' : '#ef444430'};transition:border-color .2s" id="shopify-edit-item-${idx}">
+      ${imgHtml}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.88rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(item.name)}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
+          <span style="font-size:.72rem;color:var(--muted);background:var(--bg);border:1px solid var(--border);padding:1px 6px;border-radius:5px">${esc(item.code||'—')}</span>
+          ${statusBadge}
+          ${stockInfo}
+        </div>
+        ${!hasProduct ? `<div style="margin-top:6px">
+          <div style="position:relative">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="ابحث واختر منتجاً بديلاً..." autocomplete="off"
+              style="width:100%;padding:7px 28px 7px 10px;border-radius:8px;border:1.5px solid #ef444460;background:var(--bg);font-size:.78rem;color:var(--text);outline:none;box-sizing:border-box;font-family:inherit"
+              oninput="_shopifyInlineSearch(this,${idx})"
+              onfocus="_shopifyInlineSearch(this,${idx})">
+            <div id="shopify-inline-picker-${idx}" style="display:none;position:absolute;z-index:100;left:0;right:0;margin-top:4px;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;max-height:200px;overflow-y:auto;background:var(--bg);box-shadow:0 8px 28px rgba(0,0,0,.14)"></div>
+          </div>
+        </div>` : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div style="text-align:center">
+          <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">السعر</div>
+          <input type="number" min="0" value="${item.price||0}"
+            style="width:70px;padding:5px 7px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg);font-size:.82rem;text-align:center;color:var(--text);outline:none;font-family:inherit"
+            oninput="_shopifyEditItemChanged(${idx},'price',+this.value)">
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">الكمية</div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <button onclick="_shopifyEditQty(${idx},-1)" style="width:26px;height:26px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-size:1rem;font-weight:700;display:flex;align-items:center;justify-content:center">−</button>
+            <input type="number" min="1" value="${item.qty||1}"
+              style="width:42px;padding:4px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);font-size:.88rem;text-align:center;color:var(--text);outline:none;font-family:inherit"
+              oninput="_shopifyEditItemChanged(${idx},'qty',Math.max(1,+this.value))">
+            <button onclick="_shopifyEditQty(${idx},1)" style="width:26px;height:26px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-size:1rem;font-weight:700;display:flex;align-items:center;justify-content:center">+</button>
+          </div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">الإجمالي</div>
+          <div style="font-size:.9rem;font-weight:800;color:var(--accent);min-width:60px;text-align:center" id="shopify-edit-subtotal-${idx}">${fmtJ((item.qty||1)*(item.price||0))}</div>
+        </div>
+        <button onclick="_shopifyEditRemoveItem(${idx})" style="width:28px;height:28px;border-radius:7px;border:1.5px solid var(--border);background:transparent;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:all .15s" title="حذف" onmouseenter="this.style.background='#fee2e2';this.style.color='#dc2626';this.style.borderColor='#fecaca'" onmouseleave="this.style.background='transparent';this.style.color='var(--muted)';this.style.borderColor='var(--border)'">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  _updateShopifyEditSummary();
+}
+
+function _shopifyEditItemChanged(idx, field, val) {
+  if (!_shopifyEditItems[idx]) return;
+  _shopifyEditItems[idx][field] = val;
+  _shopifyEditItems[idx].total = (_shopifyEditItems[idx].qty||1) * (_shopifyEditItems[idx].price||0);
+  const sub = document.getElementById(`shopify-edit-subtotal-${idx}`);
+  if (sub) sub.textContent = fmtJ(_shopifyEditItems[idx].total);
+  _updateShopifyEditSummary();
+}
+
+function _shopifyEditQty(idx, delta) {
+  if (!_shopifyEditItems[idx]) return;
+  const newQty = Math.max(1, (_shopifyEditItems[idx].qty||1) + delta);
+  _shopifyEditItems[idx].qty = newQty;
+  _shopifyEditItems[idx].total = newQty * (_shopifyEditItems[idx].price||0);
+  _renderShopifyEditItems();
+}
+
+function _shopifyEditRemoveItem(idx) {
+  _shopifyEditItems.splice(idx, 1);
+  _renderShopifyEditItems();
+}
+
+function _updateShopifyEditSummary() {
+  const el = document.getElementById('shopify-edit-summary');
+  if (!el) return;
+  const total = _shopifyEditItems.reduce((s,i) => s + (i.qty||1)*(i.price||0), 0);
+  const unmatched = _shopifyEditItems.filter(i => !i.productId).length;
+  el.innerHTML = `
+    <span style="margin-left:14px"><b>${_shopifyEditItems.length}</b> صنف</span>
+    <span style="color:var(--accent);font-weight:700">${fmtJ(total)} EGP</span>
+    ${unmatched > 0 ? `<span style="color:#f59e0b;margin-right:10px;font-size:.78rem">⚠️ ${unmatched} غير معرَّف</span>` : ''}
+  `;
+}
+
+function _shopifyEditSearch(q) {
+  const picker = document.getElementById('shopify-edit-picker');
+  if (!picker) return;
+  const results = _shopifyPickerResults(q);
+  if (!results.length && !q) { picker.style.display = 'none'; return; }
+  picker.style.display = 'block';
+  const key = 'add_' + (++_shopifyPickerCbId);
+  _shopifyPickerCallbacks[key] = (prodId) => {
+    _shopifyEditAddFromPicker(prodId);
+    const s = document.getElementById('shopify-edit-search');
+    if (s) s.value = '';
+    picker.style.display = 'none';
+  };
+  picker.innerHTML = _shopifyPickerHTML(results, key);
+}
+
+function _shopifyInlineSearch(input, idx) {
+  const pickerEl = document.getElementById(`shopify-inline-picker-${idx}`);
+  if (!pickerEl) return;
+  const q = input.value;
+  const results = _shopifyPickerResults(q);
+  if (!results.length && !q) { pickerEl.style.display = 'none'; return; }
+  pickerEl.style.display = 'block';
+  const key = 'inline_' + idx + '_' + (++_shopifyPickerCbId);
+  _shopifyPickerCallbacks[key] = (prodId) => {
+    const prod = products.find(p => p._id === prodId);
+    if (!prod || !_shopifyEditItems[idx]) return;
+    _shopifyEditItems[idx].productId = prod._id;
+    _shopifyEditItems[idx].code = prod.code || _shopifyEditItems[idx].code;
+    _shopifyEditItems[idx].name = prod.name;
+    _shopifyEditItems[idx].price = prod.sellPrice || _shopifyEditItems[idx].price;
+    _shopifyEditItems[idx].total = _shopifyEditItems[idx].qty * _shopifyEditItems[idx].price;
+    pickerEl.style.display = 'none';
+    _renderShopifyEditItems();
+  };
+  pickerEl.innerHTML = _shopifyPickerHTML(results, key);
+}
+
+function _shopifyPickerResults(q) {
+  if (!Array.isArray(products)) return [];
+  const tokens = normalizeUiSearch(q || '').split(/\s+/).filter(Boolean);
+  return products.filter(p => {
+    if (!tokens.length) return true;
+    const blob = normalizeUiSearch([p.name, p.code||''].join(' '));
+    return tokens.every(t => blob.includes(t));
+  }).slice(0, 40);
+}
+
+// Registry for picker callbacks — avoids serializing closures into onclick strings
+const _shopifyPickerCallbacks = {};
+let _shopifyPickerCbId = 0;
+
+function _shopifyPickerHTML(list, callbackKey) {
+  if (!list.length) return `<div style="padding:14px;text-align:center;color:var(--muted);font-size:.82rem">لا توجد نتائج</div>`;
+  return list.map(p => {
+    const inv = Array.isArray(inventoryCache) ? inventoryCache.find(x => x._id === p._id || x.code === p.code) : null;
+    const stock = inv ? inv.current : null;
+    const isOut = stock !== null && stock === 0;
+    const imgUrl = p.imageUrl ? sanitizeUrl(p.imageUrl) : '';
+    const _colors = ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6'];
+    const _hue = _colors[(p.code||p.name||'').charCodeAt(0) % _colors.length];
+    const initials = (p.name||'').split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('');
+    const imgHtml = imgUrl
+      ? `<img src="${esc(imgUrl)}" alt="${esc(p.name)}" style="width:38px;height:38px;border-radius:8px;object-fit:cover;flex-shrink:0" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'">`
+      : `<div style="width:38px;height:38px;border-radius:8px;background:${_hue}22;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:.82rem;font-weight:800;color:${_hue}">${initials||'؟'}</span></div>`;
+    const stockHtml = stock !== null
+      ? `<span style="font-size:.7rem;color:${isOut ? '#ef4444' : '#10b981'};font-weight:600">${isOut ? 'نفد' : `متاح: ${stock}`}</span>`
+      : '';
+    const alreadyAdded = _shopifyEditItems.some(i => i.productId === p._id);
+    return `<div onclick="_shopifyPickerDispatch('${callbackKey}','${p._id}')"
+      style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background .12s;border-bottom:1px solid var(--border);${alreadyAdded?'opacity:.55':''}"
+      onmouseenter="this.style.background='var(--bg-alt)'" onmouseleave="this.style.background='transparent'">
+      ${imgHtml}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.85rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+          ${p.code ? `<span style="font-size:.7rem;color:var(--muted);background:var(--bg-alt);border:1px solid var(--border);padding:0 5px;border-radius:4px">${esc(p.code)}</span>` : ''}
+          ${stockHtml}
+          ${alreadyAdded ? `<span style="font-size:.7rem;color:var(--accent);font-weight:600">✓ مضاف</span>` : ''}
+        </div>
+      </div>
+      <div style="font-size:.88rem;font-weight:700;color:var(--accent);flex-shrink:0">${fmtJ(p.sellPrice||0)}</div>
+    </div>`;
+  }).join('');
+}
+
+function _shopifyPickerDispatch(key, prodId) {
+  const cb = _shopifyPickerCallbacks[key];
+  if (cb) cb(prodId);
+}
+
+function _shopifyEditAddFromPicker(prodId) {
+  const prod = products.find(p => p._id === prodId);
+  if (!prod) return;
+  const existing = _shopifyEditItems.find(i => i.productId === prodId);
+  if (existing) { existing.qty += 1; existing.total = existing.qty * existing.price; }
+  else {
+    _shopifyEditItems.push({
+      productId: prod._id,
+      code: prod.code || '',
+      name: prod.name,
+      qty: 1,
+      price: prod.sellPrice || 0,
+      total: prod.sellPrice || 0,
+    });
+  }
+  _renderShopifyEditItems();
+}
+
+async function _saveShopifyEdit() {
+  const btn = document.getElementById('shopify-edit-save-btn');
+  if (!_shopifyEditId || !_shopifyEditItems.length) { toast('لا توجد أصناف للحفظ', true); return; }
+  const unmatched = _shopifyEditItems.filter(i => !i.productId);
+  if (unmatched.length) {
+    if (!confirm(`لا يزال هناك ${unmatched.length} صنف غير معرَّف. هل تريد الحفظ على أي حال؟`)) return;
+  }
+  if (btn) { btn.disabled = true; btn.innerHTML = '⏳ جارٍ الحفظ...'; }
+  try {
+    await api(`/shopify/orders/${_shopifyEditId}/items`, {
+      method: 'PATCH',
+      body: JSON.stringify({ items: _shopifyEditItems }),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    document.getElementById('shopify-edit-modal')?.remove();
+    document.removeEventListener('click', _shopifyEditOutsideClick, true);
+    toast('تم حفظ التعديلات بنجاح ✅');
+    await loadShopifyOrders();
+  } catch(e) {
+    toast('خطأ: ' + (e?.message || 'حدث خطأ أثناء الحفظ'), true);
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> حفظ التعديلات'; }
   }
 }
 // ===================== End Shopify Orders =====================

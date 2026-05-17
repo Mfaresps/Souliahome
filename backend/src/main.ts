@@ -2,10 +2,17 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './core/filters/http-exception.filter';
+import { NextFunction, Request, Response } from 'express';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
     rawBody: true, // مطلوب للتحقق من Shopify webhook signature
+  });
+
+  // Strip trailing whitespace/newlines from URL (Shopify sometimes sends %0A)
+  app.use((req: Request, _res: Response, next: NextFunction) => {
+    req.url = req.url.replace(/[\r\n%0A%0D]+$/gi, '');
+    next();
   });
 
   app.setGlobalPrefix('api');

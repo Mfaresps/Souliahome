@@ -36,7 +36,19 @@ export class ShopifyOrder {
   discount: number;
 
   @Prop({ default: '' })
+  discountCode: string;
+
+  @Prop({ default: '' })
+  discountType: string; // 'percent' | 'fixed'
+
+  @Prop({ default: 0 })
+  discountValue: number;
+
+  @Prop({ default: '' })
   financialStatus: string;
+
+  @Prop({ default: '' })
+  shopifyCreatedAt: string;
 
   @Prop({ type: [Object], default: [] })
   items: Array<{

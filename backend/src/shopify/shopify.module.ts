@@ -14,6 +14,8 @@ import {
   ShopifyOrder,
   ShopifyOrderSchema,
 } from './schemas/shopify-order.schema';
+import { VaultModule } from '../vault/vault.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import {
       { name: Product.name, schema: ProductSchema },
       { name: ShopifyOrder.name, schema: ShopifyOrderSchema },
     ]),
+    VaultModule,
+    AuthModule,
   ],
   controllers: [ShopifyController],
   providers: [ShopifyService],

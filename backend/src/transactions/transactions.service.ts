@@ -899,7 +899,7 @@ export class TransactionsService {
           txId: String(tx._id),
           txRef: tx.ref || '',
           commentId: 0,
-          commentText: `تمت الموافقة على طلب إلغاء حركة #${tx.ref || tx._id}${chosenVault ? ` — تم الخصم من خزنة ${chosenVault}` : ''}`,
+          commentText: `تمت الموافقة على طلب إلغاء حركة #${tx.ref || tx._id}${chosenVault ? (tx.type === 'مشتريات' ? ` — تم الرد إلى خزنة ${chosenVault}` : ` — تم الخصم من خزنة ${chosenVault}`) : ''}`,
         });
         this.emit('mentions:changed', { targetUserId: reqId, targetUsername: reqUsername });
       } catch { /* swallow */ }

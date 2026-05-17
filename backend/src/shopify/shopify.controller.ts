@@ -72,6 +72,13 @@ export class ShopifyController {
     return this.shopifyService.approveOrder(id, user, deposit || 0, payment);
   }
 
+  // تعديل items أوردر
+  @Patch('orders/:id/items')
+  @UseGuards(JwtAuthGuard)
+  async updateItems(@Param('id') id: string, @Body('items') items: any[]) {
+    return this.shopifyService.updateOrderItems(id, items || []);
+  }
+
   // رفض أوردر
   @Patch('orders/:id/reject')
   @UseGuards(JwtAuthGuard)
@@ -82,5 +89,19 @@ export class ShopifyController {
   ) {
     const user = req.user?.username || req.user?.name || 'admin';
     return this.shopifyService.rejectOrder(id, user, reason || '');
+  }
+
+  // إعادة حساب totals للأوردرات المعلقة (تشغيل مرة واحدة لإصلاح القديمة)
+  @Post('recalc-pending')
+  @UseGuards(JwtAuthGuard)
+  async recalcPending() {
+    return this.shopifyService.recalcPendingOrders();
+  }
+
+  // إصلاح الأرقام المرجعية القديمة (تشغيل مرة واحدة)
+  @Post('fix-refs')
+  @UseGuards(JwtAuthGuard)
+  async fixRefs() {
+    return this.shopifyService.fixHashRefs();
   }
 }
