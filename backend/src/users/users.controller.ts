@@ -70,14 +70,14 @@ export class UsersController {
   @Roles('admin')
   @Get()
   async findAll() {
-    return this.usersService.findAll();
+    return this.usersService.findAllForAdmin();
   }
 
   @Roles('admin')
   @Post()
   async create(@Body() dto: CreateUserDto) {
     const user = await this.usersService.createUser(dto);
-    return this.usersService.findAll().then((users) =>
+    return this.usersService.findAllForAdmin().then((users) =>
       users.find((u) => u._id.toString() === user._id.toString()),
     );
   }

@@ -416,7 +416,7 @@ body.dark-mode .history-detail-item.removed{background:rgba(248,113,113,.08)}
 .history-detail-item .old-val{color:var(--red);text-decoration:line-through;font-weight:500}
 .history-detail-item .new-val{color:var(--green);font-weight:600}
 .history-detail-item .arrow-sep{color:var(--muted);margin:0 2px}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1300;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
 .modal-overlay.active{opacity:1;pointer-events:auto}
 .modal{background:var(--bg);border-radius:var(--radius);padding:24px;width:90vw;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);background-image:none !important;box-sizing:border-box;display:flex;flex-direction:column}
 @media(max-width:768px){.modal{width:95vw;max-height:95vh;padding:16px}}
@@ -1745,22 +1745,21 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .inv-cmt-item:hover{background:var(--surface2)}
 .inv-cmt-item .tx-cmt-actions{opacity:0}.inv-cmt-item:hover .tx-cmt-actions{opacity:1}
 /* Mention alert modal */
-.mention-alert-overlay{position:fixed;inset:0;z-index:2000;display:flex;align-items:flex-end;justify-content:center;padding:0 0 24px;pointer-events:none}
+.mention-alert-overlay{position:fixed;inset:0;z-index:2000;display:flex;align-items:flex-end;justify-content:center;padding:0 0 16px;pointer-events:none}
 @media(min-width:600px){.mention-alert-overlay{align-items:center;padding:0}}
-.mention-alert-box{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 24px 64px rgba(0,0,0,.2),0 4px 16px rgba(124,58,237,.08);width:min(440px,calc(100vw - 20px));pointer-events:auto;animation:mentionAlertIn .32s cubic-bezier(.34,1.56,.64,1);overflow:hidden}
+.mention-alert-box{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 24px 64px rgba(0,0,0,.22),0 4px 16px rgba(124,58,237,.1);width:min(480px,calc(100vw - 16px));pointer-events:auto;animation:mentionAlertIn .32s cubic-bezier(.34,1.56,.64,1);overflow:hidden}
 @keyframes mentionAlertIn{from{opacity:0;transform:translateY(28px) scale(.96)}to{opacity:1;transform:none}}
-.mention-alert-header{display:flex;align-items:center;gap:12px;padding:14px 16px 13px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,rgba(124,58,237,.05) 0%,transparent 100%)}
-.mention-alert-icon{width:40px;height:40px;border-radius:12px;background:rgba(124,58,237,.13);color:#7c3aed;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(124,58,237,.15)}
-.mention-alert-title{font-size:.9rem;font-weight:700;color:var(--text);line-height:1.2}
-.mention-alert-sub{font-size:.75rem;color:var(--muted);margin-top:2px;line-height:1.3}
-.mention-alert-close{margin-right:auto;background:none;border:none;cursor:pointer;color:var(--muted);padding:6px;border-radius:8px;display:flex;align-items:center;transition:all .15s}
+.mention-alert-header{display:flex;align-items:center;gap:12px;padding:13px 16px 12px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,rgba(124,58,237,.06) 0%,transparent 100%)}
+.mention-alert-icon{width:38px;height:38px;border-radius:11px;background:rgba(124,58,237,.13);color:#7c3aed;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(124,58,237,.15)}
+.mention-alert-title{font-size:.88rem;font-weight:700;color:var(--text);line-height:1.2}
+.mention-alert-sub{font-size:.73rem;color:var(--muted);margin-top:2px;line-height:1.3}
+.mention-alert-close{margin-right:auto;background:none;border:none;cursor:pointer;color:var(--muted);padding:6px;border-radius:8px;display:flex;align-items:center;transition:all .15s;flex-shrink:0}
 .mention-alert-close:hover{color:var(--text);background:var(--surface2)}
-.mention-alert-list{max-height:260px;overflow-y:auto;padding:6px 0}
-.mention-alert-item{display:flex;align-items:flex-start;gap:8px;padding:8px 12px;cursor:pointer;transition:background .12s;border-bottom:1px solid var(--border)}
-.mention-alert-item:last-child{border-bottom:none}
-.mention-alert-item:hover{background:var(--primary-pale)}
-.mention-alert-avatar{font-size:.6rem;font-weight:800;letter-spacing:.5px;flex-shrink:0;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;background:rgba(139,92,246,.12);color:#7c3aed}
-.mention-alert-footer{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:var(--bg-alt)}
+.mention-alert-list{max-height:360px;overflow-y:auto;padding:4px 0}
+.mention-alert-list .nc-mention-card{border-radius:0;border-bottom:1px solid var(--border)}
+.mention-alert-list .nc-mention-card:last-child{border-bottom:none}
+.mention-alert-footer{padding:10px 16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg-alt)}
+.mention-alert-count-badge{font-size:.72rem;font-weight:700;color:#7c3aed;background:rgba(124,58,237,.1);border-radius:99px;padding:2px 10px}
 @media(max-width:540px){
   .tx-comment-input-row{grid-template-columns:1fr 32px}
   .inv-cmt-input-row{grid-template-columns:1fr 32px}
@@ -2592,6 +2591,51 @@ body.dark-mode .mov-cancel-req-pill{background:#422006;color:#fcd34d;border-colo
 .mov-tab-bar .mov-main-tab:hover{color:var(--text);background:var(--primary-pale)}
 .mov-tab-bar .mov-main-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .mov-tab-bar .mov-main-tab svg{width:16px;height:16px}
+
+/* ═══ Collections Tab ═══ */
+.coll-filters-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)}
+.coll-type-pills{display:flex;gap:6px;flex-wrap:wrap}
+.coll-type-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:var(--r-pill);border:1px solid var(--border);background:var(--bg);color:var(--muted);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.coll-type-pill:hover{border-color:var(--accent);color:var(--accent)}
+.coll-type-pill.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.coll-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.coll-dot-green{background:#16a34a}
+.coll-dot-red{background:#dc2626}
+.coll-filters-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-right:auto}
+.coll-search-wrap{position:relative;display:flex;align-items:center}
+.coll-search-wrap svg{position:absolute;right:10px;color:var(--muted);pointer-events:none}
+.coll-search-wrap input{padding:6px 30px 6px 10px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;background:var(--bg);color:var(--text);font-family:inherit;width:190px;transition:border-color .15s,box-shadow .15s}
+.coll-search-wrap input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px rgba(45,122,79,.12)}
+.coll-filter-btn{padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--muted);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;display:inline-flex;align-items:center;gap:5px}
+.coll-filter-btn:hover{border-color:var(--accent);color:var(--accent)}
+.coll-filter-btn.active{background:var(--primary-pale);border-color:var(--accent);color:var(--accent)}
+.coll-reset-btn{color:var(--muted)}
+.coll-reset-btn:hover{border-color:var(--red);color:var(--red)}
+.coll-range-wrap{display:flex;align-items:center;gap:6px}
+.coll-range-wrap input[type=date]{padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-size:.8rem;background:var(--bg);color:var(--text);font-family:inherit;cursor:pointer}
+.coll-table th,.coll-table td{padding:9px 14px;font-size:.82rem;white-space:nowrap}
+.coll-table th{background:var(--surface2);font-weight:700;color:var(--muted);text-align:right}
+.coll-table td{vertical-align:middle}
+.coll-table tbody tr{cursor:pointer;transition:background .12s}
+.coll-table tbody tr:hover{background:var(--primary-pale)}
+.coll-ref-link{color:var(--accent);font-weight:700;text-decoration:none;font-size:.82rem}
+.coll-ref-link:hover{text-decoration:underline}
+.coll-badge-in{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:var(--r-pill);background:#dcfce7;color:#15803d;font-size:.75rem;font-weight:700}
+.coll-badge-out{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:var(--r-pill);background:#fee2e2;color:#b91c1c;font-size:.75rem;font-weight:700}
+body.dark-mode .coll-badge-in{background:rgba(22,163,74,.15);color:#4ade80}
+body.dark-mode .coll-badge-out{background:rgba(220,38,38,.15);color:#f87171}
+.coll-amount-in{color:#15803d;font-weight:700}
+.coll-amount-out{color:#b91c1c;font-weight:700}
+.coll-day-sep td{background:var(--surface2);color:var(--muted);font-size:.75rem;font-weight:700;letter-spacing:.04em;padding:5px 14px;border-top:1px solid var(--border);pointer-events:none;cursor:default}
+.coll-day-sep:first-child td{border-top:none}
+.coll-name-filter-bar{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.coll-name-filter-label{font-size:.75rem;font-weight:700;color:var(--muted);white-space:nowrap;flex-shrink:0}
+.coll-name-pills{display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;flex:1;scrollbar-width:none}
+.coll-name-pills::-webkit-scrollbar{display:none}
+.coll-name-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 11px;border-radius:var(--r-pill);border:1px solid var(--border);background:var(--bg);color:var(--muted);font-size:.76rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;font-family:inherit;flex-shrink:0}
+.coll-name-pill:hover{border-color:var(--accent);color:var(--accent)}
+.coll-name-pill.active{background:var(--primary-pale);border-color:var(--accent);color:var(--accent)}
+
 .hamburger{display:none;background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;padding:4px}
 /* Mobile card lists: hidden by default, shown only on mobile */
 #mov-mobile-list{display:none}
@@ -3132,6 +3176,14 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 .vault-tab-content { animation: fadeIn .3s ease-in; }
 .vault-countdown-wrap{display:inline-flex;align-items:center;gap:5px;font-size:.78rem;font-weight:600;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:7px;padding:4px 9px;white-space:nowrap}
 .vault-countdown-num{font-variant-numeric:tabular-nums;letter-spacing:.03em;color:#92400e}
+/* OTP ring countdown */
+.otp-ring-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;margin:10px 0}
+.otp-ring-svg{transform:rotate(-90deg)}
+.otp-ring-bg{fill:none;stroke:#fde68a;stroke-width:5}
+.otp-ring-fg{fill:none;stroke:#f59e0b;stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset .9s linear,stroke .3s}
+.otp-ring-fg.urgent{stroke:#ef4444}
+.otp-ring-text{font-variant-numeric:tabular-nums;font-weight:700;font-size:.95rem;color:#92400e;letter-spacing:.03em}
+.otp-ring-text.urgent{color:#ef4444}
 /* Vault sync button & timestamp */
 #vault-sync-btn svg { transition: transform .6s ease; }
 #vault-sync-btn.syncing svg { animation: vaultSpinIcon .7s linear infinite; }
@@ -6144,6 +6196,10 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 7l-5 5-5-5"/><path d="M17 17l-5-5-5 5"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
     <span data-i18n="movementsTabFrozen">الأرشيف</span>
   </button>
+  <button class="mov-main-tab" id="mov-tab-collections" onclick="switchMovTab('collections',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    <span>سجل التحصيلات</span>
+  </button>
 </div>
 
 <!-- Active transactions panel -->
@@ -6445,6 +6501,83 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   </div>
   <div id="archive-pagination"></div>
 </div><!-- end mov-panel-archive -->
+
+<!-- Collections panel -->
+<div id="mov-panel-collections" style="display:none">
+  <div class="flex-between mb-16" style="flex-wrap:wrap;gap:12px">
+    <div>
+      <h2 class="page-title" style="margin-bottom:4px">سجل التحصيلات</h2>
+      <p style="font-size:.8rem;color:var(--muted);margin:0">جميع عمليات تحصيل العملاء وسداد الموردين</p>
+    </div>
+  </div>
+
+  <!-- Type filter + search + date filters -->
+  <div class="coll-filters-bar">
+    <!-- Type pills -->
+    <div class="coll-type-pills">
+      <button class="coll-type-pill active" data-type="all" onclick="setCollTypeFilter('all',this)">الكل</button>
+      <button class="coll-type-pill" data-type="مبيعات" onclick="setCollTypeFilter('مبيعات',this)">
+        <span class="coll-dot coll-dot-green"></span>تحصيل عملاء
+      </button>
+      <button class="coll-type-pill" data-type="مشتريات" onclick="setCollTypeFilter('مشتريات',this)">
+        <span class="coll-dot coll-dot-red"></span>سداد موردين
+      </button>
+    </div>
+
+    <!-- Search + date filters -->
+    <div class="coll-filters-right">
+      <div class="coll-search-wrap">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="coll-search" placeholder="بحث برقم المرجعي..." oninput="renderCollectionsTable()" />
+      </div>
+      <button class="coll-filter-btn" id="coll-filter-today" onclick="setCollDateFilter('today',this)">اليوم</button>
+      <button class="coll-filter-btn" id="coll-filter-month" onclick="setCollDateFilter('month',this)">هذا الشهر</button>
+      <div class="coll-range-wrap">
+        <input type="date" id="coll-from" onchange="setCollDateFilter('range',null)" title="من تاريخ" />
+        <span style="color:var(--muted);font-size:.8rem">—</span>
+        <input type="date" id="coll-to" onchange="setCollDateFilter('range',null)" title="إلى تاريخ" />
+      </div>
+      <button class="coll-filter-btn coll-reset-btn" onclick="resetCollFilters()">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        إعادة تعيين
+      </button>
+    </div>
+  </div>
+
+  <!-- Name filter pills -->
+  <div class="coll-name-filter-bar">
+    <span class="coll-name-filter-label">المحصِّل:</span>
+    <div class="coll-name-pills" id="coll-collector-pills"></div>
+    <span class="coll-name-filter-label" style="margin-right:8px">صانع الحركة:</span>
+    <div class="coll-name-pills" id="coll-employee-pills"></div>
+  </div>
+
+  <!-- Table -->
+  <div style="background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-top:12px">
+    <div class="overflow-x">
+      <table id="coll-table" class="coll-table">
+        <thead>
+          <tr>
+            <th>الوقت</th>
+            <th>المرجعي</th>
+            <th>العميل / المورد</th>
+            <th>النوع</th>
+            <th>قيمة التحصيل</th>
+            <th>صافي الخزنة</th>
+            <th>زيادة شحن</th>
+            <th>صانع الحركة</th>
+            <th>المحصِّل</th>
+          </tr>
+        </thead>
+        <tbody id="coll-tbody">
+          <tr><td colspan="9" class="empty-state">جارٍ التحميل...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div id="coll-pagination" style="margin-top:16px"></div>
+</div><!-- end mov-panel-collections -->
+
 </div>
 
 <!-- Clients -->
@@ -7367,6 +7500,10 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
           جدول
         </button>
       </div>
+      <button class="btn btn-outline btn-sm" id="pu-refresh-btn" onclick="puRefreshOrders()" style="display:flex;align-items:center;gap:6px" title="تحديث البيانات">
+        <svg id="pu-refresh-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+        تحديث
+      </button>
       <button class="btn btn-outline btn-sm" onclick="exportPickupExcel()" style="display:flex;align-items:center;gap:6px">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         تصدير
@@ -9126,7 +9263,10 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <div class="uh-field">
         <label class="uh-label" for="uh-password">كلمة مرور جديدة</label>
         <span class="uh-hint">اتركها فارغة لعدم التغيير</span>
-        <input type="password" id="uh-password" class="uh-input" placeholder="6 أحرف على الأقل" autocomplete="new-password">
+        <div style="position:relative">
+          <input type="password" id="uh-password" class="uh-input" placeholder="6 أحرف على الأقل" autocomplete="new-password" style="padding-left:36px">
+          <button type="button" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);transition:all .2s" onclick="togglePassField(event)" title="إظهار/إخفاء كلمة المرور"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.1em;height:1.1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
       </div>
     </div>
 
@@ -9293,11 +9433,11 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   <div class="mention-alert-box" id="mention-alert-box">
     <div class="mention-alert-header">
       <div class="mention-alert-icon">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"/></svg>
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
       </div>
-      <div>
-        <div class="mention-alert-title">أشار إليك أحد الزملاء</div>
-        <div class="mention-alert-sub" id="mention-alert-sub">لديك إشارات جديدة في تعليقات الحركات</div>
+      <div style="flex:1;min-width:0">
+        <div class="mention-alert-title" id="mention-alert-title">إشارات جديدة تنتظرك</div>
+        <div class="mention-alert-sub" id="mention-alert-sub">منذ آخر جلسة</div>
       </div>
       <button class="mention-alert-close" onclick="closeMentionAlert()" aria-label="إغلاق">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
@@ -9305,6 +9445,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     </div>
     <div class="mention-alert-list" id="mention-alert-list"></div>
     <div class="mention-alert-footer">
+      <span class="mention-alert-count-badge" id="mention-alert-count-badge"></span>
       <button class="btn btn-primary btn-sm" onclick="closeMentionAlert();openNotifCenter();setTimeout(()=>_setNcTab('mentions'),100)" style="font-size:.78rem">عرض كل الإشارات ←</button>
     </div>
   </div>
@@ -9688,8 +9829,8 @@ let vaultUnlocked = false;
 let reportCharts = {};
 let currentLang = 'ar';
 
-const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','reports','vault','users','settings'];
-const PERMS_AR = {dashboard:'الرئيسية',transaction:'الحركات',inventory:'المخزن',movements:'سجل الحركات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',reports:'التقارير',vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات'};
+const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','vault','users','settings'];
+const PERMS_AR = {dashboard:'الرئيسية',transaction:'الحركات',inventory:'المخزن',movements:'سجل الحركات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',approvals:'الموافقات',reports:'التقارير',vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات'};
 
 const NAV_ICONS = {
   dashboard:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/></svg>',
@@ -12803,6 +12944,7 @@ function buildNotifications() {
   list.innerHTML = visible.length ? visible.map(n => {
     const isUnread = !_notifReadIds.includes(n.id);
     const refAttrs = n.refId ? `data-ref-id="${esc(n.refId)}" data-ref-type="${esc(n.refType||'')}"` : `data-ref-type="${esc(n.refType||'')}"`;
+
     return `<div class="notif-item ${n.type}${isUnread?' unread-notif':''}" ${refAttrs}
       onclick="onNotifClick('${esc(n.page)}','${esc(n.id)}'${n.fuId?`,'${esc(n.fuId)}'`:''}${n.refId?`,'${esc(n.refType||'')}','${esc(n.refId)}'`:''})" >
       <div class="notif-icon">${n.icon}</div>
@@ -12813,6 +12955,7 @@ function buildNotifications() {
       </div>
     </div>`;
   }).join('') : `<div class="notif-empty">${t('noNotifications')}</div>`;
+  _startNotifOtpCountdowns();
 }
 
 function toggleNotifPanel(e) {
@@ -12968,6 +13111,7 @@ function openNotifCenter() {
   _renderNcContent();
   qs('#nc-overlay')?.classList.add('active');
   document.body.style.overflow = 'hidden';
+  _startNotifOtpCountdowns();
 }
 
 function closeNotifCenter() {
@@ -12997,6 +13141,7 @@ function _setNcTab(key) {
   _ncSelectedId = null;
   _renderNcTabBar();
   _renderNcContent();
+  _startNotifOtpCountdowns();
 }
 
 function _renderNcContent() {
@@ -13089,186 +13234,286 @@ function _ncInfoRow(label, val) {
   return `<div class="nc-info-row"><span class="nc-lbl">${label}</span><span class="nc-val">${val}</span></div>`;
 }
 
-function _ncMentionCardHtml(m) {
-  const ago = _timeAgo(m.ts);
-  const isUnread = !m.read;
+/* ─────────────────────────────────────────────────────────────────
+   _buildMentionCardHtml(m, cls)
+   الدالة المشتركة الوحيدة لبناء HTML بطاقات الإشارات.
+   تستخدمها كل من buildMentionNotifsList (البانل) و _renderNcMentionsList (المركز).
+   cls: 'notif-item mention'  → البانل
+        'nc-mention-card'     → مركز الإشعارات (افتراضي)
+───────────────────────────────────────────────────────────────── */
+function _buildMentionCardHtml(m, cls = 'nc-mention-card') {
+  const ago       = _timeAgo(m.ts);
+  const isUnread  = !m.read;
   const clickAttr = `onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})"`;
-  const baseStyle = `cursor:pointer;${isUnread ? 'background:rgba(124,58,237,.035)' : ''}`;
-  const unreadBar = isUnread ? `<div style="position:absolute;inset-inline-start:0;top:0;bottom:0;width:3px;border-radius:2px;background:#7c3aed"></div>` : '';
+  const pad       = isUnread ? '16px' : '12px';
+  const unreadBar = isUnread
+    ? `<div style="position:absolute;inset-inline-start:0;top:0;bottom:0;width:3px;border-radius:2px;background:#7c3aed"></div>`
+    : '';
 
-  const _gv = (lines, prefix) => { const l = lines.find(x => x.trimStart().startsWith(prefix)); return l ? l.slice(l.indexOf(':')+1).trim() : ''; };
-  const _items = (lines) => lines.filter(l => l.trimStart().startsWith('•')).map(l => l.replace(/^\s*•\s*/,'').trim());
-  const _itemsHtml = (items, max=4) => {
-    if (!items.length) return '';
-    const uid = 'itx_' + Math.random().toString(36).slice(2,8);
-    const rowHtml = it => `<div style="font-size:.71rem;color:var(--text);padding:2px 0;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it)}</div>`;
-    const visibleRows = items.slice(0, max).map(rowHtml).join('');
-    const hiddenRows = items.length > max ? items.slice(max).map(rowHtml).join('') : '';
-    const moreBtn = items.length > max
-      ? `<div id="${uid}_more" style="font-size:.65rem;color:var(--accent);padding-top:3px;cursor:pointer;text-decoration:underline" onclick="event.stopPropagation();(function(){var h=document.getElementById('${uid}_hidden');var b=document.getElementById('${uid}_more');if(h&&b){h.style.display='block';b.style.display='none';}})()">...و${items.length-max} أخرى — اضغط لعرض الكل</div>`
-      : '';
-    const hiddenDiv = hiddenRows ? `<div id="${uid}_hidden" style="display:none">${hiddenRows}</div>` : '';
-    return `<div style="padding:2px 0">${visibleRows}${hiddenDiv}${moreBtn}</div>`;
+  const gv = (lines, prefix) => {
+    const l = lines.find(x => x.trimStart().startsWith(prefix));
+    return l ? l.slice(l.indexOf(':') + 1).trim() : '';
+  };
+  const unreadDot = (color) => isUnread
+    ? `<span style="width:6px;height:6px;border-radius:50%;background:${color};display:inline-block;vertical-align:middle;margin-right:3px"></span>`
+    : '';
+  const oRow = (label, val) => val
+    ? `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:.72rem;padding:2px 0"><span style="color:var(--muted);white-space:nowrap;flex-shrink:0">${label}</span><span style="color:var(--text);text-align:end;word-break:break-word">${val}</span></div>`
+    : '';
+  const otpBlock = (code, color) => code
+    ? `<div style="background:${color}14;border:1.5px solid ${color}38;border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center"><div style="font-size:.58rem;color:${color};font-weight:600;margin-bottom:2px">كود التحقق</div><div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr"><span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:${color}">${esc(code)}</span><button class="otp-copy-btn" style="color:${color}" onclick="event.stopPropagation();_ncCopyCode('${esc(code)}',this)" title="نسخ الكود">${_COPY_SVG}</button></div></div>`
+    : '';
+  const infoGrid = (rows) =>
+    `<div style="background:var(--surface);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">${rows}</div>`;
+  const iconBox = (color, svg) =>
+    `<div style="width:32px;height:32px;border-radius:10px;background:${color}1e;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${svg}</div>`;
+  const hdr = (color, title) =>
+    `<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px"><span style="font-size:.72rem;font-weight:700;color:${color};white-space:nowrap">${unreadDot(color)}${title}</span><span style="font-size:.62rem;color:var(--muted);white-space:nowrap">${ago}</span></div>`;
+  const card = (color, iconSvg, title, code, rows, extra = '', attrs = '') =>
+    `<div class="${cls}" style="position:relative;padding:10px 12px;padding-inline-start:${pad};cursor:pointer;${isUnread ? `background:${color}0a` : ''}" ${clickAttr} ${attrs}>${unreadBar}<div style="display:flex;gap:10px;align-items:flex-start">${iconBox(color, iconSvg)}<div style="flex:1;min-width:0">${hdr(color, title)}${otpBlock(code, color)}${infoGrid(rows)}${extra}</div></div></div>`;
+  // دالة مشتركة لصف "صالح حتى" مع كاونتداون ديناميكي
+  const cdRow = (validStr) => {
+    if (!validStr) return '';
+    const uid = `otp-cd-${m.id}-${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.72rem;padding:2px 0" data-sp-valid="${esc(validStr)}" data-sp-uid="${uid}"><span style="color:var(--muted);white-space:nowrap;flex-shrink:0">صالح حتى</span><span id="${uid}" style="font-variant-numeric:tabular-nums;font-weight:700;direction:ltr;color:var(--muted)">--:--</span></div>`;
+  };
+  const itemsList = (lines, max = 4) => {
+    const items = lines.filter(l => l.trimStart().startsWith('•')).map(l => l.replace(/^\s*•\s*/, '').trim());
+    const more  = lines.find(l => /^\s*\.\.\./.test(l));
+    if (!items.length && !more) return '';
+    return `<div style="padding:3px 0 1px"><div style="font-size:.65rem;color:var(--muted);margin-bottom:2px">الأصناف</div>${items.slice(0, max).map(it => `<div style="font-size:.7rem;color:var(--text);padding:1px 0;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it)}</div>`).join('')}${items.length > max ? `<div style="font-size:.65rem;color:var(--muted);padding-top:2px">...و${items.length - max} أخرى</div>` : ''}${more ? `<div style="font-size:.65rem;color:var(--muted);padding-top:2px">${esc(more.trim())}</div>` : ''}</div>`;
   };
 
-  // ── Discount OTP ──
+  // ── Discount OTP (نظام التحقق) ──
   if (m.fromName === 'نظام التحقق') {
     const lines = m.commentText.split('\n');
-    const code = (lines[0]||'').replace(/.*:\s*/,'').trim();
+    const code  = (lines[0] || '').replace(/.*:\s*/, '').trim();
     const color = '#e11d48';
-    return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:.73rem;font-weight:800;color:${color};display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> كود تحقق خصم</span>
-        <span style="font-size:.62rem;color:var(--muted)">${ago}</span>
-      </div>
-      ${code ? _ncOtpBox(code, color) : ''}
-      <div class="nc-info-grid">
-        ${_ncInfoRow('الموظف', esc(_gv(lines,'الموظف')))}
-        ${_ncInfoRow('العميل', esc(_gv(lines,'العميل')))}
-        ${_gv(lines,'الفاتورة')&&_gv(lines,'الفاتورة')!=='-' ? _ncInfoRow('الفاتورة', `<span style="color:var(--accent)">#${esc(_gv(lines,'الفاتورة'))}</span>`) : ''}
-        ${_gv(lines,'الخصم') ? _ncInfoRow('قيمة الخصم', `<strong style="color:${color}">EGP ${esc(_gv(lines,'الخصم').replace(/\s*ج\.?م?\.?\s*/g,'').trim())}</strong>`) : ''}
-        ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted);direction:ltr;display:inline-block">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
-      </div></div>`;
+    const icon  = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`;
+    const disc  = gv(lines, 'الخصم').replace(/\s*ج\.?م?\.?\s*/g, '').trim();
+    const valid = gv(lines,'صالح حتى');
+    return card(color, icon, 'كود تحقق خصم', code, [
+      oRow('الموظف', esc(gv(lines, 'الموظف'))),
+      oRow('العميل', esc(gv(lines, 'العميل'))),
+      gv(lines,'الفاتورة') && gv(lines,'الفاتورة') !== '-' ? oRow('الفاتورة', `<span style="color:var(--accent)">#${esc(gv(lines,'الفاتورة'))}</span>`) : '',
+      disc ? oRow('قيمة الخصم', `<strong style="color:${color}">EGP ${esc(disc.split('(')[0].trim())}</strong>`) : '',
+      cdRow(valid),
+    ].join(''));
   }
 
-  // ── Add Product OTP ──
+  // ── Add Product OTP (نظام إضافة الأصناف) ──
   if (m.fromName === 'نظام إضافة الأصناف') {
-    const lines = m.commentText.split('\n');
-    const code = _gv(lines,'🔐 كود التحقق');
+    const lines   = m.commentText.split('\n');
+    const color   = '#10b981';
+    const icon    = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>`;
     const apLabel = lines.find(l => l.startsWith('إضافة صنف:')) || '';
-    const color = '#10b981';
-    return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:.73rem;font-weight:800;color:${color};display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg> طلب إضافة صنف — موافقة مطلوبة</span>
-        <span style="font-size:.62rem;color:var(--muted)">${ago}</span>
-      </div>
-      ${code ? _ncOtpBox(code, color) : ''}
-      <div class="nc-info-grid">
-        ${_ncInfoRow('الموظف', esc(_gv(lines,'الموظف')))}
-        ${apLabel ? _ncInfoRow('الصنف', `<strong>${esc(apLabel.replace('إضافة صنف: ', ''))}</strong>`) : ''}
-        ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted)">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
-      </div></div>`;
+    return card(color, icon, 'طلب إضافة صنف — موافقة مطلوبة', gv(lines, '🔐 كود التحقق'), [
+      oRow('الموظف', esc(gv(lines, 'الموظف'))),
+      apLabel ? oRow('الصنف', `<strong>${esc(apLabel.replace('إضافة صنف: ', ''))}</strong>`) : '',
+      cdRow(gv(lines,'صالح حتى')),
+    ].join(''));
   }
 
-  // ── Delete OTP ──
+  // ── Delete OTP (نظام الحماية) ──
   if (m.fromName === 'نظام الحماية') {
     const lines = m.commentText.split('\n');
-    const code = _gv(lines,'🔐 كود التحقق');
-    // Legacy add-product OTPs were saved with fromName='نظام الحماية' before the fix
     if (lines[0]?.includes('➕') || lines[0]?.includes('إضافة صنف')) {
+      const color   = '#10b981';
+      const icon    = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>`;
       const apLabel = lines.find(l => l.startsWith('إضافة صنف:')) || '';
-      const color = '#10b981';
-      return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <span style="font-size:.73rem;font-weight:800;color:${color};display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg> طلب إضافة صنف — موافقة مطلوبة</span>
-          <span style="font-size:.62rem;color:var(--muted)">${ago}</span>
-        </div>
-        ${code ? _ncOtpBox(code, color) : ''}
-        <div class="nc-info-grid">
-          ${_ncInfoRow('الموظف', esc(_gv(lines,'الموظف')))}
-          ${apLabel ? _ncInfoRow('الصنف', `<strong>${esc(apLabel.replace('إضافة صنف: ', ''))}</strong>`) : ''}
-          ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted)">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
-        </div></div>`;
+      return card(color, icon, 'طلب إضافة صنف — موافقة مطلوبة', gv(lines, '🔐 كود التحقق'), [
+        oRow('الموظف', esc(gv(lines, 'الموظف'))),
+        apLabel ? oRow('الصنف', `<strong>${esc(apLabel.replace('إضافة صنف: ', ''))}</strong>`) : '',
+        cdRow(gv(lines,'صالح حتى')),
+      ].join(''));
     }
     const isSupplier = lines[0]?.includes('مورد');
-    const title = isSupplier ? 'طلب حذف مورد — موافقة مطلوبة' : 'طلب حذف صنف — موافقة مطلوبة';
-    const color = '#ef4444';
-    return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:.73rem;font-weight:800;color:${color};display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg> ${title}</span>
-        <span style="font-size:.62rem;color:var(--muted)">${ago}</span>
-      </div>
-      ${code ? _ncOtpBox(code, color) : ''}
-      <div class="nc-info-grid">
-        ${_ncInfoRow('الموظف', esc(_gv(lines,'الموظف')))}
-        ${isSupplier ? _ncInfoRow('المورد', `<strong>${esc(_gv(lines,'المورد'))}</strong>`) : ''}
-        ${_itemsHtml(_items(lines))}
-        ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted)">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
-      </div></div>`;
+    const color  = '#ef4444';
+    const icon   = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+    return card(color, icon, isSupplier ? 'طلب حذف مورد — موافقة مطلوبة' : 'طلب حذف صنف — موافقة مطلوبة', gv(lines, '🔐 كود التحقق'), [
+      oRow('الموظف', esc(gv(lines, 'الموظف'))),
+      isSupplier ? oRow('المورد', `<strong>${esc(gv(lines,'المورد'))}</strong>`) : '',
+      itemsList(lines),
+      cdRow(gv(lines,'صالح حتى')),
+    ].join(''));
   }
 
-  // ── Vault OTP ──
+  // ── Vault OTP (نظام الخزنة) ──
   if (m.fromName === 'نظام الخزنة') {
     const lines = m.commentText.split('\n');
-    const code = _gv(lines,'🔐 كود التحقق');
     const color = '#0ea5e9';
-    return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:.73rem;font-weight:800;color:${color};display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg> طلب دخول الخزنة — موافقة مطلوبة</span>
-        <span style="font-size:.62rem;color:var(--muted)">${ago}</span>
-      </div>
-      ${code ? _ncOtpBox(code, color) : ''}
-      <div class="nc-info-grid">
-        ${_ncInfoRow('الموظف', esc(_gv(lines,'الموظف')))}
-        ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted)">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
-      </div></div>`;
+    const icon  = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/><circle cx="12" cy="14" r="2"/></svg>`;
+    return card(color, icon, 'طلب دخول الخزنة — موافقة مطلوبة', gv(lines, '🔐 كود التحقق'), [
+      oRow('الموظف', esc(gv(lines, 'الموظف'))),
+      cdRow(gv(lines,'صالح حتى')),
+    ].join(''));
   }
 
-  // ── Purchase OTP ──
+  // ── Purchase OTP (نظام المشتريات) ──
   if (m.fromName === 'نظام المشتريات') {
-    const lines = m.commentText.split('\n');
-    const code = _gv(lines,'🔐 كود التحقق');
-    const color = '#d97706';
-    return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:.73rem;font-weight:800;color:${color};display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg> طلب شراء — موافقة مطلوبة</span>
-        <span style="font-size:.62rem;color:var(--muted)">${ago}</span>
-      </div>
-      ${code ? _ncOtpBox(code, color) : ''}
-      <div class="nc-info-grid">
-        ${_ncInfoRow('الموظف', esc(_gv(lines,'الموظف')))}
-        ${_ncInfoRow('المورد', `<strong>${esc(_gv(lines,'المورد'))}</strong>`)}
-        ${_gv(lines,'رقم الفاتورة')&&_gv(lines,'رقم الفاتورة')!=='-' ? _ncInfoRow('الفاتورة', `<span style="color:var(--accent)">#${esc(_gv(lines,'رقم الفاتورة'))}</span>`) : ''}
-        ${_itemsHtml(_items(lines))}
-        ${_gv(lines,'الإجمالي') ? _ncInfoRow('الإجمالي', `<strong style="color:var(--primary)">EGP ${esc(_gv(lines,'الإجمالي').replace(/\s*ج\.?م?\.?\s*/g,'').trim())}</strong>`) : ''}
-        ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted);direction:ltr;display:inline-block">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
-      </div></div>`;
+    const lines    = m.commentText.split('\n');
+    const color    = '#d97706';
+    const icon     = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>`;
+    const purRef   = gv(lines, 'رقم الفاتورة');
+    const purTotal = gv(lines, 'الإجمالي').replace(/\s*ج\.?م?\.?\s*/g, '').trim();
+    return card(color, icon, 'طلب شراء — موافقة مطلوبة', gv(lines, '🔐 كود التحقق'), [
+      oRow('الموظف', esc(gv(lines, 'الموظف'))),
+      oRow('المورد',  `<strong>${esc(gv(lines,'المورد'))}</strong>`),
+      purRef && purRef !== '-' ? oRow('رقم الفاتورة', `<span style="color:var(--accent)">#${esc(purRef)}</span>`) : '',
+      itemsList(lines),
+      purTotal ? oRow('الإجمالي', `<strong style="color:var(--primary)">EGP ${esc(purTotal)}</strong>`) : '',
+      cdRow(gv(lines,'صالح حتى')),
+    ].join(''));
   }
 
-  // ── Import OTP ──
+  // ── Import OTP (نظام الاستيراد) ──
   if (m.fromName === 'نظام الاستيراد') {
-    const lines = m.commentText.split('\n');
-    const code = _gv(lines,'🔐 كود التحقق');
-    const color = '#8b5cf6';
-    return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:.73rem;font-weight:800;color:${color};display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> طلب استيراد أصناف — موافقة مطلوبة</span>
-        <span style="font-size:.62rem;color:var(--muted)">${ago}</span>
-      </div>
-      ${code ? _ncOtpBox(code, color) : ''}
-      <div class="nc-info-grid">
-        ${_ncInfoRow('الموظف', esc(_gv(lines,'الموظف')))}
-        ${_gv(lines,'عدد الأصناف') ? _ncInfoRow('عدد الأصناف', `<strong style="color:var(--primary)">${esc(_gv(lines,'عدد الأصناف'))}</strong>`) : ''}
-        ${_itemsHtml(_items(lines), 3)}
-        ${_gv(lines,'صالح حتى') ? _ncInfoRow('صالح حتى', `<span style="color:var(--muted)">${esc(_gv(lines,'صالح حتى'))}</span>`) : ''}
+    const lines    = m.commentText.split('\n');
+    const color    = '#8b5cf6';
+    const icon     = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
+    let impNames   = [];
+    const ns       = lines.findIndex(l => l.trimStart() === 'الأصناف:');
+    if (ns !== -1) {
+      for (let i = ns + 1; i < lines.length; i++) {
+        const nl = lines[i].trim();
+        if (!nl || nl.startsWith('🔐') || nl.startsWith('الموظف') || nl.startsWith('عدد') || nl.startsWith('صالح')) break;
+        if (nl.startsWith('•')) impNames.push(nl.slice(1).trim());
+        else if (nl.startsWith('...')) { impNames.push(nl); break; }
+      }
+    }
+    const impAttrs = `data-imp-names="${encodeURIComponent(JSON.stringify(impNames))}" data-imp-emp="${esc(gv(lines,'الموظف'))}" data-imp-count="${esc(gv(lines,'عدد الأصناف'))}" data-imp-code="${esc(gv(lines,'🔐 كود التحقق'))}" data-imp-mid="${esc(m.id)}" onclick="showImportNamesModal(this)"`;
+    return `<div class="${cls}" style="position:relative;padding:10px 12px;padding-inline-start:${pad};cursor:pointer;${isUnread ? `background:${color}0a` : ''}" ${impAttrs}>${unreadBar}
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        ${iconBox(color, icon)}
+        <div style="flex:1;min-width:0">
+          ${hdr(color, 'طلب استيراد أصناف — موافقة مطلوبة')}
+          ${otpBlock(gv(lines,'🔐 كود التحقق'), color)}
+          ${infoGrid([
+            oRow('الموظف', esc(gv(lines,'الموظف'))),
+            gv(lines,'عدد الأصناف') ? oRow('عدد الأصناف', `<strong style="color:var(--primary)">${esc(gv(lines,'عدد الأصناف'))}</strong>`) : '',
+            cdRow(gv(lines,'صالح حتى')),
+          ].join(''))}
+          <div style="margin-top:6px;text-align:center"><span style="font-size:.7rem;color:${color};text-decoration:underline;cursor:pointer">اضغط لمعاينة الأصناف ◂</span></div>
+        </div>
       </div></div>`;
   }
 
-  // ── Regular mention ──
+  // ── Supplier Pay OTP (نظام سداد الموردين) ──
+  if (m.fromName === 'نظام سداد الموردين') {
+    const lines    = m.commentText.split('\n');
+    const color    = '#b45309';
+    const icon     = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`;
+    const spRef    = gv(lines, 'الفاتورة').replace(/^#/, '');
+    const spAmount = gv(lines, 'المبلغ المراد سداده').replace(/^EGP\s*/i, '').trim();
+    return card(color, icon, 'طلب سداد مورد — موافقة مطلوبة', gv(lines,'🔐 كود التحقق'), [
+      oRow('الموظف', esc(gv(lines,'الموظف'))),
+      gv(lines,'المورد')        ? oRow('المورد',       `<strong style="color:var(--accent)">${esc(gv(lines,'المورد'))}</strong>`) : '',
+      spRef                     ? oRow('الفاتورة',     `<span style="color:var(--accent)">#${esc(spRef)}</span>`) : '',
+      spAmount                  ? oRow('المبلغ',       `<strong style="color:var(--red)">EGP ${esc(spAmount)}</strong>`) : '',
+      gv(lines,'طريقة السداد') ? oRow('طريقة السداد', esc(gv(lines,'طريقة السداد'))) : '',
+      cdRow(gv(lines,'صالح حتى')),
+    ].join(''));
+  }
+
+  // ── Export Excel OTP (نظام التصدير) ──
+  if (m.fromName === 'نظام التصدير') {
+    const lines = m.commentText.split('\n');
+    const color = '#0369a1';
+    const icon  = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+    return card(color, icon, 'طلب تصدير Excel — موافقة مطلوبة', gv(lines, '🔐 كود التحقق'), [
+      oRow('الموظف',   esc(gv(lines,'الموظف'))),
+      gv(lines,'التصدير')   ? oRow('التصدير',   `<strong>${esc(gv(lines,'التصدير'))}</strong>`) : '',
+      cdRow(gv(lines,'صالح حتى')),
+    ].join(''));
+  }
+
+  // ── Edit Tx OTP (نظام التعديل) ──
+  if (m.fromName === 'نظام التعديل') {
+    const lines  = m.commentText.split('\n');
+    const color  = '#7c3aed';
+    const icon   = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+    const etRef  = gv(lines, 'المرجع').replace(/^#/, '');
+    const cs     = lines.findIndex(l => l.trimStart() === 'التغييرات:');
+    let changes  = [];
+    if (cs !== -1) {
+      for (let i = cs + 1; i < lines.length; i++) {
+        const cl = lines[i].trim();
+        if (!cl || cl.startsWith('🔐') || cl.startsWith('الموظف') || cl.startsWith('النوع') || cl.startsWith('المرجع') || cl.startsWith('صالح')) break;
+        if (cl.startsWith('•')) changes.push(cl.slice(1).trim());
+        else if (cl.startsWith('...')) { changes.push(cl); break; }
+      }
+    }
+    const changesBlock = changes.length
+      ? `<div style="background:var(--surface2);border-radius:7px;padding:6px 8px;margin-top:6px"><div style="font-size:.65rem;font-weight:700;color:var(--muted);margin-bottom:4px">التغييرات المطلوبة</div>${changes.slice(0, 4).map(c => `<div style="font-size:.72rem;color:var(--text);padding:1px 0">• ${esc(c.replace(/<[^>]*>/g, ''))}</div>`).join('')}${changes.length > 4 ? `<div style="font-size:.68rem;color:var(--muted)">... و${changes.length - 4} تغييرات أخرى</div>` : ''}</div>`
+      : '';
+    const otpDocId = m.txId || '';
+    return `<div class="${cls}" style="position:relative;padding:10px 12px;padding-inline-start:${pad};cursor:pointer;${isUnread ? `background:${color}0a` : ''}" onclick="openEditTxOtpReviewModal('${esc(otpDocId)}','${esc(m.id)}')">${unreadBar}
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        ${iconBox(color, icon)}
+        <div style="flex:1;min-width:0">
+          ${hdr(color, 'طلب تعديل حركة — موافقة مطلوبة')}
+          ${otpBlock(gv(lines,'🔐 كود التحقق'), color)}
+          ${infoGrid([
+            oRow('الموظف',    esc(gv(lines,'الموظف'))),
+            gv(lines,'النوع')      ? oRow('نوع الحركة', esc(gv(lines,'النوع'))) : '',
+            etRef                  ? oRow('المرجع',     `<span style="color:var(--accent)">#${esc(etRef)}</span>`) : '',
+            cdRow(gv(lines,'صالح حتى')),
+          ].join(''))}
+          ${changesBlock}
+          <div style="text-align:center;margin-top:6px"><span style="font-size:.7rem;color:${color};text-decoration:underline;cursor:pointer">اضغط لمراجعة التفاصيل والاعتماد ◂</span></div>
+        </div>
+      </div></div>`;
+  }
+
+  // ── Edit Approved / Rejected ──
+  const isEditApproved = m.commentText.startsWith('✅ تمت الموافقة على طلب تعديل');
+  const isEditRejected = m.commentText.startsWith('❌ تم رفض طلب تعديل');
+  if (isEditApproved || isEditRejected) {
+    const lines  = m.commentText.split('\n');
+    const ac     = isEditApproved ? '#10b981' : '#ef4444';
+    const bg     = isEditApproved ? 'rgba(16,185,129,.07)' : 'rgba(239,68,68,.07)';
+    const border = isEditApproved ? 'rgba(16,185,129,.25)' : 'rgba(239,68,68,.25)';
+    return `<div class="${cls}" style="position:relative;padding:10px 12px;padding-inline-start:${pad};${isUnread ? `background:${bg}` : ''}">${unreadBar}
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <div style="width:32px;height:32px;border-radius:10px;background:${bg};border:1px solid ${border};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:1.1rem">${isEditApproved ? '✅' : '❌'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
+            <span style="font-size:.72rem;font-weight:700;color:${ac};line-height:1.3">${unreadDot(ac)}${esc(lines[0] || '')}</span>
+            <span style="font-size:.62rem;color:var(--muted);white-space:nowrap;flex-shrink:0">${ago}</span>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;display:flex;flex-direction:column;gap:3px">
+            ${lines.slice(1).filter(Boolean).map(l => `<div style="font-size:.73rem;color:var(--muted);line-height:1.4">${esc(l)}</div>`).join('')}
+          </div>
+        </div>
+      </div></div>`;
+  }
+
+  // ── Regular mention (إشارة عادية) ──
   const rawTxt = _stripHtml((m.commentText || '').replace(/\s*EGP\s*/gi, ' ')).replace(/\s{2,}/g, ' ').trim();
-  // Remove OTP codes and long hex IDs from preview text
   const txt = rawTxt
     .replace(/🔐\s*كود التحقق\s*[:\-]?\s*\d+/g, '')
     .replace(/كود التحقق\s*[:\-]?\s*\d+/g, '')
-    .replace(/#[a-f0-9]{10,}/gi, id => `#${id.slice(1,9)}…`)
+    .replace(/#[a-f0-9]{10,}/gi, id => `#${id.slice(1, 9)}…`)
     .replace(/\s{2,}/g, ' ').trim();
   const shortRef = m.txId ? `#${String(m.txId).slice(-6)}` : '';
-  const color = '#7c3aed';
-  return `<div class="nc-mention-card" style="${baseStyle};position:relative;padding-inline-start:${isUnread?'16px':'12px'}" ${clickAttr}>${unreadBar}
+  const color    = '#7c3aed';
+  return `<div class="${cls}" style="position:relative;padding:10px 12px;padding-inline-start:${pad};cursor:pointer;${isUnread ? 'background:rgba(124,58,237,.035)' : ''}" ${clickAttr}>${unreadBar}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
       <div style="display:flex;align-items:center;gap:6px">
         <div style="width:28px;height:28px;border-radius:8px;background:rgba(124,58,237,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"/></svg>
         </div>
-        <div>
-          <div style="font-size:.78rem;font-weight:700;color:var(--text);line-height:1.2">${esc(m.fromName||'')} <span style="color:${color}">أشار إليك</span>${shortRef ? ` <span style="font-size:.67rem;font-weight:500;color:var(--muted)">${esc(shortRef)}</span>` : ''}</div>
-        </div>
+        <div style="font-size:.78rem;font-weight:700;color:var(--text);line-height:1.2">${esc(m.fromName || '')} <span style="color:${color}">أشار إليك</span>${shortRef ? ` <span style="font-size:.67rem;font-weight:500;color:var(--muted)">${esc(shortRef)}</span>` : ''}</div>
       </div>
       <span style="font-size:.62rem;color:var(--muted);white-space:nowrap;margin-inline-start:8px">${ago}</span>
     </div>
     ${txt ? `<div style="font-size:.73rem;color:var(--muted);line-height:1.5;padding:3px 0 1px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${esc(txt)}</div>` : ''}
   </div>`;
 }
+
+// مركز الإشعارات يستخدم الدالة المشتركة مباشرةً بـ class الخاص به
+function _ncMentionCardHtml(m) { return _buildMentionCardHtml(m, 'nc-mention-card'); }
+
 
 function _renderNcMentionsList(main) {
   const subtitle = qs('#nc-subtitle');
@@ -13283,6 +13528,7 @@ function _renderNcMentionsList(main) {
     `<div class="nc-time-label">${g.label}</div>` +
     g.items.map(m => _ncMentionCardHtml(m)).join('')
   ).join('');
+  _startNotifOtpCountdowns();
 }
 
 function _renderNcStockList(main) {
@@ -13721,573 +13967,58 @@ function renderMentionNotifsList() {
     list.innerHTML = `<div class="notif-empty">لا توجد إشارات بعد</div>`;
     return;
   }
-  list.innerHTML = mentions.map(m => {
-    const ago = _timeAgo(m.ts);
-    const isOtp = m.fromName === 'نظام التحقق';
-    const isFu = Array.isArray(followUps) && followUps.some(f => String(f._id) === String(m.txId));
-
-    // Shared helper for OTP card rows
-    const _otpRow = (label, val, valStyle = '') => val
-      ? `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:.72rem;padding:2px 0">
-           <span style="color:var(--muted);white-space:nowrap;flex-shrink:0">${label}</span>
-           <span style="color:var(--text);text-align:end;word-break:break-word;${valStyle}">${val}</span>
-         </div>`
-      : '';
-
-    if (isOtp) {
-      // Format: "🔐 كود التحقق: XXXX\nالموظف: Y\nالعميل: Z\nالفاتورة: N\nالخصم: A ج.م (الحد: B)\nصالح حتى: T"
-      const otpLines = m.commentText.split('\n');
-      const getOtpVal = (prefix) => {
-        const ln = otpLines.find(l => l.startsWith(prefix));
-        if (!ln) return '';
-        const idx = ln.indexOf(':');
-        return idx !== -1 ? ln.slice(idx + 1).trim() : '';
-      };
-      const otpCode    = (otpLines[0] || '').replace(/.*:\s*/, '').trim();
-      const employee   = getOtpVal('الموظف');
-      const clientName = getOtpVal('العميل');
-      const refNum     = getOtpVal('الفاتورة');
-      const discLine   = getOtpVal('الخصم').replace(/\s*ج\.?م?\.?\s*/g, '').trim();
-      const validLine  = getOtpVal('صالح حتى');
-      const unreadDot  = m.read ? '' : '<span style="width:6px;height:6px;border-radius:50%;background:#e11d48;display:inline-block;vertical-align:middle;margin-right:3px"></span>';
-      return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})" style="cursor:pointer;padding:10px 12px;${m.read ? '' : 'background:rgba(225,29,72,.045)'}">
-        <div style="display:flex;gap:10px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:10px;background:rgba(225,29,72,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#e11d48" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-          </div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
-              <span style="font-size:.7rem;font-weight:700;color:#e11d48;white-space:nowrap">${unreadDot}كود تحقق خصم</span>
-              <span style="font-size:.62rem;color:var(--muted);white-space:nowrap">${ago}</span>
-            </div>
-            <div style="background:rgba(225,29,72,.07);border:1.5px solid rgba(225,29,72,.2);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
-              <div style="font-size:.58rem;color:#e11d48;font-weight:600;margin-bottom:2px">كود التحقق</div>
-              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
-                <span style="font-family:monospace;font-size:1.15rem;font-weight:800;letter-spacing:.35em;color:#e11d48">${esc(otpCode) || '—'}</span>
-                ${otpCode ? `<button class="otp-copy-btn" style="color:#e11d48" onclick="event.stopPropagation();_ncCopyCode('${esc(otpCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>` : ''}
-              </div>
-            </div>
-            <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
-              ${_otpRow('الموظف', esc(employee))}
-              ${_otpRow('العميل', esc(clientName))}
-              ${refNum && refNum !== '-' ? _otpRow('رقم الفاتورة', `<span style="color:var(--accent)">#${esc(refNum)}</span>`) : ''}
-              ${discLine ? _otpRow('قيمة الخصم', `<strong style="color:#e11d48">EGP ${esc(discLine.replace(/\s*ج\.?م?\.?\s*/g,'').split('(')[0].trim())}</strong>`) : ''}
-              ${validLine ? _otpRow('صالح حتى', `<span style="direction:ltr;display:inline-block">${esc(validLine)}</span>`) : ''}
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }
-
-    // ── Add Product OTP ──
-    if (m.fromName === 'نظام إضافة الأصناف') {
-      const apLines = m.commentText.split('\n');
-      const getApVal = (prefix) => {
-        const ln = apLines.find(l => l.trimStart().startsWith(prefix));
-        if (!ln) return '';
-        const idx = ln.indexOf(':');
-        return idx !== -1 ? ln.slice(idx + 1).trim() : '';
-      };
-      const apCode  = getApVal('🔐 كود التحقق');
-      const apEmp   = getApVal('الموظف');
-      const apValid = getApVal('صالح حتى');
-      const apLabel = apLines.find(l => l.startsWith('إضافة صنف:')) || '';
-      const apColor = '#10b981';
-      const unreadDot = m.read ? '' : `<span style="width:6px;height:6px;border-radius:50%;background:${apColor};display:inline-block;vertical-align:middle;margin-right:3px"></span>`;
-      const addIcon = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${apColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>`;
-      return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})" style="cursor:pointer;padding:10px 12px;${m.read ? '' : `background:rgba(16,185,129,.04)`}">
-        <div style="display:flex;gap:10px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:10px;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${addIcon}</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
-              <span style="font-size:.7rem;font-weight:700;color:${apColor};white-space:nowrap">${unreadDot}طلب إضافة صنف — موافقة مطلوبة</span>
-              <span style="font-size:.62rem;color:var(--muted);white-space:nowrap">${ago}</span>
-            </div>
-            ${apCode ? `<div style="background:rgba(16,185,129,.08);border:1.5px solid rgba(16,185,129,.25);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
-              <div style="font-size:.58rem;color:${apColor};font-weight:600;margin-bottom:2px">كود التحقق</div>
-              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
-                <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:${apColor}">${esc(apCode)}</span>
-                <button class="otp-copy-btn" style="color:${apColor}" onclick="event.stopPropagation();_ncCopyCode('${esc(apCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
-              </div>
-            </div>` : ''}
-            <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
-              ${_otpRow('الموظف', esc(apEmp))}
-              ${apLabel ? _otpRow('الصنف', `<strong style="color:var(--text)">${esc(apLabel.replace('إضافة صنف: ', ''))}</strong>`) : ''}
-              ${apValid ? _otpRow('صالح حتى', esc(apValid)) : ''}
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }
-
-    const isDelOtp = m.fromName === 'نظام الحماية';
-    if (isDelOtp) {
-      const delLines = m.commentText.split('\n');
-      // Legacy add-product OTPs were saved with fromName='نظام الحماية' before the fix
-      if (delLines[0]?.includes('➕') || delLines[0]?.includes('إضافة صنف')) {
-        const getApVal2 = (prefix) => {
-          const ln = delLines.find(l => l.trimStart().startsWith(prefix));
-          if (!ln) return '';
-          const idx = ln.indexOf(':');
-          return idx !== -1 ? ln.slice(idx + 1).trim() : '';
-        };
-        const apCode2  = getApVal2('🔐 كود التحقق');
-        const apEmp2   = getApVal2('الموظف');
-        const apValid2 = getApVal2('صالح حتى');
-        const apLabel2 = delLines.find(l => l.startsWith('إضافة صنف:')) || '';
-        const apColor2 = '#10b981';
-        const unreadDot2 = m.read ? '' : `<span style="width:6px;height:6px;border-radius:50%;background:${apColor2};display:inline-block;vertical-align:middle;margin-right:3px"></span>`;
-        const addIcon2 = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${apColor2}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>`;
-        return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})" style="cursor:pointer;padding:10px 12px;${m.read ? '' : `background:rgba(16,185,129,.04)`}">
-          <div style="display:flex;gap:10px;align-items:flex-start">
-            <div style="width:32px;height:32px;border-radius:10px;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${addIcon2}</div>
-            <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
-                <span style="font-size:.7rem;font-weight:700;color:${apColor2};white-space:nowrap">${unreadDot2}طلب إضافة صنف — موافقة مطلوبة</span>
-                <span style="font-size:.62rem;color:var(--muted);white-space:nowrap">${ago}</span>
-              </div>
-              ${apCode2 ? `<div style="background:rgba(16,185,129,.08);border:1.5px solid rgba(16,185,129,.25);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
-                <div style="font-size:.58rem;color:${apColor2};font-weight:600;margin-bottom:2px">كود التحقق</div>
-                <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
-                  <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:${apColor2}">${esc(apCode2)}</span>
-                  <button class="otp-copy-btn" style="color:${apColor2}" onclick="event.stopPropagation();_ncCopyCode('${esc(apCode2)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
-                </div>
-              </div>` : ''}
-              <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
-                ${_otpRow('الموظف', esc(apEmp2))}
-                ${apLabel2 ? _otpRow('الصنف', `<strong style="color:var(--text)">${esc(apLabel2.replace('إضافة صنف: ', ''))}</strong>`) : ''}
-                ${apValid2 ? _otpRow('صالح حتى', esc(apValid2)) : ''}
-              </div>
-            </div>
-          </div>
-        </div>`;
-      }
-      const getDelVal = (prefix) => {
-        const ln = delLines.find(l => l.trimStart().startsWith(prefix));
-        if (!ln) return '';
-        const idx = ln.indexOf(':');
-        return idx !== -1 ? ln.slice(idx + 1).trim() : '';
-      };
-      const delCode     = getDelVal('🔐 كود التحقق');
-      const delEmp      = getDelVal('الموظف');
-      const delValid    = getDelVal('صالح حتى');
-      const isSupplier  = delLines[0]?.includes('مورد');
-      const delProdLabel   = !isSupplier ? (delLines.find(l => l.startsWith('حذف')) || '') : '';
-      const delSupplier    = isSupplier  ? getDelVal('المورد') : '';
-      const titleText      = isSupplier ? 'طلب حذف مورد — موافقة مطلوبة' : 'طلب حذف صنف — موافقة مطلوبة';
-      // Bulk items list: lines starting with "  •"
-      const delItems = delLines.filter(l => l.trimStart().startsWith('•')).map(l => l.replace(/^\s*•\s*/, '').trim());
-      const delMore  = delLines.find(l => /^\s*\.\.\./.test(l));
-      const unreadDot = m.read ? '' : '<span style="width:6px;height:6px;border-radius:50%;background:#ef4444;display:inline-block;vertical-align:middle;margin-right:3px"></span>';
-      const trashIcon = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
-      return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})" style="cursor:pointer;padding:10px 12px;${m.read ? '' : 'background:rgba(239,68,68,.04)'}">
-        <div style="display:flex;gap:10px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:10px;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${trashIcon}</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
-              <span style="font-size:.7rem;font-weight:700;color:#ef4444;white-space:nowrap">${unreadDot}${titleText}</span>
-              <span style="font-size:.62rem;color:var(--muted);white-space:nowrap">${ago}</span>
-            </div>
-            ${delCode ? `<div style="background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.25);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
-              <div style="font-size:.58rem;color:#ef4444;font-weight:600;margin-bottom:2px">كود التحقق</div>
-              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
-                <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:#ef4444">${esc(delCode)}</span>
-                <button class="otp-copy-btn" style="color:#ef4444" onclick="event.stopPropagation();_ncCopyCode('${esc(delCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
-              </div>
-            </div>` : ''}
-            <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
-              ${_otpRow('الموظف', esc(delEmp))}
-              ${isSupplier && delSupplier ? _otpRow('المورد', `<strong style="color:var(--text)">${esc(delSupplier)}</strong>`) : ''}
-              ${!isSupplier && delProdLabel && !delItems.length ? _otpRow('الصنف', `<strong style="color:var(--text)">${esc(delProdLabel)}</strong>`) : ''}
-              ${delItems.length ? `<div style="padding:3px 0 1px">
-                <div style="font-size:.65rem;color:var(--muted);margin-bottom:2px">الأصناف</div>
-                ${delItems.map(it => `<div style="font-size:.7rem;color:var(--text);padding:1px 0;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it)}</div>`).join('')}
-                ${delMore ? `<div style="font-size:.65rem;color:var(--muted);padding-top:2px">${esc(delMore.trim())}</div>` : ''}
-              </div>` : ''}
-              ${delValid ? _otpRow('صالح حتى', esc(delValid)) : ''}
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }
-
-    const isVaultOtp = m.fromName === 'نظام الخزنة';
-    if (isVaultOtp) {
-      // Format: "🔐 طلب دخول الخزنة يحتاج موافقتك\n🔐 كود التحقق: XXXX\nالموظف: Y\nصالح حتى: T"
-      const vLines = m.commentText.split('\n');
-      const getVVal = (prefix) => {
-        const ln = vLines.find(l => l.trimStart().startsWith(prefix));
-        if (!ln) return '';
-        const idx = ln.indexOf(':');
-        return idx !== -1 ? ln.slice(idx + 1).trim() : '';
-      };
-      const vCode  = getVVal('🔐 كود التحقق');
-      const vEmp   = getVVal('الموظف');
-      const vValid = getVVal('صالح حتى');
-      const unreadDot = m.read ? '' : '<span style="width:6px;height:6px;border-radius:50%;background:#0ea5e9;display:inline-block;vertical-align:middle;margin-right:3px"></span>';
-      const vaultIcon = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#0ea5e9" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/><circle cx="12" cy="14" r="2"/></svg>`;
-      return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})" style="cursor:pointer;padding:10px 12px;${m.read ? '' : 'background:rgba(14,165,233,.04)'}">
-        <div style="display:flex;gap:10px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:10px;background:rgba(14,165,233,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${vaultIcon}</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
-              <span style="font-size:.7rem;font-weight:700;color:#0ea5e9;white-space:nowrap">${unreadDot}طلب دخول الخزنة — موافقة مطلوبة</span>
-              <span style="font-size:.62rem;color:var(--muted);white-space:nowrap">${ago}</span>
-            </div>
-            ${vCode ? `<div style="background:rgba(14,165,233,.08);border:1.5px solid rgba(14,165,233,.25);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
-              <div style="font-size:.58rem;color:#0ea5e9;font-weight:600;margin-bottom:2px">كود التحقق</div>
-              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
-                <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:#0ea5e9">${esc(vCode)}</span>
-                <button class="otp-copy-btn" style="color:#0ea5e9" onclick="event.stopPropagation();_ncCopyCode('${esc(vCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
-              </div>
-            </div>` : ''}
-            <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
-              ${_otpRow('الموظف', esc(vEmp))}
-              ${vValid ? _otpRow('صالح حتى', esc(vValid)) : ''}
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }
-
-    const isPurOtp = m.fromName === 'نظام المشتريات';
-    if (isPurOtp) {
-      // Format: "🛒 طلب شراء يحتاج موافقتك\n🔐 كود التحقق: XXXX\nالموظف: Y\nالمورد: Z\nرقم الفاتورة: N\nالأصناف:\n  • ...\nالإجمالي: T ج.م\nصالح حتى: H"
-      const purLines = m.commentText.split('\n');
-      const getPurVal = (prefix) => {
-        const ln = purLines.find(l => l.trimStart().startsWith(prefix));
-        if (!ln) return '';
-        const idx = ln.indexOf(':');
-        return idx !== -1 ? ln.slice(idx + 1).trim() : '';
-      };
-      const purCode    = getPurVal('🔐 كود التحقق');
-      const purEmp     = getPurVal('الموظف');
-      const purSup     = getPurVal('المورد');
-      const purRef     = getPurVal('رقم الفاتورة');
-      const purTotal   = getPurVal('الإجمالي').replace(/\s*ج\.?م?\.?\s*/g, '').trim();
-      const purValid   = getPurVal('صالح حتى');
-      // Collect item lines (lines starting with "  • ")
-      const purItems   = purLines.filter(l => l.trimStart().startsWith('•')).map(l => l.replace(/^\s*•\s*/, '').trim());
-      const moreMatch  = purLines.find(l => /^\s*\.\.\./.test(l));
-      const unreadDot  = m.read ? '' : '<span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;display:inline-block;vertical-align:middle;margin-right:3px"></span>';
-      return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})" style="cursor:pointer;padding:10px 12px;${m.read ? '' : 'background:rgba(245,158,11,.04)'}">
-        <div style="display:flex;gap:10px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:10px;background:rgba(245,158,11,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-          </div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
-              <span style="font-size:.7rem;font-weight:700;color:#d97706;white-space:nowrap">${unreadDot}طلب شراء — موافقة مطلوبة</span>
-              <span style="font-size:.62rem;color:var(--muted);white-space:nowrap">${ago}</span>
-            </div>
-            ${purCode ? `<div style="background:rgba(245,158,11,.1);border:1.5px solid rgba(245,158,11,.3);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
-              <div style="font-size:.58rem;color:#d97706;font-weight:600;margin-bottom:2px">كود التحقق</div>
-              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
-                <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:#d97706">${esc(purCode)}</span>
-                <button class="otp-copy-btn" style="color:#d97706" onclick="event.stopPropagation();_ncCopyCode('${esc(purCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
-              </div>
-            </div>` : ''}
-            <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
-              ${_otpRow('الموظف', esc(purEmp))}
-              ${_otpRow('المورد', `<strong>${esc(purSup)}</strong>`)}
-              ${purRef && purRef !== '-' ? _otpRow('رقم الفاتورة', `<span style="color:var(--accent)">#${esc(purRef)}</span>`) : ''}
-              ${purItems.length ? `<div style="padding:3px 0 1px">
-                <div style="font-size:.65rem;color:var(--muted);margin-bottom:2px">الأصناف</div>
-                ${purItems.map(it => `<div style="font-size:.7rem;color:var(--text);padding:1px 0;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it)}</div>`).join('')}
-                ${moreMatch ? `<div style="font-size:.65rem;color:var(--muted);padding-top:2px">${esc(moreMatch.trim())}</div>` : ''}
-              </div>` : ''}
-              ${purTotal ? _otpRow('الإجمالي', `<strong style="color:var(--primary)">EGP ${esc(purTotal)}</strong>`) : ''}
-              ${purValid ? _otpRow('صالح حتى', `<span style="direction:ltr;display:inline-block">${esc(purValid)}</span>`) : ''}
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }
-
-    const isImportOtp = m.fromName === 'نظام الاستيراد';
-    if (isImportOtp) {
-      // Format: "📥 طلب استيراد أصناف يحتاج موافقتك\n🔐 كود التحقق: XXXX\nالموظف: Y\nعدد الأصناف: N صنف\nصالح حتى: T"
-      const impLines = m.commentText.split('\n');
-      const getImpVal = (prefix) => {
-        const ln = impLines.find(l => l.trimStart().startsWith(prefix));
-        if (!ln) return '';
-        const idx = ln.indexOf(':');
-        return idx !== -1 ? ln.slice(idx + 1).trim() : '';
-      };
-      const impCode  = getImpVal('🔐 كود التحقق');
-      const impEmp   = getImpVal('الموظف');
-      const impCount = getImpVal('عدد الأصناف');
-      const impValid = getImpVal('صالح حتى');
-      // Parse item names block: lines after "الأصناف:" until next section
-      let impNames = [];
-      const namesStart = impLines.findIndex(l => l.trimStart() === 'الأصناف:');
-      if (namesStart !== -1) {
-        for (let ni = namesStart + 1; ni < impLines.length; ni++) {
-          const nl = impLines[ni].trim();
-          if (!nl || nl.startsWith('🔐') || nl.startsWith('الموظف') || nl.startsWith('عدد الأصناف') || nl.startsWith('صالح حتى')) break;
-          if (nl.startsWith('•')) impNames.push(nl.slice(1).trim());
-          else if (nl.startsWith('...')) { impNames.push(nl); break; }
-        }
-      }
-      const unreadDot = m.read ? '' : '<span style="width:6px;height:6px;border-radius:50%;background:#8b5cf6;display:inline-block;vertical-align:middle;margin-right:3px"></span>';
-      const importIcon = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
-      return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" data-imp-names="${encodeURIComponent(JSON.stringify(impNames))}" data-imp-emp="${esc(impEmp)}" data-imp-count="${esc(impCount)}" data-imp-code="${esc(impCode)}" data-imp-mid="${esc(m.id)}" onclick="showImportNamesModal(this)" style="cursor:pointer;padding:10px 12px;${m.read ? '' : 'background:rgba(139,92,246,.04)'}">
-        <div style="display:flex;gap:10px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:10px;background:rgba(139,92,246,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${importIcon}</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
-              <span style="font-size:.7rem;font-weight:700;color:#8b5cf6;white-space:nowrap">${unreadDot}طلب استيراد أصناف — موافقة مطلوبة</span>
-              <span style="font-size:.62rem;color:var(--muted);white-space:nowrap">${ago}</span>
-            </div>
-            ${impCode ? `<div style="background:rgba(139,92,246,.08);border:1.5px solid rgba(139,92,246,.25);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
-              <div style="font-size:.58rem;color:#8b5cf6;font-weight:600;margin-bottom:2px">كود التحقق</div>
-              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
-                <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:#8b5cf6">${esc(impCode)}</span>
-                <button class="otp-copy-btn" style="color:#8b5cf6" onclick="event.stopPropagation();_ncCopyCode('${esc(impCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
-              </div>
-            </div>` : ''}
-            <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
-              ${_otpRow('الموظف', esc(impEmp))}
-              ${impCount ? _otpRow('عدد الأصناف', `<strong style="color:var(--primary)">${esc(impCount)}</strong>`) : ''}
-              ${impValid ? _otpRow('صالح حتى', esc(impValid)) : ''}
-            </div>
-            <div style="margin-top:6px;text-align:center">
-              <span style="font-size:.7rem;color:#8b5cf6;text-decoration:underline;cursor:pointer">اضغط لمعاينة الأصناف ◂</span>
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }
-
-    // ── Supplier Pay OTP ──
-    if (m.fromName === 'نظام سداد الموردين') {
-      const spLines = m.commentText.split('\n');
-      const getSpVal = (prefix) => {
-        const ln = spLines.find(l => l.trimStart().startsWith(prefix));
-        if (!ln) return '';
-        const idx = ln.indexOf(':');
-        return idx !== -1 ? ln.slice(idx + 1).trim() : '';
-      };
-      const spCode    = getSpVal('🔐 كود التحقق');
-      const spEmp     = getSpVal('الموظف');
-      const spSup     = getSpVal('المورد');
-      const spRef     = getSpVal('الفاتورة').replace(/^#/, '');
-      const spAmount  = getSpVal('المبلغ المراد سداده').replace(/^EGP\s*/i, '').trim();
-      const spMethod  = getSpVal('طريقة السداد');
-      const spValidStr = getSpVal('صالح حتى');
-      const spColor   = '#b45309';
-      const spUid     = `sp-cd-${m.id}`;
-      const unreadDot = m.read ? '' : `<span style="width:6px;height:6px;border-radius:50%;background:${spColor};display:inline-block;vertical-align:middle;margin-right:3px"></span>`;
-      const spIcon = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${spColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`;
-      return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})" style="cursor:pointer;padding:10px 12px;${m.read ? '' : `background:rgba(180,83,9,.04)`}" data-sp-valid="${esc(spValidStr)}" data-sp-uid="${spUid}">
-        <div style="display:flex;gap:10px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:10px;background:rgba(180,83,9,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${spIcon}</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
-              <span style="font-size:.7rem;font-weight:700;color:${spColor};white-space:nowrap">${unreadDot}طلب سداد مورد — موافقة مطلوبة</span>
-              <span style="font-size:.62rem;color:var(--muted);white-space:nowrap">${ago}</span>
-            </div>
-            ${spCode ? `<div style="background:rgba(180,83,9,.09);border:1.5px solid rgba(180,83,9,.28);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
-              <div style="font-size:.58rem;color:${spColor};font-weight:600;margin-bottom:2px">كود التحقق</div>
-              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
-                <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:${spColor}">${esc(spCode)}</span>
-                <button class="otp-copy-btn" style="color:${spColor}" onclick="event.stopPropagation();_ncCopyCode('${esc(spCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
-              </div>
-            </div>` : ''}
-            <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
-              ${_otpRow('الموظف', esc(spEmp))}
-              ${spSup ? _otpRow('المورد', `<strong style="color:var(--accent)">${esc(spSup)}</strong>`) : ''}
-              ${spRef ? _otpRow('الفاتورة', `<span style="color:var(--accent)">#${esc(spRef)}</span>`) : ''}
-              ${spAmount ? _otpRow('المبلغ', `<strong style="color:var(--red)">EGP ${esc(spAmount)}</strong>`) : ''}
-              ${spMethod ? _otpRow('طريقة السداد', esc(spMethod)) : ''}
-              ${spValidStr ? `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.72rem;padding:2px 0">
-                <span style="color:var(--muted);white-space:nowrap;flex-shrink:0">صالح حتى</span>
-                <span id="${spUid}" style="font-variant-numeric:tabular-nums;font-weight:700;direction:ltr;color:var(--muted)">--:--</span>
-              </div>` : ''}
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }
-
-    // ── Export Excel OTP ──
-    if (m.fromName === 'نظام التصدير') {
-      const exLines = m.commentText.split('\n');
-      const getExVal = (prefix) => {
-        const ln = exLines.find(l => l.trimStart().startsWith(prefix));
-        if (!ln) return '';
-        const idx = ln.indexOf(':');
-        return idx !== -1 ? ln.slice(idx + 1).trim() : '';
-      };
-      const exCode  = getExVal('🔐 كود التحقق');
-      const exEmp   = getExVal('الموظف');
-      const exLabel = getExVal('التصدير');
-      const exValid = getExVal('صالح حتى');
-      const exColor = '#0369a1';
-      const unreadDot = m.read ? '' : `<span style="width:6px;height:6px;border-radius:50%;background:${exColor};display:inline-block;vertical-align:middle;margin-right:3px"></span>`;
-      const exIcon = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${exColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
-      return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})" style="cursor:pointer;padding:10px 12px;${m.read ? '' : `background:rgba(3,105,161,.04)`}">
-        <div style="display:flex;gap:10px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:10px;background:rgba(3,105,161,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${exIcon}</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
-              <span style="font-size:.7rem;font-weight:700;color:${exColor};white-space:nowrap">${unreadDot}طلب تصدير Excel — موافقة مطلوبة</span>
-              <span style="font-size:.62rem;color:var(--muted);white-space:nowrap">${ago}</span>
-            </div>
-            ${exCode ? `<div style="background:rgba(3,105,161,.08);border:1.5px solid rgba(3,105,161,.25);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
-              <div style="font-size:.58rem;color:${exColor};font-weight:600;margin-bottom:2px">كود التحقق</div>
-              <div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr">
-                <span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:${exColor}">${esc(exCode)}</span>
-                <button class="otp-copy-btn" style="color:${exColor}" onclick="event.stopPropagation();_ncCopyCode('${esc(exCode)}',this)" title="نسخ الكود">${_COPY_SVG}</button>
-              </div>
-            </div>` : ''}
-            <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px">
-              ${_otpRow('الموظف', esc(exEmp))}
-              ${exLabel ? _otpRow('التصدير', `<strong style="color:var(--text)">${esc(exLabel)}</strong>`) : ''}
-              ${exValid ? _otpRow('صالح حتى', `<span style="direction:ltr;display:inline-block">${esc(exValid)}</span>`) : ''}
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }
-
-    const isEditTxOtp = m.fromName === 'نظام التعديل';
-    if (isEditTxOtp) {
-      // Format: "✏️ طلب تعديل حركة مبيعات/مشتريات يحتاج موافقتك\n🔐 كود التحقق: XXXX\nالموظف: Y\nالنوع: Z\nالمرجع: #N\nالتغييرات:\n  • ...\nصالح حتى: T"
-      const etLines = m.commentText.split('\n');
-      const getEtVal = (prefix) => {
-        const ln = etLines.find(l => l.trimStart().startsWith(prefix));
-        if (!ln) return '';
-        const idx = ln.indexOf(':');
-        return idx !== -1 ? ln.slice(idx + 1).trim() : '';
-      };
-      const etCode   = getEtVal('🔐 كود التحقق');
-      const etEmp    = getEtVal('الموظف');
-      const etType   = getEtVal('النوع');
-      const etRef    = getEtVal('المرجع').replace(/^#/, '');
-      const etValid  = getEtVal('صالح حتى');
-      const changesStart = etLines.findIndex(l => l.trimStart() === 'التغييرات:');
-      let etChanges = [];
-      if (changesStart !== -1) {
-        for (let ci = changesStart + 1; ci < etLines.length; ci++) {
-          const cl = etLines[ci].trim();
-          if (!cl || cl.startsWith('🔐') || cl.startsWith('الموظف') || cl.startsWith('النوع') || cl.startsWith('المرجع') || cl.startsWith('صالح حتى')) break;
-          if (cl.startsWith('•')) etChanges.push(cl.slice(1).trim());
-          else if (cl.startsWith('...')) { etChanges.push(cl); break; }
-        }
-      }
-      const unreadDot = m.read ? '' : '<span style="width:6px;height:6px;border-radius:50%;background:#7c3aed;display:inline-block;vertical-align:middle;margin-right:3px"></span>';
-      const editIcon = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
-      const otpDocId = m.txId || '';
-      return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="openEditTxOtpReviewModal('${esc(otpDocId)}','${esc(m.id)}')" style="cursor:pointer;padding:10px 12px;${m.read ? '' : 'background:rgba(124,58,237,.04)'}">
-        <div style="display:flex;gap:10px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:10px;background:rgba(124,58,237,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${editIcon}</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
-              <span style="font-size:.7rem;font-weight:700;color:#7c3aed;white-space:nowrap">${unreadDot}طلب تعديل حركة — موافقة مطلوبة</span>
-              <span style="font-size:.62rem;color:var(--muted);white-space:nowrap">${ago}</span>
-            </div>
-            ${etCode ? `<div style="background:rgba(124,58,237,.08);border:1.5px solid rgba(124,58,237,.25);border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center">
-              <div style="font-size:.58rem;color:#7c3aed;font-weight:600;margin-bottom:2px">كود التحقق</div>
-              <span style="font-family:monospace;font-size:1.15rem;font-weight:800;letter-spacing:.35em;color:#7c3aed;direction:ltr;display:block">${esc(etCode)}</span>
-            </div>` : ''}
-            <div style="background:var(--bg);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column;gap:2px;margin-bottom:6px">
-              ${_otpRow('الموظف', esc(etEmp))}
-              ${etType ? _otpRow('نوع الحركة', `<span style="color:var(--text)">${esc(etType)}</span>`) : ''}
-              ${etRef ? _otpRow('المرجع', `<span style="color:var(--accent)">#${esc(etRef)}</span>`) : ''}
-              ${etValid ? _otpRow('صالح حتى', esc(etValid)) : ''}
-            </div>
-            ${etChanges.length ? `<div style="background:var(--surface2);border-radius:7px;padding:6px 8px;margin-bottom:6px">
-              <div style="font-size:.65rem;font-weight:700;color:var(--muted);margin-bottom:4px">التغييرات المطلوبة</div>
-              ${etChanges.slice(0,4).map(c=>`<div style="font-size:.72rem;color:var(--text);padding:1px 0">• ${esc(c.replace(/<[^>]*>/g,''))}</div>`).join('')}
-              ${etChanges.length > 4 ? `<div style="font-size:.68rem;color:var(--muted)">... و${etChanges.length - 4} تغييرات أخرى</div>` : ''}
-            </div>` : ''}
-            <div style="text-align:center;margin-top:4px">
-              <span style="font-size:.7rem;color:#7c3aed;text-decoration:underline;cursor:pointer">اضغط لمراجعة التفاصيل والاعتماد ◂</span>
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }
-
-    // System approval / rejection notification for edit-tx requests
-    const isEditApproved = m.commentText.startsWith('✅ تمت الموافقة على طلب تعديل');
-    const isEditRejected = m.commentText.startsWith('❌ تم رفض طلب تعديل');
-    if (isEditApproved || isEditRejected) {
-      const lines = m.commentText.split('\n');
-      const titleLine = lines[0] || '';
-      const detailLines = lines.slice(1).filter(Boolean);
-      const accentColor = isEditApproved ? '#10b981' : '#ef4444';
-      const bgColor = isEditApproved ? 'rgba(16,185,129,.07)' : 'rgba(239,68,68,.07)';
-      const borderColor = isEditApproved ? 'rgba(16,185,129,.25)' : 'rgba(239,68,68,.25)';
-      const unreadDot = m.read ? '' : `<span style="width:6px;height:6px;border-radius:50%;background:${accentColor};display:inline-block;vertical-align:middle;margin-right:3px"></span>`;
-      return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" style="padding:10px 12px;${m.read ? '' : `background:${bgColor}`}">
-        <div style="display:flex;gap:10px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:10px;background:${bgColor};border:1px solid ${borderColor};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:1.1rem">${isEditApproved ? '✅' : '❌'}</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
-              <span style="font-size:.72rem;font-weight:700;color:${accentColor};line-height:1.3">${unreadDot}${esc(titleLine)}</span>
-              <span style="font-size:.62rem;color:var(--muted);white-space:nowrap;flex-shrink:0">${ago}</span>
-            </div>
-            <div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;display:flex;flex-direction:column;gap:3px">
-              ${detailLines.map(l => `<div style="font-size:.73rem;color:var(--muted);line-height:1.4">${esc(l)}</div>`).join('')}
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }
-
-    const _cleanSnippet = (t) => t.replace(/🔐\s*كود التحقق\s*[:\-]?\s*\d+/g,'').replace(/كود التحقق\s*[:\-]?\s*\d+/g,'').replace(/\s{2,}/g,' ').trim();
-    const rawSnippet = _cleanSnippet(m.commentText);
-    const snippet = rawSnippet.length > 60 ? rawSnippet.slice(0, 60) + '…' : rawSnippet;
-    const _shortId = (id) => id ? `#${String(id).slice(-6)}` : '';
-    const context = isFu
-      ? `متابعة طلب <strong>${esc(_shortId(m.txRef || m.txId))}</strong>`
-      : `حركة <strong>${esc(_shortId(m.txRef || m.txId))}</strong>`;
-    return `<div class="notif-item mention${m.read ? '' : ' unread-mention'}" onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})" style="${m.read ? '' : 'background:rgba(139,92,246,.05)'}">
-      <div class="notif-icon">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"/></svg>
-      </div>
-      <div class="notif-body">
-        <div class="notif-title" style="font-size:.82rem"><strong>${esc(m.fromName)}</strong> أشار إليك في ${context}${m.read ? '' : ' <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#7c3aed;vertical-align:middle;margin-right:2px"></span>'}</div>
-        <div class="notif-desc" style="font-size:.72rem;margin-top:2px;font-style:italic">"${esc(snippet)}"</div>
-        <div class="notif-time">${ago}</div>
-      </div>
-    </div>`;
-  }).join('');
+  list.innerHTML = mentions.map(m => _buildMentionCardHtml(m, 'notif-item mention')).join('');
   _startNotifOtpCountdowns();
 }
 
 let _notifCountdownInterval = null;
 function _startNotifOtpCountdowns() {
   clearInterval(_notifCountdownInterval);
-  const tick = () => {
-    const list = qs('#notif-list');
-    if (!list || !qs('#notif-panel')?.classList.contains('show')) {
-      clearInterval(_notifCountdownInterval);
-      return;
-    }
-    list.querySelectorAll('[data-sp-valid]').forEach(card => {
+  const _toAr = n => String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+  const _tickCards = (container) => {
+    if (!container) return;
+    container.querySelectorAll('[data-sp-valid]').forEach(card => {
       const validStr = card.dataset.spValid;
       const uid = card.dataset.spUid;
       if (!validStr || !uid) return;
       const el = document.getElementById(uid);
       if (!el) return;
-      const expiry = new Date(validStr);
+      let expiry = new Date(validStr);
+      // إشعارات قديمة مخزنة بصيغة HH:MM فقط — نبني تاريخ اليوم منها
+      if (isNaN(expiry.getTime()) && /^\d{2}:\d{2}$/.test(validStr.trim())) {
+        const [hh, mm] = validStr.trim().split(':').map(Number);
+        expiry = new Date();
+        expiry.setHours(hh, mm, 0, 0);
+        if (expiry < new Date()) expiry.setDate(expiry.getDate() + 1);
+      }
       if (isNaN(expiry.getTime())) { el.textContent = validStr; return; }
       const diff = Math.floor((expiry - Date.now()) / 1000);
       if (diff <= 0) {
         el.textContent = 'انتهت الصلاحية';
         el.style.color = 'var(--red)';
         el.style.fontWeight = '700';
+        el.style.direction = 'rtl';
       } else {
         const mm = String(Math.floor(diff / 60)).padStart(2, '0');
         const ss = String(diff % 60).padStart(2, '0');
-        el.textContent = `${mm}:${ss}`;
+        el.textContent = _toAr(mm) + ':' + _toAr(ss);
         el.style.color = diff <= 30 ? '#ef4444' : 'var(--muted)';
         el.style.fontWeight = '700';
+        el.style.direction = 'ltr';
       }
     });
+  };
+  const tick = () => {
+    const panelOpen  = qs('#notif-panel')?.classList.contains('show');
+    const alertOpen  = qs('#mention-alert-overlay')?.style.display !== 'none';
+    const ncOpen     = qs('.nc-overlay')?.classList.contains('active');
+    if (!panelOpen && !alertOpen && !ncOpen) {
+      clearInterval(_notifCountdownInterval);
+      return;
+    }
+    if (panelOpen)  _tickCards(qs('#notif-list'));
+    if (alertOpen)  _tickCards(qs('#mention-alert-list'));
+    if (ncOpen)     _tickCards(qs('#nc-main'));
   };
   tick();
   _notifCountdownInterval = setInterval(tick, 1000);
@@ -14629,26 +14360,40 @@ function showMentionAlert(mentions) {
   const overlay = qs('#mention-alert-overlay');
   const list = qs('#mention-alert-list');
   const sub = qs('#mention-alert-sub');
+  const titleEl = qs('#mention-alert-title');
+  const badge = qs('#mention-alert-count-badge');
   if (!overlay || !list) return;
 
-  if (sub) sub.textContent = mentions.length === 1 ? `إشارة جديدة واحدة منذ آخر جلسة` : `${mentions.length} إشارات جديدة منذ آخر جلسة`;
+  const count = mentions.length;
+  const hasOtp = mentions.some(m => m.fromName && m.fromName.startsWith('نظام'));
 
-  list.innerHTML = mentions.map(m => {
-    const snippet = (m.commentText || '').length > 55 ? m.commentText.slice(0, 55) + '…' : m.commentText;
-    const isFu = Array.isArray(followUps) && followUps.some(f => String(f._id) === String(m.txId));
-    const ctxLabel = isFu ? `متابعة طلب` : `حركة`;
-    return `<div class="mention-alert-item" onclick="closeMentionAlert();onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})">
-      <div class="mention-alert-avatar">OTP</div>
-      <div class="notif-body">
-        <div class="notif-title"><strong>${esc(m.fromName)}</strong> <span style="font-weight:400;color:var(--muted)">أشار إليك في</span> ${ctxLabel} <span style="font-size:.74rem;color:#7c3aed;background:rgba(124,58,237,.08);padding:1px 5px;border-radius:4px">#${esc(String(m.txRef || m.txId).slice(-6))}</span></div>
-        ${snippet ? `<div class="notif-desc" style="font-style:italic">💬 ${esc(snippet)}</div>` : ''}
-        <div class="notif-time">${_timeAgo(m.ts)}</div>
-      </div>
-    </div>`;
-  }).join('');
+  if (titleEl) {
+    if (hasOtp && count === 1) titleEl.textContent = 'إشارة جديدة تنتظر موافقتك';
+    else if (hasOtp) titleEl.textContent = 'إشارات وطلبات تنتظرك';
+    else if (count === 1) titleEl.textContent = 'زميل أشار إليك';
+    else titleEl.textContent = `${count} إشارات جديدة تنتظرك`;
+  }
+  if (sub) {
+    const types = [...new Set(mentions.map(m => {
+      if (m.fromName === 'نظام التحقق') return 'كود خصم';
+      if (m.fromName === 'نظام التصدير') return 'تصدير Excel';
+      if (m.fromName === 'نظام سداد الموردين') return 'سداد مورد';
+      if (m.fromName === 'نظام المشتريات') return 'طلب شراء';
+      if (m.fromName === 'نظام التعديل') return 'تعديل حركة';
+      if (m.fromName === 'نظام الخزنة') return 'دخول الخزنة';
+      if (m.fromName === 'نظام الحماية') return 'حذف/إضافة صنف';
+      if (m.fromName === 'نظام الاستيراد') return 'استيراد أصناف';
+      if (m.fromName === 'نظام إضافة الأصناف') return 'إضافة صنف';
+      return null;
+    }).filter(Boolean))];
+    sub.textContent = types.length ? types.join(' · ') : 'منذ آخر جلسة';
+  }
+  if (badge) badge.textContent = count === 1 ? 'جديدة' : `${count} جديدة`;
+
+  list.innerHTML = mentions.map(m => _buildMentionCardHtml(m, 'nc-mention-card')).join('');
+  _startNotifOtpCountdowns();
 
   overlay.style.display = 'flex';
-  // Record last-seen timestamp
   try { localStorage.setItem(MENTION_LAST_SEEN_KEY + '_' + (_myUserId() || currentUser?.username || ''), new Date().toISOString()); } catch(_) {}
 }
 
@@ -23550,6 +23295,7 @@ async function doCollectMovement(id) {
     // ===== للمشتريات: طلب كود OTP أولاً =====
     if (isPurchase) {
       const tx2 = transactions.find(t => t._id === id);
+      closeModal(); // إغلاق نافذة السداد قبل فتح نافذة OTP
       await openSupplierPayOtpFlow(
         id,
         tx2?.client || '',
@@ -24296,7 +24042,222 @@ function switchMovTab(tab, btn) {
   btn.classList.add('active');
   qs('#mov-panel-list').style.display = tab === 'list' ? 'block' : 'none';
   qs('#mov-panel-archive').style.display = tab === 'archive' ? 'block' : 'none';
+  qs('#mov-panel-collections').style.display = tab === 'collections' ? 'block' : 'none';
   if (tab === 'archive') loadArchivedMovements();
+  if (tab === 'collections') renderCollectionsTable();
+}
+
+/* ═══════════════════════════════════════════════
+   سجل التحصيلات — Collections Log
+   ═══════════════════════════════════════════════ */
+let _collTypeFilter = 'all';
+let _collDateFilter = 'all'; // 'all' | 'today' | 'month' | 'range'
+let _collPage = 1;
+let _collCollector = 'all';
+let _collEmployee = 'all';
+const COLL_PAGE_SIZE = 30;
+
+function setCollTypeFilter(type, btn) {
+  _collTypeFilter = type;
+  _collPage = 1;
+  qsa('.coll-type-pill').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderCollectionsTable();
+}
+
+function setCollDateFilter(filter, btn) {
+  _collDateFilter = filter;
+  _collPage = 1;
+  qsa('.coll-filter-btn:not(.coll-reset-btn)').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (filter !== 'range') {
+    qs('#coll-from').value = '';
+    qs('#coll-to').value = '';
+  }
+  renderCollectionsTable();
+}
+
+function resetCollFilters() {
+  _collTypeFilter = 'all';
+  _collDateFilter = 'all';
+  _collCollector = 'all';
+  _collEmployee = 'all';
+  _collPage = 1;
+  qs('#coll-search').value = '';
+  qs('#coll-from').value = '';
+  qs('#coll-to').value = '';
+  qsa('.coll-type-pill').forEach(b => b.classList.remove('active'));
+  const allPill = qs('.coll-type-pill[data-type="all"]');
+  if (allPill) allPill.classList.add('active');
+  qsa('.coll-filter-btn:not(.coll-reset-btn)').forEach(b => b.classList.remove('active'));
+  qsa('.coll-name-pill').forEach(b => b.classList.remove('active'));
+  qsa('.coll-name-pill[data-val="all"]').forEach(b => b.classList.add('active'));
+  renderCollectionsTable();
+}
+
+function setCollNameFilter(field, val, btn) {
+  if (field === 'collector') _collCollector = val;
+  else _collEmployee = val;
+  _collPage = 1;
+  const container = field === 'collector' ? '#coll-collector-pills' : '#coll-employee-pills';
+  qsa(`${container} .coll-name-pill`).forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderCollectionsTable();
+}
+
+function buildCollNamePills() {
+  const allRows = buildCollectionsData();
+  const collectors = [...new Set(allRows.map(r => r.collector).filter(Boolean))].sort();
+  const employees = [...new Set(allRows.map(r => r.employee).filter(Boolean))].sort();
+
+  const cPills = qs('#coll-collector-pills');
+  const ePills = qs('#coll-employee-pills');
+  if (!cPills || !ePills) return;
+
+  const makePill = (val, label, field, isActive) =>
+    `<button class="coll-name-pill${isActive ? ' active' : ''}" data-val="${esc(val)}" onclick="setCollNameFilter('${field}','${esc(val)}',this)">${esc(label)}</button>`;
+
+  cPills.innerHTML = makePill('all', 'الكل', 'collector', _collCollector === 'all')
+    + collectors.map(n => makePill(n, n, 'collector', _collCollector === n)).join('');
+  ePills.innerHTML = makePill('all', 'الكل', 'employee', _collEmployee === 'all')
+    + employees.map(n => makePill(n, n, 'employee', _collEmployee === n)).join('');
+}
+
+function buildCollectionsData() {
+  const rows = [];
+  const txList = transactions || [];
+  txList.forEach(tx => {
+    if (!tx.payments || !tx.payments.length) return;
+    if (tx.type !== 'مبيعات' && tx.type !== 'مشتريات') return;
+    tx.payments.forEach(pay => {
+      rows.push({
+        txId: tx._id,
+        ref: tx.ref || '',
+        client: tx.client || '',
+        type: tx.type,
+        date: pay.date || '',
+        collectedAmount: Number(pay.collectedAmount) || 0,  // ما دفعه العميل/المورد
+        netVault: Number(pay.amount) || 0,                  // ما دخل الخزنة فعلاً
+        shipExtra: Number(pay.shipExtra) || 0,              // زيادة الشحن إن وجدت
+        collector: pay.by || '',
+        employee: tx.employee || '',
+      });
+    });
+  });
+  rows.sort((a, b) => new Date(b.date) - new Date(a.date));
+  return rows;
+}
+
+function filterCollectionsData(rows) {
+  const search = (qs('#coll-search')?.value || '').trim().toLowerCase();
+  const from = qs('#coll-from')?.value;
+  const to = qs('#coll-to')?.value;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const nowMonth = todayStr.slice(0, 7);
+
+  return rows.filter(r => {
+    if (_collTypeFilter !== 'all' && r.type !== _collTypeFilter) return false;
+    if (search && !r.ref.toLowerCase().includes(search)) return false;
+    if (_collCollector !== 'all' && r.collector !== _collCollector) return false;
+    if (_collEmployee !== 'all' && r.employee !== _collEmployee) return false;
+    const rDate = r.date ? r.date.slice(0, 10) : '';
+    if (_collDateFilter === 'today' && rDate !== todayStr) return false;
+    if (_collDateFilter === 'month' && rDate.slice(0, 7) !== nowMonth) return false;
+    if (_collDateFilter === 'range') {
+      if (from && rDate < from) return false;
+      if (to && rDate > to) return false;
+    }
+    return true;
+  });
+}
+
+function renderCollectionsTable() {
+  const tbody = qs('#coll-tbody');
+  if (!tbody) return;
+
+  buildCollNamePills();
+  const allRows = buildCollectionsData();
+  const filtered = filterCollectionsData(allRows);
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / COLL_PAGE_SIZE));
+  if (_collPage > totalPages) _collPage = totalPages;
+
+  const start = (_collPage - 1) * COLL_PAGE_SIZE;
+  const pageRows = filtered.slice(start, start + COLL_PAGE_SIZE);
+
+  if (!pageRows.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">لا توجد بيانات تحصيل</td></tr>';
+    qs('#coll-pagination').innerHTML = '';
+    return;
+  }
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const yesterdayStr = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+  let lastDayKey = null;
+  const html = [];
+
+  pageRows.forEach(r => {
+    const dayKey = r.date ? r.date.slice(0, 10) : '';
+    if (dayKey !== lastDayKey) {
+      lastDayKey = dayKey;
+      const label = dayKey ? fmtDate(dayKey) : '—';
+      html.push(`<tr class="coll-day-sep"><td colspan="9">${label}</td></tr>`);
+    }
+
+    const isIn = r.type === 'مبيعات';
+    const badge = isIn
+      ? '<span class="coll-badge-in">▲ تحصيل عميل</span>'
+      : '<span class="coll-badge-out">▼ سداد مورد</span>';
+    const amtClass = isIn ? 'coll-amount-in' : 'coll-amount-out';
+    const amtSign = isIn ? '+' : '-';
+    const timeStr = r.date ? new Date(r.date).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true }) : '—';
+    const refEsc = esc(r.ref);
+    const clientEsc = esc(r.client);
+    const collectorEsc = esc(r.collector || '—');
+    const employeeEsc = esc(r.employee || '—');
+    const shipExtraCell = r.shipExtra > 0
+      ? `<span style="color:var(--orange);font-weight:700">+ ${fmtJ(r.shipExtra)}</span>`
+      : '<span style="color:var(--muted)">—</span>';
+
+    html.push(`<tr onclick="showInvoiceDetail('${esc(r.txId)}')" title="فتح الفاتورة">
+      <td style="color:var(--muted);font-size:.79rem;font-variant-numeric:tabular-nums">${timeStr}</td>
+      <td><a class="coll-ref-link" onclick="event.stopPropagation();showInvoiceDetail('${esc(r.txId)}')"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;margin-left:2px"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>#${refEsc || '—'}</a></td>
+      <td style="font-weight:600">${clientEsc || '—'}</td>
+      <td>${badge}</td>
+      <td class="${amtClass}">${amtSign} ${fmtJ(r.collectedAmount)}</td>
+      <td class="${amtClass}" style="font-size:.79rem">${amtSign} ${fmtJ(r.netVault)}</td>
+      <td>${shipExtraCell}</td>
+      <td style="color:var(--muted)">${employeeEsc}</td>
+      <td style="font-weight:600">${collectorEsc}</td>
+    </tr>`);
+  });
+
+  tbody.innerHTML = html.join('');
+
+  // pagination
+  qs('#coll-pagination').innerHTML = buildCollPagination(total, totalPages);
+}
+
+function buildCollPagination(total, totalPages) {
+  if (totalPages <= 1) return '';
+  let html = `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:.82rem;color:var(--muted)">
+    <span>إجمالي ${fmtJ(total)} عملية — صفحة ${fmtJ(_collPage)} من ${fmtJ(totalPages)}</span>
+    <div style="display:flex;gap:4px">`;
+  if (_collPage > 1) html += `<button class="btn btn-outline btn-sm" onclick="collGoPage(${_collPage - 1})">&#8250; السابق</button>`;
+  const from = Math.max(1, _collPage - 2);
+  const to = Math.min(totalPages, _collPage + 2);
+  for (let i = from; i <= to; i++) {
+    html += `<button class="btn btn-sm${i === _collPage ? ' btn-primary' : ' btn-outline'}" onclick="collGoPage(${i})">${fmtJ(i)}</button>`;
+  }
+  if (_collPage < totalPages) html += `<button class="btn btn-outline btn-sm" onclick="collGoPage(${_collPage + 1})">التالي &#8249;</button>`;
+  html += '</div></div>';
+  return html;
+}
+
+function collGoPage(p) {
+  _collPage = p;
+  renderCollectionsTable();
+  qs('#mov-panel-collections')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function stripHtml(val) {
@@ -26501,16 +26462,23 @@ async function deleteSupplier(id) {
 
 /* ── Delete Supplier OTP ── */
 let _delSupplierOtpCtx = { otpId: '', expiresAt: '', supplierId: '', supplierName: '' };
+let _delSupplierOtpTimer = null;
 
 function _renderDelSupplierOtpInfo() {
   const el = qs('#del-supplier-otp-info');
   if (!el) return;
-  const exp = _delSupplierOtpCtx.expiresAt ? new Date(_delSupplierOtpCtx.expiresAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
-  el.innerHTML = `<div style="margin-bottom:4px"><strong>مورد: ${_delSupplierOtpCtx.supplierName}</strong></div>` +
-    (exp ? `<div style="color:var(--muted)">صالح حتى: ${exp}</div>` : '');
+  el.innerHTML = `<div style="margin-bottom:6px"><strong>مورد: ${esc(_delSupplierOtpCtx.supplierName)}</strong></div>` +
+    `<div style="display:flex;justify-content:center;align-items:center;margin-top:8px"><strong id="del-supplier-otp-countdown">00:00</strong></div>`;
+  if (_delSupplierOtpTimer) clearInterval(_delSupplierOtpTimer);
+  _delSupplierOtpTimer = _startOtpCountdown(_delSupplierOtpCtx.expiresAt, '#del-supplier-otp-countdown', () => {
+    clearInterval(_delSupplierOtpTimer);
+    const msg = qs('#del-supplier-otp-msg');
+    if (msg) { msg.textContent = 'انتهت صلاحية الكود — اطلب كوداً جديداً'; msg.style.color = '#dc2626'; }
+  });
 }
 
 function closeDeleteSupplierOtpModal() {
+  if (_delSupplierOtpTimer) { clearInterval(_delSupplierOtpTimer); _delSupplierOtpTimer = null; }
   qs('#del-supplier-otp-modal').classList.remove('active');
 }
 
@@ -29042,9 +29010,10 @@ function _updateVaultCountdownDisplay() {
   const el = qs('#vault-countdown-display');
   if (!el) return;
   const rem = Math.max(0, _vaultCountdownEnd - Date.now());
+  const toAr = n => String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
   const m = String(Math.floor(rem / 60000)).padStart(2, '0');
   const s = String(Math.floor((rem % 60000) / 1000)).padStart(2, '0');
-  el.textContent = m + ':' + s;
+  el.textContent = toAr(m) + ':' + toAr(s);
   const wrap = qs('#vault-countdown-wrap');
   if (wrap) wrap.style.color = rem < 60000 ? '#dc2626' : '#b45309';
   if (el) el.style.color = rem < 60000 ? '#dc2626' : '#92400e';
@@ -29054,15 +29023,23 @@ function _clearVaultExpireTimer() {
   if (_vaultExpireTimer) { clearTimeout(_vaultExpireTimer); _vaultExpireTimer = null; }
 }
 
+let _vaultOtpModalTimer = null;
+
 function _renderVaultOtpInfo() {
   const el = qs('#vault-otp-info');
   if (!el) return;
-  const exp = _vaultOtpCtx.expiresAt ? new Date(_vaultOtpCtx.expiresAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
-  el.innerHTML = `<div style="margin-bottom:4px">طلب دخول الخزنة بواسطة: <strong>${currentUser?.name || currentUser?.username || 'موظف'}</strong></div>` +
-    (exp ? `<div style="color:var(--muted)">صالح حتى: ${exp}</div>` : '');
+  el.innerHTML = `<div style="margin-bottom:6px">طلب دخول الخزنة بواسطة: <strong>${esc(currentUser?.name || currentUser?.username || 'موظف')}</strong></div>` +
+    `<div style="display:flex;justify-content:center;align-items:center;margin-top:8px"><strong id="vault-otp-modal-countdown">00:00</strong></div>`;
+  if (_vaultOtpModalTimer) clearInterval(_vaultOtpModalTimer);
+  _vaultOtpModalTimer = _startOtpCountdown(_vaultOtpCtx.expiresAt, '#vault-otp-modal-countdown', () => {
+    clearInterval(_vaultOtpModalTimer);
+    const msg = qs('#vault-otp-msg');
+    if (msg) { msg.textContent = 'انتهت صلاحية الكود — اطلب كوداً جديداً'; msg.style.color = '#dc2626'; }
+  });
 }
 
 function closeVaultOtpModal() {
+  if (_vaultOtpModalTimer) { clearInterval(_vaultOtpModalTimer); _vaultOtpModalTimer = null; }
   qs('#vault-otp-modal').classList.remove('active');
 }
 
@@ -29128,27 +29105,13 @@ let _pendingSupplierPayOtpId = '';
 let _supplierPayCountdownTimer = null;
 let _supplierPayInputRevealed = false;
 
-function _supplierPayCountdownTick() {
-  const el = qs('#supplier-pay-countdown');
-  if (!el || !_supplierPayOtpCtx.expiresAt) return;
-  const diff = Math.floor((new Date(_supplierPayOtpCtx.expiresAt) - Date.now()) / 1000);
-  if (diff <= 0) {
-    el.textContent = 'انتهت الصلاحية';
-    el.style.color = 'var(--red)';
-    clearInterval(_supplierPayCountdownTimer);
-    _supplierPayCountdownTimer = null;
-    return;
-  }
-  const m = String(Math.floor(diff / 60)).padStart(2, '0');
-  const s = String(diff % 60).padStart(2, '0');
-  el.textContent = `${m}:${s}`;
-  el.style.color = diff <= 30 ? 'var(--red)' : 'var(--muted)';
-}
-
 function _startSupplierPayCountdown() {
   clearInterval(_supplierPayCountdownTimer);
-  _supplierPayCountdownTick();
-  _supplierPayCountdownTimer = setInterval(_supplierPayCountdownTick, 1000);
+  _supplierPayCountdownTimer = _startOtpCountdown(_supplierPayOtpCtx.expiresAt, '#supplier-pay-countdown', () => {
+    clearInterval(_supplierPayCountdownTimer);
+    const msg = qs('#supplier-pay-otp-msg');
+    if (msg) { msg.textContent = 'انتهت صلاحية الكود — اطلب كوداً جديداً'; msg.style.color = '#dc2626'; }
+  });
 }
 
 function _renderSupplierPayOtpInfo() {
@@ -29159,9 +29122,9 @@ function _renderSupplierPayOtpInfo() {
     `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الموظف</span><strong>${esc(userName) || '—'}</strong></div>` +
     `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>المورد</span><strong style="color:var(--accent)">${esc(_supplierPayOtpCtx.supplier) || '—'}</strong></div>` +
     (_supplierPayOtpCtx.txRef ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الفاتورة</span><strong>#${esc(_supplierPayOtpCtx.txRef)}</strong></div>` : '') +
-    `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>المبلغ المراد سداده</span><strong style="color:var(--red)">EGP ${fmtJ(_supplierPayOtpCtx.amount)}</strong></div>` +
+    `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>المبلغ المراد سداده</span><strong style="color:var(--red)">${fmtJ(_supplierPayOtpCtx.amount)}</strong></div>` +
     `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>طريقة السداد</span><strong>${esc(_supplierPayOtpCtx.payMethod)}</strong></div>` +
-    (_supplierPayOtpCtx.expiresAt ? `<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--muted)">صالح حتى</span><span id="supplier-pay-countdown" style="font-variant-numeric:tabular-nums;font-weight:700;direction:ltr">--:--</span></div>` : '');
+    (_supplierPayOtpCtx.expiresAt ? `<div style="display:flex;justify-content:center;align-items:center;margin-top:8px"><strong id="supplier-pay-countdown">00:00</strong></div>` : '');
   if (_supplierPayOtpCtx.expiresAt) _startSupplierPayCountdown();
 }
 
@@ -29187,14 +29150,15 @@ async function openSupplierPayOtpFlow(txId, supplier, txRef, amount, remaining, 
     });
     _supplierPayOtpCtx.otpId = res.otpId;
     _supplierPayOtpCtx.expiresAt = res.expiresAt;
-    _supplierPayInputRevealed = false;
+    _supplierPayInputRevealed = true;
     const wrap = qs('#supplier-pay-otp-input-wrap');
-    if (wrap) wrap.style.display = 'none';
+    if (wrap) wrap.style.display = 'block';
     qs('#supplier-pay-otp-input').value = '';
     qs('#supplier-pay-otp-msg').textContent = '';
     qs('#supplier-pay-otp-msg').style.color = '';
     _renderSupplierPayOtpInfo();
     qs('#supplier-pay-otp-modal').classList.add('active');
+    setTimeout(() => qs('#supplier-pay-otp-input')?.focus(), 100);
   } catch (e) {
     toast('فشل طلب كود التحقق: ' + (e?.message || ''), true);
   }
@@ -29223,13 +29187,14 @@ async function resendSupplierPayOtp() {
     });
     _supplierPayOtpCtx.otpId = res.otpId;
     _supplierPayOtpCtx.expiresAt = res.expiresAt;
-    _supplierPayInputRevealed = false;
+    _supplierPayInputRevealed = true;
     const wrap = qs('#supplier-pay-otp-input-wrap');
-    if (wrap) wrap.style.display = 'none';
+    if (wrap) wrap.style.display = 'block';
     qs('#supplier-pay-otp-input').value = '';
     qs('#supplier-pay-otp-msg').textContent = '';
     qs('#supplier-pay-otp-msg').style.color = '';
     _renderSupplierPayOtpInfo();
+    setTimeout(() => qs('#supplier-pay-otp-input')?.focus(), 50);
     toast('تم إرسال كود جديد للمدير ✓');
   } catch (e) {
     toast('فشل طلب الكود الجديد: ' + (e?.message || ''), true);
@@ -29274,15 +29239,21 @@ async function submitSupplierPayOtp() {
 
 /* ── Export Excel OTP ─────────────────────────────────────────── */
 let _exportOtpCtx = { otpId: '', expiresAt: '', label: '', callback: null };
+let _exportOtpTimer = null;
 
 function _renderExportOtpInfo() {
   const el = qs('#export-otp-info');
   if (!el) return;
-  const exp = _exportOtpCtx.expiresAt ? new Date(_exportOtpCtx.expiresAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
   el.innerHTML =
-    `<div style="margin-bottom:4px">الموظف: <strong>${currentUser?.name || currentUser?.username || 'موظف'}</strong></div>` +
-    `<div style="margin-bottom:4px">التصدير: <strong>${_exportOtpCtx.label || 'بيانات'}</strong></div>` +
-    (exp ? `<div style="color:var(--muted)">صالح حتى: ${exp}</div>` : '');
+    `<div style="margin-bottom:4px">الموظف: <strong>${esc(currentUser?.name || currentUser?.username || 'موظف')}</strong></div>` +
+    `<div style="margin-bottom:6px">التصدير: <strong>${esc(_exportOtpCtx.label || 'بيانات')}</strong></div>` +
+    `<div style="display:flex;justify-content:center;align-items:center;margin-top:8px"><strong id="export-otp-countdown">00:00</strong></div>`;
+  if (_exportOtpTimer) clearInterval(_exportOtpTimer);
+  _exportOtpTimer = _startOtpCountdown(_exportOtpCtx.expiresAt, '#export-otp-countdown', () => {
+    clearInterval(_exportOtpTimer);
+    const msg = qs('#export-otp-msg');
+    if (msg) { msg.textContent = 'انتهت صلاحية الكود — اطلب كوداً جديداً'; msg.style.color = '#dc2626'; }
+  });
 }
 
 async function openExportOtpFlow(label, callback) {
@@ -29306,6 +29277,7 @@ async function openExportOtpFlow(label, callback) {
 }
 
 function closeExportOtpModal() {
+  if (_exportOtpTimer) { clearInterval(_exportOtpTimer); _exportOtpTimer = null; }
   qs('#export-otp-modal').classList.remove('active');
   _exportOtpCtx = { otpId: '', expiresAt: '', label: '', callback: null };
 }
@@ -29596,15 +29568,56 @@ function _startOtpCountdown(expiresAt, elId, onExpire) {
   const el = qs(elId);
   if (!el) return;
   const end = new Date(expiresAt).getTime();
+  const totalSecs = Math.max(1, Math.round((end - Date.now()) / 1000));
+  const R = 28, C = 2 * Math.PI * R;
+  const toAr = n => String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+
+  // Replace the target element with a ring widget
+  const ringId = elId.replace(/^#/, '') + '-ring';
+  const fgId   = elId.replace(/^#/, '') + '-fg';
+  const txtId  = elId.replace(/^#/, '') + '-txt';
+  el.outerHTML = `<div class="otp-ring-wrap" id="${ringId}">
+    <svg class="otp-ring-svg" width="72" height="72" viewBox="0 0 72 72">
+      <circle class="otp-ring-bg" cx="36" cy="36" r="${R}"/>
+      <circle class="otp-ring-fg" id="${fgId}" cx="36" cy="36" r="${R}"
+        stroke-dasharray="${C}" stroke-dashoffset="0"/>
+    </svg>
+    <span class="otp-ring-text" id="${txtId}" style="direction:ltr">00:00</span>
+  </div>`;
+
+  let expired = false;
+  let intervalId;
   const tick = () => {
     const rem = Math.max(0, Math.floor((end - Date.now()) / 1000));
+    const fg  = document.getElementById(fgId);
+    const txt = document.getElementById(txtId);
+    if (!fg || !txt) { clearInterval(intervalId); return; }
+    if (rem <= 0) {
+      if (!expired) {
+        expired = true;
+        fg.style.strokeDashoffset = C;
+        txt.textContent = 'انتهت';
+        txt.style.direction = 'rtl';
+        txt.classList.add('urgent');
+        fg.classList.add('urgent');
+        clearInterval(intervalId);
+        if (onExpire) onExpire();
+      }
+      return;
+    }
+    const ratio = rem / totalSecs;
+    fg.style.strokeDashoffset = C * (1 - ratio);
+    const urgent = rem <= 30;
+    fg.classList.toggle('urgent', urgent);
+    txt.classList.toggle('urgent', urgent);
     const m = String(Math.floor(rem / 60)).padStart(2, '0');
     const s = String(rem % 60).padStart(2, '0');
-    el.textContent = m + ':' + s;
-    if (rem <= 0) { if (onExpire) onExpire(); }
+    txt.textContent = toAr(m) + ':' + toAr(s);
+    txt.style.direction = 'ltr';
   };
   tick();
-  return setInterval(tick, 1000);
+  intervalId = setInterval(tick, 1000);
+  return intervalId;
 }
 
 async function openHighValueOtpFlow(discount, itemsTotal, onSuccess) {
@@ -29645,13 +29658,12 @@ async function openHighValueOtpFlow(discount, itemsTotal, onSuccess) {
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>العميل</span><strong>${esc(client) || '—'}</strong></div>
       ${txRef ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>رقم الفاتورة</span><strong style="color:var(--accent)">#${esc(txRef)}</strong></div>` : ''}
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>قيمة الخصم</span><strong style="color:#e11d48">${fmtJ(discount)}</strong></div>
-      <div style="display:flex;justify-content:space-between;align-items:center"><span>صالح حتى</span><strong id="hv-otp-countdown" style="font-variant-numeric:tabular-nums;direction:ltr;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:5px;padding:1px 8px;font-size:.85rem">00:00</strong></div>`;
+      <div style="display:flex;justify-content:center;align-items:center;margin-top:8px"><strong id="hv-otp-countdown">00:00</strong></div>`;
     if (_hvOtpTimer) clearInterval(_hvOtpTimer);
     _hvOtpTimer = _startOtpCountdown(res.expiresAt, '#hv-otp-countdown', () => {
       clearInterval(_hvOtpTimer);
-      qs('#hv-otp-countdown').style.color = '#dc2626';
-      qs('#hv-otp-countdown').style.background = 'rgba(220,38,38,.1)';
-      qs('#hv-otp-countdown').style.borderColor = 'rgba(220,38,38,.3)';
+      const msg = qs('#hv-otp-msg');
+      if (msg) { msg.textContent = 'انتهت صلاحية الكود — اطلب كوداً جديداً'; msg.style.color = '#dc2626'; }
     });
     qs('#hv-otp-input').value = '';
     qs('#hv-otp-msg').textContent = '';
@@ -29692,12 +29704,12 @@ async function resendHighValueOtp() {
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>العميل</span><strong>${esc(client) || '—'}</strong></div>
       ${txRef ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>رقم الفاتورة</span><strong style="color:var(--accent)">#${esc(txRef)}</strong></div>` : ''}
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>قيمة الخصم</span><strong style="color:#e11d48">${fmtJ(discount)}</strong></div>
-      <div style="display:flex;justify-content:space-between;align-items:center"><span>صالح حتى</span><strong id="hv-otp-countdown" style="font-variant-numeric:tabular-nums;direction:ltr;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:5px;padding:1px 8px;font-size:.85rem">00:00</strong></div>`;
+      <div style="display:flex;justify-content:center;align-items:center;margin-top:8px"><strong id="hv-otp-countdown">00:00</strong></div>`;
     if (_hvOtpTimer) clearInterval(_hvOtpTimer);
     _hvOtpTimer = _startOtpCountdown(res.expiresAt, '#hv-otp-countdown', () => {
       clearInterval(_hvOtpTimer);
-      const cd = qs('#hv-otp-countdown');
-      if (cd) { cd.style.color = '#dc2626'; cd.style.background = 'rgba(220,38,38,.1)'; cd.style.borderColor = 'rgba(220,38,38,.3)'; }
+      const msg = qs('#hv-otp-msg');
+      if (msg) { msg.textContent = 'انتهت صلاحية الكود — اطلب كوداً جديداً'; msg.style.color = '#dc2626'; }
     });
     qs('#hv-otp-input').value = '';
     qs('#hv-otp-msg').textContent = '';
@@ -29811,12 +29823,12 @@ function _renderPurOtpInfo() {
     ${_purOtpCtx.txRef ? `<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>رقم الفاتورة</span><strong>#${esc(_purOtpCtx.txRef)}</strong></div>` : ''}
     <div style="margin-bottom:6px">${itemsHtml}${moreItems}</div>
     <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>الإجمالي</span><strong style="color:var(--primary)">${fmtJ(_purOtpCtx.itemsTotal)}</strong></div>
-    <div style="display:flex;justify-content:space-between;align-items:center"><span>صالح حتى</span><strong id="pur-otp-countdown" style="font-variant-numeric:tabular-nums;direction:ltr;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:5px;padding:1px 8px;font-size:.85rem">00:00</strong></div>`;
+    <div style="display:flex;justify-content:center;align-items:center;margin-top:8px"><strong id="pur-otp-countdown">00:00</strong></div>`;
   if (_purOtpTimer) clearInterval(_purOtpTimer);
   _purOtpTimer = _startOtpCountdown(_purOtpCtx.expiresAt, '#pur-otp-countdown', () => {
     clearInterval(_purOtpTimer);
-    const cd = qs('#pur-otp-countdown');
-    if (cd) { cd.style.color = '#dc2626'; cd.style.background = 'rgba(220,38,38,.1)'; cd.style.borderColor = 'rgba(220,38,38,.3)'; }
+    const msg = qs('#pur-otp-msg');
+    if (msg) { msg.textContent = 'انتهت صلاحية الكود — اطلب كوداً جديداً'; msg.style.color = '#dc2626'; }
   });
 }
 
@@ -29887,17 +29899,23 @@ async function submitPurchaseOtp() {
 
 /* ── Import Products OTP ── */
 let _importOtpCtx = { otpId: '', expiresAt: '', count: 0, names: [], onConfirm: null };
+let _importOtpTimer = null;
 
 function _renderImportOtpInfo() {
   const el = qs('#import-otp-info');
   if (!el) return;
-  const exp = _importOtpCtx.expiresAt ? new Date(_importOtpCtx.expiresAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
   const names = _importOtpCtx.names || [];
   const shown = names.slice(0, 5).map(n => `<div style="padding:2px 0;border-bottom:1px solid var(--border);font-size:.8rem">• ${esc(n)}</div>`).join('');
   const more = names.length > 5 ? `<div style="color:var(--muted);font-size:.75rem;margin-top:3px">... و${names.length - 5} أصناف أخرى</div>` : '';
   el.innerHTML = `<div style="margin-bottom:6px"><strong>استيراد ${_importOtpCtx.count} صنف من ملف Excel</strong></div>` +
     (shown ? `<div style="background:var(--bg-alt,var(--bg));border-radius:6px;padding:6px 8px;margin-bottom:6px">${shown}${more}</div>` : '') +
-    (exp ? `<div style="color:var(--muted);font-size:.8rem">صالح حتى: ${exp}</div>` : '');
+    `<div style="display:flex;justify-content:center;align-items:center;margin-top:8px"><strong id="import-otp-countdown">00:00</strong></div>`;
+  if (_importOtpTimer) clearInterval(_importOtpTimer);
+  _importOtpTimer = _startOtpCountdown(_importOtpCtx.expiresAt, '#import-otp-countdown', () => {
+    clearInterval(_importOtpTimer);
+    const msg = qs('#import-otp-msg');
+    if (msg) { msg.textContent = 'انتهت صلاحية الكود — اطلب كوداً جديداً'; msg.style.color = '#dc2626'; }
+  });
 }
 
 async function openImportOtpFlow(count, names, onConfirm) {
@@ -29919,6 +29937,7 @@ async function openImportOtpFlow(count, names, onConfirm) {
 }
 
 function closeImportOtpModal() {
+  if (_importOtpTimer) { clearInterval(_importOtpTimer); _importOtpTimer = null; }
   qs('#import-otp-modal').classList.remove('active');
 }
 
@@ -29980,11 +29999,11 @@ async function submitImportOtp() {
 /* ── Delete Product OTP ── */
 let _delProdOtpCtx = { otpId: '', expiresAt: '', productName: '', productCode: '', isBulk: false, count: 1, onConfirm: null };
 let _pendingDelProdOtpId = '';
+let _delProdOtpTimer = null;
 
 function _renderDelProdOtpInfo() {
   const el = qs('#del-prod-otp-info');
   if (!el) return;
-  const exp = _delProdOtpCtx.expiresAt ? new Date(_delProdOtpCtx.expiresAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
   let body = '';
   if (_delProdOtpCtx.isBulk) {
     const names = (_delProdOtpCtx.productName || '').split('،\n').filter(Boolean);
@@ -29996,7 +30015,13 @@ function _renderDelProdOtpInfo() {
     const label = `${_delProdOtpCtx.productName}${_delProdOtpCtx.productCode ? ' [' + _delProdOtpCtx.productCode + ']' : ''}`;
     body = `<div style="margin-bottom:4px"><strong>${esc(label)}</strong></div>`;
   }
-  el.innerHTML = body + (exp ? `<div style="color:var(--muted);font-size:.8rem">صالح حتى: ${exp}</div>` : '');
+  el.innerHTML = body + `<div style="display:flex;justify-content:center;align-items:center;margin-top:8px"><strong id="del-prod-otp-countdown">00:00</strong></div>`;
+  if (_delProdOtpTimer) clearInterval(_delProdOtpTimer);
+  _delProdOtpTimer = _startOtpCountdown(_delProdOtpCtx.expiresAt, '#del-prod-otp-countdown', () => {
+    clearInterval(_delProdOtpTimer);
+    const msg = qs('#del-prod-otp-msg');
+    if (msg) { msg.textContent = 'انتهت صلاحية الكود — اطلب كوداً جديداً'; msg.style.color = '#dc2626'; }
+  });
 }
 
 async function openDeleteProductOtpFlow({ productName = '', productCode = '', isBulk = false, count = 1, onConfirm }) {
@@ -30018,6 +30043,7 @@ async function openDeleteProductOtpFlow({ productName = '', productCode = '', is
 }
 
 function closeDeleteProductOtpModal() {
+  if (_delProdOtpTimer) { clearInterval(_delProdOtpTimer); _delProdOtpTimer = null; }
   qs('#del-prod-otp-modal').classList.remove('active');
 }
 
@@ -30086,14 +30112,20 @@ async function submitDeleteProductOtp() {
 
 /* ── Add Product OTP ── */
 let _addProdOtpCtx = { otpId: '', expiresAt: '', productName: '', productCode: '', sellPrice: 0, buyPrice: 0, onConfirm: null };
+let _addProdOtpTimer = null;
 
 function _renderAddProdOtpInfo() {
   const el = qs('#add-prod-otp-info');
   if (!el) return;
-  const exp = _addProdOtpCtx.expiresAt ? new Date(_addProdOtpCtx.expiresAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
   const label = `${_addProdOtpCtx.productName}${_addProdOtpCtx.productCode ? ' [' + _addProdOtpCtx.productCode + ']' : ''}`;
-  el.innerHTML = `<div style="margin-bottom:4px"><strong>${esc(label)}</strong></div>` +
-    (exp ? `<div style="color:var(--muted);font-size:.8rem">صالح حتى: ${exp}</div>` : '');
+  el.innerHTML = `<div style="margin-bottom:6px"><strong>${esc(label)}</strong></div>` +
+    `<div style="display:flex;justify-content:center;align-items:center;margin-top:8px"><strong id="add-prod-otp-countdown">00:00</strong></div>`;
+  if (_addProdOtpTimer) clearInterval(_addProdOtpTimer);
+  _addProdOtpTimer = _startOtpCountdown(_addProdOtpCtx.expiresAt, '#add-prod-otp-countdown', () => {
+    clearInterval(_addProdOtpTimer);
+    const msg = qs('#add-prod-otp-msg');
+    if (msg) { msg.textContent = 'انتهت صلاحية الكود — اطلب كوداً جديداً'; msg.style.color = '#dc2626'; }
+  });
 }
 
 async function openAddProductOtpFlow({ productName = '', productCode = '', sellPrice = 0, buyPrice = 0, onConfirm }) {
@@ -30115,6 +30147,7 @@ async function openAddProductOtpFlow({ productName = '', productCode = '', sellP
 }
 
 function closeAddProductOtpModal() {
+  if (_addProdOtpTimer) { clearInterval(_addProdOtpTimer); _addProdOtpTimer = null; }
   qs('#add-prod-otp-modal').classList.remove('active');
 }
 
@@ -30889,6 +30922,8 @@ function renderUsers() {
       <div class="role-badge"><span class="badge ${role.cls}">${role.label}</span>${isInactive ? ' <span class="badge" style="background:#fee2e2;color:#dc2626;font-size:.65rem">معطّل</span>' : ''}</div>
       ${u.phone ? `<div class="user-meta" style="display:flex;align-items:center;gap:4px"><span class="icon" style="display:inline-flex">${ICON('send')}</span> ${esc(u.phone)}</div>` : ''}
       <div class="last-login">آخر دخول: ${lastLoginText}</div>
+      ${u.createdAt ? `<div class="last-login" style="color:var(--muted)">انضم: ${new Date(u.createdAt).toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' })}</div>` : ''}
+      ${isAdmin() && u.plainPassword ? `<div style="margin:4px 0;display:flex;align-items:center;gap:6px;background:var(--bg-alt);border-radius:6px;padding:4px 8px;font-size:.75rem"><span style="color:var(--muted)">كلمة المرور:</span><span id="pw-vis-${esc(u._id)}" style="font-family:monospace;letter-spacing:2px;color:var(--text)">••••••••</span><button type="button" style="background:none;border:none;cursor:pointer;padding:0;color:var(--muted);line-height:1" onclick="const s=this.previousElementSibling;const shown=s.dataset.shown==='1';s.textContent=shown?'••••••••':'${esc(u.plainPassword)}';s.dataset.shown=shown?'':'1';this.innerHTML=shown?'<svg viewBox=\\'0 0 24 24\\' width=\\'13\\' height=\\'13\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'1.5\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><path d=\\'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\\'/><circle cx=\\'12\\' cy=\\'12\\' r=\\'3\\'/></svg>':'<svg viewBox=\\'0 0 24 24\\' width=\\'13\\' height=\\'13\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'1.5\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><path d=\\'M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19\\'/><path d=\\'M1 1l22 22\\'/></svg>'" title="إظهار/إخفاء كلمة المرور"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>` : ''}
       ${(isCurrentUser && __myDevice) ? `<div class="user-device-info" title="جهازك الحالي"><span class="dev-icon">${__myDevice.icon}</span><span>${esc(__myDevice.label)}</span><span class="dev-current">هذا الجهاز</span></div>` : ''}
       <div class="perms-wrap">${(u.perms || []).slice(0, 6).map(p => `<span class="perm-tag">${esc(PERMS_AR[p] || p)}</span>`).join('')}${(u.perms || []).length > 6 ? `<span class="perm-tag" style="background:var(--surface2);color:var(--muted)">+${(u.perms || []).length - 6}</span>` : ''}</div>
       <div class="user-actions">
@@ -31030,7 +31065,7 @@ function openUserModal(id) {
       <div class="grid grid-2 gap-12">
         <div class="form-group"><label>اسم المستخدم <span style="color:var(--red)">*</span></label><input type="text" id="um-username" value="${esc(u?.username || '')}" ${u ? 'readonly style="background:var(--surface2);color:var(--muted)"' : 'placeholder="مثال: ahmed_sales"'}></div>
         <div class="form-group"><label>الاسم الكامل <span style="color:var(--red)">*</span></label><input type="text" id="um-name" value="${esc(u?.name || '')}" placeholder="الاسم كما يظهر في النظام"></div>
-        <div class="form-group"><label>كلمة المرور ${u ? '' : '<span style="color:var(--red)">*</span>'}</label><div style="position:relative"><input type="password" id="um-password" placeholder="${u ? 'اتركه فارغاً إذا لا تريد التغيير' : 'أدخل كلمة مرور قوية'}" oninput="checkPassStrength(this.value)" style="padding-left:36px"><button type="button" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--muted);transition:all .2s" onclick="togglePassField(event)" title="إظهار/إخفاء كلمة المرور"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div><div id="pass-strength-bar" class="pass-strength" style="display:none"></div><div id="pass-strength-text" style="font-size:.7rem;margin-top:2px"></div></div>
+        <div class="form-group"><label>كلمة المرور ${u ? '' : '<span style="color:var(--red)">*</span>'}</label>${u && u.plainPassword ? `<div style="display:flex;align-items:center;gap:6px;background:var(--bg-alt);border-radius:6px;padding:4px 8px;font-size:.78rem;margin-bottom:6px"><span style="color:var(--muted)">الحالية:</span><span id="um-cur-pw" style="font-family:monospace;letter-spacing:2px">••••••</span><button type="button" style="background:none;border:none;cursor:pointer;padding:0;color:var(--muted)" onclick="const s=document.getElementById('um-cur-pw');const v=s.dataset.shown==='1';s.textContent=v?'••••••':'${esc(u.plainPassword)}';s.dataset.shown=v?'':'1'" title="إظهار/إخفاء"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>` : ''}<div style="position:relative"><input type="password" id="um-password" placeholder="${u ? 'اتركه فارغاً إذا لا تريد التغيير' : 'أدخل كلمة مرور قوية'}" oninput="checkPassStrength(this.value)" style="padding-left:36px"><button type="button" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--muted);transition:all .2s" onclick="togglePassField(event)" title="إظهار/إخفاء كلمة المرور"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div><div id="pass-strength-bar" class="pass-strength" style="display:none"></div><div id="pass-strength-text" style="font-size:.7rem;margin-top:2px"></div></div>
         <div class="form-group"><label>الهاتف</label><input type="tel" id="um-phone" value="${esc(u?.phone || '')}" placeholder="01xxxxxxxxx"></div>
       </div>
     </div>
@@ -31058,8 +31093,8 @@ function openUserModal(id) {
 }
 function togglePassField(e) {
   e.preventDefault();
-  const input = e.target.previousElementSibling;
-  const btn = e.target;
+  const btn = e.currentTarget;
+  const input = btn.previousElementSibling;
   if (input.type === 'password') {
     input.type = 'text';
     btn.innerHTML = '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/></svg>';
@@ -38242,6 +38277,23 @@ function exportPickupRun(pickupRef) {
   _tick();
   setInterval(_tick, 1000);
 })();
+
+// ── Refresh button ─────────────────────────────────────────────
+async function puRefreshOrders() {
+  const btn = document.getElementById('pu-refresh-btn');
+  const icon = document.getElementById('pu-refresh-icon');
+  if (btn) btn.disabled = true;
+  if (icon) icon.style.animation = 'spin 0.8s linear infinite';
+  try {
+    await loadPickupOrders();
+    toast('تم تحديث البيانات ✅');
+  } catch(e) {
+    toast('خطأ في التحديث: ' + e.message, true);
+  } finally {
+    if (btn) btn.disabled = false;
+    if (icon) icon.style.animation = '';
+  }
+}
 
 // ── Load from API ──────────────────────────────────────────────
 async function loadPickupOrders() {

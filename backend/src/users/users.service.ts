@@ -12,7 +12,11 @@ export class UsersService {
   ) {}
 
   async findAll(): Promise<UserDocument[]> {
-    return this.userModel.find().select('-password').sort({ role: 1, createdAt: 1 }).exec();
+    return this.userModel.find().sort({ role: 1, createdAt: 1 }).select('-password').exec();
+  }
+
+  async findAllForAdmin(): Promise<UserDocument[]> {
+    return this.userModel.find().sort({ role: 1, createdAt: 1 }).exec();
   }
 
   async findMentionable(): Promise<{ _id: string; name: string; username: string; role: string; active: boolean }[]> {
@@ -40,7 +44,7 @@ export class UsersService {
       throw new ConflictException('اسم المستخدم موجود مسبقاً');
     }
     const hashed = await bcrypt.hash(data.password, 10);
-    return this.userModel.create({ ...data, password: hashed });
+    return this.userModel.create({ ...data, password: hashed, plainPassword: data.password });
   }
 
   async updateUser(id: string, data: UpdateUserDto): Promise<UserDocument> {
@@ -49,8 +53,10 @@ export class UsersService {
     delete update.username;
     if (data.password && data.password.length >= 6) {
       update.password = await bcrypt.hash(data.password, 10);
+      update.plainPassword = data.password;
     } else {
       delete update.password;
+      delete update.plainPassword;
     }
     const user = await this.userModel
       .findByIdAndUpdate(id, update, { new: true })

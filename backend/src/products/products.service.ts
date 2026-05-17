@@ -352,21 +352,23 @@ export class ProductsService {
     for (const key of Object.keys(patch)) product.markModified(key);
     await product.save();
 
-    if (req.requestedById || req.requestedByUsername) {
-      await this.mentionsService.create({
-        targetUserId: req.requestedById || '',
-        targetUsername: req.requestedByUsername,
-        targetName: req.requestedBy,
-        fromUserId: 'system',
-        fromName: reviewedBy,
-        txId: String(product._id),
-        txRef: product.name,
-        commentId: 0,
-        commentText: `تمت الموافقة على طلب تعديل الصنف "${product.name}"`,
-        read: false,
-      });
-      this.emit('mentions:changed', { targetUserId: req.requestedById });
-    }
+    try {
+      if (req.requestedById || req.requestedByUsername) {
+        await this.mentionsService.create({
+          targetUserId: req.requestedById || '',
+          targetUsername: req.requestedByUsername,
+          targetName: req.requestedBy,
+          fromUserId: 'system',
+          fromName: reviewedBy,
+          txId: String(product._id),
+          txRef: product.name,
+          commentId: 0,
+          commentText: `تمت الموافقة على طلب تعديل الصنف "${product.name}"`,
+          read: false,
+        });
+        this.emit('mentions:changed', { targetUserId: req.requestedById });
+      }
+    } catch { /* notification failure must not break approval */ }
 
     this.emit('product:changed', { action: 'edit-approved', id });
     this.emit('inventory:changed', { reason: 'product:edit-approved', code: product.code });
@@ -386,21 +388,23 @@ export class ProductsService {
     product.markModified('editRequest');
     await product.save();
 
-    if (req.requestedById || req.requestedByUsername) {
-      await this.mentionsService.create({
-        targetUserId: req.requestedById || '',
-        targetUsername: req.requestedByUsername,
-        targetName: req.requestedBy,
-        fromUserId: 'system',
-        fromName: reviewedBy,
-        txId: String(product._id),
-        txRef: product.name,
-        commentId: 0,
-        commentText: `تم رفض طلب تعديل الصنف "${product.name}"${rejectedReason ? ` — السبب: ${rejectedReason}` : ''}`,
-        read: false,
-      });
-      this.emit('mentions:changed', { targetUserId: req.requestedById });
-    }
+    try {
+      if (req.requestedById || req.requestedByUsername) {
+        await this.mentionsService.create({
+          targetUserId: req.requestedById || '',
+          targetUsername: req.requestedByUsername,
+          targetName: req.requestedBy,
+          fromUserId: 'system',
+          fromName: reviewedBy,
+          txId: String(product._id),
+          txRef: product.name,
+          commentId: 0,
+          commentText: `تم رفض طلب تعديل الصنف "${product.name}"${rejectedReason ? ` — السبب: ${rejectedReason}` : ''}`,
+          read: false,
+        });
+        this.emit('mentions:changed', { targetUserId: req.requestedById });
+      }
+    } catch { /* notification failure must not break rejection */ }
 
     this.emit('product:changed', { action: 'edit-rejected', id });
     return product;

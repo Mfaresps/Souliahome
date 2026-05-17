@@ -171,7 +171,7 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const expiresStr = expiresAt.toISOString();
       const text =
         `🔐 كود التحقق: ${otp}` +
         `\nالموظف: ${args.requestedByName || args.requestedByUsername || 'موظف'}` +
@@ -326,7 +326,7 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const expiresStr = expiresAt.toISOString();
       const itemsText = (args.items || [])
         .slice(0, 5)
         .map(it => `  • ${it.name}: ${it.qty} × ${it.price} = EGP ${it.total}`)
@@ -400,7 +400,7 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const expiresStr = expiresAt.toISOString();
       const names = args.itemNames || [];
       const shownNames = names.slice(0, 10).map(n => `• ${n}`).join('\n');
       const moreNames = names.length > 10 ? `\n... و${names.length - 10} أصناف أخرى` : '';
@@ -476,7 +476,7 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const expiresStr = expiresAt.toISOString();
       let namesBlock = '';
       if (args.isBulk && args.productName) {
         const names = args.productName.split('،\n').filter(Boolean);
@@ -544,7 +544,7 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const expiresStr = expiresAt.toISOString();
       const text =
         `🗑️ طلب حذف مورد يحتاج موافقتك` +
         `\n🔐 كود التحقق: ${otp}` +
@@ -680,7 +680,7 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const expiresStr = expiresAt.toISOString();
       const text =
         `🔐 طلب دخول الخزنة يحتاج موافقتك` +
         `\n🔐 كود التحقق: ${otp}` +
@@ -741,7 +741,7 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const expiresStr = expiresAt.toISOString();
       const text =
         `➕ طلب إضافة صنف يحتاج موافقتك` +
         `\n🔐 كود التحقق: ${otp}` +
@@ -802,7 +802,7 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const expiresStr = expiresAt.toISOString();
       const text =
         `📊 طلب تصدير Excel يحتاج موافقتك` +
         `\n🔐 كود التحقق: ${otp}` +
@@ -884,7 +884,7 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const expiresStr = expiresAt.toISOString();
       const changesText = (args.changes || []).slice(0, 8).map(c => `  • ${c}`).join('\n');
       const moreChanges = (args.changes || []).length > 8 ? `\n  ... و${(args.changes || []).length - 8} تغييرات أخرى` : '';
       const text =

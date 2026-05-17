@@ -1052,7 +1052,7 @@ export class TransactionsService {
       method: dto.collectMethod,
       note: dto.collectNote || (shipExtra > 0 ? `زيادة شحن: ${shipExtra} ج` : ''),
       date: new Date().toISOString(),
-      by: tx.employee || '',
+      by: by || tx.employee || '',
       remaining: totalRemaining,
       collectedAmount: payAmount,
       // لقطة لاستخدام التراجع (UNDO) — ترجع كل شيء كما كان قبل التحصيل
