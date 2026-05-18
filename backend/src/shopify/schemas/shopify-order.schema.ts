@@ -59,6 +59,8 @@ export class ShopifyOrder {
     price: number;
     total: number;
     imageUrl: string;
+    shopifyPrice: number;
+    shopifyName: string;
   }>;
 
   @Prop({ default: 'pending' })
@@ -75,6 +77,15 @@ export class ShopifyOrder {
 
   @Prop({ default: '' })
   rejectReason: string;
+
+  @Prop({ default: '' })
+  tags: string;
+
+  @Prop({ default: '' })
+  shippingAddress: string;
+
+  @Prop({ default: '' })
+  orderStatusUrl: string;
 
   @Prop({ type: Object })
   rawData: Record<string, unknown>;

@@ -67,8 +67,7 @@ export class ShopifyService {
         .filter(Boolean).join(' ') || 'عميل Shopify';
       const clientPhone = customer.phone || orderData.shipping_address?.phone || '';
       const address = this.formatAddress(orderData.shipping_address);
-      const shopifyNotes = orderData.note || '';
-      const notes = [address, shopifyNotes].filter(Boolean).join(' | ');
+      const notes = orderData.note || '';
       const shipCost = this.parsePrice(orderData.shipping_lines?.[0]?.price);
       const discount = this.parsePrice(orderData.total_discounts);
       // نحسب الإجمالي من أسعار النظام الفعلية (وليس total_price من Shopify)
@@ -100,6 +99,9 @@ export class ShopifyService {
         discountValue,
         financialStatus: orderData.financial_status || '',
         shopifyCreatedAt: orderData.created_at || '',
+        tags: orderData.tags || '',
+        shippingAddress: address,
+        orderStatusUrl: orderData.order_status_url || '',
         items,
         status: 'pending',
         rawData: orderData,
@@ -110,6 +112,42 @@ export class ShopifyService {
     } catch (err) {
       this.logger.error(`❌ خطأ: ${err.message}`);
       return { saved: false, reason: err.message };
+    }
+  }
+
+  // مزامنة تحديث الأوردر من Shopify (note + tags فقط)
+  async handleOrderUpdate(orderData: any): Promise<{ updated: boolean; reason?: string }> {
+    try {
+      const shopifyId = String(orderData.id);
+      const order = await this.shopifyOrderModel.findOne({ shopifyId });
+      if (!order) {
+        return { updated: false, reason: 'الأوردر غير موجود في النظام' };
+      }
+
+      const notes = orderData.note || '';
+      const address = this.formatAddress(orderData.shipping_address);
+      const tags = orderData.tags || '';
+      const financialStatus = orderData.financial_status || order.financialStatus;
+
+      order.notes = notes;
+      order.shippingAddress = address;
+      order.tags = tags;
+      order.financialStatus = financialStatus;
+      await order.save();
+
+      // تحديث الحركة المقابلة في سجل المبيعات إن وُجدت
+      // tags في Shopify نص مفصول بفواصل، transaction تحتفظ بها كمصفوفة
+      const txTags = tags ? tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [];
+      await this.txModel.updateOne(
+        { shopifyOrderId: shopifyId },
+        { $set: { notes, tags: txTags } },
+      );
+
+      this.logger.log(`🔄 تحديث أوردر Shopify: ${order.ref}`);
+      return { updated: true };
+    } catch (err) {
+      this.logger.error(`❌ خطأ في تحديث الأوردر: ${err.message}`);
+      return { updated: false, reason: err.message };
     }
   }
 
@@ -170,6 +208,7 @@ export class ShopifyService {
       payStatus,
       employee,
       source: 'shopify',
+      shopifyOrderId: order.shopifyId,
       pickupStatus: 'Pending',
       cancelled: false,
       archived: false,

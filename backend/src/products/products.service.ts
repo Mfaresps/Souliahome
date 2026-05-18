@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, isValidObjectId } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
 import { Transaction, TransactionDocument } from '../transactions/schemas/transaction.schema';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
@@ -71,6 +71,7 @@ export class ProductsService {
   }
 
   async update(id: string, dto: UpdateProductDto): Promise<ProductDocument> {
+    if (!isValidObjectId(id)) throw new BadRequestException(`معرّف الصنف غير صالح: "${id}"`);
     const patch: Record<string, unknown> = { ...dto };
 
     const current = await this.productModel.findById(id).exec();

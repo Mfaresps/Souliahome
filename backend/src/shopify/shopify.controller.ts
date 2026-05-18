@@ -47,6 +47,10 @@ export class ShopifyController {
       return this.shopifyService.handleOrder(req.body);
     }
 
+    if (topic === 'orders/updated') {
+      return this.shopifyService.handleOrderUpdate(req.body);
+    }
+
     return { received: true, topic };
   }
 

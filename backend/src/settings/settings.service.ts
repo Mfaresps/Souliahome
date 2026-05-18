@@ -81,6 +81,34 @@ function migrateDoc(collection: string, doc: any): void {
     def(doc, 'active', true);
     return;
   }
+
+  if (collection === 'products') {
+    def(doc, 'sellPrice', 0);
+    def(doc, 'buyPrice', 0);
+    def(doc, 'minStock', 10);
+    def(doc, 'openingBalance', 0);
+    def(doc, 'supplier', '');
+    def(doc, 'imageUrl', '');
+    def(doc, 'editRequest', null);
+    return;
+  }
+
+  if (collection === 'shopifyorders') {
+    def(doc, 'status', 'pending');
+    def(doc, 'pendingStatus', '');
+    def(doc, 'items', []);
+    def(doc, 'total', 0);
+    def(doc, 'itemsTotal', 0);
+    def(doc, 'shipCost', 0);
+    def(doc, 'discount', 0);
+    def(doc, 'discountCode', '');
+    def(doc, 'discountType', '');
+    def(doc, 'discountValue', 0);
+    def(doc, 'tags', '');
+    def(doc, 'shippingAddress', '');
+    def(doc, 'orderStatusUrl', '');
+    return;
+  }
 }
 
 @Injectable()
@@ -381,12 +409,18 @@ export class SettingsService {
         timestamp: new Date().toISOString(),
         data: {
           transactions: await this.connection.collection('transactions').find({}).toArray(),
+          products: await this.connection.collection('products').find({}).toArray(),
           vaultentries: await this.connection.collection('vaultentries').find({}).toArray(),
           clients: await this.connection.collection('clients').find({}).toArray(),
           suppliers: await this.connection.collection('suppliers').find({}).toArray(),
           returnrequests: await this.connection.collection('returnrequests').find({}).toArray(),
           expenses: await this.connection.collection('expenses').find({}).toArray(),
           complaints: await this.connection.collection('complaints').find({}).toArray(),
+          shopifyorders: await this.connection.collection('shopifyorders').find({}).toArray(),
+          followups: await this.connection.collection('followups').find({}).toArray(),
+          mentions: await this.connection.collection('mentions').find({}).toArray(),
+          tags: await this.connection.collection('tags').find({}).toArray(),
+          users: await this.connection.collection('users').find({}).toArray(),
         },
         vault_balances: {
           vaultCash: settings?.vaultCash || 0,
@@ -448,12 +482,19 @@ export class SettingsService {
     // Step 2: Delete all data
     const collections = [
       'transactions',
+      'products',
       'vaultentries',
       'clients',
       'suppliers',
       'returnrequests',
       'expenses',
       'complaints',
+      'shopifyorders',
+      'followups',
+      'mentions',
+      'discountotps',
+      'tags',
+      'users',
     ];
 
     const results: Record<string, number> = {};

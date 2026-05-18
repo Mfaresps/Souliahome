@@ -1237,9 +1237,16 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .meta-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:.74rem}
 .meta-chip .k{color:#94a3b8;font-weight:500}
 .meta-chip .v{color:#0f172a;font-weight:600}
-.meta-chip.note{flex:1 1 100%;background:#fffbeb;border-color:#fde68a}
+.meta-chip.note{flex:1 1 100%;background:#fffbeb;border-color:#fde68a;position:relative;cursor:default}
 .meta-chip.note .k{color:#b45309}
-.meta-chip.note .v{color:#78350f;font-weight:500;white-space:normal;word-break:break-word}
+.meta-chip.note .v{color:#78350f;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;display:inline-block;vertical-align:middle}
+.meta-chip.payment-note{background:#f0fdf4;border-color:#86efac}
+.meta-chip.payment-note .k{color:#15803d}
+.meta-chip.payment-note .v{color:#14532d;font-weight:600;white-space:nowrap;overflow:visible;max-width:none}
+/* Note popup */
+.note-popup{display:none;position:absolute;bottom:calc(100% + 6px);right:0;z-index:9999;background:#1e293b;color:#f1f5f9;font-size:.8rem;font-weight:500;padding:8px 12px;border-radius:10px;white-space:pre-wrap;word-break:break-word;max-width:260px;min-width:120px;line-height:1.55;box-shadow:0 4px 16px rgba(0,0,0,.25);pointer-events:none}
+.note-popup::after{content:'';position:absolute;top:100%;right:16px;border:6px solid transparent;border-top-color:#1e293b}
+.meta-chip.note:hover .note-popup,.meta-chip.note.popup-open .note-popup{display:block}
 /* Legacy extra-card hidden */
 .inv-extra-card{display:none}
 /* Items Table — clean invoice style */
@@ -1446,6 +1453,27 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 #sidebar .nav-item:hover{background:var(--primary-pale);color:var(--text)}
 #sidebar .nav-item.active{color:var(--accent);border-right-color:var(--accent);background:var(--primary-pale)}
 #sidebar .nav-item svg{width:18px;height:18px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.sp-src-link:hover{background:#f0f9ec!important;border-color:#95bf4770!important}
+.sp-src-link:hover .sp-src-svg{filter:grayscale(0) opacity(1)!important}
+/* ── Shopify Orders Table ── */
+#shopify-orders-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+#shopify-orders-table-wrap .data-table{border-collapse:collapse;font-size:.83rem}
+#shopify-orders-table-wrap .data-table thead tr{background:var(--bg-alt);border-bottom:2px solid var(--border)}
+#shopify-orders-table-wrap .data-table thead th{padding:10px 12px;font-size:.75rem;font-weight:600;color:var(--text-muted);white-space:nowrap;letter-spacing:.01em}
+#shopify-orders-table-wrap .data-table tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+#shopify-orders-table-wrap .data-table tbody tr:last-child{border-bottom:none}
+#shopify-orders-table-wrap .data-table tbody tr:hover{background:var(--bg-alt)}
+#shopify-orders-table-wrap .data-table td{padding:10px 12px;vertical-align:middle}
+/* address popup fix */
+.sp-addr-popup{position:fixed;z-index:9990;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:14px 16px;min-width:240px;max-width:360px;width:max-content;text-align:right;word-break:break-word}
+/* mobile */
+@media(max-width:768px){
+  .sp-addr-popup{max-width:calc(100vw - 32px)!important;width:calc(100vw - 32px)!important}
+  #shopify-kpi-row{grid-template-columns:1fr 1fr!important}
+  #shopify-orders-table-wrap{border-radius:10px;overflow-x:auto}
+  #shopify-orders-table-wrap .data-table thead th,#shopify-orders-table-wrap .data-table td{padding:8px 8px;font-size:.75rem}
+  #page-shopify-orders .flex-between{flex-direction:column;align-items:flex-start}
+}
 #sidebar .nav-item[data-page="shopify-orders"] svg{stroke:none!important}
 #sidebar .nav-item[data-page="shopify-orders"] svg path:nth-child(1){fill:#95BF47!important}
 #sidebar .nav-item[data-page="shopify-orders"] svg path:nth-child(2){fill:#5E8E3E!important}
@@ -3769,8 +3797,8 @@ body.dark-mode .mov-type-inline.t-exchange{background:#2e1065;color:#c4b5fd;bord
 /* Product Detail Modal */
 .inv-detail-hero{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);border-radius:14px;padding:20px;color:#fff;margin-bottom:18px;text-align:center;position:relative;overflow:hidden}
 .inv-detail-hero::before{content:'';position:absolute;top:-30px;left:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.07)}
-.inv-detail-hero-name{font-size:1.3rem;font-weight:900;letter-spacing:.5px;margin-bottom:6px}
-.inv-detail-hero-code{font-size:.85rem;opacity:.85;margin-bottom:12px}
+.inv-detail-hero-name{font-size:1.3rem;font-weight:900;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:4px}
+.inv-detail-hero-code{font-size:.85rem;opacity:.85;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:4px}
 .inv-detail-hero-stock{font-size:2rem;font-weight:900;margin-bottom:4px}
 .inv-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
 .inv-detail-field{background:var(--surface2);border-radius:10px;padding:12px 14px}
@@ -5400,7 +5428,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 </button>
 <div class="notif-wrap" style="order:1">
 <button class="notif-btn" onclick="toggleNotifPanel(event)" title="الإشعارات"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="notif-badge" id="notif-badge"></span></button>
-<div class="notif-panel" id="notif-panel">
+<div class="notif-panel" id="notif-panel" dir="rtl">
 <div class="notif-header" style="flex-direction:column;gap:0;padding:0">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 0">
     <span style="font-weight:700;font-size:.9rem">الإشعارات</span>
@@ -8344,11 +8372,25 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     </div>
   </div>
 
-  <!-- Search Bar -->
-  <div style="margin-bottom:16px">
-    <div style="position:relative;width:100%;max-width:340px">
+  <!-- Search Bar + Status Filters -->
+  <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <div style="position:relative;width:100%;max-width:280px">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input id="shopify-search" type="text" placeholder="بحث برقم الأوردر..." oninput="renderShopifyOrders()" style="width:100%;padding:10px 38px 10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-size:.9rem;box-sizing:border-box;direction:ltr;transition:border-color .2s;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-sm sp-status-filter-btn" data-filter="confirmed" data-color="#10b981" onclick="switchShopifyStatusFilter('confirmed',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid var(--border);color:var(--text-muted);background:var(--bg-alt);border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:400">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        جاهز للتسجيل
+      </button>
+      <button class="btn btn-sm sp-status-filter-btn" data-filter="followup" data-color="#f59e0b" onclick="switchShopifyStatusFilter('followup',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid var(--border);color:var(--text-muted);background:var(--bg-alt);border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:400">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        متابعة مع العميل
+      </button>
+      <button class="btn btn-sm sp-status-filter-btn" data-filter="cancelled" data-color="#6b7280" onclick="switchShopifyStatusFilter('cancelled',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid var(--border);color:var(--text-muted);background:var(--bg-alt);border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:400">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        طلب غير مؤكد
+      </button>
     </div>
   </div>
   <div id="shopify-orders-table-wrap"></div>
@@ -9812,6 +9854,23 @@ function esc(str) {
   return d.innerHTML;
 }
 
+function copyBtn(text) {
+  const id = 'cb_' + Math.random().toString(36).slice(2);
+  const COPY_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+  const CHECK_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+  setTimeout(() => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      navigator.clipboard.writeText(text).then(() => {
+        btn.innerHTML = CHECK_ICON;
+        setTimeout(() => { btn.innerHTML = COPY_ICON; }, 1500);
+      });
+    });
+  }, 0);
+  return `<button id="${id}" title="نسخ" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:3px 5px;cursor:pointer;display:inline-flex;align-items:center;color:#fff;opacity:.75;transition:opacity .15s;vertical-align:middle;margin-right:4px" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='.75'">${COPY_ICON}</button>`;
+}
+
 function sanitizeUrl(url) {
   if (!url) return '';
   const lower = url.trim().toLowerCase();
@@ -10012,8 +10071,8 @@ let vaultUnlocked = false;
 let reportCharts = {};
 let currentLang = 'ar';
 
-const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','vault','users','settings'];
-const PERMS_AR = {dashboard:'الرئيسية',transaction:'الحركات',inventory:'المخزن',movements:'سجل الحركات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',approvals:'الموافقات',reports:'التقارير',vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات'};
+const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','vault','users','settings','shopify-orders'];
+const PERMS_AR = {dashboard:'الرئيسية',transaction:'الحركات',inventory:'المخزن',movements:'سجل الحركات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',approvals:'الموافقات',reports:'التقارير',vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات','shopify-orders':'أوردرات Shopify'};
 
 const NAV_ICONS = {
   dashboard:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/></svg>',
@@ -10035,7 +10094,7 @@ const NAV_ICONS = {
 const NAV_ITEMS = [
   {id:'dashboard',label:'الرئيسية',labelEn:'Dashboard',icon:NAV_ICONS.dashboard,perm:'dashboard'},
   {id:'transaction',label:'حركة جديدة',labelEn:'New Transaction',icon:NAV_ICONS.transaction,perm:'transaction'},
-  {id:'shopify-orders',label:'أوردرات Shopify',labelEn:'Shopify Orders',icon:'<svg viewBox="0 0 108.44 122.88" xmlns="http://www.w3.org/2000/svg"><path fill="#95BF47" fill-rule="evenodd" clip-rule="evenodd" d="M94.98,23.66c-0.09-0.62-0.63-0.96-1.08-1c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.72-0.72-2.13-0.5-2.68-0.34c-0.01,0-1.37,0.43-3.68,1.14c-0.38-1.25-0.95-2.78-1.76-4.32c-2.6-4.97-6.42-7.6-11.03-7.61c-0.01,0-0.01,0-0.02,0c-0.32,0-0.64,0.03-0.96,0.06c-0.14-0.16-0.27-0.32-0.42-0.48c-2.01-2.15-4.58-3.19-7.67-3.1c-5.95,0.17-11.88,4.47-16.69,12.11c-3.38,5.37-5.96,12.12-6.69,17.35c-6.83,2.12-11.61,3.6-11.72,3.63c-3.45,1.08-3.56,1.19-4.01,4.44C9.03,39.99,0,109.8,0,109.8l75.65,13.08l32.79-8.15C108.44,114.73,95.06,24.28,94.98,23.66zM66.52,16.63c-1.74,0.54-3.72,1.15-5.87,1.82c-0.04-3.01-0.4-7.21-1.81-10.83C63.36,8.47,65.58,13.58,66.52,16.63zM56.69,19.68c-3.96,1.23-8.29,2.57-12.63,3.91c1.22-4.67,3.54-9.33,6.38-12.38c1.06-1.14,2.54-2.4,4.29-3.12C56.38,11.52,56.73,16.39,56.69,19.68zM48.58,3.97c1.4-0.03,2.57,0.28,3.58,0.94C50.55,5.74,49,6.94,47.54,8.5c-3.78,4.06-6.68,10.35-7.83,16.43c-3.6,1.11-7.13,2.21-10.37,3.21C31.38,18.58,39.4,4.23,48.58,3.97z"/><path fill="#5E8E3E" fill-rule="evenodd" clip-rule="evenodd" d="M93.9,22.66c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.27-0.27-0.63-0.41-1.02-0.47l0,108.68l32.78-8.15c0,0-13.38-90.44-13.46-91.06C94.9,23.04,94.35,22.7,93.9,22.66z"/><path fill="#FFFFFF" fill-rule="evenodd" clip-rule="evenodd" d="M57.48,39.52l-3.81,14.25c0,0-4.25-1.93-9.28-1.62c-7.38,0.47-7.46,5.12-7.39,6.29c0.4,6.37,17.16,7.76,18.11,22.69c0.74,11.74-6.23,19.77-16.27,20.41c-12.05,0.76-18.69-6.35-18.69-6.35l2.55-10.86c0,0,6.68,5.04,12.02,4.7c3.49-0.22,4.74-3.06,4.61-5.07c-0.52-8.31-14.18-7.82-15.04-21.48c-0.73-11.49,6.82-23.14,23.48-24.19C54.2,37.88,57.48,39.52,57.48,39.52z"/></svg>',perm:'movements',adminOnly:true},
+  {id:'shopify-orders',label:'أوردرات Shopify',labelEn:'Shopify Orders',icon:'<svg viewBox="0 0 108.44 122.88" xmlns="http://www.w3.org/2000/svg"><path fill="#95BF47" fill-rule="evenodd" clip-rule="evenodd" d="M94.98,23.66c-0.09-0.62-0.63-0.96-1.08-1c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.72-0.72-2.13-0.5-2.68-0.34c-0.01,0-1.37,0.43-3.68,1.14c-0.38-1.25-0.95-2.78-1.76-4.32c-2.6-4.97-6.42-7.6-11.03-7.61c-0.01,0-0.01,0-0.02,0c-0.32,0-0.64,0.03-0.96,0.06c-0.14-0.16-0.27-0.32-0.42-0.48c-2.01-2.15-4.58-3.19-7.67-3.1c-5.95,0.17-11.88,4.47-16.69,12.11c-3.38,5.37-5.96,12.12-6.69,17.35c-6.83,2.12-11.61,3.6-11.72,3.63c-3.45,1.08-3.56,1.19-4.01,4.44C9.03,39.99,0,109.8,0,109.8l75.65,13.08l32.79-8.15C108.44,114.73,95.06,24.28,94.98,23.66zM66.52,16.63c-1.74,0.54-3.72,1.15-5.87,1.82c-0.04-3.01-0.4-7.21-1.81-10.83C63.36,8.47,65.58,13.58,66.52,16.63zM56.69,19.68c-3.96,1.23-8.29,2.57-12.63,3.91c1.22-4.67,3.54-9.33,6.38-12.38c1.06-1.14,2.54-2.4,4.29-3.12C56.38,11.52,56.73,16.39,56.69,19.68zM48.58,3.97c1.4-0.03,2.57,0.28,3.58,0.94C50.55,5.74,49,6.94,47.54,8.5c-3.78,4.06-6.68,10.35-7.83,16.43c-3.6,1.11-7.13,2.21-10.37,3.21C31.38,18.58,39.4,4.23,48.58,3.97z"/><path fill="#5E8E3E" fill-rule="evenodd" clip-rule="evenodd" d="M93.9,22.66c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.27-0.27-0.63-0.41-1.02-0.47l0,108.68l32.78-8.15c0,0-13.38-90.44-13.46-91.06C94.9,23.04,94.35,22.7,93.9,22.66z"/><path fill="#FFFFFF" fill-rule="evenodd" clip-rule="evenodd" d="M57.48,39.52l-3.81,14.25c0,0-4.25-1.93-9.28-1.62c-7.38,0.47-7.46,5.12-7.39,6.29c0.4,6.37,17.16,7.76,18.11,22.69c0.74,11.74-6.23,19.77-16.27,20.41c-12.05,0.76-18.69-6.35-18.69-6.35l2.55-10.86c0,0,6.68,5.04,12.02,4.7c3.49-0.22,4.74-3.06,4.61-5.07c-0.52-8.31-14.18-7.82-15.04-21.48c-0.73-11.49,6.82-23.14,23.48-24.19C54.2,37.88,57.48,39.52,57.48,39.52z"/></svg>',perm:'shopify-orders'},
   {id:'inventory',label:'المخزن',labelEn:'Inventory',icon:NAV_ICONS.inventory,perm:'inventory'},
   {id:'movements',label:'سجل الحركات',labelEn:'Movements',icon:NAV_ICONS.movements,perm:'movements'},
   {id:'clients',label:'العملاء',labelEn:'Clients',icon:NAV_ICONS.clients,perm:'clients'},
@@ -10349,6 +10408,118 @@ function fmtJ(n) {
 function fmtJT(n) {
   // Plain-text version for toast / textContent contexts
   return 'EGP ' + fmtN(n);
+}
+
+// ── Smart note parser: detects if a note contains a payment amount + method ──
+// Returns { isPayment, amount, method } or null if plain note
+function parseNoteAsPayment(note) {
+  if (!note) return null;
+  // Strip "جنيه" / "egp" / "ج" anywhere in the string before matching
+  const s = note.trim().replace(/\bجنيه\b|\bج\b|\begp\b/gi, '').replace(/\s+/g, ' ').trim();
+
+  // Fuzzy keyword sets — typo-tolerant via multiple variants
+  const methodMap = [
+    {
+      // Vodafone Cash — all Arabic/English/typo variants
+      // voda, vdafon, vodafun, فودافون, فوادفون, فوافون ...
+      keywords: [
+        /v[ou]d[ao]f[uo]?n[eae]?\s*(?:c[ao]sh?)?/i,
+        /فو[اوأ]?[اد]?[وأ]?ف[وأ]?[وا]?ن\s*(?:كاش|cash)?/i,
+        /فودا\s*(?:كاش|cash)?/i,
+        /فوافون\s*(?:كاش)?/i,
+        /\bvoda\b/i,
+      ],
+      label: 'فودافون كاش',
+    },
+    {
+      // Instapay — insta, instapay, insta pay, انستا, انستاباي, انستباي, انستاي ...
+      keywords: [
+        /ins?t[ae]?\s*p?[ae]?y?/i,
+        /insta\s*pay/i,
+        /[اإأ]ن[سص]ت[اه]?\s*(?:ب[اه]?ي|pay)?/i,
+        /\binsta?\b/i,
+      ],
+      label: 'Instapay',
+    },
+    {
+      // Bank transfer — بنك, بنكي, bank, transfer, تحويل, حوالة
+      keywords: [
+        /ب[نا]?[نك][كي]?/i,
+        /b[ae]?n[kc]/i,
+        /trans?f[eai]?r?/i,
+        /تح[وا]?[يو]?ل/i,
+        /ح[وا]?[يو]?[اله]?[هة]/i,
+      ],
+      label: 'تحويل بنكي',
+    },
+    {
+      // Cash — كاش, نقد, نقدي, cash, csh, kash
+      keywords: [
+        /[كق][اه][شس]ه?/i,
+        /نق[دذ][يى]?/i,
+        /c[ao]?sh?/i,
+        /k[ae]sh?/i,
+      ],
+      label: 'كاش',
+    },
+  ];
+
+  // Extract the first number found (handles 1000, 1,000, 1.5, ١٢٣ Arabic-Indic)
+  const toWestern = (str) => str.replace(/[٠-٩]/g, d => d.charCodeAt(0) - 1632);
+  const numMatch = toWestern(s).match(/\d[\d,.]*/);
+  if (!numMatch) return null;
+  const amount = parseFloat(numMatch[0].replace(/,/g, ''));
+  if (!amount || amount <= 0) return null;
+
+  // Remove the number from string to isolate keyword part
+  const withoutNum = toWestern(s).replace(numMatch[0], '').trim();
+
+  for (const { keywords, label } of methodMap) {
+    if (keywords.some(rx => rx.test(withoutNum) || rx.test(s))) {
+      return { isPayment: true, amount, method: label };
+    }
+  }
+  return null;
+}
+
+// Detect payment method from any text — no number required (used for auto-fill)
+function detectPaymentMethod(text) {
+  if (!text) return null;
+  const s = text.trim().replace(/\bجنيه\b|\bج\b|\begp\b/gi, '').trim();
+  const checks = [
+    { rx: /v[ou]d[ao]f[uo]?n[eae]?\s*(?:c[ao]sh?)?|فو[اوأ]?[اد]?[وأ]?ف[وأ]?[وا]?ن\s*(?:كاش|cash)?|فودا\s*(?:كاش|cash)?|فوافون\s*(?:كاش)?|\bvoda\b/i, label: 'فودافون كاش' },
+    { rx: /ins?t[ae]?\s*p?[ae]?y?|insta\s*pay|[اإأ]ن[سص]ت[اه]?\s*(?:ب[اه]?ي|pay)?|\binsta?\b/i, label: 'Instapay' },
+    { rx: /ب[نا]?[نك][كي]?|b[ae]?n[kc]|trans?f[eai]?r?|تح[وا]?[يو]?ل|ح[وا]?[يو]?[اله]?[هة]/i, label: 'تحويل بنكي' },
+    { rx: /[كق][اه][شس]ه?|نق[دذ][يى]?|c[ao]?sh?|k[ae]sh?/i, label: 'كاش' },
+  ];
+  for (const { rx, label } of checks) {
+    if (rx.test(s)) return label;
+  }
+  return null;
+}
+
+// Auto-fill payment method fields (Sales form only) when note contains a payment keyword
+function autoFillPaymentFromNote(val) {
+  const method = detectPaymentMethod(val);
+  if (!method) return;
+
+  // dep-method buttons + hidden select
+  const depMethodSel = qs('#tx-dep-method');
+  if (depMethodSel) {
+    depMethodSel.value = method;
+    qsa('#dep-method-btns .dep-method-btn').forEach(btn => {
+      const active = btn.dataset.val === method;
+      btn.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
+      btn.style.background  = active ? 'var(--accent-light, #ede9fe)' : 'var(--surface2)';
+    });
+  }
+
+  // remaining payment select
+  const paymentSel = qs('#tx-payment');
+  if (paymentSel) {
+    const opt = Array.from(paymentSel.options).find(o => o.value === method);
+    if (opt) paymentSel.value = method;
+  }
 }
 
 // ── Field Info Tooltip helper ──
@@ -16166,7 +16337,7 @@ function renderTxFields() {
     </div>
     <div class="form-group" style="margin-bottom:0">
       <label>ملاحظات</label>
-      <input type="text" id="tx-notes" placeholder="أي ملاحظات إضافية — اختياري">
+      <input type="text" id="tx-notes" placeholder="أي ملاحظات إضافية — اختياري" oninput="autoFillPaymentFromNote(this.value)">
     </div>`;
   } else if (txType === 'مشتريات') {
     html = `
@@ -16209,6 +16380,10 @@ function renderTxFields() {
       <div class="form-group"><label>الموظف</label><input type="text" id="tx-emp" value="${esc(currentUser?.name || '')}" readonly></div>`;
   }
   qs('#tx-fields').innerHTML = html;
+  if (txType === 'مبيعات') {
+    const _defBtn = qs('#dep-method-btns [data-val="Instapay"]');
+    if (_defBtn) selectDepMethod('Instapay', _defBtn);
+  }
   if (txType === 'مرتجع') { syncReturnReasonAndExchangeUI(); updateRetVaultAccountVisibility(); }
 }
 function updateRetVaultAccountVisibility() {
@@ -20508,8 +20683,8 @@ function openInventoryDetail(key) {
   openModal(`
     <div class="inv-detail-hero">
       <div style="width:96px;height:96px;border-radius:14px;margin:0 auto 12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid rgba(255,255,255,.3)">${heroImg}</div>
-      <div class="inv-detail-hero-name">${esc(r.name)}</div>
-      <div class="inv-detail-hero-code">#${esc(r.code || '-')}</div>
+      <div class="inv-detail-hero-name">${esc(r.name)}${copyBtn(r.name)}</div>
+      <div class="inv-detail-hero-code">${esc(r.code || '-')}${r.code ? copyBtn(r.code) : ''}</div>
       <div class="inv-detail-hero-stock">${fmtN(r.current)}</div>
       <span class="exp-detail-hero-badge" style="background:rgba(255,255,255,.2)">${statusEmoji} ${statusLabel}</span>
     </div>
@@ -20748,7 +20923,7 @@ function renderMovMobileCard(tx) {
       <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" class="mov-client-name">${tx.client ? esc(tx.client) : '<span style="color:var(--muted)">بدون اسم</span>'}</a>
       ${tx.ref ? `<span class="mov-card-ref">#${esc(tx.ref)}</span>` : ''}
     </div>
-    <div class="mov-card-statusrow">${statusHtml}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : ''}<span class="mov-card-emp mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span><span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div>
+    <div class="mov-card-statusrow">${statusHtml}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : ''}${tx.shopifyOrderId ? `<a href="https://admin.shopify.com/store/soulia-2/orders/${esc(tx.shopifyOrderId)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="mov-card-emp mov-emp-initials" title="فتح أوردر Shopify" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">${_SHOPIFY_LOGO_SVG}</a>` : `<span class="mov-card-emp mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span>`}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div>
     <div class="mov-card-grid">
       <div class="mov-item"><span class="mov-label">الإجمالي</span><span class="mov-val mov-col-total">${fmtJ(tx.total)}</span></div>
       <div class="mov-item"><span class="mov-label">المدفوع</span><span class="mov-val mov-col-paid">${dep}</span></div>
@@ -21160,7 +21335,7 @@ function renderMovementTxRow(tx) {
     <td data-col="tag" style="text-align:center;min-width:110px" onclick="event.stopPropagation()" data-tag-cell="${esc(tx._id)}">${renderTxTagsCell(tx._id)}</td>
     <td data-col="discount" style="text-align:center;white-space:nowrap">${_movDiscountBadge(tx)}</td>
     <td data-col="pickup" style="text-align:center;white-space:nowrap">${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : '<span style="color:var(--muted);font-size:.8rem">—</span>'}</td>
-    <td data-col="employee" class="mov-col-employee" style="text-align:center"><div class="mov-col-employee-wrap"><span class="mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span><span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div></td>
+    <td data-col="employee" class="mov-col-employee" style="text-align:center"><div class="mov-col-employee-wrap">${tx.shopifyOrderId ? `<a href="https://admin.shopify.com/store/soulia-2/orders/${esc(tx.shopifyOrderId)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="mov-emp-initials" title="فتح أوردر Shopify #${esc(tx.shopifyOrderId)}" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">${_SHOPIFY_LOGO_SVG}</a>` : `<span class="mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span>`}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div></td>
     <td>
       <div class="actions-dd">
         <button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button>
@@ -23708,7 +23883,10 @@ function openCollectMovement(id) {
   // قراءة طريقة دفع المتبقي: من #tx-payment في الـ form أولاً (القيمة التي اختارها المستخدم)
   const formPayment = (qs('#tx-payment')?.value || '').trim();
   const formDepMethod = (qs('#tx-dep-method')?.value || '').trim();
-  let collectDef = formPayment || formDepMethod || (tx.payment || tx.collectMethod || tx.depMethod || '').trim() || 'تحويل بنكي';
+  // If the transaction note contains a detected payment method, prefer it as the default
+  const _notePayment = parseNoteAsPayment(tx.notes || '');
+  const noteMethod = _notePayment ? _notePayment.method : '';
+  let collectDef = noteMethod || formPayment || formDepMethod || (tx.payment || tx.collectMethod || tx.depMethod || '').trim() || 'تحويل بنكي';
   const defaultMethod = RET_VAULT_SEGMENTS.includes(collectDef) ? collectDef : 'تحويل بنكي';
   const collectOpts = RET_VAULT_SEGMENTS.map(v => `<option value="${v}"${v === defaultMethod ? ' selected' : ''}>${v}</option>`).join('');
 
@@ -23972,8 +24150,8 @@ async function doCollectMovement(id) {
       if (tx.remaining <= 0) {
         tx.remaining = 0;
         tx.payStatus = 'مكتمل';
-        // Auto-advance pickup to Delivered when fully paid
-        if (!isPurchase && tx.pickupStatus === 'Ready') {
+        // Auto-advance pickup to Delivered when fully paid (Ready or Pending)
+        if (!isPurchase && (tx.pickupStatus === 'Ready' || (tx.pickupStatus||'Pending') === 'Pending')) {
           api('/transactions/' + id + '/pickup-delivered', { method: 'POST', body: '{}' }).catch(() => {});
           tx.pickupStatus = 'Delivered';
         }
@@ -25771,7 +25949,16 @@ function showInvoiceDetail(id, highlightCommentId) {
           <span class="meta-chip"><span class="k">الدفع</span><span class="v">${esc(tx.depMethod || tx.payment || (isPurchase ? 'تحويل بنكي' : 'نقدي'))}</span></span>
           <span class="meta-chip"><span class="k">الموظف</span><span class="v">${esc(tx.employee || '-')}</span></span>
           ${!isPurchase && !isReturn ? `<span class="meta-chip"><span class="k">Pick-Up Status</span><span class="v">${_puStatusBadge(tx.pickupStatus || 'Pending')}</span></span>${tx.pickupDate ? `<span class="meta-chip"><span class="k">Pick-Up Date</span><span class="v">${esc(tx.pickupDate)}</span></span>` : ''}` : ''}
-          ${tx.notes ? `<span class="meta-chip note"><span class="k">ملاحظة</span><span class="v">${esc(tx.notes)}</span></span>` : ''}
+          ${(()=>{
+            if (!tx.notes) return '';
+            const _np = parseNoteAsPayment(tx.notes);
+            if (_np) {
+              return `<span class="meta-chip note payment-note"><span class="k">💳 دفعة</span><span class="v"><span class="amt-cur">EGP</span> <span class="amt-num">${fmtN(_np.amount)}</span> · ${esc(_np.method)}</span></span>`;
+            }
+            const _escaped = esc(tx.notes);
+            const _needsPopup = tx.notes.length > 40;
+            return `<span class="meta-chip note" ${_needsPopup ? `onclick="this.classList.toggle('popup-open')"` : ''}><span class="k">ملاحظة</span><span class="v">${_escaped}</span>${_needsPopup ? `<span class="note-popup">${_escaped}</span>` : ''}</span>`;
+          })()}
         </div>
         ${tx.cancelReason ? `<div class="inv-notes cancel-reason"><div class="inv-notes-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>سبب الإلغاء</div><div class="inv-notes-text">${esc(tx.cancelReason)}</div></div>` : ''}
         <!-- Supplier Attachments -->
@@ -26653,9 +26840,13 @@ function _pmValidateField(field, value, editingId) {
   }, 300);
 }
 async function saveProduct(id) {
-  const body = { code: qs('#pm-code').value.trim(), name: qs('#pm-name').value.trim(), supplier: qs('#pm-supplier')?.value || '', sellPrice: Number(qs('#pm-sell').value) || 0, buyPrice: Number(qs('#pm-buy').value) || 0, minStock: Number(qs('#pm-min').value) || 0, openingBalance: Number(qs('#pm-opening').value) || 0, imageUrl: qs('#pm-image')?.value?.trim() || '' };
+  const openingRaw = qs('#pm-opening')?.value ?? '';
+  const openingVal = openingRaw === '' ? 0 : Number(openingRaw);
+  if (isNaN(openingVal) || openingVal < 0) { toast('الرصيد الافتتاحي يجب أن يكون رقماً صحيحاً ≥ 0', true); return; }
+  const body = { code: qs('#pm-code').value.trim(), name: qs('#pm-name').value.trim(), supplier: qs('#pm-supplier')?.value || '', sellPrice: Number(qs('#pm-sell').value) || 0, buyPrice: Number(qs('#pm-buy').value) || 0, minStock: Number(qs('#pm-min').value) || 0, openingBalance: Math.floor(openingVal), imageUrl: qs('#pm-image')?.value?.trim() || '' };
   if (!body.code) { toast('كود الصنف مطلوب', true); return; }
   if (!body.name) { toast('اسم الصنف مطلوب', true); return; }
+  if (id && !/^[a-f\d]{24}$/i.test(id)) { toast('حدث خطأ في تحديد الصنف — أعد فتح الصفحة', true); return; }
   if (!id) {
     if (!body.sellPrice) { toast('سعر البيع مطلوب ولا يمكن أن يكون صفراً', true); return; }
     if (!body.buyPrice) { toast('سعر الشراء مطلوب ولا يمكن أن يكون صفراً', true); return; }
@@ -39304,6 +39495,7 @@ function clearPickupSelection() {}
 // ===================== Shopify Orders =====================
 let _shopifyOrders = [];
 let _shopifyTab = 'pending';
+let _shopifyStatusFilter = '';
 
 async function recalcShopifyOrders() {
   if (!confirm('سيتم إعادة حساب إجماليات كل الأوردرات المعلقة بأسعار النظام الفعلية. متأكد؟')) return;
@@ -39332,8 +39524,31 @@ async function loadShopifyOrders() {
 
 function switchShopifyTab(tab) {
   _shopifyTab = tab;
+  _shopifyStatusFilter = '';
   qs('#shopify-tab-pending')?.classList.toggle('active-tab', tab === 'pending');
   qs('#shopify-tab-all')?.classList.toggle('active-tab', tab === 'all');
+  renderShopifyOrders();
+}
+
+function switchShopifyStatusFilter(val, btn) {
+  _shopifyStatusFilter = _shopifyStatusFilter === val ? '' : val;
+  /* reset all buttons to default */
+  document.querySelectorAll('.sp-status-filter-btn').forEach(b => {
+    b.style.border = '1.5px solid var(--border)';
+    b.style.color = 'var(--text-muted)';
+    b.style.background = 'var(--bg-alt)';
+    b.style.fontWeight = '400';
+    b.style.boxShadow = 'none';
+  });
+  /* apply selected style */
+  if (_shopifyStatusFilter && btn) {
+    const c = btn.dataset.color || 'var(--accent)';
+    btn.style.border = `2px solid ${c}`;
+    btn.style.color = c;
+    btn.style.background = `color-mix(in srgb, ${c} 10%, transparent)`;
+    btn.style.fontWeight = '600';
+    btn.style.boxShadow = `0 0 0 3px color-mix(in srgb, ${c} 15%, transparent)`;
+  }
   renderShopifyOrders();
 }
 
@@ -39369,6 +39584,31 @@ function renderShopifyOrders() {
   const searchQ = (qs('#shopify-search')?.value || '').trim().toLowerCase();
   let data = _shopifyTab === 'pending' ? pending : _shopifyOrders;
   if (searchQ) data = data.filter(o => String(o.ref || '').toLowerCase().includes(searchQ));
+  if (_shopifyStatusFilter) {
+    data = data.filter(o => {
+      const smart = _shopifySmartStatus(o);
+      const effectiveStatus = smart ? smart.value : (o.pendingStatus || '');
+      return effectiveStatus === _shopifyStatusFilter;
+    });
+  }
+
+  /* ── Priority classification ── */
+  function _getOrderPriority(o) {
+    const noteText = (o.notes || '').trim().startsWith('العنوان:') ? '' : (o.notes || '').trim();
+    const hasDeposit = noteText && /(\d[\d,.]*)/.test(noteText);
+    if (hasDeposit) return 'confirmed'; // 🟢
+    const orderDate = new Date(o.shopifyCreatedAt || o.createdAt);
+    const hoursOld = (Date.now() - orderDate.getTime()) / 36e5;
+    if (hoursOld >= 48) return 'urgent';   // 🔴
+    if (hoursOld >= 24) return 'followup'; // 🟡
+    return 'new'; // no badge needed
+  }
+
+  /* Sort pending: confirmed first, then urgent, then followup, then new */
+  if (_shopifyTab === 'pending') {
+    const priorityOrder = { confirmed: 0, urgent: 1, followup: 2, new: 3 };
+    data = [...data].sort((a, b) => priorityOrder[_getOrderPriority(a)] - priorityOrder[_getOrderPriority(b)]);
+  }
 
   if (!data.length) {
     wrap.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
@@ -39378,43 +39618,177 @@ function renderShopifyOrders() {
     return;
   }
 
-  wrap.innerHTML = `<div style="overflow-x:auto">
+  /* ── Priority summary bar (pending tab only) ── */
+  const prioritySummaryHtml = (() => {
+    if (_shopifyTab !== 'pending') return '';
+    const allPending = pending;
+    const confirmedOrders = allPending.filter(o => { const s = _shopifySmartStatus(o); return s?.value === 'confirmed'; });
+    const followupOrders  = allPending.filter(o => { const s = _shopifySmartStatus(o); return s?.value === 'followup'; });
+    const cards = [];
+    if (confirmedOrders.length) {
+      const total = confirmedOrders.reduce((s, o) => s + (o.total || 0), 0);
+      const depositTotal = confirmedOrders.reduce((s, o) => {
+        const np = parseNoteAsPayment(o.notes || '');
+        return s + (np ? np.amount : 0);
+      }, 0);
+      cards.push(`
+      <div style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 18px;cursor:pointer" onclick="switchShopifyStatusFilter('confirmed', document.querySelector('[data-filter=confirmed]'))">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:#10b98115;flex-shrink:0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+        <div>
+          <div style="font-size:.7rem;color:var(--text-muted);font-weight:500">مؤكد - جاهز للتسجيل</div>
+          <div style="font-size:.95rem;font-weight:700;color:#10b981">${confirmedOrders.length} أوردر</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:2px">إجمالي: <b style="color:var(--text)">${fmtJ(total)}</b>${depositTotal > 0 ? ` · ديبوزت: <b style="color:#10b981">${fmtJ(depositTotal)}</b>` : ''}</div>
+        </div>
+      </div>`);
+    }
+    if (followupOrders.length) {
+      const total = followupOrders.reduce((s, o) => s + (o.total || 0), 0);
+      cards.push(`
+      <div style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 18px;cursor:pointer" onclick="switchShopifyStatusFilter('followup', document.querySelector('[data-filter=followup]'))">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:#f59e0b15;flex-shrink:0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        </span>
+        <div>
+          <div style="font-size:.7rem;color:var(--text-muted);font-weight:500">يحتاج متابعة</div>
+          <div style="font-size:.95rem;font-weight:700;color:#f59e0b">${followupOrders.length} أوردر</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:2px">إجمالي: <b style="color:var(--text)">${fmtJ(total)}</b></div>
+        </div>
+      </div>`);
+    }
+    if (!cards.length) return '';
+    return `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${cards.join('')}</div>`;
+  })();
+
+  wrap.innerHTML = `<div>${prioritySummaryHtml}
     <table class="data-table" style="width:100%">
       <thead><tr>
-        <th>رقم الأوردر</th>
-        <th>وقت الأوردر</th>
-        <th>العميل</th>
-        <th>الهاتف</th>
-        <th>الأصناف</th>
-        <th>الشحن</th>
-        <th>الخصم</th>
-        <th>الإجمالي</th>
-        <th>الحالة</th>
-        <th>الإجراء</th>
+        <th style="white-space:nowrap;width:90px">رقم الأوردر</th>
+        <th style="white-space:nowrap;width:110px">الوقت</th>
+        <th style="width:130px">العميل</th>
+        <th style="white-space:nowrap;width:120px">الهاتف</th>
+        <th style="white-space:nowrap;width:90px">الأصناف</th>
+        <th style="white-space:nowrap;width:70px">الشحن</th>
+        <th style="white-space:nowrap;width:80px">الخصم</th>
+        <th style="white-space:nowrap;width:90px">الإجمالي</th>
+        <th style="width:160px">ملاحظات</th>
+        <th style="width:150px">Tags</th>
+        <th style="white-space:nowrap;width:160px">الحالة</th>
+        <th style="width:200px">الإجراء</th>
+        <th style="width:44px;text-align:center">عنوان</th>
+        <th style="width:54px;text-align:center;font-size:.72rem;color:var(--text-muted)">المصدر</th>
       </tr></thead>
       <tbody>
         ${data.map(o => {
           const _oToday = new Date().toISOString().slice(0,10);
           const _oDate = (o.shopifyCreatedAt || o.createdAt || '').slice(0,10);
           const _oNewBadge = _oDate === _oToday ? `<span class="mov-new-badge" style="margin-left:5px">جديد</span>` : '';
+
+          /* ── Notes cell — smart deposit parser ── */
+          const noteText = (o.notes || '').trim().startsWith('العنوان:') ? '' : (o.notes || '').trim();
+          const noteCell = (() => {
+            if (!noteText) return `<span style="color:var(--text-muted);font-size:.8rem">—</span>`;
+            /* استخراج رقم من النص */
+            const numMatch = noteText.match(/(\d[\d,.]*)/);
+            const amount = numMatch ? parseFloat(numMatch[1].replace(/,/g,'')) : null;
+            /* تحديد طريقة الدفع من الكلمات */
+            const lower = noteText.toLowerCase();
+            let method = '', methodColor = '#10b981', methodBg = '#10b98112', methodBorder = '#10b98130';
+            if (/voda|فودا|فون/.test(lower))         { method = 'فودافون كاش'; }
+            else if (/insta|انستا|إنستا/.test(lower)) { method = 'Instapay'; }
+            else if (/bank|بنك|تحويل|transfer/.test(lower)) { method = 'تحويل بنكي'; }
+            else if (/cash|كاش/.test(lower))          { method = 'كاش'; }
+            else if (amount !== null)                  { method = 'كاش'; }
+            if (amount !== null) {
+              /* أيكون طريقة الدفع */
+              const methodIconHtml = (() => {
+                if (/voda|فودا|فون/.test(lower))
+                  return `<img src="/vodafone.svg" style="width:16px;height:16px;object-fit:contain;flex-shrink:0" alt="Vodafone">`;
+                if (/insta|انستا|إنستا/.test(lower))
+                  return `<img src="/instapay.svg" style="width:16px;height:16px;object-fit:contain;flex-shrink:0" alt="Instapay">`;
+                /* كاش / تحويل بنكي */
+                return `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${methodColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`;
+              })();
+              return `<div style="display:inline-flex;align-items:center;gap:7px;background:${methodBg};border:1px solid ${methodBorder};border-radius:9px;padding:5px 10px;min-width:0;white-space:nowrap">
+                ${methodIconHtml}
+                <span style="font-size:.82rem;font-weight:700;color:${methodColor}">${fmtJ(amount)}${method ? `<span style="font-weight:400;opacity:.8;margin-right:5px;font-size:.75rem"> · ${method}</span>` : ''}</span>
+              </div>`;
+            }
+            /* ملاحظة عادية */
+            const isLong = noteText.length > 55;
+            const short = isLong ? noteText.slice(0, 55) + '…' : noteText;
+            const noteId = 'spn_' + o._id;
+            return `<div style="display:flex;align-items:flex-start;gap:6px;background:var(--bg-alt);border:1px solid var(--border);border-radius:8px;padding:5px 9px;min-width:0">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              <div style="flex:1;min-width:0">
+                <span id="${noteId}" style="font-size:.75rem;color:var(--text);line-height:1.5;word-break:break-word;white-space:pre-wrap">${short}</span>
+                ${isLong ? `<button onclick="_toggleSpNote('${noteId}','${encodeURIComponent(noteText)}')" style="display:block;margin-top:2px;background:none;border:none;padding:0;font-size:.7rem;color:var(--accent);cursor:pointer;font-family:inherit">عرض الكل</button>` : ''}
+              </div>
+            </div>`;
+          })();
+
+          /* ── Tags cell ── */
+          const tagList = o.tags ? o.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+          const tagsCell = !tagList.length ? `<span style="color:var(--text-muted)">—</span>` : (() => {
+            const first = tagList[0];
+            const rest  = tagList.slice(1);
+            const firstBadge = `<span style="display:inline-block;background:var(--bg-alt);border:1px solid var(--border);border-radius:20px;padding:2px 9px;font-size:.71rem;color:var(--text-muted);white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle" title="${first}">${first}</span>`;
+            const moreBtn = rest.length ? `<span class="sp-tags-more-btn" style="display:inline-flex;align-items:center;background:var(--accent);color:#fff;border-radius:20px;padding:2px 8px;font-size:.7rem;cursor:pointer;white-space:nowrap;vertical-align:middle;position:relative;flex-shrink:0" onclick="_toggleShopifyTags(this)">+${rest.length}
+              <div class="sp-tags-popup" style="display:none;position:absolute;top:calc(100% + 5px);right:0;z-index:400;background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 24px #0003;padding:8px;min-width:140px;max-width:220px">
+                ${rest.map(t => `<div style="padding:5px 8px;font-size:.75rem;color:var(--text);border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${t}">${t}</div>`).join('')}
+              </div>
+            </span>` : '';
+            return `<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap">${firstBadge}${moreBtn}</div>`;
+          })();
+
+          /* ── Shopify source icon (greyscale → color on hover) ── */
+          const spUrl = o.orderStatusUrl || o.rawData?.order_status_url;
+          const sourceCell = spUrl
+            ? `<a href="${spUrl}" target="_blank" title="فتح في Shopify" class="sp-src-link" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;background:var(--bg-alt);border:1px solid var(--border);text-decoration:none;transition:border-color .18s,background .18s" onmouseover="this.classList.add('sp-src-hover')" onmouseout="this.classList.remove('sp-src-hover')">
+                <svg class="sp-src-svg" viewBox="0 0 108.44 122.88" xmlns="http://www.w3.org/2000/svg" width="20" height="20" style="transition:filter .18s;filter:grayscale(1) opacity(.45)"><path fill="#95BF47" fill-rule="evenodd" clip-rule="evenodd" d="M94.98,23.66c-0.09-0.62-0.63-0.96-1.08-1c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.72-0.72-2.13-0.5-2.68-0.34c-0.01,0-1.37,0.43-3.68,1.14c-0.38-1.25-0.95-2.78-1.76-4.32c-2.6-4.97-6.42-7.6-11.03-7.61c-0.01,0-0.01,0-0.02,0c-0.32,0-0.64,0.03-0.96,0.06c-0.14-0.16-0.27-0.32-0.42-0.48c-2.01-2.15-4.58-3.19-7.67-3.1c-5.95,0.17-11.88,4.47-16.69,12.11c-3.38,5.37-5.96,12.12-6.69,17.35c-6.83,2.12-11.61,3.6-11.72,3.63c-3.45,1.08-3.56,1.19-4.01,4.44C9.03,39.99,0,109.8,0,109.8l75.65,13.08l32.79-8.15C108.44,114.73,95.06,24.28,94.98,23.66zM66.52,16.63c-1.74,0.54-3.72,1.15-5.87,1.82c-0.04-3.01-0.4-7.21-1.81-10.83C63.36,8.47,65.58,13.58,66.52,16.63zM56.69,19.68c-3.96,1.23-8.29,2.57-12.63,3.91c1.22-4.67,3.54-9.33,6.38-12.38c1.06-1.14,2.54-2.4,4.29-3.12C56.38,11.52,56.73,16.39,56.69,19.68zM48.58,3.97c1.4-0.03,2.57,0.28,3.58,0.94C50.55,5.74,49,6.94,47.54,8.5c-3.78,4.06-6.68,10.35-7.83,16.43c-3.6,1.11-7.13,2.21-10.37,3.21C31.38,18.58,39.4,4.23,48.58,3.97z"/><path fill="#5E8E3E" fill-rule="evenodd" clip-rule="evenodd" d="M93.9,22.66c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.27-0.27-0.63-0.41-1.02-0.47l0,108.68l32.78-8.15c0,0-13.38-90.44-13.46-91.06C94.9,23.04,94.35,22.7,93.9,22.66z"/><path fill="#FFFFFF" fill-rule="evenodd" clip-rule="evenodd" d="M57.48,39.52l-3.81,14.25c0,0-4.25-1.93-9.28-1.62c-7.38,0.47-7.46,5.12-7.39,6.29c0.4,6.37,17.16,7.76,18.11,22.69c0.74,11.74-6.23,19.77-16.27,20.41c-12.05,0.76-18.69-6.35-18.69-6.35l2.55-10.86c0,0,6.68,5.04,12.02,4.7c3.49-0.22,4.74-3.06,4.61-5.07c-0.52-8.31-14.18-7.82-15.04-21.48c-0.73-11.49,6.82-23.14,23.48-24.19C54.2,37.88,57.48,39.52,57.48,39.52z"/></svg>
+              </a>`
+            : `<span style="color:var(--text-muted)">—</span>`;
+
           return `
           <tr>
-            <td><b>${o.ref ? fmtRef(String(o.ref).replace(/^#+/, '')) : '-'}</b>${_oNewBadge}</td>
-            <td style="white-space:nowrap;font-size:.8rem;color:var(--text-muted)">${o.shopifyCreatedAt ? _fmtShopifyDate(o.shopifyCreatedAt, o.shopifyCreatedAt) : '<span style="color:var(--text-muted)">—</span>'}</td>
-            <td>${o.client || '-'}</td>
-            <td dir="ltr">${o.phone || '-'}</td>
+            <td style="white-space:nowrap"><b>${o.ref ? fmtRef(String(o.ref).replace(/^#+/, '')) : '-'}</b>${_oNewBadge}</td>
+            <td style="white-space:nowrap;font-size:.78rem;color:var(--text-muted)">${o.shopifyCreatedAt ? _fmtShopifyDate(o.shopifyCreatedAt, o.shopifyCreatedAt) : '<span style="color:var(--text-muted)">—</span>'}</td>
+            <td style="font-size:.85rem">${o.client || '<span style="color:var(--text-muted)">—</span>'}</td>
+            <td dir="ltr" style="font-size:.82rem;white-space:nowrap">${o.phone || '<span style="color:var(--text-muted)">—</span>'}</td>
             <td style="position:relative">
               <div style="position:relative;display:inline-block">
                 <button onclick="_toggleShopifyItems(this)" style="background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;gap:5px;color:var(--accent);font-size:.82rem;font-family:inherit;white-space:nowrap">
                   <svg class="sp-arrow" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .22s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
                   ${o.items?.length || 0} ${o.items?.length === 1 ? 'صنف' : 'أصناف'}
-                  ${(o.items||[]).some(i => !i.productId) ? `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` : ''}
+                  ${(o.items||[]).some(i => {
+                    if (!Array.isArray(inventoryCache)) return !i.productId;
+                    return !inventoryCache.find(p =>
+                      (i.code && i.code !== 'SHOPIFY' && (p.code === i.code || p._id === i.productId)) ||
+                      ((!i.code || i.code === 'SHOPIFY') && p.name && i.shopifyName && p.name.trim().toLowerCase() === (i.shopifyName||'').trim().toLowerCase())
+                    );
+                  }) ? `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` : ''}
                 </button>
                 <div class="sp-items-panel" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:300;width:290px;background:var(--bg);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px #0003;padding:10px;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto">
                   ${(o.items||[]).map(i => {
-                    const inv = i.productId && Array.isArray(inventoryCache) ? inventoryCache.find(p => p._id === i.productId || p.code === i.code) : null;
-                    const stockOk = inv ? inv.current >= i.qty : null;
-                    const imgSrc = i.imageUrl || i.image || '';
+                    const liveInv = Array.isArray(inventoryCache)
+                      ? inventoryCache.find(p =>
+                          (i.code && i.code !== 'SHOPIFY' && (p.code === i.code || p._id === i.productId)) ||
+                          (!i.code || i.code === 'SHOPIFY') && p.name && i.shopifyName && p.name.trim().toLowerCase() === (i.shopifyName||'').trim().toLowerCase()
+                        )
+                      : null;
+                    const liveFound = !!liveInv;
+                    const stockOk = liveInv ? liveInv.current >= i.qty : false;
+                    const liveWarnings = [];
+                    if (liveInv) {
+                      if (liveInv.sellPrice && Math.abs(liveInv.sellPrice - i.shopifyPrice) > 0.01) {
+                        liveWarnings.push(`سعر مختلف: Shopify=${i.shopifyPrice}، النظام=${liveInv.sellPrice}`);
+                      }
+                      if (liveInv.name && i.shopifyName && liveInv.name.trim().toLowerCase() !== (i.shopifyName||'').trim().toLowerCase()) {
+                        liveWarnings.push(`اسم مختلف: Shopify="${i.shopifyName}"، النظام="${liveInv.name}"`);
+                      }
+                    }
+                    const imgSrc = (liveInv && liveInv.imageUrl) || i.imageUrl || i.image || '';
                     return `
                     <div style="background:var(--bg-alt);border-radius:9px;padding:9px 10px;border:1px solid var(--border)">
                       <div style="display:flex;align-items:flex-start;gap:9px">
@@ -39423,8 +39797,8 @@ function renderShopifyOrders() {
                         </div>
                         <div style="flex:1;min-width:0">
                           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px">
-                            <span style="font-size:.82rem;font-weight:600;color:var(--text);line-height:1.3">${i.name}</span>
-                            ${!i.productId
+                            <span style="font-size:.82rem;font-weight:600;color:var(--text);line-height:1.3">${liveInv ? liveInv.name : i.name}</span>
+                            ${!liveFound
                               ? `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="غير موجود في المخزن" style="flex-shrink:0;margin-top:2px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
                               : `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><polyline points="20 6 9 17 4 12"/></svg>`}
                           </div>
@@ -39432,10 +39806,10 @@ function renderShopifyOrders() {
                           <div style="display:flex;align-items:center;gap:5px;margin-top:5px;flex-wrap:wrap">
                             <span style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-size:.73rem;color:var(--text-muted)">${i.qty} ×</span>
                             <span style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-size:.73rem;color:var(--text-muted)">${fmtJ(i.price)}</span>
-                            ${inv !== null ? `<span style="background:${stockOk ? '#10b98115' : '#ef444415'};border:1px solid ${stockOk ? '#10b98140' : '#ef444440'};border-radius:5px;padding:2px 7px;font-size:.73rem;color:${stockOk ? '#10b981' : '#ef4444'};font-weight:600">متاح: ${inv.current}</span>` : ''}
+                            ${liveInv ? `<span style="background:${stockOk ? '#10b98115' : '#ef444415'};border:1px solid ${stockOk ? '#10b98140' : '#ef444440'};border-radius:5px;padding:2px 7px;font-size:.73rem;color:${stockOk ? '#10b981' : '#ef4444'};font-weight:600">متاح: ${liveInv.current}</span>` : ''}
                           </div>
-                          ${!i.productId ? `<div style="color:#ef4444;font-size:.7rem;margin-top:4px;line-height:1.4;word-break:break-word;white-space:normal;display:flex;align-items:flex-start;gap:3px"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>SKU غير متطابق مع النظام</span></div>` : ''}
-                          ${(i.warnings||[]).map(w => `<div style="color:#f59e0b;font-size:.7rem;margin-top:4px;line-height:1.4;word-break:break-word;white-space:normal;display:flex;align-items:flex-start;gap:3px"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>${w}</span></div>`).join('')}
+                          ${!liveFound ? `<div style="color:#ef4444;font-size:.7rem;margin-top:4px;line-height:1.4;word-break:break-word;white-space:normal;display:flex;align-items:flex-start;gap:3px"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>SKU غير متطابق مع النظام</span></div>` : ''}
+                          ${liveWarnings.map(w => `<div style="color:#f59e0b;font-size:.7rem;margin-top:4px;line-height:1.4;word-break:break-word;white-space:normal;display:flex;align-items:flex-start;gap:3px"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>${w}</span></div>`).join('')}
                         </div>
                       </div>
                     </div>`;
@@ -39443,29 +39817,127 @@ function renderShopifyOrders() {
                 </div>
               </div>
             </td>
-            <td>${fmtJ(o.shipCost || 0)}</td>
-            <td>${o.discount > 0 ? `<span style="color:#10b981;font-size:.82rem">${o.discountCode ? `<b>${o.discountCode}</b><br>` : ''}${o.discountType === 'percent' ? o.discountValue + '%' : fmtJ(o.discount)}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
-            <td><b style="color:var(--accent)">${fmtJ(o.total)}</b></td>
-            <td>${_shopifyStatusBadge(o.status, o.phone, o._id, o.pendingStatus)}</td>
+            <td style="font-size:.82rem;color:var(--text-muted);white-space:nowrap">${fmtJ(o.shipCost || 0)}</td>
+            <td>${o.discount > 0 ? `<span style="color:#10b981;font-size:.8rem;font-weight:600">${o.discountCode ? `<span style="font-size:.72rem;display:block;color:var(--text-muted)">${o.discountCode}</span>` : ''}${o.discountType === 'percent' ? o.discountValue + '%' : fmtJ(o.discount)}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+            <td><b style="color:var(--accent);font-size:.9rem">${fmtJ(o.total)}</b></td>
+            <td>${noteCell}</td>
+            <td>${tagsCell}</td>
+            <td>${_shopifyStatusBadge(o.status, o.phone, o._id, o.pendingStatus, o)}</td>
             <td>
               ${o.status === 'pending' ? `
-                <div style="display:flex;flex-direction:row;align-items:center;gap:6px;flex-wrap:nowrap">
-                  <button class="btn btn-sm" style="background:var(--accent);color:#fff;font-size:.72rem;display:inline-flex;align-items:center;gap:5px;padding:5px 10px;white-space:nowrap" onclick="approveShopifyOrder('${o._id}')">
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                <div style="display:flex;flex-direction:row;align-items:center;gap:5px;flex-wrap:nowrap">
+                  <button class="btn btn-sm" style="background:var(--accent);color:#fff;font-size:.72rem;display:inline-flex;align-items:center;gap:4px;padding:5px 10px;white-space:nowrap" onclick="approveShopifyOrder('${o._id}')">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     إرسال إلى سجل الحركات
                   </button>
-                  <button title="تعديل الأصناف" class="btn btn-sm" style="background:var(--bg-alt);color:var(--text);border:1.5px solid var(--border);padding:5px 7px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0" onclick="editShopifyOrder('${o._id}')">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  <button title="تعديل" class="btn btn-sm" style="background:var(--bg-alt);color:var(--text);border:1.5px solid var(--border);padding:5px 7px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0" onclick="editShopifyOrder('${o._id}')">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                   </button>
                 </div>
-              ` : '-'}
+              ` : '<span style="color:var(--text-muted);font-size:.8rem">—</span>'}
             </td>
+            <td style="text-align:center;padding:8px 6px">
+              ${(() => {
+                const addr = (o.shippingAddress || '').replace(/^العنوان:\s*/,'').trim()
+                          || (() => { const a = o.rawData?.shipping_address; if (!a) return ''; return [a.address1,a.address2,a.city,a.province,a.country].filter(Boolean).join('، '); })();
+                if (!addr) return `<span style="color:var(--text-muted)">—</span>`;
+                const addrId = 'spa_' + o._id;
+                return `<div style="position:relative;display:inline-block">
+                  <button onclick="_toggleSpAddr('${addrId}',this)" title="عنوان الشحن" style="background:none;border:none;cursor:pointer;padding:5px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);border-radius:7px;transition:color .15s,background .15s" onmouseover="this.style.color='var(--accent)';this.style.background='var(--bg-alt)'" onmouseout="this.style.color='var(--text-muted)';this.style.background='none'" type="button">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  </button>
+                  <div id="${addrId}" class="sp-addr-popup" style="display:none">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+                      <div style="display:flex;align-items:center;gap:6px">
+                        <div style="width:26px;height:26px;border-radius:7px;background:#10b98115;border:1px solid #10b98130;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        </div>
+                        <span style="font-size:.78rem;font-weight:700;color:var(--text)">عنوان الشحن</span>
+                      </div>
+                      <button onclick="document.getElementById('${addrId}').style.display='none'" style="background:none;border:none;cursor:pointer;padding:2px;color:var(--text-muted);line-height:1;border-radius:4px;display:flex" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-muted)'">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
+                    </div>
+                    <p style="margin:0;font-size:.8rem;color:var(--text);line-height:1.75;word-break:break-word">${addr.replace(/،/g, '،\n')}</p>
+                  </div>
+                </div>`;
+              })()}
+            </td>
+            <td style="text-align:center;padding:8px 6px">${sourceCell}</td>
           </tr>
         `;}).join('')}
       </tbody>
     </table>
   </div>`;
 }
+
+function _toggleSpAddr(id, btn) {
+  const popup = document.getElementById(id);
+  if (!popup) return;
+  const isOpen = popup.style.display === 'block';
+  document.querySelectorAll('[id^="spa_"]').forEach(p => { p.style.display = 'none'; });
+  if (!isOpen) {
+    // أظهر مؤقتاً لحساب الأبعاد
+    popup.style.visibility = 'hidden';
+    popup.style.display = 'block';
+    const rect = btn.getBoundingClientRect();
+    const pw = popup.offsetWidth || 260;
+    const ph = popup.offsetHeight || 160;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // أفقياً: ابدأ من يمين الزر، وتأكد من عدم الخروج
+    let left = rect.left + rect.width / 2 - pw / 2;
+    if (left + pw > vw - 12) left = vw - pw - 12;
+    if (left < 12) left = 12;
+    // عمودياً: تحت الزر إذا في مساحة، وإلا فوقه
+    let top;
+    if (rect.bottom + ph + 8 <= vh) {
+      top = rect.bottom + 6;
+    } else {
+      top = rect.top - ph - 6;
+    }
+    popup.style.left = left + 'px';
+    popup.style.right = 'auto';
+    popup.style.top = top + 'px';
+    popup.style.bottom = 'auto';
+    popup.style.visibility = 'visible';
+  }
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('[id^="spa_"]') && !e.target.closest('button[onclick^="_toggleSpAddr"]')) {
+    document.querySelectorAll('[id^="spa_"]').forEach(p => { p.style.display = 'none'; });
+  }
+});
+
+function _toggleSpNote(id, encoded) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const btn = el.nextElementSibling;
+  const full = decodeURIComponent(encoded);
+  if (el.dataset.expanded === '1') {
+    const short = full.length > 60 ? full.slice(0, 60) + '…' : full;
+    el.textContent = short;
+    el.dataset.expanded = '0';
+    if (btn) btn.textContent = 'عرض الكل';
+  } else {
+    el.textContent = full;
+    el.dataset.expanded = '1';
+    if (btn) btn.textContent = 'إخفاء';
+  }
+}
+
+function _toggleShopifyTags(btn) {
+  const popup = btn.querySelector('.sp-tags-popup');
+  if (!popup) return;
+  const isOpen = popup.style.display === 'block';
+  document.querySelectorAll('.sp-tags-popup').forEach(p => { p.style.display = 'none'; });
+  if (!isOpen) popup.style.display = 'block';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.sp-tags-more-btn')) {
+    document.querySelectorAll('.sp-tags-popup').forEach(p => { p.style.display = 'none'; });
+  }
+});
 
 function _toggleShopifyItems(btn) {
   const panel = btn.nextElementSibling;
@@ -39487,11 +39959,10 @@ document.addEventListener('click', e => {
 });
 
 const _SHOPIFY_PENDING_STATUSES = [
-  { value: '',                label: 'بانتظار تأكيد العميل',  color: '#92400e' },
-  { value: 'msg_sent',        label: 'تم إرسال رسالة تأكيد',  color: '#1d4ed8' },
-  { value: 'awaiting_transfer', label: 'في انتظار التحويل',   color: '#166534' },
-  { value: 'no_reply',        label: 'لم يرد / لم يتم التأكيد', color: '#991b1b' },
-  { value: 'cancelled',       label: 'العميل طلب الإلغاء',    color: '#6b7280' },
+  { value: '',          label: 'بانتظار تأكيد العميل', color: '#92400e', icon: 'clock' },
+  { value: 'confirmed', label: 'جاهز للتسجيل',         color: '#10b981', icon: 'check' },
+  { value: 'followup',  label: 'متابعة مع العميل',     color: '#f59e0b', icon: 'followup' },
+  { value: 'cancelled', label: 'طلب غير مؤكد',         color: '#6b7280', icon: 'x' },
 ];
 
 function _shopifyPendingStatusInfo(v) {
@@ -39500,15 +39971,60 @@ function _shopifyPendingStatusInfo(v) {
 
 const _WA_PATH = `M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232`;
 
-function _shopifyStatusBadge(status, phone, orderId, pendingStatus) {
+const _SP_ICONS = {
+  check:    `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  followup: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>`,
+  x:        `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  clock:    `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+};
+
+function _shopifySmartStatus(order) {
+  const tags = (order.tags || '').toLowerCase();
+  const note = (order.notes || '').trim().startsWith('العنوان:') ? '' : (order.notes || '').trim();
+
+  /* confirmed — paid or verified */
+  const confirmedTags = ['تم دفع الاوردر بالكامل', 'تم دفع ديبوزت', 'contact verified by otp', 'verified via whatsapp'];
+  const hasConfirmedTag = confirmedTags.some(t => tags.includes(t.toLowerCase()));
+  const hasDepositInNote = note && /(\d[\d,.]*)/.test(note);
+  if (hasConfirmedTag || hasDepositInNote) {
+    return { label: 'جاهز للتسجيل', color: '#10b981', iconKey: 'check', value: 'confirmed' };
+  }
+
+  /* cancelled */
+  const cancelledTags = ['cancelled via whatsapp', 'customer cancelled order', 'cancelled❌', 'cancelled'];
+  if (cancelledTags.some(t => tags.includes(t.toLowerCase()))) {
+    return { label: 'طلب غير مؤكد', color: '#6b7280', iconKey: 'x', value: 'cancelled' };
+  }
+
+  /* followup */
+  const followupTags = ['رسالة التأكيد وصلت', 'not verified in 60 minutes', 'verification timeout', 'الرقم مش عليه واتس اب'];
+  if (followupTags.some(t => tags.includes(t.toLowerCase()))) {
+    return { label: 'متابعة مع العميل', color: '#f59e0b', iconKey: 'followup', value: 'followup' };
+  }
+
+  return null;
+}
+
+function _shopifyStatusBadge(status, phone, orderId, pendingStatus, order) {
   if (status === 'pending') {
     const clean = (phone || '').replace(/\D/g, '');
     const waUrl = clean ? `https://wa.me/${clean}` : '';
-    const info = _shopifyPendingStatusInfo(pendingStatus);
+
+    /* Smart status from tags/notes, fallback to manual pendingStatus, then default */
+    const smart = order ? _shopifySmartStatus(order) : null;
+    let color, label, iconKey;
+    if (smart) {
+      color = smart.color; label = smart.label; iconKey = smart.iconKey;
+    } else {
+      const info = _shopifyPendingStatusInfo(pendingStatus);
+      color = info.color; label = info.label; iconKey = info.icon || 'clock';
+    }
+    const iconSvg = `<span style="display:inline-flex;align-items:center;flex-shrink:0">${_SP_ICONS[iconKey] || _SP_ICONS.clock}</span>`;
+
     const waHtml = waUrl
-      ? `<a href="${waUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" data-shopify-ps-wa="${orderId}" title="واتساب" style="display:inline-flex;align-items:center;margin-right:2px;flex-shrink:0"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="${info.color}" viewBox="0 0 16 16"><path d="${_WA_PATH}"/></svg></a>`
+      ? `<a href="${waUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" data-shopify-ps-wa="${orderId}" title="واتساب" style="display:inline-flex;align-items:center;margin-right:2px;flex-shrink:0"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="${color}" viewBox="0 0 16 16"><path d="${_WA_PATH}"/></svg></a>`
       : '';
-    return `<span data-shopify-ps-id="${orderId}" oncontextmenu="_shopifyPendingContextMenu(event,'${orderId}')" title="كليك يمين لتغيير الحالة" style="display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb,${info.color} 12%,transparent);color:${info.color};border-radius:6px;padding:3px 8px;font-size:.72rem;cursor:context-menu;user-select:none;transition:background .25s,color .25s"><svg width="7" height="7" viewBox="0 0 7 7" data-shopify-ps-dot="${orderId}" style="flex-shrink:0"><circle cx="3.5" cy="3.5" r="3.5" fill="${info.color}"/></svg><span data-shopify-ps-label="${orderId}">${info.label}</span>${waHtml}</span>`;
+    return `<span data-shopify-ps-id="${orderId}" oncontextmenu="_shopifyPendingContextMenu(event,'${orderId}')" title="كليك يمين لتغيير الحالة" style="display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb,${color} 12%,transparent);color:${color};border-radius:6px;padding:4px 9px;font-size:.72rem;cursor:context-menu;user-select:none;transition:background .25s,color .25s">${iconSvg}<span data-shopify-ps-label="${orderId}">${label}</span>${waHtml}</span>`;
   }
   if (status === 'approved') return '<span style="background:#10b98122;color:#10b981;border-radius:99px;padding:2px 10px;font-size:.78rem">تم القبول</span>';
   if (status === 'rejected') return '<span style="background:#ef444422;color:#ef4444;border-radius:99px;padding:2px 10px;font-size:.78rem">مرفوض</span>';
@@ -39531,8 +40047,9 @@ function _shopifyPendingContextMenu(e, orderId) {
   menu.innerHTML = `<div style="padding:6px 10px 5px;font-size:.71rem;color:var(--text-muted);font-weight:600;letter-spacing:.03em">تغيير حالة الأوردر</div>` +
     _SHOPIFY_PENDING_STATUSES.map(s => {
       const active = cur === s.value;
+      const iconSvg = (_SP_ICONS[s.icon] || _SP_ICONS.clock).replace('stroke="currentColor"', `stroke="${s.color}"`);
       return `<div data-ctx-item onclick="_setShopifyPendingStatus('${orderId}','${s.value}')" style="display:flex;align-items:center;gap:9px;padding:9px 10px;cursor:pointer;font-size:.83rem;border-radius:8px;transition:background .12s;background:${active ? 'color-mix(in srgb,'+s.color+' 10%,transparent)' : 'transparent'}">
-        <svg width="8" height="8" viewBox="0 0 8 8" style="flex-shrink:0"><circle cx="4" cy="4" r="4" fill="${s.color}" opacity="${active?1:.55}"/></svg>
+        <span style="display:inline-flex;align-items:center;flex-shrink:0;opacity:${active?1:.55}">${iconSvg}</span>
         <span style="flex:1;color:var(--text);font-weight:${active?600:400}">${s.label}</span>
         ${active ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
       </div>`;
@@ -39604,13 +40121,26 @@ async function approveShopifyOrder(id) {
         </div>
       </div>
       <div style="margin-bottom:16px">
-        <label style="font-size:.85rem;color:var(--text-muted);display:block;margin-bottom:6px">طريقة الدفع</label>
-        <select id="shopify-payment-sel" style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-size:.9rem;box-sizing:border-box">
+        <label style="font-size:.85rem;color:var(--text-muted);display:block;margin-bottom:8px">طريقة الدفع</label>
+        <select id="shopify-payment-sel" style="display:none">
           <option value="كاش">كاش</option>
           <option value="فودافون كاش">فودافون كاش</option>
           <option value="Instapay">Instapay</option>
           <option value="تحويل بنكي">تحويل بنكي</option>
         </select>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+          ${[
+            { val:'Instapay',     icon:`<img src="/instapay.svg" style="width:28px;height:28px;object-fit:contain" alt="Instapay">` },
+            { val:'فودافون كاش', icon:`<img src="/vodafone.svg" style="width:28px;height:22px;object-fit:contain" alt="Vodafone">` },
+            { val:'كاش',         icon:`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>` },
+            { val:'تحويل بنكي',  icon:`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M3 10h18M3 6l9-4 9 4"/><path d="M6 10v12M10 10v12M14 10v12M18 10v12"/></svg>` },
+          ].map(m => `
+            <button type="button" class="sp-pay-method-btn" data-val="${m.val}" onclick="_selectShopifyPayMethod('${m.val}',this)"
+              style="padding:10px 6px;border-radius:9px;border:2px solid var(--border);background:var(--bg-alt);color:var(--text);font-size:.72rem;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:all .15s">
+              ${m.icon}
+              <span>${m.val}</span>
+            </button>`).join('')}
+        </div>
       </div>
       <div style="display:flex;gap:10px">
         <button onclick="document.getElementById('shopify-confirm-modal').remove()" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;cursor:pointer;font-size:.9rem">إلغاء</button>
@@ -39619,7 +40149,41 @@ async function approveShopifyOrder(id) {
     </div>`;
   document.body.appendChild(modal);
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-  setTimeout(() => qs('#shopify-deposit-inp')?.focus(), 100);
+
+  // Auto-fill deposit + payment method from order notes
+  setTimeout(() => {
+    const _np = parseNoteAsPayment(order.notes || '');
+    const depInp = qs('#shopify-deposit-inp');
+    if (_np) {
+      if (depInp) { depInp.value = String(_np.amount); _updateShopifyRemaining(order.total); }
+      const targetMethod = _np.method;
+      const btn = document.querySelector(`.sp-pay-method-btn[data-val="${targetMethod}"]`);
+      if (btn) { _selectShopifyPayMethod(targetMethod, btn); }
+      else {
+        const firstBtn = document.querySelector('.sp-pay-method-btn');
+        if (firstBtn) _selectShopifyPayMethod(firstBtn.dataset.val, firstBtn);
+      }
+    } else {
+      const firstBtn = document.querySelector('.sp-pay-method-btn');
+      if (firstBtn) _selectShopifyPayMethod(firstBtn.dataset.val, firstBtn);
+    }
+    depInp?.focus();
+  }, 50);
+}
+
+function _selectShopifyPayMethod(val, btn) {
+  const sel = qs('#shopify-payment-sel');
+  if (sel) sel.value = val;
+  document.querySelectorAll('.sp-pay-method-btn').forEach(b => {
+    b.style.border = '2px solid var(--border)';
+    b.style.background = 'var(--bg-alt)';
+    b.style.color = 'var(--text)';
+  });
+  if (btn) {
+    btn.style.border = '2px solid var(--accent)';
+    btn.style.background = 'color-mix(in srgb, var(--accent) 10%, transparent)';
+    btn.style.color = 'var(--accent)';
+  }
 }
 
 function _updateShopifyRemaining(total) {

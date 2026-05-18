@@ -233,6 +233,10 @@ export class Transaction {
   /** Preparation tick: true when this order has been marked ready within its prep group */
   @Prop({ default: false })
   prepChecked: boolean;
+
+  /** Shopify order numeric ID — used to build admin link */
+  @Prop({ default: '' })
+  shopifyOrderId: string;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
