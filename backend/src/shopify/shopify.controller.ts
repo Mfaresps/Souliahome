@@ -91,6 +91,13 @@ export class ShopifyController {
     return this.shopifyService.rejectOrder(id, user, reason || '');
   }
 
+  // تحديث الحالة الفرعية لأوردر معلق
+  @Patch('orders/:id/pending-status')
+  @UseGuards(JwtAuthGuard)
+  async updatePendingStatus(@Param('id') id: string, @Body('pendingStatus') pendingStatus: string) {
+    return this.shopifyService.updatePendingStatus(id, pendingStatus || '');
+  }
+
   // إعادة حساب totals للأوردرات المعلقة (تشغيل مرة واحدة لإصلاح القديمة)
   @Post('recalc-pending')
   @UseGuards(JwtAuthGuard)

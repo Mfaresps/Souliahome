@@ -274,6 +274,15 @@ export class ShopifyService {
     return { success: true };
   }
 
+  // تحديث الحالة الفرعية لأوردر معلق
+  async updatePendingStatus(orderId: string, pendingStatus: string): Promise<{ success: boolean }> {
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) throw new NotFoundException('الأوردر غير موجود');
+    order.pendingStatus = pendingStatus;
+    await order.save();
+    return { success: true };
+  }
+
   private async mapItems(lineItems: any[]) {
     return Promise.all(
       lineItems.map(async (item) => {

@@ -65,6 +65,9 @@ export class ShopifyOrder {
   status: string; // 'pending' | 'approved' | 'rejected'
 
   @Prop({ default: '' })
+  pendingStatus: string; // '' | 'msg_sent' | 'awaiting_transfer' | 'no_reply'
+
+  @Prop({ default: '' })
   reviewedBy: string;
 
   @Prop({ default: '' })

@@ -2459,6 +2459,10 @@ body.dark-mode .mov-status.ملغي{background:#450a0a;color:#f87171}
 .presence-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;font-size:.6rem;font-weight:700;letter-spacing:.03em;flex-shrink:0;box-shadow:0 0 0 2px var(--bg,#fff),0 0 8px 2px rgba(249,115,22,.55);animation:presencePulse 2s ease-in-out infinite}
 @keyframes presencePulse{0%,100%{box-shadow:0 0 0 2px var(--bg,#fff),0 0 8px 2px rgba(249,115,22,.55)}50%{box-shadow:0 0 0 2px var(--bg,#fff),0 0 14px 5px rgba(249,115,22,.8)}}
 .mov-col-employee-wrap{display:inline-flex;align-items:center;gap:5px}
+.mov-qdate-pill{border:1px solid var(--border);background:var(--bg);color:var(--muted);border-radius:20px;padding:3px 10px;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.mov-qdate-pill:hover{border-color:var(--primary);color:var(--primary)}
+.mov-qdate-pill.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.mov-new-badge{display:inline-flex;align-items:center;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-size:.6rem;font-weight:700;border-radius:10px;padding:1px 5px;letter-spacing:.04em;margin-right:4px;vertical-align:middle;line-height:1.4}
 .mov-pickup-filter-pill.active{background:color-mix(in srgb,var(--primary) 12%,transparent);border-color:var(--primary)}
 .mov-pickup-filter-pill.active .pu-badge-pickedup{background:var(--primary);color:#fff;border-color:var(--primary)}
 .mov-pickup-filter-pill.active .pu-badge-prep{background:var(--primary);color:#fff;border-color:var(--primary)}
@@ -5321,12 +5325,12 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       </span>
       Remember me
     </label>
-    <span id="login-saved-badge" style="display:none">✓ Saved</span>
+    <span id="login-saved-badge" style="display:none;align-items:center;gap:5px">Saved<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
   </div>
 
   <button class="lfp-btn-login" onclick="doLogin()" style="width:60%">Sign In</button>
 
-  <button type="button" onclick="openForgotPassword()" style="margin-top:12px;background:none;border:none;cursor:pointer;font-size:.8rem;color:#6b8c78;text-decoration:underline;padding:0">نسيت كلمة المرور؟</button>
+  <button type="button" onclick="openForgotPassword()" style="margin-top:12px;background:none;border:none;cursor:pointer;font-size:.8rem;color:#6b8c78;text-decoration:none;padding:0;display:inline-flex;align-items:center;gap:5px;opacity:.75;transition:opacity .15s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity='.75'"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Forgot password</button>
 
   <!-- Mobile-only: inline quote bar at bottom -->
   <div id="mobile-quote-bar" style="display:none">
@@ -5867,67 +5871,84 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 
 <!-- Forgot Password Modal -->
 <div id="forgot-password-overlay" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px)">
-  <div style="background:var(--bg,#fff);border-radius:20px;padding:36px 32px;width:100%;max-width:420px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
-    <div style="font-size:44px;margin-bottom:8px">🔑</div>
-    <h2 style="font-size:1.15rem;font-weight:700;color:var(--text,#1a2e22);margin:0 0 6px">استرداد كلمة المرور</h2>
-    <p id="fp-subtitle" style="color:#6b8c78;font-size:0.85rem;margin:0 0 20px;line-height:1.6">أدخل اسم المستخدم الخاص بحساب المدير</p>
+  <div style="background:var(--bg,#fff);border-radius:16px;padding:36px 32px;width:100%;max-width:420px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.18)">
+    <div style="width:48px;height:48px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;background:#f0fdf4;border-radius:12px">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#10b981" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+    </div>
+    <h2 style="font-size:1.1rem;font-weight:700;color:var(--text,#1a2e22);margin:0 0 6px">Reset Password</h2>
+    <p id="fp-subtitle" style="color:#6b8c78;font-size:0.84rem;margin:0 0 22px;line-height:1.6">Enter your admin account username</p>
 
     <!-- Step 1: username -->
     <div id="fp-step-1">
-      <div style="margin-bottom:14px;text-align:right">
-        <label style="display:block;font-size:.8rem;font-weight:600;color:#2d4a38;margin-bottom:6px">اسم المستخدم</label>
-        <input type="text" id="fp-username" placeholder="أدخل اسم المستخدم" autocomplete="off"
+      <div style="margin-bottom:14px;text-align:left">
+        <label style="display:block;font-size:.8rem;font-weight:600;color:#2d4a38;margin-bottom:6px">Username</label>
+        <input type="text" id="fp-username" placeholder="Enter your username" autocomplete="off"
           style="width:100%;padding:11px 14px;border:1.5px solid #dde6e0;border-radius:10px;font-size:.93rem;color:#1a2e22;background:#f8faf9;box-sizing:border-box;outline:none"
           onkeydown="if(event.key==='Enter')fpStep1()">
       </div>
       <div id="fp-error-1" style="color:#dc2626;font-size:.83rem;margin-bottom:10px;display:none"></div>
       <button onclick="fpStep1()" id="fp-btn-1"
-        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:10px">
-        التالي
+        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;margin-bottom:10px">
+        Continue
       </button>
       <button onclick="closeForgotPassword()"
-        style="width:100%;padding:10px;background:transparent;border:1px solid #dde6e0;border-radius:12px;font-size:.9rem;color:#6b8c78;cursor:pointer">
-        إلغاء
+        style="width:100%;padding:10px;background:transparent;border:1.5px solid #dde6e0;border-radius:10px;font-size:.88rem;color:#6b8c78;cursor:pointer">
+        Cancel
       </button>
     </div>
 
     <!-- Step 2: TOTP -->
     <div id="fp-step-2" style="display:none">
-      <p style="font-size:.83rem;color:#6b8c78;margin:0 0 16px">افتح تطبيق <strong>Google Authenticator</strong> وأدخل الرمز المكوّن من 6 أرقام</p>
+      <p style="font-size:.83rem;color:#6b8c78;margin:0 0 18px">Open <strong>Google Authenticator</strong> and enter the 6-digit code</p>
       <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;direction:ltr">
-        ${[0,1,2,3,4,5].map(i => `<input id="fp-digit-${i}" type="text" inputmode="numeric" maxlength="1"
-          style="width:44px;height:54px;text-align:center;font-size:1.4rem;font-weight:700;border:2px solid #dde6e0;border-radius:10px;background:#f8faf9;color:#1a2e22;outline:none"
-          oninput="fpDigitInput(this,${i})" onkeydown="fpDigitKeydown(event,${i})">`).join('')}
+        <input id="fp-digit-0" type="text" inputmode="numeric" maxlength="1"
+          style="width:44px;height:52px;text-align:center;font-size:1.4rem;font-weight:700;border:1.5px solid #dde6e0;border-radius:10px;background:#f8faf9;color:#1a2e22;outline:none"
+          oninput="fpDigitInput(this,0)" onkeydown="fpDigitKeydown(event,0)">
+        <input id="fp-digit-1" type="text" inputmode="numeric" maxlength="1"
+          style="width:44px;height:52px;text-align:center;font-size:1.4rem;font-weight:700;border:1.5px solid #dde6e0;border-radius:10px;background:#f8faf9;color:#1a2e22;outline:none"
+          oninput="fpDigitInput(this,1)" onkeydown="fpDigitKeydown(event,1)">
+        <input id="fp-digit-2" type="text" inputmode="numeric" maxlength="1"
+          style="width:44px;height:52px;text-align:center;font-size:1.4rem;font-weight:700;border:1.5px solid #dde6e0;border-radius:10px;background:#f8faf9;color:#1a2e22;outline:none"
+          oninput="fpDigitInput(this,2)" onkeydown="fpDigitKeydown(event,2)">
+        <input id="fp-digit-3" type="text" inputmode="numeric" maxlength="1"
+          style="width:44px;height:52px;text-align:center;font-size:1.4rem;font-weight:700;border:1.5px solid #dde6e0;border-radius:10px;background:#f8faf9;color:#1a2e22;outline:none"
+          oninput="fpDigitInput(this,3)" onkeydown="fpDigitKeydown(event,3)">
+        <input id="fp-digit-4" type="text" inputmode="numeric" maxlength="1"
+          style="width:44px;height:52px;text-align:center;font-size:1.4rem;font-weight:700;border:1.5px solid #dde6e0;border-radius:10px;background:#f8faf9;color:#1a2e22;outline:none"
+          oninput="fpDigitInput(this,4)" onkeydown="fpDigitKeydown(event,4)">
+        <input id="fp-digit-5" type="text" inputmode="numeric" maxlength="1"
+          style="width:44px;height:52px;text-align:center;font-size:1.4rem;font-weight:700;border:1.5px solid #dde6e0;border-radius:10px;background:#f8faf9;color:#1a2e22;outline:none"
+          oninput="fpDigitInput(this,5)" onkeydown="fpDigitKeydown(event,5)">
       </div>
       <div id="fp-error-2" style="color:#dc2626;font-size:.83rem;margin-bottom:10px;display:none"></div>
       <button onclick="fpStep2()" id="fp-btn-2"
-        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:10px">
-        تحقق
+        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;margin-bottom:10px">
+        Verify
       </button>
       <button onclick="closeForgotPassword()"
-        style="width:100%;padding:10px;background:transparent;border:1px solid #dde6e0;border-radius:12px;font-size:.9rem;color:#6b8c78;cursor:pointer">
-        إلغاء
+        style="width:100%;padding:10px;background:transparent;border:1.5px solid #dde6e0;border-radius:10px;font-size:.88rem;color:#6b8c78;cursor:pointer">
+        Cancel
       </button>
     </div>
 
     <!-- Step 3: new password -->
     <div id="fp-step-3" style="display:none">
-      <div style="margin-bottom:14px;text-align:right">
-        <label style="display:block;font-size:.8rem;font-weight:600;color:#2d4a38;margin-bottom:6px">كلمة المرور الجديدة</label>
-        <input type="password" id="fp-newpass" placeholder="6 أحرف على الأقل" autocomplete="new-password"
+      <div style="margin-bottom:14px;text-align:left">
+        <label style="display:block;font-size:.8rem;font-weight:600;color:#2d4a38;margin-bottom:6px">New Password</label>
+        <input type="password" id="fp-newpass" placeholder="At least 6 characters" autocomplete="new-password"
           style="width:100%;padding:11px 14px;border:1.5px solid #dde6e0;border-radius:10px;font-size:.93rem;color:#1a2e22;background:#f8faf9;box-sizing:border-box;outline:none"
           onkeydown="if(event.key==='Enter')fpStep3()">
       </div>
-      <div style="margin-bottom:14px;text-align:right">
-        <label style="display:block;font-size:.8rem;font-weight:600;color:#2d4a38;margin-bottom:6px">تأكيد كلمة المرور</label>
-        <input type="password" id="fp-newpass-confirm" placeholder="أعد الكتابة للتأكيد" autocomplete="new-password"
+      <div style="margin-bottom:14px;text-align:left">
+        <label style="display:block;font-size:.8rem;font-weight:600;color:#2d4a38;margin-bottom:6px">Confirm Password</label>
+        <input type="password" id="fp-newpass-confirm" placeholder="Re-enter to confirm" autocomplete="new-password"
           style="width:100%;padding:11px 14px;border:1.5px solid #dde6e0;border-radius:10px;font-size:.93rem;color:#1a2e22;background:#f8faf9;box-sizing:border-box;outline:none"
           onkeydown="if(event.key==='Enter')fpStep3()">
       </div>
       <div id="fp-error-3" style="color:#dc2626;font-size:.83rem;margin-bottom:10px;display:none"></div>
       <button onclick="fpStep3()" id="fp-btn-3"
-        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:10px">
-        حفظ كلمة المرور
+        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;margin-bottom:10px">
+        Save Password
       </button>
     </div>
   </div>
@@ -6385,7 +6406,10 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
           <input type="text" id="mov-search" placeholder="بحث... مراجع متعددة: 1845 1853 | تاج: #عاجل" data-i18n-placeholder="movSearch" oninput="debouncedRenderMovements()" title="بحث عادي — أو أدخل أرقام مراجع متعددة مفصولة بمسافة (مثال: 1845 1853) — أو اكتب #كلمة للفلترة بالوسم">
           <button class="fx-search-clear" onclick="clearFxSearch('mov')" type="button" aria-label="مسح">×</button>
         </div>
-        <div class="fx-date-quick">
+        <div class="fx-date-quick" style="display:flex;align-items:center;gap:4px">
+          <button id="mov-qdate-all" class="mov-qdate-pill active" onclick="applyMovQuickDate('all')" title="كل الحركات">الكل</button>
+          <button id="mov-qdate-today" class="mov-qdate-pill" onclick="applyMovQuickDate('today')" title="حركات اليوم فقط">اليوم</button>
+          <button id="mov-qdate-yesterday" class="mov-qdate-pill" onclick="applyMovQuickDate('yesterday')" title="حركات أمس فقط">أمس</button>
           <button class="fx-btn fx-btn-icon" id="mov-date-btn" onclick="toggleMovDateMenu(event)" title="فلترة بالتاريخ" aria-label="فلترة بالتاريخ" data-i18n="movDateFilter">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span class="fx-btn-text-mobile-hide" id="mov-date-label" data-i18n="date">التاريخ</span>
@@ -11264,7 +11288,7 @@ async function doLogin() {
   errEl.style.display = 'none';
 
   const rememberMe = qs('#login-remember')?.checked;
-  const deviceToken = localStorage.getItem('device_token') || '';
+  const deviceToken = localStorage.getItem(`device_token_${username}`) || localStorage.getItem('device_token') || '';
   try {
     const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ username, password, deviceToken }) });
 
@@ -11324,33 +11348,39 @@ function _showTotpVerifyScreen(userId, username, password, rememberMe) {
     overlay.id = 'totp-verify-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px)';
     overlay.innerHTML = `
-      <div style="background:var(--bg,#fff);border-radius:20px;padding:36px 32px;width:100%;max-width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
-        <div style="font-size:48px;margin-bottom:8px">🔐</div>
-        <h2 style="font-size:1.2rem;font-weight:700;color:var(--text);margin:0 0 6px">التحقق بخطوتين</h2>
-        <p style="color:var(--muted);font-size:0.88rem;margin:0 0 20px;line-height:1.6">
-          افتح تطبيق <strong>Google Authenticator</strong> وأدخل الرمز المكوّن من 6 أرقام
+      <div style="background:var(--bg,#fff);border-radius:16px;padding:36px 32px;width:100%;max-width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.18)">
+        <div style="width:48px;height:48px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;background:#f0fdf4;border-radius:12px">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#10b981" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="#10b981" stroke="none"/></svg>
+        </div>
+        <h2 style="font-size:1.1rem;font-weight:700;color:var(--text,#1a2e22);margin:0 0 6px">Two-Factor Authentication</h2>
+        <p style="color:var(--muted,#6b8c78);font-size:0.84rem;margin:0 0 22px;line-height:1.6">
+          Open <strong>Google Authenticator</strong> and enter the 6-digit code
         </p>
         <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;direction:ltr">
           ${[0,1,2,3,4,5].map(i => `<input id="totp-digit-${i}" type="text" inputmode="numeric" maxlength="1"
-            style="width:44px;height:54px;text-align:center;font-size:1.4rem;font-weight:700;border:2px solid var(--border);border-radius:10px;background:var(--bg-alt);color:var(--text);outline:none"
+            style="width:44px;height:52px;text-align:center;font-size:1.4rem;font-weight:700;border:1.5px solid var(--border,#dde6e0);border-radius:10px;background:var(--bg-alt,#f8faf9);color:var(--text,#1a2e22);outline:none;transition:border-color .15s"
             oninput="totpDigitInput(this,${i})" onkeydown="totpDigitKeydown(event,${i})">`).join('')}
         </div>
-        <div id="totp-verify-error" style="color:#dc2626;font-size:0.85rem;margin-bottom:12px;display:none;min-height:20px"></div>
-        <label style="display:flex;align-items:center;gap:8px;justify-content:center;font-size:0.85rem;color:var(--muted);margin-bottom:16px;cursor:pointer">
-          <input type="checkbox" id="totp-trust-device" style="width:16px;height:16px;accent-color:var(--accent)">
-          تذكر هذا الجهاز (لا تسألني مجدداً)
+        <div id="totp-verify-error" style="color:#dc2626;font-size:0.83rem;margin-bottom:12px;display:none;min-height:18px"></div>
+        <label style="display:flex;align-items:center;gap:8px;justify-content:center;font-size:0.83rem;color:var(--muted,#6b8c78);margin-bottom:18px;cursor:pointer">
+          <input type="checkbox" id="totp-trust-device" style="width:15px;height:15px;accent-color:var(--accent)">
+          Remember this device
         </label>
         <button onclick="submitTotpVerify()" id="totp-verify-btn"
-          style="width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),var(--accent-dark,#0ea5e9));color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer">
-          تحقق
+          style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;letter-spacing:.01em">
+          Verify
         </button>
         <button onclick="qs('#totp-verify-overlay').remove();_totpLoginUserId=null"
-          style="width:100%;margin-top:10px;padding:10px;background:transparent;border:1px solid var(--border);border-radius:12px;font-size:0.9rem;color:var(--muted);cursor:pointer">
-          رجوع
+          style="width:100%;margin-top:10px;padding:10px;background:transparent;border:1.5px solid var(--border,#dde6e0);border-radius:10px;font-size:0.88rem;color:var(--muted,#6b8c78);cursor:pointer">
+          Back
         </button>
       </div>`;
     document.body.appendChild(overlay);
   }
+  // Reset state every time the modal is shown
+  [0,1,2,3,4,5].forEach(i => { const d = qs(`#totp-digit-${i}`); if (d) d.value = ''; });
+  const cb = qs('#totp-trust-device'); if (cb) cb.checked = false;
+  const err = qs('#totp-verify-error'); if (err) { err.style.display = 'none'; err.textContent = ''; }
   overlay.style.display = 'flex';
   setTimeout(() => { const f = qs('#totp-digit-0'); if (f) f.focus(); }, 100);
 }
@@ -11382,7 +11412,11 @@ async function submitTotpVerify() {
       method: 'POST',
       body: JSON.stringify({ userId: _totpLoginUserId, token, trustDevice })
     });
-    if (data.deviceToken) localStorage.setItem('device_token', data.deviceToken);
+    if (data.deviceToken) {
+      const uname = qs('#login-user')?.value?.trim() || '';
+      localStorage.setItem(`device_token_${uname}`, data.deviceToken);
+      localStorage.setItem('device_token', data.deviceToken); // fallback
+    }
     qs('#totp-verify-overlay')?.remove();
     if (_totpLoginRemember) {
       localStorage.setItem('rem_user', qs('#login-user')?.value || '');
@@ -11537,13 +11571,15 @@ function openForgotPassword() {
   _fpUserId = null;
   _fpResetToken = null;
   const overlay = qs('#forgot-password-overlay');
+  // Move to body if still inside #app (which has display:none during login)
+  if (overlay.closest('#app')) document.body.appendChild(overlay);
   overlay.style.display = 'flex';
   qs('#fp-step-1').style.display = 'block';
   qs('#fp-step-2').style.display = 'none';
   qs('#fp-step-3').style.display = 'none';
   qs('#fp-username').value = '';
   qs('#fp-error-1').style.display = 'none';
-  qs('#fp-subtitle').textContent = 'أدخل اسم المستخدم الخاص بحساب المدير';
+  qs('#fp-subtitle').textContent = 'Enter your admin account username';
   setTimeout(() => qs('#fp-username')?.focus(), 100);
 }
 
@@ -11563,7 +11599,7 @@ async function fpStep1() {
     _fpUserId = data.userId;
     qs('#fp-step-1').style.display = 'none';
     qs('#fp-step-2').style.display = 'block';
-    qs('#fp-subtitle').textContent = 'أدخل رمز Google Authenticator للتحقق من هويتك';
+    qs('#fp-subtitle').textContent = 'Enter your Google Authenticator code to verify your identity';
     [0,1,2,3,4,5].forEach(i => { const d = qs(`#fp-digit-${i}`); if (d) d.value = ''; });
     setTimeout(() => qs('#fp-digit-0')?.focus(), 100);
   } catch(e) {
@@ -11598,7 +11634,7 @@ async function fpStep2() {
     _fpResetToken = data.resetToken;
     qs('#fp-step-2').style.display = 'none';
     qs('#fp-step-3').style.display = 'block';
-    qs('#fp-subtitle').textContent = 'أدخل كلمة المرور الجديدة';
+    qs('#fp-subtitle').textContent = 'Enter your new password';
     qs('#fp-newpass').value = '';
     qs('#fp-newpass-confirm').value = '';
     setTimeout(() => qs('#fp-newpass')?.focus(), 100);
@@ -11637,7 +11673,8 @@ async function revokeMyTrustedDevices() {
   if (!confirm('سيتم إلغاء ثقة جميع الأجهزة المحفوظة — ستحتاج إدخال رمز التحقق في كل جهاز مجدداً')) return;
   try {
     await api('/auth/totp/revoke-devices', { method: 'POST' });
-    localStorage.removeItem('device_token');
+    // Remove all device tokens from localStorage
+    Object.keys(localStorage).filter(k => k.startsWith('device_token')).forEach(k => localStorage.removeItem(k));
     toast('تم إلغاء ثقة الأجهزة بنجاح');
   } catch(e) { toast(e.message || 'حدث خطأ', true); }
 }
@@ -11691,7 +11728,7 @@ function loadRememberedLogin() {
   if (userEl) userEl.value = remUser;
   if (passEl) passEl.value = remPass || '';
   if (cb) { cb.checked = true; updateRememberBox(true); }
-  if (badge) badge.style.display = 'inline-block';
+  if (badge) badge.style.display = 'inline-flex';
 }
 
 function updateRememberBox(checked) {
@@ -21101,9 +21138,13 @@ function renderMovementTxRow(tx) {
   const rowStateClass = (tx.cancelled || isStatusCancelled(tx.payStatus)) ? ' mov-row-cancelled'
     : (isStatusPending(tx.payStatus) || isExchangeSalePendingCollect(tx) || (tx.cancelRequest && tx.cancelRequest.status === 'معلق')) ? ' mov-row-pending'
     : isStatusCompleted(tx.payStatus) ? ' mov-row-completed' : '';
+  // شارة "جديد" للحركات المنشأة اليوم
+  const _todayStr = new Date().toISOString().slice(0,10);
+  const _txDateStr = (tx.createdAt || tx.date || '').slice(0,10);
+  const newBadge = _txDateStr === _todayStr ? `<span class="mov-new-badge">جديد</span>` : '';
   return `<tr ${rowStyle} class="${isSelected ? 'mov-row-selected' : ''}${_rtFlash}${rowStateClass}" onclick="handleMovRowClick(event,'${esc(tx._id)}')">
     <td><input type="checkbox" class="checkbox mov-check" value="${esc(tx._id)}" ${isSelected ? 'checked' : ''} onclick="handleMovCheck(event,'${esc(tx._id)}')"></td>
-    <td data-col="ref" class="col-ref">${movementRefCell(tx)}</td>
+    <td data-col="ref" class="col-ref">${newBadge}${movementRefCell(tx)}</td>
     <td data-col="date">${dateCell}</td>
     <td data-col="client">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -21989,6 +22030,28 @@ function _movDateActivePreset() {
   return null;
 }
 
+function applyMovQuickDate(id) {
+  if (id === 'all') {
+    fxState.mov.dateFrom = '';
+    fxState.mov.dateTo = '';
+  } else {
+    applyMovDatePreset(id);
+    return; // applyMovDatePreset calls renderMovements
+  }
+  _syncMovQDatePills();
+  _updateMovDateLabel();
+  movPage = 1; renderMovements();
+}
+function _syncMovQDatePills() {
+  const active = _movDateActivePreset();
+  const hasDate = !!(fxState.mov.dateFrom || fxState.mov.dateTo);
+  const allBtn = qs('#mov-qdate-all');
+  const todayBtn = qs('#mov-qdate-today');
+  const ydBtn = qs('#mov-qdate-yesterday');
+  if (allBtn) allBtn.classList.toggle('active', !hasDate);
+  if (todayBtn) todayBtn.classList.toggle('active', active === 'today');
+  if (ydBtn) ydBtn.classList.toggle('active', active === 'yesterday');
+}
 function applyMovDatePreset(id) {
   const today = new Date(); today.setHours(0,0,0,0);
   const fmtD = (d) => d.toISOString().slice(0,10);
@@ -22002,6 +22065,7 @@ function applyMovDatePreset(id) {
   fxState.mov.dateFrom = from;
   fxState.mov.dateTo = to;
   qs('#mov-date-menu')?.classList.remove('show');
+  _syncMovQDatePills();
   _updateMovDateLabel();
   movPage = 1; renderMovements();
 }
@@ -22011,6 +22075,7 @@ function applyMovDateCustom() {
   const t = qs('#mov-date-to-custom')?.value || '';
   fxState.mov.dateFrom = f;
   fxState.mov.dateTo = t;
+  _syncMovQDatePills();
   _updateMovDateLabel();
   movPage = 1; renderMovements();
 }
@@ -22018,6 +22083,7 @@ function clearMovDate() {
   fxState.mov.dateFrom = '';
   fxState.mov.dateTo = '';
   qs('#mov-date-menu')?.classList.remove('show');
+  _syncMovQDatePills();
   _updateMovDateLabel();
   movPage = 1; renderMovements();
 }
@@ -22040,6 +22106,7 @@ function _updateMovDateLabel() {
   }
   if (ind) ind.style.display = hasDate ? 'inline-flex' : 'none';
   if (btn) btn.classList.toggle('active', hasDate);
+  _syncMovQDatePills();
 }
 
 function toggleMovFilters(btn) {
@@ -39379,7 +39446,7 @@ function renderShopifyOrders() {
             <td>${fmtJ(o.shipCost || 0)}</td>
             <td>${o.discount > 0 ? `<span style="color:#10b981;font-size:.82rem">${o.discountCode ? `<b>${o.discountCode}</b><br>` : ''}${o.discountType === 'percent' ? o.discountValue + '%' : fmtJ(o.discount)}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
             <td><b style="color:var(--accent)">${fmtJ(o.total)}</b></td>
-            <td>${_shopifyStatusBadge(o.status, o.phone)}</td>
+            <td>${_shopifyStatusBadge(o.status, o.phone, o._id, o.pendingStatus)}</td>
             <td>
               ${o.status === 'pending' ? `
                 <div style="display:flex;flex-direction:row;align-items:center;gap:6px;flex-wrap:nowrap">
@@ -39419,17 +39486,94 @@ document.addEventListener('click', e => {
   }
 });
 
-function _shopifyStatusBadge(status, phone) {
+const _SHOPIFY_PENDING_STATUSES = [
+  { value: '',                label: 'بانتظار تأكيد العميل',  color: '#92400e' },
+  { value: 'msg_sent',        label: 'تم إرسال رسالة تأكيد',  color: '#1d4ed8' },
+  { value: 'awaiting_transfer', label: 'في انتظار التحويل',   color: '#166534' },
+  { value: 'no_reply',        label: 'لم يرد / لم يتم التأكيد', color: '#991b1b' },
+  { value: 'cancelled',       label: 'العميل طلب الإلغاء',    color: '#6b7280' },
+];
+
+function _shopifyPendingStatusInfo(v) {
+  return _SHOPIFY_PENDING_STATUSES.find(s => s.value === (v || '')) || _SHOPIFY_PENDING_STATUSES[0];
+}
+
+const _WA_PATH = `M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232`;
+
+function _shopifyStatusBadge(status, phone, orderId, pendingStatus) {
   if (status === 'pending') {
     const clean = (phone || '').replace(/\D/g, '');
     const waUrl = clean ? `https://wa.me/${clean}` : '';
-    const tag = waUrl ? 'a' : 'span';
-    const extra = waUrl ? `href="${waUrl}" target="_blank" rel="noopener" title="فتح واتساب العميل"` : '';
-    return `<${tag} ${extra} style="display:inline-flex;align-items:center;gap:4px;background:#fef9ec;color:#b45309;border-radius:6px;padding:2px 8px;font-size:.72rem;${waUrl?'cursor:pointer;text-decoration:none;':''}"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="#b45309" viewBox="0 0 16 16"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/></svg>بانتظار تأكيد العميل</${tag}>`;
+    const info = _shopifyPendingStatusInfo(pendingStatus);
+    const waHtml = waUrl
+      ? `<a href="${waUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" data-shopify-ps-wa="${orderId}" title="واتساب" style="display:inline-flex;align-items:center;margin-right:2px;flex-shrink:0"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="${info.color}" viewBox="0 0 16 16"><path d="${_WA_PATH}"/></svg></a>`
+      : '';
+    return `<span data-shopify-ps-id="${orderId}" oncontextmenu="_shopifyPendingContextMenu(event,'${orderId}')" title="كليك يمين لتغيير الحالة" style="display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb,${info.color} 12%,transparent);color:${info.color};border-radius:6px;padding:3px 8px;font-size:.72rem;cursor:context-menu;user-select:none;transition:background .25s,color .25s"><svg width="7" height="7" viewBox="0 0 7 7" data-shopify-ps-dot="${orderId}" style="flex-shrink:0"><circle cx="3.5" cy="3.5" r="3.5" fill="${info.color}"/></svg><span data-shopify-ps-label="${orderId}">${info.label}</span>${waHtml}</span>`;
   }
   if (status === 'approved') return '<span style="background:#10b98122;color:#10b981;border-radius:99px;padding:2px 10px;font-size:.78rem">تم القبول</span>';
   if (status === 'rejected') return '<span style="background:#ef444422;color:#ef4444;border-radius:99px;padding:2px 10px;font-size:.78rem">مرفوض</span>';
   return status;
+}
+
+function _shopifyPendingContextMenu(e, orderId) {
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('shopify-status-ctx')?.remove();
+  const order = _shopifyOrders.find(o => o._id === orderId);
+  if (!order) return;
+  const menuW = 250, menuH = _SHOPIFY_PENDING_STATUSES.length * 44 + 50;
+  const x = Math.min(e.clientX, window.innerWidth - menuW - 8);
+  const y = Math.min(e.clientY, window.innerHeight - menuH - 8);
+  const cur = order.pendingStatus || '';
+  const menu = document.createElement('div');
+  menu.id = 'shopify-status-ctx';
+  menu.style.cssText = `position:fixed;z-index:99999;background:var(--bg);border:1px solid var(--border);border-radius:12px;box-shadow:0 16px 48px #00000022;width:${menuW}px;padding:5px;left:${x}px;top:${y}px;opacity:0;transform:scale(.93) translateY(-6px);transition:opacity .18s cubic-bezier(.4,0,.2,1),transform .18s cubic-bezier(.4,0,.2,1)`;
+  menu.innerHTML = `<div style="padding:6px 10px 5px;font-size:.71rem;color:var(--text-muted);font-weight:600;letter-spacing:.03em">تغيير حالة الأوردر</div>` +
+    _SHOPIFY_PENDING_STATUSES.map(s => {
+      const active = cur === s.value;
+      return `<div data-ctx-item onclick="_setShopifyPendingStatus('${orderId}','${s.value}')" style="display:flex;align-items:center;gap:9px;padding:9px 10px;cursor:pointer;font-size:.83rem;border-radius:8px;transition:background .12s;background:${active ? 'color-mix(in srgb,'+s.color+' 10%,transparent)' : 'transparent'}">
+        <svg width="8" height="8" viewBox="0 0 8 8" style="flex-shrink:0"><circle cx="4" cy="4" r="4" fill="${s.color}" opacity="${active?1:.55}"/></svg>
+        <span style="flex:1;color:var(--text);font-weight:${active?600:400}">${s.label}</span>
+        ${active ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+      </div>`;
+    }).join('');
+  document.body.appendChild(menu);
+  requestAnimationFrame(() => requestAnimationFrame(() => { menu.style.opacity='1'; menu.style.transform='scale(1) translateY(0)'; }));
+  menu.querySelectorAll('[data-ctx-item]').forEach(el => {
+    el.addEventListener('mouseenter', () => { if (el.style.background.includes('transparent')) el.style.background='var(--bg-alt)'; });
+    el.addEventListener('mouseleave', () => { if (!el.style.background.includes('color-mix')) el.style.background='transparent'; });
+  });
+  const closeMenu = (ev) => {
+    if (!menu.contains(ev.target)) {
+      menu.style.opacity='0'; menu.style.transform='scale(.93) translateY(-6px)';
+      setTimeout(() => menu.remove(), 180);
+      document.removeEventListener('mousedown', closeMenu);
+    }
+  };
+  setTimeout(() => document.addEventListener('mousedown', closeMenu), 0);
+}
+
+async function _setShopifyPendingStatus(orderId, pendingStatus) {
+  const menu = document.getElementById('shopify-status-ctx');
+  if (menu) { menu.style.opacity='0'; menu.style.transform='scale(.93) translateY(-6px)'; setTimeout(()=>menu.remove(),180); }
+  const order = _shopifyOrders.find(o => o._id === orderId);
+  if (!order) return;
+  try {
+    await api(`/shopify/orders/${orderId}/pending-status`, { method: 'PATCH', body: JSON.stringify({ pendingStatus }) });
+    order.pendingStatus = pendingStatus;
+    const info = _shopifyPendingStatusInfo(pendingStatus);
+    const badge = document.querySelector(`[data-shopify-ps-id="${orderId}"]`);
+    if (badge) {
+      badge.style.background = `color-mix(in srgb,${info.color} 12%,transparent)`;
+      badge.style.color = info.color;
+      const dot = badge.querySelector('svg circle');
+      if (dot) dot.setAttribute('fill', info.color);
+      const lbl = badge.querySelector(`[data-shopify-ps-label="${orderId}"]`);
+      if (lbl) lbl.textContent = info.label;
+      const waEl = badge.querySelector(`a[data-shopify-ps-wa] svg`);
+      if (waEl) waEl.setAttribute('fill', info.color);
+    }
+  } catch(err) { console.error(err); toast('حدث خطأ أثناء التحديث', true); }
 }
 
 async function approveShopifyOrder(id) {

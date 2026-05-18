@@ -127,7 +127,9 @@ export class AuthService {
 
     if (needsTotp) {
       const deviceToken = (loginDto as any).deviceToken as string | undefined;
+      console.log('[TRUST] userId:', userId, '| deviceToken length:', deviceToken?.length ?? 0, '| token preview:', deviceToken?.slice(0,8) ?? 'EMPTY');
       const trusted = await this.totpService.isTrustedDevice(userId, deviceToken ?? '');
+      console.log('[TRUST] isTrusted result:', trusted);
       if (!trusted) {
         return { requireTotp: true, userId };
       }
