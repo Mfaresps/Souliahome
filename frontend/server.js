@@ -34,7 +34,7 @@ const apiProxy = createProxyMiddleware({
     if (res && res.status) res.status(502).json({ error: 'Backend connection failed' });
   }
 });
-app.use('/api/', apiProxy);
+app.use('/api', apiProxy);
 
 // Proxy Socket.IO to backend (HTTP polling + WebSocket upgrade)
 const socketProxy = createProxyMiddleware({

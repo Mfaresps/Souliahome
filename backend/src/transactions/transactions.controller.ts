@@ -13,7 +13,9 @@ import {
   UseGuards,
   HttpException,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
+import { isValidObjectId } from 'mongoose';
 import type { Response } from 'express';
 import { TransactionsService } from './transactions.service';
 import { ReferenceDetailService } from './reference-detail.service';
@@ -217,6 +219,7 @@ export class TransactionsController {
   async findOne(@Param('id') id: string) {
     if (id === 'pickup-orders') return this.transactionsService.findPickupOrders();
     if (id === 'archived') return this.transactionsService.findArchived();
+    if (!isValidObjectId(id)) throw new BadRequestException('معرّف الحركة غير صالح');
     return this.transactionsService.findById(id);
   }
 

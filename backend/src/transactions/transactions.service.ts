@@ -1410,6 +1410,9 @@ export class TransactionsService {
   }
 
   async remove(id: string, archivedBy?: string): Promise<void> {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('معرّف الحركة غير صالح');
+    }
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) {
       throw new NotFoundException('الحركة غير موجودة');
@@ -1465,6 +1468,9 @@ export class TransactionsService {
   }
 
   async restore(id: string): Promise<TransactionDocument> {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('معرّف الحركة غير صالح');
+    }
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) {
       throw new NotFoundException('الحركة غير موجودة');

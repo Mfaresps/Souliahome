@@ -1455,9 +1455,11 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 #sidebar .nav-item svg{width:18px;height:18px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .sp-src-link:hover{background:#f0f9ec!important;border-color:#95bf4770!important}
 .sp-src-link:hover .sp-src-svg{filter:grayscale(0) opacity(1)!important}
+@keyframes needContactPulse{0%,100%{box-shadow:0 0 6px #ef444440,0 0 14px #ef444425}50%{box-shadow:0 0 14px #ef444470,0 0 28px #ef444445,0 0 40px #ef444420}}
+.sp-need-contact-btn:hover{box-shadow:0 0 18px #ef444480,0 0 36px #ef444450!important;transform:translateY(-1px)}
 /* ── Shopify Orders Table ── */
-#shopify-orders-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)}
-#shopify-orders-table-wrap .data-table{border-collapse:collapse;font-size:.83rem}
+#shopify-orders-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow-x:auto;overflow-y:visible;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+#shopify-orders-table-wrap .data-table{border-collapse:collapse;font-size:.83rem;min-width:900px}
 #shopify-orders-table-wrap .data-table thead tr{background:var(--bg-alt);border-bottom:2px solid var(--border)}
 #shopify-orders-table-wrap .data-table thead th{padding:10px 12px;font-size:.75rem;font-weight:600;color:var(--text-muted);white-space:nowrap;letter-spacing:.01em}
 #shopify-orders-table-wrap .data-table tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
@@ -1465,7 +1467,7 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 #shopify-orders-table-wrap .data-table tbody tr:hover{background:var(--bg-alt)}
 #shopify-orders-table-wrap .data-table td{padding:10px 12px;vertical-align:middle}
 /* address popup fix */
-.sp-addr-popup{position:fixed;z-index:9990;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:14px 16px;min-width:240px;max-width:360px;width:max-content;text-align:right;word-break:break-word}
+.sp-addr-popup{position:fixed;z-index:9990;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:14px 16px;min-width:240px;max-width:min(360px,calc(100vw - 32px));width:300px;text-align:right;word-break:break-word;overflow-wrap:break-word;white-space:normal}
 /* mobile */
 @media(max-width:768px){
   .sp-addr-popup{max-width:calc(100vw - 32px)!important;width:calc(100vw - 32px)!important}
@@ -8328,13 +8330,12 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <p style="margin:4px 0 0;color:var(--text-muted);font-size:.85rem">مراجعة الأوردرات القادمة من المتجر قبل إضافتها للحركات</p>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
-      <button class="btn btn-sm" onclick="loadShopifyOrders()" style="gap:6px">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7"/><polyline points="21 4 21 10 15 10"/></svg>
-        تحديث
-      </button>
-      <div style="display:flex;gap:4px;background:var(--bg-alt);border-radius:8px;padding:3px">
-        <button id="shopify-tab-pending" class="btn btn-sm active-tab" onclick="switchShopifyTab('pending')" style="font-size:.78rem">بانتظار تأكيد العميل <span id="shopify-pending-count" style="background:var(--accent);color:#fff;border-radius:99px;padding:1px 7px;font-size:.72rem;margin-right:4px">0</span></button>
-        <button id="shopify-tab-all" class="btn btn-sm" onclick="switchShopifyTab('all')" style="font-size:.78rem">الكل</button>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn btn-sm" onclick="loadShopifyOrders()" style="gap:6px">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7"/><polyline points="21 4 21 10 15 10"/></svg>
+          تحديث
+        </button>
+        <span id="shopify-last-refresh" style="font-size:.72rem;color:var(--text-muted)"></span>
       </div>
     </div>
   </div>
@@ -8379,6 +8380,10 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <input id="shopify-search" type="text" placeholder="بحث برقم الأوردر..." oninput="renderShopifyOrders()" style="width:100%;padding:10px 38px 10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-size:.9rem;box-sizing:border-box;direction:ltr;transition:border-color .2s;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
     </div>
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-sm sp-status-filter-btn sp-need-contact-btn" data-filter="need-contact" data-color="#ef4444" onclick="switchShopifyStatusFilter('need-contact',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid #ef4444;color:#ef4444;background:linear-gradient(135deg,#ef444418 0%,#dc262618 100%);border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:600;box-shadow:0 0 8px #ef444440,0 0 16px #ef444420;animation:needContactPulse 2s ease-in-out infinite">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/></svg>
+        يحتاج تواصل <span id="shopify-need-contact-count" style="background:#ef4444;color:#fff;border-radius:99px;padding:1px 6px;font-size:.68rem;font-weight:700">0</span>
+      </button>
       <button class="btn btn-sm sp-status-filter-btn" data-filter="confirmed" data-color="#10b981" onclick="switchShopifyStatusFilter('confirmed',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid var(--border);color:var(--text-muted);background:var(--bg-alt);border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:400">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         جاهز للتسجيل
@@ -12079,7 +12084,7 @@ function connectSocket() {
   socket.on('tx:created', async (payload) => {
     try {
       const tx = payload?.tx;
-      if (!tx) return;
+      if (!tx || !tx._id || String(tx._id).length < 10) return;
       const exists = transactions.some(t => String(t._id) === String(tx._id));
       if (!exists) {
         transactions.unshift(tx);
@@ -24531,6 +24536,7 @@ async function doApplyPostDiscount(txId) {
 }
 
 async function archiveMovement(id) {
+  if (!id || id === 'undefined' || id === 'null' || String(id).length < 10) { toast('خطأ: معرّف الحركة غير صالح', true); return; }
   const tx = transactions.find(t => t._id === id);
   if (!tx) { toast('الحركة غير موجودة', true); return; }
   if (!tx.cancelled) { toast(currentLang==='en'?'Archive is only available for cancelled transactions':'الأرشفة تقتصر على الحركات الملغاة فقط', true); return; }
@@ -39515,6 +39521,8 @@ async function loadShopifyOrders() {
     if (localStorage.getItem('shopify_seen_count') === null) {
       localStorage.setItem('shopify_seen_count', String(_shopifyOrders.filter(o => o.status === 'pending').length));
     }
+    const _refEl = document.getElementById('shopify-last-refresh');
+    if (_refEl) { const _n = new Date(); _refEl.textContent = `آخر تحديث ${String(_n.getHours()).padStart(2,'0')}:${String(_n.getMinutes()).padStart(2,'0')}`; }
     renderShopifyOrders();
     buildSidebar();
   } catch(e) {
@@ -39581,6 +39589,11 @@ function renderShopifyOrders() {
   const lWeek = qs('#shopify-kpi-week-label'); if (lWeek) lWeek.textContent = `${weekStart} – ${weekEnd}`;
   const lMonth = qs('#shopify-kpi-month-label'); if (lMonth) lMonth.textContent = monthLabel;
 
+  /* update need-contact count */
+  const _needContactCount = pending.filter(o => !_shopifySmartStatus(o) && !o.pendingStatus).length;
+  const _ncEl = qs('#shopify-need-contact-count');
+  if (_ncEl) _ncEl.textContent = _needContactCount;
+
   const searchQ = (qs('#shopify-search')?.value || '').trim().toLowerCase();
   let data = _shopifyTab === 'pending' ? pending : _shopifyOrders;
   if (searchQ) data = data.filter(o => String(o.ref || '').toLowerCase().includes(searchQ));
@@ -39588,26 +39601,35 @@ function renderShopifyOrders() {
     data = data.filter(o => {
       const smart = _shopifySmartStatus(o);
       const effectiveStatus = smart ? smart.value : (o.pendingStatus || '');
+      if (_shopifyStatusFilter === 'need-contact') return !smart && !o.pendingStatus;
       return effectiveStatus === _shopifyStatusFilter;
     });
   }
 
-  /* ── Priority classification ── */
-  function _getOrderPriority(o) {
-    const noteText = (o.notes || '').trim().startsWith('العنوان:') ? '' : (o.notes || '').trim();
-    const hasDeposit = noteText && /(\d[\d,.]*)/.test(noteText);
-    if (hasDeposit) return 'confirmed'; // 🟢
-    const orderDate = new Date(o.shopifyCreatedAt || o.createdAt);
-    const hoursOld = (Date.now() - orderDate.getTime()) / 36e5;
-    if (hoursOld >= 48) return 'urgent';   // 🔴
-    if (hoursOld >= 24) return 'followup'; // 🟡
-    return 'new'; // no badge needed
-  }
-
-  /* Sort pending: confirmed first, then urgent, then followup, then new */
+  /* Sort: smart priority ranking */
   if (_shopifyTab === 'pending') {
-    const priorityOrder = { confirmed: 0, urgent: 1, followup: 2, new: 3 };
-    data = [...data].sort((a, b) => priorityOrder[_getOrderPriority(a)] - priorityOrder[_getOrderPriority(b)]);
+    const _nowMs = Date.now();
+    const _24h = 24 * 60 * 60 * 1000;
+    /* rank: 1=today+need-contact, 2=confirmed, 3=today+followup, 4=old+need-contact, 5=old+followup, 6=cancelled */
+    const _smartRank = o => {
+      const smart = _shopifySmartStatus(o);
+      const sv = smart ? smart.value : (o.pendingStatus || '');
+      const age = _nowMs - new Date(o.shopifyCreatedAt || o.createdAt || 0).getTime();
+      const isRecent = age < _24h;
+      if (sv === 'cancelled') return isRecent ? 6 : 7;
+      if (isRecent) return 1;           // أي أوردر جديد (أقل من 24 ساعة) يطلع فوق الكل
+      if (sv === 'confirmed') return 2; // جاهز للتسجيل
+      if (!smart && !o.pendingStatus) return 3; // يحتاج تواصل قديم
+      if (sv === 'followup')  return 4; // متابعة قديم
+      return 5;
+    };
+    data = [...data].sort((a, b) => {
+      const pa = _smartRank(a), pb = _smartRank(b);
+      if (pa !== pb) return pa - pb;
+      const da = new Date(a.shopifyCreatedAt || a.createdAt).getTime();
+      const db = new Date(b.shopifyCreatedAt || b.createdAt).getTime();
+      return db - da;
+    });
   }
 
   if (!data.length) {
@@ -39678,36 +39700,68 @@ function renderShopifyOrders() {
         <th style="width:200px">الإجراء</th>
         <th style="width:44px;text-align:center">عنوان</th>
         <th style="width:54px;text-align:center;font-size:.72rem;color:var(--text-muted)">المصدر</th>
+        <th style="width:54px;text-align:center;font-size:.72rem;color:var(--text-muted)">تتبع العميل</th>
       </tr></thead>
       <tbody>
         ${data.map(o => {
-          const _oToday = new Date().toISOString().slice(0,10);
-          const _oDate = (o.shopifyCreatedAt || o.createdAt || '').slice(0,10);
-          const _oNewBadge = _oDate === _oToday ? `<span class="mov-new-badge" style="margin-left:5px">جديد</span>` : '';
+          const _oAgeMs = Date.now() - new Date(o.shopifyCreatedAt || o.createdAt || 0).getTime();
+          const _isNewToday = _oAgeMs < 24 * 60 * 60 * 1000;
+          const _oNewBadge = _isNewToday ? `<span class="mov-new-badge" style="margin-left:5px">جديد</span>` : '';
+          const _newRowStyle = _isNewToday ? `background:linear-gradient(90deg,rgba(16,185,129,.07) 0%,transparent 100%);border-right:3px solid #10b981;` : '';
 
           /* ── Notes cell — smart deposit parser ── */
           const noteText = (o.notes || '').trim().startsWith('العنوان:') ? '' : (o.notes || '').trim();
           const noteCell = (() => {
-            if (!noteText) return `<span style="color:var(--text-muted);font-size:.8rem">—</span>`;
+            /* clean tags from emojis for matching */
+            const cleanTags = (o.tags || '').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{1F300}-\u{1F9FF}✅❌💲📥💸🎉]/gu, '').toLowerCase();
+
+            /* check if fully paid tag or note keyword */
+            const fullPaidTagKeywords = ['تم دفع الاوردر بالكامل', 'paid in full', 'fully paid'];
+            const fullPaidNoteKeywords = ['تم دفع الاوردر بالكامل', 'دفع كامل', 'paid in full', 'fully paid', 'تم الدفع بالكامل'];
+            const hasFullPaidTag  = fullPaidTagKeywords.some(k => cleanTags.includes(k));
+            const hasFullPaidNote = fullPaidNoteKeywords.some(k => noteText.toLowerCase().includes(k));
+
             /* استخراج رقم من النص */
             const numMatch = noteText.match(/(\d[\d,.]*)/);
-            const amount = numMatch ? parseFloat(numMatch[1].replace(/,/g,'')) : null;
-            /* تحديد طريقة الدفع من الكلمات */
-            const lower = noteText.toLowerCase();
-            let method = '', methodColor = '#10b981', methodBg = '#10b98112', methodBorder = '#10b98130';
-            if (/voda|فودا|فون/.test(lower))         { method = 'فودافون كاش'; }
-            else if (/insta|انستا|إنستا/.test(lower)) { method = 'Instapay'; }
-            else if (/bank|بنك|تحويل|transfer/.test(lower)) { method = 'تحويل بنكي'; }
-            else if (/cash|كاش/.test(lower))          { method = 'كاش'; }
-            else if (amount !== null)                  { method = 'كاش'; }
+            const amountFromNote = numMatch ? parseFloat(numMatch[1].replace(/,/g,'')) : null;
+
+            /* السيناريو 1: رقم في الملاحظة → يكسب دائماً */
+            /* السيناريو 2+3: تاج أو كلمة دفع كامل بدون رقم → إجمالي الأوردر */
+            const amount = amountFromNote !== null ? amountFromNote
+                         : (hasFullPaidTag || hasFullPaidNote) ? (o.total || 0)
+                         : null;
+
+            if (!noteText && amount === null) return `<span style="color:var(--text-muted);font-size:.8rem">—</span>`;
+
+            /* تحديد طريقة الدفع من النص أو التاجات */
+            const searchIn = (noteText + ' ' + (o.tags || '')).toLowerCase();
+            let method = '';
+            if (/voda|فودا|فون/.test(searchIn))              { method = 'فودافون كاش'; }
+            else if (/insta|انستا|إنستا/.test(searchIn))      { method = 'Instapay'; }
+            else if (/bank|بنك|تحويل|transfer/.test(searchIn)){ method = 'تحويل بنكي'; }
+            else if (/cash|كاش/.test(searchIn))               { method = 'كاش'; }
+            else if (amount !== null)                          { method = 'كاش'; }
+
+            const methodColor = '#10b981', methodBg = '#10b98112', methodBorder = '#10b98130';
             if (amount !== null) {
+              /* لو دفع كامل بدون طريقة دفع صريحة (فودافون/انستا/بنك) → تحذير */
+              const hasExplicitMethod = /voda|فودا|فون|insta|انستا|إنستا|bank|بنك|تحويل|transfer/.test(searchIn);
+              const isFullNoMethod = (hasFullPaidTag || hasFullPaidNote) && amountFromNote === null && !hasExplicitMethod;
+              if (isFullNoMethod) {
+                return `<div style="display:inline-flex;align-items:center;gap:6px;background:#10b98108;border:1px solid #10b98125;border-radius:8px;padding:4px 9px;white-space:nowrap">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                  <span style="font-size:.78rem;font-weight:700;color:#10b981">${fmtJ(amount)}</span>
+                  <span style="color:var(--border);font-size:.7rem">·</span>
+                  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span style="font-size:.7rem;color:#f59e0b;font-weight:600">اختر طريقة الدفع</span>
+                </div>`;
+              }
               /* أيكون طريقة الدفع */
               const methodIconHtml = (() => {
-                if (/voda|فودا|فون/.test(lower))
+                if (/voda|فودا|فون/.test(searchIn))
                   return `<img src="/vodafone.svg" style="width:16px;height:16px;object-fit:contain;flex-shrink:0" alt="Vodafone">`;
-                if (/insta|انستا|إنستا/.test(lower))
+                if (/insta|انستا|إنستا/.test(searchIn))
                   return `<img src="/instapay.svg" style="width:16px;height:16px;object-fit:contain;flex-shrink:0" alt="Instapay">`;
-                /* كاش / تحويل بنكي */
                 return `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${methodColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`;
               })();
               return `<div style="display:inline-flex;align-items:center;gap:7px;background:${methodBg};border:1px solid ${methodBorder};border-radius:9px;padding:5px 10px;min-width:0;white-space:nowrap">
@@ -39733,7 +39787,7 @@ function renderShopifyOrders() {
           const tagsCell = !tagList.length ? `<span style="color:var(--text-muted)">—</span>` : (() => {
             const first = tagList[0];
             const rest  = tagList.slice(1);
-            const firstBadge = `<span style="display:inline-block;background:var(--bg-alt);border:1px solid var(--border);border-radius:20px;padding:2px 9px;font-size:.71rem;color:var(--text-muted);white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle" title="${first}">${first}</span>`;
+            const firstBadge = `<span style="display:inline-block;background:var(--bg-alt);border:1px solid var(--border);border-radius:20px;padding:2px 9px;font-size:.71rem;color:var(--text-muted);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle" title="${first}">${first}</span>`;
             const moreBtn = rest.length ? `<span class="sp-tags-more-btn" style="display:inline-flex;align-items:center;background:var(--accent);color:#fff;border-radius:20px;padding:2px 8px;font-size:.7rem;cursor:pointer;white-space:nowrap;vertical-align:middle;position:relative;flex-shrink:0" onclick="_toggleShopifyTags(this)">+${rest.length}
               <div class="sp-tags-popup" style="display:none;position:absolute;top:calc(100% + 5px);right:0;z-index:400;background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 24px #0003;padding:8px;min-width:140px;max-width:220px">
                 ${rest.map(t => `<div style="padding:5px 8px;font-size:.75rem;color:var(--text);border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${t}">${t}</div>`).join('')}
@@ -39743,7 +39797,9 @@ function renderShopifyOrders() {
           })();
 
           /* ── Shopify source icon (greyscale → color on hover) ── */
-          const spUrl = o.orderStatusUrl || o.rawData?.order_status_url;
+          const spUrl = (o.shopifyOrderId ? `https://admin.shopify.com/store/soulia-2/orders/${o.shopifyOrderId}` : null)
+            || (o.rawData?.id   ? `https://admin.shopify.com/store/soulia-2/orders/${o.rawData.id}`   : null)
+            || o.orderStatusUrl || o.rawData?.order_status_url;
           const sourceCell = spUrl
             ? `<a href="${spUrl}" target="_blank" title="فتح في Shopify" class="sp-src-link" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;background:var(--bg-alt);border:1px solid var(--border);text-decoration:none;transition:border-color .18s,background .18s" onmouseover="this.classList.add('sp-src-hover')" onmouseout="this.classList.remove('sp-src-hover')">
                 <svg class="sp-src-svg" viewBox="0 0 108.44 122.88" xmlns="http://www.w3.org/2000/svg" width="20" height="20" style="transition:filter .18s;filter:grayscale(1) opacity(.45)"><path fill="#95BF47" fill-rule="evenodd" clip-rule="evenodd" d="M94.98,23.66c-0.09-0.62-0.63-0.96-1.08-1c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.72-0.72-2.13-0.5-2.68-0.34c-0.01,0-1.37,0.43-3.68,1.14c-0.38-1.25-0.95-2.78-1.76-4.32c-2.6-4.97-6.42-7.6-11.03-7.61c-0.01,0-0.01,0-0.02,0c-0.32,0-0.64,0.03-0.96,0.06c-0.14-0.16-0.27-0.32-0.42-0.48c-2.01-2.15-4.58-3.19-7.67-3.1c-5.95,0.17-11.88,4.47-16.69,12.11c-3.38,5.37-5.96,12.12-6.69,17.35c-6.83,2.12-11.61,3.6-11.72,3.63c-3.45,1.08-3.56,1.19-4.01,4.44C9.03,39.99,0,109.8,0,109.8l75.65,13.08l32.79-8.15C108.44,114.73,95.06,24.28,94.98,23.66zM66.52,16.63c-1.74,0.54-3.72,1.15-5.87,1.82c-0.04-3.01-0.4-7.21-1.81-10.83C63.36,8.47,65.58,13.58,66.52,16.63zM56.69,19.68c-3.96,1.23-8.29,2.57-12.63,3.91c1.22-4.67,3.54-9.33,6.38-12.38c1.06-1.14,2.54-2.4,4.29-3.12C56.38,11.52,56.73,16.39,56.69,19.68zM48.58,3.97c1.4-0.03,2.57,0.28,3.58,0.94C50.55,5.74,49,6.94,47.54,8.5c-3.78,4.06-6.68,10.35-7.83,16.43c-3.6,1.11-7.13,2.21-10.37,3.21C31.38,18.58,39.4,4.23,48.58,3.97z"/><path fill="#5E8E3E" fill-rule="evenodd" clip-rule="evenodd" d="M93.9,22.66c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.27-0.27-0.63-0.41-1.02-0.47l0,108.68l32.78-8.15c0,0-13.38-90.44-13.46-91.06C94.9,23.04,94.35,22.7,93.9,22.66z"/><path fill="#FFFFFF" fill-rule="evenodd" clip-rule="evenodd" d="M57.48,39.52l-3.81,14.25c0,0-4.25-1.93-9.28-1.62c-7.38,0.47-7.46,5.12-7.39,6.29c0.4,6.37,17.16,7.76,18.11,22.69c0.74,11.74-6.23,19.77-16.27,20.41c-12.05,0.76-18.69-6.35-18.69-6.35l2.55-10.86c0,0,6.68,5.04,12.02,4.7c3.49-0.22,4.74-3.06,4.61-5.07c-0.52-8.31-14.18-7.82-15.04-21.48c-0.73-11.49,6.82-23.14,23.48-24.19C54.2,37.88,57.48,39.52,57.48,39.52z"/></svg>
@@ -39751,7 +39807,7 @@ function renderShopifyOrders() {
             : `<span style="color:var(--text-muted)">—</span>`;
 
           return `
-          <tr>
+          <tr style="${_newRowStyle}">
             <td style="white-space:nowrap"><b>${o.ref ? fmtRef(String(o.ref).replace(/^#+/, '')) : '-'}</b>${_oNewBadge}</td>
             <td style="white-space:nowrap;font-size:.78rem;color:var(--text-muted)">${o.shopifyCreatedAt ? _fmtShopifyDate(o.shopifyCreatedAt, o.shopifyCreatedAt) : '<span style="color:var(--text-muted)">—</span>'}</td>
             <td style="font-size:.85rem">${o.client || '<span style="color:var(--text-muted)">—</span>'}</td>
@@ -39864,6 +39920,13 @@ function renderShopifyOrders() {
               })()}
             </td>
             <td style="text-align:center;padding:8px 6px">${sourceCell}</td>
+            <td style="text-align:center;padding:8px 6px">${(() => {
+              const trackUrl = o.orderStatusUrl || o.rawData?.order_status_url;
+              if (!trackUrl) return `<span style="color:var(--text-muted)">—</span>`;
+              return `<a href="${trackUrl}" target="_blank" title="رابط تتبع الأوردر للعميل" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;background:var(--bg-alt);border:1px solid var(--border);text-decoration:none;color:var(--text-muted);transition:color .18s,border-color .18s,background .18s" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)';this.style.background='var(--accent)15'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)';this.style.background='var(--bg-alt)'">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </a>`;
+            })()}</td>
           </tr>
         `;}).join('')}
       </tbody>
@@ -39908,6 +39971,9 @@ document.addEventListener('click', e => {
     document.querySelectorAll('[id^="spa_"]').forEach(p => { p.style.display = 'none'; });
   }
 });
+document.addEventListener('scroll', () => {
+  document.querySelectorAll('[id^="spa_"]').forEach(p => { p.style.display = 'none'; });
+}, true);
 
 function _toggleSpNote(id, encoded) {
   const el = document.getElementById(id);
@@ -39959,7 +40025,7 @@ document.addEventListener('click', e => {
 });
 
 const _SHOPIFY_PENDING_STATUSES = [
-  { value: '',          label: 'بانتظار تأكيد العميل', color: '#92400e', icon: 'clock' },
+  { value: '',          label: 'تواصل الآن مع العميل للتأكيد', color: '#ef4444', icon: 'whatsapp' },
   { value: 'confirmed', label: 'جاهز للتسجيل',         color: '#10b981', icon: 'check' },
   { value: 'followup',  label: 'متابعة مع العميل',     color: '#f59e0b', icon: 'followup' },
   { value: 'cancelled', label: 'طلب غير مؤكد',         color: '#6b7280', icon: 'x' },
@@ -39976,13 +40042,15 @@ const _SP_ICONS = {
   followup: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>`,
   x:        `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
   clock:    `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  whatsapp: `<svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/></svg>`,
 };
 
 function _shopifySmartStatus(order) {
-  const tags = (order.tags || '').toLowerCase();
+  /* strip emojis for clean matching */
+  const tags = (order.tags || '').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{1F300}-\u{1F9FF}✅❌💲📥💸🎉]/gu, '').toLowerCase();
   const note = (order.notes || '').trim().startsWith('العنوان:') ? '' : (order.notes || '').trim();
 
-  /* confirmed — paid or verified */
+  /* confirmed — any signal of payment takes priority over everything */
   const confirmedTags = ['تم دفع الاوردر بالكامل', 'تم دفع ديبوزت', 'contact verified by otp', 'verified via whatsapp'];
   const hasConfirmedTag = confirmedTags.some(t => tags.includes(t.toLowerCase()));
   const hasDepositInNote = note && /(\d[\d,.]*)/.test(note);
@@ -40005,10 +40073,49 @@ function _shopifySmartStatus(order) {
   return null;
 }
 
+function _buildShopifyWaUrl(order) {
+  const phone = (order?.phone || '').replace(/\D/g, '');
+  if (!phone) return '';
+
+  /* تحديد الضمير بناء على الاسم - افتراضي بيك/ي */
+  const client = order.client || '';
+  const greeting = client ? `اهلا بيك/ي يا ${client}،` : 'اهلا بيك/ي،';
+
+  const ref = order.ref ? String(order.ref).replace(/^#+/, '') : '—';
+
+  /* أصناف بالإنجليزي من shopifyName */
+  const orderItems = order.items || [];
+  const itemsLabel = orderItems.length === 1 ? 'Item' : 'Items';
+  const itemsText = orderItems.map(i => {
+    const name = i.shopifyName || i.name || i.code || '?';
+    const qty  = i.qty || i.quantity || 1;
+    return `• ${name} (${qty})`;
+  }).join('\n') || '—';
+
+  /* سعر الشحن من rawData مباشرة */
+  const shipPrice = parseFloat(order.rawData?.shipping_lines?.[0]?.price) || 0;
+  const shipping = shipPrice > 0 ? fmtJT(shipPrice) : 'مجاني';
+
+  const total = order.total != null ? fmtJT(order.total) : '—';
+
+  const msg =
+`${greeting}
+طلبك رقم ${ref} من *Soulia Home*${order.orderStatusUrl ? '\n' + order.orderStatusUrl : ''}.
+
+${itemsLabel}: ${itemsText.replace(/^/gm, '').trim()}
+الشحن: ${shipping} | الإجمالي: *${total}*
+
+ديبوزيت (____ ج) لتأكيد الطلب — يُخصم عند الاستلام.
+التوصيل خلال 5-7 أيام عمل.
+
+شكرا لاختيارك *Soulia Home*`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+}
+
 function _shopifyStatusBadge(status, phone, orderId, pendingStatus, order) {
   if (status === 'pending') {
     const clean = (phone || '').replace(/\D/g, '');
-    const waUrl = clean ? `https://wa.me/${clean}` : '';
+    const waUrl = order ? _buildShopifyWaUrl(order) : (clean ? `https://wa.me/${clean}` : '');
 
     /* Smart status from tags/notes, fallback to manual pendingStatus, then default */
     const smart = order ? _shopifySmartStatus(order) : null;
@@ -40019,9 +40126,14 @@ function _shopifyStatusBadge(status, phone, orderId, pendingStatus, order) {
       const info = _shopifyPendingStatusInfo(pendingStatus);
       color = info.color; label = info.label; iconKey = info.icon || 'clock';
     }
-    const iconSvg = `<span style="display:inline-flex;align-items:center;flex-shrink:0">${_SP_ICONS[iconKey] || _SP_ICONS.clock}</span>`;
+    /* when iconKey is whatsapp, wrap it as a clickable link — no duplicate wa icon */
+    const isWaIcon = iconKey === 'whatsapp';
+    const iconSvgInner = _SP_ICONS[iconKey] || _SP_ICONS.clock;
+    const iconSvg = isWaIcon && waUrl
+      ? `<a href="${waUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="واتساب" style="display:inline-flex;align-items:center;flex-shrink:0;color:inherit">${iconSvgInner}</a>`
+      : `<span style="display:inline-flex;align-items:center;flex-shrink:0">${iconSvgInner}</span>`;
 
-    const waHtml = waUrl
+    const waHtml = (!isWaIcon && waUrl)
       ? `<a href="${waUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" data-shopify-ps-wa="${orderId}" title="واتساب" style="display:inline-flex;align-items:center;margin-right:2px;flex-shrink:0"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="${color}" viewBox="0 0 16 16"><path d="${_WA_PATH}"/></svg></a>`
       : '';
     return `<span data-shopify-ps-id="${orderId}" oncontextmenu="_shopifyPendingContextMenu(event,'${orderId}')" title="كليك يمين لتغيير الحالة" style="display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb,${color} 12%,transparent);color:${color};border-radius:6px;padding:4px 9px;font-size:.72rem;cursor:context-menu;user-select:none;transition:background .25s,color .25s">${iconSvg}<span data-shopify-ps-label="${orderId}">${label}</span>${waHtml}</span>`;
@@ -40150,22 +40262,43 @@ async function approveShopifyOrder(id) {
   document.body.appendChild(modal);
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 
-  // Auto-fill deposit + payment method from order notes
+  // Auto-fill deposit + payment method from order notes/tags
   setTimeout(() => {
-    const _np = parseNoteAsPayment(order.notes || '');
     const depInp = qs('#shopify-deposit-inp');
+    const notes = order.notes || '';
+    const cleanTags = (order.tags || '').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{1F300}-\u{1F9FF}✅❌💲📥💸🎉]/gu, '').toLowerCase();
+    const searchIn = (notes + ' ' + (order.tags || '')).toLowerCase();
+
+    /* detect full payment from tag or note keyword */
+    const fullPaidKeywords = ['تم دفع الاوردر بالكامل', 'paid in full', 'fully paid', 'دفع كامل', 'تم الدفع بالكامل'];
+    const isFullPaid = fullPaidKeywords.some(k => cleanTags.includes(k) || notes.toLowerCase().includes(k));
+
+    /* detect payment method from notes or tags */
+    let autoMethod = '';
+    if (/voda|فودا|فون/.test(searchIn))               autoMethod = 'فودافون كاش';
+    else if (/insta|انستا|إنستا/.test(searchIn))       autoMethod = 'Instapay';
+    else if (/bank|بنك|تحويل|transfer/.test(searchIn)) autoMethod = 'تحويل بنكي';
+    else if (/cash|كاش/.test(searchIn))                autoMethod = 'كاش';
+
+    const _np = parseNoteAsPayment(notes);
+
     if (_np) {
+      /* رقم في الملاحظة → يكسب */
       if (depInp) { depInp.value = String(_np.amount); _updateShopifyRemaining(order.total); }
-      const targetMethod = _np.method;
-      const btn = document.querySelector(`.sp-pay-method-btn[data-val="${targetMethod}"]`);
-      if (btn) { _selectShopifyPayMethod(targetMethod, btn); }
-      else {
-        const firstBtn = document.querySelector('.sp-pay-method-btn');
-        if (firstBtn) _selectShopifyPayMethod(firstBtn.dataset.val, firstBtn);
-      }
+      const method = autoMethod || _np.method;
+      const btn = document.querySelector(`.sp-pay-method-btn[data-val="${method}"]`);
+      if (btn) _selectShopifyPayMethod(method, btn);
+      else { const fb = document.querySelector('.sp-pay-method-btn'); if (fb) _selectShopifyPayMethod(fb.dataset.val, fb); }
+    } else if (isFullPaid) {
+      /* دفع كامل بدون رقم → إجمالي الأوردر */
+      if (depInp) { depInp.value = String(order.total); _updateShopifyRemaining(order.total); }
+      const btn = autoMethod ? document.querySelector(`.sp-pay-method-btn[data-val="${autoMethod}"]`) : null;
+      if (btn) _selectShopifyPayMethod(autoMethod, btn);
+      else { const fb = document.querySelector('.sp-pay-method-btn'); if (fb) _selectShopifyPayMethod(fb.dataset.val, fb); }
     } else {
-      const firstBtn = document.querySelector('.sp-pay-method-btn');
-      if (firstBtn) _selectShopifyPayMethod(firstBtn.dataset.val, firstBtn);
+      /* لا شيء → default أول زر */
+      const fb = document.querySelector('.sp-pay-method-btn');
+      if (fb) _selectShopifyPayMethod(fb.dataset.val, fb);
     }
     depInp?.focus();
   }, 50);
