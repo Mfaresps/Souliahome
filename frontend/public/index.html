@@ -40074,12 +40074,14 @@ function _shopifySmartStatus(order) {
 }
 
 function _buildShopifyWaUrl(order) {
-  const phone = (order?.phone || '').replace(/\D/g, '');
+  let phone = (order?.phone || '').replace(/\D/g, '');
   if (!phone) return '';
+  if (phone.startsWith('0')) phone = '20' + phone.slice(1);
+  else if (!phone.startsWith('20')) phone = '20' + phone;
 
   /* تحديد الضمير بناء على الاسم - افتراضي بيك/ي */
   const client = order.client || '';
-  const greeting = client ? `اهلا بيك/ي يا ${client}،` : 'اهلا بيك/ي،';
+  const greeting = client ? `أهلاً بيك/ي يا *_${client}_*،` : 'أهلاً بيك/ي،';
 
   const ref = order.ref ? String(order.ref).replace(/^#+/, '') : '—';
 
@@ -40089,7 +40091,7 @@ function _buildShopifyWaUrl(order) {
   const itemsText = orderItems.map(i => {
     const name = i.shopifyName || i.name || i.code || '?';
     const qty  = i.qty || i.quantity || 1;
-    return `• ${name} (${qty})`;
+    return `• ${qty}x ${name}`;
   }).join('\n') || '—';
 
   /* سعر الشحن من rawData مباشرة */
@@ -40098,17 +40100,25 @@ function _buildShopifyWaUrl(order) {
 
   const total = order.total != null ? fmtJT(order.total) : '—';
 
-  const msg =
-`${greeting}
-طلبك رقم ${ref} من *Soulia Home*${order.orderStatusUrl ? '\n' + order.orderStatusUrl : ''}.
-
-${itemsLabel}: ${itemsText.replace(/^/gm, '').trim()}
-الشحن: ${shipping} | الإجمالي: *${total}*
-
-ديبوزيت (____ ج) لتأكيد الطلب — يُخصم عند الاستلام.
-التوصيل خلال 5-7 أيام عمل.
-
-شكرا لاختيارك *Soulia Home*`;
+  const orderUrl = order.orderStatusUrl || '';
+  const msg = [
+    `${greeting}`,
+    `نؤكد معكَ/ِ استلامَ طلبك رقم ${ref} من`,
+    `*Soulia Home*`,
+    ``,
+    `*${itemsLabel}:*`,
+    itemsText,
+    ``,
+    `الشحن: ${shipping}`,
+    `الإجمالي: *${total}*`,
+    ``,
+    `لتأكيد الطلب يُرجى *دفع ديبوزيت* (____ EGP)`,
+    `يُخصم من قيمة الطلب عند الاستلام.`,
+    ``,
+    `التوصيل خلال 5-7 أيام عمل.`,
+    ``,
+    `شكرا لاختيارك *Soulia Home*`,
+  ].filter((l, i, arr) => !(l === '' && arr[i - 1] === '')).join('\n');
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
 }
 
