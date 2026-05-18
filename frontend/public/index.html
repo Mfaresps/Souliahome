@@ -21138,13 +21138,9 @@ function renderMovementTxRow(tx) {
   const rowStateClass = (tx.cancelled || isStatusCancelled(tx.payStatus)) ? ' mov-row-cancelled'
     : (isStatusPending(tx.payStatus) || isExchangeSalePendingCollect(tx) || (tx.cancelRequest && tx.cancelRequest.status === 'معلق')) ? ' mov-row-pending'
     : isStatusCompleted(tx.payStatus) ? ' mov-row-completed' : '';
-  // شارة "جديد" للحركات المنشأة اليوم
-  const _todayStr = new Date().toISOString().slice(0,10);
-  const _txDateStr = (tx.createdAt || tx.date || '').slice(0,10);
-  const newBadge = _txDateStr === _todayStr ? `<span class="mov-new-badge">جديد</span>` : '';
   return `<tr ${rowStyle} class="${isSelected ? 'mov-row-selected' : ''}${_rtFlash}${rowStateClass}" onclick="handleMovRowClick(event,'${esc(tx._id)}')">
     <td><input type="checkbox" class="checkbox mov-check" value="${esc(tx._id)}" ${isSelected ? 'checked' : ''} onclick="handleMovCheck(event,'${esc(tx._id)}')"></td>
-    <td data-col="ref" class="col-ref">${newBadge}${movementRefCell(tx)}</td>
+    <td data-col="ref" class="col-ref">${movementRefCell(tx)}</td>
     <td data-col="date">${dateCell}</td>
     <td data-col="client">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -39397,9 +39393,13 @@ function renderShopifyOrders() {
         <th>الإجراء</th>
       </tr></thead>
       <tbody>
-        ${data.map(o => `
+        ${data.map(o => {
+          const _oToday = new Date().toISOString().slice(0,10);
+          const _oDate = (o.shopifyCreatedAt || o.createdAt || '').slice(0,10);
+          const _oNewBadge = _oDate === _oToday ? `<span class="mov-new-badge" style="margin-left:5px">جديد</span>` : '';
+          return `
           <tr>
-            <td><b>${o.ref ? fmtRef(String(o.ref).replace(/^#+/, '')) : '-'}</b></td>
+            <td><b>${o.ref ? fmtRef(String(o.ref).replace(/^#+/, '')) : '-'}</b>${_oNewBadge}</td>
             <td style="white-space:nowrap;font-size:.8rem;color:var(--text-muted)">${o.shopifyCreatedAt ? _fmtShopifyDate(o.shopifyCreatedAt, o.shopifyCreatedAt) : '<span style="color:var(--text-muted)">—</span>'}</td>
             <td>${o.client || '-'}</td>
             <td dir="ltr">${o.phone || '-'}</td>
@@ -39461,7 +39461,7 @@ function renderShopifyOrders() {
               ` : '-'}
             </td>
           </tr>
-        `).join('')}
+        `;}).join('')}
       </tbody>
     </table>
   </div>`;
