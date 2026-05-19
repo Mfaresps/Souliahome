@@ -5955,6 +5955,34 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;margin-bottom:10px">
         Verify
       </button>
+      <button onclick="fpShowPasswordFallback()"
+        style="width:100%;padding:8px;background:transparent;border:none;font-size:.8rem;color:#6b8c78;cursor:pointer;text-decoration:underline;margin-bottom:4px">
+        لا يمكنني الوصول لـ Google Authenticator
+      </button>
+      <button onclick="closeForgotPassword()"
+        style="width:100%;padding:10px;background:transparent;border:1.5px solid #dde6e0;border-radius:10px;font-size:.88rem;color:#6b8c78;cursor:pointer">
+        Cancel
+      </button>
+    </div>
+
+    <!-- Step 2b: password fallback (when TOTP unavailable) -->
+    <div id="fp-step-2b" style="display:none">
+      <p style="font-size:.83rem;color:#6b8c78;margin:0 0 18px">أدخل كلمة مرورك الحالية للتحقق من هويتك</p>
+      <div style="margin-bottom:14px;text-align:left">
+        <label style="display:block;font-size:.8rem;font-weight:600;color:#2d4a38;margin-bottom:6px">Current Password</label>
+        <input type="password" id="fp-curpass" placeholder="أدخل كلمة المرور الحالية" autocomplete="current-password"
+          style="width:100%;padding:11px 14px;border:1.5px solid #dde6e0;border-radius:10px;font-size:.93rem;color:#1a2e22;background:#f8faf9;box-sizing:border-box;outline:none"
+          onkeydown="if(event.key==='Enter')fpStep2b()">
+      </div>
+      <div id="fp-error-2b" style="color:#dc2626;font-size:.83rem;margin-bottom:10px;display:none"></div>
+      <button onclick="fpStep2b()" id="fp-btn-2b"
+        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;margin-bottom:10px">
+        Verify
+      </button>
+      <button onclick="fpBackToTotp()"
+        style="width:100%;padding:8px;background:transparent;border:none;font-size:.8rem;color:#6b8c78;cursor:pointer;text-decoration:underline;margin-bottom:4px">
+        الرجوع لرمز المصادقة
+      </button>
       <button onclick="closeForgotPassword()"
         style="width:100%;padding:10px;background:transparent;border:1.5px solid #dde6e0;border-radius:10px;font-size:.88rem;color:#6b8c78;cursor:pointer">
         Cancel
@@ -8964,11 +8992,11 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
           <!-- ─── التحقق بخطوتين (2FA) ─── -->
           <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
             <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px">🔐 التحقق بخطوتين (Google Authenticator)</div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:12px">حماية إضافية عند تسجيل الدخول من جهاز جديد — تطبق على حساب المدير دائماً</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px">حماية إضافية عند تسجيل الدخول — عند التعطيل لا يُطلب رمز المصادقة من أي مستخدم</div>
             <label class="lock-toggle-row">
               <span class="lock-toggle-info">
-                <span class="lock-toggle-title">تفعيل 2FA لجميع الموظفين</span>
-                <span class="lock-toggle-sub">عند التفعيل: كل موظف يحتاج Google Authenticator عند الدخول من جهاز جديد</span>
+                <span class="lock-toggle-title">تفعيل نظام المصادقة الثنائية (2FA)</span>
+                <span class="lock-toggle-sub">عند التفعيل: المدير والموظفون يحتاجون Google Authenticator عند الدخول من جهاز جديد</span>
               </span>
               <span class="lock-switch"><input type="checkbox" id="set-global-2fa-enabled" onchange="saveGlobal2fa(this.checked)"><span class="lock-switch-slider"></span></span>
             </label>
@@ -11752,6 +11780,7 @@ function openForgotPassword() {
   overlay.style.display = 'flex';
   qs('#fp-step-1').style.display = 'block';
   qs('#fp-step-2').style.display = 'none';
+  qs('#fp-step-2b').style.display = 'none';
   qs('#fp-step-3').style.display = 'none';
   qs('#fp-username').value = '';
   qs('#fp-error-1').style.display = 'none';
@@ -11819,6 +11848,48 @@ async function fpStep2() {
     errEl.style.display = 'block';
     [0,1,2,3,4,5].forEach(i => { const d = qs(`#fp-digit-${i}`); if (d) d.value = ''; });
     qs('#fp-digit-0')?.focus();
+  } finally {
+    btn.disabled = false; btn.style.opacity = '';
+  }
+}
+
+function fpShowPasswordFallback() {
+  qs('#fp-step-2').style.display = 'none';
+  qs('#fp-step-2b').style.display = 'block';
+  qs('#fp-subtitle').textContent = 'Verify your identity with your current password';
+  qs('#fp-curpass').value = '';
+  qs('#fp-error-2b').style.display = 'none';
+  setTimeout(() => qs('#fp-curpass')?.focus(), 100);
+}
+
+function fpBackToTotp() {
+  qs('#fp-step-2b').style.display = 'none';
+  qs('#fp-step-2').style.display = 'block';
+  qs('#fp-subtitle').textContent = 'Enter your Google Authenticator code to verify your identity';
+  [0,1,2,3,4,5].forEach(i => { const d = qs(`#fp-digit-${i}`); if (d) d.value = ''; });
+  qs('#fp-error-2').style.display = 'none';
+  setTimeout(() => qs('#fp-digit-0')?.focus(), 100);
+}
+
+async function fpStep2b() {
+  const currentPassword = qs('#fp-curpass').value;
+  const errEl = qs('#fp-error-2b');
+  const btn = qs('#fp-btn-2b');
+  if (!currentPassword) { errEl.textContent = 'أدخل كلمة المرور الحالية'; errEl.style.display = 'block'; return; }
+  btn.disabled = true; btn.style.opacity = '0.6';
+  errEl.style.display = 'none';
+  try {
+    const data = await api('/auth/forgot-password/verify-password', { method: 'POST', body: JSON.stringify({ userId: _fpUserId, currentPassword }) });
+    _fpResetToken = data.resetToken;
+    qs('#fp-step-2b').style.display = 'none';
+    qs('#fp-step-3').style.display = 'block';
+    qs('#fp-subtitle').textContent = 'Enter your new password';
+    qs('#fp-newpass').value = '';
+    qs('#fp-newpass-confirm').value = '';
+    setTimeout(() => qs('#fp-newpass')?.focus(), 100);
+  } catch(e) {
+    errEl.textContent = e.message || 'كلمة المرور غير صحيحة';
+    errEl.style.display = 'block';
   } finally {
     btn.disabled = false; btn.style.opacity = '';
   }
@@ -33124,25 +33195,108 @@ async function syncAllProductRefs() {
   }
 }
 
-async function confirmResetAllData() {
-  const password = await showPrompt(
-    currentLang==='en'?'Enter vault password to confirm:':'أدخل كلمة السر الخزنة للتأكيد:',
-    { title: currentLang==='en'?'⚠️ Reset ALL data':'⚠️ مسح جميع البيانات', icon: 'danger', required: true, placeholder: currentLang==='en'?'Password':'كلمة السر' }
-  );
-  if (!password) {
-    toast('تم إلغاء العملية', false);
-    return;
+function confirmResetAllData() {
+  const existingModal = document.getElementById('selective-delete-modal');
+  if (existingModal) existingModal.remove();
+
+  if (!document.getElementById('sdm-styles')) {
+    const style = document.createElement('style');
+    style.id = 'sdm-styles';
+    style.textContent = `
+      .sdm-opt{display:block;cursor:pointer}
+      .sdm-opt input[type=checkbox]{display:none}
+      .sdm-opt-body{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2);transition:all .15s}
+      .sdm-opt input:checked~.sdm-opt-body{border-color:#dc2626;background:rgba(220,38,38,.06)}
+      .sdm-opt-icon{font-size:1.3rem;flex-shrink:0}
+      .sdm-opt-title{font-size:.84rem;font-weight:600;color:var(--text)}
+      .sdm-opt-desc{font-size:.72rem;color:var(--muted);margin-top:1px}
+    `;
+    document.head.appendChild(style);
   }
 
+  const modal = document.createElement('div');
+  modal.id = 'selective-delete-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);padding:16px';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+      <div style="background:linear-gradient(135deg,#dc2626,#991b1b);padding:18px 20px;display:flex;align-items:center;gap:10px;border-radius:16px 16px 0 0">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div>
+          <div style="color:white;font-weight:700;font-size:.95rem">⚠️ منطقة الخطر — مسح البيانات</div>
+          <div style="color:rgba(255,255,255,.75);font-size:.75rem;margin-top:2px">اختر ما تريد حذفه — نسخة احتياطية تلقائية قبل الحذف</div>
+        </div>
+      </div>
+      <div style="padding:20px">
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px" id="sdm-options">
+          <label class="sdm-opt"><input type="checkbox" value="transactions,returnrequests">
+            <div class="sdm-opt-body"><div class="sdm-opt-icon">📦</div><div><div class="sdm-opt-title">الحركات والمرتجعات</div><div class="sdm-opt-desc">مبيعات، مشتريات، مرتجعات</div></div></div>
+          </label>
+          <label class="sdm-opt"><input type="checkbox" value="products">
+            <div class="sdm-opt-body"><div class="sdm-opt-icon">🏷️</div><div><div class="sdm-opt-title">المنتجات والمخزون</div><div class="sdm-opt-desc">جميع الأصناف والكميات</div></div></div>
+          </label>
+          <label class="sdm-opt"><input type="checkbox" value="clients,suppliers">
+            <div class="sdm-opt-body"><div class="sdm-opt-icon">👥</div><div><div class="sdm-opt-title">العملاء والموردون</div><div class="sdm-opt-desc">بيانات العملاء والموردين</div></div></div>
+          </label>
+          <label class="sdm-opt"><input type="checkbox" value="expenses">
+            <div class="sdm-opt-body"><div class="sdm-opt-icon">💸</div><div><div class="sdm-opt-title">المصروفات</div><div class="sdm-opt-desc">جميع سجلات المصروفات</div></div></div>
+          </label>
+          <label class="sdm-opt"><input type="checkbox" value="vaultentries,__vault__">
+            <div class="sdm-opt-body"><div class="sdm-opt-icon">🏦</div><div><div class="sdm-opt-title">الخزنة والأرصدة</div><div class="sdm-opt-desc">سجلات الخزنة + تصفير الأرصدة الأربعة</div></div></div>
+          </label>
+          <label class="sdm-opt"><input type="checkbox" value="complaints,followups,mentions,shopifyorders,discountotps,tags">
+            <div class="sdm-opt-body"><div class="sdm-opt-icon">📋</div><div><div class="sdm-opt-title">بيانات أخرى</div><div class="sdm-opt-desc">شكاوى، متابعات، وسوم، طلبات Shopify، أكواد خصم</div></div></div>
+          </label>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;font-weight:600;color:#dc2626;padding:10px 12px;background:rgba(220,38,38,.06);border-radius:10px;border:1px solid rgba(220,38,38,.2);margin-bottom:14px">
+          <input type="checkbox" id="sdm-select-all" style="width:15px;height:15px;accent-color:#dc2626" onchange="sdmToggleAll(this.checked)">
+          تحديد الكل (مسح شامل لجميع البيانات)
+        </label>
+        <div style="font-size:.76rem;color:var(--muted);margin-bottom:16px;padding:8px 12px;background:var(--bg-alt);border-radius:8px;line-height:1.5">
+          🔒 سيُطلب منك كلمة سر الخزنة في الخطوة التالية<br>📦 نسخة احتياطية تلقائية قبل أي حذف
+        </div>
+        <div style="display:flex;gap:10px">
+          <button onclick="document.getElementById('selective-delete-modal').remove()" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-weight:600;font-size:.85rem;cursor:pointer">إلغاء</button>
+          <button onclick="sdmProceed()" id="sdm-confirm-btn" style="flex:1;padding:10px;border-radius:10px;border:none;background:#dc2626;color:white;font-weight:700;font-size:.85rem;cursor:pointer">متابعة ←</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+function sdmToggleAll(checked) {
+  document.querySelectorAll('#sdm-options input[type=checkbox]').forEach(cb => { cb.checked = checked; });
+}
+
+async function sdmProceed() {
+  const checked = [...document.querySelectorAll('#sdm-options input[type=checkbox]:checked')];
+  if (!checked.length) { toast('يجب اختيار قسم واحد على الأقل', true); return; }
+
+  const collectionsRaw = checked.flatMap(cb => cb.value.split(','));
+  const resetVault = collectionsRaw.includes('__vault__');
+  const collections = collectionsRaw.filter(c => c !== '__vault__');
+
+  const password = await showPrompt(
+    'أدخل كلمة سر الخزنة للتأكيد:',
+    { title: '⚠️ تأكيد مسح البيانات', icon: 'danger', required: true, placeholder: 'كلمة السر' }
+  );
+  if (!password) { toast('تم إلغاء العملية', false); return; }
+
+  const btn = document.getElementById('sdm-confirm-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'جارٍ الحذف...'; btn.style.opacity = '0.7'; }
+
   try {
-    const result = await api('/settings/reset-all-data', {
+    const result = await api('/settings/reset-selective-data', {
       method: 'POST',
-      body: JSON.stringify({ password })
+      body: JSON.stringify({ password, collections, resetVault })
     });
+    document.getElementById('selective-delete-modal')?.remove();
     toast(result.message, false);
-    setTimeout(() => location.reload(), 1500);
+    setTimeout(() => location.reload(), 1800);
   } catch (e) {
-    toast((currentLang==='en'?'Error: ':'خطأ: ') + (e.message || (currentLang==='en'?'Data reset failed':'فشل في مسح البيانات')), true);
+    toast('خطأ: ' + (e.message || 'فشل في مسح البيانات'), true);
+    if (btn) { btn.disabled = false; btn.textContent = 'متابعة ←'; btn.style.opacity = ''; }
   }
 }
 
@@ -39593,6 +39747,26 @@ function renderShopifyOrders() {
   const _needContactCount = pending.filter(o => !_shopifySmartStatus(o) && !o.pendingStatus).length;
   const _ncEl = qs('#shopify-need-contact-count');
   if (_ncEl) _ncEl.textContent = _needContactCount;
+  const _ncBtn = document.querySelector('.sp-need-contact-btn');
+  if (_ncBtn) {
+    if (_needContactCount === 0) {
+      _ncBtn.style.border = '1.5px solid var(--border)';
+      _ncBtn.style.color = 'var(--text-muted)';
+      _ncBtn.style.background = 'var(--bg-alt)';
+      _ncBtn.style.boxShadow = 'none';
+      _ncBtn.style.animation = 'none';
+      _ncBtn.style.fontWeight = '400';
+      _ncEl.style.background = 'var(--text-muted)';
+    } else {
+      _ncBtn.style.border = '1.5px solid #ef4444';
+      _ncBtn.style.color = '#ef4444';
+      _ncBtn.style.background = 'linear-gradient(135deg,#ef444418 0%,#dc262618 100%)';
+      _ncBtn.style.boxShadow = '0 0 8px #ef444440,0 0 16px #ef444420';
+      _ncBtn.style.animation = 'needContactPulse 2s ease-in-out infinite';
+      _ncBtn.style.fontWeight = '600';
+      _ncEl.style.background = '#ef4444';
+    }
+  }
 
   const searchQ = (qs('#shopify-search')?.value || '').trim().toLowerCase();
   let data = _shopifyTab === 'pending' ? pending : _shopifyOrders;

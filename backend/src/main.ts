@@ -11,7 +11,7 @@ async function bootstrap(): Promise<void> {
 
   // Strip trailing whitespace/newlines from URL (Shopify sometimes sends %0A)
   app.use((req: Request, _res: Response, next: NextFunction) => {
-    req.url = req.url.replace(/[\r\n%0A%0D]+$/gi, '');
+    req.url = req.url.replace(/(\r\n|\r|\n|%0D%0A|%0A|%0D)+$/gi, '');
     next();
   });
 

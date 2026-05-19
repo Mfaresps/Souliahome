@@ -68,7 +68,7 @@ export class TotpService {
       secret,
       encoding: 'base32',
       token,
-      window: 4,
+      window: 6,
     });
   }
 

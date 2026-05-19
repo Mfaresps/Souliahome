@@ -130,6 +130,23 @@ export class SettingsController {
   }
 
   @Roles('admin')
+  @Post('reset-selective-data')
+  async resetSelectiveData(
+    @Body('password') password: string,
+    @Body('collections') collections: string[],
+    @Body('resetVault') resetVault: boolean,
+  ) {
+    const isValid = await this.settingsService.verifyVaultPassword(password);
+    if (!isValid) {
+      throw new UnauthorizedException('كلمة المرور خاطئة - لا يمكن مسح البيانات');
+    }
+    if (!Array.isArray(collections) || collections.length === 0) {
+      throw new UnauthorizedException('يجب اختيار نوع واحد على الأقل للحذف');
+    }
+    return await this.settingsService.resetSelectiveData(collections, !!resetVault);
+  }
+
+  @Roles('admin')
   @UseGuards(ThrottlerGuard)
   @Post('restore-backup')
   async restoreBackup(@Body('filename') filename: string, @Body('password') password: string) {

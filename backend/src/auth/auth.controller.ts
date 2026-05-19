@@ -186,4 +186,21 @@ export class AuthController {
   async forgotReset(@Body() body: { resetToken: string; newPassword: string }) {
     return this.authService.forgotReset(body.resetToken, body.newPassword);
   }
+
+  // Emergency: bypass TOTP using current password (when authenticator is unavailable)
+  @Post('forgot-password/verify-password')
+  async forgotVerifyPassword(@Body() body: { userId: string; currentPassword: string }) {
+    return this.authService.forgotVerifyPassword(body.userId, body.currentPassword);
+  }
+
+  // Emergency: disable 2FA without auth (protected by EMERGENCY_KEY env var)
+  @Post('emergency/disable-2fa')
+  async emergencyDisable2fa(@Body() body: { key: string }) {
+    const emergencyKey = process.env.EMERGENCY_KEY;
+    if (!emergencyKey || body.key !== emergencyKey) {
+      return { error: 'forbidden' };
+    }
+    await this.totpService.setGlobal2fa(false);
+    return { success: true, message: '2FA disabled' };
+  }
 }

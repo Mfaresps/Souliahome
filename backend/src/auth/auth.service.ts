@@ -118,6 +118,24 @@ export class AuthService {
     const userId = user._id.toString();
     const isAdmin = user.role === 'admin';
 
+    // If 2FA is globally disabled, skip TOTP entirely for everyone
+    if (!global2fa) {
+      const payload = { sub: userId, username: user.username };
+      const accessToken = this.jwtService.sign(payload);
+      return {
+        accessToken,
+        user: {
+          id: userId,
+          username: user.username,
+          name: user.name,
+          role: user.role,
+          phone: user.phone || '',
+          avatar: user.avatar || '',
+          perms: user.perms || [],
+        },
+      };
+    }
+
     // Admins must always use TOTP — if not set up yet, force setup flow
     if (isAdmin && !user.totpEnabled) {
       return { requireTotp: true, userId, requireTotpSetup: true };
@@ -208,6 +226,17 @@ export class AuthService {
     await this.usersService.updateUser(entry.userId, { password: newPassword } as any);
     resetTokens.delete(resetToken);
     return { success: true };
+  }
+
+  // Emergency: verify old password instead of TOTP (when TOTP is unavailable after system reset)
+  async forgotVerifyPassword(userId: string, currentPassword: string): Promise<{ resetToken: string }> {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('بيانات غير صحيحة');
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) throw new UnauthorizedException('كلمة المرور الحالية غير صحيحة');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    resetTokens.set(resetToken, { userId, expiresAt: Date.now() + 10 * 60 * 1000 });
+    return { resetToken };
   }
 
   private async _notifyAdmins(_username: string, _name: string, message: string): Promise<void> {

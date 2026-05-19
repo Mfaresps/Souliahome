@@ -469,7 +469,31 @@ export class SettingsService {
     return JSON.parse(fs.readFileSync(registryPath, 'utf8'));
   }
 
+  static readonly ALLOWED_COLLECTIONS = [
+    'transactions',
+    'products',
+    'vaultentries',
+    'clients',
+    'suppliers',
+    'returnrequests',
+    'expenses',
+    'complaints',
+    'shopifyorders',
+    'followups',
+    'mentions',
+    'discountotps',
+    'tags',
+  ];
+
   async resetAllData() {
+    return this.resetSelectiveData(SettingsService.ALLOWED_COLLECTIONS, true);
+  }
+
+  async resetSelectiveData(selectedCollections: string[], resetVault: boolean) {
+    // Whitelist check
+    const allowed = SettingsService.ALLOWED_COLLECTIONS;
+    const safeCollections = selectedCollections.filter(c => allowed.includes(c));
+
     // Step 1: Create backup first
     const backup = await this.createBackup();
     if (!backup.success) {
@@ -479,26 +503,9 @@ export class SettingsService {
       };
     }
 
-    // Step 2: Delete all data
-    const collections = [
-      'transactions',
-      'products',
-      'vaultentries',
-      'clients',
-      'suppliers',
-      'returnrequests',
-      'expenses',
-      'complaints',
-      'shopifyorders',
-      'followups',
-      'mentions',
-      'discountotps',
-      'tags',
-      'users',
-    ];
-
+    // Step 2: Delete selected collections
     const results: Record<string, number> = {};
-    for (const collectionName of collections) {
+    for (const collectionName of safeCollections) {
       try {
         const result = await this.connection
           .collection(collectionName)
@@ -509,31 +516,34 @@ export class SettingsService {
       }
     }
 
-    // Step 3: Reset vault balances and clear offers
-    try {
-      const settings = await this.settingsModel.findOne().exec();
-      if (settings) {
-        settings.vaultCash = 0;
-        settings.vaultVodafone = 0;
-        settings.vaultInstapay = 0;
-        settings.vaultBank = 0;
-        settings.vaultBalance = 0;
-        settings.discountCodes = [];
-        settings.discountBundles = [];
-        settings.markModified('discountCodes');
-        settings.markModified('discountBundles');
-        await settings.save();
-        results['vault_balances_reset'] = 1;
-        results['offers_cleared'] = 1;
+    // Step 3: Reset vault balances if requested
+    if (resetVault) {
+      try {
+        const settings = await this.settingsModel.findOne().exec();
+        if (settings) {
+          settings.vaultCash = 0;
+          settings.vaultVodafone = 0;
+          settings.vaultInstapay = 0;
+          settings.vaultBank = 0;
+          settings.vaultBalance = 0;
+          settings.discountCodes = [];
+          settings.discountBundles = [];
+          settings.markModified('discountCodes');
+          settings.markModified('discountBundles');
+          await settings.save();
+          results['vault_balances_reset'] = 1;
+          results['offers_cleared'] = 1;
+        }
+      } catch (e) {
+        results['vault_balances_reset'] = 0;
+        results['offers_cleared'] = 0;
       }
-    } catch (e) {
-      results['vault_balances_reset'] = 0;
-      results['offers_cleared'] = 0;
     }
 
+    const deletedNames = safeCollections.join(', ');
     return {
       success: true,
-      message: `✓ تم مسح جميع البيانات بنجاح\n📦 نسخة احتياطية: ${backup.filename}`,
+      message: `✓ تم مسح البيانات المحددة بنجاح\n📦 نسخة احتياطية: ${backup.filename}`,
       deleted: results,
       backup: backup.filename,
     };
@@ -730,8 +740,8 @@ export class SettingsService {
 
     const restoreResults: Record<string, number> = {};
 
-    // Step 1: Delete current data
-    const collections = Object.keys(backupData.data);
+    // Step 1: Delete current data (never touch users collection)
+    const collections = Object.keys(backupData.data).filter(c => c !== 'users');
     for (const collectionName of collections) {
       try {
         await this.connection.collection(collectionName).deleteMany({});
@@ -740,8 +750,9 @@ export class SettingsService {
       }
     }
 
-    // Step 2: Restore each collection
+    // Step 2: Restore each collection (skip users to preserve current accounts)
     for (const [collectionName, docs] of Object.entries(backupData.data)) {
+      if (collectionName === 'users') continue;
       try {
         if (!Array.isArray(docs) || docs.length === 0) {
           restoreResults[collectionName] = 0;
