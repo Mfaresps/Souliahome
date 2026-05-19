@@ -120,7 +120,6 @@ export class SettingsController {
   }
 
   @Roles('admin')
-  @UseGuards(ThrottlerGuard)
   @Post('reset-all-data')
   async resetAllData(@Body('password') password: string) {
     const isValid = await this.settingsService.verifyVaultPassword(password);

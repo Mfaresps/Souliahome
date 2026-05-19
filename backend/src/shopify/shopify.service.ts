@@ -129,10 +129,21 @@ export class ShopifyService {
       const tags = orderData.tags || '';
       const financialStatus = orderData.financial_status || order.financialStatus;
 
+      const items = await this.mapItems(orderData.line_items || []);
+      const shipCost = this.parsePrice(orderData.shipping_lines?.[0]?.price);
+      const discount = this.parsePrice(orderData.total_discounts);
+      const itemsTotal = items.reduce((s: number, i: any) => s + (i.price * i.qty), 0);
+      const total = Math.max(0, itemsTotal + shipCost - discount);
+
       order.notes = notes;
       order.shippingAddress = address;
       order.tags = tags;
       order.financialStatus = financialStatus;
+      order.items = items;
+      order.shipCost = shipCost;
+      order.itemsTotal = itemsTotal;
+      order.total = total;
+      order.rawData = orderData;
       await order.save();
 
       // تحديث الحركة المقابلة في سجل المبيعات إن وُجدت
