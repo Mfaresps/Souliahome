@@ -1567,22 +1567,26 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 #sp-date-panel{
   position:absolute;top:calc(100% + 10px);right:0;
   z-index:1300;display:none;
+  width:500px;
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:18px;
-  box-shadow:0 4px 6px -1px rgba(0,0,0,.06),0 16px 48px -8px rgba(0,0,0,.14);
+  box-shadow:0 4px 6px -1px rgba(0,0,0,.07),0 20px 50px -10px rgba(0,0,0,.18);
   overflow:hidden;
   animation:spPanelIn .18s cubic-bezier(.16,1,.3,1)
 }
-#sp-date-panel.open{display:flex}
+#sp-date-panel.open{display:flex;flex-direction:row}
 @keyframes spPanelIn{
   from{opacity:0;transform:translateY(-10px) scale(.96)}
   to  {opacity:1;transform:translateY(0)     scale(1)}
 }
 
+/* ── Calendar panel ── */
+#sp-cal-main{flex:1;padding:20px 20px;min-width:0;overflow:hidden;order:1}
+
 /* ── Presets sidebar ── */
 #sp-cal-presets{
-  width:156px;flex-shrink:0;
+  width:152px;flex-shrink:0;order:2;
   border-left:1px solid var(--border);
   display:flex;flex-direction:column;
   background:var(--bg-alt)
@@ -1590,41 +1594,36 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 #sp-cal-presets-scroll{flex:1;overflow-y:auto;padding:6px 0}
 #sp-cal-presets-scroll::-webkit-scrollbar{width:0}
 .sp-preset-item{
-  display:block;width:100%;padding:9px 18px;
-  font-size:.8rem;color:var(--text-muted);
-  cursor:pointer;transition:all .13s;
+  display:block;width:100%;padding:9px 16px;
+  font-size:.79rem;color:var(--text-muted);
+  cursor:pointer;transition:background .12s,color .12s;
   white-space:nowrap;font-family:inherit;
   background:none;border:none;text-align:right;
   line-height:1.3;border-radius:0;position:relative
 }
 .sp-preset-item:hover{background:var(--surface);color:var(--text)}
-.sp-preset-item.active{
-  color:var(--accent);font-weight:600;background:var(--surface)
+.sp-preset-item.active{color:var(--accent);font-weight:600;background:var(--surface)}
+.sp-preset-item.active::after{
+  content:'';position:absolute;right:0;top:20%;
+  width:3px;height:60%;border-radius:2px 0 0 2px;background:var(--accent)
 }
-.sp-preset-item.active::before{
-  content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);
-  width:3px;height:70%;border-radius:2px 0 0 2px;background:var(--accent)
-}
-#sp-cal-apply-wrap{padding:12px;border-top:1px solid var(--border)}
+#sp-cal-apply-wrap{padding:10px 12px;border-top:1px solid var(--border)}
 #sp-cal-apply{
-  display:block;width:100%;padding:10px;
+  display:block;width:100%;padding:10px 8px;
   border-radius:10px;border:none;
   background:var(--accent);color:#fff;
-  font-size:.83rem;font-weight:700;
+  font-size:.82rem;font-weight:700;
   cursor:pointer;font-family:inherit;
   transition:opacity .15s,transform .1s;
-  letter-spacing:.01em
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 }
-#sp-cal-apply:hover{opacity:.88}
+#sp-cal-apply:hover{opacity:.87}
 #sp-cal-apply:active{transform:scale(.97)}
-
-/* ── Calendar panel ── */
-#sp-cal-main{flex:1;padding:20px 22px;min-width:0}
 
 /* Header */
 .sp-cal-header{
   display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:18px
+  margin-bottom:14px
 }
 .sp-cal-nav{
   width:30px;height:30px;border-radius:8px;
@@ -1639,14 +1638,19 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 }
 .sp-cal-nav:active{transform:scale(.93)}
 .sp-cal-month-year{display:flex;align-items:baseline;gap:6px}
-.sp-cal-month{font-size:1rem;font-weight:700;color:var(--text)}
-.sp-cal-year{font-size:.85rem;font-weight:400;color:var(--muted)}
+.sp-cal-month{font-size:.95rem;font-weight:700;color:var(--text)}
+.sp-cal-year{font-size:.82rem;font-weight:400;color:var(--muted)}
 
-/* Grid */
-.sp-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
+/* Grid — fixed 7 equal columns */
+.sp-cal-grid{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:2px;
+  width:100%
+}
 .sp-cal-dow{
-  font-size:.65rem;font-weight:600;color:var(--muted);
-  text-align:center;padding:5px 0 10px;letter-spacing:.04em;text-transform:uppercase
+  font-size:.63rem;font-weight:600;color:var(--muted);
+  text-align:center;padding:4px 0 8px;letter-spacing:.03em
 }
 
 /* Day cells */
@@ -1654,7 +1658,7 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
   position:relative;
   width:100%;aspect-ratio:1;min-width:0;
   display:flex;align-items:center;justify-content:center;
-  font-size:.8rem;border-radius:10px;
+  font-size:.78rem;border-radius:8px;
   cursor:pointer;transition:background .12s,color .12s;
   font-family:inherit;border:none;background:none;
   color:var(--text);font-weight:400;padding:0;
@@ -1682,10 +1686,12 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
   color:var(--accent);
   border-radius:0
 }
-.sp-cal-day.sp-cal-range-start.sp-cal-in-range,
-.sp-cal-day.sp-cal-sel:not(.sp-cal-range-single){border-radius:10px 0 0 10px}
-.sp-cal-day.sp-cal-range-end.sp-cal-in-range{border-radius:0 10px 10px 0}
+/* RTL: range-start is visually on the right, range-end on the left */
+.sp-cal-day.sp-cal-sel.sp-cal-range-start{border-radius:0 10px 10px 0!important}
+.sp-cal-day.sp-cal-sel.sp-cal-range-end{border-radius:10px 0 0 10px!important}
 .sp-cal-day.sp-cal-range-single{border-radius:10px!important}
+/* in-range: flat on both sides */
+.sp-cal-day.sp-cal-in-range{border-radius:0}
 
 /* order dot */
 .sp-cal-day.sp-cal-has-orders::after{
@@ -1709,29 +1715,35 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 }
 
 /* ── Mobile ── */
-@media(max-width:640px){
+@media(max-width:560px){
   #sp-date-panel{
-    position:fixed;inset:auto 8px 0;right:8px;left:8px;
+    position:fixed;bottom:0;left:0;right:0;top:auto;
+    width:100%!important;
     border-radius:20px 20px 0 0;
-    flex-direction:column-reverse;
-    max-height:90vh;overflow:hidden
+    flex-direction:column;
+    max-height:92vh;overflow-y:auto
   }
   #sp-cal-presets{
-    width:100%;flex-direction:row;
-    border-left:none;border-top:1px solid var(--border)
+    width:100%;flex-direction:row;flex-shrink:0;
+    border-right:none;border-top:1px solid var(--border)
   }
   #sp-cal-presets-scroll{
     display:flex;flex-direction:row;
-    overflow-x:auto;overflow-y:hidden;padding:8px 8px
+    overflow-x:auto;overflow-y:hidden;
+    padding:8px;gap:4px
   }
   #sp-cal-presets-scroll::-webkit-scrollbar{height:0}
   .sp-preset-item{
-    white-space:nowrap;width:auto;padding:7px 14px;
+    white-space:nowrap;width:auto;padding:6px 12px;
     border-radius:20px;font-size:.75rem
   }
-  .sp-preset-item.active::before{display:none}
+  .sp-preset-item.active::after{display:none}
+  .sp-preset-item.active{
+    background:color-mix(in srgb,var(--accent) 12%,transparent)!important;
+    border-radius:20px
+  }
   #sp-cal-apply-wrap{display:none}
-  #sp-cal-main{padding:16px}
+  #sp-cal-main{padding:16px 14px}
 }
   /* hide table, show cards */
   #shopify-orders-table-wrap .sp-table-scroll{display:none}
@@ -8765,14 +8777,15 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <!-- Left: Calendar -->
       <div id="sp-cal-main">
         <div class="sp-cal-header">
-          <button class="sp-cal-nav" onclick="spCalNav(-1)" type="button" aria-label="شهر سابق">
+          <!-- RTL: right arrow = next month, left arrow = prev month -->
+          <button class="sp-cal-nav" onclick="spCalNav(1)" type="button" aria-label="شهر تالي">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
           <div class="sp-cal-month-year">
             <span class="sp-cal-month" id="sp-cal-month-lbl"></span>
             <span class="sp-cal-year" id="sp-cal-year-lbl"></span>
           </div>
-          <button class="sp-cal-nav" onclick="spCalNav(1)" type="button" aria-label="شهر تالي">
+          <button class="sp-cal-nav" onclick="spCalNav(-1)" type="button" aria-label="شهر سابق">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
         </div>
@@ -40637,167 +40650,213 @@ function clearPickupSelection() {}
 let _shopifyOrders = [];
 let _shopifyTab = 'pending';
 let _shopifyStatusFilter = '';
-// ── Shopify Calendar Date Filter ──
-let _shopifyDateFilter = { from: null, to: null };  // Date objects or null
-let _spCalView = { year: new Date().getFullYear(), month: new Date().getMonth() };
-let _spCalPending = { from: null, to: null };  // pending selection before Apply
+/* ════════════════════════════════════════
+   Shopify Date Range Picker — JS
+   ════════════════════════════════════════ */
+let _shopifyDateFilter = { from: null, to: null };
+let _spCalView  = { year: new Date().getFullYear(), month: new Date().getMonth() };
+let _spCalPend  = { from: null, to: null };   // working selection before Apply
 let _spActivePreset = 'custom';
-const _spMN = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-const _spDOW = ['ح','ن','ث','ر','خ','ج','س'];
 
-function spToggleDatePanel(e) {
+const _spMN  = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+const _spDOW = ['الأح','الإث','الثل','الأر','الخم','الجم','السب']; // Mon-first via offset
+
+/* ── helpers ── */
+function _spDay0(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function _spSame(a,b){ return a&&b&&_spDay0(a).getTime()===_spDay0(b).getTime(); }
+function _spBetween(d,a,b){ const t=_spDay0(d).getTime(); return t>_spDay0(a).getTime()&&t<_spDay0(b).getTime(); }
+function _spFmt(d){
+  if (!d) return '';
+  return `${d.getDate()} ${_spMN[d.getMonth()]}`;
+}
+
+/* ── open/close panel ── */
+function spToggleDatePanel(e){
   e.stopPropagation();
   const panel = qs('#sp-date-panel');
-  const chevron = qs('#sp-df-chevron');
   const isOpen = panel.classList.toggle('open');
-  if (chevron) chevron.style.transform = isOpen ? 'rotate(180deg)' : '';
-  if (isOpen) {
-    // init view to current filter or today
+  qs('#sp-df-chevron').style.transform = isOpen ? 'rotate(180deg)' : '';
+  if (isOpen){
+    _spCalPend = { from: _shopifyDateFilter.from, to: _shopifyDateFilter.to };
     const ref = _shopifyDateFilter.from || new Date();
     _spCalView = { year: ref.getFullYear(), month: ref.getMonth() };
-    _spCalPending = { from: _shopifyDateFilter.from, to: _shopifyDateFilter.to };
     _spRenderCal();
-    setTimeout(() => document.addEventListener('click', spCloseDatePanel, { once: true }), 0);
+    setTimeout(() => document.addEventListener('click', _spOutsideClose, {once:true}), 0);
   }
 }
-function spCloseDatePanel() {
-  qs('#sp-date-panel')?.classList.remove('open');
-  const chevron = qs('#sp-df-chevron');
-  if (chevron) chevron.style.transform = '';
+function _spOutsideClose(e){
+  if (!qs('#sp-date-panel')?.contains(e.target)) spCloseDatePanel();
 }
-function spClearDateFilter(e) {
+function spCloseDatePanel(){
+  qs('#sp-date-panel')?.classList.remove('open');
+  const ch = qs('#sp-df-chevron'); if(ch) ch.style.transform='';
+}
+function spClearDateFilter(e){
   e && e.stopPropagation();
-  _shopifyDateFilter = { from: null, to: null };
-  _spCalPending = { from: null, to: null };
+  _shopifyDateFilter = { from:null, to:null };
+  _spCalPend = { from:null, to:null };
   _spActivePreset = 'custom';
-  _spUpdateTriggerLabel();
+  document.querySelectorAll('.sp-preset-item').forEach(b => b.classList.toggle('active', b.dataset.preset==='custom'));
+  _spSyncTrigger();
   renderShopifyOrders();
 }
-function _spUpdateTriggerLabel() {
-  const lbl = qs('#sp-df-label-text');
-  const clr = qs('#sp-date-clear');
+
+/* ── trigger label sync ── */
+function _spSyncTrigger(){
+  const lbl     = qs('#sp-df-label-text');
+  const clr     = qs('#sp-date-clear');
   const trigger = qs('#sp-date-trigger');
   const { from, to } = _shopifyDateFilter;
+  const has = !!from;
   let text = 'تصفية بالتاريخ';
-  const hasFilter = from !== null;
-  if (from) {
-    const fStr = `${from.getDate()} ${_spMN[from.getMonth()]}`;
-    if (!to || _spSameDay(from, to)) {
-      text = fStr;
-    } else {
-      const tStr = `${to.getDate()} ${_spMN[to.getMonth()]}${to.getFullYear() !== from.getFullYear() ? ' '+to.getFullYear() : ''}`;
-      text = `${fStr} – ${tStr}`;
-    }
+  if (from){
+    const f = _spFmt(from);
+    const t = to && !_spSame(from,to)
+      ? `${to.getDate()} ${_spMN[to.getMonth()]}${to.getFullYear()!==from.getFullYear()?' '+to.getFullYear():''}`
+      : null;
+    text = t ? `${f} – ${t}` : f;
   }
   if (lbl) lbl.textContent = text;
-  if (clr) clr.style.display = hasFilter ? 'inline-flex' : 'none';
-  if (trigger) trigger.classList.toggle('sp-df-active', hasFilter);
+  if (clr) clr.style.display = has ? 'inline-flex' : 'none';
+  if (trigger) trigger.classList.toggle('sp-df-active', has);
 }
-function _spSameDay(a, b) {
-  return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
-}
-function _spStartOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+// alias used by renderShopifyOrders
+function _spUpdateTriggerLabel(){ _spSyncTrigger(); }
 
-function _spRenderCal() {
-  const title = qs('#sp-cal-title');
-  const grid = qs('#sp-cal-grid');
-  if (!title || !grid) return;
+/* ── render calendar ── */
+function _spRenderCal(){
   const { year, month } = _spCalView;
-  title.textContent = `${_spMN[month]} ${year}`;
+  // header
+  const ml = qs('#sp-cal-month-lbl'); if(ml) ml.textContent = _spMN[month];
+  const yl = qs('#sp-cal-year-lbl');  if(yl) yl.textContent = year;
 
-  // Build days-with-orders set for dot indicators
+  // order-day dots
   const orderDays = new Set();
-  _shopifyOrders.forEach(o => {
-    const d = new Date(o.shopifyCreatedAt || o.createdAt);
-    if (!isNaN(d) && d.getFullYear()===year && d.getMonth()===month)
-      orderDays.add(d.getDate());
+  _shopifyOrders.forEach(o=>{
+    const d = new Date(o.shopifyCreatedAt||o.createdAt);
+    if(!isNaN(d)&&d.getFullYear()===year&&d.getMonth()===month) orderDays.add(d.getDate());
   });
 
-  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
-  const daysInMonth = new Date(year, month+1, 0).getDate();
   const today = new Date();
-  const { from, to } = _spCalPending;
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  // Monday-first offset (Mon=1 ... Sun=0→7)
+  let startDow = new Date(year, month, 1).getDay(); // 0=Sun
+  startDow = (startDow === 0) ? 6 : startDow - 1;  // convert to Mon=0
+  const { from, to } = _spCalPend;
 
-  // DOW headers (Sun–Sat)
-  let html = _spDOW.map(d => `<div class="sp-cal-dow">${d}</div>`).join('');
-  // Empty cells before first day
-  for (let i = 0; i < firstDay; i++) html += `<button class="sp-cal-day sp-cal-other" disabled></button>`;
-  // Day cells
-  for (let d = 1; d <= daysInMonth; d++) {
-    const thisDate = new Date(year, month, d);
-    const isToday = _spSameDay(thisDate, today);
-    const isSel = (from && _spSameDay(thisDate, from)) || (to && _spSameDay(thisDate, to));
-    const inRange = from && to && thisDate > from && thisDate < to;
-    const hasDot = orderDays.has(d);
+  // DOW headers — Mon to Sun
+  const DOW_LABELS = ['إث','ثل','أر','خم','جم','سب','أح'];
+  let html = DOW_LABELS.map(d=>`<div class="sp-cal-dow">${d}</div>`).join('');
+
+  // leading empty cells
+  for(let i=0;i<startDow;i++) html += `<div class="sp-cal-day sp-cal-other"></div>`;
+
+  // day cells
+  for(let d=1;d<=daysInMonth;d++){
+    const dt = new Date(year, month, d);
+    const isToday    = _spSame(dt, today);
+    const isFrom     = from && _spSame(dt, from);
+    const isTo       = to   && _spSame(dt, to);
+    const isSingle   = from && to && _spSame(from,to);
+    const inRange    = from && to && _spBetween(dt,from,to);
+    const hasDot     = orderDays.has(d);
+
     let cls = 'sp-cal-day';
-    if (isToday) cls += ' sp-cal-today';
-    if (isSel) cls += ' sp-cal-sel';
+    if (isToday && !isFrom && !isTo) cls += ' sp-cal-today';
+    if (isFrom || isTo) {
+      cls += ' sp-cal-sel';
+      if (isSingle) cls += ' sp-cal-range-single';
+      else if (isFrom && !isSingle) cls += ' sp-cal-range-start';
+      else if (isTo  && !isSingle) cls += ' sp-cal-range-end';
+    }
     if (inRange) cls += ' sp-cal-in-range';
-    if (hasDot) cls += ' sp-cal-has-orders';
+    if (hasDot)  cls += ' sp-cal-has-orders';
+
     html += `<button class="${cls}" onclick="spCalDayClick(${d})" type="button">${d}</button>`;
   }
-  grid.innerHTML = html;
+  qs('#sp-cal-grid').innerHTML = html;
 
-  // Update apply button label
-  const apply = qs('#sp-cal-apply');
-  if (apply) {
-    if (from && to && !_spSameDay(from,to)) apply.textContent = `تطبيق: ${from.getDate()} ${_spMN[from.getMonth()]} – ${to.getDate()} ${_spMN[to.getMonth()]}`;
-    else if (from) apply.textContent = `تطبيق: ${from.getDate()} ${_spMN[from.getMonth()]}`;
-    else apply.textContent = 'تطبيق';
+  // range label
+  const rl = qs('#sp-cal-range-label');
+  if (rl){
+    if (from && to && !_spSame(from,to))
+      rl.innerHTML = `<span>${_spFmt(from)} &nbsp;→&nbsp; ${_spFmt(to)}</span>`;
+    else if (from)
+      rl.innerHTML = `<span>${_spFmt(from)}</span>`;
+    else
+      rl.innerHTML = '';
+  }
+
+  // apply button text
+  const ap = qs('#sp-cal-apply');
+  if (ap){
+    if (from && to && !_spSame(from,to))
+      ap.textContent = `تطبيق  ${_spFmt(from)} – ${_spFmt(to)}`;
+    else if (from)
+      ap.textContent = `تطبيق  ${_spFmt(from)}`;
+    else
+      ap.textContent = 'تطبيق';
   }
 }
 
-function spCalNav(dir) {
+/* ── navigation ── */
+function spCalNav(dir){
   _spCalView.month += dir;
-  if (_spCalView.month > 11) { _spCalView.month = 0; _spCalView.year++; }
-  if (_spCalView.month < 0)  { _spCalView.month = 11; _spCalView.year--; }
+  if (_spCalView.month>11){ _spCalView.month=0; _spCalView.year++; }
+  if (_spCalView.month<0) { _spCalView.month=11; _spCalView.year--; }
   _spRenderCal();
 }
 
-function spCalDayClick(d) {
+/* ── day click (range selection) ── */
+function spCalDayClick(d){
   const clicked = new Date(_spCalView.year, _spCalView.month, d);
-  const { from, to } = _spCalPending;
-  if (!from || (from && to)) {
-    // start new range
-    _spCalPending = { from: clicked, to: null };
-    _spActivePreset = 'custom';
+  const {from, to} = _spCalPend;
+  if (!from || (from && to)){
+    _spCalPend = { from: clicked, to: null };
   } else {
-    // complete range
-    if (clicked < from) _spCalPending = { from: clicked, to: from };
-    else if (_spSameDay(clicked, from)) _spCalPending = { from: clicked, to: clicked };
-    else _spCalPending = { from, to: clicked };
-    _spActivePreset = 'custom';
+    if (clicked < from)           _spCalPend = { from: clicked, to: from };
+    else if (_spSame(clicked,from)) _spCalPend = { from: clicked, to: clicked };
+    else                           _spCalPend = { from, to: clicked };
   }
-  // update preset highlights
-  document.querySelectorAll('.sp-preset-item').forEach(b => b.classList.toggle('active', b.dataset.preset === _spActivePreset));
+  _spActivePreset = 'custom';
+  document.querySelectorAll('.sp-preset-item').forEach(b=>b.classList.toggle('active', b.dataset.preset==='custom'));
   _spRenderCal();
 }
 
-function spCalApply() {
-  _shopifyDateFilter = { from: _spCalPending.from, to: _spCalPending.to || _spCalPending.from };
-  _spUpdateTriggerLabel();
+/* ── apply ── */
+function spCalApply(){
+  if (!_spCalPend.from) return;
+  _shopifyDateFilter = { from: _spCalPend.from, to: _spCalPend.to || _spCalPend.from };
+  _spSyncTrigger();
   renderShopifyOrders();
   spCloseDatePanel();
 }
 
-function spPreset(key, btn) {
+/* ── presets ── */
+function spPreset(key, btn){
+  document.querySelectorAll('.sp-preset-item').forEach(b=>b.classList.toggle('active', b===btn));
   _spActivePreset = key;
-  document.querySelectorAll('.sp-preset-item').forEach(b => b.classList.toggle('active', b === btn));
-  const now = new Date();
-  const tod = _spStartOfDay(now);
-  let from, to;
-  if (key === 'today')      { from = tod; to = tod; }
-  else if (key === 'yesterday') { from = new Date(tod.getFullYear(),tod.getMonth(),tod.getDate()-1); to = new Date(from); }
-  else if (key === 'this-week') { from = new Date(tod); from.setDate(tod.getDate()-tod.getDay()); to = tod; }
-  else if (key === 'last-week') { const s=new Date(tod); s.setDate(tod.getDate()-tod.getDay()-7); const e=new Date(s); e.setDate(s.getDate()+6); from=s; to=e; }
-  else if (key === 'this-month') { from = new Date(now.getFullYear(),now.getMonth(),1); to = tod; }
-  else if (key === 'last-month') { from = new Date(now.getFullYear(),now.getMonth()-1,1); to = new Date(now.getFullYear(),now.getMonth(),0); }
-  else if (key === 'this-year') { from = new Date(now.getFullYear(),0,1); to = tod; }
-  else { return; } // custom: just highlight, no auto-apply
-  _spCalPending = { from, to };
-  _spCalView = { year: from.getFullYear(), month: from.getMonth() };
+  if (key === 'custom') return;
+
+  const now = new Date(), tod = _spDay0(now);
+  const d = (n) => { const x=new Date(tod); x.setDate(tod.getDate()+n); return x; };
+  const map = {
+    'today':      [tod, tod],
+    'yesterday':  [d(-1), d(-1)],
+    'last-7':     [d(-6), tod],
+    'last-14':    [d(-13), tod],
+    'last-30':    [d(-29), tod],
+    'this-week':  [(() =>{ const s=new Date(tod); s.setDate(tod.getDate()-((tod.getDay()||7)-1)); return s; })(), tod],
+    'last-week':  [(() =>{ const s=new Date(tod); s.setDate(tod.getDate()-((tod.getDay()||7)-1)-7); return s; })(),
+                   (() =>{ const s=new Date(tod); s.setDate(tod.getDate()-((tod.getDay()||7)-1)-1); return s; })()],
+    'this-month': [new Date(now.getFullYear(),now.getMonth(),1), tod],
+    'last-month': [new Date(now.getFullYear(),now.getMonth()-1,1), new Date(now.getFullYear(),now.getMonth(),0)],
+    'this-year':  [new Date(now.getFullYear(),0,1), tod],
+  };
+  const [from, to] = map[key] || [tod, tod];
+  _spCalPend = { from, to };
+  _spCalView = { year: to.getFullYear(), month: to.getMonth() };
   _spRenderCal();
-  // auto-apply presets immediately
   spCalApply();
 }
 
