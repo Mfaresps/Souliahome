@@ -106,6 +106,22 @@ h1,h2,h3,h4,h5,h6{line-height:1.35;letter-spacing:-0.015em}
 .modal-overlay{transition:opacity var(--motion-base);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .modal{box-shadow:var(--shadow-xl);border-radius:var(--r-lg);transition:transform var(--motion-base),opacity var(--motion-base)}
 
+/* —— Products Drag & Drop Overlay —— */
+#prod-drop-overlay{position:fixed;inset:0;z-index:8000;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .25s ease}
+#prod-drop-overlay.active{opacity:1;pointer-events:auto}
+#prod-drop-overlay::before{content:'';position:absolute;inset:0;background:rgba(0,79,46,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.prod-drop-box{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;border:3px dashed rgba(255,255,255,.7);border-radius:28px;padding:56px 80px;text-align:center;color:#fff;animation:prodDropPulse 1.6s ease-in-out infinite}
+.prod-drop-box.dropping{border-color:#6ee7b7;background:rgba(16,185,129,.18);transform:scale(1.03);transition:transform .15s ease,background .15s ease}
+@keyframes prodDropPulse{0%,100%{box-shadow:0 0 0 0 rgba(110,231,183,.3),0 0 40px rgba(16,185,129,.15)}50%{box-shadow:0 0 0 18px rgba(110,231,183,0),0 0 60px rgba(16,185,129,.3)}}
+.prod-drop-icon{width:80px;height:80px;background:rgba(255,255,255,.12);border-radius:50%;display:flex;align-items:center;justify-content:center;animation:prodDropBounce 1.4s ease-in-out infinite}
+@keyframes prodDropBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.prod-drop-title{font-size:1.6rem;font-weight:700;letter-spacing:-.3px;text-shadow:0 2px 12px rgba(0,0,0,.3)}
+.prod-drop-sub{font-size:.92rem;opacity:.8;font-weight:400}
+.prod-drop-badge{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:6px 18px;font-size:.8rem;font-weight:600;backdrop-filter:blur(4px)}
+/* particles */
+.prod-drop-particle{position:absolute;border-radius:50%;pointer-events:none;opacity:0;animation:prodParticle var(--dur,2s) var(--delay,0s) ease-in-out infinite}
+@keyframes prodParticle{0%{opacity:0;transform:translateY(0) scale(0)}20%{opacity:.7}80%{opacity:.4}100%{opacity:0;transform:translateY(var(--ty,-120px)) scale(1.2) translateX(var(--tx,0px))}}
+
 /* —— Toast: friendlier shape —— */
 .toast-container{display:flex;flex-direction:column;gap:6px;align-items:center}
 
@@ -359,7 +375,8 @@ tr:hover{background:var(--primary-pale)}
 .btn-outline{border:1px solid var(--border);color:var(--text)}
 .btn-outline:hover{background:var(--surface2)}
 .btn-sm{padding:5px 12px;font-size:.78rem}
-.btn-icon{width:34px;height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;font-size:1rem}
+.btn-icon{width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;font-size:1rem}
+.btn-icon.btn-danger{border-radius:8px}
 .actions-dd{position:relative;display:inline-block}
 .actions-dd .dd-toggle{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;font-size:1.1rem;transition:all .2s ease;border:1px solid var(--border);background:var(--surface);color:var(--muted)}
 .actions-dd .dd-toggle:hover{background:var(--surface2);color:var(--text);transform:scale(1.05)}
@@ -1457,24 +1474,274 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .sp-src-link:hover .sp-src-svg{filter:grayscale(0) opacity(1)!important}
 @keyframes needContactPulse{0%,100%{box-shadow:0 0 6px #ef444440,0 0 14px #ef444425}50%{box-shadow:0 0 14px #ef444470,0 0 28px #ef444445,0 0 40px #ef444420}}
 .sp-need-contact-btn:hover{box-shadow:0 0 18px #ef444480,0 0 36px #ef444450!important;transform:translateY(-1px)}
-/* ── Shopify Orders Table ── */
-#shopify-orders-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow-x:auto;overflow-y:visible;box-shadow:0 2px 12px rgba(0,0,0,.06)}
-#shopify-orders-table-wrap .data-table{border-collapse:collapse;font-size:.83rem;min-width:900px}
-#shopify-orders-table-wrap .data-table thead tr{background:var(--bg-alt);border-bottom:2px solid var(--border)}
-#shopify-orders-table-wrap .data-table thead th{padding:10px 12px;font-size:.75rem;font-weight:600;color:var(--text-muted);white-space:nowrap;letter-spacing:.01em}
-#shopify-orders-table-wrap .data-table tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
-#shopify-orders-table-wrap .data-table tbody tr:last-child{border-bottom:none}
-#shopify-orders-table-wrap .data-table tbody tr:hover{background:var(--bg-alt)}
-#shopify-orders-table-wrap .data-table td{padding:10px 12px;vertical-align:middle}
-/* address popup fix */
+/* ── Shopify Orders Page Layout ── */
+#page-shopify-orders{padding-bottom:32px}
+#shopify-page-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+#shopify-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.shopify-kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+#shopify-filters-bar{margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#shopify-search-wrap{position:relative;flex:1;min-width:180px;max-width:280px}
+#shopify-filter-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex:1}
+/* ── Table (desktop) ── */
+#shopify-orders-table-wrap{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+#shopify-orders-table-wrap .sp-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#shopify-orders-table-wrap .data-table{border-collapse:collapse;font-size:.82rem;width:100%;min-width:900px}
+#shopify-orders-table-wrap .data-table thead th{padding:9px 8px;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--surface2);white-space:nowrap;border-bottom:2px solid var(--border)}
+#shopify-orders-table-wrap .data-table tbody tr{transition:background .12s;cursor:pointer}
+#shopify-orders-table-wrap .data-table tbody tr:hover{background:var(--primary-pale)}
+#shopify-orders-table-wrap .data-table tbody tr:last-child td{border-bottom:none}
+#shopify-orders-table-wrap .data-table td{padding:8px 8px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap;font-size:.82rem;line-height:1.35}
+/* ── Mobile Cards ── */
+#sp-mobile-list{display:none;flex-direction:column;gap:10px}
+.sp-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:box-shadow .15s,border-color .15s;cursor:pointer}
+.sp-card:hover{border-color:#cbd5e1;box-shadow:0 4px 14px rgba(15,23,42,.07)}
+.sp-card.sp-card-new{border-right:3px solid #10b981;background:linear-gradient(90deg,rgba(16,185,129,.05) 0%,var(--surface) 100%)}
+.sp-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px}
+.sp-card-ref{font-size:.78rem;font-weight:700;color:var(--text-muted)}
+.sp-card-time{font-size:.72rem;color:var(--text-muted)}
+.sp-card-client{font-size:1rem;font-weight:700;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-card-phone{font-size:.78rem;color:var(--text-muted);direction:ltr;text-align:right}
+.sp-card-amounts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0;padding:10px 0;border-top:1px dashed var(--border);border-bottom:1px dashed var(--border)}
+.sp-card-amount-item{display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px}
+.sp-card-amount-label{font-size:.65rem;color:var(--text-muted);margin-bottom:2px;white-space:nowrap}
+.sp-card-amount-val{font-size:.88rem;font-weight:700;color:var(--text)}
+.sp-card-amount-val.sp-total{color:var(--accent);font-size:.95rem}
+.sp-card-bottom{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.sp-card-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%;margin-top:8px}
+.sp-card-actions .btn{flex:1;justify-content:center;font-size:.78rem;padding:8px 10px}
+/* ── address popup ── */
 .sp-addr-popup{position:fixed;z-index:9990;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:14px 16px;min-width:240px;max-width:min(360px,calc(100vw - 32px));width:300px;text-align:right;word-break:break-word;overflow-wrap:break-word;white-space:normal}
-/* mobile */
+/* ── Responsive breakpoints ── */
+@media(max-width:1100px){
+  #shopify-kpi-row{grid-template-columns:repeat(3,1fr)}
+}
 @media(max-width:768px){
   .sp-addr-popup{max-width:calc(100vw - 32px)!important;width:calc(100vw - 32px)!important}
   #shopify-kpi-row{grid-template-columns:1fr 1fr!important}
-  #shopify-orders-table-wrap{border-radius:10px;overflow-x:auto}
-  #shopify-orders-table-wrap .data-table thead th,#shopify-orders-table-wrap .data-table td{padding:8px 8px;font-size:.75rem}
-  #page-shopify-orders .flex-between{flex-direction:column;align-items:flex-start}
+  .shopify-kpi-card{padding:12px 14px;gap:10px}
+  .shopify-kpi-card > div:first-child{width:36px!important;height:36px!important;border-radius:9px!important}
+  #shopify-page-header{flex-direction:column;align-items:flex-start}
+  #shopify-filters-bar{flex-direction:column;align-items:stretch;gap:8px}
+  #shopify-search-wrap{max-width:100%}
+  #shopify-filter-btns{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+  #shopify-filter-btns::-webkit-scrollbar{height:0}
+  #shopify-filter-btns .sp-status-filter-btn{flex-shrink:0}
+/* ════════════════════════════════════════
+   Shopify Date Range Picker
+   ════════════════════════════════════════ */
+#sp-date-filter{position:relative;display:inline-flex;align-items:center}
+
+/* Trigger button */
+#sp-date-trigger{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:8px 14px;border-radius:10px;
+  border:1.5px solid var(--border);background:var(--surface);
+  color:var(--text);font-size:.82rem;font-family:inherit;
+  cursor:pointer;transition:border-color .15s,color .15s,background .15s;
+  white-space:nowrap;font-weight:400;line-height:1;user-select:none
+}
+#sp-date-trigger:hover{border-color:var(--accent);color:var(--accent)}
+#sp-date-trigger.sp-df-active{
+  border-color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 8%,transparent);
+  color:var(--accent);font-weight:500
+}
+#sp-date-trigger .sp-df-icon{opacity:.55;flex-shrink:0;transition:opacity .15s}
+#sp-date-trigger:hover .sp-df-icon,
+#sp-date-trigger.sp-df-active .sp-df-icon{opacity:1}
+#sp-df-label-text{max-width:200px;overflow:hidden;text-overflow:ellipsis}
+#sp-df-chevron{opacity:.4;transition:transform .2s,opacity .15s;flex-shrink:0}
+#sp-date-trigger:hover #sp-df-chevron{opacity:.8}
+#sp-df-sep{width:1px;height:12px;background:var(--border);flex-shrink:0;display:none}
+#sp-date-trigger.sp-df-active #sp-df-sep{display:block}
+#sp-date-clear{
+  display:none;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:50%;
+  background:color-mix(in srgb,var(--accent) 15%,transparent);
+  color:var(--accent);cursor:pointer;flex-shrink:0;
+  transition:background .15s,color .15s
+}
+#sp-date-clear:hover{background:var(--accent);color:#fff}
+
+/* ── Panel ── */
+#sp-date-panel{
+  position:absolute;top:calc(100% + 10px);right:0;
+  z-index:1300;display:none;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:0 4px 6px -1px rgba(0,0,0,.06),0 16px 48px -8px rgba(0,0,0,.14);
+  overflow:hidden;
+  animation:spPanelIn .18s cubic-bezier(.16,1,.3,1)
+}
+#sp-date-panel.open{display:flex}
+@keyframes spPanelIn{
+  from{opacity:0;transform:translateY(-10px) scale(.96)}
+  to  {opacity:1;transform:translateY(0)     scale(1)}
+}
+
+/* ── Presets sidebar ── */
+#sp-cal-presets{
+  width:156px;flex-shrink:0;
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;
+  background:var(--bg-alt)
+}
+#sp-cal-presets-scroll{flex:1;overflow-y:auto;padding:6px 0}
+#sp-cal-presets-scroll::-webkit-scrollbar{width:0}
+.sp-preset-item{
+  display:block;width:100%;padding:9px 18px;
+  font-size:.8rem;color:var(--text-muted);
+  cursor:pointer;transition:all .13s;
+  white-space:nowrap;font-family:inherit;
+  background:none;border:none;text-align:right;
+  line-height:1.3;border-radius:0;position:relative
+}
+.sp-preset-item:hover{background:var(--surface);color:var(--text)}
+.sp-preset-item.active{
+  color:var(--accent);font-weight:600;background:var(--surface)
+}
+.sp-preset-item.active::before{
+  content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);
+  width:3px;height:70%;border-radius:2px 0 0 2px;background:var(--accent)
+}
+#sp-cal-apply-wrap{padding:12px;border-top:1px solid var(--border)}
+#sp-cal-apply{
+  display:block;width:100%;padding:10px;
+  border-radius:10px;border:none;
+  background:var(--accent);color:#fff;
+  font-size:.83rem;font-weight:700;
+  cursor:pointer;font-family:inherit;
+  transition:opacity .15s,transform .1s;
+  letter-spacing:.01em
+}
+#sp-cal-apply:hover{opacity:.88}
+#sp-cal-apply:active{transform:scale(.97)}
+
+/* ── Calendar panel ── */
+#sp-cal-main{flex:1;padding:20px 22px;min-width:0}
+
+/* Header */
+.sp-cal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:18px
+}
+.sp-cal-nav{
+  width:30px;height:30px;border-radius:8px;
+  border:1px solid var(--border);background:var(--surface);
+  color:var(--text);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .13s;flex-shrink:0;padding:0
+}
+.sp-cal-nav:hover{
+  border-color:var(--accent);color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 8%,transparent)
+}
+.sp-cal-nav:active{transform:scale(.93)}
+.sp-cal-month-year{display:flex;align-items:baseline;gap:6px}
+.sp-cal-month{font-size:1rem;font-weight:700;color:var(--text)}
+.sp-cal-year{font-size:.85rem;font-weight:400;color:var(--muted)}
+
+/* Grid */
+.sp-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
+.sp-cal-dow{
+  font-size:.65rem;font-weight:600;color:var(--muted);
+  text-align:center;padding:5px 0 10px;letter-spacing:.04em;text-transform:uppercase
+}
+
+/* Day cells */
+.sp-cal-day{
+  position:relative;
+  width:100%;aspect-ratio:1;min-width:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;border-radius:10px;
+  cursor:pointer;transition:background .12s,color .12s;
+  font-family:inherit;border:none;background:none;
+  color:var(--text);font-weight:400;padding:0;
+  z-index:0
+}
+.sp-cal-day:not(.sp-cal-other):hover{
+  background:color-mix(in srgb,var(--accent) 10%,transparent);
+  color:var(--accent)
+}
+.sp-cal-day.sp-cal-other{color:var(--muted);opacity:.3;cursor:default;pointer-events:none}
+.sp-cal-day.sp-cal-today:not(.sp-cal-sel){
+  font-weight:700;
+  background:color-mix(in srgb,var(--accent) 8%,transparent);
+  color:var(--accent)
+}
+/* selected endpoints */
+.sp-cal-day.sp-cal-sel{
+  background:var(--accent)!important;
+  color:#fff!important;font-weight:700;
+  border-radius:10px;z-index:1
+}
+/* range fill between endpoints */
+.sp-cal-day.sp-cal-in-range{
+  background:color-mix(in srgb,var(--accent) 12%,transparent);
+  color:var(--accent);
+  border-radius:0
+}
+.sp-cal-day.sp-cal-range-start.sp-cal-in-range,
+.sp-cal-day.sp-cal-sel:not(.sp-cal-range-single){border-radius:10px 0 0 10px}
+.sp-cal-day.sp-cal-range-end.sp-cal-in-range{border-radius:0 10px 10px 0}
+.sp-cal-day.sp-cal-range-single{border-radius:10px!important}
+
+/* order dot */
+.sp-cal-day.sp-cal-has-orders::after{
+  content:'';position:absolute;
+  bottom:4px;left:50%;transform:translateX(-50%);
+  width:3px;height:3px;border-radius:50%;
+  background:currentColor;opacity:.5
+}
+.sp-cal-day.sp-cal-sel.sp-cal-has-orders::after{background:#fff;opacity:.8}
+
+/* selected range label */
+#sp-cal-range-label{
+  min-height:20px;margin-bottom:12px;
+  font-size:.75rem;color:var(--muted);text-align:center
+}
+#sp-cal-range-label span{
+  display:inline-flex;align-items:center;gap:6px;
+  background:color-mix(in srgb,var(--accent) 8%,transparent);
+  color:var(--accent);border-radius:6px;padding:3px 10px;
+  font-weight:500
+}
+
+/* ── Mobile ── */
+@media(max-width:640px){
+  #sp-date-panel{
+    position:fixed;inset:auto 8px 0;right:8px;left:8px;
+    border-radius:20px 20px 0 0;
+    flex-direction:column-reverse;
+    max-height:90vh;overflow:hidden
+  }
+  #sp-cal-presets{
+    width:100%;flex-direction:row;
+    border-left:none;border-top:1px solid var(--border)
+  }
+  #sp-cal-presets-scroll{
+    display:flex;flex-direction:row;
+    overflow-x:auto;overflow-y:hidden;padding:8px 8px
+  }
+  #sp-cal-presets-scroll::-webkit-scrollbar{height:0}
+  .sp-preset-item{
+    white-space:nowrap;width:auto;padding:7px 14px;
+    border-radius:20px;font-size:.75rem
+  }
+  .sp-preset-item.active::before{display:none}
+  #sp-cal-apply-wrap{display:none}
+  #sp-cal-main{padding:16px}
+}
+  /* hide table, show cards */
+  #shopify-orders-table-wrap .sp-table-scroll{display:none}
+  #shopify-orders-table-wrap > div:first-child{padding:0}
+  #sp-mobile-list{display:flex}
+  #shopify-orders-table-wrap{border:none;box-shadow:none;background:transparent;overflow:visible}
+}
+@media(max-width:480px){
+  #shopify-kpi-row{grid-template-columns:1fr!important}
+  .shopify-kpi-card{padding:10px 12px}
 }
 #sidebar .nav-item[data-page="shopify-orders"] svg{stroke:none!important}
 #sidebar .nav-item[data-page="shopify-orders"] svg path:nth-child(1){fill:#95BF47!important}
@@ -3409,6 +3676,10 @@ body.dark-mode .fx-checkbox-count{background:var(--surface2)}
 .mov-edited-mini{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;background:#fef3c7;color:#92400e;cursor:pointer;flex-shrink:0;transition:all .12s}
 .mov-edited-mini:hover{background:#fde68a}
 body.dark-mode .mov-edited-mini{background:#422006;color:#fcd34d}
+#mov-table tbody tr.mov-row-new-shopify td:first-child{border-right:3px solid #95BF47}
+body.dark-mode #mov-table tbody tr.mov-row-new-shopify td:first-child{border-right-color:#7aad35}
+#mov-mobile-list .mov-card.mov-card-new-shopify{border-right:3px solid #95BF47}
+body.dark-mode #mov-mobile-list .mov-card.mov-card-new-shopify{border-right-color:#7aad35}
 /* Discount indicator badge on movement rows */
 /* ── Discount badge — premium redesign ── */
 .mov-discount-ic{
@@ -6062,6 +6333,31 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   </div>
 </div>
 
+<!-- Products Page Drag & Drop Overlay -->
+<div id="prod-drop-overlay" aria-hidden="true">
+  <div class="prod-drop-box" id="prod-drop-box">
+    <!-- animated particles -->
+    <div class="prod-drop-particle" style="--dur:2.1s;--delay:0s;--ty:-130px;--tx:30px;width:10px;height:10px;background:#6ee7b7;top:60%;left:40%"></div>
+    <div class="prod-drop-particle" style="--dur:1.8s;--delay:.4s;--ty:-100px;--tx:-50px;width:7px;height:7px;background:#34d399;top:55%;left:60%"></div>
+    <div class="prod-drop-particle" style="--dur:2.4s;--delay:.8s;--ty:-150px;--tx:20px;width:12px;height:12px;background:#a7f3d0;top:65%;left:45%"></div>
+    <div class="prod-drop-particle" style="--dur:1.9s;--delay:.2s;--ty:-80px;--tx:-30px;width:6px;height:6px;background:#6ee7b7;top:50%;left:55%"></div>
+    <div class="prod-drop-particle" style="--dur:2.2s;--delay:1s;--ty:-120px;--tx:60px;width:9px;height:9px;background:#10b981;top:70%;left:35%"></div>
+    <div class="prod-drop-icon">
+      <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+    </div>
+    <div class="prod-drop-title">أفلت الملف هنا</div>
+    <div class="prod-drop-sub">ملف Excel لاستيراد الأصناف (.xlsx / .xls)</div>
+    <div class="prod-drop-badge">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>
+      استيراد الأصناف
+    </div>
+  </div>
+</div>
+
 <!-- Import Products OTP modal -->
 <div class="modal-overlay" id="import-otp-modal">
   <div class="modal" style="max-width:440px">
@@ -6101,6 +6397,35 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <div id="import-names-list" style="max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:8px"></div>
     <div style="margin-top:14px;text-align:left">
       <button class="btn btn-outline" onclick="qs('#import-names-modal').classList.remove('active')">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Import Confirm modal -->
+<div class="modal-overlay" id="import-confirm-modal">
+  <div class="modal" style="max-width:560px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 style="margin:0;font-size:1rem;display:flex;align-items:center;gap:8px">
+        <span style="display:inline-flex;width:22px;height:22px;color:#0369a1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>
+        تأكيد استيراد الأصناف
+      </h3>
+      <button onclick="closeImportConfirmModal()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:1.2rem;line-height:1;padding:2px 6px">✕</button>
+    </div>
+    <div id="import-confirm-summary" style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap"></div>
+    <div id="import-confirm-controls" style="display:flex;gap:8px;margin-bottom:8px;align-items:center;flex-wrap:wrap">
+      <button onclick="importSelectAll('all')" style="font-size:.76rem;padding:3px 10px;border:1px solid var(--border);border-radius:5px;background:var(--bg-alt);cursor:pointer">تحديد الكل</button>
+      <button onclick="importSelectAll('none')" style="font-size:.76rem;padding:3px 10px;border:1px solid var(--border);border-radius:5px;background:var(--bg-alt);cursor:pointer">إلغاء الكل</button>
+      <button onclick="importSelectAll('new')" style="font-size:.76rem;padding:3px 10px;border:1px solid #d1fae5;border-radius:5px;background:#d1fae5;color:#065f46;cursor:pointer">الجديدة فقط</button>
+      <button onclick="importSelectAll('update')" style="font-size:.76rem;padding:3px 10px;border:1px solid #fef3c7;border-radius:5px;background:#fef3c7;color:#92400e;cursor:pointer">التحديثات فقط</button>
+      <span id="import-selected-count" style="margin-right:auto;font-size:.78rem;color:var(--muted)"></span>
+    </div>
+    <div id="import-confirm-list" style="max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-bottom:14px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeImportConfirmModal()">إلغاء</button>
+      <button class="btn btn-primary" id="import-confirm-btn" onclick="confirmAdminImport()">
+        <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;width:1em;height:1em;margin-left:4px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        تأكيد الاستيراد
+      </button>
     </div>
   </div>
 </div>
@@ -6843,7 +7168,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   <div id="prod-bulk-bar" style="display:none;gap:8px;align-items:center;flex-wrap:wrap;padding-top:4px;border-top:1px dashed var(--border)" class="flex">
     <span id="prod-sel-count" style="font-size:.82rem;font-weight:600;color:var(--primary)"></span>
     <button class="btn btn-outline btn-sm" onclick="openBulkEditModal()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل جماعي</button>
-    <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="bulkDeleteProducts()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> حذف الكل</button>
+    <button id="prod-bulk-delete-btn" class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="bulkDeleteProducts()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> <span id="prod-bulk-delete-label">حذف المحدد</span></button>
     <button class="btn btn-outline btn-sm" onclick="deselectAllProducts()">✕ إلغاء التحديد</button>
   </div>
 </div>
@@ -8352,24 +8677,23 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 
 <!-- Shopify Orders -->
 <div class="page" id="page-shopify-orders">
-  <div class="flex-between" style="flex-wrap:wrap;gap:10px;margin-bottom:16px">
+  <!-- Header -->
+  <div id="shopify-page-header">
     <div>
       <h2 style="margin:0;font-size:1.3rem;display:flex;align-items:center;gap:8px">أوردرات <svg viewBox="0 0 108.44 122.88" height="22" width="20" style="display:block;flex-shrink:0" xmlns="http://www.w3.org/2000/svg"><style>.sh0{fill-rule:evenodd;clip-rule:evenodd;fill:#95BF47}.sh1{fill-rule:evenodd;clip-rule:evenodd;fill:#5E8E3E}.sh2{fill-rule:evenodd;clip-rule:evenodd;fill:#FFFFFF}</style><path class="sh0" d="M94.98,23.66c-0.09-0.62-0.63-0.96-1.08-1c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.72-0.72-2.13-0.5-2.68-0.34c-0.01,0-1.37,0.43-3.68,1.14c-0.38-1.25-0.95-2.78-1.76-4.32c-2.6-4.97-6.42-7.6-11.03-7.61c-0.01,0-0.01,0-0.02,0c-0.32,0-0.64,0.03-0.96,0.06c-0.14-0.16-0.27-0.32-0.42-0.48c-2.01-2.15-4.58-3.19-7.67-3.1c-5.95,0.17-11.88,4.47-16.69,12.11c-3.38,5.37-5.96,12.12-6.69,17.35c-6.83,2.12-11.61,3.6-11.72,3.63c-3.45,1.08-3.56,1.19-4.01,4.44C9.03,39.99,0,109.8,0,109.8l75.65,13.08l32.79-8.15C108.44,114.73,95.06,24.28,94.98,23.66z M66.52,16.63c-1.74,0.54-3.72,1.15-5.87,1.82c-0.04-3.01-0.4-7.21-1.81-10.83C63.36,8.47,65.58,13.58,66.52,16.63z M56.69,19.68c-3.96,1.23-8.29,2.57-12.63,3.91c1.22-4.67,3.54-9.33,6.38-12.38c1.06-1.14,2.54-2.4,4.29-3.12C56.38,11.52,56.73,16.39,56.69,19.68z M48.58,3.97c1.4-0.03,2.57,0.28,3.58,0.94C50.55,5.74,49,6.94,47.54,8.5c-3.78,4.06-6.68,10.35-7.83,16.43c-3.6,1.11-7.13,2.21-10.37,3.21C31.38,18.58,39.4,4.23,48.58,3.97z"/><path class="sh1" d="M93.9,22.66c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.27-0.27-0.63-0.41-1.02-0.47l0,108.68l32.78-8.15c0,0-13.38-90.44-13.46-91.06C94.9,23.04,94.35,22.7,93.9,22.66z"/><path class="sh2" d="M57.48,39.52l-3.81,14.25c0,0-4.25-1.93-9.28-1.62c-7.38,0.47-7.46,5.12-7.39,6.29c0.4,6.37,17.16,7.76,18.11,22.69c0.74,11.74-6.23,19.77-16.27,20.41c-12.05,0.76-18.69-6.35-18.69-6.35l2.55-10.86c0,0,6.68,5.04,12.02,4.7c3.49-0.22,4.74-3.06,4.61-5.07c-0.52-8.31-14.18-7.82-15.04-21.48c-0.73-11.49,6.82-23.14,23.48-24.19C54.2,37.88,57.48,39.52,57.48,39.52z"/></svg></h2>
       <p style="margin:4px 0 0;color:var(--text-muted);font-size:.85rem">مراجعة الأوردرات القادمة من المتجر قبل إضافتها للحركات</p>
     </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <div style="display:flex;align-items:center;gap:8px">
-        <button class="btn btn-sm" onclick="loadShopifyOrders()" style="gap:6px">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7"/><polyline points="21 4 21 10 15 10"/></svg>
-          تحديث
-        </button>
-        <span id="shopify-last-refresh" style="font-size:.72rem;color:var(--text-muted)"></span>
-      </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="btn btn-sm" onclick="loadShopifyOrders()" style="gap:6px">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7"/><polyline points="21 4 21 10 15 10"/></svg>
+        تحديث
+      </button>
+      <span id="shopify-last-refresh" style="font-size:.72rem;color:var(--text-muted)"></span>
     </div>
   </div>
   <!-- KPI Stats Cards -->
-  <div id="shopify-kpi-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
-    <div class="shopify-kpi-card" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 6px rgba(0,0,0,.06)">
+  <div id="shopify-kpi-row">
+    <div class="shopify-kpi-card">
       <div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#95BF47,#5E8E3E);display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       </div>
@@ -8379,7 +8703,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         <div id="shopify-kpi-today-label" style="font-size:.7rem;color:var(--text-muted);margin-top:3px">—</div>
       </div>
     </div>
-    <div class="shopify-kpi-card" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 6px rgba(0,0,0,.06)">
+    <div class="shopify-kpi-card">
       <div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#6366f1,#4f46e5);display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 9h18v4H3z"/><path d="M3 15h18v4H3z"/></svg>
       </div>
@@ -8389,7 +8713,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         <div id="shopify-kpi-week-label" style="font-size:.7rem;color:var(--text-muted);margin-top:3px">—</div>
       </div>
     </div>
-    <div class="shopify-kpi-card" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 6px rgba(0,0,0,.06)">
+    <div class="shopify-kpi-card">
       <div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       </div>
@@ -8400,14 +8724,13 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       </div>
     </div>
   </div>
-
-  <!-- Search Bar + Status Filters -->
-  <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <div style="position:relative;width:100%;max-width:280px">
+  <!-- Search + Filters -->
+  <div id="shopify-filters-bar">
+    <div id="shopify-search-wrap">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input id="shopify-search" type="text" placeholder="بحث برقم الأوردر..." oninput="renderShopifyOrders()" style="width:100%;padding:10px 38px 10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-size:.9rem;box-sizing:border-box;direction:ltr;transition:border-color .2s;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
     </div>
-    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+    <div id="shopify-filter-btns">
       <button class="btn btn-sm sp-status-filter-btn sp-need-contact-btn" data-filter="need-contact" data-color="#ef4444" onclick="switchShopifyStatusFilter('need-contact',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid #ef4444;color:#ef4444;background:linear-gradient(135deg,#ef444418 0%,#dc262618 100%);border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:600;box-shadow:0 0 8px #ef444440,0 0 16px #ef444420;animation:needContactPulse 2s ease-in-out infinite">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/></svg>
         يحتاج تواصل <span id="shopify-need-contact-count" style="background:#ef4444;color:#fff;border-radius:99px;padding:1px 6px;font-size:.68rem;font-weight:700">0</span>
@@ -8426,7 +8749,61 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       </button>
     </div>
   </div>
+  <!-- Date Filter -->
+  <div id="sp-date-filter" style="margin-bottom:14px">
+    <button id="sp-date-trigger" onclick="spToggleDatePanel(event)" type="button">
+      <svg class="sp-df-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span id="sp-df-label-text">تصفية بالتاريخ</span>
+      <svg id="sp-df-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      <span id="sp-df-sep"></span>
+      <span id="sp-date-clear" onclick="spClearDateFilter(event)" title="مسح">
+        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </span>
+    </button>
+
+    <div id="sp-date-panel">
+      <!-- Left: Calendar -->
+      <div id="sp-cal-main">
+        <div class="sp-cal-header">
+          <button class="sp-cal-nav" onclick="spCalNav(-1)" type="button" aria-label="شهر سابق">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="sp-cal-month-year">
+            <span class="sp-cal-month" id="sp-cal-month-lbl"></span>
+            <span class="sp-cal-year" id="sp-cal-year-lbl"></span>
+          </div>
+          <button class="sp-cal-nav" onclick="spCalNav(1)" type="button" aria-label="شهر تالي">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        <div id="sp-cal-range-label"></div>
+        <div class="sp-cal-grid" id="sp-cal-grid"></div>
+      </div>
+
+      <!-- Right: Presets -->
+      <div id="sp-cal-presets">
+        <div id="sp-cal-presets-scroll">
+          <button class="sp-preset-item" data-preset="today"       onclick="spPreset('today',this)">اليوم</button>
+          <button class="sp-preset-item" data-preset="yesterday"   onclick="spPreset('yesterday',this)">أمس</button>
+          <button class="sp-preset-item" data-preset="last-7"      onclick="spPreset('last-7',this)">آخر ٧ أيام</button>
+          <button class="sp-preset-item" data-preset="last-14"     onclick="spPreset('last-14',this)">آخر ١٤ يوم</button>
+          <button class="sp-preset-item" data-preset="last-30"     onclick="spPreset('last-30',this)">آخر ٣٠ يوم</button>
+          <button class="sp-preset-item" data-preset="this-week"   onclick="spPreset('this-week',this)">هذا الأسبوع</button>
+          <button class="sp-preset-item" data-preset="last-week"   onclick="spPreset('last-week',this)">الأسبوع الماضي</button>
+          <button class="sp-preset-item" data-preset="this-month"  onclick="spPreset('this-month',this)">هذا الشهر</button>
+          <button class="sp-preset-item" data-preset="last-month"  onclick="spPreset('last-month',this)">الشهر الماضي</button>
+          <button class="sp-preset-item" data-preset="this-year"   onclick="spPreset('this-year',this)">هذا العام</button>
+          <button class="sp-preset-item active" data-preset="custom" onclick="spPreset('custom',this)">مخصص</button>
+        </div>
+        <div id="sp-cal-apply-wrap">
+          <button id="sp-cal-apply" onclick="spCalApply()" type="button">تطبيق</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Table (desktop) + Cards (mobile) -->
   <div id="shopify-orders-table-wrap"></div>
+  <div id="sp-mobile-list"></div>
 </div>
 
 <!-- Pending Sync (Offline Queue) -->
@@ -9409,16 +9786,20 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
               </button>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
               <button class="btn btn-primary" onclick="restoreBackupNow()" style="justify-content:center;font-size:.8rem;padding:6px 8px">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>
-                استرجاع
+                استرجاع كامل
               </button>
               <button class="btn btn-outline" onclick="downloadBackupNow()" style="justify-content:center;font-size:.8rem;padding:6px 8px">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 تحميل
               </button>
             </div>
+            <button class="btn btn-outline" onclick="showSelectiveRestoreModal()" style="width:100%;justify-content:center;font-size:.8rem;padding:6px 8px;border-color:var(--primary);color:var(--primary)">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/><circle cx="18" cy="5" r="3"/><path d="M21 8v1a4 4 0 01-4 4h-1"/></svg>
+              استرجاع انتقائي
+            </button>
           </div>
         </div>
 
@@ -9559,6 +9940,85 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 </div>
 </div>
 </main>
+</div>
+
+<!-- Selective Restore Modal -->
+<div id="selective-restore-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--bg);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+
+    <!-- Header -->
+    <div style="padding:16px 18px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+      <div style="width:38px;height:38px;background:linear-gradient(135deg,var(--primary),#047857);border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <!-- history/restore icon -->
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+          <path d="M12 7v5l4 2"/>
+        </svg>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.93rem;font-weight:700;color:var(--text)">الاسترجاع الانتقائي</div>
+        <div style="font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:4px;margin-top:2px">
+          <!-- file icon -->
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span id="sr-filename-label">اختر نسخة أولاً</span>
+        </div>
+      </div>
+      <button onclick="closeSelectiveRestoreModal()" style="background:transparent;border:none;cursor:pointer;color:var(--muted);padding:5px;border-radius:7px;display:flex;align-items:center;transition:background .15s" onmouseenter="this.style.background='var(--bg-alt)'" onmouseleave="this.style.background='transparent'">
+        <!-- x icon -->
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Step 1: Password -->
+    <div id="sr-step-password" style="padding:20px">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;padding:12px;background:var(--bg-alt);border-radius:10px;border:1px solid var(--border)">
+        <!-- lock icon -->
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <p style="margin:0;font-size:.8rem;color:var(--muted);line-height:1.6">أدخل كلمة سر الخزنة — سيتم جلب مقارنة تفصيلية بين النسخة والبيانات الحالية قبل أي تغيير</p>
+      </div>
+      <div style="position:relative;margin-bottom:12px">
+        <!-- key icon inside input -->
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6"/><path d="M15.5 7.5l3 3L22 7l-3-3"/></svg>
+        <input type="password" id="sr-password-input" placeholder="كلمة السر" style="width:100%;padding:9px 34px 9px 12px;border:1px solid var(--border);border-radius:9px;font-size:.85rem;background:var(--bg-alt);color:var(--text);box-sizing:border-box" onkeydown="if(event.key==='Enter')srFetchPreview()">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="srFetchPreview()" style="flex:1;justify-content:center;font-size:.83rem;gap:6px" id="sr-preview-btn">
+          <!-- compare/layers icon -->
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          عرض المقارنة
+        </button>
+        <button class="btn btn-outline" onclick="closeSelectiveRestoreModal()" style="flex-shrink:0;font-size:.83rem;gap:6px">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          إلغاء
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Preview & Section Selection -->
+    <div id="sr-step-select" style="display:none;padding:0 18px 18px">
+      <div id="sr-preview-table" style="margin-bottom:14px"></div>
+
+      <!-- Conflict Warning -->
+      <div id="sr-conflict-warning" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:9px;padding:10px 12px;margin-bottom:12px;font-size:.78rem;color:#92400e;line-height:1.5;display:none;align-items:flex-start;gap:8px">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span><strong>تنبيه:</strong> استرجاع الحركات بدون المنتجات قد يسبب تعارضاً في البيانات</span>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="srExecuteRestore()" style="flex:1;justify-content:center;font-size:.83rem;gap:6px" id="sr-execute-btn">
+          <!-- restore arrow icon -->
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          استرجاع الأقسام المحددة
+        </button>
+        <button class="btn btn-outline" onclick="closeSelectiveRestoreModal()" style="flex-shrink:0;font-size:.83rem;gap:6px">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          إلغاء
+        </button>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
@@ -10662,6 +11122,31 @@ function toast(msg, isError = false) {
   }, 3000);
 }
 
+function showImportResultToast({ created, updated, skipped, total }) {
+  const c = qs('#toast-container');
+  const d = document.createElement('div');
+  d.className = 'toast success';
+  d.style.cssText = 'min-width:260px;max-width:340px;padding:14px 16px;gap:0;align-items:flex-start';
+  const rows = [];
+  if (created) rows.push(`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.15)"><span>✦ أصناف جديدة</span><strong>${created}</strong></div>`);
+  if (updated) rows.push(`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.15)"><span>✎ تم تحديثها</span><strong>${updated}</strong></div>`);
+  if (skipped > 0) rows.push(`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;opacity:.8"><span>✓ بدون تغيير</span><strong>${skipped}</strong></div>`);
+  d.innerHTML = `<div style="display:flex;flex-direction:column;gap:6px;width:100%">
+    <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:.92rem;margin-bottom:4px">
+      <span>${ICON('success')}</span><span>تم الاستيراد — ${total} صنف</span>
+    </div>
+    <div style="font-size:.82rem;background:rgba(0,0,0,.12);border-radius:6px;padding:6px 10px;display:flex;flex-direction:column;gap:1px">
+      ${rows.join('')}
+    </div>
+  </div>`;
+  d.style.animation = 'slideIn 0.3s ease-out';
+  c.appendChild(d);
+  setTimeout(() => {
+    d.style.animation = 'slideOut 0.3s ease-out forwards';
+    setTimeout(() => d.remove(), 300);
+  }, 5000);
+}
+
 /* ════════════════════════════════════════════════════════════════
    CUSTOM MODAL ENGINE — replaces all native confirm/prompt/alert
    ════════════════════════════════════════════════════════════════ */
@@ -11353,12 +11838,15 @@ async function api(path, options = {}) {
     const err = await res.json().catch(() => ({}));
     const msg = Array.isArray(err.message) ? err.message.join(', ') : (err.message || 'خطأ في الطلب');
     if (res.status === 401 && !path.startsWith('/auth/login')) {
-      // Only logout on 401 from non-login endpoints (expired token or mid-session deactivation)
-      if (msg && msg.includes('🔒')) {
-        doLogout();
-        setTimeout(() => _showLockedAccountBanner(msg), 400);
-      } else {
-        doLogout();
+      // Password-verification endpoints use 401 for wrong password — don't logout
+      const isPasswordCheck = path.includes('preview-selective-restore') || path.includes('selective-restore') || path.includes('restore-backup') || path.includes('clear-data') || path.includes('backups');
+      if (!isPasswordCheck) {
+        if (msg && msg.includes('🔒')) {
+          doLogout();
+          setTimeout(() => _showLockedAccountBanner(msg), 400);
+        } else {
+          doLogout();
+        }
       }
     }
     throw new Error(msg);
@@ -12921,7 +13409,7 @@ window.txNotifier = (function () {
   }
   function _fmt(n) {
     const v = Math.abs(Number(n) || 0);
-    return v.toLocaleString('en-US') + ' ج';
+    return 'EGP ' + v.toLocaleString('en-US');
   }
   function _cardType(txType, isCancellation, isCollect) {
     if (isCancellation) return 'cancel';
@@ -20973,7 +21461,8 @@ function renderMovMobileCard(tx) {
     ? `<div class="dd-item" onclick="event.stopPropagation();window.open('https://wa.me/${encodeURIComponent(phoneClean)}','_blank','noopener')"><svg viewBox="0 0 512 512" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.05em;height:1.05em;margin-right:4px" preserveAspectRatio="xMidYMid meet"><path fill="#25d366" d="M373.3 306.8c-6.4-3.2-37.7-18.5-43.5-20.7-5.8-2.1-10.1-3.2-14.3 3.3-4.2 6.3-16.4 20.6-20.2 24.8-3.7 4.2-7.4 4.5-13.7 1.7-6.4-3.2-26.9-9.9-51.3-31.7-19-16.9-31.7-37.7-35.4-44.2-3.7-6.3-.4-9.9 2.8-13.1 2.9-2.9 6.4-7.3 9.7-11.2 3.1-3.8 4.1-6.4 6.3-10.6 2.1-4.5 1-8-.6-11.2s-14.3-34.6-19.7-47.1c-5.1-12.4-10.4-10.8-14.3-10.8-3.7-.3-7.9-.3-12.2-.3-4.2 0-11.2 1.6-17 7.7-5.8 6.4-22.3 21.7-22.3 52.8s22.8 61.2 26 65.7c3.2 4.2 44.9 68.2 108.8 95.7 15.3 6.4 27.1 10.3 36.3 13.4 15.3 4.8 29.2 4.2 40.2 2.6 12.2-2 37.7-15.4 43-30.4 5.4-15.1 5.4-27.6 3.8-30.4-1.6-2.9-5.7-4.5-12.2-7.3zM257.3 464h-.3c-37.8 0-75.3-10.3-107.9-29.4l-7.7-4.6-80 20.8L82.9 373l-5.2-8c-21.1-33.6-32.3-72.3-32.3-112.2 0-116.2 95.1-210.9 212.1-210.9 56.7 0 109.8 22.1 149.8 62.1 40 39.7 62.1 92.8 62.1 149.2-.1 116.1-95.2 210.8-212.1 210.8M437.7 73.6C389.1 26.6 325.1 0 257 0 116.6 0 2.2 113.8 2.2 253.7c0 44.7 11.7 88.3 34 126.8L0 512l135.2-35.3c37.2 20.1 79.2 30.8 121.8 30.9h.1c140.5 0 254.8-113.8 254.9-253.8 0-67.7-26.4-131.5-74.6-179.4z"/></svg> واتساب</div>`
     : '';
   const tagsHtml = (typeof renderTxTagsCell === 'function') ? renderTxTagsCell(tx._id) : '';
-  return `<div class="mov-card${isCancelled ? ' mov-card-cancelled' : ''}" onclick="showInvoiceDetail('${esc(tx._id)}')">
+  const _isNewShopifyMobile = tx.shopifyOrderId && tx.createdAt && (Date.now() - new Date(tx.createdAt).getTime() < 86400000);
+  return `<div class="mov-card${isCancelled ? ' mov-card-cancelled' : ''}${_isNewShopifyMobile ? ' mov-card-new-shopify' : ''}" onclick="showInvoiceDetail('${esc(tx._id)}')">
     <div class="mov-card-header">
       <div style="flex:1;min-width:0">
         ${dateHtml}
@@ -20996,7 +21485,9 @@ function renderMovMobileCard(tx) {
       </div>
     </div>
     <div class="mov-card-clientline">
-      <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" class="mov-client-name">${tx.client ? esc(tx.client) : '<span style="color:var(--muted)">بدون اسم</span>'}</a>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" class="mov-client-name">${tx.client ? esc(tx.client) : '<span style="color:var(--muted)">بدون اسم</span>'}</a>
+      </div>
       ${tx.ref ? `<span class="mov-card-ref">#${esc(tx.ref)}</span>` : ''}
     </div>
     <div class="mov-card-statusrow">${statusHtml}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : ''}${tx.shopifyOrderId ? `<a href="https://admin.shopify.com/store/soulia-2/orders/${esc(tx.shopifyOrderId)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="mov-card-emp mov-emp-initials" title="فتح أوردر Shopify" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">${_SHOPIFY_LOGO_SVG}</a>` : `<span class="mov-card-emp mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span>`}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div>
@@ -21040,9 +21531,9 @@ function discBadgeHtml(disc, codeStr, itemsBase, opts = {}) {
   // When codeType is 'percent' and itemsBase is unknown, show the stored percent value directly
   const amtLabel = opts.codeType === 'percent'
     ? `${disc}%`
-    : (opts.codeType === 'fixed' ? `${fmtN(disc)} ج` : (pct > 0 ? `${pct}%` : `${fmtN(disc)} ج`));
+    : (opts.codeType === 'fixed' ? `EGP ${fmtN(disc)}` : (pct > 0 ? `${pct}%` : `EGP ${fmtN(disc)}`));
   const tooltip = codeNames.length
-    ? `${codeNames.length > 1 ? 'أكواد' : 'كود'}: ${codeNames.join(' + ')} — خصم ${fmtN(disc)} ج${pct > 0 ? ` (${pct}%)` : ''}`
+    ? `${codeNames.length > 1 ? 'أكواد' : 'كود'}: ${codeNames.join(' + ')} — خصم EGP ${fmtN(disc)}${pct > 0 ? ` (${pct}%)` : ''}`
     : `خصم ${amtLabel}`;
   const discIcon = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`;
   let inner;
@@ -21386,10 +21877,11 @@ function renderMovementTxRow(tx) {
   const mentionIcon = hasMention
     ? `<span class="mov-mention-ic" title="يحتوي على إشارة @" onclick="event.stopPropagation();showInvoiceDetail('${esc(tx._id)}')">@</span>`
     : '';
+  const isNewShopify = tx.shopifyOrderId && tx.createdAt && (Date.now() - new Date(tx.createdAt).getTime() < 86400000);
   const rowStateClass = (tx.cancelled || isStatusCancelled(tx.payStatus)) ? ' mov-row-cancelled'
     : (isStatusPending(tx.payStatus) || isExchangeSalePendingCollect(tx) || (tx.cancelRequest && tx.cancelRequest.status === 'معلق')) ? ' mov-row-pending'
     : isStatusCompleted(tx.payStatus) ? ' mov-row-completed' : '';
-  return `<tr ${rowStyle} class="${isSelected ? 'mov-row-selected' : ''}${_rtFlash}${rowStateClass}" onclick="handleMovRowClick(event,'${esc(tx._id)}')">
+  return `<tr ${rowStyle} class="${isSelected ? 'mov-row-selected' : ''}${_rtFlash}${rowStateClass}${isNewShopify ? ' mov-row-new-shopify' : ''}" onclick="handleMovRowClick(event,'${esc(tx._id)}')">
     <td><input type="checkbox" class="checkbox mov-check" value="${esc(tx._id)}" ${isSelected ? 'checked' : ''} onclick="handleMovCheck(event,'${esc(tx._id)}')"></td>
     <td data-col="ref" class="col-ref">${movementRefCell(tx)}</td>
     <td data-col="date">${dateCell}</td>
@@ -27052,7 +27544,12 @@ function getSelectedProductIds() {
 function updateProdBulkBar() {
   const ids = getSelectedProductIds();
   const bar = qs('#prod-bulk-bar');
-  if (ids.length > 0) { bar.style.display = 'flex'; qs('#prod-sel-count').textContent = `تم تحديد ${ids.length} صنف`; }
+  if (ids.length > 0) {
+    bar.style.display = 'flex';
+    qs('#prod-sel-count').textContent = `تم تحديد ${ids.length} صنف`;
+    const delLabel = qs('#prod-bulk-delete-label');
+    if (delLabel) delLabel.textContent = `حذف المحدد (${ids.length})`;
+  }
   else { bar.style.display = 'none'; }
   const allBox = qs('#prod-select-all');
   const allChks = document.querySelectorAll('.prod-chk');
@@ -27138,6 +27635,63 @@ function exportProductsExcel() {
   doExport();
 }
 
+/* ── Products page: drag & drop anywhere ── */
+(function() {
+  let _dragCounter = 0;
+  let _activePage = false;
+
+  function isProductsPage() {
+    const p = document.querySelector('.page.active');
+    return p && p.id === 'products';
+  }
+
+  function showOverlay() {
+    const o = document.getElementById('prod-drop-overlay');
+    if (o) o.classList.add('active');
+  }
+  function hideOverlay() {
+    const o = document.getElementById('prod-drop-overlay');
+    if (o) { o.classList.remove('active'); document.getElementById('prod-drop-box')?.classList.remove('dropping'); }
+    _dragCounter = 0;
+  }
+
+  function hasExcel(dt) {
+    if (!dt || !dt.types) return false;
+    for (const t of dt.types) { if (t === 'Files') return true; }
+    return false;
+  }
+
+  document.addEventListener('dragenter', function(e) {
+    if (!isProductsPage() || !hasExcel(e.dataTransfer)) return;
+    _dragCounter++;
+    if (_dragCounter === 1) showOverlay();
+    e.preventDefault();
+  }, false);
+
+  document.addEventListener('dragleave', function(e) {
+    if (!isProductsPage()) return;
+    _dragCounter--;
+    if (_dragCounter <= 0) hideOverlay();
+  }, false);
+
+  document.addEventListener('dragover', function(e) {
+    if (!isProductsPage() || !hasExcel(e.dataTransfer)) return;
+    e.preventDefault();
+    document.getElementById('prod-drop-box')?.classList.add('dropping');
+  }, false);
+
+  document.addEventListener('drop', function(e) {
+    if (!isProductsPage()) return;
+    e.preventDefault();
+    hideOverlay();
+    const file = e.dataTransfer?.files?.[0];
+    if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['xlsx','xls'].includes(ext)) { toast('الملف يجب أن يكون Excel (.xlsx أو .xls)', true); return; }
+    importProductsExcel({ target: { files: [file] } });
+  }, false);
+})();
+
 function importProductsExcel(event) {
   const file = event.target.files[0]; if (!file) return;
   const reader = new FileReader();
@@ -27156,10 +27710,20 @@ function importProductsExcel(event) {
       }));
       const items = allItems.filter(r => r.code && r.name);
       if (!items.length) { toast('لا يوجد بيانات صالحة في الملف — تأكد من وجود أعمدة الكود والاسم', true); return; }
-      const doImport = async () => {
+      const doImport = async (selectedItems) => {
+        const toImport = (selectedItems && selectedItems.length) ? selectedItems : items;
         try {
-          await api('/products/import', { method: 'POST', body: JSON.stringify({ items }) });
-          toast('تم استيراد ' + items.length + ' صنف');
+          const res = await api('/products/import', { method: 'POST', body: JSON.stringify({ items: toImport }) });
+          const created = res?.created ?? 0;
+          const updated = res?.updated ?? 0;
+          const skipped = toImport.length - created - updated;
+          let msg = '';
+          if (created && updated) msg = `✅ تمت إضافة ${created} صنف جديد وتحديث ${updated} صنف`;
+          else if (created) msg = `✅ تمت إضافة ${created} صنف جديد`;
+          else if (updated) msg = `✅ تم تحديث ${updated} صنف`;
+          else msg = `✅ تم معالجة ${toImport.length} صنف`;
+          if (skipped > 0) msg += ` · ${skipped} لم يتغير`;
+          showImportResultToast({ created, updated, skipped, total: toImport.length });
           products = await api('/products').catch(() => products);
           try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
           renderProducts();
@@ -27168,7 +27732,7 @@ function importProductsExcel(event) {
       if (!isAdmin()) {
         openImportOtpFlow(items.length, items.map(i => i.name), doImport);
       } else {
-        await doImport();
+        openAdminImportConfirm(items, doImport);
       }
     } catch (err) { toast('خطأ في قراءة الملف: ' + err.message, true); }
   };
@@ -30810,6 +31374,149 @@ function closeImportOtpModal() {
   qs('#import-otp-modal').classList.remove('active');
 }
 
+/* ── Admin Import Confirm Preview ── */
+let _adminImportCtx = { items: [], onConfirm: null, itemMeta: [] };
+
+function _importUpdateSelectedCount() {
+  const checked = qsa('#import-confirm-list input[type=checkbox]:checked').length;
+  const total = qsa('#import-confirm-list input[type=checkbox]').length;
+  const countEl = qs('#import-selected-count');
+  if (countEl) countEl.textContent = `محدد: ${checked} من ${total}`;
+  const btn = qs('#import-confirm-btn');
+  if (btn) {
+    btn.disabled = checked === 0;
+    btn.style.opacity = checked === 0 ? '0.5' : '1';
+    btn.innerHTML = `<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;width:1em;height:1em;margin-left:4px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> استيراد المحدد (${checked} صنف)`;
+  }
+}
+
+function importSelectAll(mode) {
+  const checkboxes = qsa('#import-confirm-list input[type=checkbox]');
+  checkboxes.forEach(cb => {
+    if (mode === 'all') cb.checked = true;
+    else if (mode === 'none') cb.checked = false;
+    else if (mode === 'new') cb.checked = cb.dataset.status === 'new';
+    else if (mode === 'update') cb.checked = cb.dataset.status === 'update';
+    else if (mode === 'match') cb.checked = cb.dataset.status === 'match';
+  });
+  _importUpdateSelectedCount();
+}
+
+function openAdminImportConfirm(items, onConfirm) {
+  const productMap = {};
+  (products || []).forEach(p => {
+    const code = String(p.code || '').trim().toLowerCase();
+    const name = String(p.name || '').trim().toLowerCase();
+    if (code) productMap[code] = p;
+    if (name && !productMap[name]) productMap[name] = p;
+  });
+
+  let newCount = 0, updateCount = 0, matchCount = 0;
+  const itemMeta = items.map((item, idx) => {
+    const code = String(item.code || '').trim().toLowerCase();
+    const name = String(item.name || '').trim().toLowerCase();
+    const existing = productMap[code] || productMap[name];
+    if (!existing) { newCount++; return { ...item, _idx: idx, _status: 'new', _existing: null, _diffs: [] }; }
+
+    // compare fields
+    const diffs = [];
+    const chk = (label, oldVal, newVal) => {
+      const o = String(oldVal ?? '').trim();
+      const n = String(newVal ?? '').trim();
+      if (o !== n) diffs.push({ label, old: o, new: n });
+    };
+    chk('سعر البيع', existing.sellPrice, item.sellPrice);
+    chk('سعر الشراء', existing.buyPrice, item.buyPrice);
+    chk('الاسم', existing.name, item.name);
+    chk('الحد الأدنى', existing.minStock, item.minStock);
+    chk('المورد', existing.supplier, item.supplier);
+
+    if (diffs.length === 0) matchCount++;
+    else updateCount++;
+    return { ...item, _idx: idx, _status: diffs.length === 0 ? 'match' : 'update', _existing: existing, _diffs: diffs };
+  });
+
+  _adminImportCtx = { items, onConfirm, itemMeta };
+
+  const rows = itemMeta.map((item) => {
+    if (item._status === 'new') {
+      return `<label style="display:grid;grid-template-columns:28px 80px 1fr auto auto;gap:6px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--border);font-size:.8rem;cursor:pointer;">
+        <input type="checkbox" data-idx="${item._idx}" data-status="new" checked onchange="_importUpdateSelectedCount()" style="width:15px;height:15px;cursor:pointer">
+        <span style="color:var(--muted);font-family:monospace">${esc(item.code)}</span>
+        <span style="font-weight:500">${esc(item.name)}</span>
+        <span style="color:var(--muted);white-space:nowrap">${item.sellPrice ? fmtN(item.sellPrice) + ' ج' : '—'}</span>
+        <span style="background:#d1fae5;color:#065f46;border-radius:4px;padding:1px 7px;font-size:.74rem;font-weight:600;white-space:nowrap">جديد ✦</span>
+      </label>`;
+    }
+
+    if (item._status === 'match') {
+      return `<label style="display:grid;grid-template-columns:28px 80px 1fr auto auto;gap:6px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--border);font-size:.8rem;cursor:pointer;background:var(--bg-alt);">
+        <input type="checkbox" data-idx="${item._idx}" data-status="match" onchange="_importUpdateSelectedCount()" style="width:15px;height:15px;cursor:pointer">
+        <span style="color:var(--muted);font-family:monospace">${esc(item.code)}</span>
+        <span style="color:var(--muted)">${esc(item.name)}</span>
+        <span style="color:var(--muted);white-space:nowrap">${item.sellPrice ? fmtN(item.sellPrice) + ' ج' : '—'}</span>
+        <span style="background:#e0f2fe;color:#0369a1;border-radius:4px;padding:1px 7px;font-size:.74rem;font-weight:600;white-space:nowrap">✓ مطابق</span>
+      </label>`;
+    }
+
+    // status === 'update' — show diffs
+    const diffsHtml = item._diffs.map(d =>
+      `<div style="display:flex;gap:6px;align-items:center;font-size:.72rem;padding:1px 0">
+        <span style="color:var(--muted);min-width:52px">${esc(d.label)}</span>
+        <span style="color:#dc2626;text-decoration:line-through;white-space:nowrap">${esc(d.old || '—')}</span>
+        <span style="color:var(--muted)">←</span>
+        <span style="color:#15803d;font-weight:600;white-space:nowrap">${esc(d.new || '—')}</span>
+      </div>`
+    ).join('');
+
+    return `<div style="border-bottom:1px solid var(--border);background:#fffbeb;">
+      <label style="display:grid;grid-template-columns:28px 80px 1fr auto auto;gap:6px;align-items:center;padding:7px 10px 4px;font-size:.8rem;cursor:pointer;">
+        <input type="checkbox" data-idx="${item._idx}" data-status="update" checked onchange="_importUpdateSelectedCount()" style="width:15px;height:15px;cursor:pointer">
+        <span style="color:var(--muted);font-family:monospace">${esc(item.code)}</span>
+        <span style="font-weight:500">${esc(item.name)}</span>
+        <span style="color:var(--muted);white-space:nowrap">${item.sellPrice ? fmtN(item.sellPrice) + ' ج' : '—'}</span>
+        <span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 7px;font-size:.74rem;font-weight:600;white-space:nowrap">تحديث ✎</span>
+      </label>
+      <div style="padding:0 10px 7px 42px">${diffsHtml}</div>
+    </div>`;
+  });
+
+  const summaryEl = qs('#import-confirm-summary');
+  summaryEl.innerHTML = [
+    `<div style="flex:1;background:#d1fae5;border-radius:8px;padding:8px 12px;text-align:center"><div style="font-size:1.4rem;font-weight:700;color:#065f46">${newCount}</div><div style="font-size:.75rem;color:#065f46">جديد</div></div>`,
+    `<div style="flex:1;background:#fef3c7;border-radius:8px;padding:8px 12px;text-align:center"><div style="font-size:1.4rem;font-weight:700;color:#92400e">${updateCount}</div><div style="font-size:.75rem;color:#92400e">تحديث</div></div>`,
+    matchCount ? `<div style="flex:1;background:#e0f2fe;border-radius:8px;padding:8px 12px;text-align:center"><div style="font-size:1.4rem;font-weight:700;color:#0369a1">${matchCount}</div><div style="font-size:.75rem;color:#0369a1">مطابق</div></div>` : '',
+    `<div style="flex:1;background:var(--bg-alt,var(--bg));border-radius:8px;padding:8px 12px;text-align:center"><div style="font-size:1.4rem;font-weight:700">${items.length}</div><div style="font-size:.75rem;color:var(--muted)">الإجمالي</div></div>`,
+  ].join('');
+
+  const listEl = qs('#import-confirm-list');
+  listEl.innerHTML = `<div style="display:grid;grid-template-columns:28px 80px 1fr auto auto;gap:6px;padding:6px 10px;background:var(--bg-alt,var(--bg));font-size:.75rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)">
+    <span></span><span>الكود</span><span>الاسم</span><span>سعر البيع</span><span>الحالة</span>
+  </div>` + rows.join('');
+
+  _importUpdateSelectedCount();
+  qs('#import-confirm-modal').classList.add('active');
+}
+
+function closeImportConfirmModal() {
+  qs('#import-confirm-modal').classList.remove('active');
+  _adminImportCtx = { items: [], onConfirm: null, itemMeta: [] };
+}
+
+async function confirmAdminImport() {
+  const btn = qs('#import-confirm-btn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+
+  const selectedIdxs = new Set(
+    Array.from(qsa('#import-confirm-list input[type=checkbox]:checked')).map(cb => Number(cb.dataset.idx))
+  );
+  const selectedItems = (_adminImportCtx.items || []).filter((_, idx) => selectedIdxs.has(idx));
+
+  const cb = _adminImportCtx.onConfirm;
+  closeImportConfirmModal();
+  if (cb) await cb(selectedItems);
+}
+
 async function resendImportOtp() {
   try {
     const res = await api('/discount-otp/import-products-request', {
@@ -31178,7 +31885,7 @@ function renderDiscAuditLog() {
       <td style="padding:7px 10px;font-weight:600">${esc(e.employee)}</td>
       <td style="padding:7px 10px"><span style="background:${col}1a;color:${col};border-radius:4px;padding:2px 7px;font-size:.72rem;font-weight:700">${esc(lbl)}</span></td>
       <td style="padding:7px 10px;color:var(--text)">${esc(codePart)}</td>
-      <td style="padding:7px 10px;text-align:left;direction:ltr;font-variant-numeric:tabular-nums">${e.amount > 0 ? fmtJ(e.amount) + ' ج' : '—'}</td>
+      <td style="padding:7px 10px;text-align:left;direction:ltr;font-variant-numeric:tabular-nums">${e.amount > 0 ? fmtJ(e.amount) : '—'}</td>
       <td style="padding:7px 10px;font-size:.75rem;color:var(--muted)">${esc(e.reason || '—')}</td>
     </tr>`;
   }).join('');
@@ -32059,7 +32766,7 @@ function renderSettings() {
     <tr><td>${esc(c.name)}</td>
       <td><input type="number" value="${c.cairo || c.cairoPrice || 0}" style="width:100px" onchange="updateShipPrice(${i},'cairo',this.value)"></td>
       <td><input type="number" value="${c.gov || c.govPrice || 0}" style="width:100px" onchange="updateShipPrice(${i},'gov',this.value)"></td>
-      <td><button class="btn-icon btn-danger" onclick="removeShipCompany(${i})">✕</button></td>
+      <td><button class="btn-icon btn-danger" onclick="removeShipCompany(${i})"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button></td>
     </tr>`).join('') : '<tr><td colspan="4" class="empty-state">لا توجد شركات شحن</td></tr>';
   qs('#set-dark').checked = document.body.classList.contains('dark-mode');
   const vsCb = qs('#set-vault-sound'); if (vsCb) vsCb.checked = !(window.txNotifier?.isMuted?.());
@@ -32169,7 +32876,7 @@ function renderDiscountCodes() {
         <div style="display:flex;gap:6px;align-items:center">
           <button class="btn btn-outline btn-sm" style="font-size:.75rem;padding:4px 8px" onclick="openEditDiscountCodeModal('${esc(c.id)}')">تعديل</button>
           <button class="btn btn-sm" style="font-size:.75rem;padding:4px 8px;background:${c.active ? 'rgba(245,158,11,.1)' : 'rgba(16,185,129,.1)'};color:${c.active ? '#d97706' : '#059669'};border:1px solid ${c.active ? 'rgba(245,158,11,.25)' : 'rgba(16,185,129,.25)'}" onclick="toggleDiscountCodeActive('${esc(c.id)}',${!c.active})">${c.active ? 'تعطيل' : 'تفعيل'}</button>
-          <button class="btn-icon btn-danger" style="font-size:.82rem" onclick="deleteDiscountCode('${esc(c.id)}','${esc(c.code)}')" title="حذف">✕</button>
+          <button class="btn-icon btn-danger" onclick="deleteDiscountCode('${esc(c.id)}','${esc(c.code)}')" title="حذف"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>
         </div>
       </td>
     </tr>`;
@@ -32207,7 +32914,7 @@ function renderDiscountBundles() {
       </td>
       <td style="padding:10px 14px"><div style="display:flex;flex-wrap:wrap;gap:4px">${productsCell}</div></td>
       <td style="padding:10px 14px">
-        ${codeObj ? `<span style="font-weight:700;font-size:.82rem;color:var(--primary)">${esc(codeObj.code)}</span><br><span style="font-size:.72rem;color:var(--muted)">${codeObj.type==='percent'?codeObj.value+'%':fmtJ(codeObj.value)+' ج'}</span>` : `<span style="color:var(--muted);font-size:.78rem">—</span>`}
+        ${codeObj ? `<span style="font-weight:700;font-size:.82rem;color:var(--primary)">${esc(codeObj.code)}</span><br><span style="font-size:.72rem;color:var(--muted)">${codeObj.type==='percent'?codeObj.value+'%':fmtJ(codeObj.value)}</span>` : `<span style="color:var(--muted);font-size:.78rem">—</span>`}
         ${partialCode ? `<div style="font-size:.72rem;color:var(--muted);margin-top:2px">جزئي: ${esc(partialCode.code)}</div>` : ''}
       </td>
       <td style="padding:10px 14px;text-align:center">
@@ -32223,7 +32930,7 @@ function renderDiscountBundles() {
         <div style="display:flex;gap:6px;align-items:center">
           <button class="btn btn-outline btn-sm" style="font-size:.75rem;padding:4px 8px" onclick="openEditBundleModal('${esc(b.id)}')">تعديل</button>
           <button class="btn btn-sm" style="font-size:.75rem;padding:4px 8px;background:${b.active?'rgba(245,158,11,.1)':'rgba(16,185,129,.1)'};color:${b.active?'#d97706':'#059669'};border:1px solid ${b.active?'rgba(245,158,11,.25)':'rgba(16,185,129,.25)'}" onclick="toggleBundleActive('${esc(b.id)}',${!b.active})">${b.active?'تعطيل':'تفعيل'}</button>
-          <button class="btn-icon btn-danger" style="font-size:.82rem" onclick="deleteDiscountBundle('${esc(b.id)}','${esc(b.name)}')" title="حذف">✕</button>
+          <button class="btn-icon btn-danger" onclick="deleteDiscountBundle('${esc(b.id)}','${esc(b.name)}')" title="حذف"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>
         </div>
       </td>
     </tr>`;
@@ -32382,7 +33089,7 @@ function _getBundleFormData() {
 function _buildBundleCodeOptions(selectedId) {
   const codes = (settings.discountCodes || []).filter(c => c.active);
   return `<option value="">— اختر كود الخصم —</option>` + codes.map(c =>
-    `<option value="${esc(c.id)}" ${selectedId===c.id?'selected':''}>${esc(c.code)} (${c.type==='percent'?c.value+'%':fmtJT(c.value)+' ج'})</option>`
+    `<option value="${esc(c.id)}" ${selectedId===c.id?'selected':''}>${esc(c.code)} (${c.type==='percent'?c.value+'%':'EGP '+fmtJT(c.value)})</option>`
   ).join('');
 }
 
@@ -33063,6 +33770,280 @@ async function restoreBackupNow() {
     toast((currentLang==='en'?'Error: ':'خطأ: ') + (e.message || (currentLang==='en'?'Restore failed':'فشل في الاسترجاع')), true);
   }
 }
+
+// ── Selective Restore ───────────────────────────────────────────────────────
+const SR_SECTION_ICONS = {
+  transactions:   `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>`,
+  products:       `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`,
+  customers:      `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>`,
+  expenses:       `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`,
+  vault:          `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="3"/></svg>`,
+  vault_balances: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>`,
+  other:          `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
+};
+
+const SR_SECTIONS = [
+  { key:'transactions',   label:'الحركات والمرتجعات', safe: false },
+  { key:'products',       label:'المنتجات والمخزون',  safe: false },
+  { key:'customers',      label:'العملاء والموردون',   safe: true  },
+  { key:'expenses',       label:'المصروفات',           safe: true  },
+  { key:'vault',          label:'سجلات الخزنة',       safe: false },
+  { key:'vault_balances', label:'أرصدة الخزنة',       safe: false },
+  { key:'other',          label:'بيانات أخرى',        safe: true  },
+];
+
+function showSelectiveRestoreModal() {
+  const filename = qs('#backup-select')?.value;
+  if (!filename) { toast('يجب اختيار نسخة احتياطية أولاً', true); return; }
+  qs('#sr-filename-label').textContent = filename;
+  qs('#sr-password-input').value = '';
+  qs('#sr-step-password').style.display = 'block';
+  qs('#sr-step-select').style.display = 'none';
+  const overlay = qs('#selective-restore-overlay');
+  overlay.style.display = 'flex';
+}
+
+function closeSelectiveRestoreModal() {
+  qs('#selective-restore-overlay').style.display = 'none';
+}
+
+function srDiff(b, c) {
+  const d = b - c;
+  if (d === 0) return `<span style="color:var(--muted)">لا فرق</span>`;
+  return d > 0
+    ? `<span style="color:#10b981">+${fmtN(d)} سجل</span>`
+    : `<span style="color:var(--red)">${fmtN(d)} سجل</span>`;
+}
+function srStatRow(label, bVal, cVal, isMoney) {
+  const fmt  = v => (isMoney ? fmtJT(v) : fmtN(v));
+  const bStr = bVal != null ? fmt(bVal) : '—';
+  const cStr = cVal != null ? fmt(cVal) : '—';
+  const diff = (bVal != null && cVal != null && bVal !== cVal)
+    ? `<span style="color:${bVal>cVal?'#10b981':'var(--red)'}"> (${bVal>cVal?'+':''}${isMoney?fmtJT(bVal-cVal):fmtN(bVal-cVal)})</span>`
+    : '';
+  return `<tr><td style="padding:3px 6px;color:var(--muted);white-space:nowrap">${label}</td>
+    <td style="padding:3px 6px;text-align:center;font-weight:600;color:var(--blue)">${bStr}</td>
+    <td style="padding:3px 6px;text-align:center;font-weight:600;color:var(--primary)">${cStr}${diff}</td></tr>`;
+}
+function srDetailsTable(rows) {
+  return `<table style="width:100%;border-collapse:collapse;font-size:.7rem;margin-top:8px">
+    <thead><tr>
+      <th style="padding:3px 6px;text-align:right;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)">البيان</th>
+      <th style="padding:3px 6px;text-align:center;color:var(--blue);font-weight:600;border-bottom:1px solid var(--border)">النسخة</th>
+      <th style="padding:3px 6px;text-align:center;color:var(--primary);font-weight:600;border-bottom:1px solid var(--border)">الحالي</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+}
+function srBuildDetails(key, p) {
+  const b = p.backupStats||{}, c = p.currentStats||{};
+  let r = '';
+  if (key==='transactions') {
+    r+=srStatRow('مبيعات (عدد)',b.salesCount,c.salesCount,false);
+    r+=srStatRow('إجمالي المبيعات',b.salesTotal,c.salesTotal,true);
+    r+=srStatRow('مشتريات (عدد)',b.purchaseCount,c.purchaseCount,false);
+    r+=srStatRow('إجمالي المشتريات',b.purchaseTotal,c.purchaseTotal,true);
+    r+=srStatRow('مرتجعات',b.returnCount,c.returnCount,false);
+    r+=srStatRow('ملغاة',b.cancelledCount,c.cancelledCount,false);
+    r+=srStatRow('معلقة الدفع',b.pendingPayment,c.pendingPayment,false);
+    r+=srStatRow('أعلى قيمة بيع',b.maxSale,c.maxSale,true);
+  } else if (key==='products') {
+    r+=srStatRow('إجمالي الوحدات',b.totalUnits,c.totalUnits,false);
+    r+=srStatRow('نفد من المخزون',b.outOfStock,c.outOfStock,false);
+    r+=srStatRow('مخزون منخفض',b.lowStock,c.lowStock,false);
+    r+=srStatRow('التصنيفات',b.categories,c.categories,false);
+  } else if (key==='customers') {
+    r+=srStatRow('عملاء',b.clientCount,c.clientCount,false);
+    r+=srStatRow('موردون',b.supplierCount,c.supplierCount,false);
+    r+=srStatRow('عملاء بديون',b.clientsWithDebt,c.clientsWithDebt,false);
+    r+=srStatRow('إجمالي ديون العملاء',b.totalClientDebt,c.totalClientDebt,true);
+    r+=srStatRow('إجمالي ديون الموردين',b.totalSupplierDebt,c.totalSupplierDebt,true);
+  } else if (key==='expenses') {
+    r+=srStatRow('إجمالي المعتمدة',b.total,c.total,true);
+    r+=srStatRow('معتمدة',b.approvedCount,c.approvedCount,false);
+    r+=srStatRow('معلقة',b.pendingCount,c.pendingCount,false);
+    r+=srStatRow('أعلى مصروف',b.maxExpense,c.maxExpense,true);
+    r+=srStatRow('التصنيفات',b.categories,c.categories,false);
+  } else if (key==='vault') {
+    r+=srStatRow('سجلات واردة',b.inflowCount,c.inflowCount,false);
+    r+=srStatRow('إجمالي الوارد',b.inflowTotal,c.inflowTotal,true);
+    r+=srStatRow('سجلات صادرة',b.outflowCount,c.outflowCount,false);
+    r+=srStatRow('إجمالي الصادر',b.outflowTotal,c.outflowTotal,true);
+    r+=srStatRow('الصافي',b.net,c.net,true);
+  } else if (key==='other') {
+    const cols={complaints:'شكاوى',followups:'متابعات',tags:'وسوم',shopifyorders:'طلبات Shopify',mentions:'إشعارات'};
+    for (const [col,lbl] of Object.entries(cols)) { const bd=(p.details||{})[col]||{}; r+=srStatRow(lbl,bd.backup??0,bd.current??0,false); }
+  }
+  return r ? srDetailsTable(r) : '';
+}
+function srBuildVaultDetails(p) {
+  const bd=p.backupDetails||{}, cd=p.currentDetails||{};
+  return srDetailsTable(
+    srStatRow('كاش',bd.vaultCash,cd.vaultCash,true)+
+    srStatRow('فودافون كاش',bd.vaultVodafone,cd.vaultVodafone,true)+
+    srStatRow('Instapay',bd.vaultInstapay,cd.vaultInstapay,true)+
+    srStatRow('تحويل بنكي',bd.vaultBank,cd.vaultBank,true)
+  );
+}
+function srToggleDetails(key) {
+  const el=qs(`#sr-details-${key}`), btn=qs(`#sr-expand-${key}`);
+  if (!el) return;
+  const open = el.style.display!=='none';
+  el.style.display    = open?'none':'block';
+  btn.style.transform = open?'rotate(0deg)':'rotate(180deg)';
+}
+
+async function srFetchPreview() {
+  const filename = qs('#backup-select')?.value;
+  const password = qs('#sr-password-input').value.trim();
+  if (!password) { toast('أدخل كلمة السر', true); return; }
+
+  const btn   = qs('#sr-preview-btn');
+  const input = qs('#sr-password-input');
+  btn.disabled = true; btn.style.opacity = '.6';
+  input.style.borderColor = 'var(--border)';
+
+  try {
+    const result = await api('/settings/preview-selective-restore', {
+      method: 'POST',
+      body: JSON.stringify({ filename, password })
+    });
+
+    if (!result.success) {
+      input.style.borderColor = 'var(--red)';
+      toast(result.message || 'فشل في جلب المعاينة', true);
+      return;
+    }
+
+    qs('#sr-step-password').dataset.password = password;
+
+    const preview    = result.preview;
+    const backupDate = result.backupTimestamp
+      ? new Date(result.backupTimestamp).toLocaleString('ar-EG') : '—';
+
+    let html = `
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:10px;padding:8px 11px;background:var(--bg-alt);border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        تاريخ النسخة: <strong style="color:var(--text)">${backupDate}</strong>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px">`;
+
+    for (const s of SR_SECTIONS) {
+      const p = preview[s.key] || {};
+      const safeTag = s.safe
+        ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:.62rem;background:#d1fae5;color:#065f46;padding:2px 6px;border-radius:4px;font-weight:600"><svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="#065f46" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>آمن</span>`
+        : `<span style="display:inline-flex;align-items:center;gap:3px;font-size:.62rem;background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:4px;font-weight:600"><svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="#92400e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>تنبيه</span>`;
+
+      const icon = SR_SECTION_ICONS[s.key] || '';
+      let summaryLine = '', dateLine = '', detailsHtml = '';
+
+      if (s.key === 'vault_balances') {
+        const bT = p.backupVaultTotal  != null ? fmtJT(p.backupVaultTotal)  : '—';
+        const cT = p.currentVaultTotal != null ? fmtJT(p.currentVaultTotal) : '—';
+        const same = p.backupVaultTotal === p.currentVaultTotal;
+        const diffMark = same
+          ? `<span style="color:var(--muted)">متطابق</span>`
+          : `<span style="color:${p.backupVaultTotal > p.currentVaultTotal ? '#10b981':'var(--red)'}">مختلف</span>`;
+        summaryLine = `النسخة: <strong style="color:var(--blue)">${bT}</strong> &nbsp;|&nbsp; الحالي: <strong style="color:var(--primary)">${cT}</strong> &nbsp;|&nbsp; ${diffMark}`;
+        detailsHtml = srBuildVaultDetails(p);
+      } else {
+        const bk = p.backup  ?? 0;
+        const cu = p.current ?? 0;
+        summaryLine = `النسخة: <strong style="color:var(--blue)">${fmtN(bk)} سجل</strong> &nbsp;|&nbsp; الحالي: <strong style="color:var(--primary)">${fmtN(cu)} سجل</strong> &nbsp;|&nbsp; ${srDiff(bk, cu)}`;
+        if (p.backupLatest || p.currentLatest) {
+          dateLine = `<div style="font-size:.68rem;color:var(--muted);margin-top:2px">
+            آخر سجل في النسخة: <strong>${p.backupLatest||'—'}</strong> &nbsp;|&nbsp; آخر سجل حالي: <strong>${p.currentLatest||'—'}</strong>
+          </div>`;
+        }
+        detailsHtml = srBuildDetails(s.key, p);
+      }
+
+      html += `
+        <div style="border:1px solid var(--border);border-radius:9px;background:var(--bg-alt);overflow:hidden" id="sr-card-${s.key}"
+             onmouseenter="this.style.borderColor='var(--primary)'" onmouseleave="this.style.borderColor='var(--border)'">
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;margin:0">
+            <input type="checkbox" value="${s.key}" class="sr-section-cb" onchange="srCheckConflict()" style="width:16px;height:16px;accent-color:var(--primary);flex-shrink:0">
+            <span style="color:var(--muted);flex-shrink:0;display:flex">${icon}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:3px;display:flex;align-items:center;gap:5px">${s.label} ${safeTag}</div>
+              <div style="font-size:.72rem;color:var(--muted)">${summaryLine}</div>
+              ${dateLine}
+            </div>
+            ${detailsHtml ? `<button type="button" id="sr-expand-${s.key}" onclick="event.preventDefault();srToggleDetails('${s.key}')"
+              style="background:transparent;border:none;cursor:pointer;color:var(--muted);padding:4px;display:flex;align-items:center;flex-shrink:0;transition:transform .2s">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>` : ''}
+          </label>
+          ${detailsHtml ? `<div id="sr-details-${s.key}" style="display:none;padding:0 12px 10px;border-top:1px solid var(--border)">${detailsHtml}</div>` : ''}
+        </div>`;
+    }
+
+    html += `</div>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-alt)">
+        <input type="checkbox" id="sr-select-all" onchange="srToggleAll(this.checked)" style="width:14px;height:14px;accent-color:var(--primary)">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <label for="sr-select-all" style="font-size:.77rem;color:var(--muted);cursor:pointer">تحديد الكل</label>
+      </div>`;
+
+    qs('#sr-preview-table').innerHTML = html;
+    qs('#sr-step-password').style.display = 'none';
+    qs('#sr-step-select').style.display = 'block';
+    qs('#sr-conflict-warning').style.display = 'none';
+  } catch(e) {
+    input.style.borderColor = 'var(--red)';
+    toast(e.message || 'كلمة السر خاطئة', true);
+  } finally {
+    btn.disabled = false; btn.style.opacity = '';
+  }
+}
+
+function srToggleAll(checked) {
+  qsa('.sr-section-cb').forEach(cb => cb.checked = checked);
+  srCheckConflict();
+}
+
+function srCheckConflict() {
+  const checked = [...qsa('.sr-section-cb:checked')].map(c => c.value);
+  const hasTransactions = checked.includes('transactions');
+  const hasProducts = checked.includes('products');
+  const warn = hasTransactions && !hasProducts;
+  qs('#sr-conflict-warning').style.display = warn ? 'block' : 'none';
+}
+
+async function srExecuteRestore() {
+  const sections = [...qsa('.sr-section-cb:checked')].map(c => c.value);
+  if (!sections.length) { toast('اختر قسماً واحداً على الأقل', true); return; }
+
+  const filename = qs('#backup-select')?.value;
+  const password = qs('#sr-step-password').dataset.password;
+
+  const confirmed = await showConfirm(
+    `سيتم استرجاع ${sections.length} قسم من النسخة الاحتياطية — هذا سيحل محل البيانات الحالية في هذه الأقسام`,
+    { title: 'تأكيد الاسترجاع الانتقائي', icon: 'danger', danger: true, confirmLabel: 'استرجاع' }
+  );
+  if (!confirmed) return;
+
+  const btn = qs('#sr-execute-btn');
+  btn.disabled = true; btn.style.opacity = '.6';
+
+  try {
+    const result = await api('/settings/selective-restore', {
+      method: 'POST',
+      body: JSON.stringify({ filename, password, sections })
+    });
+
+    if (result.success) {
+      toast('✅ ' + result.message, false);
+      closeSelectiveRestoreModal();
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      toast(result.message || 'فشل في الاسترجاع', true);
+    }
+  } catch(e) {
+    toast('خطأ: ' + (e.message || 'فشل في الاسترجاع'), true);
+  } finally {
+    btn.disabled = false; btn.style.opacity = '';
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────
 
 async function downloadBackupNow() {
   const select = qs('#backup-select');
@@ -39656,6 +40637,169 @@ function clearPickupSelection() {}
 let _shopifyOrders = [];
 let _shopifyTab = 'pending';
 let _shopifyStatusFilter = '';
+// ── Shopify Calendar Date Filter ──
+let _shopifyDateFilter = { from: null, to: null };  // Date objects or null
+let _spCalView = { year: new Date().getFullYear(), month: new Date().getMonth() };
+let _spCalPending = { from: null, to: null };  // pending selection before Apply
+let _spActivePreset = 'custom';
+const _spMN = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+const _spDOW = ['ح','ن','ث','ر','خ','ج','س'];
+
+function spToggleDatePanel(e) {
+  e.stopPropagation();
+  const panel = qs('#sp-date-panel');
+  const chevron = qs('#sp-df-chevron');
+  const isOpen = panel.classList.toggle('open');
+  if (chevron) chevron.style.transform = isOpen ? 'rotate(180deg)' : '';
+  if (isOpen) {
+    // init view to current filter or today
+    const ref = _shopifyDateFilter.from || new Date();
+    _spCalView = { year: ref.getFullYear(), month: ref.getMonth() };
+    _spCalPending = { from: _shopifyDateFilter.from, to: _shopifyDateFilter.to };
+    _spRenderCal();
+    setTimeout(() => document.addEventListener('click', spCloseDatePanel, { once: true }), 0);
+  }
+}
+function spCloseDatePanel() {
+  qs('#sp-date-panel')?.classList.remove('open');
+  const chevron = qs('#sp-df-chevron');
+  if (chevron) chevron.style.transform = '';
+}
+function spClearDateFilter(e) {
+  e && e.stopPropagation();
+  _shopifyDateFilter = { from: null, to: null };
+  _spCalPending = { from: null, to: null };
+  _spActivePreset = 'custom';
+  _spUpdateTriggerLabel();
+  renderShopifyOrders();
+}
+function _spUpdateTriggerLabel() {
+  const lbl = qs('#sp-df-label-text');
+  const clr = qs('#sp-date-clear');
+  const trigger = qs('#sp-date-trigger');
+  const { from, to } = _shopifyDateFilter;
+  let text = 'تصفية بالتاريخ';
+  const hasFilter = from !== null;
+  if (from) {
+    const fStr = `${from.getDate()} ${_spMN[from.getMonth()]}`;
+    if (!to || _spSameDay(from, to)) {
+      text = fStr;
+    } else {
+      const tStr = `${to.getDate()} ${_spMN[to.getMonth()]}${to.getFullYear() !== from.getFullYear() ? ' '+to.getFullYear() : ''}`;
+      text = `${fStr} – ${tStr}`;
+    }
+  }
+  if (lbl) lbl.textContent = text;
+  if (clr) clr.style.display = hasFilter ? 'inline-flex' : 'none';
+  if (trigger) trigger.classList.toggle('sp-df-active', hasFilter);
+}
+function _spSameDay(a, b) {
+  return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+}
+function _spStartOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+
+function _spRenderCal() {
+  const title = qs('#sp-cal-title');
+  const grid = qs('#sp-cal-grid');
+  if (!title || !grid) return;
+  const { year, month } = _spCalView;
+  title.textContent = `${_spMN[month]} ${year}`;
+
+  // Build days-with-orders set for dot indicators
+  const orderDays = new Set();
+  _shopifyOrders.forEach(o => {
+    const d = new Date(o.shopifyCreatedAt || o.createdAt);
+    if (!isNaN(d) && d.getFullYear()===year && d.getMonth()===month)
+      orderDays.add(d.getDate());
+  });
+
+  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = new Date();
+  const { from, to } = _spCalPending;
+
+  // DOW headers (Sun–Sat)
+  let html = _spDOW.map(d => `<div class="sp-cal-dow">${d}</div>`).join('');
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) html += `<button class="sp-cal-day sp-cal-other" disabled></button>`;
+  // Day cells
+  for (let d = 1; d <= daysInMonth; d++) {
+    const thisDate = new Date(year, month, d);
+    const isToday = _spSameDay(thisDate, today);
+    const isSel = (from && _spSameDay(thisDate, from)) || (to && _spSameDay(thisDate, to));
+    const inRange = from && to && thisDate > from && thisDate < to;
+    const hasDot = orderDays.has(d);
+    let cls = 'sp-cal-day';
+    if (isToday) cls += ' sp-cal-today';
+    if (isSel) cls += ' sp-cal-sel';
+    if (inRange) cls += ' sp-cal-in-range';
+    if (hasDot) cls += ' sp-cal-has-orders';
+    html += `<button class="${cls}" onclick="spCalDayClick(${d})" type="button">${d}</button>`;
+  }
+  grid.innerHTML = html;
+
+  // Update apply button label
+  const apply = qs('#sp-cal-apply');
+  if (apply) {
+    if (from && to && !_spSameDay(from,to)) apply.textContent = `تطبيق: ${from.getDate()} ${_spMN[from.getMonth()]} – ${to.getDate()} ${_spMN[to.getMonth()]}`;
+    else if (from) apply.textContent = `تطبيق: ${from.getDate()} ${_spMN[from.getMonth()]}`;
+    else apply.textContent = 'تطبيق';
+  }
+}
+
+function spCalNav(dir) {
+  _spCalView.month += dir;
+  if (_spCalView.month > 11) { _spCalView.month = 0; _spCalView.year++; }
+  if (_spCalView.month < 0)  { _spCalView.month = 11; _spCalView.year--; }
+  _spRenderCal();
+}
+
+function spCalDayClick(d) {
+  const clicked = new Date(_spCalView.year, _spCalView.month, d);
+  const { from, to } = _spCalPending;
+  if (!from || (from && to)) {
+    // start new range
+    _spCalPending = { from: clicked, to: null };
+    _spActivePreset = 'custom';
+  } else {
+    // complete range
+    if (clicked < from) _spCalPending = { from: clicked, to: from };
+    else if (_spSameDay(clicked, from)) _spCalPending = { from: clicked, to: clicked };
+    else _spCalPending = { from, to: clicked };
+    _spActivePreset = 'custom';
+  }
+  // update preset highlights
+  document.querySelectorAll('.sp-preset-item').forEach(b => b.classList.toggle('active', b.dataset.preset === _spActivePreset));
+  _spRenderCal();
+}
+
+function spCalApply() {
+  _shopifyDateFilter = { from: _spCalPending.from, to: _spCalPending.to || _spCalPending.from };
+  _spUpdateTriggerLabel();
+  renderShopifyOrders();
+  spCloseDatePanel();
+}
+
+function spPreset(key, btn) {
+  _spActivePreset = key;
+  document.querySelectorAll('.sp-preset-item').forEach(b => b.classList.toggle('active', b === btn));
+  const now = new Date();
+  const tod = _spStartOfDay(now);
+  let from, to;
+  if (key === 'today')      { from = tod; to = tod; }
+  else if (key === 'yesterday') { from = new Date(tod.getFullYear(),tod.getMonth(),tod.getDate()-1); to = new Date(from); }
+  else if (key === 'this-week') { from = new Date(tod); from.setDate(tod.getDate()-tod.getDay()); to = tod; }
+  else if (key === 'last-week') { const s=new Date(tod); s.setDate(tod.getDate()-tod.getDay()-7); const e=new Date(s); e.setDate(s.getDate()+6); from=s; to=e; }
+  else if (key === 'this-month') { from = new Date(now.getFullYear(),now.getMonth(),1); to = tod; }
+  else if (key === 'last-month') { from = new Date(now.getFullYear(),now.getMonth()-1,1); to = new Date(now.getFullYear(),now.getMonth(),0); }
+  else if (key === 'this-year') { from = new Date(now.getFullYear(),0,1); to = tod; }
+  else { return; } // custom: just highlight, no auto-apply
+  _spCalPending = { from, to };
+  _spCalView = { year: from.getFullYear(), month: from.getMonth() };
+  _spRenderCal();
+  // auto-apply presets immediately
+  spCalApply();
+}
 
 async function recalcShopifyOrders() {
   if (!confirm('سيتم إعادة حساب إجماليات كل الأوردرات المعلقة بأسعار النظام الفعلية. متأكد؟')) return;
@@ -39687,6 +40831,7 @@ async function loadShopifyOrders() {
 function switchShopifyTab(tab) {
   _shopifyTab = tab;
   _shopifyStatusFilter = '';
+  _shopifyDateFilter = { from: null, to: null };
   qs('#shopify-tab-pending')?.classList.toggle('active-tab', tab === 'pending');
   qs('#shopify-tab-all')?.classList.toggle('active-tab', tab === 'all');
   renderShopifyOrders();
@@ -39716,6 +40861,7 @@ function switchShopifyStatusFilter(val, btn) {
 
 function renderShopifyOrders() {
   const wrap = qs('#shopify-orders-table-wrap');
+  const mobileList = qs('#sp-mobile-list');
   if (!wrap) return;
 
   const pending = _shopifyOrders.filter(o => o.status === 'pending');
@@ -39779,6 +40925,17 @@ function renderShopifyOrders() {
       return effectiveStatus === _shopifyStatusFilter;
     });
   }
+  // Date filter (range)
+  if (_shopifyDateFilter.from) {
+    const fromMs = _spStartOfDay(_shopifyDateFilter.from).getTime();
+    const toD = _shopifyDateFilter.to || _shopifyDateFilter.from;
+    const toMs = _spStartOfDay(toD).getTime() + 86400000 - 1;
+    data = data.filter(o => {
+      const t = new Date(o.shopifyCreatedAt || o.createdAt).getTime();
+      return t >= fromMs && t <= toMs;
+    });
+  }
+  _spUpdateTriggerLabel();
 
   /* Sort: smart priority ranking */
   if (_shopifyTab === 'pending') {
@@ -39807,10 +40964,12 @@ function renderShopifyOrders() {
   }
 
   if (!data.length) {
-    wrap.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
+    const emptyHtml = `<div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
       <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" style="opacity:.3;margin-bottom:12px"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
       <div>${_shopifyTab === 'pending' ? 'لا توجد أوردرات بانتظار تأكيد العميل' : 'لا توجد أوردرات'}</div>
     </div>`;
+    wrap.innerHTML = emptyHtml;
+    if (mobileList) mobileList.innerHTML = '';
     return;
   }
 
@@ -39857,8 +41016,8 @@ function renderShopifyOrders() {
     return `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${cards.join('')}</div>`;
   })();
 
-  wrap.innerHTML = `<div>${prioritySummaryHtml}
-    <table class="data-table" style="width:100%">
+  wrap.innerHTML = `${prioritySummaryHtml ? `<div style="padding:12px 14px 0">${prioritySummaryHtml}</div>` : ''}<div class="sp-table-scroll">
+    <table class="data-table">
       <thead><tr>
         <th style="white-space:nowrap;width:90px">رقم الأوردر</th>
         <th style="white-space:nowrap;width:110px">الوقت</th>
@@ -40106,6 +41265,63 @@ function renderShopifyOrders() {
       </tbody>
     </table>
   </div>`;
+
+  /* ── Mobile Cards ── */
+  if (mobileList) {
+    mobileList.innerHTML = data.map(o => {
+      const _oAgeMs = Date.now() - new Date(o.shopifyCreatedAt || o.createdAt || 0).getTime();
+      const _isNew = _oAgeMs < 24 * 60 * 60 * 1000;
+      const _dateStr = (() => {
+        const d = new Date(o.shopifyCreatedAt || o.createdAt);
+        const h = String(d.getHours()).padStart(2,'0'), m = String(d.getMinutes()).padStart(2,'0');
+        const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+        return `${d.getDate()} ${months[d.getMonth()]} - ${h}:${m}`;
+      })();
+      const statusBadge = _shopifyStatusBadge(o.status, o.phone, o._id, o.pendingStatus, o);
+      const noteText = (o.notes || '').trim().startsWith('العنوان:') ? '' : (o.notes || '').trim();
+      const np = parseNoteAsPayment(o.notes || '');
+      const depositHtml = np ? `<div class="sp-card-amount-item"><div class="sp-card-amount-label">ديبوزت</div><div class="sp-card-amount-val" style="color:#10b981">${fmtJ(np.amount)}</div></div>` : '';
+      const actionHtml = o.status === 'pending' ? `
+        <div class="sp-card-actions">
+          <button class="btn btn-sm" style="background:var(--accent);color:#fff;gap:5px" onclick="approveShopifyOrder('${o._id}')">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            إرسال للحركات
+          </button>
+          <button class="btn btn-sm" style="background:var(--bg-alt);border:1.5px solid var(--border);gap:5px;flex:0 0 auto;padding:8px 12px" onclick="editShopifyOrder('${o._id}')">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            تعديل
+          </button>
+        </div>` : '';
+      const tagList = o.tags ? o.tags.split(',').map(t=>t.trim()).filter(Boolean) : [];
+      const tagsHtml = tagList.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${tagList.slice(0,3).map(t=>`<span style="background:var(--bg-alt);border:1px solid var(--border);border-radius:20px;padding:1px 8px;font-size:.68rem;color:var(--text-muted);white-space:nowrap">${t}</span>`).join('')}${tagList.length>3?`<span style="background:var(--accent);color:#fff;border-radius:20px;padding:1px 8px;font-size:.68rem">+${tagList.length-3}</span>`:''}</div>` : '';
+      return `<div class="sp-card${_isNew?' sp-card-new':''}">
+        <div class="sp-card-top">
+          <div>
+            <div class="sp-card-ref">#${o.ref || o.shopifyOrderId || '—'}</div>
+            <div class="sp-card-client">${o.customerName || o.phone || '—'}</div>
+            <div class="sp-card-phone">${o.phone || ''}</div>
+          </div>
+          <div style="text-align:left;flex-shrink:0">
+            ${_isNew ? `<span class="mov-new-badge" style="display:block;margin-bottom:4px">جديد</span>` : ''}
+            <div class="sp-card-time">${_dateStr}</div>
+          </div>
+        </div>
+        <div class="sp-card-amounts">
+          ${o.items?.length ? `<div class="sp-card-amount-item"><div class="sp-card-amount-label">الأصناف</div><div class="sp-card-amount-val">${o.items.length} صنف</div></div>` : ''}
+          ${o.shipCost > 0 ? `<div class="sp-card-amount-item"><div class="sp-card-amount-label">الشحن</div><div class="sp-card-amount-val">${fmtJ(o.shipCost)}</div></div>` : ''}
+          ${o.discount > 0 ? `<div class="sp-card-amount-item"><div class="sp-card-amount-label">الخصم</div><div class="sp-card-amount-val" style="color:#10b981">${o.discountType==='percent'?o.discountValue+'%':fmtJ(o.discount)}</div></div>` : ''}
+          ${depositHtml}
+          <div class="sp-card-amount-item"><div class="sp-card-amount-label">الإجمالي</div><div class="sp-card-amount-val sp-total">${fmtJ(o.total)}</div></div>
+        </div>
+        <div class="sp-card-bottom">
+          <div>${statusBadge}</div>
+          ${noteText ? `<div style="font-size:.75rem;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${noteText}</div>` : ''}
+        </div>
+        ${tagsHtml}
+        ${actionHtml}
+      </div>`;
+    }).join('');
+  }
 }
 
 function _toggleSpAddr(id, btn) {
