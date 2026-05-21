@@ -158,6 +158,30 @@ export class SettingsController {
   }
 
   @Roles('admin')
+  @Post('preview-selective-restore')
+  async previewSelectiveRestore(@Body('filename') filename: string, @Body('password') password: string) {
+    const isValid = await this.settingsService.verifyVaultPassword(password);
+    if (!isValid) throw new UnauthorizedException('كلمة المرور خاطئة');
+    return await this.settingsService.previewSelectiveRestore(filename);
+  }
+
+  @Roles('admin')
+  @UseGuards(ThrottlerGuard)
+  @Post('selective-restore')
+  async selectiveRestore(
+    @Body('filename') filename: string,
+    @Body('password') password: string,
+    @Body('sections') sections: string[],
+  ) {
+    const isValid = await this.settingsService.verifyVaultPassword(password);
+    if (!isValid) throw new UnauthorizedException('كلمة المرور خاطئة - لا يمكن الاسترجاع');
+    if (!Array.isArray(sections) || sections.length === 0) {
+      throw new UnauthorizedException('يجب اختيار قسم واحد على الأقل');
+    }
+    return await this.settingsService.selectiveRestoreBackup(filename, sections);
+  }
+
+  @Roles('admin')
   @Get('download-backup/:filename')
   async downloadBackup(@Param('filename') filename: string, @Res() res: any) {
     const buffer = await this.settingsService.downloadBackupStream(filename);

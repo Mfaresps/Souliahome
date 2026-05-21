@@ -1567,7 +1567,7 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 #sp-date-panel{
   position:absolute;top:calc(100% + 10px);right:0;
   z-index:1300;display:none;
-  width:540px;
+  width:520px;height:340px;
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:16px;
@@ -1575,23 +1575,26 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
   overflow:hidden;
   animation:spPanelIn .18s cubic-bezier(.16,1,.3,1)
 }
-#sp-date-panel.open{display:flex;flex-direction:row}
+#sp-date-panel.open{display:flex;flex-direction:row-reverse}
 @keyframes spPanelIn{
   from{opacity:0;transform:translateY(-10px) scale(.96)}
   to  {opacity:1;transform:translateY(0)     scale(1)}
 }
 
-/* ── Presets sidebar (LEFT / order:1 in RTL context) ── */
+/* ── Calendar panel (RIGHT side) ── */
+#sp-cal-main{flex:1;padding:20px 18px;min-width:0;overflow:hidden;height:100%;box-sizing:border-box}
+
+/* ── Presets sidebar (LEFT side) ── */
 #sp-cal-presets{
-  width:170px;flex-shrink:0;order:1;
-  border-left:1px solid var(--border);
+  width:160px;flex-shrink:0;height:100%;box-sizing:border-box;
+  border-right:1px solid var(--border);
   display:flex;flex-direction:column;
   background:var(--surface)
 }
 #sp-cal-presets-scroll{flex:1;overflow-y:auto;padding:8px 0}
 #sp-cal-presets-scroll::-webkit-scrollbar{width:0}
 .sp-preset-item{
-  display:block;width:100%;padding:10px 18px;
+  display:block;width:100%;padding:10px 16px;
   font-size:.82rem;color:var(--text-muted);
   cursor:pointer;transition:background .12s,color .12s;
   white-space:nowrap;font-family:inherit;
@@ -1620,133 +1623,96 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 #sp-cal-apply:hover{background:#1f2937}
 #sp-cal-apply:active{transform:scale(.97)}
 
-/* ── Calendar panel (RIGHT / order:2 in RTL context) ── */
-#sp-cal-main{flex:1;padding:22px 20px;min-width:0;overflow:hidden;order:2}
-
 /* Header */
 .sp-cal-header{
   display:flex;align-items:center;justify-content:space-between;
   margin-bottom:14px
 }
 .sp-cal-nav{
-  width:30px;height:30px;border-radius:8px;
-  border:1px solid var(--border);background:var(--surface);
-  color:var(--text);cursor:pointer;
+  width:28px;height:28px;border-radius:50%;
+  border:none;background:transparent;
+  color:var(--text-muted);cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:all .13s;flex-shrink:0;padding:0
 }
-.sp-cal-nav:hover{
-  border-color:var(--accent);color:var(--accent);
-  background:color-mix(in srgb,var(--accent) 8%,transparent)
-}
-.sp-cal-nav:active{transform:scale(.93)}
-.sp-cal-month-year{display:flex;align-items:baseline;gap:6px}
+.sp-cal-nav:hover{background:var(--bg-alt);color:var(--text)}
+.sp-cal-nav:active{transform:scale(.9)}
+.sp-cal-month-year{display:flex;align-items:baseline;gap:5px}
 .sp-cal-month{font-size:.95rem;font-weight:700;color:var(--text)}
-.sp-cal-year{font-size:.82rem;font-weight:400;color:var(--muted)}
+.sp-cal-year{font-size:.95rem;font-weight:700;color:var(--text)}
 
-/* Grid — fixed 7 equal columns */
-.sp-cal-grid{
-  display:grid;
-  grid-template-columns:repeat(7,1fr);
-  gap:2px;
-  width:100%
-}
-.sp-cal-dow{
-  font-size:.63rem;font-weight:600;color:var(--muted);
-  text-align:center;padding:4px 0 8px;letter-spacing:.03em
-}
+/* Grid */
+.sp-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;width:100%}
+.sp-cal-dow{font-size:.67rem;font-weight:600;color:var(--text-muted);text-align:center;padding:4px 0 8px}
 
 /* Day cells */
 .sp-cal-day{
-  position:relative;
-  width:100%;aspect-ratio:1;min-width:0;
+  position:relative;width:100%;aspect-ratio:1;min-width:0;min-height:32px;
   display:flex;align-items:center;justify-content:center;
-  font-size:.78rem;border-radius:8px;
+  font-size:.8rem;border-radius:50%;
   cursor:pointer;transition:background .12s,color .12s;
   font-family:inherit;border:none;background:none;
-  color:var(--text);font-weight:400;padding:0;
-  z-index:0
+  color:var(--text);font-weight:400;padding:0;z-index:0
 }
-.sp-cal-day:not(.sp-cal-other):hover{
-  background:color-mix(in srgb,var(--accent) 10%,transparent);
-  color:var(--accent)
-}
+.sp-cal-day:not(.sp-cal-other):hover{background:var(--bg-alt);color:var(--text)}
 .sp-cal-day.sp-cal-other{color:var(--muted);opacity:.3;cursor:default;pointer-events:none}
 .sp-cal-day.sp-cal-today:not(.sp-cal-sel){
   font-weight:700;
-  background:color-mix(in srgb,var(--accent) 8%,transparent);
+  background:color-mix(in srgb,var(--accent) 10%,transparent);
   color:var(--accent)
 }
-/* selected endpoints */
 .sp-cal-day.sp-cal-sel{
-  background:var(--accent)!important;
-  color:#fff!important;font-weight:700;
-  border-radius:10px;z-index:1
+  background:var(--accent)!important;color:#fff!important;
+  font-weight:700;border-radius:50%;z-index:1
 }
-/* range fill between endpoints */
 .sp-cal-day.sp-cal-in-range{
   background:color-mix(in srgb,var(--accent) 12%,transparent);
-  color:var(--accent);
-  border-radius:0
+  color:var(--accent);border-radius:0
 }
-/* RTL: range-start is visually on the right, range-end on the left */
-.sp-cal-day.sp-cal-sel.sp-cal-range-start{border-radius:0 10px 10px 0!important}
-.sp-cal-day.sp-cal-sel.sp-cal-range-end{border-radius:10px 0 0 10px!important}
-.sp-cal-day.sp-cal-range-single{border-radius:10px!important}
-/* in-range: flat on both sides */
-.sp-cal-day.sp-cal-in-range{border-radius:0}
-
-/* order dot */
+.sp-cal-day.sp-cal-sel.sp-cal-range-start{border-radius:0 50% 50% 0!important}
+.sp-cal-day.sp-cal-sel.sp-cal-range-end{border-radius:50% 0 0 50%!important}
+.sp-cal-day.sp-cal-range-single{border-radius:50%!important}
 .sp-cal-day.sp-cal-has-orders::after{
-  content:'';position:absolute;
-  bottom:4px;left:50%;transform:translateX(-50%);
-  width:3px;height:3px;border-radius:50%;
-  background:currentColor;opacity:.5
+  content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);
+  width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.5
 }
 .sp-cal-day.sp-cal-sel.sp-cal-has-orders::after{background:#fff;opacity:.8}
 
 /* selected range label */
 #sp-cal-range-label{
-  min-height:20px;margin-bottom:12px;
+  min-height:20px;margin-bottom:10px;
   font-size:.75rem;color:var(--muted);text-align:center
 }
 #sp-cal-range-label span{
   display:inline-flex;align-items:center;gap:6px;
   background:color-mix(in srgb,var(--accent) 8%,transparent);
-  color:var(--accent);border-radius:6px;padding:3px 10px;
-  font-weight:500
+  color:var(--accent);border-radius:6px;padding:3px 10px;font-weight:500
 }
 
 /* ── Mobile ── */
-@media(max-width:560px){
+@media(max-width:600px){
   #sp-date-panel{
     position:fixed;bottom:0;left:0;right:0;top:auto;
-    width:100%!important;
-    border-radius:20px 20px 0 0;
-    flex-direction:column;
-    max-height:92vh;overflow-y:auto
+    width:100%!important;height:auto!important;border-radius:20px 20px 0 0;
+    flex-direction:column;max-height:92vh;overflow-y:auto
   }
   #sp-cal-presets{
-    width:100%;flex-direction:row;flex-shrink:0;
+    width:100%!important;height:auto!important;flex-direction:row;flex-shrink:0;
     border-right:none;border-top:1px solid var(--border)
   }
+  #sp-cal-main{padding:16px 14px;height:auto!important}
   #sp-cal-presets-scroll{
-    display:flex;flex-direction:row;
-    overflow-x:auto;overflow-y:hidden;
-    padding:8px;gap:4px
+    display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:8px;gap:4px
   }
   #sp-cal-presets-scroll::-webkit-scrollbar{height:0}
   .sp-preset-item{
-    white-space:nowrap;width:auto;padding:6px 12px;
-    border-radius:20px;font-size:.75rem
+    white-space:nowrap;width:auto;padding:6px 12px;border-radius:20px;font-size:.75rem
   }
-  .sp-preset-item.active::after{display:none}
+  .sp-preset-item.active::before{display:none}
   .sp-preset-item.active{
-    background:color-mix(in srgb,var(--accent) 12%,transparent)!important;
-    border-radius:20px
+    background:color-mix(in srgb,var(--accent) 12%,transparent)!important;border-radius:20px
   }
   #sp-cal-apply-wrap{display:none}
-  #sp-cal-main{padding:16px 14px}
 }
   /* hide table, show cards */
   #shopify-orders-table-wrap .sp-table-scroll{display:none}

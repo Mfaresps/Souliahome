@@ -2274,6 +2274,19 @@ export class TransactionsService {
       },
     );
     this.emit('pickup:updated', { ids: validIds, action: 'ready', pickupRef: batchRef });
+
+    // Auto-advance to Delivered for orders that were already fully paid
+    const prepaidOrders = await this.transactionModel.find({
+      _id: { $in: validIds },
+      type: 'مبيعات',
+      cancelled: { $ne: true },
+      pickupStatus: 'Ready',
+      payStatus: 'مكتمل',
+    }).select('_id');
+    for (const o of prepaidOrders) {
+      await this.markPickupDelivered(String(o._id), by);
+    }
+
     return { updated: result.modifiedCount, pickupRef: batchRef };
   }
 

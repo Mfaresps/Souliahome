@@ -827,4 +827,362 @@ export class SettingsService {
       restored: restoreResults,
     };
   }
+
+  private static SECTION_COLLECTIONS: Record<string, string[]> = {
+    transactions:   ['transactions', 'returnrequests'],
+    products:       ['products'],
+    customers:      ['clients', 'suppliers'],
+    expenses:       ['expenses'],
+    vault:          ['vaultentries'],
+    other:          ['complaints', 'followups', 'tags', 'shopifyorders', 'mentions'],
+  };
+
+  private static DATE_FIELD: Record<string, string> = {
+    transactions:   'date',
+    returnrequests: 'date',
+    products:       'updatedAt',
+    clients:        'createdAt',
+    suppliers:      'createdAt',
+    expenses:       'date',
+    vaultentries:   'date',
+    complaints:     'createdAt',
+    followups:      'createdAt',
+  };
+
+  private async getLatestDate(col: string): Promise<string | null> {
+    const dateField = SettingsService.DATE_FIELD[col];
+    if (!dateField) return null;
+    try {
+      const sort: Record<string, number> = {};
+      sort[dateField] = -1;
+      const doc = await this.connection.collection(col).findOne({}, { sort } as any);
+      if (!doc) return null;
+      const val = doc[dateField];
+      if (!val) return null;
+      return new Date(val).toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch { return null; }
+  }
+
+  private getLatestDateFromDocs(docs: any[], dateField: string): string | null {
+    if (!Array.isArray(docs) || docs.length === 0 || !dateField) return null;
+    let latest: Date | null = null;
+    for (const doc of docs) {
+      const val = doc[dateField];
+      if (!val) continue;
+      const d = new Date(val);
+      if (!isNaN(d.getTime()) && (!latest || d > latest)) latest = d;
+    }
+    if (!latest) return null;
+    return latest.toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  private fmtDate(val: any): string | null {
+    if (!val) return null;
+    try {
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return null;
+      return d.toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch { return null; }
+  }
+
+  private sumField(docs: any[], field: string): number {
+    return docs.reduce((s, d) => s + (Number(d[field]) || 0), 0);
+  }
+
+  private buildTransactionsStats(txDocs: any[], retDocs: any[]): Record<string, any> {
+    const sales    = txDocs.filter(t => t.type === 'مبيعات');
+    const purchases= txDocs.filter(t => t.type === 'مشتريات');
+    const returns  = retDocs;
+    const cancelled= txDocs.filter(t => t.cancelled);
+    const pending  = txDocs.filter(t => t.payStatus === 'معلق');
+    return {
+      salesCount:     sales.length,
+      salesTotal:     this.sumField(sales, 'total'),
+      purchaseCount:  purchases.length,
+      purchaseTotal:  this.sumField(purchases, 'total'),
+      returnCount:    returns.length,
+      cancelledCount: cancelled.length,
+      pendingPayment: pending.length,
+      maxSale:        sales.length ? Math.max(...sales.map(s => Number(s.total) || 0)) : 0,
+    };
+  }
+
+  private buildProductsStats(docs: any[]): Record<string, any> {
+    const totalUnits  = docs.reduce((s, p) => s + (Number(p.stock) || 0), 0);
+    const outOfStock  = docs.filter(p => (Number(p.stock) || 0) === 0).length;
+    const lowStock    = docs.filter(p => (Number(p.stock) || 0) > 0 && (Number(p.stock) || 0) <= (Number(p.minStock) || 5)).length;
+    const categories  = [...new Set(docs.map(p => p.category).filter(Boolean))].length;
+    return { totalUnits, outOfStock, lowStock, categories, productCount: docs.length };
+  }
+
+  private buildCustomersStats(clientDocs: any[], supplierDocs: any[]): Record<string, any> {
+    const withDebt    = clientDocs.filter(c => (Number(c.balance) || 0) > 0).length;
+    const totalDebt   = this.sumField(clientDocs, 'balance');
+    const supDebt     = this.sumField(supplierDocs, 'balance');
+    return {
+      clientCount:    clientDocs.length,
+      supplierCount:  supplierDocs.length,
+      clientsWithDebt: withDebt,
+      totalClientDebt: totalDebt,
+      totalSupplierDebt: supDebt,
+    };
+  }
+
+  private buildExpensesStats(docs: any[]): Record<string, any> {
+    const approved  = docs.filter(e => e.status === 'معتمد');
+    const pending   = docs.filter(e => e.status === 'معلق');
+    const total     = this.sumField(approved, 'amount');
+    const maxExp    = docs.length ? Math.max(...docs.map(e => Number(e.amount) || 0)) : 0;
+    const categories= [...new Set(docs.map(e => e.category).filter(Boolean))].length;
+    return { total, approvedCount: approved.length, pendingCount: pending.length, maxExpense: maxExp, categories };
+  }
+
+  private buildVaultStats(docs: any[]): Record<string, any> {
+    const inflow  = docs.filter(v => (Number(v.amount) || 0) > 0);
+    const outflow = docs.filter(v => (Number(v.amount) || 0) < 0);
+    const net     = docs.reduce((s, v) => s + (Number(v.amount) || 0), 0);
+    return {
+      entryCount: docs.length,
+      inflowCount: inflow.length,
+      inflowTotal: this.sumField(inflow, 'amount'),
+      outflowCount: outflow.length,
+      outflowTotal: Math.abs(docs.filter(v => (Number(v.amount)||0)<0).reduce((s,v)=>s+(Number(v.amount)||0),0)),
+      net,
+    };
+  }
+
+  async previewSelectiveRestore(filename: string): Promise<any> {
+    const backupDir = this.getBackupDir();
+    let safeFilename = path.basename(filename);
+    if (safeFilename.startsWith('soulia-')) safeFilename = safeFilename.substring(7);
+    const filepath = path.join(backupDir, safeFilename);
+
+    if (!fs.existsSync(filepath)) return { success: false, message: 'ملف النسخة الاحتياطية غير موجود' };
+
+    let backupData: any;
+    try {
+      const raw = fs.readFileSync(filepath, 'utf8');
+      backupData = JSON.parse(raw);
+    } catch {
+      return { success: false, message: 'ملف النسخة الاحتياطية تالف أو غير صالح' };
+    }
+
+    const d = backupData?.data || {};
+    const preview: Record<string, any> = {};
+
+    // ── Transactions ──────────────────────────────────────────────────────────
+    {
+      const bTx  = Array.isArray(d.transactions)    ? d.transactions    : [];
+      const bRet = Array.isArray(d.returnrequests)  ? d.returnrequests  : [];
+      const cTxCount  = await this.connection.collection('transactions').countDocuments().catch(()=>0);
+      const cRetCount = await this.connection.collection('returnrequests').countDocuments().catch(()=>0);
+      const cLatestTx  = await this.getLatestDate('transactions');
+      const cLatestRet = await this.getLatestDate('returnrequests');
+      const cLatest = [cLatestTx, cLatestRet].filter(Boolean).sort().pop() || null;
+      const bLatestTx  = this.getLatestDateFromDocs(bTx,  'date');
+      const bLatestRet = this.getLatestDateFromDocs(bRet, 'date');
+      const bLatest = [bLatestTx, bLatestRet].filter(Boolean).sort().pop() || null;
+
+      // current stats from db
+      const [cTxDocs, cRetDocs] = await Promise.all([
+        this.connection.collection('transactions').find({}).toArray().catch(()=>[]),
+        this.connection.collection('returnrequests').find({}).toArray().catch(()=>[]),
+      ]);
+
+      preview['transactions'] = {
+        backup:  bTx.length + bRet.length,
+        current: cTxCount + cRetCount,
+        backupLatest: bLatest, currentLatest: cLatest,
+        backupStats:  this.buildTransactionsStats(bTx, bRet),
+        currentStats: this.buildTransactionsStats(cTxDocs as any[], cRetDocs as any[]),
+      };
+    }
+
+    // ── Products ─────────────────────────────────────────────────────────────
+    {
+      const bDocs = Array.isArray(d.products) ? d.products : [];
+      const cCount = await this.connection.collection('products').countDocuments().catch(()=>0);
+      const cLatest = await this.getLatestDate('products');
+      const cDocs = await this.connection.collection('products').find({}).toArray().catch(()=>[]);
+      preview['products'] = {
+        backup:  bDocs.length,
+        current: cCount,
+        backupLatest:  this.getLatestDateFromDocs(bDocs, 'updatedAt'),
+        currentLatest: cLatest,
+        backupStats:  this.buildProductsStats(bDocs),
+        currentStats: this.buildProductsStats(cDocs as any[]),
+      };
+    }
+
+    // ── Customers ─────────────────────────────────────────────────────────────
+    {
+      const bClients   = Array.isArray(d.clients)   ? d.clients   : [];
+      const bSuppliers = Array.isArray(d.suppliers)  ? d.suppliers : [];
+      const cCliCount  = await this.connection.collection('clients').countDocuments().catch(()=>0);
+      const cSupCount  = await this.connection.collection('suppliers').countDocuments().catch(()=>0);
+      const cCliLatest = await this.getLatestDate('clients');
+      const cSupLatest = await this.getLatestDate('suppliers');
+      const cLatest = [cCliLatest, cSupLatest].filter(Boolean).sort().pop() || null;
+      const bLatest = [
+        this.getLatestDateFromDocs(bClients,   'createdAt'),
+        this.getLatestDateFromDocs(bSuppliers, 'createdAt'),
+      ].filter(Boolean).sort().pop() || null;
+      const [cCliDocs, cSupDocs] = await Promise.all([
+        this.connection.collection('clients').find({}).toArray().catch(()=>[]),
+        this.connection.collection('suppliers').find({}).toArray().catch(()=>[]),
+      ]);
+      preview['customers'] = {
+        backup:  bClients.length + bSuppliers.length,
+        current: cCliCount + cSupCount,
+        backupLatest: bLatest, currentLatest: cLatest,
+        backupStats:  this.buildCustomersStats(bClients, bSuppliers),
+        currentStats: this.buildCustomersStats(cCliDocs as any[], cSupDocs as any[]),
+      };
+    }
+
+    // ── Expenses ──────────────────────────────────────────────────────────────
+    {
+      const bDocs  = Array.isArray(d.expenses) ? d.expenses : [];
+      const cCount = await this.connection.collection('expenses').countDocuments().catch(()=>0);
+      const cLatest= await this.getLatestDate('expenses');
+      const cDocs  = await this.connection.collection('expenses').find({}).toArray().catch(()=>[]);
+      preview['expenses'] = {
+        backup:  bDocs.length,
+        current: cCount,
+        backupLatest:  this.getLatestDateFromDocs(bDocs, 'date'),
+        currentLatest: cLatest,
+        backupStats:  this.buildExpensesStats(bDocs),
+        currentStats: this.buildExpensesStats(cDocs as any[]),
+      };
+    }
+
+    // ── Vault entries ─────────────────────────────────────────────────────────
+    {
+      const bDocs  = Array.isArray(d.vaultentries) ? d.vaultentries : [];
+      const cCount = await this.connection.collection('vaultentries').countDocuments().catch(()=>0);
+      const cLatest= await this.getLatestDate('vaultentries');
+      const cDocs  = await this.connection.collection('vaultentries').find({}).toArray().catch(()=>[]);
+      preview['vault'] = {
+        backup:  bDocs.length,
+        current: cCount,
+        backupLatest:  this.getLatestDateFromDocs(bDocs, 'date'),
+        currentLatest: cLatest,
+        backupStats:  this.buildVaultStats(bDocs),
+        currentStats: this.buildVaultStats(cDocs as any[]),
+      };
+    }
+
+    // ── Other ─────────────────────────────────────────────────────────────────
+    {
+      const cols = ['complaints','followups','tags','shopifyorders','mentions'];
+      let bCount = 0, cCount = 0;
+      const details: Record<string, {backup:number; current:number}> = {};
+      for (const col of cols) {
+        const bLen = Array.isArray(d[col]) ? d[col].length : 0;
+        const cLen = await this.connection.collection(col).countDocuments().catch(()=>0);
+        bCount += bLen; cCount += cLen;
+        details[col] = { backup: bLen, current: cLen };
+      }
+      preview['other'] = { backup: bCount, current: cCount, backupLatest: null, currentLatest: null, details };
+    }
+
+    // ── Vault balances ────────────────────────────────────────────────────────
+    const currentSettings = await this.settingsModel.findOne().exec();
+    const bv = backupData?.vault_balances;
+    preview['vault_balances'] = {
+      backupVaultTotal:  bv ? (Number(bv.vaultCash||0)+Number(bv.vaultVodafone||0)+Number(bv.vaultInstapay||0)+Number(bv.vaultBank||0)) : null,
+      currentVaultTotal: currentSettings ? ((currentSettings.vaultCash||0)+(currentSettings.vaultVodafone||0)+(currentSettings.vaultInstapay||0)+(currentSettings.vaultBank||0)) : null,
+      backupDetails:  bv || null,
+      currentDetails: currentSettings ? {
+        vaultCash:      currentSettings.vaultCash,
+        vaultVodafone:  currentSettings.vaultVodafone,
+        vaultInstapay:  currentSettings.vaultInstapay,
+        vaultBank:      currentSettings.vaultBank,
+      } : null,
+    };
+
+    return { success: true, filename: safeFilename, backupTimestamp: backupData.timestamp, preview };
+  }
+
+  async selectiveRestoreBackup(filename: string, sections: string[]): Promise<any> {
+    const backupDir = this.getBackupDir();
+    let safeFilename = path.basename(filename);
+    if (safeFilename.startsWith('soulia-')) safeFilename = safeFilename.substring(7);
+    const filepath = path.join(backupDir, safeFilename);
+
+    if (!fs.existsSync(filepath)) return { success: false, message: 'ملف النسخة الاحتياطية غير موجود' };
+
+    let backupData: any;
+    try {
+      const raw = fs.readFileSync(filepath, 'utf8');
+      backupData = JSON.parse(raw);
+    } catch {
+      return { success: false, message: 'ملف النسخة الاحتياطية تالف أو غير صالح' };
+    }
+
+    if (!backupData?.data || typeof backupData.data !== 'object') {
+      return { success: false, message: 'صيغة الملف غير صحيحة' };
+    }
+
+    const restoreResults: Record<string, number> = {};
+
+    for (const section of sections) {
+      if (section === 'vault_balances') {
+        try {
+          const settings = await this.settingsModel.findOne().exec();
+          if (settings && backupData.vault_balances) {
+            settings.vaultCash = Number(backupData.vault_balances.vaultCash) || 0;
+            settings.vaultVodafone = Number(backupData.vault_balances.vaultVodafone) || 0;
+            settings.vaultInstapay = Number(backupData.vault_balances.vaultInstapay) || 0;
+            settings.vaultBank = Number(backupData.vault_balances.vaultBank) || 0;
+            settings.vaultBalance = settings.vaultCash + settings.vaultVodafone + settings.vaultInstapay + settings.vaultBank;
+            await settings.save();
+            restoreResults['vault_balances'] = 1;
+          }
+        } catch (e: any) {
+          this.logger.error('selective restore vault_balances failed', e?.message);
+        }
+        continue;
+      }
+
+      const collections = SettingsService.SECTION_COLLECTIONS[section];
+      if (!collections) { this.logger.warn(`Unknown section: ${section}`); continue; }
+
+      for (const col of collections) {
+        const docs = backupData.data[col];
+        try {
+          await this.connection.collection(col).deleteMany({});
+          if (Array.isArray(docs) && docs.length > 0) {
+            const fixedDocs = docs.map((doc: any) => {
+              const fixed: any = { ...doc };
+              if (fixed._id) {
+                const rawId = typeof fixed._id === 'string' ? fixed._id : fixed._id?.$oid;
+                if (rawId) { try { fixed._id = new ObjectId(rawId); } catch { delete fixed._id; } }
+              }
+              migrateDoc(col, fixed);
+              return fixed;
+            });
+            try {
+              await this.connection.collection(col).insertMany(fixedDocs, { ordered: false });
+              restoreResults[col] = fixedDocs.length;
+            } catch (bulkErr: any) {
+              restoreResults[col] = bulkErr?.result?.insertedCount ?? 0;
+            }
+          } else {
+            restoreResults[col] = 0;
+          }
+        } catch (e: any) {
+          this.logger.error(`selective restore ${col} failed`, e?.message);
+          restoreResults[col] = -1;
+        }
+      }
+    }
+
+    this.logger.log(`Selective restore from ${safeFilename} (${sections.join(',')}): ${JSON.stringify(restoreResults)}`);
+    return {
+      success: true,
+      message: `✓ تم الاسترجاع الانتقائي بنجاح من: ${safeFilename}`,
+      restored: restoreResults,
+    };
+  }
 }
