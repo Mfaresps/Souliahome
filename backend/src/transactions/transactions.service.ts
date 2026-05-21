@@ -2244,14 +2244,26 @@ export class TransactionsService {
   }
 
   /** Move orders into Preparing state (entering a prep group) */
-  async setPickupPreparing(ids: string[], by: string, prepRef: string): Promise<{ updated: number }> {
+  async setPickupPreparing(
+    ids: string[],
+    by: string,
+    prepRef: string,
+    meta?: { note?: string; shipCo?: string; createdAt?: string; createdBy?: string },
+  ): Promise<{ updated: number }> {
     const validIds = ids.filter(id => isValidObjectId(id));
     if (!validIds.length) return { updated: 0 };
     const now = new Date().toISOString().slice(0, 10);
     const result = await this.transactionModel.updateMany(
       { _id: { $in: validIds }, type: 'مبيعات', cancelled: { $ne: true }, pickupStatus: { $in: ['Pending', null] } },
       {
-        $set: { pickupStatus: 'Preparing', pickupRef: prepRef },
+        $set: {
+          pickupStatus: 'Preparing',
+          pickupRef: prepRef,
+          prepNote:      meta?.note      || '',
+          prepShipCo:    meta?.shipCo    || '',
+          prepCreatedAt: meta?.createdAt || now,
+          prepCreatedBy: meta?.createdBy || by,
+        },
         $push: { pickupHistory: { action: 'preparing', date: now, by, pickupRef: prepRef } },
       },
     );

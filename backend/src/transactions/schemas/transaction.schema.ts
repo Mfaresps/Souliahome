@@ -234,6 +234,19 @@ export class Transaction {
   @Prop({ default: false })
   prepChecked: boolean;
 
+  /** Prep group metadata — persisted so groups survive localStorage wipe */
+  @Prop({ default: '' })
+  prepNote: string;
+
+  @Prop({ default: '' })
+  prepShipCo: string;
+
+  @Prop({ default: '' })
+  prepCreatedAt: string;
+
+  @Prop({ default: '' })
+  prepCreatedBy: string;
+
   /** Shopify order numeric ID — used to build admin link */
   @Prop({ default: '' })
   shopifyOrderId: string;

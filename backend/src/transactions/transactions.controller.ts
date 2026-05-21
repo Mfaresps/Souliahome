@@ -173,11 +173,16 @@ export class TransactionsController {
 
   @Post('pickup-orders/preparing')
   async setPickupPreparing(
-    @Body() body: { ids: string[]; prepRef: string },
+    @Body() body: { ids: string[]; prepRef: string; note?: string; shipCo?: string; createdAt?: string },
     @Req() req: { user: { name: string; username: string } },
   ) {
     const by = req.user.name || req.user.username || 'مستخدم';
-    return this.transactionsService.setPickupPreparing(body.ids, by, body.prepRef);
+    return this.transactionsService.setPickupPreparing(body.ids, by, body.prepRef, {
+      note: body.note || '',
+      shipCo: body.shipCo || '',
+      createdAt: body.createdAt || '',
+      createdBy: by,
+    });
   }
 
   @Post('pickup-orders/confirm')

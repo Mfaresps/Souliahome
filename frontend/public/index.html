@@ -37178,7 +37178,7 @@ function _puLoadPrepGroups(orders) {
   } catch(_) {}
 
   // Step 2: rebuild any prep groups from backend that are missing in localStorage
-  // (happens when another user/device created the groups)
+  // (happens after localStorage wipe or another user/device created the groups)
   const lsRefs = new Set(lsGroups.map(g => g.prepRef));
   const backendPrepping = orders.filter(o => o.pickupStatus === 'Preparing' && o.pickupRef && !lsRefs.has(o.pickupRef));
   if (backendPrepping.length) {
@@ -37190,10 +37190,19 @@ function _puLoadPrepGroups(orders) {
     });
     byRef.forEach((grpOrders, ref) => {
       grpOrders.forEach(o => { o._prepGroup = ref; });
+      // Restore metadata from the first order in the group (saved to backend on creation)
+      const first = grpOrders[0];
+      const restoredCreatedAt = first.prepCreatedAt
+        ? new Date(first.prepCreatedAt).toLocaleString('ar-EG', { hour12:false, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
+        : '';
       lsGroups.push({
-        prepRef: ref, note: '', shipCo: [...new Set(grpOrders.map(o => o.shipCo).filter(Boolean))].join(', '),
-        createdAt: '', createdAtIso: '', createdBy: '',
-        orders: grpOrders,
+        prepRef:      ref,
+        note:         first.prepNote      || '',
+        shipCo:       first.prepShipCo    || [...new Set(grpOrders.map(o => o.shipCo).filter(Boolean))].join(', '),
+        createdAt:    restoredCreatedAt,
+        createdAtIso: first.prepCreatedAt || '',
+        createdBy:    first.prepCreatedBy || '',
+        orders:       grpOrders,
       });
     });
   }
@@ -37375,7 +37384,7 @@ function submitPrepGroup() {
   // Persist Preparing status to backend
   api('/transactions/pickup-orders/preparing', {
     method: 'POST',
-    body: JSON.stringify({ ids: orders.map(o => o._id), prepRef }),
+    body: JSON.stringify({ ids: orders.map(o => o._id), prepRef, note, shipCo: detectedShip, createdAt: createdAtIso }),
   }).catch(() => {});
 
   closePrepGroupModal();
@@ -38051,7 +38060,7 @@ function _puAddPendingToPrepGroup(orderId, prepRef) {
   _puSavePrepGroups();
   api('/transactions/pickup-orders/preparing', {
     method: 'POST',
-    body: JSON.stringify({ ids: toAdd.map(o => o._id), prepRef }),
+    body: JSON.stringify({ ids: toAdd.map(o => o._id), prepRef, note: grp.note || '', shipCo: grp.shipCo || '', createdAt: grp.createdAtIso || '' }),
   }).catch(() => {});
 
   const msg = toAdd.length === 1
@@ -38155,7 +38164,7 @@ function puPtMoveSelected() {
   // Persist Preparing status to backend
   api('/transactions/pickup-orders/preparing', {
     method: 'POST',
-    body: JSON.stringify({ ids: orders.map(o => o._id), prepRef }),
+    body: JSON.stringify({ ids: orders.map(o => o._id), prepRef, note: '', shipCo: detectedShip, createdAt: createdAtIso }),
   }).catch(() => {});
   toast(`✅ ${prepRef} — ${fmtN(orders.length)} طلب في قيد التحضير`);
   renderPickupBoard();
@@ -39241,7 +39250,7 @@ async function puGroupUndoReadyToPrep(groupKey) {
       freshOrders.forEach(o => { o._prepGroup = prepRef; o.pickupStatus = 'Preparing'; o.pickupRef = prepRef; });
       api('/transactions/pickup-orders/preparing', {
         method: 'POST',
-        body: JSON.stringify({ ids: freshOrders.map(o => o._id), prepRef }),
+        body: JSON.stringify({ ids: freshOrders.map(o => o._id), prepRef, note: freshOrders[0].client||'', shipCo: freshOrders[0].shipCo||'', createdAt: _puNow3.toISOString() }),
       }).catch(() => {});
       toast(`✅ تم إرجاع الطلبات إلى قيد التحضير — ${prepRef}`);
     }
@@ -39270,7 +39279,7 @@ function puJoinPrepGroup(groupKey) {
   clientOrders.forEach(o => { o._prepGroup = prepRef; o.pickupStatus = 'Preparing'; o.pickupRef = prepRef; });
   api('/transactions/pickup-orders/preparing', {
     method: 'POST',
-    body: JSON.stringify({ ids: clientOrders.map(o => o._id), prepRef }),
+    body: JSON.stringify({ ids: clientOrders.map(o => o._id), prepRef, note: grp.note || '', shipCo: grp.shipCo || '', createdAt: grp.createdAtIso || '' }),
   }).catch(() => {});
   toast(`✅ تمت إضافة ${fmtN(clientOrders.length)} طلب إلى ${prepRef}`);
   renderPickupBoard();
@@ -39404,7 +39413,7 @@ function submitPuBulk() {
   // Persist Preparing status to backend (syncs to other users via socket)
   api('/transactions/pickup-orders/preparing', {
     method: 'POST',
-    body: JSON.stringify({ ids: orders.map(o => o._id), prepRef }),
+    body: JSON.stringify({ ids: orders.map(o => o._id), prepRef, note: 'إدخال مجمع', shipCo: detectedShip, createdAt: _puNow4.toISOString() }),
   }).catch(() => {});
 
   closePuBulkModal();
@@ -39498,7 +39507,7 @@ async function puBoardDrop(e, colType) {
     _puPrepGroups.push({ prepRef, note: orders[0].client||'', shipCo: orders[0].shipCo||'', orders, createdAt, createdAtIso: _puNow5.toISOString(), createdBy: _puCBy5 });
     _puSavePrepGroups();
     orders.forEach(o => { o._prepGroup = prepRef; o.pickupStatus = 'Preparing'; o.pickupRef = prepRef; _puPendingSelected.delete(String(o._id)); });
-    api('/transactions/pickup-orders/preparing', { method:'POST', body: JSON.stringify({ ids: orders.map(o=>o._id), prepRef }) }).catch(() => {});
+    api('/transactions/pickup-orders/preparing', { method:'POST', body: JSON.stringify({ ids: orders.map(o=>o._id), prepRef, note: orders[0].client||'', shipCo: orders[0].shipCo||'', createdAt: _puNow5.toISOString() }) }).catch(() => {});
     const msg = orders.length > 1 ? `✅ مجموعة جديدة ${prepRef} — ${orders.length} طلبات` : `✅ مجموعة جديدة ${prepRef}`;
     toast(msg);
     renderPickupBoard();
