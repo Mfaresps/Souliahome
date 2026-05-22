@@ -85,6 +85,9 @@ export class ShopifyOrder {
   shippingAddress: string;
 
   @Prop({ default: '' })
+  shippingCity: string;
+
+  @Prop({ default: '' })
   orderStatusUrl: string;
 
   @Prop({ type: Object })

@@ -137,7 +137,24 @@ export class SettingsService {
   stripSensitive(doc: SettingsDocument): Record<string, unknown> {
     const obj = doc.toObject() as unknown as Record<string, unknown>;
     delete obj['vaultPass'];
+    // Replace bostaApiKey with a masked flag — never expose raw key to frontend
+    obj['bostaApiKeySet'] = !!(obj['bostaApiKey'] as string);
+    delete obj['bostaApiKey'];
     return obj;
+  }
+
+  async saveBostaApiKey(key: string): Promise<void> {
+    const settings = await this.getSettings();
+    await this.settingsModel.findByIdAndUpdate(
+      settings._id,
+      { $set: { bostaApiKey: key.trim() } },
+      { new: true },
+    ).exec();
+  }
+
+  async getBostaApiKey(): Promise<string> {
+    const settings = await this.getSettings();
+    return (settings as any).bostaApiKey || process.env.BOSTA_API_KEY || '';
   }
 
   async getSettingsSafe(): Promise<Record<string, unknown>> {

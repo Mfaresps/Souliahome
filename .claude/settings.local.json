@@ -35,7 +35,11 @@
       "Bash(python3 -)",
       "PowerShell(Get-Process -Id 32088)",
       "PowerShell(wmic process where \"ProcessId=32088\" get CommandLine)",
-      "Bash(curl -s http://localhost:8080/ -o nul -w \"%{http_code}\")"
+      "Bash(curl -s http://localhost:8080/ -o nul -w \"%{http_code}\")",
+      "Bash(Get-ChildItem -Path \"d:\\\\website\\\\Souliahome\" -Force)",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "Bash(Format-Table)",
+      "PowerShell(Start-Sleep -Seconds 3; \\(Invoke-WebRequest -Uri \"http://localhost:8080/\" -UseBasicParsing -ErrorAction SilentlyContinue\\).StatusCode)"
     ]
   }
 }

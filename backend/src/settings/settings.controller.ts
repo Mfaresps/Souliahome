@@ -12,7 +12,6 @@ import {
   NotFoundException,
   UploadedFile,
   UseInterceptors,
-  StreamableFile,
   Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -216,6 +215,50 @@ export class SettingsController {
       throw new UnauthorizedException('كلمة المرور خاطئة');
     }
     return await this.settingsService.uploadBackup(file);
+  }
+
+  // ─── Bosta API Key ───────────────────────────────────────────────────────
+
+  @Roles('admin')
+  @Post('bosta-api-key')
+  async saveBostaApiKey(@Body('key') key: string) {
+    if (!key || typeof key !== 'string') {
+      return { success: false, message: 'المفتاح مطلوب' };
+    }
+    await this.settingsService.saveBostaApiKey(key);
+    return { success: true, message: 'تم حفظ Bosta API Key بنجاح' };
+  }
+
+  @Roles('admin')
+  @Post('bosta-api-key/test')
+  async testBostaApiKey(@Body('key') key: string) {
+    const apiKey = (key || '').trim() || await this.settingsService.getBostaApiKey();
+    if (!apiKey) return { success: false, message: 'لم يتم إدخال API Key' };
+    try {
+      // Test using /api/v2/users/profile — returns 200 on valid key, 401 on invalid
+      const result = await new Promise<{ ok: boolean; message: string }>((resolve) => {
+        const https = require('https');
+        const req = https.request(
+          { hostname: 'app.bosta.co', path: '/api/v2/users/profile', method: 'GET',
+            headers: { Authorization: apiKey, 'Content-Type': 'application/json' } },
+          (res: any) => {
+            let data = '';
+            res.on('data', (c: any) => { data += c; });
+            res.on('end', () => {
+              if (res.statusCode === 200) resolve({ ok: true, message: 'الاتصال بـ Bosta ناجح ✅' });
+              else if (res.statusCode === 401 || res.statusCode === 403)
+                resolve({ ok: false, message: 'المفتاح غير صحيح أو منتهي الصلاحية ❌' });
+              else resolve({ ok: false, message: `استجابة غير متوقعة: HTTP ${res.statusCode}` });
+            });
+          },
+        );
+        req.on('error', (e: any) => resolve({ ok: false, message: `خطأ في الاتصال: ${e.message}` }));
+        req.end();
+      });
+      return { success: result.ok, message: result.message };
+    } catch (e: any) {
+      return { success: false, message: `خطأ: ${e.message}` };
+    }
   }
 
   // ─── Discount Codes ───────────────────────────────────────────────────────

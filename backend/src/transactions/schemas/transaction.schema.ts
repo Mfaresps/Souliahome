@@ -250,6 +250,44 @@ export class Transaction {
   /** Shopify order numeric ID — used to build admin link */
   @Prop({ default: '' })
   shopifyOrderId: string;
+
+  /** Shipping address (from Shopify or manual entry) */
+  @Prop({ default: '' })
+  shippingAddress: string;
+
+  /** Shipping city extracted from Shopify shipping_address.city */
+  @Prop({ default: '' })
+  shippingCity: string;
+
+  // ── Bosta Shipping Integration ─────────────────────────────────────────────
+
+  /** Bosta order ID returned after successful creation */
+  @Prop({ default: '' })
+  bostaOrderId: string;
+
+  /** Bosta tracking number (waybill number) */
+  @Prop({ default: '' })
+  bostaTrackingNumber: string;
+
+  /**
+   * Bosta shipment status — mirrors Bosta state codes:
+   * CREATED | PICKED_UP | IN_TRANSIT | OUT_FOR_DELIVERY |
+   * DELIVERED | RETURNED | CANCELLED | FAILED_ATTEMPT
+   */
+  @Prop({ default: '' })
+  bostaStatus: string;
+
+  /** Human-readable Arabic label for bostaStatus */
+  @Prop({ default: '' })
+  bostaStatusLabel: string;
+
+  /** ISO timestamp of last Bosta status sync */
+  @Prop({ default: '' })
+  bostaLastSync: string;
+
+  /** Full Bosta API response payload — for audit / debugging */
+  @Prop({ type: Object, default: null })
+  bostaRawResponse: Record<string, unknown> | null;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);

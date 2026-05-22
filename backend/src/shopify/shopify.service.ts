@@ -52,6 +52,10 @@ export class ShopifyService {
   // استقبال الأوردر من Shopify وحفظه للمراجعة
   async handleOrder(orderData: any): Promise<{ saved: boolean; id?: string; reason?: string }> {
     try {
+      if (!orderData.id) {
+        this.logger.warn(`Shopify order missing id, skipping. name=${orderData.name}`);
+        return { saved: false, reason: 'بيانات ناقصة - لا يوجد id' };
+      }
       const shopifyId = String(orderData.id);
       this.logger.log(`Shopify order fields: id=${orderData.id}, name=${orderData.name}, order_number=${orderData.order_number}`);
 
@@ -67,6 +71,7 @@ export class ShopifyService {
         .filter(Boolean).join(' ') || 'عميل Shopify';
       const clientPhone = customer.phone || orderData.shipping_address?.phone || '';
       const address = this.formatAddress(orderData.shipping_address);
+      const city = this.formatCity(orderData.shipping_address);
       const notes = orderData.note || '';
       const shipCost = this.parsePrice(orderData.shipping_lines?.[0]?.price);
       const discount = this.parsePrice(orderData.total_discounts);
@@ -101,6 +106,7 @@ export class ShopifyService {
         shopifyCreatedAt: orderData.created_at || '',
         tags: orderData.tags || '',
         shippingAddress: address,
+        shippingCity: city,
         orderStatusUrl: orderData.order_status_url || '',
         items,
         status: 'pending',
@@ -220,6 +226,8 @@ export class ShopifyService {
       employee,
       source: 'shopify',
       shopifyOrderId: order.shopifyId,
+      shippingAddress: order.shippingAddress || '',
+      shippingCity: order.shippingCity || '',
       pickupStatus: 'Pending',
       cancelled: false,
       archived: false,
@@ -381,8 +389,14 @@ export class ShopifyService {
 
   private formatAddress(addr: any): string {
     if (!addr) return '';
-    const parts = [addr.address1, addr.address2, addr.city, addr.province, addr.country].filter(Boolean);
-    return parts.length ? `العنوان: ${parts.join('، ')}` : '';
+    // firstLine = address1 + address2 فقط (city تُحفظ منفصلاً في shippingCity)
+    const parts = [addr.address1, addr.address2].filter(Boolean);
+    return parts.join('، ');
+  }
+
+  private formatCity(addr: any): string {
+    if (!addr) return '';
+    return addr.city || addr.province || '';
   }
 
   private mapPaymentMethod(order: any): string {

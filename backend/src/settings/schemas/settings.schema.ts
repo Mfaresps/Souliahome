@@ -196,6 +196,10 @@ export class Settings {
 
   @Prop({ default: false })
   global2faEnabled: boolean;
+
+  /** Bosta API key — stored encrypted in DB, never returned to frontend as plaintext */
+  @Prop({ default: '' })
+  bostaApiKey: string;
 }
 
 export const SettingsSchema = SchemaFactory.createForClass(Settings);

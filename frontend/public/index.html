@@ -1479,9 +1479,11 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 #shopify-page-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:16px}
 #shopify-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
 .shopify-kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
-#shopify-filters-bar{margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-#shopify-search-wrap{position:relative;flex:1;min-width:180px;max-width:280px}
-#shopify-filter-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex:1}
+#shopify-filters-bar{margin-bottom:16px;display:flex;flex-direction:column;gap:10px}
+#shopify-filters-top-row{display:flex;align-items:center;gap:10px}
+#shopify-search-wrap{position:relative;flex:1;min-width:180px;max-width:320px}
+#shopify-filter-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:var(--bg-alt);border:1px solid var(--border);border-radius:12px}
+#shopify-filter-btns::before{content:'تصفية:';font-size:.72rem;color:var(--text-muted);font-weight:600;white-space:nowrap;margin-left:4px}
 /* ── Table (desktop) ── */
 #shopify-orders-table-wrap{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)}
 #shopify-orders-table-wrap .sp-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -1522,198 +1524,11 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
   .shopify-kpi-card > div:first-child{width:36px!important;height:36px!important;border-radius:9px!important}
   #shopify-page-header{flex-direction:column;align-items:flex-start}
   #shopify-filters-bar{flex-direction:column;align-items:stretch;gap:8px}
+  #shopify-filters-top-row{flex-direction:column;align-items:stretch}
   #shopify-search-wrap{max-width:100%}
-  #shopify-filter-btns{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+  #shopify-filter-btns{overflow-x:auto;flex-wrap:nowrap;padding:8px 12px;-webkit-overflow-scrolling:touch}
   #shopify-filter-btns::-webkit-scrollbar{height:0}
   #shopify-filter-btns .sp-status-filter-btn{flex-shrink:0}
-/* ════════════════════════════════════════
-   Shopify Date Range Picker
-   ════════════════════════════════════════ */
-#sp-date-filter{position:relative;display:inline-flex;align-items:center}
-
-/* Trigger button */
-#sp-date-trigger{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:8px 14px;border-radius:10px;
-  border:1.5px solid var(--border);background:var(--surface);
-  color:var(--text);font-size:.82rem;font-family:inherit;
-  cursor:pointer;transition:border-color .15s,color .15s,background .15s;
-  white-space:nowrap;font-weight:400;line-height:1;user-select:none
-}
-#sp-date-trigger:hover{border-color:var(--accent);color:var(--accent)}
-#sp-date-trigger.sp-df-active{
-  border-color:var(--accent);
-  background:color-mix(in srgb,var(--accent) 8%,transparent);
-  color:var(--accent);font-weight:500
-}
-#sp-date-trigger .sp-df-icon{opacity:.55;flex-shrink:0;transition:opacity .15s}
-#sp-date-trigger:hover .sp-df-icon,
-#sp-date-trigger.sp-df-active .sp-df-icon{opacity:1}
-#sp-df-label-text{max-width:200px;overflow:hidden;text-overflow:ellipsis}
-#sp-df-chevron{opacity:.4;transition:transform .2s,opacity .15s;flex-shrink:0}
-#sp-date-trigger:hover #sp-df-chevron{opacity:.8}
-#sp-df-sep{width:1px;height:12px;background:var(--border);flex-shrink:0;display:none}
-#sp-date-trigger.sp-df-active #sp-df-sep{display:block}
-#sp-date-clear{
-  display:none;align-items:center;justify-content:center;
-  width:18px;height:18px;border-radius:50%;
-  background:color-mix(in srgb,var(--accent) 15%,transparent);
-  color:var(--accent);cursor:pointer;flex-shrink:0;
-  transition:background .15s,color .15s
-}
-#sp-date-clear:hover{background:var(--accent);color:#fff}
-
-/* ── Panel ── */
-#sp-date-panel{
-  position:absolute;top:calc(100% + 10px);right:0;
-  z-index:1300;display:none;
-  width:520px;height:340px;
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:16px;
-  box-shadow:0 4px 6px -1px rgba(0,0,0,.08),0 24px 60px -12px rgba(0,0,0,.22);
-  overflow:hidden;
-  animation:spPanelIn .18s cubic-bezier(.16,1,.3,1)
-}
-#sp-date-panel.open{display:flex;flex-direction:row-reverse}
-@keyframes spPanelIn{
-  from{opacity:0;transform:translateY(-10px) scale(.96)}
-  to  {opacity:1;transform:translateY(0)     scale(1)}
-}
-
-/* ── Calendar panel (RIGHT side) ── */
-#sp-cal-main{flex:1;padding:20px 18px;min-width:0;overflow:hidden;height:100%;box-sizing:border-box}
-
-/* ── Presets sidebar (LEFT side) ── */
-#sp-cal-presets{
-  width:160px;flex-shrink:0;height:100%;box-sizing:border-box;
-  border-right:1px solid var(--border);
-  display:flex;flex-direction:column;
-  background:var(--surface)
-}
-#sp-cal-presets-scroll{flex:1;overflow-y:auto;padding:8px 0}
-#sp-cal-presets-scroll::-webkit-scrollbar{width:0}
-.sp-preset-item{
-  display:block;width:100%;padding:10px 16px;
-  font-size:.82rem;color:var(--text-muted);
-  cursor:pointer;transition:background .12s,color .12s;
-  white-space:nowrap;font-family:inherit;
-  background:none;border:none;text-align:right;
-  line-height:1.4;border-radius:0;position:relative
-}
-.sp-preset-item:hover{background:var(--bg-alt);color:var(--text)}
-.sp-preset-item.active{
-  color:var(--accent);font-weight:600;
-  background:color-mix(in srgb,var(--accent) 8%,transparent)
-}
-.sp-preset-item.active::before{
-  content:'';position:absolute;right:0;top:15%;
-  width:3px;height:70%;border-radius:2px 0 0 2px;background:var(--accent)
-}
-#sp-cal-apply-wrap{padding:12px 14px;border-top:1px solid var(--border)}
-#sp-cal-apply{
-  display:block;width:100%;padding:11px 8px;
-  border-radius:10px;border:none;
-  background:#111827;color:#fff;
-  font-size:.84rem;font-weight:700;
-  cursor:pointer;font-family:inherit;
-  transition:background .15s,transform .1s;
-  letter-spacing:.01em
-}
-#sp-cal-apply:hover{background:#1f2937}
-#sp-cal-apply:active{transform:scale(.97)}
-
-/* Header */
-.sp-cal-header{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:14px
-}
-.sp-cal-nav{
-  width:28px;height:28px;border-radius:50%;
-  border:none;background:transparent;
-  color:var(--text-muted);cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  transition:all .13s;flex-shrink:0;padding:0
-}
-.sp-cal-nav:hover{background:var(--bg-alt);color:var(--text)}
-.sp-cal-nav:active{transform:scale(.9)}
-.sp-cal-month-year{display:flex;align-items:baseline;gap:5px}
-.sp-cal-month{font-size:.95rem;font-weight:700;color:var(--text)}
-.sp-cal-year{font-size:.95rem;font-weight:700;color:var(--text)}
-
-/* Grid */
-.sp-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;width:100%}
-.sp-cal-dow{font-size:.67rem;font-weight:600;color:var(--text-muted);text-align:center;padding:4px 0 8px}
-
-/* Day cells */
-.sp-cal-day{
-  position:relative;width:100%;aspect-ratio:1;min-width:0;min-height:32px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:.8rem;border-radius:50%;
-  cursor:pointer;transition:background .12s,color .12s;
-  font-family:inherit;border:none;background:none;
-  color:var(--text);font-weight:400;padding:0;z-index:0
-}
-.sp-cal-day:not(.sp-cal-other):hover{background:var(--bg-alt);color:var(--text)}
-.sp-cal-day.sp-cal-other{color:var(--muted);opacity:.3;cursor:default;pointer-events:none}
-.sp-cal-day.sp-cal-today:not(.sp-cal-sel){
-  font-weight:700;
-  background:color-mix(in srgb,var(--accent) 10%,transparent);
-  color:var(--accent)
-}
-.sp-cal-day.sp-cal-sel{
-  background:var(--accent)!important;color:#fff!important;
-  font-weight:700;border-radius:50%;z-index:1
-}
-.sp-cal-day.sp-cal-in-range{
-  background:color-mix(in srgb,var(--accent) 12%,transparent);
-  color:var(--accent);border-radius:0
-}
-.sp-cal-day.sp-cal-sel.sp-cal-range-start{border-radius:0 50% 50% 0!important}
-.sp-cal-day.sp-cal-sel.sp-cal-range-end{border-radius:50% 0 0 50%!important}
-.sp-cal-day.sp-cal-range-single{border-radius:50%!important}
-.sp-cal-day.sp-cal-has-orders::after{
-  content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);
-  width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.5
-}
-.sp-cal-day.sp-cal-sel.sp-cal-has-orders::after{background:#fff;opacity:.8}
-
-/* selected range label */
-#sp-cal-range-label{
-  min-height:20px;margin-bottom:10px;
-  font-size:.75rem;color:var(--muted);text-align:center
-}
-#sp-cal-range-label span{
-  display:inline-flex;align-items:center;gap:6px;
-  background:color-mix(in srgb,var(--accent) 8%,transparent);
-  color:var(--accent);border-radius:6px;padding:3px 10px;font-weight:500
-}
-
-/* ── Mobile ── */
-@media(max-width:600px){
-  #sp-date-panel{
-    position:fixed;bottom:0;left:0;right:0;top:auto;
-    width:100%!important;height:auto!important;border-radius:20px 20px 0 0;
-    flex-direction:column;max-height:92vh;overflow-y:auto
-  }
-  #sp-cal-presets{
-    width:100%!important;height:auto!important;flex-direction:row;flex-shrink:0;
-    border-right:none;border-top:1px solid var(--border)
-  }
-  #sp-cal-main{padding:16px 14px;height:auto!important}
-  #sp-cal-presets-scroll{
-    display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:8px;gap:4px
-  }
-  #sp-cal-presets-scroll::-webkit-scrollbar{height:0}
-  .sp-preset-item{
-    white-space:nowrap;width:auto;padding:6px 12px;border-radius:20px;font-size:.75rem
-  }
-  .sp-preset-item.active::before{display:none}
-  .sp-preset-item.active{
-    background:color-mix(in srgb,var(--accent) 12%,transparent)!important;border-radius:20px
-  }
-  #sp-cal-apply-wrap{display:none}
-}
   /* hide table, show cards */
   #shopify-orders-table-wrap .sp-table-scroll{display:none}
   #shopify-orders-table-wrap > div:first-child{padding:0}
@@ -4774,6 +4589,25 @@ body.dark-mode .txn-bar{background:rgba(255,255,255,.08)}
 [data-theme=dark] .pu-badge-pickedup{background:#422006;color:#fde047;border-color:#713f12}
 [data-theme=dark] .pu-badge-collected{background:#422006;color:#fde047;border-color:#713f12}
 [data-theme=dark] .pu-badge-delivered{background:#064e3b;color:#34d399}
+.bosta-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:.71rem;font-weight:600;white-space:nowrap;border:1px solid transparent}
+.bosta-badge-none{background:#f3f4f6;color:#9ca3af;border-color:#e5e7eb}
+.bosta-badge-created{background:#dbeafe;color:#1e40af;border-color:#bfdbfe}
+.bosta-badge-transit{background:#fef3c7;color:#92400e;border-color:#fde68a}
+.bosta-badge-out{background:#fed7aa;color:#9a3412;border-color:#fdba74}
+.bosta-badge-delivered{background:#d1fae5;color:#065f46;border-color:#6ee7b7}
+.bosta-badge-returned{background:#fce7f3;color:#9d174d;border-color:#f9a8d4}
+.bosta-badge-failed{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
+.bosta-badge-cancelled{background:#f3f4f6;color:#6b7280;border-color:#d1d5db}
+[data-theme=dark] .bosta-badge-none{background:#374151;color:#6b7280}
+[data-theme=dark] .bosta-badge-created{background:#1e3a8a;color:#93c5fd}
+[data-theme=dark] .bosta-badge-transit{background:#78350f;color:#fde68a}
+[data-theme=dark] .bosta-badge-out{background:#7c2d12;color:#fdba74}
+[data-theme=dark] .bosta-badge-delivered{background:#064e3b;color:#34d399}
+[data-theme=dark] .bosta-badge-returned{background:#831843;color:#f9a8d4}
+[data-theme=dark] .bosta-badge-failed{background:#7f1d1d;color:#fca5a5}
+[data-theme=dark] .bosta-badge-cancelled{background:#1f2937;color:#4b5563}
+.bosta-track-link{display:inline-flex;align-items:center;color:var(--muted);text-decoration:none;transition:color .15s}.bosta-track-link:hover{color:#FF0000}
+.bosta-icon{display:inline-block;width:13px;height:13px;flex-shrink:0;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'%3E%3Cpath d='M43.5 17.5L26 8C25 7.5 24 7.5 23.5 8L6 17.5C5.5 18 5 18.8 5 19.5v16.5c0 .8.5 1.5 1.3 2L24 47.5c.8.4 1.7.4 2.5 0L44.2 38c.8-.5 1.3-1.2 1.3-2V19.5C45.5 18.8 45 18 43.5 17.5zM41.5 22.5v10.5L31.5 28 41.5 22.5zM9.5 19.5L25 11l15.5 8.5L25 28 9.5 19.5zM21.5 30l2 1c.8.5 1.7.5 2.5 0l2-1L40.5 37 25 45.5 9.5 37 21.5 30zM18.5 28L8.5 33V22.5L18.5 28z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'%3E%3Cpath d='M43.5 17.5L26 8C25 7.5 24 7.5 23.5 8L6 17.5C5.5 18 5 18.8 5 19.5v16.5c0 .8.5 1.5 1.3 2L24 47.5c.8.4 1.7.4 2.5 0L44.2 38c.8-.5 1.3-1.2 1.3-2V19.5C45.5 18.8 45 18 43.5 17.5zM41.5 22.5v10.5L31.5 28 41.5 22.5zM9.5 19.5L25 11l15.5 8.5L25 28 9.5 19.5zM21.5 30l2 1c.8.5 1.7.5 2.5 0l2-1L40.5 37 25 45.5 9.5 37 21.5 30zM18.5 28L8.5 33V22.5L18.5 28z'/%3E%3C/svg%3E") center/contain no-repeat;vertical-align:middle}
 .pu-date-btn{background:none;border:none;cursor:pointer;color:var(--accent);font-size:.82rem;padding:0;text-decoration:underline dotted}
 /* run meta chips */
 .pu-run-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -6717,6 +6551,9 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> خصم مجمّع
     </button>
     <button class="btn btn-sm" id="bulk-cancel-btn" style="display:none;background:rgba(220,38,38,.7);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="bulkCancelMovements()" data-i18n="bulkCancel">إلغاء</button>
+    <button class="btn btn-sm" id="bulk-bosta-btn" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);gap:5px;display:flex;align-items:center" onclick="bulkSendToBosta()">
+      <span class="bosta-icon" style="width:14px;height:14px"></span> Bosta
+    </button>
     <button class="btn btn-sm" id="bulk-del-btn" style="background:rgba(220,38,38,.7);color:#fff;border:1px solid rgba(255,255,255,.3);gap:5px;display:flex;align-items:center" onclick="bulkArchiveMovements()" data-i18n="bulkFreeze">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg> أرشفة
     </button>
@@ -6920,6 +6757,12 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
                   <span class="pu-badge pu-badge-delivered" style="font-size:.65rem;padding:1px 6px">Delivered</span>
                 </div>
               </div>
+            </th>
+            <th data-col="bosta" style="text-align:center;white-space:nowrap">
+              <span style="display:flex;align-items:center;justify-content:center;gap:5px">
+                <span class="bosta-icon"></span>
+                Bosta
+              </span>
             </th>
             <th data-col="employee" class="col-secondary" style="text-align:center">
               <span style="display:flex;align-items:center;justify-content:center;gap:5px">
@@ -8707,80 +8550,33 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   </div>
   <!-- Search + Filters -->
   <div id="shopify-filters-bar">
-    <div id="shopify-search-wrap">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="shopify-search" type="text" placeholder="بحث برقم الأوردر..." oninput="renderShopifyOrders()" style="width:100%;padding:10px 38px 10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-size:.9rem;box-sizing:border-box;direction:ltr;transition:border-color .2s;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+    <div id="shopify-filters-top-row">
+      <div id="shopify-search-wrap">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="shopify-search" type="text" placeholder="بحث برقم الأوردر..." oninput="renderShopifyOrders()" style="width:100%;padding:10px 38px 10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-size:.9rem;box-sizing:border-box;direction:ltr;transition:border-color .2s;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
     </div>
     <div id="shopify-filter-btns">
+      <button class="btn btn-sm sp-status-filter-btn" data-filter="" onclick="switchShopifyStatusFilter('',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:600">
+        الكل
+      </button>
+      <span style="width:1px;height:20px;background:var(--border);border-radius:1px;margin:0 2px;flex-shrink:0"></span>
       <button class="btn btn-sm sp-status-filter-btn sp-need-contact-btn" data-filter="need-contact" data-color="#ef4444" onclick="switchShopifyStatusFilter('need-contact',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid #ef4444;color:#ef4444;background:linear-gradient(135deg,#ef444418 0%,#dc262618 100%);border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:600;box-shadow:0 0 8px #ef444440,0 0 16px #ef444420;animation:needContactPulse 2s ease-in-out infinite">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/></svg>
         يحتاج تواصل <span id="shopify-need-contact-count" style="background:#ef4444;color:#fff;border-radius:99px;padding:1px 6px;font-size:.68rem;font-weight:700">0</span>
       </button>
-      <button class="btn btn-sm sp-status-filter-btn" data-filter="confirmed" data-color="#10b981" onclick="switchShopifyStatusFilter('confirmed',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid var(--border);color:var(--text-muted);background:var(--bg-alt);border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:400">
+      <button class="btn btn-sm sp-status-filter-btn" data-filter="confirmed" data-color="#10b981" onclick="switchShopifyStatusFilter('confirmed',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid #10b98140;color:#10b981;background:#10b98110;border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:500">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         جاهز للتسجيل
       </button>
-      <button class="btn btn-sm sp-status-filter-btn" data-filter="followup" data-color="#f59e0b" onclick="switchShopifyStatusFilter('followup',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid var(--border);color:var(--text-muted);background:var(--bg-alt);border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:400">
+      <button class="btn btn-sm sp-status-filter-btn" data-filter="followup" data-color="#f59e0b" onclick="switchShopifyStatusFilter('followup',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid #f59e0b40;color:#f59e0b;background:#f59e0b10;border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:500">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
         متابعة مع العميل
       </button>
-      <button class="btn btn-sm sp-status-filter-btn" data-filter="cancelled" data-color="#6b7280" onclick="switchShopifyStatusFilter('cancelled',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid var(--border);color:var(--text-muted);background:var(--bg-alt);border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:400">
+      <button class="btn btn-sm sp-status-filter-btn" data-filter="cancelled" data-color="#6b7280" onclick="switchShopifyStatusFilter('cancelled',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid #6b728040;color:#6b7280;background:#6b728010;border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:500">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         طلب غير مؤكد
       </button>
-    </div>
-  </div>
-  <!-- Date Filter -->
-  <div id="sp-date-filter" style="margin-bottom:14px">
-    <button id="sp-date-trigger" onclick="spToggleDatePanel(event)" type="button">
-      <svg class="sp-df-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <span id="sp-df-label-text">تصفية بالتاريخ</span>
-      <svg id="sp-df-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      <span id="sp-df-sep"></span>
-      <span id="sp-date-clear" onclick="spClearDateFilter(event)" title="مسح">
-        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </span>
-    </button>
-
-    <div id="sp-date-panel">
-      <!-- Left: Calendar -->
-      <div id="sp-cal-main">
-        <div class="sp-cal-header">
-          <!-- RTL: right arrow = next month, left arrow = prev month -->
-          <button class="sp-cal-nav" onclick="spCalNav(1)" type="button" aria-label="شهر تالي">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <div class="sp-cal-month-year">
-            <span class="sp-cal-month" id="sp-cal-month-lbl"></span>
-            <span class="sp-cal-year" id="sp-cal-year-lbl"></span>
-          </div>
-          <button class="sp-cal-nav" onclick="spCalNav(-1)" type="button" aria-label="شهر سابق">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-        </div>
-        <div id="sp-cal-range-label"></div>
-        <div class="sp-cal-grid" id="sp-cal-grid"></div>
-      </div>
-
-      <!-- Right: Presets -->
-      <div id="sp-cal-presets">
-        <div id="sp-cal-presets-scroll">
-          <button class="sp-preset-item" data-preset="today"       onclick="spPreset('today',this)">اليوم</button>
-          <button class="sp-preset-item" data-preset="yesterday"   onclick="spPreset('yesterday',this)">أمس</button>
-          <button class="sp-preset-item" data-preset="last-7"      onclick="spPreset('last-7',this)">آخر ٧ أيام</button>
-          <button class="sp-preset-item" data-preset="last-14"     onclick="spPreset('last-14',this)">آخر ١٤ يوم</button>
-          <button class="sp-preset-item" data-preset="last-30"     onclick="spPreset('last-30',this)">آخر ٣٠ يوم</button>
-          <button class="sp-preset-item" data-preset="this-week"   onclick="spPreset('this-week',this)">هذا الأسبوع</button>
-          <button class="sp-preset-item" data-preset="last-week"   onclick="spPreset('last-week',this)">الأسبوع الماضي</button>
-          <button class="sp-preset-item" data-preset="this-month"  onclick="spPreset('this-month',this)">هذا الشهر</button>
-          <button class="sp-preset-item" data-preset="last-month"  onclick="spPreset('last-month',this)">الشهر الماضي</button>
-          <button class="sp-preset-item" data-preset="this-year"   onclick="spPreset('this-year',this)">هذا العام</button>
-          <button class="sp-preset-item active" data-preset="custom" onclick="spPreset('custom',this)">مخصص</button>
-        </div>
-        <div id="sp-cal-apply-wrap">
-          <button id="sp-cal-apply" onclick="spCalApply()" type="button">تطبيق</button>
-        </div>
-      </div>
     </div>
   </div>
   <!-- Table (desktop) + Cards (mobile) -->
@@ -9262,6 +9058,66 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
             <input type="number" id="new-ship-gov" placeholder="المحافظات" style="flex:none">
           </div>
           <button class="btn btn-primary btn-sm" onclick="addShipCompany()" style="width:100%">إضافة شركة</button>
+        </div>
+      </div>
+
+      <!-- Bosta Integration -->
+      <div class="settings-section-label" style="margin-top:20px">
+        <span class="bosta-icon" style="width:14px;height:14px"></span>
+        ربط Bosta للشحن
+      </div>
+      <div class="settings-card" id="stg-bosta-card" data-stg-keywords="bosta api key شحن ربط">
+        <div class="stg-card-title">
+          <div class="stg-card-title-icon"><span class="bosta-icon" style="width:18px;height:18px"></span></div>
+          <div class="stg-card-title-text">
+            <strong>Bosta API Key</strong>
+            <span>مطلوب لإرسال الطلبات وتتبع الشحنات تلقائياً</span>
+          </div>
+        </div>
+
+        <!-- Status indicator -->
+        <div id="bosta-key-status" style="margin-bottom:12px;font-size:.82rem;display:flex;align-items:center;gap:6px;color:var(--muted)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          جاري التحقق...
+        </div>
+
+        <!-- Key input -->
+        <div class="form-group" style="margin-bottom:10px">
+          <label style="font-size:.8rem;margin-bottom:5px;display:block;font-weight:600">API Key</label>
+          <div style="position:relative">
+            <input type="password" id="stg-bosta-api-key"
+              placeholder="أدخل Bosta API Key هنا..."
+              style="width:100%;padding-right:40px;font-family:monospace;font-size:.82rem;direction:ltr"
+              oninput="delete this.dataset.masked; qs('#bosta-key-status').innerHTML=''">
+            <button type="button" id="btn-toggle-bosta-key"
+              style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;display:flex;align-items:center;justify-content:center;width:28px;height:28px"
+              onclick="togglePassField(event)"
+              title="إظهار / إخفاء">
+              <svg viewBox="0 0 24 24" style="display:block;flex-shrink:0;width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" onclick="testBostaKey()" id="btn-test-bosta">
+            <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;width:1em;height:1em;margin-inline-end:4px" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            اختبار الاتصال
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="saveBostaKey()" id="btn-save-bosta">
+            <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;width:1em;height:1em;margin-inline-end:4px" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            حفظ المفتاح
+          </button>
+        </div>
+
+        <!-- Instructions -->
+        <div style="margin-top:14px;padding:10px 12px;background:var(--bg-alt);border-radius:8px;border:1px solid var(--border);font-size:.77rem;color:var(--muted);line-height:1.7;direction:rtl">
+          <strong style="color:var(--text);display:block;margin-bottom:4px">كيف تحصل على API Key؟</strong>
+          <ol style="margin:0;padding-inline-start:18px">
+            <li>ادخل على لوحة تحكم Bosta</li>
+            <li>اذهب إلى الإعدادات → API Credentials</li>
+            <li>انسخ الـ API Key وألصقه هنا</li>
+          </ol>
         </div>
       </div>
 
@@ -10884,6 +10740,20 @@ function fmtJT(n) {
   // Plain-text version for toast / textContent contexts
   return 'EGP ' + fmtN(n);
 }
+function payMethodIcon(method, size) {
+  const m = (method || '').toLowerCase();
+  const s = size || 16;
+  if (m.includes('فودافون') || m.includes('vodafone')) {
+    return `<img src="/vodafone.svg" style="width:${s}px;height:${Math.round(s*.8)}px;object-fit:contain;flex-shrink:0" alt="Vodafone">`;
+  }
+  if (m.includes('instapay')) {
+    return `<img src="/instapay.svg" style="width:${s}px;height:${s}px;object-fit:contain;flex-shrink:0" alt="Instapay">`;
+  }
+  if (m.includes('بنك') || m.includes('bank') || m.includes('تحويل')) {
+    return `<svg viewBox="0 0 24 24" width="${s}" height="${s}" style="flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M3 10h18M3 6l9-4 9 4"/><path d="M6 10v12M10 10v12M14 10v12M18 10v12"/></svg>`;
+  }
+  return `<svg viewBox="0 0 24 24" width="${s}" height="${s}" style="flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`;
+}
 
 // ── Smart note parser: detects if a note contains a payment amount + method ──
 // Returns { isPayment, amount, method } or null if plain note
@@ -11163,10 +11033,15 @@ function showImportResultToast({ created, updated, skipped, total }) {
   function _open({ title, icon='info', rows=[], question='', confirmLabel='تأكيد', cancelLabel='إلغاء', danger=false, prompt=false, placeholder='', required=false }) {
     _isPrompt = prompt;
 
-    elTitle().textContent = title;
+    elTitle().innerHTML = title;
     elIcon().className = icon;
-    const iconMap = { warn:'⚠️', danger:'🗑️', info:'ℹ️', success:'✅' };
-    elIcon().textContent = iconMap[icon] || '❓';
+    const iconMap = {
+      warn:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;color:#f59e0b"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+      danger:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;color:#ef4444"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`,
+      info:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;color:#3b82f6"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+      success: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;color:#10b981"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+    };
+    elIcon().innerHTML = iconMap[icon] || iconMap.info;
 
     elRows().innerHTML = rows.map(([k,v]) =>
       `<div class="sm-row"><span class="sm-key">${esc(k)}</span><span class="sm-val">${esc(String(v))}</span></div>`
@@ -16769,11 +16644,16 @@ function renderTxFields() {
           <div class="field-hint">ابدأ بالكتابة لعرض السجل</div>
           <div class="field-error" id="err-client"></div>
         </div>
-        <div class="form-group" style="margin-bottom:0">
+        <div class="form-group" style="margin-bottom:8px">
           <label>رقم الهاتف <span style="color:var(--red)">*</span></label>
           <input type="tel" id="tx-phone" placeholder="01xxxxxxxxx" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
           <div class="field-hint">11 رقم يبدأ بـ 01</div>
           <div class="field-error" id="err-phone"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>عنوان التوصيل <span style="color:var(--red)">*</span></label>
+          <input type="text" id="tx-address" placeholder="الشارع، المنطقة، المدينة">
+          <div class="field-error" id="err-address"></div>
         </div>
       </div>
 
@@ -19535,6 +19415,7 @@ function validateTx() {
     const phone = qs('#tx-phone')?.value?.trim() || '';
     if (!phone) { const el = qs('#err-phone'); if (el) el.textContent = 'مطلوب'; valid = false; }
     else if (!isValidPhone(phone)) { const el = qs('#err-phone'); if (el) el.textContent = 'رقم هاتف غير صحيح (01xxxxxxxxx)'; valid = false; }
+    if (!qs('#tx-address')?.value?.trim()) { const el = qs('#err-address'); if (el) el.textContent = 'مطلوب'; valid = false; }
     const saleRef = qs('#tx-ref')?.value?.trim() || '';
     if (!saleRef) { const el = qs('#err-ref'); if (el) el.textContent = 'مطلوب'; valid = false; }
     else if (!/^\d+$/.test(saleRef)) { const el = qs('#err-ref'); if (el) el.textContent = 'أرقام فقط'; valid = false; }
@@ -19829,7 +19710,8 @@ async function saveTx() {
       const saleRemaining = Math.max(0, total - deposit);
       Object.assign(body, { shipCo: qs('#tx-shipco')?.value || '', shipZone: txShipZone, shipCost, deposit,
         remaining: saleRemaining, depMethod: qs('#tx-dep-method')?.value || '',
-        payment: qs('#tx-payment')?.value || '', payStatus: saleRemaining <= 0 ? 'مكتمل' : 'معلق' });
+        payment: qs('#tx-payment')?.value || '', payStatus: saleRemaining <= 0 ? 'مكتمل' : 'معلق',
+        shippingAddress: (qs('#tx-address')?.value || '').trim() });
     } else if (txType === 'مشتريات') {
       const account = qs('#tx-account')?.value || 'كاش';
       const paidNow = deposit; // already capped above
@@ -20214,6 +20096,7 @@ function serializeTxForm() {
   if (txType === 'مبيعات') {
     Object.assign(snap, {
       client: get('#tx-client'), phone: get('#tx-phone'), ref: get('#tx-ref'),
+      address: get('#tx-address'),
       shipCo: get('#tx-shipco'), shipZone: typeof txShipZone !== 'undefined' ? txShipZone : '',
       shipCost: get('#tx-shipcost'), deposit: get('#tx-deposit'),
       depMethod: get('#tx-dep-method'), payment: get('#tx-payment'),
@@ -20255,6 +20138,7 @@ function deserializeTxForm(snap) {
     set('#tx-inv-note', snap.invNote);
     if (snap.type === 'مبيعات') {
       set('#tx-client', snap.client); set('#tx-phone', snap.phone); set('#tx-ref', snap.ref);
+      set('#tx-address', snap.address);
       set('#tx-shipco', snap.shipCo);
       if (typeof snap.shipZone === 'string') { try { txShipZone = snap.shipZone; } catch(_) {} }
       set('#tx-shipcost', snap.shipCost); set('#tx-deposit', snap.deposit);
@@ -21472,7 +21356,7 @@ function renderMovMobileCard(tx) {
       </div>
       ${tx.ref ? `<span class="mov-card-ref">#${esc(tx.ref)}</span>` : ''}
     </div>
-    <div class="mov-card-statusrow">${statusHtml}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : ''}${tx.shopifyOrderId ? `<a href="https://admin.shopify.com/store/soulia-2/orders/${esc(tx.shopifyOrderId)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="mov-card-emp mov-emp-initials" title="فتح أوردر Shopify" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">${_SHOPIFY_LOGO_SVG}</a>` : `<span class="mov-card-emp mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span>`}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div>
+    <div class="mov-card-statusrow">${statusHtml}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : ''}${tx.bostaOrderId ? `<span onclick="event.stopPropagation();syncBostaStatus('${esc(tx._id)}')" title="Bosta — اضغط لتحديث الحالة" style="cursor:pointer">${_bostaStatusBadge(tx)}</span>` : ''}${tx.shopifyOrderId ? `<a href="https://admin.shopify.com/store/soulia-2/orders/${esc(tx.shopifyOrderId)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="mov-card-emp mov-emp-initials" title="فتح أوردر Shopify" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">${_SHOPIFY_LOGO_SVG}</a>` : `<span class="mov-card-emp mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span>`}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div>
     <div class="mov-card-grid">
       <div class="mov-item"><span class="mov-label">الإجمالي</span><span class="mov-val mov-col-total">${fmtJ(tx.total)}</span></div>
       <div class="mov-item"><span class="mov-label">المدفوع</span><span class="mov-val mov-col-paid">${dep}</span></div>
@@ -21885,6 +21769,7 @@ function renderMovementTxRow(tx) {
     <td data-col="tag" style="text-align:center;min-width:110px" onclick="event.stopPropagation()" data-tag-cell="${esc(tx._id)}">${renderTxTagsCell(tx._id)}</td>
     <td data-col="discount" style="text-align:center;white-space:nowrap">${_movDiscountBadge(tx)}</td>
     <td data-col="pickup" style="text-align:center;white-space:nowrap">${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : '<span style="color:var(--muted);font-size:.8rem">—</span>'}</td>
+    <td data-col="bosta" style="text-align:center;white-space:nowrap">${_bostaStatusBadge(tx)}</td>
     <td data-col="employee" class="mov-col-employee" style="text-align:center"><div class="mov-col-employee-wrap">${tx.shopifyOrderId ? `<a href="https://admin.shopify.com/store/soulia-2/orders/${esc(tx.shopifyOrderId)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="mov-emp-initials" title="فتح أوردر Shopify #${esc(tx.shopifyOrderId)}" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">${_SHOPIFY_LOGO_SVG}</a>` : `<span class="mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span>`}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div></td>
     <td>
       <div class="actions-dd">
@@ -21907,6 +21792,10 @@ function renderMovementTxRow(tx) {
                 : `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')" style="display:flex;align-items:center;gap:5px">${ICON('ban')} ${currentLang==='en'?'Cancel':'إلغاء'}</div>`
           ) : ''}
           ${isAdmin() && tx.cancelled ? `<div class="dd-item danger" onclick="archiveMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg> أرشفة</div>` : ''}
+          ${tx.type === 'مبيعات' && !tx.cancelled ? `<div class="dd-divider"></div>${!tx.bostaOrderId
+            ? `<div class="dd-item" onclick="sendToBosta('${esc(tx._id)}')">${_BOSTA_ICON} إرسال Bosta</div>`
+            : `<div class="dd-item" onclick="syncBostaStatus('${esc(tx._id)}')">${_BOSTA_ICON} تحديث Bosta</div>`
+          }` : ''}
           <div class="dd-divider"></div>
           <div class="dd-item" style="color:var(--muted)" onclick="toggleMovExclude('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg> ${movExcludedIds.has(String(tx._id)) ? 'إلغاء الاستبعاد' : 'استبعاد من النتائج'}</div>
         </div>
@@ -24456,7 +24345,21 @@ function openCollectMovement(id) {
       <div id="collect-preview" style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:12px;font-size:.83rem">
         <span style="color:var(--green);font-weight:700"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> سيتم السداد بالكامل</span>
       </div>
-      <div class="form-group"><label>طريقة السداد</label><select id="collect-method" required onchange="syncPaymentMethod()">${collectOpts || '<option value="">اختر طريقة الدفع</option>'}</select></div>
+      <div class="form-group"><label>طريقة السداد</label>
+        <select id="collect-method" style="display:none">${collectOpts}</select>
+        <div id="collect-method-btns" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px">
+          ${RET_VAULT_SEGMENTS.map(v => {
+            const icons = {
+              'Instapay': '<img src="/instapay.svg" style="width:28px;height:28px;object-fit:contain" alt="Instapay">',
+              'فودافون كاش': '<img src="/vodafone.svg" style="width:30px;height:24px;object-fit:contain" alt="Vodafone">',
+              'كاش': '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
+              'تحويل بنكي': '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M3 10h18M3 6l9-4 9 4"/><path d="M6 10v12M10 10v12M14 10v12M18 10v12"/></svg>'
+            };
+            const isActive = v === defaultMethod;
+            return `<button type="button" onclick="_selectCollectMethod('${v}',this)" data-val="${v}" style="padding:10px 6px;border-radius:9px;border:2px solid ${isActive ? 'var(--accent)' : 'var(--border)'};background:${isActive ? 'var(--accent-light,#ede9fe)' : 'var(--surface2)'};color:var(--text);font-size:.72rem;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:all .15s">${icons[v]||''}<span>${v}</span></button>`;
+          }).join('')}
+        </div>
+      </div>
       <div class="form-group"><label>ملاحظات</label><input type="text" id="collect-note" placeholder="ملاحظة السداد..."></div>
       <div class="flex gap-8 mt-16">
         <button class="btn btn-danger" onclick="doCollectMovement('${esc(id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg> تأكيد السداد</button>
@@ -24484,7 +24387,21 @@ function openCollectMovement(id) {
       <div id="collect-net-preview" style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:14px;font-size:.83rem">
         <span style="color:var(--green);font-weight:700">✓ سيُضاف ${fmtJ(Math.max(0, (tx.remaining || 0) - remainingShipToDeduct))} إلى الخزنة</span>
       </div>
-      <div class="form-group"><label>طريقة التحصيل</label><select id="collect-method" onchange="syncPaymentMethod()">${collectOpts}</select></div>
+      <div class="form-group"><label>طريقة التحصيل</label>
+        <select id="collect-method" style="display:none">${collectOpts}</select>
+        <div id="collect-method-btns" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px">
+          ${RET_VAULT_SEGMENTS.map(v => {
+            const icons = {
+              'Instapay': '<img src="/instapay.svg" style="width:28px;height:28px;object-fit:contain" alt="Instapay">',
+              'فودافون كاش': '<img src="/vodafone.svg" style="width:30px;height:24px;object-fit:contain" alt="Vodafone">',
+              'كاش': '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
+              'تحويل بنكي': '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M3 10h18M3 6l9-4 9 4"/><path d="M6 10v12M10 10v12M14 10v12M18 10v12"/></svg>'
+            };
+            const isActive = v === defaultMethod;
+            return `<button type="button" onclick="_selectCollectMethod('${v}',this)" data-val="${v}" style="padding:10px 6px;border-radius:9px;border:2px solid ${isActive ? 'var(--accent)' : 'var(--border)'};background:${isActive ? 'var(--accent-light,#ede9fe)' : 'var(--surface2)'};color:var(--text);font-size:.72rem;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:all .15s">${icons[v]||''}<span>${v}</span></button>`;
+          }).join('')}
+        </div>
+      </div>
       <div class="form-group"><label>ملاحظات</label><input type="text" id="collect-note"></div>
       <div class="flex gap-8 mt-16">
         <button class="btn btn-primary" onclick="doCollectMovement('${esc(id)}')">تحصيل</button>
@@ -24492,13 +24409,21 @@ function openCollectMovement(id) {
       </div>`, 'max-width:500px');
   }
 }
+function _selectCollectMethod(val, btn) {
+  const sel = qs('#collect-method');
+  if (sel) sel.value = val;
+  document.querySelectorAll('#collect-method-btns button').forEach(b => {
+    const active = b.dataset.val === val;
+    b.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
+    b.style.background = active ? 'var(--accent-light,#ede9fe)' : 'var(--surface2)';
+  });
+  syncPaymentMethod();
+}
 function syncPaymentMethod() {
   const collectMethod = (qs('#collect-method')?.value || '').trim();
   if (!collectMethod) return;
-  // Update hidden select in transaction form
   const txDepField = qs('#tx-dep-method');
   if (txDepField) txDepField.value = collectMethod;
-  // Find and click the matching button to update styles and trigger recalculation
   const targetBtn = qsa('#dep-method-btns .dep-method-btn').find(b => b.getAttribute('data-val') === collectMethod);
   if (targetBtn) selectDepMethod(collectMethod, targetBtn);
 }
@@ -25096,6 +25021,111 @@ async function archiveMovement(id) {
 }
 // Keep deleteMovement as alias for backward compatibility
 async function deleteMovement(id) { return archiveMovement(id); }
+
+// ── Bosta integration helpers ────────────────────────────────────────────
+async function sendToBosta(id) {
+  const tx = transactions.find(t => t._id === id);
+  if (!tx) { toast('الحركة غير موجودة', true); return; }
+  if (tx.bostaOrderId) { toast('تم إرسال هذا الطلب إلى Bosta مسبقاً', true); return; }
+  const confirmed = await showConfirm(
+    `إرسال الطلب #${tx.ref || id.slice(-6)} للعميل "${tx.client || '—'}" إلى Bosta للشحن؟`,
+    { title: `إرسال إلى ${_BOSTA_ICON} bosta`, icon: 'info' }
+  );
+  if (!confirmed) return;
+  try {
+    const res = await api(`/shipping/create-order/${id}`, { method: 'POST' });
+    const tracking = res.trackingNumber || res.bostaTrackingNumber || '';
+    if (tracking) {
+      toast(`تم الإرسال إلى Bosta ✅ — رقم التتبع: ${tracking}`);
+    } else {
+      toast(`تم الإرسال إلى Bosta ✅ — معرف الشحنة: ${res.bostaOrderId || '—'}`);
+    }
+    // تحديث الـ transaction محلياً فوراً
+    if (tx) {
+      tx.bostaOrderId          = res.bostaOrderId || tx.bostaOrderId;
+      tx.bostaTrackingNumber   = tracking || tx.bostaTrackingNumber;
+      tx.bostaStatus           = 'CREATED';
+      tx.bostaStatusLabel      = 'تم الإنشاء';
+    }
+    transactions = await api('/transactions').catch(() => transactions);
+    renderMovements();
+  } catch (e) {
+    toast('فشل الإرسال إلى Bosta: ' + (e.message || 'خطأ غير معروف'), true);
+  }
+}
+
+async function bulkSendToBosta() {
+  if (!selectedMovIds.size) { toast('لم يتم تحديد أي حركات', true); return; }
+  const eligible = [...selectedMovIds]
+    .map(id => transactions.find(t => t._id === id))
+    .filter(t => t && t.type === 'مبيعات' && !t.cancelled && !t.bostaOrderId);
+  if (!eligible.length) { toast('لا توجد حركات مبيعات جديدة للإرسال (غير مُرسلة مسبقاً)', true); return; }
+  const confirmed = await showConfirm(
+    `إرسال ${eligible.length} طلب إلى Bosta؟`,
+    { title: `إرسال مجمّع إلى ${_BOSTA_ICON} bosta`, icon: 'info' }
+  );
+  if (!confirmed) return;
+  let success = 0, failed = 0;
+  for (const tx of eligible) {
+    try {
+      const res = await api(`/shipping/create-order/${tx._id}`, { method: 'POST' });
+      const tracking = res.trackingNumber || res.bostaTrackingNumber || '';
+      tx.bostaOrderId        = res.bostaOrderId || tx.bostaOrderId;
+      tx.bostaTrackingNumber = tracking || tx.bostaTrackingNumber;
+      tx.bostaStatus         = 'CREATED';
+      tx.bostaStatusLabel    = 'تم الإنشاء';
+      success++;
+    } catch { failed++; }
+  }
+  toast(`Bosta: تم إرسال ${success} طلب${failed ? ` — فشل ${failed}` : ' ✅'}`);
+  transactions = await api('/transactions').catch(() => transactions);
+  renderMovements();
+}
+
+async function syncBostaStatus(id) {
+  try {
+    const res = await api(`/shipping/sync/${id}`);
+    const tracking = res.trackingNumber || res.bostaTrackingNumber || '';
+    toast(`حالة Bosta: ${res.statusLabel || res.status || '—'}${tracking ? ` — رقم التتبع: ${tracking}` : ''}`);
+    const tx = transactions.find(t => t._id === id);
+    if (tx) {
+      tx.bostaStatus           = res.status || tx.bostaStatus;
+      tx.bostaStatusLabel      = res.statusLabel || tx.bostaStatusLabel;
+      if (tracking) tx.bostaTrackingNumber = tracking;
+    }
+    renderMovements();
+  } catch (e) {
+    toast('فشل تحديث حالة Bosta: ' + (e.message || 'خطأ غير معروف'), true);
+  }
+}
+
+// ── Auto sync Bosta every 30 min ──────────────────────────────
+let _bostaAutoSyncTimer = null;
+
+async function _bostaAutoSync() {
+  const pending = (transactions || []).filter(t =>
+    t.bostaOrderId && !['DELIVERED','RETURNED','CANCELLED'].includes(t.bostaStatus || '')
+  );
+  if (!pending.length) return;
+  let updated = 0;
+  for (const tx of pending) {
+    try {
+      const res = await api(`/shipping/sync/${tx._id}`);
+      tx.bostaStatus      = res.status      || tx.bostaStatus;
+      tx.bostaStatusLabel = res.statusLabel || tx.bostaStatusLabel;
+      const tracking = res.trackingNumber || res.bostaTrackingNumber || '';
+      if (tracking) tx.bostaTrackingNumber = tracking;
+      updated++;
+    } catch { /* skip single failure */ }
+  }
+  if (updated) renderMovements();
+}
+
+function startBostaAutoSync() {
+  if (_bostaAutoSyncTimer) clearInterval(_bostaAutoSyncTimer);
+  _bostaAutoSync(); // run immediately on start
+  _bostaAutoSyncTimer = setInterval(_bostaAutoSync, 30 * 60 * 1000);
+}
 
 async function bulkArchiveMovements() {
   if (!selectedMovIds.size) return;
@@ -26217,6 +26247,7 @@ function buildInvoiceHtml(tx) {
       <div class="info-val">${esc(tx.client || '—')}</div>
       ${tx.phone ? `<div class="info-sub">${esc(tx.phone)}</div>` : ''}
     </div>
+    ${isSales ? (()=>{ const _sa = (tx.shippingAddress||'').replace(/^العنوان:\s*/,'').trim() || (()=>{ const a=tx.rawData?.shipping_address; if(!a) return ''; return [a.address1,a.address2,a.city].filter(Boolean).join('، '); })(); return _sa ? `<div class="info-cell"><div class="info-lbl">عنوان الشحن</div><div class="info-val" style="font-size:10px;line-height:1.5">${esc(_sa)}</div></div>` : ''; })() : ''}
     <div class="info-cell">
       <div class="info-lbl">حالة الدفع</div>
       <div style="margin:2px 0 4px"><span class="badge ${statusCls}">${statusLabel}</span></div>
@@ -26451,6 +26482,7 @@ function showInvoiceDetail(id, highlightCommentId) {
           <div class="inv-party-info">
             <div class="inv-party-name">${esc(tx.client || '-')}<span class="inv-party-tag">${isPurchase ? 'المورد' : 'العميل'}</span></div>
             ${tx.phone ? `<div class="inv-party-phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>${esc(tx.phone)}</div>` : ''}
+            ${!isPurchase ? (()=>{ const _sa = (tx.shippingAddress||'').replace(/^العنوان:\s*/,'').trim() || (()=>{ const a=tx.rawData?.shipping_address; if(!a) return ''; return [a.address1,a.address2,a.city].filter(Boolean).join('، '); })(); return _sa ? `<div class="inv-party-phone" style="margin-top:4px;color:var(--text-muted)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(_sa)}</div>` : ''; })() : ''}
           </div>
         </div>
         <!-- Items Table -->
@@ -26490,7 +26522,7 @@ function showInvoiceDetail(id, highlightCommentId) {
           </div>
           ${(tx.remaining || 0) > 0 || _depositsTotal > 0 || _paymentsTotal > 0 ? `
           <div class="inv-breakdown">
-            ${_depositsTotal > 0 ? `<div class="inv-breakdown-row deposit"><span class="label">${isPurchase ? 'العربون المدفوع' : 'الديبوزت المسبق'}${tx.depMethod ? ` · ${tx.depMethod}` : ''}</span><span class="amount">${fmtJ(_depositsTotal)}</span></div>` : ''}
+            ${_depositsTotal > 0 ? `<div class="inv-breakdown-row deposit"><span class="label" style="display:flex;align-items:center;gap:5px">${tx.depMethod ? payMethodIcon(tx.depMethod) : ''}${isPurchase ? 'العربون المدفوع' : 'الديبوزت المسبق'}${tx.depMethod ? `<span style="font-size:.78rem;opacity:.7">· ${tx.depMethod}</span>` : ''}</span><span class="amount">${fmtJ(_depositsTotal)}</span></div>` : ''}
             ${_paymentsTotal > 0 ? `<div class="inv-breakdown-row collection"><span class="label" style="font-size:0.9rem"><span>${isPurchase ? 'السدادات الإضافية' : `التحصيل من ${tx.shipCo || 'الشحن'}`}</span>${tx.collectMethod ? `<span style="display:block;font-size:0.85rem;color:#666;margin-top:2px">· ${tx.collectMethod}</span>` : ''}</span><span class="amount">${fmtJ(_paymentsTotal)}</span></div>` : ''}
             ${(tx.remaining || 0) > 0 ? `<div class="inv-breakdown-row discount"><span class="label">${isPurchase ? 'المتبقي للمورد' : 'المتبقي للتحصيل'}</span><span class="amount">${fmtJ(tx.remaining || 0)}</span></div>` : ''}
           </div>` : ''}
@@ -26500,11 +26532,12 @@ function showInvoiceDetail(id, highlightCommentId) {
           <span class="meta-chip"><span class="k">الدفع</span><span class="v">${esc(tx.depMethod || tx.payment || (isPurchase ? 'تحويل بنكي' : 'نقدي'))}</span></span>
           <span class="meta-chip"><span class="k">الموظف</span><span class="v">${esc(tx.employee || '-')}</span></span>
           ${!isPurchase && !isReturn ? `<span class="meta-chip"><span class="k">Pick-Up Status</span><span class="v">${_puStatusBadge(tx.pickupStatus || 'Pending')}</span></span>${tx.pickupDate ? `<span class="meta-chip"><span class="k">Pick-Up Date</span><span class="v">${esc(tx.pickupDate)}</span></span>` : ''}` : ''}
+          ${!isPurchase && !isReturn ? `<span class="meta-chip"><span class="k">Bosta</span><span class="v" style="display:flex;align-items:center;gap:6px">${_bostaStatusBadge(tx)}${tx.bostaLastSync ? `<span style="font-size:.7rem;color:var(--muted)">${new Date(tx.bostaLastSync).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</span>` : ''}</span></span>` : ''}
           ${(()=>{
             if (!tx.notes) return '';
             const _np = parseNoteAsPayment(tx.notes);
             if (_np) {
-              return `<span class="meta-chip note payment-note"><span class="k">💳 دفعة</span><span class="v"><span class="amt-cur">EGP</span> <span class="amt-num">${fmtN(_np.amount)}</span> · ${esc(_np.method)}</span></span>`;
+              return `<span class="meta-chip note payment-note" style="display:inline-flex;align-items:center;gap:5px">${payMethodIcon(_np.method)}<span class="amt-num" style="font-weight:700">${fmtN(_np.amount)}</span><span style="opacity:.65;font-size:.78rem">· ${esc(_np.method)}</span></span>`;
             }
             const _escaped = esc(tx.notes);
             const _needsPopup = tx.notes.length > 40;
@@ -26544,6 +26577,10 @@ function showInvoiceDetail(id, highlightCommentId) {
       <button class="btn btn-outline" onclick="closeInvoiceDetail();printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>طباعة</button>
       ${isExchangeSalePendingCollect(tx) ? `<button class="btn btn-primary" onclick="closeInvoiceDetail();openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg>تحصيل فرق الاستبدال (${fmtJ(tx.remaining)})</button>` : ''}
       ${(tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx) ? `<button class="btn ${isPurchase ? 'btn-danger' : 'btn-primary'}" onclick="closeInvoiceDetail();openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${isPurchase ? '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>' : '<circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/>'}</svg>${isPurchase ? 'سداد للمورد' : 'تحصيل من العميل'}</button>` : ''}
+      ${!isPurchase && !isReturn && !tx.cancelled ? (!tx.bostaOrderId
+        ? `<button class="btn btn-outline" onclick="closeInvoiceDetail();sendToBosta('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px">${_BOSTA_ICON} <span style="font-size:.85rem">إرسال bosta</span></button>`
+        : `<button class="btn btn-outline" onclick="closeInvoiceDetail();syncBostaStatus('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>${_BOSTA_ICON} <span style="font-size:.85rem">تحديث bosta</span></button>`
+      ) : ''}
     </div>`;
   const _invEl = qs('#inv-detail-content');
   _invEl.classList.toggle('is-purchase', isPurchase);
@@ -26626,11 +26663,9 @@ function buildPaymentTimelineSection(tx) {
     return `<div class="inv-timeline-item">
       <div class="inv-timeline-dot ${isDeposit ? 'green' : 'blue'}"></div>
       <div class="inv-timeline-content">
-        <div class="inv-timeline-amount" style="color:${isDeposit ? '#16a34a' : '#3b82f6'}">${fmtJ(e.amount)}</div>
+        <div class="inv-timeline-amount" style="color:${isDeposit ? '#16a34a' : '#3b82f6'};display:flex;align-items:center;gap:6px">${payMethodIcon(e.method)}<span style="font-weight:700">${fmtN(e.amount)}</span><span style="opacity:.65;font-size:.78rem;font-weight:400">· ${esc(e.method)}</span></div>
         <div class="inv-timeline-meta">
           <span>${isDeposit ? (isPurchase ? 'عربون' : 'ديبوزت') : (isPurchase ? 'سداد' : 'تحصيل')}</span>
-          <span>·</span>
-          <span>${esc(e.method)}</span>
           <span>·</span>
           <span>${dateStr} ${timeStr}</span>
           ${e.note ? `<span>·</span><span>${esc(e.note)}</span>` : ''}
@@ -30803,6 +30838,7 @@ const MOV_COLS = [
   { id:'discount',  i18n:null,                ar:'الخصم',          en:'Discount' },
   { id:'pickup',    i18n:null,                ar:'Pick-Up',        en:'Pick-Up' },
   { id:'employee',  i18n:'colEmployee',       ar:'الموظف',         en:'Employee' },
+  { id:'bosta',     i18n:null,                ar:'Bosta',          en:'Bosta' },
 ];
 function _getHiddenMovCols() {
   try { const v = localStorage.getItem(MOV_COLS_KEY); return v ? new Set(JSON.parse(v)) : new Set(); }
@@ -32759,6 +32795,12 @@ function renderSettings() {
     const kpiCb = qs('#set-mov-kpi-staff');
     if (kpiCb) kpiCb.checked = (settings.showMovKpiForStaff === true);
   }
+  // Bosta key status indicator
+  const bostaCard = qs('#stg-bosta-card');
+  if (bostaCard) {
+    bostaCard.style.display = isAdmin() ? '' : 'none';
+    _updateBostaKeyStatus(!!settings.bostaApiKeySet);
+  }
   // Render version footer
   renderVersionFooter();
   // Load backup list when settings page is rendered (silently, without notifications)
@@ -33628,6 +33670,59 @@ async function saveVaultPass() {
   try { await api('/settings', { method: 'PUT', body: JSON.stringify({ vaultPass: pass }) }); qs('#set-vault-pass').value = ''; toast('تم حفظ كلمة المرور'); }
   catch (e) { toast('خطأ: ' + e.message, true); }
 }
+// ── Bosta API Key management ─────────────────────────────────────────────
+async function saveBostaKey() {
+  const inp = qs('#stg-bosta-api-key');
+  const key = (inp?.value || '').trim();
+  if (!key || inp?.dataset?.masked === '1') { toast('أدخل الـ API Key الجديد أولاً', true); return; }
+  const btn = qs('#btn-save-bosta');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+  try {
+    await api('/settings/bosta-api-key', { method: 'POST', body: JSON.stringify({ key }) });
+    _updateBostaKeyStatus(true);
+    toast('تم حفظ Bosta API Key بنجاح ✅');
+  } catch (e) {
+    toast('خطأ في الحفظ: ' + e.message, true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  }
+}
+
+async function testBostaKey() {
+  const inp = qs('#stg-bosta-api-key');
+  const key = (inp?.dataset?.masked === '1') ? '' : (inp?.value || '').trim();
+  const btn = qs('#btn-test-bosta');
+  const statusEl = qs('#bosta-key-status');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+  if (statusEl) statusEl.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> جاري الاختبار...';
+  try {
+    const body = key ? JSON.stringify({ key }) : '{}';
+    const res = await api('/settings/bosta-api-key/test', { method: 'POST', body });
+    if (statusEl) {
+      statusEl.innerHTML = res.success
+        ? `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> <span style="color:#10b981">${res.message}</span>`
+        : `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> <span style="color:#ef4444">${res.message}</span>`;
+    }
+  } catch (e) {
+    if (statusEl) statusEl.innerHTML = `<span style="color:#ef4444">خطأ: ${esc(e.message)}</span>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  }
+}
+
+function _updateBostaKeyStatus(isSet) {
+  const el = qs('#bosta-key-status');
+  if (!el) return;
+  const inp = qs('#stg-bosta-api-key');
+  if (isSet) {
+    el.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> <span style="color:#10b981">مفتاح محفوظ — يمكنك اختباره أو استبداله</span>`;
+    if (inp && !inp.value) { inp.value = '••••••••••••••••••••••••••••••••'; inp.dataset.masked = '1'; }
+  } else {
+    el.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> <span style="color:#f59e0b">لم يتم ضبط المفتاح بعد</span>`;
+    if (inp) { inp.value = ''; delete inp.dataset.masked; }
+  }
+}
+
 async function toggleMovKpiSetting(val) {
   if (!settings) settings = {};
   settings.showMovKpiForStaff = val;
@@ -36931,6 +37026,7 @@ __pingTimer = setInterval(() => { if (!navigator.onLine) showOfflineBanner(); el
     initReferenceClickHandlers();
     try { window.txNotifier?.init(); } catch(_) {}
     try { window.vaultNotifier?.init(); } catch(_) {}
+    try { startBostaAutoSync(); } catch(_) {}
     try { const cnt = await oqPendingCount(); if (cnt > 0 && !isLikelyOffline()) setTimeout(() => oqOnReconnect(), 1500); } catch(_) {}
   }
   else { qs('#login-page').style.display = 'flex'; loadRememberedLogin(); if (window._initLoginQuotePanel) window._initLoginQuotePanel(); }
@@ -39663,6 +39759,35 @@ function _puFilterRuns() {
 }
 
 // ── Status badge helpers ───────────────────────────────────────
+// Bosta icon only (hexagon box) — used for dropdown items
+const _BOSTA_ICON = `<span class="bosta-icon"></span>`;
+// Bosta icon + text — used for buttons and modal titles
+const _BOSTA_LOGO = `<span class="bosta-icon" style="width:14px;height:14px"></span><span style="font-family:sans-serif;font-weight:700;font-size:.85em;letter-spacing:.5px">bosta</span>`;
+
+function _bostaStatusBadge(tx) {
+  const status = tx.bostaStatus || '';
+  const label  = tx.bostaStatusLabel || status || '—';
+  const map = {
+    'created':          ['bosta-badge-created',   'تم الإنشاء'],
+    'picked_up':        ['bosta-badge-transit',   'تم الاستلام'],
+    'in_transit':       ['bosta-badge-transit',   'في الطريق'],
+    'out_for_delivery': ['bosta-badge-out',        'خارج للتسليم'],
+    'delivered':        ['bosta-badge-delivered',  'تم التسليم'],
+    'returned':         ['bosta-badge-returned',   'مُرتجع'],
+    'failed_attempt':   ['bosta-badge-failed',     'محاولة فاشلة'],
+    'delivery_failed':  ['bosta-badge-failed',     'فشل التسليم'],
+    'cancelled':        ['bosta-badge-cancelled',  'ملغي'],
+  };
+  if (!status) return tx.bostaOrderId
+    ? `<span class="bosta-badge bosta-badge-created">تم الإرسال</span>`
+    : `<span class="bosta-badge bosta-badge-none">—</span>`;
+  const [cls, fallbackLabel] = map[status.toLowerCase()] || ['bosta-badge-none', label];
+  const tracking = tx.bostaTrackingNumber || '';
+  const trackLink = tracking
+    ? `<a href="https://bosta.co/ar-eg/tracking-shipments?shipment-number=${tracking}" target="_blank" rel="noopener" title="تتبع: ${tracking}" onclick="event.stopPropagation()" class="bosta-track-link"><span class="bosta-icon"></span></a>`
+    : '';
+  return `<span style="display:inline-flex;align-items:center;gap:4px"><span class="bosta-badge ${cls}">${tx.bostaStatusLabel || fallbackLabel}</span>${trackLink}</span>`;
+}
 function _puStatusBadge(status) {
   const pkgIcon = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
   const map = {
@@ -40596,243 +40721,19 @@ function exportPickupExcel() {
       const ships = [...new Set(run.orders.map(o=>o.shipCo).filter(Boolean))].join('، ');
       rows.push([run.pickupRef, run.pickupDate||'', ships, run.orders.length, total, run.pickupBy]);
     });
-    rows.push([]);
-    rows.push(['=== تفاصيل الطلبات ===']);
-    rows.push(['Pickup Ref','رقم الطلب','العميل','الإجمالي','المتبقي','حالة الدفع','شركة الشحن','الحالة']);
-    _pickupRuns.forEach(run => {
-      run.orders.forEach(o => {
-        rows.push([run.pickupRef, o.ref||'', o.client||'', o.total||0, o.remaining||0, o.payStatus||'', o.shipCo||'', o.pickupStatus||'']);
-      });
-    });
-    if (typeof XLSX !== 'undefined') {
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Pickup Runs');
-      XLSX.writeFile(wb, `pickup_runs_${new Date().toISOString().slice(0,10)}.xlsx`);
-    } else {
-      toast('مكتبة التصدير غير محملة', true);
-    }
+    exportToExcel(rows, 'pickup-runs');
   };
   if (!isAdmin()) { requireExportOtp('تصدير سجل الاستلام', doExport); return; }
   doExport();
 }
 
-// Legacy stubs to avoid runtime errors if called from elsewhere
-function renderPickupOrders() { renderPickupRuns(); }
-function clearPickupSelection() {}
-
 // ===================== Shopify Orders =====================
 let _shopifyOrders = [];
 let _shopifyTab = 'pending';
 let _shopifyStatusFilter = '';
-/* ════════════════════════════════════════
-   Shopify Date Range Picker — JS
-   ════════════════════════════════════════ */
 let _shopifyDateFilter = { from: null, to: null };
-let _spCalView  = { year: new Date().getFullYear(), month: new Date().getMonth() };
-let _spCalPend  = { from: null, to: null };   // working selection before Apply
-let _spActivePreset = 'custom';
-
-const _spMN  = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-const _spDOW = ['الأح','الإث','الثل','الأر','الخم','الجم','السب']; // Mon-first via offset
-
-/* ── helpers ── */
-function _spDay0(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
-function _spSame(a,b){ return a&&b&&_spDay0(a).getTime()===_spDay0(b).getTime(); }
-function _spBetween(d,a,b){ const t=_spDay0(d).getTime(); return t>_spDay0(a).getTime()&&t<_spDay0(b).getTime(); }
-function _spFmt(d){
-  if (!d) return '';
-  return `${d.getDate()} ${_spMN[d.getMonth()]}`;
-}
-
-/* ── open/close panel ── */
-function spToggleDatePanel(e){
-  e.stopPropagation();
-  const panel = qs('#sp-date-panel');
-  const isOpen = panel.classList.toggle('open');
-  qs('#sp-df-chevron').style.transform = isOpen ? 'rotate(180deg)' : '';
-  if (isOpen){
-    _spCalPend = { from: _shopifyDateFilter.from, to: _shopifyDateFilter.to };
-    const ref = _shopifyDateFilter.from || new Date();
-    _spCalView = { year: ref.getFullYear(), month: ref.getMonth() };
-    _spRenderCal();
-    setTimeout(() => document.addEventListener('click', _spOutsideClose, {once:true}), 0);
-  }
-}
-function _spOutsideClose(e){
-  if (!qs('#sp-date-panel')?.contains(e.target)) spCloseDatePanel();
-}
-function spCloseDatePanel(){
-  qs('#sp-date-panel')?.classList.remove('open');
-  const ch = qs('#sp-df-chevron'); if(ch) ch.style.transform='';
-}
-function spClearDateFilter(e){
-  e && e.stopPropagation();
-  _shopifyDateFilter = { from:null, to:null };
-  _spCalPend = { from:null, to:null };
-  _spActivePreset = 'custom';
-  document.querySelectorAll('.sp-preset-item').forEach(b => b.classList.toggle('active', b.dataset.preset==='custom'));
-  _spSyncTrigger();
-  renderShopifyOrders();
-}
-
-/* ── trigger label sync ── */
-function _spSyncTrigger(){
-  const lbl     = qs('#sp-df-label-text');
-  const clr     = qs('#sp-date-clear');
-  const trigger = qs('#sp-date-trigger');
-  const { from, to } = _shopifyDateFilter;
-  const has = !!from;
-  let text = 'تصفية بالتاريخ';
-  if (from){
-    const f = _spFmt(from);
-    const t = to && !_spSame(from,to)
-      ? `${to.getDate()} ${_spMN[to.getMonth()]}${to.getFullYear()!==from.getFullYear()?' '+to.getFullYear():''}`
-      : null;
-    text = t ? `${f} – ${t}` : f;
-  }
-  if (lbl) lbl.textContent = text;
-  if (clr) clr.style.display = has ? 'inline-flex' : 'none';
-  if (trigger) trigger.classList.toggle('sp-df-active', has);
-}
-// alias used by renderShopifyOrders
-function _spUpdateTriggerLabel(){ _spSyncTrigger(); }
-
-/* ── render calendar ── */
-function _spRenderCal(){
-  const { year, month } = _spCalView;
-  // header
-  const ml = qs('#sp-cal-month-lbl'); if(ml) ml.textContent = _spMN[month];
-  const yl = qs('#sp-cal-year-lbl');  if(yl) yl.textContent = year;
-
-  // order-day dots
-  const orderDays = new Set();
-  _shopifyOrders.forEach(o=>{
-    const d = new Date(o.shopifyCreatedAt||o.createdAt);
-    if(!isNaN(d)&&d.getFullYear()===year&&d.getMonth()===month) orderDays.add(d.getDate());
-  });
-
-  const today = new Date();
-  const daysInMonth = new Date(year, month+1, 0).getDate();
-  // Monday-first offset (Mon=1 ... Sun=0→7)
-  let startDow = new Date(year, month, 1).getDay(); // 0=Sun
-  startDow = (startDow === 0) ? 6 : startDow - 1;  // convert to Mon=0
-  const { from, to } = _spCalPend;
-
-  // DOW headers — Mon to Sun
-  const DOW_LABELS = ['إث','ثل','أر','خم','جم','سب','أح'];
-  let html = DOW_LABELS.map(d=>`<div class="sp-cal-dow">${d}</div>`).join('');
-
-  // leading empty cells
-  for(let i=0;i<startDow;i++) html += `<div class="sp-cal-day sp-cal-other"></div>`;
-
-  // day cells
-  for(let d=1;d<=daysInMonth;d++){
-    const dt = new Date(year, month, d);
-    const isToday    = _spSame(dt, today);
-    const isFrom     = from && _spSame(dt, from);
-    const isTo       = to   && _spSame(dt, to);
-    const isSingle   = from && to && _spSame(from,to);
-    const inRange    = from && to && _spBetween(dt,from,to);
-    const hasDot     = orderDays.has(d);
-
-    let cls = 'sp-cal-day';
-    if (isToday && !isFrom && !isTo) cls += ' sp-cal-today';
-    if (isFrom || isTo) {
-      cls += ' sp-cal-sel';
-      if (isSingle) cls += ' sp-cal-range-single';
-      else if (isFrom && !isSingle) cls += ' sp-cal-range-start';
-      else if (isTo  && !isSingle) cls += ' sp-cal-range-end';
-    }
-    if (inRange) cls += ' sp-cal-in-range';
-    if (hasDot)  cls += ' sp-cal-has-orders';
-
-    html += `<button class="${cls}" onclick="spCalDayClick(${d})" type="button">${d}</button>`;
-  }
-  qs('#sp-cal-grid').innerHTML = html;
-
-  // range label
-  const rl = qs('#sp-cal-range-label');
-  if (rl){
-    if (from && to && !_spSame(from,to))
-      rl.innerHTML = `<span>${_spFmt(from)} &nbsp;→&nbsp; ${_spFmt(to)}</span>`;
-    else if (from)
-      rl.innerHTML = `<span>${_spFmt(from)}</span>`;
-    else
-      rl.innerHTML = '';
-  }
-
-  // apply button text
-  const ap = qs('#sp-cal-apply');
-  if (ap){
-    if (from && to && !_spSame(from,to))
-      ap.textContent = `تطبيق  ${_spFmt(from)} – ${_spFmt(to)}`;
-    else if (from)
-      ap.textContent = `تطبيق  ${_spFmt(from)}`;
-    else
-      ap.textContent = 'تطبيق';
-  }
-}
-
-/* ── navigation ── */
-function spCalNav(dir){
-  _spCalView.month += dir;
-  if (_spCalView.month>11){ _spCalView.month=0; _spCalView.year++; }
-  if (_spCalView.month<0) { _spCalView.month=11; _spCalView.year--; }
-  _spRenderCal();
-}
-
-/* ── day click (range selection) ── */
-function spCalDayClick(d){
-  const clicked = new Date(_spCalView.year, _spCalView.month, d);
-  const {from, to} = _spCalPend;
-  if (!from || (from && to)){
-    _spCalPend = { from: clicked, to: null };
-  } else {
-    if (clicked < from)           _spCalPend = { from: clicked, to: from };
-    else if (_spSame(clicked,from)) _spCalPend = { from: clicked, to: clicked };
-    else                           _spCalPend = { from, to: clicked };
-  }
-  _spActivePreset = 'custom';
-  document.querySelectorAll('.sp-preset-item').forEach(b=>b.classList.toggle('active', b.dataset.preset==='custom'));
-  _spRenderCal();
-}
-
-/* ── apply ── */
-function spCalApply(){
-  if (!_spCalPend.from) return;
-  _shopifyDateFilter = { from: _spCalPend.from, to: _spCalPend.to || _spCalPend.from };
-  _spSyncTrigger();
-  renderShopifyOrders();
-  spCloseDatePanel();
-}
-
-/* ── presets ── */
-function spPreset(key, btn){
-  document.querySelectorAll('.sp-preset-item').forEach(b=>b.classList.toggle('active', b===btn));
-  _spActivePreset = key;
-  if (key === 'custom') return;
-
-  const now = new Date(), tod = _spDay0(now);
-  const d = (n) => { const x=new Date(tod); x.setDate(tod.getDate()+n); return x; };
-  const map = {
-    'today':      [tod, tod],
-    'yesterday':  [d(-1), d(-1)],
-    'last-7':     [d(-6), tod],
-    'last-14':    [d(-13), tod],
-    'last-30':    [d(-29), tod],
-    'this-week':  [(() =>{ const s=new Date(tod); s.setDate(tod.getDate()-((tod.getDay()||7)-1)); return s; })(), tod],
-    'last-week':  [(() =>{ const s=new Date(tod); s.setDate(tod.getDate()-((tod.getDay()||7)-1)-7); return s; })(),
-                   (() =>{ const s=new Date(tod); s.setDate(tod.getDate()-((tod.getDay()||7)-1)-1); return s; })()],
-    'this-month': [new Date(now.getFullYear(),now.getMonth(),1), tod],
-    'last-month': [new Date(now.getFullYear(),now.getMonth()-1,1), new Date(now.getFullYear(),now.getMonth(),0)],
-    'this-year':  [new Date(now.getFullYear(),0,1), tod],
-  };
-  const [from, to] = map[key] || [tod, tod];
-  _spCalPend = { from, to };
-  _spCalView = { year: to.getFullYear(), month: to.getMonth() };
-  _spRenderCal();
-  spCalApply();
-}
+function _spStartOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
+function _spUpdateTriggerLabel(){}
 
 async function recalcShopifyOrders() {
   if (!confirm('سيتم إعادة حساب إجماليات كل الأوردرات المعلقة بأسعار النظام الفعلية. متأكد؟')) return;
@@ -40871,23 +40772,32 @@ function switchShopifyTab(tab) {
 }
 
 function switchShopifyStatusFilter(val, btn) {
-  _shopifyStatusFilter = _shopifyStatusFilter === val ? '' : val;
-  /* reset all buttons to default */
+  _shopifyStatusFilter = (val === '' || _shopifyStatusFilter === val) ? '' : val;
+  /* reset all buttons to their default colored state */
   document.querySelectorAll('.sp-status-filter-btn').forEach(b => {
-    b.style.border = '1.5px solid var(--border)';
-    b.style.color = 'var(--text-muted)';
-    b.style.background = 'var(--bg-alt)';
-    b.style.fontWeight = '400';
+    const c = b.dataset.color;
+    if (c) {
+      b.style.border = `1.5px solid ${c}40`;
+      b.style.color = c;
+      b.style.background = `${c}10`;
+      b.style.fontWeight = '500';
+    } else {
+      b.style.border = '1.5px solid var(--border)';
+      b.style.color = 'var(--text-muted)';
+      b.style.background = 'var(--bg-alt)';
+      b.style.fontWeight = '400';
+    }
     b.style.boxShadow = 'none';
   });
   /* apply selected style */
-  if (_shopifyStatusFilter && btn) {
+  if (btn) {
+    const isAll = btn.dataset.filter === '';
     const c = btn.dataset.color || 'var(--accent)';
-    btn.style.border = `2px solid ${c}`;
-    btn.style.color = c;
-    btn.style.background = `color-mix(in srgb, ${c} 10%, transparent)`;
-    btn.style.fontWeight = '600';
-    btn.style.boxShadow = `0 0 0 3px color-mix(in srgb, ${c} 15%, transparent)`;
+    btn.style.border = `2px solid ${isAll ? 'var(--accent)' : c}`;
+    btn.style.color = isAll ? 'var(--accent)' : c;
+    btn.style.background = `color-mix(in srgb, ${isAll ? 'var(--accent)' : c} 15%, transparent)`;
+    btn.style.fontWeight = '700';
+    btn.style.boxShadow = `0 0 0 3px color-mix(in srgb, ${isAll ? 'var(--accent)' : c} 15%, transparent)`;
   }
   renderShopifyOrders();
 }
@@ -41428,22 +41338,58 @@ document.addEventListener('click', e => {
   }
 });
 
-function _toggleShopifyItems(btn) {
-  const panel = btn.nextElementSibling;
-  const arrow = btn.querySelector('.sp-arrow');
-  const isOpen = panel.style.display === 'flex';
-  // close all other open panels
-  document.querySelectorAll('.sp-items-panel').forEach(p => { p.style.display = 'none'; });
-  document.querySelectorAll('.sp-arrow').forEach(a => { a.style.transform = ''; });
-  if (!isOpen) {
-    panel.style.display = 'flex';
-    if (arrow) arrow.style.transform = 'rotate(180deg)';
+let _spItemsPortal = null;
+let _spItemsSourceBtn = null;
+
+function _closeSpItemsPortal() {
+  if (_spItemsPortal) { _spItemsPortal.remove(); _spItemsPortal = null; }
+  if (_spItemsSourceBtn) {
+    const a = _spItemsSourceBtn.querySelector('.sp-arrow');
+    if (a) a.style.transform = '';
+    _spItemsSourceBtn = null;
   }
 }
+
+function _toggleShopifyItems(btn) {
+  if (_spItemsSourceBtn === btn) { _closeSpItemsPortal(); return; }
+  _closeSpItemsPortal();
+
+  const panel = btn.nextElementSibling;
+  if (!panel) return;
+
+  // clone into body portal to escape overflow:hidden
+  const clone = panel.cloneNode(true);
+  clone.style.display = 'flex';
+  clone.style.position = 'fixed';
+  clone.style.zIndex = '9999';
+  clone.style.width = '290px';
+  clone.style.maxHeight = '340px';
+  clone.style.overflowY = 'auto';
+
+  const rect = btn.getBoundingClientRect();
+  const spaceBelow = window.innerHeight - rect.bottom;
+  if (spaceBelow < 360) {
+    clone.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+    clone.style.top = 'auto';
+  } else {
+    clone.style.top = (rect.bottom + 6) + 'px';
+    clone.style.bottom = 'auto';
+  }
+  // align right edge with button right edge
+  const rightEdge = window.innerWidth - rect.right;
+  clone.style.right = rightEdge + 'px';
+  clone.style.left = 'auto';
+
+  document.body.appendChild(clone);
+  _spItemsPortal = clone;
+  _spItemsSourceBtn = btn;
+  const arrow = btn.querySelector('.sp-arrow');
+  if (arrow) arrow.style.transform = 'rotate(180deg)';
+}
+
 document.addEventListener('click', e => {
-  if (!e.target.closest('.sp-items-panel') && !e.target.closest('button[onclick*="_toggleShopifyItems"]')) {
-    document.querySelectorAll('.sp-items-panel').forEach(p => { p.style.display = 'none'; });
-    document.querySelectorAll('.sp-arrow').forEach(a => { a.style.transform = ''; });
+  if (_spItemsPortal && !e.target.closest('.sp-items-panel') && !e.target.closest('button[onclick*="_toggleShopifyItems"]')) {
+    _closeSpItemsPortal();
   }
 });
 
