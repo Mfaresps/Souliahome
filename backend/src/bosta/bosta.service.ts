@@ -247,11 +247,12 @@ export class BostaService {
       .map((it: any) => {
         const name = (it.name || it.shopifyName || it.productName || it.title || it.itemName || '').trim();
         const qty  = it.qty  || it.quantity    || 1;
+        const code = it.code || it.productCode || it.sku || '';
         if (!name) return '';
-        return `${name} × ${qty}`;
+        return `${name} x ${qty}${code ? ` (Code ${code})` : ''}`;
       })
       .filter(s => s.length > 0)
-      .join(' | ') || `طلب #${tx.ref || String(tx._id).slice(-6)}`;
+      .join(' ') || `طلب #${tx.ref || String(tx._id).slice(-6)}`;
 
     // Business reference
     const businessRef = tx.ref ? tx.ref : String(tx._id);
@@ -263,11 +264,10 @@ export class BostaService {
         size: 'MEDIUM',
         weight: this.calcWeight(tx.items as any[]),
         packageDescription,
-        description: packageDescription,
         itemsCount: (tx.items as any[] || []).reduce((s: number, it: any) => s + (it.qty || it.quantity || 1), 0) || 1,
       },
-      description: packageDescription,
-      notes: tx.notes || '',
+      goodsDescription: packageDescription,
+      notes: packageDescription + (tx.notes ? ` | ${tx.notes}` : ''),
       cod: tx.remaining || 0,
       dropOffAddress: {
         city,
