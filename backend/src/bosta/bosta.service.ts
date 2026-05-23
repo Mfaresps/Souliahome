@@ -12,6 +12,7 @@ import {
 } from '../shopify/schemas/shopify-order.schema';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { SettingsService } from '../settings/settings.service';
+import { normalizeCity } from '../shared/normalize-city.util';
 
 // ── Bosta status → Arabic label map ────────────────────────────────────────
 const BOSTA_STATUS_LABELS: Record<string, string> = {
@@ -23,6 +24,9 @@ const BOSTA_STATUS_LABELS: Record<string, string> = {
   RETURNED:          'مرتجع',
   CANCELLED:         'ملغي',
   FAILED_ATTEMPT:    'محاولة فاشلة',
+  DELETED:           'محذوف من Bosta',
+  VALIDATION_ERROR:  'خطأ في البيانات',
+  UNKNOWN:           'غير معروف',
 };
 
 // Bosta numeric state codes → string status
@@ -38,6 +42,7 @@ const BOSTA_STATE_CODE_MAP: Record<number, string> = {
   80: 'FAILED_ATTEMPT',
 };
 
+
 function resolveBostaStatus(d: any, res: any): string {
   // Prefer string code if available
   const strCode = d.currentStatus?.code || d.state?.code;
@@ -46,7 +51,9 @@ function resolveBostaStatus(d: any, res: any): string {
   const numCode = typeof d.state?.code === 'number' ? d.state.code
     : typeof res.currentStatus?.code === 'number' ? res.currentStatus.code : null;
   if (numCode !== null && BOSTA_STATE_CODE_MAP[numCode]) return BOSTA_STATE_CODE_MAP[numCode];
-  return 'CREATED';
+  // Only return CREATED if the delivery data actually exists and has a valid id
+  if (d._id || d.id || d.deliveryId) return 'CREATED';
+  return 'UNKNOWN';
 }
 
 export interface BostaCreateResult {
@@ -54,6 +61,7 @@ export interface BostaCreateResult {
   bostaOrderId?: string;
   trackingNumber?: string;
   error?: string;
+  code?: string;
 }
 
 export interface BostaTrackResult {
@@ -62,6 +70,7 @@ export interface BostaTrackResult {
   statusLabel?: string;
   raw?: Record<string, unknown>;
   error?: string;
+  code?: string;
 }
 
 @Injectable()
@@ -121,7 +130,17 @@ export class BostaService {
             if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
               resolve(parsed as T);
             } else {
-              reject(new Error(parsed?.message || parsed?.error || `HTTP ${res.statusCode}`));
+              const msg = parsed?.message || parsed?.error || `HTTP ${res.statusCode}`;
+              const err: any = new Error(msg);
+              err.statusCode = res.statusCode;
+              // Bosta returns 422 for validation errors
+              if (res.statusCode === 422 || (parsed?.validationErrors)) {
+                err.code = 'VALIDATION_ERROR';
+                err.details = parsed?.validationErrors || parsed?.details || msg;
+              } else if (res.statusCode === 404) {
+                err.code = 'NOT_FOUND';
+              }
+              reject(err);
             }
           } catch {
             reject(new Error(`Failed to parse Bosta response: ${data}`));
@@ -146,14 +165,53 @@ export class BostaService {
     const tx = await this.txModel.findById(txId).lean();
     if (!tx) return { success: false, error: 'الحركة غير موجودة' };
     if (tx.type !== 'مبيعات') return { success: false, error: 'الشحن متاح للمبيعات فقط' };
-    if (tx.bostaOrderId) return { success: false, error: 'تم إرسال هذا الطلب إلى Bosta مسبقاً' };
+    const resendableStatuses = ['VALIDATION_ERROR', 'DELETED'];
+    const isResendable = resendableStatuses.includes(tx.bostaStatus || '');
+    if (tx.bostaOrderId && !isResendable) {
+      return { success: false, error: 'تم إرسال هذا الطلب إلى Bosta مسبقاً' };
+    }
+    // Clear previous failed/deleted state before resending
+    if (isResendable || tx.bostaOrderId) {
+      await this.txModel.findByIdAndUpdate(txId, {
+        bostaOrderId: '',
+        bostaStatus: '',
+        bostaStatusLabel: '',
+      });
+    }
 
     const phoneClean = (tx.phone || '').replace(/\D/g, '');
 
     // Resolve address — try tx.shippingAddress first, then fallback to shopify rawData
     let firstLine = ((tx as any).shippingAddress || '').replace(/^العنوان:\s*/, '').trim();
-    let city      = ((tx as any).shippingCity || tx.shipZone || '').trim();
 
+    // shippingBostaCity = Bosta-accepted English name saved directly by city picker (most reliable)
+    // shippingGov = Arabic governorate name from city picker
+    // shippingCity = full display value e.g. "البحيرة — كفر الدوار"
+    const rawBostaCity = ((tx as any).shippingBostaCity || '').trim();
+    const rawGov       = ((tx as any).shippingGov || '').trim();
+    const rawCity      = ((tx as any).shippingCity || '').trim();
+    // Extract governorate part before dash separator (handles "البحيرة — كفر الدوار")
+    const cityPart     = rawCity.split(/\s*[—–\-]\s*/)[0].trim();
+
+    let city: string;
+    if (rawBostaCity) {
+      // Most reliable: English name saved directly by city picker — no translation needed
+      city = rawBostaCity;
+      this.logger.log(`Bosta city from shippingBostaCity="${city}"`);
+    } else {
+      // Fallback: translate Arabic governorate name — use only gov/city fields, NOT address text
+      // cityPart is extracted from shippingCity (e.g. "الغربية" from "الغربية — المحلة الكبرى")
+      // rawGov is the saved governorate — both are safe short strings, not full address text
+      const arabicCity = rawGov || cityPart;
+      city = arabicCity ? normalizeCity(arabicCity) : '';
+      this.logger.log(`Bosta city via normalizeCity("${arabicCity}") → "${city}"`);
+      // Auto-fix: persist shippingGov if it was missing (legacy records)
+      if (!rawGov && cityPart) {
+        await this.txModel.findByIdAndUpdate(txId, { shippingGov: cityPart });
+      }
+    }
+
+    // When city or address is missing, pull from Shopify rawData
     if ((!firstLine || !city) && (tx as any).shopifyOrderId) {
       const shopifyOrder = await this.shopifyOrderModel
         .findOne({ shopifyId: (tx as any).shopifyOrderId })
@@ -164,32 +222,36 @@ export class BostaService {
           firstLine = [addr?.address1, addr?.address2].filter(Boolean).join('، ');
         }
         if (!city) {
-          city = addr?.city || addr?.province || '';
+          // ONLY use province/city fields — NEVER address1/address2 (they contain street text with city names)
+          const shopifyProvince = addr?.province || '';
+          const shopifyCity     = addr?.city || '';
+          city = normalizeCity(shopifyProvince) || normalizeCity(shopifyCity) || '';
         }
-        // also patch tx for future calls
-        if (firstLine || city) {
-          await this.txModel.findByIdAndUpdate(txId, {
-            shippingAddress: firstLine,
-            shippingCity: city,
-          });
+        // Only persist address — never overwrite shippingCity/shippingBostaCity with address text
+        if (firstLine) {
+          await this.txModel.findByIdAndUpdate(txId, { shippingAddress: firstLine });
         }
       }
     }
 
     this.logger.log(`Bosta address resolve — txId=${txId} firstLine="${firstLine}" city="${city}" shopifyOrderId="${(tx as any).shopifyOrderId || ''}"`);
 
-    if (!city) city = 'Cairo';
+    if (!city) {
+      this.logger.error(`Bosta city missing — tx=${txId} shippingCity="${rawCity}" shippingGov="${rawGov}" shippingBostaCity="${rawBostaCity}"`);
+      return { success: false, error: 'لم يتم تحديد المحافظة — افتح الحركة وحدد المحافظة من القائمة ثم أعد الإرسال', code: 'VALIDATION_ERROR' };
+    }
 
     // وصف المنتج — يظهر في حقل "وصف المنتج" في Bosta
     this.logger.log(`Bosta items raw — txId=${txId} items=${JSON.stringify(tx.items)}`);
     const packageDescription = (tx.items as any[] || [])
       .map((it: any) => {
-        const name = it.name || it.productName || it.title || it.itemName || '';
-        const code = it.code || it.productCode || it.sku || '';
+        const name = (it.name || it.shopifyName || it.productName || it.title || it.itemName || '').trim();
         const qty  = it.qty  || it.quantity    || 1;
-        return `${name}${code ? ` (${code})` : ''} × ${qty}`;
+        if (!name) return '';
+        return `${name} × ${qty}`;
       })
-      .join(' | ');
+      .filter(s => s.length > 0)
+      .join(' | ') || `طلب #${tx.ref || String(tx._id).slice(-6)}`;
 
     // Business reference
     const businessRef = tx.ref ? tx.ref : String(tx._id);
@@ -201,7 +263,10 @@ export class BostaService {
         size: 'MEDIUM',
         weight: this.calcWeight(tx.items as any[]),
         packageDescription,
+        description: packageDescription,
+        itemsCount: (tx.items as any[] || []).reduce((s: number, it: any) => s + (it.qty || it.quantity || 1), 0) || 1,
       },
+      description: packageDescription,
       notes: tx.notes || '',
       cod: tx.remaining || 0,
       dropOffAddress: {
@@ -247,6 +312,16 @@ export class BostaService {
       return { success: true, bostaOrderId, trackingNumber };
     } catch (err: any) {
       this.logger.error(`Bosta createOrder failed tx=${txId}: ${err.message} | stack: ${err.stack}`);
+      if (err.code === 'VALIDATION_ERROR') {
+        // Mark transaction so employee knows to fix data before resending
+        await this.txModel.findByIdAndUpdate(txId, {
+          bostaStatus: 'VALIDATION_ERROR',
+          bostaStatusLabel: 'خطأ في البيانات — راجع العنوان والهاتف',
+          bostaLastSync: new Date().toISOString(),
+        });
+        this.emit('tx:updated', { _id: txId });
+        return { success: false, error: `خطأ في بيانات الشحنة: ${typeof err.details === 'string' ? err.details : JSON.stringify(err.details)}`, code: 'VALIDATION_ERROR' };
+      }
       return { success: false, error: err.message };
     }
   }
@@ -266,6 +341,19 @@ export class BostaService {
       const res = await this.request<any>('GET', `/deliveries/${tx.bostaOrderId}`, undefined, apiKey);
       this.logger.log(`Bosta syncStatus raw response — ${JSON.stringify(res)}`);
       const d = res.data || res;
+
+      // If Bosta marks delivery as deleted/terminated in response body
+      if (d.isDeleted === true || d.deletedAt) {
+        await this.txModel.findByIdAndUpdate(txId, {
+          bostaStatus: 'DELETED',
+          bostaStatusLabel: 'محذوف من Bosta',
+          bostaOrderId: '',
+          bostaLastSync: new Date().toISOString(),
+        });
+        this.emit('tx:updated', { _id: txId });
+        return { success: true, status: 'DELETED', statusLabel: 'محذوف من Bosta — يمكنك إعادة الإرسال' };
+      }
+
       const statusCode  = resolveBostaStatus(d, res);
       const statusLabel = BOSTA_STATUS_LABELS[statusCode] || statusCode;
 
@@ -280,6 +368,22 @@ export class BostaService {
       return { success: true, status: statusCode, statusLabel, raw: res };
     } catch (err: any) {
       this.logger.error(`Bosta syncStatus failed tx=${txId}: ${err.message}`);
+      // Order deleted or not found in Bosta — mark accordingly
+      const notFoundMsg = typeof err.message === 'string' && (
+        err.message.toLowerCase().includes('not found') ||
+        err.message.toLowerCase().includes('delivery not found') ||
+        err.message.includes('غير موجود')
+      );
+      if (err.code === 'NOT_FOUND' || err.statusCode === 404 || notFoundMsg) {
+        await this.txModel.findByIdAndUpdate(txId, {
+          bostaStatus: 'DELETED',
+          bostaStatusLabel: 'محذوف من Bosta',
+          bostaOrderId: '',
+          bostaLastSync: new Date().toISOString(),
+        });
+        this.emit('tx:updated', { _id: txId });
+        return { success: true, status: 'DELETED', statusLabel: 'محذوف من Bosta — يمكنك إعادة الإرسال' };
+      }
       return { success: false, error: err.message };
     }
   }
@@ -333,6 +437,21 @@ export class BostaService {
     }
   }
 
+  // ── Force-mark as DELETED so order can be re-sent ─────────────────────
+
+  async markAsDeleted(txId: string): Promise<{ success: boolean; error?: string }> {
+    const tx = await this.txModel.findById(txId).lean();
+    if (!tx) return { success: false, error: 'الحركة غير موجودة' };
+    await this.txModel.findByIdAndUpdate(txId, {
+      bostaStatus: 'DELETED',
+      bostaStatusLabel: 'محذوف من Bosta',
+      bostaOrderId: '',
+      bostaLastSync: new Date().toISOString(),
+    });
+    this.emit('tx:updated', { _id: txId });
+    return { success: true };
+  }
+
   // ── Fix corrupted status values (e.g. numeric "10" saved as status) ──────
 
   async fixCorruptedStatuses(): Promise<{ fixed: number }> {
@@ -342,6 +461,43 @@ export class BostaService {
     );
     this.logger.log(`fixCorruptedStatuses: fixed ${result.modifiedCount} records`);
     return { fixed: result.modifiedCount };
+  }
+
+  // ── Inspect & fix city data for a transaction by ref ─────────────────
+
+  async fixCityByRef(ref: string): Promise<any> {
+    const tx = await this.txModel.findOne({ ref }).lean() as any;
+    if (!tx) return { error: `لم يتم العثور على حركة بالمرجع ${ref}` };
+    const info = {
+      _id: String(tx._id),
+      ref: tx.ref,
+      client: tx.client,
+      shippingCity: tx.shippingCity || '',
+      shippingGov: tx.shippingGov || '',
+      shippingBostaCity: tx.shippingBostaCity || '',
+      shippingAddress: tx.shippingAddress || '',
+      bostaStatus: tx.bostaStatus || '',
+      bostaOrderId: tx.bostaOrderId || '',
+    };
+    this.logger.log(`fixCityByRef ref=${ref} data=${JSON.stringify(info)} items=${JSON.stringify((tx as any).items?.slice(0,3))}`);
+    (info as any)['items'] = ((tx as any).items || []).map((it: any) => ({ name: it.name, shopifyName: it.shopifyName, productName: it.productName, title: it.title, qty: it.qty }));
+
+    // إصلاح: استخرج المحافظة من shippingCity وأعد حساب shippingBostaCity
+    const cityPart = (tx.shippingCity || '').split(/\s*[—–\-]\s*/)[0].trim();
+    const { normalizeCity } = await import('../shared/normalize-city.util');
+    const bostaEn = normalizeCity(cityPart);
+    if (bostaEn && !tx.shippingBostaCity) {
+      await this.txModel.findByIdAndUpdate(tx._id, {
+        shippingGov: cityPart,
+        shippingBostaCity: bostaEn,
+        // مسح bostaOrderId حتى يمكن إعادة الإرسال
+        bostaOrderId: '',
+        bostaStatus: 'DELETED',
+        bostaStatusLabel: 'محذوف من Bosta',
+      });
+      return { success: true, tx: info, fixed: { shippingGov: cityPart, shippingBostaCity: bostaEn, note: 'تم مسح bostaOrderId — يمكنك إعادة الإرسال' } };
+    }
+    return { success: true, tx: info };
   }
 
   // ── Helper: estimate total weight from items ───────────────────────────

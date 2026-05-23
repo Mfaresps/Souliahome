@@ -108,6 +108,18 @@ export class CreateTransactionDto {
   @IsOptional()
   readonly shipZone?: string;
 
+  @IsString()
+  @IsOptional()
+  readonly shippingAddress?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly shippingCity?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly shippingGov?: string;
+
   @IsNumber()
   @Min(0)
   @IsOptional()
@@ -217,6 +229,18 @@ export class UpdateTransactionDto {
   @IsString()
   @IsOptional()
   readonly shipZone?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly shippingAddress?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly shippingCity?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly shippingGov?: string;
 
   @IsNumber()
   @Min(0)

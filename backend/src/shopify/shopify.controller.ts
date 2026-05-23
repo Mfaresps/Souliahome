@@ -102,6 +102,13 @@ export class ShopifyController {
     return this.shopifyService.updatePendingStatus(id, pendingStatus || '');
   }
 
+  // ترقية: حفظ shopifyCreatedAt في transactions القديمة (تشغيل مرة واحدة)
+  @Post('backfill-shopify-created-at')
+  @UseGuards(JwtAuthGuard)
+  async backfillShopifyCreatedAt() {
+    return this.shopifyService.backfillShopifyCreatedAt();
+  }
+
   // إعادة حساب totals للأوردرات المعلقة (تشغيل مرة واحدة لإصلاح القديمة)
   @Post('recalc-pending')
   @UseGuards(JwtAuthGuard)

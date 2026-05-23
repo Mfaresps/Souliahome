@@ -251,6 +251,10 @@ export class Transaction {
   @Prop({ default: '' })
   shopifyOrderId: string;
 
+  /** Original creation time of the order in Shopify (before sync to this system) */
+  @Prop({ default: '' })
+  shopifyCreatedAt: string;
+
   /** Shipping address (from Shopify or manual entry) */
   @Prop({ default: '' })
   shippingAddress: string;
@@ -258,6 +262,14 @@ export class Transaction {
   /** Shipping city extracted from Shopify shipping_address.city */
   @Prop({ default: '' })
   shippingCity: string;
+
+  /** Governorate (محافظة) — set by city picker, used for Bosta mapping */
+  @Prop({ default: '' })
+  shippingGov: string;
+
+  /** Bosta-accepted English city name — set directly by city picker to avoid translation errors */
+  @Prop({ default: '' })
+  shippingBostaCity: string;
 
   // ── Bosta Shipping Integration ─────────────────────────────────────────────
 

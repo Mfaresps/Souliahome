@@ -382,7 +382,7 @@ tr:hover{background:var(--primary-pale)}
 .actions-dd .dd-toggle:hover{background:var(--surface2);color:var(--text);transform:scale(1.05)}
 .actions-dd .dd-toggle:active{transform:scale(.95)}
 .actions-dd .dd-menu{display:none}
-.dd-menu-portal{position:fixed;min-width:180px;background:var(--bg);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06);z-index:9000;padding:6px;opacity:0;transform:scale(.92) translateY(-4px);pointer-events:none;transition:opacity .18s ease,transform .18s ease;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);max-height:320px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
+.dd-menu-portal{position:fixed;min-width:180px;background:var(--bg);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06);z-index:9000;padding:6px;opacity:0;transform:scale(.92) translateY(-4px);pointer-events:none;transition:opacity .18s ease,transform .18s ease;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);overflow:visible}
 body.dark-mode .dd-menu-portal{background:rgba(22,29,24,.92);box-shadow:0 12px 40px rgba(0,0,0,.4),0 2px 8px rgba(0,0,0,.2)}
 body.dark-mode .type-btn.active{background:var(--surface2);color:var(--accent);box-shadow:0 1px 6px rgba(0,0,0,.4)}
 body.dark-mode .tx-items-table{background:var(--surface2)}
@@ -442,6 +442,30 @@ body.dark-mode .history-detail-item.removed{background:rgba(248,113,113,.08)}
 .form-group{margin-bottom:14px}
 .form-group label{display:block;font-size:.8rem;font-weight:600;margin-bottom:4px;color:var(--muted)}
 .field-error{color:var(--red);font-size:.72rem;margin-top:2px}
+.addr-ac-dropdown{display:none;position:fixed;z-index:999999;background:var(--card,#fff);border:1.5px solid var(--border,#e5e7eb);border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.15),0 2px 8px rgba(0,0,0,.08);max-height:280px;overflow-y:auto;overflow-x:hidden}
+.addr-ac-item{padding:10px 14px;cursor:pointer;font-size:.88rem;display:flex;align-items:center;gap:8px;color:var(--text,#1f2937);border-bottom:1px solid var(--border,#e5e7eb);transition:background .12s;direction:rtl;text-align:right}
+.addr-ac-item:last-child{border-bottom:none}
+.addr-ac-item:hover,.addr-ac-item.active{background:var(--bg-alt,#f3f4f6)}
+.addr-ac-item strong{color:var(--primary,#2563eb);font-weight:700}
+/* City autocomplete */
+.city-ac-dropdown{display:none;position:fixed;z-index:999999;background:var(--card,#fff);border:1.5px solid var(--border,#e5e7eb);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,.14),0 2px 10px rgba(0,0,0,.08);width:300px;max-height:340px;overflow:hidden;flex-direction:column;direction:rtl}
+.city-ac-dropdown.show{display:flex}
+.city-ac-search-wrap{padding:10px 12px 8px;border-bottom:1px solid var(--border,#e5e7eb);flex-shrink:0}
+.city-ac-search{width:100%;border:1px solid var(--border,#e5e7eb);border-radius:8px;padding:7px 10px 7px 32px;font-size:.82rem;color:var(--text,#1f2937);background:var(--bg-alt,#f3f4f6);outline:none;direction:rtl;box-sizing:border-box;transition:border-color .15s}
+.city-ac-search:focus{border-color:var(--primary,#2563eb);background:#fff}
+.city-ac-search-icon{position:absolute;left:22px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted,#6b7280);width:14px;height:14px}
+.city-ac-list{overflow-y:auto;flex:1;padding:6px 0}
+.city-ac-group-label{padding:5px 14px 3px;font-size:.68rem;font-weight:700;color:var(--muted,#9ca3af);text-transform:uppercase;letter-spacing:.06em;user-select:none}
+.city-ac-item{padding:8px 14px;cursor:pointer;font-size:.86rem;display:flex;align-items:center;gap:9px;color:var(--text,#1f2937);transition:background .1s;border-radius:6px;margin:1px 6px}
+.city-ac-item:hover,.city-ac-item.active{background:var(--bg-alt,#f3f4f6)}
+.city-ac-item .city-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.city-ac-item .city-name{flex:1;font-weight:500}
+.city-ac-item .city-gov{font-size:.72rem;color:var(--muted,#9ca3af)}
+.city-ac-item strong{color:var(--primary,#2563eb);font-weight:700}
+.city-ac-empty{padding:20px;text-align:center;color:var(--muted,#9ca3af);font-size:.82rem}
+.city-ac-trigger{position:relative;cursor:pointer}
+.city-ac-trigger input{cursor:pointer;padding-left:32px}
+.city-ac-trigger::after{content:'';position:absolute;left:12px;top:50%;transform:translateY(-50%);width:0;height:0;border-right:5px solid transparent;border-left:5px solid transparent;border-top:5px solid var(--muted,#9ca3af);pointer-events:none}
 .grid{display:grid;gap:16px}
 .grid-2{grid-template-columns:repeat(2,1fr)}
 .grid-3{grid-template-columns:repeat(3,1fr)}
@@ -1238,21 +1262,24 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .inv-body-inner{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px}
 /* Document Info Bar — hidden (info merged into header) */
 .inv-doc-bar{display:none}
-/* Client/Supplier Row — slim & compact */
-.inv-party-card{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin:0;position:relative}
-.inv-party-avatar{width:32px;height:32px;border-radius:50%;background:#dbeafe;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0;order:3;margin-right:auto}
-.inv-party-card:not(.is-purchase) .inv-party-avatar{background:#d1fae5;color:#059669}
-.inv-party-info{flex:1;min-width:0;order:1;display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px}
-.inv-party-name{font-size:.92rem;font-weight:700;color:#0f172a;display:inline-flex;align-items:center;gap:7px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.inv-party-tag{font-size:.65rem;font-weight:600;color:#64748b;background:#f1f5f9;padding:2px 7px;border-radius:5px;flex-shrink:0}
-.inv-party-phone{display:inline-flex;align-items:center;gap:5px;font-size:.76rem;color:#64748b;direction:ltr;font-weight:500}
-.inv-party-phone svg{width:11px;height:11px}
+/* Client/Supplier Row — professional card */
+.inv-party-card{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:linear-gradient(135deg,#f8faff 0%,#fff 100%);border:1px solid #e2e8f0;border-radius:12px;margin:0;position:relative;direction:rtl}
+.inv-party-card.is-purchase{background:linear-gradient(135deg,#f0fdf4 0%,#fff 100%)}
+.inv-party-avatar{width:40px;height:40px;border-radius:50%;background:#dbeafe;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;flex-shrink:0;border:2px solid #bfdbfe;box-shadow:0 2px 6px rgba(37,99,235,.15)}
+.inv-party-card:not(.is-purchase) .inv-party-avatar{background:#d1fae5;color:#059669;border-color:#6ee7b7;box-shadow:0 2px 6px rgba(5,150,105,.15)}
+.inv-party-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.inv-party-name{font-size:.93rem;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.inv-party-tag{font-size:.63rem;font-weight:600;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;padding:2px 8px;border-radius:20px;flex-shrink:0;letter-spacing:.02em}
+.inv-party-card.is-purchase .inv-party-tag{color:#059669;background:#f0fdf4;border-color:#6ee7b7}
+.inv-party-phone{display:inline-flex;align-items:center;gap:5px;font-size:.77rem;color:#475569;direction:ltr;font-weight:500;background:#f8fafc;border:1px solid #e2e8f0;border-radius:20px;padding:2px 10px;width:fit-content}
+.inv-party-phone svg{width:11px;height:11px;color:#64748b}
 .inv-party-extra{display:none}
 .inv-party-badge{display:none}
 /* Meta Chips — replaces ملخص إضافي card */
 .inv-meta-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0}
 .meta-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:.74rem}
 .meta-chip .k{color:#94a3b8;font-weight:500}
+.meta-chip .k.meta-chip-icon{display:flex;align-items:center;color:#94a3b8}
 .meta-chip .v{color:#0f172a;font-weight:600}
 .meta-chip.note{flex:1 1 100%;background:#fffbeb;border-color:#fde68a;position:relative;cursor:default}
 .meta-chip.note .k{color:#b45309}
@@ -1362,6 +1389,52 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .inv-timeline-content{flex:1;min-width:0}
 .inv-timeline-amount{font-weight:700;font-size:.83rem;margin-bottom:1px}
 .inv-timeline-meta{font-size:.72rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px}
+/* Order Timeline (Shopify → Bosta) */
+.ord-timeline{margin-top:10px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--bg)}
+.ord-timeline-header{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:var(--surface);cursor:pointer;transition:background .15s;user-select:none}
+.ord-timeline-header:hover{background:var(--surface2)}
+.ord-timeline-header h5{margin:0;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:8px;color:var(--text)}
+.ord-timeline-header .otl-badge{font-size:.7rem;padding:2px 8px;background:var(--primary,#16a34a);color:#fff;border-radius:10px;font-weight:600}
+.ord-timeline-header .otl-chevron{width:15px;height:15px;color:var(--muted);transition:transform .2s;flex-shrink:0}
+.ord-timeline-header.expanded .otl-chevron{transform:rotate(180deg)}
+.ord-timeline-body{overflow:hidden;max-height:0;transition:max-height .4s ease;border-top:0}
+.ord-timeline-body.open{max-height:700px;border-top:1px solid var(--border)}
+.ord-timeline-steps{padding:14px 14px 10px}
+.ord-tl-step{display:flex;gap:13px;position:relative;padding-bottom:18px;transition:opacity .2s}.ord-tl-step.pending-dim{opacity:.45}
+.ord-tl-step:last-child{padding-bottom:6px}
+.ord-tl-left{display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0;width:32px}
+.ord-tl-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid transparent;transition:all .2s}
+.ord-tl-icon.completed{background:#dcfce7;border-color:#16a34a;color:#16a34a}
+.ord-tl-icon.active{background:#dbeafe;border-color:#3b82f6;color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.ord-tl-icon.pending{background:var(--surface);border-color:var(--border);color:var(--muted)}
+.ord-tl-icon svg{width:14px;height:14px;flex-shrink:0}
+.ord-tl-line{width:2px;flex:1;min-height:14px;background:var(--border);margin-top:2px;border-radius:1px}
+.ord-tl-line.done{background:#16a34a}
+.ord-tl-line.active{background:linear-gradient(to bottom,#16a34a,#3b82f6)}
+.ord-tl-right{flex:1;min-width:0;padding-top:5px}
+.ord-tl-title-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px}
+.ord-tl-title{font-size:.84rem;font-weight:600;color:var(--text)}
+.ord-tl-badge{font-size:.67rem;padding:1px 7px;border-radius:8px;font-weight:600;letter-spacing:.2px}
+.ord-tl-badge.completed{background:#dcfce7;color:#15803d}
+.ord-tl-badge.active{background:#dbeafe;color:#1d4ed8}
+.ord-tl-badge.pending{background:var(--surface2);color:var(--muted)}
+.ord-tl-desc{font-size:.77rem;color:var(--muted);margin-bottom:3px}
+.ord-tl-time{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:4px}
+.ord-tl-time svg{width:11px;height:11px;flex-shrink:0;opacity:.6}
+.ord-tl-sub-events{margin-top:7px;padding:6px 10px;background:var(--surface);border-radius:7px;border:1px solid var(--border)}
+.ord-tl-sub-event{display:flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:.75rem}
+.ord-tl-sub-event:not(:last-child){border-bottom:1px dashed var(--border)}
+.ord-tl-sub-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.ord-tl-sub-dot.done{background:#16a34a}
+.ord-tl-sub-dot.active{background:#3b82f6}
+.ord-tl-sub-dot.pending{background:var(--border)}
+.ord-tl-sub-text{flex:1;color:var(--text);line-height:1.4}
+.ord-tl-sub-time{color:var(--muted);white-space:nowrap;font-size:.7rem}
+.ord-tl-source-logos{display:flex;align-items:center;gap:6px;margin-top:4px}
+.ord-tl-shopify-logo{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;color:#3d6b1f;background:#f3f9ec;border:1px solid #bcd99a;border-radius:5px;padding:2px 7px}
+.ord-tl-shopify-logo svg{flex-shrink:0}
+.ord-tl-bosta-logo{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;color:#e63025;background:#fff0f0;border:1px solid #f5bcb9;border-radius:5px;padding:2px 7px}
+.ord-tl-bosta-logo svg{flex-shrink:0;border-radius:2px}
 /* Collapsible Sections */
 .inv-section{margin-top:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .inv-section-header{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:var(--surface);cursor:pointer;transition:background .15s;user-select:none}
@@ -1426,11 +1499,11 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .inv-meta-line .ship-chip{font-size:.68rem;padding:2px 7px}
 .inv-status-banner{padding:6px 12px;font-size:.72rem}
 .inv-body-inner{padding:10px;gap:6px}
-.inv-party-card{padding:7px 10px;gap:8px}
-.inv-party-avatar{width:30px;height:30px;font-size:.74rem}
-.inv-party-name{font-size:.85rem}
-.inv-party-tag{font-size:.62rem;padding:1px 6px}
-.inv-party-phone{font-size:.74rem}
+.inv-party-card{padding:10px 12px;gap:10px}
+.inv-party-avatar{width:36px;height:36px;font-size:.78rem}
+.inv-party-name{font-size:.87rem}
+.inv-party-tag{font-size:.6rem;padding:2px 7px}
+.inv-party-phone{font-size:.72rem;padding:2px 8px}
 .inv-items-section{border-radius:10px}
 .inv-items-header{padding:7px 10px}
 .inv-items-title{font-size:.76rem}
@@ -2797,7 +2870,7 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
 .tx-tag:hover{opacity:.8;transform:scale(1.05)}
 .tx-tag .tag-del{opacity:0;font-size:.7rem;line-height:1;cursor:pointer;transition:opacity .12s;margin-right:-2px}
 .tx-tag:hover .tag-del{opacity:.7}
-.tx-tag-add{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:.68rem;font-weight:600;cursor:pointer;background:none;border:1px dashed var(--border);color:var(--muted);transition:all .12s}
+.tx-tag-add{display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:4px;font-size:.64rem;font-weight:300;cursor:pointer;background:none;border:1px dashed var(--border);color:var(--muted);transition:all .12s}
 .tx-tag-add:hover{border-color:var(--accent);color:var(--accent);background:var(--primary-pale)}
 .tag-dropdown{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 32px rgba(15,23,42,.14),0 2px 6px rgba(15,23,42,.05);padding:8px;width:240px;max-height:280px;overflow-y:auto;overscroll-behavior:contain;animation:mipPop .14s cubic-bezier(.22,.9,.36,1.05) both}
 .tag-dropdown::-webkit-scrollbar{width:6px}
@@ -4598,6 +4671,8 @@ body.dark-mode .txn-bar{background:rgba(255,255,255,.08)}
 .bosta-badge-returned{background:#fce7f3;color:#9d174d;border-color:#f9a8d4}
 .bosta-badge-failed{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
 .bosta-badge-cancelled{background:#f3f4f6;color:#6b7280;border-color:#d1d5db}
+.bosta-badge-deleted{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
+.bosta-badge-validation{background:#fef3c7;color:#92400e;border-color:#fde68a}
 [data-theme=dark] .bosta-badge-none{background:#374151;color:#6b7280}
 [data-theme=dark] .bosta-badge-created{background:#1e3a8a;color:#93c5fd}
 [data-theme=dark] .bosta-badge-transit{background:#78350f;color:#fde68a}
@@ -4606,6 +4681,8 @@ body.dark-mode .txn-bar{background:rgba(255,255,255,.08)}
 [data-theme=dark] .bosta-badge-returned{background:#831843;color:#f9a8d4}
 [data-theme=dark] .bosta-badge-failed{background:#7f1d1d;color:#fca5a5}
 [data-theme=dark] .bosta-badge-cancelled{background:#1f2937;color:#4b5563}
+[data-theme=dark] .bosta-badge-deleted{background:#7f1d1d;color:#fca5a5}
+[data-theme=dark] .bosta-badge-validation{background:#78350f;color:#fde68a}
 .bosta-track-link{display:inline-flex;align-items:center;color:var(--muted);text-decoration:none;transition:color .15s}.bosta-track-link:hover{color:#FF0000}
 .bosta-icon{display:inline-block;width:13px;height:13px;flex-shrink:0;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'%3E%3Cpath d='M43.5 17.5L26 8C25 7.5 24 7.5 23.5 8L6 17.5C5.5 18 5 18.8 5 19.5v16.5c0 .8.5 1.5 1.3 2L24 47.5c.8.4 1.7.4 2.5 0L44.2 38c.8-.5 1.3-1.2 1.3-2V19.5C45.5 18.8 45 18 43.5 17.5zM41.5 22.5v10.5L31.5 28 41.5 22.5zM9.5 19.5L25 11l15.5 8.5L25 28 9.5 19.5zM21.5 30l2 1c.8.5 1.7.5 2.5 0l2-1L40.5 37 25 45.5 9.5 37 21.5 30zM18.5 28L8.5 33V22.5L18.5 28z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'%3E%3Cpath d='M43.5 17.5L26 8C25 7.5 24 7.5 23.5 8L6 17.5C5.5 18 5 18.8 5 19.5v16.5c0 .8.5 1.5 1.3 2L24 47.5c.8.4 1.7.4 2.5 0L44.2 38c.8-.5 1.3-1.2 1.3-2V19.5C45.5 18.8 45 18 43.5 17.5zM41.5 22.5v10.5L31.5 28 41.5 22.5zM9.5 19.5L25 11l15.5 8.5L25 28 9.5 19.5zM21.5 30l2 1c.8.5 1.7.5 2.5 0l2-1L40.5 37 25 45.5 9.5 37 21.5 30zM18.5 28L8.5 33V22.5L18.5 28z'/%3E%3C/svg%3E") center/contain no-repeat;vertical-align:middle}
 .pu-date-btn{background:none;border:none;cursor:pointer;color:var(--accent);font-size:.82rem;padding:0;text-decoration:underline dotted}
@@ -5699,7 +5776,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <div class="ds-card">
       <h4 class="ds-section-title">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-        تم تسليمها لشركة الشحن Picked-Up
+        تم تسليمها لشركة الشحن Ready to Ship
         <span id="dash-pickedup-count" style="margin-right:6px;font-size:.75rem;background:var(--accent);color:#fff;border-radius:99px;padding:1px 8px"></span>
       </h4>
       <div class="overflow-x">
@@ -6593,8 +6670,8 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
           <button class="fx-btn mov-pickup-filter-pill" data-pu-val="Preparing" onclick="setMovPickupFilter('Preparing')" title="Preparing فقط" style="gap:4px;padding:4px 8px">
             <span class="pu-badge pu-badge-prep" style="font-size:.68rem;padding:1px 6px">Preparing</span>
           </button>
-          <button class="fx-btn mov-pickup-filter-pill" data-pu-val="Ready" onclick="setMovPickupFilter('Ready')" title="Picked-Up فقط" style="gap:4px;padding:4px 8px">
-            <span class="pu-badge pu-badge-pickedup" style="font-size:.68rem;padding:1px 6px">Picked-Up</span>
+          <button class="fx-btn mov-pickup-filter-pill" data-pu-val="Ready" onclick="setMovPickupFilter('Ready')" title="Ready to Ship فقط" style="gap:4px;padding:4px 8px">
+            <span class="pu-badge pu-badge-pickedup" style="font-size:.68rem;padding:1px 6px">Ready to Ship</span>
           </button>
           <button class="fx-btn mov-pickup-filter-pill" data-pu-val="Delivered" onclick="setMovPickupFilter('Delivered')" title="Delivered فقط" style="gap:4px;padding:4px 8px">
             <span class="pu-badge pu-badge-delivered" style="font-size:.68rem;padding:1px 6px">Delivered</span>
@@ -6674,6 +6751,12 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
                 <span data-i18n="date">التاريخ</span>
               </span>
             </th>
+            <th data-col="type" style="text-align:center">
+              <span style="display:flex;align-items:center;justify-content:center;gap:5px">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+                <span data-i18n="type">النوع</span>
+              </span>
+            </th>
             <th data-col="client">
               <span style="display:flex;align-items:center;gap:5px">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -6710,22 +6793,10 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
                 <span data-i18n="colItems">الأصناف</span>
               </span>
             </th>
-            <th data-col="type" style="text-align:center">
-              <span style="display:flex;align-items:center;justify-content:center;gap:5px">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
-                <span data-i18n="type">النوع</span>
-              </span>
-            </th>
             <th data-col="status" style="text-align:center">
               <span style="display:flex;align-items:center;justify-content:center;gap:5px">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
-                <span data-i18n="status">الحالة</span>
-              </span>
-            </th>
-            <th data-col="tag" style="text-align:center;min-width:110px">
-              <span style="display:flex;align-items:center;justify-content:center;gap:5px">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                TAG
+                <span>حالة الدفع</span>
               </span>
             </th>
             <th data-col="discount" style="text-align:center">
@@ -6751,7 +6822,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
                   <span class="pu-badge pu-badge-prep" style="font-size:.65rem;padding:1px 6px">Preparing</span>
                 </div>
                 <div onclick="setMovPickupFilter('Ready');closePickupColFilter()" style="padding:6px 10px;border-radius:6px;cursor:pointer;font-size:.78rem;display:flex;align-items:center;gap:6px" onmouseover="this.style.background='var(--bg-alt)'" onmouseout="this.style.background=''">
-                  <span class="pu-badge pu-badge-pickedup" style="font-size:.65rem;padding:1px 6px">Picked-Up</span>
+                  <span class="pu-badge pu-badge-pickedup" style="font-size:.65rem;padding:1px 6px">Ready to Ship</span>
                 </div>
                 <div onclick="setMovPickupFilter('Delivered');closePickupColFilter()" style="padding:6px 10px;border-radius:6px;cursor:pointer;font-size:.78rem;display:flex;align-items:center;gap:6px" onmouseover="this.style.background='var(--bg-alt)'" onmouseout="this.style.background=''">
                   <span class="pu-badge pu-badge-delivered" style="font-size:.65rem;padding:1px 6px">Delivered</span>
@@ -6762,6 +6833,12 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
               <span style="display:flex;align-items:center;justify-content:center;gap:5px">
                 <span class="bosta-icon"></span>
                 Bosta
+              </span>
+            </th>
+            <th data-col="tag" style="text-align:center;min-width:110px">
+              <span style="display:flex;align-items:center;justify-content:center;gap:5px">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                TAG
               </span>
             </th>
             <th data-col="employee" class="col-secondary" style="text-align:center">
@@ -7853,7 +7930,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
       </div>
       <span class="pu-bkpi-label" style="display:flex;align-items:center;justify-content:space-between">
-        Picked-Up
+        Ready to Ship
         <span id="pu-live-clock" style="font-size:.65rem;font-weight:600;color:#d97706;font-variant-numeric:tabular-nums;background:color-mix(in srgb,#d97706 10%,transparent);padding:1px 5px;border-radius:5px">—</span>
       </span>
       <span class="pu-bkpi-val" id="bkpi-ready">—</span>
@@ -7964,12 +8041,12 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         </div>
       </div>
 
-      <!-- Column 3: Picked-Up -->
+      <!-- Column 3: Ready to Ship -->
       <div class="pu-board-col pu-col-ready">
         <div class="pu-board-col-header">
           <div class="pu-board-col-header-left">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-            Picked-Up
+            Ready to Ship
             <span class="pu-col-count" id="pu-ready-count">0</span>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px">
@@ -8048,7 +8125,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         </div>
         <div>
           <div style="font-weight:700;font-size:.95rem">تأكيد تحضير المجموعة للاستلام</div>
-          <div style="font-size:.76rem;color:var(--muted);margin-top:2px" id="pu-confirm-subtitle">سيتم نقل جميع الطلبات إلى "Picked-Up"</div>
+          <div style="font-size:.76rem;color:var(--muted);margin-top:2px" id="pu-confirm-subtitle">سيتم نقل جميع الطلبات إلى "Ready to Ship"</div>
         </div>
       </div>
       <button onclick="closePuConfirmModal()" style="background:var(--bg-alt);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:1rem;color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
@@ -10248,9 +10325,19 @@ function toggleActionMenu(e) {
   const mW = portal.offsetWidth;
   const mH = portal.offsetHeight;
   const isRtl = document.documentElement.dir === 'rtl';
-  let top = rect.bottom + 6;
+  const vp = window.innerHeight;
+  const spaceBelow = vp - rect.bottom - 12;
+  const spaceAbove = rect.top - 12;
+  let top;
+  if (mH <= spaceBelow) {
+    top = rect.bottom + 6;
+  } else if (mH <= spaceAbove) {
+    top = rect.top - mH - 6;
+  } else {
+    // Neither side fits fully — anchor to top of viewport with a small margin
+    top = Math.max(8, vp - mH - 8);
+  }
   let left = isRtl ? rect.left : rect.right - mW;
-  if (top + mH > window.innerHeight - 12) top = rect.top - mH - 6;
   if (left < 8) left = 8;
   if (left + mW > window.innerWidth - 8) left = window.innerWidth - mW - 8;
   portal.style.top = top + 'px';
@@ -10914,7 +11001,7 @@ function fmtDate(d) {
   if (!d) return '-';
   const str = typeof d === 'string' ? d.slice(0, 10) : d;
   const t = today();
-  const loc = currentLang === 'en' ? 'en-US' : 'ar-EG';
+  const loc = currentLang === 'en' ? 'en-US' : 'ar-EG-u-nu-latn';
   if (str === t) return currentLang === 'en' ? 'Today' : 'اليوم';
   const y = new Date(new Date(t).getTime() - 86400000).toISOString().slice(0, 10);
   if (str === y) return currentLang === 'en' ? 'Yesterday' : 'أمس';
@@ -10953,7 +11040,7 @@ function fmtDateTime(d) {
   try {
     const dt = new Date(d);
     if (isNaN(dt.getTime())) return fmtDate(d);
-    const loc = currentLang === 'en' ? 'en-US' : 'ar-EG';
+    const loc = currentLang === 'en' ? 'en-US' : 'ar-EG-u-nu-latn';
     const dateStr = dt.toLocaleDateString(loc, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
     const timeStr = dt.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
     return `${dateStr} — ${timeStr}`;
@@ -16646,13 +16733,20 @@ function renderTxFields() {
         </div>
         <div class="form-group" style="margin-bottom:8px">
           <label>رقم الهاتف <span style="color:var(--red)">*</span></label>
-          <input type="tel" id="tx-phone" placeholder="01xxxxxxxxx" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+          <input type="tel" id="tx-phone" placeholder="01xxxxxxxxx" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'');autoFillCustomerByPhone(this.value)">
           <div class="field-hint">11 رقم يبدأ بـ 01</div>
           <div class="field-error" id="err-phone"></div>
         </div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label>المحافظة / المدينة <span style="color:var(--red)">*</span></label>
+          <div class="city-ac-trigger" id="tx-city-wrap">
+            <input type="text" id="tx-city" placeholder="اختر المدينة..." autocomplete="off" readonly style="background:var(--bg-alt,#f3f4f6);cursor:pointer">
+          </div>
+          <div class="field-error" id="err-city"></div>
+        </div>
         <div class="form-group" style="margin-bottom:0">
-          <label>عنوان التوصيل <span style="color:var(--red)">*</span></label>
-          <input type="text" id="tx-address" placeholder="الشارع، المنطقة، المدينة">
+          <label>عنوان التوصيل التفصيلي <span style="color:var(--red)">*</span></label>
+          <input type="text" id="tx-address" placeholder="الشارع، الحي، رقم المبنى...">
           <div class="field-error" id="err-address"></div>
         </div>
       </div>
@@ -19108,6 +19202,435 @@ ${includePolicyPage ? `
 function isValidPhone(phone) {
   return /^01[0125][0-9]{8}$/.test(phone);
 }
+
+// ══════════════════════════════════════════════════════════════════
+// Address Autocomplete
+// ══════════════════════════════════════════════════════════════════
+const ADDRESS_SUGGESTIONS = [
+  // القاهرة
+  'القاهرة','وسط البلد','مدينة نصر','مصر الجديدة','هليوبوليس','المعادي','المقطم',
+  'حلوان','التجمع الخامس','التجمع الأول','القاهرة الجديدة','الرحاب','مدينتي',
+  'مدينة بدر','مدينة الشروق','مدينة العبور','عين شمس','الزيتون','المطرية القاهرة',
+  'شبرا','روض الفرج','الشرابية','المرج','عزبة النخل','الوايلي','ألماظة',
+  'البساتين','منشأة ناصر','مدينة السلام','القطامية','الأميرية','بولاق',
+  'السيدة زينب','الخليفة','الموسكي','العتبة','الأزهر','باب الشعرية','الجمالية القاهرة',
+  // الجيزة
+  'الجيزة','الدقي','المهندسين','العجوزة','إمبابة','الهرم','فيصل الجيزة',
+  '٦ أكتوبر','الشيخ زايد','حدائق أكتوبر','بولاق الدكرور','الوراق','أوسيم',
+  'كرداسة','البدرشين','الحوامدية','أبو النمرس','العياط','الصف','أطفيح',
+  'المنيب','المريوطية','أبو رواش','شبرامنت',
+  // الإسكندرية
+  'الإسكندرية','المنتزه','سيدي بشر','سموحة','محرم بك','الرمل','سيدي جابر',
+  'المندرة','أبو قير','ستانلي','كليوباترا','المعمورة','الدخيلة','اللبان',
+  'العامرية','برج العرب','كرموز','باب شرق','الأزاريطة','الجمرك','العطارين',
+  // الدقهلية
+  'الدقهلية','المنصورة','طلخا','ميت غمر','دكرنس','أجا','السنبلاوين',
+  'منية النصر','شربين','بلقاس','المنزلة','تمي الأمديد',
+  // الغربية
+  'الغربية','طنطا','المحلة الكبرى','كفر الزيات','زفتى','السنطة','قطور','بسيون','سمنود',
+  // الشرقية
+  'الشرقية','الزقازيق','بلبيس','منيا القمح','ههيا','أبو كبير','فاقوس',
+  'الصالحية الجديدة','القنايات','أبو حماد','كفر صقر','ديرب نجم',
+  'العاشر من رمضان','مشتول السوق','أولاد صقر',
+  // القليوبية
+  'القليوبية','بنها','القناطر الخيرية','كفر شكر','طوخ','قليوب',
+  'شبين القناطر','الخانكة','شبرا الخيمة','أبو زعبل','مسطرد',
+  // البحيرة
+  'البحيرة','دمنهور','كفر الدوار','رشيد','إيتاي البارود','أبو حمص',
+  'الدلنجات','شبراخيت','المحمودية','حوش عيسى','وادي النطرون','النوبارية',
+  // المنوفية
+  'المنوفية','شبين الكوم','منوف','أشمون','الباجور','قويسنا','بركة السبع','الشهداء',
+  // كفر الشيخ
+  'كفر الشيخ','دسوق','فوه','مطوبس','قلين','بلطيم','بيلا','سيدي سالم','الحامول',
+  // دمياط
+  'دمياط','فارسكور','الزرقا','كفر سعد','رأس البر','دمياط الجديدة',
+  // الإسماعيلية
+  'الإسماعيلية','القنطرة','التل الكبير','أبو صوير',
+  // بورسعيد
+  'بورسعيد','بور فؤاد',
+  // السويس
+  'السويس','عتاقة',
+  // الفيوم
+  'الفيوم','سنورس','إطسا','طامية','يوسف الصديق','أبشواي',
+  // بني سويف
+  'بني سويف','الواسطى','إهناسيا','ببا','الفشن','سمسطا',
+  // المنيا
+  'المنيا','أبو قرقاص','ملوي','مغاغة','بني مزار','مطاي','سمالوط','دير مواس',
+  // أسيوط
+  'أسيوط','ديروط','القوصية','منفلوط','أبنوب','أبو تيج','البداري',
+  // سوهاج
+  'سوهاج','أخميم','طهطا','جرجا','جهينة','المراغة','البلينا',
+  // قنا
+  'قنا','نجع حمادي','دشنا','قوص','أبو تشت','نقادة','فرشوط',
+  // الأقصر
+  'الأقصر','إسنا',
+  // أسوان
+  'أسوان','كوم أمبو','إدفو','دراو','أبو سمبل',
+  // البحر الأحمر
+  'الغردقة','سفاجا','القصير','مرسى علم','رأس غارب',
+  // جنوب سيناء
+  'شرم الشيخ','دهب','نويبع','طابا','الطور','سانت كاترين',
+  // شمال سيناء
+  'العريش','رفح','الشيخ زويد','بئر العبد',
+  // مطروح
+  'مرسى مطروح','الضبعة','السلوم','سيوة','العلمين','الساحل الشمالي','مارينا',
+  // الوادي الجديد
+  'الوادي الجديد','الخارجة','الداخلة','الفرافرة',
+];
+
+// ── City Autocomplete ────────────────────────────────────────────────────────
+const CITY_GROUPS = [
+  // ── القائمة مبنية على أسماء Bosta الرسمية مباشرة من API /cities ──
+  // bostaEn = الاسم الإنجليزي الرسمي الذي تقبله Bosta بدون ترجمة
+  { label: 'القاهرة',      bostaEn: 'Cairo',         color: '#6366f1', cities: [
+    'القاهرة','مدينة نصر','التجمع الخامس','التجمع الأول','المعادي','حلوان','شبرا','مصر الجديدة','المقطم','الرحاب','مدينتي','مدينة الشروق','مدينة بدر','مدينة العبور','وسط البلد','الزيتون','عين شمس','المرج',
+  ]},
+  { label: 'الجيزة',       bostaEn: 'Giza',          color: '#8b5cf6', cities: [
+    'الجيزة','المهندسين','الدقي','العجوزة','إمبابة','الهرم','٦ أكتوبر','الشيخ زايد','فيصل','بولاق الدكرور','حدائق أكتوبر','أوسيم',
+  ]},
+  { label: 'الإسكندرية',   bostaEn: 'Alexandria',    color: '#0ea5e9', cities: [
+    'الإسكندرية','سيدي بشر','سموحة','المنتزه','كليوباترا','المعمورة','العجمي','برج العرب','الدخيلة','أبو قير',
+  ]},
+  { label: 'الدقهلية',     bostaEn: 'Dakahlia',      color: '#10b981', cities: [
+    'الدقهلية','المنصورة','طلخا','ميت غمر','دكرنس','أجا','السنبلاوين','منية النصر','شربين','بلقاس','المنزلة','تمي الأمديد',
+  ]},
+  { label: 'الغربية',      bostaEn: 'Gharbia',       color: '#059669', cities: [
+    'الغربية','طنطا','المحلة الكبرى','كفر الزيات','زفتى','السنطة','قطور','بسيون','سمنود',
+  ]},
+  { label: 'المنوفية',     bostaEn: 'Monufia',       color: '#0d9488', cities: [
+    'المنوفية','شبين الكوم','منوف','أشمون','الباجور','قويسنا','بركة السبع','الشهداء',
+  ]},
+  { label: 'البحيرة',      bostaEn: 'Behira',        color: '#0891b2', cities: [
+    'البحيرة','دمنهور','كفر الدوار','رشيد','إيتاي البارود','أبو حمص','الدلنجات','شبراخيت','المحمودية','حوش عيسى','وادي النطرون','النوبارية',
+  ]},
+  { label: 'كفر الشيخ',    bostaEn: 'Kafr Alsheikh', color: '#0369a1', cities: [
+    'كفر الشيخ','دسوق','فوه','مطوبس','قلين','بلطيم','بيلا','سيدي سالم','الحامول',
+  ]},
+  { label: 'الشرقية',      bostaEn: 'Sharqia',       color: '#7c3aed', cities: [
+    'الشرقية','الزقازيق','بلبيس','منيا القمح','ههيا','أبو كبير','فاقوس','الصالحية الجديدة','القنايات','أبو حماد','كفر صقر','العاشر من رمضان',
+  ]},
+  { label: 'القليوبية',    bostaEn: 'El Kalioubia',  color: '#6d28d9', cities: [
+    'القليوبية','بنها','القناطر الخيرية','كفر شكر','طوخ','قليوب','شبين القناطر','الخانكة','شبرا الخيمة','أبو زعبل',
+  ]},
+  { label: 'دمياط',        bostaEn: 'Damietta',      color: '#be185d', cities: [
+    'دمياط','فارسكور','الزرقا','كفر سعد','رأس البر','دمياط الجديدة',
+  ]},
+  { label: 'الإسماعيلية',  bostaEn: 'Ismailia',      color: '#b45309', cities: [
+    'الإسماعيلية','القنطرة','التل الكبير','أبو صوير',
+  ]},
+  { label: 'بورسعيد',      bostaEn: 'Port Said',     color: '#c2410c', cities: [
+    'بورسعيد','بور فؤاد',
+  ]},
+  { label: 'السويس',       bostaEn: 'Suez',          color: '#92400e', cities: [
+    'السويس','عتاقة',
+  ]},
+  { label: 'الفيوم',       bostaEn: 'Fayoum',        color: '#d97706', cities: [
+    'الفيوم','سنورس','إطسا','طامية','يوسف الصديق','أبشواي',
+  ]},
+  { label: 'بني سويف',     bostaEn: 'Bani Suif',     color: '#a16207', cities: [
+    'بني سويف','الواسطى','إهناسيا','ببا','الفشن','سمسطا',
+  ]},
+  { label: 'المنيا',       bostaEn: 'Menya',         color: '#f59e0b', cities: [
+    'المنيا','أبو قرقاص','ملوي','مغاغة','بني مزار','مطاي','سمالوط','دير مواس',
+  ]},
+  { label: 'أسيوط',        bostaEn: 'Assuit',        color: '#ea580c', cities: [
+    'أسيوط','ديروط','القوصية','منفلوط','أبنوب','أبو تيج','البداري',
+  ]},
+  { label: 'سوهاج',        bostaEn: 'Sohag',         color: '#dc2626', cities: [
+    'سوهاج','أخميم','طهطا','جرجا','جهينة','المراغة','البلينا','ساقلته','المنشأة','دار السلام',
+  ]},
+  { label: 'قنا',          bostaEn: 'Qena',          color: '#be123c', cities: [
+    'قنا','نجع حمادي','دشنا','قوص','أبو تشت','نقادة','فرشوط','الوقف','قفط',
+  ]},
+  { label: 'الأقصر',       bostaEn: 'Luxor',         color: '#9d174d', cities: [
+    'الأقصر','إسنا','الأرمنت',
+  ]},
+  { label: 'أسوان',        bostaEn: 'Aswan',         color: '#831843', cities: [
+    'أسوان','كوم أمبو','إدفو','دراو','أبو سمبل','نصر النوبة',
+  ]},
+  { label: 'البحر الأحمر', bostaEn: 'Red Sea',       color: '#ef4444', cities: [
+    'الغردقة','سفاجا','القصير','مرسى علم','رأس غارب','الزعفرانة',
+  ]},
+  { label: 'جنوب سيناء',   bostaEn: 'South Sinai',   color: '#f97316', cities: [
+    'شرم الشيخ','دهب','نويبع','طابا','الطور','سانت كاترين','أبو رديس',
+  ]},
+  { label: 'شمال سيناء',   bostaEn: 'North Sinai',   color: '#fb923c', cities: [
+    'العريش','رفح','الشيخ زويد','بئر العبد','الحسنة','نخل',
+  ]},
+  { label: 'مطروح',        bostaEn: 'Matrouh',       color: '#64748b', cities: [
+    'مطروح','مرسى مطروح','العلمين','الضبعة','السلوم','سيوة','الحمام',
+  ]},
+  { label: 'الساحل الشمالي', bostaEn: 'North Coast', color: '#475569', cities: [
+    'الساحل الشمالي','مارينا','هاسيندا باي',
+  ]},
+  { label: 'الوادي الجديد', bostaEn: 'New Valley',   color: '#334155', cities: [
+    'الوادي الجديد','الخارجة','الداخلة','الفرافرة',
+  ]},
+];
+
+let _cityDropdown = null;
+let _citySearchInput = null;
+let _cityList = null;
+let _cityActiveInput = null;
+
+function _buildCityDropdown() {
+  if (_cityDropdown) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'city-ac-dropdown';
+  wrap.innerHTML = `
+    <div class="city-ac-search-wrap" style="position:relative">
+      <svg class="city-ac-search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="9" r="6"/><path d="M15 15l-3-3"/></svg>
+      <input class="city-ac-search" placeholder="ابحث عن مدينة..." type="text" autocomplete="off">
+    </div>
+    <div class="city-ac-list"></div>`;
+  document.body.appendChild(wrap);
+  _cityDropdown = wrap;
+  _citySearchInput = wrap.querySelector('.city-ac-search');
+  _cityList = wrap.querySelector('.city-ac-list');
+
+  _citySearchInput.addEventListener('input', () => _renderCityItems(_citySearchInput.value));
+  _citySearchInput.addEventListener('keydown', _cityKeydown);
+
+  document.addEventListener('mousedown', e => {
+    if (_cityDropdown && !_cityDropdown.contains(e.target) && e.target !== _cityActiveInput) {
+      _hideCityDropdown();
+    }
+  });
+}
+
+function _normalizeAr(str) {
+  return str.replace(/[أإآا]/g,'ا').replace(/[ةه]/g,'ه').replace(/ى/g,'ي').replace(/[ً-ٟ]/g,'');
+}
+
+function _renderCityItems(q) {
+  if (!_cityList) return;
+  const query = q.trim();
+  _cityList.innerHTML = '';
+  let hasAny = false;
+  const nq = _normalizeAr(query);
+
+  CITY_GROUPS.forEach(group => {
+    const groupMatch = query && group.bostaEn.toLowerCase().includes(query.toLowerCase());
+    const filtered = query
+      ? (groupMatch ? group.cities : group.cities.filter(c => _normalizeAr(c).includes(nq)))
+      : group.cities;
+    if (!filtered.length) return;
+    hasAny = true;
+    const label = document.createElement('div');
+    label.className = 'city-ac-group-label';
+    label.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${group.color};margin-left:5px;vertical-align:middle"></span>${group.label}<span style="font-size:.7rem;color:var(--muted);margin-right:6px;font-family:monospace">${group.bostaEn}</span>`;
+    _cityList.appendChild(label);
+    filtered.forEach(city => {
+      const item = document.createElement('div');
+      item.className = 'city-ac-item';
+      const hi = query ? city.replace(query, `<strong>${query}</strong>`) : city;
+      item.innerHTML = `<span class="city-dot" style="background:${group.color}"></span><span class="city-name">${hi}</span>`;
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        _selectCity(city);
+      });
+      _cityList.appendChild(item);
+    });
+  });
+
+  if (!hasAny) {
+    _cityList.innerHTML = `<div class="city-ac-empty">لا توجد نتائج لـ "${query}"</div>`;
+  }
+}
+
+function _positionCityDropdown() {
+  if (!_cityDropdown || !_cityActiveInput) return;
+  const r = _cityActiveInput.getBoundingClientRect();
+  const dropH = 340;
+  const spaceBelow = window.innerHeight - r.bottom - 8;
+  const top = spaceBelow >= dropH * 0.5 ? r.bottom + 4 : r.top - dropH - 4;
+  _cityDropdown.style.top = top + 'px';
+  // محاذاة يمين الحقل
+  const right = window.innerWidth - r.right;
+  _cityDropdown.style.right = right + 'px';
+  _cityDropdown.style.left = 'auto';
+}
+
+function _showCityDropdown(input) {
+  _buildCityDropdown();
+  _cityActiveInput = input;
+  _citySearchInput.value = '';
+  _renderCityItems('');
+  _positionCityDropdown();
+  _cityDropdown.classList.add('show');
+  setTimeout(() => _citySearchInput.focus(), 30);
+  window.addEventListener('scroll', _positionCityDropdown, true);
+  window.addEventListener('resize', _positionCityDropdown);
+}
+
+function _hideCityDropdown() {
+  if (_cityDropdown) _cityDropdown.classList.remove('show');
+  _cityActiveInput = null;
+  window.removeEventListener('scroll', _positionCityDropdown, true);
+  window.removeEventListener('resize', _positionCityDropdown);
+}
+
+/** ملء dataset.bostaEn و gov لحقل مدينة من قيمة نصية موجودة (عند تحميل draft/تعديل) */
+function _restoreCityDataset(inputEl, bostaCity, gov) {
+  if (!inputEl) return;
+  if (bostaCity) { inputEl.dataset.bostaEn = bostaCity; inputEl.dataset.gov = gov || ''; return; }
+  const cityPart = (inputEl.value || '').split(/\s*[—–-]\s*/).pop()?.trim() || '';
+  const g = _getCityGroup(cityPart) || CITY_GROUPS.find(gr => gr.label === gov);
+  if (g) { inputEl.dataset.bostaEn = g.bostaEn; inputEl.dataset.gov = g.label; }
+}
+
+function _getCityGroup(city) {
+  for (const g of CITY_GROUPS) {
+    if (g.cities.includes(city)) return g;
+  }
+  return null;
+}
+
+function _getCityGovernorate(city) {
+  const g = _getCityGroup(city);
+  return g ? g.label : '';
+}
+
+function _selectCity(city) {
+  if (_cityActiveInput) {
+    const g = _getCityGroup(city);
+    const gov = g ? g.label : '';
+    const bostaEn = g ? (g.bostaEn || '') : '';
+    // حفظ المحافظة العربية والإنجليزية الجاهزة لبوسطا مباشرةً
+    _cityActiveInput.dataset.gov = gov;
+    _cityActiveInput.dataset.bostaEn = bostaEn;
+    _cityActiveInput.dataset.cityOnly = city;
+    // عرض: "المحافظة — المدينة" لو المدينة مختلفة عن المحافظة
+    _cityActiveInput.value = (gov && gov !== city) ? `${gov} — ${city}` : city;
+    _cityActiveInput.dispatchEvent(new Event('change'));
+    const errId = _cityActiveInput.id === 'tx-city' ? 'err-city' : 'err-edit-city';
+    const errEl = document.getElementById(errId);
+    if (errEl) errEl.textContent = '';
+  }
+  _hideCityDropdown();
+}
+
+function _cityKeydown(e) {
+  const items = Array.from(_cityList.querySelectorAll('.city-ac-item'));
+  const idx = items.findIndex(i => i.classList.contains('active'));
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (idx >= 0) items[idx].classList.remove('active');
+    const next = items[(idx + 1) % items.length];
+    next.classList.add('active');
+    next.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (idx >= 0) items[idx].classList.remove('active');
+    const prev = items[(idx - 1 + items.length) % items.length];
+    prev.classList.add('active');
+    prev.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter') {
+    const active = _cityList.querySelector('.city-ac-item.active');
+    if (active) { e.preventDefault(); _selectCity(active.querySelector('.city-name').textContent); }
+  } else if (e.key === 'Escape') {
+    _hideCityDropdown();
+  }
+}
+
+function initCityAutocomplete(inputId) {
+  const input = document.getElementById(inputId);
+  if (!input || input._cityAcInit) return;
+  input._cityAcInit = true;
+  input.addEventListener('click', () => _showCityDropdown(input));
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      _showCityDropdown(input);
+    }
+  });
+}
+
+function initAddressAutocomplete(inputId) {
+  const input = document.getElementById(inputId);
+  if (!input || input._acInit) return;
+  input._acInit = true;
+
+  // dropdown مثبت في body بـ fixed positioning
+  const dropdown = document.createElement('div');
+  dropdown.className = 'addr-ac-dropdown';
+  document.body.appendChild(dropdown);
+
+  function positionDropdown() {
+    const r = input.getBoundingClientRect();
+    dropdown.style.position = 'fixed';
+    dropdown.style.top  = (r.bottom + 2) + 'px';
+    dropdown.style.left = r.left + 'px';
+    dropdown.style.width = r.width + 'px';
+  }
+
+  function getHistoryAddresses() {
+    const seen = new Set(), hist = [];
+    (window.transactions || []).filter(t => t.type === 'مبيعات' && t.shippingAddress).forEach(t => {
+      const a = (t.shippingAddress || '').replace(/^العنوان:\s*/, '').trim();
+      if (a.length > 5 && !seen.has(a)) { seen.add(a); hist.push(a); }
+    });
+    return hist.slice(0, 20);
+  }
+
+  function hide() { dropdown.style.display = 'none'; }
+
+  function showSuggestions(val) {
+    const q = val.trim();
+    dropdown.innerHTML = '';
+    if (!q) { hide(); return; }
+    const history = getHistoryAddresses();
+    const all = [...new Set([...history, ...ADDRESS_SUGGESTIONS])];
+    const nq = _normalizeAr(q);
+    const matches = all.filter(s => _normalizeAr(s).includes(nq)).slice(0, 8);
+    if (!matches.length) { hide(); return; }
+    matches.forEach(s => {
+      const item = document.createElement('div');
+      item.className = 'addr-ac-item';
+      const isHist = history.includes(s);
+      const hi = s.replace(q, `<strong>${q}</strong>`);
+      item.innerHTML = `<span>${isHist ? '⏱' : '📍'}</span><span>${hi}</span>`;
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        input.value = s;
+        hide();
+        const errEl = document.getElementById(inputId === 'tx-address' ? 'err-address' : 'err-edit-address');
+        if (errEl) errEl.textContent = '';
+      });
+      dropdown.appendChild(item);
+    });
+    positionDropdown();
+    dropdown.style.display = 'block';
+  }
+
+  input.addEventListener('input',  () => showSuggestions(input.value));
+  input.addEventListener('focus',  () => showSuggestions(input.value));
+  window.addEventListener('scroll', positionDropdown, true);
+  window.addEventListener('resize', positionDropdown);
+
+  document.addEventListener('mousedown', e => {
+    if (e.target !== input && !dropdown.contains(e.target)) hide();
+  });
+
+  input.addEventListener('keydown', e => {
+    if (dropdown.style.display === 'none') return;
+    const items = Array.from(dropdown.querySelectorAll('.addr-ac-item'));
+    if (!items.length) return;
+    const idx = items.findIndex(i => i.classList.contains('active'));
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (idx >= 0) items[idx].classList.remove('active');
+      items[(idx + 1) % items.length].classList.add('active');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (idx >= 0) items[idx].classList.remove('active');
+      items[(idx - 1 + items.length) % items.length].classList.add('active');
+    } else if (e.key === 'Enter') {
+      const active = dropdown.querySelector('.addr-ac-item.active');
+      if (active) { e.preventDefault(); input.value = active.querySelectorAll('span')[1].textContent; hide(); }
+    } else if (e.key === 'Escape') { hide(); }
+  });
+}
 function getKnownClients() {
   const map = {};
   transactions.forEach(tx => {
@@ -19415,6 +19938,7 @@ function validateTx() {
     const phone = qs('#tx-phone')?.value?.trim() || '';
     if (!phone) { const el = qs('#err-phone'); if (el) el.textContent = 'مطلوب'; valid = false; }
     else if (!isValidPhone(phone)) { const el = qs('#err-phone'); if (el) el.textContent = 'رقم هاتف غير صحيح (01xxxxxxxxx)'; valid = false; }
+    if (!qs('#tx-city')?.value?.trim()) { const el = qs('#err-city'); if (el) el.textContent = 'مطلوب'; valid = false; }
     if (!qs('#tx-address')?.value?.trim()) { const el = qs('#err-address'); if (el) el.textContent = 'مطلوب'; valid = false; }
     const saleRef = qs('#tx-ref')?.value?.trim() || '';
     if (!saleRef) { const el = qs('#err-ref'); if (el) el.textContent = 'مطلوب'; valid = false; }
@@ -19711,7 +20235,10 @@ async function saveTx() {
       Object.assign(body, { shipCo: qs('#tx-shipco')?.value || '', shipZone: txShipZone, shipCost, deposit,
         remaining: saleRemaining, depMethod: qs('#tx-dep-method')?.value || '',
         payment: qs('#tx-payment')?.value || '', payStatus: saleRemaining <= 0 ? 'مكتمل' : 'معلق',
-        shippingAddress: (qs('#tx-address')?.value || '').trim() });
+        shippingAddress: (qs('#tx-address')?.value || '').trim(),
+        shippingCity: (qs('#tx-city')?.value || '').trim(),
+        shippingGov: (qs('#tx-city')?.dataset?.gov || '').trim(),
+        shippingBostaCity: (qs('#tx-city')?.dataset?.bostaEn || '').trim() });
     } else if (txType === 'مشتريات') {
       const account = qs('#tx-account')?.value || 'كاش';
       const paidNow = deposit; // already capped above
@@ -19749,6 +20276,19 @@ function showTxConfirmation(body) {
     summary += `<div style="margin-bottom:16px">
       <div style="font-weight:600;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:6px">${ICON('user')} ${txType === 'مبيعات' ? (currentLang==='en'?'Customer':'العميل') : (currentLang==='en'?'Supplier':'المورد')}</div>
       <div style="color:var(--text);font-size:.95rem">${esc(body.client)}</div>
+    </div>`;
+  }
+
+  if (body.shippingCity || body.shippingAddress) {
+    summary += `<div style="margin-bottom:16px">
+      <div style="font-weight:600;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:6px">📍 تفاصيل العنوان</div>
+      <div style="background:var(--bg);border-radius:8px;padding:12px;border-right:3px solid var(--primary)">
+        ${body.shippingCity ? `<div style="display:flex;align-items:center;gap:6px;margin-bottom:${body.shippingAddress ? '8px' : '0'}">
+          <span style="font-size:.72rem;font-weight:700;color:var(--muted);white-space:nowrap">المحافظة / المدينة</span>
+          <span style="font-weight:700;color:var(--text);font-size:.92rem">${esc(body.shippingCity)}</span>
+        </div>` : ''}
+        ${body.shippingAddress ? `<div style="color:var(--text);font-size:.88rem;line-height:1.5;border-top:${body.shippingCity ? '1px solid var(--border)' : 'none'};padding-top:${body.shippingCity ? '8px' : '0'}">${esc(body.shippingAddress)}</div>` : ''}
+      </div>
     </div>`;
   }
 
@@ -20096,7 +20636,8 @@ function serializeTxForm() {
   if (txType === 'مبيعات') {
     Object.assign(snap, {
       client: get('#tx-client'), phone: get('#tx-phone'), ref: get('#tx-ref'),
-      address: get('#tx-address'),
+      address: get('#tx-address'), city: get('#tx-city'),
+      bostaCity: qs('#tx-city')?.dataset?.bostaEn || '', gov: qs('#tx-city')?.dataset?.gov || '',
       shipCo: get('#tx-shipco'), shipZone: typeof txShipZone !== 'undefined' ? txShipZone : '',
       shipCost: get('#tx-shipcost'), deposit: get('#tx-deposit'),
       depMethod: get('#tx-dep-method'), payment: get('#tx-payment'),
@@ -20138,7 +20679,8 @@ function deserializeTxForm(snap) {
     set('#tx-inv-note', snap.invNote);
     if (snap.type === 'مبيعات') {
       set('#tx-client', snap.client); set('#tx-phone', snap.phone); set('#tx-ref', snap.ref);
-      set('#tx-address', snap.address);
+      set('#tx-address', snap.address); set('#tx-city', snap.city);
+      _restoreCityDataset(qs('#tx-city'), snap.bostaCity || '', snap.gov || '');
       set('#tx-shipco', snap.shipCo);
       if (typeof snap.shipZone === 'string') { try { txShipZone = snap.shipZone; } catch(_) {} }
       set('#tx-shipcost', snap.shipCost); set('#tx-deposit', snap.deposit);
@@ -20527,8 +21069,16 @@ function _fxApplySort(ctx, arr) {
     case 'buy-desc': copy.sort((a,b) => cmp(b,a,'buyPrice')); break;
     case 'stock-asc':  copy.sort((a,b) => cmp(a,b,'current')); break;
     case 'stock-desc': copy.sort((a,b) => cmp(b,a,'current')); break;
-    case 'date-desc': copy.sort((a,b) => (b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'')); break;
-    case 'date-asc':  copy.sort((a,b) => (a.date||a.createdAt||'').localeCompare(b.date||b.createdAt||'')); break;
+    case 'date-desc': copy.sort((a,b) => {
+      const dc = (b.createdAt||b.date||'').localeCompare(a.createdAt||a.date||'');
+      if (dc !== 0) return dc;
+      return (Number((b.ref||'').replace(/\D/g,''))||0) - (Number((a.ref||'').replace(/\D/g,''))||0);
+    }); break;
+    case 'date-asc':  copy.sort((a,b) => {
+      const dc = (a.createdAt||a.date||'').localeCompare(b.createdAt||b.date||'');
+      if (dc !== 0) return dc;
+      return (Number((a.ref||'').replace(/\D/g,''))||0) - (Number((b.ref||'').replace(/\D/g,''))||0);
+    }); break;
     case 'amount-desc': copy.sort((a,b) => cmp(b,a,'total')); break;
     case 'amount-asc':  copy.sort((a,b) => cmp(a,b,'total')); break;
     case 'client-asc':  copy.sort((a,b) => (a.client||'').localeCompare(b.client||'','ar')); break;
@@ -21751,6 +22301,7 @@ function renderMovementTxRow(tx) {
     <td><input type="checkbox" class="checkbox mov-check" value="${esc(tx._id)}" ${isSelected ? 'checked' : ''} onclick="handleMovCheck(event,'${esc(tx._id)}')"></td>
     <td data-col="ref" class="col-ref">${movementRefCell(tx)}</td>
     <td data-col="date">${dateCell}</td>
+    <td data-col="type" style="text-align:center;white-space:nowrap">${movementKindBadgeCompact(tx)}</td>
     <td data-col="client">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" class="mov-client-name">${tx.client ? esc(tx.client) : '<span style="color:var(--muted)">—</span>'}</a>
@@ -21764,26 +22315,38 @@ function renderMovementTxRow(tx) {
     <td data-col="remaining" style="text-align:center"><span class="${remAmt > 0 ? 'mov-col-remaining-pos' : 'mov-col-remaining-zero'}">${fmtJ(remAmt)}</span></td>
     <td data-col="ship" style="text-align:center">${_movShipCell(tx)}</td>
     <td data-col="items" style="text-align:center">${_movItemsCell(tx)}</td>
-    <td data-col="type" style="text-align:center;white-space:nowrap">${movementKindBadgeCompact(tx)}</td>
     <td data-col="status" style="text-align:center;white-space:nowrap">${movementStatusCell(tx)}${vaultStatusBadge}${vaultHint}</td>
-    <td data-col="tag" style="text-align:center;min-width:110px" onclick="event.stopPropagation()" data-tag-cell="${esc(tx._id)}">${renderTxTagsCell(tx._id)}</td>
     <td data-col="discount" style="text-align:center;white-space:nowrap">${_movDiscountBadge(tx)}</td>
     <td data-col="pickup" style="text-align:center;white-space:nowrap">${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : '<span style="color:var(--muted);font-size:.8rem">—</span>'}</td>
     <td data-col="bosta" style="text-align:center;white-space:nowrap">${_bostaStatusBadge(tx)}</td>
+    <td data-col="tag" style="text-align:center;min-width:110px" onclick="event.stopPropagation()" data-tag-cell="${esc(tx._id)}">${renderTxTagsCell(tx._id)}</td>
     <td data-col="employee" class="mov-col-employee" style="text-align:center"><div class="mov-col-employee-wrap">${tx.shopifyOrderId ? `<a href="https://admin.shopify.com/store/soulia-2/orders/${esc(tx.shopifyOrderId)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="mov-emp-initials" title="فتح أوردر Shopify #${esc(tx.shopifyOrderId)}" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">${_SHOPIFY_LOGO_SVG}</a>` : `<span class="mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span>`}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div></td>
     <td>
       <div class="actions-dd">
         <button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button>
         <div class="dd-menu">
+          <!-- 1. فتح الفاتورة -->
           <div class="dd-item" onclick="showInvoiceDetail('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg> فتح الفاتورة</div>
+          <!-- 2. WhatsApp -->
           ${waMenuItem ? `<div class="dd-divider"></div>${waMenuItem}` : ''}
           <div class="dd-divider"></div>
+          <!-- 3. تعديل -->
           ${editItem}
+          <!-- 4. طباعة -->
           <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة / PDF</div>
+          <!-- 5. تحصيل -->
           ${(tx.remaining || 0) > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')">${isExchangeSalePendingCollect(tx) ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل فرق الاستبدال' : tx.type === 'مشتريات' ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg> سداد المتبقي للمورد' : '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل'}</div>` : ''}
+          <!-- 6. خصم بعد البيع -->
           ${tx.type === 'مبيعات' && !tx.cancelled && isAdmin() ? `<div class="dd-item" onclick="openPostDiscountModal('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> خصم بعد البيع</div>` : ''}
-          ${tx.type !== 'مبيعات' && ((tx.payments||[]).length > 0 || (tx.deposits||[]).length > 0) && !tx.cancelled && isAdmin() ? `<div class="dd-item" style="color:#f97316" onclick="openUndoPaymentSelector('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 010 8h-3"/></svg> تراجع عن دفعة محددة</div>` : ''}
+          <!-- 7. Bosta -->
+          ${tx.type === 'مبيعات' && !tx.cancelled ? `<div class="dd-divider"></div>${['VALIDATION_ERROR','DELETED',''].includes(tx.bostaStatus||'')
+            ? `<div class="dd-item" onclick="sendToBosta('${esc(tx._id)}')"><svg viewBox="0 0 10 10" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;border-radius:2px"><rect width="10" height="10" fill="#FF0000"/><path fill="#fff" d="M8.8,2.9L5.2,1l0,0C5.1,0.9,4.9,0.9,4.8,1L1.2,2.9C1,3,0.9,3.2,0.9,3.3v3.3C0.9,6.8,1,6.9,1.2,7l3.6,1.9c0.2,0.1,0.3,0.1,0.5,0L8.9,7c0.1,0,0.2-0.2,0.2-0.4V3.3C9.1,3.2,8.9,3,8.8,2.9z M8.4,3.9V6l-2-1L8.4,3.9z M2,3.3l3-1.6l3,1.6L5,4.9L2,3.3z M4.4,5.4l0.4,0.2c0.1,0.1,0.3,0.1,0.5,0l0.4-0.2l2.4,1.3l-3,1.6L2,6.8L4.4,5.4z M3.6,5l-2,1.1V3.9L3.6,5z"/></svg> ${tx.bostaStatus === 'VALIDATION_ERROR' ? 'إعادة إرسال Bosta' : tx.bostaStatus === 'DELETED' ? 'إعادة إرسال Bosta' : 'إرسال Bosta'}</div>`
+            : `<div class="dd-item" onclick="syncBostaStatus('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="#FF0000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> تحديث Bosta</div>`
+          }` : ''}
+          <!-- 8. تراجع عن دفعة -->
+          ${tx.type !== 'مبيعات' && ((tx.payments||[]).length > 0 || (tx.deposits||[]).length > 0) && !tx.cancelled && isAdmin() ? `<div class="dd-divider"></div><div class="dd-item" style="color:#f97316" onclick="openUndoPaymentSelector('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 010 8h-3"/></svg> تراجع عن دفعة محددة</div>` : ''}
           ${tx.type === 'مبيعات' && (tx.payments||[]).length > 0 && !tx.cancelled && isAdmin() ? `<div class="dd-item" style="color:var(--orange)" onclick="openReverseCollect('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.4 7.4 11.5 4 18 5.5"/><path d="M21 17v-6h-6"/><path d="M21 11c-2.4 5.6-8.5 9-15 7.5"/></svg> تراجع عند التحصيل</div>` : ''}
+          <!-- 9. إلغاء / أرشفة -->
           ${!isStatusCancelled(tx.payStatus) && !tx.cancelled && !isStatusCompleted(tx.payStatus) ? (
             isExchangeSalePendingCollect(tx)
               ? `<div class="dd-divider"></div><div class="dd-item danger" style="opacity:.55;cursor:not-allowed" onclick="event.stopPropagation();toastExchangePendingLocked()" style="display:flex;align-items:center;gap:5px">${ICON('ban')} إلغاء <span class="text-xs">(مقفول)</span></div>`
@@ -21792,10 +22355,7 @@ function renderMovementTxRow(tx) {
                 : `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')" style="display:flex;align-items:center;gap:5px">${ICON('ban')} ${currentLang==='en'?'Cancel':'إلغاء'}</div>`
           ) : ''}
           ${isAdmin() && tx.cancelled ? `<div class="dd-item danger" onclick="archiveMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg> أرشفة</div>` : ''}
-          ${tx.type === 'مبيعات' && !tx.cancelled ? `<div class="dd-divider"></div>${!tx.bostaOrderId
-            ? `<div class="dd-item" onclick="sendToBosta('${esc(tx._id)}')">${_BOSTA_ICON} إرسال Bosta</div>`
-            : `<div class="dd-item" onclick="syncBostaStatus('${esc(tx._id)}')">${_BOSTA_ICON} تحديث Bosta</div>`
-          }` : ''}
+          <!-- 10. استبعاد -->
           <div class="dd-divider"></div>
           <div class="dd-item" style="color:var(--muted)" onclick="toggleMovExclude('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg> ${movExcludedIds.has(String(tx._id)) ? 'إلغاء الاستبعاد' : 'استبعاد من النتائج'}</div>
         </div>
@@ -21903,9 +22463,12 @@ function renderMovements() {
   let merged;
   if (useDefaultMerge) {
     merged = [
-      ...data.map(tx => ({ k: 'tx', tx, sk: tx.date || '' })),
-      ...retRows.map(r => ({ k: 'ret', r, sk: r.createdAt || '' })),
-    ].sort((a, b) => (b.sk || '').localeCompare(a.sk || ''));
+      ...data.map(tx => ({ k: 'tx', tx, sk: tx.createdAt || tx.date || '', ref: Number((tx.ref||'').replace(/\D/g,''))||0 })),
+      ...retRows.map(r => ({ k: 'ret', r, sk: r.createdAt || '', ref: 0 })),
+    ].sort((a, b) => {
+      const dc = (b.sk || '').localeCompare(a.sk || '');
+      return dc !== 0 ? dc : b.ref - a.ref;
+    });
   } else {
     merged = [
       ...data.map(tx => ({ k: 'tx', tx })),
@@ -22151,18 +22714,15 @@ function setMovViewMode(mode) {
 /* ===== TAG system ===== */
 function renderTxTagsCell(txId) {
   const tags = getTxTagObjects(txId);
-  const tagHtml = tags.map(tag => `
-    <span class="tx-tag" style="background:${esc(tag.bg)};color:${esc(tag.color)};border-color:${esc(tag.bg)}" title="${esc(tag.label)}">
-      ${esc(tag.label)}
-      <span class="tag-del" onclick="event.stopPropagation();deleteTxTag('${esc(txId)}','${esc(tag.label)}')">✕</span>
-    </span>`).join('');
-  return `<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center;align-items:center">
-    ${tagHtml}
-    <button class="tx-tag-add" onclick="event.stopPropagation();openTagDropdown('${esc(txId)}',this)" title="إضافة TAG">
-      <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      TAG
-    </button>
-  </div>`;
+  const addBtn = `<button class="tx-tag-add" onclick="event.stopPropagation();openTagDropdown('${esc(txId)}',this)" title="إضافة TAG" style="padding:1px 6px;font-size:.64rem;font-weight:300;border-radius:4px;border-style:solid">
+    <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>TAG
+  </button>`;
+  if (!tags.length) return `<div style="display:flex;gap:3px;align-items:center;justify-content:center;flex-wrap:nowrap">${addBtn}</div>`;
+  const first = tags[0];
+  const rest  = tags.slice(1);
+  const firstTag = `<span class="tx-tag" style="background:${esc(first.bg)};color:${esc(first.color)};border-color:${esc(first.bg)};font-weight:400;font-size:.64rem;padding:1px 6px;border-radius:4px;white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis" title="${esc(first.label)}">${esc(first.label)}<span class="tag-del" onclick="event.stopPropagation();deleteTxTag('${esc(txId)}','${esc(first.label)}')">✕</span></span>`;
+  const moreBtn = rest.length ? `<span style="display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:.64rem;font-weight:300;color:var(--muted);cursor:pointer;white-space:nowrap;position:relative" onclick="event.stopPropagation();this.querySelector('.tx-more-popup').style.display=this.querySelector('.tx-more-popup').style.display==='none'?'block':'none'">+${rest.length}<div class="tx-more-popup" style="display:none;position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);z-index:400;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px #0002;padding:6px;min-width:120px">${rest.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:3px 6px;font-size:.72rem;color:var(--text);border-radius:4px;gap:8px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(t.label)}">${esc(t.label)}</span><span style="cursor:pointer;color:var(--muted);flex-shrink:0" onclick="event.stopPropagation();deleteTxTag('${esc(txId)}','${esc(t.label)}')">✕</span></div>`).join('')}</div></span>` : '';
+  return `<div style="display:flex;gap:3px;align-items:center;justify-content:center;flex-wrap:nowrap">${addBtn}${moreBtn}${firstTag}</div>`;
 }
 
 let _tagDd = null;
@@ -22359,7 +22919,7 @@ function _fmtShopifyDate(dateStr, createdAt) {
   const isToday     = now.toDateString() === dt.toDateString();
   const isYesterday = new Date(now - 86400000).toDateString() === dt.toDateString();
   const ar = currentLang !== 'en';
-  const loc = ar ? 'ar-EG' : 'en-US';
+  const loc = ar ? 'ar-EG-u-nu-latn' : 'en-US';
   const time = dt.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: true });
   const sep = ar ? 'في' : 'at';
   let day;
@@ -22389,10 +22949,10 @@ function _fmtCardDate(dateStr, createdAt) {
   const now = new Date();
   const today = now.toDateString() === dt.toDateString();
   const yesterday = new Date(now - 86400000).toDateString() === dt.toDateString();
-  const timeParts = dt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const timeParts = dt.toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit', hour12: true });
   if (today)     return `اليوم، ${timeParts}`;
   if (yesterday) return `أمس، ${timeParts}`;
-  return dt.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' }) + '، ' + timeParts;
+  return dt.toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' }) + '، ' + timeParts;
 }
 function renderMovGridCard(tx) {
   const isCancelled = tx.cancelled || isStatusCancelled(tx.payStatus);
@@ -22508,6 +23068,21 @@ function toggleMovToolbar(btn) {
   try { localStorage.setItem('mov_toolbar_collapsed', collapsed ? '1' : '0'); } catch(_) {}
 }
 window.addEventListener('DOMContentLoaded', () => {
+  // Address autocomplete — event delegation يشتغل على أي input حتى لو كان مخفياً وقت التحميل
+  document.addEventListener('focus', e => {
+    if (e.target && (e.target.id === 'tx-address' || e.target.id === 'edit-tx-address')) {
+      initAddressAutocomplete(e.target.id);
+    }
+    if (e.target && (e.target.id === 'tx-city' || e.target.id === 'edit-tx-city')) {
+      initCityAutocomplete(e.target.id);
+    }
+  }, true);
+  document.addEventListener('click', e => {
+    if (e.target && (e.target.id === 'tx-city' || e.target.id === 'edit-tx-city')) {
+      initCityAutocomplete(e.target.id);
+    }
+  });
+
   try {
     if (localStorage.getItem('mov_toolbar_collapsed') === '1') {
       const tb = qs('#mov-toolbar');
@@ -22758,12 +23333,22 @@ function filterCustomerHistory(searchText) {
 
   // Get unique customers from sales transactions sorted by recency
   const customerMap = new Map();
+  // أحدث عنوان حقيقي لكل عميل (أكثر من 5 أحرف)
+  const bestAddressMap = new Map();
+  transactions.filter(t => t.type === 'مبيعات').forEach(tx => {
+    if (!tx.client) return;
+    const key = tx.client.toLowerCase();
+    const a = (tx.shippingAddress || '').replace(/^العنوان:\s*/,'').trim();
+    if (a.length > 5 && !bestAddressMap.has(key)) bestAddressMap.set(key, a);
+  });
   transactions.filter(t => t.type === 'مبيعات').reverse().forEach(tx => {
     if (tx.client && !customerMap.has(tx.client.toLowerCase())) {
+      const key = tx.client.toLowerCase();
       const products = (tx.items || []).map(it => ({ name: it.name, code: it.code, price: it.price }));
-      customerMap.set(tx.client.toLowerCase(), {
+      customerMap.set(key, {
         name: tx.client,
         phone: tx.phone || '',
+        address: bestAddressMap.get(key) || '',
         products,
         lastDate: tx.date
       });
@@ -22787,7 +23372,8 @@ function filterCustomerHistory(searchText) {
     return `<div onclick="selectCustomerFromHistory('${esc(customer.name)}')" style="padding:12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;display:flex;justify-content:space-between;align-items:center;gap:10px;hover:background:var(--primary-pale)">
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:.85rem;margin-bottom:2px">${esc(customer.name)}</div>
-        ${customer.phone ? `<div style="font-size:.75rem;color:var(--accent);margin-bottom:4px;display:flex;align-items:center;gap:3px">${ICON('send')} ${esc(customer.phone)}</div>` : ''}
+        ${customer.phone ? `<div style="font-size:.75rem;color:var(--accent);margin-bottom:2px;display:flex;align-items:center;gap:3px">${ICON('send')} ${esc(customer.phone)}</div>` : ''}
+        ${customer.address ? `<div style="font-size:.73rem;color:var(--muted);margin-bottom:2px;display:flex;align-items:center;gap:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> ${esc(customer.address)}</div>` : ''}
         <div style="font-size:.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${prodPreview}${prodCount > 2 ? ' +' + (prodCount - 2) : ''}</div>
       </div>
       <div style="flex-shrink:0;font-size:.75rem;color:var(--accent);display:flex;align-items:center;gap:3px">${ICON('box')} ${prodCount}</div>
@@ -22804,11 +23390,28 @@ function selectCustomerFromHistory(clientName) {
   const dropdown = qs('#tx-client-history');
   if (dropdown) dropdown.style.display = 'none';
 
-  // Find the customer's phone number and auto-fill it
+  // Find the customer's most recent sales transaction
   const customerTxs = transactions.filter(t => t.type === 'مبيعات' && t.client === clientName);
-  if (customerTxs.length > 0 && customerTxs[0].phone) {
-    const phoneInput = qs('#tx-phone');
-    if (phoneInput) phoneInput.value = customerTxs[0].phone;
+  if (customerTxs.length > 0) {
+    const latest = customerTxs[0];
+    if (latest.phone) {
+      const phoneInput = qs('#tx-phone');
+      if (phoneInput) phoneInput.value = latest.phone;
+    }
+    const withAddr = customerTxs.find(t => {
+      const a = (t.shippingAddress || '').replace(/^العنوان:\s*/,'').trim();
+      return a.length > 5;
+    });
+    if (withAddr) {
+      const addrInput = qs('#tx-address');
+      if (addrInput) addrInput.value = (withAddr.shippingAddress || '').replace(/^العنوان:\s*/,'').trim();
+      const errEl = qs('#err-address');
+      if (errEl) errEl.textContent = '';
+      if (withAddr.shippingCity) {
+        const cityInput = qs('#tx-city');
+        if (cityInput) { cityInput.value = withAddr.shippingCity; const ce = qs('#err-city'); if (ce) ce.textContent = ''; }
+      }
+    }
   }
 
   if (customerTxs.length === 0) return;
@@ -22843,6 +23446,31 @@ function selectCustomerFromHistory(clientName) {
   renderTxItems();
   calcTxSummary();
   toast(currentLang==='en'?`Loaded ${recentProducts.length} items from "${clientName}" history`:`تم تحميل ${recentProducts.length} أصناف من سجل "${clientName}"`);
+}
+
+function autoFillCustomerByPhone(phone) {
+  if (txType !== 'مبيعات' || !phone || phone.length < 11) return;
+  const customerTxs = transactions.filter(t => t.type === 'مبيعات' && t.phone === phone);
+  if (!customerTxs.length) return;
+  const clientInput = qs('#tx-client');
+  if (clientInput && !clientInput.value.trim()) clientInput.value = customerTxs[0].client || '';
+  // أخذ أحدث حركة فيها عنوان حقيقي (ليس مجرد مدينة أو قيمة قصيرة)
+  const addrInput = qs('#tx-address');
+  if (addrInput && !addrInput.value.trim()) {
+    const withAddr = customerTxs.find(t => {
+      const a = (t.shippingAddress || '').replace(/^العنوان:\s*/,'').trim();
+      return a.length > 5; // عنوان حقيقي وليس كلمة واحدة مثل "القاهرة"
+    });
+    if (withAddr) {
+      addrInput.value = (withAddr.shippingAddress || '').replace(/^العنوان:\s*/,'').trim();
+      const errEl = qs('#err-address');
+      if (errEl) errEl.textContent = '';
+      if (withAddr.shippingCity) {
+        const cityInput = qs('#tx-city');
+        if (cityInput && !cityInput.value.trim()) { cityInput.value = withAddr.shippingCity; const ce = qs('#err-city'); if (ce) ce.textContent = ''; }
+      }
+    }
+  }
 }
 
 let lastCheckedMovIdx = null;
@@ -23219,6 +23847,8 @@ async function openEditMovement(id) {
     <div class="grid grid-2 gap-12">
       ${supplierField}
       <div class="form-group"><label>الهاتف${isSale ? ` <span style="color:var(--red)">*</span>` : ''}</label><input type="tel" id="edit-tx-phone" value="${esc(tx.phone || '')}" placeholder="${isPurchase ? 'يُملأ تلقائياً عند اختيار المورد' : '01xxxxxxxxx'}" maxlength="11" ${isPurchase ? 'readonly tabindex="-1" style="background:var(--surface2);color:var(--muted);cursor:default;pointer-events:none"' : `oninput="this.value=this.value.replace(/[^0-9]/g,'');qs('#err-edit-phone')&&(qs('#err-edit-phone').textContent='');this.style.borderColor=''"`}><div class="field-hint" style="font-size:.72rem;color:var(--muted);margin-top:3px">${isPurchase ? 'يُحدَّث تلقائياً — غير قابل للتعديل' : '11 رقم يبدأ بـ 01'}</div><div class="field-error" id="err-edit-phone"></div></div>
+      ${isSale ? `<div class="form-group"><label>المحافظة / المدينة <span style="color:var(--red)">*</span></label><div class="city-ac-trigger" id="edit-tx-city-wrap"><input type="text" id="edit-tx-city" value="${esc(tx.shippingCity||'')}" placeholder="اختر المدينة..." autocomplete="off" readonly style="background:var(--bg-alt,#f3f4f6);cursor:pointer"></div><div class="field-error" id="err-edit-city"></div></div>` : ''}
+      ${isSale ? `<div class="form-group"><label>عنوان التوصيل التفصيلي <span style="color:var(--red)">*</span></label><input type="text" id="edit-tx-address" value="${esc((tx.shippingAddress||'').replace(/^العنوان:\s*/,'').trim())}" placeholder="الشارع، الحي، رقم المبنى..."><div class="field-error" id="err-edit-address"></div></div>` : ''}
       <div class="form-group"><label>${isPurchase ? 'رقم الفاتورة' : 'المرجع'}</label><input type="text" id="edit-tx-ref" value="${esc(tx.ref || '')}" ${refRetailEdit ? 'inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"' : ''}></div>
       <div class="form-group"><label>${isPurchase ? 'العربون (المدفوع مقدماً)' : 'الديبوزت'}</label><input type="text" inputmode="numeric" id="edit-tx-deposit" value="${tx.deposit || 0}" oninput="this.value=this.value.replace(/[^0-9]/g,'');recalcEditTx()" onkeydown="if(event.key==='.'||event.key===',')event.preventDefault()"></div>
       ${isSale ? `<div class="form-group"><label>شركة الشحن</label><select id="edit-tx-shipco" onchange="recalcEditTx()"><option value=""${!tx.shipCo ? ' selected' : ''}>بدون شحن</option>${shipCoOpts}</select></div>
@@ -23258,6 +23888,10 @@ async function openEditMovement(id) {
     const zoneEl = qs('#edit-tx-zone');
     if (zoneEl && tx.shipZone) zoneEl.value = tx.shipZone;
     renderEditTxItems(); recalcEditTx(); _editDsbDismissed = false; _renderEditDiscountSuggestionBanner();
+    initAddressAutocomplete('edit-tx-address');
+    initCityAutocomplete('edit-tx-city');
+    // استرجاع bostaEn و gov من CITY_GROUPS بناءً على القيمة المحفوظة
+    _restoreCityDataset(qs('#edit-tx-city'), tx.shippingBostaCity || '', tx.shippingGov || '');
   }, 80);
 }
 function renderEditTxItems() {
@@ -23946,6 +24580,18 @@ async function saveEditMovement(id) {
       if (errEl) errEl.textContent = 'رقم الهاتف غير صحيح — 11 رقماً يبدأ بـ 01';
       editValid = false;
     }
+    const cityVal = (qs('#edit-tx-city')?.value || '').trim();
+    if (!cityVal) {
+      const errEl = qs('#err-edit-city');
+      if (errEl) errEl.textContent = 'المدينة مطلوبة';
+      editValid = false;
+    }
+    const addrVal = (qs('#edit-tx-address')?.value || '').trim();
+    if (!addrVal) {
+      const errEl = qs('#err-edit-address');
+      if (errEl) errEl.textContent = 'عنوان التوصيل مطلوب';
+      editValid = false;
+    }
     if (!editValid) { toast('يرجى تصحيح الحقول المطلوبة', true); return; }
   }
   const editRef = (qs('#edit-tx-ref')?.value || '').trim();
@@ -24018,6 +24664,11 @@ async function saveEditMovement(id) {
   const origRef = (tx.ref || '').trim();
   if (newClient !== origClient) changes.push({ type: 'info', text: `${tx.type === 'مشتريات' ? 'المورد' : 'العميل'}: "${origClient || '—'}" ← "${newClient || '—'}"` });
   if (newPhone !== origPhone) changes.push({ type: 'info', text: `الهاتف: ${origPhone || '—'} ← ${newPhone || '—'}` });
+  if (tx.type === 'مبيعات') {
+    const newAddr = (qs('#edit-tx-address')?.value || '').trim();
+    const origAddr = (tx.shippingAddress || '').replace(/^العنوان:\s*/,'').trim();
+    if (newAddr !== origAddr) changes.push({ type: 'info', text: `عنوان التوصيل: "${origAddr || '—'}" ← "${newAddr || '—'}"` });
+  }
   if (newRef !== origRef) changes.push({ type: 'info', text: `${tx.type === 'مشتريات' ? 'رقم الفاتورة' : 'المرجع'}: ${origRef || '—'} ← ${newRef || '—'}` });
 
   // تغييرات طريقة الدفع وبيانات الشحن (مبيعات فقط)
@@ -24085,6 +24736,10 @@ async function saveEditMovement(id) {
   const newItemsSig = newItems.map(it => { const p = it.productId ? products.find(x=>x._id===it.productId) : null; return `${it.productId||(p?.code||it.code)}:${it.qty}:${it.price}`; }).sort().join('|');
   const itemsChanged = origItemsSig !== newItemsSig;
   const body = { client: qs('#edit-tx-client').value, phone: qs('#edit-tx-phone').value, ref: editRef,
+    shippingAddress: (qs('#edit-tx-address')?.value || '').trim(),
+    shippingCity: (qs('#edit-tx-city')?.value || '').trim(),
+    shippingGov: (qs('#edit-tx-city')?.dataset?.gov || '').trim(),
+    shippingBostaCity: (qs('#edit-tx-city')?.dataset?.bostaEn || '').trim(),
     deposit, discount,
     discountCodeId: editDiscCodeId,
     discountCode: editDiscCode,
@@ -25026,11 +25681,27 @@ async function deleteMovement(id) { return archiveMovement(id); }
 async function sendToBosta(id) {
   const tx = transactions.find(t => t._id === id);
   if (!tx) { toast('الحركة غير موجودة', true); return; }
-  if (tx.bostaOrderId) { toast('تم إرسال هذا الطلب إلى Bosta مسبقاً', true); return; }
-  const confirmed = await showConfirm(
-    `إرسال الطلب #${tx.ref || id.slice(-6)} للعميل "${tx.client || '—'}" إلى Bosta للشحن؟`,
-    { title: `إرسال إلى ${_BOSTA_ICON} bosta`, icon: 'info' }
-  );
+  // Allow re-send if no prior order, or if status is resendable (deleted/validation error)
+  const resendable = ['VALIDATION_ERROR', 'DELETED', ''].includes(tx.bostaStatus || '');
+  if (!resendable) { toast('تم إرسال هذا الطلب إلى Bosta مسبقاً', true); return; }
+
+  // التحقق من البيانات المطلوبة قبل الإرسال
+  const missingFields = [];
+  const addr = (tx.shippingAddress || '').replace(/^العنوان:\s*/, '').trim();
+  const city = (tx.shippingGov || tx.shippingCity || '').trim();
+  const phone = (tx.phone || '').replace(/\D/g, '');
+  if (!addr)  missingFields.push('عنوان التوصيل التفصيلي');
+  if (!city)  missingFields.push('المحافظة / المدينة');
+  if (!phone) missingFields.push('رقم الهاتف');
+  if (missingFields.length) {
+    toast(`❌ بيانات ناقصة — يرجى تعديل الحركة وإضافة: ${missingFields.join(' • ')}`, true);
+    return;
+  }
+
+  const confirmMsg = resendable
+    ? `إعادة إرسال الطلب #${tx.ref || id.slice(-6)} للعميل "${tx.client || '—'}" إلى Bosta؟`
+    : `إرسال الطلب #${tx.ref || id.slice(-6)} للعميل "${tx.client || '—'}" إلى Bosta للشحن؟`;
+  const confirmed = await showConfirm(confirmMsg, { title: `إرسال إلى ${_BOSTA_ICON} bosta`, icon: 'info' });
   if (!confirmed) return;
   try {
     const res = await api(`/shipping/create-order/${id}`, { method: 'POST' });
@@ -25040,7 +25711,6 @@ async function sendToBosta(id) {
     } else {
       toast(`تم الإرسال إلى Bosta ✅ — معرف الشحنة: ${res.bostaOrderId || '—'}`);
     }
-    // تحديث الـ transaction محلياً فوراً
     if (tx) {
       tx.bostaOrderId          = res.bostaOrderId || tx.bostaOrderId;
       tx.bostaTrackingNumber   = tracking || tx.bostaTrackingNumber;
@@ -25050,7 +25720,12 @@ async function sendToBosta(id) {
     transactions = await api('/transactions').catch(() => transactions);
     renderMovements();
   } catch (e) {
-    toast('فشل الإرسال إلى Bosta: ' + (e.message || 'خطأ غير معروف'), true);
+    const msg = e.message || 'خطأ غير معروف';
+    if (msg.includes('خطأ في بيانات') || e.status === 422) {
+      toast('❌ خطأ في بيانات الشحنة — راجع العنوان ورقم الهاتف ثم أعد الإرسال', true);
+    } else {
+      toast('فشل الإرسال إلى Bosta: ' + msg, true);
+    }
   }
 }
 
@@ -25086,16 +25761,30 @@ async function syncBostaStatus(id) {
   try {
     const res = await api(`/shipping/sync/${id}`);
     const tracking = res.trackingNumber || res.bostaTrackingNumber || '';
-    toast(`حالة Bosta: ${res.statusLabel || res.status || '—'}${tracking ? ` — رقم التتبع: ${tracking}` : ''}`);
     const tx = transactions.find(t => t._id === id);
     if (tx) {
-      tx.bostaStatus           = res.status || tx.bostaStatus;
-      tx.bostaStatusLabel      = res.statusLabel || tx.bostaStatusLabel;
+      tx.bostaStatus      = res.status      || tx.bostaStatus;
+      tx.bostaStatusLabel = res.statusLabel || tx.bostaStatusLabel;
       if (tracking) tx.bostaTrackingNumber = tracking;
+      // If Bosta says order is gone, clear local bostaOrderId so re-send button appears
+      if (res.status === 'DELETED') {
+        tx.bostaOrderId = '';
+        toast('⚠️ الطلب غير موجود في Bosta — يمكنك إعادة الإرسال الآن', true);
+      } else {
+        toast(`حالة Bosta: ${res.statusLabel || res.status || '—'}${tracking ? ` — رقم التتبع: ${tracking}` : ''}`);
+      }
     }
     renderMovements();
   } catch (e) {
-    toast('فشل تحديث حالة Bosta: ' + (e.message || 'خطأ غير معروف'), true);
+    const msg = e.message || 'خطأ غير معروف';
+    const tx = transactions.find(t => t._id === id);
+    if (e.status === 404 || msg.includes('محذوف') || msg.includes('NOT_FOUND') || msg.toLowerCase().includes('delivery not found')) {
+      if (tx) { tx.bostaStatus = 'DELETED'; tx.bostaStatusLabel = 'محذوف من Bosta'; tx.bostaOrderId = ''; }
+      toast('⚠️ الطلب محذوف أو غير موجود في Bosta — يمكنك إعادة الإرسال من القائمة', true);
+      renderMovements();
+    } else {
+      toast('فشل تحديث حالة Bosta: ' + msg, true);
+    }
   }
 }
 
@@ -25104,7 +25793,7 @@ let _bostaAutoSyncTimer = null;
 
 async function _bostaAutoSync() {
   const pending = (transactions || []).filter(t =>
-    t.bostaOrderId && !['DELIVERED','RETURNED','CANCELLED'].includes(t.bostaStatus || '')
+    t.bostaOrderId && !['DELIVERED','RETURNED','CANCELLED','DELETED'].includes(t.bostaStatus || '')
   );
   if (!pending.length) return;
   let updated = 0;
@@ -25115,6 +25804,7 @@ async function _bostaAutoSync() {
       tx.bostaStatusLabel = res.statusLabel || tx.bostaStatusLabel;
       const tracking = res.trackingNumber || res.bostaTrackingNumber || '';
       if (tracking) tx.bostaTrackingNumber = tracking;
+      if (res.status === 'DELETED') tx.bostaOrderId = '';
       updated++;
     } catch { /* skip single failure */ }
   }
@@ -26420,9 +27110,9 @@ function showInvoiceDetail(id, highlightCommentId) {
   const _clientInitials = (tx.client || '؟').split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '؟';
   const _invNumber = tx.ref ? `#${tx.ref}` : `INV-${tx._id?.slice(-6) || '000000'}`;
   const _dateObj = new Date(tx.createdAt || tx.date);
-  const _dateFormatted = _dateObj.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  const _dateShort = _dateObj.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
-  const _timeFormatted = _dateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const _dateFormatted = _dateObj.toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const _dateShort = _dateObj.toLocaleDateString('ar-EG-u-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' });
+  const _timeFormatted = _dateObj.toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit', hour12: true });
   const _statusIcon = statusClass === 'paid' 
     ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
     : statusClass === 'cancelled'
@@ -26482,7 +27172,13 @@ function showInvoiceDetail(id, highlightCommentId) {
           <div class="inv-party-info">
             <div class="inv-party-name">${esc(tx.client || '-')}<span class="inv-party-tag">${isPurchase ? 'المورد' : 'العميل'}</span></div>
             ${tx.phone ? `<div class="inv-party-phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>${esc(tx.phone)}</div>` : ''}
-            ${!isPurchase ? (()=>{ const _sa = (tx.shippingAddress||'').replace(/^العنوان:\s*/,'').trim() || (()=>{ const a=tx.rawData?.shipping_address; if(!a) return ''; return [a.address1,a.address2,a.city].filter(Boolean).join('، '); })(); return _sa ? `<div class="inv-party-phone" style="margin-top:4px;color:var(--text-muted)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(_sa)}</div>` : ''; })() : ''}
+            ${!isPurchase ? (()=>{
+              const _sa = (tx.shippingAddress||'').replace(/^العنوان:\s*/,'').trim() || (()=>{ const a=tx.rawData?.shipping_address; if(!a) return ''; return [a.address1,a.address2,a.city].filter(Boolean).join('، '); })();
+              const _city = tx.shippingGov || tx.shippingCity || tx.rawData?.shipping_address?.province || tx.rawData?.shipping_address?.city || '';
+              if (!_sa) return '';
+              const cityBadge = _city ? `<span style="display:inline-flex;align-items:center;gap:3px;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:20px;font-size:.67rem;font-weight:700;padding:2px 9px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(_city)}</span>` : '';
+              return `<div style="display:flex;align-items:flex-start;gap:5px;margin-top:3px"><svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="flex-shrink:0;margin-top:2px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg><div style="display:flex;flex-wrap:wrap;align-items:center;gap:5px"><span style="font-size:.74rem;color:#64748b;line-height:1.4">${esc(_sa)}</span>${cityBadge}</div></div>`;
+            })() : ''}
           </div>
         </div>
         <!-- Items Table -->
@@ -26529,9 +27225,9 @@ function showInvoiceDetail(id, highlightCommentId) {
         </div>
         <!-- Extra Meta — compact chips -->
         <div class="inv-meta-chips">
-          <span class="meta-chip"><span class="k">الدفع</span><span class="v">${esc(tx.depMethod || tx.payment || (isPurchase ? 'تحويل بنكي' : 'نقدي'))}</span></span>
-          <span class="meta-chip"><span class="k">الموظف</span><span class="v">${esc(tx.employee || '-')}</span></span>
-          ${!isPurchase && !isReturn ? `<span class="meta-chip"><span class="k">Pick-Up Status</span><span class="v">${_puStatusBadge(tx.pickupStatus || 'Pending')}</span></span>${tx.pickupDate ? `<span class="meta-chip"><span class="k">Pick-Up Date</span><span class="v">${esc(tx.pickupDate)}</span></span>` : ''}` : ''}
+          <span class="meta-chip"><span class="k meta-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span><span class="v">${esc(tx.depMethod || tx.payment || (isPurchase ? 'تحويل بنكي' : 'نقدي'))}</span></span>
+          <span class="meta-chip"><span class="k meta-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="v">${esc(tx.employee || '-')}</span></span>
+          ${!isPurchase && !isReturn ? `<span class="meta-chip"><span class="k meta-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.27 6.96L12 12.01l8.73-5.05"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span class="v">${_puStatusBadge(tx.pickupStatus || 'Pending')}</span></span>${tx.pickupDate ? `<span class="meta-chip"><span class="k meta-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span class="v">${esc(tx.pickupDate)}</span></span>` : ''}` : ''}
           ${!isPurchase && !isReturn ? `<span class="meta-chip"><span class="k">Bosta</span><span class="v" style="display:flex;align-items:center;gap:6px">${_bostaStatusBadge(tx)}${tx.bostaLastSync ? `<span style="font-size:.7rem;color:var(--muted)">${new Date(tx.bostaLastSync).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</span>` : ''}</span></span>` : ''}
           ${(()=>{
             if (!tx.notes) return '';
@@ -26563,6 +27259,8 @@ function showInvoiceDetail(id, highlightCommentId) {
             </div>
           </div>`;
         })()}
+        <!-- Order Timeline (Shopify → Bosta) -->
+        ${buildOrderTimelineSection(tx)}
         <!-- Payment Timeline -->
         ${buildPaymentTimelineSection(tx)}
         <!-- Comments Section -->
@@ -26577,8 +27275,8 @@ function showInvoiceDetail(id, highlightCommentId) {
       <button class="btn btn-outline" onclick="closeInvoiceDetail();printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>طباعة</button>
       ${isExchangeSalePendingCollect(tx) ? `<button class="btn btn-primary" onclick="closeInvoiceDetail();openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg>تحصيل فرق الاستبدال (${fmtJ(tx.remaining)})</button>` : ''}
       ${(tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx) ? `<button class="btn ${isPurchase ? 'btn-danger' : 'btn-primary'}" onclick="closeInvoiceDetail();openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${isPurchase ? '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>' : '<circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/>'}</svg>${isPurchase ? 'سداد للمورد' : 'تحصيل من العميل'}</button>` : ''}
-      ${!isPurchase && !isReturn && !tx.cancelled ? (!tx.bostaOrderId
-        ? `<button class="btn btn-outline" onclick="closeInvoiceDetail();sendToBosta('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px">${_BOSTA_ICON} <span style="font-size:.85rem">إرسال bosta</span></button>`
+      ${!isPurchase && !isReturn && !tx.cancelled ? (['VALIDATION_ERROR','DELETED',''].includes(tx.bostaStatus||'')
+        ? `<button class="btn btn-outline" onclick="closeInvoiceDetail();sendToBosta('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px">${_BOSTA_ICON} <span style="font-size:.85rem">${tx.bostaStatus==='VALIDATION_ERROR'?'إعادة إرسال bosta':tx.bostaStatus==='DELETED'?'إعادة إرسال bosta':'إرسال bosta'}</span></button>`
         : `<button class="btn btn-outline" onclick="closeInvoiceDetail();syncBostaStatus('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>${_BOSTA_ICON} <span style="font-size:.85rem">تحديث bosta</span></button>`
       ) : ''}
     </div>`;
@@ -26640,6 +27338,136 @@ function highlightInvComment(commentId) {
 }
 // Track which tx is currently open in the invoice detail overlay
 window._currentInvoiceTxId = null;
+function buildOrderTimelineSection(tx) {
+  if (tx.type !== 'مبيعات') return '';
+  const _fmtTs = (iso) => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    const yr = d.getFullYear();
+    const mo = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    const tm = d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+    return `${yr}-${mo}-${dd} · ${tm}`;
+  };
+  const _timeHtml = (iso) => {
+    if (!iso) return `<span class="ord-tl-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>—</span>`;
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(String(iso).trim());
+    const d = isDateOnly ? new Date(String(iso) + 'T12:00:00') : new Date(iso);
+    if (isNaN(d.getTime())) return `<span class="ord-tl-time">—</span>`;
+    const yr = d.getFullYear();
+    const mo = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    const calIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+    const clkIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+    if (isDateOnly) return `<span class="ord-tl-time">${calIcon}${yr}-${mo}-${dd}</span>`;
+    const tm = d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+    return `<span class="ord-tl-time">${calIcon}${yr}-${mo}-${dd}&nbsp;&nbsp;${clkIcon}${tm}</span>`;
+  };
+  const _stepHtml = (icon, title, desc, sk, timeIso, extra, isLast) => {
+    const lineClass = sk === 'completed' ? 'done' : sk === 'active' ? 'active' : '';
+    const lbl = {completed:'مكتمل', active:'جارٍ', pending:'قادم'}[sk] || sk;
+    return `<div class="ord-tl-step${sk === 'pending' ? ' pending-dim' : ''}">
+      <div class="ord-tl-left">
+        <div class="ord-tl-icon ${sk}">${icon}</div>
+        ${!isLast ? `<div class="ord-tl-line ${lineClass}"></div>` : ''}
+      </div>
+      <div class="ord-tl-right">
+        <div class="ord-tl-title-row"><span class="ord-tl-title">${title}</span><span class="ord-tl-badge ${sk}">${lbl}</span></div>
+        <div class="ord-tl-desc">${desc}</div>
+        ${_timeHtml(timeIso)}
+        ${extra || ''}
+      </div>
+    </div>`;
+  };
+  // Step 1: Order Created
+  const isShopify = !!tx.shopifyOrderId;
+  const _SHOPIFY_ICON = `<svg viewBox="0 0 108.44 122.88" width="13" height="13" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" fill="#95BF47" d="M94.98,23.66c-0.09-0.62-0.63-0.96-1.08-1c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.72-0.72-2.13-0.5-2.68-0.34c-0.01,0-1.37,0.43-3.68,1.14c-0.38-1.25-0.95-2.78-1.76-4.32c-2.6-4.97-6.42-7.6-11.03-7.61c-0.01,0-0.01,0-0.02,0c-0.32,0-0.64,0.03-0.96,0.06c-0.14-0.16-0.27-0.32-0.42-0.48c-2.01-2.15-4.58-3.19-7.67-3.1c-5.95,0.17-11.88,4.47-16.69,12.11c-3.38,5.37-5.96,12.12-6.69,17.35c-6.83,2.12-11.61,3.6-11.72,3.63c-3.45,1.08-3.56,1.19-4.01,4.44C9.03,39.99,0,109.8,0,109.8l75.65,13.08l32.79-8.15C108.44,114.73,95.06,24.28,94.98,23.66z M66.52,16.63c-1.74,0.54-3.72,1.15-5.87,1.82c-0.04-3.01-0.4-7.21-1.81-10.83C63.36,8.47,65.58,13.58,66.52,16.63z M56.69,19.68c-3.96,1.23-8.29,2.57-12.63,3.91c1.22-4.67,3.54-9.33,6.38-12.38c1.06-1.14,2.54-2.4,4.29-3.12C56.38,11.52,56.73,16.39,56.69,19.68z M48.58,3.97c1.4-0.03,2.57,0.28,3.58,0.94C50.55,5.74,49,6.94,47.54,8.5c-3.78,4.06-6.68,10.35-7.83,16.43c-3.6,1.11-7.13,2.21-10.37,3.21C31.38,18.58,39.4,4.23,48.58,3.97z"/><path fill-rule="evenodd" clip-rule="evenodd" fill="#5E8E3E" d="M93.9,22.66c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.27-0.27-0.63-0.41-1.02-0.47l0,108.68l32.78-8.15c0,0-13.38-90.44-13.46-91.06C94.9,23.04,94.35,22.7,93.9,22.66z"/><path fill-rule="evenodd" clip-rule="evenodd" fill="#FFFFFF" d="M57.48,39.52l-3.81,14.25c0,0-4.25-1.93-9.28-1.62c-7.38,0.47-7.46,5.12-7.39,6.29c0.4,6.37,17.16,7.76,18.11,22.69c0.74,11.74-6.23,19.77-16.27,20.41c-12.05,0.76-18.69-6.35-18.69-6.35l2.55-10.86c0,0,6.68,5.04,12.02,4.7c3.49-0.22,4.74-3.06,4.61-5.07c-0.52-8.31-14.18-7.82-15.04-21.48c-0.73-11.49,6.82-23.14,23.48-24.19C54.2,37.88,57.48,39.52,57.48,39.52z"/></svg>`;
+  // Step 1: Order entered Shopify orders page (Shopify only) — first logical step
+  const shopifyOrdersLogos = isShopify ? `<div class="ord-tl-source-logos"><span class="ord-tl-shopify-logo">${_SHOPIFY_ICON}Shopify</span></div>` : '';
+  const step1 = isShopify ? _stepHtml(
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>`,
+    'دخول الطلب للنظام',
+    'تم استلام الطلب من Shopify وظهوره في صفحة الأوردرات.',
+    'completed', tx.shopifyCreatedAt || tx.createdAt || tx.date, shopifyOrdersLogos, false)
+  : _stepHtml(
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>`,
+    'تم إنشاء الطلب', 'تم إنشاء الطلب يدوياً وتسجيله في النظام.',
+    'completed', tx.createdAt || tx.date, '', false);
+  // Step 1b: Order registered in system — Shopify→Soulia flow visual
+  const _SOULIA_BADGE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="18" height="18"><path d="M0 0 C2.48 0 4.96 -0.01 7.44 -0.02 C13.45 -0.04 19.47 -0.04 25.48 -0.04 C30.38 -0.04 35.27 -0.05 40.17 -0.05 C54.1 -0.07 68.03 -0.08 81.95 -0.08 C83.08 -0.08 83.08 -0.08 84.22 -0.08 C84.97 -0.08 85.72 -0.08 86.5 -0.08 C98.63 -0.08 110.76 -0.1 122.89 -0.13 C135.39 -0.16 147.9 -0.17 160.4 -0.17 C167.4 -0.17 174.4 -0.17 181.4 -0.19 C188 -0.21 194.59 -0.21 201.18 -0.2 C203.58 -0.2 205.99 -0.2 208.39 -0.21 C245.86 -0.39 277.95 10 305.07 36.42 C335.73 67.26 340.6 105.43 340.59 146.96 C340.6 149.43 340.6 151.9 340.6 154.37 C340.61 160.35 340.62 166.33 340.62 172.3 C340.62 177.17 340.62 182.04 340.62 186.91 C340.63 200.77 340.64 214.62 340.63 228.48 C340.63 229.59 340.63 229.59 340.63 230.73 C340.63 231.48 340.63 232.22 340.63 232.99 C340.63 245.06 340.64 257.12 340.66 269.18 C340.67 281.62 340.68 294.06 340.68 306.5 C340.68 313.46 340.68 320.42 340.69 327.38 C340.7 333.94 340.7 340.49 340.69 347.05 C340.69 349.44 340.69 351.83 340.7 354.22 C340.73 365.61 340.57 376.92 339.57 388.27 C339.49 389.14 339.42 390.01 339.34 390.9 C336.14 423.18 318.53 452.06 293.82 472.65 C290.2 475.47 286.39 477.95 282.45 480.29 C281.81 480.67 281.17 481.05 280.52 481.44 C272.79 485.95 264.92 489.76 256.45 492.67 C255.8 492.89 255.15 493.12 254.48 493.35 C238.32 498.52 222.17 498.73 205.38 498.68 C202.89 498.68 200.41 498.69 197.92 498.69 C191.9 498.71 185.89 498.71 179.88 498.7 C174.98 498.69 170.09 498.69 165.19 498.69 C164.49 498.69 163.79 498.69 163.07 498.69 C161.65 498.69 160.22 498.7 158.8 498.7 C145.49 498.7 132.19 498.7 118.88 498.68 C107.5 498.67 96.13 498.67 84.75 498.68 C71.48 498.7 58.22 498.7 44.96 498.69 C43.54 498.69 42.12 498.69 40.71 498.69 C40.01 498.69 39.31 498.69 38.59 498.69 C33.71 498.69 28.83 498.69 23.95 498.7 C17.37 498.71 10.78 498.7 4.19 498.68 C1.79 498.68 -0.62 498.68 -3.02 498.69 C-19.34 498.73 -35.05 498.09 -50.61 492.6 C-51.35 492.35 -52.09 492.09 -52.85 491.83 C-83.38 480.91 -108.45 458.75 -122.46 429.38 C-133.22 405.97 -135.01 383.13 -134.94 357.66 C-134.94 355.04 -134.95 352.42 -134.95 349.8 C-134.97 343.48 -134.97 337.15 -134.96 330.82 C-134.95 325.67 -134.95 320.52 -134.95 315.37 C-134.95 314.64 -134.95 313.9 -134.95 313.14 C-134.95 311.64 -134.96 310.14 -134.96 308.64 C-134.97 294.63 -134.96 280.63 -134.94 266.62 C-134.93 254.65 -134.93 242.68 -134.94 230.71 C-134.96 216.74 -134.96 202.78 -134.96 188.82 C-134.95 187.33 -134.95 185.84 -134.95 184.34 C-134.95 183.61 -134.95 182.87 -134.95 182.11 C-134.95 176.98 -134.95 171.85 -134.96 166.72 C-134.97 159.79 -134.96 152.85 -134.94 145.92 C-134.94 143.39 -134.94 140.87 -134.95 138.34 C-134.99 119.97 -134.74 101.03 -128.43 83.54 C-128.13 82.68 -127.83 81.83 -127.52 80.94 C-122.42 66.88 -115.17 54.69 -105.55 43.29 C-104.77 42.35 -103.99 41.4 -103.19 40.43 C-76.48 9.49 -39.41 -0.02 0 0 Z" fill="#00311E" transform="translate(153.55,6.71)"/><path d="M0 0 C2.58 0.01 5.16 -0.02 7.74 -0.05 C23.61 -0.12 39.25 2.18 54.02 8.2 C54.89 8.54 55.76 8.89 56.66 9.24 C69.73 14.57 80.23 21.41 90.15 31.45 C91.26 32.54 91.26 32.54 92.39 33.66 C108.03 50.02 113.69 72.2 113.64 94.3 C113.34 105.56 110.29 116.51 103.15 125.45 C102.67 126.05 102.19 126.65 101.7 127.27 C96.02 133.62 87.63 138.32 79.15 139.45 C55.07 140.55 55.07 140.55 46.15 132.45 C40.37 125.02 36.19 116.67 33.9 107.57 C31.49 99.31 26.41 92.48 19.15 87.88 C9.23 82.68 -2.23 81.78 -13.16 84.17 C-19.93 86.43 -23.87 89.47 -27.85 95.45 C-28.75 103.04 -28.68 110.25 -23.85 116.45 C-13.12 128.37 3.02 135.7 16.88 143.27 C38.69 155.18 60.22 167.21 79.15 183.45 C79.88 184.05 80.6 184.66 81.35 185.28 C86.11 189.3 90.21 193.62 94.15 198.45 C95.31 199.83 95.31 199.83 96.49 201.25 C115.6 224.63 120.21 248.91 118.15 278.45 C117.48 284.05 116.09 289.13 114.15 294.45 C113.81 295.52 113.47 296.6 113.12 297.72 C107.96 312.89 98.46 325.33 87.15 336.45 C86.4 337.19 85.65 337.94 84.88 338.71 C69.59 353.12 48.8 362.72 28.58 367.63 C27.9 367.8 27.22 367.97 26.51 368.14 C-11.58 376.92 -58.87 370.38 -92.38 350.41 C-95.3 348.52 -98.09 346.55 -100.85 344.45 C-101.78 343.75 -102.71 343.05 -103.67 342.33 C-123.9 326.49 -137.17 303.9 -140.4 278.37 C-141.02 272.46 -141.11 266.57 -141.16 260.63 C-141.19 259.53 -141.22 258.44 -141.25 257.3 C-141.36 243.82 -136.77 231.37 -127.35 221.57 C-117.7 212.59 -108.19 210.61 -95.38 211.03 C-84.44 211.76 -74.73 216.91 -67.54 225.07 C-65.59 228.96 -64.67 232.67 -63.69 236.9 C-60 252.56 -55.45 269.99 -41.02 279.25 C-30.81 284.89 -22.09 285.91 -10.54 285.95 C-9.34 285.95 -8.13 285.96 -6.89 285.96 C3.56 285.82 12.27 284.13 20.02 276.63 C21.76 273.25 21.71 271.23 21.15 267.45 C17.74 260.77 13.21 256.36 7.09 252.2 C5.91 251.37 5.91 251.37 4.71 250.54 C-9.79 240.52 -25.03 231.73 -40.31 222.98 C-54.35 214.91 -68.2 206.6 -80.85 196.45 C-81.36 196.04 -81.87 195.64 -82.39 195.22 C-98.93 181.9 -112.6 167.47 -122.79 148.76 C-123.16 148.09 -123.52 147.43 -123.9 146.75 C-129.69 135.66 -130.43 124.65 -130.35 112.38 C-130.35 111.22 -130.35 111.22 -130.35 110.03 C-130.28 98.24 -129.65 87.38 -124.85 76.45 C-124.55 75.76 -124.25 75.07 -123.94 74.35 C-118.1 61.28 -110.77 49.81 -100.85 39.45 C-100.19 38.71 -99.52 37.97 -98.84 37.21 C-84.91 22.27 -65.88 13.02 -46.85 6.45 C-45.58 5.98 -45.58 5.98 -44.28 5.51 C-30.12 0.75 -14.81 -0.07 0 0 Z" fill="#FEF1CE" transform="translate(265.85,70.55)"/></svg>`;
+  const _flowLogos = isShopify ? `<div class="ord-tl-source-logos" style="justify-content:flex-end;align-items:center;gap:6px;direction:ltr">
+    <span class="ord-tl-shopify-logo">${_SHOPIFY_ICON}Shopify</span>
+    <svg viewBox="0 0 24 10" width="24" height="10" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="5" x2="19" y2="5" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"/><polyline points="14,2 19,5 14,8" stroke="#aaa" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span style="display:inline-flex;align-items:center;background:#f0f7f1;border:1px solid #bcd99a;border-radius:5px;padding:2px 7px">${_SOULIA_BADGE_SVG}</span>
+  </div>` : '';
+  const step1b = isShopify ? _stepHtml(
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>`,
+    'تم إنشاء الطلب',
+    'تم استلام الطلب من Shopify وتسجيله في النظام.',
+    'completed', tx.createdAt || tx.date, _flowLogos, false) : '';
+  // Step 2: Preparing
+  const prepHistory = tx.pickupHistory || [];
+  const prepEventPreparing = prepHistory.find(h => h.action === 'preparing');
+  const prepEventReady = prepHistory.find(h => h.action === 'ready');
+  const prepEvent = prepEventPreparing || prepEventReady;
+  const isPrepping = ['Preparing','Ready','Delivered'].includes(tx.pickupStatus || '');
+  const prepStatus = isPrepping ? (prepEventReady || prepEventPreparing ? 'completed' : 'active') : 'pending';
+  const prepDate = prepEvent?.date || (isPrepping ? tx.pickupDate : null) || null;
+  const step2 = _stepHtml(
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.27 6.96L12 12.01l8.73-5.05"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`,
+    'جارٍ التحضير', 'بدأ تجهيز الطلب في المستودع.',
+    prepStatus, prepDate, '', false);
+  // Step 3: Sent to Shipping
+  const hasBosta = !!tx.bostaOrderId;
+  const bostaCreatedAt = tx.bostaRawResponse?.createdAt || null;
+  const bostaTracking = tx.bostaTrackingNumber || '';
+  const bostaLogoExtra = hasBosta
+    ? `<div class="ord-tl-source-logos" style="margin-top:4px"><span class="ord-tl-bosta-logo"><svg viewBox="0 0 10 10" width="13" height="13" xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10" fill="#FF0000"/><path fill="#fff" d="M8.8,2.9L5.2,1l0,0C5.1,0.9,4.9,0.9,4.8,1L1.2,2.9C1,3,0.9,3.2,0.9,3.3v3.3C0.9,6.8,1,6.9,1.2,7l3.6,1.9c0.2,0.1,0.3,0.1,0.5,0L8.9,7c0.1,0,0.2-0.2,0.2-0.4V3.3C9.1,3.2,8.9,3,8.8,2.9z M8.4,3.9V6l-2-1L8.4,3.9z M2,3.3l3-1.6l3,1.6L5,4.9L2,3.3z M4.4,5.4l0.4,0.2c0.1,0.1,0.3,0.1,0.5,0l0.4-0.2l2.4,1.3l-3,1.6L2,6.8L4.4,5.4z M3.6,5l-2,1.1V3.9L3.6,5z"/></svg>bosta</span>${bostaTracking ? `<span style="font-size:.7rem;color:var(--muted)">رقم التتبع: ${esc(bostaTracking)}</span>` : ''}</div>` : '';
+  const step3 = _stepHtml(
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1.5"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
+    'إرسال للشحن', 'تم تسليم الطلب إلى Bosta للتوصيل.',
+    hasBosta ? 'completed' : 'pending', hasBosta ? (bostaCreatedAt || tx.bostaLastSync || null) : null,
+    bostaLogoExtra, false);
+  // Step 4: Shipping Status Updates
+  const rawTransit = tx.bostaRawResponse?.TransitEvents || tx.bostaRawResponse?.transitEvents || [];
+  const bostaEvents = [];
+  if (Array.isArray(rawTransit) && rawTransit.length) {
+    const labelMap = {'created':'تم استلام الشحنة من Bosta','picked_up':'تم استلام الشحنة من المرسل','in_transit':'في الطريق إلى الوجهة','out_for_delivery':'خارج للتسليم','delivered':'تم التسليم','returned':'تم الإرجاع','failed_attempt':'محاولة تسليم فاشلة','delivery_failed':'فشل التسليم','cancelled':'ملغي'};
+    rawTransit.forEach(ev => {
+      const evStatus = (ev.state?.value || ev.code || ev.status || '').toLowerCase();
+      const isDone = ['delivered','returned','cancelled','delivery_failed'].includes(evStatus);
+      const isIn = ['out_for_delivery','in_transit','picked_up'].includes(evStatus);
+      bostaEvents.push({label: labelMap[evStatus] || (ev.state?.description || ev.description || evStatus), time: ev.timestamp||ev.date||null, dotClass: isDone||isIn ? (isDone?'done':'active') : 'done'});
+    });
+  } else if (hasBosta && tx.bostaStatus) {
+    const seq = ['CREATED','PICKED_UP','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED'];
+    const curIdx = seq.indexOf((tx.bostaStatus||'').toUpperCase());
+    const lm = {'CREATED':'تم استلام الطلب من Bosta','PICKED_UP':'تم استلام الشحنة من المرسل','IN_TRANSIT':'في الطريق إلى الوجهة','OUT_FOR_DELIVERY':'خارج للتسليم','DELIVERED':'تم التسليم'};
+    seq.forEach((s, idx) => {
+      if (idx <= curIdx) bostaEvents.push({label: lm[s]||s, time: idx===curIdx?tx.bostaLastSync:null, dotClass: idx<curIdx?'done':'active'});
+    });
+  }
+  const step4StatusKey = !hasBosta ? 'pending' : ['DELIVERED','RETURNED','CANCELLED','DELIVERY_FAILED'].includes((tx.bostaStatus||'').toUpperCase()) ? 'completed' : 'active';
+  const subEventsHtml = bostaEvents.length ? `<div class="ord-tl-sub-events">${bostaEvents.map(ev=>`<div class="ord-tl-sub-event"><div class="ord-tl-sub-dot ${ev.dotClass}"></div><span class="ord-tl-sub-text">${esc(ev.label)}</span><span class="ord-tl-sub-time">${_fmtTs(ev.time)||'—'}</span></div>`).join('')}</div>` : '';
+  const step4 = _stepHtml(
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
+    'تحديثات الشحن',
+    hasBosta ? 'يتم تتبع الشحنة في الوقت الفعلي عبر Bosta.' : 'سيتم تحديث حالة الشحن عند إرسال الطلب لـ Bosta.',
+    step4StatusKey, hasBosta ? tx.bostaLastSync : null, subEventsHtml, true);
+  const totalSteps = isShopify ? 5 : 4;
+  const completedCount = [true, isShopify, prepEvent!=null||prepStatus==='completed', hasBosta, step4StatusKey==='completed'].filter(Boolean).length;
+  return `<div class="ord-timeline">
+    <div class="ord-timeline-header" onclick="this.classList.toggle('expanded');this.nextElementSibling.classList.toggle('open')">
+      <h5><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>مسار الطلب</h5>
+      <span class="otl-badge">${completedCount} / ${totalSteps}</span>
+      <svg class="otl-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="ord-timeline-body">
+      <div class="ord-timeline-steps">${step1}${step1b}${step2}${step3}${step4}</div>
+    </div>
+  </div>`;
+}
 function buildPaymentTimelineSection(tx) {
   const deposits = tx.deposits || [];
   const payments = tx.payments || [];
@@ -37573,7 +38401,7 @@ async function puConfirmMoveToReady() {
       _puSavePrepGroups();
       delete modal.dataset.prepRef;
     }
-    toast(`✅ تم نقل ${fmtN(_puConfirmGroupIds.length)} طلب إلى Picked-Up · ${ref}`);
+    toast(`✅ تم نقل ${fmtN(_puConfirmGroupIds.length)} طلب إلى Ready to Ship · ${ref}`);
     closePuConfirmModal();
     _puMarkLanding(ref);
     renderPickupBoard();
@@ -38032,7 +38860,7 @@ function renderPickupBoard() {
   if (readyCol) {
     readyCol.innerHTML = '';
     if (readyFiltered.length === 0) {
-      readyCol.innerHTML = `<div style="text-align:center;padding:40px 12px;color:var(--muted);font-size:.83rem;pointer-events:none">لا توجد مجموعات Picked-Up</div>`;
+      readyCol.innerHTML = `<div style="text-align:center;padding:40px 12px;color:var(--muted);font-size:.83rem;pointer-events:none">لا توجد مجموعات Ready to Ship</div>`;
     } else {
       readyFiltered.forEach(g => readyCol.appendChild(_puBuildGroupCard(g, 'ready')));
     }
@@ -38308,7 +39136,7 @@ function _puBuildGroupCard(group, colType) {
     openPuCardOrdersModal(group.key, colType);
   });
 
-  const statusLabel = colType === 'pending' ? 'معلق' : 'Picked-Up';
+  const statusLabel = colType === 'pending' ? 'معلق' : 'Ready to Ship';
   const statusClass = colType === 'pending' ? 'pu-group-status-pending' : 'pu-group-status-ready';
   const latestDate = group.orders.reduce((d,o)=>((o.date||'')>d?o.date:d),'');
   const allRefs = group.orders.map(o=>o.ref||'').filter(Boolean);
@@ -39776,7 +40604,9 @@ function _bostaStatusBadge(tx) {
     'returned':         ['bosta-badge-returned',   'مُرتجع'],
     'failed_attempt':   ['bosta-badge-failed',     'محاولة فاشلة'],
     'delivery_failed':  ['bosta-badge-failed',     'فشل التسليم'],
-    'cancelled':        ['bosta-badge-cancelled',  'ملغي'],
+    'cancelled':         ['bosta-badge-cancelled',  'ملغي'],
+    'deleted':           ['bosta-badge-deleted',    'محذوف من Bosta'],
+    'validation_error':  ['bosta-badge-validation', 'خطأ في البيانات'],
   };
   if (!status) return tx.bostaOrderId
     ? `<span class="bosta-badge bosta-badge-created">تم الإرسال</span>`
@@ -39793,8 +40623,8 @@ function _puStatusBadge(status) {
   const map = {
     'Pending':    ['pu-badge-pending',   'Pending',    ''],
     'Preparing':  ['pu-badge-prep',      'Preparing',  ''],
-    'Ready':      ['pu-badge-pickedup',  'Picked-Up',  pkgIcon],
-    'Picked-Up':  ['pu-badge-pickedup',  'Picked-Up',  pkgIcon],
+    'Ready':      ['pu-badge-pickedup',  'Ready to Ship',  pkgIcon],
+    'Picked-Up':  ['pu-badge-pickedup',  'Ready to Ship',  pkgIcon],
     'Delivered':  ['pu-badge-delivered', 'Delivered',  ''],
   };
   const [cls, label, icon] = map[status] || ['pu-badge-pending', status || 'Pending', ''];
@@ -41061,15 +41891,16 @@ function renderShopifyOrders() {
           /* ── Tags cell ── */
           const tagList = o.tags ? o.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
           const tagsCell = !tagList.length ? `<span style="color:var(--text-muted)">—</span>` : (() => {
-            const first = tagList[0];
-            const rest  = tagList.slice(1);
-            const firstBadge = `<span style="display:inline-block;background:var(--bg-alt);border:1px solid var(--border);border-radius:20px;padding:2px 9px;font-size:.71rem;color:var(--text-muted);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle" title="${first}">${first}</span>`;
-            const moreBtn = rest.length ? `<span class="sp-tags-more-btn" style="display:inline-flex;align-items:center;background:var(--accent);color:#fff;border-radius:20px;padding:2px 8px;font-size:.7rem;cursor:pointer;white-space:nowrap;vertical-align:middle;position:relative;flex-shrink:0" onclick="_toggleShopifyTags(this)">+${rest.length}
+            const shown = tagList.slice(0, 2);
+            const rest  = tagList.slice(2);
+            const tagBadge = t => `<span style="display:inline-block;border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:.68rem;font-weight:300;color:var(--text-muted);white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;line-height:1.5" title="${t}">${t}</span>`;
+            const shownHtml = shown.map(tagBadge).join('');
+            const moreBtn = rest.length ? `<span class="sp-tags-more-btn" style="display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:.68rem;font-weight:300;color:var(--text-muted);cursor:pointer;white-space:nowrap;vertical-align:middle;position:relative;flex-shrink:0" onclick="_toggleShopifyTags(this)">+${rest.length}
               <div class="sp-tags-popup" style="display:none;position:absolute;top:calc(100% + 5px);right:0;z-index:400;background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 24px #0003;padding:8px;min-width:140px;max-width:220px">
                 ${rest.map(t => `<div style="padding:5px 8px;font-size:.75rem;color:var(--text);border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${t}">${t}</div>`).join('')}
               </div>
             </span>` : '';
-            return `<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap">${firstBadge}${moreBtn}</div>`;
+            return `<div style="display:flex;align-items:center;gap:3px;flex-wrap:nowrap">${shownHtml}${moreBtn}</div>`;
           })();
 
           /* ── Shopify source icon (greyscale → color on hover) ── */

@@ -88,6 +88,12 @@ export class ShopifyOrder {
   shippingCity: string;
 
   @Prop({ default: '' })
+  shippingGov: string;
+
+  @Prop({ default: '' })
+  shippingBostaCity: string;
+
+  @Prop({ default: '' })
   orderStatusUrl: string;
 
   @Prop({ type: Object })

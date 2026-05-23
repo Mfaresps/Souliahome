@@ -16,6 +16,7 @@ import {
 } from './schemas/shopify-order.schema';
 import { VaultService } from '../vault/vault.service';
 import { PresenceGateway } from '../auth/presence.gateway';
+import { normalizeCity, cityToShipZone } from '../shared/normalize-city.util';
 
 @Injectable()
 export class ShopifyService {
@@ -72,6 +73,8 @@ export class ShopifyService {
       const clientPhone = customer.phone || orderData.shipping_address?.phone || '';
       const address = this.formatAddress(orderData.shipping_address);
       const city = this.formatCity(orderData.shipping_address);
+      const bostaCity = city; // formatCity already returns English Bosta-accepted city name
+      const govArabic = orderData.shipping_address?.province || orderData.shipping_address?.city || '';
       const notes = orderData.note || '';
       const shipCost = this.parsePrice(orderData.shipping_lines?.[0]?.price);
       const discount = this.parsePrice(orderData.total_discounts);
@@ -107,6 +110,8 @@ export class ShopifyService {
         tags: orderData.tags || '',
         shippingAddress: address,
         shippingCity: city,
+        shippingGov: govArabic,
+        shippingBostaCity: bostaCity,
         orderStatusUrl: orderData.order_status_url || '',
         items,
         status: 'pending',
@@ -132,6 +137,9 @@ export class ShopifyService {
 
       const notes = orderData.note || '';
       const address = this.formatAddress(orderData.shipping_address);
+      const city = this.formatCity(orderData.shipping_address);
+      const bostaCity = city;
+      const govArabic = orderData.shipping_address?.province || orderData.shipping_address?.city || '';
       const tags = orderData.tags || '';
       const financialStatus = orderData.financial_status || order.financialStatus;
 
@@ -143,6 +151,9 @@ export class ShopifyService {
 
       order.notes = notes;
       order.shippingAddress = address;
+      if (city) order.shippingCity = city;
+      if (city) order.shippingBostaCity = bostaCity;
+      if (govArabic) order.shippingGov = govArabic;
       order.tags = tags;
       order.financialStatus = financialStatus;
       order.items = items;
@@ -155,9 +166,14 @@ export class ShopifyService {
       // تحديث الحركة المقابلة في سجل المبيعات إن وُجدت
       // tags في Shopify نص مفصول بفواصل، transaction تحتفظ بها كمصفوفة
       const txTags = tags ? tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [];
+      const txUpdate: any = { notes, tags: txTags };
+      if (address) txUpdate.shippingAddress = address;
+      if (city) txUpdate.shippingCity = city;
+      if (city) txUpdate.shippingBostaCity = bostaCity;
+      if (govArabic) txUpdate.shippingGov = govArabic;
       await this.txModel.updateOne(
         { shopifyOrderId: shopifyId },
-        { $set: { notes, tags: txTags } },
+        { $set: txUpdate },
       );
 
       this.logger.log(`🔄 تحديث أوردر Shopify: ${order.ref}`);
@@ -202,6 +218,10 @@ export class ShopifyService {
     // تنظيف ref من أي # مسبقة (دعم بيانات قديمة)
     const cleanRef = String(order.ref || '').replace(/^#+/, '');
 
+    // shippingBostaCity is the English Bosta-accepted city name (most reliable)
+    const bostaCity = (order as any).shippingBostaCity || order.shippingCity || '';
+    const shipZone = cityToShipZone(bostaCity);
+
     const tx = await this.txModel.create({
       date,
       type: 'مبيعات',
@@ -219,6 +239,7 @@ export class ShopifyService {
       total: order.total,
       itemsTotal: order.itemsTotal,
       shipCost: order.shipCost,
+      shipZone,
       discount: order.discount,
       discountCode: order.discountCode || '',
       discountCodeType: order.discountType || '',
@@ -226,8 +247,11 @@ export class ShopifyService {
       employee,
       source: 'shopify',
       shopifyOrderId: order.shopifyId,
+      shopifyCreatedAt: order.shopifyCreatedAt || '',
       shippingAddress: order.shippingAddress || '',
       shippingCity: order.shippingCity || '',
+      shippingGov: (order as any).shippingGov || '',
+      shippingBostaCity: bostaCity,
       pickupStatus: 'Pending',
       cancelled: false,
       archived: false,
@@ -263,6 +287,20 @@ export class ShopifyService {
 
     this.logger.log(`✅ تم قبول أوردر Shopify: ${cleanRef}`);
     return { success: true, txId: String(tx._id) };
+  }
+
+  // ترقية: حفظ shopifyCreatedAt في transactions القديمة التي تفتقده
+  async backfillShopifyCreatedAt(): Promise<{ updated: number }> {
+    const txs = await this.txModel.find({ shopifyOrderId: { $exists: true, $ne: '' }, shopifyCreatedAt: { $in: [null, '', undefined] } }).lean();
+    let updated = 0;
+    for (const tx of txs) {
+      const order = await this.shopifyOrderModel.findOne({ shopifyId: tx.shopifyOrderId }).lean();
+      if (order?.shopifyCreatedAt) {
+        await this.txModel.updateOne({ _id: tx._id }, { $set: { shopifyCreatedAt: order.shopifyCreatedAt } });
+        updated++;
+      }
+    }
+    return { updated };
   }
 
   // تحديث items الأوردر (تعديل المنتجات غير المعرّفة)
@@ -396,7 +434,14 @@ export class ShopifyService {
 
   private formatCity(addr: any): string {
     if (!addr) return '';
-    return addr.city || addr.province || '';
+    // province = المحافظة (Gharbia, Alexandria...) أدق من city (Tanta, Smoha...)
+    const raw = addr.province || addr.city || '';
+    return normalizeCity(raw) || raw;
+  }
+
+  private formatBostaCity(addr: any): string {
+    // نفس المنطق — يُرجع الاسم الإنجليزي الجاهز لبوسطا
+    return this.formatCity(addr);
   }
 
   private mapPaymentMethod(order: any): string {

@@ -24,9 +24,10 @@ export class BostaController {
     const operator: string = req.user?.username || req.user?.name || 'system';
     const result = await this.bostaService.createOrder(txId, operator);
     if (!result.success) {
+      const status = result.code === 'VALIDATION_ERROR' ? HttpStatus.UNPROCESSABLE_ENTITY : HttpStatus.BAD_REQUEST;
       throw new HttpException(
-        { message: result.error || 'فشل إنشاء الشحنة في Bosta' },
-        HttpStatus.BAD_REQUEST,
+        { message: result.error || 'فشل إنشاء الشحنة في Bosta', code: result.code },
+        status,
       );
     }
     return result;
@@ -37,9 +38,10 @@ export class BostaController {
   async syncStatus(@Param('txId') txId: string) {
     const result = await this.bostaService.syncStatus(txId);
     if (!result.success) {
+      const status = result.code === 'NOT_FOUND' ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
       throw new HttpException(
-        { message: result.error || 'فشل تحديث حالة الشحنة' },
-        HttpStatus.BAD_REQUEST,
+        { message: result.error || 'فشل تحديث حالة الشحنة', code: result.code },
+        status,
       );
     }
     return result;
@@ -57,6 +59,20 @@ export class BostaController {
   @Roles('admin')
   async fixStatuses() {
     return this.bostaService.fixCorruptedStatuses();
+  }
+
+  /** Force-mark a Bosta order as DELETED so it can be re-sent */
+  @Post('mark-deleted/:txId')
+  @Roles('admin')
+  async markDeleted(@Param('txId') txId: string) {
+    return this.bostaService.markAsDeleted(txId);
+  }
+
+  /** Fix shippingBostaCity for a transaction by ref — admin only */
+  @Post('fix-city-by-ref/:ref')
+  @Roles('admin')
+  async fixCityByRef(@Param('ref') ref: string) {
+    return this.bostaService.fixCityByRef(ref);
   }
 
   /** Cancel a Bosta order — admin only */
