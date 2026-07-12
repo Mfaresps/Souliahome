@@ -58,19 +58,24 @@ export class SecurityAuditController {
     });
 
     // Notify all admins of the unlock
-    const allUsers = await this.usersService.findAll();
-    const adminUsers = allUsers.filter(u => u.role === 'admin');
-    await this.mentionsService.createMany(
-      adminUsers.map(a => ({
-        targetUserId: a._id.toString(),
-        targetUsername: a.username,
-        targetName: a.name,
-        fromUserId: admin.userId,
-        fromName: admin.name || admin.username,
-        commentText: `✅ تم إلغاء تعطيل حساب "${user.name || user.username}" بواسطة ${admin.name || admin.username}${body.reason ? ' — ' + body.reason : ''}`,
-        read: false,
-      })),
-    );
+    try {
+      const allUsers = await this.usersService.findAll();
+      const adminUsers = allUsers.filter(u => u.role === 'admin');
+      await this.mentionsService.createMany(
+        adminUsers.map(a => ({
+          targetUserId: a._id.toString(),
+          targetUsername: a.username,
+          targetName: a.name,
+          fromUserId: admin.userId || 'system',
+          fromName: admin.name || admin.username || 'admin',
+          txId: '',
+          commentText: `✅ تم إلغاء تعطيل حساب "${user.name || user.username}" بواسطة ${admin.name || admin.username}${body.reason ? ' — ' + body.reason : ''}`,
+          read: false,
+        })),
+      );
+    } catch (_) {
+      // notification failure must not break unlock
+    }
 
     return { success: true, user };
   }

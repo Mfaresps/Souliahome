@@ -220,6 +220,11 @@ export class TransactionsController {
     return this.transactionsService.setPrepChecked(id, body.prepChecked);
   }
 
+  @Get('by-ref/:ref')
+  async findByRef(@Param('ref') ref: string, @Query('type') type?: string) {
+    return this.transactionsService.findByRef(ref, type);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     if (id === 'pickup-orders') return this.transactionsService.findPickupOrders();
@@ -308,10 +313,11 @@ export class TransactionsController {
   async collect(
     @Param('id') id: string,
     @Body() dto: CollectTransactionDto,
-    @Req() req: { user: { name: string; username: string } },
+    @Req() req: any,
   ) {
     const by = req.user?.name || req.user?.username || 'مستخدم';
-    return this.transactionsService.collect(id, dto, by);
+    const callerRole = req.user?.role || '';
+    return this.transactionsService.collect(id, dto, by, callerRole);
   }
 
   @Post(':id/reverse-collect')

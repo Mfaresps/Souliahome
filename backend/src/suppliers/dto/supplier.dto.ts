@@ -24,6 +24,10 @@ export class CreateSupplierDto {
   @IsString()
   @IsOptional()
   readonly notes?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly by?: string;
 }
 
 export class UpdateSupplierDto {
@@ -50,4 +54,22 @@ export class UpdateSupplierDto {
   @IsString()
   @IsOptional()
   readonly notes?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly by?: string;
+}
+
+export class AddSupplierLogDto {
+  @IsString()
+  @IsNotEmpty()
+  readonly action: string;
+
+  @IsString()
+  @IsOptional()
+  readonly detail?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly by?: string;
 }

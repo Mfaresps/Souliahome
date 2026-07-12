@@ -226,6 +226,14 @@ export class TransactionsService {
     return tx;
   }
 
+  async findByRef(ref: string, type?: string): Promise<TransactionDocument> {
+    const query: Record<string, unknown> = { ref: Number(ref) || ref };
+    if (type) query.type = type;
+    const tx = await this.transactionModel.findOne(query).exec();
+    if (!tx) throw new NotFoundException('الفاتورة غير موجودة');
+    return tx;
+  }
+
   async create(dto: CreateTransactionDto, callerRole?: string): Promise<TransactionDocument> {
     const employee = (dto as unknown as { employee?: string }).employee || '';
     // High-value discount OTP enforcement (admin is exempt; skip entirely when otpEnabled=false)
@@ -536,12 +544,14 @@ export class TransactionsService {
     const oldTotal = existing.total || 0;
     const oldDiscount = existing.discount || 0;
     const oldShipCost = existing.shipCost || 0;
+    const oldTransactionDate = (existing as unknown as { transactionDate?: string }).transactionDate || '';
 
     // 📊 حساب الفروقات
     const newTotal = dto.total !== undefined ? (Number(dto.total) || 0) : oldTotal;
     const newDeposit = dto.deposit !== undefined ? (Number(dto.deposit) || 0) : oldDeposit;
     const newDiscount = dto.discount !== undefined ? (Number(dto.discount) || 0) : oldDiscount;
     const newShipCost = dto.shipCost !== undefined ? (Number(dto.shipCost) || 0) : oldShipCost;
+    const newTransactionDate = (dto as unknown as { transactionDate?: string }).transactionDate ?? oldTransactionDate;
 
     const totalDelta = newTotal - oldTotal;
     const depositDelta = newDeposit - oldDeposit;
@@ -554,6 +564,8 @@ export class TransactionsService {
     if (depositDelta !== 0) changes.push(`الديبوزت: ${oldDeposit} ← ${newDeposit}`);
     if (discountDelta !== 0) changes.push(`الخصم: ${oldDiscount} ← ${newDiscount}`);
     if (shipCostDelta !== 0) changes.push(`الشحن: ${oldShipCost} ← ${newShipCost}`);
+    if (newTransactionDate && newTransactionDate !== oldTransactionDate)
+      changes.push(`تاريخ الحركة: ${oldTransactionDate || '—'} ← ${newTransactionDate}`);
 
     const historyEntry = {
       editedAt: new Date().toISOString(),
@@ -576,6 +588,7 @@ export class TransactionsService {
         shipZone: existing.shipZone,
         payment: existing.payment,
         payStatus: existing.payStatus,
+        transactionDate: oldTransactionDate,
       },
       after: {
         total: newTotal,
@@ -583,6 +596,7 @@ export class TransactionsService {
         discount: newDiscount,
         shipCost: newShipCost,
         items: dto.items || existing.items,
+        transactionDate: newTransactionDate,
       },
       changes,
       totalDelta,
@@ -962,6 +976,7 @@ export class TransactionsService {
     id: string,
     dto: CollectTransactionDto,
     by = 'مستخدم',
+    callerRole = '',
   ): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) {
@@ -997,9 +1012,11 @@ export class TransactionsService {
       await this.vaultService.assertSufficientBalance(dto.collectMethod, payAmount);
     }
 
-    // ===== التحقق من OTP لسداد المورد (للمشتريات فقط) =====
-    if (isPurchase) {
-      await this.discountOtpService.assertSupplierPayOtp(dto.otpId || '', payAmount);
+    // ===== التحقق من OTP لسداد المورد (للمشتريات فقط — يُتجاوز للمدير) =====
+    if (isPurchase && callerRole !== 'admin') {
+      // For bulk payments, otpTotalAmount is the OTP-registered total; fall back to per-invoice payAmount
+      const otpCheckAmount = dto.otpTotalAmount != null ? dto.otpTotalAmount : payAmount;
+      await this.discountOtpService.assertSupplierPayOtp(dto.otpId || '', otpCheckAmount);
     }
 
     // لقطة الحالة قبل التحصيل — تُحفظ في سجل الدفعة لاستخدامها في التراجع (UNDO)
@@ -1046,12 +1063,15 @@ export class TransactionsService {
     // سجل السدادات
     if (!tx.payments) tx.payments = [];
     const vaultDelta = isPurchase ? -payAmount : netVaultAmount;
+    const paymentDate = (dto.collectDate && /^\d{4}-\d{2}-\d{2}/.test(dto.collectDate))
+      ? new Date(dto.collectDate).toISOString()
+      : new Date().toISOString();
     tx.payments.push({
       id: this.genPaymentId(),
       amount: isPurchase ? payAmount : netVaultAmount,
       method: dto.collectMethod,
       note: dto.collectNote || (shipExtra > 0 ? `زيادة شحن: ${shipExtra} ج` : ''),
-      date: new Date().toISOString(),
+      date: paymentDate,
       by: by || tx.employee || '',
       remaining: totalRemaining,
       collectedAmount: payAmount,
@@ -1070,7 +1090,7 @@ export class TransactionsService {
         isPurchase
           ? `سداد مشتريات #${tx.ref || tx._id} — ${tx.client || ''}${!isFullyPaid ? ` (جزئي — متبقي: ${newRemaining} ج)` : ' (مكتمل)'}`
           : `تحصيل #${tx.ref || tx._id} — صافي: ${netVaultAmount} ج${billedShip > 0 ? ` (شحن: ${billedShip} ج${shipExtra > 0 ? ` + زيادة: ${shipExtra} ج` : ''})` : ''}`,
-        new Date().toISOString().split('T')[0],
+        paymentDate.split('T')[0],
         isPurchase ? 'مشتريات' : 'تحصيل',
         tx.ref || String(tx._id),
         isPurchase ? { supplier: tx.client || '' } : { customer: tx.client || '' },

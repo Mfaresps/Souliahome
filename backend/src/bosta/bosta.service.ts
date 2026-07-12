@@ -243,16 +243,17 @@ export class BostaService {
 
     // وصف المنتج — يظهر في حقل "وصف المنتج" في Bosta
     this.logger.log(`Bosta items raw — txId=${txId} items=${JSON.stringify(tx.items)}`);
-    const packageDescription = (tx.items as any[] || [])
+    const itemLines = (tx.items as any[] || [])
       .map((it: any) => {
         const name = (it.name || it.shopifyName || it.productName || it.title || it.itemName || '').trim();
         const qty  = it.qty  || it.quantity    || 1;
         const code = it.code || it.productCode || it.sku || '';
         if (!name) return '';
-        return `${name} x ${qty}${code ? ` (Code ${code})` : ''}`;
+        return `${name} x ${qty}${code ? ` (${code})` : ''}`;
       })
-      .filter(s => s.length > 0)
-      .join(' ') || `طلب #${tx.ref || String(tx._id).slice(-6)}`;
+      .filter(s => s.length > 0);
+    const packageDescription = itemLines.join(' | ') || `طلب #${tx.ref || String(tx._id).slice(-6)}`;
+    this.logger.log(`Bosta packageDescription — "${packageDescription}"`);
 
     // Business reference
     const businessRef = tx.ref ? tx.ref : String(tx._id);
@@ -263,11 +264,13 @@ export class BostaService {
         packageType: 'Parcel',
         size: 'MEDIUM',
         weight: this.calcWeight(tx.items as any[]),
-        packageDescription,
-        itemsCount: (tx.items as any[] || []).reduce((s: number, it: any) => s + (it.qty || it.quantity || 1), 0) || 1,
+        packageDetails: {
+          itemsCount: (tx.items as any[] || []).reduce((s: number, it: any) => s + (it.qty || it.quantity || 1), 0) || 1,
+          productsType: packageDescription,
+        },
       },
       goodsDescription: packageDescription,
-      notes: packageDescription + (tx.notes ? ` | ${tx.notes}` : ''),
+      notes: tx.notes || '',
       cod: tx.remaining || 0,
       dropOffAddress: {
         city,

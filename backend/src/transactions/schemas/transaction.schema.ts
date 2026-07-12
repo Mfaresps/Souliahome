@@ -13,6 +13,9 @@ export class TransactionItem {
   @Prop({ required: true })
   name: string;
 
+  @Prop({ default: '' })
+  imageUrl: string;
+
   @Prop({ required: true })
   qty: number;
 
@@ -27,6 +30,10 @@ export class TransactionItem {
 export class Transaction {
   @Prop({ required: true })
   date: string;
+
+  /** Business date chosen by user (YYYY-MM-DD). Defaults to creation date. Immutable created_at is in Mongoose timestamps. */
+  @Prop({ default: '' })
+  transactionDate: string;
 
   @Prop({
     required: true,

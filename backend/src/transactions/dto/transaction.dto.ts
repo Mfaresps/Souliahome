@@ -43,6 +43,10 @@ export class CreateTransactionDto {
   readonly date: string;
 
   @IsString()
+  @IsOptional()
+  readonly transactionDate?: string;
+
+  @IsString()
   @IsIn(['مبيعات', 'مشتريات', 'مرتجع مبيعات', 'مرتجع مشتريات', 'مرتجع'])
   readonly type: string;
 
@@ -181,6 +185,10 @@ export class CreateTransactionDto {
 }
 
 export class UpdateTransactionDto {
+  @IsString()
+  @IsOptional()
+  readonly transactionDate?: string;
+
   @IsString()
   @IsOptional()
   readonly client?: string;
@@ -337,6 +345,16 @@ export class CollectTransactionDto {
   @IsString()
   @IsOptional()
   readonly otpId?: string;
+
+  // For bulk payments: the total OTP amount (may differ from per-invoice collectAmount)
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly otpTotalAmount?: number;
+
+  @IsString()
+  @IsOptional()
+  readonly collectDate?: string;
 }
 
 export class BulkDeleteDto {

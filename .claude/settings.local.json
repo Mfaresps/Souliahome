@@ -39,7 +39,9 @@
       "Bash(Get-ChildItem -Path \"d:\\\\website\\\\Souliahome\" -Force)",
       "Bash(Select-Object Name, PSIsContainer)",
       "Bash(Format-Table)",
-      "PowerShell(Start-Sleep -Seconds 3; \\(Invoke-WebRequest -Uri \"http://localhost:8080/\" -UseBasicParsing -ErrorAction SilentlyContinue\\).StatusCode)"
+      "PowerShell(Start-Sleep -Seconds 3; \\(Invoke-WebRequest -Uri \"http://localhost:8080/\" -UseBasicParsing -ErrorAction SilentlyContinue\\).StatusCode)",
+      "Skill(run)",
+      "Skill(run:*)"
     ]
   }
 }

@@ -21,6 +21,8 @@ import { DiscountOtpModule } from './discount-otp/discount-otp.module';
 import { SecurityAuditModule } from './security-audit/security-audit.module';
 import { ShopifyModule } from './shopify/shopify.module';
 import { BostaModule } from './bosta/bosta.module';
+import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
+import { DraftsModule } from './drafts/drafts.module';
 import { SeedService } from './seed/seed.service';
 
 @Module({
@@ -49,6 +51,8 @@ import { SeedService } from './seed/seed.service';
     SecurityAuditModule,
     ShopifyModule,
     BostaModule,
+    PurchaseOrdersModule,
+    DraftsModule,
   ],
   providers: [SeedService],
 })

@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>فاتورة — Soulia</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<script src="/config.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f8fafb;--surface:#fff;--border:#e2e8f0;
+  --primary:#00311e;--accent:#2d7a4f;--green:#16a34a;--red:#dc2626;
+  --text:#0f172a;--muted:#64748b;--radius:12px;
+}
+html{font-size:14px}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+/* ── Page Shell ── */
+.page-wrap{max-width:620px;margin:0 auto;padding:24px 16px 60px}
+
+/* ── Top Bar ── */
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px}
+.top-bar-brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.1rem;color:var(--primary);text-decoration:none}
+.top-bar-brand svg{width:28px;height:28px}
+.top-bar-actions{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;border:none;font-family:'Cairo',sans-serif;font-size:.84rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn svg{width:14px;height:14px;flex-shrink:0}
+.btn-outline{background:#fff;color:#475569;border:1px solid var(--border)}
+.btn-outline:hover{background:#f1f5f9;border-color:#cbd5e1}
+.btn-primary{background:#1e40af;color:#fff}
+.btn-primary:hover{background:#1e3a8a}
+.btn-green{background:#16a34a;color:#fff}
+.btn-green:hover{background:#15803d}
+.btn-copy{background:#fff;color:#2563eb;border:1px solid #bfdbfe}
+.btn-copy:hover{background:#eff6ff}
+
+/* ── Card ── */
+.inv-card{background:#fff;border-radius:16px;border:1px solid var(--border);overflow:hidden;box-shadow:0 4px 24px rgba(15,23,42,.07)}
+
+/* ── Header ── */
+.inv-header{padding:22px 22px 18px;text-align:center;border-bottom:1px solid var(--border);position:relative}
+.inv-header.is-sale{background:linear-gradient(180deg,#ecfdf5 0%,#fff 100%)}
+.inv-header.is-purchase{background:linear-gradient(180deg,#eff6ff 0%,#fff 100%)}
+.inv-header.is-return{background:linear-gradient(180deg,#fff7ed 0%,#fff 100%)}
+.inv-icon-circle{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;border:2px solid}
+.inv-header.is-sale .inv-icon-circle{background:#d1fae5;border-color:#6ee7b7;color:#059669}
+.inv-header.is-purchase .inv-icon-circle{background:#dbeafe;border-color:#93c5fd;color:#2563eb}
+.inv-header.is-return .inv-icon-circle{background:#ffedd5;border-color:#fdba74;color:#ea580c}
+.inv-icon-circle svg{width:22px;height:22px}
+.inv-title{font-size:1.1rem;font-weight:800;color:var(--text);margin-bottom:6px}
+.inv-meta-line{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;font-size:.78rem;color:var(--muted)}
+.inv-ref{display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-weight:700;color:var(--text);cursor:pointer;transition:background .15s}
+.inv-ref:hover{background:#e2e8f0}
+.ship-chip{display:inline-flex;align-items:center;gap:4px;background:#faf5ff;border:1px solid #e9d5ff;color:#7c3aed;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:600}
+.ship-chip svg{width:11px;height:11px}
+
+/* ── Status Banner ── */
+.inv-status-banner{display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;font-size:.8rem;font-weight:600;border-bottom:1px solid var(--border)}
+.inv-status-banner svg{width:14px;height:14px;flex-shrink:0}
+.inv-status-banner.paid{color:#059669;background:#f0fdf4}
+.inv-status-banner.pending{color:#c2410c;background:#fff7ed}
+.inv-status-banner.cancelled{color:#b91c1c;background:#fef2f2}
+.inv-progress-mini{flex:0 1 80px;height:4px;background:rgba(0,0,0,.06);border-radius:3px;overflow:hidden;margin-right:6px}
+.inv-progress-mini .bar{height:100%;background:currentColor;border-radius:3px}
+
+/* ── Body ── */
+.inv-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+
+/* ── Party Card ── */
+.inv-party-card{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;position:relative}
+.inv-party-card.is-sale{background:linear-gradient(135deg,#f8faff 0%,#fff 100%)}
+.inv-party-card.is-purchase{background:linear-gradient(135deg,#f0fdf4 0%,#fff 100%)}
+.inv-party-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;flex-shrink:0;border:2px solid}
+.inv-party-card.is-sale .inv-party-avatar{background:#d1fae5;color:#059669;border-color:#6ee7b7}
+.inv-party-card.is-purchase .inv-party-avatar{background:#dbeafe;color:#2563eb;border-color:#93c5fd}
+.inv-party-card.is-return .inv-party-avatar{background:#ffedd5;color:#ea580c;border-color:#fdba74}
+.inv-party-info{flex:1;min-width:0}
+.inv-party-name{font-size:.93rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.inv-party-tag{font-size:.63rem;font-weight:600;border-radius:20px;padding:2px 8px;flex-shrink:0}
+.inv-party-card.is-sale .inv-party-tag{color:#059669;background:#f0fdf4;border:1px solid #6ee7b7}
+.inv-party-card.is-purchase .inv-party-tag{color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe}
+.inv-party-card.is-return .inv-party-tag{color:#ea580c;background:#fff7ed;border:1px solid #fdba74}
+.inv-party-phone{display:inline-flex;align-items:center;gap:5px;font-size:.77rem;color:#475569;direction:ltr;background:#f8fafc;border:1px solid var(--border);border-radius:20px;padding:2px 10px}
+.inv-party-phone svg{width:11px;height:11px}
+.inv-party-addr{display:flex;align-items:flex-start;gap:5px;margin-top:4px;font-size:.74rem;color:var(--muted);line-height:1.4}
+.inv-party-addr svg{flex-shrink:0;margin-top:2px;width:12px;height:12px}
+.city-badge{display:inline-flex;align-items:center;gap:3px;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:20px;font-size:.67rem;font-weight:700;padding:2px 9px;margin-right:5px}
+
+/* ── Items Table ── */
+.inv-items-section{border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.inv-items-header{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:#f8fafc;border-bottom:1px solid var(--border)}
+.inv-items-title{font-size:.8rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px}
+.inv-items-title svg{width:14px;height:14px;color:var(--muted)}
+.inv-items-count{font-size:.7rem;padding:2px 9px;background:#ecfdf5;color:#059669;border-radius:10px;font-weight:600}
+.inv-items-tbl{width:100%;border-collapse:collapse;font-size:.8rem}
+.inv-items-tbl th{background:#fff;padding:8px 12px;text-align:right;font-weight:600;font-size:.72rem;color:#64748b;border-bottom:1px solid var(--border)}
+.inv-items-tbl td{padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;background:#fff;vertical-align:middle}
+.inv-items-tbl tbody tr:last-child td{border-bottom:none}
+.inv-items-tbl tbody tr:hover td{background:#f8fafc}
+.col-num{width:28px;color:#94a3b8;font-size:.74rem;text-align:center}
+.col-img{width:44px;padding:6px 8px}
+.col-img-thumb{width:38px;height:38px;border-radius:7px;object-fit:cover;border:1px solid var(--border);display:block}
+.col-img-fallback{width:38px;height:38px;border-radius:7px;border:1px solid var(--border);background:#f8fafc;display:flex;align-items:center;justify-content:center}
+.col-img-fallback svg{width:16px;height:16px;color:#cbd5e1}
+.col-product{font-weight:600;color:var(--text)}
+.col-code{font-size:.68rem;color:#94a3b8;direction:ltr;margin-top:1px;font-family:monospace}
+.col-qty{text-align:center;font-weight:700;color:#475569;width:48px}
+.col-price,.col-total{direction:ltr;text-align:left}
+.col-total{font-weight:700;color:var(--text)}
+/* ── Payment Detail Card ── */
+.pay-detail-card{background:#f8fafc;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.pay-detail-row{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:.8rem}
+.pay-detail-row:last-child{border-bottom:none}
+.pay-detail-row .k{color:#64748b;font-weight:500;display:flex;align-items:center;gap:5px}
+.pay-detail-row .v{font-weight:700;direction:ltr}
+.pay-detail-row.dep .v{color:#15803d}
+.pay-detail-row.rem .v{color:#dc2626}
+.pay-detail-row.method .v{background:#f1f5f9;border:1px solid var(--border);padding:2px 8px;border-radius:5px;font-size:.72rem}
+.pay-progress-bar-wrap{height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden;margin:0}
+.pay-progress-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+
+/* ── Summary ── */
+.inv-summary-grid{border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.inv-summary-card{padding:12px 14px;display:flex;flex-direction:column;justify-content:center;gap:6px;background:#f8fafc}
+.sum-line{display:flex;justify-content:space-between;align-items:center;font-size:.78rem;gap:8px}
+.sum-line .lbl{color:#64748b;font-weight:500}
+.sum-line .val{color:var(--text);font-weight:700;direction:ltr}
+.sum-line.discount .lbl,.sum-line.discount .val{color:var(--red)}
+
+/* ── Breakdown ── */
+.inv-breakdown{display:flex;flex-direction:column;gap:5px}
+.inv-breakdown-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;font-size:.8rem;border:1px solid var(--border)}
+.inv-breakdown-row .label{display:flex;align-items:center;gap:6px;color:#475569;font-weight:500}
+.inv-breakdown-row .amount{font-weight:700;color:var(--text)}
+.inv-breakdown-row.deposit{border-color:#bbf7d0;background:#f0fdf4}.inv-breakdown-row.deposit .amount{color:#16a34a}
+.inv-breakdown-row.collection{border-color:#bfdbfe;background:#eff6ff}.inv-breakdown-row.collection .amount{color:#2563eb}
+.inv-breakdown-row.remaining{border-color:#fecaca;background:#fef2f2}.inv-breakdown-row.remaining .amount{color:#dc2626}
+
+/* ── Meta Chips ── */
+.inv-meta-chips{display:flex;flex-wrap:wrap;gap:6px}
+.meta-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;font-size:.74rem}
+.meta-chip .k{color:var(--muted)}
+.meta-chip .v{color:var(--text);font-weight:600}
+.meta-chip svg{width:13px;height:13px;color:var(--muted);flex-shrink:0}
+
+/* ── Notes ── */
+.inv-notes{padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:.84rem}
+.inv-notes-label{font-size:.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.inv-notes-label svg{width:13px;height:13px}
+.inv-notes.cancel-reason{background:#fef2f2;border-color:rgba(220,38,38,.2)}
+.inv-notes.cancel-reason .inv-notes-label{color:#dc2626}
+
+/* ── Footer ── */
+.inv-footer{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}
+
+/* ── Loading / Error ── */
+.state-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;text-align:center}
+.state-icon{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto}
+.state-icon.loading{background:#f1f5f9;animation:pulse 1.5s ease infinite}
+.state-icon.error{background:#fef2f2}
+.state-icon svg{width:28px;height:28px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.state-title{font-size:1rem;font-weight:700;color:var(--text)}
+.state-sub{font-size:.84rem;color:var(--muted)}
+
+/* ── Type Badge ── */
+.type-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700}
+.type-badge.sale{background:#d1fae5;color:#065f46}
+.type-badge.purchase{background:#dbeafe;color:#1e40af}
+.type-badge.return{background:#ffedd5;color:#9a3412}
+
+@media(max-width:540px){
+  .top-bar-actions .btn span{display:none}
+}
+@media print{
+  body{background:#fff}
+  .top-bar{display:none}
+  .inv-footer{display:none}
+  .page-wrap{padding:0}
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+  <div class="top-bar">
+    <a class="top-bar-brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Soulia
+    </a>
+    <div class="top-bar-actions">
+      <button class="btn btn-copy" id="btn-copy" onclick="copyLink()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        <span>نسخ الرابط</span>
+      </button>
+      <button class="btn btn-outline" onclick="window.print()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span>طباعة</span>
+      </button>
+    </div>
+  </div>
+  <div id="root"></div>
+</div>
+
+<script>
+const BASE = (typeof BACKEND_URL !== 'undefined' ? BACKEND_URL : '') || 'http://localhost:4000/api';
+
+async function apiFetch(url) {
+  const token = localStorage.getItem('token');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(url, { headers });
+  if (res.status === 401) {
+    showState('error', 'غير مصرح', 'يجب تسجيل الدخول أولاً لعرض هذه الفاتورة');
+    throw new Error('Unauthorized');
+  }
+  return res.json();
+}
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtN(n) {
+  return Number(n || 0).toLocaleString('ar-EG', { maximumFractionDigits: 2 });
+}
+
+function fmtJ(n) {
+  return String(fmtN(n)).replace(/0/g,'٠').replace(/1/g,'١').replace(/2/g,'٢').replace(/3/g,'٣')
+    .replace(/4/g,'٤').replace(/5/g,'٥').replace(/6/g,'٦').replace(/7/g,'٧').replace(/8/g,'٨').replace(/9/g,'٩');
+}
+
+function showState(type, title, sub) {
+  const icon = type === 'loading'
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+  document.getElementById('root').innerHTML = `
+    <div class="state-wrap">
+      <div class="state-icon ${type}">${icon}</div>
+      <div class="state-title">${esc(title)}</div>
+      <div class="state-sub">${esc(sub)}</div>
+    </div>`;
+}
+
+function isStatusCompleted(s) { return s === 'مكتمل' || s === 'مدفوع' || s === 'مكتمل (رد)'; }
+function isStatusCancelled(s) { return s === 'ملغي' || s === 'محذوف'; }
+
+async function fetchTx() {
+  const p = new URLSearchParams(location.search);
+  const sale     = p.get('sale');
+  const purchase = p.get('purchase');
+  const ret      = p.get('return');
+  const txId     = p.get('tx');
+
+  showState('loading', 'جاري تحميل الفاتورة…', '');
+
+  try {
+    let tx;
+    if (sale) {
+      tx = await apiFetch(`${BASE}/transactions/by-ref/${encodeURIComponent(sale)}?type=${encodeURIComponent('مبيعات')}`);
+    } else if (purchase) {
+      tx = await apiFetch(`${BASE}/transactions/by-ref/${encodeURIComponent(purchase)}?type=${encodeURIComponent('مشتريات')}`);
+    } else if (ret) {
+      tx = await apiFetch(`${BASE}/transactions/by-ref/${encodeURIComponent(ret)}?type=${encodeURIComponent('مرتجع')}`);
+    } else if (txId) {
+      tx = await apiFetch(`${BASE}/transactions/${encodeURIComponent(txId)}`);
+    } else {
+      showState('error', 'رابط غير صالح', 'لا يوجد معرّف فاتورة في الرابط');
+      return;
+    }
+
+    if (!tx || tx.statusCode >= 400 || tx.message) {
+      showState('error', 'الفاتورة غير موجودة', tx?.message || 'تحقق من الرابط وحاول مجدداً');
+      return;
+    }
+
+    renderInvoice(tx);
+  } catch (e) {
+    if (e.message !== 'Unauthorized') {
+      showState('error', 'خطأ في الاتصال', 'تعذر تحميل بيانات الفاتورة — تأكد من الاتصال بالشبكة');
+    }
+  }
+}
+
+function renderInvoice(tx) {
+  const isPurchase = tx.type === 'مشتريات';
+  const isReturn   = tx.type === 'مرتجع';
+  const typeClass  = isPurchase ? 'is-purchase' : isReturn ? 'is-return' : 'is-sale';
+  const partyClass = isPurchase ? 'is-purchase' : isReturn ? 'is-return' : 'is-sale';
+
+  const statusClass = (tx.cancelled || isStatusCancelled(tx.payStatus)) ? 'cancelled'
+    : isStatusCompleted(tx.payStatus) ? 'paid' : 'pending';
+
+  let statusText = '';
+  if (tx.cancelled || isStatusCancelled(tx.payStatus)) {
+    statusText = 'ملغي';
+  } else if (isStatusCompleted(tx.payStatus)) {
+    statusText = isPurchase ? 'تم السداد بالكامل' : 'مكتمل — تم التحصيل';
+  } else if (isPurchase) {
+    statusText = `مديون للمورد — المتبقي: ${fmtJ(tx.remaining || 0)}`;
+  } else {
+    statusText = `في انتظار التحصيل — المتبقي: ${fmtJ(tx.remaining || 0)}`;
+  }
+
+  const statusIcon = statusClass === 'paid'
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
+    : statusClass === 'cancelled'
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+
+  const typeTitle = isPurchase ? 'فاتورة شراء' : isReturn ? 'فاتورة مرتجع' : 'فاتورة مبيعات';
+  document.title = `${typeTitle} ${tx.ref ? '#' + tx.ref : ''} — Soulia`;
+
+  const typeIconSvg = isPurchase
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>`
+    : isReturn
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg>`;
+
+  const _txDateStr = tx.transactionDate || tx.date || tx.createdAt || '';
+  const _txDateObj = _txDateStr ? new Date(_txDateStr.length === 10 ? _txDateStr + 'T00:00:00' : _txDateStr) : new Date();
+  const _createdAtObj = new Date(tx.createdAt || tx.date);
+  const dateShort = _txDateObj.toLocaleDateString('ar-EG-u-nu-latn', { year:'numeric', month:'long', day:'numeric' });
+  const timeFormatted = _createdAtObj.toLocaleTimeString('ar-EG-u-nu-latn', { hour:'2-digit', minute:'2-digit', hour12:true });
+  const createdAtShort = _createdAtObj.toLocaleDateString('ar-EG-u-nu-latn', { year:'numeric', month:'long', day:'numeric' });
+  const datesDiffer = tx.transactionDate && tx.transactionDate !== (tx.createdAt || tx.date || '').slice(0,10);
+
+  const initials = (tx.client || '؟').split(' ').slice(0,2).map(w => w[0] || '').join('').toUpperCase() || '؟';
+  const invNumber = tx.ref ? `#${tx.ref}` : `INV-${(tx._id || '').slice(-6) || '000000'}`;
+
+  // Address
+  const _sa = (tx.shippingAddress || '').replace(/^العنوان:\s*/,'').trim();
+  const _city = tx.shippingGov || tx.shippingCity || '';
+  const addrHtml = (!isPurchase && _sa) ? `
+    <div class="inv-party-addr">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <div>
+        <span>${esc(_sa)}</span>
+        ${_city ? `<span class="city-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(_city)}</span>` : ''}
+      </div>
+    </div>` : '';
+
+  // Items
+  const itemsRows = (tx.items || []).map((it, i) => {
+    const imgSrc = it.imageUrl && /^https?:\/\//.test(it.imageUrl) ? it.imageUrl : '';
+    const imgCell = imgSrc
+      ? `<img class="col-img-thumb" src="${esc(imgSrc)}" alt="${esc(it.name||'')}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`+
+        `<div class="col-img-fallback" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>`
+      : `<div class="col-img-fallback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>`;
+    return `<tr>
+      <td class="col-num">${i+1}</td>
+      <td class="col-img">${imgCell}</td>
+      <td class="col-product">${esc(it.name||'')}${it.code ? `<div class="col-code">${esc(it.code)}</div>` : ''}</td>
+      <td class="col-qty">${fmtN(it.qty)}</td>
+      <td class="col-price">${fmtJ(it.price)}</td>
+      <td class="col-total">${fmtJ(it.total)}</td>
+    </tr>`;
+  }).join('');
+  const itemsTotal = (tx.items || []).reduce((s, it) => s + (it.total || 0), 0);
+
+  // Payments
+  const _depositsArr = tx.deposits || [];
+  const _paymentsArr = tx.payments || [];
+  const _depositsTotal = _depositsArr.reduce((s,d) => s+(d.amount||0), 0) || (_paymentsArr.length===0 ? (tx.deposit||0) : 0);
+  const _paymentsTotal = _paymentsArr.reduce((s,p) => s+(p.amount||p.collectAmount||0), 0);
+  const _totalCollected = Math.max(0, (tx.total||0) - (tx.remaining||0));
+  const _paymentPercent = tx.total > 0 ? Math.min(100, Math.round((_totalCollected/tx.total)*100)) : 0;
+  const _isFullyPaid = (tx.remaining||0) <= 0;
+  const _hasDeposit   = _depositsTotal > 0;
+  const _depMethod    = tx.depMethod || tx.payment || '';
+  const _depMethodLabel = {'كاش':'كاش','فودافون كاش':'فودافون كاش','Instapay':'InstaPay','تحويل بنكي':'تحويل بنكي'}[_depMethod] || _depMethod;
+  const _barColor = _isFullyPaid ? '#16a34a' : _hasDeposit ? '#3b82f6' : '#f59e0b';
+  const _statusChipBg   = _isFullyPaid ? '#dcfce7' : _hasDeposit ? '#dbeafe' : '#fef9c3';
+  const _statusChipClr  = _isFullyPaid ? '#15803d' : _hasDeposit ? '#1d4ed8' : '#92400e';
+  const _statusText     = _isFullyPaid ? '✓ مكتمل الدفع' : _hasDeposit ? `مدفوع جزئياً` : 'بانتظار التحصيل';
+
+  const breakdownHtml = `
+    <div class="pay-detail-card">
+      <div class="pay-progress-bar-wrap">
+        <div class="pay-progress-bar-fill" style="width:${_paymentPercent}%;background:${_barColor}"></div>
+      </div>
+      <div class="pay-detail-row" style="background:${_statusChipBg}">
+        <span class="k" style="color:${_statusChipClr};font-weight:700">${_statusText}</span>
+        <span class="v" style="color:${_statusChipClr}">${_paymentPercent}% مُسدَّد</span>
+      </div>
+      <div class="pay-detail-row">
+        <span class="k">إجمالي الفاتورة</span>
+        <span class="v">${fmtJ(tx.total||0)} ج.م</span>
+      </div>
+      ${_hasDeposit ? `
+      <div class="pay-detail-row dep">
+        <span class="k">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          ${isPurchase?'العربون المدفوع':'الديبوزت المدفوع'}
+        </span>
+        <span class="v">− ${fmtJ(_depositsTotal)} ج.م</span>
+      </div>` : ''}
+      ${_depMethod ? `
+      <div class="pay-detail-row method">
+        <span class="k">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          طريقة الدفع
+        </span>
+        <span class="v">${esc(_depMethodLabel)}</span>
+      </div>` : ''}
+      ${_paymentsTotal > 0 ? `
+      <div class="pay-detail-row dep">
+        <span class="k">التحصيلات الإضافية</span>
+        <span class="v">− ${fmtJ(_paymentsTotal)} ج.م</span>
+      </div>` : ''}
+      ${!_isFullyPaid ? `
+      <div class="pay-detail-row rem" style="border-top:1.5px dashed #fecaca">
+        <span class="k" style="color:#dc2626;font-weight:600">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          ${isPurchase?'المتبقي للمورد':'المتبقي للتحصيل'}
+        </span>
+        <span class="v">${fmtJ(tx.remaining||0)} ج.م</span>
+      </div>` : `
+      <div class="pay-detail-row dep">
+        <span class="k" style="color:#15803d;font-weight:700">✓ تم السداد بالكامل</span>
+        <span class="v" style="color:#15803d">٠ ج.م متبقي</span>
+      </div>`}
+    </div>`;
+
+  // Meta chips
+  const methodVal = tx.depMethod || tx.payment || (isPurchase ? 'تحويل بنكي' : 'نقدي');
+  const notesHtml = tx.notes ? `<div class="inv-notes"><div class="inv-notes-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>ملاحظات</div><div>${esc(tx.notes)}</div></div>` : '';
+  const cancelHtml = tx.cancelReason ? `<div class="inv-notes cancel-reason"><div class="inv-notes-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>سبب الإلغاء</div><div>${esc(tx.cancelReason)}</div></div>` : '';
+
+  document.getElementById('root').innerHTML = `
+  <div class="inv-card ${typeClass}">
+    <!-- Header -->
+    <div class="inv-header ${typeClass}">
+      <div class="inv-icon-circle">${typeIconSvg}</div>
+      <div class="inv-title">${typeTitle}</div>
+      <div class="inv-meta-line">
+        <span>${dateShort} · ${timeFormatted}</span>
+        ${datesDiffer ? `<span style="font-size:.72rem;opacity:.7">سُجِّل: ${esc(createdAtShort)}</span>` : ''}
+        ${tx.ref ? `<span class="inv-ref" onclick="navigator.clipboard?.writeText('${esc(String(tx.ref))}').then(()=>this.textContent='✓ تم النسخ');setTimeout(()=>this.textContent='${invNumber}',1500)" title="انقر للنسخ">${invNumber}</span>` : ''}
+        ${!isPurchase && tx.shipCo ? `<span class="ship-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="15" height="10" rx="1.5"/><path d="M16 9h3l3 4v3h-6z"/><circle cx="6.5" cy="18" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>${esc(tx.shipCo)}</span>` : ''}
+      </div>
+    </div>
+    <!-- Status -->
+    <div class="inv-status-banner ${statusClass}">
+      ${statusIcon}
+      <span>${statusText}</span>
+      ${statusClass==='pending' && _paymentPercent>0 ? `<div class="inv-progress-mini"><div class="bar" style="width:${_paymentPercent}%"></div></div>` : ''}
+    </div>
+    <!-- Body -->
+    <div class="inv-body">
+      <!-- Party -->
+      <div class="inv-party-card ${partyClass}">
+        <div class="inv-party-avatar">${esc(initials)}</div>
+        <div class="inv-party-info">
+          <div class="inv-party-name">
+            ${esc(tx.client || '-')}
+            <span class="inv-party-tag">${isPurchase?'المورد':isReturn?'العميل (مرتجع)':'العميل'}</span>
+          </div>
+          ${tx.phone ? `<div class="inv-party-phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>${esc(tx.phone)}</div>` : ''}
+          ${addrHtml}
+        </div>
+      </div>
+      <!-- Items -->
+      <div class="inv-items-section">
+        <div class="inv-items-header">
+          <div class="inv-items-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>
+            الأصناف
+          </div>
+          <div class="inv-items-count">${(tx.items||[]).length} صنف</div>
+        </div>
+        <table class="inv-items-tbl">
+          <thead><tr>
+            <th class="col-num">#</th>
+            <th class="col-img"></th>
+            <th>الصنف</th>
+            <th style="text-align:center">الكمية</th>
+            <th>السعر</th>
+            <th>الإجمالي</th>
+          </tr></thead>
+          <tbody>${itemsRows}</tbody>
+        </table>
+      </div>
+      <!-- Summary + Payment -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="inv-summary-grid" style="border-radius:12px;overflow:hidden;display:flex;flex-direction:column">
+          <div class="inv-summary-card" style="flex:1">
+            <div class="sum-line"><span class="lbl">إجمالي الأصناف</span><span class="val">${fmtJ(itemsTotal)}</span></div>
+            ${tx.discount ? `<div class="sum-line discount"><span class="lbl">خصم</span><span class="val">− ${fmtJ(tx.discount)}</span></div>` : ''}
+            ${tx.shipCost && !isPurchase ? `<div class="sum-line"><span class="lbl">تكلفة الشحن</span><span class="val">+ ${fmtJ(tx.shipCost)}</span></div>` : ''}
+            <div class="sum-line" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+              <span class="lbl" style="font-weight:700;color:var(--text)">الإجمالي الكلي</span>
+              <span class="val" style="font-size:1.15rem;font-weight:800;color:#065f46">${fmtJ(tx.total||0)}</span>
+            </div>
+          </div>
+        </div>
+        ${breakdownHtml}
+      </div>
+      <!-- Meta -->
+      <div class="inv-meta-chips">
+        <span class="meta-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          <span class="k">طريقة الدفع</span><span class="v">${esc(methodVal)}</span>
+        </span>
+        ${tx.employee ? `<span class="meta-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="k">الموظف</span><span class="v">${esc(tx.employee)}</span></span>` : ''}
+        ${tx.ref ? `<span class="meta-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg><span class="k">رقم الفاتورة</span><span class="v">#${esc(String(tx.ref))}</span></span>` : ''}
+      </div>
+      ${notesHtml}
+      ${cancelHtml}
+    </div>
+  </div>
+  <div class="inv-footer">
+    <button class="btn btn-outline" onclick="window.close()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      إغلاق
+    </button>
+    <button class="btn btn-copy" onclick="copyLink()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      نسخ الرابط
+    </button>
+    <button class="btn btn-outline" onclick="window.print()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      طباعة
+    </button>
+  </div>`;
+}
+
+function copyLink() {
+  navigator.clipboard?.writeText(location.href).then(() => {
+    const btn = document.getElementById('btn-copy');
+    if (btn) { const orig = btn.innerHTML; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg> <span>تم النسخ</span>'; setTimeout(() => { btn.innerHTML = orig; }, 1800); }
+  });
+}
+
+fetchTx();
+</script>
+</body>
+</html>
