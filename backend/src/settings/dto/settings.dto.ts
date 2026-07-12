@@ -166,6 +166,10 @@ export class UpdateSettingsDto {
 
   @IsString()
   @IsOptional()
+  readonly defaultPayMethod?: string;
+
+  @IsString()
+  @IsOptional()
   readonly printPolicySales?: string;
 
   @IsString()

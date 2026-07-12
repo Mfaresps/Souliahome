@@ -214,9 +214,13 @@ export class Transaction {
   @Prop({ type: [String], default: [] })
   tags: string[];
 
-  /** Pick-Up tracking: Pending | Preparing | Ready | Delivered */
+  /** Pick-Up tracking: Pending | Preparing | Ready | Shipped | Delivered */
   @Prop({ default: 'Pending' })
   pickupStatus: string;
+
+  /** ISO timestamp when order was shipped to Bosta */
+  @Prop({ default: null })
+  shippedAt: string;
 
   @Prop()
   pickupDate: string;

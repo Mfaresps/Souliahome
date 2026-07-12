@@ -173,6 +173,9 @@ export class Settings {
   @Prop({ default: true })
   printIncludePolicy: boolean;
 
+  @Prop({ default: 'تحويل بنكي' })
+  defaultPayMethod: string;
+
   @Prop({ default: '' })
   printPolicySales: string;
 

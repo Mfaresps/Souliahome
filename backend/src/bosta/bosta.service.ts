@@ -245,14 +245,18 @@ export class BostaService {
     this.logger.log(`Bosta items raw — txId=${txId} items=${JSON.stringify(tx.items)}`);
     const itemLines = (tx.items as any[] || [])
       .map((it: any) => {
-        const name = (it.name || it.shopifyName || it.productName || it.title || it.itemName || '').trim();
-        const qty  = it.qty  || it.quantity    || 1;
-        const code = it.code || it.productCode || it.sku || '';
-        if (!name) return '';
-        return `${name} x ${qty}${code ? ` (${code})` : ''}`;
-      })
-      .filter(s => s.length > 0);
+        const name = (
+          it.name || it.shopifyName || it.productName || it.title || it.itemName ||
+          it.itemTitle || it.product_name || it.variant_title || it.description || ''
+        ).trim();
+        const qty  = it.qty || it.quantity || 1;
+        const code = it.code || it.productCode || it.sku || it.variantSku || '';
+        // Include item even if name missing — use code as fallback label
+        const label = name || code || 'صنف';
+        return `${label} x ${qty}`;
+      });
     const packageDescription = itemLines.join(' | ') || `طلب #${tx.ref || String(tx._id).slice(-6)}`;
+    this.logger.log(`Bosta packageDescription built — "${packageDescription}"`);
     this.logger.log(`Bosta packageDescription — "${packageDescription}"`);
 
     // Business reference
@@ -266,10 +270,10 @@ export class BostaService {
         weight: this.calcWeight(tx.items as any[]),
         packageDetails: {
           itemsCount: (tx.items as any[] || []).reduce((s: number, it: any) => s + (it.qty || it.quantity || 1), 0) || 1,
-          productsType: packageDescription,
+          description: packageDescription,
+          goodsValue: 1000,
         },
       },
-      goodsDescription: packageDescription,
       notes: tx.notes || '',
       cod: tx.remaining || 0,
       dropOffAddress: {
@@ -307,10 +311,13 @@ export class BostaService {
         bostaStatusLabel: statusLabel,
         bostaLastSync: new Date().toISOString(),
         bostaRawResponse: res,
+        pickupStatus: 'Shipped',
+        shippedAt: new Date().toISOString(),
       });
 
       this.logger.log(`Bosta order created: tx=${txId} bostaId=${bostaOrderId} tracking=${trackingNumber}`);
       this.emit('tx:updated', { _id: txId });
+      this.emit('pickup:shipped', { _id: txId });
 
       return { success: true, bostaOrderId, trackingNumber };
     } catch (err: any) {
@@ -352,8 +359,11 @@ export class BostaService {
           bostaStatusLabel: 'محذوف من Bosta',
           bostaOrderId: '',
           bostaLastSync: new Date().toISOString(),
+          pickupStatus: 'Ready',
+          shippedAt: null,
         });
         this.emit('tx:updated', { _id: txId });
+        this.emit('pickup:unshipped', { _id: txId });
         return { success: true, status: 'DELETED', statusLabel: 'محذوف من Bosta — يمكنك إعادة الإرسال' };
       }
 
@@ -383,8 +393,11 @@ export class BostaService {
           bostaStatusLabel: 'محذوف من Bosta',
           bostaOrderId: '',
           bostaLastSync: new Date().toISOString(),
+          pickupStatus: 'Ready',
+          shippedAt: null,
         });
         this.emit('tx:updated', { _id: txId });
+        this.emit('pickup:unshipped', { _id: txId });
         return { success: true, status: 'DELETED', statusLabel: 'محذوف من Bosta — يمكنك إعادة الإرسال' };
       }
       return { success: false, error: err.message };
