@@ -173,8 +173,14 @@ export class Settings {
   @Prop({ default: true })
   printIncludePolicy: boolean;
 
-  @Prop({ default: 'تحويل بنكي' })
+  @Prop({ default: 'Instapay' })
   defaultPayMethod: string;
+
+  @Prop({ default: '' })
+  defaultDepMethod: string;
+
+  @Prop({ default: '' })
+  defaultShipCo: string;
 
   @Prop({ default: '' })
   printPolicySales: string;
@@ -203,6 +209,15 @@ export class Settings {
   /** Bosta API key — stored encrypted in DB, never returned to frontend as plaintext */
   @Prop({ default: '' })
   bostaApiKey: string;
+
+  /**
+   * COD collection large-amount warning threshold (EGP).
+   * When a COD collection amount is >= this value, the frontend requires
+   * an explicit second confirmation before the vault entry is created.
+   * Default 5000 — set to 0 to disable the check.
+   */
+  @Prop({ default: 5000 })
+  codCollectionThreshold: number;
 }
 
 export const SettingsSchema = SchemaFactory.createForClass(Settings);

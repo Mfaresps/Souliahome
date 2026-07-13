@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Req,
+  Body,
   UseGuards,
   HttpException,
   HttpStatus,
@@ -84,6 +85,46 @@ export class BostaController {
       throw new HttpException(
         { message: result.error || 'فشل إلغاء الشحنة في Bosta' },
         HttpStatus.BAD_REQUEST,
+      );
+    }
+    return result;
+  }
+
+  /**
+   * Confirm that an employee physically received COD cash from the Bosta courier.
+   * This is the ONLY action that creates a vault income entry for COD orders.
+   * Bosta DELIVERED status alone never touches the vault.
+   *
+   * Body: { method: string, note?: string }
+   */
+  @Post('confirm-collection/:txId')
+  async confirmCollection(
+    @Param('txId') txId: string,
+    @Req() req: any,
+    @Body() body: { method: string; note?: string; largeAmountConfirmed?: boolean },
+  ) {
+    const operator: string = req.user?.username || req.user?.name || 'system';
+    if (!body?.method) {
+      throw new HttpException(
+        { message: 'يجب تحديد طريقة التحصيل (method)' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const result = await this.bostaService.confirmCodCollection(
+      txId,
+      operator,
+      body.method,
+      body.note || '',
+      body.largeAmountConfirmed === true,
+    );
+    if (!result.success) {
+      // Use 422 so the frontend can distinguish "needs re-confirmation" from a hard error
+      const status = result.requiresConfirmation
+        ? HttpStatus.UNPROCESSABLE_ENTITY
+        : HttpStatus.BAD_REQUEST;
+      throw new HttpException(
+        { message: result.error || 'فشل تسجيل التحصيل', requiresConfirmation: result.requiresConfirmation, threshold: result.threshold },
+        status,
       );
     }
     return result;

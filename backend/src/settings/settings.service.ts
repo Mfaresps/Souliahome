@@ -131,6 +131,20 @@ export class SettingsService {
         vaultPass: '1234',
       });
     }
+    // Persist defaults for fields added after the document was first created
+    const migrations: Record<string, any> = {};
+    if ((settings as any).defaultPayMethod === undefined || (settings as any).defaultPayMethod === null || (settings as any).defaultPayMethod === 'تحويل بنكي')
+      migrations['defaultPayMethod'] = 'Instapay';
+    if ((settings as any).defaultShipCo === undefined || (settings as any).defaultShipCo === null)
+      migrations['defaultShipCo'] = '';
+    if ((settings as any).defaultDepMethod === undefined || (settings as any).defaultDepMethod === null)
+      migrations['defaultDepMethod'] = '';
+    if ((settings as any).codCollectionThreshold === undefined || (settings as any).codCollectionThreshold === null)
+      migrations['codCollectionThreshold'] = 5000;
+    if (Object.keys(migrations).length > 0) {
+      await this.settingsModel.findByIdAndUpdate(settings._id, { $set: migrations }).exec();
+      Object.assign(settings, migrations);
+    }
     return settings;
   }
 

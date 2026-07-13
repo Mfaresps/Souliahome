@@ -12,6 +12,8 @@ import { BostaService } from './bosta.service';
 import { BostaController } from './bosta.controller';
 import { AuthModule } from '../auth/auth.module';
 import { SettingsModule } from '../settings/settings.module';
+import { VaultModule } from '../vault/vault.module';
+import { ShopifyModule } from '../shopify/shopify.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { SettingsModule } from '../settings/settings.module';
     ]),
     AuthModule,
     SettingsModule,
+    VaultModule,
+    ShopifyModule,
   ],
   controllers: [BostaController],
   providers: [BostaService],

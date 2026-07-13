@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as https from 'https';
@@ -12,6 +12,8 @@ import {
 } from '../shopify/schemas/shopify-order.schema';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { SettingsService } from '../settings/settings.service';
+import { VaultService } from '../vault/vault.service';
+import { ShopifyAdminService } from '../shopify/shopify-admin.service';
 import { normalizeCity } from '../shared/normalize-city.util';
 
 // ── Bosta status → Arabic label map ────────────────────────────────────────
@@ -40,6 +42,18 @@ const BOSTA_STATE_CODE_MAP: Record<number, string> = {
   60: 'RETURNED',
   70: 'CANCELLED',
   80: 'FAILED_ATTEMPT',
+};
+
+// Bosta API status → granular bostaShippingStatus stored on Transaction
+const BOSTA_TO_SHIPPING_STATUS: Record<string, string> = {
+  CREATED:           'Created',
+  PICKED_UP:         'PickedUp',
+  IN_TRANSIT:        'InTransit',
+  OUT_FOR_DELIVERY:  'OutForDelivery',
+  DELIVERED:         'Delivered',
+  RETURNED:          'Returned',
+  CANCELLED:         'Cancelled',
+  FAILED_ATTEMPT:    'InTransit',  // stays in transit on failed attempt
 };
 
 
@@ -85,6 +99,8 @@ export class BostaService {
     private readonly shopifyOrderModel: Model<ShopifyOrderDocument>,
     private readonly presence: PresenceGateway,
     private readonly settingsService: SettingsService,
+    private readonly vaultService: VaultService,
+    private readonly shopifyAdmin: ShopifyAdminService,
   ) {}
 
   private async resolveApiKey(): Promise<string> {
@@ -304,11 +320,19 @@ export class BostaService {
       const statusCode  = resolveBostaStatus(d, res);
       const statusLabel = BOSTA_STATUS_LABELS[statusCode] || statusCode;
 
+      // Determine initial COD collection status based on whether order has a COD amount
+      const hasCod = (tx.remaining || 0) > 0;
+      const initialCodStatus = hasCod ? 'PendingPayment' : '';
+
       await this.txModel.findByIdAndUpdate(txId, {
         bostaOrderId,
         bostaTrackingNumber: trackingNumber,
         bostaStatus: statusCode,
         bostaStatusLabel: statusLabel,
+        bostaShippingStatus: BOSTA_TO_SHIPPING_STATUS[statusCode] || 'Created',
+        codCollectionStatus: initialCodStatus,
+        // Snapshot the COD amount at creation — immutable reference for collection
+        ...(hasCod ? { bostaOriginalCod: tx.remaining } : {}),
         bostaLastSync: new Date().toISOString(),
         bostaRawResponse: res,
         pickupStatus: 'Shipped',
@@ -318,6 +342,21 @@ export class BostaService {
       this.logger.log(`Bosta order created: tx=${txId} bostaId=${bostaOrderId} tracking=${trackingNumber}`);
       this.emit('tx:updated', { _id: txId });
       this.emit('pickup:shipped', { _id: txId });
+
+      // ── إرسال Fulfillment + رقم التتبع لشوبيفاي تلقائياً ──────────────────
+      const shopifyOrderId = (tx as any).shopifyOrderId || '';
+      if (shopifyOrderId) {
+        const trackNum = trackingNumber || bostaOrderId;
+        this.shopifyAdmin.fulfillOrder(shopifyOrderId, trackNum, 'Bosta')
+          .then(r => {
+            if (r.success) {
+              this.logger.log(`Shopify fulfilled order ${shopifyOrderId} fulfillmentId=${r.fulfillmentId}`);
+            } else {
+              this.logger.warn(`Shopify fulfillment skipped for ${shopifyOrderId}: ${r.error}`);
+            }
+          })
+          .catch(e => this.logger.error(`Shopify fulfillment error for ${shopifyOrderId}: ${e.message}`));
+      }
 
       return { success: true, bostaOrderId, trackingNumber };
     } catch (err: any) {
@@ -367,14 +406,20 @@ export class BostaService {
         return { success: true, status: 'DELETED', statusLabel: 'محذوف من Bosta — يمكنك إعادة الإرسال' };
       }
 
-      const statusCode  = resolveBostaStatus(d, res);
-      const statusLabel = BOSTA_STATUS_LABELS[statusCode] || statusCode;
+      const statusCode     = resolveBostaStatus(d, res);
+      const statusLabel    = BOSTA_STATUS_LABELS[statusCode] || statusCode;
+      const shippingStatus = BOSTA_TO_SHIPPING_STATUS[statusCode] || '';
+
+      // Compute the new codCollectionStatus — only advance, never regress
+      const codUpdate = this.resolveCodStatusUpdate(tx, statusCode);
 
       await this.txModel.findByIdAndUpdate(txId, {
         bostaStatus: statusCode,
         bostaStatusLabel: statusLabel,
+        bostaShippingStatus: shippingStatus,
         bostaLastSync: new Date().toISOString(),
         bostaRawResponse: res,
+        ...codUpdate,
       });
 
       this.emit('tx:updated', { _id: txId });
@@ -514,6 +559,201 @@ export class BostaService {
       return { success: true, tx: info, fixed: { shippingGov: cityPart, shippingBostaCity: bostaEn, note: 'تم مسح bostaOrderId — يمكنك إعادة الإرسال' } };
     }
     return { success: true, tx: info };
+  }
+
+  // ── COD threshold guard ───────────────────────────────────────────────────
+
+  async getCodThreshold(): Promise<number> {
+    try {
+      const s = await this.settingsService.getSettings();
+      return (s as any).codCollectionThreshold ?? 5000;
+    } catch {
+      return 5000;
+    }
+  }
+
+  // ── COD collection status state machine ──────────────────────────────────
+
+  /**
+   * Returns a partial update object for codCollectionStatus.
+   * Rules:
+   *  - Only COD orders (remaining > 0) get a codCollectionStatus.
+   *  - DELIVERED → CODWaitingCollection (never auto-collect into vault).
+   *  - RETURNED/CANCELLED → FailedCollection (money never arrived).
+   *  - Terminal states (Collected, FailedCollection) are never overwritten by sync.
+   */
+  private resolveCodStatusUpdate(
+    tx: any,
+    newBostaStatus: string,
+  ): Record<string, string> {
+    const current = tx.codCollectionStatus || '';
+    const hasCod  = (tx.remaining || 0) > 0;
+
+    // Already finalized — do not regress
+    if (current === 'Collected' || current === 'FailedCollection') return {};
+    // Non-COD orders carry no collection status
+    if (!hasCod) return {};
+
+    if (newBostaStatus === 'DELIVERED' && current !== 'Collected') {
+      return { codCollectionStatus: 'CODWaitingCollection' };
+    }
+    if ((newBostaStatus === 'RETURNED' || newBostaStatus === 'CANCELLED') && current !== 'Collected') {
+      return { codCollectionStatus: 'FailedCollection' };
+    }
+    return {};
+  }
+
+  // ── Confirm COD cash receipt from Bosta courier ───────────────────────────
+
+  /**
+   * Called when an employee physically receives the COD cash from Bosta.
+   * Creates a vault income entry and stamps the transaction as Collected.
+   * Does NOT auto-run on DELIVERED — requires explicit employee action.
+   *
+   * Concurrency safety:
+   *  1. Atomically CAS codCollectionStatus to 'CollectionProcessing' — only one
+   *     concurrent caller can succeed; the rest get null back and are rejected.
+   *  2. Use bostaOriginalCod (immutable snapshot) as the canonical amount.
+   *  3. If vault creation fails, revert the status so the employee can retry.
+   */
+  async confirmCodCollection(
+    txId: string,
+    operator: string,
+    method: string,
+    note: string,
+    largeAmountConfirmed = false,
+  ): Promise<{ success: boolean; vaultEntryId?: string; transaction?: any; error?: string; requiresConfirmation?: boolean; threshold?: number }> {
+    // ── Step 1: Atomic lock — only advance from CODWaitingCollection ──────────
+    const locked = await this.txModel.findOneAndUpdate(
+      {
+        _id: txId,
+        type: 'مبيعات',
+        bostaStatus: 'DELIVERED',
+        codCollectionStatus: { $nin: ['Collected', 'CollectionProcessing', 'FailedCollection'] },
+        $or: [{ bostaOriginalCod: { $gt: 0 } }, { remaining: { $gt: 0 } }],
+      },
+      { $set: { codCollectionStatus: 'CollectionProcessing' } },
+      { new: false }, // return the pre-update doc so we read the original values
+    ).lean() as any;
+
+    if (!locked) {
+      // Distinguish "not found / wrong type" from "already processing / collected"
+      const tx = await this.txModel.findById(txId).lean() as any;
+      if (!tx) return { success: false, error: 'الحركة غير موجودة' };
+      if (tx.type !== 'مبيعات') return { success: false, error: 'تحصيل COD متاح للمبيعات فقط' };
+      if (tx.bostaStatus !== 'DELIVERED') return { success: false, error: 'لا يمكن تأكيد التحصيل قبل أن تُسلَّم الشحنة من Bosta' };
+      if (tx.codCollectionStatus === 'Collected') return { success: false, error: 'تم تسجيل التحصيل مسبقاً لهذه الحركة' };
+      if (tx.codCollectionStatus === 'CollectionProcessing') return { success: false, error: 'جاري تسجيل التحصيل بالفعل — انتظر لحظة ثم أعد المحاولة' };
+      return { success: false, error: 'لا يوجد مبلغ COD معلق على هذه الحركة' };
+    }
+
+    // Use the immutable original COD amount if available, else fall back to remaining
+    const codAmount = (locked.bostaOriginalCod && locked.bostaOriginalCod > 0)
+      ? locked.bostaOriginalCod
+      : (locked.remaining || 0);
+
+    if (codAmount <= 0) {
+      // Revert lock — amount was zero somehow
+      await this.txModel.findByIdAndUpdate(txId, { $set: { codCollectionStatus: locked.codCollectionStatus || 'CODWaitingCollection' } });
+      return { success: false, error: 'لا يوجد مبلغ COD معلق على هذه الحركة' };
+    }
+
+    // ── Threshold guard — large-amount must be explicitly confirmed ───────────
+    const threshold = await this.getCodThreshold();
+    if (threshold > 0 && codAmount >= threshold && !largeAmountConfirmed) {
+      // Revert lock so the employee can re-confirm with the flag set
+      await this.txModel.findByIdAndUpdate(txId, { $set: { codCollectionStatus: 'CODWaitingCollection' } });
+      return {
+        success: false,
+        requiresConfirmation: true,
+        threshold,
+        error: `المبلغ ${codAmount} يتجاوز الحد المسموح (${threshold}) — يجب تأكيد استلام المبلغ الكبير`,
+      };
+    }
+
+    const now = new Date().toISOString();
+    const bostaRef = locked.bostaTrackingNumber || locked.bostaOrderId || '';
+
+    // ── Step 2: Create vault entry ────────────────────────────────────────────
+    let vaultEntry: any;
+    try {
+      vaultEntry = await this.vaultService.addSystemEntry(
+        codAmount,
+        method,
+        `تحصيل COD — طلب #${locked.ref || txId}${bostaRef ? ` | Bosta: ${bostaRef}` : ''}`,
+        now.split('T')[0],
+        'تحصيل',
+        locked.ref || '',
+        { customer: locked.client || '' },
+        operator,
+        { linkedTransactionId: String(locked._id), bostaRef },
+      );
+    } catch (err: any) {
+      this.logger.error(`COD vault entry failed tx=${txId}: ${err.message}`);
+      // Revert lock so employee can retry
+      await this.txModel.findByIdAndUpdate(txId, {
+        $set: { codCollectionStatus: 'CODWaitingCollection' },
+        $push: {
+          codCollectionHistory: {
+            action: 'vault_error',
+            by: operator,
+            at: now,
+            amount: codAmount,
+            method,
+            note: `فشل قيد الخزنة: ${err.message}`,
+            bostaRef,
+          },
+        },
+      });
+      return { success: false, error: err.message };
+    }
+
+    // ── Step 3: Finalize transaction ──────────────────────────────────────────
+    const historyEntry = {
+      action: 'confirmed',
+      by: operator,
+      at: now,
+      amount: codAmount,
+      method,
+      note: note || '',
+      vaultEntryId: String(vaultEntry._id),
+      bostaRef,
+    };
+
+    await this.txModel.findByIdAndUpdate(txId, {
+      $set: {
+        codCollectionStatus: 'Collected',
+        codCollectedAt: now,
+        codCollectedBy: operator,
+        codCollectionMethod: method,
+        codVaultEntryId: String(vaultEntry._id),
+        codCollectedAmount: codAmount,
+        payStatus: 'مكتمل',
+        remaining: 0,
+      },
+      $push: { codCollectionHistory: historyEntry },
+    });
+
+    this.emit('tx:updated', { _id: txId });
+    this.logger.log(`COD collected: tx=${txId} amount=${codAmount} method=${method} by=${operator} vault=${vaultEntry._id}`);
+
+    // ── تحديث حالة الدفع في شوبيفاي بعد تأكيد استلام COD ──────────────────
+    const shopifyOrderId = (locked as any).shopifyOrderId || '';
+    if (shopifyOrderId) {
+      this.shopifyAdmin.markOrderPaid(shopifyOrderId, codAmount)
+        .then(r => {
+          if (r.success) {
+            this.logger.log(`Shopify order ${shopifyOrderId} marked paid — COD collected`);
+          } else {
+            this.logger.warn(`Shopify markOrderPaid skipped for ${shopifyOrderId}: ${r.error}`);
+          }
+        })
+        .catch(e => this.logger.error(`Shopify markOrderPaid error for ${shopifyOrderId}: ${e.message}`));
+    }
+
+    // Return the updated transaction so the caller can relay fresh state to the frontend
+    const updatedTx = await this.txModel.findById(txId).lean();
+    return { success: true, vaultEntryId: String(vaultEntry._id), transaction: updatedTx };
   }
 
   // ── Helper: estimate total weight from items ───────────────────────────

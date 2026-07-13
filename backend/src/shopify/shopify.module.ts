@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ShopifyController } from './shopify.controller';
 import { ShopifyService } from './shopify.service';
+import { ShopifyAdminService } from './shopify-admin.service';
 import {
   Transaction,
   TransactionSchema,
@@ -28,6 +29,7 @@ import { AuthModule } from '../auth/auth.module';
     AuthModule,
   ],
   controllers: [ShopifyController],
-  providers: [ShopifyService],
+  providers: [ShopifyService, ShopifyAdminService],
+  exports: [ShopifyAdminService],
 })
 export class ShopifyModule {}

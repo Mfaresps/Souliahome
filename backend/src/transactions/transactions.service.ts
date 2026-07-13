@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
@@ -25,6 +26,7 @@ import { PresenceGateway } from '../auth/presence.gateway';
 import { MentionsService } from '../mentions/mentions.service';
 import { DiscountOtpService } from '../discount-otp/discount-otp.service';
 import { SettingsService } from '../settings/settings.service';
+import { ShopifyAdminService } from '../shopify/shopify-admin.service';
 // #region agent log
 import { debugLog } from '../debug-log.util';
 // #endregion
@@ -70,6 +72,8 @@ export interface DashboardData {
 
 @Injectable()
 export class TransactionsService {
+  private readonly logger = new Logger(TransactionsService.name);
+
   constructor(
     @InjectModel(Transaction.name)
     private readonly transactionModel: Model<TransactionDocument>,
@@ -81,6 +85,7 @@ export class TransactionsService {
     private readonly mentionsService: MentionsService,
     private readonly discountOtpService: DiscountOtpService,
     private readonly settingsService: SettingsService,
+    private readonly shopifyAdmin: ShopifyAdminService,
   ) {}
 
   // ── Concurrent edit lock: txId → { user, since } ──
@@ -741,6 +746,66 @@ export class TransactionsService {
     tx.remaining = previousTotal;
 
     const saved = await tx.save();
+
+    // ── COD reversal: if COD was already collected, reverse the vault entry ──
+    // This covers both admin-direct cancel and approve-cancel flows.
+    const codCollectionStatus = (tx as any).codCollectionStatus || '';
+    if (
+      tx.type === 'مبيعات' &&
+      codCollectionStatus === 'Collected' &&
+      !(tx as any).codReversalVaultEntryId // not already reversed
+    ) {
+      const codAmount =
+        ((tx as any).bostaOriginalCod && (tx as any).bostaOriginalCod > 0)
+          ? (tx as any).bostaOriginalCod
+          : ((tx as any).codCollectedAmount || 0);
+      const codMethod = (tx as any).codCollectionMethod || 'كاش';
+      const bostaRef  = (tx as any).bostaTrackingNumber || (tx as any).bostaOrderId || '';
+      if (codAmount > 0) {
+        try {
+          const reversalEntry = await this.vaultService.addSystemEntry(
+            -codAmount,
+            codMethod,
+            `عكس تحصيل COD — إلغاء طلب #${tx.ref || String(tx._id)}${bostaRef ? ` | Bosta: ${bostaRef}` : ''} — ${reason}`,
+            new Date().toISOString().split('T')[0],
+            'إلغاء',
+            tx.ref || String(tx._id),
+            { customer: tx.client || '' },
+            cancelledBy,
+            { linkedTransactionId: String(tx._id), bostaRef, reversalOf: (tx as any).codVaultEntryId },
+          );
+          await this.transactionModel.findByIdAndUpdate(tx._id, {
+            $set: {
+              codCollectionStatus: 'ReversedCollection',
+              codReversalVaultEntryId: String(reversalEntry._id),
+              codReversedAt: new Date().toISOString(),
+              codReversedBy: cancelledBy,
+            },
+            $push: {
+              codCollectionHistory: {
+                action: 'reversed',
+                by: cancelledBy,
+                at: new Date().toISOString(),
+                amount: -codAmount,
+                method: codMethod,
+                note: `إلغاء الحركة — ${reason}`,
+                vaultEntryId: String(reversalEntry._id),
+                bostaRef,
+              },
+            },
+          });
+        } catch (err: any) {
+          // Log but don't block cancellation — reversal failure should be flagged manually
+          debugLog('transactions.service.ts:performCancellation', 'COD_REVERSAL_FAILED', {
+            txId: String(tx._id),
+            ref: tx.ref,
+            codAmount,
+            error: err.message,
+          });
+        }
+      }
+    }
+
     const vaultMethod = tx.depMethod || tx.payment || 'كاش';
     if (tx.type === 'مشتريات') {
       // Calculate total actually paid = total - remaining at time of cancel
@@ -813,6 +878,21 @@ export class TransactionsService {
     });
     // #endregion
     this.emit('tx:cancelled', { tx: saved, by: cancelledBy });
+
+    // ── إلغاء الطلب في شوبيفاي تلقائياً ──────────────────────────────────────
+    const shopifyOrderId = (saved as any).shopifyOrderId || '';
+    if (shopifyOrderId && saved.type === 'مبيعات') {
+      this.shopifyAdmin.cancelOrder(shopifyOrderId, 'other', false)
+        .then(r => {
+          if (r.success) {
+            this.logger.log(`Shopify order ${shopifyOrderId} cancelled (tx cancel)`);
+          } else {
+            this.logger.warn(`Shopify cancel skipped for ${shopifyOrderId}: ${r.error}`);
+          }
+        })
+        .catch(e => this.logger.error(`Shopify cancel error for ${shopifyOrderId}: ${e.message}`));
+    }
+
     this.emit('inventory:changed', {
       reason: 'tx:cancelled',
       txId: String(saved._id),

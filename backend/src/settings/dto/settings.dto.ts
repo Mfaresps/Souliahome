@@ -170,6 +170,14 @@ export class UpdateSettingsDto {
 
   @IsString()
   @IsOptional()
+  readonly defaultDepMethod?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly defaultShipCo?: string;
+
+  @IsString()
+  @IsOptional()
   readonly printPolicySales?: string;
 
   @IsString()
@@ -192,4 +200,9 @@ export class UpdateSettingsDto {
   @IsArray()
   @IsOptional()
   readonly discountCodes?: DiscountCodeDto[];
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly codCollectionThreshold?: number;
 }

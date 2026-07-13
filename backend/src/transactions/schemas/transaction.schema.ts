@@ -311,6 +311,91 @@ export class Transaction {
   /** Full Bosta API response payload — for audit / debugging */
   @Prop({ type: Object, default: null })
   bostaRawResponse: Record<string, unknown> | null;
+
+  // ── COD (Cash-on-Delivery) Collection Tracking ─────────────────────────────
+
+  /**
+   * Granular Bosta shipping status — separate from bostaStatus (raw API code).
+   * Values: Created | PickedUp | InTransit | OutForDelivery | Delivered | Returned | Cancelled
+   * Set on every syncStatus call so the UI can show a progress timeline.
+   */
+  @Prop({ default: '' })
+  bostaShippingStatus: string;
+
+  /**
+   * COD payment collection status — independent of shipping delivery status.
+   * Shipping DELIVERED does NOT automatically advance this to Collected.
+   *
+   * Values:
+   *   ''                     – not a COD order (prepaid / no COD amount)
+   *   'PendingPayment'       – order not yet delivered (deposit paid / awaiting delivery)
+   *   'DepositPaid'          – partial deposit paid, rest COD
+   *   'CODWaitingCollection' – delivered by Bosta, employee must confirm cash receipt
+   *   'CollectionProcessing' – transient atomic lock held during confirmCodCollection();
+   *                            reverted to CODWaitingCollection on vault failure so employee can retry
+   *   'Collected'            – employee confirmed receiving COD cash; vault income entry created
+   *   'FailedCollection'     – collection attempt failed (shipment returned or cancelled)
+   *   'ReversedCollection'   – previously Collected COD was reversed because the transaction
+   *                            was cancelled; a negative vault entry offsets the original income
+   */
+  @Prop({ default: '' })
+  codCollectionStatus: string;
+
+  /** ISO timestamp when COD was confirmed as collected */
+  @Prop({ default: '' })
+  codCollectedAt: string;
+
+  /** Employee who confirmed the COD collection */
+  @Prop({ default: '' })
+  codCollectedBy: string;
+
+  /** Payment method used for COD collection (كاش / فودافون كاش / Instapay / تحويل بنكي) */
+  @Prop({ default: '' })
+  codCollectionMethod: string;
+
+  /** Vault entry ID created when COD was confirmed — used for audit trail linking */
+  @Prop({ default: '' })
+  codVaultEntryId: string;
+
+  /**
+   * Immutable snapshot of the COD amount sent to Bosta at shipment creation.
+   * Set once in createOrder and never changed — used as the canonical collection amount.
+   * Prevents drift if `remaining` is later edited between delivery and collection.
+   */
+  @Prop({ default: 0 })
+  bostaOriginalCod: number;
+
+  /** Amount actually collected (stored for reversal reference after remaining is zeroed) */
+  @Prop({ default: 0 })
+  codCollectedAmount: number;
+
+  /** Vault entry ID for the COD reversal, if a collected COD was reversed on cancellation */
+  @Prop({ default: '' })
+  codReversalVaultEntryId: string;
+
+  /** ISO timestamp when COD collection was reversed */
+  @Prop({ default: '' })
+  codReversedAt: string;
+
+  /** Operator who reversed the COD collection */
+  @Prop({ default: '' })
+  codReversedBy: string;
+
+  /**
+   * Full immutable audit log of every COD collection action.
+   * Each entry records who did what and when — never deleted or mutated.
+   */
+  @Prop({ type: [Object], default: [] })
+  codCollectionHistory: Array<{
+    action: string;        // 'confirmed' | 'reversed' | 'vault_error' | 'failed' | 'note_added'
+    by: string;            // employee username
+    at: string;            // ISO timestamp
+    amount: number;        // amount collected (negative for reversals)
+    method: string;        // payment method
+    note?: string;         // optional free-text
+    vaultEntryId?: string; // linked vault entry
+    bostaRef?: string;     // Bosta tracking/order reference for traceability
+  }>;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
