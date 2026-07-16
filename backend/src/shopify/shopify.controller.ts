@@ -5,6 +5,7 @@ import {
   Patch,
   Param,
   Body,
+  Query,
   Headers,
   Req,
   HttpCode,
@@ -66,6 +67,32 @@ export class ShopifyController {
   @UseGuards(JwtAuthGuard)
   async getAll() {
     return this.shopifyService.getAllOrders();
+  }
+
+  // جلب أوردرات قديمة مباشرة من Shopify (للاستيراد اليدوي)
+  @Get('remote-orders')
+  @UseGuards(JwtAuthGuard)
+  async fetchRemoteOrders(
+    @Query('limit') limit?: string,
+    @Query('status') status?: 'open' | 'closed' | 'cancelled' | 'any',
+    @Query('createdAtMin') createdAtMin?: string,
+    @Query('createdAtMax') createdAtMax?: string,
+    @Query('name') name?: string,
+  ) {
+    return this.shopifyService.fetchRemoteOrders({
+      limit: limit ? Number(limit) : undefined,
+      status,
+      createdAtMin,
+      createdAtMax,
+      name,
+    });
+  }
+
+  // استيراد أوردر قديم محدد من Shopify (يدخل بحالة pending لانتظار موافقة الأدمن)
+  @Post('remote-orders/:shopifyId/import')
+  @UseGuards(JwtAuthGuard)
+  async importRemoteOrder(@Param('shopifyId') shopifyId: string) {
+    return this.shopifyService.importOrderById(shopifyId);
   }
 
   // قبول أوردر

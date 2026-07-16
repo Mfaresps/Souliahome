@@ -217,6 +217,68 @@ export class ShopifyAdminService {
     }
   }
 
+  // ── List orders from Shopify (for importing old/historical orders) ─────────
+  async listOrders(params: {
+    limit?: number;
+    sinceId?: string;
+    status?: 'open' | 'closed' | 'cancelled' | 'any';
+    createdAtMin?: string;
+    createdAtMax?: string;
+    name?: string; // order number/name search e.g. "1023" or "#1023"
+  } = {}): Promise<{ success: boolean; orders?: any[]; error?: string }> {
+    const cfg = this.getConfig();
+    if (!cfg) {
+      return { success: false, error: 'Shopify Admin API غير مضبوط' };
+    }
+
+    try {
+      const query = new URLSearchParams();
+      query.set('limit', String(params.limit || 50));
+      query.set('status', params.status || 'any');
+      if (params.sinceId) query.set('since_id', params.sinceId);
+      if (params.createdAtMin) query.set('created_at_min', params.createdAtMin);
+      if (params.createdAtMax) query.set('created_at_max', params.createdAtMax);
+
+      // Shopify order search by name isn't supported on the standard orders.json
+      // list endpoint, so when a name/number is given we fetch a larger page and
+      // filter client-side.
+      if (params.name) query.set('limit', '250');
+
+      const res = await this.request<any>('GET', `/orders.json?${query.toString()}`, undefined, cfg);
+      let orders: any[] = res.orders || [];
+
+      if (params.name) {
+        const needle = params.name.replace(/^#/, '').trim().toLowerCase();
+        orders = orders.filter((o: any) => {
+          const name = String(o.name || '').replace(/^#/, '').toLowerCase();
+          const num = String(o.order_number || '');
+          return name.includes(needle) || num.includes(needle);
+        });
+      }
+
+      return { success: true, orders };
+    } catch (err: any) {
+      this.logger.error(`Shopify listOrders failed: ${err.message}`);
+      return { success: false, error: err.message };
+    }
+  }
+
+  // ── Get a single order by its Shopify ID ────────────────────────────────────
+  async getOrder(shopifyOrderId: string): Promise<{ success: boolean; order?: any; error?: string }> {
+    const cfg = this.getConfig();
+    if (!cfg) {
+      return { success: false, error: 'Shopify Admin API غير مضبوط' };
+    }
+
+    try {
+      const res = await this.request<any>('GET', `/orders/${shopifyOrderId}.json`, undefined, cfg);
+      return { success: true, order: res.order };
+    } catch (err: any) {
+      this.logger.error(`Shopify getOrder failed for ${shopifyOrderId}: ${err.message}`);
+      return { success: false, error: err.message };
+    }
+  }
+
   isConfigured(): boolean {
     return !!this.getConfig();
   }

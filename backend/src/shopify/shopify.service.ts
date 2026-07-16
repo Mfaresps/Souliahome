@@ -17,6 +17,7 @@ import {
 import { VaultService } from '../vault/vault.service';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { normalizeCity, cityToShipZone } from '../shared/normalize-city.util';
+import { ShopifyAdminService } from './shopify-admin.service';
 
 @Injectable()
 export class ShopifyService {
@@ -31,6 +32,7 @@ export class ShopifyService {
     private readonly shopifyOrderModel: Model<ShopifyOrderDocument>,
     private readonly vaultService: VaultService,
     private readonly presence: PresenceGateway,
+    private readonly shopifyAdminService: ShopifyAdminService,
   ) {}
 
   private emit(event: string, payload: unknown): void {
@@ -124,6 +126,47 @@ export class ShopifyService {
       this.logger.error(`❌ خطأ: ${err.message}`);
       return { saved: false, reason: err.message };
     }
+  }
+
+  // جلب أوردرات قديمة من Shopify مباشرة (Admin API) لعرضها واختيار ما يُستورد
+  async fetchRemoteOrders(params: {
+    limit?: number;
+    status?: 'open' | 'closed' | 'cancelled' | 'any';
+    createdAtMin?: string;
+    createdAtMax?: string;
+    name?: string;
+  }): Promise<{ success: boolean; orders?: any[]; error?: string }> {
+    const res = await this.shopifyAdminService.listOrders(params);
+    if (!res.success) return res;
+
+    const existingIds = new Set(
+      (await this.shopifyOrderModel.find({}, { shopifyId: 1 }).lean()).map((o: any) => o.shopifyId),
+    );
+
+    const orders = (res.orders || []).map((o: any) => ({
+      shopifyId: String(o.id),
+      name: o.name,
+      orderNumber: o.order_number,
+      createdAt: o.created_at,
+      client: [o.customer?.first_name, o.customer?.last_name].filter(Boolean).join(' ') || 'عميل Shopify',
+      phone: o.customer?.phone || o.shipping_address?.phone || '',
+      total: this.parsePrice(o.total_price),
+      financialStatus: o.financial_status || '',
+      fulfillmentStatus: o.fulfillment_status || '',
+      itemsCount: (o.line_items || []).length,
+      alreadyImported: existingIds.has(String(o.id)),
+    }));
+
+    return { success: true, orders };
+  }
+
+  // استيراد أوردر قديم محدد بالـ ID من Shopify (نفس مسار الأوردر الفوري: pending ثم موافقة الأدمن)
+  async importOrderById(shopifyOrderId: string): Promise<{ saved: boolean; id?: string; reason?: string }> {
+    const res = await this.shopifyAdminService.getOrder(shopifyOrderId);
+    if (!res.success || !res.order) {
+      return { saved: false, reason: res.error || 'تعذر جلب الأوردر من Shopify' };
+    }
+    return this.handleOrder(res.order);
   }
 
   // مزامنة تحديث الأوردر من Shopify (note + tags فقط)
