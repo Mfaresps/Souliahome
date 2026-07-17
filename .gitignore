@@ -5,3 +5,5 @@ dist/
 !.env.example
 *.log
 .DS_Store
+# machine-specific compose overrides (Mac dev points at host MongoDB; server must use its own)
+docker-compose.override.yml
