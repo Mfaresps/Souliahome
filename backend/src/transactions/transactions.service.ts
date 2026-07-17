@@ -2219,6 +2219,21 @@ export class TransactionsService {
         entityCtx,
         emp,
       );
+    } else if (tx.type === 'مرتجع مشتريات') {
+      const refundAmount = Number(tx.total) || 0;
+      if (refundAmount <= 0) {
+        return;
+      }
+      await this.vaultService.addSystemEntry(
+        refundAmount,
+        tx.depMethod || 'كاش',
+        `رد مرتجع مشتريات #${txRef} — ${tx.client || ''}`,
+        txDate,
+        'مرتجع مشتريات',
+        txRef,
+        entityCtx,
+        emp,
+      );
     }
   }
 
@@ -2315,6 +2330,18 @@ export class TransactionsService {
           refundAmount, // positive: reverses the negative refund entry
           tx.depMethod,
           `${reason} — عكس رد مرتجع #${txRef} — ${tx.client || ''}`,
+          today,
+          'تجميد',
+          txRef,
+        );
+      }
+    } else if (tx.type === 'مرتجع مشتريات') {
+      const refundAmount = Number(tx.total) || 0;
+      if (refundAmount > 0 && tx.depMethod) {
+        await this.vaultService.addSystemEntry(
+          -refundAmount, // negative: reverses the positive inflow entry
+          tx.depMethod,
+          `${reason} — عكس رد مرتجع مشتريات #${txRef} — ${tx.client || ''}`,
           today,
           'تجميد',
           txRef,

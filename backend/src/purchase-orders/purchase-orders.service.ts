@@ -196,7 +196,9 @@ export class PurchaseOrdersService {
     });
 
     const itemsTotal = sourceItems.reduce((s, i) => s + i.total, 0);
-    const deposit = dto.deposit ?? 0;
+    const discount = Math.max(0, Math.min(dto.discount ?? 0, itemsTotal));
+    const total = itemsTotal - discount;
+    const deposit = Math.min(dto.deposit ?? 0, total);
     const account = dto.depMethod || 'كاش';
     const today = new Date().toISOString().split('T')[0];
 
@@ -209,15 +211,16 @@ export class PurchaseOrdersService {
       notes: dto.notes || `محوّل من أمر شراء ${po.poNumber}`,
       items: sourceItems,
       itemsTotal,
-      total: itemsTotal,
-      discount: 0,
+      total,
+      discount,
       deposit,
-      remaining: Math.max(0, itemsTotal - deposit),
-      payStatus: deposit >= itemsTotal ? 'مكتمل' : 'معلق',
+      remaining: Math.max(0, total - deposit),
+      payStatus: deposit >= total ? 'مكتمل' : 'معلق',
       depMethod: account,
       payment: account,
       employee: dto.createdBy,
       purchaseOtpId: dto.purchaseOtpId || '',
+      invoiceImages: dto.invoiceImages || [],
     } as unknown as CreateTransactionDto;
 
     const tx = await this.transactionsService.create(txDto, callerRole);

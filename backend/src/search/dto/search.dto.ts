@@ -8,7 +8,7 @@ export class SearchQueryDto {
 
 export interface SearchResultItem {
   readonly id: string;
-  readonly type: 'product' | 'order' | 'customer' | 'supplier';
+  readonly type: 'product' | 'order' | 'customer' | 'supplier' | 'complaint';
   readonly title: string;
   readonly subtitle: string;
   readonly icon: string;

@@ -687,10 +687,13 @@ body.dark-mode .settings-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.2)}
 }
 #header{position:fixed;top:0;right:0;left:0;height:var(--header-h);background:#f5f7f6;border-bottom:1px solid #dde6e0;color:#1a2e22;display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:100;gap:16px;box-shadow:0 1px 8px rgba(0,0,0,.07)}
 body.dark-mode #header{background:#161d18;border-bottom-color:#2a3d2e;color:#e8f5ee;box-shadow:0 1px 8px rgba(0,0,0,.3)}
-#header .logo{display:inline-flex;align-items:center;cursor:pointer;user-select:none;line-height:1}
+#header .logo{display:inline-flex;flex-direction:row-reverse;align-items:center;cursor:pointer;user-select:none;line-height:1}
 #header .logo img{height:28px;width:auto;display:block;transition:filter .22s ease,opacity .22s ease;filter:invert(27%) sepia(40%) saturate(600%) hue-rotate(110deg) brightness(60%) contrast(110%)}
 body.dark-mode #header .logo img{filter:invert(75%) sepia(35%) saturate(400%) hue-rotate(90deg) brightness(115%) contrast(100%)}
 #header .logo:hover img{opacity:.75}
+#header .logo .logo-tag{direction:ltr;unicode-bidi:isolate;font-size:9px;font-weight:700;letter-spacing:.6px;color:var(--muted,#8a97a8);margin-left:10px;padding-left:10px;border-left:1px solid var(--border,#dde3ea);text-transform:uppercase;white-space:nowrap;font-family:'Segoe UI',Tahoma,Arial,sans-serif;display:inline-block;opacity:0;transform:translateX(6px);animation:logoTagIn .5s ease .35s forwards}
+body.dark-mode #header .logo .logo-tag{color:#8b98a8;border-left-color:#3a4451}
+@keyframes logoTagIn{from{opacity:0;transform:translateX(6px)}to{opacity:1;transform:translateX(0)}}
 #header #header-date{font-size:.78rem;color:#3a5c45;font-weight:500;white-space:nowrap}
 body.dark-mode #header #header-date{color:#7faa8e}
 /* greeting fades out, date stays */
@@ -2429,6 +2432,129 @@ body.dark-mode .adb-search-wrap input,body.dark-mode .adb-range{background:var(-
 .kpi-strip .kpi[data-tooltip]:last-child:hover::after{left:auto;right:0;transform:none}
 .kpi-strip .kpi[data-tooltip]:last-child:hover::before{left:auto;right:24px;transform:none}
 /* ════════════════════════════════════════════════════════════
+   COMPLAINTS PAGE (خدمة العملاء) — Stat cards, filters, tabs, table/cards
+   ════════════════════════════════════════════════════════════ */
+.cmp-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-bottom:16px}
+.cmp-stats-grid .cmp-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px;transition:transform .15s,box-shadow .15s}
+.cmp-stats-grid .cmp-stat:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.cmp-stats-grid .cmp-stat .cmp-stat-icon{flex-shrink:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.cmp-stats-grid .cmp-stat .cmp-stat-icon svg{width:19px;height:19px}
+.cmp-stats-grid .cmp-stat .cmp-stat-val{font-size:1.25rem;font-weight:700;line-height:1.1;color:var(--text);font-variant-numeric:tabular-nums}
+.cmp-stats-grid .cmp-stat .cmp-stat-label{font-size:.72rem;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmp-stats-grid .cmp-stat.st-blue .cmp-stat-icon{background:#dbeafe;color:#1d4ed8}
+.cmp-stats-grid .cmp-stat.st-orange .cmp-stat-icon{background:#fff7ed;color:#c2410c}
+.cmp-stats-grid .cmp-stat.st-green .cmp-stat-icon{background:#dcfce7;color:#15803d}
+.cmp-stats-grid .cmp-stat.st-red .cmp-stat-icon{background:#fee2e2;color:#dc2626}
+.cmp-stats-grid .cmp-stat.st-purple .cmp-stat-icon{background:#f3e8ff;color:#6d28d9}
+body.dark-mode .cmp-stats-grid .cmp-stat.st-blue .cmp-stat-icon{background:#172554;color:#60a5fa}
+body.dark-mode .cmp-stats-grid .cmp-stat.st-orange .cmp-stat-icon{background:#431407;color:#fb923c}
+body.dark-mode .cmp-stats-grid .cmp-stat.st-green .cmp-stat-icon{background:#052e16;color:#4ade80}
+body.dark-mode .cmp-stats-grid .cmp-stat.st-red .cmp-stat-icon{background:#450a0a;color:#f87171}
+body.dark-mode .cmp-stats-grid .cmp-stat.st-purple .cmp-stat-icon{background:#2e1065;color:#c084fc}
+
+.cmp-filter-bar{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.cmp-filter-field{display:flex;flex-direction:column;gap:4px}
+.cmp-filter-field label{font-size:.68rem;color:var(--muted);font-weight:600;padding:0 2px}
+.cmp-filter-field select,.cmp-filter-field input{min-width:120px}
+.cmp-filter-search{flex:1;min-width:180px}
+.cmp-filter-search input{width:100%}
+.cmp-filter-clear{height:34px;font-size:.78rem;padding:0 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:5px;align-self:flex-end}
+.cmp-filter-clear:hover{background:var(--bg-alt);color:var(--text)}
+
+.cmp-status-tabs{margin-bottom:14px}
+.cmp-status-tabs .s-tab{gap:6px}
+.s-tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;font-size:.68rem;font-weight:700;background:var(--bg-alt);color:var(--muted)}
+.s-tab-count.cnt-orange{background:#fff7ed;color:#c2410c}
+.s-tab-count.cnt-green{background:#dcfce7;color:#15803d}
+.s-tab-count.cnt-red{background:#fee2e2;color:#dc2626}
+.s-tab-count.cnt-blue{background:#dbeafe;color:#1d4ed8}
+body.dark-mode .s-tab-count.cnt-orange{background:#431407;color:#fb923c}
+body.dark-mode .s-tab-count.cnt-green{background:#052e16;color:#4ade80}
+body.dark-mode .s-tab-count.cnt-red{background:#450a0a;color:#f87171}
+body.dark-mode .s-tab-count.cnt-blue{background:#172554;color:#60a5fa}
+
+.cmp-table-wrap{background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.cmp-table td,.cmp-table th{vertical-align:middle}
+.cmp-priority{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;font-weight:600;padding:3px 9px;border-radius:20px}
+.cmp-priority.pr-high{background:#fee2e2;color:#dc2626}
+.cmp-priority.pr-medium{background:#fff7ed;color:#c2410c}
+.cmp-priority.pr-low{background:#dcfce7;color:#15803d}
+.cmp-priority .pr-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+body.dark-mode .cmp-priority.pr-high{background:#450a0a;color:#f87171}
+body.dark-mode .cmp-priority.pr-medium{background:#431407;color:#fb923c}
+body.dark-mode .cmp-priority.pr-low{background:#052e16;color:#4ade80}
+
+.cmp-no-wrap{display:inline-flex;align-items:center;gap:4px}
+.cmp-copy-btn{width:22px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--muted);cursor:pointer;flex-shrink:0;transition:all .15s}
+.cmp-copy-btn svg{width:12px;height:12px}
+.cmp-copy-btn:hover{background:var(--primary-pale);color:var(--accent);border-color:var(--accent)}
+.cmp-copy-btn.copied{background:#dcfce7;color:#15803d;border-color:#15803d}
+body.dark-mode .cmp-copy-btn.copied{background:#052e16;color:#4ade80;border-color:#4ade80}
+
+@keyframes cmpHighlightPulse{
+  0%,100%{background:transparent}
+  15%,60%{background:rgba(21,128,61,.14)}
+}
+#cmp-tbody tr.cmp-highlight{animation:cmpHighlightPulse 1.3s ease-in-out 2;outline:2px solid var(--accent);outline-offset:-2px}
+.cmp-card.cmp-highlight{animation:cmpHighlightPulse 1.3s ease-in-out 2;outline:2px solid var(--accent);outline-offset:-2px;border-radius:12px}
+
+.cmp-progress-select{font-size:.75rem;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;max-width:170px}
+.cmp-progress-select.pg-review{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+.cmp-progress-select.pg-progress{background:#fff7ed;color:#c2410c;border-color:#fed7aa}
+.cmp-progress-select.pg-waiting{background:#f3e8ff;color:#6d28d9;border-color:#ddd6fe}
+.cmp-progress-select.pg-done{background:#dcfce7;color:#15803d;border-color:#bbf7d0}
+body.dark-mode .cmp-progress-select.pg-review{background:#172554;color:#60a5fa;border-color:#1e3a8a}
+body.dark-mode .cmp-progress-select.pg-progress{background:#431407;color:#fb923c;border-color:#7c2d12}
+body.dark-mode .cmp-progress-select.pg-waiting{background:#2e1065;color:#c084fc;border-color:#4c1d95}
+body.dark-mode .cmp-progress-select.pg-done{background:#052e16;color:#4ade80;border-color:#14532d}
+
+.cmp-notes-btn{position:relative;width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s}
+.cmp-notes-btn svg{width:15px;height:15px}
+.cmp-notes-btn:hover{background:var(--primary-pale);color:var(--accent);border-color:var(--accent)}
+.cmp-notes-btn.has-notes{color:var(--accent);border-color:var(--accent)}
+.cmp-notes-count{position:absolute;top:-6px;left:-6px;background:var(--accent);color:#fff;font-size:.62rem;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+
+.cmp-emp-tag{font-size:.75rem;color:var(--muted);white-space:nowrap}
+
+.cmp-notes-list{max-height:320px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px}
+.cmp-note-item{background:var(--bg-alt);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.cmp-note-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;gap:8px}
+.cmp-note-author{font-weight:700;font-size:.78rem;color:var(--text)}
+.cmp-note-date{font-size:.68rem;color:var(--muted);white-space:nowrap}
+.cmp-note-text{font-size:.84rem;color:var(--text);white-space:pre-wrap;line-height:1.5}
+.cmp-note-actions{display:flex;gap:8px;margin-top:6px}
+.cmp-note-action-btn{background:none;border:none;color:var(--accent);font-size:.72rem;font-weight:600;cursor:pointer;padding:2px 4px}
+.cmp-note-action-btn.danger{color:var(--red)}
+.cmp-note-action-btn:hover{text-decoration:underline}
+.cmp-note-edit textarea{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:.84rem;background:var(--surface);color:var(--text);resize:vertical}
+.cmp-notes-empty{text-align:center;color:var(--muted);font-size:.82rem;padding:20px 0}
+.cmp-note-add{display:flex;flex-direction:column;gap:8px}
+.cmp-note-add textarea{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:.84rem;background:var(--surface);color:var(--text);resize:vertical}
+.cmp-note-add .btn{align-self:flex-end}
+
+.cmp-empty{text-align:center;padding:56px 20px;color:var(--muted)}
+.cmp-empty svg{width:52px;height:52px;opacity:.35;margin-bottom:14px}
+.cmp-empty .cmp-empty-title{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.cmp-empty .cmp-empty-sub{font-size:.8rem;color:var(--muted)}
+
+/* Cards (mobile) — hidden by default, table hidden on mobile */
+.cmp-cards{display:none;flex-direction:column;gap:10px}
+.cmp-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px}
+.cmp-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.cmp-card-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.82rem;padding:5px 0;border-top:1px solid var(--border)}
+.cmp-card-row:first-of-type{border-top:none}
+.cmp-card-row .cmp-card-label{color:var(--muted);font-size:.72rem;display:flex;align-items:center;gap:5px}
+.cmp-card-desc{font-size:.8rem;color:var(--text);margin:8px 0;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.cmp-card-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+
+@media(max-width:768px){
+  .cmp-table-wrap{display:none}
+  .cmp-cards{display:flex}
+  .cmp-filter-bar{padding:10px}
+  .cmp-filter-field select,.cmp-filter-field input{min-width:100px}
+}
+
+/* ════════════════════════════════════════════════════════════
    INVENTORY PAGE ENHANCEMENTS
    ════════════════════════════════════════════════════════════ */
 #page-inventory .inv-kpi-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:16px;padding:0 0 8px 0}
@@ -2832,6 +2958,9 @@ body.dark-mode .coll-badge-out{background:rgba(220,38,38,.15);color:#f87171}
 #vault-log-mobile-list{display:none}
 /* ── View Mode Toggle ── */
 .mov-view-toggle{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.bulk-ref-check-btn{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:#fff;border:1px solid transparent;box-shadow:0 2px 8px rgba(0,49,30,.28);transition:filter .15s,box-shadow .15s,transform .12s}
+.bulk-ref-check-btn:hover{filter:brightness(1.08);box-shadow:0 3px 12px rgba(0,49,30,.36);transform:translateY(-1px)}
+.bulk-ref-check-btn:active{transform:translateY(0)}
 @media(max-width:768px){.mov-view-toggle{display:none}#mov-cols-btn{display:none!important}}
 .mov-view-btn{display:flex;align-items:center;justify-content:center;padding:7px 12px;border:none;background:none;cursor:pointer;color:var(--muted);transition:background .18s,color .18s,transform .12s;position:relative}
 .mov-view-btn:hover{background:var(--primary-pale);color:var(--accent)}
@@ -2933,6 +3062,7 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
   #header-date{display:none!important}
   #header-name{display:none!important}
   #header .logo img{height:22px}
+  #header .logo .logo-tag{display:none}
   #header .header-actions{gap:6px}
   #header button[onclick*="toggleCalc"]{display:none!important}
   #header .header-lang-btn,#header #header-theme-btn{width:30px;height:30px}
@@ -3882,6 +4012,14 @@ body.dark-mode .mov-type-inline.t-exchange{background:#2e1065;color:#c4b5fd;bord
 .fx-date-custom-row input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(0,107,66,.1)}
 .fx-date-custom-row input::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.6;transition:opacity .15s}
 .fx-date-custom-row input:hover::-webkit-calendar-picker-indicator{opacity:1}
+
+/* Collapsed date filter — shows only the calendar icon until focused/has a value */
+input[type="date"].date-filter-icon{width:34px!important;min-width:34px!important;padding:0!important;border:1.5px solid transparent;background:transparent;color:transparent;cursor:pointer;transition:width .15s ease,border-color .15s ease,background .15s ease,padding .15s ease;flex:none!important;box-sizing:border-box}
+input[type="date"].date-filter-icon::-webkit-calendar-picker-indicator{opacity:.65;cursor:pointer;margin:0}
+input[type="date"].date-filter-icon:hover::-webkit-calendar-picker-indicator{opacity:1}
+input[type="date"].date-filter-icon:focus,
+input[type="date"].date-filter-icon.has-value{width:140px!important;min-width:140px!important;padding:0 8px!important;border-color:var(--border);background:var(--bg);color:var(--text)}
+input[type="date"].date-filter-icon:focus{outline:none;border-color:var(--primary)}
 
 /* Movements toolbar — refined desktop + mobile */
 #mov-toolbar{padding:10px 12px}
@@ -5591,7 +5729,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 <header id="header">
 <div class="flex gap-8">
 <button class="hamburger" id="hamburger-btn" onclick="toggleSidebar()" style="display:inline-flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
-<div class="logo" onclick="goHomeFromLogo()" title="الرئيسية"><img src="/soulia-logo.svg" alt="Soulia" draggable="false"></div>
+<div class="logo" onclick="goHomeFromLogo()" title="الرئيسية"><img src="/soulia-logo.svg" alt="Soulia" draggable="false"><span class="logo-tag">ERP SYSTEM</span></div>
 <span id="header-date"></span>
 </div>
 <div class="header-search">
@@ -6020,7 +6158,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <div style="padding:10px 14px 0;display:flex;align-items:center;gap:8px">
         <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="2" width="12" height="12" rx="2"/><line x1="2" y1="6" x2="14" y2="6"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/></svg>
         <label for="tx-transaction-date" style="font-size:.75rem;color:var(--muted);font-weight:600;white-space:nowrap;flex-shrink:0">تاريخ الطلب</label>
-        <input type="date" id="tx-transaction-date" value="${todayLocalISO()}" style="flex:1;border:none;background:transparent;font-size:.82rem;color:var(--text);direction:ltr;text-align:left;cursor:pointer;outline:none;padding:2px 0">
+        <input type="date" id="tx-transaction-date" style="flex:1;border:none;background:transparent;font-size:.82rem;color:var(--text);direction:ltr;text-align:left;cursor:pointer;outline:none;padding:2px 0">
       </div>
       <div class="tx-inv-note-wrap">
         <div class="tx-inv-note-label">
@@ -6668,19 +6806,21 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <div class="flex gap-8" style="flex-wrap:wrap;align-items:center">
       <!-- View Mode Toggle -->
       <div class="mov-view-toggle" id="mov-view-toggle">
-        <button class="mov-view-btn active" id="mov-view-list-btn" onclick="setMovViewMode('list')" title="عرض قائمة" aria-label="عرض قائمة" data-i18n="movViewList">
+        <button class="mov-view-btn active" id="mov-view-list-btn" onclick="setMovViewMode('list')" title="عرض قائمة" aria-label="عرض قائمة" data-i18n-title="movViewList">
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
-        <button class="mov-view-btn" id="mov-view-grid-btn" onclick="setMovViewMode('grid')" title="عرض بطاقات" aria-label="عرض بطاقات" data-i18n="movViewCard">
+        <button class="mov-view-btn" id="mov-view-grid-btn" onclick="setMovViewMode('grid')" title="عرض بطاقات" aria-label="عرض بطاقات" data-i18n-title="movViewCard">
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
         </button>
       </div>
-      <button class="mov-view-btn" id="mov-cols-btn" type="button" onclick="toggleMovColsMenu(event)" title="الأعمدة" aria-label="إعدادات الأعمدة" data-i18n="movColumns" style="border:1px solid var(--border);border-radius:8px;padding:6px 10px;background:var(--surface);cursor:pointer">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+      <button class="mov-view-btn" id="mov-cols-btn" type="button" onclick="toggleMovColsMenu(event)" title="الأعمدة" aria-label="إعدادات الأعمدة" data-i18n-title="movColumns" style="border:1px solid var(--border);border-radius:8px;padding:6px 10px;background:var(--surface);cursor:pointer">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16M15 4v16" stroke-width="1.4" opacity=".55"/><circle cx="6" cy="8.4" r=".9" fill="currentColor" stroke="none"/><circle cx="12" cy="8.4" r=".9" fill="currentColor" stroke="none"/><circle cx="18" cy="8.4" r=".9" fill="currentColor" stroke="none"/></svg>
       </button>
-      <button class="btn btn-outline btn-sm" onclick="exportMovementsExcel()" style="display:flex;align-items:center;gap:6px" data-i18n="exportExcel">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        تصدير Excel
+      <button class="mov-view-btn" onclick="exportMovementsExcel()" title="تصدير Excel" aria-label="تصدير Excel" data-i18n-title="exportExcel" style="border:1px solid var(--border);border-radius:8px;padding:6px 10px;background:var(--surface);cursor:pointer">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2.5H7a2 2 0 00-2 2v15a2 2 0 002 2h10a2 2 0 002-2V8.5L14 2.5z"/><path d="M14 2.5V7a1.5 1.5 0 001.5 1.5H19" opacity=".6"/><path d="M12 17v-6M12 17l-2.5-2.5M12 17l2.5-2.5" stroke-width="2"/></svg>
+      </button>
+      <button class="bulk-ref-check-btn" onclick="openBulkRefCheckModal()" title="فحص جماعي للمرجع" aria-label="فحص جماعي للمرجع" style="border-radius:8px;padding:6px 10px;cursor:pointer">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="13" height="17" rx="2" opacity=".55"/><path d="M8 8h5M8 11.5h3.2" stroke-width="1.5" opacity=".55"/><circle cx="16.5" cy="16.5" r="4.6" fill="rgba(255,255,255,.18)"/><circle cx="16.5" cy="16.5" r="4.6"/><path d="M14.6 16.6l1.35 1.35 2.55-2.75" stroke-width="2.1"/></svg>
       </button>
       <button class="btn btn-outline btn-sm" id="mov-return-from-selection-btn" style="display:none" onclick="openMovementReturnShortcut()" data-i18n="returnSelected">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>
@@ -7011,9 +7151,9 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <button class="coll-filter-btn" id="coll-filter-today" onclick="setCollDateFilter('today',this)">اليوم</button>
       <button class="coll-filter-btn" id="coll-filter-month" onclick="setCollDateFilter('month',this)">هذا الشهر</button>
       <div class="coll-range-wrap">
-        <input type="date" id="coll-from" onchange="setCollDateFilter('range',null)" title="من تاريخ" />
+        <input type="date" id="coll-from" class="date-filter-icon" onchange="setCollDateFilter('range',null)" title="من تاريخ" />
         <span style="color:var(--muted);font-size:.8rem">—</span>
-        <input type="date" id="coll-to" onchange="setCollDateFilter('range',null)" title="إلى تاريخ" />
+        <input type="date" id="coll-to" class="date-filter-icon" onchange="setCollDateFilter('range',null)" title="إلى تاريخ" />
       </div>
       <button class="coll-filter-btn coll-reset-btn" onclick="resetCollFilters()">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
@@ -7216,13 +7356,13 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         <option value="">كل الموردين</option>
       </select>
     </div>
-    <div style="min-width:130px">
+    <div>
       <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:4px">من تاريخ</label>
-      <input type="date" id="splog-from" onchange="renderSuppliersPaymentsLog()" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:.83rem">
+      <input type="date" id="splog-from" class="date-filter-icon" onchange="renderSuppliersPaymentsLog()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:.83rem">
     </div>
-    <div style="min-width:130px">
+    <div>
       <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:4px">إلى تاريخ</label>
-      <input type="date" id="splog-to" onchange="renderSuppliersPaymentsLog()" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:.83rem">
+      <input type="date" id="splog-to" class="date-filter-icon" onchange="renderSuppliersPaymentsLog()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:.83rem">
     </div>
     <div style="min-width:130px">
       <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:4px">طريقة الدفع</label>
@@ -7293,17 +7433,20 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <button class="btn btn-outline btn-sm" onclick="openSupplierModal(currentSupplierId)">تعديل البيانات</button>
     <button class="btn btn-outline btn-sm" id="sp-bulk-pay-btn" onclick="openBulkSupplierPayModal()" style="color:var(--red);border-color:rgba(220,38,38,.4)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg> سداد دفعة</button>
     <button class="btn btn-primary btn-sm" onclick="openCreatePoModal()">+ إنشاء أمر شراء</button>
+    <button class="btn btn-outline btn-sm" style="color:#ea580c;border-color:rgba(234,88,12,.4)" onclick="openCreateSupplierReturnModal()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> + إنشاء مرتجع مورد</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px" id="sp-kpi-strip"></div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="sp-tab-bar">
   <button class="tab-btn active" id="sp-tab-btn-invoices" onclick="setSpTab('invoices',this)">الفواتير</button>
   <button class="tab-btn" id="sp-tab-btn-pos" onclick="setSpTab('pos',this)">أوامر الشراء</button>
+  <button class="tab-btn" id="sp-tab-btn-sreturns" onclick="setSpTab('sreturns',this)">مرتجعات الموردين</button>
   <button class="tab-btn" id="sp-tab-btn-payments" onclick="setSpTab('payments',this)">سجل المدفوعات</button>
   <button class="tab-btn" id="sp-tab-btn-activity" onclick="setSpTab('activity',this)">سجل النشاط</button>
 </div>
 <div id="sp-panel-invoices"></div>
 <div id="sp-panel-pos" style="display:none"></div>
+<div id="sp-panel-sreturns" style="display:none"></div>
 <div id="sp-panel-payments" style="display:none"></div>
 <div id="sp-panel-activity" style="display:none"></div>
 </div>
@@ -7364,8 +7507,8 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <input type="text" id="exp-search" placeholder="بحث بالوصف أو رقم المصروف..." oninput="debouncedRenderExpenses()" class="exp-search-input">
     </div>
     <div class="exp-filters-row">
-      <input type="date" id="exp-from" title="من تاريخ" onchange="expPage=1;renderExpenses()" class="exp-filter-input">
-      <input type="date" id="exp-to" title="إلى تاريخ" onchange="expPage=1;renderExpenses()" class="exp-filter-input">
+      <input type="date" id="exp-from" title="من تاريخ" onchange="expPage=1;renderExpenses()" class="exp-filter-input date-filter-icon">
+      <input type="date" id="exp-to" title="إلى تاريخ" onchange="expPage=1;renderExpenses()" class="exp-filter-input date-filter-icon">
       <select id="exp-cat-filter" onchange="expPage=1;renderExpenses()" class="exp-filter-input">
         <option value="">كل الفئات</option>
         <option value="إيجارات">إيجارات</option>
@@ -7498,9 +7641,9 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <!-- Date range -->
     <div style="display:flex;align-items:center;gap:4px">
       <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <input type="date" id="fu-from" style="height:28px;font-size:.75rem;padding:0 6px;border:1px solid var(--border);border-radius:7px;background:var(--bg);width:120px" onchange="_fuFilterChange()">
+      <input type="date" id="fu-from" class="date-filter-icon" style="height:28px;font-size:.75rem;border:1px solid var(--border);border-radius:7px;background:var(--bg)" onchange="_fuFilterChange()">
       <span style="font-size:.72rem;color:var(--muted)">—</span>
-      <input type="date" id="fu-to" style="height:28px;font-size:.75rem;padding:0 6px;border:1px solid var(--border);border-radius:7px;background:var(--bg);width:120px" onchange="_fuFilterChange()">
+      <input type="date" id="fu-to" class="date-filter-icon" style="height:28px;font-size:.75rem;border:1px solid var(--border);border-radius:7px;background:var(--bg)" onchange="_fuFilterChange()">
     </div>
     <!-- Clear btn -->
     <button onclick="clearFuFilters()" title="مسح الفلاتر" style="height:28px;width:28px;padding:0;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -7552,63 +7695,109 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 ═══════════════════════════════════════ -->
 <div id="cmp-complaints-section" style="display:none;padding-top:20px">
 
-  <!-- KPI row -->
-  <div class="kpi-strip mb-20" id="cmp-kpi"></div>
+  <!-- Stat cards -->
+  <div class="cmp-stats-grid" id="cmp-kpi"></div>
 
   <!-- Filters -->
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-    <div style="position:relative;flex:1;min-width:160px">
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="cmp-search" placeholder="بحث..." style="width:100%;height:32px;font-size:.82rem;padding:2px 32px 2px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;background:var(--bg)" oninput="renderComplaints()">
+  <div class="cmp-filter-bar">
+    <div class="cmp-filter-field cmp-filter-search">
+      <label>بحث</label>
+      <div style="position:relative">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="cmp-search" placeholder="رقم الشكوى، العميل، الطلب..." style="width:100%;height:34px;font-size:.82rem;padding:2px 32px 2px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;background:var(--bg)" oninput="renderComplaints()">
+      </div>
     </div>
-    <select id="cmp-status-filter" style="height:32px;font-size:.82rem;padding:2px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);min-width:110px" onchange="renderComplaints()">
-      <option value="">كل الحالات</option>
-      <option value="معلق">معلق</option>
-      <option value="مقبول">مقبول</option>
-      <option value="مرفوض">مرفوض</option>
-    </select>
-    <select id="cmp-emp-filter" style="height:32px;font-size:.82rem;padding:2px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);min-width:120px" onchange="renderComplaints()"><option value="">كل الموظفين</option></select>
-    <input type="date" id="cmp-from" style="height:32px;font-size:.82rem;padding:2px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);width:130px" onchange="renderComplaints()">
-    <input type="date" id="cmp-to" style="height:32px;font-size:.82rem;padding:2px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);width:130px" onchange="renderComplaints()">
-    <select id="cmp-sort-order" style="height:32px;font-size:.82rem;padding:2px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);width:100px" onchange="renderComplaints()">
-      <option value="desc">الأحدث</option>
-      <option value="asc">الأقدم</option>
-    </select>
-    <button onclick="clearCmpFilters()" style="height:32px;font-size:.78rem;padding:0 12px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:5px">
+    <div class="cmp-filter-field">
+      <label>الحالة</label>
+      <select id="cmp-status-filter" style="height:34px;font-size:.82rem;padding:2px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg)" onchange="renderComplaints()">
+        <option value="">كل الحالات</option>
+        <option value="معلق">معلقة</option>
+        <option value="مقبول">مقبولة</option>
+        <option value="مرفوض">مرفوضة</option>
+      </select>
+    </div>
+    <div class="cmp-filter-field">
+      <label>الموظف</label>
+      <select id="cmp-emp-filter" style="height:34px;font-size:.82rem;padding:2px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg)" onchange="renderComplaints()"><option value="">كل الموظفين</option></select>
+    </div>
+    <div class="cmp-filter-field">
+      <label>الأولوية</label>
+      <select id="cmp-priority-filter" style="height:34px;font-size:.82rem;padding:2px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg)" onchange="renderComplaints()">
+        <option value="">كل الأولويات</option>
+        <option value="عالية">عالية 🔴</option>
+        <option value="متوسطة">متوسطة 🟠</option>
+        <option value="منخفضة">منخفضة 🟢</option>
+      </select>
+    </div>
+    <div class="cmp-filter-field">
+      <label>من تاريخ</label>
+      <input type="date" id="cmp-from" class="date-filter-icon" style="height:34px;font-size:.82rem;border:1px solid var(--border);border-radius:8px;background:var(--bg)" onchange="renderComplaints()">
+    </div>
+    <div class="cmp-filter-field">
+      <label>إلى تاريخ</label>
+      <input type="date" id="cmp-to" class="date-filter-icon" style="height:34px;font-size:.82rem;border:1px solid var(--border);border-radius:8px;background:var(--bg)" onchange="renderComplaints()">
+    </div>
+    <div class="cmp-filter-field">
+      <label>الترتيب</label>
+      <select id="cmp-sort-order" style="height:34px;font-size:.82rem;padding:2px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg)" onchange="renderComplaints()">
+        <option value="desc">الأحدث</option>
+        <option value="asc">الأقدم</option>
+      </select>
+    </div>
+    <button onclick="clearCmpFilters()" class="cmp-filter-clear" title="مسح الفلاتر">
       <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       مسح
     </button>
   </div>
 
   <!-- Sub-tabs -->
-  <div class="section-tab-bar" style="margin-bottom:14px">
-    <button class="s-tab active" id="cmp-tab-all" onclick="setCmpTab('all',this)">الكل</button>
-    <button class="s-tab" id="cmp-tab-pending" onclick="setCmpTab('معلق',this)">المعلقة</button>
-    <button class="s-tab" id="cmp-tab-accepted" onclick="setCmpTab('مقبول',this)">المقبولة</button>
-    <button class="s-tab" id="cmp-tab-rejected" onclick="setCmpTab('مرفوض',this)">المرفوضة</button>
-    <button class="s-tab" id="cmp-tab-followup" onclick="setCmpTab('followup',this)">المتابعة</button>
+  <div class="section-tab-bar cmp-status-tabs" id="cmp-status-tabs">
+    <button class="s-tab active" id="cmp-tab-all" onclick="setCmpTab('all',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      الكل <span class="s-tab-count" id="cmp-count-all">0</span>
+    </button>
+    <button class="s-tab" id="cmp-tab-pending" onclick="setCmpTab('معلق',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+      معلقة <span class="s-tab-count cnt-orange" id="cmp-count-pending">0</span>
+    </button>
+    <button class="s-tab" id="cmp-tab-accepted" onclick="setCmpTab('مقبول',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      مقبولة <span class="s-tab-count cnt-green" id="cmp-count-accepted">0</span>
+    </button>
+    <button class="s-tab" id="cmp-tab-rejected" onclick="setCmpTab('مرفوض',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      مرفوضة <span class="s-tab-count cnt-red" id="cmp-count-rejected">0</span>
+    </button>
+    <button class="s-tab" id="cmp-tab-followup" onclick="setCmpTab('followup',this)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      المتابعة <span class="s-tab-count cnt-blue" id="cmp-count-followup">0</span>
+    </button>
   </div>
 
-  <!-- Table -->
-  <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+  <!-- Table (desktop/tablet) -->
+  <div class="cmp-table-wrap">
   <div class="overflow-x">
-    <table id="cmp-table">
+    <table id="cmp-table" class="cmp-table">
       <thead><tr>
         <th data-i18n="colComplaintNo">رقم الشكوى</th>
-        <th data-i18n="colEmployee">الموظف</th>
+        <th data-i18n="colSubmittedAt">تاريخ التقديم</th>
         <th data-i18n="client">العميل</th>
         <th data-i18n="colOrder">الطلب</th>
-        <th data-i18n="colDescription">الوصف</th>
+        <th data-i18n="colProgress">حالة سير العمل</th>
+        <th data-i18n="colNotes">الملاحظات</th>
         <th data-i18n="status">الحالة</th>
-        <th data-i18n="colAction">الإجراء</th>
-        <th data-i18n="colSubmittedAt">تاريخ التقديم</th>
+        <th data-i18n="colPriority">الأولوية</th>
         <th data-i18n="colCustRating">تقييم العميل</th>
-        <th data-i18n="colActions">إجراءات</th>
+        <th data-i18n="colEmployee">الموظف</th>
+        <th data-i18n="colActions" style="text-align:center">إجراءات</th>
       </tr></thead>
       <tbody id="cmp-tbody"></tbody>
     </table>
   </div>
   </div>
+
+  <!-- Cards (mobile) -->
+  <div id="cmp-cards" class="cmp-cards"></div>
 
   <!-- Negative feedback alert -->
   <div id="cmp-neg-alert" style="display:none;margin-top:16px"></div>
@@ -7725,8 +7914,8 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 </div>
 <div class="filter-card" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
 <div style="display:flex;flex-direction:column;gap:4px"><label class="filter-label">تاريخ الطلب</label><div class="flex gap-8">
-<input type="date" id="appr-from" style="width:140px" onchange="renderApprovals()"><input type="date" id="appr-to" style="width:140px" onchange="renderApprovals()"></div></div>
-<div style="display:flex;flex-direction:column;gap:4px"><label class="filter-label">تاريخ الموافقة</label><div class="flex gap-8"><input type="date" id="appr-act-from" style="width:140px" onchange="renderApprovals()"><input type="date" id="appr-act-to" style="width:140px" onchange="renderApprovals()"></div></div>
+<input type="date" id="appr-from" class="date-filter-icon" onchange="renderApprovals()"><input type="date" id="appr-to" class="date-filter-icon" onchange="renderApprovals()"></div></div>
+<div style="display:flex;flex-direction:column;gap:4px"><label class="filter-label">تاريخ الموافقة</label><div class="flex gap-8"><input type="date" id="appr-act-from" class="date-filter-icon" onchange="renderApprovals()"><input type="date" id="appr-act-to" class="date-filter-icon" onchange="renderApprovals()"></div></div>
 <button class="btn btn-outline btn-sm" onclick="clearApprFilters()">مسح الفلاتر</button>
 </div>
 <div class="kpi-strip" id="appr-kpi" style="grid-template-columns:repeat(auto-fit,minmax(128px,1fr))"></div>
@@ -7757,8 +7946,8 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <option value="Instapay">Instapay</option>
     <option value="تحويل بنكي">تحويل بنكي</option>
   </select>
-  <input type="date" id="hub-from" style="width:145px" onchange="renderHistoryHub()" placeholder="من تاريخ">
-  <input type="date" id="hub-to" style="width:145px" onchange="renderHistoryHub()" placeholder="إلى تاريخ">
+  <input type="date" id="hub-from" class="date-filter-icon" onchange="renderHistoryHub()" title="من تاريخ">
+  <input type="date" id="hub-to" class="date-filter-icon" onchange="renderHistoryHub()" title="إلى تاريخ">
   <input type="text" id="hub-search" style="width:180px" placeholder="بحث بالمرجع أو العميل..." oninput="renderHistoryHub()">
   <button class="btn btn-outline btn-sm" onclick="clearHubFilters()">مسح الفلاتر</button>
 </div>
@@ -7838,11 +8027,11 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     </div>
     <div>
       <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px">من تاريخ</label>
-      <input type="date" id="otp-audit-from" style="width:100%;font-size:.8rem" onchange="renderOtpAudit()">
+      <input type="date" id="otp-audit-from" class="date-filter-icon" style="font-size:.8rem" onchange="renderOtpAudit()">
     </div>
     <div>
       <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px">إلى تاريخ</label>
-      <input type="date" id="otp-audit-to" style="width:100%;font-size:.8rem" onchange="renderOtpAudit()">
+      <input type="date" id="otp-audit-to" class="date-filter-icon" style="font-size:.8rem" onchange="renderOtpAudit()">
     </div>
     <div>
       <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px">الموظف</label>
@@ -7911,9 +8100,9 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <div style="width:1px;height:24px;background:var(--border);flex-shrink:0"></div>
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
       <span style="color:var(--muted);font-size:.82rem">من</span>
-      <input type="date" id="rep-from" style="width:138px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.85rem" onchange="onReportRangeChange()">
+      <input type="date" id="rep-from" class="date-filter-icon" style="border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.85rem" onchange="onReportRangeChange()">
       <span style="color:var(--muted);font-size:.82rem">إلى</span>
-      <input type="date" id="rep-to" style="width:138px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.85rem" onchange="onReportRangeChange()">
+      <input type="date" id="rep-to" class="date-filter-icon" style="border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.85rem" onchange="onReportRangeChange()">
     </div>
     <div id="rep-period-echo" style="margin-inline-start:auto;color:var(--muted);font-size:.8rem;white-space:nowrap"></div>
   </div>
@@ -8176,9 +8365,9 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <div class="pu-filter-date-grp">
       <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       <span>من</span>
-      <input type="date" id="pu-board-date-from" onchange="renderPickupBoard()">
+      <input type="date" id="pu-board-date-from" class="date-filter-icon" onchange="renderPickupBoard()">
       <span>—</span>
-      <input type="date" id="pu-board-date-to" onchange="renderPickupBoard()">
+      <input type="date" id="pu-board-date-to" class="date-filter-icon" onchange="renderPickupBoard()">
     </div>
     <div class="pu-filter-divider"></div>
     <select id="pu-board-shipco" class="pu-filter-shipco" onchange="renderPickupBoard()">
@@ -8289,9 +8478,9 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       </div>
       <div class="pu-date-range">
         <span class="pu-date-range-label">من</span>
-        <input type="date" id="pu-filter-date-from" onchange="_pickupPage=1;renderPickupRuns()">
+        <input type="date" id="pu-filter-date-from" class="date-filter-icon" onchange="_pickupPage=1;renderPickupRuns()">
         <span class="pu-date-range-label">إلى</span>
-        <input type="date" id="pu-filter-date-to" onchange="_pickupPage=1;renderPickupRuns()">
+        <input type="date" id="pu-filter-date-to" class="date-filter-icon" onchange="_pickupPage=1;renderPickupRuns()">
       </div>
       <select id="pu-filter-shipco" onchange="_pickupPage=1;renderPickupRuns()">
         <option value="all">كل شركات الشحن</option>
@@ -9041,11 +9230,11 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     </div>
     <div>
       <span class="vault-filter-label">من تاريخ</span>
-      <input type="date" id="vault-from" class="vault-filter-input" onchange="vaultPage=1;_clearVaultQuickBtns();loadVaultLog()">
+      <input type="date" id="vault-from" class="vault-filter-input date-filter-icon" onchange="vaultPage=1;_clearVaultQuickBtns();loadVaultLog()">
     </div>
     <div>
       <span class="vault-filter-label">إلى تاريخ</span>
-      <input type="date" id="vault-to" class="vault-filter-input" onchange="vaultPage=1;_clearVaultQuickBtns();loadVaultLog()">
+      <input type="date" id="vault-to" class="vault-filter-input date-filter-icon" onchange="vaultPage=1;_clearVaultQuickBtns();loadVaultLog()">
     </div>
     <div style="display:flex;flex-direction:column;gap:3px">
       <span class="vault-filter-label" style="visibility:hidden">‎</span>
@@ -10625,7 +10814,7 @@ let socket = null; // Socket.IO connection
 let activeSessions = []; // Admin-only: active sessions with IP & geo
 const _rtFlashIds = new Set(); // tx ids that should briefly flash on render
 const _activeEditors = new Map(); // txId → { user, initials } — real-time presence
-let products = [], transactions = [], suppliers = [], expenses = [], settings = {}, users = [], vaultLog = [], inventoryCache = [], returnRequests = [], complaints = [], purchaseOrders = [];
+let products = [], transactions = [], suppliers = [], expenses = [], settings = {}, users = [], vaultLog = [], inventoryCache = [], returnRequests = [], complaints = [], purchaseOrders = [], supplierReturns = [];
 let cmpTabFilter = 'all';
 let currentPage = 'dashboard';
 let movFilter = 'all';
@@ -10755,6 +10944,30 @@ let pendingMovementReturn = null;
 const RETURN_REQUEST_MAX_DAYS = 14;
 const RET_VAULT_SEGMENTS = ['كاش', 'فودافون كاش', 'Instapay', 'تحويل بنكي'];
 const RET_VAULT_TO_HEADER_CODE = { 'كاش': 'cash', 'فودافون كاش': 'vodafone', 'Instapay': 'instapay', 'تحويل بنكي': 'bank' };
+const VAULT_METHOD_ICONS = {
+  'Instapay': '<img src="/instapay.svg" style="width:26px;height:26px;object-fit:contain" alt="Instapay">',
+  'فودافون كاش': '<img src="/vodafone.svg" style="width:28px;height:22px;object-fit:contain" alt="Vodafone">',
+  'كاش': '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
+  'تحويل بنكي': '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M3 10h18M3 6l9-4 9 4"/><path d="M6 10v12M10 10v12M14 10v12M18 10v12"/></svg>',
+};
+function renderVaultMethodBtns(selectId, onSelectFn, defaultVal) {
+  const def = defaultVal || RET_VAULT_SEGMENTS[0];
+  return RET_VAULT_SEGMENTS.map(v => {
+    const isActive = v === def;
+    return `<button type="button" onclick="${onSelectFn}('${esc(v)}','${esc(selectId)}',this)" data-val="${esc(v)}" style="padding:10px 6px;border-radius:9px;border:2px solid ${isActive ? 'var(--accent)' : 'var(--border)'};background:${isActive ? 'var(--accent-light,#ede9fe)' : 'var(--surface2)'};color:var(--text);font-size:.72rem;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:all .15s">${VAULT_METHOD_ICONS[v] || ''}<span>${esc(v)}</span></button>`;
+  }).join('');
+}
+function _selectVaultMethodBtn(val, selectId, btn) {
+  const sel = qs('#' + selectId);
+  if (sel) sel.value = val;
+  const wrap = btn?.parentElement;
+  if (!wrap) return;
+  wrap.querySelectorAll('button').forEach(b => {
+    const active = b.dataset.val === val;
+    b.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
+    b.style.background = active ? 'var(--accent-light,#ede9fe)' : 'var(--surface2)';
+  });
+}
 let vaultUnlocked = false;
 let reportCharts = {};
 let currentLang = 'ar';
@@ -10866,7 +11079,7 @@ const TRANSLATIONS = {
   approved:{ar:'معتمد',en:'Approved'},pending:{ar:'معلق',en:'Pending'},completed:{ar:'مكتمل',en:'Completed'},cancelled:{ar:'ملغي',en:'Cancelled'},rejected:{ar:'مرفوض',en:'Rejected'},
   colFrozenAt:{ar:'تاريخ الأرشفة',en:'Archived at'},colBy:{ar:'بواسطة',en:'By'},colActions:{ar:'إجراءات',en:'Actions'},colAction:{ar:'الإجراء',en:'Action'},
   colAccount:{ar:'الحساب',en:'Account'},colAmount:{ar:'المبلغ',en:'Amount'},colDescription:{ar:'الوصف',en:'Description'},
-  colComplaintNo:{ar:'رقم الشكوى',en:'Complaint #'},colOrder:{ar:'الطلب',en:'Order'},colSubmittedAt:{ar:'تاريخ التقديم',en:'Submitted'},
+  colComplaintNo:{ar:'رقم الشكوى',en:'Complaint #'},colOrder:{ar:'الطلب',en:'Order'},colSubmittedAt:{ar:'تاريخ التقديم',en:'Submitted'},colPriority:{ar:'الأولوية',en:'Priority'},colProgress:{ar:'حالة سير العمل',en:'Progress'},colNotes:{ar:'الملاحظات',en:'Notes'},
   colCustRating:{ar:'تقييم العميل',en:'Rating'},colDateTime:{ar:'التاريخ والوقت',en:'Date & time'},colInvoice:{ar:'الفاتورة',en:'Invoice'},
   colVault:{ar:'الخزنة',en:'Vault'},colDetails:{ar:'التفاصيل',en:'Details'},colInvoiceTotal:{ar:'إجمالي الفاتورة',en:'Invoice total'},
   colRevenue:{ar:'الإيراد',en:'Revenue'},colCost:{ar:'التكلفة',en:'Cost'},colProfit:{ar:'الربح',en:'Profit'},colMargin:{ar:'الهامش %',en:'Margin %'},
@@ -11424,6 +11637,18 @@ function showImportResultToast({ created, updated, skipped, total }) {
     overlay().classList.add('active');
     return new Promise(res => { _resolve = res; });
   }
+
+  // Collapsed date-filter icons: expand once a value is set, collapse back when cleared/blurred empty
+  document.addEventListener('change', (e) => {
+    if (e.target.matches?.('input[type="date"].date-filter-icon')) {
+      e.target.classList.toggle('has-value', !!e.target.value);
+    }
+  });
+  document.addEventListener('focusout', (e) => {
+    if (e.target.matches?.('input[type="date"].date-filter-icon') && !e.target.value) {
+      e.target.classList.remove('has-value');
+    }
+  }, true);
 
   // Wire buttons
   document.addEventListener('DOMContentLoaded', () => {
@@ -14269,6 +14494,7 @@ function setVaultQuickDate(range, btn) {
   else if (range === '7d') { const s = new Date(now); s.setDate(s.getDate()-6); fromEl.value = fmt(s); toEl.value = fmt(now); }
   else if (range === '30d') { const s = new Date(now); s.setDate(s.getDate()-29); fromEl.value = fmt(s); toEl.value = fmt(now); }
   else if (range === 'month') { const s = new Date(now.getFullYear(), now.getMonth(), 1); fromEl.value = fmt(s); toEl.value = fmt(now); }
+  fromEl.classList.add('has-value'); toEl.classList.add('has-value');
   vaultPage = 1; loadVaultLog();
 }
 function resetVaultFilters() {
@@ -14276,7 +14502,8 @@ function resetVaultFilters() {
   const now = new Date(); const fmt = d => d.toISOString().slice(0,10);
   const s = new Date(now.getFullYear(), now.getMonth(), 1);
   const fromEl = qs('#vault-from'), toEl = qs('#vault-to');
-  if (fromEl) fromEl.value = fmt(s); if (toEl) toEl.value = fmt(now);
+  if (fromEl) { fromEl.value = fmt(s); fromEl.classList.add('has-value'); }
+  if (toEl) { toEl.value = fmt(now); toEl.classList.add('has-value'); }
   _clearVaultQuickBtns();
   qs('.vault-quick-btns')?.querySelector('[onclick*="month"]')?.classList.add('active');
   vaultPage = 1; loadVaultLog();
@@ -14375,6 +14602,16 @@ function buildNotifications() {
         title: `${t('notifReturnPending')}: ${kindLabel}`,
         desc: `${ret.client} — ${fmtJ(ret.total)} (${ret.reason})`,
         page: 'approvals', ts: ret.createdAt || '',
+        refType: 'approvals' });
+    });
+  }
+  const pendingSupplierReturns = (supplierReturns || []).filter(r => r.status === 'معلق' || r.status === 'معتمد');
+  if (pendingSupplierReturns.length > 0 && currentUser?.role === 'admin') {
+    pendingSupplierReturns.forEach(r => {
+      notifs.push({ id: 'supplier-return-' + r._id, icon: ICON('box'), type: r.status === 'معتمد' ? 'urgent' : 'warning',
+        title: r.status === 'معتمد' ? `مرتجع مورد بانتظار الإتمام: ${r.returnNumber}` : `مرتجع مورد معلق: ${r.returnNumber}`,
+        desc: `${r.supplierName} — ${fmtJ(r.total)} (${r.reason})`,
+        page: 'approvals', ts: r.createdAt || '',
         refType: 'approvals' });
     });
   }
@@ -16097,11 +16334,12 @@ function onPageEnter(page) {
       buildSidebar();
       break;
     case 'pending-sync': renderPendingSyncPage(); break;
-    case 'complaints':
-      // Always land on Follow-up Orders tab first
-      switchMainTab('fu');
+    case 'complaints': {
+      const _cmpSubTab = location.hash.slice(1).split('/')[1] || 'orders';
+      switchMainTab(_cmpSubTab === 'complaints' ? 'cmp' : 'fu', true);
       loadComplaints().catch(e => toast('خطأ: ' + e.message, true));
       break;
+    }
     case 'approvals':
       renderApprovals();
       if (apprActiveTab === 'hub') renderHistoryHub();
@@ -16163,6 +16401,7 @@ async function loadAllData() {
     try { returnRequests = await api('/returns'); } catch (_) { returnRequests = []; }
     try { complaints = await api('/complaints'); } catch (_) { complaints = []; }
     try { purchaseOrders = await api('/purchase-orders'); } catch (_) { purchaseOrders = []; }
+    try { supplierReturns = await api('/supplier-returns'); } catch (_) { supplierReturns = []; }
     if (settings.darkMode) document.body.classList.add('dark-mode');
     if (settings.lang) { currentLang = settings.lang; applyLang(); }
     try { syncThemeIcon(); syncLangButton(); } catch(_) {}
@@ -17128,6 +17367,7 @@ function initTxPage() {
   }
 
   renderTxFields(); renderTxItems(); calcTxSummary(); renderTxComments();
+  const _txDateEl = qs('#tx-transaction-date'); if (_txDateEl) _txDateEl.value = todayLocalISO();
   _refreshDiscBtnLock();
   const _pw = qs('#pay-method-btns'); if (_pw) _pw._userPicked = false;
   const _pwSel = qs('#tx-payment'); if (_pwSel) _pwSel.value = '';
@@ -22210,9 +22450,9 @@ function openFxDrawer(ctx) {
             <button onclick="setMovDateField('createdAt')" style="flex:1;padding:5px 4px;font-size:.75rem;font-weight:600;border:none;cursor:pointer;transition:all .15s;background:${(s.dateField||'transactionDate')==='createdAt'?'var(--primary)':'transparent'};color:${(s.dateField||'transactionDate')==='createdAt'?'#fff':'var(--muted)'}">تاريخ التسجيل</button>
           </div>
           <div class="fx-range">
-            <input type="date" data-fx="dateFrom" value="${esc(s.dateFrom)}" placeholder="من">
+            <input type="date" data-fx="dateFrom" value="${esc(s.dateFrom)}" class="date-filter-icon${s.dateFrom ? ' has-value' : ''}" title="من">
             <span class="fx-range-sep">←</span>
-            <input type="date" data-fx="dateTo" value="${esc(s.dateTo)}" placeholder="إلى">
+            <input type="date" data-fx="dateTo" value="${esc(s.dateTo)}" class="date-filter-icon${s.dateTo ? ' has-value' : ''}" title="إلى">
           </div>
         </div>
       </div>
@@ -27761,8 +28001,8 @@ function setCollDateFilter(filter, btn) {
   qsa('.coll-filter-btn:not(.coll-reset-btn)').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   if (filter !== 'range') {
-    qs('#coll-from').value = '';
-    qs('#coll-to').value = '';
+    qs('#coll-from').value = ''; qs('#coll-from').classList.remove('has-value');
+    qs('#coll-to').value = ''; qs('#coll-to').classList.remove('has-value');
   }
   renderCollectionsTable();
 }
@@ -27774,8 +28014,8 @@ function resetCollFilters() {
   _collEmployee = 'all';
   _collPage = 1;
   qs('#coll-search').value = '';
-  qs('#coll-from').value = '';
-  qs('#coll-to').value = '';
+  qs('#coll-from').value = ''; qs('#coll-from').classList.remove('has-value');
+  qs('#coll-to').value = ''; qs('#coll-to').classList.remove('has-value');
   qsa('.coll-type-pill').forEach(b => b.classList.remove('active'));
   const allPill = qs('.coll-type-pill[data-type="all"]');
   if (allPill) allPill.classList.add('active');
@@ -28429,6 +28669,260 @@ function writeExcelFormatted(rows, colKeys, sheetName, fileName, opts = {}) {
 function exportMovementsExcel() {
   if (!isAdmin()) { requireExportOtp('تصدير الحركات', () => showExportModal(false)); return; }
   showExportModal(false);
+}
+
+/* ══════════════ Bulk Reference Number Validator (read-only) ══════════════ */
+let _bulkRefResults = null; // { matched: [], missing: [], duplicates: [] }
+let _bulkRefActiveFilter = 'all';
+
+function _bulkRefNormalize(raw) {
+  return String(raw || '').trim().replace(/^#/, '');
+}
+
+function openBulkRefCheckModal() {
+  _bulkRefResults = null;
+  _bulkRefActiveFilter = 'all';
+  openModal(`
+    <div style="display:flex;flex-direction:column;height:100%;width:100%;box-sizing:border-box;max-width:760px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-shrink:0">
+        <h3 style="font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:6px;margin:0">
+          ${ICON('barChart')} فحص جماعي للمرجع
+        </h3>
+        <button onclick="closeModal()" style="background:none;border:none;cursor:pointer;font-size:1.3rem;color:var(--muted);line-height:1;flex-shrink:0">×</button>
+      </div>
+      <p style="font-size:.8rem;color:var(--muted);margin:0 0 12px">الصق أرقام المرجع (رقم في كل سطر) للتحقق من وجودها في سجل الحركات. أداة قراءة فقط — لا تُعدّل أي بيانات.</p>
+
+      <div id="bulk-ref-input-stage">
+        <textarea id="bulk-ref-textarea" placeholder="12345&#10;12346&#10;12347" rows="8"
+          style="width:100%;box-sizing:border-box;resize:vertical;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:.88rem;background:var(--surface);color:var(--text)"
+          oninput="_bulkRefUpdateCount()"></textarea>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+          <span style="font-size:.78rem;color:var(--muted)"><span id="bulk-ref-count">0</span> رقم مرجع تم رصده</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="qs('#bulk-ref-textarea').value='';_bulkRefUpdateCount()">مسح</button>
+            <button class="btn btn-primary btn-sm" onclick="runBulkRefCheck()">فحص الأرقام</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="bulk-ref-results-stage" style="display:none;margin-top:6px"></div>
+    </div>
+  `, 'max-width:760px;width:92vw');
+}
+
+function _bulkRefUpdateCount() {
+  const raw = qs('#bulk-ref-textarea')?.value || '';
+  const n = raw.split(/\r?\n/).map(_bulkRefNormalize).filter(Boolean).length;
+  const el = qs('#bulk-ref-count');
+  if (el) el.textContent = fmtN(n);
+}
+
+function runBulkRefCheck() {
+  const raw = qs('#bulk-ref-textarea')?.value || '';
+  const lines = raw.split(/\r?\n/).map(_bulkRefNormalize).filter(Boolean);
+
+  if (!lines.length) { toast('الصق رقماً مرجعياً واحداً على الأقل', true); return; }
+
+  const inputStage = qs('#bulk-ref-input-stage');
+  const resultsStage = qs('#bulk-ref-results-stage');
+  resultsStage.style.display = 'block';
+  resultsStage.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:24px 0;justify-content:center;color:var(--muted);font-size:.85rem">
+    <span class="spinner" style="width:18px;height:18px;border:2.5px solid var(--border);border-top-color:var(--primary);border-radius:50%;display:inline-block;animation:spin .7s linear infinite"></span>
+    جارِ فحص ${fmtN(lines.length)} رقم مرجعي…
+  </div>`;
+
+  setTimeout(() => {
+    const seen = new Map(); // normalized ref -> count
+    lines.forEach(r => seen.set(r, (seen.get(r) || 0) + 1));
+
+    const allTx = Array.isArray(transactions) ? transactions : [];
+    const txByRef = new Map();
+    allTx.forEach(t => {
+      const r = _bulkRefNormalize(t.ref);
+      if (r && !txByRef.has(r)) txByRef.set(r, t);
+    });
+
+    const matched = [];
+    const missing = [];
+    const duplicates = [];
+    const uniqueRefs = [...seen.keys()];
+
+    uniqueRefs.forEach(ref => {
+      if (seen.get(ref) > 1) duplicates.push({ ref, count: seen.get(ref) });
+      const tx = txByRef.get(ref);
+      if (tx) matched.push(tx); else missing.push(ref);
+    });
+
+    _bulkRefResults = { matched, missing, duplicates, total: uniqueRefs.length };
+    inputStage.style.display = 'none';
+    _renderBulkRefResults();
+  }, 250);
+}
+
+function _bulkRefSetFilter(filter, btn) {
+  _bulkRefActiveFilter = filter;
+  qsa('#bulk-ref-filter-bar button').forEach(b => {
+    const active = b === btn;
+    b.style.background = active ? 'var(--primary)' : '';
+    b.style.color = active ? '#fff' : '';
+    b.style.borderColor = active ? 'var(--primary)' : '';
+  });
+  _renderBulkRefResultsTable();
+}
+
+function _renderBulkRefResults() {
+  const { matched, missing, duplicates, total } = _bulkRefResults;
+  const stage = qs('#bulk-ref-results-stage');
+  stage.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px">
+      <div style="background:var(--bg-alt);border-radius:var(--radius);padding:10px 12px;text-align:center">
+        <div style="font-size:1.1rem;font-weight:700">${fmtN(total)}</div>
+        <div style="font-size:.72rem;color:var(--muted)">إجمالي المفحوص</div>
+      </div>
+      <div style="background:rgba(16,185,129,.1);border-radius:var(--radius);padding:10px 12px;text-align:center">
+        <div style="font-size:1.1rem;font-weight:700;color:#059669">${fmtN(matched.length)}</div>
+        <div style="font-size:.72rem;color:var(--muted)">مطابق</div>
+      </div>
+      <div style="background:rgba(239,68,68,.1);border-radius:var(--radius);padding:10px 12px;text-align:center">
+        <div style="font-size:1.1rem;font-weight:700;color:var(--red)">${fmtN(missing.length)}</div>
+        <div style="font-size:.72rem;color:var(--muted)">غير مسجل</div>
+      </div>
+      <div style="background:rgba(245,158,11,.1);border-radius:var(--radius);padding:10px 12px;text-align:center">
+        <div style="font-size:1.1rem;font-weight:700;color:#d97706">${fmtN(duplicates.length)}</div>
+        <div style="font-size:.72rem;color:var(--muted)">مكرر</div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+      <div id="bulk-ref-filter-bar" style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" style="background:var(--primary);color:#fff;border-color:var(--primary)" onclick="_bulkRefSetFilter('all', this)">الكل</button>
+        <button class="btn btn-outline btn-sm" onclick="_bulkRefSetFilter('matched', this)">مطابق</button>
+        <button class="btn btn-outline btn-sm" onclick="_bulkRefSetFilter('missing', this)">غير مسجل</button>
+        <button class="btn btn-outline btn-sm" onclick="_bulkRefSetFilter('duplicate', this)">مكرر</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline btn-sm" onclick="exportBulkRefMissing()" ${missing.length ? '' : 'disabled'}>تصدير غير المسجل Excel</button>
+        <button class="btn btn-outline btn-sm" onclick="_bulkRefBackToInput()">فحص جديد</button>
+      </div>
+    </div>
+
+    <div id="bulk-ref-table-wrap" style="max-height:360px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius)"></div>
+  `;
+  _renderBulkRefResultsTable();
+}
+
+function _bulkRefBackToInput() {
+  qs('#bulk-ref-input-stage').style.display = 'block';
+  qs('#bulk-ref-results-stage').style.display = 'none';
+  qs('#bulk-ref-results-stage').innerHTML = '';
+  _bulkRefResults = null;
+}
+
+function _renderBulkRefResultsTable() {
+  const wrap = qs('#bulk-ref-table-wrap');
+  if (!wrap || !_bulkRefResults) return;
+  const { matched, missing, duplicates } = _bulkRefResults;
+  const dupSet = new Set(duplicates.map(d => d.ref));
+  const filter = _bulkRefActiveFilter;
+
+  if (filter === 'duplicate') {
+    if (!duplicates.length) { wrap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.85rem">لا توجد أرقام مكررة</div>'; return; }
+    wrap.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+        <thead><tr style="background:var(--bg-alt);position:sticky;top:0">
+          <th style="padding:8px 10px;text-align:right">رقم المرجع</th>
+          <th style="padding:8px 10px;text-align:center">عدد التكرار</th>
+        </tr></thead>
+        <tbody>
+          ${duplicates.map(d => `<tr style="border-top:1px solid var(--border)">
+            <td style="padding:7px 10px;font-weight:600">#${esc(d.ref)}</td>
+            <td style="padding:7px 10px;text-align:center">${fmtN(d.count)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+    return;
+  }
+
+  if (filter === 'missing') {
+    if (!missing.length) { wrap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.85rem">لا توجد أرقام غير مسجلة</div>'; return; }
+    wrap.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+        <thead><tr style="background:var(--bg-alt);position:sticky;top:0">
+          <th style="padding:8px 10px;text-align:right">رقم المرجع</th>
+          <th style="padding:8px 10px;text-align:center">الحالة</th>
+        </tr></thead>
+        <tbody>
+          ${missing.map(ref => `<tr style="border-top:1px solid var(--border)">
+            <td style="padding:7px 10px;font-weight:600">#${esc(ref)}${dupSet.has(ref) ? ' <span class="badge" style="font-size:.6rem;background:rgba(245,158,11,.15);color:#d97706">مكرر</span>' : ''}</td>
+            <td style="padding:7px 10px;text-align:center"><span class="badge badge-status-cancelled">غير مسجل</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+    return;
+  }
+
+  // 'all' or 'matched'
+  if (filter === 'all') {
+    const missingRowsHtml = missing.map(ref => `<tr style="border-top:1px solid var(--border)">
+      <td style="padding:7px 10px;font-weight:600">#${esc(ref)}${dupSet.has(ref) ? ' <span class="badge" style="font-size:.6rem;background:rgba(245,158,11,.15);color:#d97706">مكرر</span>' : ''}</td>
+      <td style="padding:7px 10px">-</td><td style="padding:7px 10px">-</td><td style="padding:7px 10px">-</td><td style="padding:7px 10px">-</td>
+      <td style="padding:7px 10px"><span class="badge badge-status-cancelled">غير مسجل</span></td>
+    </tr>`).join('');
+    wrap.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+        <thead><tr style="background:var(--bg-alt);position:sticky;top:0">
+          <th style="padding:8px 10px;text-align:right">رقم المرجع</th>
+          <th style="padding:8px 10px;text-align:right">معرف الحركة</th>
+          <th style="padding:8px 10px;text-align:right">النوع</th>
+          <th style="padding:8px 10px;text-align:right">التاريخ</th>
+          <th style="padding:8px 10px;text-align:right">المبلغ</th>
+          <th style="padding:8px 10px;text-align:right">الحالة</th>
+        </tr></thead>
+        <tbody>
+          ${matched.map(t => _bulkRefMatchedRowHtml(t, dupSet)).join('')}
+          ${missingRowsHtml}
+        </tbody>
+      </table>`;
+    if (!matched.length && !missing.length) wrap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.85rem">لا توجد نتائج</div>';
+    return;
+  }
+
+  if (!matched.length) { wrap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.85rem">لا توجد أرقام مطابقة</div>'; return; }
+  wrap.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+      <thead><tr style="background:var(--bg-alt);position:sticky;top:0">
+        <th style="padding:8px 10px;text-align:right">رقم المرجع</th>
+        <th style="padding:8px 10px;text-align:right">معرف الحركة</th>
+        <th style="padding:8px 10px;text-align:right">النوع</th>
+        <th style="padding:8px 10px;text-align:right">التاريخ</th>
+        <th style="padding:8px 10px;text-align:right">المبلغ</th>
+        <th style="padding:8px 10px;text-align:right">الحالة</th>
+      </tr></thead>
+      <tbody>${matched.map(t => _bulkRefMatchedRowHtml(t, dupSet)).join('')}</tbody>
+    </table>`;
+}
+
+function _bulkRefMatchedRowHtml(t, dupSet) {
+  const ref = _bulkRefNormalize(t.ref);
+  const shortId = String(t._id || '').slice(-8);
+  return `<tr style="border-top:1px solid var(--border)">
+    <td style="padding:7px 10px;font-weight:600">
+      <a href="#" data-reference-ref="${esc(ref)}" style="color:var(--text);text-decoration:none;cursor:pointer" title="انقر لعرض تفاصيل شاملة">#${esc(ref)}</a>
+      ${dupSet.has(ref) ? ' <span class="badge" style="font-size:.6rem;background:rgba(245,158,11,.15);color:#d97706">مكرر</span>' : ''}
+    </td>
+    <td style="padding:7px 10px;color:var(--muted);font-size:.78rem">${esc(shortId)}</td>
+    <td style="padding:7px 10px">${esc(t.type || '-')}</td>
+    <td style="padding:7px 10px">${esc((t.date || '').slice(0, 10) || '-')}</td>
+    <td style="padding:7px 10px">${fmtN(t.total)} <span style="color:var(--muted);font-size:.75rem">ج.م</span></td>
+    <td style="padding:7px 10px">${movementStatusCell(t)}</td>
+  </tr>`;
+}
+
+function exportBulkRefMissing() {
+  if (!_bulkRefResults || !_bulkRefResults.missing.length) { toast('لا توجد أرقام غير مسجلة للتصدير', true); return; }
+  const data = _bulkRefResults.missing.map(ref => ({ 'رقم المرجع': ref, 'الحالة': 'غير مسجل' }));
+  writeExcel(data, 'مراجع غير مسجلة', `مراجع_غير_مسجلة_${todayLocalISO()}`);
+  toast('تم تصدير الأرقام غير المسجلة بنجاح ✅');
 }
 
 function exportSelectedExcel() {
@@ -31169,6 +31663,7 @@ function renderSupplierProfile() {
   const totalRemaining = activeTxs.reduce((sum, t) => sum + (t.remaining || 0), 0);
   const supplierPOs = purchaseOrders.filter(p => p.supplierId === currentSupplierId);
   const activePOs = supplierPOs.filter(p => !p.linkedTransactionId);
+  const supplierReturnsList = supplierReturns.filter(r => r.supplierId === currentSupplierId);
 
   qs('#sp-kpi-strip').innerHTML = `
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
@@ -31184,18 +31679,19 @@ function renderSupplierProfile() {
       <div style="font-size:.75rem;color:var(--muted);margin-top:3px">الرصيد المستحق</div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-      <div style="font-size:1.05rem;font-weight:700;color:var(--text)">${fmtJ(activePOs.length)}</div>
+      <div style="font-size:1.05rem;font-weight:700;color:var(--text)">${fmtN(activePOs.length)}</div>
       <div style="font-size:.75rem;color:var(--muted);margin-top:3px">أوامر شراء نشطة</div>
     </div>
   `;
 
   renderSpInvoicesPanel(txs);
   renderSpPosPanel(supplierPOs);
+  renderSpSupplierReturnsPanel(supplierReturnsList);
   renderSpPaymentsPanel(txs);
   renderSpActivityPanel(s);
 
   // Restore active tab
-  ['invoices','pos','payments','activity'].forEach(t => {
+  ['invoices','pos','sreturns','payments','activity'].forEach(t => {
     const panel = qs('#sp-panel-' + t);
     const btn = qs('#sp-tab-btn-' + t);
     if (panel) panel.style.display = t === _spActiveTab ? '' : 'none';
@@ -31207,7 +31703,7 @@ function setSpTab(tab, btn) {
   _spActiveTab = tab;
   qs('#sp-tab-bar').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
-  ['invoices','pos','payments','activity'].forEach(t => {
+  ['invoices','pos','sreturns','payments','activity'].forEach(t => {
     const panel = qs('#sp-panel-' + t);
     if (panel) panel.style.display = t === tab ? '' : 'none';
   });
@@ -31330,11 +31826,11 @@ function renderSpPosPanel(pos) {
       <td style="padding:7px 8px">${esc(po.expectedDeliveryDate || '—')}</td>
       <td style="padding:7px 8px;text-align:center">${fmtN(po.items?.length || 0)} صنف</td>
       <td style="padding:7px 8px">${statusBadge}</td>
-      <td style="padding:7px 8px;white-space:nowrap;display:flex;gap:4px;flex-wrap:wrap">
-        <button class="btn btn-outline btn-sm" style="font-size:.72rem" onclick="openPoDetailModal('${esc(po._id)}')">عرض</button>
-        <button class="btn btn-outline btn-sm" style="font-size:.72rem" onclick="printPo('${esc(po._id)}')">طباعة</button>
-        ${!isLinked ? `<button class="btn btn-outline btn-sm" style="font-size:.72rem" onclick="openEditPoModal('${esc(po._id)}')">تعديل</button>` : ''}
-        ${!isLinked ? `<button class="btn btn-outline btn-sm" style="font-size:.72rem;color:var(--red);border-color:rgba(239,68,68,.4)" onclick="deletePo('${esc(po._id)}')">حذف</button>` : ''}
+      <td style="padding:7px 8px;white-space:nowrap;display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+        <button class="btn-icon btn-outline" title="عرض" onclick="openPoDetailModal('${esc(po._id)}')"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <button class="btn-icon btn-outline" title="طباعة" onclick="printPo('${esc(po._id)}')"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+        ${!isLinked ? `<button class="btn-icon btn-outline" title="تعديل" onclick="openEditPoModal('${esc(po._id)}')"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
+        ${!isLinked ? `<button class="btn-icon btn-outline" style="color:var(--red);border-color:rgba(239,68,68,.4)" title="حذف" onclick="deletePo('${esc(po._id)}')"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>` : ''}
         ${!isLinked && nextStatus ? `<button class="btn btn-primary btn-sm" style="font-size:.72rem" onclick="advancePoStatus('${esc(po._id)}','${esc(nextStatus)}')">${esc(nextStatus)}</button>` : ''}
         ${!isLinked && po.status === 'مستلم' ? `<button class="btn btn-primary btn-sm" style="font-size:.72rem;background:var(--green,#10b981)" onclick="openConvertPoModal('${esc(po._id)}')">تحويل إلى فاتورة</button>` : ''}
       </td>
@@ -31355,6 +31851,595 @@ function renderSpPosPanel(pos) {
         <tbody>${rows}</tbody>
       </table>
     </div>`;
+}
+
+/* ── Supplier Return Orders ── */
+const _SR_STATUS_BADGE = {
+  'مسودة': 'badge-purple',
+  'معلق': 'badge-orange',
+  'معتمد': 'badge-blue',
+  'مكتمل': 'badge-green',
+  'مرفوض': 'badge-red',
+  'ملغي': 'badge-red',
+};
+const SR_REASONS = ['تلف المنتج', 'منتج خاطئ', 'مشكلة جودة', 'أخرى'];
+let srReturnItems = []; // [{code, name, purchasedQty, purchasedPrice, alreadyReturned, returnQty, returnPrice}]
+let srSelectedTxId = null;
+let srEditingId = null; // معرف المرتجع الجاري تعديله، أو null عند الإنشاء
+
+function renderSpSupplierReturnsPanel(list) {
+  const sorted = [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const rows = sorted.length ? sorted.map(r => {
+    const badge = `<span class="badge ${_SR_STATUS_BADGE[r.status] || 'badge-orange'}">${esc(r.status)}</span>`;
+    const itemsSummary = (r.items || []).map(it => `${esc(it.name)} (×${it.qty})`).join(' · ');
+    const canSubmit = r.status === 'مسودة';
+    const canEdit = ['مسودة', 'معلق'].includes(r.status);
+    const canCancel = ['مسودة', 'معلق', 'معتمد'].includes(r.status) && isAdmin();
+    const canComplete = r.status === 'معتمد' && isAdmin();
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:7px 8px"><strong>${esc(r.returnNumber)}</strong></td>
+      <td style="padding:7px 8px;white-space:nowrap">${fmtDate(r.returnDate || r.createdAt)}</td>
+      <td style="padding:7px 8px;max-width:260px" title="${esc(itemsSummary)}">${itemsSummary || '—'}</td>
+      <td style="padding:7px 8px;text-align:center;font-weight:700;color:#ea580c">${fmtJ(r.total || 0)}</td>
+      <td style="padding:7px 8px">${badge}</td>
+      <td style="padding:7px 8px;white-space:nowrap;display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+        <button class="btn-icon btn-outline" title="عرض" onclick="showSupplierReturnDetail('${esc(r._id)}')"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        ${canEdit ? `<button class="btn-icon btn-outline" title="تعديل" onclick="openEditSupplierReturnModal('${esc(r._id)}')"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
+        <button class="btn-icon btn-outline" title="طباعة" onclick="printSupplierReturn('${esc(r._id)}')"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+        ${canSubmit ? `<button class="btn btn-primary btn-sm" style="font-size:.72rem" onclick="submitSupplierReturn('${esc(r._id)}')">إرسال للاعتماد</button>` : ''}
+        ${canComplete ? `<button class="btn btn-primary btn-sm" style="font-size:.72rem;background:var(--green,#10b981)" onclick="completeSupplierReturn('${esc(r._id)}')">إتمام</button>` : ''}
+        ${canCancel ? `<button class="btn-icon btn-outline" style="color:var(--red);border-color:rgba(239,68,68,.4)" title="إلغاء" onclick="cancelSupplierReturn('${esc(r._id)}')"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></button>` : ''}
+      </td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="6" class="empty-state">لا توجد مرتجعات لهذا المورد</td></tr>';
+
+  qs('#sp-panel-sreturns').innerHTML = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <button class="btn btn-outline btn-sm" onclick="exportSupplierReturnsExcel('${esc(currentSupplierId)}')">تصدير Excel</button>
+    </div>
+    <div class="overflow-x">
+      <table style="width:100%;font-size:.82rem;border-collapse:collapse">
+        <thead><tr style="background:var(--surface2)">
+          <th style="padding:7px 8px;text-align:right">رقم المرتجع</th>
+          <th style="padding:7px 8px;text-align:right">التاريخ</th>
+          <th style="padding:7px 8px;text-align:right">الأصناف</th>
+          <th style="padding:7px 8px;text-align:center">القيمة</th>
+          <th style="padding:7px 8px;text-align:right">الحالة</th>
+          <th style="padding:7px 8px"></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function openCreateSupplierReturnModal() {
+  const s = suppliers.find(x => x._id === currentSupplierId);
+  if (!s) return;
+  const invoices = getSupplierPurchases(s.name).filter(t => !t.cancelled);
+  if (!invoices.length) {
+    toast('لا توجد فواتير مشتريات لهذا المورد', true);
+    return;
+  }
+  srEditingId = null;
+  srReturnItems = [];
+  srSelectedTxId = null;
+  const sorted = [...invoices].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const options = sorted.map(t => `<option value="${esc(t._id)}">${esc(t.ref || t._id)} — ${fmtDate(t.date)} — ${fmtJ(t.total || 0)}</option>`).join('');
+  openModal(`
+    <h3 style="margin-bottom:16px">إنشاء مرتجع مورد — ${esc(s.name)}</h3>
+    <div class="form-group" style="margin-bottom:12px">
+      <label style="font-size:.8rem;color:var(--muted)">الفاتورة الأصلية</label>
+      <select id="sr-invoice-select" class="form-input" style="width:100%" onchange="srSelectInvoice(this.value)">
+        <option value="">اختر فاتورة...</option>
+        ${options}
+      </select>
+    </div>
+    ${_srModalBodyHtml()}
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      <button class="btn btn-outline" id="sr-draft-btn" onclick="saveSupplierReturn('${esc(s._id)}','${esc(s.name)}',true)" disabled>حفظ كمسودة</button>
+      <button class="btn btn-primary" id="sr-save-btn" onclick="saveSupplierReturn('${esc(s._id)}','${esc(s.name)}',false)" disabled>إرسال للاعتماد</button>
+      <button class="btn btn-outline" id="sr-print-btn" onclick="printSupplierReturnDraft('${esc(s._id)}','${esc(s.name)}')" disabled>طباعة</button>
+      <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+    </div>
+  `);
+}
+
+function _srModalBodyHtml() {
+  return `
+    <div id="sr-body" style="display:none">
+      <div class="form-group" style="margin-bottom:8px">
+        <label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:6px">الأصناف المرتجعة</label>
+        <div id="sr-items-list"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="form-group">
+          <label style="font-size:.8rem;color:var(--muted)">سبب الإرجاع</label>
+          <select id="sr-reason" class="form-input" style="width:100%" onchange="qs('#sr-reason-details-wrap').style.display=this.value==='أخرى'?'':'none'">
+            ${SR_REASONS.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label style="font-size:.8rem;color:var(--muted)">قسم الخزنة (سيُضاف إليه مبلغ الرد)</label>
+          <select id="sr-vault-account" style="display:none">${RET_VAULT_SEGMENTS.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('')}</select>
+          <div id="sr-vault-account-btns" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:2px">${renderVaultMethodBtns('sr-vault-account', '_selectVaultMethodBtn')}</div>
+        </div>
+      </div>
+      <div class="form-group" id="sr-reason-details-wrap" style="display:none;margin-bottom:12px">
+        <label style="font-size:.8rem;color:var(--muted)">تفاصيل السبب</label>
+        <input type="text" id="sr-reason-details" class="form-input" style="width:100%" placeholder="اختياري">
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:.85rem;color:var(--muted)">إجمالي قيمة المرتجع</span>
+        <strong id="sr-total-display" style="font-size:1.1rem;color:#ea580c">0</strong>
+      </div>
+    </div>`;
+}
+
+function openEditSupplierReturnModal(id) {
+  const r = supplierReturns.find(x => x._id === id);
+  if (!r) return;
+  if (!['مسودة', 'معلق'].includes(r.status)) {
+    toast('لا يمكن تعديل هذا الطلب في حالته الحالية', true);
+    return;
+  }
+  const s = suppliers.find(x => x._id === r.supplierId);
+  if (!s) return;
+  srEditingId = id;
+  srSelectedTxId = r.originalTransactionId;
+  openModal(`
+    <h3 style="margin-bottom:16px">تعديل مرتجع مورد ${esc(r.returnNumber)} — ${esc(s.name)}</h3>
+    <div class="form-group" style="margin-bottom:12px">
+      <label style="font-size:.8rem;color:var(--muted)">الفاتورة الأصلية</label>
+      <div style="padding:9px 12px;background:var(--surface2);border-radius:8px;font-size:.85rem">#${esc(r.originalRef || '-')} — ${fmtDate(r.originalDate)} <span class="text-muted" style="font-size:.75rem">(لا يمكن تغيير الفاتورة الأصلية عند التعديل)</span></div>
+    </div>
+    ${_srModalBodyHtml()}
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      <button class="btn btn-primary" id="sr-save-btn" onclick="saveSupplierReturn('${esc(s._id)}','${esc(s.name)}',false)" disabled>حفظ التعديلات</button>
+      <button class="btn btn-outline" id="sr-print-btn" onclick="printSupplierReturnDraft('${esc(s._id)}','${esc(s.name)}')" disabled>طباعة</button>
+      <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+    </div>
+  `);
+  qs('#sr-reason').value = r.reason;
+  qs('#sr-reason-details').value = r.reasonDetails || '';
+  qs('#sr-reason-details-wrap').style.display = r.reason === 'أخرى' ? '' : 'none';
+  _selectVaultMethodBtn(r.vaultRefundAccount, 'sr-vault-account', qs(`#sr-vault-account-btns button[data-val="${r.vaultRefundAccount}"]`));
+  _srLoadItemsForEdit(r);
+}
+
+async function _srLoadItemsForEdit(r) {
+  const txId = r.originalTransactionId;
+  const tx = transactions.find(t => t._id === txId);
+  if (!tx) { toast('تعذر العثور على الفاتورة الأصلية', true); return; }
+  let priorReturns = [];
+  try { priorReturns = await api('/supplier-returns/supplier/' + r.supplierId).catch(() => []); } catch (_) { priorReturns = []; }
+  const alreadyReturnedByCode = new Map();
+  priorReturns.filter(pr => pr._id !== r._id && pr.originalTransactionId === txId && !['مرفوض','ملغي'].includes(pr.status)).forEach(pr => {
+    (pr.items || []).forEach(it => {
+      alreadyReturnedByCode.set(it.code, (alreadyReturnedByCode.get(it.code) || 0) + (it.qty || 0));
+    });
+  });
+  const byCode = new Map();
+  (tx.items || []).forEach(it => {
+    const code = it.code || '';
+    const prev = byCode.get(code);
+    byCode.set(code, { name: it.name || code, qty: (prev?.qty || 0) + (it.qty || 0), price: it.price || 0 });
+  });
+  const currentByCode = new Map((r.items || []).map(it => [it.code, it]));
+  srReturnItems = [...byCode.entries()].map(([code, v]) => {
+    const product = products.find(p => (p.code || '') === code);
+    const currentItem = currentByCode.get(code);
+    return {
+      code, name: v.name,
+      image: product?.imageUrl || product?.image || '',
+      purchasedQty: v.qty, purchasedPrice: v.price,
+      alreadyReturned: alreadyReturnedByCode.get(code) || 0,
+      returnQty: currentItem ? currentItem.qty : 0,
+      returnPrice: currentItem ? currentItem.price : v.price,
+      note: currentItem ? (currentItem.note || '') : '',
+    };
+  }).filter(it => it.purchasedQty - it.alreadyReturned > 0 || currentByCode.has(it.code));
+  qs('#sr-body').style.display = '';
+  renderSrReturnItems();
+}
+
+async function srSelectInvoice(txId) {
+  srSelectedTxId = txId || null;
+  const body = qs('#sr-body');
+  if (!txId) { body.style.display = 'none'; return; }
+  const tx = transactions.find(t => t._id === txId);
+  if (!tx) return;
+  let priorReturns = [];
+  try { priorReturns = await api('/supplier-returns/supplier/' + currentSupplierId).catch(() => []); } catch (_) { priorReturns = []; }
+  const alreadyReturnedByCode = new Map();
+  priorReturns.filter(r => r.originalTransactionId === txId && !['مرفوض','ملغي'].includes(r.status)).forEach(r => {
+    (r.items || []).forEach(it => {
+      alreadyReturnedByCode.set(it.code, (alreadyReturnedByCode.get(it.code) || 0) + (it.qty || 0));
+    });
+  });
+  const byCode = new Map();
+  (tx.items || []).forEach(it => {
+    const code = it.code || '';
+    const prev = byCode.get(code);
+    byCode.set(code, { name: it.name || code, qty: (prev?.qty || 0) + (it.qty || 0), price: it.price || 0 });
+  });
+  srReturnItems = [...byCode.entries()].map(([code, v]) => {
+    const product = products.find(p => (p.code || '') === code);
+    return {
+      code, name: v.name,
+      image: product?.imageUrl || product?.image || '',
+      purchasedQty: v.qty, purchasedPrice: v.price,
+      alreadyReturned: alreadyReturnedByCode.get(code) || 0,
+      returnQty: 0, returnPrice: v.price, note: '',
+    };
+  }).filter(it => it.purchasedQty - it.alreadyReturned > 0);
+  if (!srReturnItems.length) {
+    toast('كل أصناف هذه الفاتورة تم إرجاعها بالكامل مسبقاً', true);
+    body.style.display = 'none';
+    return;
+  }
+  body.style.display = '';
+  renderSrReturnItems();
+}
+
+const _SR_AVATAR_COLORS = ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6'];
+
+function renderSrReturnItems() {
+  const host = qs('#sr-items-list');
+  if (!host) return;
+  const rowsHtml = srReturnItems.map((it, i) => {
+    const maxQty = it.purchasedQty - it.alreadyReturned;
+    const imgUrl = it.image ? sanitizeUrl(it.image) : '';
+    const _hue = _SR_AVATAR_COLORS[(it.code || it.name || '').charCodeAt(0) % _SR_AVATAR_COLORS.length] || '#10b981';
+    const _initials = (it.name || '').split(/\s+/).slice(0,2).map(w => w[0]?.toUpperCase() || '').join('');
+    const imgHtml = imgUrl
+      ? `<img src="${esc(imgUrl)}" alt="${esc(it.name)}" loading="lazy" style="border-radius:8px;object-fit:cover;width:100%;height:100%" onerror="_txImgFallback(this)">`
+      : `<div style="width:100%;height:100%;border-radius:8px;background:${_hue}22;display:flex;align-items:center;justify-content:center"><span style="font-size:1.05rem;font-weight:800;color:${_hue};letter-spacing:-.5px">${_initials || '؟'}</span></div>`;
+    return `
+    <div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--surface)">
+      <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+        <div style="width:48px;height:48px;border-radius:8px;border:1px solid var(--border);flex-shrink:0;overflow:hidden">${imgHtml}</div>
+        <div style="flex:1;min-width:160px">
+          <div style="font-size:.92rem;font-weight:700;color:var(--text)">${esc(it.name)}</div>
+          <div style="font-size:.7rem;color:var(--muted);font-family:monospace">${esc(it.code)}</div>
+          <div style="margin-top:5px;display:inline-flex;align-items:center;gap:4px;background:rgba(234,88,12,.12);color:#ea580c;font-weight:700;font-size:.74rem;padding:3px 8px;border-radius:20px">
+            متاح للإرجاع: ${fmtN(maxQty)} من أصل ${fmtN(it.purchasedQty)}${it.alreadyReturned ? ` (تم إرجاع ${fmtN(it.alreadyReturned)} مسبقاً)` : ''}
+          </div>
+        </div>
+        <div>
+          <label style="font-size:.7rem;color:var(--muted);display:block">الكمية</label>
+          <input type="number" min="0" max="${maxQty}" value="${it.returnQty}" class="form-input" style="width:80px;text-align:center" oninput="srQtyChanged(${i}, this.value, this)">
+        </div>
+        <div>
+          <label style="font-size:.7rem;color:var(--muted);display:block">السعر</label>
+          <input type="number" min="0" max="${it.purchasedPrice}" value="${it.returnPrice}" class="form-input" style="width:90px;text-align:center" oninput="srPriceChanged(${i}, this.value, this)">
+        </div>
+        <div style="text-align:center;min-width:70px">
+          <label style="font-size:.7rem;color:var(--muted);display:block">الإجمالي</label>
+          <div style="font-weight:700;color:#ea580c">${fmtJ(it.returnQty * it.returnPrice)}</div>
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:2px">ملاحظة لهذا الصنف — سبب الاسترجاع الخاص به (اختياري)</label>
+        <input type="text" value="${esc(it.note || '')}" class="form-input" style="width:100%" placeholder="مثال: تلف في الغطاء فقط" oninput="srNoteChanged(${i}, this.value)">
+      </div>
+    </div>`;
+  }).join('');
+  host.innerHTML = rowsHtml;
+  updateSrTotal();
+}
+
+function srNoteChanged(i, val) {
+  const it = srReturnItems[i];
+  if (!it) return;
+  it.note = val;
+}
+
+function srQtyChanged(i, val, inputEl) {
+  const it = srReturnItems[i];
+  if (!it) return;
+  const maxQty = it.purchasedQty - it.alreadyReturned;
+  let n = parseInt(val) || 0;
+  const clamped = Math.max(0, Math.min(maxQty, n));
+  if (clamped !== n && inputEl) {
+    inputEl.value = clamped;
+    toast(`أقصى كمية متاحة للإرجاع لهذا الصنف: ${fmtN(maxQty)}`, true);
+  }
+  it.returnQty = clamped;
+  updateSrTotal();
+}
+
+function srPriceChanged(i, val, inputEl) {
+  const it = srReturnItems[i];
+  if (!it) return;
+  let n = Number(val) || 0;
+  const clamped = Math.max(0, Math.min(it.purchasedPrice, n));
+  if (clamped !== n && inputEl) {
+    inputEl.value = clamped;
+    toast(`السعر لا يمكن أن يتجاوز سعر الشراء الأصلي: ${fmtN(it.purchasedPrice)}`, true);
+  }
+  it.returnPrice = clamped;
+  updateSrTotal();
+}
+
+function updateSrTotal() {
+  const total = srReturnItems.reduce((s, it) => s + (it.returnQty * it.returnPrice), 0);
+  const display = qs('#sr-total-display');
+  if (display) display.innerHTML = fmtJ(total);
+  const hasQty = srReturnItems.some(it => it.returnQty > 0);
+  const draftBtn = qs('#sr-draft-btn');
+  const saveBtn = qs('#sr-save-btn');
+  const printBtn = qs('#sr-print-btn');
+  if (draftBtn) draftBtn.disabled = !hasQty;
+  if (saveBtn) saveBtn.disabled = !hasQty;
+  if (printBtn) printBtn.disabled = !hasQty;
+}
+
+async function saveSupplierReturn(supplierId, supplierName, asDraft) {
+  const tx = transactions.find(t => t._id === srSelectedTxId);
+  if (!tx) { toast('اختر فاتورة أولاً', true); return; }
+  const items = srReturnItems.filter(it => it.returnQty > 0).map(it => ({
+    code: it.code, name: it.name, qty: it.returnQty, price: it.returnPrice, note: it.note || '',
+  }));
+  if (!items.length) { toast('حدد كمية إرجاع لصنف واحد على الأقل', true); return; }
+  const reason = qs('#sr-reason')?.value || SR_REASONS[0];
+  const reasonDetails = qs('#sr-reason-details')?.value || '';
+  const vaultRefundAccount = qs('#sr-vault-account')?.value || RET_VAULT_SEGMENTS[0];
+  const isEdit = !!srEditingId;
+  const btn = asDraft ? qs('#sr-draft-btn') : qs('#sr-save-btn');
+  if (btn) btn.disabled = true;
+  try {
+    if (isEdit) {
+      await api('/supplier-returns/' + srEditingId, {
+        method: 'PUT',
+        body: JSON.stringify({ reason, reasonDetails, items, vaultRefundAccount }),
+      });
+      await addSupplierLog(supplierId, 'تعديل مرتجع مورد', `تعديل مرتجع من الفاتورة ${tx.ref || tx._id}`);
+      toast('تم حفظ التعديلات');
+    } else {
+      await api('/supplier-returns', {
+        method: 'POST',
+        body: JSON.stringify({
+          supplierId, supplierName,
+          originalTransactionId: tx._id, originalRef: tx.ref, originalDate: tx.date,
+          reason, reasonDetails, items, vaultRefundAccount, saveAsDraft: asDraft,
+        }),
+      });
+      await addSupplierLog(supplierId, 'إنشاء مرتجع مورد', `مرتجع من الفاتورة ${tx.ref || tx._id}`);
+      toast(asDraft ? 'تم حفظ المرتجع كمسودة' : 'تم إرسال المرتجع للاعتماد');
+    }
+    supplierReturns = await api('/supplier-returns').catch(() => supplierReturns);
+    closeModal();
+    srEditingId = null;
+    _spActiveTab = 'sreturns';
+    renderSupplierProfile();
+  } catch (e) {
+    toast('خطأ: ' + e.message, true);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function submitSupplierReturn(id) {
+  try {
+    await api('/supplier-returns/' + id + '/submit', { method: 'POST', body: '{}' });
+    toast('تم إرسال المرتجع للاعتماد');
+    supplierReturns = await api('/supplier-returns').catch(() => supplierReturns);
+    renderSupplierProfile();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+
+async function completeSupplierReturn(id) {
+  if (!await showConfirm('سيتم إضافة قيمة المرتجع إلى الخزنة وخصم الكمية من المخزون. هل تريد المتابعة؟', { title: 'إتمام مرتجع المورد', icon: 'warn' })) return;
+  try {
+    await api('/supplier-returns/' + id + '/complete', { method: 'POST', body: '{}' });
+    toast('تم إتمام المرتجع — تم تحديث المخزون والخزنة');
+    supplierReturns = await api('/supplier-returns').catch(() => supplierReturns);
+    transactions = await api('/transactions').catch(() => transactions);
+    renderSupplierProfile();
+    syncVaultState?.();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+
+async function cancelSupplierReturn(id) {
+  if (!await showConfirm('سيتم إلغاء طلب المرتجع بدون أي أثر على المخزون أو الخزنة.', { title: 'إلغاء مرتجع المورد', icon: 'warn', danger: true })) return;
+  try {
+    await api('/supplier-returns/' + id + '/cancel', { method: 'POST', body: '{}' });
+    toast('تم إلغاء المرتجع');
+    supplierReturns = await api('/supplier-returns').catch(() => supplierReturns);
+    renderSupplierProfile();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+
+function showSupplierReturnDetail(id) {
+  const r = supplierReturns.find(x => x._id === id);
+  if (!r) return;
+  const itemsRows = (r.items || []).map(it => {
+    const product = products.find(p => (p.code || '') === it.code);
+    const imgUrl = product?.imageUrl || product?.image || '';
+    const imgHtml = imgUrl
+      ? `<img src="${esc(sanitizeUrl(imgUrl))}" alt="${esc(it.name)}" loading="lazy" style="width:36px;height:36px;object-fit:cover;border-radius:6px" onerror="_txImgFallback(this)">`
+      : `<div style="width:36px;height:36px;border-radius:6px;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.65rem">—</div>`;
+    return `<tr>
+    <td style="padding:6px 8px">${imgHtml}</td>
+    <td style="padding:6px 8px">${esc(it.name)}</td>
+    <td style="padding:6px 8px;text-align:center">${fmtN(it.qty)}</td>
+    <td style="padding:6px 8px;text-align:center">${fmtJ(it.price)}</td>
+    <td style="padding:6px 8px;text-align:center">${fmtJ(it.total)}</td>
+    <td style="padding:6px 8px;font-size:.74rem;color:var(--muted)">${esc(it.note || '')}</td>
+  </tr>`;
+  }).join('');
+  const historyRows = [...(r.statusHistory || [])].reverse().map(h => `<tr>
+    <td style="padding:6px 8px;white-space:nowrap">${fmtDateTime(h.changedAt)}</td>
+    <td style="padding:6px 8px"><span class="badge ${_SR_STATUS_BADGE[h.status] || 'badge-orange'}">${esc(h.status)}</span></td>
+    <td style="padding:6px 8px">${esc(h.changedBy || '—')}</td>
+    <td style="padding:6px 8px">${esc(h.note || '')}</td>
+  </tr>`).join('');
+  openModal(`
+    <h3 style="margin-bottom:8px">مرتجع مورد ${esc(r.returnNumber)}</h3>
+    <div class="text-sm text-muted" style="margin-bottom:12px">الفاتورة الأصلية: #${esc(r.originalRef)} — ${fmtDate(r.originalDate)} | السبب: ${esc(r.reason)}${r.reasonDetails ? ' — ' + esc(r.reasonDetails) : ''}</div>
+    <div class="overflow-x" style="margin-bottom:16px">
+      <table style="width:100%;font-size:.82rem;border-collapse:collapse">
+        <thead><tr style="background:var(--surface2)">
+          <th style="padding:6px 8px;text-align:right">صورة</th>
+          <th style="padding:6px 8px;text-align:right">الصنف</th>
+          <th style="padding:6px 8px;text-align:center">الكمية</th>
+          <th style="padding:6px 8px;text-align:center">السعر</th>
+          <th style="padding:6px 8px;text-align:center">الإجمالي</th>
+          <th style="padding:6px 8px;text-align:right">ملاحظة</th>
+        </tr></thead>
+        <tbody>${itemsRows}</tbody>
+      </table>
+    </div>
+    <div style="font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">الإجمالي: <span style="color:#ea580c">${fmtJ(r.total || 0)}</span> — قسم الخزنة: <span style="display:inline-flex;align-items:center;gap:4px">${VAULT_METHOD_ICONS[r.vaultRefundAccount] || ''} ${esc(r.vaultRefundAccount)}</span></div>
+    <h4 style="margin-bottom:8px;font-size:.9rem">سجل الحالة</h4>
+    <div class="overflow-x">
+      <table style="width:100%;font-size:.78rem;border-collapse:collapse">
+        <thead><tr style="background:var(--surface2)">
+          <th style="padding:6px 8px;text-align:right">التاريخ</th>
+          <th style="padding:6px 8px;text-align:right">الحالة</th>
+          <th style="padding:6px 8px;text-align:right">بواسطة</th>
+          <th style="padding:6px 8px;text-align:right">ملاحظة</th>
+        </tr></thead>
+        <tbody>${historyRows}</tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      ${['مسودة','معلق'].includes(r.status) ? `<button class="btn btn-outline" onclick="closeModal();openEditSupplierReturnModal('${esc(r._id)}')">تعديل</button>` : ''}
+      <button class="btn btn-outline" onclick="printSupplierReturn('${esc(r._id)}')">طباعة</button>
+      <button class="btn btn-outline" onclick="closeModal()">إغلاق</button>
+    </div>
+  `);
+}
+
+function _buildSupplierReturnPrintHtml({ returnNumber, status, supplierName, supplierPhone, supplierAddress, returnDate, originalRef, reason, reasonDetails, items, total, vaultRefundAccount }) {
+  const itemRows = (items || []).map(it => `
+    <tr>
+      <td style="padding:8px;border:1px solid #ddd;text-align:center">
+        ${it.image ? `<img src="${esc(it.image)}" style="width:44px;height:44px;object-fit:contain">` : '—'}
+      </td>
+      <td style="padding:8px;border:1px solid #ddd">${esc(it.code || '')}</td>
+      <td style="padding:8px;border:1px solid #ddd">${esc(it.name || '')}</td>
+      <td style="padding:8px;border:1px solid #ddd;text-align:center">${it.qty ?? it.returnQty ?? 0}</td>
+      <td style="padding:8px;border:1px solid #ddd;text-align:center">${it.price ?? it.returnPrice ?? 0} ج</td>
+      <td style="padding:8px;border:1px solid #ddd;text-align:center">${((it.qty ?? it.returnQty ?? 0) * (it.price ?? it.returnPrice ?? 0))} ج</td>
+      <td style="padding:8px;border:1px solid #ddd;font-size:11px;color:#666">${esc(it.note || '')}</td>
+    </tr>`).join('');
+  return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>مرتجع مورد — ${esc(returnNumber)}</title>
+<style>
+  body{font-family:Arial,sans-serif;margin:24px;color:#111;direction:rtl}
+  @media print{@page{margin:1.5cm}}
+  h2{margin:0;font-size:1.3rem}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:16px}
+  th{background:#f0f4f8;padding:8px;border:1px solid #ddd;text-align:right}
+  .header{display:flex;justify-content:space-between;margin-bottom:20px;align-items:flex-start}
+  .label{color:#666;font-size:12px}
+  .badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:#ffedd5;color:#c2410c}
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h2>مرتجع مورد</h2>
+    <p class="label" style="margin:4px 0">${esc(returnNumber)}</p>
+    <span class="badge">${esc(status)}</span>
+  </div>
+  <div style="text-align:left">
+    <strong style="font-size:1rem">${esc(supplierName)}</strong>
+    ${supplierPhone ? `<p class="label" style="margin:3px 0">${esc(supplierPhone)}</p>` : ''}
+    ${supplierAddress ? `<p class="label" style="margin:3px 0">${esc(supplierAddress)}</p>` : ''}
+  </div>
+</div>
+<div style="display:flex;gap:24px;font-size:13px;margin-bottom:8px;flex-wrap:wrap">
+  <span><span class="label">تاريخ الإرجاع:</span> ${esc(returnDate || '')}</span>
+  ${originalRef ? `<span><span class="label">الفاتورة الأصلية:</span> #${esc(originalRef)}</span>` : ''}
+  <span><span class="label">قسم الخزنة:</span> ${esc(vaultRefundAccount || '')}</span>
+</div>
+<p style="font-size:13px"><span class="label">سبب الإرجاع:</span> ${esc(reason || '')}${reasonDetails ? ' — ' + esc(reasonDetails) : ''}</p>
+<table>
+  <thead>
+    <tr>
+      <th style="width:50px">صورة</th>
+      <th>كود الصنف</th>
+      <th>اسم الصنف</th>
+      <th style="text-align:center;width:60px">الكمية</th>
+      <th style="text-align:center;width:80px">السعر</th>
+      <th style="text-align:center;width:80px">الإجمالي</th>
+      <th>ملاحظة</th>
+    </tr>
+  </thead>
+  <tbody>${itemRows}</tbody>
+</table>
+<div style="margin-top:16px;font-size:14px;font-weight:700;text-align:left">إجمالي قيمة المرتجع: ${total} ج</div>
+<div style="margin-top:24px;font-size:11px;color:#999;text-align:center">تم إنشاء هذا المستند بواسطة نظام SOULIA</div>
+</body>
+</html>`;
+}
+
+function printSupplierReturn(id) {
+  const r = supplierReturns.find(x => x._id === id);
+  if (!r) return;
+  const s = suppliers.find(x => x._id === r.supplierId);
+  const html = _buildSupplierReturnPrintHtml({
+    returnNumber: r.returnNumber, status: r.status, supplierName: r.supplierName,
+    supplierPhone: s?.phone, supplierAddress: s?.address, returnDate: r.returnDate,
+    originalRef: r.originalRef, reason: r.reason, reasonDetails: r.reasonDetails,
+    items: r.items, total: fmtN(r.total || 0), vaultRefundAccount: r.vaultRefundAccount,
+  });
+  const pw = window.open('', '_blank');
+  if (!pw) { toast('يرجى السماح بالنوافذ المنبثقة للطباعة', true); return; }
+  pw.document.write(html);
+  pw.document.close();
+  setTimeout(() => { pw.print(); }, 300);
+}
+
+function printSupplierReturnDraft(supplierId, supplierName) {
+  const items = srReturnItems.filter(it => it.returnQty > 0);
+  if (!items.length) { toast('حدد كمية إرجاع لصنف واحد على الأقل', true); return; }
+  const s = suppliers.find(x => x._id === supplierId);
+  const tx = transactions.find(t => t._id === srSelectedTxId);
+  const reason = qs('#sr-reason')?.value || SR_REASONS[0];
+  const reasonDetails = qs('#sr-reason-details')?.value || '';
+  const vaultRefundAccount = qs('#sr-vault-account')?.value || RET_VAULT_SEGMENTS[0];
+  const total = items.reduce((sum, it) => sum + (it.returnQty * it.returnPrice), 0);
+  const html = _buildSupplierReturnPrintHtml({
+    returnNumber: 'مسودة', status: 'مسودة', supplierName,
+    supplierPhone: s?.phone, supplierAddress: s?.address, returnDate: todayLocalISO(),
+    originalRef: tx?.ref, reason, reasonDetails,
+    items, total: fmtN(total), vaultRefundAccount,
+  });
+  const pw = window.open('', '_blank');
+  if (!pw) { toast('يرجى السماح بالنوافذ المنبثقة للطباعة', true); return; }
+  pw.document.write(html);
+  pw.document.close();
+  setTimeout(() => { pw.print(); }, 300);
+}
+
+function exportSupplierReturnsExcel(supplierId) {
+  const list = supplierReturns.filter(r => r.supplierId === supplierId);
+  if (!list.length) { toast('لا توجد مرتجعات لتصديرها', true); return; }
+  const data = [['رقم المرتجع', 'التاريخ', 'الفاتورة الأصلية', 'الأصناف', 'القيمة', 'الحالة', 'اعتُمد بواسطة']];
+  for (const r of list) {
+    data.push([
+      r.returnNumber || '',
+      r.returnDate || '',
+      r.originalRef || '',
+      (r.items || []).map(it => `${it.name} (×${it.qty})`).join(', '),
+      r.total || 0,
+      r.status || '',
+      r.approvedBy || '',
+    ]);
+  }
+  try {
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [14, 12, 16, 40, 12, 12, 16].map(w => ({ wch: w }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'مرتجعات الموردين');
+    XLSX.writeFile(wb, `مرتجعات_الموردين_${todayLocalISO()}.xlsx`);
+  } catch (e) { toast('خطأ في التصدير: ' + e.message, true); }
 }
 
 function renderSpPaymentsPanel(txs) {
@@ -32107,18 +33192,18 @@ function openConvertPoModal(poId) {
   const n = items.length;
   const itemRows = items.map((item, i) => `
     <tr style="border-bottom:1px solid var(--border)" id="conv-row-${i}">
-      <td style="padding:6px 8px;font-size:.78rem;color:var(--muted)">${esc(item.productCode||'')}</td>
-      <td style="padding:6px 8px">${esc(item.productName||'')}</td>
-      <td style="padding:6px 8px;text-align:center;color:var(--muted);font-size:.8rem">${fmtN(item.qty)}</td>
-      <td style="padding:6px 8px;text-align:center">
-        <div style="display:flex;align-items:center;gap:6px;justify-content:center">
+      <td style="padding:6px 8px;font-size:.78rem;color:var(--muted);white-space:nowrap">${esc(item.productCode||'')}</td>
+      <td style="padding:6px 8px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(item.productName||'')}">${esc(item.productName||'')}</td>
+      <td style="padding:6px 8px;text-align:center;color:var(--muted);font-size:.8rem;white-space:nowrap">${fmtN(item.qty)}</td>
+      <td style="padding:6px 8px;text-align:center;min-width:160px">
+        <div style="display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:nowrap">
           <button type="button" id="conv-recv-ok-${i}"
             onclick="_convSetRecvOk(${i},${item.qty||0},${n})"
             title="الكمية مطابقة — تأكيد الاستلام"
             style="width:28px;height:28px;border-radius:50%;border:2px solid #16a34a;background:#dcfce7;color:#16a34a;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">✓</button>
           <input type="number" id="conv-recv-${i}"
-                 value="${item.qty||0}" min="0" max="${item.qty||0}"
-                 style="width:60px;text-align:center;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-size:.83rem"
+                 value="${item.qty||0}" min="0"
+                 style="width:60px;flex-shrink:0;text-align:center;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-size:.83rem"
                  oninput="_convRecvChanged(${i},${item.qty||0},${n})">
           <button type="button" id="conv-recv-bad-${i}"
             onclick="_convSetRecvBad(${i},${item.qty||0},${n})"
@@ -32127,13 +33212,13 @@ function openConvertPoModal(poId) {
         </div>
         <div id="conv-recv-hint-${i}" style="font-size:.68rem;text-align:center;margin-top:2px;color:#16a34a">مطابق ✓</div>
       </td>
-      <td style="padding:6px 8px;text-align:center">
+      <td style="padding:6px 8px;text-align:center;min-width:90px">
         <input type="number" id="conv-price-${i}" value="${item.unitPrice || 0}"
                min="0" step="0.01"
                style="width:80px;text-align:center;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-size:.83rem"
                oninput="updateConvTotal(${n})">
       </td>
-      <td style="padding:6px 8px;text-align:center;font-weight:600" id="conv-item-total-${i}">
+      <td style="padding:6px 8px;text-align:center;font-weight:600;white-space:nowrap" id="conv-item-total-${i}">
         ${fmtN((item.qty||0)*(item.unitPrice||0))}
       </td>
     </tr>`).join('');
@@ -32151,23 +33236,41 @@ function openConvertPoModal(poId) {
       </button>
     </div>
     <div class="overflow-x" style="margin-bottom:12px">
-      <table style="width:100%;font-size:.82rem;border-collapse:collapse">
+      <table style="width:100%;min-width:640px;font-size:.82rem;border-collapse:collapse">
         <thead><tr style="background:var(--surface2)">
-          <th style="padding:6px 8px;text-align:right">الكود</th>
-          <th style="padding:6px 8px;text-align:right">الصنف</th>
-          <th style="padding:6px 8px;text-align:center">الكمية المطلوبة</th>
-          <th style="padding:6px 8px;text-align:center">الاستلام الفعلي</th>
-          <th style="padding:6px 8px;text-align:center">سعر الشراء</th>
-          <th style="padding:6px 8px;text-align:center">الإجمالي</th>
+          <th style="padding:6px 8px;text-align:right;white-space:nowrap">الكود</th>
+          <th style="padding:6px 8px;text-align:right;white-space:nowrap">الصنف</th>
+          <th style="padding:6px 8px;text-align:center;white-space:nowrap">الكمية المطلوبة</th>
+          <th style="padding:6px 8px;text-align:center;white-space:nowrap;min-width:160px">الاستلام الفعلي</th>
+          <th style="padding:6px 8px;text-align:center;white-space:nowrap;min-width:90px">سعر الشراء</th>
+          <th style="padding:6px 8px;text-align:center;white-space:nowrap">الإجمالي</th>
         </tr></thead>
         <tbody>${itemRows}</tbody>
       </table>
     </div>
 
-    <!-- Grand total bar -->
-    <div style="background:var(--surface2);border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:.85rem;font-weight:600">الإجمالي الكلي</span>
-      <strong id="conv-grand-total" style="font-size:1.05rem;color:var(--accent)">0</strong>
+    <!-- Discount + Grand total bar -->
+    <div style="background:var(--surface2);border-radius:8px;padding:10px 16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:.85rem;font-weight:600">إجمالي الأصناف</span>
+        <strong id="conv-items-total" style="font-size:.95rem">0</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
+        <span style="font-size:.82rem;color:var(--muted)">إضافة خصم</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="text" inputmode="numeric" id="conv-discount" value="0"
+                 style="width:80px;text-align:center;padding:5px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-size:.83rem"
+                 oninput="this.value=this.value.replace(/[^0-9.]/g,'');updateConvTotal(${n})">
+          <select id="conv-discount-type" onchange="updateConvTotal(${n})" style="padding:5px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-size:.8rem">
+            <option value="value">ج.م</option>
+            <option value="percent">%</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+        <span style="font-size:.85rem;font-weight:700">الإجمالي بعد الخصم</span>
+        <strong id="conv-grand-total" style="font-size:1.05rem;color:var(--accent)">0</strong>
+      </div>
     </div>
 
     <!-- Invoice fields — mirrors saveTx purchase section -->
@@ -32199,6 +33302,16 @@ function openConvertPoModal(poId) {
         <input type="text" id="conv-notes" class="form-input" placeholder="اختياري" style="width:100%">
       </div>
 
+      <div class="form-group" style="grid-column:1/-1">
+        <label style="font-size:.8rem;color:var(--muted)">فواتير المورد <span style="font-weight:400;color:var(--muted)">(اختياري — يمكن إضافة أكثر من فاتورة)</span></label>
+        <div id="conv-invoice-imgs-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
+        <button type="button" onclick="_addConvInvoiceImgRow()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px dashed var(--border);border-radius:8px;background:none;color:var(--muted);cursor:pointer;font-size:.83rem;transition:border-color .15s,color .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          إضافة رابط فاتورة
+        </button>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:4px">أدخل رابطاً مباشراً لكل صورة فاتورة — ستظهر جميعها في تفاصيل عملية الشراء</div>
+      </div>
+
       <div class="form-group">
         <label style="font-size:.8rem;color:var(--muted)">العربون — دفعة مقدمة</label>
         <input type="text" inputmode="numeric" id="conv-deposit" class="form-input" value="0"
@@ -32208,12 +33321,13 @@ function openConvertPoModal(poId) {
 
       <div class="form-group">
         <label style="font-size:.8rem;color:var(--muted)">حساب الدفع (السحب من) *</label>
-        <select id="conv-account" class="form-input" style="width:100%">
+        <select id="conv-account" style="display:none">
           <option value="كاش">كاش</option>
           <option value="فودافون كاش">فودافون كاش</option>
           <option value="Instapay">Instapay</option>
           <option value="تحويل بنكي">تحويل بنكي</option>
         </select>
+        <div id="conv-account-btns" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"></div>
       </div>
     </div>
 
@@ -32236,10 +33350,55 @@ function openConvertPoModal(poId) {
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary" id="conv-save-btn"
               onclick="doConvertPo('${esc(poId)}',${n})">حفظ فاتورة المشتريات</button>
+      <button class="btn btn-outline" onclick="printConvPreview('${esc(poId)}',${n})" style="display:inline-flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        معاينة وطباعة
+      </button>
       <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
     </div>
-  `);
+  `, 'max-width:900px');
   updateConvTotal(n);
+  renderConvAccountBtns();
+}
+
+function _addConvInvoiceImgRow(url) {
+  const list = qs('#conv-invoice-imgs-list');
+  if (!list) return;
+  const row = document.createElement('div');
+  row.className = 'invoice-img-row';
+  row.style.cssText = 'display:flex;flex-direction:column;gap:6px;padding:10px;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px';
+  row.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px">
+      <input type="url" class="conv-invoice-img-url" placeholder="https://... رابط صورة الفاتورة" value="${esc(url||'')}" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-size:.82rem" oninput="_updateInvoiceImgPreview(this)">
+      <button type="button" onclick="_removeInvoiceImgRow(this)" style="flex-shrink:0;width:28px;height:28px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:center" title="حذف">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="invoice-img-preview" style="min-height:0"></div>`;
+  list.appendChild(row);
+  if (url) _updateInvoiceImgPreview(row.querySelector('.conv-invoice-img-url'));
+}
+
+const _CONV_ACCOUNTS = ['كاش', 'فودافون كاش', 'Instapay', 'تحويل بنكي'];
+
+function renderConvAccountBtns() {
+  const wrap = qs('#conv-account-btns'); if (!wrap) return;
+  const selVal = qs('#conv-account')?.value || 'كاش';
+  wrap.innerHTML = _CONV_ACCOUNTS.map(val => {
+    const isActive = val === selVal;
+    const icon = _PAY_METHOD_ICONS[val] || '';
+    return `<button type="button" onclick="selectConvAccount('${val}')"
+      style="padding:8px 6px;border-radius:8px;border:2px solid ${isActive ? 'var(--accent)' : 'var(--border)'};background:${isActive ? 'var(--accent-light,#ede9fe)' : 'var(--surface2)'};color:${isActive ? 'var(--accent)' : 'var(--text)'};font-weight:${isActive ? '700' : '600'};font-size:.75rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:all .15s;min-height:52px">
+      ${icon}
+      <span>${val === 'فودافون كاش' ? 'فودافون' : val}</span>
+    </button>`;
+  }).join('');
+}
+
+function selectConvAccount(val) {
+  const sel = qs('#conv-account');
+  if (sel) sel.value = val;
+  renderConvAccountBtns();
 }
 
 function fillConvPricesFromSystem(itemCount) {
@@ -32264,24 +33423,36 @@ function fillConvPricesFromSystem(itemCount) {
   else toast('لم يُعثر على أسعار شراء مسجلة لهذه الأصناف', true);
 }
 
+function _convComputeDiscount(itemsTotal) {
+  const rawVal = Number((qs('#conv-discount')?.value || '').replace(/[^0-9.]/g,'')) || 0;
+  const type = qs('#conv-discount-type')?.value || 'value';
+  let disc = type === 'percent' ? (itemsTotal * Math.min(rawVal, 100) / 100) : rawVal;
+  disc = Math.max(0, Math.min(disc, itemsTotal));
+  return disc;
+}
+
 function updateConvTotal(itemCount) {
   const po = _convPoId ? purchaseOrders.find(p => p._id === _convPoId) : null;
-  let grandTotal = 0;
+  let itemsTotal = 0;
   for (let i = 0; i < itemCount; i++) {
     const price = parseFloat(qs('#conv-price-' + i)?.value || '0') || 0;
     // use received qty if available, fallback to PO qty
     const recvEl = qs('#conv-recv-' + i);
     const qty = recvEl ? (parseFloat(recvEl.value) || 0) : (po?.items?.[i]?.qty || 0);
     const lineTotal = price * qty;
-    grandTotal += lineTotal;
+    itemsTotal += lineTotal;
     const cell = qs('#conv-item-total-' + i);
     if (cell) cell.textContent = fmtN(lineTotal);
   }
+  const discount = _convComputeDiscount(itemsTotal);
+  const grandTotal = Math.max(0, itemsTotal - discount);
   const deposit = Number((qs('#conv-deposit')?.value || '').replace(/[^0-9]/g,'')) || 0;
-  const paidNow = deposit > 0 ? deposit : 0;
+  const paidNow = deposit > 0 ? Math.min(deposit, grandTotal) : 0;
   const remaining = Math.max(0, grandTotal - paidNow);
   const isPaid = remaining <= 0;
 
+  const itEl = qs('#conv-items-total');
+  if (itEl) itEl.textContent = fmtN(itemsTotal);
   const gEl = qs('#conv-grand-total');
   if (gEl) gEl.textContent = fmtN(grandTotal);
   const pEl = qs('#conv-paid-display');
@@ -32297,7 +33468,8 @@ function _convApplyRecvState(i, orderedQty, receivedQty, n) {
   const badBtn  = qs('#conv-recv-bad-' + i);
   const hint    = qs('#conv-recv-hint-' + i);
   const row     = qs('#conv-row-' + i);
-  const isMatch = receivedQty >= orderedQty;
+  const isMatch = receivedQty === orderedQty;
+  const isOver  = receivedQty > orderedQty;
   const isZero  = receivedQty === 0;
 
   if (okBtn) {
@@ -32306,14 +33478,18 @@ function _convApplyRecvState(i, orderedQty, receivedQty, n) {
     okBtn.style.color        = isMatch ? '#16a34a' : 'var(--muted)';
   }
   if (badBtn) {
-    badBtn.style.borderColor = !isMatch ? '#dc2626' : 'var(--border)';
-    badBtn.style.background  = !isMatch ? '#fee2e2' : 'var(--surface2)';
-    badBtn.style.color       = !isMatch ? '#dc2626' : 'var(--muted)';
+    badBtn.style.borderColor = (!isMatch && !isOver) ? '#dc2626' : 'var(--border)';
+    badBtn.style.background  = (!isMatch && !isOver) ? '#fee2e2' : 'var(--surface2)';
+    badBtn.style.color       = (!isMatch && !isOver) ? '#dc2626' : 'var(--muted)';
   }
   if (hint) {
     if (isMatch) {
       hint.textContent = 'مطابق ✓';
       hint.style.color = '#16a34a';
+    } else if (isOver) {
+      const extra = receivedQty - orderedQty;
+      hint.textContent = `زيادة ${fmtN(extra)} ⚠`;
+      hint.style.color = '#d97706';
     } else if (isZero) {
       hint.textContent = 'لم يُستلم ✕';
       hint.style.color = '#dc2626';
@@ -32323,7 +33499,7 @@ function _convApplyRecvState(i, orderedQty, receivedQty, n) {
       hint.style.color = '#dc2626';
     }
   }
-  if (row) row.style.background = isMatch ? '' : (isZero ? 'rgba(220,38,38,.04)' : 'rgba(251,191,36,.06)');
+  if (row) row.style.background = isMatch ? '' : (isOver ? 'rgba(217,119,6,.06)' : (isZero ? 'rgba(220,38,38,.04)' : 'rgba(251,191,36,.06)'));
   updateConvTotal(n);
 }
 
@@ -32336,7 +33512,7 @@ function _convSetRecvOk(i, orderedQty, n) {
 function _convSetRecvBad(i, orderedQty, n) {
   const inp = qs('#conv-recv-' + i);
   const cur = inp ? (parseFloat(inp.value) || 0) : 0;
-  // if already at full qty, drop to 0 to prompt edit; otherwise keep current val and focus
+  // if already at full qty or more, drop to 0 to prompt edit; otherwise keep current val and focus
   if (cur >= orderedQty) { if (inp) { inp.value = 0; } _convApplyRecvState(i, orderedQty, 0, n); }
   else { _convApplyRecvState(i, orderedQty, cur, n); }
   if (inp) { inp.focus(); inp.select(); }
@@ -32344,7 +33520,7 @@ function _convSetRecvBad(i, orderedQty, n) {
 
 function _convRecvChanged(i, orderedQty, n) {
   const inp = qs('#conv-recv-' + i);
-  const val = inp ? Math.max(0, Math.min(orderedQty, parseFloat(inp.value) || 0)) : 0;
+  const val = inp ? Math.max(0, parseFloat(inp.value) || 0) : 0;
   if (inp && parseFloat(inp.value) !== val) inp.value = val;
   _convApplyRecvState(i, orderedQty, val, n);
 }
@@ -32401,20 +33577,42 @@ async function doConvertPo(poId, itemCount) {
   const finalItems = items.filter(it => it.qty > 0);
   if (!finalItems.length) { toast('لا توجد أصناف في أمر الشراء', true); return; }
 
-  // Build receipt discrepancy note
+  // Build receipt discrepancy note (shortage AND surplus vs. ordered qty)
   const shortageItems = items.filter(it => it.qty < it.orderedQty);
-  const autoNote = shortageItems.length > 0
-    ? 'نقص في الاستلام: ' + shortageItems.map(it => `${it.name} (مطلوب ${fmtN(it.orderedQty)} — مستلم ${fmtN(it.qty)})`).join('، ')
-    : '';
+  const surplusItems = items.filter(it => it.qty > it.orderedQty);
+  const noteParts = [];
+  if (shortageItems.length > 0) {
+    noteParts.push('نقص في الاستلام: ' + shortageItems.map(it => `${it.name} (مطلوب ${fmtN(it.orderedQty)} — مستلم ${fmtN(it.qty)})`).join('، '));
+  }
+  if (surplusItems.length > 0) {
+    noteParts.push('زيادة في الاستلام عن المطلوب: ' + surplusItems.map(it => `${it.name} (مطلوب ${fmtN(it.orderedQty)} — مستلم ${fmtN(it.qty)})`).join('، '));
+  }
+  const autoNote = noteParts.join(' | ');
+
+  if (surplusItems.length > 0) {
+    const names = surplusItems.map(it => `${it.name} (+${fmtN(it.qty - it.orderedQty)})`).join('، ');
+    const ok = await showConfirm(
+      `الأصناف التالية استُلمت بكمية أكبر من المطلوب في أمر الشراء:\n${names}\n\nسيتم تدوين ذلك تلقائياً في ملاحظات الفاتورة. هل تريد المتابعة؟`,
+      { title: 'تنبيه — استلام كمية زائدة', icon: 'warning' }
+    );
+    if (!ok) return;
+  }
 
   const itemsTotal = finalItems.reduce((s, it) => s + it.total, 0);
+  const discount = _convComputeDiscount(itemsTotal);
+  if (discount > 0 && _isOtpRequired() && discount > getHighValueDiscountLimit()) {
+    toast(`الخصم (${fmtN(discount)} ج) يتجاوز الحد المسموح بدون تحقق (${fmtN(getHighValueDiscountLimit())} ج) — يلزم مدير لتطبيق هذا الخصم`, true);
+    return;
+  }
+  const grandTotal = Math.max(0, itemsTotal - discount);
   const deposit = Number((qs('#conv-deposit')?.value || '').replace(/[^0-9]/g,'')) || 0;
-  if (deposit > itemsTotal) { toast('العربون لا يمكن أن يتجاوز إجمالي الفاتورة', true); return; }
+  if (deposit > grandTotal) { toast('العربون لا يمكن أن يتجاوز إجمالي الفاتورة بعد الخصم', true); return; }
   const paidNow = deposit;
-  const purRemaining = Math.max(0, itemsTotal - paidNow);
+  const purRemaining = Math.max(0, grandTotal - paidNow);
   const account = qs('#conv-account')?.value || 'كاش';
   const userNotes = (qs('#conv-notes')?.value || '').trim();
   const notes = [userNotes, autoNote].filter(Boolean).join(' | ');
+  const invoiceImages = Array.from(qsa('#conv-invoice-imgs-list .conv-invoice-img-url')).map(i => i.value.trim()).filter(Boolean);
 
   // ── Purchase OTP gate — mirrors saveTx but calls doConvertPo on success ──
   if (_isPurchaseOtpRequired() && !_convPurchaseOtpId) {
@@ -32453,6 +33651,8 @@ async function doConvertPo(poId, itemCount) {
         notes: notes || `محوّل من أمر شراء ${po.poNumber}`,
         items: finalItems,
         purchaseOtpId: _convPurchaseOtpId || '',
+        invoiceImages,
+        discount,
       }),
     });
     _convPurchaseOtpId = '';
@@ -32465,6 +33665,114 @@ async function doConvertPo(poId, itemCount) {
     renderSupplierProfile();
   } catch (e) { toast('خطأ: ' + e.message, true); }
   finally { if (btn) { btn.disabled = false; btn.style.opacity = ''; } }
+}
+
+/* ── Print preview for PO-to-invoice conversion (before saving) ── */
+function printConvPreview(poId, itemCount) {
+  const po = purchaseOrders.find(p => p._id === poId);
+  if (!po) return;
+  const s = suppliers.find(x => x._id === po.supplierId);
+
+  const rows = [];
+  let itemsTotal = 0;
+  for (let i = 0; i < itemCount; i++) {
+    const item = po.items?.[i];
+    if (!item) continue;
+    const price = parseFloat(qs('#conv-price-' + i)?.value || '0') || 0;
+    const recvEl = qs('#conv-recv-' + i);
+    const qty = recvEl ? Math.max(0, parseFloat(recvEl.value) || 0) : (item.qty || 0);
+    if (qty <= 0) continue;
+    const lineTotal = qty * price;
+    itemsTotal += lineTotal;
+    const orderedQty = item.qty || 0;
+    const diffNote = qty > orderedQty
+      ? `<span style="color:#d97706">(زيادة ${fmtN(qty - orderedQty)} عن المطلوب)</span>`
+      : qty < orderedQty
+        ? `<span style="color:#dc2626">(نقص ${fmtN(orderedQty - qty)} عن المطلوب)</span>`
+        : '';
+    rows.push(`
+      <tr>
+        <td style="padding:8px;border:1px solid #ddd">${esc(item.productCode||'')}</td>
+        <td style="padding:8px;border:1px solid #ddd">${esc(item.productName||'')}</td>
+        <td style="padding:8px;border:1px solid #ddd;text-align:center">${fmtN(qty)} ${diffNote}</td>
+        <td style="padding:8px;border:1px solid #ddd;text-align:center">${fmtN(price)} ج</td>
+        <td style="padding:8px;border:1px solid #ddd;text-align:center">${fmtN(lineTotal)} ج</td>
+      </tr>`);
+  }
+
+  const discount = _convComputeDiscount(itemsTotal);
+  const grandTotal = Math.max(0, itemsTotal - discount);
+  const deposit = Number((qs('#conv-deposit')?.value || '').replace(/[^0-9]/g,'')) || 0;
+  const paidNow = deposit > 0 ? Math.min(deposit, grandTotal) : 0;
+  const remaining = Math.max(0, grandTotal - paidNow);
+  const account = qs('#conv-account')?.value || 'كاش';
+  const ref = (qs('#conv-ref')?.value || '').trim();
+  const convDate = (qs('#conv-date')?.value || '').trim();
+  const notes = (qs('#conv-notes')?.value || '').trim();
+
+  const pw = window.open('', '_blank');
+  if (!pw) { toast('يرجى السماح بالنوافذ المنبثقة للطباعة', true); return; }
+  pw.document.write(`<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>معاينة فاتورة مشتريات — ${esc(po.poNumber)}</title>
+<style>
+  body{font-family:Arial,sans-serif;margin:24px;color:#111;direction:rtl}
+  @media print{@page{margin:1.5cm}}
+  h2{margin:0;font-size:1.3rem}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:16px}
+  th{background:#f0f4f8;padding:8px;border:1px solid #ddd;text-align:right}
+  .header{display:flex;justify-content:space-between;margin-bottom:20px;align-items:flex-start}
+  .label{color:#666;font-size:12px}
+  .badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:#fef3c7;color:#92400e}
+  .summary{margin-top:18px;border:1px solid #ddd;border-radius:8px;padding:12px 16px;max-width:340px;margin-left:0}
+  .summary-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0}
+  .summary-row.total{font-weight:700;border-top:1px solid #ddd;margin-top:6px;padding-top:8px}
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h2>معاينة — تحويل إلى فاتورة مشتريات</h2>
+    <p class="label" style="margin:4px 0">${esc(po.poNumber)}${ref ? ' — فاتورة #' + esc(ref) : ''}</p>
+    <span class="badge">مسودة — لم يتم الحفظ بعد</span>
+  </div>
+  <div style="text-align:left">
+    <strong style="font-size:1rem">${esc(po.supplierName)}</strong>
+    ${s?.phone ? `<p class="label" style="margin:3px 0">${esc(s.phone)}</p>` : ''}
+    ${s?.address ? `<p class="label" style="margin:3px 0">${esc(s.address)}</p>` : ''}
+  </div>
+</div>
+<div style="display:flex;gap:24px;font-size:13px;margin-bottom:8px">
+  <span><span class="label">تاريخ الفاتورة:</span> ${esc(convDate||'')}</span>
+  <span><span class="label">حساب الدفع:</span> ${esc(account)}</span>
+</div>
+${notes ? `<p style="font-size:13px"><span class="label">ملاحظة:</span> ${esc(notes)}</p>` : ''}
+<table>
+  <thead>
+    <tr>
+      <th>كود الصنف</th>
+      <th>اسم الصنف</th>
+      <th style="text-align:center">الكمية المستلمة</th>
+      <th style="text-align:center">سعر الشراء</th>
+      <th style="text-align:center">الإجمالي</th>
+    </tr>
+  </thead>
+  <tbody>${rows.join('')}</tbody>
+</table>
+<div class="summary">
+  <div class="summary-row"><span>إجمالي الأصناف</span><strong>${fmtN(itemsTotal)} ج</strong></div>
+  ${discount > 0 ? `<div class="summary-row"><span>الخصم</span><strong style="color:#dc2626">-${fmtN(discount)} ج</strong></div>` : ''}
+  <div class="summary-row total"><span>الإجمالي بعد الخصم</span><strong>${fmtN(grandTotal)} ج</strong></div>
+  <div class="summary-row"><span>العربون المدفوع الآن</span><strong>${fmtN(paidNow)} ج</strong></div>
+  <div class="summary-row"><span>المتبقي للمورد</span><strong>${fmtN(remaining)} ج</strong></div>
+</div>
+<div style="margin-top:24px;font-size:11px;color:#999;text-align:center">معاينة قبل الحفظ — نظام SOULIA</div>
+</body>
+</html>`);
+  pw.document.close();
+  setTimeout(() => { pw.print(); }, 300);
 }
 
 /* ── Print PO ── */
@@ -32759,6 +34067,7 @@ const debouncedRenderExpenses = debounce(() => { expPage = 1; renderExpenses(); 
 
 function clearExpFilters() {
   qs('#exp-from').value = ''; qs('#exp-to').value = ''; qs('#exp-cat-filter').value = ''; qs('#exp-acc-filter').value = ''; qs('#exp-search').value = '';
+  qs('#exp-from').classList.remove('has-value'); qs('#exp-to').classList.remove('has-value');
   expPage = 1; renderExpenses();
 }
 
@@ -33265,6 +34574,7 @@ function clearApprFilters() {
   qs('#appr-kind-filter').value = '';
   qs('#appr-from').value = ''; qs('#appr-to').value = '';
   qs('#appr-act-from').value = ''; qs('#appr-act-to').value = '';
+  qsa('#appr-from, #appr-to, #appr-act-from, #appr-act-to').forEach(el => el.classList.remove('has-value'));
   renderApprovals();
 }
 // ── OTP Audit helpers ────────────────────────────────────────────────────
@@ -33551,7 +34861,7 @@ function toggleOtpDetail(idx) {
 }
 function clearOtpAuditFilters() {
   ['otp-audit-kind','otp-audit-status','otp-audit-from','otp-audit-to','otp-audit-emp','otp-audit-code']
-    .forEach(id => { const el = qs('#' + id); if (el) el.value = ''; });
+    .forEach(id => { const el = qs('#' + id); if (el) { el.value = ''; el.classList.remove('has-value'); } });
   renderOtpAudit();
 }
 
@@ -33600,19 +34910,22 @@ function renderApprovals() {
   const allReturns = returnRequests || [];
   const allCancelReqs = (transactions || []).filter(tx => tx.cancelRequest && tx.cancelRequest.status);
   const allProductEdits = (products || []).filter(p => p.editRequest && p.editRequest.status);
+  const allSupplierReturns = supplierReturns || [];
   const pendingExp = allExpenses.filter(e => e.status === 'معلق');
   const pendingRet = allReturns.filter(r => r.status === 'معلق');
   const pendingCancel = allCancelReqs.filter(tx => tx.cancelRequest.status === 'معلق');
   const pendingProductEdits = allProductEdits.filter(p => p.editRequest.status === 'معلق');
+  const pendingSupplierReturns = allSupplierReturns.filter(r => r.status === 'معلق' || r.status === 'معتمد');
   const approvedExp = allExpenses.filter(e => e.status === 'معتمد');
   const approvedRet = allReturns.filter(r => r.status === 'معتمد');
   const rejectedAll = allExpenses.filter(e => e.status === 'مرفوض').length + allReturns.filter(r => r.status === 'مرفوض').length + allCancelReqs.filter(tx => tx.cancelRequest.status === 'مرفوض').length + allProductEdits.filter(p => p.editRequest.status === 'مرفوض').length;
   qs('#appr-kpi').innerHTML = `
-    <div class="kpi"><div class="kpi-val text-orange">${pendingExp.length + pendingRet.length + pendingCancel.length + pendingProductEdits.length}</div><div class="kpi-label">معلقة</div></div>
+    <div class="kpi"><div class="kpi-val text-orange">${pendingExp.length + pendingRet.length + pendingCancel.length + pendingProductEdits.length + pendingSupplierReturns.length}</div><div class="kpi-label">معلقة</div></div>
     <div class="kpi"><div class="kpi-val text-orange">${fmtJ(pendingExp.reduce((s, e) => s + (e.amount || 0), 0))}</div><div class="kpi-label">مصاريف معلقة</div></div>
     <div class="kpi"><div class="kpi-val text-purple">${pendingRet.length}</div><div class="kpi-label">مرتجع/استبدال معلق</div></div>
     <div class="kpi"><div class="kpi-val text-red" style="font-size:1.1rem">${pendingCancel.length}</div><div class="kpi-label">طلبات إلغاء</div></div>
     <div class="kpi"><div class="kpi-val text-blue" style="font-size:1.1rem">${pendingProductEdits.length}</div><div class="kpi-label">تعديل أصناف</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:#ea580c;font-size:1.1rem">${pendingSupplierReturns.length}</div><div class="kpi-label">مرتجعات موردين</div></div>
     <div class="kpi"><div class="kpi-val text-green">${approvedExp.length + approvedRet.length}</div><div class="kpi-label">معتمدة (إجمالي)</div></div>
     <div class="kpi"><div class="kpi-val text-red">${rejectedAll}</div><div class="kpi-label">مرفوضة</div></div>`;
   let expData = allExpenses;
@@ -33643,11 +34956,19 @@ function renderApprovals() {
   if (dateTo) productEditData = productEditData.filter(p => (p.editRequest.requestedAt || '').slice(0, 10) <= dateTo);
   if (actFrom) productEditData = productEditData.filter(p => p.editRequest.reviewedAt && p.editRequest.reviewedAt.slice(0, 10) >= actFrom);
   if (actTo) productEditData = productEditData.filter(p => p.editRequest.reviewedAt && p.editRequest.reviewedAt.slice(0, 10) <= actTo);
+  let supplierReturnData = allSupplierReturns.filter(r => r.status === 'معلق' || r.status === 'معتمد');
+  if (kindFilter && kindFilter !== 'supplier-return') supplierReturnData = [];
+  if (filter) supplierReturnData = supplierReturnData.filter(r => r.status === filter);
+  if (dateFrom) supplierReturnData = supplierReturnData.filter(r => ((r.createdAt || r.returnDate || '') + '').slice(0, 10) >= dateFrom);
+  if (dateTo) supplierReturnData = supplierReturnData.filter(r => ((r.createdAt || r.returnDate || '') + '').slice(0, 10) <= dateTo);
+  if (actFrom) supplierReturnData = supplierReturnData.filter(r => r.approvedAt && r.approvedAt.slice(0, 10) >= actFrom);
+  if (actTo) supplierReturnData = supplierReturnData.filter(r => r.approvedAt && r.approvedAt.slice(0, 10) <= actTo);
   const combined = [
     ...expData.map(e => ({ ...e, _type: 'expense' })),
     ...retData.map(r => ({ ...r, _type: 'return' })),
     ...cancelData.map(tx => ({ ...tx, _type: 'cancel', _status: tx.cancelRequest.status, _sortDate: tx.cancelRequest.reviewedAt || tx.cancelRequest.requestedAt || '' })),
     ...productEditData.map(p => ({ ...p, _type: 'product-edit', _status: p.editRequest.status, _sortDate: p.editRequest.reviewedAt || p.editRequest.requestedAt || '' })),
+    ...supplierReturnData.map(r => ({ ...r, _type: 'supplier-return' })),
   ].sort((a, b) => {
     const pendingFirst = !filter || filter === 'معلق';
     const aStatus = (a._type === 'cancel' || a._type === 'product-edit') ? a._status : a.status;
@@ -33668,6 +34989,7 @@ function renderApprovals() {
     if (item._type === 'expense') return renderExpenseApprovalCard(item);
     if (item._type === 'cancel') return renderCancelRequestApprovalCard(item);
     if (item._type === 'product-edit') return renderProductEditApprovalCard(item);
+    if (item._type === 'supplier-return') return renderSupplierReturnApprovalCard(item);
     return renderReturnApprovalCard(item);
   }).join('');
 }
@@ -34013,6 +35335,75 @@ async function updateReturnVault(id, value, type) {
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 
+function renderSupplierReturnApprovalCard(r) {
+  const isPending = r.status === 'معلق';
+  const isApproved = r.status === 'معتمد';
+  const statusBadge = `<span class="badge ${_SR_STATUS_BADGE[r.status] || 'badge-orange'}">${esc(r.status)}</span>`;
+  const itemsList = (r.items || []).map(it => `${esc(it.name)} (×${it.qty})${it.note ? ' <span class="text-muted" style="font-size:.75rem">— ' + esc(it.note) + '</span>' : ''}`).join(' · ');
+  const actions = isPending && isAdmin()
+    ? `<div class="flex gap-8"><button class="btn btn-primary btn-sm" onclick="approveSupplierReturnFromAppr('${esc(r._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> اعتماد</button><button class="btn btn-danger btn-sm" onclick="rejectSupplierReturnFromAppr('${esc(r._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg> رفض</button></div>`
+    : isApproved && isAdmin()
+      ? `<div class="flex gap-8"><button class="btn btn-primary btn-sm" style="background:var(--green,#10b981)" onclick="completeSupplierReturnFromAppr('${esc(r._id)}')">إتمام — تحديث المخزون والخزنة</button></div>`
+      : '';
+  const approvedInfo = r.approvedBy ? `<div class="text-xs text-muted" style="margin-top:4px">بواسطة: ${esc(r.approvedBy)} ${r.approvedAt ? '- ' + fmtDate(r.approvedAt) : ''}</div>` : '';
+  const borderStyle = isPending ? 'border-right:4px solid #ea580c' : (isApproved ? 'border-right:4px solid var(--primary)' : r.status === 'مكتمل' ? 'border-right:4px solid var(--green)' : 'border-right:4px solid var(--red)');
+  return `<div class="card mb-16" style="background:linear-gradient(135deg,rgba(234,88,12,.04),rgba(234,88,12,.02));${borderStyle}">
+    <div class="flex-between">
+      <div>
+        <div class="flex gap-8" style="align-items:center;flex-wrap:wrap"><span class="badge badge-purple" style="font-size:.65rem">مرتجع مورد</span><strong style="font-size:1rem">${esc(r.supplierName)}</strong>${statusBadge}</div>
+        <div class="text-sm text-muted" style="margin-top:6px">رقم المرتجع: ${esc(r.returnNumber)} — الفاتورة الأصلية #${esc(r.originalRef || '-')} — ${fmtDate(r.originalDate)}</div>
+        <div class="text-sm" style="margin-top:4px"><strong style="color:#ea580c">الأصناف المرتجعة:</strong> ${itemsList}</div>
+        <div class="text-sm" style="margin-top:4px"><strong>سبب الإرجاع:</strong> <span class="badge badge-purple">${esc(r.reason)}</span> ${r.reasonDetails ? '<span class="text-muted">— ' + esc(r.reasonDetails) + '</span>' : ''}</div>
+        <div class="text-xs text-muted" style="margin-top:4px">طلب من: ${esc(r.createdBy || '-')} — ${fmtDate(r.createdAt)}</div>
+        ${r.status === 'مكتمل' ? '<div class="text-xs" style="margin-top:6px;color:var(--green);font-weight:600">تم الإتمام — تم تحديث المخزون والخزنة</div>' : ''}
+        ${r.rejectedReason ? `<div class="text-xs text-red" style="margin-top:4px">سبب الرفض: ${esc(r.rejectedReason)}</div>` : ''}
+        ${approvedInfo}
+      </div>
+      <div style="text-align:left">
+        <div style="background:var(--surface2);padding:10px;border-radius:8px;margin-top:8px">
+          <div style="font-size:.85rem;color:var(--muted);margin-bottom:4px">قيمة المرتجع</div>
+          <div style="border:2px solid #ea580c;padding:8px;border-radius:6px;margin-bottom:6px">
+            <div style="font-size:1.4rem;font-weight:800;color:#ea580c">${fmtJ(Number(r.total) || 0)}</div>
+            <div style="font-size:.7rem;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:4px;justify-content:flex-end">سيُضاف إلى خزنة ${VAULT_METHOD_ICONS[r.vaultRefundAccount] || ''} ${esc(r.vaultRefundAccount)}</div>
+          </div>
+        </div>
+        <div style="margin-top:8px">${actions}</div>
+      </div>
+    </div>
+  </div>`;
+}
+async function approveSupplierReturnFromAppr(id) {
+  if (!await showConfirm('سيتم اعتماد مرتجع المورد. لن يتم تحديث المخزون أو الخزنة إلا بعد الإتمام.', { title: 'اعتماد مرتجع المورد', icon: 'warn' })) return;
+  try {
+    await api('/supplier-returns/' + id + '/approve', { method: 'POST', body: '{}' });
+    toast('تم اعتماد مرتجع المورد');
+    supplierReturns = await api('/supplier-returns').catch(() => supplierReturns);
+    renderApprovals(); buildSidebar(); buildNotifications();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+async function rejectSupplierReturnFromAppr(id) {
+  const reason = await showPrompt('سبب رفض مرتجع المورد (اختياري):', { title: 'رفض مرتجع المورد', icon: 'warn' });
+  if (reason === null) return;
+  try {
+    await api('/supplier-returns/' + id + '/reject', { method: 'POST', body: JSON.stringify({ rejectedReason: reason.trim() }) });
+    toast('تم رفض مرتجع المورد');
+    supplierReturns = await api('/supplier-returns').catch(() => supplierReturns);
+    renderApprovals(); buildSidebar(); buildNotifications();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+async function completeSupplierReturnFromAppr(id) {
+  if (!await showConfirm('سيتم إضافة قيمة المرتجع إلى الخزنة وخصم الكمية من المخزون. هل تريد المتابعة؟', { title: 'إتمام مرتجع المورد', icon: 'warn' })) return;
+  try {
+    await api('/supplier-returns/' + id + '/complete', { method: 'POST', body: '{}' });
+    toast('تم إتمام المرتجع — تم تحديث المخزون والخزنة');
+    supplierReturns = await api('/supplier-returns').catch(() => supplierReturns);
+    transactions = await api('/transactions').catch(() => transactions);
+    try { inventoryCache = await api('/transactions/inventory'); } catch (_) {}
+    renderApprovals(); renderMovements(); buildSidebar(); buildNotifications();
+    syncVaultState();
+  } catch (e) { toast('خطأ: ' + e.message, true); }
+}
+
 /* History Hub (سجل التعديلات) */
 let apprActiveTab = 'approvals';
 
@@ -34031,7 +35422,7 @@ function switchApprTab(tab, btn) {
 
 function clearHubFilters() {
   const ids = ['hub-emp-filter','hub-type-filter','hub-action-filter','hub-vault-filter','hub-from','hub-to','hub-search'];
-  ids.forEach(id => { const el = qs('#' + id); if (el) el.value = ''; });
+  ids.forEach(id => { const el = qs('#' + id); if (el) { el.value = ''; el.classList.remove('has-value'); } });
   renderHistoryHub();
 }
 
@@ -34641,8 +36032,8 @@ function setReportPeriod(period, btn) {
       to = '';
       break;
   }
-  qs('#rep-from').value = from;
-  qs('#rep-to').value = to;
+  qs('#rep-from').value = from; qs('#rep-from').classList.toggle('has-value', !!from);
+  qs('#rep-to').value = to; qs('#rep-to').classList.toggle('has-value', !!to);
   qsa('#page-reports .rep-presets .tab-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   loadReports();
@@ -39809,8 +41200,9 @@ function renderSearchDropdown() {
     customer: 'العملاء',
     order: 'الحركات والطلبات',
     supplier: 'الموردون',
+    complaint: 'الشكاوى',
   };
-  const preferred = ['nav', 'product', 'customer', 'order', 'supplier'];
+  const preferred = ['nav', 'complaint', 'product', 'customer', 'order', 'supplier'];
   const grouped = {};
   searchResults.forEach((r, idx) => {
     r._idx = idx;
@@ -39913,7 +41305,34 @@ function selectSearchResult(idx) {
     setTimeout(() => { const el = qs('#mov-search'); if (el) { el.value = item.title.replace('#', ''); renderMovements(); } }, 100);
   } else if (item.type === 'supplier' && hasPerm('suppliers')) {
     navigateTo('suppliers');
+  } else if (item.type === 'complaint' && hasPerm('complaints')) {
+    navigateTo('complaints');
+    setTimeout(() => {
+      if (typeof switchMainTab === 'function') switchMainTab('cmp');
+      setTimeout(() => highlightComplaintById(item.id), 150);
+    }, 100);
   }
+}
+
+function highlightComplaintById(id) {
+  const c = complaints.find(x => x._id === id);
+  if (!c) return;
+  // اعرض الشكوى في التاب المناسب حتى لو مش ضمن الفلتر الحالي
+  cmpTabFilter = 'all';
+  qsa('.s-tab', qs('#page-complaints')).forEach(b => b.classList.remove('active'));
+  qs('#cmp-tab-all')?.classList.add('active');
+  if (qs('#cmp-status-filter')) qs('#cmp-status-filter').value = '';
+  if (qs('#cmp-search')) qs('#cmp-search').value = c.complaintNo;
+  renderComplaints();
+  setTimeout(() => {
+    const row = document.querySelector(`#cmp-tbody tr[data-complaint-id="${id}"]`)
+      || document.querySelector(`.cmp-card[data-complaint-id="${id}"]`);
+    if (row) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      row.classList.add('cmp-highlight');
+      setTimeout(() => row.classList.remove('cmp-highlight'), 2600);
+    }
+  }, 100);
 }
 
 function handleSearchKeydown(e) {
@@ -40134,7 +41553,7 @@ async function loadComplaints() {
   }
 }
 
-function switchMainTab(tab) {
+function switchMainTab(tab, skipHash) {
   const fuSection = qs('#fu-orders-section');
   const cmpSection = qs('#cmp-complaints-section');
   const btnFu = qs('#main-tab-fu');
@@ -40169,6 +41588,10 @@ function switchMainTab(tab) {
     if (btnNewFu) btnNewFu.style.display = 'none';
     renderComplaints();
   }
+  if (!skipHash) {
+    const hashVal = tab === 'fu' ? 'complaints/orders' : 'complaints/complaints';
+    if (location.hash !== '#' + hashVal) history.pushState(null, '', '#' + hashVal);
+  }
 }
 
 function setCmpTab(tab, btn) {
@@ -40186,8 +41609,9 @@ function setCmpTab(tab, btn) {
 function clearCmpFilters() {
   qs('#cmp-status-filter').value = '';
   qs('#cmp-emp-filter').value = '';
-  qs('#cmp-from').value = '';
-  qs('#cmp-to').value = '';
+  if (qs('#cmp-priority-filter')) qs('#cmp-priority-filter').value = '';
+  qs('#cmp-from').value = ''; qs('#cmp-from').classList.remove('has-value');
+  qs('#cmp-to').value = ''; qs('#cmp-to').classList.remove('has-value');
   qs('#cmp-search').value = '';
   cmpTabFilter = 'all';
   qsa('.s-tab', qs('#page-complaints')).forEach(b => b.classList.remove('active'));
@@ -40195,6 +41619,175 @@ function clearCmpFilters() {
   renderComplaints();
 }
 
+function cmpStatusBadge(c) {
+  return c.status === 'مقبول'
+    ? `<span class="badge badge-green">مقبول</span>`
+    : c.status === 'مرفوض'
+      ? `<span class="badge badge-red">مرفوض</span>`
+      : `<span class="badge badge-orange">معلق</span>`;
+}
+function cmpPriorityBadge(c) {
+  const p = c.priority || 'متوسطة';
+  const cls = p === 'عالية' ? 'pr-high' : p === 'منخفضة' ? 'pr-low' : 'pr-medium';
+  return `<span class="cmp-priority ${cls}"><span class="pr-dot"></span>${esc(p)}</span>`;
+}
+const CMP_PROGRESS_STAGES = [
+  { v: '', label: '— بدون —', cls: '' },
+  { v: 'جاري المراجعة', label: 'جاري المراجعة', cls: 'pg-review' },
+  { v: 'جاري العمل على حل المشكلة', label: 'جاري العمل على حل المشكلة', cls: 'pg-progress' },
+  { v: 'بانتظار رد العميل', label: 'بانتظار رد العميل', cls: 'pg-waiting' },
+  { v: 'تم حل المشكلة بنجاح', label: 'تم حل المشكلة بنجاح', cls: 'pg-done' },
+];
+function cmpProgressMeta(stage) {
+  return CMP_PROGRESS_STAGES.find(s => s.v === (stage || '')) || CMP_PROGRESS_STAGES[0];
+}
+function cmpProgressSelect(c) {
+  const opts = CMP_PROGRESS_STAGES.map(s => `<option value="${esc(s.v)}"${(c.progressStage||'')===s.v?' selected':''}>${esc(s.label)}</option>`).join('');
+  const meta = cmpProgressMeta(c.progressStage);
+  return `<select class="cmp-progress-select ${meta.cls}" data-complaint-id="${c._id}" onchange="updateComplaintProgress('${c._id}',this.value,this)" onclick="event.stopPropagation()">${opts}</select>`;
+}
+async function updateComplaintProgress(id, stage, selEl) {
+  try {
+    await api(`/complaints/${id}/progress-stage`, { method: 'POST', body: JSON.stringify({ progressStage: stage }) });
+    const c = complaints.find(x => x._id === id);
+    if (c) c.progressStage = stage;
+    if (selEl) {
+      const meta = cmpProgressMeta(stage);
+      selEl.className = 'cmp-progress-select ' + meta.cls;
+    }
+    toast('تم تحديث حالة سير العمل');
+  } catch (e) { toast(e.message, true); }
+}
+function cmpNotesBtn(c) {
+  const count = (c.notes || []).length;
+  return `<button class="cmp-notes-btn${count ? ' has-notes' : ''}" onclick="event.stopPropagation();openComplaintNotes('${c._id}')" title="الملاحظات">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    ${count ? `<span class="cmp-notes-count">${fmtN(count)}</span>` : ''}
+  </button>`;
+}
+function openComplaintNotes(id) {
+  const c = complaints.find(x => x._id === id);
+  if (!c) return;
+  const notes = (c.notes || []).slice().sort((a, b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+  const myId = currentUser?.id || currentUser?._id;
+  const canEdit = (n) => isAdmin() || n.authorId === myId;
+  const notesHtml = notes.length ? notes.map(n => `
+    <div class="cmp-note-item" data-note-id="${esc(n.id)}">
+      <div class="cmp-note-head">
+        <span class="cmp-note-author">${esc(n.author)}</span>
+        <span class="cmp-note-date">${(n.createdAt||'').slice(0,16).replace('T',' ')}${n.updatedAt && n.updatedAt !== n.createdAt ? ' (معدّلة)' : ''}</span>
+      </div>
+      <div class="cmp-note-text" id="cmp-note-text-${esc(n.id)}">${esc(n.text)}</div>
+      ${canEdit(n) ? `<div class="cmp-note-actions">
+        <button class="cmp-note-action-btn" onclick="editComplaintNote('${id}','${esc(n.id)}')">تعديل</button>
+        <button class="cmp-note-action-btn danger" onclick="deleteComplaintNote('${id}','${esc(n.id)}')">حذف</button>
+      </div>` : ''}
+    </div>`).join('') : '<div class="cmp-notes-empty">لا توجد ملاحظات بعد</div>';
+  openModal(`<h3 style="margin-bottom:4px">ملاحظات ${cmpNoBadge(c)}</h3>
+    <div class="cmp-notes-list" id="cmp-notes-list">${notesHtml}</div>
+    <div class="cmp-note-add">
+      <textarea id="cmp-new-note-text" rows="2" placeholder="أضف ملاحظة جديدة..."></textarea>
+      <button class="btn btn-primary btn-sm" onclick="addComplaintNote('${id}')">إضافة</button>
+    </div>
+    <div class="flex gap-8" style="margin-top:14px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal()">إغلاق</button>
+    </div>`);
+}
+async function addComplaintNote(id) {
+  const ta = qs('#cmp-new-note-text');
+  const text = (ta?.value || '').trim();
+  if (!text) { toast('اكتب نص الملاحظة', true); return; }
+  try {
+    const res = await api(`/complaints/${id}/notes`, { method: 'POST', body: JSON.stringify({ text }) });
+    const idx = complaints.findIndex(x => x._id === id);
+    if (idx >= 0) complaints[idx] = res;
+    renderComplaints();
+    openComplaintNotes(id);
+    toast('تمت إضافة الملاحظة');
+  } catch (e) { toast(e.message, true); }
+}
+function editComplaintNote(id, noteId) {
+  const c = complaints.find(x => x._id === id);
+  const note = c?.notes?.find(n => n.id === noteId);
+  if (!note) return;
+  const textEl = qs(`#cmp-note-text-${noteId}`);
+  if (!textEl) return;
+  const original = note.text;
+  textEl.outerHTML = `<div class="cmp-note-edit" id="cmp-note-text-${noteId}">
+    <textarea id="cmp-note-edit-input-${noteId}" rows="2">${esc(original)}</textarea>
+    <div class="cmp-note-actions">
+      <button class="cmp-note-action-btn" onclick="saveComplaintNoteEdit('${id}','${noteId}')">حفظ</button>
+      <button class="cmp-note-action-btn" onclick="openComplaintNotes('${id}')">إلغاء</button>
+    </div>
+  </div>`;
+}
+async function saveComplaintNoteEdit(id, noteId) {
+  const input = qs(`#cmp-note-edit-input-${noteId}`);
+  const text = (input?.value || '').trim();
+  if (!text) { toast('اكتب نص الملاحظة', true); return; }
+  try {
+    const res = await api(`/complaints/${id}/notes/${noteId}`, { method: 'POST', body: JSON.stringify({ text }) });
+    const idx = complaints.findIndex(x => x._id === id);
+    if (idx >= 0) complaints[idx] = res;
+    renderComplaints();
+    openComplaintNotes(id);
+    toast('تم تحديث الملاحظة');
+  } catch (e) { toast(e.message, true); }
+}
+async function deleteComplaintNote(id, noteId) {
+  if (!await showConfirm('هل تريد حذف هذه الملاحظة؟', { title: 'حذف ملاحظة', icon: 'danger', danger: true })) return;
+  try {
+    const res = await api(`/complaints/${id}/notes/${noteId}`, { method: 'DELETE' });
+    const idx = complaints.findIndex(x => x._id === id);
+    if (idx >= 0) complaints[idx] = res;
+    renderComplaints();
+    openComplaintNotes(id);
+    toast('تم حذف الملاحظة');
+  } catch (e) { toast(e.message, true); }
+}
+function cmpNoBadge(c) {
+  return `<span class="cmp-no-wrap">
+    <span class="badge badge-blue">${esc(c.complaintNo)}</span>
+    <button class="cmp-copy-btn" title="نسخ رقم الشكوى" onclick="event.stopPropagation();copyComplaintNo('${esc(c.complaintNo)}',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+    </button>
+  </span>`;
+}
+function copyComplaintNo(no, btnEl) {
+  navigator.clipboard.writeText(no).then(() => {
+    toast('تم نسخ رقم الشكوى: ' + no);
+    if (btnEl) {
+      btnEl.classList.add('copied');
+      setTimeout(() => btnEl.classList.remove('copied'), 1200);
+    }
+  }).catch(() => toast('تعذر النسخ', true));
+}
+function buildComplaintShareText(c) {
+  const lines = [
+    `📋 شكوى ${c.complaintNo}`,
+    `👤 العميل: ${c.clientName || '—'}`,
+  ];
+  if (c.transactionRef) lines.push(`🧾 رقم الطلب: ${c.transactionRef}`);
+  lines.push(`📌 الحالة: ${c.status}`);
+  lines.push(`⚑ الأولوية: ${c.priority || 'متوسطة'}`);
+  lines.push(`📅 التاريخ: ${(c.createdAt || '').slice(0, 16).replace('T', ' ')}`);
+  lines.push(`📝 الوصف: ${(c.description || '').trim()}`);
+  if (c.managerAction) lines.push(`✅ الإجراء: ${c.managerAction}`);
+  if (c.actionNote) lines.push(`💬 ملاحظات: ${c.actionNote}`);
+  return lines.join('\n');
+}
+function shareComplaint(id, btnEl) {
+  const c = complaints.find(x => x._id === id);
+  if (!c) return;
+  const text = buildComplaintShareText(c);
+  navigator.clipboard.writeText(text).then(() => {
+    toast('تم نسخ ملخص الشكوى للمشاركة');
+    if (btnEl) {
+      btnEl.classList.add('copied');
+      setTimeout(() => btnEl.classList.remove('copied'), 1200);
+    }
+  }).catch(() => toast('تعذر النسخ', true));
+}
 function renderComplaints() {
   // populate employee filter
   const empSel = qs('#cmp-emp-filter');
@@ -40204,6 +41797,7 @@ function renderComplaints() {
 
   const statusF = qs('#cmp-status-filter').value;
   const empF = empSel.value;
+  const priorityF = qs('#cmp-priority-filter')?.value || '';
   const fromF = qs('#cmp-from').value;
   const toF = qs('#cmp-to').value;
   const search = (qs('#cmp-search').value || '').toLowerCase();
@@ -40213,6 +41807,7 @@ function renderComplaints() {
     if (cmpTabFilter === 'followup') { if (!c.inFollowUp) return false; }
     else if (statusF) { if (c.status !== statusF) return false; }
     if (empF && c.submittedBy !== empF) return false;
+    if (priorityF && (c.priority || 'متوسطة') !== priorityF) return false;
     const dStr = (c.createdAt || '').slice(0, 10);
     if (fromF && dStr < fromF) return false;
     if (toF && dStr > toF) return false;
@@ -40226,53 +41821,109 @@ function renderComplaints() {
     ? (a.createdAt||'').localeCompare(b.createdAt||'')
     : (b.createdAt||'').localeCompare(a.createdAt||''));
 
-
-  // KPI
+  // Stat cards
   const total = complaints.length;
   const pending = complaints.filter(c => c.status === 'معلق').length;
   const accepted = complaints.filter(c => c.status === 'مقبول').length;
   const rejected = complaints.filter(c => c.status === 'مرفوض').length;
+  const highPriority = complaints.filter(c => c.status === 'معلق' && c.priority === 'عالية').length;
   qs('#cmp-kpi').innerHTML = [
-    { label: 'إجمالي الشكاوى', val: total, color: 'text-blue' },
-    { label: 'معلقة', val: pending, color: 'text-orange' },
-    { label: 'مقبولة', val: accepted, color: 'text-green' },
-    { label: 'مرفوضة', val: rejected, color: 'text-red' },
-  ].map(s => `<div style="display:inline-flex;align-items:baseline;gap:6px;padding:0 14px"><span style="font-size:.8rem;color:var(--muted)">${esc(s.label)}</span><span class="${s.color}" style="font-size:1rem;font-weight:700">${esc(String(s.val))}</span></div>`).join('');
+    { label: 'إجمالي الشكاوى', val: total, cls: 'st-blue', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' },
+    { label: 'معلقة', val: pending, cls: 'st-orange', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>' },
+    { label: 'مقبولة', val: accepted, cls: 'st-green', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' },
+    { label: 'مرفوضة', val: rejected, cls: 'st-red', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' },
+    { label: 'عالية الأولوية (معلقة)', val: highPriority, cls: 'st-purple', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' },
+  ].map(s => `<div class="cmp-stat ${s.cls}"><div class="cmp-stat-icon">${s.icon}</div><div><div class="cmp-stat-val">${fmtN(s.val)}</div><div class="cmp-stat-label">${esc(s.label)}</div></div></div>`).join('');
+
+  // Status tab counts
+  const fuCount = complaints.filter(c => c.inFollowUp).length;
+  qs('#cmp-count-all').textContent = fmtN(total);
+  qs('#cmp-count-pending').textContent = fmtN(pending);
+  qs('#cmp-count-accepted').textContent = fmtN(accepted);
+  qs('#cmp-count-rejected').textContent = fmtN(rejected);
+  qs('#cmp-count-followup').textContent = fmtN(fuCount);
 
   const tbody = qs('#cmp-tbody');
+  const cardsBox = qs('#cmp-cards');
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">لا توجد شكاوى</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="11"><div class="cmp-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="15" y2="10"/></svg>
+      <div class="cmp-empty-title">لا توجد شكاوى</div>
+      <div class="cmp-empty-sub">ستظهر شكاوى العملاء الجديدة هنا تلقائياً</div>
+    </div></td></tr>`;
+    cardsBox.innerHTML = `<div class="cmp-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="15" y2="10"/></svg>
+      <div class="cmp-empty-title">لا توجد شكاوى</div>
+      <div class="cmp-empty-sub">ستظهر شكاوى العملاء الجديدة هنا تلقائياً</div>
+    </div>`;
     return;
   }
   tbody.innerHTML = data.map(c => {
-    const statusBadge = c.status === 'مقبول'
-      ? `<span class="badge badge-green">مقبول</span>`
-      : c.status === 'مرفوض'
-        ? `<span class="badge badge-red">مرفوض</span>`
-        : `<span class="badge badge-orange">معلق</span>`;
     const ratingHtml = c.surveyRating ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'.repeat(c.surveyRating) : '<span class="text-muted">—</span>';
-    const actionBadge = c.managerAction ? `<span class="badge badge-blue">${esc(c.managerAction)}</span>` : '<span class="text-muted">—</span>';
-    const surveyLink = c.surveyToken && !c.surveyCompletedAt
-      ? `<button class="btn btn-outline btn-xs" onclick="copySurveyLink('${esc(c.surveyToken)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg> نسخ رابط</button>` : '';
-    const resolveBtn = isAdmin() && c.status === 'معلق'
-      ? `<button class="btn btn-primary btn-xs" onclick="openResolveModal('${c._id}')">قرار</button>` : '';
-    const deleteBtn = isAdmin()
-      ? `<button class="btn btn-danger btn-xs" onclick="deleteComplaint('${c._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>` : '';
-    const viewBtn = `<button class="btn btn-outline btn-xs" onclick="viewComplaint('${c._id}')">عرض</button>`;
     const elapsedHtml = c.createdAt ? `<span style="font-size:.7rem;color:var(--muted)">${fmtElapsed(c.createdAt)}</span>` : '—';
-    return `<tr>
-      <td><span class="badge badge-blue">${esc(c.complaintNo)}</span></td>
-      <td>${esc(c.submittedBy || '—')}</td>
+    return `<tr data-complaint-id="${c._id}">
+      <td>${cmpNoBadge(c)}</td>
+      <td>${fmtDate((c.createdAt || '').slice(0, 10))}<br>${elapsedHtml}</td>
       <td>${esc(c.clientName || '—')}</td>
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.transactionRef || '—')}</td>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.description)}">${esc(c.description)}</td>
-      <td>${statusBadge}</td>
-      <td>${actionBadge}</td>
-      <td>${fmtDate((c.createdAt || '').slice(0, 10))}<br>${elapsedHtml}</td>
+      <td>${cmpProgressSelect(c)}</td>
+      <td style="text-align:center">${cmpNotesBtn(c)}</td>
+      <td>${cmpStatusBadge(c)}</td>
+      <td>${cmpPriorityBadge(c)}</td>
       <td>${ratingHtml}</td>
-      <td class="flex gap-4" style="gap:4px">${viewBtn}${resolveBtn}${surveyLink}${deleteBtn}</td>
+      <td><span class="cmp-emp-tag" title="${esc(c.submittedBy || '')}">${esc(cmpShortName(c.submittedBy))}</span></td>
+      <td style="text-align:center">${cmpActionsMenu(c)}</td>
     </tr>`;
   }).join('');
+
+  cardsBox.innerHTML = data.map(c => {
+    const elapsedHtml = c.createdAt ? fmtElapsed(c.createdAt) : '—';
+    return `<div class="cmp-card" data-complaint-id="${c._id}">
+      <div class="cmp-card-top">
+        ${cmpNoBadge(c)}
+        ${cmpStatusBadge(c)}
+      </div>
+      <div class="cmp-card-row"><span class="cmp-card-label">التاريخ</span><span>${fmtDate((c.createdAt||'').slice(0,10))} (${elapsedHtml})</span></div>
+      <div class="cmp-card-row"><span class="cmp-card-label">العميل</span><span>${esc(c.clientName || '—')}</span></div>
+      <div class="cmp-card-row"><span class="cmp-card-label">الطلب</span><span>${esc(c.transactionRef || '—')}</span></div>
+      <div class="cmp-card-row"><span class="cmp-card-label">سير العمل</span>${cmpProgressSelect(c)}</div>
+      <div class="cmp-card-row"><span class="cmp-card-label">الأولوية</span>${cmpPriorityBadge(c)}</div>
+      <div class="cmp-card-row"><span class="cmp-card-label">الموظف</span><span>${esc(cmpShortName(c.submittedBy))}</span></div>
+      <div class="cmp-card-desc">${esc(c.description)}</div>
+      <div class="cmp-card-actions">
+        <button class="btn btn-outline btn-xs" onclick="viewComplaint('${c._id}')">عرض</button>
+        ${cmpNotesBtn(c)}
+        <button class="btn btn-outline btn-xs" onclick="shareComplaint('${c._id}')">مشاركة</button>
+        ${isAdmin() && c.status === 'معلق' ? `<button class="btn btn-primary btn-xs" onclick="openResolveModal('${c._id}')">قرار</button>` : ''}
+        ${c.surveyToken && !c.surveyCompletedAt ? `<button class="btn btn-outline btn-xs" onclick="copySurveyLink('${esc(c.surveyToken)}')">نسخ رابط</button>` : ''}
+        ${isAdmin() ? `<button class="btn btn-danger btn-xs" onclick="deleteComplaint('${c._id}')">حذف</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function cmpShortName(name) {
+  const n = (name || '').trim();
+  if (!n) return '—';
+  const parts = n.split(/\s+/);
+  if (parts.length === 1) return parts[0].length > 10 ? parts[0].slice(0, 10) + '…' : parts[0];
+  return parts[0] + ' ' + parts[1][0] + '.';
+}
+
+function cmpActionsMenu(c) {
+  const resolveItem = isAdmin() && c.status === 'معلق'
+    ? `<div class="dd-item" onclick="openResolveModal('${c._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> اتخاذ قرار</div>` : '';
+  const surveyItem = c.surveyToken && !c.surveyCompletedAt
+    ? `<div class="dd-item" onclick="copySurveyLink('${esc(c.surveyToken)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg> نسخ رابط الاستبيان</div>` : '';
+  const deleteItem = isAdmin()
+    ? `<div class="dd-item danger" onclick="deleteComplaint('${c._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> حذف</div>` : '';
+  return `<div class="actions-dd">
+    <button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button>
+    <div class="dd-menu">
+      <div class="dd-item" onclick="viewComplaint('${c._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> عرض التفاصيل</div>
+      <div class="dd-item" onclick="shareComplaint('${c._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> مشاركة سريعة (نسخ)</div>
+      ${resolveItem}${surveyItem}${deleteItem}
+    </div>
+  </div>`;
 }
 
 function renderCmpNegAlert() {
@@ -40284,7 +41935,7 @@ function renderCmpNegAlert() {
   negBox.innerHTML = `<div class="card" style="border:2px solid var(--red);padding:14px">
     <div style="font-weight:700;color:var(--red);margin-bottom:10px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> شكاوى بتقييم سلبي (${neg.length})</div>
     ${neg.map(c => `<div style="border-bottom:1px solid var(--border);padding:6px 0;font-size:.85rem">
-      <span class="badge badge-blue">${esc(c.complaintNo)}</span>
+      ${cmpNoBadge(c)}
       ${'<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'.repeat(c.surveyRating)} — ${esc(c.clientName || c.submittedBy)}:
       <em>${esc(c.surveyComment || '—')}</em>
     </div>`).join('')}
@@ -40319,6 +41970,14 @@ function openComplaintModal() {
     <div class="form-group">
       <label class="form-label">وصف الشكوى <span style="color:var(--red)">*</span></label>
       <textarea id="cmp-desc" rows="4" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;color:var(--text);resize:vertical" placeholder="اكتب تفاصيل الشكوى..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">الأولوية</label>
+      <select id="cmp-priority-input" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;color:var(--text)">
+        <option value="عالية">عالية 🔴</option>
+        <option value="متوسطة" selected>متوسطة 🟠</option>
+        <option value="منخفضة">منخفضة 🟢</option>
+      </select>
     </div>
     <div style="text-align:left;margin-top:8px">
       <small class="text-muted">سيتم تسجيل اسم الموظف: <strong>${esc(currentUser?.name || currentUser?.username || '')}</strong></small>
@@ -40388,7 +42047,8 @@ async function saveComplaint() {
   const description = (qs('#cmp-desc')?.value || '').trim();
   if (!description) { toast('يرجى كتابة وصف الشكوى', true); return; }
   try {
-    const body = { description };
+    const priority = qs('#cmp-priority-input')?.value || 'متوسطة';
+    const body = { description, priority };
     if (transactionId) { body.transactionId = transactionId; body.transactionRef = transactionRef; }
     if (clientName) body.clientName = clientName;
     const res = await api('/complaints', { method: 'POST', body: JSON.stringify(body) });
@@ -40463,21 +42123,21 @@ async function resolveComplaint(id) {
 function viewComplaint(id) {
   const c = complaints.find(x => x._id === id);
   if (!c) return;
-  const statusBadge = c.status === 'مقبول'
-    ? `<span class="badge badge-green">مقبول</span>`
-    : c.status === 'مرفوض'
-      ? `<span class="badge badge-red">مرفوض</span>`
-      : `<span class="badge badge-orange">معلق</span>`;
+  const statusBadge = cmpStatusBadge(c);
   const ratingHtml = c.surveyRating ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'.repeat(c.surveyRating) + ` (${c.surveyRating}/5)` : '—';
   const surveyLink = c.surveyToken
     ? `${location.origin}/survey.html?token=${c.surveyToken}` : null;
-  openModal(`<h3 style="margin-bottom:4px">${esc(c.complaintNo)}</h3>
-    <div style="margin-bottom:14px">${statusBadge} ${c.managerAction ? '<span class="badge badge-blue">' + esc(c.managerAction) + '</span>' : ''}</div>
+  openModal(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <h3 style="margin:0">${cmpNoBadge(c)}</h3>
+    </div>
+    <div style="margin-bottom:14px">${statusBadge} ${cmpPriorityBadge(c)} ${c.managerAction ? '<span class="badge badge-blue">' + esc(c.managerAction) + '</span>' : ''}</div>
     <table style="width:100%;font-size:.88rem;border-collapse:collapse">
       <tr><td style="padding:5px 8px;color:var(--muted);width:140px">الموظف المقدِّم</td><td>${esc(c.submittedBy)}</td></tr>
       <tr><td style="padding:5px 8px;color:var(--muted)">العميل</td><td>${esc(c.clientName || '—')}</td></tr>
       <tr><td style="padding:5px 8px;color:var(--muted)">الطلب</td><td>${esc(c.transactionRef || '—')}</td></tr>
       <tr><td style="padding:5px 8px;color:var(--muted)">تاريخ التقديم</td><td>${(c.createdAt||'').slice(0,16).replace('T',' ')}</td></tr>
+      <tr><td style="padding:5px 8px;color:var(--muted)">حالة سير العمل</td><td>${cmpProgressSelect(c)}</td></tr>
+      <tr><td style="padding:5px 8px;color:var(--muted)">الملاحظات</td><td>${cmpNotesBtn(c)}</td></tr>
       <tr><td style="padding:5px 8px;color:var(--muted)">الوصف</td><td style="white-space:pre-wrap">${esc(c.description)}</td></tr>
       ${c.resolvedBy ? '<tr><td style="padding:5px 8px;color:var(--muted)">المُعالِج</td><td>' + esc(c.resolvedBy) + '</td></tr>' : ''}
       ${c.resolvedAt ? '<tr><td style="padding:5px 8px;color:var(--muted)">تاريخ المعالجة</td><td>' + (c.resolvedAt||'').slice(0,16).replace('T',' ') + '</td></tr>' : ''}
@@ -40487,6 +42147,7 @@ function viewComplaint(id) {
       ${surveyLink ? '<tr><td style="padding:5px 8px;color:var(--muted)">رابط الاستبيان</td><td style="word-break:break-all;font-size:.8rem">' + esc(surveyLink) + '</td></tr>' : ''}
     </table>
     <div class="flex gap-8" style="margin-top:16px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="shareComplaint('${c._id}',this)"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> مشاركة سريعة</button>
       ${surveyLink && !c.surveyCompletedAt ? '<button class="btn btn-outline" onclick="navigator.clipboard.writeText(' + "'" + esc(surveyLink) + "'" + ').then(()=>toast("تم النسخ"))"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg> نسخ رابط الاستبيان</button>' : ''}
       <button class="btn btn-outline" onclick="closeModal()">إغلاق</button>
     </div>`);
@@ -40517,6 +42178,7 @@ function exportComplaintsExcel() {
       'العميل': c.clientName || '',
       'الطلب': c.transactionRef || '',
       'الوصف': c.description,
+      'الأولوية': c.priority || 'متوسطة',
       'الحالة': c.status,
       'الإجراء': c.managerAction || '',
       'ملاحظات': c.actionNote || '',
@@ -40770,8 +42432,8 @@ function clearFuFilters() {
   qs('#fu-search').value = '';
   qs('#fu-status-filter').value = '';
   qs('#fu-user-filter').value = '';
-  qs('#fu-from').value = '';
-  qs('#fu-to').value = '';
+  qs('#fu-from').value = ''; qs('#fu-from').classList.remove('has-value');
+  qs('#fu-to').value = ''; qs('#fu-to').classList.remove('has-value');
   renderFollowUps();
 }
 
@@ -44270,7 +45932,7 @@ async function puBoardDrop(e, colType) {
 }
 
 function clearBoardFilters() {
-  ['pu-board-search','pu-board-date-from','pu-board-date-to'].forEach(id=>{const el=qs('#'+id);if(el)el.value='';});
+  ['pu-board-search','pu-board-date-from','pu-board-date-to'].forEach(id=>{const el=qs('#'+id);if(el){el.value='';el.classList.remove('has-value');}});
   const sc=qs('#pu-board-shipco'); if(sc) sc.value='all';
   const ps=qs('#pu-pending-search'); if(ps) ps.value='';
   const prs=qs('#pu-prep-search');   if(prs) prs.value='';
@@ -45307,8 +46969,8 @@ async function savePuDateEdit() {
 function clearPickupFilters() {
   const s = qs('#pu-search');           if (s)  s.value  = '';
   const fc = qs('#pu-filter-shipco');   if (fc) fc.value = 'all';
-  const fd1 = qs('#pu-filter-date-from'); if (fd1) fd1.value = '';
-  const fd2 = qs('#pu-filter-date-to');   if (fd2) fd2.value = '';
+  const fd1 = qs('#pu-filter-date-from'); if (fd1) { fd1.value = ''; fd1.classList.remove('has-value'); }
+  const fd2 = qs('#pu-filter-date-to');   if (fd2) { fd2.value = ''; fd2.classList.remove('has-value'); }
   _pickupPage = 1;
   renderPickupRuns();
 }

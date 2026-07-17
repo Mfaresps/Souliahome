@@ -9,6 +9,10 @@ import {
   Supplier,
   SupplierSchema,
 } from '../suppliers/schemas/supplier.schema';
+import {
+  Complaint,
+  ComplaintSchema,
+} from '../complaints/schemas/complaint.schema';
 import { SearchService } from './search.service';
 import { SearchController } from './search.controller';
 
@@ -18,6 +22,7 @@ import { SearchController } from './search.controller';
       { name: Product.name, schema: ProductSchema },
       { name: Transaction.name, schema: TransactionSchema },
       { name: Supplier.name, schema: SupplierSchema },
+      { name: Complaint.name, schema: ComplaintSchema },
     ]),
   ],
   controllers: [SearchController],

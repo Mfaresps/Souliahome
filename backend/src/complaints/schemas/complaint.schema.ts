@@ -3,6 +3,28 @@ import { HydratedDocument } from 'mongoose';
 
 export type ComplaintDocument = HydratedDocument<Complaint>;
 
+@Schema({ _id: false })
+export class ComplaintNote {
+  @Prop({ required: true })
+  id: string;
+
+  @Prop({ required: true })
+  text: string;
+
+  @Prop({ required: true })
+  author: string;
+
+  @Prop({ required: true })
+  authorId: string;
+
+  @Prop({ required: true })
+  createdAt: string;
+
+  @Prop()
+  updatedAt: string;
+}
+export const ComplaintNoteSchema = SchemaFactory.createForClass(ComplaintNote);
+
 @Schema({ timestamps: true })
 export class Complaint {
   @Prop({ required: true, unique: true })
@@ -28,6 +50,15 @@ export class Complaint {
 
   @Prop({ default: 'معلق' })
   status: string; // معلق | مقبول | مرفوض
+
+  @Prop({ default: 'متوسطة' })
+  priority: string; // عالية | متوسطة | منخفضة
+
+  @Prop({ default: '' })
+  progressStage: string; // جاري العمل على حل المشكلة | تم حل المشكلة بنجاح | ...
+
+  @Prop({ type: [ComplaintNoteSchema], default: [] })
+  notes: ComplaintNote[];
 
   @Prop()
   managerAction: string; // استبدال | استرداد | تعويض | رفض | أخرى

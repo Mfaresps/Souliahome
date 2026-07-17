@@ -10,6 +10,10 @@ import {
   Supplier,
   SupplierDocument,
 } from '../suppliers/schemas/supplier.schema';
+import {
+  Complaint,
+  ComplaintDocument,
+} from '../complaints/schemas/complaint.schema';
 import { SearchResultItem, SearchResponse } from './dto/search.dto';
 
 const MAX_RESULTS_PER_CATEGORY = 50;
@@ -34,6 +38,8 @@ export class SearchService {
     private readonly transactionModel: Model<TransactionDocument>,
     @InjectModel(Supplier.name)
     private readonly supplierModel: Model<SupplierDocument>,
+    @InjectModel(Complaint.name)
+    private readonly complaintModel: Model<ComplaintDocument>,
   ) {}
 
   async search(query: string): Promise<SearchResponse> {
@@ -51,41 +57,52 @@ export class SearchService {
     let orders: SearchResultItem[] = [];
     let customers: SearchResultItem[] = [];
     let supplierResults: SearchResultItem[] = [];
+    let complaintResults: SearchResultItem[] = [];
 
     if (isPhone) {
       // يبدأ بـ 01 → رقم هاتف بالتأكيد: عملاء وموردون أولاً، الحركات تبعاً
-      [customers, supplierResults, orders] = await Promise.all([
+      [customers, supplierResults, orders, complaintResults] = await Promise.all([
         this.searchCustomersByPhone(trimmed),
         this.searchSuppliersByPhone(trimmed),
         this.searchOrdersByPhone(trimmed),
+        this.searchComplaintsByText(trimmed),
       ]);
     } else if (numeric) {
       // أرقام قصيرة (1-6): رقم مرجع أوردر أولاً
       // أرقام طويلة (7+): هاتف أولاً ثم أوردر
       if (numLen <= 6) {
-        [orders, customers, supplierResults] = await Promise.all([
+        [orders, customers, supplierResults, complaintResults] = await Promise.all([
           this.searchOrdersByRef(trimmed),
           this.searchCustomersByPhone(trimmed),
           this.searchSuppliersByPhone(trimmed),
+          this.searchComplaintsByText(trimmed),
         ]);
       } else {
-        [customers, orders, supplierResults] = await Promise.all([
+        [customers, orders, supplierResults, complaintResults] = await Promise.all([
           this.searchCustomersByPhone(trimmed),
           this.searchOrdersByPhone(trimmed),
           this.searchSuppliersByPhone(trimmed),
+          this.searchComplaintsByText(trimmed),
         ]);
       }
     } else {
       // نص: بحث عام في الاسم
-      [products, orders, customers, supplierResults] = await Promise.all([
+      [products, orders, customers, supplierResults, complaintResults] = await Promise.all([
         this.searchProducts(trimmed),
         this.searchOrdersByText(trimmed),
         this.searchCustomersByText(trimmed),
         this.searchSuppliers(trimmed),
+        this.searchComplaintsByText(trimmed),
       ]);
     }
 
-    const results = [...products, ...customers, ...supplierResults, ...orders];
+    const results = [
+      ...complaintResults,
+      ...products,
+      ...customers,
+      ...supplierResults,
+      ...orders,
+    ];
     return { results, total: results.length };
   }
 
@@ -320,6 +337,47 @@ export class SearchService {
         icon: '👥',
         meta: `${c.orders} حركة | ${c.total} ج`,
       }));
+  }
+
+  private async searchComplaintsByText(query: string): Promise<SearchResultItem[]> {
+    const q = query.trim();
+    if (!q) return [];
+    const tokens = this.tokenizeQuery(query);
+    const complaints = await this.complaintModel
+      .find()
+      .select('complaintNo clientName submittedBy transactionRef status priority createdAt')
+      .sort({ createdAt: -1 })
+      .limit(2000)
+      .lean()
+      .exec();
+    const out: SearchResultItem[] = [];
+    const qLower = q.toLowerCase().replace(/^#+/, '');
+    for (const c of complaints) {
+      const noMatch = (c.complaintNo || '').toLowerCase().includes(qLower);
+      const refMatch = (c.transactionRef || '')
+        .toLowerCase()
+        .replace(/^#+/, '')
+        .includes(qLower);
+      const blob = [c.clientName, c.submittedBy].filter(Boolean).join(' ');
+      const textMatch = tokens.length && this.matchesTokens(blob, tokens);
+      if (!noMatch && !refMatch && !textMatch) continue;
+      out.push({
+        id: String(c._id),
+        type: 'complaint' as const,
+        title: c.complaintNo,
+        subtitle: `${c.clientName || c.submittedBy || ''} — ${c.status}`,
+        icon: '📮',
+        meta: c.transactionRef ? `الطلب: ${c.transactionRef}` : '',
+      });
+      if (out.length >= MAX_RESULTS_PER_CATEGORY) break;
+    }
+    // المطابقة التامة لرقم الشكوى تصعد لأعلى النتائج
+    out.sort((a, b) => {
+      const aExact = a.title.toLowerCase() === qLower ? 0 : 1;
+      const bExact = b.title.toLowerCase() === qLower ? 0 : 1;
+      return aExact - bExact;
+    });
+    return out;
   }
 
   private async searchSuppliers(query: string): Promise<SearchResultItem[]> {

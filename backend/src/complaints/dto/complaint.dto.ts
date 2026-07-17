@@ -23,6 +23,10 @@ export class CreateComplaintDto {
   @IsNotEmpty()
   @IsString()
   description: string;
+
+  @IsOptional()
+  @IsString()
+  priority?: string;
 }
 
 export class ResolveComplaintDto {
@@ -48,4 +52,21 @@ export class SurveyResponseDto {
   @IsOptional()
   @IsString()
   comment?: string;
+}
+
+export class UpdateProgressStageDto {
+  @IsString()
+  progressStage: string;
+}
+
+export class CreateNoteDto {
+  @IsNotEmpty()
+  @IsString()
+  text: string;
+}
+
+export class UpdateNoteDto {
+  @IsNotEmpty()
+  @IsString()
+  text: string;
 }

@@ -154,4 +154,14 @@ export class ConvertPoToInvoiceDto {
   @ValidateNested({ each: true })
   @Type(() => PurchaseOrderItemDto)
   readonly items?: PurchaseOrderItemDto[];
+
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  readonly invoiceImages?: string[];
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly discount?: number;
 }
