@@ -6,6 +6,7 @@ import {
   Query,
   Req,
   Body,
+  Headers,
   UseGuards,
   HttpCode,
   HttpException,
@@ -30,19 +31,30 @@ export class BostaController {
   /**
    * Inbound webhook from Bosta — pushes delivery status changes in real time.
    * No JWT guard (Bosta can't authenticate as our users); instead verified via
-   * a secret token configured in Settings > Shipping and passed as ?token=.
-   * Configure this URL in the Bosta dashboard as: POST /api/shipping/webhook?token=<secret>
+   * a secret token configured in Settings > Shipping.
+   *
+   * Bosta's dashboard "Edit Webhook Link" form sends the secret as a custom
+   * HTTP header (its "webhookCustomHeaders" mechanism), not a query param —
+   * configure it there as header name `X-Webhook-Secret` with this secret as
+   * the value. The query-param form (?token=) is kept as a fallback for
+   * manual testing (e.g. curl/Postman).
+   * URL to register in Bosta: POST https://admin.soulia.store/api/shipping/webhook
    */
   @Post('webhook')
   @HttpCode(200)
-  async handleWebhook(@Query('token') token: string, @Body() body: any) {
+  async handleWebhook(
+    @Headers('x-webhook-secret') headerToken: string,
+    @Query('token') queryToken: string,
+    @Body() body: any,
+  ) {
     const expected = await this.settingsService.getBostaWebhookSecret();
     if (!expected) {
       this.logger.warn('Bosta webhook received but no bostaWebhookSecret configured — rejecting');
       throw new HttpException({ message: 'Webhook not configured' }, HttpStatus.SERVICE_UNAVAILABLE);
     }
-    if (token !== expected) {
-      this.logger.warn('Bosta webhook received with invalid token');
+    const provided = headerToken || queryToken;
+    if (provided !== expected) {
+      this.logger.warn('Bosta webhook received with invalid/missing secret');
       throw new HttpException({ message: 'Invalid token' }, HttpStatus.UNAUTHORIZED);
     }
     const result = await this.bostaService.processWebhook(body);

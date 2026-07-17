@@ -70,6 +70,42 @@ function resolveBostaStatus(d: any, res: any): string {
   return 'UNKNOWN';
 }
 
+// ── Bosta WEBHOOK state codes → our internal status ────────────────────────
+// Per https://docs.bosta.co/docs/how-to/get-delivery-status-via-webhook/
+// The webhook body is FLAT (no `res.data` wrapper) and `state` is a numeric
+// code, unlike the REST GET /deliveries/:id response used by resolveBostaStatus.
+const BOSTA_WEBHOOK_STATE_MAP: Record<number, string> = {
+  10:  'CREATED',          // Pickup requested
+  11:  'CREATED',          // Waiting for route (cash collection)
+  20:  'CREATED',          // Route assigned
+  21:  'PICKED_UP',        // Picked up from business
+  22:  'IN_TRANSIT',       // Picking up from consignee (CRP/Exchange)
+  23:  'PICKED_UP',        // Picked up from consignee (CRP/Exchange)
+  24:  'IN_TRANSIT',       // Received at warehouse
+  25:  'IN_TRANSIT',       // Fulfilled
+  30:  'IN_TRANSIT',       // In transit between hubs
+  40:  'IN_TRANSIT',       // Picking up (cash collection)
+  41:  'OUT_FOR_DELIVERY', // Picked up — heading to customer/you
+  45:  'DELIVERED',        // Delivered
+  46:  'RETURNED',         // Returned to business
+  47:  'FAILED_ATTEMPT',   // Exception (NDR)
+  48:  'CANCELLED',        // Terminated
+  49:  'CANCELLED',        // Canceled
+  60:  'RETURNED',         // Returned to stock
+  100: 'FAILED_ATTEMPT',   // Lost
+  101: 'FAILED_ATTEMPT',   // Damaged
+  102: 'FAILED_ATTEMPT',   // Investigation
+  103: 'FAILED_ATTEMPT',   // Awaiting your action
+  104: 'CANCELLED',        // Archived
+  105: 'IN_TRANSIT',       // On hold
+};
+
+function resolveWebhookStatus(payload: any): string {
+  const code = Number(payload?.state);
+  if (!Number.isNaN(code) && BOSTA_WEBHOOK_STATE_MAP[code]) return BOSTA_WEBHOOK_STATE_MAP[code];
+  return 'UNKNOWN';
+}
+
 export interface BostaCreateResult {
   success: boolean;
   bostaOrderId?: string;
@@ -417,12 +453,20 @@ export class BostaService {
 
   /**
    * Shared status-application logic used by both the polling sync (syncStatus)
-   * and the inbound Bosta webhook. `res` is either a full `{ data: {...} }`
-   * API response (from sync) or the raw webhook body (Bosta posts the
-   * delivery object directly) — resolveBostaStatus/`d` handle both shapes.
+   * and the inbound Bosta webhook. These two sources have DIFFERENT shapes:
+   *  - REST sync (GET /deliveries/:id): `res` is `{ data: {...} }`, status comes
+   *    from `d.currentStatus.code` / `d.state.code` (string code) — resolved
+   *    via resolveBostaStatus().
+   *  - Webhook: `res` is the flat delivery object itself, `state` is a numeric
+   *    code per Bosta's webhook state table — resolved via resolveWebhookStatus().
    */
-  private async applyDeliveryUpdate(txId: string, tx: any, res: any): Promise<BostaTrackResult> {
-    const d = res.data || res;
+  private async applyDeliveryUpdate(
+    txId: string,
+    tx: any,
+    res: any,
+    source: 'sync' | 'webhook' = 'sync',
+  ): Promise<BostaTrackResult> {
+    const d = source === 'webhook' ? res : (res.data || res);
 
     if (d.isDeleted === true || d.deletedAt) {
       await this.txModel.findByIdAndUpdate(txId, {
@@ -438,7 +482,7 @@ export class BostaService {
       return { success: true, status: 'DELETED', statusLabel: 'محذوف من Bosta — يمكنك إعادة الإرسال' };
     }
 
-    const statusCode     = resolveBostaStatus(d, res);
+    const statusCode     = source === 'webhook' ? resolveWebhookStatus(d) : resolveBostaStatus(d, res);
     const statusLabel    = BOSTA_STATUS_LABELS[statusCode] || statusCode;
     const shippingStatus = BOSTA_TO_SHIPPING_STATUS[statusCode] || '';
 
@@ -518,8 +562,8 @@ export class BostaService {
       return { success: false, error: 'لا توجد حركة مطابقة لهذا الطلب', code: 'NOT_FOUND' };
     }
 
-    this.logger.log(`Bosta webhook received — tx=${tx._id} bostaOrderId=${bostaOrderId} tracking=${trackingNumber}`);
-    return this.applyDeliveryUpdate(String(tx._id), tx, payload);
+    this.logger.log(`Bosta webhook received — tx=${tx._id} bostaOrderId=${bostaOrderId} tracking=${trackingNumber} state=${d.state}`);
+    return this.applyDeliveryUpdate(String(tx._id), tx, d, 'webhook');
   }
 
   // ── Bulk sync all unfinished Bosta orders ──────────────────────────────

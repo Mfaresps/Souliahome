@@ -9643,11 +9643,13 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         </div>
 
         <div style="margin-top:14px;padding:10px 12px;background:var(--bg-alt);border-radius:8px;border:1px solid var(--border);font-size:.77rem;color:var(--muted);line-height:1.7;direction:ltr;word-break:break-all">
-          <strong style="color:var(--text);display:block;margin-bottom:4px;direction:rtl;text-align:right">رابط الـ Webhook — الصقه في إعدادات Bosta</strong>
+          <strong style="color:var(--text);display:block;margin-bottom:4px;direction:rtl;text-align:right">رابط الـ Webhook — الصقه في حقل "رابط Webhook" في Bosta (بدون أي إضافات)</strong>
           <span id="bosta-webhook-url">—</span>
         </div>
-        <div style="margin-top:8px;font-size:.77rem;color:var(--muted);line-height:1.7;direction:rtl">
-          ادخل على لوحة تحكم Bosta → الإعدادات → Webhooks، وأضف الرابط أعلاه ليتم استقبال تحديثات الحالة تلقائياً.
+        <div style="margin-top:8px;padding:10px 12px;background:var(--bg-alt);border-radius:8px;border:1px solid var(--border);font-size:.77rem;color:var(--muted);line-height:1.7;direction:rtl">
+          <strong style="color:var(--text);display:block;margin-bottom:4px">في نفس شاشة "تعديل رابط الـ Webhook" بلوحة تحكم Bosta:</strong>
+          <div>اسم مفتاح التوثيق: <code style="direction:ltr;display:inline-block">X-Webhook-Secret</code></div>
+          <div>مفتاح التوثيق (القيمة): نفس الرمز السري المحفوظ أعلاه</div>
           <br>يعمل حتى لو تم إنشاء الشحنة مباشرة من Shopify إلى Bosta (بدون المرور بزر "إنشاء شحنة") — يتم ربط رقم التتبع بالحركة تلقائياً أول مرة يصل فيها تحديث.
         </div>
       </div>
@@ -38848,8 +38850,7 @@ function renderSettings() {
     bostaWebhookCard.style.display = isAdmin() ? '' : 'none';
     _updateBostaWebhookStatus(!!settings.bostaWebhookSecretSet);
     const urlEl = qs('#bosta-webhook-url');
-    const tokenPlaceholder = settings.bostaWebhookSecretSet ? '<نفس_الرمز_السري_المحفوظ_أعلاه>' : '<الرمز_السري>';
-    if (urlEl) urlEl.textContent = window.location.origin + '/api/shipping/webhook?token=' + tokenPlaceholder;
+    if (urlEl) urlEl.textContent = window.location.origin + '/api/shipping/webhook';
   }
   // Render version footer
   renderVersionFooter();
