@@ -389,41 +389,7 @@ export class BostaService {
       this.logger.log(`Bosta syncStatus — bostaOrderId=${tx.bostaOrderId}`);
       const res = await this.request<any>('GET', `/deliveries/${tx.bostaOrderId}`, undefined, apiKey);
       this.logger.log(`Bosta syncStatus raw response — ${JSON.stringify(res)}`);
-      const d = res.data || res;
-
-      // If Bosta marks delivery as deleted/terminated in response body
-      if (d.isDeleted === true || d.deletedAt) {
-        await this.txModel.findByIdAndUpdate(txId, {
-          bostaStatus: 'DELETED',
-          bostaStatusLabel: 'محذوف من Bosta',
-          bostaOrderId: '',
-          bostaLastSync: new Date().toISOString(),
-          pickupStatus: 'Ready',
-          shippedAt: null,
-        });
-        this.emit('tx:updated', { _id: txId });
-        this.emit('pickup:unshipped', { _id: txId });
-        return { success: true, status: 'DELETED', statusLabel: 'محذوف من Bosta — يمكنك إعادة الإرسال' };
-      }
-
-      const statusCode     = resolveBostaStatus(d, res);
-      const statusLabel    = BOSTA_STATUS_LABELS[statusCode] || statusCode;
-      const shippingStatus = BOSTA_TO_SHIPPING_STATUS[statusCode] || '';
-
-      // Compute the new codCollectionStatus — only advance, never regress
-      const codUpdate = this.resolveCodStatusUpdate(tx, statusCode);
-
-      await this.txModel.findByIdAndUpdate(txId, {
-        bostaStatus: statusCode,
-        bostaStatusLabel: statusLabel,
-        bostaShippingStatus: shippingStatus,
-        bostaLastSync: new Date().toISOString(),
-        bostaRawResponse: res,
-        ...codUpdate,
-      });
-
-      this.emit('tx:updated', { _id: txId });
-      return { success: true, status: statusCode, statusLabel, raw: res };
+      return await this.applyDeliveryUpdate(String(tx._id), tx, res);
     } catch (err: any) {
       this.logger.error(`Bosta syncStatus failed tx=${txId}: ${err.message}`);
       // Order deleted or not found in Bosta — mark accordingly
@@ -447,6 +413,113 @@ export class BostaService {
       }
       return { success: false, error: err.message };
     }
+  }
+
+  /**
+   * Shared status-application logic used by both the polling sync (syncStatus)
+   * and the inbound Bosta webhook. `res` is either a full `{ data: {...} }`
+   * API response (from sync) or the raw webhook body (Bosta posts the
+   * delivery object directly) — resolveBostaStatus/`d` handle both shapes.
+   */
+  private async applyDeliveryUpdate(txId: string, tx: any, res: any): Promise<BostaTrackResult> {
+    const d = res.data || res;
+
+    if (d.isDeleted === true || d.deletedAt) {
+      await this.txModel.findByIdAndUpdate(txId, {
+        bostaStatus: 'DELETED',
+        bostaStatusLabel: 'محذوف من Bosta',
+        bostaOrderId: '',
+        bostaLastSync: new Date().toISOString(),
+        pickupStatus: 'Ready',
+        shippedAt: null,
+      });
+      this.emit('tx:updated', { _id: txId });
+      this.emit('pickup:unshipped', { _id: txId });
+      return { success: true, status: 'DELETED', statusLabel: 'محذوف من Bosta — يمكنك إعادة الإرسال' };
+    }
+
+    const statusCode     = resolveBostaStatus(d, res);
+    const statusLabel    = BOSTA_STATUS_LABELS[statusCode] || statusCode;
+    const shippingStatus = BOSTA_TO_SHIPPING_STATUS[statusCode] || '';
+
+    // Compute the new codCollectionStatus — only advance, never regress
+    const codUpdate = this.resolveCodStatusUpdate(tx, statusCode);
+
+    await this.txModel.findByIdAndUpdate(txId, {
+      bostaStatus: statusCode,
+      bostaStatusLabel: statusLabel,
+      bostaShippingStatus: shippingStatus,
+      bostaLastSync: new Date().toISOString(),
+      bostaRawResponse: res,
+      ...codUpdate,
+    });
+
+    this.emit('tx:updated', { _id: txId });
+    return { success: true, status: statusCode, statusLabel, raw: res };
+  }
+
+  // ── Inbound Bosta webhook — pushes status updates in real time ────────
+
+  /**
+   * Handles a webhook payload pushed by Bosta when a delivery's status changes.
+   *
+   * Two cases:
+   *  1. The order was created via our own "create-order" button — the
+   *     transaction already has bostaOrderId/bostaTrackingNumber saved, so we
+   *     match directly.
+   *  2. The order was shipped straight from Shopify to Bosta, bypassing our
+   *     system entirely — the transaction exists (synced from Shopify) but has
+   *     no Bosta fields yet. Bosta's businessReference in that case carries
+   *     whatever reference Shopify sent (its order name/number or numeric id),
+   *     so we fall back to matching on tx.ref or tx.shopifyOrderId and
+   *     auto-link the Bosta fields onto that transaction the first time we see it.
+   */
+  async processWebhook(payload: any): Promise<BostaTrackResult> {
+    const d = payload?.data || payload || {};
+    const bostaOrderId   = String(d._id || d.id || d.deliveryId || '');
+    const trackingNumber = String(d.trackingNumber || d.waybillNumber || d.TrackingNumber || '');
+    const businessRef    = String(d.businessReference || d.orderReference || '').trim();
+
+    if (!bostaOrderId && !trackingNumber) {
+      return { success: false, error: 'Webhook payload missing delivery id/tracking number', code: 'VALIDATION_ERROR' };
+    }
+
+    let tx = await this.txModel.findOne(
+      bostaOrderId
+        ? { bostaOrderId }
+        : { bostaTrackingNumber: trackingNumber },
+    ).lean();
+
+    // Fallback: not linked yet — try to match by our own ref or the Shopify
+    // order id/name Bosta was given as businessReference, then auto-link.
+    if (!tx && businessRef) {
+      const refDigits = businessRef.replace(/^#/, '');
+      tx = await this.txModel.findOne({
+        bostaOrderId: { $in: ['', null] },
+        $or: [
+          { ref: businessRef },
+          { ref: refDigits },
+          { shopifyOrderId: businessRef },
+          { shopifyOrderId: refDigits },
+        ],
+      }).lean();
+
+      if (tx) {
+        this.logger.log(`Bosta webhook auto-link — tx=${tx._id} matched via businessReference="${businessRef}" (order shipped directly from Shopify to Bosta)`);
+        await this.txModel.findByIdAndUpdate(tx._id, {
+          bostaOrderId,
+          bostaTrackingNumber: trackingNumber,
+        });
+      }
+    }
+
+    if (!tx) {
+      this.logger.warn(`Bosta webhook: no matching transaction for bostaOrderId=${bostaOrderId} tracking=${trackingNumber} businessReference=${businessRef}`);
+      return { success: false, error: 'لا توجد حركة مطابقة لهذا الطلب', code: 'NOT_FOUND' };
+    }
+
+    this.logger.log(`Bosta webhook received — tx=${tx._id} bostaOrderId=${bostaOrderId} tracking=${trackingNumber}`);
+    return this.applyDeliveryUpdate(String(tx._id), tx, payload);
   }
 
   // ── Bulk sync all unfinished Bosta orders ──────────────────────────────

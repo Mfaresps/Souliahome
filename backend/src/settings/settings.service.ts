@@ -154,6 +154,9 @@ export class SettingsService {
     // Replace bostaApiKey with a masked flag — never expose raw key to frontend
     obj['bostaApiKeySet'] = !!(obj['bostaApiKey'] as string);
     delete obj['bostaApiKey'];
+    // Same treatment for the webhook secret
+    obj['bostaWebhookSecretSet'] = !!(obj['bostaWebhookSecret'] as string);
+    delete obj['bostaWebhookSecret'];
     return obj;
   }
 
@@ -169,6 +172,20 @@ export class SettingsService {
   async getBostaApiKey(): Promise<string> {
     const settings = await this.getSettings();
     return (settings as any).bostaApiKey || process.env.BOSTA_API_KEY || '';
+  }
+
+  async saveBostaWebhookSecret(secret: string): Promise<void> {
+    const settings = await this.getSettings();
+    await this.settingsModel.findByIdAndUpdate(
+      settings._id,
+      { $set: { bostaWebhookSecret: secret.trim() } },
+      { new: true },
+    ).exec();
+  }
+
+  async getBostaWebhookSecret(): Promise<string> {
+    const settings = await this.getSettings();
+    return (settings as any).bostaWebhookSecret || process.env.BOSTA_WEBHOOK_SECRET || '';
   }
 
   async getSettingsSafe(): Promise<Record<string, unknown>> {

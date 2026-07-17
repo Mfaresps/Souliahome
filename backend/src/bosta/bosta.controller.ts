@@ -3,23 +3,56 @@ import {
   Post,
   Get,
   Param,
+  Query,
   Req,
   Body,
   UseGuards,
+  HttpCode,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { BostaService } from './bosta.service';
+import { SettingsService } from '../settings/settings.service';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('shipping')
 export class BostaController {
-  constructor(private readonly bostaService: BostaService) {}
+  private readonly logger = new Logger(BostaController.name);
+
+  constructor(
+    private readonly bostaService: BostaService,
+    private readonly settingsService: SettingsService,
+  ) {}
+
+  /**
+   * Inbound webhook from Bosta — pushes delivery status changes in real time.
+   * No JWT guard (Bosta can't authenticate as our users); instead verified via
+   * a secret token configured in Settings > Shipping and passed as ?token=.
+   * Configure this URL in the Bosta dashboard as: POST /api/shipping/webhook?token=<secret>
+   */
+  @Post('webhook')
+  @HttpCode(200)
+  async handleWebhook(@Query('token') token: string, @Body() body: any) {
+    const expected = await this.settingsService.getBostaWebhookSecret();
+    if (!expected) {
+      this.logger.warn('Bosta webhook received but no bostaWebhookSecret configured — rejecting');
+      throw new HttpException({ message: 'Webhook not configured' }, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    if (token !== expected) {
+      this.logger.warn('Bosta webhook received with invalid token');
+      throw new HttpException({ message: 'Invalid token' }, HttpStatus.UNAUTHORIZED);
+    }
+    const result = await this.bostaService.processWebhook(body);
+    // Always 200 to Bosta once authenticated, even on a soft "not found" match,
+    // so Bosta doesn't retry-storm us for orders we don't recognize.
+    return { received: true, ...result };
+  }
 
   /** Create a Bosta delivery order for a sales transaction */
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('create-order/:txId')
   async createOrder(@Param('txId') txId: string, @Req() req: any) {
     const operator: string = req.user?.username || req.user?.name || 'system';
@@ -35,6 +68,7 @@ export class BostaController {
   }
 
   /** Sync Bosta status for a single transaction */
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('sync/:txId')
   async syncStatus(@Param('txId') txId: string) {
     const result = await this.bostaService.syncStatus(txId);
@@ -49,6 +83,7 @@ export class BostaController {
   }
 
   /** Bulk sync all in-progress Bosta orders — admin only */
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('sync-all')
   @Roles('admin')
   async syncAll() {
@@ -56,6 +91,7 @@ export class BostaController {
   }
 
   /** Fix corrupted numeric status values — admin only */
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('fix-statuses')
   @Roles('admin')
   async fixStatuses() {
@@ -63,6 +99,7 @@ export class BostaController {
   }
 
   /** Force-mark a Bosta order as DELETED so it can be re-sent */
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('mark-deleted/:txId')
   @Roles('admin')
   async markDeleted(@Param('txId') txId: string) {
@@ -70,6 +107,7 @@ export class BostaController {
   }
 
   /** Fix shippingBostaCity for a transaction by ref — admin only */
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('fix-city-by-ref/:ref')
   @Roles('admin')
   async fixCityByRef(@Param('ref') ref: string) {
@@ -77,6 +115,7 @@ export class BostaController {
   }
 
   /** Cancel a Bosta order — admin only */
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('cancel/:txId')
   @Roles('admin')
   async cancelOrder(@Param('txId') txId: string) {
@@ -97,6 +136,7 @@ export class BostaController {
    *
    * Body: { method: string, note?: string }
    */
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('confirm-collection/:txId')
   async confirmCollection(
     @Param('txId') txId: string,

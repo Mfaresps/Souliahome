@@ -210,6 +210,10 @@ export class Settings {
   @Prop({ default: '' })
   bostaApiKey: string;
 
+  /** Secret token used to verify inbound Bosta webhook calls (sent as ?token= query param) */
+  @Prop({ default: '' })
+  bostaWebhookSecret: string;
+
   /**
    * COD collection large-amount warning threshold (EGP).
    * When a COD collection amount is >= this value, the frontend requires

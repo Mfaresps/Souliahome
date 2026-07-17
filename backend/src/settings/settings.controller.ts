@@ -230,6 +230,16 @@ export class SettingsController {
   }
 
   @Roles('admin')
+  @Post('bosta-webhook-secret')
+  async saveBostaWebhookSecret(@Body('secret') secret: string) {
+    if (!secret || typeof secret !== 'string') {
+      return { success: false, message: 'الرمز السري مطلوب' };
+    }
+    await this.settingsService.saveBostaWebhookSecret(secret);
+    return { success: true, message: 'تم حفظ رمز Webhook السري بنجاح' };
+  }
+
+  @Roles('admin')
   @Post('bosta-api-key/test')
   async testBostaApiKey(@Body('key') key: string) {
     const apiKey = (key || '').trim() || await this.settingsService.getBostaApiKey();

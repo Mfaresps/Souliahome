@@ -9602,6 +9602,56 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         </div>
       </div>
 
+      <!-- Bosta Webhook (automatic status push) -->
+      <div class="settings-section-label" style="margin-top:20px">
+        <span class="bosta-icon" style="width:14px;height:14px"></span>
+        تحديث حالة الشحنة تلقائياً (Webhook)
+      </div>
+      <div class="settings-card" id="stg-bosta-webhook-card" data-stg-keywords="bosta webhook تتبع تلقائي حالة شحنة">
+        <div class="stg-card-title">
+          <div class="stg-card-title-icon"><span class="bosta-icon" style="width:18px;height:18px"></span></div>
+          <div class="stg-card-title-text">
+            <strong>رمز Webhook السري</strong>
+            <span>تحديث حالة الشحنة فور تغيّرها في Bosta — بدون انتظار المزامنة اليدوية</span>
+          </div>
+        </div>
+
+        <div id="bosta-webhook-status" style="margin-bottom:12px;font-size:.82rem;display:flex;align-items:center;gap:6px;color:var(--muted)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          جاري التحقق...
+        </div>
+
+        <div class="form-group" style="margin-bottom:10px">
+          <label style="font-size:.8rem;margin-bottom:5px;display:block;font-weight:600">الرمز السري</label>
+          <div style="position:relative">
+            <input type="password" id="stg-bosta-webhook-secret"
+              placeholder="أدخل رمز سري (أو اضغط توليد)..."
+              style="width:100%;padding-right:40px;font-family:monospace;font-size:.82rem;direction:ltr"
+              oninput="delete this.dataset.masked; qs('#bosta-webhook-status').innerHTML=''">
+            <button type="button"
+              style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;display:flex;align-items:center;justify-content:center;width:28px;height:28px"
+              onclick="togglePassField(event)"
+              title="إظهار / إخفاء">
+              <svg viewBox="0 0 24 24" style="display:block;flex-shrink:0;width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" onclick="generateBostaWebhookSecret()">توليد رمز عشوائي</button>
+          <button class="btn btn-primary btn-sm" onclick="saveBostaWebhookSecret()" id="btn-save-bosta-webhook">حفظ الرمز</button>
+        </div>
+
+        <div style="margin-top:14px;padding:10px 12px;background:var(--bg-alt);border-radius:8px;border:1px solid var(--border);font-size:.77rem;color:var(--muted);line-height:1.7;direction:ltr;word-break:break-all">
+          <strong style="color:var(--text);display:block;margin-bottom:4px;direction:rtl;text-align:right">رابط الـ Webhook — الصقه في إعدادات Bosta</strong>
+          <span id="bosta-webhook-url">—</span>
+        </div>
+        <div style="margin-top:8px;font-size:.77rem;color:var(--muted);line-height:1.7;direction:rtl">
+          ادخل على لوحة تحكم Bosta → الإعدادات → Webhooks، وأضف الرابط أعلاه ليتم استقبال تحديثات الحالة تلقائياً.
+          <br>يعمل حتى لو تم إنشاء الشحنة مباشرة من Shopify إلى Bosta (بدون المرور بزر "إنشاء شحنة") — يتم ربط رقم التتبع بالحركة تلقائياً أول مرة يصل فيها تحديث.
+        </div>
+      </div>
+
     </div><!-- /shipping -->
 
     <!-- ── TAB: Security (الأمان) ── -->
@@ -10471,7 +10521,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
             <th>العميل</th>
             <th style="text-align:center">الإيراد</th>
             <th style="text-align:center">تكلفة المنتجات</th>
-            <th style="text-align:center">الشحن</th>
+            <th style="text-align:center">خسارة الشحن الإضافي</th>
             <th style="text-align:center">الخصم</th>
             <th style="text-align:center">صافي الربح</th>
             <th style="text-align:center">الهامش %</th>
@@ -10719,6 +10769,26 @@ function esc(str) {
   const d = document.createElement('div');
   d.appendChild(document.createTextNode(s));
   return d.innerHTML;
+}
+
+/**
+ * Discount code startDate/endDate are stored as plain "YYYY-MM-DD" strings.
+ * `new Date("YYYY-MM-DD")` parses as UTC midnight, which falls a few hours
+ * before local midnight in Egypt (UTC+2/+3) — causing codes to look "not
+ * started yet" for the first hours of their start day, and to expire a few
+ * hours early on their end day. Compare using local calendar days instead.
+ */
+function _codeNotStarted(startDate, now) {
+  if (!startDate) return false;
+  const s = new Date(startDate);
+  const localStart = new Date(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate(), 0, 0, 0, 0);
+  return localStart > now;
+}
+function _codeExpired(endDate, now) {
+  if (!endDate) return false;
+  const e = new Date(endDate);
+  const localEnd = new Date(e.getUTCFullYear(), e.getUTCMonth(), e.getUTCDate(), 23, 59, 59, 999);
+  return localEnd < now;
 }
 
 function copyBtn(text) {
@@ -18443,8 +18513,8 @@ function _rebuildNewDiscSection(itemsTotal) {
   const now = new Date();
   const activeCodes = (settings.discountCodes || []).filter(c => {
     if (!c.active) return false;
-    if (c.startDate && new Date(c.startDate) > now) return false;
-    if (c.endDate && new Date(c.endDate) < now) return false;
+    if (_codeNotStarted(c.startDate, now)) return false;
+    if (_codeExpired(c.endDate, now)) return false;
     return true;
   });
   if (!activeCodes.length) { sec.innerHTML = ''; return; }
@@ -18843,8 +18913,8 @@ function _computeDiscountSuggestions() {
 
     const codeObj = codes.find(c => c.id === codeId);
     if (!codeObj || !codeObj.active) return;
-    if (codeObj.startDate && new Date(codeObj.startDate) > now) return;
-    if (codeObj.endDate && new Date(codeObj.endDate) < now) return;
+    if (_codeNotStarted(codeObj.startDate, now)) return;
+    if (_codeExpired(codeObj.endDate, now)) return;
 
     const alreadyApplied = txAppliedCodes.some(ac => ac.id === codeId);
     // Check if this code was recently auto-removed and conditions are now restored
@@ -19100,8 +19170,8 @@ function _applySuggestion(codeId, code, type, value, bundleId) {
   const now = new Date();
   const codeObj = (settings.discountCodes || []).find(c => c.id === codeId);
   if (!codeObj || !codeObj.active) { toast('هذا الكود غير متاح حالياً', true); return; }
-  if (codeObj.endDate && new Date(codeObj.endDate) < now) { toast('انتهت صلاحية هذا الكود', true); return; }
-  if (codeObj.startDate && new Date(codeObj.startDate) > now) { toast('هذا الكود لم يبدأ بعد', true); return; }
+  if (_codeExpired(codeObj.endDate, now)) { toast('انتهت صلاحية هذا الكود', true); return; }
+  if (_codeNotStarted(codeObj.startDate, now)) { toast('هذا الكود لم يبدأ بعد', true); return; }
 
   const alreadyIdx = txAppliedCodes.findIndex(c => c.id === codeId);
   if (alreadyIdx >= 0) { toast('الكود مُطبَّق بالفعل ✓'); return; }
@@ -19186,8 +19256,8 @@ function _computeEditDiscountSuggestions() {
     if (!codeId) return;
     const codeObj = codes.find(c => c.id === codeId);
     if (!codeObj || !codeObj.active) return;
-    if (codeObj.startDate && new Date(codeObj.startDate) > now) return;
-    if (codeObj.endDate && new Date(codeObj.endDate) < now) return;
+    if (_codeNotStarted(codeObj.startDate, now)) return;
+    if (_codeExpired(codeObj.endDate, now)) return;
     const alreadyApplied = editAppliedCodes.some(ac => ac.id === codeId);
     const wasAutoRemoved = !alreadyApplied && !!_editDiscRemovedForReapply[codeId] && isFull;
     if (wasAutoRemoved) delete _editDiscRemovedForReapply[codeId];
@@ -19332,8 +19402,8 @@ function _editDsbApplyCard(cardEl, codeId, code, type, value, itemsTotal) {
   const now = new Date();
   const codeObj = (settings.discountCodes || []).find(c => c.id === codeId);
   if (!codeObj || !codeObj.active) { toast('هذا الكود غير متاح حالياً', true); return; }
-  if (codeObj.endDate && new Date(codeObj.endDate) < now) { toast('انتهت صلاحية هذا الكود', true); return; }
-  if (codeObj.startDate && new Date(codeObj.startDate) > now) { toast('هذا الكود لم يبدأ بعد', true); return; }
+  if (_codeExpired(codeObj.endDate, now)) { toast('انتهت صلاحية هذا الكود', true); return; }
+  if (_codeNotStarted(codeObj.startDate, now)) { toast('هذا الكود لم يبدأ بعد', true); return; }
   if (editAppliedCodes.some(c => c.id === codeId)) { toast('الكود مُطبَّق بالفعل ✓'); return; }
   editAppliedCodes.push({ id: codeId, code, type, value: Number(value) });
   // Write combined codes to hidden inputs and recalc summary
@@ -25560,8 +25630,8 @@ function _rebuildEditDiscSection(itemsTotal) {
   const now = new Date();
   const activeCodes = (settings.discountCodes || []).filter(c => {
     if (!c.active) return false;
-    if (c.startDate && new Date(c.startDate) > now) return false;
-    if (c.endDate && new Date(c.endDate) < now) return false;
+    if (_codeNotStarted(c.startDate, now)) return false;
+    if (_codeExpired(c.endDate, now)) return false;
     return true;
   });
   if (!activeCodes.length) { sec.innerHTML = ''; return; }
@@ -25608,8 +25678,8 @@ function showEditDiscountForm() {
   const now = new Date();
   const activeCodes = (settings.discountCodes || []).filter(c => {
     if (!c.active) return false;
-    if (c.startDate && new Date(c.startDate) > now) return false;
-    if (c.endDate && new Date(c.endDate) < now) return false;
+    if (_codeNotStarted(c.startDate, now)) return false;
+    if (_codeExpired(c.endDate, now)) return false;
     return true;
   });
 
@@ -27280,6 +27350,7 @@ async function bulkSendToBosta() {
   );
   if (!confirmed) return;
   let success = 0, failed = 0;
+  const trackedRefs = [];
   for (const tx of eligible) {
     try {
       const res = await api(`/shipping/create-order/${tx._id}`, { method: 'POST' });
@@ -27292,10 +27363,16 @@ async function bulkSendToBosta() {
       tx.shippedAt           = new Date().toISOString();
       const po = (_pickupOrders || []).find(o => String(o._id) === String(tx._id));
       if (po) { po.pickupStatus = 'Shipped'; po.shippedAt = tx.shippedAt; }
+      if (tracking) trackedRefs.push(`#${tx.ref || tx._id.slice(-6)}: ${tracking}`);
       success++;
     } catch { failed++; }
   }
-  toast(`Bosta: تم إرسال ${success} طلب${failed ? ` — فشل ${failed}` : ' ✅'}`);
+  if (success && trackedRefs.length) {
+    const trackingList = trackedRefs.join(' • ');
+    toast(`تم إرسال ${success} طلب إلى Bosta بنجاح ✅ — أرقام التتبع: ${trackingList}${failed ? ` — فشل ${failed}` : ''}`);
+  } else {
+    toast(`Bosta: تم إرسال ${success} طلب${failed ? ` — فشل ${failed}` : ' ✅'}`);
+  }
   transactions = await api('/transactions').catch(() => transactions);
   renderMovements();
   if (typeof renderPickupBoard === 'function') renderPickupBoard();
@@ -27661,7 +27738,11 @@ function openProfitAnalysis() {
 
   _paData = selected.map(tx => {
     const revenue   = tx.itemsTotal ?? tx.total ?? 0;
-    const shipping  = Number(tx.shipCost) || 0;
+    // شحن العميل (المحصّل) لا يُعد تكلفة — هو مبلغ مُمرَّر من العميل لتغطية الشحن.
+    // فقط فرق الشحن الفعلي الزائد عن المحصّل (إن وجد) يُعتبر خسارة على الشركة.
+    const billedShip  = Number(tx.shipCost) || 0;
+    const actualShip  = Number(tx.actualShipCost) || 0;
+    const shipLoss    = Math.max(0, actualShip - billedShip);
     const discount  = Number(tx.discount) || 0;
     // cost = sum of (item.qty × product.buyPrice)
     let cost = 0;
@@ -27669,19 +27750,19 @@ function openProfitAnalysis() {
       const prod = products.find(p => p.code === item.code || p._id === item.productId);
       cost += (prod?.buyPrice || 0) * (item.qty || 1);
     });
-    const netProfit = revenue - cost - shipping - discount;
+    const netProfit = revenue - cost - shipLoss - discount;
     const margin    = revenue > 0 ? ((netProfit / revenue) * 100) : 0;
-    return { tx, revenue, cost, shipping, discount, netProfit, margin };
+    return { tx, revenue, cost, shipLoss, discount, netProfit, margin };
   });
 
   // Summary totals
   const tot = _paData.reduce((a, r) => ({
     revenue: a.revenue + r.revenue,
     cost:    a.cost    + r.cost,
-    shipping:a.shipping+ r.shipping,
+    shipLoss:a.shipLoss+ r.shipLoss,
     discount:a.discount+ r.discount,
     profit:  a.profit  + r.netProfit,
-  }), { revenue:0, cost:0, shipping:0, discount:0, profit:0 });
+  }), { revenue:0, cost:0, shipLoss:0, discount:0, profit:0 });
   const totalMargin = tot.revenue > 0 ? ((tot.profit / tot.revenue) * 100) : 0;
 
   const summaryEl = qs('#pa-summary-cards');
@@ -27689,7 +27770,7 @@ function openProfitAnalysis() {
     <div class="pa-kpi"><div class="pa-kpi-label">عدد الحركات</div><div class="pa-kpi-val blue">${fmtN(_paData.length)}</div></div>
     <div class="pa-kpi"><div class="pa-kpi-label">إجمالي الإيراد</div><div class="pa-kpi-val">${fmtJ(tot.revenue)}</div></div>
     <div class="pa-kpi"><div class="pa-kpi-label">تكلفة المنتجات</div><div class="pa-kpi-val red">${fmtJ(tot.cost)}</div></div>
-    <div class="pa-kpi"><div class="pa-kpi-label">تكلفة الشحن</div><div class="pa-kpi-val red">${fmtJ(tot.shipping)}</div></div>
+    <div class="pa-kpi"><div class="pa-kpi-label">خسارة الشحن الإضافي</div><div class="pa-kpi-val red">${fmtJ(tot.shipLoss)}</div></div>
     <div class="pa-kpi"><div class="pa-kpi-label">الخصومات</div><div class="pa-kpi-val red">${fmtJ(tot.discount)}</div></div>
     <div class="pa-kpi"><div class="pa-kpi-label">صافي الربح</div><div class="pa-kpi-val ${tot.profit >= 0 ? 'green' : 'red'}">${fmtJ(tot.profit)}</div></div>
     <div class="pa-kpi"><div class="pa-kpi-label">هامش الربح</div><div class="pa-kpi-val ${totalMargin >= 0 ? 'green' : 'red'}">${totalMargin.toFixed(1)}%</div></div>
@@ -27705,7 +27786,7 @@ function openProfitAnalysis() {
       <td>${esc(r.tx.client || '—')}</td>
       <td style="text-align:center">${fmtJ(r.revenue)}</td>
       <td style="text-align:center;color:#ef4444">${fmtJ(r.cost)}</td>
-      <td style="text-align:center;color:#f59e0b">${fmtJ(r.shipping)}</td>
+      <td style="text-align:center;color:#f59e0b">${r.shipLoss > 0 ? fmtJ(r.shipLoss) : '—'}</td>
       <td style="text-align:center;color:#8b5cf6">${fmtJ(r.discount)}</td>
       <td style="text-align:center" class="${profitCls}">${fmtJ(r.netProfit)}</td>
       <td style="text-align:center">
@@ -27728,13 +27809,13 @@ function _paPrintPDF() {
   const panel = qs('#profit-analysis-modal .pa-panel');
   if (!panel) return;
   const w = window.open('', '_blank', 'width=950,height=700');
-  const tot = _paData.reduce((a,r)=>({revenue:a.revenue+r.revenue,cost:a.cost+r.cost,shipping:a.shipping+r.shipping,discount:a.discount+r.discount,profit:a.profit+r.netProfit}),{revenue:0,cost:0,shipping:0,discount:0,profit:0});
+  const tot = _paData.reduce((a,r)=>({revenue:a.revenue+r.revenue,cost:a.cost+r.cost,shipLoss:a.shipLoss+r.shipLoss,discount:a.discount+r.discount,profit:a.profit+r.netProfit}),{revenue:0,cost:0,shipLoss:0,discount:0,profit:0});
   const rows = _paData.map(r => `<tr>
     <td>#${r.tx.ref||String(r.tx._id).slice(-6)}</td>
     <td>${r.tx.client||'—'}</td>
     <td>${r.revenue.toFixed(2)}</td>
     <td>${r.cost.toFixed(2)}</td>
-    <td>${r.shipping.toFixed(2)}</td>
+    <td>${r.shipLoss > 0 ? r.shipLoss.toFixed(2) : '—'}</td>
     <td>${r.discount.toFixed(2)}</td>
     <td style="font-weight:700;color:${r.netProfit>=0?'#10b981':'#ef4444'}">${r.netProfit.toFixed(2)}</td>
     <td>${r.margin.toFixed(1)}%</td>
@@ -27750,11 +27831,11 @@ function _paPrintPDF() {
   <div class="kpis">
     <div class="kpi"><div class="kpi-l">الإيراد</div><div class="kpi-v">${tot.revenue.toFixed(2)}</div></div>
     <div class="kpi"><div class="kpi-l">التكلفة</div><div class="kpi-v" style="color:#ef4444">${tot.cost.toFixed(2)}</div></div>
-    <div class="kpi"><div class="kpi-l">الشحن</div><div class="kpi-v" style="color:#f59e0b">${tot.shipping.toFixed(2)}</div></div>
+    <div class="kpi"><div class="kpi-l">خسارة الشحن الإضافي</div><div class="kpi-v" style="color:#f59e0b">${tot.shipLoss.toFixed(2)}</div></div>
     <div class="kpi"><div class="kpi-l">الخصومات</div><div class="kpi-v" style="color:#8b5cf6">${tot.discount.toFixed(2)}</div></div>
     <div class="kpi"><div class="kpi-l">صافي الربح</div><div class="kpi-v" style="color:${tot.profit>=0?'#10b981':'#ef4444'}">${tot.profit.toFixed(2)}</div></div>
   </div>
-  <table><thead><tr><th>#المرجع</th><th>العميل</th><th>الإيراد</th><th>التكلفة</th><th>الشحن</th><th>الخصم</th><th>صافي الربح</th><th>الهامش %</th></tr></thead>
+  <table><thead><tr><th>#المرجع</th><th>العميل</th><th>الإيراد</th><th>التكلفة</th><th>خسارة الشحن الإضافي</th><th>الخصم</th><th>صافي الربح</th><th>الهامش %</th></tr></thead>
   <tbody>${rows}</tbody></table>
   <script>setTimeout(()=>window.print(),400)<\/script></body></html>`);
   w.document.close();
@@ -27762,13 +27843,13 @@ function _paPrintPDF() {
 
 function _paExportExcel() {
   if (!_paData.length) return;
-  const tot = _paData.reduce((a,r)=>({revenue:a.revenue+r.revenue,cost:a.cost+r.cost,shipping:a.shipping+r.shipping,discount:a.discount+r.discount,profit:a.profit+r.netProfit}),{revenue:0,cost:0,shipping:0,discount:0,profit:0});
+  const tot = _paData.reduce((a,r)=>({revenue:a.revenue+r.revenue,cost:a.cost+r.cost,shipLoss:a.shipLoss+r.shipLoss,discount:a.discount+r.discount,profit:a.profit+r.netProfit}),{revenue:0,cost:0,shipLoss:0,discount:0,profit:0});
   const rows = _paData.map(r => ({
     'المرجع': '#' + (r.tx.ref || String(r.tx._id).slice(-6)),
     'العميل': r.tx.client || '—',
     'الإيراد (ج)': r.revenue,
     'تكلفة المنتجات (ج)': r.cost,
-    'الشحن (ج)': r.shipping,
+    'خسارة الشحن الإضافي (ج)': r.shipLoss,
     'الخصم (ج)': r.discount,
     'صافي الربح (ج)': r.netProfit,
     'الهامش %': parseFloat(r.margin.toFixed(2)),
@@ -27778,7 +27859,7 @@ function _paExportExcel() {
     'العميل': '',
     'الإيراد (ج)': tot.revenue,
     'تكلفة المنتجات (ج)': tot.cost,
-    'الشحن (ج)': tot.shipping,
+    'خسارة الشحن الإضافي (ج)': tot.shipLoss,
     'الخصم (ج)': tot.discount,
     'صافي الربح (ج)': tot.profit,
     'الهامش %': tot.revenue > 0 ? parseFloat(((tot.profit/tot.revenue)*100).toFixed(2)) : 0,
@@ -32115,17 +32196,30 @@ function renderSrReturnItems() {
         </div>
         <div style="text-align:center;min-width:70px">
           <label style="font-size:.7rem;color:var(--muted);display:block">الإجمالي</label>
-          <div style="font-weight:700;color:#ea580c">${fmtJ(it.returnQty * it.returnPrice)}</div>
+          <div id="sr-item-total-${i}" style="font-weight:700;color:#ea580c">${fmtJ(it.returnQty * it.returnPrice)}</div>
         </div>
       </div>
       <div style="margin-top:8px">
         <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:2px">ملاحظة لهذا الصنف — سبب الاسترجاع الخاص به (اختياري)</label>
-        <input type="text" value="${esc(it.note || '')}" class="form-input" style="width:100%" placeholder="مثال: تلف في الغطاء فقط" oninput="srNoteChanged(${i}, this.value)">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+          ${SR_ITEM_NOTE_QUICK_OPTIONS.map(opt => `<button type="button" class="btn btn-outline btn-sm" style="font-size:.72rem;padding:3px 10px" onclick="srApplyQuickNote(${i},'${esc(opt)}')">${esc(opt)}</button>`).join('')}
+        </div>
+        <input type="text" id="sr-item-note-${i}" value="${esc(it.note || '')}" class="form-input" style="width:100%" placeholder="مثال: تلف في الغطاء فقط" oninput="srNoteChanged(${i}, this.value)">
       </div>
     </div>`;
   }).join('');
   host.innerHTML = rowsHtml;
   updateSrTotal();
+}
+
+const SR_ITEM_NOTE_QUICK_OPTIONS = ['تلف منتج', 'حجم غير مطابق', 'لون مختلف'];
+
+function srApplyQuickNote(i, label) {
+  const it = srReturnItems[i];
+  if (!it) return;
+  it.note = label;
+  const input = qs('#sr-item-note-' + i);
+  if (input) input.value = label;
 }
 
 function srNoteChanged(i, val) {
@@ -32145,6 +32239,8 @@ function srQtyChanged(i, val, inputEl) {
     toast(`أقصى كمية متاحة للإرجاع لهذا الصنف: ${fmtN(maxQty)}`, true);
   }
   it.returnQty = clamped;
+  const totalEl = qs('#sr-item-total-' + i);
+  if (totalEl) totalEl.innerHTML = fmtJ(it.returnQty * it.returnPrice);
   updateSrTotal();
 }
 
@@ -32158,6 +32254,8 @@ function srPriceChanged(i, val, inputEl) {
     toast(`السعر لا يمكن أن يتجاوز سعر الشراء الأصلي: ${fmtN(it.purchasedPrice)}`, true);
   }
   it.returnPrice = clamped;
+  const totalEl = qs('#sr-item-total-' + i);
+  if (totalEl) totalEl.innerHTML = fmtJ(it.returnQty * it.returnPrice);
   updateSrTotal();
 }
 
@@ -32318,11 +32416,13 @@ function _buildSupplierReturnPrintHtml({ returnNumber, status, supplierName, sup
         ${it.image ? `<img src="${esc(it.image)}" style="width:44px;height:44px;object-fit:contain">` : '—'}
       </td>
       <td style="padding:8px;border:1px solid #ddd">${esc(it.code || '')}</td>
-      <td style="padding:8px;border:1px solid #ddd">${esc(it.name || '')}</td>
+      <td style="padding:8px;border:1px solid #ddd">
+        ${esc(it.name || '')}
+        ${it.note ? `<br><span style="display:inline-block;margin-top:3px;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700;background:#ffedd5;color:#c2410c">${esc(it.note)}</span>` : ''}
+      </td>
       <td style="padding:8px;border:1px solid #ddd;text-align:center">${it.qty ?? it.returnQty ?? 0}</td>
       <td style="padding:8px;border:1px solid #ddd;text-align:center">${it.price ?? it.returnPrice ?? 0} ج</td>
       <td style="padding:8px;border:1px solid #ddd;text-align:center">${((it.qty ?? it.returnQty ?? 0) * (it.price ?? it.returnPrice ?? 0))} ج</td>
-      <td style="padding:8px;border:1px solid #ddd;font-size:11px;color:#666">${esc(it.note || '')}</td>
     </tr>`).join('');
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -32368,7 +32468,6 @@ function _buildSupplierReturnPrintHtml({ returnNumber, status, supplierName, sup
       <th style="text-align:center;width:60px">الكمية</th>
       <th style="text-align:center;width:80px">السعر</th>
       <th style="text-align:center;width:80px">الإجمالي</th>
-      <th>ملاحظة</th>
     </tr>
   </thead>
   <tbody>${itemRows}</tbody>
@@ -38743,6 +38842,15 @@ function renderSettings() {
     bostaCard.style.display = isAdmin() ? '' : 'none';
     _updateBostaKeyStatus(!!settings.bostaApiKeySet);
   }
+  // Bosta webhook secret status + URL
+  const bostaWebhookCard = qs('#stg-bosta-webhook-card');
+  if (bostaWebhookCard) {
+    bostaWebhookCard.style.display = isAdmin() ? '' : 'none';
+    _updateBostaWebhookStatus(!!settings.bostaWebhookSecretSet);
+    const urlEl = qs('#bosta-webhook-url');
+    const tokenPlaceholder = settings.bostaWebhookSecretSet ? '<نفس_الرمز_السري_المحفوظ_أعلاه>' : '<الرمز_السري>';
+    if (urlEl) urlEl.textContent = window.location.origin + '/api/shipping/webhook?token=' + tokenPlaceholder;
+  }
   // Render version footer
   renderVersionFooter();
   // Load backup list when settings page is rendered (silently, without notifications)
@@ -38792,7 +38900,7 @@ function renderDiscountCodes() {
     if (q && !c.code.toLowerCase().includes(q) && !(c.description || '').toLowerCase().includes(q)) return false;
     if (typeFilter && c.type !== typeFilter) return false;
     if (statusFilter) {
-      const expired = c.endDate && new Date(c.endDate) < now;
+      const expired = _codeExpired(c.endDate, now);
       if (statusFilter === 'active' && (!c.active || expired)) return false;
       if (statusFilter === 'inactive' && c.active) return false;
       if (statusFilter === 'expired' && !expired) return false;
@@ -38806,8 +38914,8 @@ function renderDiscountCodes() {
   }
 
   tbody.innerHTML = codes.map(c => {
-    const expired = c.endDate && new Date(c.endDate) < now;
-    const notStarted = c.startDate && new Date(c.startDate) > now;
+    const expired = _codeExpired(c.endDate, now);
+    const notStarted = _codeNotStarted(c.startDate, now);
     let statusBadge;
     if (expired) {
       statusBadge = `<span class="badge" style="background:rgba(239,68,68,.1);color:#ef4444;font-size:.72rem">منتهي</span>`;
@@ -39661,6 +39769,47 @@ function _updateBostaKeyStatus(isSet) {
     if (inp && !inp.value) { inp.value = '••••••••••••••••••••••••••••••••'; inp.dataset.masked = '1'; }
   } else {
     el.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> <span style="color:#f59e0b">لم يتم ضبط المفتاح بعد</span>`;
+    if (inp) { inp.value = ''; delete inp.dataset.masked; }
+  }
+}
+
+// ── Bosta Webhook secret management ───────────────────────────────────────
+async function saveBostaWebhookSecret() {
+  const inp = qs('#stg-bosta-webhook-secret');
+  const secret = (inp?.value || '').trim();
+  if (!secret || inp?.dataset?.masked === '1') { toast('أدخل الرمز السري أولاً', true); return; }
+  const btn = qs('#btn-save-bosta-webhook');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+  try {
+    await api('/settings/bosta-webhook-secret', { method: 'POST', body: JSON.stringify({ secret }) });
+    _updateBostaWebhookStatus(true);
+    if (settings) settings.bostaWebhookSecretSet = true;
+    toast('تم حفظ رمز Webhook بنجاح ✅');
+  } catch (e) {
+    toast('خطأ في الحفظ: ' + e.message, true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  }
+}
+
+function generateBostaWebhookSecret() {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  const secret = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  const inp = qs('#stg-bosta-webhook-secret');
+  if (inp) { inp.value = secret; delete inp.dataset.masked; }
+  qs('#bosta-webhook-status').innerHTML = '';
+}
+
+function _updateBostaWebhookStatus(isSet) {
+  const el = qs('#bosta-webhook-status');
+  if (!el) return;
+  const inp = qs('#stg-bosta-webhook-secret');
+  if (isSet) {
+    el.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> <span style="color:#10b981">الرمز محفوظ — Webhook مفعّل</span>`;
+    if (inp && !inp.value) { inp.value = '••••••••••••••••••••••••••••••••'; inp.dataset.masked = '1'; }
+  } else {
+    el.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> <span style="color:#f59e0b">لم يتم ضبط الرمز — Webhook غير مفعّل</span>`;
     if (inp) { inp.value = ''; delete inp.dataset.masked; }
   }
 }
