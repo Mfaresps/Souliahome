@@ -47,6 +47,11 @@ const socketProxy = createProxyMiddleware({
 });
 app.use('/socket.io/', socketProxy);
 
+// Short customer-facing survey link — same domain, no query string, no page name exposed
+app.get('/s/:slug', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'survey.html'));
+});
+
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 

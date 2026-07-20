@@ -24,6 +24,7 @@ import { BostaModule } from './bosta/bosta.module';
 import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { SupplierReturnsModule } from './supplier-returns/supplier-returns.module';
 import { DraftsModule } from './drafts/drafts.module';
+import { CustomerServicePlaybookModule } from './customer-service-playbook/customer-service-playbook.module';
 import { SeedService } from './seed/seed.service';
 
 @Module({
@@ -55,6 +56,7 @@ import { SeedService } from './seed/seed.service';
     PurchaseOrdersModule,
     SupplierReturnsModule,
     DraftsModule,
+    CustomerServicePlaybookModule,
   ],
   providers: [SeedService],
 })

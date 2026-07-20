@@ -57,7 +57,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       errorName = 'ConflictException';
     } else {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
-      message = 'Internal server error';
+      message = 'حدث خطأ غير متوقع في الخادم — يرجى المحاولة مرة أخرى، وإبلاغ الدعم الفني إذا تكررت المشكلة';
       errorName = 'InternalServerError';
       this.logger.error(
         `Unhandled exception on ${request.method} ${request.url}`,

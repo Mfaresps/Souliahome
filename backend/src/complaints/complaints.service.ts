@@ -29,9 +29,24 @@ export class ComplaintsService {
   }
 
   async findBySurveyToken(token: string): Promise<ComplaintDocument> {
-    const complaint = await this.complaintModel.findOne({ surveyToken: token }).exec();
+    const complaint = await this.complaintModel
+      .findOne({ $or: [{ surveySlug: token }, { surveyToken: token }] })
+      .exec();
     if (!complaint) throw new NotFoundException('رابط الاستبيان غير صالح');
     return complaint;
+  }
+
+  /** Short, random, unguessable slug for the customer-facing survey link — doesn't reveal the internal domain structure. */
+  private async generateSurveySlug(): Promise<string> {
+    const alphabet = 'abcdefghijkmnpqrstuvwxyzACDEFGHJKLMNPQRTUVWXY34679'; // no ambiguous 0/O/1/l/I
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const bytes = randomBytes(9);
+      let slug = '';
+      for (let i = 0; i < 9; i++) slug += alphabet[bytes[i] % alphabet.length];
+      const exists = await this.complaintModel.exists({ surveySlug: slug });
+      if (!exists) return slug;
+    }
+    throw new Error('تعذّر إنشاء رابط الاستبيان');
   }
 
   private async generateComplaintNo(transactionRef?: string): Promise<string> {
@@ -79,12 +94,28 @@ export class ComplaintsService {
     submittedById: string,
   ): Promise<ComplaintDocument> {
     const complaintNo = await this.generateComplaintNo(dto.transactionRef);
+    const now = new Date().toISOString();
+    const imageMeta = dto.imageUrl
+      ? { imageAddedBy: submittedBy, imageAddedAt: now }
+      : {};
     return this.complaintModel.create({
       ...dto,
+      ...imageMeta,
       complaintNo,
       submittedBy,
       submittedById,
       status: 'معلق',
+      notes: [
+        {
+          id: randomUUID(),
+          text: 'تم إنشاء الشكوى',
+          author: submittedBy,
+          authorId: submittedById,
+          createdAt: now,
+          updatedAt: now,
+          kind: 'system',
+        },
+      ],
     });
   }
 
@@ -98,13 +129,28 @@ export class ComplaintsService {
       throw new BadRequestException('الشكوى مُعالجة بالفعل');
     }
     const surveyToken = randomBytes(24).toString('hex');
+    const surveySlug = await this.generateSurveySlug();
+    const now = new Date().toISOString();
     complaint.status = dto.status;
     complaint.managerAction = dto.managerAction || '';
     complaint.actionNote = dto.actionNote || '';
     complaint.resolvedBy = resolvedBy;
-    complaint.resolvedAt = new Date().toISOString();
+    complaint.resolvedAt = now;
     complaint.inFollowUp = dto.status === 'مقبول';
     complaint.surveyToken = surveyToken;
+    complaint.surveySlug = surveySlug;
+    const decisionText = dto.managerAction
+      ? `تم تغيير الحالة إلى: ${dto.status} — الإجراء: ${dto.managerAction}`
+      : `تم تغيير الحالة إلى: ${dto.status}`;
+    complaint.notes.push({
+      id: randomUUID(),
+      text: decisionText,
+      author: resolvedBy,
+      authorId: '',
+      createdAt: now,
+      updatedAt: now,
+      kind: 'system',
+    });
     return complaint.save();
   }
 
@@ -134,9 +180,22 @@ export class ComplaintsService {
   async updateProgressStage(
     id: string,
     progressStage: string,
+    author?: string,
   ): Promise<ComplaintDocument> {
     const complaint = await this.findById(id);
     complaint.progressStage = progressStage || '';
+    if (progressStage) {
+      const now = new Date().toISOString();
+      complaint.notes.push({
+        id: randomUUID(),
+        text: `تم تحديث سير العمل إلى: ${progressStage}`,
+        author: author || '',
+        authorId: '',
+        createdAt: now,
+        updatedAt: now,
+        kind: 'system',
+      });
+    }
     return complaint.save();
   }
 
@@ -155,6 +214,7 @@ export class ComplaintsService {
       authorId,
       createdAt: now,
       updatedAt: now,
+      kind: 'note',
     });
     return complaint.save();
   }

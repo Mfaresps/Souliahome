@@ -88,8 +88,14 @@ export class ComplaintsController {
   async updateProgressStage(
     @Param('id') id: string,
     @Body() dto: UpdateProgressStageDto,
+    @Req() req: { user: { name: string; username: string } },
   ) {
-    return this.complaintsService.updateProgressStage(id, dto.progressStage);
+    const author = req.user.name || req.user.username;
+    return this.complaintsService.updateProgressStage(
+      id,
+      dto.progressStage,
+      author,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

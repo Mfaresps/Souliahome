@@ -20,6 +20,46 @@ export class CreateComplaintDto {
   @IsString()
   clientName?: string;
 
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  productId?: string;
+
+  @IsOptional()
+  @IsString()
+  productCode?: string;
+
+  @IsOptional()
+  @IsString()
+  productName?: string;
+
+  @IsOptional()
+  @IsString()
+  productImageUrl?: string;
+
+  @IsOptional()
+  @IsNumber()
+  productQty?: number;
+
+  @IsOptional()
+  @IsString()
+  variantDetail?: string;
+
+  @IsOptional()
+  @IsString()
+  categoryGroup?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
   @IsNotEmpty()
   @IsString()
   description: string;

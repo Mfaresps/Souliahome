@@ -472,6 +472,131 @@ export class BostaService {
     }
   }
 
+  // ── Manual delivery confirmation (legacy orders) ───────────────────────
+
+  /**
+   * Confirms delivery for a sales order that never received a Bosta
+   * DELIVERED status — e.g. orders delivered before the Bosta integration
+   * existed, or delivered outside Bosta entirely. Sets bostaStatus to
+   * DELIVERED (mirroring what a real Bosta webhook would set) and locks the
+   * order via deliverySource='MANUAL' so no later Bosta webhook/sync can
+   * change it (see the guard at the top of applyDeliveryUpdate).
+   *
+   * Deliberately does NOT touch VaultService, inventory, deposits, or
+   * payments — only resolveCodStatusUpdate is reused so a legacy COD order
+   * becomes collectible via the existing confirm-collection endpoint,
+   * exactly like a normal Bosta DELIVERED event would allow.
+   */
+  async markDeliveredManually(
+    txId: string,
+    operator: string,
+    reason: string,
+    note: string,
+  ): Promise<{ success: boolean; error?: string; transaction?: any }> {
+    const tx = await this.txModel.findById(txId).lean();
+    if (!tx) return { success: false, error: 'الحركة غير موجودة' };
+    if (tx.type !== 'مبيعات') return { success: false, error: 'هذا الإجراء متاح فقط لحركات المبيعات' };
+    if (tx.bostaStatus === 'DELIVERED') return { success: false, error: 'الطلب مُسجل بالفعل كـ "تم التسليم"' };
+
+    const now = new Date().toISOString();
+    const previousStatus = tx.bostaStatus || '';
+    const previousStatusLabel = tx.bostaStatusLabel || '';
+    const previousShippingStatus = tx.bostaShippingStatus || '';
+    const previousCodCollectionStatus = tx.codCollectionStatus || '';
+    const previousPickupStatus = tx.pickupStatus || '';
+    const codUpdate = this.resolveCodStatusUpdate(tx, 'DELIVERED');
+
+    const updated = await this.txModel.findByIdAndUpdate(
+      txId,
+      {
+        $set: {
+          bostaStatus: 'DELIVERED',
+          bostaStatusLabel: 'تم التسليم',
+          bostaShippingStatus: 'Delivered',
+          pickupStatus: 'Delivered',
+          deliverySource: 'MANUAL',
+          deliveredAt: now,
+          deliveredBy: operator,
+          ...codUpdate,
+        },
+        $push: {
+          deliveryAuditLog: {
+            action: 'MANUAL_DELIVERY_CONFIRMATION',
+            previousStatus,
+            newStatus: 'DELIVERED',
+            reason,
+            note: note || '',
+            by: operator,
+            at: now,
+            previousStatusLabel,
+            previousShippingStatus,
+            previousCodCollectionStatus,
+            previousPickupStatus,
+          },
+        },
+      },
+      { new: true },
+    ).lean();
+
+    this.emit('tx:updated', { _id: txId });
+    this.logger.log(`Manual delivery confirmed — tx=${txId} by=${operator} reason="${reason}"`);
+    return { success: true, transaction: updated };
+  }
+
+  /**
+   * Reverts a manual delivery confirmation, restoring bostaStatus and
+   * codCollectionStatus to what they were right before the confirmation
+   * (snapshotted on the MANUAL_DELIVERY_CONFIRMATION audit entry), and
+   * clears deliverySource so Bosta webhooks/sync can update the order again.
+   */
+  async undoManualDelivery(
+    txId: string,
+    operator: string,
+  ): Promise<{ success: boolean; error?: string; transaction?: any }> {
+    const tx = await this.txModel.findById(txId).lean();
+    if (!tx) return { success: false, error: 'الحركة غير موجودة' };
+    if (tx.deliverySource !== 'MANUAL') return { success: false, error: 'لا يوجد تأكيد تسليم يدوي لهذه الحركة' };
+
+    const log = (tx.deliveryAuditLog || []) as any[];
+    const lastConfirmation = [...log].reverse().find((e) => e.action === 'MANUAL_DELIVERY_CONFIRMATION');
+    if (!lastConfirmation) return { success: false, error: 'لا يمكن العثور على سجل التأكيد الأصلي' };
+
+    const now = new Date().toISOString();
+    const restoredStatus = lastConfirmation.previousStatus || '';
+
+    const updated = await this.txModel.findByIdAndUpdate(
+      txId,
+      {
+        $set: {
+          bostaStatus: restoredStatus,
+          bostaStatusLabel: lastConfirmation.previousStatusLabel || '',
+          bostaShippingStatus: lastConfirmation.previousShippingStatus || '',
+          codCollectionStatus: lastConfirmation.previousCodCollectionStatus || '',
+          pickupStatus: lastConfirmation.previousPickupStatus || 'Pending',
+          deliverySource: '',
+          deliveredAt: '',
+          deliveredBy: '',
+        },
+        $push: {
+          deliveryAuditLog: {
+            action: 'MANUAL_DELIVERY_UNDO',
+            previousStatus: 'DELIVERED',
+            newStatus: restoredStatus,
+            reason: '',
+            note: '',
+            by: operator,
+            at: now,
+          },
+        },
+      },
+      { new: true },
+    ).lean();
+
+    this.emit('tx:updated', { _id: txId });
+    this.logger.log(`Manual delivery undone — tx=${txId} by=${operator} restoredStatus="${restoredStatus}"`);
+    return { success: true, transaction: updated };
+  }
+
   /**
    * Shared status-application logic used by both the polling sync (syncStatus)
    * and the inbound Bosta webhook. These two sources have DIFFERENT shapes:
@@ -487,6 +612,26 @@ export class BostaService {
     res: any,
     source: 'sync' | 'webhook' = 'sync',
   ): Promise<BostaTrackResult> {
+    // Once a delivery has been manually confirmed, no Bosta-driven update
+    // (webhook or sync) may ever change bostaStatus again — not even other
+    // terminal statuses at the same rank (e.g. RETURNED after MANUAL DELIVERED).
+    if (tx.deliverySource === 'MANUAL') {
+      const d0 = source === 'webhook' ? res : (res.data || res);
+      const incoming = source === 'webhook' ? resolveWebhookStatus(d0) : resolveBostaStatus(d0, res);
+      this.logger.warn(`Bosta ${source} update ignored (manual delivery lock) — tx=${txId} incoming=${incoming}`);
+      await this.txModel.findByIdAndUpdate(txId, {
+        $push: {
+          bostaStatusIgnoredEvents: {
+            at: new Date().toISOString(),
+            source,
+            currentStatus: tx.bostaStatus,
+            incomingStatus: incoming,
+          },
+        },
+      });
+      return { success: true, status: tx.bostaStatus, statusLabel: tx.bostaStatusLabel, raw: res };
+    }
+
     const d = source === 'webhook' ? res : (res.data || res);
 
     if (d.isDeleted === true || d.deletedAt) {

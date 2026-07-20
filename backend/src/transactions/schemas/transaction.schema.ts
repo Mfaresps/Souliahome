@@ -325,6 +325,38 @@ export class Transaction {
     incomingStatus: string; // status that was rejected
   }>;
 
+  // ── Manual Delivery Confirmation (legacy orders) ───────────────────────────
+
+  /** '' | 'BOSTA' | 'MANUAL' | 'SYSTEM' — how delivery was confirmed */
+  @Prop({ default: '' })
+  deliverySource: string;
+
+  /** ISO timestamp delivery was confirmed */
+  @Prop({ default: '' })
+  deliveredAt: string;
+
+  /** User (username) who manually confirmed delivery */
+  @Prop({ default: '' })
+  deliveredBy: string;
+
+  /** Audit trail for manual delivery confirmations on legacy/edge-case orders */
+  @Prop({ type: [Object], default: [] })
+  deliveryAuditLog: Array<{
+    action: string;          // 'MANUAL_DELIVERY_CONFIRMATION' | 'MANUAL_DELIVERY_UNDO'
+    previousStatus: string;
+    newStatus: string;       // 'DELIVERED' | previousStatus (on undo)
+    reason: string;
+    note?: string;
+    by: string;
+    at: string;
+    // Snapshot of fields overwritten by the confirmation — used to precisely
+    // restore state on undo. Only present on MANUAL_DELIVERY_CONFIRMATION entries.
+    previousStatusLabel?: string;
+    previousShippingStatus?: string;
+    previousCodCollectionStatus?: string;
+    previousPickupStatus?: string;
+  }>;
+
   // ── COD (Cash-on-Delivery) Collection Tracking ─────────────────────────────
 
   /**

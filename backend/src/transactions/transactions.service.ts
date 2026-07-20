@@ -1136,6 +1136,12 @@ export class TransactionsService {
     tx.deposit = (tx.deposit || 0) + (isPurchase ? payAmount : netVaultAmount);
     tx.collectMethod = dto.collectMethod;
     tx.collectNote = dto.collectNote || '';
+    // COD orders collected via the generic collect flow (not the Bosta-specific
+    // confirm-collection endpoint) should still be reflected as Collected —
+    // never regress an already-finalized Collected/FailedCollection status.
+    if (!isPurchase && isFullyPaid && tx.codCollectionStatus === 'CODWaitingCollection') {
+      tx.codCollectionStatus = 'Collected';
+    }
     if (isFullyPaid) {
       tx.collectedAt = new Date().toISOString().split('T')[0];
     }
@@ -2462,11 +2468,14 @@ export class TransactionsService {
     return { updated: result.modifiedCount };
   }
 
-  /** Mark pick-up orders as delivered (called when payment is fully collected) */
+  /** Mark pick-up orders as delivered (called when payment is fully collected, or
+   *  when Bosta/manual delivery confirms the shipment). Accepts either 'Ready' or
+   *  'Shipped' as the prior state — a normal Bosta-tracked order is 'Shipped' by
+   *  the time Bosta reports DELIVERED, not still 'Ready'. */
   async markPickupDelivered(id: string, by: string): Promise<void> {
     const now = new Date().toISOString().slice(0, 10);
     await this.transactionModel.updateOne(
-      { _id: id, pickupStatus: 'Ready' },
+      { _id: id, pickupStatus: { $in: ['Ready', 'Picked-Up', 'Shipped'] } },
       {
         $set: { pickupStatus: 'Delivered' },
         $push: { pickupHistory: { action: 'delivered', date: now, by } },

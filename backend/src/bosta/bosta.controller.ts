@@ -18,6 +18,9 @@ import { SettingsService } from '../settings/settings.service';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
+import { PermsGuard } from '../core/guards/perms.guard';
+import { RequirePerms } from '../core/decorators/perms.decorator';
+import { MarkDeliveredManualDto } from './dto/mark-delivered-manual.dto';
 
 @Controller('shipping')
 export class BostaController {
@@ -177,6 +180,60 @@ export class BostaController {
       throw new HttpException(
         { message: result.error || 'فشل تسجيل التحصيل', requiresConfirmation: result.requiresConfirmation, threshold: result.threshold },
         status,
+      );
+    }
+    return result;
+  }
+
+  /**
+   * Manually confirm delivery for a legacy sales order that never received a
+   * Bosta DELIVERED status (delivered before the integration existed, or
+   * outside Bosta entirely). Locks the order so no later Bosta webhook/sync
+   * can overwrite the status — see BostaService.markDeliveredManually.
+   *
+   * Body: { reason: string, note?: string }
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
+  @RequirePerms('delivery-manual-confirm')
+  @Post(':txId/mark-delivered-manual')
+  async markDeliveredManual(
+    @Param('txId') txId: string,
+    @Req() req: any,
+    @Body() body: MarkDeliveredManualDto,
+  ) {
+    const operator: string = req.user?.username || req.user?.name || 'system';
+    const result = await this.bostaService.markDeliveredManually(
+      txId,
+      operator,
+      body.reason,
+      body.note || '',
+    );
+    if (!result.success) {
+      throw new HttpException(
+        { message: result.error || 'فشل تأكيد التسليم يدوياً' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    return result;
+  }
+
+  /**
+   * Undo a manual delivery confirmation, restoring the order's previous
+   * Bosta status and COD collection status — see BostaService.undoManualDelivery.
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
+  @RequirePerms('delivery-manual-confirm')
+  @Post(':txId/undo-delivered-manual')
+  async undoDeliveredManual(
+    @Param('txId') txId: string,
+    @Req() req: any,
+  ) {
+    const operator: string = req.user?.username || req.user?.name || 'system';
+    const result = await this.bostaService.undoManualDelivery(txId, operator);
+    if (!result.success) {
+      throw new HttpException(
+        { message: result.error || 'فشل التراجع عن تأكيد التسليم' },
+        HttpStatus.BAD_REQUEST,
       );
     }
     return result;

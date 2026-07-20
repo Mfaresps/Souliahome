@@ -126,7 +126,6 @@ export class UsersController {
   ) {
     const user = await this.usersService.findById(id);
     if (!user) throw new BadRequestException('المستخدم غير موجود');
-    if (user.username === 'admin') throw new ForbiddenException('لا يمكن تعديل المدير الرئيسي');
     const result = await this.usersService.unlockAccount(id, req.user?.userId || req.user?.sub || 'admin');
     this.auditService.log({
       userId: id,

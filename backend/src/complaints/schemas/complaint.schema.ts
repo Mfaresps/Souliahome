@@ -14,14 +14,17 @@ export class ComplaintNote {
   @Prop({ required: true })
   author: string;
 
-  @Prop({ required: true })
-  authorId: string;
+  @Prop({ default: '' })
+  authorId: string; // empty for system-generated notes
 
   @Prop({ required: true })
   createdAt: string;
 
   @Prop()
   updatedAt: string;
+
+  @Prop({ default: 'note' })
+  kind: string; // note | system
 }
 export const ComplaintNoteSchema = SchemaFactory.createForClass(ComplaintNote);
 
@@ -38,6 +41,42 @@ export class Complaint {
 
   @Prop()
   clientName: string;
+
+  @Prop()
+  phone: string;
+
+  @Prop()
+  productId: string;
+
+  @Prop()
+  productCode: string;
+
+  @Prop()
+  productName: string;
+
+  @Prop()
+  productImageUrl: string;
+
+  @Prop()
+  productQty: number;
+
+  @Prop({ default: '' })
+  variantDetail: string; // ملاحظة نصية اختيارية عن اللون/المقاس
+
+  @Prop({ default: '' })
+  categoryGroup: string; // مشكلة في المنتج | مشكلة في الشحن | خدمة العملاء | أخرى
+
+  @Prop({ default: '' })
+  category: string; // السبب المحدد داخل المجموعة
+
+  @Prop({ default: '' })
+  imageUrl: string; // رابط صورة المشكلة
+
+  @Prop()
+  imageAddedBy: string;
+
+  @Prop()
+  imageAddedAt: string;
 
   @Prop({ required: true })
   description: string;
@@ -77,6 +116,9 @@ export class Complaint {
 
   @Prop({ unique: true, sparse: true })
   surveyToken: string;
+
+  @Prop({ unique: true, sparse: true })
+  surveySlug: string;
 
   @Prop({ min: 1, max: 5 })
   surveyRating: number;
