@@ -312,6 +312,19 @@ export class Transaction {
   @Prop({ type: Object, default: null })
   bostaRawResponse: Record<string, unknown> | null;
 
+  /**
+   * Audit trail of out-of-order Bosta status updates that were ignored because
+   * they would have regressed bostaStatus backwards (e.g. a delayed
+   * OUT_FOR_DELIVERY webhook arriving after DELIVERED was already recorded).
+   */
+  @Prop({ type: [Object], default: [] })
+  bostaStatusIgnoredEvents: Array<{
+    at: string;            // ISO timestamp the ignored event was received
+    source: string;        // 'sync' | 'webhook'
+    currentStatus: string; // status that was kept
+    incomingStatus: string; // status that was rejected
+  }>;
+
   // ── COD (Cash-on-Delivery) Collection Tracking ─────────────────────────────
 
   /**

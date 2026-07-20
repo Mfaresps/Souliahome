@@ -101,10 +101,31 @@ const BOSTA_WEBHOOK_STATE_MAP: Record<number, string> = {
 };
 
 function resolveWebhookStatus(payload: any): string {
-  const code = Number(payload?.state);
+  // Webhook `state` is normally a flat numeric code, but some Bosta payloads
+  // (e.g. ones that mirror the REST delivery object) send it as an object
+  // like { code: 45, value: "Delivered" } — unwrap that case too.
+  const raw  = payload?.state;
+  const code = Number(typeof raw === 'object' && raw !== null ? raw.code : raw);
   if (!Number.isNaN(code) && BOSTA_WEBHOOK_STATE_MAP[code]) return BOSTA_WEBHOOK_STATE_MAP[code];
   return 'UNKNOWN';
 }
+
+// Ordering used to prevent a late/out-of-order webhook or sync from
+// regressing a transaction's status backwards (e.g. a delayed
+// OUT_FOR_DELIVERY webhook arriving after DELIVERED was already recorded).
+// Terminal states (DELIVERED/RETURNED/CANCELLED) are never overwritten by a
+// lower-ranked status once reached.
+const BOSTA_STATUS_RANK: Record<string, number> = {
+  UNKNOWN:           0,
+  CREATED:           1,
+  PICKED_UP:         2,
+  IN_TRANSIT:        3,
+  OUT_FOR_DELIVERY:  4,
+  FAILED_ATTEMPT:    4,
+  DELIVERED:         5,
+  RETURNED:          5,
+  CANCELLED:         5,
+};
 
 export interface BostaCreateResult {
   success: boolean;
@@ -482,7 +503,20 @@ export class BostaService {
       return { success: true, status: 'DELETED', statusLabel: 'محذوف من Bosta — يمكنك إعادة الإرسال' };
     }
 
-    const statusCode     = source === 'webhook' ? resolveWebhookStatus(d) : resolveBostaStatus(d, res);
+    const incomingStatus = source === 'webhook' ? resolveWebhookStatus(d) : resolveBostaStatus(d, res);
+
+    // Never let a late/out-of-order update regress the status backwards —
+    // e.g. a delayed OUT_FOR_DELIVERY webhook arriving after DELIVERED was
+    // already recorded (from an earlier webhook or a manual sync).
+    const currentRank = BOSTA_STATUS_RANK[tx.bostaStatus || ''] ?? 0;
+    const newRank     = BOSTA_STATUS_RANK[incomingStatus] ?? 0;
+    const regressed   = newRank < currentRank;
+    const statusCode  = regressed ? tx.bostaStatus : incomingStatus;
+
+    if (regressed) {
+      this.logger.warn(`Bosta ${source} update ignored (regression) — tx=${txId} current=${tx.bostaStatus} incoming=${incomingStatus}`);
+    }
+
     const statusLabel    = BOSTA_STATUS_LABELS[statusCode] || statusCode;
     const shippingStatus = BOSTA_TO_SHIPPING_STATUS[statusCode] || '';
 
@@ -490,12 +524,24 @@ export class BostaService {
     const codUpdate = this.resolveCodStatusUpdate(tx, statusCode);
 
     await this.txModel.findByIdAndUpdate(txId, {
-      bostaStatus: statusCode,
-      bostaStatusLabel: statusLabel,
-      bostaShippingStatus: shippingStatus,
-      bostaLastSync: new Date().toISOString(),
-      bostaRawResponse: res,
-      ...codUpdate,
+      $set: {
+        bostaStatus: statusCode,
+        bostaStatusLabel: statusLabel,
+        bostaShippingStatus: shippingStatus,
+        bostaLastSync: new Date().toISOString(),
+        bostaRawResponse: res,
+        ...codUpdate,
+      },
+      ...(regressed ? {
+        $push: {
+          bostaStatusIgnoredEvents: {
+            at: new Date().toISOString(),
+            source,
+            currentStatus: tx.bostaStatus,
+            incomingStatus,
+          },
+        },
+      } : {}),
     });
 
     this.emit('tx:updated', { _id: txId });
