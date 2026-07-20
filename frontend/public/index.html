@@ -3833,7 +3833,7 @@ body.dark-mode .fx-drawer{background:#1a1f2e}
 .fx-drawer-title{font-weight:800;font-size:.95rem;color:#fff;display:flex;align-items:center;gap:8px}
 .fx-drawer-close{width:30px;height:30px;border-radius:8px;border:none;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .fx-drawer-close:hover{background:rgba(255,255,255,.3)}
-.fx-drawer-body{flex:1;overflow-y:auto;padding:0;display:flex;flex-direction:column}
+.fx-drawer-body{flex:1;min-height:0;overflow-y:auto;padding:0;display:flex;flex-direction:column}
 .fx-drawer-footer{padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;background:#f8fafc}
 body.dark-mode .fx-drawer-footer{background:#1a1f2e}
 .fx-drawer-footer .btn{flex:1;justify-content:center;height:38px;font-size:.83rem}
@@ -3856,7 +3856,7 @@ body.dark-mode .fx-range input{background:var(--surface)}
 .fx-range input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(var(--primary-rgb),.1)}
 .fx-range-sep{color:var(--muted);font-size:.8rem;flex-shrink:0}
 /* Checkbox list */
-.fx-checkboxes{display:flex;flex-direction:column;gap:1px;max-height:160px;overflow-y:auto;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.fx-checkboxes{display:flex;flex-direction:column;gap:1px;max-height:160px;overflow-y:auto;overflow-x:hidden;border-radius:10px;border:1px solid var(--border)}
 .fx-checkbox{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-size:.82rem;background:#fff;transition:background .1s;color:var(--text)}
 body.dark-mode .fx-checkbox{background:var(--surface)}
 .fx-checkbox:hover{background:var(--primary-pale)}
@@ -3880,6 +3880,10 @@ body.dark-mode .fx-checkbox-count{background:var(--surface2)}
 .mov-edited-mini{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;background:#fef3c7;color:#92400e;cursor:pointer;flex-shrink:0;transition:all .12s}
 .mov-edited-mini:hover{background:#fde68a}
 body.dark-mode .mov-edited-mini{background:#422006;color:#fcd34d}
+/* Recently Updated badge — dynamic priority sorting indicator */
+.mov-recent-badge{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:20px;font-size:.68rem;font-weight:700;background:#dbeafe;color:#1d4ed8;white-space:nowrap;flex-shrink:0;animation:movRecentPulse 1.8s ease-in-out 2}
+body.dark-mode .mov-recent-badge{background:#1e3a5f;color:#93c5fd}
+@keyframes movRecentPulse{0%,100%{opacity:1}50%{opacity:.55}}
 #mov-table tbody tr.mov-row-new-shopify td:first-child{border-right:3px solid #95BF47}
 body.dark-mode #mov-table tbody tr.mov-row-new-shopify td:first-child{border-right-color:#7aad35}
 #mov-mobile-list .mov-card.mov-card-new-shopify{border-right:3px solid #95BF47}
@@ -11503,6 +11507,8 @@ let onlineUsers = {}; // Track online status: { userId: { lastSeen, status } }
 let socket = null; // Socket.IO connection
 let activeSessions = []; // Admin-only: active sessions with IP & geo
 const _rtFlashIds = new Set(); // tx ids that should briefly flash on render
+const _movRecentlyUpdatedIds = new Map(); // txId → timestamp(ms) of last status-relevant update, for priority scoring + "Recently Updated" badge
+const MOV_RECENT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 const _activeEditors = new Map(); // txId → { user, initials } — real-time presence
 let products = [], transactions = [], suppliers = [], expenses = [], settings = {}, users = [], vaultLog = [], inventoryCache = [], returnRequests = [], complaints = [], purchaseOrders = [], supplierReturns = [];
 let cmpTabFilter = 'all';
@@ -11511,6 +11517,11 @@ let movFilter = 'all';
 let movStatusFilter = '';
 let movPickupFilter = ''; // '' | 'Pending' | 'Preparing' | 'Picked-Up' | 'Delivered'
 let movBostaFilter = ''; // '' | 'created' | 'picked_up' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'returned' | 'failed_attempt' | 'delivery_failed' | 'cancelled' | 'deleted' | 'validation_error'
+const _BOSTA_STATUS_LABELS = {
+  CREATED: 'تم الإنشاء', PICKED_UP: 'تم الاستلام', IN_TRANSIT: 'في الطريق', OUT_FOR_DELIVERY: 'خارج للتسليم',
+  DELIVERED: 'تم التسليم', RETURNED: 'مُرتجع', FAILED_ATTEMPT: 'محاولة فاشلة', DELIVERY_FAILED: 'فشل التسليم',
+  CANCELLED: 'ملغي', DELETED: 'محذوف من Bosta', VALIDATION_ERROR: 'خطأ في البيانات',
+};
 let movViewMode = 'list'; // 'list' | 'grid'
 let movTagFilter = '';
 let movDiscountFilter = false;
@@ -11581,7 +11592,7 @@ let prodFilter = 'all';
 const fxState = {
   inv: { sort: 'name-asc', supplier: new Set(), priceMin: '', priceMax: '', stockMin: '', stockMax: '' },
   prod: { sort: 'name-asc', supplier: new Set(), sellMin: '', sellMax: '', buyMin: '', buyMax: '' },
-  mov: { sort: 'date-desc', employee: new Set(), method: new Set(), status: new Set(), dateFrom: '', dateTo: '', dateField: 'transactionDate', amountMin: '', amountMax: '', discountOnly: false, discountCode: '' },
+  mov: { sort: 'priority-desc', employee: new Set(), method: new Set(), status: new Set(), bosta: new Set(), dateFrom: '', dateTo: '', dateField: 'transactionDate', amountMin: '', amountMax: '', discountOnly: false, discountCode: '' },
 };
 let _fxDrawerCtx = null; // 'inv' | 'prod' while drawer open
 // Pagination page state (30/page for tables, 50/page for vault)
@@ -14183,6 +14194,7 @@ async function checkAuth() {
 
 async function showApp() {
   qs('#login-page').style.display = 'none'; qs('#app').style.display = 'block';
+  _loadMovSortPref();
   updateHeader(); buildSidebar(); initMobileNav(); await loadAllData();
   annInit();
 
@@ -14335,6 +14347,7 @@ function connectSocket() {
     if (i >= 0) transactions[i] = tx;
     _rtFlashIds.add(String(tx._id));
     setTimeout(() => _rtFlashIds.delete(String(tx._id)), 3000);
+    markMovRecentlyUpdated(tx._id);
     _rtRefreshUI({ movements: true });
     if (payload?.action === 'collect') {
       _rtRefreshUI({ sidebar: true });
@@ -18675,6 +18688,65 @@ function isStatusCancelled(status) {
 }
 function isStatusFrozen(status) {
   return status === 'تم تجميد الحركة في الخزنة';
+}
+
+/* ===== Dynamic Priority Sorting (Movements) =====
+   Marks a transaction as "recently updated" — feeds both the priority score
+   (recency bonus) and the "Recently Updated" badge shown in the Movements list. */
+function markMovRecentlyUpdated(txId) {
+  if (!txId) return;
+  _movRecentlyUpdatedIds.set(String(txId), Date.now());
+}
+function isMovRecentlyUpdated(txId) {
+  const ts = _movRecentlyUpdatedIds.get(String(txId));
+  if (!ts) return false;
+  if (Date.now() - ts > MOV_RECENT_WINDOW_MS) { _movRecentlyUpdatedIds.delete(String(txId)); return false; }
+  return true;
+}
+// Periodically re-render so "Recently Updated" badges/priority order expire without a manual refresh
+setInterval(() => {
+  if (!_movRecentlyUpdatedIds.size) return;
+  const now = Date.now();
+  let expired = false;
+  for (const [id, ts] of _movRecentlyUpdatedIds) {
+    if (now - ts > MOV_RECENT_WINDOW_MS) { _movRecentlyUpdatedIds.delete(id); expired = true; }
+  }
+  if (expired && currentPage === 'movements' && typeof renderMovements === 'function') renderMovements();
+}, 60 * 1000);
+
+/* Priority scoring engine — higher score = surfaced first.
+   Base score reflects logistics urgency (active shipment stages outrank finished ones),
+   plus bonuses for recency and items requiring the user's attention. */
+function movPriorityScore(tx) {
+  if (!tx) return 0;
+  const isCompleted = isStatusCompleted(tx.payStatus) && !tx.cancelled;
+  const isCancelled = tx.cancelled || isStatusCancelled(tx.payStatus);
+  if (isCancelled) return 0;
+
+  const bosta = tx.bostaStatus || '';
+  const pickup = tx.pickupStatus || 'Pending';
+
+  let base = 0;
+  if (bosta === 'CREATED' || pickup === 'Ready' || pickup === 'Pending') base = 100;
+  else if (bosta === 'IN_TRANSIT') base = 90;
+  else if (bosta === 'OUT_FOR_DELIVERY') base = 80;
+  else if (bosta === 'PICKED_UP' || pickup === 'Preparing' || pickup === 'Shipped') base = 60;
+  else if (bosta === 'DELIVERED' || pickup === 'Delivered' || isCompleted) base = 0;
+  else if (isStatusPending(tx.payStatus)) base = 40;
+  else base = 20;
+
+  let bonus = 0;
+  if (isMovRecentlyUpdated(tx._id)) bonus += 20; // recently modified / new status update
+
+  const requiresAction = isStatusPending(tx.payStatus)
+    || (tx.cancelRequest && tx.cancelRequest.status === 'معلق')
+    || isExchangeSalePendingCollect(tx)
+    || (bosta === 'DELIVERED' && (tx.remaining || 0) > 0 && tx.codCollectionStatus !== 'Collected');
+  if (requiresAction) bonus += 30;
+
+  if (isCompleted) return 0; // completed/delivered/closed sink to the bottom regardless of bonuses
+
+  return base + bonus;
 }
 function isStatusNotCollectable(status) {
   // Transaction cannot be collected if it's cancelled, frozen, or rejected
@@ -23674,6 +23746,7 @@ const FX_SORT_OPTIONS = {
     { id: 'date-asc',   label: 'الأقدم أولاً',          icon: ICON('clock') },
   ],
   mov: [
+    { id: 'priority-desc', label: 'الأولوية (ذكي)',      icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>' },
     { id: 'date-desc',   label: 'الأحدث أولاً',         icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>' },
     { id: 'date-asc',    label: 'الأقدم أولاً',         icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h13M3 8h9m-9 4h9m5 4l-4 4m0 0l-4-4m4 4V8"/></svg>' },
     { id: 'amount-desc', label: 'الأعلى قيمة',          icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>' },
@@ -23727,9 +23800,32 @@ function setFxSort(ctx, sortId) {
   const labelEl = qs('#' + ctx + '-sort-label');
   if (labelEl && opt) labelEl.textContent = opt.label;
   qsa('.fx-sort-menu.show').forEach(m => m.classList.remove('show'));
+  if (ctx === 'mov') _saveMovSortPref(sortId);
   if (ctx === 'inv') { invPage = 1; renderInventory(); }
   else if (ctx === 'prod') { prodPage = 1; renderProducts(); }
   else { movPage = 1; renderMovements(); }
+}
+
+/* Per-user Movements sort preference — default is always "priority-desc" (الأولوية الذكية)
+   for everyone; only a user who explicitly picks another sort keeps that choice, and only
+   on their own account (keyed by username), not globally. */
+function _movSortPrefKey() {
+  const uname = currentUser?.username || currentUser?.name;
+  return uname ? `mov_sort_pref_${uname}` : null;
+}
+function _saveMovSortPref(sortId) {
+  const key = _movSortPrefKey();
+  if (!key) return;
+  try { localStorage.setItem(key, sortId); } catch(_) {}
+}
+function _loadMovSortPref() {
+  const key = _movSortPrefKey();
+  const saved = key ? (() => { try { return localStorage.getItem(key); } catch(_) { return null; } })() : null;
+  const sortId = (saved && FX_SORT_OPTIONS.mov.some(o => o.id === saved)) ? saved : 'priority-desc';
+  fxState.mov.sort = sortId;
+  const labelEl = qs('#mov-sort-label');
+  const opt = FX_SORT_OPTIONS.mov.find(o => o.id === sortId);
+  if (labelEl && opt) labelEl.textContent = opt.label;
 }
 
 function _fxApplySort(ctx, arr) {
@@ -23740,6 +23836,13 @@ function _fxApplySort(ctx, arr) {
   };
   const copy = arr.slice();
   switch (sort) {
+    case 'priority-desc': copy.sort((a,b) => {
+      const ps = movPriorityScore(b) - movPriorityScore(a);
+      if (ps !== 0) return ps;
+      const dc = (b.createdAt||b.date||'').localeCompare(a.createdAt||a.date||'');
+      if (dc !== 0) return dc;
+      return (Number((b.ref||'').replace(/\D/g,''))||0) - (Number((a.ref||'').replace(/\D/g,''))||0);
+    }); break;
     case 'name-asc':  copy.sort((a,b) => (a.name||'').localeCompare(b.name||'','ar')); break;
     case 'name-desc': copy.sort((a,b) => (b.name||'').localeCompare(a.name||'','ar')); break;
     case 'price-asc':  copy.sort((a,b) => cmp(a,b,'sellPrice')); break;
@@ -23804,12 +23907,34 @@ function openFxDrawer(ctx) {
         <span class="fx-checkbox-label">${esc(st)}</span>
         <span class="fx-checkbox-count">${fmtN(statusCounts.get(st)||0)}</span>
       </label>`).join('');
+    const bostaOptions = [
+      { val: 'CREATED',          label: _BOSTA_STATUS_LABELS.CREATED,          cls: 'bosta-badge-created' },
+      { val: 'PICKED_UP',        label: _BOSTA_STATUS_LABELS.PICKED_UP,        cls: 'bosta-badge-transit' },
+      { val: 'IN_TRANSIT',       label: _BOSTA_STATUS_LABELS.IN_TRANSIT,       cls: 'bosta-badge-transit' },
+      { val: 'OUT_FOR_DELIVERY', label: _BOSTA_STATUS_LABELS.OUT_FOR_DELIVERY, cls: 'bosta-badge-out' },
+      { val: 'DELIVERED',        label: _BOSTA_STATUS_LABELS.DELIVERED,        cls: 'bosta-badge-delivered' },
+      { val: 'RETURNED',         label: _BOSTA_STATUS_LABELS.RETURNED,         cls: 'bosta-badge-returned' },
+      { val: 'FAILED_ATTEMPT',   label: _BOSTA_STATUS_LABELS.FAILED_ATTEMPT,   cls: 'bosta-badge-failed' },
+      { val: 'DELIVERY_FAILED',  label: _BOSTA_STATUS_LABELS.DELIVERY_FAILED,  cls: 'bosta-badge-failed' },
+      { val: 'CANCELLED',        label: _BOSTA_STATUS_LABELS.CANCELLED,        cls: 'bosta-badge-cancelled' },
+      { val: 'DELETED',          label: _BOSTA_STATUS_LABELS.DELETED,          cls: 'bosta-badge-deleted' },
+      { val: 'VALIDATION_ERROR', label: _BOSTA_STATUS_LABELS.VALIDATION_ERROR, cls: 'bosta-badge-validation' },
+    ];
+    const bostaCounts = new Map();
+    txs.forEach(t => { const k = (t.bostaStatus || '').trim(); if (k) bostaCounts.set(k, (bostaCounts.get(k)||0)+1); });
+    const bostaHtml = bostaOptions.map(o => `
+      <label class="fx-checkbox">
+        <input type="checkbox" data-fx="bosta" value="${esc(o.val)}" ${s.bosta.has(o.val)?'checked':''}>
+        <span class="bosta-badge ${o.cls}" style="font-size:.65rem;padding:1px 6px">${esc(o.label)}</span>
+        <span class="fx-checkbox-count">${fmtN(bostaCounts.get(o.val)||0)}</span>
+      </label>`).join('');
     const _chevron = `<svg class="fx-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
     const _hasDate = s.dateFrom || s.dateTo;
     const _hasAmt  = s.amountMin !== '' || s.amountMax !== '';
     const _hasSt   = s.status.size > 0;
     const _hasEmp  = s.employee.size > 0;
     const _hasMeth = s.method.size > 0;
+    const _hasBosta = s.bosta.size > 0;
     const _hasDisc = !!s.discountOnly || !!s.discountCode;
     body.innerHTML = `
       <div class="fx-section${_hasDate?' has-active':''}">
@@ -23851,6 +23976,14 @@ function openFxDrawer(ctx) {
           ${_chevron}
         </div>
         <div class="fx-section-body"><div class="fx-checkboxes">${statusesHtml}</div></div>
+      </div>
+      <div class="fx-section${_hasBosta?' has-active':''}">
+        <div class="fx-section-header" onclick="this.closest('.fx-section').classList.toggle('collapsed')">
+          <span class="fx-section-active-badge"></span>
+          <span class="fx-section-label"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> حالة الشحن (Bosta)</span>
+          ${_chevron}
+        </div>
+        <div class="fx-section-body"><div class="fx-checkboxes">${bostaHtml}</div></div>
       </div>
       <div class="fx-section${_hasEmp?' has-active':''}">
         <div class="fx-section-header" onclick="this.closest('.fx-section').classList.toggle('collapsed')">
@@ -24019,7 +24152,7 @@ function _fxOnDrawerChange(inp) {
   if (k === 'supplier') {
     if (inp.checked) s.supplier.add(inp.value);
     else s.supplier.delete(inp.value);
-  } else if (k === 'employee' || k === 'method' || k === 'status') {
+  } else if (k === 'employee' || k === 'method' || k === 'status' || k === 'bosta') {
     if (inp.checked) s[k].add(inp.value);
     else s[k].delete(inp.value);
   } else if (k === 'discountOnly') {
@@ -24046,7 +24179,7 @@ function resetFxFilters() {
   if (!ctx) return;
   if (ctx === 'inv') fxState.inv = { sort: fxState.inv.sort, supplier: new Set(), priceMin: '', priceMax: '', stockMin: '', stockMax: '' };
   else if (ctx === 'prod') fxState.prod = { sort: fxState.prod.sort, supplier: new Set(), sellMin: '', sellMax: '', buyMin: '', buyMax: '' };
-  else if (ctx === 'mov') fxState.mov = { sort: fxState.mov.sort, employee: new Set(), method: new Set(), status: new Set(), dateFrom: '', dateTo: '', dateField: fxState.mov.dateField || 'transactionDate', amountMin: '', amountMax: '', discountOnly: false, discountCode: '' };
+  else if (ctx === 'mov') fxState.mov = { sort: fxState.mov.sort, employee: new Set(), method: new Set(), status: new Set(), bosta: new Set(), dateFrom: '', dateTo: '', dateField: fxState.mov.dateField || 'transactionDate', amountMin: '', amountMax: '', discountOnly: false, discountCode: '' };
   openFxDrawer(ctx); // re-render
   if (ctx === 'inv') { invPage = 1; renderInventory(); }
   else if (ctx === 'prod') { prodPage = 1; renderProducts(); }
@@ -24066,7 +24199,7 @@ function fxResetAll(ctx) {
     prodPage = 1; renderProducts();
   } else if (ctx === 'mov') {
     movFilter = 'all'; movStatusFilter = '';
-    fxState.mov = { sort: 'date-desc', employee: new Set(), method: new Set(), status: new Set(), dateFrom: '', dateTo: '', dateField: fxState.mov?.dateField || 'transactionDate', amountMin: '', amountMax: '', discountOnly: false, discountCode: '' };
+    fxState.mov = { sort: 'date-desc', employee: new Set(), method: new Set(), status: new Set(), bosta: new Set(), dateFrom: '', dateTo: '', dateField: fxState.mov?.dateField || 'transactionDate', amountMin: '', amountMax: '', discountOnly: false, discountCode: '' };
     movDiscountFilter = false;
     const sInp = qs('#mov-search'); if (sInp) sInp.value = '';
     movPage = 1; renderMovements();
@@ -24082,6 +24215,7 @@ function fxRemoveChip(ctx, kind, value) {
   else if (kind === 'employee') s.employee.delete(value);
   else if (kind === 'method') s.method.delete(value);
   else if (kind === 'movstatus') s.status.delete(value);
+  else if (kind === 'movbosta') s.bosta.delete(value);
   else if (kind === 'discountOnly') { s.discountOnly = false; movDiscountFilter = false; }
   else if (kind === 'discountCode') { s.discountCode = ''; }
   else if (kind === 'range') { s[value+'Min'] = ''; s[value+'Max'] = ''; }
@@ -24117,6 +24251,7 @@ function _fxBuildChips(ctx) {
     s.employee.forEach(e => chips.push({ kind: 'employee', value: e, label: 'الموظف: ' + e }));
     s.method.forEach(m => chips.push({ kind: 'method', value: m, label: 'الطريقة: ' + m }));
     s.status.forEach(st => chips.push({ kind: 'movstatus', value: st, label: 'الحالة: ' + st }));
+    s.bosta.forEach(bv => chips.push({ kind: 'movbosta', value: bv, label: 'Bosta: ' + (_BOSTA_STATUS_LABELS[bv] || bv) }));
     if (s.discountOnly) chips.push({ kind: 'discountOnly', value: '', label: 'لها خصم فقط' });
     if (s.discountCode) chips.push({ kind: 'discountCode', value: s.discountCode, label: 'كود الخصم: ' + s.discountCode });
   }
@@ -24589,6 +24724,7 @@ function renderMovMobileCard(tx) {
     <div class="mov-card-clientline">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" class="mov-client-name">${tx.client ? esc(tx.client) : '<span style="color:var(--muted)">بدون اسم</span>'}</a>
+        ${isMovRecentlyUpdated(tx._id) ? '<span class="mov-recent-badge" title="تم تحديثه مؤخراً">🔄 محدَّث حديثاً</span>' : ''}
       </div>
       ${tx.ref ? `<span class="mov-card-ref">#${esc(tx.ref)}</span>` : ''}
     </div>
@@ -24983,6 +25119,9 @@ function renderMovementTxRow(tx) {
   const rowStateClass = (tx.cancelled || isStatusCancelled(tx.payStatus)) ? ' mov-row-cancelled'
     : (isStatusPending(tx.payStatus) || isExchangeSalePendingCollect(tx) || (tx.cancelRequest && tx.cancelRequest.status === 'معلق')) ? ' mov-row-pending'
     : isStatusCompleted(tx.payStatus) ? ' mov-row-completed' : '';
+  const recentlyUpdatedBadge = isMovRecentlyUpdated(tx._id)
+    ? '<span class="mov-recent-badge" title="تم تحديثه مؤخراً">🔄 محدَّث حديثاً</span>'
+    : '';
   return `<tr ${rowStyle} class="${isSelected ? 'mov-row-selected' : ''}${_rtFlash}${rowStateClass}${isNewShopify ? ' mov-row-new-shopify' : ''}" onclick="handleMovRowClick(event,'${esc(tx._id)}')">
     <td><input type="checkbox" class="checkbox mov-check" value="${esc(tx._id)}" ${isSelected ? 'checked' : ''} onclick="handleMovCheck(event,'${esc(tx._id)}')"></td>
     <td data-col="ref" class="col-ref">${movementRefCell(tx)}</td>
@@ -24994,6 +25133,7 @@ function renderMovementTxRow(tx) {
         ${commentIcon}
         ${mentionIcon}
         ${(tx.editHistory && tx.editHistory.length) ? '<span class="mov-edited-mini" title="تم التعديل" onclick="event.stopPropagation();showInvoiceDetail(\''+esc(tx._id)+'\')"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>' : ''}
+        ${recentlyUpdatedBadge}
       </div>
     </td>
     <td data-col="invoice" style="text-align:center"><span class="mov-col-total">${fmtJ(tx.total)}</span></td>
@@ -25119,6 +25259,7 @@ function renderMovements() {
       if (tx.cancelled) st = 'ملغي';
       if (!fs.status.has(st)) return false;
     }
+    if (fs.bosta.size > 0 && !fs.bosta.has((tx.bostaStatus || '').trim())) return false;
     // Multi-ref OR search: match if any ref/phone token found in ref or phone fields
     if (multiRefTokens.length) {
       // Include ref without leading # so "1845" matches "#1845" stored value
@@ -25202,6 +25343,7 @@ function renderMovements() {
   const pendingCount = activeTx.filter(t => isStatusPending(t.payStatus)).length;
   const completedCount = activeTx.filter(t => t.payStatus === 'مكتمل').length;
   const cancelledCount = allTx.filter(t => t.cancelled || t.payStatus === 'ملغي').length;
+  const deliveredCount = activeTx.filter(t => (t.bostaStatus || '') === 'DELIVERED').length;
 
   // Compact summary line (excludes cancelled)
   const _msEl = qs('#mov-mini-summary');
@@ -25253,8 +25395,10 @@ function renderMovements() {
         icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' },
       { val: pendingCount,              label: 'معلق',             color: '#f59e0b', tooltip: 'عدد الحركات المعلقة — في انتظار اكتمال الدفع أو التحصيل',
         icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 00-.586-1.414L12 12l-4.414 4.414A2 2 0 007 17.828V22M7 2v4.172a2 2 0 00.586 1.414L12 12l4.414-4.414A2 2 0 0017 6.172V2"/></svg>' },
-      { val: completedCount,            label: 'مكتمل',            color: '#10b981', tooltip: 'عدد الحركات المكتملة — تم سداد كامل المبلغ',
+      { val: completedCount,            label: 'مكتمل الدفع',      color: '#10b981', tooltip: 'عدد الحركات المكتملة — تم سداد كامل المبلغ',
         icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>' },
+      { val: deliveredCount,            label: 'تم التسليم',       color: '#16a34a', tooltip: 'عدد الطلبات التي وصلت حالتها في Bosta إلى "تم التسليم"',
+        icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/><path d="M9.5 9.5l1.5 1.5 3-3" stroke-width="2.2"/></svg>' },
       { val: cancelledCount,            label: 'ملغي',             color: '#94a3b8', tooltip: 'عدد الحركات الملغاة — لا تؤثر على الأرصدة أو المخزون',
         icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>' },
     ];
@@ -25724,6 +25868,7 @@ function renderMovGridCard(tx) {
     </div>
     <div class="mgc-client" style="display:flex;align-items:center;gap:7px;overflow:hidden;flex-wrap:wrap">
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tx.client ? esc(tx.client) : '<span style="color:var(--muted)">بدون اسم</span>'}</span>
+      ${isMovRecentlyUpdated(tx._id) ? '<span class="mov-recent-badge" title="تم تحديثه مؤخراً">🔄 محدَّث حديثاً</span>' : ''}
       ${tx.type === 'مبيعات' && tx.phone ? `<a class="wa-btn" href="https://wa.me/${encodeURIComponent((tx.phone||'').replace(/\D/g,''))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="واتساب: ${esc(tx.phone)}"><svg viewBox="0 0 512 512" width="13" height="13" preserveAspectRatio="xMidYMid meet"><path fill="#25d366" d="M373.3 306.8c-6.4-3.2-37.7-18.5-43.5-20.7-5.8-2.1-10.1-3.2-14.3 3.3-4.2 6.3-16.4 20.6-20.2 24.8-3.7 4.2-7.4 4.5-13.7 1.7-6.4-3.2-26.9-9.9-51.3-31.7-19-16.9-31.7-37.7-35.4-44.2-3.7-6.3-.4-9.9 2.8-13.1 2.9-2.9 6.4-7.3 9.7-11.2 3.1-3.8 4.1-6.4 6.3-10.6 2.1-4.5 1-8-.6-11.2s-14.3-34.6-19.7-47.1c-5.1-12.4-10.4-10.8-14.3-10.8-3.7-.3-7.9-.3-12.2-.3-4.2 0-11.2 1.6-17 7.7-5.8 6.4-22.3 21.7-22.3 52.8s22.8 61.2 26 65.7c3.2 4.2 44.9 68.2 108.8 95.7 15.3 6.4 27.1 10.3 36.3 13.4 15.3 4.8 29.2 4.2 40.2 2.6 12.2-2 37.7-15.4 43-30.4 5.4-15.1 5.4-27.6 3.8-30.4-1.6-2.9-5.7-4.5-12.2-7.3zM257.3 464h-.3c-37.8 0-75.3-10.3-107.9-29.4l-7.7-4.6-80 20.8L82.9 373l-5.2-8c-21.1-33.6-32.3-72.3-32.3-112.2 0-116.2 95.1-210.9 212.1-210.9 56.7 0 109.8 22.1 149.8 62.1 40 39.7 62.1 92.8 62.1 149.2-.1 116.1-95.2 210.8-212.1 210.8M437.7 73.6C389.1 26.6 325.1 0 257 0 116.6 0 2.2 113.8 2.2 253.7c0 44.7 11.7 88.3 34 126.8L0 512l135.2-35.3c37.2 20.1 79.2 30.8 121.8 30.9h.1c140.5 0 254.8-113.8 254.9-253.8 0-67.7-26.4-131.5-74.6-179.4z"/></svg></a>` : ''}
       ${(tx.comments && tx.comments.length) ? `<a class="mov-comment-ic" href="#" onclick="event.preventDefault();event.stopPropagation();showInvoiceDetail('${esc(tx._id)}')" title="${tx.comments.length} تعليق"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></a>` : ''}
     </div>
@@ -28075,6 +28220,7 @@ async function doCollectMovement(id) {
       }
     }
 
+    markMovRecentlyUpdated(id);
     toast(isPurchase ? (currentLang==='en'?'Payment completed successfully':'تم السداد بنجاح') : (currentLang==='en'?'Collection completed':'تم التحصيل بنجاح'));
     closeModal();
 
@@ -28671,6 +28817,7 @@ async function sendToBosta(id) {
     // sync pickup orders list too
     const po = (_pickupOrders || []).find(o => String(o._id) === String(id));
     if (po) { po.pickupStatus = 'Shipped'; po.shippedAt = new Date().toISOString(); }
+    markMovRecentlyUpdated(id);
     transactions = await api('/transactions').catch(() => transactions);
     renderMovements();
     if (typeof renderPickupBoard === 'function') renderPickupBoard();
@@ -28740,6 +28887,7 @@ async function syncBostaStatus(id) {
         toast(`حالة Bosta: ${res.statusLabel || res.status || '—'}${tracking ? ` — رقم التتبع: ${tracking}` : ''}`);
       }
       _applyBostaToPickup(tx, tx.bostaStatus);
+      markMovRecentlyUpdated(tx._id);
     }
     renderMovements();
   } catch (e) {
@@ -28747,6 +28895,7 @@ async function syncBostaStatus(id) {
     const tx = transactions.find(t => t._id === id);
     if (e.status === 404 || msg.includes('محذوف') || msg.includes('NOT_FOUND') || msg.toLowerCase().includes('delivery not found')) {
       if (tx) { tx.bostaStatus = 'DELETED'; tx.bostaStatusLabel = 'محذوف من Bosta'; tx.bostaOrderId = ''; }
+      markMovRecentlyUpdated(id);
       toast('⚠️ الطلب محذوف أو غير موجود في Bosta — يمكنك إعادة الإرسال من القائمة', true);
       renderMovements();
     } else {
@@ -28897,10 +29046,41 @@ async function undoManualDelivery(txId) {
 }
 
 // ── Bulk Manual Delivery Confirmation ────────────────────────────────────
+let _bmdmUncheckedIds = new Set();
 function _bulkManualDeliveryEligible() {
   return [...selectedMovIds]
     .map(id => transactions.find(t => t._id === id))
     .filter(t => t && t.type === 'مبيعات' && !t.cancelled && t.bostaStatus !== 'DELIVERED');
+}
+function _bulkManualDeliveryChecked() {
+  return _bulkManualDeliveryEligible().filter(t => !_bmdmUncheckedIds.has(String(t._id)));
+}
+function renderBulkManualDeliveryList() {
+  const listEl = qs('#bmdm-list');
+  if (!listEl) return;
+  const eligible = _bulkManualDeliveryEligible();
+  listEl.innerHTML = eligible.map(t => {
+    const id = String(t._id);
+    const checked = !_bmdmUncheckedIds.has(id);
+    return `<label style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--border);cursor:pointer;font-size:.82rem">
+      <input type="checkbox" class="checkbox" ${checked ? 'checked' : ''} onchange="toggleBmdmItem('${esc(id)}',this.checked)">
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(fmtRef(t.ref || '') || '-')} ${t.client ? '— ' + esc(t.client) : ''}</span>
+    </label>`;
+  }).join('');
+  const countEl = qs('#bmdm-count');
+  const checkedCount = _bulkManualDeliveryChecked().length;
+  if (countEl) countEl.textContent = `${checkedCount} طلب محدد للتأكيد${eligible.length !== selectedMovIds.size ? ` (${eligible.length} مؤهل من أصل ${selectedMovIds.size} محدد)` : ''}`;
+  const confirmBtn = qs('#bmdm-confirm-btn');
+  if (confirmBtn) confirmBtn.disabled = !checkedCount;
+}
+function toggleBmdmItem(id, isChecked) {
+  if (isChecked) _bmdmUncheckedIds.delete(id); else _bmdmUncheckedIds.add(id);
+  renderBulkManualDeliveryList();
+}
+function toggleBmdmSelectAll(selectAll) {
+  _bmdmUncheckedIds.clear();
+  if (!selectAll) _bulkManualDeliveryEligible().forEach(t => _bmdmUncheckedIds.add(String(t._id)));
+  renderBulkManualDeliveryList();
 }
 function openBulkManualDeliveryModal() {
   const eligible = _bulkManualDeliveryEligible();
@@ -28924,8 +29104,18 @@ function openBulkManualDeliveryModal() {
             <div style="font-size:.8rem;color:var(--muted)" id="bmdm-count">—</div>
           </div>
         </div>
-        <div style="background:var(--bg-alt);border-radius:10px;padding:12px 14px;margin-bottom:18px;font-size:.82rem;color:var(--muted);line-height:1.6">
-          ⚠️ سيتم تطبيق نفس السبب والملاحظة على كل الطلبات المحددة المؤهلة. استخدم هذا الإجراء فقط للطلبات القديمة أو التي تم تسليمها فعلياً خارج نظام Bosta. بعد التأكيد لن يستطيع Bosta تغيير حالة هذه الطلبات مرة أخرى.
+        <div style="background:var(--bg-alt);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:.82rem;color:var(--muted);line-height:1.6">
+          ⚠️ سيتم تطبيق نفس السبب والملاحظة على كل الطلبات المحددة أدناه. الطلبات الملغاة، طلبات المشتريات، والطلبات المسلَّمة فعلياً عبر Bosta تُستبعد تلقائياً. استخدم هذا الإجراء فقط للطلبات القديمة أو التي تم تسليمها فعلياً خارج نظام Bosta. بعد التأكيد لن يستطيع Bosta تغيير حالة هذه الطلبات مرة أخرى.
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <label style="font-size:.82rem;font-weight:600">الطلبات المؤهلة</label>
+            <div style="display:flex;gap:10px;font-size:.75rem">
+              <a href="#" onclick="event.preventDefault();toggleBmdmSelectAll(true)" style="color:var(--primary)">تحديد الكل</a>
+              <a href="#" onclick="event.preventDefault();toggleBmdmSelectAll(false)" style="color:var(--muted)">إلغاء الكل</a>
+            </div>
+          </div>
+          <div id="bmdm-list" style="max-height:180px;overflow-y:auto;border:1.5px solid var(--border);border-radius:8px;padding:4px 8px"></div>
         </div>
         <div style="margin-bottom:14px">
           <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:6px">السبب <span style="color:var(--red)">*</span></label>
@@ -28950,8 +29140,8 @@ function openBulkManualDeliveryModal() {
     document.body.appendChild(modal);
     modal.addEventListener('click', e => { if (e.target === modal) closeBulkManualDeliveryModal(); });
   }
-  const countEl = modal.querySelector('#bmdm-count');
-  if (countEl) countEl.textContent = `${eligible.length} طلب مؤهل${eligible.length !== selectedMovIds.size ? ` (من أصل ${selectedMovIds.size} محدد)` : ''}`;
+  _bmdmUncheckedIds = new Set();
+  renderBulkManualDeliveryList();
   const noteEl = modal.querySelector('#bmdm-note');
   if (noteEl) noteEl.value = '';
   const reasonEl = modal.querySelector('#bmdm-reason');
@@ -28968,8 +29158,8 @@ async function submitBulkManualDelivery() {
   const reason = qs('#bmdm-reason')?.value || '';
   const note = (qs('#bmdm-note')?.value || '').trim();
   if (!reason) { toast('يجب اختيار السبب', true); return; }
-  const eligible = _bulkManualDeliveryEligible();
-  if (!eligible.length) { closeBulkManualDeliveryModal(); toast('لا توجد حركات مؤهلة للتسليم اليدوي ضمن التحديد', true); return; }
+  const eligible = _bulkManualDeliveryChecked();
+  if (!eligible.length) { toast('لم يتم تحديد أي طلب للتأكيد', true); return; }
   const btn = qs('#bmdm-confirm-btn');
   if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
   let done = 0, errors = 0;
@@ -37577,6 +37767,7 @@ async function confirmApproveCancel(txId) {
       : `تم اعتماد الإلغاء — خصم المبلغ من خزنة ${vaultAccount}`;
     toast(txt);
     closeModal();
+    markMovRecentlyUpdated(txId);
     transactions = await api('/transactions').catch(() => transactions);
     renderApprovals(); renderMovements(); buildSidebar(); buildNotifications();
     syncVaultState();
@@ -37593,6 +37784,7 @@ async function rejectCancelRequest(txId) {
       body: JSON.stringify({ rejectedReason: reason.trim() }),
     });
     toast('تم رفض طلب الإلغاء');
+    markMovRecentlyUpdated(txId);
     transactions = await api('/transactions').catch(() => transactions);
     renderApprovals(); renderMovements(); buildSidebar(); buildNotifications();
   } catch (e) { toast('خطأ: ' + e.message, true); }
