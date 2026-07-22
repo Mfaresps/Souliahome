@@ -2604,6 +2604,13 @@ body.dark-mode .cmp-progress-select.pg-done{background:#052e16;color:#4ade80;bor
 
 .cmp-emp-tag{font-size:.75rem;color:var(--muted);white-space:nowrap}
 
+/* Assignee avatar-initial badge — replaces the raw 👤 emoji, which renders
+   inconsistently across OS/fonts. Shared by the complaints and follow-up cards. */
+.person-badge{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;color:var(--muted);white-space:nowrap;max-width:100%}
+.person-badge-avatar{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--primary-pale);color:var(--primary);font-size:.64rem;font-weight:700;flex-shrink:0;line-height:1}
+.person-badge-avatar-empty{background:var(--bg-alt);color:var(--muted)}
+.person-badge-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 .cmp-notes-list{max-height:320px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px}
 .cmp-note-item{background:var(--bg-alt);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
 .cmp-note-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;gap:8px}
@@ -2770,10 +2777,11 @@ body.dark-mode .cmp-chip .s-tab-count{background:rgba(255,255,255,.08)}
 .fu-card.is-unseen{box-shadow:inset 3px 0 0 var(--primary)}
 .fu-card.is-done{opacity:.6}
 
-.fu-card-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;cursor:pointer}
-.fu-card-headline{display:flex;align-items:baseline;gap:7px;min-width:0;overflow:hidden}
+.fu-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.fu-card-headline{display:flex;align-items:baseline;gap:7px;min-width:0;overflow:hidden;cursor:pointer}
 .fu-card-order{font-size:1rem;font-weight:700;color:var(--primary);flex-shrink:0}
 .fu-card-client{font-size:.86rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fu-card-head-end{display:flex;align-items:center;gap:2px;flex-shrink:0}
 .fu-card-elapsed{font-size:.7rem;color:var(--muted);white-space:nowrap;flex-shrink:0}
 .fu-card-phone{font-size:.74rem;color:var(--muted);margin-top:3px;direction:ltr;text-align:right;cursor:pointer;font-variant-numeric:tabular-nums}
 
@@ -2783,14 +2791,23 @@ body.dark-mode .cmp-chip .s-tab-count{background:rgba(255,255,255,.08)}
 .fu-status-chip svg{flex-shrink:0;opacity:.75}
 .fu-status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 
+.fu-esc-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;background:rgba(217,119,6,.12);color:#b45309;font-size:.68rem;font-weight:700;white-space:nowrap}
+body.dark-mode .fu-esc-badge{background:rgba(217,119,6,.2);color:#fbbf24}
 .fu-card-tags{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:10px}
+.fu-card-comment{display:flex;align-items:flex-start;gap:7px;margin-top:10px;padding:8px 10px;border-radius:9px;background:var(--bg-alt);color:var(--text);cursor:pointer}
+.fu-card-comment svg{flex-shrink:0;margin-top:2px;color:var(--primary)}
+.fu-card-comment-text{font-size:.8rem;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
 .fu-card-meta-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.76rem;color:var(--muted);padding-top:11px;margin-top:11px;border-top:1px solid var(--border)}
-.fu-card-actions{display:flex;gap:8px;margin-top:11px}
-.fu-card-actions .btn-fu-primary{flex:1;height:40px;font-size:.83rem;min-width:0}
-.fu-card-actions .fu-icon-btn{width:40px;height:40px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid var(--border);background:var(--bg-alt);color:var(--muted);cursor:pointer}
-.fu-card-actions .fu-icon-btn.has-comment{color:var(--primary);background:var(--primary-light, #eff6ff);border-color:transparent}
-.fu-card-actions .fu-icon-btn.is-danger{color:#dc2626}
+.fu-card-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:11px}
+.fu-card-actions .fu-icon-btn{width:38px;height:38px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid var(--border);background:var(--bg-alt);color:var(--muted);cursor:pointer}
 .fu-card-actions .fu-wa-btn{background:#dcfce7;color:#16a34a;border-color:transparent}
+.fu-card-actions .fu-edit-btn{color:var(--primary);background:var(--primary-pale);border-color:transparent}
+
+/* "⋮" overflow menu trigger — sits at the card's start-of-header edge (the
+   left in RTL), as a flex sibling rather than an absolute overlay so it never
+   collides with the order#/name/elapsed-time text. */
+.fu-card-menu-btn{flex-shrink:0;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-size:1.1rem;line-height:1}
+.fu-card-menu-btn:hover{background:var(--bg-alt);color:var(--text)}
 
 /* Popover menu for the follow-up status picker (reuses .dd-menu-portal) */
 .fu-status-menu-portal{min-width:210px}
@@ -8341,9 +8358,8 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   <div id="fu-kpi" class="fu-kpi-strip" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px"></div>
 
   <!-- Mobile filter trigger (opens bottom sheet) -->
-  <button class="cmp-filter-trigger fu-filter-trigger" id="fu-filter-trigger-btn" onclick="openFuFilterSheet()">
+  <button class="cmp-filter-trigger fu-filter-trigger" id="fu-filter-trigger-btn" onclick="openFuFilterSheet()" title="فلترة" aria-label="فلترة">
     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
-    فلترة
     <span class="cmp-filter-badge" id="fu-filter-badge" style="display:none">0</span>
   </button>
 
@@ -16564,7 +16580,7 @@ function _buildMentionCardHtml(m, cls = 'nc-mention-card') {
     ? `<span style="width:6px;height:6px;border-radius:50%;background:${color};display:inline-block;vertical-align:middle;margin-right:3px"></span>`
     : '';
   const oRow = (label, val) => val
-    ? `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:.72rem;padding:2px 0"><span style="color:var(--muted);white-space:nowrap;flex-shrink:0">${label}</span><span style="color:var(--text);text-align:end;word-break:break-word">${val}</span></div>`
+    ? `<div style="display:flex;align-items:baseline;gap:6px;font-size:.72rem;padding:2px 0"><span style="color:var(--muted);white-space:nowrap;flex-shrink:0">${label}:</span><span style="color:var(--text);word-break:break-word">${val}</span></div>`
     : '';
   const otpBlock = (code, color) => code
     ? `<div style="background:${color}14;border:1.5px solid ${color}38;border-radius:8px;padding:5px 10px;margin-bottom:7px;text-align:center"><div style="font-size:.58rem;color:${color};font-weight:600;margin-bottom:2px">كود التحقق</div><div style="display:flex;align-items:center;justify-content:center;gap:6px;direction:ltr"><span style="font-family:monospace;font-size:1.1rem;font-weight:800;letter-spacing:.35em;color:${color}">${esc(code)}</span><button class="otp-copy-btn" style="color:${color}" onclick="event.stopPropagation();_ncCopyCode('${esc(code)}',this)" title="نسخ الكود">${_COPY_SVG}</button></div></div>`
@@ -16792,6 +16808,34 @@ function _buildMentionCardHtml(m, cls = 'nc-mention-card') {
           </div>
         </div>
       </div></div>`;
+  }
+
+  // ── Follow-up assignment (متابعة طلب) ──
+  if (/^متابعة طلب #/.test(m.commentText || '')) {
+    const fuColor = '#d97706';
+    const fuMatch = /^متابعة طلب #([^:]*):\s*([\s\S]*)$/.exec(m.commentText || '');
+    const fuOrderRef = fuMatch ? fuMatch[1].trim() : (m.txRef || '');
+    const fuReason   = fuMatch ? fuMatch[2].trim() : '';
+    const fuIcon = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${fuColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+    return `<div class="${cls}" style="position:relative;padding:10px 12px;padding-inline-start:${pad};cursor:pointer;${isUnread ? `background:${fuColor}0a` : ''}" ${clickAttr}>${unreadBar}
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div style="width:28px;height:28px;border-radius:8px;background:${fuColor}1e;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${fuIcon}</div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+            <div style="display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap">
+              ${unreadDot(fuColor)}<span style="font-size:.78rem;font-weight:700;color:${fuColor};line-height:1.2">متابعة طلب</span>
+              ${fuOrderRef ? `<span style="font-size:.68rem;font-weight:700;color:${fuColor};background:${fuColor}1a;border-radius:5px;padding:1px 6px;white-space:nowrap" dir="ltr">#${esc(fuOrderRef)}</span>` : ''}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--muted);flex-wrap:wrap">
+            <span style="font-weight:600;color:var(--text)" dir="ltr">${esc(m.fromName || '')}</span>
+            <span style="opacity:.6">•</span>
+            <span style="white-space:nowrap">${ago}</span>
+          </div>
+          ${fuReason ? `<div style="display:flex;align-items:flex-start;gap:6px;font-size:.73rem;color:${fuColor};font-weight:600;line-height:1.4;background:${fuColor}14;border:1px solid ${fuColor}33;border-radius:7px;padding:6px 8px;word-break:break-word"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="${fuColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.24H4a1 1 0 0 0-1 1v5.59a2 2 0 0 0 .59 1.41l9.58 9.59a2 2 0 0 0 2.83 0l4.59-4.59a2 2 0 0 0 0-2.83Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><span>${esc(fuReason)}</span></div>` : ''}
+        </div>
+      </div>
+    </div>`;
   }
 
   // ── Regular mention (إشارة عادية) ──
@@ -17343,19 +17387,7 @@ async function onMentionNotifClick(mentionId, txId, commentId) {
   // Check if this is a follow-up mention (txId is a followup _id, not a transaction _id)
   const isFu = Array.isArray(followUps) && followUps.some(f => String(f._id) === String(txId));
   if (isFu) {
-    navigateTo('complaints');
-    setTimeout(() => {
-      if (typeof switchMainTab === 'function') switchMainTab('fu');
-      setTimeout(() => {
-        const row = qs(`#fu-row-${txId}`);
-        if (row) {
-          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          row.style.transition = 'background .2s';
-          row.style.background = 'rgba(234,179,8,.25)';
-          setTimeout(() => { row.style.background = ''; }, 2200);
-        }
-      }, 350);
-    }, 350);
+    goToFuAndHighlight(txId);
     return;
   }
 
@@ -44917,7 +44949,7 @@ function cmpRenderListCard(c) {
       <div class="cmp-lc-desc" id="${descId}">${esc(desc)}</div>
       ${mayOverflow ? `<button type="button" class="cmp-lc-expand" onclick="event.stopPropagation();cmpToggleDesc('${descId}',this)">عرض المزيد</button>` : ''}
       <div class="cmp-lc-metarow">
-        <span class="cmp-emp-tag" title="${esc(c.submittedBy || '')}">👤 ${esc(cmpShortName(c.submittedBy))}</span>
+        ${personBadgeHtml(c.submittedBy)}
         ${cmpPriorityBadge(c)}
       </div>
       <div class="cmp-lc-workflow" onclick="event.stopPropagation()">${cmpProgressSelect(c)}</div>
@@ -44942,6 +44974,14 @@ function cmpShortName(name) {
   const parts = n.split(/\s+/);
   if (parts.length === 1) return parts[0].length > 10 ? parts[0].slice(0, 10) + '…' : parts[0];
   return parts[0] + ' ' + parts[1][0] + '.';
+}
+/* Small avatar-initial badge for "assigned to" labels, replacing the raw
+   👤 emoji (renders inconsistently across OS/fonts and reads as unpolished). */
+function personBadgeHtml(name) {
+  const n = (name || '').trim();
+  if (!n) return `<span class="person-badge"><span class="person-badge-avatar person-badge-avatar-empty">?</span><span class="person-badge-name">—</span></span>`;
+  const initial = n[0].toLocaleUpperCase();
+  return `<span class="person-badge" title="${esc(n)}"><span class="person-badge-avatar">${esc(initial)}</span><span class="person-badge-name">${esc(n)}</span></span>`;
 }
 
 function cmpActionsMenu(c) {
@@ -45680,7 +45720,7 @@ function renderFollowUps() {
           return `<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:10px;background:${bg};color:${color};font-size:.68rem;font-weight:700;white-space:nowrap">${esc(tag)}<button onclick="event.stopPropagation();removeFuTag('${fId}','${esc(tag).replace(/'/g,"\\'")}')" style="border:none;background:none;cursor:pointer;padding:0;color:inherit;line-height:1;font-size:.75rem;opacity:.7">&times;</button></span>`;
         }).join(' ')
       : '';
-    const addTagBtn = `<button onclick="event.stopPropagation();openFuTagPopover('${fId}',this)" title="إضافة TAG" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1px ${(f.tags||[]).length?'solid var(--primary)':'dashed var(--border)'};background:${(f.tags||[]).length?'var(--primary-light, #eff6ff)':'none'};cursor:pointer;color:${(f.tags||[]).length?'var(--primary)':'var(--muted)'};font-size:.75rem;font-weight:700">+</button>`;
+    const addTagBtn = `<button onclick="event.stopPropagation();openFuTagPopover('${fId}',this)" title="إضافة TAG" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1px ${(f.tags||[]).length?'solid var(--primary)':'dashed var(--border)'};background:${(f.tags||[]).length?'var(--primary-pale)':'none'};cursor:pointer;color:${(f.tags||[]).length?'var(--primary)':'var(--muted)'};font-size:.75rem;font-weight:700">+</button>`;
 
     const statusSel = `<div style="display:inline-flex;align-items:center;gap:4px;background:${st.bg};border-radius:16px;padding:2px 8px 2px 4px">
       <span style="width:6px;height:6px;border-radius:50%;background:${st.dot};flex-shrink:0"></span>
@@ -45701,7 +45741,7 @@ function renderFollowUps() {
     </button>`;
 
     const hasComment = !!f.comment;
-    const commentBtn = `<button onclick="openFuCommentPopup('${fId}')" title="${hasComment ? esc(f.comment) : 'إضافة ملاحظة'}" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;border:none;cursor:pointer;background:${hasComment?'var(--primary-light, #eff6ff)':'var(--bg-alt)'};color:${hasComment?'var(--primary)':'var(--muted)'}">
+    const commentBtn = `<button onclick="openFuCommentPopup('${fId}')" title="${hasComment ? esc(f.comment) : 'إضافة ملاحظة'}" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;border:none;cursor:pointer;background:${hasComment?'var(--primary-pale)':'var(--bg-alt)'};color:${hasComment?'var(--primary)':'var(--muted)'}">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
     </button>`;
     const editBtn = `<button onclick="openFuModal('${fId}')" title="تعديل" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;border:none;cursor:pointer;background:var(--bg-alt);color:var(--muted)">
@@ -45710,6 +45750,24 @@ function renderFollowUps() {
     const delBtn = `<button onclick="deleteFuItem('${fId}')" title="حذف" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;border:none;cursor:pointer;background:var(--bg-alt);color:#dc2626">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
     </button>`;
+    // Card-only "⋮" overflow menu — comment + delete live here instead of as
+    // separate icon buttons, since the comment already has its own visible
+    // preview block on the card and delete is destructive/low-frequency.
+    const fuCardMenuBtn = `<button type="button" class="fu-card-menu-btn" onclick="event.stopPropagation();fuOpenCardMenu(event,'${fId}')">⋮</button>`;
+
+    // Simple "still waiting" reminder chip — appears once the follow-up has
+    // sat past 12h/24h/+1day (etc.) since its last status/reason change.
+    // Mirrors the backend escalation levels in FollowUpsService (12h, then
+    // every 24h) so the badge label always matches the reminder that fired.
+    const escLabel = (function(){
+      const level = f.escalationLevel || 0;
+      if (!level || isDone) return '';
+      const hours = [12,24,48,72,96,120,144,168][level-1] || (level*24);
+      return hours < 24 ? `${hours} ساعة` : `${hours/24} يوم`;
+    })();
+    const escBadge = escLabel
+      ? `<span class="fu-esc-badge" title="بانتظار تحديث منذ ${escLabel}">⏰ ${escLabel}</span>`
+      : '';
 
     const rowStyle = `border-bottom:1px solid var(--border);${isDone?'opacity:.55':''}${isUnseen?' border-inline-end:3px solid var(--primary)':''}`;
     const row = `<tr id="fu-row-${fId}" style="${rowStyle}" onmouseenter="this.style.background='var(--bg-alt)'" onmouseleave="this.style.background=''">
@@ -45723,41 +45781,36 @@ function renderFollowUps() {
       <td style="${P};font-size:.78rem">${reasonHtml}</td>
       <td style="${P};font-size:.74rem">${tagsHtml}${tagsHtml?' ':''}<span style="opacity:0.7">${addTagBtn}</span></td>
       <td style="${P}">${statusSel}</td>
-      <td style="${P};font-size:.72rem;color:var(--muted)">${fmtElapsed(f.updatedAt||f.createdAt||'')}</td>
+      <td style="${P};font-size:.72rem;color:var(--muted)">${fmtElapsed(f.updatedAt||f.createdAt||'')}${escBadge ? `<br>${escBadge}` : ''}</td>
       <td style="${P};text-align:center"><div style="display:flex;align-items:center;gap:4px;justify-content:center">${commentBtn}${editBtn}${delBtn}</div></td>
       <td style="${P};font-size:.78rem;color:var(--text)">${esc(f.responsibleName||'—')}</td>
     </tr>`;
 
-    const waCardBtn = resolvedPhone
-      ? `<a href="https://wa.me/${resolvedPhone.replace(/\D/g,'')}" target="_blank" rel="noopener" class="fu-icon-btn fu-wa-btn" title="واتساب" onclick="event.stopPropagation()">${WA_SVG_ACTIVE}</a>`
-      : '';
     const card = `<article class="fu-card${isUnseen?' is-unseen':''}${isDone?' is-done':''}" data-fu-id="${fId}">
-      <div class="fu-card-head" onclick="openFuModal('${fId}')">
-        <div class="fu-card-headline">
+      <div class="fu-card-head">
+        <div class="fu-card-headline" onclick="openFuModal('${fId}')">
           <span class="fu-card-order">#${esc(f.orderRef)}</span>
           ${resolvedName ? `<span class="fu-card-client">${esc(resolvedName)}</span>` : ''}
         </div>
-        <span class="fu-card-elapsed">${fmtElapsed(f.updatedAt||f.createdAt||'')}</span>
+        <div class="fu-card-head-end">
+          <span class="fu-card-elapsed">${fmtElapsed(f.updatedAt||f.createdAt||'')}</span>
+          ${fuCardMenuBtn}
+        </div>
       </div>
       ${resolvedPhone ? `<div class="fu-card-phone" onclick="openFuModal('${fId}')" dir="ltr">${esc(resolvedPhone)}</div>` : ''}
       <div class="fu-card-statusrow" onclick="event.stopPropagation()">
         ${statusBtnCard}
         ${reasonHtml}
+        ${escBadge}
       </div>
       ${tagsHtml ? `<div class="fu-card-tags" onclick="event.stopPropagation()">${tagsHtml}${addTagBtn}</div>` : ''}
+      ${hasComment ? `<div class="fu-card-comment" onclick="event.stopPropagation();openFuCommentPopup('${fId}')" title="اضغط للتعديل">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span class="fu-card-comment-text">${esc(f.comment)}</span>
+      </div>` : ''}
       <div class="fu-card-meta-row">
-        <span>👤 ${esc(f.responsibleName||'—')}</span>
+        ${personBadgeHtml(f.responsibleName)}
         ${!tagsHtml ? `<span onclick="event.stopPropagation()">${addTagBtn}</span>` : ''}
-      </div>
-      <div class="fu-card-actions" onclick="event.stopPropagation()">
-        <button class="btn btn-outline btn-fu-primary" onclick="openFuModal('${fId}')">تعديل</button>
-        ${waCardBtn}
-        <button class="fu-icon-btn${hasComment?' has-comment':''}" onclick="openFuCommentPopup('${fId}')" title="${hasComment ? esc(f.comment) : 'إضافة ملاحظة'}">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        </button>
-        <button class="fu-icon-btn is-danger" onclick="deleteFuItem('${fId}')" title="حذف">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-        </button>
       </div>
     </article>`;
 
@@ -45819,6 +45872,55 @@ function fuOpenStatusMenu(e, id) {
     if (!item) return;
     closeAllMenus();
     updateFuStatus(id, item.dataset.status);
+  });
+  requestAnimationFrame(() => portal.classList.add('show'));
+}
+
+/* "⋮" overflow menu for the mobile card — comment (add/edit) + delete.
+   Reuses the same .dd-menu-portal pattern as the other popovers. */
+function fuOpenCardMenu(e, id) {
+  e.stopPropagation();
+  const btn = e.currentTarget;
+  const f = followUps.find(x => String(x._id) === id);
+  if (!f) return;
+  const hadOpen = !!document.querySelector('.dd-menu-portal.show');
+  closeAllMenus();
+  if (hadOpen) return;
+  const hasComment = !!f.comment;
+  const _tx = transactions.find(t => t._id === f.transactionId || t.ref === f.orderRef);
+  const resolvedPhone = (f.clientPhone || _tx?.phone || '').trim();
+  const portal = document.createElement('div');
+  portal.className = 'dd-menu-portal';
+  portal.innerHTML = `
+    <button type="button" class="dd-item" data-action="edit"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span class="dd-label">تعديل</span></button>
+    ${resolvedPhone ? `<button type="button" class="dd-item" data-action="whatsapp"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg><span class="dd-label">واتساب</span></button>` : ''}
+    <button type="button" class="dd-item" data-action="comment"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="dd-label">${hasComment ? 'تعديل الملاحظة' : 'إضافة ملاحظة'}</span></button>
+    <button type="button" class="dd-item danger" data-action="delete"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg><span class="dd-label">حذف</span></button>`;
+  document.body.appendChild(portal);
+  const rect = btn.getBoundingClientRect();
+  const mW = portal.offsetWidth;
+  const mH = portal.offsetHeight;
+  const isRtl = document.documentElement.dir === 'rtl';
+  const vp = window.innerHeight;
+  const spaceBelow = vp - rect.bottom - 12;
+  const spaceAbove = rect.top - 12;
+  let top;
+  if (mH <= spaceBelow) top = rect.bottom + 6;
+  else if (mH <= spaceAbove) top = rect.top - mH - 6;
+  else top = Math.max(8, vp - mH - 8);
+  let left = isRtl ? rect.left : rect.right - mW;
+  if (left < 8) left = 8;
+  if (left + mW > window.innerWidth - 8) left = window.innerWidth - mW - 8;
+  portal.style.top = top + 'px';
+  portal.style.left = left + 'px';
+  portal.addEventListener('click', (ev) => {
+    const item = ev.target.closest('.dd-item');
+    if (!item) return;
+    closeAllMenus();
+    if (item.dataset.action === 'edit') openFuModal(id);
+    else if (item.dataset.action === 'whatsapp') window.open(`https://wa.me/${resolvedPhone.replace(/\D/g,'')}`, '_blank', 'noopener');
+    else if (item.dataset.action === 'comment') openFuCommentPopup(id);
+    else if (item.dataset.action === 'delete') deleteFuItem(id);
   });
   requestAnimationFrame(() => portal.classList.add('show'));
 }
@@ -45921,7 +46023,19 @@ function openFuTagPopover(fuId, anchorEl) {
   const popover = document.createElement('div');
   popover.id = 'fu-tag-popover';
   popover.dataset.fuId = fuId;
-  popover.style.cssText = `position:fixed;z-index:9999;background:var(--surface,var(--bg));border:1px solid var(--border);border-radius:10px;padding:10px;box-shadow:0 12px 28px rgba(0,0,0,.14);width:240px;max-height:340px;overflow-y:auto;top:${rect.bottom+4}px;right:${document.documentElement.clientWidth-rect.right}px`;
+  const popW = 240;
+  const popMaxH = 340;
+  const vw = document.documentElement.clientWidth;
+  const vh = document.documentElement.clientHeight;
+  // Anchor under the + button, but clamp so the fixed-width popover never
+  // runs off either edge of the viewport (the + button often sits near the
+  // card's start edge, which pushed the popover off-screen before this).
+  let popLeft = rect.right - popW;
+  if (popLeft < 8) popLeft = 8;
+  if (popLeft + popW > vw - 8) popLeft = vw - popW - 8;
+  let popTop = rect.bottom + 4;
+  if (popTop + popMaxH > vh - 8) popTop = Math.max(8, vh - popMaxH - 8);
+  popover.style.cssText = `position:fixed;z-index:9999;background:var(--surface,var(--bg));border:1px solid var(--border);border-radius:10px;padding:10px;box-shadow:0 12px 28px rgba(0,0,0,.14);width:${popW}px;max-height:${popMaxH}px;overflow-y:auto;top:${popTop}px;left:${popLeft}px`;
   _fuPickedSwatch = 0;
 
   const presetsHtml = FU_TAG_PALETTE.map((p, i) => {
@@ -46008,13 +46122,14 @@ function goToFuAndHighlight(fuId) {
   setTimeout(()=>{
     if(typeof switchMainTab==='function') switchMainTab('fu');
     setTimeout(()=>{
-      const row = qs(`#fu-row-${fuId}`);
-      if(row){
-        row.classList.remove('nav-highlight-fu'); void row.offsetWidth;
-        row.classList.add('nav-highlight-fu');
-        row.scrollIntoView({behavior:'smooth',block:'center'});
-        setTimeout(()=>row.classList.remove('nav-highlight-fu'),3000);
-      }
+      const candidates = [qs(`#fu-row-${fuId}`), qs(`.fu-card[data-fu-id="${fuId}"]`)];
+      candidates.forEach(el => {
+        if (!el || el.offsetParent === null) return;
+        el.classList.remove('nav-highlight-fu'); void el.offsetWidth;
+        el.classList.add('nav-highlight-fu');
+        el.scrollIntoView({behavior:'smooth',block:'center'});
+        setTimeout(()=>el.classList.remove('nav-highlight-fu'),3000);
+      });
     },400);
   },320);
 }

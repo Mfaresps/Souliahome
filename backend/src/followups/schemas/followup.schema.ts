@@ -43,6 +43,12 @@ export class FollowUp {
 
   @Prop({ default: false })
   notified: boolean; // whether notification was sent for this reason
+
+  @Prop({ default: Date.now })
+  escalationBaseline: Date; // resets when status/reason change — start point for 12h/24h/day reminders
+
+  @Prop({ default: 0 })
+  escalationLevel: number; // highest reminder threshold already sent (0=none, 1=12h, 2=24h, 3=48h, ...)
 }
 
 export const FollowUpSchema = SchemaFactory.createForClass(FollowUp);
