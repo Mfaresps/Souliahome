@@ -413,6 +413,35 @@ export class ShopifyService {
     return { success: true };
   }
 
+  // إلغاء أوردر معلق (Admin فقط) — يستبعده من الإحصائيات مع إمكانية الاسترجاع
+  async cancelOrder(orderId: string, cancelledBy: string, reason = ''): Promise<{ success: boolean }> {
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) throw new NotFoundException('الأوردر غير موجود');
+    if (order.status !== 'pending') {
+      return { success: false };
+    }
+    order.cancelled = true;
+    order.cancelledBy = cancelledBy;
+    order.cancelledAt = new Date().toISOString();
+    order.cancelReason = reason;
+    await order.save();
+    this.logger.log(`🚫 تم إلغاء أوردر Shopify: ${order.ref}`);
+    return { success: true };
+  }
+
+  // استرجاع أوردر ملغي
+  async restoreOrder(orderId: string): Promise<{ success: boolean }> {
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) throw new NotFoundException('الأوردر غير موجود');
+    order.cancelled = false;
+    order.cancelledBy = '';
+    order.cancelledAt = '';
+    order.cancelReason = '';
+    await order.save();
+    this.logger.log(`↩️ تم استرجاع أوردر Shopify: ${order.ref}`);
+    return { success: true };
+  }
+
   // تحديث الحالة الفرعية لأوردر معلق
   async updatePendingStatus(orderId: string, pendingStatus: string): Promise<{ success: boolean }> {
     const order = await this.shopifyOrderModel.findById(orderId);

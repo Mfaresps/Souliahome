@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import * as https from 'https';
 import {
   Transaction,
@@ -758,6 +759,24 @@ export class BostaService {
   }
 
   // ── Bulk sync all unfinished Bosta orders ──────────────────────────────
+
+  /**
+   * Reconciles Bosta status for all in-progress orders on a timer, so a
+   * missed/dropped webhook (network blip, Bosta not configured to retry,
+   * etc.) doesn't leave a transaction stuck on a stale status forever.
+   * Webhooks remain the primary, real-time path — this is just the backstop.
+   */
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async scheduledSyncAll(): Promise<void> {
+    try {
+      const result = await this.syncAll();
+      if (result.synced || result.errors) {
+        this.logger.log(`Bosta scheduled sync — synced=${result.synced} errors=${result.errors}`);
+      }
+    } catch (err: any) {
+      this.logger.error(`Bosta scheduled sync failed: ${err.message}`);
+    }
+  }
 
   async syncAll(): Promise<{ synced: number; errors: number }> {
     const TERMINAL = ['DELIVERED', 'RETURNED', 'CANCELLED'];

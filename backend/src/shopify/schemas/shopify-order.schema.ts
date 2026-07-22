@@ -69,6 +69,18 @@ export class ShopifyOrder {
   @Prop({ default: '' })
   pendingStatus: string; // '' | 'msg_sent' | 'awaiting_transfer' | 'no_reply'
 
+  @Prop({ default: false })
+  cancelled: boolean;
+
+  @Prop({ default: '' })
+  cancelledBy: string;
+
+  @Prop({ default: '' })
+  cancelledAt: string;
+
+  @Prop({ default: '' })
+  cancelReason: string;
+
   @Prop({ default: '' })
   reviewedBy: string;
 

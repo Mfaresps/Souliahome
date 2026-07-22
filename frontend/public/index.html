@@ -546,13 +546,24 @@ body.dark-mode .settings-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.2)}
 .settings-ship-add input[type="text"]{flex:1;min-width:140px}
 .settings-ship-add input[type="number"]{max-width:120px}
 
-/* Responsive: collapse sidebar to horizontal tabs on tablet */
+/* Mobile dropdown trigger (hidden on desktop) */
+.stg-mobile-trigger{display:none}
+
+/* Responsive: collapse sidebar to a dropdown menu on tablet/phone */
 @media(max-width:900px){
   .stg-layout{grid-template-columns:1fr}
-  .stg-sidebar{position:static;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;padding:6px 8px;gap:4px;scrollbar-width:none}
-  .stg-sidebar::-webkit-scrollbar{display:none}
-  .stg-tab-btn{white-space:nowrap;flex-shrink:0;padding:7px 12px;font-size:.78rem}
-  .stg-tab-sep{display:none}
+  .stg-mobile-nav-wrap{position:relative}
+  .stg-mobile-trigger{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border:1px solid var(--border);background:var(--surface);border-radius:12px;cursor:pointer;font-size:.85rem;font-weight:600;color:var(--text);box-shadow:var(--shadow-xs)}
+  .stg-mobile-trigger-icon{display:flex;color:var(--primary);flex-shrink:0}
+  .stg-mobile-trigger-icon svg{width:16px;height:16px}
+  .stg-mobile-trigger-label{flex:1;text-align:start}
+  .stg-mobile-trigger-chevron{width:16px;height:16px;flex-shrink:0;color:var(--muted);transition:transform .18s}
+  .stg-mobile-trigger.open .stg-mobile-trigger-chevron{transform:rotate(180deg)}
+
+  .stg-sidebar{position:absolute;top:calc(100% + 6px);inset-inline:0;z-index:40;flex-direction:column;flex-wrap:nowrap;overflow-x:visible;padding:8px;gap:2px;box-shadow:0 10px 30px rgba(0,0,0,.14);display:none}
+  .stg-sidebar.open{display:flex}
+  .stg-tab-btn{white-space:nowrap;flex-shrink:0;padding:10px 12px;font-size:.83rem;width:100%}
+  .stg-tab-sep{display:block}
 }
 @media(max-width:640px){
   .settings-page-inner{padding:0 10px}
@@ -1580,6 +1591,13 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 #shopify-search-wrap{position:relative;flex:1;min-width:180px;max-width:320px}
 #shopify-filter-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:var(--bg-alt);border:1px solid var(--border);border-radius:12px}
 #shopify-filter-btns::before{content:'تصفية:';font-size:.72rem;color:var(--text-muted);font-weight:600;white-space:nowrap;margin-left:4px}
+#shopify-date-filter-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 14px;background:var(--bg-alt);border:1px solid var(--border);border-radius:12px}
+.sp-date-quick-btn{font-size:.75rem;border:1.5px solid var(--border);color:var(--text-muted);background:var(--surface);border-radius:8px;padding:5px 12px;font-weight:500;transition:all .2s}
+.sp-date-quick-btn.active{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:700}
+.sp-date-sep{width:1px;height:20px;background:var(--border);border-radius:1px;flex-shrink:0}
+.sp-date-input{font-size:.78rem;border:1.5px solid var(--border);border-radius:8px;padding:5px 8px;background:var(--surface);color:var(--text);font-family:inherit;min-width:0}
+.sp-date-arrow{font-size:.72rem;color:var(--text-muted);white-space:nowrap;flex-shrink:0}
+#shopify-date-clear-btn{font-size:.72rem;color:#ef4444;border:1.5px solid #ef444440;background:#ef444410;border-radius:8px;padding:5px 10px}
 /* ── Table (desktop) ── */
 #shopify-orders-table-wrap{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)}
 #shopify-orders-table-wrap .sp-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -1632,6 +1650,8 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
   #shopify-search-wrap{max-width:100%}
   #shopify-filter-btns{flex-wrap:wrap;padding:8px 12px}
   #shopify-filter-btns .sp-status-filter-btn{flex-shrink:0}
+  #shopify-date-filter-bar{padding:8px 10px}
+  .sp-date-input{flex:1;min-width:110px}
   /* hide table, show cards */
   #shopify-orders-table-wrap .sp-table-scroll{display:none}
   #shopify-orders-table-wrap > div:first-child{padding:0}
@@ -1835,12 +1855,12 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .qty-btn:focus{outline:none;box-shadow:var(--ring-focus)}
 .tx-item-stock{font-size:.72rem;margin-top:4px;padding:0 30px}
 /* ===== Generic product thumbnail (used in inventory, products, search) ===== */
-.product-thumb{width:42px;height:42px;border-radius:8px;overflow:hidden;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.product-thumb{width:42px;height:42px;min-width:42px;aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
 .product-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .product-thumb .tx-item-img-fallback{width:100%;height:100%}
 .product-thumb .tx-item-img-fallback svg{width:55%;height:55%}
 .product-thumb.inv-thumb{width:44px;height:44px}
-.product-thumb.inv-card-thumb{width:48px;height:48px}
+.product-thumb.inv-card-thumb{width:64px;height:64px;min-width:64px;border-radius:10px}
 .product-thumb.prod-grid-thumb{width:100%;height:160px;border-radius:10px 10px 0 0;border:none;border-bottom:1px solid var(--border)}
 .product-thumb.prod-grid-thumb .tx-item-img-fallback svg{width:38%;height:38%}
 .product-thumb.prod-list-thumb{width:56px;height:56px;border-radius:10px}
@@ -2550,7 +2570,13 @@ body.dark-mode .cmp-copy-btn.copied{background:#052e16;color:#4ade80;border-colo
 #cmp-tbody tr.cmp-highlight{animation:cmpHighlightPulse 1.3s ease-in-out 2;outline:2px solid var(--accent);outline-offset:-2px}
 .cmp-card.cmp-highlight{animation:cmpHighlightPulse 1.3s ease-in-out 2;outline:2px solid var(--accent);outline-offset:-2px;border-radius:12px}
 
-.cmp-progress-select{font-size:.75rem;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;max-width:170px}
+/* .cmp-progress-select is now a <button> (opens a custom popover via
+   cmpOpenProgressMenu) rather than a native <select> — native mobile option
+   lists render at a fixed system size CSS can't touch, which is what made
+   the workflow pill balloon in size on phones. */
+.cmp-progress-select{display:inline-flex;align-items:center;justify-content:space-between;gap:6px;font:inherit;font-size:.75rem;font-weight:600;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;max-width:170px;font-family:inherit}
+.cmp-progress-select svg{flex-shrink:0;opacity:.7}
+.cmp-progress-select-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .cmp-progress-select.pg-review{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
 .cmp-progress-select.pg-progress{background:#fff7ed;color:#c2410c;border-color:#fed7aa}
 .cmp-progress-select.pg-waiting{background:#f3e8ff;color:#6d28d9;border-color:#ddd6fe}
@@ -2559,6 +2585,16 @@ body.dark-mode .cmp-progress-select.pg-review{background:#172554;color:#60a5fa;b
 body.dark-mode .cmp-progress-select.pg-progress{background:#431407;color:#fb923c;border-color:#7c2d12}
 body.dark-mode .cmp-progress-select.pg-waiting{background:#2e1065;color:#c084fc;border-color:#4c1d95}
 body.dark-mode .cmp-progress-select.pg-done{background:#052e16;color:#4ade80;border-color:#14532d}
+
+/* Popover menu for the workflow-stage picker (reuses .dd-menu-portal) */
+.cmp-progress-menu-portal{min-width:200px}
+.cmp-progress-menu-portal .dd-item{gap:9px}
+.cmp-progress-menu-portal .dd-item.active{background:var(--primary-pale);font-weight:700}
+.cmp-progress-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.cmp-progress-dot.pg-review{background:#1d4ed8}
+.cmp-progress-dot.pg-progress{background:#c2410c}
+.cmp-progress-dot.pg-waiting{background:#6d28d9}
+.cmp-progress-dot.pg-done{background:#15803d}
 
 .cmp-notes-btn{position:relative;width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s}
 .cmp-notes-btn svg{width:15px;height:15px}
@@ -2605,10 +2641,6 @@ body.dark-mode .cmp-progress-select.pg-done{background:#052e16;color:#4ade80;bor
 .cmp-timeline-item-system .cmp-note-text{color:var(--muted);font-style:italic}
 .cmp-timeline-item-system .cmp-note-author{color:var(--muted);font-weight:600}
 
-@media(max-width:768px){
-  .modal-overlay:has(.cmp-detail-head) .modal{max-height:100vh!important;height:100vh;border-radius:0!important}
-  .modal-overlay:has(.cmp-detail-head) .modal::before{display:none}
-}
 
 .cmp-empty{text-align:center;padding:56px 20px;color:var(--muted)}
 .cmp-empty svg{width:52px;height:52px;opacity:.35;margin-bottom:14px}
@@ -2654,8 +2686,17 @@ body.dark-mode .cmp-progress-select.pg-done{background:#052e16;color:#4ade80;bor
 .cmp-pick-row:has(.cmp-pick-checkbox:checked){border-color:var(--primary);background:var(--primary-pale, var(--surface))}
 .cmp-pick-checkbox{width:18px;height:18px;flex-shrink:0;accent-color:var(--primary);cursor:pointer}
 
-/* Mobile filter trigger button (opens bottom sheet) — hidden on desktop */
+/* Mobile filter trigger button (opens bottom sheet) — hidden on desktop.
+   Icon-only on mobile; the badge overlays the unread-filter count. */
 .cmp-filter-trigger{display:none}
+
+/* Compact mobile header bar: search field + filter trigger */
+.cmp-mobile-bar{display:none}
+.cmp-mobile-search{position:relative;flex:1;min-width:0}
+.cmp-mobile-search svg{position:absolute;top:50%;right:12px;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.cmp-mobile-search input{width:100%;height:42px;box-sizing:border-box;padding:0 40px 0 14px;border:1px solid var(--border);border-radius:11px;background:var(--surface);color:var(--text);font-size:.85rem}
+.cmp-mobile-search input::placeholder{color:var(--muted)}
+.cmp-mobile-search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--primary-pale)}
 
 /* Quick filter chips row — mobile only */
 .cmp-chip-row{display:none}
@@ -2665,52 +2706,96 @@ body.dark-mode .cmp-progress-select.pg-done{background:#052e16;color:#4ade80;bor
 .cmp-chip.active .s-tab-count{background:rgba(255,255,255,.25);color:#fff}
 body.dark-mode .cmp-chip .s-tab-count{background:rgba(255,255,255,.08)}
 
+/* ════════════════════════════════════════════════════════════
+   Complaint list card (mobile) — redesigned CRM-style card.
+   Hierarchy: id+status → customer → order/time → problem (2-line
+   clamp, expandable) → assignee/priority → workflow chip → actions.
+   Scoped as its own component (.cmp-list-card) rather than reusing
+   the generic .cmp-card box, which the new-complaint wizard's
+   picker rows and product/order summary boxes still rely on.
+   ════════════════════════════════════════════════════════════ */
+.cmp-list-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;overflow:hidden;max-width:100%;box-sizing:border-box}
+.cmp-lc-head{cursor:pointer}
+.cmp-lc-idline{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.cmp-lc-idline .badge{font-size:.66rem;padding:2px 8px}
+.cmp-lc-name{font-size:1rem;font-weight:700;color:var(--text);margin-top:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmp-lc-orderline{font-size:.76rem;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums}
+.cmp-lc-dot{opacity:.6}
+.cmp-lc-desc{font-size:.82rem;line-height:1.55;color:var(--text);margin-top:11px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;cursor:pointer}
+.cmp-lc-desc.cmp-lc-desc-expanded{-webkit-line-clamp:unset;display:block}
+.cmp-lc-expand{margin-top:4px;background:none;border:none;padding:0;color:var(--accent);font-size:.76rem;font-weight:700;cursor:pointer;font-family:inherit}
+.cmp-lc-expand:hover{text-decoration:underline}
+.cmp-lc-metarow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
+.cmp-lc-metarow .cmp-priority{font-size:.68rem;padding:2px 8px;gap:4px}
+.cmp-lc-metarow .cmp-priority .pr-dot{width:5px;height:5px}
+.cmp-lc-workflow{margin-top:10px}
+.cmp-lc-workflow .cmp-progress-select{width:100%;max-width:none;font-size:.72rem;padding:6px 10px}
+.cmp-lc-actions{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.cmp-lc-btn-primary{flex:1;height:42px;font-size:.85rem;min-width:0}
+.cmp-lc-actions .cmp-notes-btn{width:42px;height:42px;flex-shrink:0}
+.cmp-lc-actions .actions-dd .dd-toggle{width:42px;height:42px;flex-shrink:0}
+
 @media(max-width:768px){
   .cmp-table-wrap{display:none}
   .cmp-cards{display:flex}
-  /* Hide the always-visible desktop filter bar; replaced by trigger + sheet */
+  /* Hide the always-visible desktop filter bar; replaced by mobile bar + sheet */
   .cmp-filter-bar{display:none}
   .cmp-status-tabs{display:none}
-  .cmp-filter-trigger{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-size:.82rem;font-weight:600;cursor:pointer;margin-bottom:12px}
-  .cmp-filter-trigger .cmp-filter-badge{background:var(--accent);color:#fff;border-radius:10px;font-size:.68rem;font-weight:700;min-width:16px;height:16px;padding:0 4px;display:inline-flex;align-items:center;justify-content:center}
-  .cmp-chip-row{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
+  .cmp-mobile-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .cmp-filter-trigger{display:inline-flex;align-items:center;justify-content:center;position:relative;width:42px;height:42px;flex-shrink:0;padding:0;border:1px solid var(--border);border-radius:11px;background:var(--surface);color:var(--text);cursor:pointer}
+  .cmp-filter-trigger .cmp-filter-badge{position:absolute;top:-5px;left:-5px;background:var(--accent);color:#fff;border-radius:10px;font-size:.62rem;font-weight:700;min-width:16px;height:16px;padding:0 4px;display:inline-flex;align-items:center;justify-content:center}
+  .cmp-chip-row{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none}
   .cmp-chip-row::-webkit-scrollbar{display:none}
+}
 
-  /* Card hierarchy: status/id top, primary action full-width, secondary actions in overflow menu */
-  .cmp-card{padding:14px;position:relative;transition:transform .15s}
-  .cmp-card:active{transform:scale(.985)}
-  .cmp-card-top{margin-bottom:8px}
-  .cmp-card-customer{font-size:.92rem;font-weight:700;color:var(--text);margin-bottom:2px}
-  .cmp-card-order{font-size:.74rem;color:var(--muted);margin-bottom:8px}
-  .cmp-card-desc{-webkit-line-clamp:2;margin:6px 0 10px}
-  .cmp-card-meta-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
-  .cmp-card-actions{border-top:1px solid var(--border);padding-top:10px;margin-top:0;flex-wrap:nowrap}
-  .cmp-card-actions .btn-cmp-primary{flex:1;height:40px;font-size:.84rem}
-  .cmp-card-actions .actions-dd .dd-toggle{width:40px;height:40px}
+/* Tighter title/subtitle + stat grid specifically on the complaints screen,
+   which stacks a long Arabic title, tabs, KPIs, filters and cards — the
+   dense "everything is loud" mobile look this redesign fixes. */
+@media(max-width:640px){
+  #page-complaints .page-title{font-size:1.05rem;line-height:1.35}
+  #page-complaints .page-subtitle{display:none}
+  #page-complaints .cmp-stats-grid{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+  #page-complaints .cmp-stats-grid .cmp-stat{padding:10px 12px;gap:8px}
+  #page-complaints .cmp-stats-grid .cmp-stat-icon{width:30px;height:30px}
+  #page-complaints .cmp-stats-grid .cmp-stat-icon svg{width:15px;height:15px}
+  #page-complaints .cmp-stats-grid .cmp-stat-val{font-size:1.05rem}
+  #page-complaints .cmp-stats-grid .cmp-stat-label{font-size:.66rem}
 }
 
 /* ════════════════════════════════════════════════════════════
    FOLLOW-UP ORDERS (متابعة الطلبات) — KPI strip + mobile cards
    ════════════════════════════════════════════════════════════ */
 .fu-cards{display:none;flex-direction:column;gap:10px}
-.fu-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative;transition:transform .15s}
-.fu-card:active{transform:scale(.985)}
+.fu-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;position:relative;box-sizing:border-box;max-width:100%;overflow:hidden}
 .fu-card.is-unseen{box-shadow:inset 3px 0 0 var(--primary)}
 .fu-card.is-done{opacity:.6}
-.fu-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
-.fu-card-order{font-size:.92rem;font-weight:700;color:var(--primary)}
-.fu-card-client{font-size:.8rem;color:var(--text);margin-top:2px}
-.fu-card-phone{font-size:.72rem;color:var(--muted);margin-top:1px;direction:ltr;text-align:right}
-.fu-card-status{margin-bottom:8px}
-.fu-card-reason{font-size:.78rem;margin-bottom:8px}
-.fu-card-tags{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:8px}
-.fu-card-meta-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.74rem;color:var(--muted);padding-top:8px;border-top:1px solid var(--border);margin-top:2px}
-.fu-card-actions{display:flex;gap:6px;margin-top:10px}
-.fu-card-actions .btn-fu-primary{flex:1;height:38px;font-size:.8rem}
-.fu-card-actions .fu-icon-btn{width:38px;height:38px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid var(--border);background:var(--bg-alt);color:var(--muted);cursor:pointer}
-.fu-card-actions .fu-icon-btn.has-comment{color:var(--accent);border-color:var(--accent)}
+
+.fu-card-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;cursor:pointer}
+.fu-card-headline{display:flex;align-items:baseline;gap:7px;min-width:0;overflow:hidden}
+.fu-card-order{font-size:1rem;font-weight:700;color:var(--primary);flex-shrink:0}
+.fu-card-client{font-size:.86rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fu-card-elapsed{font-size:.7rem;color:var(--muted);white-space:nowrap;flex-shrink:0}
+.fu-card-phone{font-size:.74rem;color:var(--muted);margin-top:3px;direction:ltr;text-align:right;cursor:pointer;font-variant-numeric:tabular-nums}
+
+.fu-card-statusrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:12px}
+.fu-status-chip{display:inline-flex;align-items:center;gap:5px;border:none;border-radius:14px;padding:4px 9px;font-size:.72rem;font-weight:700;font-family:inherit;cursor:pointer;max-width:100%}
+.fu-status-chip .fu-status-chip-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.fu-status-chip svg{flex-shrink:0;opacity:.75}
+.fu-status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+.fu-card-tags{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:10px}
+.fu-card-meta-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.76rem;color:var(--muted);padding-top:11px;margin-top:11px;border-top:1px solid var(--border)}
+.fu-card-actions{display:flex;gap:8px;margin-top:11px}
+.fu-card-actions .btn-fu-primary{flex:1;height:40px;font-size:.83rem;min-width:0}
+.fu-card-actions .fu-icon-btn{width:40px;height:40px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid var(--border);background:var(--bg-alt);color:var(--muted);cursor:pointer}
+.fu-card-actions .fu-icon-btn.has-comment{color:var(--primary);background:var(--primary-light, #eff6ff);border-color:transparent}
 .fu-card-actions .fu-icon-btn.is-danger{color:#dc2626}
 .fu-card-actions .fu-wa-btn{background:#dcfce7;color:#16a34a;border-color:transparent}
+
+/* Popover menu for the follow-up status picker (reuses .dd-menu-portal) */
+.fu-status-menu-portal{min-width:210px}
+.fu-status-menu-portal .dd-item{gap:9px}
+.fu-status-menu-portal .dd-item.active{background:var(--primary-pale);font-weight:700}
 
 @media(max-width:768px){
   .fu-table-wrap{display:none}
@@ -2753,22 +2838,21 @@ body.dark-mode .cmp-chip .s-tab-count{background:rgba(255,255,255,.08)}
 #page-inventory .inv-mobile-list{display:none}
 #page-inventory .inv-product-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;transition:all .2s ease;cursor:pointer}
 #page-inventory .inv-product-card:active{transform:scale(.98);background:var(--primary-pale)}
-#page-inventory .inv-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px}
-#page-inventory .inv-card-code{font-size:.75rem;font-weight:700;color:var(--text);font-family:monospace;background:var(--surface2);padding:2px 6px;border-radius:4px}
-#page-inventory .inv-card-name{font-size:.88rem;font-weight:700;color:var(--text);margin:8px 0 4px 0;flex:1}
-#page-inventory .inv-status-badge{display:inline-block;padding:3px 8px;border-radius:16px;font-size:.7rem;font-weight:700}
+#page-inventory .inv-card-header{display:flex;align-items:center;gap:10px}
+#page-inventory .inv-card-info{flex:1;min-width:0;align-self:center}
+#page-inventory .inv-card-code{display:inline-block;font-size:.72rem;font-weight:700;color:var(--muted);font-family:monospace;background:var(--surface2);padding:2px 6px;border-radius:4px;margin-bottom:4px}
+#page-inventory .inv-card-name{font-size:.9rem;font-weight:700;color:var(--text);margin:0;line-height:1.3;overflow-wrap:break-word}
+#page-inventory .inv-card-price{font-size:.76rem;color:var(--muted);font-weight:600;margin-top:4px}
+#page-inventory .inv-card-price-sep{margin:0 5px;opacity:.5}
+#page-inventory .inv-status-badge{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px;border-radius:12px;font-size:.7rem;font-weight:700;white-space:nowrap}
+#page-inventory .inv-status-badge-top{display:inline-flex;align-items:center;gap:4px}
+#page-inventory .inv-status-badge-qty{font-size:.9rem;font-weight:800}
 #page-inventory .inv-status-badge.متوفر{background:#dcfce7;color:#15803d}
 #page-inventory .inv-status-badge.منخفض{background:#fff7ed;color:#c2410c}
 #page-inventory .inv-status-badge.نفد{background:#fee2e2;color:#dc2626}
 body.dark-mode #page-inventory .inv-status-badge.متوفر{background:#052e16;color:#4ade80}
 body.dark-mode #page-inventory .inv-status-badge.منخفض{background:#431407;color:#fb923c}
 body.dark-mode #page-inventory .inv-status-badge.نفد{background:#450a0a;color:#f87171}
-
-#page-inventory .inv-card-footer{display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:1px solid var(--border);padding-top:8px;margin-top:8px;font-size:.78rem}
-#page-inventory .inv-card-item{display:flex;justify-content:space-between;align-items:center}
-#page-inventory .inv-card-label{color:var(--muted);font-weight:600}
-#page-inventory .inv-card-val{color:var(--text);font-weight:700;text-align:right}
-#page-inventory .inv-card-val.accent{color:var(--accent);font-weight:800}
 
 /* Movements page enhancements */
 #page-movements .mov-filter-card{
@@ -3199,20 +3283,20 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
 .mgc-action-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 4px;border:1px solid var(--border);border-radius:8px;background:none;cursor:pointer;font-size:.72rem;color:var(--muted);font-weight:600;transition:all .15s;white-space:nowrap}
 .mgc-action-btn:hover{background:var(--primary-pale);color:var(--accent);border-color:var(--accent)}
 .mgc-action-btn.is-danger:hover{background:#fee2e2;color:#dc2626;border-color:#fecaca}
-/* TAG system */
-.tx-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:700;cursor:pointer;transition:all .12s;border:1px solid transparent}
-.tx-tag:hover{opacity:.8;transform:scale(1.05)}
+/* TAG system — minimal pill chips: light tint fill, thin border, neutral weight */
+.tx-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:.68rem;font-weight:500;cursor:pointer;transition:background-color .12s,border-color .12s;background:color-mix(in srgb,var(--tag-c,var(--muted)) 10%,var(--surface));color:var(--tag-c,var(--text));border:1px solid color-mix(in srgb,var(--tag-c,var(--muted)) 28%,transparent)}
+.tx-tag:hover{background:color-mix(in srgb,var(--tag-c,var(--muted)) 16%,var(--surface))}
 .tx-tag .tag-del{opacity:0;font-size:.7rem;line-height:1;cursor:pointer;transition:opacity .12s;margin-right:-2px}
-.tx-tag:hover .tag-del{opacity:.7}
-.tx-tag-add{display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:4px;font-size:.64rem;font-weight:300;cursor:pointer;background:none;border:1px dashed var(--border);color:var(--muted);transition:all .12s}
+.tx-tag:hover .tag-del{opacity:.6}
+.tx-tag-add{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:99px;font-size:.64rem;font-weight:400;cursor:pointer;background:none;border:1px dashed var(--border);color:var(--muted);transition:all .12s}
 .tx-tag-add:hover{border-color:var(--accent);color:var(--accent);background:var(--primary-pale)}
 .tag-dropdown{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 32px rgba(15,23,42,.14),0 2px 6px rgba(15,23,42,.05);padding:8px;width:240px;max-height:280px;overflow-y:auto;overscroll-behavior:contain;animation:mipPop .14s cubic-bezier(.22,.9,.36,1.05) both}
 .tag-dropdown::-webkit-scrollbar{width:6px}
 .tag-dropdown::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
 .tag-dropdown .tag-dd-title{font-size:.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:4px 6px 6px;border-bottom:1px solid var(--border);margin-bottom:6px;display:flex;align-items:center}
 .tag-dropdown .tag-dd-presets{display:flex;flex-wrap:wrap;gap:4px;padding:2px}
-.tag-dd-preset{display:inline-flex;align-items:center;padding:3px 8px;border-radius:99px;font-size:.68rem;font-weight:600;cursor:pointer;transition:transform .12s,opacity .12s;border:1px solid transparent;line-height:1.4;white-space:nowrap}
-.tag-dd-preset:hover{transform:scale(1.06);opacity:.88}
+.tag-dd-preset{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:.68rem;font-weight:500;cursor:pointer;transition:background-color .12s,border-color .12s;background:color-mix(in srgb,var(--dd-c,var(--muted)) 10%,var(--surface));color:var(--dd-c,var(--text));border:1px solid color-mix(in srgb,var(--dd-c,var(--muted)) 28%,transparent);line-height:1.4;white-space:nowrap}
+.tag-dd-preset:hover{background:color-mix(in srgb,var(--dd-c,var(--muted)) 16%,var(--surface))}
 .tag-dd-input-row{display:flex;gap:5px;margin-top:7px;padding-top:7px;border-top:1px solid var(--border)}
 .tag-dd-input{flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:.74rem;background:var(--surface);color:var(--text);outline:none;font-family:inherit}
 .tag-dd-input:focus{border-color:#15803d;box-shadow:0 0 0 2px rgba(21,128,61,.15)}
@@ -3287,9 +3371,10 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
     animation:mSearchSlide .2s cubic-bezier(.4,0,.2,1)
   }
   @keyframes mSearchSlide{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-  #header .header-search.m-search-open .search-wrap{width:100%}
-  #header .header-search.m-search-open input{font-size:.8rem;padding:6px 28px 6px 30px;border-radius:18px;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.18)}
-  #header .header-search.m-search-open input:focus{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28);box-shadow:0 0 0 2px rgba(255,255,255,.06)}
+  #header .header-search.m-search-open .search-wrap{width:100%;position:relative}
+  #header .header-search.m-search-open input{font-size:.8rem;padding:6px 28px 6px 30px;border-radius:18px;background:#fff;color:#1a2e22;border-color:rgba(255,255,255,.4)}
+  #header .header-search.m-search-open input::placeholder{color:#8aab96}
+  #header .header-search.m-search-open input:focus{background:#fff;border-color:#2d7a4f;box-shadow:0 0 0 2px rgba(255,255,255,.3)}
   /* Dropdown inside mobile overlay */
   #header .header-search.m-search-open .search-dropdown{position:relative;top:auto;left:auto;right:auto;margin-top:6px;border-radius:12px;max-height:calc(100svh - 120px);box-shadow:0 12px 40px rgba(0,0,0,.24);background:var(--surface)}
   /* Search result items — wrap for product meta */
@@ -3478,12 +3563,13 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
   #page-inventory .table-card{display:none!important}
   #page-inventory .inv-mobile-list{display:flex;flex-direction:column;gap:8px}
   #page-inventory .inv-product-card{border-radius:10px;padding:10px}
-  #page-inventory .inv-card-header{gap:6px}
-  #page-inventory .inv-card-code{font-size:.7rem;padding:2px 4px}
-  #page-inventory .inv-card-name{font-size:.82rem;margin:6px 0 4px 0}
-  #page-inventory .inv-card-footer{grid-template-columns:1fr 1fr;gap:6px}
-  #page-inventory .inv-card-footer .inv-card-item{font-size:.75rem}
-  #page-inventory .inv-card-label{font-size:.68rem}
+  #page-inventory .inv-card-header{gap:8px}
+  #page-inventory .product-thumb.inv-card-thumb{width:56px;height:56px;min-width:56px}
+  #page-inventory .inv-card-code{font-size:.68rem;padding:2px 4px}
+  #page-inventory .inv-card-name{font-size:.82rem;margin:0}
+  #page-inventory .inv-card-price{font-size:.7rem}
+  #page-inventory .inv-status-badge{font-size:.64rem;padding:5px 8px}
+  #page-inventory .inv-status-badge-qty{font-size:.82rem}
 
   /* ── KPI Strip → 2 columns ── */
   .kpi-strip{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
@@ -3517,6 +3603,11 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
   /* ── Forms ── */
   .form-group label{font-size:.78rem}
   input,select,textarea{font-size:16px!important}/* prevents iOS zoom */
+  /* Chip-style status <select> (follow-up orders) isn't a typed-into text field
+     (no iOS zoom risk) — exempt it so its intentionally small pill text isn't
+     blown up to 16px. The complaints equivalent is a custom button/popover
+     (not a native select), so it isn't affected by this rule at all. */
+  .fu-card-status select{font-size:.72rem!important}
   #tx-fields{gap:8px!important}
 
   /* ── Filter bars → horizontal scroll ── */
@@ -3880,10 +3971,6 @@ body.dark-mode .fx-checkbox-count{background:var(--surface2)}
 .mov-edited-mini{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;background:#fef3c7;color:#92400e;cursor:pointer;flex-shrink:0;transition:all .12s}
 .mov-edited-mini:hover{background:#fde68a}
 body.dark-mode .mov-edited-mini{background:#422006;color:#fcd34d}
-/* Recently Updated badge — dynamic priority sorting indicator */
-.mov-recent-badge{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:20px;font-size:.68rem;font-weight:700;background:#dbeafe;color:#1d4ed8;white-space:nowrap;flex-shrink:0;animation:movRecentPulse 1.8s ease-in-out 2}
-body.dark-mode .mov-recent-badge{background:#1e3a5f;color:#93c5fd}
-@keyframes movRecentPulse{0%,100%{opacity:1}50%{opacity:.55}}
 #mov-table tbody tr.mov-row-new-shopify td:first-child{border-right:3px solid #95BF47}
 body.dark-mode #mov-table tbody tr.mov-row-new-shopify td:first-child{border-right-color:#7aad35}
 #mov-mobile-list .mov-card.mov-card-new-shopify{border-right:3px solid #95BF47}
@@ -4251,6 +4338,10 @@ input[type="date"].date-filter-icon:focus{outline:none;border-color:var(--primar
   .fx-mov-tabs .fx-btn{padding:8px 10px;font-size:.76rem;justify-content:center}
   .fx-mov-tabs .fx-btn svg{width:13px;height:13px}
   .fx-mov-tabs .fx-btn-text{flex:1;text-align:center}
+  /* Pick-Up status pill group: span full row width, scroll horizontally instead of being squeezed into one grid cell */
+  .fx-mov-tabs > div{grid-column:1 / -1;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-right:none!important;padding-right:0!important;margin-right:0!important}
+  .fx-mov-tabs > div::-webkit-scrollbar{display:none}
+  .fx-mov-tabs > div .fx-btn{flex-shrink:0}
 
   /* Controls row: search full-width on top, action buttons below */
   .fx-mov-controls{gap:6px}
@@ -4514,12 +4605,12 @@ input[type="date"].date-filter-icon:focus{outline:none;border-color:var(--primar
 
 /* Desktop folder list rows (used above the mobile breakpoint) */
 .csp-folder-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;cursor:pointer;font-size:.86rem;color:var(--text);transition:background .15s;border:none;background:none;width:100%;text-align:right;font-family:inherit}
-.csp-folder-card:hover{background:var(--bg-alt)}
+.csp-folder-card:hover{background:var(--surface2)}
 .csp-folder-card.active{background:var(--primary-pale,#ede9fe);color:var(--primary);font-weight:700}
 .csp-folder-card-icon{flex-shrink:0;display:inline-flex;color:var(--primary)}
 .csp-folder-card.active .csp-folder-card-icon{color:var(--primary)}
 .csp-folder-card-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.csp-folder-card-count{margin-right:auto;font-size:.72rem;color:var(--muted);background:var(--bg-alt);border-radius:99px;padding:2px 8px;flex-shrink:0}
+.csp-folder-card-count{margin-right:auto;font-size:.72rem;color:var(--muted);background:var(--surface2);border-radius:99px;padding:2px 8px;flex-shrink:0}
 .csp-folder-card.active .csp-folder-card-count{background:rgba(255,255,255,.6)}
 
 .csp-main{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -4528,8 +4619,8 @@ input[type="date"].date-filter-icon:focus{outline:none;border-color:var(--primar
 .csp-search-suggest{position:absolute;top:calc(100% + 6px);right:0;left:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:40;max-height:340px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px}
 .csp-search-suggest-label{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:8px 10px 4px}
 .csp-search-suggest-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:9px;cursor:pointer;min-height:44px}
-.csp-search-suggest-item:hover{background:var(--bg-alt)}
-.csp-search-suggest-rank{width:20px;height:20px;border-radius:50%;background:var(--bg-alt);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;flex-shrink:0}
+.csp-search-suggest-item:hover{background:var(--surface2)}
+.csp-search-suggest-rank{width:20px;height:20px;border-radius:50%;background:var(--surface2);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;flex-shrink:0}
 .csp-search-suggest-item:nth-child(-n+3) .csp-search-suggest-rank{background:var(--primary);color:#fff}
 .csp-search-suggest-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.84rem;color:var(--text)}
 .csp-search-suggest-text mark{background:var(--primary-pale,#ede9fe);color:var(--primary);border-radius:3px;padding:0 1px}
@@ -4560,11 +4651,16 @@ input[type="date"].date-filter-icon:focus{outline:none;border-color:var(--primar
 .csp-card-type.policy{background:#dbeafe;color:#2563eb}
 .csp-card-type.procedure{background:#fef3c7;color:#b45309}
 .csp-card-type.warning{background:#fee2e2;color:#dc2626}
-.csp-card-tag{display:inline-flex;align-items:center;font-size:.68rem;font-weight:600;color:var(--muted);background:var(--bg-alt);border:1px solid var(--border);border-radius:5px;padding:4px 10px}
-.csp-card-title-row{display:flex;align-items:center;gap:8px}
-.csp-card-title{font-size:.94rem;font-weight:700;color:var(--text);line-height:1.4;padding-bottom:4px;border-bottom:2px solid var(--primary);width:fit-content}
+.csp-card-tag{display:inline-flex;align-items:center;font-size:.68rem;font-weight:600;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:4px 10px}
+.csp-card-title-row{display:flex;align-items:center;gap:8px;min-width:0}
+.csp-card-title{font-size:.94rem;font-weight:700;color:var(--text);line-height:1.4;padding-bottom:4px;border-bottom:2px solid var(--primary);min-width:0;max-width:100%;white-space:normal;word-break:break-word}
 .csp-card-toggle-icon{margin-right:auto;flex-shrink:0;display:flex;color:var(--muted);transition:transform .25s}
 .csp-card-open .csp-card-toggle-icon{transform:rotate(180deg);color:var(--primary)}
+.csp-card-quick-edit{margin-inline-start:auto;background:var(--surface);border:1px solid var(--border);min-width:26px;min-height:26px;padding:4px;flex-shrink:0}
+
+/* Collapsed-state response snippet — mobile only (≤768px); desktop cards open
+   instantly on click so the extra preview line would be redundant there. */
+.csp-card-preview{display:none}
 
 /* Body is collapsed (0-height, hidden) until .csp-card-open is applied.
    .csp-card-body is the clipping grid container; .csp-card-body-inner holds the
@@ -4581,14 +4677,14 @@ input[type="date"].date-filter-icon:focus{outline:none;border-color:var(--primar
 .csp-card-response-block{padding:2px 16px 12px;display:flex;flex-direction:column;gap:6px;min-height:0}
 .csp-card-response-label{display:flex;align-items:center;gap:5px;font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 /* Long/heavy responses stay contained — internal scroll instead of stretching the card, on both desktop and mobile */
-.csp-card-response{background:var(--bg-alt);border-radius:8px;font-size:.85rem;color:var(--text);line-height:1.65;white-space:pre-wrap;padding:11px 12px;max-height:min(45vh,220px);overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:inherit;overscroll-behavior:contain}
+.csp-card-response{background:var(--surface2);border-radius:8px;font-size:.85rem;color:var(--text);line-height:1.65;white-space:pre-wrap;padding:11px 12px;max-height:min(45vh,220px);overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:inherit;overscroll-behavior:contain}
 
-.csp-card-internal{margin:0 16px 12px;background:var(--bg-alt);border-right:3px solid var(--muted);border-radius:6px;padding:9px 11px;font-size:.75rem;color:var(--muted);line-height:1.6;max-height:120px;overflow-y:auto}
+.csp-card-internal{margin:0 16px 12px;background:var(--surface2);border-right:3px solid var(--muted);border-radius:6px;padding:9px 11px;font-size:.75rem;color:var(--muted);line-height:1.6;max-height:120px;overflow-y:auto}
 
 .csp-card-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding:11px 16px;border-top:1px solid var(--border)}
 .csp-card-meta-item{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .csp-card-meta-item svg{flex-shrink:0;opacity:.8}
-.csp-copy-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:.82rem;font-weight:600;cursor:pointer;transition:opacity .15s;min-height:40px;flex-shrink:0}
+.csp-copy-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:.82rem;font-weight:600;cursor:pointer;transition:opacity .15s;min-height:40px;flex-shrink:0;white-space:nowrap}
 .csp-copy-btn:hover{opacity:.9}
 .csp-copy-btn:active{transform:scale(.98)}
 
@@ -4608,12 +4704,12 @@ input[type="date"].date-filter-icon:focus{outline:none;border-color:var(--primar
 .csp-manage-section-header{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.82rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
 .csp-manage-folders,.csp-manage-cards{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px}
 .csp-manage-folder-row{display:flex;align-items:center;gap:8px;padding:10px;border-radius:9px;font-size:.85rem;cursor:pointer;min-height:44px}
-.csp-manage-folder-row:hover{background:var(--bg-alt)}
+.csp-manage-folder-row:hover{background:var(--surface2)}
 .csp-manage-folder-row.active{background:var(--primary-pale,#ede9fe);color:var(--primary);font-weight:700}
 .csp-manage-folder-icon{display:inline-flex;color:var(--primary);flex-shrink:0}
 .csp-manage-folder-actions{margin-right:auto;display:flex;gap:4px}
 .csp-icon-btn{background:none;border:none;cursor:pointer;color:var(--muted);padding:6px;display:flex;border-radius:6px;min-width:32px;min-height:32px;align-items:center;justify-content:center}
-.csp-icon-btn:hover{background:var(--bg-alt);color:var(--text)}
+.csp-icon-btn:hover{background:var(--surface2);color:var(--text)}
 .csp-icon-btn.danger:hover{color:var(--red)}
 .csp-manage-card-row{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;min-height:44px}
 .csp-manage-card-row-title{flex:1;font-size:.86rem;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -4621,29 +4717,29 @@ input[type="date"].date-filter-icon:focus{outline:none;border-color:var(--primar
 
 .csp-analytics-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px}
 .csp-analytics-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
-.csp-analytics-stat{background:var(--bg-alt);border-radius:10px;padding:10px 8px;text-align:center;min-width:0}
+.csp-analytics-stat{background:var(--surface2);border-radius:10px;padding:10px 8px;text-align:center;min-width:0}
 .csp-analytics-stat-val{font-size:1.1rem;font-weight:800;color:var(--primary);line-height:1.3}
 .csp-analytics-stat-label{font-size:.68rem;color:var(--muted);line-height:1.3;margin-top:2px}
 .csp-rank-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
 .csp-rank-row:last-child{border-bottom:none}
 .csp-rank-num{width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0}
-.csp-rank-bar-wrap{flex:1;height:8px;background:var(--bg-alt);border-radius:99px;overflow:hidden}
+.csp-rank-bar-wrap{flex:1;height:8px;background:var(--surface2);border-radius:99px;overflow:hidden}
 .csp-rank-bar{height:100%;background:var(--primary);border-radius:99px}
 .csp-rank-title{font-size:.84rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .csp-rank-count{font-size:.78rem;font-weight:700;color:var(--muted);flex-shrink:0}
 
 .csp-ie-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:6px}
-.csp-ie-card{background:var(--bg-alt);border:1px solid var(--border);border-radius:12px;padding:14px}
+.csp-ie-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px}
 .csp-ie-card-title{font-weight:700;font-size:.9rem;margin-bottom:4px}
 .csp-ie-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .csp-ie-upload-btn{cursor:pointer;display:inline-flex;align-items:center}
 .csp-import-history-row{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-size:.8rem;flex-wrap:wrap}
 .csp-import-history-meta{color:var(--muted);font-size:.72rem}
-.csp-import-badge{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--bg-alt)}
+.csp-import-badge{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--surface2)}
 .csp-import-badge.err{background:rgba(239,68,68,.12);color:var(--red)}
 
 .csp-preview-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
-.csp-preview-chip{background:var(--bg-alt);border-radius:10px;padding:10px 6px;text-align:center}
+.csp-preview-chip{background:var(--surface2);border-radius:10px;padding:10px 6px;text-align:center}
 .csp-preview-chip-val{font-size:1rem;font-weight:800;color:var(--primary)}
 .csp-preview-chip.err .csp-preview-chip-val{color:var(--red)}
 .csp-preview-chip-label{font-size:.66rem;color:var(--muted);margin-top:2px}
@@ -4664,40 +4760,100 @@ input[type="date"].date-filter-icon:focus{outline:none;border-color:var(--primar
   .csp-ie-grid{grid-template-columns:1fr}
   .csp-preview-summary{grid-template-columns:repeat(2,1fr)}
 }
+/* ─── Mobile (≤768px): rebuilt as its own layout, not a shrunk desktop grid ───
+   Priority order for staff scanning on a phone: category → search → response → copy.
+   Everything below is additive inside the .page#page-csp scope only. */
 @media(max-width:768px){
-  .csp-page-header{gap:10px}
-  .csp-layout{grid-template-columns:1fr;gap:12px}
+  .csp-page-header{flex-direction:column;align-items:stretch;gap:10px;margin-bottom:12px}
+  .csp-page-header h2.page-title{font-size:1.02rem}
+  .csp-page-header .page-subtitle{font-size:.74rem}
+  .csp-header-actions{width:100%}
+  .csp-tab-btn{flex:1;padding:11px 10px;min-height:44px}
 
-  /* Folder nav becomes a horizontal scroll-snap row of touch-friendly cards */
-  .csp-folder-nav-wrap{display:block;position:relative}
+  .csp-layout{display:block}
+  .csp-main{gap:12px}
+
+  /* ── Category rail: full-bleed horizontal scroller, no clipping ──
+     Cards are sized to their own content (auto width) instead of a fixed
+     88px box, so short labels like "المدفوعات" don't sit in oversized tiles
+     and long ones never truncate to a single clipped word. */
+  .csp-folder-nav-wrap{
+    display:block;position:relative;
+    margin:0 -12px;padding:0;
+  }
   .csp-folder-nav{
-    position:static;flex-direction:row;flex-wrap:nowrap;gap:10px;
-    overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;
-    padding:12px 28px 14px 12px;background:transparent;border:none;
+    position:static;flex-direction:row;flex-wrap:nowrap;gap:8px;
+    overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;scroll-padding-inline:12px;
+    padding:2px 12px 6px;background:transparent;border:none;border-radius:0;
+    width:100%;min-width:0;box-sizing:border-box;
   }
   .csp-folder-nav::-webkit-scrollbar{display:none}
+  .csp-folder-nav-wrap::before,
   .csp-folder-nav-wrap::after{
-    content:'';position:absolute;top:0;bottom:14px;left:0;width:34px;
-    background:linear-gradient(to left,transparent,var(--bg) 85%);
-    pointer-events:none;display:block;
+    content:'';position:absolute;top:0;bottom:6px;width:22px;z-index:1;pointer-events:none;transition:opacity .2s;
   }
-  .csp-folder-nav-wrap.csp-scrolled-end::after{display:none}
+  .csp-folder-nav-wrap::after{left:0;background:linear-gradient(to left,transparent,var(--bg) 85%)}
+  .csp-folder-nav-wrap::before{right:0;background:linear-gradient(to right,transparent,var(--bg) 85%);opacity:0}
+  .csp-folder-nav-wrap.csp-scrolled-end::after{opacity:0}
   .csp-folder-card{
-    flex:0 0 auto;width:112px;flex-direction:column;text-align:center;gap:8px;
-    padding:14px 10px;border-radius:16px;background:var(--surface);
+    flex:0 0 auto;min-width:76px;max-width:112px;flex-direction:column;text-align:center;gap:7px;
+    padding:12px 10px 10px;border-radius:16px;background:var(--surface);
     border:1.5px solid var(--border);scroll-snap-align:start;
+    -webkit-tap-highlight-color:transparent;
   }
-  .csp-folder-card.active{border-color:var(--primary)}
-  .csp-folder-card-icon{width:40px;height:40px;border-radius:12px;background:var(--bg-alt);align-items:center;justify-content:center;display:flex}
+  .csp-folder-card:active{transform:scale(.96);transition:transform .1s}
+  .csp-folder-card.active{border-color:var(--primary);background:var(--primary-pale)}
+  .csp-folder-card-icon{width:38px;height:38px;border-radius:11px;background:var(--surface2);align-items:center;justify-content:center;display:flex;margin:0 auto}
   .csp-folder-card.active .csp-folder-card-icon{background:var(--primary);color:#fff}
-  .csp-folder-card-name{white-space:normal;font-size:.78rem;line-height:1.25;max-width:100%}
-  .csp-folder-card-count{margin-right:0;font-size:.68rem}
+  .csp-folder-card-name{white-space:normal;font-size:.7rem;font-weight:600;line-height:1.25;max-width:100%;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .csp-folder-card-count{margin-right:0;font-size:.62rem;padding:1px 7px;background:var(--surface2)}
+  .csp-folder-card.active .csp-folder-card-count{background:rgba(255,255,255,.55)}
 
-  .csp-card-grid{grid-template-columns:1fr;gap:14px;padding:0 2px}
-  .csp-card-response{max-height:38vh}
+  /* ── Search: sticky just below the fixed app header, always reachable while
+     scrolling cards. #main scrolls with the window (not its own container),
+     so "top" must clear var(--header-h) or the fixed header covers it. ── */
+  .csp-search-wrap{position:sticky;top:var(--header-h);z-index:20;background:var(--bg);padding:8px 0;margin:0 0 -4px}
+  .csp-search-input{padding:13px 42px 13px 14px;font-size:.88rem;border-radius:12px;box-shadow:var(--shadow-xs)}
+  .csp-search-suggest{border-radius:14px;box-shadow:var(--shadow-lg)}
+  .csp-search-suggest-item{padding:11px 10px}
 
-  .csp-header-actions{width:100%}
-  .csp-tab-btn{flex:1}
+  /* ── Article cards: full-width, response readable without opening ── */
+  .csp-card-grid{grid-template-columns:1fr;gap:10px;padding:0}
+  .csp-card{border-radius:14px}
+  .csp-card-head{padding:13px 14px 11px;gap:7px}
+  .csp-card-badges{gap:5px}
+  .csp-card-type{padding:4px 9px;font-size:.66rem}
+  .csp-card-tag{padding:3px 9px;font-size:.66rem}
+  .csp-card-title{font-size:.9rem;line-height:1.35;padding-bottom:3px}
+  .csp-card-toggle-icon{width:26px;height:26px;border-radius:8px;background:var(--surface2);align-items:center;justify-content:center;display:flex;transition:transform .25s,background .2s}
+  .csp-card-open .csp-card-toggle-icon{background:var(--primary-pale);color:var(--primary)}
+
+  /* Collapsed state: show a 2-line preview of the ready-made response right on
+     the closed card, so staff can scan without a single tap — only the deeper
+     scenario/customer-question context stays hidden until expanded. */
+  .csp-card-preview{
+    display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    margin:0 14px 12px;padding:9px 11px;background:var(--surface2);border-radius:9px;
+    font-size:.78rem;line-height:1.55;color:var(--muted);
+  }
+  .csp-card-open .csp-card-preview{display:none}
+
+  .csp-card-context{padding:2px 14px 11px;gap:9px}
+  .csp-card-context-text{font-size:.8rem}
+  .csp-card-response-block{padding:2px 14px 12px}
+  .csp-card-response{font-size:.84rem;max-height:34vh;padding:12px 12px}
+  .csp-card-internal{margin:0 14px 12px}
+
+  /* Copy stays full-width and pinned to the card's own bottom edge (not
+     viewport-fixed) so multiple open cards each keep a reachable action
+     without the button jumping between them mid-scroll. */
+  .csp-card-footer{
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));
+    flex-wrap:wrap;gap:8px;position:sticky;bottom:0;background:var(--surface);
+  }
+  .csp-card-meta-item{font-size:.7rem}
+  .csp-copy-btn{flex:1 1 100%;order:1;justify-content:center;min-height:46px;font-size:.85rem;border-radius:10px}
+  .csp-copy-btn:active{transform:scale(.97)}
 
   .csp-icon-picker{grid-template-columns:repeat(5,1fr)}
 
@@ -8276,15 +8432,17 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 ═══════════════════════════════════════ -->
 <div id="cmp-complaints-section" style="display:none;padding-top:20px">
 
-  <!-- Stat cards -->
-  <div class="cmp-stats-grid" id="cmp-kpi"></div>
-
-  <!-- Mobile filter trigger (opens bottom sheet) -->
-  <button class="cmp-filter-trigger" id="cmp-filter-trigger-btn" onclick="openCmpFilterSheet()">
-    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
-    فلترة
-    <span class="cmp-filter-badge" id="cmp-filter-badge" style="display:none">0</span>
-  </button>
+  <!-- Mobile-only compact header: search + filter trigger, sits above chips/cards -->
+  <div class="cmp-mobile-bar">
+    <div class="cmp-mobile-search">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="cmp-search-mobile" placeholder="بحث برقم الشكوى أو اسم العميل..." oninput="cmpSyncSearch(this.value)">
+    </div>
+    <button class="cmp-filter-trigger" id="cmp-filter-trigger-btn" onclick="openCmpFilterSheet()">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
+      <span class="cmp-filter-badge" id="cmp-filter-badge" style="display:none">0</span>
+    </button>
+  </div>
 
   <!-- Quick filter chips (mobile) -->
   <div class="cmp-chip-row" id="cmp-chip-row">
@@ -8294,6 +8452,9 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <button class="cmp-chip" data-chip="مرفوض" onclick="setCmpChip('مرفوض',this)">مرفوضة <span class="s-tab-count" id="cmp-chip-count-rejected">0</span></button>
     <button class="cmp-chip" data-chip="urgent" onclick="setCmpChip('urgent',this)">عاجلة 🔴 <span class="s-tab-count" id="cmp-chip-count-urgent">0</span></button>
   </div>
+
+  <!-- Stat cards -->
+  <div class="cmp-stats-grid" id="cmp-kpi"></div>
 
   <!-- Filters -->
   <div class="cmp-filter-bar">
@@ -8410,8 +8571,18 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <button onclick="closeFuModal()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted)">×</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px">
-      <!-- Live search order -->
+      <!-- Order mode toggle -->
       <div>
+        <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">نوع الطلب</label>
+        <div style="display:flex;gap:4px;background:var(--bg-alt);border-radius:10px;padding:4px">
+          <button type="button" id="fu-mode-btn-registered" onclick="_fuSetOrderMode('registered')"
+            style="flex:1;border:none;border-radius:8px;padding:9px 10px;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .18s">رقم مسجل بالنظام</button>
+          <button type="button" id="fu-mode-btn-unregistered" onclick="_fuSetOrderMode('unregistered')"
+            style="flex:1;border:none;border-radius:8px;padding:9px 10px;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .18s">رقم غير مسجل</button>
+        </div>
+      </div>
+      <!-- Live search order (registered) -->
+      <div id="fu-order-registered-wrap">
         <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px">رقم الطلب (مبيعات) <span style="color:var(--red)">*</span></label>
         <div style="position:relative">
           <input type="text" id="fu-order-search" placeholder="ابحث برقم الطلب أو اسم العميل..." autocomplete="off"
@@ -8419,9 +8590,17 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
             oninput="fuOrderSearch(this.value)">
           <div id="fu-order-results" style="display:none;position:absolute;top:38px;right:0;left:0;background:var(--bg);border:1px solid var(--border);border-radius:8px;max-height:200px;overflow-y:auto;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
         </div>
-        <input type="hidden" id="fu-modal-order-ref">
-        <input type="hidden" id="fu-modal-order-txid">
       </div>
+      <!-- Manual order number (unregistered) -->
+      <div id="fu-order-unregistered-wrap" style="display:none">
+        <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px">رقم الطلب (غير مسجل بالنظام) <span style="color:var(--red)">*</span></label>
+        <input type="text" id="fu-order-manual" placeholder="اكتب رقم الطلب..." autocomplete="off"
+          oninput="_fuCheckManualOrderExists(this.value)"
+          style="width:100%;height:36px;font-size:.85rem;padding:2px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px">
+        <div id="fu-order-manual-warning" style="display:none;margin-top:6px;font-size:.78rem;color:#c2410c;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:6px 10px">⚠️ هذا الرقم مسجل بالفعل في النظام كطلب مبيعات — تأكد من اختيارك "رقم مسجل بالنظام" بدلاً من ذلك.</div>
+      </div>
+      <input type="hidden" id="fu-modal-order-ref">
+      <input type="hidden" id="fu-modal-order-txid">
       <!-- Selected order info -->
       <div id="fu-modal-client-row" style="display:none;background:var(--bg-alt);border-radius:8px;padding:8px 12px;font-size:.82rem">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -8442,6 +8621,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px">سبب المتابعة</label>
         <select id="fu-modal-reason" onchange="_fuOnReasonChange()" style="width:100%;height:34px;font-size:.85rem;padding:2px 10px;border:1px solid var(--border);border-radius:8px">
           <option value="">اختر السبب...</option>
+          <option value="عملية تأكيد الطلب">عملية تأكيد الطلب</option>
           <option value="رفض الاستلام">رفض الاستلام</option>
           <option value="أجل الاستلام">أجل الاستلام</option>
           <option value="طلب فتح الشحنة">طلب فتح الشحنة</option>
@@ -8451,7 +8631,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       </div>
       <div>
         <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px">الحالة</label>
-        <select id="fu-modal-status" onchange="_fuOnStatusChange()" style="width:100%;height:34px;font-size:.85rem;padding:2px 10px;border:1px solid var(--border);border-radius:8px">
+        <select id="fu-modal-status" style="width:100%;height:34px;font-size:.85rem;padding:2px 10px;border:1px solid var(--border);border-radius:8px">
           <option value="في انتظار المتابعة">في انتظار المتابعة</option>
           <option value="سيتم ارتجاع الشحنة">سيتم ارتجاع الشحنة</option>
           <option value="تم حل المشكلة">تم حل المشكلة</option>
@@ -9614,26 +9794,26 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <span id="shopify-last-refresh" style="font-size:.72rem;color:var(--text-muted)"></span>
     </div>
   </div>
-  <!-- KPI Stats Cards -->
+  <!-- KPI Stats Cards (react to the active date filter) -->
   <div id="shopify-kpi-row">
     <div class="shopify-kpi-card">
       <div style="background:linear-gradient(135deg,#95BF47,#5E8E3E);display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       </div>
       <div>
-        <div style="font-size:.68rem;color:var(--text-muted);margin-bottom:1px">اليوم</div>
-        <div id="shopify-kpi-today" style="font-size:1.25rem;font-weight:700;line-height:1;color:var(--text)">—</div>
-        <div id="shopify-kpi-today-label" style="font-size:.62rem;color:var(--text-muted);margin-top:2px">—</div>
+        <div id="shopify-kpi-period-label" style="font-size:.68rem;color:var(--text-muted);margin-bottom:1px">اليوم</div>
+        <div id="shopify-kpi-valid" style="font-size:1.25rem;font-weight:700;line-height:1;color:var(--text)">—</div>
+        <div style="font-size:.62rem;color:var(--text-muted);margin-top:2px">أوردر صحيح</div>
       </div>
     </div>
     <div class="shopify-kpi-card">
-      <div style="background:linear-gradient(135deg,#6366f1,#4f46e5);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 9h18v4H3z"/><path d="M3 15h18v4H3z"/></svg>
+      <div style="background:linear-gradient(135deg,#ef4444,#dc2626);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </div>
       <div>
-        <div style="font-size:.68rem;color:var(--text-muted);margin-bottom:1px">الأسبوع</div>
-        <div id="shopify-kpi-week" style="font-size:1.25rem;font-weight:700;line-height:1;color:var(--text)">—</div>
-        <div id="shopify-kpi-week-label" style="font-size:.62rem;color:var(--text-muted);margin-top:2px">—</div>
+        <div style="font-size:.68rem;color:var(--text-muted);margin-bottom:1px">ملغي</div>
+        <div id="shopify-kpi-cancelled" style="font-size:1.25rem;font-weight:700;line-height:1;color:var(--text)">—</div>
+        <div style="font-size:.62rem;color:var(--text-muted);margin-top:2px">لنفس الفترة</div>
       </div>
     </div>
     <div class="shopify-kpi-card">
@@ -9641,9 +9821,9 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       </div>
       <div>
-        <div style="font-size:.68rem;color:var(--text-muted);margin-bottom:1px">الشهر</div>
-        <div id="shopify-kpi-month" style="font-size:1.25rem;font-weight:700;line-height:1;color:var(--text)">—</div>
-        <div id="shopify-kpi-month-label" style="font-size:.62rem;color:var(--text-muted);margin-top:2px">—</div>
+        <div style="font-size:.68rem;color:var(--text-muted);margin-bottom:1px">الإجمالي</div>
+        <div id="shopify-kpi-total" style="font-size:1.25rem;font-weight:700;line-height:1;color:var(--text)">—</div>
+        <div style="font-size:.62rem;color:var(--text-muted);margin-top:2px">الأوردرات الصحيحة فقط</div>
       </div>
     </div>
   </div>
@@ -9654,6 +9834,15 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input id="shopify-search" type="text" placeholder="بحث برقم الأوردر..." oninput="renderShopifyOrders()" style="width:100%;padding:10px 38px 10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-size:.9rem;box-sizing:border-box;direction:ltr;transition:border-color .2s;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
       </div>
+    </div>
+    <div id="shopify-date-filter-bar">
+      <button type="button" class="btn btn-sm sp-date-quick-btn" data-range="today" onclick="_setShopifyDateQuickRange('today',this)">اليوم</button>
+      <button type="button" class="btn btn-sm sp-date-quick-btn" data-range="yesterday" onclick="_setShopifyDateQuickRange('yesterday',this)">أمس</button>
+      <span class="sp-date-sep"></span>
+      <input type="date" id="shopify-date-from" class="sp-date-input" onchange="_applyShopifyCustomRange()">
+      <span class="sp-date-arrow">إلى</span>
+      <input type="date" id="shopify-date-to" class="sp-date-input" onchange="_applyShopifyCustomRange()">
+      <button type="button" class="btn btn-sm" id="shopify-date-clear-btn" onclick="_clearShopifyDateRange()" style="display:none">مسح التاريخ ✕</button>
     </div>
     <div id="shopify-filter-btns">
       <button class="btn btn-sm sp-status-filter-btn" data-filter="" onclick="switchShopifyStatusFilter('',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:600">
@@ -9997,6 +10186,14 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 <!-- Tab layout -->
 <div class="stg-layout">
 
+  <!-- Mobile dropdown trigger + menu (hidden on desktop) -->
+  <div class="stg-mobile-nav-wrap">
+  <button type="button" class="stg-mobile-trigger" id="stg-mobile-trigger" onclick="stgToggleMobileMenu()" aria-haspopup="true" aria-expanded="false">
+    <span class="stg-mobile-trigger-icon" id="stg-mobile-trigger-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></span>
+    <span class="stg-mobile-trigger-label" id="stg-mobile-trigger-label" data-i18n="stgTabGeneral">عام</span>
+    <svg class="stg-mobile-trigger-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+
   <!-- ══ SIDEBAR TABS ══ -->
   <nav class="stg-sidebar" id="stg-sidebar" role="tablist" aria-label="Settings tabs">
 
@@ -10038,6 +10235,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     </button>
 
   </nav>
+  </div><!-- /stg-mobile-nav-wrap -->
 
   <!-- ══ PANELS ══ -->
   <div class="stg-panels" id="stg-panels">
@@ -18697,13 +18895,7 @@ function markMovRecentlyUpdated(txId) {
   if (!txId) return;
   _movRecentlyUpdatedIds.set(String(txId), Date.now());
 }
-function isMovRecentlyUpdated(txId) {
-  const ts = _movRecentlyUpdatedIds.get(String(txId));
-  if (!ts) return false;
-  if (Date.now() - ts > MOV_RECENT_WINDOW_MS) { _movRecentlyUpdatedIds.delete(String(txId)); return false; }
-  return true;
-}
-// Periodically re-render so "Recently Updated" badges/priority order expire without a manual refresh
+// Periodically re-render so priority order expires without a manual refresh once the recent-edit window elapses
 setInterval(() => {
   if (!_movRecentlyUpdatedIds.size) return;
   const now = Date.now();
@@ -18715,36 +18907,47 @@ setInterval(() => {
 }, 60 * 1000);
 
 /* Priority scoring engine — higher score = surfaced first.
-   Base score reflects logistics urgency (active shipment stages outrank finished ones),
-   plus bonuses for recency and items requiring the user's attention. */
+   A transaction that was just edited always floats to the very top (tie-broken by
+   most-recent-edit-first), regardless of its status. Below that, active logistics
+   stages (Created → In Transit → Out for Delivery) outrank finished/cancelled ones. */
 function movPriorityScore(tx) {
   if (!tx) return 0;
-  const isCompleted = isStatusCompleted(tx.payStatus) && !tx.cancelled;
+
+  // Recently-edited transactions always win, most-recent-edit first — this tier (1e12+)
+  // is far above any status-based score below, so an edit always jumps the row to the top.
+  const recentTs = _movRecentlyUpdatedIds.get(String(tx._id));
+  if (recentTs && (Date.now() - recentTs) <= MOV_RECENT_WINDOW_MS) {
+    return 1e12 + recentTs;
+  }
+
   const isCancelled = tx.cancelled || isStatusCancelled(tx.payStatus);
   if (isCancelled) return 0;
 
   const bosta = tx.bostaStatus || '';
   const pickup = tx.pickupStatus || 'Pending';
+  // Still in an active shipping stage? Stays near the top regardless of payment status —
+  // a paid-in-full sale whose shipment was just Created must not sink to the bottom.
+  const isShippingActive = ['CREATED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(bosta)
+    || ['Ready', 'Pending', 'Preparing', 'Shipped'].includes(pickup);
+
+  const isCompleted = isStatusCompleted(tx.payStatus) && !isShippingActive;
+  if (isCompleted) return 0; // completed/delivered/closed sink to the bottom
 
   let base = 0;
   if (bosta === 'CREATED' || pickup === 'Ready' || pickup === 'Pending') base = 100;
   else if (bosta === 'IN_TRANSIT') base = 90;
   else if (bosta === 'OUT_FOR_DELIVERY') base = 80;
   else if (bosta === 'PICKED_UP' || pickup === 'Preparing' || pickup === 'Shipped') base = 60;
-  else if (bosta === 'DELIVERED' || pickup === 'Delivered' || isCompleted) base = 0;
+  else if (bosta === 'DELIVERED' || pickup === 'Delivered') base = 0;
   else if (isStatusPending(tx.payStatus)) base = 40;
   else base = 20;
 
   let bonus = 0;
-  if (isMovRecentlyUpdated(tx._id)) bonus += 20; // recently modified / new status update
-
   const requiresAction = isStatusPending(tx.payStatus)
     || (tx.cancelRequest && tx.cancelRequest.status === 'معلق')
     || isExchangeSalePendingCollect(tx)
     || (bosta === 'DELIVERED' && (tx.remaining || 0) > 0 && tx.codCollectionStatus !== 'Collected');
   if (requiresAction) bonus += 30;
-
-  if (isCompleted) return 0; // completed/delivered/closed sink to the bottom regardless of bonuses
 
   return base + bonus;
 }
@@ -24409,29 +24612,15 @@ function renderInventory() {
       return `<div class="inv-product-card" onclick="openInventoryDetail('${esc(key)}')">
         <div class="inv-card-header">
           ${productThumbHtml(r.imageUrl, r.name, 'inv-card-thumb')}
-          <div style="flex:1;min-width:0">
+          <div class="inv-card-info">
             <div class="inv-card-code">${esc(r.code || '-')}</div>
             <div class="inv-card-name">${esc(r.name)}</div>
+            ${isAdminUser ? `<div class="inv-card-price">${fmtJ(r.sellPrice)}<span class="inv-card-price-sep">•</span>القيمة ${fmtJ((r.current || 0) * (r.sellPrice || 0))}</div>` : ''}
           </div>
-          <span class="inv-status-badge ${status}" style="flex-shrink:0">${status}</span>
-        </div>
-        <div class="inv-card-footer">
-          ${isAdminUser ? `<div class="inv-card-item">
-            <span class="inv-card-label">السعر</span>
-            <span class="inv-card-val accent">${fmtJ(r.sellPrice)}</span>
-          </div>` : ''}
-          <div class="inv-card-item">
-            <span class="inv-card-label">الكمية</span>
-            <span class="inv-card-val">${fmtN(r.current)}</span>
-          </div>
-          <div class="inv-card-item">
-            <span class="inv-card-label">الحد الأدنى</span>
-            <span class="inv-card-val">${fmtN(r.minStock || 0)}</span>
-          </div>
-          ${isAdminUser ? `<div class="inv-card-item">
-            <span class="inv-card-label">القيمة</span>
-            <span class="inv-card-val">${fmtJ((r.current || 0) * (r.sellPrice || 0))}</span>
-          </div>` : ''}
+          <span class="inv-status-badge ${status}" style="flex-shrink:0">
+            <span class="inv-status-badge-top">${statusEmoji}${status}</span>
+            <span class="inv-status-badge-qty">${fmtN(r.current)}</span>
+          </span>
         </div>
       </div>`;
     }).join('') : `<div style="text-align:center;padding:40px 20px;color:var(--muted)"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" style="margin-bottom:12px;opacity:.4"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg><div style="font-size:.95rem;font-weight:600">لا توجد منتجات</div></div>`;
@@ -24724,11 +24913,10 @@ function renderMovMobileCard(tx) {
     <div class="mov-card-clientline">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <a href="#" onclick="event.preventDefault();showInvoiceDetail('${esc(tx._id)}')" class="mov-client-name">${tx.client ? esc(tx.client) : '<span style="color:var(--muted)">بدون اسم</span>'}</a>
-        ${isMovRecentlyUpdated(tx._id) ? '<span class="mov-recent-badge" title="تم تحديثه مؤخراً">🔄 محدَّث حديثاً</span>' : ''}
       </div>
       ${tx.ref ? `<span class="mov-card-ref">#${esc(tx.ref)}</span>` : ''}
     </div>
-    <div class="mov-card-statusrow">${statusHtml}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : ''}${tx.bostaOrderId ? `<span onclick="event.stopPropagation();syncBostaStatus('${esc(tx._id)}')" title="Bosta — اضغط لتحديث الحالة" style="cursor:pointer">${_bostaStatusBadge(tx)}</span>` : ''}${tx.shopifyOrderId ? `<a href="https://admin.shopify.com/store/soulia-2/orders/${esc(tx.shopifyOrderId)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="mov-card-emp mov-emp-initials" title="فتح أوردر Shopify" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">${_SHOPIFY_LOGO_SVG}</a>` : `<span class="mov-card-emp mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span>`}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div>
+    <div class="mov-card-statusrow">${statusHtml}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}${tx.type==='مبيعات' ? _puStatusBadge(((tx.bostaOrderId || tx.deliverySource === 'MANUAL') && !['VALIDATION_ERROR','DELETED',''].includes(tx.bostaStatus||'')) ? 'Shipped' : (tx.pickupStatus||'Pending')) : ''}${tx.bostaOrderId ? `<span onclick="event.stopPropagation();syncBostaStatus('${esc(tx._id)}')" title="Bosta — اضغط لتحديث الحالة" style="cursor:pointer;display:inline-flex;align-items:center;gap:3px"><span class="bosta-icon" style="width:11px;height:11px"></span>${_bostaStatusBadge(tx)}</span>` : ''}${tx.shopifyOrderId ? `<a href="https://admin.shopify.com/store/soulia-2/orders/${esc(tx.shopifyOrderId)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="mov-card-emp mov-emp-initials" title="فتح أوردر Shopify" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">${_SHOPIFY_LOGO_SVG}</a>` : `<span class="mov-card-emp mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span>`}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div>
     <div class="mov-card-grid">
       <div class="mov-item"><span class="mov-label">الإجمالي</span><span class="mov-val mov-col-total">${fmtJ(tx.total)}</span></div>
       <div class="mov-item"><span class="mov-label">المدفوع</span><span class="mov-val mov-col-paid">${dep}</span></div>
@@ -25119,9 +25307,6 @@ function renderMovementTxRow(tx) {
   const rowStateClass = (tx.cancelled || isStatusCancelled(tx.payStatus)) ? ' mov-row-cancelled'
     : (isStatusPending(tx.payStatus) || isExchangeSalePendingCollect(tx) || (tx.cancelRequest && tx.cancelRequest.status === 'معلق')) ? ' mov-row-pending'
     : isStatusCompleted(tx.payStatus) ? ' mov-row-completed' : '';
-  const recentlyUpdatedBadge = isMovRecentlyUpdated(tx._id)
-    ? '<span class="mov-recent-badge" title="تم تحديثه مؤخراً">🔄 محدَّث حديثاً</span>'
-    : '';
   return `<tr ${rowStyle} class="${isSelected ? 'mov-row-selected' : ''}${_rtFlash}${rowStateClass}${isNewShopify ? ' mov-row-new-shopify' : ''}" onclick="handleMovRowClick(event,'${esc(tx._id)}')">
     <td><input type="checkbox" class="checkbox mov-check" value="${esc(tx._id)}" ${isSelected ? 'checked' : ''} onclick="handleMovCheck(event,'${esc(tx._id)}')"></td>
     <td data-col="ref" class="col-ref">${movementRefCell(tx)}</td>
@@ -25133,7 +25318,6 @@ function renderMovementTxRow(tx) {
         ${commentIcon}
         ${mentionIcon}
         ${(tx.editHistory && tx.editHistory.length) ? '<span class="mov-edited-mini" title="تم التعديل" onclick="event.stopPropagation();showInvoiceDetail(\''+esc(tx._id)+'\')"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>' : ''}
-        ${recentlyUpdatedBadge}
       </div>
     </td>
     <td data-col="invoice" style="text-align:center"><span class="mov-col-total">${fmtJ(tx.total)}</span></td>
@@ -25584,7 +25768,7 @@ function renderTxTagsCell(txId) {
   if (!tags.length) return `<div style="display:flex;gap:3px;align-items:center;justify-content:center;flex-wrap:nowrap">${addBtn}</div>`;
   const first = tags[0];
   const rest  = tags.slice(1);
-  const firstTag = `<span class="tx-tag" style="background:${esc(first.bg)};color:${esc(first.color)};border-color:${esc(first.bg)};font-weight:400;font-size:.64rem;padding:1px 6px;border-radius:4px;white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis" title="${esc(first.label)}">${esc(first.label)}<span class="tag-del" onclick="event.stopPropagation();deleteTxTag('${esc(txId)}','${esc(first.label)}')">✕</span></span>`;
+  const firstTag = `<span class="tx-tag" style="--tag-c:${esc(first.bg)};font-size:.64rem;padding:2px 8px;white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis" title="${esc(first.label)}">${esc(first.label)}<span class="tag-del" onclick="event.stopPropagation();deleteTxTag('${esc(txId)}','${esc(first.label)}')">✕</span></span>`;
   const moreBtn = rest.length ? `<span style="display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:.64rem;font-weight:300;color:var(--muted);cursor:pointer;white-space:nowrap;position:relative" onclick="event.stopPropagation();this.querySelector('.tx-more-popup').style.display=this.querySelector('.tx-more-popup').style.display==='none'?'block':'none'">+${rest.length}<div class="tx-more-popup" style="display:none;position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);z-index:400;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px #0002;padding:6px;min-width:120px">${rest.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:3px 6px;font-size:.72rem;color:var(--text);border-radius:4px;gap:8px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(t.label)}">${esc(t.label)}</span><span style="cursor:pointer;color:var(--muted);flex-shrink:0" onclick="event.stopPropagation();deleteTxTag('${esc(txId)}','${esc(t.label)}')">✕</span></div>`).join('')}</div></span>` : '';
   return `<div style="display:flex;gap:3px;align-items:center;justify-content:center;flex-wrap:nowrap">${addBtn}${moreBtn}${firstTag}</div>`;
 }
@@ -25617,7 +25801,7 @@ function openTagDropdown(txId, anchorEl) {
       ${en?'Add / pick TAG':'إضافة / اختيار TAG'}
     </div>
     <div class="tag-dd-presets">
-      ${masterTags.map(p => `<span class="tag-dd-preset" style="background:${esc(p.bg)};color:${esc(p.color)}" onclick="applyTagFromDropdown('${esc(txId)}','${esc(p.name)}','${esc(p.color)}','${esc(p.bg)}')">${esc(p.name)}</span>`).join('')}
+      ${masterTags.map(p => `<span class="tag-dd-preset" style="--dd-c:${esc(p.bg)}" onclick="applyTagFromDropdown('${esc(txId)}','${esc(p.name)}','${esc(p.color)}','${esc(p.bg)}')">${esc(p.name)}</span>`).join('')}
     </div>
     <div class="tag-dd-input-row">
       <input class="tag-dd-input" id="tag-dd-custom-input" placeholder="${en?'Custom TAG…':'TAG مخصص…'}" maxlength="20" onkeydown="if(event.key==='Enter'){saveCustomTag('${esc(txId)}');event.preventDefault()}">
@@ -25680,7 +25864,7 @@ function _rebuildTagFilterRow() {
     const master = masterTags.find(t => t.name === label);
     const bg = master?.bg || 'var(--accent)';
     const isActive = movTagFilter === label;
-    return `<span class="tx-tag" style="background:${esc(bg)};color:#fff;border-color:${esc(bg)};${isActive?'box-shadow:0 0 0 2px '+esc(bg)+',0 0 0 4px #fff':'opacity:.75'}" onclick="setMovTagFilter('${esc(label)}')">${esc(label)}</span>`;
+    return `<span class="tx-tag" style="--tag-c:${esc(bg)};${isActive?'box-shadow:0 0 0 1.5px '+esc(bg):'opacity:.7'}" onclick="setMovTagFilter('${esc(label)}')">${esc(label)}</span>`;
   }).join('');
 }
 function setMovTagFilter(label) {
@@ -25846,7 +26030,7 @@ function renderMovGridCard(tx) {
   const rem = tx.remaining || 0;
   const dep = exchangeSalePaidDisplayAmount(tx);
   const tags = getTxTagObjects(tx._id);
-  const tagHtml = tags.map(tag => `<span class="tx-tag" style="background:${esc(tag.bg)};color:${esc(tag.color)};border-color:${esc(tag.bg)}">${esc(tag.label)}<span class="tag-del" onclick="event.stopPropagation();deleteTxTag('${esc(tx._id)}','${esc(tag.label)}')">✕</span></span>`).join('');
+  const tagHtml = tags.map(tag => `<span class="tx-tag" style="--tag-c:${esc(tag.bg)}">${esc(tag.label)}<span class="tag-del" onclick="event.stopPropagation();deleteTxTag('${esc(tx._id)}','${esc(tag.label)}')">✕</span></span>`).join('');
   const _rtFlash = _rtFlashIds.has(String(tx._id)) ? ' rt-flash' : '';
   const itemsPreview = (tx.items || []).slice(0, 3).map(it =>
     `<div class="mgci"><span class="mgci-name">${esc(it.name||it.code||'—')}</span><span class="mgci-total">${fmtJ(it.total||0)}</span></div>`
@@ -25868,7 +26052,6 @@ function renderMovGridCard(tx) {
     </div>
     <div class="mgc-client" style="display:flex;align-items:center;gap:7px;overflow:hidden;flex-wrap:wrap">
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tx.client ? esc(tx.client) : '<span style="color:var(--muted)">بدون اسم</span>'}</span>
-      ${isMovRecentlyUpdated(tx._id) ? '<span class="mov-recent-badge" title="تم تحديثه مؤخراً">🔄 محدَّث حديثاً</span>' : ''}
       ${tx.type === 'مبيعات' && tx.phone ? `<a class="wa-btn" href="https://wa.me/${encodeURIComponent((tx.phone||'').replace(/\D/g,''))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="واتساب: ${esc(tx.phone)}"><svg viewBox="0 0 512 512" width="13" height="13" preserveAspectRatio="xMidYMid meet"><path fill="#25d366" d="M373.3 306.8c-6.4-3.2-37.7-18.5-43.5-20.7-5.8-2.1-10.1-3.2-14.3 3.3-4.2 6.3-16.4 20.6-20.2 24.8-3.7 4.2-7.4 4.5-13.7 1.7-6.4-3.2-26.9-9.9-51.3-31.7-19-16.9-31.7-37.7-35.4-44.2-3.7-6.3-.4-9.9 2.8-13.1 2.9-2.9 6.4-7.3 9.7-11.2 3.1-3.8 4.1-6.4 6.3-10.6 2.1-4.5 1-8-.6-11.2s-14.3-34.6-19.7-47.1c-5.1-12.4-10.4-10.8-14.3-10.8-3.7-.3-7.9-.3-12.2-.3-4.2 0-11.2 1.6-17 7.7-5.8 6.4-22.3 21.7-22.3 52.8s22.8 61.2 26 65.7c3.2 4.2 44.9 68.2 108.8 95.7 15.3 6.4 27.1 10.3 36.3 13.4 15.3 4.8 29.2 4.2 40.2 2.6 12.2-2 37.7-15.4 43-30.4 5.4-15.1 5.4-27.6 3.8-30.4-1.6-2.9-5.7-4.5-12.2-7.3zM257.3 464h-.3c-37.8 0-75.3-10.3-107.9-29.4l-7.7-4.6-80 20.8L82.9 373l-5.2-8c-21.1-33.6-32.3-72.3-32.3-112.2 0-116.2 95.1-210.9 212.1-210.9 56.7 0 109.8 22.1 149.8 62.1 40 39.7 62.1 92.8 62.1 149.2-.1 116.1-95.2 210.8-212.1 210.8M437.7 73.6C389.1 26.6 325.1 0 257 0 116.6 0 2.2 113.8 2.2 253.7c0 44.7 11.7 88.3 34 126.8L0 512l135.2-35.3c37.2 20.1 79.2 30.8 121.8 30.9h.1c140.5 0 254.8-113.8 254.9-253.8 0-67.7-26.4-131.5-74.6-179.4z"/></svg></a>` : ''}
       ${(tx.comments && tx.comments.length) ? `<a class="mov-comment-ic" href="#" onclick="event.preventDefault();event.stopPropagation();showInvoiceDetail('${esc(tx._id)}')" title="${tx.comments.length} تعليق"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></a>` : ''}
     </div>
@@ -26751,9 +26934,9 @@ async function openEditMovement(id) {
       ${isSale ? `<div class="form-group"><label>عنوان التوصيل التفصيلي <span style="color:var(--red)">*</span></label><input type="text" id="edit-tx-address" value="${esc((tx.shippingAddress||'').replace(/^العنوان:\s*/,'').trim())}" placeholder="الشارع، الحي، رقم المبنى..."><div class="field-error" id="err-edit-address"></div></div>` : ''}
       <div class="form-group"><label>${isPurchase ? 'رقم الفاتورة' : 'المرجع'}</label><input type="text" id="edit-tx-ref" value="${esc(tx.ref || '')}" ${refRetailEdit ? 'inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"' : ''}></div>
       <div class="form-group"><label>${isPurchase ? 'العربون (المدفوع مقدماً)' : 'الديبوزت'}</label><input type="text" inputmode="numeric" id="edit-tx-deposit" value="${tx.deposit || 0}" oninput="this.value=this.value.replace(/[^0-9]/g,'');recalcEditTx()" onkeydown="if(event.key==='.'||event.key===',')event.preventDefault()"></div>
-      ${isSale ? `<div class="form-group"><label>شركة الشحن</label><select id="edit-tx-shipco" onchange="recalcEditTx()"><option value=""${!tx.shipCo ? ' selected' : ''}>بدون شحن</option>${shipCoOpts}</select></div>
-      <div class="form-group"><label>المنطقة</label><select id="edit-tx-zone" onchange="recalcEditTx()"><option value="cairo" ${tx.shipZone === 'cairo' ? 'selected' : ''}>القاهرة</option><option value="gov" ${tx.shipZone === 'gov' ? 'selected' : ''}>المحافظات</option></select></div>
-      <div class="form-group"><label>تكلفة الشحن</label><input type="text" inputmode="numeric" id="edit-tx-shipcost" value="${tx.shipCost || 0}" oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\..*?)\..*/g,'$1');recalcEditTx()"></div>
+      ${isSale ? `<div class="form-group"><label>شركة الشحن</label><select id="edit-tx-shipco" onchange="updateEditShipCost();recalcEditTx()"><option value=""${!tx.shipCo ? ' selected' : ''}>بدون شحن</option>${shipCoOpts}</select></div>
+      <div class="form-group"><label>المنطقة</label><select id="edit-tx-zone" onchange="updateEditShipCost();recalcEditTx()"><option value="cairo" ${tx.shipZone === 'cairo' ? 'selected' : ''}>القاهرة</option><option value="gov" ${tx.shipZone === 'gov' ? 'selected' : ''}>المحافظات</option></select></div>
+      <div class="form-group"><label>تكلفة الشحن</label><input type="text" inputmode="numeric" id="edit-tx-shipcost" value="${tx.shipCost || 0}" onfocus="this.select()" oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\..*?)\..*/g,'$1');recalcEditTx()"></div>
       <div class="form-group"><label>طريقة الدفع</label><select id="edit-tx-payment"><option value="كاش" ${tx.payment === 'كاش' ? 'selected' : ''}>كاش</option><option value="آجل" ${tx.payment === 'آجل' ? 'selected' : ''}>آجل</option><option value="فودافون كاش" ${tx.payment === 'فودافون كاش' ? 'selected' : ''}>فودافون كاش</option><option value="Instapay" ${tx.payment === 'Instapay' ? 'selected' : ''}>Instapay</option><option value="تحويل بنكي" ${tx.payment === 'تحويل بنكي' ? 'selected' : ''}>تحويل بنكي</option></select></div>` : ''}
       <div class="form-group"><label>ملاحظات</label><input type="text" id="edit-tx-notes" value="${esc(tx.notes || '')}"></div>
       <div class="form-group">
@@ -27325,6 +27508,15 @@ function removeEditSummaryManualDisc() {
   if (discInput) discInput.value = Math.min(_editCodesTotal(it), it);
   recalcEditTx();
   toast('تم حذف الخصم اليدوي ✓');
+}
+function updateEditShipCost() {
+  const coName = qs('#edit-tx-shipco')?.value || '';
+  const costInput = qs('#edit-tx-shipcost');
+  if (!coName || !costInput) return;
+  const co = (settings.shipCos || []).find(c => c.name === coName);
+  if (!co) return;
+  const zone = qs('#edit-tx-zone')?.value || 'cairo';
+  costInput.value = zone === 'cairo' ? (co.cairo || co.cairoPrice || settings.cairoPrice || 0) : (co.gov || co.govPrice || settings.govPrice || 0);
 }
 function recalcEditTx() {
   // Validate applied codes against current edit cart; auto-remove violated ones
@@ -28212,11 +28404,6 @@ async function doCollectMovement(id) {
       if (tx.remaining <= 0) {
         tx.remaining = 0;
         tx.payStatus = 'مكتمل';
-        // Auto-advance pickup to Delivered when fully paid (Ready or Pending)
-        if (!isPurchase && (tx.pickupStatus === 'Ready' || (tx.pickupStatus||'Pending') === 'Pending')) {
-          api('/transactions/' + id + '/pickup-delivered', { method: 'POST', body: '{}' }).catch(() => {});
-          tx.pickupStatus = 'Delivered';
-        }
       }
     }
 
@@ -29291,7 +29478,7 @@ function openBulkTagModal() {
   const presetsEl = qs('#bulk-tag-presets');
   if (presetsEl) {
     presetsEl.innerHTML = (masterTags || []).map(p =>
-      `<span class="tag-dd-preset" style="background:${esc(p.bg)};color:${esc(p.color)};cursor:pointer;padding:4px 10px;border-radius:20px;font-size:.78rem;font-weight:600"
+      `<span class="tag-dd-preset" style="--dd-c:${esc(p.bg)};padding:4px 11px;font-size:.78rem"
         onclick="applyBulkTag('${esc(p.name)}','${esc(p.color)}','${esc(p.bg)}')">${esc(p.name)}</span>`
     ).join('');
   }
@@ -36493,6 +36680,7 @@ function renderCspCards() {
         <div class="csp-card-badges">
           <span class="csp-card-type ${esc(c.cardType)}">${esc(cspCardTypeLabel(c.cardType))}</span>
           ${(c.tags || []).map(t => `<span class="csp-card-tag">${esc(t)}</span>`).join('')}
+          ${hasPerm('csp-edit') ? `<span class="csp-icon-btn csp-card-quick-edit" role="button" tabindex="0" title="تعديل سريع" onclick="event.stopPropagation();openCspCardModal('${esc(c._id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();openCspCardModal('${esc(c._id)}')}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>` : ''}
         </div>
         <div class="csp-card-title-row">
           <span class="csp-card-title">${esc(c.title)}</span>
@@ -36501,6 +36689,8 @@ function renderCspCards() {
           </span>
         </div>
       </button>
+
+      <div class="csp-card-preview">${esc(c.response)}</div>
 
       <div class="csp-card-body"><div class="csp-card-body-inner">
         ${(c.scenario || c.customerQuestion) ? `<div class="csp-card-context">
@@ -40321,7 +40511,43 @@ function stgSwitchTab(tabName, btn) {
   if (btn) btn.classList.add('active');
   // Persist active tab
   try { localStorage.setItem('stg_active_tab', tabName); } catch(e){}
+  // Sync mobile dropdown trigger label/icon
+  if (btn) {
+    const iconSrc = btn.querySelector('svg');
+    const labelSrc = btn.querySelector('span');
+    const iconDst = qs('#stg-mobile-trigger-icon');
+    const labelDst = qs('#stg-mobile-trigger-label');
+    if (iconDst && iconSrc) iconDst.innerHTML = iconSrc.outerHTML;
+    if (labelDst && labelSrc) labelDst.textContent = labelSrc.textContent;
+  }
+  stgCloseMobileMenu();
 }
+
+function stgToggleMobileMenu() {
+  const sidebar = qs('#stg-sidebar');
+  const trigger = qs('#stg-mobile-trigger');
+  if (!sidebar || !trigger) return;
+  const willOpen = !sidebar.classList.contains('open');
+  sidebar.classList.toggle('open', willOpen);
+  trigger.classList.toggle('open', willOpen);
+  trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+}
+
+function stgCloseMobileMenu() {
+  const sidebar = qs('#stg-sidebar');
+  const trigger = qs('#stg-mobile-trigger');
+  if (!sidebar || !trigger) return;
+  sidebar.classList.remove('open');
+  trigger.classList.remove('open');
+  trigger.setAttribute('aria-expanded', 'false');
+}
+
+document.addEventListener('click', (e) => {
+  const sidebar = qs('#stg-sidebar');
+  const trigger = qs('#stg-mobile-trigger');
+  if (!sidebar || !trigger || !sidebar.classList.contains('open')) return;
+  if (!sidebar.contains(e.target) && !trigger.contains(e.target)) stgCloseMobileMenu();
+});
 
 function stgSearch(q) {
   q = (q || '').trim().toLowerCase();
@@ -42077,7 +42303,7 @@ function renderTagMgmt() {
 
   const tagsHtml = masterTags.length
     ? masterTags.map(t => `
-        <span class="tx-tag" style="background:${esc(t.bg)};color:${esc(t.color)};border-color:${esc(t.bg)};gap:6px">
+        <span class="tx-tag" style="--tag-c:${esc(t.bg)};gap:6px">
           ${esc(t.name)}
           <span class="tag-del" onclick="deleteMasterTag('${esc(t._id)}','${esc(t.name)}')" title="حذف TAG">✕</span>
         </span>`).join('')
@@ -44231,10 +44457,18 @@ function clearCmpFilters() {
   qs('#cmp-from').value = ''; qs('#cmp-from').classList.remove('has-value');
   qs('#cmp-to').value = ''; qs('#cmp-to').classList.remove('has-value');
   qs('#cmp-search').value = '';
+  if (qs('#cmp-search-mobile')) qs('#cmp-search-mobile').value = '';
   cmpTabFilter = 'all';
   cmpChipFilter = 'all';
   qsa('.s-tab', qs('#page-complaints')).forEach(b => b.classList.remove('active'));
   qs('#cmp-tab-all').classList.add('active');
+  renderComplaints();
+}
+
+/* ── Mobile: compact search bar (mirrors into the real #cmp-search input,
+   so renderComplaints() stays the single source of truth) ── */
+function cmpSyncSearch(val) {
+  qs('#cmp-search').value = val;
   renderComplaints();
 }
 
@@ -44318,6 +44552,7 @@ function openCmpFilterSheet() {
 }
 function applyCmpFilterSheet() {
   qs('#cmp-search').value = qs('#cmp-sheet-search').value;
+  if (qs('#cmp-search-mobile')) qs('#cmp-search-mobile').value = qs('#cmp-sheet-search').value;
   qs('#cmp-status-filter').value = qs('#cmp-sheet-status').value;
   qs('#cmp-emp-filter').value = qs('#cmp-sheet-emp').value;
   if (qs('#cmp-priority-filter')) qs('#cmp-priority-filter').value = qs('#cmp-sheet-priority').value;
@@ -44363,19 +44598,64 @@ const CMP_PROGRESS_STAGES = [
 function cmpProgressMeta(stage) {
   return CMP_PROGRESS_STAGES.find(s => s.v === (stage || '')) || CMP_PROGRESS_STAGES[0];
 }
+/* Custom picker (not a native <select>) — mobile OS option lists render at a
+   fixed system font/size that CSS can't restyle, which is what made the
+   workflow pill balloon to native-picker size. This reuses the app's existing
+   .dd-menu-portal popover pattern instead, so text stays at the intended size
+   on every platform. */
 function cmpProgressSelect(c) {
-  const opts = CMP_PROGRESS_STAGES.map(s => `<option value="${esc(s.v)}"${(c.progressStage||'')===s.v?' selected':''}>${esc(s.label)}</option>`).join('');
   const meta = cmpProgressMeta(c.progressStage);
-  return `<select class="cmp-progress-select ${meta.cls}" data-complaint-id="${c._id}" onchange="updateComplaintProgress('${c._id}',this.value,this)" onclick="event.stopPropagation()">${opts}</select>`;
+  return `<button type="button" class="cmp-progress-select ${meta.cls}" data-complaint-id="${c._id}" onclick="event.stopPropagation();cmpOpenProgressMenu(event,'${c._id}')">
+    <span class="cmp-progress-select-label">${esc(meta.label)}</span>
+    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>`;
 }
-async function updateComplaintProgress(id, stage, selEl) {
+function cmpOpenProgressMenu(e, id) {
+  e.stopPropagation();
+  const btn = e.currentTarget;
+  const c = complaints.find(x => x._id === id);
+  if (!c) return;
+  const hadOpen = !!document.querySelector('.dd-menu-portal.show');
+  closeAllMenus();
+  if (hadOpen) return;
+  const portal = document.createElement('div');
+  portal.className = 'dd-menu-portal cmp-progress-menu-portal';
+  portal.innerHTML = CMP_PROGRESS_STAGES.map(s => `<button type="button" class="dd-item${(c.progressStage||'')===s.v?' active':''}" data-stage="${esc(s.v)}"><span class="cmp-progress-dot ${s.cls}"></span><span class="dd-label">${esc(s.label)}</span></button>`).join('');
+  document.body.appendChild(portal);
+  const rect = btn.getBoundingClientRect();
+  const mW = portal.offsetWidth;
+  const mH = portal.offsetHeight;
+  const isRtl = document.documentElement.dir === 'rtl';
+  const vp = window.innerHeight;
+  const spaceBelow = vp - rect.bottom - 12;
+  const spaceAbove = rect.top - 12;
+  let top;
+  if (mH <= spaceBelow) top = rect.bottom + 6;
+  else if (mH <= spaceAbove) top = rect.top - mH - 6;
+  else top = Math.max(8, vp - mH - 8);
+  let left = isRtl ? rect.left : rect.right - mW;
+  if (left < 8) left = 8;
+  if (left + mW > window.innerWidth - 8) left = window.innerWidth - mW - 8;
+  portal.style.top = top + 'px';
+  portal.style.left = left + 'px';
+  portal.addEventListener('click', (ev) => {
+    const item = ev.target.closest('.dd-item');
+    if (!item) return;
+    closeAllMenus();
+    updateComplaintProgress(id, item.dataset.stage, btn);
+  });
+  requestAnimationFrame(() => portal.classList.add('show'));
+}
+async function updateComplaintProgress(id, stage, btnEl) {
   try {
     await api(`/complaints/${id}/progress-stage`, { method: 'POST', body: JSON.stringify({ progressStage: stage }) });
     const c = complaints.find(x => x._id === id);
     if (c) c.progressStage = stage;
-    if (selEl) {
+    if (btnEl) {
       const meta = cmpProgressMeta(stage);
-      selEl.className = 'cmp-progress-select ' + meta.cls;
+      btnEl.className = 'cmp-progress-select ' + meta.cls;
+      const labelEl = btnEl.querySelector('.cmp-progress-select-label');
+      if (labelEl) labelEl.textContent = meta.label;
     }
     toast('تم تحديث حالة سير العمل');
   } catch (e) { toast(e.message, true); }
@@ -44612,30 +44892,49 @@ function renderComplaints() {
     </tr>`;
   }).join('');
 
-  cardsBox.innerHTML = data.map(c => {
-    const elapsedHtml = c.createdAt ? fmtElapsed(c.createdAt) : '—';
-    return `<div class="cmp-card" data-complaint-id="${c._id}" onclick="viewComplaint('${c._id}')">
-      <div class="cmp-card-top">
-        ${cmpStatusBadge(c)}
-        ${cmpNoBadge(c)}
+  cardsBox.innerHTML = data.map(c => cmpRenderListCard(c)).join('');
+}
+
+function cmpRenderListCard(c) {
+  const elapsedHtml = c.createdAt ? fmtElapsed(c.createdAt) : '—';
+  const desc = (c.description || '').trim();
+  const descId = 'cmp-desc-' + c._id;
+  // Rough clamp-overflow check: two lines fit ~64 chars at the card's mobile width.
+  const mayOverflow = desc.length > 64;
+  return `<article class="cmp-list-card" data-complaint-id="${c._id}">
+      <div class="cmp-lc-head" onclick="viewComplaint('${c._id}')">
+        <div class="cmp-lc-idline">
+          ${cmpNoBadge(c)}
+          ${cmpStatusBadge(c)}
+        </div>
+        <div class="cmp-lc-name">${esc(c.clientName || '—')}</div>
+        <div class="cmp-lc-orderline">
+          <span>طلب #${esc(c.transactionRef || '—')}</span>
+          <span class="cmp-lc-dot">·</span>
+          <span>${elapsedHtml}</span>
+        </div>
       </div>
-      <div class="cmp-card-customer">${esc(c.clientName || '—')}</div>
-      <div class="cmp-card-order">الطلب: ${esc(c.transactionRef || '—')} · ${fmtDate((c.createdAt||'').slice(0,10))} (${elapsedHtml})</div>
-      <div class="cmp-card-desc">${esc(c.description)}</div>
-      <div class="cmp-card-meta-row">
-        ${cmpPriorityBadge(c)}
+      <div class="cmp-lc-desc" id="${descId}">${esc(desc)}</div>
+      ${mayOverflow ? `<button type="button" class="cmp-lc-expand" onclick="event.stopPropagation();cmpToggleDesc('${descId}',this)">عرض المزيد</button>` : ''}
+      <div class="cmp-lc-metarow">
         <span class="cmp-emp-tag" title="${esc(c.submittedBy || '')}">👤 ${esc(cmpShortName(c.submittedBy))}</span>
+        ${cmpPriorityBadge(c)}
       </div>
-      <div class="cmp-card-row" onclick="event.stopPropagation()"><span class="cmp-card-label">سير العمل</span>${cmpProgressSelect(c)}</div>
-      <div class="cmp-card-actions" onclick="event.stopPropagation()">
+      <div class="cmp-lc-workflow" onclick="event.stopPropagation()">${cmpProgressSelect(c)}</div>
+      <div class="cmp-lc-actions" onclick="event.stopPropagation()">
         ${isAdmin() && c.status === 'معلق'
-          ? `<button class="btn btn-primary btn-cmp-primary" onclick="openResolveModal('${c._id}')">اتخاذ قرار</button>`
-          : `<button class="btn btn-outline btn-cmp-primary" onclick="viewComplaint('${c._id}')">عرض التفاصيل</button>`}
+          ? `<button class="btn btn-primary cmp-lc-btn-primary" onclick="openResolveModal('${c._id}')">اتخاذ قرار</button>`
+          : `<button class="btn btn-outline cmp-lc-btn-primary" onclick="viewComplaint('${c._id}')">عرض التفاصيل</button>`}
         ${cmpNotesBtn(c)}
         ${cmpActionsMenu(c)}
       </div>
-    </div>`;
-  }).join('');
+    </article>`;
+}
+function cmpToggleDesc(descId, btnEl) {
+  const el = qs('#' + CSS.escape(descId));
+  if (!el) return;
+  const expanded = el.classList.toggle('cmp-lc-desc-expanded');
+  btnEl.textContent = expanded ? 'عرض أقل' : 'عرض المزيد';
 }
 function cmpShortName(name) {
   const n = (name || '').trim();
@@ -45195,6 +45494,13 @@ const FU_STATUS_STYLES = {
   'في انتظار المتابعة': { bg:'#fff7ed', color:'#c2410c', dot:'#f97316' },
   'سيتم ارتجاع الشحنة': { bg:'#fff1f2', color:'#be123c', dot:'#f43f5e' },
   'تم حل المشكلة':      { bg:'#ecfdf5', color:'#047857', dot:'#10b981' },
+  // confirmation-call statuses (سبب: عملية تأكيد الطلب)
+  'تمت عملية التأكيد':  { bg:'#ecfdf5', color:'#047857', dot:'#10b981' },
+  'في انتظار المتابعة مع العميل': { bg:'#fff7ed', color:'#c2410c', dot:'#f97316' },
+  'العميل لم يرد':      { bg:'#fff7ed', color:'#c2410c', dot:'#f97316' },
+  'العميل مازال متردد': { bg:'#fefce8', color:'#854d0e', dot:'#eab308' },
+  'العميل أجل الطلب':   { bg:'#eff6ff', color:'#1d4ed8', dot:'#3b82f6' },
+  'العميل ألغى الطلب':  { bg:'#fff1f2', color:'#be123c', dot:'#f43f5e' },
   // legacy values kept for old records
   'قيد المتابعة':  { bg:'#fff7ed', color:'#c2410c', dot:'#f97316' },
   'تمت المتابعة': { bg:'#eff6ff', color:'#1d4ed8', dot:'#3b82f6' },
@@ -45202,6 +45508,11 @@ const FU_STATUS_STYLES = {
   'يحتاج مراجعة': { bg:'#fdf4ff', color:'#7e22ce', dot:'#a855f7' },
   'لم يتم الحل':   { bg:'#fff1f2', color:'#be123c', dot:'#f43f5e' },
 };
+const FU_STATUS_OPTIONS_DEFAULT = ['في انتظار المتابعة','سيتم ارتجاع الشحنة','تم حل المشكلة'];
+const FU_STATUS_OPTIONS_CONFIRM = ['تمت عملية التأكيد','في انتظار المتابعة مع العميل','العميل لم يرد','العميل مازال متردد','العميل أجل الطلب','العميل ألغى الطلب'];
+function fuStatusOptionsFor(reason) {
+  return reason === 'عملية تأكيد الطلب' ? FU_STATUS_OPTIONS_CONFIRM : FU_STATUS_OPTIONS_DEFAULT;
+}
 
 let _fuPage = 1;
 const FU_PAGE_SIZE = 20;
@@ -45375,12 +45686,19 @@ function renderFollowUps() {
       <span style="width:6px;height:6px;border-radius:50%;background:${st.dot};flex-shrink:0"></span>
       <select onchange="updateFuStatus('${fId}',this.value)" style="border:none;background:transparent;font-size:.72rem;font-weight:600;color:${st.color};cursor:pointer;outline:none;padding:0">
         ${(function(){
-          const opts = ['في انتظار المتابعة','سيتم ارتجاع الشحنة','تم حل المشكلة'];
-          if (f.status && !opts.includes(f.status)) opts.unshift(f.status); // preserve legacy value
+          const opts = fuStatusOptionsFor(f.reason).slice();
+          if (f.status && !opts.includes(f.status)) opts.unshift(f.status); // preserve legacy/mismatched value
           return opts.map(s=>`<option value="${s}"${f.status===s?' selected':''}>${s}</option>`).join('');
         })()}
       </select>
     </div>`;
+    // Custom popover trigger for the mobile card — avoids the native <select>
+    // options list, which renders at a fixed system font size on phones.
+    const statusBtnCard = `<button type="button" class="fu-status-chip" style="background:${st.bg};color:${st.color}" onclick="event.stopPropagation();fuOpenStatusMenu(event,'${fId}')">
+      <span class="fu-status-dot" style="background:${st.dot}"></span>
+      <span class="fu-status-chip-label">${esc(f.status||'—')}</span>
+      <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>`;
 
     const hasComment = !!f.comment;
     const commentBtn = `<button onclick="openFuCommentPopup('${fId}')" title="${hasComment ? esc(f.comment) : 'إضافة ملاحظة'}" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;border:none;cursor:pointer;background:${hasComment?'var(--primary-light, #eff6ff)':'var(--bg-alt)'};color:${hasComment?'var(--primary)':'var(--muted)'}">
@@ -45413,20 +45731,23 @@ function renderFollowUps() {
     const waCardBtn = resolvedPhone
       ? `<a href="https://wa.me/${resolvedPhone.replace(/\D/g,'')}" target="_blank" rel="noopener" class="fu-icon-btn fu-wa-btn" title="واتساب" onclick="event.stopPropagation()">${WA_SVG_ACTIVE}</a>`
       : '';
-    const card = `<div class="fu-card${isUnseen?' is-unseen':''}${isDone?' is-done':''}" data-fu-id="${fId}" onclick="openFuModal('${fId}')">
-      <div class="fu-card-top">
-        <div>
-          <div class="fu-card-order">#${esc(f.orderRef)}</div>
-          ${resolvedName ? `<div class="fu-card-client">${esc(resolvedName)}</div>` : ''}
-          ${resolvedPhone ? `<div class="fu-card-phone">${esc(resolvedPhone)}</div>` : ''}
+    const card = `<article class="fu-card${isUnseen?' is-unseen':''}${isDone?' is-done':''}" data-fu-id="${fId}">
+      <div class="fu-card-head" onclick="openFuModal('${fId}')">
+        <div class="fu-card-headline">
+          <span class="fu-card-order">#${esc(f.orderRef)}</span>
+          ${resolvedName ? `<span class="fu-card-client">${esc(resolvedName)}</span>` : ''}
         </div>
-        <span style="font-size:.7rem;color:var(--muted);white-space:nowrap">${fmtElapsed(f.updatedAt||f.createdAt||'')}</span>
+        <span class="fu-card-elapsed">${fmtElapsed(f.updatedAt||f.createdAt||'')}</span>
       </div>
-      <div class="fu-card-status" onclick="event.stopPropagation()">${statusSel}</div>
-      <div class="fu-card-reason">${reasonHtml}</div>
-      <div class="fu-card-tags" onclick="event.stopPropagation()">${tagsHtml}${addTagBtn}</div>
+      ${resolvedPhone ? `<div class="fu-card-phone" onclick="openFuModal('${fId}')" dir="ltr">${esc(resolvedPhone)}</div>` : ''}
+      <div class="fu-card-statusrow" onclick="event.stopPropagation()">
+        ${statusBtnCard}
+        ${reasonHtml}
+      </div>
+      ${tagsHtml ? `<div class="fu-card-tags" onclick="event.stopPropagation()">${tagsHtml}${addTagBtn}</div>` : ''}
       <div class="fu-card-meta-row">
         <span>👤 ${esc(f.responsibleName||'—')}</span>
+        ${!tagsHtml ? `<span onclick="event.stopPropagation()">${addTagBtn}</span>` : ''}
       </div>
       <div class="fu-card-actions" onclick="event.stopPropagation()">
         <button class="btn btn-outline btn-fu-primary" onclick="openFuModal('${fId}')">تعديل</button>
@@ -45438,7 +45759,7 @@ function renderFollowUps() {
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
         </button>
       </div>
-    </div>`;
+    </article>`;
 
     return { row, card };
   });
@@ -45456,6 +45777,50 @@ async function updateFuStatus(id, status) {
     renderFuKpi();
     renderFollowUps();
   } catch(e) { toast(e.message, true); }
+}
+/* Popover-based status picker for the mobile card (reuses .dd-menu-portal) —
+   a native <select> options list renders at a fixed system font size on
+   phones, which is what made the status pill balloon in size. */
+function fuOpenStatusMenu(e, id) {
+  e.stopPropagation();
+  const btn = e.currentTarget;
+  const f = followUps.find(x => String(x._id) === id);
+  if (!f) return;
+  const hadOpen = !!document.querySelector('.dd-menu-portal.show');
+  closeAllMenus();
+  if (hadOpen) return;
+  const opts = fuStatusOptionsFor(f.reason).slice();
+  if (f.status && !opts.includes(f.status)) opts.unshift(f.status);
+  const portal = document.createElement('div');
+  portal.className = 'dd-menu-portal fu-status-menu-portal';
+  portal.innerHTML = opts.map(s => {
+    const st = FU_STATUS_STYLES[s] || { dot:'#9ca3af' };
+    return `<button type="button" class="dd-item${f.status===s?' active':''}" data-status="${esc(s)}"><span class="fu-status-dot" style="background:${st.dot}"></span><span class="dd-label">${esc(s)}</span></button>`;
+  }).join('');
+  document.body.appendChild(portal);
+  const rect = btn.getBoundingClientRect();
+  const mW = portal.offsetWidth;
+  const mH = portal.offsetHeight;
+  const isRtl = document.documentElement.dir === 'rtl';
+  const vp = window.innerHeight;
+  const spaceBelow = vp - rect.bottom - 12;
+  const spaceAbove = rect.top - 12;
+  let top;
+  if (mH <= spaceBelow) top = rect.bottom + 6;
+  else if (mH <= spaceAbove) top = rect.top - mH - 6;
+  else top = Math.max(8, vp - mH - 8);
+  let left = isRtl ? rect.left : rect.right - mW;
+  if (left < 8) left = 8;
+  if (left + mW > window.innerWidth - 8) left = window.innerWidth - mW - 8;
+  portal.style.top = top + 'px';
+  portal.style.left = left + 'px';
+  portal.addEventListener('click', (ev) => {
+    const item = ev.target.closest('.dd-item');
+    if (!item) return;
+    closeAllMenus();
+    updateFuStatus(id, item.dataset.status);
+  });
+  requestAnimationFrame(() => portal.classList.add('show'));
 }
 
 function clearFuFilters() {
@@ -45654,8 +46019,54 @@ function goToFuAndHighlight(fuId) {
   },320);
 }
 
+function _fuPopulateStatusOptions(reason, keepValue) {
+  const sel = qs('#fu-modal-status');
+  const prev = keepValue !== undefined ? keepValue : sel.value;
+  const opts = fuStatusOptionsFor(reason);
+  sel.innerHTML = opts.map(s => `<option value="${s}">${s}</option>`).join('');
+  sel.value = opts.includes(prev) ? prev : opts[0];
+}
+
+function _fuCheckManualOrderExists(q) {
+  const warn = qs('#fu-order-manual-warning');
+  const keyword = String(q||'').trim().toLowerCase();
+  const exists = !!keyword && transactions.some(t => t.type === 'مبيعات' && String(t.ref||'').toLowerCase() === keyword);
+  warn.style.display = exists ? 'block' : 'none';
+}
+
+function _fuOnReasonChange() {
+  const reasonSel = qs('#fu-modal-reason');
+  const reason = reasonSel.value;
+  qs('#fu-modal-reason-other').style.display = reason === 'أخرى' ? 'block' : 'none';
+  _fuPopulateStatusOptions(reason);
+}
+
 // Live search for sales transactions in fu modal
 let _fuSelectedTx = null;
+let _fuOrderMode = 'registered';
+const _FU_MODE_BASE_STYLE = 'flex:1;border:none;border-radius:8px;padding:9px 10px;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .18s;';
+function _fuSetOrderMode(mode) {
+  _fuOrderMode = mode;
+  const regBtn = qs('#fu-mode-btn-registered');
+  const unregBtn = qs('#fu-mode-btn-unregistered');
+  const activeStyle = 'background:var(--primary);color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)';
+  const inactiveStyle = 'background:transparent;color:var(--muted)';
+  regBtn.style.cssText = _FU_MODE_BASE_STYLE + (mode === 'registered' ? activeStyle : inactiveStyle);
+  unregBtn.style.cssText = _FU_MODE_BASE_STYLE + (mode === 'unregistered' ? activeStyle : inactiveStyle);
+  qs('#fu-order-registered-wrap').style.display = mode === 'registered' ? 'block' : 'none';
+  qs('#fu-order-unregistered-wrap').style.display = mode === 'unregistered' ? 'block' : 'none';
+  qs('#fu-modal-order-ref').value = '';
+  qs('#fu-modal-order-txid').value = '';
+  qs('#fu-modal-client-row').style.display = 'none';
+  _fuSelectedTx = null;
+  if (mode === 'registered') {
+    qs('#fu-order-search').value = '';
+    qs('#fu-order-results').style.display = 'none';
+  } else {
+    qs('#fu-order-manual').value = '';
+  }
+  qs('#fu-order-manual-warning').style.display = 'none';
+}
 function fuOrderSearch(q) {
   const box = qs('#fu-order-results');
   if (!q || q.length < 1) { box.style.display = 'none'; return; }
@@ -45714,9 +46125,11 @@ async function openFuModal(id) {
   // Reset search
   qs('#fu-order-search').value = '';
   qs('#fu-order-results').style.display = 'none';
+  qs('#fu-order-manual').value = '';
   qs('#fu-modal-order-ref').value = '';
   qs('#fu-modal-order-txid').value = '';
   qs('#fu-modal-client-row').style.display = 'none';
+  _fuSetOrderMode('registered');
 
   // Populate user dropdown
   const userSel = qs('#fu-modal-user');
@@ -45734,7 +46147,14 @@ async function openFuModal(id) {
   if (id) {
     const f = followUps.find(x => x._id === id);
     if (f) {
-      qs('#fu-order-search').value = f.orderRef;
+      if (f.transactionId) {
+        _fuSetOrderMode('registered');
+        qs('#fu-order-search').value = f.orderRef;
+      } else {
+        _fuSetOrderMode('unregistered');
+        qs('#fu-order-manual').value = f.orderRef;
+        _fuCheckManualOrderExists(f.orderRef);
+      }
       qs('#fu-modal-order-ref').value = f.orderRef;
       qs('#fu-modal-order-txid').value = f.transactionId || '';
       qs('#fu-modal-order-label').textContent = f.orderRef;
@@ -45745,12 +46165,14 @@ async function openFuModal(id) {
       qs('#fu-modal-client-row').style.display = 'block';
       userSel.value = f.responsibleId;
       qs('#fu-modal-reason').value = f.reason || '';
-      qs('#fu-modal-status').value = f.status || 'قيد المتابعة';
+      qs('#fu-modal-reason-other').style.display = 'none';
+      _fuPopulateStatusOptions(f.reason, f.status);
       qs('#fu-modal-comment').value = f.comment || '';
     }
   } else {
     qs('#fu-modal-reason').value = '';
-    qs('#fu-modal-status').value = 'قيد المتابعة';
+    qs('#fu-modal-reason-other').style.display = 'none';
+    _fuPopulateStatusOptions('');
     qs('#fu-modal-comment').value = '';
     qs('#fu-modal-mention-note').style.display = 'none';
     // Pre-select current user
@@ -45767,6 +46189,13 @@ function closeFuModal() {
 }
 
 async function saveFuItem() {
+  if (_fuOrderMode === 'unregistered') {
+    const manualRef = qs('#fu-order-manual').value.trim();
+    qs('#fu-modal-order-ref').value = manualRef;
+    qs('#fu-modal-order-txid').value = '';
+    const exists = manualRef && transactions.some(t => t.type === 'مبيعات' && String(t.ref||'').toLowerCase() === manualRef.toLowerCase());
+    if (exists) { toast('هذا الرقم مسجل بالفعل بالنظام — اختر "رقم مسجل بالنظام"', true); return; }
+  }
   const orderRef = qs('#fu-modal-order-ref').value.trim();
   const transactionId = qs('#fu-modal-order-txid').value.trim();
   const userSel = qs('#fu-modal-user');
@@ -45787,7 +46216,7 @@ async function saveFuItem() {
     }
   }
 
-  if (!orderRef) { toast('اختر طلباً من القائمة', true); return; }
+  if (!orderRef) { toast(_fuOrderMode === 'unregistered' ? 'اكتب رقم الطلب' : 'اختر طلباً من القائمة', true); return; }
   if (!responsibleId) { toast('اختر موظفاً مسؤولاً', true); return; }
 
   const btn = qs('#fu-modal-save-btn');
@@ -50076,6 +50505,58 @@ let _shopifyDateFilter = { from: null, to: null };
 function _spStartOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
 function _spUpdateTriggerLabel(){}
 
+function _setShopifyDateQuickRange(range, btn) {
+  const isActive = btn && btn.classList.contains('active');
+  document.querySelectorAll('.sp-date-quick-btn').forEach(b => b.classList.remove('active'));
+  const fromEl = qs('#shopify-date-from'), toEl = qs('#shopify-date-to');
+  if (isActive) {
+    _shopifyDateFilter = { from: null, to: null };
+    if (fromEl) fromEl.value = '';
+    if (toEl) toEl.value = '';
+  } else {
+    const now = new Date();
+    const day = range === 'yesterday' ? new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1) : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    _shopifyDateFilter = { from: day, to: day };
+    if (fromEl) fromEl.value = _spDateToInputVal(day);
+    if (toEl) toEl.value = _spDateToInputVal(day);
+    if (btn) btn.classList.add('active');
+  }
+  _updateShopifyDateClearBtn();
+  renderShopifyOrders();
+}
+
+function _spDateToInputVal(d) {
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function _applyShopifyCustomRange() {
+  document.querySelectorAll('.sp-date-quick-btn').forEach(b => b.classList.remove('active'));
+  const fromVal = qs('#shopify-date-from')?.value;
+  const toVal = qs('#shopify-date-to')?.value;
+  _shopifyDateFilter = {
+    from: fromVal ? new Date(fromVal + 'T00:00:00') : null,
+    to: toVal ? new Date(toVal + 'T00:00:00') : null,
+  };
+  _updateShopifyDateClearBtn();
+  renderShopifyOrders();
+}
+
+function _clearShopifyDateRange() {
+  _shopifyDateFilter = { from: null, to: null };
+  const fromEl = qs('#shopify-date-from'), toEl = qs('#shopify-date-to');
+  if (fromEl) fromEl.value = '';
+  if (toEl) toEl.value = '';
+  document.querySelectorAll('.sp-date-quick-btn').forEach(b => b.classList.remove('active'));
+  _updateShopifyDateClearBtn();
+  renderShopifyOrders();
+}
+
+function _updateShopifyDateClearBtn() {
+  const btn = qs('#shopify-date-clear-btn');
+  if (btn) btn.style.display = (_shopifyDateFilter.from || _shopifyDateFilter.to) ? '' : 'none';
+}
+
 async function recalcShopifyOrders() {
   if (!confirm('سيتم إعادة حساب إجماليات كل الأوردرات المعلقة بأسعار النظام الفعلية. متأكد؟')) return;
   try {
@@ -50231,26 +50712,30 @@ function renderShopifyOrders() {
   const el = qs('#shopify-pending-count');
   if (el) el.textContent = pending.length;
 
-  // KPI calculations
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const startOfWeek = new Date(startOfDay); startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const todayCount = _shopifyOrders.filter(o => new Date(o.createdAt) >= startOfDay).length;
-  const weekCount = _shopifyOrders.filter(o => new Date(o.createdAt) >= startOfWeek).length;
-  const monthCount = _shopifyOrders.filter(o => new Date(o.createdAt) >= startOfMonth).length;
+  // KPI calculations — reacts to the active date filter (defaults to "اليوم" when none is set)
   const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-  const todayLabel = `${now.getDate()} ${monthNames[now.getMonth()]}`;
-  const weekStart = `${startOfWeek.getDate()} ${monthNames[startOfWeek.getMonth()]}`;
-  const weekEnd = `${now.getDate()} ${monthNames[now.getMonth()]}`;
-  const monthLabel = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+  const _fmtKpiDay = d => `${d.getDate()} ${monthNames[d.getMonth()]}`;
+  const _today0 = _spStartOfDay(new Date());
+  const kpiFrom = _shopifyDateFilter.from ? _spStartOfDay(_shopifyDateFilter.from) : _today0;
+  const kpiTo   = _shopifyDateFilter.from ? _spStartOfDay(_shopifyDateFilter.to || _shopifyDateFilter.from) : _today0;
+  const kpiFromMs = kpiFrom.getTime();
+  const kpiToMs   = kpiTo.getTime() + 86400000 - 1;
+  const kpiPeriodLabel = kpiFromMs === kpiToMs - 86400000 + 1
+    ? _fmtKpiDay(kpiFrom)
+    : `${_fmtKpiDay(kpiFrom)} – ${_fmtKpiDay(kpiTo)}`;
 
-  const kToday = qs('#shopify-kpi-today'); if (kToday) kToday.textContent = todayCount;
-  const kWeek = qs('#shopify-kpi-week'); if (kWeek) kWeek.textContent = weekCount;
-  const kMonth = qs('#shopify-kpi-month'); if (kMonth) kMonth.textContent = monthCount;
-  const lToday = qs('#shopify-kpi-today-label'); if (lToday) lToday.textContent = todayLabel;
-  const lWeek = qs('#shopify-kpi-week-label'); if (lWeek) lWeek.textContent = `${weekStart} – ${weekEnd}`;
-  const lMonth = qs('#shopify-kpi-month-label'); if (lMonth) lMonth.textContent = monthLabel;
+  const kpiOrders = _shopifyOrders.filter(o => {
+    const t = new Date(o.shopifyCreatedAt || o.createdAt).getTime();
+    return t >= kpiFromMs && t <= kpiToMs;
+  });
+  const kpiValid = kpiOrders.filter(o => !o.cancelled);
+  const kpiCancelledCount = kpiOrders.length - kpiValid.length;
+  const kpiTotal = kpiValid.reduce((s, o) => s + (o.total || 0), 0);
+
+  const lPeriod = qs('#shopify-kpi-period-label'); if (lPeriod) lPeriod.textContent = kpiPeriodLabel;
+  const kValid = qs('#shopify-kpi-valid'); if (kValid) kValid.textContent = kpiValid.length;
+  const kCancelled = qs('#shopify-kpi-cancelled'); if (kCancelled) kCancelled.textContent = kpiCancelledCount;
+  const kTotal = qs('#shopify-kpi-total'); if (kTotal) kTotal.innerHTML = fmtJ(kpiTotal);
 
   /* update need-contact count */
   const _needContactCount = pending.filter(o => !_shopifySmartStatus(o) && !o.pendingStatus).length;
@@ -50479,9 +50964,9 @@ function renderShopifyOrders() {
           const tagsCell = !tagList.length ? `<span style="color:var(--text-muted)">—</span>` : (() => {
             const shown = tagList.slice(0, 2);
             const rest  = tagList.slice(2);
-            const tagBadge = t => `<span style="display:inline-block;border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:.68rem;font-weight:300;color:var(--text-muted);white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;line-height:1.5" title="${t}">${t}</span>`;
+            const tagBadge = t => `<span style="display:inline-block;background:var(--surface2,var(--bg-alt));border:1px solid var(--border);border-radius:99px;padding:2px 9px;font-size:.68rem;font-weight:500;color:var(--text-muted);white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;line-height:1.5" title="${t}">${t}</span>`;
             const shownHtml = shown.map(tagBadge).join('');
-            const moreBtn = rest.length ? `<span class="sp-tags-more-btn" style="display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:.68rem;font-weight:300;color:var(--text-muted);cursor:pointer;white-space:nowrap;vertical-align:middle;position:relative;flex-shrink:0" onclick="_toggleShopifyTags(this)">+${rest.length}
+            const moreBtn = rest.length ? `<span class="sp-tags-more-btn" style="display:inline-flex;align-items:center;background:var(--surface2,var(--bg-alt));border:1px solid var(--border);border-radius:99px;padding:2px 9px;font-size:.68rem;font-weight:500;color:var(--text-muted);cursor:pointer;white-space:nowrap;vertical-align:middle;position:relative;flex-shrink:0" onclick="_toggleShopifyTags(this)">+${rest.length}
               <div class="sp-tags-popup" style="display:none;position:absolute;top:calc(100% + 5px);right:0;z-index:400;background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 24px #0003;padding:8px;min-width:140px;max-width:220px">
                 ${rest.map(t => `<div style="padding:5px 8px;font-size:.75rem;color:var(--text);border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${t}">${t}</div>`).join('')}
               </div>
@@ -50573,7 +51058,7 @@ function renderShopifyOrders() {
             <td>${tagsCell}</td>
             <td>${_shopifyStatusBadge(o.status, o.phone, o._id, o.pendingStatus, o)}</td>
             <td>
-              ${o.status === 'pending' ? `
+              ${o.status === 'pending' && !o.cancelled ? `
                 <div style="display:flex;flex-direction:row;align-items:center;gap:5px;flex-wrap:nowrap">
                   <button class="btn btn-sm" style="background:var(--accent);color:#fff;font-size:.72rem;display:inline-flex;align-items:center;gap:4px;padding:5px 10px;white-space:nowrap" onclick="approveShopifyOrder('${o._id}')">
                     <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -50582,7 +51067,16 @@ function renderShopifyOrders() {
                   <button title="تعديل" class="btn btn-sm" style="background:var(--bg-alt);color:var(--text);border:1.5px solid var(--border);padding:5px 7px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0" onclick="editShopifyOrder('${o._id}')">
                     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                   </button>
+                  ${isAdmin() ? `
+                  <button title="إلغاء الأوردر" class="btn btn-sm" style="background:#ef444412;color:#ef4444;border:1.5px solid #ef444440;padding:5px 7px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0" onclick="cancelShopifyOrder('${o._id}')">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>` : ''}
                 </div>
+              ` : (o.status === 'pending' && o.cancelled && isAdmin()) ? `
+                <button class="btn btn-sm" style="background:var(--bg-alt);color:var(--text);border:1.5px solid var(--border);font-size:.72rem;display:inline-flex;align-items:center;gap:4px;padding:5px 10px;white-space:nowrap" onclick="restoreShopifyOrder('${o._id}')">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+                  استرجاع
+                </button>
               ` : '<span style="color:var(--text-muted);font-size:.8rem">—</span>'}
             </td>
             <td style="text-align:center;padding:8px 6px">
@@ -50647,7 +51141,7 @@ function renderShopifyOrders() {
         'تحويل بنكي': '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M3 22h18M3 10h18M3 6l9-4 9 4"/><path d="M6 10v12M10 10v12M14 10v12M18 10v12"/></svg>'
       }[np?.method] || '';
       const depositHtml = np ? `<div class="sp-card-amount-item"><div class="sp-card-amount-label">ديبوزت</div><div class="sp-card-amount-val" style="color:#10b981;display:flex;align-items:center;gap:4px">${_depMethodIcon}${fmtJ(np.amount)}</div></div>` : '';
-      const actionHtml = o.status === 'pending' ? `
+      const actionHtml = (o.status === 'pending' && !o.cancelled) ? `
         <div class="sp-card-actions">
           <button class="btn btn-sm" style="background:var(--accent);color:#fff;gap:5px" onclick="approveShopifyOrder('${o._id}')">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -50657,9 +51151,20 @@ function renderShopifyOrders() {
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             تعديل
           </button>
+          ${isAdmin() ? `
+          <button class="btn btn-sm" style="background:#ef444412;color:#ef4444;border:1.5px solid #ef444440;gap:5px;flex:0 0 auto;padding:8px 12px" onclick="cancelShopifyOrder('${o._id}')">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            إلغاء
+          </button>` : ''}
+        </div>` : (o.status === 'pending' && o.cancelled && isAdmin()) ? `
+        <div class="sp-card-actions">
+          <button class="btn btn-sm" style="background:var(--bg-alt);border:1.5px solid var(--border);gap:5px" onclick="restoreShopifyOrder('${o._id}')">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+            استرجاع
+          </button>
         </div>` : '';
       const tagList = o.tags ? o.tags.split(',').map(t=>t.trim()).filter(Boolean) : [];
-      const tagsHtml = tagList.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${tagList.slice(0,3).map(t=>`<span style="background:var(--bg-alt);border:1px solid var(--border);border-radius:20px;padding:1px 8px;font-size:.68rem;color:var(--text-muted);white-space:nowrap">${t}</span>`).join('')}${tagList.length>3?`<span style="background:var(--accent);color:#fff;border-radius:20px;padding:1px 8px;font-size:.68rem">+${tagList.length-3}</span>`:''}</div>` : '';
+      const tagsHtml = tagList.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${tagList.slice(0,3).map(t=>`<span style="background:var(--bg-alt);border:1px solid var(--border);border-radius:20px;padding:1px 8px;font-size:.68rem;font-weight:500;color:var(--text-muted);white-space:nowrap">${t}</span>`).join('')}${tagList.length>3?`<span style="background:var(--bg-alt);border:1px solid var(--border);color:var(--text-muted);border-radius:20px;padding:1px 8px;font-size:.68rem;font-weight:500">+${tagList.length-3}</span>`:''}</div>` : '';
       return `<div class="sp-card${_isNew?' sp-card-new':''}">
         <div class="sp-card-top">
           <div>
@@ -50915,6 +51420,12 @@ function _buildShopifyWaUrl(order) {
 }
 
 function _shopifyStatusBadge(status, phone, orderId, pendingStatus, order) {
+  if (order?.cancelled) {
+    return `<span style="display:inline-flex;align-items:center;gap:5px;background:#ef444422;color:#ef4444;border-radius:6px;padding:4px 9px;font-size:.72rem;font-weight:600">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      ملغي
+    </span>`;
+  }
   if (status === 'pending') {
     const clean = (phone || '').replace(/\D/g, '');
     const waUrl = order ? _buildShopifyWaUrl(order) : (clean ? `https://wa.me/${clean}` : '');
@@ -51218,6 +51729,78 @@ async function _confirmApproveShopify(id) {
     toast('حدث خطأ أثناء الإرسال', true);
     if (btn) { btn.disabled = false; btn.innerHTML = _btnHTML; }
   }
+}
+
+function _shopifyActionModal({ title, message, showReason, confirmLabel, confirmColor, onConfirm }) {
+  document.getElementById('shopify-action-modal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'shopify-action-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:#0008;z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  modal.innerHTML = `
+    <div style="background:var(--bg);border-radius:16px;padding:24px;width:380px;max-width:100%;box-shadow:0 20px 60px #0004">
+      <h3 style="margin:0 0 12px;font-size:1.05rem">${title}</h3>
+      <p style="margin:0 0 ${showReason ? '16px' : '20px'};font-size:.88rem;color:var(--text-muted);line-height:1.6">${message}</p>
+      ${showReason ? `
+      <div style="margin-bottom:18px">
+        <label style="font-size:.8rem;color:var(--text-muted);display:block;margin-bottom:6px">السبب (اختياري)</label>
+        <input id="shopify-action-reason-inp" type="text" placeholder="اكتب السبب..." style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg-alt);font-size:.88rem;box-sizing:border-box">
+      </div>` : ''}
+      <div style="display:flex;gap:10px">
+        <button onclick="document.getElementById('shopify-action-modal').remove()" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text);cursor:pointer;font-size:.88rem">تراجع</button>
+        <button id="shopify-action-confirm-btn" style="flex:1;padding:10px;border-radius:8px;background:${confirmColor};color:#fff;border:none;cursor:pointer;font-size:.88rem;font-weight:600">${confirmLabel}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  qs('#shopify-action-confirm-btn').addEventListener('click', async () => {
+    const reason = showReason ? (qs('#shopify-action-reason-inp')?.value.trim() || '') : '';
+    const btn = qs('#shopify-action-confirm-btn');
+    btn.disabled = true; btn.style.opacity = '0.6';
+    await onConfirm(reason);
+    modal.remove();
+  });
+}
+
+function cancelShopifyOrder(id) {
+  if (!isAdmin()) return;
+  _shopifyActionModal({
+    title: 'إلغاء الأوردر',
+    message: 'سيتم إلغاء هذا الأوردر وسيُستبعد من الإحصائيات — يمكن استرجاعه لاحقاً.',
+    showReason: true,
+    confirmLabel: 'إلغاء الأوردر',
+    confirmColor: '#ef4444',
+    onConfirm: async (reason) => {
+      try {
+        await api(`/shopify/orders/${id}/cancel`, { method: 'PATCH', body: JSON.stringify({ reason }), headers: {'Content-Type':'application/json'} });
+        toast('تم إلغاء الأوردر ✅');
+        await loadShopifyOrders();
+      } catch(e) {
+        console.error('cancelShopifyOrder failed:', e);
+        toast('حدث خطأ أثناء الإلغاء: ' + (e.message || ''), true);
+      }
+    },
+  });
+}
+
+function restoreShopifyOrder(id) {
+  if (!isAdmin()) return;
+  _shopifyActionModal({
+    title: 'استرجاع الأوردر',
+    message: 'سيتم استرجاع هذا الأوردر ليعود ضمن الإحصائيات.',
+    showReason: false,
+    confirmLabel: 'استرجاع',
+    confirmColor: 'var(--accent)',
+    onConfirm: async () => {
+      try {
+        await api(`/shopify/orders/${id}/restore`, { method: 'PATCH' });
+        toast('تم استرجاع الأوردر ✅');
+        await loadShopifyOrders();
+      } catch(e) {
+        console.error('restoreShopifyOrder failed:', e);
+        toast('حدث خطأ أثناء الاسترجاع: ' + (e.message || ''), true);
+      }
+    },
+  });
 }
 
 async function rejectShopifyOrder(id) {

@@ -17,6 +17,8 @@ import {
 import { Request as ExpressRequest } from 'express';
 import { ShopifyService } from './shopify.service';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
+import { RolesGuard } from '../core/guards/roles.guard';
+import { Roles } from '../core/decorators/roles.decorator';
 
 @Controller('shopify')
 export class ShopifyController {
@@ -127,6 +129,27 @@ export class ShopifyController {
   @UseGuards(JwtAuthGuard)
   async updatePendingStatus(@Param('id') id: string, @Body('pendingStatus') pendingStatus: string) {
     return this.shopifyService.updatePendingStatus(id, pendingStatus || '');
+  }
+
+  // إلغاء أوردر معلق (أدمن فقط)
+  @Patch('orders/:id/cancel')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async cancelOrder(
+    @Param('id') id: string,
+    @Body('reason') reason: string,
+    @Request() req: any,
+  ) {
+    const user = req.user?.username || req.user?.name || 'admin';
+    return this.shopifyService.cancelOrder(id, user, reason || '');
+  }
+
+  // استرجاع أوردر ملغي (أدمن فقط)
+  @Patch('orders/:id/restore')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async restoreOrder(@Param('id') id: string) {
+    return this.shopifyService.restoreOrder(id);
   }
 
   // ترقية: حفظ shopifyCreatedAt في transactions القديمة (تشغيل مرة واحدة)
