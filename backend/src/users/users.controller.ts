@@ -59,7 +59,17 @@ export class UsersController {
     if (!userId) throw new BadRequestException('تعذر تحديد هوية المستخدم');
     // Non-admins cannot change role or perms
     const safeDto: UpdateUserDto = { name: dto.name, phone: dto.phone, avatar: dto.avatar, password: dto.password };
-    return this.usersService.updateUser(userId, safeDto);
+    const user = await this.usersService.updateUser(userId, safeDto);
+    if (dto.avatar !== undefined || dto.name !== undefined) {
+      try {
+        this.presenceGateway.emitEvent('user:profile-changed', {
+          userId,
+          name: user.name,
+          avatar: user.avatar || '',
+        });
+      } catch (_) {}
+    }
+    return user;
   }
 
   @Get('mentionable')
@@ -98,7 +108,17 @@ export class UsersController {
     if (target && target.username === 'admin' && dto.role && dto.role !== 'admin') {
       throw new ForbiddenException('لا يمكن تغيير دور السوبر أدمن');
     }
-    return this.usersService.updateUser(id, dto);
+    const user = await this.usersService.updateUser(id, dto);
+    if (dto.avatar !== undefined || dto.name !== undefined) {
+      try {
+        this.presenceGateway.emitEvent('user:profile-changed', {
+          userId: id,
+          name: user.name,
+          avatar: user.avatar || '',
+        });
+      } catch (_) {}
+    }
+    return user;
   }
 
   @Roles('admin')

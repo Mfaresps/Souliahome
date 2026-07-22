@@ -1,7 +1,26 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 
 export type FollowUpDocument = HydratedDocument<FollowUp>;
+
+@Schema({ _id: true, timestamps: true })
+export class FollowUpComment {
+  _id?: Types.ObjectId;
+
+  @Prop({ required: true })
+  authorId: string;
+
+  @Prop({ required: true })
+  authorName: string;
+
+  @Prop({ required: true })
+  text: string;
+
+  @Prop({ default: false })
+  edited: boolean;
+}
+
+export const FollowUpCommentSchema = SchemaFactory.createForClass(FollowUpComment);
 
 @Schema({ timestamps: true })
 export class FollowUp {
@@ -10,6 +29,9 @@ export class FollowUp {
 
   @Prop()
   transactionId: string;
+
+  @Prop()
+  shopifyOrderId: string; // set when orderRef was picked from a Shopify order instead of a system sales transaction
 
   @Prop()
   clientName: string;
@@ -30,7 +52,10 @@ export class FollowUp {
   status: string; // قيد المتابعة | تمت المتابعة | بانتظار العميل | يحتاج مراجعة | لم يتم الحل
 
   @Prop({ default: '' })
-  comment: string;
+  comment: string; // deprecated — legacy single-note field, kept for old records; use `comments` going forward
+
+  @Prop({ type: [FollowUpCommentSchema], default: [] })
+  comments: FollowUpComment[]; // full comment thread — one entry per user note, each editable/deletable by its author
 
   @Prop({ default: '' })
   reasonOther: string; // free-text reason when reason === 'أخرى'

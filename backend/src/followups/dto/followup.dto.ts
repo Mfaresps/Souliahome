@@ -3,6 +3,7 @@ import { IsString, IsOptional, IsArray } from 'class-validator';
 export class CreateFollowUpDto {
   @IsString() orderRef: string;
   @IsOptional() @IsString() transactionId?: string;
+  @IsOptional() @IsString() shopifyOrderId?: string;
   @IsOptional() @IsString() clientName?: string;
   @IsOptional() @IsString() clientPhone?: string;
   @IsString() responsibleId: string;

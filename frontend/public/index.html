@@ -2786,6 +2786,8 @@ body.dark-mode .cmp-chip .s-tab-count{background:rgba(255,255,255,.08)}
 .fu-card-phone{font-size:.74rem;color:var(--muted);margin-top:3px;direction:ltr;text-align:right;cursor:pointer;font-variant-numeric:tabular-nums}
 
 .fu-card-statusrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:12px}
+.fu-card-field-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px}
+.fu-card-field-label{font-size:.7rem;color:var(--muted);font-weight:600;flex-shrink:0}
 .fu-status-chip{display:inline-flex;align-items:center;gap:5px;border:none;border-radius:14px;padding:4px 9px;font-size:.72rem;font-weight:700;font-family:inherit;cursor:pointer;max-width:100%}
 .fu-status-chip .fu-status-chip-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .fu-status-chip svg{flex-shrink:0;opacity:.75}
@@ -2794,6 +2796,13 @@ body.dark-mode .cmp-chip .s-tab-count{background:rgba(255,255,255,.08)}
 .fu-esc-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;background:rgba(217,119,6,.12);color:#b45309;font-size:.68rem;font-weight:700;white-space:nowrap}
 body.dark-mode .fu-esc-badge{background:rgba(217,119,6,.2);color:#fbbf24}
 .fu-card-tags{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:10px}
+.fu-card-comments-bar{display:flex;align-items:center;gap:7px;margin-top:10px;cursor:pointer}
+.fu-avatar-stack{display:flex;align-items:center;flex-shrink:0}
+.fu-avatar-stack>*{margin-inline-start:-8px;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--border)}
+.fu-avatar-stack>*:last-child{margin-inline-start:0}
+.fu-avatar-stack-more{width:22px;height:22px;border-radius:50%;background:var(--bg-alt);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;margin-inline-start:-8px;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--border);flex-shrink:0}
+.fu-comments-count{font-size:.72rem;color:var(--muted);font-weight:600;white-space:nowrap}
+.fu-comments-view-btn{margin-inline-start:auto;background:none;border:none;padding:0;cursor:pointer;font-size:.72rem;font-weight:700;color:var(--primary);white-space:nowrap}
 .fu-card-comment{display:flex;align-items:flex-start;gap:7px;margin-top:10px;padding:8px 10px;border-radius:9px;background:var(--bg-alt);color:var(--text);cursor:pointer}
 .fu-card-comment svg{flex-shrink:0;margin-top:2px;color:var(--primary)}
 .fu-card-comment-text{font-size:.8rem;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
@@ -2813,6 +2822,57 @@ body.dark-mode .fu-esc-badge{background:rgba(217,119,6,.2);color:#fbbf24}
 .fu-status-menu-portal{min-width:210px}
 .fu-status-menu-portal .dd-item{gap:9px}
 .fu-status-menu-portal .dd-item.active{background:var(--primary-pale);font-weight:700}
+
+/* ── مسار المتابعة — comment timeline modal ─────────────────── */
+.fu-thread-overlay{display:none;position:fixed;inset:0;z-index:1200;background:rgba(15,23,42,.5);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:24px;box-sizing:border-box}
+.fu-thread-overlay.show{display:flex;animation:fuThreadFadeIn .18s ease}
+@keyframes fuThreadFadeIn{from{opacity:0}to{opacity:1}}
+.fu-thread-modal{background:var(--bg);border-radius:16px;width:460px;max-width:100%;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.25);animation:fuThreadPop .2s ease}
+@keyframes fuThreadPop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.fu-thread-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.fu-thread-header h4{margin:0;font-size:.92rem;font-weight:700;color:var(--text)}
+.fu-thread-close{background:none;border:none;font-size:1.3rem;line-height:1;cursor:pointer;color:var(--muted);width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.fu-thread-close:hover{background:var(--bg-alt);color:var(--text)}
+.fu-thread-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 18px}
+.fu-thread-empty{text-align:center;color:var(--muted);font-size:.82rem;padding:28px 0}
+
+.fu-timeline{position:relative}
+.fu-timeline-item{position:relative;display:flex;gap:10px;padding-bottom:18px}
+.fu-timeline-item:last-child{padding-bottom:0}
+.fu-timeline-item:not(:last-child)::before{content:'';position:absolute;top:32px;bottom:-2px;inset-inline-start:15px;width:2px;background:var(--border)}
+.fu-timeline-avatar{flex-shrink:0;z-index:1}
+.fu-timeline-content{flex:1;min-width:0;background:var(--bg-alt);border-radius:11px;padding:9px 11px}
+.fu-timeline-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px}
+.fu-timeline-who{display:flex;align-items:baseline;gap:6px;min-width:0}
+.fu-timeline-name{font-size:.8rem;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fu-timeline-time{font-size:.66rem;color:var(--muted);white-space:nowrap;cursor:default}
+.fu-timeline-edited{font-size:.62rem;color:var(--muted);font-style:italic}
+.fu-timeline-text{font-size:.82rem;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.fu-timeline-menu-btn{flex-shrink:0;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1}
+.fu-timeline-menu-btn:hover{background:var(--surface2);color:var(--text)}
+.fu-timeline-item-highlight .fu-timeline-content{animation:fuCommentPulse 2.5s ease}
+@keyframes fuCommentPulse{0%,100%{box-shadow:none}25%{box-shadow:0 0 0 2px var(--primary)}}
+
+.fu-thread-composer{flex-shrink:0;border-top:1px solid var(--border);padding:14px 18px;background:var(--bg)}
+.fu-thread-composer textarea{width:100%;font-size:.85rem;padding:9px 11px;box-sizing:border-box;resize:vertical;border-radius:9px;border:1px solid var(--border);font-family:inherit;background:var(--surface);color:var(--text)}
+.fu-thread-composer-actions{display:flex;gap:8px;margin-top:10px;justify-content:flex-end}
+.fu-comment-send-btn{width:38px;height:38px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0}
+
+/* "إضافة متابعة" — green with a soft breathing glow so the primary action
+   on the follow-ups page reads at a glance, without being distracting. */
+.fu-new-btn-glow{background:#10b981;border-color:#10b981;color:#fff;animation:fuNewBtnGlow 2.6s ease-in-out infinite}
+.fu-new-btn-glow:hover{background:#0ea371;border-color:#0ea371}
+@keyframes fuNewBtnGlow{
+  0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.45)}
+  50%{box-shadow:0 0 0 8px rgba(16,185,129,0)}
+}
+
+@media(max-width:600px){
+  .fu-thread-overlay{padding:0;align-items:flex-end}
+  .fu-thread-modal{width:100%;max-width:100%;max-height:88vh;border-radius:16px 16px 0 0}
+  .fu-thread-modal{animation:fuThreadSlideUp .22s ease}
+}
+@keyframes fuThreadSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 
 @media(max-width:768px){
   .fu-table-wrap{display:none}
@@ -8321,7 +8381,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:4px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       شكوى جديدة
     </button>
-    <button class="btn btn-primary btn-sm" onclick="openFuModal()" id="btn-new-fu" style="display:none;background:var(--text);border-color:var(--text)">
+    <button class="btn btn-sm fu-new-btn-glow" onclick="openFuModal()" id="btn-new-fu" style="display:none">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:4px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       إضافة متابعة
     </button>
@@ -8421,10 +8481,11 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
             <th style="padding:8px 12px;font-weight:600;font-size:.72rem;color:var(--muted)">الحالة</th>
             <th style="padding:8px 12px;font-weight:600;font-size:.72rem;color:var(--muted)">
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              وقت
+              آخر تحديث
             </th>
-            <th style="padding:8px 12px;font-weight:600;font-size:.72rem;color:var(--muted);text-align:center">
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            <th style="padding:8px 12px;font-weight:600;font-size:.72rem;color:var(--muted);text-align:center" title="مسار المتابعة">
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              مسار المتابعة
             </th>
             <th style="padding:8px 12px;font-weight:600;font-size:.72rem;color:var(--muted)">
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -8587,39 +8648,23 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <button onclick="closeFuModal()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted)">×</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px">
-      <!-- Order mode toggle -->
+      <!-- Unified order search -->
       <div>
-        <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">نوع الطلب</label>
-        <div style="display:flex;gap:4px;background:var(--bg-alt);border-radius:10px;padding:4px">
-          <button type="button" id="fu-mode-btn-registered" onclick="_fuSetOrderMode('registered')"
-            style="flex:1;border:none;border-radius:8px;padding:9px 10px;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .18s">رقم مسجل بالنظام</button>
-          <button type="button" id="fu-mode-btn-unregistered" onclick="_fuSetOrderMode('unregistered')"
-            style="flex:1;border:none;border-radius:8px;padding:9px 10px;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .18s">رقم غير مسجل</button>
-        </div>
-      </div>
-      <!-- Live search order (registered) -->
-      <div id="fu-order-registered-wrap">
-        <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px">رقم الطلب (مبيعات) <span style="color:var(--red)">*</span></label>
+        <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px">رقم الطلب <span style="color:var(--red)">*</span></label>
         <div style="position:relative">
-          <input type="text" id="fu-order-search" placeholder="ابحث برقم الطلب أو اسم العميل..." autocomplete="off"
+          <input type="text" id="fu-order-search" placeholder="ابحث برقم الطلب أو اسم العميل، أو اكتب رقماً جديداً..." autocomplete="off"
             style="width:100%;height:36px;font-size:.85rem;padding:2px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px"
-            oninput="fuOrderSearch(this.value)">
-          <div id="fu-order-results" style="display:none;position:absolute;top:38px;right:0;left:0;background:var(--bg);border:1px solid var(--border);border-radius:8px;max-height:200px;overflow-y:auto;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
+            oninput="fuOrderSearch(this.value)" onfocus="fuOrderSearch(this.value)">
+          <div id="fu-order-results" style="display:none;position:absolute;top:38px;right:0;left:0;background:var(--bg);border:1px solid var(--border);border-radius:8px;max-height:260px;overflow-y:auto;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
         </div>
-      </div>
-      <!-- Manual order number (unregistered) -->
-      <div id="fu-order-unregistered-wrap" style="display:none">
-        <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px">رقم الطلب (غير مسجل بالنظام) <span style="color:var(--red)">*</span></label>
-        <input type="text" id="fu-order-manual" placeholder="اكتب رقم الطلب..." autocomplete="off"
-          oninput="_fuCheckManualOrderExists(this.value)"
-          style="width:100%;height:36px;font-size:.85rem;padding:2px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px">
-        <div id="fu-order-manual-warning" style="display:none;margin-top:6px;font-size:.78rem;color:#c2410c;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:6px 10px">⚠️ هذا الرقم مسجل بالفعل في النظام كطلب مبيعات — تأكد من اختيارك "رقم مسجل بالنظام" بدلاً من ذلك.</div>
       </div>
       <input type="hidden" id="fu-modal-order-ref">
       <input type="hidden" id="fu-modal-order-txid">
+      <input type="hidden" id="fu-modal-order-shopify-id">
       <!-- Selected order info -->
       <div id="fu-modal-client-row" style="display:none;background:var(--bg-alt);border-radius:8px;padding:8px 12px;font-size:.82rem">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span id="fu-modal-order-source-badge"></span>
           <span>📦 <strong id="fu-modal-order-label"></strong></span>
           <span>👤 <span id="fu-modal-client-name"></span></span>
           <span id="fu-modal-wa-preview"></span>
@@ -8654,10 +8699,6 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         </select>
         <input type="text" id="fu-modal-resolution" placeholder="اكتب طريقة الحل..." style="display:none;margin-top:6px;width:100%;height:34px;font-size:.85rem;padding:2px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px">
       </div>
-      <div>
-        <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px">تعليق</label>
-        <textarea id="fu-modal-comment" rows="2" placeholder="ملاحظات إضافية..." style="width:100%;font-size:.85rem;padding:6px 10px;box-sizing:border-box;resize:vertical;border-radius:8px;border:1px solid var(--border)"></textarea>
-      </div>
     </div>
     <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
       <button onclick="closeFuModal()" class="btn btn-outline btn-sm">إلغاء</button>
@@ -8666,20 +8707,20 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   </div>
 </div>
 
-<!-- Follow-up Comment Popup -->
-<div id="fu-comment-popup" style="display:none;position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
-  <div style="background:var(--bg);border-radius:12px;padding:20px;width:400px;max-width:95vw;direction:rtl">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <h4 style="margin:0;font-size:.9rem;font-weight:700">تعليق على الطلب</h4>
-      <button onclick="closeFuCommentPopup()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)">×</button>
+<!-- Follow-up Comment Thread / مسار المتابعة -->
+<div id="fu-comment-popup" class="fu-thread-overlay">
+  <div class="fu-thread-modal" dir="rtl">
+    <div class="fu-thread-header">
+      <h4 id="fu-comment-title">مسار المتابعة</h4>
+      <button class="fu-thread-close" onclick="closeFuCommentPopup()">×</button>
     </div>
-    <!-- Read view -->
-    <div id="fu-comment-read" style="display:none;background:var(--bg-alt);border-radius:8px;padding:10px 12px;font-size:.85rem;margin-bottom:10px;min-height:40px;white-space:pre-wrap;word-break:break-word"></div>
-    <!-- Edit -->
-    <textarea id="fu-comment-text" rows="4" placeholder="أضف ملاحظة..." style="width:100%;font-size:.85rem;padding:8px 10px;box-sizing:border-box;resize:vertical;border-radius:8px;border:1px solid var(--border)"></textarea>
-    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
-      <button onclick="closeFuCommentPopup()" class="btn btn-outline btn-sm">إلغاء</button>
-      <button onclick="saveFuComment()" class="btn btn-primary btn-sm">حفظ التعليق</button>
+    <div id="fu-comment-thread" class="fu-thread-body"></div>
+    <div class="fu-thread-composer">
+      <textarea id="fu-comment-text" rows="2" placeholder="أضف تعليقاً..."></textarea>
+      <div class="fu-thread-composer-actions">
+        <button id="fu-comment-cancel-edit-btn" onclick="_fuCancelEditComment()" class="btn btn-outline btn-sm" style="display:none">إلغاء التعديل</button>
+        <button onclick="saveFuComment()" class="btn btn-primary btn-sm fu-comment-send-btn" id="fu-comment-save-btn" title="إضافة تعليق" aria-label="إضافة تعليق"></button>
+      </div>
     </div>
   </div>
 </div>
@@ -15044,6 +15085,25 @@ function connectSocket() {
     _updateNotifTimestamp?.();
   });
 
+  // A user changed their avatar/name — keep every avatar shown across the
+  // app (follow-up cards, comment timelines, etc.) in sync live rather than
+  // waiting for a manual refresh.
+  socket.on('user:profile-changed', (payload) => {
+    if (!payload?.userId) return;
+    const u = (Array.isArray(users) ? users : []).find(x => String(x._id) === String(payload.userId));
+    if (u) {
+      if (payload.name !== undefined) u.name = payload.name;
+      if (payload.avatar !== undefined) u.avatar = payload.avatar;
+    }
+    if (currentUser && String(currentUser._id || currentUser.id) === String(payload.userId)) {
+      if (payload.name !== undefined) currentUser.name = payload.name;
+      if (payload.avatar !== undefined) currentUser.avatar = payload.avatar;
+      updateHeader?.();
+    }
+    if (qs('#fu-orders-section')?.style.display !== 'none') { renderFollowUps(); }
+    if (qs('#fu-comment-popup')?.classList.contains('show')) { _fuRenderCommentThread(); }
+  });
+
   // Real-time banner sync — admin publishes, all other tabs/users update instantly
   socket.on('banner:changed', (cfg) => {
     try {
@@ -16838,6 +16898,30 @@ function _buildMentionCardHtml(m, cls = 'nc-mention-card') {
     </div>`;
   }
 
+  // ── New comment on a follow-up thread (تعليق جديد على متابعة) ──
+  if (/^تعليق جديد على متابعة #/.test(m.commentText || '')) {
+    const cColor = '#7c3aed';
+    const cMatch = /^تعليق جديد على متابعة #([^:]*):\s*([\s\S]*)$/.exec(m.commentText || '');
+    const cOrderRef = cMatch ? cMatch[1].trim() : (m.txRef || '');
+    const cPreview  = cMatch ? cMatch[2].trim() : '';
+    const fromUser  = (typeof users !== 'undefined' ? users : []).find(u => String(u._id) === String(m.fromUserId)) || { name: m.fromName };
+    const avatarHtml = userAvatarHtml(fromUser, 28);
+    return `<div class="${cls}" style="position:relative;padding:10px 12px;padding-inline-start:${pad};cursor:pointer;${isUnread ? `background:${cColor}0a` : ''}" ${clickAttr}>${unreadBar}
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        ${avatarHtml}
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap">
+            ${unreadDot(cColor)}<span style="font-size:.78rem;font-weight:700;color:var(--text)">${esc(m.fromName || '')}</span>
+            <span style="font-size:.72rem;color:${cColor};font-weight:600">علّق على متابعة</span>
+            ${cOrderRef ? `<span style="font-size:.68rem;font-weight:700;color:${cColor};background:${cColor}1a;border-radius:5px;padding:1px 6px;white-space:nowrap" dir="ltr">#${esc(cOrderRef)}</span>` : ''}
+            <span style="font-size:.62rem;color:var(--muted);margin-inline-start:auto;white-space:nowrap">${ago}</span>
+          </div>
+          ${cPreview ? `<div style="font-size:.73rem;color:var(--text);line-height:1.4;background:var(--surface);border-radius:7px;padding:6px 8px;word-break:break-word;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${esc(cPreview)}</div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
   // ── Regular mention (إشارة عادية) ──
   const rawTxt = _stripHtml((m.commentText || '').replace(/\s*EGP\s*/gi, ' ')).replace(/\s{2,}/g, ' ').trim();
   const txt = rawTxt
@@ -17387,7 +17471,8 @@ async function onMentionNotifClick(mentionId, txId, commentId) {
   // Check if this is a follow-up mention (txId is a followup _id, not a transaction _id)
   const isFu = Array.isArray(followUps) && followUps.some(f => String(f._id) === String(txId));
   if (isFu) {
-    goToFuAndHighlight(txId);
+    const isCommentNotif = /^تعليق جديد على متابعة/.test(m?.commentText || '');
+    goToFuAndHighlight(txId, isCommentNotif, m?.fuCommentId || '');
     return;
   }
 
@@ -44975,6 +45060,44 @@ function cmpShortName(name) {
   if (parts.length === 1) return parts[0].length > 10 ? parts[0].slice(0, 10) + '…' : parts[0];
   return parts[0] + ' ' + parts[1][0] + '.';
 }
+/* Reusable circular avatar: real profile image when the user has one and it
+   loads, initials otherwise. Avoids nested-quote onerror strings by toggling
+   a sibling fallback span instead of rebuilding a node in the handler. */
+function userAvatarHtml(user, sizePx = 26) {
+  const name = (user?.name || user?.username || '').trim();
+  const initials = name ? name.trim().split(/\s+/).filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
+  const url = user ? sanitizeUrl(user.avatar) : '';
+  const common = `width:${sizePx}px;height:${sizePx}px;border-radius:50%;flex-shrink:0`;
+  if (!url) {
+    return `<span class="user-avatar-fallback" style="${common};display:flex;align-items:center;justify-content:center;background:var(--accent);color:#fff;font-weight:700;font-size:${Math.round(sizePx*.4)}px" title="${esc(name)}">${esc(initials)}</span>`;
+  }
+  return `<span style="${common};position:relative;display:inline-block" title="${esc(name)}">
+    <img src="${esc(url)}" alt="" style="${common};object-fit:cover;position:absolute;inset:0" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="user-avatar-fallback" style="${common};display:none;align-items:center;justify-content:center;background:var(--accent);color:#fff;font-weight:700;font-size:${Math.round(sizePx*.4)}px;position:absolute;inset:0">${esc(initials)}</span>
+  </span>`;
+}
+
+/* Arabic relative time with proper dual/plural forms (منذ 5 دقائق، منذ
+   ساعتين، منذ يوم...) — coarser helpers elsewhere (_timeAgo) don't
+   distinguish singular/dual/plural, which reads oddly in a comment timeline. */
+function _fuRelTime(iso) {
+  if (!iso) return '';
+  const diffSec = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  const units = [
+    { secs: 60, words: ['أقل من دقيقة', 'دقيقة', 'دقيقتين', 'دقائق'] },
+    { secs: 3600, div: 60, words: ['أقل من ساعة', 'ساعة', 'ساعتين', 'ساعات'] },
+    { secs: 86400, div: 3600, words: ['أقل من يوم', 'يوم', 'يومين', 'أيام'] },
+    { secs: 2592000, div: 86400, words: ['أقل من أسبوع', 'أسبوع', 'أسبوعين', 'أسابيع'] },
+  ];
+  const pick = (n, w) => n < 1 ? w[0] : n === 1 ? `منذ ${w[1]}` : n === 2 ? `منذ ${w[2]}` : n <= 10 ? `منذ ${n} ${w[3]}` : `منذ ${n} ${w[1]}`;
+  if (diffSec < 60) return 'الآن';
+  if (diffSec < units[0].secs * 60) { const n = Math.floor(diffSec / 60); return pick(n, units[0].words); }
+  if (diffSec < units[1].secs * 24) { const n = Math.floor(diffSec / units[1].div); return pick(n, units[1].words); }
+  if (diffSec < units[2].secs * 7) { const n = Math.floor(diffSec / units[2].div); return pick(n, units[2].words); }
+  if (diffSec < units[3].secs * 4) { const n = Math.floor(diffSec / units[3].div); return pick(n, units[3].words); }
+  return fmtDate(iso);
+}
+
 /* Small avatar-initial badge for "assigned to" labels, replacing the raw
    👤 emoji (renders inconsistently across OS/fonts and reads as unpolished). */
 function personBadgeHtml(name) {
@@ -45529,6 +45652,7 @@ function exportComplaintsExcel() {
 let followUps = [];
 let fuEditId = null;
 let fuCommentTargetId = null;
+let _fuEditingCommentId = null;
 
 const FU_STATUS_STYLES = {
   'في انتظار المتابعة': { bg:'#fff7ed', color:'#c2410c', dot:'#f97316' },
@@ -45740,8 +45864,41 @@ function renderFollowUps() {
       <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>`;
 
-    const hasComment = !!f.comment;
-    const commentBtn = `<button onclick="openFuCommentPopup('${fId}')" title="${hasComment ? esc(f.comment) : 'إضافة ملاحظة'}" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;border:none;cursor:pointer;background:${hasComment?'var(--primary-pale)':'var(--bg-alt)'};color:${hasComment?'var(--primary)':'var(--muted)'}">
+    const fuComments = Array.isArray(f.comments) ? f.comments : [];
+    const lastComment = fuComments.length ? fuComments[fuComments.length - 1] : null;
+    const hasComment = !!lastComment;
+
+    // Stacked avatar group — one avatar per unique commenter (most recent
+    // first), capped visually with a "+N" overflow chip, plus a total count
+    // and a compact "view comments" action. Kept to a single slim row so the
+    // card doesn't grow taller than before.
+    const uniqueCommenters = [];
+    const seenAuthorIds = new Set();
+    for (let i = fuComments.length - 1; i >= 0; i--) {
+      const c = fuComments[i];
+      const aid = String(c.authorId);
+      if (seenAuthorIds.has(aid)) continue;
+      seenAuthorIds.add(aid);
+      const u = (typeof users !== 'undefined' ? users : []).find(x => String(x._id) === aid) || { name: c.authorName };
+      uniqueCommenters.push(u);
+    }
+    const FU_AVATAR_STACK_MAX = 3;
+    const shownCommenters = uniqueCommenters.slice(0, FU_AVATAR_STACK_MAX);
+    const extraCommenters = uniqueCommenters.length - shownCommenters.length;
+    const avatarStackHtml = shownCommenters.length
+      ? `<div class="fu-avatar-stack">
+          ${shownCommenters.map(u => userAvatarHtml(u, 22)).join('')}
+          ${extraCommenters > 0 ? `<span class="fu-avatar-stack-more">+${extraCommenters}</span>` : ''}
+        </div>`
+      : '';
+    const commentsBarHtml = fuComments.length
+      ? `<div class="fu-card-comments-bar" onclick="event.stopPropagation();openFuCommentPopup('${fId}')">
+          ${avatarStackHtml}
+          <span class="fu-comments-count">${fuComments.length} تعليق</span>
+          <button type="button" class="fu-comments-view-btn" onclick="event.stopPropagation();openFuCommentPopup('${fId}')">عرض التعليقات</button>
+        </div>`
+      : '';
+    const commentBtn = `<button onclick="openFuCommentPopup('${fId}')" title="${hasComment ? esc(lastComment.text) : 'إضافة تعليق'}" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;border:none;cursor:pointer;background:${hasComment?'var(--primary-pale)':'var(--bg-alt)'};color:${hasComment?'var(--primary)':'var(--muted)'}">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
     </button>`;
     const editBtn = `<button onclick="openFuModal('${fId}')" title="تعديل" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;border:none;cursor:pointer;background:var(--bg-alt);color:var(--muted)">
@@ -45783,7 +45940,12 @@ function renderFollowUps() {
       <td style="${P}">${statusSel}</td>
       <td style="${P};font-size:.72rem;color:var(--muted)">${fmtElapsed(f.updatedAt||f.createdAt||'')}${escBadge ? `<br>${escBadge}` : ''}</td>
       <td style="${P};text-align:center"><div style="display:flex;align-items:center;gap:4px;justify-content:center">${commentBtn}${editBtn}${delBtn}</div></td>
-      <td style="${P};font-size:.78rem;color:var(--text)">${esc(f.responsibleName||'—')}</td>
+      <td style="${P};font-size:.78rem;color:var(--text)">
+        <div style="display:flex;align-items:center;gap:6px">
+          ${userAvatarHtml((typeof users !== 'undefined' ? users : []).find(u => String(u._id) === String(f.responsibleId)) || { name: f.responsibleName }, 22)}
+          <span>${esc(f.responsibleName||'—')}</span>
+        </div>
+      </td>
     </tr>`;
 
     const card = `<article class="fu-card${isUnseen?' is-unseen':''}${isDone?' is-done':''}" data-fu-id="${fId}">
@@ -45798,15 +45960,17 @@ function renderFollowUps() {
         </div>
       </div>
       ${resolvedPhone ? `<div class="fu-card-phone" onclick="openFuModal('${fId}')" dir="ltr">${esc(resolvedPhone)}</div>` : ''}
-      <div class="fu-card-statusrow" onclick="event.stopPropagation()">
+      ${f.reason ? `<div class="fu-card-field-row"><span class="fu-card-field-label">سبب المتابعة:</span>${reasonHtml}</div>` : ''}
+      <div class="fu-card-field-row" onclick="event.stopPropagation()">
+        <span class="fu-card-field-label">الحالة:</span>
         ${statusBtnCard}
-        ${reasonHtml}
         ${escBadge}
       </div>
       ${tagsHtml ? `<div class="fu-card-tags" onclick="event.stopPropagation()">${tagsHtml}${addTagBtn}</div>` : ''}
-      ${hasComment ? `<div class="fu-card-comment" onclick="event.stopPropagation();openFuCommentPopup('${fId}')" title="اضغط للتعديل">
+      ${commentsBarHtml}
+      ${hasComment ? `<div class="fu-card-comment" onclick="event.stopPropagation();openFuCommentPopup('${fId}')" title="اضغط لعرض كل التعليقات">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        <span class="fu-card-comment-text">${esc(f.comment)}</span>
+        <span class="fu-card-comment-text"><strong>${esc(lastComment.authorName || '')}:</strong> ${esc(lastComment.text)}</span>
       </div>` : ''}
       <div class="fu-card-meta-row">
         ${personBadgeHtml(f.responsibleName)}
@@ -45886,7 +46050,6 @@ function fuOpenCardMenu(e, id) {
   const hadOpen = !!document.querySelector('.dd-menu-portal.show');
   closeAllMenus();
   if (hadOpen) return;
-  const hasComment = !!f.comment;
   const _tx = transactions.find(t => t._id === f.transactionId || t.ref === f.orderRef);
   const resolvedPhone = (f.clientPhone || _tx?.phone || '').trim();
   const portal = document.createElement('div');
@@ -45894,7 +46057,8 @@ function fuOpenCardMenu(e, id) {
   portal.innerHTML = `
     <button type="button" class="dd-item" data-action="edit"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span class="dd-label">تعديل</span></button>
     ${resolvedPhone ? `<button type="button" class="dd-item" data-action="whatsapp"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg><span class="dd-label">واتساب</span></button>` : ''}
-    <button type="button" class="dd-item" data-action="comment"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="dd-label">${hasComment ? 'تعديل الملاحظة' : 'إضافة ملاحظة'}</span></button>
+    <button type="button" class="dd-item" data-action="comment"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="dd-label">إضافة تعليق</span></button>
+    <button type="button" class="dd-item" data-action="trail"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="dd-label">مسار المتابعة</span></button>
     <button type="button" class="dd-item danger" data-action="delete"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg><span class="dd-label">حذف</span></button>`;
   document.body.appendChild(portal);
   const rect = btn.getBoundingClientRect();
@@ -45920,6 +46084,7 @@ function fuOpenCardMenu(e, id) {
     if (item.dataset.action === 'edit') openFuModal(id);
     else if (item.dataset.action === 'whatsapp') window.open(`https://wa.me/${resolvedPhone.replace(/\D/g,'')}`, '_blank', 'noopener');
     else if (item.dataset.action === 'comment') openFuCommentPopup(id);
+    else if (item.dataset.action === 'trail') openFuCommentPopup(id);
     else if (item.dataset.action === 'delete') deleteFuItem(id);
   });
   requestAnimationFrame(() => portal.classList.add('show'));
@@ -46117,20 +46282,56 @@ async function removeFuTag(id, tag) {
   } catch(e){toast(e.message,true);}
 }
 
-function goToFuAndHighlight(fuId) {
+async function goToFuAndHighlight(fuId, openThread = false, highlightCommentId = '') {
   navigateTo('complaints');
-  setTimeout(()=>{
+  setTimeout(async ()=>{
     if(typeof switchMainTab==='function') switchMainTab('fu');
-    setTimeout(()=>{
+
+    // switchMainTab('fu') kicks off an async loadFollowUps() fetch — wait for
+    // it (and any filters that would hide this item) before hunting for the
+    // row/card in the DOM, otherwise the highlight silently no-ops when the
+    // network round-trip outlasts a fixed setTimeout.
+    try { await loadFollowUps(); } catch(_) {}
+
+    const statusF = qs('#fu-status-filter');
+    const userF = qs('#fu-user-filter');
+    const searchF = qs('#fu-search');
+    const fromF = qs('#fu-from');
+    const toF = qs('#fu-to');
+    if (statusF && statusF.value) statusF.value = '';
+    if (userF && userF.value) userF.value = '';
+    if (searchF && searchF.value) searchF.value = '';
+    if (fromF && fromF.value) { fromF.value = ''; fromF.classList.remove('has-value'); }
+    if (toF && toF.value) { toF.value = ''; toF.classList.remove('has-value'); }
+
+    // Jump to whichever page this follow-up actually lands on, mirroring
+    // renderFollowUps' own sort (active first, then done, both newest-first).
+    const f = (followUps||[]).find(x => String(x._id) === String(fuId));
+    if (f) {
+      const isDoneStatus = s => s === 'تم حل المشكلة' || s === 'تمت المتابعة';
+      const active = (followUps||[]).filter(x => !isDoneStatus(x.status)).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+      const done   = (followUps||[]).filter(x => isDoneStatus(x.status)).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+      const ordered = [...active, ...done];
+      const idx = ordered.findIndex(x => String(x._id) === String(fuId));
+      if (idx !== -1 && typeof FU_PAGE_SIZE !== 'undefined') _fuPage = Math.floor(idx / FU_PAGE_SIZE) + 1;
+    }
+    renderFollowUps();
+
+    let tries = 0;
+    const tryHighlight = () => {
       const candidates = [qs(`#fu-row-${fuId}`), qs(`.fu-card[data-fu-id="${fuId}"]`)];
-      candidates.forEach(el => {
-        if (!el || el.offsetParent === null) return;
+      const found = candidates.some(el => {
+        if (!el || el.offsetParent === null) return false;
         el.classList.remove('nav-highlight-fu'); void el.offsetWidth;
         el.classList.add('nav-highlight-fu');
         el.scrollIntoView({behavior:'smooth',block:'center'});
         setTimeout(()=>el.classList.remove('nav-highlight-fu'),3000);
+        return true;
       });
-    },400);
+      if (!found && tries < 10) { tries++; setTimeout(tryHighlight, 150); return; }
+      if (openThread) openFuCommentPopup(fuId, highlightCommentId);
+    };
+    tryHighlight();
   },320);
 }
 
@@ -46142,13 +46343,6 @@ function _fuPopulateStatusOptions(reason, keepValue) {
   sel.value = opts.includes(prev) ? prev : opts[0];
 }
 
-function _fuCheckManualOrderExists(q) {
-  const warn = qs('#fu-order-manual-warning');
-  const keyword = String(q||'').trim().toLowerCase();
-  const exists = !!keyword && transactions.some(t => t.type === 'مبيعات' && String(t.ref||'').toLowerCase() === keyword);
-  warn.style.display = exists ? 'block' : 'none';
-}
-
 function _fuOnReasonChange() {
   const reasonSel = qs('#fu-modal-reason');
   const reason = reasonSel.value;
@@ -46156,95 +46350,158 @@ function _fuOnReasonChange() {
   _fuPopulateStatusOptions(reason);
 }
 
-// Live search for sales transactions in fu modal
+// Unified order search in fu modal — searches system sales transactions, Shopify orders,
+// and falls back to letting the user register a brand-new (unregistered) order number.
 let _fuSelectedTx = null;
-let _fuOrderMode = 'registered';
-const _FU_MODE_BASE_STYLE = 'flex:1;border:none;border-radius:8px;padding:9px 10px;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .18s;';
-function _fuSetOrderMode(mode) {
-  _fuOrderMode = mode;
-  const regBtn = qs('#fu-mode-btn-registered');
-  const unregBtn = qs('#fu-mode-btn-unregistered');
-  const activeStyle = 'background:var(--primary);color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)';
-  const inactiveStyle = 'background:transparent;color:var(--muted)';
-  regBtn.style.cssText = _FU_MODE_BASE_STYLE + (mode === 'registered' ? activeStyle : inactiveStyle);
-  unregBtn.style.cssText = _FU_MODE_BASE_STYLE + (mode === 'unregistered' ? activeStyle : inactiveStyle);
-  qs('#fu-order-registered-wrap').style.display = mode === 'registered' ? 'block' : 'none';
-  qs('#fu-order-unregistered-wrap').style.display = mode === 'unregistered' ? 'block' : 'none';
+let _fuSelectedSource = null; // 'system' | 'shopify' | 'manual'
+const _FU_SOURCE_BADGES = {
+  system:  '<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;background:#e0f2fe;color:#0369a1;font-size:.7rem;font-weight:700">من النظام</span>',
+  shopify: '<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;background:#f3f9ec;color:#3d6b1f;font-size:.7rem;font-weight:700">Shopify</span>',
+  manual:  '<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;background:#fff7ed;color:#c2410c;font-size:.7rem;font-weight:700">رقم غير مسجل</span>',
+};
+
+function _fuResetOrderSelection() {
+  _fuSelectedTx = null;
+  _fuSelectedSource = null;
   qs('#fu-modal-order-ref').value = '';
   qs('#fu-modal-order-txid').value = '';
+  qs('#fu-modal-order-shopify-id').value = '';
   qs('#fu-modal-client-row').style.display = 'none';
-  _fuSelectedTx = null;
-  if (mode === 'registered') {
-    qs('#fu-order-search').value = '';
-    qs('#fu-order-results').style.display = 'none';
-  } else {
-    qs('#fu-order-manual').value = '';
-  }
-  qs('#fu-order-manual-warning').style.display = 'none';
 }
+
 function fuOrderSearch(q) {
   const box = qs('#fu-order-results');
-  if (!q || q.length < 1) { box.style.display = 'none'; return; }
-  const keyword = q.toLowerCase();
-  // Auto-fill client info when typed value exactly matches a sales ref
-  const exact = transactions.find(t => t.type === 'مبيعات' && String(t.ref||'').toLowerCase() === keyword);
-  if (exact) fuSelectOrder(exact._id);
+  const keyword = String(q||'').trim().toLowerCase();
+  if (!keyword) { box.style.display = 'none'; return; }
+
   const sales = transactions.filter(t =>
     t.type === 'مبيعات' &&
     ([t.ref, t.client, t.phone].join(' ').toLowerCase().includes(keyword))
-  ).slice(0, 10);
-  if (!sales.length) {
+  ).slice(0, 8);
+  const shopify = (_shopifyOrders||[]).filter(o =>
+    [o.ref, o.client, o.phone||o.clientPhone].join(' ').toLowerCase().includes(keyword)
+  ).slice(0, 8);
+
+  // Auto-select when the typed value exactly matches a known ref
+  const exactSale = transactions.find(t => t.type === 'مبيعات' && String(t.ref||'').toLowerCase() === keyword);
+  const exactShopify = !exactSale && (_shopifyOrders||[]).find(o => String(o.ref||'').toLowerCase() === keyword);
+  if (exactSale) fuSelectSystemOrder(exactSale._id);
+  else if (exactShopify) fuSelectShopifyOrder(exactShopify._id);
+
+  const rows = [];
+  sales.forEach(t => {
+    const nm = (t.client||'').trim();
+    rows.push(`
+    <div onclick="fuSelectSystemOrder('${esc(t._id)}')" style="padding:8px 12px;cursor:pointer;font-size:.83rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px" onmouseenter="this.style.background='var(--bg-alt)'" onmouseleave="this.style.background=''">
+      <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><strong>${esc(t.ref||t._id)}</strong>${nm?` — ${esc(nm)}`:''}</span>
+      <span style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <span style="font-size:.75rem;color:var(--muted)">${esc(t.phone||'')}</span>
+        ${_FU_SOURCE_BADGES.system}
+      </span>
+    </div>`);
+  });
+  shopify.forEach(o => {
+    const nm = (o.client||'').trim();
+    rows.push(`
+    <div onclick="fuSelectShopifyOrder('${esc(o._id)}')" style="padding:8px 12px;cursor:pointer;font-size:.83rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px" onmouseenter="this.style.background='var(--bg-alt)'" onmouseleave="this.style.background=''">
+      <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><strong>${esc(o.ref||o._id)}</strong>${nm?` — ${esc(nm)}`:''}</span>
+      <span style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <span style="font-size:.75rem;color:var(--muted)">${esc(o.phone||o.clientPhone||'')}</span>
+        ${_FU_SOURCE_BADGES.shopify}
+      </span>
+    </div>`);
+  });
+
+  // Offer to register the typed value as a brand-new (unregistered) order number,
+  // unless it's already an exact match to something registered above.
+  const typedRaw = q.trim();
+  if (!exactSale && !exactShopify && typedRaw) {
+    const attrSafe = esc(typedRaw).replace(/'/g, '&#39;');
+    rows.push(`
+    <div onclick="fuSelectManualOrder('${attrSafe}')" style="padding:8px 12px;cursor:pointer;font-size:.83rem;display:flex;justify-content:space-between;align-items:center;gap:8px" onmouseenter="this.style.background='var(--bg-alt)'" onmouseleave="this.style.background=''">
+      <span>➕ استخدام "${esc(typedRaw)}" كرقم غير مسجل</span>
+      ${_FU_SOURCE_BADGES.manual}
+    </div>`);
+  }
+
+  if (!rows.length) {
     box.style.display = 'block';
     box.innerHTML = '<div style="padding:10px;font-size:.82rem;color:var(--muted)">لا توجد نتائج</div>';
     return;
   }
   box.style.display = 'block';
-  box.innerHTML = sales.map(t => {
-    const nm = (t.client||'').trim();
-    return `
-    <div onclick="fuSelectOrder('${esc(t._id)}')" style="padding:8px 12px;cursor:pointer;font-size:.83rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center" onmouseenter="this.style.background='var(--bg-alt)'" onmouseleave="this.style.background=''">
-      <span><strong>${esc(t.ref||t._id)}</strong>${nm?` — ${esc(nm)}`:''}</span>
-      <span style="font-size:.75rem;color:var(--muted)">${esc(t.phone||'')}</span>
-    </div>`;
-  }).join('');
+  box.innerHTML = rows.join('');
 }
 
-function fuSelectOrder(txId) {
-  const t = transactions.find(x => x._id === txId);
-  if (!t) return;
-  _fuSelectedTx = t;
-  const ref = t.ref || t._id;
-  const nm = (t.client||'').trim();
-  qs('#fu-modal-order-ref').value = ref;
-  qs('#fu-modal-order-txid').value = t._id;
-  qs('#fu-order-search').value = nm ? `${ref} — ${nm}` : ref;
-  qs('#fu-order-results').style.display = 'none';
-  // Show client info
+function _fuShowSelectedOrder(ref, name, phone, source) {
   qs('#fu-modal-order-label').textContent = ref;
-  qs('#fu-modal-client-name').textContent = nm || '—';
-  const phone = (t.phone||'').replace(/\D/g,'');
-  qs('#fu-modal-wa-preview').innerHTML = phone
-    ? `<a href="https://wa.me/${phone}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;color:#16a34a;font-size:.78rem;text-decoration:none">
+  qs('#fu-modal-client-name').textContent = name || '—';
+  qs('#fu-modal-order-source-badge').innerHTML = _FU_SOURCE_BADGES[source] || '';
+  const cleanPhone = (phone||'').replace(/\D/g,'');
+  qs('#fu-modal-wa-preview').innerHTML = cleanPhone
+    ? `<a href="https://wa.me/${cleanPhone}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;color:#16a34a;font-size:.78rem;text-decoration:none">
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet"><path fill="#16a34a" d="M373.3 306.8c-6.4-3.2-37.7-18.5-43.5-20.7-5.8-2.1-10.1-3.2-14.3 3.3-4.2 6.3-16.4 20.6-20.2 24.8-3.7 4.2-7.4 4.5-13.7 1.7-6.4-3.2-26.9-9.9-51.3-31.7-19-16.9-31.7-37.7-35.4-44.2-3.7-6.3-.4-9.9 2.8-13.1 2.9-2.9 6.4-7.3 9.7-11.2 3.1-3.8 4.1-6.4 6.3-10.6 2.1-4.5 1-8-.6-11.2s-14.3-34.6-19.7-47.1c-5.1-12.4-10.4-10.8-14.3-10.8-3.7-.3-7.9-.3-12.2-.3-4.2 0-11.2 1.6-17 7.7-5.8 6.4-22.3 21.7-22.3 52.8s22.8 61.2 26 65.7c3.2 4.2 44.9 68.2 108.8 95.7 15.3 6.4 27.1 10.3 36.3 13.4 15.3 4.8 29.2 4.2 40.2 2.6 12.2-2 37.7-15.4 43-30.4 5.4-15.1 5.4-27.6 3.8-30.4-1.6-2.9-5.7-4.5-12.2-7.3zM257.3 464h-.3c-37.8 0-75.3-10.3-107.9-29.4l-7.7-4.6-80 20.8L82.9 373l-5.2-8c-21.1-33.6-32.3-72.3-32.3-112.2 0-116.2 95.1-210.9 212.1-210.9 56.7 0 109.8 22.1 149.8 62.1 40 39.7 62.1 92.8 62.1 149.2-.1 116.1-95.2 210.8-212.1 210.8M437.7 73.6C389.1 26.6 325.1 0 257 0 116.6 0 2.2 113.8 2.2 253.7c0 44.7 11.7 88.3 34 126.8L0 512l135.2-35.3c37.2 20.1 79.2 30.8 121.8 30.9h.1c140.5 0 254.8-113.8 254.9-253.8 0-67.7-26.4-131.5-74.6-179.4z"/></svg>
-        واتساب ${t.phone}
+        واتساب ${esc(phone||'')}
       </a>` : '';
   qs('#fu-modal-client-row').style.display = 'block';
 }
 
+function fuSelectSystemOrder(txId) {
+  const t = transactions.find(x => x._id === txId);
+  if (!t) return;
+  _fuSelectedTx = t;
+  _fuSelectedSource = 'system';
+  const ref = t.ref || t._id;
+  const nm = (t.client||'').trim();
+  qs('#fu-modal-order-ref').value = ref;
+  qs('#fu-modal-order-txid').value = t._id;
+  qs('#fu-modal-order-shopify-id').value = '';
+  qs('#fu-order-search').value = nm ? `${ref} — ${nm}` : ref;
+  qs('#fu-order-results').style.display = 'none';
+  _fuShowSelectedOrder(ref, nm, t.phone, 'system');
+}
+
+function fuSelectShopifyOrder(orderId) {
+  const o = (_shopifyOrders||[]).find(x => x._id === orderId);
+  if (!o) return;
+  _fuSelectedTx = null;
+  _fuSelectedSource = 'shopify';
+  const ref = o.ref || o._id;
+  const nm = (o.client||'').trim();
+  const phone = o.phone || o.clientPhone || '';
+  qs('#fu-modal-order-ref').value = ref;
+  qs('#fu-modal-order-txid').value = '';
+  qs('#fu-modal-order-shopify-id').value = o._id;
+  qs('#fu-order-search').value = nm ? `${ref} — ${nm}` : ref;
+  qs('#fu-order-results').style.display = 'none';
+  _fuShowSelectedOrder(ref, nm, phone, 'shopify');
+  // Keep client info available for saveFuItem even though _fuSelectedTx is null
+  _fuSelectedTx = { client: nm, phone };
+}
+
+function fuSelectManualOrder(ref) {
+  _fuSelectedTx = null;
+  _fuSelectedSource = 'manual';
+  qs('#fu-modal-order-ref').value = ref;
+  qs('#fu-modal-order-txid').value = '';
+  qs('#fu-modal-order-shopify-id').value = '';
+  qs('#fu-order-search').value = ref;
+  qs('#fu-order-results').style.display = 'none';
+  _fuShowSelectedOrder(ref, '', '', 'manual');
+}
+
 async function openFuModal(id) {
   fuEditId = id || null;
-  _fuSelectedTx = null;
   qs('#fu-modal-overlay').style.display = 'flex';
   qs('#fu-modal-title').textContent = id ? 'تعديل متابعة طلب' : 'إضافة متابعة طلب';
 
   // Reset search
   qs('#fu-order-search').value = '';
   qs('#fu-order-results').style.display = 'none';
-  qs('#fu-order-manual').value = '';
-  qs('#fu-modal-order-ref').value = '';
-  qs('#fu-modal-order-txid').value = '';
-  qs('#fu-modal-client-row').style.display = 'none';
-  _fuSetOrderMode('registered');
+  _fuResetOrderSelection();
+
+  // Lazy-load Shopify orders so they're searchable even if the user hasn't visited that page yet
+  if (!_shopifyOrders.length) loadShopifyOrders().catch(()=>{});
 
   // Populate user dropdown
   const userSel = qs('#fu-modal-user');
@@ -46262,18 +46519,14 @@ async function openFuModal(id) {
   if (id) {
     const f = followUps.find(x => x._id === id);
     if (f) {
-      if (f.transactionId) {
-        _fuSetOrderMode('registered');
-        qs('#fu-order-search').value = f.orderRef;
-      } else {
-        _fuSetOrderMode('unregistered');
-        qs('#fu-order-manual').value = f.orderRef;
-        _fuCheckManualOrderExists(f.orderRef);
-      }
+      _fuSelectedSource = f.transactionId ? 'system' : (f.shopifyOrderId ? 'shopify' : 'manual');
+      qs('#fu-order-search').value = f.orderRef;
       qs('#fu-modal-order-ref').value = f.orderRef;
       qs('#fu-modal-order-txid').value = f.transactionId || '';
+      qs('#fu-modal-order-shopify-id').value = f.shopifyOrderId || '';
       qs('#fu-modal-order-label').textContent = f.orderRef;
       qs('#fu-modal-client-name').textContent = f.clientName || '—';
+      qs('#fu-modal-order-source-badge').innerHTML = _FU_SOURCE_BADGES[_fuSelectedSource] || '';
       const phone = (f.clientPhone||'').replace(/\D/g,'');
       qs('#fu-modal-wa-preview').innerHTML = phone
         ? `<span style="font-size:.78rem;color:#16a34a">${f.clientPhone}</span>` : '';
@@ -46282,13 +46535,11 @@ async function openFuModal(id) {
       qs('#fu-modal-reason').value = f.reason || '';
       qs('#fu-modal-reason-other').style.display = 'none';
       _fuPopulateStatusOptions(f.reason, f.status);
-      qs('#fu-modal-comment').value = f.comment || '';
     }
   } else {
     qs('#fu-modal-reason').value = '';
     qs('#fu-modal-reason-other').style.display = 'none';
     _fuPopulateStatusOptions('');
-    qs('#fu-modal-comment').value = '';
     qs('#fu-modal-mention-note').style.display = 'none';
     // Pre-select current user
     const me = allUsers.find(u => u._id === currentUser?._id || u.username === currentUser?.username);
@@ -46300,19 +46551,13 @@ function closeFuModal() {
   qs('#fu-modal-overlay').style.display = 'none';
   qs('#fu-order-results').style.display = 'none';
   fuEditId = null;
-  _fuSelectedTx = null;
+  _fuResetOrderSelection();
 }
 
 async function saveFuItem() {
-  if (_fuOrderMode === 'unregistered') {
-    const manualRef = qs('#fu-order-manual').value.trim();
-    qs('#fu-modal-order-ref').value = manualRef;
-    qs('#fu-modal-order-txid').value = '';
-    const exists = manualRef && transactions.some(t => t.type === 'مبيعات' && String(t.ref||'').toLowerCase() === manualRef.toLowerCase());
-    if (exists) { toast('هذا الرقم مسجل بالفعل بالنظام — اختر "رقم مسجل بالنظام"', true); return; }
-  }
   const orderRef = qs('#fu-modal-order-ref').value.trim();
   const transactionId = qs('#fu-modal-order-txid').value.trim();
+  const shopifyOrderId = qs('#fu-modal-order-shopify-id').value.trim();
   const userSel = qs('#fu-modal-user');
   const responsibleId = userSel.value;
   const selOpt = userSel.options[userSel.selectedIndex];
@@ -46320,7 +46565,6 @@ async function saveFuItem() {
   const responsibleUsername = selOpt?.dataset.username || '';
   const reason = qs('#fu-modal-reason').value.trim();
   const status = qs('#fu-modal-status').value;
-  const comment = qs('#fu-modal-comment').value.trim();
   let clientName = _fuSelectedTx?.client || '';
   let clientPhone = _fuSelectedTx?.phone || '';
   if ((!clientName || !clientPhone) && orderRef) {
@@ -46331,7 +46575,7 @@ async function saveFuItem() {
     }
   }
 
-  if (!orderRef) { toast(_fuOrderMode === 'unregistered' ? 'اكتب رقم الطلب' : 'اختر طلباً من القائمة', true); return; }
+  if (!orderRef) { toast('اختر طلباً أو اكتب رقماً جديداً', true); return; }
   if (!responsibleId) { toast('اختر موظفاً مسؤولاً', true); return; }
 
   const btn = qs('#fu-modal-save-btn');
@@ -46339,12 +46583,12 @@ async function saveFuItem() {
   try {
     let savedDoc;
     if (fuEditId) {
-      savedDoc = await api(`/followups/${fuEditId}`, { method:'PATCH', body: JSON.stringify({ responsibleId, responsibleName, reason, status, comment }) });
+      savedDoc = await api(`/followups/${fuEditId}`, { method:'PATCH', body: JSON.stringify({ responsibleId, responsibleName, reason, status }) });
       const idx = followUps.findIndex(f => f._id === fuEditId);
       if (idx !== -1) followUps[idx] = { ...followUps[idx], ...savedDoc };
       toast('تم التحديث ✅');
     } else {
-      savedDoc = await api('/followups', { method:'POST', body: JSON.stringify({ orderRef, transactionId, clientName, clientPhone, responsibleId, responsibleName, reason, status, comment }) });
+      savedDoc = await api('/followups', { method:'POST', body: JSON.stringify({ orderRef, transactionId, shopifyOrderId, clientName, clientPhone, responsibleId, responsibleName, reason, status }) });
       followUps.unshift(savedDoc);
       // Mark creator as seen immediately
       const s = _fuGetSeenIds();
@@ -46383,38 +46627,201 @@ async function saveFuItem() {
   finally { btn.disabled = false; }
 }
 
-function openFuCommentPopup(id) {
-  fuCommentTargetId = id;
-  const f = followUps.find(x => x._id === id);
-  const existing = f?.comment || '';
-  const readEl = qs('#fu-comment-read');
-  if (existing) {
-    readEl.style.display = 'block';
-    readEl.textContent = existing;
+// Paper-plane send icon for "إضافة تعليق"; a checkmark takes over while
+// editing an existing comment so the button's meaning still reads clearly
+// without needing a text label.
+const FU_SEND_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`;
+const FU_SAVE_EDIT_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+function _fuSetCommentBtnMode(mode) {
+  const btn = qs('#fu-comment-save-btn');
+  if (!btn) return;
+  if (mode === 'edit') {
+    btn.innerHTML = FU_SAVE_EDIT_ICON;
+    btn.title = 'حفظ التعديل';
+    btn.setAttribute('aria-label', 'حفظ التعديل');
   } else {
-    readEl.style.display = 'none';
+    btn.innerHTML = FU_SEND_ICON;
+    btn.title = 'إضافة تعليق';
+    btn.setAttribute('aria-label', 'إضافة تعليق');
   }
-  qs('#fu-comment-text').value = existing;
-  qs('#fu-comment-popup').style.display = 'flex';
-  setTimeout(() => qs('#fu-comment-text').focus(), 50);
+}
+
+function openFuCommentPopup(id, highlightCommentId = '') {
+  fuCommentTargetId = id;
+  _fuEditingCommentId = null;
+  qs('#fu-comment-title').textContent = 'مسار المتابعة';
+  _fuRenderCommentThread();
+  qs('#fu-comment-text').value = '';
+  _fuSetCommentBtnMode('add');
+  qs('#fu-comment-cancel-edit-btn').style.display = 'none';
+  qs('#fu-comment-popup').classList.add('show');
+  if (highlightCommentId) {
+    setTimeout(() => {
+      const item = qs(`#fu-comment-thread [data-comment-id="${highlightCommentId}"]`);
+      if (item) {
+        item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        item.classList.add('fu-timeline-item-highlight');
+        setTimeout(() => item.classList.remove('fu-timeline-item-highlight'), 2500);
+      } else {
+        qs('#fu-comment-text').focus();
+      }
+    }, 80);
+  } else {
+    setTimeout(() => qs('#fu-comment-text').focus(), 50);
+  }
+}
+
+// Deterministic per-author color so each person's comments are visually
+// distinguishable at a glance in the timeline, without needing a fixed
+// user->color map to maintain.
+const FU_AUTHOR_PALETTE = [
+  { bg: 'rgba(59,130,246,.08)',  bd: 'rgba(59,130,246,.35)',  text: '#2563eb' },
+  { bg: 'rgba(16,185,129,.08)',  bd: 'rgba(16,185,129,.35)',  text: '#059669' },
+  { bg: 'rgba(217,119,6,.08)',   bd: 'rgba(217,119,6,.35)',   text: '#b45309' },
+  { bg: 'rgba(219,39,119,.08)',  bd: 'rgba(219,39,119,.35)',  text: '#be185d' },
+  { bg: 'rgba(124,58,237,.08)',  bd: 'rgba(124,58,237,.35)',  text: '#7c3aed' },
+  { bg: 'rgba(8,145,178,.08)',   bd: 'rgba(8,145,178,.35)',   text: '#0e7490' },
+];
+function _fuAuthorColor(authorId) {
+  const s = String(authorId || '');
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+  return FU_AUTHOR_PALETTE[hash % FU_AUTHOR_PALETTE.length];
+}
+
+function _fuRenderCommentThread() {
+  const threadEl = qs('#fu-comment-thread');
+  const f = followUps.find(x => String(x._id) === String(fuCommentTargetId));
+  const comments = (f?.comments || []).slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  if (!comments.length) {
+    threadEl.innerHTML = `<div class="fu-thread-empty">لا توجد تعليقات بعد</div>`;
+    return;
+  }
+  const myId = String(currentUser?._id || currentUser?.id || '');
+  const canManageAll = isAdmin();
+  threadEl.innerHTML = `<div class="fu-timeline">${comments.map(c => {
+    const mine = canManageAll || String(c.authorId) === myId;
+    const cid = String(c._id);
+    const u = (typeof users !== 'undefined' ? users : []).find(x => String(x._id) === String(c.authorId)) || { name: c.authorName };
+    const ac = _fuAuthorColor(c.authorId);
+    const menuBtn = mine
+      ? `<button type="button" class="fu-timeline-menu-btn" onclick="event.stopPropagation();_fuOpenCommentMenu(event,'${cid}')">⋮</button>`
+      : '';
+    return `<div class="fu-timeline-item" data-comment-id="${cid}">
+      <div class="fu-timeline-avatar">${userAvatarHtml(u, 32)}</div>
+      <div class="fu-timeline-content" style="background:${ac.bg};border:1px solid ${ac.bd}">
+        <div class="fu-timeline-top">
+          <div class="fu-timeline-who">
+            <span class="fu-timeline-name" style="color:${ac.text}">${esc(c.authorName || '—')}</span>
+            <span class="fu-timeline-time" title="${esc(fmtDateTime(c.createdAt))}">${esc(_fuRelTime(c.createdAt))}</span>
+            ${c.edited ? `<span class="fu-timeline-edited">(معدّل)</span>` : ''}
+          </div>
+          ${menuBtn}
+        </div>
+        <div class="fu-timeline-text">${esc(c.text)}</div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+  threadEl.scrollTop = threadEl.scrollHeight;
+}
+
+function _fuOpenCommentMenu(e, commentId) {
+  e.stopPropagation();
+  const btn = e.currentTarget;
+  const hadOpen = !!document.querySelector('.dd-menu-portal.show');
+  closeAllMenus();
+  if (hadOpen) return;
+  const portal = document.createElement('div');
+  portal.className = 'dd-menu-portal';
+  portal.innerHTML = `
+    <button type="button" class="dd-item" data-action="edit"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span class="dd-label">تعديل</span></button>
+    <button type="button" class="dd-item danger" data-action="delete"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg><span class="dd-label">حذف</span></button>`;
+  document.body.appendChild(portal);
+  const rect = btn.getBoundingClientRect();
+  const mW = portal.offsetWidth;
+  const mH = portal.offsetHeight;
+  const isRtl = document.documentElement.dir === 'rtl';
+  const vp = window.innerHeight;
+  const spaceBelow = vp - rect.bottom - 12;
+  const spaceAbove = rect.top - 12;
+  let top;
+  if (mH <= spaceBelow) top = rect.bottom + 6;
+  else if (mH <= spaceAbove) top = rect.top - mH - 6;
+  else top = Math.max(8, vp - mH - 8);
+  let left = isRtl ? rect.left : rect.right - mW;
+  if (left < 8) left = 8;
+  if (left + mW > window.innerWidth - 8) left = window.innerWidth - mW - 8;
+  portal.style.top = top + 'px';
+  portal.style.left = left + 'px';
+  portal.addEventListener('click', (ev) => {
+    const item = ev.target.closest('.dd-item');
+    if (!item) return;
+    closeAllMenus();
+    if (item.dataset.action === 'edit') _fuStartEditComment(commentId);
+    else if (item.dataset.action === 'delete') _fuDeleteComment(commentId);
+  });
+  requestAnimationFrame(() => portal.classList.add('show'));
+}
+
+function _fuStartEditComment(commentId) {
+  const f = followUps.find(x => String(x._id) === String(fuCommentTargetId));
+  const c = (f?.comments || []).find(x => String(x._id) === String(commentId));
+  if (!c) return;
+  _fuEditingCommentId = commentId;
+  qs('#fu-comment-text').value = c.text;
+  _fuSetCommentBtnMode('edit');
+  qs('#fu-comment-cancel-edit-btn').style.display = 'inline-flex';
+  qs('#fu-comment-text').focus();
+}
+
+function _fuCancelEditComment() {
+  _fuEditingCommentId = null;
+  qs('#fu-comment-text').value = '';
+  _fuSetCommentBtnMode('add');
+  qs('#fu-comment-cancel-edit-btn').style.display = 'none';
+}
+
+async function _fuDeleteComment(commentId) {
+  if (!fuCommentTargetId) return;
+  if (!await showConfirm('هل تريد حذف هذا التعليق؟', { title: 'حذف تعليق', icon: 'danger', danger: true })) return;
+  try {
+    const updated = await api(`/followups/${fuCommentTargetId}/comments/${commentId}`, { method: 'DELETE' });
+    const idx = followUps.findIndex(f => String(f._id) === String(fuCommentTargetId));
+    if (idx !== -1) followUps[idx] = { ...followUps[idx], ...updated };
+    if (_fuEditingCommentId === commentId) _fuCancelEditComment();
+    _fuRenderCommentThread();
+    renderFollowUps();
+  } catch(e) { toast(e.message, true); }
 }
 
 function closeFuCommentPopup() {
-  qs('#fu-comment-popup').style.display = 'none';
+  qs('#fu-comment-popup').classList.remove('show');
   fuCommentTargetId = null;
+  _fuEditingCommentId = null;
 }
 
 async function saveFuComment() {
-  const comment = qs('#fu-comment-text').value.trim();
-  if (!fuCommentTargetId) return;
+  const text = qs('#fu-comment-text').value.trim();
+  if (!fuCommentTargetId || !text) return;
+  const btn = qs('#fu-comment-save-btn');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
   try {
-    const updated = await api(`/followups/${fuCommentTargetId}`, { method:'PATCH', body: JSON.stringify({ comment }) });
-    const idx = followUps.findIndex(f => f._id === fuCommentTargetId);
+    let updated;
+    if (_fuEditingCommentId) {
+      updated = await api(`/followups/${fuCommentTargetId}/comments/${_fuEditingCommentId}`, { method: 'PATCH', body: JSON.stringify({ text }) });
+    } else {
+      updated = await api(`/followups/${fuCommentTargetId}/comments`, { method: 'POST', body: JSON.stringify({ text }) });
+    }
+    const idx = followUps.findIndex(f => String(f._id) === String(fuCommentTargetId));
     if (idx !== -1) followUps[idx] = { ...followUps[idx], ...updated };
-    closeFuCommentPopup();
+    _fuCancelEditComment();
+    _fuRenderCommentThread();
     renderFollowUps();
     toast('تم حفظ التعليق ✅');
   } catch(e) { toast(e.message, true); }
+  finally { btn.disabled = false; btn.style.opacity = '1'; }
 }
 
 /* Smart Product Card */

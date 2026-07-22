@@ -95,6 +95,7 @@ export class MentionsController {
       txRef: m.txRef,
       commentId: m.commentId,
       commentText: m.commentText,
+      fuCommentId: m.fuCommentId || '',
       read: m.read,
       ts: (m.createdAt instanceof Date) ? m.createdAt.toISOString() : new Date(m.createdAt).toISOString(),
     }));

@@ -54,6 +54,93 @@ export class FollowUpsService {
     return this.model.findByIdAndDelete(id);
   }
 
+  async addComment(id: string, authorId: string, authorName: string, text: string) {
+    const before = await this.model.findById(id).lean();
+    if (!before) return null;
+    const doc = await this.model
+      .findByIdAndUpdate(
+        id,
+        { $push: { comments: { authorId, authorName, text, edited: false } } },
+        { new: true },
+      )
+      .lean();
+    // Notify everyone already involved in this thread (responsible user +
+    // anyone who has commented before) except whoever just wrote this one —
+    // computed from the pre-push snapshot so the author's own new entry
+    // never counts as a "prior participant" of itself.
+    const participantIds = new Set<string>();
+    if (before.responsibleId) participantIds.add(String(before.responsibleId));
+    ((before.comments as any[]) || []).forEach((c) => participantIds.add(String(c.authorId)));
+    participantIds.delete(String(authorId));
+
+    // $push guarantees the new entry lands last — its _id is what the
+    // notification needs so the client can scroll to/highlight this exact
+    // comment instead of just opening the thread at the top.
+    const newComments = (doc?.comments as any[]) || [];
+    const newCommentId = newComments.length ? String(newComments[newComments.length - 1]._id) : '';
+
+    const preview = text.length > 80 ? `${text.slice(0, 80)}…` : text;
+    const commentText = `تعليق جديد على متابعة #${before.orderRef}: ${preview}`;
+    for (const targetUserId of participantIds) {
+      try {
+        const created = await this.mentionsService.create({
+          targetUserId,
+          fromUserId: authorId,
+          fromName: authorName,
+          txId: String(id),
+          txRef: before.orderRef,
+          commentId: 0,
+          commentText,
+          fuCommentId: newCommentId,
+        });
+        this.presence.emitToUser(targetUserId, 'mention:new', {
+          id: String(created._id),
+          _id: String(created._id),
+          targetUserId,
+          fromUserId: authorId,
+          fromName: authorName,
+          txId: String(id),
+          txRef: before.orderRef,
+          commentId: 0,
+          commentText,
+          fuCommentId: newCommentId,
+          read: false,
+          ts: new Date().toISOString(),
+        });
+      } catch (err: any) {
+        this.logger.warn(`Failed to notify ${targetUserId} of new followup comment: ${err.message}`);
+      }
+    }
+    return doc;
+  }
+
+  async editComment(id: string, commentId: string, authorId: string, text: string, isAdmin = false) {
+    const doc = await this.model.findById(id);
+    if (!doc) return null;
+    const entry = (doc.comments as any[]).find((c) => String(c._id) === String(commentId));
+    if (!entry) return null;
+    if (!isAdmin && String(entry.authorId) !== String(authorId)) {
+      throw new Error('FORBIDDEN');
+    }
+    entry.text = text;
+    entry.edited = true;
+    await doc.save();
+    return doc.toObject();
+  }
+
+  async deleteComment(id: string, commentId: string, authorId: string, isAdmin = false) {
+    const doc = await this.model.findById(id);
+    if (!doc) return null;
+    const entry = (doc.comments as any[]).find((c) => String(c._id) === String(commentId));
+    if (!entry) return null;
+    if (!isAdmin && String(entry.authorId) !== String(authorId)) {
+      throw new Error('FORBIDDEN');
+    }
+    (doc.comments as any[]).splice((doc.comments as any[]).indexOf(entry), 1);
+    await doc.save();
+    return doc.toObject();
+  }
+
   /**
    * Re-pings the responsible employee when an open follow-up has sat past a
    * reminder threshold (12h, then every 24h) since its last status/reason

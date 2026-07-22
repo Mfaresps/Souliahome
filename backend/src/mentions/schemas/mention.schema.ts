@@ -32,6 +32,9 @@ export class Mention {
   @Prop({ required: true })
   commentText: string;
 
+  @Prop()
+  fuCommentId: string; // for follow-up comment notifications — the specific comment subdocument _id to scroll to/highlight
+
   @Prop({ default: false, index: true })
   read: boolean;
 }
