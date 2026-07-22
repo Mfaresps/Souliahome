@@ -28204,6 +28204,29 @@ async function doCancelMovement(id) {
   } catch (e) { toast((currentLang==='en'?'Error: ':'خطأ: ') + e.message, true); }
 }
 
+const COLLECT_METHOD_GLOBAL_KEY = 'collectMethodGlobalDefault';
+const COLLECT_METHOD_USE_GLOBAL_KEY = 'collectMethodUseGlobal';
+function getCollectMethodUseGlobal() {
+  try { return localStorage.getItem(COLLECT_METHOD_USE_GLOBAL_KEY) === '1'; } catch(_) { return false; }
+}
+function getCollectMethodGlobalDefault() {
+  try {
+    const v = localStorage.getItem(COLLECT_METHOD_GLOBAL_KEY);
+    return RET_VAULT_SEGMENTS.includes(v) ? v : 'تحويل بنكي';
+  } catch(_) { return 'تحويل بنكي'; }
+}
+function setCollectMethodGlobalDefault(v) {
+  if (!RET_VAULT_SEGMENTS.includes(v)) return;
+  try { localStorage.setItem(COLLECT_METHOD_GLOBAL_KEY, v); } catch(_) {}
+}
+function toggleCollectMethodUseGlobal(checked) {
+  try { localStorage.setItem(COLLECT_METHOD_USE_GLOBAL_KEY, checked ? '1' : '0'); } catch(_) {}
+  if (!getCollectMethodGlobalDefault()) setCollectMethodGlobalDefault('تحويل بنكي');
+  const btn = qsa('#collect-method-btns button')[0];
+  const activeVal = checked ? getCollectMethodGlobalDefault() : (qs('#collect-method')?.dataset.txDefault || 'تحويل بنكي');
+  if (activeVal) _selectCollectMethod(activeVal, qsa('#collect-method-btns button').find(b => b.dataset.val === activeVal) || btn);
+}
+
 function openCollectMovement(id) {
   const tx = transactions.find(t => t._id === id); if (!tx) return;
   const isPurchase = tx.type === 'مشتريات';
@@ -28214,8 +28237,18 @@ function openCollectMovement(id) {
   const _notePayment    = parseNoteAsPayment(tx.notes || '');
   const noteMethod      = _notePayment ? _notePayment.method : '';
   const collectDef      = txPayment || txCollectMethod || noteMethod || txDepMethod || 'تحويل بنكي';
-  const defaultMethod   = RET_VAULT_SEGMENTS.includes(collectDef) ? collectDef : 'تحويل بنكي';
+  const txDefaultMethod = RET_VAULT_SEGMENTS.includes(collectDef) ? collectDef : 'تحويل بنكي';
+  const useGlobalDefault = getCollectMethodUseGlobal();
+  const defaultMethod   = useGlobalDefault ? getCollectMethodGlobalDefault() : txDefaultMethod;
   const collectOpts = RET_VAULT_SEGMENTS.map(v => `<option value="${v}"${v === defaultMethod ? ' selected' : ''}>${v}</option>`).join('');
+  const collectSwitchHtml = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:var(--surface2);border-radius:8px;margin-top:8px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:600;cursor:pointer;margin:0">
+        <input type="checkbox" id="collect-use-global" ${useGlobalDefault ? 'checked' : ''} onchange="toggleCollectMethodUseGlobal(this.checked)" style="width:16px;height:16px;cursor:pointer">
+        استخدام طريقة افتراضية ثابتة دائماً
+      </label>
+      <span style="font-size:.72rem;color:var(--muted)">بدلاً من طريقة الحركة الأصلية</span>
+    </div>`;
 
   if (isPurchase) {
     const remaining = tx.remaining || 0;
@@ -28234,7 +28267,7 @@ function openCollectMovement(id) {
         <span style="color:var(--green);font-weight:700"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> سيتم السداد بالكامل</span>
       </div>
       <div class="form-group"><label>طريقة السداد</label>
-        <select id="collect-method" style="display:none">${collectOpts}</select>
+        <select id="collect-method" data-tx-default="${txDefaultMethod}" style="display:none">${collectOpts}</select>
         <div id="collect-method-btns" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px">
           ${RET_VAULT_SEGMENTS.map(v => {
             const icons = {
@@ -28247,6 +28280,7 @@ function openCollectMovement(id) {
             return `<button type="button" onclick="_selectCollectMethod('${v}',this)" data-val="${v}" style="padding:10px 6px;border-radius:9px;border:2px solid ${isActive ? 'var(--accent)' : 'var(--border)'};background:${isActive ? 'var(--accent-light,#ede9fe)' : 'var(--surface2)'};color:var(--text);font-size:.72rem;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:all .15s">${icons[v]||''}<span>${v}</span></button>`;
           }).join('')}
         </div>
+        ${collectSwitchHtml}
       </div>
       <div class="form-group"><label>تاريخ السداد</label>
         <input type="date" id="collect-date" value="${todayLocalISO()}" max="${todayLocalISO()}">
@@ -28280,7 +28314,7 @@ function openCollectMovement(id) {
         <span style="color:var(--green);font-weight:700">✓ سيُضاف ${fmtJ(Math.max(0, (tx.remaining || 0) - remainingShipToDeduct))} إلى الخزنة</span>
       </div>
       <div class="form-group"><label>طريقة التحصيل</label>
-        <select id="collect-method" style="display:none">${collectOpts}</select>
+        <select id="collect-method" data-tx-default="${txDefaultMethod}" style="display:none">${collectOpts}</select>
         <div id="collect-method-btns" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px">
           ${RET_VAULT_SEGMENTS.map(v => {
             const icons = {
@@ -28293,6 +28327,7 @@ function openCollectMovement(id) {
             return `<button type="button" onclick="_selectCollectMethod('${v}',this)" data-val="${v}" style="padding:10px 6px;border-radius:9px;border:2px solid ${isActive ? 'var(--accent)' : 'var(--border)'};background:${isActive ? 'var(--accent-light,#ede9fe)' : 'var(--surface2)'};color:var(--text);font-size:.72rem;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:all .15s">${icons[v]||''}<span>${v}</span></button>`;
           }).join('')}
         </div>
+        ${collectSwitchHtml}
       </div>
       <div class="form-group"><label>ملاحظات</label><input type="text" id="collect-note"></div>
       <div class="flex gap-8 mt-16">
@@ -28309,6 +28344,7 @@ function _selectCollectMethod(val, btn) {
     b.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
     b.style.background = active ? 'var(--accent-light,#ede9fe)' : 'var(--surface2)';
   });
+  if (getCollectMethodUseGlobal()) setCollectMethodGlobalDefault(val);
   syncPaymentMethod();
 }
 function syncPaymentMethod() {
