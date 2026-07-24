@@ -62,7 +62,7 @@ export class TagsService {
 
     if (count > 0) {
       throw new BadRequestException(
-        `هذا TAG مستخدم في ${count} حركة — لا يمكن حذفه`,
+        `هذا TAG مستخدم في ${count} معاملة — لا يمكن حذفه`,
       );
     }
 

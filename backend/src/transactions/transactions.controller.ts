@@ -150,7 +150,7 @@ export class TransactionsController {
   ) {
     const archivedBy = req.user.name || req.user.username || '';
     const count = await this.transactionsService.bulkRemove(dto.ids, archivedBy);
-    return { message: `تم تجميد ${count} حركة`, deletedCount: count };
+    return { message: `تم تجميد ${count} معاملة`, deletedCount: count };
   }
 
   @Roles('admin')
@@ -161,7 +161,7 @@ export class TransactionsController {
   ) {
     const deletedBy = req.user.name || req.user.username || '';
     await this.transactionsService.hardDelete(id, deletedBy);
-    return { message: 'تم الحذف النهائي للحركة' };
+    return { message: 'تم الحذف النهائي للمعاملة' };
   }
 
   // ─── Pick-Up endpoints (must be BEFORE @Get(':id') to avoid routing conflict) ──
@@ -229,7 +229,7 @@ export class TransactionsController {
   async findOne(@Param('id') id: string) {
     if (id === 'pickup-orders') return this.transactionsService.findPickupOrders();
     if (id === 'archived') return this.transactionsService.findArchived();
-    if (!isValidObjectId(id)) throw new BadRequestException('معرّف الحركة غير صالح');
+    if (!isValidObjectId(id)) throw new BadRequestException('معرّف المعاملة غير صالح');
     return this.transactionsService.findById(id);
   }
 
@@ -247,7 +247,7 @@ export class TransactionsController {
     const result = this.transactionsService.tryAcquireEditLock(id, requestingUser, req.user?.userId);
     if (!result.ok) {
       throw new HttpException(
-        { message: `هذه الحركة قيد التعديل بواسطة ${result.lockedBy} — حاول لاحقاً`, lockedBy: result.lockedBy },
+        { message: `هذه المعاملة قيد التعديل بواسطة ${result.lockedBy} — حاول لاحقاً`, lockedBy: result.lockedBy },
         HttpStatus.CONFLICT,
       );
     }
@@ -416,7 +416,7 @@ export class TransactionsController {
   @Delete('clear')
   async clearAll() {
     await this.transactionsService.clearAll();
-    return { message: 'تم مسح كل الحركات' };
+    return { message: 'تم مسح كل المعاملات' };
   }
 
   @Delete(':id')
@@ -426,6 +426,6 @@ export class TransactionsController {
   ) {
     const archivedBy = req.user.name || req.user.username || '';
     await this.transactionsService.remove(id, archivedBy);
-    return { message: 'تم تجميد الحركة' };
+    return { message: 'تم تجميد المعاملة' };
   }
 }

@@ -79,7 +79,7 @@ export function generateVaultTexts(
     case 'إلغاء':
       const action = amount > 0 ? 'استرداد' : 'خصم';
       desc = `${action} مبلغ إلغاء فاتورة #${ref} — ${absAmount} ج`;
-      justification = `عكس قيد سابق — الخزنة (${methodLabel}) تعود لوضعها قبل الحركة`;
+      justification = `عكس قيد سابق — الخزنة (${methodLabel}) تعود لوضعها قبل المعاملة`;
       break;
 
     case 'خصم بعدي':
@@ -88,8 +88,8 @@ export function generateVaultTexts(
       break;
 
     case 'تجميد':
-      desc = `عكس قيد تجميد حركة #${ref} — ${absAmount} ج من ${methodLabel}`;
-      justification = `استرجاع الحركة المجمدة — الخزنة (${methodLabel}) ترتفع بالمبلغ المجمد`;
+      desc = `عكس قيد تجميد معاملة #${ref} — ${absAmount} ج من ${methodLabel}`;
+      justification = `استرجاع المعاملة المجمدة — الخزنة (${methodLabel}) ترتفع بالمبلغ المجمد`;
       break;
 
     case 'يدوي':
@@ -142,7 +142,7 @@ function generateJustification(
       return `الخزنة (${methodLabel}) تنخفض ${absAmount} ج — الخصم يُطبَّق على الفاتورة`;
 
     case 'تجميد':
-      return `استرجاع الحركة المجمدة — الخزنة (${methodLabel}) ترتفع`;
+      return `استرجاع المعاملة المجمدة — الخزنة (${methodLabel}) ترتفع`;
 
     default:
       return '';

@@ -394,7 +394,7 @@ export class SupplierReturnsService {
       status: 'مكتمل',
       changedBy: completedBy,
       changedAt: new Date().toISOString(),
-      note: `حركة مرتجع رقم ${tx.ref}`,
+      note: `معاملة مرتجع رقم ${tx.ref}`,
     });
     const saved = await r.save();
     await this.suppliersService.addLog(r.supplierId, {

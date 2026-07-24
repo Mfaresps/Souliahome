@@ -18,6 +18,15 @@ export class FollowUpComment {
 
   @Prop({ default: false })
   edited: boolean;
+
+  @Prop({ default: 'note' })
+  kind: string; // 'note' | 'call' — 'call' entries mark a logged customer call attempt
+
+  @Prop()
+  callAttemptNo?: number; // 1-3, set only when kind === 'call'
+
+  @Prop()
+  callOutcome?: string; // 'answered' | 'no_answer' — set only when kind === 'call'
 }
 
 export const FollowUpCommentSchema = SchemaFactory.createForClass(FollowUpComment);

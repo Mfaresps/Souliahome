@@ -216,7 +216,7 @@ export class SearchService {
         title: c.name,
         subtitle: c.phone || 'بدون رقم',
         icon: '👥',
-        meta: `${c.orders} حركة | ${c.total} ج`,
+        meta: `${c.orders} معاملة | ${c.total} ج`,
       }));
   }
 
@@ -335,7 +335,7 @@ export class SearchService {
         title: c.name,
         subtitle: c.phone || 'بدون رقم',
         icon: '👥',
-        meta: `${c.orders} حركة | ${c.total} ج`,
+        meta: `${c.orders} معاملة | ${c.total} ج`,
       }));
   }
 

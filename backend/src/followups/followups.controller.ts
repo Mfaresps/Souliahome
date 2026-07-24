@@ -65,6 +65,22 @@ export class FollowUpsController {
     return doc;
   }
 
+  @Post(':id/call-attempts')
+  async addCallAttempt(@Param('id') id: string, @Body() body: { outcome?: string }, @Req() req: AuthRequest) {
+    const authorId = String(req.user?.userId || req.user?.sub || '');
+    const authorName = req.user?.name || req.user?.username || '';
+    const outcome = body?.outcome === 'answered' ? 'answered' : body?.outcome === 'no_answer' ? 'no_answer' : null;
+    if (!outcome) throw new ForbiddenException('يجب تحديد نتيجة المحاولة (تم الرد / لم يتم الرد)');
+    try {
+      const doc = await this.service.addCallAttempt(id, authorId, authorName, outcome);
+      try { this.presence.emitEvent('followup:changed', { action: 'update', id }); } catch (_) {}
+      return doc;
+    } catch (e: any) {
+      if (e.message === 'CALL_LIMIT_REACHED') throw new ForbiddenException('تم تسجيل الحد الأقصى (3) من محاولات الاتصال');
+      throw e;
+    }
+  }
+
   @Patch(':id/comments/:commentId')
   async editComment(
     @Param('id') id: string,

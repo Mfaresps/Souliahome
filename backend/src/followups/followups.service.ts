@@ -114,6 +114,63 @@ export class FollowUpsService {
     return doc;
   }
 
+  async addCallAttempt(id: string, authorId: string, authorName: string, outcome: 'answered' | 'no_answer') {
+    const before = await this.model.findById(id).lean();
+    if (!before) return null;
+    const existingAttempts = ((before.comments as any[]) || []).filter((c) => c.kind === 'call').length;
+    if (existingAttempts >= 3) throw new Error('CALL_LIMIT_REACHED');
+    const attemptNo = existingAttempts + 1;
+    const outcomeLabel = outcome === 'answered' ? 'تم الرد' : 'لم يتم الرد';
+    const text = `محاولة اتصال رقم ${attemptNo} بالعميل — ${outcomeLabel}`;
+    const doc = await this.model
+      .findByIdAndUpdate(
+        id,
+        { $push: { comments: { authorId, authorName, text, edited: false, kind: 'call', callAttemptNo: attemptNo, callOutcome: outcome } } },
+        { new: true },
+      )
+      .lean();
+
+    const participantIds = new Set<string>();
+    if (before.responsibleId) participantIds.add(String(before.responsibleId));
+    ((before.comments as any[]) || []).forEach((c) => participantIds.add(String(c.authorId)));
+    participantIds.delete(String(authorId));
+
+    const newComments = (doc?.comments as any[]) || [];
+    const newCommentId = newComments.length ? String(newComments[newComments.length - 1]._id) : '';
+    const commentText = `تعليق جديد على متابعة #${before.orderRef}: ${text}`;
+    for (const targetUserId of participantIds) {
+      try {
+        const created = await this.mentionsService.create({
+          targetUserId,
+          fromUserId: authorId,
+          fromName: authorName,
+          txId: String(id),
+          txRef: before.orderRef,
+          commentId: 0,
+          commentText,
+          fuCommentId: newCommentId,
+        });
+        this.presence.emitToUser(targetUserId, 'mention:new', {
+          id: String(created._id),
+          _id: String(created._id),
+          targetUserId,
+          fromUserId: authorId,
+          fromName: authorName,
+          txId: String(id),
+          txRef: before.orderRef,
+          commentId: 0,
+          commentText,
+          fuCommentId: newCommentId,
+          read: false,
+          ts: new Date().toISOString(),
+        });
+      } catch (err: any) {
+        this.logger.warn(`Failed to notify ${targetUserId} of new call attempt: ${err.message}`);
+      }
+    }
+    return doc;
+  }
+
   async editComment(id: string, commentId: string, authorId: string, text: string, isAdmin = false) {
     const doc = await this.model.findById(id);
     if (!doc) return null;

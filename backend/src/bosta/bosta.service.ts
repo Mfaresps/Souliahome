@@ -237,7 +237,7 @@ export class BostaService {
     }
 
     const tx = await this.txModel.findById(txId).lean();
-    if (!tx) return { success: false, error: 'الحركة غير موجودة' };
+    if (!tx) return { success: false, error: 'المعاملة غير موجودة' };
     if (tx.type !== 'مبيعات') return { success: false, error: 'الشحن متاح للمبيعات فقط' };
     const resendableStatuses = ['VALIDATION_ERROR', 'DELETED'];
     const isResendable = resendableStatuses.includes(tx.bostaStatus || '');
@@ -312,7 +312,7 @@ export class BostaService {
 
     if (!city) {
       this.logger.error(`Bosta city missing — tx=${txId} shippingCity="${rawCity}" shippingGov="${rawGov}" shippingBostaCity="${rawBostaCity}"`);
-      return { success: false, error: 'لم يتم تحديد المحافظة — افتح الحركة وحدد المحافظة من القائمة ثم أعد الإرسال', code: 'VALIDATION_ERROR' };
+      return { success: false, error: 'لم يتم تحديد المحافظة — افتح المعاملة وحدد المحافظة من القائمة ثم أعد الإرسال', code: 'VALIDATION_ERROR' };
     }
 
     // وصف المنتج — يظهر في حقل "وصف المنتج" في Bosta
@@ -440,7 +440,7 @@ export class BostaService {
     if (!apiKey) return { success: false, error: 'Bosta API Key غير مضبوط' };
 
     const tx = await this.txModel.findById(txId).lean();
-    if (!tx) return { success: false, error: 'الحركة غير موجودة' };
+    if (!tx) return { success: false, error: 'المعاملة غير موجودة' };
     if (!tx.bostaOrderId) return { success: false, error: 'لم يتم ربط هذا الطلب بـ Bosta بعد' };
 
     try {
@@ -495,8 +495,8 @@ export class BostaService {
     note: string,
   ): Promise<{ success: boolean; error?: string; transaction?: any }> {
     const tx = await this.txModel.findById(txId).lean();
-    if (!tx) return { success: false, error: 'الحركة غير موجودة' };
-    if (tx.type !== 'مبيعات') return { success: false, error: 'هذا الإجراء متاح فقط لحركات المبيعات' };
+    if (!tx) return { success: false, error: 'المعاملة غير موجودة' };
+    if (tx.type !== 'مبيعات') return { success: false, error: 'هذا الإجراء متاح فقط لمعاملات المبيعات' };
     if (tx.bostaStatus === 'DELIVERED') return { success: false, error: 'الطلب مُسجل بالفعل كـ "تم التسليم"' };
 
     const now = new Date().toISOString();
@@ -555,8 +555,8 @@ export class BostaService {
     operator: string,
   ): Promise<{ success: boolean; error?: string; transaction?: any }> {
     const tx = await this.txModel.findById(txId).lean();
-    if (!tx) return { success: false, error: 'الحركة غير موجودة' };
-    if (tx.deliverySource !== 'MANUAL') return { success: false, error: 'لا يوجد تأكيد تسليم يدوي لهذه الحركة' };
+    if (!tx) return { success: false, error: 'المعاملة غير موجودة' };
+    if (tx.deliverySource !== 'MANUAL') return { success: false, error: 'لا يوجد تأكيد تسليم يدوي لهذه المعاملة' };
 
     const log = (tx.deliveryAuditLog || []) as any[];
     const lastConfirmation = [...log].reverse().find((e) => e.action === 'MANUAL_DELIVERY_CONFIRMATION');
@@ -751,7 +751,7 @@ export class BostaService {
 
     if (!tx) {
       this.logger.warn(`Bosta webhook: no matching transaction for bostaOrderId=${bostaOrderId} tracking=${trackingNumber} businessReference=${businessRef}`);
-      return { success: false, error: 'لا توجد حركة مطابقة لهذا الطلب', code: 'NOT_FOUND' };
+      return { success: false, error: 'لا توجد معاملة مطابقة لهذا الطلب', code: 'NOT_FOUND' };
     }
 
     this.logger.log(`Bosta webhook received — tx=${tx._id} bostaOrderId=${bostaOrderId} tracking=${trackingNumber} state=${d.state}`);
@@ -829,7 +829,7 @@ export class BostaService {
 
   async markAsDeleted(txId: string): Promise<{ success: boolean; error?: string }> {
     const tx = await this.txModel.findById(txId).lean();
-    if (!tx) return { success: false, error: 'الحركة غير موجودة' };
+    if (!tx) return { success: false, error: 'المعاملة غير موجودة' };
     await this.txModel.findByIdAndUpdate(txId, {
       bostaStatus: 'DELETED',
       bostaStatusLabel: 'محذوف من Bosta',
@@ -855,7 +855,7 @@ export class BostaService {
 
   async fixCityByRef(ref: string): Promise<any> {
     const tx = await this.txModel.findOne({ ref }).lean() as any;
-    if (!tx) return { error: `لم يتم العثور على حركة بالمرجع ${ref}` };
+    if (!tx) return { error: `لم يتم العثور على معاملة بالمرجع ${ref}` };
     const info = {
       _id: String(tx._id),
       ref: tx.ref,
@@ -966,12 +966,12 @@ export class BostaService {
     if (!locked) {
       // Distinguish "not found / wrong type" from "already processing / collected"
       const tx = await this.txModel.findById(txId).lean() as any;
-      if (!tx) return { success: false, error: 'الحركة غير موجودة' };
+      if (!tx) return { success: false, error: 'المعاملة غير موجودة' };
       if (tx.type !== 'مبيعات') return { success: false, error: 'تحصيل COD متاح للمبيعات فقط' };
       if (tx.bostaStatus !== 'DELIVERED') return { success: false, error: 'لا يمكن تأكيد التحصيل قبل أن تُسلَّم الشحنة من Bosta' };
-      if (tx.codCollectionStatus === 'Collected') return { success: false, error: 'تم تسجيل التحصيل مسبقاً لهذه الحركة' };
+      if (tx.codCollectionStatus === 'Collected') return { success: false, error: 'تم تسجيل التحصيل مسبقاً لهذه المعاملة' };
       if (tx.codCollectionStatus === 'CollectionProcessing') return { success: false, error: 'جاري تسجيل التحصيل بالفعل — انتظر لحظة ثم أعد المحاولة' };
-      return { success: false, error: 'لا يوجد مبلغ COD معلق على هذه الحركة' };
+      return { success: false, error: 'لا يوجد مبلغ COD معلق على هذه المعاملة' };
     }
 
     // Use the immutable original COD amount if available, else fall back to remaining
@@ -982,7 +982,7 @@ export class BostaService {
     if (codAmount <= 0) {
       // Revert lock — amount was zero somehow
       await this.txModel.findByIdAndUpdate(txId, { $set: { codCollectionStatus: locked.codCollectionStatus || 'CODWaitingCollection' } });
-      return { success: false, error: 'لا يوجد مبلغ COD معلق على هذه الحركة' };
+      return { success: false, error: 'لا يوجد مبلغ COD معلق على هذه المعاملة' };
     }
 
     // ── Threshold guard — large-amount must be explicitly confirmed ───────────

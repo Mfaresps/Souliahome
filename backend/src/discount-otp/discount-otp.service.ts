@@ -888,7 +888,7 @@ export class DiscountOtpService {
       const changesText = (args.changes || []).slice(0, 8).map(c => `  • ${c}`).join('\n');
       const moreChanges = (args.changes || []).length > 8 ? `\n  ... و${(args.changes || []).length - 8} تغييرات أخرى` : '';
       const text =
-        `✏️ طلب تعديل حركة ${typeLabel} يحتاج موافقتك` +
+        `✏️ طلب تعديل معاملة ${typeLabel} يحتاج موافقتك` +
         `\n🔐 كود التحقق: ${otp}` +
         `\nالموظف: ${args.requestedByName || args.requestedByUsername || 'موظف'}` +
         `\nالنوع: ${typeLabel}` +
@@ -916,7 +916,7 @@ export class DiscountOtpService {
   }
 
   async assertEditTxOtp(otpId: string): Promise<DiscountOtpDocument> {
-    if (!otpId) throw new BadRequestException('يلزم كود تحقق لتعديل الحركة');
+    if (!otpId) throw new BadRequestException('يلزم كود تحقق لتعديل المعاملة');
     const doc = await this.otpModel.findById(otpId).exec();
     if (!doc) throw new BadRequestException('كود التحقق غير موجود');
     if (doc.kind !== 'edit-tx') throw new BadRequestException('نوع كود التحقق غير صحيح');
@@ -944,10 +944,10 @@ export class DiscountOtpService {
         const txRef = doc.txRef || doc.editTxId || '';
         const typeLabel = doc.editTxType === 'مشتريات' ? 'مشتريات' : 'مبيعات';
         const text =
-          `✅ تمت الموافقة على طلب تعديل حركة ${typeLabel}` +
+          `✅ تمت الموافقة على طلب تعديل معاملة ${typeLabel}` +
           (txRef ? ` (#${txRef})` : '') +
           `\nتمت المراجعة بواسطة: ${reviewedBy || 'المدير'}` +
-          `\nتم تطبيق التعديل على الحركة بنجاح.`;
+          `\nتم تطبيق التعديل على المعاملة بنجاح.`;
         await this.mentionsService.createMany([{
           targetUserId: doc.requestedById,
           targetUsername: doc.requestedByUsername || '',
@@ -979,7 +979,7 @@ export class DiscountOtpService {
         const txRef = doc.txRef || doc.editTxId || '';
         const typeLabel = doc.editTxType === 'مشتريات' ? 'مشتريات' : 'مبيعات';
         const text =
-          `❌ تم رفض طلب تعديل حركة ${typeLabel}` +
+          `❌ تم رفض طلب تعديل معاملة ${typeLabel}` +
           (txRef ? ` (#${txRef})` : '') +
           `\nتمت المراجعة بواسطة: ${reviewedBy || 'المدير'}` +
           `\nيرجى التواصل مع المدير للمزيد من التفاصيل.`;

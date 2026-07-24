@@ -84,7 +84,7 @@ export class ProductsController {
   @Post('sync-product-refs')
   async syncProductRefs() {
     const result = await this.productsService.syncProductRefs();
-    return { message: `تم تحديث ${result.txUpdated} حركة و ${result.itemsPatched} صنف`, ...result };
+    return { message: `تم تحديث ${result.txUpdated} معاملة و ${result.itemsPatched} صنف`, ...result };
   }
 
   @Post(':id/request-edit')

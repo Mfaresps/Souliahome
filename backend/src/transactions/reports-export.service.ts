@@ -75,7 +75,7 @@ export class ReportsExportService implements OnModuleDestroy {
 
     const rows: Array<[string, number | string]> = [
       ['الفترة', periodLabel],
-      ['عدد الحركات', report.transactionCount ?? 0],
+      ['عدد المعاملات', report.transactionCount ?? 0],
       ['عدد فواتير المبيعات', report.orderCount ?? 0],
       ['إجمالي المبيعات', report.totalSales ?? 0],
       ['إجمالي المشتريات', report.totalPurchases ?? 0],

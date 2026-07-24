@@ -132,7 +132,7 @@ export class TransactionsService {
     const lastAt = this._recentSubmissions.get(key);
     if (lastAt && Date.now() - lastAt < this._SUBMIT_DEDUP_MS) {
       throw new BadRequestException(
-        'تم رصد إرسال مكرر — تم تسجيل نفس الحركة للتو. انتظر لحظة قبل إعادة المحاولة'
+        'تم رصد إرسال مكرر — تم تسجيل نفس المعاملة للتو. انتظر لحظة قبل إعادة المحاولة'
       );
     }
     this._recentSubmissions.set(key, Date.now());
@@ -211,10 +211,10 @@ export class TransactionsService {
   async hardDelete(id: string, deletedBy: string): Promise<void> {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) {
-      throw new NotFoundException('الحركة غير موجودة');
+      throw new NotFoundException('المعاملة غير موجودة');
     }
     if (!tx.archived) {
-      throw new BadRequestException('يمكن حذف الحركات المجمدة فقط');
+      throw new BadRequestException('يمكن حذف المعاملات المجمدة فقط');
     }
     await this.transactionModel.findByIdAndDelete(id).exec();
     this.emit('tx:deleted', { id, deletedBy, type: tx.type, date: tx.date });
@@ -222,11 +222,11 @@ export class TransactionsService {
 
   async findById(id: string): Promise<TransactionDocument> {
     if (!isValidObjectId(id)) {
-      throw new BadRequestException('معرّف الحركة غير صالح');
+      throw new BadRequestException('معرّف المعاملة غير صالح');
     }
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) {
-      throw new NotFoundException('الحركة غير موجودة');
+      throw new NotFoundException('المعاملة غير موجودة');
     }
     return tx;
   }
@@ -308,7 +308,7 @@ export class TransactionsService {
         id: this.genPaymentId(),
         amount: deposit,
         method: depMethod,
-        note: 'ديبوزت أول - عند إنشاء الحركة',
+        note: 'ديبوزت أول - عند إنشاء المعاملة',
         date: new Date().toISOString(),
         by: employee,
       });
@@ -395,7 +395,7 @@ export class TransactionsService {
     const exists = await this.transactionModel.findOne(conflictQuery).exec();
     if (exists) {
       throw new BadRequestException(
-        'هذا الرقم المرجعي مسجّل مسبقاً في حركة أخرى',
+        'هذا الرقم المرجعي مسجّل مسبقاً في معاملة أخرى',
       );
     }
   }
@@ -475,7 +475,7 @@ export class TransactionsService {
     const needed = this.aggregateOutboundQtyByCode(items);
     if (needed.size === 0) {
       throw new BadRequestException(
-        'لا توجد كميات صالحة في الأصناف لهذه الحركة',
+        'لا توجد كميات صالحة في الأصناف لهذه المعاملة',
       );
     }
     const available = await this.getAvailableQtyByProductCode(
@@ -514,7 +514,7 @@ export class TransactionsService {
       !tx.cancelled;
     if (isLocked) {
       throw new BadRequestException(
-        'حركة استبدال عليها متبقي لصالح الشركة — لا يُسمح بالتعديل أو الإلغاء أو الحذف قبل تحصيل المبلغ من العميل',
+        'معاملة استبدال عليها متبقي لصالح الشركة — لا يُسمح بالتعديل أو الإلغاء أو الحذف قبل تحصيل المبلغ من العميل',
       );
     }
   }
@@ -527,7 +527,7 @@ export class TransactionsService {
   ): Promise<TransactionDocument> {
     const existing = await this.transactionModel.findById(id).exec();
     if (!existing) {
-      throw new NotFoundException('الحركة غير موجودة');
+      throw new NotFoundException('المعاملة غير موجودة');
     }
     this.assertNotExchangePendingCollect(existing);
     if (dto.ref !== undefined) {
@@ -570,7 +570,7 @@ export class TransactionsService {
     if (discountDelta !== 0) changes.push(`الخصم: ${oldDiscount} ← ${newDiscount}`);
     if (shipCostDelta !== 0) changes.push(`الشحن: ${oldShipCost} ← ${newShipCost}`);
     if (newTransactionDate && newTransactionDate !== oldTransactionDate)
-      changes.push(`تاريخ الحركة: ${oldTransactionDate || '—'} ← ${newTransactionDate}`);
+      changes.push(`تاريخ المعاملة: ${oldTransactionDate || '—'} ← ${newTransactionDate}`);
 
     const historyEntry = {
       editedAt: new Date().toISOString(),
@@ -623,7 +623,7 @@ export class TransactionsService {
         id: this.genPaymentId(),
         amount: depositDelta,
         method: depMethod,
-        note: `ديبوزت إضافي - من تعديل الحركة (${oldDeposit} → ${newDeposit})`,
+        note: `ديبوزت إضافي - من تعديل المعاملة (${oldDeposit} → ${newDeposit})`,
         date: new Date().toISOString(),
         by: editedBy || 'مجهول',
       });
@@ -711,10 +711,10 @@ export class TransactionsService {
   ): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) {
-      throw new NotFoundException('الحركة غير موجودة');
+      throw new NotFoundException('المعاملة غير موجودة');
     }
     if (tx.cancelled) {
-      throw new BadRequestException('الحركة ملغية بالفعل');
+      throw new BadRequestException('المعاملة ملغية بالفعل');
     }
     this.assertNotExchangePendingCollect(tx);
     return this.performCancellation(tx, dto.cancelReason, dto.cancelledBy);
@@ -788,7 +788,7 @@ export class TransactionsService {
                 at: new Date().toISOString(),
                 amount: -codAmount,
                 method: codMethod,
-                note: `إلغاء الحركة — ${reason}`,
+                note: `إلغاء المعاملة — ${reason}`,
                 vaultEntryId: String(reversalEntry._id),
                 bostaRef,
               },
@@ -838,7 +838,7 @@ export class TransactionsService {
       await this.vaultService.addSystemEntry(
         -previousDeposit,
         vaultMethod,
-        `إلغاء حركة #${tx.ref || tx._id} — ${tx.client || ''} (بواسطة: ${cancelledBy})`,
+        `إلغاء معاملة #${tx.ref || tx._id} — ${tx.client || ''} (بواسطة: ${cancelledBy})`,
         new Date().toISOString().split('T')[0],
         'إلغاء',
         tx.ref || String(tx._id),
@@ -864,7 +864,7 @@ export class TransactionsService {
     });
     // #endregion
     // #region agent log
-    const cancelInventoryImpact = saved.type === 'مبيعات' ? 'إلغاء = إعادة للمخزن (لم يُخصم فعلياً لأن الحركة لم تكتمل)' :
+    const cancelInventoryImpact = saved.type === 'مبيعات' ? 'إلغاء = إعادة للمخزن (لم يُخصم فعلياً لأن المعاملة لم تكتمل)' :
       saved.type === 'مشتريات' && this.transactionAddsSupplierPurchases(saved) ? 'إلغاء = خصم من المخزن (إن كانت أُضيفت)' :
       'لا يؤثر';
     debugLog('transactions.service.ts:performCancellation', 'INVENTORY_CANCEL_IMPACT', {
@@ -874,7 +874,7 @@ export class TransactionsService {
       ref: saved.ref,
       cancelInventoryImpact,
       items: (saved.items || []).map((it) => ({ code: it.code, name: it.name, qty: it.qty })),
-      note: 'الحركات الملغاة لا تُحتسب في المخزن (cancelled: true)',
+      note: 'المعاملات الملغاة لا تُحتسب في المخزن (cancelled: true)',
     });
     // #endregion
     this.emit('tx:cancelled', { tx: saved, by: cancelledBy });
@@ -911,16 +911,16 @@ export class TransactionsService {
     requestedByUsername?: string,
   ): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
-    if (!tx) throw new NotFoundException('الحركة غير موجودة');
-    if (tx.cancelled) throw new BadRequestException('الحركة ملغية بالفعل');
-    if (tx.archived) throw new BadRequestException('الحركة مجمدة');
+    if (!tx) throw new NotFoundException('المعاملة غير موجودة');
+    if (tx.cancelled) throw new BadRequestException('المعاملة ملغية بالفعل');
+    if (tx.archived) throw new BadRequestException('المعاملة مجمدة');
     if (tx.payStatus !== 'معلق') {
       throw new BadRequestException(
-        'طلب الإلغاء مسموح فقط للحركات المعلقة — الحركة المكتملة لا يمكن إلغاؤها',
+        'طلب الإلغاء مسموح فقط للمعاملات المعلقة — المعاملة المكتملة لا يمكن إلغاؤها',
       );
     }
     if (tx.cancelRequest && tx.cancelRequest.status === 'معلق') {
-      throw new BadRequestException('يوجد طلب إلغاء معلق بالفعل لهذه الحركة');
+      throw new BadRequestException('يوجد طلب إلغاء معلق بالفعل لهذه المعاملة');
     }
     this.assertNotExchangePendingCollect(tx);
     const updated = await this.transactionModel
@@ -948,11 +948,11 @@ export class TransactionsService {
     vaultAccount?: string,
   ): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
-    if (!tx) throw new NotFoundException('الحركة غير موجودة');
+    if (!tx) throw new NotFoundException('المعاملة غير موجودة');
     if (!tx.cancelRequest || tx.cancelRequest.status !== 'معلق') {
-      throw new BadRequestException('لا يوجد طلب إلغاء معلق لهذه الحركة');
+      throw new BadRequestException('لا يوجد طلب إلغاء معلق لهذه المعاملة');
     }
-    if (tx.cancelled) throw new BadRequestException('الحركة ملغية بالفعل');
+    if (tx.cancelled) throw new BadRequestException('المعاملة ملغية بالفعل');
     // Override deposit method with admin-selected vault account (refund/deduction account)
     const chosenVault = (vaultAccount || '').trim();
     if (chosenVault) {
@@ -993,7 +993,7 @@ export class TransactionsService {
           txId: String(tx._id),
           txRef: tx.ref || '',
           commentId: 0,
-          commentText: `تمت الموافقة على طلب إلغاء حركة #${tx.ref || tx._id}${chosenVault ? (tx.type === 'مشتريات' ? ` — تم الرد إلى خزنة ${chosenVault}` : ` — تم الخصم من خزنة ${chosenVault}`) : ''}`,
+          commentText: `تمت الموافقة على طلب إلغاء معاملة #${tx.ref || tx._id}${chosenVault ? (tx.type === 'مشتريات' ? ` — تم الرد إلى خزنة ${chosenVault}` : ` — تم الخصم من خزنة ${chosenVault}`) : ''}`,
         });
         this.emit('mentions:changed', { targetUserId: reqId, targetUsername: reqUsername });
       } catch { /* swallow */ }
@@ -1007,9 +1007,9 @@ export class TransactionsService {
     rejectedReason?: string,
   ): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
-    if (!tx) throw new NotFoundException('الحركة غير موجودة');
+    if (!tx) throw new NotFoundException('المعاملة غير موجودة');
     if (!tx.cancelRequest || tx.cancelRequest.status !== 'معلق') {
-      throw new BadRequestException('لا يوجد طلب إلغاء معلق لهذه الحركة');
+      throw new BadRequestException('لا يوجد طلب إلغاء معلق لهذه المعاملة');
     }
     const requester = tx.cancelRequest as unknown as {
       requestedBy?: string;
@@ -1044,7 +1044,7 @@ export class TransactionsService {
           txId: String(tx._id),
           txRef: tx.ref || '',
           commentId: 0,
-          commentText: `تم رفض طلب إلغاء حركة #${tx.ref || tx._id}${rejectedReason ? ` — السبب: ${rejectedReason}` : ''}`,
+          commentText: `تم رفض طلب إلغاء معاملة #${tx.ref || tx._id}${rejectedReason ? ` — السبب: ${rejectedReason}` : ''}`,
         });
         this.emit('mentions:changed', { targetUserId: reqId, targetUsername: reqUsername });
       } catch { /* swallow */ }
@@ -1060,13 +1060,13 @@ export class TransactionsService {
   ): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) {
-      throw new NotFoundException('الحركة غير موجودة');
+      throw new NotFoundException('المعاملة غير موجودة');
     }
     if (tx.cancelled) {
-      throw new BadRequestException('لا يمكن تحصيل حركة ملغية');
+      throw new BadRequestException('لا يمكن تحصيل معاملة ملغية');
     }
     if (tx.payStatus === 'مكتمل') {
-      throw new BadRequestException('الحركة محصلة بالفعل');
+      throw new BadRequestException('المعاملة محصلة بالفعل');
     }
     const totalRemaining = tx.remaining || 0;
     const isPurchase = tx.type === 'مشتريات';
@@ -1225,11 +1225,11 @@ export class TransactionsService {
     _reversedBy: string,
   ): Promise<{ tx: TransactionDocument; reversedAmount: number; vaultMethod: string }> {
     const tx = await this.transactionModel.findById(id).exec();
-    if (!tx) throw new NotFoundException('الحركة غير موجودة');
-    if (tx.cancelled) throw new BadRequestException('لا يمكن التراجع على حركة ملغية');
+    if (!tx) throw new NotFoundException('المعاملة غير موجودة');
+    if (tx.cancelled) throw new BadRequestException('لا يمكن التراجع على معاملة ملغية');
 
     const payments = tx.payments || [];
-    if (!payments.length) throw new BadRequestException('لا يوجد تحصيل مسجل لهذه الحركة');
+    if (!payments.length) throw new BadRequestException('لا يوجد تحصيل مسجل لهذه المعاملة');
 
     // آخر عملية تحصيل
     const lastPayment: any = payments[payments.length - 1];
@@ -1342,8 +1342,8 @@ export class TransactionsService {
     reason?: string,
   ): Promise<{ tx: TransactionDocument; reversedAmount: number; vaultMethod: string; mode: 'full' | 'partial' | 'deposit' }> {
     const tx = await this.transactionModel.findById(txId).exec();
-    if (!tx) throw new NotFoundException('الحركة غير موجودة');
-    if (tx.cancelled) throw new BadRequestException('لا يمكن التراجع على حركة ملغاة');
+    if (!tx) throw new NotFoundException('المعاملة غير موجودة');
+    if (tx.cancelled) throw new BadRequestException('لا يمكن التراجع على معاملة ملغاة');
 
     this.backfillPaymentIds(tx);
 
@@ -1478,7 +1478,7 @@ export class TransactionsService {
     if (expectedVersion !== undefined) {
       const fresh = await this.transactionModel.findById(tx._id).select('__v').lean().exec();
       if (fresh && (fresh as any).__v !== expectedVersion) {
-        throw new BadRequestException('تم تعديل الحركة من جلسة أخرى — أعد التحميل وحاول مرة أخرى');
+        throw new BadRequestException('تم تعديل المعاملة من جلسة أخرى — أعد التحميل وحاول مرة أخرى');
       }
     }
     return tx.save();
@@ -1493,7 +1493,7 @@ export class TransactionsService {
       { new: true }
     ).exec();
     if (!tx) {
-      throw new NotFoundException('الحركة غير موجودة');
+      throw new NotFoundException('المعاملة غير موجودة');
     }
     return tx;
   }
@@ -1505,7 +1505,7 @@ export class TransactionsService {
       { new: true }
     ).exec();
     if (!tx) {
-      throw new NotFoundException('الحركة غير موجودة');
+      throw new NotFoundException('المعاملة غير موجودة');
     }
     this.presence.emitEvent('tx:updated', {
       txId: id,
@@ -1517,15 +1517,15 @@ export class TransactionsService {
 
   async remove(id: string, archivedBy?: string): Promise<void> {
     if (!isValidObjectId(id)) {
-      throw new BadRequestException('معرّف الحركة غير صالح');
+      throw new BadRequestException('معرّف المعاملة غير صالح');
     }
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) {
-      throw new NotFoundException('الحركة غير موجودة');
+      throw new NotFoundException('المعاملة غير موجودة');
     }
     // Freeze is only allowed for cancelled transactions (archiving purposes)
     if (!tx.cancelled) {
-      throw new BadRequestException('🔒 تجميد يقتصر على الحركات الملغاة فقط');
+      throw new BadRequestException('🔒 تجميد يقتصر على المعاملات الملغاة فقط');
     }
     this.assertNotExchangePendingCollect(tx);
     // Archive the cancelled transaction — does NOT reverse vault entries
@@ -1550,7 +1550,7 @@ export class TransactionsService {
     // Enforce: only cancelled transactions can be frozen
     const nonCancelledTx = docs.find(tx => !tx.cancelled);
     if (nonCancelledTx) {
-      throw new BadRequestException('تجميد يقتصر على الحركات الملغاة فقط');
+      throw new BadRequestException('تجميد يقتصر على المعاملات الملغاة فقط');
     }
 
     for (const tx of docs) {
@@ -1575,14 +1575,14 @@ export class TransactionsService {
 
   async restore(id: string): Promise<TransactionDocument> {
     if (!isValidObjectId(id)) {
-      throw new BadRequestException('معرّف الحركة غير صالح');
+      throw new BadRequestException('معرّف المعاملة غير صالح');
     }
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) {
-      throw new NotFoundException('الحركة غير موجودة');
+      throw new NotFoundException('المعاملة غير موجودة');
     }
     if (!tx.archived) {
-      throw new BadRequestException('الحركة ليست مجمدة');
+      throw new BadRequestException('المعاملة ليست مجمدة');
     }
     // Unarchive first — guaranteed
     const restored = await this.transactionModel
@@ -2073,8 +2073,8 @@ export class TransactionsService {
     notes = '',
   ): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
-    if (!tx) throw new NotFoundException('الحركة غير موجودة');
-    if (tx.cancelled) throw new BadRequestException('لا يمكن تطبيق خصم على حركة ملغية');
+    if (!tx) throw new NotFoundException('المعاملة غير موجودة');
+    if (tx.cancelled) throw new BadRequestException('لا يمكن تطبيق خصم على معاملة ملغية');
     if (tx.type !== 'مبيعات') throw new BadRequestException('الخصم البعدي يُطبَّق على فواتير المبيعات فقط');
     const discountAmount = Math.round(amount);
     if (discountAmount <= 0) throw new BadRequestException('مبلغ الخصم يجب أن يكون أكبر من صفر');

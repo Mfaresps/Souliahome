@@ -40,7 +40,7 @@ export class VaultService {
       // Map vault status to transaction payStatus with descriptive messages
       let newPayStatus = transaction.payStatus;
       if (newStatus === 'frozen') {
-        newPayStatus = 'تم تجميد الحركة في الخزنة'; // Transaction frozen in vault
+        newPayStatus = 'تم تجميد المعاملة في الخزنة'; // Transaction frozen in vault
       } else if (newStatus === 'completed') {
         newPayStatus = 'مكتملة'; // Completed
       } else if (newStatus === 'cancelled') {
@@ -153,7 +153,7 @@ export class VaultService {
     }).exec();
     if (duplicate) {
       throw new BadRequestException(
-        'تم اكتشاف حركة مكررة — نفس المبلغ والقسم والوصف سُجِّلا للتو. انتظر لحظة قبل إعادة الإرسال'
+        'تم اكتشاف معاملة مكررة — نفس المبلغ والقسم والوصف سُجِّلا للتو. انتظر لحظة قبل إعادة الإرسال'
       );
     }
 

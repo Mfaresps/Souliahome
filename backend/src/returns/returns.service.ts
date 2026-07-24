@@ -117,7 +117,7 @@ export class ReturnsService {
       dto.originalTransactionId,
     );
     if (tx.cancelled) {
-      throw new BadRequestException('لا يمكن استرجاع حركة ملغية');
+      throw new BadRequestException('لا يمكن استرجاع معاملة ملغية');
     }
     const txDate = new Date(tx.date);
     const now = new Date();
@@ -126,7 +126,7 @@ export class ReturnsService {
     const daysRemaining = MAX_RETURN_DAYS - diffDays;
     if (daysRemaining <= 0) {
       throw new BadRequestException(
-        `انتهت مدة الاسترجاع (${MAX_RETURN_DAYS} يوم) — مرّ ${diffDays} يوم على الحركة`,
+        `انتهت مدة الاسترجاع (${MAX_RETURN_DAYS} يوم) — مرّ ${diffDays} يوم على المعاملة`,
       );
     }
     const duplicate = await this.returnModel
