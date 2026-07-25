@@ -2856,14 +2856,14 @@ body.dark-mode .fu-esc-badge{background:rgba(217,119,6,.2);color:#fbbf24}
 .fu-status-menu-portal .dd-item.active{background:var(--primary-pale);font-weight:700}
 
 /* ── مسار المتابعة — comment timeline modal ─────────────────── */
-.fu-thread-overlay{display:none;position:fixed;inset:0;z-index:1200;background:rgba(15,23,42,.5);backdrop-filter:blur(2px);align-items:flex-start;justify-content:center;padding:24px;box-sizing:border-box}
+.fu-thread-overlay{display:none;position:fixed;inset:0;z-index:1200;background:rgba(15,23,42,.5);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:24px;box-sizing:border-box}
 .fu-thread-overlay.show{display:flex;animation:fuThreadFadeIn .18s ease}
 @keyframes fuThreadFadeIn{from{opacity:0}to{opacity:1}}
-.fu-thread-modal{background:var(--bg);border-radius:16px;width:460px;max-width:100%;max-height:82vh;margin-top:6vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.25);animation:fuThreadPop .2s ease}
+.fu-thread-modal{background:var(--bg);border-radius:16px;overflow:hidden;width:460px;max-width:100%;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.25);animation:fuThreadPop .2s ease}
 @keyframes fuThreadPop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 .fu-thread-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
 .fu-thread-header h4{margin:0;font-size:.92rem;font-weight:700;color:var(--text)}
-.fu-thread-close{background:none;border:none;font-size:1.3rem;line-height:1;cursor:pointer;color:var(--muted);width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.fu-thread-close{background:none;border:none;font-size:1.5rem;line-height:1;cursor:pointer;color:var(--muted);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center}
 .fu-thread-close:hover{background:var(--bg-alt);color:var(--text)}
 .fu-reason-banner{flex-shrink:0;margin:12px 18px 0;display:flex;align-items:flex-start;gap:7px;padding:9px 12px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:.8rem;line-height:1.5}
 .fu-reason-banner svg{flex-shrink:0;margin-top:2px}
@@ -2925,14 +2925,12 @@ body.dark-mode .fu-reason-banner{background:rgba(59,130,246,.12);border-color:rg
 }
 
 @media(max-width:600px){
-  .fu-thread-overlay{padding:0;align-items:flex-end}
-  .fu-thread-modal{width:100%;max-width:100%;max-height:88vh;margin-top:0;border-radius:16px 16px 0 0}
-  .fu-thread-modal{animation:fuThreadSlideUp .22s ease}
+  .fu-thread-overlay{padding:14px}
+  .fu-thread-modal{width:100%;max-width:100%;max-height:88vh}
   .fu-thread-composer{padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
   .fu-thread-composer-box{padding-inline-end:12px}
   .fu-thread-composer-box textarea{min-height:44px;font-size:.95rem}
 }
-@keyframes fuThreadSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 
 @media(max-width:768px){
   .fu-table-wrap{display:none}
