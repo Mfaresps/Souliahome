@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content">
 <title>Soulia - إدارة المخازن</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 <script src="/config.js"></script>
@@ -2856,10 +2856,10 @@ body.dark-mode .fu-esc-badge{background:rgba(217,119,6,.2);color:#fbbf24}
 .fu-status-menu-portal .dd-item.active{background:var(--primary-pale);font-weight:700}
 
 /* ── مسار المتابعة — comment timeline modal ─────────────────── */
-.fu-thread-overlay{display:none;position:fixed;inset:0;z-index:1200;background:rgba(15,23,42,.5);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:24px;box-sizing:border-box}
+.fu-thread-overlay{display:none;position:fixed;inset:0;height:100dvh;z-index:1200;background:rgba(15,23,42,.5);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:24px;box-sizing:border-box}
 .fu-thread-overlay.show{display:flex;animation:fuThreadFadeIn .18s ease}
 @keyframes fuThreadFadeIn{from{opacity:0}to{opacity:1}}
-.fu-thread-modal{background:var(--bg);border-radius:16px;overflow:hidden;width:460px;max-width:100%;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.25);animation:fuThreadPop .2s ease}
+.fu-thread-modal{background:var(--bg);border-radius:16px;overflow:hidden;width:460px;max-width:100%;max-height:82dvh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.25);animation:fuThreadPop .2s ease}
 @keyframes fuThreadPop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 .fu-thread-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
 .fu-thread-header h4{margin:0;font-size:.92rem;font-weight:700;color:var(--text)}
@@ -2926,7 +2926,7 @@ body.dark-mode .fu-reason-banner{background:rgba(59,130,246,.12);border-color:rg
 
 @media(max-width:600px){
   .fu-thread-overlay{padding:14px}
-  .fu-thread-modal{width:100%;max-width:100%;max-height:88vh}
+  .fu-thread-modal{width:100%;max-width:100%;max-height:88dvh}
   .fu-thread-composer{padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
   .fu-thread-composer-box{padding-inline-end:12px}
   .fu-thread-composer-box textarea{min-height:44px;font-size:.95rem}
@@ -46998,7 +46998,7 @@ function openFuCommentPopup(id, highlightCommentId = '') {
   _fuSetCommentBtnMode('add');
   qs('#fu-comment-cancel-edit-btn').style.display = 'none';
   qs('#fu-comment-popup').classList.add('show');
-  document.body.style.overflow = 'hidden';
+  _fuLockBodyScroll();
   if (highlightCommentId) {
     setTimeout(() => {
       const item = qs(`#fu-comment-thread [data-comment-id="${highlightCommentId}"]`);
@@ -47258,10 +47258,35 @@ async function _fuDeleteComment(commentId) {
 
 function closeFuCommentPopup() {
   qs('#fu-comment-popup').classList.remove('show');
-  document.body.style.overflow = '';
+  _fuUnlockBodyScroll();
   fuCommentTargetId = null;
   _fuEditingCommentId = null;
   _fuAwaitingOutcome = false;
+}
+
+// iOS Safari scrolls the whole page to bring a focused input into view even
+// when body has overflow:hidden, because the input sits inside a
+// position:fixed ancestor. Pinning the body itself to position:fixed at its
+// current scroll offset (then restoring that offset on unlock) is the
+// standard workaround — it removes the document's own scroll container
+// entirely while the popup is open, so there's nothing for the keyboard to
+// scroll except the modal's own internal areas.
+let _fuLockedScrollY = 0;
+function _fuLockBodyScroll() {
+  _fuLockedScrollY = window.scrollY || window.pageYOffset || 0;
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${_fuLockedScrollY}px`;
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+  document.body.style.width = '100%';
+}
+function _fuUnlockBodyScroll() {
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.right = '';
+  document.body.style.width = '';
+  window.scrollTo(0, _fuLockedScrollY);
 }
 
 async function saveFuComment() {
