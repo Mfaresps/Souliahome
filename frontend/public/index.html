@@ -2772,41 +2772,73 @@ body.dark-mode .cmp-chip .s-tab-count{background:rgba(255,255,255,.08)}
 /* ════════════════════════════════════════════════════════════
    FOLLOW-UP ORDERS (متابعة الطلبات) — KPI strip + mobile cards
    ════════════════════════════════════════════════════════════ */
-.fu-cards{display:none;flex-direction:column;gap:10px}
-.fu-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;position:relative;box-sizing:border-box;max-width:100%;overflow:hidden}
-.fu-card.is-unseen{box-shadow:inset 3px 0 0 var(--primary)}
+.fu-cards{display:none;flex-direction:column;gap:14px}
+.fu-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px;position:relative;box-sizing:border-box;max-width:100%;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.04);transition:border-color .2s,background-color .2s;cursor:pointer}
+body.dark-mode .fu-card{box-shadow:0 1px 3px rgba(0,0,0,.25),0 1px 2px rgba(0,0,0,.2)}
+.fu-card.is-unseen{box-shadow:inset 3px 0 0 var(--primary),0 1px 3px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.04)}
+body.dark-mode .fu-card.is-unseen{box-shadow:inset 3px 0 0 var(--primary),0 1px 3px rgba(0,0,0,.25),0 1px 2px rgba(0,0,0,.2)}
 .fu-card.is-done{opacity:.6}
+.fu-card.is-cancelled{opacity:.7;background:var(--bg-alt)}
 
-.fu-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.fu-card-headline{display:flex;align-items:baseline;gap:7px;min-width:0;overflow:hidden;cursor:pointer}
+/* Progressive "getting overdue" redness — mirrors the 12h/24h/48h+
+   escalation levels already used for the ⏰ badge, so a late follow-up
+   reddens gradually instead of jumping straight to full alarm. */
+.fu-card.fu-heat-1{border-color:#fbbf24}
+.fu-card.fu-heat-2{border-color:#f87171;background:rgba(239,68,68,.04)}
+.fu-card.fu-heat-3{border-color:#dc2626;background:rgba(220,38,38,.08)}
+body.dark-mode .fu-card.fu-heat-2{background:rgba(239,68,68,.08)}
+body.dark-mode .fu-card.fu-heat-3{background:rgba(220,38,38,.14)}
+
+.fu-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.fu-card-headline{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;cursor:pointer;row-gap:4px}
 .fu-card-order{font-size:1rem;font-weight:700;color:var(--primary);flex-shrink:0}
-.fu-card-client{font-size:.86rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fu-card-client{font-size:.86rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}
+.fu-card-resp-initial{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--bg-alt);color:var(--muted);font-size:.62rem;font-weight:700;flex-shrink:0}
+.fu-card-sep{width:1px;height:12px;background:var(--border);flex-shrink:0}
 .fu-card-head-end{display:flex;align-items:center;gap:2px;flex-shrink:0}
 .fu-card-elapsed{font-size:.7rem;color:var(--muted);white-space:nowrap;flex-shrink:0}
-.fu-card-phone{font-size:.74rem;color:var(--muted);margin-top:3px;direction:ltr;text-align:right;cursor:pointer;font-variant-numeric:tabular-nums}
 
-.fu-card-statusrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:12px}
-.fu-card-field-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px}
-.fu-card-field-label{font-size:.7rem;color:var(--muted);font-weight:600;flex-shrink:0}
-.fu-status-chip{display:inline-flex;align-items:center;gap:5px;border:none;border-radius:14px;padding:4px 9px;font-size:.72rem;font-weight:700;font-family:inherit;cursor:pointer;max-width:100%}
+.fu-status-chip{display:inline-flex;align-items:center;gap:4px;border:1px solid transparent;border-radius:12px;padding:3px 8px;font-size:.7rem;font-weight:700;font-family:inherit;cursor:pointer;max-width:100%}
 .fu-status-chip .fu-status-chip-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .fu-status-chip svg{flex-shrink:0;opacity:.75}
 .fu-status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 
 .fu-esc-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;background:rgba(217,119,6,.12);color:#b45309;font-size:.68rem;font-weight:700;white-space:nowrap}
 body.dark-mode .fu-esc-badge{background:rgba(217,119,6,.2);color:#fbbf24}
-.fu-card-tags{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:10px}
-.fu-card-comments-bar{display:flex;align-items:center;gap:7px;margin-top:10px;cursor:pointer}
+.fu-card-tags{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:8px}
 .fu-avatar-stack{display:flex;align-items:center;flex-shrink:0}
 .fu-avatar-stack>*{margin-inline-start:-8px;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--border)}
 .fu-avatar-stack>*:last-child{margin-inline-start:0}
 .fu-avatar-stack-more{width:22px;height:22px;border-radius:50%;background:var(--bg-alt);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;margin-inline-start:-8px;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--border);flex-shrink:0}
-.fu-comments-count{font-size:.72rem;color:var(--muted);font-weight:600;white-space:nowrap}
-.fu-comments-view-btn{margin-inline-start:auto;background:none;border:none;padding:0;cursor:pointer;font-size:.72rem;font-weight:700;color:var(--primary);white-space:nowrap}
-.fu-card-comment{display:flex;align-items:flex-start;gap:7px;margin-top:10px;padding:8px 10px;border-radius:9px;background:var(--bg-alt);color:var(--text);cursor:pointer}
-.fu-card-comment svg{flex-shrink:0;margin-top:2px;color:var(--primary)}
 .fu-card-comment-text{font-size:.8rem;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
-.fu-card-meta-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.76rem;color:var(--muted);padding-top:11px;margin-top:11px;border-top:1px solid var(--border)}
+.fu-card-meta-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.76rem;color:var(--muted);padding-top:9px;margin-top:10px;border-top:1px solid var(--border)}
+
+/* "Action → إلغاء" banner — replaces the usual trail preview once a follow-up
+   has been cancelled, showing why and by whom in the same red family as the
+   status chip so a cancelled card reads as settled at a glance. */
+.fu-cancel-banner{margin-top:10px;display:flex;align-items:flex-start;gap:7px;padding:8px 10px;border-radius:10px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);color:#dc2626;font-size:.78rem;line-height:1.5}
+.fu-cancel-banner svg{flex-shrink:0;margin-top:2px}
+.fu-cancel-by{color:var(--muted);font-weight:600}
+
+/* Unified "مسار المتابعة" highlight panel — groups commenter avatars, comment
+   count, last-comment preview, and call-attempt status into one visually
+   distinct block instead of scattering them across separate rows, so the
+   card's most action-relevant info reads at a glance. The head row (avatars
+   + counts) carries the strong highlight since it's the at-a-glance summary;
+   the body (last note preview) stays on plain surface so the head still pops. */
+.fu-trail-panel{margin-top:10px;border-radius:11px;border:1.5px dashed var(--primary);overflow:hidden;cursor:pointer;background:var(--surface);transition:border-color .15s,box-shadow .15s}
+.fu-trail-panel:hover,.fu-trail-panel:active{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-pale)}
+.fu-trail-panel-head{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--primary-pale);border-bottom:1px solid var(--border)}
+.fu-trail-stat{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;color:var(--primary)}
+.fu-trail-stat svg{flex-shrink:0}
+.fu-trail-stat.fu-trail-call-answered{color:#16a34a}
+.fu-trail-stat.fu-trail-call-missed{color:#dc2626}
+.fu-trail-stat.fu-trail-call-none{color:var(--muted)}
+.fu-trail-sep{width:1px;align-self:stretch;background:var(--border);opacity:.6}
+.fu-trail-panel-body{display:flex;align-items:flex-start;gap:7px;padding:8px 10px}
+.fu-trail-panel-body svg{flex-shrink:0;margin-top:2px;color:var(--primary)}
+.fu-trail-empty{padding:9px 10px;display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted);font-weight:600}
+.fu-trail-empty svg{color:var(--primary);flex-shrink:0}
 .fu-card-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:11px}
 .fu-card-actions .fu-icon-btn{width:38px;height:38px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid var(--border);background:var(--bg-alt);color:var(--muted);cursor:pointer}
 .fu-card-actions .fu-wa-btn{background:#dcfce7;color:#16a34a;border-color:transparent}
@@ -2833,13 +2865,16 @@ body.dark-mode .fu-esc-badge{background:rgba(217,119,6,.2);color:#fbbf24}
 .fu-thread-header h4{margin:0;font-size:.92rem;font-weight:700;color:var(--text)}
 .fu-thread-close{background:none;border:none;font-size:1.3rem;line-height:1;cursor:pointer;color:var(--muted);width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center}
 .fu-thread-close:hover{background:var(--bg-alt);color:var(--text)}
+.fu-reason-banner{flex-shrink:0;margin:12px 18px 0;display:flex;align-items:flex-start;gap:7px;padding:9px 12px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:.8rem;line-height:1.5}
+.fu-reason-banner svg{flex-shrink:0;margin-top:2px}
+body.dark-mode .fu-reason-banner{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.35);color:#93c5fd}
 .fu-thread-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 18px}
 .fu-thread-empty{text-align:center;color:var(--muted);font-size:.82rem;padding:28px 0}
 
 .fu-timeline{position:relative}
 .fu-timeline-item{position:relative;display:flex;gap:10px;padding-bottom:18px}
 .fu-timeline-item:last-child{padding-bottom:0}
-.fu-timeline-item:not(:last-child)::before{content:'';position:absolute;top:32px;bottom:-2px;inset-inline-start:15px;width:2px;background:var(--border)}
+.fu-timeline-item:not(:last-child)::before{content:'';position:absolute;top:32px;bottom:-2px;inset-inline-start:15px;width:0;border-inline-start:2px dashed var(--border)}
 .fu-timeline-avatar{flex-shrink:0;z-index:1}
 .fu-timeline-content{flex:1;min-width:0;background:var(--bg-alt);border-radius:11px;padding:9px 11px}
 .fu-timeline-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px}
@@ -2854,9 +2889,15 @@ body.dark-mode .fu-esc-badge{background:rgba(217,119,6,.2);color:#fbbf24}
 @keyframes fuCommentPulse{0%,100%{box-shadow:none}25%{box-shadow:0 0 0 2px var(--primary)}}
 
 .fu-thread-composer{flex-shrink:0;border-top:1px solid var(--border);padding:14px 18px;background:var(--bg)}
-.fu-thread-composer textarea{width:100%;font-size:.85rem;padding:9px 11px;box-sizing:border-box;resize:vertical;border-radius:9px;border:1px solid var(--border);font-family:inherit;background:var(--surface);color:var(--text)}
-.fu-thread-composer-actions{display:flex;gap:8px;margin-top:10px;justify-content:flex-end}
-.fu-comment-send-btn{width:38px;height:38px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0}
+/* Send button lives inside the textarea's own box (chat-app style) instead
+   of a separate row below it, so the composer stays compact and scales with
+   however many lines of text the textarea grows to. */
+.fu-thread-composer-box{position:relative;display:flex;align-items:flex-end;gap:6px;padding:6px;padding-inline-start:10px;border-radius:16px;border:1px solid var(--border);background:var(--surface);box-sizing:border-box}
+.fu-thread-composer-box textarea{flex:1 1 0%;width:100%;min-width:0;font-size:.85rem;padding:6px 0;box-sizing:border-box;resize:none;overflow-y:auto;min-height:20px;max-height:160px;border:none;background:transparent;font-family:inherit;color:var(--text);line-height:1.4}
+.fu-thread-composer-box textarea:focus{outline:none}
+.fu-comment-send-btn{width:30px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;border:none;background:var(--primary);color:#fff;cursor:pointer}
+.fu-comment-send-btn svg{width:14px;height:14px}
+.fu-comment-send-btn:disabled{opacity:.5;cursor:not-allowed}
 
 /* Call-attempt logging — dedicated row above the composer + distinct
    timeline bubble style so a logged call reads differently from a free-text
@@ -2864,7 +2905,8 @@ body.dark-mode .fu-esc-badge{background:rgba(217,119,6,.2);color:#fbbf24}
 .fu-call-attempt-row{flex-shrink:0;padding:10px 18px;border-top:1px solid var(--border);background:var(--bg-alt);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .fu-call-attempt-dots{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted)}
 .fu-call-attempt-dot{width:9px;height:9px;border-radius:50%;background:var(--border);flex-shrink:0}
-.fu-call-attempt-dot.filled{background:#16a34a}
+.fu-call-attempt-dot.filled.answered{background:#16a34a}
+.fu-call-attempt-dot.filled.missed{background:#dc2626}
 .fu-call-attempt-btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:8px;border:1px solid #16a34a;background:rgba(22,163,74,.08);color:#16a34a;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap}
 .fu-call-attempt-btn:hover{background:rgba(22,163,74,.16)}
 .fu-call-attempt-btn:disabled{opacity:.5;cursor:not-allowed;background:var(--bg-alt);border-color:var(--border);color:var(--muted)}
@@ -2886,6 +2928,9 @@ body.dark-mode .fu-esc-badge{background:rgba(217,119,6,.2);color:#fbbf24}
   .fu-thread-overlay{padding:0;align-items:flex-end}
   .fu-thread-modal{width:100%;max-width:100%;max-height:88vh;border-radius:16px 16px 0 0}
   .fu-thread-modal{animation:fuThreadSlideUp .22s ease}
+  .fu-thread-composer{padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .fu-thread-composer-box{padding-inline-start:12px}
+  .fu-thread-composer-box textarea{min-height:26px;font-size:.9rem}
 }
 @keyframes fuThreadSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 
@@ -2893,13 +2938,18 @@ body.dark-mode .fu-esc-badge{background:rgba(217,119,6,.2);color:#fbbf24}
   .fu-table-wrap{display:none}
   .fu-cards{display:flex}
   .fu-toolbar{display:none!important}
+  .fu-kpi-toolbar-row{display:block!important}
 
-  /* KPI strip → 2-column grid of proper stat tiles instead of a cramped pill row */
-  .fu-kpi-strip{display:grid!important;grid-template-columns:1fr 1fr;gap:8px}
-  .fu-kpi-strip>div{display:flex!important;flex-direction:column;align-items:flex-start;gap:4px;border-radius:12px!important;padding:10px 12px!important}
-  .fu-kpi-strip .fu-kpi-dot{width:9px;height:9px}
-  .fu-kpi-strip .fu-kpi-label{font-size:.7rem;order:3}
-  .fu-kpi-strip .fu-kpi-val{font-size:1.15rem;order:2}
+  /* KPI strip → one compact horizontal row of 4 stat cells (number + tiny
+     label stacked, no card chrome per cell) instead of tall 2x2 tiles, so
+     the strip stays a thin band and the follow-up cards start higher on
+     screen. */
+  .fu-kpi-strip{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:0!important;background:var(--bg)!important;border:1px solid var(--border)!important;border-radius:12px!important;overflow:hidden;margin-bottom:12px!important}
+  .fu-kpi-strip>div{display:flex!important;flex-direction:column;align-items:center!important;justify-content:center;gap:1px;border-radius:0!important;padding:8px 4px!important;border:none!important;border-inline-end:1px solid var(--border)!important;background:transparent!important}
+  .fu-kpi-strip>div:last-child{border-inline-end:none!important}
+  .fu-kpi-strip .fu-kpi-dot{display:none}
+  .fu-kpi-strip .fu-kpi-label{font-size:.62rem;order:3;text-align:center;line-height:1.2;white-space:normal}
+  .fu-kpi-strip .fu-kpi-val{font-size:1rem;order:2}
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -3416,8 +3466,8 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
   /* Sidebar slide-out */
   #sidebar{transform:translateX(110%);box-shadow:-4px 0 24px rgba(0,0,0,.15)}
   #sidebar.open{transform:translateX(0)}
-  #main{margin-right:0;padding:12px;padding-bottom:calc(90px + env(safe-area-inset-bottom,0px));box-sizing:border-box;max-width:100%;overflow-x:hidden}
-  .bulk-bar{right:0;bottom:64px}
+  #main{margin-right:0;padding:12px;padding-bottom:calc(104px + env(safe-area-inset-bottom,0px));box-sizing:border-box;max-width:100%;overflow-x:hidden}
+  .bulk-bar{right:0;bottom:78px}
   [dir="ltr"] #sidebar{transform:translateX(-110%)}
   [dir="ltr"] #sidebar.open{transform:translateX(0)}
   [dir="ltr"] #main{margin-left:0}
@@ -3494,7 +3544,7 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
   #mobile-bottom-nav{
     display:block;
     position:fixed;bottom:0;left:0;right:0;
-    height:calc(70px + env(safe-area-inset-bottom,0px));
+    height:calc(84px + env(safe-area-inset-bottom,0px));
     z-index:200;
     pointer-events:none;
   }
@@ -3518,12 +3568,12 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
   /* Each tab item */
   #mobile-bottom-nav .m-nav-item{
     flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
-    gap:3px;cursor:pointer;border:none;background:none;
-    color:var(--muted);padding:6px 2px 10px;
+    gap:4px;cursor:pointer;border:none;background:none;
+    color:var(--muted);padding:8px 2px 12px;
     -webkit-tap-highlight-color:transparent;
     transition:color .18s;
     position:relative;overflow:hidden;
-    min-height:60px;
+    min-height:72px;
   }
   /* Active indicator — pill under icon */
   #mobile-bottom-nav .m-nav-dot{
@@ -3537,7 +3587,7 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
     transform:translateX(-50%) scaleX(1);
   }
   #mobile-bottom-nav .m-nav-item svg{
-    width:22px;height:22px;flex-shrink:0;
+    width:26px;height:26px;flex-shrink:0;
     transition:transform .22s cubic-bezier(.34,1.56,.64,1),stroke .18s,color .18s;
   }
   #mobile-bottom-nav .m-nav-item.active{color:var(--accent)}
@@ -3546,33 +3596,39 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
     stroke:var(--accent);
   }
   #mobile-bottom-nav .m-nav-label{
-    font-size:.57rem;font-weight:700;letter-spacing:.02em;line-height:1;
+    font-size:.64rem;font-weight:700;letter-spacing:.02em;line-height:1;
     transition:color .18s;margin-bottom:2px;
   }
   #mobile-bottom-nav .m-nav-item:active{opacity:.7}
   /* Central FAB slot — creates space in the flex row for the notch */
   #mobile-bottom-nav .m-nav-fab-slot{
-    flex:0 0 76px;display:flex;align-items:flex-end;justify-content:center;
-    padding-bottom:8px;position:relative;
+    flex:0 0 100px;display:flex;align-items:flex-end;justify-content:center;
+    padding-bottom:10px;position:relative;
   }
   /* FAB — floating action button rises above the bar */
   #mobile-bottom-nav .m-nav-fab{
     display:flex;align-items:center;justify-content:center;
     background:linear-gradient(145deg,#2d7a4f 0%,#00311e 100%);
-    border-radius:50%;width:56px;height:56px;
+    border-radius:50%;width:64px;height:64px;
     cursor:pointer;border:3px solid #fff;color:#fff;
-    box-shadow:0 4px 18px rgba(0,49,30,.45),0 2px 6px rgba(0,49,30,.22);
+    box-shadow:0 4px 18px rgba(0,49,30,.45),0 2px 6px rgba(0,49,30,.22),0 0 0 0 rgba(45,122,79,.6);
     transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s;
     -webkit-tap-highlight-color:transparent;
-    position:absolute;bottom:12px;
+    position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
     pointer-events:auto;
+    animation:fabGlowPulse 2.2s ease-out infinite;
   }
   body.dark-mode #mobile-bottom-nav .m-nav-fab{border-color:#161d18}
   #mobile-bottom-nav .m-nav-fab:active{
-    transform:scale(.88);
+    transform:translateX(-50%) scale(.88);
     box-shadow:0 2px 8px rgba(0,49,30,.3);
   }
-  #mobile-bottom-nav .m-nav-fab svg{width:22px;height:22px;stroke-width:2.5}
+  #mobile-bottom-nav .m-nav-fab svg{width:28px;height:28px;stroke-width:2}
+  @keyframes fabGlowPulse{
+    0%{box-shadow:0 4px 18px rgba(0,49,30,.45),0 2px 6px rgba(0,49,30,.22),0 0 0 0 rgba(45,122,79,.55)}
+    70%{box-shadow:0 4px 18px rgba(0,49,30,.45),0 2px 6px rgba(0,49,30,.22),0 0 0 14px rgba(45,122,79,0)}
+    100%{box-shadow:0 4px 18px rgba(0,49,30,.45),0 2px 6px rgba(0,49,30,.22),0 0 0 0 rgba(45,122,79,0)}
+  }
 
   /* ── Modals → Bottom Sheet ── */
   .modal-overlay{align-items:flex-end!important}
@@ -3755,9 +3811,10 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
 @media(max-width:380px){
   #dash-stats{grid-template-columns:repeat(2,1fr)!important}
   .kpi-strip .kpi .kpi-val{font-size:.9rem}
-  #mobile-bottom-nav .m-nav-label{font-size:.52rem}
-  #mobile-bottom-nav .m-nav-fab{width:50px;height:50px}
-  #mobile-bottom-nav .m-nav-fab-slot{flex:0 0 68px}
+  #mobile-bottom-nav .m-nav-label{font-size:.58rem}
+  #mobile-bottom-nav .m-nav-fab{width:58px;height:58px}
+  #mobile-bottom-nav .m-nav-fab-slot{flex:0 0 76px}
+  #mobile-bottom-nav .m-nav-fab svg{width:26px;height:26px}
 }
 
 /* Desktop — hide bottom nav */
@@ -6531,10 +6588,10 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <path id="m-nav-bg-path"/>
   </svg>
   <div class="m-nav-row">
-    <!-- الرئيسية -->
-    <button class="m-nav-item" id="mnav-dashboard" onclick="navigateTo('dashboard');updateMobileNav('dashboard')" aria-label="الرئيسية">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-      <span class="m-nav-label">الرئيسية</span>
+    <!-- المخزن -->
+    <button class="m-nav-item" id="mnav-inventory" onclick="navigateTo('inventory');updateMobileNav('inventory')" aria-label="المخزن">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      <span class="m-nav-label">المخزن</span>
       <span class="m-nav-dot"></span>
     </button>
     <!-- المعاملات -->
@@ -6545,14 +6602,12 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     </button>
     <!-- FAB slot (notch space) -->
     <div class="m-nav-fab-slot">
-      <button class="m-nav-fab" onclick="navigateTo('transaction');setTimeout(()=>setTxType('مبيعات'),50);updateMobileNav('transaction')" title="معاملة جديدة" aria-label="إنشاء معاملة جديدة">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      </button>
+      <button class="m-nav-fab" id="m-nav-fab-btn"></button>
     </div>
-    <!-- المخزن -->
-    <button class="m-nav-item" id="mnav-inventory" onclick="navigateTo('inventory');updateMobileNav('inventory')" aria-label="المخزن">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-      <span class="m-nav-label">المخزن</span>
+    <!-- الرئيسية -->
+    <button class="m-nav-item" id="mnav-dashboard" onclick="navigateTo('dashboard');updateMobileNav('dashboard')" aria-label="الرئيسية">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      <span class="m-nav-label">الرئيسية</span>
       <span class="m-nav-dot"></span>
     </button>
     <!-- المزيد -->
@@ -8439,8 +8494,10 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 ═══════════════════════════════════════ -->
 <div id="fu-orders-section" style="padding-top:16px">
 
+  <!-- KPI strip + toolbar — same row on desktop -->
+  <div class="fu-kpi-toolbar-row" style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
   <!-- KPI strip — compact inline numbers -->
-  <div id="fu-kpi" class="fu-kpi-strip" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px"></div>
+  <div id="fu-kpi" class="fu-kpi-strip" style="display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;flex-shrink:0;padding-bottom:2px"></div>
 
   <!-- Mobile filter trigger (opens bottom sheet) -->
   <button class="cmp-filter-trigger fu-filter-trigger" id="fu-filter-trigger-btn" onclick="openFuFilterSheet()" title="فلترة" aria-label="فلترة">
@@ -8449,7 +8506,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   </button>
 
   <!-- Toolbar — icon-only filters, one row (desktop/tablet) -->
-  <div class="fu-toolbar" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+  <div class="fu-toolbar" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0">
     <!-- Search -->
     <div style="position:relative;flex:1;min-width:140px;max-width:260px">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -8493,6 +8550,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <button onclick="clearFuFilters()" title="مسح الفلاتر" style="height:28px;width:28px;padding:0;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
+  </div>
   </div>
 
   <!-- Table (desktop/tablet) -->
@@ -8753,16 +8811,20 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 <div id="fu-comment-popup" class="fu-thread-overlay">
   <div class="fu-thread-modal" dir="rtl">
     <div class="fu-thread-header">
-      <h4 id="fu-comment-title">مسار المتابعة</h4>
+      <div style="display:flex;align-items:baseline;gap:7px;min-width:0">
+        <h4 id="fu-comment-title" style="flex-shrink:0">مسار المتابعة</h4>
+        <span id="fu-comment-subtitle" style="font-size:.78rem;color:var(--muted);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0"></span>
+      </div>
       <button class="fu-thread-close" onclick="closeFuCommentPopup()">×</button>
     </div>
+    <div id="fu-comment-reason-banner"></div>
     <div id="fu-comment-thread" class="fu-thread-body"></div>
     <div id="fu-call-attempt-row" class="fu-call-attempt-row"></div>
     <div class="fu-thread-composer">
-      <textarea id="fu-comment-text" rows="2" placeholder="أضف تعليقاً..."></textarea>
-      <div class="fu-thread-composer-actions">
-        <button id="fu-comment-cancel-edit-btn" onclick="_fuCancelEditComment()" class="btn btn-outline btn-sm" style="display:none">إلغاء التعديل</button>
-        <button onclick="saveFuComment()" class="btn btn-primary btn-sm fu-comment-send-btn" id="fu-comment-save-btn" title="إضافة تعليق" aria-label="إضافة تعليق"></button>
+      <button id="fu-comment-cancel-edit-btn" onclick="_fuCancelEditComment()" class="btn btn-outline btn-sm" style="display:none;margin-bottom:8px">إلغاء التعديل</button>
+      <div class="fu-thread-composer-box">
+        <textarea id="fu-comment-text" rows="1" placeholder="أضف تعليقاً..." oninput="_fuAutoGrow(this)"></textarea>
+        <button onclick="saveFuComment()" class="fu-comment-send-btn" id="fu-comment-save-btn" title="إضافة تعليق" aria-label="إضافة تعليق"></button>
       </div>
     </div>
   </div>
@@ -16090,23 +16152,41 @@ function updateMobileNav(page) {
   const map = { dashboard:'mnav-dashboard', movements:'mnav-movements', inventory:'mnav-inventory' };
   if (map[page]) qs('#' + map[page])?.classList.add('active');
 }
+function setupMobileNavFab() {
+  const btn = qs('#m-nav-fab-btn');
+  if (!btn) return;
+  const ICON_COMPLAINTS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13a8 8 0 0116 0"/><path d="M19 13v4a2 2 0 01-2 2h-1"/><path d="M14 20a1.5 1.5 0 01-3 0"/><rect x="2" y="12" width="4" height="6" rx="1.5"/><rect x="18" y="12" width="4" height="6" rx="1.5"/></svg>';
+  const ICON_DASHBOARD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
+  if (hasPerm('complaints')) {
+    btn.innerHTML = ICON_COMPLAINTS;
+    btn.title = 'خدمة العملاء';
+    btn.setAttribute('aria-label', 'خدمة العملاء');
+    btn.onclick = () => { navigateTo('complaints'); updateMobileNav('complaints'); };
+  } else {
+    btn.innerHTML = ICON_DASHBOARD;
+    btn.title = 'الرئيسية';
+    btn.setAttribute('aria-label', 'الرئيسية');
+    btn.onclick = () => { navigateTo('dashboard'); updateMobileNav('dashboard'); };
+  }
+}
 function initMobileNav() {
   const nav = qs('#mobile-bottom-nav');
   if (!nav) return;
+  setupMobileNavFab();
 
   function drawNavCurve() {
     const svg = qs('#m-nav-bg-svg');
     const pathEl = qs('#m-nav-bg-path');
     if (!svg || !pathEl) return;
     const W = window.innerWidth;
-    const H = 70;
+    const H = 84;
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     svg.setAttribute('width', W);
     svg.setAttribute('height', H);
     const cx = W / 2;
-    const r = 32;   // notch half-width at base
-    const depth = 24; // how high the notch goes
-    const slope = 14; // curve approach slope
+    const r = 34;   // notch half-width at base
+    const depth = 20; // how high the notch goes
+    const slope = 16; // curve approach slope
     const d = [
       `M0,0`,
       `L${cx - r - slope},0`,
@@ -16351,7 +16431,7 @@ function buildNotifications() {
   // Follow-up unseen items (all users)
   if (Array.isArray(followUps)) {
     const fuSeenIds = _fuGetSeenIds();
-    followUps.filter(f => !fuSeenIds.includes(String(f._id)) && (f.status !== 'تم حل المشكلة' && f.status !== 'تمت المتابعة')).forEach(f => {
+    followUps.filter(f => !fuSeenIds.includes(String(f._id)) && !_fuIsSettled(f)).forEach(f => {
       notifs.push({
         id: 'fu-unseen-' + f._id,
         icon: ICON('clock'),
@@ -16532,7 +16612,7 @@ function _buildNcUpdates() {
   }
   if (Array.isArray(followUps)) {
     const fuSeenIds = _fuGetSeenIds();
-    followUps.filter(f => !fuSeenIds.includes(String(f._id)) && (f.status !== 'تم حل المشكلة' && f.status !== 'تمت المتابعة')).forEach(f => {
+    followUps.filter(f => !fuSeenIds.includes(String(f._id)) && !_fuIsSettled(f)).forEach(f => {
       notifs.push({ id: 'fu-unseen-' + f._id, icon: ICON('clock'), type: 'info',
         title: `متابعة طلب #${f.orderRef}`, desc: `${f.responsibleName} — ${(f.reason||'').slice(0,80)}`,
         page: 'complaints', fuId: String(f._id), ts: f.createdAt || '', refType: 'fu', refId: String(f._id) });
@@ -45826,9 +45906,26 @@ function _fuTagStyle(label) {
 }
 let _fuPickedSwatch = 0;
 
+function _fuIsSettled(f) { return !!f.cancelled || f.status === 'تم حل المشكلة' || f.status === 'تمت المتابعة'; }
+// Compact "4h / 5m / 30s" elapsed label for the mobile card header — short
+// English unit letters instead of the full Arabic "منذ N ساعة" phrasing.
+function _fuShortElapsed(isoStr) {
+  if (!isoStr) return '';
+  const diff = Math.max(0, Date.now() - new Date(isoStr).getTime());
+  const secs = Math.floor(diff / 1000);
+  if (secs < 60) return `${secs}s`;
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d`;
+  const months = Math.floor(days / 30);
+  return `${months}mo`;
+}
 function _fuGetSeenIds() { try { return JSON.parse(localStorage.getItem(FU_SEEN_KEY)||'[]'); } catch(_){return[];} }
 function _fuSaveSeenIds(arr) { localStorage.setItem(FU_SEEN_KEY, JSON.stringify(arr)); }
-function _fuUnseenCount() { const s = _fuGetSeenIds(); return followUps.filter(f => !s.includes(String(f._id)) && (f.status !== 'تم حل المشكلة' && f.status !== 'تمت المتابعة')).length; }
+function _fuUnseenCount() { const s = _fuGetSeenIds(); return followUps.filter(f => !s.includes(String(f._id)) && !_fuIsSettled(f)).length; }
 function _fuMarkAllSeen() { const s = _fuGetSeenIds(); followUps.forEach(f => { const id=String(f._id); if(!s.includes(id)) s.push(id); }); _fuSaveSeenIds(s); }
 function _fuUpdateBadges() { const count = _fuUnseenCount(); const b = qs('#fu-tab-badge'); if (b) { b.textContent = count; b.style.display = count > 0 ? 'inline-block' : 'none'; } buildSidebar(); }
 
@@ -45843,8 +45940,11 @@ async function loadFollowUps() {
 
 function renderFuKpi() {
   const newToday = followUps.filter(f => (f.createdAt||'').slice(0,10) === today()).length;
-  const solved   = followUps.filter(f => f.status === 'تم حل المشكلة' || f.status === 'تمت المتابعة').length;
-  const waiting  = followUps.filter(f => f.status === 'في انتظار المتابعة' || f.status === 'قيد المتابعة' || f.status === 'بانتظار العميل').length;
+  const solved   = followUps.filter(f => f.status === 'تم حل المشكلة' || f.status === 'تمت المتابعة' || f.status === 'تمت عملية التأكيد').length;
+  const waiting  = followUps.filter(f => [
+    'في انتظار المتابعة', 'قيد المتابعة', 'بانتظار العميل',
+    'في انتظار المتابعة مع العميل', 'العميل لم يرد', 'العميل مازال متردد', 'العميل أجل الطلب',
+  ].includes(f.status)).length;
   const returns  = followUps.filter(f => f.status === 'سيتم ارتجاع الشحنة').length;
   const kpiEl = qs('#fu-kpi');
   if (!kpiEl) return;
@@ -45854,7 +45954,7 @@ function renderFuKpi() {
     { label:'سيتم ارتجاع الشحنة',  val: returns,  color:'#ef4444', dot:'#fecaca' },
     { label:'تم حل المشكلة',        val: solved,   color:'#16a34a', dot:'#bbf7d0' },
   ].map(k => `
-    <div style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid var(--border);border-radius:20px;background:var(--bg)">
+    <div style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid var(--border);border-radius:20px;background:var(--bg);flex-shrink:0;white-space:nowrap">
       <span class="fu-kpi-dot" style="width:8px;height:8px;border-radius:50%;background:${k.dot};flex-shrink:0;border:1.5px solid ${k.color}"></span>
       <span class="fu-kpi-label" style="font-size:.78rem;color:var(--muted)">${k.label}</span>
       <span class="fu-kpi-val" style="font-size:.88rem;font-weight:700;color:${k.color}">${fmtN(k.val)}</span>
@@ -45888,9 +45988,9 @@ function renderFollowUps() {
     return true;
   });
 
-  // Completed go to bottom, rest sorted newest first
-  const active = data.filter(f => (f.status !== 'تم حل المشكلة' && f.status !== 'تمت المتابعة')).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
-  const done   = data.filter(f => f.status === 'تم حل المشكلة' || f.status === 'تمت المتابعة').sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+  // Completed/cancelled go to bottom, rest sorted newest first
+  const active = data.filter(f => !_fuIsSettled(f)).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+  const done   = data.filter(_fuIsSettled).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
   data = [...active, ...done];
 
   const tbody = qs('#fu-tbody');
@@ -45924,8 +46024,9 @@ function renderFollowUps() {
     const resolvedName = (f.clientName || _tx?.client || '').trim();
     const resolvedPhone = (f.clientPhone || _tx?.phone || '').trim();
     const seenIds = _fuGetSeenIds();
-    const isUnseen = !seenIds.includes(fId) && (f.status !== 'تم حل المشكلة' && f.status !== 'تمت المتابعة');
-    const isDone = (f.status === 'تم حل المشكلة' || f.status === 'تمت المتابعة');
+    const isCancelled = !!f.cancelled;
+    const isUnseen = !seenIds.includes(fId) && !_fuIsSettled(f);
+    const isDone = (f.status === 'تم حل المشكلة' || f.status === 'تمت المتابعة') && !isCancelled;
 
     const st = FU_STATUS_STYLES[f.status] || { bg:'#f3f4f6', color:'#6b7280', dot:'#9ca3af' };
     const P = 'padding:6px 10px;vertical-align:middle;white-space:nowrap';
@@ -45939,7 +46040,7 @@ function renderFollowUps() {
         </span>`;
 
     const reasonHtml = f.reason
-      ? `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#fef9c3;color:#854d0e;font-size:.74rem;font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle" title="${esc(f.reason)}">${esc(f.reason)}</span>`
+      ? `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#eff6ff;color:#1d4ed8;font-size:.74rem;font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle" title="${esc(f.reason)}">${esc(f.reason)}</span>`
       : `<span style="color:var(--muted);font-size:.74rem">—</span>`;
 
     const tagsHtml = (Array.isArray(f.tags) && f.tags.length)
@@ -45985,11 +46086,8 @@ function renderFollowUps() {
       <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
       ${fmtN(callAttempts)}/3
     </span>`;
-
     // Stacked avatar group — one avatar per unique commenter (most recent
-    // first), capped visually with a "+N" overflow chip, plus a total count
-    // and a compact "view comments" action. Kept to a single slim row so the
-    // card doesn't grow taller than before.
+    // first), capped visually with a "+N" overflow chip.
     const uniqueCommenters = [];
     const seenAuthorIds = new Set();
     for (let i = fuComments.length - 1; i >= 0; i--) {
@@ -46009,13 +46107,30 @@ function renderFollowUps() {
           ${extraCommenters > 0 ? `<span class="fu-avatar-stack-more">+${extraCommenters}</span>` : ''}
         </div>`
       : '';
-    const commentsBarHtml = fuComments.length
-      ? `<div class="fu-card-comments-bar" onclick="event.stopPropagation();openFuCommentPopup('${fId}')">
-          ${avatarStackHtml}
-          <span class="fu-comments-count">${fuComments.length} تعليق</span>
-          <button type="button" class="fu-comments-view-btn" onclick="event.stopPropagation();openFuCommentPopup('${fId}')">عرض التعليقات</button>
+
+    // Unified "مسار المتابعة" highlight panel — one distinct block combining
+    // commenter avatars + note count + call-attempt status + last note
+    // preview, instead of the note count/avatars and call chip living in
+    // separate, easy-to-miss rows on the card.
+    const noteEntries = fuComments.filter(c => c.kind !== 'call');
+    const callStatClass = !callAttempts ? 'fu-trail-call-none' : (lastCallAnswered ? 'fu-trail-call-answered' : 'fu-trail-call-missed');
+    const callStatIcon = !callAttempts ? FU_CALL_PHONE_ICON : (lastCallAnswered ? FU_CALL_ANSWERED_ICON : FU_CALL_MISSED_ICON);
+    const trailPanelHtml = (fuComments.length)
+      ? `<div class="fu-trail-panel" onclick="event.stopPropagation();openFuCommentPopup('${fId}')">
+          <div class="fu-trail-panel-head">
+            ${avatarStackHtml}
+            <span class="fu-trail-stat">${FU_TRAIL_COMMENT_ICON}${fmtN(noteEntries.length)}</span>
+            <span class="fu-trail-sep"></span>
+            <span class="fu-trail-stat ${callStatClass}">${callStatIcon}${fmtN(callAttempts)}/3</span>
+          </div>
+          ${lastComment ? `<div class="fu-trail-panel-body">
+            ${FU_TRAIL_COMMENT_ICON}
+            <span class="fu-card-comment-text"><strong>${esc(lastComment.authorName || '')}:</strong> ${esc(lastComment.text)}</span>
+          </div>` : ''}
         </div>`
-      : '';
+      : `<div class="fu-trail-panel" onclick="event.stopPropagation();openFuCommentPopup('${fId}')">
+          <div class="fu-trail-empty">${FU_TRAIL_COMMENT_ICON}لا يوجد مسار متابعة بعد — اضغط للإضافة</div>
+        </div>`;
     // "⋮" overflow menu — edit/whatsapp/trail/delete all live here instead of
     // separate icon buttons, on both the desktop row and the mobile card.
     const fuCardMenuBtn = `<button type="button" class="fu-card-menu-btn" onclick="event.stopPropagation();fuOpenCardMenu(event,'${fId}')">⋮</button>`;
@@ -46040,12 +46155,25 @@ function renderFollowUps() {
     const escBadge = escLabel
       ? `<span class="fu-esc-badge" title="بانتظار تحديث منذ ${escLabel}">⏰ ${escLabel}</span>`
       : '';
+    // Progressive "getting late" redness on the card itself, mirroring the
+    // same escalation levels as escBadge: 1 (12h) = faint outline only,
+    // 2 (24h+) = light red wash, 3+ (48h+) = stronger red — so an overdue
+    // follow-up is visible in the card list without opening it.
+    const escLevel = isDone ? 0 : (f.escalationLevel || 0);
+    const heatClass = escLevel >= 3 ? 'fu-heat-3' : escLevel === 2 ? 'fu-heat-2' : escLevel === 1 ? 'fu-heat-1' : '';
 
-    const rowStyle = `border-bottom:1px solid var(--border);${isDone?'opacity:.55':''}${isUnseen?' border-inline-end:3px solid var(--primary)':''}`;
-    const row = `<tr id="fu-row-${fId}" style="${rowStyle}" onmouseenter="this.style.background='var(--bg-alt)'" onmouseleave="this.style.background=''">
+    // Rows with a final decision (cancellation) get a distinct red-tinted
+    // background + accent border so a settled case is unmistakable at a
+    // glance in the table, mirroring the .is-cancelled treatment mobile
+    // cards already have.
+    const rowStyle = `border-bottom:1px solid var(--border);${isCancelled?'background:rgba(220,38,38,.05);border-inline-start:3px solid #dc2626;':(isDone?'opacity:.55;':'')}${isUnseen&&!isCancelled?' border-inline-end:3px solid var(--primary)':''}`;
+    const decisionRowBadge = isCancelled
+      ? `<span title="${esc(f.cancelReason||'')}${f.cancelledByName?` — ${esc(f.cancelledByName)}`:''}" style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:10px;background:rgba(220,38,38,.12);color:#dc2626;font-size:.66rem;font-weight:700;white-space:nowrap;margin-inline-start:4px"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>قرار: ملغاة</span>`
+      : '';
+    const row = `<tr id="fu-row-${fId}" style="${rowStyle}" onmouseenter="this.style.background='var(--bg-alt)'" onmouseleave="this.style.background='${isCancelled?'rgba(220,38,38,.05)':''}'">
       <td style="${P};font-size:.82rem">
         <div style="display:flex;flex-direction:column;gap:2px;line-height:1.3">
-          <span><span style="font-weight:700;color:var(--primary)">#${esc(f.orderRef)}</span>${resolvedName?` <span style="color:var(--text);font-size:.78rem">· ${esc(resolvedName)}</span>`:''}</span>
+          <span><span style="font-weight:700;color:var(--primary)">#${esc(f.orderRef)}</span>${resolvedName?` <span style="color:var(--text);font-size:.78rem">· ${esc(resolvedName)}</span>`:''}${decisionRowBadge}</span>
           ${resolvedPhone?`<span style="font-size:.7rem;color:var(--muted)" dir="ltr">${esc(resolvedPhone)}</span>`:''}
         </div>
       </td>
@@ -46065,33 +46193,34 @@ function renderFollowUps() {
       <td style="${P};text-align:center"><div style="display:flex;align-items:center;gap:4px;justify-content:center">${fuRowMenuBtn}</div></td>
     </tr>`;
 
-    const card = `<article class="fu-card${isUnseen?' is-unseen':''}${isDone?' is-done':''}" data-fu-id="${fId}">
+    const responsibleInitial = (f.responsibleName || '').trim()[0]?.toLocaleUpperCase() || '?';
+    const cancelBannerHtml = f.cancelled
+      ? `<div class="fu-cancel-banner">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <span><strong>ملغاة</strong> — ${esc(f.cancelReason || '')}${f.cancelledByName ? ` <span class="fu-cancel-by">(${esc(f.cancelledByName)})</span>` : ''}</span>
+        </div>`
+      : '';
+    const card = `<article class="fu-card${isUnseen?' is-unseen':''}${isDone?' is-done':''}${isCancelled?' is-cancelled':''}${heatClass?' '+heatClass:''}" data-fu-id="${fId}" onclick="openFuCommentPopup('${fId}')">
       <div class="fu-card-head">
-        <div class="fu-card-headline" onclick="openFuModal('${fId}')">
+        <div class="fu-card-headline" onclick="event.stopPropagation();openFuModal('${fId}')">
           <span class="fu-card-order">#${esc(f.orderRef)}</span>
           ${resolvedName ? `<span class="fu-card-client">${esc(resolvedName)}</span>` : ''}
+          ${f.reason ? reasonHtml : ''}
+          <span class="fu-card-resp-initial" title="${esc(f.responsibleName||'')}">${esc(responsibleInitial)}</span>
+          <span class="fu-card-sep"></span>
+          <span onclick="event.stopPropagation()">${statusBtnCard}</span>
+          ${escBadge}
         </div>
         <div class="fu-card-head-end">
-          <span class="fu-card-elapsed">${fmtElapsed(f.updatedAt||f.createdAt||'')}</span>
+          <span class="fu-card-elapsed">${_fuShortElapsed(f.updatedAt||f.createdAt||'')}</span>
           ${fuCardMenuBtn}
         </div>
       </div>
-      ${resolvedPhone ? `<div class="fu-card-phone" onclick="openFuModal('${fId}')" dir="ltr">${esc(resolvedPhone)}</div>` : ''}
-      ${f.reason ? `<div class="fu-card-field-row"><span class="fu-card-field-label">سبب المتابعة:</span>${reasonHtml}</div>` : ''}
-      <div class="fu-card-field-row" onclick="event.stopPropagation()">
-        <span class="fu-card-field-label">الحالة:</span>
-        ${statusBtnCard}
-        ${escBadge}
-      </div>
       ${tagsHtml ? `<div class="fu-card-tags" onclick="event.stopPropagation()">${tagsHtml}${addTagBtn}</div>` : ''}
-      ${commentsBarHtml}
-      ${hasComment ? `<div class="fu-card-comment" onclick="event.stopPropagation();openFuCommentPopup('${fId}')" title="اضغط لعرض كل التعليقات">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        <span class="fu-card-comment-text"><strong>${esc(lastComment.authorName || '')}:</strong> ${esc(lastComment.text)}</span>
-      </div>` : ''}
+      ${cancelBannerHtml}
+      ${trailPanelHtml}
       <div class="fu-card-meta-row">
         ${personBadgeHtml(f.responsibleName)}
-        <span onclick="event.stopPropagation();openFuCommentPopup('${fId}')">${callChip}</span>
         ${!tagsHtml ? `<span onclick="event.stopPropagation()">${addTagBtn}</span>` : ''}
       </div>
     </article>`;
@@ -46176,6 +46305,7 @@ function fuOpenCardMenu(e, id) {
     <button type="button" class="dd-item" data-action="edit"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span class="dd-label">تعديل</span></button>
     ${resolvedPhone ? `<button type="button" class="dd-item" data-action="whatsapp"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg><span class="dd-label">واتساب</span></button>` : ''}
     <button type="button" class="dd-item" data-action="trail"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M5 8.2V13a4 4 0 004 4h1.5" stroke-dasharray="3 3"/></svg><span class="dd-label">مسار المتابعة</span></button>
+    ${!f.cancelled ? `<button type="button" class="dd-item danger" data-action="cancel-action"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span class="dd-label">إجراء — إلغاء المتابعة</span></button>` : ''}
     <button type="button" class="dd-item danger" data-action="delete"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg><span class="dd-label">حذف</span></button>`;
   document.body.appendChild(portal);
   const rect = btn.getBoundingClientRect();
@@ -46201,6 +46331,7 @@ function fuOpenCardMenu(e, id) {
     if (item.dataset.action === 'edit') openFuModal(id);
     else if (item.dataset.action === 'whatsapp') window.open(`https://wa.me/${resolvedPhone.replace(/\D/g,'')}`, '_blank', 'noopener');
     else if (item.dataset.action === 'trail') openFuCommentPopup(id);
+    else if (item.dataset.action === 'cancel-action') openFuCancelModal(id);
     else if (item.dataset.action === 'delete') deleteFuItem(id);
   });
   requestAnimationFrame(() => portal.classList.add('show'));
@@ -46291,6 +46422,57 @@ async function deleteFuItem(id) {
     renderFuKpi(); renderFollowUps(); _fuUpdateBadges();
     toast('تم الحذف');
   } catch(e) { toast(e.message,true); }
+}
+
+// "Action → إلغاء" — records a decision to stop following up on an order,
+// with a required reason. Cancelled follow-ups sink to the bottom of the
+// list alongside resolved ones and show their cancellation reason on the
+// card instead of the normal trail preview.
+const FU_CANCEL_REASONS = ['رفض دفع ديبوزت', 'تغير رأي', 'عدم الرد', 'سبب آخر'];
+
+function openFuCancelModal(id) {
+  const f = followUps.find(x => String(x._id) === id);
+  if (!f) return;
+  openModal(`
+    <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:14px">
+      <span style="flex-shrink:0;width:38px;height:38px;border-radius:50%;background:rgba(220,38,38,.1);color:var(--red);display:flex;align-items:center;justify-content:center">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      </span>
+      <div>
+        <h3 style="margin:0 0 4px;color:var(--red);font-size:1rem">إلغاء المتابعة #${esc(f.orderRef)}</h3>
+        <p style="margin:0;font-size:.8rem;color:var(--muted);line-height:1.5">سيتم نقل هذه المتابعة لأسفل القائمة مع توضيح سبب الإلغاء. لا يمكن التراجع عن هذا القرار.</p>
+      </div>
+    </div>
+    <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">سبب الإلغاء</label>
+    <select id="fu-cancel-reason" onchange="document.getElementById('fu-cancel-reason-other').style.display=this.value==='سبب آخر'?'block':'none'" style="width:100%;height:36px;font-size:.85rem;padding:2px 10px;border:1px solid var(--border);border-radius:8px;box-sizing:border-box">
+      <option value="">اختر السبب...</option>
+      ${FU_CANCEL_REASONS.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('')}
+    </select>
+    <input type="text" id="fu-cancel-reason-other" placeholder="اكتب السبب..." style="display:none;margin-top:8px;width:100%;height:36px;font-size:.85rem;padding:2px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px">
+    <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end">
+      <button onclick="closeModal()" class="btn btn-outline btn-sm">تراجع</button>
+      <button onclick="submitFuCancel('${id}')" class="btn btn-sm" id="fu-cancel-submit-btn" style="background:var(--red);border-color:var(--red);color:#fff">تأكيد الإلغاء</button>
+    </div>`, 'max-width:420px');
+}
+
+async function submitFuCancel(id) {
+  const sel = qs('#fu-cancel-reason');
+  const other = qs('#fu-cancel-reason-other');
+  const reason = sel.value === 'سبب آخر' ? other.value.trim() : sel.value;
+  if (!reason) { toast('اختر سبب الإلغاء', true); return; }
+  const btn = qs('#fu-cancel-submit-btn');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  try {
+    const updated = await api(`/followups/${id}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) });
+    const idx = followUps.findIndex(f => String(f._id) === id);
+    if (idx !== -1) followUps[idx] = { ...followUps[idx], ...updated };
+    closeModal();
+    renderFuKpi(); renderFollowUps();
+    toast('تم إلغاء المتابعة');
+  } catch(e) { toast(e.message, true); }
+  finally { btn.disabled = false; btn.style.opacity = '1'; }
 }
 
 function openFuTagPopover(fuId, anchorEl) {
@@ -46783,14 +46965,38 @@ function _fuSetCommentBtnMode(mode) {
   }
 }
 
+// Auto-grows the comment textarea to fit its content (up to the CSS
+// max-height, after which it scrolls internally) — manual drag-resize is
+// disabled so the box only ever changes size in response to what's typed.
+function _fuAutoGrow(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
 function openFuCommentPopup(id, highlightCommentId = '') {
   fuCommentTargetId = id;
   _fuEditingCommentId = null;
   _fuAwaitingOutcome = false;
+  const f = followUps.find(x => String(x._id) === String(id));
   qs('#fu-comment-title').textContent = 'مسار المتابعة';
+  const _fuTx = f && (typeof transactions !== 'undefined') ? transactions.find(t => t._id === f.transactionId || t.ref === f.orderRef) : null;
+  const _fuSubName = (f?.clientName || _fuTx?.client || '').trim();
+  qs('#fu-comment-subtitle').textContent = f ? [f.orderRef ? `#${f.orderRef}` : '', _fuSubName].filter(Boolean).join(' — ') : '';
+  const reasonText = (f?.reason === 'أخرى' ? f?.reasonOther : f?.reason) || '';
+  qs('#fu-comment-reason-banner').innerHTML = reasonText
+    ? `<div class="fu-reason-banner"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M5 8.2V13a4 4 0 004 4h1.5" stroke-dasharray="3 3"/></svg><span><strong>مسار:</strong> ${esc(reasonText)}</span></div>`
+    : '';
   _fuRenderCommentThread();
-  _fuRenderCallAttemptRow();
+  // Once a final decision (cancellation) is recorded, the trail is closed —
+  // no further comments or call attempts can be logged, so hide the inputs
+  // that would otherwise let staff act on an already-decided case.
+  const decided = !!f?.cancelled;
+  qs('#fu-call-attempt-row').style.display = decided ? 'none' : '';
+  qs('.fu-thread-composer').style.display = decided ? 'none' : '';
+  if (!decided) _fuRenderCallAttemptRow();
   qs('#fu-comment-text').value = '';
+  _fuAutoGrow(qs('#fu-comment-text'));
   _fuSetCommentBtnMode('add');
   qs('#fu-comment-cancel-edit-btn').style.display = 'none';
   qs('#fu-comment-popup').classList.add('show');
@@ -46832,8 +47038,27 @@ function _fuRenderCommentThread() {
   const threadEl = qs('#fu-comment-thread');
   const f = followUps.find(x => String(x._id) === String(fuCommentTargetId));
   const comments = (f?.comments || []).slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  // Final decision (cancellation) always closes the trail — rendered as the
+  // last item regardless of comment timestamps, since it's the outcome
+  // everything above led up to, not just another entry in the sequence.
+  const decisionHtml = f?.cancelled
+    ? `<div class="fu-timeline-item is-decision" data-comment-id="decision">
+        <div class="fu-timeline-avatar">${userAvatarHtml({ name: f.cancelledByName }, 32)}</div>
+        <div class="fu-timeline-content" style="background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.35)">
+          <div class="fu-timeline-top">
+            <div class="fu-timeline-who">
+              <span class="fu-timeline-name" style="color:#dc2626">${esc(f.cancelledByName || '—')}</span>
+              <span class="fu-timeline-time" title="${esc(fmtDateTime(f.cancelledAt))}">${esc(_fuRelTime(f.cancelledAt))}</span>
+            </div>
+          </div>
+          <span class="fu-timeline-call-badge" style="color:#dc2626"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>القرار النهائي: إلغاء المتابعة — ${esc(f.cancelReason || '')}</span>
+        </div>
+      </div>`
+    : '';
   if (!comments.length) {
-    threadEl.innerHTML = `<div class="fu-thread-empty">لا توجد تعليقات بعد</div>`;
+    threadEl.innerHTML = decisionHtml
+      ? `<div class="fu-timeline">${decisionHtml}</div>`
+      : `<div class="fu-thread-empty">لا توجد تعليقات بعد</div>`;
     return;
   }
   const myId = String(currentUser?._id || currentUser?.id || '');
@@ -46868,11 +47093,15 @@ function _fuRenderCommentThread() {
         ${isCall ? callBadge : `<div class="fu-timeline-text">${esc(c.text)}</div>`}
       </div>
     </div>`;
-  }).join('')}</div>`;
+  }).join('')}${decisionHtml}</div>`;
   threadEl.scrollTop = threadEl.scrollHeight;
 }
 
 const FU_CALL_PHONE_ICON = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>`;
+// Two overlapping chat bubbles — reads as an ongoing back-and-forth
+// conversation, distinguishing the follow-up trail's comment count/preview
+// from the single-bubble icon used for plain comments elsewhere in the app.
+const FU_TRAIL_COMMENT_ICON = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10.5a4.5 4.5 0 014.5-4.5h4A4.5 4.5 0 0121 10.5v2a4.5 4.5 0 01-2 3.74V19l-3.2-2H16" fill="var(--surface)"/><path d="M16 13.5A4.5 4.5 0 0011.5 9h-4A4.5 4.5 0 003 13.5v2A4.5 4.5 0 005 19.24V22l3.2-2H11.5a4.5 4.5 0 004.5-4.5v-1.5z"/></svg>`;
 // Standard telecom glyphs — an outgoing-arrow handset for "answered" (call
 // connected) and an incoming-arrow handset for "missed"/"no answer", the
 // same visual convention phone apps use for call-log entries.
@@ -46892,8 +47121,13 @@ function _fuRenderCallAttemptRow() {
   if (!rowEl) return;
   const f = followUps.find(x => String(x._id) === String(fuCommentTargetId));
   const comments = Array.isArray(f?.comments) ? f.comments : [];
-  const attempts = comments.filter(c => c.kind === 'call').length;
-  const dots = [1,2,3].map(n => `<span class="fu-call-attempt-dot${n<=attempts?' filled':''}"></span>`).join('');
+  const callEntries = comments.filter(c => c.kind === 'call');
+  const attempts = callEntries.length;
+  const dots = [1,2,3].map(n => {
+    if (n > attempts) return `<span class="fu-call-attempt-dot"></span>`;
+    const outcomeClass = callEntries[n-1].callOutcome === 'answered' ? 'answered' : 'missed';
+    return `<span class="fu-call-attempt-dot filled ${outcomeClass}"></span>`;
+  }).join('');
   const maxed = attempts >= 3;
   const _tx = transactions.find(t => t._id === f?.transactionId || t.ref === f?.orderRef);
   const phone = (f?.clientPhone || _tx?.phone || '').trim();
@@ -46992,6 +47226,7 @@ function _fuStartEditComment(commentId) {
   if (!c) return;
   _fuEditingCommentId = commentId;
   qs('#fu-comment-text').value = c.text;
+  _fuAutoGrow(qs('#fu-comment-text'));
   _fuSetCommentBtnMode('edit');
   qs('#fu-comment-cancel-edit-btn').style.display = 'inline-flex';
   qs('#fu-comment-text').focus();
@@ -47000,6 +47235,7 @@ function _fuStartEditComment(commentId) {
 function _fuCancelEditComment() {
   _fuEditingCommentId = null;
   qs('#fu-comment-text').value = '';
+  _fuAutoGrow(qs('#fu-comment-text'));
   _fuSetCommentBtnMode('add');
   qs('#fu-comment-cancel-edit-btn').style.display = 'none';
 }

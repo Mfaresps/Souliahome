@@ -83,6 +83,21 @@ export class FollowUp {
 
   @Prop({ default: 0 })
   escalationLevel: number; // highest reminder threshold already sent (0=none, 1=12h, 2=24h, 3=48h, ...)
+
+  @Prop({ default: false })
+  cancelled: boolean; // true once an "Action → إلغاء" decision has been recorded
+
+  @Prop({ default: '' })
+  cancelReason: string; // one of FU_CANCEL_REASONS, or free text when 'سبب آخر'
+
+  @Prop()
+  cancelledAt?: Date;
+
+  @Prop({ default: '' })
+  cancelledById: string;
+
+  @Prop({ default: '' })
+  cancelledByName: string;
 }
 
 export const FollowUpSchema = SchemaFactory.createForClass(FollowUp);

@@ -54,6 +54,22 @@ export class FollowUpsService {
     return this.model.findByIdAndDelete(id);
   }
 
+  cancel(id: string, cancelReason: string, userId: string, userName: string) {
+    return this.model
+      .findByIdAndUpdate(
+        id,
+        {
+          cancelled: true,
+          cancelReason,
+          cancelledAt: new Date(),
+          cancelledById: userId,
+          cancelledByName: userName,
+        },
+        { new: true },
+      )
+      .lean();
+  }
+
   async addComment(id: string, authorId: string, authorName: string, text: string) {
     const before = await this.model.findById(id).lean();
     if (!before) return null;
@@ -207,7 +223,7 @@ export class FollowUpsService {
   @Cron('0 */15 * * * *')
   async scheduledEscalationScan(): Promise<void> {
     try {
-      const open = await this.model.find({ status: { $nin: DONE_STATUSES } }).lean();
+      const open = await this.model.find({ status: { $nin: DONE_STATUSES }, cancelled: { $ne: true } }).lean();
       const now = Date.now();
       for (const f of open as any[]) {
         const baseline = f.escalationBaseline ? new Date(f.escalationBaseline).getTime() : new Date(f.createdAt).getTime();

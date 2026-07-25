@@ -54,6 +54,17 @@ export class FollowUpsController {
     return { ok: true };
   }
 
+  @Post(':id/cancel')
+  async cancel(@Param('id') id: string, @Body() body: { reason?: string }, @Req() req: AuthRequest) {
+    const reason = String(body?.reason || '').trim();
+    if (!reason) throw new ForbiddenException('سبب الإلغاء مطلوب');
+    const userId = String(req.user?.userId || req.user?.sub || '');
+    const userName = req.user?.name || req.user?.username || '';
+    const doc = await this.service.cancel(id, reason, userId, userName);
+    try { this.presence.emitEvent('followup:changed', { action: 'update', id }); } catch (_) {}
+    return doc;
+  }
+
   @Post(':id/comments')
   async addComment(@Param('id') id: string, @Body() body: { text: string }, @Req() req: AuthRequest) {
     const authorId = String(req.user?.userId || req.user?.sub || '');
