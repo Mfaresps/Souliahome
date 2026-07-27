@@ -30340,7 +30340,7 @@ function renderDemandPlanning() {
     }
     // Spell out what the numbers mean — it differs between the two sources
     const explain = _dpSource === 'shopify'
-      ? 'ℹ️ هذه الأوردرات <strong>لم تُخصم من المخزون بعد</strong>. «المتاح» هو الرصيد الحالي فعلياً، و«محتجز» هو ما تحتاجه أوردرات سجل المعاملات التي لم تُشحن بعد. النقص هو ما يجب توفيره قبل إرسال هذه الأوردرات لسجل المعاملات.'
+      ? 'ℹ️ هذه الأوردرات <strong>لم تُخصم من المخزون بعد</strong>. الحساب هنا مقتصر على <strong>الأوردرات المحددة فقط</strong> مقابل «المتاح» (الرصيد الحالي فعلياً) — لا يتم خصم أي التزامات أخرى من سجل المعاملات. تنبيه: لو كان نفس الصنف مطلوباً في طلبات أخرى لم تُشحن بعد، فقد يقل المتاح الفعلي عند إرسال هذه الأوردرات.'
       : 'ℹ️ هذه المعاملات <strong>مخصومة من المخزون بالفعل</strong>، لذلك تمت إعادة كمياتها إلى «المتاح» لحساب الرصيد قبل تنفيذها.';
     noticeWrap.innerHTML = `<div class="dp-notice" style="background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.3)">${explain}</div>` +
       (parts.length ? `<div class="dp-notice">${parts.join('<br>')}</div>` : '');

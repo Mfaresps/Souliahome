@@ -574,25 +574,14 @@ export class DemandPlanningService {
     const productBySku = new Map(products.map((p) => [this.skuKey(p.code), p]));
     const lastPurchasePriceBySku = await this.buildLastPurchasePriceMap();
 
-    // Every open (unshipped) sales order in the ledger still holds stock and
-    // therefore competes with this Shopify demand.
-    const allSales = await this.txModel
-      .find({
-        type: 'مبيعات',
-        cancelled: { $ne: true },
-        archived: { $ne: true },
-      })
-      .exec();
+    // By request, this analysis is scoped strictly to the SELECTED Shopify
+    // orders: required vs. what's on hand right now. Other open sales orders
+    // in the transactions log are intentionally NOT subtracted as "reserved" —
+    // scoping to the selection was an explicit, informed choice, so a shortage
+    // shown here can still be sold out from under you by unrelated pending
+    // orders. Keep this map empty rather than deleting the reserved column so
+    // the UI/report shape stays stable if that decision is ever revisited.
     const reservedBySku = new Map<string, number>();
-    allSales.forEach((tx) => {
-      if (!this.isOpenSalesOrder(tx)) return;
-      (tx.items || []).forEach((item) => {
-        const key = this.skuKey(item.code);
-        const qty = Number(item.qty) || 0;
-        if (!key || qty <= 0) return;
-        reservedBySku.set(key, (reservedBySku.get(key) || 0) + qty);
-      });
-    });
 
     // Group the pending Shopify demand by SKU
     const buckets = new Map<string, DemandBucket>();
