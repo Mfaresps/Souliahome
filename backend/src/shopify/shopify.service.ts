@@ -252,7 +252,9 @@ export class ShopifyService {
     const employee = `Shopify (${approvedBy})`;
 
     const now = new Date();
-    const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    // المعاملة بتتسجل بتاريخ إنشاء الأوردر الأصلي في شوبيفاي، مش تاريخ لحظة الإرسال لسجل المعاملات
+    const orderDateSource = order.shopifyCreatedAt ? new Date(order.shopifyCreatedAt) : now;
+    const date = `${orderDateSource.getFullYear()}-${String(orderDateSource.getMonth() + 1).padStart(2, '0')}-${String(orderDateSource.getDate()).padStart(2, '0')}`;
 
     const depositsLog = paidNow > 0
       ? [{ id: `dep-${Date.now()}`, amount: paidNow, method: depMethod, note: 'ديبوزت أول - Shopify', date: now.toISOString(), by: employee }]

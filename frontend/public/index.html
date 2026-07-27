@@ -1568,30 +1568,45 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .inv-body{overflow:visible}
 .inv-section-body{max-height:none!important}
 }
-#sidebar{position:fixed;top:var(--header-h);right:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;z-index:50;padding:12px 0;transition:transform .3s}
+#sidebar{position:fixed;top:var(--header-h);right:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;z-index:50;padding:12px 0;transition:transform .3s;display:flex;flex-direction:column}
 #sidebar .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:.85rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;border-right:3px solid transparent;text-decoration:none}
 #sidebar .nav-item:hover{background:var(--primary-pale);color:var(--text)}
 #sidebar .nav-item.active{color:var(--accent);border-right-color:var(--accent);background:var(--primary-pale)}
 #sidebar .nav-item svg{width:18px;height:18px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#sidebar .nav-sep{height:1px;background:var(--border);margin:8px 20px}
+#sidebar .nav-bottom-group{margin-top:auto;padding-top:8px;border-top:1px solid var(--border)}
+#sidebar .nav-item .nav-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin-right:4px;border-radius:99px;background:var(--accent);color:#fff;font-size:.65rem;font-weight:700;line-height:1;flex-shrink:0}
 .sp-src-link:hover{background:#f0f9ec!important;border-color:#95bf4770!important}
 .sp-src-link:hover .sp-src-svg{filter:grayscale(0) opacity(1)!important}
-@keyframes needContactPulse{0%,100%{box-shadow:0 0 6px #ef444440,0 0 14px #ef444425}50%{box-shadow:0 0 14px #ef444470,0 0 28px #ef444445,0 0 40px #ef444420}}
-.sp-need-contact-btn:hover{box-shadow:0 0 18px #ef444480,0 0 36px #ef444450!important;transform:translateY(-1px)}
 /* ── Shopify Orders Page Layout ── */
 #page-shopify-orders{padding-bottom:32px}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
 #shopify-page-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:16px}
-#shopify-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
-.shopify-kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.05);min-width:0}
-.shopify-kpi-card > div:first-child{width:34px;height:34px;border-radius:9px}
-.shopify-kpi-card > div:first-child svg{width:16px;height:16px}
-.shopify-kpi-card > div:last-child{min-width:0}
-.shopify-kpi-card [id$="-label"]{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#shopify-filters-bar{margin-bottom:16px;display:flex;flex-direction:column;gap:10px}
-#shopify-filters-top-row{display:flex;align-items:center;gap:10px}
+#shopify-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.shopify-kpi-stat{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;padding:16px;min-width:0;border-inline-start:1px solid var(--border)}
+.shopify-kpi-stat:first-child{border-inline-start:none}
+.shopify-kpi-stat-icon{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:34px;height:34px;border-radius:9px;background:var(--bg-alt);color:var(--accent)}
+.shopify-kpi-stat-icon svg{width:16px;height:16px;display:block}
+.shopify-kpi-stat-body{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.shopify-kpi-stat-label{font-size:.7rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.shopify-kpi-stat-val{font-size:1.55rem;font-weight:800;color:var(--text);line-height:1.2;white-space:nowrap}
+.shopify-kpi-stat-sub{font-size:.68rem;color:var(--text-muted);white-space:nowrap}
+#shopify-filters-bar{display:flex;flex-direction:column;gap:10px;background:var(--surface2);border-bottom:1px solid var(--border);padding:12px 14px}
+#shopify-filters-top-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 #shopify-search-wrap{position:relative;flex:1;min-width:180px;max-width:320px}
-#shopify-filter-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:var(--bg-alt);border:1px solid var(--border);border-radius:12px}
-#shopify-filter-btns::before{content:'تصفية:';font-size:.72rem;color:var(--text-muted);font-weight:600;white-space:nowrap;margin-left:4px}
-#shopify-date-filter-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 14px;background:var(--bg-alt);border:1px solid var(--border);border-radius:12px}
+#shopify-filter-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#shopify-filter-icon-btn{position:relative}
+#shopify-filter-icon-btn.active{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+#shopify-filter-icon-btn.active::after{content:'';position:absolute;top:5px;left:5px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.sp-filter-sep{width:1px;height:20px;background:var(--border);border-radius:1px;margin:0 2px;flex-shrink:0}
+.sp-status-filter-btn{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;font-weight:500;border:1.5px solid var(--border);color:var(--text-muted);background:var(--surface);border-radius:8px;padding:5px 12px;transition:all .15s}
+.sp-status-filter-btn:hover{border-color:var(--accent);color:var(--accent)}
+.sp-status-filter-btn.active{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent);font-weight:700}
+.sp-filter-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sp-filter-count{background:var(--bg-alt);color:var(--text-muted);border-radius:99px;padding:1px 6px;font-size:.68rem;font-weight:700}
+.sp-status-filter-btn.active .sp-filter-count{background:var(--accent);color:#fff}
+.sp-date-popover{display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:20;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);width:max-content;max-width:min(360px,calc(100vw - 32px))}
+.sp-date-popover.open{display:flex}
 .sp-date-quick-btn{font-size:.75rem;border:1.5px solid var(--border);color:var(--text-muted);background:var(--surface);border-radius:8px;padding:5px 12px;font-weight:500;transition:all .2s}
 .sp-date-quick-btn.active{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:700}
 .sp-date-sep{width:1px;height:20px;background:var(--border);border-radius:1px;flex-shrink:0}
@@ -1633,42 +1648,34 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .sp-addr-popup{position:fixed;z-index:9990;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:14px 16px;min-width:240px;max-width:min(360px,calc(100vw - 32px));width:300px;text-align:right;word-break:break-word;overflow-wrap:break-word;white-space:normal}
 /* ── Responsive breakpoints ── */
 @media(max-width:1100px){
-  #shopify-kpi-row{grid-template-columns:repeat(3,1fr)}
+  #shopify-kpi-row{grid-template-columns:repeat(2,1fr)}
+  .shopify-kpi-stat:nth-child(2n+1){border-inline-start:none}
+  .shopify-kpi-stat:nth-child(n+3){border-block-start:1px solid var(--border)}
 }
 @media(max-width:768px){
   .sp-addr-popup{max-width:calc(100vw - 32px)!important;width:calc(100vw - 32px)!important}
-  #shopify-kpi-row{grid-template-columns:repeat(3,1fr)!important;gap:6px!important}
-  .shopify-kpi-card{padding:8px 6px!important;gap:6px!important;border-radius:10px}
-  .shopify-kpi-card > div:first-child{width:26px!important;height:26px!important;border-radius:7px!important}
-  .shopify-kpi-card > div:first-child svg{width:13px!important;height:13px!important}
-  .shopify-kpi-card [id^="shopify-kpi-"]:not([id$="-label"]){font-size:1.05rem!important}
-  .shopify-kpi-card > div:last-child > div:first-child{font-size:.62rem!important}
-  .shopify-kpi-card [id$="-label"]{font-size:.6rem!important}
+  #shopify-kpi-row{grid-template-columns:repeat(2,1fr)}
+  .shopify-kpi-stat{padding:12px}
+  .shopify-kpi-stat-icon{width:28px;height:28px}
+  .shopify-kpi-stat-icon svg{width:14px;height:14px}
+  .shopify-kpi-stat-val{font-size:1.3rem}
   #shopify-page-header{flex-direction:column;align-items:flex-start}
-  #shopify-filters-bar{flex-direction:column;align-items:stretch;gap:8px}
+  #shopify-filters-bar{flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid var(--border)}
   #shopify-filters-top-row{flex-direction:column;align-items:stretch}
   #shopify-search-wrap{max-width:100%}
-  #shopify-filter-btns{flex-wrap:wrap;padding:8px 12px}
+  .sp-date-popover{left:auto;right:0;width:calc(100vw - 32px);max-width:360px}
+  #shopify-filter-btns{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
   #shopify-filter-btns .sp-status-filter-btn{flex-shrink:0}
-  #shopify-date-filter-bar{padding:8px 10px}
   .sp-date-input{flex:1;min-width:110px}
   /* hide table, show cards */
   #shopify-orders-table-wrap .sp-table-scroll{display:none}
-  #shopify-orders-table-wrap > div:first-child{padding:0}
+  #shopify-orders-table-body > div:first-child{padding:0}
   #sp-mobile-list{display:flex}
   #shopify-orders-table-wrap{border:none;box-shadow:none;background:transparent;overflow:visible}
   /* edit-items modal: stack info/controls, full-width sheet */
   #shopify-edit-modal > div{width:100%!important;max-width:100%!important;height:100%!important;max-height:100%!important;border-radius:0!important}
   .sp-edit-item-row{flex-direction:column;align-items:stretch;gap:10px}
   .sp-edit-item-controls{justify-content:space-between;width:100%}
-}
-@media(max-width:480px){
-  #shopify-kpi-row{grid-template-columns:repeat(3,1fr)!important;gap:5px!important}
-  .shopify-kpi-card{padding:7px 5px!important;gap:4px!important}
-  .shopify-kpi-card > div:first-child{width:22px!important;height:22px!important;border-radius:6px!important}
-  .shopify-kpi-card > div:first-child svg{width:11px!important;height:11px!important}
-  .shopify-kpi-card [id^="shopify-kpi-"]:not([id$="-label"]){font-size:.92rem!important}
-  .shopify-kpi-card [id$="-label"]{display:none!important}
 }
 #sidebar .nav-item[data-page="shopify-orders"] svg{stroke:none!important}
 #sidebar .nav-item[data-page="shopify-orders"] svg path:nth-child(1){fill:#95BF47!important}
@@ -4291,6 +4298,125 @@ body.dark-mode .disc-badge:hover .db-code,body.dark-mode .disc-badge:hover .db-m
 .pa-margin-bar{display:inline-block;height:6px;border-radius:3px;min-width:4px;vertical-align:middle;margin-left:5px}
 .pa-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:14px 24px;border-top:1px solid var(--border)}
 @media(max-width:640px){.pa-modal{padding:10px}.pa-summary{grid-template-columns:repeat(2,1fr)}.pa-table{font-size:.74rem}.pa-table th,.pa-table td{padding:7px 7px}}
+/* ── Demand Planning (تحليل احتياج المخزون) ───────────────────────────── */
+.dp-modal{position:fixed;inset:0;z-index:1015;display:flex;align-items:flex-start;justify-content:center;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);padding:20px;overflow-y:auto}
+.dp-panel{background:var(--surface);border-radius:16px;width:100%;max-width:1120px;box-shadow:0 24px 64px rgba(0,0,0,.25);border:1px solid var(--border);margin:auto;direction:rtl}
+.dp-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 24px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);border-radius:16px 16px 0 0;z-index:3}
+.dp-header h3{margin:0;font-size:1.05rem;font-weight:800;color:var(--primary);display:flex;align-items:center;gap:8px}
+.dp-header .dp-sub{font-size:.72rem;font-weight:600;color:var(--muted);margin-top:3px}
+.dp-close{background:none;border:none;font-size:1.2rem;color:var(--muted);cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;transition:background .15s}
+.dp-close:hover{background:var(--bg-alt)}
+.dp-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:16px 24px;border-bottom:1px solid var(--border)}
+.dp-kpi{background:var(--bg-alt);border-radius:10px;padding:11px 13px;text-align:center;border:1px solid transparent}
+.dp-kpi.warn{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.07)}
+.dp-kpi.bad{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.07)}
+.dp-kpi-label{font-size:.66rem;font-weight:700;color:var(--muted);letter-spacing:.03em;margin-bottom:5px;line-height:1.3}
+.dp-kpi-val{font-size:1.08rem;font-weight:800;color:var(--text)}
+.dp-kpi-val.green{color:#10b981}.dp-kpi-val.red{color:#ef4444}.dp-kpi-val.blue{color:#3b82f6}.dp-kpi-val.orange{color:#f59e0b}
+.dp-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 24px;border-bottom:1px solid var(--border)}
+.dp-chip{background:var(--bg-alt);border:1px solid var(--border);color:var(--muted);border-radius:999px;padding:5px 13px;font-size:.74rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.dp-chip:hover{border-color:var(--accent)}
+.dp-chip.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.dp-search{flex:1;min-width:150px;background:var(--bg-alt);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:.78rem;color:var(--text);font-family:inherit}
+.dp-notice{margin:12px 24px 0;background:rgba(245,158,11,.09);border:1px solid rgba(245,158,11,.3);border-radius:9px;padding:9px 13px;font-size:.75rem;color:var(--text);line-height:1.65}
+.dp-table-wrap{padding:14px 24px;overflow-x:auto}
+.dp-table{width:100%;border-collapse:collapse;font-size:.79rem}
+.dp-table th{background:var(--bg-alt);padding:9px 9px;text-align:right;font-weight:700;color:var(--muted);font-size:.7rem;white-space:nowrap;border-bottom:2px solid var(--border);cursor:pointer;user-select:none;position:sticky;top:0}
+.dp-table th.nosort{cursor:default}
+.dp-table th .dp-sort-ind{opacity:.5;font-size:.62rem;margin-inline-start:3px}
+.dp-table td{padding:9px 9px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+.dp-row{cursor:pointer;transition:background .12s}
+.dp-row:hover>td{background:var(--bg-alt)}
+.dp-row.shortage>td:first-child{box-shadow:inset 3px 0 0 #ef4444}
+.dp-row.low>td:first-child{box-shadow:inset 3px 0 0 #f59e0b}
+.dp-row.available>td:first-child{box-shadow:inset 3px 0 0 #10b981}
+.dp-prod{display:flex;align-items:center;gap:9px;min-width:170px}
+.dp-prod img{width:34px;height:34px;border-radius:7px;object-fit:cover;background:var(--bg-alt);flex-shrink:0}
+.dp-prod-ph{width:34px;height:34px;border-radius:7px;background:var(--bg-alt);display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+.dp-prod-name{font-weight:700;line-height:1.3;font-size:.79rem}
+.dp-prod-sku{font-size:.66rem;color:var(--muted);direction:ltr;text-align:start;font-family:ui-monospace,monospace}
+.dp-num{text-align:center;font-weight:700;white-space:nowrap}
+.dp-badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 9px;font-size:.68rem;font-weight:700;white-space:nowrap}
+.dp-badge.ok{background:rgba(16,185,129,.13);color:#059669}
+.dp-badge.low{background:rgba(245,158,11,.15);color:#b45309}
+.dp-badge.bad{background:rgba(239,68,68,.13);color:#dc2626}
+.dp-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.dp-caret{display:inline-block;transition:transform .18s;color:var(--muted);font-size:.7rem}
+.dp-row.open .dp-caret{transform:rotate(-90deg)}
+.dp-detail-row>td{padding:0!important;border-bottom:1px solid var(--border)!important;background:var(--bg-alt)}
+.dp-detail{padding:12px 16px}
+.dp-detail-title{font-size:.72rem;font-weight:800;color:var(--muted);margin-bottom:9px;letter-spacing:.03em}
+.dp-orders{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:8px}
+.dp-order{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 11px;display:flex;align-items:center;justify-content:space-between;gap:9px}
+.dp-order-ref{font-weight:800;color:var(--accent);font-size:.76rem;direction:ltr}
+.dp-order-client{font-size:.71rem;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dp-order-qty{font-weight:700;font-size:.76rem;white-space:nowrap;color:var(--muted)}
+.dp-order-value{font-weight:800;font-size:.84rem;white-space:nowrap;color:var(--text)}
+.dp-order-pay{display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-size:.66rem;font-weight:700;line-height:1.2}
+.dp-order-pay .dp-pay-full{color:#059669}
+.dp-order-pay .dp-pay-part{color:#b45309}
+.dp-order-pay .dp-pay-tag{font-size:.6rem;font-weight:700;opacity:.75;background:var(--bg-alt);border-radius:4px;padding:1px 4px}
+.dp-order-pay.dp-pay-none{color:var(--muted);opacity:.7;font-weight:600}
+.dp-order-open{background:var(--bg-alt);border:1px solid var(--border);border-radius:6px;color:var(--accent);cursor:pointer;font-size:.66rem;font-weight:700;padding:3px 8px;font-family:inherit;white-space:nowrap}
+.dp-order-open:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+/* Shortage calculation — labelled steps rather than one inline equation */
+.dp-calc{margin-top:10px;border-top:1px dashed var(--border);padding-top:10px}
+.dp-calc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+.dp-calc-group{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 11px}
+.dp-calc-head{font-size:.65rem;font-weight:800;color:var(--muted);letter-spacing:.03em;margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.dp-calc-row{display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:6px;padding:2.5px 0;font-size:.72rem;line-height:1.5}
+.dp-calc-op{color:var(--muted);font-weight:800;text-align:center;font-size:.78rem}
+.dp-calc-label{color:var(--muted)}
+.dp-calc-val{font-weight:700;color:var(--text);white-space:nowrap;font-variant-numeric:tabular-nums}
+.dp-calc-total{margin-top:4px;padding-top:5px;border-top:1px solid var(--border)}
+.dp-calc-total .dp-calc-label{color:var(--text);font-weight:700}
+.dp-calc-total .dp-calc-val{font-weight:800;font-size:.8rem}
+.dp-calc-note{margin-top:8px;font-size:.7rem;color:var(--muted)}
+.dp-empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:.83rem}
+.dp-footer{display:flex;align-items:center;justify-content:flex-end;gap:9px;padding:13px 24px;border-top:1px solid var(--border);flex-wrap:wrap;position:sticky;bottom:0;background:var(--surface);border-radius:0 0 16px 16px}
+.dp-footer .dp-foot-info{margin-inline-end:auto;font-size:.74rem;color:var(--muted);font-weight:600}
+.dp-cards{display:none}
+/* Mobile: card view replaces the table */
+@media(max-width:820px){
+  .dp-modal{padding:0}
+  .dp-panel{max-width:100%;border-radius:0;min-height:100%}
+  .dp-header{border-radius:0}
+  .dp-summary{grid-template-columns:repeat(2,1fr);padding:12px 14px;gap:8px}
+  .dp-toolbar{padding:10px 14px}
+  .dp-notice{margin:10px 14px 0}
+  .dp-table-wrap{display:none}
+  .dp-cards{display:block;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+  .dp-card{background:var(--bg-alt);border:1px solid var(--border);border-radius:11px;overflow:hidden}
+  .dp-card.shortage{border-inline-start:3px solid #ef4444}
+  .dp-card.low{border-inline-start:3px solid #f59e0b}
+  .dp-card.available{border-inline-start:3px solid #10b981}
+  .dp-card-head{display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer}
+  .dp-card-head .dp-prod{flex:1}
+  .dp-card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-top:1px solid var(--border)}
+  .dp-card-cell{background:var(--surface);padding:8px 6px;text-align:center}
+  .dp-card-cell .l{font-size:.6rem;font-weight:700;color:var(--muted);margin-bottom:3px;line-height:1.2}
+  .dp-card-cell .v{font-size:.88rem;font-weight:800}
+  .dp-card-body{display:none;border-top:1px solid var(--border);background:var(--surface)}
+  .dp-card.open .dp-card-body{display:block}
+  .dp-orders{grid-template-columns:1fr}
+  .dp-footer{position:sticky;bottom:0;padding:11px 14px;box-shadow:0 -6px 18px rgba(0,0,0,.08)}
+  .dp-footer .btn{flex:1;min-width:calc(50% - 5px);justify-content:center}
+  .dp-footer .dp-foot-info{width:100%;margin:0 0 4px;text-align:center}
+}
+/* PO picker sub-modal */
+.dp-po-list{display:flex;flex-direction:column;gap:9px;max-height:min(48vh,380px);overflow-y:auto;margin:4px 0 2px;padding:2px}
+.dp-po{background:var(--bg-alt);border:2px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer;transition:all .15s;text-align:start;font-family:inherit;width:100%;display:block}
+.dp-po:hover{border-color:var(--accent)}
+.dp-po.sel{border-color:var(--primary);background:rgba(30,58,95,.06)}
+.dp-po-top{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}
+.dp-po-num{font-weight:800;color:var(--accent);font-size:.85rem;direction:ltr}
+.dp-po-meta{font-size:.72rem;color:var(--muted);margin-top:4px;line-height:1.6}
+.dp-po-overlap{margin-top:7px;font-size:.7rem;color:#059669;background:rgba(16,185,129,.1);border-radius:6px;padding:5px 8px;line-height:1.55}
+.dp-preview{background:var(--bg-alt);border-radius:9px;padding:10px 12px;font-size:.75rem;line-height:1.75;max-height:190px;overflow-y:auto;border:1px solid var(--border)}
+.dp-preview .dp-pv-line{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:3px 0}
+.dp-preview .dp-pv-line+.dp-pv-line{border-top:1px dashed var(--border)}
+.dp-preview .dp-pv-calc{font-weight:800;direction:ltr;white-space:nowrap}
+.dp-preview .dp-pv-new{color:#059669;font-size:.66rem;font-weight:700}
 .bulk-discount-panel .bd-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
 .bulk-discount-panel .bd-actions button{flex:1;min-width:120px}
 /* Shopify-style date cell — single line, weekday + time */
@@ -5152,20 +5278,6 @@ input.is-valid,select.is-valid,textarea.is-valid{
 .tx-icon-btn:active{transform:scale(.95)}
 .tx-icon-btn-drafts{position:relative}
 .tx-icon-btn-badge{position:absolute;top:-5px;inset-inline-start:-5px;background:var(--red);color:#fff;border-radius:99px;font-size:.62rem;font-weight:800;min-width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 5px rgba(239,68,68,.4);border:1.5px solid var(--surface);line-height:1}
-/* Sidebar draft badge — مسودات محفوظة */
-.nav-draft-badge{display:inline-flex;align-items:center;gap:4px;margin-inline-start:6px;padding:2px 8px 2px 6px;border-radius:99px;background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);color:#92400e;font-size:.66rem;font-weight:800;line-height:1;box-shadow:0 1px 3px rgba(245,158,11,.25),inset 0 0 0 1px rgba(245,158,11,.35);vertical-align:middle;animation:navDraftIn .35s cubic-bezier(.2,.8,.3,1.2)}
-.nav-item.active .nav-draft-badge{background:linear-gradient(135deg,#fef9c3 0%,#fde68a 100%);box-shadow:0 1px 3px rgba(0,0,0,.18),inset 0 0 0 1px rgba(146,64,14,.4)}
-.nav-draft-dot{width:6px;height:6px;border-radius:50%;background:#f59e0b;box-shadow:0 0 0 0 rgba(245,158,11,.6);animation:navDraftPulse 1.8s infinite}
-.nav-draft-num{font-variant-numeric:tabular-nums}
-@keyframes navDraftPulse{
-  0%   {box-shadow:0 0 0 0 rgba(245,158,11,.65)}
-  60%  {box-shadow:0 0 0 6px rgba(245,158,11,0)}
-  100% {box-shadow:0 0 0 0 rgba(245,158,11,0)}
-}
-@keyframes navDraftIn{
-  from {opacity:0;transform:scale(.5) translateY(-3px)}
-  to   {opacity:1;transform:scale(1) translateY(0)}
-}
 .draft-status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);border:1px solid #f59e0b;color:#92400e;border-radius:99px;font-size:.74rem;font-weight:700;margin-bottom:8px;animation:fxChipIn .25s cubic-bezier(.2,.8,.3,1.2);align-self:flex-start}
 .draft-status-pill .draft-pill-x{cursor:pointer;width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:rgba(146,64,14,.18);font-size:.85rem;line-height:1}
 .draft-status-pill .draft-pill-x:hover{background:#dc2626;color:#fff}
@@ -9954,81 +10066,102 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <span id="shopify-last-refresh" style="font-size:.72rem;color:var(--text-muted)"></span>
     </div>
   </div>
-  <!-- KPI Stats Cards (react to the active date filter) -->
+  <!-- KPI Stats Row (minimal, neutral, aligned) -->
   <div id="shopify-kpi-row">
-    <div class="shopify-kpi-card">
-      <div style="background:linear-gradient(135deg,#95BF47,#5E8E3E);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <div class="shopify-kpi-stat">
+      <div class="shopify-kpi-stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
       </div>
-      <div>
-        <div id="shopify-kpi-period-label" style="font-size:.68rem;color:var(--text-muted);margin-bottom:1px">اليوم</div>
-        <div id="shopify-kpi-valid" style="font-size:1.25rem;font-weight:700;line-height:1;color:var(--text)">—</div>
-        <div style="font-size:.62rem;color:var(--text-muted);margin-top:2px">أوردر صحيح</div>
-      </div>
-    </div>
-    <div class="shopify-kpi-card">
-      <div style="background:linear-gradient(135deg,#ef4444,#dc2626);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </div>
-      <div>
-        <div style="font-size:.68rem;color:var(--text-muted);margin-bottom:1px">ملغي</div>
-        <div id="shopify-kpi-cancelled" style="font-size:1.25rem;font-weight:700;line-height:1;color:var(--text)">—</div>
-        <div style="font-size:.62rem;color:var(--text-muted);margin-top:2px">لنفس الفترة</div>
+      <div class="shopify-kpi-stat-body">
+        <span class="shopify-kpi-stat-label" id="shopify-kpi-period-label">اليوم</span>
+        <span class="shopify-kpi-stat-val" id="shopify-kpi-valid">—</span>
+        <span class="shopify-kpi-stat-sub">أوردر صحيح</span>
       </div>
     </div>
-    <div class="shopify-kpi-card">
-      <div style="background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <div class="shopify-kpi-stat">
+      <div class="shopify-kpi-stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
       </div>
-      <div>
-        <div style="font-size:.68rem;color:var(--text-muted);margin-bottom:1px">الإجمالي</div>
-        <div id="shopify-kpi-total" style="font-size:1.25rem;font-weight:700;line-height:1;color:var(--text)">—</div>
-        <div style="font-size:.62rem;color:var(--text-muted);margin-top:2px">الأوردرات الصحيحة فقط</div>
-      </div>
-    </div>
-  </div>
-  <!-- Search + Filters -->
-  <div id="shopify-filters-bar">
-    <div id="shopify-filters-top-row">
-      <div id="shopify-search-wrap">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="shopify-search" type="text" placeholder="بحث برقم الأوردر..." oninput="shopifyPage=1;renderShopifyOrders()" style="width:100%;padding:10px 38px 10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-size:.9rem;box-sizing:border-box;direction:ltr;transition:border-color .2s;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      <div class="shopify-kpi-stat-body">
+        <span class="shopify-kpi-stat-label">ملغي</span>
+        <span class="shopify-kpi-stat-val" id="shopify-kpi-cancelled">—</span>
+        <span class="shopify-kpi-stat-sub">لنفس الفترة</span>
       </div>
     </div>
-    <div id="shopify-date-filter-bar">
-      <button type="button" class="btn btn-sm sp-date-quick-btn" data-range="today" onclick="_setShopifyDateQuickRange('today',this)">اليوم</button>
-      <button type="button" class="btn btn-sm sp-date-quick-btn" data-range="yesterday" onclick="_setShopifyDateQuickRange('yesterday',this)">أمس</button>
-      <span class="sp-date-sep"></span>
-      <input type="date" id="shopify-date-from" class="sp-date-input" onchange="_applyShopifyCustomRange()">
-      <span class="sp-date-arrow">إلى</span>
-      <input type="date" id="shopify-date-to" class="sp-date-input" onchange="_applyShopifyCustomRange()">
-      <button type="button" class="btn btn-sm" id="shopify-date-clear-btn" onclick="_clearShopifyDateRange()" style="display:none">مسح التاريخ ✕</button>
+    <div class="shopify-kpi-stat">
+      <div class="shopify-kpi-stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
+      </div>
+      <div class="shopify-kpi-stat-body">
+        <span class="shopify-kpi-stat-label">الإجمالي</span>
+        <span class="shopify-kpi-stat-val" id="shopify-kpi-total">—</span>
+        <span class="shopify-kpi-stat-sub">EGP</span>
+      </div>
     </div>
-    <div id="shopify-filter-btns">
-      <button class="btn btn-sm sp-status-filter-btn" data-filter="" onclick="switchShopifyStatusFilter('',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:600">
-        الكل
-      </button>
-      <span style="width:1px;height:20px;background:var(--border);border-radius:1px;margin:0 2px;flex-shrink:0"></span>
-      <button class="btn btn-sm sp-status-filter-btn sp-need-contact-btn" data-filter="need-contact" data-color="#ef4444" onclick="switchShopifyStatusFilter('need-contact',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid #ef4444;color:#ef4444;background:linear-gradient(135deg,#ef444418 0%,#dc262618 100%);border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:600;box-shadow:0 0 8px #ef444440,0 0 16px #ef444420;animation:needContactPulse 2s ease-in-out infinite">
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/></svg>
-        يحتاج تواصل <span id="shopify-need-contact-count" style="background:#ef4444;color:#fff;border-radius:99px;padding:1px 6px;font-size:.68rem;font-weight:700">0</span>
-      </button>
-      <button class="btn btn-sm sp-status-filter-btn" data-filter="confirmed" data-color="#10b981" onclick="switchShopifyStatusFilter('confirmed',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid #10b98140;color:#10b981;background:#10b98110;border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:500">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        جاهز للتسجيل
-      </button>
-      <button class="btn btn-sm sp-status-filter-btn" data-filter="followup" data-color="#f59e0b" onclick="switchShopifyStatusFilter('followup',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid #f59e0b40;color:#f59e0b;background:#f59e0b10;border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:500">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        متابعة مع العميل
-      </button>
-      <button class="btn btn-sm sp-status-filter-btn" data-filter="cancelled" data-color="#6b7280" onclick="switchShopifyStatusFilter('cancelled',this)" style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;border:1.5px solid #6b728040;color:#6b7280;background:#6b728010;border-radius:8px;padding:5px 12px;transition:all .2s;font-weight:500">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        طلب غير مؤكد
-      </button>
+    <div class="shopify-kpi-stat">
+      <div class="shopify-kpi-stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H8l-5 4V6a2 2 0 012-2h14a2 2 0 012 2z"/><circle cx="9" cy="10" r=".6" fill="currentColor" stroke="none"/><circle cx="13" cy="10" r=".6" fill="currentColor" stroke="none"/><circle cx="17" cy="10" r=".6" fill="currentColor" stroke="none"/></svg>
+      </div>
+      <div class="shopify-kpi-stat-body">
+        <span class="shopify-kpi-stat-label">يحتاج متابعة</span>
+        <span class="shopify-kpi-stat-val" id="shopify-kpi-followup">—</span>
+        <span class="shopify-kpi-stat-sub">EGP <span id="shopify-kpi-followup-total">0</span></span>
+      </div>
     </div>
   </div>
-  <!-- Table (desktop) + Cards (mobile) -->
-  <div id="shopify-orders-table-wrap"></div>
+  <!-- Table (desktop) + Cards (mobile), with search + filters merged into the table toolbar -->
+  <div id="shopify-orders-table-wrap">
+    <!-- Search + Filters (part of table toolbar) -->
+    <div id="shopify-filters-bar">
+      <div id="shopify-filters-top-row">
+        <div id="shopify-search-wrap">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="shopify-search" type="text" placeholder="بحث برقم الأوردر..." oninput="shopifyPage=1;renderShopifyOrders()" style="width:100%;padding:9px 38px 9px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg);font-size:.85rem;box-sizing:border-box;direction:ltr;transition:border-color .2s;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+        <div id="sp-bulk-bar-slot"></div>
+        <div style="position:relative">
+          <button type="button" class="btn btn-sm" id="shopify-filter-icon-btn" onclick="_toggleShopifyDatePopover(event)" title="تصفية بالتاريخ" style="display:inline-flex;align-items:center;justify-content:center;padding:9px 11px">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          </button>
+          <div id="shopify-date-filter-bar" class="sp-date-popover">
+            <button type="button" class="btn btn-sm sp-date-quick-btn" data-range="today" onclick="_setShopifyDateQuickRange('today',this)">اليوم</button>
+            <button type="button" class="btn btn-sm sp-date-quick-btn" data-range="yesterday" onclick="_setShopifyDateQuickRange('yesterday',this)">أمس</button>
+            <button type="button" class="btn btn-sm sp-date-quick-btn" data-range="last7days" onclick="_setShopifyDateQuickRange('last7days',this)">آخر 7 أيام</button>
+            <button type="button" class="btn btn-sm sp-date-quick-btn" data-range="lastmonth" onclick="_setShopifyDateQuickRange('lastmonth',this)">آخر شهر</button>
+            <button type="button" class="btn btn-sm sp-date-quick-btn" data-range="last3months" onclick="_setShopifyDateQuickRange('last3months',this)">آخر 3 شهور</button>
+            <span class="sp-date-sep"></span>
+            <input type="date" id="shopify-date-from" class="sp-date-input" onchange="_applyShopifyCustomRange()">
+            <span class="sp-date-arrow">إلى</span>
+            <input type="date" id="shopify-date-to" class="sp-date-input" onchange="_applyShopifyCustomRange()">
+            <button type="button" class="btn btn-sm" id="shopify-date-clear-btn" onclick="_clearShopifyDateRange()" style="display:none">مسح التاريخ ✕</button>
+          </div>
+        </div>
+        <div id="shopify-filter-btns">
+          <button class="btn btn-sm sp-status-filter-btn active" data-filter="" onclick="switchShopifyStatusFilter('',this)">
+            الكل
+          </button>
+          <span class="sp-filter-sep"></span>
+          <button class="btn btn-sm sp-status-filter-btn" data-filter="need-contact" data-color="#ef4444" onclick="switchShopifyStatusFilter('need-contact',this)">
+            <span class="sp-filter-dot" style="background:#ef4444"></span>
+            يحتاج تواصل <span id="shopify-need-contact-count" class="sp-filter-count">0</span>
+          </button>
+          <button class="btn btn-sm sp-status-filter-btn" data-filter="confirmed" data-color="#10b981" onclick="switchShopifyStatusFilter('confirmed',this)">
+            <span class="sp-filter-dot" style="background:#10b981"></span>
+            جاهز للتسجيل
+          </button>
+          <button class="btn btn-sm sp-status-filter-btn" data-filter="followup" data-color="#f59e0b" onclick="switchShopifyStatusFilter('followup',this)">
+            <span class="sp-filter-dot" style="background:#f59e0b"></span>
+            متابعة مع العميل
+          </button>
+          <button class="btn btn-sm sp-status-filter-btn" data-filter="cancelled" data-color="#6b7280" onclick="switchShopifyStatusFilter('cancelled',this)">
+            <span class="sp-filter-dot" style="background:#6b7280"></span>
+            طلب غير مؤكد
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="shopify-orders-table-body"></div>
+  </div>
   <div id="sp-mobile-list"></div>
   <div id="shopify-pagination" style="margin-top:16px"></div>
 </div>
@@ -11527,6 +11660,74 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   </div>
 </div>
 
+<!-- Demand & Inventory Planning — تحليل احتياج المخزون للطلبات المحددة -->
+<div id="demand-planning-modal" class="dp-modal" style="display:none" onclick="if(event.target===this)closeDemandPlanning()">
+  <div class="dp-panel" role="dialog" aria-modal="true" aria-labelledby="dp-title">
+    <div class="dp-header">
+      <div>
+        <h3 id="dp-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>
+          تحليل احتياج المخزون
+        </h3>
+        <div class="dp-sub" id="dp-subtitle">—</div>
+      </div>
+      <button class="dp-close" onclick="closeDemandPlanning()" aria-label="إغلاق">✕</button>
+    </div>
+
+    <div class="dp-summary" id="dp-summary"></div>
+    <div id="dp-notice-wrap"></div>
+
+    <div class="dp-toolbar">
+      <button class="dp-chip active" data-dp-filter="all" onclick="setDpFilter('all',this)">الكل <span id="dp-cnt-all">0</span></button>
+      <button class="dp-chip" data-dp-filter="shortage" onclick="setDpFilter('shortage',this)">نقص <span id="dp-cnt-shortage">0</span></button>
+      <button class="dp-chip" data-dp-filter="low" onclick="setDpFilter('low',this)">منخفض <span id="dp-cnt-low">0</span></button>
+      <button class="dp-chip" data-dp-filter="available" onclick="setDpFilter('available',this)">متوفر <span id="dp-cnt-available">0</span></button>
+      <input type="search" class="dp-search" id="dp-search" placeholder="ابحث بالاسم أو الكود (SKU)…" oninput="renderDemandPlanningRows()">
+    </div>
+
+    <div class="dp-table-wrap">
+      <table class="dp-table" id="dp-table">
+        <thead>
+          <tr>
+            <th class="nosort" style="width:26px"></th>
+            <th onclick="setDpSort('name')">الصنف <span class="dp-sort-ind" data-dp-ind="name"></span></th>
+            <th onclick="setDpSort('sku')">الكود SKU <span class="dp-sort-ind" data-dp-ind="sku"></span></th>
+            <th style="text-align:center" onclick="setDpSort('required')">المطلوب <span class="dp-sort-ind" data-dp-ind="required"></span></th>
+            <th style="text-align:center" onclick="setDpSort('available')">المتاح <span class="dp-sort-ind" data-dp-ind="available"></span></th>
+            <th style="text-align:center" onclick="setDpSort('reserved')">محتجز <span class="dp-sort-ind" data-dp-ind="reserved"></span></th>
+            <th style="text-align:center" onclick="setDpSort('shortage')">النقص <span class="dp-sort-ind" data-dp-ind="shortage"></span></th>
+            <th style="text-align:center" onclick="setDpSort('suggestedPurchase')">الشراء المقترح <span class="dp-sort-ind" data-dp-ind="suggestedPurchase"></span></th>
+            <th style="text-align:center" class="nosort">الحالة</th>
+          </tr>
+        </thead>
+        <tbody id="dp-tbody"></tbody>
+      </table>
+    </div>
+    <div class="dp-cards" id="dp-cards"></div>
+
+    <div class="dp-footer">
+      <span class="dp-foot-info" id="dp-foot-info"></span>
+      <button class="btn btn-sm" onclick="_dpExportExcel()" style="gap:5px;display:flex;align-items:center;background:#10b981;color:#fff;border:none">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>
+        Excel
+      </button>
+      <button class="btn btn-sm" onclick="_dpPrintPDF()" style="gap:5px;display:flex;align-items:center;background:var(--bg-alt);color:var(--text);border:1px solid var(--border)">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        طباعة
+      </button>
+      <button class="btn btn-sm" id="dp-add-po-btn" onclick="openDpAddToPo()" style="gap:5px;display:flex;align-items:center;background:var(--primary);color:#fff;border:none">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        إضافة لأمر شراء
+      </button>
+      <button class="btn btn-sm" id="dp-new-po-btn" onclick="openDpCreatePo()" style="gap:5px;display:flex;align-items:center;background:#f59e0b;color:#fff;border:none">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        أمر شراء جديد
+      </button>
+      <button class="btn btn-sm" onclick="closeDemandPlanning()" style="background:var(--bg-alt);color:var(--muted);border:1px solid var(--border)">إغلاق</button>
+    </div>
+  </div>
+</div>
+
 <!-- Custom Modal Dialog -->
 <div id="soulia-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="soulia-modal-title">
   <div id="soulia-modal">
@@ -12055,24 +12256,33 @@ const NAV_ICONS = {
   csp:'<svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M9 7h7M9 11h7"/></svg>'
 };
 const NAV_ITEMS = [
+  // ── الرئيسية / معاملة جديدة / أوردرات Shopify / سجل المعاملات
   {id:'dashboard',label:'الرئيسية',labelEn:'Dashboard',icon:NAV_ICONS.dashboard,perm:'dashboard'},
   {id:'transaction',label:'معاملة جديدة',labelEn:'New Transaction',icon:NAV_ICONS.transaction,perm:'transaction'},
   {id:'shopify-orders',label:'أوردرات Shopify',labelEn:'Shopify Orders',icon:'<svg viewBox="0 0 108.44 122.88" xmlns="http://www.w3.org/2000/svg"><path fill="#95BF47" fill-rule="evenodd" clip-rule="evenodd" d="M94.98,23.66c-0.09-0.62-0.63-0.96-1.08-1c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.72-0.72-2.13-0.5-2.68-0.34c-0.01,0-1.37,0.43-3.68,1.14c-0.38-1.25-0.95-2.78-1.76-4.32c-2.6-4.97-6.42-7.6-11.03-7.61c-0.01,0-0.01,0-0.02,0c-0.32,0-0.64,0.03-0.96,0.06c-0.14-0.16-0.27-0.32-0.42-0.48c-2.01-2.15-4.58-3.19-7.67-3.1c-5.95,0.17-11.88,4.47-16.69,12.11c-3.38,5.37-5.96,12.12-6.69,17.35c-6.83,2.12-11.61,3.6-11.72,3.63c-3.45,1.08-3.56,1.19-4.01,4.44C9.03,39.99,0,109.8,0,109.8l75.65,13.08l32.79-8.15C108.44,114.73,95.06,24.28,94.98,23.66zM66.52,16.63c-1.74,0.54-3.72,1.15-5.87,1.82c-0.04-3.01-0.4-7.21-1.81-10.83C63.36,8.47,65.58,13.58,66.52,16.63zM56.69,19.68c-3.96,1.23-8.29,2.57-12.63,3.91c1.22-4.67,3.54-9.33,6.38-12.38c1.06-1.14,2.54-2.4,4.29-3.12C56.38,11.52,56.73,16.39,56.69,19.68zM48.58,3.97c1.4-0.03,2.57,0.28,3.58,0.94C50.55,5.74,49,6.94,47.54,8.5c-3.78,4.06-6.68,10.35-7.83,16.43c-3.6,1.11-7.13,2.21-10.37,3.21C31.38,18.58,39.4,4.23,48.58,3.97z"/><path fill="#5E8E3E" fill-rule="evenodd" clip-rule="evenodd" d="M93.9,22.66c-0.45-0.04-9.19-0.17-9.19-0.17s-7.32-7.1-8.04-7.83c-0.27-0.27-0.63-0.41-1.02-0.47l0,108.68l32.78-8.15c0,0-13.38-90.44-13.46-91.06C94.9,23.04,94.35,22.7,93.9,22.66z"/><path fill="#FFFFFF" fill-rule="evenodd" clip-rule="evenodd" d="M57.48,39.52l-3.81,14.25c0,0-4.25-1.93-9.28-1.62c-7.38,0.47-7.46,5.12-7.39,6.29c0.4,6.37,17.16,7.76,18.11,22.69c0.74,11.74-6.23,19.77-16.27,20.41c-12.05,0.76-18.69-6.35-18.69-6.35l2.55-10.86c0,0,6.68,5.04,12.02,4.7c3.49-0.22,4.74-3.06,4.61-5.07c-0.52-8.31-14.18-7.82-15.04-21.48c-0.73-11.49,6.82-23.14,23.48-24.19C54.2,37.88,57.48,39.52,57.48,39.52z"/></svg>',perm:'shopify-orders'},
-  {id:'inventory',label:'المخزن',labelEn:'Inventory',icon:NAV_ICONS.inventory,perm:'inventory'},
   {id:'movements',label:'سجل المعاملات',labelEn:'Movements',icon:NAV_ICONS.movements,perm:'movements'},
-  {id:'clients',label:'العملاء',labelEn:'Clients',icon:NAV_ICONS.clients,perm:'clients'},
+  {id:'sep-1',sep:true},
+  // ── المخزن / الأصناف
+  {id:'inventory',label:'المخزن',labelEn:'Inventory',icon:NAV_ICONS.inventory,perm:'inventory'},
   {id:'products',label:'الأصناف',labelEn:'Products',icon:NAV_ICONS.products,perm:'products'},
-  {id:'suppliers',label:'الموردون',labelEn:'Suppliers',icon:NAV_ICONS.suppliers,perm:'suppliers'},
-  {id:'expenses',label:'المصاريف',labelEn:'Expenses',icon:NAV_ICONS.expenses,perm:'expenses'},
+  {id:'sep-2',sep:true},
+  // ── خدمة العملاء / دليل خدمة العملاء / العملاء
   {id:'complaints',label:'خدمة العملاء',labelEn:'Customer Service',icon:NAV_ICONS.complaints,perm:'complaints'},
   {id:'csp',label:'دليل خدمة العملاء',labelEn:'CS Playbook',icon:NAV_ICONS.csp,perm:'csp-view'},
-  {id:'approvals',label:'الموافقات',labelEn:'Approvals',icon:NAV_ICONS.approvals,perm:'approvals'},
+  {id:'clients',label:'العملاء',labelEn:'Clients',icon:NAV_ICONS.clients,perm:'clients'},
+  {id:'sep-3',sep:true},
+  // ── المعاملات المعلقة / Pick-Up Orders
   {id:'pending-sync',label:'المعاملات المعلقة',labelEn:'Pending Sync',icon:'<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7"/><polyline points="21 4 21 10 15 10"/></svg>',perm:'transaction'},
   {id:'pickup-orders',label:'Pick-Up Orders',labelEn:'Pick-Up Orders',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',perm:'movements'},
+  {id:'sep-4',sep:true},
+  // ── الموافقات / الموردون / المصاريف / التقارير / الخزنة
+  {id:'approvals',label:'الموافقات',labelEn:'Approvals',icon:NAV_ICONS.approvals,perm:'approvals'},
+  {id:'suppliers',label:'الموردون',labelEn:'Suppliers',icon:NAV_ICONS.suppliers,perm:'suppliers'},
+  {id:'expenses',label:'المصاريف',labelEn:'Expenses',icon:NAV_ICONS.expenses,perm:'expenses'},
   {id:'reports',label:'التقارير',labelEn:'Reports',icon:NAV_ICONS.reports,perm:'reports',adminOnly:true},
   {id:'vault',label:'الخزنة',labelEn:'Vault',icon:NAV_ICONS.vault,perm:'vault'},
   {id:'users',label:'المستخدمون',labelEn:'Users',icon:NAV_ICONS.users,perm:'users'},
-  {id:'settings',label:'الإعدادات',labelEn:'Settings',icon:NAV_ICONS.settings,perm:'settings'},
+  {id:'settings',label:'الإعدادات',labelEn:'Settings',icon:NAV_ICONS.settings,perm:'settings',bottomGroup:true},
   {id:'invoice-view',label:'عرض الفاتورة',labelEn:'Invoice',icon:'',perm:'movements',hidden:true},
 ];
 
@@ -13366,7 +13576,7 @@ async function oqUpdateBadges() {
     }
     const navBadge = qs('#oq-nav-badge');
     if (navBadge) {
-      if (cnt > 0) { navBadge.textContent = String(cnt); navBadge.style.display = 'inline-block'; }
+      if (cnt > 0) { navBadge.textContent = String(cnt); navBadge.style.display = 'inline-flex'; }
       else { navBadge.style.display = 'none'; }
     }
     const fab = qs('#offline-fab');
@@ -16107,27 +16317,41 @@ function buildSidebar() {
   const _movSeen = parseInt(localStorage.getItem('mov_seen_count') ?? '-1');
   const newMovCount = _movSeen >= 0 ? Math.max(0, _movTotal - _movSeen) : 0;
   const draftCount = (typeof _readDrafts === 'function') ? _readDrafts().length : 0;
-  sb.innerHTML = NAV_ITEMS.filter(n => !n.hidden && ((n.adminOnly && !isAdmin()) ? false : hasPerm(n.perm))).map(n => {
+  const visibleItems = NAV_ITEMS.filter(n => n.sep || (!n.hidden && ((n.adminOnly && !isAdmin()) ? false : hasPerm(n.perm))));
+  let html = '';
+  let bottomOpened = false;
+  let hasRealItem = false;
+  visibleItems.forEach((n, i) => {
+    if (n.sep) {
+      const nextIsRealItem = visibleItems.slice(i + 1).some(x => !x.sep);
+      if (hasRealItem && nextIsRealItem) html += `<div class="nav-sep"></div>`;
+      return;
+    }
+    hasRealItem = true;
+    if (n.bottomGroup && !bottomOpened) { html += `<div class="nav-bottom-group">`; bottomOpened = true; }
     let badge = '';
-    if (n.id === 'approvals' && totalApprovalsBadge > 0) badge = ` <span class="badge badge-orange" style="margin-right:4px;font-size:.65rem">${totalApprovalsBadge}</span>`;
-    if (n.id === 'movements' && newMovCount > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">+${newMovCount}</span>`;
+    if (n.id === 'approvals' && totalApprovalsBadge > 0) badge = ` <span class="nav-badge">${totalApprovalsBadge}</span>`;
+    if (n.id === 'movements' && newMovCount > 0) badge = ` <span class="nav-badge">+${newMovCount}</span>`;
     const fuUnseenCount = typeof _fuUnseenCount === 'function' ? _fuUnseenCount() : 0;
     const totalComplaintsBadge = pendingCmpCount + fuUnseenCount;
-    if (n.id === 'complaints' && totalComplaintsBadge > 0) badge = ` <span class="badge badge-red" style="margin-right:4px;font-size:.65rem">${totalComplaintsBadge}</span>`;
-    if (n.id === 'pending-sync') badge = ` <span class="badge badge-orange oq-nav-badge" style="margin-right:4px;font-size:.65rem;display:none" id="oq-nav-badge"></span>`;
+    if (n.id === 'complaints' && totalComplaintsBadge > 0) badge = ` <span class="nav-badge">${totalComplaintsBadge}</span>`;
+    if (n.id === 'pending-sync') badge = ` <span class="nav-badge oq-nav-badge" style="display:none" id="oq-nav-badge"></span>`;
     if (n.id === 'shopify-orders') {
       const spTotal = (_shopifyOrders || []).filter(o => o.status === 'pending').length;
       const spSeen = parseInt(localStorage.getItem('shopify_seen_count') ?? '-1');
       const spNew = spSeen >= 0 ? Math.max(0, spTotal - spSeen) : 0;
-      if (spNew > 0) badge = ` <span class="badge badge-orange" style="margin-right:4px;font-size:.65rem">+${spNew}</span>`;
+      if (spNew > 0) badge = ` <span class="nav-badge">+${spNew}</span>`;
     }
     if (n.id === 'transaction' && draftCount > 0) {
       const word = draftCount === 1 ? 'مسودة' : (draftCount === 2 ? 'مسودتان' : 'مسودات');
       const arabicNum = String(draftCount).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
-      badge = ` <span class="nav-draft-badge" title="لديك ${arabicNum} ${word} محفوظة — اضغط لفتح صفحة المعاملات ثم زر المسودات"><span class="nav-draft-dot"></span><span class="nav-draft-num">+${arabicNum}</span></span>`;
+      badge = ` <span class="nav-badge" title="لديك ${arabicNum} ${word} محفوظة — اضغط لفتح صفحة المعاملات ثم زر المسودات">+${arabicNum}</span>`;
     }
-    return `<a class="nav-item${currentPage === n.id ? ' active' : ''}" data-page="${n.id}" href="#${n.id}" onclick="handleNavClick(event,'${n.id}')"><span>${n.icon}</span><span>${esc(navLabel(n))}${badge}</span></a>`;
-  }).join('') + `<a class="nav-item" data-page="userhub" href="#userhub" onclick="handleNavClick(event,'userhub')"><span>${NAV_ICONS.profile}</span><span>UserHub</span></a>`;
+    html += `<a class="nav-item${currentPage === n.id ? ' active' : ''}" data-page="${n.id}" href="#${n.id}" onclick="handleNavClick(event,'${n.id}')"><span>${n.icon}</span><span>${esc(navLabel(n))}${badge}</span></a>`;
+  });
+  if (!bottomOpened) html += `<div class="nav-bottom-group">`;
+  html += `<a class="nav-item" data-page="userhub" href="#userhub" onclick="handleNavClick(event,'userhub')"><span>${NAV_ICONS.profile}</span><span>UserHub</span></a></div>`;
+  sb.innerHTML = html;
 }
 function handleNavClick(e, page) {
   if (!e.ctrlKey && !e.metaKey && e.button !== 1) {
@@ -25600,7 +25824,7 @@ function renderMovementTxRow(tx) {
     <td data-col="items" style="text-align:center">${_movItemsCell(tx)}</td>
     <td data-col="status" style="text-align:center;white-space:nowrap">${movementStatusCell(tx)}${vaultStatusBadge}${vaultHint}</td>
     <td data-col="discount" style="text-align:center;white-space:nowrap">${_movDiscountBadge(tx)}</td>
-    <td data-col="pickup" style="text-align:center;white-space:nowrap">${tx.type==='مبيعات' ? _puStatusBadge(((tx.bostaOrderId || tx.deliverySource === 'MANUAL') && !['VALIDATION_ERROR','DELETED',''].includes(tx.bostaStatus||'')) ? 'Shipped' : (tx.pickupStatus||'Pending')) : '<span style="color:var(--muted);font-size:.8rem">—</span>'}</td>
+    <td data-col="pickup" style="text-align:center;white-space:nowrap">${tx.type==='مبيعات' ? _puStatusBadge(tx.bostaStatus === 'DELIVERED' ? 'Delivered' : ((tx.bostaOrderId || tx.deliverySource === 'MANUAL') && !['VALIDATION_ERROR','DELETED',''].includes(tx.bostaStatus||'')) ? 'Shipped' : (tx.pickupStatus||'Pending')) : '<span style="color:var(--muted);font-size:.8rem">—</span>'}</td>
     <td data-col="bosta" style="text-align:center;white-space:nowrap">${_bostaStatusBadge(tx)}</td>
     <td data-col="tag" style="text-align:center;min-width:110px" onclick="event.stopPropagation()" data-tag-cell="${esc(tx._id)}">${renderTxTagsCell(tx._id)}</td>
     <td data-col="employee" class="mov-col-employee" style="text-align:center"><div class="mov-col-employee-wrap">${tx.shopifyOrderId ? `<a href="https://admin.shopify.com/store/soulia-2/orders/${esc(tx.shopifyOrderId)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="mov-emp-initials" title="فتح أوردر Shopify #${esc(tx.shopifyOrderId)}" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">${_SHOPIFY_LOGO_SVG}</a>` : `<span class="mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span>`}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div></td>
@@ -29995,6 +30219,725 @@ function _paExportExcel() {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Demand & Inventory Planning — تحليل احتياج المخزون
+   Groups the selected orders' items by SKU, reconciles each against the live
+   inventory ledger, and turns the shortage into purchase-order quantities.
+
+   Primary use is the Shopify orders page: those orders are still PENDING, so
+   their stock has NOT been deducted yet — the shortage is actionable, telling
+   you what to buy before the orders are pushed into the transactions log.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+let _dpAnalysis = null;      // last analysis payload from the server
+let _dpSource = 'shopify';   // 'shopify' | 'transactions' — which page opened it
+let _dpSourceIds = [];       // ids the analysis was run on (for PO provenance)
+let _dpFilter = 'all';       // 'all' | 'shortage' | 'low' | 'available'
+let _dpSort = { key: 'shortage', dir: 'desc' };
+let _dpOpenSkus = new Set(); // expanded rows
+let _dpOpenPos = [];         // cached open purchase orders
+let _dpSelectedPoId = '';
+
+/** Lines that should be pushed to a supplier — anything with a suggested purchase */
+function _dpPurchasableLines() {
+  return (_dpAnalysis?.lines || []).filter(l => l.suggestedPurchase > 0);
+}
+
+/**
+ * Shopify orders page entry point — analyses the selected PENDING orders.
+ * This is the meaningful one: nothing has been deducted from stock yet.
+ */
+async function openShopifyDemandPlanning() {
+  if (!hasPerm('inventory')) { toast('ليس لديك صلاحية المخزون', true); return; }
+  if (!_shopifySelectedIds.size) { toast('لم يتم تحديد أي أوردرات', true); return; }
+  const ids = [..._shopifySelectedIds];
+  await _dpRunAnalysis('shopify', '/demand-planning/analyze-shopify', { orderIds: ids }, ids);
+}
+
+/**
+ * Transactions page entry point. Kept available because the same reconciliation
+ * is still useful for already-committed orders, but note their stock is already
+ * deducted, so `available` is reconstructed by adding their qty back.
+ */
+async function openDemandPlanning() {
+  if (!hasPerm('inventory')) { toast('ليس لديك صلاحية المخزون', true); return; }
+  if (!selectedMovIds.size) { toast('لم يتم تحديد أي معاملات', true); return; }
+  const ids = [...selectedMovIds];
+  const salesCount = ids
+    .map(id => transactions.find(t => t._id === id))
+    .filter(t => t && t.type === 'مبيعات' && !t.cancelled).length;
+  if (!salesCount) {
+    toast('التحليل يعمل على طلبات المبيعات النشطة فقط — حدّد طلب عميل واحداً على الأقل', true);
+    return;
+  }
+  await _dpRunAnalysis('transactions', '/demand-planning/analyze', { transactionIds: ids }, ids);
+}
+
+async function _dpRunAnalysis(source, endpoint, body, ids) {
+  try {
+    _dpAnalysis = await api(endpoint, { method: 'POST', body: JSON.stringify(body) });
+    _dpSource = source;
+    _dpSourceIds = ids;
+    _dpFilter = 'all';
+    _dpSort = { key: 'shortage', dir: 'desc' };
+    _dpOpenSkus = new Set();
+    const searchEl = qs('#dp-search'); if (searchEl) searchEl.value = '';
+    qsa('#demand-planning-modal .dp-chip').forEach(c =>
+      c.classList.toggle('active', c.dataset.dpFilter === 'all'));
+    renderDemandPlanning();
+    const modal = qs('#demand-planning-modal');
+    if (modal) modal.style.display = 'flex';
+  } catch (e) {
+    toast('تعذّر التحليل: ' + e.message, true);
+  }
+}
+
+function closeDemandPlanning() {
+  const modal = qs('#demand-planning-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function renderDemandPlanning() {
+  const a = _dpAnalysis;
+  if (!a) return;
+
+  const sub = qs('#dp-subtitle');
+  const srcLabel = _dpSource === 'shopify' ? 'أوردر شوبيفاي معلق' : 'معاملة محددة';
+  if (sub) sub.textContent =
+    `${fmtN(a.ordersCount)} ${srcLabel} • ${fmtN(a.totalSkus)} صنف (SKU) • ${fmtN(a.totalRequiredQty)} قطعة مطلوبة`;
+
+  const sum = qs('#dp-summary');
+  if (sum) sum.innerHTML = `
+    <div class="dp-kpi"><div class="dp-kpi-label">الطلبات المحددة</div><div class="dp-kpi-val blue">${fmtN(a.ordersCount)}</div></div>
+    <div class="dp-kpi"><div class="dp-kpi-label">إجمالي الأصناف</div><div class="dp-kpi-val">${fmtN(a.totalSkus)} SKU</div></div>
+    <div class="dp-kpi"><div class="dp-kpi-label">إجمالي المطلوب</div><div class="dp-kpi-val">${fmtN(a.totalRequiredQty)} قطعة</div></div>
+    <div class="dp-kpi ${a.totalShortageQty > 0 ? 'bad' : ''}"><div class="dp-kpi-label">إجمالي النقص</div><div class="dp-kpi-val ${a.totalShortageQty > 0 ? 'red' : 'green'}">${fmtN(a.totalShortageQty)} قطعة</div></div>
+    <div class="dp-kpi ${a.shortageSkus > 0 ? 'bad' : ''}"><div class="dp-kpi-label">أصناف بها نقص</div><div class="dp-kpi-val ${a.shortageSkus > 0 ? 'red' : 'green'}">${fmtN(a.shortageSkus)}</div></div>
+    <div class="dp-kpi ${a.totalSuggestedPurchaseQty > 0 ? 'warn' : ''}"><div class="dp-kpi-label">الشراء المقترح</div><div class="dp-kpi-val orange">${fmtN(a.totalSuggestedPurchaseQty)} قطعة</div></div>
+    ${isAdmin() ? `<div class="dp-kpi"><div class="dp-kpi-label">تكلفة الشراء التقديرية</div><div class="dp-kpi-val">${fmtJ(a.estimatedPurchaseCost)}</div></div>` : ''}
+  `;
+
+  // Warnings: skipped orders and SKUs missing from the product master
+  const noticeWrap = qs('#dp-notice-wrap');
+  if (noticeWrap) {
+    const parts = [];
+    // Unmapped items get their own notice below — don't repeat them here.
+    const otherSkips = [...new Set(
+      (a.skippedOrders || [])
+        .filter(s => !/غير مرتبط بالمخزن/.test(s.reason))
+        .map(s => s.reason)
+    )];
+    if (otherSkips.length) {
+      const shown = otherSkips.slice(0, 4).map(esc);
+      const more = otherSkips.length > 4 ? ` — و${fmtN(otherSkips.length - 4)} أخرى` : '';
+      parts.push(`⚠️ <strong>تم استثناء ${fmtN(otherSkips.length)} حالة من التحليل:</strong> ${shown.join(' • ')}${more}`);
+    }
+    if (a.unmappedItems?.length) {
+      parts.push(`🔗 <strong>${fmtN(a.unmappedItems.length)} صنف غير مرتبط بالمخزن</strong> — لم يُحسب في التحليل، اربطه بصنف في قاعدة الأصناف أولاً: ${a.unmappedItems.slice(0, 6).map(esc).join('، ')}${a.unmappedItems.length > 6 ? ' …' : ''}`);
+    }
+    if (a.unknownSkus?.length) {
+      parts.push(`⚠️ <strong>أكواد غير موجودة في قاعدة الأصناف</strong> (لا يمكن إضافتها لأمر شراء): ${a.unknownSkus.slice(0, 8).map(esc).join('، ')}`);
+    }
+    // Spell out what the numbers mean — it differs between the two sources
+    const explain = _dpSource === 'shopify'
+      ? 'ℹ️ هذه الأوردرات <strong>لم تُخصم من المخزون بعد</strong>. «المتاح» هو الرصيد الحالي فعلياً، و«محتجز» هو ما تحتاجه أوردرات سجل المعاملات التي لم تُشحن بعد. النقص هو ما يجب توفيره قبل إرسال هذه الأوردرات لسجل المعاملات.'
+      : 'ℹ️ هذه المعاملات <strong>مخصومة من المخزون بالفعل</strong>، لذلك تمت إعادة كمياتها إلى «المتاح» لحساب الرصيد قبل تنفيذها.';
+    noticeWrap.innerHTML = `<div class="dp-notice" style="background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.3)">${explain}</div>` +
+      (parts.length ? `<div class="dp-notice">${parts.join('<br>')}</div>` : '');
+  }
+
+  const cnt = k => (a.lines || []).filter(l => l.status === k).length;
+  const setCnt = (id, v) => { const el = qs(id); if (el) el.textContent = fmtN(v); };
+  setCnt('#dp-cnt-all', (a.lines || []).length);
+  setCnt('#dp-cnt-shortage', cnt('shortage'));
+  setCnt('#dp-cnt-low', cnt('low'));
+  setCnt('#dp-cnt-available', cnt('available'));
+
+  const purchasable = _dpPurchasableLines().length;
+  const addBtn = qs('#dp-add-po-btn'), newBtn = qs('#dp-new-po-btn');
+  const canBuy = purchasable > 0 && hasPerm('suppliers');
+  if (addBtn) { addBtn.disabled = !canBuy; addBtn.style.opacity = canBuy ? '' : '.45'; addBtn.style.cursor = canBuy ? '' : 'not-allowed'; }
+  if (newBtn) { newBtn.disabled = !canBuy; newBtn.style.opacity = canBuy ? '' : '.45'; newBtn.style.cursor = canBuy ? '' : 'not-allowed'; }
+
+  renderDemandPlanningRows();
+}
+
+function setDpFilter(f, btn) {
+  _dpFilter = f;
+  qsa('#demand-planning-modal .dp-chip').forEach(c => c.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderDemandPlanningRows();
+}
+
+function setDpSort(key) {
+  if (_dpSort.key === key) _dpSort.dir = _dpSort.dir === 'desc' ? 'asc' : 'desc';
+  else _dpSort = { key, dir: key === 'name' || key === 'sku' ? 'asc' : 'desc' };
+  renderDemandPlanningRows();
+}
+
+function _dpVisibleLines() {
+  const a = _dpAnalysis; if (!a) return [];
+  const q = normalizeUiSearch(qs('#dp-search')?.value || '');
+  let rows = (a.lines || []).filter(l => {
+    if (_dpFilter !== 'all' && l.status !== _dpFilter) return false;
+    if (q && !normalizeUiSearch(`${l.name} ${l.sku}`).includes(q)) return false;
+    return true;
+  });
+  const { key, dir } = _dpSort;
+  const mul = dir === 'asc' ? 1 : -1;
+  rows = rows.slice().sort((x, y) => {
+    const xv = x[key], yv = y[key];
+    if (typeof xv === 'string' || typeof yv === 'string') {
+      return String(xv || '').localeCompare(String(yv || ''), 'ar') * mul;
+    }
+    return ((Number(xv) || 0) - (Number(yv) || 0)) * mul;
+  });
+  return rows;
+}
+
+function _dpStatusBadge(l) {
+  if (l.status === 'shortage') return `<span class="dp-badge bad"><span class="dp-dot"></span>نقص ${fmtN(l.shortage)}</span>`;
+  if (l.status === 'low') return `<span class="dp-badge low"><span class="dp-dot"></span>منخفض</span>`;
+  return `<span class="dp-badge ok"><span class="dp-dot"></span>متوفر</span>`;
+}
+
+function _dpProdCell(l) {
+  const img = l.imageUrl
+    ? `<img src="${esc(l.imageUrl)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'dp-prod-ph\\'>📦</div>'">`
+    : `<div class="dp-prod-ph">📦</div>`;
+  return `<div class="dp-prod">${img}<div><div class="dp-prod-name">${esc(l.name)}</div><div class="dp-prod-sku">${esc(l.sku)}</div></div></div>`;
+}
+
+/**
+ * Resolves an affected order's deposit + payment method.
+ * Pending Shopify orders carry the deposit inside their notes/tags, so reuse
+ * the page's existing parser instead of re-implementing it here.
+ */
+function _dpOrderPayInfo(o) {
+  if (_dpSource === 'shopify' && typeof _spDetectDepositAndMethod === 'function') {
+    try {
+      const d = _spDetectDepositAndMethod({
+        notes: o.notes || '',
+        tags: o.tags || '',
+        total: o.orderTotal || 0,
+      });
+      return { deposit: d.deposit || 0, method: d.deposit > 0 ? d.payment : '' };
+    } catch (_) { /* fall through to the stored values */ }
+  }
+  return { deposit: Number(o.deposit) || 0, method: o.payment || '' };
+}
+
+/**
+ * The shortage calculation, laid out as labelled steps instead of one dense
+ * equation. Mixing math operators into RTL prose was hard to read, so each
+ * quantity gets its own row with the arithmetic sign shown separately.
+ */
+function _dpCalcBreakdown(l) {
+  const row = (label, val, opts = {}) => `
+    <div class="dp-calc-row${opts.total ? ' dp-calc-total' : ''}">
+      <span class="dp-calc-op">${opts.op || ''}</span>
+      <span class="dp-calc-label">${label}</span>
+      <span class="dp-calc-val" ${opts.color ? `style="color:${opts.color}"` : ''}>${val}</span>
+    </div>`;
+
+  // Step 1 — how much of the on-hand stock these orders can actually draw on.
+  // A negative result means earlier orders already claim more than exists, so
+  // it is stated as a deficit rather than a bare negative number.
+  const isShort = l.freeToUse < 0;
+  const freeBlock =
+    row('الموجود في المخزن', fmtN(l.available)) +
+    (l.reserved > 0 ? row('محجوز لطلبات أخرى', fmtN(l.reserved), { op: '−', color: '#b45309' }) : '') +
+    row(
+      isShort ? 'عجز قائم بالفعل' : 'المتاح لهذه الطلبات',
+      isShort ? fmtN(Math.abs(l.freeToUse)) + ' ناقصة' : fmtN(l.freeToUse),
+      { total: true, color: isShort ? '#dc2626' : 'var(--text)' },
+    );
+
+  // Step 2 — demand vs. that figure. The subtraction is restated here rather
+  // than carried over silently. When freeToUse is negative, "− (−11)" reads
+  // badly, so the deficit is shown as a positive amount that is added instead.
+  const oversold = l.freeToUse < 0;
+  const needBlock =
+    row('الكمية المطلوبة', fmtN(l.required)) +
+    (oversold
+      ? row('عجز قائم من طلبات سابقة', fmtN(Math.abs(l.freeToUse)), {
+          op: '+',
+          color: '#dc2626',
+        })
+      : row('المتاح لهذه الطلبات', fmtN(l.freeToUse), { op: '−' })) +
+    row(
+      l.shortage > 0 ? 'الناقص' : 'النتيجة',
+      l.shortage > 0 ? fmtN(l.shortage) + ' قطعة' : 'مغطاة بالكامل ✓',
+      { total: true, color: l.shortage > 0 ? '#dc2626' : '#059669' },
+    );
+
+  // Step 3 — only meaningful when something must be bought
+  const buyBlock = l.suggestedPurchase > 0
+    ? `<div class="dp-calc-group">
+         <div class="dp-calc-head">الشراء المقترح</div>
+         ${row('الناقص', fmtN(l.shortage))}
+         ${row('مخزون أمان', fmtN(l.safetyStock), { op: '+' })}
+         ${row('يُشترى من المورد', fmtN(l.suggestedPurchase) + ' قطعة', { total: true, color: '#b45309' })}
+       </div>`
+    : '';
+
+  return `<div class="dp-calc">
+    <div class="dp-calc-grid">
+      <div class="dp-calc-group">
+        <div class="dp-calc-head">المتاح فعلياً</div>
+        ${freeBlock}
+      </div>
+      <div class="dp-calc-group">
+        <div class="dp-calc-head">${l.shortage > 0 ? 'حساب النقص' : 'التغطية'}</div>
+        ${needBlock}
+      </div>
+      ${buyBlock}
+    </div>
+    ${l.supplier ? `<div class="dp-calc-note">المورد المعتاد: <strong>${esc(l.supplier)}</strong></div>` : ''}
+  </div>`;
+}
+
+/** Expandable panel listing every order that contributes to this SKU's demand */
+function _dpAffectedPanel(l) {
+  const orders = (l.affectedOrders || []).map(o => {
+    const pay = _dpOrderPayInfo(o);
+    const isFull = pay.deposit > 0 && pay.deposit >= (o.orderTotal || 0);
+    // Deposit line: icon + amount, or a muted "unpaid" hint
+    const payLine = pay.deposit > 0
+      ? `<span class="dp-order-pay" title="${isFull ? 'مدفوع بالكامل' : 'عربون مدفوع'}${pay.method ? ' — ' + esc(pay.method) : ''}">
+           ${pay.method ? payMethodIcon(pay.method, 11) : ''}
+           <span class="${isFull ? 'dp-pay-full' : 'dp-pay-part'}">${fmtJ(pay.deposit)}</span>
+           ${isFull ? '<span class="dp-pay-tag">كامل</span>' : '<span class="dp-pay-tag">عربون</span>'}
+         </span>`
+      : `<span class="dp-order-pay dp-pay-none" title="لا يوجد عربون مدفوع">بدون عربون</span>`;
+    return `
+    <div class="dp-order">
+      <div style="min-width:0">
+        <div class="dp-order-ref">#${esc(o.ref)}</div>
+        <div class="dp-order-client">${esc(o.client)}${o.variant ? ' — ' + esc(o.variant) : ''}</div>
+        ${payLine}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+        <span class="dp-order-value" title="قيمة الطلب">${fmtJ(o.orderTotal || 0)}</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="dp-order-qty" title="الكمية من هذا الصنف">×${fmtN(o.qty)}</span>
+          <button class="dp-order-open" onclick="event.stopPropagation();_dpOpenOrder('${esc(o.transactionId)}')">فتح</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="dp-detail">
+    <div class="dp-detail-title">الطلبات المتأثرة — ${fmtN(l.ordersCount)} طلب • إجمالي ${fmtN(l.required)} قطعة <span style="font-weight:600;opacity:.75">(مرتبة من الأعلى قيمة)</span></div>
+    <div class="dp-orders">${orders}</div>
+    ${_dpCalcBreakdown(l)}
+  </div>`;
+}
+
+function renderDemandPlanningRows() {
+  const rows = _dpVisibleLines();
+
+  qsa('#demand-planning-modal .dp-sort-ind').forEach(el => {
+    el.textContent = el.dataset.dpInd === _dpSort.key ? (_dpSort.dir === 'asc' ? '▲' : '▼') : '';
+  });
+
+  const tbody = qs('#dp-tbody');
+  if (tbody) {
+    tbody.innerHTML = rows.length ? rows.map(l => {
+      const open = _dpOpenSkus.has(l.sku);
+      return `<tr class="dp-row ${l.status}${open ? ' open' : ''}" onclick="_dpToggleRow('${esc(l.sku)}')">
+        <td style="text-align:center"><span class="dp-caret">▼</span></td>
+        <td>${_dpProdCell(l)}</td>
+        <td><span class="dp-prod-sku">${esc(l.sku)}</span></td>
+        <td class="dp-num">${fmtN(l.required)}</td>
+        <td class="dp-num">${fmtN(l.available)}</td>
+        <td class="dp-num" style="color:${l.reserved > 0 ? '#f59e0b' : 'var(--muted)'}">${l.reserved > 0 ? fmtN(l.reserved) : '—'}</td>
+        <td class="dp-num" style="color:${l.shortage > 0 ? '#dc2626' : 'var(--muted)'}">${l.shortage > 0 ? fmtN(l.shortage) : '—'}</td>
+        <td class="dp-num" style="color:${l.suggestedPurchase > 0 ? '#b45309' : 'var(--muted)'}">${l.suggestedPurchase > 0 ? fmtN(l.suggestedPurchase) : '—'}</td>
+        <td style="text-align:center">${_dpStatusBadge(l)}</td>
+      </tr>
+      ${open ? `<tr class="dp-detail-row"><td colspan="9">${_dpAffectedPanel(l)}</td></tr>` : ''}`;
+    }).join('') : `<tr><td colspan="9"><div class="dp-empty">لا توجد أصناف مطابقة للفلتر الحالي</div></td></tr>`;
+  }
+
+  const cards = qs('#dp-cards');
+  if (cards) {
+    cards.innerHTML = rows.length ? rows.map(l => {
+      const open = _dpOpenSkus.has(l.sku);
+      return `<div class="dp-card ${l.status}${open ? ' open' : ''}">
+        <div class="dp-card-head" onclick="_dpToggleRow('${esc(l.sku)}')">
+          ${_dpProdCell(l)}
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+            ${_dpStatusBadge(l)}
+            <span class="dp-caret" style="font-size:.65rem">▼</span>
+          </div>
+        </div>
+        <div class="dp-card-grid">
+          <div class="dp-card-cell"><div class="l">المطلوب</div><div class="v">${fmtN(l.required)}</div></div>
+          <div class="dp-card-cell"><div class="l">المتاح</div><div class="v">${fmtN(l.available)}</div></div>
+          <div class="dp-card-cell"><div class="l">محتجز</div><div class="v" style="color:${l.reserved > 0 ? '#f59e0b' : 'var(--muted)'}">${l.reserved > 0 ? fmtN(l.reserved) : '—'}</div></div>
+          <div class="dp-card-cell"><div class="l">النقص</div><div class="v" style="color:${l.shortage > 0 ? '#dc2626' : 'var(--muted)'}">${l.shortage > 0 ? fmtN(l.shortage) : '—'}</div></div>
+          <div class="dp-card-cell"><div class="l">مخزون أمان</div><div class="v">${fmtN(l.safetyStock)}</div></div>
+          <div class="dp-card-cell"><div class="l">شراء مقترح</div><div class="v" style="color:${l.suggestedPurchase > 0 ? '#b45309' : 'var(--muted)'}">${l.suggestedPurchase > 0 ? fmtN(l.suggestedPurchase) : '—'}</div></div>
+        </div>
+        <div class="dp-card-body">${_dpAffectedPanel(l)}</div>
+      </div>`;
+    }).join('') : `<div class="dp-empty">لا توجد أصناف مطابقة للفلتر الحالي</div>`;
+  }
+
+  const info = qs('#dp-foot-info');
+  if (info) {
+    const shown = rows.length, total = (_dpAnalysis?.lines || []).length;
+    const buyable = _dpPurchasableLines().length;
+    info.textContent = `عرض ${fmtN(shown)} من ${fmtN(total)} صنف` +
+      (buyable ? ` • ${fmtN(buyable)} صنف يحتاج شراء` : ' • لا يوجد نقص');
+  }
+}
+
+function _dpToggleRow(sku) {
+  if (_dpOpenSkus.has(sku)) _dpOpenSkus.delete(sku); else _dpOpenSkus.add(sku);
+  renderDemandPlanningRows();
+}
+
+/**
+ * "Open the order directly". Transactions have an internal invoice view;
+ * pending Shopify orders live in the Shopify admin, so open them there.
+ */
+function _dpOpenOrder(orderId) {
+  if (_dpSource === 'transactions') {
+    closeDemandPlanning();
+    setTimeout(() => showInvoiceDetail(orderId), 220);
+    return;
+  }
+  const o = (_shopifyOrders || []).find(x => x._id === orderId);
+  const sid = o && (o.shopifyId || o.rawData?.id);
+  if (sid) {
+    window.open(`https://admin.shopify.com/store/soulia-2/orders/${sid}`, '_blank', 'noopener');
+  } else {
+    toast('لا يوجد رابط لهذا الأوردر على شوبيفاي', true);
+  }
+}
+
+/* ── Export & print ───────────────────────────────────────────────────── */
+
+function _dpExportExcel() {
+  const rows = _dpVisibleLines();
+  if (!rows.length) { toast('لا توجد بيانات للتصدير', true); return; }
+  const STATUS_AR = { shortage: 'نقص', low: 'منخفض', available: 'متوفر' };
+  const data = rows.map(l => {
+    const row = {
+      'الصنف': l.name,
+      'الكود SKU': l.sku,
+      'المطلوب': l.required,
+      'المتاح': l.available,
+      'محتجز لطلبات أخرى': l.reserved,
+      'قابل للاستخدام': l.freeToUse,
+      'النقص': l.shortage,
+      'مخزون الأمان': l.safetyStock,
+      'الشراء المقترح': l.suggestedPurchase,
+      'الحالة': STATUS_AR[l.status] || l.status,
+      'عدد الطلبات المتأثرة': l.ordersCount,
+      'الطلبات المتأثرة (الأعلى قيمة أولاً)': (l.affectedOrders || []).map(o => {
+        const p = _dpOrderPayInfo(o);
+        return `#${o.ref} (${o.client}) × ${o.qty} — ${o.orderTotal || 0} ج` +
+          (p.deposit > 0 ? ` — عربون ${p.deposit} ج${p.method ? ' ' + p.method : ''}` : ' — بدون عربون');
+      }).join(' | '),
+    };
+    // Purchase pricing is admin-only, consistent with the inventory table
+    if (isAdmin()) {
+      row['آخر سعر شراء'] = l.lastPurchasePrice;
+      row['التكلفة التقديرية'] = Math.round(l.suggestedPurchase * l.lastPurchasePrice * 100) / 100;
+    }
+    return row;
+  });
+  writeExcel(data, 'احتياج المخزون', 'demand-planning_' + todayLocalISO());
+}
+
+function _dpPrintPDF() {
+  const a = _dpAnalysis; if (!a) return;
+  const rows = _dpVisibleLines();
+  const STATUS_AR = { shortage: 'نقص', low: 'منخفض', available: 'متوفر' };
+  const body = rows.map(l => `<tr>
+    <td>${escHtml(l.name)}</td><td style="direction:ltr">${escHtml(l.sku)}</td>
+    <td>${l.required}</td><td>${l.available}</td><td>${l.reserved || '—'}</td>
+    <td style="font-weight:700;color:${l.shortage > 0 ? '#dc2626' : '#059669'}">${l.shortage || '—'}</td>
+    <td>${l.safetyStock}</td>
+    <td style="font-weight:700;color:#b45309">${l.suggestedPurchase || '—'}</td>
+    <td>${STATUS_AR[l.status] || l.status}</td>
+    <td style="font-size:10px">${escHtml((l.affectedOrders || []).map(o => `#${o.ref}×${o.qty}`).join(' · '))}</td>
+  </tr>`).join('');
+  const w = window.open('', '_blank', 'width=1000,height=720');
+  if (!w) { toast('تم منع النافذة المنبثقة — اسمح بالنوافذ لهذا الموقع', true); return; }
+  w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"><title>تحليل احتياج المخزون</title>
+  <style>body{font-family:Cairo,Arial,sans-serif;padding:20px;color:#1e293b}h2{color:#1e3a5f;margin:0 0 6px}
+  .meta{font-size:12px;color:#64748b;margin-bottom:16px}
+  .kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .kpi{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:9px 14px;min-width:100px;text-align:center}
+  .kpi-l{font-size:10px;font-weight:700;color:#64748b;margin-bottom:4px}.kpi-v{font-size:15px;font-weight:800}
+  table{width:100%;border-collapse:collapse;font-size:11px}
+  th{background:#1e3a5f;color:#fff;padding:7px 8px;text-align:right;white-space:nowrap}
+  td{padding:6px 8px;border-bottom:1px solid #e2e8f0}tr:nth-child(even) td{background:#f8fafc}
+  @media print{body{padding:8px}}</style></head><body>
+  <h2>تحليل احتياج المخزون</h2>
+  <div class="meta">${a.ordersCount} طلب محدد • ${a.totalSkus} صنف • تم التوليد ${new Date(a.generatedAt).toLocaleString('ar-EG')}</div>
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-l">إجمالي المطلوب</div><div class="kpi-v">${a.totalRequiredQty}</div></div>
+    <div class="kpi"><div class="kpi-l">إجمالي النقص</div><div class="kpi-v" style="color:#dc2626">${a.totalShortageQty}</div></div>
+    <div class="kpi"><div class="kpi-l">أصناف بها نقص</div><div class="kpi-v" style="color:#dc2626">${a.shortageSkus}</div></div>
+    <div class="kpi"><div class="kpi-l">الشراء المقترح</div><div class="kpi-v" style="color:#b45309">${a.totalSuggestedPurchaseQty}</div></div>
+  </div>
+  <table><thead><tr><th>الصنف</th><th>SKU</th><th>المطلوب</th><th>المتاح</th><th>محتجز</th><th>النقص</th><th>مخزون أمان</th><th>شراء مقترح</th><th>الحالة</th><th>الطلبات المتأثرة</th></tr></thead>
+  <tbody>${body}</tbody></table>
+  <script>setTimeout(()=>window.print(),400)<\/script></body></html>`);
+  w.document.close();
+}
+
+/* ── Option 1: add to an existing purchase order ──────────────────────── */
+
+async function openDpAddToPo() {
+  const lines = _dpPurchasableLines();
+  if (!lines.length) { toast('لا يوجد نقص يحتاج شراء', true); return; }
+  if (!hasPerm('suppliers')) { toast('ليس لديك صلاحية الموردين', true); return; }
+
+  try {
+    _dpOpenPos = await api('/demand-planning/open-purchase-orders');
+  } catch (e) {
+    toast('تعذّر تحميل أوامر الشراء: ' + e.message, true);
+    return;
+  }
+
+  if (!_dpOpenPos.length) {
+    const ok = await showConfirm(
+      'لا يوجد أمر شراء نشط يمكن الإضافة إليه. هل تريد إنشاء أمر شراء جديد؟',
+      { title: 'لا توجد أوامر شراء نشطة', icon: 'info', confirmLabel: 'إنشاء أمر جديد' });
+    if (ok) openDpCreatePo();
+    return;
+  }
+
+  _dpSelectedPoId = '';
+  // Overlap counts help the user pick the PO that already carries these SKUs
+  const skuSet = new Set(lines.map(l => String(l.sku).trim().toLowerCase()));
+  const list = _dpOpenPos.map(po => {
+    const overlap = (po.items || []).filter(i => skuSet.has(String(i.productCode || '').trim().toLowerCase())).length;
+    return `<button type="button" class="dp-po" data-po-id="${esc(po._id)}" onclick="_dpSelectPo('${esc(po._id)}')">
+      <div class="dp-po-top">
+        <span class="dp-po-num">${esc(po.poNumber)}</span>
+        <span class="badge">${esc(po.status)}</span>
+      </div>
+      <div class="dp-po-meta">
+        المورد: <strong>${esc(po.supplierName)}</strong><br>
+        ${fmtN(po.itemsCount)} صنف • ${fmtN(po.totalQty)} قطعة • أُنشئ ${esc(po.createdDate || '—')}
+        ${po.expectedDeliveryDate ? ` • التسليم المتوقع ${esc(po.expectedDeliveryDate)}` : ''}
+      </div>
+      ${overlap ? `<div class="dp-po-overlap">✓ يحتوي بالفعل على ${fmtN(overlap)} من الأصناف الناقصة — سيتم زيادة الكميات</div>` : ''}
+    </button>`;
+  }).join('');
+
+  openModal(`
+    <h3 style="margin:0 0 4px;font-size:1rem;font-weight:800;color:var(--primary)">إضافة إلى أمر شراء قائم</h3>
+    <p style="margin:0 0 14px;font-size:.78rem;color:var(--muted);line-height:1.6">
+      اختر أمر الشراء الذي سيستقبل الكميات الناقصة (${fmtN(lines.length)} صنف • ${fmtN(lines.reduce((s, l) => s + l.suggestedPurchase, 0))} قطعة).
+    </p>
+    <div class="dp-po-list">${list}</div>
+    <div id="dp-po-preview-wrap" style="display:none;margin-top:14px">
+      <div style="font-size:.74rem;font-weight:800;color:var(--muted);margin-bottom:7px">معاينة التغييرات</div>
+      <div class="dp-preview" id="dp-po-preview"></div>
+    </div>
+    <div class="bd-actions">
+      <button class="btn btn-primary btn-sm" id="dp-po-confirm" disabled style="opacity:.5" onclick="_dpConfirmAddToPo()">تأكيد الإضافة</button>
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">إلغاء</button>
+    </div>
+  `, 'max-width:600px;width:calc(100% - 28px);padding:22px');
+}
+
+function _dpSelectPo(poId) {
+  _dpSelectedPoId = poId;
+  qsa('#modal-content .dp-po').forEach(el =>
+    el.classList.toggle('sel', el.dataset.poId === poId));
+
+  const po = _dpOpenPos.find(p => p._id === poId);
+  const lines = _dpPurchasableLines();
+  const wrap = qs('#dp-po-preview-wrap'), prev = qs('#dp-po-preview');
+  if (po && prev) {
+    prev.innerHTML = lines.map(l => {
+      const existing = (po.items || []).find(i =>
+        String(i.productCode || '').trim().toLowerCase() === String(l.sku).trim().toLowerCase());
+      const before = existing ? Number(existing.qty) || 0 : 0;
+      return `<div class="dp-pv-line">
+        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}${!existing ? ' <span class="dp-pv-new">جديد</span>' : ''}</span>
+        <span class="dp-pv-calc">${fmtN(before)} + ${fmtN(l.suggestedPurchase)} = <strong style="color:#059669">${fmtN(before + l.suggestedPurchase)}</strong></span>
+      </div>`;
+    }).join('');
+    if (wrap) wrap.style.display = 'block';
+  }
+  const btn = qs('#dp-po-confirm');
+  if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+}
+
+async function _dpConfirmAddToPo() {
+  const po = _dpOpenPos.find(p => p._id === _dpSelectedPoId);
+  if (!po) { toast('اختر أمر شراء أولاً', true); return; }
+  const lines = _dpPurchasableLines();
+  if (!lines.length) { toast('لا يوجد نقص يحتاج شراء', true); return; }
+
+  const totalQty = lines.reduce((s, l) => s + l.suggestedPurchase, 0);
+  const ok = await showConfirm(
+    `سيتم تعديل أمر الشراء ${po.poNumber} بإضافة ${fmtN(totalQty)} قطعة موزعة على ${fmtN(lines.length)} صنف. هل تريد المتابعة؟`,
+    {
+      title: 'تأكيد تعديل أمر الشراء',
+      icon: 'warn',
+      confirmLabel: 'تأكيد الإضافة',
+      rows: [
+        ['أمر الشراء', po.poNumber],
+        ['المورد', po.supplierName],
+        ['عدد الأصناف', fmtN(lines.length)],
+        ['إجمالي الكميات المضافة', fmtN(totalQty) + ' قطعة'],
+      ],
+    });
+  if (!ok) return;
+
+  const btn = qs('#dp-po-confirm');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; btn.textContent = 'جارٍ الحفظ…'; }
+  try {
+    const res = await api('/demand-planning/add-to-purchase-order', {
+      method: 'POST',
+      body: JSON.stringify({
+        poId: po._id,
+        lines: lines.map(l => ({ sku: l.sku, name: l.name, qty: l.suggestedPurchase, unitPrice: l.lastPurchasePrice })),
+        by: currentUser?.name || currentUser?.username || '',
+        byUsername: currentUser?.username || '',
+        // Provenance for the audit log. Only real transaction ids belong in
+        // this field; Shopify-sourced runs record their refs in `note` instead.
+        transactionIds: _dpSource === 'transactions' ? _dpSourceIds : [],
+        note: _dpSource === 'shopify'
+          ? `من تحليل ${_dpAnalysis?.ordersCount || 0} أوردر شوبيفاي معلق`
+          : '',
+      }),
+    });
+    try { purchaseOrders = await api('/purchase-orders'); } catch (_) {}
+    closeModal();
+    closeDemandPlanning();
+    const added = (res.changes || []).reduce((s, c) => s + c.addedQty, 0);
+    toast(`تم إضافة ${fmtN(added)} قطعة إلى أمر الشراء ${po.poNumber} ✅`);
+  } catch (e) {
+    toast('خطأ: ' + e.message, true);
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.textContent = 'تأكيد الإضافة'; }
+  }
+}
+
+/* ── Option 2: create a new purchase order ────────────────────────────── */
+
+async function openDpCreatePo() {
+  const lines = _dpPurchasableLines();
+  if (!lines.length) { toast('لا يوجد نقص يحتاج شراء', true); return; }
+  if (!hasPerm('suppliers')) { toast('ليس لديك صلاحية الموردين', true); return; }
+
+  if (!suppliers.length) {
+    try { suppliers = await api('/suppliers'); } catch (_) {}
+  }
+  if (!suppliers.length) {
+    toast('لا يوجد موردون مسجلون — أضف مورداً أولاً من قسم الموردين', true);
+    return;
+  }
+
+  // Pre-select the supplier most of the shortage items normally come from
+  const tally = {};
+  lines.forEach(l => { if (l.supplier) tally[l.supplier] = (tally[l.supplier] || 0) + 1; });
+  const topName = Object.keys(tally).sort((a, b) => tally[b] - tally[a])[0] || '';
+  const preferred = suppliers.find(s => s.name === topName);
+
+  const totalQty = lines.reduce((s, l) => s + l.suggestedPurchase, 0);
+  const estCost = lines.reduce((s, l) => s + l.suggestedPurchase * (l.lastPurchasePrice || 0), 0);
+
+  openModal(`
+    <h3 style="margin:0 0 4px;font-size:1rem;font-weight:800;color:var(--primary)">أمر شراء جديد من التحليل</h3>
+    <p style="margin:0 0 14px;font-size:.78rem;color:var(--muted);line-height:1.6">
+      سيتم إنشاء أمر شراء يحتوي على ${fmtN(lines.length)} صنف بإجمالي ${fmtN(totalQty)} قطعة${isAdmin() ? ` — تكلفة تقديرية ${fmtJ(estCost)}` : ''}.
+    </p>
+    <div class="form-group">
+      <label>المورد <span style="color:var(--red)">*</span></label>
+      <select id="dp-new-po-supplier">
+        <option value="">اختر المورد</option>
+        ${suppliers.map(s => `<option value="${esc(s._id)}" ${preferred && preferred._id === s._id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}
+      </select>
+      ${preferred ? `<div style="font-size:.7rem;color:var(--muted);margin-top:5px">تم الاقتراح تلقائياً بناءً على المورد المعتاد لمعظم الأصناف الناقصة</div>` : ''}
+    </div>
+    <div class="form-group">
+      <label>تاريخ التسليم المتوقع</label>
+      <input type="date" id="dp-new-po-date">
+    </div>
+    <div class="form-group">
+      <label>ملاحظات</label>
+      <textarea id="dp-new-po-notes" rows="2" placeholder="ملاحظات على أمر الشراء…">أمر شراء مُولَّد من تحليل احتياج المخزون لـ ${fmtN(_dpAnalysis?.ordersCount || 0)} طلب</textarea>
+    </div>
+    <div style="font-size:.74rem;font-weight:800;color:var(--muted);margin-bottom:7px">الأصناف</div>
+    <div class="dp-preview">
+      ${lines.map(l => `<div class="dp-pv-line">
+        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)} <span class="dp-prod-sku">${esc(l.sku)}</span></span>
+        <span class="dp-pv-calc">${fmtN(l.suggestedPurchase)} قطعة${isAdmin() && l.lastPurchasePrice ? ` × ${fmtJ(l.lastPurchasePrice)}` : ''}</span>
+      </div>`).join('')}
+    </div>
+    <div class="bd-actions">
+      <button class="btn btn-primary btn-sm" id="dp-new-po-confirm" onclick="_dpConfirmCreatePo()">إنشاء أمر الشراء</button>
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">إلغاء</button>
+    </div>
+  `, 'max-width:600px;width:calc(100% - 28px);padding:22px');
+}
+
+async function _dpConfirmCreatePo() {
+  const supplierId = qs('#dp-new-po-supplier')?.value || '';
+  if (!supplierId) { toast('اختر المورد أولاً', true); return; }
+  const supplier = suppliers.find(s => s._id === supplierId);
+  if (!supplier) { toast('المورد غير موجود — أعد اختياره', true); return; }
+
+  const lines = _dpPurchasableLines();
+  if (!lines.length) { toast('لا يوجد نقص يحتاج شراء', true); return; }
+  const totalQty = lines.reduce((s, l) => s + l.suggestedPurchase, 0);
+
+  const ok = await showConfirm(
+    `سيتم إنشاء أمر شراء جديد لدى ${supplier.name}. هل تريد المتابعة؟`,
+    {
+      title: 'تأكيد إنشاء أمر الشراء',
+      icon: 'warn',
+      confirmLabel: 'إنشاء',
+      rows: [
+        ['المورد', supplier.name],
+        ['عدد الأصناف', fmtN(lines.length)],
+        ['إجمالي الكميات', fmtN(totalQty) + ' قطعة'],
+      ],
+    });
+  if (!ok) return;
+
+  const btn = qs('#dp-new-po-confirm');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; btn.textContent = 'جارٍ الإنشاء…'; }
+  try {
+    const res = await api('/demand-planning/create-purchase-order', {
+      method: 'POST',
+      body: JSON.stringify({
+        supplierId,
+        supplierName: supplier.name,
+        expectedDeliveryDate: qs('#dp-new-po-date')?.value || '',
+        notes: qs('#dp-new-po-notes')?.value || '',
+        lines: lines.map(l => ({ sku: l.sku, name: l.name, qty: l.suggestedPurchase, unitPrice: l.lastPurchasePrice })),
+        by: currentUser?.name || currentUser?.username || '',
+        byUsername: currentUser?.username || '',
+        // Provenance for the audit log. Only real transaction ids belong in
+        // this field; Shopify-sourced runs record their refs in `note` instead.
+        transactionIds: _dpSource === 'transactions' ? _dpSourceIds : [],
+        note: _dpSource === 'shopify'
+          ? `من تحليل ${_dpAnalysis?.ordersCount || 0} أوردر شوبيفاي معلق`
+          : '',
+      }),
+    });
+    try { purchaseOrders = await api('/purchase-orders'); } catch (_) {}
+    closeModal();
+    closeDemandPlanning();
+    toast(`تم إنشاء أمر الشراء ${res.po?.poNumber || ''} بنجاح ✅`);
+  } catch (e) {
+    toast('خطأ: ' + e.message, true);
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.textContent = 'إنشاء أمر الشراء'; }
+  }
+}
+
 async function executeBulkDiscount() {
   const amtInp = qs('#bulk-discount-amount');
   const discountAmt = Number(amtInp?.value ?? 0) || 0;
@@ -30012,13 +30955,13 @@ async function executeBulkDiscount() {
   let done = 0, errors = 0;
   for (const id of ids) {
     try {
-      await api('/transactions/' + id, {
+      const updated = await api('/transactions/' + id, {
         method: 'PUT',
         body: JSON.stringify({ discount: discountAmt }),
       });
-      // Update local cache immediately
-      const tx = transactions.find(t => t._id === id);
-      if (tx) tx.discount = discountAmt;
+      // Replace local cache with the server's copy (carries the correctly-built editHistory entry)
+      const idx = transactions.findIndex(t => t._id === id);
+      if (idx !== -1 && updated) transactions[idx] = updated;
       done++;
     } catch (_) { errors++; }
   }
@@ -30026,11 +30969,6 @@ async function executeBulkDiscount() {
     ? `تم إزالة الخصم من ${done} معاملة${errors ? ' — فشل ' + errors : ''}`
     : `تم تطبيق الخصم على ${done} معاملة${errors ? ' — فشل ' + errors : ''}`;
   toast(msg);
-  // Log audit trail entry locally in editHistory for affected transactions
-  transactions.filter(t => ids.includes(t._id)).forEach(tx => {
-    if (!tx.editHistory) tx.editHistory = [];
-    tx.editHistory.push({ field: 'discount', value: discountAmt, by: currentUser?.name || currentUser?.username || '', at: new Date().toISOString() });
-  });
   selectedMovIds.clear();
   renderMovements();
   updateMovementSelectionActions();
@@ -32231,9 +33169,13 @@ function buildInvCommentsSection(tx) {
 }
 function buildInvEditHistorySection(tx) {
   if (!tx.editHistory || !tx.editHistory.length) return '';
-  const history = tx.editHistory;
+  // Entries missing a `before` snapshot (e.g. legacy audit-only log lines) can't be
+  // diffed meaningfully — skip them here instead of comparing against {} and showing
+  // every field as "changed".
+  const history = tx.editHistory.filter(e => e && e.before);
+  if (!history.length) return '';
   const entries = history.map((entry, i) => {
-    const b = entry.before || {};
+    const b = entry.before;
     const after = (i < history.length - 1) ? (history[i + 1].before || {}) : tx;
     const details = [];
     const fieldDefs = [
@@ -39345,7 +40287,20 @@ function renderVaultPage() {
   // If lock is disabled in settings, treat as unlocked automatically
   if (isLockDisabled('vault')) vaultUnlocked = true;
   if (!vaultUnlocked) { qs('#vault-locked').style.display = 'block'; qs('#vault-content').style.display = 'none'; }
-  else { qs('#vault-locked').style.display = 'none'; qs('#vault-content').style.display = 'block'; const sc = qs('#vault-settle-card'); if (sc) sc.style.display = isAdmin() ? '' : 'none'; if (isAdmin()) _stopVaultCountdown(); renderVaultSegs(); loadVaultLog(); loadVaultAnalytics(); const lsEl = qs('#vault-last-sync'); if (lsEl && !lsEl.textContent) lsEl.textContent = 'جارٍ التحميل...'; }
+  else {
+    qs('#vault-locked').style.display = 'none'; qs('#vault-content').style.display = 'block';
+    const admin = isAdmin();
+    const sc = qs('#vault-settle-card'); if (sc) sc.style.display = admin ? '' : 'none';
+    const segs = qs('#vault-segs'); if (segs) segs.style.display = admin ? '' : 'none';
+    const tabsWrap = qs('.vault-tabs'); if (tabsWrap) tabsWrap.style.display = admin ? '' : 'none';
+    const filterCard = qs('.vault-filter-card'); if (filterCard) filterCard.style.display = admin ? '' : 'none';
+    const analyticsTab = qs('#vault-tab-analytics'); if (analyticsTab) analyticsTab.style.display = 'none';
+    const overviewTab = qs('#vault-tab-overview'); if (overviewTab) overviewTab.style.display = 'block';
+    if (!admin) qsa('.vault-tab-btn').forEach(el => el.classList.remove('active'));
+    if (admin) _stopVaultCountdown();
+    renderVaultSegs(); loadVaultLog(); if (admin) loadVaultAnalytics();
+    const lsEl = qs('#vault-last-sync'); if (lsEl && !lsEl.textContent) lsEl.textContent = 'جارٍ التحميل...';
+  }
 }
 
 /** Refreshes settings (vault balances) from server and, if vault page is open/unlocked, re-renders it in real time */
@@ -40976,7 +41931,7 @@ function switchVaultTab(tabName, btn) {
 function renderVaultSegs() {
   // After DOM update, detect any total change vs. last render → pulse
   setTimeout(() => detectVaultPulse(), 0);
-  const segs = [{ label: 'كاش', val: settings.vaultCash || 0, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>' }, { label: 'فودافون كاش', val: settings.vaultVodafone || 0, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>' }, { label: 'Instapay', val: settings.vaultInstapay || 0, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/><path d="M9.5 10l2.5 2.5 2.5-2.5"/></svg>' }, { label: 'تحويل بنكي', val: settings.vaultBank || 0, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M3 10h18M3 6l9-4 9 4"/><path d="M6 10v12M10 10v12M14 10v12M18 10v12"/></svg>' }];
+  const segs = [{ label: 'كاش', val: settings.vaultCash || 0, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>' }, { label: 'فودافون كاش', val: settings.vaultVodafone || 0, icon: '<img src="/vodafone.svg" style="display:inline-block;vertical-align:middle;width:1.3em;height:1em;object-fit:contain" alt="Vodafone Cash">' }, { label: 'Instapay', val: settings.vaultInstapay || 0, icon: '<img src="/instapay.svg" style="display:inline-block;vertical-align:middle;width:1em;height:1em;object-fit:contain" alt="Instapay">' }, { label: 'تحويل بنكي', val: settings.vaultBank || 0, icon: '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M3 10h18M3 6l9-4 9 4"/><path d="M6 10v12M10 10v12M14 10v12M18 10v12"/></svg>' }];
   const totalBalance = segs.reduce((s, seg) => s + seg.val, 0);
   qs('#vault-segs').innerHTML = segs.map(s => `<div class="seg-card"><div>${s.icon}</div><div class="seg-val">${fmtJ(s.val)}</div><div class="seg-label">${esc(s.label)}</div></div>`).join('') + `<div class="seg-card" style="background:var(--primary-pale);border-color:var(--accent)"><div><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg></div><div class="seg-val" style="color:var(--accent)">${fmtJ(totalBalance)}</div><div class="seg-label" style="font-weight:700">إجمالي الرصيد</div></div>`;
 }
@@ -51513,6 +52468,7 @@ let _shopifyOrders = [];
 let _shopifyTab = 'pending';
 let _shopifyStatusFilter = '';
 let _shopifyDateFilter = { from: null, to: null };
+let _shopifySelectedIds = new Set();
 function _spStartOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
 function _spUpdateTriggerLabel(){}
 
@@ -51526,10 +52482,25 @@ function _setShopifyDateQuickRange(range, btn) {
     if (toEl) toEl.value = '';
   } else {
     const now = new Date();
-    const day = range === 'yesterday' ? new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1) : new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    _shopifyDateFilter = { from: day, to: day };
-    if (fromEl) fromEl.value = _spDateToInputVal(day);
-    if (toEl) toEl.value = _spDateToInputVal(day);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let from, to;
+    if (range === 'yesterday') {
+      from = to = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    } else if (range === 'last7days') {
+      from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+      to = today;
+    } else if (range === 'lastmonth') {
+      from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29);
+      to = today;
+    } else if (range === 'last3months') {
+      from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 89);
+      to = today;
+    } else {
+      from = to = today;
+    }
+    _shopifyDateFilter = { from, to };
+    if (fromEl) fromEl.value = _spDateToInputVal(from);
+    if (toEl) toEl.value = _spDateToInputVal(to);
     if (btn) btn.classList.add('active');
   }
   _updateShopifyDateClearBtn();
@@ -51568,7 +52539,28 @@ function _clearShopifyDateRange() {
 
 function _updateShopifyDateClearBtn() {
   const btn = qs('#shopify-date-clear-btn');
-  if (btn) btn.style.display = (_shopifyDateFilter.from || _shopifyDateFilter.to) ? '' : 'none';
+  const hasRange = !!(_shopifyDateFilter.from || _shopifyDateFilter.to);
+  if (btn) btn.style.display = hasRange ? '' : 'none';
+  const iconBtn = qs('#shopify-filter-icon-btn');
+  if (iconBtn) iconBtn.classList.toggle('active', hasRange);
+}
+
+function _toggleShopifyDatePopover(evt) {
+  evt?.stopPropagation();
+  const pop = qs('#shopify-date-filter-bar');
+  if (!pop) return;
+  const willOpen = !pop.classList.contains('open');
+  pop.classList.toggle('open', willOpen);
+  if (willOpen) document.addEventListener('click', _shopifyDatePopoverOutsideClick);
+}
+
+function _shopifyDatePopoverOutsideClick(e) {
+  const pop = qs('#shopify-date-filter-bar');
+  const btn = qs('#shopify-filter-icon-btn');
+  if (pop && !pop.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+    pop.classList.remove('open');
+    document.removeEventListener('click', _shopifyDatePopoverOutsideClick);
+  }
 }
 
 async function recalcShopifyOrders() {
@@ -51583,6 +52575,13 @@ async function recalcShopifyOrders() {
 }
 
 async function loadShopifyOrders() {
+  const wrap = qs('#shopify-orders-table-body');
+  if (wrap && !_shopifyOrders.length) {
+    wrap.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
+      <div class="spinner" style="margin:0 auto 12px"></div>
+      <div>جارٍ تحميل الأوردرات…</div>
+    </div>`;
+  }
   try {
     _shopifyOrders = await api('/shopify/orders');
     // Set baseline on first ever load so new orders after that trigger the badge
@@ -51610,32 +52609,9 @@ function switchShopifyTab(tab) {
 
 function switchShopifyStatusFilter(val, btn) {
   _shopifyStatusFilter = (val === '' || _shopifyStatusFilter === val) ? '' : val;
-  /* reset all buttons to their default colored state */
-  document.querySelectorAll('.sp-status-filter-btn').forEach(b => {
-    const c = b.dataset.color;
-    if (c) {
-      b.style.border = `1.5px solid ${c}40`;
-      b.style.color = c;
-      b.style.background = `${c}10`;
-      b.style.fontWeight = '500';
-    } else {
-      b.style.border = '1.5px solid var(--border)';
-      b.style.color = 'var(--text-muted)';
-      b.style.background = 'var(--bg-alt)';
-      b.style.fontWeight = '400';
-    }
-    b.style.boxShadow = 'none';
-  });
-  /* apply selected style */
-  if (btn) {
-    const isAll = btn.dataset.filter === '';
-    const c = btn.dataset.color || 'var(--accent)';
-    btn.style.border = `2px solid ${isAll ? 'var(--accent)' : c}`;
-    btn.style.color = isAll ? 'var(--accent)' : c;
-    btn.style.background = `color-mix(in srgb, ${isAll ? 'var(--accent)' : c} 15%, transparent)`;
-    btn.style.fontWeight = '700';
-    btn.style.boxShadow = `0 0 0 3px color-mix(in srgb, ${isAll ? 'var(--accent)' : c} 15%, transparent)`;
-  }
+  document.querySelectorAll('.sp-status-filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn && (_shopifyStatusFilter !== '' || btn.dataset.filter === '')) btn.classList.add('active');
+  if (_shopifyStatusFilter === '') document.querySelector('.sp-status-filter-btn[data-filter=""]')?.classList.add('active');
   shopifyPage = 1;
   renderShopifyOrders();
 }
@@ -51720,7 +52696,7 @@ async function importOldShopifyOrder(shopifyId, btn) {
 }
 
 function renderShopifyOrders() {
-  const wrap = qs('#shopify-orders-table-wrap');
+  const wrap = qs('#shopify-orders-table-body');
   const mobileList = qs('#sp-mobile-list');
   if (!wrap) return;
 
@@ -51753,30 +52729,20 @@ function renderShopifyOrders() {
   const kCancelled = qs('#shopify-kpi-cancelled'); if (kCancelled) kCancelled.textContent = kpiCancelledCount;
   const kTotal = qs('#shopify-kpi-total'); if (kTotal) kTotal.innerHTML = fmtJ(kpiTotal);
 
+  /* Need Follow Up KPI: pending orders needing contact or in follow-up, regardless of date filter */
+  const followupPendingOrders = pending.filter(o => {
+    const smart = _shopifySmartStatus(o);
+    if (!smart && !o.pendingStatus) return true; // needs contact
+    return smart?.value === 'followup';
+  });
+  const followupTotal = followupPendingOrders.reduce((s, o) => s + (o.total || 0), 0);
+  const kFollowup = qs('#shopify-kpi-followup'); if (kFollowup) kFollowup.textContent = followupPendingOrders.length;
+  const kFollowupTotal = qs('#shopify-kpi-followup-total'); if (kFollowupTotal) kFollowupTotal.innerHTML = fmtJ(followupTotal);
+
   /* update need-contact count */
   const _needContactCount = pending.filter(o => !_shopifySmartStatus(o) && !o.pendingStatus).length;
   const _ncEl = qs('#shopify-need-contact-count');
   if (_ncEl) _ncEl.textContent = _needContactCount;
-  const _ncBtn = document.querySelector('.sp-need-contact-btn');
-  if (_ncBtn) {
-    if (_needContactCount === 0) {
-      _ncBtn.style.border = '1.5px solid var(--border)';
-      _ncBtn.style.color = 'var(--text-muted)';
-      _ncBtn.style.background = 'var(--bg-alt)';
-      _ncBtn.style.boxShadow = 'none';
-      _ncBtn.style.animation = 'none';
-      _ncBtn.style.fontWeight = '400';
-      _ncEl.style.background = 'var(--text-muted)';
-    } else {
-      _ncBtn.style.border = '1.5px solid #ef4444';
-      _ncBtn.style.color = '#ef4444';
-      _ncBtn.style.background = 'linear-gradient(135deg,#ef444418 0%,#dc262618 100%)';
-      _ncBtn.style.boxShadow = '0 0 8px #ef444440,0 0 16px #ef444420';
-      _ncBtn.style.animation = 'needContactPulse 2s ease-in-out infinite';
-      _ncBtn.style.fontWeight = '600';
-      _ncEl.style.background = '#ef4444';
-    }
-  }
 
   const searchQ = (qs('#shopify-search')?.value || '').trim().toLowerCase();
   let data = _shopifyTab === 'pending' ? pending : _shopifyOrders;
@@ -51870,23 +52836,19 @@ function renderShopifyOrders() {
       }, 0);
       cards.push(`
       <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:7px 12px;cursor:pointer;white-space:nowrap" onclick="switchShopifyStatusFilter('confirmed', document.querySelector('[data-filter=confirmed]'))">
-        <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#10b98115;flex-shrink:0">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        </span>
+        <span class="sp-filter-dot" style="background:#10b981"></span>
         <span style="font-size:.72rem;color:var(--text-muted);font-weight:500">جاهز للتسجيل</span>
-        <span style="font-size:.82rem;font-weight:700;color:#10b981">${confirmedOrders.length} أوردر</span>
-        <span style="font-size:.68rem;color:var(--text-muted)">EGP <b style="color:var(--text)">${fmtJ(total)}</b>${depositTotal > 0 ? ` · ديبوزت <b style="color:#10b981">${fmtJ(depositTotal)}</b>` : ''}</span>
+        <span style="font-size:.82rem;font-weight:700;color:var(--text)">${confirmedOrders.length} أوردر</span>
+        <span style="font-size:.68rem;color:var(--text-muted)">EGP <b style="color:var(--text)">${fmtJ(total)}</b>${depositTotal > 0 ? ` · ديبوزت <b style="color:var(--text)">${fmtJ(depositTotal)}</b>` : ''}</span>
       </div>`);
     }
     if (followupOrders.length) {
       const total = followupOrders.reduce((s, o) => s + (o.total || 0), 0);
       cards.push(`
       <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:7px 12px;cursor:pointer;white-space:nowrap" onclick="switchShopifyStatusFilter('followup', document.querySelector('[data-filter=followup]'))">
-        <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#f59e0b15;flex-shrink:0">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        </span>
+        <span class="sp-filter-dot" style="background:#f59e0b"></span>
         <span style="font-size:.72rem;color:var(--text-muted);font-weight:500">يحتاج متابعة</span>
-        <span style="font-size:.82rem;font-weight:700;color:#f59e0b">${followupOrders.length} أوردر</span>
+        <span style="font-size:.82rem;font-weight:700;color:var(--text)">${followupOrders.length} أوردر</span>
         <span style="font-size:.68rem;color:var(--text-muted)">EGP <b style="color:var(--text)">${fmtJ(total)}</b></span>
       </div>`);
     }
@@ -51894,9 +52856,31 @@ function renderShopifyOrders() {
     return `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${cards.join('')}</div>`;
   })();
 
+  /* keep selection limited to orders still visible on this page */
+  const _spVisibleSelectableIds = new Set(data.filter(o => o.status === 'pending' && !o.cancelled).map(o => o._id));
+  for (const id of [..._shopifySelectedIds]) if (!_spVisibleSelectableIds.has(id)) _shopifySelectedIds.delete(id);
+
+  const bulkBarSlot = qs('#sp-bulk-bar-slot');
+  if (bulkBarSlot) {
+    bulkBarSlot.innerHTML = _shopifySelectedIds.size ? `
+      <div id="sp-bulk-bar" style="display:flex;align-items:center;gap:8px;background:var(--bg-alt);border:1px solid var(--border);border-radius:9px;padding:7px 10px;white-space:nowrap">
+        <span style="font-size:.78rem;font-weight:700;color:var(--text)">${_shopifySelectedIds.size} محدد</span>
+        <button class="btn btn-sm" style="background:var(--accent);color:#fff;font-size:.74rem;display:inline-flex;align-items:center;gap:5px;padding:6px 10px" onclick="bulkSendShopifyOrders()">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          إرسال إلى سجل المعاملات
+        </button>
+        ${hasPerm('inventory') ? `<button class="btn btn-sm" style="background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-size:.74rem;display:inline-flex;align-items:center;gap:5px;padding:6px 10px" onclick="openShopifyDemandPlanning()" title="احسب الكميات المطلوبة لهذه الأوردرات وقارنها بالمخزون قبل إرسالها">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>
+          تحليل احتياج المخزون
+        </button>` : ''}
+        <button class="btn btn-sm" style="background:transparent;border:none;color:var(--text-muted);font-size:.74rem;padding:6px 4px" onclick="_clearShopifySelection()">✕</button>
+      </div>` : '';
+  }
+
   wrap.innerHTML = `${prioritySummaryHtml ? `<div style="padding:12px 14px 0">${prioritySummaryHtml}</div>` : ''}<div class="sp-table-scroll">
     <table class="data-table">
       <thead><tr>
+        <th style="width:36px;text-align:center"><input type="checkbox" id="sp-select-all" onclick="_toggleSelectAllShopify(this)" ${_spVisibleSelectableIds.size && [..._spVisibleSelectableIds].every(id => _shopifySelectedIds.has(id)) ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)"></th>
         <th style="white-space:nowrap;width:90px">رقم الأوردر</th>
         <th style="white-space:nowrap;width:110px">الوقت</th>
         <th style="width:130px">العميل</th>
@@ -52018,8 +53002,10 @@ function renderShopifyOrders() {
               </a>`
             : `<span style="color:var(--text-muted)">—</span>`;
 
+          const _spSelectable = o.status === 'pending' && !o.cancelled;
           return `
           <tr style="${_newRowStyle}">
+            <td style="text-align:center;padding:8px 6px">${_spSelectable ? `<input type="checkbox" class="sp-row-check" data-id="${o._id}" onclick="_toggleSelectShopifyRow('${o._id}',this,event)" ${_shopifySelectedIds.has(o._id) ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">` : ''}</td>
             <td style="white-space:nowrap"><b>${o.ref ? fmtRef(String(o.ref).replace(/^#+/, '')) : '-'}</b>${_oNewBadge}</td>
             <td style="white-space:nowrap;font-size:.78rem;color:var(--text-muted)">${o.shopifyCreatedAt ? _fmtShopifyDate(o.shopifyCreatedAt, o.shopifyCreatedAt) : '<span style="color:var(--text-muted)">—</span>'}</td>
             <td style="font-size:.85rem">${o.client || '<span style="color:var(--text-muted)">—</span>'}</td>
@@ -52229,6 +53215,191 @@ function renderShopifyOrders() {
   }
 
   renderPagination('shopify-pagination', shopifyTotal, shopifyPage, shopifyPerPage, 'setShopifyPage', [15,30,50,100], 'setShopifyPerPage');
+}
+
+let _spLastCheckedId = null;
+
+function _toggleSelectShopifyRow(id, cb, evt) {
+  const checks = [...document.querySelectorAll('.sp-row-check')];
+
+  if (evt?.shiftKey && _spLastCheckedId) {
+    const lastIdx = checks.findIndex(el => el.dataset.id === _spLastCheckedId);
+    const curIdx = checks.findIndex(el => el.dataset.id === id);
+    if (lastIdx !== -1 && curIdx !== -1) {
+      const [from, to] = lastIdx < curIdx ? [lastIdx, curIdx] : [curIdx, lastIdx];
+      for (let i = from; i <= to; i++) {
+        const rowId = checks[i].dataset.id;
+        if (cb.checked) _shopifySelectedIds.add(rowId); else _shopifySelectedIds.delete(rowId);
+      }
+      _spLastCheckedId = id;
+      renderShopifyOrders();
+      return;
+    }
+  }
+
+  if (cb.checked) _shopifySelectedIds.add(id); else _shopifySelectedIds.delete(id);
+  _spLastCheckedId = id;
+  renderShopifyOrders();
+}
+
+function _toggleSelectAllShopify(cb) {
+  document.querySelectorAll('.sp-row-check').forEach(el => {
+    if (cb.checked) _shopifySelectedIds.add(el.dataset.id); else _shopifySelectedIds.delete(el.dataset.id);
+  });
+  renderShopifyOrders();
+}
+
+function _clearShopifySelection() {
+  _shopifySelectedIds.clear();
+  _spLastCheckedId = null;
+  renderShopifyOrders();
+}
+
+function _spDetectDepositAndMethod(order) {
+  const notes = order.notes || '';
+  const cleanTags = (order.tags || '').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{1F300}-\u{1F9FF}✅❌💲📥💸🎉]/gu, '').toLowerCase();
+  const searchIn = (notes + ' ' + (order.tags || '')).toLowerCase();
+  const fullPaidKeywords = ['تم دفع الاوردر بالكامل', 'paid in full', 'fully paid', 'دفع كامل', 'تم الدفع بالكامل'];
+  const isFullPaid = fullPaidKeywords.some(k => cleanTags.includes(k) || notes.toLowerCase().includes(k));
+  let autoMethod = 'كاش';
+  if (/voda|فودا|فون/.test(searchIn))               autoMethod = 'فودافون كاش';
+  else if (/insta|انستا|إنستا/.test(searchIn))       autoMethod = 'Instapay';
+  else if (/bank|بنك|تحويل|transfer/.test(searchIn)) autoMethod = 'تحويل بنكي';
+  else if (/cash|كاش/.test(searchIn))                autoMethod = 'كاش';
+  const np = parseNoteAsPayment(notes);
+  if (np) return { deposit: np.amount, payment: autoMethod };
+  if (isFullPaid) return { deposit: order.total, payment: autoMethod };
+  return { deposit: 0, payment: 'كاش' };
+}
+
+/* Pre-validates every selected order (duplicate ref, missing product link, and stock —
+   including stock shared/competed for across the selected batch itself, not just each
+   order in isolation) and returns { sendable:[{order,deposit,payment}], blocked:[{order,reason}] }. */
+function _spValidateBulkSelection(ids) {
+  const sendable = [];
+  const blocked = [];
+  const stockLedger = new Map(); // productId/code -> remaining qty across this batch
+
+  for (const id of ids) {
+    const order = _shopifyOrders.find(o => o._id === id);
+    if (!order) { blocked.push({ order: { ref: id }, reason: 'الأوردر غير موجود' }); continue; }
+
+    const _orderRefClean = String(order.ref || '').replace(/^#+/, '');
+    const dupRef = transactions.find(t => t.ref && _orderRefClean && String(t.ref).replace(/^#+/, '') === _orderRefClean);
+    if (dupRef) { blocked.push({ order, reason: 'رقم مرجعي مكرر — يوجد معاملة بنفس الرقم' }); continue; }
+
+    const missingItems = (order.items || []).filter(i => !i.productId);
+    if (missingItems.length) {
+      blocked.push({ order, reason: `${missingItems.length} صنف غير موجود في المخزن (${missingItems.map(i => i.name).join('، ')})` });
+      continue;
+    }
+
+    let stockReason = '';
+    if (Array.isArray(inventoryCache) && inventoryCache.length) {
+      for (const item of (order.items || [])) {
+        const inv = inventoryCache.find(p => p._id === item.productId || p.code === item.code);
+        if (!inv) continue;
+        const key = inv._id || inv.code;
+        if (!stockLedger.has(key)) stockLedger.set(key, inv.current);
+        const remaining = stockLedger.get(key);
+        if (remaining < item.qty) {
+          stockReason = `كمية غير كافية من "${item.name}" (متاح: ${remaining}، مطلوب: ${item.qty})`;
+          break;
+        }
+      }
+    }
+    if (stockReason) { blocked.push({ order, reason: stockReason }); continue; }
+
+    // reserve the stock for this order so later orders in the same batch see the reduced quantity
+    for (const item of (order.items || [])) {
+      const inv = inventoryCache.find(p => p._id === item.productId || p.code === item.code);
+      if (!inv) continue;
+      const key = inv._id || inv.code;
+      stockLedger.set(key, stockLedger.get(key) - item.qty);
+    }
+
+    const { deposit, payment } = _spDetectDepositAndMethod(order);
+    sendable.push({ order, deposit, payment });
+  }
+
+  return { sendable, blocked };
+}
+
+/* Bulk "send to transactions log" — shows a confirmation dialog listing which selected orders
+   will actually be sent vs. blocked (duplicate ref / missing product / insufficient stock,
+   checked cumulatively across the whole selected batch) before anything is submitted. */
+function bulkSendShopifyOrders() {
+  const ids = [..._shopifySelectedIds];
+  if (!ids.length) return;
+
+  const { sendable, blocked } = _spValidateBulkSelection(ids);
+
+  const modal = document.createElement('div');
+  modal.id = 'sp-bulk-confirm-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:#0008;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:var(--bg);border-radius:16px;padding:26px;width:460px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px #0004">
+      <h3 style="margin:0 0 14px;font-size:1.1rem">تأكيد إرسال ${ids.length} أوردر إلى سجل المعاملات</h3>
+
+      ${sendable.length ? `
+        <div style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:6px;color:#10b981;font-weight:700;font-size:.85rem;margin-bottom:6px">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            سيتم إرسال ${sendable.length} أوردر
+          </div>
+          <div style="background:var(--bg-alt);border-radius:10px;padding:10px 12px;max-height:160px;overflow-y:auto">
+            ${sendable.map(s => `<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:.8rem"><span>#${s.order.ref || '-'} — ${esc(s.order.client || '')}</span><b style="color:var(--accent)">${fmtJ(s.order.total)}</b></div>`).join('')}
+          </div>
+        </div>` : ''}
+
+      ${blocked.length ? `
+        <div style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:6px;color:#ef4444;font-weight:700;font-size:.85rem;margin-bottom:6px">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            لن يتم إرسال ${blocked.length} أوردر
+          </div>
+          <div style="background:#ef444408;border:1px solid #ef444425;border-radius:10px;padding:10px 12px;max-height:160px;overflow-y:auto">
+            ${blocked.map(b => `<div style="padding:4px 0;font-size:.78rem;line-height:1.5"><b>#${b.order.ref || '-'}</b> — <span style="color:#ef4444">${esc(b.reason)}</span></div>`).join('')}
+          </div>
+        </div>` : ''}
+
+      ${!sendable.length ? `<div style="color:var(--text-muted);font-size:.85rem;margin-bottom:16px">لا يوجد أي أوردر صالح للإرسال ضمن المحدد.</div>` : ''}
+
+      <div style="display:flex;gap:10px">
+        <button onclick="document.getElementById('sp-bulk-confirm-modal').remove()" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;cursor:pointer;font-size:.9rem">إلغاء</button>
+        ${sendable.length ? `<button id="sp-bulk-confirm-btn" onclick="_confirmBulkSendShopify()" style="flex:2;padding:10px;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:.9rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> تأكيد الإرسال (${sendable.length})</button>` : ''}
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  modal._sendable = sendable;
+}
+
+async function _confirmBulkSendShopify() {
+  const modal = qs('#sp-bulk-confirm-modal');
+  const sendable = modal?._sendable || [];
+  const btn = qs('#sp-bulk-confirm-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '⏳ جارٍ الإرسال...'; }
+
+  let okCount = 0;
+  const errors = [];
+  for (const { order, deposit, payment } of sendable) {
+    try {
+      await api(`/shopify/orders/${order._id}/approve`, { method: 'PATCH', body: JSON.stringify({ deposit, payment }), headers: {'Content-Type':'application/json'} });
+      okCount++;
+    } catch (e) {
+      errors.push(`#${order.ref}: فشل الإرسال`);
+    }
+  }
+
+  modal?.remove();
+  _shopifySelectedIds.clear();
+  if (okCount) toast(`تم إرسال ${okCount} أوردر إلى سجل المعاملات بنجاح ✅`);
+  if (errors.length) toast(`تعذر إرسال ${errors.length} أوردر:\n${errors.join('\n')}`, true);
+
+  try { transactions = await api('/transactions'); } catch(_) {}
+  if (typeof renderMovements === 'function') renderMovements();
+  await loadShopifyOrders();
 }
 
 function _toggleSpAddr(id, btn) {

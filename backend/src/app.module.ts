@@ -23,6 +23,7 @@ import { SecurityAuditModule } from './security-audit/security-audit.module';
 import { ShopifyModule } from './shopify/shopify.module';
 import { BostaModule } from './bosta/bosta.module';
 import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
+import { DemandPlanningModule } from './demand-planning/demand-planning.module';
 import { SupplierReturnsModule } from './supplier-returns/supplier-returns.module';
 import { DraftsModule } from './drafts/drafts.module';
 import { CustomerServicePlaybookModule } from './customer-service-playbook/customer-service-playbook.module';
@@ -56,6 +57,7 @@ import { SeedService } from './seed/seed.service';
     ShopifyModule,
     BostaModule,
     PurchaseOrdersModule,
+    DemandPlanningModule,
     SupplierReturnsModule,
     DraftsModule,
     CustomerServicePlaybookModule,
