@@ -44,6 +44,8 @@ export interface AuditRow {
   txId: string;
   hasProfit: boolean;
   hasShipping: boolean;
+  notes: string;
+  tags: string;
 }
 
 export type SyncStatus = 'synced' | 'missing' | 'failed' | 'cancelled' | 'pending';
@@ -256,6 +258,8 @@ export class OrderAuditService {
           txId: String(tx._id || ''),
           hasProfit: productCost > 0,
           hasShipping: shippingCost > 0 || actualShipCost > 0,
+          notes: '',
+          tags: '',
         });
         continue;
       }
@@ -311,6 +315,8 @@ export class OrderAuditService {
           txId: '',
           hasProfit: false,
           hasShipping: (Number(so.shipCost) || 0) > 0,
+          notes: String(so.notes || ''),
+          tags: String(so.tags || ''),
         });
         continue;
       }
@@ -339,6 +345,8 @@ export class OrderAuditService {
         txId: '',
         hasProfit: false,
         hasShipping: false,
+        notes: '',
+        tags: '',
       });
     }
 

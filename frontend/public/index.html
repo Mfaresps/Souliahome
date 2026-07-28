@@ -9483,12 +9483,18 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <div style="display:flex;flex-direction:column;gap:4px;min-width:130px;flex:1 1 130px">
         <label for="oa-from" style="font-size:.78rem;color:var(--muted)">من أوردر رقم</label>
         <input type="number" id="oa-from" min="1" step="1" placeholder="2231" onkeydown="if(event.key==='Enter')runOrderAudit()"
-          style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.9rem;width:100%">
+          style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.9rem;width:100%;box-sizing:border-box">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;min-width:130px;flex:1 1 130px">
         <label for="oa-to" style="font-size:.78rem;color:var(--muted)">إلى أوردر رقم</label>
-        <input type="number" id="oa-to" min="1" step="1" placeholder="2279" onkeydown="if(event.key==='Enter')runOrderAudit()"
-          style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.9rem;width:100%">
+        <div style="position:relative">
+          <input type="number" id="oa-to" min="1" step="1" placeholder="2279" onkeydown="if(event.key==='Enter')runOrderAudit()"
+            style="padding:8px 34px 8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.9rem;width:100%;box-sizing:border-box">
+          <button type="button" onclick="fillLatestShopifyOrder()" title="تعبئة آخر رقم أوردر وصل من Shopify"
+            style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:24px;height:24px;padding:0;border:none;border-radius:6px;background:rgba(0,102,204,.1);color:#0066cc;cursor:pointer;display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+          </button>
+        </div>
       </div>
       <button class="btn btn-primary" id="oa-run-btn" onclick="runOrderAudit()" style="flex:0 0 auto">
         <svg viewBox="0 0 24 24" width="14" height="14" style="display:inline-block;vertical-align:-2px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -9610,10 +9616,19 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         <button class="tab-btn" data-oa-filter="noship" onclick="setAuditFilter('noship',this)">بدون تكلفة شحن <span class="oa-filter-count" data-oa-count="noship"></span></button>
       </div>
 
+      <!-- Selection summary bar -->
+      <div id="oa-selection-bar" style="display:none;align-items:center;gap:16px;flex-wrap:wrap;background:var(--bg-alt,var(--surface2));border:1px solid var(--border);border-radius:var(--radius);padding:9px 14px;margin-bottom:10px;font-size:.84rem">
+        <span style="font-weight:700;color:var(--text)"><span id="oa-sel-count">0</span> محدد</span>
+        <span style="color:var(--muted)">الإجمالي: <b id="oa-sel-total" style="color:var(--text)">—</b></span>
+        <span style="color:var(--muted)">صافي الربح: <b id="oa-sel-profit" style="color:var(--text)">—</b></span>
+        <button class="btn btn-outline btn-sm" style="margin-inline-start:auto" onclick="clearAuditSelection()">إلغاء التحديد</button>
+      </div>
+
       <div class="overflow-x">
         <table id="oa-table" class="oa-sortable-table" style="width:100%;border-collapse:collapse;font-size:.85rem;min-width:1050px">
           <thead>
             <tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
+              <th style="padding:8px 9px;text-align:center;width:34px"><input type="checkbox" id="oa-select-all" onchange="toggleAuditSelectAll(this.checked)"></th>
               <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('orderNumber')">رقم الأوردر <span class="oa-sort-ind" data-oa-ind="orderNumber"></span></th>
               <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('shopifyCreatedAt')">تاريخ Shopify <span class="oa-sort-ind" data-oa-ind="shopifyCreatedAt"></span></th>
               <th class="oa-th-sort" style="padding:8px 9px;text-align:right" onclick="setAuditSort('client')">العميل <span class="oa-sort-ind" data-oa-ind="client"></span></th>
@@ -12097,6 +12112,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         <span class="dp-ord-range">القيمة <input type="number" placeholder="من" id="dp-ord-val-from-ready" onchange="renderDpOrdersTab('ready')"> <input type="number" placeholder="إلى" id="dp-ord-val-to-ready" onchange="renderDpOrdersTab('ready')"></span>
         <input type="search" class="dp-search" id="dp-ord-search-ready" placeholder="ابحث برقم الأوردر أو اسم العميل…" oninput="renderDpOrdersTab('ready')" style="min-width:160px">
       </div>
+      <div id="dp-ready-bulk-bar-slot" style="padding:0 clamp(14px,3vw,24px)"></div>
       <div class="dp-ord-wrap">
         <table class="dp-ord-table" id="dp-ord-table-ready">
           <thead>
@@ -30968,7 +30984,41 @@ function renderDpOrdersTab(tab) {
   if (tab === 'ready') {
     const selectAll = qs('#dp-ready-select-all');
     if (selectAll) selectAll.checked = rows.length > 0 && rows.every(o => _dpReadySelectedIds.has(o.transactionId));
+
+    const bulkSlot = qs('#dp-ready-bulk-bar-slot');
+    if (bulkSlot) {
+      const canSend = _dpSource === 'shopify' && _dpReadySelectedIds.size;
+      bulkSlot.innerHTML = canSend ? `
+        <div style="display:flex;align-items:center;gap:8px;background:var(--bg-alt);border:1px solid var(--border);border-radius:9px;padding:7px 10px;white-space:nowrap;flex-wrap:wrap;margin-bottom:10px">
+          <span style="font-size:.78rem;font-weight:700;color:var(--text)">${fmtN(_dpReadySelectedIds.size)} محدد</span>
+          <span style="font-size:.74rem;color:var(--text-muted)">الإجمالي: <b style="color:var(--text)">${fmtJ((_dpOrdersPivot.ready || []).filter(o => _dpReadySelectedIds.has(o.transactionId)).reduce((s, o) => s + (o.orderTotal || 0), 0))}</b></span>
+          <button class="btn btn-sm" style="background:var(--accent);color:#fff;font-size:.74rem;display:inline-flex;align-items:center;gap:5px;padding:6px 10px" onclick="_dpBulkSendReadyOrders()">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            إرسال إلى سجل المعاملات
+          </button>
+          <button class="btn btn-sm" style="background:transparent;border:none;color:var(--text-muted);font-size:.74rem;padding:6px 4px" onclick="_dpReadySelectedIds.clear();renderDpOrdersTab('ready')">✕</button>
+        </div>` : '';
+    }
   }
+}
+
+/* Reuses the Shopify page's bulk-send confirmation flow (duplicate ref / stock checks,
+   confirmation modal, /shopify/orders/:id/approve) for orders selected in the demand
+   planning "ready to ship" tab — only meaningful when the analysis source is Shopify,
+   since transactions-sourced orders are already logged. */
+function _dpBulkSendReadyOrders() {
+  if (_dpSource !== 'shopify' || !_dpReadySelectedIds.size) return;
+  const sentIds = new Set(_dpReadySelectedIds);
+  const prevSelection = _shopifySelectedIds;
+  _shopifySelectedIds = new Set(sentIds);
+  bulkSendShopifyOrders();
+  _shopifySelectedIds = prevSelection;
+
+  const confirmBtn = qs('#sp-bulk-confirm-btn');
+  if (confirmBtn) confirmBtn.addEventListener('click', () => {
+    sentIds.forEach(id => _dpReadySelectedIds.delete(id));
+    renderDpOrdersTab('ready');
+  }, { once: true });
 }
 
 function _dpToggleSelectReady(id, cb) {
@@ -40597,6 +40647,23 @@ var orderAuditAlert = null;
 
 function fmtNum(n) { return (Number(n) || 0).toLocaleString('en-US'); }
 
+async function fillLatestShopifyOrder() {
+  const toEl = qs('#oa-to');
+  if (!toEl) return;
+  try {
+    let orders = _shopifyOrders;
+    if (!orders || !orders.length) orders = await api('/shopify/orders');
+    if (!orders || !orders.length) { toast('لا يوجد أوردرات Shopify مسجلة', true); return; }
+    const sorted = [...orders].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    const latest = sorted[0];
+    const n = Number(String(latest.ref || '').replace('#', '')) || Number(latest.orderNumber) || 0;
+    if (!n) { toast('تعذر تحديد رقم آخر أوردر', true); return; }
+    toEl.value = n;
+  } catch (e) {
+    toast('تعذر جلب آخر رقم أوردر', true);
+  }
+}
+
 async function runOrderAudit() {
   const fromEl = qs('#oa-from'), toEl = qs('#oa-to');
   const from = Number(fromEl?.value), to = Number(toEl?.value);
@@ -40759,7 +40826,7 @@ function auditFinScopeRows(d, scope) {
   switch (scope) {
     case 'cancelled': return rows.filter(r => r.cancelled);
     case 'pending':   return rows.filter(r => r.syncStatus === 'pending');
-    case 'all':       return rows.filter(r => r.registered);
+    case 'all':       return rows;
     case 'synced':
     default:          return rows.filter(r => r.registered && !r.cancelled);
   }
@@ -40771,10 +40838,13 @@ function renderAuditFinancials(d, scope) {
   if (sel && sel.value !== scope) sel.value = scope;
 
   const rows = auditFinScopeRows(d, scope);
+  const profitRows = rows.filter(r => r.registered);
+  const hasProfitData = profitRows.length > 0;
+
   const totalSales = rows.reduce((s, r) => s + (r.orderTotal || 0), 0);
   const totalProductCost = rows.reduce((s, r) => s + (r.productCost || 0), 0);
   const totalShippingCost = rows.reduce((s, r) => s + (r.shippingCost || 0), 0);
-  const totalProfit = rows.reduce((s, r) => s + (r.netProfit || 0), 0);
+  const totalProfit = profitRows.reduce((s, r) => s + (r.netProfit || 0), 0);
   const avgOrderValue = rows.length ? Math.round(totalSales / rows.length) : 0;
   const profitMargin = totalSales > 0 ? Math.round((totalProfit / totalSales) * 1000) / 10 : 0;
 
@@ -40782,13 +40852,15 @@ function renderAuditFinancials(d, scope) {
     { l: 'إجمالي المبيعات', v: fmtJ(totalSales) },
     { l: 'إجمالي تكلفة المنتجات', v: fmtJ(totalProductCost) },
     { l: 'إجمالي تكلفة الشحن', v: fmtJ(totalShippingCost) },
-    { l: 'إجمالي الربح', v: fmtJ(totalProfit) },
+    { l: 'إجمالي الربح', v: hasProfitData ? fmtJ(totalProfit) : '—' },
     { l: 'متوسط قيمة الأوردر', v: fmtJ(avgOrderValue) },
-    { l: 'هامش الربح', v: `<span class="amt-num">${profitMargin}%</span>` },
+    { l: 'هامش الربح', v: hasProfitData ? `<span class="amt-num">${profitMargin}%</span>` : '—' },
   ];
+  const note = hasProfitData ? '' :
+    `<div style="grid-column:1/-1;font-size:.76rem;color:var(--muted);margin-top:-4px;margin-bottom:2px">الربح غير محسوب لأوردرات غير مسجّلة بعد في سوليا</div>`;
   const el = qs('#oa-financials');
   if (el) el.innerHTML = `<div style="grid-column:1/-1;font-size:.78rem;color:var(--muted);margin-bottom:2px">عدد الأوردرات ضمن هذا العرض: ${fmtNum(rows.length)}</div>` +
-    items.map(i => `<div class="oa-fin"><div class="oa-fin-l">${i.l}</div><div class="oa-fin-v">${i.v}</div></div>`).join('');
+    items.map(i => `<div class="oa-fin"><div class="oa-fin-l">${i.l}</div><div class="oa-fin-v">${i.v}</div></div>`).join('') + note;
 }
 
 function renderAuditShipping(d) {
@@ -40846,13 +40918,59 @@ function renderAuditDateRange(d) {
 let auditSort = { key: 'orderNumber', dir: 'asc' };
 let auditPage = 1;
 let auditPerPage = 30;
+let auditSelected = new Set();
 
 function setAuditFilter(f, btn) {
   auditFilter = f;
   auditPage = 1;
+  auditSelected.clear();
   qsa('#rep-panel-orderaudit .oa-filters .tab-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   renderAuditTable();
+}
+
+function clearAuditSelection() {
+  auditSelected.clear();
+  renderAuditTable();
+}
+
+function toggleAuditRowSelect(orderNumber, checked) {
+  if (checked) auditSelected.add(orderNumber);
+  else auditSelected.delete(orderNumber);
+  renderAuditSelectionBar();
+  const all = qs('#oa-select-all');
+  if (all) {
+    const shownIds = qsa('#oa-tbody tr[data-oa-row]').map(el => el.dataset.oaRow);
+    all.checked = shownIds.length > 0 && shownIds.every(id => auditSelected.has(id));
+    all.indeterminate = !all.checked && shownIds.some(id => auditSelected.has(id));
+  }
+}
+
+function toggleAuditSelectAll(checked) {
+  const shownIds = qsa('#oa-tbody tr[data-oa-row]').map(el => el.dataset.oaRow);
+  shownIds.forEach(id => { if (checked) auditSelected.add(id); else auditSelected.delete(id); });
+  renderAuditTable();
+}
+
+function renderAuditSelectionBar() {
+  const bar = qs('#oa-selection-bar');
+  if (!bar) return;
+  const d = currentAuditData;
+  const rows = (d?.rows || []).filter(r => auditSelected.has(r.orderNumber));
+
+  if (!rows.length) {
+    bar.style.display = 'none';
+    return;
+  }
+  bar.style.display = 'flex';
+
+  const total = rows.reduce((s, r) => s + (r.registered ? (r.orderTotal || 0) : 0), 0);
+  const profitRows = rows.filter(r => r.registered);
+  const profit = profitRows.reduce((s, r) => s + (r.netProfit || 0), 0);
+
+  qs('#oa-sel-count').textContent = fmtNum(rows.length);
+  qs('#oa-sel-total').innerHTML = fmtJ(total);
+  qs('#oa-sel-profit').innerHTML = profitRows.length ? fmtJ(profit) : '—';
 }
 
 function setAuditSort(key) {
@@ -40942,19 +41060,39 @@ function renderAuditTable() {
   tbody.innerHTML = shown.map(r => {
     const missing = r.syncStatus === 'missing' || r.syncStatus === 'failed';
     const dateTxt = r.shopifyCreatedAt ? String(r.shopifyCreatedAt).slice(0, 10) : '—';
-    return `<tr class="${missing ? 'oa-row-missing' : ''}">
+    const checked = auditSelected.has(r.orderNumber);
+
+    // Pending/unregistered orders don't have a committed transaction yet, but the order
+    // total, product cost and shipping cost are already knowable from Shopify + the
+    // product cost table, and any deposit noted by staff (in notes/tags) can be parsed
+    // the same way the Shopify orders page does. Net profit is shown as an estimate
+    // (marked with ~) since discounts/actual shipping burden aren't finalized yet.
+    let depositCell = esc(r.paymentStatus || '—');
+    if (!r.registered && r.syncStatus === 'pending' && typeof _spNoteDepositAmount === 'function') {
+      const dep = _spNoteDepositAmount({ notes: r.notes || '', tags: r.tags || '', total: r.orderTotal || 0 });
+      depositCell = dep.deposit > 0
+        ? `<span style="color:#059669;font-weight:700">${fmtJ(dep.deposit)}${dep.payment ? ` · ${esc(dep.payment)}` : ''}</span>`
+        : `<span style="color:var(--muted)">بدون عربون</span>`;
+    }
+
+    const estProfit = (r.orderTotal || 0) - (r.productCost || 0) - (r.shippingCost || 0);
+    const profitValue = r.registered ? r.netProfit : estProfit;
+    const profitPrefix = r.registered ? '' : '~ ';
+
+    return `<tr class="${missing ? 'oa-row-missing' : ''}" data-oa-row="${esc(r.orderNumber)}">
+      <td style="text-align:center"><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleAuditRowSelect('${esc(r.orderNumber)}',this.checked)"></td>
       <td style="font-weight:700;white-space:nowrap">#${esc(r.orderNumber)}</td>
       <td style="white-space:nowrap;color:var(--muted);font-size:.82rem">${esc(dateTxt)}</td>
       <td>${esc(r.client || '—')}</td>
       <td style="white-space:nowrap;direction:ltr;text-align:left;font-size:.82rem">${esc(r.phone || '—')}</td>
       <td style="text-align:center;font-size:.8rem">${esc(r.orderStatus || '—')}</td>
-      <td style="text-align:center;font-size:.8rem">${esc(r.paymentStatus || '—')}</td>
+      <td style="text-align:center;font-size:.8rem">${depositCell}</td>
       <td style="max-width:230px;font-size:.8rem" title="${esc(r.productsLabel)}">
         <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.productsLabel || '—')}</div></td>
-      <td class="num">${r.registered ? fmtJ(r.orderTotal) : '—'}</td>
-      <td class="num">${r.registered ? fmtJ(r.productCost) : '—'}</td>
-      <td class="num">${r.registered ? fmtJ(r.shippingCost) : '—'}</td>
-      <td class="num" style="color:${r.netProfit >= 0 ? '#059669' : 'var(--red)'};font-weight:600">${r.registered ? fmtJ(r.netProfit) : '—'}</td>
+      <td class="num">${r.orderTotal ? fmtJ(r.orderTotal) : '—'}</td>
+      <td class="num">${r.productCost ? fmtJ(r.productCost) : (r.registered ? fmtJ(0) : '—')}</td>
+      <td class="num">${r.shippingCost ? fmtJ(r.shippingCost) : (r.registered ? fmtJ(0) : '—')}</td>
+      <td class="num" style="color:${profitValue >= 0 ? '#059669' : 'var(--red)'};font-weight:600">${r.orderTotal ? profitPrefix + fmtJ(profitValue) : '—'}</td>
       <td style="text-align:center">${r.registered
         ? '<span style="color:#059669;font-weight:700">✓</span>'
         : '<span style="color:var(--red);font-weight:700">✕</span>'}</td>
@@ -40966,6 +41104,14 @@ function renderAuditTable() {
   if (foot) foot.textContent = `إجمالي ${fmtNum(rows.length)} أوردر`;
 
   renderPagination('oa-table-pagination', rows.length, auditPage, auditPerPage, 'setAuditPage', [30, 50, 100, 250], 'setAuditPerPage');
+
+  const selectAll = qs('#oa-select-all');
+  if (selectAll) {
+    const shownIds = shown.map(r => r.orderNumber);
+    selectAll.checked = shownIds.length > 0 && shownIds.every(id => auditSelected.has(id));
+    selectAll.indeterminate = !selectAll.checked && shownIds.some(id => auditSelected.has(id));
+  }
+  renderAuditSelectionBar();
 }
 
 async function markAuditReviewed(orderNumber, reviewed) {
@@ -54151,6 +54297,7 @@ function renderShopifyOrders() {
     bulkBarSlot.innerHTML = _shopifySelectedIds.size ? `
       <div id="sp-bulk-bar" style="display:flex;align-items:center;gap:8px;background:var(--bg-alt);border:1px solid var(--border);border-radius:9px;padding:7px 10px;white-space:nowrap">
         <span style="font-size:.78rem;font-weight:700;color:var(--text)">${_shopifySelectedIds.size} محدد</span>
+        <span style="font-size:.74rem;color:var(--text-muted)">الإجمالي: <b style="color:var(--text)">${fmtJ(_shopifyOrders.filter(o => _shopifySelectedIds.has(o._id)).reduce((s, o) => s + (o.total || 0), 0))}</b></span>
         <button class="btn btn-sm" style="background:var(--accent);color:#fff;font-size:.74rem;display:inline-flex;align-items:center;gap:5px;padding:6px 10px" onclick="bulkSendShopifyOrders()">
           <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           إرسال إلى سجل المعاملات
@@ -54539,6 +54686,37 @@ function _clearShopifySelection() {
   _shopifySelectedIds.clear();
   _spLastCheckedId = null;
   renderShopifyOrders();
+}
+
+/* Same detection rules as the "ملاحظات" column in the Shopify orders table (renderShopifyOrders):
+   any number found in the note counts as a deposit, even without an explicit payment-method
+   keyword nearby (defaults to كاش in that case). _spDetectDepositAndMethod below is stricter —
+   it requires a method keyword to match — which is why the two can disagree on the same note. */
+function _spNoteDepositAmount(order) {
+  const noteText = (order.notes || '').trim().startsWith('العنوان:') ? '' : (order.notes || '').trim();
+  const cleanTags = (order.tags || '').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{1F300}-\u{1F9FF}✅❌💲📥💸🎉]/gu, '').toLowerCase();
+
+  const fullPaidTagKeywords = ['تم دفع الاوردر بالكامل', 'paid in full', 'fully paid'];
+  const fullPaidNoteKeywords = ['تم دفع الاوردر بالكامل', 'دفع كامل', 'paid in full', 'fully paid', 'تم الدفع بالكامل'];
+  const hasFullPaidTag = fullPaidTagKeywords.some(k => cleanTags.includes(k));
+  const hasFullPaidNote = fullPaidNoteKeywords.some(k => noteText.toLowerCase().includes(k));
+
+  const numMatch = noteText.match(/(\d[\d,.]*)/);
+  const amountFromNote = numMatch ? parseFloat(numMatch[1].replace(/,/g, '')) : null;
+  const amount = amountFromNote !== null ? amountFromNote
+    : (hasFullPaidTag || hasFullPaidNote) ? (order.total || 0)
+    : null;
+
+  if (amount === null) return { deposit: 0, payment: '' };
+
+  const searchIn = (noteText + ' ' + (order.tags || '')).toLowerCase();
+  let method = 'كاش';
+  if (/voda|فودا|فون/.test(searchIn)) method = 'فودافون كاش';
+  else if (/insta|انستا|إنستا/.test(searchIn)) method = 'Instapay';
+  else if (/bank|بنك|تحويل|transfer/.test(searchIn)) method = 'تحويل بنكي';
+  else if (/cash|كاش/.test(searchIn)) method = 'كاش';
+
+  return { deposit: amount, payment: method };
 }
 
 function _spDetectDepositAndMethod(order) {
