@@ -594,6 +594,7 @@ body.dark-mode .settings-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.2)}
 .table-card .overflow-x{margin:0}
 .table-card table{margin:0}
 .tab-btn{padding:6px 16px;border-radius:20px;font-size:.8rem;font-weight:600;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .2s}
+.oa-filter-count{opacity:.65;font-weight:600;font-variant-numeric:tabular-nums}
 .tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .rep-trend-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .rep-kpi-grid{grid-template-columns:repeat(4,1fr)}
@@ -649,6 +650,7 @@ body.dark-mode .settings-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.2)}
 #oa-table tbody tr:hover{background:var(--bg-alt,var(--surface2))}
 #oa-table tbody tr.oa-row-missing{background:rgba(239,68,68,.045)}
 #oa-table tbody tr.oa-row-missing:hover{background:rgba(239,68,68,.09)}
+#oa-table th{vertical-align:middle}
 #oa-table td{padding:7px 9px;vertical-align:middle}
 #oa-table td.num{text-align:left;direction:ltr;font-variant-numeric:tabular-nums}
 #oa-table th.oa-th-sort{cursor:pointer;user-select:none}
@@ -1677,8 +1679,9 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .sp-date-arrow{font-size:.72rem;color:var(--text-muted);white-space:nowrap;flex-shrink:0}
 #shopify-date-clear-btn{font-size:.72rem;color:#ef4444;border:1.5px solid #ef444440;background:#ef444410;border-radius:8px;padding:5px 10px}
 /* ── Table (desktop) ── */
-#shopify-orders-table-wrap{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)}
-#shopify-orders-table-wrap .sp-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#shopify-orders-table-wrap{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.04)}
+#shopify-filters-bar{border-radius:var(--radius) var(--radius) 0 0}
+#shopify-orders-table-wrap .sp-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:0 0 var(--radius) var(--radius)}
 #shopify-orders-table-wrap .data-table{border-collapse:collapse;font-size:.82rem;width:100%;min-width:900px}
 #shopify-orders-table-wrap .data-table thead th{padding:9px 8px;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--surface2);white-space:nowrap;border-bottom:2px solid var(--border)}
 #shopify-orders-table-wrap .data-table tbody tr{transition:background .12s;cursor:pointer}
@@ -2281,12 +2284,57 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .user-card .user-actions .btn-sm.danger{color:var(--red)}
 .user-card .user-actions .btn-sm.danger:hover{background:var(--red);color:#fff;border-color:var(--red)}
 .user-card .last-login{font-size:.7rem;color:var(--muted);margin-top:6px}
-.user-modal-form .form-section{margin-bottom:20px}
-.user-modal-form .form-section-title{font-size:.85rem;font-weight:700;color:var(--primary);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--primary-pale);display:flex;align-items:center;gap:6px}
+.user-modal-form .form-section{margin-bottom:14px}
+.user-modal-form .form-section-title{font-size:.76rem;font-weight:700;color:var(--primary);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--primary-pale);display:flex;align-items:center;gap:5px}
+.user-modal-form .form-section-title svg{width:.9em;height:.9em}
+.user-modal-form .form-group{margin-bottom:8px}
+.user-modal-form .form-group label{font-size:.72rem;margin-bottom:3px}
+.user-modal-form .form-group input,.user-modal-form .form-group select{padding:6px 9px;font-size:.8rem;border-radius:7px}
+.user-modal-form .grid-2{align-items:start}
 .user-modal-form .perms-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .user-modal-form .perm-label{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all .15s;border:1px solid var(--border);font-size:.82rem}
 .user-modal-form .perm-label:hover{background:var(--primary-pale);border-color:var(--primary)}
 .user-modal-form .perm-label input:checked+span{color:var(--primary);font-weight:600}
+
+/* ── Hierarchical permissions (ERP-style accordion) ───────────── */
+.perm-sys{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
+.perm-sys-toolbar{display:flex;align-items:center;gap:6px;padding:7px 8px;border-bottom:1px solid var(--border);background:var(--bg-alt);flex-wrap:wrap}
+.perm-sys-search{flex:1;min-width:120px;position:relative}
+.perm-sys-search input{width:100%;padding:5px 30px 5px 8px;border:1px solid var(--border);border-radius:7px;font-size:.78rem;background:var(--surface)}
+.perm-sys-search svg{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--muted);pointer-events:none}
+.perm-sys-toolbar .btn-sm{font-size:.7rem;padding:5px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--surface2);color:var(--text);white-space:nowrap;transition:all .15s}
+.perm-sys-toolbar .btn-sm:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+.perm-sys-templates{display:flex;align-items:center;gap:5px;padding:7px 8px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.perm-sys-templates span{font-size:.72rem;color:var(--muted);font-weight:600;white-space:nowrap}
+.perm-tpl-btn{font-size:.72rem;padding:4px 10px;border-radius:20px;border:1px solid var(--primary-pale);background:var(--primary-pale);color:var(--primary);cursor:pointer;font-weight:600;transition:all .15s}
+.perm-tpl-btn:hover{background:var(--primary);color:#fff}
+.perm-sys-summary{padding:6px 10px;font-size:.72rem;color:var(--muted);border-bottom:1px solid var(--border);background:var(--surface)}
+.perm-sys-summary b{color:var(--primary)}
+.perm-sys-body{max-height:230px;overflow-y:auto}
+.perm-module{border-bottom:1px solid var(--border)}
+.perm-module:last-child{border-bottom:none}
+.perm-module-head{display:flex;align-items:center;gap:7px;padding:6px 8px;cursor:pointer;transition:background .15s;user-select:none}
+.perm-module-head:hover{background:var(--bg-alt)}
+.perm-module-head input[type="checkbox"],.perm-action-label input[type="checkbox"]{width:13px;height:13px;flex-shrink:0;margin:0;accent-color:var(--primary)}
+.perm-module-chevron{width:11px;height:11px;color:var(--muted);transition:transform .2s;flex-shrink:0}
+.perm-module.open .perm-module-chevron{transform:rotate(90deg)}
+.perm-module-icon{width:14px;height:14px;color:var(--primary);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.perm-module-icon svg{width:100%;height:100%}
+.perm-module-title{flex:1;font-size:.76rem;font-weight:700;color:var(--text)}
+.perm-module-count{font-size:.62rem;padding:1px 6px;border-radius:20px;background:var(--surface2);color:var(--muted);font-weight:600;white-space:nowrap}
+.perm-module.full .perm-module-count{background:var(--primary-pale);color:var(--primary)}
+.perm-module-master{position:relative;flex-shrink:0;display:flex;align-items:center}
+.perm-module-body{max-height:0;overflow:hidden;transition:max-height .25s ease}
+.perm-module.open .perm-module-body{max-height:600px}
+.perm-module-actions{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:4px;padding:2px 8px 8px 28px}
+.perm-action-label{display:flex;align-items:center;gap:5px;padding:4px 7px;border-radius:6px;cursor:pointer;transition:all .15s;border:1px solid var(--border);font-size:.7rem;background:var(--bg-alt)}
+.perm-action-label:hover{background:var(--primary-pale);border-color:var(--primary)}
+.perm-action-label input:checked+span{color:var(--primary);font-weight:600}
+.perm-module.hidden-by-search{display:none}
+@media (max-width:640px){
+  .perm-module-actions{grid-template-columns:1fr 1fr;padding-left:24px}
+  .perm-sys-templates{gap:4px}
+}
 .pass-strength{height:4px;border-radius:2px;margin-top:4px;transition:all .3s}
 .pass-strength.weak{background:var(--red);width:33%}
 .pass-strength.medium{background:#f59e0b;width:66%}
@@ -9498,10 +9546,19 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 
     <!-- 3. Financial summary -->
     <div class="card mb-16">
-      <h3 style="font-size:.95rem;color:var(--text);margin:0 0 12px;font-weight:600;display:flex;align-items:center;gap:7px">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-        التحليل المالي
-      </h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <h3 style="font-size:.95rem;color:var(--text);margin:0;font-weight:600;display:flex;align-items:center;gap:7px">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          التحليل المالي
+        </h3>
+        <select id="oa-fin-scope" onchange="renderAuditFinancials(currentAuditData, this.value)"
+          style="padding:5px 9px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.82rem">
+          <option value="synced">متزامن فقط</option>
+          <option value="cancelled">المرفوض / الملغي</option>
+          <option value="pending">بانتظار الموافقة</option>
+          <option value="all">الكل</option>
+        </select>
+      </div>
       <div class="oa-fin-grid" id="oa-financials"></div>
     </div>
 
@@ -9509,7 +9566,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <div class="card mb-16">
       <h3 style="font-size:.95rem;color:var(--text);margin:0 0 12px;font-weight:600;display:flex;align-items:center;gap:7px">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
-        الأكثر مبيعاً داخل النطاق
+        أفضل 10 منتجات مبيعاً داخل النطاق
       </h3>
       <div id="oa-top-products"></div>
     </div>
@@ -9542,14 +9599,15 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 
       <!-- Filters -->
       <div class="oa-filters" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
-        <button class="tab-btn active" data-oa-filter="all" onclick="setAuditFilter('all',this)">الكل</button>
-        <button class="tab-btn" data-oa-filter="missing" onclick="setAuditFilter('missing',this)">المفقودة فقط</button>
-        <button class="tab-btn" data-oa-filter="synced" onclick="setAuditFilter('synced',this)">المتزامنة</button>
-        <button class="tab-btn" data-oa-filter="failed" onclick="setAuditFilter('failed',this)">فشل المزامنة</button>
-        <button class="tab-btn" data-oa-filter="cancelled" onclick="setAuditFilter('cancelled',this)">الملغاة</button>
-        <button class="tab-btn" data-oa-filter="highvalue" onclick="setAuditFilter('highvalue',this)">قيمة عالية</button>
-        <button class="tab-btn" data-oa-filter="noprofit" onclick="setAuditFilter('noprofit',this)">بدون حساب ربح</button>
-        <button class="tab-btn" data-oa-filter="noship" onclick="setAuditFilter('noship',this)">بدون تكلفة شحن</button>
+        <button class="tab-btn active" data-oa-filter="all" onclick="setAuditFilter('all',this)">الكل <span class="oa-filter-count" data-oa-count="all"></span></button>
+        <button class="tab-btn" data-oa-filter="missing" onclick="setAuditFilter('missing',this)">المفقودة فقط <span class="oa-filter-count" data-oa-count="missing"></span></button>
+        <button class="tab-btn" data-oa-filter="synced" onclick="setAuditFilter('synced',this)">المتزامنة <span class="oa-filter-count" data-oa-count="synced"></span></button>
+        <button class="tab-btn" data-oa-filter="failed" onclick="setAuditFilter('failed',this)">فشل المزامنة <span class="oa-filter-count" data-oa-count="failed"></span></button>
+        <button class="tab-btn" data-oa-filter="cancelled" onclick="setAuditFilter('cancelled',this)">الملغاة <span class="oa-filter-count" data-oa-count="cancelled"></span></button>
+        <button class="tab-btn" data-oa-filter="pending" onclick="setAuditFilter('pending',this)">بانتظار الموافقة <span class="oa-filter-count" data-oa-count="pending"></span></button>
+        <button class="tab-btn" data-oa-filter="highvalue" onclick="setAuditFilter('highvalue',this)">قيمة عالية <span class="oa-filter-count" data-oa-count="highvalue"></span></button>
+        <button class="tab-btn" data-oa-filter="noprofit" onclick="setAuditFilter('noprofit',this)">بدون حساب ربح <span class="oa-filter-count" data-oa-count="noprofit"></span></button>
+        <button class="tab-btn" data-oa-filter="noship" onclick="setAuditFilter('noship',this)">بدون تكلفة شحن <span class="oa-filter-count" data-oa-count="noship"></span></button>
       </div>
 
       <div class="overflow-x">
@@ -9559,14 +9617,14 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
               <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('orderNumber')">رقم الأوردر <span class="oa-sort-ind" data-oa-ind="orderNumber"></span></th>
               <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('shopifyCreatedAt')">تاريخ Shopify <span class="oa-sort-ind" data-oa-ind="shopifyCreatedAt"></span></th>
               <th class="oa-th-sort" style="padding:8px 9px;text-align:right" onclick="setAuditSort('client')">العميل <span class="oa-sort-ind" data-oa-ind="client"></span></th>
-              <th style="padding:8px 9px;text-align:right;white-space:nowrap">الهاتف</th>
+              <th style="padding:8px 9px;text-align:left;white-space:nowrap">الهاتف</th>
               <th class="oa-th-sort" style="padding:8px 9px;text-align:center;white-space:nowrap" onclick="setAuditSort('orderStatus')">حالة الأوردر <span class="oa-sort-ind" data-oa-ind="orderStatus"></span></th>
               <th class="oa-th-sort" style="padding:8px 9px;text-align:center;white-space:nowrap" onclick="setAuditSort('paymentStatus')">حالة الدفع <span class="oa-sort-ind" data-oa-ind="paymentStatus"></span></th>
               <th style="padding:8px 9px;text-align:right">المنتجات</th>
-              <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('orderTotal')">الإجمالي <span class="oa-sort-ind" data-oa-ind="orderTotal"></span></th>
-              <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('productCost')">تكلفة المنتج <span class="oa-sort-ind" data-oa-ind="productCost"></span></th>
-              <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('shippingCost')">الشحن <span class="oa-sort-ind" data-oa-ind="shippingCost"></span></th>
-              <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('netProfit')">صافي الربح <span class="oa-sort-ind" data-oa-ind="netProfit"></span></th>
+              <th class="oa-th-sort" style="padding:8px 9px;text-align:left;white-space:nowrap" onclick="setAuditSort('orderTotal')">الإجمالي <span class="oa-sort-ind" data-oa-ind="orderTotal"></span></th>
+              <th class="oa-th-sort" style="padding:8px 9px;text-align:left;white-space:nowrap" onclick="setAuditSort('productCost')">تكلفة المنتج <span class="oa-sort-ind" data-oa-ind="productCost"></span></th>
+              <th class="oa-th-sort" style="padding:8px 9px;text-align:left;white-space:nowrap" onclick="setAuditSort('shippingCost')">الشحن <span class="oa-sort-ind" data-oa-ind="shippingCost"></span></th>
+              <th class="oa-th-sort" style="padding:8px 9px;text-align:left;white-space:nowrap" onclick="setAuditSort('netProfit')">صافي الربح <span class="oa-sort-ind" data-oa-ind="netProfit"></span></th>
               <th class="oa-th-sort" style="padding:8px 9px;text-align:center;white-space:nowrap" onclick="setAuditSort('registered')">مسجل <span class="oa-sort-ind" data-oa-ind="registered"></span></th>
               <th class="oa-th-sort" style="padding:8px 9px;text-align:center;white-space:nowrap" onclick="setAuditSort('syncLabel')">المزامنة <span class="oa-sort-ind" data-oa-ind="syncLabel"></span></th>
             </tr>
@@ -12621,6 +12679,24 @@ let currentLang = 'ar';
 
 const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','vault','users','settings','shopify-orders','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import','delivery-manual-confirm','delivery-view-audit'];
 const PERMS_AR = {dashboard:'الرئيسية',transaction:'المعاملات',inventory:'المخزن',movements:'سجل المعاملات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',approvals:'الموافقات',reports:'التقارير',vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات','shopify-orders':'أوردرات Shopify','csp-view':'دليل خدمة العملاء - عرض','csp-create':'دليل خدمة العملاء - إضافة بطاقات','csp-edit':'دليل خدمة العملاء - تعديل بطاقات','csp-delete':'دليل خدمة العملاء - حذف بطاقات','csp-manage-folders':'دليل خدمة العملاء - إدارة الفولدرات','csp-analytics':'دليل خدمة العملاء - الإحصائيات','csp-export':'دليل خدمة العملاء - تصدير','csp-import':'دليل خدمة العملاء - استيراد','delivery-manual-confirm':'تأكيد التسليم يدوياً','delivery-view-audit':'عرض سجل تدقيق التسليم'};
+
+// Module grouping for the ERP-style hierarchical permissions UI
+const PERM_MODULES = [
+  { key:'dashboard', label:'الرئيسية', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/></svg>', perms:['dashboard'] },
+  { key:'inventory', label:'المخزن والأصناف', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8L12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>', perms:['inventory','products'] },
+  { key:'orders', label:'المعاملات والحركات', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>', perms:['transaction','movements','approvals'] },
+  { key:'customers', label:'العملاء والموردون', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg>', perms:['clients','suppliers','complaints'] },
+  { key:'vault', label:'الخزنة والمصاريف', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>', perms:['vault','expenses'] },
+  { key:'reports', label:'التقارير', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-4"/></svg>', perms:['reports'] },
+  { key:'shopify', label:'Shopify ودليل خدمة العملاء', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1.5 5h9L18 2"/><path d="M3.5 7h17l-1.2 13.2a2 2 0 01-2 1.8H6.7a2 2 0 01-2-1.8L3.5 7z"/></svg>', perms:['shopify-orders','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import'] },
+  { key:'delivery', label:'التسليم', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>', perms:['delivery-manual-confirm','delivery-view-audit'] },
+  { key:'settings', label:'المستخدمون والإعدادات', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>', perms:['users','settings'] },
+];
+const ROLE_TEMPLATES = {
+  staff: ['dashboard','transaction','inventory','movements','clients','products','complaints','expenses'],
+  viewer: ['dashboard','inventory','reports'],
+  admin: PERMS.slice(),
+};
 
 const NAV_ICONS = {
   dashboard:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/></svg>',
@@ -40593,25 +40669,24 @@ function renderAuditTopProducts(d) {
     });
   });
 
-  const top5 = Array.from(byCode.values()).sort((a, b) => b.qty - a.qty).slice(0, 5);
+  const top10 = Array.from(byCode.values()).sort((a, b) => b.qty - a.qty).slice(0, 10);
 
-  if (!top5.length) {
+  if (!top10.length) {
     el.innerHTML = `<div style="text-align:center;padding:16px;color:var(--muted);font-size:.85rem">لا توجد بيانات منتجات في هذا النطاق</div>`;
     return;
   }
 
-  const maxQty = top5[0].qty || 1;
-  const medals = ['🥇', '🥈', '🥉', '4', '5'];
-  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">${top5.map((p, i) => `
-    <div style="display:flex;align-items:center;gap:12px">
-      <div style="width:26px;text-align:center;font-size:${i < 3 ? '1.1rem' : '.85rem'};font-weight:700;color:var(--muted);flex-shrink:0">${medals[i]}</div>
+  const maxQty = top10[0].qty || 1;
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">${top10.map((p, i) => `
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:20px;text-align:center;font-size:.8rem;font-weight:700;color:var(--muted);flex-shrink:0">${i + 1}</div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:4px">
           <span style="font-size:.87rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span>
           <span style="font-size:.8rem;color:var(--muted);white-space:nowrap">${fmtNum(p.qty)} قطعة · ${fmtJ(p.revenue)}</span>
         </div>
-        <div style="height:7px;border-radius:4px;background:var(--surface2);overflow:hidden">
-          <div style="height:100%;border-radius:4px;background:linear-gradient(90deg,#f59e0b,#fbbf24);width:${Math.max(4, (p.qty / maxQty) * 100)}%"></div>
+        <div style="height:6px;border-radius:4px;background:var(--surface2);overflow:hidden">
+          <div style="height:100%;border-radius:4px;background:#f59e0b;width:${Math.max(4, (p.qty / maxQty) * 100)}%"></div>
         </div>
       </div>
     </div>`).join('')}</div>`;
@@ -40679,19 +40754,41 @@ function renderAuditMissing(d) {
   }).join('');
 }
 
-function renderAuditFinancials(d) {
-  const f = d.financials;
+function auditFinScopeRows(d, scope) {
+  const rows = d.rows || [];
+  switch (scope) {
+    case 'cancelled': return rows.filter(r => r.cancelled);
+    case 'pending':   return rows.filter(r => r.syncStatus === 'pending');
+    case 'all':       return rows.filter(r => r.registered);
+    case 'synced':
+    default:          return rows.filter(r => r.registered && !r.cancelled);
+  }
+}
+
+function renderAuditFinancials(d, scope) {
+  const sel = qs('#oa-fin-scope');
+  scope = scope || sel?.value || 'synced';
+  if (sel && sel.value !== scope) sel.value = scope;
+
+  const rows = auditFinScopeRows(d, scope);
+  const totalSales = rows.reduce((s, r) => s + (r.orderTotal || 0), 0);
+  const totalProductCost = rows.reduce((s, r) => s + (r.productCost || 0), 0);
+  const totalShippingCost = rows.reduce((s, r) => s + (r.shippingCost || 0), 0);
+  const totalProfit = rows.reduce((s, r) => s + (r.netProfit || 0), 0);
+  const avgOrderValue = rows.length ? Math.round(totalSales / rows.length) : 0;
+  const profitMargin = totalSales > 0 ? Math.round((totalProfit / totalSales) * 1000) / 10 : 0;
+
   const items = [
-    { l: 'إجمالي المبيعات', v: fmtJ(f.totalSales) },
-    { l: 'إجمالي تكلفة المنتجات', v: fmtJ(f.totalProductCost) },
-    { l: 'إجمالي تكلفة الشحن', v: fmtJ(f.totalShippingCost) },
-    { l: 'إجمالي الربح', v: fmtJ(f.totalProfit) },
-    { l: 'متوسط قيمة الأوردر', v: fmtJ(f.avgOrderValue) },
-    { l: 'هامش الربح', v: `<span class="amt-num">${f.profitMargin}%</span>` },
+    { l: 'إجمالي المبيعات', v: fmtJ(totalSales) },
+    { l: 'إجمالي تكلفة المنتجات', v: fmtJ(totalProductCost) },
+    { l: 'إجمالي تكلفة الشحن', v: fmtJ(totalShippingCost) },
+    { l: 'إجمالي الربح', v: fmtJ(totalProfit) },
+    { l: 'متوسط قيمة الأوردر', v: fmtJ(avgOrderValue) },
+    { l: 'هامش الربح', v: `<span class="amt-num">${profitMargin}%</span>` },
   ];
   const el = qs('#oa-financials');
-  if (el) el.innerHTML = items.map(i =>
-    `<div class="oa-fin"><div class="oa-fin-l">${i.l}</div><div class="oa-fin-v">${i.v}</div></div>`).join('');
+  if (el) el.innerHTML = `<div style="grid-column:1/-1;font-size:.78rem;color:var(--muted);margin-bottom:2px">عدد الأوردرات ضمن هذا العرض: ${fmtNum(rows.length)}</div>` +
+    items.map(i => `<div class="oa-fin"><div class="oa-fin-l">${i.l}</div><div class="oa-fin-v">${i.v}</div></div>`).join('');
 }
 
 function renderAuditShipping(d) {
@@ -40768,22 +40865,39 @@ function setAuditSort(key) {
 function setAuditPage(p) { auditPage = p; renderAuditTable(); }
 function setAuditPerPage(v) { auditPerPage = v; auditPage = 1; renderAuditTable(); }
 
+const AUDIT_HIGH_VALUE = 5000;
+
+function matchesAuditFilter(r, filter) {
+  switch (filter) {
+    case 'missing':   return r.syncStatus === 'missing' || r.syncStatus === 'failed';
+    case 'synced':    return r.syncStatus === 'synced';
+    case 'failed':    return r.syncStatus === 'failed';
+    case 'cancelled': return !!r.cancelled;
+    case 'pending':   return r.syncStatus === 'pending';
+    case 'highvalue': return r.orderTotal >= AUDIT_HIGH_VALUE;
+    case 'noprofit':  return r.registered && !r.hasProfit;
+    case 'noship':    return r.registered && !r.hasShipping;
+    default:          return true;
+  }
+}
+
+function renderAuditFilterCounts() {
+  const d = currentAuditData;
+  const rows = d?.rows || [];
+  const filters = ['all', 'missing', 'synced', 'failed', 'cancelled', 'pending', 'highvalue', 'noprofit', 'noship'];
+  filters.forEach(f => {
+    const count = f === 'all' ? rows.length : rows.filter(r => matchesAuditFilter(r, f)).length;
+    qsa(`.oa-filter-count[data-oa-count="${f}"]`).forEach(el => { el.textContent = `(${fmtNum(count)})`; });
+  });
+}
+
 function auditRowsFiltered() {
   const d = currentAuditData;
   if (!d) return [];
   const q = (qs('#oa-search')?.value || '').trim().toLowerCase();
-  const HIGH_VALUE = 5000;
 
   const rows = (d.rows || []).filter(r => {
-    switch (auditFilter) {
-      case 'missing':   if (r.syncStatus !== 'missing' && r.syncStatus !== 'failed') return false; break;
-      case 'synced':    if (r.syncStatus !== 'synced') return false; break;
-      case 'failed':    if (r.syncStatus !== 'failed') return false; break;
-      case 'cancelled': if (!r.cancelled) return false; break;
-      case 'highvalue': if (!(r.orderTotal >= HIGH_VALUE)) return false; break;
-      case 'noprofit':  if (r.hasProfit || !r.registered) return false; break;
-      case 'noship':    if (r.hasShipping || !r.registered) return false; break;
-    }
+    if (!matchesAuditFilter(r, auditFilter)) return false;
     if (!q) return true;
     return r.orderNumber.includes(q)
       || (r.client || '').toLowerCase().includes(q)
@@ -40814,6 +40928,8 @@ function renderAuditTable() {
   qsa('#oa-table .oa-sort-ind').forEach(el => {
     el.textContent = el.dataset.oaInd === auditSort.key ? (auditSort.dir === 'asc' ? '▲' : '▼') : '';
   });
+
+  renderAuditFilterCounts();
 
   const rows = auditRowsFiltered();
   const totalPages = Math.max(1, Math.ceil(rows.length / auditPerPage));
@@ -43680,19 +43796,15 @@ function openUserModal(id) {
       </div>
     </div>
     <div class="form-section">
-      <div class="form-section-title"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg> الصورة</div>
-      <div class="form-group"><input type="text" id="um-avatar" value="${esc(u?.avatar || '')}" placeholder="رابط الصورة (اختياري)"></div>
+      <div class="form-group"><label style="font-size:.7rem;color:var(--muted)">رابط الصورة (اختياري)</label><input type="text" id="um-avatar" value="${esc(u?.avatar || '')}" placeholder="https://..." style="font-size:.76rem"></div>
     </div>
     <div class="form-section">
       <div class="form-section-title"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> الدور والصلاحيات</div>
       <div class="form-group"><label>الدور <span style="color:var(--red)">*</span></label><select id="um-role" onchange="autoSetPerms()">
         ${roleOptions.map(r => `<option value="${r.value}" ${u?.role === r.value || (!u && r.value === 'staff') ? 'selected' : ''}>${r.label}</option>`).join('')}
       </select></div>
-      <div style="margin-top:12px"><label style="font-weight:600;font-size:.85rem">الصلاحيات</label>
-        <div style="margin:6px 0 8px"><button class="btn-sm" style="font-size:.72rem;padding:3px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--surface2)" onclick="qsa('.perm-cb').forEach(c=>c.checked=true)">تحديد الكل</button> <button class="btn-sm" style="font-size:.72rem;padding:3px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--surface2)" onclick="qsa('.perm-cb').forEach(c=>c.checked=false)">إلغاء الكل</button></div>
-        <div class="perms-grid">
-          ${PERMS.map(p => `<label class="perm-label"><input type="checkbox" class="perm-cb" value="${p}" ${u?.perms?.includes(p) ? 'checked' : ''}> <span>${esc(PERMS_AR[p])}</span></label>`).join('')}
-        </div>
+      <div style="margin-top:8px"><label style="font-weight:600;font-size:.76rem;color:var(--muted)">الصلاحيات</label>
+        <div style="margin-top:6px">${renderPermSystem(u?.perms || [])}</div>
       </div>
     </div>
     <div class="flex gap-8" style="justify-content:flex-end;padding-top:16px;border-top:1px solid var(--border)">
@@ -43730,11 +43842,92 @@ function checkPassStrength(val) {
 }
 function autoSetPerms() {
   const role = qs('#um-role').value;
-  const salesPerms = ['dashboard','transaction','inventory','movements','clients','products','complaints','expenses'];
-  const accountPerms = ['dashboard','transaction','inventory','movements','reports','vault','expenses','suppliers'];
-  if (role === 'admin') { qsa('.perm-cb').forEach(c => c.checked = true); }
-  else if (role === 'viewer') { qsa('.perm-cb').forEach(c => c.checked = ['dashboard','inventory','reports'].includes(c.value)); }
-  else { qsa('.perm-cb').forEach(c => c.checked = salesPerms.includes(c.value)); }
+  applyPermTemplate(role, false);
+}
+
+/* ── Hierarchical permissions system (ERP-style accordion) ───── */
+function renderPermSystem(activePerms) {
+  const modulesHtml = PERM_MODULES.map(mod => {
+    const checkedCount = mod.perms.filter(p => activePerms.includes(p)).length;
+    const total = mod.perms.length;
+    const isFull = checkedCount === total;
+    const isOpen = checkedCount > 0 && !isFull; // partially-checked modules start expanded
+    return `<div class="perm-module${isFull ? ' full' : ''}${isOpen ? ' open' : ''}" data-module="${mod.key}">
+      <div class="perm-module-head" onclick="togglePermModule(this)">
+        <svg class="perm-module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <span class="perm-module-icon">${mod.icon}</span>
+        <span class="perm-module-title">${esc(mod.label)}</span>
+        <span class="perm-module-count">${fmtN(checkedCount)}/${fmtN(total)}</span>
+        <label class="perm-module-master" onclick="event.stopPropagation()">
+          <input type="checkbox" class="perm-master-cb" ${isFull ? 'checked' : ''} onchange="togglePermModuleAll(this)">
+        </label>
+      </div>
+      <div class="perm-module-body">
+        <div class="perm-module-actions">
+          ${mod.perms.map(p => `<label class="perm-action-label"><input type="checkbox" class="perm-cb" value="${p}" data-module="${mod.key}" ${activePerms.includes(p) ? 'checked' : ''} onchange="onPermCbChange(this)"> <span>${esc(PERMS_AR[p])}</span></label>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="perm-sys">
+    <div class="perm-sys-templates">
+      <span>قوالب جاهزة:</span>
+      <button type="button" class="perm-tpl-btn" onclick="applyPermTemplate('viewer')">مشاهد</button>
+      <button type="button" class="perm-tpl-btn" onclick="applyPermTemplate('staff')">موظف</button>
+      <button type="button" class="perm-tpl-btn" onclick="applyPermTemplate('admin')">مدير كامل</button>
+    </div>
+    <div class="perm-sys-toolbar">
+      <div class="perm-sys-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="ابحث عن صلاحية..." oninput="filterPermSystem(this.value)">
+      </div>
+      <button type="button" class="btn-sm" onclick="qsa('.perm-cb').forEach(c=>c.checked=true);refreshPermModules()">تحديد الكل</button>
+      <button type="button" class="btn-sm" onclick="qsa('.perm-cb').forEach(c=>c.checked=false);refreshPermModules()">إلغاء الكل</button>
+    </div>
+    <div class="perm-sys-summary">مُفعّل: <b id="perm-sys-total">${fmtN(activePerms.length)}</b> من ${fmtN(PERMS.length)} صلاحية</div>
+    <div class="perm-sys-body">${modulesHtml}</div>
+  </div>`;
+}
+function togglePermModule(headEl) {
+  headEl.closest('.perm-module').classList.toggle('open');
+}
+function togglePermModuleAll(masterCb) {
+  const mod = masterCb.closest('.perm-module');
+  mod.querySelectorAll('.perm-cb').forEach(c => c.checked = masterCb.checked);
+  refreshPermModules();
+}
+function onPermCbChange(cb) {
+  refreshPermModules();
+}
+function refreshPermModules() {
+  qsa('.perm-module').forEach(mod => {
+    const cbs = qsa('.perm-cb', mod);
+    const checked = cbs.filter(c => c.checked).length;
+    const master = qs('.perm-master-cb', mod);
+    if (master) { master.checked = checked === cbs.length; master.indeterminate = checked > 0 && checked < cbs.length; }
+    const countEl = qs('.perm-module-count', mod);
+    if (countEl) countEl.textContent = `${fmtN(checked)}/${fmtN(cbs.length)}`;
+    mod.classList.toggle('full', checked === cbs.length && cbs.length > 0);
+  });
+  const totalEl = qs('#perm-sys-total');
+  if (totalEl) totalEl.textContent = fmtN(qsa('.perm-cb:checked').length);
+}
+function filterPermSystem(term) {
+  const q = (term || '').trim().toLowerCase();
+  qsa('.perm-module').forEach(mod => {
+    if (!q) { mod.classList.remove('hidden-by-search'); return; }
+    const labels = qsa('.perm-action-label span', mod).map(s => s.textContent.toLowerCase());
+    const modTitle = (qs('.perm-module-title', mod)?.textContent || '').toLowerCase();
+    const matches = modTitle.includes(q) || labels.some(l => l.includes(q));
+    mod.classList.toggle('hidden-by-search', !matches);
+    if (matches && q) mod.classList.add('open');
+  });
+}
+function applyPermTemplate(role, syncRoleSelect = true) {
+  const set = new Set(ROLE_TEMPLATES[role] || []);
+  qsa('.perm-cb').forEach(c => c.checked = set.has(c.value));
+  refreshPermModules();
+  if (syncRoleSelect) { const sel = qs('#um-role'); if (sel) sel.value = role; }
 }
 async function saveUser(id) {
   const perms = qsa('.perm-cb:checked').map(cb => cb.value);
