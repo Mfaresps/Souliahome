@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content">
-<title>Soulia - إدارة المخازن</title>
+<title>Soulia - Business Management</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="shortcut icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 <script src="/config.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -616,6 +619,47 @@ body.dark-mode .settings-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.2)}
 @media(max-width:600px){
   .rep-sec-tab{padding:8px 14px;font-size:.8rem;gap:5px}
   .rep-sec-tab svg{display:none}
+}
+/* ── Order Range Audit ── */
+.oa-kpi-grid{grid-template-columns:repeat(4,1fr)}
+@media(max-width:1100px){.oa-kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:460px){.oa-kpi-grid{grid-template-columns:1fr}}
+.oa-kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;border-top:3px solid var(--border)}
+.oa-kpi-label{font-size:.78rem;color:var(--muted);margin-bottom:6px}
+.oa-kpi-value{font-size:1.45rem;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums}
+.oa-kpi-sub{font-size:.74rem;color:var(--muted);margin-top:4px}
+.oa-fin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:860px){.oa-fin-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:460px){.oa-fin-grid{grid-template-columns:1fr}}
+.oa-fin{background:var(--bg-alt,var(--surface2));border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px}
+.oa-fin-l{font-size:.76rem;color:var(--muted);margin-bottom:3px}
+.oa-fin-v{font-size:1.05rem;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.oa-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.32);border-radius:7px;padding:5px 10px;font-weight:700;font-size:.86rem;font-variant-numeric:tabular-nums}
+.oa-chip.reviewed{background:rgba(16,185,129,.1);color:#059669;border-color:rgba(16,185,129,.32)}
+.oa-miss-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--border)}
+.oa-miss-row:last-child{border-bottom:none}
+.oa-miss-actions{display:flex;gap:6px;flex-wrap:wrap;margin-inline-start:auto}
+.oa-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.74rem;font-weight:600;white-space:nowrap}
+.oa-badge.synced{background:rgba(16,185,129,.12);color:#059669}
+.oa-badge.missing{background:rgba(239,68,68,.12);color:#dc2626}
+.oa-badge.failed{background:rgba(245,158,11,.14);color:#b45309}
+.oa-badge.cancelled{background:rgba(107,114,128,.16);color:#4b5563}
+.oa-badge.pending{background:rgba(59,130,246,.13);color:#1d4ed8}
+#oa-table tbody tr{border-bottom:1px solid var(--border)}
+#oa-table tbody tr:hover{background:var(--bg-alt,var(--surface2))}
+#oa-table tbody tr.oa-row-missing{background:rgba(239,68,68,.045)}
+#oa-table tbody tr.oa-row-missing:hover{background:rgba(239,68,68,.09)}
+#oa-table td{padding:7px 9px;vertical-align:middle}
+#oa-table td.num{text-align:left;direction:ltr;font-variant-numeric:tabular-nums}
+#oa-table th.oa-th-sort{cursor:pointer;user-select:none}
+#oa-table th.oa-th-sort:hover{color:var(--accent)}
+#oa-table .oa-sort-ind{opacity:.55;font-size:.68rem;margin-inline-start:3px}
+@media(max-width:760px){
+  .oa-inputs{flex-direction:column;align-items:stretch}
+  .oa-export-btns{width:100%}
+  .oa-export-btns .btn{flex:1 1 auto;justify-content:center}
+  .oa-two-col{grid-template-columns:1fr}
+  .oa-miss-actions{margin-inline-start:0;width:100%}
 }
 .tab-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
 .section-tab-bar{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
@@ -1292,6 +1336,19 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .inv-party-name{font-size:1.05rem;font-weight:800;color:#0f172a;display:flex;align-items:center;gap:7px;flex-wrap:wrap;line-height:1.2}
 .inv-party-tag{font-size:.62rem;font-weight:700;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;padding:2px 9px;border-radius:20px;flex-shrink:0;letter-spacing:.03em}
 .inv-party-card.is-purchase .inv-party-tag{color:#059669;background:#f0fdf4;border-color:#6ee7b7}
+.inv-cust-badge{font-size:.62rem;font-weight:800;padding:2px 9px;border-radius:20px;flex-shrink:0;letter-spacing:.02em;cursor:pointer;border:1px solid transparent;display:inline-flex;align-items:center;gap:4px;transition:filter .15s}
+.inv-cust-badge:hover{filter:brightness(.96)}
+.inv-cust-badge.is-repeat{color:#b45309;background:#fffbeb;border-color:#fde68a}
+.inv-cust-badge.is-new{color:#7c3aed;background:#f5f3ff;border-color:#ddd6fe}
+.inv-cust-history{display:none;margin-top:8px;padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px}
+.inv-cust-history.open{display:block}
+.inv-cust-history-title{font-size:.72rem;font-weight:700;color:#92400e;margin-bottom:7px;display:flex;align-items:center;gap:5px}
+.inv-cust-history-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:8px;font-size:.76rem;cursor:pointer;background:#fff;border:1px solid #fde68a}
+.inv-cust-history-item+.inv-cust-history-item{margin-top:5px}
+.inv-cust-history-item:hover{background:#fef3c7}
+.inv-cust-history-item .ref{font-weight:700;color:#0f172a}
+.inv-cust-history-item .date{color:#92400e;font-size:.7rem}
+.inv-cust-history-item .amt{font-weight:700;color:#059669;direction:ltr}
 .inv-party-phone{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:#1e40af;direction:ltr;font-weight:600;background:#eff6ff;border:1px solid #bfdbfe;border-radius:20px;padding:4px 12px;width:fit-content;cursor:pointer;transition:background .15s,border-color .15s;user-select:all}
 .inv-party-card.is-purchase .inv-party-phone{color:#065f46;background:#f0fdf4;border-color:#6ee7b7}
 .inv-party-phone:hover{background:#dbeafe;border-color:#93c5fd}
@@ -1605,6 +1662,12 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .sp-filter-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .sp-filter-count{background:var(--bg-alt);color:var(--text-muted);border-radius:99px;padding:1px 6px;font-size:.68rem;font-weight:700}
 .sp-status-filter-btn.active .sp-filter-count{background:var(--accent);color:#fff}
+#shopify-deposit-summary-bar{display:flex;align-items:center;gap:12px;flex-wrap:nowrap;flex-shrink:0}
+#shopify-deposit-summary-bar:empty{display:none}
+.sp-deposit-chip{display:inline-flex;align-items:center;gap:4px;font-size:.74rem;font-weight:700;color:var(--text);letter-spacing:.01em;white-space:nowrap}
+.sp-deposit-chip img{width:15px;height:15px;object-fit:contain;opacity:.9;flex-shrink:0}
+.sp-deposit-chip svg{flex-shrink:0}
+.sp-deposit-sep{width:1px;height:14px;background:var(--border);border-radius:1px;flex-shrink:0}
 .sp-date-popover{display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:20;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);width:max-content;max-width:min(360px,calc(100vw - 32px))}
 .sp-date-popover.open{display:flex}
 .sp-date-quick-btn{font-size:.75rem;border:1.5px solid var(--border);color:var(--text-muted);background:var(--surface);border-radius:8px;padding:5px 12px;font-weight:500;transition:all .2s}
@@ -1872,6 +1935,8 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .product-thumb.prod-grid-thumb .tx-item-img-fallback svg{width:38%;height:38%}
 .product-thumb.prod-list-thumb{width:56px;height:56px;border-radius:10px}
 .product-thumb.cmp-product-thumb{width:52px;height:52px;border-radius:10px}
+.product-thumb.inv-item-thumb{width:34px;height:34px;min-width:34px;border-radius:7px}
+.product-thumb.inv-item-thumb .tx-item-img-fallback svg{width:50%;height:50%}
 /* ===== Products view-mode toggle ===== */
 .prod-view-toggle{display:inline-flex;gap:2px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px}
 @media(max-width:768px){.prod-view-toggle{display:none}}
@@ -3481,8 +3546,11 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
   /* Sidebar overlay */
   #sidebar-overlay{backdrop-filter:blur(2px)}
 
-  /* Hamburger hidden — replaced by bottom nav */
-  .hamburger{display:none!important}
+  /* Hamburger moved next to logo, top-right */
+  .hamburger{display:inline-flex!important;width:32px;height:32px;color:#1a2e22;border-radius:8px}
+  body.dark-mode .hamburger{color:#e5efe9}
+  .hamburger:active{background:rgba(0,0,0,.06)}
+  .hamburger svg{width:19px;height:19px}
 
   /* ── Header ── */
   #header{padding:0 14px;gap:8px;height:56px;box-shadow:0 2px 12px rgba(0,0,0,.18)}
@@ -3545,45 +3613,57 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
   .search-hint{font-size:.65rem;padding:7px 12px}
   .search-empty{padding:20px 12px}
 
-  /* ══ Bottom Navigation Bar — Curved FAB Style ══ */
+  /* ══ Bottom Navigation Bar — Floating Glassmorphism Pill ══ */
   #mobile-bottom-nav{
-    display:block;
-    position:fixed;bottom:0;left:0;right:0;
-    height:calc(84px + env(safe-area-inset-bottom,0px));
-    z-index:200;
+    position:fixed;left:0;right:0;
+    bottom:calc(14px + env(safe-area-inset-bottom,0px));
+    z-index:45;
+    display:flex;justify-content:center;
     pointer-events:none;
+    padding:0 14px;
+    transition:opacity .2s,transform .2s;
   }
-  /* SVG background curve — the "notch" shape */
-  #mobile-bottom-nav .m-nav-bg{
-    position:absolute;bottom:0;left:0;right:0;
-    width:100%;height:100%;
-    pointer-events:none;
-    overflow:visible;
-    filter:drop-shadow(0 -3px 12px rgba(0,0,0,.09));
+  #sidebar.open ~ #mobile-bottom-nav{
+    opacity:0;transform:translateY(12px);pointer-events:none;
   }
-  #mobile-bottom-nav .m-nav-bg path{fill:#ffffff}
-  body.dark-mode #mobile-bottom-nav .m-nav-bg path{fill:#161d18}
-  /* Row that holds the actual items */
+  /* Row that holds the actual items — the floating glass pill itself */
   #mobile-bottom-nav .m-nav-row{
-    position:relative;width:100%;
-    display:flex;align-items:flex-end;
-    padding-bottom:env(safe-area-inset-bottom,0px);
+    position:relative;
+    display:flex;align-items:center;justify-content:center;
+    gap:2px;
     pointer-events:auto;
+    background:rgba(255,255,255,.62);
+    -webkit-backdrop-filter:blur(20px) saturate(180%);
+    backdrop-filter:blur(20px) saturate(180%);
+    border:1px solid rgba(255,255,255,.5);
+    border-radius:28px;
+    padding:8px 10px;
+    box-shadow:0 8px 32px rgba(15,30,20,.14),0 2px 8px rgba(15,30,20,.06),inset 0 1px 0 rgba(255,255,255,.6);
+    max-width:420px;width:100%;
+  }
+  body.dark-mode #mobile-bottom-nav .m-nav-row{
+    background:rgba(22,29,24,.62);
+    border-color:rgba(255,255,255,.08);
+    box-shadow:0 8px 32px rgba(0,0,0,.45),0 2px 8px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.05);
   }
   /* Each tab item */
   #mobile-bottom-nav .m-nav-item{
-    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
-    gap:4px;cursor:pointer;border:none;background:none;
-    color:var(--muted);padding:8px 2px 12px;
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2px;cursor:pointer;border:none;background:none;
+    color:var(--muted);padding:7px 4px;
+    border-radius:18px;
     -webkit-tap-highlight-color:transparent;
-    transition:color .18s;
+    transition:color .18s,background .18s;
     position:relative;overflow:hidden;
-    min-height:72px;
+    min-height:52px;
+  }
+  #mobile-bottom-nav .m-nav-item.active{
+    background:color-mix(in srgb,var(--accent) 12%,transparent);
   }
   /* Active indicator — pill under icon */
   #mobile-bottom-nav .m-nav-dot{
-    position:absolute;bottom:6px;left:50%;transform:translateX(-50%) scaleX(0);
-    width:22px;height:3px;
+    position:absolute;bottom:3px;left:50%;transform:translateX(-50%) scaleX(0);
+    width:16px;height:3px;
     background:var(--accent);border-radius:999px;
     transition:transform .22s cubic-bezier(.4,0,.2,1);
     transform-origin:center;
@@ -3592,48 +3672,40 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
     transform:translateX(-50%) scaleX(1);
   }
   #mobile-bottom-nav .m-nav-item svg{
-    width:26px;height:26px;flex-shrink:0;
+    width:22px;height:22px;flex-shrink:0;
     transition:transform .22s cubic-bezier(.34,1.56,.64,1),stroke .18s,color .18s;
   }
   #mobile-bottom-nav .m-nav-item.active{color:var(--accent)}
   #mobile-bottom-nav .m-nav-item.active svg{
-    transform:translateY(-2px) scale(1.12);
+    transform:translateY(-1px) scale(1.1);
     stroke:var(--accent);
   }
   #mobile-bottom-nav .m-nav-label{
-    font-size:.64rem;font-weight:700;letter-spacing:.02em;line-height:1;
-    transition:color .18s;margin-bottom:2px;
+    font-size:.6rem;font-weight:700;letter-spacing:.02em;line-height:1;
+    transition:color .18s;
   }
-  #mobile-bottom-nav .m-nav-item:active{opacity:.7}
-  /* Central FAB slot — creates space in the flex row for the notch */
+  #mobile-bottom-nav .m-nav-item:active{opacity:.7;transform:scale(.94)}
+  /* Central FAB slot */
   #mobile-bottom-nav .m-nav-fab-slot{
-    flex:0 0 100px;display:flex;align-items:flex-end;justify-content:center;
-    padding-bottom:10px;position:relative;
+    flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    padding:0 6px;position:relative;
   }
-  /* FAB — floating action button rises above the bar */
+  /* FAB — premium green floating action button */
   #mobile-bottom-nav .m-nav-fab{
     display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(145deg,#2d7a4f 0%,#00311e 100%);
-    border-radius:50%;width:64px;height:64px;
-    cursor:pointer;border:3px solid #fff;color:#fff;
-    box-shadow:0 4px 18px rgba(0,49,30,.45),0 2px 6px rgba(0,49,30,.22),0 0 0 0 rgba(45,122,79,.6);
+    background:linear-gradient(145deg,#34a06a 0%,#00311e 100%);
+    border-radius:50%;width:50px;height:50px;
+    cursor:pointer;border:none;color:#fff;
+    box-shadow:0 4px 14px rgba(0,49,30,.4),0 2px 5px rgba(0,49,30,.2),inset 0 1px 1px rgba(255,255,255,.25);
     transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s;
     -webkit-tap-highlight-color:transparent;
-    position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
     pointer-events:auto;
-    animation:fabGlowPulse 2.2s ease-out infinite;
   }
-  body.dark-mode #mobile-bottom-nav .m-nav-fab{border-color:#161d18}
   #mobile-bottom-nav .m-nav-fab:active{
-    transform:translateX(-50%) scale(.88);
+    transform:scale(.88);
     box-shadow:0 2px 8px rgba(0,49,30,.3);
   }
-  #mobile-bottom-nav .m-nav-fab svg{width:28px;height:28px;stroke-width:2}
-  @keyframes fabGlowPulse{
-    0%{box-shadow:0 4px 18px rgba(0,49,30,.45),0 2px 6px rgba(0,49,30,.22),0 0 0 0 rgba(45,122,79,.55)}
-    70%{box-shadow:0 4px 18px rgba(0,49,30,.45),0 2px 6px rgba(0,49,30,.22),0 0 0 14px rgba(45,122,79,0)}
-    100%{box-shadow:0 4px 18px rgba(0,49,30,.45),0 2px 6px rgba(0,49,30,.22),0 0 0 0 rgba(45,122,79,0)}
-  }
+  #mobile-bottom-nav .m-nav-fab svg{width:24px;height:24px;stroke-width:2.2}
 
   /* ── Modals → Bottom Sheet ── */
   .modal-overlay{align-items:flex-end!important}
@@ -3816,10 +3888,10 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
 @media(max-width:380px){
   #dash-stats{grid-template-columns:repeat(2,1fr)!important}
   .kpi-strip .kpi .kpi-val{font-size:.9rem}
-  #mobile-bottom-nav .m-nav-label{font-size:.58rem}
-  #mobile-bottom-nav .m-nav-fab{width:58px;height:58px}
-  #mobile-bottom-nav .m-nav-fab-slot{flex:0 0 76px}
-  #mobile-bottom-nav .m-nav-fab svg{width:26px;height:26px}
+  #mobile-bottom-nav .m-nav-label{font-size:.55rem}
+  #mobile-bottom-nav .m-nav-row{gap:0;padding:6px 6px}
+  #mobile-bottom-nav .m-nav-fab{width:46px;height:46px}
+  #mobile-bottom-nav .m-nav-fab svg{width:22px;height:22px}
 }
 
 /* Desktop — hide bottom nav */
@@ -4299,9 +4371,9 @@ body.dark-mode .disc-badge:hover .db-code,body.dark-mode .disc-badge:hover .db-m
 .pa-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:14px 24px;border-top:1px solid var(--border)}
 @media(max-width:640px){.pa-modal{padding:10px}.pa-summary{grid-template-columns:repeat(2,1fr)}.pa-table{font-size:.74rem}.pa-table th,.pa-table td{padding:7px 7px}}
 /* ── Demand Planning (تحليل احتياج المخزون) ───────────────────────────── */
-.dp-modal{position:fixed;inset:0;z-index:1015;display:flex;align-items:flex-start;justify-content:center;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);padding:20px;overflow-y:auto}
-.dp-panel{background:var(--surface);border-radius:16px;width:100%;max-width:1120px;box-shadow:0 24px 64px rgba(0,0,0,.25);border:1px solid var(--border);margin:auto;direction:rtl}
-.dp-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 24px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);border-radius:16px 16px 0 0;z-index:3}
+.dp-modal{position:fixed;inset:0;z-index:1015;display:flex;background:var(--surface);padding:0;overflow-y:auto}
+.dp-panel{background:var(--surface);border-radius:0;width:100%;max-width:none;min-height:100%;box-shadow:none;border:none;margin:0;direction:rtl;display:flex;flex-direction:column}
+.dp-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px clamp(14px,3vw,28px) 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:3}
 .dp-header h3{margin:0;font-size:1.05rem;font-weight:800;color:var(--primary);display:flex;align-items:center;gap:8px}
 .dp-header .dp-sub{font-size:.72rem;font-weight:600;color:var(--muted);margin-top:3px}
 .dp-close{background:none;border:none;font-size:1.2rem;color:var(--muted);cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;transition:background .15s}
@@ -4373,9 +4445,37 @@ body.dark-mode .disc-badge:hover .db-code,body.dark-mode .disc-badge:hover .db-m
 .dp-calc-total .dp-calc-val{font-weight:800;font-size:.8rem}
 .dp-calc-note{margin-top:8px;font-size:.7rem;color:var(--muted)}
 .dp-empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:.83rem}
-.dp-footer{display:flex;align-items:center;justify-content:flex-end;gap:9px;padding:13px 24px;border-top:1px solid var(--border);flex-wrap:wrap;position:sticky;bottom:0;background:var(--surface);border-radius:0 0 16px 16px}
+.dp-footer{display:flex;align-items:center;justify-content:flex-end;gap:9px;padding:13px clamp(14px,3vw,24px);border-top:1px solid var(--border);flex-wrap:wrap;position:sticky;bottom:0;background:var(--surface)}
 .dp-footer .dp-foot-info{margin-inline-end:auto;font-size:.74rem;color:var(--muted);font-weight:600}
 .dp-cards{display:none}
+/* ── Tabs: تحليل المخزون / جاهز للشحن / نواقص الطلبات ─────────────────── */
+.dp-tabs{position:sticky;top:0;background:var(--surface);z-index:2;border-bottom:1px solid var(--border)}
+.dp-tabs-scroll{display:flex;align-items:center;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 clamp(14px,3vw,24px)}
+.dp-tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:inherit;font-size:.82rem;font-weight:700;padding:12px 14px;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:6px}
+.dp-tab:hover{color:var(--text)}
+.dp-tab.active{color:var(--primary);border-color:var(--primary)}
+.dp-tab .dp-tab-badge{background:var(--bg-alt);color:var(--muted);border-radius:999px;padding:1px 7px;font-size:.68rem;font-weight:800}
+.dp-tab.active .dp-tab-badge{background:var(--primary);color:#fff}
+.dp-tabpane{display:none}
+.dp-tabpane.active{display:block}
+/* Orders filter/sort toolbar (Ready-to-Ship / Missing tabs) */
+.dp-ord-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px clamp(14px,3vw,24px);border-bottom:1px solid var(--border)}
+.dp-ord-toolbar select,.dp-ord-toolbar input[type=date],.dp-ord-toolbar input[type=number]{background:var(--bg-alt);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.75rem;color:var(--text);font-family:inherit}
+.dp-ord-toolbar .dp-ord-range{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--muted)}
+.dp-ord-toolbar .dp-ord-range input{width:84px}
+.dp-ord-wrap{padding:14px clamp(14px,3vw,24px);overflow-x:auto}
+.dp-ord-table{width:100%;border-collapse:collapse;font-size:.79rem;min-width:640px}
+.dp-ord-table th{background:var(--bg-alt);padding:9px 9px;text-align:right;font-weight:700;color:var(--muted);font-size:.7rem;white-space:nowrap;border-bottom:2px solid var(--border);position:sticky;top:0}
+.dp-ord-table td{padding:9px 9px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+.dp-ord-table tr:hover>td{background:var(--bg-alt)}
+.dp-ord-ref{font-weight:800;color:var(--accent);font-size:.82rem;direction:ltr;text-align:start}
+.dp-ord-client{font-weight:700;font-size:.79rem}
+.dp-ord-date{font-size:.72rem;color:var(--muted);white-space:nowrap}
+.dp-ord-items{font-size:.72rem;color:var(--muted);line-height:1.6;max-width:280px}
+.dp-ord-items .missing-item{color:#dc2626;font-weight:700}
+.dp-ord-priority-1{white-space:nowrap}
+@media(max-width:900px){.dp-ord-priority-2{display:none}}
+@media(max-width:700px){.dp-ord-priority-3{display:none}}
 /* Mobile: card view replaces the table */
 @media(max-width:820px){
   .dp-modal{padding:0}
@@ -4384,6 +4484,12 @@ body.dark-mode .disc-badge:hover .db-code,body.dark-mode .disc-badge:hover .db-m
   .dp-summary{grid-template-columns:repeat(2,1fr);padding:12px 14px;gap:8px}
   .dp-toolbar{padding:10px 14px}
   .dp-notice{margin:10px 14px 0}
+  .dp-tabs-scroll{padding:0 14px}
+  .dp-ord-toolbar{padding:10px 14px;flex-direction:column;align-items:stretch}
+  .dp-ord-toolbar select,.dp-ord-toolbar .dp-ord-range,.dp-ord-toolbar .dp-search{width:100%}
+  .dp-ord-toolbar .dp-ord-range{justify-content:space-between}
+  .dp-ord-toolbar .dp-ord-range input{flex:1;width:auto;min-width:0}
+  .dp-ord-wrap{padding:14px}
   .dp-table-wrap{display:none}
   .dp-cards{display:block;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
   .dp-card{background:var(--bg-alt);border:1px solid var(--border);border-radius:11px;overflow:hidden}
@@ -6465,7 +6571,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 <div id="splash-screen" aria-hidden="true" role="status" aria-label="جارٍ التحميل">
   <div class="splash-stage">
     <img src="/soulia-logo.svg" alt="Soulia" class="splash-logo" draggable="false">
-    <div class="splash-sub">نظام إدارة المبيعات والمخزون</div>
+    <div class="splash-sub">Operations Management</div>
     <div class="splash-bar" aria-hidden="true"><div class="splash-bar-fill"></div></div>
     <div class="splash-percent" id="splash-percent">0%</div>
   </div>
@@ -6691,12 +6797,8 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 <nav id="sidebar"></nav>
 <div id="sidebar-overlay" style="display:none;position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.3)" onclick="closeSidebar()"></div>
 
-<!-- Mobile Bottom Navigation Bar — Curved FAB -->
+<!-- Mobile Bottom Navigation Bar — Floating Glassmorphism Pill -->
 <nav id="mobile-bottom-nav" style="display:none" aria-label="التنقل الرئيسي">
-  <!-- SVG curve background with notch for FAB — path is set by JS on init/resize -->
-  <svg class="m-nav-bg" id="m-nav-bg-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <path id="m-nav-bg-path"/>
-  </svg>
   <div class="m-nav-row">
     <!-- المخزن -->
     <button class="m-nav-item" id="mnav-inventory" onclick="navigateTo('inventory');updateMobileNav('inventory')" aria-label="المخزن">
@@ -6710,7 +6812,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <span class="m-nav-label">المعاملات</span>
       <span class="m-nav-dot"></span>
     </button>
-    <!-- FAB slot (notch space) -->
+    <!-- FAB slot -->
     <div class="m-nav-fab-slot">
       <button class="m-nav-fab" id="m-nav-fab-btn"></button>
     </div>
@@ -6720,10 +6822,10 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <span class="m-nav-label">الرئيسية</span>
       <span class="m-nav-dot"></span>
     </button>
-    <!-- المزيد -->
-    <button class="m-nav-item" id="mnav-more" onclick="toggleSidebar()" aria-label="المزيد">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      <span class="m-nav-label">المزيد</span>
+    <!-- معاملة جديدة -->
+    <button class="m-nav-item" id="mnav-new-tx" onclick="hasPerm('transaction') ? (navigateTo('transaction'),updateMobileNav('transaction')) : toast('ليس لديك صلاحية معاملة جديدة', true)" aria-label="معاملة جديدة">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span class="m-nav-label">جديد</span>
       <span class="m-nav-dot"></span>
     </button>
   </div>
@@ -9135,6 +9237,10 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
       أكواد الخصم
     </button>
+    <button class="rep-sec-tab" data-rep-tab="orderaudit" onclick="switchReportTab('orderaudit',this)" role="tab" aria-selected="false">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="13" width="3" height="5" rx="0.5"/><rect x="12" y="9" width="3" height="9" rx="0.5"/><rect x="17" y="5" width="3" height="13" rx="0.5"/></svg>
+      تحليل الطلبات
+    </button>
   </div>
 
   <!-- Row 3: Filter bar -->
@@ -9308,6 +9414,201 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <div style="font-size:.95rem">لا توجد أكواد خصم مُعرَّفة بعد</div>
     </div>
   </div>
+</div>
+
+<!-- ── TAB 4: Order Range Audit ── -->
+<div class="rep-tab-panel" id="rep-panel-orderaudit">
+
+  <!-- Range input bar -->
+  <div class="card oa-range-bar" style="margin-top:16px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <span style="width:32px;height:32px;border-radius:8px;background:rgba(0,102,204,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#0066cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="13" width="3" height="5" rx="0.5"/><rect x="12" y="9" width="3" height="9" rx="0.5"/><rect x="17" y="5" width="3" height="13" rx="0.5"/></svg>
+      </span>
+      <div>
+        <h3 style="font-size:.95rem;color:var(--text);margin:0;font-weight:600">تحليل الطلبات</h3>
+        <div style="font-size:.78rem;color:var(--muted);margin-top:2px">مطابقة أرقام أوردرات Shopify مع الحركات المسجلة في سوليا وتحليل أداء المنتجات داخل النطاق</div>
+      </div>
+    </div>
+
+    <div class="oa-inputs" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:130px;flex:1 1 130px">
+        <label for="oa-from" style="font-size:.78rem;color:var(--muted)">من أوردر رقم</label>
+        <input type="number" id="oa-from" min="1" step="1" placeholder="2231" onkeydown="if(event.key==='Enter')runOrderAudit()"
+          style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.9rem;width:100%">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:130px;flex:1 1 130px">
+        <label for="oa-to" style="font-size:.78rem;color:var(--muted)">إلى أوردر رقم</label>
+        <input type="number" id="oa-to" min="1" step="1" placeholder="2279" onkeydown="if(event.key==='Enter')runOrderAudit()"
+          style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.9rem;width:100%">
+      </div>
+      <button class="btn btn-primary" id="oa-run-btn" onclick="runOrderAudit()" style="flex:0 0 auto">
+        <svg viewBox="0 0 24 24" width="14" height="14" style="display:inline-block;vertical-align:-2px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        فحص النطاق
+      </button>
+      <div style="flex:1 1 auto"></div>
+      <div class="oa-export-btns" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" id="oa-export-excel" onclick="exportOrderAudit('excel')" disabled title="تصدير Excel">
+          <svg viewBox="0 0 24 24" width="14" height="14" style="display:inline-block;vertical-align:-2px" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="19"/><line x1="15" y1="13" x2="9" y2="19"/></svg>
+          Excel
+        </button>
+        <button class="btn btn-outline btn-sm" id="oa-export-pdf" onclick="exportOrderAudit('pdf')" disabled title="تصدير PDF">
+          <svg viewBox="0 0 24 24" width="14" height="14" style="display:inline-block;vertical-align:-2px" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          PDF
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="toggleAuditHistory()" title="سجل عمليات التدقيق">
+          <svg viewBox="0 0 24 24" width="14" height="14" style="display:inline-block;vertical-align:-2px" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          السجل
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div class="card" id="oa-empty" style="margin-top:16px">
+    <div style="text-align:center;padding:44px 20px;color:var(--muted)">
+      <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px;opacity:.4"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <div style="font-size:.95rem;margin-bottom:4px">أدخل نطاق أرقام الأوردرات ثم اضغط «فحص النطاق»</div>
+      <div style="font-size:.82rem;opacity:.75">مثال: من 2231 إلى 2279</div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="card" id="oa-loading" style="margin-top:16px;display:none">
+    <div style="text-align:center;padding:44px 20px;color:var(--muted);font-size:.9rem">جاري فحص النطاق…</div>
+  </div>
+
+  <!-- Results -->
+  <div id="oa-results" style="display:none">
+
+    <!-- 1. Sequence KPIs -->
+    <div class="grid grid-4 oa-kpi-grid" id="oa-kpis" style="gap:12px;margin-top:16px"></div>
+
+    <!-- 2. Missing orders -->
+    <div class="card mb-16" id="oa-missing-card" style="margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <h3 style="font-size:.95rem;color:var(--text);margin:0;font-weight:600;display:flex;align-items:center;gap:7px">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          الأوردرات المفقودة
+        </h3>
+        <span id="oa-missing-count" style="font-size:.8rem;color:var(--muted)"></span>
+      </div>
+      <div id="oa-missing-body"></div>
+    </div>
+
+    <!-- 3. Financial summary -->
+    <div class="card mb-16">
+      <h3 style="font-size:.95rem;color:var(--text);margin:0 0 12px;font-weight:600;display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        التحليل المالي
+      </h3>
+      <div class="oa-fin-grid" id="oa-financials"></div>
+    </div>
+
+    <!-- 3b. Top 5 Products -->
+    <div class="card mb-16">
+      <h3 style="font-size:.95rem;color:var(--text);margin:0 0 12px;font-weight:600;display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
+        الأكثر مبيعاً داخل النطاق
+      </h3>
+      <div id="oa-top-products"></div>
+    </div>
+
+    <!-- 4. Shipping + Date range -->
+    <div class="grid grid-2 mb-16 oa-two-col">
+      <div class="card">
+        <h3 style="font-size:.95rem;color:var(--text);margin:0 0 12px;font-weight:600;display:flex;align-items:center;gap:7px">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          تحليل الشحن
+        </h3>
+        <div id="oa-shipping"></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:.95rem;color:var(--text);margin:0 0 12px;font-weight:600;display:flex;align-items:center;gap:7px">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          تحليل الفترة الزمنية
+        </h3>
+        <div id="oa-daterange"></div>
+      </div>
+    </div>
+
+    <!-- 5. Full audit table -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+        <h3 style="font-size:.95rem;color:var(--text);margin:0;font-weight:600">جدول التدقيق الكامل</h3>
+        <input type="text" id="oa-search" placeholder="بحث برقم الأوردر أو العميل…" oninput="auditPage=1;renderAuditTable()"
+          style="padding:5px 9px;width:220px;max-width:100%;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.85rem">
+      </div>
+
+      <!-- Filters -->
+      <div class="oa-filters" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+        <button class="tab-btn active" data-oa-filter="all" onclick="setAuditFilter('all',this)">الكل</button>
+        <button class="tab-btn" data-oa-filter="missing" onclick="setAuditFilter('missing',this)">المفقودة فقط</button>
+        <button class="tab-btn" data-oa-filter="synced" onclick="setAuditFilter('synced',this)">المتزامنة</button>
+        <button class="tab-btn" data-oa-filter="failed" onclick="setAuditFilter('failed',this)">فشل المزامنة</button>
+        <button class="tab-btn" data-oa-filter="cancelled" onclick="setAuditFilter('cancelled',this)">الملغاة</button>
+        <button class="tab-btn" data-oa-filter="highvalue" onclick="setAuditFilter('highvalue',this)">قيمة عالية</button>
+        <button class="tab-btn" data-oa-filter="noprofit" onclick="setAuditFilter('noprofit',this)">بدون حساب ربح</button>
+        <button class="tab-btn" data-oa-filter="noship" onclick="setAuditFilter('noship',this)">بدون تكلفة شحن</button>
+      </div>
+
+      <div class="overflow-x">
+        <table id="oa-table" class="oa-sortable-table" style="width:100%;border-collapse:collapse;font-size:.85rem;min-width:1050px">
+          <thead>
+            <tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
+              <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('orderNumber')">رقم الأوردر <span class="oa-sort-ind" data-oa-ind="orderNumber"></span></th>
+              <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('shopifyCreatedAt')">تاريخ Shopify <span class="oa-sort-ind" data-oa-ind="shopifyCreatedAt"></span></th>
+              <th class="oa-th-sort" style="padding:8px 9px;text-align:right" onclick="setAuditSort('client')">العميل <span class="oa-sort-ind" data-oa-ind="client"></span></th>
+              <th style="padding:8px 9px;text-align:right;white-space:nowrap">الهاتف</th>
+              <th class="oa-th-sort" style="padding:8px 9px;text-align:center;white-space:nowrap" onclick="setAuditSort('orderStatus')">حالة الأوردر <span class="oa-sort-ind" data-oa-ind="orderStatus"></span></th>
+              <th class="oa-th-sort" style="padding:8px 9px;text-align:center;white-space:nowrap" onclick="setAuditSort('paymentStatus')">حالة الدفع <span class="oa-sort-ind" data-oa-ind="paymentStatus"></span></th>
+              <th style="padding:8px 9px;text-align:right">المنتجات</th>
+              <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('orderTotal')">الإجمالي <span class="oa-sort-ind" data-oa-ind="orderTotal"></span></th>
+              <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('productCost')">تكلفة المنتج <span class="oa-sort-ind" data-oa-ind="productCost"></span></th>
+              <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('shippingCost')">الشحن <span class="oa-sort-ind" data-oa-ind="shippingCost"></span></th>
+              <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('netProfit')">صافي الربح <span class="oa-sort-ind" data-oa-ind="netProfit"></span></th>
+              <th class="oa-th-sort" style="padding:8px 9px;text-align:center;white-space:nowrap" onclick="setAuditSort('registered')">مسجل <span class="oa-sort-ind" data-oa-ind="registered"></span></th>
+              <th class="oa-th-sort" style="padding:8px 9px;text-align:center;white-space:nowrap" onclick="setAuditSort('syncLabel')">المزامنة <span class="oa-sort-ind" data-oa-ind="syncLabel"></span></th>
+            </tr>
+          </thead>
+          <tbody id="oa-tbody"></tbody>
+        </table>
+      </div>
+      <div id="oa-table-empty" style="display:none;text-align:center;padding:26px;color:var(--muted);font-size:.88rem">لا توجد نتائج مطابقة للفلتر</div>
+      <div id="oa-table-foot" style="margin-top:10px;font-size:.8rem;color:var(--muted)"></div>
+      <div id="oa-table-pagination"></div>
+    </div>
+  </div>
+
+  <!-- Audit history -->
+  <div class="card mb-16" id="oa-history-card" style="margin-top:16px;display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <h3 style="font-size:.95rem;color:var(--text);margin:0;font-weight:600;display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        سجل عمليات التدقيق
+      </h3>
+      <button class="btn btn-outline btn-sm" onclick="toggleAuditHistory(false)">إغلاق</button>
+    </div>
+    <div class="overflow-x">
+      <table style="width:100%;border-collapse:collapse;font-size:.85rem;min-width:760px">
+        <thead>
+          <tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
+            <th style="padding:8px 9px;text-align:right">التاريخ</th>
+            <th style="padding:8px 9px;text-align:right">النطاق</th>
+            <th style="padding:8px 9px;text-align:center">المتوقع</th>
+            <th style="padding:8px 9px;text-align:center">المسجل</th>
+            <th style="padding:8px 9px;text-align:center">المفقود</th>
+            <th style="padding:8px 9px;text-align:center">نسبة المزامنة</th>
+            <th style="padding:8px 9px;text-align:right">بواسطة</th>
+            <th style="padding:8px 9px;text-align:center">النتيجة</th>
+          </tr>
+        </thead>
+        <tbody id="oa-history-tbody"></tbody>
+      </table>
+    </div>
+    <div id="oa-history-empty" style="display:none;text-align:center;padding:24px;color:var(--muted);font-size:.88rem">لا توجد عمليات تدقيق سابقة</div>
+  </div>
+
 </div>
 
 </div>
@@ -10119,6 +10420,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
           <input id="shopify-search" type="text" placeholder="بحث برقم الأوردر..." oninput="shopifyPage=1;renderShopifyOrders()" style="width:100%;padding:9px 38px 9px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg);font-size:.85rem;box-sizing:border-box;direction:ltr;transition:border-color .2s;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
         </div>
         <div id="sp-bulk-bar-slot"></div>
+        <div id="shopify-deposit-summary-bar"></div>
         <div style="position:relative">
           <button type="button" class="btn btn-sm" id="shopify-filter-icon-btn" onclick="_toggleShopifyDatePopover(event)" title="تصفية بالتاريخ" style="display:inline-flex;align-items:center;justify-content:center;padding:9px 11px">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
@@ -11677,33 +11979,116 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <div class="dp-summary" id="dp-summary"></div>
     <div id="dp-notice-wrap"></div>
 
-    <div class="dp-toolbar">
-      <button class="dp-chip active" data-dp-filter="all" onclick="setDpFilter('all',this)">الكل <span id="dp-cnt-all">0</span></button>
-      <button class="dp-chip" data-dp-filter="shortage" onclick="setDpFilter('shortage',this)">نقص <span id="dp-cnt-shortage">0</span></button>
-      <button class="dp-chip" data-dp-filter="low" onclick="setDpFilter('low',this)">منخفض <span id="dp-cnt-low">0</span></button>
-      <button class="dp-chip" data-dp-filter="available" onclick="setDpFilter('available',this)">متوفر <span id="dp-cnt-available">0</span></button>
-      <input type="search" class="dp-search" id="dp-search" placeholder="ابحث بالاسم أو الكود (SKU)…" oninput="renderDemandPlanningRows()">
+    <div class="dp-tabs">
+      <div class="dp-tabs-scroll">
+        <button class="dp-tab active" data-dp-tab="analysis" onclick="setDpTab('analysis',this)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>
+          تحليل المخزون <span class="dp-tab-badge" id="dp-tab-cnt-analysis">0</span>
+        </button>
+        <button class="dp-tab" data-dp-tab="ready" onclick="setDpTab('ready',this)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          جاهز للشحن <span class="dp-tab-badge" id="dp-tab-cnt-ready">0</span>
+        </button>
+        <button class="dp-tab" data-dp-tab="missing" onclick="setDpTab('missing',this)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          نواقص الطلبات <span class="dp-tab-badge" id="dp-tab-cnt-missing">0</span>
+        </button>
+      </div>
     </div>
 
-    <div class="dp-table-wrap">
-      <table class="dp-table" id="dp-table">
-        <thead>
-          <tr>
-            <th class="nosort" style="width:26px"></th>
-            <th onclick="setDpSort('name')">الصنف <span class="dp-sort-ind" data-dp-ind="name"></span></th>
-            <th onclick="setDpSort('sku')">الكود SKU <span class="dp-sort-ind" data-dp-ind="sku"></span></th>
-            <th style="text-align:center" onclick="setDpSort('required')">المطلوب <span class="dp-sort-ind" data-dp-ind="required"></span></th>
-            <th style="text-align:center" onclick="setDpSort('available')">المتاح <span class="dp-sort-ind" data-dp-ind="available"></span></th>
-            <th style="text-align:center" onclick="setDpSort('reserved')">محتجز <span class="dp-sort-ind" data-dp-ind="reserved"></span></th>
-            <th style="text-align:center" onclick="setDpSort('shortage')">النقص <span class="dp-sort-ind" data-dp-ind="shortage"></span></th>
-            <th style="text-align:center" onclick="setDpSort('suggestedPurchase')">الشراء المقترح <span class="dp-sort-ind" data-dp-ind="suggestedPurchase"></span></th>
-            <th style="text-align:center" class="nosort">الحالة</th>
-          </tr>
-        </thead>
-        <tbody id="dp-tbody"></tbody>
-      </table>
+    <!-- Tab 1: Product Inventory Analysis (existing) -->
+    <div class="dp-tabpane active" id="dp-tabpane-analysis">
+      <div class="dp-toolbar">
+        <button class="dp-chip active" data-dp-filter="all" onclick="setDpFilter('all',this)">الكل <span id="dp-cnt-all">0</span></button>
+        <button class="dp-chip" data-dp-filter="shortage" onclick="setDpFilter('shortage',this)">نقص <span id="dp-cnt-shortage">0</span></button>
+        <button class="dp-chip" data-dp-filter="low" onclick="setDpFilter('low',this)">منخفض <span id="dp-cnt-low">0</span></button>
+        <button class="dp-chip" data-dp-filter="available" onclick="setDpFilter('available',this)">متوفر <span id="dp-cnt-available">0</span></button>
+        <input type="search" class="dp-search" id="dp-search" placeholder="ابحث بالاسم أو الكود (SKU)…" oninput="renderDemandPlanningRows()">
+      </div>
+
+      <div class="dp-table-wrap">
+        <table class="dp-table" id="dp-table">
+          <thead>
+            <tr>
+              <th class="nosort" style="width:26px"></th>
+              <th onclick="setDpSort('name')">الصنف <span class="dp-sort-ind" data-dp-ind="name"></span></th>
+              <th onclick="setDpSort('sku')">الكود SKU <span class="dp-sort-ind" data-dp-ind="sku"></span></th>
+              <th style="text-align:center" onclick="setDpSort('required')">المطلوب <span class="dp-sort-ind" data-dp-ind="required"></span></th>
+              <th style="text-align:center" onclick="setDpSort('available')">المتاح <span class="dp-sort-ind" data-dp-ind="available"></span></th>
+              <th style="text-align:center" onclick="setDpSort('shortage')">النقص <span class="dp-sort-ind" data-dp-ind="shortage"></span></th>
+              <th style="text-align:center" onclick="setDpSort('suggestedPurchase')">الشراء المقترح <span class="dp-sort-ind" data-dp-ind="suggestedPurchase"></span></th>
+              <th style="text-align:center" class="nosort">الحالة</th>
+            </tr>
+          </thead>
+          <tbody id="dp-tbody"></tbody>
+        </table>
+      </div>
+      <div class="dp-cards" id="dp-cards"></div>
     </div>
-    <div class="dp-cards" id="dp-cards"></div>
+
+    <!-- Tab 2: Ready To Ship Orders -->
+    <div class="dp-tabpane" id="dp-tabpane-ready">
+      <div class="dp-ord-toolbar">
+        <select id="dp-ord-sort-ready" onchange="renderDpOrdersTab('ready')">
+          <option value="date-desc">الأحدث أولاً</option>
+          <option value="date-asc">الأقدم أولاً</option>
+          <option value="value-desc">الأعلى قيمة أولاً</option>
+          <option value="value-asc">الأقل قيمة أولاً</option>
+        </select>
+        <span class="dp-ord-range">من <input type="date" id="dp-ord-date-from-ready" onchange="renderDpOrdersTab('ready')"> إلى <input type="date" id="dp-ord-date-to-ready" onchange="renderDpOrdersTab('ready')"></span>
+        <span class="dp-ord-range">القيمة <input type="number" placeholder="من" id="dp-ord-val-from-ready" onchange="renderDpOrdersTab('ready')"> <input type="number" placeholder="إلى" id="dp-ord-val-to-ready" onchange="renderDpOrdersTab('ready')"></span>
+        <input type="search" class="dp-search" id="dp-ord-search-ready" placeholder="ابحث برقم الأوردر أو اسم العميل…" oninput="renderDpOrdersTab('ready')" style="min-width:160px">
+      </div>
+      <div class="dp-ord-wrap">
+        <table class="dp-ord-table" id="dp-ord-table-ready">
+          <thead>
+            <tr>
+              <th class="dp-ord-priority-1" style="width:26px"><input type="checkbox" id="dp-ready-select-all" onclick="_dpToggleSelectAllReady(this)"></th>
+              <th class="dp-ord-priority-1">رقم الأوردر</th>
+              <th class="dp-ord-priority-1">العميل</th>
+              <th class="dp-ord-priority-2">المنتجات</th>
+              <th class="dp-ord-priority-2" style="text-align:center">الكمية</th>
+              <th class="dp-ord-priority-3">التاريخ</th>
+              <th class="dp-ord-priority-1" style="text-align:center">القيمة</th>
+              <th class="dp-ord-priority-1" style="text-align:center">الحالة</th>
+            </tr>
+          </thead>
+          <tbody id="dp-ord-tbody-ready"></tbody>
+        </table>
+      </div>
+      <div class="dp-foot-info" id="dp-ord-foot-ready" style="padding:0 clamp(14px,3vw,24px) 14px;font-size:.74rem;color:var(--muted);font-weight:600"></div>
+    </div>
+
+    <!-- Tab 3: Missing Stock Orders -->
+    <div class="dp-tabpane" id="dp-tabpane-missing">
+      <div class="dp-ord-toolbar">
+        <select id="dp-ord-sort-missing" onchange="renderDpOrdersTab('missing')">
+          <option value="date-desc">الأحدث أولاً</option>
+          <option value="date-asc">الأقدم أولاً</option>
+          <option value="value-desc">الأعلى قيمة أولاً</option>
+          <option value="value-asc">الأقل قيمة أولاً</option>
+        </select>
+        <span class="dp-ord-range">من <input type="date" id="dp-ord-date-from-missing" onchange="renderDpOrdersTab('missing')"> إلى <input type="date" id="dp-ord-date-to-missing" onchange="renderDpOrdersTab('missing')"></span>
+        <span class="dp-ord-range">القيمة <input type="number" placeholder="من" id="dp-ord-val-from-missing" onchange="renderDpOrdersTab('missing')"> <input type="number" placeholder="إلى" id="dp-ord-val-to-missing" onchange="renderDpOrdersTab('missing')"></span>
+        <input type="search" class="dp-search" id="dp-ord-search-missing" placeholder="ابحث برقم الأوردر أو اسم العميل…" oninput="renderDpOrdersTab('missing')" style="min-width:160px">
+      </div>
+      <div class="dp-ord-wrap">
+        <table class="dp-ord-table" id="dp-ord-table-missing">
+          <thead>
+            <tr>
+              <th class="dp-ord-priority-1">رقم الأوردر</th>
+              <th class="dp-ord-priority-1">العميل</th>
+              <th class="dp-ord-priority-2">الأصناف الناقصة</th>
+              <th class="dp-ord-priority-1" style="text-align:center">المتاح / الناقص</th>
+              <th class="dp-ord-priority-3">التاريخ</th>
+              <th class="dp-ord-priority-1" style="text-align:center">القيمة</th>
+            </tr>
+          </thead>
+          <tbody id="dp-ord-tbody-missing"></tbody>
+        </table>
+      </div>
+      <div class="dp-foot-info" id="dp-ord-foot-missing" style="padding:0 clamp(14px,3vw,24px) 14px;font-size:.74rem;color:var(--muted);font-weight:600"></div>
+    </div>
 
     <div class="dp-footer">
       <span class="dp-foot-info" id="dp-foot-info"></span>
@@ -12339,7 +12724,7 @@ const TRANSLATIONS = {
   settingsLangLabel:{ar:'اللغة',en:'Language'},
   settingsLangHint:{ar:'يُحفظ تلقائياً ويُطبّق على الجلسة الحالية.',en:'Saved automatically and applied for this session.'},
   headerLangTitle:{ar:'تغيير اللغة',en:'Change language'},
-  docTitle:{ar:'Soulia - إدارة المخازن',en:'Soulia — Warehouse management'},
+  docTitle:{ar:'Soulia - Business Management',en:'Soulia - Business Management'},
   colCode:{ar:'الكود',en:'Code'},colName:{ar:'الاسم',en:'Name'},colSupplier:{ar:'المورد',en:'Supplier'},
   colSellPrice:{ar:'سعر البيع',en:'Sale price'},colBuyPrice:{ar:'سعر الشراء',en:'Purchase price'},
   colOpeningBal:{ar:'الرصيد الافتتاحي',en:'Opening balance'},colPurchases:{ar:'المشتريات',en:'Purchases'},
@@ -14774,7 +15159,7 @@ async function showApp() {
 
   if (currentUser) {
     const userName = currentUser.name || currentUser.username || '';
-    toast(`${t('toastWelcome')}, ${userName}`);
+    setTimeout(() => toast(`${t('toastWelcome')}, ${userName}`), 2200);
   }
 
   // Sync users status initially (socket will take over after)
@@ -14984,6 +15369,22 @@ function connectSocket() {
       toast(`تم تحديث ${changes || 'بيانات الصنف'} في ${fmtN(modifiedCount)} معاملة`);
     }
   });
+  // Daily monitor found Shopify orders missing from Soulia (admins only)
+  socket.on('orderAudit:missing', (payload) => {
+    if (currentUser?.role !== 'admin') return;
+    orderAuditAlert = {
+      hasAlert: true,
+      count: payload?.count || 0,
+      missingOrders: payload?.missingOrders || [],
+      from: payload?.from,
+      to: payload?.to,
+      at: new Date().toISOString(),
+    };
+    buildNotifications?.();
+    _updateNotifTimestamp?.();
+    toast(payload?.message || `⚠ ${orderAuditAlert.count} أوردر من Shopify غير مسجل في سوليا`, true);
+  });
+
   socket.on('inventory:changed', async (payload) => {
     try { inventoryCache = await api('/transactions/inventory'); } catch(_) {}
     if (currentPage === 'inventory') renderInventory?.();
@@ -16371,7 +16772,7 @@ function closeSidebar() {
 }
 function updateMobileNav(page) {
   qsa('#mobile-bottom-nav .m-nav-item').forEach(b => b.classList.remove('active'));
-  const map = { dashboard:'mnav-dashboard', movements:'mnav-movements', inventory:'mnav-inventory' };
+  const map = { dashboard:'mnav-dashboard', movements:'mnav-movements', inventory:'mnav-inventory', transaction:'mnav-new-tx' };
   if (map[page]) qs('#' + map[page])?.classList.add('active');
 }
 function setupMobileNavFab() {
@@ -16396,36 +16797,9 @@ function initMobileNav() {
   if (!nav) return;
   setupMobileNavFab();
 
-  function drawNavCurve() {
-    const svg = qs('#m-nav-bg-svg');
-    const pathEl = qs('#m-nav-bg-path');
-    if (!svg || !pathEl) return;
-    const W = window.innerWidth;
-    const H = 84;
-    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    svg.setAttribute('width', W);
-    svg.setAttribute('height', H);
-    const cx = W / 2;
-    const r = 34;   // notch half-width at base
-    const depth = 20; // how high the notch goes
-    const slope = 16; // curve approach slope
-    const d = [
-      `M0,0`,
-      `L${cx - r - slope},0`,
-      `C${cx - r},0 ${cx - r},${depth} ${cx},${depth}`,
-      `C${cx + r},${depth} ${cx + r},0 ${cx + r + slope},0`,
-      `L${W},0`,
-      `L${W},${H}`,
-      `L0,${H}`,
-      `Z`
-    ].join(' ');
-    pathEl.setAttribute('d', d);
-  }
-
   const update = () => {
     const visible = window.innerWidth <= 768;
-    nav.style.display = visible ? 'block' : 'none';
-    if (visible) drawNavCurve();
+    nav.style.display = visible ? 'flex' : 'none';
   };
   update();
   window.addEventListener('resize', update);
@@ -16667,6 +17041,22 @@ function buildNotifications() {
       });
     });
   }
+
+  // Shopify order sync gaps detected by the daily monitor (admin only)
+  if (currentUser?.role === 'admin' && orderAuditAlert?.hasAlert) {
+    const nums = (orderAuditAlert.missingOrders || []).map(n => '#' + n).join('، ');
+    notifs.push({
+      id: 'order-audit-missing',
+      icon: ICON('box'),
+      type: 'urgent',
+      title: `⚠ ${orderAuditAlert.count} أوردر من Shopify غير مسجل في سوليا`,
+      desc: nums ? `الأوردرات: ${nums}` : 'اضغط لمراجعة تقرير تحليل الطلبات',
+      page: 'reports',
+      ts: orderAuditAlert.at || '',
+      refType: 'orderAudit',
+    });
+  }
+
   const NOTIF_PRIORITY = { urgent: 1, warning: 2, info: 3 };
   notifs.sort((a, b) => {
     const pd = (NOTIF_PRIORITY[a.type] || 9) - (NOTIF_PRIORITY[b.type] || 9);
@@ -18452,6 +18842,8 @@ async function loadAllData() {
     // Pre-load vault log for admins so the daily briefing has cash data ready
     if (isAdmin()) {
       try { vaultLog = await api('/vault'); } catch (_) { vaultLog = []; }
+      // Shopify↔Soulia sync gaps found by the daily monitor (feeds the bell)
+      try { orderAuditAlert = await api('/order-audit/monitor-alert'); } catch (_) { orderAuditAlert = null; }
     }
     // Initialize movements seen-count baseline on first load if not set
     if (localStorage.getItem('mov_seen_count') === null) {
@@ -30281,9 +30673,11 @@ async function _dpRunAnalysis(source, endpoint, body, ids) {
     _dpFilter = 'all';
     _dpSort = { key: 'shortage', dir: 'desc' };
     _dpOpenSkus = new Set();
+    _dpReadySelectedIds = new Set();
     const searchEl = qs('#dp-search'); if (searchEl) searchEl.value = '';
     qsa('#demand-planning-modal .dp-chip').forEach(c =>
       c.classList.toggle('active', c.dataset.dpFilter === 'all'));
+    setDpTab('analysis', qs('#demand-planning-modal .dp-tab[data-dp-tab="analysis"]'));
     renderDemandPlanning();
     const modal = qs('#demand-planning-modal');
     if (modal) modal.style.display = 'flex';
@@ -30360,6 +30754,156 @@ function renderDemandPlanning() {
   if (newBtn) { newBtn.disabled = !canBuy; newBtn.style.opacity = canBuy ? '' : '.45'; newBtn.style.cursor = canBuy ? '' : 'not-allowed'; }
 
   renderDemandPlanningRows();
+
+  _dpBuildOrderPivot();
+  const setTabCnt = (id, v) => { const el = qs(id); if (el) el.textContent = fmtN(v); };
+  setTabCnt('#dp-tab-cnt-analysis', (a.lines || []).length);
+  setTabCnt('#dp-tab-cnt-ready', _dpOrdersPivot.ready.length);
+  setTabCnt('#dp-tab-cnt-missing', _dpOrdersPivot.missing.length);
+  renderDpOrdersTab('ready');
+  renderDpOrdersTab('missing');
+}
+
+/* ── Tabs ──────────────────────────────────────────────────────────────── */
+let _dpActiveTab = 'analysis';
+function setDpTab(tab, btn) {
+  _dpActiveTab = tab;
+  qsa('#demand-planning-modal .dp-tab').forEach(t => t.classList.toggle('active', t.dataset.dpTab === tab));
+  qsa('#demand-planning-modal .dp-tabpane').forEach(p => p.classList.toggle('active', p.id === `dp-tabpane-${tab}`));
+}
+
+/**
+ * Pivots the SKU-centric analysis (`_dpAnalysis.lines[].affectedOrders`) into
+ * per-order rows. An order is "ready to ship" only if every line item it
+ * contributes to is fully covered by that line's freeToUse stock — i.e. this
+ * specific order's slice of the demand isn't part of the line's shortage.
+ * Lines are pre-sorted by affectedOrders value (desc, see buildLines on the
+ * server), so within each line the highest-value orders are served first out
+ * of freeToUse when apportioning what's actually covered.
+ */
+let _dpOrdersPivot = { ready: [], missing: [] };
+let _dpReadySelectedIds = new Set();
+function _dpBuildOrderPivot() {
+  const a = _dpAnalysis;
+  const byOrder = new Map(); // transactionId -> { ref, client, date, orderTotal, items:[], missingItems:[] }
+  (a?.lines || []).forEach(l => {
+    let freeLeft = Math.max(0, l.freeToUse);
+    (l.affectedOrders || []).forEach(o => {
+      let entry = byOrder.get(o.transactionId);
+      if (!entry) {
+        entry = {
+          transactionId: o.transactionId,
+          ref: o.ref,
+          client: o.client,
+          date: o.date,
+          orderTotal: o.orderTotal || 0,
+          items: [],
+          missingItems: [],
+        };
+        byOrder.set(o.transactionId, entry);
+      }
+      const covered = Math.min(o.qty, freeLeft);
+      const missing = o.qty - covered;
+      freeLeft -= covered;
+      entry.items.push({ sku: l.sku, name: l.name, qty: o.qty, covered, missing });
+      if (missing > 0) entry.missingItems.push({ sku: l.sku, name: l.name, required: o.qty, missing, available: l.available });
+    });
+  });
+
+  const ready = [], missing = [];
+  byOrder.forEach(entry => {
+    if (entry.missingItems.length) missing.push(entry);
+    else ready.push(entry);
+  });
+  _dpOrdersPivot = { ready, missing };
+  // Drop selections for orders no longer in the ready set
+  const readyIds = new Set(ready.map(o => o.transactionId));
+  [..._dpReadySelectedIds].forEach(id => { if (!readyIds.has(id)) _dpReadySelectedIds.delete(id); });
+}
+
+function _dpOrdSortRows(rows, sortKey) {
+  const sorted = rows.slice();
+  switch (sortKey) {
+    case 'date-asc': sorted.sort((x, y) => new Date(x.date) - new Date(y.date)); break;
+    case 'value-desc': sorted.sort((x, y) => y.orderTotal - x.orderTotal); break;
+    case 'value-asc': sorted.sort((x, y) => x.orderTotal - y.orderTotal); break;
+    case 'date-desc':
+    default: sorted.sort((x, y) => new Date(y.date) - new Date(x.date));
+  }
+  return sorted;
+}
+
+function _dpOrdFilterRows(rows, tab) {
+  const q = normalizeUiSearch(qs(`#dp-ord-search-${tab}`)?.value || '');
+  const dateFrom = qs(`#dp-ord-date-from-${tab}`)?.value || '';
+  const dateTo = qs(`#dp-ord-date-to-${tab}`)?.value || '';
+  const valFrom = Number(qs(`#dp-ord-val-from-${tab}`)?.value) || null;
+  const valTo = Number(qs(`#dp-ord-val-to-${tab}`)?.value) || null;
+  return rows.filter(o => {
+    if (q && !normalizeUiSearch(`${o.ref} ${o.client}`).includes(q)) return false;
+    const d = (o.date || '').slice(0, 10);
+    if (dateFrom && d && d < dateFrom) return false;
+    if (dateTo && d && d > dateTo) return false;
+    if (valFrom != null && o.orderTotal < valFrom) return false;
+    if (valTo != null && o.orderTotal > valTo) return false;
+    return true;
+  });
+}
+
+function renderDpOrdersTab(tab) {
+  const rows = _dpOrdSortRows(
+    _dpOrdFilterRows(_dpOrdersPivot[tab] || [], tab),
+    qs(`#dp-ord-sort-${tab}`)?.value || 'date-desc',
+  );
+  const tbody = qs(`#dp-ord-tbody-${tab}`);
+  if (!tbody) return;
+
+  if (tab === 'ready') {
+    tbody.innerHTML = rows.length ? rows.map(o => `
+      <tr>
+        <td class="dp-ord-priority-1"><input type="checkbox" class="dp-ready-check" data-id="${esc(o.transactionId)}" onclick="_dpToggleSelectReady('${esc(o.transactionId)}',this)" ${_dpReadySelectedIds.has(o.transactionId) ? 'checked' : ''}></td>
+        <td class="dp-ord-priority-1"><span class="dp-ord-ref">#${esc(o.ref)}</span></td>
+        <td class="dp-ord-priority-1"><span class="dp-ord-client">${esc(o.client)}</span></td>
+        <td class="dp-ord-priority-2"><div class="dp-ord-items">${o.items.map(i => `${esc(i.name)} ×${fmtN(i.qty)}`).join('<br>')}</div></td>
+        <td class="dp-ord-priority-2" style="text-align:center">${fmtN(o.items.reduce((s, i) => s + i.qty, 0))}</td>
+        <td class="dp-ord-priority-3"><span class="dp-ord-date">${esc(fmtDate(o.date))}</span></td>
+        <td class="dp-ord-priority-1" style="text-align:center">${fmtJ(o.orderTotal)}</td>
+        <td class="dp-ord-priority-1" style="text-align:center"><span class="dp-badge ok"><span class="dp-dot"></span>جاهز</span></td>
+      </tr>`).join('') : `<tr><td colspan="8"><div class="dp-empty">لا توجد أوردرات جاهزة للشحن مطابقة للفلتر الحالي</div></td></tr>`;
+  } else {
+    tbody.innerHTML = rows.length ? rows.map(o => `
+      <tr>
+        <td class="dp-ord-priority-1"><span class="dp-ord-ref">#${esc(o.ref)}</span></td>
+        <td class="dp-ord-priority-1"><span class="dp-ord-client">${esc(o.client)}</span></td>
+        <td class="dp-ord-priority-2"><div class="dp-ord-items">${o.missingItems.map(i => `<span class="missing-item">${esc(i.name)}</span> — مطلوب ${fmtN(i.required)}`).join('<br>')}</div></td>
+        <td class="dp-ord-priority-1" style="text-align:center"><div class="dp-ord-items">${o.missingItems.map(i => `${fmtN(i.available)} / <span class="missing-item">${fmtN(i.missing)}</span>`).join('<br>')}</div></td>
+        <td class="dp-ord-priority-3"><span class="dp-ord-date">${esc(fmtDate(o.date))}</span></td>
+        <td class="dp-ord-priority-1" style="text-align:center">${fmtJ(o.orderTotal)}</td>
+      </tr>`).join('') : `<tr><td colspan="6"><div class="dp-empty">لا توجد أوردرات ناقصة مطابقة للفلتر الحالي</div></td></tr>`;
+  }
+
+  const foot = qs(`#dp-ord-foot-${tab}`);
+  if (foot) {
+    const total = (_dpOrdersPivot[tab] || []).length;
+    foot.textContent = `عرض ${fmtN(rows.length)} من ${fmtN(total)} أوردر` +
+      (tab === 'ready' && _dpReadySelectedIds.size ? ` • ${fmtN(_dpReadySelectedIds.size)} محدد` : '');
+  }
+
+  if (tab === 'ready') {
+    const selectAll = qs('#dp-ready-select-all');
+    if (selectAll) selectAll.checked = rows.length > 0 && rows.every(o => _dpReadySelectedIds.has(o.transactionId));
+  }
+}
+
+function _dpToggleSelectReady(id, cb) {
+  if (cb.checked) _dpReadySelectedIds.add(id); else _dpReadySelectedIds.delete(id);
+  renderDpOrdersTab('ready');
+}
+
+function _dpToggleSelectAllReady(cb) {
+  const rows = _dpOrdFilterRows(_dpOrdersPivot.ready || [], 'ready');
+  rows.forEach(o => { if (cb.checked) _dpReadySelectedIds.add(o.transactionId); else _dpReadySelectedIds.delete(o.transactionId); });
+  renderDpOrdersTab('ready');
 }
 
 function setDpFilter(f, btn) {
@@ -30549,14 +31093,13 @@ function renderDemandPlanningRows() {
         <td>${_dpProdCell(l)}</td>
         <td><span class="dp-prod-sku">${esc(l.sku)}</span></td>
         <td class="dp-num">${fmtN(l.required)}</td>
-        <td class="dp-num">${fmtN(l.available)}</td>
-        <td class="dp-num" style="color:${l.reserved > 0 ? '#f59e0b' : 'var(--muted)'}">${l.reserved > 0 ? fmtN(l.reserved) : '—'}</td>
+        <td class="dp-num" style="color:#10b981">${fmtN(l.available)}</td>
         <td class="dp-num" style="color:${l.shortage > 0 ? '#dc2626' : 'var(--muted)'}">${l.shortage > 0 ? fmtN(l.shortage) : '—'}</td>
         <td class="dp-num" style="color:${l.suggestedPurchase > 0 ? '#b45309' : 'var(--muted)'}">${l.suggestedPurchase > 0 ? fmtN(l.suggestedPurchase) : '—'}</td>
         <td style="text-align:center">${_dpStatusBadge(l)}</td>
       </tr>
-      ${open ? `<tr class="dp-detail-row"><td colspan="9">${_dpAffectedPanel(l)}</td></tr>` : ''}`;
-    }).join('') : `<tr><td colspan="9"><div class="dp-empty">لا توجد أصناف مطابقة للفلتر الحالي</div></td></tr>`;
+      ${open ? `<tr class="dp-detail-row"><td colspan="8">${_dpAffectedPanel(l)}</td></tr>` : ''}`;
+    }).join('') : `<tr><td colspan="8"><div class="dp-empty">لا توجد أصناف مطابقة للفلتر الحالي</div></td></tr>`;
   }
 
   const cards = qs('#dp-cards');
@@ -30573,8 +31116,7 @@ function renderDemandPlanningRows() {
         </div>
         <div class="dp-card-grid">
           <div class="dp-card-cell"><div class="l">المطلوب</div><div class="v">${fmtN(l.required)}</div></div>
-          <div class="dp-card-cell"><div class="l">المتاح</div><div class="v">${fmtN(l.available)}</div></div>
-          <div class="dp-card-cell"><div class="l">محتجز</div><div class="v" style="color:${l.reserved > 0 ? '#f59e0b' : 'var(--muted)'}">${l.reserved > 0 ? fmtN(l.reserved) : '—'}</div></div>
+          <div class="dp-card-cell"><div class="l">المتاح</div><div class="v" style="color:#10b981">${fmtN(l.available)}</div></div>
           <div class="dp-card-cell"><div class="l">النقص</div><div class="v" style="color:${l.shortage > 0 ? '#dc2626' : 'var(--muted)'}">${l.shortage > 0 ? fmtN(l.shortage) : '—'}</div></div>
           <div class="dp-card-cell"><div class="l">مخزون أمان</div><div class="v">${fmtN(l.safetyStock)}</div></div>
           <div class="dp-card-cell"><div class="l">شراء مقترح</div><div class="v" style="color:${l.suggestedPurchase > 0 ? '#b45309' : 'var(--muted)'}">${l.suggestedPurchase > 0 ? fmtN(l.suggestedPurchase) : '—'}</div></div>
@@ -32439,12 +32981,25 @@ function showInvoiceDetail(id, highlightCommentId) {
   const itemsRows = (tx.items || []).map((it, i) => `
     <tr>
       <td class="col-num">${i + 1}</td>
-      <td class="col-product">${esc(it.name || '')}${it.code ? `<div class="col-code">${esc(it.code)}</div>` : ''}</td>
+      <td class="col-product"><div style="display:flex;align-items:center;gap:8px">${productThumbHtml(it.imageUrl, it.name, 'inv-item-thumb')}<div>${esc(it.name || '')}${it.code ? `<div class="col-code">${esc(it.code)}</div>` : ''}</div></div></td>
       <td class="col-qty">${fmtN(it.qty)}</td>
       <td class="col-price">${fmtJ(it.price)}</td>
       <td class="col-total">${fmtJ(it.total)}</td>
     </tr>`).join('');
   const itemsTotal = (tx.items || []).reduce((s, it) => s + (it.total || 0), 0);
+  // Repeat-customer detection (sales only): prior orders from same client, matched by phone (fallback name)
+  let _custHistory = [];
+  if (!isPurchase && !isReturn) {
+    const _custKey = (tx.phone || '').replace(/\D/g,'') || (tx.client || '').trim().toLowerCase();
+    if (_custKey) {
+      _custHistory = transactions.filter(t => {
+        if (t._id === tx._id || t.type !== 'مبيعات') return false;
+        const k = (t.phone || '').replace(/\D/g,'') || (t.client || '').trim().toLowerCase();
+        return k === _custKey;
+      }).sort((a,b) => new Date(b.transactionDate||b.date||b.createdAt||0) - new Date(a.transactionDate||a.date||a.createdAt||0));
+    }
+  }
+  const _custOrderCount = _custHistory.length;
   const _typeTitle = isPurchase ? 'فاتورة شراء' : isReturn ? 'فاتورة مرتجع' : 'فاتورة مبيعات';
   const _typeIconSvg = isPurchase
     ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>'
@@ -32483,7 +33038,9 @@ function showInvoiceDetail(id, highlightCommentId) {
         <div class="inv-party-card${isPurchase ? ' is-purchase' : ''}">
           <div class="inv-party-avatar">${_clientInitials}</div>
           <div class="inv-party-info">
-            <div class="inv-party-name"><a href="#" onclick="event.preventDefault();openTxInNewTab('${esc(id)}')" style="color:inherit;text-decoration:none;border-bottom:1px dashed var(--muted);cursor:pointer" title="فتح الفاتورة في تاب جديد">${esc(tx.client || '-')}</a><span class="inv-party-tag">${isPurchase ? 'المورد' : 'العميل'}</span></div>
+            <div class="inv-party-name"><a href="#" onclick="event.preventDefault();openTxInNewTab('${esc(id)}')" style="color:inherit;text-decoration:none;border-bottom:1px dashed var(--muted);cursor:pointer" title="فتح الفاتورة في تاب جديد">${esc(tx.client || '-')}</a><span class="inv-party-tag">${isPurchase ? 'المورد' : 'العميل'}</span>${!isPurchase && !isReturn ? (_custOrderCount > 0
+              ? `<span class="inv-cust-badge is-repeat" onclick="toggleInvCustHistory(this)" title="عرض الفواتير السابقة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>${_custOrderCount + 1} أوردر+</span>`
+              : `<span class="inv-cust-badge is-new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M12 5v14M5 12h14"/></svg>أول طلب</span>`) : ''}</div>
             ${tx.phone ? `<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
               <div class="inv-party-phone" title="اضغط لنسخ الرقم" onclick="_copyPhone('${esc(tx.phone)}',this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
@@ -32502,6 +33059,18 @@ function showInvoiceDetail(id, highlightCommentId) {
             })() : ''}
           </div>
         </div>
+        ${_custOrderCount > 0 ? `<div class="inv-cust-history" id="inv-cust-history-${esc(id)}">
+          <div class="inv-cust-history-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>الفواتير السابقة لهذا العميل (${_custOrderCount})</div>
+          ${_custHistory.map(h => {
+            const hDate = new Date(h.transactionDate || h.date || h.createdAt || Date.now()).toLocaleDateString('ar-EG-u-nu-latn', { year:'numeric', month:'short', day:'numeric' });
+            const hRef = h.ref ? `#${esc(h.ref)}` : `INV-${(h._id||'').slice(-6)}`;
+            return `<div class="inv-cust-history-item" onclick="showInvoiceDetail('${esc(h._id)}')">
+              <span class="ref">${hRef}</span>
+              <span class="date">${hDate}</span>
+              <span class="amt">${fmtJ(h.total || 0)}</span>
+            </div>`;
+          }).join('')}
+        </div>` : ''}
         <!-- Items Table -->
         <div class="inv-items-section">
           <div class="inv-items-header">
@@ -32704,7 +33273,7 @@ function renderInvoiceViewPage() {
   const itemsRows = (tx.items||[]).map((it,i) => `
     <tr>
       <td style="color:#94a3b8;font-size:.74rem;padding:9px 12px;border-bottom:1px solid #f1f5f9;text-align:right">${i+1}</td>
-      <td style="font-weight:600;color:#0f172a;padding:9px 12px;border-bottom:1px solid #f1f5f9;text-align:right">${esc(it.name||'')}${it.code?`<div style="font-size:.68rem;color:#94a3b8;direction:ltr">${esc(it.code)}</div>`:''}</td>
+      <td style="font-weight:600;color:#0f172a;padding:9px 12px;border-bottom:1px solid #f1f5f9;text-align:right"><div style="display:flex;align-items:center;gap:8px">${productThumbHtml(it.imageUrl, it.name, 'inv-item-thumb')}<div>${esc(it.name||'')}${it.code?`<div style="font-size:.68rem;color:#94a3b8;direction:ltr">${esc(it.code)}</div>`:''}</div></div></td>
       <td style="text-align:center;font-weight:600;color:#475569;padding:9px 12px;border-bottom:1px solid #f1f5f9;width:48px">${Number(it.qty||0).toLocaleString('en')}</td>
       <td style="direction:ltr;text-align:left;color:#475569;padding:9px 12px;border-bottom:1px solid #f1f5f9;white-space:nowrap">${Number(it.price||0).toLocaleString('en', {minimumFractionDigits:0, maximumFractionDigits:2})}</td>
       <td style="font-weight:700;color:#0f172a;direction:ltr;text-align:left;padding:9px 12px;border-bottom:1px solid #f1f5f9;white-space:nowrap">${Number(it.total||0).toLocaleString('en', {minimumFractionDigits:0, maximumFractionDigits:2})}</td>
@@ -33275,6 +33844,12 @@ async function addInvoiceComment(txId) {
   } catch (e) {
     toast((currentLang==='en'?'Error: ':'خطأ: ') + e.message, true);
   }
+}
+
+function toggleInvCustHistory(badgeEl) {
+  const panel = badgeEl.closest('.inv-party-card')?.nextElementSibling;
+  if (!panel || !panel.classList.contains('inv-cust-history')) return;
+  panel.classList.toggle('open');
 }
 
 function closeInvoiceDetail() {
@@ -39935,6 +40510,451 @@ function onReportRangeChange() {
   loadReports();
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   Order Range Audit — Shopify ↔ Soulia sequence reconciliation
+   ══════════════════════════════════════════════════════════════════════════ */
+let currentAuditData = null;
+let auditFilter = 'all';
+let auditHistoryOpen = false;
+/** Daily-monitor alert payload — populated in loadAllData for admins. */
+var orderAuditAlert = null;
+
+function fmtNum(n) { return (Number(n) || 0).toLocaleString('en-US'); }
+
+async function runOrderAudit() {
+  const fromEl = qs('#oa-from'), toEl = qs('#oa-to');
+  const from = Number(fromEl?.value), to = Number(toEl?.value);
+
+  if (!from || !to) { toast('أدخل رقم الأوردر الأول والأخير', true); return; }
+  if (!Number.isInteger(from) || !Number.isInteger(to) || from <= 0 || to <= 0) {
+    toast('أرقام الأوردرات يجب أن تكون أرقاماً صحيحة موجبة', true); return;
+  }
+  if (to < from) { toast('رقم الأوردر الأخير يجب أن يكون أكبر من أو يساوي الأول', true); return; }
+  if (to - from + 1 > 5000) { toast('النطاق كبير جداً — الحد الأقصى 5000 أوردر', true); return; }
+
+  const btn = qs('#oa-run-btn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+  qs('#oa-empty')?.style.setProperty('display', 'none');
+  qs('#oa-results')?.style.setProperty('display', 'none');
+  qs('#oa-loading')?.style.setProperty('display', 'block');
+
+  try {
+    const data = await api(`/order-audit/run?from=${from}&to=${to}`);
+    currentAuditData = data;
+    auditFilter = 'all';
+    auditPage = 1;
+    qsa('#rep-panel-orderaudit .oa-filters .tab-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.oaFilter === 'all'));
+
+    renderAuditResults();
+    qs('#oa-loading')?.style.setProperty('display', 'none');
+    qs('#oa-results')?.style.setProperty('display', 'block');
+    qs('#oa-export-excel')?.removeAttribute('disabled');
+    qs('#oa-export-pdf')?.removeAttribute('disabled');
+
+    const miss = data.sequence.missingCount;
+    toast(miss > 0
+      ? `تم الفحص — ${fmtNum(miss)} أوردر مفقود من ${fmtNum(data.sequence.expectedCount)} ⚠`
+      : `تم الفحص — التسلسل مكتمل بالكامل ✅`, miss > 0);
+  } catch (e) {
+    qs('#oa-loading')?.style.setProperty('display', 'none');
+    qs('#oa-empty')?.style.setProperty('display', 'block');
+    toast(e.message || 'فشل فحص النطاق', true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  }
+}
+
+function renderAuditResults() {
+  const d = currentAuditData;
+  if (!d) return;
+  renderAuditKpis(d);
+  renderAuditMissing(d);
+  renderAuditFinancials(d);
+  renderAuditTopProducts(d);
+  renderAuditShipping(d);
+  renderAuditDateRange(d);
+  renderAuditTable();
+}
+
+function renderAuditTopProducts(d) {
+  const el = qs('#oa-top-products');
+  if (!el) return;
+
+  const byCode = new Map();
+  (d.rows || []).forEach(r => {
+    if (r.cancelled) return;
+    (r.products || []).forEach(p => {
+      const key = p.code || p.name;
+      const cur = byCode.get(key) || { name: p.name, qty: 0, revenue: 0 };
+      cur.qty += Number(p.qty) || 0;
+      cur.revenue += (Number(p.qty) || 0) * (Number(p.price) || 0);
+      byCode.set(key, cur);
+    });
+  });
+
+  const top5 = Array.from(byCode.values()).sort((a, b) => b.qty - a.qty).slice(0, 5);
+
+  if (!top5.length) {
+    el.innerHTML = `<div style="text-align:center;padding:16px;color:var(--muted);font-size:.85rem">لا توجد بيانات منتجات في هذا النطاق</div>`;
+    return;
+  }
+
+  const maxQty = top5[0].qty || 1;
+  const medals = ['🥇', '🥈', '🥉', '4', '5'];
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">${top5.map((p, i) => `
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:26px;text-align:center;font-size:${i < 3 ? '1.1rem' : '.85rem'};font-weight:700;color:var(--muted);flex-shrink:0">${medals[i]}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:4px">
+          <span style="font-size:.87rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span>
+          <span style="font-size:.8rem;color:var(--muted);white-space:nowrap">${fmtNum(p.qty)} قطعة · ${fmtJ(p.revenue)}</span>
+        </div>
+        <div style="height:7px;border-radius:4px;background:var(--surface2);overflow:hidden">
+          <div style="height:100%;border-radius:4px;background:linear-gradient(90deg,#f59e0b,#fbbf24);width:${Math.max(4, (p.qty / maxQty) * 100)}%"></div>
+        </div>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+function renderAuditKpis(d) {
+  const s = d.sequence;
+  const rateColor = s.syncRate >= 99 ? '#10b981' : s.syncRate >= 90 ? '#f59e0b' : 'var(--red)';
+  const cards = [
+    { label: 'الأوردرات المتوقعة', value: fmtNum(s.expectedCount), color: '#0066cc',
+      sub: `النطاق #${fmtNum(d.from)} → #${fmtNum(d.to)}` },
+    { label: 'الأوردرات المسجلة', value: fmtNum(s.registeredCount), color: '#10b981',
+      sub: s.cancelledCount > 0 ? `منها ${fmtNum(s.cancelledCount)} ملغاة` : 'في سجل الحركات' },
+    { label: 'الأوردرات المفقودة', value: fmtNum(s.missingCount),
+      color: s.missingCount > 0 ? 'var(--red)' : '#10b981',
+      sub: s.pendingCount > 0 ? `و ${fmtNum(s.pendingCount)} بانتظار الموافقة` : (s.missingCount > 0 ? 'تحتاج مراجعة' : 'لا يوجد نقص') },
+    { label: 'نسبة المزامنة', value: s.syncRate + '%', color: rateColor,
+      sub: s.syncRate >= 99 ? 'ممتاز' : s.syncRate >= 90 ? 'يحتاج متابعة' : 'حرج' },
+  ];
+  const el = qs('#oa-kpis');
+  if (el) el.innerHTML = cards.map(c => `
+    <div class="oa-kpi" style="border-top-color:${c.color}">
+      <div class="oa-kpi-label">${c.label}</div>
+      <div class="oa-kpi-value" style="color:${c.color}">${c.value}</div>
+      <div class="oa-kpi-sub">${esc(c.sub)}</div>
+    </div>`).join('');
+}
+
+function renderAuditMissing(d) {
+  const body = qs('#oa-missing-body');
+  const countEl = qs('#oa-missing-count');
+  if (!body) return;
+
+  const list = d.missingOrders || [];
+  if (countEl) countEl.textContent = list.length ? `${fmtNum(list.length)} أوردر` : '';
+
+  if (!list.length) {
+    body.innerHTML = `<div style="display:flex;align-items:center;gap:9px;padding:16px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.25);border-radius:var(--radius);color:#059669;font-size:.9rem;font-weight:600">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      لا توجد أوردرات مفقودة — كل أرقام النطاق مسجلة في سوليا
+    </div>`;
+    return;
+  }
+
+  body.innerHTML = list.map(m => {
+    const shopBtn = m.shopifyId && m.adminUrl
+      ? `<a class="btn btn-outline btn-sm" href="${esc(m.adminUrl)}" target="_blank" rel="noopener">عرض في Shopify</a>`
+      : '';
+    return `<div class="oa-miss-row" data-oa-missing="${esc(m.orderNumber)}">
+      <span class="oa-chip ${m.reviewed ? 'reviewed' : ''}">#${esc(m.orderNumber)}</span>
+      <div style="min-width:180px;flex:1 1 220px">
+        <div style="font-size:.84rem;color:var(--text)">${esc(m.client || 'عميل غير معروف')}</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:2px">${esc(m.reason)}</div>
+        ${m.note ? `<div style="font-size:.75rem;color:var(--accent);margin-top:3px">📝 ${esc(m.note)}</div>` : ''}
+      </div>
+      <div class="oa-miss-actions">
+        ${shopBtn}
+        <button class="btn btn-outline btn-sm" onclick="retryAuditSync('${esc(m.orderNumber)}')">إعادة المزامنة</button>
+        <button class="btn btn-outline btn-sm" onclick="markAuditReviewed('${esc(m.orderNumber)}',${m.reviewed ? 'false' : 'true'})">
+          ${m.reviewed ? 'إلغاء المراجعة' : 'تمت المراجعة'}
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="addAuditNote('${esc(m.orderNumber)}')">ملاحظة</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAuditFinancials(d) {
+  const f = d.financials;
+  const items = [
+    { l: 'إجمالي المبيعات', v: fmtJ(f.totalSales) },
+    { l: 'إجمالي تكلفة المنتجات', v: fmtJ(f.totalProductCost) },
+    { l: 'إجمالي تكلفة الشحن', v: fmtJ(f.totalShippingCost) },
+    { l: 'إجمالي الربح', v: fmtJ(f.totalProfit) },
+    { l: 'متوسط قيمة الأوردر', v: fmtJ(f.avgOrderValue) },
+    { l: 'هامش الربح', v: `<span class="amt-num">${f.profitMargin}%</span>` },
+  ];
+  const el = qs('#oa-financials');
+  if (el) el.innerHTML = items.map(i =>
+    `<div class="oa-fin"><div class="oa-fin-l">${i.l}</div><div class="oa-fin-v">${i.v}</div></div>`).join('');
+}
+
+function renderAuditShipping(d) {
+  const s = d.shipping;
+  const el = qs('#oa-shipping');
+  if (!el) return;
+
+  const cards = `<div class="oa-fin-grid" style="grid-template-columns:1fr 1fr;margin-bottom:12px">
+    <div class="oa-fin"><div class="oa-fin-l">إجمالي تكلفة الشحن</div><div class="oa-fin-v">${fmtJ(s.totalShippingCost)}</div></div>
+    <div class="oa-fin"><div class="oa-fin-l">متوسط التكلفة للأوردر</div><div class="oa-fin-v">${fmtJ(s.avgShippingCost)}</div></div>
+  </div>
+  ${s.highestOrder ? `<div class="oa-fin" style="margin-bottom:12px">
+    <div class="oa-fin-l">أعلى أوردر تكلفةً في الشحن</div>
+    <div class="oa-fin-v">#${esc(s.highestOrder.orderNumber)} — ${fmtJ(s.highestOrder.cost)}
+      <span style="font-weight:400;font-size:.8rem;color:var(--muted)"> · ${esc(s.highestOrder.client || '')}</span></div>
+  </div>` : ''}`;
+
+  const rows = (s.companies || []).map(c => `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:7px 8px">${esc(c.name)}</td>
+      <td style="padding:7px 8px;text-align:center">${fmtNum(c.orders)}</td>
+      <td style="padding:7px 8px;text-align:left;direction:ltr">${fmtJ(c.totalCost)}</td>
+      <td style="padding:7px 8px;text-align:left;direction:ltr">${fmtJ(c.avgCost)}</td>
+    </tr>`).join('');
+
+  el.innerHTML = cards + (rows
+    ? `<div class="overflow-x"><table style="width:100%;border-collapse:collapse;font-size:.84rem;min-width:380px">
+        <thead><tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
+          <th style="padding:7px 8px;text-align:right">شركة الشحن</th>
+          <th style="padding:7px 8px;text-align:center">الأوردرات</th>
+          <th style="padding:7px 8px;text-align:right">الإجمالي</th>
+          <th style="padding:7px 8px;text-align:right">المتوسط</th>
+        </tr></thead><tbody>${rows}</tbody></table></div>`
+    : `<div style="text-align:center;padding:16px;color:var(--muted);font-size:.85rem">لا توجد بيانات شحن في هذا النطاق</div>`);
+}
+
+function renderAuditDateRange(d) {
+  const r = d.dateRange;
+  const el = qs('#oa-daterange');
+  if (!el) return;
+
+  const box = (title, o) => `<div class="oa-fin" style="margin-bottom:10px">
+    <div class="oa-fin-l">${title}</div>
+    <div class="oa-fin-v">${o ? `#${esc(o.orderNumber)}` : '—'}</div>
+    ${o ? `<div style="font-size:.76rem;color:var(--muted);margin-top:3px">${esc(o.date)} · ${esc(o.time)}</div>` : ''}
+  </div>`;
+
+  el.innerHTML = box('أول أوردر في النطاق', r.firstOrder) + box('آخر أوردر في النطاق', r.lastOrder) +
+    `<div class="oa-fin-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="oa-fin"><div class="oa-fin-l">عدد الأيام</div><div class="oa-fin-v">${fmtNum(r.durationDays)}</div></div>
+      <div class="oa-fin"><div class="oa-fin-l">أوردرات / يوم</div><div class="oa-fin-v">${r.ordersPerDay}</div></div>
+      <div class="oa-fin"><div class="oa-fin-l">مبيعات / يوم</div><div class="oa-fin-v">${fmtJ(r.salesPerDay)}</div></div>
+    </div>`;
+}
+
+let auditSort = { key: 'orderNumber', dir: 'asc' };
+let auditPage = 1;
+let auditPerPage = 30;
+
+function setAuditFilter(f, btn) {
+  auditFilter = f;
+  auditPage = 1;
+  qsa('#rep-panel-orderaudit .oa-filters .tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderAuditTable();
+}
+
+function setAuditSort(key) {
+  if (auditSort.key === key) auditSort.dir = auditSort.dir === 'asc' ? 'desc' : 'asc';
+  else auditSort = { key, dir: key === 'orderNumber' || key === 'shopifyCreatedAt' ? 'desc' : 'asc' };
+  auditPage = 1;
+  renderAuditTable();
+}
+
+function setAuditPage(p) { auditPage = p; renderAuditTable(); }
+function setAuditPerPage(v) { auditPerPage = v; auditPage = 1; renderAuditTable(); }
+
+function auditRowsFiltered() {
+  const d = currentAuditData;
+  if (!d) return [];
+  const q = (qs('#oa-search')?.value || '').trim().toLowerCase();
+  const HIGH_VALUE = 5000;
+
+  const rows = (d.rows || []).filter(r => {
+    switch (auditFilter) {
+      case 'missing':   if (r.syncStatus !== 'missing' && r.syncStatus !== 'failed') return false; break;
+      case 'synced':    if (r.syncStatus !== 'synced') return false; break;
+      case 'failed':    if (r.syncStatus !== 'failed') return false; break;
+      case 'cancelled': if (!r.cancelled) return false; break;
+      case 'highvalue': if (!(r.orderTotal >= HIGH_VALUE)) return false; break;
+      case 'noprofit':  if (r.hasProfit || !r.registered) return false; break;
+      case 'noship':    if (r.hasShipping || !r.registered) return false; break;
+    }
+    if (!q) return true;
+    return r.orderNumber.includes(q)
+      || (r.client || '').toLowerCase().includes(q)
+      || (r.phone || '').includes(q);
+  });
+
+  const { key, dir } = auditSort;
+  const mul = dir === 'asc' ? 1 : -1;
+  rows.sort((a, b) => {
+    let av = a[key], bv = b[key];
+    if (key === 'orderNumber') { av = Number(av); bv = Number(bv); }
+    else if (key === 'registered') { av = av ? 1 : 0; bv = bv ? 1 : 0; }
+    else if (typeof av === 'string' || typeof bv === 'string') {
+      av = (av || '').toString(); bv = (bv || '').toString();
+      return mul * av.localeCompare(bv, 'ar');
+    }
+    av = Number(av) || 0; bv = Number(bv) || 0;
+    return mul * (av - bv);
+  });
+
+  return rows;
+}
+
+function renderAuditTable() {
+  const tbody = qs('#oa-tbody');
+  if (!tbody || !currentAuditData) return;
+
+  qsa('#oa-table .oa-sort-ind').forEach(el => {
+    el.textContent = el.dataset.oaInd === auditSort.key ? (auditSort.dir === 'asc' ? '▲' : '▼') : '';
+  });
+
+  const rows = auditRowsFiltered();
+  const totalPages = Math.max(1, Math.ceil(rows.length / auditPerPage));
+  if (auditPage > totalPages) auditPage = totalPages;
+  const startIdx = (auditPage - 1) * auditPerPage;
+  const shown = rows.slice(startIdx, startIdx + auditPerPage);
+
+  qs('#oa-table-empty')?.style.setProperty('display', rows.length ? 'none' : 'block');
+
+  tbody.innerHTML = shown.map(r => {
+    const missing = r.syncStatus === 'missing' || r.syncStatus === 'failed';
+    const dateTxt = r.shopifyCreatedAt ? String(r.shopifyCreatedAt).slice(0, 10) : '—';
+    return `<tr class="${missing ? 'oa-row-missing' : ''}">
+      <td style="font-weight:700;white-space:nowrap">#${esc(r.orderNumber)}</td>
+      <td style="white-space:nowrap;color:var(--muted);font-size:.82rem">${esc(dateTxt)}</td>
+      <td>${esc(r.client || '—')}</td>
+      <td style="white-space:nowrap;direction:ltr;text-align:left;font-size:.82rem">${esc(r.phone || '—')}</td>
+      <td style="text-align:center;font-size:.8rem">${esc(r.orderStatus || '—')}</td>
+      <td style="text-align:center;font-size:.8rem">${esc(r.paymentStatus || '—')}</td>
+      <td style="max-width:230px;font-size:.8rem" title="${esc(r.productsLabel)}">
+        <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.productsLabel || '—')}</div></td>
+      <td class="num">${r.registered ? fmtJ(r.orderTotal) : '—'}</td>
+      <td class="num">${r.registered ? fmtJ(r.productCost) : '—'}</td>
+      <td class="num">${r.registered ? fmtJ(r.shippingCost) : '—'}</td>
+      <td class="num" style="color:${r.netProfit >= 0 ? '#059669' : 'var(--red)'};font-weight:600">${r.registered ? fmtJ(r.netProfit) : '—'}</td>
+      <td style="text-align:center">${r.registered
+        ? '<span style="color:#059669;font-weight:700">✓</span>'
+        : '<span style="color:var(--red);font-weight:700">✕</span>'}</td>
+      <td style="text-align:center"><span class="oa-badge ${esc(r.syncStatus)}">${esc(r.syncLabel)}</span></td>
+    </tr>`;
+  }).join('');
+
+  const foot = qs('#oa-table-foot');
+  if (foot) foot.textContent = `إجمالي ${fmtNum(rows.length)} أوردر`;
+
+  renderPagination('oa-table-pagination', rows.length, auditPage, auditPerPage, 'setAuditPage', [30, 50, 100, 250], 'setAuditPerPage');
+}
+
+async function markAuditReviewed(orderNumber, reviewed) {
+  try {
+    await api(`/order-audit/missing/${encodeURIComponent(orderNumber)}/review`, {
+      method: 'PATCH',
+      body: JSON.stringify({ reviewed: reviewed === true || reviewed === 'true' }),
+    });
+    const m = (currentAuditData?.missingOrders || []).find(x => x.orderNumber === String(orderNumber));
+    if (m) m.reviewed = (reviewed === true || reviewed === 'true');
+    renderAuditMissing(currentAuditData);
+    toast(m?.reviewed ? `تم تعليم الأوردر #${orderNumber} كمُراجَع ✅` : `تم إلغاء علامة المراجعة عن #${orderNumber}`);
+  } catch (e) {
+    toast(e.message || 'فشل تحديث حالة المراجعة', true);
+  }
+}
+
+async function addAuditNote(orderNumber) {
+  const existing = (currentAuditData?.missingOrders || []).find(x => x.orderNumber === String(orderNumber));
+  const note = prompt(`ملاحظة التحقيق للأوردر #${orderNumber}:`, existing?.note || '');
+  if (note === null) return;
+  try {
+    await api(`/order-audit/missing/${encodeURIComponent(orderNumber)}/review`, {
+      method: 'PATCH',
+      body: JSON.stringify({ note }),
+    });
+    if (existing) existing.note = note;
+    renderAuditMissing(currentAuditData);
+    toast(note ? 'تم حفظ ملاحظة التحقيق ✅' : 'تم مسح الملاحظة');
+  } catch (e) {
+    toast(e.message || 'فشل حفظ الملاحظة', true);
+  }
+}
+
+async function retryAuditSync(orderNumber) {
+  try {
+    toast('جاري البحث في Shopify…');
+    const res = await api(`/order-audit/missing/${encodeURIComponent(orderNumber)}/retry-sync`, { method: 'POST' });
+    toast(res.message || (res.success ? 'تم العثور على الأوردر' : 'تعذرت المزامنة'), !res.success);
+  } catch (e) {
+    toast(e.message || 'فشلت إعادة المزامنة', true);
+  }
+}
+
+async function exportOrderAudit(format) {
+  if (!currentAuditData) { toast('شغّل الفحص أولاً', true); return; }
+  const { from, to } = currentAuditData;
+  const ext = format === 'pdf' ? '.pdf' : '.xlsx';
+  try {
+    const token = localStorage.getItem('token');
+    const headers = {};
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    toast('جاري إنشاء التقرير…');
+    const res = await fetch(`${API_BASE}/order-audit/export?from=${from}&to=${to}&format=${format}`, { headers });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'فشل التصدير');
+    }
+    const blob = await res.blob();
+    const link = document.createElement('a');
+    const objectUrl = URL.createObjectURL(blob);
+    link.href = objectUrl;
+    link.download = `order_audit_${from}_${to}${ext}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    toast('تم تصدير تقرير التدقيق بنجاح ✅');
+  } catch (e) {
+    toast(e.message || 'فشل التصدير', true);
+  }
+}
+
+async function toggleAuditHistory(force) {
+  const card = qs('#oa-history-card');
+  if (!card) return;
+  const open = force === undefined ? !auditHistoryOpen : !!force;
+  auditHistoryOpen = open;
+  card.style.display = open ? 'block' : 'none';
+  if (!open) return;
+
+  try {
+    const rows = await api('/order-audit/history?limit=50');
+    const tbody = qs('#oa-history-tbody');
+    qs('#oa-history-empty')?.style.setProperty('display', rows.length ? 'none' : 'block');
+    if (tbody) tbody.innerHTML = rows.map(h => {
+      const clean = h.result === 'clean';
+      const when = h.createdAt ? fmtDateTime(new Date(h.createdAt)) : '—';
+      return `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:7px 9px;white-space:nowrap;font-size:.82rem">${esc(when)}</td>
+        <td style="padding:7px 9px;white-space:nowrap;font-weight:600">#${fmtNum(h.fromOrder)} → #${fmtNum(h.toOrder)}</td>
+        <td style="padding:7px 9px;text-align:center">${fmtNum(h.expectedCount)}</td>
+        <td style="padding:7px 9px;text-align:center;color:#059669">${fmtNum(h.registeredCount)}</td>
+        <td style="padding:7px 9px;text-align:center;color:${h.missingCount > 0 ? 'var(--red)' : 'var(--muted)'};font-weight:${h.missingCount > 0 ? '700' : '400'}">${fmtNum(h.missingCount)}</td>
+        <td style="padding:7px 9px;text-align:center">${h.syncRate}%</td>
+        <td style="padding:7px 9px;font-size:.82rem">${esc(h.generatedBy || '—')}${h.source === 'auto' ? ' <span style="color:var(--muted);font-size:.75rem">(تلقائي)</span>' : ''}</td>
+        <td style="padding:7px 9px;text-align:center">
+          <span class="oa-badge ${clean ? 'synced' : 'missing'}">${clean ? 'مكتمل' : 'يوجد نقص'}</span></td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    toast(e.message || 'فشل تحميل سجل التدقيق', true);
+  }
+}
+
 let activeReportTab = 'kpis';
 
 function switchReportTab(tab, btn) {
@@ -39956,6 +40976,10 @@ function switchReportTab(tab, btn) {
     const from = qs('#rep-from')?.value || '';
     const to = qs('#rep-to')?.value || '';
     renderDiscountCodesReport(from, to);
+  }
+  // Re-render a previously-run audit so results survive tab switching
+  if (tab === 'orderaudit' && currentAuditData) {
+    renderAuditResults();
   }
 }
 
@@ -52695,6 +53719,69 @@ async function importOldShopifyOrder(shopifyId, btn) {
   }
 }
 
+/* Minimalist icon-only strip, inline with the search box. Default view: deposit totals by
+   method (Instapay/Vodafone) + paid vs unpaid order counts, scoped to the active filters.
+   When orders are selected (checkboxes), switches to per-method deposit totals for just the
+   selected batch, so the user can see how much is owed via each channel before sending. */
+function _renderShopifyDepositSummary(data) {
+  const bar = qs('#shopify-deposit-summary-bar');
+  if (!bar) return;
+
+  if (_shopifySelectedIds.size) {
+    const selected = data.filter(o => _shopifySelectedIds.has(o._id));
+    const totals = { 'كاش': 0, 'فودافون كاش': 0, 'Instapay': 0, 'تحويل بنكي': 0 };
+    for (const o of selected) {
+      const { deposit, payment } = _spDetectDepositAndMethod(o);
+      if (deposit > 0 && totals.hasOwnProperty(payment)) totals[payment] += deposit;
+    }
+    const methodChips = [
+      { key: 'Instapay',     icon: '<img src="/instapay.svg" alt="Instapay">', title: 'ديبوزت Instapay' },
+      { key: 'فودافون كاش',  icon: '<img src="/vodafone.svg" alt="Vodafone">', title: 'ديبوزت فودافون كاش' },
+      { key: 'كاش',          icon: VAULT_METHOD_ICONS['كاش'], title: 'ديبوزت كاش' },
+      { key: 'تحويل بنكي',   icon: VAULT_METHOD_ICONS['تحويل بنكي'], title: 'ديبوزت تحويل بنكي' },
+    ];
+
+    bar.innerHTML = methodChips.map(m => `
+      <div class="sp-deposit-chip" title="${m.title}">
+        ${m.icon}
+        <span>${fmtN(totals[m.key])}</span>
+      </div>`).join('');
+    return;
+  }
+
+  let instapay = 0, vodafone = 0, paidCount = 0, unpaidCount = 0;
+  for (const o of data) {
+    if (o.cancelled) continue;
+    const { deposit, payment } = _spDetectDepositAndMethod(o);
+    if (deposit > 0) {
+      paidCount++;
+      if (payment === 'Instapay') instapay += deposit;
+      else if (payment === 'فودافون كاش') vodafone += deposit;
+    } else {
+      unpaidCount++;
+    }
+  }
+
+  bar.innerHTML = `
+    <div class="sp-deposit-chip" title="ديبوزت Instapay">
+      <img src="/instapay.svg" alt="Instapay">
+      <span>${fmtN(instapay)}</span>
+    </div>
+    <div class="sp-deposit-chip" title="ديبوزت فودافون كاش">
+      <img src="/vodafone.svg" alt="Vodafone">
+      <span>${fmtN(vodafone)}</span>
+    </div>
+    <span class="sp-deposit-sep"></span>
+    <div class="sp-deposit-chip" title="أوردرات مدفوعة بالديبوزت">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      <span>${fmtN(paidCount)}</span>
+    </div>
+    <div class="sp-deposit-chip" title="أوردرات غير مدفوعة">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>${fmtN(unpaidCount)}</span>
+    </div>`;
+}
+
 function renderShopifyOrders() {
   const wrap = qs('#shopify-orders-table-body');
   const mobileList = qs('#sp-mobile-list');
@@ -52802,6 +53889,12 @@ function renderShopifyOrders() {
       return db - da;
     });
   }
+
+  /* prune selection to orders still matching the active filters before computing summaries */
+  const _spFilteredIds = new Set(data.filter(o => o.status === 'pending' && !o.cancelled).map(o => o._id));
+  for (const id of [..._shopifySelectedIds]) if (!_spFilteredIds.has(id)) _shopifySelectedIds.delete(id);
+
+  _renderShopifyDepositSummary(data);
 
   if (!data.length) {
     const emptyHtml = `<div style="text-align:center;padding:60px 20px;color:var(--text-muted)">

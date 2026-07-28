@@ -1213,10 +1213,6 @@ export class TransactionsService {
         items: (saved.items || []).map((it) => ({ name: it.name, qty: it.qty })),
       });
     }
-    // Auto-transition Ready → Delivered on full payment for sales orders
-    if (!isPurchase && isFullyPaid && saved.pickupStatus === 'Ready') {
-      await this.markPickupDelivered(String(saved._id), by);
-    }
     return saved;
   }
 
@@ -1297,10 +1293,6 @@ export class TransactionsService {
 
     this.emit('tx:updated', { tx: saved, action: 'reverse-collect' });
     this.emit('vault:changed', { reason: 'tx:reverse-collect', txId: String(saved._id) });
-    // Auto-revert Delivered → Ready when payment is reversed on a sales order
-    if (!isPurchase && saved.pickupStatus === 'Delivered') {
-      await this.revertPickupDelivered(String(saved._id), _reversedBy);
-    }
     return { tx: saved, reversedAmount, vaultMethod };
   }
 
@@ -2420,18 +2412,6 @@ export class TransactionsService {
     );
     this.emit('pickup:updated', { ids: validIds, action: 'ready', pickupRef: batchRef });
 
-    // Auto-advance to Delivered for orders that were already fully paid
-    const prepaidOrders = await this.transactionModel.find({
-      _id: { $in: validIds },
-      type: 'مبيعات',
-      cancelled: { $ne: true },
-      pickupStatus: 'Ready',
-      payStatus: 'مكتمل',
-    }).select('_id');
-    for (const o of prepaidOrders) {
-      await this.markPickupDelivered(String(o._id), by);
-    }
-
     return { updated: result.modifiedCount, pickupRef: batchRef };
   }
 
@@ -2468,10 +2448,11 @@ export class TransactionsService {
     return { updated: result.modifiedCount };
   }
 
-  /** Mark pick-up orders as delivered (called when payment is fully collected, or
-   *  when Bosta/manual delivery confirms the shipment). Accepts either 'Ready' or
-   *  'Shipped' as the prior state — a normal Bosta-tracked order is 'Shipped' by
-   *  the time Bosta reports DELIVERED, not still 'Ready'. */
+  /** Mark pick-up orders as delivered — called only when Bosta/manual delivery
+   *  confirms the shipment actually arrived. Accepts either 'Ready' or 'Shipped'
+   *  as the prior state — a normal Bosta-tracked order is 'Shipped' by the time
+   *  Bosta reports DELIVERED, not still 'Ready'. Payment status must never drive
+   *  this transition — a fully-paid order can still be sitting unshipped. */
   async markPickupDelivered(id: string, by: string): Promise<void> {
     const now = new Date().toISOString().slice(0, 10);
     await this.transactionModel.updateOne(

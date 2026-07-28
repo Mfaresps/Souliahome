@@ -97,12 +97,18 @@ export class BostaController {
     return result;
   }
 
-  /** Bulk sync all in-progress Bosta orders — admin only */
+  /**
+   * Bulk sync Bosta orders — admin only.
+   *
+   * `?includeTerminal=true` also re-reads orders already marked
+   * DELIVERED/RETURNED/CANCELLED, so a status that was recorded wrongly can be
+   * corrected from Bosta. Manually-confirmed deliveries remain locked.
+   */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('sync-all')
   @Roles('admin')
-  async syncAll() {
-    return this.bostaService.syncAll();
+  async syncAll(@Query('includeTerminal') includeTerminal?: string) {
+    return this.bostaService.syncAll(includeTerminal === 'true');
   }
 
   /** Fix corrupted numeric status values — admin only */

@@ -32,50 +32,16 @@ const BOSTA_STATUS_LABELS: Record<string, string> = {
   UNKNOWN:           'غير معروف',
 };
 
-// Bosta numeric state codes → string status
-const BOSTA_STATE_CODE_MAP: Record<number, string> = {
-  10: 'CREATED',
-  20: 'PICKED_UP',
-  30: 'IN_TRANSIT',
-  40: 'OUT_FOR_DELIVERY',
-  45: 'OUT_FOR_DELIVERY',
-  50: 'DELIVERED',
-  60: 'RETURNED',
-  70: 'CANCELLED',
-  80: 'FAILED_ATTEMPT',
-};
-
-// Bosta API status → granular bostaShippingStatus stored on Transaction
-const BOSTA_TO_SHIPPING_STATUS: Record<string, string> = {
-  CREATED:           'Created',
-  PICKED_UP:         'PickedUp',
-  IN_TRANSIT:        'InTransit',
-  OUT_FOR_DELIVERY:  'OutForDelivery',
-  DELIVERED:         'Delivered',
-  RETURNED:          'Returned',
-  CANCELLED:         'Cancelled',
-  FAILED_ATTEMPT:    'InTransit',  // stays in transit on failed attempt
-};
-
-
-function resolveBostaStatus(d: any, res: any): string {
-  // Prefer string code if available
-  const strCode = d.currentStatus?.code || d.state?.code;
-  if (typeof strCode === 'string') return strCode;
-  // Map numeric code
-  const numCode = typeof d.state?.code === 'number' ? d.state.code
-    : typeof res.currentStatus?.code === 'number' ? res.currentStatus.code : null;
-  if (numCode !== null && BOSTA_STATE_CODE_MAP[numCode]) return BOSTA_STATE_CODE_MAP[numCode];
-  // Only return CREATED if the delivery data actually exists and has a valid id
-  if (d._id || d.id || d.deliveryId) return 'CREATED';
-  return 'UNKNOWN';
-}
-
-// ── Bosta WEBHOOK state codes → our internal status ────────────────────────
+// ── Bosta numeric state codes → our internal status ────────────────────────
+// SINGLE SOURCE OF TRUTH — used by BOTH the REST sync (GET /deliveries/:id)
+// and the inbound webhook. Bosta emits the same numeric state codes on both
+// channels, so they must never be interpreted by two different tables.
 // Per https://docs.bosta.co/docs/how-to/get-delivery-status-via-webhook/
-// The webhook body is FLAT (no `res.data` wrapper) and `state` is a numeric
-// code, unlike the REST GET /deliveries/:id response used by resolveBostaStatus.
-const BOSTA_WEBHOOK_STATE_MAP: Record<number, string> = {
+//
+// NOTE: code 45 is DELIVERED (not "out for delivery") and 41 is the real
+// OUT_FOR_DELIVERY — an earlier duplicate table had these inverted, which
+// left every delivered order stuck on "خارج للتسليم" forever.
+const BOSTA_STATE_CODE_MAP: Record<number, string> = {
   10:  'CREATED',          // Pickup requested
   11:  'CREATED',          // Waiting for route (cash collection)
   20:  'CREATED',          // Route assigned
@@ -86,7 +52,7 @@ const BOSTA_WEBHOOK_STATE_MAP: Record<number, string> = {
   25:  'IN_TRANSIT',       // Fulfilled
   30:  'IN_TRANSIT',       // In transit between hubs
   40:  'IN_TRANSIT',       // Picking up (cash collection)
-  41:  'OUT_FOR_DELIVERY', // Picked up — heading to customer/you
+  41:  'OUT_FOR_DELIVERY', // Out for delivery — heading to customer
   45:  'DELIVERED',        // Delivered
   46:  'RETURNED',         // Returned to business
   47:  'FAILED_ATTEMPT',   // Exception (NDR)
@@ -101,21 +67,156 @@ const BOSTA_WEBHOOK_STATE_MAP: Record<number, string> = {
   105: 'IN_TRANSIT',       // On hold
 };
 
-function resolveWebhookStatus(payload: any): string {
-  // Webhook `state` is normally a flat numeric code, but some Bosta payloads
-  // (e.g. ones that mirror the REST delivery object) send it as an object
-  // like { code: 45, value: "Delivered" } — unwrap that case too.
-  const raw  = payload?.state;
-  const code = Number(typeof raw === 'object' && raw !== null ? raw.code : raw);
-  if (!Number.isNaN(code) && BOSTA_WEBHOOK_STATE_MAP[code]) return BOSTA_WEBHOOK_STATE_MAP[code];
+// Free-text / legacy string states Bosta may return on the REST endpoint,
+// normalized to our internal status vocabulary. Keys are lowercased with all
+// non-alphanumerics stripped, so "Out for delivery", "OUT_FOR_DELIVERY" and
+// "out-for-delivery" all collapse to the same key.
+const BOSTA_TEXT_STATUS_MAP: Record<string, string> = {
+  created:                  'CREATED',
+  pickuprequested:          'CREATED',
+  waitingforroute:          'CREATED',
+  routeassigned:            'CREATED',
+  pickedup:                 'PICKED_UP',
+  pickedupfrombusiness:     'PICKED_UP',
+  pickedupfromconsignee:    'PICKED_UP',
+  intransit:                'IN_TRANSIT',
+  receivedatwarehouse:      'IN_TRANSIT',
+  fulfilled:                'IN_TRANSIT',
+  onhold:                   'IN_TRANSIT',
+  outfordelivery:           'OUT_FOR_DELIVERY',
+  delivered:                'DELIVERED',
+  completed:                'DELIVERED',
+  returned:                 'RETURNED',
+  returnedtobusiness:       'RETURNED',
+  returnedtostock:          'RETURNED',
+  cancelled:                'CANCELLED',
+  canceled:                 'CANCELLED',
+  terminated:               'CANCELLED',
+  archived:                 'CANCELLED',
+  failedattempt:            'FAILED_ATTEMPT',
+  exception:                'FAILED_ATTEMPT',
+  lost:                     'FAILED_ATTEMPT',
+  damaged:                  'FAILED_ATTEMPT',
+  investigation:            'FAILED_ATTEMPT',
+  awaitingyouraction:       'FAILED_ATTEMPT',
+  deleted:                  'DELETED',
+  validationerror:          'VALIDATION_ERROR',
+  unknown:                  'UNKNOWN',
+};
+
+/** Normalizes any Bosta status representation (numeric code or free text). */
+function normalizeBostaStatus(raw: unknown): string | null {
+  if (raw === null || raw === undefined || raw === '') return null;
+
+  // Numeric code — either a real number or a numeric string like "45"
+  const asNum = typeof raw === 'number' ? raw : Number(String(raw).trim());
+  if (!Number.isNaN(asNum) && String(raw).trim() !== '') {
+    const mapped = BOSTA_STATE_CODE_MAP[asNum];
+    if (mapped) return mapped;
+  }
+
+  // Text status — normalize then look up
+  const key = String(raw).toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!key) return null;
+  if (BOSTA_TEXT_STATUS_MAP[key]) return BOSTA_TEXT_STATUS_MAP[key];
+
+  // Already one of our internal codes (e.g. "OUT_FOR_DELIVERY")
+  const upper = String(raw).trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if (BOSTA_STATUS_LABELS[upper]) return upper;
+
+  return null;
+}
+
+// Bosta API status → granular bostaShippingStatus stored on Transaction
+const BOSTA_TO_SHIPPING_STATUS: Record<string, string> = {
+  CREATED:           'Created',
+  PICKED_UP:         'PickedUp',
+  IN_TRANSIT:        'InTransit',
+  OUT_FOR_DELIVERY:  'OutForDelivery',
+  DELIVERED:         'Delivered',
+  RETURNED:          'Returned',
+  CANCELLED:         'Cancelled',
+  FAILED_ATTEMPT:    'InTransit',  // stays in transit on failed attempt
+};
+
+
+/**
+ * Resolves the status from a REST GET /deliveries/:id response.
+ *
+ * Every plausible field Bosta uses to carry state is tried in order of
+ * specificity and run through normalizeBostaStatus, so numeric codes and
+ * free-text values are handled identically.
+ *
+ * IMPORTANT: an unrecognized payload returns UNKNOWN, never CREATED. The old
+ * `if (d._id) return 'CREATED'` fallback silently rewrote in-transit orders
+ * back to "تم الإنشاء" whenever a state code wasn't in the (incomplete) map;
+ * UNKNOWN is rank 0 and is therefore discarded rather than applied.
+ */
+function resolveBostaStatus(d: any, res: any): string {
+  const candidates = [
+    d?.state?.code,
+    d?.state?.value,
+    d?.state,
+    d?.currentStatus?.code,
+    d?.currentStatus?.value,
+    d?.currentStatus,
+    res?.currentStatus?.code,
+    res?.currentStatus?.value,
+    res?.state?.code,
+    d?.status,
+  ];
+
+  for (const c of candidates) {
+    if (c === null || c === undefined) continue;
+    // Skip objects — their inner .code/.value are already listed above
+    if (typeof c === 'object') continue;
+    const resolved = normalizeBostaStatus(c);
+    if (resolved) return resolved;
+  }
+
   return 'UNKNOWN';
 }
 
-// Ordering used to prevent a late/out-of-order webhook or sync from
-// regressing a transaction's status backwards (e.g. a delayed
-// OUT_FOR_DELIVERY webhook arriving after DELIVERED was already recorded).
-// Terminal states (DELIVERED/RETURNED/CANCELLED) are never overwritten by a
-// lower-ranked status once reached.
+/**
+ * Resolves the status from an inbound webhook payload.
+ *
+ * The webhook body is FLAT (no `res.data` wrapper) and `state` is normally a
+ * numeric code, but some Bosta payloads mirror the REST delivery object and
+ * send it as `{ code: 45, value: "Delivered" }` — both shapes are handled.
+ *
+ * Uses the SAME BOSTA_STATE_CODE_MAP as the REST sync path: Bosta emits one
+ * set of state codes, so there is exactly one table to interpret them.
+ */
+function resolveWebhookStatus(payload: any): string {
+  const raw = payload?.state;
+  const candidates = typeof raw === 'object' && raw !== null
+    ? [raw.code, raw.value]
+    : [raw];
+
+  // Fall back to the same fields the REST path inspects, in case a webhook
+  // variant carries the status elsewhere.
+  candidates.push(
+    payload?.currentStatus?.code,
+    payload?.currentStatus?.value,
+    payload?.currentStatus,
+    payload?.status,
+  );
+
+  for (const c of candidates) {
+    if (c === null || c === undefined || typeof c === 'object') continue;
+    const resolved = normalizeBostaStatus(c);
+    if (resolved) return resolved;
+  }
+
+  return 'UNKNOWN';
+}
+
+// Ordering used only to detect that an update moves the status backwards.
+// Bosta is the source of truth, so a backwards move from a REAL Bosta status
+// is still APPLIED (and recorded in deliveryAuditLog) — the rank exists to
+// flag the change for audit, not to block it. The single exception is
+// UNKNOWN (rank 0), which means "we could not read this payload" rather than
+// a genuine state, and is therefore never written over a known status.
 const BOSTA_STATUS_RANK: Record<string, number> = {
   UNKNOWN:           0,
   CREATED:           1,
@@ -650,17 +751,41 @@ export class BostaService {
     }
 
     const incomingStatus = source === 'webhook' ? resolveWebhookStatus(d) : resolveBostaStatus(d, res);
+    const now = new Date().toISOString();
+    const currentStatus = tx.bostaStatus || '';
 
-    // Never let a late/out-of-order update regress the status backwards —
-    // e.g. a delayed OUT_FOR_DELIVERY webhook arriving after DELIVERED was
-    // already recorded (from an earlier webhook or a manual sync).
-    const currentRank = BOSTA_STATUS_RANK[tx.bostaStatus || ''] ?? 0;
+    // UNKNOWN means the payload could not be interpreted — it is not a real
+    // Bosta state, so it must never overwrite a status we already know.
+    // (Writing it would also erase the shipping status and strand COD orders.)
+    if (incomingStatus === 'UNKNOWN') {
+      this.logger.warn(
+        `Bosta ${source} update unreadable — tx=${txId} kept=${currentStatus || '(none)'} payload=${JSON.stringify(d)?.slice(0, 500)}`,
+      );
+      await this.txModel.findByIdAndUpdate(txId, {
+        $set: { bostaLastSync: now, bostaRawResponse: res },
+        $push: {
+          bostaStatusIgnoredEvents: {
+            at: now,
+            source,
+            currentStatus,
+            incomingStatus: 'UNKNOWN',
+          },
+        },
+      });
+      return { success: true, status: currentStatus, statusLabel: tx.bostaStatusLabel, raw: res };
+    }
+
+    // Bosta is the source of truth: a real status is always applied, even when
+    // it moves backwards relative to what we had recorded. A backwards move is
+    // logged to deliveryAuditLog so the change is reviewable — this is what
+    // lets an order wrongly stuck on a later status be corrected automatically.
+    const currentRank = BOSTA_STATUS_RANK[currentStatus] ?? 0;
     const newRank     = BOSTA_STATUS_RANK[incomingStatus] ?? 0;
-    const regressed   = newRank < currentRank;
-    const statusCode  = regressed ? tx.bostaStatus : incomingStatus;
+    const regressed   = currentStatus !== '' && newRank < currentRank;
+    const statusCode  = incomingStatus;
 
     if (regressed) {
-      this.logger.warn(`Bosta ${source} update ignored (regression) — tx=${txId} current=${tx.bostaStatus} incoming=${incomingStatus}`);
+      this.logger.warn(`Bosta ${source} status moved backwards (applied — Bosta is source of truth) — tx=${txId} ${currentStatus} → ${incomingStatus}`);
     }
 
     const statusLabel    = BOSTA_STATUS_LABELS[statusCode] || statusCode;
@@ -674,21 +799,30 @@ export class BostaService {
         bostaStatus: statusCode,
         bostaStatusLabel: statusLabel,
         bostaShippingStatus: shippingStatus,
-        bostaLastSync: new Date().toISOString(),
+        bostaLastSync: now,
         bostaRawResponse: res,
+        // Stamp delivery provenance so DELIVERED orders are attributable
+        ...(statusCode === 'DELIVERED' ? { deliverySource: 'BOSTA', deliveredAt: tx.deliveredAt || now } : {}),
         ...codUpdate,
       },
       ...(regressed ? {
         $push: {
-          bostaStatusIgnoredEvents: {
-            at: new Date().toISOString(),
-            source,
-            currentStatus: tx.bostaStatus,
-            incomingStatus,
+          deliveryAuditLog: {
+            action: 'BOSTA_STATUS_REGRESSION',
+            previousStatus: currentStatus,
+            newStatus: incomingStatus,
+            reason: `تحديث من Bosta (${source}) أرجع الحالة للخلف — طُبِّق لأن Bosta هي المصدر الموثوق`,
+            note: '',
+            by: `bosta:${source}`,
+            at: now,
           },
         },
       } : {}),
     });
+
+    if (currentStatus !== statusCode) {
+      this.logger.log(`Bosta ${source} status change — tx=${txId} ${currentStatus || '(none)'} → ${statusCode}`);
+    }
 
     this.emit('tx:updated', { _id: txId });
     return { success: true, status: statusCode, statusLabel, raw: res };
@@ -778,25 +912,42 @@ export class BostaService {
     }
   }
 
-  async syncAll(): Promise<{ synced: number; errors: number }> {
+  /**
+   * Reconciles in-progress Bosta orders.
+   *
+   * `includeTerminal` re-checks orders already sitting on a terminal status
+   * (DELIVERED/RETURNED/CANCELLED). The scheduled run leaves those alone — a
+   * terminal state does not change, so re-polling them every 10 minutes is
+   * wasted API calls. The admin-triggered run passes true so orders whose
+   * terminal status was recorded WRONGLY can be re-read from Bosta and fixed.
+   * Manually-confirmed deliveries stay locked either way (see applyDeliveryUpdate).
+   */
+  async syncAll(includeTerminal = false): Promise<{ synced: number; errors: number; changed: number }> {
     const TERMINAL = ['DELIVERED', 'RETURNED', 'CANCELLED'];
     const txList = await this.txModel
       .find({
         bostaOrderId: { $exists: true, $ne: '' },
-        bostaStatus: { $nin: TERMINAL },
+        ...(includeTerminal ? {} : { bostaStatus: { $nin: TERMINAL } }),
       })
       .lean();
 
     let synced = 0;
     let errors = 0;
+    let changed = 0;
 
     for (const tx of txList) {
+      const before = tx.bostaStatus || '';
       const result = await this.syncStatus(String(tx._id));
-      if (result.success) synced++; else errors++;
+      if (result.success) {
+        synced++;
+        if (result.status && result.status !== before) changed++;
+      } else {
+        errors++;
+      }
     }
 
-    this.logger.log(`Bosta bulk sync complete: synced=${synced} errors=${errors}`);
-    return { synced, errors };
+    this.logger.log(`Bosta bulk sync complete: synced=${synced} changed=${changed} errors=${errors} includeTerminal=${includeTerminal}`);
+    return { synced, errors, changed };
   }
 
   // ── Cancel a Bosta order ───────────────────────────────────────────────
@@ -842,13 +993,49 @@ export class BostaService {
 
   // ── Fix corrupted status values (e.g. numeric "10" saved as status) ──────
 
-  async fixCorruptedStatuses(): Promise<{ fixed: number }> {
-    const result = await this.txModel.updateMany(
-      { bostaOrderId: { $exists: true, $ne: '' }, bostaStatus: { $not: /^[A-Z_]+$/ } },
-      { $set: { bostaStatus: 'CREATED', bostaStatusLabel: 'تم الإنشاء' } },
-    );
-    this.logger.log(`fixCorruptedStatuses: fixed ${result.modifiedCount} records`);
-    return { fixed: result.modifiedCount };
+  /**
+   * Repairs transactions whose bostaStatus is not one of our internal codes
+   * (e.g. a raw numeric "45" or free text "Out for delivery" written by an
+   * older build), by NORMALIZING the stored value through the same table the
+   * live paths use.
+   *
+   * It deliberately does NOT force unrecognized values to CREATED — the old
+   * behaviour did exactly that and silently rewrote delivered/in-transit
+   * orders back to "تم الإنشاء". Anything that cannot be normalized is left
+   * untouched and reported so it can be re-synced from Bosta instead.
+   */
+  async fixCorruptedStatuses(): Promise<{ fixed: number; unresolved: number; details: any[] }> {
+    const candidates = await this.txModel
+      .find({
+        bostaOrderId: { $exists: true, $ne: '' },
+        bostaStatus: { $nin: Object.keys(BOSTA_STATUS_LABELS).concat(['', 'DELETED', 'VALIDATION_ERROR']) },
+      })
+      .lean();
+
+    let fixed = 0;
+    const details: any[] = [];
+
+    for (const tx of candidates) {
+      const raw = (tx as any).bostaStatus;
+      const normalized = normalizeBostaStatus(raw);
+      if (!normalized || normalized === 'UNKNOWN') {
+        details.push({ _id: String(tx._id), ref: tx.ref, rawStatus: raw, action: 'left-for-resync' });
+        continue;
+      }
+      await this.txModel.findByIdAndUpdate(tx._id, {
+        $set: {
+          bostaStatus: normalized,
+          bostaStatusLabel: BOSTA_STATUS_LABELS[normalized] || normalized,
+          bostaShippingStatus: BOSTA_TO_SHIPPING_STATUS[normalized] || '',
+        },
+      });
+      fixed++;
+      details.push({ _id: String(tx._id), ref: tx.ref, rawStatus: raw, action: 'normalized', to: normalized });
+    }
+
+    const unresolved = details.length - fixed;
+    this.logger.log(`fixCorruptedStatuses: normalized=${fixed} unresolved=${unresolved}`);
+    return { fixed, unresolved, details };
   }
 
   // ── Inspect & fix city data for a transaction by ref ─────────────────

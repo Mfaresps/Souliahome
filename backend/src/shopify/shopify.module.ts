@@ -3,6 +3,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ShopifyController } from './shopify.controller';
 import { ShopifyService } from './shopify.service';
 import { ShopifyAdminService } from './shopify-admin.service';
+import { OrderAuditController } from './order-audit.controller';
+import { OrderAuditService } from './order-audit.service';
+import { OrderAuditExportService } from './order-audit-export.service';
+import { OrderAudit, OrderAuditSchema } from './schemas/order-audit.schema';
 import {
   Transaction,
   TransactionSchema,
@@ -24,12 +28,18 @@ import { AuthModule } from '../auth/auth.module';
       { name: Transaction.name, schema: TransactionSchema },
       { name: Product.name, schema: ProductSchema },
       { name: ShopifyOrder.name, schema: ShopifyOrderSchema },
+      { name: OrderAudit.name, schema: OrderAuditSchema },
     ]),
     VaultModule,
     AuthModule,
   ],
-  controllers: [ShopifyController],
-  providers: [ShopifyService, ShopifyAdminService],
-  exports: [ShopifyAdminService],
+  controllers: [ShopifyController, OrderAuditController],
+  providers: [
+    ShopifyService,
+    ShopifyAdminService,
+    OrderAuditService,
+    OrderAuditExportService,
+  ],
+  exports: [ShopifyAdminService, OrderAuditService],
 })
 export class ShopifyModule {}
