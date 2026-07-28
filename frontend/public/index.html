@@ -40964,13 +40964,18 @@ function renderAuditSelectionBar() {
   }
   bar.style.display = 'flex';
 
-  const total = rows.reduce((s, r) => s + (r.registered ? (r.orderTotal || 0) : 0), 0);
-  const profitRows = rows.filter(r => r.registered);
-  const profit = profitRows.reduce((s, r) => s + (r.netProfit || 0), 0);
+  const total = rows.reduce((s, r) => s + (r.orderTotal || 0), 0);
+
+  const profitableRows = rows.filter(r => r.orderTotal);
+  const hasEstimated = profitableRows.some(r => !r.registered);
+  const profit = profitableRows.reduce((s, r) => {
+    const p = r.registered ? (r.netProfit || 0) : (r.orderTotal || 0) - (r.productCost || 0) - (r.shippingCost || 0);
+    return s + p;
+  }, 0);
 
   qs('#oa-sel-count').textContent = fmtNum(rows.length);
   qs('#oa-sel-total').innerHTML = fmtJ(total);
-  qs('#oa-sel-profit').innerHTML = profitRows.length ? fmtJ(profit) : '—';
+  qs('#oa-sel-profit').innerHTML = profitableRows.length ? (hasEstimated ? '~ ' : '') + fmtJ(profit) : '—';
 }
 
 function setAuditSort(key) {
@@ -41024,7 +41029,24 @@ function auditRowsFiltered() {
 
   const { key, dir } = auditSort;
   const mul = dir === 'asc' ? 1 : -1;
+
+  // "حالة الدفع" shows a parsed deposit amount for pending/unregistered rows rather than
+  // the raw paymentStatus string, so sort by that same parsed amount instead.
+  const depositOf = (r) => {
+    if (r.registered) return null;
+    if (r.syncStatus !== 'pending' || typeof _spNoteDepositAmount !== 'function') return 0;
+    return _spNoteDepositAmount({ notes: r.notes || '', tags: r.tags || '', total: r.orderTotal || 0 }).deposit || 0;
+  };
+
   rows.sort((a, b) => {
+    if (key === 'paymentStatus') {
+      const av = depositOf(a), bv = depositOf(b);
+      if (av === null || bv === null) {
+        const as = String(a.paymentStatus || ''), bs = String(b.paymentStatus || '');
+        return mul * as.localeCompare(bs, 'ar');
+      }
+      return mul * (av - bv);
+    }
     let av = a[key], bv = b[key];
     if (key === 'orderNumber') { av = Number(av); bv = Number(bv); }
     else if (key === 'registered') { av = av ? 1 : 0; bv = bv ? 1 : 0; }
