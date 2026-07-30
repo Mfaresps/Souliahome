@@ -143,12 +143,14 @@ h1,h2,h3,h4,h5,h6{line-height:1.35;letter-spacing:-0.015em}
 
 /* —— Page transitions —— */
 .page{animation:pageEnter var(--motion-slow)}
-#page-reports,#page-users,#page-clients,#page-approvals,#page-suppliers,#page-expenses,#page-transaction,#page-supplier-profile{max-width:1400px;margin:0 auto;padding:16px 20px;border:1px solid var(--border);border-radius:12px;background:var(--bg-alt)}
+#page-reports,#page-users,#page-clients,#page-approvals,#page-suppliers,#page-expenses,#page-transaction,#page-supplier-profile{max-width:1400px;margin:0 auto;padding:16px 20px;border:1px solid var(--border);border-radius:12px;background:var(--bg);box-shadow:0 1px 3px rgba(0,0,0,.05)}
+#page-complaints,#page-movements,#page-inventory,#page-products,#page-settings,#page-vault{margin:0;padding:16px 20px;border:1px solid var(--border);border-radius:12px;background:var(--bg);box-shadow:0 1px 3px rgba(0,0,0,.05)}
 #page-reports .card,#page-users .card,#page-clients .card,#page-approvals .card,#page-suppliers .card,#page-expenses .card,#page-transaction .card,#page-supplier-profile .card,
 #page-reports .filter-card,#page-users .filter-card,#page-clients .filter-card,#page-approvals .filter-card,#page-suppliers .filter-card,#page-expenses .filter-card,
 #page-reports .client-card,#page-clients .client-card,
 #page-reports .kpi,#page-users .kpi,#page-clients .kpi,#page-approvals .kpi,#page-suppliers .kpi,#page-expenses .kpi,
-#page-reports .rep-kpi-card,#page-reports .oa-kpi-card,#page-reports .ds-kpi{background:var(--surface)}
+#page-reports .rep-kpi-card,#page-reports .oa-kpi-card,#page-reports .ds-kpi,
+#page-complaints .cmp-stat,#page-complaints .cmp-card{background:var(--bg-alt)}
 #page-supplier-profile #sp-panel-invoices .overflow-x,#page-supplier-profile #sp-panel-pos .overflow-x,
 #page-supplier-profile #sp-panel-sreturns .overflow-x,#page-supplier-profile #sp-panel-payments .overflow-x,
 #page-supplier-profile #sp-panel-activity .overflow-x{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
@@ -1593,11 +1595,11 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .sp-src-link:hover{background:#f0f9ec!important;border-color:#95bf4770!important}
 .sp-src-link:hover .sp-src-svg{filter:grayscale(0) opacity(1)!important}
 /* ── Shopify Orders Page Layout ── */
-#page-shopify-orders{padding-bottom:32px}
+#page-shopify-orders{margin:0;padding:16px 20px 32px;border:1px solid var(--border);border-radius:12px;background:var(--bg);box-shadow:0 1px 3px rgba(0,0,0,.05)}
 .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
 #shopify-page-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:16px}
 .sp-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;padding:0;flex-shrink:0}
-#shopify-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+#shopify-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:16px;background:var(--bg-alt);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .shopify-kpi-stat{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;padding:16px;min-width:0;border-inline-start:1px solid var(--border)}
 .shopify-kpi-stat:first-child{border-inline-start:none}
 .shopify-kpi-stat-icon{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:34px;height:34px;border-radius:9px;background:var(--bg-alt);color:var(--accent)}
@@ -1644,7 +1646,7 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .sp-date-arrow{font-size:.72rem;color:var(--text-muted);white-space:nowrap;flex-shrink:0}
 #shopify-date-clear-btn{font-size:.72rem;color:#ef4444;border:1.5px solid #ef444440;background:#ef444410;border-radius:8px;padding:5px 10px}
 /* ── Table (desktop) ── */
-#shopify-orders-table-wrap{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.04)}
+#shopify-orders-table-wrap{background:var(--bg-alt);border-radius:var(--radius);border:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.04)}
 #shopify-filters-bar{border-radius:var(--radius) var(--radius) 0 0}
 #shopify-orders-table-wrap .sp-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:0 0 var(--radius) var(--radius)}
 #shopify-orders-table-wrap .data-table{border-collapse:collapse;font-size:.82rem;width:100%;min-width:900px}
@@ -2253,7 +2255,7 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .tx-picker-new-btn{background:none;border:none;color:var(--primary);font-size:.85rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;transition:background .15s}
 .tx-picker-new-btn:hover{background:var(--primary-pale)}
 .tx-picker-empty{text-align:center;padding:32px 16px;color:var(--muted);font-size:.85rem}
-.supplier-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center}
+.supplier-card{background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04)}
 .supplier-card h4{font-size:.95rem;margin-bottom:4px}
 .supplier-card p{font-size:.78rem;color:var(--muted)}
 .client-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;transition:all .25s;display:flex;flex-direction:column}
@@ -4161,6 +4163,7 @@ body.dark-mode #calc-widget{box-shadow:0 12px 48px rgba(0,0,0,.5)}
 }
 .vault-tab-btn svg { width:16px; height:16px; flex-shrink:0; }
 .vault-tab-btn:hover { color: var(--text); }
+.vault-tab-btn + .vault-tab-btn { border-inline-start:1px solid var(--border); }
 .vault-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 .vault-actions { display:flex; gap:6px; padding-bottom:6px; align-items:center; }
 .vault-actions .btn { display:inline-flex; align-items:center; gap:5px; }
