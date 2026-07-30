@@ -34,6 +34,7 @@ import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
 import { ExpensesService } from '../expenses/expenses.service';
+import { maskTransactionForRole, maskTransactionsForRole } from './purchase-mask.util';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('transactions')
@@ -49,11 +50,13 @@ export class TransactionsController {
   async findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Req() req?: { user?: { role?: string } },
   ) {
-    return this.transactionsService.findAll(
+    const txs = await this.transactionsService.findAll(
       page ? Number(page) : undefined,
       limit ? Number(limit) : undefined,
     );
+    return maskTransactionsForRole(txs, req?.user?.role);
   }
 
   @Roles('admin')
@@ -120,13 +123,28 @@ export class TransactionsController {
   }
 
   @Get('archived')
-  async findArchived() {
-    return this.transactionsService.findArchived();
+  async findArchived(@Req() req?: { user?: { role?: string } }) {
+    const txs = await this.transactionsService.findArchived();
+    return maskTransactionsForRole(txs, req?.user?.role);
   }
 
   @Get('reference/:ref')
-  async getReferenceDetails(@Param('ref') ref: string) {
-    return this.referenceDetailService.getDetailsByReference(ref);
+  async getReferenceDetails(
+    @Param('ref') ref: string,
+    @Req() req?: { user?: { role?: string } },
+  ) {
+    const detail = await this.referenceDetailService.getDetailsByReference(ref);
+    if (req?.user?.role === 'admin') return detail;
+
+    const maskTxInfo = (t: any) =>
+      t && (t.type === 'مشتريات' || t.type === 'مرتجع مشتريات')
+        ? { ...t, total: null, deposit: null, remaining: null, items: undefined }
+        : t;
+    return {
+      ...detail,
+      primaryTransaction: maskTxInfo(detail.primaryTransaction),
+      allTransactions: (detail.allTransactions || []).map(maskTxInfo),
+    };
   }
 
   @Get('reference-search/:partial')
@@ -221,16 +239,28 @@ export class TransactionsController {
   }
 
   @Get('by-ref/:ref')
-  async findByRef(@Param('ref') ref: string, @Query('type') type?: string) {
-    return this.transactionsService.findByRef(ref, type);
+  async findByRef(
+    @Param('ref') ref: string,
+    @Query('type') type?: string,
+    @Req() req?: { user?: { role?: string } },
+  ) {
+    const tx = await this.transactionsService.findByRef(ref, type);
+    return maskTransactionForRole(tx, req?.user?.role);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    if (id === 'pickup-orders') return this.transactionsService.findPickupOrders();
-    if (id === 'archived') return this.transactionsService.findArchived();
+  async findOne(@Param('id') id: string, @Req() req?: { user?: { role?: string } }) {
+    if (id === 'pickup-orders') {
+      const txs = await this.transactionsService.findPickupOrders();
+      return maskTransactionsForRole(txs, req?.user?.role);
+    }
+    if (id === 'archived') {
+      const txs = await this.transactionsService.findArchived();
+      return maskTransactionsForRole(txs, req?.user?.role);
+    }
     if (!isValidObjectId(id)) throw new BadRequestException('معرّف المعاملة غير صالح');
-    return this.transactionsService.findById(id);
+    const tx = await this.transactionsService.findById(id);
+    return maskTransactionForRole(tx, req?.user?.role);
   }
 
   @Get(':id/lock-status')

@@ -1,4 +1,6 @@
-import { IsString, IsNotEmpty, IsOptional, MaxLength, Matches } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MaxLength, Matches, IsIn } from 'class-validator';
+
+const TAG_CATEGORIES = ['operational', 'risk', 'system'] as const;
 
 export class CreateTagDto {
   @IsString()
@@ -14,6 +16,10 @@ export class CreateTagDto {
   @IsString()
   @IsOptional()
   readonly bg?: string;
+
+  @IsIn(TAG_CATEGORIES)
+  @IsOptional()
+  readonly category?: 'operational' | 'risk' | 'system';
 }
 
 export class UpdateTagDto {
@@ -24,4 +30,8 @@ export class UpdateTagDto {
   @IsString()
   @IsOptional()
   readonly bg?: string;
+
+  @IsIn([...TAG_CATEGORIES, null])
+  @IsOptional()
+  readonly category?: 'operational' | 'risk' | 'system' | null;
 }

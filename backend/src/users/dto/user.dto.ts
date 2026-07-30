@@ -31,6 +31,10 @@ export class CreateUserDto {
   @IsOptional()
   readonly avatar?: string;
 
+  @IsString()
+  @IsOptional()
+  readonly jobTitle?: string;
+
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
@@ -62,6 +66,10 @@ export class UpdateUserDto {
   @IsString()
   @IsOptional()
   readonly avatar?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly jobTitle?: string;
 
   @IsArray()
   @IsString({ each: true })

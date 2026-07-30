@@ -26,6 +26,9 @@ export class User {
   @Prop()
   avatar: string;
 
+  @Prop({ default: '' })
+  jobTitle: string;
+
   @Prop({ type: [String], default: [] })
   perms: string[];
 

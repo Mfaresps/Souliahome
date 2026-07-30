@@ -24,9 +24,17 @@ function isNumericOnly(q: string): boolean {
   return /^\d+$/.test(q.trim());
 }
 
-/** هل يبدأ الإدخال بـ 01 (رقم هاتف مصري)؟ */
+/** هل يبدأ الإدخال بمقدمة رقم هاتف مصري صالحة (010/011/012/015)؟ */
 function isPhoneNumber(q: string): boolean {
-  return /^01/.test(q.trim());
+  return /^(010|011|012|015)/.test(q.trim());
+}
+
+/** أيقونة ديناميكية حسب نوع المعاملة */
+function orderIcon(type: string): string {
+  if (type === 'مبيعات') return '🛒';
+  if (type === 'مشتريات') return '📦';
+  if (type?.startsWith('مرتجع')) return '↩️';
+  return '📋';
 }
 
 @Injectable()
@@ -51,7 +59,6 @@ export class SearchService {
 
     const numeric = isNumericOnly(trimmed);
     const isPhone = isPhoneNumber(trimmed);
-    const numLen = trimmed.length;
 
     let products: SearchResultItem[] = [];
     let orders: SearchResultItem[] = [];
@@ -68,23 +75,11 @@ export class SearchService {
         this.searchComplaintsByText(trimmed),
       ]);
     } else if (numeric) {
-      // أرقام قصيرة (1-6): رقم مرجع أوردر أولاً
-      // أرقام طويلة (7+): هاتف أولاً ثم أوردر
-      if (numLen <= 6) {
-        [orders, customers, supplierResults, complaintResults] = await Promise.all([
-          this.searchOrdersByRef(trimmed),
-          this.searchCustomersByPhone(trimmed),
-          this.searchSuppliersByPhone(trimmed),
-          this.searchComplaintsByText(trimmed),
-        ]);
-      } else {
-        [customers, orders, supplierResults, complaintResults] = await Promise.all([
-          this.searchCustomersByPhone(trimmed),
-          this.searchOrdersByPhone(trimmed),
-          this.searchSuppliersByPhone(trimmed),
-          this.searchComplaintsByText(trimmed),
-        ]);
-      }
+      // أرقام لا تبدأ بمقدمة هاتف صالحة (010/011/012/015): تعامل كرقم مرجع أوردر فقط، بدون مطابقة هاتف
+      [orders, complaintResults] = await Promise.all([
+        this.searchOrdersByRef(trimmed),
+        this.searchComplaintsByText(trimmed),
+      ]);
     } else {
       // نص: بحث عام في الاسم
       [products, orders, customers, supplierResults, complaintResults] = await Promise.all([
@@ -96,13 +91,10 @@ export class SearchService {
       ]);
     }
 
-    const results = [
-      ...complaintResults,
-      ...products,
-      ...customers,
-      ...supplierResults,
-      ...orders,
-    ];
+    const results =
+      numeric && !isPhone
+        ? [...orders, ...complaintResults, ...products, ...customers, ...supplierResults]
+        : [...complaintResults, ...products, ...customers, ...supplierResults, ...orders];
     return { results, total: results.length };
   }
 
@@ -134,7 +126,7 @@ export class SearchService {
   private async searchOrdersByRef(ref: string): Promise<SearchResultItem[]> {
     const transactions = await this.transactionModel
       .find({ ...TX_ACTIVE_FILTER, ref: { $regex: `^${ref}`, $options: 'i' } })
-      .select('ref client phone type total payStatus')
+      .select('ref client phone type total payStatus items createdAt bostaStatusLabel')
       .sort({ ref: 1 })
       .limit(MAX_RESULTS_PER_CATEGORY)
       .lean()
@@ -152,8 +144,13 @@ export class SearchService {
       type: 'order' as const,
       title: `#${tx.ref || String(tx._id).slice(-6)}`,
       subtitle: `${tx.type} — ${tx.client || ''}`,
-      icon: '📋',
+      icon: orderIcon(tx.type),
       meta: `${tx.total} ج — ${tx.payStatus}`,
+      total: tx.total,
+      itemsCount: Array.isArray(tx.items) ? tx.items.length : 0,
+      createdAt: (tx as any).createdAt,
+      payStatus: tx.payStatus,
+      bostaStatusLabel: tx.bostaStatusLabel || '',
     }));
   }
 
@@ -161,7 +158,7 @@ export class SearchService {
   private async searchOrdersByPhone(phone: string): Promise<SearchResultItem[]> {
     const transactions = await this.transactionModel
       .find({ ...TX_ACTIVE_FILTER, phone: { $regex: phone, $options: 'i' } })
-      .select('ref client phone type total payStatus')
+      .select('ref client phone type total payStatus items createdAt bostaStatusLabel')
       .sort({ createdAt: -1 })
       .limit(MAX_RESULTS_PER_CATEGORY)
       .lean()
@@ -172,8 +169,13 @@ export class SearchService {
       type: 'order' as const,
       title: `#${tx.ref || String(tx._id).slice(-6)}`,
       subtitle: `${tx.type} — ${tx.client || ''}`,
-      icon: '📋',
+      icon: orderIcon(tx.type),
       meta: `${tx.total} ج — ${tx.payStatus}`,
+      total: tx.total,
+      itemsCount: Array.isArray(tx.items) ? tx.items.length : 0,
+      createdAt: (tx as any).createdAt,
+      payStatus: tx.payStatus,
+      bostaStatusLabel: tx.bostaStatusLabel || '',
     }));
   }
 
@@ -271,7 +273,7 @@ export class SearchService {
     if (!tokens.length) return [];
     const transactions = await this.transactionModel
       .find(TX_ACTIVE_FILTER)
-      .select('ref client phone type total payStatus notes')
+      .select('ref client phone type total payStatus notes items createdAt bostaStatusLabel')
       .sort({ createdAt: -1 })
       .limit(2000)
       .lean()
@@ -287,8 +289,13 @@ export class SearchService {
         type: 'order' as const,
         title: `#${tx.ref || String(tx._id).slice(-6)}`,
         subtitle: `${tx.type} — ${tx.client || ''}`,
-        icon: '📋',
+        icon: orderIcon(tx.type),
         meta: `${tx.total} ج — ${tx.payStatus}`,
+        total: tx.total,
+        itemsCount: Array.isArray(tx.items) ? tx.items.length : 0,
+        createdAt: (tx as any).createdAt,
+        payStatus: tx.payStatus,
+        bostaStatusLabel: tx.bostaStatusLabel || '',
       });
       if (out.length >= MAX_RESULTS_PER_CATEGORY) break;
     }

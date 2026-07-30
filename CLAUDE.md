@@ -5,6 +5,13 @@ SOULIA is a comprehensive warehouse management system built with NestJS (backend
 
 ---
 
+## UI Standing Rules
+
+### Search Boxes — Always Small, Simple Text (Jul 30, 2026)
+All search inputs across the app (placeholder starting with "بحث") must keep small, simple text — no large or bold placeholder/value fonts. Enforced globally via `input[placeholder*="بحث"]` CSS rule near line 916 in `frontend/public/index.html`. Any new search box automatically inherits this; don't override it with a larger font-size.
+
+---
+
 ## Access Control & Security (Apr 25, 2026)
 
 ### Admin-Only Features

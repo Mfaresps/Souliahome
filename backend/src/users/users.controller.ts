@@ -57,8 +57,8 @@ export class UsersController {
   ) {
     const userId = (req.user?.userId || req.user?.sub) as string;
     if (!userId) throw new BadRequestException('تعذر تحديد هوية المستخدم');
-    // Non-admins cannot change role or perms
-    const safeDto: UpdateUserDto = { name: dto.name, phone: dto.phone, avatar: dto.avatar, password: dto.password };
+    // Non-admins cannot change role, perms, phone, or password
+    const safeDto: UpdateUserDto = { name: dto.name, avatar: dto.avatar };
     const user = await this.usersService.updateUser(userId, safeDto);
     if (dto.avatar !== undefined || dto.name !== undefined) {
       try {

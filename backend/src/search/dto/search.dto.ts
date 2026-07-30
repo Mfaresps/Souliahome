@@ -14,6 +14,11 @@ export interface SearchResultItem {
   readonly icon: string;
   readonly meta?: string;
   readonly imageUrl?: string;
+  readonly total?: number;
+  readonly itemsCount?: number;
+  readonly createdAt?: string;
+  readonly payStatus?: string;
+  readonly bostaStatusLabel?: string;
 }
 
 export interface SearchResponse {
