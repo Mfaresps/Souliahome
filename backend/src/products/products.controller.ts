@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Request,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { ProductAnalyticsService } from './product-analytics.service';
@@ -114,7 +115,17 @@ export class ProductsController {
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateProductDto,
+    @Request() req: { user?: { role?: string; perms?: string[] } },
+  ) {
+    if (dto.buyPrice !== undefined && req.user?.role !== 'admin') {
+      const perms = req.user?.perms || [];
+      if (!perms.includes('purchase-edit-price')) {
+        throw new ForbiddenException('ليس لديك صلاحية تعديل سعر الشراء');
+      }
+    }
     return this.productsService.update(id, dto);
   }
 

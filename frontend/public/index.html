@@ -713,6 +713,10 @@ body.dark-mode #header #header-date{color:#7faa8e}
   transition:opacity .35s ease,max-height .35s ease,border-bottom-width .3s ease,background .4s ease;
   max-height:36px;
   font-family:'Cairo',sans-serif;
+  /* own compositor layer — avoids repeated repaint flicker under the header
+     on mobile when combined with backdrop-filter */
+  transform:translateZ(0);
+  -webkit-transform:translateZ(0);
 }
 body.dark-mode #announcement-bar{
   background:rgba(18,26,20,.94);
@@ -1676,7 +1680,8 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 #shopify-orders-table-body tbody tr{transition:background .12s}
 .sp-card:hover{border-color:#cbd5e1;box-shadow:0 4px 14px rgba(15,23,42,.07)}
 .sp-card.sp-card-new{border-right:3px solid #10b981;background:linear-gradient(90deg,rgba(16,185,129,.05) 0%,var(--surface) 100%)}
-.sp-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px}
+.sp-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px;flex-wrap:wrap;min-width:0}
+.sp-card-top>div{min-width:0}
 .sp-card-ref{font-size:1rem;font-weight:800;color:var(--text)}
 .sp-card-time{font-size:.72rem;color:var(--text-muted)}
 .sp-card-client{font-weight:400;color:var(--text-muted)}
@@ -2323,7 +2328,7 @@ body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .perm-tpl-btn:hover{background:var(--primary);color:#fff}
 .perm-sys-summary{padding:6px 10px;font-size:.72rem;color:var(--muted);border-bottom:1px solid var(--border);background:var(--surface)}
 .perm-sys-summary b{color:var(--primary)}
-.perm-sys-body{max-height:230px;overflow-y:auto}
+.perm-sys-body{max-height:min(60vh,520px);overflow-y:auto}
 .perm-module{border-bottom:1px solid var(--border)}
 .perm-module:last-child{border-bottom:none}
 .perm-module-head{display:flex;align-items:center;gap:7px;padding:6px 8px;cursor:pointer;transition:background .15s;user-select:none}
@@ -3372,13 +3377,14 @@ body.dark-mode .ent-table-card{box-shadow:0 1px 2px rgba(0,0,0,.25)}
    client column flexes to absorb remaining space */
 #mov-table th[data-col="ref"],#mov-table td[data-col="ref"]{width:64px;white-space:nowrap}
 #mov-table th[data-col="date"],#mov-table td[data-col="date"]{width:132px;white-space:nowrap}
-#mov-table th[data-col="type"],#mov-table td[data-col="type"]{width:72px}
+#mov-table th[data-col="type"],#mov-table td[data-col="type"]{width:96px}
 #mov-table th[data-col="client"],#mov-table td[data-col="client"]{width:180px}
 #mov-table th[data-col="invoice"],#mov-table td[data-col="invoice"]{width:84px}
 #mov-table th[data-col="paid"],#mov-table td[data-col="paid"]{width:84px}
 #mov-table th[data-col="remaining"],#mov-table td[data-col="remaining"]{width:84px}
 #mov-table th[data-col="ship"],#mov-table td[data-col="ship"]{width:74px}
-#mov-table th[data-col="items"],#mov-table td[data-col="items"]{width:84px}
+#mov-table th[data-col="items"],#mov-table td[data-col="items"]{width:104px}
+#mov-table .amt-masked{display:inline-flex;align-items:center;gap:4px;color:var(--muted);background:var(--bg-alt);border-radius:var(--r-pill,20px);padding:2px 9px;font-size:.72rem;font-weight:600}
 #mov-table th[data-col="status"],#mov-table td[data-col="status"]{width:100px;white-space:normal}
 #mov-table th[data-col="discount"],#mov-table td[data-col="discount"]{width:64px;overflow:hidden}
 #mov-table th[data-col="pickup"],#mov-table td[data-col="pickup"]{width:108px}
@@ -3797,6 +3803,11 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
     pointer-events:none;
     padding:0 14px;
     transition:opacity .2s,transform .2s;
+    /* own compositor layer — prevents iOS Safari from re-flowing this fixed
+       bar mid-page during scroll/repaint on pages with backdrop-filter children */
+    transform:translateZ(0);
+    -webkit-transform:translateZ(0);
+    will-change:transform;
   }
   /* بحث/الرئيسية: فقاعة منفصلة عن القائمة الرئيسية */
   #mobile-bottom-nav .m-nav-search-fab{
@@ -9518,7 +9529,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <h2 class="page-title" style="margin:0" data-i18n="reports">التقارير</h2>
       <p class="page-subtitle" style="margin:4px 0 0" data-i18n="reportsSubtitle">تحليل الأداء المالي والمبيعات والمخزون</p>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap" id="rep-export-actions">
       <button class="btn btn-outline btn-sm" onclick="exportReportExcel()" title="تصدير Excel">
         <svg viewBox="0 0 24 24" width="14" height="14" style="display:inline-block;vertical-align:-2px" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="19"/><line x1="15" y1="13" x2="9" y2="19"/></svg>
         Excel
@@ -9532,19 +9543,19 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
 
   <!-- Row 2: Section Tabs -->
   <div class="rep-section-tabs" role="tablist" style="margin-bottom:0;border-bottom:none">
-    <button class="rep-sec-tab active" data-rep-tab="kpis" onclick="switchReportTab('kpis',this)" role="tab" aria-selected="true">
+    <button class="rep-sec-tab active" data-rep-tab="kpis" data-rep-perm="reports-kpis" onclick="switchReportTab('kpis',this)" role="tab" aria-selected="true">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
       مؤشرات الأداء
     </button>
-    <button class="rep-sec-tab" data-rep-tab="charts" onclick="switchReportTab('charts',this)" role="tab" aria-selected="false">
+    <button class="rep-sec-tab" data-rep-tab="charts" data-rep-perm="reports-charts" onclick="switchReportTab('charts',this)" role="tab" aria-selected="false">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
       المبيعات والمشتريات
     </button>
-    <button class="rep-sec-tab" data-rep-tab="discounts" onclick="switchReportTab('discounts',this)" role="tab" aria-selected="false">
+    <button class="rep-sec-tab" data-rep-tab="discounts" data-rep-perm="reports-discounts" onclick="switchReportTab('discounts',this)" role="tab" aria-selected="false">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
       أكواد الخصم
     </button>
-    <button class="rep-sec-tab" data-rep-tab="orderaudit" onclick="switchReportTab('orderaudit',this)" role="tab" aria-selected="false">
+    <button class="rep-sec-tab" data-rep-tab="orderaudit" data-rep-perm="reports-orderaudit" onclick="switchReportTab('orderaudit',this)" role="tab" aria-selected="false">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="13" width="3" height="5" rx="0.5"/><rect x="12" y="9" width="3" height="9" rx="0.5"/><rect x="17" y="5" width="3" height="13" rx="0.5"/></svg>
       تحليل الطلبات
     </button>
@@ -12962,24 +12973,27 @@ let vaultUnlocked = false;
 let reportCharts = {};
 let currentLang = 'ar';
 
-const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','vault','users','settings','shopify-orders','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import','delivery-manual-confirm','delivery-view-audit'];
-const PERMS_AR = {dashboard:'الرئيسية',transaction:'المعاملات',inventory:'المخزن',movements:'سجل المعاملات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',approvals:'الموافقات',reports:'التقارير',vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات','shopify-orders':'أوردرات Shopify','csp-view':'دليل خدمة العملاء - عرض','csp-create':'دليل خدمة العملاء - إضافة بطاقات','csp-edit':'دليل خدمة العملاء - تعديل بطاقات','csp-delete':'دليل خدمة العملاء - حذف بطاقات','csp-manage-folders':'دليل خدمة العملاء - إدارة الفولدرات','csp-analytics':'دليل خدمة العملاء - الإحصائيات','csp-export':'دليل خدمة العملاء - تصدير','csp-import':'دليل خدمة العملاء - استيراد','delivery-manual-confirm':'تأكيد التسليم يدوياً','delivery-view-audit':'عرض سجل تدقيق التسليم'};
+const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-export','vault','users','settings','shopify-orders','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import','delivery-manual-confirm','delivery-view-audit','purchase-create','purchase-view','purchase-edit-price'];
+const PERMS_AR = {dashboard:'الرئيسية',transaction:'المعاملات',inventory:'المخزن',movements:'سجل المعاملات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',approvals:'الموافقات',reports:'التقارير',
+  'reports-kpis':'التقارير - مؤشرات الأداء','reports-charts':'التقارير - المبيعات والمشتريات','reports-discounts':'التقارير - أكواد الخصم','reports-orderaudit':'التقارير - تحليل الطلبات','reports-export':'التقارير - تصدير Excel/PDF',
+  vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات','shopify-orders':'أوردرات Shopify','csp-view':'دليل خدمة العملاء - عرض','csp-create':'دليل خدمة العملاء - إضافة بطاقات','csp-edit':'دليل خدمة العملاء - تعديل بطاقات','csp-delete':'دليل خدمة العملاء - حذف بطاقات','csp-manage-folders':'دليل خدمة العملاء - إدارة الفولدرات','csp-analytics':'دليل خدمة العملاء - الإحصائيات','csp-export':'دليل خدمة العملاء - تصدير','csp-import':'دليل خدمة العملاء - استيراد','delivery-manual-confirm':'تأكيد التسليم يدوياً','delivery-view-audit':'عرض سجل تدقيق التسليم','purchase-create':'المشتريات - إنشاء عملية شراء','purchase-view':'المشتريات - عرض فواتير الشراء','purchase-edit-price':'المشتريات - تعديل سعر الشراء'};
 
 // Module grouping for the ERP-style hierarchical permissions UI
 const PERM_MODULES = [
   { key:'dashboard', label:'الرئيسية', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/></svg>', perms:['dashboard'] },
   { key:'inventory', label:'المخزن والأصناف', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8L12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>', perms:['inventory','products'] },
   { key:'orders', label:'المعاملات والحركات', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>', perms:['transaction','movements','approvals'] },
+  { key:'purchases', label:'المشتريات', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v9"/></svg>', perms:['purchase-create','purchase-view','purchase-edit-price'] },
   { key:'customers', label:'العملاء والموردون', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg>', perms:['clients','suppliers','complaints'] },
   { key:'vault', label:'الخزنة والمصاريف', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>', perms:['vault','expenses'] },
-  { key:'reports', label:'التقارير', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-4"/></svg>', perms:['reports'] },
+  { key:'reports', label:'التقارير', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-4"/></svg>', perms:['reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-export'] },
   { key:'shopify', label:'Shopify ودليل خدمة العملاء', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1.5 5h9L18 2"/><path d="M3.5 7h17l-1.2 13.2a2 2 0 01-2 1.8H6.7a2 2 0 01-2-1.8L3.5 7z"/></svg>', perms:['shopify-orders','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import'] },
   { key:'delivery', label:'التسليم', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>', perms:['delivery-manual-confirm','delivery-view-audit'] },
   { key:'settings', label:'المستخدمون والإعدادات', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>', perms:['users','settings'] },
 ];
 const ROLE_TEMPLATES = {
   staff: ['dashboard','transaction','inventory','movements','clients','products','complaints','expenses'],
-  viewer: ['dashboard','inventory','reports'],
+  viewer: ['dashboard','inventory','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-export'],
   admin: PERMS.slice(),
 };
 
@@ -13025,7 +13039,7 @@ const NAV_ITEMS = [
   {id:'approvals',label:'الموافقات',labelEn:'Approvals',icon:NAV_ICONS.approvals,perm:'approvals'},
   {id:'suppliers',label:'الموردون',labelEn:'Suppliers',icon:NAV_ICONS.suppliers,perm:'suppliers'},
   {id:'expenses',label:'المصاريف',labelEn:'Expenses',icon:NAV_ICONS.expenses,perm:'expenses'},
-  {id:'reports',label:'التقارير',labelEn:'Reports',icon:NAV_ICONS.reports,perm:'reports',adminOnly:true},
+  {id:'reports',label:'التقارير',labelEn:'Reports',icon:NAV_ICONS.reports,perm:'reports'},
   {id:'vault',label:'الخزنة',labelEn:'Vault',icon:NAV_ICONS.vault,perm:'vault'},
   {id:'users',label:'المستخدمون',labelEn:'Users',icon:NAV_ICONS.users,perm:'users'},
   {id:'settings',label:'الإعدادات',labelEn:'Settings',icon:NAV_ICONS.settings,perm:'settings',bottomGroup:true},
@@ -13906,9 +13920,13 @@ function fmtJ(n) {
   const num = fmtN(n);
   return `<span class="amt-cur">EGP</span> <span class="amt-num">${num}</span>`;
 }
+/** Locked placeholder badge shown instead of an amount when the backend masked the value for non-admins (tx.purchaseDetailsHidden). */
+function amtMaskedBadge() {
+  return `<span class="amt-masked" title="مرئي للمدير فقط"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg> ••••</span>`;
+}
 /** Amount cell for purchase rows: shows a locked placeholder instead of "EGP 0" when the backend masked the value for non-admins (tx.purchaseDetailsHidden). */
 function fmtJMasked(tx, field) {
-  if (tx && tx.purchaseDetailsHidden) return `<span class="amt-masked" title="مرئي للمدير فقط">🔒 ••••</span>`;
+  if (tx && tx.purchaseDetailsHidden) return amtMaskedBadge();
   return fmtJ(tx ? tx[field] : null);
 }
 function fmtJT(n) {
@@ -20188,12 +20206,27 @@ function renderDashShipList(sel, items) {
   const el = qs(sel);
   if (!el) return;
   if (!items.length) { el.innerHTML = '<div class="ds-empty">لا توجد طلبات قيد الشحن</div>'; return; }
-  el.innerHTML = `<table class="ds-ship-table"><tbody>` + items.map(({ tx, status }) => `
+  el.innerHTML = `<table class="ds-ship-table"><tbody>` + items.map(({ tx, status }) => {
+    const shopifyUrl = tx.shopifyOrderId ? `https://admin.shopify.com/store/soulia-2/orders/${tx.shopifyOrderId}` : '';
+    const bostaTracking = tx.bostaTrackingNumber || '';
+    const bostaUrl = bostaTracking ? `https://bosta.co/ar-eg/tracking-shipments?shipment-number=${bostaTracking}` : '';
+    const shopifyItem = shopifyUrl
+      ? `<div class="dd-item" onclick="window.open('${esc(shopifyUrl)}','_blank')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><path d="M9 20L3 17V7l6-3m0 16l6 3m-6-3V4m6 16l6-3V7l-6-3m0 16V4m0 0L9 7"/></svg> عرض الأوردر في Shopify</div>`
+      : '';
+    const bostaItem = bostaUrl
+      ? `<div class="dd-item" onclick="window.open('${esc(bostaUrl)}','_blank')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> تتبع الشحنة في Bosta</div>`
+      : '';
+    const menu = (shopifyItem || bostaItem)
+      ? `<div class="actions-dd" onclick="event.stopPropagation()"><button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu">${shopifyItem}${bostaItem}</div></div>`
+      : '';
+    return `
     <tr class="ds-ship-row" onclick="navigateTo('movements');setTimeout(()=>{const e=qs('#mov-search');if(e){e.value='${esc(String(tx.ref||''))}';renderMovements();}},100)">
       <td class="ds-ship-ref">#${esc(tx.ref || '-')}</td>
       <td class="ds-ship-client">${esc(tx.client || '-')}</td>
       <td class="ds-ship-status-cell"><span class="ds-ship-badge ${status.cls}${status.pulse ? ' ds-ship-pulse' : ''}">${esc(status.label)}</span></td>
-    </tr>`).join('') + `</tbody></table>`;
+      <td style="width:36px;text-align:center">${menu}</td>
+    </tr>`;
+  }).join('') + `</tbody></table>`;
 }
 
 async function loadDashboard() {
@@ -20437,6 +20470,9 @@ function movementStatusCell(tx) {
 function initTxPage() {
   txItems = []; txDiscount = 0; txDiscountType = 'fixed'; txAppliedCodeId = ''; txAppliedCode = ''; txAppliedCodes = []; txComments = []; txDirty = false; _discSuggestions = []; _dsbDismissed = false; _discRemovedForReapply = {};
 
+  const _purBtn = qs('#tx-type-selector .type-btn[data-type="مشتريات"]');
+  if (_purBtn) _purBtn.style.display = hasPerm('purchase-create') ? '' : 'none';
+
   // استعادة النموذج بعد الريفريش
   const _savedSnap = (() => { try { const s = sessionStorage.getItem('_txPageSnap'); sessionStorage.removeItem('_txPageSnap'); return s ? JSON.parse(s) : null; } catch(_) { return null; } })();
   if (_savedSnap && _draftHasContent(_savedSnap)) {
@@ -20458,6 +20494,14 @@ function initTxPage() {
 }
 
 function setTxType(type, opts) {
+  if (type === 'مشتريات' && !hasPerm('purchase-create')) {
+    toast('ليس لديك صلاحية إنشاء عملية شراء', true);
+    return;
+  }
+  if (type === 'مشتريات' && !opts?.skipPurchaseLock && !isAdmin() && !purchaseUnlocked) {
+    unlockPurchaseType();
+    return;
+  }
   txType = type;
   _pendingPurchaseOtpId = '';
   qsa('#tx-type-selector .type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
@@ -26507,8 +26551,8 @@ function renderMovMobileCard(tx) {
     ${itemsCount ? `<div class="mov-card-items-subline">${currentLang==='en'?'Items':'الأصناف'}: ${_movItemsCell(tx)}</div>` : ''}
     <div class="mov-card-grid">
       <div class="mov-item"><span class="mov-label">الإجمالي</span><span class="mov-val mov-col-total">${fmtJMasked(tx, 'total')}</span></div>
-      <div class="mov-item"><span class="mov-label">المدفوع</span><span class="mov-val mov-col-paid">${tx.purchaseDetailsHidden ? '🔒 ••••' : dep}</span></div>
-      <div class="mov-item"><span class="mov-label">المتبقي</span><span class="mov-val ${rem > 0 ? 'mov-col-remaining-pos' : 'mov-col-remaining-zero'}">${tx.purchaseDetailsHidden ? '🔒 ••••' : fmtJ(rem)}</span></div>
+      <div class="mov-item"><span class="mov-label">المدفوع</span><span class="mov-val mov-col-paid">${tx.purchaseDetailsHidden ? amtMaskedBadge() : dep}</span></div>
+      <div class="mov-item"><span class="mov-label">المتبقي</span><span class="mov-val ${rem > 0 ? 'mov-col-remaining-pos' : 'mov-col-remaining-zero'}">${tx.purchaseDetailsHidden ? amtMaskedBadge() : fmtJ(rem)}</span></div>
       ${(billedShip > 0 || actualShip > 0) ? `<div class="mov-item"><span class="mov-label">الشحن</span><span class="mov-val">${fmtJ(billedShip)}${shipLoss > 0 ? ` <span class="mov-ship-loss">−${fmtJ(shipLoss)}</span>` : ''}</span></div>` : ''}
     </div>
     <div class="mov-card-statusrow">${statusHtml}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}${shippingBadgeHtml}${bostaBadgeHtml}${empOrShopifyHtml}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div>
@@ -26909,8 +26953,8 @@ function renderMovementTxRow(tx) {
       </div>
     </td>
     <td data-col="invoice" style="text-align:center"><span class="mov-col-total">${fmtJMasked(tx, 'total')}</span></td>
-    <td data-col="paid" style="text-align:center"><span class="mov-col-paid">${tx.purchaseDetailsHidden ? '🔒 ••••' : exchangeSalePaidDisplayAmount(tx)}</span></td>
-    <td data-col="remaining" style="text-align:center"><span class="${remAmt > 0 ? 'mov-col-remaining-pos' : 'mov-col-remaining-zero'}">${tx.purchaseDetailsHidden ? '🔒 ••••' : fmtJ(remAmt)}</span></td>
+    <td data-col="paid" style="text-align:center">${tx.purchaseDetailsHidden ? amtMaskedBadge() : `<span class="mov-col-paid">${exchangeSalePaidDisplayAmount(tx)}</span>`}</td>
+    <td data-col="remaining" style="text-align:center">${tx.purchaseDetailsHidden ? amtMaskedBadge() : `<span class="${remAmt > 0 ? 'mov-col-remaining-pos' : 'mov-col-remaining-zero'}">${fmtJ(remAmt)}</span>`}</td>
     <td data-col="ship" style="text-align:center">${_movShipCell(tx)}</td>
     <td data-col="items" style="text-align:center">${_movItemsCell(tx)}</td>
     <td data-col="status" style="text-align:center;white-space:nowrap">${movementStatusCell(tx)}${vaultStatusBadge}${vaultHint}</td>
@@ -26967,12 +27011,15 @@ function renderMovements() {
   // Ensure orders in prep groups show as 'Preparing' in the pickup status column
   if (typeof _puSyncPrepStatusToTransactions === 'function') _puSyncPrepStatusToTransactions();
   // Update tab counts (across ALL transactions, before filters)
-  const _allTx = Array.isArray(transactions) ? transactions : [];
+  const _canSeePurchases = isAdmin() || hasPerm('purchase-view');
+  const _allTx = (Array.isArray(transactions) ? transactions : []).filter(t => _canSeePurchases || (t.type !== 'مشتريات' && t.type !== 'مرتجع مشتريات'));
   const _setCnt = (id, v) => { const el = qs('#' + id); if (el) el.textContent = fmtN(v); };
   _setCnt('mov-count-all',      _allTx.length);
   _setCnt('mov-count-sales',    _allTx.filter(t => t.type === 'مبيعات').length);
   _setCnt('mov-count-purchase', _allTx.filter(t => t.type === 'مشتريات').length);
   _setCnt('mov-count-return',   _allTx.filter(t => t.type === 'مرتجع' || t.type === 'مرتجع مبيعات' || t.type === 'مرتجع مشتريات').length);
+  const _purTabBtn = qs('[data-mov-type="مشتريات"]');
+  if (_purTabBtn) _purTabBtn.style.display = _canSeePurchases ? '' : 'none';
   _syncMovTypeDdTrigger();
 
   const fs = fxState.mov;
@@ -26993,6 +27040,7 @@ function renderMovements() {
   const multiRefTokens = _multiRefMode ? _nonTagParts.map(t => normalizeUiSearch(t.replace(/^#/, ''))) : [];
 
   let data = transactions.filter(tx => {
+    if ((tx.type === 'مشتريات' || tx.type === 'مرتجع مشتريات') && !isAdmin() && !hasPerm('purchase-view')) return false;
     const _dateField = fs.dateField || 'transactionDate';
     const _txDateForFilter = (_dateField === 'createdAt'
       ? (tx.createdAt || tx.date || '')
@@ -34018,6 +34066,11 @@ function renderInvoiceViewPage() {
   const tx = transactions.find(t => t._id === id);
   if (!tx) { wrap.innerHTML = '<p style="color:var(--red);text-align:center;padding:40px">الفاتورة غير موجودة</p>'; return; }
 
+  if ((tx.type === 'مشتريات' || tx.type === 'مرتجع مشتريات') && !isAdmin() && !hasPerm('purchase-view')) {
+    wrap.innerHTML = '<p style="color:var(--red);text-align:center;padding:40px">ليس لديك صلاحية عرض فواتير الشراء</p>';
+    return;
+  }
+
   const isPurchase = tx.type === 'مشتريات';
   const isReturn   = tx.type === 'مرتجع';
   const statusClass = tx.cancelled || isStatusCancelled(tx.payStatus) ? 'cancelled'
@@ -35220,7 +35273,9 @@ function openProductModal(id) {
       </div>
       <div class="form-group"><label>المورد</label><select id="pm-supplier"><option value="">— بدون مورد —</option>${supOpts}</select></div>
       <div class="form-group"><label>سعر البيع</label><input type="number" id="pm-sell" value="${p?.sellPrice || 0}"></div>
-      <div class="form-group"><label>سعر الشراء</label><input type="number" id="pm-buy" value="${p?.buyPrice || 0}"></div>
+      ${(isAdmin() || hasPerm('purchase-edit-price'))
+        ? `<div class="form-group"><label>سعر الشراء</label><input type="number" id="pm-buy" value="${p?.buyPrice || 0}"></div>`
+        : `<input type="hidden" id="pm-buy" value="${p?.buyPrice || 0}">`}
       <div class="form-group"><label>الحد الأدنى</label><input type="number" id="pm-min" value="${p?.minStock || 0}"></div>
       <div class="form-group"><label>الرصيد الافتتاحي</label><input type="number" id="pm-opening" value="${p?.openingBalance || 0}"></div>
       <div class="form-group" style="grid-column:1/-1"><label>رابط صورة المنتج</label>
@@ -40960,6 +41015,49 @@ let currentReportData = null;
 /* Reports Security */
 let reportsUnlocked = false;
 
+/* Purchase Type Security — hides buy prices from staff behind vault password */
+let purchaseUnlocked = false;
+
+function unlockPurchaseType() {
+  openModal(`
+    <div style="text-align:center">
+      <div style="font-size:3rem;margin-bottom:16px"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><circle cx="12" cy="16" r="1"/></svg></div>
+      <h3 style="margin:0 0 12px 0;color:var(--primary)">المشتريات محمية</h3>
+      <p style="color:var(--muted);margin:0 0 20px 0">أدخل رقم السر للخزنة لفتح حركة الشراء (تعرض أسعار الشراء)</p>
+
+      <div class="form-group" style="max-width:300px;margin:0 auto 20px">
+        <input type="password" id="purchase-pass-input" placeholder="رقم السر..."
+          style="width:100%;padding:12px;border:2px solid var(--border);border-radius:8px;font-size:1rem"
+          onkeydown="if(event.key==='Enter')verifyPurchasePassword()">
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button class="btn btn-primary" onclick="verifyPurchasePassword()">فتح المشتريات</button>
+        <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+      </div>
+    </div>
+  `, 'max-width:400px;text-align:center');
+  setTimeout(() => qs('#purchase-pass-input')?.focus(), 100);
+}
+
+async function verifyPurchasePassword() {
+  const password = qs('#purchase-pass-input')?.value;
+  if (!password) { toast('يرجى إدخال رقم السر لفتح المشتريات', true); return; }
+
+  try {
+    await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password }) });
+    purchaseUnlocked = true;
+    closeModal();
+    setTxType('مشتريات', { skipPurchaseLock: true });
+    toast('تم فتح المشتريات بنجاح');
+  } catch (e) {
+    if (e.message?.includes('🔒')) return;
+    toast(e.message || 'رقم السر غير صحيح - حاول مرة أخرى', true);
+    qs('#purchase-pass-input').value = '';
+    qs('#purchase-pass-input')?.focus();
+  }
+}
+
 function unlockReports() {
   openModal(`
     <div style="text-align:center">
@@ -41002,9 +41100,33 @@ async function verifyReportsPassword() {
 
 let repTrendMetric = 'sales';
 
+function applyReportsPermFilter() {
+  // Users granted only the base 'reports' perm before sub-permissions existed keep full access
+  const hasAnySubPerm = ['reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-export'].some(p => currentUser?.perms?.includes(p));
+  const legacyFullAccess = hasPerm('reports') && !hasAnySubPerm;
+
+  const canExport = isAdmin() || legacyFullAccess || hasPerm('reports-export');
+  const exportWrap = qs('#rep-export-actions');
+  if (exportWrap) exportWrap.style.display = canExport ? '' : 'none';
+
+  let firstVisibleTab = null;
+  qsa('#page-reports .rep-sec-tab').forEach(btn => {
+    const perm = btn.dataset.repPerm;
+    const allowed = isAdmin() || legacyFullAccess || hasPerm(perm);
+    btn.style.display = allowed ? '' : 'none';
+    if (allowed && !firstVisibleTab) firstVisibleTab = btn;
+  });
+  // If the currently active tab is no longer allowed, switch to the first allowed one
+  const activeBtn = qs('#page-reports .rep-sec-tab.active');
+  if (firstVisibleTab && (!activeBtn || activeBtn.style.display === 'none')) {
+    switchReportTab(firstVisibleTab.dataset.repTab, firstVisibleTab);
+  }
+}
+
 async function loadReports() {
   if (!reportsUnlocked && !isLockDisabled('reports')) { unlockReports(); return; }
   reportsUnlocked = true;
+  applyReportsPermFilter();
   renderSkeleton(qs('#rep-stats'), { variant: 'cards', cards: 4 });
   const from = qs('#rep-from')?.value;
   const to = qs('#rep-to')?.value;
@@ -41938,6 +42060,10 @@ async function toggleAuditHistory(force) {
 let activeReportTab = 'kpis';
 
 function switchReportTab(tab, btn) {
+  const tabPerms = { kpis:'reports-kpis', charts:'reports-charts', discounts:'reports-discounts', orderaudit:'reports-orderaudit' };
+  const hasAnySubPerm = ['reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-export'].some(p => currentUser?.perms?.includes(p));
+  const legacyFullAccess = hasPerm('reports') && !hasAnySubPerm;
+  if (!isAdmin() && !legacyFullAccess && tabPerms[tab] && !hasPerm(tabPerms[tab])) return;
   activeReportTab = tab;
   qsa('#page-reports .rep-sec-tab').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
   qsa('#page-reports .rep-tab-panel').forEach(p => p.classList.remove('active'));
@@ -41963,13 +42089,21 @@ function switchReportTab(tab, btn) {
   }
 }
 
+function _canExportReports() {
+  const hasAnySubPerm = ['reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-export'].some(p => currentUser?.perms?.includes(p));
+  const legacyFullAccess = hasPerm('reports') && !hasAnySubPerm;
+  return isAdmin() || legacyFullAccess || hasPerm('reports-export');
+}
+
 async function exportReportExcel() {
+  if (!_canExportReports()) { toast('ليس لديك صلاحية تصدير التقارير', true); return; }
   if (!reportsUnlocked && !isLockDisabled('reports')) { unlockReports(); return; }
   reportsUnlocked = true;
   await downloadReportFile('excel', '.xlsx');
 }
 
 async function exportReportPDF() {
+  if (!_canExportReports()) { toast('ليس لديك صلاحية تصدير التقارير', true); return; }
   if (!reportsUnlocked && !isLockDisabled('reports')) { unlockReports(); return; }
   reportsUnlocked = true;
   await downloadReportFile('pdf', '.pdf');
@@ -44692,7 +44826,7 @@ function openUserModal(id) {
       <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
       <button class="btn btn-primary" onclick="saveUser('${id || ''}')">${u ? '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> حفظ التعديلات' : '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> إضافة المستخدم'}</button>
     </div>
-  </div>`, 'max-width:640px');
+  </div>`, 'max-width:720px;max-height:92vh');
 }
 function togglePassField(e) {
   e.preventDefault();
@@ -55561,7 +55695,7 @@ function renderShopifyOrders() {
             ${_isNew ? `<span class="mov-new-badge">جديد</span>` : ''}
             <div class="sp-card-status-inline">${statusBadge}</div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
             ${depositBadgeHtml}
             <div class="sp-card-amount-val sp-total-neutral">${fmtJ(o.total)}</div>
           </div>

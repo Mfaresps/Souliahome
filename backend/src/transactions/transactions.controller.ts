@@ -14,6 +14,7 @@ import {
   HttpException,
   HttpStatus,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { isValidObjectId } from 'mongoose';
 import type { Response } from 'express';
@@ -34,7 +35,7 @@ import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
 import { ExpensesService } from '../expenses/expenses.service';
-import { maskTransactionForRole, maskTransactionsForRole } from './purchase-mask.util';
+import { maskTransactionForRole, maskTransactionsForRole, filterPurchasesForPerms } from './purchase-mask.util';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('transactions')
@@ -50,13 +51,14 @@ export class TransactionsController {
   async findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
-    @Req() req?: { user?: { role?: string } },
+    @Req() req?: { user?: { role?: string; perms?: string[] } },
   ) {
     const txs = await this.transactionsService.findAll(
       page ? Number(page) : undefined,
       limit ? Number(limit) : undefined,
     );
-    return maskTransactionsForRole(txs, req?.user?.role);
+    const filtered = filterPurchasesForPerms(txs, req?.user?.role, req?.user?.perms);
+    return maskTransactionsForRole(filtered, req?.user?.role);
   }
 
   @Roles('admin')
@@ -123,27 +125,31 @@ export class TransactionsController {
   }
 
   @Get('archived')
-  async findArchived(@Req() req?: { user?: { role?: string } }) {
+  async findArchived(@Req() req?: { user?: { role?: string; perms?: string[] } }) {
     const txs = await this.transactionsService.findArchived();
-    return maskTransactionsForRole(txs, req?.user?.role);
+    const filtered = filterPurchasesForPerms(txs, req?.user?.role, req?.user?.perms);
+    return maskTransactionsForRole(filtered, req?.user?.role);
   }
 
   @Get('reference/:ref')
   async getReferenceDetails(
     @Param('ref') ref: string,
-    @Req() req?: { user?: { role?: string } },
+    @Req() req?: { user?: { role?: string; perms?: string[] } },
   ) {
     const detail = await this.referenceDetailService.getDetailsByReference(ref);
     if (req?.user?.role === 'admin') return detail;
 
-    const maskTxInfo = (t: any) =>
-      t && (t.type === 'مشتريات' || t.type === 'مرتجع مشتريات')
-        ? { ...t, total: null, deposit: null, remaining: null, items: undefined }
-        : t;
+    const canViewPurchases = (req?.user?.perms || []).includes('purchase-view');
+    const isPurchaseTx = (t: any) => t && (t.type === 'مشتريات' || t.type === 'مرتجع مشتريات');
+    const maskTxInfo = (t: any) => {
+      if (!isPurchaseTx(t)) return t;
+      if (!canViewPurchases) return null;
+      return { ...t, total: null, deposit: null, remaining: null, items: undefined };
+    };
     return {
       ...detail,
       primaryTransaction: maskTxInfo(detail.primaryTransaction),
-      allTransactions: (detail.allTransactions || []).map(maskTxInfo),
+      allTransactions: (detail.allTransactions || []).filter((t: any) => canViewPurchases || !isPurchaseTx(t)).map(maskTxInfo),
     };
   }
 
@@ -155,8 +161,14 @@ export class TransactionsController {
   @Post()
   async create(
     @Body() dto: CreateTransactionDto,
-    @Req() req: { user?: { role?: string } },
+    @Req() req: { user?: { role?: string; perms?: string[] } },
   ) {
+    if (dto.type === 'مشتريات' && req.user?.role !== 'admin') {
+      const perms = req.user?.perms || [];
+      if (!perms.includes('purchase-create')) {
+        throw new ForbiddenException('ليس لديك صلاحية إنشاء عملية شراء');
+      }
+    }
     return this.transactionsService.create(dto, req.user?.role);
   }
 
@@ -242,25 +254,38 @@ export class TransactionsController {
   async findByRef(
     @Param('ref') ref: string,
     @Query('type') type?: string,
-    @Req() req?: { user?: { role?: string } },
+    @Req() req?: { user?: { role?: string; perms?: string[] } },
   ) {
     const tx = await this.transactionsService.findByRef(ref, type);
+    this.assertPurchaseViewable(tx, req?.user);
     return maskTransactionForRole(tx, req?.user?.role);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Req() req?: { user?: { role?: string } }) {
+  async findOne(@Param('id') id: string, @Req() req?: { user?: { role?: string; perms?: string[] } }) {
     if (id === 'pickup-orders') {
       const txs = await this.transactionsService.findPickupOrders();
-      return maskTransactionsForRole(txs, req?.user?.role);
+      return maskTransactionsForRole(filterPurchasesForPerms(txs, req?.user?.role, req?.user?.perms), req?.user?.role);
     }
     if (id === 'archived') {
       const txs = await this.transactionsService.findArchived();
-      return maskTransactionsForRole(txs, req?.user?.role);
+      return maskTransactionsForRole(filterPurchasesForPerms(txs, req?.user?.role, req?.user?.perms), req?.user?.role);
     }
     if (!isValidObjectId(id)) throw new BadRequestException('معرّف المعاملة غير صالح');
     const tx = await this.transactionsService.findById(id);
+    this.assertPurchaseViewable(tx, req?.user);
     return maskTransactionForRole(tx, req?.user?.role);
+  }
+
+  private assertPurchaseViewable(
+    tx: any,
+    user?: { role?: string; perms?: string[] },
+  ): void {
+    if (!tx) return;
+    if (user?.role === 'admin') return;
+    if (tx.type !== 'مشتريات' && tx.type !== 'مرتجع مشتريات') return;
+    if ((user?.perms || []).includes('purchase-view')) return;
+    throw new ForbiddenException('ليس لديك صلاحية عرض فواتير الشراء');
   }
 
   @Get(':id/lock-status')

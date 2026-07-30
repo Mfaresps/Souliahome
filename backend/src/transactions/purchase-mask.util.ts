@@ -78,3 +78,18 @@ export function maskTransactionsForRole<T extends TransactionDocument | Record<s
 ): Record<string, any>[] {
   return (txs || []).map((tx) => maskTransactionForRole(tx, role));
 }
+
+/**
+ * Filters out purchase (مشتريات / مرتجع مشتريات) rows entirely for viewers
+ * without the `purchase-view` permission. Used on list endpoints (Movements)
+ * where the requirement is to hide the row, not just its financial fields.
+ */
+export function filterPurchasesForPerms<T extends Record<string, any>>(
+  txs: T[],
+  role: string | undefined,
+  perms: string[] | undefined,
+): T[] {
+  if (role === 'admin') return txs;
+  if ((perms || []).includes('purchase-view')) return txs;
+  return (txs || []).filter((tx) => !isPurchaseType((tx as any)?.type));
+}
