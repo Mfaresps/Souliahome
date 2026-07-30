@@ -28,6 +28,9 @@ export interface AuditRow {
   client: string;
   phone: string;
   orderStatus: string;
+  bostaStatus: string;
+  bostaOrderId: string;
+  bostaTrackingNumber: string;
   paymentStatus: string;
   products: AuditItem[];
   productsLabel: string;
@@ -242,6 +245,9 @@ export class OrderAuditService {
           client: String(tx.client || so?.client || ''),
           phone: String(tx.phone || so?.phone || ''),
           orderStatus: cancelled ? 'ملغي' : String(tx.pickupStatus || 'Pending'),
+          bostaStatus: String(tx.bostaStatus || ''),
+          bostaOrderId: String(tx.bostaOrderId || ''),
+          bostaTrackingNumber: String(tx.bostaTrackingNumber || ''),
           paymentStatus: String(tx.payStatus || ''),
           products: items,
           productsLabel: items.map((i) => `${i.name} ×${i.qty}`).join('، '),
@@ -294,6 +300,9 @@ export class OrderAuditService {
               : so.status === 'rejected'
                 ? 'مرفوض'
                 : String(so.status || ''),
+          bostaStatus: '',
+          bostaOrderId: '',
+          bostaTrackingNumber: '',
           paymentStatus: String(so.financialStatus || ''),
           products: items,
           productsLabel: items.map((i) => `${i.name} ×${i.qty}`).join('، '),
@@ -329,6 +338,9 @@ export class OrderAuditService {
         client: '',
         phone: '',
         orderStatus: 'غير موجود',
+        bostaStatus: '',
+        bostaOrderId: '',
+        bostaTrackingNumber: '',
         paymentStatus: '',
         products: [],
         productsLabel: '',

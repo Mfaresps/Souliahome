@@ -9812,7 +9812,7 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
     <!-- 3b. Top 5 Products -->
     <div class="card mb-16">
       <h3 style="font-size:.95rem;color:var(--text);margin:0 0 12px;font-weight:600;display:flex;align-items:center;gap:7px">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
         أفضل 10 منتجات مبيعاً داخل النطاق
       </h3>
       <div id="oa-top-products"></div>
@@ -9869,11 +9869,10 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
         <table id="oa-table" class="oa-sortable-table" style="width:100%;border-collapse:collapse;font-size:.85rem;min-width:1050px">
           <thead>
             <tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
-              <th style="padding:8px 9px;text-align:center;width:34px"><input type="checkbox" id="oa-select-all" onchange="toggleAuditSelectAll(this.checked)"></th>
+              <th style="padding:8px 9px;text-align:center;width:34px"><input type="checkbox" id="oa-select-all" onchange="toggleAuditSelectAll(this.checked)" style="accent-color:var(--accent);cursor:pointer"></th>
               <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('orderNumber')">رقم الأوردر <span class="oa-sort-ind" data-oa-ind="orderNumber"></span></th>
               <th class="oa-th-sort" style="padding:8px 9px;text-align:right;white-space:nowrap" onclick="setAuditSort('shopifyCreatedAt')">تاريخ Shopify <span class="oa-sort-ind" data-oa-ind="shopifyCreatedAt"></span></th>
               <th class="oa-th-sort" style="padding:8px 9px;text-align:right" onclick="setAuditSort('client')">العميل <span class="oa-sort-ind" data-oa-ind="client"></span></th>
-              <th style="padding:8px 9px;text-align:left;white-space:nowrap">الهاتف</th>
               <th class="oa-th-sort" style="padding:8px 9px;text-align:center;white-space:nowrap" onclick="setAuditSort('orderStatus')">حالة الأوردر <span class="oa-sort-ind" data-oa-ind="orderStatus"></span></th>
               <th class="oa-th-sort" style="padding:8px 9px;text-align:center;white-space:nowrap" onclick="setAuditSort('paymentStatus')">حالة الدفع <span class="oa-sort-ind" data-oa-ind="paymentStatus"></span></th>
               <th style="padding:8px 9px;text-align:right">المنتجات</th>
@@ -41410,7 +41409,7 @@ function renderAuditTopProducts(d) {
           <span style="font-size:.8rem;color:var(--muted);white-space:nowrap">${fmtNum(p.qty)} قطعة · ${fmtJ(p.revenue)}</span>
         </div>
         <div style="height:6px;border-radius:4px;background:var(--surface2);overflow:hidden">
-          <div style="height:100%;border-radius:4px;background:#f59e0b;width:${Math.max(4, (p.qty / maxQty) * 100)}%"></div>
+          <div style="height:100%;border-radius:4px;background:var(--accent);width:${Math.max(4, (p.qty / maxQty) * 100)}%"></div>
         </div>
       </div>
     </div>`).join('')}</div>`;
@@ -41603,6 +41602,30 @@ function toggleAuditRowSelect(orderNumber, checked) {
   }
 }
 
+let _oaLastCheckedId = null;
+
+function _toggleAuditRowSelect(orderNumber, cb, evt) {
+  const checks = [...document.querySelectorAll('.oa-row-check')];
+
+  if (evt?.shiftKey && _oaLastCheckedId) {
+    const lastIdx = checks.findIndex(el => el.dataset.id === _oaLastCheckedId);
+    const curIdx = checks.findIndex(el => el.dataset.id === orderNumber);
+    if (lastIdx !== -1 && curIdx !== -1) {
+      const [from, to] = lastIdx < curIdx ? [lastIdx, curIdx] : [curIdx, lastIdx];
+      for (let i = from; i <= to; i++) {
+        const rowId = checks[i].dataset.id;
+        if (cb.checked) auditSelected.add(rowId); else auditSelected.delete(rowId);
+      }
+      _oaLastCheckedId = orderNumber;
+      renderAuditTable();
+      return;
+    }
+  }
+
+  toggleAuditRowSelect(orderNumber, cb.checked);
+  _oaLastCheckedId = orderNumber;
+}
+
 function toggleAuditSelectAll(checked) {
   const shownIds = qsa('#oa-tbody tr[data-oa-row]').map(el => el.dataset.oaRow);
   shownIds.forEach(id => { if (checked) auditSelected.add(id); else auditSelected.delete(id); });
@@ -41680,8 +41703,7 @@ function auditRowsFiltered() {
     if (!matchesAuditFilter(r, auditFilter)) return false;
     if (!q) return true;
     return r.orderNumber.includes(q)
-      || (r.client || '').toLowerCase().includes(q)
-      || (r.phone || '').includes(q);
+      || (r.client || '').toLowerCase().includes(q);
   });
 
   const { key, dir } = auditSort;
@@ -41759,12 +41781,11 @@ function renderAuditTable() {
     const profitPrefix = r.registered ? '' : '~ ';
 
     return `<tr class="${missing ? 'oa-row-missing' : ''}" data-oa-row="${esc(r.orderNumber)}">
-      <td style="text-align:center"><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleAuditRowSelect('${esc(r.orderNumber)}',this.checked)"></td>
+      <td style="text-align:center"><input type="checkbox" class="oa-row-check" data-id="${esc(r.orderNumber)}" ${checked ? 'checked' : ''} onclick="_toggleAuditRowSelect('${esc(r.orderNumber)}',this,event)" style="accent-color:var(--accent);cursor:pointer"></td>
       <td style="font-weight:700;white-space:nowrap">#${esc(r.orderNumber)}</td>
       <td style="white-space:nowrap;color:var(--muted);font-size:.82rem">${esc(dateTxt)}</td>
       <td>${esc(r.client || '—')}</td>
-      <td style="white-space:nowrap;direction:ltr;text-align:left;font-size:.82rem">${esc(r.phone || '—')}</td>
-      <td style="text-align:center;font-size:.8rem">${esc(r.orderStatus || '—')}</td>
+      <td style="text-align:center;font-size:.8rem">${r.registered ? _bostaStatusBadge({ bostaStatus: r.bostaStatus, bostaOrderId: r.bostaOrderId, bostaTrackingNumber: r.bostaTrackingNumber }) : esc(r.orderStatus || '—')}</td>
       <td style="text-align:center;font-size:.8rem">${depositCell}</td>
       <td style="max-width:230px;font-size:.8rem" title="${esc(r.productsLabel)}">
         <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.productsLabel || '—')}</div></td>
