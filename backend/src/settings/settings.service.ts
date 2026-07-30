@@ -203,6 +203,18 @@ export class SettingsService {
     return updated ?? existing;
   }
 
+  /** Bumps the patch version (x.y.Z -> x.y.Z+1) and stamps the update/upload timestamps. Called by the post-commit git hook on every deploy. */
+  async bumpVersion(): Promise<SettingsDocument> {
+    const settings = await this.getSettings();
+    const parts = (settings.systemVersion || '2.4.0').split('.').map(n => parseInt(n, 10) || 0);
+    parts[2] = (parts[2] || 0) + 1;
+    settings.systemVersion = parts.join('.');
+    const now = new Date();
+    settings.lastVersionUpdate = now;
+    settings.lastLiveUpload = now;
+    return settings.save();
+  }
+
   async setStaffDiscount(value: boolean): Promise<SettingsDocument> {
     const settings = await this.getSettings();
     settings.staffDiscountEnabled = value;
