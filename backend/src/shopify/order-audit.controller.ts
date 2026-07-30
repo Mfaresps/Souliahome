@@ -16,16 +16,17 @@ import { Response } from 'express';
 import { OrderAuditService } from './order-audit.service';
 import { OrderAuditExportService } from './order-audit-export.service';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
-import { RolesGuard } from '../core/guards/roles.guard';
-import { Roles } from '../core/decorators/roles.decorator';
+import { PermsGuard } from '../core/guards/perms.guard';
+import { RequirePerms } from '../core/decorators/perms.decorator';
 
 /**
- * Order Range Audit — admin-only reconciliation between Shopify order numbers
+ * Order Range Audit — reconciliation between Shopify order numbers
  * and the sales transactions registered inside Soulia.
+ * Accessible to admins, or staff granted the 'reports-orderaudit' permission.
  */
 @Controller('order-audit')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@UseGuards(JwtAuthGuard, PermsGuard)
+@RequirePerms('reports-orderaudit')
 export class OrderAuditController {
   constructor(
     private readonly auditService: OrderAuditService,

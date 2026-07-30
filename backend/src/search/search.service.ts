@@ -14,6 +14,10 @@ import {
   Complaint,
   ComplaintDocument,
 } from '../complaints/schemas/complaint.schema';
+import {
+  ShopifyOrder,
+  ShopifyOrderDocument,
+} from '../shopify/schemas/shopify-order.schema';
 import { SearchResultItem, SearchResponse } from './dto/search.dto';
 
 const MAX_RESULTS_PER_CATEGORY = 50;
@@ -48,6 +52,8 @@ export class SearchService {
     private readonly supplierModel: Model<SupplierDocument>,
     @InjectModel(Complaint.name)
     private readonly complaintModel: Model<ComplaintDocument>,
+    @InjectModel(ShopifyOrder.name)
+    private readonly shopifyOrderModel: Model<ShopifyOrderDocument>,
   ) {}
 
   async search(query: string): Promise<SearchResponse> {
@@ -65,6 +71,7 @@ export class SearchService {
     let customers: SearchResultItem[] = [];
     let supplierResults: SearchResultItem[] = [];
     let complaintResults: SearchResultItem[] = [];
+    let shopifyResults: SearchResultItem[] = [];
 
     if (isPhone) {
       // يبدأ بـ 01 → رقم هاتف بالتأكيد: عملاء وموردون أولاً، الحركات تبعاً
@@ -76,9 +83,10 @@ export class SearchService {
       ]);
     } else if (numeric) {
       // أرقام لا تبدأ بمقدمة هاتف صالحة (010/011/012/015): تعامل كرقم مرجع أوردر فقط، بدون مطابقة هاتف
-      [orders, complaintResults] = await Promise.all([
+      [orders, complaintResults, shopifyResults] = await Promise.all([
         this.searchOrdersByRef(trimmed),
         this.searchComplaintsByText(trimmed),
+        this.searchShopifyOrdersByRef(trimmed),
       ]);
     } else {
       // نص: بحث عام في الاسم
@@ -93,7 +101,7 @@ export class SearchService {
 
     const results =
       numeric && !isPhone
-        ? [...orders, ...complaintResults, ...products, ...customers, ...supplierResults]
+        ? [...orders, ...shopifyResults, ...complaintResults, ...products, ...customers, ...supplierResults]
         : [...complaintResults, ...products, ...customers, ...supplierResults, ...orders];
     return { results, total: results.length };
   }
@@ -152,6 +160,41 @@ export class SearchService {
       payStatus: tx.payStatus,
       bostaStatusLabel: tx.bostaStatusLabel || '',
     }));
+  }
+
+  // ── بحث رقمي: أوردرات Shopify غير المسجلة/الملغية (لا تظهر كحركة بعد) ──
+  private async searchShopifyOrdersByRef(ref: string): Promise<SearchResultItem[]> {
+    const orders = await this.shopifyOrderModel
+      .find({
+        ref: { $regex: `^#?${ref}`, $options: 'i' },
+        status: { $ne: 'approved' },
+      })
+      .select('ref client phone total status cancelled items createdAt')
+      .sort({ createdAt: -1 })
+      .limit(MAX_RESULTS_PER_CATEGORY)
+      .lean()
+      .exec();
+
+    return orders.map((o) => {
+      const statusLabel = o.cancelled
+        ? 'ملغي'
+        : o.status === 'rejected'
+          ? 'مرفوض'
+          : 'في انتظار التسجيل';
+      return {
+        id: String(o._id),
+        type: 'shopify_order' as const,
+        title: `#${String(o.ref || '').replace(/^#+/, '')}`,
+        subtitle: `Shopify — ${o.client || ''}`,
+        icon: '🛍️',
+        meta: `${o.total} ج — ${statusLabel}`,
+        total: o.total,
+        itemsCount: Array.isArray(o.items) ? o.items.length : 0,
+        createdAt: (o as any).createdAt,
+        shopifyStatus: statusLabel,
+        shopifyCancelled: !!o.cancelled,
+      };
+    });
   }
 
   // ── بحث رقمي: هاتف يحتوي على الرقم ──────────────────────────────

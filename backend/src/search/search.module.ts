@@ -13,6 +13,10 @@ import {
   Complaint,
   ComplaintSchema,
 } from '../complaints/schemas/complaint.schema';
+import {
+  ShopifyOrder,
+  ShopifyOrderSchema,
+} from '../shopify/schemas/shopify-order.schema';
 import { SearchService } from './search.service';
 import { SearchController } from './search.controller';
 
@@ -23,6 +27,7 @@ import { SearchController } from './search.controller';
       { name: Transaction.name, schema: TransactionSchema },
       { name: Supplier.name, schema: SupplierSchema },
       { name: Complaint.name, schema: ComplaintSchema },
+      { name: ShopifyOrder.name, schema: ShopifyOrderSchema },
     ]),
   ],
   controllers: [SearchController],

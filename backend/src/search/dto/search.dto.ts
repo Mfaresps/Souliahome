@@ -8,7 +8,13 @@ export class SearchQueryDto {
 
 export interface SearchResultItem {
   readonly id: string;
-  readonly type: 'product' | 'order' | 'customer' | 'supplier' | 'complaint';
+  readonly type:
+    | 'product'
+    | 'order'
+    | 'customer'
+    | 'supplier'
+    | 'complaint'
+    | 'shopify_order';
   readonly title: string;
   readonly subtitle: string;
   readonly icon: string;
@@ -19,6 +25,8 @@ export interface SearchResultItem {
   readonly createdAt?: string;
   readonly payStatus?: string;
   readonly bostaStatusLabel?: string;
+  readonly shopifyStatus?: string;
+  readonly shopifyCancelled?: boolean;
 }
 
 export interface SearchResponse {

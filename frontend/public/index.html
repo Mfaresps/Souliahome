@@ -6795,12 +6795,14 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;
 }
 .dashboard-v2 .ds-ship-created{background:#dbeafe;color:#1e40af}
-.dashboard-v2 .ds-ship-transit{background:#fde047;color:#713f12}
+.dashboard-v2 .ds-ship-pickedup{background:#fde047;color:#713f12}
+.dashboard-v2 .ds-ship-transit{background:#dbeafe;color:#2563eb}
 .dashboard-v2 .ds-ship-out{background:#ede9fe;color:#5b21b6}
 .dashboard-v2 .ds-ship-delivered{background:#d1fae5;color:#065f46}
 .dashboard-v2 .ds-ship-issue{background:#fee2e2;color:#991b1b}
 [data-theme=dark] .dashboard-v2 .ds-ship-created{background:#1e3a8a;color:#93c5fd}
-[data-theme=dark] .dashboard-v2 .ds-ship-transit{background:#422006;color:#fde047}
+[data-theme=dark] .dashboard-v2 .ds-ship-pickedup{background:#422006;color:#fde047}
+[data-theme=dark] .dashboard-v2 .ds-ship-transit{background:#1e3a8a;color:#93c5fd}
 [data-theme=dark] .dashboard-v2 .ds-ship-out{background:#3b0764;color:#c4b5fd}
 [data-theme=dark] .dashboard-v2 .ds-ship-delivered{background:#064e3b;color:#34d399}
 [data-theme=dark] .dashboard-v2 .ds-ship-issue{background:#450a0a;color:#fca5a5}
@@ -20185,7 +20187,7 @@ function _renderStaffDashboard(adminMode) {
 function _dashShipStatus(tx) {
   const STAGES = {
     CREATED:          { cls: 'ds-ship-created',   label: 'Created',          rank: 1 },
-    PICKED_UP:        { cls: 'ds-ship-transit',   label: 'Picked Up',        rank: 2 },
+    PICKED_UP:        { cls: 'ds-ship-pickedup',  label: 'Picked Up',        rank: 2 },
     IN_TRANSIT:       { cls: 'ds-ship-transit',   label: 'In Transit',       rank: 3 },
     OUT_FOR_DELIVERY: { cls: 'ds-ship-out',       label: 'Out for Delivery', rank: 4, pulse: true },
     DELIVERED:        { cls: 'ds-ship-delivered', label: 'Delivered',        rank: 5 },
@@ -47617,13 +47619,14 @@ function renderSearchDropdown() {
     product: 'الأصناف',
     customer: 'العملاء',
     order: 'المعاملات والطلبات',
+    shopify_order: 'أوردرات Shopify',
     supplier: 'الموردون',
     complaint: 'الشكاوى',
   };
   const _numericQuery = /^\d+$/.test(_sq) && !_phoneQueryAllowed;
   const preferred = _numericQuery
-    ? ['nav', 'order', 'complaint', 'product', 'customer', 'supplier']
-    : ['nav', 'complaint', 'product', 'customer', 'order', 'supplier'];
+    ? ['nav', 'order', 'shopify_order', 'complaint', 'product', 'customer', 'supplier']
+    : ['nav', 'complaint', 'product', 'customer', 'order', 'shopify_order', 'supplier'];
   const grouped = {};
   searchResults.forEach((r, idx) => {
     r._idx = idx;
@@ -47672,6 +47675,19 @@ function renderSearchDropdown() {
           + '<div class="search-order-sub">' + fmtN(item.itemsCount || 0) + ' صنف'
             + (dateStr ? ' · ' + esc(dateStr) : '') + (bostaBadge ? ' · ' + bostaBadge : '') + '</div>'
         + '</div>';
+      } else if (item.type === 'shopify_order') {
+        const custName = String(item.subtitle || '').replace(/^\s*[^—]+—\s*/, '').trim();
+        const dateStr = item.createdAt ? fmtDateShort(new Date(item.createdAt)) : '';
+        const statusBadgeClass = item.shopifyCancelled ? 'search-order-badge-red' : 'search-order-badge-blue';
+        metaHtml = '<div class="search-order-meta">'
+          + '<div class="search-order-top">'
+            + '<span class="search-order-ref">' + esc(item.title) + '</span>'
+            + '<span class="search-order-name">' + esc(custName) + '</span>'
+            + '<span class="search-order-amount">' + fmtJ(item.total || 0) + '</span>'
+          + '</div>'
+          + '<div class="search-order-sub">' + fmtN(item.itemsCount || 0) + ' صنف'
+            + (dateStr ? ' · ' + esc(dateStr) : '') + ' · <span class="search-order-badge ' + statusBadgeClass + '" style="font-size:.65rem">' + esc(item.shopifyStatus || '') + '</span></div>'
+        + '</div>';
       } else if (item.type === 'product') {
         const stock = getProductAvailableStock(item.id);
         let stockBadge = '';
@@ -47712,11 +47728,11 @@ function renderSearchDropdown() {
       if ((item.type === 'customer' || item.type === 'supplier') && !_phoneQueryAllowed && /^01[0125]\d{8}$/.test(String(_subtitle || '').replace(/\D/g, ''))) {
         _subtitle = 'بدون رقم';
       }
-      const infoInner = item.type === 'order'
+      const infoInner = (item.type === 'order' || item.type === 'shopify_order')
         ? metaHtml
         : ('<div class="search-title">' + esc(item.title) + '</div><div class="search-subtitle">' + esc(_subtitle) + '</div>'
           + (item.type === 'product' ? metaHtml : ''));
-      const trailingMeta = (item.type === 'product' || item.type === 'order') ? '' : metaHtml;
+      const trailingMeta = (item.type === 'product' || item.type === 'order' || item.type === 'shopify_order') ? '' : metaHtml;
       const excludeBtn = '';
       html += '<div class="search-item' + (isSelected ? ' selected' : '') + '" data-idx="' + item._idx + '" onmousedown="selectSearchResult(' + item._idx + ')">'
         + iconHtml
@@ -47754,6 +47770,13 @@ function selectSearchResult(idx) {
   } else if (item.type === 'order' && hasPerm('movements')) {
     navigateTo('movements');
     setTimeout(() => showInvoiceDetail(item.id), 200);
+  } else if (item.type === 'shopify_order' && hasPerm('shopify-orders')) {
+    navigateTo('shopify-orders');
+    setTimeout(() => {
+      const o = (typeof _shopifyOrders !== 'undefined' ? _shopifyOrders : []).find(x => x._id === item.id);
+      if (o && !o.cancelled && typeof editShopifyOrder === 'function') editShopifyOrder(item.id);
+      else if (typeof highlightShopifyOrderRow === 'function') highlightShopifyOrderRow(item.id);
+    }, 250);
   } else if (item.type === 'supplier' && hasPerm('suppliers')) {
     navigateTo('suppliers');
   } else if (item.type === 'complaint' && hasPerm('complaints')) {
@@ -56537,6 +56560,25 @@ function restoreShopifyOrder(id) {
       }
     },
   });
+}
+
+function highlightShopifyOrderRow(id) {
+  const o = (typeof _shopifyOrders !== 'undefined' ? _shopifyOrders : []).find(x => x._id === id);
+  if (!o) return;
+  if (typeof switchShopifyTab === 'function' && _shopifyTab === 'pending') switchShopifyTab('all');
+  const searchEl = qs('#shopify-search');
+  if (searchEl) { searchEl.value = String(o.ref || '').replace(/^#+/, ''); }
+  if (typeof renderShopifyOrders === 'function') renderShopifyOrders();
+  setTimeout(() => {
+    const rows = qsa('#shopify-orders-table-body tr');
+    const row = rows.find(r => r.textContent.includes(String(o.ref || '').replace(/^#+/, '')));
+    if (row) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      row.style.transition = 'background-color .3s';
+      row.style.backgroundColor = 'var(--primary-pale)';
+      setTimeout(() => { row.style.backgroundColor = ''; }, 2000);
+    }
+  }, 150);
 }
 
 async function rejectShopifyOrder(id) {
