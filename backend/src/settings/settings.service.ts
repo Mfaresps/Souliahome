@@ -141,6 +141,24 @@ export class SettingsService {
       migrations['defaultDepMethod'] = '';
     if ((settings as any).codCollectionThreshold === undefined || (settings as any).codCollectionThreshold === null)
       migrations['codCollectionThreshold'] = 5000;
+    {
+      // performanceConfig sub-fields added after deliveryPoints existed alone — merge in any missing keys
+      const perfDefaults = {
+        deliveryPoints: 2,
+        depositFullPoints: 5,
+        depositPartial50Points: 3,
+        depositPartialLowPoints: 2,
+        depositNonePoints: 1,
+        speedUnder15MinPoints: 3,
+        speedUnder1HourPoints: 2,
+        speedUnder4HoursPoints: 1,
+      };
+      const currentPerf = (settings as any).performanceConfig || {};
+      const missingPerfKeys = Object.keys(perfDefaults).filter((k) => currentPerf[k] === undefined || currentPerf[k] === null);
+      if (missingPerfKeys.length > 0) {
+        migrations['performanceConfig'] = { ...perfDefaults, ...currentPerf };
+      }
+    }
     if (Object.keys(migrations).length > 0) {
       await this.settingsModel.findByIdAndUpdate(settings._id, { $set: migrations }).exec();
       Object.assign(settings, migrations);

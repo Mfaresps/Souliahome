@@ -35,6 +35,10 @@ export class UsersService {
     return this.userModel.findOne({ username }).exec();
   }
 
+  async findAdmins(): Promise<UserDocument[]> {
+    return this.userModel.find({ role: 'admin', isActive: { $ne: false } }).exec();
+  }
+
   async findById(id: string): Promise<UserDocument | null> {
     return this.userModel.findById(id).exec();
   }

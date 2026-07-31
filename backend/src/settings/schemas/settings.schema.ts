@@ -222,6 +222,31 @@ export class Settings {
    */
   @Prop({ default: 5000 })
   codCollectionThreshold: number;
+
+  /** Employee performance scoring configuration (Customer Service Performance Dashboard) — points awarded per criterion, admin-tunable */
+  @Prop({
+    type: Object,
+    default: {
+      deliveryPoints: 2,
+      depositFullPoints: 5,
+      depositPartial50Points: 3,
+      depositPartialLowPoints: 2,
+      depositNonePoints: 1,
+      speedUnder15MinPoints: 3,
+      speedUnder1HourPoints: 2,
+      speedUnder4HoursPoints: 1,
+    },
+  })
+  performanceConfig: {
+    deliveryPoints: number;
+    depositFullPoints: number;
+    depositPartial50Points: number;
+    depositPartialLowPoints: number;
+    depositNonePoints: number;
+    speedUnder15MinPoints: number;
+    speedUnder1HourPoints: number;
+    speedUnder4HoursPoints: number;
+  };
 }
 
 export const SettingsSchema = SchemaFactory.createForClass(Settings);

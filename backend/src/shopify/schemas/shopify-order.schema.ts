@@ -110,6 +110,49 @@ export class ShopifyOrder {
 
   @Prop({ type: Object })
   rawData: Record<string, unknown>;
+
+  // Shift-based auto-assignment — routing metadata only, not a scoring gate
+  @Prop({ default: '' })
+  assignedTo: string; // User._id as string
+
+  @Prop({ default: '' })
+  assignedToName: string;
+
+  @Prop({ default: '' })
+  assignedAt: string; // ISO
+
+  @Prop({ default: '' })
+  assignmentReason: string; // 'shift' | 'on-call-fallback' | 'unassigned' | 'manual'
+
+  // Append-only audit trail of assignment changes — reassignment updates assignedTo/
+  // assignedToName above but never rewrites this history, and never touches reviewedBy/
+  // reviewedAt/deposit fields or any EmployeePerformanceLog row (scoring stays untouched).
+  @Prop({ type: [Object], default: [] })
+  assignmentHistory: Array<{
+    previousUserId: string;
+    previousName: string;
+    newUserId: string;
+    newName: string;
+    changedBy: string;
+    reason: string;
+    at: string; // ISO
+  }>;
+
+  // Deposit fields — parsed once from `notes` at approveOrder() time, never re-run
+  @Prop({ default: 0 })
+  depositAmount: number;
+
+  @Prop({ default: '' })
+  depositMethod: string;
+
+  @Prop({ default: '' })
+  depositStatus: string; // 'full' | 'partial' | 'none'
+
+  @Prop({ default: 0 })
+  depositPercentage: number; // 0-100
+
+  @Prop({ default: '' })
+  depositDetectedAt: string; // ISO
 }
 
 export const ShopifyOrderSchema = SchemaFactory.createForClass(ShopifyOrder);

@@ -21,6 +21,9 @@ import {
 } from './schemas/shopify-order.schema';
 import { VaultModule } from '../vault/vault.module';
 import { AuthModule } from '../auth/auth.module';
+import { EmployeePerformanceModule } from '../employee-performance/employee-performance.module';
+import { MentionsModule } from '../mentions/mentions.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -32,6 +35,9 @@ import { AuthModule } from '../auth/auth.module';
     ]),
     VaultModule,
     AuthModule,
+    EmployeePerformanceModule,
+    MentionsModule,
+    UsersModule,
   ],
   controllers: [ShopifyController, OrderAuditController],
   providers: [

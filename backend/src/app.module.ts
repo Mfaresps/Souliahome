@@ -27,6 +27,7 @@ import { DemandPlanningModule } from './demand-planning/demand-planning.module';
 import { SupplierReturnsModule } from './supplier-returns/supplier-returns.module';
 import { DraftsModule } from './drafts/drafts.module';
 import { CustomerServicePlaybookModule } from './customer-service-playbook/customer-service-playbook.module';
+import { EmployeePerformanceModule } from './employee-performance/employee-performance.module';
 import { SeedService } from './seed/seed.service';
 
 @Module({
@@ -61,6 +62,7 @@ import { SeedService } from './seed/seed.service';
     SupplierReturnsModule,
     DraftsModule,
     CustomerServicePlaybookModule,
+    EmployeePerformanceModule,
   ],
   providers: [SeedService],
 })

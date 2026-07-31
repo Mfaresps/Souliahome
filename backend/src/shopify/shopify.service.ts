@@ -18,6 +18,11 @@ import { VaultService } from '../vault/vault.service';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { normalizeCity, cityToShipZone } from '../shared/normalize-city.util';
 import { ShopifyAdminService } from './shopify-admin.service';
+import { computeDepositFields } from './deposit-parser.util';
+import { EmployeeShiftService } from '../employee-performance/employee-shift.service';
+import { EmployeeScoringService } from '../employee-performance/employee-scoring.service';
+import { MentionsService } from '../mentions/mentions.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class ShopifyService {
@@ -33,6 +38,10 @@ export class ShopifyService {
     private readonly vaultService: VaultService,
     private readonly presence: PresenceGateway,
     private readonly shopifyAdminService: ShopifyAdminService,
+    private readonly employeeShiftService: EmployeeShiftService,
+    private readonly employeeScoringService: EmployeeScoringService,
+    private readonly mentionsService: MentionsService,
+    private readonly usersService: UsersService,
   ) {}
 
   private emit(event: string, payload: unknown): void {
@@ -121,11 +130,170 @@ export class ShopifyService {
       });
 
       this.logger.log(`📦 أوردر Shopify جديد بانتظار المراجعة: ${ref}`);
+
+      // إسناد استرشادي للموظف المسؤول حسب جدول الورديات — لا يمنع إنشاء الأوردر عند الفشل
+      try {
+        const assignment = await this.employeeShiftService.resolveAssignee(order.shopifyCreatedAt || new Date().toISOString());
+        if (assignment) {
+          order.assignedTo = assignment.userId;
+          order.assignedToName = assignment.name;
+          order.assignedAt = new Date().toISOString();
+          order.assignmentReason = assignment.reason;
+          await order.save();
+          this.notifyOrderAssigned(order, assignment.userId).catch((err) =>
+            this.logger.error(`Order-assigned notification failed for order ${order._id}: ${(err as Error).message}`),
+          );
+        }
+      } catch (assignErr) {
+        this.logger.warn(`Auto-assignment failed for order ${order._id}: ${(assignErr as Error).message}`);
+      }
+
+      // تحليل الإيداع من الملاحظات فور وصول الأوردر — يُستخدم فوراً لتقييم أداء الموظف المسؤول
+      try {
+        const parsed = computeDepositFields({ notes: order.notes, tags: order.tags, total: order.total });
+        order.depositAmount = parsed.depositAmount;
+        order.depositMethod = parsed.depositMethod;
+        order.depositStatus = parsed.depositStatus;
+        order.depositPercentage = parsed.depositPercentage;
+        order.depositDetectedAt = new Date().toISOString();
+        await order.save();
+        this.employeeScoringService.scoreDepositDetection(order).catch((err) =>
+          this.logger.error(`Deposit scoring failed for order ${order._id}: ${(err as Error).message}`),
+        );
+      } catch (depositErr) {
+        this.logger.warn(`Deposit parsing failed for order ${order._id}: ${(depositErr as Error).message}`);
+      }
+
       return { saved: true, id: String(order._id) };
     } catch (err) {
       this.logger.error(`❌ خطأ: ${err.message}`);
       return { saved: false, reason: err.message };
     }
+  }
+
+  /**
+   * Notifies the assigned employee (and all admins) that a new Shopify order
+   * was routed to them, via the existing mentions/presence infrastructure —
+   * persisted notification + real-time push, same pipe the frontend already
+   * renders (mentionNotifier sound/toast, notification bell/list).
+   */
+  private async notifyOrderAssigned(order: ShopifyOrderDocument, assignedUserId: string): Promise<void> {
+    const cleanRef = String(order.ref || '').replace(/^#+/, '');
+    const assigneeName = order.assignedToName || '-';
+
+    // Personalized per recipient: the assignee sees "assigned to YOU"; admins (who did not
+    // receive the order themselves) see "assigned to <name>" — same event, different framing.
+    const buildText = (forAssignee: boolean) =>
+      [
+        forAssignee ? `أوردر جديد مُسند إليك: #${cleanRef}` : `أوردر جديد مُسند إلى ${assigneeName}: #${cleanRef}`,
+        `العميل: ${order.client || '-'}`,
+        `الإجمالي: ${order.total || 0} EGP`,
+      ].join('\n');
+
+    const admins = await this.usersService.findAdmins();
+    const targetIds = new Set<string>([assignedUserId, ...admins.map((a) => String(a._id))]);
+
+    const rows = [...targetIds].map((targetUserId) => ({
+      targetUserId,
+      targetUsername: '',
+      targetName: order.assignedToName || '',
+      fromUserId: 'system',
+      fromName: 'نظام التوزيع',
+      txId: String(order._id),
+      txRef: cleanRef,
+      commentId: 0,
+      commentText: buildText(targetUserId === assignedUserId),
+      read: false,
+    }));
+
+    const created = await this.mentionsService.createMany(rows);
+    for (const m of created as any[]) {
+      const payload = {
+        id: String(m._id),
+        _id: String(m._id),
+        targetUserId: m.targetUserId,
+        targetUsername: m.targetUsername,
+        targetName: m.targetName,
+        fromUserId: m.fromUserId,
+        fromName: m.fromName,
+        txId: m.txId,
+        txRef: m.txRef,
+        commentId: m.commentId,
+        commentText: m.commentText,
+        read: false,
+        ts: (m.createdAt instanceof Date) ? m.createdAt.toISOString() : new Date().toISOString(),
+      };
+      try { this.presence.emitToUser(String(m.targetUserId), 'mention:new', payload); } catch { /* best-effort */ }
+    }
+  }
+
+  /**
+   * Admin-only manual reassignment. Changes ONLY routing metadata (assignedTo/
+   * assignedToName/assignedAt/assignmentReason) and appends to assignmentHistory —
+   * never touches reviewedBy/reviewedAt, deposit fields, or any EmployeePerformanceLog
+   * row, so historical scoring/attribution is unaffected by a later reassignment.
+   */
+  async reassignOrder(
+    orderId: string,
+    newEmployeeId: string,
+    reason: string,
+    changedBy: string,
+  ): Promise<{ success: boolean; error?: string }> {
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) return { success: false, error: 'الأوردر غير موجود' };
+
+    const newUser = await this.usersService.findById(newEmployeeId);
+    if (!newUser) return { success: false, error: 'الموظف غير موجود' };
+    if (newUser.role !== 'staff') return { success: false, error: 'يمكن إسناد الأوردر لموظف (staff) فقط' };
+
+    const previousUserId = order.assignedTo || '';
+    const previousName = order.assignedToName || '';
+    const newName = newUser.name || newUser.username || '';
+    const now = new Date().toISOString();
+
+    order.assignedTo = newEmployeeId;
+    order.assignedToName = newName;
+    order.assignedAt = now;
+    order.assignmentReason = 'manual';
+    order.assignmentHistory = [
+      ...(order.assignmentHistory || []),
+      {
+        previousUserId,
+        previousName,
+        newUserId: newEmployeeId,
+        newName,
+        changedBy,
+        reason: reason || '',
+        at: now,
+      },
+    ];
+
+    // أوردرات قديمة كانت لسه معلقة قبل تفعيل هذا النظام قد لا يكون تحليل الإيداع
+    // تم لها من قبل — نعيد التحليل هنا فقط إذا لم يُنفَّذ بعد، حتى تُحسب نقاط الإيداع
+    // للموظف الجديد. لا نلمس reviewedBy/reviewedAt أو نقاط سرعة التأكيد/التسليم إطلاقاً،
+    // لأن توقيتات أوردر قديم لا تعطي قياس سرعة منطقي.
+    if (order.status === 'pending' && !order.depositDetectedAt) {
+      const parsed = computeDepositFields({ notes: order.notes, tags: order.tags, total: order.total });
+      order.depositAmount = parsed.depositAmount;
+      order.depositMethod = parsed.depositMethod;
+      order.depositStatus = parsed.depositStatus;
+      order.depositPercentage = parsed.depositPercentage;
+      order.depositDetectedAt = now;
+    }
+
+    await order.save();
+
+    if (order.status === 'pending') {
+      this.employeeScoringService.scoreDepositDetection(order).catch((err) =>
+        this.logger.error(`Deposit scoring failed after reassignment for order ${order._id}: ${(err as Error).message}`),
+      );
+    }
+
+    this.notifyOrderAssigned(order, newEmployeeId).catch((err) =>
+      this.logger.error(`Reassignment notification failed for order ${order._id}: ${(err as Error).message}`),
+    );
+
+    return { success: true };
   }
 
   // جلب أوردرات قديمة من Shopify مباشرة (Admin API) لعرضها واختيار ما يُستورد
@@ -204,7 +372,25 @@ export class ShopifyService {
       order.itemsTotal = itemsTotal;
       order.total = total;
       order.rawData = orderData;
+
+      // إعادة تحليل الإيداع فقط طالما الأوردر لسه معلق — بعد التأكيد تتجمد قيم الإيداع
+      // لأنها بالفعل مرتبطة بحركة/خزنة تم إنشاؤها، وإعادة تحليلها هتفصل بين الرقم المسجل والفعلي
+      if (order.status === 'pending') {
+        const parsed = computeDepositFields({ notes: order.notes, tags: order.tags, total: order.total });
+        order.depositAmount = parsed.depositAmount;
+        order.depositMethod = parsed.depositMethod;
+        order.depositStatus = parsed.depositStatus;
+        order.depositPercentage = parsed.depositPercentage;
+        order.depositDetectedAt = new Date().toISOString();
+      }
+
       await order.save();
+
+      if (order.status === 'pending') {
+        this.employeeScoringService.scoreDepositDetection(order).catch((err) =>
+          this.logger.error(`Deposit re-scoring failed for order ${order._id}: ${(err as Error).message}`),
+        );
+      }
 
       // تحديث الحركة المقابلة في سجل المبيعات إن وُجدت
       // tags في Shopify نص مفصول بفواصل، transaction تحتفظ بها كمصفوفة
@@ -293,6 +479,8 @@ export class ShopifyService {
       source: 'shopify',
       shopifyOrderId: order.shopifyId,
       shopifyCreatedAt: order.shopifyCreatedAt || '',
+      assignedToName: order.assignedToName || '',
+      depositDetectedAt: order.depositDetectedAt || '',
       shippingAddress: order.shippingAddress || '',
       shippingCity: order.shippingCity || '',
       shippingGov: (order as any).shippingGov || '',
@@ -316,6 +504,14 @@ export class ShopifyService {
       );
     }
 
+    // تحليل الإيداع من الملاحظات مرة واحدة فقط عند التأكيد — يُستخدم لاحقاً في تقييم الأداء
+    const parsedDeposit = computeDepositFields({ notes: order.notes, tags: order.tags, total: order.total });
+    order.depositAmount = parsedDeposit.depositAmount;
+    order.depositMethod = parsedDeposit.depositMethod;
+    order.depositStatus = parsedDeposit.depositStatus;
+    order.depositPercentage = parsedDeposit.depositPercentage;
+    order.depositDetectedAt = new Date().toISOString();
+
     order.status = 'approved';
     order.reviewedBy = approvedBy;
     order.reviewedAt = new Date().toISOString();
@@ -329,6 +525,11 @@ export class ShopifyService {
       txType: tx.type,
       items: (tx.items || []).map((it: any) => ({ name: it.name, qty: it.qty })),
     });
+
+    // تقييم أداء الموظف الذي قام بالتأكيد — لا يجب أن يؤثر على نجاح العملية عند الفشل
+    this.employeeScoringService.scoreConfirmation(order, approvedBy).catch((err) =>
+      this.logger.error(`Performance scoring failed for order ${order._id}: ${(err as Error).message}`),
+    );
 
     this.logger.log(`✅ تم قبول أوردر Shopify: ${cleanRef}`);
     return { success: true, txId: String(tx._id) };

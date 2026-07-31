@@ -222,6 +222,10 @@ export class Transaction {
   @Prop({ default: null })
   shippedAt: string;
 
+  /** Employee who clicked "Send to Bosta" (operator name from the create-order request) */
+  @Prop({ default: '' })
+  shippedByName: string;
+
   @Prop()
   pickupDate: string;
 
@@ -265,6 +269,14 @@ export class Transaction {
   /** Original creation time of the order in Shopify (before sync to this system) */
   @Prop({ default: '' })
   shopifyCreatedAt: string;
+
+  /** Employee responsible for this order per shift-based auto-assignment (denormalized from ShopifyOrder.assignedToName at approval time) */
+  @Prop({ default: '' })
+  assignedToName: string;
+
+  /** When the deposit-note parser last ran on the originating ShopifyOrder (denormalized from ShopifyOrder.depositDetectedAt) */
+  @Prop({ default: '' })
+  depositDetectedAt: string;
 
   /** Shipping address (from Shopify or manual entry) */
   @Prop({ default: '' })

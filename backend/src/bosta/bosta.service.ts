@@ -16,6 +16,7 @@ import { SettingsService } from '../settings/settings.service';
 import { VaultService } from '../vault/vault.service';
 import { ShopifyAdminService } from '../shopify/shopify-admin.service';
 import { normalizeCity } from '../shared/normalize-city.util';
+import { EmployeeScoringService } from '../employee-performance/employee-scoring.service';
 
 // ── Bosta status → Arabic label map ────────────────────────────────────────
 const BOSTA_STATUS_LABELS: Record<string, string> = {
@@ -260,6 +261,7 @@ export class BostaService {
     private readonly settingsService: SettingsService,
     private readonly vaultService: VaultService,
     private readonly shopifyAdmin: ShopifyAdminService,
+    private readonly employeeScoringService: EmployeeScoringService,
   ) {}
 
   private async resolveApiKey(): Promise<string> {
@@ -496,6 +498,7 @@ export class BostaService {
         bostaRawResponse: res,
         pickupStatus: 'Shipped',
         shippedAt: new Date().toISOString(),
+        shippedByName: operatorName || '',
       });
 
       this.logger.log(`Bosta order created: tx=${txId} bostaId=${bostaOrderId} tracking=${trackingNumber}`);
@@ -642,6 +645,13 @@ export class BostaService {
 
     this.emit('tx:updated', { _id: txId });
     this.logger.log(`Manual delivery confirmed — tx=${txId} by=${operator} reason="${reason}"`);
+
+    if (updated?.shopifyOrderId) {
+      this.employeeScoringService.scoreDelivery(updated as any).catch((err) =>
+        this.logger.error(`Delivery scoring failed for tx ${txId}: ${(err as Error).message}`),
+      );
+    }
+
     return { success: true, transaction: updated };
   }
 
@@ -825,6 +835,16 @@ export class BostaService {
     }
 
     this.emit('tx:updated', { _id: txId });
+
+    if (currentStatus !== 'DELIVERED' && statusCode === 'DELIVERED' && tx.shopifyOrderId) {
+      const updatedTx = await this.txModel.findById(txId).lean();
+      if (updatedTx) {
+        this.employeeScoringService.scoreDelivery(updatedTx as any).catch((err) =>
+          this.logger.error(`Delivery scoring failed for tx ${txId}: ${(err as Error).message}`),
+        );
+      }
+    }
+
     return { success: true, status: statusCode, statusLabel, raw: res };
   }
 

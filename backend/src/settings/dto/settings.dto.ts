@@ -205,4 +205,17 @@ export class UpdateSettingsDto {
   @Min(0)
   @IsOptional()
   readonly codCollectionThreshold?: number;
+
+  @IsObject()
+  @IsOptional()
+  readonly performanceConfig?: {
+    deliveryPoints?: number;
+    depositFullPoints?: number;
+    depositPartial50Points?: number;
+    depositPartialLowPoints?: number;
+    depositNonePoints?: number;
+    speedUnder15MinPoints?: number;
+    speedUnder1HourPoints?: number;
+    speedUnder4HoursPoints?: number;
+  };
 }

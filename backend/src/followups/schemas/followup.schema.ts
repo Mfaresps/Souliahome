@@ -33,6 +33,14 @@ export const FollowUpCommentSchema = SchemaFactory.createForClass(FollowUpCommen
 
 @Schema({ timestamps: true })
 export class FollowUp {
+  // Human-facing ticket id, unique per follow-up: FU-YYMMDD-{orderRef}, with a
+  // -2/-3 suffix when the same order gets more than one follow-up the same day.
+  // Mirrors the Complaint.complaintNo scheme (CMP-YYMMDD-REF) so both
+  // customer-service records read the same way. Not `required` at the schema
+  // level: records created before this field existed are backfilled on boot.
+  @Prop({ unique: true, sparse: true, index: true })
+  ticketNo: string;
+
   @Prop({ required: true })
   orderRef: string; // transaction ref pulled from system
 

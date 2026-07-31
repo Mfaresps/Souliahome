@@ -14,6 +14,7 @@ import { AuthModule } from '../auth/auth.module';
 import { SettingsModule } from '../settings/settings.module';
 import { VaultModule } from '../vault/vault.module';
 import { ShopifyModule } from '../shopify/shopify.module';
+import { EmployeePerformanceModule } from '../employee-performance/employee-performance.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ShopifyModule } from '../shopify/shopify.module';
     SettingsModule,
     VaultModule,
     ShopifyModule,
+    EmployeePerformanceModule,
   ],
   controllers: [BostaController],
   providers: [BostaService],

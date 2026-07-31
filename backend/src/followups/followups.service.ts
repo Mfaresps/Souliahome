@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron } from '@nestjs/schedule';
 import { Model } from 'mongoose';
@@ -13,7 +13,7 @@ const DONE_STATUSES = ['تمت المتابعة', 'تم حل المشكلة'];
 const ESCALATION_HOURS = [12, 24, 48, 72, 96, 120, 144, 168];
 
 @Injectable()
-export class FollowUpsService {
+export class FollowUpsService implements OnModuleInit {
   private readonly logger = new Logger(FollowUpsService.name);
 
   constructor(
@@ -30,8 +30,84 @@ export class FollowUpsService {
     return this.model.findById(id).lean();
   }
 
-  create(dto: CreateFollowUpDto) {
-    return this.model.create(dto);
+  /**
+   * Builds the human-facing ticket id: FU-YYMMDD-{orderRef}, adding a -2/-3
+   * suffix when the same order already has a follow-up opened the same day.
+   * Deliberately mirrors ComplaintsService.generateComplaintNo so a follow-up
+   * ticket and a complaint number read identically apart from the prefix.
+   */
+  private async generateTicketNo(orderRef?: string, when: Date = new Date()): Promise<string> {
+    const yy = String(when.getFullYear()).slice(-2);
+    const mm = String(when.getMonth() + 1).padStart(2, '0');
+    const dd = String(when.getDate()).padStart(2, '0');
+    const ref = (orderRef || '').replace(/^#+/, '').trim();
+    const datePart = `${yy}${mm}${dd}`;
+
+    if (ref) {
+      // Escape the ref before interpolating it into a regex — order refs can
+      // carry dashes and other literal characters (e.g. "2254-RET").
+      const safeRef = ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const base = `FU-${datePart}-${ref}`;
+      const existing = await this.model
+        .find({ ticketNo: { $regex: `^FU-${datePart}-${safeRef}(-\\d+)?$` } })
+        .select('ticketNo')
+        .lean()
+        .exec();
+      if (!existing.length) return base;
+      let maxSuffix = 1;
+      for (const e of existing) {
+        const m = (e as any).ticketNo?.match(/-(\d+)$/);
+        const n = m && (e as any).ticketNo !== base ? parseInt(m[1], 10) : 1;
+        if (n > maxSuffix) maxSuffix = n;
+      }
+      return `${base}-${maxSuffix + 1}`;
+    }
+
+    // No linked order — fall back to a daily sequence so the id stays unique.
+    const sameDay = await this.model
+      .find({ ticketNo: { $regex: `^FU-${datePart}-N\\d+$` } })
+      .select('ticketNo')
+      .lean()
+      .exec();
+    let seq = 1;
+    for (const e of sameDay) {
+      const m = (e as any).ticketNo?.match(/-N(\d+)$/);
+      const n = m ? parseInt(m[1], 10) : 0;
+      if (n >= seq) seq = n + 1;
+    }
+    return `FU-${datePart}-N${String(seq).padStart(3, '0')}`;
+  }
+
+  async create(dto: CreateFollowUpDto) {
+    const ticketNo = await this.generateTicketNo(dto.orderRef);
+    return this.model.create({ ...dto, ticketNo });
+  }
+
+  /**
+   * Backfills ticketNo on records created before the field existed. Runs once
+   * on boot; each ticket is derived from that record's own createdAt so the
+   * date embedded in the id stays truthful rather than reflecting migration
+   * day. Sequential (not Promise.all) because generateTicketNo reads back the
+   * rows it just wrote to resolve same-day suffixes.
+   */
+  async onModuleInit(): Promise<void> {
+    try {
+      const missing = await this.model
+        .find({ $or: [{ ticketNo: { $exists: false } }, { ticketNo: '' }, { ticketNo: null }] })
+        .select('_id orderRef createdAt')
+        .sort({ createdAt: 1 })
+        .lean()
+        .exec();
+      if (!missing.length) return;
+      for (const f of missing as any[]) {
+        const when = f.createdAt ? new Date(f.createdAt) : new Date();
+        const ticketNo = await this.generateTicketNo(f.orderRef, when);
+        await this.model.updateOne({ _id: f._id }, { ticketNo }).exec();
+      }
+      this.logger.log(`Backfilled ticketNo on ${missing.length} follow-up(s)`);
+    } catch (err: any) {
+      this.logger.error(`ticketNo backfill failed: ${err.message}`);
+    }
   }
 
   async update(id: string, dto: UpdateFollowUpDto) {

@@ -105,6 +105,20 @@ export class ShopifyController {
     return this.shopifyService.approveOrder(id, user, deposit || 0, payment);
   }
 
+  // إعادة إسناد أوردر لموظف آخر (أدمن فقط) — لا يؤثر على reviewedBy أو الإيداع أو سجل الأداء
+  @Patch('orders/:id/reassign')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async reassign(
+    @Param('id') id: string,
+    @Body('newEmployeeId') newEmployeeId: string,
+    @Body('reason') reason: string,
+    @Request() req: any,
+  ) {
+    const changedBy = req.user?.username || req.user?.name || 'admin';
+    return this.shopifyService.reassignOrder(id, newEmployeeId, reason || '', changedBy);
+  }
+
   // تعديل items أوردر
   @Patch('orders/:id/items')
   @UseGuards(JwtAuthGuard)
