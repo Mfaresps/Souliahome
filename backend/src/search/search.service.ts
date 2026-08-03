@@ -82,12 +82,19 @@ export class SearchService {
         this.searchComplaintsByText(trimmed),
       ]);
     } else if (numeric) {
-      // أرقام لا تبدأ بمقدمة هاتف صالحة (010/011/012/015): تعامل كرقم مرجع أوردر فقط، بدون مطابقة هاتف
-      [orders, complaintResults, shopifyResults] = await Promise.all([
+      // أرقام لا تبدأ بمقدمة هاتف صالحة (010/011/012/015): تعامل كرقم مرجع أوردر أو رقم تتبع بوسطة
+      let trackingResults: SearchResultItem[] = [];
+      [orders, complaintResults, shopifyResults, trackingResults] = await Promise.all([
         this.searchOrdersByRef(trimmed),
         this.searchComplaintsByText(trimmed),
         this.searchShopifyOrdersByRef(trimmed),
+        this.searchOrdersByTracking(trimmed),
       ]);
+      // دمج نتائج رقم التتبع مع نتائج المرجع (بدون تكرار نفس الحركة)
+      if (trackingResults.length) {
+        const seenIds = new Set(orders.map((o) => o.id));
+        orders = [...orders, ...trackingResults.filter((o) => !seenIds.has(o.id))];
+      }
     } else {
       // نص: بحث عام في الاسم
       [products, orders, customers, supplierResults, complaintResults] = await Promise.all([
@@ -154,6 +161,31 @@ export class SearchService {
       subtitle: `${tx.type} — ${tx.client || ''}`,
       icon: orderIcon(tx.type),
       meta: `${tx.total} ج — ${tx.payStatus}`,
+      total: tx.total,
+      itemsCount: Array.isArray(tx.items) ? tx.items.length : 0,
+      createdAt: (tx as any).createdAt,
+      payStatus: tx.payStatus,
+      bostaStatusLabel: tx.bostaStatusLabel || '',
+    }));
+  }
+
+  // ── بحث رقمي: رقم تتبع بوسطة (Bosta tracking number) ──────────────
+  private async searchOrdersByTracking(trackingNo: string): Promise<SearchResultItem[]> {
+    const transactions = await this.transactionModel
+      .find({ ...TX_ACTIVE_FILTER, bostaTrackingNumber: { $regex: `^${trackingNo}`, $options: 'i' } })
+      .select('ref client phone type total payStatus items createdAt bostaStatusLabel bostaTrackingNumber')
+      .sort({ createdAt: -1 })
+      .limit(MAX_RESULTS_PER_CATEGORY)
+      .lean()
+      .exec();
+
+    return transactions.map((tx) => ({
+      id: String(tx._id),
+      type: 'order' as const,
+      title: `#${tx.ref || String(tx._id).slice(-6)}`,
+      subtitle: `${tx.type} — ${tx.client || ''}`,
+      icon: orderIcon(tx.type),
+      meta: `تتبع: ${tx.bostaTrackingNumber} — ${tx.total} ج`,
       total: tx.total,
       itemsCount: Array.isArray(tx.items) ? tx.items.length : 0,
       createdAt: (tx as any).createdAt,

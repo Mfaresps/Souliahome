@@ -361,36 +361,92 @@ body.dark-mode .history-detail-item.removed{background:rgba(248,113,113,.08)}
 .modal h3{margin-bottom:16px;font-size:1.1rem}
 .form-group{margin-bottom:14px}
 .form-group label{display:block;font-size:.8rem;font-weight:600;margin-bottom:4px;color:var(--muted)}
-/* Edit Transaction modal — professional ERP layout on a strict 2-column grid (scoped, does not affect other modals) */
-#modal-content.edit-tx-modal-host{width:90vw;max-width:850px;max-height:85vh;padding:0;overflow:hidden}
+/* Edit Transaction modal — professional ERP layout on a strict grid (scoped, does not affect other modals) */
+#modal-content.edit-tx-modal-host{width:92vw;max-width:900px;max-height:85vh;padding:0;overflow:hidden}
 .edit-tx-modal-host .edit-tx-modal{display:flex;flex-direction:column;height:100%;min-height:0;flex:1 1 auto}
-.edit-tx-modal-host .edit-tx-modal-header{position:sticky;top:0;z-index:2;background:var(--bg);padding:16px 24px 12px;margin:0;border-bottom:1px solid var(--border);flex-shrink:0;font-size:1rem}
+.edit-tx-modal-host .edit-tx-modal-header{position:sticky;top:0;z-index:2;background:var(--bg);padding:16px 24px 12px;margin:0;border-bottom:1px solid var(--border);flex-shrink:0;font-size:1rem;display:flex;align-items:center;gap:10px}
+.edit-tx-ref-badge{font-size:.78rem;font-weight:700;color:var(--primary);background:var(--primary-pale,rgba(16,185,129,.12));padding:2px 10px;border-radius:20px;letter-spacing:.02em;direction:ltr}
+body.dark-mode .edit-tx-ref-badge{background:rgba(16,185,129,.18)}
+/* Order-data summary strip — always visible; the fields themselves sit in a panel that opens on demand,
+   because most edits target items/discounts rather than customer, shipping or payment data */
+.edit-tx-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px;margin-bottom:16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
+.edit-tx-meta-summary{flex:1 1 220px;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;font-size:.75rem;color:var(--text)}
+.edit-tx-meta-summary strong{font-weight:700}
+.edit-tx-meta-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;background:var(--surface);border:1px solid var(--border);border-radius:20px;white-space:nowrap;line-height:1.5}
+.edit-tx-meta-chip.is-pay{background:var(--primary-pale,rgba(16,185,129,.1));border-color:transparent}
+body.dark-mode .edit-tx-meta-chip.is-pay{background:rgba(16,185,129,.16)}
+.edit-tx-meta-ico{display:inline-flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0}
+.edit-tx-meta-ico svg{width:13px;height:13px}
+.edit-tx-meta-chip.is-pay .edit-tx-meta-ico{color:var(--primary)}
+.edit-tx-meta-empty{color:var(--muted);font-style:italic}
+.edit-tx-meta-toggle{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.edit-tx-meta-toggle:hover{background:var(--surface2);border-color:var(--primary);color:var(--primary)}
+.edit-tx-meta-toggle svg{width:15px;height:15px;flex-shrink:0}
+.edit-tx-meta-toggle.is-open{background:var(--primary);border-color:var(--primary);color:#fff}
+.edit-tx-meta-body[hidden]{display:none}
+/* Dashed rule separating the modal's blocks (بيانات الطلب / الأصناف / ملخص الأوردر) */
+.edit-tx-divider{border:0;border-top:1px dashed var(--border);margin:20px 0 16px;height:0}
+/* A section holding only hidden inputs (sales: the discount fields) must not add stray vertical space */
+.edit-tx-section:empty,
+.edit-tx-section:not(:has(> :not(input[type="hidden"]))){margin:0;row-gap:0}
+/* Block headings inside the edit modal (الأصناف / ملخص الأوردر) */
+.edit-tx-modal .edit-tx-block-title{margin:0;font-size:.9rem;font-weight:700;display:flex;align-items:center;gap:8px}
+/* Order-summary card — heading and totals share one surface */
+.edit-tx-summary-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;font-size:.85rem}
+.edit-tx-modal .edit-tx-summary-title{padding-bottom:9px;margin-bottom:10px;border-bottom:1px dashed var(--border)}
+.edit-tx-count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:20px;background:var(--primary-pale,rgba(16,185,129,.12));color:var(--primary);font-size:.7rem;font-weight:700;font-variant-numeric:tabular-nums}
+body.dark-mode .edit-tx-count-badge{background:rgba(16,185,129,.2)}
 .edit-tx-modal-host .edit-tx-modal-body{overflow-y:auto;padding:20px 24px;flex:1;min-height:0}
 .edit-tx-modal-host .edit-tx-modal-footer{position:sticky;bottom:0;z-index:2;background:var(--bg);padding:14px 24px;margin:0;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:8px}
-/* Section = 2-column grid. Every direct child occupies exactly one column unless it opts into .full */
-.edit-tx-section{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px;row-gap:24px;align-items:start;margin-bottom:28px}
+/* Every section is a 12-column grid. Each field spans a column count proportional to the data it
+   actually holds (a 3-5 digit deposit ≠ a two-part customer name), and every row sums to 12 so
+   there is never dead space at the end of a line. */
+.edit-tx-section{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:14px;row-gap:14px;align-items:start;margin-bottom:18px}
 .edit-tx-section-title{grid-column:1/-1;font-size:11px;font-weight:700;color:var(--muted);margin:0;text-transform:uppercase;letter-spacing:.04em}
 .edit-tx-section .form-group.full,
 .edit-tx-modal .edit-tx-span-2{grid-column:1/-1}
-/* Uniform field metrics — width is owned by the grid track, never by the field itself */
+/* Span scale — chosen from real content width, not visual guesswork:
+   sp-2 ≈ 2-4 رقم (تكلفة شحن) · sp-3 ≈ 3-6 رقم (ديبوزت/مرجع) · sp-4 = هاتف 11 رقم، تاريخ، قوائم قصيرة
+   sp-5 = قوائم أطول (طريقة الدفع/شركة الشحن) · sp-6/sp-8 = أسماء وعناوين متعددة الكلمات */
+.edit-tx-section .form-group.sp-2{grid-column:span 2}
+.edit-tx-section .form-group.sp-3{grid-column:span 3}
+.edit-tx-section .form-group.sp-4{grid-column:span 4}
+.edit-tx-section .form-group.sp-5{grid-column:span 5}
+.edit-tx-section .form-group.sp-6{grid-column:span 6}
+.edit-tx-section .form-group.sp-8{grid-column:span 8}
+/* Uniform field metrics — compact sizing matches the small search-box text rule (input[placeholder*="بحث"], ~line 992).
+   Width always comes from the grid track so fields align to a single vertical rhythm. */
 .edit-tx-modal .form-group{margin-bottom:0;min-width:0;max-width:none;display:flex;flex-direction:column}
-.edit-tx-modal .form-group label{display:block;font-size:12px;font-weight:500;margin-bottom:8px;color:var(--muted)}
+.edit-tx-modal .form-group label{display:block;font-size:11px;font-weight:500;margin-bottom:6px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .edit-tx-modal .form-group input,
 .edit-tx-modal .form-group select,
-.edit-tx-modal .form-group .city-ac-trigger input{width:100%;box-sizing:border-box;height:44px;border-radius:10px;font-size:13px;padding:0 12px}
-.edit-tx-modal .form-group input[type="date"]{padding:0 10px}
+.edit-tx-modal .form-group .city-ac-trigger input{width:100%;box-sizing:border-box;height:36px;border-radius:8px;font-size:.74rem;padding:0 10px}
+.edit-tx-modal .form-group input[type="date"]{padding:0 8px}
 .edit-tx-modal .form-group .city-ac-trigger{display:block;width:100%}
-.edit-tx-modal .field-hint{font-size:.68rem;margin-top:4px}
-.edit-tx-modal .field-error{margin-top:4px}
+.edit-tx-modal .field-hint{font-size:.66rem;margin-top:3px}
+.edit-tx-modal .field-error{margin-top:3px}
+/* Numeric fields read better centred on their own digits than hugging the RTL edge */
+.edit-tx-modal .form-group.is-num input{text-align:center;letter-spacing:.02em}
+/* Notes — de-emphasized supplementary field, shorter and smaller than the rest */
+.edit-tx-modal .form-group.notes-compact input{height:30px;font-size:.7rem;color:var(--muted)}
+/* Tablet — collapse the 12-col scale to 6 (roughly two fields per row) */
+@media(max-width:900px){
+  .edit-tx-section{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .edit-tx-section .form-group.sp-2{grid-column:span 2}
+  .edit-tx-section .form-group.sp-3,
+  .edit-tx-section .form-group.sp-4{grid-column:span 3}
+  .edit-tx-section .form-group.sp-5,
+  .edit-tx-section .form-group.sp-6,
+  .edit-tx-section .form-group.sp-8{grid-column:span 6}
+}
+/* Phone — single column, every field full width */
 @media(max-width:768px){
   #modal-content.edit-tx-modal-host{width:95vw;max-height:92vh}
   .edit-tx-modal-host .edit-tx-modal-header{padding:14px 16px 10px}
   .edit-tx-modal-host .edit-tx-modal-body{padding:16px}
   .edit-tx-modal-host .edit-tx-modal-footer{padding:12px 16px}
-  .edit-tx-section{grid-template-columns:minmax(0,1fr);column-gap:0;row-gap:18px;margin-bottom:22px}
-  .edit-tx-modal .form-group input,
-  .edit-tx-modal .form-group select,
-  .edit-tx-modal .form-group .city-ac-trigger input{width:100%}
+  .edit-tx-section{grid-template-columns:minmax(0,1fr);column-gap:0;row-gap:14px;margin-bottom:18px}
+  .edit-tx-section .form-group[class*="sp-"]{grid-column:1/-1}
 }
 .field-error{color:var(--red);font-size:.72rem;margin-top:2px}
 .addr-ac-dropdown{display:none;position:fixed;z-index:999999;background:var(--card,#fff);border:1.5px solid var(--border,#e5e7eb);border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.15),0 2px 8px rgba(0,0,0,.08);max-height:280px;overflow-y:auto;overflow-x:hidden}
@@ -1577,11 +1633,18 @@ body.dark-mode .inv-cust-history-item .amt{color:#4ade80}
 .inv2-col-main,.inv2-col-side{display:flex;flex-direction:column;gap:10px;min-width:0}
 .inv2-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .inv2-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;font-size:.82rem;font-weight:700;color:var(--text);border-bottom:1px solid var(--border);background:var(--bg-alt)}
+/* Accented icon chip beside a card title (see سجل النشاط) */
+.inv2-head-title{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.inv2-head-ico{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:24px;height:24px;border-radius:7px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent)}
+.inv2-head-ico svg{width:14px;height:14px;display:block}
+body.dark-mode .inv2-head-ico{background:color-mix(in srgb,var(--accent) 22%,transparent)}
 .inv2-card-body{padding:10px 12px}
 /* Side-column cards run denser than the main column */
 .inv2-col-side .inv2-card-body{padding:9px 12px}
 .inv2-col-side .inv2-card-body[style*="gap:8px"]{gap:6px!important}
 .inv2-count-badge{font-size:.7rem;padding:2px 9px;background:var(--surface2);color:var(--muted);border-radius:10px;font-weight:600}
+/* Hairline separating the shipping rows from the delivery rows inside the merged الشحن والتسليم card */
+.inv2-sec-div{height:1px;background:var(--border);margin:3px 0;opacity:.7}
 .inv2-kv{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.8rem;line-height:1.45}
 .inv2-kv .k{color:var(--muted)}
 .inv2-kv .v{font-weight:600;color:var(--text);display:flex;align-items:center;gap:5px}
@@ -1592,6 +1655,14 @@ body.dark-mode .inv-cust-history-item .amt{color:#4ade80}
 body.dark-mode .inv2-status-banner.paid{color:#4ade80}
 body.dark-mode .inv2-status-banner.cancelled{color:#f87171}
 body.dark-mode .inv2-status-banner.pending{color:#fb923c}
+/* Collection progress — deliberately neutral, not the banner's warning color: the bar shows
+   how much is already collected (progress), so it shouldn't read as part of the alert. */
+.inv2-pay-progress{height:3px;background:var(--bg-alt);border-radius:99px;overflow:hidden;margin-top:10px}
+.inv2-pay-progress-bar{height:100%;border-radius:99px;background:#9ca3af;transition:width .35s ease}
+body.dark-mode .inv2-pay-progress-bar{background:#6b7280}
+.inv2-pay-remaining{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;font-size:.78rem}
+.inv2-pay-remaining .k{color:var(--muted)}
+.inv2-pay-remaining .v{font-weight:700;color:var(--text);direction:ltr}
 .inv2-btn{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:7px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:.83rem;font-family:inherit;white-space:nowrap}
 .inv2-btn:hover{background:var(--bg-alt)}
 .inv2-btn svg{flex-shrink:0}
@@ -1601,8 +1672,11 @@ body.dark-mode .inv2-status-banner.pending{color:#fb923c}
 .inv2-btn-danger{background:#dc2626;color:#fff;border-color:#dc2626}
 .inv2-btn-danger:hover{background:#b91c1c}
 .inv2-log-tabs{display:flex;gap:2px;padding:0 14px;border-bottom:1px solid var(--border);overflow-x:auto}
-.inv2-log-tab{background:none;border:none;padding:9px 12px;font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit}
+.inv2-log-tab{display:inline-flex;align-items:center;gap:6px;background:none;border:none;padding:9px 12px;font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit}
 .inv2-log-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.inv2-log-tab-ico{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;opacity:.75}
+.inv2-log-tab-ico svg{width:14px;height:14px;display:block}
+.inv2-log-tab.active .inv2-log-tab-ico{opacity:1}
 .inv2-log-pane{padding-top:12px}
 .inv2-status-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;font-size:.8rem;border:1px solid;color:var(--text)}
 .inv2-status-row.is-success{border-color:#bbf7d0;background:#f0fdf4;color:#16a34a}
@@ -1616,21 +1690,62 @@ body.dark-mode .inv2-status-row.is-danger{border-color:rgba(248,113,113,.35);bac
 .inv2-text-green{color:#059669}
 body.dark-mode .inv2-badge-green{background:rgba(74,222,128,.12);color:#4ade80;border-color:rgba(74,222,128,.35)}
 body.dark-mode .inv2-text-green{color:#4ade80}
-.inv-ticket-toolbar{display:flex;justify-content:flex-end;margin-bottom:10px}
-.inv-ticket-add-btn{display:inline-flex;align-items:center;gap:5px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:5px 11px;font-size:.74rem;font-weight:500;cursor:pointer;font-family:inherit}
-.inv-ticket-add-btn:hover{background:var(--bg-alt);color:var(--text)}
-.inv-ticket-list{display:flex;flex-direction:column;gap:10px}
-.inv-ticket-card{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--bg-alt)}
-.inv-ticket-card-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
-.inv-ticket-ref{font-weight:700;font-size:.83rem;color:var(--text);direction:ltr}
-.inv-ticket-ref-sub{font-size:.85em;font-weight:500;opacity:.75;direction:ltr}
-.inv-ticket-meta-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
-.inv-ticket-type{font-size:.78rem;color:var(--muted)}
-.inv-ticket-status-pill{font-size:.68rem;font-weight:700;padding:2px 9px;border-radius:20px}
-.inv-ticket-desc{font-size:.8rem;color:var(--text);margin-bottom:8px;line-height:1.5}
-.inv-ticket-foot{display:flex;justify-content:space-between;align-items:center;font-size:.72rem;color:var(--muted);gap:8px}
-.inv-ticket-view-btn{display:inline-flex;align-items:center;justify-content:center;background:none;border:1px solid var(--border);color:var(--accent);border-radius:7px;width:28px;height:28px;cursor:pointer;flex-shrink:0}
-.inv-ticket-view-btn:hover{background:var(--surface)}
+.sp-row-selected{background:rgba(45,122,79,.08)}
+.sp-row-selected:hover{background:rgba(45,122,79,.13)}
+body.dark-mode .sp-row-selected{background:rgba(74,222,128,.1)}
+body.dark-mode .sp-row-selected:hover{background:rgba(74,222,128,.16)}
+.inv-ticket-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media (max-width:720px){.inv-ticket-list{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:480px){.inv-ticket-list{grid-template-columns:1fr}}
+.inv-ticket-card{border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--surface);min-width:0;box-shadow:0 1px 2px rgba(0,0,0,.03);transition:box-shadow .15s,border-color .15s;cursor:pointer}
+.inv-ticket-card:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.inv-ticket-card:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.inv-ticket-card-top{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px}
+.inv-ticket-kind{font-weight:500;font-size:.7rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inv-ticket-kind-complaint{color:#b45309}
+.inv-ticket-kind-return{color:#0369a1}
+.inv-ticket-kind-followup{color:#6d28d9}
+body.dark-mode .inv-ticket-kind-complaint{color:#fbbf24}
+body.dark-mode .inv-ticket-kind-return{color:#38bdf8}
+body.dark-mode .inv-ticket-kind-followup{color:#a78bfa}
+.inv-ticket-code{font-weight:700;font-size:.76rem;color:var(--accent);direction:ltr;text-align:right;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inv-ticket-status-pill{font-weight:500;font-size:.6rem;padding:1px 7px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.inv-ticket-foot{display:flex;justify-content:space-between;align-items:center;font-size:.64rem;color:var(--muted);gap:6px}
+.inv-ticket-foot span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inv-ticket-person{display:inline-flex;align-items:center;gap:5px;min-width:0;overflow:hidden}
+.inv-ticket-person-avatar{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;background:var(--bg-alt);color:var(--muted);font-size:.58rem;font-weight:500;flex-shrink:0}
+.inv-ticket-person-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inv-ticket-date{display:inline-flex;align-items:center;gap:4px;font-size:.64rem;color:var(--muted);flex-shrink:0}
+.inv-ticket-date svg{opacity:.7;flex-shrink:0}
+/* Freshly created ticket (<1h): the relative label is the signal, so give it a touch of emphasis */
+.inv-ticket-date.is-fresh{color:var(--accent);font-weight:600}
+.inv-ticket-date.is-fresh svg{opacity:1}
+/* Just-added highlight — a soft accent flash on the new card, fading back to normal.
+   Set by _tktFlash* on the card the re-render produces after saveAddTicket succeeds. */
+@keyframes invTicketFlash{
+  0%{background:var(--accent-soft,rgba(16,185,129,.16));border-color:var(--accent);box-shadow:0 0 0 3px rgba(16,185,129,.16)}
+  60%{background:var(--accent-soft,rgba(16,185,129,.10));border-color:var(--accent);box-shadow:0 0 0 3px rgba(16,185,129,.08)}
+  100%{background:var(--surface);border-color:var(--border);box-shadow:0 1px 2px rgba(0,0,0,.03)}
+}
+.inv-ticket-card.is-new{animation:invTicketFlash 2.4s ease-out 1}
+body.dark-mode .inv-ticket-card.is-new{animation-name:invTicketFlashDark}
+@keyframes invTicketFlashDark{
+  0%{background:rgba(16,185,129,.20);border-color:var(--accent);box-shadow:0 0 0 3px rgba(16,185,129,.18)}
+  60%{background:rgba(16,185,129,.12);border-color:var(--accent);box-shadow:0 0 0 3px rgba(16,185,129,.09)}
+  100%{background:var(--surface);border-color:var(--border);box-shadow:0 1px 2px rgba(0,0,0,.03)}
+}
+/* Nudge the Tickets tab button itself so the effect is visible even if another pane is open */
+@keyframes invTicketTabPulse{0%,100%{color:var(--accent)}50%{color:var(--muted)}}
+.inv2-log-tab.is-new-pulse{animation:invTicketTabPulse 1s ease-in-out 2}
+@media (prefers-reduced-motion:reduce){
+  .inv-ticket-card.is-new,.inv2-log-tab.is-new-pulse{animation:none}
+  .inv-ticket-card.is-new{border-color:var(--accent);box-shadow:0 0 0 3px rgba(16,185,129,.14)}
+}
+.inv-ticket-add-cell{display:flex;align-items:center;justify-content:center;min-height:100%}
+/* No tickets yet → the add button is alone in the grid; span the full row so it centers instead of hugging the first column */
+.inv-ticket-list.is-empty .inv-ticket-add-cell{grid-column:1/-1}
+.inv-ticket-add-card{display:inline-flex;align-items:center;justify-content:center;gap:5px;width:auto;border:1px dashed var(--border);border-radius:10px;padding:8px 16px;background:var(--bg-alt);color:var(--muted);font-size:.74rem;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap;transition:border-color .15s,color .15s,background .15s}
+.inv-ticket-add-card:hover{border-color:var(--accent);color:var(--accent);background:var(--surface)}
 /* Shopify mark — brand shape, no brand colors: inherits the button's currentColor */
 .inv2-shopify-mark{flex-shrink:0}
 .inv2-shopify-mark path{fill:currentColor;stroke:none}
@@ -2264,7 +2379,7 @@ body.dark-mode .inv-item-qty-chip{background:color-mix(in srgb,var(--accent) 22%
 .tx-item-img-fallback svg{width:55%;height:55%;opacity:.55}
 .tx-item-num-badge{position:absolute;top:-6px;inset-inline-start:-6px;width:18px;height:18px;border-radius:50%;background:var(--primary);color:#fff;font-size:.62rem;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.2);z-index:2;pointer-events:none}
 /* Name cell */
-.tx-item-info{min-width:0;display:flex;flex-direction:column;gap:3px}
+.tx-item-info{min-width:0;display:flex;flex-direction:column;gap:3px;align-items:flex-start;text-align:start}
 .tx-item-name{font-size:.92rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
 .tx-item-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .tx-item-code{font-size:.7rem;color:var(--muted);font-family:monospace;letter-spacing:.02em}
@@ -3515,7 +3630,7 @@ body.dark-mode .ent-table-card{box-shadow:0 1px 2px rgba(0,0,0,.25)}
 #mov-table{table-layout:fixed}
 #mov-table tbody tr td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap;font-size:.8rem;line-height:1.25;min-height:42px;box-sizing:border-box}
 #mov-table tbody tr td:not(:first-child):not(:last-child):not([data-col="status"]):not([data-col="date"]):not([data-col="pickup"]):not([data-col="bosta"]):not([data-col="items"]){overflow:hidden;text-overflow:ellipsis}
-#mov-table td[data-col="tag"]{overflow:hidden}
+#mov-table td[data-col="tag"]{overflow:hidden;white-space:normal}
 #mov-table tbody tr:last-child td{border-bottom:none}
 #mov-table thead th{padding:9px 10px;font-size:.68rem;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;background:var(--surface);white-space:nowrap;border-bottom:1px solid var(--border)}
 /* Soft vertical column separators — subtle rhythm, not a heavy grid */
@@ -3539,7 +3654,7 @@ body.dark-mode .ent-table-card{box-shadow:0 1px 2px rgba(0,0,0,.25)}
 #mov-table td[data-col="pickup"] .pu-badge-delivered{background:#e5e7eb;color:#4b5563;border:none}
 [data-theme=dark] #mov-table td[data-col="pickup"] .pu-badge-delivered{background:#374151;color:#9ca3af}
 #mov-table th[data-col="bosta"],#mov-table td[data-col="bosta"]{width:108px}
-#mov-table th[data-col="tag"],#mov-table td[data-col="tag"]{width:100px}
+#mov-table th[data-col="tag"],#mov-table td[data-col="tag"]{width:168px}
 #mov-table th[data-col="employee"],#mov-table td[data-col="employee"]{width:44px;min-width:44px}
 /* Financial column group (invoice/paid/remaining) — stronger shared divider
    on the group's outer edges so the three read as one related cluster */
@@ -3606,7 +3721,8 @@ body.dark-mode .mov-col-remaining-zero{color:#64748b!important}
 .mov-date-main{font-size:.82rem;font-weight:400;color:var(--text)}
 .mov-date-sub{font-size:.7rem;color:var(--muted);margin-top:2px}
 /* Client/Supplier cell */
-.mov-client-name{font-weight:400;color:var(--text);font-size:.87rem;text-decoration:none}
+.mov-client-name{font-weight:400;color:var(--text);font-size:.87rem;text-decoration:none;cursor:pointer;transition:color .12s}
+a.mov-client-name:hover{color:var(--accent);text-decoration:underline}
 /* Amount cell */
 .mov-amount{font-weight:700;font-size:.9rem}
 /* Reference cell — right-aligned, prominent */
@@ -3675,8 +3791,7 @@ input[type="number"]{scroll-behavior:auto}
 #mov-table .checkbox{width:14px;height:14px;cursor:pointer;margin:0;vertical-align:middle}
 #mov-table thead th:first-child,#mov-table tbody td:first-child{padding:6px 6px;width:36px;text-align:center!important}
 #mov-table tbody td:first-child input[type="checkbox"]{display:inline-block}
-#mov-table thead th:last-child,#mov-table tbody td:last-child{background:var(--surface);width:52px;border-inline-start:none}
-#mov-table tbody tr:hover td:last-child{background:var(--surface)}
+#mov-table thead th:last-child,#mov-table tbody td:last-child{width:52px}
 #mov-table tbody tr.mov-row-selected td:last-child{background:var(--primary-pale)}
 #mov-table tbody td:last-child .dd-toggle{border-color:transparent;background:transparent}
 #mov-table tbody tr:hover td:last-child .dd-toggle{border-color:var(--border);background:var(--surface2,var(--surface))}
@@ -3817,7 +3932,7 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
 .mgc-action-btn:hover{background:var(--primary-pale);color:var(--accent);border-color:var(--accent)}
 .mgc-action-btn.is-danger:hover{background:#fee2e2;color:#dc2626;border-color:#fecaca}
 /* TAG system — minimal pill chips: light tint fill, thin border, neutral weight */
-.tx-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:.68rem;font-weight:500;cursor:pointer;transition:background-color .12s,border-color .12s;background:color-mix(in srgb,var(--tag-c,var(--muted)) 10%,var(--surface));color:var(--tag-c,var(--text));border:1px solid color-mix(in srgb,var(--tag-c,var(--muted)) 28%,transparent)}
+.tx-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:.68rem;font-weight:500;white-space:nowrap;cursor:pointer;transition:background-color .12s,border-color .12s;background:color-mix(in srgb,var(--tag-c,var(--muted)) 10%,var(--surface));color:var(--tag-c,var(--text));border:1px solid color-mix(in srgb,var(--tag-c,var(--muted)) 28%,transparent)}
 .tx-tag-neutral{--tag-c:var(--muted)!important;background:var(--surface2,var(--surface));color:var(--text);border-color:var(--border)}
 .tx-tag:hover{background:color-mix(in srgb,var(--tag-c,var(--muted)) 16%,var(--surface))}
 .tx-tag .tag-del{opacity:0;font-size:.7rem;line-height:1;cursor:pointer;transition:opacity .12s;margin-right:-2px}
@@ -6550,24 +6665,36 @@ body.pu-dragging-active .pu-group:not(.pu-group-dragging){box-shadow:0 2px 8px r
 .pu-pending-table-wrap{display:flex;flex-direction:column;gap:0;width:100%}
 .pu-pt-header{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--surface);border:1.5px solid var(--border);border-radius:8px 8px 0 0;font-size:.71rem;flex-wrap:wrap;position:sticky;top:0;z-index:2}
 .pu-pt-check-wrap{display:flex;align-items:center;flex-shrink:0}
+.pu-pt-shift-hint{font-size:.63rem;color:var(--muted);font-weight:600;white-space:nowrap;opacity:.75;border:1px solid var(--border);border-radius:4px;padding:1px 5px;cursor:help}
+@media (max-width:1100px){.pu-pt-shift-hint{display:none}}
 .pu-pt-move-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;font-size:.72rem;border:none;background:#2563eb;color:#fff;cursor:pointer;font-weight:600;white-space:nowrap;transition:background .14s;margin-right:auto}
 .pu-pt-move-btn:hover{background:#1d4ed8}
 .pu-pt-list{display:flex;flex-direction:column;border:1.5px solid var(--border);border-top:none;border-radius:0 0 8px 8px;overflow:hidden}
-.pu-pt-row{display:grid;grid-template-columns:20px 80px 1fr auto 76px;align-items:center;gap:6px;padding:7px 10px;border-bottom:1px solid var(--border);cursor:grab;transition:background .1s;direction:rtl}
+.pu-pt-row{display:grid;grid-template-columns:20px 80px 1fr auto 76px;align-items:center;gap:6px;padding:7px 10px;border-bottom:1px solid var(--border);cursor:grab;transition:background .1s;direction:rtl;position:relative;user-select:none;-webkit-user-select:none}
+/* While Shift is held, rows read as range-select targets (no text selection, no grab cursor) */
+.pu-pt-list.pu-shift-active .pu-pt-row{cursor:pointer}
+/* Newest orders highlight — right accent bar + soft amber wash */
+.pu-pt-row-new{background:color-mix(in srgb,#f59e0b 7%,var(--surface))}
+.pu-pt-row-new::before{content:'';position:absolute;top:0;bottom:0;right:0;width:3px;background:linear-gradient(180deg,#f59e0b 0%,#fbbf24 100%)}
+.pu-pt-row-new:hover{background:color-mix(in srgb,#f59e0b 12%,var(--surface))}
+.pu-pt-new-badge{display:inline-flex;align-items:center;font-size:.6rem;font-weight:800;color:#92400e;background:#fef3c7;border:1px solid #fde68a;padding:0 4px;border-radius:4px;line-height:1.5;white-space:nowrap;flex-shrink:0}
+[data-theme=dark] .pu-pt-row-new{background:color-mix(in srgb,#f59e0b 11%,var(--surface))}
+[data-theme=dark] .pu-pt-row-new:hover{background:color-mix(in srgb,#f59e0b 17%,var(--surface))}
+[data-theme=dark] .pu-pt-new-badge{color:#fcd34d;background:#78350f;border-color:#92400e}
 .pu-pt-row:active{cursor:grabbing}
 .pu-pt-row-dragging{opacity:.42;background:color-mix(in srgb,#2563eb 10%,var(--surface))!important;transform:scale(.98);transition:transform .1s}
 .pu-group.pu-group-droptarget{outline:2.5px solid #2563eb;outline-offset:-2px;background:color-mix(in srgb,#2563eb 7%,var(--surface));transform:scale(1.018);box-shadow:0 0 0 4px color-mix(in srgb,#2563eb 18%,transparent),0 8px 28px rgba(37,99,235,.18);transition:transform .15s cubic-bezier(.34,1.56,.64,1),box-shadow .15s,background .1s}
 .pu-group.pu-group-droptarget .pu-group-accent{background:linear-gradient(90deg,#2563eb 0%,#60a5fa 100%)!important}
 .pu-pt-row:last-child{border-bottom:none}
 .pu-pt-row:hover{background:color-mix(in srgb,var(--primary) 4%,var(--surface))}
-.pu-pt-row-sel{background:color-mix(in srgb,#2563eb 7%,var(--surface))!important}
+.pu-pt-row-sel,.pu-pt-row-sel.pu-pt-row-new{background:color-mix(in srgb,#2563eb 7%,var(--surface))!important}
 .pu-pt-ref{display:inline-flex;align-items:center;font-weight:800;font-size:.76rem;color:#1e40af;font-family:monospace;white-space:nowrap;background:#dbeafe;border:1px solid #bfdbfe;padding:1px 7px;border-radius:5px}
 [data-theme=dark] .pu-pt-ref{color:#93c5fd;background:#1e3a8a;border-color:#1e40af}
 .pu-pt-client{font-size:.8rem;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pu-pt-ship{font-size:.68rem;color:var(--muted);white-space:nowrap;display:inline-flex;align-items:center;gap:2px}
 .pu-pt-total{font-size:.79rem;font-weight:700;color:var(--text);text-align:left;white-space:nowrap}
 [data-theme=dark] .pu-pt-row:hover{background:color-mix(in srgb,var(--primary) 8%,var(--surface))}
-[data-theme=dark] .pu-pt-row-sel{background:color-mix(in srgb,#2563eb 12%,var(--surface))!important}
+[data-theme=dark] .pu-pt-row-sel,[data-theme=dark] .pu-pt-row-sel.pu-pt-row-new{background:color-mix(in srgb,#2563eb 12%,var(--surface))!important}
 .pu-pt-bulk-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px 12px;border:1.5px dashed var(--border);border-radius:8px;background:var(--surface);color:var(--muted);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s;margin-bottom:4px}
 .pu-pt-bulk-btn:hover{border-color:#2563eb;color:#2563eb;background:color-mix(in srgb,#2563eb 5%,var(--surface))}
 .pu-pt-create-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px 12px;border:none;border-radius:8px;background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);color:#fff;font-size:.83rem;font-weight:700;cursor:pointer;transition:all .15s;margin-bottom:8px;box-shadow:0 2px 8px rgba(37,99,235,.25)}
@@ -6987,6 +7114,29 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
   transition:width .3s ease;
 }
 .dashboard-v2 .ds-myorders-bar-label{font-size:11.5px;color:var(--ds-muted)}
+
+.dashboard-v2 .ds-ship-tabs{
+  display:flex;gap:4px;margin:2px 0 12px;border-bottom:1px solid var(--ds-border);
+}
+.dashboard-v2 .ds-ship-tab{
+  border:none;background:transparent;color:var(--ds-muted);cursor:pointer;
+  font-size:.78rem;font-weight:600;padding:7px 4px;display:flex;align-items:center;gap:6px;
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;
+}
+.dashboard-v2 .ds-ship-tab:hover{color:var(--ds-text)}
+.dashboard-v2 .ds-ship-tab.active{color:var(--ds-accent);border-bottom-color:var(--ds-accent)}
+.dashboard-v2 .ds-ship-tab-count{
+  font-size:.68rem;font-weight:700;border-radius:99px;padding:1px 7px;background:var(--ds-border);color:var(--ds-muted);
+}
+.dashboard-v2 .ds-ship-tab.active .ds-ship-tab-count{background:var(--ds-accent);color:#fff}
+.dashboard-v2 .ds-ship-tab.is-danger .ds-ship-tab-count{background:#fee2e2;color:#b91c1c}
+.dashboard-v2 .ds-ship-tab.is-danger.active .ds-ship-tab-count{background:#dc2626;color:#fff}
+body.dark-mode .dashboard-v2 .ds-ship-tab.is-danger .ds-ship-tab-count{background:#450a0a;color:#fca5a5}
+
+.dashboard-v2 .ds-ship-subbar{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;
+}
+.dashboard-v2 .ds-ship-total{font-size:.72rem;color:var(--ds-muted);font-weight:600}
 
 .ds-live-dot{
   display:inline-block;width:8px;height:8px;margin-right:6px;
@@ -7459,9 +7609,26 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
       <span data-i18n="dashShippingTitle">قيد الشحن</span>
       <span class="ds-live-dot" title="تحديث مباشر"></span>
-      <span id="dash-pickedup-count" style="margin-right:6px;font-size:.75rem;background:var(--accent);color:#fff;border-radius:99px;padding:1px 8px"></span>
-      <span id="dash-delivered-today" class="ds-delivered-today" style="display:none"></span>
     </h4>
+    <div class="ds-ship-tabs">
+      <button type="button" class="ds-ship-tab active" data-tab="shipping" onclick="_setDashShipTab('shipping')">
+        <span data-i18n="dashShippingTitle">قيد الشحن</span><span id="dash-tab-count-shipping" class="ds-ship-tab-count">0</span>
+      </button>
+      <button type="button" class="ds-ship-tab" data-tab="delivered" onclick="_setDashShipTab('delivered')">
+        <span data-i18n="dashDeliveredTitle">تم التسليم</span><span id="dash-tab-count-delivered" class="ds-ship-tab-count">0</span>
+      </button>
+      <button type="button" class="ds-ship-tab is-danger" data-tab="issues" onclick="_setDashShipTab('issues')">
+        <span data-i18n="dashShipIssuesTitle">مشاكل الشحن</span><span id="dash-tab-count-issues" class="ds-ship-tab-count">0</span>
+      </button>
+    </div>
+    <div id="dash-ship-subbar" class="ds-ship-subbar" style="display:none">
+      <span class="ds-period-toggle" style="display:flex;gap:4px;font-size:.72rem">
+        <button type="button" class="ds-period-btn active" data-period="today" onclick="_setDashDeliveredPeriod('today')" data-i18n="today">اليوم</button>
+        <button type="button" class="ds-period-btn" data-period="yesterday" onclick="_setDashDeliveredPeriod('yesterday')" data-i18n="yesterday">أمس</button>
+        <button type="button" class="ds-period-btn" data-period="7d" onclick="_setDashDeliveredPeriod('7d')" data-i18n="last7Days">آخر 7 أيام</button>
+      </span>
+      <span id="dash-ship-total" class="ds-ship-total"></span>
+    </div>
     <div id="dash-staff-pickedup" class="ds-ship-list"></div>
     <div class="ds-card-foot"><a class="ds-link" href="#movements" onclick="event.preventDefault();navigateTo('movements')">عرض الكل ›</a></div>
   </div>
@@ -9273,9 +9440,9 @@ body.dark-mode #ds-explain-card{background:#1a2620;}
       <table id="fu-table" style="width:100%;border-collapse:collapse;font-size:.82rem;white-space:nowrap">
         <thead>
           <tr style="background:var(--bg-alt);text-align:right;border-bottom:1px solid var(--border)">
-            <th style="padding:8px 12px;font-weight:600;font-size:.72rem;color:var(--muted)" title="رقم التيكيت">
+            <th style="padding:8px 12px;font-weight:600;font-size:.72rem;color:var(--muted)" title="Ticket Number">
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><path d="M3 9a2 2 0 012-2h14a2 2 0 012 2v1.5a1.5 1.5 0 000 3V15a2 2 0 01-2 2H5a2 2 0 01-2-2v-1.5a1.5 1.5 0 000-3z"/><line x1="12" y1="8" x2="12" y2="16" stroke-dasharray="2 2"/></svg>
-              رقم التيكيت
+              Ticket #
             </th>
             <th style="padding:8px 12px;font-weight:600;font-size:.72rem;color:var(--muted)">
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -13425,6 +13592,9 @@ const TRANSLATIONS = {
   topSellers:{ar:'الأكثر مبيعاً',en:'Top Sellers'},lowSellers:{ar:'الأقل مبيعاً',en:'Lowest Sellers'},
   lowStock:{ar:'أصناف قاربت النفاد',en:'Low Stock Items'},recentTx:{ar:'آخر المعاملات',en:'Recent Transactions'},
   dashShippingTitle:{ar:'قيد الشحن',en:'In Shipping'},
+  dashDeliveredTitle:{ar:'تم التسليم',en:'Delivered'},
+  dashShipIssuesTitle:{ar:'مشاكل الشحن',en:'Shipping Issues'},
+  last7Days:{ar:'آخر 7 أيام',en:'Last 7 Days'},
   product:{ar:'الصنف',en:'Product'},qty:{ar:'الكمية',en:'Qty'},total:{ar:'الإجمالي',en:'Total'},
   date:{ar:'التاريخ',en:'Date'},type:{ar:'النوع',en:'Type'},client:{ar:'العميل',en:'Client'},
   status:{ar:'الحالة',en:'Status'},current:{ar:'الحالي',en:'Current'},minStock:{ar:'الحد الأدنى',en:'Min Stock'},
@@ -20706,44 +20876,82 @@ function renderDashMyOrdersList(sel, items) {
     </tr>`).join('') + `</tbody></table>`;
 }
 
+let _dashShipTab = 'shipping';
+let _dashDeliveredPeriod = 'today';
+const ISSUE_SHIP_KEYS = ['RETURNED', 'FAILED_ATTEMPT', 'DELIVERY_FAILED'];
+
+function _setDashShipTab(tab) {
+  if (tab === _dashShipTab) return;
+  _dashShipTab = tab;
+  qsa('.ds-ship-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  const subbar = qs('#dash-ship-subbar');
+  if (subbar) subbar.style.display = tab === 'delivered' ? '' : 'none';
+  _renderStaffDashboard(isAdmin());
+}
+
+function _setDashDeliveredPeriod(period) {
+  if (period === _dashDeliveredPeriod) return;
+  _dashDeliveredPeriod = period;
+  qs('#dash-ship-subbar')?.querySelectorAll('.ds-period-btn').forEach(b => b.classList.toggle('active', b.dataset.period === period));
+  _renderStaffDashboard(isAdmin());
+}
+
+function _dashPeriodMatches(ts, period) {
+  if (!ts) return false;
+  const d = new Date(ts);
+  const now = new Date();
+  if (period === 'today') return d.toDateString() === now.toDateString();
+  if (period === 'yesterday') {
+    const y = new Date(now); y.setDate(y.getDate() - 1);
+    return d.toDateString() === y.toDateString();
+  }
+  if (period === '7d') {
+    const start = new Date(now); start.setDate(start.getDate() - 7);
+    return d >= start && d <= now;
+  }
+  return true;
+}
+
 function _renderStaffDashboard(adminMode) {
   const staffSec = qs('#dash-staff-section');
   if (staffSec) staffSec.style.display = '';
   if (!adminMode) _loadMyOrdersWidget();
 
   const allTx = transactions || [];
-
-  // قيد الشحن — كل مبيعات دخلت مرحلة الشحن (من Created) ولم تُسلّم بعد
-  const shipping = allTx
+  const salesTx = allTx
     .filter(t => !t.cancelled && t.type === 'مبيعات')
     .map(t => ({ tx: t, status: _dashShipStatus(t) }))
-    .filter(x => x.status && x.status.key !== 'DELIVERED')
-    // الأقرب للعميل أولاً (أعلى rank)، ثم الأحدث تاريخاً
-    .sort((a, b) => (b.status.rank - a.status.rank) || (new Date(b.tx.date) - new Date(a.tx.date)))
-    .slice(0, 10);
+    .filter(x => x.status);
 
-  const countEl = qs('#dash-pickedup-count');
-  if (countEl) countEl.textContent = shipping.length > 0 ? String(shipping.length) : '';
+  // قيد الشحن — كل مبيعات دخلت مرحلة الشحن ولم تُسلّم بعد ولا توجد بها مشكلة
+  const shipping = salesTx
+    .filter(x => x.status.key !== 'DELIVERED' && !ISSUE_SHIP_KEYS.includes(x.status.key))
+    .sort((a, b) => (b.status.rank - a.status.rank) || (new Date(b.tx.date) - new Date(a.tx.date)));
 
-  renderDashShipList('#dash-staff-pickedup', shipping);
+  // مشاكل الشحن — مرتجع أو محاولة/تسليم فاشل
+  const issues = salesTx
+    .filter(x => ISSUE_SHIP_KEYS.includes(x.status.key))
+    .sort((a, b) => new Date(b.tx.date) - new Date(a.tx.date));
 
-  // عدد الأوردرات التي تم توصيلها اليوم
-  const todayStr = new Date().toDateString();
-  const deliveredToday = allTx.filter(t => {
-    if (t.cancelled || t.type !== 'مبيعات') return false;
-    if (_dashShipStatus(t)?.key !== 'DELIVERED') return false;
-    const ts = t.deliveredAt || t.bostaLastSync;
-    return ts && new Date(ts).toDateString() === todayStr;
-  }).length;
-  const deliveredEl = qs('#dash-delivered-today');
-  if (deliveredEl) {
-    if (deliveredToday > 0) {
-      deliveredEl.style.display = '';
-      deliveredEl.innerHTML = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> ${fmtN(deliveredToday)} تم توصيلها اليوم`;
-    } else {
-      deliveredEl.style.display = 'none';
-    }
-  }
+  // تم التسليم — ضمن الفترة الزمنية المختارة
+  const delivered = salesTx
+    .filter(x => x.status.key === 'DELIVERED' && _dashPeriodMatches(x.tx.deliveredAt || x.tx.bostaLastSync, _dashDeliveredPeriod))
+    .sort((a, b) => new Date(b.tx.deliveredAt || b.tx.bostaLastSync) - new Date(a.tx.deliveredAt || a.tx.bostaLastSync));
+
+  qs('#dash-tab-count-shipping').textContent = String(shipping.length);
+  qs('#dash-tab-count-delivered').textContent = String(delivered.length);
+  qs('#dash-tab-count-issues').textContent = String(issues.length);
+
+  const totalEl = qs('#dash-ship-total');
+  if (totalEl) totalEl.textContent = _dashShipTab === 'delivered' ? `${fmtN(delivered.length)} أوردر` : '';
+
+  const byTab = { shipping, delivered, issues };
+  const emptyMsgs = {
+    shipping: 'لا توجد طلبات قيد الشحن',
+    delivered: 'لا توجد أوردرات تم تسليمها في هذه الفترة',
+    issues: 'لا توجد مشاكل شحن حالياً 🎉',
+  };
+  renderDashShipList('#dash-staff-pickedup', byTab[_dashShipTab].slice(0, 10), emptyMsgs[_dashShipTab]);
 }
 
 /** يحدد مرحلة الشحن الحالية للمعاملة، أو null إن لم تدخل الشحن بعد. rank أعلى = أقرب للعميل */
@@ -20767,10 +20975,10 @@ function _dashShipStatus(tx) {
   return null;
 }
 
-function renderDashShipList(sel, items) {
+function renderDashShipList(sel, items, emptyMsg) {
   const el = qs(sel);
   if (!el) return;
-  if (!items.length) { el.innerHTML = '<div class="ds-empty">لا توجد طلبات قيد الشحن</div>'; return; }
+  if (!items.length) { el.innerHTML = `<div class="ds-empty">${esc(emptyMsg || 'لا توجد طلبات قيد الشحن')}</div>`; return; }
   el.innerHTML = `<table class="ds-ship-table"><tbody>` + items.map(({ tx, status }) => {
     const shopifyUrl = tx.shopifyOrderId ? `https://admin.shopify.com/store/soulia-2/orders/${tx.shopifyOrderId}` : '';
     const bostaTracking = tx.bostaTrackingNumber || '';
@@ -20896,10 +21104,12 @@ function movementRefCell(tx) {
   const r = (tx.ref || '').trim();
   if (!r) return '-';
   const base = movementBaseRef(r) || r;
+  const isPlainReturn = /(-RET)$/i.test(r) && !isMovExchangeReturn(tx);
   let tag = '';
-  if (/(-RET)$/i.test(r)) tag = isMovExchangeReturn(tx) ? 'استبدال · إرجاع' : 'استرجاع';
+  if (/(-RET)$/i.test(r)) tag = isMovExchangeReturn(tx) ? 'استبدال · إرجاع' : '';
   else if (/(-EXC)$/i.test(r)) tag = 'استبدال · بديل';
-  return `<div><a href="#" onclick="event.preventDefault();event.stopPropagation();openOrderView('${esc(tx._id)}')" style="color:var(--text);font-weight:800;text-decoration:none;cursor:pointer" title="انقر لعرض تفاصيل الفاتورة">${esc(fmtRef(base))}</a>${tag ? ` <span class="badge" style="font-size:.58rem;vertical-align:middle;background:var(--primary-pale);color:var(--primary)">${tag}</span>` : ''}</div>`;
+  const refLabel = isPlainReturn ? r : base;
+  return `<div><a href="#" onclick="event.preventDefault();event.stopPropagation();openOrderView('${esc(tx._id)}')" style="color:var(--text);font-weight:800;text-decoration:none;cursor:pointer" title="انقر لعرض تفاصيل الفاتورة">${esc(fmtRef(refLabel))}</a>${tag ? ` <span class="badge" style="font-size:.58rem;vertical-align:middle;background:var(--primary-pale);color:var(--primary)">${tag}</span>` : ''}</div>`;
 }
 function movementKindBadgeCompact(tx) {
   const en = currentLang === 'en';
@@ -24461,6 +24671,7 @@ function initAddressAutocomplete(inputId) {
       item.addEventListener('mousedown', e => {
         e.preventDefault();
         input.value = s;
+        input.dispatchEvent(new Event('input'));
         hide();
         const errEl = document.getElementById(inputId === 'tx-address' ? 'err-address' : 'err-edit-address');
         if (errEl) errEl.textContent = '';
@@ -27518,7 +27729,7 @@ function renderMovementTxRow(tx) {
     <td data-col="type" style="text-align:center;white-space:nowrap">${movementKindBadgeCompact(tx)}</td>
     <td data-col="client">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        <span class="mov-client-name">${tx.client ? esc(tx.client) : '<span style="color:var(--muted)">—</span>'}</span>
+        ${tx.client ? `<a href="#" class="mov-client-name" onclick="event.preventDefault();event.stopPropagation();openOrderView('${esc(tx._id)}')" title="انقر لعرض تفاصيل الفاتورة">${esc(tx.client)}</a>` : '<span class="mov-client-name" style="color:var(--muted)">—</span>'}
         ${commentIcon}
         ${mentionIcon}
         ${(tx.editHistory && tx.editHistory.length) ? '<span class="mov-edited-mini" title="تم التعديل" onclick="event.stopPropagation();openOrderView(\''+esc(tx._id)+'\')"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>' : ''}
@@ -27655,12 +27866,12 @@ function renderMovements() {
     if (multiRefTokens.length) {
       // Include ref without leading # so "1845" matches "#1845" stored value
       const refRaw = (tx.ref || '').replace(/^#/, '');
-      const refBlob = normalizeUiSearch([tx.ref, refRaw, movementBaseRef(tx.ref || ''), tx.phone].join(' '));
+      const refBlob = normalizeUiSearch([tx.ref, refRaw, movementBaseRef(tx.ref || ''), tx.phone, tx.bostaTrackingNumber].join(' '));
       if (!multiRefTokens.some(t => refBlob.includes(t))) return false;
     }
     // Regular AND text search
     if (tokens.length) {
-      const blob = normalizeUiSearch([tx.client, tx.ref, movementBaseRef(tx.ref || ''), tx.phone, tx.notes, tx.type, tx.employee, String(tx.total || '')].join(' '));
+      const blob = normalizeUiSearch([tx.client, tx.ref, movementBaseRef(tx.ref || ''), tx.phone, tx.notes, tx.type, tx.employee, tx.bostaTrackingNumber].join(' '));
       if (!tokens.every(t => blob.includes(t))) return false;
     }
     // Inline #tag filter from search bar
@@ -27957,6 +28168,7 @@ function setMovViewMode(mode) {
 })();
 
 /* ===== TAG system ===== */
+const MOV_TAG_CELL_FULL_LIMIT = 2;
 function renderTxTagsCell(txId) {
   const tags = getTxTagObjects(txId);
   if (!tags.length) {
@@ -27964,6 +28176,13 @@ function renderTxTagsCell(txId) {
     <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>TAG
   </button>`;
   }
+  // Up to MOV_TAG_CELL_FULL_LIMIT tags: show each as its own full, untruncated pill.
+  if (tags.length <= MOV_TAG_CELL_FULL_LIMIT) {
+    return `<div style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px">${tags.map(t => `
+      <span class="tx-tag" style="--tag-c:${esc(t.bg)}" onclick="event.stopPropagation();toggleTxTagSummaryPopup(event,'${esc(txId)}',this.closest('div'))">${esc(t.label)}</span>
+    `).join('')}</div>`;
+  }
+  // Beyond the limit: fall back to the compact "first tag + N more" summary.
   const first = tags[0];
   const restCount = tags.length - 1;
   return `<button class="tx-tag-summary" style="--tag-c:${esc(first.bg)}" title="${esc(tags.map(t=>t.label).join(', '))}" onclick="event.stopPropagation();toggleTxTagSummaryPopup(event,'${esc(txId)}',this)">
@@ -28076,6 +28295,7 @@ function closeTagDropdown() {
 async function applyTagFromDropdown(txId, label, color, bg) {
   await addTxTag(txId, label, color, bg);
   closeTagDropdown();
+  refreshInvoiceView(txId);
 }
 async function saveCustomTag(txId) {
   const inp = qs('#tag-dd-custom-input'); if (!inp) return;
@@ -28086,12 +28306,18 @@ async function saveCustomTag(txId) {
   const bg = colors[Math.floor(Math.random() * colors.length)];
   await addTxTag(txId, label, '#fff', bg);
   closeTagDropdown();
+  refreshInvoiceView(txId);
 }
 async function deleteTxTag(txId, label) {
   await removeTxTag(txId, label);
   _refreshTagCell(txId);
   // refresh TAG filter if active
   if (movTagFilter === label) { movTagFilter = ''; renderMovements(); } else { _rebuildTagFilterRow(); }
+}
+async function deleteInvViewTag(txId, label) {
+  await removeTxTag(txId, label);
+  _rebuildTagFilterRow();
+  refreshInvoiceView(txId);
 }
 function _refreshTagCell(txId) {
   // Update all tag cells for this txId without full re-render
@@ -28882,6 +29108,8 @@ let editTxItems = [];
 let editAppliedCodes = []; // multi-code for edit modal
 let editManualDiscount = 0; // separate manual discount for edit modal
 let editTxId = '';
+let _editOrigNotes = ''; // notes snapshot at modal-open — compared against on save so a background socket update to tx.notes (e.g. from another user/Bosta sync) can't be mistaken for an edit the user made
+let _editNotesTouched = false; // true only once the notes field is focused during this edit session — guards against browser spellcheck/extensions silently rewriting the field's value (e.g. inserting spaces) without the user ever intending to edit notes
 
 function showEditConfirmDialog({ changes, vaultDelta, vaultNote, tx }) {
   return new Promise(resolve => {
@@ -29008,6 +29236,85 @@ function showEditConfirmDialog({ changes, vaultDelta, vaultNote, tx }) {
     overlay.querySelector('#edit-confirm-cancel').onclick = () => { document.body.removeChild(overlay); resolve(false); };
     overlay.addEventListener('click', e => { if (e.target === overlay) { document.body.removeChild(overlay); resolve(false); } });
   });
+}
+
+// سطر ملخص بيانات الطلب المعروض فوق القسم المطوي — يقرأ من الحقول الحية إن كانت موجودة
+// (بعد تعديل لم يُحفظ بعد) وإلا من المعاملة نفسها، حتى يظل الملخص مطابقاً لما سيُحفظ
+function _buildEditMetaSummary(tx) {
+  const val = (sel, fallback) => {
+    const el = qs(sel);
+    const v = el ? (el.value || '').trim() : '';
+    return v || (fallback || '');
+  };
+  const num = (sel, fallback) => {
+    const el = qs(sel);
+    return el ? (Number(el.value) || 0) : (Number(fallback) || 0);
+  };
+  const ICO = {
+    client: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg>',
+    phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>',
+    city: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+    ship: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
+    deposit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>'
+  };
+  const chip = (icon, content, extraCls) =>
+    `<span class="edit-tx-meta-chip${extraCls ? ' ' + extraCls : ''}"><span class="edit-tx-meta-ico">${icon}</span>${content}</span>`;
+
+  const isSale = tx.type === 'مبيعات';
+  const parts = [];
+
+  const client = val('#edit-tx-client', tx.client);
+  if (client) parts.push(chip(ICO.client, `<strong>${esc(client)}</strong>`));
+
+  const phone = val('#edit-tx-phone', tx.phone ? cleanPastedPhone(tx.phone) : '');
+  if (phone) parts.push(chip(ICO.phone, `<span dir="ltr">${esc(phone)}</span>`));
+
+  if (isSale) {
+    const city = val('#edit-tx-city', tx.shippingCity);
+    if (city) parts.push(chip(ICO.city, esc(city)));
+    // الشحن: الشركة + التكلفة معاً في عنصر واحد
+    const shipCo = val('#edit-tx-shipco', tx.shipCo);
+    const shipCost = num('#edit-tx-shipcost', tx.shipCost);
+    if (shipCo || shipCost > 0) {
+      const label = [shipCo ? esc(shipCo) : '', shipCost > 0 ? fmtJT(shipCost) : ''].filter(Boolean).join(' — ');
+      parts.push(chip(ICO.ship, label));
+    }
+  }
+
+  // الدفع: شعار الوسيلة بدلاً من اسمها، وبجانبه قيمة الديبوزت
+  const payment = isSale ? val('#edit-tx-payment', tx.payment) : '';
+  const dep = num('#edit-tx-deposit', tx.deposit);
+  if (payment || dep > 0) {
+    const logo = payment ? payMethodIcon(payment, 14) : ICO.deposit;
+    const depLabel = dep > 0 ? `<strong>${fmtJT(dep)}</strong>` : '<span class="edit-tx-meta-empty">بدون ديبوزت</span>';
+    parts.push(chip(logo, depLabel, 'is-pay') );
+  }
+
+  if (!parts.length) return '<span class="edit-tx-meta-empty">لا توجد بيانات مسجّلة</span>';
+  return parts.join('');
+}
+
+function isPurchaseTx(tx) { return tx?.type === 'مشتريات'; }
+
+// فتح/طي قسم بيانات الطلب. force===true يفتحه دائماً (يُستخدم عند وجود خطأ تحقق بداخله)
+function toggleEditMetaPanel(force) {
+  const body = qs('#edit-tx-meta-body');
+  const btn = qs('#edit-tx-meta-toggle');
+  if (!body || !btn) return;
+  const willOpen = force === true ? true : body.hasAttribute('hidden');
+  if (willOpen) body.removeAttribute('hidden'); else body.setAttribute('hidden', '');
+  btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  btn.classList.toggle('is-open', willOpen);
+  const t = willOpen ? 'إخفاء بيانات الطلب' : 'تعديل بيانات الطلب';
+  btn.setAttribute('title', t);
+  btn.setAttribute('aria-label', t);
+}
+
+// يعيد رسم سطر الملخص بعد أي تعديل في حقول القسم
+function _refreshEditMetaSummary() {
+  const el = qs('#edit-tx-meta-summary');
+  const tx = transactions.find(t => t._id === editTxId);
+  if (el && tx) el.innerHTML = _buildEditMetaSummary(tx);
 }
 
 function _buildEditSupplierField(tx) {
@@ -29164,25 +29471,27 @@ async function openEditMovement(id) {
   const refRetailEdit = isSale || isPurchase;
 
   const supplierField = isPurchase ? `
-    <div class="form-group"><label>المورد</label>${_buildEditSupplierField(tx)}</div>` :
-    `<div class="form-group"><label>العميل <span style="color:var(--red)">*</span></label><input type="text" id="edit-tx-client" value="${esc(tx.client || '')}" oninput="qs('#err-edit-client')&&(qs('#err-edit-client').textContent='');this.style.borderColor=''"><div class="field-error" id="err-edit-client"></div></div>`;
+    <div class="form-group sp-5"><label>المورد</label>${_buildEditSupplierField(tx)}</div>` :
+    `<div class="form-group sp-5"><label>العميل <span style="color:var(--red)">*</span></label><input type="text" id="edit-tx-client" value="${esc(tx.client || '')}" oninput="qs('#err-edit-client')&&(qs('#err-edit-client').textContent='');this.style.borderColor=''"><div class="field-error" id="err-edit-client"></div></div>`;
 
   const invoiceImagesSection = isPurchase ? _buildEditInvoiceImages(tx) : '';
 
   const debtFieldLabel = isPurchase ? 'العربون (المدفوع مقدماً)' : 'الديبوزت';
-  const debtField = `<div class="form-group"><label>${debtFieldLabel}</label><input type="text" inputmode="numeric" id="edit-tx-deposit" value="${tx.deposit || 0}" oninput="this.value=this.value.replace(/[^0-9]/g,'');recalcEditTx()" onkeydown="if(event.key==='.'||event.key===',')event.preventDefault()"></div>`;
-  const refField = `<div class="form-group"><label>${isPurchase ? 'رقم الفاتورة' : 'المرجع'}</label><input type="text" id="edit-tx-ref" value="${esc(tx.ref || '')}" ${refRetailEdit ? 'inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"' : ''}></div>`;
-  const cityField = isSale ? `<div class="form-group"><label>المحافظة / المدينة <span style="color:var(--red)">*</span></label><div class="city-ac-trigger" id="edit-tx-city-wrap"><input type="text" id="edit-tx-city" value="${esc(tx.shippingCity||'')}" placeholder="اختر المدينة..." autocomplete="off" readonly style="background:var(--bg-alt,#f3f4f6);cursor:pointer"></div><div class="field-error" id="err-edit-city"></div></div>` : '';
-  const addressField = isSale ? `<div class="form-group full"><label>عنوان التوصيل التفصيلي <span style="color:var(--red)">*</span></label><input type="text" id="edit-tx-address" value="${esc((tx.shippingAddress||'').replace(/^العنوان:\s*/,'').trim())}" placeholder="الشارع، الحي، رقم المبنى..."><div class="field-error" id="err-edit-address"></div></div>` : '';
-  const shipCoField = isSale ? `<div class="form-group"><label>شركة الشحن</label><select id="edit-tx-shipco" onchange="updateEditShipCost();recalcEditTx()"><option value=""${!tx.shipCo ? ' selected' : ''}>بدون شحن</option>${shipCoOpts}</select></div>` : '';
-  const zoneField = isSale ? `<div class="form-group"><label>المنطقة</label><select id="edit-tx-zone" onchange="updateEditShipCost();recalcEditTx()"><option value="cairo" ${tx.shipZone === 'cairo' ? 'selected' : ''}>القاهرة</option><option value="gov" ${tx.shipZone === 'gov' ? 'selected' : ''}>المحافظات</option></select></div>` : '';
-  const shipCostField = isSale ? `<div class="form-group"><label>تكلفة الشحن</label><input type="text" inputmode="numeric" id="edit-tx-shipcost" value="${tx.shipCost || 0}" onfocus="this.select()" oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\..*?)\..*/g,'$1');recalcEditTx()"></div>` : '';
-  const paymentField = isSale ? `<div class="form-group"><label>طريقة الدفع</label><select id="edit-tx-payment"><option value="كاش" ${tx.payment === 'كاش' ? 'selected' : ''}>كاش</option><option value="آجل" ${tx.payment === 'آجل' ? 'selected' : ''}>آجل</option><option value="فودافون كاش" ${tx.payment === 'فودافون كاش' ? 'selected' : ''}>فودافون كاش</option><option value="Instapay" ${tx.payment === 'Instapay' ? 'selected' : ''}>Instapay</option><option value="تحويل بنكي" ${tx.payment === 'تحويل بنكي' ? 'selected' : ''}>تحويل بنكي</option></select></div>` : '';
-  const notesField = `<div class="form-group full"><label>ملاحظات</label><input type="text" id="edit-tx-notes" value="${esc(tx.notes || '')}"></div>`;
-  const dateField = `<div class="form-group">
+  const debtField = `<div class="form-group sp-3 is-num"><label>${debtFieldLabel}</label><input type="text" inputmode="numeric" id="edit-tx-deposit" value="${tx.deposit || 0}" oninput="this.value=this.value.replace(/[^0-9]/g,'');recalcEditTx()" onkeydown="if(event.key==='.'||event.key===',')event.preventDefault()"></div>`;
+  const refField = `<div class="form-group sp-3 is-num"><label>${isPurchase ? 'رقم الفاتورة' : 'المرجع'}</label><input type="text" id="edit-tx-ref" value="${esc(tx.ref || '')}" ${refRetailEdit ? 'inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"' : ''}></div>`;
+  const cityField = isSale ? `<div class="form-group sp-4"><label>المحافظة / المدينة <span style="color:var(--red)">*</span></label><div class="city-ac-trigger" id="edit-tx-city-wrap"><input type="text" id="edit-tx-city" value="${esc(tx.shippingCity||'')}" placeholder="اختر المدينة..." autocomplete="off" readonly style="background:var(--bg-alt,#f3f4f6);cursor:pointer"></div><div class="field-error" id="err-edit-city"></div></div>` : '';
+  const addressField = isSale ? `<div class="form-group sp-8"><label>عنوان التوصيل التفصيلي <span style="color:var(--red)">*</span></label><input type="text" id="edit-tx-address" value="${esc((tx.shippingAddress||'').replace(/^العنوان:\s*/,'').trim())}" placeholder="الشارع، الحي، رقم المبنى..."><div class="field-error" id="err-edit-address"></div></div>` : '';
+  const shipCoField = isSale ? `<div class="form-group sp-5"><label>شركة الشحن</label><select id="edit-tx-shipco" onchange="updateEditShipCost();recalcEditTx()"><option value=""${!tx.shipCo ? ' selected' : ''}>بدون شحن</option>${shipCoOpts}</select></div>` : '';
+  const zoneField = isSale ? `<div class="form-group sp-4"><label>المنطقة</label><select id="edit-tx-zone" onchange="updateEditShipCost();recalcEditTx()"><option value="cairo" ${tx.shipZone === 'cairo' ? 'selected' : ''}>القاهرة</option><option value="gov" ${tx.shipZone === 'gov' ? 'selected' : ''}>المحافظات</option></select></div>` : '';
+  const shipCostField = isSale ? `<div class="form-group sp-3 is-num"><label>تكلفة الشحن</label><input type="text" inputmode="numeric" id="edit-tx-shipcost" value="${tx.shipCost || 0}" onfocus="this.select()" oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\..*?)\..*/g,'$1');recalcEditTx()"></div>` : '';
+  const paymentField = isSale ? `<div class="form-group sp-5"><label>طريقة الدفع</label><select id="edit-tx-payment"><option value="كاش" ${tx.payment === 'كاش' ? 'selected' : ''}>كاش</option><option value="آجل" ${tx.payment === 'آجل' ? 'selected' : ''}>آجل</option><option value="فودافون كاش" ${tx.payment === 'فودافون كاش' ? 'selected' : ''}>فودافون كاش</option><option value="Instapay" ${tx.payment === 'Instapay' ? 'selected' : ''}>Instapay</option><option value="تحويل بنكي" ${tx.payment === 'تحويل بنكي' ? 'selected' : ''}>تحويل بنكي</option></select></div>` : '';
+  _editOrigNotes = (tx.notes || '').trim();
+  _editNotesTouched = false;
+  const notesField = `<div class="form-group full notes-compact"><label>ملاحظات</label><input type="text" id="edit-tx-notes" value="${esc(tx.notes || '')}" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" onfocus="_editNotesTouched=true"></div>`;
+  const dateField = `<div class="form-group sp-4">
         <label>تاريخ الطلب</label>
-        <input type="date" id="edit-tx-transaction-date" value="${esc((tx.transactionDate || tx.date || '').slice(0,10))}" style="direction:ltr;text-align:right">
-        <div class="field-hint" style="font-size:.72rem;color:var(--muted);margin-top:3px">تاريخ الطلب — تاريخ التسجيل: ${esc(new Date(tx.createdAt || tx.date || '').toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'}))}</div>
+        <input type="date" id="edit-tx-transaction-date" value="${esc((tx.transactionDate || tx.date || '').slice(0,10))}" style="direction:ltr;text-align:center">
+        <div class="field-hint">التسجيل: ${esc(new Date(tx.createdAt || tx.date || '').toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'}))}</div>
       </div>`;
   const hiddenDiscountFields = `<input type="hidden" id="edit-tx-discount" value="${tx.discount || 0}">
       <input type="hidden" id="edit-tx-discount-code-id" value="${tx.discountCodeId || ''}">
@@ -29191,36 +29500,37 @@ async function openEditMovement(id) {
 
   openModal(`
     <div class="edit-tx-modal">
-    <h3 class="edit-tx-modal-header">تعديل المعاملة ${isPurchase ? '(مشتريات)' : ''}</h3>
+    <h3 class="edit-tx-modal-header">تعديل المعاملة ${isPurchase ? '(مشتريات)' : ''}${tx.ref ? `<span class="edit-tx-ref-badge">#${esc(tx.ref)}</span>` : ''}</h3>
     <div class="edit-tx-modal-body">
+    <!-- شريط ملخص بيانات الطلب — مرئي دائماً، والحقول نفسها داخل قسم يُفتح عند الحاجة،
+         لأن أغلب التعديلات تتم على الأصناف والخصومات لا على بيانات العميل/الشحن/الدفع -->
+    <div class="edit-tx-meta">
+      <div class="edit-tx-meta-summary" id="edit-tx-meta-summary">${_buildEditMetaSummary(tx)}</div>
+      <button type="button" class="edit-tx-meta-toggle" id="edit-tx-meta-toggle" aria-expanded="false" aria-controls="edit-tx-meta-body" aria-label="تعديل بيانات الطلب" title="تعديل بيانات الطلب" onclick="toggleEditMetaPanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+    </div>
+    <div class="edit-tx-meta-body" id="edit-tx-meta-body" hidden>
     <div class="edit-tx-section">
-      <div class="edit-tx-section-title">بيانات العميل</div>
       ${supplierField}
-      <div class="form-group"><label>الهاتف${isSale ? ` <span style="color:var(--red)">*</span>` : ''}</label><input type="tel" id="edit-tx-phone" value="${esc(tx.phone || '')}" placeholder="${isPurchase ? 'يُملأ تلقائياً عند اختيار المورد' : '01xxxxxxxxx'}" maxlength="11" ${isPurchase ? 'readonly tabindex="-1" style="background:var(--surface2);color:var(--muted);cursor:default;pointer-events:none"' : `oninput="this.value=this.value.replace(/[^0-9]/g,'');qs('#err-edit-phone')&&(qs('#err-edit-phone').textContent='');this.style.borderColor=''" onpaste="handlePhonePaste(event,this,()=>{qs('#err-edit-phone')&&(qs('#err-edit-phone').textContent='');this.style.borderColor=''})"`}><div class="field-hint" style="color:var(--muted)">${isPurchase ? 'يُحدَّث تلقائياً — غير قابل للتعديل' : '11 رقم يبدأ بـ 01'}</div><div class="field-error" id="err-edit-phone"></div></div>
+      <div class="form-group sp-4 is-num"><label>الهاتف${isSale ? ` <span style="color:var(--red)">*</span>` : ''}</label><input type="tel" id="edit-tx-phone" value="${esc(tx.phone ? cleanPastedPhone(tx.phone) : '')}" placeholder="${isPurchase ? 'يُملأ تلقائياً' : '01xxxxxxxxx'}" maxlength="11" ${isPurchase ? 'readonly tabindex="-1" style="background:var(--surface2);color:var(--muted);cursor:default;pointer-events:none"' : `oninput="this.value=this.value.replace(/[^0-9]/g,'');qs('#err-edit-phone')&&(qs('#err-edit-phone').textContent='');this.style.borderColor=''" onpaste="handlePhonePaste(event,this,()=>{qs('#err-edit-phone')&&(qs('#err-edit-phone').textContent='');this.style.borderColor=''})"`}><div class="field-hint">${isPurchase ? 'تلقائي — غير قابل للتعديل' : '11 رقم يبدأ بـ 01'}</div><div class="field-error" id="err-edit-phone"></div></div>
+      ${refField}
       ${cityField}
       ${addressField}
-    </div>
-    ${isSale ? `<div class="edit-tx-section">
-      <div class="edit-tx-section-title">بيانات الشحن</div>
-      ${shipCoField}
-      ${zoneField}
-      ${shipCostField}
-    </div>` : ''}
-    <div class="edit-tx-section">
-      <div class="edit-tx-section-title">بيانات الدفع</div>
+      ${isSale ? shipCoField + zoneField + shipCostField : ''}
       ${paymentField}
       ${debtField}
-    </div>
-    <div class="edit-tx-section">
-      <div class="edit-tx-section-title">بيانات الطلب</div>
-      ${refField}
       ${dateField}
       ${notesField}
+    </div>
+    </div>
+    <div class="edit-tx-section">
       ${hiddenDiscountFields}
       ${invoiceImagesSection}
     </div>
-    <div class="flex-between mt-16 mb-8" style="align-items:center">
-      <h4 style="margin:0">الأصناف</h4>
+    <div class="edit-tx-divider"></div>
+    <div class="flex-between mb-8" style="align-items:center">
+      <h4 class="edit-tx-block-title">الأصناف<span class="edit-tx-count-badge" id="edit-tx-items-count">0</span></h4>
       <div style="display:flex;gap:8px">
         <button class="btn btn-outline btn-sm" onclick="openEditDiscountPct()" style="font-size:.78rem">٪ خصم %</button>
         <button class="btn btn-primary btn-sm" onclick="openEditProductPicker()">+ إضافة صنف</button>
@@ -29228,10 +29538,15 @@ async function openEditMovement(id) {
     </div>
     <div id="edit-tx-discount-suggestion-banner" style="display:none"></div>
     <div id="edit-tx-items"></div>
-    <div id="edit-tx-summary" style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:var(--radius);font-size:.85rem"></div>
+    <div class="edit-tx-divider"></div>
+    <!-- العنوان داخل الكارد نفسه — لا يمكن وضعه داخل #edit-tx-summary لأن recalcEditTx يستبدل محتواه بالكامل -->
+    <div class="edit-tx-summary-card">
+      <h4 class="edit-tx-block-title edit-tx-summary-title">ملخص الأوردر</h4>
+      <div id="edit-tx-summary"></div>
+    </div>
     </div>
     <div class="edit-tx-modal-footer">
-      <button class="btn btn-primary" onclick="saveEditMovement('${esc(id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> حفظ التعديلات</button>
+      <button class="btn btn-primary" id="edit-tx-save-btn" style="display:none" onclick="saveEditMovement('${esc(id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> حفظ التعديلات</button>
       <button class="btn btn-outline" onclick="releaseEditMovementLock('${esc(id)}');closeModal()">إلغاء</button>
     </div>
     </div>`, '');
@@ -29252,6 +29567,15 @@ async function openEditMovement(id) {
     initCityAutocomplete('edit-tx-city');
     // استرجاع bostaEn و gov من CITY_GROUPS بناءً على القيمة المحفوظة
     _restoreCityDataset(qs('#edit-tx-city'), tx.shippingBostaCity || '', tx.shippingGov || '');
+    // مستمع مفوَّض واحد يغطي كل حقول النافذة (العميل/الهاتف/المرجع/الملاحظات/التاريخ/المدينة/العنوان/الدفع)
+    // لتحديث ظهور زر الحفظ فوراً — بديل عن ربط كل حقل يدوياً بأحداثه الخاصة
+    const modalBody = qs('.edit-tx-modal-body');
+    const _onEditFieldChange = () => { _refreshEditSaveBtnVisibility(); _refreshEditMetaSummary(); };
+    if (modalBody) {
+      modalBody.addEventListener('input', _onEditFieldChange);
+      modalBody.addEventListener('change', _onEditFieldChange);
+    }
+    _refreshEditSaveBtnVisibility();
   }, 80);
 }
 function renderEditTxItems() {
@@ -29259,6 +29583,9 @@ function renderEditTxItems() {
   if (!container) return;
   const tx = transactions.find(t => t._id === editTxId);
   const isSale = tx?.type === 'مبيعات';
+  // عدّاد الأصناف — يُحدَّث هنا لأن هذه الدالة تُستدعى بعد كل إضافة/حذف/دمج
+  const countEl = qs('#edit-tx-items-count');
+  if (countEl) countEl.textContent = editTxItems.length;
   if (!editTxItems.length) {
     container.innerHTML = `<div onclick="openEditProductPicker()" class="tx-empty-state">
       <div class="tx-empty-icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
@@ -29789,7 +30116,85 @@ function updateEditShipCost() {
   if (!co) return;
   const zone = qs('#edit-tx-zone')?.value || 'cairo';
   costInput.value = zone === 'cairo' ? (co.cairo || co.cairoPrice || settings.cairoPrice || 0) : (co.gov || co.govPrice || settings.govPrice || 0);
+  // القيمة تُكتب برمجياً — أبلغ المستمعين حتى يتحدّث ملخص الطلب وزر الحفظ بالتكلفة الجديدة
+  costInput.dispatchEvent(new Event('input', { bubbles: true }));
 }
+// فحص خفيف بلا آثار جانبية (بدون توست/تحقق) — يحدد هل يوجد أي تغيير فعلي في نافذة التعديل
+// يُستخدم فقط لإظهار/إخفاء زر "حفظ التعديلات"؛ منطق الحفظ الفعلي في saveEditMovement يعيد نفس الحساب بتفصيل أكبر
+function _editHasChanges() {
+  const tx = transactions.find(t => t._id === editTxId);
+  if (!tx) return false;
+
+  const newClient = (qs('#edit-tx-client')?.value || '').trim();
+  if (newClient !== (tx.client || '').trim()) return true;
+
+  const newPhone = (qs('#edit-tx-phone')?.value || '').trim();
+  if (newPhone !== (tx.phone || '').trim()) return true;
+
+  const newRef = (qs('#edit-tx-ref')?.value || '').trim();
+  if (newRef !== (tx.ref || '').trim()) return true;
+
+  if (tx.type === 'مبيعات') {
+    const newAddr = (qs('#edit-tx-address')?.value || '').trim();
+    const origAddr = (tx.shippingAddress || '').replace(/^العنوان:\s*/,'').trim();
+    if (newAddr !== origAddr) return true;
+    const newCity = (qs('#edit-tx-city')?.value || '').trim();
+    if (newCity !== (tx.shippingCity || '').trim()) return true;
+    const newPayment = qs('#edit-tx-payment')?.value || '';
+    if (newPayment !== (tx.payment || '')) return true;
+    const newShipCo = qs('#edit-tx-shipco')?.value || '';
+    if (newShipCo !== (tx.shipCo || '')) return true;
+    const newShipZone = qs('#edit-tx-zone')?.value || '';
+    if (newShipZone !== (tx.shipZone || '')) return true;
+    const newShipCost = Number(qs('#edit-tx-shipcost')?.value) || 0;
+    if (newShipCost !== (tx.shipCost || 0)) return true;
+  }
+
+  const newNotes = _editNotesTouched ? (qs('#edit-tx-notes')?.value || '').trim() : _editOrigNotes;
+  if (newNotes !== _editOrigNotes) return true;
+
+  const newTransactionDate = (qs('#edit-tx-transaction-date')?.value || '').trim();
+  const origTransactionDate = ((tx.transactionDate || tx.date || '').slice(0,10)).trim();
+  if (newTransactionDate && newTransactionDate !== origTransactionDate) return true;
+
+  const discountRaw = Number(qs('#edit-tx-discount')?.value) || 0;
+  if (discountRaw !== (tx.discount || 0)) return true;
+
+  const depositRaw = Number(qs('#edit-tx-deposit')?.value) || 0;
+  if (depositRaw !== (tx.deposit || 0)) return true;
+
+  const resolveItemKey = it => {
+    let pid = it.productId || '';
+    if (pid && !products.find(p => p._id === pid)) pid = '';
+    if (!pid && (it.code || it.name)) {
+      const live = products.find(p => (it.code && p.code === it.code) || (it.name && p.name === it.name));
+      if (live) pid = live._id;
+    }
+    return pid || it.code || it.name || '';
+  };
+  const origItems = tx.items || [];
+  const origItemMap = {};
+  origItems.forEach(it => { const k = resolveItemKey(it); if (k) origItemMap[k] = it; });
+  const newItemMap = {};
+  editTxItems.forEach(it => { const k = resolveItemKey(it); if (k) newItemMap[k] = it; });
+  if (Object.keys(origItemMap).length !== Object.keys(newItemMap).length) return true;
+  for (const k in newItemMap) {
+    const orig = origItemMap[k];
+    if (!orig) return true;
+    if (orig.qty !== newItemMap[k].qty || orig.price !== newItemMap[k].price) return true;
+  }
+  for (const k in origItemMap) { if (!newItemMap[k]) return true; }
+
+  return false;
+}
+
+// يُستدعى بعد أي تفاعل في نافذة التعديل لإظهار/إخفاء زر الحفظ حسب وجود تغيير فعلي
+function _refreshEditSaveBtnVisibility() {
+  const btn = qs('#edit-tx-save-btn');
+  if (!btn) return;
+  btn.style.display = _editHasChanges() ? '' : 'none';
+}
+
 function recalcEditTx() {
   // Validate applied codes against current edit cart; auto-remove violated ones
   _checkEditAppliedCodesValidity();
@@ -29907,6 +30312,7 @@ function recalcEditTx() {
       <div style="display:flex;justify-content:space-between;margin-top:4px"><span>المتبقي</span><strong style="color:${remaining > 0 ? 'var(--red)' : 'var(--green)'}">${remaining > 0 ? fmtJ(remaining) : '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> مدفوع بالكامل'}</strong></div>
       ${vaultDeltaHtml}`;
   }
+  _refreshEditSaveBtnVisibility();
 }
 
 async function saveEditMovement(id) {
@@ -29961,17 +30367,18 @@ async function saveEditMovement(id) {
       if (errEl) errEl.textContent = 'عنوان التوصيل مطلوب';
       editValid = false;
     }
-    if (!editValid) { toast('يرجى تصحيح الحقول المطلوبة', true); return; }
+    // هذه الحقول داخل القسم المطوي — افتحه وإلا رأى المستخدم رسالة خطأ عن حقول لا يراها
+    if (!editValid) { toggleEditMetaPanel(true); toast('يرجى تصحيح الحقول المطلوبة', true); return; }
   }
   const editRef = (qs('#edit-tx-ref')?.value || '').trim();
   if (tx.type === 'مبيعات' || tx.type === 'مشتريات') {
-    if (tx.type === 'مبيعات' && !editRef) { toast('المرجع مطلوب', true); return; }
-    if (editRef && !/^\d+$/.test(editRef)) { toast('المرجع أرقام فقط', true); return; }
-    if (editRef && isRetailRefTaken(editRef, id)) { toast('المرجع مستخدم في معاملة أخرى', true); return; }
+    if (tx.type === 'مبيعات' && !editRef) { toggleEditMetaPanel(true); toast('المرجع مطلوب', true); return; }
+    if (editRef && !/^\d+$/.test(editRef)) { toggleEditMetaPanel(true); toast('المرجع أرقام فقط', true); return; }
+    if (editRef && isRetailRefTaken(editRef, id)) { toggleEditMetaPanel(true); toast('المرجع مستخدم في معاملة أخرى', true); return; }
   }
   const editPhone = (qs('#edit-tx-phone')?.value || '').trim();
   if (tx.type !== 'مبيعات' && editPhone && (!/^\d{11}$/.test(editPhone) || !editPhone.startsWith('01'))) {
-    toast('رقم الهاتف غير صحيح — يجب أن يكون 11 رقماً يبدأ بـ 01', true); return;
+    toggleEditMetaPanel(true); toast('رقم الهاتف غير صحيح — يجب أن يكون 11 رقماً يبدأ بـ 01', true); return;
   }
   const newItems = validItems.map(it => {
     const p = it.productId ? products.find(x => x._id === it.productId) : null;
@@ -29985,7 +30392,7 @@ async function saveEditMovement(id) {
   const total = Math.max(0, itemsTotal - discount + shipCost);
   if (total <= 0 && tx.type !== 'مشتريات') { toast('الإجمالي النهائي يجب أن يكون أكبر من صفر', true); return; }
   const depositRaw = Number(qs('#edit-tx-deposit').value) || 0;
-  if (depositRaw > total) { toast('الديبوزت / العربون لا يمكن أن يتجاوز إجمالي الفاتورة', true); qs('#edit-tx-deposit')?.focus(); return; }
+  if (depositRaw > total) { toggleEditMetaPanel(true); toast('الديبوزت / العربون لا يمكن أن يتجاوز إجمالي الفاتورة', true); qs('#edit-tx-deposit')?.focus(); return; }
   const deposit = Math.min(depositRaw, total);
 
   // 📊 حساب الفروقات (قبل/بعد)
@@ -30053,9 +30460,12 @@ async function saveEditMovement(id) {
     }
   }
 
-  // تغييرات الملاحظات
-  const newNotes = (qs('#edit-tx-notes')?.value || '').trim();
-  const origNotes = (tx.notes || '').trim();
+  // تغييرات الملاحظات — تُقارن بالقيمة وقت فتح النافذة، وليس tx.notes الحية،
+  // حتى لا يُعتبر تحديث خلفي (socket tx:updated من مستخدم آخر أو مزامنة Bosta) أثناء التعديل تعديلاً للملاحظات لم يقم به المستخدم.
+  // كذلك: إن لم يضغط المستخدم داخل حقل الملاحظات إطلاقاً في هذه الجلسة، تُعتبر دون تغيير حتى لو تغيرت قيمة الحقل تلقائياً
+  // (تصحيح إملائي من المتصفح أو إضافة خارجية مثل Grammarly قد تُدرج مسافات في الحقل دون تدخل المستخدم)
+  const newNotes = _editNotesTouched ? (qs('#edit-tx-notes')?.value || '').trim() : _editOrigNotes;
+  const origNotes = _editOrigNotes;
   if (newNotes !== origNotes) changes.push({ type: 'info', text: `الملاحظات: "${origNotes || '—'}" ← "${newNotes || '—'}"` });
 
   // تغييرات تاريخ الطلب
@@ -30106,7 +30516,10 @@ async function saveEditMovement(id) {
   if (depositDelta !== 0) changes.push({ type: 'financial', text: `${tx.type === 'مشتريات' ? 'العربون' : 'الديبوزت'}: ${fmtJT(origDeposit)} ← ${fmtJT(deposit)}` });
   if (totalDelta !== 0) changes.push({ type: 'financial', text: `الإجمالي: ${fmtJT(origTotal)} ← ${fmtJT(total)}` });
 
-  // دائماً أظهر نافذة التأكيد لمراجعة التغييرات قبل الحفظ
+  // لا تعديلات فعلية — أغلق دون حفظ أو طلب تأكيد
+  if (!changes.length) { toast('لا توجد تغييرات لحفظها'); releaseEditMovementLock(id); closeModal(); return; }
+
+  // أظهر نافذة التأكيد لمراجعة التغييرات قبل الحفظ
   const confirmed = await showEditConfirmDialog({ changes, vaultDelta, vaultNote, tx });
   if (!confirmed) return;
 
@@ -30134,7 +30547,7 @@ async function saveEditMovement(id) {
     discountCodeType: editDiscCodeType,
     manualDiscount: editManualDiscount || 0,
     manualDiscountType: editManualDiscountType || 'fixed',
-    notes: qs('#edit-tx-notes').value, ...(itemsChanged ? { items: newItems, itemsTotal } : { itemsTotal }),
+    notes: newNotes, ...(itemsChanged ? { items: newItems, itemsTotal } : { itemsTotal }),
     total, remaining: newRemaining, payStatus: newRemaining <= 0 ? 'مكتمل' : 'معلق',
     editInfo: {
       before: { total: origTotal, deposit: origDeposit, discount: origDiscount, shipCost: origShipCost },
@@ -34687,12 +35100,15 @@ function renderInvoiceViewPage() {
   const statusClass = tx.cancelled || isStatusCancelled(tx.payStatus) ? 'cancelled'
     : isStatusCompleted(tx.payStatus) ? 'paid' : 'pending';
 
+  // Short banner label only — the remaining amount is surfaced on its own row below the
+  // progress bar (statusRemaining), so the banner stays a single scannable phrase.
   let statusText = '';
+  let statusRemaining = 0;
   if (tx.cancelled || isStatusCancelled(tx.payStatus)) statusText = 'ملغي';
-  else if (isStatusCompleted(tx.payStatus)) statusText = isPurchase ? 'تم السداد بالكامل' : 'مكتمل — تم التحصيل';
-  else if (isExchangeSalePendingCollect(tx)) statusText = `انتظار تحصيل فرق الاستبدال: ${tx.remaining}`;
-  else if (isPurchase) statusText = `مديون للمورد — المتبقي: ${tx.remaining || 0}`;
-  else statusText = `في انتظار التحصيل — المتبقي: ${tx.remaining || 0}`;
+  else if (isStatusCompleted(tx.payStatus)) statusText = isPurchase ? 'تم السداد بالكامل' : 'مدفوع بالكامل';
+  else if (isExchangeSalePendingCollect(tx)) { statusText = 'بانتظار فرق الاستبدال'; statusRemaining = Number(tx.remaining) || 0; }
+  else if (isPurchase) { statusText = 'مستحق للمورد'; statusRemaining = Number(tx.remaining) || 0; }
+  else { statusText = 'بانتظار التحصيل'; statusRemaining = Number(tx.remaining) || 0; }
 
   const statusIcon = statusClass === 'paid'
     ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
@@ -34934,63 +35350,102 @@ function renderInvoiceViewPage() {
   const _cmtHtml = buildInvCommentsSection(tx);
   const _editHtml = buildInvEditHistorySection(tx);
   const _tktHtml = buildRelatedTicketsSection(tx);
+  // Tab icons — 14px inline SVGs, currentColor so they follow the active/inactive tab color
+  const _logTabIcon = {
+    timeline: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h6a4 4 0 000-8H9a4 4 0 010-8h6"/><circle cx="18" cy="5" r="3"/></svg>',
+    payments: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>',
+    comments: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>',
+    edits: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+    tickets: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9V7a2 2 0 012-2h14a2 2 0 012 2v2a2 2 0 000 4v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 000-4z"/><path d="M13 5v2M13 11v2M13 17v2"/></svg>',
+  };
   const _logTabs = [
     { key:'timeline', label:'مسار الطلب', html:_tlHtml },
     { key:'payments', label:'المدفوعات', html:_payHtml },
     { key:'comments', label:'التعليقات', html:_cmtHtml },
     { key:'edits', label:'التعديلات', html:_editHtml },
   ].filter(t => t.html);
-  // Always shown (unlike the tabs above) — must surface the "+ إضافة تذكرة" action even with zero tickets
+  // Always shown (unlike the tabs above) — must surface the "+ Add Ticket" action even with zero tickets
   // Purchases have no customer to follow up with, so this tab is hidden for them
   if (!isPurchase) {
     const _tktCount = _relatedTickets(tx).length;
-    _logTabs.push({ key:'tickets', label:`التذاكر والمتابعات${_tktCount ? ` (${_tktCount})` : ''}`, html:_tktHtml });
+    _logTabs.push({ key:'tickets', label:`Tickets والمتابعات${_tktCount ? ` (${_tktCount})` : ''}`, html:_tktHtml });
   }
   const activeLogHtml = _logTabs.length ? `
     <div class="inv2-card">
-      <div class="inv2-card-head">سجل النشاط</div>
+      <div class="inv2-card-head">
+        <span class="inv2-head-title">
+          <span class="inv2-head-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+          <span>سجل النشاط</span>
+        </span>
+      </div>
       <div class="inv2-log-tabs">
-        ${_logTabs.map((t,i) => `<button class="inv2-log-tab${i===0?' active':''}" data-log-tab="${t.key}" onclick="switchInvLogTab(this,'${t.key}')">${t.label}</button>`).join('')}
+        ${_logTabs.map((t,i) => `<button class="inv2-log-tab${i===0?' active':''}" data-log-tab="${t.key}" onclick="switchInvLogTab(this,'${t.key}')"><span class="inv2-log-tab-ico">${_logTabIcon[t.key]||''}</span>${t.label}</button>`).join('')}
       </div>
       <div class="inv2-card-body" style="padding-top:0">
         ${_logTabs.map((t,i) => `<div class="inv2-log-pane${i===0?' active':''}" data-log-pane="${t.key}" style="${i===0?'':'display:none'}">${t.html}</div>`).join('')}
       </div>
     </div>` : '';
 
-  // Status (right column)
-  const statusCardHtml = `
-    <div class="inv2-card">
-      <div class="inv2-card-head">الحالة</div>
-      <div class="inv2-card-body">
+  // Payment status — merged into the payment-details card below (see paymentCardHtml)
+  const paymentStatusRowsHtml = `
         <div class="inv2-status-banner ${statusClass}">
           ${statusIcon}<span>${statusText}</span>
         </div>
-        ${statusClass==='pending'&&_pct>0?`<div style="height:5px;background:var(--bg-alt);border-radius:3px;overflow:hidden;margin-top:8px"><div style="height:100%;width:${_pct}%;background:currentColor;border-radius:3px" class="${statusClass}"></div></div>`:''}
-        ${cancelHtml}
-      </div>
-    </div>`;
+        ${statusClass==='pending'&&_pct>0?`<div class="inv2-pay-progress"><div class="inv2-pay-progress-bar" style="width:${_pct}%"></div></div>` : ''}
+        ${statusClass==='pending'&&statusRemaining>0?`<div class="inv2-pay-remaining">
+          <span class="k">المتبقي</span>
+          <span class="v">${fmt(statusRemaining)}</span>
+        </div>` : ''}
+        ${cancelHtml}`;
 
-  // Delivery Status (right column) — pickup + Bosta chips, manual delivery notice
-  const deliveryStatusHtml = (!isPurchase && !isReturn) ? `
-    <div class="inv2-card">
-      <div class="inv2-card-head">حالة التسليم</div>
-      <div class="inv2-card-body" style="display:flex;flex-direction:column;gap:8px">
+  // Shipping & Delivery (right column) — one merged card: shipping data + pickup/Bosta chips + manual delivery notice
+  const _hasShipInfo = !isPurchase && (tx.shipCo || tx.shipCost || tx.shipZone || tx.shippingGov || tx.shippingCity);
+  const _hasDeliveryInfo = !isPurchase && !isReturn;
+  const shipDeliveryHtml = (_hasShipInfo || _hasDeliveryInfo) ? (()=>{
+    const _zoneLabel = tx.shipZone === 'cairo' ? 'القاهرة' : (tx.shipZone === 'gov' ? 'المحافظات' : '');
+    const _govName = (tx.shippingGov || tx.shippingCity || '').trim();
+    const _shipRows = _hasShipInfo ? `
+        ${tx.shipCo ? `<div class="inv2-kv"><span class="k">شركة الشحن</span><span class="v">${esc(tx.shipCo)}</span></div>` : ''}
+        ${_zoneLabel ? `<div class="inv2-kv"><span class="k">منطقة الشحن</span><span class="v">${esc(_zoneLabel)}</span></div>` : ''}
+        ${_govName ? `<div class="inv2-kv"><span class="k">المحافظة</span><span class="v">${esc(_govName)}</span></div>` : ''}
+        ${tx.shipCost ? `<div class="inv2-kv"><span class="k">تكلفة الشحن</span><span class="v">${fmt(tx.shipCost)}</span></div>` : ''}` : '';
+    const _deliveryRows = _hasDeliveryInfo ? `
         <div class="inv2-kv"><span class="k">حالة الالتقاط</span><span class="v">${_puStatusBadge(tx.pickupStatus || 'Pending')}${tx.pickupDate ? ` <span style="color:var(--muted);font-size:.72rem">· ${esc(tx.pickupDate)}</span>` : ''}</span></div>
         <div class="inv2-kv"><span class="k">Bosta</span><span class="v">${_bostaStatusBadge(tx)}${tx.bostaLastSync ? `<span style="font-size:.7rem;color:var(--muted);direction:ltr"> · ${new Date(tx.bostaLastSync).toLocaleTimeString('ar-EG-u-nu-latn',{hour:'2-digit',minute:'2-digit'})}</span>` : ''}</span></div>
         ${tx.bostaTrackingNumber ? `<div class="inv2-kv"><span class="k">رقم التتبع</span><span class="v" onclick="navigator.clipboard?.writeText('${esc(String(tx.bostaTrackingNumber))}').then(()=>toast('تم نسخ رقم التتبع'))" title="انقر لنسخ رقم التتبع" style="cursor:pointer;direction:ltr">${esc(tx.bostaTrackingNumber)}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" style="opacity:.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></span></div>` : ''}
-        ${tx.deliverySource === 'MANUAL' ? `<div style="background:var(--bg-alt);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:.78rem">
+        ${tx.deliverySource === 'MANUAL' ? `<div style="background:var(--bg-alt);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:.78rem;margin-top:2px">
           <div style="display:flex;align-items:center;gap:6px;color:var(--text);font-weight:700"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M20 6L9 17l-5-5"/></svg>تم التسليم يدوياً</div>
           <div style="color:var(--muted);line-height:1.6;margin-top:4px">بواسطة: ${esc(tx.deliveredBy||'—')} · بتاريخ: ${tx.deliveredAt ? new Date(tx.deliveredAt).toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}${hasPerm('delivery-view-audit') && Array.isArray(tx.deliveryAuditLog) && tx.deliveryAuditLog.length ? (()=>{ const _last = tx.deliveryAuditLog[tx.deliveryAuditLog.length-1]; return `<br>السبب: ${esc(_last.reason||'')}${_last.note ? ` — ${esc(_last.note)}` : ''}`; })() : ''}</div>
-        </div>` : ''}
-      </div>
-    </div>` : '';
-
-  // Shipping / Payment details (right column)
-  const _payMethodForDisplay = tx.depMethod || tx.payment || (isPurchase ? 'تحويل بنكي' : 'نقدي');
-  const shippingDetailsHtml = `
+        </div>` : ''}` : '';
+    return `
     <div class="inv2-card">
-      <div class="inv2-card-head">بيانات الدفع</div>
+      <div class="inv2-card-head">
+        <span class="inv2-head-title">
+          <span class="inv2-head-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>
+          <span>الشحن والتسليم</span>
+        </span>
+      </div>
       <div class="inv2-card-body" style="display:flex;flex-direction:column;gap:8px">
+        ${_shipRows}
+        ${_shipRows && _deliveryRows ? '<div class="inv2-sec-div"></div>' : ''}
+        ${_deliveryRows}
+      </div>
+    </div>`;
+  })() : '';
+
+  // Payment (right column) — one merged card: payment status banner + payment details
+  const _payMethodForDisplay = tx.depMethod || tx.payment || (isPurchase ? 'تحويل بنكي' : 'نقدي');
+  const paymentCardHtml = `
+    <div class="inv2-card">
+      <div class="inv2-card-head">
+        <span class="inv2-head-title">
+          <span class="inv2-head-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
+          <span>بيانات الدفع</span>
+        </span>
+      </div>
+      <div class="inv2-card-body" style="display:flex;flex-direction:column;gap:8px">
+        <div>${paymentStatusRowsHtml}</div>
+        <div class="inv2-sec-div"></div>
         <div class="inv2-kv"><span class="k">طريقة الدفع</span><span class="v">${payMethodIcon(_payMethodForDisplay,13)}${esc(_payMethodForDisplay)}</span></div>
         ${_depTotal > 0 ? `<div class="inv2-kv"><span class="k">${isPurchase?'العربون المدفوع':'الديبوزت المسبق'}</span><span class="v inv2-text-green">${fmt(_depTotal)}</span></div>` : ''}
         <div class="inv2-kv"><span class="k">رقم الفاتورة</span><span class="v" onclick="navigator.clipboard?.writeText('${esc(String(tx.ref || invNumber))}').then(()=>toast('تم نسخ رقم الفاتورة'))" title="انقر لنسخ رقم الفاتورة" style="cursor:pointer;direction:ltr">${invNumber}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" style="opacity:.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></span></div>
@@ -34998,27 +35453,19 @@ function renderInvoiceViewPage() {
         ${_txDateDiffersNote(datesDiffer, createdShort)}
         ${notesHtml}
       </div>
-    </div>
-    ${!isPurchase && (tx.shipCo || tx.shipCost || tx.shipZone || tx.shippingGov || tx.shippingCity) ? (()=>{
-      const _zoneLabel = tx.shipZone === 'cairo' ? 'القاهرة' : (tx.shipZone === 'gov' ? 'المحافظات' : '');
-      const _govName = (tx.shippingGov || tx.shippingCity || '').trim();
-      return `<div class="inv2-card">
-      <div class="inv2-card-head">بيانات الشحن</div>
-      <div class="inv2-card-body" style="display:flex;flex-direction:column;gap:6px">
-        ${tx.shipCo ? `<div class="inv2-kv"><span class="k">شركة الشحن</span><span class="v">${esc(tx.shipCo)}</span></div>` : ''}
-        ${_zoneLabel ? `<div class="inv2-kv"><span class="k">منطقة الشحن</span><span class="v">${esc(_zoneLabel)}</span></div>` : ''}
-        ${_govName ? `<div class="inv2-kv"><span class="k">المحافظة</span><span class="v">${esc(_govName)}</span></div>` : ''}
-        ${tx.shipCost ? `<div class="inv2-kv"><span class="k">تكلفة الشحن</span><span class="v">${fmt(tx.shipCost)}</span></div>` : ''}
-      </div>
-    </div>`; })() : ''}
+    </div>`;
+  // Tags + discount cards — rendered after the shipping/delivery card
+  const shippingDetailsHtml = `
     ${(()=>{
       const _tags = getTxTagObjects(tx._id);
-      if (!_tags.length) return '';
       return `<div class="inv2-card">
         <div class="inv2-card-head"><span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>التاجز</span><span class="inv2-count-badge">${_tags.length}</span></div>
         <div class="inv2-card-body">
           <div class="inv2-tag-wrap">
-            ${_tags.map(t => `<span class="inv2-tag" style="background:${esc(t.bg)};color:${esc(t.color)}">${esc(t.label)}</span>`).join('')}
+            ${_tags.map(t => `<span class="inv2-tag" style="background:${esc(t.bg)};color:${esc(t.color)}">${esc(t.label)}<span class="tag-del" style="margin-inline-start:5px;cursor:pointer;opacity:.8" onclick="event.stopPropagation();deleteInvViewTag('${esc(tx._id)}','${esc(t.label)}')">✕</span></span>`).join('')}
+            <button class="tx-tag-add" onclick="event.stopPropagation();openTagDropdown('${esc(tx._id)}',this)" title="إضافة TAG" style="padding:2px 8px;font-size:.64rem;font-weight:300;border-radius:99px;border-style:dashed;display:inline-flex;align-items:center;gap:3px">
+              <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>TAG
+            </button>
           </div>
         </div>
       </div>`;
@@ -35141,8 +35588,8 @@ function renderInvoiceViewPage() {
         ${activeLogHtml}
       </div>
       <div class="inv2-col-side">
-        ${statusCardHtml}
-        ${deliveryStatusHtml}
+        ${paymentCardHtml}
+        ${shipDeliveryHtml}
         ${shippingDetailsHtml}
       </div>
     </div>
@@ -35548,24 +35995,75 @@ function _relatedTickets(tx) {
 }
 
 const _EYE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const _CAL_ICON = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+/**
+ * Smart relative label for a ticket timestamp — "منذ دقيقة"/"اليوم"/"أمس"/"منذ 3 أيام",
+ * falling back to the absolute date once it stops being useful (a week+ old).
+ * Latin digits throughout (fmtN / -u-nu-latn), per the Arabic-Indic-digits trap in CLAUDE.md.
+ * Returns { text, fresh } — `fresh` marks a <1h ticket so the card can emphasize it.
+ */
+function _ticketRelativeDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return null;
+  const now = new Date();
+  const diffMs = now - d;
+  const mins = Math.floor(diffMs / 60000);
+  // Future/clock-skew timestamps: don't render "منذ -2 دقيقة"
+  if (mins < 1) return { text: 'الآن', fresh: true };
+  if (mins < 60) return { text: mins === 1 ? 'منذ دقيقة' : mins === 2 ? 'منذ دقيقتين' : `منذ ${fmtN(mins)} دقيقة`, fresh: true };
+  const hours = Math.floor(mins / 60);
+  if (hours < 24 && d.toDateString() === now.toDateString()) {
+    return { text: hours === 1 ? 'منذ ساعة' : hours === 2 ? 'منذ ساعتين' : `منذ ${fmtN(hours)} ساعات`, fresh: false };
+  }
+  // Calendar-day comparison (not 24h windows) so 11pm→1am reads "أمس", not "منذ ساعتين"
+  const startOf = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((startOf(now) - startOf(d)) / 86400000);
+  if (days <= 0) return { text: 'اليوم', fresh: false };
+  if (days === 1) return { text: 'أمس', fresh: false };
+  if (days === 2) return { text: 'أول أمس', fresh: false };
+  if (days < 7) return { text: `منذ ${fmtN(days)} أيام`, fresh: false };
+  return { text: _fuFmtDate(iso), fresh: false };
+}
+function _ticketDateHtml(iso) {
+  if (!iso) return '';
+  const rel = _ticketRelativeDate(iso);
+  if (!rel || !rel.text) return '';
+  // Absolute date+time stays available on hover, since the relative label loses precision
+  const exact = [_fuFmtDate(iso), _fuFmtTime(iso)].filter(Boolean).join(' — ');
+  return `<div class="inv-ticket-date${rel.fresh ? ' is-fresh' : ''}"${exact ? ` title="${esc(exact)}"` : ''}>${_CAL_ICON}<span>${esc(rel.text)}</span></div>`;
+}
+/** One consistent small avatar-initials circle for any person name string (not a full user record). */
+function _ticketPersonHtml(name) {
+  const n = (name || '').trim();
+  if (!n) return `<span class="inv-ticket-person"><span class="inv-ticket-person-avatar">?</span><span>—</span></span>`;
+  const initials = n.split(/\s+/).filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  return `<span class="inv-ticket-person" title="${esc(n)}"><span class="inv-ticket-person-avatar">${esc(initials)}</span><span class="inv-ticket-person-name">${esc(n)}</span></span>`;
+}
+
+/**
+ * IDs of tickets created in the last save, so the re-render flashes them.
+ * Consumed (and cleared) by _tktConsumeNewFlash once the DOM is in place.
+ */
+window._tktNewIds = window._tktNewIds || [];
+function _tktIsNew(id) { return (window._tktNewIds || []).includes(String(id || '')); }
 
 function buildRelatedTicketsSection(tx) {
   const txId = String(tx._id || '');
   const tickets = _relatedTickets(tx);
 
   const cardHtml = tickets.map(t => {
+    const _newCls = _tktIsNew(t.doc && t.doc._id) ? ' is-new' : '';
     if (t.kind === 'complaint') {
       const c = t.doc;
-      return `<div class="inv-ticket-card">
+      return `<div class="inv-ticket-card${_newCls}" role="button" tabindex="0" onclick="viewRelatedTicket('complaint','${esc(c._id)}')" onkeydown="if(event.key==='Enter')viewRelatedTicket('complaint','${esc(c._id)}')">
         <div class="inv-ticket-card-top">
-          <span class="inv-ticket-ref">${esc(c.complaintNo || '')}</span>
+          <span class="inv-ticket-kind inv-ticket-kind-complaint">شكوى${c.categoryGroup ? ` — ${esc(c.categoryGroup)}` : ''}</span>
           ${cmpStatusBadge(c)}
         </div>
-        <div class="inv-ticket-meta-row"><span class="inv-ticket-type">شكوى${c.categoryGroup ? ` — ${esc(c.categoryGroup)}` : ''}</span>${cmpPriorityBadge(c)}</div>
-        <div class="inv-ticket-desc">${esc(c.description || '')}</div>
+        <div class="inv-ticket-code">${esc(c.complaintNo || '')}</div>
         <div class="inv-ticket-foot">
-          <span>مسؤول: ${esc(c.submittedBy || '—')}</span>
-          <button class="inv-ticket-view-btn" title="عرض التذكرة" aria-label="عرض التذكرة" onclick="viewRelatedTicket('complaint','${esc(c._id)}')">${_EYE_ICON}</button>
+          ${_ticketPersonHtml(c.submittedBy)}
+          ${_ticketDateHtml(c.createdAt)}
         </div>
       </div>`;
     }
@@ -35573,48 +36071,79 @@ function buildRelatedTicketsSection(tx) {
       const r = t.doc;
       const kindLabel = r.requestKind === 'exchange' ? 'طلب استبدال' : 'طلب استرجاع';
       const statusCls = r.status === 'معتمد' ? 'badge-green' : r.status === 'مرفوض' ? 'badge-red' : 'badge-orange';
-      return `<div class="inv-ticket-card">
+      return `<div class="inv-ticket-card${_newCls}" role="button" tabindex="0" onclick="viewRelatedTicket('return','${esc(r._id)}')" onkeydown="if(event.key==='Enter')viewRelatedTicket('return','${esc(r._id)}')">
         <div class="inv-ticket-card-top">
-          <span class="inv-ticket-ref">${esc(kindLabel)}</span>
-          <span class="badge ${statusCls}">${esc(r.status || 'معلق')} <span class="inv-ticket-ref-sub">#${esc(String(r._id).slice(-6))}</span></span>
+          <span class="inv-ticket-kind inv-ticket-kind-return">${esc(kindLabel)}</span>
+          <span class="badge ${statusCls}">${esc(r.status || 'معلق')}</span>
         </div>
-        <div class="inv-ticket-meta-row"><span class="inv-ticket-type">${fmtJ(r.total || 0)}</span></div>
-        <div class="inv-ticket-desc">${esc(r.reason || '')}</div>
+        <div class="inv-ticket-code">#${esc(String(r._id).slice(-6))}</div>
         <div class="inv-ticket-foot">
-          <span>مسؤول: ${esc(r.requestedBy || '—')}</span>
-          <button class="inv-ticket-view-btn" title="عرض التذكرة" aria-label="عرض التذكرة" onclick="viewRelatedTicket('return','${esc(r._id)}')">${_EYE_ICON}</button>
+          ${_ticketPersonHtml(r.requestedBy)}
+          ${_ticketDateHtml(r.createdAt)}
         </div>
       </div>`;
     }
     const f = t.doc;
     const st = FU_STATUS_STYLES[f.status] || { bg:'#f3f4f6', color:'#374151' };
-    return `<div class="inv-ticket-card">
+    return `<div class="inv-ticket-card${_newCls}" role="button" tabindex="0" onclick="viewRelatedTicket('followup','${esc(f._id)}')" onkeydown="if(event.key==='Enter')viewRelatedTicket('followup','${esc(f._id)}')">
       <div class="inv-ticket-card-top">
-        <span class="inv-ticket-ref">متابعة عميل${f.reason ? ` — ${esc(f.reason)}` : ''}</span>
-        <span class="inv-ticket-status-pill" style="background:${st.bg};color:${st.color}">${esc(f.status || '')} <span class="inv-ticket-ref-sub">${esc(f.ticketNo || '')}</span></span>
+        <span class="inv-ticket-kind inv-ticket-kind-followup">متابعة عميل${f.reason ? ` — ${esc(f.reason)}` : ''}</span>
+        <span class="inv-ticket-status-pill" style="background:${st.bg};color:${st.color}">${esc(f.status || '')}</span>
       </div>
+      <div class="inv-ticket-code">${esc(f.ticketNo || '')}</div>
       <div class="inv-ticket-foot">
-        <span>مسؤول: ${esc(f.responsibleName || '—')}</span>
-        <button class="inv-ticket-view-btn" title="عرض التذكرة" aria-label="عرض التذكرة" onclick="viewRelatedTicket('followup','${esc(f._id)}')">${_EYE_ICON}</button>
+        ${_ticketPersonHtml(f.responsibleName)}
+        ${_ticketDateHtml(f.createdAt)}
       </div>
     </div>`;
   }).join('');
 
-  return `<div class="inv-ticket-toolbar">
-    <button class="inv-ticket-add-btn" onclick="openAddTicketModal('${esc(txId)}')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      <span>إضافة تذكرة</span>
+  const addCardHtml = `<div class="inv-ticket-add-cell">
+    <button type="button" class="inv-ticket-add-card" onclick="openAddTicketModal('${esc(txId)}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Add Ticket</span>
     </button>
-  </div>
-  <div class="inv-ticket-list">
-    ${cardHtml || '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.83rem">لا توجد تذاكر أو متابعات مرتبطة بهذا الطلب</div>'}
+  </div>`;
+  const emptyHtml = tickets.length ? '' : '<div style="grid-column:1/-1;padding:14px 14px 4px;text-align:center;color:var(--muted);font-size:.8rem">No tickets or follow-ups linked to this order</div>';
+  return `<div class="inv-ticket-list${tickets.length ? '' : ' is-empty'}">
+    ${emptyHtml}${cardHtml}${addCardHtml}
   </div>`;
 }
 
+/**
+ * Runs after refreshInvoiceView has re-rendered: brings the Tickets tab forward,
+ * scrolls the new card into view, and lets the CSS flash play once. The ids are
+ * cleared afterwards so any later re-render (comment add, Bosta sync…) doesn't replay it.
+ */
+function _tktConsumeNewFlash() {
+  const ids = window._tktNewIds || [];
+  if (!ids.length) return;
+  requestAnimationFrame(() => {
+    const tabBtn = document.querySelector('.inv2-log-tab[data-log-tab="tickets"]');
+    if (tabBtn && !tabBtn.classList.contains('active')) switchInvLogTab(tabBtn, 'tickets');
+    if (tabBtn) {
+      tabBtn.classList.add('is-new-pulse');
+      setTimeout(() => tabBtn.classList.remove('is-new-pulse'), 2200);
+    }
+    const card = document.querySelector('.inv-ticket-card.is-new');
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Let the animation finish, then drop the marker so it doesn't re-fire on the next render
+    setTimeout(() => { window._tktNewIds = []; }, 2600);
+  });
+}
+
 /** Navigates to the owning module's existing detail UI — no separate ticket-detail page is built. */
-function viewRelatedTicket(kind, id) {
+async function viewRelatedTicket(kind, id) {
   if (kind === 'followup') { goToFuAndHighlight(id, true, '', true); return; }
   if (kind === 'complaint') {
+    // Quick view in place — viewComplaint() reads from the in-memory `complaints`
+    // array, which is already populated (the card itself was built from it), so the
+    // modal opens over the invoice page instead of navigating to the Complaints tab.
+    if (!(complaints || []).some(c => String(c._id) === String(id))) {
+      try { await loadComplaints(); } catch (_) {}
+    }
+    if ((complaints || []).some(c => String(c._id) === String(id))) { viewComplaint(id); return; }
+    // Fall back to the Complaints page if the record can't be resolved (deleted/permissions)
     navigateTo('complaints');
     setTimeout(() => { if (typeof switchMainTab === 'function') switchMainTab('cmp', true); }, 0);
     return;
@@ -35626,12 +36155,14 @@ function viewRelatedTicket(kind, id) {
 function openAddTicketModal(txId) {
   const tx = transactions.find(t => t._id === txId);
   if (!tx) { toast('لم يتم العثور على المعاملة', true); return; }
+  window._tktCurrentTx = tx;
+  window._tktSelectedItems = [];
   const allUsers = users.length ? users : [];
   const userOptions = allUsers.map(u => `<option value="${esc(u._id)}" data-name="${esc(u.name||u.username)}">${esc(u.name||u.username)}</option>`).join('');
   const groupOptions = Object.keys(CMP_CATEGORIES).map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
-  openModal(`<h3 style="margin-bottom:16px">إضافة تذكرة — ${esc(tx.ref ? '#'+tx.ref : txId)}</h3>
+  openModal(`<h3 style="margin-bottom:16px">Add Ticket — ${esc(tx.ref ? '#'+tx.ref : txId)}</h3>
     <div class="form-group">
-      <label class="form-label">نوع التذكرة</label>
+      <label class="form-label">Ticket Type</label>
       <select id="tkt-type" style="width:100%;height:44px" onchange="_tktTypeChanged()">
         <option value="complaint">شكوى</option>
         <option value="followup">متابعة عميل</option>
@@ -35653,6 +36184,10 @@ function openAddTicketModal(txId) {
       <div class="form-group" id="tkt-cat-wrap" style="display:none">
         <label class="form-label">السبب</label>
         <select id="tkt-cat" style="width:100%;height:44px" onchange="_tktCategoryChanged()"></select>
+      </div>
+      <div class="form-group" id="tkt-product-wrap" style="display:none">
+        <label class="form-label">المنتج/المنتجات محل الشكوى <span style="color:var(--muted);font-size:.8rem">(يمكن اختيار أكثر من منتج)</span></label>
+        <div id="tkt-product-list" style="display:flex;flex-direction:column;gap:8px;max-height:34vh;overflow-y:auto"></div>
       </div>
       <div class="form-group">
         <label class="form-label">تفاصيل اللون/المقاس <span style="color:var(--muted);font-size:.8rem">(اختياري)</span></label>
@@ -35739,10 +36274,41 @@ function _tktCategoryGroupChanged() {
   const wrap = qs('#tkt-cat-wrap');
   const catSel = qs('#tkt-cat');
   if (!wrap || !catSel) return;
-  if (!group) { wrap.style.display = 'none'; catSel.innerHTML = ''; return; }
-  wrap.style.display = '';
-  catSel.innerHTML = (CMP_CATEGORIES[group] || []).map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  if (!group) { wrap.style.display = 'none'; catSel.innerHTML = ''; }
+  else {
+    wrap.style.display = '';
+    catSel.innerHTML = (CMP_CATEGORIES[group] || []).map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  }
+  _tktRenderProductPicker(group === 'مشكلة في المنتج');
   _tktCategoryChanged();
+}
+
+/** Shows an inline product picker (mirrors renderCmpWizard step B) when the complaint category is "مشكلة في المنتج". */
+function _tktRenderProductPicker(show) {
+  const wrap = qs('#tkt-product-wrap');
+  const list = qs('#tkt-product-list');
+  if (!wrap || !list) return;
+  if (!show) { wrap.style.display = 'none'; window._tktSelectedItems = []; return; }
+  wrap.style.display = '';
+  const tx = window._tktCurrentTx;
+  const items = (tx?.items || []).map(_cmpResolveItem);
+  window._tktSelectedItems = [];
+  list.innerHTML = items.length ? items.map((it, idx) => `
+    <label class="cmp-card cmp-pick-row" style="cursor:pointer;display:flex;gap:10px;align-items:center">
+      <input type="checkbox" class="cmp-pick-checkbox tkt-product-checkbox" data-idx="${idx}" onchange="_tktUpdateSelectedItems()">
+      ${productThumbHtml(it.imageUrl, it.name, 'cmp-product-thumb')}
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:.86rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.name||'')}</div>
+        <div style="font-size:.76rem;color:var(--muted)">${esc(it.code||'')} • كمية ${fmtN(it.qty||0)} • ${fmtJ(it.price||0)}</div>
+      </div>
+    </label>`).join('') : '<div class="cmp-empty" style="padding:14px"><div class="cmp-empty-sub">لا توجد منتجات في هذا الطلب</div></div>';
+}
+
+function _tktUpdateSelectedItems() {
+  const tx = window._tktCurrentTx;
+  const items = (tx?.items || []).map(_cmpResolveItem);
+  const checked = Array.from(document.querySelectorAll('.tkt-product-checkbox:checked')).map(cb => items[Number(cb.dataset.idx)]).filter(Boolean);
+  window._tktSelectedItems = checked;
 }
 
 function _tktCategoryChanged() {
@@ -35820,9 +36386,23 @@ async function saveAddTicket(txId) {
       if (category) body.category = category;
       if (variantDetail) body.variantDetail = variantDetail;
       if (imageUrl && /^https?:\/\//i.test(imageUrl)) body.imageUrl = imageUrl;
-      const doc = await api('/complaints', { method: 'POST', body: JSON.stringify(body) });
-      complaints.unshift(doc);
-      toast(`تم حفظ الشكوى رقم ${doc.complaintNo}`);
+      const selectedItems = (categoryGroup === 'مشكلة في المنتج') ? (window._tktSelectedItems || []) : [];
+      const itemList = selectedItems.length ? selectedItems : [null];
+      const results = [];
+      for (const it of itemList) {
+        const itemBody = { ...body };
+        if (it) {
+          itemBody.productId = it.productId || '';
+          itemBody.productCode = it.code || '';
+          itemBody.productName = it.name || '';
+          itemBody.productImageUrl = it.imageUrl || '';
+          itemBody.productQty = it.qty || 0;
+        }
+        results.push(await api('/complaints', { method: 'POST', body: JSON.stringify(itemBody) }));
+      }
+      results.forEach(doc => complaints.unshift(doc));
+      window._tktNewIds = results.map(doc => String(doc._id || ''));
+      toast(results.length > 1 ? `تم حفظ ${fmtN(results.length)} شكاوى بنجاح` : `تم حفظ الشكوى رقم ${results[0].complaintNo}`);
     } else {
       const reasonSel = qs('#tkt-fu-reason')?.value || '';
       const reason = reasonSel === 'أخرى' ? (qs('#tkt-fu-reason-other')?.value || '').trim() : reasonSel;
@@ -35833,10 +36413,12 @@ async function saveAddTicket(txId) {
         responsibleId, responsibleName, reason, status,
       }) });
       followUps.unshift(doc);
+      window._tktNewIds = [String(doc._id || '')];
       toast('تمت إضافة المتابعة ✅');
     }
     closeModal();
     refreshInvoiceView(txId);
+    _tktConsumeNewFlash();
   } catch (e) {
     toast(e.message, true);
   } finally {
@@ -48885,6 +49467,8 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     if (qs('#tx-dirty-overlay')?.style.display === 'flex') txDirtyCancel();
     else if (qs('#tx-picker-overlay')?.style.display !== 'none' && qs('#tx-picker-overlay')?.style.display) closeProductPicker();
+    // نافذة الخصم تُفتح فوق نافذة التعديل — تُغلق أولاً حتى لا تُغلق نافذة التعديل من تحتها
+    else if (qs('#edit-disc-overlay')) _closeEditDiscOverlay();
     else if (qs('#inv-detail-overlay').classList.contains('active')) closeInvoiceDetail();
     else if (qs('#modal-overlay').classList.contains('active')) closeModal();
   } else if (e.key === 'Enter') {
@@ -48947,7 +49531,7 @@ function renderRecentSearches() {
     return;
   }
   let html = '<div class="search-recent-head"><span>عمليات البحث الأخيرة</span><button class="search-recent-clear" onmousedown="event.preventDefault();clearRecentSearches()">مسح الكل</button></div>';
-  html += '<div class="search-recent-chips">' + list.map(t => '<span class="search-recent-chip" onmousedown="event.preventDefault();rerunRecentSearch(' + JSON.stringify(t) + ')">' + esc(t) + '</span>').join('') + '</div>';
+  html += '<div class="search-recent-chips">' + list.map(t => '<span class="search-recent-chip" onmousedown="event.preventDefault();rerunRecentSearch(' + esc(JSON.stringify(t)) + ')">' + esc(t) + '</span>').join('') + '</div>';
   openSearchDropdown(html);
 }
 function rerunRecentSearch(term) {
@@ -50918,7 +51502,7 @@ function renderFollowUps() {
     // copies this ticket's shareable deep link.
     const ticketNo = f.ticketNo || '';
     const ticketCell = ticketNo
-      ? `<button type="button" class="fu-ticket-chip" onclick="event.stopPropagation();copyFuTicketLink('${fId}')" title="نسخ رابط التيكيت — ${esc(ticketNo)}">
+      ? `<button type="button" class="fu-ticket-chip" onclick="event.stopPropagation();copyFuTicketLink('${fId}')" title="Copy Ticket Link — ${esc(ticketNo)}">
           <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a2 2 0 012-2h14a2 2 0 012 2v1.5a1.5 1.5 0 000 3V15a2 2 0 01-2 2H5a2 2 0 01-2-2v-1.5a1.5 1.5 0 000-3z"/></svg>
           <span class="fu-ticket-chip-label">${esc(ticketNo)}</span>
         </button>`
@@ -50982,7 +51566,7 @@ function renderFollowUps() {
         </div>
       </div>
       ${ticketNo ? `<div class="fu-card-ticket-row" onclick="event.stopPropagation()">
-        <button type="button" class="fu-ticket-chip" onclick="copyFuTicketLink('${fId}')" title="نسخ رابط التيكيت">
+        <button type="button" class="fu-ticket-chip" onclick="copyFuTicketLink('${fId}')" title="Copy Ticket Link">
           <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a2 2 0 012-2h14a2 2 0 012 2v1.5a1.5 1.5 0 000 3V15a2 2 0 01-2 2H5a2 2 0 01-2-2v-1.5a1.5 1.5 0 000-3z"/></svg>
           <span class="fu-ticket-chip-label">${esc(ticketNo)}</span>
         </button>
@@ -51080,7 +51664,7 @@ function fuOpenCardMenu(e, id) {
     <button type="button" class="dd-item" data-action="edit"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span class="dd-label">تعديل</span></button>
     ${resolvedPhone ? `<button type="button" class="dd-item" data-action="whatsapp"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg><span class="dd-label">واتساب</span></button>` : ''}
     <button type="button" class="dd-item" data-action="trail"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M5 8.2V13a4 4 0 004 4h1.5" stroke-dasharray="3 3"/></svg><span class="dd-label">مسار المتابعة</span></button>
-    ${f.ticketNo ? `<button type="button" class="dd-item" data-action="copy-link"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg><span class="dd-label">نسخ رابط التيكيت</span></button>` : ''}
+    ${f.ticketNo ? `<button type="button" class="dd-item" data-action="copy-link"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg><span class="dd-label">Copy Ticket Link</span></button>` : ''}
     ${!f.cancelled ? `<button type="button" class="dd-item danger" data-action="cancel-action"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span class="dd-label">إجراء — إلغاء المتابعة</span></button>` : ''}
     <button type="button" class="dd-item danger" data-action="delete"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg><span class="dd-label">حذف</span></button>`;
   document.body.appendChild(portal);
@@ -51398,11 +51982,11 @@ async function copyFuTicketLink(fuId) {
   const f = ((typeof followUps !== 'undefined' ? followUps : []) || []).find(x => String(x._id) === String(fuId));
   if (!f) { toast('لم يتم العثور على طلب المتابعة', true); return; }
   const hash = _fuTicketHashFor(f);
-  if (!hash) { toast('لا يوجد رقم تيكيت لهذا الطلب', true); return; }
+  if (!hash) { toast('لا يوجد رقم Ticket لهذا الطلب', true); return; }
   const url = location.origin + location.pathname + '#' + hash;
   try {
     await navigator.clipboard.writeText(url);
-    toast(`تم نسخ رابط التيكيت ${f.ticketNo || ''} ✅`);
+    toast(`تم نسخ رابط Ticket ${f.ticketNo || ''} ✅`);
   } catch (_) {
     // Clipboard API needs a secure context — fall back to a temp textarea.
     try {
@@ -51411,7 +51995,7 @@ async function copyFuTicketLink(fuId) {
       document.body.appendChild(ta); ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      toast(`تم نسخ رابط التيكيت ${f.ticketNo || ''} ✅`);
+      toast(`تم نسخ رابط Ticket ${f.ticketNo || ''} ✅`);
     } catch (e) { toast('تعذّر نسخ الرابط', true); }
   }
 }
@@ -51425,7 +52009,7 @@ async function openFuTicketBySlug(slug) {
     try { await loadFollowUps(); } catch (_) {}
     fuId = _resolveFuTicketSlug(slug);
   }
-  if (!fuId) { toast('لم يتم العثور على التيكيت ' + slug, true); return; }
+  if (!fuId) { toast('لم يتم العثور على Ticket ' + slug, true); return; }
   goToFuAndHighlight(fuId, true, '', true);
 }
 
@@ -53577,6 +54161,9 @@ function renderPickupBoard() {
   const allNonArchived = _pickupOrders.filter(o => !o.cancelled && !o.archived);
   const sumAmt = arr => arr.reduce((s,o)=>s+(o.total||0),0);
 
+  // Flag newest arrivals from the full pending set, before any search filtering
+  _puComputeNewOrders(pendingOrders);
+
   // KPI counts
   const pendingGroups = _puBuildGroups(pendingOrders);
   const readyGroups   = _puBuildGroups(readyOrders);
@@ -53683,7 +54270,51 @@ function renderPickupBoard() {
 
 // ── Pending selected orders set ───────────────────────────────
 let _puPendingSelected = new Set(); // order _id strings
-let _puLastCheckedOid  = null;      // for shift+click range select
+let _puLastCheckedOid  = null;      // anchor row for shift+click range select
+let _puNewOrderIds     = new Set(); // order _id strings flagged as "جديد" (newest arrivals)
+
+// ── Newest-orders highlight ───────────────────────────────────
+// An order is "new" when it is among the most recent PU_NEW_MAX pending orders
+// AND was created within PU_NEW_HOURS. Both bounds matter: the count keeps the
+// highlight from covering the whole column on a quiet day, the age cutoff keeps
+// stale orders from looking new when nothing fresh has come in.
+const PU_NEW_MAX   = 8;
+const PU_NEW_HOURS = 48;
+
+function _puOrderTime(o) {
+  const raw = o.createdAt || o.date || '';
+  const t = new Date(raw).getTime();
+  return Number.isFinite(t) ? t : 0;
+}
+
+// Recomputes _puNewOrderIds from the full pending set (not the filtered view —
+// searching must not change which orders are considered new).
+function _puComputeNewOrders(pendingOrders) {
+  _puNewOrderIds = new Set();
+  if (!pendingOrders || !pendingOrders.length) return;
+  const cutoff = Date.now() - PU_NEW_HOURS * 3600 * 1000;
+  pendingOrders
+    .filter(o => _puOrderTime(o) >= cutoff)
+    .sort((a, b) => _puOrderTime(b) - _puOrderTime(a))
+    .slice(0, PU_NEW_MAX)
+    .forEach(o => _puNewOrderIds.add(String(o._id)));
+}
+
+// ── Pending table header (shared by initial render and the in-place refresh) ──
+function _puPendingHeaderHTML(allSel, someSel, cnt) {
+  const S = _puSVG;
+  return `
+    <label class="pu-pt-check-wrap" title="تحديد الكل">
+      <input type="checkbox" id="pu-pt-check-all" ${allSel?'checked':''} ${(!allSel&&someSel)?'data-indeterminate="true"':''} onchange="puPtToggleAll(this.checked)" style="width:14px;height:14px;accent-color:#2563eb;cursor:pointer">
+    </label>
+    <span style="font-size:.71rem;color:var(--muted);font-weight:700;flex:1">المرجع · العميل</span>
+    <span class="pu-pt-shift-hint" title="اضغط Shift مع الكليك لتحديد نطاق من الصفوف دفعة واحدة">Shift + كليك للتحديد المتعدد</span>
+    <span style="font-size:.71rem;color:var(--muted);font-weight:700;white-space:nowrap">القيمة</span>
+    ${cnt > 0 ? `<button class="pu-pt-move-btn" onclick="puPtMoveSelected()" title="نقل المحددة لقيد التحضير">
+      ${S.pkg} نقل ${fmtN(cnt)} للتحضير
+    </button>` : ''}
+  `;
+}
 
 // ── Build compact pending orders table ───────────────────────
 function _puBuildPendingTable(orders) {
@@ -53697,17 +54328,12 @@ function _puBuildPendingTable(orders) {
   const allSelected = orders.length > 0 && orders.every(o => _puPendingSelected.has(String(o._id)));
   const someSelected = orders.some(o => _puPendingSelected.has(String(o._id)));
   const selCount = orders.filter(o => _puPendingSelected.has(String(o._id))).length;
-  headerRow.innerHTML = `
-    <label class="pu-pt-check-wrap" title="تحديد الكل">
-      <input type="checkbox" id="pu-pt-check-all" ${allSelected?'checked':''} ${(!allSelected&&someSelected)?'data-indeterminate="true"':''} onchange="puPtToggleAll(this.checked)" style="width:14px;height:14px;accent-color:#2563eb;cursor:pointer">
-    </label>
-    <span style="font-size:.71rem;color:var(--muted);font-weight:700;flex:1">المرجع · العميل</span>
-    <span style="font-size:.71rem;color:var(--muted);font-weight:700;white-space:nowrap">القيمة</span>
-    ${selCount > 0 ? `<button class="pu-pt-move-btn" onclick="puPtMoveSelected()" title="نقل المحددة لقيد التحضير">
-      ${S.pkg} نقل ${fmtN(selCount)} للتحضير
-    </button>` : ''}
-  `;
+  headerRow.innerHTML = _puPendingHeaderHTML(allSelected, someSelected, selCount);
   wrap.appendChild(headerRow);
+  if (!allSelected && someSelected) {
+    const cbAll = headerRow.querySelector('#pu-pt-check-all');
+    if (cbAll) cbAll.indeterminate = true;
+  }
 
   // Order rows
   const list = document.createElement('div');
@@ -53715,12 +54341,18 @@ function _puBuildPendingTable(orders) {
   orders.forEach(o => {
     const oid = String(o._id);
     const checked = _puPendingSelected.has(oid);
-    const row = document.createElement('label');
-    row.className = 'pu-pt-row' + (checked ? ' pu-pt-row-sel' : '');
+    const isNew = _puNewOrderIds.has(oid);
+    // <div>, not <label>: a label's implicit activation double-fires against our
+    // own click handler (toggle on, toggle straight back off) and breaks shift-range.
+    const row = document.createElement('div');
+    row.className = 'pu-pt-row' + (checked ? ' pu-pt-row-sel' : '') + (isNew ? ' pu-pt-row-new' : '');
     row.dataset.oid = oid;
     row.draggable = true;
-    row.title = 'اسحب لإضافة لمجموعة تحضير — حدد عدة طلبات ثم اسحب لنقلها معاً';
+    row.title = 'اسحب لإضافة لمجموعة تحضير — حدد عدة طلبات ثم اسحب لنقلها معاً\nShift + كليك لتحديد نطاق كامل من الصفوف';
     row.addEventListener('dragstart', e => {
+      // Shift+click is range-select, not drag — otherwise a slight mouse move
+      // during the gesture starts a drag and swallows the selection.
+      if (e.shiftKey) { e.preventDefault(); return; }
       _puDragPendingId = oid;
       // If this row is part of the selection, drag ALL selected; otherwise just this one
       const selIds = _puPendingSelected.has(oid) && _puPendingSelected.size > 1
@@ -53747,24 +54379,47 @@ function _puBuildPendingTable(orders) {
       qsa('.pu-group-droptarget').forEach(el => el.classList.remove('pu-group-droptarget'));
     });
     row.innerHTML = `
-      <input type="checkbox" ${checked?'checked':''} onchange="puPtRowCheck(event,'${oid}',this.checked)" style="width:14px;height:14px;accent-color:#2563eb;cursor:pointer;flex-shrink:0">
+      <input type="checkbox" ${checked?'checked':''} style="width:14px;height:14px;accent-color:#2563eb;cursor:pointer;flex-shrink:0">
       <span class="pu-pt-ref">${esc(o.ref||'—')}</span>
-      <span class="pu-pt-client">${esc(o.client||'—')}</span>
+      <span class="pu-pt-client">${esc(o.client||'—')}${isNew ? ' <span class="pu-pt-new-badge">جديد</span>' : ''}</span>
       ${o.shipCo ? `<span class="pu-pt-ship">${S.truck} ${esc(o.shipCo)}</span>` : '<span></span>'}
       <span class="pu-pt-total">${fmtJT(o.total||0)}</span>
     `;
-    // Shift+left-click on row (outside checkbox) also toggles selection
+    // Single click handler for the whole row (checkbox included) so plain clicks
+    // and Shift+click range-select go through exactly one code path.
     row.addEventListener('click', e => {
-      if (e.target.tagName === 'INPUT') return;
       const cb = row.querySelector('input[type=checkbox]');
       if (!cb) return;
-      cb.checked = !cb.checked;
-      puPtRowCheck(e, oid, cb.checked);
+      const fromCheckbox = e.target === cb;
+      // Shift+click extends from the anchor; the clicked row's target state is
+      // the inverse of its current state (matches file-manager behaviour).
+      const nextChecked = fromCheckbox ? cb.checked : !cb.checked;
+      if (!fromCheckbox) cb.checked = nextChecked;
+      puPtRowCheck(e, oid, nextChecked);
     });
     list.appendChild(row);
   });
   wrap.appendChild(list);
+  _puBindShiftHint(list);
   return wrap;
+}
+
+// ── Shift-key affordance: flag the list while Shift is held ───
+// Bound once on window; the handler targets whatever list is currently in the DOM.
+let _puShiftHintBound = false;
+let _puShiftHeld = false;
+function _puBindShiftHint(list) {
+  if (list) list.classList.toggle('pu-shift-active', _puShiftHeld);
+  if (_puShiftHintBound) return;
+  _puShiftHintBound = true;
+  const sync = held => {
+    _puShiftHeld = held;
+    qsa('.pu-pt-list').forEach(el => el.classList.toggle('pu-shift-active', held));
+  };
+  window.addEventListener('keydown', e => { if (e.key === 'Shift') sync(true); });
+  window.addEventListener('keyup',   e => { if (e.key === 'Shift') sync(false); });
+  // Releasing Shift while the window is unfocused never fires keyup — clear it on blur.
+  window.addEventListener('blur', () => sync(false));
 }
 
 // ── Add pending order(s) to an existing prep group ───────────
@@ -53817,14 +54472,18 @@ function puPtRowCheck(evtOrOid, oidOrChecked, checkedArg) {
     evt = null; oid = evtOrOid; checked = oidOrChecked;
   }
 
-  // Shift+click range select
-  if (evt && evt.shiftKey && _puLastCheckedOid && _puLastCheckedOid !== oid) {
-    const prepIds = new Set(_puPrepGroups.flatMap(g=>g.orders.map(x=>String(x._id))));
-    const allRows = [...qsa('.pu-pt-row')].map(r => r.dataset.oid).filter(Boolean);
-    const fromIdx = allRows.indexOf(_puLastCheckedOid);
-    const toIdx   = allRows.indexOf(oid);
-    if (fromIdx !== -1 && toIdx !== -1) {
-      const lo = Math.min(fromIdx, toIdx), hi = Math.max(fromIdx, toIdx);
+  // Shift+click range select — applies `checked` to every row between the anchor
+  // (_puLastCheckedOid, the last row clicked without Shift) and the clicked row,
+  // in current visual order. Rows filtered out by search are simply not present,
+  // so the range never reaches beyond what the user can see.
+  const allRows = [...qsa('.pu-pt-row')].map(r => r.dataset.oid).filter(Boolean);
+  const anchorIdx = _puLastCheckedOid ? allRows.indexOf(_puLastCheckedOid) : -1;
+  const rangeMode = !!(evt && evt.shiftKey && anchorIdx !== -1 && _puLastCheckedOid !== oid);
+
+  if (rangeMode) {
+    const toIdx = allRows.indexOf(oid);
+    if (toIdx !== -1) {
+      const lo = Math.min(anchorIdx, toIdx), hi = Math.max(anchorIdx, toIdx);
       allRows.slice(lo, hi + 1).forEach(sid => {
         if (checked) _puPendingSelected.add(sid);
         else         _puPendingSelected.delete(sid);
@@ -53836,11 +54495,16 @@ function puPtRowCheck(evtOrOid, oidOrChecked, checkedArg) {
         }
       });
     }
+    // Shift+click can leave a native text selection behind despite user-select:none
+    // in some browsers — clear it so the range doesn't look like highlighted text.
+    window.getSelection()?.removeAllRanges();
   } else {
     if (checked) _puPendingSelected.add(oid);
     else         _puPendingSelected.delete(oid);
   }
-  _puLastCheckedOid = oid;
+  // Anchor moves to the clicked row only on a plain click; a Shift+click keeps the
+  // original anchor so the user can widen/narrow the same range repeatedly.
+  if (!rangeMode) _puLastCheckedOid = oid;
   // Re-render only the header row (faster than full board re-render)
   const header = qs('.pu-pt-header');
   if (header) {
@@ -53848,17 +54512,7 @@ function puPtRowCheck(evtOrOid, oidOrChecked, checkedArg) {
     const allSel = allPending.length>0 && allPending.every(o=>_puPendingSelected.has(String(o._id)));
     const someSel = allPending.some(o=>_puPendingSelected.has(String(o._id)));
     const cnt = allPending.filter(o=>_puPendingSelected.has(String(o._id))).length;
-    const S = _puSVG;
-    header.innerHTML = `
-      <label class="pu-pt-check-wrap" title="تحديد الكل">
-        <input type="checkbox" id="pu-pt-check-all" ${allSel?'checked':''} ${(!allSel&&someSel)?'data-indeterminate="true"':''} onchange="puPtToggleAll(this.checked)" style="width:14px;height:14px;accent-color:#2563eb;cursor:pointer">
-      </label>
-      <span style="font-size:.71rem;color:var(--muted);font-weight:700;flex:1">المرجع · العميل</span>
-      <span style="font-size:.71rem;color:var(--muted);font-weight:700;white-space:nowrap">القيمة</span>
-      ${cnt > 0 ? `<button class="pu-pt-move-btn" onclick="puPtMoveSelected()" title="نقل المحددة لقيد التحضير">
-        ${S.pkg} نقل ${fmtN(cnt)} للتحضير
-      </button>` : ''}
-    `;
+    header.innerHTML = _puPendingHeaderHTML(allSel, someSel, cnt);
     const cb = qs('#pu-pt-check-all');
     if (cb && !allSel && someSel) cb.indeterminate = true;
     // Update row highlight
@@ -53880,6 +54534,7 @@ function puPtToggleAll(checked) {
     if (checked) _puPendingSelected.add(String(o._id));
     else         _puPendingSelected.delete(String(o._id));
   });
+  _puLastCheckedOid = null; // select-all resets the shift-range anchor
   renderPickupBoard();
 }
 
@@ -56630,7 +57285,10 @@ async function renderPerformanceDashboard() {
       <td style="padding:8px 10px;text-align:center">${r.earnedPoints}</td>
       <td style="padding:8px 10px;text-align:center;${r.bonusPoints !== 0 ? `color:${r.bonusPoints > 0 ? '#059669' : 'var(--red)'};font-weight:700` : 'color:var(--muted)'}">${r.bonusPoints > 0 ? '+' : ''}${r.bonusPoints}</td>
       <td style="padding:8px 10px;text-align:center;font-weight:800;color:${isTop ? '#f59e0b' : 'var(--accent)'}">${r.totalPoints}</td>
-      <td style="padding:8px 10px;text-align:center">${isAdmin() ? `<button class="btn-icon" title="Add manual bonus" onclick="openManualBonusModal('${esc(r.employeeId)}','${esc(r.employeeName)}')" style="width:26px;height:26px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>` : ''}</td>
+      <td style="padding:8px 10px;text-align:center">${isAdmin() ? `<div style="display:inline-flex;gap:4px">
+        <button class="btn-icon" title="Add bonus" onclick="openManualBonusModal('${esc(r.employeeId)}','${esc(r.employeeName)}','bonus')" style="width:26px;height:26px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        <button class="btn-icon" title="Add penalty" onclick="openManualBonusModal('${esc(r.employeeId)}','${esc(r.employeeName)}','penalty')" style="width:26px;height:26px;color:var(--red)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      </div>` : ''}</td>
     </tr>`;
   }).join('');
 
@@ -56652,7 +57310,10 @@ async function renderPerformanceDashboard() {
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
             <div style="font-weight:800;color:${isTop ? '#f59e0b' : 'var(--accent)'};font-size:1.1rem">${r.totalPoints} pts</div>
-            ${isAdmin() ? `<button class="btn-icon" title="Add manual bonus" onclick="openManualBonusModal('${esc(r.employeeId)}','${esc(r.employeeName)}')" style="width:26px;height:26px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>` : ''}
+            ${isAdmin() ? `<div style="display:inline-flex;gap:4px">
+              <button class="btn-icon" title="Add bonus" onclick="openManualBonusModal('${esc(r.employeeId)}','${esc(r.employeeName)}','bonus')" style="width:26px;height:26px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+              <button class="btn-icon" title="Add penalty" onclick="openManualBonusModal('${esc(r.employeeId)}','${esc(r.employeeName)}','penalty')" style="width:26px;height:26px;color:var(--red)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+            </div>` : ''}
           </div>
         </div>
         <div class="sp-card-subline">
@@ -56687,41 +57348,153 @@ function _perfActionLabel(actionType) {
   return _PERF_ACTION_LABELS[actionType] || actionType;
 }
 
+let _perfDetailLogs = [];
+let _perfDetailEmployeeId = null;
+let _perfDetailDateFilter = 'all'; // 'all' | 'today' | 'yesterday' | 'week' | 'month' | 'range'
+let _perfDetailPage = 1;
+const PERF_DETAIL_PAGE_SIZE = 10;
+
 async function openEmployeePerformanceDetail(employeeId, employeeName) {
+  _perfDetailEmployeeId = employeeId;
+  _perfDetailDateFilter = 'all';
+  _perfDetailPage = 1;
+
   openModal(`
     <h3 style="margin-bottom:4px">سجل نقاط الأداء — ${esc(employeeName)}</h3>
     <p style="font-size:.8rem;color:var(--muted);margin:0 0 14px">تفاصيل كل نقاط مكتسبة أو يدوية وسببها والأوردر المرتبط بها</p>
-    <div id="perf-detail-body" style="max-height:65vh;overflow-y:auto;overflow-x:auto">
+
+    <div class="coll-filters-right" style="margin-bottom:12px">
+      <button class="coll-filter-btn active" id="perf-filter-all" onclick="setPerfDetailDateFilter('all',this)">الكل</button>
+      <button class="coll-filter-btn" id="perf-filter-today" onclick="setPerfDetailDateFilter('today',this)">اليوم</button>
+      <button class="coll-filter-btn" id="perf-filter-yesterday" onclick="setPerfDetailDateFilter('yesterday',this)">أمس</button>
+      <button class="coll-filter-btn" id="perf-filter-week" onclick="setPerfDetailDateFilter('week',this)">هذا الأسبوع</button>
+      <button class="coll-filter-btn" id="perf-filter-month" onclick="setPerfDetailDateFilter('month',this)">هذا الشهر</button>
+      <div class="coll-range-wrap">
+        <input type="date" id="perf-from" class="date-filter-icon" onchange="setPerfDetailDateFilter('range',null)" title="من تاريخ" />
+        <span style="color:var(--muted);font-size:.8rem">—</span>
+        <input type="date" id="perf-to" class="date-filter-icon" onchange="setPerfDetailDateFilter('range',null)" title="إلى تاريخ" />
+      </div>
+      <button class="coll-filter-btn" title="طباعة تقرير الفترة المحددة" onclick="_printPerfDetailReport('${esc(employeeName)}')">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        طباعة
+      </button>
+    </div>
+
+    <div id="perf-detail-summary" style="font-size:.8rem;color:var(--muted);margin-bottom:8px"></div>
+
+    <div id="perf-detail-body" style="max-height:55vh;overflow-y:auto;overflow-x:auto">
       <div style="text-align:center;padding:24px;color:var(--muted)">جارِ التحميل...</div>
     </div>
+    <div id="perf-detail-pagination"></div>
     <div class="flex gap-8 mt-16">
       <button class="btn btn-outline" onclick="closeModal()">إغلاق</button>
     </div>`, 'max-width:900px;max-height:90vh');
 
-  let logs = [];
   try {
-    logs = await api(`/employee-performance/logs?employeeId=${encodeURIComponent(employeeId)}`);
+    _perfDetailLogs = await api(`/employee-performance/logs?employeeId=${encodeURIComponent(employeeId)}`);
   } catch (e) {
+    _perfDetailLogs = [];
     const body = qs('#perf-detail-body');
     if (body) body.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red)">فشل تحميل السجل</div>`;
     return;
   }
 
-  const body = qs('#perf-detail-body');
-  if (!body) return;
-
   if (!_shopifyOrders.length) {
     try { await loadShopifyOrders(); } catch (_) {}
   }
 
-  if (!logs.length) {
+  renderPerfDetailTable();
+}
+
+function setPerfDetailDateFilter(filter, btn) {
+  _perfDetailDateFilter = filter;
+  _perfDetailPage = 1;
+  const bar = btn ? btn.closest('.coll-filters-right') : document;
+  (bar || document).querySelectorAll('.coll-filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (filter !== 'range') {
+    const f = qs('#perf-from'), t = qs('#perf-to');
+    if (f) { f.value = ''; f.classList.remove('has-value'); }
+    if (t) { t.value = ''; t.classList.remove('has-value'); }
+  }
+  renderPerfDetailTable();
+}
+
+function _perfDetailFilteredLogs() {
+  const logs = _perfDetailLogs || [];
+  if (_perfDetailDateFilter === 'all') return logs;
+
+  const now = new Date();
+  let start = null, end = null;
+
+  if (_perfDetailDateFilter === 'today') {
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    end = new Date(start.getTime() + 86400000);
+  } else if (_perfDetailDateFilter === 'yesterday') {
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    end = new Date(start.getTime() + 86400000);
+  } else if (_perfDetailDateFilter === 'week') {
+    const day = now.getDay(); // 0=Sunday
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+    end = new Date(start.getTime() + 7 * 86400000);
+  } else if (_perfDetailDateFilter === 'month') {
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+    end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  } else if (_perfDetailDateFilter === 'range') {
+    const fromVal = qs('#perf-from')?.value;
+    const toVal = qs('#perf-to')?.value;
+    if (fromVal) start = new Date(fromVal + 'T00:00:00');
+    if (toVal) end = new Date(toVal + 'T23:59:59.999');
+  }
+
+  return logs.filter(log => {
+    if (!log.createdAt) return false;
+    const d = new Date(log.createdAt);
+    if (start && d < start) return false;
+    if (end && d >= (_perfDetailDateFilter === 'range' ? new Date(end.getTime() + 1) : end)) return false;
+    return true;
+  });
+}
+
+function setPerfDetailPage(p) {
+  _perfDetailPage = p;
+  renderPerfDetailTable();
+}
+
+function _perfDetailOrdersCount(logs) {
+  return new Set(logs.filter(l => l.orderId).map(l => String(l.orderId))).size;
+}
+
+function renderPerfDetailTable() {
+  const body = qs('#perf-detail-body');
+  if (!body) return;
+
+  const filtered = _perfDetailFilteredLogs();
+  const summary = qs('#perf-detail-summary');
+
+  if (!_perfDetailLogs.length) {
     body.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)">لا يوجد سجل نقاط لهذا الموظف بعد</div>`;
+    renderPagination('perf-detail-pagination', 0, 1, PERF_DETAIL_PAGE_SIZE, 'setPerfDetailPage');
+    if (summary) summary.innerHTML = '';
+    return;
+  }
+  if (summary) {
+    const ordersCount = _perfDetailOrdersCount(filtered);
+    summary.innerHTML = `إجمالي عدد الأوردرات ضمن هذا الفلتر: <strong style="color:var(--text)">${fmtN(ordersCount)}</strong>`;
+  }
+  if (!filtered.length) {
+    body.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)">لا توجد نقاط ضمن هذا النطاق الزمني</div>`;
+    renderPagination('perf-detail-pagination', 0, 1, PERF_DETAIL_PAGE_SIZE, 'setPerfDetailPage');
     return;
   }
 
+  const totalPages = Math.ceil(filtered.length / PERF_DETAIL_PAGE_SIZE) || 1;
+  if (_perfDetailPage > totalPages) _perfDetailPage = totalPages;
+  const pageLogs = filtered.slice((_perfDetailPage - 1) * PERF_DETAIL_PAGE_SIZE, _perfDetailPage * PERF_DETAIL_PAGE_SIZE);
+
   const orderRefById = new Map((_shopifyOrders || []).map(o => [String(o._id), o.ref]));
 
-  const rowsHtml = logs.map(log => {
+  const rowsHtml = pageLogs.map(log => {
     const isBonus = log.actionType === 'manual_bonus';
     const orderRef = log.orderId ? (orderRefById.get(String(log.orderId)) || null) : null;
     const pointsColor = log.points > 0 ? '#059669' : (log.points < 0 ? 'var(--red)' : 'var(--muted)');
@@ -56753,40 +57526,111 @@ async function openEmployeePerformanceDetail(employeeId, employeeName) {
       </thead>
       <tbody>${rowsHtml}</tbody>
     </table>`;
+
+  renderPagination('perf-detail-pagination', filtered.length, _perfDetailPage, PERF_DETAIL_PAGE_SIZE, 'setPerfDetailPage');
 }
 
-function openManualBonusModal(employeeId, employeeName) {
+function _perfDetailFilterLabel() {
+  const labels = {
+    all: 'كل الفترات',
+    today: 'اليوم',
+    yesterday: 'أمس',
+    week: 'هذا الأسبوع',
+    month: 'هذا الشهر',
+  };
+  if (_perfDetailDateFilter !== 'range') return labels[_perfDetailDateFilter] || 'كل الفترات';
+  const fromVal = qs('#perf-from')?.value;
+  const toVal = qs('#perf-to')?.value;
+  const fmtD = v => v ? new Date(v + 'T00:00:00').toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+  const from = fmtD(fromVal), to = fmtD(toVal);
+  if (from && to) return `من ${from} إلى ${to}`;
+  if (from) return `من ${from}`;
+  if (to) return `حتى ${to}`;
+  return 'كل الفترات';
+}
+
+function _printPerfDetailReport(employeeName) {
+  const filtered = _perfDetailFilteredLogs();
+  const ordersCount = _perfDetailOrdersCount(filtered);
+  const totalPoints = filtered.reduce((s, l) => s + (l.points || 0), 0);
+  const orderRefById = new Map((_shopifyOrders || []).map(o => [String(o._id), o.ref]));
+  const periodLabel = _perfDetailFilterLabel();
+
+  const rows = filtered.map(log => {
+    const isBonus = log.actionType === 'manual_bonus';
+    const orderRef = log.orderId ? (orderRefById.get(String(log.orderId)) || null) : null;
+    const orderCell = orderRef ? `#${String(orderRef).replace(/^#+/, '')}` : (isBonus ? 'غير مرتبط بأوردر' : '—');
+    const byCell = isBonus && log.meta && log.meta.adjustedBy ? log.meta.adjustedBy : '—';
+    const dateStr = log.createdAt ? new Date(log.createdAt).toLocaleString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+    return `<tr>
+      <td>${esc(_perfActionLabel(log.actionType))}</td>
+      <td>${esc(log.note || '—')}</td>
+      <td>${esc(orderCell)}</td>
+      <td>${esc(byCell)}</td>
+      <td>${esc(dateStr)}</td>
+      <td style="font-weight:700;color:${log.points > 0 ? '#10b981' : (log.points < 0 ? '#ef4444' : '#64748b')}">${log.points > 0 ? '+' : ''}${log.points}</td>
+    </tr>`;
+  }).join('');
+
+  const w = window.open('', '_blank', 'width=950,height=700');
+  w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"><title>تقرير نقاط الأداء</title>
+  <style>body{font-family:Cairo,Arial,sans-serif;padding:20px;color:#1e293b}h2{color:#1e3a5f;margin-bottom:4px}
+  .sub{color:#64748b;font-size:13px;margin-bottom:16px}
+  .kpis{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}.kpi{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 16px;min-width:120px;text-align:center}
+  .kpi-l{font-size:11px;font-weight:700;color:#64748b;margin-bottom:4px}.kpi-v{font-size:16px;font-weight:800}
+  table{width:100%;border-collapse:collapse;font-size:12px}th{background:#1e3a5f;color:#fff;padding:8px 10px;text-align:right}
+  td{padding:7px 10px;border-bottom:1px solid #e2e8f0}tr:nth-child(even) td{background:#f8fafc}
+  @media print{body{padding:10px}}</style></head><body>
+  <h2>تقرير نقاط الأداء — ${esc(employeeName)}</h2>
+  <div class="sub">الفترة: ${esc(periodLabel)} — تاريخ الطباعة: ${new Date().toLocaleString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-l">عدد الأوردرات</div><div class="kpi-v">${fmtN(ordersCount)}</div></div>
+    <div class="kpi"><div class="kpi-l">عدد الحركات</div><div class="kpi-v">${fmtN(filtered.length)}</div></div>
+    <div class="kpi"><div class="kpi-l">إجمالي النقاط</div><div class="kpi-v" style="color:${totalPoints >= 0 ? '#10b981' : '#ef4444'}">${totalPoints > 0 ? '+' : ''}${totalPoints}</div></div>
+  </div>
+  <table><thead><tr><th>النوع</th><th>السبب</th><th>الأوردر</th><th>بواسطة</th><th>التاريخ</th><th>النقاط</th></tr></thead>
+  <tbody>${rows || `<tr><td colspan="6" style="text-align:center;color:#64748b">لا توجد بيانات ضمن هذه الفترة</td></tr>`}</tbody></table>
+  <script>setTimeout(()=>window.print(),400)<\/script></body></html>`);
+  w.document.close();
+}
+
+function openManualBonusModal(employeeId, employeeName, mode) {
+  mode = mode === 'penalty' ? 'penalty' : 'bonus';
+  const isPenalty = mode === 'penalty';
   openModal(`
-    <h3 style="margin-bottom:16px">Manual Performance Adjustment — ${esc(employeeName)}</h3>
+    <h3 style="margin-bottom:16px">${isPenalty ? 'خصم نقاط' : 'إضافة نقاط'} — ${esc(employeeName)}</h3>
+    <input type="hidden" id="mb-mode" value="${mode}">
     <div class="form-group">
-      <label>Points <span style="color:var(--red)">*</span></label>
-      <input type="number" id="mb-points" placeholder="e.g. 5 or -3" step="1">
-      ${fiHint('Positive = bonus, negative = penalty/correction. Cannot be zero.')}
+      <label>عدد النقاط <span style="color:var(--red)">*</span></label>
+      <input type="number" id="mb-points" placeholder="مثال: 5" step="1" min="1">
+      ${fiHint(isPenalty ? 'سيتم خصم هذا العدد من النقاط.' : 'سيتم إضافة هذا العدد كمكافأة.')}
     </div>
     <div class="form-group">
-      <label>Reason <span style="color:var(--red)">*</span></label>
-      <textarea id="mb-reason" rows="3" placeholder="Why is this adjustment being made?"></textarea>
+      <label>السبب <span style="color:var(--red)">*</span></label>
+      <textarea id="mb-reason" rows="3" placeholder="ما سبب هذا التعديل؟"></textarea>
     </div>
     <div class="flex gap-8 mt-16">
-      <button class="btn btn-primary" onclick="saveManualBonus('${esc(employeeId)}')">Save Adjustment</button>
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn ${isPenalty ? '' : 'btn-primary'}" ${isPenalty ? `style="background:var(--red);color:#fff"` : ''} onclick="saveManualBonus('${esc(employeeId)}')">${isPenalty ? 'تأكيد الخصم' : 'حفظ الإضافة'}</button>
+      <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
     </div>`);
 }
 
 async function saveManualBonus(employeeId) {
-  const points = parseInt(qs('#mb-points')?.value, 10);
+  const mode = qs('#mb-mode')?.value === 'penalty' ? 'penalty' : 'bonus';
+  const rawPoints = parseInt(qs('#mb-points')?.value, 10);
   const reason = (qs('#mb-reason')?.value || '').trim();
-  if (!Number.isFinite(points) || points === 0) { toast('Enter a non-zero points value', true); return; }
-  if (!reason) { toast('Reason is required', true); return; }
+  if (!Number.isFinite(rawPoints) || rawPoints <= 0) { toast('أدخل عدد نقاط أكبر من صفر', true); return; }
+  if (!reason) { toast('السبب مطلوب', true); return; }
+  const points = mode === 'penalty' ? -Math.abs(rawPoints) : Math.abs(rawPoints);
   try {
     await api('/employee-performance/manual-bonus', {
       method: 'POST',
       body: JSON.stringify({ employeeId, points, reason }),
     });
     closeModal();
-    toast('Adjustment saved ✅');
+    toast(mode === 'penalty' ? 'تم تسجيل الخصم ✅' : 'تم حفظ الإضافة ✅');
     renderPerformanceDashboard();
-  } catch (e) { toast('Error: ' + (e.message || 'Failed to save'), true); }
+  } catch (e) { toast('خطأ: ' + (e.message || 'فشل الحفظ'), true); }
 }
 
 function openReassignOrderModal(orderId) {
@@ -57258,6 +58102,8 @@ function renderShopifyOrders() {
           const _isNewToday = _oAgeMs < 24 * 60 * 60 * 1000;
           const _oNewBadge = _isNewToday ? `<span class="mov-new-badge" style="margin-left:5px">جديد</span>` : '';
           const _newRowStyle = _isNewToday ? `background:linear-gradient(90deg,rgba(16,185,129,.07) 0%,transparent 100%);border-right:3px solid #10b981;` : '';
+          const _spRowSelected = _shopifySelectedIds.has(o._id);
+          const _selectedRowStyle = _spRowSelected ? `border-right:3px solid var(--accent);` : '';
 
           /* ── Notes cell — smart deposit parser ── */
           const noteText = (o.notes || '').trim().startsWith('العنوان:') ? '' : (o.notes || '').trim();
@@ -57359,7 +58205,7 @@ function renderShopifyOrders() {
 
           const _spSelectable = o.status === 'pending' && !o.cancelled;
           return `
-          <tr style="${_newRowStyle}animation-delay:${Math.min(_spRowIdx,20)*18}ms">
+          <tr class="${_spRowSelected ? 'sp-row-selected' : ''}" style="${_selectedRowStyle || _newRowStyle}animation-delay:${Math.min(_spRowIdx,20)*18}ms">
             <td style="text-align:center;padding:8px 6px">${_spSelectable ? `<input type="checkbox" class="sp-row-check" data-id="${o._id}" onclick="_toggleSelectShopifyRow('${o._id}',this,event)" ${_shopifySelectedIds.has(o._id) ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">` : ''}</td>
             <td style="white-space:nowrap"><b>${o.ref ? fmtRef(String(o.ref).replace(/^#+/, '')) : '-'}</b>${_oNewBadge}</td>
             <td style="white-space:nowrap;font-size:.78rem;color:var(--text-muted)">${o.shopifyCreatedAt ? _fmtShopifyDate(o.shopifyCreatedAt, o.shopifyCreatedAt) : '<span style="color:var(--text-muted)">—</span>'}</td>
@@ -57426,7 +58272,7 @@ function renderShopifyOrders() {
               </div>
             </td>
             <td style="font-size:.82rem;color:var(--text-muted);white-space:nowrap">${fmtJ(o.shipCost || 0)}</td>
-            <td>${o.discount > 0 ? `<span style="color:#10b981;font-size:.8rem;font-weight:600">${o.discountCode ? `<span style="font-size:.72rem;display:block;color:var(--text-muted)">${o.discountCode}</span>` : ''}${o.discountType === 'percent' ? o.discountValue + '%' : fmtJ(o.discount)}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+            <td>${o.discount > 0 ? `<span style="color:#10b981;font-size:.8rem;font-weight:600">${o.discountCode ? `<span style="font-size:.72rem;display:block;color:var(--text-muted)">${o.discountCode}</span>` : ''}${fmtJ(o.discount)}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
             <td><b style="color:var(--accent);font-size:.9rem">${fmtJ(o.total)}</b></td>
             <td>${noteCell}</td>
             <td>${tagsCell}</td>
@@ -58160,7 +59006,7 @@ async function approveShopifyOrder(id) {
         <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--text-muted)">العميل</span><b>${order.client}</b></div>
         <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--text-muted)">الأصناف</span><b>${order.items?.length || 0} أصناف</b></div>
         <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--text-muted)">الشحن</span><b>${fmtJ(order.shipCost || 0)}</b></div>
-        ${order.discount > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--text-muted)">الخصم ${order.discountCode ? '(' + order.discountCode + ')' : ''}</span><b style="color:#10b981">- ${order.discountType === 'percent' ? order.discountValue + '%' : fmtJ(order.discount)}</b></div>` : ''}
+        ${order.discount > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--text-muted)">الخصم ${order.discountCode ? '(' + order.discountCode + ')' : ''}</span><b style="color:#10b981">- ${fmtJ(order.discount)}</b></div>` : ''}
         <div style="display:flex;justify-content:space-between;font-size:1rem;border-top:1px solid var(--border);padding-top:8px;margin-top:4px"><span>الإجمالي</span><b style="color:var(--accent)">${fmtJ(order.total)}</b></div>
       </div>
       <div style="margin-bottom:12px">

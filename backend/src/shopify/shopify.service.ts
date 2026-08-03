@@ -93,8 +93,9 @@ export class ShopifyService {
       const itemsTotal = items.reduce((s, i) => s + (i.price * i.qty), 0);
       const total = Math.max(0, itemsTotal + shipCost - discount);
 
-      // بيانات الخصم
-      const discountApp = orderData.discount_applications?.[0];
+      // بيانات الخصم — نتجاهل تطبيقات الخصم الخاصة بالشحن (مثل Free Shipping التلقائي)
+      // لأنها ليست خصماً حقيقياً على قيمة الأوردر
+      const discountApp = this.pickOrderDiscountApplication(orderData.discount_applications);
       const discountCode = orderData.discount_codes?.[0]?.code || '';
       const discountType = discountApp?.value_type === 'percentage' ? 'percent' : 'fixed';
       const discountValue = this.parsePrice(discountApp?.value);
@@ -698,6 +699,14 @@ export class ShopifyService {
   private parsePrice(val: any): number {
     if (!val) return 0;
     return parseFloat(String(val).replace(/,/g, '')) || 0;
+  }
+
+  // يختار تطبيق الخصم الخاص بقيمة الأوردر/الأصناف من discount_applications،
+  // متجاهلاً تطبيقات الشحن (target_type: 'shipping_line') مثل "Free Shipping"
+  // التلقائي — والتي لا تمثل خصماً حقيقياً على سعر المنتجات ولا يجب عرضها كنسبة خصم
+  private pickOrderDiscountApplication(apps: any[]): any {
+    if (!Array.isArray(apps) || apps.length === 0) return undefined;
+    return apps.find((a) => a?.target_type !== 'shipping_line') || undefined;
   }
 
   private formatAddress(addr: any): string {
