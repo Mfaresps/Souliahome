@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Get, UseGuards, Req } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { AuthService } from './auth.service';
+import { AuthService, buildAuthUserPayload } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { PresenceGateway } from './presence.gateway';
@@ -26,17 +26,14 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getProfile(@Req() req: Request) {
-    const user = req.user as Record<string, unknown>;
-    return {
-      id: user.userId,
-      username: user.username,
-      name: user.name,
-      role: user.role,
-      phone: user.phone || '',
-      avatar: user.avatar || '',
-      perms: user.perms || [],
-    };
+  async getProfile(@Req() req: Request) {
+    const reqUser = req.user as Record<string, unknown>;
+    const userId = (reqUser.userId || reqUser.sub) as string;
+    // Read the full document rather than the JWT projection — the profile page
+    // needs lastLogin/createdAt, which the token payload does not carry.
+    const doc = userId ? await this.usersService.findById(userId) : null;
+    if (doc) return buildAuthUserPayload(doc);
+    return buildAuthUserPayload({ ...reqUser, _id: userId });
   }
 
   @Post('set-status')

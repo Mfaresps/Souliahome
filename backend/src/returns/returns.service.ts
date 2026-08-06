@@ -15,9 +15,6 @@ import { CreateReturnRequestDto } from './dto/return-request.dto';
 import { TransactionsService } from '../transactions/transactions.service';
 import { ExpensesService } from '../expenses/expenses.service';
 import { VaultService } from '../vault/vault.service';
-// #region agent log
-import { debugLog } from '../debug-log.util';
-// #endregion
 
 const MAX_RETURN_DAYS = 14;
 
@@ -123,12 +120,9 @@ export class ReturnsService {
     const now = new Date();
     const diffMs = now.getTime() - txDate.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    // Return window is advisory, not enforced — daysRemaining can go negative and is
+    // still stored/displayed as a "past the usual window" indicator, not a hard block.
     const daysRemaining = MAX_RETURN_DAYS - diffDays;
-    if (daysRemaining <= 0) {
-      throw new BadRequestException(
-        `انتهت مدة الاسترجاع (${MAX_RETURN_DAYS} يوم) — مرّ ${diffDays} يوم على المعاملة`,
-      );
-    }
     const duplicate = await this.returnModel
       .findOne({
         originalTransactionId: dto.originalTransactionId,
@@ -179,6 +173,8 @@ export class ReturnsService {
       priceDifference: 0,
       vaultRefundAccount: vaultRefundAccount!,
       vaultCollectAccount: '',
+      returnShipCo: dto.returnShipCo || '',
+      returnTrackingNumber: dto.returnTrackingNumber || '',
       requestedBy,
       status: 'معلق',
       daysRemaining,
@@ -239,22 +235,10 @@ export class ReturnsService {
       payStatus: 'مكتمل',
       discount: 0,
       shipCost: 0,
+      returnShipCo: ret.returnShipCo || '',
+      returnTrackingNumber: ret.returnTrackingNumber || '',
     };
     await this.transactionsService.create(returnTx as never);
-    // #region agent log
-    debugLog('returns.service.ts:approve', 'RETURN_APPROVED', {
-      hypothesisId: 'INV',
-      returnId: String(saved._id),
-      originalRef: ret.originalRef,
-      client: ret.client,
-      reason: ret.reason,
-      refundTotal,
-      refundAccount,
-      inventoryImpact: 'إضافة للمخزن (إرجاع من عميل)',
-      items: (ret.items || []).map((it: any) => ({ code: it.code, name: it.name, qty: it.qty })),
-      createdReturnTxRef: ret.originalRef + '-RET',
-    });
-    // #endregion
     return saved;
   }
 

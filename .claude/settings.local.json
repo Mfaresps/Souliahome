@@ -41,7 +41,11 @@
       "Bash(Format-Table)",
       "PowerShell(Start-Sleep -Seconds 3; \\(Invoke-WebRequest -Uri \"http://localhost:8080/\" -UseBasicParsing -ErrorAction SilentlyContinue\\).StatusCode)",
       "Skill(run)",
-      "Skill(run:*)"
+      "Skill(run:*)",
+      "Bash(node _repro_tmp.js)",
+      "Bash(SOULIA_USER='admin' SOULIA_PASS='fares@soulia' node _debug_tmp.js)",
+      "Bash(cd /tmp && grep -n \"^async function rejectProductEditRequest\\\\|^async function approveCancelRequest\" orig.html)",
+      "Read(//d/tmp/**)"
     ]
   }
 }

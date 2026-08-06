@@ -7,9 +7,6 @@ import { resolveVaultSegmentFromPaymentMethod } from './vault-segment.util';
 import { generateVaultTexts } from './vault-description.util';
 import { CreateVaultEntryDto, UpdateVaultEntryDto } from './dto/vault.dto';
 import { PresenceGateway } from '../auth/presence.gateway';
-// #region agent log
-import { debugLog } from '../debug-log.util';
-// #endregion
 
 @Injectable()
 export class VaultService {
@@ -125,7 +122,7 @@ export class VaultService {
     const stored = s.vaultBalance || 0;
     const delta = Math.abs(computed - stored);
     if (delta > 0.01) {
-      debugLog('vault.service.ts:assertBalanceIntegrity', 'BALANCE_INTEGRITY_MISMATCH', { stored, computed, delta });
+      console.error('[assertBalanceIntegrity] BALANCE_INTEGRITY_MISMATCH', { stored, computed, delta });
     }
     return { ok: delta <= 0.01, stored, computed, delta };
   }
@@ -286,25 +283,6 @@ export class VaultService {
       employee: employee || '',
       txNo,
     });
-    // #region agent log
-    debugLog('vault.service.ts:addSystemEntry', 'VAULT_ENTRY_CREATED', {
-      hypothesisId: 'H1,H3,H5',
-      txNo,
-      amount,
-      seg,
-      method,
-      source,
-      ref,
-      desc: finalDesc,
-      balanceAfter: {
-        cash: settings.vaultCash,
-        vodafone: settings.vaultVodafone,
-        instapay: settings.vaultInstapay,
-        bank: settings.vaultBank,
-        total: settings.vaultBalance,
-      },
-    });
-    // #endregion
     this.emit('vault:changed', {
       reason: 'system',
       amount,
@@ -550,20 +528,6 @@ export class VaultService {
     const cancelledTransactions = await this.vaultModel.countDocuments({ status: 'cancelled' });
     const pendingApprovals = entries.filter((e) => e.requiresApproval && !e.isApproved).length;
 
-    // #region agent log
-    debugLog('vault.service.ts:getStatistics', 'STATISTICS_COMPUTED', {
-      hypothesisId: 'H3',
-      seg: seg || 'ALL',
-      totalIncome,
-      totalExpense,
-      net: totalIncome - totalExpense,
-      totalTransactions: entries.length,
-      frozenTransactions,
-      cancelledTransactions,
-      pendingApprovals,
-      filterApplied: 'status === completed (fixed)',
-    });
-    // #endregion
     return {
       totalIncome,
       totalExpense,
@@ -664,29 +628,6 @@ export class VaultService {
     // Current balances
     const settings = await this.settingsService.getSettings();
 
-    // #region agent log
-    debugLog('vault.service.ts:getAnalytics', 'ANALYTICS_COMPUTED', {
-      hypothesisId: 'H3',
-      windowDays: days,
-      seg: seg || 'ALL',
-      dateRange: { from: fromStr, to: toStr },
-      monthlyNet: currentNet,
-      lastMonthNet: prevNet,
-      dailyAverage,
-      cashVelocity,
-      currentEntriesCount: currentEntries.length,
-      segmentBalances: {
-        cash: settings.vaultCash || 0,
-        vodafone: settings.vaultVodafone || 0,
-        instapay: settings.vaultInstapay || 0,
-        bank: settings.vaultBank || 0,
-        total: settings.vaultBalance || 0,
-      },
-      sumOfAllEntriesAmount: currentEntries.reduce((s, e) => s + e.amount, 0),
-      sumPositive: currentEntries.filter((e) => e.amount > 0).reduce((s, e) => s + e.amount, 0),
-      sumNegative: currentEntries.filter((e) => e.amount < 0).reduce((s, e) => s + e.amount, 0),
-    });
-    // #endregion
     return {
       dailyAverage,
       monthlyNet: currentNet,

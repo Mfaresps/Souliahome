@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
+import { CollectionsModule } from './collections/collections.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { SettingsModule } from './settings/settings.module';
 import { VaultModule } from './vault/vault.module';
@@ -25,6 +26,9 @@ import { BostaModule } from './bosta/bosta.module';
 import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { DemandPlanningModule } from './demand-planning/demand-planning.module';
 import { SupplierReturnsModule } from './supplier-returns/supplier-returns.module';
+import { InventoryMovementsModule } from './inventory-movements/inventory-movements.module';
+import { SupplierLedgerModule } from './supplier-ledger/supplier-ledger.module';
+import { SupplierLedgerBackfillModule } from './supplier-ledger/backfill/supplier-ledger-backfill.module';
 import { DraftsModule } from './drafts/drafts.module';
 import { CustomerServicePlaybookModule } from './customer-service-playbook/customer-service-playbook.module';
 import { EmployeePerformanceModule } from './employee-performance/employee-performance.module';
@@ -44,6 +48,7 @@ import { SeedService } from './seed/seed.service';
     ProductsModule,
     TransactionsModule,
     SuppliersModule,
+    CollectionsModule,
     ExpensesModule,
     SettingsModule,
     VaultModule,
@@ -60,6 +65,9 @@ import { SeedService } from './seed/seed.service';
     PurchaseOrdersModule,
     DemandPlanningModule,
     SupplierReturnsModule,
+    InventoryMovementsModule,
+    SupplierLedgerModule,
+    SupplierLedgerBackfillModule,
     DraftsModule,
     CustomerServicePlaybookModule,
     EmployeePerformanceModule,

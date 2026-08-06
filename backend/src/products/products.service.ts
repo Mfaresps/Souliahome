@@ -3,6 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
 import { Transaction, TransactionDocument } from '../transactions/schemas/transaction.schema';
+import {
+  CollectionProduct,
+  CollectionProductDocument,
+} from '../collections/schemas/collection-product.schema';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { MentionsService } from '../mentions/mentions.service';
@@ -14,12 +18,104 @@ export class ProductsService {
     private readonly productModel: Model<ProductDocument>,
     @InjectModel(Transaction.name)
     private readonly transactionModel: Model<TransactionDocument>,
+    @InjectModel(CollectionProduct.name)
+    private readonly collectionProductModel: Model<CollectionProductDocument>,
     private readonly presence: PresenceGateway,
     private readonly mentionsService: MentionsService,
   ) {}
 
   private emit(event: string, payload: unknown): void {
     try { this.presence?.emitEvent(event, payload); } catch { /* swallow */ }
+  }
+
+  private static readonly COLOR_ABBR: Record<string, string> = {
+    Black: 'BLK',
+    White: 'WHT',
+    Beige: 'BEI',
+    Gray: 'GRY',
+    Green: 'GRN',
+    Blue: 'BLU',
+    Brown: 'BRN',
+    Pink: 'PNK',
+    Red: 'RED',
+  };
+  private static readonly SIZE_ABBR: Record<string, string> = {
+    Small: 'S',
+    Medium: 'M',
+    Large: 'L',
+  };
+
+  /**
+   * Builds a readable slug from name + color + size, e.g.
+   * "Alba Cushion" + Green + Medium -> ALBA-CUSHION-GRN-M
+   * Falls back to a name-only or generic prefix when those parts are missing.
+   */
+  private buildProductCodePrefix(
+    name: string,
+    colors?: string[],
+    size?: string,
+  ): string {
+    const cleaned = String(name || '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9؀-ۿ\s]/g, '')
+      .trim();
+    const words = cleaned.split(/\s+/).filter(Boolean).slice(0, 2);
+    let prefix = words.join('-').slice(0, 16);
+    if (!prefix) prefix = `PROD-${Date.now().toString().slice(-6)}`;
+
+    const colorAbbr = colors?.[0]
+      ? ProductsService.COLOR_ABBR[colors[0]] || colors[0].slice(0, 3).toUpperCase()
+      : '';
+    const sizeAbbr = size
+      ? ProductsService.SIZE_ABBR[size] || size.slice(0, 1).toUpperCase()
+      : '';
+
+    return [prefix, colorAbbr, sizeAbbr].filter(Boolean).join('-');
+  }
+
+  private async generateProductCode(
+    name: string,
+    colors?: string[],
+    size?: string,
+  ): Promise<string> {
+    const prefix = this.buildProductCodePrefix(name, colors, size);
+    const regexSafePrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const count = await this.productModel
+      .countDocuments({ code: { $regex: `^${regexSafePrefix}-` } })
+      .exec();
+    return `${prefix}-${String(count + 1).padStart(3, '0')}`;
+  }
+
+  private async syncCollectionLink(
+    productId: string,
+    collectionId: string | null | undefined,
+    actor: string,
+  ): Promise<void> {
+    await this.collectionProductModel.deleteMany({ productId }).exec();
+    if (collectionId) {
+      await this.collectionProductModel.create({
+        collectionId,
+        productId,
+        addedBy: actor,
+        addedAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  private async logActivity(
+    productId: string,
+    action: string,
+    detail: string,
+    by: string,
+    changes?: { field: string; label: string; oldValue: unknown; newValue: unknown }[],
+  ): Promise<void> {
+    await this.productModel
+      .findByIdAndUpdate(productId, {
+        $push: {
+          activityLog: { action, detail, changes: changes || [], by, at: new Date().toISOString() },
+        },
+      })
+      .exec();
   }
 
   async findAll(): Promise<ProductDocument[]> {
@@ -42,19 +138,23 @@ export class ProductsService {
     return this.productModel.findOne({ name }).exec();
   }
 
-  async create(dto: CreateProductDto): Promise<ProductDocument> {
-    const code = String(dto.code || '').trim();
+  async create(dto: CreateProductDto, actor = ''): Promise<ProductDocument> {
     const name = String(dto.name || '').trim();
-    const [codeConflict, nameConflict] = await Promise.all([
-      this.findByCode(code),
-      this.findByName(name),
-    ]);
-    if (codeConflict) {
-      throw new ConflictException('الكود موجود بالفعل');
-    }
+    const nameConflict = await this.findByName(name);
     if (nameConflict) {
       throw new ConflictException('الاسم موجود بالفعل');
     }
+
+    let code = String(dto.code || '').trim();
+    if (!code) {
+      code = await this.generateProductCode(name, dto.colors, dto.size);
+    } else {
+      const codeConflict = await this.findByCode(code);
+      if (codeConflict) {
+        throw new ConflictException('الكود موجود بالفعل');
+      }
+    }
+
     const openingBalance = Math.max(
       0,
       Math.floor(Number(dto.openingBalance ?? 0)),
@@ -64,13 +164,23 @@ export class ProductsService {
       code,
       name,
       openingBalance,
+      createdBy: actor,
     });
+
+    if (dto.collectionId) {
+      await this.syncCollectionLink(created._id.toString(), dto.collectionId, actor);
+    }
+
     this.emit('product:changed', { action: 'created', product: created });
     this.emit('inventory:changed', { reason: 'product:created', code });
     return created;
   }
 
-  async update(id: string, dto: UpdateProductDto): Promise<ProductDocument> {
+  async update(
+    id: string,
+    dto: UpdateProductDto,
+    actor = '',
+  ): Promise<ProductDocument> {
     if (!isValidObjectId(id)) throw new BadRequestException(`معرّف الصنف غير صالح: "${id}"`);
     const patch: Record<string, unknown> = { ...dto };
 
@@ -101,8 +211,55 @@ export class ProductsService {
       patch.openingBalance = Math.max(0, Math.floor(Number(dto.openingBalance)));
     }
 
+    const TRACKED_LABELS: Record<string, string> = {
+      name: 'الاسم',
+      code: 'الكود',
+      sellPrice: 'سعر البيع',
+      buyPrice: 'سعر الشراء',
+      minStock: 'الحد الأدنى',
+      openingBalance: 'الرصيد الافتتاحي',
+      supplier: 'المورد',
+      imageUrl: 'رابط الصورة',
+      images: 'صور إضافية',
+      categoryId: 'التصنيف',
+      collectionId: 'المجموعة',
+      isActive: 'الحالة (مفعّل)',
+      description: 'الوصف',
+      colors: 'الألوان',
+      isPattern: 'نقشة',
+      pattern: 'اسم النقشة',
+      material: 'الخامة',
+      sizeType: 'نوع المقاس',
+      size: 'المقاس',
+      dimensions: 'الأبعاد',
+      tags: 'الوسوم',
+    };
+    // Use `patch` (already trimmed/normalized for name/code/openingBalance above), not the raw
+    // `dto`, so whitespace-only edits don't produce spurious "changed" log entries.
+    const changedFields = Object.keys(TRACKED_LABELS).filter((f) => {
+      const newVal = patch[f];
+      if (newVal === undefined) return false;
+      const oldVal = (current as unknown as Record<string, unknown>)[f];
+      return JSON.stringify(oldVal ?? null) !== JSON.stringify(newVal ?? null);
+    });
+
     const product = await this.productModel.findByIdAndUpdate(id, patch, { new: true }).exec();
     if (!product) throw new NotFoundException('الصنف غير موجود');
+
+    if (changedFields.length) {
+      const changes = changedFields.map((f) => ({
+        field: f,
+        label: TRACKED_LABELS[f],
+        oldValue: (current as unknown as Record<string, unknown>)[f] ?? null,
+        newValue: patch[f] ?? null,
+      }));
+      const detail = changedFields.map((f) => TRACKED_LABELS[f]).join('، ');
+      await this.logActivity(id, 'تعديل بيانات الصنف', `تم تحديث: ${detail}`, actor, changes);
+    }
+
+    if (dto.collectionId !== undefined) {
+      await this.syncCollectionLink(id, dto.collectionId || null, actor);
+    }
 
     this.emit('product:changed', { action: 'updated', product });
     this.emit('inventory:changed', { reason: 'product:updated', code: product.code });
@@ -302,6 +459,19 @@ export class ProductsService {
       name: 'الاسم',
       code: 'الكود',
       imageUrl: 'رابط الصورة',
+      images: 'صور إضافية',
+      categoryId: 'التصنيف',
+      collectionId: 'المجموعة',
+      isActive: 'الحالة (مفعّل)',
+      description: 'الوصف',
+      colors: 'الألوان',
+      isPattern: 'نقشة',
+      pattern: 'اسم النقشة',
+      material: 'الخامة',
+      sizeType: 'نوع المقاس',
+      size: 'المقاس',
+      dimensions: 'الأبعاد',
+      tags: 'الوسوم',
     };
 
     const changes = Object.entries(dto.changes)
@@ -352,6 +522,27 @@ export class ProductsService {
     Object.assign(product, patch);
     for (const key of Object.keys(patch)) product.markModified(key);
     await product.save();
+
+    if (patch.collectionId !== undefined) {
+      await this.syncCollectionLink(id, (patch.collectionId as string) || null, reviewedBy);
+    }
+    if (Object.keys(patch).length) {
+      const changes = (
+        req.changes as Array<{
+          field: string;
+          label?: string;
+          oldValue: unknown;
+          newValue: unknown;
+        }>
+      ).map((c) => ({
+        field: c.field,
+        label: c.label || c.field,
+        oldValue: c.oldValue,
+        newValue: c.newValue,
+      }));
+      const detail = changes.map((c) => c.label).join('، ');
+      await this.logActivity(id, 'اعتماد طلب تعديل', `تم تحديث: ${detail}`, reviewedBy, changes);
+    }
 
     try {
       if (req.requestedById || req.requestedByUsername) {
@@ -421,17 +612,23 @@ export class ProductsService {
       openingBalance?: number;
       supplier?: string;
       imageUrl?: string;
+      categoryId?: string;
+      collectionId?: string;
+      description?: string;
+      colors?: string[];
+      isPattern?: boolean;
+      pattern?: string;
+      material?: string;
+      sizeType?: string;
+      size?: string;
+      dimensions?: { length?: number; width?: number; height?: number };
+      isActive?: boolean;
     }[],
+    actor = '',
   ): Promise<{ created: number; updated: number }> {
-    // #region agent log
-    fetch('http://127.0.0.1:7285/ingest/76d98979-170a-4e37-ae45-7d75cc90954a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a36edf'},body:JSON.stringify({sessionId:'a36edf',location:'products.service.ts:145',message:'importProducts called',data:{itemCount:items.length,items:items.slice(0,3)},timestamp:Date.now(),hypothesisId:'A,B,C,D,E'})}).catch(()=>{});
-    // #endregion
     let created = 0;
     let updated = 0;
     for (const item of items) {
-      // #region agent log
-      fetch('http://127.0.0.1:7285/ingest/76d98979-170a-4e37-ae45-7d75cc90954a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a36edf'},body:JSON.stringify({sessionId:'a36edf',location:'products.service.ts:159',message:'Processing item - BEFORE trim',data:{rawCode:item.code,rawCodeType:typeof item.code,rawName:item.name,rawNameType:typeof item.name,codeIsNull:item.code===null,codeIsUndefined:item.code===undefined,nameIsNull:item.name===null,nameIsUndefined:item.name===undefined},timestamp:Date.now(),hypothesisId:'A,C,D'})}).catch(()=>{});
-      // #endregion
       const code = String(item.code || '').trim();
       const openingBalance = Math.max(
         0,
@@ -443,9 +640,6 @@ export class ProductsService {
         name: String(item.name || '').trim(),
         openingBalance,
       };
-      // #region agent log
-      fetch('http://127.0.0.1:7285/ingest/76d98979-170a-4e37-ae45-7d75cc90954a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a36edf'},body:JSON.stringify({sessionId:'a36edf',location:'products.service.ts:170',message:'Row prepared - AFTER trim',data:{finalCode:row.code,finalCodeLength:row.code.length,finalName:row.name,finalNameLength:row.name.length,codeEmpty:row.code==='',nameEmpty:row.name===''},timestamp:Date.now(),hypothesisId:'A,C'})}).catch(()=>{});
-      // #endregion
       const existing = await this.findByCode(code);
       if (existing) {
         // On update via import: if name is changing, check it won't collide with another product
@@ -457,6 +651,9 @@ export class ProductsService {
           }
         }
         await this.productModel.findByIdAndUpdate(existing._id, row).exec();
+        if (item.collectionId !== undefined) {
+          await this.syncCollectionLink(existing._id.toString(), item.collectionId || null, actor);
+        }
         updated++;
       } else {
         // On create via import: check name uniqueness
@@ -464,16 +661,19 @@ export class ProductsService {
         if (nameConflict) {
           throw new ConflictException(`الاسم "${String(item.name || '').trim()}" موجود بالفعل`);
         }
-        await this.productModel.create(row);
+        const createdProduct = await this.productModel.create(row);
+        if (item.collectionId) {
+          await this.syncCollectionLink(createdProduct._id.toString(), item.collectionId, actor);
+        }
         created++;
       }
     }
-    
+
     if (created > 0 || updated > 0) {
       this.emit('product:changed', { action: 'imported', created, updated });
       this.emit('inventory:changed', { reason: 'product:imported', created, updated });
     }
-    
+
     return { created, updated };
   }
 }

@@ -4,15 +4,35 @@ import {
   IsNumber,
   IsOptional,
   IsArray,
+  IsBoolean,
   ValidateNested,
   Min,
+  ArrayMaxSize,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+export class ProductDimensionsDto {
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly length?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly width?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly height?: number;
+}
+
 export class CreateProductDto {
   @IsString()
-  @IsNotEmpty()
-  readonly code: string;
+  @IsOptional()
+  readonly code?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -45,6 +65,63 @@ export class CreateProductDto {
   @IsString()
   @IsOptional()
   readonly imageUrl?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  readonly images?: string[];
+
+  @IsString()
+  @IsOptional()
+  readonly categoryId?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly collectionId?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  readonly isActive?: boolean;
+
+  @IsString()
+  @IsOptional()
+  readonly description?: string;
+
+  @IsArray()
+  @ArrayMaxSize(3)
+  @IsString({ each: true })
+  @IsOptional()
+  readonly colors?: string[];
+
+  @IsBoolean()
+  @IsOptional()
+  readonly isPattern?: boolean;
+
+  @IsString()
+  @IsOptional()
+  readonly pattern?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly material?: string;
+
+  @IsIn(['standard', 'custom', ''])
+  @IsOptional()
+  readonly sizeType?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly size?: string;
+
+  @ValidateNested()
+  @Type(() => ProductDimensionsDto)
+  @IsOptional()
+  readonly dimensions?: ProductDimensionsDto;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  readonly tags?: string[];
 }
 
 export class UpdateProductDto {
@@ -83,6 +160,63 @@ export class UpdateProductDto {
   @IsString()
   @IsOptional()
   readonly imageUrl?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  readonly images?: string[];
+
+  @IsString()
+  @IsOptional()
+  readonly categoryId?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly collectionId?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  readonly isActive?: boolean;
+
+  @IsString()
+  @IsOptional()
+  readonly description?: string;
+
+  @IsArray()
+  @ArrayMaxSize(3)
+  @IsString({ each: true })
+  @IsOptional()
+  readonly colors?: string[];
+
+  @IsBoolean()
+  @IsOptional()
+  readonly isPattern?: boolean;
+
+  @IsString()
+  @IsOptional()
+  readonly pattern?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly material?: string;
+
+  @IsIn(['standard', 'custom', ''])
+  @IsOptional()
+  readonly sizeType?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly size?: string;
+
+  @ValidateNested()
+  @Type(() => ProductDimensionsDto)
+  @IsOptional()
+  readonly dimensions?: ProductDimensionsDto;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  readonly tags?: string[];
 }
 
 export class ImportProductItemDto {
@@ -117,6 +251,53 @@ export class ImportProductItemDto {
   @IsString()
   @IsOptional()
   readonly imageUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly categoryId?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly collectionId?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly description?: string;
+
+  @IsArray()
+  @ArrayMaxSize(3)
+  @IsString({ each: true })
+  @IsOptional()
+  readonly colors?: string[];
+
+  @IsBoolean()
+  @IsOptional()
+  readonly isPattern?: boolean;
+
+  @IsString()
+  @IsOptional()
+  readonly pattern?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly material?: string;
+
+  @IsIn(['standard', 'custom', ''])
+  @IsOptional()
+  readonly sizeType?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly size?: string;
+
+  @ValidateNested()
+  @Type(() => ProductDimensionsDto)
+  @IsOptional()
+  readonly dimensions?: ProductDimensionsDto;
+
+  @IsBoolean()
+  @IsOptional()
+  readonly isActive?: boolean;
 }
 
 export class ImportProductsDto {
@@ -183,6 +364,19 @@ export class RequestProductEditDto {
     name?: string;
     code?: string;
     imageUrl?: string;
+    images?: string[];
+    categoryId?: string;
+    collectionId?: string;
+    isActive?: boolean;
+    description?: string;
+    colors?: string[];
+    isPattern?: boolean;
+    pattern?: string;
+    material?: string;
+    sizeType?: string;
+    size?: string;
+    dimensions?: { length?: number; width?: number; height?: number };
+    tags?: string[];
   };
 }
 

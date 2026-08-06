@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Transaction, TransactionSchema } from './schemas/transaction.schema';
 import { ReturnRequest, ReturnRequestSchema } from '../returns/schemas/return-request.schema';
@@ -14,6 +14,9 @@ import { MentionsModule } from '../mentions/mentions.module';
 import { DiscountOtpModule } from '../discount-otp/discount-otp.module';
 import { SettingsModule } from '../settings/settings.module';
 import { ShopifyModule } from '../shopify/shopify.module';
+import { SupplierLedgerModule } from '../supplier-ledger/supplier-ledger.module';
+import { SuppliersModule } from '../suppliers/suppliers.module';
+import { InventoryMovementsModule } from '../inventory-movements/inventory-movements.module';
 
 @Module({
   imports: [
@@ -29,6 +32,9 @@ import { ShopifyModule } from '../shopify/shopify.module';
     DiscountOtpModule,
     SettingsModule,
     ShopifyModule,
+    SupplierLedgerModule,
+    SuppliersModule,
+    forwardRef(() => InventoryMovementsModule),
   ],
   controllers: [TransactionsController],
   providers: [TransactionsService, ReferenceDetailService, ReportsExportService],

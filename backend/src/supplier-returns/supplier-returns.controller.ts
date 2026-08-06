@@ -14,6 +14,8 @@ import {
   UpdateSupplierReturnDto,
   RejectSupplierReturnDto,
   CancelSupplierReturnDto,
+  CompleteSupplierReturnDto,
+  ReverseSupplierReturnDto,
 } from './dto/supplier-return.dto';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
@@ -42,10 +44,14 @@ export class SupplierReturnsController {
   @Post()
   async create(
     @Body() dto: CreateSupplierReturnDto,
-    @Req() req: { user: { name: string; username: string } },
+    @Req() req: { user: { name: string; username: string; role: string } },
   ) {
     const requestedBy = req.user.name || req.user.username;
-    return this.supplierReturnsService.create(dto, requestedBy);
+    return this.supplierReturnsService.create(
+      dto,
+      requestedBy,
+      req.user.role === 'admin',
+    );
   }
 
   @Put(':id')
@@ -92,10 +98,17 @@ export class SupplierReturnsController {
   @Post(':id/complete')
   async complete(
     @Param('id') id: string,
+    @Body() dto: CompleteSupplierReturnDto,
     @Req() req: { user: { name: string; username: string } },
   ) {
     const completedBy = req.user.name || req.user.username;
-    return this.supplierReturnsService.complete(id, completedBy);
+    return this.supplierReturnsService.complete(
+      id,
+      completedBy,
+      dto?.settlementMode,
+      dto?.remainderMode,
+      dto?.vaultRefundAccount,
+    );
   }
 
   @Roles('admin')
@@ -107,5 +120,16 @@ export class SupplierReturnsController {
   ) {
     const by = req.user.name || req.user.username;
     return this.supplierReturnsService.cancel(id, by, dto.reason);
+  }
+
+  @Roles('admin')
+  @Post(':id/reverse')
+  async reverse(
+    @Param('id') id: string,
+    @Body() dto: ReverseSupplierReturnDto,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const by = req.user.name || req.user.username;
+    return this.supplierReturnsService.reverseReturn(id, by, dto.reason);
   }
 }

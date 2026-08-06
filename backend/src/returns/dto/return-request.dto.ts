@@ -116,6 +116,14 @@ export class CreateReturnRequestDto {
   @IsOptional()
   @IsString()
   readonly vaultCollectAccount?: string;
+
+  @IsOptional()
+  @IsString()
+  readonly returnShipCo?: string;
+
+  @IsOptional()
+  @IsString()
+  readonly returnTrackingNumber?: string;
 }
 
 export class RejectReturnDto {

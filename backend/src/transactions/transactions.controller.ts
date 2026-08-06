@@ -316,8 +316,12 @@ export class TransactionsController {
   }
 
   @Post(':id/restore')
-  async restore(@Param('id') id: string) {
-    return this.transactionsService.restore(id);
+  async restore(
+    @Param('id') id: string,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const restoredBy = req.user?.name || req.user?.username || 'مستخدم';
+    return this.transactionsService.restore(id, restoredBy);
   }
 
   @Post(':id/request-cancel')

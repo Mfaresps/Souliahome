@@ -11,6 +11,24 @@ export class SuppliersService {
     private readonly supplierModel: Model<SupplierDocument>,
   ) {}
 
+  /**
+   * Keeps `phones` and `phone` consistent on the way in, so no read site has to reconcile them.
+   * Trims, drops blanks, de-duplicates, and mirrors the first number into `phone`. Accepts either
+   * field alone: a client that only sends `phone` (older callers, imports) gets a one-item
+   * `phones`, and a client that only sends `phones` gets `phone` derived from it.
+   * Returns the fields to write, or nothing when neither was supplied — so an update that touches
+   * only e.g. `notes` never blanks out the phone list.
+   */
+  private normalizePhones(dto: { phone?: string; phones?: string[] }): { phone: string; phones: string[] } | null {
+    if (dto.phones === undefined && dto.phone === undefined) return null;
+    const source = dto.phones !== undefined ? dto.phones : [dto.phone as string];
+    const phones = (source || [])
+      .map(p => String(p ?? '').trim())
+      .filter(Boolean)
+      .filter((p, i, arr) => arr.indexOf(p) === i);
+    return { phones, phone: phones[0] || '' };
+  }
+
   async findAll(): Promise<SupplierDocument[]> {
     return this.supplierModel.find().sort({ createdAt: -1 }).exec();
   }
@@ -37,6 +55,7 @@ export class SuppliersService {
     };
     return this.supplierModel.create({
       ...dto,
+      ...(this.normalizePhones(dto) || {}),
       name: normalizedName,
       activityLog: [entry],
     });
@@ -54,6 +73,9 @@ export class SuppliersService {
       if (existing) throw new ConflictException('يوجد مورد آخر بهذا الاسم بالفعل.');
       updateData['name'] = normalizedName;
     }
+
+    const normalized = this.normalizePhones(dto);
+    if (normalized) Object.assign(updateData, normalized);
 
     const entry: SupplierActivityEntry = {
       action: 'تعديل بيانات المورد',

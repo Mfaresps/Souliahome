@@ -44,6 +44,11 @@ export class Transaction {
   @Prop({ default: '' })
   client: string;
 
+  /** Optional supplier reference for مشتريات transactions — populated going forward when the
+   *  caller supplies it. Historical/unlinked purchases fall back to name matching on `client`. */
+  @Prop({ default: '', index: true, sparse: true })
+  supplierId: string;
+
   @Prop()
   phone: string;
 
@@ -65,6 +70,10 @@ export class Transaction {
   @Prop({ default: 0 })
   remaining: number;
 
+  /** Standing supplier ledger credit applied against this purchase's total (مشتريات only). */
+  @Prop({ default: 0 })
+  creditApplied: number;
+
   @Prop({ type: [Object], required: true })
   items: TransactionItem[];
 
@@ -79,6 +88,14 @@ export class Transaction {
 
   @Prop()
   shipZone: string;
+
+  /** شركة الشحن التي رجعت بها شحنة المرتجع من العميل (مرتجع مبيعات فقط، اختياري). */
+  @Prop({ default: '' })
+  returnShipCo: string;
+
+  /** رقم تتبع شحنة المرتجع لدى شركة الشحن (مرتجع مبيعات فقط، اختياري). */
+  @Prop({ default: '' })
+  returnTrackingNumber: string;
 
   @Prop({ default: 0 })
   shipCost: number;

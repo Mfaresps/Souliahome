@@ -25,6 +25,12 @@ import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
 
+type ReqUser = { user?: { name?: string; username?: string; role?: string; perms?: string[] } };
+
+function actorOf(req: ReqUser): string {
+  return req.user?.name || req.user?.username || 'مستخدم';
+}
+
 @UseGuards(JwtAuthGuard)
 @Controller('products')
 export class ProductsController {
@@ -54,13 +60,13 @@ export class ProductsController {
   }
 
   @Post()
-  async create(@Body() dto: CreateProductDto) {
-    return this.productsService.create(dto);
+  async create(@Body() dto: CreateProductDto, @Request() req: ReqUser) {
+    return this.productsService.create(dto, actorOf(req));
   }
 
   @Post('import')
-  async importProducts(@Body() dto: ImportProductsDto) {
-    return this.productsService.importProducts(dto.items);
+  async importProducts(@Body() dto: ImportProductsDto, @Request() req: ReqUser) {
+    return this.productsService.importProducts(dto.items, actorOf(req));
   }
 
   @Post('bulk-update')
@@ -118,7 +124,7 @@ export class ProductsController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateProductDto,
-    @Request() req: { user?: { role?: string; perms?: string[] } },
+    @Request() req: ReqUser,
   ) {
     if (dto.buyPrice !== undefined && req.user?.role !== 'admin') {
       const perms = req.user?.perms || [];
@@ -126,7 +132,7 @@ export class ProductsController {
         throw new ForbiddenException('ليس لديك صلاحية تعديل سعر الشراء');
       }
     }
-    return this.productsService.update(id, dto);
+    return this.productsService.update(id, dto, actorOf(req));
   }
 
   @Delete(':id')

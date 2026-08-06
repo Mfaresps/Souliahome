@@ -48,6 +48,17 @@ export class SettingsController {
   @Put()
   async updateSettings(@Body() dto: UpdateSettingsDto, @Req() req: any) {
     const updated = await this.settingsService.updateSettings(dto, req.body);
+    // Language policy is enforced live: when the admin changes the system language
+    // or flips the staff-override switch, every connected client must re-evaluate
+    // immediately (see handleLangPolicy() in the frontend). Only emitted when one
+    // of the two fields was actually part of this request, so unrelated settings
+    // saves don't churn every open session.
+    if (dto.lang !== undefined || dto.langEnabled !== undefined) {
+      this.presenceGateway.emitEvent('settings:lang-policy', {
+        lang: updated.lang,
+        langEnabled: updated.langEnabled !== false,
+      });
+    }
     return this.settingsService.stripSensitive(updated);
   }
 

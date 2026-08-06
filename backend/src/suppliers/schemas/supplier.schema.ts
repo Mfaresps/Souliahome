@@ -15,8 +15,21 @@ export class Supplier {
   @Prop({ required: true })
   name: string;
 
+  /**
+   * Primary phone number. Kept as a plain string (rather than folded into `phones`) because many
+   * read sites — supplier cards, purchase-order/return printouts, the purchase form's auto-fill —
+   * want exactly one number to show. It always mirrors `phones[0]`.
+   */
   @Prop()
   phone: string;
+
+  /**
+   * All contact numbers for the supplier, primary first. Suppliers commonly have several
+   * (landline, sales rep, accounts). `phone` stays in sync with `phones[0]` so older records and
+   * single-number read sites keep working without a migration.
+   */
+  @Prop({ type: [String], default: [] })
+  phones: string[];
 
   @Prop()
   address: string;

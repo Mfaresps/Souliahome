@@ -1,5 +1,7 @@
 import {
   Injectable,
+  Inject,
+  forwardRef,
   Logger,
   NotFoundException,
   BadRequestException,
@@ -27,9 +29,13 @@ import { MentionsService } from '../mentions/mentions.service';
 import { DiscountOtpService } from '../discount-otp/discount-otp.service';
 import { SettingsService } from '../settings/settings.service';
 import { ShopifyAdminService } from '../shopify/shopify-admin.service';
-// #region agent log
-import { debugLog } from '../debug-log.util';
-// #endregion
+import { SupplierLedgerService } from '../supplier-ledger/supplier-ledger.service';
+import { SuppliersService } from '../suppliers/suppliers.service';
+import {
+  InventoryMovementsService,
+  RecordMovementEntry,
+} from '../inventory-movements/inventory-movements.service';
+import { InventoryMovementType } from '../inventory-movements/schemas/inventory-movement.schema';
 
 export interface InventoryItem {
   _id: string;
@@ -47,6 +53,7 @@ export interface InventoryItem {
   sales: number;
   current: number;
   status: 'ok' | 'low' | 'zero';
+  isActive: boolean;
 }
 
 export interface DashboardData {
@@ -86,6 +93,10 @@ export class TransactionsService {
     private readonly discountOtpService: DiscountOtpService,
     private readonly settingsService: SettingsService,
     private readonly shopifyAdmin: ShopifyAdminService,
+    private readonly supplierLedgerService: SupplierLedgerService,
+    private readonly suppliersService: SuppliersService,
+    @Inject(forwardRef(() => InventoryMovementsService))
+    private readonly inventoryMovementsService: InventoryMovementsService,
   ) {}
 
   // ── Concurrent edit lock: txId → { user, since } ──
@@ -190,6 +201,72 @@ export class TransactionsService {
     return true;
   }
 
+  /**
+   * Classifies a transaction's inventory-movement type + sign for the Inventory Movement Log.
+   * `sign` is the direction stock moves when this transaction is CREATED (+1 = stock in, -1 = stock out);
+   * callers reversing an effect (cancellation) flip the sign themselves.
+   * Returns null for transaction types that never affect stock.
+   */
+  private classifyInventoryMovement(
+    tx: TransactionDocument,
+  ): { type: InventoryMovementType; sign: 1 | -1 } | null {
+    if (this.transactionAddsSupplierPurchases(tx)) return { type: 'مشتريات', sign: 1 };
+    if (this.transactionAddsReturnToStock(tx)) return { type: 'مرتجع مبيعات', sign: 1 };
+    if (tx.type === 'مبيعات') return { type: 'مبيعات', sign: -1 };
+    if (tx.type === 'مرتجع مشتريات') return { type: 'مرتجع مشتريات', sign: -1 };
+    return null;
+  }
+
+  /** Resolves a supplierId for ledger posting — prefers an explicit id, falls back to name matching. Never throws. */
+  private async resolveSupplierIdForLedger(
+    explicitSupplierId: string | undefined,
+    clientName: string,
+  ): Promise<string> {
+    if (explicitSupplierId) return explicitSupplierId;
+    if (!clientName) return '';
+    try {
+      const suppliers = await this.suppliersService.findAll();
+      const match = suppliers.find(
+        (s) => s.name.trim().toLowerCase() === clientName.trim().toLowerCase(),
+      );
+      return match ? String(match._id) : '';
+    } catch {
+      return '';
+    }
+  }
+
+  /** Non-cancelled مشتريات transactions for a supplier that contain the given product code, oldest-first. Used by supplier-return allocation (FIFO/average). */
+  async findPurchasesBySupplierForCode(
+    supplierId: string,
+    supplierName: string,
+    code: string,
+  ): Promise<TransactionDocument[]> {
+    const orConds: Record<string, unknown>[] = [];
+    if (supplierId) orConds.push({ supplierId });
+    if (supplierName) orConds.push({ client: supplierName });
+    if (!orConds.length) return [];
+    return this.transactionModel
+      .find({
+        type: 'مشتريات',
+        cancelled: { $ne: true },
+        $or: orConds,
+        'items.code': code,
+      })
+      .sort({ date: 1 })
+      .exec();
+  }
+
+  /** All (any type, including cancelled — caller filters) transactions matching a supplier by id or name. Used by the supplier-ledger backfill. */
+  async findAllBySupplierName(
+    supplierName: string,
+  ): Promise<TransactionDocument[]> {
+    if (!supplierName) return [];
+    return this.transactionModel
+      .find({ client: supplierName })
+      .sort({ date: 1 })
+      .exec();
+  }
+
   async findAll(page?: number, limit?: number): Promise<TransactionDocument[]> {
     const query = this.transactionModel
       .find({ archived: { $ne: true } })
@@ -277,7 +354,30 @@ export class TransactionsService {
         const method = (dto as unknown as { depMethod?: string }).depMethod || 'كاش';
         await this.vaultService.assertSufficientBalance(method, depositPaid);
       }
+      // Applying standing supplier credit: verify it's actually available right before acting —
+      // matches this codebase's existing check-then-act posture for stock/vault checks above,
+      // no locking infra introduced.
+      const creditApplied = Number((dto as unknown as { creditApplied?: number }).creditApplied) || 0;
+      if (creditApplied > 0) {
+        const supplierId = await this.resolveSupplierIdForLedger(
+          dto.supplierId,
+          (dto as unknown as { client?: string }).client || '',
+        );
+        if (!supplierId) {
+          throw new BadRequestException('لا يمكن تطبيق رصيد آجل بدون تحديد المورد');
+        }
+        const { credit } = await this.supplierLedgerService.getBalanceSummary(supplierId);
+        if (creditApplied > credit) {
+          throw new BadRequestException(
+            `الرصيد الآجل المتاح (${credit} ج) أقل من المبلغ المطلوب تطبيقه (${creditApplied} ج)`,
+          );
+        }
+      }
     }
+    // Pre-creation stock snapshot for the Inventory Movement Log — taken BEFORE the transaction
+    // exists so this transaction's own items don't pollute their own "before" balance.
+    const _invSnapshotBefore = await this.getInventory();
+
     const tx = await this.transactionModel.create(dto);
 
     // Link discount OTP to created transaction (audit trail)
@@ -316,40 +416,72 @@ export class TransactionsService {
     }
 
     await this.recordVaultForTransaction(tx);
-    // #region agent log
-    debugLog('transactions.service.ts:create', 'TX_CREATED', {
-      hypothesisId: 'H1,H4,H5',
-      id: String(tx._id),
-      type: tx.type,
-      ref: tx.ref,
-      client: tx.client,
-      total: tx.total,
-      itemsTotal: tx.itemsTotal,
-      shipCost: tx.shipCost,
-      deposit: tx.deposit,
-      remaining: tx.remaining,
-      payStatus: tx.payStatus,
-      depMethod: tx.depMethod,
-      collectMethod: tx.collectMethod,
-      itemsCount: (tx.items || []).length,
-      itemsSum: (tx.items || []).reduce((s, it) => s + (Number(it.total) || 0), 0),
-      dtoDeposit: deposit,
-      dtoDepMethod: depMethod,
-    });
-    // #endregion
-    // #region agent log
-    const inventoryImpact = tx.type === 'مبيعات' ? 'خصم من المخزن' :
-      tx.type === 'مشتريات' && this.transactionAddsSupplierPurchases(tx) ? 'إضافة للمخزن' :
-      this.transactionAddsReturnToStock(tx) ? 'إرجاع للمخزن' : 'لا يؤثر';
-    debugLog('transactions.service.ts:create', 'INVENTORY_IMPACT', {
-      hypothesisId: 'INV',
-      txId: String(tx._id),
-      type: tx.type,
-      ref: tx.ref,
-      inventoryImpact,
-      items: (tx.items || []).map((it) => ({ code: it.code, name: it.name, qty: it.qty })),
-    });
-    // #endregion
+
+    if (tx.type === 'مشتريات' && this.transactionAddsSupplierPurchases(tx)) {
+      const supplierId = await this.resolveSupplierIdForLedger(
+        tx.supplierId,
+        tx.client || '',
+      );
+      const creditApplied = Number((dto as unknown as { creditApplied?: number }).creditApplied) || 0;
+      if (supplierId) {
+        await this.supplierLedgerService.postPurchaseDebt({
+          supplierId,
+          supplierName: tx.client || '',
+          transactionId: String(tx._id),
+          transactionRef: tx.ref || String(tx._id),
+          date: this.formatTxDateForVault(tx),
+          total: Number(tx.total) || 0,
+          // Both cash paid now AND credit applied reduce the NEW debt this purchase posts —
+          // credit itself is separately consumed via postCreditUsed below.
+          upfrontDeposit: (Number(tx.deposit) || 0) + creditApplied,
+          employee,
+        });
+        if (creditApplied > 0) {
+          await this.supplierLedgerService.postCreditUsed({
+            supplierId,
+            supplierName: tx.client || '',
+            transactionId: String(tx._id),
+            transactionRef: tx.ref || String(tx._id),
+            date: this.formatTxDateForVault(tx),
+            amount: creditApplied,
+            employee,
+          });
+        }
+      }
+    }
+    try {
+      const movementInfo = this.classifyInventoryMovement(tx);
+      if (movementInfo) {
+        const byCodeBefore = new Map(_invSnapshotBefore.map((r) => [String(r.code).trim(), r]));
+        const movementEntries: RecordMovementEntry[] = [];
+        for (const item of tx.items || []) {
+          const code = String(item.code || '').trim();
+          const invRow = byCodeBefore.get(code);
+          if (!invRow) continue;
+          const qtyBefore = invRow.current;
+          const qtyDelta = movementInfo.sign * (Number(item.qty) || 0);
+          movementEntries.push({
+            productId: invRow._id,
+            productCode: code,
+            productName: item.name || invRow.name,
+            type: movementInfo.type,
+            qtyDelta,
+            qtyBefore,
+            qtyAfter: qtyBefore + qtyDelta,
+            sourceTransactionId: String(tx._id),
+            sourceTransactionRef: tx.ref || String(tx._id),
+            sourceType: 'transaction-create',
+            by: employee || 'مستخدم',
+          });
+        }
+        await this.inventoryMovementsService.record(movementEntries);
+      }
+    } catch (err) {
+      this.logger.error(
+        `[create] inventory movement logging failed for tx ${tx._id}: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+    }
     this.emit('tx:created', { tx, by: employee });
     this.emit('inventory:changed', {
       reason: 'tx:created',
@@ -702,6 +834,58 @@ export class TransactionsService {
       }
     }
 
+    if (dto.items !== undefined && tx) {
+      try {
+        const movementInfo = this.classifyInventoryMovement(existing);
+        if (movementInfo) {
+          const beforeByCode = new Map<string, number>();
+          (existing.items || []).forEach((it) => {
+            const code = String(it.code || '').trim();
+            beforeByCode.set(code, (beforeByCode.get(code) || 0) + (Number(it.qty) || 0));
+          });
+          const afterByCode = new Map<string, number>();
+          (dto.items || []).forEach((it) => {
+            const code = String(it.code || '').trim();
+            afterByCode.set(code, (afterByCode.get(code) || 0) + (Number(it.qty) || 0));
+          });
+          const allCodes = new Set([...beforeByCode.keys(), ...afterByCode.keys()]);
+          const invSnapshot = await this.getInventory();
+          const invByCode = new Map(invSnapshot.map((r) => [String(r.code).trim(), r]));
+          const movementEntries: RecordMovementEntry[] = [];
+          for (const code of allCodes) {
+            const beforeQty = beforeByCode.get(code) || 0;
+            const afterQty = afterByCode.get(code) || 0;
+            const lineDelta = afterQty - beforeQty;
+            if (lineDelta === 0) continue;
+            const invRow = invByCode.get(code);
+            if (!invRow) continue;
+            const qtyDelta = movementInfo.sign * lineDelta;
+            const currentStock = invRow.current; // post-update stock — getInventory() ran after findByIdAndUpdate
+            movementEntries.push({
+              productId: invRow._id,
+              productCode: code,
+              productName: invRow.name,
+              type: movementInfo.type,
+              qtyDelta,
+              qtyBefore: currentStock - qtyDelta,
+              qtyAfter: currentStock,
+              sourceTransactionId: String(tx._id),
+              sourceTransactionRef: tx.ref || String(tx._id),
+              sourceType: 'transaction-update',
+              by: editedBy || 'مستخدم',
+              notes: `تعديل بنود المعاملة: ${beforeQty} ← ${afterQty}`,
+            });
+          }
+          await this.inventoryMovementsService.record(movementEntries);
+        }
+      } catch (err) {
+        this.logger.error(
+          `[update] inventory movement logging failed for tx ${id}: ${(err as Error).message}`,
+          (err as Error).stack,
+        );
+      }
+    }
+
     return tx!;
   }
 
@@ -796,12 +980,9 @@ export class TransactionsService {
           });
         } catch (err: any) {
           // Log but don't block cancellation — reversal failure should be flagged manually
-          debugLog('transactions.service.ts:performCancellation', 'COD_REVERSAL_FAILED', {
-            txId: String(tx._id),
-            ref: tx.ref,
-            codAmount,
-            error: err.message,
-          });
+          this.logger.error(
+            `[performCancellation] COD_REVERSAL_FAILED tx=${tx.ref || tx._id} codAmount=${codAmount}: ${err.message}`,
+          );
         }
       }
     }
@@ -833,6 +1014,21 @@ export class TransactionsService {
           tx.ref || String(tx._id),
         );
       }
+    } else if (tx.type === 'مرتجع مشتريات') {
+      // Reverses the positive vault entry recordVaultForTransaction posted at completion time
+      // (cash received back from the supplier) — this transaction always has deposit:0 (set by
+      // SupplierReturnsService.complete()), so it would otherwise fall through both branches above
+      // and silently leave the refunded cash unreclaimed.
+      if (previousTotal > 0) {
+        await this.vaultService.addSystemEntry(
+          -previousTotal,
+          vaultMethod,
+          `عكس مرتجع مشتريات — استرجاع الرد النقدي #${tx.ref || tx._id} — ${tx.client || ''} (بواسطة: ${cancelledBy})`,
+          new Date().toISOString().split('T')[0],
+          'إلغاء',
+          tx.ref || String(tx._id),
+        );
+      }
     } else if (previousDeposit > 0) {
       // مبيعات / مرتجع: refund deposit to client — deduct from vault
       await this.vaultService.addSystemEntry(
@@ -844,39 +1040,41 @@ export class TransactionsService {
         tx.ref || String(tx._id),
       );
     }
-    // #region agent log
-    debugLog('transactions.service.ts:performCancellation', 'TX_CANCELLED', {
-      hypothesisId: 'H1,H3,H4,H6',
-      id: String(saved._id),
-      type: saved.type,
-      ref: saved.ref,
-      previousDeposit,
-      previousTotal,
-      previousRemaining,
-      previousPayStatus,
-      previousCollectMethod,
-      depMethod: tx.depMethod,
-      vaultMethodUsed: vaultMethod,
-      totalPaidToSupplier: saved.type === 'مشتريات' ? previousTotal - previousRemaining : null,
-      additionalPaid: saved.type === 'مشتريات' ? (previousTotal - previousRemaining) - previousDeposit : null,
-      newRemainingAfterCancel: saved.remaining,
-      newPayStatus: saved.payStatus,
-    });
-    // #endregion
-    // #region agent log
-    const cancelInventoryImpact = saved.type === 'مبيعات' ? 'إلغاء = إعادة للمخزن (لم يُخصم فعلياً لأن المعاملة لم تكتمل)' :
-      saved.type === 'مشتريات' && this.transactionAddsSupplierPurchases(saved) ? 'إلغاء = خصم من المخزن (إن كانت أُضيفت)' :
-      'لا يؤثر';
-    debugLog('transactions.service.ts:performCancellation', 'INVENTORY_CANCEL_IMPACT', {
-      hypothesisId: 'INV',
-      txId: String(saved._id),
-      type: saved.type,
-      ref: saved.ref,
-      cancelInventoryImpact,
-      items: (saved.items || []).map((it) => ({ code: it.code, name: it.name, qty: it.qty })),
-      note: 'المعاملات الملغاة لا تُحتسب في المخزن (cancelled: true)',
-    });
-    // #endregion
+    try {
+      const movementInfo = this.classifyInventoryMovement(saved);
+      if (movementInfo) {
+        const invSnapshot = await this.getInventory();
+        const invByCode = new Map(invSnapshot.map((r) => [String(r.code).trim(), r]));
+        const movementEntries: RecordMovementEntry[] = [];
+        for (const item of saved.items || []) {
+          const code = String(item.code || '').trim();
+          const invRow = invByCode.get(code);
+          if (!invRow) continue;
+          const qtyDelta = -movementInfo.sign * (Number(item.qty) || 0); // reverse of the original effect
+          const currentStock = invRow.current; // post-cancellation stock — getInventory() reflects cancelled:true already
+          movementEntries.push({
+            productId: invRow._id,
+            productCode: code,
+            productName: item.name || invRow.name,
+            type: movementInfo.type,
+            qtyDelta,
+            qtyBefore: currentStock - qtyDelta,
+            qtyAfter: currentStock,
+            sourceTransactionId: String(saved._id),
+            sourceTransactionRef: saved.ref || String(saved._id),
+            sourceType: 'transaction-cancel',
+            by: cancelledBy || 'مستخدم',
+            reason,
+          });
+        }
+        await this.inventoryMovementsService.record(movementEntries);
+      }
+    } catch (err) {
+      this.logger.error(
+        `[performCancellation] inventory movement logging failed for tx ${saved._id}: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+    }
     this.emit('tx:cancelled', { tx: saved, by: cancelledBy });
 
     // ── إلغاء الطلب في شوبيفاي تلقائياً ──────────────────────────────────────
@@ -1183,26 +1381,24 @@ export class TransactionsService {
         tx.employee || '',
         { txId: String(saved._id), isPurchase, payAmount, isPartial: !isFullyPaid, newRemaining, client: tx.client || '' },
       );
+      if (isPurchase) {
+        const supplierId = await this.resolveSupplierIdForLedger(
+          saved.supplierId,
+          saved.client || '',
+        );
+        if (supplierId) {
+          await this.supplierLedgerService.postPayment({
+            supplierId,
+            supplierName: saved.client || '',
+            transactionId: String(saved._id),
+            transactionRef: saved.ref || String(saved._id),
+            date: paymentDate.split('T')[0],
+            amount: payAmount,
+            employee: by || saved.employee || '',
+          });
+        }
+      }
     }
-    // #region agent log
-    debugLog('transactions.service.ts:collect', 'TX_COLLECTED', {
-      hypothesisId: 'H1,H4',
-      id: String(saved._id),
-      type: saved.type,
-      ref: saved.ref,
-      isPurchase,
-      payAmount,
-      billedShip,
-      shipExtra,
-      netVaultAmount,
-      vaultDelta: isPurchase ? -payAmount : netVaultAmount,
-      collectMethod: dto.collectMethod,
-      newDeposit: saved.deposit,
-      newRemaining: saved.remaining,
-      newPayStatus: saved.payStatus,
-      previousRemainingAtStart: totalRemaining,
-    });
-    // #endregion
     this.emit('tx:updated', { tx: saved, action: 'collect' });
     if (isPurchase && isFullyPaid) {
       // purchase fully paid — inventory was already committed at creation, just notify
@@ -1565,7 +1761,7 @@ export class TransactionsService {
     return result.modifiedCount;
   }
 
-  async restore(id: string): Promise<TransactionDocument> {
+  async restore(id: string, restoredBy = ''): Promise<TransactionDocument> {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('معرّف المعاملة غير صالح');
     }
@@ -1588,7 +1784,40 @@ export class TransactionsService {
     this.recordVaultForTransaction(restored!).catch((err) =>
       console.error(`[restore] vault re-record failed for ${id}:`, err),
     );
+    // Re-apply inventory movement log (inverse of cancellation) — same non-blocking posture as vault re-record above.
+    this.recordRestoreInventoryMovement(restored!, restoredBy).catch((err) =>
+      this.logger.error(`[restore] inventory movement logging failed for ${id}: ${(err as Error).message}`, (err as Error).stack),
+    );
     return restored!;
+  }
+
+  private async recordRestoreInventoryMovement(restored: TransactionDocument, restoredBy: string): Promise<void> {
+    const movementInfo = this.classifyInventoryMovement(restored);
+    if (!movementInfo) return;
+    const invSnapshot = await this.getInventory();
+    const invByCode = new Map(invSnapshot.map((r) => [String(r.code).trim(), r]));
+    const movementEntries: RecordMovementEntry[] = [];
+    for (const item of restored.items || []) {
+      const code = String(item.code || '').trim();
+      const invRow = invByCode.get(code);
+      if (!invRow) continue;
+      const qtyDelta = movementInfo.sign * (Number(item.qty) || 0);
+      const currentStock = invRow.current;
+      movementEntries.push({
+        productId: invRow._id,
+        productCode: code,
+        productName: item.name || invRow.name,
+        type: movementInfo.type,
+        qtyDelta,
+        qtyBefore: currentStock - qtyDelta,
+        qtyAfter: currentStock,
+        sourceTransactionId: String(restored._id),
+        sourceTransactionRef: restored.ref || String(restored._id),
+        sourceType: 'transaction-restore',
+        by: restoredBy || 'مستخدم',
+      });
+    }
+    await this.inventoryMovementsService.record(movementEntries);
   }
 
   async clearAll(): Promise<void> {
@@ -1628,8 +1857,9 @@ export class TransactionsService {
             if (dateStr) {
               returnDateSet.add(dateStr);
             }
-          } else if (tx.type === 'مبيعات') {
-            // Sales: add to sales count (direct sales only)
+          } else if (tx.type === 'مبيعات' || tx.type === 'مرتجع مشتريات') {
+            // Sales / supplier returns (stock leaving the warehouse back to the supplier):
+            // both consume stock the same way.
             sales += item.qty;
           }
         });
@@ -1645,22 +1875,6 @@ export class TransactionsService {
       } else if (current <= (product.minStock || 10)) {
         status = 'low';
       }
-      // #region agent log
-      if (purchases > 0 || sales > 0 || returnsToStock > 0) {
-        debugLog('transactions.service.ts:getInventory', 'INVENTORY_ITEM_CALC', {
-          hypothesisId: 'INV',
-          code: product.code,
-          name: product.name,
-          openingBalance: openingBal,
-          purchases,
-          returnsToStock,
-          sales,
-          current,
-          formula: `${openingBal} + ${purchases} + ${returnsToStock} - ${sales} = ${current}`,
-          status,
-        });
-      }
-      // #endregion
       return {
         _id: product._id.toString(),
         code: product.code,
@@ -1677,6 +1891,7 @@ export class TransactionsService {
         sales,
         current,
         status,
+        isActive: (product as { isActive?: boolean }).isActive !== false,
       };
     });
   }
@@ -1772,27 +1987,6 @@ export class TransactionsService {
       .sort({ createdAt: -1 })
       .limit(8)
       .exec();
-    // #region agent log
-    debugLog('transactions.service.ts:getDashboard', 'DASHBOARD_COMPUTED', {
-      hypothesisId: 'H2,H3,H6',
-      totalProducts: inventory.length,
-      lowStockCount,
-      totalSales,
-      grossProductSales,
-      totalPurchases,
-      totalRemaining,
-      totalExpenses: expenseTotal,
-      grossProfit,
-      netProfit,
-      totalShipping,
-      totalShipLoss,
-      returnCount: approvedReturns.length,
-      totalReturns,
-      returnedProfit,
-      activeTxCount: activeTx.length,
-      salesTxCount: salesTx.length,
-    });
-    // #endregion
     return {
       totalProducts: inventory.length,
       lowStockCount,
@@ -2098,19 +2292,6 @@ export class TransactionsService {
       'خصم بعدي',
       tx.ref || String(tx._id),
     );
-    // #region agent log
-    debugLog('transactions.service.ts:applyPostDiscount', 'POST_DISCOUNT_APPLIED', {
-      hypothesisId: 'H1,H3',
-      id: String(saved._id),
-      ref: saved.ref,
-      discountAmount,
-      vaultAccount,
-      newDiscount: saved.discount,
-      newTotal: saved.total,
-      newRemaining: saved.remaining,
-      newPayStatus: saved.payStatus,
-    });
-    // #endregion
     return saved;
   }
 

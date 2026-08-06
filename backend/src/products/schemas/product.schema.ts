@@ -3,6 +3,27 @@ import { HydratedDocument } from 'mongoose';
 
 export type ProductDocument = HydratedDocument<Product>;
 
+export class ProductDimensions {
+  length?: number;
+  width?: number;
+  height?: number;
+}
+
+export class ProductActivityChange {
+  field: string;
+  label: string;
+  oldValue: unknown;
+  newValue: unknown;
+}
+
+export class ProductActivityEntry {
+  action: string;
+  detail: string;
+  changes?: ProductActivityChange[];
+  by: string; // اسم المستخدم
+  at: string; // ISO timestamp
+}
+
 @Schema({ timestamps: true })
 export class Product {
   @Prop({ required: true, unique: true })
@@ -28,6 +49,51 @@ export class Product {
 
   @Prop({ default: '' })
   imageUrl: string;
+
+  @Prop({ type: [String], default: [] })
+  images: string[];
+
+  @Prop({ type: String, default: null })
+  categoryId: string | null;
+
+  @Prop({ type: String, default: null })
+  collectionId: string | null;
+
+  @Prop({ default: true })
+  isActive: boolean;
+
+  @Prop({ default: '' })
+  description: string;
+
+  @Prop({ type: [String], default: [] })
+  colors: string[];
+
+  @Prop({ default: false })
+  isPattern: boolean;
+
+  @Prop({ default: '' })
+  pattern: string;
+
+  @Prop({ default: '' })
+  material: string;
+
+  @Prop({ type: String, default: '' })
+  sizeType: 'standard' | 'custom' | '';
+
+  @Prop({ default: '' })
+  size: string;
+
+  @Prop({ type: Object, default: null })
+  dimensions: ProductDimensions | null;
+
+  @Prop({ type: [String], default: [] })
+  tags: string[];
+
+  @Prop({ default: '' })
+  createdBy: string;
+
+  @Prop({ type: [Object], default: [] })
+  activityLog: ProductActivityEntry[];
 
   /** Edit request submitted by employee, pending manager approval */
   @Prop({ type: Object, default: null })

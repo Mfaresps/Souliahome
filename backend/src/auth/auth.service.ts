@@ -16,17 +16,59 @@ const resetTokens = new Map<string, { userId: string; expiresAt: number }>();
 // In-memory user status tracker
 const usersStatus: Record<string, { status: 'online' | 'offline'; lastSeen: Date }> = {};
 
+export interface AuthUserPayload {
+  id: string;
+  username: string;
+  name: string;
+  role: string;
+  phone: string;
+  avatar: string;
+  jobTitle: string;
+  perms: string[];
+  lastLogin: string | null;
+  lastSeen: string | null;
+  createdAt: string | null;
+  isActive: boolean;
+  totpEnabled: boolean;
+}
+
+/**
+ * Single source of truth for the user object returned to the client (login,
+ * TOTP verify, /auth/me). Every field the profile page reads must be here —
+ * lastLogin/createdAt used to be omitted, so the UI showed "غير متاح".
+ *
+ * `lastLoginOverride` lets the login flow report the *previous* login instead
+ * of the one being performed right now.
+ */
+export function buildAuthUserPayload(
+  user: Record<string, any>,
+  lastLoginOverride?: Date | null,
+): AuthUserPayload {
+  const iso = (v: unknown): string | null => {
+    if (!v) return null;
+    const d = v instanceof Date ? v : new Date(v as string);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  };
+  return {
+    id: user._id ? String(user._id) : String(user.id ?? ''),
+    username: user.username || '',
+    name: user.name || '',
+    role: user.role || '',
+    phone: user.phone || '',
+    avatar: user.avatar || '',
+    jobTitle: user.jobTitle || '',
+    perms: user.perms || [],
+    lastLogin: iso(lastLoginOverride !== undefined ? lastLoginOverride : user.lastLogin),
+    lastSeen: iso(user.lastSeen),
+    createdAt: iso(user.createdAt),
+    isActive: user.isActive !== false,
+    totpEnabled: !!user.totpEnabled,
+  };
+}
+
 export interface LoginResponse {
   accessToken?: string;
-  user?: {
-    id: string;
-    username: string;
-    name: string;
-    role: string;
-    phone: string;
-    avatar: string;
-    perms: string[];
-  };
+  user?: AuthUserPayload;
   requireTotp?: boolean;
   requireTotpSetup?: boolean;
   userId?: string;
@@ -109,6 +151,10 @@ export class AuthService {
       );
     }
 
+    // Capture the *previous* login before it is overwritten below, so the
+    // profile page shows "last time you signed in", not "just now".
+    const previousLogin: Date | null = user.lastLogin ?? null;
+
     // Successful login — reset counter
     await this.usersService.resetLoginAttempts(user._id.toString());
     await this.usersService.updateLastLogin(user._id.toString());
@@ -124,15 +170,7 @@ export class AuthService {
       const accessToken = this.jwtService.sign(payload);
       return {
         accessToken,
-        user: {
-          id: userId,
-          username: user.username,
-          name: user.name,
-          role: user.role,
-          phone: user.phone || '',
-          avatar: user.avatar || '',
-          perms: user.perms || [],
-        },
+        user: buildAuthUserPayload(user, previousLogin),
       };
     }
 
@@ -156,15 +194,7 @@ export class AuthService {
     const payload = { sub: userId, username: user.username };
     return {
       accessToken: this.jwtService.sign(payload),
-      user: {
-        id: userId,
-        username: user.username,
-        name: user.name,
-        role: user.role,
-        phone: user.phone || '',
-        avatar: user.avatar || '',
-        perms: user.perms || [],
-      },
+      user: buildAuthUserPayload(user, previousLogin),
     };
   }
 
@@ -189,15 +219,7 @@ export class AuthService {
     const payload = { sub: userId, username: user.username };
     return {
       accessToken: this.jwtService.sign(payload),
-      user: {
-        id: userId,
-        username: user.username,
-        name: user.name,
-        role: user.role,
-        phone: user.phone || '',
-        avatar: user.avatar || '',
-        perms: user.perms || [],
-      },
+      user: buildAuthUserPayload(user),
       ...(trustDevice && { deviceToken }),
     };
   }

@@ -65,6 +65,37 @@ function migrateDoc(collection: string, doc: any): void {
     def(doc, 'openingBalance', 0);
     def(doc, 'supplier', '');
     def(doc, 'imageUrl', '');
+    def(doc, 'editRequest', null);
+    // Fields added with the products/categories redesign (Aug 2026) — older backups lack them.
+    def(doc, 'images', []);
+    def(doc, 'categoryId', null);
+    def(doc, 'collectionId', null);
+    def(doc, 'isActive', true);
+    def(doc, 'description', '');
+    def(doc, 'colors', []);
+    def(doc, 'isPattern', false);
+    def(doc, 'pattern', '');
+    def(doc, 'material', '');
+    def(doc, 'sizeType', '');
+    def(doc, 'size', '');
+    def(doc, 'dimensions', null);
+    def(doc, 'tags', []);
+    def(doc, 'createdBy', '');
+    def(doc, 'activityLog', []);
+    return;
+  }
+
+  if (collection === 'suppliers') {
+    // `phones` was added Aug 2026; `phone` mirrors phones[0]. Backfill both directions so
+    // restored suppliers work with the multi-phone UI and the single-number read sites.
+    if (!Array.isArray(doc.phones)) doc.phones = doc.phone ? [doc.phone] : [];
+    if (!doc.phone && doc.phones.length) doc.phone = doc.phones[0];
+    def(doc, 'phone', '');
+    def(doc, 'address', '');
+    def(doc, 'email', '');
+    def(doc, 'products', '');
+    def(doc, 'notes', '');
+    def(doc, 'activityLog', []);
     return;
   }
 
@@ -82,14 +113,82 @@ function migrateDoc(collection: string, doc: any): void {
     return;
   }
 
-  if (collection === 'products') {
-    def(doc, 'sellPrice', 0);
-    def(doc, 'buyPrice', 0);
-    def(doc, 'minStock', 10);
-    def(doc, 'openingBalance', 0);
-    def(doc, 'supplier', '');
-    def(doc, 'imageUrl', '');
-    def(doc, 'editRequest', null);
+  if (collection === 'supplierreturnorders') {
+    def(doc, 'itemsTotal', 0);
+    def(doc, 'vaultRefundAccount', '');
+    def(doc, 'linkedTransactionId', '');
+    def(doc, 'settlement', null);
+    def(doc, 'reversal', null);
+    def(doc, 'statusHistory', []);
+    // originalTransactionId/originalRef/originalDate are deprecated in favour of linkedInvoices[].
+    // Older records only have the singular fields — synthesise the array so the new read paths work.
+    def(doc, 'originalTransactionId', '');
+    def(doc, 'originalRef', '');
+    def(doc, 'originalDate', '');
+    if (!Array.isArray(doc.linkedInvoices)) {
+      doc.linkedInvoices = doc.originalTransactionId
+        ? [{
+            transactionId: doc.originalTransactionId,
+            ref: doc.originalRef || '',
+            date: doc.originalDate || '',
+            allocatedTotal: Number(doc.total) || 0,
+          }]
+        : [];
+    }
+    def(doc, 'allocationMethod', doc.linkedInvoices.length > 1 ? 'manual' : 'single-invoice');
+    if (Array.isArray(doc.items)) {
+      doc.items.forEach((it: any) => { if (!Array.isArray(it.allocations)) it.allocations = []; });
+    }
+    return;
+  }
+
+  if (collection === 'supplierledgerentries') {
+    def(doc, 'runningBalance', 0);
+    def(doc, 'sourceType', '');
+    def(doc, 'sourceId', '');
+    def(doc, 'sourceRef', '');
+    def(doc, 'vaultEntryId', '');
+    def(doc, 'vaultSeg', '');
+    def(doc, 'refNo', '');
+    def(doc, 'employee', '');
+    def(doc, 'reversed', false);
+    def(doc, 'reversalOfEntryId', '');
+    def(doc, 'meta', null);
+    return;
+  }
+
+  if (collection === 'inventorymovements') {
+    def(doc, 'qtyBefore', 0);
+    def(doc, 'qtyAfter', 0);
+    def(doc, 'sourceTransactionId', '');
+    def(doc, 'sourceTransactionRef', '');
+    def(doc, 'byUserId', '');
+    def(doc, 'reason', '');
+    def(doc, 'notes', '');
+    return;
+  }
+
+  if (collection === 'categories') {
+    def(doc, 'parentId', null);
+    def(doc, 'isActive', true);
+    def(doc, 'description', '');
+    return;
+  }
+
+  if (collection === 'collections') {
+    def(doc, 'categoryId', null);
+    def(doc, 'coverImage', '');
+    def(doc, 'description', '');
+    def(doc, 'status', 'draft');
+    def(doc, 'supplierIds', []);
+    def(doc, 'tagIds', []);
+    def(doc, 'activityLog', []);
+    return;
+  }
+
+  if (collection === 'collectionproducts') {
+    def(doc, 'addedBy', '');
+    def(doc, 'addedAt', '');
     return;
   }
 
@@ -462,6 +561,58 @@ export class SettingsService {
     return settings.save();
   }
 
+  /**
+   * Every Mongo collection captured by createBackup(), in write order.
+   *
+   * This is the single source of truth for "what a backup contains". When a new module adds a
+   * collection, add it here AND to SECTION_COLLECTIONS (so selective restore can put it back);
+   * ALLOWED_COLLECTIONS decides separately whether clear-data may wipe it. The coverage test in
+   * test/integration/settings-backup-coverage.spec.ts fails if these drift apart.
+   *
+   * `users` is captured for reference but deliberately never restored — restoring it would clobber
+   * current accounts/passwords (see restoreBackup step 1).
+   */
+  static readonly BACKUP_COLLECTIONS = [
+    'transactions',
+    'products',
+    'vaultentries',
+    'clients',
+    'suppliers',
+    'returnrequests',
+    'expenses',
+    'complaints',
+    'shopifyorders',
+    'followups',
+    'mentions',
+    'tags',
+    'purchaseorders',
+    'supplierreturnorders',
+    'supplierledgerentries',
+    // ── Catalogue: categories / collections and the product↔collection join table ──
+    'categories',
+    'collections',
+    'collectionproducts',
+    // ── Stock audit trail — without it, restored stock levels have no history ──
+    'inventorymovements',
+    // ── Per-segment vault balances (settings.vault* is only a mirror of these) ──
+    'vaultbalances',
+    // ── Operational / audit data ──
+    'drafts',
+    // Short-lived OTPs, but clear-data wipes them, so the pre-wipe safety backup must restore them.
+    'discountotps',
+    'securityauditlogs',
+    'employeeshifts',
+    'employeeperformancelogs',
+    'demandanalysislogs',
+    // ── Customer-service playbook ──
+    'knowledgefolders',
+    'knowledgecards',
+    'knowledgeauditlogs',
+    'knowledgeimportlogs',
+    // Captured last: never restored, only kept for reference.
+    'users',
+  ];
+
   private getBackupDir(): string {
     const dir = path.join(process.cwd(), 'backups');
     if (!fs.existsSync(dir)) {
@@ -483,23 +634,22 @@ export class SettingsService {
       const filepath = path.join(backupDir, filename);
 
       const settings = await this.settingsModel.findOne().exec();
+
+      const data: Record<string, any[]> = {};
+      for (const col of SettingsService.BACKUP_COLLECTIONS) {
+        try {
+          data[col] = await this.connection.collection(col).find({}).toArray();
+        } catch (e: any) {
+          // A collection that doesn't exist yet in this database reads as empty rather than
+          // aborting the whole backup.
+          this.logger.warn(`Backup: could not read collection ${col}: ${e?.message}`);
+          data[col] = [];
+        }
+      }
+
       const backupData = {
         timestamp: new Date().toISOString(),
-        data: {
-          transactions: await this.connection.collection('transactions').find({}).toArray(),
-          products: await this.connection.collection('products').find({}).toArray(),
-          vaultentries: await this.connection.collection('vaultentries').find({}).toArray(),
-          clients: await this.connection.collection('clients').find({}).toArray(),
-          suppliers: await this.connection.collection('suppliers').find({}).toArray(),
-          returnrequests: await this.connection.collection('returnrequests').find({}).toArray(),
-          expenses: await this.connection.collection('expenses').find({}).toArray(),
-          complaints: await this.connection.collection('complaints').find({}).toArray(),
-          shopifyorders: await this.connection.collection('shopifyorders').find({}).toArray(),
-          followups: await this.connection.collection('followups').find({}).toArray(),
-          mentions: await this.connection.collection('mentions').find({}).toArray(),
-          tags: await this.connection.collection('tags').find({}).toArray(),
-          users: await this.connection.collection('users').find({}).toArray(),
-        },
+        data,
         vault_balances: {
           vaultCash: settings?.vaultCash || 0,
           vaultVodafone: settings?.vaultVodafone || 0,
@@ -561,6 +711,23 @@ export class SettingsService {
     'mentions',
     'discountotps',
     'tags',
+    'purchaseorders',
+    'supplierreturnorders',
+    'supplierledgerentries',
+    'categories',
+    'collections',
+    'collectionproducts',
+    'inventorymovements',
+    'vaultbalances',
+    'drafts',
+    'securityauditlogs',
+    'employeeshifts',
+    'employeeperformancelogs',
+    'demandanalysislogs',
+    'knowledgefolders',
+    'knowledgecards',
+    'knowledgeauditlogs',
+    'knowledgeimportlogs',
   ];
 
   async resetAllData() {
@@ -906,13 +1073,19 @@ export class SettingsService {
     };
   }
 
+  // Every collection captured by createBackup() (except `users`, which is never restored) must
+  // appear in exactly one section here — otherwise a selective restore silently skips it.
+  // Covered by the settings.service SECTION_COLLECTIONS coverage test.
   private static SECTION_COLLECTIONS: Record<string, string[]> = {
-    transactions:   ['transactions', 'returnrequests'],
-    products:       ['products'],
-    customers:      ['clients', 'suppliers'],
+    transactions:   ['transactions', 'returnrequests', 'inventorymovements'],
+    products:       ['products', 'categories', 'collections', 'collectionproducts'],
+    customers:      ['clients', 'suppliers', 'purchaseorders', 'supplierreturnorders', 'supplierledgerentries'],
     expenses:       ['expenses'],
-    vault:          ['vaultentries'],
-    other:          ['complaints', 'followups', 'tags', 'shopifyorders', 'mentions'],
+    vault:          ['vaultentries', 'vaultbalances'],
+    other:          ['complaints', 'followups', 'tags', 'shopifyorders', 'mentions',
+                     'drafts', 'discountotps', 'securityauditlogs', 'employeeshifts',
+                     'employeeperformancelogs', 'demandanalysislogs',
+                     'knowledgefolders', 'knowledgecards', 'knowledgeauditlogs', 'knowledgeimportlogs'],
   };
 
   private static DATE_FIELD: Record<string, string> = {
@@ -1052,8 +1225,10 @@ export class SettingsService {
     {
       const bTx  = Array.isArray(d.transactions)    ? d.transactions    : [];
       const bRet = Array.isArray(d.returnrequests)  ? d.returnrequests  : [];
+      const bMov = Array.isArray(d.inventorymovements) ? d.inventorymovements : [];
       const cTxCount  = await this.connection.collection('transactions').countDocuments().catch(()=>0);
       const cRetCount = await this.connection.collection('returnrequests').countDocuments().catch(()=>0);
+      const cMovCount = await this.connection.collection('inventorymovements').countDocuments().catch(()=>0);
       const cLatestTx  = await this.getLatestDate('transactions');
       const cLatestRet = await this.getLatestDate('returnrequests');
       const cLatest = [cLatestTx, cLatestRet].filter(Boolean).sort().pop() || null;
@@ -1068,8 +1243,8 @@ export class SettingsService {
       ]);
 
       preview['transactions'] = {
-        backup:  bTx.length + bRet.length,
-        current: cTxCount + cRetCount,
+        backup:  bTx.length + bRet.length + bMov.length,
+        current: cTxCount + cRetCount + cMovCount,
         backupLatest: bLatest, currentLatest: cLatest,
         backupStats:  this.buildTransactionsStats(bTx, bRet),
         currentStats: this.buildTransactionsStats(cTxDocs as any[], cRetDocs as any[]),
@@ -1079,12 +1254,20 @@ export class SettingsService {
     // ── Products ─────────────────────────────────────────────────────────────
     {
       const bDocs = Array.isArray(d.products) ? d.products : [];
+      const bCats = Array.isArray(d.categories) ? d.categories : [];
+      const bCols = Array.isArray(d.collections) ? d.collections : [];
+      const bCP   = Array.isArray(d.collectionproducts) ? d.collectionproducts : [];
       const cCount = await this.connection.collection('products').countDocuments().catch(()=>0);
+      const [cCatCount, cColCount, cCPCount] = await Promise.all([
+        this.connection.collection('categories').countDocuments().catch(()=>0),
+        this.connection.collection('collections').countDocuments().catch(()=>0),
+        this.connection.collection('collectionproducts').countDocuments().catch(()=>0),
+      ]);
       const cLatest = await this.getLatestDate('products');
       const cDocs = await this.connection.collection('products').find({}).toArray().catch(()=>[]);
       preview['products'] = {
-        backup:  bDocs.length,
-        current: cCount,
+        backup:  bDocs.length + bCats.length + bCols.length + bCP.length,
+        current: cCount + cCatCount + cColCount + cCPCount,
         backupLatest:  this.getLatestDateFromDocs(bDocs, 'updatedAt'),
         currentLatest: cLatest,
         backupStats:  this.buildProductsStats(bDocs),
@@ -1093,11 +1276,21 @@ export class SettingsService {
     }
 
     // ── Customers ─────────────────────────────────────────────────────────────
+    // (also covers purchaseorders/supplierreturnorders/supplierledgerentries — supplier-scoped
+    // data that lives in the same SECTION_COLLECTIONS bucket as 'suppliers')
     {
       const bClients   = Array.isArray(d.clients)   ? d.clients   : [];
       const bSuppliers = Array.isArray(d.suppliers)  ? d.suppliers : [];
-      const cCliCount  = await this.connection.collection('clients').countDocuments().catch(()=>0);
-      const cSupCount  = await this.connection.collection('suppliers').countDocuments().catch(()=>0);
+      const bPOs       = Array.isArray(d.purchaseorders)        ? d.purchaseorders        : [];
+      const bSRs       = Array.isArray(d.supplierreturnorders)  ? d.supplierreturnorders  : [];
+      const bSLEs      = Array.isArray(d.supplierledgerentries) ? d.supplierledgerentries : [];
+      const [cCliCount, cSupCount, cPOCount, cSRCount, cSLECount] = await Promise.all([
+        this.connection.collection('clients').countDocuments().catch(()=>0),
+        this.connection.collection('suppliers').countDocuments().catch(()=>0),
+        this.connection.collection('purchaseorders').countDocuments().catch(()=>0),
+        this.connection.collection('supplierreturnorders').countDocuments().catch(()=>0),
+        this.connection.collection('supplierledgerentries').countDocuments().catch(()=>0),
+      ]);
       const cCliLatest = await this.getLatestDate('clients');
       const cSupLatest = await this.getLatestDate('suppliers');
       const cLatest = [cCliLatest, cSupLatest].filter(Boolean).sort().pop() || null;
@@ -1110,8 +1303,8 @@ export class SettingsService {
         this.connection.collection('suppliers').find({}).toArray().catch(()=>[]),
       ]);
       preview['customers'] = {
-        backup:  bClients.length + bSuppliers.length,
-        current: cCliCount + cSupCount,
+        backup:  bClients.length + bSuppliers.length + bPOs.length + bSRs.length + bSLEs.length,
+        current: cCliCount + cSupCount + cPOCount + cSRCount + cSLECount,
         backupLatest: bLatest, currentLatest: cLatest,
         backupStats:  this.buildCustomersStats(bClients, bSuppliers),
         currentStats: this.buildCustomersStats(cCliDocs as any[], cSupDocs as any[]),
@@ -1152,7 +1345,7 @@ export class SettingsService {
 
     // ── Other ─────────────────────────────────────────────────────────────────
     {
-      const cols = ['complaints','followups','tags','shopifyorders','mentions'];
+      const cols = SettingsService.SECTION_COLLECTIONS['other'];
       let bCount = 0, cCount = 0;
       const details: Record<string, {backup:number; current:number}> = {};
       for (const col of cols) {
@@ -1228,9 +1421,20 @@ export class SettingsService {
 
       for (const col of collections) {
         const docs = backupData.data[col];
+        // A backup taken before this collection existed simply has no key for it. Deleting in that
+        // case would wipe live data and restore nothing in its place, so skip the collection
+        // entirely — "absent from the backup" must never mean "empty in the backup".
+        // An explicitly-empty array IS a real state and still clears the collection.
+        if (!Array.isArray(docs)) {
+          this.logger.warn(
+            `Selective restore: '${col}' is absent from this backup — leaving existing data untouched.`,
+          );
+          restoreResults[col] = -2; // signals "skipped, not in backup"
+          continue;
+        }
         try {
           await this.connection.collection(col).deleteMany({});
-          if (Array.isArray(docs) && docs.length > 0) {
+          if (docs.length > 0) {
             const fixedDocs = docs.map((doc: any) => {
               const fixed: any = { ...doc };
               if (fixed._id) {

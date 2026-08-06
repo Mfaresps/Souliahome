@@ -35,7 +35,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: user.role,
       phone: user.phone || '',
       avatar: user.avatar || '',
+      jobTitle: user.jobTitle || '',
       perms: user.perms || [],
+      lastLogin: user.lastLogin || null,
+      lastSeen: user.lastSeen || null,
+      createdAt: (user as unknown as { createdAt?: Date }).createdAt || null,
+      // Inactive users are rejected by the guard above, so this is always true here.
+      isActive: true,
+      totpEnabled: !!user.totpEnabled,
     };
   }
 }

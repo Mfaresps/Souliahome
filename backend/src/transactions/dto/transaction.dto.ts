@@ -56,6 +56,10 @@ export class CreateTransactionDto {
 
   @IsString()
   @IsOptional()
+  readonly supplierId?: string;
+
+  @IsString()
+  @IsOptional()
   readonly phone?: string;
 
   @IsString()
@@ -79,6 +83,13 @@ export class CreateTransactionDto {
   @Min(0)
   @IsOptional()
   readonly remaining?: number;
+
+  /** Amount of standing supplier credit (from SupplierLedger) applied against this purchase's
+   *  total, reducing the debt newly posted. Only meaningful for type:'مشتريات'. */
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly creditApplied?: number;
 
   @IsArray()
   @ValidateNested({ each: true })

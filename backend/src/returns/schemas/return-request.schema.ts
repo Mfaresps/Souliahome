@@ -95,6 +95,14 @@ export class ReturnRequest {
   /** قسم الخزنة لإيداع مبلغ التحصيل عندما الفرق لصالح الشركة (استبدال). */
   @Prop({ default: '' })
   vaultCollectAccount: string;
+
+  /** شركة الشحن التي رجعت بها الشحنة المرتجعة من العميل (اختياري). */
+  @Prop({ default: '' })
+  returnShipCo: string;
+
+  /** رقم تتبع شحنة المرتجع لدى شركة الشحن (اختياري). */
+  @Prop({ default: '' })
+  returnTrackingNumber: string;
 }
 
 export const ReturnRequestSchema =

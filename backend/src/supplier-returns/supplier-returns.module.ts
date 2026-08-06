@@ -6,8 +6,10 @@ import {
 } from './schemas/supplier-return.schema';
 import { SupplierReturnsService } from './supplier-returns.service';
 import { SupplierReturnsController } from './supplier-returns.controller';
+import { SrAllocationService } from './allocation.service';
 import { TransactionsModule } from '../transactions/transactions.module';
 import { SuppliersModule } from '../suppliers/suppliers.module';
+import { SupplierLedgerModule } from '../supplier-ledger/supplier-ledger.module';
 
 @Module({
   imports: [
@@ -16,9 +18,10 @@ import { SuppliersModule } from '../suppliers/suppliers.module';
     ]),
     TransactionsModule,
     SuppliersModule,
+    SupplierLedgerModule,
   ],
   controllers: [SupplierReturnsController],
-  providers: [SupplierReturnsService],
+  providers: [SupplierReturnsService, SrAllocationService],
   exports: [SupplierReturnsService],
 })
 export class SupplierReturnsModule {}
