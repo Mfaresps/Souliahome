@@ -65,6 +65,24 @@ export class FollowUp {
   @Prop({ default: '' })
   reason: string; // triggers notification when set
 
+  // ── Auto-opened shipping-problem follow-ups ──────────────────────────────
+  // Set only on follow-ups the system opened by itself when Bosta reported a
+  // delivery problem (FAILED_ATTEMPT / RETURNED / DELIVERY_FAILED). Manual
+  // follow-ups leave both fields at their defaults, so `autoSource` doubles as
+  // the "was this machine-created?" flag the UI uses to render the auto badge.
+  @Prop({ default: '' })
+  autoSource: string; // '' | 'shipping-issue'
+
+  @Prop({ default: '' })
+  autoTrigger: string; // the Bosta status code that opened it, e.g. 'FAILED_ATTEMPT'
+
+  // How the assignee was picked — mirrors AssigneeResolution.reason from
+  // EmployeeShiftService ('shift' | 'on-call-fallback' | 'unassigned'). Shown
+  // in the badge tooltip so an on-call fallback is distinguishable from a real
+  // shift match without opening the record.
+  @Prop({ default: '' })
+  assignSource: string;
+
   @Prop({ default: 'قيد المتابعة' })
   status: string; // قيد المتابعة | تمت المتابعة | بانتظار العميل | يحتاج مراجعة | لم يتم الحل
 

@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Delete,
   Body,
   Param,
@@ -11,6 +12,7 @@ import {
 import { ComplaintsService } from './complaints.service';
 import {
   CreateComplaintDto,
+  UpdateComplaintDto,
   ResolveComplaintDto,
   SurveyResponseDto,
   UpdateProgressStageDto,
@@ -61,6 +63,18 @@ export class ComplaintsController {
     const submittedBy = req.user.name || req.user.username;
     const submittedById = req.user.userId;
     return this.complaintsService.create(dto, submittedBy, submittedById);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Put(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateComplaintDto,
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const author = req.user.name || req.user.username;
+    return this.complaintsService.update(id, dto, author);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

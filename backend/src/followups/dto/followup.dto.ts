@@ -14,6 +14,10 @@ export class CreateFollowUpDto {
   @IsOptional() @IsString() resolution?: string;
   @IsOptional() @IsString() comment?: string;
   @IsOptional() @IsArray() tags?: string[];
+  // Set only by the automatic shipping-issue opener; never sent by the client UI.
+  @IsOptional() @IsString() autoSource?: string;
+  @IsOptional() @IsString() autoTrigger?: string;
+  @IsOptional() @IsString() assignSource?: string;
 }
 
 export class UpdateFollowUpDto {

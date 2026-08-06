@@ -17,6 +17,7 @@ import { VaultService } from '../vault/vault.service';
 import { ShopifyAdminService } from '../shopify/shopify-admin.service';
 import { normalizeCity } from '../shared/normalize-city.util';
 import { EmployeeScoringService } from '../employee-performance/employee-scoring.service';
+import { FollowUpsService } from '../followups/followups.service';
 
 // ── Bosta status → Arabic label map ────────────────────────────────────────
 const BOSTA_STATUS_LABELS: Record<string, string> = {
@@ -262,6 +263,7 @@ export class BostaService {
     private readonly vaultService: VaultService,
     private readonly shopifyAdmin: ShopifyAdminService,
     private readonly employeeScoringService: EmployeeScoringService,
+    private readonly followUpsService: FollowUpsService,
   ) {}
 
   private async resolveApiKey(): Promise<string> {
@@ -496,8 +498,10 @@ export class BostaService {
         ...(hasCod ? { bostaOriginalCod: tx.remaining } : {}),
         bostaLastSync: new Date().toISOString(),
         bostaRawResponse: res,
-        pickupStatus: 'Shipped',
-        shippedAt: new Date().toISOString(),
+        // Creating a Bosta order only registers the shipment — the courier has not collected it
+        // yet, so it stays "Ready to Ship". syncStatus() promotes it to 'Shipped' once Bosta
+        // reports PICKED_UP, which is when it is actually on its way.
+        pickupStatus: 'Ready',
         shippedByName: operatorName || '',
       });
 
@@ -804,6 +808,14 @@ export class BostaService {
     // Compute the new codCollectionStatus — only advance, never regress
     const codUpdate = this.resolveCodStatusUpdate(tx, statusCode);
 
+    // Creating the Bosta order leaves pickupStatus 'Ready' (registered, not collected). The
+    // courier picking it up is what makes it genuinely shipped, so promote it here — and only
+    // from 'Ready', so a later 'Delivered' is never dragged back to 'Shipped'.
+    const pickupUpdate =
+      ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(statusCode) && tx.pickupStatus === 'Ready'
+        ? { pickupStatus: 'Shipped', shippedAt: (tx as any).shippedAt || now }
+        : {};
+
     await this.txModel.findByIdAndUpdate(txId, {
       $set: {
         bostaStatus: statusCode,
@@ -813,6 +825,7 @@ export class BostaService {
         bostaRawResponse: res,
         // Stamp delivery provenance so DELIVERED orders are attributable
         ...(statusCode === 'DELIVERED' ? { deliverySource: 'BOSTA', deliveredAt: tx.deliveredAt || now } : {}),
+        ...pickupUpdate,
         ...codUpdate,
       },
       ...(regressed ? {
@@ -843,6 +856,20 @@ export class BostaService {
           this.logger.error(`Delivery scoring failed for tx ${txId}: ${(err as Error).message}`),
         );
       }
+    }
+
+    // A shipment that just entered a delivery-problem state opens a
+    // "مشكلة في الاستلام" follow-up assigned to the employee on shift. Only on
+    // the *transition* — a repeated webhook carrying the same failed status must
+    // not re-fire (openShippingIssueFollowUp is idempotent too, but not firing
+    // at all is cheaper). Fire-and-forget: status ingestion never waits on, or
+    // fails because of, follow-up creation.
+    if (currentStatus !== statusCode && FollowUpsService.isShippingIssueStatus(statusCode)) {
+      this.followUpsService
+        .openShippingIssueFollowUp(tx as any, statusCode)
+        .catch((err) =>
+          this.logger.error(`Auto follow-up failed for tx ${txId}: ${(err as Error).message}`),
+        );
     }
 
     return { success: true, status: statusCode, statusLabel, raw: res };

@@ -5,6 +5,7 @@ import { randomBytes, randomUUID } from 'crypto';
 import { Complaint, ComplaintDocument } from './schemas/complaint.schema';
 import {
   CreateComplaintDto,
+  UpdateComplaintDto,
   ResolveComplaintDto,
   SurveyResponseDto,
   CreateNoteDto,
@@ -117,6 +118,60 @@ export class ComplaintsService {
         },
       ],
     });
+  }
+
+  /**
+   * Admin edit of complaint fields. Only keys present in the DTO are written, so a
+   * partial payload never blanks out the rest. Each change is appended to the notes
+   * timeline as a system entry, keeping the same audit trail as resolve/progress-stage.
+   */
+  async update(
+    id: string,
+    dto: UpdateComplaintDto,
+    author: string,
+  ): Promise<ComplaintDocument> {
+    const complaint = await this.findById(id);
+    const labels: Record<string, string> = {
+      clientName: 'اسم العميل',
+      phone: 'الهاتف',
+      variantDetail: 'اللون/المقاس',
+      categoryGroup: 'مجموعة السبب',
+      category: 'السبب',
+      imageUrl: 'صورة المشكلة',
+      description: 'وصف الشكوى',
+      priority: 'الأولوية',
+    };
+    const changes: string[] = [];
+    for (const key of Object.keys(labels)) {
+      if (!(key in dto)) continue;
+      const next = ((dto as Record<string, string>)[key] ?? '').trim();
+      const prev = ((complaint as unknown as Record<string, string>)[key] || '')
+        .toString()
+        .trim();
+      if (next === prev) continue;
+      (complaint as unknown as Record<string, string>)[key] = next;
+      changes.push(
+        key === 'description' || key === 'imageUrl'
+          ? `تم تعديل ${labels[key]}`
+          : `${labels[key]}: ${prev || '—'} → ${next || '—'}`,
+      );
+    }
+    if (!changes.length) return complaint;
+    if ('imageUrl' in dto && complaint.imageUrl && !complaint.imageAddedBy) {
+      complaint.imageAddedBy = author;
+      complaint.imageAddedAt = new Date().toISOString();
+    }
+    const now = new Date().toISOString();
+    complaint.notes.push({
+      id: randomUUID(),
+      text: `تم تعديل الشكوى — ${changes.join(' • ')}`,
+      author,
+      authorId: '',
+      createdAt: now,
+      updatedAt: now,
+      kind: 'system',
+    });
+    return complaint.save();
   }
 
   async resolve(

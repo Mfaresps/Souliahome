@@ -3,6 +3,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const zlib = require('zlib');
 
 // Load .env manually (no extra dependencies)
 const envPath = path.join(__dirname, '.env');
@@ -22,6 +23,40 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:4000';
 app.get('/config.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
   res.send(`window.__ENV__ = { API_BASE_URL: "" };`);
+});
+
+// Deploy marker — the running app polls this to detect a new build and force a refresh.
+// In production nginx serves the copy baked into the image at build time (see Dockerfile);
+// here in dev we derive it from index.html's mtime so editing the file bumps the version
+// and the update dialog can be exercised locally without a Docker build.
+app.get('/version.json', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  let build = 'dev';
+  try {
+    // Math.floor, not `| 0` — mtimeMs exceeds 32 bits and bitwise ops would wrap it negative.
+    build = String(Math.floor(fs.statSync(path.join(__dirname, 'public', 'index.html')).mtimeMs));
+  } catch (_) {}
+  res.json({ version: `1.0.${build}`, build });
+});
+
+// Never cache the app shell — a cached index.html would make a "reload" re-serve the old
+// build, trapping the force-update dialog in a loop. Mirrors the nginx rule in production.
+//
+// The shell is ~4.5MB and, being no-store, is re-fetched on every load, so it is gzipped
+// here too (~1MB) to match what nginx does in production — otherwise dev feels artificially
+// slow and hides the real bandwidth profile. Uses built-in zlib rather than the `compression`
+// package, keeping this server dependency-light like the hand-rolled .env parser above.
+app.get(['/', '/index.html'], (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Vary', 'Accept-Encoding');   // correctness for any proxy in between
+  const file = path.join(__dirname, 'public', 'index.html');
+  if (/\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
+    res.setHeader('Content-Encoding', 'gzip');
+    fs.createReadStream(file).pipe(zlib.createGzip({ level: 6 })).pipe(res);
+  } else {
+    fs.createReadStream(file).pipe(res);
+  }
 });
 
 // Proxy /api requests to backend

@@ -6,8 +6,28 @@ import { FollowUp, FollowUpDocument } from './schemas/followup.schema';
 import { CreateFollowUpDto, UpdateFollowUpDto } from './dto/followup.dto';
 import { MentionsService } from '../mentions/mentions.service';
 import { PresenceGateway } from '../auth/presence.gateway';
+import { EmployeeShiftService } from '../employee-performance/employee-shift.service';
 
 const DONE_STATUSES = ['تمت المتابعة', 'تم حل المشكلة'];
+
+/**
+ * Reason + status stamped on follow-ups the system opens by itself when a
+ * shipment hits a delivery problem. The VALUES are Arabic because that is what
+ * every other follow-up stores — the frontend maps them to English at render
+ * time (`_FU_REASON_EN` / `_FU_STATUS_EN`), never in the database.
+ */
+export const SHIPPING_ISSUE_REASON = 'مشكلة في الاستلام';
+const SHIPPING_ISSUE_STATUS = 'في انتظار المتابعة';
+
+/** Bosta status codes that count as a delivery problem worth a follow-up. */
+const SHIPPING_ISSUE_STATUSES = ['FAILED_ATTEMPT', 'RETURNED', 'DELIVERY_FAILED'];
+
+/** Arabic label per trigger, used in the auto-generated opening comment. */
+const TRIGGER_LABELS: Record<string, string> = {
+  FAILED_ATTEMPT: 'محاولة تسليم فاشلة',
+  RETURNED: 'مرتجع',
+  DELIVERY_FAILED: 'فشل التسليم',
+};
 
 // Escalation thresholds in hours: 12h, then 24h, 48h, 72h, ... (one per day after the first day)
 const ESCALATION_HOURS = [12, 24, 48, 72, 96, 120, 144, 168];
@@ -20,7 +40,163 @@ export class FollowUpsService implements OnModuleInit {
     @InjectModel(FollowUp.name) private model: Model<FollowUpDocument>,
     private readonly mentionsService: MentionsService,
     private readonly presence: PresenceGateway,
+    private readonly shiftService: EmployeeShiftService,
   ) {}
+
+  /** True when a Bosta status code is one this module opens a follow-up for. */
+  static isShippingIssueStatus(status: string): boolean {
+    return SHIPPING_ISSUE_STATUSES.includes(String(status || ''));
+  }
+
+  /**
+   * Opens a "مشكلة في الاستلام" follow-up for an order Bosta reported a delivery
+   * problem on, assigning it to whoever is on shift right now (falling back to
+   * the on-call employee) and pinging them in the mentions/notifications feed.
+   *
+   * Idempotent per transaction: an order that keeps bouncing between
+   * FAILED_ATTEMPT and IN_TRANSIT must not spawn a new ticket on every webhook.
+   * The existing auto follow-up is reused as long as it is still open — once it
+   * has been resolved or cancelled, a *new* problem legitimately opens a new one.
+   *
+   * Never throws. Delivery-status ingestion must not fail because follow-up
+   * assignment did, so every failure path is logged and swallowed; callers get
+   * `null` back rather than an exception.
+   */
+  async openShippingIssueFollowUp(tx: {
+    _id: unknown;
+    ref?: string;
+    client?: string;
+    phone?: string;
+    shopifyOrderId?: string;
+  }, trigger: string): Promise<FollowUpDocument | null> {
+    try {
+      const transactionId = String(tx._id || '');
+      if (!transactionId) return null;
+
+      // Reuse an open auto-ticket for the same order instead of duplicating it.
+      const existing = await this.model
+        .findOne({
+          transactionId,
+          autoSource: 'shipping-issue',
+          cancelled: { $ne: true },
+          status: { $nin: DONE_STATUSES },
+        })
+        .exec();
+      if (existing) {
+        // Same ticket, new trigger (e.g. FAILED_ATTEMPT → RETURNED): record the
+        // escalation on the thread rather than opening a second ticket.
+        if (existing.autoTrigger !== trigger) {
+          existing.autoTrigger = trigger;
+          (existing.comments as any[]).push({
+            authorId: 'system',
+            authorName: 'النظام',
+            text: `تحديث حالة الشحنة: ${TRIGGER_LABELS[trigger] || trigger}`,
+            edited: false,
+            kind: 'note',
+          });
+          await existing.save();
+          this.presence.emitEvent('followup:changed', { action: 'update', id: String(existing._id) });
+        }
+        return existing;
+      }
+
+      // Assign to whoever is on shift at this moment. resolveAssignee reads the
+      // wall-clock time-of-day out of the ISO string it is given, so "now" must
+      // be passed as a plain ISO timestamp exactly like the Shopify path does.
+      let assignee: { userId: string; name: string; reason: string } | null = null;
+      try {
+        assignee = await this.shiftService.resolveAssignee(new Date().toISOString());
+      } catch (err: any) {
+        this.logger.warn(`Shift lookup failed for shipping issue on tx=${transactionId}: ${err.message}`);
+      }
+      if (!assignee?.userId) {
+        this.logger.warn(
+          `No employee on shift or on-call — shipping issue on tx=${transactionId} (${trigger}) left unassigned`,
+        );
+        return null;
+      }
+
+      const orderRef = String(tx.ref || transactionId);
+      const ticketNo = await this.generateTicketNo(orderRef);
+      const triggerLabel = TRIGGER_LABELS[trigger] || trigger;
+
+      const doc = await this.model.create({
+        ticketNo,
+        orderRef,
+        transactionId,
+        shopifyOrderId: tx.shopifyOrderId || '',
+        clientName: tx.client || '',
+        clientPhone: tx.phone || '',
+        responsibleId: assignee.userId,
+        responsibleName: assignee.name,
+        reason: SHIPPING_ISSUE_REASON,
+        status: SHIPPING_ISSUE_STATUS,
+        autoSource: 'shipping-issue',
+        autoTrigger: trigger,
+        assignSource: assignee.reason,
+        notified: true,
+        comments: [
+          {
+            authorId: 'system',
+            authorName: 'النظام',
+            text: `تم فتح المتابعة تلقائياً — أبلغت شركة الشحن عن: ${triggerLabel}`,
+            edited: false,
+            kind: 'note',
+          },
+        ],
+      });
+
+      const notifyText = `مشكلة في الاستلام — طلب #${orderRef} (${triggerLabel})`;
+      try {
+        const created = await this.mentionsService.create({
+          targetUserId: assignee.userId,
+          targetName: assignee.name,
+          fromUserId: 'system',
+          fromName: 'متابعة تلقائية',
+          txId: String(doc._id),
+          txRef: orderRef,
+          commentId: 0,
+          commentText: notifyText,
+        });
+        this.presence.emitToUser(assignee.userId, 'mention:new', {
+          id: String(created._id),
+          _id: String(created._id),
+          targetUserId: assignee.userId,
+          targetName: assignee.name,
+          fromUserId: 'system',
+          fromName: 'متابعة تلقائية',
+          txId: String(doc._id),
+          txRef: orderRef,
+          commentId: 0,
+          commentText: notifyText,
+          read: false,
+          ts: new Date().toISOString(),
+        });
+        this.presence.emitToUser(assignee.userId, 'followup:notify', {
+          id: String(doc._id),
+          orderRef,
+          reason: SHIPPING_ISSUE_REASON,
+          fromName: 'متابعة تلقائية',
+          auto: true,
+        });
+      } catch (err: any) {
+        this.logger.warn(`Failed to notify ${assignee.userId} of auto shipping follow-up: ${err.message}`);
+      }
+
+      // Broadcast so every open client (dashboard shipping-issues card included)
+      // picks the new ticket up without a manual refresh.
+      this.presence.emitEvent('followup:changed', { action: 'create', id: String(doc._id) });
+      this.presence.emitEvent('tx:updated', { _id: transactionId });
+
+      this.logger.log(
+        `Auto follow-up ${ticketNo} opened for tx=${transactionId} (${trigger}) → ${assignee.name} [${assignee.reason}]`,
+      );
+      return doc;
+    } catch (err: any) {
+      this.logger.error(`openShippingIssueFollowUp failed (${trigger}): ${err.message}`);
+      return null;
+    }
+  }
 
   findAll() {
     return this.model.find().sort({ createdAt: -1 }).lean();

@@ -69,6 +69,42 @@ export class CreateComplaintDto {
   priority?: string;
 }
 
+/** Admin edit of an existing complaint. Every field optional — only what is sent gets written. */
+export class UpdateComplaintDto {
+  @IsOptional()
+  @IsString()
+  clientName?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  variantDetail?: string;
+
+  @IsOptional()
+  @IsString()
+  categoryGroup?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  priority?: string;
+}
+
 export class ResolveComplaintDto {
   @IsNotEmpty()
   @IsString()

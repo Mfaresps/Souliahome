@@ -47,6 +47,118 @@ The single full-featured invoice view, ported to full parity with (and now super
 
 ---
 
+## Offline Archive Export — "نسخة كاملة" on Every Resource (Aug 6, 2026)
+
+Every module now has a **تصدير نسخة كاملة** button producing one multi-sheet `.xlsx` — a browsable offline archive, not a flat table dump. 20 resources, one generic engine.
+
+### Why a new engine rather than more `writeExcel` calls
+The 26 pre-existing exporters each emit **one row per record**, so a transaction's items, payments, shipping, and audit trail were unreachable. A transaction has 7 levels of nested data; one row cannot hold them. The archive splits them across joined sheets (الملخص / الفواتير / الأصناف / المدفوعات / الشحن / المرتجعات / السجل), keyed on **المرجع**.
+
+### The registry is the only thing you edit
+`EXPORT_REGISTRY` (just below `writeCsv`) has one entry per resource: `title`, `titleKey`, `dated`, `all()`, optional `filtered()`/`selected()`, `dateOf(r)`, `build(rows, meta)`, optional `stats(rows)` / `fileTitle()` / `adminOnly`. **The button, modal, scope/period filtering, OTP gate and file writer are all generic** — adding a resource means adding a registry entry plus `archiveExportBtn('key')` (or an inline button calling `openArchiveExport('key')`). Do not write per-resource export functions.
+
+`build()` returns `[{name, header, rows, numeric:Set<colIndex>}]`. `header` is an explicit Arabic array — **never `Object.keys()`**, or column order silently depends on which optional field the first record happened to have.
+
+### UI follows the language; file content never does
+Buttons/modal go through `t()` (ar/en). **The workbook is always Arabic** — headers, sheet names, values, and the الملخص sheet. It is an accounting archive, not a view.
+
+`_xpLabel(key, fallbackAr)` exists because **`t()` returns the key itself when missing**, so the idiomatic `t(k) || fallback` is dead code. Seven registry titles (`invoice`, pickup, pending-sync, complaints, follow-ups, Shopify, approvals) had no `TRANSLATIONS` entry — the sidebar builds those labels from `NAV_ITEMS.label/labelEn`, not `t()`. They now have real `xpRes*` keys; use `_xpLabel` for any new title that might not be translated.
+
+### What the free SheetJS build actually honours — verified, not assumed
+The CDN build is **not** SheetJS Pro. Measured by writing files and reading back the sheet XML:
+- ✅ `!cols`, `!merges`, `!autofilter`, cell `.z` number formats, and **`wb.Workbook.Views = [{RTL:true}]`** (produces `rightToLeft="1"`).
+- ❌ **`ws['!views'] = [{RTL:true}]` is silently dropped** — per-sheet RTL does nothing. RTL must be set at the **workbook** level. Don't "fix" this by adding it back per sheet.
+- ❌ `ws['!freeze']` / `!pane` — ignored entirely.
+- ❌ **All `ws[addr].s` styling** (the fills/bold/borders in the older `writeExcel` at ~line 62300 and `writeExcelFormatted`) — inert. Those colours have never rendered.
+
+Numbers are written as real numbers (`t:'n'`) with `#,##0.00`, so `SUM()` works in the exported file. Dates use `'ar-EG-u-nu-latn'` — the plain `'ar-EG'` locale emits Arabic-Indic digits (٠-٩), the recurring trap in this codebase.
+
+### Security
+- Reuses `requireExportOtp()` — non-admins still need manager approval. No new bypass.
+- `users` export is `adminOnly` and **deliberately omits `password`, `plainPassword`, `totpSecret`**. Keep it that way.
+- Non-admins get purchase-masked data from `GET /transactions` (`maskTransactionsForRole`). Rather than let a short archive look complete, the الملخص sheet **states this in the file** when the exporter is not an admin.
+- `_xpRelease()` nulls `window._xpCtx` on every close/success path — the context holds full record arrays and `closeModal()` only hides the overlay.
+
+### OTP gates must outrank modals — `z-index:1500`
+A staff member exporting from the archive dialog saw **only the dimmer**: the OTP prompt opened *behind* the export modal, so the code could not be typed.
+
+Cause: `#export-otp-modal` and the other eight OTP overlays are `.modal-overlay` (`z-index:1300`) declared **early** in the document (~lines 9700–10050), while the generic `#modal-overlay` that `openModal()` reuses is declared **last** (~line 14780). At equal z-index the later DOM node wins, so *any* gate opened from inside a modal lost.
+
+All nine OTP overlays are now pinned to `z-index:1500` (above `.modal-overlay` 1300 and the in-modal `.inv-over-modal`/`#tx-picker-overlay` 1400). **This is not archive-export-specific** — it fixes every "approve from inside a modal" flow. If you add a new OTP/approval overlay, add its id to that rule.
+
+Note the two overlays stay independent (`closeExportOtpModal` touches only `#export-otp-modal`; `closeModal` only `#modal-overlay`), and `_xpRun` reads every modal input **before** calling `requireExportOtp`, so the callback closes over captured values and never re-queries a dialog that may already be gone.
+
+### Two pre-existing bugs fixed along the way
+1. **`exportPickupExcel` was dead.** It called `exportToExcel(...)`, a function that **never existed anywhere in the file** — every Pick-Up Orders export threw `ReferenceError`. Now writes via `XLSX` directly, like its working sibling `exportPickupRun`.
+2. **`exportClientsCsv` bypassed the OTP gate** that its Excel twin enforced, exporting identical data with no manager approval. Now gated.
+
+---
+
+## Forced Update on Deploy (Aug 6, 2026)
+
+Every deploy now makes each open session show a blocking "يوجد تحديث جديد" dialog whose single button reloads the page. Nobody keeps working on stale JS against a changed API.
+
+### The version comes from CI — it cannot be forgotten
+`BUILD_NUMBER` (Jenkins, auto-incrementing) → `--build-arg` → written to `/version.json` **inside the image** by [frontend/Dockerfile](frontend/Dockerfile) at build time. It is **not a committed file**, so there is no manual bump step to skip; rebuilding necessarily changes it. Both Jenkins stages pass it ([Jenkinsfile](Jenkinsfile) build stage via `--build-arg`, deploy stage via the `BUILD_NUMBER=` env prefix consumed by `args:` in [docker-compose.yml](docker-compose.yml)). Local builds fall back to `dev`.
+
+In dev, [frontend/server.js](frontend/server.js) synthesizes the same endpoint from `index.html`'s mtime, so editing the file bumps the version and the dialog can be exercised without Docker. Use `Math.floor(mtimeMs)` — `| 0` wraps it negative (32-bit).
+
+### gzip is now load-bearing too
+Because the shell is `no-store`, its full ~4.5MB is re-sent on **every** open and every forced refresh — there is no cached copy to fall back on. [nginx.conf](frontend/nginx.conf) therefore enables gzip (measured: 4,716,601 → ~1,090,000 bytes, **77% less**; verified lossless by SHA-256 round-trip). `server.js` mirrors it with built-in `zlib` (no new dependency, matching its hand-rolled `.env` parser). **Do not remove the gzip block** — nothing will look broken, it just silently costs every user ~3.5MB per page load. `text/html` is deliberately absent from `gzip_types` (nginx always gzips it; listing it warns about a duplicate MIME type).
+
+### The cache fix is load-bearing, not incidental
+`index.html` had **no `Cache-Control`**, so browsers applied heuristic caching and a reload could re-serve the *old* build — the dialog would then reappear forever. [nginx.conf](frontend/nginx.conf) now serves both `= /index.html` and `= /version.json` with `no-store`; `server.js` mirrors it for dev. **Do not remove those two `location` blocks** — the whole feature depends on the reload actually fetching new bytes. (The app is one big file with no bundler/hashed assets, so no-store on the shell is sufficient; no Service Worker is involved.)
+
+### Client side (`APP UPDATE / FORCE REFRESH` block, right after `toast()`)
+`initAppUpdateWatcher()` is called from `showApp()` **above the deep-link routing block** — that block `return`s early on several paths and would otherwise skip it. It records the version the tab booted with, then re-checks on a 60s interval, on `visibilitychange`, and on window focus. `checkForAppUpdate()` swallows network errors (a blip must not nag; the next tick retries) and only fires when the remote value *differs* from the boot value.
+
+`showUpdateDialog()` appends straight to `<body>` with an inline `z-index:2147483647` rather than going through the modal helpers — it must cover open modals/drawers/toasts. **Deliberately non-dismissible**: no close button, ESC is `preventDefault`ed, Tab is trapped on the one button, and `body.overflow` is locked. `_updDialogShown` is a one-way latch so it never re-shows or flickers.
+
+The reload writes `sessionStorage['soulia_update_reloaded']`; on next boot `_updShowReloadedToast()` consumes it and shows the green "تم التحديث بنجاح — الإصدار X" toast via the normal `toast()`.
+
+**Socket `app:new-version` is an optimization, not the guarantee.** Polling is what makes this work with the socket down; the event just removes the wait. Its payload is ignored — the handler re-reads `/version.json` and compares, so a stray event can't reload an already-current tab. **No backend emitter is wired yet** — see below.
+
+### If you want instant (rather than ≤60s) notification
+Emit `app:new-version` from `PresenceGateway.emitEvent()` after a deploy — same mechanism as `settings:lang-policy`. Without it the feature still works fully, just on the poll interval.
+
+### i18n
+Six `upd*` keys in `TRANSLATIONS`; the dialog is built in JS so it uses `t()` (not `data-i18n`) and reads `currentLang` for `dir`. It renders in whichever language the user is on — no re-render needed, since it's created at show time and the page reloads immediately after.
+
+---
+
+## Categories Permissions — Fine-Grained `categories-*` (Aug 6, 2026)
+
+The التصنيفات module (Categories / category-profile / collection-profile) went from **all-or-nothing `isAdmin()`** to six granular perms, enforced on both layers.
+
+### What was actually broken
+1. **`perm:'categories'` was an orphan.** `NAV_ITEMS` referenced it, but it was absent from `PERMS`, `PERMS_AR` and `PERM_MODULES` — so it had **no checkbox in the users UI and could never be granted**. Categories was admin-only by accident, not design.
+2. **12 UI gates were `isAdmin()`, and UI-only.** None of the 8 mutating functions re-checked; all are global and reachable from the console.
+3. **Backend read routes were JWT-only** — any logged-in user could `GET /categories`, `/collections`, `/collections/:id/products`. Deep-links `#category-profile/<id>` / `#collection-profile/<id>` bypassed perm checks on **boot and popstate** (the popstate fallback checked `validPages` but not `hasPerm` — for *every* page, not just these).
+
+### The six perms
+`categories-view` · `categories-create` · `categories-edit` · `categories-delete` · `categories-assign-products` · `categories-link-suppliers` — grouped as the `categories` module ("التصنيفات والمجموعات") in `PERM_MODULES`, so `renderPermSystem()` renders the accordion/master-checkbox/search for them with **no new UI code**. `ROLE_TEMPLATES.staff` and `.viewer` both gained `categories-view`; `admin` is `PERMS.slice()` so it picks them up automatically.
+
+### Frontend helpers (one block under `CATEGORIES PERMISSIONS`, after `hasPerm`)
+`catPerm(action)` + the `canViewCategories()` / `canCreateCategories()` / `canEditCategories()` / `canDeleteCategories()` / `canAssignCatProducts()` / `canLinkCatSuppliers()` wrappers, plus **`requireCatPerm(action)`** — the in-function guard that toasts and returns false. Every mutating function starts with it (`openCategoryModal`, `saveCategory`, `deleteCategoryFromGrid`, `openCollectionModal`, `saveCollection`, `deleteCollection`, `openAssignProductsModal`, `confirmAssignProducts`, `removeCollectionProduct`, `openLinkSupplierModal`, `confirmLinkSupplier`, `unlinkCollectionSupplier`). **Add `requireCatPerm` to any new write action here** — hiding the button is not the guard.
+
+The helpers are `const` arrows (no hoisting) defined ~line 20179; all 44 call sites run later, so there's no TDZ issue — but **don't move the block down**.
+
+### Row menus are per-action, not per-role
+`_catRowMenuHtml(c, inline)` / `_colRowMenuHtml(col)` build the ⋮ menu from `canEditCategories()` / `canDeleteCategories()` independently and return `''` when neither applies (dropping the ⋮ entirely). A user with only edit still gets a working menu — don't collapse these back to a single `isAdmin()` ternary.
+
+### Backend (mirrors the `csp-*` convention)
+Both controllers now use `@UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)` + `@RequirePerms(...)` on **all 17 routes including GETs**, replacing per-route `@Roles('admin')`. `PermsGuard` bypasses unconditionally for `role === 'admin'`, so admin behaviour is unchanged. JWT carries only `{sub, username}` and `jwt.strategy.ts` refetches the user per request — **perm changes apply without re-login**.
+
+`GET /collections/search-products/:partial` is behind `categories-assign-products` (it only feeds the assign picker); `GET /collections/product-links` stays on `categories-view` because the **Products page** taxonomy chips use it too.
+
+### Back-compat: the legacy `'categories'` alias
+Both layers treat the old string as an alias for `categories-view` **only** — never a write. Frontend: the last line of `catPerm()`. Backend: `LEGACY_PERM_ALIASES` in [perms.guard.ts](backend/src/core/guards/perms.guard.ts). Both must move together, or the UI shows a page whose API 403s. That map is the place to add future read-only legacy aliases (it's keyed required-perm → older strings); **do not add write perms to it**.
+
+### Cross-page callers that needed gating
+`loadProductCollectionMap()` (Products page) and `_ensureSupplierTagSources()` (supplier modal tag picker) both hit categories endpoints for users who may lack `categories-view` — both now bail early rather than firing doomed 403s. `openCategoryProfile()` / `openCollectionProfile()` are gated at the entry point because the **Products page taxonomy chips** deep-link into them. `loadCategoriesPage()` has a `canViewCategories()` backstop since `navigateTo`/`_doNavigateTo` never check perms themselves.
+
+---
+
 ## i18n — Settings Page Localized (Aug 6, 2026)
 
 All seven Settings tabs (عام / الشحن / الأمان / الطباعة / العروض / الإعلانات / البيانات) were localized — 218 `stg*` keys, 228 `data-i18n*` bindings. Same two mechanisms as the Products/Categories/Inventory work below; the notes there apply here too.
@@ -399,6 +511,9 @@ const expenseTotal = filteredExpenses
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Aug 6, 2026 | Offline archive export ("نسخة كاملة") on all 20 resources — multi-sheet Excel; fixed dead `exportToExcel` + clients-CSV OTP bypass | See "Offline Archive Export" above |
+| Aug 6, 2026 | Forced update dialog on every deploy — CI-driven `/version.json` + `no-store` on the shell | See "Forced Update on Deploy" above |
+| Aug 6, 2026 | Categories permissions: 6 fine-grained `categories-*` perms, 17 backend routes guarded, deep-link + popstate perm holes closed | See "Categories Permissions" above |
 | Aug 6, 2026 | Full English localization of the Settings page — all 7 tabs (218 `stg*` keys) | See "i18n — Settings Page Localized" above |
 | Aug 6, 2026 | Full English localization of الأصناف / التصنيفات / المخزن (~1030 translation keys) | See "i18n — Products / Categories / Inventory" above |
 | Jul 31, 2026 | Order-detail full page: two-column layout, dark mode, type-prefixed URL, hard-refresh routing fix | See "Movements → Order Detail Navigation" above |

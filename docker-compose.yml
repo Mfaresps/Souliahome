@@ -36,6 +36,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # Supplied by CI (Jenkins exports BUILD_NUMBER); defaults to "dev" locally.
+        # Written into /version.json at image build — the deploy marker clients poll.
+        BUILD_NUMBER: ${BUILD_NUMBER:-dev}
     container_name: soulia-frontend
     restart: unless-stopped
     ports:

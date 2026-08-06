@@ -15,6 +15,7 @@ import { SettingsModule } from '../settings/settings.module';
 import { VaultModule } from '../vault/vault.module';
 import { ShopifyModule } from '../shopify/shopify.module';
 import { EmployeePerformanceModule } from '../employee-performance/employee-performance.module';
+import { FollowUpsModule } from '../followups/followups.module';
 
 @Module({
   imports: [
@@ -27,6 +28,8 @@ import { EmployeePerformanceModule } from '../employee-performance/employee-perf
     VaultModule,
     ShopifyModule,
     EmployeePerformanceModule,
+    // For auto-opening a "مشكلة في الاستلام" follow-up on delivery failures.
+    FollowUpsModule,
   ],
   controllers: [BostaController],
   providers: [BostaService],
