@@ -28,6 +28,15 @@ export class SupplierLedgerController {
     private readonly suppliersService: SuppliersService,
   ) {}
 
+  /**
+   * All supplier balances at once, keyed by supplierId — feeds the suppliers list page.
+   * Declared above the `supplier/:supplierId` routes so 'balances' is never read as a supplierId.
+   */
+  @Get('balances')
+  async getAllBalances() {
+    return this.supplierLedgerService.getAllBalances();
+  }
+
   @Get('supplier/:supplierId')
   async findBySupplier(
     @Param('supplierId') supplierId: string,

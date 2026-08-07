@@ -70,6 +70,44 @@ export class SupplierLedgerService {
     };
   }
 
+  /**
+   * Every supplier's balance in ONE query, keyed by supplierId.
+   *
+   * The suppliers list shows a debt figure per card. Reading it per supplier would be N round-trips
+   * on every page load, which is why that page used to sum tx.remaining instead — and therefore
+   * silently ignored every invoice-less entry (manual adjustments, advance deposits, debit charges).
+   * That is the exact cause of the card/profile mismatch this endpoint exists to remove.
+   *
+   * Mirrors getCurrentBalance() exactly — newest entry per supplierId by createdAt, take its
+   * runningBalance — so a balance here can never disagree with its single-supplier read.
+   * Suppliers with no ledger entries are absent from the map; callers treat that as 0.
+   */
+  async getAllBalances(): Promise<Record<string, SrBalanceSummary>> {
+    const rows = await this.ledgerModel
+      .aggregate<{ _id: string; runningBalance: number }>([
+        { $sort: { supplierId: 1, createdAt: -1 } },
+        {
+          $group: {
+            _id: '$supplierId',
+            runningBalance: { $first: '$runningBalance' },
+          },
+        },
+      ])
+      .exec();
+
+    const out: Record<string, SrBalanceSummary> = {};
+    for (const r of rows) {
+      if (!r._id) continue;
+      const balance = Number(r.runningBalance) || 0;
+      out[String(r._id)] = {
+        balance,
+        debt: Math.max(0, balance),
+        credit: Math.max(0, -balance),
+      };
+    }
+    return out;
+  }
+
   async findBySupplier(
     supplierId: string,
     opts?: { from?: string; to?: string },
