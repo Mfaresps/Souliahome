@@ -56,6 +56,8 @@ export interface InventoryItem {
   returnRefs: string;
   returnDates: string;
   sales: number;
+  /** Net of admin manual stock corrections (تسوية مخزون). Signed: negative when stock was written down. */
+  adjustments: number;
   current: number;
   status: 'ok' | 'low' | 'zero';
   isActive: boolean;
@@ -925,6 +927,10 @@ export class TransactionsService {
     const txs = excludeTransactionId
       ? transactions.filter((t) => String(t._id) !== excludeTransactionId)
       : transactions;
+    // Must mirror getInventory() exactly — this map is the oversell guard, and stock the admin
+    // wrote down manually is stock that cannot be sold.
+    const adjustmentsByCode =
+      await this.inventoryMovementsService.getManualAdjustmentQtyByProductCode();
     const result = new Map<string, number>();
     for (const product of products) {
       const productCodeNorm = String(product.code || '').trim();
@@ -954,7 +960,11 @@ export class TransactionsService {
       );
       result.set(
         productCodeNorm,
-        openingBal + purchases + returnsToStock - sales,
+        openingBal +
+          purchases +
+          returnsToStock -
+          sales +
+          (adjustmentsByCode.get(productCodeNorm) || 0),
       );
     }
     return result;
@@ -2344,6 +2354,11 @@ export class TransactionsService {
     const transactions = await this.transactionModel
       .find({ cancelled: { $ne: true }, archived: { $ne: true } })
       .exec();
+    // Manual stock corrections are a fourth term alongside purchases/returns/sales — see
+    // getManualAdjustmentQtyByProductCode(). Must stay in step with getAvailableQtyByProductCode:
+    // if the two disagree, the oversell guard and this screen report different on-hand figures.
+    const adjustmentsByCode =
+      await this.inventoryMovementsService.getManualAdjustmentQtyByProductCode();
     return products.map((product) => {
       let purchases = 0;
       let sales = 0;
@@ -2384,7 +2399,8 @@ export class TransactionsService {
         0,
         Math.floor(Number(product.openingBalance) || 0),
       );
-      const current = openingBal + purchases + returnsToStock - sales;
+      const adjustments = adjustmentsByCode.get(productCodeNorm) || 0;
+      const current = openingBal + purchases + returnsToStock - sales + adjustments;
       let status: 'ok' | 'low' | 'zero' = 'ok';
       if (current <= 0) {
         status = 'zero';
@@ -2405,6 +2421,7 @@ export class TransactionsService {
         returnRefs: [...returnRefSet].sort().join('، '),
         returnDates: [...returnDateSet].sort().join('، '),
         sales,
+        adjustments,
         current,
         status,
         isActive: (product as { isActive?: boolean }).isActive !== false,

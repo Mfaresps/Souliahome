@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ShopifyController } from './shopify.controller';
 import { ShopifyService } from './shopify.service';
@@ -24,6 +24,8 @@ import { AuthModule } from '../auth/auth.module';
 import { EmployeePerformanceModule } from '../employee-performance/employee-performance.module';
 import { MentionsModule } from '../mentions/mentions.module';
 import { UsersModule } from '../users/users.module';
+import { InventoryMovementsModule } from '../inventory-movements/inventory-movements.module';
+import { TransactionsModule } from '../transactions/transactions.module';
 
 @Module({
   imports: [
@@ -38,6 +40,14 @@ import { UsersModule } from '../users/users.module';
     EmployeePerformanceModule,
     MentionsModule,
     UsersModule,
+    // approveOrder writes the transaction directly via txModel, bypassing
+    // TransactionsService.create() — so it must replicate that method's inventory
+    // movement logging itself. TransactionsService supplies the pre-create stock
+    // snapshot (getInventory), InventoryMovementsService writes the rows.
+    // Both are forwardRef'd: InventoryMovementsModule <-> TransactionsModule is
+    // already a cycle, and ShopifyModule now joins it.
+    forwardRef(() => InventoryMovementsModule),
+    forwardRef(() => TransactionsModule),
   ],
   controllers: [ShopifyController, OrderAuditController],
   providers: [

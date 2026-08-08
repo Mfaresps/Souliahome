@@ -139,6 +139,81 @@ export class InventoryMovementsService {
     });
   }
 
+  /**
+   * Net manual-adjustment quantity per product code — the third term in derived stock.
+   *
+   * ⚠ This is what makes `adjustStock` actually move stock. Stock in this system is DERIVED
+   * (`getInventory` = opening + purchases + returns − sales), never stored on the product, so a
+   * movement row on its own changes nothing: before this existed, an adjustment wrote a row whose
+   * `qtyAfter` was already a lie by the time it was read back, and the next adjustment recomputed
+   * `qtyBefore` from the untouched derived figure and silently erased the previous one.
+   *
+   * Only `sourceType:'manual-adjustment'` is summed. Every other movement type is a RECORD of a
+   * transaction that the derived loops already account for — summing those would double-count each
+   * sale and purchase.
+   *
+   * Returned as a Map keyed by trimmed productCode so the callers stay O(products), not O(n²).
+   */
+  async getManualAdjustmentQtyByProductCode(): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    try {
+      const rows = await this.model
+        .find({ sourceType: 'manual-adjustment' })
+        .select('productCode qtyDelta')
+        .lean()
+        .exec();
+      for (const r of rows) {
+        const code = String(r.productCode || '').trim();
+        if (!code) continue;
+        map.set(code, (map.get(code) || 0) + (Number(r.qtyDelta) || 0));
+      }
+    } catch (err) {
+      // A failure here must not take the inventory screen down with it. Returning an empty map
+      // degrades to pre-adjustment figures rather than throwing — but it IS wrong stock, so it is
+      // logged at error level, not swallowed silently.
+      this.logger.error(
+        `getManualAdjustmentQtyByProductCode() failed — inventory will omit manual adjustments: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+    }
+    return map;
+  }
+
+  /**
+   * Sum of qtyDelta for a product across every movement logged strictly AFTER `after`.
+   *
+   * Used only by the retroactive backfill, to rewind current stock back to what the
+   * balance was at an earlier moment: a movement that was never logged has no row, so
+   * the present balance minus everything logged since lands on that movement's qtyAfter.
+   * Returns 0 when `after` is missing, which makes the caller fall back to current stock.
+   */
+  async sumDeltaAfter(productCode: string, after?: Date): Promise<number> {
+    if (!after) return 0;
+    const rows = await this.model
+      .find({ productCode: String(productCode).trim(), createdAt: { $gt: after } })
+      .select('qtyDelta')
+      .lean()
+      .exec();
+    return rows.reduce((sum, r) => sum + (Number(r.qtyDelta) || 0), 0);
+  }
+
+  /**
+   * How many rows of a given sourceType exist for a transaction ref.
+   *
+   * Used by the retroactive backfill to ask the precise question "is the create row
+   * missing?" — a transaction edited or cancelled after creation carries 'transaction-update'
+   * / 'transaction-cancel' rows, so a bare "any row exists" test would report a repaired-looking
+   * ref whose original movement is still absent.
+   */
+  async countBySourceType(
+    sourceTransactionRef: string,
+    sourceType: InventoryMovementSourceType,
+  ): Promise<number> {
+    return this.model
+      .countDocuments({ sourceTransactionRef: String(sourceTransactionRef).trim(), sourceType })
+      .exec();
+  }
+
   /** Sequential human-readable reference for manual adjustments, e.g. ADJ-000001. */
   private async generateAdjustmentRef(): Promise<string> {
     const count = await this.model.countDocuments({ sourceType: 'manual-adjustment' }).exec();

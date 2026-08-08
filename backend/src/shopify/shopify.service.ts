@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  forwardRef,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as crypto from 'crypto';
@@ -23,6 +29,11 @@ import { EmployeeShiftService } from '../employee-performance/employee-shift.ser
 import { EmployeeScoringService } from '../employee-performance/employee-scoring.service';
 import { MentionsService } from '../mentions/mentions.service';
 import { UsersService } from '../users/users.service';
+import {
+  InventoryMovementsService,
+  RecordMovementEntry,
+} from '../inventory-movements/inventory-movements.service';
+import { TransactionsService } from '../transactions/transactions.service';
 
 @Injectable()
 export class ShopifyService {
@@ -42,6 +53,10 @@ export class ShopifyService {
     private readonly employeeScoringService: EmployeeScoringService,
     private readonly mentionsService: MentionsService,
     private readonly usersService: UsersService,
+    @Inject(forwardRef(() => InventoryMovementsService))
+    private readonly inventoryMovementsService: InventoryMovementsService,
+    @Inject(forwardRef(() => TransactionsService))
+    private readonly transactionsService: TransactionsService,
   ) {}
 
   private emit(event: string, payload: unknown): void {
@@ -458,6 +473,11 @@ export class ShopifyService {
     const bostaCity = (order as any).shippingBostaCity || order.shippingCity || '';
     const shipZone = cityToShipZone(bostaCity);
 
+    // Pre-creation stock snapshot for the Inventory Movement Log — taken BEFORE the
+    // transaction exists so this order's own items don't pollute their own "before"
+    // balance. Mirrors TransactionsService.create(); see recordInventoryMovementForSale.
+    const invSnapshotBefore = await this.transactionsService.getInventory();
+
     const tx = await this.txModel.create({
       date,
       type: 'مبيعات',
@@ -512,6 +532,10 @@ export class ShopifyService {
       );
     }
 
+    // سجل حركة المخزون — لازم يتكتب هنا لأن approveOrder بتكتب المعاملة مباشرة
+    // على txModel وبتتخطى TransactionsService.create() اللي بتسجل الحركة عادة.
+    await this.recordInventoryMovementForSale(tx, invSnapshotBefore, employee);
+
     // تحليل الإيداع من الملاحظات مرة واحدة فقط عند التأكيد — يُستخدم لاحقاً في تقييم الأداء
     const parsedDeposit = computeDepositFields({ notes: order.notes, tags: order.tags, total: order.total });
     order.depositAmount = parsedDeposit.depositAmount;
@@ -541,6 +565,207 @@ export class ShopifyService {
 
     this.logger.log(`✅ تم قبول أوردر Shopify: ${cleanRef}`);
     return { success: true, txId: String(tx._id) };
+  }
+
+  /**
+   * Writes the سجل حركة المخزون rows for a Shopify sale.
+   *
+   * approveOrder creates its transaction straight on txModel rather than through
+   * TransactionsService.create(), so none of that method's side effects run — this
+   * replicates the movement-logging block at transactions.service.ts (create()).
+   * A Shopify order is always type 'مبيعات', so the movement is always sign -1.
+   *
+   * `snapshotBefore` MUST be the getInventory() result taken before the transaction
+   * was created, or qtyBefore already absorbs this order's own deduction.
+   *
+   * Never throws: the sale and its vault entry are already committed by this point,
+   * and a logging failure must not fail an order that has otherwise succeeded.
+   */
+  private async recordInventoryMovementForSale(
+    tx: TransactionDocument,
+    snapshotBefore: Array<{ _id: string; code: string; name: string; current: number }>,
+    employee: string,
+  ): Promise<void> {
+    try {
+      const byCodeBefore = new Map(
+        snapshotBefore.map((r) => [String(r.code).trim(), r]),
+      );
+      const entries: RecordMovementEntry[] = [];
+      const skipped: string[] = [];
+
+      for (const item of tx.items || []) {
+        const code = String(item.code || '').trim();
+        const invRow = byCodeBefore.get(code);
+        if (!invRow) {
+          // Shopify line items are copied verbatim, so a SKU that matches no product
+          // code yields no movement row. Silent in create(); named here, because for a
+          // Shopify order this is the likely failure and it is otherwise invisible.
+          skipped.push(`${item.name || '?'}${code ? ` (${code})` : ' (بدون كود)'}`);
+          continue;
+        }
+        const qtyBefore = invRow.current;
+        const qtyDelta = -(Number(item.qty) || 0);
+        entries.push({
+          productId: invRow._id,
+          productCode: code,
+          productName: item.name || invRow.name,
+          type: 'مبيعات',
+          qtyDelta,
+          qtyBefore,
+          qtyAfter: qtyBefore + qtyDelta,
+          sourceTransactionId: String(tx._id),
+          sourceTransactionRef: tx.ref || String(tx._id),
+          sourceType: 'transaction-create',
+          by: employee || 'Shopify',
+        });
+      }
+
+      if (skipped.length) {
+        this.logger.warn(
+          `[approveOrder] tx ${tx.ref}: ${skipped.length} صنف بدون مطابقة في المخزن، لم تُسجَّل حركته — ${skipped.join('، ')}`,
+        );
+      }
+      await this.inventoryMovementsService.record(entries);
+    } catch (err) {
+      this.logger.error(
+        `[approveOrder] inventory movement logging failed for tx ${tx._id}: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+    }
+  }
+
+  /**
+   * One-off repair for Shopify sales approved BEFORE approveOrder logged inventory
+   * movements. Writes the missing 'مبيعات' rows for the given transaction refs.
+   *
+   * ⚠ qtyBefore/qtyAfter are RECONSTRUCTED, not recovered — the true historical
+   * balance was never recorded. Current stock already reflects these sales (it is
+   * derived from the transactions themselves), so using getInventory() directly
+   * would double-count. Instead each row is rewound from the present balance:
+   *
+   *     qtyAfter  = current stock + (qty of every LATER movement already logged)
+   *     qtyBefore = qtyAfter + qty sold
+   *
+   * That is exact only if no untracked movement happened after this sale. Rows are
+   * therefore flagged in `notes` so the log never presents them as original records.
+   *
+   * Idempotent: a ref that already has movement rows is skipped, never duplicated.
+   */
+  async backfillMissingSaleMovements(
+    refs: string[],
+    by: string,
+    dryRun = true,
+  ): Promise<{
+    dryRun: boolean;
+    results: Array<{
+      ref: string;
+      status: 'written' | 'would-write' | 'skipped-existing' | 'not-found' | 'not-eligible' | 'no-items-matched';
+      rows?: Array<{ code: string; name: string; qty: number; qtyBefore: number; qtyAfter: number }>;
+      unmatchedItems?: string[];
+      note?: string;
+    }>;
+  }> {
+    const results: Array<{
+      ref: string;
+      status: 'written' | 'would-write' | 'skipped-existing' | 'not-found' | 'not-eligible' | 'no-items-matched';
+      rows?: Array<{ code: string; name: string; qty: number; qtyBefore: number; qtyAfter: number }>;
+      unmatchedItems?: string[];
+      note?: string;
+    }> = [];
+
+    const inventory = await this.transactionsService.getInventory();
+    const invByCode = new Map(inventory.map((r) => [String(r.code).trim(), r]));
+
+    for (const rawRef of refs) {
+      const ref = String(rawRef || '').replace(/^#+/, '').trim();
+      if (!ref) continue;
+
+      const tx = await this.txModel.findOne({ ref }).exec();
+      if (!tx) {
+        results.push({ ref, status: 'not-found' });
+        continue;
+      }
+      if (tx.type !== 'مبيعات' || tx.cancelled || tx.archived) {
+        results.push({
+          ref,
+          status: 'not-eligible',
+          note: `النوع "${tx.type}"${tx.cancelled ? ' — ملغاة' : ''}${tx.archived ? ' — مؤرشفة' : ''}`,
+        });
+        continue;
+      }
+
+      // Idempotency. The question is specifically "is the CREATE row missing?", not
+      // "does this ref have any row at all": a transaction edited after creation carries
+      // 'transaction-update' rows, and counting those as proof would permanently block
+      // the repair of the very row that is actually missing.
+      const existingCreate = await this.inventoryMovementsService.countBySourceType(
+        ref,
+        'transaction-create',
+      );
+      if (existingCreate > 0) {
+        results.push({
+          ref,
+          status: 'skipped-existing',
+          note: `يوجد ${existingCreate} حركة إنشاء مسجّلة بالفعل لهذا المرجع`,
+        });
+        continue;
+      }
+
+      const entries: RecordMovementEntry[] = [];
+      const preview: Array<{ code: string; name: string; qty: number; qtyBefore: number; qtyAfter: number }> = [];
+      const unmatched: string[] = [];
+
+      for (const item of tx.items || []) {
+        const code = String(item.code || '').trim();
+        const invRow = invByCode.get(code);
+        if (!invRow) {
+          unmatched.push(`${item.name || '?'}${code ? ` (${code})` : ' (بدون كود)'}`);
+          continue;
+        }
+        const qty = Number(item.qty) || 0;
+
+        // Rewind: sum the deltas of every movement logged AFTER this sale, then undo them
+        // from the current balance to land on this sale's qtyAfter.
+        const laterDelta = await this.inventoryMovementsService.sumDeltaAfter(
+          code,
+          (tx as unknown as { createdAt?: Date }).createdAt,
+        );
+        const qtyAfter = invRow.current - laterDelta;
+        const qtyBefore = qtyAfter + qty;
+
+        preview.push({ code, name: item.name || invRow.name, qty, qtyBefore, qtyAfter });
+        entries.push({
+          productId: invRow._id,
+          productCode: code,
+          productName: item.name || invRow.name,
+          type: 'مبيعات',
+          qtyDelta: -qty,
+          qtyBefore,
+          qtyAfter,
+          sourceTransactionId: String(tx._id),
+          sourceTransactionRef: ref,
+          sourceType: 'transaction-create',
+          by: tx.employee || 'Shopify',
+          notes: `تسجيل بأثر رجعي — الحركة لم تُسجَّل وقت إنشاء المعاملة (أوردر Shopify). الرصيد قبل/بعد محسوب رجوعياً. نُفِّذ بواسطة ${by}`,
+        });
+      }
+
+      if (!entries.length) {
+        results.push({ ref, status: 'no-items-matched', unmatchedItems: unmatched });
+        continue;
+      }
+
+      if (dryRun) {
+        results.push({ ref, status: 'would-write', rows: preview, unmatchedItems: unmatched.length ? unmatched : undefined });
+        continue;
+      }
+
+      await this.inventoryMovementsService.record(entries);
+      this.logger.log(`[backfill] كُتبت ${entries.length} حركة مخزون للمرجع ${ref} بواسطة ${by}`);
+      results.push({ ref, status: 'written', rows: preview, unmatchedItems: unmatched.length ? unmatched : undefined });
+    }
+
+    return { dryRun, results };
   }
 
   // ترقية: حفظ shopifyCreatedAt في transactions القديمة التي تفتقده

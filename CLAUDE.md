@@ -12,6 +12,43 @@ All search inputs across the app (placeholder starting with "بحث") must keep 
 
 ---
 
+## Shopify Sales Were Missing From سجل حركة المخزون (Aug 9, 2026)
+
+Orders confirmed from the Shopify page appeared in سجل المعاملات and correctly reduced the stock **balance**, but wrote **no row** to سجل حركة المخزون. Reported against refs `2313` and `2274`.
+
+### Stock balance is derived; the movement log is not
+These are two different systems and they fail independently:
+- **Balance** — derived on read by `getInventory()`: `opening + purchases + returns − sales + adjustments`. Any non-cancelled `مبيعات` transaction reduces it automatically, whoever wrote it.
+- **The log** — a real collection (`InventoryMovement`) whose rows are only ever written by `InventoryMovementsService.record()`, called from **four** places, all inside `TransactionsService`: `create()`, `update()`, `performCancellation()`, restore.
+
+`ShopifyService.approveOrder` creates its transaction with `this.txModel.create({...})` — **it never goes through `TransactionsService.create()`**, so none of those four ran. It hand-replicated every *other* side effect (vault entry, `tx:created`, `inventory:changed`), which is precisely why nothing looked wrong: the emitted `inventory:changed` refreshed the on-screen stock number, so the balance was right and only the audit trail was empty.
+
+⚠ **Any code path that writes a transaction straight to `txModel` inherits this bug.** If you add one, either route it through `TransactionsService.create()` or replicate the movement-logging block — there is no third option, and the UI will not tell you which you chose.
+
+### The snapshot must be taken before the write
+`recordInventoryMovementForSale(tx, snapshotBefore, employee)` mirrors `create()`'s block. `snapshotBefore` **must** be the `getInventory()` result captured *before* `txModel.create`, or `qtyBefore` already contains this order's own deduction and every row is off by its own quantity.
+
+Unmatched line items are **named in a warning** here rather than skipped silently as in `create()`: Shopify line items are copied verbatim, so a SKU that matches no product `code` is the likely failure mode and would otherwise be invisible. The whole method is try/catch — the sale and its vault entry are already committed, and a logging failure must not fail the order.
+
+### Backfill: `qtyBefore`/`qtyAfter` are reconstructed, not recovered
+`POST /shopify/backfill/inventory-movements` (admin) `{refs:[...], dryRun:false}`. The historical balance was never recorded anywhere, so it is rewound from the present:
+
+```
+qtyAfter  = current stock − (Σ qtyDelta of every movement logged after this sale)
+qtyBefore = qtyAfter + qty sold
+```
+
+⚠ **Do not use `getInventory()` directly as `qtyBefore`** — current stock *already* includes these sales, so that double-counts. The rewind is exact only if no untracked movement happened after the sale, which is why every backfilled row carries a `notes` string saying it was reconstructed. **`sumDeltaAfter` must sum all movement types, including `تسوية مخزون`** — manual adjustments are a term in derived stock (`getManualAdjustmentQtyByProductCode`), so omitting them would skew the rewind.
+
+`dryRun` defaults to **true** (`dryRun !== false`) — a bare `{refs:[…]}` previews and writes nothing. Idempotent: a ref that already has any movement row is skipped, never duplicated.
+
+### Wiring
+`ShopifyModule` now imports `InventoryMovementsModule` and `TransactionsModule`, both `forwardRef` — those two were already a cycle and Shopify joins it. `nest build` does not prove this resolves; only starting `dist/main.js` does (see the nullable-`@Prop` section below for why). Verified: *Nest application successfully started*.
+
+**Still open:** cancelling a pre-fix Shopify sale writes a reversing `+qty` row via `performCancellation` with no original `-qty` to match it. Backfilling the ref first avoids this.
+
+---
+
 ## A Nullable `@Prop` Without `type` Kills the Whole API (Aug 8, 2026)
 
 `ReturnRequest.reversedAt` was added as `@Prop({ default: null }) reversedAt: string | null`. `nest build` passes — this is **not** a compile error. It throws at *module load*:
@@ -1069,6 +1106,7 @@ const expenseTotal = filteredExpenses
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Aug 9, 2026 | Shopify orders now write to سجل حركة المخزون — `approveOrder` bypassed `TransactionsService.create()`, so the stock balance moved but no movement row was ever logged; plus an admin backfill for affected refs | See "Shopify Sales Were Missing From سجل حركة المخزون" above |
 | Aug 8, 2026 | Fixed the deploy-breaking crash: a nullable `@Prop` with no `type` killed NestJS at module load, so every request — including login — failed while the build reported success | See "A Nullable `@Prop` Without `type` Kills the Whole API" above |
 | Aug 8, 2026 | Trust hardening: "failed to load" split from "no data" (`LOAD_FAIL`), silent @mention failures surfaced, `beforeunload` added app-wide, product modal given real unsaved-changes protection, boot cut from 8 sequential round-trips to 1 | See "Trust & Data-Loss Hardening" above |
 | Aug 8, 2026 | `NAV_TRAIL`: back buttons now name and return to where you actually came from, replacing hardcoded destinations; the three one-way links (Shopify→متابعة, vault→invoice, ledger→vault) got a return path | See "Navigation Trail — `NAV_TRAIL`" above |

@@ -119,6 +119,28 @@ export class ShopifyController {
     return this.shopifyService.reassignOrder(id, newEmployeeId, reason || '', changedBy);
   }
 
+  /**
+   * إصلاح بأثر رجعي: كتابة حركات المخزون الناقصة لمبيعات Shopify التي تمت
+   * قبل أن يسجّل approveOrder حركة المخزون.
+   *
+   * dryRun افتراضياً true — لازم تبعت {"dryRun": false} عشان يكتب فعلياً.
+   * آمن للتكرار: أي مرجع له حركات مسجّلة بالفعل يُتخطى ولا يُضاعف.
+   */
+  @Post('backfill/inventory-movements')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async backfillInventoryMovements(
+    @Body('refs') refs: string[],
+    @Body('dryRun') dryRun: boolean,
+    @Request() req: any,
+  ) {
+    if (!Array.isArray(refs) || !refs.length) {
+      throw new BadRequestException('refs مطلوبة — مصفوفة بأرقام مراجع المعاملات');
+    }
+    const by = req.user?.name || req.user?.username || 'admin';
+    return this.shopifyService.backfillMissingSaleMovements(refs, by, dryRun !== false);
+  }
+
   // تعديل items أوردر
   @Patch('orders/:id/items')
   @UseGuards(JwtAuthGuard)
