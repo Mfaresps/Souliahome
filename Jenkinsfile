@@ -85,10 +85,6 @@ pipeline {
   post {
     always {
       sh 'docker rmi soulia-backend:ci-${BUILD_NUMBER} soulia-frontend:ci-${BUILD_NUMBER} 2>/dev/null || true'
-      // كل نشرة تبني الصورتين مرتين (مرحلة Build ثم compose --build)، فتتراكم
-      // طبقات معلّقة تملأ قرص VPS صغير مع الوقت. dangling فقط — لا يمسّ صور
-      // الحاويات العاملة ولا يبطئ البناء التالي (الكاش الموسوم يبقى).
-      sh 'docker image prune -f >/dev/null 2>&1 || true'
     }
   }
 }
