@@ -53,13 +53,26 @@ pipeline {
         // 60 محاولة × 2ث = 120ث. النافذة القديمة (60ث) كانت أضيق من إقلاع بارد
         // لـ NestJS + اتصال Mongo على جهاز مضغوط — فكانت تحسب النشرَ فاشلاً
         // والحاويات على وشك الجاهزية.
+        //
+        // ⚠ الفحص يضرب /api/ فعلياً ولا يكتفي بحالة الحاوية. `restart: unless-stopped`
+        // يعيد تشغيل الحاوية بعد كل انهيار، فـ `.State.Status` يقرأ "running" حتى
+        // بينما NestJS يموت ويعود في حلقة. هكذا نجح بناءٌ كامل بينما كان الـ API
+        // ميتاً ورسالة «خطأ في الطلب» تظهر عند تسجيل الدخول: كان الفحص يسأل
+        // السؤال الخطأ. رد 401 على بيانات وهمية دليلٌ على صحة المسار كاملاً
+        // (Nest + Mongo + المصادقة)، أما رفض الاتصال فليس كذلك.
         sh '''
           for i in $(seq 1 60); do
             frontend_ok=false
             curl -sf -o /dev/null http://localhost:8080/ && frontend_ok=true
+            api_code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 \
+              -X POST http://localhost:8080/api/auth/login \
+              -H 'Content-Type: application/json' \
+              -d '{"username":"__healthcheck__","password":"__healthcheck__"}' 2>/dev/null || echo 000)
             backend_state=$(docker inspect -f '{{.State.Status}}' soulia-backend 2>/dev/null || echo missing)
-            if [ "$frontend_ok" = true ] && [ "$backend_state" = "running" ]; then
-              echo "SOULIA deployed and healthy"
+            # أي رد HTTP حقيقي (401 المتوقع، أو 400/429) يعني أن الـ API حيّ ويوجّه.
+            # 000 = لا اتصال، و 502 = nginx وجد الباك-إند ميتاً.
+            if [ "$frontend_ok" = true ] && [ "$api_code" != "000" ] && [ "$api_code" != "502" ] && [ "$api_code" != "504" ]; then
+              echo "SOULIA deployed and healthy (login endpoint responded $api_code)"
               exit 0
             fi
             sleep 2
@@ -67,7 +80,11 @@ pipeline {
           # عند الفشل: اطبع كل ما يلزم للتشخيص من صفحة الـ build مباشرة —
           # حالة الحاويات، لوج الاثنين (فشل nginx في الإقلاع كان أعمى تماماً
           # قبل ذلك: القديم كان يطبع لوج الباك-إند فقط)، والقرص.
-          echo "HEALTH CHECK FAILED (frontend_ok=$frontend_ok backend=$backend_state)"
+          echo "HEALTH CHECK FAILED (frontend_ok=$frontend_ok api_code=$api_code backend=$backend_state)"
+          # عدد مرات إعادة التشغيل يفضح انهيارَ إقلاعٍ متكرراً: حاوية "running"
+          # بعدّاد مرتفع هنا لم تُقلع قط، بل تُبعث كل بضع ثوانٍ.
+          echo "=== backend restarts ==="
+          docker inspect -f '{{.RestartCount}} restarts' soulia-backend || true
           echo "=== containers ==="
           docker compose -p soulia ps || true
           echo "=== backend logs ==="

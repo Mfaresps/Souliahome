@@ -12,6 +12,25 @@ All search inputs across the app (placeholder starting with "بحث") must keep 
 
 ---
 
+## A Nullable `@Prop` Without `type` Kills the Whole API (Aug 8, 2026)
+
+`ReturnRequest.reversedAt` was added as `@Prop({ default: null }) reversedAt: string | null`. `nest build` passes — this is **not** a compile error. It throws at *module load*:
+
+```
+CannotDetermineTypeError: Cannot determine a type for the "ReturnRequest.reversedAt" field
+```
+
+A `T | null` union erases to no usable design-time metadata, so `@nestjs/mongoose` cannot infer the SchemaType and throws while the file is being `require`d — **before `NestFactory` ever binds a port**. Every route dies with it. The visible symptom was «خطأ في الطلب» on login, which reads as an auth bug and is not: `auth.controller.ts` and `app.module.ts` were byte-identical between the working and broken revisions.
+
+**The rule: every nullable `@Prop` states its type.** All six pre-existing ones already did (`product.categoryId`, `product.collectionId`, `category.parentId`, `collection.categoryId`, `settings.startDate`, `settings.endDate`) — `reversedAt` was the only new field that broke the pattern. Object-valued nullables use `type: Object` (`transaction.writeOff`, `supplier-return.settlement`).
+
+⚠ **`npm run build` does not catch this.** The only check that does is actually starting the compiled output — `node dist/main.js`. Do that once before pushing anything that touches a schema.
+
+### The health check was asking the wrong question
+`restart: unless-stopped` in [docker-compose.yml](docker-compose.yml) resurrects the container after every crash, so `docker inspect -f '{{.State.Status}}'` reports **`running`** while NestJS is dying in a loop. The build therefore went green over a completely dead API. The check now POSTs to `/api/auth/login` through nginx and accepts any real HTTP status (401 is the expected one) while rejecting `000`/`502`/`504`; the failure branch also prints `RestartCount`, which is what exposes a boot-crash loop at a glance.
+
+---
+
 ## Trust & Data-Loss Hardening (Aug 8, 2026)
 
 Three systems whose primitives already existed but were barely adopted: 66 `showConfirm` calls (excellent) against only 11 skeletons, 13 filter-aware empty states, and **178 empty `catch (_) {}` blocks**.
@@ -1050,6 +1069,7 @@ const expenseTotal = filteredExpenses
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Aug 8, 2026 | Fixed the deploy-breaking crash: a nullable `@Prop` with no `type` killed NestJS at module load, so every request — including login — failed while the build reported success | See "A Nullable `@Prop` Without `type` Kills the Whole API" above |
 | Aug 8, 2026 | Trust hardening: "failed to load" split from "no data" (`LOAD_FAIL`), silent @mention failures surfaced, `beforeunload` added app-wide, product modal given real unsaved-changes protection, boot cut from 8 sequential round-trips to 1 | See "Trust & Data-Loss Hardening" above |
 | Aug 8, 2026 | `NAV_TRAIL`: back buttons now name and return to where you actually came from, replacing hardcoded destinations; the three one-way links (Shopify→متابعة, vault→invoice, ledger→vault) got a return path | See "Navigation Trail — `NAV_TRAIL`" above |
 | Aug 8, 2026 | Reports charts rebuilt on `REP_VIZ`: validated light/dark palette, two 3-bar charts → one waterfall, and «المنتجات الراكدة» fixed — it could never contain a zero-sale product | See "Reports Charts — Rebuilt as a Design System" above |

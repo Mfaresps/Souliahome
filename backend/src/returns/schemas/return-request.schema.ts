@@ -144,8 +144,13 @@ export class ReturnRequest {
   /**
    * Set when the approved return's transaction is cancelled. Every aggregate filters on it
    * (NOT_REVERSED_FILTER) — status stays 'معتمد', mirroring how SupplierReturnOrder marks reversal.
+   *
+   * ⚠ `type: String` is required, not decorative: a `T | null` union carries no usable design-time
+   * metadata, so Mongoose throws CannotDetermineTypeError at module load — the whole API then never
+   * binds its port and every request, including login, fails. Every other nullable field in the
+   * codebase (product.categoryId, settings.startDate, …) states its type for the same reason.
    */
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   reversedAt: string | null;
 
   @Prop({ default: '' })
