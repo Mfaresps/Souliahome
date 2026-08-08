@@ -124,4 +124,8 @@ export const createMockInventoryMovementsService = () => ({
   record: jest.fn().mockResolvedValue(undefined),
   adjustStock: jest.fn().mockResolvedValue(undefined),
   findAll: jest.fn().mockResolvedValue([]),
+  // Defaults to an empty Map, not undefined: both derived-stock loops call this on every run, so
+  // an unstubbed mock would throw inside getInventory() and fail tests that never touch
+  // adjustments. Tests that assert on adjustments override it.
+  getManualAdjustmentQtyByProductCode: jest.fn().mockResolvedValue(new Map()),
 });

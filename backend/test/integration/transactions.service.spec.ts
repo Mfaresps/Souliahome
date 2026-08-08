@@ -1100,4 +1100,70 @@ describe('TransactionsService (integration with mocks)', () => {
       ).resolves.toBeDefined();
     });
   });
+
+  /**
+   * تسوية المخزون اليدوية — الحركة يجب أن تُحرّك المخزون فعلاً.
+   *
+   * قبل هذا الإصلاح كان adjustStock يكتب صفاً في سجل الحركات فقط، والمخزون مشتقّ من
+   * المعاملات ولا يقرأ ذلك السجل — فلا يتغيّر الرقم إطلاقاً. الحالة التراكمية أدناه هي
+   * التي تكشف العيب: التسوية الأولى وحدها تبدو صحيحة في الصف المكتوب، والثانية هي التي
+   * تفضح أن الأولى لم تصل إلى الرصيد.
+   */
+  describe('getInventory — manual stock adjustments (تسوية مخزون)', () => {
+    beforeEach(() => {
+      productsService.findAll.mockResolvedValue([
+        { _id: 'p1', code: 'P001', name: 'سجادة', sellPrice: 100, buyPrice: 60, minStock: 5, openingBalance: 10 },
+      ]);
+      txModel.find.mockReturnValue({ exec: jest.fn().mockResolvedValue([]) });
+    });
+
+    it('adds a positive adjustment to current stock', async () => {
+      inventoryMovementsService.getManualAdjustmentQtyByProductCode.mockResolvedValue(
+        new Map([['P001', 3]]),
+      );
+      const inv = await service.getInventory();
+      expect(inv[0].current).toBe(13); // 10 افتتاحي + 3 تسوية
+      expect(inv[0].adjustments).toBe(3);
+    });
+
+    it('subtracts a negative adjustment (stock written down)', async () => {
+      inventoryMovementsService.getManualAdjustmentQtyByProductCode.mockResolvedValue(
+        new Map([['P001', -4]]),
+      );
+      const inv = await service.getInventory();
+      expect(inv[0].current).toBe(6);
+      expect(inv[0].adjustments).toBe(-4);
+    });
+
+    it('accumulates successive adjustments — the case the old code silently erased', async () => {
+      // مجموع التسويات هو ما يُقرأ، لا آخر صف: +3 ثم −5 = −2
+      inventoryMovementsService.getManualAdjustmentQtyByProductCode.mockResolvedValue(
+        new Map([['P001', -2]]),
+      );
+      const inv = await service.getInventory();
+      expect(inv[0].current).toBe(8);
+    });
+
+    it('combines adjustments with transaction-derived movement', async () => {
+      txModel.find.mockReturnValue({
+        exec: jest.fn().mockResolvedValue([
+          { type: 'مبيعات', ref: '2254', date: '2026-08-01', items: [{ code: 'P001', qty: 4 }] },
+        ]),
+      });
+      inventoryMovementsService.getManualAdjustmentQtyByProductCode.mockResolvedValue(
+        new Map([['P001', 2]]),
+      );
+      const inv = await service.getInventory();
+      expect(inv[0].current).toBe(8); // 10 − 4 مبيعات + 2 تسوية
+    });
+
+    it('leaves products with no adjustment untouched', async () => {
+      inventoryMovementsService.getManualAdjustmentQtyByProductCode.mockResolvedValue(
+        new Map([['P999', 99]]),
+      );
+      const inv = await service.getInventory();
+      expect(inv[0].current).toBe(10);
+      expect(inv[0].adjustments).toBe(0);
+    });
+  });
 });
