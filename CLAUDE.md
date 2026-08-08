@@ -12,6 +12,46 @@ All search inputs across the app (placeholder starting with "بحث") must keep 
 
 ---
 
+## Trust & Data-Loss Hardening (Aug 8, 2026)
+
+Three systems whose primitives already existed but were barely adopted: 66 `showConfirm` calls (excellent) against only 11 skeletons, 13 filter-aware empty states, and **178 empty `catch (_) {}` blocks**.
+
+### `LOAD_FAIL` — "couldn't load" is not "there is nothing"
+Every boot resource was fetched with `.catch(() => [])`, converting **failure into an empty array**. A backend outage therefore rendered a fully-drawn, entirely-empty app with no error surface anywhere, and the Movements page — which has no fetch and no skeleton of its own, it renders straight off the in-memory array — announced «لا توجد معاملات». Staff read that as *the transaction history was deleted*.
+
+**The rule is three states, never two: loaded-and-empty ≠ filtered-to-zero ≠ failed-to-load.**
+
+`fetchOr(key, promise, fallback)` still returns the empty array (so no `.length` guard downstream changes) but records the failure. Any renderer can then ask `loadFailed('transactions')` and draw `loadErrorState(key, onRetry)`. **The flag clears on a successful retry** — otherwise a page keeps showing an error after the data came back. Applied to Movements, Vault, Complaints and Follow-ups.
+
+⚠ **The vault opens on the current month by default** (`resetVaultFilters`), so an empty vault log is almost always a *filter* result. `_vltEmptyHtml()` now offers `resetVaultFilters()` — which already existed in the code and was never surfaced — instead of claiming the ledger is empty. Complaints had the worst copy: «ستظهر شكاوى العملاء الجديدة هنا تلقائياً» was printed even under an active filter.
+
+### Silent failures that lose real work
+`POST /mentions` after an invoice comment and after a follow-up assignment both ended in `catch (_) {}`. The comment saved and appeared, so the user believed they had escalated something — **the tagged colleague was never notified**. `_warnMentionFailed(targets)` names who didn't get it. The wording is a *warning*, not an error: the underlying action genuinely succeeded.
+
+`clearMentionNotifications` / `markAllMentionsRead` cleared local state regardless of the server result, so the badge silently resurrected on next load. Both now bail with a toast instead of faking success.
+
+### `beforeunload` — there was none, anywhere
+`txDirty` guarded `navigateTo` only, so F5 / tab-close / browser-back discarded even the protected transaction form. The guard is a **registry** (`registerUnsavedGuard(key, fn)`), so adding a form means registering a predicate — don't edit the listener.
+
+⚠ **Deliberate reloads must call `allowUnload()` first** — the forced-update dialog, backup restore, selective import and selective delete all reload on purpose, and would otherwise hit the browser's "Leave site?" prompt during an operation the user just requested. All five sites are wired.
+
+### `_pmWatchDirty` was never protection
+Despite the name, it flipped the save button's label from «حفظ» to «تحديث» and then **removed its own listeners** — no flag, no guard. The app's longest form (~20 fields) was lost to a stray Cancel click or refresh. Now a real `_pmDirty` flag that stays readable for the modal's whole life, guarding Cancel/X (`_pmCancel`, which asks only when something would be lost) and page unload. It runs in **create mode too** — a fully typed new product was the most painful loss and had no watch at all. `_pmClearDirty()` is called from `closeModal()` rather than from each of `saveProduct`'s several exits.
+
+⚠ **Both close buttons must point at `_pmCancel()`, not `closeModal()`.** The header `.modal-x` was still calling `closeModal()` directly after the guard was written — and since `closeModal()` calls `_pmClearDirty()`, the X wiped the flag and destroyed the form with no prompt, defeating the entire feature while «إلغاء» looked like it worked. `lockDismiss:true` already covers the backdrop and ESC paths, so those two need nothing. **Any new dismiss control on this modal goes through `_pmCancel()`.**
+
+⚠ `showConfirm(question, opts)` returns a **Promise&lt;boolean&gt;** — it is not an options object with an `onConfirm` callback.
+
+### Boot: 8 sequential round-trips → 1
+`loadAllData` ran 8 requests in parallel and then **7 strictly sequentially**, each awaiting the last for no reason. All 15 are now one `Promise.all`. `isAdmin()` reads only `currentUser` (set at login), not the batch results, so the admin-only fetches join safely. ⚠ `settings.darkMode` and `handleLangPolicy({force:true})` must stay **after** the await — both read the settings loaded in it.
+
+**Still open (measured, not fixed):** `/transactions` is fetched whole — 437 records / ~5MB in the current backup — and paginated client-side, while the backend already supports `page`/`limit` ([transactions.service.ts](backend/src/transactions/transactions.service.ts) `findAll`). This is a growth ceiling, not just latency.
+
+### Removed: «نسخة كاملة» on the invoice page
+The `openArchiveExport('invoiceView')` button was dropped from `renderInvoiceViewPage`'s header. Its `EXPORT_REGISTRY` entry and the `xpResInvoice` translation key were deleted with it — a registry entry no button can reach is dead code that reads as a live feature. Everything else in `EXPORT_REGISTRY` is unaffected; **re-adding the button means restoring the registry entry too**, since the engine is driven entirely by that map.
+
+---
+
 ## Navigation Trail — `NAV_TRAIL` (Aug 8, 2026)
 
 Every back button in the app carried a **hardcoded** destination: the invoice page always returned to «الحركات» even when opened from the vault, and the supplier profile always to «الموردون». Three links had no back button at all — Shopify order # → متابعة الطلبات, vault ref → invoice, supplier ledger → vault. The root cause: `_doNavigateTo` — the only place `currentPage` changes — recorded nothing, and there is **no `history.back()` anywhere in the file**.
@@ -1010,6 +1050,7 @@ const expenseTotal = filteredExpenses
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Aug 8, 2026 | Trust hardening: "failed to load" split from "no data" (`LOAD_FAIL`), silent @mention failures surfaced, `beforeunload` added app-wide, product modal given real unsaved-changes protection, boot cut from 8 sequential round-trips to 1 | See "Trust & Data-Loss Hardening" above |
 | Aug 8, 2026 | `NAV_TRAIL`: back buttons now name and return to where you actually came from, replacing hardcoded destinations; the three one-way links (Shopify→متابعة, vault→invoice, ledger→vault) got a return path | See "Navigation Trail — `NAV_TRAIL`" above |
 | Aug 8, 2026 | Reports charts rebuilt on `REP_VIZ`: validated light/dark palette, two 3-bar charts → one waterfall, and «المنتجات الراكدة» fixed — it could never contain a zero-sale product | See "Reports Charts — Rebuilt as a Design System" above |
 | Aug 8, 2026 | Customer returns Phase 0: wired the dead validation service, bounded the refund, made reversal visible to reports, allowed partial returns, and stopped damaged goods re-entering stock | See "Customer Returns — Phase 0 Hardening" above |
