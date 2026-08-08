@@ -18,6 +18,14 @@ export class ReturnItem {
 
   @Prop({ required: true })
   total: number;
+
+  /**
+   * سليم | تالف — see RETURN_ITEM_CONDITIONS. A تالف unit is refunded to the customer but does
+   * NOT re-enter sellable stock: TransactionsService reads this field off the return transaction's
+   * items when deriving inventory. Defaults to سليم so pre-existing rows keep today's behaviour.
+   */
+  @Prop({ default: 'سليم' })
+  condition: string;
 }
 
 @Schema({ timestamps: true })
@@ -103,6 +111,48 @@ export class ReturnRequest {
   /** رقم تتبع شحنة المرتجع لدى شركة الشحن (اختياري). */
   @Prop({ default: '' })
   returnTrackingNumber: string;
+
+  /**
+   * The 'مرتجع' transaction created at approval. Without it, cancelling that transaction could not
+   * be traced back here, which is what left reversed returns permanently deducted from net sales.
+   */
+  @Prop({ default: '' })
+  returnTxId: string;
+
+  /** Ref given to the return transaction — `{originalRef}-RET`, then `-RET-2`, `-RET-3`… */
+  @Prop({ default: '' })
+  returnTxRef: string;
+
+  /**
+   * 1 for the first return against an invoice, 2 for the second… Drives the ref suffix, so two
+   * partial returns on one invoice can no longer collide on `{ref}-RET`.
+   */
+  @Prop({ default: 1 })
+  sequence: number;
+
+  /**
+   * Ceiling the refund was validated against, stored for audit: an approver reading the request a
+   * week later can see what the cap was without re-deriving the invoice's discount allocation.
+   */
+  @Prop({ default: 0 })
+  maxRefundable: number;
+
+  /** Value of the units returned as تالف — refunded but never added back to sellable stock. */
+  @Prop({ default: 0 })
+  damagedValue: number;
+
+  /**
+   * Set when the approved return's transaction is cancelled. Every aggregate filters on it
+   * (NOT_REVERSED_FILTER) — status stays 'معتمد', mirroring how SupplierReturnOrder marks reversal.
+   */
+  @Prop({ default: null })
+  reversedAt: string | null;
+
+  @Prop({ default: '' })
+  reversedBy: string;
+
+  @Prop({ default: '' })
+  reversalReason: string;
 }
 
 export const ReturnRequestSchema =

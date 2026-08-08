@@ -13,6 +13,17 @@ import { PERMS_KEY } from '../decorators/perms.decorator';
  */
 const LEGACY_PERM_ALIASES: Record<string, string[]> = {
   'categories-view': ['categories'],
+  // The blanket `suppliers` perm predates the suppliers-* split. It keeps granting the six READ
+  // tabs — exactly what a non-admin holding it could already see — so no existing account loses
+  // access. It must never appear under an action perm (suppliers-pay, -deposit, -ledger-adjust,
+  // -write-off, -reverse, -returns): those were admin-only, and payment was the unguarded hole
+  // this split exists to close. Mirrors supPerm()/SUP_TAB_ACTIONS in index.html.
+  'suppliers-tab-invoices': ['suppliers'],
+  'suppliers-tab-pos': ['suppliers'],
+  'suppliers-tab-sreturns': ['suppliers'],
+  'suppliers-tab-payments': ['suppliers'],
+  'suppliers-tab-ledger': ['suppliers'],
+  'suppliers-tab-activity': ['suppliers'],
 };
 
 @Injectable()

@@ -28,16 +28,44 @@ export class ProductsService {
     try { this.presence?.emitEvent(event, payload); } catch { /* swallow */ }
   }
 
+  /**
+   * ⚠ نسخة مطابقة لاختصارات PRODUCT_COLORS في frontend/public/index.html
+   * (`_pmSlugPreview` يعاين الكود بها، وهذه الدالة تولّده فعلياً). أي لون يُضاف
+   * هناك يجب أن يُضاف هنا، وإلا وُلّد اختصاره من أول ثلاثة أحرف فاختلف الكود
+   * المولَّد على الخادم عن المعاينة التي رآها المستخدم.
+   */
   private static readonly COLOR_ABBR: Record<string, string> = {
     Black: 'BLK',
-    White: 'WHT',
-    Beige: 'BEI',
+    Charcoal: 'CHR',
     Gray: 'GRY',
-    Green: 'GRN',
-    Blue: 'BLU',
+    Silver: 'SLV',
+    White: 'WHT',
+    'Off White': 'OWH',
+    Cream: 'CRM',
+    Beige: 'BEI',
+    Taupe: 'TPE',
     Brown: 'BRN',
-    Pink: 'PNK',
+    Camel: 'CML',
+    Gold: 'GLD',
+    Mustard: 'MST',
+    Yellow: 'YLW',
+    Orange: 'ORG',
+    Terracotta: 'TRC',
     Red: 'RED',
+    Burgundy: 'BRG',
+    'Baby Blue': 'BBL',
+    Blue: 'BLU',
+    Navy: 'NVY',
+    Turquoise: 'TRQ',
+    Teal: 'TEL',
+    Sage: 'SGE',
+    Green: 'GRN',
+    'Dark Green': 'DGR',
+    Olive: 'OLV',
+    Pink: 'PNK',
+    'Dusty Rose': 'DRS',
+    Lilac: 'LIL',
+    Purple: 'PRP',
   };
   private static readonly SIZE_ABBR: Record<string, string> = {
     Small: 'S',
@@ -226,6 +254,7 @@ export class ProductsService {
       isActive: 'الحالة (مفعّل)',
       description: 'الوصف',
       colors: 'الألوان',
+      features: 'المميزات',
       isPattern: 'نقشة',
       pattern: 'اسم النقشة',
       material: 'الخامة',
@@ -465,6 +494,7 @@ export class ProductsService {
       isActive: 'الحالة (مفعّل)',
       description: 'الوصف',
       colors: 'الألوان',
+      features: 'المميزات',
       isPattern: 'نقشة',
       pattern: 'اسم النقشة',
       material: 'الخامة',
@@ -616,6 +646,7 @@ export class ProductsService {
       collectionId?: string;
       description?: string;
       colors?: string[];
+      features?: string[];
       isPattern?: boolean;
       pattern?: string;
       material?: string;

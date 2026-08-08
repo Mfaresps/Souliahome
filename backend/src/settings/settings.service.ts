@@ -73,6 +73,7 @@ function migrateDoc(collection: string, doc: any): void {
     def(doc, 'isActive', true);
     def(doc, 'description', '');
     def(doc, 'colors', []);
+    def(doc, 'features', []);
     def(doc, 'isPattern', false);
     def(doc, 'pattern', '');
     def(doc, 'material', '');

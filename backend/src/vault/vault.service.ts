@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, isValidObjectId } from 'mongoose';
 import { VaultEntry, VaultEntryDocument } from './schemas/vault-entry.schema';
 import { SettingsService } from '../settings/settings.service';
 import { resolveVaultSegmentFromPaymentMethod } from './vault-segment.util';
@@ -204,6 +204,29 @@ export class VaultService {
       },
     });
     return entry;
+  }
+
+  /** Single vault entry by id. Returns null on a malformed id rather than throwing. */
+  async findEntryById(id: string): Promise<VaultEntryDocument | null> {
+    if (!id || !isValidObjectId(id)) return null;
+    return this.vaultModel.findById(id).exec();
+  }
+
+  /**
+   * Newest vault entry carrying `ref` (a transaction ref), optionally narrowed by `source`.
+   * Read-only — used to attach the vault operation number to records created elsewhere, e.g. the
+   * supplier-ledger refund row whose cash actually moved through a مرتجع مشتريات transaction.
+   */
+  async findLatestByRef(
+    ref: string,
+    source?: string,
+  ): Promise<VaultEntryDocument | null> {
+    if (!ref) return null;
+    const query: Record<string, unknown> = { ref };
+    if (source) query.source = source;
+    return this.vaultModel
+      .findOne(query, null, { sort: { createdAt: -1 } })
+      .exec();
   }
 
   async deleteLastEntryByRef(ref: string): Promise<boolean> {

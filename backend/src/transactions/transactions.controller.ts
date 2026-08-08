@@ -34,10 +34,12 @@ import {
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
+import { PermsGuard } from '../core/guards/perms.guard';
+import { RequirePerms } from '../core/decorators/perms.decorator';
 import { ExpensesService } from '../expenses/expenses.service';
 import { maskTransactionForRole, maskTransactionsForRole, filterPurchasesForPerms } from './purchase-mask.util';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
 @Controller('transactions')
 export class TransactionsController {
   constructor(
@@ -376,7 +378,10 @@ export class TransactionsController {
   ) {
     const by = req.user?.name || req.user?.username || 'مستخدم';
     const callerRole = req.user?.role || '';
-    return this.transactionsService.collect(id, dto, by, callerRole);
+    // Perms are forwarded rather than enforced by a route decorator: this endpoint serves both
+    // customer collection and supplier payment, and only the loaded transaction knows which.
+    const callerPerms: string[] = req.user?.perms || [];
+    return this.transactionsService.collect(id, dto, by, callerRole, callerPerms);
   }
 
   @Post(':id/reverse-collect')
@@ -388,16 +393,38 @@ export class TransactionsController {
     return this.transactionsService.reverseCollect(id, reversedBy);
   }
 
-  @Roles('admin')
+  /**
+   * Reversing a purchase payment is delegable via `suppliers-reverse`; reversing a sales
+   * collection stays admin-only. The route perm is the coarse gate, the service does the
+   * type-dependent half — see undoSpecificPayment().
+   */
+  @RequirePerms('suppliers-reverse')
   @Post(':id/payments/:paymentId/undo')
   async undoPayment(
     @Param('id') id: string,
     @Param('paymentId') paymentId: string,
     @Body() body: { reason?: string },
-    @Req() req: { user: { name: string; username: string } },
+    @Req() req: any,
   ) {
     const undoBy = req.user?.name || req.user?.username || 'مجهول';
-    return this.transactionsService.undoSpecificPayment(id, paymentId, undoBy, body?.reason);
+    return this.transactionsService.undoSpecificPayment(
+      id, paymentId, undoBy, body?.reason, req.user?.role || '', req.user?.perms || [],
+    );
+  }
+
+  /**
+   * Close a purchase invoice's unpaid remainder that the supplier waived. Admin-only: it reduces
+   * a payable without any cash moving, so the stated reason is the entire audit trail.
+   */
+  @RequirePerms('suppliers-write-off')
+  @Post(':id/write-off-remaining')
+  async writeOffRemaining(
+    @Param('id') id: string,
+    @Body() body: { reason?: string },
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const by = req.user?.name || req.user?.username || 'مجهول';
+    return this.transactionsService.writeOffRemaining(id, body?.reason || '', by);
   }
 
   @Roles('admin')
@@ -421,15 +448,24 @@ export class TransactionsController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateTransactionDto,
-    @Req() req: { user: { name: string; username: string } },
+    @Req() req: { user: { name: string; username: string; role?: string } },
     @Query('editedBy') editedByOverride?: string,
     @Query('approvedBy') approvedByOverride?: string,
   ) {
     const approvedBy = approvedByOverride || '';
     const editedBy = editedByOverride || req.user.name || req.user.username || '';
+    // مرحلة الشحن هي ما يقفل التعديل (لا حالة الدفع)، والدور يحدد استثناء المدير
+    // للأوردر الذي في الطريق — راجع assertEditableByFulfillment.
+    const callerRole = req.user?.role || '';
     this.transactionsService.acquireEditLock(id, editedBy);
     try {
-      return await this.transactionsService.update(id, dto, editedBy, approvedBy);
+      return await this.transactionsService.update(
+        id,
+        dto,
+        editedBy,
+        approvedBy,
+        callerRole,
+      );
     } finally {
       this.transactionsService.releaseEditLock(id);
     }

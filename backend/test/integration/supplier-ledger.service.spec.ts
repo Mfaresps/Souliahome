@@ -15,13 +15,20 @@ import { VaultService } from '../../src/vault/vault.service';
 describe('SupplierLedgerService', () => {
   let service: SupplierLedgerService;
   let ledgerModel: ReturnType<typeof createMockMongooseModel>;
-  let vaultService: { addEntry: jest.Mock; cancelEntry: jest.Mock };
+  let vaultService: {
+    addEntry: jest.Mock;
+    cancelEntry: jest.Mock;
+    findLatestByRef: jest.Mock;
+    findEntryById: jest.Mock;
+  };
 
   beforeEach(async () => {
     ledgerModel = createMockMongooseModel();
     vaultService = {
-      addEntry: jest.fn().mockResolvedValue({ _id: 'vault-1' }),
+      addEntry: jest.fn().mockResolvedValue({ _id: 'vault-1', txNo: 'TXN-007' }),
       cancelEntry: jest.fn().mockResolvedValue({}),
+      findLatestByRef: jest.fn().mockResolvedValue(null),
+      findEntryById: jest.fn().mockResolvedValue(null),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -276,6 +283,9 @@ describe('SupplierLedgerService', () => {
       expect(entry.runningBalance).toBe(-200); // 100 debt fully offset, 200 becomes standing credit
       expect(entry.vaultEntryId).toBe('vault-1');
       expect(entry.vaultSeg).toBe('cash');
+      // The readable operation number is what the statement links to — a Mongo id is
+      // unusable on a printed statement and costs a lookup per row.
+      expect(entry.vaultTxNo).toBe('TXN-007');
     });
 
     it('turns an advance deposit into available credit on a zero balance', async () => {
@@ -341,6 +351,108 @@ describe('SupplierLedgerService', () => {
         'admin',
         expect.any(String),
       );
+    });
+  });
+
+  /**
+   * The refund row is amount:0 (the return already offset the debt), so without a vault link it
+   * is a line that says "cash moved" while showing no figure and no reference to verify.
+   */
+  describe('postReturnSettlement — vault link on the cash-refund row', () => {
+    const base = {
+      supplierId: 's1',
+      supplierName: 'المتحدة',
+      returnId: 'r1',
+      returnNumber: 'SR-2026-0004',
+      date: '2026-02-01',
+      debtOffsetAmount: 0,
+      creditAmount: 0,
+      employee: 'admin',
+    };
+
+    beforeEach(() => {
+      mockLatestBalance(0);
+      ledgerModel.create.mockImplementation((doc: any) => Promise.resolve(doc));
+    });
+
+    it('resolves the vault operation from the refund transaction ref', async () => {
+      vaultService.findLatestByRef.mockResolvedValue({ _id: 'v-9', txNo: 'RET-003' });
+      const res = await service.postReturnSettlement({
+        ...base,
+        refundAmount: 2400,
+        refundTxRef: '900001-SRET',
+      });
+      expect(vaultService.findLatestByRef).toHaveBeenCalledWith('900001-SRET');
+      const refundRow = res.entries.find((e) => e.entryType === 'refund-paid');
+      expect(refundRow?.vaultTxNo).toBe('RET-003');
+      expect(refundRow?.vaultEntryId).toBe('v-9');
+      expect(refundRow?.amount).toBe(0); // audit-only row, never nets the payable
+    });
+
+    it('an explicitly supplied vault number wins over the lookup', async () => {
+      const res = await service.postReturnSettlement({
+        ...base,
+        refundAmount: 2400,
+        vaultEntryId: 'v-1',
+        vaultTxNo: 'RET-001',
+        refundTxRef: '900001-SRET',
+      });
+      expect(vaultService.findLatestByRef).not.toHaveBeenCalled();
+      expect(res.entries[0].vaultTxNo).toBe('RET-001');
+    });
+
+    it('a failed lookup never breaks the settlement — the money already moved', async () => {
+      vaultService.findLatestByRef.mockRejectedValue(new Error('db down'));
+      const res = await service.postReturnSettlement({
+        ...base,
+        refundAmount: 2400,
+        refundTxRef: '900001-SRET',
+      });
+      expect(res.entries[0].entryType).toBe('refund-paid');
+      expect(res.entries[0].vaultTxNo).toBe('');
+    });
+
+    it('skips the lookup entirely when there was no cash refund', async () => {
+      await service.postReturnSettlement({
+        ...base,
+        debtOffsetAmount: 500,
+        refundAmount: 0,
+        refundTxRef: '900001-SRET',
+      });
+      expect(vaultService.findLatestByRef).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('backfillVaultTxNo', () => {
+    const rows = () => {
+      const a: any = { _id: 'e1', vaultEntryId: 'v-1', vaultTxNo: '', save: jest.fn() };
+      const b: any = { _id: 'e2', vaultEntryId: 'v-gone', vaultTxNo: '', save: jest.fn() };
+      return [a, b];
+    };
+
+    it('dry run reports what it would fill and writes nothing', async () => {
+      const docs = rows();
+      ledgerModel.find.mockReturnValue({ exec: jest.fn().mockResolvedValue(docs) });
+      vaultService.findEntryById.mockImplementation((id: string) =>
+        Promise.resolve(id === 'v-1' ? { _id: 'v-1', txNo: 'TXN-001' } : null),
+      );
+      const res = await service.backfillVaultTxNo();
+      expect(res).toMatchObject({ dryRun: true, candidates: 2, filled: 1 });
+      expect(res.missingVaultEntry).toEqual([{ entryId: 'e2', vaultEntryId: 'v-gone' }]);
+      expect(docs[0].save).not.toHaveBeenCalled();
+    });
+
+    it('a real run writes only the resolvable rows and never guesses the rest', async () => {
+      const docs = rows();
+      ledgerModel.find.mockReturnValue({ exec: jest.fn().mockResolvedValue(docs) });
+      vaultService.findEntryById.mockImplementation((id: string) =>
+        Promise.resolve(id === 'v-1' ? { _id: 'v-1', txNo: 'TXN-001' } : null),
+      );
+      await service.backfillVaultTxNo(false);
+      expect(docs[0].vaultTxNo).toBe('TXN-001');
+      expect(docs[0].save).toHaveBeenCalledTimes(1);
+      expect(docs[1].vaultTxNo).toBe('');
+      expect(docs[1].save).not.toHaveBeenCalled();
     });
   });
 });

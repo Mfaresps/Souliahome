@@ -24,6 +24,15 @@ export class TransactionItem {
 
   @Prop({ required: true })
   total: number;
+
+  /**
+   * Only meaningful on a 'مرتجع' transaction: سليم | تالف, copied from the approved ReturnRequest.
+   * A تالف line is refunded but must NOT re-enter sellable stock — read by
+   * `returnedItemQtyForStock`, which both derived-inventory loops go through. Empty/absent means
+   * سليم, so every pre-existing return keeps the behaviour it had.
+   */
+  @Prop({ default: '' })
+  condition: string;
 }
 
 @Schema({ timestamps: true })
@@ -144,6 +153,15 @@ export class Transaction {
 
   @Prop()
   cancelledAt: string;
+
+  /**
+   * Set when a supplier waived this purchase invoice's unpaid remainder (credit-memo treatment).
+   * The invoice's own `total`/`items` stay at their original, supplier-agreed values — only
+   * `remaining` goes to 0 — so this field is the record of WHY it reads as settled.
+   * Shape: { amount, reason, by, at }.
+   */
+  @Prop({ type: Object, default: null })
+  writeOff: Record<string, unknown> | null;
 
   @Prop({ type: [Object], default: [] })
   editHistory: Record<string, unknown>[];
@@ -290,6 +308,18 @@ export class Transaction {
   /** Employee responsible for this order per shift-based auto-assignment (denormalized from ShopifyOrder.assignedToName at approval time) */
   @Prop({ default: '' })
   assignedToName: string;
+
+  /** When the order was assigned to that employee (denormalized from ShopifyOrder.assignedAt). Empty on orders created before this field existed — the audit footer falls back to depositDetectedAt there. */
+  @Prop({ default: '' })
+  assignedAt: string;
+
+  /** Who approved the originating ShopifyOrder into this transaction (denormalized from ShopifyOrder.reviewedBy) */
+  @Prop({ default: '' })
+  confirmedByName: string;
+
+  /** When that approval happened (denormalized from ShopifyOrder.reviewedAt). Distinct from `date`, which carries the original Shopify order date. */
+  @Prop({ default: '' })
+  confirmedAt: string;
 
   /** When the deposit-note parser last ran on the originating ShopifyOrder (denormalized from ShopifyOrder.depositDetectedAt) */
   @Prop({ default: '' })

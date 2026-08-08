@@ -116,4 +116,13 @@ export class SupplierLedgerBackfillService {
       entriesPosted,
     };
   }
+
+  /**
+   * Fills the readable vault operation number on rows created before `vaultTxNo` existed.
+   * Delegates to SupplierLedgerService, which owns both the ledger model and VaultService —
+   * this class only exposes it under the same admin/dry-run gate as the other backfills.
+   */
+  async backfillVaultTxNo(dryRun = true) {
+    return this.supplierLedgerService.backfillVaultTxNo(dryRun);
+  }
 }

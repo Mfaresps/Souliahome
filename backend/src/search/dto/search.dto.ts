@@ -27,6 +27,11 @@ export interface SearchResultItem {
   readonly bostaStatusLabel?: string;
   readonly shopifyStatus?: string;
   readonly shopifyCancelled?: boolean;
+  /**
+   * درجة الصلة (relevance). الواجهة ترتّب بها العناصر داخل كل قسم، وترتّب
+   * الأقسام بأعلى درجة داخلها — بدلاً من قائمة أولويات ثابتة.
+   */
+  readonly score?: number;
 }
 
 export interface SearchResponse {

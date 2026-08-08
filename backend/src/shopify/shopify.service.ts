@@ -443,6 +443,10 @@ export class ShopifyService {
     const orderDateSource = order.shopifyCreatedAt ? new Date(order.shopifyCreatedAt) : now;
     const date = `${orderDateSource.getFullYear()}-${String(orderDateSource.getMonth() + 1).padStart(2, '0')}-${String(orderDateSource.getDate()).padStart(2, '0')}`;
 
+    // لحظة التأكيد — تُحسب مرة واحدة وتُكتب على المعاملة وعلى الأوردر معاً، فلا ينفصل
+    // reviewedAt عن confirmedAt بفارق أجزاء الثانية بين الاثنين.
+    const confirmedAt = now.toISOString();
+
     const depositsLog = paidNow > 0
       ? [{ id: `dep-${Date.now()}`, amount: paidNow, method: depMethod, note: 'ديبوزت أول - Shopify', date: now.toISOString(), by: employee }]
       : [];
@@ -481,6 +485,9 @@ export class ShopifyService {
       shopifyOrderId: order.shopifyId,
       shopifyCreatedAt: order.shopifyCreatedAt || '',
       assignedToName: order.assignedToName || '',
+      assignedAt: order.assignedAt || '',
+      confirmedByName: approvedBy || '',
+      confirmedAt: confirmedAt,
       depositDetectedAt: order.depositDetectedAt || '',
       shippingAddress: order.shippingAddress || '',
       shippingCity: order.shippingCity || '',
@@ -515,7 +522,7 @@ export class ShopifyService {
 
     order.status = 'approved';
     order.reviewedBy = approvedBy;
-    order.reviewedAt = new Date().toISOString();
+    order.reviewedAt = confirmedAt;
     await order.save();
 
     // إرسال أحداث التحديث الفوري (inventory + transactions)

@@ -20,6 +20,11 @@ export const SR_LEDGER_ENTRY_TYPES = [
   'manual-adjustment', // signed, admin-entered correction, always requires a reason
   'advance-deposit', // -amount: cash paid to the supplier ahead of any invoice; ALSO withdraws from a vault segment
   'debit-adjustment', // +amount: cash-neutral increase of what we owe (supplier-side charge/correction)
+  // -amount: the supplier waived what was left on ONE invoice. Distinct from 'manual-adjustment'
+  // because it is tied to a specific invoice (sourceId/sourceRef) and closes it: the invoice's own
+  // total is never edited, so our document still matches the supplier's copy — the standard
+  // credit-memo treatment rather than a retroactive rewrite of a countersigned document.
+  'invoice-write-off',
 ] as const;
 
 export type SrLedgerEntryType = (typeof SR_LEDGER_ENTRY_TYPES)[number];
@@ -58,6 +63,15 @@ export class SupplierLedgerEntry {
 
   @Prop({ default: '' })
   vaultEntryId: string;
+
+  /**
+   * The vault operation's human-readable number (VaultEntry.txNo, e.g. TXN-005) — denormalised
+   * on purpose. `vaultEntryId` is a Mongo id: it proves the link exists but is unreadable on a
+   * printed statement and would cost one lookup per row to resolve. txNo is assigned once at
+   * creation and never changes, so copying it here cannot go stale.
+   */
+  @Prop({ default: '' })
+  vaultTxNo: string;
 
   /** Vault segment the cash moved from, for entry types that move cash ('advance-deposit'). */
   @Prop({ default: '' })

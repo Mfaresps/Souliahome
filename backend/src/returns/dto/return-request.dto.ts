@@ -11,16 +11,11 @@ import {
   ArrayMinSize,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
-
-/** أسباب الاسترجاع والاستبدال — يجب أن تطابق التحقق في ReturnsService */
-const RETURN_AND_EXCHANGE_REASONS = [
-  'تلف الشحنة',
-  'شحنة خاطئة',
-  'سبب آخر',
-  'مقاس أو لون مختلف',
-  'رغبة العميل بصنف آخر',
-  'عيب مصنع',
-] as const;
+import {
+  ALL_RETURN_REASONS,
+  RETURN_ITEM_CONDITIONS,
+  RETURN_CONDITION_SOUND,
+} from '../returns.constants';
 
 export class ReturnItemDto {
   @IsString()
@@ -42,6 +37,21 @@ export class ReturnItemDto {
   @IsNumber()
   @Min(0)
   readonly total: number;
+
+  /**
+   * سليم | تالف. Absent means سليم, so existing clients keep working — but note the default is
+   * applied HERE rather than only in the schema, because the value is copied onto the return
+   * transaction's items and an undefined condition there would read as "unknown", not "sound".
+   */
+  @IsOptional()
+  @Transform(({ value }) =>
+    (RETURN_ITEM_CONDITIONS as readonly string[]).includes(String(value))
+      ? String(value)
+      : RETURN_CONDITION_SOUND,
+  )
+  @IsString()
+  @IsIn([...RETURN_ITEM_CONDITIONS])
+  readonly condition?: string;
 }
 
 export class CreateReturnRequestDto {
@@ -76,7 +86,7 @@ export class CreateReturnRequestDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsIn([...RETURN_AND_EXCHANGE_REASONS])
+  @IsIn([...ALL_RETURN_REASONS])
   readonly reason: string;
 
   @IsString()
@@ -124,6 +134,16 @@ export class CreateReturnRequestDto {
   @IsOptional()
   @IsString()
   readonly returnTrackingNumber?: string;
+
+  /**
+   * Cost of the reverse shipment. The schema field existed with no writer, so this cost was simply
+   * lost — neither charged to the customer nor recognised as a company loss. Recorded now and
+   * surfaced on the request; whether it is deducted from the refund stays a policy decision.
+   */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  readonly actualShipCost?: number;
 }
 
 export class RejectReturnDto {

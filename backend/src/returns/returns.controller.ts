@@ -14,14 +14,9 @@ import { RejectReturnDto } from './dto/return-request.dto';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
+import { normalizeVaultAccountLabel } from './returns.constants';
 
-const VAULT_HEADER_CODE_TO_METHOD: Record<string, string> = {
-  cash: 'كاش',
-  vodafone: 'فودافون كاش',
-  instapay: 'Instapay',
-  bank: 'تحويل بنكي',
-};
-
+/** Normalisation lives in returns.constants.ts — this file used to carry a third copy of the map. */
 function readVaultMethodFromHeader(
   headerVal: string | string[] | undefined,
 ): string | undefined {
@@ -29,7 +24,7 @@ function readVaultMethodFromHeader(
   if (!raw || typeof raw !== 'string') {
     return undefined;
   }
-  return VAULT_HEADER_CODE_TO_METHOD[raw.trim().toLowerCase()];
+  return normalizeVaultAccountLabel(raw);
 }
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -40,6 +35,16 @@ export class ReturnsController {
   @Get()
   async findAll() {
     return this.returnsService.findAll();
+  }
+
+  /**
+   * How much of each line on an invoice is still returnable, and how much cash is still refundable.
+   * Declared before `:id` — Nest matches routes in declaration order, so a literal segment placed
+   * after a param route would be swallowed by it and treated as an id.
+   */
+  @Get('returnable/:transactionId')
+  async returnable(@Param('transactionId') transactionId: string) {
+    return this.returnsService.getReturnableQuantities(transactionId);
   }
 
   @Get(':id')

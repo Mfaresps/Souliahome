@@ -26,6 +26,8 @@ interface PostEntryInput {
   sourceId?: string;
   sourceRef?: string;
   vaultEntryId?: string;
+  /** VaultEntry.txNo — the readable operation number the statement links to. */
+  vaultTxNo?: string;
   vaultSeg?: string;
   refNo?: string;
   employee?: string;
@@ -126,6 +128,48 @@ export class SupplierLedgerService {
     return this.ledgerModel.findById(id).exec();
   }
 
+  /**
+   * Fills `vaultTxNo` on entries written before the field existed. They already carry
+   * `vaultEntryId`, so this is a pure read-across-and-copy — no amount, balance or date is
+   * touched, and an entry whose vault row was deleted is reported, never guessed at.
+   *
+   * dryRun:true (default) only reports what would change. Admin-triggered, never automatic.
+   */
+  async backfillVaultTxNo(dryRun = true): Promise<{
+    dryRun: boolean;
+    candidates: number;
+    filled: number;
+    missingVaultEntry: Array<{ entryId: string; vaultEntryId: string }>;
+  }> {
+    const candidates = await this.ledgerModel
+      .find({
+        vaultEntryId: { $nin: ['', null] },
+        $or: [{ vaultTxNo: '' }, { vaultTxNo: { $exists: false } }],
+      })
+      .exec();
+    const missingVaultEntry: Array<{ entryId: string; vaultEntryId: string }> = [];
+    let filled = 0;
+    for (const entry of candidates) {
+      const ve = await this.vaultService.findEntryById(entry.vaultEntryId);
+      if (!ve || !ve.txNo) {
+        missingVaultEntry.push({
+          entryId: String(entry._id),
+          vaultEntryId: entry.vaultEntryId,
+        });
+        continue;
+      }
+      filled++;
+      if (!dryRun) {
+        entry.vaultTxNo = ve.txNo;
+        await entry.save();
+      }
+    }
+    this.logger.log(
+      `backfillVaultTxNo(dryRun=${dryRun}): ${candidates.length} candidates, ${filled} fillable, ${missingVaultEntry.length} without a vault entry`,
+    );
+    return { dryRun, candidates: candidates.length, filled, missingVaultEntry };
+  }
+
   /** Core internal poster — all public post* methods funnel through this so runningBalance bookkeeping lives in ONE place. */
   private async postEntry(
     input: PostEntryInput,
@@ -144,6 +188,7 @@ export class SupplierLedgerService {
       sourceId: input.sourceId || '',
       sourceRef: input.sourceRef || '',
       vaultEntryId: input.vaultEntryId || '',
+      vaultTxNo: input.vaultTxNo || '',
       vaultSeg: input.vaultSeg || '',
       refNo: input.refNo || '',
       employee: input.employee || '',
@@ -230,9 +275,33 @@ export class SupplierLedgerService {
     creditAmount: number;
     refundAmount: number;
     vaultEntryId?: string;
+    vaultTxNo?: string;
+    /**
+     * Ref of the مرتجع مشتريات transaction that moved the refund cash. The vault entry is created
+     * deep inside TransactionsService, so the caller never holds it — resolving it here (this
+     * service already injects VaultService) keeps SupplierReturnsService free of a VaultModule
+     * dependency it does not otherwise need.
+     */
+    refundTxRef?: string;
     employee: string;
   }): Promise<ReturnSettlementResult> {
     const entries: SupplierLedgerEntryDocument[] = [];
+    let refundVaultId = params.vaultEntryId || '';
+    let refundVaultTxNo = params.vaultTxNo || '';
+    if (params.refundAmount > 0 && !refundVaultTxNo && params.refundTxRef) {
+      try {
+        const ve = await this.vaultService.findLatestByRef(params.refundTxRef);
+        if (ve) {
+          refundVaultId = refundVaultId || String(ve._id);
+          refundVaultTxNo = ve.txNo || '';
+        }
+      } catch (err) {
+        // A missing back-reference must never fail the settlement — the money already moved.
+        this.logger.warn(
+          `Could not resolve the vault entry for refund ref ${params.refundTxRef}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
     if (params.debtOffsetAmount > 0) {
       entries.push(
         await this.postEntry({
@@ -277,7 +346,10 @@ export class SupplierLedgerService {
           sourceType: 'supplier-return',
           sourceId: params.returnId,
           sourceRef: params.returnNumber,
-          vaultEntryId: params.vaultEntryId || '',
+          // بلا هذين الحقلين يصبح هذا الصف بلا رقم ولا مبلغ في العمودين (قيمته صفر
+          // لأن المرتجع خصم المديونية قبله) — سطر يقول «تحرّكت نقدية» بلا أي أثر يُتحقق منه.
+          vaultEntryId: refundVaultId,
+          vaultTxNo: refundVaultTxNo,
           employee: params.employee,
           meta: { refundAmount: params.refundAmount },
         }),
@@ -354,6 +426,7 @@ export class SupplierLedgerService {
 
     const isDeposit = params.kind === 'deposit';
     let vaultEntryId = '';
+    let vaultTxNo = '';
 
     if (isDeposit) {
       if (!params.vaultSeg) {
@@ -372,6 +445,7 @@ export class SupplierLedgerService {
         params.employee,
       );
       vaultEntryId = String(vaultEntry._id);
+      vaultTxNo = vaultEntry.txNo || '';
     }
 
     try {
@@ -389,6 +463,7 @@ export class SupplierLedgerService {
         sourceType: 'manual',
         sourceRef: params.refNo || '',
         vaultEntryId,
+        vaultTxNo,
         vaultSeg: isDeposit ? params.vaultSeg || '' : '',
         refNo: params.refNo || '',
         employee: params.employee,
@@ -411,6 +486,50 @@ export class SupplierLedgerService {
       }
       throw err;
     }
+  }
+
+  /**
+   * The supplier waived the unpaid remainder of ONE invoice — a credit memo, not an edit.
+   *
+   * Why this is not `update()`-ing the invoice total: a purchase invoice is a document exchanged
+   * with the supplier. Rewriting its total makes our copy disagree with theirs and hides the reason
+   * inside a changed number. Every real AP system issues a separate credit note instead, which is
+   * what this is: the invoice keeps its original value, this entry cancels the outstanding part, and
+   * the invoice closes.
+   *
+   * Distinct entryType (not 'manual-adjustment') so the statement can label it correctly and so the
+   * write-off is traceable to its invoice via sourceId/sourceRef.
+   */
+  async postInvoiceWriteOff(params: {
+    supplierId: string;
+    supplierName: string;
+    transactionId: string;
+    transactionRef: string;
+    date: string;
+    amount: number;
+    reason: string;
+    employee: string;
+  }): Promise<SupplierLedgerEntryDocument> {
+    const amount = Number(params.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('قيمة الإقفال غير صالحة');
+    }
+    if (!params.reason || !params.reason.trim()) {
+      throw new BadRequestException('يجب إدخال سبب إقفال المتبقي');
+    }
+    return this.postEntry({
+      supplierId: params.supplierId,
+      supplierName: params.supplierName,
+      date: params.date,
+      entryType: 'invoice-write-off',
+      amount: -amount, // reduces the payable
+      desc: `إقفال متبقي فاتورة #${params.transactionRef} — ${params.reason}`,
+      sourceType: 'transaction',
+      sourceId: params.transactionId,
+      sourceRef: params.transactionRef,
+      employee: params.employee,
+      meta: { writeOffAmount: amount, reason: params.reason },
+    });
   }
 
   /** Admin-only manual correction, always requires a reason. */

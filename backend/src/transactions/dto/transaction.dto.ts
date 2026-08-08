@@ -35,6 +35,11 @@ export class TransactionItemDto {
   @IsNumber()
   @Min(0)
   readonly total: number;
+
+  /** سليم | تالف on a 'مرتجع' line — see TransactionItem.condition. Blank elsewhere. */
+  @IsString()
+  @IsOptional()
+  readonly condition?: string;
 }
 
 export class CreateTransactionDto {

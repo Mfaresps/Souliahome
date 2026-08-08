@@ -93,6 +93,13 @@ export class CreateProductDto {
   @IsOptional()
   readonly colors?: string[];
 
+  /** خصائص الصنف (Waterproof, Anti Slip, …) — بلا حد أقصى، بعكس الألوان. */
+  @IsArray()
+  @ArrayMaxSize(40)
+  @IsString({ each: true })
+  @IsOptional()
+  readonly features?: string[];
+
   @IsBoolean()
   @IsOptional()
   readonly isPattern?: boolean;
@@ -188,6 +195,13 @@ export class UpdateProductDto {
   @IsOptional()
   readonly colors?: string[];
 
+  /** خصائص الصنف (Waterproof, Anti Slip, …) — بلا حد أقصى، بعكس الألوان. */
+  @IsArray()
+  @ArrayMaxSize(40)
+  @IsString({ each: true })
+  @IsOptional()
+  readonly features?: string[];
+
   @IsBoolean()
   @IsOptional()
   readonly isPattern?: boolean;
@@ -269,6 +283,13 @@ export class ImportProductItemDto {
   @IsString({ each: true })
   @IsOptional()
   readonly colors?: string[];
+
+  /** خصائص الصنف (Waterproof, Anti Slip, …) — بلا حد أقصى، بعكس الألوان. */
+  @IsArray()
+  @ArrayMaxSize(40)
+  @IsString({ each: true })
+  @IsOptional()
+  readonly features?: string[];
 
   @IsBoolean()
   @IsOptional()
@@ -370,6 +391,7 @@ export class RequestProductEditDto {
     isActive?: boolean;
     description?: string;
     colors?: string[];
+    features?: string[];
     isPattern?: boolean;
     pattern?: string;
     material?: string;

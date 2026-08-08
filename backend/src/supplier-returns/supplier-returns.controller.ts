@@ -20,8 +20,21 @@ import {
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
+import { PermsGuard } from '../core/guards/perms.guard';
+import { RequirePerms } from '../core/decorators/perms.decorator';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
+/**
+ * Writes are gated on `suppliers-returns`; approve/reject deliberately stay @Roles('admin').
+ *
+ * The submit → approve step exists to put a second person between a staff member and a stock/
+ * ledger movement. Folding approval into the same perm as creation would let one holder request
+ * and approve their own return, which is the exact control the two-step flow provides.
+ *
+ * The GET routes stay JWT-only: `GET /supplier-returns` is a boot-time load that also feeds the
+ * approvals page, so gating it would break approvals for a user who legitimately holds
+ * `approvals` but not the supplier-returns tab. Tab visibility is enforced client-side.
+ */
+@UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
 @Controller('supplier-returns')
 export class SupplierReturnsController {
   constructor(private readonly supplierReturnsService: SupplierReturnsService) {}
@@ -41,6 +54,7 @@ export class SupplierReturnsController {
     return this.supplierReturnsService.findById(id);
   }
 
+  @RequirePerms('suppliers-returns')
   @Post()
   async create(
     @Body() dto: CreateSupplierReturnDto,
@@ -54,6 +68,7 @@ export class SupplierReturnsController {
     );
   }
 
+  @RequirePerms('suppliers-returns')
   @Put(':id')
   async update(
     @Param('id') id: string,
@@ -64,6 +79,7 @@ export class SupplierReturnsController {
     return this.supplierReturnsService.update(id, dto, by);
   }
 
+  @RequirePerms('suppliers-returns')
   @Post(':id/submit')
   async submit(
     @Param('id') id: string,
@@ -94,7 +110,7 @@ export class SupplierReturnsController {
     return this.supplierReturnsService.reject(id, by, dto.rejectedReason);
   }
 
-  @Roles('admin')
+  @RequirePerms('suppliers-returns')
   @Post(':id/complete')
   async complete(
     @Param('id') id: string,
@@ -111,7 +127,7 @@ export class SupplierReturnsController {
     );
   }
 
-  @Roles('admin')
+  @RequirePerms('suppliers-returns')
   @Post(':id/cancel')
   async cancel(
     @Param('id') id: string,
@@ -122,7 +138,7 @@ export class SupplierReturnsController {
     return this.supplierReturnsService.cancel(id, by, dto.reason);
   }
 
-  @Roles('admin')
+  @RequirePerms('suppliers-returns')
   @Post(':id/reverse')
   async reverse(
     @Param('id') id: string,

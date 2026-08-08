@@ -21,4 +21,16 @@ export class SupplierLedgerBackfillController {
     const dryRun = body?.dryRun !== false; // defaults to true — real run requires an explicit {dryRun:false}
     return this.backfillService.backfillPurchaseDebt(dryRun);
   }
+
+  /**
+   * Copies VaultEntry.txNo onto ledger rows that already have a vaultEntryId — the readable
+   * number the statement links to. Safe compared to the debt backfill (it writes no amounts),
+   * but kept behind the same admin + dry-run-by-default gate.
+   */
+  @Roles('admin')
+  @Post('vault-tx-no')
+  async backfillVaultTxNo(@Body() body: { dryRun?: boolean }) {
+    const dryRun = body?.dryRun !== false;
+    return this.backfillService.backfillVaultTxNo(dryRun);
+  }
 }

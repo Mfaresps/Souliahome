@@ -18,9 +18,10 @@ import {
 import { SuppliersService } from '../suppliers/suppliers.service';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
-import { Roles } from '../core/decorators/roles.decorator';
+import { PermsGuard } from '../core/guards/perms.guard';
+import { RequirePerms } from '../core/decorators/perms.decorator';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
 @Controller('supplier-ledger')
 export class SupplierLedgerController {
   constructor(
@@ -37,6 +38,15 @@ export class SupplierLedgerController {
     return this.supplierLedgerService.getAllBalances();
   }
 
+  /**
+   * The سجل المديونية tab's own content — gated on the tab perm.
+   *
+   * The two balance-summary routes are deliberately NOT gated: they return a single aggregate
+   * that the profile KPI strip and the suppliers list already show to anyone who can open the
+   * page. Gating them would blank those numbers for a user who merely lacks the ledger TAB,
+   * which is a different decision from hiding the entry-by-entry history.
+   */
+  @RequirePerms('suppliers-tab-ledger')
   @Get('supplier/:supplierId')
   async findBySupplier(
     @Param('supplierId') supplierId: string,
@@ -52,10 +62,11 @@ export class SupplierLedgerController {
 
   /**
    * Advance deposit (cash leaves the vault, supplier credit rises) or debit charge (cash-neutral).
-   * Admin-only like the sibling manual adjustment below — it moves real money and has no source
-   * document behind it, so the description IS the audit trail.
+   * It moves real money and has no source document behind it, so the description IS the audit
+   * trail. Was @Roles('admin'); now delegable via suppliers-deposit — PermsGuard still passes any
+   * admin unconditionally, so admin behaviour is unchanged.
    */
-  @Roles('admin')
+  @RequirePerms('suppliers-deposit')
   @Post('supplier/:supplierId/balance-adjustment')
   async postBalanceAdjustment(
     @Param('supplierId') supplierId: string,
@@ -89,7 +100,8 @@ export class SupplierLedgerController {
     return entry;
   }
 
-  @Roles('admin')
+  /** Cash-neutral ledger correction — a separate perm from the cash-moving deposit above. */
+  @RequirePerms('suppliers-ledger-adjust')
   @Post('supplier/:supplierId/adjustment')
   async postAdjustment(
     @Param('supplierId') supplierId: string,

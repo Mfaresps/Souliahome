@@ -68,6 +68,14 @@ export class Product {
   @Prop({ type: [String], default: [] })
   colors: string[];
 
+  /**
+   * خصائص الصنف (Waterproof, Anti Slip, …) — تتعايش مع `material` ولا تحل محلها:
+   * الخامة واحدة وتحمل تعليمات العناية، والميزة تتراكم بلا حد. القيم مخزَّنة
+   * بالإنجليزية (نفس اصطلاح `colors`) والترجمة تحدث في العرض فقط.
+   */
+  @Prop({ type: [String], default: [] })
+  features: string[];
+
   @Prop({ default: false })
   isPattern: boolean;
 

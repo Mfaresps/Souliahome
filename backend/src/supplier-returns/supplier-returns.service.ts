@@ -721,6 +721,8 @@ export class SupplierReturnsService {
       debtOffsetAmount,
       creditAmount,
       refundAmount,
+      // يربط صف «رد نقدي» في كشف الحساب بعملية الخزنة التي خرجت/دخلت فعلاً.
+      refundTxRef: tx?.ref || '',
       employee: completedBy,
     });
 

@@ -8,16 +8,17 @@ import { ReturnsService } from './returns.service';
 import { ReturnsValidationService } from './returns-validation.service';
 import { ReturnsController } from './returns.controller';
 import { TransactionsModule } from '../transactions/transactions.module';
-import { ExpensesModule } from '../expenses/expenses.module';
 import { VaultModule } from '../vault/vault.module';
 
+// ExpensesModule was imported only for an ExpensesService that ReturnsService injected and never
+// used. Damaged returns need no expense record: the cash left the vault and no stock came back, so
+// the loss is already recognised by the derived-inventory + vault figures.
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: ReturnRequest.name, schema: ReturnRequestSchema },
     ]),
     TransactionsModule,
-    ExpensesModule,
     VaultModule,
   ],
   controllers: [ReturnsController],

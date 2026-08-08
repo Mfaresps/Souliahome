@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
@@ -16,6 +17,10 @@ import {
   ReturnRequest,
   ReturnRequestDocument,
 } from '../returns/schemas/return-request.schema';
+import {
+  SupplierReturnOrder,
+  SupplierReturnOrderDocument,
+} from '../supplier-returns/schemas/supplier-return.schema';
 import {
   CreateTransactionDto,
   UpdateTransactionDto,
@@ -60,8 +65,14 @@ export interface DashboardData {
   totalProducts: number;
   lowStockCount: number;
   totalSales: number;
+  /** Net of settled supplier returns. `grossPurchases - supplierReturnsTotal`. */
   totalPurchases: number;
+  grossPurchases: number;
+  supplierReturnsTotal: number;
+  /** Customer receivables + supplier payables (the latter from the ledger, not tx.remaining). */
   totalRemaining: number;
+  customerReceivables: number;
+  supplierPayables: number;
   totalExpenses: number;
   grossProfit: number;
   netProfit: number;
@@ -86,6 +97,8 @@ export class TransactionsService {
     private readonly transactionModel: Model<TransactionDocument>,
     @InjectModel(ReturnRequest.name)
     private readonly returnRequestModel: Model<ReturnRequestDocument>,
+    @InjectModel(SupplierReturnOrder.name)
+    private readonly supplierReturnModel: Model<SupplierReturnOrderDocument>,
     private readonly productsService: ProductsService,
     private readonly vaultService: VaultService,
     private readonly presence: PresenceGateway,
@@ -189,6 +202,110 @@ export class TransactionsService {
     return false;
   }
 
+  /**
+   * Quantity a returned line contributes to sellable stock.
+   *
+   * A unit returned as تالف is refunded to the customer but never becomes sellable again, so it
+   * contributes 0. Before this, `تلف الشحنة` returns went straight back into available stock — the
+   * warehouse showed damaged goods as on-hand and the loss was never recognised anywhere.
+   *
+   * Both derived-inventory loops (`getAvailableQtyByProductCode` and `getInventory`) must go
+   * through this. They are the only two places stock is computed, and if they disagree the
+   * oversell guard and the inventory screen show different numbers for the same product.
+   */
+  private returnedItemQtyForStock(item: { qty?: number; condition?: string }): number {
+    if (String(item.condition || '').trim() === 'تالف') {
+      return 0;
+    }
+    return Number(item.qty) || 0;
+  }
+
+  /**
+   * Profit given up by approved customer returns — subtracted from gross profit.
+   *
+   * A سليم unit costs us the margin only: we refund the price but the goods come back, so the cost
+   * is recovered as inventory. A تالف unit costs us the **whole price** — it is refunded and never
+   * re-enters stock (`returnedItemQtyForStock` returns 0 for it), so the cost is lost too. Valuing
+   * both at the margin would understate the loss on damaged goods by exactly their cost.
+   *
+   * Shared by getDashboard() and getReports(), which carried byte-identical copies of this loop.
+   */
+  private computeReturnedProfitLoss(
+    approvedReturns: ReturnRequestDocument[],
+    products: { code: string; buyPrice: number }[],
+  ): number {
+    let lost = 0;
+    for (const ret of approvedReturns) {
+      for (const item of (ret.items || []) as {
+        code?: string;
+        price?: number;
+        qty?: number;
+        condition?: string;
+      }[]) {
+        const product = products.find((p) => p.code === item.code);
+        const cost = product ? Number(product.buyPrice) || 0 : 0;
+        const price = Number(item.price) || 0;
+        const qty = Number(item.qty) || 0;
+        const damaged = String(item.condition || '').trim() === 'تالف';
+        lost += (damaged ? price : price - cost) * qty;
+      }
+    }
+    return lost;
+  }
+
+  /** A customer return created by approving a ReturnRequest — not a supplier return. */
+  private isCustomerReturnTransaction(tx: TransactionDocument): boolean {
+    if (this.isCustomerReturnToStockType(tx.type)) {
+      return true;
+    }
+    return (
+      tx.type === 'مشتريات' && /-RET(-\d+)?$/i.test(String(tx.ref || '').trim())
+    );
+  }
+
+  /**
+   * Flags the ReturnRequest behind a cancelled return transaction as reversed.
+   *
+   * Matches on the stored link first, then on the ref, because `returnTxId` is written in a second
+   * save after the transaction is created and may be absent on rows written before that field
+   * existed. Never throws: a cancellation whose money has already moved must not fail because the
+   * back-reference could not be updated.
+   */
+  private async markReturnRequestReversed(
+    tx: TransactionDocument,
+    reason: string,
+    cancelledBy: string,
+  ): Promise<void> {
+    const ref = String(tx.ref || '').trim();
+    const or: Record<string, unknown>[] = [{ returnTxId: String(tx._id) }];
+    if (ref) {
+      or.push({ returnTxRef: ref });
+    }
+    try {
+      const updated = await this.returnRequestModel
+        .findOneAndUpdate(
+          { status: 'معتمد', reversedAt: null, $or: or },
+          {
+            $set: {
+              reversedAt: new Date().toISOString(),
+              reversedBy: cancelledBy,
+              reversalReason: reason || 'إلغاء معاملة المرتجع',
+            },
+          },
+        )
+        .exec();
+      if (!updated) {
+        this.logger.warn(
+          `[performCancellation] RETURN_REQUEST_NOT_LINKED tx=${ref || String(tx._id)} — لم يُعثر على طلب استرجاع معتمد مرتبط؛ راجع التقارير يدوياً`,
+        );
+      }
+    } catch (e) {
+      this.logger.error(
+        `[performCancellation] RETURN_REVERSAL_FLAG_FAILED tx=${ref || String(tx._id)}: ${(e as Error).message}`,
+      );
+    }
+  }
+
   /** True only for supplier purchases (رقم مرجعي أرقام فقط في الواجهة؛ لا يشمل إرجاع العميل). */
   private transactionAddsSupplierPurchases(tx: TransactionDocument): boolean {
     if (tx.type !== 'مشتريات') {
@@ -199,6 +316,64 @@ export class TransactionsService {
       return false;
     }
     return true;
+  }
+
+  /**
+   * Total value of settled supplier returns in a date window — the amount to subtract from gross
+   * purchases so the KPI reports what was actually bought and kept.
+   *
+   * Read from SupplierReturnOrder, NOT from the 'مرتجع مشتريات' transactions, deliberately: that
+   * transaction is created with `total: refundAmount` (see SupplierReturnsService.complete) — only
+   * the CASH-refund slice. A return settled as debt-offset or supplier credit produces a
+   * transaction with total 0, so netting from the transaction stream would subtract nothing for
+   * exactly the returns that matter most. `r.total` on the order is the full economic value.
+   *
+   * Only 'مكتمل' returns count, and reversed ones are excluded — a reversal undoes the inventory,
+   * vault and ledger effects, so its value must not stay deducted. NOTE: a reversed return KEEPS
+   * status 'مكتمل' (the `reversal` field is what marks it), so the status check alone is not enough.
+   */
+  private async getSettledSupplierReturns(
+    from?: string,
+    to?: string,
+  ): Promise<SupplierReturnOrderDocument[]> {
+    const query: Record<string, unknown> = {
+      status: 'مكتمل',
+      $or: [{ reversal: null }, { reversal: { $exists: false } }],
+    };
+    if (from || to) {
+      query.returnDate = {
+        ...(from ? { $gte: from } : {}),
+        ...(to ? { $lte: to } : {}),
+      };
+    }
+    return this.supplierReturnModel.find(query).exec();
+  }
+
+  /** Convenience sum over the above — the figure subtracted from gross purchases. */
+  private async getSettledSupplierReturnsTotal(
+    from?: string,
+    to?: string,
+  ): Promise<number> {
+    const rows = await this.getSettledSupplierReturns(from, to);
+    return rows.reduce((sum, r) => sum + (Number(r.total) || 0), 0);
+  }
+
+  /**
+   * What we currently owe all suppliers, per the supplier ledger — the authoritative payable.
+   * Suppliers in credit (negative balance) contribute 0 rather than offsetting someone else's
+   * debt: a prepayment with supplier A is not a reduction of what we owe supplier B.
+   * Falls back to 0 if the ledger is unreachable, so a dashboard never fails to render.
+   */
+  private async getTotalSupplierDebt(): Promise<number> {
+    try {
+      const balances = await this.supplierLedgerService.getAllBalances();
+      return Object.values(balances).reduce(
+        (sum, b) => sum + Math.max(0, Number(b.debt) || 0),
+        0,
+      );
+    } catch {
+      return 0;
+    }
   }
 
   /**
@@ -232,6 +407,195 @@ export class TransactionsService {
       return match ? String(match._id) : '';
     } catch {
       return '';
+    }
+  }
+
+  /**
+   * Posts a correcting supplier-ledger entry when a purchase invoice's PAYABLE changes outside the
+   * payment flow — i.e. on edit and on cancellation.
+   *
+   * Why this exists: `create()` posts a purchase-debt entry of (total - deposit) and `collect()`
+   * posts payments, but `update()` and `cancel()` historically posted NOTHING. So editing an
+   * invoice's total, or cancelling it outright, left the original debt standing in the ledger
+   * forever while the invoice itself said something different. Every such divergence had to be
+   * found by reconciling against a supplier statement and patched by hand — which is exactly the
+   * incident that motivated this method.
+   *
+   * `delta` is the change in what we owe: negative reduces the payable (a discount, a
+   * cancellation), positive increases it (an invoice corrected upward). Zero is a no-op.
+   *
+   * Posted as a 'manual-adjustment' with `sourceType:'transaction'` and the transaction's id, so
+   * the entry is traceable back to the invoice that caused it and reads clearly in the ledger.
+   * Never throws — the vault and the invoice are already committed by the time this runs, and a
+   * ledger failure must not roll those back. It is logged as CRITICAL for manual correction.
+   */
+  private async adjustSupplierLedgerForPayableChange(
+    tx: TransactionDocument,
+    delta: number,
+    by: string,
+    reason: string,
+  ): Promise<void> {
+    if (tx.type !== 'مشتريات') return;
+    const amount = Number(delta) || 0;
+    if (!amount) return;
+    // Stock-return transactions (ref ending -RET) are inventory bookkeeping, not supplier trade —
+    // they never post a purchase-debt entry, so they must not post a correction either.
+    if (!this.transactionAddsSupplierPurchases(tx)) return;
+    const txRef = tx.ref || String(tx._id);
+    try {
+      const supplierId = await this.resolveSupplierIdForLedger(
+        tx.supplierId,
+        tx.client || '',
+      );
+      if (!supplierId) {
+        this.logger.warn(
+          `adjustSupplierLedgerForPayableChange: no supplierId resolvable for #${txRef} — ledger left untouched (delta ${amount})`,
+        );
+        return;
+      }
+      await this.supplierLedgerService.postManualAdjustment({
+        supplierId,
+        supplierName: tx.client || '',
+        date: new Date().toISOString().split('T')[0],
+        amount,
+        reason,
+        employee: by,
+      });
+    } catch (err) {
+      this.logger.error(
+        `CRITICAL: purchase #${txRef} changed by ${amount} ج but the supplier-ledger correction failed — the supplier balance is now out of sync and needs a manual adjustment.`,
+        err instanceof Error ? err.stack : String(err),
+      );
+    }
+  }
+
+  /**
+   * Closes the unpaid remainder of a purchase invoice the supplier has waived — a credit memo.
+   *
+   * The invoice's `total` and `items` are deliberately LEFT UNTOUCHED: it is a document exchanged
+   * with the supplier, and rewriting its value makes our copy disagree with theirs while burying
+   * the reason inside a changed number. Instead `remaining` goes to 0, the status becomes مكتمل,
+   * and a matching 'invoice-write-off' entry cancels the payable in the ledger. Both sides move
+   * together, so the invoice list and the supplier balance can never disagree afterwards.
+   *
+   * Unlike the fire-and-forget ledger corrections elsewhere in this service, the ledger entry is
+   * posted FIRST and its failure aborts the whole operation: closing the invoice without cancelling
+   * the debt would leave the supplier balance overstated with no invoice left to explain it — the
+   * precise failure this feature exists to prevent.
+   */
+  async writeOffRemaining(
+    id: string,
+    reason: string,
+    by: string,
+  ): Promise<TransactionDocument> {
+    const tx = await this.transactionModel.findById(id).exec();
+    if (!tx) throw new NotFoundException('المعاملة غير موجودة');
+    if (tx.type !== 'مشتريات') {
+      throw new BadRequestException('إقفال المتبقي متاح لفواتير المشتريات فقط');
+    }
+    if (tx.cancelled) {
+      throw new BadRequestException('لا يمكن إقفال متبقي معاملة ملغاة');
+    }
+    if (!reason || !reason.trim()) {
+      throw new BadRequestException('يجب إدخال سبب إقفال المتبقي');
+    }
+    const remaining = Number(tx.remaining) || 0;
+    if (remaining <= 0) {
+      throw new BadRequestException('لا يوجد متبقٍ على هذه الفاتورة');
+    }
+    if (!this.transactionAddsSupplierPurchases(tx)) {
+      throw new BadRequestException('هذه المعاملة ليست فاتورة مشتريات من مورد');
+    }
+
+    const supplierId = await this.resolveSupplierIdForLedger(
+      tx.supplierId,
+      tx.client || '',
+    );
+    if (!supplierId) {
+      throw new BadRequestException(
+        'تعذّر تحديد المورد لهذه الفاتورة — لا يمكن إقفال المتبقي دون تسجيله في سجل المديونية',
+      );
+    }
+
+    // Ledger first: if this throws, the invoice is untouched and nothing is inconsistent.
+    await this.supplierLedgerService.postInvoiceWriteOff({
+      supplierId,
+      supplierName: tx.client || '',
+      transactionId: String(tx._id),
+      transactionRef: tx.ref || String(tx._id),
+      date: new Date().toISOString().split('T')[0],
+      amount: remaining,
+      reason: reason.trim(),
+      employee: by,
+    });
+
+    tx.remaining = 0;
+    tx.payStatus = 'مكتمل';
+    (tx as unknown as { writeOff?: unknown }).writeOff = {
+      amount: remaining,
+      reason: reason.trim(),
+      by,
+      at: new Date().toISOString(),
+    };
+    const saved = await tx.save();
+    this.emit('tx:updated', { tx: saved, action: 'write-off-remaining' });
+    return saved;
+  }
+
+  /**
+   * Reverses the supplier-ledger 'payment' entry that `collect()` posted for a purchase payment.
+   *
+   * Every path that undoes a purchase payment MUST call this. The vault side was always reversed,
+   * but the ledger side was not — so an undone payment stayed deducted from the supplier balance
+   * forever, understating what we owe. That is exactly how the Talla Home balance drifted: three
+   * payments were undone in the vault, their ledger entries survived, and the balance had to be
+   * patched by hand with two manual adjustments.
+   *
+   * Matched on (sourceType:'transaction', sourceId, entryType:'payment', reversed:false) and always
+   * takes the NEWEST such entry, mirroring the LIFO order in which payments are undone. Never
+   * throws: a reversal that fails must not roll back an already-committed vault reversal, so the
+   * failure is logged loudly for manual correction instead.
+   */
+  private async reverseSupplierPaymentLedgerEntry(
+    tx: TransactionDocument,
+    by: string,
+    reason: string,
+  ): Promise<void> {
+    if (tx.type !== 'مشتريات') return;
+    const txRef = tx.ref || String(tx._id);
+    try {
+      const supplierId = await this.resolveSupplierIdForLedger(
+        tx.supplierId,
+        tx.client || '',
+      );
+      if (!supplierId) {
+        this.logger.warn(
+          `reverseSupplierPaymentLedgerEntry: no supplierId resolvable for #${txRef} — ledger left untouched`,
+        );
+        return;
+      }
+      const entries = await this.supplierLedgerService.findBySupplier(supplierId);
+      const target = entries
+        .filter(
+          (e) =>
+            e.sourceType === 'transaction' &&
+            String(e.sourceId) === String(tx._id) &&
+            e.entryType === 'payment' &&
+            !e.reversed,
+        )
+        .pop();
+      if (!target) {
+        this.logger.warn(
+          `reverseSupplierPaymentLedgerEntry: no open payment entry for #${txRef} — nothing to reverse`,
+        );
+        return;
+      }
+      await this.supplierLedgerService.reverseEntry(String(target._id), by, reason);
+    } catch (err) {
+      this.logger.error(
+        `CRITICAL: vault reversal for purchase #${txRef} succeeded but the supplier-ledger reversal failed — the supplier balance is now understated and needs a manual adjustment.`,
+        err instanceof Error ? err.stack : String(err),
+      );
     }
   }
 
@@ -578,7 +942,7 @@ export class TransactionsService {
           if (this.transactionAddsSupplierPurchases(tx)) {
             purchases += Number(item.qty) || 0;
           } else if (this.transactionAddsReturnToStock(tx)) {
-            returnsToStock += Number(item.qty) || 0;
+            returnsToStock += this.returnedItemQtyForStock(item);
           } else if (tx.type === 'مبيعات' || tx.type === 'مرتجع مشتريات') {
             sales += Number(item.qty) || 0;
           }
@@ -651,17 +1015,68 @@ export class TransactionsService {
     }
   }
 
+  /**
+   * The edit lock is a FULFILLMENT rule, not a payment one.
+   *
+   * `payStatus === 'مكتمل'` only says the money settled. For a prepaid/Instapay
+   * order that is true from the first minute, while the goods may sit in the
+   * warehouse for days — so gating edits on it locked precisely the orders most
+   * likely to still need a correction. It also contradicted this service, whose
+   * update() already handles a completed sale by posting `totalDelta` to the vault.
+   *
+   * Mirrors `txFulfillmentStage()` / `txEditGate()` in the frontend —
+   * ⚠ keep the two in sync; the client gate is UX, this one is the authority.
+   *
+   * 'Picked-Up' means handed to OUR pickup courier — the goods are gone, so it is
+   * terminal. Bosta's PICKED_UP is the opposite (they collected it from us and it
+   * is now moving), hence it lands in the non-terminal branch. Don't merge them.
+   */
+  private assertEditableByFulfillment(
+    tx: TransactionDocument,
+    callerRole = '',
+  ): void {
+    if (tx.type !== 'مبيعات') return;
+    const bosta = String(tx.bostaStatus || '')
+      .trim()
+      .toUpperCase();
+    const pickup = String(tx.pickupStatus || '').trim();
+
+    // سُلّمت للعميل أو خرجت مع مندوب البيك أب → الأوردر منتهٍ. حتى المدير لا يعدّل؛
+    // التصحيح الوحيد المقبول محاسبياً هو مرتجع.
+    if (
+      bosta === 'DELIVERED' ||
+      pickup === 'Delivered' ||
+      pickup === 'Picked-Up'
+    ) {
+      throw new BadRequestException(
+        'الأوردر تم تسليمه — لا يمكن تعديله. لأي تصحيح استخدم مرتجعاً',
+      );
+    }
+
+    const inTransit =
+      ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(bosta) ||
+      pickup === 'Shipped' ||
+      tx.deliverySource === 'MANUAL';
+    if (inTransit && callerRole !== 'admin') {
+      throw new BadRequestException(
+        'الأوردر في الطريق مع المندوب — التعديل متاح للمدير فقط',
+      );
+    }
+  }
+
   async update(
     id: string,
     dto: UpdateTransactionDto,
     editedBy = '',
     approvedBy = '',
+    callerRole = '',
   ): Promise<TransactionDocument> {
     const existing = await this.transactionModel.findById(id).exec();
     if (!existing) {
       throw new NotFoundException('المعاملة غير موجودة');
     }
     this.assertNotExchangePendingCollect(existing);
+    this.assertEditableByFulfillment(existing, callerRole);
     if (dto.ref !== undefined) {
       await this.assertRetailRefForPersist(
         existing.type,
@@ -679,6 +1094,8 @@ export class TransactionsService {
 
     const oldDeposit = existing.deposit || 0;
     const oldTotal = existing.total || 0;
+    // Captured BEFORE any mutation — the supplier-ledger correction below is computed against it.
+    const previousRemaining = existing.remaining || 0;
     const oldDiscount = existing.discount || 0;
     const oldShipCost = existing.shipCost || 0;
     const oldTransactionDate = (existing as unknown as { transactionDate?: string }).transactionDate || '';
@@ -831,6 +1248,20 @@ export class TransactionsService {
           tx.payStatus = newRemaining <= 0 ? 'مكتمل' : 'معلق';
           await tx.save();
         }
+
+        // The payable moved, so the ledger must move with it. Measured on `remaining` (what we
+        // still owe), NOT on `total`: a total change absorbed entirely by the deposit — the money
+        // already left the vault — changes nothing about the outstanding debt. Without this, a
+        // discount like #012's (20,880 → 19,488) silently left 1,392 of phantom debt in the ledger.
+        const remainingDelta = newRemaining - previousRemaining;
+        if (remainingDelta !== 0) {
+          await this.adjustSupplierLedgerForPayableChange(
+            tx || existing,
+            remainingDelta,
+            editedBy,
+            `تعديل فاتورة مشتريات #${txRef} — ${changes.join(' | ') || `الإجمالي: ${oldTotal} ← ${newTotal}`}`,
+          );
+        }
       }
     }
 
@@ -865,7 +1296,23 @@ export class TransactionsService {
               productId: invRow._id,
               productCode: code,
               productName: invRow.name,
-              type: movementInfo.type,
+              /**
+               * ⚠ 'تسوية مخزون' — NOT `movementInfo.type`.
+               *
+               * `movementInfo.type` names the transaction ('مبيعات'), and on create() that is
+               * right: the row IS the sale. Here the row is a CORRECTION to a sale already
+               * logged, and half of these corrections move stock the opposite way — removing a
+               * line puts goods BACK. Stamping those 'مبيعات' produced rows reading
+               * «بيع +1» on invoice #33223: a sale that increased stock, which cannot happen.
+               *
+               * That also broke the log's own filter — filtering by «مبيعات» returned rows that
+               * were not sales, and no filter could isolate edit corrections at all, even
+               * though 'تسوية مخزون' existed in the enum for exactly this.
+               *
+               * `qtyDelta` was always correct; only the label contradicted it. Don't "fix" a
+               * future +/- oddity here by flipping the sign — check the type first.
+               */
+              type: 'تسوية مخزون',
               qtyDelta,
               qtyBefore: currentStock - qtyDelta,
               qtyAfter: currentStock,
@@ -873,6 +1320,10 @@ export class TransactionsService {
               sourceTransactionRef: tx.ref || String(tx._id),
               sourceType: 'transaction-update',
               by: editedBy || 'مستخدم',
+              // ⚠ الأرقام هنا مُعزولة بـ <bdi> عند العرض، لا مُبدَّلة في المصدر. النص المخزَّن
+              // يبقى «القديم ← الجديد» منطقياً؛ بدون العزل تُرتَّب الأرقام اللاتينية LTR داخل
+              // الفقرة العربية فيظهر «0 ← 1» لبند نزل من 1 إلى 0. نفس قاعدة حوار الإقفال:
+              // تُصلَح بالعزل عند العرض، ولا تُصلَح أبداً بقلب البيانات المخزَّنة.
               notes: `تعديل بنود المعاملة: ${beforeQty} ← ${afterQty}`,
             });
           }
@@ -987,6 +1438,15 @@ export class TransactionsService {
       }
     }
 
+    // A cancelled customer-return transaction has already had its stock and vault effects undone
+    // (stock is derived from non-cancelled transactions; the vault reversal happens below). What was
+    // NOT undone was the ReturnRequest behind it: it stayed 'معتمد', so both report queries kept
+    // subtracting its value from net sales forever. Marked reversed here so those queries skip it —
+    // the same guard the supplier-return side has carried all along.
+    if (this.isCustomerReturnTransaction(tx)) {
+      await this.markReturnRequestReversed(tx, reason, cancelledBy);
+    }
+
     const vaultMethod = tx.depMethod || tx.payment || 'كاش';
     if (tx.type === 'مشتريات') {
       // Calculate total actually paid = total - remaining at time of cancel
@@ -1012,6 +1472,19 @@ export class TransactionsService {
           new Date().toISOString().split('T')[0],
           'إلغاء',
           tx.ref || String(tx._id),
+        );
+      }
+      // A cancelled invoice is not owed. The vault refunds above undo the CASH side; this undoes
+      // the DEBT side, which was previously left standing in the ledger forever — a cancelled
+      // 28,460 ج invoice kept inflating the supplier balance with no invoice to explain it.
+      // Netted on what was still outstanding (previousRemaining), since anything already paid is
+      // handled by the refunds above and was never part of the payable.
+      if (previousRemaining > 0) {
+        await this.adjustSupplierLedgerForPayableChange(
+          tx,
+          -previousRemaining,
+          cancelledBy,
+          `إلغاء فاتورة مشتريات #${tx.ref || tx._id}${reason ? ` — ${reason}` : ''}`,
         );
       }
     } else if (tx.type === 'مرتجع مشتريات') {
@@ -1255,6 +1728,7 @@ export class TransactionsService {
     dto: CollectTransactionDto,
     by = 'مستخدم',
     callerRole = '',
+    callerPerms: string[] = [],
   ): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) {
@@ -1268,6 +1742,14 @@ export class TransactionsService {
     }
     const totalRemaining = tx.remaining || 0;
     const isPurchase = tx.type === 'مشتريات';
+
+    // Paying a SUPPLIER moves cash out of a vault. This route had no authorization check of any
+    // kind — any authenticated user could settle any purchase invoice. It cannot be a route-level
+    // @RequirePerms because the same endpoint collects from CUSTOMERS (money coming in), which is
+    // a different operation with a different audience; only the transaction type tells them apart.
+    if (isPurchase && callerRole !== 'admin' && !callerPerms.includes('suppliers-pay')) {
+      throw new ForbiddenException('ليست لديك صلاحية سداد مبالغ للموردين');
+    }
 
     // Partial payment support for purchases
     let payAmount: number;
@@ -1337,8 +1819,14 @@ export class TransactionsService {
     // COD orders collected via the generic collect flow (not the Bosta-specific
     // confirm-collection endpoint) should still be reflected as Collected —
     // never regress an already-finalized Collected/FailedCollection status.
+    // The who/when must be stamped here too: confirmCodCollection writes all three fields,
+    // so setting only the status here left codCollectedBy/At empty and made the collection
+    // step vanish from the order-handling log, which gates its row on codCollectedBy.
     if (!isPurchase && isFullyPaid && tx.codCollectionStatus === 'CODWaitingCollection') {
       tx.codCollectionStatus = 'Collected';
+      tx.codCollectedBy = by || tx.employee || '';
+      tx.codCollectedAt = new Date().toISOString();
+      tx.codCollectionMethod = dto.collectMethod;
     }
     if (isFullyPaid) {
       tx.collectedAt = new Date().toISOString().split('T')[0];
@@ -1487,6 +1975,13 @@ export class TransactionsService {
     // حذف آخر سجل تحصيل من الخزنة (بدون إضافة سجل عكسي)
     await this.vaultService.deleteLastEntryByRef(txRef);
 
+    // نفس المنطق في الخزنة يجب أن ينعكس في دفتر المورد، وإلا بقيت الدفعة مخصومة من المديونية.
+    await this.reverseSupplierPaymentLedgerEntry(
+      saved,
+      _reversedBy || saved.employee || '',
+      `تراجع عن تحصيل #${txRef}`,
+    );
+
     this.emit('tx:updated', { tx: saved, action: 'reverse-collect' });
     this.emit('vault:changed', { reason: 'tx:reverse-collect', txId: String(saved._id) });
     return { tx: saved, reversedAmount, vaultMethod };
@@ -1528,10 +2023,22 @@ export class TransactionsService {
     paymentId: string,
     undoBy: string,
     reason?: string,
+    callerRole = '',
+    callerPerms: string[] = [],
   ): Promise<{ tx: TransactionDocument; reversedAmount: number; vaultMethod: string; mode: 'full' | 'partial' | 'deposit' }> {
     const tx = await this.transactionModel.findById(txId).exec();
     if (!tx) throw new NotFoundException('المعاملة غير موجودة');
     if (tx.cancelled) throw new BadRequestException('لا يمكن التراجع على معاملة ملغاة');
+
+    // Route-level @RequirePerms('suppliers-reverse') already let the caller in. That perm only
+    // covers PURCHASE payments, so a non-purchase reversal still needs the original admin rule —
+    // otherwise granting the supplier perm would silently widen into sales collections too.
+    if (tx.type !== 'مشتريات' && callerRole !== 'admin') {
+      throw new ForbiddenException('التراجع عن تحصيل المبيعات متاح للمدير فقط');
+    }
+    if (tx.type === 'مشتريات' && callerRole !== 'admin' && !callerPerms.includes('suppliers-reverse')) {
+      throw new ForbiddenException('ليست لديك صلاحية التراجع عن دفعات الموردين');
+    }
 
     this.backfillPaymentIds(tx);
 
@@ -1652,6 +2159,14 @@ export class TransactionsService {
         { txId: String(saved._id), undoOf: paymentId, kind: 'payment-undo' },
       );
     }
+
+    // Mirror the vault reversal in the supplier ledger, or the undone payment stays deducted
+    // from the supplier balance forever.
+    await this.reverseSupplierPaymentLedgerEntry(
+      saved,
+      undoBy,
+      `تراجع عن دفعة #${txRef}${reason ? ` — ${reason}` : ''}`,
+    );
 
     this.emit('tx:updated', { tx: saved, action: 'undo-payment' });
     this.emit('vault:changed', { reason: 'tx:undo-payment', txId: String(saved._id) });
@@ -1848,7 +2363,8 @@ export class TransactionsService {
             // Customer returns: add to stock
             // Formula: current = opening + purchases + returns - sales
             // where sales = direct sales only (not reduced by returns)
-            returnsToStock += item.qty;
+            // A تالف unit contributes 0 — see returnedItemQtyForStock.
+            returnsToStock += this.returnedItemQtyForStock(item);
             const refStr = String(tx.ref || '').trim();
             if (refStr) {
               returnRefSet.add(refStr);
@@ -1910,7 +2426,15 @@ export class TransactionsService {
     let returnedProfit = 0;
     let approvedReturns: ReturnRequestDocument[] = [];
     try {
-      approvedReturns = await this.returnRequestModel.find({ status: 'معتمد' }).exec();
+      // `reversedAt` must be filtered on, not just `status`: a reversed return KEEPS status 'معتمد'
+      // (mirroring SupplierReturnOrder), so the status check alone would keep subtracting a return
+      // whose stock and cash were already given back.
+      approvedReturns = await this.returnRequestModel
+        .find({
+          status: 'معتمد',
+          $or: [{ reversedAt: null }, { reversedAt: { $exists: false } }],
+        })
+        .exec();
       totalReturns = approvedReturns.reduce((s, r) => s + (Number(r.total) || 0), 0);
     } catch (e) {
       totalReturns = 0;
@@ -1921,13 +2445,30 @@ export class TransactionsService {
     const totalShipLoss = salesTx.reduce((s, t) => s + (Number(t.shipLoss) || 0), 0);
     const grossProductSales = salesTx.reduce((s, t) => s + (Number(t.itemsTotal) || t.total - (Number(t.shipCost) || 0)), 0);
     const totalSales = Math.max(0, grossProductSales - totalReturns);
-    const totalPurchases = activeTx
+    // Purchases are reported NET of settled supplier returns — goods sent back are not spend we
+    // kept. Mirrors totalSales being net of customer returns above. No date window here: the
+    // dashboard is all-time.
+    const grossPurchases = activeTx
       .filter((t) => this.transactionAddsSupplierPurchases(t))
       .reduce((sum, t) => sum + t.total, 0);
-    const totalRemaining = activeTx.reduce(
-      (sum, t) => sum + (t.remaining || 0),
-      0,
-    );
+    const supplierReturnsTotal = await this.getSettledSupplierReturnsTotal();
+    const totalPurchases = Math.max(0, grossPurchases - supplierReturnsTotal);
+    // "المتبقي / الديون" mixes money owed TO us and money we owe. The supplier half can no longer
+    // be read from tx.remaining: supplier-return debt offsets and manual ledger adjustments move
+    // what we owe WITHOUT touching any invoice's remaining (verified — neither SupplierReturnsService
+    // nor SupplierLedgerService writes tx.remaining). Summing invoices therefore over-reports
+    // supplier debt by exactly the value of every settled return and correction ever made.
+    // The ledger is authoritative for the payable side, so take it from there.
+    const customerReceivables = activeTx
+      .filter((t) => t.type === 'مبيعات')
+      .reduce((sum, t) => sum + (t.remaining || 0), 0);
+    // Returns/exchanges that still carry a balance — neither a sale nor a supplier purchase.
+    const otherRemaining = activeTx
+      .filter((t) => t.type !== 'مبيعات' && t.type !== 'مشتريات')
+      .reduce((sum, t) => sum + (t.remaining || 0), 0);
+    const supplierPayables = await this.getTotalSupplierDebt();
+    const totalRemaining =
+      customerReceivables + otherRemaining + supplierPayables;
     const totalDiscounts = salesTx.reduce((s, t) => {
       // Use stored discount if present; otherwise infer from itemsTotal vs total
       const stored = Number(t.discount) || 0;
@@ -1953,14 +2494,7 @@ export class TransactionsService {
 
     // اخصم ربح المنتجات المرتجعة من الربح الإجمالي (استخدم البيانات المجلوبة بالفعل)
     try {
-      approvedReturns.forEach((ret) => {
-        (ret.items || []).forEach((item: any) => {
-          const p = products.find((x) => x.code === item.code);
-          const cost = p ? p.buyPrice : 0;
-          const profit = (item.price - cost) * item.qty;
-          returnedProfit += profit;
-        });
-      });
+      returnedProfit = this.computeReturnedProfitLoss(approvedReturns, products);
     } catch (e) {
       returnedProfit = 0;
     }
@@ -1992,7 +2526,14 @@ export class TransactionsService {
       lowStockCount,
       totalSales,
       totalPurchases,
+      // Breakdown behind the netted figure, so the UI can show "gross − returns".
+      grossPurchases,
+      supplierReturnsTotal,
       totalRemaining,
+      // Breakdown of the mixed debts figure — receivable vs payable are opposite-signed in
+      // accounting terms, so the split is what a user actually needs to act on.
+      customerReceivables,
+      supplierPayables,
       totalExpenses: expenseTotal,
       grossProfit,
       netProfit,
@@ -2017,6 +2558,11 @@ export class TransactionsService {
     let transactions = await this.transactionModel
       .find({ cancelled: { $ne: true }, archived: { $ne: true } })
       .exec();
+    // Unfiltered handle, captured before the two filters below rebind `transactions` to a
+    // narrowed array. «آخر بيع» in the stagnant-stock panel is a lifetime fact about the
+    // product — scoping it to the selected period would report every product as never-sold
+    // whenever the user picks "اليوم".
+    const allTx = transactions;
     if (from) transactions = transactions.filter((t) => t.date >= from);
     if (to) transactions = transactions.filter((t) => t.date <= to);
     const salesTx = transactions.filter((t) => t.type === 'مبيعات');
@@ -2029,7 +2575,11 @@ export class TransactionsService {
     let returnedProfit = 0;
     let approvedReturns: ReturnRequestDocument[] = [];
     try {
-      const returnQuery: any = { status: 'معتمد' };
+      // Same reversal guard as getDashboard() — see the comment there.
+      const returnQuery: any = {
+        status: 'معتمد',
+        $or: [{ reversedAt: null }, { reversedAt: { $exists: false } }],
+      };
       if (from || to) {
         returnQuery.createdAt = {};
         if (from) returnQuery.createdAt.$gte = new Date(from + 'T00:00:00.000Z');
@@ -2051,7 +2601,18 @@ export class TransactionsService {
     // صافي المبيعات = إجمالي المنتجات فقط (بدون شحن) - المرتجعات
     const grossProductSales = salesTx.reduce((s, t) => s + (Number(t.itemsTotal) || t.total - (Number(t.shipCost) || 0)), 0);
     const totalSales = Math.max(0, grossProductSales - totalReturns);
-    const totalPurchases = pursTx.reduce((s, t) => s + t.total, 0);
+    // Purchases are reported NET of settled supplier returns — goods sent back are not spend we
+    // kept. Mirrors how totalSales is net of customer returns just above.
+    const grossPurchases = pursTx.reduce((s, t) => s + t.total, 0);
+    const settledSupplierReturns = await this.getSettledSupplierReturns(
+      from,
+      to,
+    );
+    const supplierReturnsTotal = settledSupplierReturns.reduce(
+      (s, r) => s + (Number(r.total) || 0),
+      0,
+    );
+    const totalPurchases = Math.max(0, grossPurchases - supplierReturnsTotal);
     const totalDeposit = salesTx.reduce((s, t) => s + (t.deposit || 0), 0);
     const totalRemaining = salesTx.reduce(
       (s, t) => s + (t.remaining || 0),
@@ -2081,15 +2642,7 @@ export class TransactionsService {
 
     // اخصم ربح المنتجات المرتجعة من الربح الإجمالي (استخدم البيانات المجلوبة بالفعل)
     try {
-      approvedReturns.forEach((ret) => {
-        (ret.items || []).forEach((item: any) => {
-          const p = products.find((x) => x.code === item.code);
-          const cost = p ? p.buyPrice : 0;
-          const profit = (item.price - cost) * item.qty;
-          returnedProfit += profit;
-        });
-      });
-      console.log(`[getReports] returnedProfit: ${returnedProfit}`);
+      returnedProfit = this.computeReturnedProfitLoss(approvedReturns, products);
     } catch (e) {
       console.error('[getReports] Error calculating returned profit:', e);
       returnedProfit = 0;
@@ -2109,7 +2662,15 @@ export class TransactionsService {
       ? { name: bestByQty.name, qty: bestByQty.qty, revenue: bestByQty.rev }
       : null;
 
-    const series = this.buildDailySeries(salesTx, pursTx, from, to);
+    // Series purchases must be netted the same way as the KPI, or the daily chart contradicts the
+    // headline figure it sits beside.
+    const series = this.buildDailySeries(
+      salesTx,
+      pursTx,
+      from,
+      to,
+      settledSupplierReturns,
+    );
 
     const customerMap: Record<string, { orders: number; revenue: number }> = {};
     salesTx.forEach((tx) => {
@@ -2123,9 +2684,15 @@ export class TransactionsService {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10);
 
+    const stagnantStock = await this.buildStagnantStock(salesTx, allTx);
+
     return {
       totalSales,
       totalPurchases,
+      // Breakdown behind the netted figure, so the UI can show "gross − returns" instead of an
+      // unexplained number that no longer matches the invoices list.
+      grossPurchases,
+      supplierReturnsTotal,
       totalDeposit,
       totalRemaining,
       grossProfit,
@@ -2144,6 +2711,7 @@ export class TransactionsService {
       from: from || '',
       to: to || '',
       productProfits,
+      stagnantStock,
       salesMap: salesTx.reduce(
         (acc: Record<string, number>, tx) => {
           tx.items.forEach((it) => {
@@ -2157,6 +2725,105 @@ export class TransactionsService {
   }
 
   /**
+   * Stock that did not move in the reporting period, and what it costs to hold it.
+   *
+   * The reports page used to answer "what isn't selling?" from `productProfits`, which is
+   * accumulated from sold line items — so a product with zero sales could never appear in it.
+   * The genuinely dead stock was structurally invisible, and the panel showed the ten
+   * *least*-sold-but-still-sold products instead (usually ten identical bars of qty 1).
+   *
+   * The list therefore starts from inventory, not from sales. Stock is read through
+   * `getInventory()` rather than recomputed here — it and `getAvailableQtyByProductCode` are
+   * the only two places stock is derived, and a third would drift from both.
+   *
+   * @param salesTx sales in the selected period — decides what counts as "did not move".
+   * @param allTx   every transaction, unfiltered — «آخر بيع» is a lifetime fact.
+   */
+  private async buildStagnantStock(
+    salesTx: TransactionDocument[],
+    allTx: TransactionDocument[],
+  ): Promise<{
+    items: Array<{
+      code: string;
+      name: string;
+      stock: number;
+      buyPrice: number;
+      frozenValue: number;
+      lastSale: string;
+      daysSinceSale: number | null;
+    }>;
+    count: number;
+    totalValue: number;
+    neverSold: number;
+  }> {
+    const empty = { items: [], count: 0, totalValue: 0, neverSold: 0 };
+    try {
+      const inventory = await this.getInventory();
+
+      const soldInPeriod = new Set<string>();
+      salesTx.forEach((tx) =>
+        tx.items.forEach((it) => {
+          const code = String(it.code || '').trim();
+          if (code && (Number(it.qty) || 0) > 0) soldInPeriod.add(code);
+        }),
+      );
+
+      const lastSaleByCode: Record<string, string> = {};
+      allTx.forEach((tx) => {
+        if (tx.type !== 'مبيعات') return;
+        const day = tx.date ? String(tx.date).split('T')[0] : '';
+        if (!day) return;
+        tx.items.forEach((it) => {
+          const code = String(it.code || '').trim();
+          if (!code) return;
+          if (!lastSaleByCode[code] || day > lastSaleByCode[code]) {
+            lastSaleByCode[code] = day;
+          }
+        });
+      });
+
+      // Both sides are plain YYYY-MM-DD, so Date.parse reads them as UTC midnight and the
+      // difference is a whole number of days with no timezone drift.
+      const todayMs = Date.parse(new Date().toISOString().slice(0, 10));
+      const rows = inventory
+        // Stock on hand is the whole point: a discontinued item at zero stock ties up no cash
+        // and needs no decision. Inactive products are excluded for the same reason.
+        .filter((p) => p.isActive !== false && p.current > 0)
+        .filter((p) => !soldInPeriod.has(String(p.code || '').trim()))
+        .map((p) => {
+          const code = String(p.code || '').trim();
+          const lastSale = lastSaleByCode[code] || '';
+          const lastMs = lastSale ? Date.parse(lastSale) : NaN;
+          return {
+            code,
+            name: p.name,
+            stock: p.current,
+            buyPrice: p.buyPrice || 0,
+            frozenValue: Math.round((p.current || 0) * (p.buyPrice || 0)),
+            lastSale,
+            daysSinceSale: Number.isNaN(lastMs)
+              ? null
+              : Math.max(0, Math.round((todayMs - lastMs) / 86400000)),
+          };
+        })
+        // Ordered by capital at risk, not by how long it sat: the decision the panel exists to
+        // support is "which pile of dead stock do I clear first", and that is a money question.
+        .sort((a, b) => b.frozenValue - a.frozenValue);
+
+      return {
+        items: rows.slice(0, 12),
+        count: rows.length,
+        totalValue: rows.reduce((s, r) => s + r.frozenValue, 0),
+        neverSold: rows.filter((r) => !r.lastSale).length,
+      };
+    } catch (e) {
+      // A reporting panel must never take the whole report down with it.
+      console.error('[getReports] Error building stagnant stock:', e);
+      return empty;
+    }
+  }
+
+  /**
    * Daily-bucketed series of sales/purchases/profit between from..to (inclusive).
    * If from/to omitted, covers min..max of input transactions; empty if no data.
    */
@@ -2165,6 +2832,7 @@ export class TransactionsService {
     pursTx: TransactionDocument[],
     from?: string,
     to?: string,
+    supplierReturns: SupplierReturnOrderDocument[] = [],
   ): Array<{ date: string; sales: number; purchases: number; orders: number }> {
     const dayKey = (d: string | Date | undefined): string => {
       if (!d) return '';
@@ -2175,6 +2843,7 @@ export class TransactionsService {
     const allKeys = [
       ...salesTx.map((t) => dayKey(t.date)),
       ...pursTx.map((t) => dayKey(t.date)),
+      ...supplierReturns.map((r) => dayKey(r.returnDate)),
     ].filter(Boolean);
     if (!from && !to && allKeys.length === 0) return [];
     const minDay = from || allKeys.sort()[0];
@@ -2204,6 +2873,18 @@ export class TransactionsService {
       const k = dayKey(tx.date);
       if (buckets[k]) {
         buckets[k].purchases += Number(tx.total) || 0;
+      }
+    });
+    // Net settled supplier returns out of the day they were settled on, matching the headline KPI.
+    // Clamped per-day: a return can be settled on a day with no purchases of its own, which would
+    // otherwise render a negative bar.
+    supplierReturns.forEach((r) => {
+      const k = dayKey(r.returnDate);
+      if (buckets[k]) {
+        buckets[k].purchases = Math.max(
+          0,
+          buckets[k].purchases - (Number(r.total) || 0),
+        );
       }
     });
     return Object.entries(buckets)
