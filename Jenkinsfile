@@ -7,6 +7,27 @@ pipeline {
   }
 
   stages {
+    // فحص مبكر يطبع — في أول أسطر الـ console — سبب أشهر نوعين من الفشل البيئي:
+    // امتلاء القرص، وانقطاع الوصول لسجل npm. #74/#75 فشلا على كود سبق نجاحه (#71
+    // على نفس revision #74)، فالسبب بيئي بالضرورة — هذه المرحلة تجعله مقروءاً
+    // بدل التخمين. لا تُفشِل البناء بنفسها؛ تقرير فقط.
+    stage('Env sanity') {
+      steps {
+        sh '''
+          echo "=== disk ==="
+          df -h / || true
+          echo "=== docker disk ==="
+          docker system df || true
+          echo "=== npm registry ==="
+          if curl -sf -o /dev/null --max-time 10 https://registry.npmjs.org/; then
+            echo "npm registry OK"
+          else
+            echo "WARNING: npm registry UNREACHABLE — docker build (npm install) will likely fail"
+          fi
+        '''
+      }
+    }
+
     stage('Build images') {
       steps {
         sh 'docker build -t soulia-backend:ci-${BUILD_NUMBER} backend'
@@ -29,8 +50,11 @@ pipeline {
     stage('Health check') {
       when { branch 'main' }
       steps {
+        // 60 محاولة × 2ث = 120ث. النافذة القديمة (60ث) كانت أضيق من إقلاع بارد
+        // لـ NestJS + اتصال Mongo على جهاز مضغوط — فكانت تحسب النشرَ فاشلاً
+        // والحاويات على وشك الجاهزية.
         sh '''
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             frontend_ok=false
             curl -sf -o /dev/null http://localhost:8080/ && frontend_ok=true
             backend_state=$(docker inspect -f '{{.State.Status}}' soulia-backend 2>/dev/null || echo missing)
@@ -40,8 +64,18 @@ pipeline {
             fi
             sleep 2
           done
+          # عند الفشل: اطبع كل ما يلزم للتشخيص من صفحة الـ build مباشرة —
+          # حالة الحاويات، لوج الاثنين (فشل nginx في الإقلاع كان أعمى تماماً
+          # قبل ذلك: القديم كان يطبع لوج الباك-إند فقط)، والقرص.
           echo "HEALTH CHECK FAILED (frontend_ok=$frontend_ok backend=$backend_state)"
-          docker logs --tail 50 soulia-backend || true
+          echo "=== containers ==="
+          docker compose -p soulia ps || true
+          echo "=== backend logs ==="
+          docker logs --tail 80 soulia-backend || true
+          echo "=== frontend logs ==="
+          docker logs --tail 40 soulia-frontend || true
+          echo "=== disk ==="
+          df -h / || true
           exit 1
         '''
       }
@@ -51,6 +85,10 @@ pipeline {
   post {
     always {
       sh 'docker rmi soulia-backend:ci-${BUILD_NUMBER} soulia-frontend:ci-${BUILD_NUMBER} 2>/dev/null || true'
+      // كل نشرة تبني الصورتين مرتين (مرحلة Build ثم compose --build)، فتتراكم
+      // طبقات معلّقة تملأ قرص VPS صغير مع الوقت. dangling فقط — لا يمسّ صور
+      // الحاويات العاملة ولا يبطئ البناء التالي (الكاش الموسوم يبقى).
+      sh 'docker image prune -f >/dev/null 2>&1 || true'
     }
   }
 }
