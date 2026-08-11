@@ -339,6 +339,64 @@ export class CancelTransactionDto {
   readonly cancelledBy: string;
 }
 
+/** The closing decision on a shipment that never reached the customer. */
+export class CloseFailedDeliveryDto {
+  /** refused | unreachable | bad-address | courier-error | lost */
+  @IsString()
+  @IsNotEmpty()
+  readonly outcome: string;
+
+  /** What the courier charges for the return leg. Recorded as a cost, never posted to the vault. */
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly returnShipCost?: number;
+
+  /**
+   * How much of the customer's money goes back. Omitted means "all of it".
+   * The service caps this at what was actually collected — the difference is
+   * what the shop keeps against the shipping it paid for.
+   */
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly refundAmount?: number;
+
+  @IsString()
+  @IsOptional()
+  readonly note?: string;
+}
+
+/** Sending the order out again on a fresh waybill — same transaction, same ref. */
+export class ReshipTransactionDto {
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly addShipCost?: number;
+
+  /** true (default) bills the retry to the customer; false makes it a company cost. */
+  @IsBoolean()
+  @IsOptional()
+  readonly chargeCustomer?: boolean;
+
+  @IsString()
+  @IsOptional()
+  readonly note?: string;
+}
+
+/** Admin backfill for orders that came back before this path existed. */
+export class BackfillShipIssueDto {
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  readonly refs?: string[];
+
+  /** Defaults to a preview — must be explicitly false to write. */
+  @IsBoolean()
+  @IsOptional()
+  readonly dryRun?: boolean;
+}
+
 export class CollectTransactionDto {
   @IsString()
   @IsNotEmpty()

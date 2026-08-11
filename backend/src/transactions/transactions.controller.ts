@@ -30,6 +30,9 @@ import {
   PostDiscountDto,
   RequestCancelDto,
   ReviewCancelDto,
+  CloseFailedDeliveryDto,
+  ReshipTransactionDto,
+  BackfillShipIssueDto,
 } from './dto/transaction.dto';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
@@ -368,6 +371,55 @@ export class TransactionsController {
     @Body() dto: CancelTransactionDto,
   ) {
     return this.transactionsService.cancel(id, dto);
+  }
+
+  // ── Failed delivery ───────────────────────────────────────────────────────
+  // Declared BEFORE the generic ':id/...' handlers that follow are irrelevant —
+  // Nest matches on the full path — but kept together so the whole path is
+  // readable in one place.
+
+  /**
+   * "Yes, the shipment is back" — records the closing decision, brings the stock
+   * in, refunds what is owed, and releases the order from the shipping-issues
+   * card. JWT-only, like collect: any employee who can work the card can finish
+   * the job they were assigned.
+   */
+  @Post(':id/failed-delivery/close')
+  async closeFailedDelivery(
+    @Param('id') id: string,
+    @Body() dto: CloseFailedDeliveryDto,
+    @Req() req: any,
+  ) {
+    const by = req.user?.name || req.user?.username || 'مستخدم';
+    return this.transactionsService.closeFailedDelivery(id, dto, by);
+  }
+
+  /** "Not yet" — the courier says it is coming; the order stays on the card. */
+  @Post(':id/failed-delivery/awaiting')
+  async markFailedDeliveryAwaiting(@Param('id') id: string, @Req() req: any) {
+    const by = req.user?.name || req.user?.username || 'مستخدم';
+    return this.transactionsService.markFailedDeliveryAwaiting(id, by);
+  }
+
+  /** Send it out again — new waybill, same transaction, same reference. */
+  @Post(':id/failed-delivery/reship')
+  async reshipFailedDelivery(
+    @Param('id') id: string,
+    @Body() dto: ReshipTransactionDto,
+    @Req() req: any,
+  ) {
+    const by = req.user?.name || req.user?.username || 'مستخدم';
+    return this.transactionsService.reshipFailedDelivery(id, dto, by);
+  }
+
+  /**
+   * Opens the processing state on orders that came back before this path
+   * existed. Admin-only and previews by default — `{"dryRun": false}` writes.
+   */
+  @Roles('admin')
+  @Post('backfill/ship-issue-state')
+  async backfillShipIssueState(@Body() dto: BackfillShipIssueDto) {
+    return this.transactionsService.backfillShipIssueState(dto?.refs, dto?.dryRun !== false);
   }
 
   @Post(':id/collect')

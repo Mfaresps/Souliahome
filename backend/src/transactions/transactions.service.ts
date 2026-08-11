@@ -41,6 +41,7 @@ import {
   RecordMovementEntry,
 } from '../inventory-movements/inventory-movements.service';
 import { InventoryMovementType } from '../inventory-movements/schemas/inventory-movement.schema';
+import { FollowUpsService } from '../followups/followups.service';
 
 export interface InventoryItem {
   _id: string;
@@ -112,6 +113,10 @@ export class TransactionsService {
     private readonly suppliersService: SuppliersService,
     @Inject(forwardRef(() => InventoryMovementsService))
     private readonly inventoryMovementsService: InventoryMovementsService,
+    // Closing a failed delivery must also close its follow-up ticket, or the
+    // order says "done" while the ticket keeps escalating on somebody's screen.
+    @Inject(forwardRef(() => FollowUpsService))
+    private readonly followUpsService: FollowUpsService,
   ) {}
 
   // ── Concurrent edit lock: txId → { user, since } ──
@@ -1529,6 +1534,16 @@ export class TransactionsService {
         const invSnapshot = await this.getInventory();
         const invByCode = new Map(invSnapshot.map((r) => [String(r.code).trim(), r]));
         const movementEntries: RecordMovementEntry[] = [];
+        // ⚠ The movement TYPE has to describe the effect on stock, not the type of
+        // the transaction being undone. `classifyInventoryMovement` answers "what
+        // is this transaction?" — for a sale it returns 'مبيعات', and cancelling
+        // only flips the sign. The log then read «مبيعات +1»: a sale that ADDED
+        // stock, which is a contradiction on its face and makes the log
+        // un-filterable (filtering "مبيعات" returns rows that are really returns).
+        // A cancelled sale puts goods back, so it is 'مرتجع مبيعات'; a cancelled
+        // purchase takes them out, so it is 'مرتجع مشتريات'.
+        const reversalType: InventoryMovementType =
+          movementInfo.sign === -1 ? 'مرتجع مبيعات' : 'مرتجع مشتريات';
         for (const item of saved.items || []) {
           const code = String(item.code || '').trim();
           const invRow = invByCode.get(code);
@@ -1539,7 +1554,7 @@ export class TransactionsService {
             productId: invRow._id,
             productCode: code,
             productName: item.name || invRow.name,
-            type: movementInfo.type,
+            type: reversalType,
             qtyDelta,
             qtyBefore: currentStock - qtyDelta,
             qtyAfter: currentStock,
@@ -1582,6 +1597,383 @@ export class TransactionsService {
     });
     this.emit('vault:changed', { reason: 'tx:cancelled', txId: String(saved._id) });
     return saved;
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  FAILED DELIVERY — the closing decision
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Blocks operations that contradict an unresolved delivery failure.
+   *
+   * The courier has returned the shipment and nobody has recorded what happened
+   * yet, so the transaction is NOT cancelled — which means every guard written
+   * as `if (tx.cancelled)` still lets the operation through. Two of them cause
+   * real damage:
+   *
+   *  • **Collection** would post a vault entry for money the customer never
+   *    paid, on goods that are coming back to the shelf.
+   *  • **Manual delivery confirmation** writes `deliveredAt`, and
+   *    `closeFailedDelivery` refuses any order carrying it (an order that
+   *    reached the customer is a customer return, not a failed delivery). One
+   *    mis-click therefore strands the order in a state with no exit: it can
+   *    neither be closed here nor routed to the returns module, on goods that
+   *    were never delivered to anyone.
+   *
+   * The UI disables both buttons, but both functions are global and reachable
+   * from the console — hiding a control is never the guard.
+   */
+  private assertNoOpenShipIssue(tx: TransactionDocument, action: string): void {
+    const state = (tx as any).shipIssueState || '';
+    if (state !== 'open' && state !== 'awaiting') return;
+    throw new BadRequestException(
+      `${action} غير متاح: شركة الشحن رجّعت هذا الطلب ولم تُنهَ معالجته بعد — افتح الفاتورة وأكّد استلام الشحنة أولاً`,
+    );
+  }
+
+  /** Arabic label per outcome — used in the cancel reason, the ticket and the UI. */
+  private static readonly FAILED_DELIVERY_OUTCOMES: Record<string, string> = {
+    refused:       'رفض الاستلام',
+    unreachable:   'تعذّر الوصول للعميل',
+    'bad-address': 'عنوان أو بيانات غلط',
+    'courier-error': 'خطأ شركة الشحن',
+    lost:          'الشحنة ضاعت عند شركة الشحن',
+  };
+
+  /**
+   * Closes a failed delivery. This is the end of the line the whole feature exists for.
+   *
+   * What it does, and the reasoning behind each part:
+   *
+   * • **The sale is cancelled, not returned.** The customer never received the
+   *   goods, so nothing was sold. Recording this as a customer return would
+   *   inflate both gross sales (a sale that collected nothing stays counted) and
+   *   returns (goods the customer never saw), leaving net correct by coincidence
+   *   and the "most returned products" report a lie. `performCancellation` also
+   *   brings the stock back on its own — stock is derived from non-cancelled
+   *   transactions — and writes the reversing rows into the movement log. Writing
+   *   an InventoryMovement by hand would log a return the balance never made.
+   *
+   * • **`returnShipCost` never touches the vault.** The courier nets return fees
+   *   out of other orders' payouts, so the vault already falls by that amount
+   *   when the smaller transfer lands. Posting it here too would take the same
+   *   pound twice. It is recorded on the order (`shipLoss`) so reports can cost
+   *   the failure; the cash side is already handled by arithmetic nobody has to
+   *   perform.
+   *
+   * • **Held money is refunded minus the shipping the company ate.**
+   *   `performCancellation` refunds the full deposit, so the retained shipping is
+   *   posted back as a separate positive entry. Two lines that each explain
+   *   themselves beat one netted line that explains nothing.
+   *
+   * • **`lost` brings no stock back.** The shipment is not on our shelf. This is
+   *   the one outcome that must not cancel — cancelling would credit us stock we
+   *   do not have — so it records the loss and closes without touching inventory.
+   */
+  async closeFailedDelivery(
+    id: string,
+    dto: {
+      outcome: string;
+      returnShipCost?: number;
+      refundAmount?: number;
+      note?: string;
+    },
+    by: string,
+  ): Promise<TransactionDocument> {
+    const tx = await this.transactionModel.findById(id).exec();
+    if (!tx) throw new NotFoundException('المعاملة غير موجودة');
+
+    const outcome = String(dto.outcome || '');
+    const outcomeLabel = TransactionsService.FAILED_DELIVERY_OUTCOMES[outcome];
+    if (!outcomeLabel) throw new BadRequestException('سبب إنهاء المعالجة غير معروف');
+
+    if ((tx as any).failedDelivery) {
+      throw new BadRequestException('تم إنهاء معالجة هذا الطلب بالفعل');
+    }
+    if (tx.type !== 'مبيعات') {
+      throw new BadRequestException('معالجة فشل التوصيل تخص حركات المبيعات فقط');
+    }
+    // Same guard `cancel()` applies — this path reaches performCancellation
+    // directly, so skipping it would let the one case cancellation forbids
+    // through a side door.
+    this.assertNotExchangePendingCollect(tx);
+    // A shipment that reached the customer is a customer return, and refunding it
+    // has rules this path does not implement (ceiling, approval, condition).
+    if ((tx as any).deliveredAt && outcome !== 'courier-error') {
+      throw new BadRequestException(
+        'هذا الطلب تم تسليمه للعميل — رجوعه بعد التسليم يمشي على مسار مرتجعات العملاء وليس فشل التوصيل',
+      );
+    }
+
+    const goodsBack = outcome !== 'lost';
+    const returnShipCost = Math.max(0, Number(dto.returnShipCost) || 0);
+
+    // Money the company is holding for this order: a prepaid/deposit amount, or
+    // a COD that was collected before the shipment came back.
+    const heldByUs = Math.max(0, Number(tx.deposit) || 0);
+    const requestedRefund = dto.refundAmount === undefined ? heldByUs : Math.max(0, Number(dto.refundAmount) || 0);
+    if (requestedRefund > heldByUs) {
+      throw new BadRequestException(
+        `المبلغ المطلوب رده (${requestedRefund}) أكبر من المحصّل فعلاً من العميل (${heldByUs})`,
+      );
+    }
+    const refundAmount = heldByUs > 0 ? requestedRefund : 0;
+    const shipRetained = Math.max(0, heldByUs - refundAmount);
+
+    const now = new Date().toISOString();
+    let retainedVaultEntryId = '';
+
+    if (goodsBack) {
+      // Cancels, refunds the full deposit to the vault, reverses a collected COD,
+      // returns the stock and writes the movement rows.
+      await this.performCancellation(tx, `فشل توصيل — ${outcomeLabel}`, by);
+
+      // performCancellation gave the customer back everything they paid. Whatever
+      // the shop keeps against the shipping it ate comes back as its own entry,
+      // so the ledger reads "refunded 1000, kept 120" rather than a bare 880.
+      if (shipRetained > 0) {
+        try {
+          const entry = await this.vaultService.addSystemEntry(
+            shipRetained,
+            (tx as any).depMethod || tx.payment || 'كاش',
+            `شحن غير مسترد — فشل توصيل طلب #${tx.ref || String(tx._id)} (${outcomeLabel})`,
+            now.split('T')[0],
+            // ⚠ Must be one of the values the vault log's type filter offers, or
+            // the entry becomes invisible to every filter on that page.
+            'تحصيل',
+            tx.ref || String(tx._id),
+            { customer: tx.client || '' },
+            by,
+            { linkedTransactionId: String(tx._id) },
+          );
+          retainedVaultEntryId = String(entry._id);
+        } catch (err) {
+          // The refund already went out. A failure to re-book the retained
+          // shipping leaves the customer correctly paid and the shop short by
+          // that amount — wrong, but recoverable by hand, and far better than
+          // failing the close and leaving the refund half-applied.
+          this.logger.error(
+            `[closeFailedDelivery] SHIP_RETENTION_FAILED tx=${tx.ref || tx._id} amount=${shipRetained}: ${(err as Error).message}`,
+          );
+        }
+      }
+    }
+
+    const finalTx = await this.transactionModel
+      .findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            shipIssueState: 'closed',
+            // ⚠ Recorded on the order, deliberately NOT posted to the vault.
+            shipLoss: (Number(tx.shipLoss) || 0) + returnShipCost,
+            failedDelivery: {
+              outcome,
+              goodsBack,
+              returnShipCost,
+              refundAmount,
+              shipRetained,
+              retainedVaultEntryId,
+              note: String(dto.note || ''),
+              closedAt: now,
+              closedBy: by,
+            },
+          },
+        },
+        { new: true },
+      )
+      .exec();
+
+    await this.followUpsService.closeShippingIssueFollowUp(String(id), outcomeLabel, by);
+
+    this.emit('tx:updated', { _id: String(id) });
+    this.emit('inventory:changed', { reason: 'failed-delivery:closed', txId: String(id) });
+    this.logger.log(
+      `Failed delivery closed — tx=${tx.ref || id} outcome=${outcome} goodsBack=${goodsBack} ` +
+      `refund=${refundAmount} retained=${shipRetained} returnShip=${returnShipCost} by=${by}`,
+    );
+    return finalTx as TransactionDocument;
+  }
+
+  /**
+   * Marks the goods as still on their way back, without closing anything.
+   * The courier reports RETURNED days before the shipment physically arrives, so
+   * "yes I have it" and "the courier says it's coming" are different answers and
+   * only the first may release the order from the card.
+   */
+  async markFailedDeliveryAwaiting(id: string, by: string): Promise<TransactionDocument> {
+    const tx = await this.transactionModel.findById(id).exec();
+    if (!tx) throw new NotFoundException('المعاملة غير موجودة');
+    if ((tx as any).failedDelivery) throw new BadRequestException('تم إنهاء معالجة هذا الطلب بالفعل');
+
+    const updated = await this.transactionModel
+      .findByIdAndUpdate(id, { $set: { shipIssueState: 'awaiting' } }, { new: true })
+      .exec();
+    this.emit('tx:updated', { _id: String(id) });
+    this.logger.log(`Failed delivery marked awaiting return — tx=${tx.ref || id} by=${by}`);
+    return updated as TransactionDocument;
+  }
+
+  /**
+   * Sends the order out again on a NEW waybill.
+   *
+   * ⚠ It does not create a second transaction. The courier needs a new waybill —
+   * a returned one cannot be reused — but the sale is the same sale: the same
+   * customer owes the same money for the same goods. A duplicate transaction
+   * would collide on the reference (sales refs are unique and digits-only) and
+   * would count the revenue and the stock deduction twice, which is only
+   * survivable by cancelling the original — and cancelling it would push the
+   * customer's already-paid money back through the vault and in again, two
+   * entries for cash that never moved.
+   *
+   * The previous waybill is pushed onto `shipmentAttempts` first, because
+   * `bostaOrderId` / `bostaTrackingNumber` are single fields and creating the new
+   * shipment overwrites them, erasing the attempt that failed.
+   */
+  async reshipFailedDelivery(
+    id: string,
+    dto: { addShipCost?: number; chargeCustomer?: boolean; note?: string },
+    by: string,
+  ): Promise<TransactionDocument> {
+    const tx = await this.transactionModel.findById(id).exec();
+    if (!tx) throw new NotFoundException('المعاملة غير موجودة');
+    if (tx.cancelled) throw new BadRequestException('المعاملة ملغاة');
+    if ((tx as any).failedDelivery) throw new BadRequestException('تم إنهاء معالجة هذا الطلب بالفعل');
+
+    const addShipCost = Math.max(0, Number(dto.addShipCost) || 0);
+    const chargeCustomer = dto.chargeCustomer !== false; // default: the customer pays for the retry
+    const attempts = ((tx as any).shipmentAttempts || []) as any[];
+    const now = new Date().toISOString();
+
+    const set: Record<string, unknown> = {
+      shipIssueState: 'reshipped',
+      // Cleared so the new journey starts from scratch; the old codes live on in
+      // the attempt entry pushed below.
+      bostaStatus: '',
+      bostaStatusLabel: '',
+      bostaShippingStatus: '',
+      bostaOrderId: '',
+      bostaTrackingNumber: '',
+      // ⚠ NOT 'Ready'. `_dashShipStatus` reads pickupStatus === 'Ready' as the
+      // CREATED stage, so the order appeared in «قيد الشحن» as a live shipment
+      // the moment reship was pressed — before anyone sent anything to the
+      // courier and with no waybill to track. 'Preparing' is the truthful state:
+      // it is being made ready to go out again, and the card ignores it until a
+      // real Bosta order exists.
+      pickupStatus: 'Preparing',
+      shippedAt: null,
+    };
+
+    if (addShipCost > 0) {
+      if (chargeCustomer) {
+        // The retry is billed to the customer: the order grows and so does what
+        // is still owed on it, which is what the courier will collect.
+        set.shipCost = (Number(tx.shipCost) || 0) + addShipCost;
+        set.total = (Number(tx.total) || 0) + addShipCost;
+        set.remaining = (Number(tx.remaining) || 0) + addShipCost;
+        set.payStatus = 'معلق';
+      } else {
+        // The shop eats it — same treatment as the return leg: a cost on the
+        // order, no vault entry.
+        set.shipLoss = (Number(tx.shipLoss) || 0) + addShipCost;
+      }
+    }
+
+    const updated = await this.transactionModel
+      .findByIdAndUpdate(
+        id,
+        {
+          $set: set,
+          $push: {
+            shipmentAttempts: {
+              attemptNo: attempts.length + 1,
+              bostaOrderId: (tx as any).bostaOrderId || '',
+              bostaTrackingNumber: (tx as any).bostaTrackingNumber || '',
+              finalStatus: (tx as any).bostaStatus || '',
+              shipCost: Number(tx.shipCost) || 0,
+              chargedToCustomer: chargeCustomer,
+              startedAt: (tx as any).shippedAt || '',
+              endedAt: now,
+              by,
+            },
+          },
+        },
+        { new: true },
+      )
+      .exec();
+
+    await this.followUpsService.closeShippingIssueFollowUp(
+      String(id),
+      `إعادة شحن — محاولة رقم ${attempts.length + 2}`,
+      by,
+    );
+
+    this.emit('tx:updated', { _id: String(id) });
+    this.logger.log(
+      `Reship prepared — tx=${tx.ref || id} attempt=${attempts.length + 2} addShip=${addShipCost} chargeCustomer=${chargeCustomer} by=${by}`,
+    );
+    return updated as TransactionDocument;
+  }
+
+  /**
+   * Backfills `shipIssueState` on orders that came back before this feature
+   * existed. Without it those orders sit in the card with no way to answer the
+   * receipt question — the card only offers it on rows carrying the state.
+   *
+   * Only ever opens an issue on an order that is not cancelled, was never
+   * delivered, and has no closing decision — so running it twice is harmless.
+   * `dryRun` defaults to true, matching the Shopify movement backfill.
+   */
+  async backfillShipIssueState(refs: string[] | undefined, dryRun: boolean): Promise<{
+    scanned: number;
+    updated: number;
+    dryRun: boolean;
+    rows: Array<{ ref: string; client: string; bostaStatus: string; action: string }>;
+  }> {
+    const query: Record<string, unknown> = {
+      type: 'مبيعات',
+      cancelled: { $ne: true },
+      bostaStatus: { $in: ['RETURNED', 'FAILED_ATTEMPT'] },
+    };
+    if (refs?.length) query.ref = { $in: refs.map((r) => String(r).replace(/^#+/, '').trim()) };
+
+    const candidates = await this.transactionModel.find(query).exec();
+    const rows: Array<{ ref: string; client: string; bostaStatus: string; action: string }> = [];
+    let updated = 0;
+
+    for (const tx of candidates) {
+      const ref = tx.ref || String(tx._id);
+      if ((tx as any).failedDelivery) {
+        rows.push({ ref, client: tx.client || '', bostaStatus: (tx as any).bostaStatus || '', action: 'تم إنهاؤه سابقاً — تُخُطّي' });
+        continue;
+      }
+      if ((tx as any).deliveredAt) {
+        rows.push({ ref, client: tx.client || '', bostaStatus: (tx as any).bostaStatus || '', action: 'تم تسليمه — مرتجع عميل وليس فشل توصيل' });
+        continue;
+      }
+      if ((tx as any).shipIssueState) {
+        rows.push({ ref, client: tx.client || '', bostaStatus: (tx as any).bostaStatus || '', action: 'مفتوح بالفعل — تُخُطّي' });
+        continue;
+      }
+      rows.push({ ref, client: tx.client || '', bostaStatus: (tx as any).bostaStatus || '', action: 'سيُفتح للمعالجة' });
+      if (!dryRun) {
+        await this.transactionModel.updateOne(
+          { _id: tx._id },
+          {
+            $set: {
+              shipIssueState: 'open',
+              shipIssueTrigger: (tx as any).bostaStatus || 'RETURNED',
+              shipIssueOpenedAt: (tx as any).bostaLastSync || tx.date || new Date().toISOString(),
+            },
+          },
+        ).exec();
+        updated++;
+      }
+    }
+
+    if (updated > 0) this.emit('tx:updated', { _id: '' });
+    this.logger.log(`backfillShipIssueState — scanned=${candidates.length} updated=${updated} dryRun=${dryRun}`);
+    return { scanned: candidates.length, updated, dryRun, rows };
   }
 
   async requestCancel(
@@ -1750,6 +2142,7 @@ export class TransactionsService {
     if (tx.payStatus === 'مكتمل') {
       throw new BadRequestException('المعاملة محصلة بالفعل');
     }
+    this.assertNoOpenShipIssue(tx, 'التحصيل');
     const totalRemaining = tx.remaining || 0;
     const isPurchase = tx.type === 'مشتريات';
 

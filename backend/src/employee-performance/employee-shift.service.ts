@@ -110,6 +110,49 @@ export class EmployeeShiftService {
     return null;
   }
 
+  /**
+   * Every employee who could take an assignment right now, split into tiers.
+   *
+   * `resolveAssignee` answers "who owns this?" and returns exactly one person —
+   * correct for routing a Shopify order, which has one owner. Assigning a live
+   * delivery problem is a different question: it should go to somebody who is
+   * actually at a screen, so the caller needs the whole candidate set to
+   * intersect against who is online. Neither list is ordered by preference; the
+   * caller decides.
+   *
+   * Never throws — assignment is advisory and must not block ingestion.
+   */
+  async listShiftCandidates(atIso: string): Promise<{
+    onShift: Array<{ userId: string; name: string }>;
+    scheduled: Array<{ userId: string; name: string }>;
+    onCall: { userId: string; name: string } | null;
+  }> {
+    const empty = { onShift: [], scheduled: [], onCall: null };
+    try {
+      const at = new Date(atIso);
+      if (isNaN(at.getTime())) return empty;
+
+      const hh = String(at.getUTCHours()).padStart(2, '0');
+      const mm = String(at.getUTCMinutes()).padStart(2, '0');
+      const timeOfDay = `${hh}:${mm}`;
+
+      const activeShifts = await this.shiftModel.find({ isActive: true }).exec();
+      const pick = (s: EmployeeShiftDocument) => ({ userId: s.userId, name: s.name });
+
+      const onCallDoc = activeShifts.find((s) => s.isOnCall) || null;
+      return {
+        onShift: activeShifts
+          .filter((s) => this.isWithinShiftWindow(timeOfDay, s.shiftStart, s.shiftEnd))
+          .map(pick),
+        scheduled: activeShifts.map(pick),
+        onCall: onCallDoc ? pick(onCallDoc) : null,
+      };
+    } catch (err) {
+      this.logger.warn(`listShiftCandidates failed: ${(err as Error).message}`);
+      return empty;
+    }
+  }
+
   /** Tests whether `time` (HH:mm) falls in [start, end), handling overnight-wrapping windows (end < start). */
   private isWithinShiftWindow(time: string, start: string, end: string): boolean {
     if (start === end) return false; // zero-width window, misconfiguration guard

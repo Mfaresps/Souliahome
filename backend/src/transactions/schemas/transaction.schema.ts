@@ -500,6 +500,79 @@ export class Transaction {
     vaultEntryId?: string; // linked vault entry
     bostaRef?: string;     // Bosta tracking/order reference for traceability
   }>;
+
+  // ── Failed-delivery processing ─────────────────────────────────────────────
+  // These five fields are the whole "does this order still need attention?"
+  // answer. They exist because the dashboard's مشاكل الشحن card used to read
+  // `bostaStatus` directly, and Bosta never changes RETURNED once it settles —
+  // so a row could enter that card and had no way to ever leave it.
+  //
+  // ⚠ The card must filter on `shipIssueState`, never on `bostaStatus`.
+
+  /**
+   * ''          – no delivery problem was ever reported
+   * 'open'      – reported; nobody has resolved it yet
+   * 'reshipped' – a new waybill went out, the order is back in the shipping cycle
+   * 'awaiting'  – goods heading back to us; physical receipt not confirmed yet
+   * 'closed'    – finished, whatever the outcome. Leaves the card.
+   */
+  @Prop({ default: '' })
+  shipIssueState: string;
+
+  /** ISO timestamp the problem was first reported by the courier */
+  @Prop({ default: '' })
+  shipIssueOpenedAt: string;
+
+  /** Courier status code that opened it, e.g. 'RETURNED' */
+  @Prop({ default: '' })
+  shipIssueTrigger: string;
+
+  /**
+   * The closing decision. Written once by closeFailedDelivery() and never edited.
+   * `null` until closed — declared `type: Object` because a nullable @Prop with
+   * no explicit type throws CannotDetermineTypeError at module load and takes
+   * the entire API down with it (see CLAUDE.md).
+   *
+   *   outcome:      'refused' | 'unreachable' | 'bad-address' | 'courier-error' | 'lost'
+   *   goodsBack:    false only for 'lost' — the shipment never came back
+   *   returnShipCost: what the courier charges for the return leg. Recorded as a
+   *                 cost on this order, NOT posted to the vault: the courier nets
+   *                 it out of other orders' collections, so the vault already
+   *                 falls by that amount when the smaller transfer lands.
+   *   refundAmount / shipRetained: set only when the customer's money was held.
+   */
+  @Prop({ type: Object, default: null })
+  failedDelivery: {
+    outcome: string;
+    goodsBack: boolean;
+    returnShipCost: number;
+    refundAmount: number;
+    shipRetained: number;
+    refundVaultEntryId?: string;
+    retainedVaultEntryId?: string;
+    note?: string;
+    closedAt: string;
+    closedBy: string;
+  } | null;
+
+  /**
+   * One entry per waybill this order has travelled on. Needed because
+   * bostaOrderId/bostaTrackingNumber are single fields: shipping a second time
+   * overwrites them, erasing the record of the attempt that failed. Appended by
+   * reship() before the new waybill is created.
+   */
+  @Prop({ type: [Object], default: [] })
+  shipmentAttempts: Array<{
+    attemptNo: number;
+    bostaOrderId: string;
+    bostaTrackingNumber: string;
+    finalStatus: string;   // status this attempt ended on, e.g. 'RETURNED'
+    shipCost: number;      // what this attempt cost
+    chargedToCustomer: boolean;
+    startedAt: string;
+    endedAt: string;
+    by: string;
+  }>;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);

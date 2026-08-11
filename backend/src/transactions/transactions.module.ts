@@ -21,6 +21,7 @@ import { ShopifyModule } from '../shopify/shopify.module';
 import { SupplierLedgerModule } from '../supplier-ledger/supplier-ledger.module';
 import { SuppliersModule } from '../suppliers/suppliers.module';
 import { InventoryMovementsModule } from '../inventory-movements/inventory-movements.module';
+import { FollowUpsModule } from '../followups/followups.module';
 
 @Module({
   imports: [
@@ -42,6 +43,10 @@ import { InventoryMovementsModule } from '../inventory-movements/inventory-movem
     SupplierLedgerModule,
     SuppliersModule,
     forwardRef(() => InventoryMovementsModule),
+    // Closing a failed delivery closes its follow-up ticket in the same call.
+    // forwardRef because BostaModule already bridges these two in the other
+    // direction, and this side must not be the one that decides load order.
+    forwardRef(() => FollowUpsModule),
   ],
   controllers: [TransactionsController],
   providers: [TransactionsService, ReferenceDetailService, ReportsExportService],

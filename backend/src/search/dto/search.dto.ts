@@ -25,6 +25,8 @@ export interface SearchResultItem {
   readonly createdAt?: string;
   readonly payStatus?: string;
   readonly bostaStatusLabel?: string;
+  /** عدد مرات الشحن السابقة — الواجهة بتعرض «بانتظار شحنة N» بدل «لم تُشحن». */
+  readonly shipmentAttempts?: number;
   readonly shopifyStatus?: string;
   readonly shopifyCancelled?: boolean;
   /**

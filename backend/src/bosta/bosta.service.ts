@@ -607,6 +607,20 @@ export class BostaService {
     if (tx.type !== 'مبيعات') return { success: false, error: 'هذا الإجراء متاح فقط لمعاملات المبيعات' };
     if (tx.bostaStatus === 'DELIVERED') return { success: false, error: 'الطلب مُسجل بالفعل كـ "تم التسليم"' };
 
+    // ⚠ A shipment the courier sent back was, by definition, delivered to nobody.
+    // Stamping it DELIVERED here is not just a wrong record: `deliveredAt` is
+    // exactly what closeFailedDelivery() refuses to act on (an order that
+    // reached the customer belongs to the returns module, not this path), so a
+    // single mis-click would strand the order with no exit at all — closable
+    // neither as a failed delivery nor as a customer return.
+    const shipIssueState = (tx as any).shipIssueState || '';
+    if (shipIssueState === 'open' || shipIssueState === 'awaiting') {
+      return {
+        success: false,
+        error: 'شركة الشحن رجّعت هذا الطلب — لا يمكن تأكيد تسليمه. أنهِ معالجة فشل التوصيل من الفاتورة أولاً',
+      };
+    }
+
     const now = new Date().toISOString();
     const previousStatus = tx.bostaStatus || '';
     const previousStatusLabel = tx.bostaStatusLabel || '';
@@ -858,18 +872,50 @@ export class BostaService {
       }
     }
 
-    // A shipment that just entered a delivery-problem state opens a
-    // "مشكلة في الاستلام" follow-up assigned to the employee on shift. Only on
-    // the *transition* — a repeated webhook carrying the same failed status must
-    // not re-fire (openShippingIssueFollowUp is idempotent too, but not firing
-    // at all is cheaper). Fire-and-forget: status ingestion never waits on, or
-    // fails because of, follow-up creation.
+    // ── A shipment that just entered a delivery-problem state ────────────────
+    //
+    // Two things happen, and they are separate on purpose:
+    //   1. `shipIssueState` opens on the transaction. THIS is what the dashboard
+    //      card reads. It is not derived from bostaStatus, because Bosta never
+    //      changes RETURNED once it settles and a derived card could never empty.
+    //   2. A follow-up ticket opens so somebody actually calls the customer.
+    //
+    // Only on the *transition* — a repeated webhook carrying the same failed
+    // status must not re-fire.
+    //
+    // ⚠ A shipment that was DELIVERED and only afterwards came back is NOT a
+    // failed delivery — it is a customer return, and it belongs to the returns
+    // module (refund ceiling, approval, condition). Sending it down this path
+    // would refund nothing and cancel a sale the customer actually completed.
+    // The test is delivery, not money: with cash-on-delivery the two coincide,
+    // but a prepaid order can be paid and never delivered.
     if (currentStatus !== statusCode && FollowUpsService.isShippingIssueStatus(statusCode)) {
-      this.followUpsService
-        .openShippingIssueFollowUp(tx as any, statusCode)
-        .catch((err) =>
-          this.logger.error(`Auto follow-up failed for tx ${txId}: ${(err as Error).message}`),
+      const wasDelivered = !!tx.deliveredAt || currentStatus === 'DELIVERED';
+      if (wasDelivered) {
+        this.logger.log(
+          `Bosta ${statusCode} on an already-delivered order — tx=${txId} treated as a customer return, not a failed delivery`,
         );
+      } else {
+        // Reopens a previously closed issue too: a re-shipped order that fails
+        // again is a live problem, and its old closing decision no longer holds.
+        await this.txModel.findByIdAndUpdate(txId, {
+          $set: {
+            shipIssueState: 'open',
+            shipIssueTrigger: statusCode,
+            shipIssueOpenedAt: tx.shipIssueOpenedAt || now,
+            ...(tx.shipIssueState === 'closed' ? { failedDelivery: null } : {}),
+          },
+        });
+        this.emit('tx:updated', { _id: txId });
+
+        // Fire-and-forget: status ingestion never waits on, or fails because
+        // of, follow-up creation.
+        this.followUpsService
+          .openShippingIssueFollowUp(tx as any, statusCode)
+          .catch((err) =>
+            this.logger.error(`Auto follow-up failed for tx ${txId}: ${(err as Error).message}`),
+          );
+      }
     }
 
     return { success: true, status: statusCode, statusLabel, raw: res };

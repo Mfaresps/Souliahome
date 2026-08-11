@@ -438,6 +438,10 @@ export class SearchService {
       createdAt: tx.createdAt,
       payStatus: tx.payStatus,
       bostaStatusLabel: tx.bostaStatusLabel || '',
+      // عدد مرات الشحن السابقة. لازم يوصل للواجهة لأن إعادة الشحن بتفضّي
+      // `bostaStatusLabel` (بوليصة جديدة لسه ما اتبعتتش)، فنتيجة البحث كانت
+      // بتقرا «لم تُشحن» على طلب اتشحن ورجع — وده عكس الحقيقة مش مجرد نقص.
+      shipmentAttempts: Array.isArray(tx.shipmentAttempts) ? tx.shipmentAttempts.length : 0,
       score,
     };
   }
@@ -463,7 +467,7 @@ export class SearchService {
     const transactions = await this.transactionModel
       .find({ ...TX_ACTIVE_FILTER, ref: { $regex: `^${escapeRegex(ref)}`, $options: 'i' } })
       .select(
-        'ref client phone type total payStatus items createdAt bostaStatusLabel bostaTrackingNumber notes',
+        'ref client phone type total payStatus items createdAt bostaStatusLabel bostaTrackingNumber shipmentAttempts notes',
       )
       .sort({ ref: 1 })
       .limit(200)
@@ -493,7 +497,7 @@ export class SearchService {
         bostaTrackingNumber: { $regex: `^${escapeRegex(trackingNo)}`, $options: 'i' },
       })
       .select(
-        'ref client phone type total payStatus items createdAt bostaStatusLabel bostaTrackingNumber notes',
+        'ref client phone type total payStatus items createdAt bostaStatusLabel bostaTrackingNumber shipmentAttempts notes',
       )
       .sort({ createdAt: -1 })
       .limit(200)
@@ -574,7 +578,7 @@ export class SearchService {
     const transactions = await this.transactionModel
       .find({ ...TX_ACTIVE_FILTER, phone: { $regex: escapeRegex(phone), $options: 'i' } })
       .select(
-        'ref client phone type total payStatus items createdAt bostaStatusLabel bostaTrackingNumber notes',
+        'ref client phone type total payStatus items createdAt bostaStatusLabel bostaTrackingNumber shipmentAttempts notes',
       )
       .sort({ createdAt: -1 })
       .limit(300)
@@ -682,7 +686,7 @@ export class SearchService {
     const transactions = await this.transactionModel
       .find(TX_ACTIVE_FILTER)
       .select(
-        'ref client phone type total payStatus notes items createdAt bostaStatusLabel bostaTrackingNumber',
+        'ref client phone type total payStatus notes items createdAt bostaStatusLabel bostaTrackingNumber shipmentAttempts',
       )
       .sort({ createdAt: -1 })
       .limit(2000)
