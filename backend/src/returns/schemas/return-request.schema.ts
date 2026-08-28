@@ -10,6 +10,20 @@ export class ReturnItem {
   @Prop({ required: true })
   name: string;
 
+  /**
+   * صورة الصنف — منسوخة من سطر الفاتورة الأصلية وقت تقديم الطلب.
+   *
+   * بتتنسخ على معاملة الـ'مرتجع' كما هي (`items: ret.items` في
+   * `ReturnsService.approve`)، وهي دي اللي بتتعرض في صفحة الفاتورة. من غير
+   * الحقل ده كل سطور المرتجعات بتعرض الأيقونة البديلة — نفس العطل بالظبط
+   * اللي كان في `TransactionItem.imageUrl`.
+   *
+   * اختياري: السطور القديمة والطلبات اللي بتتبعت من غير صورة تفضل شغالة زي
+   * ما هي وتعرض الأيقونة البديلة.
+   */
+  @Prop({ default: '' })
+  imageUrl: string;
+
   @Prop({ required: true })
   qty: number;
 

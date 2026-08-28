@@ -14,8 +14,13 @@ describe('SettingsService backup coverage', () => {
   const SECTIONS: Record<string, string[]> = (SettingsService as any).SECTION_COLLECTIONS;
   const sectionCols = Object.values(SECTIONS).flat();
 
-  /** `users` is backed up for reference but intentionally never restored. */
-  const NEVER_RESTORED = ['users'];
+  /**
+   * Nothing is backed up and then left unrestorable any more. `users` used to be —
+   * captured, then skipped by both restore paths — which is why a restore onto a clean
+   * database produced a full transaction history with no employee accounts and a
+   * performance leaderboard of unresolvable ids.
+   */
+  const NEVER_RESTORED: string[] = [];
 
   it('backs up every collection that clear-data is allowed to wipe', () => {
     // Otherwise the "safety backup" taken before a wipe cannot actually restore what it wiped.
@@ -45,8 +50,27 @@ describe('SettingsService backup coverage', () => {
     expect(duplicates).toEqual([]);
   });
 
-  it('never restores the users collection', () => {
-    expect(sectionCols).not.toContain('users');
+  it('restores the users collection, so employee accounts survive a restore', () => {
+    // The regression this replaces: `users` was captured but skipped on restore, so
+    // accounts, job titles, perms — and every performance log's employeeId target —
+    // vanished on a restore to a fresh database.
+    expect(BACKUP).toContain('users');
+    expect(sectionCols).toContain('users');
+  });
+
+  it('never lets clear-data wipe the users collection', () => {
+    // Restoring users is safe only because it is a MERGE. Clear-data has no merge path,
+    // so accounts must stay out of ALLOWED_COLLECTIONS or a wipe locks everyone out.
+    expect(ALLOWED).not.toContain('users');
+  });
+
+  it('keeps employee accounts and their performance data in the same section', () => {
+    // Restoring points without the accounts they belong to yields a leaderboard of ids
+    // nobody can read; restoring them separately makes that the default outcome.
+    const sectionOf = (col: string) =>
+      Object.keys(SECTIONS).find(k => SECTIONS[k].includes(col));
+    expect(sectionOf('users')).toBe(sectionOf('employeeperformancelogs'));
+    expect(sectionOf('users')).toBe(sectionOf('employeeshifts'));
   });
 
   it('has no duplicate entries in the backup list', () => {

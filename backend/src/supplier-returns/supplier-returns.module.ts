@@ -10,6 +10,7 @@ import { SrAllocationService } from './allocation.service';
 import { TransactionsModule } from '../transactions/transactions.module';
 import { SuppliersModule } from '../suppliers/suppliers.module';
 import { SupplierLedgerModule } from '../supplier-ledger/supplier-ledger.module';
+import { ProductsModule } from '../products/products.module';
 
 @Module({
   imports: [
@@ -19,6 +20,10 @@ import { SupplierLedgerModule } from '../supplier-ledger/supplier-ledger.module'
     TransactionsModule,
     SuppliersModule,
     SupplierLedgerModule,
+    // لحل صورة الصنف بالكود في مسار التخصيص العام (fifo/average/manual/none)،
+    // اللي مافيهوش فاتورة أصلية واحدة نقرأ منها. مفيش دورة: ProductsModule
+    // مابيستوردش supplier-returns.
+    ProductsModule,
   ],
   controllers: [SupplierReturnsController],
   providers: [SupplierReturnsService, SrAllocationService],

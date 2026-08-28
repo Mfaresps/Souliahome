@@ -10,6 +10,7 @@ import {
   IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { CANCEL_REASON_CODES } from '../../shared/cancellation.constants';
 
 export class TransactionItemDto {
   @IsString()
@@ -23,6 +24,25 @@ export class TransactionItemDto {
   @IsString()
   @IsNotEmpty()
   readonly name: string;
+
+  /**
+   * صورة الصنف وقت البيع — منسوخة من `Product.imageUrl` على السطر نفسه.
+   *
+   * ⚠ الحقل ده إجباري في الـDTO مش «تحسين اختياري»: الـValidationPipe شغّال
+   * بـ`whitelist:true` + `forbidNonWhitelisted:false`، يعني أي خاصية مش معرّفة
+   * هنا **بتتشال في صمت** من غير أي خطأ. الـfrontend (`saveTx`) وShopify
+   * (`mapItems`) الاتنين بيبعتوا `imageUrl` من الأول، والـschema
+   * (`TransactionItem.imageUrl`) مستنياه — لكن غياب السطر ده هو اللي كان
+   * بيمسحه بين الاتنين، فكل الـ1180 سطر في قاعدة البيانات اتخزنوا من غير صورة
+   * وكل الفواتير بتعرض أيقونة بديلة. **متشلوش السطر ده.**
+   *
+   * بتتخزن على المعاملة (denormalised) مش بتتقرا من `products` وقت العرض،
+   * لأن الفاتورة سجل تاريخي: تغيير صورة المنتج بعد سنة مالازمش يغيّر شكل
+   * فاتورة اتطبعت واتسلّمت للعميل.
+   */
+  @IsString()
+  @IsOptional()
+  readonly imageUrl?: string;
 
   @IsNumber()
   @Min(1)
@@ -123,6 +143,14 @@ export class CreateTransactionDto {
   @IsString()
   @IsOptional()
   readonly shipCo?: string;
+
+  /**
+   * Carrier code (shared/carriers.constants.ts). Validated against the backend's own copy of the
+   * list in TransactionsService — never trusted from the client.
+   */
+  @IsString()
+  @IsOptional()
+  readonly carrierCode?: string;
 
   @IsString()
   @IsOptional()
@@ -250,6 +278,14 @@ export class UpdateTransactionDto {
   @IsOptional()
   readonly shipCo?: string;
 
+  /**
+   * Carrier code (shared/carriers.constants.ts). Validated against the backend's own copy of the
+   * list in TransactionsService — never trusted from the client.
+   */
+  @IsString()
+  @IsOptional()
+  readonly carrierCode?: string;
+
   @IsString()
   @IsOptional()
   readonly shipZone?: string;
@@ -330,9 +366,27 @@ export class UpdateTransactionDto {
 }
 
 export class CancelTransactionDto {
+  /**
+   * Free-text summary. Still accepted — and still required when no code is sent — so any
+   * un-migrated caller keeps working. When `cancelReasonCode` is present the service DERIVES this
+   * from the code + note and ignores whatever was sent here.
+   */
   @IsString()
-  @IsNotEmpty()
-  readonly cancelReason: string;
+  @IsOptional()
+  readonly cancelReason?: string;
+
+  /** The countable reason. See shared/cancellation.constants.ts. */
+  @IsString()
+  @IsOptional()
+  @IsIn(CANCEL_REASON_CODES, {
+    message: 'سبب الإلغاء غير معروف',
+  })
+  readonly cancelReasonCode?: string;
+
+  /** Free-text detail alongside the code. The service requires it when the code is `other`. */
+  @IsString()
+  @IsOptional()
+  readonly cancelReasonNote?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -452,9 +506,21 @@ export class PostDiscountDto {
 }
 
 export class RequestCancelDto {
+  /** Derived from the code when one is sent; see CancelTransactionDto.cancelReason. */
   @IsString()
-  @IsNotEmpty()
-  readonly reason: string;
+  @IsOptional()
+  readonly reason?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(CANCEL_REASON_CODES, {
+    message: 'سبب الإلغاء غير معروف',
+  })
+  readonly cancelReasonCode?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly cancelReasonNote?: string;
 
   @IsString()
   @IsNotEmpty()

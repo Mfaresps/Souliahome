@@ -231,6 +231,25 @@ const BOSTA_STATUS_RANK: Record<string, number> = {
   CANCELLED:         5,
 };
 
+/**
+ * Courier statuses that end an open shipping issue on their own.
+ *
+ * DELIVERED is the obvious one. The three in-transit codes matter just as much:
+ * Bosta reports FAILED_ATTEMPT and then simply tries again, so an order can
+ * spend days back on the road while our card still asks somebody to "handle"
+ * a problem the courier already moved past.
+ *
+ * ⚠ RETURNED and CANCELLED are deliberately absent — those END a delivery, they
+ * do not resolve it, and they need the human decision `closeFailedDelivery`
+ * records (goods back? refund? who pays the return leg?).
+ */
+const SHIP_ISSUE_RESOLVING_STATUSES = [
+  'DELIVERED',
+  'IN_TRANSIT',
+  'OUT_FOR_DELIVERY',
+  'PICKED_UP',
+];
+
 export interface BostaCreateResult {
   success: boolean;
   bostaOrderId?: string;
@@ -498,6 +517,14 @@ export class BostaService {
         ...(hasCod ? { bostaOriginalCod: tx.remaining } : {}),
         bostaLastSync: new Date().toISOString(),
         bostaRawResponse: res,
+        // تجميد العنوان الذي شُحنت عليه الشحنة فعلاً — هذه القيم هي ما استلمته Bosta،
+        // ولا تتغير بعدها أبداً. بدونها لا يمكن اكتشاف أن شوبيفاي عدّلت العنوان لاحقاً.
+        bostaShippedAddress: {
+          firstLine,
+          city,
+          phone: phoneClean || '',
+          sentAt: new Date().toISOString(),
+        },
         // Creating a Bosta order only registers the shipment — the courier has not collected it
         // yet, so it stays "Ready to Ship". syncStatus() promotes it to 'Shipped' once Bosta
         // reports PICKED_UP, which is when it is actually on its way.
@@ -915,6 +942,52 @@ export class BostaService {
           .catch((err) =>
             this.logger.error(`Auto follow-up failed for tx ${txId}: ${(err as Error).message}`),
           );
+      }
+    }
+
+    // ── The courier resolved the problem itself ──────────────────────────────
+    //
+    // The block above only ever *opens* `shipIssueState`. Nothing closed it
+    // except a human pressing a button, so an order Bosta reported as RETURNED
+    // and then delivered anyway kept its open issue forever: the dashboard row
+    // showed a green `Delivered` badge next to a red "معالجة الطلب" button, and
+    // `assertNoOpenShipIssue` went on blocking actions on a completed order.
+    //
+    // The rule mirrors the one above, in the opposite direction: there, an order
+    // already delivered can never enter a delivery problem; here, an order that
+    // reaches the customer — or simply goes back on the road — is no longer one.
+    //
+    // ⚠ Only 'open'/'awaiting' are touched. 'reshipped' and 'closed' are human
+    // decisions and stay untouched; '' means there was never a problem.
+    if (currentStatus !== statusCode && SHIP_ISSUE_RESOLVING_STATUSES.includes(statusCode)) {
+      const openState = (tx as any).shipIssueState || '';
+      if (openState === 'open' || openState === 'awaiting') {
+        const delivered = statusCode === 'DELIVERED';
+        await this.txModel.findByIdAndUpdate(txId, {
+          $set: {
+            shipIssueState: 'closed',
+            // The trail is kept deliberately: `shipIssueTrigger` and
+            // `shipIssueOpenedAt` stay as written, and the outcome below records
+            // that this order did fail an attempt before it succeeded. Nulling
+            // it would make the courier look perfect in hindsight.
+            failedDelivery: {
+              outcome: delivered ? 'delivered-after-issue' : 'back-in-transit',
+              goodsBack: false,
+              returnShipCost: 0,
+              refundAmount: 0,
+              shipRetained: 0,
+              note: delivered
+                ? `أبلغت شركة الشحن عن مشكلة (${(tx as any).shipIssueTrigger || currentStatus || '—'}) ثم سلّمت الطلب — أُغلقت المعالجة تلقائياً`
+                : `أبلغت شركة الشحن عن مشكلة (${(tx as any).shipIssueTrigger || currentStatus || '—'}) ثم عادت الشحنة للطريق (${statusLabel}) — أُغلقت المعالجة تلقائياً`,
+              closedAt: now,
+              closedBy: `bosta:${source}`,
+            },
+          },
+        });
+        this.emit('tx:updated', { _id: txId });
+        this.logger.log(
+          `Shipping issue auto-closed by courier update — tx=${txId} ${openState} → closed (${statusCode})`,
+        );
       }
     }
 

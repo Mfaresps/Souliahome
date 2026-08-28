@@ -7,6 +7,7 @@ import { resolveVaultSegmentFromPaymentMethod } from './vault-segment.util';
 import { generateVaultTexts } from './vault-description.util';
 import { CreateVaultEntryDto, UpdateVaultEntryDto } from './dto/vault.dto';
 import { PresenceGateway } from '../auth/presence.gateway';
+import { dateOnly, dateWindowQuery, normalizeDateOnly } from '../shared/date-window.util';
 
 @Injectable()
 export class VaultService {
@@ -59,11 +60,9 @@ export class VaultService {
 
   async findAll(from?: string, to?: string): Promise<VaultEntryDocument[]> {
     const filter: Record<string, unknown> = {};
-    if (from || to) {
-      filter.date = {};
-      if (from) (filter.date as Record<string, string>).$gte = from;
-      if (to) (filter.date as Record<string, string>).$lte = to;
-    }
+    // Day-window bounds — an exact `$lte` drops timestamped entries on the last day.
+    const window = dateWindowQuery(from, to);
+    if (window) filter.date = window;
     return this.vaultModel.find(filter).sort({ createdAt: -1 }).exec();
   }
 
@@ -128,7 +127,11 @@ export class VaultService {
   }
 
   async addEntry(dto: CreateVaultEntryDto, employee?: string): Promise<VaultEntryDocument> {
-    const date = dto.date || new Date().toISOString().split('T')[0];
+    // ⚠ Normalised to YYYY-MM-DD. The fallback below was always truncated, but a caller-supplied
+    //   `dto.date` used to be stored verbatim — which is how 10 of 766 vault entries came to hold
+    //   a full ISO timestamp and why the day-window helpers exist. New rows stay clean.
+    const date =
+      normalizeDateOnly(dto.date) || new Date().toISOString().split('T')[0];
     const desc = dto.desc || 'تعديل يدوي';
 
     // ── 1. Amount format & range guard ──
@@ -579,11 +582,14 @@ export class VaultService {
 
     // Only count 'completed' entries for analytics (exclude frozen & cancelled)
     const query = { status: 'completed', ...(seg ? { seg } : {}) };
+    // ⚠ Day-window bounds, not exact `$lte`: some entries store `date` as a full ISO
+    //   timestamp, and those sort AFTER a bare date — so an exact bound dropped every
+    //   timestamped entry on the last day. See date-window.util.ts.
     const currentEntries = await this.vaultModel
-      .find({ ...query, date: { $gte: fromStr, $lte: toStr } })
+      .find({ ...query, date: dateWindowQuery(fromStr, toStr) })
       .exec();
     const prevEntries = await this.vaultModel
-      .find({ ...query, date: { $gte: prevFromStr, $lte: prevToStr } })
+      .find({ ...query, date: dateWindowQuery(prevFromStr, prevToStr) })
       .exec();
 
     // Calculate metrics
@@ -592,7 +598,11 @@ export class VaultService {
 
     const dailyByDate: Record<string, number> = {};
     currentEntries.forEach((e) => {
-      dailyByDate[e.date] = (dailyByDate[e.date] || 0) + e.amount;
+      // ⚠ Bucket by the DAY, as in getCashflow below. Keying on the raw `date` split a
+      //   timestamped entry into its own bucket, which inflated `daysWithEntries` (the divisor
+      //   for dailyAverage) and could surface a raw ISO string as the bestDay/worstDay label.
+      const day = dateOnly(e.date);
+      dailyByDate[day] = (dailyByDate[day] || 0) + e.amount;
     });
 
     const daysWithEntries = Object.keys(dailyByDate).length || 1;
@@ -683,17 +693,21 @@ export class VaultService {
     // Only count 'completed' entries for cash flow (exclude frozen & cancelled)
     const query = { status: 'completed', ...(seg ? { seg } : {}) };
     const entries = await this.vaultModel
-      .find({ ...query, date: { $gte: fromStr, $lte: toStr } })
+      .find({ ...query, date: dateWindowQuery(fromStr, toStr) })
       .exec();
 
     // Build daily aggregates
     const dailyByDate: Record<string, { inflow: number; outflow: number }> = {};
     entries.forEach((e) => {
-      if (!dailyByDate[e.date]) {
-        dailyByDate[e.date] = { inflow: 0, outflow: 0 };
+      // ⚠ Bucket by the DAY. Keying on the raw `date` gave a timestamped entry its own bucket
+      //   ('2026-08-13T15:21:01.188Z'), which no day key below ever matches — so its amount
+      //   vanished from the chart even once the query above included it.
+      const day = dateOnly(e.date);
+      if (!dailyByDate[day]) {
+        dailyByDate[day] = { inflow: 0, outflow: 0 };
       }
-      if (e.amount > 0) dailyByDate[e.date].inflow += e.amount;
-      else dailyByDate[e.date].outflow += Math.abs(e.amount);
+      if (e.amount > 0) dailyByDate[day].inflow += e.amount;
+      else dailyByDate[day].outflow += Math.abs(e.amount);
     });
 
     // Fill missing days

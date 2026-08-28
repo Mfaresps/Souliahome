@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { carrierLabel, LEGACY_CARRIER_AR, LEGACY_CARRIER_CODE } from '../shared/carriers.constants';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -44,6 +45,7 @@ export interface AuditRow {
   syncLabel: string;
   cancelled: boolean;
   shipCo: string;
+  carrierCode: string;
   txId: string;
   hasProfit: boolean;
   hasShipping: boolean;
@@ -261,6 +263,7 @@ export class OrderAuditService {
           syncLabel: cancelled ? 'ملغي' : 'متزامن',
           cancelled,
           shipCo: String(tx.shipCo || tx.prepShipCo || ''),
+          carrierCode: String((tx as any).carrierCode || ''),
           txId: String(tx._id || ''),
           hasProfit: productCost > 0,
           hasShipping: shippingCost > 0 || actualShipCost > 0,
@@ -321,6 +324,7 @@ export class OrderAuditService {
                 : 'فشل المزامنة',
           cancelled: !!so.cancelled,
           shipCo: '',
+          carrierCode: '',
           txId: '',
           hasProfit: false,
           hasShipping: (Number(so.shipCost) || 0) > 0,
@@ -354,6 +358,7 @@ export class OrderAuditService {
         syncLabel: 'مفقود',
         cancelled: false,
         shipCo: '',
+        carrierCode: '',
         txId: '',
         hasProfit: false,
         hasShipping: false,
@@ -421,17 +426,26 @@ export class OrderAuditService {
       }
     }
 
-    const compMap = new Map<string, { orders: number; totalCost: number }>();
+    // Grouped by the stable carrier CODE, never by the free-text name: «Bosta», «bosta» and
+    // «بوسطة» are one carrier and were previously three rows. A row with no code — written before
+    // the carrier registry, or by a caller that sent an unrecognised name — falls back to its name
+    // so it stays visible, and only a genuinely empty one lands in «غير محدد». That bucket
+    // shrinking over time is the adoption metric; it is never dropped, so the company totals
+    // always add up to the shipments that actually happened.
+    const compMap = new Map<string, { code: string; name: string; orders: number; totalCost: number }>();
     for (const r of shipRows) {
-      const name = r.shipCo?.trim() || 'غير محدد';
-      const cur = compMap.get(name) || { orders: 0, totalCost: 0 };
+      const code = String(r.carrierCode || '').trim();
+      const key = code || r.shipCo?.trim() || LEGACY_CARRIER_CODE;
+      const name = code ? carrierLabel(code, 'ar') : r.shipCo?.trim() || LEGACY_CARRIER_AR;
+      const cur = compMap.get(key) || { code, name, orders: 0, totalCost: 0 };
       cur.orders += 1;
       cur.totalCost += shipCostOf(r);
-      compMap.set(name, cur);
+      compMap.set(key, cur);
     }
-    const companies = Array.from(compMap.entries())
-      .map(([name, v]) => ({
-        name,
+    const companies = Array.from(compMap.values())
+      .map((v) => ({
+        code: v.code,
+        name: v.name,
         orders: v.orders,
         totalCost: Math.round(v.totalCost),
         avgCost: v.orders > 0 ? Math.round(v.totalCost / v.orders) : 0,

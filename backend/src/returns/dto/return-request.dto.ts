@@ -26,6 +26,18 @@ export class ReturnItemDto {
   @IsNotEmpty()
   readonly name: string;
 
+  /**
+   * صورة الصنف، منقولة من سطر الفاتورة الأصلية.
+   *
+   * ⚠ لازم يفضل معرّف هنا: الـValidationPipe شغّال بـ`whitelist:true`
+   * (شوف main.ts)، فأي خاصية مش معرّفة في الـDTO **بتتشال في صمت** قبل ما
+   * توصل الـschema — وده بالظبط اللي كان بيمسح `imageUrl` من كل سطور
+   * الفواتير. **متشلوش السطر ده.**
+   */
+  @IsString()
+  @IsOptional()
+  readonly imageUrl?: string;
+
   @IsNumber()
   @Min(1)
   readonly qty: number;

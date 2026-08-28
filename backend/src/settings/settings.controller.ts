@@ -129,6 +129,59 @@ export class SettingsController {
     return await this.settingsService.getBackupList();
   }
 
+  // حالة النسخ الاحتياطي السحابي — قراءة فقط.
+  // لا يلمس هذا المسار مفاتيح R2 ولا السحابة؛ يقرأ ملف الحالة الذي يكتبه
+  // scripts/cloud-backup.sh بعد كل تشغيل. admin فقط: العدد وتاريخ آخر نسخة
+  // معلومة تشغيلية عن البنية التحتية.
+  @Roles('admin')
+  @Get('cloud-backup-status')
+  async getCloudBackupStatus() {
+    return await this.settingsService.getCloudBackupStatus();
+  }
+
+  // --- Cloudflare R2 cloud backup ------------------------------------------
+  // Same shape as the Bosta key routes: the secret goes IN through a POST and
+  // never comes back out - getSettings() masks it to a boolean flag.
+
+  @Roles('admin')
+  @Post('r2-config')
+  async saveR2Config(@Body() body: any) {
+    await this.settingsService.saveR2Config({
+      accountId: body?.accountId,
+      accessKeyId: body?.accessKeyId,
+      secretAccessKey: body?.secretAccessKey,
+      bucket: body?.bucket,
+      enabled: body?.enabled,
+      keep: body?.keep,
+    });
+    return { success: true, message: 'تم حفظ إعدادات النسخ السحابي' };
+  }
+
+  // Accepts optional inline credentials so the user can TEST before saving -
+  // otherwise they would have to save a wrong key to find out it is wrong.
+  @Roles('admin')
+  @Post('r2-config/test')
+  async testR2(@Body() body: any) {
+    return await this.settingsService.testR2Connection({
+      accountId: body?.accountId,
+      accessKeyId: body?.accessKeyId,
+      secretAccessKey: body?.secretAccessKey,
+      bucket: body?.bucket,
+    });
+  }
+
+  @Roles('admin')
+  @Post('r2-upload')
+  async uploadToR2(@Body('filename') filename?: string) {
+    return await this.settingsService.uploadLatestToR2(filename);
+  }
+
+  @Roles('admin')
+  @Get('r2-backups')
+  async listR2Backups() {
+    return await this.settingsService.listR2Backups();
+  }
+
   @Roles('admin')
   @Post('reset-all-data')
   async resetAllData(@Body('password') password: string) {

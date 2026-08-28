@@ -22,6 +22,14 @@ import {
   SupplierReturnOrderDocument,
 } from '../supplier-returns/schemas/supplier-return.schema';
 import {
+  ShopifyOrder,
+  ShopifyOrderDocument,
+} from '../shopify/schemas/shopify-order.schema';
+import {
+  CarrierImport,
+  CarrierImportDocument,
+} from './schemas/carrier-import.schema';
+import {
   CreateTransactionDto,
   UpdateTransactionDto,
   CancelTransactionDto,
@@ -29,6 +37,7 @@ import {
 } from './dto/transaction.dto';
 import { ProductsService } from '../products/products.service';
 import { VaultService } from '../vault/vault.service';
+import { resolveVaultSegmentFromPaymentMethod } from '../vault/vault-segment.util';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { MentionsService } from '../mentions/mentions.service';
 import { DiscountOtpService } from '../discount-otp/discount-otp.service';
@@ -42,6 +51,35 @@ import {
 } from '../inventory-movements/inventory-movements.service';
 import { InventoryMovementType } from '../inventory-movements/schemas/inventory-movement.schema';
 import { FollowUpsService } from '../followups/followups.service';
+import {
+  CancelStage,
+  cancelReasonDef,
+  cancelReasonSummary,
+  CANCEL_REASON_GROUPS,
+  LEGACY_CANCEL_REASON_AR,
+  LEGACY_CANCEL_REASON_CODE,
+} from '../shared/cancellation.constants';
+import { inDateWindow, dateWindowQuery, normalizeDateOnly } from '../shared/date-window.util';
+import { normalizeCity } from '../shared/normalize-city.util';
+import {
+  ShipZone,
+  carrierDef,
+  carrierLabel,
+  carrierCodeFromName,
+  carrierSeedPrice,
+  isValidCarrier,
+  resolveCarrierForRead,
+  carrierCodeFromLooseName,
+  LEGACY_CARRIER_CODE,
+} from '../shared/carriers.constants';
+
+/** Tariff snapshot frozen onto a transaction — see Transaction.shipTariff. */
+type TxShipTariff = {
+  zone: string;
+  price: number;
+  source: 'settings' | 'manual' | 'shopify';
+  at: string;
+};
 
 export interface InventoryItem {
   _id: string;
@@ -102,6 +140,14 @@ export class TransactionsService {
     private readonly returnRequestModel: Model<ReturnRequestDocument>,
     @InjectModel(SupplierReturnOrder.name)
     private readonly supplierReturnModel: Model<SupplierReturnOrderDocument>,
+    // Read-only, for the cancellations report — orders cancelled on the Shopify page never become
+    // a transaction, so they are invisible to every other query in this service.
+    @InjectModel(ShopifyOrder.name)
+    private readonly shopifyOrderModel: Model<ShopifyOrderDocument>,
+    // Schema-only, same pattern and reason as ShopifyOrder above: fee-only carrier deductions
+    // never become a transaction, so they are invisible to every other query in this service.
+    @InjectModel(CarrierImport.name)
+    private readonly carrierImportModel: Model<CarrierImportDocument>,
     private readonly productsService: ProductsService,
     private readonly vaultService: VaultService,
     private readonly presence: PresenceGateway,
@@ -347,12 +393,9 @@ export class TransactionsService {
       status: 'مكتمل',
       $or: [{ reversal: null }, { reversal: { $exists: false } }],
     };
-    if (from || to) {
-      query.returnDate = {
-        ...(from ? { $gte: from } : {}),
-        ...(to ? { $lte: to } : {}),
-      };
-    }
+    // Day-window bounds — see date-window.util.ts for why `$lte` is widened rather than exact.
+    const window = dateWindowQuery(from, to);
+    if (window) query.returnDate = window;
     return this.supplierReturnModel.find(query).exec();
   }
 
@@ -687,6 +730,116 @@ export class TransactionsService {
     return tx;
   }
 
+  /**
+   * Resolves the carrier for a transaction being written and freezes its tariff.
+   *
+   * This is the ONLY place a carrier code is validated and a tariff snapshot is built. Every write
+   * path — manual create, edit, and Shopify's approveOrder — goes through it, so the three cannot
+   * drift the way they did when each hand-assembled its own shipping fields.
+   *
+   * Rules:
+   *   - Only sales carry a carrier. A purchase or a return has no outbound shipment, and writing
+   *     one would put supplier invoices into the shipping report.
+   *   - The code is validated against the backend's own carrier list, never trusted from the
+   *     client, and an unknown code is REJECTED rather than silently dropped: a rejected save
+   *     leaves the operator on screen to fix it, whereas dropping it files the shipment under
+   *     «غير محدد» with nobody aware.
+   *   - A caller that sends only a legacy `shipCo` name still works — the name is resolved to a
+   *     code where possible. This is what keeps the change additive.
+   *   - `shipCo` is DERIVED from the code so the many consumers that render it verbatim keep
+   *     working untouched.
+   *   - `source` records where the price came from, so a manual override is visible in reports
+   *     instead of being indistinguishable from the configured tariff.
+   */
+  private async resolveCarrierForWrite(input: {
+    type?: string;
+    carrierCode?: string;
+    shipCo?: string;
+    shipZone?: string;
+    shipCost?: number;
+    /**
+     * Forces `shipTariff.source`, bypassing the on/off-tariff comparison.
+     *
+     * Set to 'shopify' for an order whose shipping amount came from the storefront: that figure
+     * is what the CUSTOMER paid, it is not derived from any carrier tariff, and measuring it
+     * against one would misreport every such order as a manual override.
+     */
+    priceOrigin?: TxShipTariff['source'];
+  }): Promise<{ carrierCode: string; shipCo: string; shipTariff: TxShipTariff | null }> {
+    const rawCode = String(input.carrierCode || '').trim();
+    const rawName = String(input.shipCo || '').trim();
+
+    // Non-sales never carry a carrier.
+    if (input.type && input.type !== 'مبيعات') {
+      return { carrierCode: '', shipCo: rawName, shipTariff: null };
+    }
+
+    if (rawCode && !isValidCarrier(rawCode)) {
+      throw new BadRequestException('شركة الشحن غير معروفة');
+    }
+
+    // Fall back to resolving the legacy free-text name; '' when it matches nothing.
+    const code = rawCode || carrierCodeFromName(rawName);
+
+    if (!code) {
+      // No carrier identified — keep whatever name was sent (possibly '') and record no tariff.
+      // Reports bucket this under LEGACY_CARRIER_CODE rather than dropping the row.
+      return { carrierCode: '', shipCo: rawName, shipTariff: null };
+    }
+
+    const zone: ShipZone = input.shipZone === 'cairo' ? 'cairo' : 'gov';
+    const price = Number(input.shipCost);
+    const hasPrice = Number.isFinite(price);
+
+    // Configured tariff wins as the reference point; the seed value only covers a carrier that was
+    // never given a price in Settings. `??` not `||` — a genuinely free (0) shipment is a real
+    // tariff, and treating it as missing is the falsy bug this registry exists to avoid.
+    const configured = await this.carrierTariffFromSettings(code, zone);
+    const reference = configured ?? carrierSeedPrice(code, zone);
+
+    const source: TxShipTariff['source'] =
+      input.priceOrigin ??
+      (hasPrice && reference !== undefined && Math.round(price) !== Math.round(reference)
+        ? 'manual'
+        : 'settings');
+
+    return {
+      carrierCode: code,
+      shipCo: this.carrierDisplayName(code),
+      shipTariff: {
+        zone,
+        price: hasPrice ? price : (reference ?? 0),
+        source,
+        at: new Date().toISOString(),
+      },
+    };
+  }
+
+  /**
+   * The carrier's configured price for a zone, or undefined when Settings holds none.
+   *
+   * ⚠ Matches on `code` first and only then on the display name — a settings row written before
+   * the registry existed has no code until SettingsService backfills it.
+   */
+  private async carrierTariffFromSettings(code: string, zone: ShipZone): Promise<number | undefined> {
+    try {
+      const settings = await this.settingsService.getSettings();
+      const cos: any[] = Array.isArray((settings as any).shipCos) ? (settings as any).shipCos : [];
+      const row = cos.find((c) => (c?.code || carrierCodeFromName(c?.name || '')) === code);
+      if (!row) return undefined;
+      const v = zone === 'cairo' ? row.cairo : row.gov;
+      return Number.isFinite(Number(v)) ? Number(v) : undefined;
+    } catch {
+      // Settings being unreadable must not fail a sale — fall back to the seed tariff.
+      return undefined;
+    }
+  }
+
+  /** Display name for a carrier: the Settings name if the operator renamed it, else the registry label. */
+  private carrierDisplayName(code: string): string {
+    return carrierDef(code)?.en || carrierLabel(code, 'ar');
+  }
+
   async create(dto: CreateTransactionDto, callerRole?: string): Promise<TransactionDocument> {
     const employee = (dto as unknown as { employee?: string }).employee || '';
     // High-value discount OTP enforcement (admin is exempt; skip entirely when otpEnabled=false)
@@ -749,7 +902,23 @@ export class TransactionsService {
     // exists so this transaction's own items don't pollute their own "before" balance.
     const _invSnapshotBefore = await this.getInventory();
 
-    const tx = await this.transactionModel.create(dto);
+    const carrier = await this.resolveCarrierForWrite({
+      type: dto.type,
+      carrierCode: (dto as unknown as { carrierCode?: string }).carrierCode,
+      shipCo: (dto as unknown as { shipCo?: string }).shipCo,
+      shipZone: (dto as unknown as { shipZone?: string }).shipZone,
+      shipCost: (dto as unknown as { shipCost?: number }).shipCost,
+    });
+
+    // ⚠ `date` is normalised to YYYY-MM-DD rather than stored as the client sent it. Sending a
+    //   full ISO timestamp is what produced 326 of 521 rows in the mixed state that made the
+    //   last day of every report period drop those rows (see date-window.util.ts). The window
+    //   helpers tolerate both formats; this stops new rows joining them.
+    const tx = await this.transactionModel.create({
+      ...dto,
+      ...carrier,
+      ...(dto.date ? { date: normalizeDateOnly(dto.date) } : {}),
+    });
 
     // Link discount OTP to created transaction (audit trail)
     const otpIdForLink = (dto as unknown as { highValueDiscountOtpId?: string }).highValueDiscountOtpId || '';
@@ -1127,10 +1296,29 @@ export class TransactionsService {
     const discountDelta = newDiscount - oldDiscount;
     const shipCostDelta = newShipCost - oldShipCost;
 
+    // خزنة العربون: القيمة القديمة والجديدة. `payment` احتياطي فقط لأن قيد الخزنة
+    // الأصلي كُتب من `depMethod || 'كاش'` (recordVaultForTransaction) — فالمقارنة يجب
+    // أن تتم على نفس الأساس، وإلا اعتُبرت معاملة قديمة بلا depMethod تغييراً وهمياً.
+    const oldDepMethod = String(existing.depMethod || '').trim();
+    const newDepMethod =
+      (dto as unknown as { depMethod?: string }).depMethod !== undefined
+        ? String((dto as unknown as { depMethod?: string }).depMethod || '').trim()
+        : oldDepMethod;
+    // تحويل خزنة حقيقي فقط عند وجود عربون مدفوع وتغيّر فعلي في الخزنة.
+    // يُقاس على العربون **القديم** لأنه المبلغ المُقيَّد فعلاً في الخزنة القديمة؛
+    // فرق المبلغ (depositDelta) يُعالَج بشكل منفصل أدناه على الخزنة الجديدة.
+    const depMethodChanged =
+      !!oldDepMethod &&
+      !!newDepMethod &&
+      oldDepMethod !== newDepMethod &&
+      oldDeposit > 0 &&
+      !existing.cancelled;
+
     // 📝 بناء رسالة التعديل
     const changes = [];
     if (totalDelta !== 0) changes.push(`الإجمالي: ${oldTotal} ← ${newTotal}`);
     if (depositDelta !== 0) changes.push(`الديبوزت: ${oldDeposit} ← ${newDeposit}`);
+    if (depMethodChanged) changes.push(`خزنة العربون: ${oldDepMethod} ← ${newDepMethod}`);
     if (discountDelta !== 0) changes.push(`الخصم: ${oldDiscount} ← ${newDiscount}`);
     if (shipCostDelta !== 0) changes.push(`الشحن: ${oldShipCost} ← ${newShipCost}`);
     if (newTransactionDate && newTransactionDate !== oldTransactionDate)
@@ -1158,6 +1346,7 @@ export class TransactionsService {
         payment: existing.payment,
         payStatus: existing.payStatus,
         transactionDate: oldTransactionDate,
+        depMethod: oldDepMethod,
       },
       after: {
         total: newTotal,
@@ -1166,6 +1355,7 @@ export class TransactionsService {
         shipCost: newShipCost,
         items: dto.items || existing.items,
         transactionDate: newTransactionDate,
+        depMethod: newDepMethod,
       },
       changes,
       totalDelta,
@@ -1175,13 +1365,55 @@ export class TransactionsService {
     };
 
     const editHistory = [...(existing.editHistory || []), historyEntry];
+
+    // Re-freeze the tariff on edit: changing the carrier, the zone or the amount all change what
+    // this shipment costs and why, so a stale snapshot would describe the pre-edit invoice. Fields
+    // absent from the DTO fall back to the stored values so an unrelated edit (e.g. the client
+    // name) leaves the shipping record exactly as it was.
+    const editCarrier = await this.resolveCarrierForWrite({
+      type: existing.type,
+      carrierCode:
+        (dto as unknown as { carrierCode?: string }).carrierCode ?? (existing as any).carrierCode,
+      shipCo: (dto as unknown as { shipCo?: string }).shipCo ?? existing.shipCo,
+      shipZone: (dto as unknown as { shipZone?: string }).shipZone ?? existing.shipZone,
+      shipCost: newShipCost,
+      // ⚠ A Shopify order's shipping amount is what the customer paid at checkout — it is not
+      // drawn from any carrier tariff, so comparing it against one is meaningless. Without this,
+      // editing an unrelated field (the client's name) on such an order re-ran the tariff check,
+      // found the Shopify figure differed from the configured price, and relabelled it 'manual'
+      // — fabricating an operator override that never happened and corrupting the one signal the
+      // reports use to spot genuine off-tariff pricing.
+      priceOrigin: (existing as any).source === 'shopify' ? 'shopify' : undefined,
+    });
+
     const tx = await this.transactionModel
-      .findByIdAndUpdate(id, { ...dto, editHistory }, { new: true })
+      .findByIdAndUpdate(id, { ...dto, ...editCarrier, editHistory }, { new: true })
       .exec();
+
+    // يُرفع عند أي تعديل على `deposits`، ليقرر الحفظ الختامي أسفل الدالة.
+    let depositsTouched = false;
+
+    // 📋 سجل المدفوعات يتبع الخزنة المصححة: تركه على الخزنة القديمة يجعل «سجل
+    // المدفوعات» يناقض قيد الخزنة الذي صُحِّح للتو على نفس الشاشة.
+    if (depMethodChanged && tx && Array.isArray(tx.deposits)) {
+      for (const d of tx.deposits) {
+        const dep = d as unknown as { method?: string; note?: string };
+        if (String(dep.method || '').trim() === oldDepMethod) {
+          dep.method = newDepMethod;
+          dep.note = `${dep.note || ''} | تصحيح الخزنة: ${oldDepMethod} ← ${newDepMethod}`.trim();
+          depositsTouched = true;
+        }
+      }
+      if (depositsTouched && typeof tx.markModified === 'function') {
+        tx.markModified('deposits');
+      }
+    }
 
     // 📋 Record additional deposit if deposit increased during edit
     if (depositDelta > 0 && tx) {
-      const depMethod = String(existing.depMethod || '').trim() || 'كاش';
+      depositsTouched = true;
+      // الخزنة المصححة، لا القديمة — الفرق يدخل حيث ذهب المال فعلاً.
+      const depMethod = (depMethodChanged ? newDepMethod : oldDepMethod) || 'كاش';
       if (!tx.deposits) tx.deposits = [];
       tx.deposits.push({
         id: this.genPaymentId(),
@@ -1197,28 +1429,78 @@ export class TransactionsService {
     if (!existing.cancelled && tx) {
       const txDate = this.formatTxDateForVault(existing);
       const txRef = existing.ref || String(existing._id);
-      const depMethod = String(existing.depMethod || existing.payment || '').trim();
-      const isCompleted = existing.payStatus === 'مكتمل';
+      // ⚠ تصحيح خزنة العربون يسبق قيود الفروقات عمداً: بعده تُنشر أي فروقات مبلغ
+      // على الخزنة **الجديدة**، وهو السلوك الصحيح لأن العربون كله انتقل إليها.
+      if (depMethodChanged) {
+        await this.transferDepositVaultSegment(
+          existing,
+          oldDepMethod,
+          newDepMethod,
+          oldDeposit,
+          txDate,
+          txRef,
+          editedBy,
+        );
+      }
+      /**
+       * خزنة القيد. الترتيب مقصود:
+       *  1) بعد التحويل صار العربون كله في الخزنة الجديدة، فالفروقات تُنشر عليها.
+       *  2) `newDepMethod` قبل `existing`: معاملة بلا خزنة سابقة يُضاف لها عربون الآن
+       *     تحمل خزنتها في الـDTO وحده — والقراءة من `existing` كانت تُرجع '' فيسقط
+       *     القيد بالكامل عند فحص `&& depMethod`، فيدخل المال المخزن بلا أثر في الخزنة.
+       *  3) `payment` احتياطي أخير (طريقة دفع المتبقي) كما كان.
+       */
+      const depMethod =
+        (depMethodChanged ? newDepMethod : '') ||
+        newDepMethod ||
+        String(existing.depMethod || existing.payment || '').trim();
+      /**
+       * ⚠ «مكتملة» تُقاس بالمال الذي تحرَّك فعلاً (`deposit`)، لا بـ `payStatus`.
+       *
+       * `payStatus` مُشتَقّ من `remaining <= 0`، و`remaining = max(0, total - deposit)`.
+       * لذلك فاتورة إجماليها **صفر** تُحفَظ «مكتمل» بينما `deposit = 0` — لا لأن أحداً
+       * دفع، بل لأنه لا يوجد مبلغ أصلاً. القراءة القديمة (`payStatus === 'مكتمل'`) لم
+       * تكن تفرّق بين «سُدِّدت بالكامل» و«لا مبلغ لها»، فكان تعديل الإجمالي لاحقاً
+       * (0 ← 7,940) يُقيَّد على الخزنة كأن الفرق نقدٌ خرج/دخل فعلاً.
+       *
+       * الحادثة: مشتريات #900001 — أُنشئت بإجمالي 0 (فحُفظت «مكتمل» و`deposit = 0`)،
+       * ثم عُدِّل إجماليها إلى 7,940 فخُصمت 7,940 من الخزنة مقابل دفعة لم تحدث،
+       * بينما ظلّت الفاتورة نفسها تقول `deposit = 0` و`remaining = 7,940` أي دَيْن كامل.
+       *
+       * القاعدة المحاسبية: **لا يتحرك مال في الخزنة إلا بمقدار ما تحرَّك فعلاً.**
+       * القيد على فرق الإجمالي مشروط بوجود سداد سابق حقيقي (`oldDeposit > 0`)؛
+       * وعندها تُقيَّد الحصة النقدية فقط — انظر `cashSettledDelta` أدناه.
+       */
+      const oldCashSettled = oldDeposit > 0;
+      const isCompleted = oldCashSettled && oldTotal > 0 && previousRemaining <= 0;
+
+      /**
+       * الحصة النقدية من التعديل — القيمة الوحيدة المسموح بتقييدها على الخزنة.
+       *
+       * الثابت المحاسبي: الخزنة تعكس ما دُفع فعلاً (`deposit`)، لا ما هو مستحق (`total`).
+       * الفاتورة المكتملة السداد حالة خاصة فقط لأن `deposit` يلاحق `total` فيها ضمنياً:
+       * لو ارتفع الإجمالي على فاتورة مسدَّدة بالكامل ولم يُسجَّل سداد جديد، فالفرق
+       * **دَيْن جديد** لا نقدٌ تحرَّك — يُقيَّد في سجل المديونية أدناه، لا في الخزنة.
+       *
+       * لذلك يُقاس القيد دائماً على `newDeposit - oldDeposit`، مع سقف على الفاتورة
+       * المكتملة: لا يتجاوز السداد إجماليها الجديد (لا يُدفع أكثر من قيمة الفاتورة).
+       */
+      const effOldDeposit = isCompleted ? Math.min(oldDeposit, oldTotal) : oldDeposit;
+      const effNewDeposit = isCompleted
+        ? Math.min(Math.max(newDeposit, 0), Math.max(newTotal, 0))
+        : newDeposit;
+      // تقريب لقرشين: يمنع فرقاً عائماً مثل 1e-13 من فتح قيد خزنة بصفر فعلي.
+      const cashSettledDelta =
+        Math.round((effNewDeposit - effOldDeposit) * 100) / 100;
 
       if (existing.type === 'مبيعات') {
-        // حركة مكتملة: العميل دفع الإجمالي كاملاً → تغيير الإجمالي يؤثر على الخزنة
-        if (isCompleted && totalDelta !== 0 && depMethod) {
-          const direction = totalDelta > 0 ? 'زيادة إجمالي مبيعات' : 'تخفيض إجمالي مبيعات';
-          const vaultNote = `${direction} فاتورة #${txRef} — ${existing.client || ''} | قبل: ${oldTotal} ج — بعد: ${newTotal} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
+        // يدخل الخزنة ما حصَّلناه فعلاً من العميل — بموجب فرق السداد لا فرق الإجمالي.
+        if (cashSettledDelta !== 0 && depMethod) {
+          const direction =
+            cashSettledDelta > 0 ? 'إضافة تحصيل مبيعات' : 'خصم تحصيل مبيعات';
+          const vaultNote = `${direction} فاتورة #${txRef} — ${existing.client || ''} | المحصَّل قبل: ${effOldDeposit} ج — بعد: ${effNewDeposit} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
           await this.vaultService.addSystemEntry(
-            totalDelta,
-            depMethod,
-            vaultNote,
-            txDate,
-            'تعديل مبيعات',
-            txRef,
-          );
-        } else if (!isCompleted && depositDelta !== 0 && depMethod) {
-          // حركة معلقة: فقط الديبوزت دخل الخزنة
-          const direction = depositDelta > 0 ? 'إضافة ديبوزت' : 'خصم ديبوزت';
-          const vaultNote = `${direction} فاتورة #${txRef} — ${existing.client || ''} | قبل: ${oldDeposit} ج — بعد: ${newDeposit} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
-          await this.vaultService.addSystemEntry(
-            depositDelta,
+            cashSettledDelta,
             depMethod,
             vaultNote,
             txDate,
@@ -1230,24 +1512,13 @@ export class TransactionsService {
         existing.type === 'مشتريات' &&
         this.transactionAddsSupplierPurchases(existing)
       ) {
-        // حركة مكتملة: دُفع للمورد كاملاً → تغيير الإجمالي يؤثر على الخزنة
-        if (isCompleted && totalDelta !== 0 && depMethod) {
-          const direction = totalDelta > 0 ? 'زيادة إجمالي مشتريات' : 'تخفيض إجمالي مشتريات';
-          const vaultNote = `${direction} #${txRef} — ${existing.client || ''} | قبل: ${oldTotal} ج — بعد: ${newTotal} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
+        // يخرج من الخزنة ما سدَّدناه فعلاً للمورد — بموجب فرق السداد لا فرق الإجمالي.
+        if (cashSettledDelta !== 0 && depMethod) {
+          const direction =
+            cashSettledDelta > 0 ? 'زيادة سداد مشتريات' : 'تخفيض سداد مشتريات';
+          const vaultNote = `${direction} #${txRef} — ${existing.client || ''} | المسدَّد قبل: ${effOldDeposit} ج — بعد: ${effNewDeposit} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
           await this.vaultService.addSystemEntry(
-            -totalDelta, // مشتريات: زيادة الإجمالي = خصم إضافي من الخزنة
-            depMethod,
-            vaultNote,
-            txDate,
-            'تعديل مشتريات',
-            txRef,
-          );
-        } else if (!isCompleted && depositDelta !== 0 && depMethod) {
-          // حركة معلقة: فقط العربون خرج من الخزنة
-          const direction = depositDelta > 0 ? 'زيادة عربون مشتريات' : 'تخفيض عربون مشتريات';
-          const vaultNote = `${direction} #${txRef} — ${existing.client || ''} | قبل: ${oldDeposit} ج — بعد: ${newDeposit} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
-          await this.vaultService.addSystemEntry(
-            -depositDelta,
+            -cashSettledDelta, // مشتريات: زيادة السداد = خصم من الخزنة
             depMethod,
             vaultNote,
             txDate,
@@ -1352,7 +1623,54 @@ export class TransactionsService {
       }
     }
 
+    // ⚠ حفظ ختامي لتغييرات `deposits` (تصحيح الخزنة + قيد الديبوزت الإضافي).
+    // فرع «مشتريات» وحده كان يستدعي `tx.save()`، فكان دفع `deposits` على فاتورة
+    // **مبيعات** يُكتب في الذاكرة ثم يُهمَل — `findByIdAndUpdate` أعلاه لا يشمله.
+    // يُحفَظ فقط عند تعديل فعلي على `deposits` تجنباً لأي كتابة زائدة.
+    if (depositsTouched && tx && typeof tx.save === 'function') {
+      await tx.save();
+    }
+
     return tx!;
+  }
+
+  /**
+   * Resolves a cancellation reason from either shape into the structured triple the rest of the
+   * system stores.
+   *
+   * Both shapes stay valid on purpose. A caller that sends `cancelReasonCode` gets the countable
+   * record; a caller that only sends free text (an older client, or an internal call like the
+   * failed-delivery close-out below) still works and simply lands with an empty code, which the
+   * reports bucket under «غير محدد». That is what makes this additive rather than a migration.
+   *
+   * @throws BadRequestException when neither a code nor free text was supplied, or when the code
+   *   is `other` and no note explains it — an "other" with no detail is exactly the unusable row
+   *   this system exists to stop.
+   */
+  private resolveCancelReason(
+    input: { code?: string; note?: string; text?: string },
+    stage: CancelStage,
+  ): { code: string; note: string; summary: string } {
+    const code = String(input.code || '').trim();
+    const note = String(input.note || '').trim();
+    const text = String(input.text || '').trim();
+
+    if (!code) {
+      if (!text) throw new BadRequestException('يجب اختيار سبب الإلغاء');
+      // Free-text-only caller: keep the text, leave the code empty.
+      return { code: '', note: '', summary: text };
+    }
+    const def = cancelReasonDef(code);
+    if (!def) throw new BadRequestException('سبب الإلغاء غير معروف');
+    if (!def.stages.includes(stage)) {
+      throw new BadRequestException(
+        `سبب الإلغاء «${def.ar}» غير متاح لهذا النوع من الإلغاء`,
+      );
+    }
+    if (def.requiresNote && !note) {
+      throw new BadRequestException('يجب كتابة تفاصيل السبب عند اختيار «سبب آخر»');
+    }
+    return { code, note, summary: cancelReasonSummary(code, note) };
   }
 
   async cancel(
@@ -1367,13 +1685,26 @@ export class TransactionsService {
       throw new BadRequestException('المعاملة ملغية بالفعل');
     }
     this.assertNotExchangePendingCollect(tx);
-    return this.performCancellation(tx, dto.cancelReason, dto.cancelledBy);
+    const resolved = this.resolveCancelReason(
+      {
+        code: dto.cancelReasonCode,
+        note: dto.cancelReasonNote,
+        text: dto.cancelReason,
+      },
+      'transaction',
+    );
+    return this.performCancellation(tx, resolved.summary, dto.cancelledBy, {
+      code: resolved.code,
+      note: resolved.note,
+      stage: 'transaction',
+    });
   }
 
   private async performCancellation(
     tx: TransactionDocument,
     reason: string,
     cancelledBy: string,
+    structured?: { code?: string; note?: string; stage?: CancelStage },
   ): Promise<TransactionDocument> {
     const previousDeposit = tx.deposit || 0;
     const previousTotal = tx.total || 0;
@@ -1383,6 +1714,12 @@ export class TransactionsService {
 
     tx.cancelled = true;
     tx.cancelReason = reason;
+    // Structured fields are additive: an internal caller that passes only free text (the
+    // failed-delivery close-out, for instance) leaves them empty and the reports count that row
+    // under «غير محدد» rather than losing it.
+    tx.cancelReasonCode = structured?.code || '';
+    tx.cancelReasonNote = structured?.note || '';
+    tx.cancelStage = structured?.stage || 'transaction';
     tx.cancelledBy = cancelledBy;
     tx.cancelledAt = new Date().toISOString();
 
@@ -1976,12 +2313,99 @@ export class TransactionsService {
     return { scanned: candidates.length, updated, dryRun, rows };
   }
 
+  /**
+   * Closes shipping issues the courier already resolved.
+   *
+   * The mirror of the backfill above, and it exists for the same reason: the
+   * webhook only ever *opened* `shipIssueState`, so an order Bosta reported as
+   * a problem and then delivered kept its issue open forever — a green
+   * `Delivered` badge sitting next to a red "معالجة الطلب" button on one row,
+   * with `assertNoOpenShipIssue` still blocking actions on a finished order.
+   *
+   * `bosta.service.ts` now closes these as the status arrives; this catches the
+   * orders that were already stuck when that shipped.
+   *
+   * Only touches 'open'/'awaiting' — 'reshipped' and 'closed' are human
+   * decisions. Idempotent: a second run finds nothing left to close.
+   * `dryRun` defaults to true, matching every other backfill in this file.
+   */
+  async backfillResolvedShipIssues(refs: string[] | undefined, dryRun: boolean): Promise<{
+    scanned: number;
+    updated: number;
+    dryRun: boolean;
+    rows: Array<{ ref: string; client: string; bostaStatus: string; action: string }>;
+  }> {
+    const query: Record<string, unknown> = {
+      type: 'مبيعات',
+      cancelled: { $ne: true },
+      shipIssueState: { $in: ['open', 'awaiting'] },
+    };
+    if (refs?.length) query.ref = { $in: refs.map((r) => String(r).replace(/^#+/, '').trim()) };
+
+    const candidates = await this.transactionModel.find(query).exec();
+    const rows: Array<{ ref: string; client: string; bostaStatus: string; action: string }> = [];
+    const RESOLVING = ['DELIVERED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'PICKED_UP'];
+    let updated = 0;
+
+    for (const tx of candidates) {
+      const ref = tx.ref || String(tx._id);
+      const bostaStatus = (tx as any).bostaStatus || '';
+      const client = tx.client || '';
+      const delivered = !!(tx as any).deliveredAt || bostaStatus === 'DELIVERED';
+
+      // Not resolved: the courier still reports a problem and nobody has acted.
+      // These are genuinely open and must stay on the card.
+      if (!delivered && !RESOLVING.includes(bostaStatus)) {
+        rows.push({ ref, client, bostaStatus, action: 'مشكلة قائمة فعلاً — تُترك مفتوحة' });
+        continue;
+      }
+
+      rows.push({
+        ref, client, bostaStatus,
+        action: delivered ? 'تم تسليمه — ستُغلق المعالجة' : `عاد للطريق (${bostaStatus}) — ستُغلق المعالجة`,
+      });
+      if (!dryRun) {
+        const trigger = (tx as any).shipIssueTrigger || 'RETURNED';
+        await this.transactionModel.updateOne(
+          { _id: tx._id },
+          {
+            $set: {
+              shipIssueState: 'closed',
+              // The trail is kept on purpose — see the same block in
+              // bosta.service.ts. `shipIssueTrigger`/`shipIssueOpenedAt` are
+              // left as written so the failed attempt stays visible.
+              failedDelivery: {
+                outcome: delivered ? 'delivered-after-issue' : 'back-in-transit',
+                goodsBack: false,
+                returnShipCost: 0,
+                refundAmount: 0,
+                shipRetained: 0,
+                note: delivered
+                  ? `أبلغت شركة الشحن عن مشكلة (${trigger}) ثم سلّمت الطلب — أُغلقت المعالجة بأثر رجعي`
+                  : `أبلغت شركة الشحن عن مشكلة (${trigger}) ثم عادت الشحنة للطريق (${bostaStatus}) — أُغلقت المعالجة بأثر رجعي`,
+                closedAt: new Date().toISOString(),
+                closedBy: 'system:backfill',
+              },
+            },
+          },
+        ).exec();
+        updated++;
+      }
+    }
+
+    if (updated > 0) this.emit('tx:updated', { _id: '' });
+    this.logger.log(`backfillResolvedShipIssues — scanned=${candidates.length} updated=${updated} dryRun=${dryRun}`);
+    return { scanned: candidates.length, updated, dryRun, rows };
+  }
+
   async requestCancel(
     id: string,
     reason: string,
     requestedBy: string,
     requestedById?: string,
     requestedByUsername?: string,
+    reasonCode?: string,
+    reasonNote?: string,
   ): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) throw new NotFoundException('المعاملة غير موجودة');
@@ -1996,6 +2420,12 @@ export class TransactionsService {
       throw new BadRequestException('يوجد طلب إلغاء معلق بالفعل لهذه المعاملة');
     }
     this.assertNotExchangePendingCollect(tx);
+    // Validated here, at submission, rather than at approval: a request that carries an invalid
+    // or note-less reason must be rejected while the requester is still on screen to fix it.
+    const resolved = this.resolveCancelReason(
+      { code: reasonCode, note: reasonNote, text: reason },
+      'transaction',
+    );
     const updated = await this.transactionModel
       .findByIdAndUpdate(
         id,
@@ -2004,7 +2434,9 @@ export class TransactionsService {
             requestedBy,
             requestedById: requestedById || '',
             requestedByUsername: requestedByUsername || '',
-            reason,
+            reason: resolved.summary,
+            cancelReasonCode: resolved.code,
+            cancelReasonNote: resolved.note,
             requestedAt: new Date().toISOString(),
             status: 'معلق',
           },
@@ -2038,6 +2470,8 @@ export class TransactionsService {
       requestedById?: string;
       requestedByUsername?: string;
       reason?: string;
+      cancelReasonCode?: string;
+      cancelReasonNote?: string;
     };
     const reqId = requester.requestedById || '';
     const reqUsername = requester.requestedByUsername || '';
@@ -2053,7 +2487,14 @@ export class TransactionsService {
     // Perform actual cancellation + vault debit
     const reason = requester.reason || 'موافقة المدير';
     const requestedBy = reqName || reviewedBy;
-    const result = await this.performCancellation(tx, reason, requestedBy);
+    // The requester's reason is the cancellation's reason — the approver decides whether it
+    // happens, not why. Carrying the code through is what keeps request→approve cancellations
+    // countable alongside direct ones instead of all landing in «غير محدد».
+    const result = await this.performCancellation(tx, reason, requestedBy, {
+      code: requester.cancelReasonCode || '',
+      note: requester.cancelReasonNote || '',
+      stage: 'transaction',
+    });
     // Notify requester (if known)
     if (reqId || reqUsername) {
       try {
@@ -2123,6 +2564,63 @@ export class TransactionsService {
       } catch { /* swallow */ }
     }
     return updated!;
+  }
+
+  /**
+   * إغلاق تنبيه تعارض العنوان بعد الشحن.
+   *
+   * ⚠ لا يُعدّل shippingAddress إطلاقاً. العنوان المخزَّن هو العنوان الذي شُحنت عليه
+   *   الشحنة فعلاً، وهو الحقيقة التي تصف أين ذهبت. الإغلاق يسجّل فقط أن إنساناً تعامل
+   *   مع الأمر — النظام لا يستطيع معرفة ذلك بنفسه لأن Bosta لا تعرض تعديلاً للعنوان.
+   *
+   * تعارض جديد بعد الإغلاق يعيد فتح الحالة (handleOrderUpdate يكتب resolved:false)،
+   * لأن تغييراً ثانياً للعنوان واقعة مستقلة تستحق قراراً مستقلاً.
+   */
+  /**
+   * إغلاق أي من تنبيهات تعارض شوبيفاي على الحركة.
+   *
+   * ⚠ الإغلاق إقرار بشري فقط — لا يُلغي حركة ولا يعدّل عنواناً ولا يحرّك خزنة. النظام لا
+   *   يستطيع معرفة أن الموظف اتصل ببوسطا أو ألغى الحركة يدوياً، ولا يجوز أن يستنتج ذلك.
+   */
+  async resolveShopifyConflict(id: string, kind: string, by: string) {
+    const FIELDS: Record<string, string> = {
+      address: 'addressChangeConflict',
+      cancel: 'shopifyCancelConflict',
+      fulfillment: 'externalFulfillment',
+    };
+    const field = FIELDS[kind];
+    if (!field) throw new BadRequestException('نوع التنبيه غير معروف');
+
+    const tx: any = await this.transactionModel.findById(id);
+    if (!tx) throw new NotFoundException('المعاملة غير موجودة');
+    if (!tx[field]) throw new BadRequestException('لا يوجد تنبيه من هذا النوع على المعاملة');
+
+    tx[field] = {
+      ...tx[field],
+      resolved: true,
+      resolvedBy: by,
+      resolvedAt: new Date().toISOString(),
+    };
+    tx.markModified(field);
+    await tx.save();
+    return { success: true, transaction: tx.toObject() };
+  }
+
+  async resolveAddressConflict(id: string, by: string) {
+    const tx: any = await this.transactionModel.findById(id);
+    if (!tx) throw new NotFoundException('المعاملة غير موجودة');
+    if (!tx.addressChangeConflict) {
+      throw new BadRequestException('لا يوجد تعارض عنوان على هذه المعاملة');
+    }
+    tx.addressChangeConflict = {
+      ...tx.addressChangeConflict,
+      resolved: true,
+      resolvedBy: by,
+      resolvedAt: new Date().toISOString(),
+    };
+    tx.markModified('addressChangeConflict');
+    await tx.save();
+    return { success: true, transaction: tx.toObject() };
   }
 
   async collect(
@@ -2964,6 +3462,12 @@ export class TransactionsService {
     from?: string,
     to?: string,
     expenseTotal = 0,
+    /**
+     * Narrows the SHIPPING panel to one carrier. Scoped to that report alone on purpose —
+     * sales, profit and expenses are not per-carrier quantities, and filtering them by a
+     * shipping company would silently change every other KPI on the page.
+     */
+    shippingCarrier?: string,
   ): Promise<Record<string, unknown>> {
     let transactions = await this.transactionModel
       .find({ cancelled: { $ne: true }, archived: { $ne: true } })
@@ -2973,8 +3477,12 @@ export class TransactionsService {
     // product — scoping it to the selected period would report every product as never-sold
     // whenever the user picks "اليوم".
     const allTx = transactions;
-    if (from) transactions = transactions.filter((t) => t.date >= from);
-    if (to) transactions = transactions.filter((t) => t.date <= to);
+    // ⚠ Compared on the DAY, not the raw string: 63% of transactions store `date` as a full ISO
+    //   timestamp, and `'2026-06-30T00:39…' <= '2026-06-30'` is false — which silently dropped
+    //   every timestamped row on the last day of the period. See date-window.util.ts.
+    if (from || to) {
+      transactions = transactions.filter((t) => inDateWindow(t.date, from, to));
+    }
     const salesTx = transactions.filter((t) => t.type === 'مبيعات');
     const pursTx = transactions.filter((t) =>
       this.transactionAddsSupplierPurchases(t),
@@ -3095,6 +3603,8 @@ export class TransactionsService {
       .slice(0, 10);
 
     const stagnantStock = await this.buildStagnantStock(salesTx, allTx);
+    const cancellations = await this.buildCancellationsReport(from, to);
+    const shipping = await this.buildShippingReport(from, to, shippingCarrier);
 
     return {
       totalSales,
@@ -3122,6 +3632,8 @@ export class TransactionsService {
       to: to || '',
       productProfits,
       stagnantStock,
+      cancellations,
+      shipping,
       salesMap: salesTx.reduce(
         (acc: Record<string, number>, tx) => {
           tx.items.forEach((it) => {
@@ -3132,6 +3644,716 @@ export class TransactionsService {
         {},
       ),
     };
+  }
+
+  /**
+   * Why orders get cancelled, over the reporting period, across BOTH cancellation paths.
+   *
+   * The two paths are counted separately and then together, because they answer different
+   * questions and cost different amounts:
+   *   • `shopify` — cancelled on the Shopify page while still pending. Nothing moved: no stock was
+   *     deducted, no vault entry was written, no invoice exists. The cost is the lost sale.
+   *   • `transaction` — cancelled after it entered سجل المعاملات. `performCancellation` had to
+   *     reverse real effects: refund the deposit out of (or back into) the vault, write reversing
+   *     inventory movements, and unwind the supplier payable. This is the expensive kind, and
+   *     separating it is the whole point of the split — a rising `transaction` share means orders
+   *     are being caught too late.
+   *
+   * ⚠ `getReports` filters `transactions` to `cancelled: { $ne: true }`, so the cancelled rows this
+   *   panel needs are NOT in that array by construction. This method runs its own query. Do not
+   *   "optimise" it by reusing the caller's list — it would always return zero.
+   *
+   * ⚠ Cancelled transactions are dated by `cancelledAt` (when the cancellation happened), not by
+   *   `date` (when the order was placed). A cancellation is an event in the period it occurred in;
+   *   bucketing an August cancellation of a June order into June would make the current period
+   *   look clean and silently rewrite a closed month. `cancelledAt` is a full ISO timestamp, so it
+   *   is compared on its date prefix against the same `YYYY-MM-DD` bounds the rest of the report
+   *   uses. Rows with no `cancelledAt` (pre-dating the field) fall back to `date` rather than being
+   *   dropped.
+   *
+   * Money is reported as `lostValue` — the invoice total that did not become revenue — and, for
+   * the transaction path only, `refunded`: cash that actually left the vault again. A Shopify-stage
+   * cancellation can never have a refund, which is exactly the difference the panel exists to show.
+   */
+  /**
+   * Shipping-cost analysis — what the carrier ACTUALLY charged, against what we billed.
+   *
+   * WHY THIS EXISTS
+   * `shipCost` is the tariff we charge the customer; `actualShipCost` is what the carrier
+   * deducted. The gap between them was already being recorded per order (as `shipLoss`) and had
+   * never been added up anywhere, so it was spread across hundreds of invoices and invisible.
+   * Measured on the live data before this was written: of 206 orders carrying an actual cost, 174
+   * were charged MORE than billed, one matched exactly, and the total gap was 4,602 EGP.
+   *
+   * ⚠ THE VAULT IS THE POINT. Shipping is not an expense line here — `collect()` subtracts it from
+   *   the collection BEFORE the cash reaches the vault (`netVaultAmount = payAmount − billedShip −
+   *   shipExtra`). So an overcharge is not a cost we pay later, it is money that never arrives.
+   *   That is why this reports a vault chain rather than a cost table.
+   *
+   * ⚠ COVERAGE IS STATED, NEVER HIDDEN. Orders with no `actualShipCost` are counted and reported
+   *   as such, and the projection over them is returned as a SEPARATE field (`estimatedGap`) from
+   *   the measured one (`totalGap`). An estimate presented as a fact in an accounting report is
+   *   the one thing this must not do — same rule as the LOAD_FAIL three-state convention.
+   *
+   * ⚠ Bosta's «Total Fees» is shipping + insurance + VAT, so once a period contains imported rows
+   *   `actualShipCost` is a TOTAL DEDUCTION, not a pure shipping rate. `byCity` therefore reports
+   *   what the carrier costs us per governorate, which is the question that decides pricing —
+   *   the fee split lives on the import record for anyone who needs to go further.
+   *
+   * Wrapped in try/catch: a reporting panel must never take the whole report down.
+   */
+  /**
+   * Binds historical sales to a carrier code.
+   *
+   * WHY THIS EXISTS: `carrierCode` was added after the data. Measured on the live database at the
+   * time of writing, 0 of 484 non-cancelled sales carried one, while `shipCo` held 'Bosta' (78),
+   * 'bosta +' (219), '' (180) and 'Free Shipping🎉' (7). Reports therefore rely on inferring the
+   * carrier at READ time on every row, forever. This writes the inference down once, so the code
+   * becomes the stored fact it was designed to be and the «غير محدد» bucket shrinks for real.
+   *
+   * RULES:
+   * • **Only rows with no code are touched.** A row that already carries one is never rewritten —
+   *   a backfill must not overwrite a decision someone made deliberately.
+   * • **Only sales.** A purchase has no outbound shipment; stamping one would put supplier
+   *   invoices into the shipping report (the same rule resolveCarrierForWrite follows).
+   * • **Cancelled rows are included.** They are excluded from the shipping report but still
+   *   appear in the cancellations report and the archive export, and leaving them uncoded would
+   *   make the two disagree about the same order.
+   * • **`shipCo` is left exactly as it is.** It is what the invoice view, the pickup group and the
+   *   archive export render verbatim; rewriting it would alter what historical documents say.
+   * • **A row whose name resolves to nothing is REPORTED, never guessed.** `fallback` lets an
+   *   admin bind those explicitly (the 180 empty + 7 'Free Shipping' rows) after deciding what
+   *   they actually were — the decision belongs to a human, not to a heuristic.
+   *
+   * ⚠ `dryRun` defaults to TRUE. A bare call previews and writes nothing.
+   */
+  async backfillCarrierCodes(
+    by: string,
+    dryRun = true,
+    fallback = '',
+  ): Promise<Record<string, unknown>> {
+    if (fallback && !isValidCarrier(fallback)) {
+      throw new BadRequestException(`شركة شحن غير معروفة: ${fallback}`);
+    }
+    const rows = await this.transactionModel
+      .find({
+        type: 'مبيعات',
+        $or: [{ carrierCode: { $exists: false } }, { carrierCode: '' }, { carrierCode: null }],
+      })
+      .select('_id ref shipCo carrierCode')
+      .lean()
+      .exec();
+
+    const resolved: { ref: string; from: string; code: string }[] = [];
+    const unresolved: { ref: string; shipCo: string }[] = [];
+    const byCode: Record<string, number> = {};
+    const ops: { updateOne: { filter: Record<string, unknown>; update: Record<string, unknown> } }[] = [];
+
+    for (const tx of rows as any[]) {
+      const name = String(tx.shipCo || '').trim();
+      const code = carrierCodeFromLooseName(name) || fallback;
+      if (!code) {
+        unresolved.push({ ref: String(tx.ref || ''), shipCo: name });
+        continue;
+      }
+      resolved.push({ ref: String(tx.ref || ''), from: name, code });
+      byCode[code] = (byCode[code] || 0) + 1;
+      ops.push({ updateOne: { filter: { _id: tx._id }, update: { $set: { carrierCode: code } } } });
+    }
+
+    let written = 0;
+    if (!dryRun && ops.length) {
+      const res: any = await this.transactionModel.bulkWrite(ops as any);
+      written = Number(res?.modifiedCount) || 0;
+      this.logger.log(
+        `backfillCarrierCodes by ${by}: ${written} sales bound to a carrier` +
+          (fallback ? ` (fallback=${fallback})` : ''),
+      );
+    }
+
+    return {
+      dryRun,
+      fallback,
+      candidates: rows.length,
+      resolvedCount: resolved.length,
+      unresolvedCount: unresolved.length,
+      written,
+      byCarrier: Object.entries(byCode)
+        .map(([code, count]) => ({ code, label: carrierLabel(code, 'ar'), count }))
+        .sort((a, b) => b.count - a.count),
+      // Capped: this is a preview for a human, not a data export. The counts above are complete.
+      sample: resolved.slice(0, 25),
+      unresolved: unresolved.slice(0, 50),
+    };
+  }
+
+  private async buildShippingReport(
+    from?: string,
+    to?: string,
+    carrierFilter?: string,
+  ): Promise<Record<string, unknown>> {
+    const empty = {
+      billed: 0,
+      actual: 0,
+      totalGap: 0,
+      estimatedGap: 0,
+      overCount: 0,
+      underCount: 0,
+      equalCount: 0,
+      measuredCount: 0,
+      unmeasuredCount: 0,
+      coverage: 0,
+      avgGap: 0,
+      byCity: [] as unknown[],
+      byCarrier: [] as unknown[],
+      carriers: [] as unknown[],
+      carrier: '',
+      worst: [] as unknown[],
+      worstTruncated: false,
+      worstLimit: 0,
+      worstTotal: 0,
+      feeOnly: { count: 0, amount: 0 },
+      imports: [] as unknown[],
+      vaultChain: {
+        collected: 0,
+        billedShip: 0,
+        overCharge: 0,
+        feeOnly: 0,
+        toVault: 0,
+      },
+    };
+    try {
+      const sales = await this.transactionModel
+        .find({
+          type: 'مبيعات',
+          cancelled: { $ne: true },
+          ...dateWindowQuery(from, to),
+        })
+        .select('ref client date shipCost actualShipCost shipLoss shippingBostaCity shippingCity shipZone payments total carrierCode shipCo')
+        .lean()
+        .exec();
+
+      let billed = 0;
+      let actual = 0;
+      let totalGap = 0;
+      let overCount = 0;
+      let underCount = 0;
+      let equalCount = 0;
+      let measuredCount = 0;
+      let unmeasuredCount = 0;
+      let collected = 0;
+      let billedShipOnCollected = 0;
+
+      // Rows that carry no city at all. Named once so the report, the UI and any future
+      // consumer agree on the bucket — the same convention as LEGACY_CARRIER_CODE.
+      const UNKNOWN_CITY = 'غير محدد';
+      const cityMap: Record<string, { orders: number; billed: number; actual: number; zone: string }> = {};
+      /**
+       * Per-carrier performance. Accumulated over EVERY sale in the window — including the ones
+       * excluded by an active carrier filter — because the filter must not be able to hide a
+       * carrier from its own comparison table. `carrierFilter` narrows the detail panels; the
+       * comparison is always the full picture.
+       */
+      const carrierMap: Record<
+        string,
+        { orders: number; billed: number; actual: number; measured: number; gap: number; over: number }
+      > = {};
+      const worst: {
+        ref: string; client: string; city: string;
+        carrier: string; carrierLabel: string;
+        billed: number; actual: number; gap: number;
+      }[] = [];
+
+      for (const tx of sales as any[]) {
+        const b = Number(tx.shipCost) || 0;
+        const a = Number(tx.actualShipCost) || 0;
+
+        // ⚠ Read-side resolution: `carrierCode` is a new field and NO historical row carries it,
+        //   so the legacy free-text `shipCo` is the only carrier evidence on 100% of existing
+        //   sales. See resolveCarrierForRead for the measurement.
+        const carrier = resolveCarrierForRead(tx) || LEGACY_CARRIER_CODE;
+
+        // The comparison table is built BEFORE the filter is applied — a filter that removed a
+        // carrier from the table it is meant to be compared in would make the two panels
+        // disagree about how many carriers exist.
+        const cm = (carrierMap[carrier] ||= {
+          orders: 0, billed: 0, actual: 0, measured: 0, gap: 0, over: 0,
+        });
+        cm.orders++;
+        cm.billed += b;
+        if (a > 0) {
+          cm.measured++;
+          cm.actual += a;
+          const g = a - b;
+          if (g > 0.01) { cm.gap += g; cm.over++; }
+        }
+
+        // Everything below this line describes the SELECTED carrier only.
+        if (carrierFilter && carrier !== carrierFilter) continue;
+
+        billed += b;
+
+        // Cash actually collected on this order, for the vault chain.
+        const paid = (tx.payments || []).reduce(
+          (s: number, p: any) => s + (Number(p.collectedAmount) || Number(p.amount) || 0),
+          0,
+        );
+        if (paid > 0) {
+          collected += paid;
+          billedShipOnCollected += b;
+        }
+
+        if (a <= 0) {
+          unmeasuredCount++;
+          continue;
+        }
+        measuredCount++;
+        actual += a;
+        const gap = a - b;
+        if (gap > 0.01) {
+          overCount++;
+          totalGap += gap;
+        } else if (gap < -0.01) underCount++;
+        else equalCount++;
+
+        // ⚠ `shipZone` IS NOT A CITY. It is the two-value tariff zone ('cairo' | 'gov')
+        //   produced by cityToShipZone(), where 'gov' means "any governorate outside
+        //   Cairo/Giza". Falling back to it put a ZONE into a column headed المحافظة, so
+        //   the table listed lowercase `cairo` (239 rows, a zone) beside `Cairo` (91 rows,
+        //   the real city) as if they were two peer governorates — and printed a bare
+        //   `gov`, which names no place at all.
+        //
+        //   Measured on the live backup: 302 of 484 sales (62%) carry no city and were
+        //   being reported as zones. `normalizeCity` recovers 40 of them from the raw
+        //   `shippingCity` (verified: 40 resolved, 0 unresolved); the remaining 262 hold
+        //   nothing but a zone, so they are bucketed as UNKNOWN and counted, never
+        //   disguised as a governorate. Same rule as LEGACY_CARRIER_CODE: the total must
+        //   still equal what actually shipped, and a shrinking unknown bucket is the
+        //   adoption metric.
+        const rawCity = String(tx.shippingBostaCity || '').trim();
+        const city =
+          normalizeCity(rawCity) ||
+          rawCity ||
+          normalizeCity(String((tx as any).shippingCity || '').trim()) ||
+          UNKNOWN_CITY;
+        const c = (cityMap[city] ||= { orders: 0, billed: 0, actual: 0, zone: '' });
+        c.orders++;
+        c.billed += b;
+        c.actual += a;
+        // The zone is still worth reporting — it is what the tariff is actually priced on —
+        // but as its own attribute of the city, never as a substitute for one.
+        if (city === UNKNOWN_CITY) c.zone = String(tx.shipZone || '').trim();
+
+        if (gap > 0.01) {
+          worst.push({
+            ref: String(tx.ref || ''),
+            client: String(tx.client || ''),
+            city,
+            // Carried per row so the list stays readable with the filter set to "all" — an
+            // overcharge is only actionable once you know who to raise it with.
+            carrier,
+            carrierLabel: carrierLabel(carrier, 'ar'),
+            billed: b,
+            actual: a,
+            gap: Math.round(gap * 100) / 100,
+          });
+        }
+      }
+
+      const round = (n: number) => Math.round(n * 100) / 100;
+      const avgGap = overCount ? totalGap / overCount : 0;
+
+      // ⚠ A PROJECTION, returned separately from the measured figure and never folded into it.
+      //   It answers "how much are we probably not seeing?" — useful, but not a fact.
+      const estimatedGap = unmeasuredCount * avgGap;
+
+      const byCity = Object.entries(cityMap)
+        .map(([city, v]) => ({
+          city,
+          // `unknown` lets the UI label the row honestly ("طلبات بلا محافظة مسجَّلة")
+          // instead of printing a zone code the reader cannot interpret.
+          unknown: city === UNKNOWN_CITY,
+          zone: v.zone,
+          orders: v.orders,
+          billed: round(v.billed),
+          actual: round(v.actual),
+          gap: round(v.actual - v.billed),
+          avgActual: round(v.actual / Math.max(1, v.orders)),
+          avgBilled: round(v.billed / Math.max(1, v.orders)),
+        }))
+        // The no-city bucket always sorts last: it is not a governorate competing for
+        // "worst gap", it is the measurement gap itself. Ranking it among real cities
+        // would put a bucket nobody can act on at the top of a table meant for pricing.
+        .sort((a, b) => (a.unknown ? 1 : 0) - (b.unknown ? 1 : 0) || b.gap - a.gap);
+
+      worst.sort((a, b) => b.gap - a.gap);
+      const MAX_WORST_ROWS = 500;
+
+      // Fee-only deductions: the carrier kept money on shipments that collected nothing (returns).
+      // Only import records know about these — they never become a collection, so no transaction
+      // carries them.
+      // ⚠ The carrier filter MUST reach this query. `feeOnly` — and therefore the «خصم بدون
+      //   تحصيل» KPI — is derived entirely from these documents, so leaving them unfiltered
+      //   would show one carrier's orders beside every carrier's fee deductions: a KPI strip
+      //   that silently mixes two different scopes.
+      const importWhere: Record<string, unknown> = {};
+      if (from || to) importWhere.date = { $gte: String(from || ''), $lte: String(to || '\uffff') };
+      if (carrierFilter) importWhere.carrier = carrierFilter;
+      const importDocs = await this.carrierImportModel
+        .find(importWhere)
+        .select('importNo date by fileName carrier rowsSettled totalCod totalFees totalVault totalVariance feeOnlyCount feeOnlyAmount')
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean()
+        .exec()
+        .catch(() => [] as any[]);
+
+      const feeOnly = (importDocs as any[]).reduce(
+        (acc, d) => {
+          acc.count += Number(d.feeOnlyCount) || 0;
+          acc.amount += Number(d.feeOnlyAmount) || 0;
+          return acc;
+        },
+        { count: 0, amount: 0 },
+      );
+
+      return {
+        billed: round(billed),
+        actual: round(actual),
+        totalGap: round(totalGap),
+        estimatedGap: round(estimatedGap),
+        overCount,
+        underCount,
+        equalCount,
+        measuredCount,
+        unmeasuredCount,
+        coverage: measuredCount + unmeasuredCount
+          ? round((measuredCount / (measuredCount + unmeasuredCount)) * 100)
+          : 0,
+        avgGap: round(avgGap),
+        // Per-carrier comparison — always the full window, never narrowed by `carrierFilter`.
+        byCarrier: Object.entries(carrierMap)
+          .map(([code, v]) => ({
+            code,
+            label: carrierLabel(code, 'ar'),
+            labelEn: carrierLabel(code, 'en'),
+            orders: v.orders,
+            measured: v.measured,
+            billed: round(v.billed),
+            actual: round(v.actual),
+            gap: round(v.gap),
+            overCount: v.over,
+            // Coverage is per carrier: a company whose statements were never imported has no
+            // measured cost, and its zero gap means "not yet measured", not "no overcharge".
+            coverage: v.orders ? round((v.measured / v.orders) * 100) : 0,
+            avgBilled: v.orders ? round(v.billed / v.orders) : 0,
+            avgActual: v.measured ? round(v.actual / v.measured) : 0,
+            // The share of the shipping we charged that this carrier takes back above tariff —
+            // the one figure that compares carriers of different sizes fairly.
+            gapPct: v.billed > 0 ? round((v.gap / v.billed) * 100) : 0,
+          }))
+          // The unspecified bucket sorts last: it is the measurement gap, not a competitor.
+          .sort((a, b) =>
+            (a.code === LEGACY_CARRIER_CODE ? 1 : 0) - (b.code === LEGACY_CARRIER_CODE ? 1 : 0) ||
+            b.gap - a.gap || b.orders - a.orders),
+        // The filter's option list, so the UI never offers a carrier with no rows in the period.
+        carriers: Object.keys(carrierMap).map((code) => ({
+          code,
+          label: carrierLabel(code, 'ar'),
+          labelEn: carrierLabel(code, 'en'),
+          orders: carrierMap[code].orders,
+        })),
+        carrier: String(carrierFilter || ''),
+        byCity: byCity.slice(0, 25),
+        // ⚠ The UI paginates, sorts and filters this list CLIENT-SIDE, so it must receive the
+        //   real set — not a top-25 slice. Paging a truncated payload makes page 2 and every
+        //   re-sort silently wrong: they would reorder 25 arbitrary rows rather than the
+        //   period's actual overcharges. MAX_WORST_ROWS bounds the response instead, and
+        //   `worstTruncated` makes the UI SAY SO rather than present a partial list as
+        //   complete. Same rule as MAX_CANCEL_ROWS above.
+        worst: worst.slice(0, MAX_WORST_ROWS),
+        worstTruncated: worst.length > MAX_WORST_ROWS,
+        worstLimit: MAX_WORST_ROWS,
+        worstTotal: worst.length,
+        feeOnly: { count: feeOnly.count, amount: round(feeOnly.amount) },
+        imports: importDocs,
+        // The vault chain — the shape the panel renders. Each line is money that did or did not
+        // arrive, in the order `collect()` applies it.
+        vaultChain: {
+          collected: round(collected),
+          billedShip: round(billedShipOnCollected),
+          overCharge: round(totalGap),
+          feeOnly: round(feeOnly.amount),
+          toVault: round(collected - billedShipOnCollected - totalGap - feeOnly.amount),
+        },
+      };
+    } catch (err) {
+      this.logger.warn(`buildShippingReport failed: ${(err as Error).message}`);
+      return empty;
+    }
+  }
+
+  private async buildCancellationsReport(
+    from?: string,
+    to?: string,
+  ): Promise<Record<string, unknown>> {
+    const empty = {
+      total: 0,
+      shopifyCount: 0,
+      transactionCount: 0,
+      lostValue: 0,
+      refunded: 0,
+      reasons: [] as unknown[],
+      groups: [] as unknown[],
+      series: [] as unknown[],
+      recent: [] as unknown[],
+      recentTruncated: false,
+      recentLimit: 0,
+      avgHoursToCancel: null as number | null,
+      unspecified: 0,
+    };
+    try {
+      const inRange = (iso: string | undefined, fallback?: string): string => {
+        // `cancelledAt` is an ISO timestamp, `date` a bare YYYY-MM-DD. Both reduce to a day key
+        // by taking the first 10 chars, which is also what the from/to bounds are.
+        const s = String(iso || '').trim() || String(fallback || '').trim();
+        return s.slice(0, 10);
+      };
+      const within = (day: string): boolean => {
+        if (!day) return false;
+        if (from && day < from) return false;
+        if (to && day > to) return false;
+        return true;
+      };
+
+      const [cancelledTx, cancelledShopify] = await Promise.all([
+        this.transactionModel.find({ cancelled: true }).exec(),
+        this.shopifyOrderModel.find({ cancelled: true }).exec(),
+      ]);
+
+      type Row = {
+        stage: CancelStage;
+        code: string;
+        note: string;
+        summary: string;
+        day: string;
+        by: string;
+        ref: string;
+        client: string;
+        /** Invoice value that never became revenue. */
+        lostValue: number;
+        /** Cash that actually went back out of the vault. Shopify-stage rows are always 0. */
+        refunded: number;
+        /** Hours between the order being placed and it being cancelled; null when unknowable. */
+        hoursToCancel: number | null;
+        type: string;
+      };
+
+      const hoursBetween = (placed?: string, cancelled?: string): number | null => {
+        const a = placed ? Date.parse(placed) : NaN;
+        const b = cancelled ? Date.parse(cancelled) : NaN;
+        if (Number.isNaN(a) || Number.isNaN(b) || b < a) return null;
+        return Math.round(((b - a) / 3600000) * 10) / 10;
+      };
+
+      const rows: Row[] = [];
+
+      for (const tx of cancelledTx) {
+        const day = inRange((tx as any).cancelledAt, tx.date);
+        if (!within(day)) continue;
+        // Only the deposit ever left the vault at cancellation time; the remaining balance was
+        // never collected, so calling the whole total "refunded" would double-count the loss
+        // that `lostValue` already carries.
+        const refunded = Number(tx.deposit) || 0;
+        rows.push({
+          stage: ((tx as any).cancelStage as CancelStage) || 'transaction',
+          code: (tx as any).cancelReasonCode || '',
+          note: (tx as any).cancelReasonNote || '',
+          summary: tx.cancelReason || '',
+          day,
+          by: tx.cancelledBy || '',
+          ref: tx.ref || String(tx._id),
+          client: tx.client || '',
+          lostValue: Number(tx.total) || 0,
+          refunded,
+          hoursToCancel: hoursBetween(
+            (tx as any).createdAt
+              ? new Date((tx as any).createdAt).toISOString()
+              : tx.date,
+            (tx as any).cancelledAt,
+          ),
+          type: tx.type || '',
+        });
+      }
+
+      for (const o of cancelledShopify) {
+        // ShopifyOrder has no business-date field of its own — it relies on Mongoose
+        // `timestamps`, so `createdAt` (when we ingested the order) is the fallback.
+        const day = inRange(
+          (o as any).cancelledAt,
+          (o as any).createdAt ? new Date((o as any).createdAt).toISOString() : '',
+        );
+        if (!within(day)) continue;
+        rows.push({
+          stage: 'shopify',
+          code: (o as any).cancelReasonCode || '',
+          note: (o as any).cancelReasonNote || '',
+          summary: (o as any).cancelReason || '',
+          day,
+          by: (o as any).cancelledBy || '',
+          ref: (o as any).ref || String(o._id),
+          client: (o as any).client || '',
+          lostValue: Number((o as any).total) || 0,
+          // Nothing was ever taken, so nothing can be given back. Keeping this a hard 0 rather
+          // than reading a field is what makes the "cost of cancelling late" comparison honest.
+          refunded: 0,
+          hoursToCancel: hoursBetween(
+            (o as any).createdAt
+              ? new Date((o as any).createdAt).toISOString()
+              : '',
+            (o as any).cancelledAt,
+          ),
+          type: 'شوبيفاي',
+        });
+      }
+
+      if (!rows.length) return empty;
+
+      // ── Per-reason breakdown ────────────────────────────────────────────
+      // Rows with no code are bucketed under LEGACY_CANCEL_REASON_CODE rather than dropped, so
+      // the reason totals always add up to the number of cancellations that actually happened.
+      // A shrinking «غير محدد» bucket is also the adoption metric for this system.
+      const byCode = new Map<
+        string,
+        {
+          code: string;
+          label: string;
+          group: string;
+          count: number;
+          shopifyCount: number;
+          transactionCount: number;
+          lostValue: number;
+          refunded: number;
+        }
+      >();
+      for (const r of rows) {
+        const code = r.code || LEGACY_CANCEL_REASON_CODE;
+        const def = cancelReasonDef(code);
+        if (!byCode.has(code)) {
+          byCode.set(code, {
+            code,
+            label: def ? def.ar : LEGACY_CANCEL_REASON_AR,
+            group: def ? def.group : 'other',
+            count: 0,
+            shopifyCount: 0,
+            transactionCount: 0,
+            lostValue: 0,
+            refunded: 0,
+          });
+        }
+        const b = byCode.get(code)!;
+        b.count += 1;
+        if (r.stage === 'shopify') b.shopifyCount += 1;
+        else b.transactionCount += 1;
+        b.lostValue += r.lostValue;
+        b.refunded += r.refunded;
+      }
+      const reasons = [...byCode.values()]
+        .map((b) => ({
+          ...b,
+          lostValue: Math.round(b.lostValue),
+          refunded: Math.round(b.refunded),
+          share: Math.round((b.count / rows.length) * 1000) / 10,
+        }))
+        // By count, not by value: the question this panel answers is "what keeps going wrong",
+        // and one large cancelled invoice is not a bigger problem than ten small recurring ones.
+        .sort((a, b) => b.count - a.count);
+
+      // ── Per-group rollup ────────────────────────────────────────────────
+      const groups = CANCEL_REASON_GROUPS.map((g) => {
+        const members = reasons.filter((r) => r.group === g.key);
+        return {
+          key: g.key,
+          label: g.ar,
+          count: members.reduce((s, r) => s + r.count, 0),
+          lostValue: members.reduce((s, r) => s + r.lostValue, 0),
+        };
+      })
+        .filter((g) => g.count > 0)
+        .sort((a, b) => b.count - a.count);
+
+      // ── Daily series ────────────────────────────────────────────────────
+      // Split by stage so the trend shows WHEN in the funnel orders are dying, not just how many.
+      const dayMap = new Map<
+        string,
+        { date: string; shopify: number; transaction: number; lostValue: number }
+      >();
+      for (const r of rows) {
+        if (!dayMap.has(r.day)) {
+          dayMap.set(r.day, { date: r.day, shopify: 0, transaction: 0, lostValue: 0 });
+        }
+        const d = dayMap.get(r.day)!;
+        if (r.stage === 'shopify') d.shopify += 1;
+        else d.transaction += 1;
+        d.lostValue += r.lostValue;
+      }
+      const series = [...dayMap.values()]
+        .map((d) => ({ ...d, lostValue: Math.round(d.lostValue) }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      const timed = rows
+        .map((r) => r.hoursToCancel)
+        .filter((h): h is number => h !== null);
+      const avgHoursToCancel = timed.length
+        ? Math.round((timed.reduce((s, h) => s + h, 0) / timed.length) * 10) / 10
+        : null;
+
+      // The full list, not a top-25 slice: the table paginates and sorts client-side, and a
+      // truncated payload would make page 2 and every sort silently wrong (they would reorder
+      // 25 arbitrary rows rather than the period's actual cancellations). Bounded by
+      // MAX_CANCEL_ROWS so a very long period cannot return an unbounded payload — the UI states
+      // the truncation rather than hiding it.
+      const MAX_CANCEL_ROWS = 500;
+      const sorted = rows.slice().sort((a, b) => b.day.localeCompare(a.day));
+      const recent = sorted
+        .slice(0, MAX_CANCEL_ROWS)
+        .map((r) => ({
+          ref: r.ref,
+          client: r.client,
+          stage: r.stage,
+          type: r.type,
+          code: r.code || LEGACY_CANCEL_REASON_CODE,
+          label: cancelReasonDef(r.code)?.ar || LEGACY_CANCEL_REASON_AR,
+          note: r.note,
+          summary: r.summary,
+          date: r.day,
+          by: r.by,
+          lostValue: Math.round(r.lostValue),
+          refunded: Math.round(r.refunded),
+        }));
+
+      return {
+        total: rows.length,
+        shopifyCount: rows.filter((r) => r.stage === 'shopify').length,
+        transactionCount: rows.filter((r) => r.stage !== 'shopify').length,
+        lostValue: Math.round(rows.reduce((s, r) => s + r.lostValue, 0)),
+        refunded: Math.round(rows.reduce((s, r) => s + r.refunded, 0)),
+        unspecified: rows.filter((r) => !r.code).length,
+        avgHoursToCancel,
+        reasons,
+        groups,
+        series,
+        recent,
+        // Stated, never silent: the table says "showing 500 of 640" rather than presenting a
+        // truncated list as if it were the whole period.
+        recentTruncated: rows.length > MAX_CANCEL_ROWS,
+        recentLimit: MAX_CANCEL_ROWS,
+      };
+    } catch (e) {
+      // Same rule as buildStagnantStock: a reporting panel must never take the whole report down.
+      console.error('[getReports] Error building cancellations report:', e);
+      return empty;
+    }
   }
 
   /**
@@ -3384,6 +4606,63 @@ export class TransactionsService {
       tx.ref || String(tx._id),
     );
     return saved;
+  }
+
+  /**
+   * تصحيح خزنة عربون مُقيَّد بالفعل (مثال: سُجِّل على Instapay والصحيح فودافون كاش).
+   *
+   * يُنفَّذ كقيدين متقابلين — سحب من الخزنة القديمة وإيداع في الجديدة — لا بتعديل أو
+   * حذف القيد الأصلي: القيد الأصلي دليل تدقيقي، والتحويل هو ما حدث فعلاً محاسبياً.
+   * (وعملياً `VaultService.deleteLastEntryByRef` مقصورة على `تحصيل`/`مشتريات` ولا
+   * تصل إلى قيود `ديبوزت مبيعات` أصلاً.)
+   *
+   * ⚠ ترتيب القيدين مقصود: السحب أولاً. `addSystemEntry` ترفض أي خصم يجعل رصيد
+   * القطاع سالباً؛ فلو نُفِّذ الإيداع أولاً ثم فشل السحب لتضاعف المبلغ في الخزنتين.
+   * بهذا الترتيب يفشل التحويل كاملاً قبل كتابة أي قيد.
+   */
+  private async transferDepositVaultSegment(
+    tx: TransactionDocument,
+    fromMethod: string,
+    toMethod: string,
+    amount: number,
+    txDate: string,
+    txRef: string,
+    editedBy = '',
+  ): Promise<void> {
+    if (!(amount > 0) || !fromMethod || !toMethod || fromMethod === toMethod) return;
+    // اسمان مختلفان قد يُحلّان لنفس القطاع (والمجهول يقع على 'cash')؛ عندها لا مال يتحرك.
+    if (
+      resolveVaultSegmentFromPaymentMethod(fromMethod) ===
+      resolveVaultSegmentFromPaymentMethod(toMethod)
+    ) {
+      return;
+    }
+    const party = tx.client || '';
+    const by = editedBy || 'مجهول';
+    const isPurchase = tx.type === 'مشتريات';
+    const kind = isPurchase ? 'عربون مشتريات' : 'ديبوزت مبيعات';
+    const entityCtx = isPurchase ? { supplier: party } : { customer: party };
+
+    await this.vaultService.addSystemEntry(
+      -amount,
+      fromMethod,
+      `تصحيح خزنة ${kind} #${txRef} — ${party} | نقل إلى: ${toMethod} | بواسطة: ${by}`,
+      txDate,
+      'تصحيح خزنة',
+      txRef,
+      entityCtx,
+      by,
+    );
+    await this.vaultService.addSystemEntry(
+      amount,
+      toMethod,
+      `تصحيح خزنة ${kind} #${txRef} — ${party} | نقل من: ${fromMethod} | بواسطة: ${by}`,
+      txDate,
+      'تصحيح خزنة',
+      txRef,
+      entityCtx,
+      by,
+    );
   }
 
   private async recordVaultForTransaction(
@@ -3757,5 +5036,151 @@ export class TransactionsService {
       },
     );
     this.emit('pickup:updated', { ids: [id], action: 'revert-delivered' });
+  }
+
+  /**
+   * إصلاح بأثر رجعي لـ`items[].imageUrl` على المعاملات القديمة.
+   *
+   * كل سطر اتخزن قبل ما `TransactionItemDto.imageUrl` يتعرّف اتكتب من غير صورة،
+   * لأن الـValidationPipe (`whitelist:true`) كان بيشيل الحقل في صمت وهو في طريقه
+   * من الـfrontend/Shopify للـschema. الـDTO اتصلّح، بس ده بيغطي الجديد بس —
+   * المعاملات المكتوبة قبل كده لسه فاضية والفواتير بتاعتها بتعرض أيقونة بديلة.
+   *
+   * المطابقة بـ`productId` الأول وبعدين بـ`code`:
+   * - `productId` هو الرابط الحقيقي، وهو المكتوب على السطر ساعة البيع.
+   * - `code` هو الاحتياطي للسطور القديمة اللي اتخزنت من غير `productId`
+   *   (وأي سطر Shopify كوده `SHOPIFY` لأن الـSKU مامتطابقش).
+   *
+   * ⚠ **بنملا الفاضي بس — مابنستبدلش صورة موجودة.** الصورة المتخزنة على
+   * المعاملة هي صورة المنتج **وقت البيع**؛ لو منتج اتغيّرت صورته بعد كده،
+   * الكتابة فوقها بتزوّر شكل فاتورة اتطبعت واتسلّمت للعميل خلاص.
+   *
+   * `dryRun` افتراضياً true زي `backfillMissingSaleMovements` — لازم تبعت
+   * `{"dryRun": false}` عشان يكتب فعلياً. آمن للتكرار: تشغيلة تانية بتلاقي
+   * الحقول اتملت وبتتخطاها.
+   */
+  async backfillItemImages(
+    dryRun = true,
+  ): Promise<{
+    dryRun: boolean;
+    scanned: number;
+    txUpdated: number;
+    linesFilled: number;
+    linesUnmatched: number;
+    unmatched: string[];
+    returnRequestsUpdated: number;
+    supplierReturnsUpdated: number;
+  }> {
+    const products = await this.productsService.findAll();
+
+    // فهرسين: بالـid وبالكود. الكود بيتقارن lowercase عشان اختلاف حالة الحروف
+    // في سطور Shopify القديمة مايمنعش المطابقة.
+    const byId = new Map<string, string>();
+    const byCode = new Map<string, string>();
+    for (const p of products) {
+      const img = String((p as any).imageUrl || '').trim();
+      if (!/^https?:\/\//i.test(img)) continue;
+      byId.set(String((p as any)._id), img);
+      const code = String((p as any).code || '').trim().toLowerCase();
+      if (code) byCode.set(code, img);
+    }
+
+    const txs = await this.transactionModel.find({}).lean();
+
+    let txUpdated = 0;
+    let linesFilled = 0;
+    let linesUnmatched = 0;
+    const unmatched = new Set<string>();
+
+    // نفس المنطق بيتطبق على 3 مجموعات، فاتعمل مرة واحدة: أي اختلاف بينهم
+    // معناه إن فاتورة ومرتجعها يعرضوا صور مختلفة لنفس الصنف.
+    const fillDoc = (doc: any): any[] | null => {
+      const items = Array.isArray(doc.items) ? doc.items : [];
+      if (!items.length) return null;
+
+      let touched = false;
+      const nextItems = items.map((it: any) => {
+        // موجودة بالفعل → سيبها زي ما هي (شوف التحذير فوق).
+        if (String(it?.imageUrl || '').trim()) return it;
+
+        const img =
+          byId.get(String(it?.productId || '')) ||
+          byCode.get(String(it?.code || '').trim().toLowerCase()) ||
+          '';
+
+        if (!img) {
+          linesUnmatched++;
+          unmatched.add(String(it?.code || it?.name || '؟'));
+          return it;
+        }
+
+        linesFilled++;
+        touched = true;
+        return { ...it, imageUrl: img };
+      });
+
+      return touched ? nextItems : null;
+    };
+
+    for (const tx of txs as any[]) {
+      const nextItems = fillDoc(tx);
+      if (!nextItems) continue;
+      txUpdated++;
+      if (!dryRun) {
+        await this.transactionModel.updateOne(
+          { _id: tx._id },
+          { $set: { items: nextItems } },
+        );
+      }
+    }
+
+    // طلبات مرتجع العملاء — بتتنسخ حرفياً على معاملة الـ'مرتجع' وقت الاعتماد
+    // (`items: ret.items`)، فطلب معتمد قبل الإصلاح لسه سطوره فاضية.
+    let returnRequestsUpdated = 0;
+    const rrs = await this.returnRequestModel.find({}).lean();
+    for (const rr of rrs as any[]) {
+      const nextItems = fillDoc(rr);
+      if (!nextItems) continue;
+      returnRequestsUpdated++;
+      if (!dryRun) {
+        await this.returnRequestModel.updateOne(
+          { _id: rr._id },
+          { $set: { items: nextItems } },
+        );
+      }
+    }
+
+    // مرتجعات الموردين — نفس الحكاية عبر معاملة 'مرتجع مشتريات'.
+    let supplierReturnsUpdated = 0;
+    const srs = await this.supplierReturnModel.find({}).lean();
+    for (const sr of srs as any[]) {
+      const nextItems = fillDoc(sr);
+      if (!nextItems) continue;
+      supplierReturnsUpdated++;
+      if (!dryRun) {
+        await this.supplierReturnModel.updateOne(
+          { _id: sr._id },
+          { $set: { items: nextItems } },
+        );
+      }
+    }
+
+    this.logger.log(
+      `[backfillItemImages] dryRun=${dryRun} scanned=${txs.length} txUpdated=${txUpdated} ` +
+        `returnRequests=${returnRequestsUpdated} supplierReturns=${supplierReturnsUpdated} ` +
+        `linesFilled=${linesFilled} linesUnmatched=${linesUnmatched}`,
+    );
+
+    return {
+      dryRun,
+      scanned: txs.length,
+      txUpdated,
+      returnRequestsUpdated,
+      supplierReturnsUpdated,
+      linesFilled,
+      linesUnmatched,
+      // الأصناف اللي مالقيناش لها صورة — بالاسم، عشان تتراجع يدوي بدل ما تختفي في صمت.
+      unmatched: [...unmatched].slice(0, 50),
+    };
   }
 }

@@ -100,7 +100,7 @@ export class UpdateSettingsDto {
 
   @IsArray()
   @IsOptional()
-  readonly shipCos?: { name: string; cairo: number; gov: number }[];
+  readonly shipCos?: { code?: string; name: string; cairo: number; gov: number }[];
 
   @IsString()
   @IsOptional()
@@ -175,6 +175,41 @@ export class UpdateSettingsDto {
   @IsString()
   @IsOptional()
   readonly defaultShipCo?: string;
+
+  /** Carrier code pre-selected in the order-entry forms. Validated in SettingsService. */
+  @IsString()
+  @IsOptional()
+  readonly defaultCarrierCode?: string;
+
+  /* Company identity — the issuer block on the printed invoice. All optional:
+   * the print layout omits any line left empty. */
+  @IsString()
+  @IsOptional()
+  readonly companyLegalName?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly companyAddress?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly companyPhone?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly companyEmail?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly companyWebsite?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly companyTaxNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly companyCommercialReg?: string;
 
   @IsString()
   @IsOptional()

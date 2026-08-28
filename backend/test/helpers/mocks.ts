@@ -58,6 +58,13 @@ export const createMockSettingsService = () => ({
     cairoPrice: 100,
     govPrice: 150,
     vaultPass: '1234',
+    // Carrier registry: TransactionsService.resolveCarrierForWrite reads the configured
+    // tariff from here to decide whether a submitted shipCost is on- or off-tariff.
+    shipCos: [
+      { code: 'bosta', name: 'Bosta', cairo: 110, gov: 150 },
+      { code: 'mylerz', name: 'Mylerz', cairo: 90, gov: 130 },
+    ],
+    defaultCarrierCode: 'bosta',
   }),
   getSettingsSafe: jest.fn(),
   updateSettings: jest.fn(),
@@ -128,4 +135,10 @@ export const createMockInventoryMovementsService = () => ({
   // an unstubbed mock would throw inside getInventory() and fail tests that never touch
   // adjustments. Tests that assert on adjustments override it.
   getManualAdjustmentQtyByProductCode: jest.fn().mockResolvedValue(new Map()),
+});
+
+// TransactionsService injects this with forwardRef (FollowUpsModule ↔ TransactionsModule cycle);
+// only closeShippingIssueFollowUp is called from the service, on the shipping-issue paths.
+export const createMockFollowUpsService = () => ({
+  closeShippingIssueFollowUp: jest.fn().mockResolvedValue(undefined),
 });

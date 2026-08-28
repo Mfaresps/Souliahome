@@ -4,6 +4,17 @@ import { HydratedDocument } from 'mongoose';
 export type SettingsDocument = HydratedDocument<Settings>;
 
 export class ShipCompany {
+  /**
+   * Stable carrier code from shared/carriers.constants.ts — this is what transactions store and
+   * what every report groups by. `name` is display only.
+   *
+   * ⚠ Defaults to '' rather than being required: rows written before the carrier registry existed
+   * carry only a name, and SettingsService.migrateDoc backfills the code from it. A required field
+   * here would reject those documents on read.
+   */
+  @Prop({ default: '' })
+  code: string;
+
   @Prop({ required: true })
   name: string;
 
@@ -182,6 +193,55 @@ export class Settings {
   @Prop({ default: '' })
   defaultShipCo: string;
 
+  /**
+   * Carrier pre-selected in every order-entry form (manual transaction + Shopify confirm dialog).
+   * The picker is always shown — this only decides which option starts selected, so the common
+   * single-carrier case stays one click while a second carrier is still one click away.
+   *
+   * Stores a `code`, not a name; `defaultShipCo` above is the legacy name kept in sync for any
+   * consumer still reading it.
+   */
+  @Prop({ default: '' })
+  defaultCarrierCode: string;
+
+  /* ────────────────────────────────────────────────────────────────────────
+   * COMPANY IDENTITY — the issuer block on every printed invoice.
+   *
+   * A formal invoice must state who issued it. Before these existed the printed
+   * page carried only a logo, so a customer holding the paper could not identify
+   * the seller, and the document had no standing as a commercial record.
+   *
+   * Every one defaults to '' and the print layout omits any line that is empty —
+   * so an install that never fills these in prints exactly as it did before,
+   * minus nothing. Fill them in Settings → الطباعة.
+   * ──────────────────────────────────────────────────────────────────────── */
+
+  /** Registered legal name, printed as the issuer. Falls back to 'SOULIA' when empty. */
+  @Prop({ default: '' })
+  companyLegalName: string;
+
+  /** Street address of the issuing branch. */
+  @Prop({ default: '' })
+  companyAddress: string;
+
+  /** Contact phone printed under the issuer block. */
+  @Prop({ default: '' })
+  companyPhone: string;
+
+  @Prop({ default: '' })
+  companyEmail: string;
+
+  @Prop({ default: '' })
+  companyWebsite: string;
+
+  /** البطاقة الضريبية — printed only when set. */
+  @Prop({ default: '' })
+  companyTaxNumber: string;
+
+  /** السجل التجاري — printed only when set. */
+  @Prop({ default: '' })
+  companyCommercialReg: string;
+
   @Prop({ default: '' })
   printPolicySales: string;
 
@@ -213,6 +273,49 @@ export class Settings {
   /** Secret token used to verify inbound Bosta webhook calls (sent as ?token= query param) */
   @Prop({ default: '' })
   bostaWebhookSecret: string;
+
+  // ─── النسخ الاحتياطي السحابي (Cloudflare R2) ───────────────────────────
+  // نفس نمط bostaApiKey: يُخزَّن هنا ولا يُعاد إلى الواجهة أبداً (انظر
+  // getSettings، حيث يُستبدل بعَلَم r2SecretAccessKeySet).
+
+  /** Cloudflare Account ID — يُبنى منه عنوان الوصول */
+  @Prop({ default: '' })
+  r2AccountId: string;
+
+  /** R2 Access Key ID */
+  @Prop({ default: '' })
+  r2AccessKeyId: string;
+
+  /** R2 Secret Access Key — لا يُعاد إلى الواجهة مطلقاً */
+  @Prop({ default: '' })
+  r2SecretAccessKey: string;
+
+  /** اسم الـ bucket على R2 */
+  @Prop({ default: 'soulia-backups' })
+  r2Bucket: string;
+
+  /** تفعيل الرفع التلقائي بعد النسخة الليلية */
+  @Prop({ default: false })
+  r2Enabled: boolean;
+
+  /** عدد النسخ التي تبقى على السحابة */
+  @Prop({ default: 14 })
+  r2Keep: number;
+
+  /**
+   * نتيجة آخر رفع — تعرضها لوحة الإعدادات.
+   * ⚠ `type: Object` إلزامي مع @Prop كائنية، وإلا فـ CannotDetermineTypeError
+   * عند تحميل الوحدة وتموت كل المسارات (انظر قاعدة @Prop القابل لـ null).
+   */
+  @Prop({ type: Object, default: null })
+  r2LastRun: {
+    status: string;
+    message: string;
+    file: string;
+    sizeBytes: number;
+    remoteCount: number;
+    finishedAt: string;
+  } | null;
 
   /**
    * COD collection large-amount warning threshold (EGP).

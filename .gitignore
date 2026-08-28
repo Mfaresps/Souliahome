@@ -7,3 +7,9 @@ dist/
 .DS_Store
 # machine-specific compose overrides (Mac dev points at host MongoDB; server must use its own)
 docker-compose.override.yml
+
+# النسخ الاحتياطي السحابي: يحتوي كلمة سر مونجو. المثال فقط هو المرفوع.
+scripts/cloud-backup.env
+
+# Carrier settlement sample files — contain real customer names and phone numbers
+scripts/samples/

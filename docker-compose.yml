@@ -27,6 +27,11 @@ services:
       PORT: 3000
     ports:
       - '3001:3000'
+    volumes:
+      # createBackup() writes to path.join(process.cwd(), 'backups') — process.cwd() is /app
+      # (Dockerfile WORKDIR). Without this volume every deploy replaces the container and takes
+      # all manual backups with it.
+      - backend-backups:/app/backups
     depends_on:
       - mongodb
     networks:
@@ -51,6 +56,7 @@ services:
 
 volumes:
   mongo-data:
+  backend-backups:
 
 networks:
   soulia-net:

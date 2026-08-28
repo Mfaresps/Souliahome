@@ -14,6 +14,9 @@ export class SrAllocationDetail {
 export class SupplierReturnItem {
   code: string;
   name: string;
+  /** صورة الصنف — بيحلّها السيرفر من الفاتورة الأصلية بالكود، مش بتتبعت من العميل.
+   *  بتتنسخ على معاملة 'مرتجع مشتريات' اللي بتتعرض في صفحة الفاتورة. */
+  imageUrl?: string;
   qty: number;
   price: number;
   total: number;

@@ -26,6 +26,7 @@ import { MentionsModule } from '../mentions/mentions.module';
 import { UsersModule } from '../users/users.module';
 import { InventoryMovementsModule } from '../inventory-movements/inventory-movements.module';
 import { TransactionsModule } from '../transactions/transactions.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
@@ -40,6 +41,9 @@ import { TransactionsModule } from '../transactions/transactions.module';
     EmployeePerformanceModule,
     MentionsModule,
     UsersModule,
+    // approveOrder reads settings.defaultCarrierCode to pre-resolve the shipping carrier.
+    // Not forwardRef'd: SettingsModule does not depend on ShopifyModule, so this adds no cycle.
+    SettingsModule,
     // approveOrder writes the transaction directly via txModel, bypassing
     // TransactionsService.create() — so it must replicate that method's inventory
     // movement logging itself. TransactionsService supplies the pre-create stock

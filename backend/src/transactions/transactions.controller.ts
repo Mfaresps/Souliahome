@@ -11,16 +11,20 @@ import {
   Req,
   Res,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   HttpException,
   HttpStatus,
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
 import { isValidObjectId } from 'mongoose';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { TransactionsService } from './transactions.service';
 import { ReferenceDetailService } from './reference-detail.service';
 import { ReportsExportService } from './reports-export.service';
+import { CarrierSettlementService } from './carrier-settlement.service';
 import {
   CreateTransactionDto,
   UpdateTransactionDto,
@@ -41,6 +45,7 @@ import { PermsGuard } from '../core/guards/perms.guard';
 import { RequirePerms } from '../core/decorators/perms.decorator';
 import { ExpensesService } from '../expenses/expenses.service';
 import { maskTransactionForRole, maskTransactionsForRole, filterPurchasesForPerms } from './purchase-mask.util';
+import { inDateWindow } from '../shared/date-window.util';
 
 @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
 @Controller('transactions')
@@ -50,7 +55,83 @@ export class TransactionsController {
     private readonly referenceDetailService: ReferenceDetailService,
     private readonly expensesService: ExpensesService,
     private readonly reportsExportService: ReportsExportService,
+    private readonly carrierSettlementService: CarrierSettlementService,
   ) {}
+
+  // ── Carrier settlement-file import ────────────────────────────────────────────────────────
+  // Two routes, deliberately split: preview READS ONLY and settle WRITES. A single route that
+  // settled as a side effect of uploading would make the review screen impossible — the whole
+  // safety model is that a file can be uploaded and inspected with no financial effect.
+  //
+  // ⚠ `carrier-import` is its own permission, NOT folded into the ordinary collect gate.
+  //   Settling 150 orders in one action is a different level of authority from collecting one,
+  //   and it must be granted deliberately.
+  //
+  // The file is held in memory only (`memoryStorage` default) and never written to disk: it
+  // carries customer names and phone numbers, and nothing here needs it after parsing.
+
+  @RequirePerms('carrier-import')
+  @Post('carrier-statement/preview')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  async carrierStatementPreview(
+    @UploadedFile() file: { buffer: Buffer; originalname: string } | undefined,
+    @Body('carrier') carrier?: string,
+  ) {
+    if (!file?.buffer) throw new BadRequestException('لم يتم رفع أي ملف');
+    return this.carrierSettlementService.preview(
+      file.buffer,
+      file.originalname || 'statement.xlsx',
+      String(carrier || 'bosta'),
+    );
+  }
+
+  @RequirePerms('carrier-import')
+  @Post('carrier-statement/settle')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  async carrierStatementSettle(
+    @UploadedFile() file: { buffer: Buffer; originalname: string } | undefined,
+    @Body() body: any,
+    @Req() req?: any,
+  ) {
+    if (!file?.buffer) throw new BadRequestException('لم يتم رفع أي ملف');
+    // multipart carries everything as strings — `rows` arrives as JSON text.
+    let rows: number[] = [];
+    try {
+      rows = typeof body?.rows === 'string' ? JSON.parse(body.rows) : body?.rows || [];
+    } catch {
+      throw new BadRequestException('قائمة الصفوف المختارة غير صالحة');
+    }
+    const by = req?.user?.name || req?.user?.username || 'مستخدم';
+    return this.carrierSettlementService.settle(
+      file.buffer,
+      file.originalname || 'statement.xlsx',
+      String(body?.carrier || 'bosta'),
+      {
+        rows,
+        collectMethod: String(body?.collectMethod || ''),
+        note: String(body?.note || ''),
+        acknowledgeDuplicate:
+          body?.acknowledgeDuplicate === true || body?.acknowledgeDuplicate === 'true',
+      },
+      by,
+      req?.user?.role || '',
+      req?.user?.perms || [],
+    );
+  }
+
+  @RequirePerms('carrier-import')
+  @Get('carrier-statement/imports')
+  async carrierImports(@Query('limit') limit?: string) {
+    return this.carrierSettlementService.list(Number(limit) || 50);
+  }
+
+  @RequirePerms('carrier-import')
+  @Get('carrier-statement/imports/:importNo')
+  async carrierImportOne(@Param('importNo') importNo: string) {
+    const doc = await this.carrierSettlementService.getOne(importNo);
+    if (!doc) throw new HttpException('عملية الاستيراد غير موجودة', HttpStatus.NOT_FOUND);
+    return doc;
+  }
 
   @Get()
   async findAll(
@@ -64,6 +145,24 @@ export class TransactionsController {
     );
     const filtered = filterPurchasesForPerms(txs, req?.user?.role, req?.user?.perms);
     return maskTransactionsForRole(filtered, req?.user?.role);
+  }
+
+  /**
+   * Writes `carrierCode` onto historical sales that never had one.
+   *
+   * ⚠ `dryRun` defaults to true (`dryRun !== false`), so a bare `{}` PREVIEWS and writes nothing.
+   *   Send `{"dryRun": false}` to commit. `fallback` binds the rows whose `shipCo` resolves to
+   *   nothing — an explicit admin decision, never a guess.
+   */
+  @Roles('admin')
+  @Post('backfill/carrier-codes')
+  async backfillCarrierCodes(
+    @Body('dryRun') dryRun: boolean,
+    @Body('fallback') fallback: string,
+    @Req() req: any,
+  ) {
+    const by = req?.user?.name || req?.user?.username || 'admin';
+    return this.transactionsService.backfillCarrierCodes(by, dryRun !== false, String(fallback || ''));
   }
 
   @Roles('admin')
@@ -80,13 +179,19 @@ export class TransactionsController {
   }
 
   @Get('reports')
-  async getReports(@Query('from') from?: string, @Query('to') to?: string) {
+  async getReports(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    // Shipping-panel only — see getReports.
+    @Query('carrier') carrier?: string,
+  ) {
     const expenses = await this.expensesService.findAll();
-    let filteredExpenses = expenses;
-    if (from) filteredExpenses = filteredExpenses.filter((e) => e.date >= from);
-    if (to) filteredExpenses = filteredExpenses.filter((e) => e.date <= to);
+    // Day-window compare: expense dates are plain YYYY-MM-DD today, but the sibling
+    // transaction filter had to move off raw-string compare (see date-window.util.ts) and
+    // these two must scope identically or the expense KPI covers a different period.
+    const filteredExpenses = expenses.filter((e) => inDateWindow(e.date, from, to));
     const expenseTotal = filteredExpenses.filter(e => e.status === 'معتمد').reduce((s, e) => s + e.amount, 0);
-    return this.transactionsService.getReports(from, to, expenseTotal);
+    return this.transactionsService.getReports(from, to, expenseTotal, carrier);
   }
 
   @Roles('admin')
@@ -98,9 +203,10 @@ export class TransactionsController {
     @Query('to') to?: string,
   ): Promise<void> {
     const expenses = await this.expensesService.findAll();
-    let filteredExpenses = expenses;
-    if (from) filteredExpenses = filteredExpenses.filter((e) => e.date >= from);
-    if (to) filteredExpenses = filteredExpenses.filter((e) => e.date <= to);
+    // Day-window compare: expense dates are plain YYYY-MM-DD today, but the sibling
+    // transaction filter had to move off raw-string compare (see date-window.util.ts) and
+    // these two must scope identically or the expense KPI covers a different period.
+    const filteredExpenses = expenses.filter((e) => inDateWindow(e.date, from, to));
     const expenseTotal = filteredExpenses
       .filter((e) => e.status === 'معتمد')
       .reduce((s, e) => s + e.amount, 0);
@@ -336,10 +442,12 @@ export class TransactionsController {
   ) {
     return this.transactionsService.requestCancel(
       id,
-      dto.reason,
+      dto.reason || '',
       dto.requestedBy,
       dto.requestedById,
       dto.requestedByUsername,
+      dto.cancelReasonCode,
+      dto.cancelReasonNote,
     );
   }
 
@@ -420,6 +528,38 @@ export class TransactionsController {
   @Post('backfill/ship-issue-state')
   async backfillShipIssueState(@Body() dto: BackfillShipIssueDto) {
     return this.transactionsService.backfillShipIssueState(dto?.refs, dto?.dryRun !== false);
+  }
+
+  /**
+   * Closes issues the courier already resolved — the mirror of the route above.
+   * Admin-only and previews by default: `{"dryRun": false}` writes.
+   */
+  @Roles('admin')
+  @Post('backfill/resolved-ship-issues')
+  async backfillResolvedShipIssues(@Body() dto: BackfillShipIssueDto) {
+    return this.transactionsService.backfillResolvedShipIssues(dto?.refs, dto?.dryRun !== false);
+  }
+
+  /**
+   * إغلاق تنبيه تعارض العنوان — إقرار بشري بأن الأمر عولج (اتصال ببوسطا أو إعادة إنشاء
+   * الشحنة). لا يُعدّل أي عنوان: العنوان المشحون يبقى كما هو لأنه يصف أين ذهبت الشحنة.
+   * JWT فقط — من يستطيع رؤية الفاتورة والتصرف في الشحنة يستطيع إغلاق تنبيهها.
+   */
+  /** إغلاق تنبيه تعارض شوبيفاي (address | cancel | fulfillment) — إقرار بشري لا أكثر. */
+  @Post(':id/shopify-conflict/:kind/resolve')
+  async resolveShopifyConflict(
+    @Param('id') id: string,
+    @Param('kind') kind: string,
+    @Req() req: any,
+  ) {
+    const by = req.user?.name || req.user?.username || 'مستخدم';
+    return this.transactionsService.resolveShopifyConflict(id, kind, by);
+  }
+
+  @Post(':id/address-conflict/resolve')
+  async resolveAddressConflict(@Param('id') id: string, @Req() req: any) {
+    const by = req.user?.name || req.user?.username || 'مستخدم';
+    return this.transactionsService.resolveAddressConflict(id, by);
   }
 
   @Post(':id/collect')
@@ -557,6 +697,20 @@ export class TransactionsController {
     const by = req.user.name || req.user.username || 'مستخدم';
     await this.transactionsService.revertPickupDelivered(id, by);
     return { ok: true };
+  }
+
+  /**
+   * إصلاح بأثر رجعي: ملء `items[].imageUrl` على المعاملات وطلبات المرتجعات
+   * (عملاء وموردين) اللي اتخزنت قبل ما الحقل يتعرّف في الـDTO/الـschema
+   * (كان بيتشال في صمت بواسطة الـValidationPipe).
+   *
+   * dryRun افتراضياً true — لازم تبعت {"dryRun": false} عشان يكتب فعلياً.
+   * بيملا الفاضي بس، فآمن للتكرار ومابيمسحش صورة اتخزنت وقت البيع.
+   */
+  @Roles('admin')
+  @Post('backfill/item-images')
+  async backfillItemImages(@Body('dryRun') dryRun?: boolean) {
+    return this.transactionsService.backfillItemImages(dryRun !== false);
   }
 
   @Roles('admin')

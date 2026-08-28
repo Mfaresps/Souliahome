@@ -21,6 +21,7 @@ import { TransactionsService } from '../transactions/transactions.service';
 import { SuppliersService } from '../suppliers/suppliers.service';
 import { SupplierLedgerService } from '../supplier-ledger/supplier-ledger.service';
 import { SrAllocationService } from './allocation.service';
+import { ProductsService } from '../products/products.service';
 
 const VAULT_AR_LABELS = ['كاش', 'فودافون كاش', 'Instapay', 'تحويل بنكي'] as const;
 
@@ -54,7 +55,24 @@ export class SupplierReturnsService {
     private readonly suppliersService: SuppliersService,
     private readonly supplierLedgerService: SupplierLedgerService,
     private readonly allocationService: SrAllocationService,
+    private readonly productsService: ProductsService,
   ) {}
+
+  /**
+   * صورة الصنف بالكود، للمسار العام اللي مافيهوش فاتورة أصلية واحدة نقرأ منها.
+   *
+   * بترجّع '' لو الصنف اتمسح أو مالوش صورة — السطر ساعتها بيعرض الأيقونة
+   * البديلة بدل ما المرتجع كله يفشل. الصورة تفصيلة عرض، مش شرط لصحة العملية.
+   */
+  private async resolveItemImage(code: string): Promise<string> {
+    try {
+      const p = await this.productsService.findByCode(code);
+      const img = String((p as { imageUrl?: string } | null)?.imageUrl || '').trim();
+      return /^https?:\/\//i.test(img) ? img : '';
+    } catch {
+      return '';
+    }
+  }
 
   private async generateReturnNumber(): Promise<string> {
     const year = new Date().getFullYear();
@@ -123,7 +141,10 @@ export class SupplierReturnsService {
     if (originalTx.cancelled) {
       throw new BadRequestException('لا يمكن إرجاع أصناف من فاتورة ملغاة');
     }
-    const originalByCode = new Map<string, { qty: number; price: number }>();
+    const originalByCode = new Map<
+      string,
+      { qty: number; price: number; imageUrl: string }
+    >();
     for (const it of originalTx.items || []) {
       const code = String(it.code || '').trim();
       if (!code) continue;
@@ -131,6 +152,9 @@ export class SupplierReturnsService {
       originalByCode.set(code, {
         qty: (prev?.qty || 0) + (Number(it.qty) || 0),
         price: Number(it.price) || 0,
+        // الصورة بتتحل من الفاتورة الأصلية مش من الـpayload: الأصناف هنا بيبنيها
+        // السيرفر أصلاً، فمفيش سبب نثق في العميل في حاجة إحنا شايفينها قدامنا.
+        imageUrl: prev?.imageUrl || String((it as { imageUrl?: string }).imageUrl || ''),
       });
     }
     const alreadyReturned = await this.getAlreadyReturnedQtyByCode(
@@ -173,6 +197,7 @@ export class SupplierReturnsService {
       validated.push({
         code,
         name: it.name || code,
+        imageUrl: original.imageUrl,
         qty,
         price,
         total: qty * price,
@@ -274,6 +299,7 @@ export class SupplierReturnsService {
       validated.push({
         code,
         name: it.name || code,
+        imageUrl: await this.resolveItemImage(code),
         qty,
         price,
         total: qty * price,

@@ -4,6 +4,7 @@ import {
   forwardRef,
   Logger,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -30,10 +31,17 @@ import { EmployeeScoringService } from '../employee-performance/employee-scoring
 import { MentionsService } from '../mentions/mentions.service';
 import { UsersService } from '../users/users.service';
 import {
+  cancelReasonDef,
+  cancelReasonSummary,
+  SHOPIFY_CANCELLED_CODE,
+} from '../shared/cancellation.constants';
+import {
   InventoryMovementsService,
   RecordMovementEntry,
 } from '../inventory-movements/inventory-movements.service';
 import { TransactionsService } from '../transactions/transactions.service';
+import { SettingsService } from '../settings/settings.service';
+import { carrierLabel, isValidCarrier } from '../shared/carriers.constants';
 
 @Injectable()
 export class ShopifyService {
@@ -57,6 +65,7 @@ export class ShopifyService {
     private readonly inventoryMovementsService: InventoryMovementsService,
     @Inject(forwardRef(() => TransactionsService))
     private readonly transactionsService: TransactionsService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   private emit(event: string, payload: unknown): void {
@@ -377,16 +386,45 @@ export class ShopifyService {
       const total = Math.max(0, itemsTotal + shipCost - discount);
 
       order.notes = notes;
+      // العنوان على سجل الأوردر يتتبّع شوبيفاي دائماً — هذا السجل يمثّل ما يقوله المتجر،
+      // والتجميد يحدث على الحركة/الشحنة أدناه حيث توجد Bosta. الاثنان يختلفان عمداً عند
+      // التعارض، وهو بالضبط ما يجعل الاختلاف قابلاً للعرض بدل أن يُمحى.
       order.shippingAddress = address;
       if (city) order.shippingCity = city;
       if (city) order.shippingBostaCity = bostaCity;
       if (govArabic) order.shippingGov = govArabic;
       order.tags = tags;
       order.financialStatus = financialStatus;
-      order.items = items;
-      order.shipCost = shipCost;
-      order.itemsTotal = itemsTotal;
-      order.total = total;
+      // ⚠ الأصناف والإجماليات تُجمَّد بعد التأكيد — نفس منطق الإيداع أدناه بالضبط.
+      //
+      //   بعد التأكيد توجد حركة: خُصم مخزون، تحرّكت خزنة، وربما طُبعت فاتورة. تعديل
+      //   `total` على سجل الأوردر وحده كان يجعله يخالف الحركة بصمت — رقمان لنفس الأوردر
+      //   ولا شيء يقول أيهما الصحيح. (الحركة نفسها لم تكن تُحدَّث أصلاً، فالفاتورة كانت
+      //   سليمة؛ المشكلة في الانحراف غير المعلن بين السجلين.)
+      //
+      //   تغيير قيمة أوردر مؤكد قرار مالي — يُسجَّل كتعارض ويقرره الموظف.
+      const itemsFrozen = order.status !== 'pending';
+      const totalChanged = itemsFrozen && Math.abs((order.total || 0) - total) > 0.01;
+
+      if (!itemsFrozen) {
+        order.items = items;
+        order.shipCost = shipCost;
+        order.itemsTotal = itemsTotal;
+        order.total = total;
+      } else if (totalChanged) {
+        order.valueChangeConflict = {
+          oldTotal: order.total || 0,
+          newTotal: total,
+          oldItemsCount: (order.items || []).length,
+          newItemsCount: items.length,
+          detectedAt: new Date().toISOString(),
+          resolved: false,
+        };
+        this.logger.warn(
+          `تغيّرت قيمة أوردر مؤكد في شوبيفاي — ref=${order.ref} ${order.total} → ${total}`,
+        );
+      }
+      // rawData يُحفظ دائماً — هو أرشيف ما أرسلته شوبيفاي، لا مصدر قرار
       order.rawData = orderData;
 
       // إعادة تحليل الإيداع فقط طالما الأوردر لسه معلق — بعد التأكيد تتجمد قيم الإيداع
@@ -412,20 +450,218 @@ export class ShopifyService {
       // tags في Shopify نص مفصول بفواصل، transaction تحتفظ بها كمصفوفة
       const txTags = tags ? tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [];
       const txUpdate: any = { notes, tags: txTags };
-      if (address) txUpdate.shippingAddress = address;
-      if (city) txUpdate.shippingCity = city;
-      if (city) txUpdate.shippingBostaCity = bostaCity;
-      if (govArabic) txUpdate.shippingGov = govArabic;
+
+      // ⚠ العنوان لا يُكتب فوقه بعد الشحن.
+      //
+      // هذا المسار ساخن — قياس على اللوج: 92 orders/updated مقابل 24 orders/create، أي
+      // ~4 تحديثات لكل أوردر. وكان يكتب العنوان الجديد فوق القديم دون أي أثر، حتى على
+      // حركة سُلّمت بالفعل إلى Bosta. النتيجة: النظام يعرض عنواناً والشحنة ذاهبة إلى آخر،
+      // ولا شيء في الشاشة يشير إلى الاختلاف.
+      //
+      // Bosta لا تسمح بتعديل عنوان شحنة قائمة (لا يوجد سوى POST /deliveries و
+      // PUT /deliveries/:id/terminate)، فالإصلاح التلقائي مستحيل ومحاولته تفشل بصمت.
+      // البديل: نُبقي العنوان المشحون كما هو — لأنه يصف أين ذهبت الشحنة فعلاً — ونسجّل
+      // التعارض ليقرر الموظف: يتصل ببوسطا أو يلغي الشحنة ويعيد إنشاءها.
+      const tx = await this.txModel
+        .findOne({ shopifyOrderId: shopifyId })
+        .select('bostaOrderId bostaStatus shippingAddress shippingCity addressChangeConflict')
+        .lean() as any;
+
+      const isShipped = !!tx?.bostaOrderId;
+      const addrChanged = !!address && !!tx && address !== (tx.shippingAddress || '');
+      const cityChanged = !!city && !!tx && city !== (tx.shippingCity || '');
+
+      if (isShipped && (addrChanged || cityChanged)) {
+        // تعارض: الشحنة خرجت بالفعل. لا نكتب فوق العنوان، ونسجّل الاختلاف.
+        txUpdate.addressChangeConflict = {
+          oldAddress: tx.shippingAddress || '',
+          newAddress: address || tx.shippingAddress || '',
+          oldCity: tx.shippingCity || '',
+          newCity: city || tx.shippingCity || '',
+          detectedAt: new Date().toISOString(),
+          bostaStatus: tx.bostaStatus || '',
+          // تعارض جديد يعيد فتح الحالة — تغيير ثانٍ بعد "تم التعامل معه" واقعة مستقلة
+          resolved: false,
+        };
+        this.logger.warn(
+          `تعارض عنوان بعد الشحن — ref=${order.ref} bostaStatus=${tx.bostaStatus || '-'} ` +
+          `"${tx.shippingAddress || ''}" → "${address}"`,
+        );
+      } else {
+        // لم تُشحن بعد (أو لا يوجد تغيير) — التحديث آمن وهو السلوك الصحيح
+        if (address) txUpdate.shippingAddress = address;
+        if (city) txUpdate.shippingCity = city;
+        if (city) txUpdate.shippingBostaCity = bostaCity;
+        if (govArabic) txUpdate.shippingGov = govArabic;
+      }
+
       await this.txModel.updateOne(
         { shopifyOrderId: shopifyId },
         { $set: txUpdate },
       );
+
+      if (txUpdate.addressChangeConflict) {
+        this.emit('tx:address-conflict', { shopifyOrderId: shopifyId, ref: order.ref });
+      }
+      if (totalChanged) {
+        this.emit('shopify:value-conflict', { shopifyOrderId: shopifyId, ref: order.ref });
+      }
 
       this.logger.log(`🔄 تحديث أوردر Shopify: ${order.ref}`);
       return { updated: true };
     } catch (err) {
       this.logger.error(`❌ خطأ في تحديث الأوردر: ${err.message}`);
       return { updated: false, reason: err.message };
+    }
+  }
+
+  /**
+   * webhook «orders/cancelled» — الأوردر أُلغي في شوبيفاي نفسه.
+   *
+   * كان هذا الـ webhook مسجّلاً في شوبيفاي ويُرمى بصمت مع 200 OK: أوردر يلغيه العميل أو
+   * التاجر من المتجر يظل `pending` في النظام إلى الأبد، فيؤكّده موظف ويشحنه لعميل ألغى طلبه.
+   *
+   * ⚠ المسار مختلف جذرياً حسب ما إذا كان الأوردر قد أُكِّد:
+   *
+   *   pending  → لم يتحرك شيء (لا مخزون ولا خزنة ولا فاتورة)، فالإلغاء يُطبَّق مباشرة.
+   *              هذا هو نفس ما يفعله `cancelOrder` يدوياً، والواقعة حدثت بالفعل في شوبيفاي.
+   *
+   *   confirmed → توجد حركة: مخزون خُصم، خزنة تحرّكت، وربما شحنة عند Bosta. إلغاؤها يمرّ
+   *              عبر `performCancellation` الذي يعكس كل ذلك — وهذا **قرار مالي لا يُتخذ من
+   *              webhook**. يُسجَّل التعارض ويُعرض للموظف ليقرر، بنفس منطق تعارض العنوان.
+   *
+   * لا يرمي أبداً: خطأ هنا يجعل شوبيفاي يعيد المحاولة ثم يعطّل الـ webhook كله.
+   */
+  async handleOrderCancelled(orderData: any): Promise<{ handled: boolean; reason?: string }> {
+    try {
+      const shopifyId = String(orderData.id);
+      const order = await this.shopifyOrderModel.findOne({ shopifyId });
+      if (!order) return { handled: false, reason: 'الأوردر غير موجود في النظام' };
+      if (order.cancelled) return { handled: true, reason: 'ملغي بالفعل' };
+
+      const at = orderData.cancelled_at || new Date().toISOString();
+      // سبب شوبيفاي حقل حر (customer/fraud/inventory/declined/other) — يُحفظ كملاحظة،
+      // بينما الرمز يبقى ثابتاً ليظل الإلغاء قابلاً للعدّ في تقرير الإلغاءات.
+      const note = String(orderData.cancel_reason || '').trim();
+      const summary = cancelReasonSummary(SHOPIFY_CANCELLED_CODE, note);
+
+      const tx: any = await this.txModel
+        .findOne({ shopifyOrderId: shopifyId })
+        .select('_id ref cancelled bostaOrderId shopifyCancelConflict')
+        .lean();
+
+      // الحركة موجودة وغير ملغاة → لا نلغي تلقائياً، نرفع تعارضاً
+      if (tx && !tx.cancelled) {
+        await this.txModel.updateOne(
+          { _id: tx._id },
+          {
+            $set: {
+              shopifyCancelConflict: {
+                cancelledAt: at,
+                reason: summary,
+                shipped: !!tx.bostaOrderId,
+                detectedAt: new Date().toISOString(),
+                resolved: false,
+              },
+            },
+          },
+        );
+        this.logger.warn(
+          `أوردر أُلغي في شوبيفاي وله حركة مؤكدة — ref=${order.ref} shipped=${!!tx.bostaOrderId}`,
+        );
+        this.emit('tx:shopify-cancelled', { shopifyOrderId: shopifyId, ref: order.ref });
+        return { handled: true, reason: 'تم تسجيل تعارض — الحركة تحتاج قراراً يدوياً' };
+      }
+
+      // لا توجد حركة (أو ملغاة بالفعل) → الإلغاء آمن ويُطبَّق مباشرة
+      order.cancelled = true;
+      order.cancelledBy = 'Shopify';
+      order.cancelledAt = at;
+      order.cancelReason = summary;
+      order.cancelReasonCode = SHOPIFY_CANCELLED_CODE;
+      order.cancelReasonNote = note;
+      // طلب إلغاء معلّق لم يعد له معنى بعد وقوع الإلغاء فعلاً
+      if (order.cancelRequest) order.cancelRequest = null;
+      await order.save();
+
+      this.logger.log(`تم إلغاء أوردر Shopify من المتجر: ${order.ref}`);
+      this.emit('shopify:order-cancelled', { shopifyOrderId: shopifyId, ref: order.ref });
+      return { handled: true };
+    } catch (err) {
+      this.logger.error(`خطأ في معالجة إلغاء شوبيفاي: ${(err as Error).message}`);
+      return { handled: false, reason: (err as Error).message };
+    }
+  }
+
+  /**
+   * webhooks «fulfillments/create» و «fulfillments/update».
+   *
+   * ⚠ أغلب هذه الأحداث صدى لفعلنا نحن: `BostaService.createOrder` ينادي
+   *   `shopifyAdmin.fulfillOrder` فور نجاح الشحن، فيرتد الحدث إلينا. التصرف بناءً عليه
+   *   دون تمييز يعني حلقة — نكتب حالة كتبناها للتو، وقد نُشغّل مزامنة عند كل تحديث.
+   *
+   * لذلك: الحدث يُسجَّل ويُقارَن برقم تتبع Bosta المخزَّن، ولا يُكتب أي شيء إلا في الحالة
+   * الوحيدة التي تحمل معلومة جديدة — شحنة أنشأها شخص من لوحة شوبيفاي مباشرة برقم تتبع
+   * لا يعرفه النظام. تلك حالة يجب أن يراها الموظف لأن الطلب شُحن خارج المسار.
+   *
+   * لا يرمي أبداً — خطأ هنا يعطّل الـ webhook لدى شوبيفاي.
+   */
+  async handleFulfillment(fulfillmentData: any): Promise<{ handled: boolean; reason?: string }> {
+    try {
+      const shopifyId = String(fulfillmentData.order_id || '');
+      if (!shopifyId) return { handled: false, reason: 'لا يوجد order_id' };
+
+      const order = await this.shopifyOrderModel.findOne({ shopifyId }).lean() as any;
+      if (!order) return { handled: false, reason: 'الأوردر غير موجود في النظام' };
+
+      const tracking = String(fulfillmentData.tracking_number || '').trim();
+      const tx: any = await this.txModel
+        .findOne({ shopifyOrderId: shopifyId })
+        .select('_id ref bostaTrackingNumber bostaOrderId externalFulfillment')
+        .lean();
+
+      // شحنتنا نحن — رقم التتبع هو ما أرسلناه إلى شوبيفاي بعد إنشاء شحنة Bosta
+      const isOurs =
+        !!tx &&
+        !!tracking &&
+        (tracking === (tx.bostaTrackingNumber || '') || tracking === (tx.bostaOrderId || ''));
+
+      if (isOurs) {
+        this.logger.log(`fulfillment صادر عنّا — ref=${order.ref} tracking=${tracking}`);
+        return { handled: true, reason: 'صدى لشحنة أنشأها النظام' };
+      }
+
+      // شحنة خارجية: أُنشئت من لوحة شوبيفاي مباشرة، والنظام لا يعرف عنها شيئاً
+      if (tx && !tx.bostaOrderId) {
+        await this.txModel.updateOne(
+          { _id: tx._id },
+          {
+            $set: {
+              externalFulfillment: {
+                trackingNumber: tracking,
+                trackingCompany: String(fulfillmentData.tracking_company || '').trim(),
+                status: String(fulfillmentData.status || '').trim(),
+                detectedAt: new Date().toISOString(),
+                resolved: false,
+              },
+            },
+          },
+        );
+        this.logger.warn(
+          `شحنة من خارج النظام — ref=${order.ref} tracking=${tracking || '-'}`,
+        );
+        this.emit('tx:external-fulfillment', { shopifyOrderId: shopifyId, ref: order.ref });
+        return { handled: true, reason: 'تم تسجيل شحنة خارجية' };
+      }
+
+      // شُحن عبر Bosta ثم ظهر رقم تتبع مختلف — يُسجَّل في اللوج ولا يُكتب فوق شيء
+      this.logger.warn(
+        `fulfillment برقم تتبع مختلف — ref=${order.ref} bosta=${tx?.bostaTrackingNumber || '-'} shopify=${tracking || '-'}`,
+      );
+      return { handled: true, reason: 'رقم تتبع مختلف — مسجَّل في اللوج' };
+    } catch (err) {
+      this.logger.error(`خطأ في معالجة fulfillment: ${(err as Error).message}`);
+      return { handled: false, reason: (err as Error).message };
     }
   }
 
@@ -440,7 +676,17 @@ export class ShopifyService {
   }
 
   // قبول الأوردر وتحويله لحركة مبيعات
-  async approveOrder(orderId: string, approvedBy: string, deposit = 0, paymentMethod?: string): Promise<{ success: boolean; txId?: string }> {
+  /**
+   * @param carrierCode Which company will ship this order — chosen in the confirm dialog, which
+   *   pre-selects `settings.defaultCarrierCode` so the common case stays one click.
+   *
+   *   ⚠ This parameter is why the method exists in this shape. Before it, approveOrder wrote
+   *   `shipCost` and `shipZone` but **never `shipCo`**, so every confirmed Shopify sale carried no
+   *   shipping company at all — while the manual form refused to save without one. That single
+   *   omission put the whole Shopify volume into the «غير محدد» bucket of the shipping report and
+   *   left `order-audit.service.ts`'s per-company breakdown measuring nothing.
+   */
+  async approveOrder(orderId: string, approvedBy: string, deposit = 0, paymentMethod?: string, carrierCode?: string): Promise<{ success: boolean; txId?: string }> {
     const order = await this.shopifyOrderModel.findById(orderId);
     if (!order) throw new NotFoundException('الأوردر غير موجود');
     if (order.status !== 'pending') {
@@ -473,6 +719,23 @@ export class ShopifyService {
     const bostaCity = (order as any).shippingBostaCity || order.shippingCity || '';
     const shipZone = cityToShipZone(bostaCity);
 
+    // Carrier — required, exactly as it is on the manual form. Falling back to the configured
+    // default keeps a caller that omits it working, but an UNKNOWN code is rejected rather than
+    // dropped: the operator is still on screen to correct it, and a silently dropped carrier is
+    // the failure this whole change exists to end.
+    const settingsDoc = await this.settingsService.getSettings();
+    const resolvedCarrier =
+      String(carrierCode || '').trim() || String((settingsDoc as any).defaultCarrierCode || '').trim();
+    if (resolvedCarrier && !isValidCarrier(resolvedCarrier)) {
+      throw new BadRequestException('شركة الشحن غير معروفة');
+    }
+    // `shipCost` here is what the CUSTOMER was charged (Shopify's shipping_lines), not what the
+    // carrier costs us — hence source 'shopify'. Recording that distinction is what will let the
+    // two be compared once actualShipCost is captured.
+    const shipTariff = resolvedCarrier
+      ? { zone: shipZone, price: Number(order.shipCost) || 0, source: 'shopify' as const, at: confirmedAt }
+      : null;
+
     // Pre-creation stock snapshot for the Inventory Movement Log — taken BEFORE the
     // transaction exists so this order's own items don't pollute their own "before"
     // balance. Mirrors TransactionsService.create(); see recordInventoryMovementForSale.
@@ -496,6 +759,9 @@ export class ShopifyService {
       itemsTotal: order.itemsTotal,
       shipCost: order.shipCost,
       shipZone,
+      carrierCode: resolvedCarrier,
+      shipCo: resolvedCarrier ? carrierLabel(resolvedCarrier, 'en') : '',
+      shipTariff,
       discount: order.discount,
       discountCode: order.discountCode || '',
       discountCodeType: order.discountType || '',
@@ -849,19 +1115,186 @@ export class ShopifyService {
     return { success: true };
   }
 
-  // إلغاء أوردر معلق (Admin فقط) — يستبعده من الإحصائيات مع إمكانية الاسترجاع
-  async cancelOrder(orderId: string, cancelledBy: string, reason = ''): Promise<{ success: boolean }> {
+  /**
+   * إلغاء أوردر معلق (Admin فقط) — يستبعده من الإحصائيات مع إمكانية الاسترجاع.
+   *
+   * The reason used to be free text and optional, which made these cancellations uncountable —
+   * the Shopify page is where the largest share of them happen, and the reports could say nothing
+   * about why. It is now a code from the shared list, validated for the `shopify` stage.
+   *
+   * `reasonCode` is optional in the signature so `restoreOrder`-style internal callers and any
+   * un-migrated client keep working; when it is absent the free text is stored as before and the
+   * report buckets the row under «غير محدد».
+   */
+  async cancelOrder(
+    orderId: string,
+    cancelledBy: string,
+    reason = '',
+    reasonCode = '',
+    reasonNote = '',
+  ): Promise<{ success: boolean }> {
     const order = await this.shopifyOrderModel.findById(orderId);
     if (!order) throw new NotFoundException('الأوردر غير موجود');
     if (order.status !== 'pending') {
       return { success: false };
     }
+    // Shared with the request path so the two can never accept different reasons.
+    const { code, note, summary } = this.resolveShopifyCancelReason(
+      reasonCode,
+      reasonNote,
+      reason,
+    );
     order.cancelled = true;
     order.cancelledBy = cancelledBy;
     order.cancelledAt = new Date().toISOString();
-    order.cancelReason = reason;
+    order.cancelReason = summary;
+    order.cancelReasonCode = code;
+    order.cancelReasonNote = code ? note : '';
     await order.save();
     this.logger.log(`🚫 تم إلغاء أوردر Shopify: ${order.ref}`);
+    return { success: true };
+  }
+
+
+  /**
+   * Validates a cancellation reason for the shopify stage. Extracted so the direct-cancel path and
+   * the request path cannot drift into accepting different reasons for the same action.
+   *
+   * @throws BadRequestException on an unknown code, a code not valid at this stage, or `other`
+   *   with no note — an "other" with no detail is the unusable row the whole system exists to stop.
+   */
+  private resolveShopifyCancelReason(
+    reasonCode: string,
+    reasonNote: string,
+    fallbackText = '',
+  ): { code: string; note: string; summary: string } {
+    const code = String(reasonCode || '').trim();
+    const note = String(reasonNote || '').trim();
+    if (!code) {
+      const text = String(fallbackText || '').trim();
+      if (!text) throw new BadRequestException('يجب اختيار سبب الإلغاء');
+      return { code: '', note: '', summary: text };
+    }
+    const def = cancelReasonDef(code);
+    if (!def || !def.stages.includes('shopify')) {
+      throw new BadRequestException('سبب الإلغاء غير معروف أو غير متاح لأوردرات شوبيفاي');
+    }
+    // ⚠ رمز systemOnly يكتبه النظام وحده. هذه الميثود تخدم مسارَي الإلغاء اليدوي
+    //   (مباشر + طلب)، فقبوله هنا يسمح لموظف بوسم إلغائه اليدوي كإلغاء من شوبيفاي.
+    if (def.systemOnly) {
+      throw new BadRequestException('هذا السبب يسجّله النظام تلقائياً ولا يمكن اختياره');
+    }
+    if (def.requiresNote && !note) {
+      throw new BadRequestException('يجب كتابة تفاصيل السبب عند اختيار «سبب آخر»');
+    }
+    return { code, note, summary: cancelReasonSummary(code, note) };
+  }
+
+  /**
+   * A staff member asks for an order to be cancelled. Nothing is cancelled here.
+   *
+   * ⚠ `cancelled` deliberately stays false and the order keeps its `pending` status, so it is
+   *   still visible to everyone in the pending list. A request is not an outcome: letting the
+   *   request itself remove the order from view would hand a staff member the effect of the
+   *   permission they were not granted.
+   */
+  async requestCancelOrder(
+    orderId: string,
+    requestedBy: string,
+    reasonCode: string,
+    reasonNote: string,
+    requestedById = '',
+    requestedByUsername = '',
+  ): Promise<{ success: boolean }> {
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) throw new NotFoundException('الأوردر غير موجود');
+    if (order.cancelled) throw new BadRequestException('الأوردر ملغي بالفعل');
+    if (order.status !== 'pending') {
+      throw new BadRequestException(
+        'لا يمكن طلب إلغاء أوردر غادر قائمة الانتظار — راجع سجل المعاملات',
+      );
+    }
+    if (order.cancelRequest && order.cancelRequest.status === 'معلق') {
+      throw new BadRequestException('يوجد طلب إلغاء معلق بالفعل لهذا الأوردر');
+    }
+    // Validated at submission, not at approval: a bad reason must be rejected while the
+    // requester is still on screen to fix it.
+    const resolved = this.resolveShopifyCancelReason(reasonCode, reasonNote);
+    order.cancelRequest = {
+      requestedBy,
+      requestedById,
+      requestedByUsername,
+      reason: resolved.summary,
+      cancelReasonCode: resolved.code,
+      cancelReasonNote: resolved.note,
+      requestedAt: new Date().toISOString(),
+      status: 'معلق',
+    };
+    await order.save();
+    this.logger.log(`🔔 طلب إلغاء أوردر Shopify: ${order.ref} (بواسطة ${requestedBy})`);
+    return { success: true };
+  }
+
+  /**
+   * Manager approves a pending request — this is where the order is actually cancelled.
+   *
+   * The requester's reason is carried through unchanged: the approver decides WHETHER the
+   * cancellation happens, not WHY. Dropping the code here would send every approved request to
+   * «غير محدد» in the report and make it a measure of which path was used rather than of what
+   * went wrong.
+   */
+  async approveCancelRequest(
+    orderId: string,
+    reviewedBy: string,
+  ): Promise<{ success: boolean }> {
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) throw new NotFoundException('الأوردر غير موجود');
+    const cr = order.cancelRequest;
+    if (!cr || cr.status !== 'معلق') {
+      throw new BadRequestException('لا يوجد طلب إلغاء معلق لهذا الأوردر');
+    }
+    if (order.cancelled) throw new BadRequestException('الأوردر ملغي بالفعل');
+
+    order.cancelled = true;
+    // The requester owns the cancellation, not the approver — the report attributes it to the
+    // person who made the operational decision. `reviewedBy` below records who authorised it.
+    order.cancelledBy = cr.requestedBy || reviewedBy;
+    order.cancelledAt = new Date().toISOString();
+    order.cancelReason = cr.reason || '';
+    order.cancelReasonCode = cr.cancelReasonCode || '';
+    order.cancelReasonNote = cr.cancelReasonNote || '';
+    order.cancelRequest = {
+      ...cr,
+      status: 'معتمد',
+      reviewedBy,
+      reviewedAt: new Date().toISOString(),
+    };
+    await order.save();
+    this.logger.log(`✅ اعتماد إلغاء أوردر Shopify: ${order.ref} (بواسطة ${reviewedBy})`);
+    return { success: true };
+  }
+
+  /** Manager rejects the request. The order is untouched and stays live. */
+  async rejectCancelRequest(
+    orderId: string,
+    reviewedBy: string,
+    rejectedReason = '',
+  ): Promise<{ success: boolean }> {
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) throw new NotFoundException('الأوردر غير موجود');
+    const cr = order.cancelRequest;
+    if (!cr || cr.status !== 'معلق') {
+      throw new BadRequestException('لا يوجد طلب إلغاء معلق لهذا الأوردر');
+    }
+    order.cancelRequest = {
+      ...cr,
+      status: 'مرفوض',
+      reviewedBy,
+      reviewedAt: new Date().toISOString(),
+      rejectedReason: String(rejectedReason || '').trim(),
+    };
+    await order.save();
+    this.logger.log(`🚫 رفض طلب إلغاء أوردر Shopify: ${order.ref} (بواسطة ${reviewedBy})`);
     return { success: true };
   }
 
@@ -873,6 +1306,11 @@ export class ShopifyService {
     order.cancelledBy = '';
     order.cancelledAt = '';
     order.cancelReason = '';
+    order.cancelReasonCode = '';
+    order.cancelReasonNote = '';
+    // Otherwise a restored order keeps an 'معتمد' request attached, so the approvals page would
+    // still list a cancellation that no longer exists.
+    order.cancelRequest = null;
     await order.save();
     this.logger.log(`↩️ تم استرجاع أوردر Shopify: ${order.ref}`);
     return { success: true };

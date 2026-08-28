@@ -46,16 +46,33 @@ export class EmployeePerformanceController {
     return this.shiftService.setOnCall(id);
   }
 
+  /**
+   * `period` is one of week|month|year|all and defaults to 'month' — the reset cycle.
+   * `periodKey` ("2026-08", "2026-W34", "2026") selects WHICH one; omit it for the
+   * current period. Both fall back rather than 400ing inside resolvePeriod(): a stale
+   * bookmark or a deleted month should land on today, not on an error page.
+   */
   @Get('dashboard')
   @Roles('admin')
-  async getDashboard() {
-    return this.scoringService.getDashboardStats();
+  async getDashboard(@Query('period') period?: string, @Query('periodKey') periodKey?: string) {
+    return this.scoringService.getDashboardStats(period, periodKey);
+  }
+
+  /** The periods that actually have data — what the month picker is built from. */
+  @Get('periods')
+  @Roles('admin')
+  async getPeriods(@Query('period') period?: string) {
+    return this.scoringService.getAvailablePeriods(period);
   }
 
   @Get('my-summary')
-  async getMySummary(@Request() req: any) {
+  async getMySummary(
+    @Request() req: any,
+    @Query('period') period?: string,
+    @Query('periodKey') periodKey?: string,
+  ) {
     const userId = req.user?.userId || req.user?.sub || '';
-    return this.scoringService.getMyPerformanceSummary(String(userId));
+    return this.scoringService.getMyPerformanceSummary(String(userId), period, periodKey);
   }
 
   @Get('my-orders')
@@ -67,8 +84,13 @@ export class EmployeePerformanceController {
 
   @Get('logs')
   @Roles('admin')
-  async getLogs(@Query('employeeId') employeeId?: string, @Query('orderId') orderId?: string) {
-    return this.scoringService.getLogs({ employeeId, orderId });
+  async getLogs(
+    @Query('employeeId') employeeId?: string,
+    @Query('orderId') orderId?: string,
+    @Query('period') period?: string,
+    @Query('periodKey') periodKey?: string,
+  ) {
+    return this.scoringService.getLogs({ employeeId, orderId, period, periodKey });
   }
 
   @Post('manual-bonus')

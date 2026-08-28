@@ -92,11 +92,56 @@ export class Transaction {
   @Prop({ required: true })
   employee: string;
 
+  /**
+   * Display name of the shipping company, e.g. «Bosta».
+   *
+   * ⚠ Kept as the free-text field it always was, and now DERIVED from `carrierCode` at write time.
+   * Every existing consumer renders it verbatim — the invoice view, the pickup prep group, the
+   * archive export, the order-audit report — so keeping it populated is what makes `carrierCode`
+   * additive rather than a migration. Do not remove it; do not group reports by it.
+   */
   @Prop()
   shipCo: string;
 
+  /**
+   * Stable carrier code from shared/carriers.constants.ts. **This is what reports group by.**
+   *
+   * '' on every row written before the carrier registry existed, and on any caller that supplied
+   * only a legacy name that resolved to no known carrier. Reports bucket those under
+   * LEGACY_CARRIER_CODE («غير محدد») rather than dropping them, so shipping totals always equal
+   * what actually shipped — and that bucket shrinking is the adoption metric.
+   */
+  @Prop({ default: '' })
+  carrierCode: string;
+
   @Prop()
   shipZone: string;
+
+  /**
+   * The tariff FROZEN at the moment this transaction was written.
+   *
+   * Without it `shipCost` is a bare number with no explanation: editing a carrier's price in
+   * Settings left old invoices at the old figure and new ones at the new one, with nothing
+   * recording that a rate change had happened. Two invoices, same carrier, same zone, different
+   * cost, and no answer to "why".
+   *
+   * `source` is the load-bearing part:
+   *   'settings' – taken from the carrier's configured tariff (the normal case)
+   *   'manual'   – an operator overrode the amount; reports can surface off-tariff pricing
+   *                instead of hiding it
+   *   'shopify'  – the figure came from the Shopify order (what the CUSTOMER was charged), which
+   *                is a different quantity from what the carrier costs us
+   *
+   * ⚠ `type: Object` is required — a nullable/object @Prop without it throws
+   *   CannotDetermineTypeError at module load and takes the whole API down with it.
+   */
+  @Prop({ type: Object, default: null })
+  shipTariff: {
+    zone: string;
+    price: number;
+    source: 'settings' | 'manual' | 'shopify';
+    at: string;
+  } | null;
 
   /** شركة الشحن التي رجعت بها شحنة المرتجع من العميل (مرتجع مبيعات فقط، اختياري). */
   @Prop({ default: '' })
@@ -145,14 +190,40 @@ export class Transaction {
   @Prop({ default: false })
   cancelled: boolean;
 
+  /**
+   * Human-readable summary, kept for every consumer that renders it verbatim (invoice view,
+   * archive export, vault note). Since the structured system it is now DERIVED from
+   * `cancelReasonCode` + `cancelReasonNote` via `cancelReasonSummary()` — writing it directly is
+   * still accepted so pre-existing rows and any un-migrated caller keep working.
+   */
   @Prop()
   cancelReason: string;
+
+  /**
+   * The countable reason. One of `CANCEL_REASON_CODES` (see shared/cancellation.constants.ts).
+   * Empty on rows cancelled before this system existed — the reports bucket those under
+   * `LEGACY_CANCEL_REASON_CODE` rather than dropping them.
+   */
+  @Prop({ default: '' })
+  cancelReasonCode: string;
+
+  /** Optional free-text detail alongside the code. Required only when the code is `other`. */
+  @Prop({ default: '' })
+  cancelReasonNote: string;
 
   @Prop()
   cancelledBy: string;
 
   @Prop()
   cancelledAt: string;
+
+  /**
+   * Where the cancellation was initiated: 'transaction' (سجل المعاملات) or 'shopify' (an order
+   * cancelled on the Shopify page that had already been pushed to transactions). Lets the reports
+   * separate "cancelled before we touched it" from "cancelled after money and stock moved".
+   */
+  @Prop({ default: '' })
+  cancelStage: string;
 
   /**
    * Set when a supplier waived this purchase invoice's unpaid remainder (credit-memo treatment).
@@ -190,7 +261,15 @@ export class Transaction {
     requestedBy: string;
     requestedById?: string;
     requestedByUsername?: string;
+    /** Derived summary of the two fields below — displayed verbatim in the approvals page. */
     reason: string;
+    /**
+     * The countable reason chosen by the requester. Carried through approval onto the transaction
+     * itself, so a cancellation that went through the request→approve flow is counted in the
+     * reports exactly like a direct admin cancellation.
+     */
+    cancelReasonCode?: string;
+    cancelReasonNote?: string;
     requestedAt: string;
     status: string; // 'معلق' | 'معتمد' | 'مرفوض'
     reviewedBy?: string;
@@ -370,6 +449,85 @@ export class Transaction {
   /** Full Bosta API response payload — for audit / debugging */
   @Prop({ type: Object, default: null })
   bostaRawResponse: Record<string, unknown> | null;
+
+  /**
+   * العنوان الفعلي الذي أُرسل إلى Bosta لحظة إنشاء الشحنة — مجمَّد ولا يتغير أبداً.
+   *
+   * ⚠ بدونه لا توجد أي طريقة لمعرفة أن العنوان اختلف: `shippingAddress` كان يُكتب فوقه
+   *   مباشرة من webhook شوبيفاي، فيختفي العنوان الذي شُحنت عليه الشحنة فعلاً ويظهر مكانه
+   *   العنوان الجديد — بينما Bosta ما زالت تحمل القديم. نفس منطق تجميد `shipTariff`
+   *   و`bostaOriginalCod`: نسجّل ما حدث بالفعل، لا ما هو صحيح الآن.
+   *
+   * `type: Object` إلزامي — @Prop كائنية بدونه ترمي CannotDetermineTypeError عند تحميل
+   * الموديول وتُسقط الـ API بالكامل (انظر قاعدة nullable-@Prop في CLAUDE.md).
+   */
+  @Prop({ type: Object, default: null })
+  bostaShippedAddress: {
+    firstLine: string;
+    city: string;
+    phone: string;
+    sentAt: string; // ISO
+  } | null;
+
+  /**
+   * تعارض عنوان: العميل عدّل العنوان في شوبيفاي بعد إرسال الشحنة إلى Bosta.
+   *
+   * ⚠ Bosta لا توفّر endpoint لتعديل عنوان شحنة قائمة — الموجود فقط POST /deliveries
+   *   و PUT /deliveries/:id/terminate. فلا يمكن إصلاح هذا تلقائياً، والمحاولة تفشل بصمت
+   *   وتمنح إحساساً زائفاً بأن الأمر عولج. لذلك يُسجَّل التعارض ويُعرض للموظف ليقرر:
+   *   يتصل ببوسطا، أو يلغي الشحنة ويعيد إنشاءها.
+   *
+   * يبقى `shippingAddress` على العنوان المشحون — هو الحقيقة التي تصف أين ذهبت الشحنة.
+   */
+  /**
+   * الأوردر أُلغي في شوبيفاي بينما الحركة المقابلة ما زالت قائمة.
+   *
+   * ⚠ لا يُلغى شيء تلقائياً. إلغاء حركة مؤكدة يمرّ عبر performCancellation الذي يعكس
+   *   الخزنة والمخزون ودفتر المورد — قرار مالي لا يُتخذ من webhook. يُعرض للموظف ليقرر.
+   *
+   * `shipped` يُلتقط لحظة الاكتشاف لأنه يغيّر الإجراء المطلوب: شحنة خرجت تحتاج إيقافاً
+   * لدى Bosta قبل أي شيء آخر.
+   */
+  /**
+   * شحنة أُنشئت من لوحة شوبيفاي مباشرة دون المرور بالنظام (لا bostaOrderId).
+   *
+   * ⚠ لا يُسجَّل إلا عندما يكون رقم التتبع مختلفاً عن أرقام Bosta المخزَّنة — أغلب أحداث
+   *   fulfillment صدى لشحنة أنشأها النظام بنفسه، والتصرف بناءً عليها دون تمييز يعني حلقة.
+   */
+  @Prop({ type: Object, default: null })
+  externalFulfillment: {
+    trackingNumber: string;
+    trackingCompany: string;
+    status: string;
+    detectedAt: string;
+    resolved: boolean;
+    resolvedBy?: string;
+    resolvedAt?: string;
+  } | null;
+
+  @Prop({ type: Object, default: null })
+  shopifyCancelConflict: {
+    cancelledAt: string;
+    reason: string;
+    shipped: boolean;
+    detectedAt: string;
+    resolved: boolean;
+    resolvedBy?: string;
+    resolvedAt?: string;
+  } | null;
+
+  @Prop({ type: Object, default: null })
+  addressChangeConflict: {
+    oldAddress: string;
+    newAddress: string;
+    oldCity: string;
+    newCity: string;
+    detectedAt: string;   // ISO
+    bostaStatus: string;  // حالة الشحنة لحظة اكتشاف التعارض
+    resolved: boolean;
+    resolvedBy?: string;
+    resolvedAt?: string;
+  } | null;
 
   /**
    * Audit trail of out-of-order Bosta status updates that were ignored because

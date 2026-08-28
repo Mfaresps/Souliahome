@@ -6,9 +6,19 @@ import {
   SupplierReturnOrder,
   SupplierReturnOrderSchema,
 } from '../supplier-returns/schemas/supplier-return.schema';
+import {
+  ShopifyOrder,
+  ShopifyOrderSchema,
+} from '../shopify/schemas/shopify-order.schema';
 import { TransactionsService } from './transactions.service';
 import { ReferenceDetailService } from './reference-detail.service';
 import { ReportsExportService } from './reports-export.service';
+import { CarrierStatementService } from './carrier-statement.service';
+import { CarrierSettlementService } from './carrier-settlement.service';
+import {
+  CarrierImport,
+  CarrierImportSchema,
+} from './schemas/carrier-import.schema';
 import { TransactionsController } from './transactions.controller';
 import { ProductsModule } from '../products/products.module';
 import { ExpensesModule } from '../expenses/expenses.module';
@@ -31,6 +41,14 @@ import { FollowUpsModule } from '../followups/followups.module';
       // Schema only, not SupplierReturnsModule — that module already imports this one, so importing
       // it back would be circular. The KPI methods only need to READ settled returns.
       { name: SupplierReturnOrder.name, schema: SupplierReturnOrderSchema },
+      // Schema only, same reason as SupplierReturnOrder above: ShopifyModule is already imported
+      // here, and the cancellations report only needs to READ orders cancelled on the Shopify page
+      // — the ones that never became a transaction and are therefore invisible to every other
+      // query in this service.
+      { name: ShopifyOrder.name, schema: ShopifyOrderSchema },
+      // Audit record for carrier settlement-file imports. Owned by this module because settling a
+      // row goes through TransactionsService.collect() — see carrier-settlement.service.ts.
+      { name: CarrierImport.name, schema: CarrierImportSchema },
     ]),
     ProductsModule,
     ExpensesModule,
@@ -49,7 +67,13 @@ import { FollowUpsModule } from '../followups/followups.module';
     forwardRef(() => FollowUpsModule),
   ],
   controllers: [TransactionsController],
-  providers: [TransactionsService, ReferenceDetailService, ReportsExportService],
-  exports: [TransactionsService],
+  providers: [
+    TransactionsService,
+    ReferenceDetailService,
+    ReportsExportService,
+    CarrierStatementService,
+    CarrierSettlementService,
+  ],
+  exports: [TransactionsService, CarrierStatementService, CarrierSettlementService],
 })
 export class TransactionsModule {}

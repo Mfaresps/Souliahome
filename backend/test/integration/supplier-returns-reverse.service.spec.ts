@@ -14,10 +14,12 @@ import { TransactionsService } from '../../src/transactions/transactions.service
 import { SuppliersService } from '../../src/suppliers/suppliers.service';
 import { SupplierLedgerService } from '../../src/supplier-ledger/supplier-ledger.service';
 import { SrAllocationService } from '../../src/supplier-returns/allocation.service';
+import { ProductsService } from '../../src/products/products.service';
 import {
   createMockMongooseModel,
   createMockSuppliersService,
   createMockSupplierLedgerService,
+  createMockProductsService,
 } from '../helpers/mocks';
 
 function buildCompletedReturn(overrides: Record<string, unknown> = {}) {
@@ -80,6 +82,8 @@ describe('SupplierReturnsService.reverseReturn()', () => {
         { provide: SuppliersService, useValue: suppliersService },
         { provide: SupplierLedgerService, useValue: supplierLedgerService },
         { provide: SrAllocationService, useValue: {} },
+        // SupplierReturnsService بتحل صورة الصنف بالكود في المسار العام.
+        { provide: ProductsService, useValue: createMockProductsService() },
       ],
     }).compile();
 

@@ -1,0 +1,71 @@
+/**
+ * SOULIA brand assets for generated documents (PDF / Excel exports).
+ *
+ * ⚠ These are the APP's own tokens, copied from `--primary` / `--accent` etc. in
+ * `frontend/public/index.html` (~line 46). The exports had been using a generic
+ * `#16a34a` green plus a rainbow of per-KPI hexes that appear nowhere in the
+ * product, so an exported report did not read as a SOULIA document at all.
+ * Keep the two in step: if a token changes there, change it here — nothing
+ * links them automatically.
+ */
+export const BRAND = {
+  /** --primary — the deep green the whole app is built on. */
+  primary: '#00311e',
+  /** --primary-light */
+  primaryLight: '#1a5c3a',
+  /** --accent — the lighter green used for emphasis. */
+  accent: '#2d7a4f',
+  /** --primary-pale — the tint behind selected rows. */
+  pale: '#e8f5ee',
+  /** --text */
+  ink: '#0f1f16',
+  /** --muted */
+  muted: '#6b8c78',
+  /** --border */
+  line: '#d8e4dd',
+  /** --surface */
+  surface: '#f8fafb',
+  /** Semantic accents, also lifted from the app palette. */
+  red: '#dc2626',
+  orange: '#e65100',
+  blue: '#1565c0',
+} as const;
+
+/** ARGB forms for ExcelJS, which takes 8-digit AARRGGBB rather than CSS hex. */
+export const BRAND_ARGB = {
+  primary: 'FF00311E',
+  accent: 'FF2D7A4F',
+  pale: 'FFE8F5EE',
+  surface: 'FFF8FAFB',
+  white: 'FFFFFFFF',
+  ink: 'FF0F1F16',
+  muted: 'FF6B8C78',
+  line: 'FFD8E4DD',
+} as const;
+
+/**
+ * The app font, named for generated documents.
+ *
+ * ⚠ Cairo is `--font-app` in index.html, but the PDF is rendered by headless
+ * Chromium inside the backend container, which ships no fonts of its own. The
+ * stack therefore ends in a real fallback chain rather than trusting Cairo to
+ * be present, and `renderReportHtml` also links the Google Fonts stylesheet so
+ * an environment with network access gets the true face. See
+ * `backend/Dockerfile` — the image installs Chromium plus a Noto Arabic font
+ * for exactly this reason.
+ */
+export const BRAND_FONT_STACK =
+  "'Cairo','Noto Sans Arabic','Noto Kufi Arabic','Segoe UI',Tahoma,Arial,sans-serif";
+
+/**
+ * The SOULIA wordmark, inlined.
+ *
+ * WARNING: it MUST be inlined rather than referenced as /soulia-logo.svg. The PDF is
+ * rendered by Puppeteer via setContent(), which gives the page no origin — a
+ * root-relative URL resolves to nothing and the header would print empty. The
+ * source file has a single fill (#515151), swapped here to currentColor so one
+ * CSS color on the container paints the mark in the brand green.
+ *
+ * Source: frontend/public/soulia-logo.svg — re-inline it if that file changes.
+ */
+export const SOULIA_LOGO_SVG = "<svg class=\"logo-mark\" version=\"1.1\" id=\"Layer_1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" x=\"0px\" y=\"0px\" viewBox=\"0 0 2000 576\" style=\"enable-background:new 0 0 2000 576;\" xml:space=\"preserve\"><style type=\"text/css\">.st0{fill:currentColor;}</style><g transform=\"translate(0,576) scale(0.1,-0.1)\"><g><path class=\"st0\" d=\"M14900,5436c-327-70-542-311-528-591c10-201,158-359,423-451c75-26,91-28,240-29c138,0,171,3,239,23c222,64,366,193,405,363c16,68,13,218-5,280c-41,141-152,276-276,337C15259,5436,15041,5466,14900,5436z\"/><path class=\"st0\" d=\"M5645,5424c-429-33-747-132-1017-315c-200-137-389-361-505-599c-214-443-294-939-280-1755c17-1002,154-1495,516-1855c318-318,705-453,1328-467c459-10,765,40,1038,171c536,257,850,730,964,1451c92,588,93,1281,0,1846c-81,497-286,897-586,1141c-322,262-673,373-1208,382C5785,5426,5673,5426,5645,5424z M5990,4339c248-40,395-247,445-625c43-332,41-1015-6-1354c-69-506-250-800-524-851c-75-14-234-6-301,15c-225,70-376,333-428,746c-46,367-41,1025,10,1365c53,349,171,557,367,651C5674,4343,5840,4364,5990,4339z\"/><path class=\"st0\" d=\"M1720,5405c-440-57-799-224-1076-499c-178-177-278-337-354-565c-86-257-93-562-19-784c96-291,393-629,789-899c52-36,257-161,455-278c483-286,631-386,700-477c111-145,44-269-175-324c-83-21-326-19-423,4c-264,62-420,250-493,597c-14,63-35,138-48,165c-66,144-276,246-481,231c-349-23-556-337-516-783c33-366,157-645,391-873c238-232,596-394,1003-454c395-58,734-37,1042,65c768,254,1187,942,1015,1667c-83,350-359,689-795,977c-61,40-261,158-445,261c-594,332-709,430-710,599c0,151,108,251,295,274c203,25,373-37,475-173c49-66,71-112,105-216c54-170,137-290,228-329c68-29,153-44,257-44c163,0,275,45,381,153c110,112,157,233,166,432c13,271-63,549-203,745c-185,259-511,443-914,514C2220,5418,1874,5426,1720,5405z\"/><path class=\"st0\" d=\"M17675,5403c-592-38-979-177-1227-441c-113-120-162-250-163-427c0-94,2-105,33-168c64-130,195-241,342-289c119-39,370-27,650,32c209,44,313,53,582,48c223-4,248-6,301-27c32-12,76-37,99-54c80-62,134-205,126-333c-4-65-24-68-108-13c-157,103-276,132-535,131c-548,0-980-153-1292-455c-170-165-293-364-373-604c-123-370-145-847-55-1203c78-310,205-540,410-745c202-203,445-334,733-396c141-30,415-37,537-14c214,40,437,168,646,371c91,89,120,101,155,67c25-25,50-88,64-158c39-202,104-283,273-337c88-28,352-36,456-14c218,46,354,187,416,430c42,167,50,406,50,1576c0,809-3,1084-13,1180c-73,680-216,1055-521,1361c-208,209-440,337-751,414C18279,5393,17940,5420,17675,5403z M18111,2906c148-32,293-135,349-250c42-85,53-157,54-331c0-126-3-162-22-228c-71-248-241-420-472-478c-88-22-271-18-355,8c-169,53-300,186-357,363c-26,82-28,267-4,378c31,143,116,302,207,389C17645,2883,17908,2949,18111,2906z\"/><path class=\"st0\" d=\"M12744,5385c-300-65-509-409-574-944c-23-194-32-774-27-1901c4-1010,6-1167,21-1250c81-471,275-715,656-826c255-74,665-85,907-24c275,70,384,229,387,565c1,155-9,214-55,311c-88,187-285,279-493,230c-93-22-123-1-152,106c-21,78-28,284-15,428c7,69,16,280,21,470s17,446,27,570c26,335,26,1452,0,1619c-22,137-66,281-115,374c-47,91-154,205-224,239C13008,5400,12871,5413,12744,5385z\"/><path class=\"st0\" d=\"M10890,5374c-199-52-339-198-397-414c-16-56-18-112-18-425c0-198,7-459,14-580c17-271,19-862,2-1050c-52-611-170-983-369-1167c-88-81-146-101-282-96c-95,3-112,6-172,36c-142,69-227,228-267,498c-35,232-38,741-11,1604c19,574-1,852-77,1095c-64,203-183,364-323,435c-102,52-294,70-401,37c-255-77-425-455-469-1037c-5-74-15-520-22-990c-13-918-8-1130,32-1436c84-645,307-1073,694-1331c245-164,543-234,936-220c193,7,304,25,426,68c165,58,274,132,345,236c35,50,67,67,103,54c13-5,68-45,124-88c180-140,305-193,457-193c144,0,222,35,319,142c118,129,195,339,221,603c24,243,37,3164,15,3400c-29,307-110,517-260,667c-87,88-161,129-276,153C11146,5394,10962,5393,10890,5374z\"/><path class=\"st0\" d=\"M14961,4259c-41-6-115-23-165-39c-204-66-331-199-388-407c-20-75-22-106-29-763c-4-377-7-1018-8-1425c-1-812,4-891,55-1019c53-133,181-237,349-282c94-25,353-31,435-9c225,58,378,226,452,495l23,85v1490v1490l-23,59c-62,164-183,273-345,311C15234,4264,15053,4271,14961,4259z\"/></g></g></svg>";

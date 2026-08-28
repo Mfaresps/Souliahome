@@ -12,6 +12,8 @@ import { TransactionsService } from '../../src/transactions/transactions.service
 import { Transaction } from '../../src/transactions/schemas/transaction.schema';
 import { ReturnRequest } from '../../src/returns/schemas/return-request.schema';
 import { SupplierReturnOrder } from '../../src/supplier-returns/schemas/supplier-return.schema';
+import { ShopifyOrder } from '../../src/shopify/schemas/shopify-order.schema';
+import { CarrierImport } from '../../src/transactions/schemas/carrier-import.schema';
 import { ProductsService } from '../../src/products/products.service';
 import { VaultService } from '../../src/vault/vault.service';
 import { PresenceGateway } from '../../src/auth/presence.gateway';
@@ -22,6 +24,7 @@ import { ShopifyAdminService } from '../../src/shopify/shopify-admin.service';
 import { SupplierLedgerService } from '../../src/supplier-ledger/supplier-ledger.service';
 import { SuppliersService } from '../../src/suppliers/suppliers.service';
 import { InventoryMovementsService } from '../../src/inventory-movements/inventory-movements.service';
+import { FollowUpsService } from '../../src/followups/followups.service';
 import {
   createMockMongooseModel,
   createMockProductsService,
@@ -34,6 +37,7 @@ import {
   createMockSupplierLedgerService,
   createMockSuppliersService,
   createMockInventoryMovementsService,
+  createMockFollowUpsService,
 } from '../helpers/mocks';
 import { mockProducts } from '../fixtures/products.fixture';
 import { buildSaleTransaction } from '../fixtures/transactions.fixture';
@@ -43,6 +47,13 @@ describe('TransactionsService (integration with mocks)', () => {
   let txModel: ReturnType<typeof createMockMongooseModel>;
   let returnModel: ReturnType<typeof createMockMongooseModel>;
   let supplierReturnModel: ReturnType<typeof createMockMongooseModel>;
+  // Read-only in the service (the cancellations report). ⚠ Must be provided here or the whole
+  // module fails to compile — see the FollowUpsService note in CLAUDE.md.
+  let shopifyOrderModel: ReturnType<typeof createMockMongooseModel>;
+  // ⚠ TransactionsService now injects this for the shipping report. A dependency added to the
+  // service and NOT registered here makes EVERY test in this file fail to compile a module —
+  // the FollowUpsService trap documented in CLAUDE.md.
+  let carrierImportModel: ReturnType<typeof createMockMongooseModel>;
   let productsService: ReturnType<typeof createMockProductsService>;
   let vaultService: ReturnType<typeof createMockVaultService>;
   let supplierLedgerService: ReturnType<typeof createMockSupplierLedgerService>;
@@ -55,6 +66,8 @@ describe('TransactionsService (integration with mocks)', () => {
     txModel = createMockMongooseModel();
     returnModel = createMockMongooseModel();
     supplierReturnModel = createMockMongooseModel();
+    shopifyOrderModel = createMockMongooseModel();
+    carrierImportModel = createMockMongooseModel();
     productsService = createMockProductsService();
     vaultService = createMockVaultService();
     supplierLedgerService = createMockSupplierLedgerService();
@@ -70,6 +83,14 @@ describe('TransactionsService (integration with mocks)', () => {
           provide: getModelToken(SupplierReturnOrder.name),
           useValue: supplierReturnModel,
         },
+        {
+          provide: getModelToken(ShopifyOrder.name),
+          useValue: shopifyOrderModel,
+        },
+        {
+          provide: getModelToken(CarrierImport.name),
+          useValue: carrierImportModel,
+        },
         { provide: ProductsService, useValue: productsService },
         { provide: VaultService, useValue: vaultService },
         { provide: PresenceGateway, useValue: createMockPresenceGateway() },
@@ -83,6 +104,7 @@ describe('TransactionsService (integration with mocks)', () => {
           provide: InventoryMovementsService,
           useValue: inventoryMovementsService,
         },
+        { provide: FollowUpsService, useValue: createMockFollowUpsService() },
       ],
     }).compile();
 
@@ -405,6 +427,171 @@ describe('TransactionsService (integration with mocks)', () => {
         service.cancel('tx-return-3', { cancelReason: 'x', cancelledBy: 'admin' }),
       ).rejects.toThrow(BadRequestException);
       expect(vaultService.addSystemEntry).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * The shipping carrier used to be a free-text NAME, and the three paths that create a sale
+   * disagreed completely: the manual form required one, Shopify's approveOrder never wrote one at
+   * all, and Bosta never read it — so an order labelled «Mylerz» could ship through Bosta with
+   * nothing disagreeing, and the whole Shopify volume fell into the «غير محدد» bucket of the
+   * shipping report. resolveCarrierForWrite is now the single place a carrier is validated and its
+   * tariff frozen, so all three paths agree by construction.
+   */
+  describe('create() — carrier code and frozen tariff', () => {
+    const saleDto = (over: Record<string, unknown> = {}) =>
+      ({
+        type: 'مبيعات',
+        ref: '7100',
+        items: [{ code: 'P001', name: 'p', qty: 1, price: 100, total: 100 }],
+        date: '2026-08-28',
+        employee: 'e',
+        client: 'عميل',
+        total: 100,
+        deposit: 0,
+        ...over,
+      }) as any;
+
+    const runCreate = async (dto: any) => {
+      txModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(null) });
+      productsService.findAll.mockResolvedValue(mockProducts);
+      txModel.create.mockImplementation((doc: any) =>
+        Promise.resolve({ ...doc, _id: 'tx1', save: jest.fn() }),
+      );
+      try {
+        await service.create(dto);
+      } catch {
+        // secondary side effects (vault, ledger) are not what these cases assert
+      }
+      return txModel.create.mock.calls.at(-1)?.[0];
+    };
+
+    it('stores the carrier code and derives shipCo from it', async () => {
+      const written = await runCreate(saleDto({ carrierCode: 'bosta', shipZone: 'cairo', shipCost: 110 }));
+      expect(written.carrierCode).toBe('bosta');
+      // shipCo stays populated so every consumer that renders it verbatim keeps working.
+      expect(written.shipCo).toBe('Bosta');
+    });
+
+    it('freezes the tariff with the zone, the price and when it was taken', async () => {
+      const written = await runCreate(saleDto({ carrierCode: 'bosta', shipZone: 'cairo', shipCost: 110 }));
+      expect(written.shipTariff).toMatchObject({ zone: 'cairo', price: 110, source: 'settings' });
+      expect(typeof written.shipTariff.at).toBe('string');
+    });
+
+    // The point of `source`: an operator override must be visible in reports rather than being
+    // indistinguishable from the configured tariff.
+    it('marks an off-tariff amount as a manual override', async () => {
+      const written = await runCreate(saleDto({ carrierCode: 'bosta', shipZone: 'cairo', shipCost: 400 }));
+      expect(written.shipTariff).toMatchObject({ price: 400, source: 'manual' });
+    });
+
+    it('reads the price for the zone actually being shipped to', async () => {
+      const written = await runCreate(saleDto({ carrierCode: 'mylerz', shipZone: 'gov', shipCost: 130 }));
+      expect(written.shipTariff).toMatchObject({ zone: 'gov', price: 130, source: 'settings' });
+    });
+
+    // Additive, not a migration: a caller that still sends only the legacy free-text name keeps
+    // working and gets a code resolved for it.
+    it('resolves a legacy free-text company name to a code', async () => {
+      const written = await runCreate(saleDto({ shipCo: 'Bosta', shipZone: 'cairo', shipCost: 110 }));
+      expect(written.carrierCode).toBe('bosta');
+    });
+
+    // Dropping it would file the shipment under «غير محدد» with nobody aware; rejecting leaves the
+    // operator on screen to fix it.
+    it('rejects an unknown carrier code rather than silently dropping it', async () => {
+      txModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(null) });
+      productsService.findAll.mockResolvedValue(mockProducts);
+      await expect(service.create(saleDto({ carrierCode: 'aramex' }))).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    // An unrecognised NAME is different from an unrecognised code: the name is legacy data we
+    // cannot reject, so the row is kept and bucketed as unspecified instead.
+    it('keeps a sale whose legacy name matches nothing, with no code and no tariff', async () => {
+      const written = await runCreate(saleDto({ shipCo: 'شركة قديمة', shipCost: 90 }));
+      expect(written.carrierCode).toBe('');
+      expect(written.shipTariff).toBeNull();
+      expect(written.shipCo).toBe('شركة قديمة');
+    });
+
+    // A purchase has no outbound shipment; carrying a carrier would put supplier invoices into
+    // the shipping report.
+    it('never assigns a carrier to a purchase', async () => {
+      const written = await runCreate(
+        saleDto({ type: 'مشتريات', ref: '7200', carrierCode: 'bosta', shipCost: 110 }),
+      );
+      expect(written.carrierCode).toBe('');
+      expect(written.shipTariff).toBeNull();
+    });
+  });
+
+  /**
+   * A Shopify order's shipping amount is what the CUSTOMER paid at checkout — it is not drawn
+   * from any carrier tariff. Re-running the on/off-tariff comparison against it on every edit
+   * would relabel it as an operator override and destroy the one signal reports use to spot
+   * genuine off-tariff pricing.
+   */
+  describe('update() — the origin of a shipping price survives an edit', () => {
+    const buildShopifySale = (over: Record<string, unknown> = {}): any => {
+      const tx: any = buildSaleTransaction({
+        _id: 'tx-ship-origin',
+        type: 'مبيعات',
+        ref: '7300',
+        client: 'عميل',
+        source: 'shopify',
+        carrierCode: 'bosta',
+        shipCo: 'Bosta',
+        shipZone: 'cairo',
+        // 120 from Shopify, against a configured Bosta/cairo tariff of 110.
+        shipCost: 120,
+        cancelled: false,
+        editHistory: [],
+        ...over,
+      });
+      tx.save = jest.fn().mockImplementation(async function (this: any) {
+        return this;
+      });
+      tx.markModified = jest.fn();
+      return tx;
+    };
+
+    const runUpdate = async (tx: any, dto: any) => {
+      txModel.findById.mockReturnValue({ exec: jest.fn().mockResolvedValue(tx) });
+      txModel.findByIdAndUpdate.mockReturnValue({ exec: jest.fn().mockResolvedValue(tx) });
+      productsService.findAll.mockResolvedValue(mockProducts);
+      try {
+        await service.update(tx._id, dto, 'admin', '', 'admin');
+      } catch {
+        // secondary side effects are not what this asserts
+      }
+      return txModel.findByIdAndUpdate.mock.calls.at(-1)?.[1];
+    };
+
+    it('keeps source shopify when an unrelated field is edited', async () => {
+      const written = await runUpdate(buildShopifySale(), { client: 'اسم جديد' } as any);
+      expect(written.shipTariff).toMatchObject({ price: 120, source: 'shopify' });
+    });
+
+    it('does not invent a manual override for a Shopify price that differs from the tariff', async () => {
+      const written = await runUpdate(buildShopifySale(), { notes: 'ملاحظة' } as any);
+      expect(written.shipTariff.source).not.toBe('manual');
+    });
+
+    // The guard is scoped to Shopify orders — a manually entered sale must still report a genuine
+    // override, or the signal disappears entirely.
+    it('still flags a real override on a manually entered sale', async () => {
+      const tx = buildShopifySale({ _id: 'tx-manual-origin', source: '', shipCost: 110 });
+      const written = await runUpdate(tx, { shipCost: 400 } as any);
+      expect(written.shipTariff).toMatchObject({ price: 400, source: 'manual' });
+    });
+
+    it('reports an on-tariff manual sale as settings', async () => {
+      const tx = buildShopifySale({ _id: 'tx-manual-ok', source: '', shipCost: 110 });
+      const written = await runUpdate(tx, { shipCost: 110 } as any);
+      expect(written.shipTariff).toMatchObject({ price: 110, source: 'settings' });
     });
   });
 
@@ -1166,4 +1353,559 @@ describe('TransactionsService (integration with mocks)', () => {
       expect(inv[0].adjustments).toBe(0);
     });
   });
+
+  /**
+   * انحدار — مشتريات #900001 (12–13 أغسطس 2026).
+   *
+   * فاتورة أُنشئت بإجمالي 0، فحُفظت `payStatus: 'مكتمل'` لأن
+   * `remaining = max(0, 0 - 0) = 0` — لا لأن أحداً دفع. ثم عُدِّل إجماليها
+   * إلى 7,940 فخصم النظام 7,940 من الخزنة مقابل دفعة **لم تحدث**، بينما ظلّت
+   * الفاتورة نفسها تقول `deposit = 0` و`remaining = 7,940` أي دَيْن كامل للمورد.
+   *
+   * القاعدة المثبَّتة هنا: الخزنة تتحرك بمقدار فرق **السداد الفعلي** (`deposit`)،
+   * لا فرق الإجمالي، ولا استناداً إلى `payStatus`.
+   */
+  describe('update() — vault follows cash actually settled, never payStatus', () => {
+    function buildInvoice(overrides: Record<string, unknown> = {}): any {
+      const tx: any = buildSaleTransaction({
+        _id: 'tx-cash-rule',
+        type: 'مشتريات',
+        ref: '900001',
+        client: 'Talla Home',
+        supplierId: 'sup-talla', // صريح: يجعل قيد سجل المديونية قابلاً للتحقق دون مطابقة بالاسم
+        total: 0,
+        deposit: 0,
+        remaining: 0,
+        payStatus: 'مكتمل',
+        depMethod: 'كاش',
+        payment: 'كاش',
+        cancelled: false,
+        pickupStatus: 'Pending',
+        bostaStatus: '',
+        items: [],
+        editHistory: [],
+        ...overrides,
+      });
+      tx.save = jest.fn().mockImplementation(async function (this: any) {
+        return this;
+      });
+      tx.markModified = jest.fn();
+      return tx;
+    }
+    function mockUpdatable(tx: any) {
+      txModel.findById.mockReturnValue({ exec: jest.fn().mockResolvedValue(tx) });
+      txModel.findByIdAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(tx),
+      });
+    }
+    /** القيود المكتوبة على الخزنة من هذا التعديل فقط. */
+    function vaultAmounts(): number[] {
+      return vaultService.addSystemEntry.mock.calls.map(
+        (c: unknown[]) => c[0] as number,
+      );
+    }
+
+    it('الحادثة نفسها: إجمالي 0 ← 7,940 بلا سداد لا يمس الخزنة إطلاقاً', async () => {
+      mockUpdatable(buildInvoice());
+      await service.update(
+        'tx-cash-rule',
+        { total: 7940, deposit: 0 } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      expect(vaultService.addSystemEntry).not.toHaveBeenCalled();
+    });
+
+    it('يقيّد الفرق كدَيْن على المورد لا كنقد خارج من الخزنة', async () => {
+      mockUpdatable(buildInvoice());
+      await service.update(
+        'tx-cash-rule',
+        { total: 7940, deposit: 0 } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      // 7,940 بالكامل تذهب إلى سجل المديونية — وهي القيمة الصحيحة محاسبياً.
+      expect(supplierLedgerService.postManualAdjustment).toHaveBeenCalledWith(
+        expect.objectContaining({ amount: 7940 }),
+      );
+    });
+
+    it('يصحّح payStatus المضلِّل فيصبح «معلق» بعد التعديل', async () => {
+      const tx = buildInvoice();
+      mockUpdatable(tx);
+      await service.update(
+        'tx-cash-rule',
+        { total: 7940, deposit: 0 } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      expect(tx.remaining).toBe(7940);
+      expect(tx.payStatus).toBe('معلق');
+    });
+
+    it('السداد الفعلي وحده هو ما يخرج من الخزنة (0 ← 3,000 على إجمالي 7,940)', async () => {
+      mockUpdatable(buildInvoice());
+      await service.update(
+        'tx-cash-rule',
+        { total: 7940, deposit: 3000 } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      expect(vaultAmounts()).toEqual([-3000]); // سالب = خروج نقد للمورد
+    });
+
+    it('رفع إجمالي فاتورة مسدَّدة بالكامل دون سداد جديد لا يخصم شيئاً', async () => {
+      // 5,000 مدفوعة فعلاً؛ الإجمالي يرتفع إلى 6,000 — الفرق دَيْن، لا نقد.
+      mockUpdatable(
+        buildInvoice({ total: 5000, deposit: 5000, remaining: 0, payStatus: 'مكتمل' }),
+      );
+      await service.update(
+        'tx-cash-rule',
+        { total: 6000, deposit: 5000 } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      expect(vaultService.addSystemEntry).not.toHaveBeenCalled();
+      expect(supplierLedgerService.postManualAdjustment).toHaveBeenCalledWith(
+        expect.objectContaining({ amount: 1000 }),
+      );
+    });
+
+    it('تخفيض إجمالي فاتورة مسدَّدة بالكامل يرد الفائض للخزنة', async () => {
+      // دُفع 5,000 ثم صار الإجمالي 4,000 → 1,000 تعود فعلاً إلى الخزنة.
+      mockUpdatable(
+        buildInvoice({ total: 5000, deposit: 5000, remaining: 0, payStatus: 'مكتمل' }),
+      );
+      await service.update(
+        'tx-cash-rule',
+        { total: 4000, deposit: 5000 } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      expect(vaultAmounts()).toEqual([1000]); // موجب = رجوع نقد للخزنة
+    });
+
+    it('المبيعات: إجمالي 0 ← 5,000 بلا تحصيل لا يضيف نقداً وهمياً', async () => {
+      mockUpdatable(buildInvoice({ type: 'مبيعات', ref: '2254' }));
+      await service.update(
+        'tx-cash-rule',
+        { total: 5000, deposit: 0 } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      expect(vaultService.addSystemEntry).not.toHaveBeenCalled();
+    });
+
+    it('المبيعات: التحصيل الفعلي يدخل الخزنة بإشارة موجبة', async () => {
+      mockUpdatable(buildInvoice({ type: 'مبيعات', ref: '2254' }));
+      await service.update(
+        'tx-cash-rule',
+        { total: 5000, deposit: 2000 } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      expect(vaultAmounts()).toEqual([2000]);
+    });
+
+    it('تعديل لا يمس المال (ملاحظات فقط) لا يكتب أي قيد', async () => {
+      mockUpdatable(
+        buildInvoice({ total: 7940, deposit: 7940, remaining: 0, payStatus: 'مكتمل' }),
+      );
+      await service.update(
+        'tx-cash-rule',
+        { notes: 'تعديل وصف فقط' } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      expect(vaultService.addSystemEntry).not.toHaveBeenCalled();
+    });
+
+    /**
+     * تصحيح خزنة العربون: العربون سُجِّل على خزنة خاطئة والمبلغ نفسه لم يتغير.
+     * قبل الإصلاح كان `depositDelta === 0` يُسقط أي قيد، فتبقى الخزنة الأولى
+     * مدينة بمال ليس فيها والثانية ناقصة — بلا أي أثر في الواجهة.
+     */
+    function buildSale(overrides: Record<string, unknown> = {}): any {
+      const tx: any = buildInvoice({
+        type: 'مبيعات',
+        ref: '2408',
+        client: 'Ghadeer Alnajjar',
+        supplierId: '',
+        total: 1650,
+        deposit: 500,
+        remaining: 1150,
+        payStatus: 'معلق',
+        depMethod: 'Instapay',
+        payment: 'Instapay',
+        deposits: [{ id: 'd1', amount: 500, method: 'Instapay', note: 'ديبوزت أول' }],
+        ...overrides,
+      });
+      return tx;
+    }
+    /** [amount, method] لكل قيد خزنة. */
+    function vaultMoves(): Array<[number, string]> {
+      return vaultService.addSystemEntry.mock.calls.map(
+        (c: unknown[]) => [c[0] as number, c[1] as string],
+      );
+    }
+
+    it('تغيير خزنة العربون وحده ينقل المال بقيدين متقابلين', async () => {
+      mockUpdatable(buildSale());
+      await service.update(
+        'tx-cash-rule',
+        { depMethod: 'فودافون كاش' } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      expect(vaultMoves()).toEqual([
+        [-500, 'Instapay'],
+        [500, 'فودافون كاش'],
+      ]);
+    });
+
+    it('السحب من الخزنة القديمة يسبق الإيداع — وإلا تضاعف المال عند فشل السحب', async () => {
+      mockUpdatable(buildSale());
+      await service.update(
+        'tx-cash-rule',
+        { depMethod: 'فودافون كاش' } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      const [first] = vaultMoves();
+      expect(first[0]).toBeLessThan(0);
+      expect(first[1]).toBe('Instapay');
+    });
+
+    it('سجل المدفوعات يتبع الخزنة المصححة', async () => {
+      const tx = buildSale();
+      mockUpdatable(tx);
+      await service.update(
+        'tx-cash-rule',
+        { depMethod: 'فودافون كاش' } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      expect(tx.deposits[0].method).toBe('فودافون كاش');
+    });
+
+    it('اسمان مختلفان لنفس القطاع لا يحركان مالاً', async () => {
+      mockUpdatable(buildSale({ depMethod: 'فودافون كاش' }));
+      await service.update(
+        'tx-cash-rule',
+        { depMethod: 'فودافون' } as any, // كلاهما يُحلّ إلى vodafone
+        'Fares',
+        '',
+        'admin',
+      );
+      expect(vaultService.addSystemEntry).not.toHaveBeenCalled();
+    });
+
+    it('بلا عربون مدفوع لا يوجد قيد خزنة يُصحَّح', async () => {
+      mockUpdatable(buildSale({ deposit: 0, remaining: 1650, deposits: [] }));
+      await service.update(
+        'tx-cash-rule',
+        { depMethod: 'فودافون كاش' } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      expect(vaultService.addSystemEntry).not.toHaveBeenCalled();
+    });
+
+    it('تغيير الخزنة والمبلغ معاً: التحويل بالمبلغ القديم ثم الفرق على الخزنة الجديدة', async () => {
+      mockUpdatable(buildSale());
+      await service.update(
+        'tx-cash-rule',
+        { depMethod: 'فودافون كاش', deposit: 800 } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      // ينتقل الـ500 الأصلية أولاً، ثم تُقيَّد الـ300 الإضافية على الخزنة الجديدة.
+      expect(vaultMoves()).toEqual([
+        [-500, 'Instapay'],
+        [500, 'فودافون كاش'],
+        [300, 'فودافون كاش'],
+      ]);
+    });
+
+    it('يسجّل تغيير الخزنة في سجل التعديلات', async () => {
+      const tx = buildSale();
+      mockUpdatable(tx);
+      await service.update(
+        'tx-cash-rule',
+        { depMethod: 'فودافون كاش' } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      const entry = txModel.findByIdAndUpdate.mock.calls[0][1].editHistory.at(-1);
+      expect(entry.before.depMethod).toBe('Instapay');
+      expect(entry.after.depMethod).toBe('فودافون كاش');
+    });
+
+    /**
+     * معاملات شوبيفاي تُكتَب عبر `txModel.create` مباشرة (تتجاوز `create()`)،
+     * لكنها تُعدَّل عبر `update()` نفسها وتحمل نفس حقول `depMethod`/`deposits`.
+     */
+    it('يعمل على معاملة من شوبيفاي تماماً كالمانيول', async () => {
+      const tx = buildSale({
+        source: 'shopify',
+        shopifyOrderId: 'gid://shopify/Order/123',
+        employee: 'Shopify (Fares)',
+      });
+      mockUpdatable(tx);
+      await service.update(
+        'tx-cash-rule',
+        { depMethod: 'فودافون كاش' } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      expect(vaultMoves()).toEqual([
+        [-500, 'Instapay'],
+        [500, 'فودافون كاش'],
+      ]);
+      expect(tx.deposits[0].method).toBe('فودافون كاش');
+    });
+
+    /**
+     * إسناد (لا تحويل): معاملة بلا عربون يُضاف لها عربون الآن مع تحديد خزنته.
+     * لا يوجد قيد سابق يُعكَس، فالمطلوب قيد واحد موجب على الخزنة المختارة.
+     */
+    it('إضافة عربون على معاملة بلا عربون تقيّده على الخزنة المختارة بقيد واحد', async () => {
+      mockUpdatable(
+        buildSale({ deposit: 0, remaining: 1650, depMethod: '', payment: '', deposits: [] }),
+      );
+      await service.update(
+        'tx-cash-rule',
+        { deposit: 500, depMethod: 'فودافون كاش' } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      expect(vaultMoves()).toEqual([[500, 'فودافون كاش']]);
+    });
+
+    it('تصفير العربون يعيد المال من خزنته ولا يُنشئ تحويلاً', async () => {
+      mockUpdatable(buildSale());
+      await service.update(
+        'tx-cash-rule',
+        { deposit: 0 } as any,
+        'Fares',
+        '',
+        'admin',
+      );
+      expect(vaultMoves()).toEqual([[-500, 'Instapay']]);
+    });
+  });
+
+  /**
+   * ── نظام الإلغاءات المنظّم ────────────────────────────────────────────────
+   * The reason used to be unconstrained free text on both cancellation paths, so
+   * «العميل غير مستجيب» / «عميل مش راد» / «لا يرد» were three distinct rows in any
+   * report that tried to group them. These lock in the code-based replacement:
+   * validation at the boundary, the derived summary that keeps every legacy reader
+   * working, and the carry-through from request→approve that stops the approval
+   * flow from losing the reason it was given.
+   */
+  describe('cancel() — structured cancellation reasons', () => {
+    function buildCancellable(overrides: Record<string, unknown> = {}): any {
+      const tx: any = buildSaleTransaction({
+        _id: 'tx-cx',
+        type: 'مبيعات',
+        ref: '3001',
+        total: 1000,
+        deposit: 0,
+        remaining: 1000,
+        payStatus: 'معلق',
+        cancelled: false,
+        items: [],
+        ...overrides,
+      });
+      tx.save = jest.fn().mockImplementation(async function (this: any) { return this; });
+      tx.markModified = jest.fn();
+      return tx;
+    }
+    function mockCancellable(tx: any) {
+      txModel.findById.mockReturnValue({ exec: jest.fn().mockResolvedValue(tx) });
+      txModel.findByIdAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(tx),
+      });
+    }
+
+    it('stores the code, the note and a derived human summary', async () => {
+      const tx = buildCancellable();
+      mockCancellable(tx);
+      await service.cancel('tx-cx', {
+        cancelReasonCode: 'customer-unreachable',
+        cancelReasonNote: 'اتصلنا ٣ مرات',
+        cancelledBy: 'admin',
+      } as any);
+      expect(tx.cancelReasonCode).toBe('customer-unreachable');
+      expect(tx.cancelReasonNote).toBe('اتصلنا ٣ مرات');
+      // The free-text field every legacy consumer reads (invoice view, archive export,
+      // vault note) stays populated — that is what makes this additive, not a migration.
+      expect(tx.cancelReason).toBe('تعذّر الوصول للعميل — اتصلنا ٣ مرات');
+      expect(tx.cancelStage).toBe('transaction');
+      expect(tx.cancelled).toBe(true);
+    });
+
+    it('rejects a code that is not in the shared list', async () => {
+      mockCancellable(buildCancellable());
+      await expect(
+        service.cancel('tx-cx', {
+          cancelReasonCode: 'because-i-said-so',
+          cancelledBy: 'admin',
+        } as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    /**
+     * `test-order` is shopify-only: by the time an order is a transaction it has moved
+     * cash and stock, and calling that a test is how a real loss gets filed as noise.
+     */
+    it('rejects a shopify-only reason on a transaction cancellation', async () => {
+      mockCancellable(buildCancellable());
+      await expect(
+        service.cancel('tx-cx', {
+          cancelReasonCode: 'test-order',
+          cancelledBy: 'admin',
+        } as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('requires a note when the reason is «سبب آخر»', async () => {
+      mockCancellable(buildCancellable());
+      await expect(
+        service.cancel('tx-cx', {
+          cancelReasonCode: 'other',
+          cancelReasonNote: '   ',
+          cancelledBy: 'admin',
+        } as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('accepts «سبب آخر» once it carries a note', async () => {
+      const tx = buildCancellable();
+      mockCancellable(tx);
+      await service.cancel('tx-cx', {
+        cancelReasonCode: 'other',
+        cancelReasonNote: 'الفرع أغلق',
+        cancelledBy: 'admin',
+      } as any);
+      expect(tx.cancelReason).toBe('سبب آخر — الفرع أغلق');
+    });
+
+    it('rejects a cancellation carrying neither a code nor free text', async () => {
+      mockCancellable(buildCancellable());
+      await expect(
+        service.cancel('tx-cx', { cancelledBy: 'admin' } as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    /**
+     * Back-compat: an un-migrated caller that sends only free text still works and simply
+     * lands with an empty code — the reports bucket it under «غير محدد» rather than
+     * dropping it, so the totals keep matching reality.
+     */
+    it('still accepts a free-text-only cancellation and leaves the code empty', async () => {
+      const tx = buildCancellable();
+      mockCancellable(tx);
+      await service.cancel('tx-cx', {
+        cancelReason: 'سبب قديم مكتوب يدوياً',
+        cancelledBy: 'admin',
+      } as any);
+      expect(tx.cancelReason).toBe('سبب قديم مكتوب يدوياً');
+      expect(tx.cancelReasonCode).toBe('');
+    });
+
+    it('validates the reason at request time, not only at approval', async () => {
+      mockCancellable(buildCancellable());
+      await expect(
+        service.requestCancel('tx-cx', '', 'موظف', '', '', 'other', ''),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('records the code on the pending request', async () => {
+      const tx = buildCancellable();
+      mockCancellable(tx);
+      await service.requestCancel(
+        'tx-cx', '', 'موظف', 'u1', 'mohamed', 'out-of-stock', '',
+      );
+      const written = txModel.findByIdAndUpdate.mock.calls[0][1].cancelRequest;
+      expect(written.cancelReasonCode).toBe('out-of-stock');
+      expect(written.reason).toBe('الصنف غير متوفر');
+    });
+
+    /**
+     * The approver decides WHETHER a cancellation happens, not WHY. Losing the requester's
+     * code here would send every request→approve cancellation to «غير محدد» and make the
+     * report a measure of which path was used rather than of what went wrong.
+     */
+
+    /**
+     * The table paginates and sorts client-side, so a truncated payload would make page 2 and
+     * every sort silently wrong — they would reorder an arbitrary 25 rows rather than the
+     * period's actual cancellations. The cap exists only to bound the response, and when it
+     * bites the UI says so rather than presenting a partial list as complete.
+     */
+    it('returns every cancellation for the table, not a top-25 slice', async () => {
+      const many = Array.from({ length: 40 }, (_, i) => ({
+        _id: 'c' + i,
+        ref: String(4000 + i),
+        type: 'مبيعات',
+        client: 'عميل',
+        total: 100,
+        deposit: 0,
+        date: '2026-08-01',
+        cancelled: true,
+        cancelledAt: '2026-08-0' + ((i % 9) + 1) + 'T10:00:00.000Z',
+        cancelledBy: 'admin',
+        cancelReason: 'الصنف غير متوفر',
+        cancelReasonCode: 'out-of-stock',
+        cancelReasonNote: '',
+        cancelStage: 'transaction',
+      }));
+      txModel.find.mockReturnValue({ exec: jest.fn().mockResolvedValue(many) });
+      shopifyOrderModel.find.mockReturnValue({ exec: jest.fn().mockResolvedValue([]) });
+
+      const out: any = await (service as any).buildCancellationsReport('2026-08-01', '2026-08-31');
+      expect(out.total).toBe(40);
+      expect(out.recent).toHaveLength(40);
+      expect(out.recentTruncated).toBe(false);
+    });
+
+    it('carries the requester code through approval onto the transaction', async () => {
+      const tx = buildCancellable({
+        cancelRequest: {
+          requestedBy: 'موظف',
+          requestedById: '',
+          requestedByUsername: '',
+          reason: 'الصنف غير متوفر',
+          cancelReasonCode: 'out-of-stock',
+          cancelReasonNote: '',
+          requestedAt: '2026-08-28T00:00:00.000Z',
+          status: 'معلق',
+        },
+      });
+      mockCancellable(tx);
+      await service.approveCancel('tx-cx', 'مدير');
+      expect(tx.cancelReasonCode).toBe('out-of-stock');
+      expect(tx.cancelStage).toBe('transaction');
+    });
+  });
+
 });

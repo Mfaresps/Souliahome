@@ -78,8 +78,49 @@ export class ShopifyOrder {
   @Prop({ default: '' })
   cancelledAt: string;
 
+  /** Derived summary — `cancelReasonSummary(cancelReasonCode, cancelReasonNote)`. Rendered as-is. */
   @Prop({ default: '' })
   cancelReason: string;
+
+  /**
+   * The countable reason, one of `CANCEL_REASON_CODES` (shared/cancellation.constants.ts).
+   * Empty on orders cancelled before this system existed.
+   */
+  @Prop({ default: '' })
+  cancelReasonCode: string;
+
+  /** Optional free-text detail. Required only when the code is `other`. */
+  @Prop({ default: '' })
+  cancelReasonNote: string;
+
+  /**
+   * Cancellation requested by a staff member, awaiting a manager's decision.
+   *
+   * Mirrors `Transaction.cancelRequest` field-for-field so the approvals page can render both
+   * kinds through the same row shape. `type: Object` for the same reason it is there: this is a
+   * single embedded document, and a nullable typed sub-schema would need its own class — see the
+   * nullable-@Prop rule in CLAUDE.md.
+   *
+   * ⚠ The order is NOT cancelled while this is 'معلق'. `cancelled` stays false and the order
+   *   keeps its normal status, so it continues to appear in the pending list — a request is not
+   *   an outcome, and hiding the order before approval would let a staff member remove it from
+   *   everyone's view without authority.
+   */
+  @Prop({ type: Object, default: null })
+  cancelRequest: {
+    requestedBy: string;
+    requestedById?: string;
+    requestedByUsername?: string;
+    /** Derived summary of the code + note below. */
+    reason: string;
+    cancelReasonCode?: string;
+    cancelReasonNote?: string;
+    requestedAt: string;
+    status: string; // 'معلق' | 'معتمد' | 'مرفوض'
+    reviewedBy?: string;
+    reviewedAt?: string;
+    rejectedReason?: string;
+  } | null;
 
   @Prop({ default: '' })
   reviewedBy: string;
@@ -92,6 +133,26 @@ export class ShopifyOrder {
 
   @Prop({ default: '' })
   tags: string;
+
+  /**
+   * تغيّرت أصناف/قيمة أوردر مؤكد في شوبيفاي بعد إنشاء حركته.
+   *
+   * ⚠ الأصناف والإجماليات مجمَّدة بعد التأكيد (نفس قاعدة الإيداع)، لأن الحركة خصمت مخزوناً
+   *   وحرّكت خزنة. تعديل القيمة هنا قرار مالي — يُعرض للموظف ولا يُطبَّق تلقائياً.
+   *
+   * `type: Object` إلزامي — @Prop كائنية بدونه تُسقط الـ API عند تحميل الموديول.
+   */
+  @Prop({ type: Object, default: null })
+  valueChangeConflict: {
+    oldTotal: number;
+    newTotal: number;
+    oldItemsCount: number;
+    newItemsCount: number;
+    detectedAt: string;
+    resolved: boolean;
+    resolvedBy?: string;
+    resolvedAt?: string;
+  } | null;
 
   @Prop({ default: '' })
   shippingAddress: string;

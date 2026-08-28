@@ -12,6 +12,615 @@ All search inputs across the app (placeholder starting with "بحث") must keep 
 
 ---
 
+## The Printed Invoice — Rebuilt as an A4 Commercial Document (Aug 28, 2026)
+
+`buildInvoiceHtml` + `_invoiceSharedCss` — the sheet behind **every** print path
+(`printInvoice`, `bulkPrintPDF`, the invoice page's printer button, the ⋮ menus).
+Both function names and signatures are unchanged, so all six call sites were
+untouched.
+
+### It was a styled screen receipt, not a commercial document
+The old sheet was internally consistent and looked fine, which is why it lasted.
+It was missing the things that make paper a *record*:
+
+- **No issuer block at all.** The header carried a logo and nothing else — no
+  legal name, address, phone, tax card or commercial register. A customer holding
+  the paper could not identify the seller, and the document had no standing.
+- **No تفقيط.** The expected anti-tampering control on an Arabic commercial
+  invoice, and entirely absent. A figure can be altered with a pen; a written
+  sentence cannot.
+- **No signature block**, so the printed invoice could not double as the delivery
+  receipt it is used as.
+- **`فاتورة مبيعات` was a small green pill** beside the logo. A formal document
+  leads with its title and its number.
+- **One unlabelled date.**
+- **No page numbering** on a document that is normally two sheets.
+
+### `@page` — the geometry was never declared
+`.page` was a fixed `210mm` with **no `@page` rule**, so the print engine applied
+its own default paper and margins and fought that width; a full invoice could
+spill onto a third sheet. It is now `@page{size:A4 portrait;margin:0}` with the
+sheet painting its own `14mm/13mm` padding — so the on-screen preview and the
+printed page have identical geometry.
+
+⚠ **`thead` is `display:table-header-group`.** Without it a long invoice printed
+its second sheet as headerless rows — the columns could not be identified. `tr`
+is `page-break-inside:avoid` so a line item never splits across sheets.
+
+### The currency is stated once, in the column heading
+`fmtJ()` emits an `EGP` run before **every** figure — six repetitions per column
+on a document whose currency never varies. `.amt-cur{display:none}` hides that
+run **inside the print sheet only**; the shared helper is not forked, so nothing
+else in the app changes. The heading carries `سعر الوحدة / EGP` instead.
+
+⚠ **The code column was deleted, not moved.** The old table printed the same code
+twice — as a sub-line in column 2 *and* as column 3 — spending 64px of a 210mm
+sheet to repeat itself. It now appears once, under the item name.
+
+### التفقيط — `amountToArabicWords()`
+⚠ **Arabic counted nouns inflect, and agreement is governed by the LAST number
+spoken (`n % 100`), never by the whole amount.** Five distinct forms:
+
+| Ends in | Form | Example |
+|---|---|---|
+| 1 | noun + numeral as adjective | `جنيه واحد` |
+| 2 | dual — no numeral at all | `جنيهان` |
+| 3–10 | plural (جمع قلة) | `ثلاثة جنيهات` |
+| 11–99 | accusative singular (تمييز منصوب) | `أربعون جنيهاً` |
+| round 100/1000 | **genitive** singular | `مائة جنيه` |
+
+Three bugs this went through, all caught by the tests and all easy to
+reintroduce:
+- **`مائة ألفاً`** — a scale word is *itself* a counted noun, so `_arScaleWord`
+  needs the same `% 100` rule. Testing `count` directly gets 100,000 wrong.
+- **`مائة وواحد جنيه واحد`** — the `one`/`two` forms *embed* the numeral, so they
+  may be used only when the amount **is** 1 or 2. For 101 the numeral is already
+  spoken by the hundreds, and the noun must be the bare genitive.
+  `_arNumeralSuppressed` is the only place that tests the whole number.
+- **`واحد ألف`** — 1 and 2 are carried by the scale word (`ألف`/`ألفان`) and are
+  never counted in front of it.
+
+⚠ **Rounds to 2dp BEFORE splitting off the piastres** — reading the fraction off
+an unrounded float prints 49 piastres where the total says 50.
+
+### Company identity is data, not hardcoded text
+Seven new optional `@Prop`s on `Settings` (`companyLegalName`, `companyAddress`,
+`companyPhone`, `companyEmail`, `companyWebsite`, `companyTaxNumber`,
+`companyCommercialReg`), a card in **الإعدادات ← الطباعة**, and `saveCompanyIdentity()`.
+
+⚠ **Every line is omitted when its field is empty**, so an install that fills in
+nothing prints exactly what it printed before (logo + `SOULIA`) rather than a
+column of empty labels. **This is what makes the change deployable with no
+migration and no backfill.**
+
+⚠ The DTO fields are mandatory, not optional politeness — the whitelist pipe
+**silently strips** any property the DTO does not declare, so the values would
+have been dropped at save with no error.
+
+### Data that was already stored and never printed
+`payment` (terms), `carrierCode` → `carrierLabel()`, `shipZone`, `pickupRef` now
+render in a terms strip. On a formal invoice these are **contract terms**, not
+metadata. Each cell is omitted when its field is empty, so the strip disappears
+entirely on a transaction that carries none of them.
+
+### Other rules this sheet follows
+- **Each document type names itself**: مبيعات / مشتريات / **إشعار دائن** for a
+  return. A credit note is a different instrument from an invoice, so the old
+  generic `فاتورة {type}` was wrong for returns.
+- **`date` and `createdAt` are both printed and both labelled** — the business
+  date can be backdated, and on a formal invoice they are different facts. The
+  issue date is omitted when it equals the invoice date rather than printing the
+  same value twice.
+- **A cancelled document gets a ribbon and loses its signature block.** Nothing
+  about a void invoice is meant to be signed for.
+- **Notes sit beside the totals, not beneath them** — the space left of the
+  totals box is otherwise dead, and using it keeps the signatures on sheet 1.
+- ⚠ **Every numeric run is `unicode-bidi:isolate`** (`.num`, `.amt-num`, dates,
+  phone, tax card). Latin digits inside Arabic prose reorder otherwise — the same
+  class of bug as the write-off dialog and the vault journal. **Don't "fix" a
+  mis-rendered figure by reordering the string.**
+- The policy sheet gained an **acknowledgement paragraph** and both sheets carry
+  «صفحة ١ من ٢».
+
+### Verification
+- **24 cases in `backend/test/unit/amount-to-words.spec.ts`.** ⚠ It **extracts
+  the function from the shipped `index.html`** rather than copying it — a copy
+  would keep passing after the real one broke, which is exactly what the
+  pre-existing `returns.spec.ts` does wrong. Confirmed to fail (5 cases) when the
+  `% 100` agreement rule is reverted.
+- A sales and a purchase invoice rendered through the **shipped** functions, with
+  every printed figure checked to reconcile: line `qty × unit = total`, subtotal =
+  Σ lines, subtotal − discount + shipping = grand total, and paid + remaining =
+  grand total. All match on both.
+- Full suite: **615 tests, 31 suites, all passing** (was 591/30).
+- `node dist/main.js` → *Nest application successfully started* — per the
+  nullable-`@Prop` rule, `nest build` alone does not prove a schema change.
+
+### Still open
+- **The sheet is Arabic-only.** Every string is a literal, not a `t()` key. This
+  matches the reports page and was deliberate — it is an accounting archive, not
+  a view — but a foreign supplier cannot read it.
+- **`printTxInvoice`** (the *unsaved* new-transaction preview, with its
+  customer/shipping/warehouse tabs at ~line 34150) is a **separate builder** and
+  was not touched. It still carries the old `.hdr`/`.info-bar` markup, so the two
+  paths now look different for the same data.
+- **No QR / e-invoice payload.** If ETA e-invoicing is ever required, the issuer
+  fields added here are the prerequisite that was missing.
+
+---
+
+## Shopify Webhooks — Four of Six Were Thrown Away (Aug 28, 2026)
+
+Six webhooks are registered in Shopify. `shopify.controller.ts` handled **two**. The other four
+(`orders/edited`, `orders/cancelled`, `fulfillments/create`, `fulfillments/update`) arrived, passed
+HMAC verification, and fell through to `return { received: true }` — **200 OK, so Shopify never
+retried and nothing recorded the drop.** Same class as the `catch (_) {}` failures above.
+
+Measured from the local log before building anything: **92 `orders/updated` against 24
+`orders/create`** — ~4 updates per order. `handleOrderUpdate` is the hottest path in the module,
+not an edge case. Zero of the other four appear, but that log stops in July on a machine with no
+Docker, so it is not evidence of absence — hence the unhandled-topic `logger.warn`.
+
+### The one rule all four fixes follow
+**Record the event; never derive the financial decision from it.** A confirmed order has a
+transaction behind it: stock deducted, vault moved, possibly a Bosta shipment. Reversing that runs
+through `performCancellation`. A webhook must not trigger it.
+
+### The address was overwritten on a shipped order
+`handleOrderUpdate` wrote `shippingAddress` with no guard, **including onto a transaction already
+handed to Bosta** — and `updateOne` pushed it to the invoice too. The system then displayed one
+address while the parcel travelled to another, with nothing on screen showing the divergence.
+
+⚠ **Bosta has no endpoint to edit a live shipment** — only `POST /deliveries` and
+`PUT /deliveries/:id/terminate`. Auto-forwarding the new address is impossible, and attempting it
+fails silently while implying the problem was handled. So: **before shipping → update; after
+shipping → keep the shipped address and record `addressChangeConflict`.**
+
+`bostaShippedAddress` freezes what Bosta actually received, set in `createOrder` beside
+`bostaOriginalCod`. **Without it there is no way to detect a divergence at all.**
+
+⚠ **The ShopifyOrder record still tracks Shopify.** The order row and the transaction diverging is
+exactly what makes the conflict displayable instead of erased. Don't "fix" that into agreement.
+
+### Items and totals are frozen after confirmation
+The deposit was already frozen post-confirmation; `items`/`total`/`shipCost` were not — so a
+confirmed order's stored value drifted from the transaction its stock and vault entries were built
+on. (The transaction itself was never updated, so invoices were safe; the defect was the silent
+disagreement.) Now `valueChangeConflict`, on the same rule as the deposit.
+
+⚠ **`orders/edited` is a different topic from `orders/updated`.** It fires for the official Edit
+order flow (add/remove line, change qty) and was never handled — so item edits reached nothing.
+It routes to the same handler, which freezes rather than silently rewrites.
+
+### Cancellation splits by whether a transaction exists
+- No transaction → nothing moved; cancel directly, `cancelledBy: 'Shopify'`.
+- Live transaction → **`shopifyCancelConflict`, and nothing is cancelled.** `shipped` is captured
+  at detection because it changes the required action: a parcel already out must be stopped at
+  Bosta first.
+
+`SHOPIFY_CANCELLED_CODE` is a real code so "cancelled on Shopify" stays countable in the
+cancellations report rather than blending into manual cancellations. It carries `systemOnly: true`:
+filtered out of `cancelReasonsFor()` and **rejected by `resolveShopifyCancelReason`** — otherwise a
+staff member could label their own manual cancellation as a Shopify one and corrupt the very count
+the code exists for.
+
+### Fulfillment webhooks are mostly our own echo
+⚠ **`BostaService.createOrder` calls `shopifyAdmin.fulfillOrder` on success**, so the event bounces
+straight back. Acting on it indiscriminately is a loop. `handleFulfillment` compares the tracking
+number against `bostaTrackingNumber`/`bostaOrderId` and **writes nothing unless the shipment is
+genuinely foreign** — created from the Shopify dashboard, outside the system's tracking.
+
+⚠ **The tracking-number check is load-bearing on its own.** If the webhook wins a race against the
+`bostaOrderId` write, a `bostaOrderId`-only check flags our own shipment as external — a false
+alarm on every order shipped. A test locks this.
+
+### Resolution is a human acknowledgement
+`resolveShopifyConflict(id, kind, by)` — `address | cancel | fulfillment`. It sets `resolved` and
+nothing else: **no address is edited, no transaction cancelled.** The system cannot know whether
+someone phoned Bosta. A fresh conflict reopens the flag, because a second change is its own event.
+
+⚠ Every handler is try/catch and **never throws** — an error makes Shopify retry and then disable
+the webhook entirely.
+
+### Verification
+- 20 cases across `shopify-address-conflict.service.spec.ts` and `shopify-webhooks.service.spec.ts`.
+- **Each fix was reverted and the tests confirmed to fail** (2, then 1 for the tracking-only echo),
+  then restored — the `returns.spec.ts` trap is passing tests that never exercise the real code.
+- ⚠ Both specs need **`export {}`**: same-named top-level helpers in two spec files collide as
+  `TS2393` and neither suite runs.
+- Full suite **672 tests / 35 suites** (was 652/33); `node dist/main.js` → *Nest application
+  successfully started* — three new `@Prop`s, and `nest build` alone does not prove that.
+
+### Still open
+- **`fixCorruptedStatuses` and the pre-fix rows are untouched** — this is additive, no backfill.
+- **The conflict banners are invoice-page only.** A manager who never opens the invoice sees
+  nothing; routing them into الإشعارات (the assigned employee is already on the order) is the
+  obvious next step.
+- **No `orders/delete` or `refunds/create` handler** — neither is registered in Shopify today.
+
+---
+
+## Backup Lost Every Employee Account, and There Was No Auto-Backup (Aug 28, 2026)
+
+Two independent defects in the same system.
+
+### `users` was captured and then thrown away
+`BACKUP_COLLECTIONS` has always included `users`, and a real backup file holds all 6 accounts with their `role`, `perms` and `jobTitle`. But **both** restore paths dropped them:
+- `restoreBackup` step 1 filtered `users` out of the wipe list, and step 2 `continue`d past it.
+- `SECTION_COLLECTIONS` had no entry for it, so selective restore could not reach it either.
+
+So a restore onto a clean database produced the full transaction history with **no employee accounts at all** — and 470 `employeeperformancelogs` rows whose `employeeId` resolved to nobody, so the Performance Hub came back empty even though its data had been captured perfectly. The original comment («never restored — restoring it would clobber current accounts/passwords») described a real risk; the fix is to merge rather than to skip.
+
+### `restoreUsersMerge` — the three rules that make it safe on a live system
+Matched on **`username`**, not `_id`: that is what login and every `findByUsername` use, and it carries the unique index. Matching on `_id` alone would insert a duplicate for a user whose id differs between databases, and the unique index would then reject it — silently losing that employee.
+
+1. **An account absent from the backup is left alone, never deleted.** Someone hired after the backup must not lose their login because last week's data was restored — and that could be the admin running the restore.
+2. **Credentials are only written when CREATING an account.** `password`/`plainPassword`/`totpSecret` are never overwritten on an existing one: a restore is not a password reset, and reverting one hands back a credential the user believes is retired.
+3. **Security state is never restored** (`loginAttempts`, `lockedAt`, `trustedDevices`, `lastLogin`) — it describes this machine's live session history, so writing a month-old lockout over it would either resurrect a lifted lock or clear a current one.
+
+What *is* restored is identity and authorisation — name, role, perms, jobTitle, phone, avatar, isActive — which is exactly what was missing. On insert the backup's own `_id` is preserved: `employeeperformancelogs.employeeId` and `shopifyorders.assignedTo` store `User._id` **as a string**, so a regenerated id would orphan every point and assignment belonging to that person.
+
+⚠ **The selective path needed the same guard.** It does `deleteMany({})` then `insertMany`, which on the accounts table would log everyone out for the duration and permanently if the insert failed. `col === 'users'` routes to the merge there too. **Any new restore path must do the same — `users` must never be `deleteMany`'d.**
+
+⚠ `users` stays **out of `ALLOWED_COLLECTIONS`**: restoring is safe only because it merges, and clear-data has no merge path.
+
+⚠ `migrateDoc('users')` defaulted **`active`** — a field the schema does not have (it is `isActive`). A backup predating the field restored an account every `isActive` check then read as inactive.
+
+### There was no automatic backup at all
+`ScheduleModule` was running three other crons; nothing scheduled a backup. A backup happened only when a human opened Settings and pressed the button, so a quiet week left no recovery point.
+
+`@Cron('0 0 3 * * *', {name:'nightly-backup'})` — 03:00, outside working hours and an hour clear of the 07:00 order-audit cron so the two never contend for the database. It never throws: a scheduler that dies takes every later run with it.
+
+### Pruning: `backup_auto_` is a filename prefix, not just a flag
+`AUTO_BACKUP_KEEP = 10`. ⚠ **Only scheduler-created files are ever deleted.** A manual backup is usually taken deliberately right before something risky — rotating one away would destroy exactly the file the user wanted — and `resetSelectiveData`'s pre-wipe safety backup is manual for the same reason. The marker lives in the **filename** so the distinction survives a lost or hand-edited `registry.json`; the registry's `auto` flag is only a secondary signal.
+
+Pruning is wrapped in try/catch: it is housekeeping, and its failure must not invalidate the backup just taken.
+
+`getBackupList()` now filters to files that actually exist on disk — the registry is an index, not the truth, and a pruned or hand-deleted row was previously offered as restorable and failed only once picked.
+
+### Tests
+`settings-backup-coverage.spec.ts` asserted `expect(sectionCols).not.toContain('users')` — it was locking in the bug. Replaced by three cases: users must be backed up *and* sectioned; users must never be in `ALLOWED_COLLECTIONS`; and users must share a section with `employeeperformancelogs`/`employeeshifts`, since restoring points without the accounts they belong to yields a leaderboard of unreadable ids.
+
+**Pre-existing, not caused by this and not fixed here:** 230 of the 470 performance-log rows belong to 4 deleted accounts. `getDashboardStats` only lists users who have a shift, so they never surfaced; the points remain in the append-only log.
+
+---
+
+## The Date-Window Bug — `date-window.util.ts` (Aug 28, 2026)
+
+Found by the KPI drill-down's proof line on its very first run: June 2026 reported purchases of **22,860** against a true **61,300**. One invoice (ref `010`, **38,440**, dated 30 June) was invisible to the report.
+
+### `date` is not reliably `YYYY-MM-DD`
+It is written from whatever the client sends. `VaultService.addEntry` was `dto.date || new Date().toISOString().split('T')[0]` — **the fallback is truncated, the caller's value was stored verbatim** — and `TransactionsService.create` did `create({ ...dto, ...carrier })`, spreading the client's `date` straight through. So real data is mixed:
+
+| Collection | ISO-timestamped |
+|---|---|
+| `transactions.date` | **326 / 521 (63%)** |
+| `vaultentries.date` | 10 / 766 (every one a **manual** `MAN-*` entry) |
+| `supplierledgerentries.date` | 5 / 19 |
+| `expenses.date`, `supplierreturnorders.returnDate` | 0 (clean) |
+
+### Both JS `<=` and Mongo `$lte` compare strings bytewise
+```
+'2026-06-30T00:39:12.745Z' <= '2026-06-30'   →   FALSE
+```
+The timestamped string is *longer*, so it sorts **after** the bare date. **The last day of every period silently dropped every timestamped row on it.** It reads as missing data rather than a date bug — the totals stay self-consistent and nothing looks broken, which is why it survived.
+
+⚠ **The frontend was already correct.** `index.html` filters with `tx.date.slice(0, 10) < from` (and the same for expenses), so before this the two layers *disagreed*: صفحة الحركات and صفحة التقارير could list different transactions for the same month. The backend was the outlier — which is what makes this a correction, not a behaviour change.
+
+### Two helpers, because half the callers are Mongo
+`inDateWindow(value, from, to)` truncates and compares — for JS filtering.
+
+`dateWindowQuery(from, to)` is for Mongo, which cannot truncate a stored field in a plain `find`. It widens the **bound** instead: `$lte` becomes **`to + '￿'`**, which sorts after every possible time suffix on that day but before the next day.
+
+⚠ **Never "simplify" that back to a bare `$lte: to`** — that is the bug. A test asserts the two forms agree on all ten boundary probes; if they diverge, JS-filtered and Mongo-filtered reports scope different periods.
+
+`normalizeDateOnly` is the write-side companion, applied in `VaultService.addEntry` and `TransactionsService.create` so **new** rows stop joining the mixed state. **Not a migration** — existing rows keep their format and both helpers accept either.
+
+### Six read sites + two bucketing defects
+`getReports` (JS) · both expense filters in `transactions.controller.ts` (JS — two byte-identical copies) · `getSettledSupplierReturns` (Mongo) · `VaultService.findAll` (Mongo — the main vault log) · vault analytics current+previous windows · vault cashflow.
+
+Two **separate** defects in the same area, found while fixing the queries — including the row would have still lost it downstream:
+- `getCashflow` keyed `dailyByDate[e.date]` on the **raw** date, so a timestamped entry got its own bucket that no day key ever matches — the amount vanished from the chart.
+- `getAnalytics` did the same, which inflated `daysWithEntries` (the divisor for `dailyAverage`) and could print a raw ISO string as the `bestDay`/`worstDay` label.
+
+Both now bucket on `dateOnly(e.date)`.
+
+⚠ **`getDashboard` has no date window at all** (it is all-time), so it was never affected. Don't "fix" it.
+
+### Measured purely additive — this is what made it safe to ship
+Across all 12 months of 2026 against the real backup: **adds 1 row, removes 0.** It can only restore rows that were being dropped; it can never exclude one that used to count. June purchases went 22,860 → **61,300**; May, July and August are byte-identical.
+
+Verified by 20 cases in `test/unit/date-window.spec.ts` (the June regression first), 34 assertions against the compiled helper over real backup data, and the full suite: **578 tests, 29 suites, all passing.** `node dist/main.js` confirms *Nest application successfully started* — per the nullable-`@Prop` rule, `nest build` alone does not prove this.
+
+### Still open
+The **historical rows are not migrated** — 341 of them still hold timestamps. Reads are correct either way now, so this is cosmetic rather than a correctness issue, but a one-off normalising script would let the helpers eventually retire. `supplierledgerentries.date` (5 rows) has **no** date-window reader today; if one is added, it must use these helpers.
+
+---
+
+## KPI Drill-Down — «الرقم ده جاي منين؟» (Aug 28, 2026)
+
+Three KPI cards in التقارير (المصاريف / المشتريات / المرتجعات) now open the rows that produced their number. Before this, a card asserted `142,743` with no way to verify it: checking meant opening صفحة المصاريف, re-filtering by hand, summing, and then getting a **different** figure — because the card counts `معتمد` only and nothing on screen said so. **The click is the evidence, not a convenience.**
+
+### The list must equal the card — that constraint drives everything
+A drill-down that shows a total different from the number clicked is worse than none: it discredits both figures instead of explaining one. So every list ends with a **proof line** stating the row sum and whether it matches. The tolerance is 0.5 (decimal accumulation), and a mismatch renders red rather than being hidden.
+
+### No new endpoint — and the cost of that
+`transactions` / `expenses` / `returnRequests` / `supplierReturns` are all in memory from `loadAllData`, so the panel opens with **zero requests**. The price is that the filter rules are a **hand-kept mirror** of the backend's — same convention as `getRetRefundCeiling` and `CANCEL_REASONS`. Changing a rule in `getReports` (or the expense filter in `transactions.controller.ts`) without changing `_rd*Rows` desyncs the list from the card, and the proof line is what makes that visible.
+
+### ⚠ Each card dates its rows by a different field. This is not an oversight.
+| Card | Source | Date field |
+|---|---|---|
+| المصاريف | `expenses`, `status==='معتمد'` | `date` |
+| المشتريات | `transactions` type مشتريات | `date` |
+| … minus | `supplierReturns` مكتمل, `!reversal` | `returnDate` |
+| المرتجعات | `returnRequests` معتمد, `!reversedAt` | **`createdAt`** |
+
+`_rdReturnInPeriod` is separate from `_rdInPeriod` because the backend compares `createdAt` as a **`Date` against UTC bounds**, while transactions/expenses are compared as **raw strings**. Using one helper for both makes the rows stop matching the card.
+
+### ⚠ It surfaced a real backend bug — since fixed
+The proof line failed on its first run against June 2026. Cause: **63% of transactions (326/521) store `date` as a full ISO timestamp**, and raw-string compare made `'2026-06-30T00:39:12.745Z' <= '2026-06-30'` **false**, dropping the last day of every period. See **The Date-Window Bug** below for the fix.
+
+`_rdInPeriod` now compares on the **day** (first 10 chars), matching the corrected backend. **The two must always move together** — that is exactly what the proof line detects.
+
+### The panel
+`openRepKpiDrill(key)` → header (the figure, period, row count) → **the rule, stated in words** → search → sortable table → proof line + pagination. Reuses the shared `renderPagination()` and the `.cxr-tbl` conventions.
+
+- **المشتريات renders two groups** — الفواتير (+) and مرتجعات الموردين (−). The KPI is a *net* figure; showing one merged list makes the sum come out below the visible invoices with nothing explaining the gap.
+- **Supplier-return value comes from `SupplierReturnOrder.total`, not the مرتجع مشتريات transaction** — that one is created with `total = refundAmount` only, so a return settled as debt-offset or credit has total 0 and would deduct nothing. Same reasoning as `getSettledSupplierReturns`.
+- **A row opens its document and closes the panel** (`openOrderView`, which already handles the masked-purchase case for non-admins). Expense rows are **not** clickable: `openExpenseModal` refuses approved expenses, and every row here is approved by definition.
+- **Return rows open `returnTxId`** — the transaction created at approval. An approved return has no standalone page.
+- ⚠ **The ⓘ button carries `event.stopPropagation()`** — without it a click opens both dialogs.
+- ⚠ **`_rdRenderTable()` redraws only `<thead>`/`<tbody>`/pager.** Re-rendering the card per keystroke blurs the search box. Same rule as `_cxrRenderTable`.
+- ⚠ **Sorting runs on `.slice()`** — sorting `_rdRows` in place would permanently reorder the array the proof line reads from.
+- ⚠ **Column order is duplicated** between the `<thead>` literal and the row template; reordering one alone shifts every column under the wrong header.
+- ⚠ **`closeModal()` calls `_rdRelease()`.** Backdrop and ESC bypass `closeRepKpiDrill()`, so clearing state only there would retain hundreds of records. `_rdRelease` must **not** call `closeModal` — that direction is the recursion.
+- Filtered-to-zero and no-rows are **distinct** empty states, per the `LOAD_FAIL` three-state rule.
+- Cards are `role="button"` + `tabindex="0"` with Enter/Space; the affordance is a chevron at `.35` opacity, not a colour — it sits beside eleven non-drillable siblings.
+
+### Only three cards, deliberately
+The other nine (متوسط الفاتورة, الربح الصافي, …) are **derived from formulas, not backed by rows** — a list behind them would be meaningless. `REP_DRILL_KPIS` is the gate; adding a card there without a `REP_DRILL_META` entry renders a clickable card that opens nothing.
+
+### Verification
+Not spot-checked — the shipped `_rd*Rows` functions were extracted from `index.html` and run against real backup data across **18 periods (54 comparisons), all matching** the backend's own transcribed rules, plus 25 jsdom assertions covering render, search, sort, paging, row-click and state release. This is how the June discrepancy above was found.
+
+---
+
+## Carrier Registry — `CARRIERS` (Aug 28, 2026)
+
+The shipping company was a **free-text name** (`tx.shipCo`) copied out of `settings.shipCos[].name`, and the three paths that create a sale disagreed completely:
+
+| Path | Carrier | Tariff |
+|---|---|---|
+| سجل المعاملات (manual) | **required**, a name | read from settings, written as a bare number |
+| `ShopifyService.approveOrder` | **never written at all** | `shipping_lines[0].price` — what the *customer* paid |
+| `BostaService.createOrder` | **never read or written** | — |
+
+So an order labelled «Mylerz» could be shipped through Bosta and nothing anywhere disagreed; and every confirmed Shopify sale carried no company, while the manual form refused to save without one.
+
+### The reports were already written and starved of data
+`order-audit.service.ts` **already** grouped shipping cost per company and reported the highest-shipping order. That code worked; its input was empty. Shopify is most of the volume, so the per-company breakdown was almost entirely one «غير محدد» row. ⚠ **Fixing the data fixed the panel — no new report was written.**
+
+### `backend/src/shared/carriers.constants.ts` is the single source of truth
+⚠ **`code` is the stored value** (`tx.carrierCode`) — it lands in Mongo, the shipping breakdown and the archive export. **Never rename one**; add a new code and leave the old one so historical rows keep resolving. `ar`/`en` are display-only. Same split as `CANCEL_REASONS`, `PRODUCT_COLORS.name` and `JOB_TITLE_GROUPS`.
+
+⚠ **`index.html` carries a hand-kept mirror** (`CARRIERS` + helpers, just above `RET_VAULT_SEGMENTS`). The backend validates every submitted code against **its own** copy.
+
+**`integration: 'bosta' | 'none'` is what makes the system aware of a *connected* carrier.** It decides whether the «إرسال إلى Bosta» action exists — **not** whether the carrier may be selected. A carrier with `'none'` is fully usable for recording and reporting; it is simply handed over manually. Adding a second integrated carrier means adding its code plus its own send path; **no existing branch changes.** This is what makes the system multi-carrier rather than Bosta-with-extras.
+
+### `resolveCarrierForWrite` is the only place a carrier is resolved
+In `TransactionsService`, called by both `create()` and `update()`. Its rules:
+- **Only sales carry a carrier.** A purchase has no outbound shipment, and one would put supplier invoices into the shipping report.
+- **An unknown *code* is rejected, an unknown *name* is not.** A rejected save leaves the operator on screen to fix it; dropping it files the shipment under «غير محدد» with nobody aware. But a legacy free-text name is data we cannot reject — it keeps `carrierCode: ''` and is bucketed as unspecified.
+- **`shipCo` is DERIVED and still written.** Every consumer that renders it verbatim (invoice view, pickup prep group, archive export) keeps working untouched, so **no backfill is required**.
+
+⚠ **`update()` re-freezes the tariff**, falling back to the stored values for fields absent from the DTO — an unrelated edit (e.g. the client name) must leave the shipping record exactly as it was.
+
+### `shipTariff` — why the price is frozen on the transaction
+`shipCost` alone is a bare number with no explanation: editing a carrier's price in Settings left old invoices at the old figure and new ones at the new one, with **nothing recording that a rate change had happened**. Two invoices, same carrier, same zone, different cost, and no answer to "why".
+
+`source` is the load-bearing field: `'settings'` (the configured tariff) · `'manual'` (an operator override — **visible in reports instead of hidden**) · `'shopify'` (what the *customer* was charged, which is a different quantity from what the carrier costs us).
+
+⚠ `@Prop({ type: Object })` is mandatory — an object `@Prop` without it throws `CannotDetermineTypeError` at module load and takes the whole API down.
+
+### The picker is shown before sending, with a default pre-selected
+`settings.defaultCarrierCode` pre-selects, so the ordinary single-carrier case stays **one click** while a second carrier is one click away. The picker is **always rendered** — the default decides only what starts selected, never that the question is skipped.
+
+- It shows **each carrier's tariff for this order's zone**, so the operator sees the cost *before* confirming. Same "state the impact before the click" rule as the cancellation dialogs.
+- ⚠ `cityToShipZoneFront()` mirrors the backend's `cityToShipZone` — **keep the two in agreement**, or the operator is quoted one figure and the invoice records another.
+- ⚠ `.cpk-opt input` is `position:absolute;opacity:0`, not a bare radio — see [[global_input_width_breaks_radios]].
+- **Bulk send takes one carrier for the whole batch, and the dialog says so.** Read **before** the button is disabled, so a rejected pick leaves the dialog open. Same rules as bulk cancel.
+- A settings row whose name matches no registry entry is **not offered** in the pickers (the backend would reject it) and is marked «غير معروفة» in the settings table instead of silently failing at save.
+
+### Where the shipping price comes from — two sources, never mixed
+The confirm dialog showed **«Shipping EGP 120»** in the summary (from Shopify) while the carrier tiles below offered **145 / 135** (from the Settings tariff) — none of which would ever be written. Two numbers on one screen and nothing saying which wins.
+
+| Entry path | The price is | Behaviour |
+|---|---|---|
+| **Manual** (سجل المعاملات) | the carrier's tariff in Settings for the selected zone | **per-carrier** — changes as you pick, because that figure *is* what gets charged |
+| **Shopify** | `shipping_lines[0].price` — what the customer already paid at checkout | **fixed** — identical for every carrier; `approveOrder` writes `order.shipCost` through untouched |
+
+`_carrierPickerHtml(idp, code, zone, priceOpts)` takes `fixedPrice` (Shopify: one true figure on every tile) or `hidePrice` (bulk: each order keeps its own amount, so any single figure would be wrong for most rows), plus a `priceNote` naming the source. **Never render per-carrier settings tariffs on a Shopify order** — no tariff replaces what the customer already paid.
+
+⚠ **`priceOrigin` on `resolveCarrierForWrite` exists for the edit path.** A Shopify amount is not drawn from any tariff, so comparing it against one is meaningless — without the override, editing an unrelated field (the client's name) re-ran the check, found 120 ≠ 110, and relabelled `shipTariff.source` as `'manual'`: **fabricating an operator override that never happened** and corrupting the one signal reports use to spot genuine off-tariff pricing. Scoped to `tx.source === 'shopify'`, so a manual sale still reports a real override. 4 cases in `transactions.service.spec.ts`.
+
+### `shipRowPrice` — one resolver, and why `??` is load-bearing
+`getShipCost` (new transaction) and `updateEditShipCost` (edit modal) each carried their own copy of:
+
+```js
+co.cairo || co.cairoPrice || settings.cairoPrice || 0
+```
+
+⚠ **`||` treats 0 as "missing"**, so a carrier deliberately priced at **0** — free shipping, or customer pickup — silently inherited the global default and **charged for a shipment that was free**. A configured 0 is a real tariff. Both now call `shipRowPrice(co, zone)`, which uses `??` at every step, so the two can no longer drift. Same falsy class as the `t()` empty-string trap.
+
+### Deliberately additive
+`carrierCode` defaults to `''` on every pre-existing row, and reports bucket those under `LEGACY_CARRIER_CODE` («غير محدد») rather than dropping them — **so shipping totals always equal what actually shipped**, and a shrinking «غير محدد» bucket is the adoption metric. `SettingsService.getSettings()` backfills `shipCos[].code` and `defaultCarrierCode` from the legacy names on read.
+
+⚠ `ShopifyModule` now imports **`SettingsModule`** (not `forwardRef` — Settings does not depend on Shopify, so this adds no cycle). `nest build` does not prove this resolves; **only `node dist/main.js` does.** Verified: *Nest application successfully started*.
+
+### Still open (measured, not fixed)
+- **`shipCost` still conflates two quantities**: what the customer was charged (Shopify) and what the carrier costs us (manual). `shipTariff.source` now records *which* it is, so the split into `shipCharged` vs `shipCost` is the next step and is no longer blind.
+- **`actualShipCost` is read but never written on the sales path.** `order-audit`'s `shipCostOf` prefers it, so that branch is always false and the report measures the estimated tariff while calling it actual.
+- **`cityToShipZone` is still Cairo/Giza vs everything else**, while the city picker stores a precise `shippingBostaCity`. Finer zones are possible; changing the zone keys would invalidate every stored `shipZone`, so they must be added, never renamed.
+- **Bosta still does not check `carrierCode`.** Gating the send on `integration === 'bosta'` (and stamping the carrier on success) is stage 5.
+
+---
+
+## Structured Cancellations — `CANCEL_REASONS` (Aug 28, 2026)
+
+There are **two** ways an order dies, they had nothing in common, and neither could be counted:
+
+| Path | Where | Reason field | Was |
+|---|---|---|---|
+| `shopify` | صفحة شوبيفاي, order still `pending` | `cancelReason` | free text, **optional**, usually empty |
+| `transaction` | سجل المعاملات (direct admin, or request→approve) | `cancelReason` | free text, required, unconstrained |
+| `transaction` (bulk) | شريط التحديد في الحركات → «إلغاء» | `cancelReason` | a bare `showPrompt` — no list at all |
+
+Free text on both sides means «العميل غير مستجيب», «عميل مش راد» and «لا يرد» are **three rows** in any report that groups by reason — so the question "why do we lose orders?" had no answer at all. The reason is now a **code**; the Arabic label is derived at render.
+
+### The stage is the expensive part, not the count
+The two paths cost different amounts, so they are counted separately and never merged into one number:
+- **`shopify`** — nothing moved. No stock deducted, no vault entry, no invoice. The cost is the lost sale.
+- **`transaction`** — `performCancellation` had to *reverse* real effects: refund the deposit out of (or back into) the vault, write reversing inventory movements, and unwind the supplier payable.
+
+A rising `transaction` share means orders are being caught **too late**, which is the one operational reading this panel exists to give. `cancelStage` is stored on the transaction for exactly this.
+
+### `backend/src/shared/cancellation.constants.ts` is the single source of truth
+18 reasons in 5 groups. Each carries `stages: ['shopify'|'transaction']` — **a reason is not valid everywhere**: `test-order` is shopify-only (by the time it is a transaction it has moved cash, and calling that a test files a real loss as noise), while `delivery-failed` / `data-entry-error` / `supplier-cancelled` are transaction-only. The service validates the code *against the stage*, not just against the list.
+
+⚠ **`code` is the stored value** — it lands in Mongo, the reports breakdown and the archive export. **Never rename one**; add a new code and leave the old one in the list so historical rows keep resolving to a label. `ar`/`en` are display-only. Same split as `PRODUCT_COLORS.name` / `JOB_TITLE_GROUPS`.
+
+⚠ **`index.html` carries a hand-kept mirror of the list** (`CANCEL_REASONS` / `CANCEL_REASON_GROUPS`, just under `RET_VAULT_SEGMENTS`). The backend validates every submitted code against **its own** copy, so a code added on one side only is either un-choosable or rejected at save with «سبب الإلغاء غير معروف». Same convention as the global-search scorers and `getRetRefundCeiling`.
+
+### Additive, not a migration — this is what makes it deployable
+`cancelReason` (the free-text field) is **still written**, now DERIVED via `cancelReasonSummary(code, note)` → `«الصنف غير متوفر — الفرع أغلق»`. Every existing consumer that renders it verbatim — the invoice view, the archive export, the vault note — keeps working untouched, and **no backfill is required**. The new `cancelReasonCode` / `cancelReasonNote` / `cancelStage` sit alongside it.
+
+A caller that sends **only free text still works** and lands with an empty code; the report buckets those under `LEGACY_CANCEL_REASON_CODE` («غير محدد») rather than dropping them, **so the reason totals always equal the number of cancellations that actually happened**. A shrinking «غير محدد» bucket is also the adoption metric. Internal callers that pass only prose (the failed-delivery close-out, `performCancellation`'s COD path) were deliberately left alone for this reason.
+
+### The reason must survive approval
+`requestCancel` validates **at submission**, not at approval — a bad reason must be rejected while the requester is still on screen to fix it — and stores the code on `cancelRequest`. `approveCancel` then carries it through to `performCancellation`. **The approver decides *whether*, not *why*.** Dropping the code here would send every request→approve cancellation to «غير محدد» and turn the report into a measure of which path was used rather than of what went wrong.
+
+### `other` requires a note
+An «سبب آخر» with no detail is precisely the unusable row this system exists to stop, so it is the one code where the note is mandatory — enforced on **both** layers, and inline at the field rather than as a toast (the dialog is what the user is looking at).
+
+### The dialogs now state the impact *before* the click
+`cancelImpactHtml(tx)` mirrors `performCancellation`: it names the vault movement, the stock reversal and the removal from reports. Two rules it follows:
+- **Only the `deposit` moves.** The unpaid remainder was never collected, so it must not be shown as if it were — the same lesson as the `payStatus`-vs-cash incident above.
+- ⚠ **Every amount is wrapped in `<bdi>`.** `fmtJ` emits a Latin run inside Arabic prose; without isolation the sign attaches to the currency. Never "fix" that by reordering the string.
+
+The Shopify dialog's message was «سيُستبعد من الإحصائيات», which understated it in one direction and overstated it in another; it now says plainly that nothing touched stock or the vault and the order can be restored.
+
+`_shopifyActionModal` gained an opt-in **`reasonStage`** — it renders the structured picker and hands `onConfirm` a `{code, note}` object instead of a string. The legacy `showReason` free-text path is untouched, because that modal is shared with non-cancellation actions on the same page. Validation runs **before** the button is disabled and the modal removed, so a rejected pick leaves the dialog open with its error rather than vanishing having done nothing.
+
+### Who may cancel a Shopify order — `shopify-cancel` / `shopify-cancel-request`
+Cancelling a pending Shopify order was `@Roles('admin')` on both layers, so it could not be delegated at all: either someone held the admin account or nobody could cancel. Now two perms, and they are **different levels of authority, not two names for one**:
+
+| Perm | What the click does |
+|---|---|
+| `shopify-cancel` | Cancels immediately. The order is gone. |
+| `shopify-cancel-request` | Files a request. A manager decides in الموافقات. |
+
+`canCancelShopifyOrder()` wins when a user somehow holds both — the stronger authority already contains the weaker, and routing such a user through approvals would send a manager a request they could have skipped. `shopifyCancelMenuLabel()` switches the menu text accordingly: **«إلغاء الأوردر» on a button that only files a request is the wording that makes staff believe an order is cancelled when it is still live.**
+
+⚠ **A pending request does NOT cancel anything.** `cancelled` stays false and the order keeps its `pending` status, so it remains in everyone's list. Letting the request itself remove the order from view would hand the requester the exact effect of the permission they were not granted. A `.sp-status-badge` on the row says a request is pending, so nobody works an order that is awaiting a decision.
+
+⚠ **`approve-cancel` / `reject-cancel` stay `@Roles('admin')` and are deliberately NOT derived from `shopify-cancel`.** The request→approve step exists to put a second person between a staff member and the cancellation; if approval used the same perm, a holder could approve their own request and the gate would be decorative. Same rule supplier-returns' approve/reject already follows.
+
+- The **requester's reason is carried through approval unchanged** — the approver decides *whether*, not *why*. `cancelledBy` is set to the requester (they made the operational decision) while `cancelRequest.reviewedBy` records who authorised it. Dropping the code here would send every approved request to «غير محدد» in the cancellations report.
+- The reason is **validated at submission**, not at approval, so a bad reason is rejected while the requester is still on screen. `resolveShopifyCancelReason` is shared by the direct and request paths so the two cannot drift into accepting different reasons for the same action.
+- `restoreOrder` clears `cancelRequest`, or a restored order keeps an 'معتمد' request and الموافقات keeps listing a cancellation that no longer exists.
+- Approvals integration: a new `shopify-cancel` kind in `buildApprRow`, its own filters, and the count folded into the existing «طلبات إلغاء» KPI and the sidebar badge. ⚠ The sort comparator special-cases which kinds carry `_status`/`_sortDate` — a kind omitted from `_hasOwnStatus` silently falls back to `a.status`/`a.createdAt`, which a Shopify order does not have for its request.
+- ⚠ **The approvals page fetches `/shopify/orders` itself on entry.** `_shopifyOrders` is filled by the Shopify page, which a manager arriving straight at الموافقات may never have opened — without this the requests are simply invisible.
+- Tests: `test/integration/shopify-cancel-approval.service.spec.ts` (13 cases). It `jest.mock`s `employee-scoring.service` and `require`s ShopifyService lazily — ts-jest type-checks every transitively imported file under stricter settings than the build tsconfig, so an unrelated typing issue there would fail this suite for reasons that have nothing to do with cancellations.
+
+### Bulk cancel was the worst offender
+The selection-bar «إلغاء» called the generic `showPrompt('أدخل سبب الإلغاء:')`, so **every bulk cancellation landed with an empty code** — and bulk is how large clean-ups happen, so that one call site could have swamped the entire «غير محدد» bucket on its own. It is now a real modal with the same picker.
+
+- **One reason applies to the whole selection, and the dialog says so.** A single confirmation cannot honestly ask "why?" per row; if the reasons differ, they are separate actions. Leaving that unstated would let the operator assume each invoice kept its own reason.
+- The impact panel is **aggregated and split by direction** — purchases return cash to the vault while sales pay it back out, so netting them into one figure would describe neither. Same rule as the single dialog: only the `deposit` moves.
+- Transactions in the selection that cannot be cancelled are **counted and named as skipped**, not silently dropped.
+- **Partial failure is reported** (`cxbDonePartial`). The loop cancels one at a time; a bare success toast would hide that some rows moved vault and stock while others did not.
+- `lockDismiss: true` — a multi-row irreversible action with a required field is exactly what must not die to a stray backdrop click.
+
+### Every cancel dialog names its subject — `cancelSubjectHtml`
+All three dialogs used to open with a title and a paragraph and **never showed the order number**. On a page of 25 rows that is one misclick from cancelling the wrong order, and the confirmation could not catch it because it never said which order it meant.
+
+`cancelSubjectHtml({ref, name, total})` is one component shared by all of them: the **reference leads at 1.15rem** — it is the identity, not the fourth label on the second line — with the customer/supplier and value as muted meta beneath. It replaced the transaction dialog's 2-line label/value block, which said the same things in the wrong order of importance.
+
+⚠ **Bulk cancel deliberately does not use it.** It has no single subject and its title already states the count; a subject header there printed the same number three times on one screen. The `count` branch and its `cxsCount` key were removed rather than left unreachable — a key no caller can reach reads as a live feature.
+
+`cancelActorHtml()` adds a small muted «بواسطة {name}» at the foot. `cancelledBy` was always recorded, so this is not new data — it makes the attribution visible **at the moment it is created** rather than only afterwards in the report.
+
+The Shopify lead line was cut from a full sentence about statistics and restorability to «لا أثر على المخزون أو الخزنة — يمكن استرجاعه.» The full vault/stock effect is in the الأثر panel directly below, so the lead no longer has to carry it in prose.
+
+### The picker is radio cards, not a `<select>`
+The entire point is that the operator **sees** the standard list instead of typing whatever comes to mind, and a dropdown hides the options behind a click. ⚠ `.crp-opt input` is `position:absolute;opacity:0` rather than a bare radio — the global `input,select{width:100%}` rule crushes bare radios; see [[global_input_width_breaks_radios]].
+
+### The report — tab «الإلغاءات», perm `reports-cancellations`
+`buildCancellationsReport(from, to)` in `TransactionsService`, returned as `cancellations` on `GET /transactions/reports`. No new endpoint and no extra request — the panel is a pure function of the report already fetched.
+
+⚠ **`getReports` filters `transactions` to `cancelled: {$ne:true}`, so the rows this panel needs are absent from that array by construction.** It runs its own query. Do not "optimise" it by reusing the caller's list — it would always return zero.
+
+⚠ **Cancellations are dated by `cancelledAt`, not `date`.** A cancellation is an event in the period it *occurred* in; bucketing an August cancellation of a June order into June makes the current period look clean and silently rewrites a closed month. Rows with no `cancelledAt` fall back to `date` rather than being dropped.
+
+- `ShopifyOrder` is registered **schema-only** in `TransactionsModule` (same pattern and same reason as `SupplierReturnOrder`): orders cancelled on the Shopify page never become a transaction, so they are invisible to every other query in the service. ⚠ **Adding it means adding it to `transactions.service.spec.ts`'s test module too** — otherwise all 91 tests fail to compile a module, exactly the `FollowUpsService` trap documented above.
+- `refunded` is hard-coded `0` for shopify-stage rows rather than read from a field — nothing was ever taken, so nothing can be returned, and that is what keeps the "cost of cancelling late" comparison honest.
+- Reasons are ranked **by count, not by value**: the question is what keeps going wrong, and one large cancelled invoice is not a bigger problem than ten small recurring ones.
+- Rendered as a **table with a share meter**, not a pie — 18 ranked slices are unreadable, and the reader needs the exact count and the money beside each. The meter is single-hue for the same reason as the vault strip's: a share of one total is a ratio against a limit, not a categorical palette.
+- Wrapped in try/catch — a reporting panel must never take the whole report down.
+
+#### The «آخر الإلغاءات» table
+Paginated (25/50/100), sortable on 6 columns, filterable by stage, and searchable — all **client-side**, over data the report already returned. It never refetches.
+
+⚠ **The backend returns the full list, not a top-25 slice.** Paging and sorting a truncated payload would make page 2 and every sort silently wrong — they would reorder 25 arbitrary rows rather than the period's actual cancellations. `MAX_CANCEL_ROWS = 500` bounds the response, and when it bites `recentTruncated` makes the UI **say so** («تُعرض 500 من 640») instead of presenting a partial list as complete.
+
+- **State (`_cxrPage`/`_cxrSortKey`/`_cxrSearch`/`_cxrStageFilter`) lives outside the renderer**, so paging and filters survive a re-render (tab switch, language flip).
+- ⚠ **`_cxrRenderTable()` redraws only `<tbody>`, `<thead>` and the pager** — the card shell, filter tabs and search box are written once by `renderCancellationsReport()`. Re-rendering the whole card per keystroke would blur the search input mid-typing.
+- ⚠ **Sorting runs on `.slice()`.** Sorting `_cxrRows` in place would permanently reorder the array the KPI and reason panels read from.
+- **Search matches the reason's LABEL, not its code** — searching for text you can see must return something (same rule `renderUsers()` follows for job titles).
+- **Filtered-to-zero ≠ no cancellations.** The empty state distinguishes them and offers `resetCxrFilters()`, per the `LOAD_FAIL` three-state rule.
+- **The operator's note renders as a sub-line, not a tooltip** — it is the only part not derivable from the code, and hover-only text is unreachable on touch. The derived `summary` stays in `title`.
+- Reuses the shared **`renderPagination()`**; sort headers follow the vault table's `.is-sorted`/`.is-asc` convention, with the label in its own `<span>` so the indicator survives a text update.
+
+**Column alignment and dividers.** ⚠ **`.cxr-tbl thead th` must not set `text-align`.** It did, and at (0,1,1) it outranked the bare `.cxr-num` (0,1,0) — so القيمة and نقد مُرتجع were `start`-aligned in the header while their values were `end`-aligned in the body: the label did not stand over its own column. Alignment is now declared **once per column on `th` and `td` together** (`.cxr-tbl th.cxr-num, .cxr-tbl td.cxr-num`), which makes the two physically unable to disagree. Add a new aligned column the same way — never by styling the `th` alone.
+
+- **`table-layout:fixed` with an explicit width per column** (`.cxr-c-*`). Without it the browser sizes columns from each page's content, so the column boundaries **shift on every page change** — the table looks unstable even though the data is right. Only السبب is `auto`; it is the one variable-length column and carries the note sub-line.
+- ⚠ **The fixed widths must be budgeted against the card, not guessed.** A first pass used 462px of fixed columns + 128px of padding + 28% in percentage columns; inside a ~900px card that left السبب **58px**, and below ~840px it computed negative. Fixed columns are now 424px with 7px gutters, keeping السبب ≥87px at 820px and ~300px at 1100px. `min-width:720px` is a **floor** (below it, scrolling beats crushing), never the default — an earlier `min-width:900px` is what pushed the last column off-screen and made sideways scrolling the normal state.
+- **Column order is duplicated in two places** — `_cxrRenderTable()`'s `<thead>` and its `<tbody>` row template. They are separate string literals with nothing tying them together, so **reordering one without the other silently shifts every column's data under the wrong header**. Change both together and re-count.
+- Consequence: a long value **overflows instead of widening**, so العميل and بواسطة are `.cxr-ell` (ellipsis + full text in `title`).
+- **Vertical dividers** via `th + th` / `td + td` — eight columns with none read as one block, worst of all the two adjacent money columns. A hairline, not a full grid: the goal is separating columns, not turning the table into a spreadsheet.
+- The two money columns carry a **`.cxr-money` tint** running the full height, which ties each header to its values vertically and compensates for the deliberately light horizontal rules. Same idea as the vault log's hero amount column.
+- `applyLang()` re-renders it (every label is in a JS template literal, and `cancelReasonLabel()` reads `currentLang`).
+
+⚠ `reports-cancellations` had to be added to **all three** `hasAnySubPerm` arrays, not just `PERMS`. Those decide the legacy-full-access fallback, so a user granted *only* the new perm would otherwise read as "has no sub-perms" and be handed every tab.
+
+### Not changed
+Reasons are **not** editable from Settings. Making them user-editable would let two branches invent different taxonomies for the same event and re-open the drift this closed; if that is wanted it needs a real managed list with codes that outlive their labels.
+
+---
+
+## The Vault Followed `payStatus`, Not Cash — #900001 (Aug 27, 2026)
+
+Purchase #900001 was created with **total 0**, then edited to 7,940. The edit **deducted 7,940 from the vault for a payment that never happened** — while the invoice itself still said `deposit: 0`, `remaining: 7940`, i.e. the whole amount was owed to the supplier. It was corrected by hand (`MAN-007`), so the balance is right; the defect was in the code.
+
+### `payStatus` cannot answer "was this paid?"
+`payStatus` is derived: `remaining = max(0, total − deposit)`, then `payStatus = remaining <= 0 ? 'مكتمل' : 'معلق'` — in **both** writers ([index.html](frontend/public/index.html) `saveTx`, and `update()`'s own recompute). So a **zero-total** invoice saves as `مكتمل` with `deposit: 0`: not because anyone paid, but because there is no amount at all. `update()` read that flag as "دُفع للمورد كاملاً" and posted `−totalDelta` to the vault.
+
+**The invariant: the vault moves by cash actually settled (`deposit`), never by what is owed (`total`), and never by a status derived from their difference.**
+
+`isCompleted` now requires `oldDeposit > 0 && oldTotal > 0 && previousRemaining <= 0`, and both branches post **`cashSettledDelta = newDeposit − oldDeposit`** instead of `totalDelta`/`depositDelta`. This also closed a second hole the old code had in the *fully-paid* branch: raising the total on a paid invoice posted the whole difference as cash even when `deposit` never moved — the difference is **new debt**, and it belongs in the supplier ledger (`adjustSupplierLedgerForPayableChange`, measured on `remaining`), which already handled it correctly. Sales had the mirror bug: a 0 → 5,000 edit *added* uncollected cash.
+
+⚠ **`effOldDeposit`/`effNewDeposit` clamp the deposit to the invoice total on a fully-paid invoice** — a paid invoice cannot settle more than it is worth, so a total drop from 5,000 → 4,000 returns 1,000 to the vault rather than reading as an unchanged deposit. The delta is rounded to 2 decimals so float drift can't open a zero-value entry.
+
+The purchase branch's existing recompute of `remaining`/`payStatus` is what makes the bad state **self-healing**: editing such an invoice now flips it to `معلق` with the correct `remaining`.
+
+### Notes
+- Vault note wording changed to name what moved — «زيادة سداد مشتريات» / «إضافة تحصيل مبيعات» with `المسدَّد/المحصَّل قبل ← بعد`, not `الإجمالي قبل ← بعد`, which described a figure that no longer drives the entry.
+- 9 regression cases in `transactions.service.spec.ts` (`update() — vault follows cash actually settled, never payStatus`) lock in the incident itself, the ledger's 7,940, the `معلق` correction, partial settlement, both fully-paid directions, and the two sales mirrors.
+- ⚠ **The spec file was silently uninjectable**: `FollowUpsService` had been added to the service constructor but never to the test module, so all 71 tests in it failed to compile a module. `createMockFollowUpsService` in `test/helpers/mocks.ts` fixes it — **add a mock there whenever a dependency joins `TransactionsService`.**
+- **Not changed: zero-total invoices are still creatable.** Blocking them is a separate product decision (a draft/quotation state), and the vault is now correct either way.
+
+---
+
 ## Shopify Sales Were Missing From سجل حركة المخزون (Aug 9, 2026)
 
 Orders confirmed from the Shopify page appeared in سجل المعاملات and correctly reduced the stock **balance**, but wrote **no row** to سجل حركة المخزون. Reported against refs `2313` and `2274`.
@@ -1106,6 +1715,14 @@ const expenseTotal = filteredExpenses
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Aug 28, 2026 | Four of six registered Shopify webhooks were being thrown away with 200 OK; plus the address of an already-shipped order was silently overwritten on the invoice while Bosta still held the old one | See "Shopify Webhooks — Four of Six Were Thrown Away" above |
+| Aug 28, 2026 | Rebuilt the printed sales/purchase invoice as a formal A4 commercial document: real issuer block (7 new company settings), التفقيط, signature block, declared `@page` geometry, repeating table header, and the terms already stored but never printed | See "The Printed Invoice" above |
+| Aug 28, 2026 | Fixed the date-window bug the drill-down exposed: `date` is stored as a full ISO timestamp on 63% of transactions, and bytewise `<=` dropped the last day of every report period (June purchases read 22,860 instead of 61,300). Six read sites + two day-bucketing defects; measured purely additive (+1 row, −0) | See "The Date-Window Bug" above |
+| Aug 28, 2026 | KPI cards المصاريف / المشتريات / المرتجعات now open the rows behind their number, each list ending in a proof line that it sums to the card; its proof line immediately exposed a real backend date bug (fixed, row below) | See "KPI Drill-Down" above |
+| Aug 28, 2026 | Backup restored no employee accounts — `users` was captured then skipped by both restore paths, so a restore produced full history with no logins and a Performance Hub of unresolvable ids; plus a nightly 3 AM auto-backup (there was none) keeping the last 10 | See "Backup Lost Every Employee Account" above |
+| Aug 28, 2026 | Carrier registry: shipping company became a stable `code` bound to every sale, the tariff is frozen on the transaction, and Shopify's confirm dialog now asks which carrier ships the order — it never recorded one, so the whole Shopify volume sat in the «غير محدد» bucket of a shipping report that was already written | See "Carrier Registry — `CARRIERS`" above |
+| Aug 28, 2026 | Structured cancellations: both cancel paths (شوبيفاي / سجل المعاملات) now take a coded reason from one shared list instead of free text, the dialogs state the vault/stock impact before the click, and a new «الإلغاءات» reports tab counts reasons and separates cancelled-before-entry from cancelled-after | See "Structured Cancellations" above |
+| Aug 27, 2026 | Vault entries on edit now follow cash actually settled (`deposit`) instead of `payStatus` — a zero-total invoice saved as «مكتمل» and deducted its full new total on the next edit for a payment that never happened (#900001) | See "The Vault Followed `payStatus`, Not Cash" above |
 | Aug 9, 2026 | Shopify orders now write to سجل حركة المخزون — `approveOrder` bypassed `TransactionsService.create()`, so the stock balance moved but no movement row was ever logged; plus an admin backfill for affected refs | See "Shopify Sales Were Missing From سجل حركة المخزون" above |
 | Aug 8, 2026 | Fixed the deploy-breaking crash: a nullable `@Prop` with no `type` killed NestJS at module load, so every request — including login — failed while the build reported success | See "A Nullable `@Prop` Without `type` Kills the Whole API" above |
 | Aug 8, 2026 | Trust hardening: "failed to load" split from "no data" (`LOAD_FAIL`), silent @mention failures surfaced, `beforeunload` added app-wide, product modal given real unsaved-changes protection, boot cut from 8 sequential round-trips to 1 | See "Trust & Data-Loss Hardening" above |

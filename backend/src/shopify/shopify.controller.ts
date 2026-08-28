@@ -19,6 +19,8 @@ import { ShopifyService } from './shopify.service';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
+import { PermsGuard } from '../core/guards/perms.guard';
+import { RequirePerms } from '../core/decorators/perms.decorator';
 
 @Controller('shopify')
 export class ShopifyController {
@@ -54,7 +56,28 @@ export class ShopifyController {
       return this.shopifyService.handleOrderUpdate(req.body);
     }
 
-    return { received: true, topic };
+    // ⚠ «orders/edited» يصل عند التعديل عبر خاصية Edit order الرسمية (إضافة/حذف صنف،
+    //   تغيير كمية) — وهو topic مختلف عن «orders/updated». كان يُرمى بصمت، فتعديل
+    //   الأصناف لا يصل النظام إطلاقاً. الحمولة تحمل نفس شكل الأوردر فيتولاها نفس المعالج،
+    //   الذي يجمّد الأصناف بعد التأكيد ويرفع تعارضاً بدل التعديل الصامت.
+    if (topic === 'orders/edited') {
+      return this.shopifyService.handleOrderUpdate(req.body);
+    }
+
+    if (topic === 'orders/cancelled') {
+      return this.shopifyService.handleOrderCancelled(req.body);
+    }
+
+    if (topic === 'fulfillments/create' || topic === 'fulfillments/update') {
+      return this.shopifyService.handleFulfillment(req.body);
+    }
+
+    // ⚠ الستة المسجَّلة في Shopify كلها متعالَجة أعلاه. هذا السطر يمسك أي topic يُضاف في
+    //   لوحة شوبيفاي دون معالجة هنا — كان الوضع السابق يرميه بصمت مع 200 OK، فلا يعيد
+    //   Shopify المحاولة ولا يظهر في أي مكان.
+    //   الرد يبقى 200 عمداً: إرجاع خطأ يدفع Shopify لإعادة المحاولة ثم تعطيل الـ webhook.
+    this.logger.warn(`⚠️ Shopify webhook غير مُعالَج: ${topic}`);
+    return { received: true, topic, handled: false };
   }
 
   // جلب الأوردرات المعلقة (للأدمن)
@@ -100,9 +123,15 @@ export class ShopifyController {
   // قبول أوردر
   @Patch('orders/:id/approve')
   @UseGuards(JwtAuthGuard)
-  async approve(@Param('id') id: string, @Body('deposit') deposit: number, @Body('payment') payment: string, @Request() req: any) {
+  async approve(
+    @Param('id') id: string,
+    @Body('deposit') deposit: number,
+    @Body('payment') payment: string,
+    @Body('carrierCode') carrierCode: string,
+    @Request() req: any,
+  ) {
     const user = req.user?.username || req.user?.name || 'admin';
-    return this.shopifyService.approveOrder(id, user, deposit || 0, payment);
+    return this.shopifyService.approveOrder(id, user, deposit || 0, payment, carrierCode);
   }
 
   // إعادة إسناد أوردر لموظف آخر (أدمن فقط) — لا يؤثر على reviewedBy أو الإيداع أو سجل الأداء
@@ -167,17 +196,84 @@ export class ShopifyController {
     return this.shopifyService.updatePendingStatus(id, pendingStatus || '');
   }
 
-  // إلغاء أوردر معلق (أدمن فقط)
+  /**
+   * إلغاء مباشر — أدمن، أو موظف يحمل `shopify-cancel`.
+   *
+   * ⚠ The route stays `@Roles('admin')`-free but gains `PermsGuard`, which bypasses
+   *   unconditionally for admins — so admin behaviour is unchanged while the perm becomes
+   *   delegable. A staff member WITHOUT `shopify-cancel` must use the request route below;
+   *   this one 403s for them, which is the whole point of the split.
+   */
   @Patch('orders/:id/cancel')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
+  @RequirePerms('shopify-cancel')
   async cancelOrder(
     @Param('id') id: string,
     @Body('reason') reason: string,
+    @Body('cancelReasonCode') cancelReasonCode: string,
+    @Body('cancelReasonNote') cancelReasonNote: string,
     @Request() req: any,
   ) {
     const user = req.user?.username || req.user?.name || 'admin';
-    return this.shopifyService.cancelOrder(id, user, reason || '');
+    return this.shopifyService.cancelOrder(
+      id,
+      user,
+      reason || '',
+      cancelReasonCode || '',
+      cancelReasonNote || '',
+    );
+  }
+
+  /**
+   * طلب إلغاء — لموظف يحمل `shopify-cancel-request` ولا يملك صلاحية الإلغاء المباشر.
+   * لا يُلغى الأوردر هنا؛ ينتظر قرار المدير في صفحة الموافقات.
+   */
+  @Patch('orders/:id/request-cancel')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
+  @RequirePerms('shopify-cancel-request')
+  async requestCancelOrder(
+    @Param('id') id: string,
+    @Body('cancelReasonCode') cancelReasonCode: string,
+    @Body('cancelReasonNote') cancelReasonNote: string,
+    @Request() req: any,
+  ) {
+    const name = req.user?.name || req.user?.username || '';
+    return this.shopifyService.requestCancelOrder(
+      id,
+      name,
+      cancelReasonCode || '',
+      cancelReasonNote || '',
+      req.user?.userId || req.user?.sub || '',
+      req.user?.username || '',
+    );
+  }
+
+  /**
+   * اعتماد/رفض طلب الإلغاء — أدمن فقط، ولا يُشتق من `shopify-cancel`.
+   *
+   * ⚠ Deliberately NOT folded into the cancel perm: the request→approve step exists to put a
+   *   second person between a staff member and the cancellation. If the approval used the same
+   *   perm, a holder could approve their own request and the gate would be decorative — the same
+   *   rule supplier-returns' approve/reject already follows.
+   */
+  @Patch('orders/:id/approve-cancel')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async approveCancelRequest(@Param('id') id: string, @Request() req: any) {
+    const by = req.user?.name || req.user?.username || 'admin';
+    return this.shopifyService.approveCancelRequest(id, by);
+  }
+
+  @Patch('orders/:id/reject-cancel')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async rejectCancelRequest(
+    @Param('id') id: string,
+    @Body('rejectedReason') rejectedReason: string,
+    @Request() req: any,
+  ) {
+    const by = req.user?.name || req.user?.username || 'admin';
+    return this.shopifyService.rejectCancelRequest(id, by, rejectedReason || '');
   }
 
   // استرجاع أوردر ملغي (أدمن فقط)
