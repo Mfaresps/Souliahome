@@ -87,8 +87,18 @@ app.get('/s/:slug', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'survey.html'));
 });
 
-// Serve static files
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files.
+// Assets are referenced by a fixed path (/soulia-logo.svg keeps its name when its contents
+// change), so without an explicit header the browser applies heuristic caching and keeps
+// serving the old file for weeks after a replacement ships. Mirrors the `no-cache` rule in
+// nginx.conf — keep the two in agreement, or dev and production disagree about staleness.
+// "no-cache" still caches; it just forces revalidation, so an unchanged asset costs a 304.
+const REVALIDATE_ASSET = /\.(svg|png|jpg|jpeg|gif|ico|webp|woff2?|ttf|eot)$/i;
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (REVALIDATE_ASSET.test(filePath)) res.setHeader('Cache-Control', 'no-cache');
+  },
+}));
 
 // SPA fallback
 app.get('*', (req, res) => {

@@ -15,6 +15,7 @@ import {
   r2ListObjects,
   r2DeleteObject,
   r2TestConnection,
+  normalizeR2AccountId,
 } from '../shared/r2-uploader.util';
 
 /**
@@ -372,7 +373,9 @@ export class SettingsService {
     const settings = await this.getSettings();
     const $set: Record<string, unknown> = {};
 
-    if (typeof cfg.accountId === 'string') $set.r2AccountId = cfg.accountId.trim();
+    // يُخزَّن مُطبَّعاً: لصق الرابط الكامل من لوحة Cloudflare هو السلوك الطبيعي،
+    // وتخزينه كما هو يجعل الحقل يعرض قيمة تفشل عند أول اتصال.
+    if (typeof cfg.accountId === 'string') $set.r2AccountId = normalizeR2AccountId(cfg.accountId);
     if (typeof cfg.accessKeyId === 'string') $set.r2AccessKeyId = cfg.accessKeyId.trim();
     if (typeof cfg.bucket === 'string' && cfg.bucket.trim()) $set.r2Bucket = cfg.bucket.trim();
     if (typeof cfg.enabled === 'boolean') $set.r2Enabled = cfg.enabled;

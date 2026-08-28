@@ -143,8 +143,30 @@ function extractError(body: string, status: number): string {
   return `HTTP ${status}`;
 }
 
+/**
+ * يستخرج معرّف الحساب من أي شكل يلصقه المستخدم.
+ *
+ * ⚠ لوحة Cloudflare تعرض العنوان كاملاً، فمن الطبيعي تماماً أن يُنسخ كما هو.
+ * وبما أن `hostFor` تضيف اللاحقة بنفسها، كان لصق الرابط الكامل ينتج
+ * «...cloudflarestorage.com.r2.cloudflarestorage.com» ويفشل بـ ENOTFOUND —
+ * رسالة تبدو كعطل شبكة بينما السبب حقل قَبِل قيمة صحيحة بصيغة أخرى.
+ *
+ * يقبل الثلاثة:
+ *   253dd...0942
+ *   253dd...0942.r2.cloudflarestorage.com
+ *   https://253dd...0942.r2.cloudflarestorage.com/
+ */
+export function normalizeR2AccountId(raw: string): string {
+  let v = (raw || '').trim();
+  if (!v) return '';
+  v = v.replace(/^https?:\/\//i, '');   // البروتوكول
+  v = v.replace(/\/.*$/, '');            // أي مسار بعد المضيف
+  v = v.replace(/\.r2\.cloudflarestorage\.com\.?$/i, ''); // اللاحقة
+  return v.trim();
+}
+
 function hostFor(cfg: R2Config): string {
-  return `${cfg.accountId}.r2.cloudflarestorage.com`;
+  return `${normalizeR2AccountId(cfg.accountId)}.r2.cloudflarestorage.com`;
 }
 
 /** يرفع ملفاً واحداً. يعيد رسالة الخطأ عند الفشل بدل رميه. */

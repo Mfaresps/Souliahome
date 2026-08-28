@@ -24,6 +24,7 @@ import {
   r2DeleteObject,
   r2GetObject,
   r2TestConnection,
+  normalizeR2AccountId,
 } from '../../src/shared/r2-uploader.util';
 
 export {};
@@ -328,5 +329,55 @@ describe('r2TestConnection — اختبار الاتصال', () => {
     nextBody = 'soulia connectivity test';
     const res = await r2TestConnection(CFG);
     expect(res.ok).toBe(true);
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+describe('normalizeR2AccountId — الحقل يقبل ما تعرضه لوحة Cloudflare', () => {
+  const ID = '253dd513cc37630978a505bdc4090942';
+
+  it('المعرّف وحده يمر كما هو', () => {
+    expect(normalizeR2AccountId(ID)).toBe(ID);
+  });
+
+  it('⚠ الرابط الكامل — هذا ما لُصق فعلياً وأنتج ENOTFOUND', () => {
+    expect(normalizeR2AccountId('https://' + ID + '.r2.cloudflarestorage.com')).toBe(ID);
+  });
+
+  it('المضيف بلا بروتوكول', () => {
+    expect(normalizeR2AccountId(ID + '.r2.cloudflarestorage.com')).toBe(ID);
+  });
+
+  it('رابط بشرطة مائلة في آخره', () => {
+    expect(normalizeR2AccountId('https://' + ID + '.r2.cloudflarestorage.com/')).toBe(ID);
+  });
+
+  it('رابط بمسار بعده', () => {
+    expect(normalizeR2AccountId('https://' + ID + '.r2.cloudflarestorage.com/soulia-backups')).toBe(ID);
+  });
+
+  it('http وليس https', () => {
+    expect(normalizeR2AccountId('http://' + ID + '.r2.cloudflarestorage.com')).toBe(ID);
+  });
+
+  it('مسافات حول القيمة', () => {
+    expect(normalizeR2AccountId('  ' + ID + '  ')).toBe(ID);
+  });
+
+  it('حروف كبيرة في اللاحقة', () => {
+    expect(normalizeR2AccountId(ID + '.R2.CloudflareStorage.COM')).toBe(ID);
+  });
+
+  it('فارغ يبقى فارغاً', () => {
+    expect(normalizeR2AccountId('')).toBe('');
+    expect(normalizeR2AccountId('   ')).toBe('');
+  });
+
+  it('⚠ المضيف الناتج لا يكرر اللاحقة مهما كان شكل المدخل', async () => {
+    for (const form of [ID, ID + '.r2.cloudflarestorage.com', 'https://' + ID + '.r2.cloudflarestorage.com/']) {
+      captured = [];
+      await r2DeleteObject({ ...CFG, accountId: form }, 'k.json');
+      expect(captured[0].hostname).toBe(ID + '.r2.cloudflarestorage.com');
+    }
   });
 });

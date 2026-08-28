@@ -16731,7 +16731,7 @@ body.dark-mode .csi-done-lines>div.is-warn b{color:#fbbf24}
             placeholder="253dd513cc37630978a505bdc4090942"
             style="width:100%;font-family:monospace;font-size:.82rem;direction:ltr"
             oninput="qs('#r2-key-status').innerHTML=''">
-          <p class="text-xs text-muted" style="margin:5px 0 0;font-size:.72rem;line-height:1.5" data-i18n="stgR2AccountHint">من رابط لوحة R2 — الجزء قبل .r2.cloudflarestorage.com</p>
+          <p class="text-xs text-muted" style="margin:5px 0 0;font-size:.72rem;line-height:1.5" data-i18n="stgR2AccountHint">المعرّف فقط (32 خانة). يمكنك لصق الرابط كاملاً وسيُستخرج تلقائياً.</p>
         </div>
 
         <div class="form-group" style="margin-bottom:10px">
@@ -19478,7 +19478,7 @@ const TRANSLATIONS = {
   stgR2Section:{ar:'التخزين السحابي (Cloudflare R2)',en:'Cloud storage (Cloudflare R2)'},
   stgR2Title:{ar:'رفع النسخ إلى Cloudflare R2',en:'Upload backups to Cloudflare R2'},
   stgR2Desc:{ar:'تُرفع النسخة الليلية خارج السيرفر تلقائياً',en:'The nightly backup is shipped off-server automatically'},
-  stgR2AccountHint:{ar:'من رابط لوحة R2 — الجزء قبل .r2.cloudflarestorage.com',en:'From your R2 dashboard URL — the part before .r2.cloudflarestorage.com'},
+  stgR2AccountHint:{ar:'المعرّف فقط (32 خانة). يمكنك لصق الرابط كاملاً وسيُستخرج تلقائياً.',en:'The ID only (32 chars). You may paste the full URL — it is extracted automatically.'},
   stgR2AccessPh:{ar:'معرّف مفتاح الوصول',en:'Access key ID'},
   stgR2SecretPh:{ar:'أدخل Secret Access Key هنا...',en:'Enter Secret Access Key here...'},
   stgR2SecretHint:{ar:'يُحفظ على الخادم ولا يُعرَض مرة أخرى أبداً',en:'Stored on the server and never shown again'},
@@ -70972,11 +70972,24 @@ function _updateBostaKeyStatus(isSet) {
 // وإلا لاضطر المستخدم لحفظ مفتاح خاطئ كي يكتشف أنه خاطئ.
 
 /** يقرأ الحقول. `includeSecret` يمنع إرسال قيمة القناع كأنها سر جديد. */
+/**
+ * ⚠ لوحة Cloudflare تعرض العنوان كاملاً، فلصقه كما هو هو السلوك الطبيعي.
+ * الخادم يُطبّع القيمة أيضاً (normalizeR2AccountId) وهو المرجع؛ هذه النسخة
+ * تجعل الحقل يعرض المعرّف النظيف فوراً بدل أن ينتظر المستخدم دورة حفظ.
+ */
+function _r2NormAccount(raw) {
+  return String(raw || '').trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/\/.*$/, '')
+    .replace(/\.r2\.cloudflarestorage\.com\.?$/i, '')
+    .trim();
+}
+
 function _r2ReadForm(includeSecret) {
   const sec = qs('#stg-r2-secret');
   const masked = sec?.dataset?.masked === '1';
   const body = {
-    accountId: (qs('#stg-r2-account')?.value || '').trim(),
+    accountId: _r2NormAccount(qs('#stg-r2-account')?.value),
     accessKeyId: (qs('#stg-r2-access-key')?.value || '').trim(),
     bucket: (qs('#stg-r2-bucket')?.value || '').trim() || 'soulia-backups',
   };
@@ -70998,6 +71011,10 @@ async function saveR2Config() {
   if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
   try {
     await api('/settings/r2-config', { method: 'POST', body: JSON.stringify(body) });
+    // اعرض القيمة المُطبَّعة: ترك الرابط الكامل في الحقل بعد حفظ معرّف نظيف
+    // يجعل الشاشة تناقض ما هو محفوظ فعلاً.
+    const accEl = qs('#stg-r2-account');
+    if (accEl) accEl.value = body.accountId;
     if (settings) {
       if (body.secretAccessKey) settings.r2SecretAccessKeySet = true;
       settings.r2AccountId = body.accountId;
