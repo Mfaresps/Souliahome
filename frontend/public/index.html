@@ -71334,10 +71334,14 @@ function _cbRenderStatus(s) {
   }
 
   // مُفعّل ولم يُرفع بعد — أول رفع يكون الليلة الساعة ٣، أو الآن بزر الرفع.
+  // ⚠ النقطة والعنوان أخضران: الرفع التلقائي مُفعّل فعلاً، وهذه ليست حالة عُطل.
+  // نقطة رمادية بجوار كلمة «مُفعّل» تناقض نصّها — يقرأها المستخدم كتحذير ويذهب
+  // يبحث عن خطأ غير موجود. الرمادي محجوز لـ«غير مُفعّل» وحدها.
   if (s.status === 'pending') {
+    const g = 'var(--green, #10b981)';
     box.innerHTML = '<div style="display:flex;align-items:flex-start;gap:8px">'
-      + '<span style="width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;margin-top:5px"></span>'
-      + '<div><div style="font-size:.82rem;font-weight:600;margin-bottom:2px">' + esc(t('stgCloudPending')) + '</div>'
+      + '<span style="width:8px;height:8px;border-radius:50%;background:' + g + ';flex-shrink:0;margin-top:5px"></span>'
+      + '<div><div style="font-size:.82rem;font-weight:600;margin-bottom:2px;color:' + g + '">' + esc(t('stgCloudPending')) + '</div>'
       + '<div class="text-muted" style="font-size:.75rem;line-height:1.5">' + esc(t('stgCloudPendingHint'))
       + '</div></div></div>';
     return;

@@ -568,10 +568,19 @@ export class SettingsService {
   async uploadLatestToR2(filename?: string): Promise<{ success: boolean; message: string }> {
     let target = (filename || '').trim();
     if (!target) {
-      const list: any = await this.getBackupList();
-      const rows = list?.backups || [];
+      // getBackupList() returns the ARRAY itself, not {backups:[...]}. Reading
+      // `.backups` here yielded undefined, so the button always reported "no
+      // local backup" even with eight sitting on disk.
+      const rows = await this.getBackupList();
       if (!rows.length) return { success: false, message: 'لا توجد نسخة محلية لرفعها' };
-      target = rows[0].filename;
+      // The registry is newest-first, but a hand-edited or rebuilt one need not
+      // be. Sorting by the ISO timestamp inside the filename makes "latest"
+      // true regardless of registry order.
+      const newest = rows
+        .map(r => r.filename)
+        .filter(Boolean)
+        .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))[0];
+      target = newest || rows[0].filename;
     }
     // WARN: path-traversal guard - the name comes from the frontend.
     if (target.indexOf('/') >= 0 || target.indexOf('\\') >= 0 || target.indexOf('..') >= 0) {
