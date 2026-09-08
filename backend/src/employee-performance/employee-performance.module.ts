@@ -4,6 +4,7 @@ import { EmployeePerformanceController } from './employee-performance.controller
 import { EmployeeShiftService } from './employee-shift.service';
 import { EmployeeLeaveService } from './employee-leave.service';
 import { EmployeeScoringService } from './employee-scoring.service';
+import { ShiftIndexMigration } from './shift-index.migration';
 import { EmployeeShift, EmployeeShiftSchema } from './schemas/employee-shift.schema';
 import { EmployeeLeave, EmployeeLeaveSchema } from './schemas/employee-leave.schema';
 import { EmployeePerformanceLog, EmployeePerformanceLogSchema } from './schemas/employee-performance-log.schema';
@@ -35,7 +36,7 @@ import { AuthModule } from '../auth/auth.module';
     forwardRef(() => AuthModule),
   ],
   controllers: [EmployeePerformanceController],
-  providers: [EmployeeShiftService, EmployeeLeaveService, EmployeeScoringService],
+  providers: [EmployeeShiftService, EmployeeLeaveService, EmployeeScoringService, ShiftIndexMigration],
   exports: [EmployeeShiftService, EmployeeLeaveService, EmployeeScoringService],
 })
 export class EmployeePerformanceModule {}
