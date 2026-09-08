@@ -681,9 +681,29 @@ export class TransactionsService {
       .exec();
   }
 
+  /**
+   * الحقول التقيلة اللي **بتتشال من قوائم** المعاملات.
+   *
+   * ⚠ `bostaRawResponse` كان **٧.٢٦ ميجا من أصل ٩.٤٥ ميجا (٧٧٪)** في `GET /transactions`
+   *   على ٥٨٧ صف — ردّ خام من API شركة الشحن بيتخزن كامل لكل شحنة. بيتقرا في **شاشة
+   *   واحدة بس** (مسار الطلب في `renderInvoiceViewPage`)، والقايمة عمرها ما لمسته،
+   *   فكل مستخدم كان بيحمّله بالكامل في كل فتح للتطبيق.
+   *
+   * ⚠ ده استبعاد من **القراءات القائمية فقط**. `findById` بيرجع الدوكيومنت كامل،
+   *   وصفحة الفاتورة بتجيب السجل الكامل عند الفتح (`_ivHydrateFull`). أي شاشة
+   *   محتاجة الحقول دي لازم تعدّي على `GET /transactions/:id` — **متشيلهاش من هنا**.
+   *
+   * ⚠ متضيفش حقل جديد تقيل (raw/debug/log) للقوائم من غير ما تقيس نصيبه من الحمولة.
+   */
+  private static readonly LIST_EXCLUDED_FIELDS = {
+    bostaRawResponse: 0,
+    bostaStatusIgnoredEvents: 0,
+  } as const;
+
   async findAll(page?: number, limit?: number): Promise<TransactionDocument[]> {
     const query = this.transactionModel
       .find({ archived: { $ne: true } })
+      .select(TransactionsService.LIST_EXCLUDED_FIELDS)
       .sort({ createdAt: -1 });
     if (limit && limit > 0) {
       const skip = ((page || 1) - 1) * limit;
@@ -695,6 +715,7 @@ export class TransactionsService {
   async findArchived(): Promise<TransactionDocument[]> {
     return this.transactionModel
       .find({ archived: true })
+      .select(TransactionsService.LIST_EXCLUDED_FIELDS)
       .sort({ archivedAt: -1 })
       .exec();
   }
@@ -4905,6 +4926,7 @@ export class TransactionsService {
   async findPickupOrders(): Promise<TransactionDocument[]> {
     return this.transactionModel
       .find({ type: 'مبيعات', cancelled: { $ne: true }, archived: { $ne: true } })
+      .select(TransactionsService.LIST_EXCLUDED_FIELDS)
       .sort({ createdAt: -1 })
       .exec();
   }

@@ -720,6 +720,9 @@ export class TransactionsController {
     return { message: 'تم مسح كل المعاملات' };
   }
 
+  // Archiving is admin-only, same as its bulk twin (POST bulk-delete). The ⋮ menu already
+  // gated this on isAdmin() in both renderers; the route itself was JWT-only.
+  @Roles('admin')
   @Delete(':id')
   async remove(
     @Param('id') id: string,

@@ -176,6 +176,21 @@ export class ShopifyOrder {
   @Prop({ default: '' })
   assignedTo: string; // User._id as string
 
+  /**
+   * The assignee, addressed by the identifier that survives a restore.
+   *
+   * ⚠ assignedTo is a User._id, which is regenerated when an account is recreated on
+   * another machine — so a backup carried between the local and the online install
+   * leaves every order pointing at an id that exists nowhere, and «أوردراتي» comes back
+   * empty for everyone. assignedToName is only a display label (it is denormalised and
+   * can hold spelling variants of the same person), so it cannot be used to re-link.
+   * See EmployeePerformanceLog.employeeUsername for the full reasoning.
+   *
+   * Defaults to '' so every pre-existing order remains valid with no migration.
+   */
+  @Prop({ default: '', index: true })
+  assignedToUsername: string;
+
   @Prop({ default: '' })
   assignedToName: string;
 

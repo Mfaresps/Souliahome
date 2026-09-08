@@ -59,6 +59,14 @@ export class FollowUp {
   @Prop({ required: true })
   responsibleId: string;
 
+  /**
+   * The same person, addressed by the identifier that survives a restore.
+   * responsibleId is a User._id and breaks on a cross-database restore exactly as
+   * ShopifyOrder.assignedTo does — see the note there. Defaults to '', no migration.
+   */
+  @Prop({ default: '', index: true })
+  responsibleUsername: string;
+
   @Prop({ required: true })
   responsibleName: string;
 

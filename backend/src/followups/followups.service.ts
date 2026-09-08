@@ -17,7 +17,7 @@ import { EmployeeShiftService } from '../employee-performance/employee-shift.ser
  * the server still counted it open and kept sending escalation reminders on it
  * for a week. Change one, change the other.
  */
-const DONE_STATUSES = [
+export const DONE_STATUSES = [
   'تم حل المشكلة',     // default set — resolved
   'تمت المتابعة',      // legacy resolved
   'تمت عملية التأكيد', // confirmation set — order confirmed
@@ -85,16 +85,16 @@ export class FollowUpsService implements OnModuleInit {
    * Within tiers 1 and 2 the person holding the fewest open follow-ups wins, so
    * a busy night does not pile everything on one employee.
    */
-  private async pickAvailableAssignee(): Promise<{ userId: string; name: string; reason: string } | null> {
+  private async pickAvailableAssignee(): Promise<{ userId: string; username: string; name: string; reason: string } | null> {
     try {
       const candidates = await this.shiftService.listShiftCandidates(new Date().toISOString());
       const onlineIds = new Set(this.presence.getOnlineUserIds().map(String));
 
-      const onlineFrom = (list: Array<{ userId: string; name: string }>) =>
+      const onlineFrom = (list: Array<{ userId: string; username: string; name: string }>) =>
         list.filter((c) => onlineIds.has(String(c.userId)));
 
       const leastBusy = async (
-        list: Array<{ userId: string; name: string }>,
+        list: Array<{ userId: string; username: string; name: string }>,
         reason: string,
       ) => {
         if (!list.length) return null;
@@ -112,17 +112,17 @@ export class FollowUpsService implements OnModuleInit {
         );
         let best = 0;
         for (let i = 1; i < list.length; i++) if (counts[i] < counts[best]) best = i;
-        return { userId: list[best].userId, name: list[best].name, reason };
+        return { userId: list[best].userId, username: list[best].username || '', name: list[best].name, reason };
       };
 
       return (
         (await leastBusy(onlineFrom(candidates.onShift), 'shift-online')) ||
         (await leastBusy(onlineFrom(candidates.scheduled), 'available-online')) ||
         (candidates.onShift.length
-          ? { userId: candidates.onShift[0].userId, name: candidates.onShift[0].name, reason: 'shift' }
+          ? { userId: candidates.onShift[0].userId, username: candidates.onShift[0].username || '', name: candidates.onShift[0].name, reason: 'shift' }
           : null) ||
         (candidates.onCall
-          ? { userId: candidates.onCall.userId, name: candidates.onCall.name, reason: 'on-call-fallback' }
+          ? { userId: candidates.onCall.userId, username: candidates.onCall.username || '', name: candidates.onCall.name, reason: 'on-call-fallback' }
           : null)
       );
     } catch (err: any) {
@@ -184,6 +184,7 @@ export class FollowUpsService implements OnModuleInit {
           existing.escalationLevel = 0;
           if (next?.userId) {
             existing.responsibleId = next.userId;
+            existing.responsibleUsername = next.username || '';
             existing.responsibleName = next.name;
             existing.assignSource = next.reason;
           }
@@ -247,6 +248,7 @@ export class FollowUpsService implements OnModuleInit {
         clientName: tx.client || '',
         clientPhone: tx.phone || '',
         responsibleId: assignee?.userId || '',
+        responsibleUsername: assignee?.username || '',
         responsibleName: assignee?.name || '',
         reason: SHIPPING_ISSUE_REASON,
         status: SHIPPING_ISSUE_STATUS,

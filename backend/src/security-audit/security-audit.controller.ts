@@ -21,10 +21,36 @@ export class SecurityAuditController {
     return this.auditService.findAll();
   }
 
+  /**
+   * Locked accounts, each with the attempts that locked it.
+   *
+   * The origin (browser / OS / IP / location) lives on the audit log, not on
+   * the user record, so it is joined here. This is the first screen an admin
+   * sees after a lockout — making them scroll to the log below to answer
+   * "who was this?" is the gap this closes.
+   *
+   * ⚠ Never throws on the join: a locked account must still be listed (and
+   * therefore still be unlockable) even if its history cannot be read.
+   */
   @Roles('admin')
   @Get('locked-users')
   async getLockedUsers() {
-    return this.usersService.findLockedUsers();
+    const locked = await this.usersService.findLockedUsers();
+    return Promise.all(
+      locked.map(async (u) => {
+        const plain = typeof (u as any).toObject === 'function' ? (u as any).toObject() : u;
+        let attempts: unknown[] = [];
+        try {
+          attempts = await this.auditService.findLockoutAttempts(
+            u._id.toString(),
+            (u as any).lockedAt ?? null,
+          );
+        } catch {
+          attempts = [];
+        }
+        return { ...plain, attempts };
+      }),
+    );
   }
 
   @Roles('admin')

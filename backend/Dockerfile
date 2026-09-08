@@ -28,7 +28,14 @@ WORKDIR /app
 # failure. ttf-dejavu covers the Latin digits and EGP.
 ENV PUPPETEER_SKIP_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+# ⚠ `tzdata` is NOT optional. Alpine ships no timezone database, so without it the
+# `TZ: Africa/Cairo` set in docker-compose is SILENTLY IGNORED and the container
+# stays on UTC. The failure raises no error — it just moves every server-local date
+# boundary by three hours, which is what made the month boundary in `resolvePeriod`
+# (and every `new Date().toISOString().split('T')[0]`) disagree between the UTC
+# container and a UTC+3 developer machine.
 RUN apk add --no-cache \
+      tzdata \
       chromium \
       nss \
       freetype \

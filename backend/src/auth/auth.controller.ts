@@ -7,6 +7,7 @@ import { PresenceGateway } from './presence.gateway';
 import { Request } from 'express';
 import { UsersService } from '../users/users.service';
 import { TotpService } from './totp.service';
+import { buildClientContext } from '../shared/client-context.util';
 
 @Controller('auth')
 export class AuthController {
@@ -20,8 +21,11 @@ export class AuthController {
   @UseGuards(ThrottlerGuard)
   @Post('login')
   async login(@Body() loginDto: LoginDto, @Req() req: Request) {
-    const ip = (req.headers as Record<string, string>)['x-forwarded-for'] || (req as any).ip || '';
-    return this.authService.login(loginDto, ip);
+    // ⚠ Built from the request, never from the body — a client that could
+    // name its own browser/IP could forge the audit trail it is being
+    // recorded in. `buildClientContext` reads headers only.
+    const client = buildClientContext(req as any);
+    return this.authService.login(loginDto, client.ipAddress, client);
   }
 
   @UseGuards(JwtAuthGuard)

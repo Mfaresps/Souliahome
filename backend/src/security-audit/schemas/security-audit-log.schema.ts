@@ -33,6 +33,33 @@ export class SecurityAuditLog {
   @Prop({ default: '' })
   ipAddress: string;
 
+  // ─── Request origin ────────────────────────────────────────────────────
+  // Captured at the moment of the event. A lockout row that says only
+  // "4 failed attempts" cannot tell an admin whether it was the employee
+  // fumbling their own password on their own phone or someone else entirely.
+  //
+  // ⚠ Every one of these defaults to '' and is written best-effort. They are
+  // forensic context on an event that has already happened — a missing
+  // User-Agent must never turn a failed login into a server error.
+
+  @Prop({ default: '' })
+  userAgent: string; // raw UA — kept verbatim so a future parser can re-read it
+
+  @Prop({ default: '' })
+  device: string; // كمبيوتر | موبايل | تابلت
+
+  @Prop({ default: '' })
+  browser: string; // Chrome | Edge | Firefox | Safari | …
+
+  @Prop({ default: '' })
+  os: string; // Windows | Android | iOS | macOS | Linux
+
+  @Prop({ default: '' })
+  location: string; // "القاهرة، مصر" — resolved from ipAddress, may be empty
+
+  @Prop({ default: '' })
+  isp: string; // network operator, when the geo lookup returns one
+
   @Prop({ default: '' })
   resolvedBy: string; // admin userId who resolved/unlocked
 

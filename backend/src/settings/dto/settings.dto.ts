@@ -102,6 +102,15 @@ export class UpdateSettingsDto {
   @IsOptional()
   readonly shipCos?: { code?: string; name: string; cairo: number; gov: number }[];
 
+  /**
+   * ⚠ لازم يتعرّف هنا وإلا الـ whitelist pipe بيشيله بصمت عند الحفظ — نفس الفخ
+   * اللي وقعت فيه حقول هوية الشركة. القيمة بتتخزن كما هي (Object) لأن شكل القالب
+   * متداخل، والتحقق من محتواه بيتم في الواجهة قبل الحفظ.
+   */
+  @IsArray()
+  @IsOptional()
+  readonly shiftRotas?: Record<string, unknown>[];
+
   @IsString()
   @IsOptional()
   readonly vaultPass?: string;
@@ -249,8 +258,5 @@ export class UpdateSettingsDto {
     depositPartial50Points?: number;
     depositPartialLowPoints?: number;
     depositNonePoints?: number;
-    speedUnder15MinPoints?: number;
-    speedUnder1HourPoints?: number;
-    speedUnder4HoursPoints?: number;
   };
 }

@@ -6,6 +6,7 @@ import { SettingsService } from '../settings/settings.service';
 import { MentionsService } from '../mentions/mentions.service';
 import { UsersService } from '../users/users.service';
 import { SecurityAuditService } from '../security-audit/security-audit.service';
+import { PresenceGateway } from '../auth/presence.gateway';
 
 const MAX_OTP_ATTEMPTS = 4;
 
@@ -100,7 +101,54 @@ export class DiscountOtpService {
     private readonly mentionsService: MentionsService,
     private readonly usersService: UsersService,
     private readonly auditService: SecurityAuditService,
+    private readonly presence: PresenceGateway,
   ) {}
+
+  /**
+   * `MentionsService.createMany` only writes the row — the `mention:new` socket emit lives in
+   * MentionsController, so a mention created from inside a service reaches the user only on
+   * their next page load. Every notification raised here goes through this instead.
+   */
+  private pushMentions(rows: any[]): void {
+    try {
+      for (const m of rows) {
+        this.presence.emitToUser(String(m.targetUserId), 'mention:new', {
+          id: String(m._id),
+          _id: String(m._id),
+          targetUserId: m.targetUserId,
+          targetUsername: m.targetUsername,
+          targetName: m.targetName,
+          fromUserId: m.fromUserId,
+          fromName: m.fromName,
+          txId: m.txId,
+          txRef: m.txRef,
+          commentId: m.commentId,
+          commentText: m.commentText,
+          read: false,
+          ts: (m.createdAt instanceof Date) ? m.createdAt.toISOString() : new Date().toISOString(),
+        });
+      }
+    } catch { /* best-effort: a socket failure must not break the write it announces */ }
+  }
+
+  /**
+   * Lets the requesting employee's open "awaiting approval" dialog flip to its decided state
+   * without a refresh. Separate from the mention: the mention is the durable record, this is
+   * only the live cue, so losing it costs nothing.
+   */
+  private emitEditTxDecision(doc: DiscountOtpDocument, decision: 'approved' | 'rejected', reviewedBy: string): void {
+    try {
+      if (!doc.requestedById) return;
+      this.presence.emitToUser(String(doc.requestedById), 'edit-tx:decision', {
+        otpId: String(doc._id),
+        txId: doc.editTxId || '',
+        txRef: doc.txRef || '',
+        decision,
+        reviewedBy: reviewedBy || '',
+        at: new Date().toISOString(),
+      });
+    } catch { /* best-effort live cue */ }
+  }
 
   private generateOtp(): string {
     return String(Math.floor(1000 + Math.random() * 9000));
@@ -884,17 +932,14 @@ export class DiscountOtpService {
     try {
       const users = await this.usersService.findAll();
       const admins = users.filter((u: any) => u.role === 'admin');
-      const expiresStr = expiresAt.toISOString();
       const changesText = (args.changes || []).slice(0, 8).map(c => `  • ${c}`).join('\n');
       const moreChanges = (args.changes || []).length > 8 ? `\n  ... و${(args.changes || []).length - 8} تغييرات أخرى` : '';
       const text =
         `✏️ طلب تعديل معاملة ${typeLabel} يحتاج موافقتك` +
-        `\n🔐 كود التحقق: ${otp}` +
         `\nالموظف: ${args.requestedByName || args.requestedByUsername || 'موظف'}` +
         `\nالنوع: ${typeLabel}` +
         (args.txRef ? `\nالمرجع: #${args.txRef}` : '') +
-        `\nالتغييرات:\n${changesText}${moreChanges}` +
-        `\nصالح حتى: ${expiresStr}`;
+        `\nالتغييرات:\n${changesText}${moreChanges}`;
 
       const rows = admins.map((a: any) => ({
         targetUserId: String(a._id),
@@ -907,7 +952,7 @@ export class DiscountOtpService {
         commentId: 0,
         commentText: text,
       }));
-      await this.mentionsService.createMany(rows);
+      this.pushMentions(await this.mentionsService.createMany(rows));
     } catch {
       // notification failure must not break OTP creation
     }
@@ -948,7 +993,7 @@ export class DiscountOtpService {
           (txRef ? ` (#${txRef})` : '') +
           `\nتمت المراجعة بواسطة: ${reviewedBy || 'المدير'}` +
           `\nتم تطبيق التعديل على المعاملة بنجاح.`;
-        await this.mentionsService.createMany([{
+        this.pushMentions(await this.mentionsService.createMany([{
           targetUserId: doc.requestedById,
           targetUsername: doc.requestedByUsername || '',
           targetName: doc.requestedByName || '',
@@ -958,9 +1003,10 @@ export class DiscountOtpService {
           txRef: txRef,
           commentId: 0,
           commentText: text,
-        }]);
+        }]));
       }
     } catch { /* notification failure must not break approval */ }
+    this.emitEditTxDecision(doc, 'approved', reviewedBy);
     return { payload, txId, requestedByName: doc.requestedByName || doc.requestedByUsername || '', reviewedBy };
   }
 
@@ -983,7 +1029,7 @@ export class DiscountOtpService {
           (txRef ? ` (#${txRef})` : '') +
           `\nتمت المراجعة بواسطة: ${reviewedBy || 'المدير'}` +
           `\nيرجى التواصل مع المدير للمزيد من التفاصيل.`;
-        await this.mentionsService.createMany([{
+        this.pushMentions(await this.mentionsService.createMany([{
           targetUserId: doc.requestedById,
           targetUsername: doc.requestedByUsername || '',
           targetName: doc.requestedByName || '',
@@ -993,9 +1039,10 @@ export class DiscountOtpService {
           txRef: txRef,
           commentId: 0,
           commentText: text,
-        }]);
+        }]));
       }
     } catch { /* notification failure must not break rejection */ }
+    this.emitEditTxDecision(doc, 'rejected', reviewedBy);
   }
 
   async getEditTxOtp(otpId: string): Promise<DiscountOtpDocument | null> {

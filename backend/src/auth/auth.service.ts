@@ -7,6 +7,7 @@ import { MentionsService } from '../mentions/mentions.service';
 import { SecurityAuditService } from '../security-audit/security-audit.service';
 import { LoginDto } from './dto/login.dto';
 import { TotpService } from './totp.service';
+import { ClientContext } from '../shared/client-context.util';
 
 const MAX_LOGIN_ATTEMPTS = 4;
 
@@ -84,7 +85,18 @@ export class AuthService {
     private readonly totpService: TotpService,
   ) {}
 
-  async login(loginDto: LoginDto, ipAddress?: string): Promise<LoginResponse> {
+  /**
+   * `client` is the request fingerprint (browser / OS / device / IP). It is
+   * attached to every audit row this method writes, because "4 failed attempts"
+   * with no origin cannot distinguish an employee mistyping their own password
+   * from someone else attacking the account — which is the only question an
+   * admin looking at a lockout actually has.
+   */
+  async login(
+    loginDto: LoginDto,
+    ipAddress?: string,
+    client?: ClientContext,
+  ): Promise<LoginResponse> {
     const user = await this.usersService.findByUsername(loginDto.username);
 
     if (!user) {
@@ -101,6 +113,7 @@ export class AuthService {
         action: 'محاولة تسجيل دخول على حساب مُعطَّل',
         detail: `السبب: ${user.lockReason || 'محظور'}`,
         ipAddress,
+        client,
       });
       throw new UnauthorizedException(
         `🔒 تم تعطيل هذا الحساب — ${user.lockReason || 'تواصل مع المدير لإعادة التفعيل'}`,
@@ -119,6 +132,7 @@ export class AuthService {
         action: `فشل تسجيل الدخول — المحاولة ${attempts} من ${MAX_LOGIN_ATTEMPTS}`,
         detail: 'كلمة مرور خاطئة',
         ipAddress,
+        client,
       });
 
       if (attempts >= MAX_LOGIN_ATTEMPTS) {
@@ -132,12 +146,19 @@ export class AuthService {
           action: lockReason,
           detail: `IP: ${ipAddress || 'غير معروف'}`,
           ipAddress,
+          client,
         });
 
+        // The notification names the origin too — an admin reading it on their
+        // phone should not have to open the panel to learn whether this came
+        // from the office or from an unknown device.
+        const origin = [client?.browser, client?.os, client?.device]
+          .filter(Boolean)
+          .join(' · ');
         await this._notifyAdmins(
           user.username,
           user.name,
-          `🚨 تم تعطيل حساب "${user.name || user.username}" تلقائياً بعد ${MAX_LOGIN_ATTEMPTS} محاولات دخول فاشلة. IP: ${ipAddress || 'غير معروف'}`,
+          `🚨 تم تعطيل حساب "${user.name || user.username}" تلقائياً بعد ${MAX_LOGIN_ATTEMPTS} محاولات دخول فاشلة. IP: ${ipAddress || 'غير معروف'}${origin ? ` — ${origin}` : ''}`,
         );
 
         throw new UnauthorizedException(

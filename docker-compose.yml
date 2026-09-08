@@ -25,6 +25,16 @@ services:
       MONGODB_URI: mongodb://soulia:soulia_secret_2024@mongodb:27017/soulia?authSource=admin
       JWT_SECRET: soulia_jwt_super_secret_key_2024
       PORT: 3000
+      # ⚠ الحاوية كانت شغّالة UTC (مافيش TZ)، والسيرفر المحلي UTC+3 — فنفس الكود
+      # كان بيدّي نتيجتين مختلفتين حسب مكان التشغيل. ده بيأثر على كل حساب بيبني
+      # تاريخاً بتوقيت السيرفر: بداية الشهر في `resolvePeriod` (نقاط اتكسبت بين
+      # ١٢ و٣ فجراً يوم ١ كانت بتتحسب على الشهر اللي فات على حاوية UTC)، و
+      # `new Date().toISOString().split('T')[0]` المنتشرة في المصاريف وأوامر
+      # الشراء وغيرها.
+      # `BUSINESS_TZ` بتاعة الورديات مستقلة عن دي عن قصد — الورديات بتتحل عبر
+      # `Intl` فبتفضل صح مهما كان توقيت الحاوية؛ ده بيظبّط الباقي.
+      TZ: ${TZ:-Africa/Cairo}
+      BUSINESS_TZ: ${BUSINESS_TZ:-Africa/Cairo}
     ports:
       - '3001:3000'
     volumes:

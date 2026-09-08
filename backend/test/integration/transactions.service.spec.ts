@@ -180,22 +180,54 @@ describe('TransactionsService (integration with mocks)', () => {
   describe('findAll', () => {
     it('returns all non-archived transactions', async () => {
       const txs = [buildSaleTransaction(), buildSaleTransaction({ _id: 't2' })];
-      txModel.find.mockReturnValue({
+      const selectFn = jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(txs) }),
       });
+      txModel.find.mockReturnValue({ select: selectFn });
       const result = await service.findAll();
       expect(result).toHaveLength(2);
       expect(txModel.find).toHaveBeenCalledWith({ archived: { $ne: true } });
+      // ⚠ الحقول التقيلة لازم تتشال من القوائم — كانت ٨٢٪ من حمولة الإقلاع.
+      expect(selectFn).toHaveBeenCalledWith(
+        expect.objectContaining({ bostaRawResponse: 0 }),
+      );
+    });
+
+    /* ⚠ القفل الحقيقي على الإصلاح: القايمة **بتشيل** `bostaRawResponse` (٧.٢٦ ميجا
+       من ٩.٤٥ على بيانات حقيقية)، لكن `findById` **بيرجّعه** — صفحة الفاتورة
+       بتقراه في «مسار الطلب». لو حد شال الـprojection أو حطها على findById،
+       واحد من دول هيقع. */
+    it('excludes heavy raw fields from list reads but not from findById', async () => {
+      const selectFn = jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
+      });
+      txModel.find.mockReturnValue({ select: selectFn });
+      await service.findAll();
+      const projection = selectFn.mock.calls[0][0];
+      expect(projection).toEqual({
+        bostaRawResponse: 0,
+        bostaStatusIgnoredEvents: 0,
+      });
+
+      const tx = buildSaleTransaction();
+      const execFn = jest.fn().mockResolvedValue(tx);
+      txModel.findById.mockReturnValue({ exec: execFn, select: selectFn });
+      await service.findById('507f1f77bcf86cd799439011');
+      // مفيش projection على القراءة المفردة — الفاتورة محتاجة السجل كامل.
+      expect(execFn).toHaveBeenCalled();
+      expect(selectFn).toHaveBeenCalledTimes(1);
     });
 
     it('applies pagination when page and limit are provided', async () => {
       const skipFn = jest.fn().mockReturnThis();
       const limitFn = jest.fn().mockReturnThis();
       txModel.find.mockReturnValue({
-        sort: jest.fn().mockReturnValue({
-          skip: skipFn,
-          limit: limitFn,
-          exec: jest.fn().mockResolvedValue([]),
+        select: jest.fn().mockReturnValue({
+          sort: jest.fn().mockReturnValue({
+            skip: skipFn,
+            limit: limitFn,
+            exec: jest.fn().mockResolvedValue([]),
+          }),
         }),
       });
       await service.findAll(2, 10);

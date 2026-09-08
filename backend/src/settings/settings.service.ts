@@ -269,9 +269,6 @@ export class SettingsService {
         depositPartial50Points: 3,
         depositPartialLowPoints: 2,
         depositNonePoints: 1,
-        speedUnder15MinPoints: 3,
-        speedUnder1HourPoints: 2,
-        speedUnder4HoursPoints: 1,
       };
       const currentPerf = (settings as any).performanceConfig || {};
       const missingPerfKeys = Object.keys(perfDefaults).filter((k) => currentPerf[k] === undefined || currentPerf[k] === null);
@@ -888,6 +885,7 @@ export class SettingsService {
     'discountotps',
     'securityauditlogs',
     'employeeshifts',
+    'employeeleaves',
     'employeeperformancelogs',
     'demandanalysislogs',
     // ── Customer-service playbook ──
@@ -1139,6 +1137,7 @@ export class SettingsService {
     'drafts',
     'securityauditlogs',
     'employeeshifts',
+    'employeeleaves',
     'employeeperformancelogs',
     'demandanalysislogs',
     'knowledgefolders',
@@ -1442,6 +1441,25 @@ export class SettingsService {
               try { fixed._id = new ObjectId(rawId); } catch { delete fixed._id; }
             }
           }
+          // ⚠ Restore the Mongoose timestamps as real Dates, not the ISO STRINGS that
+          // JSON.parse hands back. Mongo compares BSON types, so a string createdAt does
+          // not match a `{$gte: Date}` bound at all — every period-scoped query silently
+          // returns ZERO. That is what made «نقاطي» read 0 for an employee holding 279
+          // points: the rows were all there, the window just could not see them.
+          // Measured on the live database: 633 of 637 rows had a string createdAt.
+          // Only these two fields are touched — a business date like `date` or
+          // `returnDate` is deliberately a plain YYYY-MM-DD string elsewhere and must
+          // stay one (see the date-window helpers).
+          for (const f of ['createdAt', 'updatedAt']) {
+            const v = fixed[f];
+            if (typeof v === 'string' && v) {
+              const d = new Date(v);
+              if (!isNaN(d.getTime())) fixed[f] = d;
+            } else if (v && typeof v === 'object' && typeof v.$date === 'string') {
+              const d = new Date(v.$date);
+              if (!isNaN(d.getTime())) fixed[f] = d;
+            }
+          }
           // Apply schema migrations so restored docs match current schema
           migrateDoc(collectionName, fixed);
           return fixed;
@@ -1594,7 +1612,7 @@ export class SettingsService {
     vault:          ['vaultentries', 'vaultbalances'],
     other:          ['complaints', 'followups', 'tags', 'shopifyorders', 'mentions',
                      'drafts', 'discountotps', 'securityauditlogs', 'employeeshifts',
-                     'employeeperformancelogs', 'demandanalysislogs', 'users',
+                     'employeeleaves', 'employeeperformancelogs', 'demandanalysislogs', 'users',
                      'knowledgefolders', 'knowledgecards', 'knowledgeauditlogs', 'knowledgeimportlogs'],
   };
 

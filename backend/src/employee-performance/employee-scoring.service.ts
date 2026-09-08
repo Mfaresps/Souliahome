@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -13,6 +13,8 @@ import { EmployeeShift, EmployeeShiftDocument } from './schemas/employee-shift.s
 import { UsersService } from '../users/users.service';
 import { SettingsService } from '../settings/settings.service';
 import { Settings } from '../settings/schemas/settings.schema';
+import { FollowUp, FollowUpDocument } from '../followups/schemas/followup.schema';
+import { DONE_STATUSES } from '../followups/followups.service';
 
 /**
  * The scoring period. Points are NOT deleted at the end of a period — they are
@@ -42,7 +44,6 @@ export interface PerformanceDashboardRow {
   confirmedOrdersCount: number;
   deliveredOrdersCount: number;
   depositConversionRate: number; // % confirmed orders with depositStatus !== 'none'
-  avgConfirmationSpeedMinutes: number;
   earnedPoints: number; // sum of all automatic scoring (everything except manual_bonus) WITHIN the period
   bonusPoints: number;  // sum of manual_bonus adjustments (can be negative) WITHIN the period
   totalPoints: number;  // earnedPoints + bonusPoints — the period score, resets each period
@@ -66,8 +67,94 @@ export interface PerformanceDashboardResult {
   rows: PerformanceDashboardRow[];
 }
 
+/**
+ * One staff member's own dashboard payload. Every list in it is already scoped to
+ * the caller — see getMyWorkspace for why that scoping lives in the query and not
+ * in the renderer.
+ */
+export interface MyWorkspaceResult {
+  period: PerformancePeriod;
+  periodKey: string;
+  periodLabel: string;
+  prevPeriodKey: string | null;
+  isCurrentPeriod: boolean;
+  points: {
+    earned: number;
+    bonus: number;
+    total: number;
+    prevPeriodPoints: number;
+    allTimePoints: number;
+  };
+  /** Lifetime count of orders routed to this employee. Labelled as all-time on the card. */
+  assignedOrdersTotal: number;
+  /** Same count bounded by the selected period — the one comparable to `points`. */
+  assignedOrdersInPeriod: number;
+  deliveredInPeriod: number;
+  openFollowUpsCount: number;
+  orders: Array<{
+    id: string;
+    shopifyId: string;
+    ref: string;
+    client: string;
+    total: number;
+    status: string;
+    depositStatus: string;
+    depositAmount: number;
+    assignedAt: string;
+  }>;
+  followUps: Array<{
+    id: string;
+    ticketNo: string;
+    orderRef: string;
+    transactionId: string;
+    clientName: string;
+    clientPhone: string;
+    reason: string;
+    status: string;
+    autoSource: string;
+    updatedAt: string;
+  }>;
+  /**
+   * Shipment rows in the shape the shared dashboard renderer expects — `_id` and
+   * `type` deliberately keep their Transaction names. See the ⚠ at the mapping.
+   */
+  shipments: Array<{
+    _id: string;
+    type: string;
+    cancelled: boolean;
+    ref: string;
+    client: string;
+    total: number;
+    shopifyOrderId: string;
+    bostaStatus: string;
+    bostaStatusLabel: string;
+    bostaTrackingNumber: string;
+    bostaLastSync: string;
+    pickupStatus: string;
+    pickupDate: string;
+    deliverySource: string;
+    deliveredAt: string;
+    shippedAt: string;
+    shipIssueState: string;
+    failedDelivery: boolean;
+    shipmentAttempts: unknown[];
+    date: string;
+  }>;
+  ordersTruncated: boolean;
+  followUpsTruncated: boolean;
+}
+
+/**
+ * Row caps for the staff workspace. Bounded because this is a dashboard payload,
+ * not an export; when a cap bites the response says so (`ordersTruncated` /
+ * `followUpsTruncated`) so the UI can state it instead of showing a partial list
+ * as if it were the whole.
+ */
+const MY_ORDERS_MAX = 200;
+const MY_FOLLOWUPS_MAX = 100;
+
 @Injectable()
-export class EmployeeScoringService {
+export class EmployeeScoringService implements OnModuleInit {
   private readonly logger = new Logger(EmployeeScoringService.name);
 
   constructor(
@@ -77,43 +164,47 @@ export class EmployeeScoringService {
     @InjectModel(Transaction.name) private readonly txModel: Model<TransactionDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(EmployeeShift.name) private readonly shiftModel: Model<EmployeeShiftDocument>,
+    @InjectModel(FollowUp.name) private readonly followUpModel: Model<FollowUpDocument>,
     private readonly usersService: UsersService,
     private readonly settingsService: SettingsService,
   ) {}
 
   /**
-   * Called from ShopifyService.approveOrder(). Awards confirmation-speed points to
-   * whoever actually confirmed the order (not necessarily who it was assigned to).
-   * Deposit points are scored separately, at order-arrival time — see scoreDepositDetection().
-   * Never throws — callers already wrap this in .catch() as fire-and-forget.
+   * Self-heals the point log on every boot, in two steps that must run in this order.
+   *
+   * ⚠ THIS IS WHAT MAKES A RESTORE ONTO ANOTHER MACHINE SAFE. employeeId stores a
+   * User._id; restoreUsersMerge matches accounts by username and keeps the id already
+   * on the target machine, so after a local↔online restore the same person holds a
+   * different _id on each side and every restored point row points at nothing. The
+   * leaderboard then renders empty with all rows intact — the failure is invisible.
+   * Measured on the two real backups in this repo: 66% of points orphaned that way.
+   *
+   * 1. backfill — stamp employeeUsername onto rows that predate the field, using the
+   *    accounts on THIS machine while their ids still resolve. Must run first: after a
+   *    restore the ids are already stale and there would be nothing left to read from.
+   * 2. relink — re-point rows whose id no longer resolves at the account owning the
+   *    same username.
+   *
+   * Both are idempotent, so a boot with nothing to fix does no writes. Neither throws:
+   * a repair pass must never stop the API from starting.
    */
-  async scoreConfirmation(order: ShopifyOrderDocument, confirmedByUsername: string): Promise<void> {
+  async onModuleInit(): Promise<void> {
     try {
-      const alreadyScored = await this.logModel
-        .exists({ orderId: String(order._id), actionType: 'confirmation_speed' })
-        .exec();
-      if (alreadyScored) return;
-
-      const user = await this.usersService.findByUsername(confirmedByUsername);
-      if (!user) {
-        this.logger.warn(`Cannot score confirmation for order ${order._id}: user "${confirmedByUsername}" not found`);
-        return;
-      }
-      const employeeId = String(user._id);
-
-      if (!order.shopifyCreatedAt || !order.reviewedAt) return;
-      const settings = await this.settingsService.getSettings();
-      const confSpeed = this.scoreSpeedPoints(order.shopifyCreatedAt, order.reviewedAt, settings.performanceConfig);
-      await this.logModel.create({
-        employeeId,
-        orderId: String(order._id),
-        actionType: 'confirmation_speed',
-        points: confSpeed.points,
-        note: `سرعة التأكيد — ${confSpeed.minutes} دقيقة`,
-        meta: { minutes: confSpeed.minutes },
-      });
+      // Must run before anything period-scoped: a string createdAt makes every window
+      // query match nothing, which is what makes a KPI read 0 while the rows exist.
+      await this.fixLogTimestamps(false);
+      await this.backfillLogUsernames(false);
+      await this.relinkOrphanedLogs(false);
+      // Shifts carry the same User._id and break the same way. They matter just as much:
+      // the leaderboard roster is built from employeeshifts, so a shift pointing at a
+      // dead id hides an employee whose points re-linked perfectly.
+      await this.backfillShiftUsernames(false);
+      await this.relinkOrphanedShifts(false);
+      // The same broken link outside the performance tables: the orders a person owns
+      // and the follow-ups assigned to them.
+      await this.healOrderAndFollowUpLinks(false);
     } catch (err) {
-      this.logger.error(`scoreConfirmation failed for order ${order._id}: ${(err as Error).message}`);
+      this.logger.error(`Performance self-heal failed on boot: ${(err as Error).message}`);
     }
   }
 
@@ -154,6 +245,7 @@ export class EmployeeScoringService {
 
       await this.logModel.create({
         employeeId: order.assignedTo,
+        employeeUsername: await this.usernameForId(order.assignedTo),
         orderId: String(order._id),
         actionType: depositScore.actionType,
         points: depositScore.points,
@@ -185,14 +277,21 @@ export class EmployeeScoringService {
       if (!creditedUsername) return;
 
       // reviewedBy is a username string (set from req.user.username in approveOrder);
-      // assignedTo is a User._id string (set by resolveAssignee). Resolve either shape to an _id.
+      // assignedTo is a User._id string (set by resolveAssignee). Resolve either shape to
+      // BOTH an _id and a username — the id is what every query filters on, the username
+      // is what survives a restore onto a different database. See employeeUsername.
       let employeeId: string | null = null;
+      let employeeUsername = '';
       const byUsername = await this.usersService.findByUsername(creditedUsername);
       if (byUsername) {
         employeeId = String(byUsername._id);
+        employeeUsername = byUsername.username || '';
       } else {
         const byId = await this.usersService.findById(creditedUsername);
-        if (byId) employeeId = String(byId._id);
+        if (byId) {
+          employeeId = String(byId._id);
+          employeeUsername = byId.username || '';
+        }
       }
       if (!employeeId) {
         this.logger.warn(`Cannot score delivery for order ${order._id}: no resolvable employee`);
@@ -204,6 +303,7 @@ export class EmployeeScoringService {
 
       await this.logModel.create({
         employeeId,
+        employeeUsername,
         orderId: String(order._id),
         actionType: 'delivery_completed',
         points,
@@ -488,32 +588,25 @@ export class EmployeeScoringService {
         ]),
       ]);
 
-    const earnedById = new Map<string, number>(pointsAgg.map((r) => [r._id, r.earnedPoints]));
-    const bonusById = new Map<string, number>(pointsAgg.map((r) => [r._id, r.bonusPoints]));
-    const allTimeById = new Map<string, number>(allTimeAgg.map((r) => [r._id, r.total]));
-    const prevById = new Map<string, number>(prevAgg.map((r) => [r._id, r.total]));
-    const assignedById = new Map<string, number>(assignedCounts.map((r) => [r._id, r.count]));
-    const deliveredById = new Map<string, number>(deliveredCounts.map((r) => [r._id, r.count]));
+    const earnedById = new Map<string, number>(pointsAgg.map((r): [string, number] => [r._id, r.earnedPoints]));
+    const bonusById = new Map<string, number>(pointsAgg.map((r): [string, number] => [r._id, r.bonusPoints]));
+    const allTimeById = new Map<string, number>(allTimeAgg.map((r): [string, number] => [r._id, r.total]));
+    const prevById = new Map<string, number>(prevAgg.map((r): [string, number] => [r._id, r.total]));
+    const assignedById = new Map<string, number>(assignedCounts.map((r): [string, number] => [r._id, r.count]));
+    const deliveredById = new Map<string, number>(deliveredCounts.map((r): [string, number] => [r._id, r.count]));
 
-    const confirmedByUsername = new Map<string, { total: number; withDeposit: number; speedSumMin: number; speedCount: number }>();
+    const confirmedByUsername = new Map<string, { total: number; withDeposit: number }>();
     for (const o of confirmedOrders) {
       const key = o.reviewedBy;
-      const bucket = confirmedByUsername.get(key) || { total: 0, withDeposit: 0, speedSumMin: 0, speedCount: 0 };
+      const bucket = confirmedByUsername.get(key) || { total: 0, withDeposit: 0 };
       bucket.total += 1;
       if (o.depositStatus && o.depositStatus !== 'none') bucket.withDeposit += 1;
-      if (o.shopifyCreatedAt && o.reviewedAt) {
-        const minutes = this.minutesBetween(o.shopifyCreatedAt, o.reviewedAt);
-        if (minutes !== null) {
-          bucket.speedSumMin += minutes;
-          bucket.speedCount += 1;
-        }
-      }
       confirmedByUsername.set(key, bucket);
     }
 
     const rows: PerformanceDashboardRow[] = staff.map((u) => {
       const id = String(u._id);
-      const confirmed = confirmedByUsername.get(u.username || '') || { total: 0, withDeposit: 0, speedSumMin: 0, speedCount: 0 };
+      const confirmed = confirmedByUsername.get(u.username || '') || { total: 0, withDeposit: 0 };
       const earned = earnedById.get(id) || 0;
       const bonus = bonusById.get(id) || 0;
       return {
@@ -525,7 +618,6 @@ export class EmployeeScoringService {
         confirmedOrdersCount: confirmed.total,
         deliveredOrdersCount: deliveredById.get(id) || 0,
         depositConversionRate: confirmed.total > 0 ? Math.round((confirmed.withDeposit / confirmed.total) * 100) : 0,
-        avgConfirmationSpeedMinutes: confirmed.speedCount > 0 ? Math.round(confirmed.speedSumMin / confirmed.speedCount) : 0,
         earnedPoints: earned,
         bonusPoints: bonus,
         totalPoints: earned + bonus,
@@ -658,6 +750,196 @@ export class EmployeeScoringService {
    * LOCAL (the reset is local midnight); $dateToString would bucket by UTC and put
    * the first hours of each month in the previous one.
    */
+
+  /**
+   * ─────────────────────────────────────────────────────────────────────────────
+   * The staff member's own workspace — everything the employee dashboard shows.
+   *
+   * ⚠ EVERY array here is scoped to `userId` in its own query. The employee
+   * dashboard must never receive a colleague's order, ticket or shipment and be
+   * trusted not to draw it: the response is the privacy boundary, not the render.
+   * That is why this is one endpoint rather than the frontend filtering the
+   * already-loaded global `transactions` array, which holds every employee's work.
+   *
+   * ⚠ Assignment is joined through ShopifyOrder, never through
+   * `Transaction.assignedToName`. That field is a denormalized NAME: two employees
+   * can share one, and a rename silently re-points history at the wrong person.
+   * `ShopifyOrder.assignedTo` holds the User._id, and `Transaction.shopifyOrderId
+   * === ShopifyOrder.shopifyId` is the only reliable join back. Do not "simplify"
+   * this into a name match.
+   * ─────────────────────────────────────────────────────────────────────────────
+   */
+  async getMyWorkspace(
+    userId: string,
+    period?: string,
+    periodKey?: string,
+  ): Promise<MyWorkspaceResult> {
+    const range = this.resolvePeriod(period, new Date(), periodKey);
+    const prev = this.previousPeriod(range);
+    const inPeriod = this.periodMatch(range);
+
+    // `assignedOrdersTotal` is lifetime and `assignedOrdersInPeriod` is bounded by
+    // the same window as the points beside it. Both are returned because showing
+    // only one is what makes an assignment counter misread — the same rule
+    // getDashboardStats states about an unbounded counter sitting next to a
+    // period total.
+    const [
+      pointsAgg,
+      prevAgg,
+      allTimeAgg,
+      assignedTotal,
+      assignedInPeriod,
+      deliveredInPeriod,
+      myOrders,
+      myFollowUps,
+    ] = await Promise.all([
+      this.logModel.aggregate([
+        { $match: { employeeId: userId, ...inPeriod } },
+        {
+          $group: {
+            _id: null,
+            earned: { $sum: { $cond: [{ $eq: ['$actionType', 'manual_bonus'] }, 0, '$points'] } },
+            bonus: { $sum: { $cond: [{ $eq: ['$actionType', 'manual_bonus'] }, '$points', 0] } },
+          },
+        },
+      ]),
+      prev
+        ? this.logModel.aggregate([
+            { $match: { employeeId: userId, ...this.periodMatch(prev) } },
+            { $group: { _id: null, total: { $sum: '$points' } } },
+          ])
+        : Promise.resolve([] as Array<{ total: number }>),
+      this.logModel.aggregate([
+        { $match: { employeeId: userId } },
+        { $group: { _id: null, total: { $sum: '$points' } } },
+      ]),
+      this.shopifyOrderModel.countDocuments({ assignedTo: userId, cancelled: { $ne: true } }),
+      this.shopifyOrderModel.countDocuments({
+        assignedTo: userId,
+        cancelled: { $ne: true },
+        ...this.periodMatchIsoString(range, 'assignedAt'),
+      }),
+      this.logModel.countDocuments({ employeeId: userId, actionType: 'delivery_completed', ...inPeriod }),
+      this.shopifyOrderModel
+        .find({ assignedTo: userId, cancelled: { $ne: true } })
+        .select('shopifyId ref client depositStatus depositAmount total status assignedAt')
+        .sort({ assignedAt: -1 })
+        .limit(MY_ORDERS_MAX)
+        .lean()
+        .exec(),
+      // `responsibleId` is a real User._id (unlike Transaction.assignedToName), so
+      // follow-ups scope exactly. Open only: a closed ticket is history, and listing
+      // it under "needs your follow-up" reads as work still owed.
+      this.followUpModel
+        .find({
+          responsibleId: userId,
+          cancelled: { $ne: true },
+          status: { $nin: DONE_STATUSES },
+        })
+        .select('ticketNo orderRef transactionId clientName clientPhone reason status autoSource updatedAt')
+        .sort({ updatedAt: -1 })
+        .limit(MY_FOLLOWUPS_MAX)
+        .lean()
+        .exec(),
+    ]);
+
+    // The shipment side of MY orders, joined on shopifyId → Transaction.shopifyOrderId.
+    // An order assigned to me but never approved into a transaction has no shipment
+    // yet and is simply absent here, rather than appearing as a phantom "not shipped".
+    const shopifyIds = myOrders.map((o) => String(o.shopifyId)).filter(Boolean);
+    const txs = shopifyIds.length
+      ? await this.txModel
+          .find({ shopifyOrderId: { $in: shopifyIds }, cancelled: { $ne: true } })
+          .select(
+            'ref client total type cancelled shopifyOrderId bostaStatus bostaStatusLabel ' +
+              'bostaTrackingNumber bostaLastSync pickupStatus pickupDate deliverySource ' +
+              'deliveredAt shippedAt date shipIssueState failedDelivery shipmentAttempts',
+          )
+          .lean()
+          .exec()
+      : [];
+
+    const earned = pointsAgg[0]?.earned || 0;
+    const bonus = pointsAgg[0]?.bonus || 0;
+
+    return {
+      period: range.period,
+      periodKey: range.key,
+      periodLabel: this.periodLabel(range),
+      prevPeriodKey: prev ? prev.key : null,
+      isCurrentPeriod: this.isCurrentPeriod(range),
+      points: {
+        earned,
+        bonus,
+        total: earned + bonus,
+        prevPeriodPoints: prevAgg[0]?.total || 0,
+        allTimePoints: allTimeAgg[0]?.total || 0,
+      },
+      assignedOrdersTotal: assignedTotal,
+      assignedOrdersInPeriod: assignedInPeriod,
+      deliveredInPeriod,
+      openFollowUpsCount: myFollowUps.length,
+      orders: myOrders.map((o) => ({
+        id: String(o._id),
+        shopifyId: String(o.shopifyId || ''),
+        ref: o.ref || '',
+        client: o.client || '',
+        total: o.total || 0,
+        status: o.status || '',
+        depositStatus: o.depositStatus || 'none',
+        depositAmount: o.depositAmount || 0,
+        assignedAt: o.assignedAt || '',
+      })),
+      followUps: myFollowUps.map((f) => ({
+        id: String(f._id),
+        ticketNo: f.ticketNo || '',
+        orderRef: f.orderRef || '',
+        transactionId: f.transactionId || '',
+        clientName: f.clientName || '',
+        clientPhone: f.clientPhone || '',
+        reason: f.reason || '',
+        status: f.status || '',
+        autoSource: f.autoSource || '',
+        updatedAt: (f as { updatedAt?: Date }).updatedAt
+          ? new Date((f as { updatedAt?: Date }).updatedAt as Date).toISOString()
+          : '',
+      })),
+      // ⚠ `_id` and `type` are kept under their real names: the dashboard reuses the
+      // SAME shipping renderer for admin and staff, and it reads a Transaction shape
+      // (row click → openOrderView(tx._id), `tx.type !== 'مبيعات'` guard). Renaming
+      // them to a prettier `id`/`kind` here would break the row click and silently
+      // turn every staff row into a non-sales row.
+      shipments: txs.map((t) => ({
+        _id: String(t._id),
+        type: t.type || '',
+        cancelled: !!t.cancelled,
+        ref: t.ref || '',
+        client: t.client || '',
+        total: t.total || 0,
+        shopifyOrderId: t.shopifyOrderId || '',
+        bostaStatus: t.bostaStatus || '',
+        bostaStatusLabel: t.bostaStatusLabel || '',
+        bostaTrackingNumber: t.bostaTrackingNumber || '',
+        bostaLastSync: t.bostaLastSync || '',
+        pickupStatus: t.pickupStatus || '',
+        pickupDate: (t as { pickupDate?: string }).pickupDate || '',
+        deliverySource: t.deliverySource || '',
+        deliveredAt: t.deliveredAt || '',
+        shippedAt: t.shippedAt || '',
+        shipIssueState: t.shipIssueState || '',
+        failedDelivery: !!(t as { failedDelivery?: unknown }).failedDelivery,
+        shipmentAttempts: Array.isArray((t as { shipmentAttempts?: unknown[] }).shipmentAttempts)
+          ? (t as { shipmentAttempts: unknown[] }).shipmentAttempts
+          : [],
+        date: t.date || '',
+      })),
+      // Reported rather than silently applied, so a capped list is never mistaken
+      // for a complete one — same rule as getLogs' `truncated`.
+      ordersTruncated: myOrders.length >= MY_ORDERS_MAX,
+      followUpsTruncated: myFollowUps.length >= MY_FOLLOWUPS_MAX,
+    };
+  }
+
   async getAvailablePeriods(period?: string): Promise<{
     period: PerformancePeriod;
     periods: Array<{ key: string; label: string; count: number; points: number; isCurrent: boolean }>;
@@ -746,12 +1028,532 @@ export class EmployeeScoringService {
   ): Promise<EmployeePerformanceLogDocument> {
     return this.logModel.create({
       employeeId,
+      employeeUsername: await this.usernameForId(employeeId),
       orderId: '',
       actionType: 'manual_bonus',
       points,
       note: reason,
       meta: { adjustedBy },
     });
+  }
+
+  /**
+   * Resolves a User._id to its username for the employeeUsername stamp.
+   *
+   * Returns '' rather than throwing when the account cannot be found: the point row
+   * itself must still be written. A row with an id but no username is exactly the
+   * pre-existing state of every historical row, and relinkOrphanedLogs() handles it.
+   */
+  private async usernameForId(employeeId: string): Promise<string> {
+    if (!employeeId) return '';
+    try {
+      const u = await this.usersService.findById(employeeId);
+      return u?.username || '';
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * Repairs performance rows whose employeeId no longer matches any account, by
+   * re-pointing them at the account that owns the same employeeUsername.
+   *
+   * ⚠ WHY THIS EXISTS. employeeId stores a User._id as a string. A restore onto a
+   * DIFFERENT database (local install ↔ online install) merges accounts by USERNAME
+   * and keeps the id already on that machine — so the same person legitimately holds
+   * a different _id on each side, and every restored point row points at an id that
+   * exists nowhere. Measured on the two real backups in this repo: 858 of 1307 points
+   * (66%) were orphaned that way, and the leaderboard renders empty while every row
+   * is still present and correct. Rebuilding the numbers by hand is impossible.
+   *
+   * Matching is on `username` for the same reason restoreUsersMerge uses it: it is
+   * what login and findByUsername resolve, and it carries the unique index, so it is
+   * the one identifier stable across databases.
+   *
+   * ⚠ Rows whose employeeUsername is empty are REPORTED, never guessed at. Those are
+   * pre-existing rows written before this field, or rows belonging to a deleted
+   * account; inventing an owner for a point row would corrupt the very leaderboard
+   * this repairs. `unresolved` is what the UI shows so the gap stays visible rather
+   * than silently absorbed.
+   *
+   * Idempotent, and safe to run on every boot: a row already pointing at a live
+   * account is not touched.
+   */
+  async relinkOrphanedLogs(dryRun = true): Promise<{
+    scanned: number;
+    healthy: number;
+    relinked: number;
+    unresolved: number;
+    unresolvedPoints: number;
+    details: Array<{ username: string; fromId: string; toId: string; rows: number; points: number }>;
+    dryRun: boolean;
+  }> {
+    const empty = {
+      scanned: 0, healthy: 0, relinked: 0, unresolved: 0, unresolvedPoints: 0,
+      details: [] as Array<{ username: string; fromId: string; toId: string; rows: number; points: number }>,
+      dryRun,
+    };
+    try {
+      const users = await this.userModel.find().select('_id username').lean().exec();
+      const liveIds = new Set(users.map((u) => String(u._id)));
+      const idByUsername = new Map<string, string>();
+      for (const u of users) if (u.username) idByUsername.set(String(u.username), String(u._id));
+
+      const logs = await this.logModel.find().select('employeeId employeeUsername points').lean().exec();
+      empty.scanned = logs.length;
+
+      // Group the broken rows by (stale id → username) so one updateMany fixes each person.
+      const groups = new Map<string, { username: string; fromId: string; rows: number; points: number }>();
+      for (const l of logs) {
+        const id = String(l.employeeId || '');
+        if (id && liveIds.has(id)) { empty.healthy++; continue; }
+
+        const uname = String((l as { employeeUsername?: string }).employeeUsername || '');
+        const target = uname ? idByUsername.get(uname) : undefined;
+        if (!target) {
+          // No username to match on, or the account itself is gone. Never guessed at.
+          empty.unresolved++;
+          empty.unresolvedPoints += Number(l.points) || 0;
+          continue;
+        }
+        const key = `${id}→${target}`;
+        const g = groups.get(key) || { username: uname, fromId: id, rows: 0, points: 0 };
+        g.rows++;
+        g.points += Number(l.points) || 0;
+        groups.set(key, g);
+      }
+
+      for (const [key, g] of groups) {
+        const toId = key.split('→')[1];
+        empty.relinked += g.rows;
+        empty.details.push({ username: g.username, fromId: g.fromId, toId, rows: g.rows, points: g.points });
+        if (!dryRun) {
+          await this.logModel
+            .updateMany({ employeeId: g.fromId, employeeUsername: g.username }, { $set: { employeeId: toId } })
+            .exec();
+        }
+      }
+
+      if (empty.relinked || empty.unresolved) {
+        this.logger.log(
+          `relinkOrphanedLogs${dryRun ? ' (dry run)' : ''}: ${empty.relinked} rows re-linked, ` +
+            `${empty.unresolved} unresolved (${empty.unresolvedPoints} pts) of ${empty.scanned} scanned`,
+        );
+      }
+      return empty;
+    } catch (err) {
+      // Diagnostics must never take the module down.
+      this.logger.error(`relinkOrphanedLogs failed: ${(err as Error).message}`);
+      return empty;
+    }
+  }
+
+  /**
+   * Backfills employeeUsername on rows written before the field existed, so a backup
+   * taken from THIS machine carries the restore-safe identifier. Rows whose account no
+   * longer exists keep '' — there is nothing to resolve, and they are reported by
+   * relinkOrphanedLogs() rather than filled with a guess.
+   */
+  async backfillLogUsernames(dryRun = true): Promise<{ scanned: number; filled: number; skipped: number; dryRun: boolean }> {
+    const res = { scanned: 0, filled: 0, skipped: 0, dryRun };
+    try {
+      const users = await this.userModel.find().select('_id username').lean().exec();
+      const usernameById = new Map<string, string>();
+      for (const u of users) usernameById.set(String(u._id), String(u.username || ''));
+
+      const rows = await this.logModel
+        .find({ $or: [{ employeeUsername: '' }, { employeeUsername: { $exists: false } }] })
+        .select('_id employeeId')
+        .lean()
+        .exec();
+      res.scanned = rows.length;
+
+      // One updateMany per employee rather than per row.
+      const byId = new Map<string, number>();
+      for (const r of rows) {
+        const id = String(r.employeeId || '');
+        byId.set(id, (byId.get(id) || 0) + 1);
+      }
+      for (const [id, count] of byId) {
+        const uname = usernameById.get(id);
+        if (!uname) { res.skipped += count; continue; }
+        res.filled += count;
+        if (!dryRun) {
+          await this.logModel
+            .updateMany(
+              { employeeId: id, $or: [{ employeeUsername: '' }, { employeeUsername: { $exists: false } }] },
+              { $set: { employeeUsername: uname } },
+            )
+            .exec();
+        }
+      }
+      this.logger.log(
+        `backfillLogUsernames${dryRun ? ' (dry run)' : ''}: ${res.filled} filled, ${res.skipped} skipped (no account), of ${res.scanned}`,
+      );
+      return res;
+    } catch (err) {
+      this.logger.error(`backfillLogUsernames failed: ${(err as Error).message}`);
+      return res;
+    }
+  }
+
+  /**
+   * Backfills userUsername on shift rows written before the field existed, using the
+   * accounts on THIS machine while their ids still resolve. Same contract and same
+   * ordering requirement as backfillLogUsernames.
+   */
+  async backfillShiftUsernames(dryRun = true): Promise<{ scanned: number; filled: number; skipped: number; dryRun: boolean }> {
+    const res = { scanned: 0, filled: 0, skipped: 0, dryRun };
+    try {
+      const users = await this.userModel.find().select('_id username').lean().exec();
+      const usernameById = new Map<string, string>();
+      for (const u of users) usernameById.set(String(u._id), String(u.username || ''));
+
+      const rows = await this.shiftModel
+        .find({ $or: [{ userUsername: '' }, { userUsername: { $exists: false } }] })
+        .select('_id userId')
+        .lean()
+        .exec();
+      res.scanned = rows.length;
+
+      for (const r of rows) {
+        const id = String((r as { userId?: string }).userId || '');
+        const uname = usernameById.get(id);
+        if (!uname) { res.skipped++; continue; }
+        res.filled++;
+        if (!dryRun) {
+          await this.shiftModel.updateOne({ _id: r._id }, { $set: { userUsername: uname } }).exec();
+        }
+      }
+      if (res.scanned) {
+        this.logger.log(
+          `backfillShiftUsernames${dryRun ? ' (dry run)' : ''}: ${res.filled} filled, ${res.skipped} skipped, of ${res.scanned}`,
+        );
+      }
+      return res;
+    } catch (err) {
+      this.logger.error(`backfillShiftUsernames failed: ${(err as Error).message}`);
+      return res;
+    }
+  }
+
+  /**
+   * Re-points shift rows whose userId no longer resolves at the account owning the same
+   * userUsername — the roster half of the same restore problem relinkOrphanedLogs fixes.
+   *
+   * ⚠ A broken shift is MORE damaging than a broken point row: the leaderboard roster is
+   * built from this collection, so one stale userId hides that employee entirely, even
+   * when every one of their points re-linked correctly. Rows with no username are
+   * reported, never guessed at.
+   */
+  async relinkOrphanedShifts(dryRun = true): Promise<{
+    scanned: number; healthy: number; relinked: number; unresolved: number; dryRun: boolean;
+  }> {
+    const res = { scanned: 0, healthy: 0, relinked: 0, unresolved: 0, dryRun };
+    try {
+      const users = await this.userModel.find().select('_id username').lean().exec();
+      const liveIds = new Set(users.map((u) => String(u._id)));
+      const idByUsername = new Map<string, string>();
+      for (const u of users) if (u.username) idByUsername.set(String(u.username), String(u._id));
+
+      const shifts = await this.shiftModel.find().select('_id userId userUsername').lean().exec();
+      res.scanned = shifts.length;
+
+      for (const sh of shifts) {
+        const id = String((sh as { userId?: string }).userId || '');
+        if (id && liveIds.has(id)) { res.healthy++; continue; }
+        const uname = String((sh as { userUsername?: string }).userUsername || '');
+        const target = uname ? idByUsername.get(uname) : undefined;
+        if (!target) { res.unresolved++; continue; }
+        res.relinked++;
+        if (!dryRun) {
+          await this.shiftModel.updateOne({ _id: sh._id }, { $set: { userId: target } }).exec();
+        }
+      }
+      if (res.relinked || res.unresolved) {
+        this.logger.log(
+          `relinkOrphanedShifts${dryRun ? ' (dry run)' : ''}: ${res.relinked} re-linked, ${res.unresolved} unresolved, of ${res.scanned}`,
+        );
+      }
+      return res;
+    } catch (err) {
+      this.logger.error(`relinkOrphanedShifts failed: ${(err as Error).message}`);
+      return res;
+    }
+  }
+
+  /**
+   * One generic pass that backfills the username and re-links the stale id on ANY
+   * collection that points at a user by `_id`.
+   *
+   * ⚠ Every such field breaks the same way on a cross-database restore, so they get the
+   * same two-step treatment rather than four hand-written copies that can drift:
+   *   backfill (stamp the username while the id still resolves)
+   *   → relink (re-point the id via that username).
+   *
+   * `model` is passed in rather than injected so this works for shopifyorders and
+   * followups without EmployeeScoringService owning those modules.
+   */
+  private async healUserLink(
+    model: Model<any>,
+    idField: string,
+    usernameField: string,
+    label: string,
+    dryRun: boolean,
+  ): Promise<{ label: string; filled: number; relinked: number; unresolved: number }> {
+    const res = { label, filled: 0, relinked: 0, unresolved: 0 };
+    try {
+      const users = await this.userModel.find().select('_id username').lean().exec();
+      const liveIds = new Set(users.map((u) => String(u._id)));
+      const usernameById = new Map<string, string>();
+      const idByUsername = new Map<string, string>();
+      for (const u of users) {
+        usernameById.set(String(u._id), String(u.username || ''));
+        if (u.username) idByUsername.set(String(u.username), String(u._id));
+      }
+
+      const rows = await model
+        .find({ [idField]: { $nin: ['', null] } })
+        .select(`_id ${idField} ${usernameField}`)
+        .lean()
+        .exec();
+
+      for (const r of rows as Array<Record<string, unknown>>) {
+        const id = String(r[idField] || '');
+        if (!id) continue;
+        const stamped = String(r[usernameField] || '');
+
+        // Step 1 — the id still resolves: make sure the username is stamped for later.
+        if (liveIds.has(id)) {
+          if (!stamped) {
+            const uname = usernameById.get(id);
+            if (uname) {
+              res.filled++;
+              if (!dryRun) await model.updateOne({ _id: r._id }, { $set: { [usernameField]: uname } }).exec();
+            }
+          }
+          continue;
+        }
+
+        // Step 2 — the id is stale: re-point it via the stamped username.
+        const target = stamped ? idByUsername.get(stamped) : undefined;
+        if (!target) { res.unresolved++; continue; } // never guessed at
+        res.relinked++;
+        if (!dryRun) await model.updateOne({ _id: r._id }, { $set: { [idField]: target } }).exec();
+      }
+
+      if (res.filled || res.relinked || res.unresolved) {
+        this.logger.log(
+          `healUserLink[${label}]${dryRun ? ' (dry run)' : ''}: ${res.filled} stamped, ` +
+            `${res.relinked} re-linked, ${res.unresolved} unresolved`,
+        );
+      }
+      return res;
+    } catch (err) {
+      this.logger.error(`healUserLink[${label}] failed: ${(err as Error).message}`);
+      return res;
+    }
+  }
+
+  /**
+   * Repairs the two remaining user links outside the performance tables: the orders an
+   * employee owns (`shopifyorders.assignedTo`) and the follow-ups assigned to them
+   * (`followups.responsibleId`). Without this, an upload leaves «أوردراتي» and the
+   * follow-up inbox empty for everyone even when the points re-linked perfectly.
+   */
+  async healOrderAndFollowUpLinks(dryRun = true): Promise<Array<{ label: string; filled: number; relinked: number; unresolved: number }>> {
+    return [
+      await this.healUserLink(this.shopifyOrderModel as unknown as Model<any>, 'assignedTo', 'assignedToUsername', 'shopifyorders.assignedTo', dryRun),
+      await this.healUserLink(this.followUpModel as unknown as Model<any>, 'responsibleId', 'responsibleUsername', 'followups.responsibleId', dryRun),
+    ];
+  }
+
+  /**
+   * Converts string `createdAt` values on the point log back into real Dates.
+   *
+   * ⚠ THIS IS WHY A KPI CAN READ ZERO WHILE THE POINTS EXIST. A restore reads the
+   * backup with JSON.parse, which has no Date type, so createdAt lands as an ISO
+   * STRING. Mongo compares BSON types, so `{createdAt: {$gte: <Date>}}` matches a
+   * string row not at all — and EVERY period-scoped query here is built that way
+   * (periodMatch). The rows are present and correct; the window simply cannot see
+   * them, so «نقاطي» prints 0 for an employee holding 279 points and the leaderboard
+   * looks like nobody scored this month.
+   *
+   * Measured on the live database when this was found: 633 of 637 rows were strings.
+   *
+   * restoreBackup now writes real Dates, so this is the repair for rows restored
+   * before that fix. Idempotent — a row already stored as a Date is skipped.
+   */
+  async fixLogTimestamps(dryRun = true): Promise<{ scanned: number; converted: number; failed: number; dryRun: boolean }> {
+    const res = { scanned: 0, converted: 0, failed: 0, dryRun };
+    try {
+      // $type:'string' finds exactly the broken rows; a Date-typed row is never matched.
+      const rows = await this.logModel
+        .find({ createdAt: { $type: 'string' } } as Record<string, unknown>)
+        .select('_id createdAt updatedAt')
+        .lean()
+        .exec();
+      res.scanned = rows.length;
+      if (!rows.length) return res;
+
+      // ⚠ Written through the RAW driver, not the Mongoose model. `timestamps: true`
+      // makes Mongoose own createdAt/updatedAt: it overwrites updatedAt on every save
+      // and silently discards a manual write to createdAt, so `logModel.updateOne` here
+      // reports success and changes nothing — the rows stay strings and the KPI stays 0.
+      // The raw collection is the only way to correct a field the ODM manages.
+      const raw = this.logModel.collection;
+      for (const r of rows as Array<Record<string, unknown>>) {
+        const set: Record<string, Date> = {};
+        for (const f of ['createdAt', 'updatedAt']) {
+          const v = r[f];
+          if (typeof v === 'string' && v) {
+            const d = new Date(v);
+            if (!isNaN(d.getTime())) set[f] = d;
+          }
+        }
+        if (!Object.keys(set).length) { res.failed++; continue; }
+        res.converted++;
+        if (!dryRun) {
+          await raw.updateOne({ _id: r._id as never }, { $set: set });
+        }
+      }
+      this.logger.log(
+        `fixLogTimestamps${dryRun ? ' (dry run)' : ''}: ${res.converted} converted, ${res.failed} unparseable, of ${res.scanned}`,
+      );
+      return res;
+    } catch (err) {
+      this.logger.error(`fixLogTimestamps failed: ${(err as Error).message}`);
+      return res;
+    }
+  }
+
+  /**
+   * Read-only integrity report for the performance data — "did the points survive?".
+   *
+   * ⚠ It answers the question the leaderboard CANNOT. An empty leaderboard has three
+   * completely different causes that look identical on screen: nobody scored, the point
+   * rows lost their employee link, or the shift roster did not come across. Only the
+   * first is normal. This separates them, the same way the LOAD_FAIL rule separates
+   * "failed to load" from "there is nothing".
+   *
+   * Never throws — a diagnostic that dies tells you nothing about the thing you are
+   * diagnosing, which is worse than an unhealthy report.
+   */
+  async getPerformanceDataHealth(): Promise<{
+    ok: boolean;
+    totalRows: number;
+    totalPoints: number;
+    linkedRows: number;
+    linkedPoints: number;
+    orphanRows: number;
+    orphanPoints: number;
+    repairableRows: number;
+    repairablePoints: number;
+    missingUsernameRows: number;
+    rosterCovered: number;
+    rosterMissing: Array<{ username: string; name: string; points: number }>;
+    shiftRows: number;
+    brokenShiftRows: number;
+    issues: string[];
+  }> {
+    const out = {
+      ok: true,
+      totalRows: 0, totalPoints: 0,
+      linkedRows: 0, linkedPoints: 0,
+      orphanRows: 0, orphanPoints: 0,
+      repairableRows: 0, repairablePoints: 0,
+      missingUsernameRows: 0,
+      rosterCovered: 0,
+      rosterMissing: [] as Array<{ username: string; name: string; points: number }>,
+      shiftRows: 0,
+      brokenShiftRows: 0,
+      issues: [] as string[],
+    };
+    try {
+      const [users, logs, shifts] = await Promise.all([
+        this.userModel.find().select('_id username name role').lean().exec(),
+        this.logModel.find().select('employeeId employeeUsername points').lean().exec(),
+        this.shiftModel.find().select('userId userUsername').lean().exec(),
+      ]);
+
+      const liveIds = new Set(users.map((u) => String(u._id)));
+      const idByUsername = new Map<string, string>();
+      for (const u of users) if (u.username) idByUsername.set(String(u.username), String(u._id));
+      const shiftUserIds = new Set(shifts.map((s) => String(s.userId)));
+      out.shiftRows = shifts.length;
+      // A shift whose userId resolves to nobody hides that employee from the roster
+      // entirely, however healthy their point rows are.
+      out.brokenShiftRows = shifts.filter((sh) => !liveIds.has(String(sh.userId))).length;
+
+      // Points per still-resolvable employee id, used for the roster check below.
+      const pointsById = new Map<string, number>();
+
+      for (const l of logs) {
+        const pts = Number(l.points) || 0;
+        const id = String(l.employeeId || '');
+        const uname = String((l as { employeeUsername?: string }).employeeUsername || '');
+        out.totalRows++;
+        out.totalPoints += pts;
+
+        if (id && liveIds.has(id)) {
+          out.linkedRows++;
+          out.linkedPoints += pts;
+          pointsById.set(id, (pointsById.get(id) || 0) + pts);
+          continue;
+        }
+
+        out.orphanRows++;
+        out.orphanPoints += pts;
+        // An orphan carrying a username that maps to a live account can be repaired
+        // automatically; one without a username cannot, and is reported instead.
+        if (uname && idByUsername.has(uname)) {
+          out.repairableRows++;
+          out.repairablePoints += pts;
+        } else if (!uname) {
+          out.missingUsernameRows++;
+        }
+      }
+
+      // Roster check — points that are perfectly linked but still invisible on the
+      // leaderboard because the employee has no shift row (or is not role 'staff').
+      for (const u of users) {
+        const id = String(u._id);
+        const pts = pointsById.get(id) || 0;
+        if (pts <= 0) continue;
+        if (shiftUserIds.has(id) && u.role === 'staff') out.rosterCovered++;
+        else out.rosterMissing.push({ username: String(u.username || ''), name: String(u.name || ''), points: pts });
+      }
+      out.rosterMissing.sort((a, b) => b.points - a.points);
+
+      if (out.orphanRows > 0) {
+        out.ok = false;
+        out.issues.push(
+          `${out.orphanRows} صف نقاط (${out.orphanPoints} نقطة) غير مرتبط بأي حساب` +
+            (out.repairableRows > 0 ? ` — ${out.repairableRows} منها قابل للإصلاح تلقائياً` : ''),
+        );
+      }
+      if (out.brokenShiftRows > 0) {
+        out.ok = false;
+        out.issues.push(
+          `${out.brokenShiftRows} وردية مرتبطة بحساب غير موجود — أصحابها لن يظهروا في جدول الأداء`,
+        );
+      }
+      if (out.shiftRows === 0) {
+        out.ok = false;
+        out.issues.push('لا توجد أي ورديات مسجّلة — جدول الأداء سيظهر فارغاً مهما بلغت النقاط');
+      }
+      if (out.rosterMissing.length > 0) {
+        out.issues.push(
+          `${out.rosterMissing.length} موظف لديه نقاط لكنه لا يظهر في الجدول (لا توجد وردية أو الدور ليس staff)`,
+        );
+      }
+      return out;
+    } catch (err) {
+      this.logger.error(`getPerformanceDataHealth failed: ${(err as Error).message}`);
+      out.ok = false;
+      out.issues.push('تعذّر فحص سلامة بيانات الأداء');
+      return out;
+    }
   }
 
   private readonly depositActionTypes: PerformanceActionType[] = [
@@ -772,24 +1574,4 @@ export class EmployeeScoringService {
     return { points: cfg?.depositNonePoints ?? 1, actionType: 'deposit_none' };
   }
 
-  /** <15min=configurable, <1h=configurable, <4h=configurable, else=0 */
-  private scoreSpeedPoints(
-    startIso: string,
-    endIso: string,
-    cfg?: Partial<Settings['performanceConfig']>,
-  ): { points: number; minutes: number } {
-    const minutes = this.minutesBetween(startIso, endIso) ?? Infinity;
-    let points = 0;
-    if (minutes < 15) points = cfg?.speedUnder15MinPoints ?? 3;
-    else if (minutes < 60) points = cfg?.speedUnder1HourPoints ?? 2;
-    else if (minutes < 240) points = cfg?.speedUnder4HoursPoints ?? 1;
-    return { points, minutes: Number.isFinite(minutes) ? Math.round(minutes) : -1 };
-  }
-
-  private minutesBetween(startIso: string, endIso: string): number | null {
-    const start = new Date(startIso).getTime();
-    const end = new Date(endIso).getTime();
-    if (isNaN(start) || isNaN(end) || end < start) return null;
-    return (end - start) / 60000;
-  }
 }

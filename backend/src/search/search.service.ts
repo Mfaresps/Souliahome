@@ -21,7 +21,15 @@ import {
 import { SearchResultItem, SearchResponse } from './dto/search.dto';
 
 const MAX_RESULTS_PER_CATEGORY = 50;
+// تجميع العملاء بيجمع إجمالي الطلبات والمبيعات — الحركة الملغاة لازم تفضل
+// مستبعدة هناك، وإلا هنعدّ فلوس ما اتحصلتش في رصيد العميل.
 const TX_ACTIVE_FILTER = { cancelled: { $ne: true } };
+
+// ⚠ البحث عن حركة بذاتها لا يستخدم الفلتر ده. الموظف اللي بيدوّر برقم أوردر
+// ملغي عايز يلاقيه ويشوف إنه ملغي — إخفاؤه بيخلي الشاشة تقول «لم يتم العثور
+// على نتائج»، وده بيتقري إن الأوردر مش موجود أصلاً مش إنه اتلغى. الحالة
+// بتتبعت للواجهة في `cancelled` وبتترسم كبادج أحمر، نفس قاعدة أوردرات شوبيفاي.
+const TX_ANY_FILTER = {};
 
 /* ════════════════════════════════════════════════════════════════════
    محرك الصلة (Relevance engine)
@@ -58,6 +66,19 @@ const S_FUZZY_FAR = 15; // خطأ إملائي بحرفين
 const EXACT_FIELD_BONUS = 150;
 /** مكافأة ظهور الاستعلام متعدد الكلمات كعبارة متصلة */
 const PHRASE_BONUS = 15;
+/**
+ * خصم الحركة الملغاة — تعديل صغير يفكّ التعادل فقط.
+ *
+ * ⚠ في البيانات الحقيقية فيه 6 حركات ملغاة بتشارك نفس الـ ref مع حركة حيّة
+ * (إلغاء وإعادة إنشاء بنفس الرقم — نفس العميل ونفس المبلغ). الاتنين بيطابقوا
+ * الاستعلام بنفس الدرجة بالظبط، فكان بيفصل بينهم `recencyBoost` — والملغاة
+ * أحياناً أحدث، فتطلع فوق الحيّة وتوجّه الموظف للسجل الغلط.
+ *
+ * القيمة (12) أكبر من أقصى فرق حداثة (6) فبتضمن إن الحيّة تسبق الملغاة عند
+ * تساوي المطابقة، وأصغر بكتير من الفرق بين درجات المطابقة نفسها (78 مقابل 34)
+ * فمش ممكن تخفي حركة ملغاة مطابقتها أقوى. الترتيب مش إخفاء.
+ */
+const CANCELLED_ORDER_PENALTY = 12;
 /** الحد الأدنى لطول الكلمة قبل السماح بالمطابقة التقريبية */
 const FUZZY_MIN_LEN = 4;
 
@@ -426,6 +447,9 @@ export class SearchService {
     score: number,
     meta?: string,
   ): SearchResultItem {
+    // الخصم متطبّق هنا مش في كل موقع استدعاء — ده المكان الوحيد اللي بتتبني فيه
+    // نتيجة حركة، فأي مسار بحث جديد بياخد نفس القاعدة من غير ما حد يفتكر يضيفها.
+    const cancelled = !!tx.cancelled;
     return {
       id: String(tx._id),
       type: 'order',
@@ -442,7 +466,13 @@ export class SearchService {
       // `bostaStatusLabel` (بوليصة جديدة لسه ما اتبعتتش)، فنتيجة البحث كانت
       // بتقرا «لم تُشحن» على طلب اتشحن ورجع — وده عكس الحقيقة مش مجرد نقص.
       shipmentAttempts: Array.isArray(tx.shipmentAttempts) ? tx.shipmentAttempts.length : 0,
-      score,
+      // الحركة الملغاة بتظهر في البحث زي أي حركة — الإلغاء حالة تُعرض، مش سبب
+      // للإخفاء. الواجهة بترسم بادج أحمر وبتخفي بادج الشحن، لأن حالة بوسطة على
+      // أوردر ملغي بتوصف بوليصة اتلغت.
+      cancelled,
+      cancelledAt: tx.cancelledAt || '',
+      cancelReason: tx.cancelReason || '',
+      score: cancelled ? score - CANCELLED_ORDER_PENALTY : score,
     };
   }
 
@@ -465,9 +495,9 @@ export class SearchService {
     ctx: ScoreCtx,
   ): Promise<SearchResultItem[]> {
     const transactions = await this.transactionModel
-      .find({ ...TX_ACTIVE_FILTER, ref: { $regex: `^${escapeRegex(ref)}`, $options: 'i' } })
+      .find({ ...TX_ANY_FILTER, ref: { $regex: `^${escapeRegex(ref)}`, $options: 'i' } })
       .select(
-        'ref client phone type total payStatus items createdAt bostaStatusLabel bostaTrackingNumber shipmentAttempts notes',
+        'ref client phone type total payStatus items createdAt bostaStatusLabel bostaTrackingNumber shipmentAttempts notes cancelled cancelledAt cancelReason',
       )
       .sort({ ref: 1 })
       .limit(200)
@@ -493,11 +523,11 @@ export class SearchService {
   ): Promise<SearchResultItem[]> {
     const transactions = await this.transactionModel
       .find({
-        ...TX_ACTIVE_FILTER,
+        ...TX_ANY_FILTER,
         bostaTrackingNumber: { $regex: `^${escapeRegex(trackingNo)}`, $options: 'i' },
       })
       .select(
-        'ref client phone type total payStatus items createdAt bostaStatusLabel bostaTrackingNumber shipmentAttempts notes',
+        'ref client phone type total payStatus items createdAt bostaStatusLabel bostaTrackingNumber shipmentAttempts notes cancelled cancelledAt cancelReason',
       )
       .sort({ createdAt: -1 })
       .limit(200)
@@ -576,9 +606,9 @@ export class SearchService {
     ctx: ScoreCtx,
   ): Promise<SearchResultItem[]> {
     const transactions = await this.transactionModel
-      .find({ ...TX_ACTIVE_FILTER, phone: { $regex: escapeRegex(phone), $options: 'i' } })
+      .find({ ...TX_ANY_FILTER, phone: { $regex: escapeRegex(phone), $options: 'i' } })
       .select(
-        'ref client phone type total payStatus items createdAt bostaStatusLabel bostaTrackingNumber shipmentAttempts notes',
+        'ref client phone type total payStatus items createdAt bostaStatusLabel bostaTrackingNumber shipmentAttempts notes cancelled cancelledAt cancelReason',
       )
       .sort({ createdAt: -1 })
       .limit(300)
@@ -684,9 +714,9 @@ export class SearchService {
   ): Promise<SearchResultItem[]> {
     if (!ctx.tokens.length) return [];
     const transactions = await this.transactionModel
-      .find(TX_ACTIVE_FILTER)
+      .find(TX_ANY_FILTER)
       .select(
-        'ref client phone type total payStatus notes items createdAt bostaStatusLabel bostaTrackingNumber shipmentAttempts',
+        'ref client phone type total payStatus notes items createdAt bostaStatusLabel bostaTrackingNumber shipmentAttempts cancelled cancelledAt cancelReason',
       )
       .sort({ createdAt: -1 })
       .limit(2000)

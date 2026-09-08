@@ -27,6 +27,14 @@ export interface SearchResultItem {
   readonly bostaStatusLabel?: string;
   /** عدد مرات الشحن السابقة — الواجهة بتعرض «بانتظار شحنة N» بدل «لم تُشحن». */
   readonly shipmentAttempts?: number;
+  /**
+   * حالة الإلغاء لحركة عادية (مش شوبيفاي). الحركة الملغاة بتظهر في البحث
+   * وبتترسم بادج «ملغي» أحمر — إخفاؤها كان بيخلي البحث برقم الأوردر يقول
+   * «لم يتم العثور على نتائج»، وده بيتقري إن الأوردر مش موجود مش إنه اتلغى.
+   */
+  readonly cancelled?: boolean;
+  readonly cancelledAt?: string;
+  readonly cancelReason?: string;
   readonly shopifyStatus?: string;
   readonly shopifyCancelled?: boolean;
   /**

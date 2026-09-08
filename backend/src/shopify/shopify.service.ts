@@ -161,6 +161,9 @@ export class ShopifyService {
         const assignment = await this.employeeShiftService.resolveAssignee(order.shopifyCreatedAt || new Date().toISOString());
         if (assignment) {
           order.assignedTo = assignment.userId;
+          // Stamped so the order still finds its owner after a restore onto a database
+          // where this account holds a different _id — see assignedToUsername.
+          order.assignedToUsername = assignment.username || '';
           order.assignedToName = assignment.name;
           order.assignedAt = new Date().toISOString();
           order.assignmentReason = assignment.reason;
@@ -277,6 +280,7 @@ export class ShopifyService {
     const now = new Date().toISOString();
 
     order.assignedTo = newEmployeeId;
+    order.assignedToUsername = newUser.username || '';
     order.assignedToName = newName;
     order.assignedAt = now;
     order.assignmentReason = 'manual';
@@ -823,11 +827,6 @@ export class ShopifyService {
       txType: tx.type,
       items: (tx.items || []).map((it: any) => ({ name: it.name, qty: it.qty })),
     });
-
-    // تقييم أداء الموظف الذي قام بالتأكيد — لا يجب أن يؤثر على نجاح العملية عند الفشل
-    this.employeeScoringService.scoreConfirmation(order, approvedBy).catch((err) =>
-      this.logger.error(`Performance scoring failed for order ${order._id}: ${(err as Error).message}`),
-    );
 
     this.logger.log(`✅ تم قبول أوردر Shopify: ${cleanRef}`);
     return { success: true, txId: String(tx._id) };

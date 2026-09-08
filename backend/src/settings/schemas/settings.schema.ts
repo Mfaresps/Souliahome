@@ -257,6 +257,20 @@ export class Settings {
   @Prop({ default: true })
   printPolicyHighlight: boolean;
 
+  /**
+   * قوالب جداول الورديات المحفوظة — كل قالب بيوصف أسبوع كامل لأي عدد موظفين.
+   *
+   * الشكل: { id, name, roles: [{ key, label }], days: [{ day, windows: { <roleKey>: [{start,end}] } }] }
+   * الأدوار مخزّنة كـ **مفاتيح مجرّدة** (`r1`,`r2`,…) مش userId — القالب بيوصف النمط،
+   * والمدير بيربط كل دور بموظف وقت التطبيق. ده اللي بيخلي نفس القالب يتطبق على أي
+   * مجموعة موظفين، ويفضل صالح بعد ما موظف يسيب الشغل.
+   *
+   * ⚠ `type: [Object]` إلزامي — نفس قاعدة discountCodes/discountBundles فوق.
+   * الافتراضي [] فالتركيبات القديمة بتقرا القالب المدمج في الواجهة زي ما هي، من غير أي backfill.
+   */
+  @Prop({ type: [Object], default: [] })
+  shiftRotas: Record<string, unknown>[];
+
   @Prop({ type: [Object], default: [] })
   discountCodes: DiscountCode[];
 
@@ -335,9 +349,6 @@ export class Settings {
       depositPartial50Points: 3,
       depositPartialLowPoints: 2,
       depositNonePoints: 1,
-      speedUnder15MinPoints: 3,
-      speedUnder1HourPoints: 2,
-      speedUnder4HoursPoints: 1,
     },
   })
   performanceConfig: {
@@ -346,9 +357,6 @@ export class Settings {
     depositPartial50Points: number;
     depositPartialLowPoints: number;
     depositNonePoints: number;
-    speedUnder15MinPoints: number;
-    speedUnder1HourPoints: number;
-    speedUnder4HoursPoints: number;
   };
 }
 

@@ -57,6 +57,11 @@ const TRANSACTIONS = [
   { _id: 't1', ref: '3852', client: 'Ghada Omara', phone: '01001112233', type: 'مبيعات', total: 670, payStatus: 'مكتمل', items: [{}], createdAt: '2026-08-01T00:00:00.000Z' },
   { _id: 't2', ref: '2254', client: 'Sama Alsamarraie', phone: '01002223344', type: 'مبيعات', total: 1200, payStatus: 'مكتمل', items: [{}], createdAt: '2026-07-20T00:00:00.000Z' },
   { _id: 't3', ref: '22540', client: 'Noura Anas', phone: '01003334455', type: 'مبيعات', total: 300, payStatus: 'معلق', items: [{}], createdAt: '2026-07-25T00:00:00.000Z' },
+  // حركة ملغاة حقيقية (ref 2404 من نسخة 2026-09-07). البحث برقمها كان بيرجع«لم يتم العثور على نتائج» لأن كل استعلامات الحركات كانت بتستبعد الملغي.
+  { _id: 't4', ref: '2404', client: 'هند آحمد مكي مكي', phone: '01005642638', type: 'مبيعات', total: 1760, payStatus: 'ملغي', items: [{}], createdAt: '2026-09-05T00:00:00.000Z', cancelled: true, cancelledAt: '2026-09-06T09:46:34.501Z', cancelReason: 'فشل توصيل — رفض الاستلام' },
+  // إلغاء وإعادة إنشاء بنفس الرقم — نمط حقيقي في البيانات (6 حالات). الاتنين
+  // بيطابقوا الاستعلام بنفس الدرجة، فلازم الحيّة تسبق الملغاة.
+  { _id: 't5', ref: '2404', client: 'هند آحمد مكي مكي', phone: '01005642638', type: 'مبيعات', total: 1760, payStatus: 'مكتمل', items: [{}], createdAt: '2026-09-04T00:00:00.000Z' },
 ];
 
 const COMPLAINTS = [
@@ -173,6 +178,72 @@ describe('Search relevance', () => {
     it('matches a word after the definite article "ال"', async () => {
       const { results } = await makeService().search('شنط');
       expect(results.some((r) => r.type === 'supplier')).toBe(true);
+    });
+  });
+
+  /**
+   * الحركة الملغاة حالة تُعرض، مش سبب للإخفاء. `TX_ACTIVE_FILTER` كان مطبّق
+   * على كل استعلامات الحركات، فالبحث برقم أوردر ملغي كان بيرجع «لم يتم العثور
+   * على نتائج» — وده بيتقري إن الأوردر مش موجود أصلاً، مش إنه اتلغى.
+   */
+  describe('cancelled orders stay searchable', () => {
+    it('finds a cancelled order by its exact ref', async () => {
+      const { results } = await makeService().search('2404');
+      const hit = results.find((r) => r.title === '#2404');
+      expect(hit).toBeDefined();
+      expect(hit!.type).toBe('order');
+    });
+
+    it('marks it cancelled so the UI can badge it instead of hiding it', async () => {
+      const { results } = await makeService().search('2404');
+      const hit = results.find((r) => r.title === '#2404' && r.cancelled)!;
+      expect(hit).toBeDefined();
+      expect(hit.cancelReason).toBe('فشل توصيل — رفض الاستلام');
+    });
+
+    it('an active order still reports cancelled:false, never undefined', async () => {
+      const { results } = await makeService().search('2254');
+      const hit = results.find((r) => r.title === '#2254')!;
+      expect(hit.cancelled).toBe(false);
+    });
+
+    it('finds a cancelled order by customer name and by phone', async () => {
+      const byName = await makeService().search('هند');
+      expect(byName.results.some((r) => r.title === '#2404')).toBe(true);
+      const byPhone = await makeService().search('01005642638');
+      expect(byPhone.results.some((r) => r.title === '#2404')).toBe(true);
+    });
+
+    /**
+     * ترتيب، مش إخفاء: الحركة الحيّة تسبق الملغاة عند تساوي المطابقة — لكن
+     * الملغاة تفضل ظاهرة. ⚠ الملغاة هنا createdAt أحدث من الحيّة عمداً، فلو
+     * الخصم اتشال هيرجّعها `recencyBoost` للأول تاني.
+     */
+    it('ranks the live order above a cancelled one sharing the same ref', async () => {
+      const { results } = await makeService().search('2404');
+      const both = results.filter((r) => r.title === '#2404');
+      expect(both).toHaveLength(2);
+      expect(both[0].cancelled).toBe(false);
+      expect(both[1].cancelled).toBe(true);
+    });
+
+    it('the penalty never outweighs a better textual match', async () => {
+      // 2404 مطابقة تامة للملغاة، و22540 مجرد بادئة لحركة حيّة — الملغاة تكسب.
+      const { results } = await makeService().search('2404');
+      expect(results[0].title).toBe('#2404');
+    });
+
+    /**
+     * الاستثناء المقصود: تجميع العملاء بيجمع عدد الطلبات والإجمالي، فالحركة
+     * الملغاة لازم تفضل مستبعدة هناك وإلا هنعدّ فلوس ما اتحصلتش.
+     */
+    it('still excludes cancelled orders from customer totals', async () => {
+      const { results } = await makeService().search('01005642638');
+      const cust = results.find((r) => r.type === 'customer')!;
+      // العميل عنده حركتين بنفس الرقم: واحدة حيّة وواحدة ملغاة. التجميع لازم
+      // يعدّ الحيّة بس — لو عدّ الاتنين هيقول «2 معاملة | 3520 ج» لفلوس
+      // نصّها ما اتحصلش.
+      expect(cust.meta).toBe('1 معاملة | 1760 ج');
     });
   });
 

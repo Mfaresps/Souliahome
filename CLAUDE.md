@@ -149,6 +149,69 @@ entirely on a transaction that carries none of them.
 
 ---
 
+## The Dashboard Opened on a White Page (Sep 8, 2026)
+
+Reported as «الصفحة بتفتح ببطء» on the online build. Three independent defects, measured before anything was written.
+
+### The splash screen was lying
+`#splash-screen` faded out on a **fixed CSS timer** — `animation-delay:1.6s` — and its percentage counter was a `requestAnimationFrame` loop counting to 100% over 1500ms. **Neither was connected to the data.** `showApp()` does `await loadAllData()` before rendering anything, so on any network slower than the animation the splash finished, revealed an empty shell, and the user sat on a **white page** with no indication anything was still happening. On a fast connection it looked fine, which is why it survived.
+
+The `animation-delay` is gone. `_bootProgress(pct, step)` / `_bootDone()` are driven by the real load, and `dismissSplash()` is now the only thing that hides it.
+
+⚠ **`minDelay` is a floor, not a cap.** A fast connection would otherwise flash the splash for 200ms — visual noise, not information. A slow load is never cut short; that is the entire point.
+
+⚠ **The bar never moves backwards** (`_bootPct` is a monotonic floor). Progress that retreats reads as something breaking.
+
+⚠ **A 20s safety timeout force-hides it.** An exception anywhere in the boot path before `_bootDone()` would otherwise leave the splash covering the app permanently — trading a slow page for a dead one.
+
+⚠ **`BOOT_REQUEST_COUNT` must match the `Promise.all` in `loadAllData`.** Add or remove a request there without updating it and the bar stalls short of the end or jumps.
+
+### `bostaRawResponse` was 77% of the boot payload
+Measured against the real backup: `GET /transactions` is **9.45 MB over 587 rows**, and **7.26 MB of that (77%) is `bostaRawResponse`** — the carrier's raw API response stored whole per shipment — plus 0.49 MB of `bostaStatusIgnoredEvents`.
+
+It is read by **exactly one screen**: the order timeline in `renderInvoiceViewPage` (`tx.bostaRawResponse?.TransitEvents`). The list never touches it, so every user downloaded it on every page load.
+
+`LIST_EXCLUDED_FIELDS` projects both out of `findAll` / `findArchived` / `findPickupOrders`. Verified against the live database: **same 583 rows, 9.45 MB → 1.68 MB (82.2% smaller)**, with exactly those two fields dropped and no other field lost.
+
+⚠ **`findById` is deliberately NOT projected.** The invoice page calls `_ivHydrateFull(id)` on open, which fetches the full record and merges it into the in-memory row. **The render does not await it** — the invoice paints immediately from list data and the timeline fills in when the response lands, guarded by a check that the user is still on that invoice so a late reply can't paint over a different one. `_fullyHydrated` marks the row so reopening costs no second request.
+
+⚠ **Any screen needing these fields must go through `GET /transactions/:id`.** Do not "fix" a missing field by deleting the projection.
+
+### Two awaits blocked the first paint for no reason
+`await syncUsersStatus()` in `showApp` and `await refreshMentionsFromServer()` in `loadAllData` each added a full round-trip **before the first page render**. Neither result is needed to draw a page — one fills a presence strip the socket takes over anyway, the other a header badge. Both now run detached, with `buildNotifications()` called again when the mentions reply arrives.
+
+### The loading state is now a skeleton, never a sentence
+«جاري تحميل المستخدمين...» read as a stuck state and collapsed to nothing when the avatars arrived. Replaced by shaped skeletons, and data arrives through `revealData(el, {stagger:true})` — a 340ms rise that plays across children in sequence so a table reads as *being built* rather than snapping into place.
+
+⚠ **Only `transform` and `opacity` are animated** — the two properties the compositor handles without re-layout. Anything animating `height`/`width`/`top` stutters on a table of hundreds of rows.
+
+⚠ **`will-change` is cleared on `animationend`.** Left on hundreds of rows it holds a GPU layer per row and costs more memory than it saves.
+
+⚠ **`prefers-reduced-motion` is honoured and is not optional.** Animation is disabled and content stays **visible** (`opacity:1`) — a reduced-motion rule that only removes the animation while leaving the `from` state would hide the data permanently. `countUp` writes the final value directly. Verified in a reduced-motion browser context.
+
+### زر «آخر تحديث» — `refreshBtnHtml(page)` / `refreshPageData(page)`
+Refetches the current page's data and shows when it last succeeded.
+
+⚠ **It must never call `location.reload()`.** `index.html` is served `no-store` (see "Forced Update on Deploy"), so a reload re-downloads the whole ~4.5MB shell and discards filters, sort and page state. It refetches data and re-renders.
+
+⚠ **The timestamp lives in memory, not `localStorage`.** "Last update" is a question about this session; persisted, a freshly-opened tab would claim «منذ ٣ دقائق».
+
+⚠ `is-busy` sets `pointer-events:none` — verified that **5 rapid clicks fire exactly one fetch**. `finally` always clears it, so a failure can't leave the button stuck.
+
+⚠ One shared interval refreshes the label, not one per button — per-button timers keep running after their button leaves the DOM.
+
+### Verification
+- Backend: **819/820 tests pass** (the one failure is in `staff-dashboard.spec.ts`, untracked pre-existing work — it fails **15** tests without these changes and 1 with them). A new case locks the projection: the list excludes the fields *and* `findById` does not.
+- `node dist/main.js` → *Nest application successfully started* — per the nullable-`@Prop` rule, `nest build` alone does not prove a service change resolves.
+- Browser-verified (Playwright, served over HTTP since `API_BASE` is relative): with data held open, the splash **stays visible at 12% showing «جارٍ التجهيز…» through 5 seconds** where the old build faded at 1.6s; with staggered responses the bar climbs 16→25→34→47→56→65→74→100%. Console errors compared against `HEAD`: **no new errors** once the mock returns correctly-shaped `duty-board` data.
+
+### Still open
+- **`/transactions` is still fetched whole** and paginated client-side, though now at 1.68 MB rather than 9.45 MB. The backend already supports `page`/`limit`; this remains the growth ceiling.
+- **`renderDutyBoard` assumes `onDuty`/`nextUp`/`onLeave` are arrays** and throws on a malformed response. Pre-existing, not touched here.
+- The reveal animation is wired into the dashboard only; other pages still snap in.
+
+---
+
 ## Shopify Webhooks — Four of Six Were Thrown Away (Aug 28, 2026)
 
 Six webhooks are registered in Shopify. `shopify.controller.ts` handled **two**. The other four
@@ -1715,6 +1778,7 @@ const expenseTotal = filteredExpenses
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Sep 8, 2026 | Dashboard opened on a white page: the splash faded on a 1.6s timer unrelated to the data, `bostaRawResponse` was 77% of the boot payload (9.45→1.68 MB), and two awaits blocked the first paint; plus staged reveal animations and an «آخر تحديث» button | See "The Dashboard Opened on a White Page" above |
 | Aug 28, 2026 | Four of six registered Shopify webhooks were being thrown away with 200 OK; plus the address of an already-shipped order was silently overwritten on the invoice while Bosta still held the old one | See "Shopify Webhooks — Four of Six Were Thrown Away" above |
 | Aug 28, 2026 | Rebuilt the printed sales/purchase invoice as a formal A4 commercial document: real issuer block (7 new company settings), التفقيط, signature block, declared `@page` geometry, repeating table header, and the terms already stored but never printed | See "The Printed Invoice" above |
 | Aug 28, 2026 | Fixed the date-window bug the drill-down exposed: `date` is stored as a full ISO timestamp on 63% of transactions, and bytewise `<=` dropped the last day of every report period (June purchases read 22,860 instead of 61,300). Six read sites + two day-bucketing defects; measured purely additive (+1 row, −0) | See "The Date-Window Bug" above |
