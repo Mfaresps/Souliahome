@@ -12,7 +12,7 @@
  * Run with: npm test -- shopify-cancel-approval
  */
 
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 
 /**
  * ⚠ `employee-scoring.service.ts` is stubbed, and the class is then reached through `require`.
@@ -173,6 +173,102 @@ describe('ShopifyService — cancellation request/approval', () => {
     it('refuses when there is no pending request', async () => {
       const o = buildOrder();
       await expect(serviceFor(o).rejectCancelRequest('o1', 'مدير', 'x')).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  /**
+   * withdrawCancelRequest() — the requester takes their own request back before it is decided.
+   *
+   * A request is not an outcome, so withdrawing one must not cancel, restore or reverse anything:
+   * it erases the request and leaves the order exactly as it was before it was filed.
+   */
+  describe('withdrawCancelRequest()', () => {
+    const pending = (extra: Record<string, unknown> = {}) => ({
+      status: 'معلق',
+      requestedBy: 'ريم',
+      requestedById: 'u-reem',
+      requestedByUsername: 'reem',
+      reason: 'الصنف غير متوفر',
+      cancelReasonCode: 'out-of-stock',
+      requestedAt: '2026-09-08T10:00:00.000Z',
+      ...extra,
+    });
+
+    it('the requester withdraws their own request and the order is untouched', async () => {
+      const o = buildOrder({ cancelRequest: pending() });
+      await serviceFor(o).withdrawCancelRequest('o1', 'u-reem', 'reem', false);
+
+      expect(o.cancelRequest).toBeNull();
+      // Nothing was cancelled, and nothing was "restored" either — it was never cancelled.
+      expect(o.cancelled).toBe(false);
+      expect(o.status).toBe('pending');
+      expect(o.cancelReasonCode).toBe('');
+      expect(o.save).toHaveBeenCalled();
+    });
+
+    it('matches on username alone for rows written before requestedById existed', async () => {
+      const o = buildOrder({ cancelRequest: pending({ requestedById: '' }) });
+      await serviceFor(o).withdrawCancelRequest('o1', 'some-other-id', 'reem', false);
+      expect(o.cancelRequest).toBeNull();
+    });
+
+    /* The load-bearing rule: holding `shopify-cancel-request` lets you file YOUR request,
+       not drop a colleague's — that would be exercising the decision authority you lack. */
+    it('refuses to let a colleague withdraw someone else request', async () => {
+      const o = buildOrder({ cancelRequest: pending() });
+      await expect(
+        serviceFor(o).withdrawCancelRequest('o1', 'u-other', 'other', false),
+      ).rejects.toThrow(ForbiddenException);
+      expect(o.cancelRequest).not.toBeNull();
+      expect(o.cancelRequest.status).toBe('معلق');
+      expect(o.save).not.toHaveBeenCalled();
+    });
+
+    it('an admin may withdraw any pending request', async () => {
+      const o = buildOrder({ cancelRequest: pending() });
+      await serviceFor(o).withdrawCancelRequest('o1', 'u-boss', 'boss', true);
+      expect(o.cancelRequest).toBeNull();
+    });
+
+    /* After approval the order is genuinely cancelled: the only way back is restoreOrder(),
+       which is admin-only. Allowing a withdraw here would un-cancel it through the back door. */
+    it('refuses once the request has been approved', async () => {
+      const o = buildOrder({
+        cancelled: true,
+        cancelRequest: pending({ status: 'معتمد' }),
+      });
+      await expect(
+        serviceFor(o).withdrawCancelRequest('o1', 'u-reem', 'reem', false),
+      ).rejects.toThrow(BadRequestException);
+      expect(o.cancelled).toBe(true);
+    });
+
+    /* A rejected request carries the manager's reason — the only reply the requester ever gets.
+       Erasing it would delete that answer and invite an identical re-submission. */
+    it('refuses once the request has been rejected, keeping the rejection reason', async () => {
+      const o = buildOrder({
+        cancelRequest: pending({ status: 'مرفوض', rejectedReason: 'العميل أكد الطلب' }),
+      });
+      await expect(
+        serviceFor(o).withdrawCancelRequest('o1', 'u-reem', 'reem', false),
+      ).rejects.toThrow(BadRequestException);
+      expect(o.cancelRequest.rejectedReason).toBe('العميل أكد الطلب');
+    });
+
+    it('refuses when there is no request at all', async () => {
+      const o = buildOrder();
+      await expect(
+        serviceFor(o).withdrawCancelRequest('o1', 'u-reem', 'reem', false),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws NotFound for an unknown order', async () => {
+      const svc = Object.create(ShopifyServiceClass().prototype);
+      svc.shopifyOrderModel = { findById: jest.fn().mockResolvedValue(null) };
+      svc.logger = { log: jest.fn(), warn: jest.fn(), error: jest.fn() };
+      await expect(
+        svc.withdrawCancelRequest('nope', 'u-reem', 'reem', false),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

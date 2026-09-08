@@ -80,11 +80,45 @@ export interface MyWorkspaceResult {
   isCurrentPeriod: boolean;
   points: {
     earned: number;
+    /**
+     * NET of every manual adjustment in the period — a +100 bonus and a -40 penalty
+     * sum to 60 here.
+     *
+     * ⚠ This field alone cannot answer "was I given a bonus or docked?". It is kept
+     * because `total = earned + bonus` is built on it and several callers read it,
+     * but the employee-facing card reads `bonusTotal`/`penaltyTotal` and
+     * `adjustments` instead. Do not "simplify" those away into this one number.
+     */
     bonus: number;
+    /** Sum of the POSITIVE manual adjustments only. Always >= 0. */
+    bonusTotal: number;
+    /** Sum of the NEGATIVE manual adjustments, as a POSITIVE magnitude. Always >= 0. */
+    penaltyTotal: number;
     total: number;
     prevPeriodPoints: number;
     allTimePoints: number;
   };
+  /**
+   * The individual manual adjustments in the period, newest first — each with the
+   * reason the admin typed.
+   *
+   * ⚠ The reason is the entire point of this array. A manual adjustment the employee
+   * cannot see a reason for is indistinguishable from a scoring bug, and reads as one:
+   * points move with no explanation. `note` is written by `addManualBonus` from the
+   * admin's required `reason` field, so it is never empty on a row created through
+   * the normal path.
+   *
+   * Bounded by MY_ADJUSTMENTS_MAX — this feeds a dashboard card, not an audit report.
+   * `adjustmentsTruncated` says so rather than presenting a partial list as complete.
+   */
+  adjustments: Array<{
+    id: string;
+    points: number;
+    reason: string;
+    by: string;
+    createdAt: string;
+  }>;
+  adjustmentsTruncated: boolean;
   /** Lifetime count of orders routed to this employee. Labelled as all-time on the card. */
   assignedOrdersTotal: number;
   /** Same count bounded by the selected period — the one comparable to `points`. */
@@ -152,6 +186,11 @@ export interface MyWorkspaceResult {
  */
 const MY_ORDERS_MAX = 200;
 const MY_FOLLOWUPS_MAX = 100;
+/* عدد التعديلات اليدوية اللي بتترجع للموظف في الفترة. الكارت بيعرض آخر تلاتة
+   والباقي بيتفتح في قايمة — فالسقف ده وفير جداً لشهر عادي، وموجود عشان استعلام
+   غير محدود ما يبقاش سطح هجوم لو حد كتب ٥٠٠ تعديل. `adjustmentsTruncated`
+   بتقول إن في أكتر، بدل ما قايمة ناقصة تتعرض كإنها كاملة. */
+const MY_ADJUSTMENTS_MAX = 50;
 
 @Injectable()
 export class EmployeeScoringService implements OnModuleInit {
@@ -792,6 +831,8 @@ export class EmployeeScoringService implements OnModuleInit {
       deliveredInPeriod,
       myOrders,
       myFollowUps,
+      myAdjustments,
+      myAdjustmentsCount,
     ] = await Promise.all([
       this.logModel.aggregate([
         { $match: { employeeId: userId, ...inPeriod } },
@@ -800,6 +841,30 @@ export class EmployeeScoringService implements OnModuleInit {
             _id: null,
             earned: { $sum: { $cond: [{ $eq: ['$actionType', 'manual_bonus'] }, 0, '$points'] } },
             bonus: { $sum: { $cond: [{ $eq: ['$actionType', 'manual_bonus'] }, '$points', 0] } },
+            /* ⚠ المكافآت والخصومات بتتجمّع كل واحدة لوحدها، مش بالصافي.
+               +١٠٠ مكافأة و−٤٠ خصم في نفس الشهر بيدّوا `bonus: 60` — رقم
+               مالوش معنى: لا هو مكافأة ولا خصم، والموظف بيقرا إنه اداله ٦٠
+               وهو في الحقيقة اتخصم منه ٤٠ كمان. الاتنين لازم يتعرضوا. */
+            bonusTotal: {
+              $sum: {
+                $cond: [
+                  { $and: [{ $eq: ['$actionType', 'manual_bonus'] }, { $gt: ['$points', 0] }] },
+                  '$points',
+                  0,
+                ],
+              },
+            },
+            /* بالسالب هنا، وبيتحوّل لمقدار موجب تحت — الجمع لازم يفضل على
+               القيم الأصلية عشان `$sum` ما يحتاجش `$abs` لكل صف. */
+            penaltyTotal: {
+              $sum: {
+                $cond: [
+                  { $and: [{ $eq: ['$actionType', 'manual_bonus'] }, { $lt: ['$points', 0] }] },
+                  '$points',
+                  0,
+                ],
+              },
+            },
           },
         },
       ]),
@@ -841,6 +906,18 @@ export class EmployeeScoringService implements OnModuleInit {
         .limit(MY_FOLLOWUPS_MAX)
         .lean()
         .exec(),
+      /* التعديلات اليدوية بأسبابها — دي البيانات اللي بتخلّي حركة النقاط
+         مفهومة بدل ما تبقى رقم بيتغيّر لوحده.
+         ⚠ نفس `inPeriod` بتاع النقاط بالظبط: تعديل بره الفترة المعروضة مش
+         داخل في الإجمالي اللي فوقه، فعرضه جنبه بيخلّي الاتنين ما يجمعوش. */
+      this.logModel
+        .find({ employeeId: userId, actionType: 'manual_bonus', ...inPeriod })
+        .select('points note meta createdAt')
+        .sort({ createdAt: -1 })
+        .limit(MY_ADJUSTMENTS_MAX)
+        .lean()
+        .exec(),
+      this.logModel.countDocuments({ employeeId: userId, actionType: 'manual_bonus', ...inPeriod }),
     ]);
 
     // The shipment side of MY orders, joined on shopifyId → Transaction.shopifyOrderId.
@@ -861,6 +938,10 @@ export class EmployeeScoringService implements OnModuleInit {
 
     const earned = pointsAgg[0]?.earned || 0;
     const bonus = pointsAgg[0]?.bonus || 0;
+    const bonusTotal = pointsAgg[0]?.bonusTotal || 0;
+    /* بيترجع من الاستعلام سالب (مجموع القيم السالبة) — بيتقلب لمقدار موجب هنا
+       عشان الواجهة تعرضه كـ«−٤٠» بعلامتها الخاصة بدل «−−٤٠». */
+    const penaltyTotal = Math.abs(pointsAgg[0]?.penaltyTotal || 0);
 
     return {
       period: range.period,
@@ -871,10 +952,25 @@ export class EmployeeScoringService implements OnModuleInit {
       points: {
         earned,
         bonus,
+        bonusTotal,
+        penaltyTotal,
         total: earned + bonus,
         prevPeriodPoints: prevAgg[0]?.total || 0,
         allTimePoints: allTimeAgg[0]?.total || 0,
       },
+      adjustments: myAdjustments.map((a) => ({
+        id: String(a._id),
+        points: a.points || 0,
+        /* ⚠ `note` هو نص السبب اللي المدير كتبه (`addManualBonus` بتكتب
+           `note: reason`، و`reason` مطلوب في الـDTO). الافتراضي فاضي هنا مش
+           نص بديل: الواجهة هي اللي بتقرر تكتب إيه لو الصف قديم ومالوش سبب. */
+        reason: a.note || '',
+        by: String((a.meta as Record<string, unknown> | null)?.adjustedBy || ''),
+        createdAt: (a as { createdAt?: Date }).createdAt
+          ? new Date((a as { createdAt?: Date }).createdAt as Date).toISOString()
+          : '',
+      })),
+      adjustmentsTruncated: myAdjustmentsCount > MY_ADJUSTMENTS_MAX,
       assignedOrdersTotal: assignedTotal,
       assignedOrdersInPeriod: assignedInPeriod,
       deliveredInPeriod,

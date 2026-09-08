@@ -173,8 +173,75 @@ export class ShopifyController {
   // تعديل items أوردر
   @Patch('orders/:id/items')
   @UseGuards(JwtAuthGuard)
-  async updateItems(@Param('id') id: string, @Body('items') items: any[]) {
-    return this.shopifyService.updateOrderItems(id, items || []);
+  async updateItems(
+    @Param('id') id: string,
+    @Body('items') items: any[],
+    @Request() req: any,
+  ) {
+    const by = req.user?.name || req.user?.username || '';
+    return this.shopifyService.updateOrderItems(id, items || [], by);
+  }
+
+  /**
+   * تعديل الخصم اليدوي وأكواد الخصم على أوردر معلق.
+   *
+   * ⚠ لا يلمس `discount` (خصم شوبيفاي) إطلاقاً — الخصم اليدوي حقل منفصل، وهو ما
+   *   يجعل الويب هوك عاجزاً عن محوه. انظر التعليق على manualDiscount في الـ schema.
+   *
+   * الدور (`role`) يُمرَّر لأن بوابة OTP معتمدة على الدور لا على صلاحية —
+   * الأدمن معفى دائماً، تماماً كما في TransactionsService.create.
+   */
+  @Patch('orders/:id/discount')
+  @UseGuards(JwtAuthGuard)
+  async updateDiscount(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      manualDiscount?: number;
+      manualDiscountType?: string;
+      codesDiscount?: number;
+      discountCodeId?: string;
+      discountCode?: string;
+      highValueDiscountOtpId?: string;
+    },
+    @Request() req: any,
+  ) {
+    const by = req.user?.name || req.user?.username || '';
+    return this.shopifyService.updateOrderDiscount(id, body || {}, by, req.user?.role || '');
+  }
+
+  /**
+   * تمييز أوردر / إزالة التمييز.
+   *
+   * ⚠ بلا حارس صلاحيات فوق JWT عمداً: النجمة علامة بصرية لا أثر لها على أي رقم،
+   *   وأي مستخدم يراها يجوز له وضعها ورفعها.
+   */
+  @Patch('orders/:id/star')
+  @UseGuards(JwtAuthGuard)
+  async toggleStar(
+    @Param('id') id: string,
+    @Body('starred') starred: boolean,
+    @Request() req: any,
+  ) {
+    const by = req.user?.name || req.user?.username || '';
+    return this.shopifyService.toggleOrderStar(id, !!starred, by);
+  }
+
+  /**
+   * إضافة تعليق على أوردر.
+   *
+   * ⚠ متاح في كل الحالات — قبل التأكيد وبعده وحتى على أوردر ملغى. التعليق لا يغيّر
+   *   قيمة ولا مخزوناً، ومنعه بعد التأكيد يلغي فائدته الأساسية (التواصل على أوردر شغّال).
+   * ⚠ لا يسجّل شيئاً في editHistory — نفس قاعدة TransactionsService.addComments.
+   */
+  @Post('orders/:id/comments')
+  @UseGuards(JwtAuthGuard)
+  async addComment(
+    @Param('id') id: string,
+    @Body('comments') comments: any[],
+    @Request() req: any,
+  ) {
+    return this.shopifyService.updateOrderComments(id, comments || []);
   }
 
   // رفض أوردر
@@ -262,6 +329,25 @@ export class ShopifyController {
   async approveCancelRequest(@Param('id') id: string, @Request() req: any) {
     const by = req.user?.name || req.user?.username || 'admin';
     return this.shopifyService.approveCancelRequest(id, by);
+  }
+
+  /**
+   * تراجع مقدّم الطلب عن طلبه قبل بتّ المدير فيه.
+   *
+   * ⚠ الصلاحية هي `shopify-cancel-request` نفسها — من يملك تقديم الطلب يملك سحبه.
+   *   الخدمة تتحقق فوق ذلك من أن الساحب هو صاحب الطلب فعلاً (أو أدمن)، فحيازة
+   *   الصلاحية لا تكفي لسحب طلب زميل.
+   */
+  @Patch('orders/:id/withdraw-cancel')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
+  @RequirePerms('shopify-cancel-request')
+  async withdrawCancelRequest(@Param('id') id: string, @Request() req: any) {
+    return this.shopifyService.withdrawCancelRequest(
+      id,
+      req.user?.userId || req.user?.sub || '',
+      req.user?.username || '',
+      req.user?.role === 'admin',
+    );
   }
 
   @Patch('orders/:id/reject-cancel')

@@ -229,6 +229,92 @@ export class ShopifyOrder {
 
   @Prop({ default: '' })
   depositDetectedAt: string; // ISO
+
+  /**
+   * خصم يدوي إضافي يضيفه الموظف — منفصل تماماً عن `discount` (خصم شوبيفاي).
+   *
+   * ⚠ الفصل مقصود وهو ما يجعل هذا آمناً: `handleOrderUpdate` يكتب فوق `discount`
+   *   في كل مرة يصل فيها orders/updated، فلو كان الخصم اليدوي يُخزَّن في نفس الحقل
+   *   لاختفى بصمت عند أول تحديث من شوبيفاي — وهو بالضبط سبب استبعاد تعديل العنوان.
+   *   الويب هوك لا يلمس هذه الحقول إطلاقاً.
+   *
+   * نفس تقسيم `Transaction.discount` / `Transaction.manualDiscount`.
+   */
+  @Prop({ default: 0 })
+  manualDiscount: number;
+
+  /**
+   * 'percent' | 'fixed'. النسبة تُحوَّل إلى مبلغ ثابت وقت التطبيق (مثل applyDiscount في
+   * سجل المعاملات)، فهذا الحقل يسجّل ما اختاره الموظف لا طريقة حساب مستمرة.
+   */
+  @Prop({ default: 'fixed' })
+  manualDiscountType: string;
+
+  /** معرّفات أكواد الخصم المطبَّقة، مفصولة بفاصلة — نفس ترميز Transaction.discountCodeId. */
+  @Prop({ default: '' })
+  discountCodeId: string;
+
+  /**
+   * قيمة خصم الأكواد المطبَّقة (بالجنيه). محسوبة وقت التطبيق من نوع/قيمة كل كود.
+   * تُخزَّن مستقلة عن `discount` لنفس سبب `manualDiscount` أعلاه.
+   */
+  @Prop({ default: 0 })
+  codesDiscount: number;
+
+  /** معرّف OTP الموافقة على الخصم العالي، للتدقيق. */
+  @Prop({ default: '' })
+  highValueDiscountOtpId: string;
+
+  /**
+   * تعليقات الموظفين على الأوردر. نفس شكل `Transaction.comments` حرفياً، لأن
+   * `approveOrder` يرحّلها إلى الحركة عند التأكيد فتبقى مقروءة بنفس العارض.
+   *
+   * ⚠ تُكتب عبر endpoint منفصل لا يسجّل تعديلاً — التعليق ليس تغييراً في قيمة
+   *   الأوردر، ونفس قاعدة TransactionsService.addComments.
+   */
+  /**
+   * تمييز يدوي للأوردر — نجمة بجانب رقمه.
+   *
+   * ⚠ لا يحمل أي معنى في المنطق: لا يغيّر حالة ولا أولوية ولا يدخل في أي تقرير.
+   *   هو علامة بصرية يضعها الموظف ليعود إليها، ولذلك يجوز لأي أحد وضعها ورفعها —
+   *   لا صلاحية ولا موافقة. جعله حقلاً ذا معنى لاحقاً يحتاج قراراً منفصلاً.
+   */
+  @Prop({ default: false })
+  starred: boolean;
+
+  /** من وضع النجمة آخر مرة — للعرض عند المرور فوقها فقط. */
+  @Prop({ default: '' })
+  starredBy: string;
+
+  @Prop({ default: '' })
+  starredAt: string;
+
+  @Prop({ type: [Object], default: [] })
+  comments: Array<{
+    id: number;
+    text: string;
+    type: string;
+    employee: string;
+    timestamp: string;
+    createdAt: string;
+  }>;
+
+  /**
+   * سجل التعديلات. نفس شكل `Transaction.editHistory` ليُعرض بنفس منطق العارض.
+   *
+   * ⚠ `type: [Object]` إلزامي — @Prop بمصفوفة كائنات بدون type صريح يرمي
+   *   CannotDetermineTypeError وقت تحميل الموديول فيسقط الـ API كله، و`nest build`
+   *   لا يمسك ذلك. انظر قاعدة الـ @Prop في CLAUDE.md.
+   */
+  @Prop({ type: [Object], default: [] })
+  editHistory: Array<{
+    editedAt: string;
+    editedBy: string;
+    action: string;
+    before: Record<string, unknown>;
+    after: Record<string, unknown>;
+    changes: string[];
+  }>;
 }
 
 export const ShopifyOrderSchema = SchemaFactory.createForClass(ShopifyOrder);

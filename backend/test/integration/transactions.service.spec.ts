@@ -1940,4 +1940,111 @@ describe('TransactionsService (integration with mocks)', () => {
     });
   });
 
+
+  /* ══════════════════════════════════════════════════════════════════════
+     setPickupPreparing — a group's identity belongs to the group
+     ══════════════════════════════════════════════════════════════════════
+     The prep group's note / shipCo / createdAt / createdBy are denormalised
+     onto every member row, and the Pick-Up board reads them off the first
+     member it finds. So an order JOINING a group must inherit them, never
+     overwrite them.
+
+     This is what the Shopify confirm dialog's "add to this card" option does
+     on every order it sends: it has no note to pass and a fresh timestamp, so
+     writing the caller's meta unconditionally would rename an existing card to
+     «» and reset its creation time to now. */
+  describe('setPickupPreparing — joining a group must not rewrite its identity', () => {
+    const GROUP_META = {
+      prepNote: 'مجموعة الأحمدي — شحن سريع',
+      prepShipCo: 'Bosta',
+      prepCreatedAt: '2026-09-08T09:00:00.000Z',
+      prepCreatedBy: 'سارة',
+    };
+
+    /** Make findOne(...).select(...).lean() resolve to `doc`. */
+    const mockExistingMember = (doc: any) => {
+      txModel.findOne.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue(doc),
+        }),
+      });
+    };
+
+    beforeEach(() => {
+      txModel.updateMany = jest.fn().mockResolvedValue({ modifiedCount: 1 });
+    });
+
+    /** The $set the service handed to Mongo. */
+    const writtenSet = () => txModel.updateMany.mock.calls[0][1].$set;
+
+    const ID_A = '507f1f77bcf86cd799439011';
+    const ID_B = '507f1f77bcf86cd799439012';
+
+    it('inherits the existing group note/shipCo/createdAt instead of blanking them', async () => {
+      mockExistingMember(GROUP_META);
+
+      // Exactly what the confirm dialog sends when adding to an existing card:
+      // a ref and nothing else.
+      await service.setPickupPreparing([ID_A], 'أحمد', '104-08SEP', {
+        createdAt: '2026-09-08T17:30:00.000Z',
+      });
+
+      const set = writtenSet();
+      expect(set.prepNote).toBe(GROUP_META.prepNote);
+      expect(set.prepShipCo).toBe(GROUP_META.prepShipCo);
+      // The card keeps the time it was actually opened, not the moment the
+      // newest order joined it.
+      expect(set.prepCreatedAt).toBe(GROUP_META.prepCreatedAt);
+      expect(set.prepCreatedBy).toBe(GROUP_META.prepCreatedBy);
+      // And the order does land in that group, in Preparing.
+      expect(set.pickupRef).toBe('104-08SEP');
+      expect(set.pickupStatus).toBe('Preparing');
+    });
+
+    it('uses the caller meta when the group does not exist yet', async () => {
+      mockExistingMember(null);
+
+      await service.setPickupPreparing([ID_A, ID_B], 'أحمد', '777-08SEP', {
+        note: 'دفعة المساء',
+        shipCo: 'Mylerz',
+        createdAt: '2026-09-08T17:30:00.000Z',
+      });
+
+      const set = writtenSet();
+      expect(set.prepNote).toBe('دفعة المساء');
+      expect(set.prepShipCo).toBe('Mylerz');
+      expect(set.prepCreatedAt).toBe('2026-09-08T17:30:00.000Z');
+      expect(set.prepCreatedBy).toBe('أحمد');
+    });
+
+    it('only ever pulls identity from a member still in Preparing', async () => {
+      mockExistingMember(GROUP_META);
+      await service.setPickupPreparing([ID_A], 'أحمد', '104-08SEP', {});
+
+      // A group already moved to Ready/Shipped is not the same batch: its rows
+      // must not be treated as the identity of a group being filled now.
+      expect(txModel.findOne).toHaveBeenCalledWith({
+        pickupRef: '104-08SEP',
+        pickupStatus: 'Preparing',
+      });
+    });
+
+    it('never touches an order that is not a live pending sale', async () => {
+      mockExistingMember(null);
+      await service.setPickupPreparing([ID_A], 'أحمد', '104-08SEP', {});
+
+      // Guards the sale itself: confirming from Shopify must not drag a
+      // cancelled row, a purchase, or an already-shipped order into a batch.
+      const filter = txModel.updateMany.mock.calls[0][0];
+      expect(filter.type).toBe('مبيعات');
+      expect(filter.cancelled).toEqual({ $ne: true });
+      expect(filter.pickupStatus).toEqual({ $in: ['Pending', null] });
+    });
+
+    it('writes nothing when every id is invalid', async () => {
+      await service.setPickupPreparing(['not-an-id'], 'أحمد', '104-08SEP', {});
+      expect(txModel.updateMany).not.toHaveBeenCalled();
+    });
+  });
+
 });

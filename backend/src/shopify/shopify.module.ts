@@ -27,6 +27,7 @@ import { UsersModule } from '../users/users.module';
 import { InventoryMovementsModule } from '../inventory-movements/inventory-movements.module';
 import { TransactionsModule } from '../transactions/transactions.module';
 import { SettingsModule } from '../settings/settings.module';
+import { DiscountOtpModule } from '../discount-otp/discount-otp.module';
 
 @Module({
   imports: [
@@ -44,6 +45,9 @@ import { SettingsModule } from '../settings/settings.module';
     // approveOrder reads settings.defaultCarrierCode to pre-resolve the shipping carrier.
     // Not forwardRef'd: SettingsModule does not depend on ShopifyModule, so this adds no cycle.
     SettingsModule,
+    // بوابة OTP للخصم العالي على الأوردر — نفس الحد ونفس المسار المستخدمين في
+    // سجل المعاملات. لا يضيف دورة: DiscountOtpModule لا يعتمد على ShopifyModule.
+    DiscountOtpModule,
     // approveOrder writes the transaction directly via txModel, bypassing
     // TransactionsService.create() — so it must replicate that method's inventory
     // movement logging itself. TransactionsService supplies the pre-create stock

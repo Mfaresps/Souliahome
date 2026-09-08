@@ -4941,7 +4941,19 @@ export class TransactionsService {
     return `${rnd}-${day}${month}`;
   }
 
-  /** Move orders into Preparing state (entering a prep group) */
+  /**
+   * Move orders into Preparing state (entering a prep group).
+   *
+   * ⚠ The group's identity (note / shipCo / createdAt / createdBy) is stored on
+   * every member row, so it is written ONLY when this call opens the group. An
+   * order JOINING an existing group inherits what that group already carries.
+   * Writing the caller's meta unconditionally is what the Shopify confirm
+   * dialog's "add to this card" path would otherwise do on every order: a group
+   * created as «مجموعة الأحمدي — شحن سريع» at 09:00 would lose its note and
+   * report itself as created at the moment the newest order joined, because
+   * that caller has no note to send and a fresh timestamp. The board reads
+   * these fields off the first member row, so the whole card would be renamed.
+   */
   async setPickupPreparing(
     ids: string[],
     by: string,
@@ -4951,16 +4963,36 @@ export class TransactionsService {
     const validIds = ids.filter(id => isValidObjectId(id));
     if (!validIds.length) return { updated: 0 };
     const now = new Date().toISOString().slice(0, 10);
+
+    // An existing member is the authority on the group's identity.
+    const existing = prepRef
+      ? await this.transactionModel
+          .findOne({ pickupRef: prepRef, pickupStatus: 'Preparing' })
+          .select('prepNote prepShipCo prepCreatedAt prepCreatedBy')
+          .lean()
+      : null;
+
+    const groupMeta = existing
+      ? {
+          prepNote:      (existing as any).prepNote      || '',
+          prepShipCo:    (existing as any).prepShipCo    || '',
+          prepCreatedAt: (existing as any).prepCreatedAt || now,
+          prepCreatedBy: (existing as any).prepCreatedBy || by,
+        }
+      : {
+          prepNote:      meta?.note      || '',
+          prepShipCo:    meta?.shipCo    || '',
+          prepCreatedAt: meta?.createdAt || now,
+          prepCreatedBy: meta?.createdBy || by,
+        };
+
     const result = await this.transactionModel.updateMany(
       { _id: { $in: validIds }, type: 'مبيعات', cancelled: { $ne: true }, pickupStatus: { $in: ['Pending', null] } },
       {
         $set: {
           pickupStatus: 'Preparing',
           pickupRef: prepRef,
-          prepNote:      meta?.note      || '',
-          prepShipCo:    meta?.shipCo    || '',
-          prepCreatedAt: meta?.createdAt || now,
-          prepCreatedBy: meta?.createdBy || by,
+          ...groupMeta,
         },
         $push: { pickupHistory: { action: 'preparing', date: now, by, pickupRef: prepRef } },
       },

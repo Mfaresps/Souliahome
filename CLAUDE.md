@@ -149,6 +149,857 @@ entirely on a transaction that carries none of them.
 
 ---
 
+## Shopify Table — Action Column, Discount Badge, Header Type, Tag Tone, Items Popover (Sep 8, 2026)
+
+Four defects, each measured in a real browser against the shipped stylesheet before
+anything was written.
+
+### الإجراء overflowed its own column at every viewport but one
+The cell is a flex row of three controls. Measured natural widths: the comments slot
+**44px** (a FIXED reservation, so rows with and without a count stay aligned), «تأكيد
+الطلب» **92.5px**, the ⋮ toggle **30px**, plus two 5px gaps = **176.5px** — inside a
+column declared **148px**. Overflow measured at +11.5px (1600), +19.6 (1440), +27.7
+(1280), +32.4 (1100). The button sat over its neighbour, which is what the screenshot
+showed.
+
+`SP_COL_W.action` and the `.sp-c-action` CSS width both go to **178**. ⚠ **They must
+move together** — the JS map re-totals the visible columns to set the table's
+min-width, so a width changed on one side only mis-sizes the whole table.
+
+⚠ **Widening alone is not the fix.** `--sp-cw` compresses every column
+proportionally, so the cell is routinely narrower than its declared width. The three
+controls are therefore explicitly ranked: the ⋮ and the comments button **never
+shrink** (an icon control shrunk is an untappable target), and «تأكيد الطلب» is the
+one that yields — its label ellipsises while **its icon never does**. A check mark
+reduced to a sliver is not a smaller icon, it is a different mark, and this is the
+control that commits the order.
+
+`total` went 88 → **94** for the same reason, found by the same sweep: at the 0.60
+scale a 1100px viewport produces, `EGP 2,450` was clipping its own value by ~1px.
+
+### The header carried Latin typography over Arabic words
+`thead th` set `text-transform:uppercase` **and** `letter-spacing:.04em` on every
+header, nearly all of which are Arabic.
+
+⚠ **Arabic is unicameral** — `uppercase` does nothing to «الإجمالي». But Arabic is
+also **cursive**, and letter-spacing pries the joins apart, so «الإجراء» rendered as
+loosened glyphs rather than a word. Measured: **0.38px of tracking on every Arabic
+header**. The size was also 9.52px — below where the dots that *distinguish* Arabic
+letters (ب/ت/ث) resolve.
+
+The base rule now carries no case transform and no tracking, at .74rem. **«Tags» is
+the only genuinely Latin header**, so it opts back in via `.sp-th-latin` rather than
+the treatment being applied to everything.
+
+⚠ **The header font scales with `--sp-cw`**, exactly as the body font already did. A
+fixed header size inside a proportionally-compressing column ellipsises — and a
+header that has ellipsised no longer names its column, which is its only job.
+Verified: 5/5 viewports with zero clipped headers.
+
+⚠ `spColAssigned` is **«الموظف» / «Staff»**, not «الموظف المسؤول» / «Assigned To».
+The 104px column compresses to ~62px and the long label clipped at every width below
+1920px. The content is a short name (Reem/Gannh), so widening the column for the
+*label* alone would waste space on every row.
+
+### Tag tone — three tones, and only two of them coloured
+Every tag rendered as the same muted grey pill, so «confirmed» — a state the whole
+page is organised around — was typographically identical to any other label the store
+happens to attach. `_spTagTone(tag)` derives a tone from the tag TEXT.
+
+⚠ **Display-only, derived, never stored.** Shopify tags are free text written by
+staff and by apps, so an unrecognised tag must keep working exactly as before: the
+default branch is the existing neutral pill, **not** an error state. 15 cases lock
+this, including `VIP`, `soulia`, the empty string and `null` all staying neutral.
+
+⚠ **Matched on the text lowercased and with emoji stripped** — «✅ 🥇 تم التأكيد» and
+«confirmed» are the same meaning in this store.
+
+⚠ **Only three tones, two coloured.** Colouring every tag would restate the
+categorical-palette mistake the vault strip documents: with every pill coloured, none
+of them is a signal.
+
+⚠ **Pre-existing dark-mode defect fixed here**: `.sp-tag` inks with
+`var(--text-muted)` and had **no dark-mode override**, so it painted rgb(30,41,59) —
+a near-black — on the rgb(30,40,32) card: **1.34:1**, against the 4.5:1 floor. An
+untoned tag was effectively invisible. Confirmed against the unmodified file (same
+two colours), so it is not a regression from the tone work. Now 4.95:1.
+
+### The items popover closed when you scrolled it
+`.mov-items-popover` is `max-height:340px;overflow-y:auto`, so a long order scrolls
+inside it — and `_closeMovItemsPopover` was bound **directly** as a capture-phase
+`scroll` listener. That inner scroll therefore closed the very panel being read: **an
+order with enough items to need the scrollbar was the one order whose list could not
+be read to the end.**
+
+`_movItemsPopoverScroll` guards on the event's origin (`pop.contains(e.target)`),
+exactly as `_movItemsPopoverOutside` already guarded mousedown. Page scroll still
+closes it — the anchor moves away.
+
+⚠ **Both registration sites and the removal must use the same reference.** There are
+two `addEventListener` sites (Movements + Shopify) and one `removeEventListener`; a
+mismatch leaks the listener instead of removing it.
+
+### الأصناف popover — the code is a chip, and stock is stated
+The code rendered as «كود CUS-K-MB» — a label word plus a value in ordinary muted
+prose, so the code (the part actually copied, searched and matched against the
+warehouse) had no more standing than the word in front of it. It is a bordered
+monospace chip now.
+
+⚠ **`unicode-bidi:isolate` on the code is required, not decoration** — it is a
+Latin+dash run inside an Arabic line and its dashes reorder without isolation. Same
+rule as the vault journal and the printed invoice. **Never "fix" a mis-rendered code
+by reordering it.**
+
+**Available stock is now stated** («المتاح 12»), which is what the picker used to
+leave the screen to find out. ⚠ **This is NOT the green "in stock" tick round 1
+rejected**, and the distinction is the point: that was a status BADGE repeated on
+every row, which buries the row that blocks the order. This is the available NUMBER,
+stated quietly beside the code — and it is shown **only when the inventory index is
+ready and the item is linked**, or every item would read «المتاح 0» because the
+stock had not loaded. The red/amber warning lines still carry every actual problem.
+
+⚠ **`.mip-code` is shared with the Movements popover**, so both renderers emit the
+chip — changing one alone leaves the other with an unframed code.
+
+### عمود الخصم — the code became a mark, and the column gave back 40px
+
+The column was **124px** but the badge that usually renders in it is «−6%». Measured
+badge widths against that 124px:
+
+| what the row has | badge | column unused |
+|---|---|---|
+| «−6%» | 43.2px | **80.8px** |
+| «−38%» | 48.5px | 75.5px |
+| «−EGP 190» | 66.9px | 57.1px |
+| «−8% SAVE10» | 85.9px | 38.1px |
+| «—» (no discount) | 12.7px | **111.3px** |
+
+So the column was mostly empty on every row, and it was taking that width from
+twelve other columns that `--sp-cw` compresses on any screen below ~1900px.
+
+**The real problem is that the code is a variable-length string in a fixed narrow
+column.** No width fits `SAVE10`, `BOWDINING` and `WELCOMEBACK2026`. Two fixes were
+built and measured before the third; both are recorded because both look reasonable
+until rendered:
+
+⚠ **Wrapping the code to a second line is wrong.** `.disc-badge` is a capsule —
+`border-radius:24px` with `overflow:hidden` — and a capsule reads as one object only
+on one line. Dropped to a second line its rounded ends split into two half-pills and
+the code pill (a solid dark fill) became a detached block hanging under the amount
+and outside the cell. It also pushed the row 44px → **45px**, breaking the table's
+rhythm for exactly the rows that had a code.
+
+⚠ **Truncating the code is worse.** «BOWDINING» clipped to «BOWDIN…» reads as a
+*different* code, and identifying which code was applied is the pill's whole purpose.
+
+**What shipped:** the cell states the *fact* that a code was used, at a width
+identical on every row — the code pill becomes a fixed-width tag glyph — and the
+code's **text** lives in the badge's `title`/`aria-label` and in the detail panel,
+which is where a reader who wants the identity is going anyway.
+
+Measured after: `SAVE10`, `BOWDINING` and `WELCOMEBACK2026` all render at **64.8px**,
+one line, inside the new **84px** column. The column gave back **40px** to the rest
+of the table.
+
+⚠ **Applied to `#mov-table` as well as the Shopify table.** سجل المعاملات has the same
+variable-length codes in a 64px column; leaving it on the old rules would make the two
+tables state the same fact in two different shapes — the drift this shared component
+exists to end.
+
+⚠ **The glyph is painted as a CSS `mask` in `currentColor`**, not as an `<img>` or an
+inline SVG fill, so it follows the pill's ink in light and dark mode without a second
+copy of the artwork and without a hardcoded fill that would go invisible on one theme.
+
+⚠ **A multi-code row must stay distinguishable from a single-code one** — they were
+two visibly different pills before. The count follows the glyph, fed by `data-n` on
+`.db-multi`. The code *names* stay in the markup for the non-table contexts that
+render them in full.
+
+⚠ **The badge scales with `--sp-cw`.** It is a fixed-size object, so unlike the text
+columns it did not compress with the table — measured 54px inside a 51.8px cell at the
+0.616 floor, i.e. painting onto الإجمالي next door. Its padding, its figure's
+font-size and the glyph all now follow the same `clamp(.86, var(--sp-cw,1), 1)` curve
+the table-wide font rule uses.
+
+⚠ `SP_COL_W.discount` and the `.sp-c-disc` CSS width must move together — 84 in both.
+
+### Verification
+- **61 browser assertions** over the SHIPPED code (Chrome, functions extracted from
+  `index.html`, never copied): the scroll guard, the popover's code chip / stock line
+  / warnings / 25-item scrolling, all three tag tones with **real composited-pixel**
+  contrast in light AND dark, header clipping + tracking across 5 viewports, and the discount badge in BOTH
+  tables (constant width whatever the code length, never two lines, code text still
+  reachable in title/aria-label).
+  ⚠ Contrast is measured from a **screenshot pixel**, not from the rgba() value — the
+  pill fills are translucent, so the raw colour is not what the eye sees.
+- **11 viewports swept, 2560px → 960px**: zero overflow across all 12 columns, zero
+  document horizontal overflow, row height a constant 44px, `--sp-cw` 1.000 → 0.600.
+- **JS/CSS width agreement checked mechanically** — all 15 `SP_COL_W` entries match
+  their `.sp-c-*` rule.
+- ⚠ **Revert-checked**: restoring the direct `_closeMovItemsPopover` scroll binding
+  fails the inner-scroll case.
+
+### Still open
+- **The mobile cards show no tag tone** — `_spTagTone` is wired into the table
+  renderer only, so the two views state the same tags with different emphasis.
+- **The tone lists are Arabic/English keyword sets**, not a managed vocabulary. A
+  store that invents a new confirmation wording gets a neutral pill until the list
+  is extended — which is the safe direction, but it is a hand-kept list.
+
+---
+
+## Shopify Orders — Operational Filters + Shared Columns (Sep 8, 2026)
+
+Two changes to صفحة شوبيفاي: the filter surface was replaced, and three columns
+were folded into the components سجل المعاملات already uses.
+
+### The old filters answered a question nobody was asking
+The page carried **three** overlapping summaries: a four-card KPI strip (اليوم ·
+أوردر صحيح / ملغي / الإجمالي / يحتاج متابعة), five status chips (الكل / يحتاج
+تواصل / جاهز للتسجيل / متابعة مع العميل / طلب غير مؤكد), and a «جاهز للتسجيل /
+يحتاج متابعة» priority row above the table. All three described **where an order
+sat in the confirmation flow** — which the smart-status column on every row
+already states — while the questions actually asked of this page («مين دفع؟ مين
+لسه؟ إيه اللي واقف على المخزن؟») had no control at all.
+
+Replaced by **`SP_FILTERS`** — four cards, each a toggle that also states its own
+numbers:
+
+| key | الفلتر | Lead KPI |
+|---|---|---|
+| `deposit-paid` | مدفوع ديبوزت | المُحصَّل — cash already in hand |
+| `no-deposit` | بدون عربون | قيمة معرّضة + الأقدم |
+| `cancelled-orders` | ملغية | قيمة مفقودة + مستحق ردّه |
+| `stock-blocked` | متعطل على المخزون | قيمة موقوفة + وحدات ناقصة / غير مربوط |
+
+⚠ **`key` is the stored/compared value** (`_shopifyStatusFilter`). Renaming one
+silently disables that filter — it matches no definition and `test()` is never
+reached. Same code-vs-label split as `CANCEL_REASONS` / `CARRIERS`.
+
+### The counting order is load-bearing
+`renderShopifyOrders` runs **tab → search → date → draw cards → apply filter**.
+The cards count the list *before* the active filter. Counting them after would
+make every inactive card read 0 the moment one filter is on, so the cards would
+stop being a map of the work and become an echo of the click just made. A test
+locks this; reverting it fails.
+
+⚠ **An unknown filter key is CLEARED, not applied.** A renamed entry (or a value
+from an older build) would otherwise filter the list to zero, which reads as «لا
+توجد أوردرات» rather than «this filter is broken».
+
+⚠ **`_spStockBlock` returns null while `inventoryCache` is empty.** Without that
+guard every order reads as stock-blocked because nothing resolves — measured: 5
+of 5 falsely flagged. Same class as the Bosta tracking-number echo check.
+
+⚠ **The inventory index is built once per render** (`_spCtx.inv`) and handed to
+all four cards; each card's `test()` and its KPIs both need it, so building it
+per card walks `inventoryCache` 8× per render.
+
+⚠ **`_spLookupInvItem` mirrors `_spValidateBulkSelection`** (code, then `_id`,
+then lowercased name). If the two disagree, an order reads as stock-blocked here
+and sends fine — or reads clean and is refused at send.
+
+Deposit detection delegates to **`_spDetectDepositAndMethod`**, the same helper
+the deposit chips and the bulk-send use. A second copy would drift and the filter
+would disagree with what the send books into the vault.
+
+### الأصناف / الشحن / الخصم now use the Movements components
+Each column was its own inline template with its own type scale and its own idea
+of an empty cell, so the same three facts had to be re-learnt between the two
+tables. They now go through `discBadgeHtml()`, `.mov-items-btn` + a popover, and
+`.mov-ship-cell`.
+
+⚠ **`_spDiscountBase` reads the stored `itemsTotal`**, exactly as
+`_movDiscountBadge` reads `tx.itemsTotal`. Summing the line items instead is
+wrong — a Shopify line carries the unit price, and an order whose lines do not
+add up to the order value gets a base far below the truth: a 100 EGP discount on
+a 500 EGP order computed against a 100 EGP base prints **«−100%»**, i.e. "the
+whole order was free". Caught by a test; reverting it fails.
+
+⚠ **The badge is rendered `size:'sm'` and WITHOUT a `txId`.** `showDiscountDetail`
+resolves ids against `transactions`, and an unconfirmed Shopify order is not in
+that array — the panel would open empty. `showSpDiscountDetail` resolves against
+`_shopifyOrders` and **hands off to the full Movements panel once the order has
+become a transaction**, so the richer panel (code usage, audit log) is never
+downgraded.
+
+⚠ **The popover CONTENT is deliberately not shared.** `showSpItemsPopover` reuses
+the Movements popover's markup, CSS and its single set of teardown listeners, but
+renders its own per-item status line — reusing `showMovItemsPopover` directly
+would look identical and silently drop every stock / SKU-mismatch warning, which
+is the entire reason this column gets opened before confirming. There is
+deliberately **no "in stock" line**: a green tick on every row buries the one row
+that blocks the order.
+
+⚠ **A Shopify order has no `actualShipCost`**, so the loss sub-line never appears.
+That is correct — the customer already paid this figure; do not invent a tariff
+to compare against.
+
+### Proportional shrink clips shared components
+`_syncSpTableMinWidth` deliberately lets columns shrink rather than scroll
+sideways, so at ~1440px the discount cell computes to ~87px against the 124px it
+asks for. Inside the badge both pills then shrank and the **code** lost —
+«SAVE10» rendered as «SAVE…», and half a code reads as a different code. Fixed
+with rules **scoped to `#shopify-orders-table-wrap`** (the shared `.disc-badge`
+rules must not move — `#mov-table` depends on them): the amount pill yields
+first, the code pill keeps its intrinsic width. The same shrink spilled the items
+button over its column edge at 1024px; it now ellipsises its count while the
+chevron and warning icon never shrink.
+
+⚠ **`SP_COL_W` must be edited with the CSS widths** (items 82→104, discount
+74→124, and discount moved from the shared `.sp-c-num` to its own `.sp-c-disc`).
+That JS map re-totals the visible columns to set the table's min-width.
+
+⚠ **`fmtJ` does not round** — the average printed «22,033.333», three decimals of
+a currency whose smallest unit is the piastre, in a 74px slot. `Math.round` at
+the call site.
+
+### فلتر النجمة — مستقل عمداً، لا كارت خامس
+`o.starred` كان موجوداً ويُرسم في عمود المرجع، لكن لم تكن هناك طريقة لعرض المميّز
+وحده. أُضيف كـ**شريحة مستقلة** (`_spStarOnly` / `toggleSpStarFilter`) لا كعنصر في
+`SP_FILTERS`.
+
+⚠ **الفرق ليس شكلياً.** الكروت الأربعة تصف حالة يستنتجها النظام من البيانات، والنجمة
+علامة وضعها موظف بيده. ولو كانت كارتاً خامساً لأقصت غيرها — «مدفوع ديبوزت» **أو**
+«مميّز» — بينما السؤال الحقيقي غالباً «المميّزة **من بين** اللي لسه ما دفعتش». فهي
+مفتاح يتقاطع مع أي فلتر نشط، وحالته في متغيّر مستقل (دمجه في `_shopifyStatusFilter`
+يعني أن اختيار كارت يمسح النجمة والعكس).
+
+⚠ **يُطبَّق بعد رسم الكروت**، فتظل أعدادها معبّرة عن النطاق كاملاً — نفس قاعدة ترتيب
+العدّ أعلاه. و`switchShopifyTab` يصفّره مع الفلتر.
+
+### نافذة فلتر التاريخ كانت مبتورة
+كانت تظهر ناقصة من الأسفل: صفّا الأزرار يظهران ثم يُقطع حقلا التاريخ و«إلى».
+
+السبب **سببان**، وكلاهما يجعل الحل السابق بلا أثر:
+1. `#shopify-orders-table-wrap` يحمل `overflow:hidden` (مطلوب — الجدول يُقصّ عند
+   زواياه المدوّرة)، فأي منبثق بداخله يُقصّ معه.
+2. ⚠ `.page` تحمل `animation:pageEnter` التي تُحرّك `transform`، و**أي سلف بـtransform
+   يصير كتلة احتواء لعناصر `position:fixed`** — فتُنسب إحداثياتها إليه لا إلى نافذة
+   المتصفح.
+
+لذلك كان تحويل `position` إلى `fixed` بعد الرسم — وهو ما كان الكود يفعله — عاجزاً:
+العنصر ظلّ داخل المُقصّ وداخل كتلة الاحتواء. الحل هو **نقل العنصر إلى `<body>`** عند
+الفتح وإعادته عند الإغلاق، بنفس نمط `toggleSpColsMenu`.
+
+⚠ **يُنقل ولا يُستنسخ.** كل الدوال تقرأ `#shopify-date-from` / `#shopify-date-to`
+بالـid؛ النسخة تعني حقلين بنفس الـid فيقرأ نصف الكود النسخة الخطأ.
+
+⚠ **المستمع `mousedown` في مرحلة الالتقاط** لا `click`: أزرار الفترة تعيد الرسم، وقد
+يُزال الهدف قبل وصول `click` فيُقرأ كنقر خارج النافذة وتُغلق فوراً.
+
+النافذة الآن تنقلب لأعلى إذا ضاقت المساحة تحت الزر، وتُقيَّد داخل الشاشة بهامش 8px،
+وتُغلق مع تمرير الزر خارج الشاشة، والزر يبقى مضيئاً بـ`.is-pop-open` (لم تعد النافذة
+ابنته فلا توجد علاقة CSS تصف حالته).
+
+### Removed, not left unreachable
+The status chips, their mobile quick-buttons and dropdown, the KPI strip, the
+priority row, the `_toggleShopifyItems` body-portal, and **13 translation keys**
+that no caller could reach. `.sp-filter-dot` survives — `_shopifyStatusBadge`
+still uses it.
+
+### Verification
+- **56 browser assertions** over the SHIPPED page (Chrome, real
+  `renderShopifyOrders`): card counts, all 12 KPI figures, toggle/clear, the
+  unfiltered-base counting rule, unknown-key self-heal, all three columns, the
+  popover, the discount panel's two paths, English, and the two empty states.
+  ⚠ **Revert-checked**: the `itemsTotal` base, the counting order, the inventory
+  guard and the unknown-key clear each fail a test when reverted.
+- **54 layout assertions** across 8 viewports (1920→380px): no document overflow,
+  no card or cell spill, all KPI values render, legible type, plus dark-mode
+  contrast ≥4.5:1 and reduced motion.
+- **34 assertions** for the star filter and the date popover: the intersection with
+  the card filters, that card counts keep describing the full scope, the empty and
+  English states, and — for the popover — that it reaches `<body>`, escapes both the
+  clipper and the transform containing block, is never duplicated across
+  open/close, still applies a range from the portal, and flips up when there is no
+  room below. ⚠ **Revert-checked**: removing the `appendChild(pop)` fails 3.
+- Backend suite **1032/1033** — the single failure is the pre-existing
+  `staff-dashboard.spec.ts` case, confirmed to fail identically with these
+  changes stashed.
+
+### Still open
+- **The mobile cards do not show discount or shipping**, so the two views state
+  different facts about the same order.
+- **The date filter still scopes only the table**, not a period label anywhere —
+  the old KPI strip was the only thing that named the active period.
+
+---
+
+## Prep Group Orders — Rebuilt as a Picking Workspace (Sep 8, 2026)
+
+`#pu-card-orders-modal` was a 760px single column of order cards, each with a
+6-column items **table** whose product image was a 38px thumbnail and whose
+quantity was a small amber pill in the 4th column. A picker reading that table
+fast has nothing to anchor on: the qty sits between two prices in the same type
+size, and the image is too small to identify the product from. **The quantity is
+the one number a wrong reading turns into a wrong parcel**, and it was the least
+prominent thing on the row.
+
+Rebuilt as `.pw-*` — a two-panel workspace: left navigator (all orders in the
+group), right workspace (the one order being picked).
+
+### The quantity is read-only *by construction*
+`.pw-qty` is a `<div>`, never an `<input>`. This is a screen for an order that
+already exists — the qty is what the customer bought, and the only correct
+interaction with it is reading it. The old `puCardItemChange` inline qty/price
+editor is not reachable from here.
+
+⚠ **A test asserts the workspace contains zero `<input>`, `<select>` and
+`[contenteditable]`.** Adding an editable control here is how a picking screen
+silently becomes an order editor.
+
+### `_pwSelId` is an `_id`, never an index
+The list re-renders on search, on add and on remove, so an index would point at
+a *different order* after any of those — exactly the class of mistake this
+screen exists to prevent. `_pwVisible` holds the ids **in display order** and is
+what ↑/↓ walk.
+
+⚠ **Selection never wraps.** Running past the last order and silently landing on
+the first is how an order gets prepared twice. `pwMoveSelection` clamps.
+
+### Two renderers, one selection
+`_pucoRenderOrders()` draws the LEFT panel; `_pwRenderWork()` draws the RIGHT.
+`_pucoRenderOrders` calls `_pwRenderWork` — **don't call the right one alone**
+after changing which orders exist, or the panels disagree about the selection.
+
+⚠ **`pucoTickOrder` patches the DOM rather than re-rendering.** `_pwRenderWork()`
+would rebuild the items grid and reset its scroll position, throwing away where
+the picker had got to in a long order.
+
+### The keydown listener is bound ONCE, on `document`
+Not per open — a listener added on each open stacks, and one key press then
+moves the selection several rows. It is gated on the modal being open, bails
+while the invoice panel is on top, and **ignores keys typed into any input**.
+The search box forwards ↑/↓ deliberately via its own `onkeydown`
+(`pwSearchKeydown`); that is why the document listener must skip inputs, or a
+single arrow in the search box steps **two** orders.
+
+### `direction:ltr` moves an element's START EDGE — bidi bit us again
+`.pw-item-code` was `direction:ltr`, which printed «كود 33» at the far side of
+the card instead of under the product name. Same for the two phone lines. The
+value is isolated with `<bdi>` / `unicode-bidi:isolate` and the **line keeps the
+page's direction** — the identical rule the vault journal's metadata rows follow.
+**Never fix a mis-placed Latin run by flipping its container's direction.**
+
+⚠ Likewise `margin-inline-start:auto` on `.pw-abtn.is-go` threw the primary
+action to the opposite end of the bar from every other button in RTL; on narrow
+viewports it is reset to 0 and the prepare band takes the full row.
+
+### Other rules
+- **Opens on the first order still to be prepared**, not blindly on the first
+  row — reopening a half-done group should resume, not restart.
+- **Removing the selected order hands the selection to the one that took its
+  place**, so the workspace is never empty beside a list that still has orders.
+- Below 860px the nav becomes a *view you switch to* (`.pw-show-work`), not a
+  squeezed column — shrinking both halves makes neither usable. `pwShowNav()` is
+  the back path; the button only exists at that breakpoint.
+- `auto-fill` (not `auto-fit`) plus `max-width:560px` per card, so a 1-item order
+  gets the same card width as a 9-item one instead of one stretched panel.
+- The group progress bar moved into the top bar so it is visible from every
+  order. `#puco-progress-fill` / `#puco-progress-count` ids are unchanged, so
+  `_pucoUpdateProgress` was not touched.
+
+### Nothing about the workflow changed
+Every action is the same function it was: `pucoTickOrder`, `pucoShowInvoice`,
+`pucoRemoveFromPrep`, `pucoRestoreFromReady`, `pucoMoveGroupToReady`,
+`pucoAddOrder`. Every input id (`#puco-search-input`, `#puco-add-ref-input`,
+`#puco-add-suggest`, `#puco-count-badge`) is unchanged. The auto-move-when-all-
+ticked, the backend `prep-check` PATCH and `_puSavePrepGroups` are untouched.
+**This was a presentation rebuild, not a logic change.**
+
+⚠ The old `#puco-footer` and its `#puco-move-ready-btn` / `#puco-move-prep-btn`
+were **deleted** — per-order actions now live in the workspace's own action bar.
+`pucoMovePendingToPrep()` survives as a global with no caller.
+
+### Verification
+- **85 jsdom assertions** over the SHIPPED renderers extracted from `index.html`
+  (never copied): 1/2/4/6/25-item orders, read-only qty, selection, search,
+  prepared state, ready-column variant, XSS, a 60-order group.
+  ⚠ **Revert-checked**: making the qty an `<input>` and making ↑/↓ wrap fails
+  **8** of them.
+- **15 real-browser (Chrome headless) checks** of the document keydown listener,
+  including "no double-step" from the search box and inertness once closed.
+- **18/18 viewport combinations clean** (3 datasets × 500→1920px) on: no document
+  overflow, panels inside the shell, internal scrollers, no item spill, actions
+  never clipped, qty font ≥22px.
+- 127 `.pw-*` rules parse; no emitted class lacks a rule; all 33 `t()` keys exist
+  with real `en` values (no empty-string fallback trap).
+
+### Round 2 — completion flow, «n ×», notes (same day)
+
+**The quantity is now «2 ×» anchored to the product photo**, not a labelled QTY
+block beside it. A picker reads «this product, this many» in one fixation; a
+separate box made the count a third column with no stated relationship to the
+image. `.pw-mult` sits on the photo's **outer** corner — `inset-inline-end`, not
+`-start`, which in RTL lands it on top of the price column.
+
+⚠ **`.pw-mult` is `direction:ltr` and that is correct here**, unlike on a text
+line: the box **is** a Latin expression (digit then `×`), not Arabic prose with a
+number in it, and being `inline-flex` its own start edge is all that moves. Left
+in RTL flow the two spans swap and it renders «× 2».
+
+**The prepare control moved into the header, beside the order number**, and the
+footer band was deleted. Two controls for one decision is how an order gets
+ticked by accident, so there is exactly one — a test asserts that.
+
+### Completed orders sink; the next pending one opens
+`_pwOrderForDisplay` puts still-to-pick first and completed last. A **single**
+divider is drawn above the completed run.
+
+⚠ **There is deliberately no «PENDING» heading.** The top of the list is the
+default state, and naming a default costs a line and teaches nothing. Only the
+exception group is labelled.
+
+⚠ **The sort runs on a COPY and is stable.** `group.orders` is the stored
+membership that `_puSavePrepGroups` persists — sorting it in place would rewrite
+the saved group on every tick. Stability keeps entry order inside each half.
+
+⚠ **The auto-advance target is computed BEFORE the re-render**, from the pre-move
+list, so "the next one" means the next one the picker had in front of them — not
+whatever slid into that row afterwards. It only fires when the order **just
+completed was the selected one**: ticking some other order, or un-ticking, leaves
+the picker where they are. `_pwNextPending` returns `null` on the last order
+rather than jumping somewhere arbitrary.
+
+⚠ **`_pwFlipRender` is FLIP, not a hand-rolled slide**: measure every card,
+re-render, measure again, transform each back to where it was, release. The
+browser animates a *real* layout change, so the cards below close the gap
+themselves and nothing can drift out of sync with the list it is animating.
+~340ms plus a one-shot ring on the finished card — `prefers-reduced-motion`
+skips both. **No confetti: this is a daily operations tool, not gamification.**
+
+### Order notes are shown where the packing happens
+`notes` (the order's own note) and the last three `comments` render under the
+customer chips. Both already travel with the order and neither is in
+`LIST_EXCLUDED_FIELDS`, so this needed **no request and no backend change**. A
+picker who cannot see «بدون كيس» packs it wrong, and that instruction used to be
+two screens away. The order note is tinted (an instruction); comments stay
+neutral (a conversation). Overflow is **stated** («+4 أقدم — افتح الفاتورة»), not
+silently truncated.
+
+### Hold Space to peek at the invoice
+Calls the same `pucoShowInvoice` the button does — a shortcut, not a new
+capability.
+
+⚠ **Held, not tapped**, because Space is also how a focused button is activated,
+and a tap must keep doing that. ⚠ **`e.repeat` is load-bearing**: the OS fires
+keydown continuously while held, and starting a fresh timer on each one means the
+invoice never opens. ⚠ **keyup, `blur` and `visibilitychange` all cancel** — a
+keyup the page never sees would otherwise leave the timer armed and open the
+invoice later, over whatever the user did next.
+
+### Also fixed
+- **«Code Code 28»** — the label was printed twice on the item code line.
+- **`_PW_NOTE_SVG` was declared below its only consumer.** `const` is not
+  hoisted; it now sits above `_pwOrderCardHtml`.
+
+### Round-2 verification
+- **57 new jsdom assertions** (142 with round 1): completion ordering, sort-on-a-
+  copy, stability, `_pwNextPending` in five states, the multiplier's read-only
+  markup, notes/escaping/Latin digits, the ready-column variant, selection
+  surviving a reorder.
+- **25 real-browser assertions** for the tick → reorder → auto-advance chain, the
+  FLIP transforms, and every space-hold edge (auto-repeat, early release, blur).
+- ⚠ **Revert-checked**: removing the completion sort and making auto-advance take
+  the next *row* rather than the next *pending* fails **8** jsdom cases and the
+  browser reorder case.
+- 15/15 keyboard, 18/18 viewport-layout, 162 `.pw-*` rules, 36 i18n keys with
+  real `en` values.
+
+### Round 3 — the prepare button, authored comments, softer motion (same day)
+
+**The Prepared button showed two ticks.** `puTickDone` was `'✅ تم التحضير'`
+while the button also draws an SVG check — so the label spelled an icon the
+control already had. The emoji is gone from both labels: **an icon is drawn,
+never spelled.** A test asserts one `<svg>` and zero tick characters in that
+button, because this is easy to reintroduce by "improving" a string.
+
+The button also had no press response. It now depresses 1px on `:active`, the
+check strokes itself in over 240ms, and the whole control settles once
+(`pw-tick-fire`). ⚠ **The press class is added BEFORE the re-render**, on the
+element the user actually clicked — the reorder replaces that node a frame later,
+so an animation started after it would play on nothing.
+
+### Comments were rendering with no author and no date
+⚠ **Both writers store `employee` and `timestamp`** (`addComment` and the
+invoice's `saveInvoiceComment`). Round 2 read `c.by`/`c.at`, which exist nowhere,
+so every comment showed a blank byline. `createdAt` is a **time-only string**
+(`'10:14 ص'`), so it is a display fallback only and must never be parsed as a date.
+
+Comments now render as a thread: avatar, author, timestamp, text.
+`_pwAuthorAvatar` uses the author's real photo when a matching user is loaded and
+falls back to coloured initials. ⚠ **The match is by NAME, not id** — that is all
+a comment stores — so an unmatched author still renders as initials rather than
+vanishing. `_pwAvatarBg` is hue-only (fixed S and L), so no avatar out-shouts the
+amber count or the green tick, and the same person keeps the same colour.
+
+⚠ **EVERY comment renders, not a slice.** A truncated thread hides the newest
+instruction behind a "+3 more" the picker has no reason to click. The list
+scrolls instead, capped at 168px so the **items grid stays above the fold** —
+notes are context, the products are the job.
+
+The two panels are separate on purpose and each states its audience («واردة مع
+الطلب» / «تظهر للموظفين فقط»): the customer's note is an instruction that came
+with the order, the internal thread is the team talking to each other, and acting
+on the wrong one is a real packing error.
+
+### Motion
+- **Switching orders fades and lifts** (`.pw-in`, 260ms, items 45ms behind the
+  header) instead of snapping. ⚠ **Only `opacity`/`transform`** — anything
+  animating height stutters on a long grid.
+- ⚠ **A same-order re-render neither animates nor scrolls.** `_pwRenderWork`
+  keeps `data-pw-order` and restores `.pw-items-wrap.scrollTop`, so ticking a box
+  or a note arriving does not throw the picker back to the top of a long order.
+- **Hold-Space is 550ms → 260ms.** Still unreachable by a tap (a deliberate press
+  is ~90–150ms) but no longer reads as lag.
+- **Releasing the key closes the peek**, fading out over 190ms. ⚠ Only when the
+  hold is what opened it (`_pwPeekOpen`) — an invoice opened with the button must
+  survive a stray Space. ⚠ The fade class is added and removed on the **shared**
+  `#inv-detail-overlay`, so no other caller's timing changes.
+
+### Round-3 verification
+- **158 jsdom assertions** (85 + 73): author/timestamp fields, avatars, initials,
+  colour stability, the untruncated thread, the count badge, both panels, and the
+  single-tick guard.
+- **30 real-browser assertions**, adding: the peek opens, marks itself the opener,
+  closes on release, clears its flag, and does **not** close a button-opened
+  invoice.
+- ⚠ **Revert-checked**: restoring `c.by`/`c.at`, re-truncating the thread and
+  putting the emoji back fails **4** cases.
+- 15/15 keyboard, 18/18 viewport-layout, 199 `.pw-*` rules, 40 i18n keys with
+  real `en` values and no orphans.
+
+### Round 4 — product photos, comment photos, notes into the header (same day)
+
+**كل صور المنتجات كانت مربّعات رمادية.** الشبكة وبطاقات التنقّل كلتاهما كانت تقرأ
+`it.imageUrl` وحده — وهي **لقطة وقت البيع**، والحقل أُضيف للـDTO متأخراً فكل سطر
+كُتب قبله وصل فارغاً لأن الـwhitelist pipe كان يحذفه بصمت (نفس ما يشرحه
+`backfillItemImages`). والنتيجة أن **الشخص الوحيد الذي يعرّف المنتج بصورته لا
+باسمه** — من يجهّز الطلب — كان يرى أيقونة بديلة على كل صنف.
+
+`_pwItemImgUrl(it)` يحلّها: اللقطة أولاً، ثم كتالوج المنتجات الحيّ بالـ`productId`
+ثم بالـ`code` ثم بالاسم. نفس ترتيب `_movItemProductImg` و`backfillItemImages`، حتى
+لا يعرض جدول الحركات ومساحة التحضير صورتين مختلفتين لنفس السطر.
+
+⚠ **اللقطة تسبق الكتالوج ولا تُستبدل به.** لو تغيّرت صورة منتج بعد البيع، الفاتورة
+المطبوعة والمسلَّمة للعميل تبقى صادقة؛ الكتالوج يملأ الفراغ فقط.
+
+⚠ **كود `SHOPIFY` نائب ولا يُطابَق.** سطور Shopify تحمله حرفياً، فمطابقته تعني أن
+كل سطر Shopify يأخذ صورة أول منتج كوده كذلك. يُتخطّى ويُجرَّب الاسم بدلاً منه.
+
+⚠ **بطاقات التنقّل كانت مصابة بنفس العلّة** — ثلاثة مربّعات رمادية متطابقة على كل
+بطاقة، والصورة هي ما يميّز طلباً عن آخر في نظرة سريعة.
+
+⚠ **`productThumbHtml` يقبل `http(s)` فقط** ولا يقبل `data:` رغم أن `sanitizeUrl`
+يسمح بها. لم يُغيَّر — 14 موقع نداء يعتمد عليه، وصور المنتجات الحقيقية كلها `http`.
+المهم للاختبارات: مُثبِّتة `data:` لن تُرسم.
+
+**صور المعلّقين تعمل من قاعدة البيانات.** `_pwAuthorAvatar` كان صحيحاً بالفعل
+(يطابق بالاسم على `users[].avatar`)؛ ما يظهر كأحرف أولى هو **موظف بلا صورة في
+حسابه** — وهي النتيجة الصحيحة. ⚠ ولاحظ أن `users` تُملأ من `/users` للأدمن ومن
+`/users/mentionable` لغيره، **وكلاهما يُرجع `avatar`** — فلا يوجد مسار يفقد الصورة.
+
+### الملاحظات انتقلت إلى الهيدر كشريحة صغيرة
+كانت لوحتين كبيرتين داخل الهيدر تأخذان أكثر من نصف ارتفاعه وتدفعان شبكة الأصناف
+تحت الطيّة. **الأصناف هي العمل والملاحظات سياق له**، فالسياق لا يجوز أن يزيح
+المهمة. صارت `<details>` بشريحة واحدة تحمل الأيقونة والعدد.
+
+⚠ **ليست إخفاءً للمحتوى.** العدد ظاهر دائماً، و**وجود ملاحظة عميل يلوّن الشريحة
+كهرمانياً** (`is-warn`) — «بدون كيس» تعليمة تُفسد الطلب إن فاتت، فوجودها يجب أن
+يُرى قبل قرار الفتح. التعليقات الداخلية وحدها تُبقي الشريحة محايدة. المخفيّ هو
+النص، لا وجوده.
+
+⚠ **`<details>` أصلية لا لوحة يدوية**: توسيع بالكيبورد وحالة `open` مجاناً، ويقرأها
+قارئ الشاشة كعنصر قابل للطي دون أي ARIA إضافي.
+
+⚠ **حدّ الارتفاع على اللوحات لا على الشبكة.** وضعه على `.pw-notes-grid` كان يقطع
+آخر تعليق في منتصف سطره — وسطر نصفه ظاهر يُقرأ كعطل لا كقائمة تُمرَّر. الحدّ الآن
+على `.pw-cmt-list` و`.pw-note-body`، وهما يمرّران أصلاً.
+
+#### التحقق (Round 4)
+- **37 تأكيداً في المتصفح** على الدوال المشحونة: المطابقة بالـid/الكود/الاسم، أسبقية
+  اللقطة، تجاهل كود `SHOPIFY`، أن الصور **تُحمَّل فعلاً** (`naturalWidth > 0`) لا أن
+  الوسم موجود فقط، صور المعلّقين والأحرف الأولى، والشريحة (مطويّة ابتداءً، العدد
+  ظاهر، التلوين الكهرماني، أصغر من اسم العميل، وأن الأصناف تبقى فوق الطيّة).
+- ⚠ **مُختبَر بالرجوع**: إعادة القراءة من `it.imageUrl` وحده تُسقط **4** حالات
+  وتُرجع **صفر** صورة — وهو بالضبط ما تعرضه لقطة الشاشة المبلَّغ عنها.
+
+### Round 5 — التعليقات مرئية دائماً، وهيدر مكثّف، وحقل إضافة (same day)
+
+**طيّ الملاحظات في الجولة السابقة كان خطأً وأُلغي.** «FAST DELIVERY» و«بدون كيس»
+تعليمات تُغيّر ما يفعله المُجهّز، **وتعليمة خلف نقرة هي تعليمة لم تصل**. المشكلة
+الحقيقية لم تكن ظهور الملاحظات بل حجمها، فالحلّ تكثيفها لا إخفاؤها.
+
+⚠ **العتبة القديمة «هيدر < 260px» أُبطلت** — وُضعت والملاحظات مخفيّة. الشرط الصحيح
+علاقة لا رقم: **الأصناف — وهي العمل — تأخذ مساحة أكبر من الهيدر**، وهذا ما يختبره
+`test_prep.js` الآن. القياس بعد التكثيف: هيدر 339px مقابل شبكة 435px.
+
+⚠ **السقف على اللوحات لا على الشبكة** (`.pw-cmt-list` / `.pw-note-body` = 104px).
+وضعه على `.pw-notes-grid` كان يقطع آخر تعليق في منتصف سطره، وسطر نصفه ظاهر يُقرأ
+كعطل لا كقائمة تُمرَّر.
+
+⚠ **الخيط يفتح على الأحدث.** `_pwRenderWork` و`_pwRefreshThread` كلاهما يضبط
+`scrollTop = scrollHeight`: أول ما يُرى عند فتح الطلب يجب أن يكون آخر تعليمة وصلت،
+لا أول تعليق كُتب قبل يومين.
+
+### البيانات الثانوية في الهيدر
+- **الاسم والهاتف على سطر واحد** (`.pw-cust-idline`) — الهاتف بيان تعريفي يُقرأ مع
+  الاسم، وإفراده بسطر كان يكلّف سطراً كاملاً لبيانٍ نادر الاستعمال أثناء التجهيز.
+  صار رابط `tel:` بما أنه على الموبايل فعل لا نص.
+- **الحالة · الشحن · الموظف صارت سطراً نصّياً بفواصل** (`.pw-cust-meta`) لا شرائح:
+  هي **سياق لا قرار**، وحدودُ الشرائح كانت تمنحها ثقلاً يساوي المال والملاحظات.
+- ⚠ **ما يحمل مبلغاً يبقى شريحة ملوّنة** (خصم / مدفوع): رقم يُقرأ في لمحة لا يصحّ
+  أن يذوب في سطر رمادي.
+- ⚠ **`unicode-bidi:isolate` على رقم الهاتف، لا `direction:ltr`** — قلب اتجاه
+  العنصر ينقل حافته الأولى للطرف المقابل فيبتعد الرقم عن الاسم الذي يخصّه.
+
+### حقل إضافة التعليق — نفس مسار الفاتورة
+`pwAddComment` تكتب بنفس شكل `addInvoiceComment` (`employee` + `timestamp` +
+`createdAt`) وعلى نفس النقطة `POST /transactions/:id/comments`، وتستدعي
+`processMentionsInComment`. ⚠ **أي اختلاف في الشكل يعني تعليقاً بلا كاتب أو بلا
+تاريخ في كل شاشة أخرى تقرأ نفس المصفوفة** — وهو بالضبط عطل `c.by`/`c.at` الموثّق
+في الجولة الثالثة، من الاتجاه المعاكس.
+
+⚠ **لوحة التعليقات تُرسم حتى بلا تعليق واحد** — لأنها تحمل حقل الكتابة. إخفاؤها عند
+الفراغ يجعل أول تعليق على أي طلب مستحيلاً من هنا.
+
+⚠ **`_pwRefreshThread` لا `_pwRenderWork()`**: الأخيرة تعيد بناء شبكة الأصناف
+وتُصفّر تمريرها فتضيع نقطة المُجهّز في طلب طويل — نفس السبب الذي يجعل
+`pucoTickOrder` تُرقّع الـDOM. **مُختبَر بالرجوع**: استبدالها يُسقط الحالة.
+
+⚠ **عند فشل الحفظ يُعاد الاستعلام عن الحقل بعد إعادة الرسم.** `_pwRefreshThread`
+استبدل `.pw-notes` كاملةً، فالمرجع الملتقط قبلها صار عقدة منفصلة عن المستند —
+الكتابة فيه تنجح بصمت ولا تظهر، فيفقد المستخدم نصّه على عطل شبكة. **مُختبَر
+بالرجوع**: استعادة المرجع القديم تُسقط الحالة.
+
+⚠ **Enter يُرسل وShift+Enter سطر جديد، و`stopPropagation` إلزامي**: المودال يستمع
+لـ↑/↓ والمسافة، وبدونه كل ضغطة أثناء الكتابة تُحرّك الاختيار أو تفتح الفاتورة.
+
+⚠ **`box-sizing:border-box` + `width:auto`**: القاعدة العامة `input,select,textarea
+{width:100%;padding:8px 12px}` بلا border-box تجعل الحقل يفيض خارج صفّه ويدفع زر
+الإرسال خارج اللوحة. ونفس القاعدة على الموبايل (`min-height:40px`) تُبطل النموّ
+التلقائي، فتُلغى صراحةً.
+
+### Round 6 — عمود جانبي للتعليمات، وتأكيد المنشن (same day)
+
+**الملاحظات كانت تمتدّ بعرض الهيدر كاملاً بينما يمين منطقة الأصناف فارغ** — إهدار
+مساحة مرّتين: عرضٌ لا تحتاجه أسطر قصيرة، وارتفاعٌ يُقتطع من الأصناف. صار جسم
+المساحة `.pw-body2` شبكة عمودين: `.pw-side` للتعليمات و`.pw-items-wrap` للأصناف.
+
+⚠ **الفصل عمودي لا أفقي.** الحدّ بين «ما يُقرأ» و«ما يُجهَّز» صار حدّاً بصرياً
+صريحاً بدل شريطين فوق بعضهما يتنازعان الارتفاع نفسه.
+
+⚠ **`minmax(0,…)` على كلا العمودين**: العمود الشبكي الافتراضي `min-width:auto`
+فيرفض أن يصغر تحت عرض محتواه، وبطاقة صنف عريضة كانت تدفع الشبكة خارج الحاوية بدل
+أن تلتفّ.
+
+⚠ **`.pw-side` يمرّر بنفسه.** لو مرّر الجسم كله لغابت التعليمات فور النزول لأصناف
+طلب طويل — وهي المعلومة التي يجب أن تظل أمام العين طوال التجهيز.
+
+⚠ **السقف بالبكسل على الخيط أُزيل** (`flex:1;max-height:none`). كان ضرورةً حين
+كانت اللوحة داخل الهيدر؛ في العمود يملأ الخيط ما تبقى ويمرّر داخله، فلا يُدفع حقل
+الكتابة خارج الشاشة مهما طال — مُختبَر بخيط من 30 تعليقاً. ملاحظة العميل تبقى
+مسقوفة (170px) لأنها قد تكون فقرة كاملة ولا يجوز أن تزيح الخيط.
+
+⚠ **268px للعمود و290px لأدنى بطاقة**، وهما رقم واحد لا رقمان: كل بكسل في العمود
+يُقتطع من عرض الأصناف. عند 320px كانت بطاقة واحدة في الصفّ تترك نصف المنطقة
+فارغاً؛ 290 تسمح ببطاقتين.
+
+⚠ **تحت 1040px يتحوّل العمودان إلى صفّين** والتعليمات فوق — تُقرأ قبل بدء التجهيز.
+عمود 268px داخل نصف شاشة يترك للأصناف عرضاً لا يكفي بطاقة واحدة.
+
+### المنشن — يعمل، وله شرط غير بديهي
+`pwAddComment` تستدعي `processMentionsInComment` كما تفعل الفاتورة. مُختبَر: منشن
+واحد، عدّة منشنات، صيغة `@Name_With_Underscore`، وتجاهل منشن الذات.
+
+⚠ **الشرط**: `processMentionsInComment` تُغادر صامتةً إن لم يكن الطلب موجوداً في
+مصفوفة `transactions`. هو موجود عملياً — طلبات مجموعة التحضير مبيعات تأتي من
+`/transactions/pickup-orders` وهي نفسها المحمّلة عند الإقلاع — لكن أي شاشة مستقبلية
+تعرض طلباً **ليس** في تلك المصفوفة ستفقد الإشعار بلا خطأ. اختبار يثبّت السلوك.
+
+### Round 7 — ملاحظة محايدة، وقت مختصر، وصورة الكاتب في كل مكان (same day)
+
+**ملاحظة العميل لم تعد صفراء.** كانت `#fffdf5` بحدّ كهرماني وأيقونة كهرمانية —
+لونٌ تنبيهي على لوحة تظهر في **كل** طلب، والتنبيه الدائم يتوقّف عن كونه تنبيهاً.
+تُميَّز الآن بأيقونتها وعنوانها فقط، وهو فرق كافٍ لأن اللوحتين متجاورتان دائماً
+ولا تُقرأ إحداهما بمعزل عن الأخرى.
+
+### الوقت: مختصر، بلغة النظام، أسفل النصّ
+كان «08 سبتمبر 2026 · 02:43 م» — 21 حرفاً تزاحم اسم الكاتب على سطر واحد داخل عمود
+ضيّق، والسنة تُطبع على تعليق كُتب اليوم.
+
+`_pwWhen` صار تصعيدياً: `الآن · 25 د · 5 س · السبت 20:23 · 30 يوليو · 4 مارس 2024`
+(وبالإنجليزية `now · 25m · 5h · Sat 20:23 · 30 Jul`). ⚠ **كل مستوى يظهر فقط حين
+يعجز الأدنى عن التمييز** — الساعة تكفي داخل اليوم، واسم اليوم داخل الأسبوع،
+والسنة لا تُطبع إلا لسنة أخرى.
+
+⚠ **`-u-nu-latn` إلزامي** — `ar-EG` وحدها تُخرج أرقاماً عربية-هندية، الفخّ المتكرّر
+في هذا الملف. و**التاريخ الكامل يبقى في `title`** (`_pwWhenFull`) فلا يضيع.
+
+⚠ **الوقت انتقل أسفل النصّ في نهاية السطر**، لا بجوار الاسم: هو أقلّ المعلومات
+أهمية في التعليق فلا يصحّ أن يأخذ نصف السطر الأول، وفي عمود ضيّق كان يُقصّ الاسم
+أو يُقصّ هو. `margin-inline-start:auto` + `align-self:flex-end` يتبعان اتجاه
+الصفحة — ⚠ لا `right` ولا `left` مثبّتة، و`isolate` لا `direction:ltr`.
+
+### صورة الكاتب — كانت تسقط لنصف المستخدمين
+⚠ **`users.find(x => (x.name || x.username) === name)` تفحص حقلاً واحداً**: إن كان
+للمستخدم `name` فالـ`username` لا يُقارَن أبداً. والتعليقات تُكتب بـ
+`currentUser.name || currentUser.username`، فأي تعليق مخزّن باسم المستخدم لا يطابق
+صاحبه ويظهر بأحرف أولى رغم وجود صورته. `_pwFindUser` تفحص القيمتين، بعد
+`trim().toLowerCase()` لأن الأسماء تُكتب يدوياً.
+
+⚠ **`onerror="this.remove()"` كانت تترك دائرة ملوّنة فارغة** — أسوأ من الأحرف
+الأولى لأنها لا تقول من صاحب التعليق إطلاقاً. الاحتياطي الآن مرسوم تحت الصورة
+ويظهر عند فشلها.
+
+⚠ **بطاقة المنشن كانت تعرض أيقونة `@` واحدة لكل المُرسِلين**، بينما بطاقتها
+الشقيقة («تعليق جديد على متابعة») في القائمة نفسها تعرض `userAvatarHtml` — بطاقتان
+متجاورتان تصفان الحدث نفسه بشكلين. صارت تعرض صورة المُرسِل، **بالبحث بالـid ثم
+بالاسم** لأن الإشعارات المخزّنة قبل وجود `fromUserId` لا تحمل id.
+
+#### التحقق (Round 7)
+- **31 تأكيداً** في `test_r7.js`: أن اللوحة لم تعد دافئة اللون (فحص RGB لا اسم
+  صنف)، الشكل المختصر في اللغتين مع بقاء التاريخ في `title`، موضع الوقت أسفل النصّ
+  وفي نهاية السطر وبخطّ أصغر، والصور — بالاسم، باسم المستخدم، بلا صورة، ولكاتب
+  مجهول، ومع صورة معطوبة، وفي بطاقة المنشن بالـid وبالاسم.
+- ⚠ **مُختبَر بالرجوع**: إعادة المطابقة بحقل واحد وإعادة أيقونة `@` تُسقط **4**
+  حالات — أبرزها أن تعليقاً مخزّناً باسم المستخدم يفقد صورته تماماً.
+
+#### التحقق (Round 6)
+- **85 تأكيداً** في `test_prep2` (27 جديداً): بنية العمودين، أن الملاحظات غادرت
+  الهيدر، أن العمودين يملآن العرض بلا فراغ، أن الأصناف تأخذ النصيب الأكبر، بطاقتان
+  في الصفّ، وأن خيطاً من 30 تعليقاً لا يدفع حقل الكتابة خارج الشاشة — على 6 مقاسات
+  مع تبديل التكديس تحت 1040px.
+- **10 تأكيدات** في `test_mention.js` لمسار المنشن كاملاً.
+
+#### التحقق (Round 5)
+- **58 تأكيداً في المتصفح**: أن الملاحظات لم تعد `<details>`، أن كل تعليق يُقرأ بلا
+  نقرة، تكثيف الهيدر (سطر واحد للاسم والهاتف، سطر نصّي للسياق، شرائح للمال فقط)،
+  ومسار الإضافة كاملاً — الشكل المرسَل، الظهور الفوري، بقاء شبكة الأصناف كما هي،
+  التراجع عند الفشل مع إعادة النص، Enter/Shift+Enter، وألّا تصل ضغطات الكتابة إلى
+  اختصارات المودال — على 5 مقاسات.
+- ⚠ **مُختبَر بالرجوع**: إعادة `_pwRenderWork()` مكان `_pwRefreshThread`، وإعادة
+  المرجع القديم للحقل، تُسقط حالتين.
+
+### Still open
+- **`backfillItemImages` لم يُشغَّل** — الإصلاح هنا وقت العرض، فالمعاملات القديمة
+  لا تزال تحمل `imageUrl` فارغاً في قاعدة البيانات. تشغيله يجعل الفواتير المطبوعة
+  (وهي لا تمرّ بهذا الحلّ) تعرض الصور أيضاً.
+- **صورة المعلّق تُطابَق بالاسم** — وهو كل ما يخزّنه التعليق. متطابقا الاسم يتشاركان
+  الصورة، وتغيير اسم موظف يفصله عن تعليقاته القديمة.
+- **The nav list renders every order in the group** — fine at the observed sizes
+  (largest real group is a few dozen), but a 500-order group would want
+  windowing.
+- **`pucoAddOrder` does not select the order it just added**; it lands in the
+  list and the picker clicks it.
+- **A very long thread scrolls inside a 168px box.** That keeps the items visible,
+  but a 40-comment order is a lot of scrolling in a small panel.
+- **The hold-Space hint is desktop-only wording.** There is no touch equivalent
+  for the peek; the «عرض الفاتورة» button is the touch path.
+
+---
+
 ## The Dashboard Opened on a White Page (Sep 8, 2026)
 
 Reported as «الصفحة بتفتح ببطء» on the online build. Three independent defects, measured before anything was written.
@@ -1774,10 +2625,78 @@ const expenseTotal = filteredExpenses
 
 ---
 
+## «سجل عمليات التحقق» Followed the User Onto Every Page (Sep 8, 2026)
+
+Reported as: open الموافقات → «سجل عمليات التحقق» → leave the page, and the OTP
+panel stays painted on every page visited afterwards (the screenshot shows it
+sitting under الموردون).
+
+### The panel was never inside the approvals page
+`#appr-tab-otp-content` was a **top-level sibling** of `#page-approvals`, not a
+child of it. Three `</div>` were written where two belong — closing the hub table
+wrapper, closing `#appr-tab-hub-content`, and then one extra that closed
+`#page-approvals` 76 lines early. The block that followed it was left orphaned
+between `page-approvals` and `page-reports`.
+
+⚠ **The markup was perfectly div-balanced, which is why this survived.** Every
+page counted `open == close`; the *extra* close was matched by the orphan's own
+closing tag. A balance check finds nothing — the only thing that detects it is
+asking whether the panel is a **descendant** of the page that owns it.
+
+### Being an orphan is what made it leak
+Page visibility is `.page{display:none}` / `.page.active{display:block}` (~line
+4919). The orphan carries no `.page` class, so **that rule never applied to it**
+and its only hiding mechanism was its inline `style="display:none"`.
+
+`switchApprTab` then does:
+
+```js
+qs('#appr-tab-otp-content').style.display = tab === 'otp' ? '' : 'none';
+```
+
+⚠ **`''` deletes the inline declaration** rather than setting a value. On a
+correctly-nested panel that is harmless — the parent page's `display:none` still
+hides everything inside it. On an orphan there is no parent rule to fall back
+to, so clearing the inline style left the block permanently visible, on every
+page, until a reload. Measured: **327px tall on الموردون, المصاريف and دليل خدمة
+العملاء alike.**
+
+Both halves are fixed: the stray `</div>` moved to after the OTP block (which now
+closes `#page-approvals`, tagged `<!-- /#page-approvals -->`), and both
+`switchApprTab` and `switchCspTab` now write **`'block'`, never `''`** — the
+convention `switchMovTab`/`switchInvTab` already follow.
+
+⚠ **`.csp-tab-content` has no CSS rule of its own** either, so `switchCspTab`
+carried the identical `''` defect. Its panels *are* correctly nested, so it never
+leaked — the change there is defence against the same trap, not a bug fix.
+
+### Verification
+- **Before/after in a real browser** (Chrome, the actual `index.html` and the
+  actual `switchApprTab`, never a copy) over the reported path: the committed
+  build paints the panel at **327px on all three other pages**; the fix gives
+  **0px** on all three while keeping it visible on الموافقات.
+- **6 tab clicks** (including repeats and revisits): exactly one panel visible
+  each time, with the matching `.s-tab.active`.
+- The shipped file **loads with no new console error** and `page-approvals` now
+  `.contains()` the OTP block — the one measured difference against HEAD.
+- Swept the remaining 5 between-page orphans: all are `position:fixed` modal
+  overlays or print-template strings, which belong outside a page.
+
+---
+
 ## Recent Changes Summary
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Sep 8, 2026 | «سجل عمليات التحقق» stayed painted on every page after being opened once — the panel was an orphan outside `#page-approvals` (one stray `</div>`), so `.page{display:none}` never covered it and `style.display=''` left nothing to hide it | See "«سجل عمليات التحقق» Followed the User Onto Every Page" above |
+| Sep 8, 2026 | Prep workspace: the customer note lost its permanent amber tint, comment timestamps became short and language-aware (`now · 25m · Sat 20:23`) and moved under the text, and author photos were fixed — a comment stored under a username never matched its author, and the mention card showed a generic @ icon instead of the sender | See "Round 7 — ملاحظة محايدة، وقت مختصر" above |
+| Sep 8, 2026 | Prep workspace: notes/comments moved into their own scrolling side column (`.pw-body2`) — they used to span the full header width while the area beside the items sat empty — and the @mention path from the new composer was verified end to end | See "Round 6 — عمود جانبي للتعليمات" above |
+| Sep 8, 2026 | Prep workspace: un-collapsed the notes — a packing instruction behind a click is an instruction that did not arrive — plus a compacted header (name+phone on one line, status/carrier/employee as plain text, chips kept only for money) and an inline comment composer on the same path as the invoice | See "Round 5 — التعليقات مرئية دائماً" above |
+| Sep 8, 2026 | Prep workspace: product photos never rendered (every line read the empty `imageUrl` snapshot instead of falling back to the live catalogue), and the notes/comments panels were moved out of the header body into a small amber-tinted `<details>` chip so the picking grid leads | See "Round 4 — product photos, comment photos, notes into the header" above |
+| Sep 8, 2026 | Shopify table: the الإجراء cell was 176.5px of controls in a 148px column and overflowed at every viewport but one; the header applied Latin uppercase + letter-spacing to Arabic (breaking its cursive joins); tags all rendered as one grey pill; the الخصم column reserved 124px for a badge that usually renders 43px (the code is now a fixed-width mark, column 124→84, applied to سجل المعاملات too); and the الأصناف popover closed when you scrolled it | See "Shopify Table — Action Column, Discount Badge, Header Type, Tag Tone, Items Popover" above |
+| Sep 8, 2026 | Shopify page: added a standalone «مميّزة» (starred) filter that intersects the four operational filters instead of replacing them, and fixed the date-filter popover, which was clipped by the table card's `overflow:hidden` AND trapped by `.page`'s animated transform | See "Shopify Orders — Operational Filters + Shared Columns" above |
+| Sep 8, 2026 | Shopify page: replaced the KPI strip + status chips + priority row with four operational filter cards that each carry their own KPIs (مدفوع ديبوزت / بدون عربون / ملغية / متعطل على المخزون), and folded الأصناف / الشحن / الخصم into the components سجل المعاملات already uses | See "Shopify Orders — Operational Filters + Shared Columns" above |
+| Sep 8, 2026 | Prep Group Orders rebuilt as a two-panel picking workspace: large product images and an unmissable read-only QTY replace a 6-column table whose qty was a pill between two prices; ↑/↓ order navigation; the modal now uses the viewport | See "Prep Group Orders — Rebuilt as a Picking Workspace" above |
 | Sep 8, 2026 | Dashboard opened on a white page: the splash faded on a 1.6s timer unrelated to the data, `bostaRawResponse` was 77% of the boot payload (9.45→1.68 MB), and two awaits blocked the first paint; plus staged reveal animations and an «آخر تحديث» button | See "The Dashboard Opened on a White Page" above |
 | Aug 28, 2026 | Four of six registered Shopify webhooks were being thrown away with 200 OK; plus the address of an already-shipped order was silently overwritten on the invoice while Bosta still held the old one | See "Shopify Webhooks — Four of Six Were Thrown Away" above |
 | Aug 28, 2026 | Rebuilt the printed sales/purchase invoice as a formal A4 commercial document: real issuer block (7 new company settings), التفقيط, signature block, declared `@page` geometry, repeating table header, and the terms already stored but never printed | See "The Printed Invoice" above |

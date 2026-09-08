@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -41,6 +42,7 @@ import {
 } from '../inventory-movements/inventory-movements.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { SettingsService } from '../settings/settings.service';
+import { DiscountOtpService } from '../discount-otp/discount-otp.service';
 import { carrierLabel, isValidCarrier } from '../shared/carriers.constants';
 
 @Injectable()
@@ -66,6 +68,7 @@ export class ShopifyService {
     @Inject(forwardRef(() => TransactionsService))
     private readonly transactionsService: TransactionsService,
     private readonly settingsService: SettingsService,
+    private readonly discountOtpService: DiscountOtpService,
   ) {}
 
   private emit(event: string, payload: unknown): void {
@@ -414,7 +417,13 @@ export class ShopifyService {
         order.items = items;
         order.shipCost = shipCost;
         order.itemsTotal = itemsTotal;
-        order.total = total;
+        order.discount = discount;
+        // ⚠ الإجمالي يُعاد حسابه عبر computeShopifyOrderTotal، لا من أرقام شوبيفاي وحدها.
+        //   `total` أعلاه يعرف خصم شوبيفاي فقط، فإسناده مباشرة كان يمحو الخصم اليدوي من
+        //   الإجمالي عند أول orders/updated — الحقول تبقى لكن الرقم يعود لما قبل الخصم،
+        //   وهو أسوأ من المحو لأن الخصم يظل ظاهراً في الواجهة بينما الإجمالي يخالفه.
+        //   خصمنا في حقول منفصلة لا يلمسها هذا المسار، فالحساب هنا يستعيدها.
+        order.total = this.computeShopifyOrderTotal(order).total;
       } else if (totalChanged) {
         order.valueChangeConflict = {
           oldTotal: order.total || 0,
@@ -766,9 +775,32 @@ export class ShopifyService {
       carrierCode: resolvedCarrier,
       shipCo: resolvedCarrier ? carrierLabel(resolvedCarrier, 'en') : '',
       shipTariff,
-      discount: order.discount,
+      // ⚠ `tx.discount` هو **إجمالي** الخصم على الحركة، لا خصم شوبيفاي وحده: نموذج
+      //   سجل المعاملات يحفظ رقماً واحداً في `discount`، ولا يكتب `manualDiscount`
+      //   إطلاقاً. وكل ما يقرأ الخصم بعد ذلك يقرأ `discount`:
+      //     · `totalDiscounts` في لوحة التحكم والتقارير (`getDashboard`/`getReports`)
+      //     · شارة الخصم في جدول الحركات وصفحة الفاتورة
+      //     · تقرير أكواد الخصم
+      //   `manualDiscount` مخزَّن للعرض فقط ولا يقرأه الخادم في أي تجميع — تركُ
+      //   الخصم الإضافي خارج `discount` كان يجعل الفاتورة تعرض إجمالياً منخفضاً
+      //   (صحيحاً) بجانب خصمٍ أقلّ منه، والـKPI يُبلغ عن خصومات أقلّ مما مُنح فعلاً.
+      // ⚠ يُقصّ عند `itemsTotal` كمجموعة واحدة تماماً كـ`computeShopifyOrderTotal`
+      //   الذي حسب `order.total` — وإلا اختلف الرقمان على الفاتورة نفسها.
+      discount: Math.min(
+        (Number(order.discount) || 0)
+          + (Number(order.codesDiscount) || 0)
+          + (Number(order.manualDiscount) || 0),
+        Number(order.itemsTotal) || Number.MAX_SAFE_INTEGER,
+      ),
+      // يبقى مخزَّناً كتفصيل: «كم منه قرّره موظف؟» سؤال مراجعة لا يجيب عنه المجموع.
+      manualDiscount: Number(order.manualDiscount) || 0,
+      manualDiscountType: order.manualDiscountType || 'fixed',
+      discountCodeId: order.discountCodeId || '',
       discountCode: order.discountCode || '',
       discountCodeType: order.discountType || '',
+      // التعليقات تنتقل مع الأوردر إلى حركته فتبقى مقروءة بعد التحوّل لفاتورة، ومربوطة
+      // برقم الأوردر عبر shopifyOrderId/ref أدناه.
+      comments: order.comments || [],
       payStatus,
       employee,
       source: 'shopify',
@@ -1048,21 +1080,297 @@ export class ShopifyService {
   }
 
   // تحديث items الأوردر (تعديل المنتجات غير المعرّفة)
-  async updateOrderItems(orderId: string, items: any[]): Promise<{ success: boolean }> {
+  /**
+   * إجمالي الأوردر بعد كل الخصومات.
+   *
+   * ⚠ الخصومات الثلاثة تُجمع ثم تُقص عند `itemsTotal` كمجموعة واحدة، لا كل واحد على حدة —
+   *   قص كل خصم بمفرده يسمح لمجموعها بتجاوز قيمة الأصناف فيخرج إجمالي سالب. نفس حارس
+   *   `getEffectiveDiscount` في سجل المعاملات.
+   *
+   * `discount` هنا هو خصم شوبيفاي، و`manualDiscount`/`codesDiscount` خصومنا الإضافية.
+   */
+  private computeShopifyOrderTotal(order: {
+    itemsTotal: number;
+    shipCost?: number;
+    discount?: number;
+    manualDiscount?: number;
+    codesDiscount?: number;
+  }): { totalDiscount: number; total: number } {
+    const itemsTotal = Number(order.itemsTotal) || 0;
+    const raw =
+      (Number(order.discount) || 0) +
+      (Number(order.manualDiscount) || 0) +
+      (Number(order.codesDiscount) || 0);
+    const totalDiscount = Math.min(Math.max(0, raw), itemsTotal);
+    const total = Math.max(0, itemsTotal - totalDiscount + (Number(order.shipCost) || 0));
+    return { totalDiscount, total };
+  }
+
+  /**
+   * يضيف سطراً إلى سجل تعديلات الأوردر.
+   *
+   * ⚠ `markModified('editHistory')` إلزامي — الحقل مصفوفة `[Object]` بلا مخطط فرعي،
+   *   وmongoose لا يرصد التغيير داخلها تلقائياً، فبدونه يُحفظ الأوردر ولا يُكتب السجل.
+   */
+  private pushOrderHistory(
+    order: ShopifyOrderDocument,
+    entry: {
+      action: string;
+      editedBy: string;
+      before: Record<string, unknown>;
+      after: Record<string, unknown>;
+      changes: string[];
+    },
+  ): void {
+    if (!entry.changes.length) return; // لا تسجّل حفظاً لم يغيّر شيئاً
+    order.editHistory = [
+      ...(order.editHistory || []),
+      { editedAt: new Date().toISOString(), ...entry },
+    ];
+    order.markModified('editHistory');
+  }
+
+  /**
+   * فروق الأصناف سطراً سطراً — أُضيف / حُذف / تغيّرت كميته أو سعره.
+   *
+   * ⚠ كان السجل يكتب «عدد الأصناف: 4 ← 2» فقط، وهو رقم لا يقول أيّ صنف خرج. ومع
+   *   استبدالٍ (حذف صنف وإضافة آخر) لا يتغيّر العدد أصلاً فلا يُسجَّل شيء إطلاقاً —
+   *   تعديلٌ كامل على الأوردر بلا أثر. السطر الآن يسمّي الصنف.
+   *
+   * ⚠ المفتاح `productId || code || name`: صنف شوبيفاي غير مطابَق لا يحمل productId،
+   *   ولو فُهرس بالاسم وحده لاندمج صنفان مختلفان يحملان الاسم نفسه.
+   * ⚠ الأصناف المكرّرة بنفس المفتاح تُجمَّع كمياتها بدل أن يطغى آخرها، وإلا قرأ
+   *   السطر نقصاً في الكمية لم يحدث.
+   */
+  private diffOrderItems(oldItems: any[], newItems: any[]): string[] {
+    const keyOf = (i: any) =>
+      String(i?.productId || i?.code || i?.name || '').trim().toLowerCase();
+    const index = (arr: any[]) => {
+      const m = new Map<string, { name: string; qty: number; price: number }>();
+      for (const i of arr || []) {
+        const k = keyOf(i);
+        if (!k) continue;
+        const prev = m.get(k);
+        const qty = Number(i?.qty) || 0;
+        if (prev) prev.qty += qty;
+        else m.set(k, { name: String(i?.name || i?.code || '—'), qty, price: Number(i?.price) || 0 });
+      }
+      return m;
+    };
+    const a = index(oldItems);
+    const b = index(newItems);
+    const lines: string[] = [];
+
+    for (const [k, v] of b) {
+      if (!a.has(k)) lines.push(`أُضيف صنف: ${v.name} (كمية ${v.qty})`);
+    }
+    for (const [k, v] of a) {
+      if (!b.has(k)) lines.push(`حُذف صنف: ${v.name} (كمية ${v.qty})`);
+    }
+    for (const [k, oldV] of a) {
+      const newV = b.get(k);
+      if (!newV) continue;
+      if (oldV.qty !== newV.qty) lines.push(`كمية ${newV.name}: ${oldV.qty} ← ${newV.qty}`);
+      if (oldV.price !== newV.price) lines.push(`سعر ${newV.name}: ${oldV.price} ← ${newV.price}`);
+    }
+    return lines;
+  }
+
+  async updateOrderItems(
+    orderId: string,
+    items: any[],
+    editedBy = '',
+  ): Promise<{ success: boolean }> {
     const order = await this.shopifyOrderModel.findById(orderId);
     if (!order) throw new NotFoundException('الأوردر غير موجود');
     if (order.status !== 'pending') throw new NotFoundException('لا يمكن تعديل أوردر غير معلق');
 
-    // إعادة حساب totals
-    const itemsTotal = items.reduce((s, i) => s + (i.price * i.qty), 0);
-    const total = itemsTotal + (order.shipCost || 0) - (order.discount || 0);
+    const oldItems = (order.items || []).map(i => ({ ...i }));
+    const oldItemsTotal = order.itemsTotal || 0;
+    const oldTotal = order.total || 0;
 
+    const itemsTotal = items.reduce((s, i) => s + (Number(i.price) || 0) * (Number(i.qty) || 0), 0);
     order.items = items;
     order.itemsTotal = itemsTotal;
-    order.total = Math.max(0, total);
+
+    // إعادة قص الخصم بعد تغيّر قيمة الأصناف: خصم كان مقبولاً على 1000 قد يتجاوز 400.
+    const { total } = this.computeShopifyOrderTotal(order);
+    order.total = total;
+
+    const changes: string[] = [...this.diffOrderItems(oldItems, items)];
+    if (oldItemsTotal !== itemsTotal) {
+      changes.push(`إجمالي الأصناف: ${oldItemsTotal} ← ${itemsTotal}`);
+    }
+    if (oldTotal !== order.total) {
+      changes.push(`الإجمالي: ${oldTotal} ← ${order.total}`);
+    }
+
+    this.pushOrderHistory(order, {
+      action: 'تعديل الأصناف',
+      editedBy,
+      before: { items: oldItems, itemsTotal: oldItemsTotal, total: oldTotal },
+      after: { items, itemsTotal, total: order.total },
+      changes,
+    });
+
     await order.save();
 
     this.logger.log(`✏️ تم تعديل أوردر Shopify: ${order.ref}`);
+    return { success: true };
+  }
+
+  /**
+   * تعديل الخصم اليدوي وأكواد الخصم على أوردر معلق.
+   *
+   * ⚠ لا يكتب في `discount` إطلاقاً. خصم شوبيفاي يبقى ملكاً للويب هوك، وخصمنا يعيش
+   *   في `manualDiscount`/`codesDiscount` — وهذا الفصل هو ما يمنع محو الخصم اليدوي
+   *   عند أول orders/updated.
+   *
+   * ⚠ بوابة OTP تُفرَض هنا على الخادم لا في الواجهة فقط: نفس شرط
+   *   TransactionsService.create — الأدمن معفى، والحد من الإعدادات.
+   */
+  async updateOrderDiscount(
+    orderId: string,
+    body: {
+      manualDiscount?: number;
+      manualDiscountType?: string;
+      codesDiscount?: number;
+      discountCodeId?: string;
+      discountCode?: string;
+      highValueDiscountOtpId?: string;
+    },
+    editedBy = '',
+    callerRole = '',
+  ): Promise<{ success: boolean; total: number; totalDiscount: number }> {
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) throw new NotFoundException('الأوردر غير موجود');
+    if (order.status !== 'pending') {
+      throw new BadRequestException('لا يمكن تعديل خصم أوردر غير معلق');
+    }
+    if (order.cancelled) {
+      throw new BadRequestException('لا يمكن تعديل خصم أوردر ملغى');
+    }
+
+    const itemsTotal = order.itemsTotal || 0;
+    const manualDiscount = Math.max(0, Number(body.manualDiscount) || 0);
+    const codesDiscount = Math.max(0, Number(body.codesDiscount) || 0);
+
+    // الحارس يقيس خصمنا وحده مقابل قيمة الأصناف. إدخال يتجاوزها يُرفض بدل أن يُقص
+    // بصمت — الموظف يجب أن يرى أن رقمه غير مقبول لا أن يُغيَّر من تحته.
+    if (manualDiscount + codesDiscount > itemsTotal) {
+      throw new BadRequestException(
+        `الخصم (${manualDiscount + codesDiscount}) يتجاوز إجمالي الأصناف (${itemsTotal})`,
+      );
+    }
+
+    // بوابة OTP — على مجموع خصمنا الإضافي، لا على خصم شوبيفاي: خصم شوبيفاي ليس قراراً
+    // اتخذه موظف هنا، فإخضاعه لموافقة مدير يطلب الموافقة على شيء لم يفعله أحد.
+    const ourDiscount = manualDiscount + codesDiscount;
+    if (ourDiscount > 0 && callerRole !== 'admin') {
+      const settings = await this.settingsService.getSettings();
+      if ((settings as any).otpEnabled !== false) {
+        const limit = Number((settings as any).highValueDiscountLimit ?? 200);
+        if (ourDiscount > limit) {
+          await this.discountOtpService.assertOtpForTransaction(
+            body.highValueDiscountOtpId || '',
+            ourDiscount,
+          );
+        }
+      }
+    }
+
+    const before = {
+      manualDiscount: order.manualDiscount || 0,
+      codesDiscount: order.codesDiscount || 0,
+      discountCode: order.discountCode || '',
+      total: order.total || 0,
+    };
+
+    order.manualDiscount = manualDiscount;
+    order.manualDiscountType = body.manualDiscountType === 'percent' ? 'percent' : 'fixed';
+    order.codesDiscount = codesDiscount;
+    order.discountCodeId = body.discountCodeId || '';
+    order.discountCode = body.discountCode || '';
+    if (body.highValueDiscountOtpId) {
+      order.highValueDiscountOtpId = body.highValueDiscountOtpId;
+    }
+
+    const { totalDiscount, total } = this.computeShopifyOrderTotal(order);
+    order.total = total;
+
+    const changes: string[] = [];
+    if (before.manualDiscount !== manualDiscount) {
+      changes.push(`الخصم اليدوي: ${before.manualDiscount} ← ${manualDiscount}`);
+    }
+    if (before.codesDiscount !== codesDiscount) {
+      changes.push(`خصم الأكواد: ${before.codesDiscount} ← ${codesDiscount}`);
+    }
+    if (before.discountCode !== (order.discountCode || '')) {
+      changes.push(`كود الخصم: ${before.discountCode || '—'} ← ${order.discountCode || '—'}`);
+    }
+    if (before.total !== total) {
+      changes.push(`الإجمالي: ${before.total} ← ${total}`);
+    }
+
+    this.pushOrderHistory(order, {
+      action: 'تعديل الخصم',
+      editedBy,
+      before,
+      after: {
+        manualDiscount,
+        codesDiscount,
+        discountCode: order.discountCode || '',
+        total,
+      },
+      changes,
+    });
+
+    await order.save();
+    this.logger.log(`💸 تم تعديل خصم أوردر Shopify: ${order.ref} (${ourDiscount})`);
+    return { success: true, total, totalDiscount };
+  }
+
+  /**
+   * تبديل تمييز الأوردر.
+   *
+   * ⚠ متاح في كل الحالات ولأي مستخدم: النجمة علامة شخصية على أوردر يريد الموظف
+   *   العودة إليه، ولا تحرّك مالاً ولا مخزوناً ولا تدخل تقريراً. تقييدها بصلاحية
+   *   يحوّلها إلى قرار إداري وهي ليست كذلك.
+   * ⚠ لا تُسجَّل في editHistory — وضع علامة ليس تعديلاً على الأوردر.
+   */
+  async toggleOrderStar(
+    orderId: string,
+    starred: boolean,
+    by = '',
+  ): Promise<{ success: boolean; starred: boolean }> {
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) throw new NotFoundException('الأوردر غير موجود');
+
+    order.starred = !!starred;
+    order.starredBy = starred ? by : '';
+    order.starredAt = starred ? new Date().toISOString() : '';
+    await order.save();
+    return { success: true, starred: order.starred };
+  }
+
+  /**
+   * حفظ تعليقات الأوردر.
+   *
+   * ⚠ متاح في كل الحالات عمداً — قبل التأكيد وبعده وعلى أوردر ملغى. التعليق لا يحرّك
+   *   قيمة ولا مخزوناً، وحصره في الأوردرات المعلقة يلغي فائدته وقت الحاجة إليه فعلاً.
+   * ⚠ لا يُكتب أي سطر في editHistory — التعليق ليس تعديلاً على الأوردر.
+   * ⚠ `markModified` إلزامي هنا للسبب نفسه في pushOrderHistory.
+   */
+  async updateOrderComments(
+    orderId: string,
+    comments: any[],
+  ): Promise<{ success: boolean }> {
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) throw new NotFoundException('الأوردر غير موجود');
+
+    order.comments = comments;
+    order.markModified('comments');
+    await order.save();
     return { success: true };
   }
 
@@ -1294,6 +1602,47 @@ export class ShopifyService {
     };
     await order.save();
     this.logger.log(`🚫 رفض طلب إلغاء أوردر Shopify: ${order.ref} (بواسطة ${reviewedBy})`);
+    return { success: true };
+  }
+
+  /**
+   * مقدّم الطلب يسحب طلبه قبل أن يبتّ فيه المدير.
+   *
+   * الطلب ليس نتيجة، فسحبه لا يلغي شيئاً ولا يُرجّع شيئاً — يمحو `cancelRequest`
+   * فيعود الأوردر لحالته الطبيعية تماماً كما كان قبل الطلب.
+   *
+   * ⚠ يُسمح به فقط والطلب «معلق». بعد الاعتماد صار الأوردر ملغياً فعلاً والمخرج
+   *   الوحيد هو «استرجاع» (أدمن)، وبعد الرفض لم يعد هناك طلب ليُسحب — والسماح
+   *   بمحو طلب مرفوض يمحو معه سبب الرفض، وهو الردّ الوحيد الذي وصل للموظف.
+   * ⚠ صاحب الطلب وحده أو الأدمن. بدون هذا الشرط يستطيع موظف أن يسحب طلب زميله
+   *   فيُسقط قراراً ليس له — وهي نفس الصلاحية التي لم تُمنح له أصلاً.
+   */
+  async withdrawCancelRequest(
+    orderId: string,
+    byUserId: string,
+    byUsername: string,
+    isAdmin: boolean,
+  ): Promise<{ success: boolean }> {
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) throw new NotFoundException('الأوردر غير موجود');
+    const cr = order.cancelRequest;
+    if (!cr || cr.status !== 'معلق') {
+      throw new BadRequestException('لا يوجد طلب إلغاء معلق لهذا الأوردر');
+    }
+    if (!isAdmin) {
+      // يُطابَق على الـid أولاً؛ اسم المستخدم احتياط للطلبات التي سُجّلت قبل تخزين الـid.
+      const sameById = !!byUserId && !!cr.requestedById && String(cr.requestedById) === String(byUserId);
+      const sameByUsername =
+        !!byUsername && !!cr.requestedByUsername && cr.requestedByUsername === byUsername;
+      if (!sameById && !sameByUsername) {
+        throw new ForbiddenException('لا يمكنك سحب طلب إلغاء قدّمه شخص آخر');
+      }
+    }
+    order.cancelRequest = null;
+    await order.save();
+    this.logger.log(
+      `↩️ تراجع عن طلب إلغاء أوردر Shopify: ${order.ref} (بواسطة ${byUsername || byUserId})`,
+    );
     return { success: true };
   }
 
