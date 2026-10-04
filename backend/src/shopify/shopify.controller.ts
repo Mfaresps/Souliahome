@@ -144,8 +144,9 @@ export class ShopifyController {
     @Body('reason') reason: string,
     @Request() req: any,
   ) {
-    const changedBy = req.user?.username || req.user?.name || 'admin';
-    return this.shopifyService.reassignOrder(id, newEmployeeId, reason || '', changedBy);
+    const changedBy = req.user?.name || req.user?.username || 'admin';
+    const changedById = String(req.user?.userId || req.user?._id || '');
+    return this.shopifyService.reassignOrder(id, newEmployeeId, reason || '', changedBy, changedById);
   }
 
   /**

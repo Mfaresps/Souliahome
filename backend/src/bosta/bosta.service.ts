@@ -306,19 +306,20 @@ export class BostaService {
   async getAwb(txId: string): Promise<{ success: true; pdfBase64: string }> {
     const apiKey = await this.resolveApiKey();
     if (!apiKey) throw new BadRequestException('Bosta API Key غير مضبوط');
-    const tx = await this.txModel.findById(txId).select('+bostaAwbBase64').lean();
+    const tx = await this.txModel.findById(txId).select('+bostaAwbBase64 +bostaAwbType').lean();
     if (!tx) throw new BadRequestException('المعاملة غير موجودة');
     if (!tx.bostaOrderId && !tx.bostaTrackingNumber) throw new BadRequestException('لم يتم إنشاء شحنة Bosta لهذا الطلب');
     if (['DELIVERED', 'RETURNED', 'CANCELLED', 'DELETED'].includes(tx.bostaStatus || '')) {
       throw new BadRequestException('بوليصة هذا الطلب غير قابلة للطباعة حسب حالة الشحنة');
     }
-    if (tx.bostaAwbBase64) return { success: true, pdfBase64: tx.bostaAwbBase64 };
+    if (tx.bostaAwbBase64 && tx.bostaAwbType === 'A6') return { success: true, pdfBase64: tx.bostaAwbBase64 };
 
     const response = await new Promise<any>((resolve, reject) => {
       const payload = JSON.stringify({
         trackingNumbers: tx.bostaTrackingNumber || undefined,
         ids: tx.bostaTrackingNumber ? undefined : tx.bostaOrderId,
-        requestedAwbType: 'A4',
+        // A6 is Bosta's compact thermal-label format.
+        requestedAwbType: 'A6',
         lang: 'ar',
       });
       const req = https.request({
@@ -351,7 +352,7 @@ export class BostaService {
     if (!pdfBase64 || response?.success === false) {
       throw new BadRequestException(response?.message || 'بوسطة لم تُرجع ملف البوليصة؛ تحقق من حالة الشحنة وإمكانية طباعتها');
     }
-    await this.txModel.findByIdAndUpdate(txId, { bostaAwbBase64: pdfBase64 });
+    await this.txModel.findByIdAndUpdate(txId, { bostaAwbBase64: pdfBase64, bostaAwbType: 'A6' });
     return { success: true, pdfBase64 };
   }
 
@@ -573,6 +574,7 @@ export class BostaService {
         bostaOrderId,
         bostaTrackingNumber: trackingNumber,
         bostaAwbBase64: '',
+        bostaAwbType: '',
         bostaStatus: statusCode,
         bostaStatusLabel: statusLabel,
         bostaShippingStatus: BOSTA_TO_SHIPPING_STATUS[statusCode] || 'Created',

@@ -219,10 +219,71 @@ stock figures, phone toggle + persistence + colspan, 6 search cases, quick view 
 and without a follow-up, fetch failure + retry, z-order and Escape layering,
 backdrop close, comments layout, 7 widths, 390px mobile, zero page errors.
 
+### Round 2 (same day)
+- **Stock is a mark, not a bar**: `_spStockMarkHtml(s, cls)` — ✓ «متاح 12», ✕ «غير
+  متوفر» / «متاح 1 من 3», link icon «غير مربوط». ⚠ This reverses the earlier
+  no-tick-on-every-row rule **at the user's request** (Oct 5) — inside the popover
+  only; the table cell still badges problems only. The red/amber warn lines under the
+  name were removed (the mark says the same); only «سعر مختلف» remains there.
+- **«New»** is `.sp-new-badge` (pale pill), stacked UNDER the order number in
+  `.sp-ref-cell` — inline it was clipped off the ~57px ref column.
+- **Quick view shows the order's own comments** (`_spPeekCommentsHtml`) when there are
+  any, separately from the follow-up trail — two different threads.
+- **Assign**: `_spStaffCellHtml` — the name is the reassign button, an empty cell is
+  «إسناد» (admin only, pending only). `openSpAssignModal(ids)` serves one or many;
+  the selection bar has «إسناد». ⚠ Bulk = the existing per-order
+  `PATCH /shopify/orders/:id/reassign` in a loop (that route owns the staff-only rule
+  and `assignmentHistory`), and ⚠ a 200 with `{success:false}` counts as a failure.
+  Failures are named; the selection is kept so they can be retried.
+  `openReassignOrderModal` now delegates to it.
+- **Filters**: the funnel used to open the DATE popover. It now opens `#sp-fpanel`
+  (deposit · stock · status · staff · tags · has comments) on `<body>`, editing a
+  DRAFT that «عرض N أوردر» applies (Escape/outside/Cancel discard). Groups AND,
+  values OR. Applied after the cards and the star (`_spApplyPanel`), same counting
+  rule. Stock options disable while inventory is not loaded. The date has its own
+  calendar button (⚠ id `shopify-filter-icon-btn` kept — the date popover anchors on
+  it) that names the active range. Every active filter is a chip in
+  `#sp-active-chips` with «مسح الكل»; `#sp-result-count` says «عرض X من Y».
+  `switchShopifyTab` resets `_spPanel`. The star chip moved into the toolbar.
+- Verified: **73 browser assertions** (adds marks, New badge, assign single/bulk/
+  partial failure, panel draft/apply/chips/OR/AND/Escape, date label, Clear all,
+  comments in the quick view, names not clipped at 1440/1280).
+
+### Round 3 (same day) — contact links, reassignment notice, «New» inline
+- **WhatsApp / Vrobo / Call** from the customer's number: two icons on the phone
+  line in the table (hidden with it), labelled buttons in the quick view.
+  `_spIntlPhone` → `20xxxxxxxxxx` (⚠ wa.me with a bare `01…` opens a non-existent
+  number). Vrobo is `https://merchant.vrobo.co/inbox?contact=<20…>&channel=whatsapp`.
+  ⚠ The Vrobo icon is a file, **`frontend/public/vrobo.png`** — a **96px trimmed copy**
+  of `Vrobo Logo.png` (1254px / 770 KB, kept as the source). Regenerate the copy if
+  the logo changes; never point rows at the original. If it is missing the `<img>`
+  removes itself and a red «V» tile shows.
+  ⚠ The table icons are **grey at rest** (`filter:grayscale(1)`) and take their brand
+  colour on hover / `:active` / focus — two saturated logos on every row out-shouted
+  the name. The quick-view buttons stay in colour.
+  The main-page contact window (`openCustomerContact`, `.fdc-btn.is-vrobo`) uses the
+  same logo; its old purple tint was dropped (it clashed with the red mark).
+- **A reassignment no longer announces itself as a new order.** `reassignOrder`
+  called `notifyOrderAssigned` («أوردر جديد مُسند إليك»), and the client plays the
+  new-order sound on «مُسند». It now calls **`notifyOrderReassigned`**: «تم إسناد
+  الأوردر إليك» (assignee), «تم نقل الأوردر منك إلى X» (previous assignee), «تم إسناد
+  الأوردر إلى X» (other admins), with `بواسطة` / `السابق` lines, and **skips the actor**
+  (`changedById` from `req.user.userId`). ⚠ None of these lines may contain «مُسند».
+  Client side, `_parseAssignLine` / `_assignTitle` are the one parser for all five
+  first lines (card, toast, English localisation). 4 cases in
+  `shopify-reassign-notify.service.spec.ts`, revert-checked (3 fail on the old call).
+- **«جديد» is back on the order-number line.** Fits because `SP_COL_W.ref` 88 → **112**
+  (with `th.sp-c-ref`), the cell padding is 4px, and an unstarred star no longer
+  reserves 27px in the table (starring is in ⋮). Below 62px of content it becomes a
+  green dot with the word in `title` — never clipped. Word at 1920/1440, dot at
+  1280/1100 (measured).
+- 83 browser assertions; backend Shopify specs 45/45; `node dist/main.js` loads.
+
 ### Still open
-- Widening الأصناف by 46px makes every other column ~4% narrower at the same
-  viewport; the order-number column was already tight below ~1440px.
-- The mobile cards show photos but not the stock badge.
+- Widening الأصناف (+46) and the ref column (+24) makes every other column narrower at
+  the same viewport; the time column still ellipsises below ~1440px.
+- The mobile cards show photos but not the stock badge, and have no assign control.
+- Filter-panel state is in memory only — a reload clears it.
 
 ---
 
@@ -2702,6 +2763,56 @@ const expenseTotal = filteredExpenses
 
 ---
 
+## Stock Demand Analysis — Rebuilt Answer-First (Oct 5, 2026)
+
+The «تحليل احتياج المخزون» modal (`#demand-planning-modal`, opened from the Shopify page
+and from Movements) was redesigned from a canvas mock-up. **Presentation only** — the
+server analysis, `_dpBuildOrderPivot`, the PO dialogs, Excel and print are untouched.
+
+- **Seven KPI tiles became one answer** (`.dpx-hero`): «N من M طلب جاهزين للشحن الآن»
+  with one block per order (solid = ready, red stripes = waiting), and beside it what
+  to buy, the estimated cost (admin-only, as before) and the purchase actions.
+  ⚠ **`_dpBuildOrderPivot()` now runs BEFORE the summary** (its later call was removed) —
+  the headline is the pivot's ready/missing split. Past 40 orders the blocks become one
+  proportional bar, because 40+ blocks are slivers.
+- ⚠ **`#dp-new-po-btn` / `#dp-add-po-btn` moved from the footer into the hero**, with the
+  SAME ids: `renderDemandPlanning` still enables/disables them by id after rendering the
+  summary. Footer keeps Excel + Print only. «إنشاء أمر شراء» is the primary action;
+  «أضِفها لأمر شراء قائم» is a link beside it.
+- **Required/available/SKU columns became one coverage bar** (`_dpCoverageHtml`):
+  `freeToUse` against `required`, shortage striped red. A negative `freeToUse` draws as
+  0 available; the detail row states the deficit in words. Sort on that column uses
+  `freeToUse`. The table is 6 columns now — **detail and empty rows use `colspan="6"`**.
+- **The calculation is one chain of chips** (`_dpCalcBreakdown`): في المخزن − محجوز =
+  متاح │ المطلوب ← الناقص + أمان = يُشترى. Each number is its own chip with the operator
+  between, so no sign is mixed into RTL prose. The arrow flips with the language.
+- **Notices are quiet lines with a drawn icon** (`.dpx-note`); the leading emoji in the
+  `dpNotice*` strings is stripped at render, not edited out of the strings.
+- Product placeholder is a drawn icon with the photo laid over it (a failed load removes
+  the `<img>`), instead of a 📦 emoji.
+
+Verified in Chrome against the real `index.html`: light, dark and 390px mobile — the
+headline, block split and tab counts agree with the pivot, no page errors, no overflow.
+
+**Round 2–3 (same day).** ⚠ The panel carried `direction:rtl`, which reversed every English
+sentence; it now inherits the document direction. ⚠ Headers were `text-align:right` while
+cells followed the document — alignment is now declared on `th` AND `td` together (measured
+0–2px in both languages). The modal is a centred ~1120px window (full-screen only ≤820px).
+English plurals go through `_dpPluralW` and `{ordersW}/{itemsW}/{unitsW}` placeholders that
+the Arabic strings simply do not use.
+- **Loading:** `_dpRunAnalysis` opens the window at once in `.is-loading` with a skeleton
+  shaped like the answer, and puts the clicked button in a busy state. ⚠ `_dpLoading`
+  makes it single-flight — a second click during the request started a duplicate
+  analysis (verified: 1 request). On failure the window closes rather than leaving a
+  skeleton standing in for an answer that is not coming. Entry points take the button:
+  `openShopifyDemandPlanning(this)`.
+- **Tabs:** one `.dpx-ink` underline slides to the active tab (`_dpMoveInk`, measured from
+  `offsetLeft`, so RTL/LTR both work); panes fade in. Reduced motion disables both.
+- **PO dialogs:** their buttons used `.bd-actions`, whose spacing exists only inside
+  `.bulk-discount-panel`, so they sat flush against the items box. Now `.dpx-dlg-actions`.
+
+---
+
 ## The Printed Invoice — Rebuilt Again, Customer-First (Oct 5, 2026)
 
 Sheet 1 of `buildInvoiceHtml` was redesigned with the owner from a canvas mock-up
@@ -2860,6 +2971,7 @@ leaked — the change there is defence against the same trap, not a bug fix.
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Oct 5, 2026 | Stock Demand Analysis rebuilt answer-first: «N of M orders ready» with per-order blocks + what to buy and the PO button, a coverage bar per product, the calculation as one chip chain; presentation only | See "Stock Demand Analysis — Rebuilt Answer-First" above |
 | Oct 5, 2026 | Printed invoice redesigned customer-first: product photos, a total/paid/remaining strip with a payment chip derived from the money; removed the terms strip, signatures and duplicate brand name; fixed every sale printing «لم يُحصّل أي مبلغ» (paid was fmtJ HTML compared as a number) | See "The Printed Invoice — Rebuilt Again" above |
 | Oct 5, 2026 | Order toasts rebuilt (assignment card + status row, bottom-end, no emoji, real order/customer named) and «Open order» fixed — it opened a ShopifyOrder id as an invoice; new-order sound → cha-ching, vault sound → wood tap so the two never collide | See "Order Toasts & Sounds" above |
 | Oct 5, 2026 | Shopify orders: product photos finally render (they read an image field inventory never has), stock badges + have/need popover, optional phone line, wider search, and the order # opens a quick view with the follow-up trail instead of leaving the page | See "Shopify Orders — Photos, Stock, Phone Toggle, Order Quick View" above |

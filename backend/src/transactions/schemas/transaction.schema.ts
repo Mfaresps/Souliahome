@@ -434,6 +434,10 @@ export class Transaction {
   @Prop({ default: '', select: false })
   bostaAwbBase64: string;
 
+  /** Print size of the cached Bosta AWB. */
+  @Prop({ default: '', select: false })
+  bostaAwbType: string;
+
   /**
    * Bosta shipment status — mirrors Bosta state codes:
    * CREATED | PICKED_UP | IN_TRANSIT | OUT_FOR_DELIVERY |

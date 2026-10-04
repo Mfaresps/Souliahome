@@ -259,6 +259,76 @@ export class ShopifyService {
   }
 
   /**
+   * Manual (re)assignment notice — deliberately different from notifyOrderAssigned.
+   *
+   * ⚠ The first line is the wire format the client dispatches on:
+   *     «تم إسناد الأوردر إليك: #ref»            → the new assignee
+   *     «تم نقل الأوردر منك إلى <name>: #ref»    → the previous assignee
+   *     «تم إسناد الأوردر إلى <name>: #ref»      → other admins
+   *   None contains «مُسند», so the client's new-order branch (headline card +
+   *   cha-ching) never fires for it. Keep it that way.
+   * ⚠ The actor is skipped: the admin who pressed «إسناد» already got a success
+   *   toast; a notification about their own click is what read as «a new order».
+   */
+  private async notifyOrderReassigned(
+    order: ShopifyOrderDocument,
+    newUserId: string,
+    previousUserId: string,
+    previousName: string,
+    changedBy: string,
+    changedById: string,
+  ): Promise<void> {
+    const cleanRef = String(order.ref || '').replace(/^#+/, '');
+    const newName = order.assignedToName || '-';
+    const tail = [
+      `العميل: ${order.client || '-'}`,
+      `الإجمالي: ${order.total || 0} EGP`,
+      `بواسطة: ${changedBy || '-'}`,
+      ...(previousName && previousUserId !== newUserId ? [`السابق: ${previousName}`] : []),
+    ];
+    const admins = await this.usersService.findAdmins();
+    const targets = new Map<string, string>();   // userId → first line
+    for (const a of admins) targets.set(String(a._id), `تم إسناد الأوردر إلى ${newName}: #${cleanRef}`);
+    if (previousUserId && previousUserId !== newUserId) targets.set(String(previousUserId), `تم نقل الأوردر منك إلى ${newName}: #${cleanRef}`);
+    targets.set(String(newUserId), `تم إسناد الأوردر إليك: #${cleanRef}`);
+    if (changedById) targets.delete(String(changedById));
+    if (!targets.size) return;
+
+    const rows = [...targets.entries()].map(([targetUserId, first]) => ({
+      targetUserId,
+      targetUsername: '',
+      targetName: newName,
+      fromUserId: 'system',
+      fromName: 'نظام التوزيع',
+      txId: String(order._id),
+      txRef: cleanRef,
+      commentId: 0,
+      commentText: [first, ...tail].join('\n'),
+      read: false,
+    }));
+
+    const created = await this.mentionsService.createMany(rows);
+    for (const m of created as any[]) {
+      const payload = {
+        id: String(m._id),
+        _id: String(m._id),
+        targetUserId: m.targetUserId,
+        targetUsername: m.targetUsername,
+        targetName: m.targetName,
+        fromUserId: m.fromUserId,
+        fromName: m.fromName,
+        txId: m.txId,
+        txRef: m.txRef,
+        commentId: m.commentId,
+        commentText: m.commentText,
+        read: false,
+        ts: (m.createdAt instanceof Date) ? m.createdAt.toISOString() : new Date().toISOString(),
+      };
+      try { this.presence.emitToUser(String(m.targetUserId), 'mention:new', payload); } catch { /* best-effort */ }
+    }
+  }
+
+  /**
    * Admin-only manual reassignment. Changes ONLY routing metadata (assignedTo/
    * assignedToName/assignedAt/assignmentReason) and appends to assignmentHistory —
    * never touches reviewedBy/reviewedAt, deposit fields, or any EmployeePerformanceLog
@@ -269,6 +339,7 @@ export class ShopifyService {
     newEmployeeId: string,
     reason: string,
     changedBy: string,
+    changedById = '',
   ): Promise<{ success: boolean; error?: string }> {
     const order = await this.shopifyOrderModel.findById(orderId);
     if (!order) return { success: false, error: 'الأوردر غير موجود' };
@@ -321,7 +392,11 @@ export class ShopifyService {
       );
     }
 
-    this.notifyOrderAssigned(order, newEmployeeId).catch((err) =>
+    /* ⚠ NOT notifyOrderAssigned. That one says «أوردر جديد مُسند إليك» and the client
+       plays the new-order sound for it — so a reassignment of an order that arrived
+       hours ago read as a fresh order, to the assignee AND to the admin who had just
+       done it. A reassignment is its own message. */
+    this.notifyOrderReassigned(order, newEmployeeId, previousUserId, previousName, changedBy, changedById).catch((err) =>
       this.logger.error(`Reassignment notification failed for order ${order._id}: ${(err as Error).message}`),
     );
 
