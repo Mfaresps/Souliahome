@@ -301,6 +301,60 @@ export class BostaService {
     return process.env.BOSTA_API_KEY || '';
   }
 
+  /** Request one printable AWB from Bosta's v2 API. The carrier returns a
+   * base64-encoded PDF for requests of 50 AWBs or fewer. */
+  async getAwb(txId: string): Promise<{ success: true; pdfBase64: string }> {
+    const apiKey = await this.resolveApiKey();
+    if (!apiKey) throw new BadRequestException('Bosta API Key غير مضبوط');
+    const tx = await this.txModel.findById(txId).select('+bostaAwbBase64').lean();
+    if (!tx) throw new BadRequestException('المعاملة غير موجودة');
+    if (!tx.bostaOrderId && !tx.bostaTrackingNumber) throw new BadRequestException('لم يتم إنشاء شحنة Bosta لهذا الطلب');
+    if (['DELIVERED', 'RETURNED', 'CANCELLED', 'DELETED'].includes(tx.bostaStatus || '')) {
+      throw new BadRequestException('بوليصة هذا الطلب غير قابلة للطباعة حسب حالة الشحنة');
+    }
+    if (tx.bostaAwbBase64) return { success: true, pdfBase64: tx.bostaAwbBase64 };
+
+    const response = await new Promise<any>((resolve, reject) => {
+      const payload = JSON.stringify({
+        trackingNumbers: tx.bostaTrackingNumber || undefined,
+        ids: tx.bostaTrackingNumber ? undefined : tx.bostaOrderId,
+        requestedAwbType: 'A4',
+        lang: 'ar',
+      });
+      const req = https.request({
+        hostname: 'app.bosta.co',
+        path: '/api/v2/deliveries/mass-awb',
+        method: 'POST',
+        headers: { Authorization: apiKey, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
+      }, (res) => {
+        let data = '';
+        res.setEncoding('utf8');
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) resolve(parsed);
+            else reject(new Error(parsed?.message || parsed?.error || `Bosta HTTP ${res.statusCode}`));
+          } catch {
+            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300 && /^[A-Za-z0-9+/=\r\n]+$/.test(data.trim())) resolve(data.trim());
+            else reject(new Error(`تعذر قراءة رد بوليصة Bosta (HTTP ${res.statusCode})`));
+          }
+        });
+      });
+      req.on('error', reject);
+      req.write(payload);
+      req.end();
+    });
+
+    const candidate = typeof response === 'string' ? response : response?.data?.pdf || response?.data?.file || response?.data?.base64 || response?.data?.awb || response?.data || response?.pdf || response?.file;
+    const pdfBase64 = typeof candidate === 'string' ? candidate : '';
+    if (!pdfBase64 || response?.success === false) {
+      throw new BadRequestException(response?.message || 'بوسطة لم تُرجع ملف البوليصة؛ تحقق من حالة الشحنة وإمكانية طباعتها');
+    }
+    await this.txModel.findByIdAndUpdate(txId, { bostaAwbBase64: pdfBase64 });
+    return { success: true, pdfBase64 };
+  }
+
   private emit(event: string, payload: unknown): void {
     try { this.presence?.emitEvent(event, payload); } catch { /* swallow */ }
   }
@@ -376,7 +430,7 @@ export class BostaService {
     if (tx.bostaOrderId && !isResendable) {
       return { success: false, error: 'تم إرسال هذا الطلب إلى Bosta مسبقاً' };
     }
-    if (!['Ready', 'Picked-Up'].includes(tx.pickupStatus)) return { success: false, error: 'يجب نقل الطلب إلى جاهز للشحن قبل إنشاء بوليصة Bosta' };
+    if (!['Preparing', 'Ready', 'Picked-Up'].includes(tx.pickupStatus)) return { success: false, error: 'يجب نقل الطلب إلى قيد التجهيز قبل إنشاء بوليصة Bosta' };
     // Clear previous failed/deleted state before resending
     if (isResendable || tx.bostaOrderId) {
       await this.txModel.findByIdAndUpdate(txId, {
@@ -518,6 +572,7 @@ export class BostaService {
       await this.txModel.findByIdAndUpdate(txId, {
         bostaOrderId,
         bostaTrackingNumber: trackingNumber,
+        bostaAwbBase64: '',
         bostaStatus: statusCode,
         bostaStatusLabel: statusLabel,
         bostaShippingStatus: BOSTA_TO_SHIPPING_STATUS[statusCode] || 'Created',

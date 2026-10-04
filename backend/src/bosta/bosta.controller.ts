@@ -82,6 +82,13 @@ export class BostaController {
     return result;
   }
 
+  /** Fetch a printable AWB for an existing Bosta shipment. */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('awb/:txId')
+  async getAwb(@Param('txId') txId: string) {
+    return this.bostaService.getAwb(txId);
+  }
+
   /** Sync Bosta status for a single transaction */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('sync/:txId')

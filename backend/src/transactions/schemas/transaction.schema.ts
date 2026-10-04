@@ -430,6 +430,10 @@ export class Transaction {
   @Prop({ default: '' })
   bostaTrackingNumber: string;
 
+  /** Cached base64 AWB PDF; excluded from ordinary transaction API responses. */
+  @Prop({ default: '', select: false })
+  bostaAwbBase64: string;
+
   /**
    * Bosta shipment status — mirrors Bosta state codes:
    * CREATED | PICKED_UP | IN_TRANSIT | OUT_FOR_DELIVERY |
