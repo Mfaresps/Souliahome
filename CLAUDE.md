@@ -149,6 +149,83 @@ entirely on a transaction that carries none of them.
 
 ---
 
+## Shopify Orders — Photos, Stock, Phone Toggle, Order Quick View (Oct 5, 2026)
+
+### Product photos were never rendered
+The items popover read `inv.imageUrl || i.imageUrl` — inventory rows carry no image
+and most Shopify lines have no snapshot, so every item was a grey square (the same
+defect the prep workspace fixed in Round 4). `_spItemImg(i, inv)` resolves: line
+snapshot → inventory row → product by `inv._id` → `_pwItemImgUrl` (id/code/name),
+trying both `shopifyName` and `name`. `_spThumbHtml` draws initials UNDER the
+`<img>`, so a broken URL shows initials, never an empty tile.
+
+### الأصناف cell — photos + a problem-only badge
+Up to 3 stacked thumbnails, the count, and a badge **only when something blocks**:
+red «N ناقص» (out of stock or short), amber «غير مربوط». No badge on a clean order —
+same no-green-tick rule as before. `_spItemStock(i, idx)` is the one per-line state
+(`na|missing|out|short|ok`) used by the popover and the quick view; `na` (inventory
+not loaded) says nothing, as `_spStockBlock` already does.
+
+⚠ `SP_COL_W.items` and `th.sp-c-items` are **150** — move together. The cell content
+sits in `.sp-items-cq`, a **`<div>` size container** (containment does not apply to
+a `<td>`), which sheds parts as `--sp-cw` compresses: extra photos → count on a
+blocked row → chevron → tighter type → photo only below 54px. **The photo and the
+badge are the last things to go** — verified visible with zero spill at 7 widths
+1920→1024 (cw down to 0.547).
+
+### Popover
+Rows show photo, name, code chip, unit price, `× qty`, and stock as **have / need
+with a bar** for short lines («0 / 1», «1 / 3») or a quiet «المتاح 12» for ok ones.
+Header summarises «N جاهز · N يمنع التأكيد · N غير مربوط»; footer the items total.
+
+### Phone under the client — optional
+`{id:'phone'}` in `SP_COLS` toggles `[data-col="phone"]` from the الأعمدة menu.
+⚠ It is **not** in `SP_COL_W` on purpose: it is a line, not a column, so hiding it
+must not change widths or the day-separator colspan (a test checks this). Rendered
+as a `tel:` link, `unicode-bidi:isolate`.
+
+### Search
+`_spMatchesSearch`: ref, client, tags, item name/`shopifyName`/code, and phone by
+**digits only, from 3 digits up**. Goes through `_gsNorm`, so «٢٦٨١» finds #2681.
+
+### Order # → quick view, not navigation
+`openSpOrderPeek(id)` opens `#sp-peek` (a side panel) instead of leaving the page:
+customer, phone, address, note, money (total/deposit/remaining/shipping/discount),
+items with stock state, and the follow-up section.
+- Follow-ups matched **exactly like `openShopifyOrderFollowup`** (shopifyOrderId,
+  then normalised orderRef) — two rules would disagree about whether one exists.
+- `followUps` is fetched here (≤1/min, `_spEnsureFollowUps`). **A failed fetch shows
+  an error + retry, never «no follow-up»** (LOAD_FAIL rule). A late reply for a
+  different order is dropped (`id !== _spPeekId`).
+- When a follow-up exists the panel shows its status, owner, reason, calls n/3 and
+  **the whole trail inline**, scrolled to the newest entry; the button opens the real
+  `openFuCommentPopup` window. ⚠ No composer in the panel — one write path.
+- ⚠ z-index **1150**: above the page, below `.fu-thread-overlay` (1200) and
+  `#modal-overlay` (1300), so the trail, comments and confirm dialogs open over it.
+  Escape closes the panel only when neither of those is open.
+- `closeFuCommentPopup` and `_spRefreshOrderRow` refresh the panel, so a note added
+  in the trail window or a comment count change shows without reopening.
+- `openShopifyOrderFollowup` still exists (other callers); it is no longer on the ref.
+
+### Comments window
+Chronological, composer pinned at the bottom, opens scrolled to the newest, real
+author photos via `_pwFindUser`. ⚠ The input id `inv-comment-text-<id>` is unchanged
+— `selectMention` builds it.
+
+### Verification
+45 assertions in a real Chrome over the shipped `index.html` with a mocked API:
+photos load, broken image → initials, badges (out/partial/unlinked/none), popover
+stock figures, phone toggle + persistence + colspan, 6 search cases, quick view with
+and without a follow-up, fetch failure + retry, z-order and Escape layering,
+backdrop close, comments layout, 7 widths, 390px mobile, zero page errors.
+
+### Still open
+- Widening الأصناف by 46px makes every other column ~4% narrower at the same
+  viewport; the order-number column was already tight below ~1440px.
+- The mobile cards show photos but not the stock badge.
+
+---
+
 ## Shopify Table — Action Column, Discount Badge, Header Type, Tag Tone, Items Popover (Sep 8, 2026)
 
 Four defects, each measured in a real browser against the shipped stylesheet before
@@ -2625,6 +2702,53 @@ const expenseTotal = filteredExpenses
 
 ---
 
+## The Printed Invoice — Rebuilt Again, Customer-First (Oct 5, 2026)
+
+Sheet 1 of `buildInvoiceHtml` was redesigned with the owner from a canvas mock-up
+(`.iv-*` classes). The policy sheet, `amountToArabicWords` and every call site are
+unchanged. **This supersedes parts of "The Printed Invoice — Rebuilt as an A4
+Commercial Document" below** — read the reversals before restoring anything from it.
+
+### A real bug: every sales invoice said «لم يُحصّل أي مبلغ»
+`paid` came from `exchangeSalePaidDisplayAmount(tx)`, which returns **`fmtJ()` HTML**,
+not a number — so `paid > 0` was always false on a sale. Invoice #2545 (300 deposit
+on فودافون كاش, 2,130 due) printed "nothing collected" directly above a balance that
+had already subtracted the 300. `paid` is now numeric, using that helper's own
+exchange-sale rule. ⚠ **Never compare the output of a `fmtJ`-based helper as a number.**
+
+### Reversed on purpose (owner's decision)
+- **The terms strip is gone.** «شروط الدفع» printed the same value as «طريقة السداد»,
+  and «رقم التتبع» printed `tx.pickupRef` — the **prep-group** ref (601-12SEP), not a
+  carrier tracking number. The shipping zone code (`gov`) is internal. The carrier
+  now rides on the address label («الشحن مع Bosta»).
+- **The signature block is gone**, and so is the operator's name from the footer —
+  an internal fact that stays on the transaction.
+- **No «SOULIA» beside the logo.** `_invIssuerHtml` no longer falls back to the brand
+  name; a legal name that *differs* from the brand still prints when set.
+
+### What the sheet states now
+Logo · title · number/dates row · اسم العميل / الهاتف / عنوان التسليم · items with a
+**product photo** (`_pwItemImgUrl`: line snapshot first, then the catalogue), qty,
+unit price and total · totals + التفقيط · a **payment strip**: total / paid (+ method)
+/ remaining. The chip is derived from the money, never from `payStatus`:
+`unpaid` (paid 0) · `partial` · `full` (nothing remaining) · `cancel`.
+- The method shows only when something was paid. A purchase settled from supplier
+  credit names «الرصيد لدى المورد», never a vault.
+- ⚠ **A failed photo removes its `<img>`** and the placeholder icon beneath it shows —
+  never a broken-image glyph on a customer document.
+- ⚠ **`_invPrintTrigger()` replaced the fixed 400/500ms `print()` timers** in
+  `printInvoice` and `bulkPrintPDF`: it waits for the images and the web font, capped
+  at 4s so a dead URL can never block printing. A fixed timer printed empty thumbnails.
+- Font is IBM Plex Sans Arabic for the whole printed document (both sheets).
+- ⚠ The CSS lives inside a JS template literal — **no backticks in its comments.**
+
+### Verification
+Five invoices rendered through the SHIPPED functions in Chrome (sale partly paid / fully
+paid / unpaid, purchase, cancelled): each fits one A4 sheet, no overflow, no errors, the
+correct chip and cells. `amount-to-words.spec.ts` 24/24.
+
+---
+
 ## Order Toasts & Sounds — `.stz-*`, Cha-ching, Wood Tap (Oct 5, 2026)
 
 The two live-event toasts were rebuilt from the design canvas, and two sounds replaced —
@@ -2736,7 +2860,9 @@ leaked — the change there is defence against the same trap, not a bug fix.
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Oct 5, 2026 | Printed invoice redesigned customer-first: product photos, a total/paid/remaining strip with a payment chip derived from the money; removed the terms strip, signatures and duplicate brand name; fixed every sale printing «لم يُحصّل أي مبلغ» (paid was fmtJ HTML compared as a number) | See "The Printed Invoice — Rebuilt Again" above |
 | Oct 5, 2026 | Order toasts rebuilt (assignment card + status row, bottom-end, no emoji, real order/customer named) and «Open order» fixed — it opened a ShopifyOrder id as an invoice; new-order sound → cha-ching, vault sound → wood tap so the two never collide | See "Order Toasts & Sounds" above |
+| Oct 5, 2026 | Shopify orders: product photos finally render (they read an image field inventory never has), stock badges + have/need popover, optional phone line, wider search, and the order # opens a quick view with the follow-up trail instead of leaving the page | See "Shopify Orders — Photos, Stock, Phone Toggle, Order Quick View" above |
 | Sep 8, 2026 | «سجل عمليات التحقق» stayed painted on every page after being opened once — the panel was an orphan outside `#page-approvals` (one stray `</div>`), so `.page{display:none}` never covered it and `style.display=''` left nothing to hide it | See "«سجل عمليات التحقق» Followed the User Onto Every Page" above |
 | Sep 8, 2026 | Prep workspace: the customer note lost its permanent amber tint, comment timestamps became short and language-aware (`now · 25m · Sat 20:23`) and moved under the text, and author photos were fixed — a comment stored under a username never matched its author, and the mention card showed a generic @ icon instead of the sender | See "Round 7 — ملاحظة محايدة، وقت مختصر" above |
 | Sep 8, 2026 | Prep workspace: notes/comments moved into their own scrolling side column (`.pw-body2`) — they used to span the full header width while the area beside the items sat empty — and the @mention path from the new composer was verified end to end | See "Round 6 — عمود جانبي للتعليمات" above |

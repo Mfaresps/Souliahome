@@ -3907,7 +3907,7 @@ body.dark-mode #shopify-orders-table-wrap .data-table thead th:not(:first-child)
 #shopify-orders-table-wrap .data-table th.sp-c-ref     {width:calc(88px * var(--sp-cw,1));white-space:nowrap}
 #shopify-orders-table-wrap .data-table th.sp-c-time    {width:calc(88px * var(--sp-cw,1));white-space:nowrap}
 #shopify-orders-table-wrap .data-table th.sp-c-client  {width:calc(132px * var(--sp-cw,1))}
-#shopify-orders-table-wrap .data-table th.sp-c-items   {width:calc(104px * var(--sp-cw,1));white-space:nowrap}
+#shopify-orders-table-wrap .data-table th.sp-c-items   {width:calc(150px * var(--sp-cw,1));white-space:nowrap}
 /* ⚠ الخصم gets its own class rather than sharing .sp-c-num: it renders the shared
    .disc-badge, which is wider than a bare figure.
    ── Why 84 and not 124 ──
@@ -4694,17 +4694,194 @@ body.dark-mode .sp-pick-menu{box-shadow:0 12px 32px rgba(0,0,0,.5),0 2px 6px rgb
 .sp-cmtwin .modal-head{margin:0;padding:16px 18px 13px;border-bottom:1px solid var(--border)}
 .sp-cmtwin-title{font-size:1.02rem;font-weight:700;color:var(--text);line-height:1.25}
 .sp-cmtwin-sub{font-size:.76rem;color:var(--muted);margin-top:3px;unicode-bidi:isolate}
-/* ⚠ الجسم هو العنصر الممرَّر، و.inv-cmt-list تحمل max-height:300px داخل الفاتورة —
-     تركها هنا يصنع شريط تمرير داخل آخر. */
-.sp-cmtwin-body{flex:1;overflow-y:auto;overscroll-behavior:contain}
-.sp-cmtwin-body .inv-cmt-list{max-height:none;overflow:visible}
-.sp-cmtwin-body .inv-cmt-form{border-bottom:1px solid var(--border);padding:12px 18px;background:transparent}
-/* السطر التوضيحي والقائمة على نفس المحاذاة الأفقية للحقل فوقهما. */
-.sp-cmtwin-body .sp-cmt-note{padding:9px 18px}
-.sp-cmtwin-body .inv-cmt-item{padding:12px 18px}
+/* ⚠ الجسم لم يعد هو الممرَّر: القائمة تمرّر وحدها وحقل الكتابة ثابت أسفلها، فلا
+     يختفي الحقل عند قراءة خيط طويل. .inv-cmt-list تحمل max-height:300px داخل
+     الفاتورة فيُلغى هنا. */
+.sp-cmtwin-body{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.sp-cmtwin-body .sp-cmt-scroll{flex:1;min-height:120px;max-height:none;overflow-y:auto;overscroll-behavior:contain;padding:6px 0}
+.sp-cmtwin-body .inv-cmt-form.sp-cmt-compose{border-top:1px solid var(--border);border-bottom:0;padding:12px 18px 10px;background:transparent;flex-shrink:0}
+.sp-cmtwin-body .sp-cmt-note{padding:7px 0 0;font-size:.72rem}
+.sp-cmtwin-body .inv-cmt-item{padding:10px 18px}
 .sp-cmtwin-body .sp-disc-empty{padding:34px 18px}
+.sp-cmt-av{flex-shrink:0;display:flex}
 /* الأفعال تظهر دائماً على اللمس — لا هوفر هناك. */
 @media (hover:none){.sp-cmtwin-body .tx-cmt-actions{opacity:1}}
+
+/* ═══ Shopify table — product images + stock badge in الأصناف (Oct 5, 2026) ═══
+   ⚠ SP_COL_W.items and th.sp-c-items are both 150 — they must move together. */
+#shopify-orders-table-wrap .data-table .sp-items-btn{padding:3px 6px 3px 4px;gap:5px;min-height:34px;overflow:hidden}
+/* ⚠ The column compresses with --sp-cw (down to ~0.6 of 150px ≈ 90px), and photos +
+   count + badge do not fit that. The cell is a size container and sheds parts in a
+   fixed order — extra photos first, then the count text — so the BADGE (the reason
+   this column is read) is never the part that is clipped or pushed into الشحن.
+   ⚠ The container is a <div> inside the <td>: size containment does not apply to
+   table cells, so container-type on the td itself silently does nothing. */
+.sp-items-cq{container-type:inline-size;width:100%;display:flex;justify-content:center}
+/* The cell's own padding is the cheapest width to give back — 8px a side here is
+   what keeps the photo AND the badge at the narrowest table scale. */
+#shopify-orders-table-wrap .data-table td[data-col="items"]{padding-inline:4px}
+/* ⚠ The PHOTO is the last thing to go — it is how a picker recognises the order.
+   Order of shedding: extra photos → count text on a blocked row (the badge already
+   says what matters) → the chevron → tighter type → and only at the floor, the photo. */
+@container (max-width:138px){
+  .sp-items-cq .sp-ith:nth-child(n+2){display:none}
+}
+@container (max-width:112px){
+  .sp-items-cq .sp-items-btn.is-blocked .mov-items-count{display:none}
+}
+@container (max-width:98px){
+  .sp-items-cq .sp-items-btn .mov-items-chev{display:none}
+  .sp-items-cq .sp-items-btn{gap:4px;padding-inline:4px}
+  .sp-items-cq .sp-ith{width:22px;height:22px}
+  .sp-items-cq .sp-items-badge{font-size:.62rem;padding:1px 4px}
+}
+@container (max-width:54px){
+  .sp-items-cq .sp-ithumbs{display:none}
+}
+.sp-items-btn.is-blocked{border-color:#f3c3bd;background:#fff7f6}
+body.dark-mode .sp-items-btn.is-blocked{border-color:rgba(248,113,113,.45);background:rgba(248,113,113,.08)}
+.sp-ithumbs{display:inline-flex;flex-shrink:0}
+.sp-ith,.sp-ip-img,.sp-pk-img{position:relative;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;background:var(--surface2);color:var(--muted);font-weight:700;line-height:1}
+.sp-ith{width:24px;height:24px;border-radius:6px;font-size:.55rem;box-shadow:0 0 0 2px var(--bg)}
+.sp-ith + .sp-ith{margin-inline-start:-9px}
+.sp-card-ith{width:30px;height:30px;box-shadow:none}
+.sp-card-item-row .sp-card-item-name{flex:1;min-width:0}
+.sp-ith img,.sp-ip-img img,.sp-pk-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;background:var(--surface2)}
+.sp-th-ini{pointer-events:none}
+.sp-items-badge{flex-shrink:0;font-size:.66rem;font-weight:700;border-radius:4px;padding:1px 5px;white-space:nowrap;line-height:1.5}
+.sp-items-badge.is-bad{color:#b42318;background:#fde7e4}
+.sp-items-badge.is-warn{color:#9a3412;background:#fdf0dc}
+body.dark-mode .sp-items-badge.is-bad{color:#fca5a5;background:rgba(248,113,113,.16)}
+body.dark-mode .sp-items-badge.is-warn{color:#fdba74;background:rgba(251,146,60,.16)}
+#shopify-orders-table-wrap .data-table .sp-items-badge{flex-shrink:0}
+
+/* Client cell — name + optional phone line ([data-col="phone"], الأعمدة menu) */
+.sp-client-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-client-phone{display:block;font-size:.72rem;color:var(--muted);text-decoration:none;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;unicode-bidi:isolate;direction:ltr;text-align:start;width:fit-content;max-width:100%}
+.sp-client-phone:hover{color:var(--accent);text-decoration:underline}
+
+/* Items popover — stock-aware rows */
+.mov-items-popover.sp-ipop{max-height:min(460px,70vh)}
+.sp-ip-head{position:sticky;top:0;z-index:1;background:inherit;padding:11px 14px 9px;border-bottom:1px solid #f1f5f9}
+.sp-ip-title{font-size:.84rem;font-weight:700;color:var(--text)}
+.sp-ip-sum{font-size:.72rem;color:var(--muted);margin-top:2px}
+.sp-ip-sum .is-bad{color:#b42318;font-weight:600}.sp-ip-sum .is-warn{color:#9a3412;font-weight:600}
+.sp-ip-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 14px;border-bottom:1px solid #f4f6f8}
+.sp-ip-row:last-of-type{border-bottom:0}
+.sp-ip-row.is-bad{background:#fff8f7}
+.sp-ip-img{width:44px;height:44px;border-radius:8px;font-size:.7rem;border:1px solid var(--border)}
+.sp-ip-body{min-width:0}
+.sp-ip-name{font-size:.82rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-ip-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px;font-size:.7rem;color:var(--muted)}
+.sp-ip-meta .mip-code-v{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.66rem;color:var(--text);border:1px solid var(--border);border-radius:4px;padding:0 5px;background:var(--bg);unicode-bidi:isolate}
+.sp-ip-unit{font-variant-numeric:tabular-nums}
+.sp-ipop .mip-warn{font-size:.68rem;margin-top:3px}
+.sp-ip-side{display:flex;flex-direction:column;align-items:flex-end;gap:5px;text-align:end}
+.sp-ip-qty{font-size:.86rem;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sp-ip-qty span{font-size:.72rem;font-weight:500;color:var(--muted)}
+.sp-ip-stock{display:flex;align-items:center;gap:5px;font-size:.68rem;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.sp-ip-stock.is-bad{color:#b42318;font-weight:600}
+.sp-ip-bar{width:36px;height:4px;border-radius:2px;background:#e8ece9;overflow:hidden;display:inline-block}
+.sp-ip-bar i{display:block;height:100%;background:#9fb7a7;border-radius:inherit}
+.sp-ip-stock.is-bad .sp-ip-bar i{background:#d92d20}
+.sp-ip-foot{position:sticky;bottom:0;background:inherit;display:flex;justify-content:space-between;gap:10px;padding:9px 14px;border-top:1px solid #eef1f3;font-size:.76rem;color:var(--muted)}
+.sp-ip-foot b{color:var(--text);font-variant-numeric:tabular-nums}
+body.dark-mode .sp-ip-head{border-bottom-color:rgba(255,255,255,.06)}
+body.dark-mode .sp-ip-row{border-bottom-color:rgba(255,255,255,.05)}
+body.dark-mode .sp-ip-row.is-bad{background:rgba(248,113,113,.07)}
+body.dark-mode .sp-ip-foot{border-top-color:rgba(255,255,255,.06)}
+body.dark-mode .sp-ip-sum .is-bad,body.dark-mode .sp-ip-stock.is-bad{color:#fca5a5}
+body.dark-mode .sp-ip-sum .is-warn{color:#fdba74}
+body.dark-mode .sp-ip-bar{background:rgba(255,255,255,.1)}
+
+/* ═══ Shopify order quick view (#sp-peek) ═══
+   ⚠ z-index 1150: above the page, BELOW .fu-thread-overlay (1200) so the full
+   follow-up trail opens over it, and below #modal-overlay (1300) so the comments
+   window and the confirm dialog do too. */
+.sp-peek-overlay{position:fixed;inset:0;z-index:1150;background:rgba(15,23,42,0);transition:background .2s ease;display:flex;justify-content:flex-end}
+.sp-peek-overlay.is-open{background:rgba(15,23,42,.32)}
+.sp-peek{width:min(440px,100vw);height:100%;background:var(--bg);color:var(--text);display:flex;flex-direction:column;box-shadow:0 0 40px rgba(15,23,42,.18);transform:translateX(var(--pk-from,100%));transition:transform .24s cubic-bezier(.22,.9,.36,1)}
+.sp-peek-overlay[dir="rtl"] .sp-peek{--pk-from:-100%}
+.sp-peek-overlay.is-open .sp-peek{transform:none}
+@media (prefers-reduced-motion:reduce){.sp-peek,.sp-peek-overlay{transition:none}}
+.sp-pk-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:16px 18px 12px;border-bottom:1px solid var(--border)}
+.sp-pk-head-main{min-width:0}
+.sp-pk-ref{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:1.15rem;font-weight:700;font-variant-numeric:tabular-nums}
+.sp-pk-sub{font-size:.74rem;color:var(--muted);margin-top:3px}
+.sp-pk-x{flex-shrink:0;width:36px;height:36px;border:0;border-radius:9px;background:transparent;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.sp-pk-x:hover{background:var(--bg-alt);color:var(--text)}
+.sp-pk-pill{--pk:#6b7280;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:999px;color:var(--pk);background:color-mix(in srgb,var(--pk) 12%,transparent);white-space:nowrap}
+.sp-pk-pill.is-ok{--pk:#15803d}.sp-pk-pill.is-bad{--pk:#b42318}.sp-pk-pill.is-warn{--pk:#b45309}
+.sp-pk-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.sp-pk-sec{padding:14px 18px;border-bottom:1px solid var(--border)}
+.sp-pk-sec:last-child{border-bottom:0}
+.sp-pk-sec-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:10px}
+.sp-pk-count{font-size:.66rem;font-weight:700;color:var(--primary-light);background:var(--primary-pale);border-radius:999px;padding:0 7px;line-height:1.6}
+.sp-pk-client{font-size:.98rem;font-weight:600}
+.sp-pk-phone{display:inline-block;margin-top:3px;font-size:.82rem;color:var(--accent);text-decoration:none;font-variant-numeric:tabular-nums}
+.sp-pk-phone:hover{text-decoration:underline}
+.sp-pk-addr{font-size:.78rem;color:var(--muted);margin-top:6px;line-height:1.6}
+.sp-pk-note{font-size:.78rem;margin-top:8px;padding:7px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.sp-pk-money{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px}
+.sp-pk-m{display:flex;flex-direction:column;gap:2px;min-width:0}
+.sp-pk-m span{font-size:.68rem;color:var(--muted)}
+.sp-pk-m b{font-size:.86rem;font-weight:600;font-variant-numeric:tabular-nums;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-pk-m b small{display:block;font-size:.66rem;font-weight:500;color:var(--muted)}
+.sp-pk-m.is-strong b{font-size:1rem;font-weight:700;color:var(--accent)}
+.sp-pk-m .is-warn{color:#b45309;font-weight:600}
+.sp-pk-items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.sp-pk-item{display:grid;grid-template-columns:36px minmax(0,1fr) auto auto;gap:9px;align-items:center}
+.sp-pk-img{width:36px;height:36px;border-radius:7px;font-size:.6rem;border:1px solid var(--border)}
+.sp-pk-item-n{font-size:.8rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-pk-item-q{font-size:.8rem;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sp-pk-st{font-size:.66rem;color:var(--muted);white-space:nowrap}
+.sp-pk-st.is-bad{color:#b42318;background:#fde7e4;font-weight:700;border-radius:4px;padding:1px 6px}
+.sp-pk-st.is-warn{color:#9a3412;background:#fdf0dc;font-weight:700;border-radius:4px;padding:1px 6px}
+.sp-pk-fu-chip{display:inline-flex;align-items:center;gap:5px;font-size:.68rem;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.sp-pk-fu-chip i{width:6px;height:6px;border-radius:50%;display:inline-block}
+.sp-pk-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.68rem;font-weight:600;color:var(--muted)}
+.sp-pk-dl{margin:0 0 12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 14px}
+.sp-pk-dl > div{min-width:0}
+.sp-pk-dl dt{font-size:.66rem;color:var(--muted);margin:0}
+.sp-pk-dl dd{margin:2px 0 0;font-size:.8rem;font-weight:500;overflow:hidden;text-overflow:ellipsis}
+.sp-pk-who{display:flex;align-items:center;gap:6px}
+.sp-pk-trail-h{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;color:var(--text);margin:4px 0 8px}
+.sp-pk-trail{list-style:none;margin:0 0 10px;padding:4px 10px;max-height:280px;overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.sp-pk-tl{display:grid;grid-template-columns:24px minmax(0,1fr);gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.sp-pk-tl:last-child{border-bottom:0}
+.sp-pk-tl-av{display:flex}
+.sp-pk-tl-b{min-width:0;font-size:.8rem;line-height:1.55;word-break:break-word}
+.sp-pk-tl-top{display:flex;align-items:baseline;gap:8px;margin-bottom:1px}
+.sp-pk-tl-top b{font-size:.76rem;font-weight:700}
+.sp-pk-tl-top time{margin-inline-start:auto;font-size:.66rem;color:var(--muted);white-space:nowrap;unicode-bidi:isolate}
+.sp-pk-tl.is-decision .sp-pk-tl-b{color:#b42318}
+.sp-pk-call{display:inline-block;font-size:.72rem;font-weight:600;border-radius:4px;padding:0 6px}
+.sp-pk-call.is-ok{color:#15803d;background:rgba(22,163,74,.1)}
+.sp-pk-call.is-bad{color:#b42318;background:rgba(220,38,38,.08)}
+.sp-pk-trail-btn{width:100%;justify-content:center;display:inline-flex;align-items:center;gap:6px}
+.sp-pk-fu-others{display:flex;flex-direction:column;gap:6px}
+.sp-pk-fu-other{display:flex;align-items:center;gap:8px;width:100%;text-align:start;font:inherit;font-size:.76rem;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);cursor:pointer}
+.sp-pk-fu-other:hover{border-color:var(--accent)}
+.sp-pk-empty{display:flex;flex-direction:column;align-items:flex-start;gap:10px;font-size:.8rem;color:var(--muted);padding:12px;border:1px dashed var(--border);border-radius:10px}
+.sp-pk-empty.is-err{color:#b42318;border-color:#f3c3bd}
+.sp-pk-fu-skel{display:flex;flex-direction:column;gap:8px}
+.sp-pk-fu-skel span{height:12px;border-radius:6px;background:var(--surface2);animation:spPkPulse 1.2s ease-in-out infinite}
+.sp-pk-fu-skel span:nth-child(2){width:70%}.sp-pk-fu-skel span:nth-child(3){width:45%}
+@keyframes spPkPulse{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.sp-pk-fu-skel span{animation:none}}
+.sp-pk-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 18px;border-top:1px solid var(--border);flex-wrap:wrap}
+.sp-pk-foot .btn{display:inline-flex;align-items:center;gap:6px}
+.sp-pk-foot .sp-confirm-btn{height:34px;padding:0 14px}
+@media (max-width:560px){
+  .sp-peek{width:100vw}
+  .sp-pk-money{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+body.dark-mode .sp-peek{box-shadow:0 0 40px rgba(0,0,0,.5)}
+body.dark-mode .sp-pk-st.is-bad,body.dark-mode .sp-pk-call.is-bad{color:#fca5a5;background:rgba(248,113,113,.16)}
+body.dark-mode .sp-pk-st.is-warn{color:#fdba74;background:rgba(251,146,60,.16)}
+body.dark-mode .sp-pk-m .is-warn{color:#fdba74}
+body.dark-mode .sp-pk-call.is-ok{color:#86efac}
+body.dark-mode .sp-pk-tl.is-decision .sp-pk-tl-b,body.dark-mode .sp-pk-empty.is-err{color:#fca5a5}
 
 /* عمود الإجراءات.
    ⚠ بلا flex-wrap: الخلية ضيقة، وwrap كان يدفع زر التعليقات إلى سطر فوق «تأكيد
@@ -18784,7 +18961,7 @@ body.dark-mode .csi-done-lines>div.is-warn b{color:#fbbf24}
       <div id="shopify-filters-top-row">
         <div id="shopify-search-wrap">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="shopify-search" type="text" data-i18n-placeholder="spSearchPlaceholder" placeholder="بحث برقم الأوردر..." oninput="shopifyPage=1;renderShopifyOrders()" style="width:100%;padding:9px 38px 9px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg);font-size:.85rem;box-sizing:border-box;direction:ltr;transition:border-color .2s;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+          <input id="shopify-search" type="search" dir="auto" autocomplete="off" data-i18n-placeholder="spSearchPlaceholder" placeholder="بحث — رقم الأوردر، العميل، الهاتف، الصنف..." oninput="shopifyPage=1;renderShopifyOrders()" style="width:100%;padding:9px 38px 9px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg);font-size:.85rem;box-sizing:border-box;transition:border-color .2s;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
         </div>
         <div id="sp-bulk-bar-slot" class="sp-desktop-only"></div>
         <div id="shopify-deposit-summary-bar" class="sp-desktop-only"></div>
@@ -26069,7 +26246,9 @@ const TRANSLATIONS = {
   spTabOrders:{ar:'الأوردرات',en:'Orders'},
 
   /* Toolbar: search / date filter / columns / status filters */
-  spSearchPlaceholder:{ar:'بحث برقم الأوردر...',en:'Search by order number...'},
+  spSearchPlaceholder:{ar:'بحث — رقم الأوردر، العميل، الهاتف، الصنف...',en:'Search — order #, client, phone, item...'},
+  spOpenOrderPeek:{ar:'عرض ملخص الأوردر والمتابعة',en:'Order summary & follow-up'},
+  spCallClient:{ar:'اتصال بالعميل',en:'Call client'},
   spFilterByDate:{ar:'تصفية بالتاريخ',en:'Filter by date'},
   spDateToday:{ar:'اليوم',en:'Today'},
   spDateYesterday:{ar:'أمس',en:'Yesterday'},
@@ -54074,7 +54253,7 @@ function _invoiceSharedCss() {
   const hlExtra = pHighlight
     ? 'background:#f0fdf4;border-right:3px solid #0f3d25;padding-right:8px;border-radius:0 3px 3px 0;'
     : '';
-  return `@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+  return `@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --ink:#111827;--ink-2:#374151;--muted:#6b7280;--faint:#9ca3af;
@@ -54091,7 +54270,7 @@ function _invoiceSharedCss() {
    preview and the printed sheet have identical geometry. */
 @page{size:A4 portrait;margin:0}
 
-body{font-family:'Cairo',sans-serif;font-size:10.5px;line-height:1.5;color:var(--ink);
+body{font-family:'IBM Plex Sans Arabic','Segoe UI',Tahoma,sans-serif;font-size:10.5px;line-height:1.5;color:var(--ink);font-variant-numeric:tabular-nums;
   background:#e9ecef;padding:24px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 
 .page{position:relative;background:#fff;width:210mm;min-height:297mm;margin:0 auto 24px;
@@ -54100,11 +54279,11 @@ body{font-family:'Cairo',sans-serif;font-size:10.5px;line-height:1.5;color:var(-
 .page:last-child{page-break-after:auto;margin-bottom:0}
 .page-body{flex:1 0 auto}
 
-/* ── DOCUMENT HEAD ───────────────────────────────────────────────────────
-   Issuer (who) on one side, title + number + dates (what/when) on the other.
-   A formal invoice leads with its title and number, not with a small badge. */
-.doc-head{display:grid;grid-template-columns:1fr auto;gap:20px;
-  padding-bottom:12px;border-bottom:2.5px solid var(--rule)}
+/* ── SHEET 1 — rebuilt Oct 2026 as .iv-* (see CLAUDE.md "The Printed Invoice — Rebuilt Again") ──
+   Hairlines instead of filled boxes, one brand band at the top edge, and the
+   payment state stated once, in the payment strip. The old .doc-head /
+   .parties / .terms / .totals / .signs rules went with their markup.
+   (No backticks in this block: it lives inside a JS template literal.) */
 .issuer{display:flex;gap:12px;align-items:flex-start}
 .issuer-logo{flex:0 0 auto;padding-top:2px}
 .issuer-name{font-size:15px;font-weight:800;color:var(--brand);line-height:1.25;letter-spacing:-.2px}
@@ -54114,144 +54293,100 @@ body{font-family:'Cairo',sans-serif;font-size:10.5px;line-height:1.5;color:var(-
 .reg-chip{font-size:8px;font-weight:600;color:var(--ink-2);background:#f3f4f6;
   border:1px solid var(--line);border-radius:3px;padding:2px 7px;white-space:nowrap}
 .reg-chip b{font-weight:700;color:var(--brand)}
-
-.doc-id{text-align:left;min-width:60mm}
-.doc-title{font-size:19px;font-weight:800;color:var(--ink);line-height:1.15;letter-spacing:-.3px}
-.doc-sub{font-size:8.5px;color:var(--faint);letter-spacing:.6px;text-transform:uppercase;margin-top:2px}
-.doc-no{margin-top:8px;display:inline-flex;align-items:baseline;gap:6px;
-  background:var(--brand);color:#fff;border-radius:4px;padding:4px 11px}
-.doc-no .k{font-size:8px;font-weight:600;opacity:.82;letter-spacing:.3px}
-.doc-no .v{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
-.doc-dates{margin-top:8px;display:flex;gap:16px;justify-content:flex-end}
-.doc-dates .d{text-align:left}
-.doc-dates .k{font-size:7.5px;font-weight:700;color:var(--faint);letter-spacing:.4px;
-  text-transform:uppercase;display:block;margin-bottom:1px}
-.doc-dates .v{font-size:10px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;
-  direction:ltr;unicode-bidi:isolate;display:block}
-
-/* ── STATUS RIBBON — a cancelled invoice must be unmissable on paper ───── */
 .doc-flag{margin-top:10px;padding:6px 12px;border-radius:4px;font-size:10px;font-weight:700;
   display:flex;align-items:center;gap:7px}
 .doc-flag.is-cancel{background:#fef2f2;color:var(--neg);border:1px solid #fecaca}
-
-/* ── PARTIES ─────────────────────────────────────────────────────────────
-   Bordered cells: on a printed page the boundary between "who we billed" and
-   "where it ships" has to survive a photocopy. */
-.parties{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));
-  margin-top:12px;border:1px solid var(--line);border-radius:5px;overflow:hidden}
-.party{padding:9px 12px;min-width:0}
-.party + .party{border-right:1px solid var(--line)}
-.party-lbl{font-size:7.5px;font-weight:700;color:var(--faint);letter-spacing:.5px;
-  text-transform:uppercase;margin-bottom:4px}
-.party-name{font-size:11.5px;font-weight:700;color:var(--ink);line-height:1.35;word-break:break-word}
-.party-line{font-size:9px;color:var(--muted);margin-top:2px;line-height:1.55;word-break:break-word}
-.party-line .k{color:var(--faint)}
-
-.badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;
-  padding:2px 9px;border-radius:20px;white-space:nowrap}
-.b-ok{background:#dcfce7;color:var(--pos);border:1px solid #bbf7d0}
-.b-pend{background:#fef9c3;color:var(--warn);border:1px solid #fde68a}
-.b-cancel{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
-
-/* ── TERMS STRIP — payment terms, carrier, zone: the contract facts ────── */
-.terms{display:flex;flex-wrap:wrap;margin-top:9px;border:1px solid var(--line);
-  border-radius:5px;overflow:hidden;background:var(--brand-tint)}
-.term{padding:6px 12px;min-width:0;flex:1 1 auto}
-.term + .term{border-right:1px solid var(--line)}
-.term .k{font-size:7.5px;font-weight:700;color:var(--faint);letter-spacing:.4px;
-  text-transform:uppercase;display:block;margin-bottom:1px}
-.term .v{font-size:9.8px;font-weight:700;color:var(--ink-2);display:block;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-/* ── LINE ITEMS ──────────────────────────────────────────────────────────
-   The currency is stated ONCE in the column heading. Repeating "EGP" on every
-   cell is a repetition a formal document does not make. */
-.sec-title{font-size:8px;font-weight:700;color:var(--faint);letter-spacing:.5px;
-  text-transform:uppercase;margin:14px 0 6px}
-table{width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed}
-/* Repeat the header on every printed sheet — a long invoice's page 2 was
-   printing headerless rows, so its columns could not be identified. */
-thead{display:table-header-group}
-tr{page-break-inside:avoid;break-inside:avoid}
-thead tr{background:var(--brand);color:#fff}
-th{padding:7px 8px;text-align:right;font-size:8.6px;font-weight:700;letter-spacing:.2px;
-  line-height:1.3;vertical-align:middle}
-th .cur{display:block;font-size:7px;font-weight:600;opacity:.72;letter-spacing:.4px}
-td{padding:6.5px 8px;border-bottom:1px solid #f0f1f0;vertical-align:top;line-height:1.4;
-  word-break:break-word}
-tbody tr:nth-child(even){background:var(--zebra)}
-tbody tr:last-child td{border-bottom:1px solid var(--line-strong)}
-
-/* Alignment is declared once per column on th AND td together, so the heading
-   can never drift out of line with the values beneath it. */
-th.c-idx,td.c-idx{width:9mm;text-align:center}
-td.c-idx{color:var(--faint);font-size:9px;font-variant-numeric:tabular-nums}
-th.c-qty,td.c-qty{width:14mm;text-align:center}
-th.c-unit,td.c-unit{width:26mm;text-align:left}
-th.c-total,td.c-total{width:29mm;text-align:left}
-
-.it-name{font-weight:600;color:var(--ink);line-height:1.35}
-.it-code{font-size:8.2px;color:var(--faint);margin-top:1.5px;direction:ltr;
-  display:inline-block;unicode-bidi:isolate;font-variant-numeric:tabular-nums}
-.it-meta{font-size:8.2px;color:var(--muted);margin-top:1.5px}
-td.c-qty .amt-num,td.c-qty .num{font-weight:700}
-td.c-total .amt-num{font-weight:700;color:var(--brand)}
-/* The shared fmtJ() emits an "EGP" run before every figure. Inside this
-   document the currency is declared once per column heading, so that run is
-   hidden here rather than the shared helper being forked. */
 .amt-cur{display:none}
 .amt-num,.num{font-variant-numeric:tabular-nums;direction:ltr;display:inline-block;unicode-bidi:isolate}
-
-/* ── SUMMARY ─────────────────────────────────────────────────────────────
-   Notes sit beside the totals rather than beneath them: on A4 the space left
-   of the totals box is otherwise dead, and using it keeps the signature block
-   on sheet 1. */
-.summary{display:grid;grid-template-columns:1fr 84mm;gap:14px;margin-top:12px;align-items:start}
-.sum-side{min-width:0}
-.totals{border:1px solid var(--line-strong);border-radius:5px;overflow:hidden;font-size:10.2px}
-.t-row{display:flex;justify-content:space-between;align-items:center;gap:10px;
-  padding:5.5px 12px;border-bottom:1px solid #f0f1f0}
-.t-row:last-child{border-bottom:none}
-.t-lbl{color:var(--ink-2);min-width:0}
-.t-val{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;
-  white-space:nowrap;font-weight:600}
-.t-val.g{color:var(--pos)}.t-val.r{color:var(--neg)}
-.t-row.grand{background:var(--brand);color:#fff;padding:9px 12px;font-size:12.5px;font-weight:800}
-.t-row.grand .t-lbl{color:#fff}
-.t-row.grand .t-val{font-weight:800}
-.t-row.dep-row{background:#f0fdf4}
-.t-row.rem-row{background:#fef2f2}
-.t-row.rule{border-top:1px solid var(--line-strong)}
-.t-note{color:var(--faint);font-size:9px}
-.dep-badge{font-size:7.6px;font-weight:700;background:var(--brand);color:#fff;border-radius:3px;
-  padding:1px 6px;margin-right:5px;vertical-align:middle;white-space:nowrap}
 .disc-manual-label{display:inline-block;margin-right:5px;padding:1px 6px;border-radius:3px;
   background:#f1f5f9;color:#64748b;font-size:7.6px;font-weight:700;border:1px solid #e2e8f0;
   letter-spacing:.2px;vertical-align:middle}
 .disc-code{display:inline-block;margin-right:4px;padding:1px 6px;border-radius:8px;background:#d1fae5;
   color:#047857;font-size:7.6px;font-weight:700;border:1px solid #a7f3d0;letter-spacing:.3px;
   direction:ltr;unicode-bidi:isolate}
+.page.iv{padding-top:15mm}
+.page.iv::before{content:'';position:absolute;inset-inline:0;top:0;height:6px;background:var(--brand)}
+.iv-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
+.iv-mark{display:flex;flex-direction:column;gap:6px;min-width:0}
+.iv-mark .issuer-lines{margin-top:0}
+.iv-title{display:flex;flex-direction:column;align-items:flex-end;gap:0}
+.iv-title .en{font-size:7.5px;font-weight:500;letter-spacing:.28em;color:var(--muted);direction:ltr}
+.iv-title .ar{font-size:22px;font-weight:600;color:var(--brand);line-height:1.35}
+.iv-k{display:block;font-size:8px;font-weight:500;letter-spacing:.04em;color:var(--muted)}
+.iv-facts{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);margin-top:7mm;
+  border-top:1px solid var(--ink);border-bottom:1px solid var(--line)}
+.iv-fact{padding:8px 0;display:flex;flex-direction:column;gap:1px;min-width:0}
+.iv-fact + .iv-fact{padding-inline-start:14px;border-inline-start:1px solid var(--line)}
+.iv-fact .v{font-size:11.5px;font-weight:500;color:var(--ink)}
+.iv-fact .v.big{font-size:14px;font-weight:600}
+.iv-cust{display:grid;grid-template-columns:1fr .8fr 1.6fr;gap:22px;margin-top:6mm}
+.iv-cust.no-addr{grid-template-columns:1fr 1fr 1fr}
+.iv-cust > div{min-width:0}
+.iv-cust .v{display:block;margin-top:3px;font-size:11.5px;font-weight:600;color:var(--ink);line-height:1.5;word-break:break-word}
+.iv-cust .v.addr{font-size:9.8px;font-weight:400;color:var(--ink-2);line-height:1.7}
+.iv-cust .iv-k b{color:var(--ink);font-weight:600}
 
-/* ── AMOUNT IN WORDS (تفقيط) ─────────────────────────────────────────────
-   The expected anti-tampering control on an Arabic commercial invoice: a
-   figure can be altered with a pen, a written sentence cannot. */
-.words{margin-top:10px;padding:8px 12px;border:1px solid var(--line-strong);
-  border-radius:5px;background:var(--brand-tint);display:flex;gap:8px;align-items:baseline}
-.words .k{flex:0 0 auto;font-size:8px;font-weight:700;color:var(--brand);letter-spacing:.3px;
-  text-transform:uppercase}
-.words .v{font-size:10.2px;font-weight:700;color:var(--ink);line-height:1.6}
+table.iv-items{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:7mm}
+/* Repeat the header on every printed sheet — page 2 of a long invoice must
+   still say which column is which. */
+table.iv-items thead{display:table-header-group}
+table.iv-items tr{page-break-inside:avoid;break-inside:avoid}
+table.iv-items th{padding:0 0 6px;font-size:8px;font-weight:600;letter-spacing:.04em;color:#4a574f;
+  text-align:right;border-bottom:1px solid var(--ink)}
+table.iv-items td{padding:7px 0;border-bottom:1px solid #e4e9e6;vertical-align:middle}
+/* Alignment is declared once per column on th AND td together. */
+table.iv-items .c-qty{width:16mm;text-align:center}
+table.iv-items .c-unit{width:25mm;text-align:left}
+table.iv-items .c-total{width:27mm;text-align:left}
+table.iv-items td.c-qty{font-size:11.5px;font-weight:600}
+table.iv-items td.c-unit{font-size:10.5px;color:var(--ink-2)}
+table.iv-items td.c-total{font-size:10.5px;font-weight:600}
+.iv-item{display:flex;align-items:center;gap:12px;min-width:0}
+.iv-thumb{flex:none;width:13mm;height:13mm;border-radius:4px;background:#f1f4f2;border:1px solid #e4e9e6;
+  position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#a3b0a8}
+/* The photo sits OVER the placeholder icon; a failed load removes it and the
+   icon shows — never a broken-image glyph on a customer's document. */
+.iv-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.iv-it-txt{display:flex;flex-direction:column;gap:1px;min-width:0}
+.iv-name{font-size:10.6px;font-weight:500;color:var(--ink);line-height:1.45;word-break:break-word}
+.iv-code{font-size:8px;color:var(--muted);letter-spacing:.03em;direction:ltr;unicode-bidi:isolate;text-align:right}
+.iv-meta{font-size:8px;color:var(--warn)}
+.iv-items-foot{display:flex;justify-content:space-between;gap:10px;padding-top:6px;font-size:8px;color:var(--muted)}
 
-.note-wrap{margin-top:10px;padding:8px 11px;background:#f8fdf9;border-right:3px solid var(--brand);
-  border-radius:0 4px 4px 0;font-size:9.4px;color:var(--ink-2);line-height:1.65}
-.note-lbl{font-size:7.5px;font-weight:700;color:var(--brand);margin-bottom:2px;
-  text-transform:uppercase;letter-spacing:.4px}
-
-/* ── SIGNATURES — a printed invoice doubles as a delivery receipt ──────── */
-.signs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:16px;
+.iv-sum{display:grid;grid-template-columns:minmax(0,1fr) 72mm;gap:30px;margin-top:6mm;align-items:start;
   page-break-inside:avoid;break-inside:avoid}
-.sign{padding-top:26px;border-top:1px solid var(--line-strong);text-align:center}
-.sign .k{font-size:8.5px;font-weight:700;color:var(--ink-2)}
-.sign .h{font-size:7.5px;color:var(--faint);margin-top:1px}
+.iv-side{display:flex;flex-direction:column;gap:12px;padding-top:3px;min-width:0}
+.iv-side .v{display:block;margin-top:3px;font-size:10px;color:var(--ink-2);line-height:1.65;word-break:break-word}
+.iv-side .v.words{font-weight:500;color:var(--ink)}
+.iv-tot{display:flex;flex-direction:column;font-size:10px}
+.iv-tot .r{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:4px 0;color:var(--ink-2)}
+.iv-tot .g{margin-top:5px}
+.iv-tot .r small{font-size:8px;color:var(--muted)}
+.iv-tot .g{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding-top:9px;border-top:1px solid var(--ink)}
+.iv-tot .g .l{font-size:11px;font-weight:600;color:var(--ink)}
+.iv-tot .g .t{font-size:18px;font-weight:600;color:var(--brand)}
+.iv-cur{font-size:8px;font-weight:500;color:var(--muted)}
+
+.iv-pay{margin-top:6mm;page-break-inside:avoid;break-inside:avoid}
+.iv-pay-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.iv-pay-head .iv-k{font-weight:600;color:#4a574f}
+.iv-chip{display:inline-block;font-size:8.2px;font-weight:600;line-height:15px;padding:0 8px;border-radius:8px}
+.iv-chip.is-partial{background:#fdf3dc;color:#7a4a05}
+.iv-chip.is-full{background:#e6f2ea;color:#0f5132}
+.iv-chip.is-unpaid{background:#f1f4f2;color:#3d4a42;border:1px solid #d9e0db}
+.iv-chip.is-cancel{background:#fee2e2;color:#991b1b}
+.iv-pay-grid{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);border:1px solid #c9d3cc;border-radius:3px;overflow:hidden}
+.iv-cell{display:flex;flex-direction:column;gap:2px;padding:10px 15px;min-width:0}
+.iv-cell + .iv-cell{border-inline-start:1px solid #c9d3cc}
+.iv-cell .k{font-size:8.2px;color:var(--muted)}
+.iv-cell .v{font-size:15px;font-weight:600;color:var(--ink)}
+.iv-cell .sub{font-size:8.2px;color:var(--ink-2)}
+.iv-cell .sub b{font-weight:600}
+.iv-cell.is-due{background:var(--brand);color:#fff}
+.iv-cell.is-due .k,.iv-cell.is-due .sub,.iv-cell.is-due .iv-cur{color:#c9ddd0}
+.iv-cell.is-due .v{font-size:18px;color:#fff}
+.iv-cell.is-settled{background:#f1f6f2;justify-content:center}
+.iv-cell.is-settled .v{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--brand)}
 
 /* ── SHEET FOOT — pinned to the bottom, carries the page number ────────── */
 .sheet-foot{position:absolute;inset-inline:13mm;bottom:10mm;display:flex;
@@ -54474,7 +54609,10 @@ function _invLogoSvg(h) {
  */
 function _invIssuerHtml(logoH) {
   const s = window.settings || {};
-  const name  = (s.companyLegalName || '').trim() || 'SOULIA';
+  // ⚠ No 'SOULIA' fallback: the wordmark already says it, and printing the
+  // default beside it put the brand name on the sheet twice. A legal name that
+  // DIFFERS from the brand (شركة … للتجارة) is still printed when it is set.
+  const name  = (s.companyLegalName || '').trim();
   const addr  = (s.companyAddress   || '').trim();
   const phone = (s.companyPhone     || '').trim();
   const email = (s.companyEmail     || '').trim();
@@ -54495,7 +54633,7 @@ function _invIssuerHtml(logoH) {
   return `<div class="issuer">
     <div class="issuer-logo">${_invLogoSvg(logoH)}</div>
     <div>
-      <div class="issuer-name" dir="auto">${esc(name)}</div>
+      ${name ? `<div class="issuer-name" dir="auto">${esc(name)}</div>` : ''}
       <div class="issuer-lines">
         ${addr    ? `<div dir="auto">${esc(addr)}</div>` : ''}
         ${contact ? `<div dir="auto">${contact}</div>` : ''}
@@ -54506,12 +54644,20 @@ function _invIssuerHtml(logoH) {
   </div>`;
 }
 
-/** Bottom-of-sheet rule: issuer, operator, and «صفحة ١ من ٢». */
+/**
+ * Bottom-of-sheet rule. A sales invoice thanks the customer and points to the
+ * policy sheet; other documents keep the issued-electronically line. The
+ * operator's name left the customer's copy with the signature block — it is
+ * an internal fact, and it is still on the transaction.
+ */
 function _invSheetFoot(tx, dateStr, pageNo, pageCount) {
-  const company = ((window.settings || {}).companyLegalName || '').trim() || 'SOULIA';
+  const legal = ((window.settings || {}).companyLegalName || '').trim();
+  const isSales = tx && tx.type === 'مبيعات';
+  const left = isSales
+    ? `شكراً لاختيارك ${esc(legal || 'سوليا')}${pageNo === 1 && pageCount > 1 ? ' · سياسة الاسترجاع والاستبدال في الصفحة التالية' : ''}`
+    : `${esc(legal || 'SOULIA')} — تم الإصدار إلكترونياً بتاريخ <span class="num">${esc(dateStr)}</span>`;
   return `<div class="sheet-foot">
-    <span>${esc(company)} — تم الإصدار إلكترونياً بتاريخ <span class="num">${esc(dateStr)}</span></span>
-    ${tx && tx.employee ? `<span class="who">مسؤول العملية: ${esc(tx.employee)}</span>` : '<span></span>'}
+    <span>${left}</span>
     <span class="pg">صفحة <span class="num">${pageNo}</span> من <span class="num">${pageCount}</span></span>
   </div>`;
 }
@@ -54522,10 +54668,8 @@ function buildInvoiceHtml(tx) {
   const isRet   = tx.type === 'مرتجع' || tx.type === 'مرتجع مبيعات';
 
   /* ── Document identity ────────────────────────────────────────────────
-     A formal document names itself. «فاتورة ضريبية مبسطة» is the correct
-     registered term for a sales invoice; a purchase is a supplier invoice and
-     a return is a credit note — each is a different instrument, so each gets
-     its own title rather than one generic "فاتورة {type}". */
+     Each document type names itself: a purchase is a supplier invoice and a
+     return is a credit note — different instruments, so different titles. */
   const docTitle = isSales ? 'فاتورة مبيعات'
     : isPur ? 'فاتورة مشتريات'
     : tx.type === 'مرتجع مشتريات' ? 'إشعار مرتجع مشتريات'
@@ -54535,40 +54679,75 @@ function buildInvoiceHtml(tx) {
     : 'CREDIT NOTE';
 
   const dateStr = (tx.date || '').slice(0, 10);
-  /* The issue date is when the document was created; `date` is the business
-     date the operator entered and can be backdated. Both are printed and both
-     are labelled, because on a formal invoice they are different facts. */
+  /* `date` is the business date (can be backdated); `createdAt` is when the
+     document was issued. Both are printed when they differ — on a formal
+     invoice they are different facts. */
   const issuedStr = (tx.createdAt || tx.date || '').slice(0, 10);
+  // «11 سبتمبر 2026». Parsed as UTC so a YYYY-MM-DD never shifts a day in a
+  // negative-offset zone; `-u-nu-latn` keeps the digits Latin.
+  const longDate = (d) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d || '')) return esc(d || '—');
+    try {
+      return new Date(d + 'T00:00:00Z').toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+    } catch (_) { return esc(d); }
+  };
 
-  /* ── Status ───────────────────────────────────────────────────────────*/
-  const purStatusLabel = isPur ? ((tx.remaining || 0) > 0 ? 'مديون للمورد' : 'مكتمل') : tx.payStatus;
-  const isCompleted = isStatusCompleted(tx.payStatus) || (isPur && (tx.remaining || 0) <= 0);
   const isCancelled = tx.cancelled === true || isStatusCancelled(tx.payStatus);
-  const statusCls   = isCancelled ? 'b-cancel' : isCompleted ? 'b-ok' : 'b-pend';
-  const statusLabel = esc(isCancelled ? 'ملغاة' : (isPur ? purStatusLabel : (tx.payStatus || '—')));
+  const money = (v) => `<span class="num">${fmtN(Math.round((Number(v) || 0) * 100) / 100)}</span>`;
+  const cur = '<span class="iv-cur">EGP</span>';
 
-  const paid = isPur ? ((tx.total || 0) - (tx.remaining || 0)) : exchangeSalePaidDisplayAmount(tx);
+  /* ── Payment state — derived from the money, never from payStatus ──────
+     ⚠ `paid` MUST be a number. It used to be exchangeSalePaidDisplayAmount(tx),
+     which returns fmtJ() HTML, so `paid > 0` was always false and every sales
+     invoice printed «لم يُحصّل أي مبلغ» even after a deposit was collected
+     (#2545: 300 paid, 2,130 due, printed as nothing paid). The exchange-sale
+     rule below is that helper's own rule, kept numeric. */
+  const total = Number(tx.total) || 0;
+  const remaining = Math.max(0, Number(tx.remaining) || 0);
+  const paid = isPur
+    ? Math.max(0, total - remaining)
+    : (isMovExchangeSale(tx) && remaining > 0 ? remaining : Math.max(0, Number(tx.deposit) || 0));
+  /* A purchase settled from supplier credit moved no cash: name the credit,
+     never default to a vault (same rule as the invoice page). */
+  const creditOnly = isPur && (Number(tx.creditApplied) || 0) > 0 && !((Number(tx.deposit) || 0) > 0);
+  const paidVia = creditOnly ? 'الرصيد لدى المورد' : (tx.depMethod || '');
+  const payState = isCancelled ? 'cancel'
+    : paid <= 0 && remaining > 0 ? 'unpaid'
+    : remaining <= 0 ? 'full'
+    : 'partial';
+  const payChip = {
+    cancel:  ['is-cancel',  'ملغاة'],
+    unpaid:  ['is-unpaid',  isPur ? 'غير مسدَّدة' : 'غير مدفوعة — الدفع عند الاستلام'],
+    full:    ['is-full',    isPur ? 'مسدَّدة بالكامل' : 'مدفوعة بالكامل'],
+    partial: ['is-partial', isPur ? 'مسدَّدة جزئياً' : 'مدفوعة جزئياً'],
+  }[payState];
+
   const itemsSubtotal = (tx.items || []).reduce((s, it) => s + (Number(it.total) || 0), 0);
+  const pieces = (tx.items || []).reduce((s, it) => s + (Number(it.qty) || 0), 0);
 
-  /* ── Line items ───────────────────────────────────────────────────────
-     The code moved INTO the description cell as a sub-line and its own column
-     was dropped: the old table printed the same code twice, in columns 2 and
-     3, which cost 64px of a 210mm sheet to say nothing new. */
-  const itemsHtml = (tx.items || []).map((it, i) => {
-    const meta = [];
-    if (it.condition && it.condition !== 'سليم') meta.push(`الحالة: ${esc(it.condition)}`);
+  /* ── Line items: photo · name · code · qty · unit · total ──────────────
+     The photo resolves like the prep workspace (_pwItemImgUrl): the snapshot
+     stored on the line first, then the live catalogue. A failed load removes
+     the <img> and the placeholder icon beneath it shows. */
+  const PH = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.8"/><path d="m21 15-5-5L5 21"/></svg>';
+  const itemsHtml = (tx.items || []).map((it) => {
+    const img = typeof _pwItemImgUrl === 'function' ? _pwItemImgUrl(it) : '';
+    const meta = (it.condition && it.condition !== 'سليم') ? `الحالة: ${esc(it.condition)}` : '';
+    const code = it.code && String(it.code).toLowerCase() !== 'shopify' ? esc(it.code) : '';
     return `<tr>
-      <td class="c-idx">${i + 1}</td>
-      <td class="c-desc">
-        <div class="it-name" dir="auto">${esc(it.name || '—')}</div>
-        ${it.code ? `<div class="it-code">${esc(it.code)}</div>` : ''}
-        ${meta.length ? `<div class="it-meta" dir="auto">${meta.join(' · ')}</div>` : ''}
-      </td>
-      <td class="c-qty"><span class="num">${fmtN(it.qty)}</span></td>
-      <td class="c-unit">${fmtJ(it.price)}</td>
-      <td class="c-total">${fmtJ(it.total)}</td>
+      <td class="c-item"><div class="iv-item">
+        <div class="iv-thumb">${PH}${img ? `<img src="${escHtml(img)}" alt="" onerror="this.remove()">` : ''}</div>
+        <div class="iv-it-txt">
+          <div class="iv-name" dir="auto">${esc(it.name || '—')}</div>
+          ${code ? `<div class="iv-code">Code ${code}</div>` : ''}
+          ${meta ? `<div class="iv-meta" dir="auto">${meta}</div>` : ''}
+        </div>
+      </div></td>
+      <td class="c-qty">${money(it.qty)}</td>
+      <td class="c-unit">${money(it.price)}</td>
+      <td class="c-total">${money(it.total)}</td>
     </tr>`;
-  }).join('') || `<tr><td class="c-idx">—</td><td class="c-desc" style="color:#9ca3af">لا توجد أصناف مسجلة على هذا المستند</td><td class="c-qty">—</td><td class="c-unit">—</td><td class="c-total">—</td></tr>`;
+  }).join('') || `<tr><td class="c-item" style="color:var(--faint)">لا توجد أصناف مسجلة على هذا المستند</td><td class="c-qty">—</td><td class="c-unit">—</td><td class="c-total">—</td></tr>`;
 
   /* ── Policy sheet ─────────────────────────────────────────────────────*/
   const includePolicyPage = settings?.printIncludePolicy !== false;
@@ -54587,140 +54766,101 @@ function buildInvoiceHtml(tx) {
   }).join('');
   const pageCount = includePolicyPage ? 2 : 1;
 
-  const depMethodLabel = tx.depMethod ? esc(tx.depMethod) : '';
-
-  /* ── Shipping address (sales only) ────────────────────────────────────*/
+  /* ── Delivery (sales only) ────────────────────────────────────────────*/
   const shipAddr = isSales ? ((tx.shippingAddress || '').replace(/^العنوان:\s*/, '').trim()
     || (() => {
       const a = tx.rawData?.shipping_address;
       return a ? [a.address1, a.address2, a.city].filter(Boolean).join('، ') : '';
     })()) : '';
-
-  /* ── Terms strip ──────────────────────────────────────────────────────
-     Payment terms, carrier and zone are stored on every sale and were never
-     printed. On a formal invoice they are contract terms, not metadata. */
   const carrierName = isSales
     ? (typeof carrierLabel === 'function' && tx.carrierCode ? carrierLabel(tx.carrierCode) : (tx.shipCo || ''))
-    : '';
-  const terms = [
-    tx.payment    ? { k: 'شروط الدفع',   v: esc(tx.payment) } : null,
-    tx.depMethod  ? { k: isRet ? 'خزنة الرد' : 'طريقة السداد', v: esc(tx.depMethod) } : null,
-    carrierName   ? { k: 'شركة الشحن',   v: esc(carrierName) } : null,
-    (isSales && tx.shipZone) ? { k: 'منطقة الشحن', v: esc(tx.shipZone) } : null,
-    tx.pickupRef  ? { k: 'رقم التتبع',   v: `<span class="num">${esc(tx.pickupRef)}</span>` } : null,
-  ].filter(Boolean);
-  const termsHtml = terms.length
-    ? `<div class="terms">${terms.map(x => `<div class="term"><span class="k">${x.k}</span><span class="v" dir="auto">${x.v}</span></div>`).join('')}</div>`
     : '';
 
   /* ── Discount label ───────────────────────────────────────────────────*/
   const discLabel = tx.discountCode
-    ? (tx.discountCode.includes('+')
-        ? tx.discountCode.split('+').filter(Boolean)
-            .map(n => `<span class="disc-code">${esc(n.trim())}</span>`).join('')
-        : `<span class="disc-code">${esc(tx.discountCode)}</span>`)
-    : `<span class="disc-manual-label">خصم مخصص</span>`;
+    ? tx.discountCode.split('+').filter(Boolean).map(n => `<span class="disc-code">${esc(n.trim())}</span>`).join('')
+    : '<small>· خصم خاص</small>';
 
-  /* ── Settlement rows ──────────────────────────────────────────────────*/
-  const settlementRows = isRet
-    ? `<div class="t-row dep-row rule">
-         <span class="t-lbl">المبلغ المردود للعميل${depMethodLabel ? `<span class="dep-badge">${depMethodLabel}</span>` : ''}</span>
-         <span class="t-val g">${fmtJ(tx.total)}</span>
-       </div>`
-    : `${paid > 0
-        ? `<div class="t-row dep-row rule">
-             <span class="t-lbl">${isPur ? 'المسدَّد للمورد' : 'المبلغ المحصَّل'}${depMethodLabel ? `<span class="dep-badge">${depMethodLabel}</span>` : ''}</span>
-             <span class="t-val g">${fmtJ(paid)}</span>
-           </div>`
-        : `<div class="t-row rule"><span class="t-lbl t-note">${isPur ? 'لم يُسدَّد أي مبلغ — القيمة بالكامل مستحقة للمورد' : 'لم يُحصَّل أي مبلغ — القيمة تُستحق عند التسليم'}</span></div>`}
-       ${(tx.remaining || 0) > 0
-        ? `<div class="t-row rem-row"><span class="t-lbl">${isPur ? 'الرصيد المستحق للمورد' : 'الرصيد المستحق على العميل'}</span><span class="t-val r">${fmtJ(tx.remaining)}</span></div>`
-        : paid > 0
-          ? `<div class="t-row dep-row"><span class="t-lbl" style="color:#15803d;font-weight:700">✓ مسدَّدة بالكامل</span><span class="t-val g">${fmtJ(0)}</span></div>`
-          : ''}`;
+  /* ── Payment strip ────────────────────────────────────────────────────
+     The three numbers a customer asks about. The due cell is the one
+     emphasis on the sheet; when nothing is due it states that instead. */
+  const CHECK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17 19 7"/></svg>';
+  const payCells = isRet
+    ? `<div class="iv-cell"><span class="k">إجمالي المرتجع</span><span class="v">${money(total)} ${cur}</span></div>
+       <div class="iv-cell"><span class="k">المبلغ المردود للعميل</span><span class="v">${money(total)} ${cur}</span>
+         ${tx.depMethod ? `<span class="sub">عن طريق <b dir="auto">${esc(tx.depMethod)}</b></span>` : ''}</div>`
+    : `<div class="iv-cell"><span class="k">إجمالي الفاتورة</span><span class="v">${money(total)} ${cur}</span></div>
+       <div class="iv-cell"><span class="k">${isPur ? 'المسدَّد للمورد' : 'المدفوع'}</span><span class="v">${money(paid)} ${cur}</span>
+         ${paid > 0 && paidVia ? `<span class="sub">عن طريق <b dir="auto">${esc(paidVia)}</b></span>` : ''}</div>
+       ${isCancelled ? ''
+         : remaining > 0
+           ? `<div class="iv-cell is-due"><span class="k">${isPur ? 'المتبقي للمورد' : 'المتبقي على العميل'}</span><span class="v">${money(remaining)} ${cur}</span>
+                <span class="sub">${isPur ? 'مستحق السداد' : 'يُحصَّل عند التسليم'}</span></div>`
+           : `<div class="iv-cell is-settled"><span class="k">المتبقي</span><span class="v">${CHECK} لا يوجد مبلغ متبقٍ</span></div>`}`;
 
-  /* ── Signatures ───────────────────────────────────────────────────────
-     A printed invoice is also the delivery receipt; without a signature area
-     it cannot serve as proof of handover. Omitted on a cancelled document —
-     nothing about a void invoice is meant to be signed for. */
-  const signsHtml = isCancelled ? '' : `<div class="signs">
-    <div class="sign"><div class="k">${isPur ? 'المورد / المُورِّد' : 'المُحرِّر'}</div><div class="h">الاسم والتوقيع</div></div>
-    <div class="sign"><div class="k">ختم الشركة</div><div class="h">Company Stamp</div></div>
-    <div class="sign"><div class="k">${isPur ? 'المستلم بالمخزن' : 'المستلم'}</div><div class="h">الاسم والتوقيع والتاريخ</div></div>
-  </div>`;
+  const factCells = [
+    tx.ref ? `<div class="iv-fact"><span class="iv-k">${isRet ? 'رقم الإشعار' : 'رقم الفاتورة'}</span><span class="v big num">#${esc(tx.ref)}</span></div>` : '',
+    `<div class="iv-fact"><span class="iv-k">${isRet ? 'تاريخ الإشعار' : 'تاريخ الفاتورة'}</span><span class="v">${longDate(dateStr)}</span></div>`,
+    issuedStr && issuedStr !== dateStr ? `<div class="iv-fact"><span class="iv-k">تاريخ الإصدار</span><span class="v">${longDate(issuedStr)}</span></div>` : '',
+  ].join('');
 
-  return `<div class="page">
+  return `<div class="page iv">
   <div class="page-body">
 
-    <div class="doc-head">
-      ${_invIssuerHtml(38)}
-      <div class="doc-id">
-        <div class="doc-title" dir="auto">${docTitle}</div>
-        <div class="doc-sub">${docSubEn}</div>
-        ${tx.ref ? `<div class="doc-no"><span class="k">رقم المستند</span><span class="v">${esc(tx.ref)}</span></div>` : ''}
-        <div class="doc-dates">
-          <div class="d"><span class="k">تاريخ الفاتورة</span><span class="v">${esc(dateStr || '—')}</span></div>
-          ${issuedStr && issuedStr !== dateStr ? `<div class="d"><span class="k">تاريخ الإصدار</span><span class="v">${esc(issuedStr)}</span></div>` : ''}
-        </div>
+    <div class="iv-head">
+      <div class="iv-mark">${_invIssuerHtml(44)}</div>
+      <div class="iv-title">
+        <span class="en">${docSubEn}</span>
+        <span class="ar" dir="auto">${docTitle}</span>
       </div>
     </div>
+
+    <div class="iv-facts">${factCells}</div>
 
     ${isCancelled ? `<div class="doc-flag is-cancel">
       <span>مستند ملغى — لا يُعتد به كسند مالي${tx.cancelReason ? ` · ${esc(tx.cancelReason)}` : ''}</span>
     </div>` : ''}
 
-    <div class="parties">
-      <div class="party">
-        <div class="party-lbl">${isPur ? 'بيانات المورد' : 'بيانات العميل'}</div>
-        <div class="party-name" dir="auto">${esc(tx.client || '—')}</div>
-        ${tx.phone ? `<div class="party-line"><span class="k">هاتف:</span> <span class="num">${esc(tx.phone)}</span></div>` : ''}
-      </div>
-      ${shipAddr ? `<div class="party">
-        <div class="party-lbl">عنوان التسليم</div>
-        <div class="party-line" style="font-size:9.5px;color:#374151;margin-top:0" dir="auto">${esc(shipAddr)}</div>
-      </div>` : ''}
-      <div class="party">
-        <div class="party-lbl">${isRet ? 'حالة الرد' : 'حالة السداد'}</div>
-        <div style="margin:2px 0"><span class="badge ${statusCls}">${statusLabel}</span></div>
-      </div>
+    <div class="iv-cust${shipAddr ? '' : ' no-addr'}">
+      <div><span class="iv-k">${isPur ? 'اسم المورد' : 'اسم العميل'}</span><span class="v" dir="auto">${esc(tx.client || tx.supplier || '—')}</span></div>
+      <div><span class="iv-k">الهاتف</span><span class="v">${tx.phone ? `<span class="num">${esc(tx.phone)}</span>` : '—'}</span></div>
+      ${shipAddr
+        ? `<div><span class="iv-k">عنوان التسليم${carrierName ? ` · الشحن مع <b dir="auto">${esc(carrierName)}</b>` : ''}</span><span class="v addr" dir="auto">${esc(shipAddr)}</span></div>`
+        : (carrierName ? `<div><span class="iv-k">الشحن</span><span class="v" dir="auto">${esc(carrierName)}</span></div>` : '<div></div>')}
     </div>
 
-    ${termsHtml}
-
-    <div class="sec-title">بيان الأصناف</div>
-    <table>
+    <table class="iv-items">
       <thead><tr>
-        <th class="c-idx">م</th>
-        <th class="c-desc">البيان / الصنف</th>
+        <th class="c-item">الصنف</th>
         <th class="c-qty">الكمية</th>
-        <th class="c-unit">سعر الوحدة<span class="cur">EGP</span></th>
-        <th class="c-total">القيمة<span class="cur">EGP</span></th>
+        <th class="c-unit">سعر الوحدة</th>
+        <th class="c-total">الإجمالي</th>
       </tr></thead>
       <tbody>${itemsHtml}</tbody>
     </table>
+    <div class="iv-items-foot">
+      <span>${fmtN((tx.items || []).length)} ${(tx.items || []).length === 1 ? 'صنف' : 'أصناف'} · ${fmtN(pieces)} ${pieces === 1 ? 'قطعة' : 'قطع'}</span>
+      <span>جميع المبالغ بالجنيه المصري (EGP)</span>
+    </div>
 
-    <div class="summary">
-      <div class="sum-side">
-        ${tx.notes ? `<div class="note-wrap" style="margin-top:0"><div class="note-lbl">ملاحظات</div><span dir="auto">${esc(tx.notes)}</span></div>` : ''}
+    <div class="iv-sum">
+      <div class="iv-side">
+        ${tx.notes ? `<div><span class="iv-k">ملاحظات</span><span class="v" dir="auto">${esc(tx.notes)}</span></div>` : ''}
+        <div><span class="iv-k">الإجمالي كتابةً</span><span class="v words" dir="auto">${esc(amountToArabicWords(total))}</span></div>
       </div>
-      <div class="totals">
-        <div class="t-row"><span class="t-lbl">إجمالي الأصناف</span><span class="t-val">${fmtJ(itemsSubtotal)}</span></div>
-        ${tx.discount ? `<div class="t-row"><span class="t-lbl">الخصم ${discLabel}</span><span class="t-val r">− ${fmtJ(tx.discount)}</span></div>` : ''}
-        ${!isPur && tx.shipCost ? `<div class="t-row"><span class="t-lbl">مصاريف الشحن</span><span class="t-val">+ ${fmtJ(tx.shipCost)}</span></div>` : ''}
-        <div class="t-row grand">
-          <span class="t-lbl">${isPur ? 'إجمالي المشتريات' : isRet ? 'إجمالي المرتجع' : 'الإجمالي المستحق'}</span>
-          <span class="t-val">${fmtJ(tx.total)}</span>
-        </div>
-        ${settlementRows}
+      <div class="iv-tot">
+        <div class="r"><span>إجمالي الأصناف</span>${money(itemsSubtotal)}</div>
+        ${tx.discount ? `<div class="r"><span>الخصم ${discLabel}</span><span class="num">−${fmtN(tx.discount)}</span></div>` : ''}
+        ${!isPur && tx.shipCost ? `<div class="r"><span>الشحن</span><span class="num">+${fmtN(tx.shipCost)}</span></div>` : ''}
+        <div class="g"><span class="l">${isPur ? 'إجمالي المشتريات' : isRet ? 'إجمالي المرتجع' : 'الإجمالي'}</span><span class="t">${money(total)} ${cur}</span></div>
       </div>
     </div>
 
-    <div class="words">
-      <span class="k">المبلغ كتابةً</span>
-      <span class="v" dir="auto">${esc(amountToArabicWords(tx.total))}</span>
+    <div class="iv-pay">
+      <div class="iv-pay-head"><span class="iv-k">${isRet ? 'الرد' : 'الدفع'}</span>${isRet && !isCancelled ? '' : `<span class="iv-chip ${payChip[0]}">${payChip[1]}</span>`}</div>
+      <div class="iv-pay-grid">${payCells}</div>
     </div>
 
-    ${signsHtml}
   </div>
   ${_invSheetFoot(tx, dateStr, 1, pageCount)}
 </div>
@@ -54745,12 +54885,27 @@ ${includePolicyPage ? `<div class="page">
 </div>` : ''}`;
 }
 
+/**
+ * The print window's trigger: waits for the product photos and the web font
+ * before opening the dialog. A fixed 400ms timer printed empty thumbnails on
+ * any connection slower than that. Capped at 4s so a dead image URL can never
+ * stop the invoice printing.
+ */
+function _invPrintTrigger() {
+  return `<script>(function(){var done=false;function go(){if(done)return;done=true;window.print();}
+var imgs=[].slice.call(document.images).filter(function(i){return !i.complete;});var left=imgs.length;
+function one(){if(--left<=0)ready();}
+function ready(){var f=document.fonts&&document.fonts.ready;(f?f.then(function(){setTimeout(go,150);}):setTimeout(go,150));}
+if(!left)ready();else imgs.forEach(function(i){i.addEventListener('load',one);i.addEventListener('error',one);});
+setTimeout(go,4000);})();<\/script>`;
+}
+
 function bulkPrintPDF() {
   if (!selectedMovIds.size) { toast('لم يتم تحديد أي معاملات', true); return; }
   const selected = [...selectedMovIds].map(id => transactions.find(t => t._id === id)).filter(Boolean);
   const w = window.open('', '_blank');
   const allHtml = selected.map(tx => buildInvoiceHtml(tx)).join('');
-  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><style>${_invoiceSharedCss()}</style></head><body>${allHtml}<script>setTimeout(()=>window.print(),500)<\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><style>${_invoiceSharedCss()}</style></head><body>${allHtml}${_invPrintTrigger()}</body></html>`);
   w.document.close();
   toast(`جارٍ طباعة ${selected.length} فاتورة`);
 }
@@ -54759,7 +54914,7 @@ function printInvoice(id) {
   const tx = transactions.find(t => t._id === id); if (!tx) return;
   if (tx.purchaseDetailsHidden) { toast('طباعة تفاصيل الشراء متاحة للمدير فقط', true); return; }
   const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><style>${_invoiceSharedCss()}</style></head><body>${buildInvoiceHtml(tx)}<script>setTimeout(()=>window.print(),400)<\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><style>${_invoiceSharedCss()}</style></head><body>${buildInvoiceHtml(tx)}${_invPrintTrigger()}</body></html>`);
   w.document.close();
 }
 
@@ -86709,6 +86864,9 @@ function closeFuCommentPopup() {
   fuCommentTargetId = null;
   _fuEditingCommentId = null;
   _fuAwaitingOutcome = false;
+  /* The Shopify quick-view shows this same trail inline; a note or call logged in
+     the window just closed must appear there without reopening it. */
+  if (typeof _spPeekRefreshFu === 'function' && qs('#sp-peek')) { try { _spPeekRefreshFu(); } catch (_) {} }
 }
 
 // iOS Safari scrolls the whole page to bring a focused input into view even
@@ -91836,7 +91994,9 @@ function _renderPuEditTargetList() {
   el.innerHTML = _puEditAvailableRuns.map(run => {
     const readyCount = run.orders.filter(o => ['Ready','Picked-Up'].includes(o.pickupStatus)).length;
     const total = run.orders.reduce((sum, o) => sum + (o.total || 0), 0);
-    const totalText = stripHtml(fmtJ(total));
+    // Keep this summary plain text. fmtJ returns styled HTML, which becomes
+    // visible markup when it is interpolated into an escaped translation.
+    const totalText = `EGP ${fmtN(total)}`;
     const disabled = !_puEditSelectedIds.size;
     return `<div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);direction:rtl">
       <div style="min-width:0">
@@ -93802,6 +93962,9 @@ const SP_COLS = [
   { id:'ref',      ar:'رقم الأوردر',        en:'Order #' },
   { id:'time',     ar:'الوقت',              en:'Time' },
   { id:'client',   ar:'العميل',             en:'Client' },
+  /* ⚠ ليس عموداً: سطر تحت اسم العميل. لا مدخل له في SP_COL_W عمداً — إخفاؤه لا
+     يغيّر عرض أي عمود ولا عدد colspan، فقط يُخفي [data-col="phone"]. */
+  { id:'phone',    ar:'رقم الهاتف (تحت العميل)', en:'Phone (under client)' },
   { id:'items',    ar:'الأصناف',            en:'Items' },
   { id:'ship',     ar:'الشحن',              en:'Shipping' },
   { id:'discount', ar:'الخصم',              en:'Discount' },
@@ -93849,7 +94012,7 @@ function _spConfirmBtnHTML(){
 }
 
 const SP_COL_W = {
-  ref:88, time:88, client:132, items:104, ship:74, discount:84, total:94,
+  ref:88, time:88, client:132, items:150, ship:74, discount:84, total:94,
   notes:186, tags:150, status:150, assigned:104, action:178,
   address:44, source:44, tracking:44,
 };
@@ -94134,6 +94297,350 @@ function _spItemStock(i, idx) {
   return { inv, need, have, state };
 }
 
+const _SP_ICO_OK = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+const _SP_ICO_NO = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>';
+const _SP_ICO_LINK = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>';
+
+/**
+ * علامة المخزون لسطر واحد: ✓ متوفر + كم متاح، ✕ غير متوفر + كم متاح، ورابط
+ * مقطوع لغير المربوط. الرقم يُقال دائماً لأن «متاح 1 من 3» تختلف عن «نفد».
+ * ⚠ 'na' (المخزون لم يُحمَّل) لا يرسم شيئاً — ✓ هنا ستكون كذبة.
+ */
+function _spStockMarkHtml(s, cls) {
+  const isEn = currentLang === 'en';
+  if (s.state === 'ok') {
+    return `<span class="${cls} sp-mk is-ok" title="${escHtml(isEn ? 'In stock' : 'متوفر بالمخزن')}">${_SP_ICO_OK}${isEn ? `${fmtN(s.have)} available` : `متاح ${fmtN(s.have)}`}</span>`;
+  }
+  if (s.state === 'out' || s.state === 'short') {
+    const txt = s.state === 'out'
+      ? (isEn ? 'Out of stock' : 'غير متوفر')
+      : (isEn ? `Only ${fmtN(s.have)} of ${fmtN(s.need)}` : `متاح ${fmtN(s.have)} من ${fmtN(s.need)}`);
+    return `<span class="${cls} sp-mk is-bad" title="${escHtml(isEn ? 'Not enough stock' : 'المخزون لا يكفي')}">${_SP_ICO_NO}${txt}</span>`;
+  }
+  if (s.state === 'missing') {
+    return `<span class="${cls} sp-mk is-warn" title="${escHtml(isEn ? 'SKU not linked to inventory' : 'الكود غير مربوط بالمخزن')}">${_SP_ICO_LINK}${isEn ? 'Not linked' : 'غير مربوط'}</span>`;
+  }
+  return '';
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SHOPIFY ORDER QUICK VIEW + FOLLOW-UP TRAIL  (Oct 5, 2026)
+   ───────────────────────────────────────────────────────────────────
+   Clicking the order number used to NAVIGATE AWAY to متابعة الطلبات — the
+   operator lost the table, its filters and their place in it just to answer
+   «هل حد بيتابع الأوردر ده؟». It now opens a side panel over the table:
+   a short summary of the order, its follow-up status, and — when an employee
+   has opened a follow-up for it — the follow-up trail itself, inline.
+
+   ⚠ Follow-ups are matched EXACTLY as openShopifyOrderFollowup matches them
+     (shopifyOrderId, then orderRef normalised for the leading '#'). Two rules
+     would let the panel say «لا توجد متابعة» for an order the follow-ups page
+     does list.
+   ⚠ `followUps` is filled only by visiting that page, so it is fetched here —
+     the Shopify page is often the first page a user opens. A failed fetch is
+     stated as a failure, never drawn as «no follow-up» (the LOAD_FAIL rule).
+   ⚠ The panel is read-mostly. Writing to the trail goes through the real
+     follow-up window (openFuCommentPopup) — a second composer here would be a
+     second code path for the same comment array.
+─────────────────────────────────────────────────────────────────── */
+
+function _spPhone(o) { return String((o && (o.phone || o.clientPhone)) || '').trim(); }
+
+/**
+ * Search: order #, client, phone, item name/code, tags.
+ * ⚠ _gsNorm converts Arabic-Indic digits, so «٢٦٨٧» finds #2687 — the same
+ *   normaliser the global search uses.
+ * ⚠ Phone is matched on DIGITS only (spaces and +20 vary between orders) and
+ *   only from 3 digits up — one or two digits would match nearly every phone.
+ */
+function _spMatchesSearch(o, q) {
+  const n = typeof _gsNorm === 'function' ? _gsNorm : (x => String(x || '').toLowerCase());
+  const qn = n(q).replace(/^#+/, '').trim();
+  if (!qn) return true;
+  const items = Array.isArray(o.items) ? o.items : [];
+  const hay = [o.ref, o.client, o.tags]
+    .concat(items.flatMap(i => [i.name, i.shopifyName, i.code === 'SHOPIFY' ? '' : i.code]))
+    .map(v => n(v)).join(' | ');
+  if (hay.includes(qn)) return true;
+  const qd = qn.replace(/\D/g, '');
+  if (qd.length >= 3 && qd.length === qn.replace(/[\s+\-()]/g, '').length) {
+    if (n(_spPhone(o)).replace(/\D/g, '').includes(qd)) return true;
+  }
+  return false;
+}
+
+let _spPeekId = null;
+let _spPeekFuState = 'loading';   /* 'loading' | 'error' | 'ready' */
+let _spPeekReturnFocus = null;
+let _spFuFetchedAt = 0;
+
+/** Follow-ups list, fetched at most once a minute. Returns null on failure. */
+async function _spEnsureFollowUps(force) {
+  const fresh = Array.isArray(followUps) && _spFuFetchedAt && Date.now() - _spFuFetchedAt < 60000;
+  if (!force && fresh) return followUps;
+  try {
+    const r = await api('/followups');
+    if (!Array.isArray(r)) return null;
+    followUps = r;
+    _spFuFetchedAt = Date.now();
+    return followUps;
+  } catch (_) { return null; }
+}
+
+function _spFollowUpsFor(o) {
+  const _norm = v => String(v ?? '').trim().replace(/^#+/, '').toLowerCase();
+  const refN = _norm(o.ref);
+  const spId = String(o.shopifyOrderId ?? '').trim();
+  return (Array.isArray(followUps) ? followUps : [])
+    .filter(f => (spId && String(f.shopifyOrderId || '') === spId) || (refN && _norm(f.orderRef) === refN))
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+}
+
+/** The order's own state, in one short pill. */
+function _spPeekStatePill(o) {
+  const isEn = currentLang === 'en';
+  if (o.cancelled) return `<span class="sp-pk-pill is-bad">${isEn ? 'Cancelled' : 'ملغي'}</span>`;
+  if (o.status && o.status !== 'pending') return `<span class="sp-pk-pill is-ok">${isEn ? 'Recorded' : 'تم التسجيل'}</span>`;
+  if (_spCancelReqState(o) === 'req') return `<span class="sp-pk-pill is-warn">${isEn ? 'Cancel requested' : 'طلب إلغاء معلّق'}</span>`;
+  const sm = _shopifySmartStatus(o);
+  if (sm) return `<span class="sp-pk-pill" style="--pk:${sm.color}">${esc(sm.label)}</span>`;
+  return `<span class="sp-pk-pill is-warn">${isEn ? 'Needs contact' : 'يحتاج تواصل'}</span>`;
+}
+
+function _spPeekFuHtml(o) {
+  const isEn = currentLang === 'en';
+  const title = `<div class="sp-pk-sec-h">${isEn ? 'Follow-up' : 'المتابعة'}</div>`;
+  if (_spPeekFuState === 'loading') {
+    return `${title}<div class="sp-pk-fu-skel" aria-label="${escHtml(isEn ? 'Loading' : 'جارٍ التحميل')}"><span></span><span></span><span></span></div>`;
+  }
+  if (_spPeekFuState === 'error') {
+    return `${title}<div class="sp-pk-empty is-err"><div>${isEn ? 'Could not load follow-ups.' : 'تعذّر تحميل المتابعات.'}</div>
+      <button type="button" class="btn btn-outline btn-sm" onclick="_spPeekLoadFu(true)">${isEn ? 'Retry' : 'إعادة المحاولة'}</button></div>`;
+  }
+  const list = _spFollowUpsFor(o);
+  if (!list.length) {
+    const canOpen = hasPerm('complaints');
+    return `${title}<div class="sp-pk-empty">
+      <div>${isEn ? 'No employee has opened a follow-up for this order.' : 'لم يفتح أي موظف متابعة لهذا الأوردر.'}</div>
+      ${canOpen ? `<button type="button" class="btn btn-outline btn-sm" onclick="closeSpOrderPeek();convertShopifyOrderToFollowUp('${esc(String(o._id))}')">${isEn ? 'Open a follow-up' : 'فتح متابعة'}</button>` : ''}
+    </div>`;
+  }
+  const f = list[0];
+  const st = FU_STATUS_STYLES[f.status] || { bg: 'var(--bg-alt)', color: 'var(--text)', dot: '#9ca3af' };
+  const reason = f.reason === 'أخرى' ? (f.reasonOther || _fuReasonLabel('أخرى')) : _fuReasonLabel(f.reason);
+  const comments = (Array.isArray(f.comments) ? f.comments : []).slice()
+    .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+  const calls = comments.filter(c => c.kind === 'call');
+  const lastCall = calls[calls.length - 1];
+  const callTxt = calls.length
+    ? `${fmtN(calls.length)}/3 · ${lastCall.callOutcome === 'answered' ? (isEn ? 'answered' : 'رد') : (isEn ? 'no answer' : 'لم يرد')}`
+    : (isEn ? 'none yet' : 'لا يوجد');
+  const _users = Array.isArray(users) ? users : [];
+  const respUser = _users.find(u => String(u._id) === String(f.responsibleId)) || { name: f.responsibleName };
+  const fid = esc(String(f._id));
+
+  const trail = comments.map(c => {
+    const u = _users.find(x => String(x._id) === String(c.authorId)) || { name: c.authorName };
+    const isCall = c.kind === 'call';
+    const outcome = c.callOutcome === 'answered' ? (isEn ? 'answered' : 'رد') : (isEn ? 'no answer' : 'لم يرد');
+    const body = isCall
+      ? `<span class="sp-pk-call ${c.callOutcome === 'answered' ? 'is-ok' : 'is-bad'}">${isEn ? `Call attempt ${fmtN(c.callAttemptNo || 0)}` : `محاولة اتصال ${fmtN(c.callAttemptNo || 0)}`} — ${outcome}</span>${c.text ? `<div dir="auto">${esc(c.text)}</div>` : ''}`
+      : `<div dir="auto">${typeof renderMentionText === 'function' ? renderMentionText(c.text || '') : esc(c.text || '')}</div>`;
+    return `<li class="sp-pk-tl">
+      <span class="sp-pk-tl-av">${userAvatarHtml(u, 24)}</span>
+      <div class="sp-pk-tl-b">
+        <div class="sp-pk-tl-top"><b>${esc(c.authorName || '—')}</b><time title="${escHtml(_pwWhenFull(c.createdAt))}">${esc(_pwWhen(c.createdAt))}</time></div>
+        ${body}
+      </div>
+    </li>`;
+  }).join('');
+  const decision = f.cancelled
+    ? `<li class="sp-pk-tl is-decision"><span class="sp-pk-tl-av">${userAvatarHtml({ name: f.cancelledByName }, 24)}</span><div class="sp-pk-tl-b">
+        <div class="sp-pk-tl-top"><b>${esc(f.cancelledByName || '—')}</b><time title="${escHtml(_pwWhenFull(f.cancelledAt))}">${esc(_pwWhen(f.cancelledAt))}</time></div>
+        <div dir="auto">${isEn ? 'Decision: cancel' : 'القرار: إلغاء'}${f.cancelReason ? ` — ${esc(f.cancelReason)}` : ''}</div></div></li>`
+    : '';
+
+  const others = list.slice(1).map(x => {
+    const s2 = FU_STATUS_STYLES[x.status] || { bg: 'var(--bg-alt)', color: 'var(--text)' };
+    return `<button type="button" class="sp-pk-fu-other" onclick="_spPeekOpenTrail('${esc(String(x._id))}')">
+      <span class="sp-pk-fu-chip" style="background:${s2.bg};color:${s2.color}">${esc(_fuStatusLabel(x.status) || '—')}</span>
+      <span>${esc(x.responsibleName || '—')}</span>${x.ticketNo ? `<bdi class="sp-pk-mono">${esc(x.ticketNo)}</bdi>` : ''}
+    </button>`;
+  }).join('');
+
+  return `<div class="sp-pk-sec-h">${isEn ? 'Follow-up' : 'المتابعة'}${f.ticketNo ? ` <bdi class="sp-pk-mono">${esc(f.ticketNo)}</bdi>` : ''}
+      <span class="sp-pk-fu-chip" style="background:${st.bg};color:${st.color}"><i style="background:${st.dot || st.color}"></i>${esc(_fuStatusLabel(f.status) || '—')}</span></div>
+    <dl class="sp-pk-dl">
+      <div><dt>${isEn ? 'Handled by' : 'المسؤول'}</dt><dd class="sp-pk-who">${userAvatarHtml(respUser, 20)}<span>${esc(f.responsibleName || '—')}</span></dd></div>
+      ${reason ? `<div><dt>${isEn ? 'Reason' : 'السبب'}</dt><dd dir="auto">${esc(reason)}</dd></div>` : ''}
+      <div><dt>${isEn ? 'Calls' : 'محاولات الاتصال'}</dt><dd>${callTxt}</dd></div>
+      <div><dt>${isEn ? 'Opened' : 'فُتحت'}</dt><dd title="${escHtml(_pwWhenFull(f.createdAt))}">${esc(_pwWhen(f.createdAt) || '—')}</dd></div>
+    </dl>
+    <div class="sp-pk-trail-h">${isEn ? 'Follow-up trail' : 'مسار المتابعة'} <span class="sp-pk-count">${fmtN(comments.length)}</span></div>
+    ${trail || decision
+      ? `<ol class="sp-pk-trail" id="sp-pk-trail">${trail}${decision}</ol>`
+      : `<div class="sp-pk-empty">${isEn ? 'No entries in the trail yet.' : 'لا توجد إدخالات في المسار بعد.'}</div>`}
+    <button type="button" class="btn btn-outline btn-sm sp-pk-trail-btn" onclick="_spPeekOpenTrail('${fid}')">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M5 8.2V13a4 4 0 004 4h1.5" stroke-dasharray="3 3"/></svg>
+      ${f.cancelled ? (isEn ? 'Open follow-up trail' : 'فتح مسار المتابعة') : (isEn ? 'Open trail · add note or call' : 'فتح المسار · إضافة تعليق أو مكالمة')}
+    </button>
+    ${others ? `<div class="sp-pk-trail-h">${isEn ? 'Other follow-ups on this order' : 'متابعات أخرى على الأوردر'}</div><div class="sp-pk-fu-others">${others}</div>` : ''}`;
+}
+
+function _spPeekHtml(o) {
+  const isEn = currentLang === 'en';
+  const ref = String(o.ref || '').replace(/^#+/, '');
+  const when = o.shopifyCreatedAt || o.createdAt;
+  const idx = _spBuildInvIndex();
+  const items = Array.isArray(o.items) ? o.items : [];
+  const { deposit, payment } = _spDetectDepositAndMethod(o);
+  const total = Number(o.total) || 0;
+  const disc = _spTotalDiscount(o);
+  const ship = Number(o.shipCost) || 0;
+  const phone = _spPhone(o);
+  const addr = (o.shippingAddress || '').replace(/^العنوان:\s*/, '').trim()
+    || (() => { const a = o.rawData?.shipping_address; if (!a) return ''; return [a.address1, a.address2, a.city, a.province].filter(Boolean).join('، '); })();
+  const note = (o.notes || '').trim().startsWith('العنوان:') ? '' : (o.notes || '').trim();
+  const nCmt = Array.isArray(o.comments) ? o.comments.length : 0;
+  const canConfirm = o.status === 'pending' && !o.cancelled && _spCancelReqState(o) !== 'req';
+
+  const itemsHtml = items.map(i => {
+    const s = _spItemStock(i, idx);
+    const nm = esc(s.inv?.name || i.shopifyName || i.name || i.code || '—');
+    const tag = _spStockMarkHtml(s, 'sp-pk-st');
+    return `<li class="sp-pk-item">${_spThumbHtml(i, s.inv, 'sp-pk-img')}
+      <span class="sp-pk-item-n" title="${escHtml(s.inv?.name || i.shopifyName || i.name || '')}">${nm}</span>
+      <span class="sp-pk-item-q">× ${fmtN(s.need)}</span>${tag}</li>`;
+  }).join('');
+
+  const money = [
+    [isEn ? 'Total' : 'الإجمالي', fmtJ(total), 'is-strong'],
+    [isEn ? 'Deposit' : 'العربون', deposit > 0 ? `${fmtJ(deposit)}<small>${esc(_payMethodLabel(payment))}</small>` : `<span class="is-warn">${isEn ? 'None' : 'لا يوجد'}</span>`, ''],
+    [isEn ? 'Remaining' : 'المتبقي', fmtJ(Math.max(0, total - (deposit || 0))), ''],
+    [isEn ? 'Shipping' : 'الشحن', ship > 0 ? fmtJ(ship) : '—', ''],
+    [isEn ? 'Discount' : 'الخصم', disc > 0 ? fmtJSigned(disc, '−') : '—', ''],
+  ].map(m => `<div class="sp-pk-m ${m[2]}"><span>${m[0]}</span><b>${m[1]}</b></div>`).join('');
+
+  return `<header class="sp-pk-head">
+      <div class="sp-pk-head-main">
+        <div class="sp-pk-ref" id="sp-pk-title"><bdi>#${esc(ref || '—')}</bdi>${_spPeekStatePill(o)}</div>
+        <div class="sp-pk-sub">${when ? `<span>${esc(_pwWhenFull(when))}</span>` : ''}${o.assignedToName ? ` · ${esc(o.assignedToName)}` : ''}</div>
+      </div>
+      <button type="button" class="sp-pk-x" onclick="closeSpOrderPeek()" aria-label="${escHtml(isEn ? 'Close' : 'إغلاق')}">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      </button>
+    </header>
+    <div class="sp-pk-body">
+      <section class="sp-pk-sec">
+        <div class="sp-pk-client" dir="auto">${esc(o.client || '—')}</div>
+        ${phone ? `<a class="sp-pk-phone" href="tel:${escHtml(phone.replace(/[^\d+]/g, ''))}"><bdi>${esc(phone)}</bdi></a>` : ''}
+        ${addr ? `<div class="sp-pk-addr" dir="auto">${esc(addr)}</div>` : ''}
+        ${note ? `<div class="sp-pk-note" dir="auto">${esc(note)}</div>` : ''}
+      </section>
+      <section class="sp-pk-sec"><div class="sp-pk-money">${money}</div></section>
+      ${items.length ? `<section class="sp-pk-sec"><div class="sp-pk-sec-h">${isEn ? 'Items' : 'الأصناف'} <span class="sp-pk-count">${fmtN(_spItemsCount(o))}</span></div><ul class="sp-pk-items">${itemsHtml}</ul></section>` : ''}
+      <section class="sp-pk-sec sp-pk-fu" id="sp-pk-fu" aria-live="polite">${_spPeekFuHtml(o)}</section>
+    </div>
+    <footer class="sp-pk-foot">
+      <button type="button" class="btn btn-outline btn-sm" onclick="openShopifyCommentsModal('${esc(String(o._id))}')">${commentIconSvg(14)} ${isEn ? 'Comments' : 'التعليقات'}${nCmt ? ` <span class="sp-pk-count">${fmtN(nCmt)}</span>` : ''}</button>
+      ${canConfirm ? `<button type="button" class="sp-confirm-btn" onclick="closeSpOrderPeek();approveShopifyOrder('${esc(String(o._id))}')">${SP_CONFIRM_ICON}<span>${t('spSendToTransactions')}</span></button>` : ''}
+    </footer>`;
+}
+
+function _spPeekRender() {
+  const panel = qs('#sp-peek .sp-peek');
+  const o = _spPeekId && _spOrderById(_spPeekId);
+  if (!panel) return;
+  if (!o) { closeSpOrderPeek(); return; }
+  const body = panel.querySelector('.sp-pk-body');
+  const keep = body ? body.scrollTop : 0;
+  panel.innerHTML = _spPeekHtml(o);
+  const nb = panel.querySelector('.sp-pk-body'); if (nb) nb.scrollTop = keep;
+  _spPeekScrollTrail();
+}
+
+/* The trail opens on its NEWEST entry — the last thing that happened is what the
+   reader came for (same rule as the prep workspace thread). */
+function _spPeekScrollTrail() {
+  const tl = qs('#sp-pk-trail'); if (tl) tl.scrollTop = tl.scrollHeight;
+}
+
+/** Re-draws only the follow-up section, so the body's scroll position survives. */
+function _spPeekRefreshFu() {
+  const host = qs('#sp-pk-fu');
+  const o = _spPeekId && _spOrderById(_spPeekId);
+  if (!host || !o) return;
+  host.innerHTML = _spPeekFuHtml(o);
+  _spPeekScrollTrail();
+}
+
+async function _spPeekLoadFu(force) {
+  const id = _spPeekId;
+  if (!id) return;
+  if (force || _spPeekFuState !== 'ready') { _spPeekFuState = 'loading'; _spPeekRefreshFu(); }
+  const r = await _spEnsureFollowUps(force);
+  /* ⚠ The reply may land after the user opened a DIFFERENT order, or closed the
+     panel — never paint it there. */
+  if (id !== _spPeekId) return;
+  if (r) _spPeekFuState = 'ready';
+  else if (_spPeekFuState !== 'ready') _spPeekFuState = 'error';
+  _spPeekRefreshFu();
+}
+
+function openSpOrderPeek(orderId) {
+  const o = _spOrderById(orderId);
+  if (!o) { toast(t('spOrderNotFound'), true); return; }
+  try { _closeMovItemsPopover(); } catch (_) {}
+  let ov = qs('#sp-peek');
+  if (!ov) {
+    _spPeekReturnFocus = document.activeElement;
+    ov = document.createElement('div');
+    ov.id = 'sp-peek';
+    ov.className = 'sp-peek-overlay';
+    ov.innerHTML = '<aside class="sp-peek" role="dialog" aria-modal="true" aria-labelledby="sp-pk-title"></aside>';
+    /* mousedown, not click: a text selection that ends on the backdrop must not close it. */
+    ov.addEventListener('mousedown', e => { if (e.target === ov) closeSpOrderPeek(); });
+    document.body.appendChild(ov);
+    document.addEventListener('keydown', _spPeekKey, true);
+  }
+  ov.setAttribute('dir', document.dir || 'rtl');
+  _spPeekId = String(orderId);
+  /* Cached follow-ups paint at once; _spPeekLoadFu refreshes them behind. */
+  _spPeekFuState = (Array.isArray(followUps) && _spFuFetchedAt) ? 'ready' : 'loading';
+  _spPeekRender();
+  requestAnimationFrame(() => ov.classList.add('is-open'));
+  setTimeout(() => qs('#sp-peek .sp-pk-x')?.focus(), 40);
+  _spPeekLoadFu(false);
+}
+
+function closeSpOrderPeek() {
+  const ov = qs('#sp-peek');
+  _spPeekId = null;
+  document.removeEventListener('keydown', _spPeekKey, true);
+  if (!ov) return;
+  ov.remove();
+  const back = _spPeekReturnFocus; _spPeekReturnFocus = null;
+  if (back && document.contains(back) && typeof back.focus === 'function') { try { back.focus(); } catch (_) {} }
+}
+
+/* ⚠ Escape closes the panel only when nothing is open ABOVE it — the trail window
+   and the comments modal have their own Escape, and one key press must not close
+   two layers. */
+function _spPeekKey(e) {
+  if (e.key !== 'Escape' || !qs('#sp-peek')) return;
+  if (qs('#fu-comment-popup')?.classList.contains('show')) return;
+  if (qs('#modal-overlay')?.classList.contains('active')) return;
+  e.stopPropagation();
+  e.preventDefault();
+  closeSpOrderPeek();
+}
+
+/** The full follow-up window, opened OVER the panel (z-index 1200 > 1150). */
+function _spPeekOpenTrail(fuId) {
+  if (!(Array.isArray(followUps) && followUps.some(f => String(f._id) === String(fuId)))) return;
+  openFuCommentPopup(fuId);
+}
+
 /**
  * الشحن — the Movements ship cell.
  * ⚠ A Shopify order carries only what the customer was charged; there is no
@@ -94339,54 +94846,60 @@ function showSpItemsPopover(orderId, btn) {
   if (!items.length) return;
   const isEn = currentLang === 'en';
   const idx = _spBuildInvIndex();
+  let nReady = 0, nBlock = 0, nMissing = 0, itemsSum = 0;
 
   const rowsHtml = items.map(i => {
-    const inv = _spLookupInvItem(i, idx);
-    const need = Number(i.qty) || 0;
-    const have = inv ? (Number(inv.current) || 0) : 0;
+    const s = _spItemStock(i, idx);
+    const inv = s.inv, need = s.need, have = s.have;
     const name = esc(inv?.name || i.shopifyName || i.name || i.code || '—');
     const code = i.code && i.code !== 'SHOPIFY' ? esc(i.code) : '';
-    const img = (inv && inv.imageUrl) || i.imageUrl || i.image || '';
-    const imgHtml = img
-      ? `<img src="${escHtml(sanitizeUrl(img))}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='flex')"><div class="mip-fallback" style="display:none"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></div>`
-      : `<div class="mip-fallback"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></div>`;
-    /* ⚠ One status line per item, and only when there is something to say.
-       A green "in stock" tick on every row would bury the two rows that are
-       actually blocking the order. */
-    let status = '';
-    if (!idx.ready) status = '';
-    else if (!inv) status = `<div class="mip-warn is-bad">${isEn ? 'Not linked to inventory' : 'غير مربوط بالمخزن'}</div>`;
-    else if (have < need) status = `<div class="mip-warn is-bad">${isEn ? `Short by ${fmtN(need - have)} · available ${fmtN(have)}` : `ناقص ${fmtN(need - have)} · المتاح ${fmtN(have)}`}</div>`;
-    else if (inv.sellPrice && i.shopifyPrice && Math.abs(inv.sellPrice - i.shopifyPrice) > 0.01)
-      status = `<div class="mip-warn is-warn">${isEn ? `Price differs · store ${fmtN(inv.sellPrice)}` : `سعر مختلف · بالمخزن ${fmtN(inv.sellPrice)}`}</div>`;
-    /* المتاح بالمخزن — رقم هادئ بجانب الكود، لا شارة على كل صف.
-       ⚠ يُعرض فقط حين يكون الفهرس جاهزاً والصنف مربوطاً: بدون هذا الشرط يقرأ كل
-       صنف «المتاح 0» بينما السبب أن المخزون لم يُحمَّل بعد — وهي نفس الحالة التي
-       يحرسها _spStockBlock. الأصناف غير المربوطة يذكرها سطر التحذير أدناه. */
-    const stockHtml = (idx.ready && inv)
-      ? `<span class="mip-stock${have <= need ? ' is-low' : ''}" title="${escHtml(isEn ? 'Available in stock' : 'المتاح بالمخزن')}">${isEn ? 'Avail' : 'المتاح'} ${fmtN(have)}</span>`
-      : '';
-    const metaHtml = (code || stockHtml)
-      ? `<div class="mip-code">${code ? `${isEn ? 'Code' : 'كود'} <span class="mip-code-v">${code}</span>` : ''}${stockHtml}</div>`
-      : '';
-    return `<div class="mip-row">
-      <div class="mip-img">${imgHtml}</div>
-      <div class="mip-body">
-        <div class="mip-name">${name}</div>
-        ${metaHtml}
-        ${status}
+    const unit = Number(i.price) || 0;
+    itemsSum += unit * need;
+    if (s.state === 'ok') nReady++;
+    else if (s.state === 'out' || s.state === 'short') nBlock++;
+    else if (s.state === 'missing') nMissing++;
+    /* The stock mark on the side carries ok/out/short/unlinked (✓ / ✕ / link); the
+       only line left under the name is the one the mark cannot say — a price mismatch. */
+    let warn = '';
+    if (s.state === 'ok' && inv.sellPrice && i.shopifyPrice && Math.abs(inv.sellPrice - i.shopifyPrice) > 0.01)
+      warn = `<div class="mip-warn is-warn">${isEn ? `Price differs · store ${fmtN(inv.sellPrice)}` : `سعر مختلف · بالمخزن ${fmtN(inv.sellPrice)}`}</div>`;
+    /* ✓ متوفر + كم متاح، ✕ غير متوفر + كم متاح فعلاً. لا شريط: الرقم هو المعلومة.
+       ⚠ لا يُرسم قبل تحميل المخزون — وإلا يقرأ كل صنف 0. */
+    const stock = _spStockMarkHtml(s, 'sp-ip-stock');
+    return `<div class="sp-ip-row${s.state === 'out' || s.state === 'short' ? ' is-bad' : ''}">
+      ${_spThumbHtml(i, inv, 'sp-ip-img')}
+      <div class="sp-ip-body">
+        <div class="sp-ip-name" title="${escHtml(inv?.name || i.shopifyName || i.name || '')}">${name}</div>
+        <div class="sp-ip-meta">${code ? `<span class="mip-code-v">${code}</span>` : ''}<span class="sp-ip-unit">${fmtJ(unit)}</span></div>
+        ${warn}
       </div>
-      <div class="mip-qty">× ${fmtN(need)}</div>
-      <div class="mip-price">${fmtJ(Number(i.price) || 0)}</div>
+      <div class="sp-ip-side">
+        <div class="sp-ip-qty"><span>×</span> ${fmtN(need)}</div>
+        ${stock}
+      </div>
     </div>`;
   }).join('');
 
+  const summary = !idx.ready
+    ? (isEn ? 'Stock not loaded yet' : 'المخزون لم يُحمَّل بعد')
+    : [
+        nReady ? (isEn ? `${nReady} ready` : `${fmtN(nReady)} جاهز`) : '',
+        nBlock ? `<b class="is-bad">${isEn ? `${nBlock} block confirmation` : `${fmtN(nBlock)} يمنع التأكيد`}</b>` : '',
+        nMissing ? `<b class="is-warn">${isEn ? `${nMissing} not linked` : `${fmtN(nMissing)} غير مربوط`}</b>` : '',
+      ].filter(Boolean).join(' · ');
+  const refTxt = String(o.ref || '').replace(/^#+/, '');
+  const itemsTotal = Number(o.itemsTotal) > 0 ? Number(o.itemsTotal) : itemsSum;
+
   const pop = document.createElement('div');
-  pop.className = 'mov-items-popover';
-  pop.innerHTML = `<div class="mip-head">${isEn ? 'Items' : 'الأصناف'}</div>${rowsHtml}`;
+  pop.className = 'mov-items-popover sp-ipop';
+  pop.innerHTML = `<div class="sp-ip-head">
+      <div class="sp-ip-title">${isEn ? 'Items' : 'الأصناف'}${refTxt ? ` · <bdi>#${esc(refTxt)}</bdi>` : ''}</div>
+      <div class="sp-ip-sum">${summary}</div>
+    </div>${rowsHtml}
+    <div class="sp-ip-foot"><span>${isEn ? 'Items total' : 'إجمالي الأصناف'}</span><b>${fmtJ(itemsTotal)}</b></div>`;
   document.body.appendChild(pop);
   const r = btn.getBoundingClientRect();
-  const pw = Math.min(340, window.innerWidth - 24);
+  const pw = Math.min(400, window.innerWidth - 24);
   pop.style.width = pw + 'px';
   let top = r.bottom + 6;
   let left = r.left + (r.width / 2) - (pw / 2);
@@ -94428,7 +94941,7 @@ function renderShopifyOrders() {
      say why the two disagree. */
   const searchQ = (qs('#shopify-search')?.value || '').trim().toLowerCase();
   let data = _shopifyTab === 'pending' ? pending : _shopifyOrders;
-  if (searchQ) data = data.filter(o => String(o.ref || '').toLowerCase().includes(searchQ));
+  if (searchQ) data = data.filter(o => _spMatchesSearch(o, searchQ));
   // Date filter (range)
   if (_shopifyDateFilter.from) {
     const fromMs = _spStartOfDay(_shopifyDateFilter.from).getTime();
@@ -94599,7 +95112,7 @@ function renderShopifyOrders() {
           if (_oDayKey) _spTblLastDayKey = _oDayKey;
           const _oAgeMs = Date.now() - new Date(o.shopifyCreatedAt || o.createdAt || 0).getTime();
           const _isNewToday = _oAgeMs < 24 * 60 * 60 * 1000;
-          const _oNewBadge = _isNewToday ? `<span class="mov-new-badge" style="margin-left:5px">${t('spNewBadge')}</span>` : '';
+          const _oNewBadge = _isNewToday ? `<span class="sp-new-badge">${t('spNewBadge')}</span>` : '';
           const _newRowStyle = _isNewToday ? `background:linear-gradient(90deg,rgba(16,185,129,.07) 0%,transparent 100%);border-right:3px solid #10b981;` : '';
           const _spRowSelected = _shopifySelectedIds.has(o._id);
           const _selectedRowStyle = _spRowSelected ? `border-right:3px solid var(--accent);` : '';
@@ -94722,11 +95235,11 @@ function renderShopifyOrders() {
           <tr class="${_spRowSelected ? 'sp-row-selected' : ''}${_spCrClass}${o.cancelled ? ' sp-row-cancelled' : ''}" style="${_selectedRowStyle || (_spCrClass ? '' : _newRowStyle)}animation-delay:${Math.min(_spRowIdx,20)*18}ms">
             <td class="sp-c-check">${_spSelectable ? `<input type="checkbox" class="sp-row-check" data-id="${o._id}" onclick="_toggleSelectShopifyRow('${o._id}',this,event)" ${_shopifySelectedIds.has(o._id) ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">` : ''}</td>
             <td style="white-space:nowrap" data-col="ref">${_spStarHtml(o)}${o.ref
-              ? `<a href="javascript:void(0)" class="sp-ref-link" title="${escHtml(t('spOpenFollowup'))}" onclick="event.stopPropagation();openShopifyOrderFollowup('${escHtml(String(o.ref))}','${escHtml(String(o.shopifyOrderId || ''))}')"><b>${fmtRef(String(o.ref).replace(/^#+/, ''))}</b></a>`
+              ? `<a href="javascript:void(0)" class="sp-ref-link" title="${escHtml(t('spOpenOrderPeek'))}" onclick="event.stopPropagation();openSpOrderPeek('${esc(String(o._id))}')"><b>${fmtRef(String(o.ref).replace(/^#+/, ''))}</b></a>`
               : '<b>-</b>'}${_oNewBadge}</td>
             <td style="white-space:nowrap;font-size:.78rem;color:var(--text-muted)" data-col="time">${o.shopifyCreatedAt ? _fmtShopifyDate(o.shopifyCreatedAt, o.shopifyCreatedAt) : '<span style="color:var(--text-muted)">—</span>'}</td>
-            <td style="font-size:.85rem" data-col="client">${o.client || '<span style="color:var(--text-muted)">—</span>'}</td>
-            <td style="text-align:center" data-col="items">${_spItemsCell(o, _spCtx.inv)}</td>
+            <td style="font-size:.85rem" data-col="client"><div class="sp-client-name" dir="auto" title="${escHtml(o.client || '')}">${o.client ? esc(o.client) : '<span style="color:var(--text-muted)">—</span>'}</div>${_spPhone(o) ? `<a class="sp-client-phone" data-col="phone" href="tel:${escHtml(_spPhone(o).replace(/[^\d+]/g, ''))}" onclick="event.stopPropagation()" title="${escHtml(t('spCallClient'))}">${esc(_spPhone(o))}</a>` : ''}</td>
+            <td style="text-align:center" data-col="items"><div class="sp-items-cq">${_spItemsCell(o, _spCtx.inv)}</div></td>
             <!-- ⚠ NO inline text-align here. The stylesheet end-aligns الشحن / الخصم /
                  الإجمالي together (a column of figures read against a ragged edge cannot
                  be compared down its length), and an inline style outranks it — so these
@@ -94853,6 +95366,7 @@ function renderShopifyOrders() {
       const itemsId = `sp-items-${o._id}`;
       const itemsListHtml = (o.items || []).length ? `<div id="${itemsId}" class="sp-card-items" style="display:none">
         ${o.items.map(it => `<div class="sp-card-item-row">
+          ${_spThumbHtml(it, _spCtx.inv.ready ? _spLookupInvItem(it, _spCtx.inv) : null, 'sp-ith sp-card-ith')}
           <span class="sp-card-item-name">${esc(it.name || it.title || '—')}</span>
           <span class="sp-card-item-qty">×${it.qty || it.quantity || 1}</span>
         </div>`).join('')}
@@ -94916,7 +95430,7 @@ function renderShopifyOrders() {
         <div class="sp-card-top">
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;min-width:0">
             <div class="sp-card-ref">${_spStarHtml(o)}${o.ref
-              ? `<a href="javascript:void(0)" class="sp-ref-link" title="${escHtml(t('spOpenFollowup'))}" onclick="event.stopPropagation();openShopifyOrderFollowup('${escHtml(String(o.ref))}','${escHtml(String(o.shopifyOrderId || ''))}')">#${esc(String(o.ref).replace(/^#+/, ''))}</a>`
+              ? `<a href="javascript:void(0)" class="sp-ref-link" title="${escHtml(t('spOpenOrderPeek'))}" onclick="event.stopPropagation();openSpOrderPeek('${esc(String(o._id))}')">#${esc(String(o.ref).replace(/^#+/, ''))}</a>`
               : `#${esc(String(o.shopifyOrderId || '—'))}`}</div>
             ${_isNew ? `<span class="mov-new-badge">${t('spNewBadge')}</span>` : ''}
             <div class="sp-card-status-inline">${statusBadge}</div>
@@ -97368,9 +97882,11 @@ function _spRenderCommentsTab() {
   const list = Array.isArray(order.comments) ? order.comments : [];
   const myName = currentUser?.name || currentUser?.username || '';
 
-  // الأحدث أولاً — التعليق الأخير هو المطلوب عادةً على أوردر قيد المتابعة.
+  /* ترتيب زمني (الأقدم أعلى) وحقل الكتابة أسفل — شكل المحادثة. الخيط يُفتح
+     ممرَّراً إلى آخره، فالتعليق الأحدث هو أول ما يُرى كما كان في الترتيب المقلوب،
+     لكن الحوار يُقرأ الآن في اتجاهه الطبيعي والرد يُكتب تحت آخر رسالة. */
   const rows = list.length
-    ? list.slice().reverse().map(c => {
+    ? list.map(c => {
         const isMine = c.employee === myName;
         // نفس ترتيب وأصناف buildInvCommentsSection: أفعال تظهر عند الهوفر لصاحبها فقط.
         const actions = isMine
@@ -97379,8 +97895,11 @@ function _spRenderCommentsTab() {
               <button class="tx-cmt-btn del" title="${esc(t('ivCmtDelete'))}" onclick="_spDeleteComment(${Number(c.id)})">${_DEL_SVG}</button>
             </div>`
           : '';
+        /* صورة الكاتب الحقيقية عند وجودها (بالاسم أو اسم المستخدم — _pwFindUser)،
+           وإلا الأحرف الأولى. */
+        const _au = (typeof _pwFindUser === 'function' && _pwFindUser(c.employee)) || { name: c.employee || '؟' };
         return `<div class="inv-cmt-item" id="sp-cmt-${Number(c.id)}">
-          <div class="tx-cmt-avatar">${_cmtInitials(c.employee)}</div>
+          <div class="sp-cmt-av">${userAvatarHtml(_au, 30)}</div>
           <div class="tx-cmt-body">
             <div class="tx-cmt-meta"><span class="tx-cmt-author">${esc(c.employee || '؟')}</span><span class="tx-cmt-time">${_cmtTimeHtml(c)}</span></div>
             <div class="tx-cmt-text" data-comment-id="${Number(c.id)}" dir="auto">${renderMentionText(c.text)}</div>
@@ -97394,7 +97913,8 @@ function _spRenderCommentsTab() {
   //   الصيغة عند إدراج الاسم المختار، فأي تسمية أخرى تجعل الاختيار من القائمة لا يكتب شيئاً.
   const inputId = `inv-comment-text-${esc(order._id)}`;
   host.innerHTML = `
-    <div class="inv-cmt-form">
+    <div class="inv-cmt-list sp-cmt-scroll" id="sp-cmt-scroll">${rows}</div>
+    <div class="inv-cmt-form sp-cmt-compose">
       <div class="inv-cmt-input-row">
         <input type="text" id="${inputId}" class="inv-cmt-input" dir="auto"
           placeholder="${escHtml(t('ivCmtAddPlaceholder'))}"
@@ -97404,10 +97924,10 @@ function _spRenderCommentsTab() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>
+      <div class="sp-cmt-note">${esc(t('spCmtCarryNote'))}</div>
     </div>
-    <div class="sp-cmt-note">${esc(t('spCmtCarryNote'))}</div>
-    <div class="inv-cmt-list">${rows}</div>
   `;
+  const sc = qs('#sp-cmt-scroll'); if (sc) sc.scrollTop = sc.scrollHeight;
 }
 
 /**
@@ -97441,6 +97961,8 @@ function _spRefreshOrderRow() {
         && typeof renderShopifyOrders === 'function') {
       renderShopifyOrders();
     }
+    /* the quick-view footer carries the same comment count */
+    if (qs('#sp-peek') && typeof _spPeekRender === 'function') _spPeekRender();
   } catch (e) {
     console.error('shopify row refresh failed:', e);
   }
