@@ -4932,11 +4932,12 @@ export class TransactionsService {
   }
 
   /** Generate a unified group reference: RRR-DDMON (e.g. 104-08MAY) */
-  private genPickupRef(): string {
+  private genPickupRef(forDate?: string): string {
     const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-    const now   = new Date();
-    const day   = String(now.getDate()).padStart(2, '0');
-    const month = MONTHS[now.getMonth()];
+    const now = new Date();
+    const parts = /^\d{4}-(\d{2})-(\d{2})$/.exec(forDate || '');
+    const day = parts?.[2] || String(now.getDate()).padStart(2, '0');
+    const month = MONTHS[parts ? Number(parts[1]) - 1 : now.getMonth()] || MONTHS[now.getMonth()];
     const rnd   = Math.floor(100 + Math.random() * 900);
     return `${rnd}-${day}${month}`;
   }
@@ -4960,9 +4961,17 @@ export class TransactionsService {
     prepRef: string,
     meta?: { note?: string; shipCo?: string; createdAt?: string; createdBy?: string },
   ): Promise<{ updated: number }> {
-    const validIds = ids.filter(id => isValidObjectId(id));
+    const validIds = [...new Set(ids.filter(id => isValidObjectId(id)))];
     if (!validIds.length) return { updated: 0 };
     const now = new Date().toISOString().slice(0, 10);
+
+    const pendingOrders = await this.transactionModel.find({
+      _id: { $in: validIds }, type: 'مبيعات', cancelled: { $ne: true },
+      pickupStatus: { $in: ['Pending', null] },
+    }).select('_id').exec();
+    if (pendingOrders.length !== validIds.length) {
+      throw new BadRequestException('يجب أن تكون كل الطلبات في حالة معلّق قبل بدء التحضير');
+    }
 
     // An existing member is the authority on the group's identity.
     const existing = prepRef
@@ -4992,64 +5001,116 @@ export class TransactionsService {
         $set: {
           pickupStatus: 'Preparing',
           pickupRef: prepRef,
+          prepChecked: false,
           ...groupMeta,
         },
         $push: { pickupHistory: { action: 'preparing', date: now, by, pickupRef: prepRef } },
       },
     );
-    this.emit('pickup:updated', { ids: validIds, action: 'preparing', pickupRef: prepRef, by });
+    if (result.modifiedCount !== validIds.length) {
+      throw new BadRequestException('تغيّرت حالة بعض الطلبات؛ حدّث الصفحة وحاول مرة أخرى');
+    }
+    if (result.modifiedCount === validIds.length) {
+      this.emit('pickup:updated', { ids: validIds, action: 'preparing', pickupRef: prepRef, by });
+    }
     return { updated: result.modifiedCount };
   }
 
   /** Confirm pick-up for one or more transaction IDs — moves to Ready */
-  async confirmPickup(ids: string[], by: string, date?: string, suggestedRef?: string): Promise<{ updated: number; pickupRef: string }> {
-    const validIds = ids.filter(id => isValidObjectId(id));
+  async confirmPickup(ids: string[], by: string, date?: string, reuseOpenRun = false): Promise<{ updated: number; pickupRef: string }> {
+    const validIds = [...new Set(ids.filter(id => isValidObjectId(id)))];
     if (!validIds.length) return { updated: 0, pickupRef: '' };
+    const sourceOrders = await this.transactionModel.find({
+      _id: { $in: validIds },
+      type: 'مبيعات',
+      cancelled: { $ne: true },
+    }).select('_id pickupStatus prepChecked').exec();
+    const allOrdersPrepared = sourceOrders.length === validIds.length && sourceOrders.every(order =>
+      order.pickupStatus === 'Preparing' && order.prepChecked === true,
+    );
+    const allOrdersAlreadyReady = sourceOrders.length === validIds.length && sourceOrders.every(order =>
+      order.pickupStatus === 'Ready' || order.pickupStatus === 'Picked-Up',
+    );
+    if (!allOrdersPrepared && !allOrdersAlreadyReady) {
+      throw new BadRequestException('لا يمكن نقل الطلب إلى الجاهز قبل نقله للتحضير وإكمال تحضيره');
+    }
     const now = date || new Date().toISOString().slice(0, 10);
-    const batchRef = suggestedRef || this.genPickupRef();
+    // A pickup date has one active Ready ticket. Continue that ticket when it
+    // already has ready orders; otherwise open a new date-stamped ticket.
+    const openRun = reuseOpenRun ? await this.transactionModel.findOne({
+      type: 'مبيعات',
+      cancelled: { $ne: true },
+      pickupStatus: { $in: ['Ready', 'Picked-Up'] },
+      pickupDate: now,
+      pickupRef: { $nin: ['', null] },
+    }).sort({ createdAt: -1, _id: -1 }).select('pickupRef').exec() : null;
+    const batchRef = openRun?.pickupRef || this.genPickupRef(now);
     const historyEntry = { action: 'ready', date: now, by, pickupRef: batchRef };
     const result = await this.transactionModel.updateMany(
-      { _id: { $in: validIds }, type: 'مبيعات', cancelled: { $ne: true }, pickupStatus: { $ne: 'Delivered' } },
+      {
+        _id: { $in: validIds }, type: 'مبيعات', cancelled: { $ne: true },
+        pickupStatus: allOrdersPrepared ? 'Preparing' : { $in: ['Ready', 'Picked-Up'] },
+        ...(allOrdersPrepared ? { prepChecked: true } : {}),
+      },
       {
         $set: { pickupStatus: 'Ready', pickupDate: now, pickupBy: by, pickupRef: batchRef },
         $push: { pickupHistory: historyEntry },
       },
     );
-    this.emit('pickup:updated', { ids: validIds, action: 'ready', pickupRef: batchRef });
+    if (result.modifiedCount === validIds.length) {
+      this.emit('pickup:updated', { ids: validIds, action: 'ready', pickupRef: batchRef, pickupDate: now });
+    }
 
     return { updated: result.modifiedCount, pickupRef: batchRef };
   }
 
   /** Undo pick-up for one or more transaction IDs — reverts Ready or Preparing → Pending */
   async undoPickup(ids: string[], by: string): Promise<{ updated: number }> {
-    const validIds = ids.filter(id => isValidObjectId(id));
+    const validIds = [...new Set(ids.filter(id => isValidObjectId(id)))];
     if (!validIds.length) return { updated: 0 };
     const now = new Date().toISOString().slice(0, 10);
     const historyEntry = { action: 'undo', date: now, by };
     const result = await this.transactionModel.updateMany(
-      { _id: { $in: validIds }, type: 'مبيعات', pickupStatus: { $in: ['Ready', 'Preparing'] } },
+      { _id: { $in: validIds }, type: 'مبيعات', pickupStatus: { $in: ['Ready', 'Picked-Up', 'Preparing'] } },
       {
-        $set: { pickupStatus: 'Pending', pickupDate: null, pickupBy: null, pickupRef: null },
+        $set: { pickupStatus: 'Pending', pickupDate: null, pickupBy: null, pickupRef: null, prepChecked: false },
+        $unset: { prepNote: 1, prepShipCo: 1, prepCreatedAt: 1, prepCreatedBy: 1 },
         $push: { pickupHistory: historyEntry },
       },
     );
-    this.emit('pickup:updated', { ids: validIds, action: 'undo' });
+    if (result.modifiedCount === validIds.length) {
+      this.emit('pickup:updated', { ids: validIds, action: 'undo' });
+    }
     return { updated: result.modifiedCount };
   }
 
-  /** Add a single pending order to an existing pickup run (directly to Ready) */
-  async addToPickupRun(id: string, pickupRef: string, by: string, date?: string): Promise<{ updated: number }> {
-    if (!isValidObjectId(id) || !pickupRef) return { updated: 0 };
-    const now = date || new Date().toISOString().slice(0, 10);
-    const historyEntry = { action: 'ready', date: now, by, pickupRef };
-    const result = await this.transactionModel.updateOne(
-      { _id: id, type: 'مبيعات', cancelled: { $ne: true }, pickupStatus: { $in: ['Pending', null] } },
+  /** Move one or more Ready orders into another active pickup run. */
+  async addToPickupRun(idsInput: string | string[], pickupRef: string, by: string, date?: string): Promise<{ updated: number }> {
+    const ids = [...new Set((Array.isArray(idsInput) ? idsInput : [idsInput]).filter(id => isValidObjectId(id)))];
+    if (!ids.length || !pickupRef) return { updated: 0 };
+    const targetRun = await this.transactionModel.findOne({
+      type: 'مبيعات',
+      pickupRef,
+      pickupStatus: { $in: ['Ready', 'Picked-Up'] },
+      cancelled: { $ne: true },
+    }).select('pickupDate').lean();
+    if (!targetRun) return { updated: 0 };
+
+    const now = targetRun.pickupDate || date || new Date().toISOString().slice(0, 10);
+    const movable = await this.transactionModel.find({
+      _id: { $in: ids }, type: 'مبيعات', cancelled: { $ne: true },
+      pickupStatus: { $in: ['Ready', 'Picked-Up'] }, pickupRef: { $ne: pickupRef },
+    }).select('_id').lean();
+    if (movable.length !== ids.length) return { updated: 0 };
+    const historyEntry = { action: 'ready_transfer', date: now, by, pickupRef };
+    const result = await this.transactionModel.updateMany(
+      { _id: { $in: ids }, type: 'مبيعات', cancelled: { $ne: true }, pickupStatus: { $in: ['Ready', 'Picked-Up'] }, pickupRef: { $ne: pickupRef } },
       {
         $set: { pickupStatus: 'Ready', pickupDate: now, pickupBy: by, pickupRef },
         $push: { pickupHistory: historyEntry },
       },
     );
-    this.emit('pickup:updated', { ids: [id], action: 'ready', pickupRef });
+    if (result.modifiedCount) this.emit('pickup:updated', { ids, action: 'ready', pickupRef, pickupDate: now });
     return { updated: result.modifiedCount };
   }
 
@@ -5071,12 +5132,24 @@ export class TransactionsService {
   }
 
   /** Toggle the per-order preparation tick inside a prep group */
-  async setPrepChecked(id: string, prepChecked: boolean): Promise<{ ok: boolean }> {
-    if (!isValidObjectId(id)) return { ok: false };
-    await this.transactionModel.updateOne({ _id: id }, { $set: { prepChecked } });
-    const tx = await this.transactionModel.findById(id).select('pickupRef').lean();
-    this.emit('pickup:updated', { ids: [id], action: 'prepCheck', prepChecked, pickupRef: tx?.pickupRef || null });
-    return { ok: true };
+  async setPrepChecked(id: string, prepChecked: boolean, by: string): Promise<{ ok: boolean; updated: number }> {
+    if (!isValidObjectId(id) || typeof prepChecked !== 'boolean') return { ok: false, updated: 0 };
+    const now = new Date().toISOString();
+    const result = await this.transactionModel.updateOne(
+      { _id: id, pickupStatus: 'Preparing', cancelled: { $ne: true } },
+      {
+        $set: { prepChecked },
+        $push: { pickupHistory: { action: 'prep-check', date: now, by, prepChecked } },
+      },
+    );
+    if (!result.modifiedCount) return { ok: false, updated: 0 };
+    const tx = await this.transactionModel.findById(id).select('pickupRef pickupHistory prepChecked').lean();
+    this.emit('pickup:updated', {
+      ids: [id], action: 'prepCheck', prepChecked,
+      pickupRef: tx?.pickupRef || null,
+      pickupHistory: tx?.pickupHistory || [],
+    });
+    return { ok: true, updated: result.modifiedCount };
   }
 
   /** Revert delivered → Ready when payment is reversed */

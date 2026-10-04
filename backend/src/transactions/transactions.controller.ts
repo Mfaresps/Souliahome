@@ -328,11 +328,11 @@ export class TransactionsController {
 
   @Post('pickup-orders/confirm')
   async confirmPickup(
-    @Body() body: { ids: string[]; date?: string; suggestedRef?: string },
+    @Body() body: { ids: string[]; date?: string; reuseOpenRun?: boolean },
     @Req() req: { user: { name: string; username: string } },
   ) {
     const by = req.user.name || req.user.username || 'مستخدم';
-    return this.transactionsService.confirmPickup(body.ids, by, body.date, body.suggestedRef);
+    return this.transactionsService.confirmPickup(body.ids, by, body.date, body.reuseOpenRun === true);
   }
 
   @Post('pickup-orders/undo')
@@ -346,19 +346,22 @@ export class TransactionsController {
 
   @Post('pickup-orders/add-to-run')
   async addToPickupRun(
-    @Body() body: { id: string; pickupRef: string; date?: string },
+    @Body() body: { id?: string; ids?: string[]; pickupRef: string; date?: string },
     @Req() req: { user: { name: string; username: string } },
   ) {
     const by = req.user.name || req.user.username || 'مستخدم';
-    return this.transactionsService.addToPickupRun(body.id, body.pickupRef, by, body.date);
+    const ids = Array.isArray(body.ids) && body.ids.length ? body.ids : (body.id ? [body.id] : []);
+    return this.transactionsService.addToPickupRun(ids, body.pickupRef, by, body.date);
   }
 
   @Patch('pickup-orders/:id/prep-check')
   async setPrepChecked(
     @Param('id') id: string,
     @Body() body: { prepChecked: boolean },
+    @Req() req: { user: { name: string; username: string } },
   ) {
-    return this.transactionsService.setPrepChecked(id, body.prepChecked);
+    const by = req.user.name || req.user.username || 'مستخدم';
+    return this.transactionsService.setPrepChecked(id, body.prepChecked, by);
   }
 
   @Get('by-ref/:ref')

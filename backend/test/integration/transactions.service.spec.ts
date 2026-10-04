@@ -1971,7 +1971,14 @@ describe('TransactionsService (integration with mocks)', () => {
     };
 
     beforeEach(() => {
-      txModel.updateMany = jest.fn().mockResolvedValue({ modifiedCount: 1 });
+      txModel.updateMany = jest.fn().mockImplementation((filter: any) =>
+        Promise.resolve({ modifiedCount: filter._id.$in.length }),
+      );
+      txModel.find.mockImplementation((filter: any) => ({
+        select: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue((filter._id.$in || []).map((_id: string) => ({ _id }))),
+        }),
+      }));
     });
 
     /** The $set the service handed to Mongo. */
@@ -2043,6 +2050,48 @@ describe('TransactionsService (integration with mocks)', () => {
 
     it('writes nothing when every id is invalid', async () => {
       await service.setPickupPreparing(['not-an-id'], 'أحمد', '104-08SEP', {});
+      expect(txModel.updateMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('pickup handoff guards', () => {
+    const ID_A = '507f1f77bcf86cd799439011';
+    const ID_B = '507f1f77bcf86cd799439012';
+    const mockSourceOrders = (rows: any[]) => {
+      txModel.find.mockReturnValue({
+        select: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(rows) }),
+      });
+    };
+
+    it('moves only fully prepared orders and reuses the open ticket for the chosen date', async () => {
+      mockSourceOrders([
+        { _id: ID_A, pickupStatus: 'Preparing', prepChecked: true },
+        { _id: ID_B, pickupStatus: 'Preparing', prepChecked: true },
+      ]);
+      txModel.findOne.mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue({ pickupRef: 'RUN-OPEN' }),
+      });
+      txModel.updateMany = jest.fn().mockResolvedValue({ modifiedCount: 2 });
+
+      const result = await service.confirmPickup([ID_A, ID_B], 'أحمد', '2026-10-04', true);
+
+      expect(result).toEqual({ updated: 2, pickupRef: 'RUN-OPEN' });
+      expect(txModel.findOne).toHaveBeenCalledWith(expect.objectContaining({
+        type: 'مبيعات', pickupDate: '2026-10-04', pickupStatus: { $in: ['Ready', 'Picked-Up'] },
+      }));
+      expect(txModel.updateMany.mock.calls[0][0]).toEqual(expect.objectContaining({
+        pickupStatus: 'Preparing', prepChecked: true,
+      }));
+    });
+
+    it('rejects Pending or incompletely prepared orders from skipping straight to Ready', async () => {
+      mockSourceOrders([{ _id: ID_A, pickupStatus: 'Pending', prepChecked: false }]);
+      txModel.updateMany = jest.fn();
+
+      await expect(service.confirmPickup([ID_A], 'أحمد', '2026-10-04', true))
+        .rejects.toThrow('لا يمكن نقل الطلب إلى الجاهز قبل نقله للتحضير وإكمال تحضيره');
       expect(txModel.updateMany).not.toHaveBeenCalled();
     });
   });

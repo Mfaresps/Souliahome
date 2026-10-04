@@ -2625,6 +2625,54 @@ const expenseTotal = filteredExpenses
 
 ---
 
+## Order Toasts & Sounds — `.stz-*`, Cha-ching, Wood Tap (Oct 5, 2026)
+
+The two live-event toasts were rebuilt from the design canvas, and two sounds replaced —
+each chosen by the owner from a listening page before anything in the app changed.
+
+### The assignment toast (`mentionNotifier._toast`) and the status row (`_rtToastEvent`)
+The «New task — Order Distribution» toast was a purple gradient box in the **centre of the
+screen** printing the server's Arabic sentence verbatim — so the Arabic customer name sat
+inside an English sentence and reordered, and `#2695` appeared twice. The «🚚 Delivered: 1
+order(s)» pill named no order at all.
+
+Both now live in one region, `#soulia-toast-region`, bottom-end corner (left in RTL), newest
+nearest the corner, above the mobile nav below 768px.
+- **Assignment card**: order ref + total as the headline, customer · assignee beneath,
+  **Dismiss / Open order**, an 8s drain bar. The server body is **parsed** (`_bodyField`
+  reads `العميل:` / `الإجمالي:`), never printed as a sentence.
+- **Status row**: tone disc (ok / info / warn / bad) + title + «#ref · customer» + optional
+  action. `_rtToastEvent` now takes `{tone, icon, title, sub, action:{label, fn}}`; a plain
+  string still works for any old caller. `_stzRefsSub(ids)` builds the sub-line.
+
+⚠ **«Open order» goes through `onMentionNotifClick`**, the same routing as the bell list.
+The old toast called `showInvoiceDetail(payload.txId)` — but an assignment's `txId` is a
+**ShopifyOrder** id, so clicking it opened nothing. Pre-existing bug, fixed here.
+
+⚠ **Auto-close pauses on hover and focus** (`_stzArm`), and hidden cards get `hidden` after
+the fade so they stop taking space — `.stz[hidden]{display:none!important}` must stay.
+
+⚠ **`sub` is inserted as HTML** — every value in it must already be `esc()`-ed and wrapped in
+`<bdi>`. `_stzRefsSub` does both; a new caller must too.
+
+### Sounds — metal means «new order», wood means «cash moved»
+- **New order** (`_chaChing`, called via `_chime('order')` only when the sender is
+  «نظام التوزيع» and the first line says «مُسند»): drawer rattle + a register bell struck
+  twice. Synthesized in the spirit of Shopify's order sound — **not** Shopify's audio file.
+  Other mentions keep their old chimes so the two can be told apart.
+- **Vault** (`_cashPlaySound`): two marimba notes, rising for money in, falling for money out.
+  The old money-in sound was a cash-register «ka-ching» that **collided by ear with the new
+  order sound** — which is why it was replaced. Keep the families apart.
+- Both master levels (0.63 / 0.55) are the levels approved in the preview pages. Mutes are
+  unchanged: `mentionnotif_muted` and `cash_pulse_sound`.
+
+### Verification
+Shipped functions rendered in headless Chrome: both toasts in light/LTR and dark/RTL, no
+overflow, hover pause holding past the timeout; both sounds rendered offline with no error
+and no clipping (peaks 0.42 / 0.24 / 0.20). **Not yet observed in the logged-in app.**
+
+---
+
 ## «سجل عمليات التحقق» Followed the User Onto Every Page (Sep 8, 2026)
 
 Reported as: open الموافقات → «سجل عمليات التحقق» → leave the page, and the OTP
@@ -2688,6 +2736,7 @@ leaked — the change there is defence against the same trap, not a bug fix.
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Oct 5, 2026 | Order toasts rebuilt (assignment card + status row, bottom-end, no emoji, real order/customer named) and «Open order» fixed — it opened a ShopifyOrder id as an invoice; new-order sound → cha-ching, vault sound → wood tap so the two never collide | See "Order Toasts & Sounds" above |
 | Sep 8, 2026 | «سجل عمليات التحقق» stayed painted on every page after being opened once — the panel was an orphan outside `#page-approvals` (one stray `</div>`), so `.page{display:none}` never covered it and `style.display=''` left nothing to hide it | See "«سجل عمليات التحقق» Followed the User Onto Every Page" above |
 | Sep 8, 2026 | Prep workspace: the customer note lost its permanent amber tint, comment timestamps became short and language-aware (`now · 25m · Sat 20:23`) and moved under the text, and author photos were fixed — a comment stored under a username never matched its author, and the mention card showed a generic @ icon instead of the sender | See "Round 7 — ملاحظة محايدة، وقت مختصر" above |
 | Sep 8, 2026 | Prep workspace: notes/comments moved into their own scrolling side column (`.pw-body2`) — they used to span the full header width while the area beside the items sat empty — and the @mention path from the new composer was verified end to end | See "Round 6 — عمود جانبي للتعليمات" above |

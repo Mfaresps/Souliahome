@@ -267,6 +267,14 @@ export interface BostaTrackResult {
   code?: string;
 }
 
+/** Stable ticket key for orders collected by a courier on the same day. */
+function shippingReceivedRef(shipCo: unknown, date: string): string {
+  const carrier = String(shipCo || 'Bosta');
+  let hash = 0;
+  for (let i = 0; i < carrier.length; i++) hash = ((hash * 31) + carrier.charCodeAt(i)) & 0xffff;
+  return `SH-${date}-${hash.toString(36).toUpperCase().padStart(4, '0')}`;
+}
+
 @Injectable()
 export class BostaService {
   private readonly logger = new Logger(BostaService.name);
@@ -368,6 +376,7 @@ export class BostaService {
     if (tx.bostaOrderId && !isResendable) {
       return { success: false, error: 'تم إرسال هذا الطلب إلى Bosta مسبقاً' };
     }
+    if (!['Ready', 'Picked-Up'].includes(tx.pickupStatus)) return { success: false, error: 'يجب نقل الطلب إلى جاهز للشحن قبل إنشاء بوليصة Bosta' };
     // Clear previous failed/deleted state before resending
     if (isResendable || tx.bostaOrderId) {
       await this.txModel.findByIdAndUpdate(txId, {
@@ -852,10 +861,18 @@ export class BostaService {
     // Creating the Bosta order leaves pickupStatus 'Ready' (registered, not collected). The
     // courier picking it up is what makes it genuinely shipped, so promote it here — and only
     // from 'Ready', so a later 'Delivered' is never dragged back to 'Shipped'.
-    const pickupUpdate =
-      ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(statusCode) && tx.pickupStatus === 'Ready'
-        ? { pickupStatus: 'Shipped', shippedAt: (tx as any).shippedAt || now }
-        : {};
+    const courierCollected = ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(statusCode) && tx.pickupStatus === 'Ready';
+    // Once the courier has the parcel, move it out of its preparation ticket and
+    // into one deterministic shipping ticket per carrier and calendar day. This
+    // keeps orders received in separate ready tickets together after refresh.
+    const pickupUpdate = courierCollected
+      ? {
+          pickupStatus: 'Shipped',
+          shippedAt: (tx as any).shippedAt || now,
+          pickupRef: shippingReceivedRef((tx as any).shipCo, now.slice(0, 10)),
+          pickupDate: now.slice(0, 10),
+        }
+      : {};
 
     await this.txModel.findByIdAndUpdate(txId, {
       $set: {

@@ -11071,18 +11071,77 @@ input.is-valid,select.is-valid,textarea.is-valid{
 .notif-filter-btn.f-info.active{background:#1d4ed8;border-color:#1d4ed8}
 .notif-item.unread-notif{background:rgba(16,185,129,.04)}
 .notif-item.unread-notif .notif-title::after{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:5px;vertical-align:middle;flex-shrink:0}
-.rt-event-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:linear-gradient(135deg,#0f766e 0%,#10b981 100%);color:#fff;padding:10px 18px;border-radius:99px;font-size:.85rem;font-weight:700;box-shadow:0 8px 20px rgba(16,185,129,.35);z-index:9999;opacity:0;pointer-events:none;transition:opacity .25s,transform .35s cubic-bezier(.2,.8,.3,1.2);display:inline-flex;align-items:center;gap:8px;max-width:90vw}
-.rt-event-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.mention-rt-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.92);background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);color:#fff;padding:16px 20px;border-radius:16px;font-size:.9rem;box-shadow:0 20px 50px rgba(0,0,0,.4);z-index:10000;opacity:0;pointer-events:none;transition:opacity .25s,transform .35s cubic-bezier(.2,.8,.3,1.2);display:flex;align-items:flex-start;gap:12px;width:min(420px,90vw);cursor:pointer}
-.mention-rt-toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
-.mention-rt-toast .mrt-icon{font-size:1.5rem;line-height:1;flex-shrink:0}
-.mention-rt-toast .mrt-body{flex:1;min-width:0}
-.mention-rt-toast .mrt-title{font-weight:700;margin-bottom:4px;font-size:.95rem;word-break:break-word}
-.mention-rt-toast .mrt-sub{opacity:.95;font-size:.82rem;font-weight:600;white-space:normal;word-break:break-word}
-.mention-rt-toast .mrt-snippet{opacity:.9;font-size:.8rem;margin-top:6px;white-space:normal;word-break:break-word;line-height:1.4}
-.mention-rt-toast .mrt-close{position:absolute;top:8px;left:8px;width:24px;height:24px;border:none;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font-size:1.1rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
-.mention-rt-toast .mrt-close:hover{background:rgba(255,255,255,.32)}
-@media(max-width:600px){.mention-rt-toast{width:calc(100vw - 32px);padding:14px 18px}}
+/* ══════════════════════════════════════════
+   ORDER TOASTS — `.stz-*` (Oct 4, 2026)
+   One region in the bottom-end corner shared by the assignment card
+   (mentionNotifier) and the status row (_rtToastEvent). Newest sits
+   closest to the corner. Colour is semantic only — the card itself is
+   neutral; the tone lives in the small icon disc.
+   ⚠ Hidden cards get `hidden` after their fade, so they stop taking
+     space in the column — `.stz[hidden]` must stay display:none.
+   ══════════════════════════════════════════ */
+#soulia-toast-region{position:fixed;bottom:24px;inset-inline-end:24px;z-index:10002;display:flex;flex-direction:column;gap:10px;width:380px;max-width:calc(100vw - 32px);pointer-events:none}
+.stz{--stz-muted:#557263;--stz-line:#eaf0ec;pointer-events:auto;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 36px -12px rgba(0,49,30,.22),0 2px 6px rgba(0,49,30,.06);font-family:var(--font-app);overflow:hidden;opacity:0;transform:translateY(12px) scale(.98);transition:opacity .22s ease,transform .32s cubic-bezier(.2,.8,.3,1)}
+.stz.show{opacity:1;transform:none}
+.stz[hidden]{display:none!important}
+body.dark-mode .stz{--stz-muted:#8fb39c;--stz-line:#223127;background:var(--surface);box-shadow:0 18px 40px -12px rgba(0,0,0,.6)}
+.stz bdi,.stz .stz-num{unicode-bidi:isolate}
+/* assignment card */
+.stz-main{display:flex;gap:12px;padding:16px 16px 14px}
+.stz-tile{flex:none;width:36px;height:36px;border-radius:10px;background:var(--primary-pale);color:var(--primary-light);display:flex;align-items:center;justify-content:center}
+body.dark-mode .stz-tile{color:#6fd49a}
+.stz-tile svg{width:18px;height:18px}
+.stz-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.stz-eyebrow{display:flex;align-items:center;gap:6px;font-size:12px;line-height:18px;color:var(--stz-muted);min-width:0}
+.stz-kind{font-weight:600;color:var(--primary-light);white-space:nowrap}
+body.dark-mode .stz-kind{color:#6fd49a}
+.stz-src{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.stz-time{margin-inline-start:auto;white-space:nowrap}
+.stz-headline{display:flex;align-items:baseline;gap:12px;line-height:26px}
+.stz-ref{font-size:17px;font-weight:700;color:var(--text);white-space:nowrap}
+.stz-amt{margin-inline-start:auto;font-size:15px;font-weight:600;white-space:nowrap;direction:ltr;unicode-bidi:isolate}
+.stz-amt small{font-size:12px;font-weight:500;color:var(--stz-muted)}
+.stz-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;line-height:22px;color:var(--stz-muted)}
+.stz-strong{color:var(--text);font-weight:500}
+.stz-sep{opacity:.5}
+.stz-snippet{font-size:13px;line-height:20px;color:var(--stz-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line}
+.stz-actions{display:flex;justify-content:flex-end;gap:8px;padding:10px 16px 12px;border-top:1px solid var(--stz-line)}
+.stz-btn{height:36px;padding:0 14px;border-radius:9px;border:1px solid transparent;background:transparent;color:var(--text);font:600 13px var(--font-app);cursor:pointer;width:auto;transition:background .15s,border-color .15s}
+.stz-btn:hover{background:var(--surface2)}
+.stz-btn-primary{background:var(--primary);border-color:var(--primary);color:#fff;padding:0 16px}
+.stz-btn-primary:hover{background:var(--primary-light);border-color:var(--primary-light)}
+body.dark-mode .stz-btn-primary{background:#2d7a4f;border-color:#2d7a4f}
+body.dark-mode .stz-btn-primary:hover{background:#3d9a6a;border-color:#3d9a6a}
+.stz-btn:focus-visible,.stz-x:focus-visible,.stz-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stz-progress{height:3px;background:var(--stz-line)}
+.stz-progress i{display:block;height:3px;width:100%;background:var(--accent);transform-origin:var(--stz-origin,left);animation:stzDrain var(--stz-dur,6s) linear forwards}
+[dir="rtl"] .stz-progress i{--stz-origin:right}
+.stz:hover .stz-progress i{animation-play-state:paused}
+@keyframes stzDrain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+/* status row */
+.stz-row{display:flex;align-items:center;gap:12px;padding-block:12px;padding-inline:14px 6px}
+.stz-disc{flex:none;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text)}
+.stz-disc svg{width:17px;height:17px}
+.stz-row[data-tone="ok"] .stz-disc{background:#dcfce7;color:#15803d}
+.stz-row[data-tone="info"] .stz-disc{background:#e3eefc;color:#1550a3}
+.stz-row[data-tone="warn"] .stz-disc{background:#fef3c7;color:#a14a06}
+.stz-row[data-tone="bad"] .stz-disc{background:#fee2e2;color:#b91c1c}
+body.dark-mode .stz-row[data-tone="ok"] .stz-disc{background:#0d2a18;color:#4ade80}
+body.dark-mode .stz-row[data-tone="info"] .stz-disc{background:#0f2440;color:#93c5fd}
+body.dark-mode .stz-row[data-tone="warn"] .stz-disc{background:#3a2405;color:#fcd34d}
+body.dark-mode .stz-row[data-tone="bad"] .stz-disc{background:#3b0d0d;color:#fca5a5}
+.stz-row .stz-body{gap:0}
+.stz-title{font-size:14px;font-weight:600;line-height:20px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stz-sub{font-size:13px;line-height:20px;color:var(--stz-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stz-sub:empty{display:none}
+.stz-link{flex:none;height:36px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:var(--primary-light);font:600 13px var(--font-app);cursor:pointer;width:auto}
+body.dark-mode .stz-link{color:#6fd49a}
+.stz-link:hover{background:var(--surface2)}
+.stz-x{flex:none;width:32px;height:32px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--stz-muted);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.stz-x:hover{background:var(--surface2);color:var(--text)}
+.stz-x svg{width:15px;height:15px}
+@media(max-width:768px){#soulia-toast-region{inset-inline:16px;width:auto;max-width:none;bottom:calc(112px + env(safe-area-inset-bottom,0px))}}
+@media (prefers-reduced-motion:reduce){.stz{transition:opacity .01s}.stz-progress i{animation:none}}
 
 /* ══════════════════════════════════════════
    TX NOTIFIER — unified transaction alert cards
@@ -11616,25 +11675,29 @@ body.dark-mode .puco-remaining{color:#93c5fd;background:#1e3a8a;border-color:#1e
    ═══════════════════════════════════════════════════════════════════════════ */
 .pw-shell{background:var(--surface);border-radius:18px;width:96%;max-width:1320px;height:min(92vh,900px);display:flex;flex-direction:column;box-shadow:0 28px 80px rgba(0,0,0,.34);overflow:hidden}
 /* ── sticky top bar ── */
-.pw-top{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.pw-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:13px 18px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
 .pw-top-id{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
 .pw-top-titles{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
 .pw-top-title{font-weight:700;font-size:.98rem;color:var(--text);white-space:nowrap}
 /* Group progress lives in the top bar so it is visible from every order. */
-.pw-top-prog{display:flex;align-items:center;gap:9px;flex-shrink:0;min-width:190px}
-.pw-top-prog-track{flex:1;height:6px;background:var(--border);border-radius:20px;overflow:hidden;min-width:90px}
-.pw-top-prog-fill{height:100%;border-radius:20px;background:var(--primary);transition:width .3s ease;width:0}
+.pw-top-prog{order:3;display:flex;align-items:center;gap:12px;flex:1 0 100%;width:100%;min-width:0;padding:8px 12px;border:1px solid color-mix(in srgb,#10b981 24%,var(--border));border-radius:11px;background:color-mix(in srgb,#10b981 5%,var(--surface))}
+.pw-top-prog>span:first-child{color:#047857!important;font-size:.76rem!important;font-weight:700}
+.pw-top-prog>span:last-child{color:#047857!important;font-size:.78rem!important}
+.pw-top-prog-track{flex:1;height:9px;background:color-mix(in srgb,#10b981 13%,var(--surface));border-radius:20px;overflow:hidden;min-width:40px;box-shadow:inset 0 1px 2px rgba(6,95,70,.08)}
+.pw-top-prog-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,#34d399 0%,#10b981 55%,#059669 100%);box-shadow:0 0 8px color-mix(in srgb,#10b981 22%,transparent);transition:width .55s cubic-bezier(.22,1,.36,1);width:0}
+body.dark-mode .pw-top-prog{border-color:color-mix(in srgb,#34d399 25%,var(--border));background:color-mix(in srgb,#10b981 9%,var(--surface))}
+body.dark-mode .pw-top-prog>span:first-child,body.dark-mode .pw-top-prog>span:last-child{color:#6ee7b7!important}
 .pw-x{background:var(--bg-alt);border:none;border-radius:9px;width:34px;height:34px;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
 .pw-x:hover{background:var(--border);color:var(--text)}
 /* ── body: navigator | workspace ── */
 .pw-body{flex:1;display:grid;grid-template-columns:326px minmax(0,1fr);min-height:0;overflow:hidden}
 .pw-nav{display:flex;flex-direction:column;min-height:0;border-inline-end:1px solid var(--border);background:var(--bg-alt)}
 .pw-nav-search{padding:10px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;flex-shrink:0}
-.pw-nav-list{flex:1;overflow-y:auto;padding:9px;display:flex;flex-direction:column;gap:7px;min-height:0}
+.pw-nav-list{flex:1;overflow-y:auto;padding:9px;display:flex;flex-direction:column;gap:8px;min-height:0;align-items:stretch}
 .pw-nav-foot{padding:8px 12px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;font-size:.7rem;color:var(--muted)}
 .pw-kbd{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 4px;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;background:var(--surface);font-size:.66rem;font-weight:700;color:var(--muted);font-family:inherit;line-height:1}
 /* ── order card in the navigator ── */
-.pw-ocard{position:relative;text-align:start;width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:11px;padding:9px 11px;cursor:pointer;display:flex;flex-direction:column;gap:6px;transition:border-color .14s,box-shadow .14s,background .14s;font-family:inherit;overflow:hidden}
+.pw-ocard{position:relative;text-align:start;width:100%;min-width:0;flex:0 0 auto;box-sizing:border-box;background:var(--surface);border:1.5px solid var(--border);border-radius:11px;padding:9px 11px;cursor:pointer;display:flex;flex-direction:column;gap:6px;transition:border-color .14s,box-shadow .14s,background .14s;font-family:inherit;overflow:hidden}
 .pw-ocard:hover{border-color:color-mix(in srgb,var(--primary) 40%,var(--border));box-shadow:0 2px 10px rgba(0,0,0,.06)}
 /* Selection reads as an edge rail + tint, not a colour flood — one accent, one meaning. */
 .pw-ocard::before{content:"";position:absolute;inset-block:0;inset-inline-start:0;width:4px;background:transparent;transition:background .16s}
@@ -11736,8 +11799,7 @@ body.dark-mode .pw-mtile.is-due .pw-mtile-lbl,body.dark-mode .pw-mtile.is-due .p
 .pw-item-empty{padding:36px 20px;text-align:center;color:var(--muted);font-size:.86rem;background:var(--surface);border:1px dashed var(--border);border-radius:12px}
 /* ── sticky action bar ── */
 .pw-actions{padding:11px 22px;border-top:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:9px;flex-wrap:wrap;flex-shrink:0}
-.pw-actions .pw-abtn.is-go{margin-inline-start:auto}
-@media (max-width:860px){.pw-actions .pw-abtn.is-go{margin-inline-start:0}}
+.pw-transfer-actions{margin-inline-start:auto;display:flex;align-items:center;gap:8px}
 /* ⚠ تحت 1040px يتحوّل العمودان إلى صفّين: عمود بعرض 300px داخل نصف الشاشة يترك
    للأصناف عرضاً لا يكفي بطاقة واحدة. التعليمات تبقى فوق الأصناف — تُقرأ أولاً. */
 @media (max-width:1040px){
@@ -11752,6 +11814,7 @@ body.dark-mode .pw-mtile.is-due .pw-mtile-lbl,body.dark-mode .pw-mtile.is-due .p
 .pw-abtn.is-warn:hover{background:#fff7ed}
 .pw-abtn.is-go{background:#d97706;border-color:#d97706;color:#fff;font-weight:700}
 .pw-abtn.is-go:hover{filter:brightness(1.06)}
+.pw-abtn:disabled{opacity:.5;cursor:not-allowed;filter:none}
 .pw-abtn:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .pw-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:.88rem;padding:40px 20px;text-align:center}
 /* ── add-order strip ── */
@@ -11773,12 +11836,16 @@ body.dark-mode .pw-mtile.is-due .pw-mtile-lbl,body.dark-mode .pw-mtile.is-due .p
   .pw-body.pw-show-work .pw-nav{display:none}
   .pw-body:not(.pw-show-work) .pw-work{display:none}
   .pw-body.pw-show-work .pw-back{display:inline-flex}
-  .pw-top-prog{min-width:120px}
+  .pw-top{gap:8px 10px;padding:10px 12px}
+  .pw-top-id{order:1;flex:1 1 0}
+  .pw-x{order:2}
+  .pw-top-prog{min-width:0;padding:7px 10px}
   .pw-cust-refno{font-size:1.28rem}
   .pw-grid{grid-template-columns:minmax(0,1fr)}
   .pw-actions{padding:10px 14px calc(10px + env(safe-area-inset-bottom))}
   .pw-abtn{flex:1;justify-content:center}
-  .pw-abtn.is-go{margin-inline-start:0}
+  .pw-transfer-actions{width:100%;margin-inline-start:0;flex-direction:column}
+  .pw-transfer-actions .pw-abtn{width:100%;flex:none;white-space:normal;text-align:center}
 }
 @media (max-width:460px){
   .pw-money{width:100%}
@@ -11842,12 +11909,12 @@ body.dark-mode .pw-sep-n{color:#34d399}
    where it was and released — so the browser animates a real layout change
    instead of us animating a copy of it. Small and quick on purpose: this is a
    daily operations tool, not a game. */
-.pw-ocard.pw-flip{transition:transform .34s cubic-bezier(.4,0,.2,1)}
+.pw-ocard.pw-flip{transition:transform .46s cubic-bezier(.22,1,.36,1)}
 /* The one-shot success pulse on the card that was just completed. */
 @keyframes pwDonePulse{
-  0%  {box-shadow:0 0 0 0 color-mix(in srgb,#10b981 55%,transparent)}
-  70% {box-shadow:0 0 0 7px transparent}
-  100%{box-shadow:0 0 0 0 transparent}
+  0%  {box-shadow:0 0 0 0 color-mix(in srgb,#10b981 40%,transparent);background:color-mix(in srgb,#10b981 12%,var(--surface))}
+  55% {box-shadow:0 0 0 8px transparent;background:color-mix(in srgb,#10b981 8%,var(--surface))}
+  100%{box-shadow:0 0 0 0 transparent;background:color-mix(in srgb,#10b981 4%,var(--surface))}
 }
 .pw-ocard.pw-justdone{animation:pwDonePulse .62s ease-out}
 @media (prefers-reduced-motion:reduce){
@@ -12020,6 +12087,7 @@ body.dark-mode .pw-note-ico.is-chat{color:var(--primary)}
 .pu-card-footer-actions{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
 .pu-card-btn{display:inline-flex;align-items:center;gap:3px;padding:4px 9px;border-radius:7px;font-size:.72rem;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:background .14s,border-color .14s,color .14s;font-weight:500;white-space:nowrap}
 .pu-card-btn:hover{background:var(--bg-alt);border-color:color-mix(in srgb,var(--primary) 30%,var(--border))}
+.pu-card-btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
 .pu-card-btn-primary{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 2px 6px rgba(var(--primary-rgb,37,99,235),.25)}
 .pu-card-btn-primary:hover{background:color-mix(in srgb,var(--primary) 82%,#000);box-shadow:0 3px 10px rgba(var(--primary-rgb,37,99,235),.35)}
 .pu-card-btn-danger{color:#dc2626;border-color:#fca5a5}
@@ -12198,7 +12266,7 @@ body.dark-mode .pu-card-ready-tick-badge{background:color-mix(in srgb,#10b981 10
 /* ── Prep group progress bar ── */
 .pu-prep-progress-wrap{display:flex;align-items:center;gap:7px;padding:5px 13px 0;font-size:.71rem;color:var(--muted)}
 .pu-prep-progress-bar-track{flex:1;height:5px;background:var(--border);border-radius:10px;overflow:hidden}
-.pu-prep-progress-bar-fill{height:100%;background:linear-gradient(90deg,#2563eb 0%,#10b981 100%);border-radius:10px;transition:width .35s cubic-bezier(.4,0,.2,1)}
+.pu-prep-progress-bar-fill{height:100%;background:linear-gradient(90deg,#34d399 0%,#10b981 55%,#059669 100%);border-radius:10px;transition:width .55s cubic-bezier(.22,1,.36,1)}
 .pu-prep-progress-bar-fill.all-done{background:#10b981}
 .pu-prep-progress-count{font-size:.7rem;font-weight:700;white-space:nowrap;flex-shrink:0}
 /* ── Auto-move banner on prep card ── */
@@ -18218,7 +18286,8 @@ body.dark-mode .csi-done-lines>div.is-warn b{color:#fbbf24}
       <!-- orders summary list -->
       <div id="pu-confirm-orders-list" style="max-height:160px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:4px"></div>
       <label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:6px;color:var(--text)" data-i18n="puPickupDate">تاريخ الاستلام</label>
-      <input type="date" id="pu-confirm-date" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:9px;font-size:.88rem;background:var(--bg);color:var(--text);box-sizing:border-box;outline:none">
+      <input type="date" id="pu-confirm-date" onchange="_puUpdateConfirmRunHint()" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:9px;font-size:.88rem;background:var(--bg);color:var(--text);box-sizing:border-box;outline:none">
+      <div id="pu-confirm-run-hint" style="margin-top:8px;padding:8px 10px;border-radius:8px;font-size:.76rem;line-height:1.45;color:#047857;background:color-mix(in srgb,#10b981 8%,var(--surface));border:1px solid color-mix(in srgb,#10b981 22%,var(--border))"></div>
     </div>
     <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-outline btn-sm" onclick="closePuConfirmModal()" data-i18n="cancel">إلغاء</button>
@@ -18630,12 +18699,12 @@ body.dark-mode .csi-done-lines>div.is-warn b{color:#fbbf24}
       </div>
       <div id="pu-edit-current-list" style="max-height:240px;overflow-y:auto"></div>
 
-      <!-- Add more orders -->
-      <div style="padding:10px 16px 6px;font-size:.78rem;font-weight:700;color:var(--muted);border-top:2px solid var(--border);background:var(--bg-alt);display:flex;align-items:center;gap:8px">
-        <span data-i18n="puAddPendingOrders">إضافة أوردرات معلقة</span>
-        <input type="text" id="pu-edit-add-search" data-i18n-placeholder="puEditAddSearchPh" placeholder="بحث بالاسم أو الرقم..." style="flex:1;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;background:var(--bg);color:var(--text)" oninput="filterPuEditAddList()">
+      <!-- Other active tickets: move selected orders into one of these tickets. -->
+      <div style="padding:10px 16px 6px;font-size:.78rem;font-weight:700;color:var(--muted);border-top:2px solid var(--border);background:var(--bg-alt);display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span data-i18n="puAvailableTickets">التذاكر المتاحة للنقل</span>
+        <span id="pu-edit-selected-count" style="font-size:.74rem;color:var(--primary)"></span>
       </div>
-      <div id="pu-edit-add-list" style="max-height:200px;overflow-y:auto"></div>
+      <div id="pu-edit-target-list" style="max-height:250px;overflow-y:auto"></div>
 
     </div>
 
@@ -23786,6 +23855,15 @@ const TRANSLATIONS = {
   mrtNewTask:{ar:'مهمة جديدة',en:'New task'},
   mrtCommentMention:{ar:'إشارة في تعليق',en:'Mentioned in a comment'},
   mrtOrder:{ar:'طلب',en:'Order'},
+  stzNewAssignment:{ar:'تكليف جديد',en:'New assignment'},
+  stzNow:{ar:'الآن',en:'now'},
+  stzAssignedTo:{ar:'مُسند إلى',en:'Assigned to'},
+  stzAssignedToYou:{ar:'مُسند إليك',en:'Assigned to you'},
+  stzDismiss:{ar:'إخفاء',en:'Dismiss'},
+  stzOpenOrder:{ar:'فتح الطلب',en:'Open order'},
+  stzOpen:{ar:'فتح',en:'Open'},
+  stzView:{ar:'عرض',en:'View'},
+  stzViewAll:{ar:'عرض الكل',en:'View all'},
   // Mention alert (first-login popup)
   maTitleOneOtp:{ar:'إشارة جديدة تنتظر موافقتك',en:'A new mention awaits your approval'},
   maTitleOtps:{ar:'إشارات وطلبات تنتظرك',en:'Mentions and requests awaiting you'},
@@ -24950,6 +25028,8 @@ const TRANSLATIONS = {
   ivTlOrderCreatedShopifyDesc:{ar:'تم استلام الطلب من Shopify وتسجيله في النظام.',en:'Order received from Shopify and recorded in the system.'},
   ivTlPreparing:{ar:'جارٍ التحضير',en:'Preparing'},
   ivTlPreparingDesc:{ar:'بدأ تجهيز الطلب في المستودع.',en:'Order preparation started in the warehouse.'},
+  ivTlPrepCheckedBy:{ar:'اكتمل التحضير — {by}',en:'Preparation completed — {by}'},
+  ivTlPrepUncheckedBy:{ar:'تم التراجع عن التحضير — {by}',en:'Preparation was undone — {by}'},
   ivTlSendToShipping:{ar:'إرسال للشحن',en:'Sent to shipping'},
   ivTlSendToShippingDone:{ar:'تم تسليم الطلب إلى Bosta للتوصيل.',en:'Order handed over to Bosta for delivery.'},
   ivTlSendToShippingPending:{ar:'في انتظار الإرسال لشركة الشحن.',en:'Awaiting handover to the shipping company.'},
@@ -26820,6 +26900,7 @@ const TRANSLATIONS = {
   puOptional:{ar:'اختياري',en:'Optional'},
   puCreatePrepGroupBtn:{ar:'إنشاء مجموعة التحضير',en:'Create prep group'},
   puNoMatchingPending:{ar:'لا توجد طلبات معلقة مطابقة',en:'No matching pending orders'},
+  puNoPreparedOrders:{ar:'لا توجد طلبات مكتمل تحضيرها للنقل إلى الجاهز',en:'No fully prepared orders are ready to move to Ready to Ship'},
   puSelectedCount:{ar:'{n} طلب محدد',en:'{n} order(s) selected'},
   puSelectAtLeastOne:{ar:'حدد طلباً واحداً على الأقل',en:'Select at least one order'},
   puPrepGroupCreated:{ar:'مجموعة التحضير {ref} — {n} طلب',en:'Prep group {ref} — {n} order(s)'},
@@ -26852,6 +26933,10 @@ const TRANSLATIONS = {
   puNoOrdersToAdd:{ar:'لا توجد طلبات متاحة للإضافة',en:'No orders available to add'},
   puClose:{ar:'إغلاق',en:'Close'},
   puMoveToPickup:{ar:'نقل للاستلام',en:'Move to pick-up'},
+  puMoveSingleToPickup:{ar:'نقل الطلب رقم {ref} إلى الجاهز للاستلام',en:'Move order #{ref} to Ready for pick-up'},
+  puMoveGroupToPickup:{ar:'نقل {n} طلبات إلى الجاهز للاستلام',en:'Move {n} orders to Ready for pick-up'},
+  puPrepareOrdersFirst:{ar:'جهّز الطلبات أولاً',en:'Prepare orders first'},
+  puPrepareAllOrdersForMove:{ar:'حضّر جميع طلبات التذكرة قبل نقلها بالسحب.',en:'Prepare every order in this ticket before dragging it to Ready to Ship.'},
   puPrepareGroup:{ar:'تحضير المجموعة',en:'Prepare group'},
   puResultsCount:{ar:'{n} نتيجة',en:'{n} result(s)'},
   puNoResultsFor:{ar:'لا توجد نتائج لـ "{q}"',en:'No results for "{q}"'},
@@ -27030,7 +27115,14 @@ const TRANSLATIONS = {
   puEditRefPh:{ar:'رقم العملية (مثال: PU-20260505-XXXXX)',en:'Run number (e.g. PU-20260505-XXXXX)'},
   puSaveDate:{ar:'حفظ التاريخ',en:'Save date'},
   puOrdersInRun:{ar:'الأوردرات في هذه العملية',en:'Orders in this run'},
-  puAddPendingOrders:{ar:'إضافة أوردرات معلقة',en:'Add pending orders'},
+  puAvailableTickets:{ar:'التذاكر المتاحة للنقل',en:'Tickets available for transfer'},
+  puTicketSummary:{ar:'{n} طلب جاهز · إجمالي {total}',en:'{n} ready order(s) · total {total}'},
+  puMoveSelectedToTicket:{ar:'نقل المحدد لهذه التذكرة',en:'Move selected to this ticket'},
+  puSelectForMove:{ar:'اختر طلباً للنقل أولاً',en:'Select an order to move first'},
+  puShippedLocked:{ar:'تم استلامه من شركة الشحن',en:'Collected by the shipping company'},
+  puNoAvailableTickets:{ar:'لا توجد تذاكر جاهزة أخرى متاحة للنقل',en:'No other active tickets are available'},
+  puOrdersMovedToRun:{ar:'تم نقل {n} طلب إلى التذكرة {ref} وحُفظ التغيير',en:'{n} order(s) moved to ticket {ref} and saved'},
+  puAddPendingOrders:{ar:'طلبات متاحة للإضافة أو النقل',en:'Orders available to add or move'},
   puEditAddSearchPh:{ar:'بحث بالاسم أو الرقم...',en:'Search by name or number...'},
   puEditEmptyHint:{ar:'أدخل رقم العملية وانقر بحث',en:'Enter the run number and click search'},
   puEnterRunNo:{ar:'أدخل رقم العملية',en:'Enter the run number'},
@@ -27043,11 +27135,15 @@ const TRANSLATIONS = {
   puDateUpdatedShort:{ar:'تم تحديث التاريخ',en:'Date updated'},
   puEditDateModalTitle:{ar:'تعديل تاريخ الاستلام',en:'Edit pick-up date'},
   puNoMatchingResults:{ar:'لا نتائج مطابقة',en:'No matching results'},
-  puNoPendingToAdd:{ar:'لا توجد طلبات معلقة للإضافة',en:'No pending orders to add'},
+  puNoPendingToAdd:{ar:'لا توجد طلبات أخرى متاحة',en:'No other orders available'},
   puRemoveFromRun:{ar:'حذف',en:'Remove'},
   puAddToRun:{ar:'إضافة',en:'Add'},
+  puMoveToRun:{ar:'نقل لهذه التذكرة',en:'Move to this ticket'},
+  puConfirmJoinTicket:{ar:'سيتم ضم الطلبات إلى التذكرة المفتوحة {ref} بتاريخ {date}',en:'Orders will join open ticket {ref} dated {date}'},
+  puConfirmNewTicket:{ar:'سيتم فتح تذكرة استلام جديدة بتاريخ {date}',en:'A new pick-up ticket will be opened for {date}'},
   puOrderRemovedFromRun:{ar:'تم حذف الأوردر من العملية',en:'Order removed from the run'},
   puOrderAddedToRun:{ar:'تمت إضافة الأوردر للعملية بنجاح',en:'Order added to the run successfully'},
+  puOrderMovedToRun:{ar:'تم نقل الأوردر إلى التذكرة بنجاح',en:'Order moved to the ticket successfully'},
   /* Create Pick-Up modal */
   puCreateModalTitle:{ar:'إنشاء أمر Pick-Up جديد',en:'Create a new Pick-Up order'},
   puCreateModalSub:{ar:'اختر الطلبات المراد استلامها',en:'Pick the orders to collect'},
@@ -27068,6 +27164,8 @@ const TRANSLATIONS = {
   puBulkOrdersLoadError:{ar:'خطأ في تحميل الطلبات: {v}',en:'Error loading orders: {v}'},
   puBulkConfirmedN:{ar:'✅ تم تأكيد الاستلام لـ {n} طلب',en:'✅ Pick-up confirmed for {n} order(s)'},
   puBulkAlreadyDeliveredN:{ar:'⬛ تم التسليم مسبقاً ({n}): {list}',en:'⬛ Already delivered ({n}): {list}'},
+  puBulkNotPreparedN:{ar:'⏳ لم يكتمل تحضيرها ({n}): {list}',en:'⏳ Preparation is incomplete ({n}): {list}'},
+  puCannotUndoShippedRun:{ar:'لا يمكن إرجاع تذكرة تحتوي طلبات تم شحنها أو تسليمها.',en:'A ticket with shipped or delivered orders cannot be returned.'},
   puBulkNotFoundN:{ar:'❌ غير موجود ({n}): {list}',en:'❌ Not found ({n}): {list}'},
   puBulkNoneMatched:{ar:'لم يُعثر على أي طلب مطابق',en:'No matching order found'},
   /* Send-group-to-Bosta flow (puGroupSendToBosta) */
@@ -27084,9 +27182,12 @@ const TRANSLATIONS = {
   puRefreshError:{ar:'خطأ في التحديث: {v}',en:'Refresh error: {v}'},
   puDataLoadError:{ar:'خطأ في تحميل البيانات: {v}',en:'Error loading data: {v}'},
   /* Realtime (socket) toasts */
-  puRtReady:{ar:'✅ جاهز للاستلام: {ref}',en:'✅ Ready to ship: {ref}'},
-  puRtDelivered:{ar:'🚚 تم التسليم: {n} طلب',en:'🚚 Delivered: {n} order(s)'},
-  puRtRevertDelivered:{ar:'↩ إلغاء تسليم: {n} طلب',en:'↩ Delivery reverted: {n} order(s)'},
+  puRtReadyTitle:{ar:'جاهز للشحن',en:'Ready to ship'},
+  puRtDeliveredOne:{ar:'تم التسليم',en:'Delivered'},
+  puRtDeliveredMany:{ar:'تم تسليم {n} طلبات',en:'{n} orders delivered'},
+  puRtRevertDeliveredTitle:{ar:'تم التراجع عن تسليم {n} طلب',en:'Delivery reverted · {n}'},
+  puRtPrepTitle:{ar:'قيد التحضير · {n} طلب',en:'Moved to preparing · {n}'},
+  puRtUndoTitle:{ar:'أُعيد إلى معلّق · {n} طلب',en:'Back to pending · {n}'},
   /* ── Expenses module (i18n Aug 2026) ── */
   expSubtitle:{ar:'إدارة ومتابعة مصاريف الشركة',en:'Manage and track company expenses'},
   expNewBtn:{ar:'مصروف جديد',en:'New expense'},
@@ -29444,6 +29545,15 @@ const HOLD_AFTER_LAST_MS = 5500;
 const FADE_OUT_MS = 1400;
 const TRAIL_AFTER_MS = 2800; // dot trail lingers on sidebar after fade
 
+/**
+ * Vault movement sound — two marimba notes: rising for money in, falling for money out
+ * (chosen by the owner, Oct 2026). Deliberately soft and wooden: the vault moves many times
+ * a day, and the old in-sound was a cash-register "ka-ching" that collided by ear with the
+ * new-order cha-ching (mentionNotifier `_chaChing`). Keep the two families apart — metal
+ * means "a new order", wood means "cash moved".
+ * Each note = fundamental + a quick 4x/10x overtone (the mallet strike). Master 0.55 = the
+ * level approved in the preview.
+ */
 function _cashPlaySound(isAdd) {
   if (localStorage.getItem('cash_pulse_sound') === 'off') return;
   try {
@@ -29453,62 +29563,23 @@ function _cashPlaySound(isAdd) {
     if (ctx.state === 'suspended') ctx.resume();
     const t0 = ctx.currentTime;
     const master = ctx.createGain();
-    master.gain.value = 0.18;
+    master.gain.value = 0.55;
     master.connect(ctx.destination);
-
-    if (isAdd) {
-      // Cash register "ka-ching" — short metallic click + bright chime
-      // 1) Metallic click (filtered noise burst)
-      const noiseLen = 0.06;
-      const noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * noiseLen), ctx.sampleRate);
-      const nd = noiseBuf.getChannelData(0);
-      for (let i = 0; i < nd.length; i++) nd[i] = (Math.random() * 2 - 1) * (1 - i / nd.length);
-      const noise = ctx.createBufferSource();
-      noise.buffer = noiseBuf;
-      const nFilter = ctx.createBiquadFilter();
-      nFilter.type = 'highpass'; nFilter.frequency.value = 2200;
-      const nGain = ctx.createGain();
-      nGain.gain.setValueAtTime(0.5, t0);
-      nGain.gain.exponentialRampToValueAtTime(0.01, t0 + noiseLen);
-      noise.connect(nFilter); nFilter.connect(nGain); nGain.connect(master);
-      noise.start(t0); noise.stop(t0 + noiseLen);
-
-      // 2) Two-tone bell chime (musical "ding")
-      [
-        { f: 1568, start: 0.04, dur: 0.55, vol: 0.55 }, // G6
-        { f: 2093, start: 0.06, dur: 0.50, vol: 0.40 }, // C7
-        { f: 2637, start: 0.08, dur: 0.45, vol: 0.30 }, // E7
-      ].forEach(n => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = 'triangle';
-        o.frequency.value = n.f;
-        const ts = t0 + n.start;
-        g.gain.setValueAtTime(0, ts);
-        g.gain.linearRampToValueAtTime(n.vol, ts + 0.01);
-        g.gain.exponentialRampToValueAtTime(0.0001, ts + n.dur);
-        o.connect(g); g.connect(master);
-        o.start(ts); o.stop(ts + n.dur + 0.02);
-      });
-    } else {
-      // Coin drop / vault close — descending dull thud
-      [
-        { f: 520, start: 0.00, dur: 0.18, vol: 0.55, type: 'sine' },
-        { f: 280, start: 0.05, dur: 0.30, vol: 0.45, type: 'sine' },
-        { f: 160, start: 0.10, dur: 0.40, vol: 0.35, type: 'triangle' },
-      ].forEach(n => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = n.type;
-        o.frequency.value = n.f;
-        const ts = t0 + n.start;
-        g.gain.setValueAtTime(0, ts);
-        g.gain.linearRampToValueAtTime(n.vol, ts + 0.01);
-        g.gain.exponentialRampToValueAtTime(0.0001, ts + n.dur);
-        o.connect(g); g.connect(master);
-        o.start(ts); o.stop(ts + n.dur + 0.02);
-      });
-    }
+    const tone = (f, at, dur, peak) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(f, at);
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(peak, at + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+      o.connect(g); g.connect(master); o.start(at); o.stop(at + dur + 0.05);
+    };
+    const marimba = (f, at, peak) => {
+      tone(f, at, 0.32, peak);
+      tone(f * 4, at, 0.06, peak * 0.35);
+      tone(f * 10, at, 0.02, peak * 0.15);
+    };
+    if (isAdd) { marimba(523, t0, 0.32); marimba(784, t0 + 0.11, 0.30); }   // C5 → G5
+    else       { marimba(659, t0, 0.26); marimba(440, t0 + 0.12, 0.24); }   // E5 → A4
   } catch (_) {}
 }
 
@@ -30689,7 +30760,8 @@ function connectSocket() {
     const i = transactions.findIndex(t => String(t._id) === String(tx._id));
     if (i >= 0) transactions[i] = tx;
     _rtRefreshUI({ movements: true, sidebar: true });
-    _rtToastEvent(`${ICON('ban')} ${t('txCancelled')} #${tx.ref || ''}`);
+    _rtToastEvent({ tone:'bad', icon:'ban', title: t('txCancelled'), sub: [tx.ref ? `<bdi>#${esc(tx.ref)}</bdi>` : '', tx.client ? `<bdi>${esc(tx.client)}</bdi>` : ''].filter(Boolean).join(' · '),
+      action: { label: t('stzView'), fn: () => openOrderView(tx._id) } });
     try { window.txNotifier?.onTxCancelled(tx); } catch(_) {}
   });
   socket.on('mentions:changed', async (payload) => {
@@ -30826,7 +30898,7 @@ function connectSocket() {
   // ===== Real-time Pickup Orders Sync (surgical DOM — no fetch, no full re-render) =====
   socket.on('pickup:updated', (payload) => {
     try {
-      const { ids = [], action, pickupRef, by } = payload || {};
+      const { ids = [], action, pickupRef, pickupDate, by } = payload || {};
       const idSet = new Set(ids.map(String));
 
       // ── helpers ────────────────────────────────────────────────
@@ -30871,10 +30943,10 @@ function connectSocket() {
         // Update in-memory state for affected orders
         ids.forEach(id => {
           const o = _pickupOrders.find(x => String(x._id) === id);
-          if (o) { o.pickupStatus = 'Preparing'; o.pickupRef = pickupRef; o._prepGroup = pickupRef; }
+          if (o) { o.pickupStatus = 'Preparing'; o.pickupRef = pickupRef; o._prepGroup = pickupRef; o.prepChecked = false; }
           if (Array.isArray(transactions)) {
             const tx = transactions.find(t => String(t._id) === id);
-            if (tx) { tx.pickupStatus = 'Preparing'; tx.pickupRef = pickupRef; }
+            if (tx) { tx.pickupStatus = 'Preparing'; tx.pickupRef = pickupRef; tx.prepChecked = false; }
           }
         });
 
@@ -30885,7 +30957,7 @@ function connectSocket() {
         // If orders not in local cache and pickup board is visible → full reload to sync
         if (!groupOrders.length && currentPage === 'pickup-orders') {
           if (typeof loadPickupOrders === 'function') loadPickupOrders();
-          _rtToastEvent?.(`📦 قيد التحضير: ${fmtN(ids.length)} طلب → ${pickupRef}`);
+          _rtToastEvent?.({ tone:'info', icon:'box', title: t('puRtPrepTitle', { n: ids.length }), sub: `<bdi>${esc(pickupRef || '')}</bdi>` });
           return;
         }
 
@@ -30932,17 +31004,17 @@ function connectSocket() {
             _puUpdateColCount('pu-prep-col');
           }, 200);
         }
-        _rtToastEvent?.(`📦 قيد التحضير: ${ids.length > 1 ? fmtN(ids.length) + ' طلبات' : (groupOrders[0]?.ref || 'طلب')} → ${pickupRef}`);
+        _rtToastEvent?.({ tone:'info', icon:'box', title: t('puRtPrepTitle', { n: ids.length }), sub: [`<bdi>${esc(pickupRef || '')}</bdi>`, _stzRefsSub(ids)].filter(Boolean).join(' · ') });
       }
 
       // ── action: undo — prep/ready cards back to pending ────────
       else if (action === 'undo') {
         ids.forEach(id => {
           const o = _pickupOrders.find(x => String(x._id) === id);
-          if (o) { o.pickupStatus = 'Pending'; o.pickupRef = null; o.pickupDate = null; delete o._prepGroup; }
+          if (o) { o.pickupStatus = 'Pending'; o.pickupRef = null; o.pickupDate = null; o.prepChecked = false; delete o._prepGroup; }
           if (Array.isArray(transactions)) {
             const tx = transactions.find(t => String(t._id) === id);
-            if (tx) { tx.pickupStatus = 'Pending'; tx.pickupRef = null; }
+            if (tx) { tx.pickupStatus = 'Pending'; tx.pickupRef = null; tx.prepChecked = false; }
           }
         });
         // Clean prep groups
@@ -30998,17 +31070,21 @@ function connectSocket() {
             _puUpdateColCount('pu-ready-col');
           }, 220);
         }
-        _rtToastEvent?.(`↩ تراجع: ${ids.length} طلب → معلق`);
+        _rtToastEvent?.({ tone:'warn', icon:'undo', title: t('puRtUndoTitle', { n: ids.length }), sub: _stzRefsSub(ids) });
       }
 
       // ── action: ready — prep group → ready column ───────────────
       else if (action === 'ready' && pickupRef) {
+        const sourcePrepRef = _puPrepGroups.find(g => g.orders.some(o => idSet.has(String(o._id))))?.prepRef;
+        const sourceReadyRefs = new Set(_pickupOrders
+          .filter(o => idSet.has(String(o._id)) && o.pickupStatus === 'Ready' && o.pickupRef && o.pickupRef !== pickupRef)
+          .map(o => o.pickupRef));
         ids.forEach(id => {
           const o = _pickupOrders.find(x => String(x._id) === id);
-          if (o) { o.pickupStatus = 'Ready'; o.pickupRef = pickupRef; }
+          if (o) { o.pickupStatus = 'Ready'; o.pickupRef = pickupRef; if (pickupDate) o.pickupDate = pickupDate; }
           if (Array.isArray(transactions)) {
             const tx = transactions.find(t => String(t._id) === id);
-            if (tx) { tx.pickupStatus = 'Ready'; tx.pickupRef = pickupRef; }
+            if (tx) { tx.pickupStatus = 'Ready'; tx.pickupRef = pickupRef; if (pickupDate) tx.pickupDate = pickupDate; }
           }
         });
         // Remove from prep groups
@@ -31019,10 +31095,19 @@ function connectSocket() {
 
         if (currentPage === 'pickup-orders' && _puBoardView === 'board') {
           const readyCol = qs('#pu-ready-col');
-          // Slide out the prep group card that moved
-          const prepCard = qs(`#pu-prep-col .pu-group[data-group-key="${CSS.escape(pickupRef)}"]`);
-          _puSlideOut(prepCard, () => {
+          const syncReadyCard = () => {
             if (!readyCol) return;
+            sourceReadyRefs.forEach(ref => {
+              const remainingOrders = _pickupOrders.filter(o => o.pickupRef === ref && ['Ready','Picked-Up'].includes(o.pickupStatus));
+              const oldCard = readyCol.querySelector(`.pu-group[data-group-key="${CSS.escape(ref)}"]`);
+              if (remainingOrders.length) {
+                const oldGroup = { key: ref, pickupRef: ref, orders: remainingOrders };
+                const refreshed = _puBuildGroupCard(oldGroup, 'ready');
+                if (oldCard) oldCard.replaceWith(refreshed);
+              } else if (oldCard) {
+                _puSlideOut(oldCard, () => _puUpdateColCount('pu-ready-col'));
+              }
+            });
             // Build the ready group from current in-memory data
             const readyOrders = _pickupOrders.filter(o => o.pickupRef === pickupRef && (o.pickupStatus === 'Ready' || o.pickupStatus === 'Picked-Up'));
             if (!readyOrders.length) return;
@@ -31038,11 +31123,21 @@ function connectSocket() {
             _puFlash(newCard);
             _puUpdateColCount('pu-prep-col');
             _puUpdateColCount('pu-ready-col');
-          });
+          };
+          const prepCard = sourcePrepRef
+            ? qs(`#pu-prep-col .pu-group[data-group-key="${CSS.escape(sourcePrepRef)}"]`)
+            : null;
+          const remainingPrepGroup = sourcePrepRef && _puPrepGroups.find(g => g.prepRef === sourcePrepRef);
+          if (prepCard && remainingPrepGroup) {
+            prepCard.replaceWith(_puBuildPrepGroupCard(remainingPrepGroup));
+            syncReadyCard();
+          } else {
+            _puSlideOut(prepCard, syncReadyCard);
+          }
         } else if (currentPage === 'pickup-orders' && _puBoardView === 'table') {
           renderPickupRuns?.();
         }
-        _rtToastEvent?.(t('puRtReady',{ref:pickupRef}));
+        _rtToastEvent?.({ tone:'info', icon:'truck', title: t('puRtReadyTitle'), sub: [`<bdi>${esc(pickupRef || '')}</bdi>`, _stzRefsSub(ids)].filter(Boolean).join(' · ') });
       }
 
       // ── action: delivered ───────────────────────────────────────
@@ -31065,7 +31160,10 @@ function connectSocket() {
             }
           });
         }
-        _rtToastEvent?.(t('puRtDelivered',{n:ids.length}));
+        _rtToastEvent?.({ tone:'ok', icon:'check', title: ids.length > 1 ? t('puRtDeliveredMany', { n: ids.length }) : t('puRtDeliveredOne'), sub: _stzRefsSub(ids),
+          action: ids.length === 1
+            ? { label: t('stzView'), fn: () => openOrderView(ids[0]) }
+            : { label: t('stzViewAll'), fn: () => navigateTo('pickup-orders') } });
       }
 
       // ── action: revert-delivered ────────────────────────────────
@@ -31084,7 +31182,7 @@ function connectSocket() {
             if (card) { card.style.opacity = '1'; _puFlash(card); }
           });
         }
-        _rtToastEvent?.(t('puRtRevertDelivered',{n:ids.length}));
+        _rtToastEvent?.({ tone:'warn', icon:'undo', title: t('puRtRevertDeliveredTitle', { n: ids.length }), sub: _stzRefsSub(ids) });
       }
 
       // ── prepCheck: sync per-order tick across all users ─────────
@@ -31094,7 +31192,11 @@ function connectSocket() {
 
         // Update _pickupOrders reference
         const o = _pickupOrders.find(x => String(x._id) === id);
-        if (o) o.prepChecked = checked;
+        if (o) { o.prepChecked = checked; if (Array.isArray(payload.pickupHistory)) o.pickupHistory = payload.pickupHistory; }
+        if (Array.isArray(transactions)) {
+          const tx = transactions.find(x => String(x._id) === id);
+          if (tx) { tx.prepChecked = checked; if (Array.isArray(payload.pickupHistory)) tx.pickupHistory = payload.pickupHistory; }
+        }
 
         // Find group by order ID first, fallback to pickupRef from payload
         let grp = _puPrepGroups.find(g => g.orders.some(x => String(x._id) === id));
@@ -31337,19 +31439,97 @@ function bounceMovementsNav() {
     });
   } catch(_) {}
 }
-let _rtToastTimer = null;
+/* ── Order toasts: shared region + show/hide/auto-close (see `.stz-*` CSS) ── */
+const _STZ_ICONS = {
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17 19 7"/></svg>',
+  truck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h11v10H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>',
+  box:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/></svg>',
+  undo:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
+  ban:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>',
+  user:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M19 8v6M16 11h6"/></svg>',
+  chat:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>',
+  x:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+};
+function _stzRegion() {
+  let r = document.getElementById('soulia-toast-region');
+  if (!r) { r = document.createElement('div'); r.id = 'soulia-toast-region'; document.body.appendChild(r); }
+  return r;
+}
+/** Get (or create) a reusable toast element by id. Re-showing moves it next to the corner. */
+function _stzEl(id, cls) {
+  let el = document.getElementById(id);
+  if (!el) { el = document.createElement('div'); el.id = id; el.hidden = true; }
+  el.className = 'stz ' + cls;
+  _stzRegion().appendChild(el);
+  return el;
+}
+function _stzShow(el, ms) {
+  clearTimeout(el._stzHideT);
+  el.hidden = false;
+  void el.offsetWidth; // restart the enter transition
+  el.classList.add('show');
+  _stzArm(el, ms);
+}
+/** Auto-close that PAUSES while hovered or focused — a toast must not vanish mid-read. */
+function _stzArm(el, ms) {
+  clearTimeout(el._stzT);
+  el._stzLeft = ms; el._stzStart = Date.now();
+  el._stzT = setTimeout(() => _stzHide(el), ms);
+  el.onmouseenter = el.onfocusin = () => {
+    clearTimeout(el._stzT);
+    el._stzLeft = Math.max(800, el._stzLeft - (Date.now() - el._stzStart));
+  };
+  el.onmouseleave = el.onfocusout = (e) => {
+    if (e && e.relatedTarget && el.contains(e.relatedTarget)) return;
+    clearTimeout(el._stzT);
+    el._stzStart = Date.now();
+    el._stzT = setTimeout(() => _stzHide(el), el._stzLeft);
+  };
+}
+function _stzHide(el) {
+  if (!el) return;
+  clearTimeout(el._stzT);
+  el.classList.remove('show');
+  clearTimeout(el._stzHideT);
+  el._stzHideT = setTimeout(() => { el.hidden = true; }, 260);
+}
+
+/**
+ * Status-row toast for live order events (delivered, ready, cancelled …).
+ * `msg` is `{ tone:'ok'|'info'|'warn'|'bad', icon, title, sub, action:{label, fn} }`.
+ * A plain string is still accepted (rendered as the title, neutral tone) for any old caller.
+ */
 function _rtToastEvent(msg) {
-  let el = qs('#rt-event-toast');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'rt-event-toast';
-    el.className = 'rt-event-toast';
-    document.body.appendChild(el);
+  const o = (msg && typeof msg === 'object') ? msg : { title: String(msg || '') };
+  const el = _stzEl('rt-event-toast', 'stz-row');
+  el.setAttribute('role', 'status');
+  el.setAttribute('aria-live', 'polite');
+  el.dataset.tone = o.tone || '';
+  el.innerHTML = `
+    <div class="stz-disc">${_STZ_ICONS[o.icon] || _STZ_ICONS.check}</div>
+    <div class="stz-body">
+      <div class="stz-title">${typeof msg === 'string' ? msg : esc(o.title || '')}</div>
+      <div class="stz-sub">${o.sub || ''}</div>
+    </div>
+    ${o.action ? `<button type="button" class="stz-link">${esc(o.action.label)}</button>` : ''}
+    <button type="button" class="stz-x" aria-label="${esc(t('ncClose'))}">${_STZ_ICONS.x}</button>`;
+  if (o.action) el.querySelector('.stz-link').onclick = () => { _stzHide(el); try { o.action.fn(); } catch(_) {} };
+  el.querySelector('.stz-x').onclick = () => _stzHide(el);
+  _stzShow(el, o.action ? 6000 : 4200);
+}
+/** "#2695 · أسماء محمد" for one order, "#2695 · #2701 · +3" for a batch. Values are escaped. */
+function _stzRefsSub(ids) {
+  const find = (id) => (Array.isArray(_pickupOrders) && _pickupOrders.find(x => String(x._id) === String(id)))
+    || (Array.isArray(transactions) && transactions.find(x => String(x._id) === String(id))) || null;
+  const rows = (ids || []).map(find).filter(Boolean);
+  if (!rows.length) return '';
+  if (rows.length === 1) {
+    const r = rows[0];
+    return [r.ref ? `<bdi>#${esc(r.ref)}</bdi>` : '', r.client ? `<bdi>${esc(r.client)}</bdi>` : ''].filter(Boolean).join(' · ');
   }
-  el.innerHTML = msg;
-  requestAnimationFrame(() => el.classList.add('show'));
-  if (_rtToastTimer) clearTimeout(_rtToastTimer);
-  _rtToastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+  const shown = rows.slice(0, 3).map(r => `<bdi>#${esc(r.ref || '')}</bdi>`);
+  if (rows.length > 3) shown.push(`<bdi>+${rows.length - 3}</bdi>`);
+  return shown.join(' · ');
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -31381,12 +31561,53 @@ window.mentionNotifier = (function () {
     return audioCtx;
   }
 
+  /**
+   * New order assigned by «نظام التوزيع» → "cha-ching" (chosen by the owner, Oct 2026, in
+   * the same spirit as Shopify's order sound — synthesized here, not Shopify's audio file).
+   * A drawer rattle (two band-passed noise bursts + a low thunk), then a register bell struck
+   * twice. The bell is a set of inharmonic partials (struck-metal ratios), which is what makes
+   * it read as metal rather than as a beep. Master 0.63 = the level approved in the preview.
+   */
+  function _chaChing(ctx) {
+    const t = ctx.currentTime;
+    const master = ctx.createGain();
+    master.gain.value = 0.63;
+    master.connect(ctx.destination);
+    const tone = (f, at, dur, peak, type) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type || 'sine'; o.frequency.setValueAtTime(f, at);
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(peak, at + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+      o.connect(g); g.connect(master); o.start(at); o.stop(at + dur + 0.05);
+    };
+    const bell = (f, at, dur, peak) =>
+      [[1, 1], [2.0, .5], [2.76, .38], [5.4, .18], [8.93, .08]].forEach(([r, a], i) =>
+        tone(f * r, at, dur * (1 - i * .14), peak * a));
+    const rattle = (at, dur, peak, freq) => {
+      const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);
+      const s = ctx.createBufferSource(); s.buffer = buf;
+      const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 1.2;
+      const g = ctx.createGain(); g.gain.value = peak;
+      s.connect(f); f.connect(g); g.connect(master); s.start(at);
+    };
+    rattle(t, 0.05, 0.9, 3200);              // "cha"
+    rattle(t + 0.065, 0.06, 0.7, 4200);
+    tone(180, t + 0.01, 0.08, 0.25, 'triangle');
+    bell(2093, t + 0.15, 1.1, 0.32);         // "ching"
+    bell(2637, t + 0.27, 1.2, 0.26);
+  }
+
   // assignment: firm three-note rising chime (task assigned)
   // comment: single soft tone (lighter, less intrusive)
+  // order assigned (kind 'order'): _chaChing
   function _chime(kind) {
     if (muted) return;
     const ctx = _ensureAudio(); if (!ctx) return;
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    if (kind === 'order') { try { _chaChing(ctx); } catch(_) {} return; }
     const now = ctx.currentTime;
     const notes = kind === 'assignment' ? [660, 880, 1100] : [740];
     const noteDur = kind === 'assignment' ? 0.13 : 0.16;
@@ -31413,56 +31634,93 @@ window.mentionNotifier = (function () {
     } catch(_) {}
   }
 
-  /** Rich mention toast — employee name, order ref, customer name, and context snippet. */
-  function _toast(payload, kind) {
-    // System senders ('نظام التوزيع' …) are stored in the DB as Arabic identifiers, and the
-    // body text they carry is composed server-side in Arabic too. Both must be mapped for
-    // display rather than printed raw — see _sysSenderLabel / _localizeSysText.
-    const name = esc(_sysSenderLabel(payload.fromName || ''));
-    const ref = payload.txRef ? esc(payload.txRef) : '';
-    const snippet = esc(_localizeSysText(payload.commentText || ''));
-    const kindLabel = kind === 'assignment' ? t('mrtNewTask') : t('mrtCommentMention');
-    const kindIcon = kind === 'assignment' ? '📌' : '💬';
+  /** Line value from a server-composed body ("العميل: …"), or ''. */
+  function _bodyField(text, label) {
+    const line = String(text || '').split('\n').find(l => l.trim().startsWith(label + ':'));
+    return line ? line.slice(line.indexOf(':') + 1).trim() : '';
+  }
 
-    // Resolve customer/supplier name from the local transactions cache (not sent over the socket)
+  /**
+   * Rich mention toast (`.stz` card). Two shapes from one frame:
+   *  - order assigned by «نظام التوزيع» → order ref + total as the headline, customer and
+   *    assignee beneath — the server body is parsed, never printed as a sentence;
+   *  - any other mention → sender as the eyebrow, the comment as a two-line snippet.
+   * «Open» goes through onMentionNotifClick — the same routing as the bell list, which
+   * marks it read and knows that an assignment's txId is a ShopifyOrder id, not a transaction.
+   */
+  function _toast(payload, kind) {
+    const body = payload.commentText || '';
+    const isAssign = payload.fromName === 'نظام التوزيع' && /مُسند/.test(body.split('\n')[0] || '');
+    const ref = payload.txRef ? String(payload.txRef).replace(/^#+/, '') : '';
+
+    // Customer/supplier from the local cache (not sent over the socket); the body is the fallback.
     let clientName = '';
     try {
       const tx = (Array.isArray(transactions) ? transactions : [])
-        .find(t => String(t._id) === String(payload.txId) || (payload.txRef && String(t.ref) === String(payload.txRef)));
+        .find(x => String(x._id) === String(payload.txId) || (ref && String(x.ref) === ref));
       clientName = tx ? (tx.client || tx.supplier || '') : '';
     } catch(_) {}
+    if (!clientName) clientName = _bodyField(body, 'العميل');
 
-    let el = qs('#mention-rt-toast');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'mention-rt-toast';
-      el.className = 'mention-rt-toast';
-      document.body.appendChild(el);
+    const el = _stzEl('mention-rt-toast', 'stz-task');
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    const refHtml = ref ? `${esc(t('mrtOrder'))} <bdi>#${esc(ref)}</bdi>` : '';
+
+    if (isAssign) {
+      const first = (body.split('\n')[0] || '').trim();
+      const toMe = /مُسند إليك/.test(first);
+      const assignee = toMe ? '' : ((/مُسند إلى\s+(.*?):/.exec(first) || [])[1] || '').trim();
+      const totalNum = Number(String(_bodyField(body, 'الإجمالي')).replace(/[^\d.\-]/g, ''));
+      const amt = Number.isFinite(totalNum) && _bodyField(body, 'الإجمالي')
+        ? `<span class="stz-amt">${totalNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <small>EGP</small></span>` : '';
+      let who = '';
+      if (toMe) who = `<span class="stz-strong">${esc(t('stzAssignedToYou'))}</span>`;
+      else if (assignee) {
+        const u = (typeof _pwFindUser === 'function' ? _pwFindUser(assignee) : null) || { name: assignee };
+        who = `<span>${esc(t('stzAssignedTo'))}</span>${userAvatarHtml(u, 20)}<bdi class="stz-strong">${esc(assignee)}</bdi>`;
+      }
+      el.innerHTML = `
+        <div class="stz-main">
+          <div class="stz-tile">${_STZ_ICONS.user}</div>
+          <div class="stz-body">
+            <div class="stz-eyebrow"><span class="stz-kind">${esc(t('stzNewAssignment'))}</span><span class="stz-src">· ${esc(_sysSenderLabel(payload.fromName))}</span><span class="stz-time">${esc(t('stzNow'))}</span></div>
+            <div class="stz-headline"><span class="stz-ref">${refHtml}</span>${amt}</div>
+            <div class="stz-meta">${clientName ? `<bdi class="stz-strong">${esc(clientName)}</bdi>` : ''}${clientName && who ? '<span class="stz-sep">·</span>' : ''}${who}</div>
+          </div>
+        </div>`;
+    } else {
+      const snippet = _localizeSysText(body);
+      el.innerHTML = `
+        <div class="stz-main">
+          <div class="stz-tile">${kind === 'assignment' ? _STZ_ICONS.user : _STZ_ICONS.chat}</div>
+          <div class="stz-body">
+            <div class="stz-eyebrow"><span class="stz-kind">${esc(kind === 'assignment' ? t('mrtNewTask') : t('mrtCommentMention'))}</span><span class="stz-src">· <bdi>${esc(_sysSenderLabel(payload.fromName || ''))}</bdi></span><span class="stz-time">${esc(t('stzNow'))}</span></div>
+            ${refHtml || clientName ? `<div class="stz-headline"><span class="stz-ref" style="font-size:15px">${refHtml}</span>${clientName ? `<bdi class="stz-strong" style="margin-inline-start:auto;font-size:13px">${esc(clientName)}</bdi>` : ''}</div>` : ''}
+            ${snippet ? `<div class="stz-snippet" dir="auto">${esc(snippet)}</div>` : ''}
+          </div>
+        </div>`;
     }
-    el.innerHTML = `
-      <button type="button" class="mrt-close" aria-label="${t('ncClose')}">&times;</button>
-      <div class="mrt-icon">${kindIcon}</div>
-      <div class="mrt-body">
-        <div class="mrt-title">${kindLabel} — ${name}</div>
-        <div class="mrt-sub">${ref ? `${t('mrtOrder')} #${ref}` : ''}${clientName ? `${ref ? ' · ' : ''}${esc(clientName)}` : ''}</div>
-        ${snippet ? `<div class="mrt-snippet">${snippet}</div>` : ''}
-      </div>`;
-    el.onclick = (e) => {
-      if (e.target.closest('.mrt-close')) return;
-      try { if (payload.txId) showInvoiceDetail(payload.txId, payload.commentId); } catch(_) {}
+    el.insertAdjacentHTML('beforeend', `
+      <div class="stz-actions">
+        <button type="button" class="stz-btn" data-stz="dismiss">${esc(t('stzDismiss'))}</button>
+        <button type="button" class="stz-btn stz-btn-primary" data-stz="open">${esc(isAssign ? t('stzOpenOrder') : t('stzOpen'))}</button>
+      </div>
+      <div class="stz-progress"><i style="--stz-dur:8s"></i></div>`);
+    el.querySelector('[data-stz="dismiss"]').onclick = () => _dismissMentionToast();
+    el.querySelector('[data-stz="open"]').onclick = () => {
       _dismissMentionToast();
+      try {
+        const id = payload.id || payload._id;
+        if (id && typeof onMentionNotifClick === 'function') onMentionNotifClick(id, payload.txId, payload.commentId);
+        else if (payload.txId) showInvoiceDetail(payload.txId, payload.commentId);
+      } catch(_) {}
     };
-    el.querySelector('.mrt-close').onclick = (e) => { e.stopPropagation(); _dismissMentionToast(); };
-    requestAnimationFrame(() => el.classList.add('show'));
-    clearTimeout(el._timer);
-    el._timer = setTimeout(_dismissMentionToast, 6000);
+    _stzShow(el, 8000);
   }
 
   function _dismissMentionToast() {
-    const el = qs('#mention-rt-toast');
-    if (!el) return;
-    clearTimeout(el._timer);
-    el.classList.remove('show');
+    _stzHide(document.getElementById('mention-rt-toast'));
   }
 
   /** Determine assignment vs comment: assignment = first mention delivered for this tx. */
@@ -31482,7 +31740,10 @@ window.mentionNotifier = (function () {
 
   function notify(payload) {
     const kind = classify(payload);
-    _chime(kind);
+    // A new order routed by the distribution system gets its own sound; a first mention on
+    // any other record keeps the task chime, so the two can be told apart by ear.
+    const isOrder = payload?.fromName === 'نظام التوزيع' && /مُسند/.test(String(payload?.commentText || '').split('\n')[0]);
+    _chime(isOrder ? 'order' : kind);
     _vibrate(kind);
     _toast(payload, kind);
   }
@@ -45633,7 +45894,7 @@ function renderMovementTxRow(tx) {
           <!-- 6. خصم بعد البيع -->
           ${tx.type === 'مبيعات' && !tx.cancelled && isAdmin() ? `<div class="dd-item" onclick="openPostDiscountModal('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> ${t('postSaleDiscount')}</div>` : ''}
           <!-- 7. Bosta -->
-          ${tx.type === 'مبيعات' && !tx.cancelled && ['Preparing','Ready','Picked-Up','Shipped'].includes(tx.pickupStatus||'') ? `<div class="dd-divider"></div>${['VALIDATION_ERROR','DELETED',''].includes(tx.bostaStatus||'')
+          ${tx.type === 'مبيعات' && !tx.cancelled && (['Ready','Picked-Up'].includes(tx.pickupStatus||'') || !!tx.bostaOrderId) ? `<div class="dd-divider"></div>${['VALIDATION_ERROR','DELETED',''].includes(tx.bostaStatus||'')
             ? `<div class="dd-item" onclick="sendToBosta('${esc(tx._id)}')"><svg viewBox="0 0 10 10" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;border-radius:2px"><rect width="10" height="10" fill="#FF0000"/><path fill="#fff" d="M8.8,2.9L5.2,1l0,0C5.1,0.9,4.9,0.9,4.8,1L1.2,2.9C1,3,0.9,3.2,0.9,3.3v3.3C0.9,6.8,1,6.9,1.2,7l3.6,1.9c0.2,0.1,0.3,0.1,0.5,0L8.9,7c0.1,0,0.2-0.2,0.2-0.4V3.3C9.1,3.2,8.9,3,8.8,2.9z M8.4,3.9V6l-2-1L8.4,3.9z M2,3.3l3-1.6l3,1.6L5,4.9L2,3.3z M4.4,5.4l0.4,0.2c0.1,0.1,0.3,0.1,0.5,0l0.4-0.2l2.4,1.3l-3,1.6L2,6.8L4.4,5.4z M3.6,5l-2,1.1V3.9L3.6,5z"/></svg> ${(tx.bostaStatus === 'VALIDATION_ERROR' || tx.bostaStatus === 'DELETED') ? t('resendBosta') : t('sendBosta')}</div>`
             : `<div class="dd-item" onclick="syncBostaStatus('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="#FF0000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> ${t('updateBostaStatus')}</div>`
           }` : ''}
@@ -50371,10 +50632,10 @@ async function sendToBosta(id) {
   // Allow re-send if no prior order, or if status is resendable (deleted/validation error)
   const resendable = ['VALIDATION_ERROR', 'DELETED', ''].includes(tx.bostaStatus || '');
   if (!resendable) { toast('تم إرسال هذا الطلب إلى Bosta مسبقاً', true); return; }
-  // يجب أن يكون الطلب في حالة Preparing على الأقل (تجهيز/جاهز/تم الالتقاط/تم الشحن) قبل الإرسال لـ Bosta
+  // Only an order that reached Ready to Ship can be handed to Bosta.
   const puStatus = tx.pickupStatus || 'Pending';
-  if (!['Preparing', 'Ready', 'Picked-Up', 'Shipped'].includes(puStatus)) {
-    toast('يجب نقل الطلب إلى "Preparing" على الأقل أولاً قبل إرساله لـ Bosta', true);
+  if (!['Ready', 'Picked-Up'].includes(puStatus)) {
+    toast('يجب إكمال التحضير ونقل الطلب إلى "Ready to Ship" قبل إرساله لـ Bosta', true);
     return;
   }
 
@@ -50533,6 +50794,13 @@ async function syncBostaStatus(id) {
 // ── Auto sync Bosta every 30 min ──────────────────────────────
 let _bostaAutoSyncTimer = null;
 
+function _puShippingReceivedRef(shipCo, date) {
+  const carrier = String(shipCo || 'Bosta');
+  let hash = 0;
+  for (let i = 0; i < carrier.length; i++) hash = ((hash * 31) + carrier.charCodeAt(i)) & 0xffff;
+  return `SH-${date}-${hash.toString(36).toUpperCase().padStart(4, '0')}`;
+}
+
 // Apply bostaStatus → pickupStatus logic for fully-paid orders
 // Note: pickupStatus is set to 'Delivered' internally (used to drop the order off the
 // pickup-orders "pending" board) but the Movements pickup column always displays it as
@@ -50544,8 +50812,15 @@ function _applyBostaToPickup(tx, bostaStatus) {
   if (PICKED_UP_ONWARD.includes(bostaStatus) && tx.pickupStatus === 'Ready') {
     tx.pickupStatus = 'Shipped';
     tx.shippedAt = tx.shippedAt || new Date().toISOString();
+    tx.pickupDate = String(tx.shippedAt).slice(0, 10);
+    tx.pickupRef = _puShippingReceivedRef(tx.shipCo, tx.pickupDate);
     const _po = (_pickupOrders || []).find(o => String(o._id) === String(tx._id));
-    if (_po) { _po.pickupStatus = 'Shipped'; _po.shippedAt = tx.shippedAt; }
+    if (_po) {
+      _po.pickupStatus = 'Shipped';
+      _po.shippedAt = tx.shippedAt;
+      _po.pickupDate = tx.pickupDate;
+      _po.pickupRef = tx.pickupRef;
+    }
   }
   if (bostaStatus === 'DELIVERED' && tx.pickupStatus !== 'Delivered') {
     tx.pickupStatus = 'Delivered';
@@ -54887,7 +55162,7 @@ function showInvoiceDetail(id, highlightCommentId) {
     <!-- Footer Actions -->
     <div class="inv-footer">
       <button class="btn btn-outline btn-icon" title="${esc(t('ivPrint'))}" onclick="closeInvoiceDetail();printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-      ${!isPurchase && !isReturn && !tx.cancelled && ['Preparing','Ready','Picked-Up','Shipped'].includes(tx.pickupStatus||'') ? (['VALIDATION_ERROR','DELETED',''].includes(tx.bostaStatus||'')
+      ${!isPurchase && !isReturn && !tx.cancelled && (['Ready','Picked-Up'].includes(tx.pickupStatus||'') || !!tx.bostaOrderId) ? (['VALIDATION_ERROR','DELETED',''].includes(tx.bostaStatus||'')
         ? `<button class="btn btn-outline" onclick="closeInvoiceDetail();sendToBosta('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px">${_BOSTA_ICON} <span style="font-size:.85rem">${tx.bostaStatus==='VALIDATION_ERROR'?'Resend to Bosta':tx.bostaStatus==='DELETED'?'Resend to Bosta':'Send to Bosta'}</span></button>`
         : `<button class="btn btn-outline" onclick="closeInvoiceDetail();syncBostaStatus('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>${_BOSTA_ICON} <span style="font-size:.85rem">Update Bosta</span></button>`
       ) : ''}
@@ -56419,13 +56694,20 @@ function buildOrderTimelineSection(tx) {
   const prepHistory = tx.pickupHistory || [];
   const prepEventPreparing = prepHistory.find(h => h.action === 'preparing');
   const prepEventReady = prepHistory.find(h => h.action === 'ready');
-  const prepEvent = prepEventPreparing || prepEventReady;
+  const prepCheckEvents = prepHistory.filter(h => h.action === 'prep-check');
+  const prepEventCheck = prepCheckEvents.length ? prepCheckEvents[prepCheckEvents.length - 1] : null;
+  const prepEvent = prepEventCheck || prepEventPreparing || prepEventReady;
   const isPrepping = ['Preparing','Ready','Shipped','Delivered'].includes(tx.pickupStatus || '');
-  const prepStatus = isPrepping ? (prepEventReady || prepEventPreparing ? 'completed' : 'active') : 'pending';
+  const prepStatus = !isPrepping ? 'pending' : (prepEventCheck
+    ? (prepEventCheck.prepChecked ? 'completed' : 'active')
+    : (prepEventReady ? 'completed' : 'active'));
   const prepDate = prepEvent?.date || (isPrepping ? tx.pickupDate : null) || null;
+  const prepDesc = prepEventCheck
+    ? (prepEventCheck.prepChecked ? t('ivTlPrepCheckedBy',{by:prepEventCheck.by||'—'}) : t('ivTlPrepUncheckedBy',{by:prepEventCheck.by||'—'}))
+    : t('ivTlPreparingDesc');
   const step2 = _stepHtml(
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.27 6.96L12 12.01l8.73-5.05"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`,
-    t('ivTlPreparing'), t('ivTlPreparingDesc'),
+    t('ivTlPreparing'), prepDesc,
     prepStatus, prepDate, '', false);
   // Step 3: Sent to Shipping
   const hasBosta = !!tx.bostaOrderId;
@@ -87169,8 +87451,34 @@ let _prepModalSelected  = new Set();// selected order ids in prep modal
 let _prepModalAllOrders = [];       // pending orders shown in prep modal
 
 const _PU_PREP_LS_KEY = 'soulia_pu_prep_groups_v1';
+const _puPrepAddingIds = new Set();
 
 function _puSavePrepGroups() {
+  // The initiating drag and its socket echo can both add an order. Deduplicate
+  // by order id before storing or rendering so repeated events are harmless.
+  const groupsByRef = new Map();
+  const claimedOrderIds = new Set();
+  for (const group of _puPrepGroups) {
+    if (!group?.prepRef) continue;
+    let clean = groupsByRef.get(group.prepRef);
+    if (!clean) {
+      clean = { ...group, orders: [] };
+      groupsByRef.set(group.prepRef, clean);
+    } else {
+      clean.note = group.note || clean.note || '';
+      clean.shipCo = group.shipCo || clean.shipCo || '';
+      clean.createdAt = clean.createdAt || group.createdAt || '';
+      clean.createdAtIso = clean.createdAtIso || group.createdAtIso || '';
+      clean.createdBy = clean.createdBy || group.createdBy || '';
+    }
+    for (const order of group.orders || []) {
+      const id = String(order?._id || '');
+      if (!id || claimedOrderIds.has(id)) continue;
+      claimedOrderIds.add(id);
+      clean.orders.push(order);
+    }
+  }
+  _puPrepGroups = [...groupsByRef.values()].filter(g => g.orders.length > 0);
   try {
     const slim = _puPrepGroups.map(g => ({
       prepRef:       g.prepRef,
@@ -87222,64 +87530,40 @@ function _puSyncPrepStatusToTransactions() {
 }
 
 function _puLoadPrepGroups(orders) {
-  const orderMap = new Map(orders.map(o => [String(o._id), o]));
-
-  // Step 1: load from localStorage
-  let lsGroups = [];
+  // Backend status is authoritative. localStorage may supply display metadata,
+  // but must never resurrect an order that has already returned to Pending.
+  let cachedGroups = [];
   try {
     const raw = localStorage.getItem(_PU_PREP_LS_KEY);
     if (raw) {
       const slim = JSON.parse(raw);
-      if (Array.isArray(slim)) {
-        lsGroups = slim
-          .map(g => {
-            const checkedSet = new Set(g.checkedIds || []);
-            const grpOrders = g.orderIds
-              .map(id => orderMap.get(id))
-              .filter(o => o && ((o.pickupStatus || 'Pending') === 'Pending' || o.pickupStatus === 'Preparing'));
-            if (!grpOrders.length) return null;
-            grpOrders.forEach(o => {
-              o._prepGroup = g.prepRef;
-              if (checkedSet.has(String(o._id))) o.prepChecked = true;
-            });
-            return { prepRef: g.prepRef, note: g.note, shipCo: g.shipCo, createdAt: g.createdAt, createdAtIso: g.createdAtIso || '', createdBy: g.createdBy || '', orders: grpOrders };
-          })
-          .filter(Boolean);
-      }
+      if (Array.isArray(slim)) cachedGroups = slim;
     }
   } catch(_) {}
 
-  // Step 2: rebuild any prep groups from backend that are missing in localStorage
-  // (happens after localStorage wipe or another user/device created the groups)
-  const lsRefs = new Set(lsGroups.map(g => g.prepRef));
-  const backendPrepping = orders.filter(o => o.pickupStatus === 'Preparing' && o.pickupRef && !lsRefs.has(o.pickupRef));
-  if (backendPrepping.length) {
-    const byRef = new Map();
-    backendPrepping.forEach(o => {
-      const ref = o.pickupRef;
-      if (!byRef.has(ref)) byRef.set(ref, []);
-      byRef.get(ref).push(o);
+  const byRef = new Map();
+  orders.filter(o => o.pickupStatus === 'Preparing' && o.pickupRef).forEach(o => {
+    if (!byRef.has(o.pickupRef)) byRef.set(o.pickupRef, []);
+    byRef.get(o.pickupRef).push(o);
+  });
+  _puPrepGroups = [...byRef.entries()].map(([ref, grpOrders]) => {
+    const cached = cachedGroups.find(g => g.prepRef === ref) || {};
+    const first = grpOrders[0];
+    const createdAtIso = first.prepCreatedAt || cached.createdAtIso || '';
+    grpOrders.forEach(o => {
+      o._prepGroup = ref;
+      if (typeof o.prepChecked !== 'boolean') o.prepChecked = false;
     });
-    byRef.forEach((grpOrders, ref) => {
-      grpOrders.forEach(o => { o._prepGroup = ref; });
-      // Restore metadata from the first order in the group (saved to backend on creation)
-      const first = grpOrders[0];
-      const restoredCreatedAt = first.prepCreatedAt
-        ? new Date(first.prepCreatedAt).toLocaleString('ar-EG', { hour12:false, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
-        : '';
-      lsGroups.push({
-        prepRef:      ref,
-        note:         first.prepNote      || '',
-        shipCo:       first.prepShipCo    || [...new Set(grpOrders.map(o => o.shipCo).filter(Boolean))].join(', '),
-        createdAt:    restoredCreatedAt,
-        createdAtIso: first.prepCreatedAt || '',
-        createdBy:    first.prepCreatedBy || '',
-        orders:       grpOrders,
-      });
-    });
-  }
-
-  _puPrepGroups = lsGroups;
+    return {
+      prepRef: ref,
+      note: first.prepNote || cached.note || '',
+      shipCo: first.prepShipCo || cached.shipCo || [...new Set(grpOrders.map(o => o.shipCo).filter(Boolean))].join(', '),
+      createdAt: createdAtIso ? new Date(createdAtIso).toLocaleString('ar-EG', { hour12:false, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : (cached.createdAt || ''),
+      createdAtIso,
+      createdBy: first.prepCreatedBy || cached.createdBy || '',
+      orders: grpOrders,
+    };
+  });
   // From here on the array holds every group that exists, so a Preparing row
   // missing from it has genuinely left the prep stage and may be cleared.
   _puPrepGroupsLoaded = true;
@@ -87434,7 +87718,7 @@ function prepModalToggleAll(checked) {
   _prepUpdateModalHeader(visible);
 }
 
-function submitPrepGroup() {
+async function submitPrepGroup() {
   const ids = [..._prepModalSelected];
   if (!ids.length) return toast(t('puSelectAtLeastOne'), true);
 
@@ -87450,17 +87734,20 @@ function submitPrepGroup() {
   const createdAt = _puNow1.toLocaleString('ar-EG', { hour12: false, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
   const createdAtIso = _puNow1.toISOString();
   const createdBy = currentUser ? (currentUser.name || currentUser.username || '') : '';
+  try {
+    const result = await api('/transactions/pickup-orders/preparing', {
+      method: 'POST',
+      body: JSON.stringify({ ids: orders.map(o => o._id), prepRef, note, shipCo: detectedShip, createdAt: createdAtIso }),
+    });
+    if (result.updated !== orders.length) throw new Error('بعض الطلبات لم تعد معلّقة؛ حدّث القائمة وحاول مرة أخرى.');
+  } catch (e) {
+    toast(t('errorPrefix',{v:e.message}), true);
+    return;
+  }
+
   _puPrepGroups.push({ prepRef, note, shipCo: detectedShip, orders, createdAt, createdAtIso, createdBy });
+  orders.forEach(o => { o._prepGroup = prepRef; o.pickupStatus = 'Preparing'; o.pickupRef = prepRef; o.prepChecked = false; });
   _puSavePrepGroups();
-
-  // Tag each order with prep group ref and set Preparing status locally
-  orders.forEach(o => { o._prepGroup = prepRef; o.pickupStatus = 'Preparing'; o.pickupRef = prepRef; });
-
-  // Persist Preparing status to backend
-  api('/transactions/pickup-orders/preparing', {
-    method: 'POST',
-    body: JSON.stringify({ ids: orders.map(o => o._id), prepRef, note, shipCo: detectedShip, createdAt: createdAtIso }),
-  }).catch(() => {});
 
   closePrepGroupModal();
   toast(t('puPrepGroupCreated',{ref:prepRef,n:fmtN(ids.length)}));
@@ -87473,37 +87760,57 @@ async function deletePrepGroup(prepRef) {
   const ok = await _puConfirm(t('puDeleteGroupConfirm',{ref:prepRef,n:grp.orders.length}), t('puDeleteGroupTitle'), t('delete'), '#dc2626');
   if (!ok) return;
   const preparingIds = grp.orders.filter(o => o.pickupStatus === 'Preparing').map(o => o._id);
+  try {
+    if (preparingIds.length) {
+      const result = await api('/transactions/pickup-orders/undo', { method:'POST', body: JSON.stringify({ ids:preparingIds }) });
+      if (result.updated !== preparingIds.length) throw new Error('لم تتم إعادة كل الطلبات؛ حدّث الصفحة وحاول مرة أخرى.');
+    }
+  } catch(e) {
+    toast(t('errorPrefix',{v:e.message}), true);
+    await loadPickupOrders();
+    return;
+  }
   grp.orders.forEach(o => {
     delete o._prepGroup;
     o.pickupStatus = 'Pending';
     o.pickupRef = null;
     if (o.prepChecked) {
       o.prepChecked = false;
-      api(`/transactions/pickup-orders/${o._id}/prep-check`, { method:'PATCH', body: JSON.stringify({ prepChecked: false }) }).catch(() => {});
     }
   });
   _puPrepGroups = _puPrepGroups.filter(g=>g.prepRef!==prepRef);
   _puSavePrepGroups();
-  // Revert Preparing → Pending on backend
-  if (preparingIds.length) {
-    api('/transactions/pickup-orders/undo', { method: 'POST', body: JSON.stringify({ ids: preparingIds }) }).catch(() => {});
-  }
   toast(t('puGroupDeleted'));
   renderPickupBoard();
 }
 
-// Move entire prep group → Ready for Pick-Up (calls backend confirm)
+// Move only prepared orders from a prep group → Ready for Pick-Up.
+function _puUpdateConfirmRunHint() {
+  const hint = qs('#pu-confirm-run-hint');
+  const date = qs('#pu-confirm-date')?.value || '';
+  if (!hint || !date) return;
+  const modal = qs('#pu-confirm-modal');
+  const openOrder = modal?.dataset?.prepRef ? (_pickupOrders || [])
+    .filter(o => ['Ready','Picked-Up'].includes(o.pickupStatus) && o.pickupDate === date && o.pickupRef)
+    .sort((a,b) => String(b.createdAt||'').localeCompare(String(a.createdAt||'')))[0] : null;
+  hint.textContent = openOrder
+    ? t('puConfirmJoinTicket',{ref:openOrder.pickupRef,date})
+    : t('puConfirmNewTicket',{date});
+}
+
 function prepGroupMoveToReady(prepRef) {
   const grp = _puPrepGroups.find(g=>g.prepRef===prepRef);
   if (!grp) return;
-  _puConfirmGroupIds = grp.orders.map(o=>String(o._id));
+  const preparedOrders = grp.orders.filter(o=>!!o.prepChecked);
+  if (!preparedOrders.length) return toast(t('puPrepareOrdersFirst'), true);
+  _puConfirmGroupIds = preparedOrders.map(o=>String(o._id));
   const modal = qs('#pu-confirm-modal');
   if (!modal) return;
   const sub = qs('#pu-confirm-subtitle');
-  if (sub) sub.innerHTML = `<span style="font-family:monospace;font-weight:700;color:#1e40af;background:#dbeafe;border:1px solid #bfdbfe;padding:1px 7px;border-radius:5px">${esc(prepRef)}</span> — ${esc(grp.note||grp.orders[0]?.client||'')} · ${t('puOrdersCount',{n:fmtN(grp.orders.length)})}`;
+  if (sub) sub.innerHTML = `<span style="font-family:monospace;font-weight:700;color:#1e40af;background:#dbeafe;border:1px solid #bfdbfe;padding:1px 7px;border-radius:5px">${esc(prepRef)}</span> — ${esc(grp.note||preparedOrders[0]?.client||'')} · ${t('puOrdersCount',{n:fmtN(preparedOrders.length)})}`;
   const list = qs('#pu-confirm-orders-list');
   if (list) {
-    list.innerHTML = grp.orders.map(o=>`
+    list.innerHTML = preparedOrders.map(o=>`
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;background:var(--bg-alt);border-radius:7px;border:1px solid var(--border)">
         <span style="font-weight:700;font-family:monospace;font-size:.82rem;color:#1e40af;background:#dbeafe;border:1px solid #bfdbfe;padding:2px 7px;border-radius:5px;flex-shrink:0">${esc(o.ref||'—')}</span>
         <span style="font-size:.78rem;color:var(--text);font-weight:500;flex-shrink:0">${esc(o.client||'')}</span>
@@ -87515,6 +87822,7 @@ function prepGroupMoveToReady(prepRef) {
   if (dt) dt.value = todayLocalISO();
   // Store prepRef so we can clean up after confirm
   modal.dataset.prepRef = prepRef;
+  _puUpdateConfirmRunHint();
   modal.style.display = 'flex';
   requestAnimationFrame(() => modal.classList.add('active'));
 }
@@ -87529,8 +87837,9 @@ async function puConfirmMoveToReady() {
   try {
     const res = await api('/transactions/pickup-orders/confirm', {
       method: 'POST',
-      body: JSON.stringify({ ids: _puConfirmGroupIds, date, suggestedRef: prepRef }),
+      body: JSON.stringify({ ids: _puConfirmGroupIds, date, reuseOpenRun: !!prepRef }),
     });
+    if (res.updated !== _puConfirmGroupIds.length) throw new Error('لم يتم تحديث كل الطلبات؛ ربما تغيّرت حالة بعضها من جهاز آخر. حدّث الصفحة وحاول مرة أخرى.');
     const ref = res.pickupRef || prepRef || '';
     // Update local state immediately so board reflects change without waiting
     // Keep prepChecked as-is so ready column shows tick badges for prepared orders
@@ -87548,7 +87857,9 @@ async function puConfirmMoveToReady() {
           if (o && !o.movedBy) o.movedBy = grpRef.createdBy || movedByName;
         });
       }
-      _puPrepGroups = _puPrepGroups.filter(g => g.prepRef !== prepRef);
+      _puPrepGroups = _puPrepGroups.map(g => g.prepRef === prepRef
+        ? { ...g, orders: g.orders.filter(o => !_puConfirmGroupIds.includes(String(o._id))) }
+        : g).filter(g => g.orders.length > 0);
       _puSavePrepGroups();
       delete modal.dataset.prepRef;
     }
@@ -87559,23 +87870,8 @@ async function puConfirmMoveToReady() {
     // Sync after delay to avoid overwriting local state with stale API response
     setTimeout(() => loadPickupOrders().catch(() => {}), 1500);
   } catch(e) {
-    // Even if API fails, move locally so board is usable
-    const localRef = prepRef || _genPrepRef();
-    const movedByNameFallback = currentUser ? (currentUser.name || currentUser.username || '') : '';
-    const movedAtIsoFallback  = new Date().toISOString();
-    _puConfirmGroupIds.forEach(id => {
-      const o = _pickupOrders.find(x => String(x._id) === String(id));
-      if (o) { o.pickupStatus = 'Ready'; o.pickupDate = date; o.pickupRef = localRef; o.movedBy = movedByNameFallback; o.movedAtIso = movedAtIsoFallback; }
-    });
-    if (prepRef) {
-      _puPrepGroups = _puPrepGroups.filter(g => g.prepRef !== prepRef);
-      _puSavePrepGroups();
-      delete modal.dataset.prepRef;
-    }
-    toast(t('puMovedLocally',{v:e.message}), false);
-    closePuConfirmModal();
-    _puMarkLanding(localRef);
-    renderPickupBoard();
+    toast(t('errorPrefix',{v:e.message}), true);
+    await loadPickupOrders().catch(() => {});
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = `${_puSVG.check} <span data-i18n="puConfirmPickup">${t('puConfirmPickup')}</span>`; }
   }
@@ -87662,7 +87958,15 @@ function _puBuildGroups(orders) {
   orders.forEach(o => {
     const status = o.pickupStatus || 'Pending';
     let key;
-    if (status === 'Ready' || status === 'Picked-Up' || status === 'Shipped' || status === 'Delivered') {
+    if (status === 'Shipped') {
+      // Courier-collected orders are displayed in one carrier/day ticket even
+      // for records created before the server started stamping SH-* references.
+      const day = String(o.shippedAt || o.pickupDate || o.date || '').slice(0, 10) || 'unknown';
+      const carrier = String(o.shipCo || 'Bosta');
+      let hash = 0;
+      for (let i = 0; i < carrier.length; i++) hash = ((hash * 31) + carrier.charCodeAt(i)) & 0xffff;
+      key = o.pickupRef?.startsWith('SH-') ? o.pickupRef : `SH-${day}-${hash.toString(36).toUpperCase().padStart(4, '0')}`;
+    } else if (status === 'Ready' || status === 'Picked-Up' || status === 'Delivered') {
       key = o.pickupRef || `noref-${o._id}`;
     } else {
       // Pending / Preparing: group by client name + phone
@@ -87674,7 +87978,7 @@ function _puBuildGroups(orders) {
         key,
         client:     o.client || '—',
         phone:      o.phone || o.clientPhone || '',
-        pickupRef:  o.pickupRef || '',
+        pickupRef:  status === 'Shipped' ? key : (o.pickupRef || ''),
         pickupDate: o.pickupDate || '',
         orders:     [],
         status,
@@ -87817,7 +88121,8 @@ function _puBuildPrepGroupCard(grp) {
   });
 
   const prepShipcos  = [...new Set(grp.orders.map(o=>o.shipCo).filter(Boolean))];
-  const remainCount  = grp.orders.filter(o=>!o.prepChecked).length;
+  const checkedOrders = grp.orders.filter(o=>!!o.prepChecked);
+  const remainCount  = grp.orders.length - checkedCount;
   const { text: cdText, overdue: cdOver } = _puFormatCountdown(grp.createdAtIso);
   const cdColor  = cdOver ? '#ef4444' : 'var(--muted)';
   const cdBg     = cdOver ? 'color-mix(in srgb,#ef4444 10%,transparent)' : 'color-mix(in srgb,var(--accent) 9%,transparent)';
@@ -87890,7 +88195,7 @@ function _puBuildPrepGroupCard(grp) {
       <button class="pu-card-btn pu-card-btn-danger" onclick="event.stopPropagation();deletePrepGroup('${esc(grp.prepRef)}')" title="${esc(t('puDeleteGroupBtnTitle'))}" style="padding:3px 7px">${S.trash}</button>
     </div>
     <div style="display:flex;align-items:center;gap:5px">
-      <button class="pu-card-btn pu-card-btn-primary" onclick="event.stopPropagation();prepGroupMoveToReady('${esc(grp.prepRef)}')">${S.truck} ${t('puMoveToPickup')}</button>
+      <button class="pu-card-btn pu-card-btn-primary" ${checkedCount ? '' : 'disabled'} onclick="event.stopPropagation();prepGroupMoveToReady('${esc(grp.prepRef)}')">${S.truck} ${checkedCount === 1 ? t('puMoveSingleToPickup',{ref:checkedOrders[0].ref||'—'}) : checkedCount ? t('puMoveGroupToPickup',{n:fmtN(checkedCount)}) : t('puPrepareOrdersFirst')}</button>
     </div>
   `;
   wrap.appendChild(footer);
@@ -88228,7 +88533,7 @@ function _puBindShiftHint(list) {
 
 // ── Add pending order(s) to an existing prep group ───────────
 let _puDragPendingId = null;
-function _puAddPendingToPrepGroup(orderId, prepRef) {
+async function _puAddPendingToPrepGroup(orderId, prepRef) {
   const grp = _puPrepGroups.find(g => g.prepRef === prepRef);
   if (!grp) { toast(t('puAddOrderFailed'), true); return; }
 
@@ -88241,24 +88546,35 @@ function _puAddPendingToPrepGroup(orderId, prepRef) {
   const existingIds = new Set(grp.orders.map(o => String(o._id)));
   const toAdd = ids
     .map(id => _pickupOrders.find(o => String(o._id) === id))
-    .filter(o => o && !existingIds.has(String(o._id)) && (o.pickupStatus || 'Pending') === 'Pending');
+    .filter(o => o && !existingIds.has(String(o._id)) && !_puPrepAddingIds.has(String(o._id)) && (o.pickupStatus || 'Pending') === 'Pending');
 
   if (!toAdd.length) { toast(t('puNoValidToAdd'), true); return; }
+  toAdd.forEach(o => _puPrepAddingIds.add(String(o._id)));
+
+  try {
+    const result = await api('/transactions/pickup-orders/preparing', {
+      method:'POST',
+      body:JSON.stringify({ ids:toAdd.map(o=>o._id), prepRef, note:grp.note||'', shipCo:grp.shipCo||'', createdAt:grp.createdAtIso||'' }),
+    });
+    if (result.updated !== toAdd.length) throw new Error('بعض الطلبات لم تعد معلّقة؛ حدّث الصفحة وحاول مرة أخرى.');
+  } catch(e) {
+    toast(t('errorPrefix',{v:e.message}), true);
+    await loadPickupOrders();
+    return;
+  } finally {
+    toAdd.forEach(o => _puPrepAddingIds.delete(String(o._id)));
+  }
 
   toAdd.forEach(o => {
     grp.orders.push(o);
     o._prepGroup = prepRef;
     o.pickupStatus = 'Preparing';
     o.pickupRef = prepRef;
+    o.prepChecked = false;
     _puPendingSelected.delete(String(o._id));
   });
 
   _puSavePrepGroups();
-  api('/transactions/pickup-orders/preparing', {
-    method: 'POST',
-    body: JSON.stringify({ ids: toAdd.map(o => o._id), prepRef, note: grp.note || '', shipCo: grp.shipCo || '', createdAt: grp.createdAtIso || '' }),
-  }).catch(() => {});
-
   const msg = toAdd.length === 1
     ? t('puAddedOneTo',{ref:toAdd[0].ref||t('puDragOrderWord'),group:prepRef})
     : t('puAddedManyTo',{n:toAdd.length,group:prepRef});
@@ -88342,7 +88658,7 @@ function puPtToggleAll(checked) {
   renderPickupBoard();
 }
 
-function puPtMoveSelected() {
+async function puPtMoveSelected() {
   if (!_puPendingSelected.size) return;
   const ids = [..._puPendingSelected];
   const orders = _pickupOrders.filter(o => ids.includes(String(o._id)) && (o.pickupStatus||'Pending')==='Pending');
@@ -88353,15 +88669,21 @@ function puPtMoveSelected() {
   const createdAt = _puNow2.toLocaleString('ar-EG', { hour12:false, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
   const createdAtIso = _puNow2.toISOString();
   const _puCBy2 = currentUser ? (currentUser.name || currentUser.username || '') : '';
+  try {
+    const result = await api('/transactions/pickup-orders/preparing', {
+      method:'POST',
+      body:JSON.stringify({ ids:orders.map(o=>o._id), prepRef, note:'', shipCo:detectedShip, createdAt:createdAtIso }),
+    });
+    if (result.updated !== orders.length) throw new Error('بعض الطلبات لم تعد معلّقة؛ حدّث الصفحة وحاول مرة أخرى.');
+  } catch(e) {
+    toast(t('errorPrefix',{v:e.message}), true);
+    await loadPickupOrders();
+    return;
+  }
   _puPrepGroups.push({ prepRef, note:'', shipCo: detectedShip, orders, createdAt, createdAtIso, createdBy: _puCBy2 });
   _puSavePrepGroups();
-  orders.forEach(o => { o._prepGroup = prepRef; o.pickupStatus = 'Preparing'; o.pickupRef = prepRef; });
+  orders.forEach(o => { o._prepGroup = prepRef; o.pickupStatus = 'Preparing'; o.pickupRef = prepRef; o.prepChecked = false; });
   _puPendingSelected.clear();
-  // Persist Preparing status to backend
-  api('/transactions/pickup-orders/preparing', {
-    method: 'POST',
-    body: JSON.stringify({ ids: orders.map(o => o._id), prepRef, note: '', shipCo: detectedShip, createdAt: createdAtIso }),
-  }).catch(() => {});
   toast(t('puMovedToPrepToast',{ref:prepRef,n:fmtN(orders.length)}));
   renderPickupBoard();
 }
@@ -88522,7 +88844,8 @@ function _puBuildGroupCard(group, colType) {
       ` : ''}
     </div>
     <div style="display:flex;align-items:center;gap:5px">
-      ${colType==='pending' ? `<button class="pu-card-btn pu-card-btn-primary" onclick="event.stopPropagation();puGroupMoveToReady('${esc(group.key)}')">${S.truck} ${t('puPrepareGroup')}</button>` : ''}
+      ${colType==='ready' && !allShipped ? `<button class="pu-card-btn" onclick="event.stopPropagation();openPuEditModal('${esc(group.key)}')" title="${esc(t('puEditRun'))}" style="gap:4px">${S.edit || '✎'} ${t('puEditRun')}</button>` : ''}
+      ${colType==='pending' ? `<button class="pu-card-btn pu-card-btn-primary" onclick="event.stopPropagation();puMovePendingGroupToPrep('${esc(group.key)}')">${S.truck} ${t('puPrepareGroup')}</button>` : ''}
       ${colType==='ready' && !allShipped ? `<button class="pu-card-btn" onclick="event.stopPropagation();puGroupSendToBosta('${esc(group.key)}')" style="background:#c7282e;color:#fff;border-color:#c7282e;gap:4px;display:inline-flex;align-items:center" title="${esc(t('puSendGroupToBosta'))}">${_BOSTA_ICON} <span style="font-family:sans-serif;font-weight:700;font-size:.78em">+ bosta</span></button>` : ''}
       ${colType==='ready' && allShipped ? `<span style="font-size:.72rem;color:#7c3aed;font-weight:700;display:inline-flex;align-items:center;gap:4px;background:#ede9fe;border:1px solid #c4b5fd;padding:3px 9px;border-radius:20px">${S.truck} ${t('puShippedDone')}</span>` : ''}
     </div>
@@ -88610,10 +88933,49 @@ function _puBuildOrderCard(o, colType) {
 }
 
 // ── Prep-tick: mark/unmark an order as prepared within its group ──
+const _puPrepCheckQueues = new Map();
+function _puSetLocalPrepChecked(orderId, checked) {
+  const id = String(orderId);
+  [(_pickupOrders || []), (Array.isArray(transactions) ? transactions : [])].flat().forEach(tx => {
+    if (String(tx._id) === id) tx.prepChecked = checked;
+  });
+  _puPrepGroups.forEach(group => group.orders.forEach(tx => {
+    if (String(tx._id) === id) tx.prepChecked = checked;
+  }));
+}
+
+function _puPersistPrepCheck(orderId, checked) {
+  const id = String(orderId);
+  const prior = _puPrepCheckQueues.get(id) || Promise.resolve();
+  const pending = prior.catch(() => {}).then(() => api(`/transactions/pickup-orders/${id}/prep-check`, {
+    method: 'PATCH', body: JSON.stringify({ prepChecked: checked }),
+  })).then(result => {
+    if (!result?.ok || !result.updated) throw new Error(t('puPrepareOrdersFirst'));
+    [(_pickupOrders || []), (Array.isArray(transactions) ? transactions : [])].flat().forEach(tx => {
+      if (String(tx._id) !== id) return;
+      tx.prepChecked = checked;
+      if (Array.isArray(result.pickupHistory)) tx.pickupHistory = result.pickupHistory;
+    });
+    _puPrepGroups.forEach(group => group.orders.forEach(tx => {
+      if (String(tx._id) !== id) return;
+      tx.prepChecked = checked;
+      if (Array.isArray(result.pickupHistory)) tx.pickupHistory = result.pickupHistory;
+    }));
+    if (String(window._currentInvoiceTxId) === id && qs('#inv-detail-overlay')?.classList.contains('active')) {
+      showInvoiceDetail(id);
+    }
+    return result;
+  });
+  _puPrepCheckQueues.set(id, pending);
+  pending.finally(() => { if (_puPrepCheckQueues.get(id) === pending) _puPrepCheckQueues.delete(id); }).catch(() => {});
+  return pending;
+}
+
 async function puCardPrepTick(orderId, checked) {
   const o = _pickupOrders.find(x => x._id === orderId);
   if (!o) return;
-  o.prepChecked = checked;
+  _puSetLocalPrepChecked(orderId, checked);
+  const savePrepCheck = _puPersistPrepCheck(orderId, checked);
 
   // Update tick wrap and card visual immediately
   const wrap = qs(`#pu-tick-wrap-${orderId}`);
@@ -88625,11 +88987,11 @@ async function puCardPrepTick(orderId, checked) {
   const cardEl = document.querySelector(`.pu-order-card[data-order-id="${orderId}"]`);
   if (cardEl) cardEl.classList.toggle('pu-card-prepared', checked);
 
-  // Persist to backend (fire-and-forget) and update localStorage
-  api(`/transactions/pickup-orders/${orderId}/prep-check`, {
-    method: 'PATCH',
-    body: JSON.stringify({ prepChecked: checked }),
-  }).catch(() => {});
+  // Save the tick before treating it as durable; refresh the board if the server rejects it.
+  savePrepCheck.catch(async e => {
+    toast(t('errorPrefix',{v:e.message}), true);
+    await loadPickupOrders().catch(() => {});
+  });
   _puSavePrepGroups();
 
   // Find the prep group this order belongs to
@@ -88663,7 +89025,9 @@ async function puCardPrepTick(orderId, checked) {
       // Auto-move after brief delay so user sees the banner
       setTimeout(() => {
         const stillAllDone = grp.orders.every(x => !!x.prepChecked);
-        if (stillAllDone) prepGroupMoveToReady(grp.prepRef);
+        savePrepCheck.then(() => {
+          if (stillAllDone && grp.orders.every(x => !!x.prepChecked)) prepGroupMoveToReady(grp.prepRef);
+        }).catch(() => {});
       }, 1400);
     } else {
       if (banner) banner.remove();
@@ -88691,6 +89055,19 @@ function _puUpdatePrepGroupProgress(prepRef) {
   // Update order-count badge on board card header
   const groupEl = document.querySelector(`.pu-group[data-group-key="${CSS.escape(prepRef)}"]`);
   if (groupEl) {
+    groupEl.classList.toggle('pu-all-checked', total > 0 && checked === total);
+    const preparedOrders = grp.orders.filter(o=>!!o.prepChecked);
+    const moveBtn = groupEl.querySelector('.pu-group-footer > div:last-child .pu-card-btn');
+    if (moveBtn) {
+      moveBtn.disabled = preparedOrders.length === 0;
+      const label = preparedOrders.length === 1
+        ? t('puMoveSingleToPickup',{ref:preparedOrders[0].ref||'—'})
+        : preparedOrders.length
+          ? t('puMoveGroupToPickup',{n:fmtN(preparedOrders.length)})
+          : t('puPrepareOrdersFirst');
+      moveBtn.innerHTML = `${S.truck} ${label}`;
+    }
+
     const orderCountBadge = groupEl.querySelector('.pu-prep-order-count');
     if (orderCountBadge) orderCountBadge.textContent = t('puOrdersCount',{n:total});
 
@@ -88874,7 +89251,7 @@ function _pucoUpdateProgress(group) {
   const pct     = total > 0 ? Math.round((checked/total)*100) : 0;
   const fill  = qs('#puco-progress-fill');
   const count = qs('#puco-progress-count');
-  if (fill)  { fill.style.width = pct+'%'; fill.style.background = pct===100?'#10b981':'var(--primary)'; }
+  if (fill)  { fill.style.width = pct+'%'; fill.classList.toggle('all-done', pct===100); }
   if (count) { count.textContent = `${checked}/${total}`; count.style.color = pct===100?'#059669':'var(--muted)'; }
 }
 
@@ -89031,6 +89408,7 @@ function _pwRenderWork() {
   const group = _pucoGetGroup();
   const o = (group?.orders || []).find(x => x._id === _pwSelId);
   const colType = _pucoColType;
+  const checkedOrders = (group?.orders || []).filter(x => !!x.prepChecked);
 
   if (!o) {
     host.innerHTML = `<div class="pw-empty">
@@ -89168,10 +89546,16 @@ function _pwRenderWork() {
         ${esc(t('puBackToPending'))}
       </button>` : ''}
       ${colType === 'prep' ? `
-      <button type="button" class="pw-abtn is-go" onclick="pucoMoveGroupToReady()">
+      <div class="pw-transfer-actions">
+      <button type="button" class="pw-abtn is-go" ${checkedOrders.length ? '' : 'disabled'} onclick="pucoMoveGroupToReady()">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/></svg>
-        ${esc(t('puMoveToPickup'))}
-      </button>` : ''}
+        ${esc(checkedOrders.length === 1
+          ? t('puMoveSingleToPickup',{ref:checkedOrders[0].ref||'—'})
+          : checkedOrders.length
+            ? t('puMoveGroupToPickup',{n:fmtN(checkedOrders.length)})
+            : t('puPrepareOrdersFirst'))}
+      </button>
+      </div>` : ''}
     </div>`;
 
   const changed = prevId !== String(o._id);
@@ -89757,7 +90141,8 @@ function pucoTickOrder(orderId, checked) {
     }
   }
 
-  o.prepChecked = checked;
+  _puSetLocalPrepChecked(orderId, checked);
+  const savePrepCheck = _puPersistPrepCheck(orderId, checked);
 
   // ── Completed orders sink to the bottom of the list, then the next order
   //    still waiting is selected and opened. ──
@@ -89799,23 +90184,24 @@ function pucoTickOrder(orderId, checked) {
       const count = qs(`#puco-pb-count-${CSS.escape(_pucoGroupKey)}`);
       if (fill)  { fill.style.width=pct+'%'; fill.classList.toggle('all-done', pct===100); }
       if (count) { count.textContent=`${grp.orders.filter(x=>!!x.prepChecked).length}/${grp.orders.length}`; }
-      // If all done auto-move
-      if (grp.orders.every(x=>!!x.prepChecked)) {
-        setTimeout(() => {
-          if (grp.orders.every(x=>!!x.prepChecked)) {
+      _puUpdatePrepGroupProgress(grp.prepRef);
+      // The final move prompt waits until the last check is saved on the server.
+      if (checked && grp.orders.every(x=>!!x.prepChecked)) {
+        savePrepCheck.then(() => setTimeout(() => {
+          if (grp.orders.length && grp.orders.every(x => !!x.prepChecked)) {
             closePuCardOrdersModal();
             prepGroupMoveToReady(grp.prepRef);
           }
-        }, 1400);
+        }, 450)).catch(() => {});
       }
     }
   }
 
   // Sync to backend
-  api(`/transactions/pickup-orders/${orderId}/prep-check`, {
-    method: 'PATCH',
-    body: JSON.stringify({ prepChecked: checked }),
-  }).catch(() => {});
+  savePrepCheck.catch(async e => {
+    toast(t('errorPrefix',{v:e.message}), true);
+    await loadPickupOrders().catch(() => {});
+  });
   _puSavePrepGroups();
 }
 
@@ -89917,14 +90303,28 @@ async function pucoAddOrder() {
     // Add to prep group
     const grp = _puPrepGroups.find(g => g.prepRef === _pucoGroupKey);
     if (!grp) return;
+    if (_puPrepAddingIds.has(String(o._id))) return toast(t('puOrderAlreadyInCard'), true);
+    _puPrepAddingIds.add(String(o._id));
+    try {
+      const result = await api('/transactions/pickup-orders/preparing', {
+        method: 'POST',
+        body: JSON.stringify({ ids: [o._id], prepRef: grp.prepRef, note: grp.note || '', shipCo: grp.shipCo || '', createdAt: grp.createdAtIso || '' }),
+      });
+      if (result.updated !== 1) throw new Error('الطلب لم يعد في حالة Pending');
+    } catch (e) {
+      _puPrepAddingIds.delete(String(o._id));
+      toast(t('errorPrefix',{v:e.message}), true);
+      await loadPickupOrders();
+      return;
+    } finally {
+      _puPrepAddingIds.delete(String(o._id));
+    }
     o._prepGroup = grp.prepRef;
+    o.pickupStatus = 'Preparing';
+    o.pickupRef = grp.prepRef;
+    o.prepChecked = false;
     grp.orders.push(o);
     _puSavePrepGroups();
-    // Sync to backend
-    api(`/transactions/pickup-orders/${o._id}/prep-check`, {
-      method: 'PATCH',
-      body: JSON.stringify({ prepChecked: false, prepGroup: grp.prepRef }),
-    }).catch(() => {});
     toast(t('puOrderAddedToGroup',{ref:refStr}));
   } else if (_pucoColType === 'pending') {
     // Merge pending: update client/phone to match group
@@ -89951,11 +90351,19 @@ async function pucoRemoveFromPrep(orderId) {
   if (_pucoColType === 'prep') {
     const grp = _puPrepGroups.find(g => g.prepRef === _pucoGroupKey);
     if (grp) {
+      try {
+        const result = await api('/transactions/pickup-orders/undo', { method:'POST', body: JSON.stringify({ ids:[orderId] }) });
+        if (!result.updated) throw new Error('تعذر إعادة الطلب إلى Pending؛ حدّث الصفحة وحاول مرة أخرى.');
+      } catch(e) {
+        toast(t('errorPrefix',{v:e.message}), true);
+        await loadPickupOrders();
+        return;
+      }
       grp.orders = grp.orders.filter(x => x._id !== orderId);
       delete o._prepGroup;
       o.prepChecked = false;
       o.pickupStatus = 'Pending';
-      api(`/transactions/pickup-orders/${orderId}/prep-check`, { method:'PATCH', body: JSON.stringify({ prepChecked: false, prepGroup: null, pickupStatus: 'Pending' }) }).catch(() => {});
+      o.pickupRef = null;
       _puSavePrepGroups();
       _puUpdatePrepGroupProgress(grp.prepRef);
       toast(t('puOrderReturned',{ref:o.ref||''}));
@@ -89985,16 +90393,41 @@ async function pucoRestoreFromReady(orderId) {
   const ok = await _puConfirm(t('puReturnOrderConfirm',{ref:o.ref||orderId}), t('puBackToPending'), t('puReturnWord'), '#d97706');
   if (!ok) return;
   try {
-    await api(`/transactions/pickup-orders/undo`, { method:'POST', body: JSON.stringify({ ids: [orderId] }) });
+    const result = await api(`/transactions/pickup-orders/undo`, { method:'POST', body: JSON.stringify({ ids: [orderId] }) });
+    if (!result.updated) throw new Error('تعذر إعادة الطلب إلى Pending');
     o.pickupStatus = 'Pending';
+    o.pickupRef = null;
     o.prepChecked  = false;
     delete o._prepGroup;
     toast(t('puOrderReturned',{ref:o.ref||''}));
     closePuCardOrdersModal();
     renderPickupBoard();
   } catch(e) {
-    toast(t('puReturnFailed'), true);
+    toast(t('errorPrefix',{v:e.message}), true);
+    await loadPickupOrders().catch(() => {});
   }
+}
+
+function pucoMoveOrderToReady(orderId) {
+  const group = _pucoGetGroup();
+  const order = group?.orders?.find(o => String(o._id) === String(orderId));
+  if (!order || _pucoColType !== 'prep') return;
+  if (!order.prepChecked) return toast(t('puPrepareOrdersFirst'), true);
+  const prepRef = _pucoGroupKey;
+  _puConfirmGroupIds = [String(order._id)];
+  closePuCardOrdersModal();
+  const modal = qs('#pu-confirm-modal');
+  if (!modal) return;
+  const sub = qs('#pu-confirm-subtitle');
+  if (sub) sub.innerHTML = `${esc(t('puMoveToPickup'))}: <b>${esc(order.ref||'—')}</b> · ${esc(prepRef)}`;
+  const list = qs('#pu-confirm-orders-list');
+  if (list) list.innerHTML = `<div style="padding:8px 10px">${esc(order.client||'')} · ${fmtJT(order.total||0)}</div>`;
+  const dt = qs('#pu-confirm-date');
+  if (dt) dt.value = todayLocalISO();
+  modal.dataset.prepRef = prepRef;
+  _puUpdateConfirmRunHint();
+  modal.style.display = 'flex';
+  requestAnimationFrame(() => modal.classList.add('active'));
 }
 
 function pucoMoveGroupToReady() {
@@ -90003,13 +90436,13 @@ function pucoMoveGroupToReady() {
   const colType = _pucoColType;
   closePuCardOrdersModal();
   if (colType === 'prep') prepGroupMoveToReady(key);
-  else puGroupMoveToReady(key);
+  else toast(t('puPrepareOrdersFirst'), true);
 }
 
 function pucoMovePendingToPrep() {
   if (!_pucoGroupKey) return;
   closePuCardOrdersModal();
-  puGroupMoveToReady(_pucoGroupKey);
+  puMovePendingGroupToPrep(_pucoGroupKey);
 }
 
 // ── Inline item edit ──────────────────────────────────────────
@@ -90150,38 +90583,57 @@ async function puGroupSaveAll(groupKey) {
   }, t('puSaving'));
 }
 
-// ── Move group → Ready ────────────────────────────────────────
-function puGroupMoveToReady(groupKey) {
-  // Find all pending order ids in this group
-  const groupOrders = _pickupOrders.filter(o => {
-    if ((o.pickupStatus||'Pending') !== 'Pending') return false;
+// Persist the first stage before moving Pending orders into a prep ticket.
+async function puCreatePrepGroup(orders, note = '', shipCo = '') {
+  const ids = [...new Set((orders || []).map(o => String(o?._id || '')).filter(Boolean))];
+  const pending = ids.map(id => _pickupOrders.find(o => String(o._id) === id))
+    .filter(o => o && (o.pickupStatus || 'Pending') === 'Pending');
+  if (!pending.length) { toast(t('puAlreadyInPrep'), true); return false; }
+  if (pending.length !== ids.length) {
+    toast(t('puAlreadyInPrep'), true);
+    await loadPickupOrders();
+    return false;
+  }
+  const prepRef = _genPrepRef();
+  const createdAt = new Date();
+  const createdBy = currentUser ? (currentUser.name || currentUser.username || '') : '';
+  try {
+    const result = await api('/transactions/pickup-orders/preparing', {
+      method: 'POST',
+      body: JSON.stringify({
+        ids: pending.map(o => o._id), prepRef, note: note || pending[0].client || '',
+        shipCo: shipCo || pending[0].shipCo || '', createdAt: createdAt.toISOString(), createdBy,
+      }),
+    });
+    if (result.updated !== pending.length) throw new Error('بعض الطلبات لم تعد معلّقة؛ حدّث القائمة وحاول مرة أخرى.');
+    pending.forEach(o => _puPendingSelected.delete(String(o._id)));
+    await loadPickupOrders();
+    toast(t('puPrepGroupCreated',{ref:prepRef,n:fmtN(pending.length)}));
+    return true;
+  } catch (e) {
+    toast(t('errorPrefix',{v:e.message}), true);
+    await loadPickupOrders();
+    return false;
+  }
+}
+
+async function puMovePendingGroupToPrep(groupKey) {
+  const orders = _pickupOrders.filter(o => {
+    if ((o.pickupStatus || 'Pending') !== 'Pending') return false;
     const key = `${(o.client||'').trim()}||${(o.phone||o.clientPhone||'').trim()}` || o._id;
     return key === groupKey;
   });
-  if (!groupOrders.length) return;
-  _puConfirmGroupIds = groupOrders.map(o => String(o._id));
-  const modal = qs('#pu-confirm-modal');
-  if (!modal) return;
-  const sub = qs('#pu-confirm-subtitle');
-  if (sub) sub.textContent = t('puGroupSummary',{name:groupOrders[0].client||t('puTheGroup'),n:fmtN(groupOrders.length)});
-  const list = qs('#pu-confirm-orders-list');
-  if (list) {
-    list.innerHTML = groupOrders.map(o => `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:var(--bg-alt);border-radius:7px;border:1px solid var(--border)">
-        <span style="font-weight:700;font-family:monospace;font-size:.82rem;color:var(--accent)">${esc(o.ref||'—')}</span>
-        <span style="font-size:.79rem;color:var(--muted)">${(o.items||[]).map(it=>`${esc(it.name)} ×${it.qty}`).join(' · ')}</span>
-        <span style="font-weight:700;font-size:.82rem">${fmtJT(o.total||0)}</span>
-      </div>`).join('');
-  }
-  const dt = qs('#pu-confirm-date');
-  if (dt) dt.value = todayLocalISO();
-  modal.style.display = 'flex';
-  requestAnimationFrame(() => modal.classList.add('active'));
+  if (!orders.length) return toast(t('puAlreadyInPrep'), true);
+  return puCreatePrepGroup(orders, orders[0].client || '', orders[0].shipCo || '');
+}
+
+function puGroupMoveToReady() {
+  return toast(t('puPrepareOrdersFirst'), true);
 }
 
 function closePuConfirmModal() {
   const modal = qs('#pu-confirm-modal');
-  if (modal) { modal.classList.remove('active'); modal.style.display = 'none'; }
+  if (modal) { modal.classList.remove('active'); modal.style.display = 'none'; delete modal.dataset.prepRef; }
   _puConfirmGroupIds = [];
 }
 
@@ -90196,14 +90648,13 @@ async function puGroupUndoReady(groupKey) {
   const ok = await _puConfirm(t('puUndoGroupConfirm',{name:groupOrders[0].client||groupKey,n:groupOrders.length}), t('puBackToPending'), t('puReturnWord'), '#d97706');
   if (!ok) return;
   try {
-    await api('/transactions/pickup-orders/undo', {
+    const result = await api('/transactions/pickup-orders/undo', {
       method: 'POST',
       body: JSON.stringify({ ids: groupOrders.map(o=>o._id) }),
     });
-    // Reset prepChecked on all returned orders
+    if (result.updated !== groupOrders.length) throw new Error('لم تتم إعادة كل الطلبات إلى المعلّق. حدّث القائمة وحاول مرة أخرى.');
     groupOrders.forEach(o => {
       o.prepChecked = false;
-      api(`/transactions/pickup-orders/${o._id}/prep-check`, { method:'PATCH', body: JSON.stringify({ prepChecked: false }) }).catch(() => {});
     });
     toast(t('puReturnedNToPending',{n:fmtN(groupOrders.length)}));
     await loadPickupOrders();
@@ -90221,38 +90672,22 @@ async function puGroupUndoReadyToPrep(groupKey) {
   const ok2 = await _puConfirm(t('puUndoGroupToPrepConfirm',{name:groupOrders[0].client||groupKey,n:groupOrders.length}), t('puUndoToPrepTitle'), t('puReturnWord'), '#2563eb');
   if (!ok2) return;
   try {
-    await api('/transactions/pickup-orders/undo', {
+    const undoResult = await api('/transactions/pickup-orders/undo', {
       method: 'POST',
       body: JSON.stringify({ ids: groupOrders.map(o=>o._id) }),
     });
+    if (undoResult.updated !== groupOrders.length) throw new Error('لم تتم إعادة كل الطلبات إلى المعلّق. حدّث القائمة وحاول مرة أخرى.');
     await loadPickupOrders();
-    // After undo, orders are back in Pending — now create a prep group for them
-    const freshOrders = _pickupOrders.filter(o => {
-      if ((o.pickupStatus||'Pending') !== 'Pending') return false;
-      const key = `${(o.client||'').trim()}||${(o.phone||o.clientPhone||'').trim()}` || o._id;
-      const sampleKey = `${(groupOrders[0].client||'').trim()}||${(groupOrders[0].phone||groupOrders[0].clientPhone||'').trim()}` || groupOrders[0]._id;
-      return key === sampleKey;
-    });
+    // Only return the orders that were in this Ready ticket to preparation.
+    const freshOrders = groupOrders.map(old => _pickupOrders.find(o => String(o._id) === String(old._id))).filter(o => o && o.pickupStatus === 'Pending');
     if (freshOrders.length) {
-      const prepRef = _genPrepRef();
-      const _puNow3 = new Date();
-      const createdAt = _puNow3.toLocaleString('ar-EG', { hour12:false, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-      const _puCBy3 = currentUser ? (currentUser.name || currentUser.username || '') : '';
-      _puPrepGroups.push({ prepRef, note: freshOrders[0].client||'', shipCo: freshOrders[0].shipCo||'', orders: freshOrders, createdAt, createdAtIso: _puNow3.toISOString(), createdBy: _puCBy3 });
-      _puSavePrepGroups();
-      freshOrders.forEach(o => { o._prepGroup = prepRef; o.pickupStatus = 'Preparing'; o.pickupRef = prepRef; });
-      api('/transactions/pickup-orders/preparing', {
-        method: 'POST',
-        body: JSON.stringify({ ids: freshOrders.map(o => o._id), prepRef, note: freshOrders[0].client||'', shipCo: freshOrders[0].shipCo||'', createdAt: _puNow3.toISOString() }),
-      }).catch(() => {});
-      toast(t('puReturnedToPrep',{ref:prepRef}));
+      await puCreatePrepGroup(freshOrders, freshOrders[0].client || '', freshOrders[0].shipCo || '');
     }
-    renderPickupBoard();
   } catch(e) { toast(t('errorPrefix',{v:e.message}), true); }
 }
 
 // ── Add pending group → existing prep group ───────────────────
-function puJoinPrepGroup(groupKey) {
+async function puJoinPrepGroup(groupKey) {
   const selId = `pu-join-sel-${groupKey}`;
   const sel = document.getElementById(selId);
   const prepRef = sel?.value;
@@ -90267,13 +90702,20 @@ function puJoinPrepGroup(groupKey) {
     return key === groupKey;
   });
   if (!clientOrders.length) return toast(t('puNoOrdersToAdd'), true);
+  try {
+    const result = await api('/transactions/pickup-orders/preparing', {
+      method:'POST',
+      body:JSON.stringify({ ids:clientOrders.map(o=>o._id), prepRef:grp.prepRef, note:grp.note||'', shipCo:grp.shipCo||'', createdAt:grp.createdAtIso||'' }),
+    });
+    if (result.updated !== clientOrders.length) throw new Error('بعض الطلبات لم تعد معلّقة؛ حدّث الصفحة وحاول مرة أخرى.');
+  } catch(e) {
+    toast(t('errorPrefix',{v:e.message}), true);
+    await loadPickupOrders();
+    return;
+  }
   grp.orders.push(...clientOrders);
+  clientOrders.forEach(o=>{ o._prepGroup=grp.prepRef; o.pickupStatus='Preparing'; o.pickupRef=grp.prepRef; o.prepChecked=false; });
   _puSavePrepGroups();
-  clientOrders.forEach(o => { o._prepGroup = prepRef; o.pickupStatus = 'Preparing'; o.pickupRef = prepRef; });
-  api('/transactions/pickup-orders/preparing', {
-    method: 'POST',
-    body: JSON.stringify({ ids: clientOrders.map(o => o._id), prepRef, note: grp.note || '', shipCo: grp.shipCo || '', createdAt: grp.createdAtIso || '' }),
-  }).catch(() => {});
   toast(t('puAddedNToGroup',{n:fmtN(clientOrders.length),ref:prepRef}));
   renderPickupBoard();
 }
@@ -90385,7 +90827,7 @@ function puBulkPreview() {
   preview.innerHTML = html;
 }
 
-function submitPuBulk() {
+async function submitPuBulk() {
   const refs = _puBulkParseRefs();
   if (!refs.length) return toast(t('puBulkEnterRefsFirst'), true);
 
@@ -90395,23 +90837,9 @@ function submitPuBulk() {
   const orders = refs.map(r=>pendingPool.find(x=>(x.ref||'').toString().trim().toLowerCase()===r.toLowerCase())).filter(Boolean);
   if (!orders.length) return toast(t('puBulkNoMatch'), true);
 
-  const prepRef    = _genPrepRef();
   const detectedShip = [...new Set(orders.map(o=>o.shipCo).filter(Boolean))].join(', ');
-  const _puNow4 = new Date();
-  const createdAt  = _puNow4.toLocaleString('ar-EG', { hour12:false, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-  const _puCBy4 = currentUser ? (currentUser.name || currentUser.username || '') : '';
-  _puPrepGroups.push({ prepRef, note:'إدخال مجمع', shipCo: detectedShip, orders, createdAt, createdAtIso: _puNow4.toISOString(), createdBy: _puCBy4 });
-  _puSavePrepGroups();
-  orders.forEach(o => { o._prepGroup = prepRef; o.pickupStatus = 'Preparing'; o.pickupRef = prepRef; });
-  // Persist Preparing status to backend (syncs to other users via socket)
-  api('/transactions/pickup-orders/preparing', {
-    method: 'POST',
-    body: JSON.stringify({ ids: orders.map(o => o._id), prepRef, note: 'إدخال مجمع', shipCo: detectedShip, createdAt: _puNow4.toISOString() }),
-  }).catch(() => {});
-
-  closePuBulkModal();
-  toast(t('puMovedToPrepToast',{ref:prepRef,n:fmtN(orders.length)}));
-  renderPickupBoard();
+  const created = await puCreatePrepGroup(orders, 'إدخال مجمع', detectedShip);
+  if (created) closePuBulkModal();
 }
 
 // ── Drag & Drop (group-level) ─────────────────────────────────
@@ -90493,17 +90921,7 @@ async function puBoardDrop(e, colType) {
       .map(id => _pickupOrders.find(o => String(o._id) === id))
       .filter(o => o && !existingInPrep.has(String(o._id)) && (o.pickupStatus||'Pending') === 'Pending');
     if (!orders.length) { toast(t('puAlreadyInPrep'), true); return; }
-    const prepRef   = _genPrepRef();
-    const _puNow5 = new Date();
-    const createdAt = _puNow5.toLocaleString('ar-EG', {hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-    const _puCBy5 = currentUser ? (currentUser.name || currentUser.username || '') : '';
-    _puPrepGroups.push({ prepRef, note: orders[0].client||'', shipCo: orders[0].shipCo||'', orders, createdAt, createdAtIso: _puNow5.toISOString(), createdBy: _puCBy5 });
-    _puSavePrepGroups();
-    orders.forEach(o => { o._prepGroup = prepRef; o.pickupStatus = 'Preparing'; o.pickupRef = prepRef; _puPendingSelected.delete(String(o._id)); });
-    api('/transactions/pickup-orders/preparing', { method:'POST', body: JSON.stringify({ ids: orders.map(o=>o._id), prepRef, note: orders[0].client||'', shipCo: orders[0].shipCo||'', createdAt: _puNow5.toISOString() }) }).catch(() => {});
-    const msg = orders.length > 1 ? t('puNewGroupMulti',{ref:prepRef,n:orders.length}) : t('puNewGroupSingle',{ref:prepRef});
-    toast(msg);
-    renderPickupBoard();
+    await puCreatePrepGroup(orders, orders[0].client || '', orders[0].shipCo || '');
     return;
   }
 
@@ -90515,16 +90933,25 @@ async function puBoardDrop(e, colType) {
   const prepGrp = _puPrepGroups.find(g=>g.prepRef===groupKey);
   if (prepGrp) {
     // prep → ready: open confirm modal
-    if (colType === 'ready') prepGroupMoveToReady(groupKey);
+    if (colType === 'ready') {
+      if (!prepGrp.orders.length || !prepGrp.orders.every(o => !!o.prepChecked)) return toast(t('puPrepareAllOrdersForMove'), true);
+      prepGroupMoveToReady(groupKey);
+    }
     // prep → pending: dissolve prep group (restore to pending)
     else if (colType === 'pending') {
       const okd = await _puConfirm(t('puGroupBackToPendingConfirm',{ref:prepGrp.prepRef,n:prepGrp.orders.length}), t('puBackToPending'), t('puReturnWord'), '#d97706');
       if (!okd) return;
-      prepGrp.orders.forEach(o => { delete o._prepGroup; });
-      _puPrepGroups = _puPrepGroups.filter(g=>g.prepRef!==groupKey);
-      _puSavePrepGroups();
-      toast(t('puGroupReturnedToPending'));
-      renderPickupBoard();
+      const ids = prepGrp.orders.filter(o => o.pickupStatus === 'Preparing').map(o => String(o._id));
+      if (!ids.length) return toast(t('puAlreadyInPrep'), true);
+      try {
+        const result = await api('/transactions/pickup-orders/undo', { method:'POST', body: JSON.stringify({ ids }) });
+        if (result.updated !== ids.length) throw new Error('لم تتم إعادة كل الطلبات إلى المعلّق. حدّث القائمة وحاول مرة أخرى.');
+        await loadPickupOrders();
+        toast(t('puGroupReturnedToPending'));
+      } catch (e) {
+        toast(t('errorPrefix',{v:e.message}), true);
+        await loadPickupOrders();
+      }
     }
     return;
   }
@@ -90546,26 +90973,18 @@ async function puBoardDrop(e, colType) {
     return key === groupKey;
   });
   if (samplePending && colType === 'prep') {
-    // Auto-create a prep group from this pending client group
+    // Persist the pending → prep transition as a single group move.
     const clientOrders = _pickupOrders.filter(o => {
       if ((o.pickupStatus||'Pending') !== 'Pending') return false;
       const key = `${(o.client||'').trim()}||${(o.phone||o.clientPhone||'').trim()}` || o._id;
       return key === groupKey;
     });
-    const prepRef = _genPrepRef();
-    const _puNow6 = new Date();
-    const createdAt = _puNow6.toLocaleString('ar-EG', { hour12:false, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-    const _puCBy6 = currentUser ? (currentUser.name || currentUser.username || '') : '';
-    _puPrepGroups.push({ prepRef, note: samplePending.client||'', shipCo: samplePending.shipCo||'', orders: clientOrders, createdAt, createdAtIso: _puNow6.toISOString(), createdBy: _puCBy6 });
-    _puSavePrepGroups();
-    clientOrders.forEach(o => { o._prepGroup = prepRef; });
-    toast(t('puNewPrepGroup',{ref:prepRef}));
-    renderPickupBoard();
+    await puCreatePrepGroup(clientOrders, samplePending.client || '', samplePending.shipCo || '');
     return;
   }
 
-  // ── Pending group drag → ready (original behavior) ────────────
-  if (samplePending && colType === 'ready') puGroupMoveToReady(groupKey);
+  // Pending orders cannot skip the preparation stage.
+  if (samplePending && colType === 'ready') toast(t('puPrepareOrdersFirst'), true);
 }
 
 function clearBoardFilters() {
@@ -90713,9 +91132,17 @@ function _puRenderKPIs() {
 // ── Group orders into "runs" by pickupRef ──────────────────────
 function _buildPickupRuns(orders) {
   const runsMap = new Map();
-  // Orders that have been picked up → group by pickupRef
+  // Orders that have been picked up → group by pickupRef. Courier-collected
+  // orders also fall into a stable carrier/day ticket for legacy rows.
   orders.filter(o => o.pickupStatus && o.pickupStatus !== 'Pending').forEach(o => {
-    const ref = o.pickupRef || '__no_ref__';
+    let ref = o.pickupRef || '__no_ref__';
+    if (o.pickupStatus === 'Shipped' && !String(ref).startsWith('SH-')) {
+      const day = String(o.shippedAt || o.pickupDate || o.date || '').slice(0, 10) || 'unknown';
+      const carrier = String(o.shipCo || 'Bosta');
+      let hash = 0;
+      for (let i = 0; i < carrier.length; i++) hash = ((hash * 31) + carrier.charCodeAt(i)) & 0xffff;
+      ref = `SH-${day}-${hash.toString(36).toUpperCase().padStart(4, '0')}`;
+    }
     if (!runsMap.has(ref)) {
       runsMap.set(ref, {
         pickupRef: o.pickupRef || '—',
@@ -91160,11 +91587,13 @@ function toggleRunMenu(e, pickupRef) {
 async function undoPickupRun(pickupRef) {
   const run = _pickupRuns.find(r => r.pickupRef === pickupRef);
   if (!run) return;
+  if (run.orders.some(o => ['Shipped','Delivered'].includes(o.pickupStatus))) return toast(t('puCannotUndoShippedRun'), true);
   const ids = run.orders.map(o => o._id);
   const okr = await _puConfirm(t('puUndoRunConfirm',{ref:pickupRef,n:ids.length}), t('puUndoPickup'), t('puUndoWord'), '#dc2626');
   if (!okr) return;
   try {
-    await api('/transactions/pickup-orders/undo', { method:'POST', body: JSON.stringify({ ids }) });
+    const result = await api('/transactions/pickup-orders/undo', { method:'POST', body: JSON.stringify({ ids }) });
+    if (result.updated !== ids.length) throw new Error('لم تتم إعادة كل الطلبات؛ حدّث القائمة وحاول مرة أخرى.');
     toast(t('puUndoRunDone'));
     await loadPickupOrders();
   } catch(e) { toast(t('errorPrefix',{v:e.message}), true); }
@@ -91173,6 +91602,7 @@ async function undoPickupRun(pickupRef) {
 function deletePickupRun(pickupRef) {
   const run = _pickupRuns.find(r => r.pickupRef === pickupRef);
   if (!run) return;
+  if (run.orders.some(o => ['Shipped','Delivered'].includes(o.pickupStatus))) return toast(t('puCannotUndoShippedRun'), true);
   const ids = run.orders.map(o => o._id);
   const orderCount = ids.length;
 
@@ -91244,7 +91674,8 @@ function deletePickupRun(pickupRef) {
 
 // ── تعديل أمر Pick-Up ─────────────────────────────────────────
 let _puEditCurrentRun = null;   // run object currently being edited
-let _puEditPendingOrders = [];  // all pending orders (for the add-list)
+let _puEditAvailableRuns = [];  // active Ready tickets that can receive orders
+let _puEditSelectedIds = new Set();
 
 function openPuEditModal(pickupRef) {
   const modal = qs('#pu-edit-modal');
@@ -91254,7 +91685,8 @@ function openPuEditModal(pickupRef) {
   const inp = qs('#pu-edit-ref-input');
   if (inp) inp.value = pickupRef || '';
   _puEditCurrentRun = null;
-  _puEditPendingOrders = [];
+  _puEditAvailableRuns = [];
+  _puEditSelectedIds = new Set();
   const dateRow = qs('#pu-edit-date-row');
   if (dateRow) dateRow.style.display = 'none';
   // Reset the header sub-label (loadPuEditRun overwrites it with the loaded run's label).
@@ -91304,9 +91736,11 @@ async function loadPuEditRun() {
     }
     _puEditCurrentRun = run;
 
-    // Pending orders not in this run
-    const runIds = new Set(run.orders.map(o => o._id));
-    _puEditPendingOrders = all.filter(o => (o.pickupStatus || 'Pending') === 'Pending' && !runIds.has(o._id));
+    // Only active Ready tickets can receive orders. Pending orders must go through
+    // preparation first, and shipped/delivered tickets are closed.
+    _puEditAvailableRuns = runs
+      .filter(candidate => candidate.pickupRef !== run.pickupRef)
+      .filter(candidate => candidate.orders.some(o => ['Ready','Picked-Up'].includes(o.pickupStatus)));
 
     const label = qs('#pu-edit-ref-label');
     if (label) label.textContent = t('puRunLabel',{ref:run.pickupRef,date:run.pickupDate || ''});
@@ -91334,24 +91768,25 @@ function _renderPuEditBody() {
 
   const cnt = qs('#pu-edit-run-count');
   if (cnt) cnt.textContent = t('puOrdersCount',{n:_puEditCurrentRun.orders.length});
+  const selectedCnt = qs('#pu-edit-selected-count');
+  if (selectedCnt) selectedCnt.textContent = _puEditSelectedIds.size ? t('puSelectedCount',{n:fmtN(_puEditSelectedIds.size)}) : '';
 
   _renderPuEditCurrentList();
-  _renderPuEditAddList();
+  _renderPuEditTargetList();
 }
 
 async function savePuEditDate() {
   if (!_puEditCurrentRun) return;
   const date = qs('#pu-edit-date-val')?.value;
   if (!date) return toast(t('puPickDate'), true);
-  const ids = _puEditCurrentRun.orders.map(o => o._id);
+  const ids = _puEditCurrentRun.orders.filter(o => ['Ready','Picked-Up'].includes(o.pickupStatus)).map(o => o._id);
   if (!ids.length) return toast(t('puNoOrdersInRun'), true);
   try {
-    await api('/transactions/pickup-orders/confirm', { method:'POST', body: JSON.stringify({ ids, date }) });
-    _puEditCurrentRun.pickupDate = date;
-    const label = qs('#pu-edit-ref-label');
-    if (label) label.textContent = t('puRunLabel',{ref:_puEditCurrentRun.pickupRef,date});
+    const result = await api('/transactions/pickup-orders/confirm', { method:'POST', body: JSON.stringify({ ids, date, reuseOpenRun: true }) });
+    if (result.updated !== ids.length) throw new Error('لم يتم تحديث تاريخ كل الطلبات الجاهزة؛ حدّث القائمة وحاول مرة أخرى.');
+    closePuEditModal();
     toast(t('puDateUpdated'));
-    loadPickupOrders();
+    await loadPickupOrders();
   } catch(e) { toast(t('errorPrefix',{v:e.message}), true); }
 }
 
@@ -91362,8 +91797,15 @@ function _puEditOrderRow(o, action, type) {
   const btnStyle  = type === 'remove'
     ? 'background:#fee2e2;border:1px solid #fca5a5;color:#dc2626'
     : 'background:#dcfce7;border:1px solid #86efac;color:#16a34a';
-  const btnLabel  = type === 'remove' ? `${svgRemove} ${t('puRemoveFromRun')}` : `${svgAdd} ${t('puAddToRun')}`;
-  return `<div style="display:grid;grid-template-columns:1fr 50px 90px auto;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--border);direction:rtl">
+  const btnLabel  = type === 'remove'
+    ? `${svgRemove} ${t('puRemoveFromRun')}`
+    : `${svgAdd} ${t('puMoveToRun')}`;
+  const selectable = type === 'remove' && ['Ready','Picked-Up'].includes(o.pickupStatus);
+  const selector = type === 'remove'
+    ? `<div style="display:flex;justify-content:center"><input type="checkbox" data-pu-select-id="${esc(o._id)}" ${_puEditSelectedIds.has(String(o._id))?'checked':''} ${selectable?'':'disabled'} onchange="puEditToggleOrder(this)" title="${esc(t('puSelectForMove'))}" style="width:15px;height:15px;accent-color:var(--primary);cursor:${selectable?'pointer':'not-allowed'}"></div>`
+    : '';
+  return `<div style="display:grid;grid-template-columns:${type === 'remove' ? '22px ' : ''}1fr 50px 90px auto;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--border);direction:rtl">
+    ${selector}
     <div style="min-width:0">
       <span style="font-weight:700;color:var(--accent);font-family:monospace;font-size:.82rem">${esc(o.ref||'—')}</span>
       <span style="font-size:.85rem;color:var(--text);margin-right:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(o.client||'—')}</span>
@@ -91384,23 +91826,37 @@ function _renderPuEditCurrentList() {
   el.innerHTML = _puEditCurrentRun.orders.map(o => _puEditOrderRow(o, null, 'remove')).join('');
 }
 
-function _renderPuEditAddList() {
-  const el     = qs('#pu-edit-add-list');
+function _renderPuEditTargetList() {
+  const el = qs('#pu-edit-target-list');
   if (!el) return;
-  const search = (qs('#pu-edit-add-search')?.value || '').toLowerCase();
-  const filtered = _puEditPendingOrders.filter(o => {
-    if (!search) return true;
-    return `${o.ref||''} ${o.client||''}`.toLowerCase().includes(search);
-  });
-  if (!filtered.length) {
-    el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:.85rem">${search ? t('puNoMatchingResults') : t('puNoPendingToAdd')}</div>`;
+  if (!_puEditAvailableRuns.length) {
+    el.innerHTML = `<div style="text-align:center;padding:22px;color:var(--muted);font-size:.85rem">${t('puNoAvailableTickets')}</div>`;
     return;
   }
-  el.innerHTML = filtered.map(o => _puEditOrderRow(o, null, 'add')).join('');
+  el.innerHTML = _puEditAvailableRuns.map(run => {
+    const readyCount = run.orders.filter(o => ['Ready','Picked-Up'].includes(o.pickupStatus)).length;
+    const total = run.orders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const totalText = stripHtml(fmtJ(total));
+    const disabled = !_puEditSelectedIds.size;
+    return `<div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);direction:rtl">
+      <div style="min-width:0">
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+          <span style="font-weight:800;color:var(--accent);font-family:monospace;font-size:.84rem">${esc(run.pickupRef||'—')}</span>
+          <span style="font-size:.76rem;color:var(--muted)">${esc(run.pickupDate||'—')}</span>
+          ${run.shipCo ? `<span style="font-size:.68rem;background:var(--bg-alt);border:1px solid var(--border);border-radius:4px;padding:2px 5px;color:var(--muted)">${esc(run.shipCo)}</span>` : ''}
+        </div>
+        <div style="font-size:.77rem;color:var(--muted);margin-top:3px">${esc(t('puTicketSummary',{n:fmtN(readyCount),total:totalText}))}</div>
+      </div>
+      <button class="btn btn-sm" ${disabled?'disabled':''} onclick="puEditMoveSelectedToRun('${esc(run.pickupRef)}')" style="padding:6px 10px;background:${disabled?'var(--bg-alt)':'#dcfce7'};border:1px solid ${disabled?'var(--border)':'#86efac'};color:${disabled?'var(--muted)':'#15803d'};border-radius:6px;font-size:.76rem;white-space:nowrap">${esc(t('puMoveSelectedToTicket'))}</button>
+    </div>`;
+  }).join('');
 }
 
-function filterPuEditAddList() {
-  _renderPuEditAddList();
+function puEditToggleOrder(cb) {
+  const id = String(cb?.dataset?.puSelectId || '');
+  if (!id) return;
+  if (cb.checked) _puEditSelectedIds.add(id); else _puEditSelectedIds.delete(id);
+  _renderPuEditBody();
 }
 
 // Delegated click handler for pu-edit add/remove buttons
@@ -91410,7 +91866,6 @@ function filterPuEditAddList() {
     if (!btn) return;
     const id = btn.dataset.puId;
     if (btn.dataset.puAction === 'remove') puEditRemoveOrder(id);
-    else if (btn.dataset.puAction === 'add') puEditAddOrder(id);
   }
   document.addEventListener('click', _puEditDelegate);
 })();
@@ -91419,49 +91874,48 @@ async function puEditRemoveOrder(id) {
   if (!_puEditCurrentRun) return;
   const o = _puEditCurrentRun.orders.find(x => x._id === id);
   if (!o) return;
+  if (!['Ready','Picked-Up'].includes(o.pickupStatus)) return toast(t('puCannotUndoShippedRun'), true);
   try {
     // Undo pickup for this single order (reverts to Pending)
-    await api('/transactions/pickup-orders/undo', { method:'POST', body: JSON.stringify({ ids: [id] }) });
-    // Move from current list to pending list
+    const result = await api('/transactions/pickup-orders/undo', { method:'POST', body: JSON.stringify({ ids: [id] }) });
+    if (result.updated !== 1) throw new Error('تعذر إرجاع الطلب إلى المعلّق؛ حدّث القائمة وحاول مرة أخرى.');
+    // Remove it from the current ticket and keep the server as the source of truth.
     _puEditCurrentRun.orders = _puEditCurrentRun.orders.filter(x => x._id !== id);
     o.pickupStatus = 'Pending'; o.pickupRef = null;
-    _puEditPendingOrders.unshift(o);
+    _puEditSelectedIds.delete(String(id));
     const cnt = qs('#pu-edit-run-count');
     if (cnt) cnt.textContent = t('puOrdersCount',{n:_puEditCurrentRun.orders.length});
     _renderPuEditCurrentList();
-    _renderPuEditAddList();
+    _renderPuEditTargetList();
     toast(t('puOrderRemovedFromRun'));
     // Refresh main table in background
     loadPickupOrders();
   } catch(e) { toast(t('errorPrefix',{v:e.message}), true); }
 }
 
-async function puEditAddOrder(id) {
-  if (!_puEditCurrentRun) return;
-  const o = _puEditPendingOrders.find(x => x._id === id);
-  if (!o) return;
+async function puEditMoveSelectedToRun(pickupRef) {
+  if (!_puEditCurrentRun || !pickupRef) return;
+  const ids = [..._puEditSelectedIds].filter(id => _puEditCurrentRun.orders.some(o => String(o._id) === id && ['Ready','Picked-Up'].includes(o.pickupStatus)));
+  if (!ids.length) return toast(t('puSelectForMove'), true);
   try {
-    // Add order to existing pickup run
-    await api('/transactions/pickup-orders/add-to-run', {
+    const result = await api('/transactions/pickup-orders/add-to-run', {
       method: 'POST',
       body: JSON.stringify({
-        id,
-        pickupRef: _puEditCurrentRun.pickupRef,
+        ids,
+        pickupRef,
         date: _puEditCurrentRun.pickupDate
       }),
     });
-    // Move from pending list to current list
-    _puEditPendingOrders = _puEditPendingOrders.filter(x => x._id !== id);
-    o.pickupStatus = 'Ready';
-    o.pickupRef = _puEditCurrentRun.pickupRef;
-    o.pickupDate = _puEditCurrentRun.pickupDate;
-    _puEditCurrentRun.orders.push(o);
-    const cnt = qs('#pu-edit-run-count');
-    if (cnt) cnt.textContent = t('puOrdersCount',{n:_puEditCurrentRun.orders.length});
-    _renderPuEditCurrentList();
-    _renderPuEditAddList();
-    toast(t('puOrderAddedToRun'));
-    loadPickupOrders();
+    if (result.updated !== ids.length) throw new Error('تعذر نقل كل الطلبات إلى التذكرة المحددة؛ حدّث القائمة وحاول مرة أخرى.');
+    _puEditSelectedIds = new Set();
+    if (_puEditCurrentRun.orders.length === ids.length) {
+      closePuEditModal();
+      toast(t('puOrdersMovedToRun',{n:fmtN(ids.length),ref:pickupRef}));
+      await loadPickupOrders();
+    } else {
+      await loadPuEditRun();
+      toast(t('puOrdersMovedToRun',{n:fmtN(ids.length),ref:pickupRef}));
+    }
   } catch(e) { toast(t('errorPrefix',{v:e.message}), true); }
 }
 
@@ -91571,7 +92025,7 @@ async function openCreatePickupModal() {
   try {
     const all = await api('/transactions/pickup-orders');
     _pickupOrders = all;
-    _puCreateAllOrders = all.filter(o => (o.pickupStatus || 'Pending') === 'Pending' && o.payStatus !== 'مكتمل');
+    _puCreateAllOrders = all.filter(o => o.pickupStatus === 'Preparing' && o.prepChecked === true);
   } catch(e) {
     if (container) container.innerHTML = `<div style="text-align:center;padding:30px;color:var(--red);font-size:.88rem">${esc(t('puCreateOrdersLoadError',{v:e.message}))}</div>`;
     return;
@@ -91614,7 +92068,7 @@ function _puBuildCreateList() {
   if (!container) return;
 
   if (filtered.length === 0) {
-    container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);font-size:.88rem">${t('puNoMatchingPending')}</div>`;
+    container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);font-size:.88rem">${t('puNoPreparedOrders')}</div>`;
   } else {
     container.innerHTML = filtered.map(o => {
       const checked = _puCreateSelected.has(o._id);
@@ -91711,8 +92165,9 @@ async function submitCreatePickup() {
     try {
       const res = await api('/transactions/pickup-orders/confirm', {
         method: 'POST',
-        body: JSON.stringify({ ids, date }),
+        body: JSON.stringify({ ids, date, reuseOpenRun: true }),
       });
+      if (res.updated !== ids.length) throw new Error('لم يتم نقل كل الطلبات المحضّرة؛ حدّث القائمة وحاول مرة أخرى.');
       const ref = res.pickupRef || '';
       const cnt = res.updated || ids.length;
       toast(t('puRunCreated',{n:fmtN(cnt),ref}));
@@ -91760,16 +92215,19 @@ function previewBulkPickup() {
     const tx = _pickupOrders.find(o => (o.ref||'').toLowerCase() === ref.toLowerCase());
     if (!tx) return {ref, status:'notfound'};
     if ((tx.pickupStatus||'Pending') === 'Delivered') return {ref, tx, status:'delivered'};
+    if (tx.pickupStatus !== 'Preparing' || tx.prepChecked !== true) return {ref, tx, status:'notprepared'};
     return {ref, tx, status:'ok'};
   }).filter(Boolean);
 
   const ok     = results.filter(r => r.status === 'ok');
   const nf     = results.filter(r => r.status === 'notfound');
   const done   = results.filter(r => r.status === 'delivered');
+  const notPrepared = results.filter(r => r.status === 'notprepared');
 
   previewBody.innerHTML = [
     ...ok.map(r   => `<div style="padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center"><span style="color:#059669">✅</span> <span style="font-weight:600;color:var(--accent)">${esc(r.ref)}</span> <span style="color:var(--muted);font-size:.8rem">${esc(r.tx.client||'')}</span> <span style="margin-right:auto;font-size:.8rem">${fmtJ(r.tx.total||0)}</span></div>`),
     ...done.map(r  => `<div style="padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center"><span style="color:var(--muted)">⬛</span> <span style="color:var(--muted)">${esc(r.ref)}</span> <span style="font-size:.78rem;color:var(--muted)">${t('puAlreadyDelivered')}</span></div>`),
+    ...notPrepared.map(r => `<div style="padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center"><span style="color:#d97706">⏳</span> <span style="color:#92400e">${esc(r.ref)}</span> <span style="font-size:.78rem;color:#92400e">${t('puPrepareOrdersFirst')}</span></div>`),
     ...nf.map(r    => `<div style="padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center"><span style="color:#dc2626">❌</span> <span style="color:#dc2626">${esc(r.ref)}</span> <span style="font-size:.78rem;color:var(--muted)">${t('puNotFound')}</span></div>`),
   ].join('') || `<div style="color:var(--muted);font-size:.83rem">${t('puNoResults')}</div>`;
 
@@ -91795,7 +92253,7 @@ async function runBulkPickup() {
     return toast(t('puBulkOrdersLoadError',{v:e.message}), true);
   }
 
-  const matched = [], notFound = [], alreadyDone = [];
+  const matched = [], notFound = [], alreadyDone = [], notPrepared = [];
   const duplicate = new Set();
   refs.forEach(ref => {
     if (duplicate.has(ref.toLowerCase())) return;
@@ -91803,14 +92261,16 @@ async function runBulkPickup() {
     const tx = _pickupOrders.find(o => (o.ref||'').toLowerCase() === ref.toLowerCase());
     if (!tx) { notFound.push(ref); return; }
     if ((tx.pickupStatus||'Pending') === 'Delivered') { alreadyDone.push(ref); return; }
+    if (tx.pickupStatus !== 'Preparing' || tx.prepChecked !== true) { notPrepared.push(ref); return; }
     matched.push(tx._id);
   });
 
   let updatedCount = 0, batchRef = '';
   if (matched.length) {
     try {
-      const res = await api('/transactions/pickup-orders/confirm', { method:'POST', body: JSON.stringify({ ids: matched, date }) });
+      const res = await api('/transactions/pickup-orders/confirm', { method:'POST', body: JSON.stringify({ ids: matched, date, reuseOpenRun: true }) });
       updatedCount = res.updated ?? matched.length;
+      if (updatedCount !== matched.length) throw new Error('لم يتم نقل كل الطلبات المحضّرة؛ حدّث القائمة وحاول مرة أخرى.');
       batchRef = res.pickupRef || '';
     } catch(e) {
       _bulkPickupRunning = false;
@@ -91827,6 +92287,7 @@ async function runBulkPickup() {
         ${updatedCount > 0 ? `<div style="color:#059669;font-weight:600">${t('puBulkConfirmedN',{n:fmtN(updatedCount)})}</div>` : ''}
         ${batchRef ? `<div style="color:var(--accent);font-weight:700">📦 Pickup Ref: <span style="font-family:monospace">${esc(batchRef)}</span></div>` : ''}
         ${alreadyDone.length ? `<div style="color:var(--muted)">${t('puBulkAlreadyDeliveredN',{n:fmtN(alreadyDone.length),list:esc(alreadyDone.join('، '))})}</div>` : ''}
+        ${notPrepared.length ? `<div style="color:#92400e">${t('puBulkNotPreparedN',{n:fmtN(notPrepared.length),list:esc(notPrepared.join('، '))})}</div>` : ''}
         ${notFound.length ? `<div style="color:#dc2626">${t('puBulkNotFoundN',{n:fmtN(notFound.length),list:esc(notFound.join('، '))})}</div>` : ''}
         ${matched.length === 0 && notFound.length === refs.length ? `<div style="color:#dc2626">${t('puBulkNoneMatched')}</div>` : ''}
       </div>`;
@@ -91863,7 +92324,8 @@ async function savePuDateEdit() {
   const date = qs('#pu-date-edit-val')?.value;
   if (!date) return toast(t('puPickDate'), true);
   try {
-    await api('/transactions/pickup-orders/confirm', { method:'POST', body: JSON.stringify({ ids: [_puDateEditId], date }) });
+    const result = await api('/transactions/pickup-orders/confirm', { method:'POST', body: JSON.stringify({ ids: [_puDateEditId], date, reuseOpenRun: true }) });
+    if (result.updated !== 1) throw new Error('لم يتم تحديث تاريخ الطلب؛ حدّث القائمة وحاول مرة أخرى.');
     toast(t('puDateUpdatedShort'));
     closePuDateModal();
     await loadPickupOrders();
@@ -93592,20 +94054,84 @@ function _spItemsCount(o) {
 function _spItemsCell(o, idx) {
   const count = _spItemsCount(o);
   if (!count) return '<span style="color:var(--muted)">—</span>';
-  const label = currentLang === 'en'
+  const isEn = currentLang === 'en';
+  const label = isEn
     ? (count === 1 ? '1 item' : `${count} items`)
     : `${fmtN(count)} ${count === 1 ? 'صنف' : 'أصناف'}`;
   /* ⚠ The index is PASSED IN by the row template (renderShopifyOrders builds it
      once as _spCtx.inv). Building it here would walk inventoryCache once per row —
      the fallback exists only for a caller that has no context to hand. */
-  const blocked = _spStockBlock(o, idx || _spBuildInvIndex());
-  const warn = blocked
-    ? `<svg class="sp-items-warn" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
-    : '';
-  return `<button class="mov-items-btn" type="button" onclick="event.stopPropagation();showSpItemsPopover('${esc(String(o._id))}', this)" title="${currentLang==='en'?'View items':'عرض الأصناف'}">
-    <span class="mov-items-count">${label}</span>${warn}
+  const ix = idx || _spBuildInvIndex();
+  const items = Array.isArray(o.items) ? o.items : [];
+  /* الصور: حتى 3 مصغّرات متراكبة — الصورة هي ما يميّز الأوردر في لمحة. */
+  const thumbs = items.slice(0, 3).map(i => _spThumbHtml(i, ix.ready ? _spLookupInvItem(i, ix) : null, 'sp-ith')).join('');
+  /* ⚠ الشارة تظهر للمشكلة فقط — لا علامة «متوفر» على كل صف، وإلا تختفي الصفوف
+     الواقفة وسط الصفوف السليمة. «ناقص» أحمر لأنه يمنع التسجيل؛ «غير مربوط» كهرماني
+     لأنه إصلاح بيانات لا نقص بضاعة. نفس قواعد _spStockBlock. */
+  let badge = '';
+  const blocked = _spStockBlock(o, ix);
+  if (blocked && blocked.short) {
+    badge = `<span class="sp-items-badge is-bad">${isEn ? `${blocked.short} short` : `${fmtN(blocked.short)} ناقص`}</span>`;
+  } else if (blocked && blocked.missing) {
+    badge = `<span class="sp-items-badge is-warn">${isEn ? 'Unlinked' : 'غير مربوط'}</span>`;
+  }
+  const tip = blocked
+    ? (isEn ? `${blocked.short} short · ${blocked.missing} not linked — click for details` : `${fmtN(blocked.short)} ناقص · ${fmtN(blocked.missing)} غير مربوط — اضغط للتفاصيل`)
+    : (isEn ? 'View items' : 'عرض الأصناف');
+  return `<button class="mov-items-btn sp-items-btn${blocked ? ' is-blocked' : ''}" type="button" onclick="event.stopPropagation();showSpItemsPopover('${esc(String(o._id))}', this)" title="${escHtml(tip)}">
+    ${thumbs ? `<span class="sp-ithumbs">${thumbs}</span>` : ''}
+    <span class="mov-items-count">${label}</span>${badge}
     <svg class="mov-items-chev" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
   </button>`;
+}
+
+/**
+ * صورة سطر أوردر شوبيفاي.
+ *
+ * ⚠ اللقطة المخزّنة على السطر أولاً، ثم صنف المخزن المطابَق، ثم كتالوج المنتجات
+ *   (بالـid ثم الكود ثم الاسم عبر _pwItemImgUrl). القراءة من `inv.imageUrl` وحده —
+ *   وهو ما كان يفعله الـpopover — تُرجع فراغاً دائماً لأن صفوف المخزون لا تحمل صورة،
+ *   فكانت كل الأصناف مربّعات رمادية. نفس العلّة الموثّقة في مساحة التحضير (Round 4).
+ * ⚠ اسم شوبيفاي (`shopifyName`) قد يختلف عن اسم المنتج، فيُجرَّب الاسمان.
+ */
+function _spItemImg(i, inv) {
+  const clean = v => sanitizeUrl(String(v || '').trim());
+  const snap = clean(i && (i.imageUrl || i.image));
+  if (snap) return snap;
+  if (inv && inv.imageUrl) { const u = clean(inv.imageUrl); if (u) return u; }
+  const list = Array.isArray(products) ? products : [];
+  if (inv && inv._id) {
+    const p = list.find(x => String(x._id) === String(inv._id));
+    if (p && p.imageUrl) { const u = clean(p.imageUrl); if (u) return u; }
+  }
+  if (!i) return '';
+  return _pwItemImgUrl({ productId: i.productId, code: i.code, name: i.shopifyName || i.name })
+      || (i.shopifyName && i.name ? _pwItemImgUrl({ name: i.name }) : '');
+}
+
+/** مصغّرة صنف: الأحرف الأولى مرسومة تحت الصورة فتظهر إن فشل تحميلها — لا مربّع فارغ. */
+function _spThumbHtml(i, inv, cls) {
+  const url = _spItemImg(i, inv);
+  const nm = String((inv && inv.name) || i.shopifyName || i.name || i.code || '').trim();
+  const ini = esc((nm.replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('') || '·').toUpperCase());
+  return `<span class="${cls}" title="${escHtml(nm)}"><span class="sp-th-ini">${ini}</span>`
+    + (url ? `<img src="${escHtml(url)}" alt="" loading="lazy" onerror="this.style.display='none'">` : '')
+    + `</span>`;
+}
+
+/**
+ * حالة مخزون سطر واحد — مصدر واحد للـpopover ونافذة الأوردر المختصرة.
+ * state: 'na' (المخزون لم يُحمَّل) | 'missing' | 'out' | 'short' | 'ok'
+ * ⚠ 'na' ليست «متوفر»: بدون الفهرس لا نعرف، ولا نقول شيئاً (نفس حارس _spStockBlock).
+ */
+function _spItemStock(i, idx) {
+  const need = Number(i.qty) || 0;
+  if (!idx || !idx.ready) return { inv: null, need, have: 0, state: 'na' };
+  const inv = _spLookupInvItem(i, idx);
+  if (!inv) return { inv: null, need, have: 0, state: 'missing' };
+  const have = Number(inv.current) || 0;
+  const state = have <= 0 && need > 0 ? 'out' : have < need ? 'short' : 'ok';
+  return { inv, need, have, state };
 }
 
 /**
