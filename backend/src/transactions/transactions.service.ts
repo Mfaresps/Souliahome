@@ -5031,7 +5031,14 @@ export class TransactionsService {
     const allOrdersAlreadyReady = sourceOrders.length === validIds.length && sourceOrders.every(order =>
       order.pickupStatus === 'Ready' || order.pickupStatus === 'Picked-Up',
     );
-    if (!allOrdersPrepared && !allOrdersAlreadyReady) {
+    // A prep group where some orders were handed to Bosta from the workspace:
+    // createOrder already moved those to Ready, the rest are prepared. Every
+    // order is still either prepared or ready — move them as one run.
+    const isPrepared = (o: any) => o.pickupStatus === 'Preparing' && o.prepChecked === true;
+    const isReady = (o: any) => o.pickupStatus === 'Ready' || o.pickupStatus === 'Picked-Up';
+    const mixedPreparedAndReady = !allOrdersPrepared && !allOrdersAlreadyReady
+      && sourceOrders.length === validIds.length && sourceOrders.every(o => isPrepared(o) || isReady(o));
+    if (!allOrdersPrepared && !allOrdersAlreadyReady && !mixedPreparedAndReady) {
       throw new BadRequestException('لا يمكن نقل الطلب إلى الجاهز قبل نقله للتحضير وإكمال تحضيره');
     }
     const now = date || new Date().toISOString().slice(0, 10);
@@ -5049,8 +5056,12 @@ export class TransactionsService {
     const result = await this.transactionModel.updateMany(
       {
         _id: { $in: validIds }, type: 'مبيعات', cancelled: { $ne: true },
-        pickupStatus: allOrdersPrepared ? 'Preparing' : { $in: ['Ready', 'Picked-Up'] },
-        ...(allOrdersPrepared ? { prepChecked: true } : {}),
+        ...(mixedPreparedAndReady
+          ? { $or: [{ pickupStatus: 'Preparing', prepChecked: true }, { pickupStatus: { $in: ['Ready', 'Picked-Up'] } }] }
+          : {
+            pickupStatus: allOrdersPrepared ? 'Preparing' : { $in: ['Ready', 'Picked-Up'] },
+            ...(allOrdersPrepared ? { prepChecked: true } : {}),
+          }),
       },
       {
         $set: { pickupStatus: 'Ready', pickupDate: now, pickupBy: by, pickupRef: batchRef },

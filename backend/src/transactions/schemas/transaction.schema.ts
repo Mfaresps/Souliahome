@@ -438,6 +438,27 @@ export class Transaction {
   @Prop({ default: '', select: false })
   bostaAwbType: string;
 
+  /** Every time a user opened the Bosta AWB for printing — who and when.
+   * Drives the timeline step, the «طُبعت» mark and the reprint warning.
+   * ⚠ `type: [Object]` is mandatory (see the nullable-@Prop rule). */
+  @Prop({ type: [Object], default: [] })
+  bostaAwbPrints: { at: string; by: string; byId?: string; trackingNumber?: string }[];
+
+  /** Append-only shipment history: sent / resent / deleted (at the carrier) /
+   * cancelled / printed. The current bosta* fields are OVERWRITTEN on a resend and
+   * a deletion wipes bostaOrderId, so without this log the timeline could not say
+   * that a shipment ever existed. Never edited, never trimmed. */
+  @Prop({ type: [Object], default: [] })
+  shipmentEvents: {
+    type: 'sent' | 'resent' | 'deleted' | 'cancelled' | 'printed';
+    at: string;
+    by?: string;
+    source?: string;
+    trackingNumber?: string;
+    bostaOrderId?: string;
+    prevTrackingNumber?: string;
+  }[];
+
   /**
    * Bosta shipment status — mirrors Bosta state codes:
    * CREATED | PICKED_UP | IN_TRANSIT | OUT_FOR_DELIVERY |

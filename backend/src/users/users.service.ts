@@ -35,6 +35,18 @@ export class UsersService {
     return this.userModel.findOne({ username }).exec();
   }
 
+  /**
+   * The set of currently-active user ids, as strings. For callers (duty board,
+   * auto-assignment, presence) that hold a userId sourced from another collection
+   * (a shift row, a Shopify order's assignedTo) and need to know whether that
+   * account is still enabled — a disabled account must disappear from mentions,
+   * assignment and "who's online", not just the Users page.
+   */
+  async findActiveUserIds(): Promise<Set<string>> {
+    const docs = await this.userModel.find({ isActive: { $ne: false } }).select('_id').lean().exec();
+    return new Set(docs.map((u) => String(u._id)));
+  }
+
   async findAdmins(): Promise<UserDocument[]> {
     return this.userModel.find({ role: 'admin', isActive: { $ne: false } }).exec();
   }

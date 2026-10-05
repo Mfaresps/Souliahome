@@ -302,8 +302,16 @@ export class BostaService {
   }
 
   /** Request one printable AWB from Bosta's v2 API. The carrier returns a
-   * base64-encoded PDF for requests of 50 AWBs or fewer. */
-  async getAwb(txId: string): Promise<{ success: true; pdfBase64: string }> {
+   * base64-encoded PDF for requests of 50 AWBs or fewer.
+   *
+   * Per Bosta's docs, `requestedAwbType` is "A6" (the Zebra / thermal label)
+   * or "A4" (the original sheet), and `lang` is "ar" or "en". A6 is tried
+   * first; if Bosta refuses it the next format is tried so the order can still
+   * be printed, and the type actually received is cached with the PDF.
+   * ⚠ Every Bosta failure must leave here as an HttpException — a plain Error
+   * reaches the global filter as a 500 and the user sees «خطأ غير متوقع»
+   * instead of Bosta's own reason. */
+  async getAwb(txId: string): Promise<{ success: true; pdfBase64: string; awbType: string }> {
     const apiKey = await this.resolveApiKey();
     if (!apiKey) throw new BadRequestException('Bosta API Key غير مضبوط');
     const tx = await this.txModel.findById(txId).select('+bostaAwbBase64 +bostaAwbType').lean();
@@ -312,48 +320,109 @@ export class BostaService {
     if (['DELIVERED', 'RETURNED', 'CANCELLED', 'DELETED'].includes(tx.bostaStatus || '')) {
       throw new BadRequestException('بوليصة هذا الطلب غير قابلة للطباعة حسب حالة الشحنة');
     }
-    if (tx.bostaAwbBase64 && tx.bostaAwbType === 'A6') return { success: true, pdfBase64: tx.bostaAwbBase64 };
+    if (tx.bostaAwbBase64 && tx.bostaAwbType === 'A6') return { success: true, pdfBase64: tx.bostaAwbBase64, awbType: 'A6' };
 
-    const response = await new Promise<any>((resolve, reject) => {
+    const attempts: Array<[string, string]> = [['A6', 'ar'], ['A6', 'en'], ['A4', 'ar']];
+    const errors: string[] = [];
+    for (const [awbType, lang] of attempts) {
+      try {
+        const pdfBase64 = await this.requestAwbPdf(apiKey, tx, awbType, lang);
+        await this.txModel.findByIdAndUpdate(txId, { bostaAwbBase64: pdfBase64, bostaAwbType: awbType });
+        if (awbType !== 'A6') this.logger.warn(`Bosta AWB tx=${txId}: A6 refused, printed ${awbType} instead`);
+        return { success: true, pdfBase64, awbType };
+      } catch (e: any) {
+        const msg = e?.message || String(e);
+        errors.push(`${awbType}/${lang}: ${msg}`);
+        this.logger.error(`Bosta AWB failed tx=${txId} type=${awbType} lang=${lang} — ${msg}`);
+      }
+    }
+    // A stale-but-real label beats no label: an old A4 copy is still valid.
+    if (tx.bostaAwbBase64) return { success: true, pdfBase64: tx.bostaAwbBase64, awbType: tx.bostaAwbType || 'A4' };
+    const first = errors[0]?.replace(/^[^:]+:\s*/, '') || '';
+    throw new BadRequestException(`بوسطة رفضت طلب البوليصة${first ? ': ' + first : ''}`);
+  }
+
+  /** One shipment-history entry. `deleted` is pushed only on the transition INTO
+   * DELETED (see deletedEventPush), so a repeated sync never duplicates it. */
+  private shipEvent(type: 'sent' | 'resent' | 'deleted' | 'cancelled' | 'printed', tx: any, extra: Record<string, unknown> = {}) {
+    return {
+      type,
+      at: new Date().toISOString(),
+      ...(tx?.bostaTrackingNumber ? { trackingNumber: String(tx.bostaTrackingNumber) } : {}),
+      ...(tx?.bostaOrderId ? { bostaOrderId: String(tx.bostaOrderId) } : {}),
+      ...extra,
+    };
+  }
+  private deletedEventPush(tx: any, source: string, by?: string): Record<string, unknown> {
+    if ((tx?.bostaStatus || '') === 'DELETED') return {};
+    return { $push: { shipmentEvents: this.shipEvent('deleted', tx, { source, ...(by ? { by } : {}) }) } };
+  }
+
+  /** Append one print to the order's AWB print log and return the whole log. */
+  async recordAwbPrint(txId: string, by: string, byId: string): Promise<{ success: true; prints: { at: string; by: string; byId?: string }[] }> {
+    const cur = await this.txModel.findById(txId).select('bostaTrackingNumber bostaOrderId').lean();
+    if (!cur) throw new BadRequestException('المعاملة غير موجودة');
+    const trackingNumber = String((cur as any).bostaTrackingNumber || '');
+    const entry = { at: new Date().toISOString(), by: by || 'مستخدم', ...(byId ? { byId } : {}), ...(trackingNumber ? { trackingNumber } : {}) };
+    const tx = await this.txModel.findByIdAndUpdate(
+      txId,
+      { $push: { bostaAwbPrints: entry, shipmentEvents: this.shipEvent('printed', cur, { by: entry.by }) } },
+      { new: true, projection: { bostaAwbPrints: 1 } },
+    ).lean();
+    if (!tx) throw new BadRequestException('المعاملة غير موجودة');
+    this.emit('tx:updated', { _id: txId });
+    return { success: true, prints: (tx as any).bostaAwbPrints || [] };
+  }
+
+  /** One mass-awb call. Throws a plain Error carrying Bosta's message (or the
+   * HTTP status and the start of the body) — getAwb converts it. */
+  private requestAwbPdf(apiKey: string, tx: any, awbType: string, lang: string): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
       const payload = JSON.stringify({
-        trackingNumbers: tx.bostaTrackingNumber || undefined,
-        ids: tx.bostaTrackingNumber ? undefined : tx.bostaOrderId,
-        // A6 is Bosta's compact thermal-label format.
-        requestedAwbType: 'A6',
-        lang: 'ar',
+        ...(tx.bostaTrackingNumber ? { trackingNumbers: String(tx.bostaTrackingNumber) } : { ids: String(tx.bostaOrderId) }),
+        requestedAwbType: awbType,
+        lang,
       });
       const req = https.request({
         hostname: 'app.bosta.co',
         path: '/api/v2/deliveries/mass-awb',
         method: 'POST',
         headers: { Authorization: apiKey, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
+        timeout: 30000,
       }, (res) => {
         let data = '';
         res.setEncoding('utf8');
         res.on('data', chunk => data += chunk);
         res.on('end', () => {
-          try {
-            const parsed = JSON.parse(data);
-            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) resolve(parsed);
-            else reject(new Error(parsed?.message || parsed?.error || `Bosta HTTP ${res.statusCode}`));
-          } catch {
-            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300 && /^[A-Za-z0-9+/=\r\n]+$/.test(data.trim())) resolve(data.trim());
-            else reject(new Error(`تعذر قراءة رد بوليصة Bosta (HTTP ${res.statusCode})`));
+          const ok = !!res.statusCode && res.statusCode >= 200 && res.statusCode < 300;
+          const body = data.trim();
+          let parsed: any = null;
+          try { parsed = JSON.parse(body); } catch { /* not JSON */ }
+          if (!ok) {
+            const m = parsed?.message || parsed?.error?.message || parsed?.error || body.slice(0, 200);
+            reject(new Error(`HTTP ${res.statusCode}${m ? ' — ' + (typeof m === 'string' ? m : JSON.stringify(m)) : ''}`));
+            return;
           }
+          if (parsed === null) {
+            // Some responses are the bare base64 string.
+            if (/^[A-Za-z0-9+/=\r\n]+$/.test(body) && body.length > 100) resolve(body.replace(/\s+/g, ''));
+            else reject(new Error(`رد غير مفهوم (${body.slice(0, 120)})`));
+            return;
+          }
+          if (typeof parsed === 'string') { resolve(parsed); return; }
+          if (parsed?.success === false) { reject(new Error(parsed?.message || 'success:false')); return; }
+          const d = parsed?.data;
+          const candidate = [d?.pdf, d?.file, d?.base64, d?.awb, d?.data, d, parsed?.pdf, parsed?.file, parsed?.base64]
+            .find(v => typeof v === 'string' && v.length > 100);
+          if (candidate) { resolve(String(candidate).replace(/^data:application\/pdf;base64,/i, '')); return; }
+          reject(new Error(parsed?.message || `لم تُرجع ملف PDF (${body.slice(0, 120)})`));
         });
       });
+      req.on('timeout', () => req.destroy(new Error('انتهت مهلة الاتصال ببوسطة')));
       req.on('error', reject);
       req.write(payload);
       req.end();
     });
-
-    const candidate = typeof response === 'string' ? response : response?.data?.pdf || response?.data?.file || response?.data?.base64 || response?.data?.awb || response?.data || response?.pdf || response?.file;
-    const pdfBase64 = typeof candidate === 'string' ? candidate : '';
-    if (!pdfBase64 || response?.success === false) {
-      throw new BadRequestException(response?.message || 'بوسطة لم تُرجع ملف البوليصة؛ تحقق من حالة الشحنة وإمكانية طباعتها');
-    }
-    await this.txModel.findByIdAndUpdate(txId, { bostaAwbBase64: pdfBase64, bostaAwbType: 'A6' });
-    return { success: true, pdfBase64 };
   }
 
   private emit(event: string, payload: unknown): void {
@@ -432,6 +501,10 @@ export class BostaService {
       return { success: false, error: 'تم إرسال هذا الطلب إلى Bosta مسبقاً' };
     }
     if (!['Preparing', 'Ready', 'Picked-Up'].includes(tx.pickupStatus)) return { success: false, error: 'يجب نقل الطلب إلى قيد التجهيز قبل إنشاء بوليصة Bosta' };
+    // Was there a shipment before? Read BEFORE the fields below are cleared.
+    const prevTracking = String(tx.bostaTrackingNumber || '');
+    const isResend = !!(tx.bostaOrderId || prevTracking
+      || ((tx as any).shipmentEvents || []).some((e: any) => e?.type === 'sent' || e?.type === 'resent'));
     // Clear previous failed/deleted state before resending
     if (isResendable || tx.bostaOrderId) {
       await this.txModel.findByIdAndUpdate(txId, {
@@ -596,11 +669,24 @@ export class BostaService {
         // reports PICKED_UP, which is when it is actually on its way.
         pickupStatus: 'Ready',
         shippedByName: operatorName || '',
+        $push: {
+          shipmentEvents: this.shipEvent(isResend ? 'resent' : 'sent',
+            { bostaTrackingNumber: trackingNumber, bostaOrderId },
+            { by: operatorName || '', ...(isResend && prevTracking && prevTracking !== trackingNumber ? { prevTrackingNumber: prevTracking } : {}) }),
+        },
       });
 
       this.logger.log(`Bosta order created: tx=${txId} bostaId=${bostaOrderId} tracking=${trackingNumber}`);
       this.emit('tx:updated', { _id: txId });
       this.emit('pickup:shipped', { _id: txId });
+
+      // Pre-fetch the A6 label in the background so the FIRST print is served
+      // from the cache instead of waiting ~0.6s on Bosta. A few seconds' delay
+      // gives Bosta time to make the new shipment printable. Never awaited and
+      // never throws — a failed prefetch just means the print fetches it.
+      setTimeout(() => {
+        this.getAwb(txId).catch(e => this.logger.warn(`Bosta AWB prefetch skipped tx=${txId}: ${e?.message || e}`));
+      }, 4000);
 
       // ── إرسال Fulfillment + رقم التتبع لشوبيفاي تلقائياً ──────────────────
       const shopifyOrderId = (tx as any).shopifyOrderId || '';
@@ -665,6 +751,7 @@ export class BostaService {
           bostaLastSync: new Date().toISOString(),
           pickupStatus: 'Ready',
           shippedAt: null,
+          ...this.deletedEventPush(tx, 'sync'),
         });
         this.emit('tx:updated', { _id: txId });
         this.emit('pickup:unshipped', { _id: txId });
@@ -865,6 +952,7 @@ export class BostaService {
         bostaLastSync: new Date().toISOString(),
         pickupStatus: 'Ready',
         shippedAt: null,
+        ...this.deletedEventPush(tx, source),
       });
       this.emit('tx:updated', { _id: txId });
       this.emit('pickup:unshipped', { _id: txId });
@@ -1192,7 +1280,7 @@ export class BostaService {
 
   // ── Cancel a Bosta order ───────────────────────────────────────────────
 
-  async cancelOrder(txId: string): Promise<{ success: boolean; error?: string }> {
+  async cancelOrder(txId: string, by = ''): Promise<{ success: boolean; error?: string }> {
     const apiKey = await this.resolveApiKey();
     if (!apiKey) return { success: false, error: 'Bosta API Key غير مضبوط' };
 
@@ -1206,6 +1294,7 @@ export class BostaService {
         bostaStatus: 'CANCELLED',
         bostaStatusLabel: 'ملغي',
         bostaLastSync: new Date().toISOString(),
+        $push: { shipmentEvents: this.shipEvent('cancelled', tx, by ? { by } : {}) },
       });
 
       this.emit('tx:updated', { _id: txId });
@@ -1218,7 +1307,7 @@ export class BostaService {
 
   // ── Force-mark as DELETED so order can be re-sent ─────────────────────
 
-  async markAsDeleted(txId: string): Promise<{ success: boolean; error?: string }> {
+  async markAsDeleted(txId: string, by = ''): Promise<{ success: boolean; error?: string }> {
     const tx = await this.txModel.findById(txId).lean();
     if (!tx) return { success: false, error: 'المعاملة غير موجودة' };
     await this.txModel.findByIdAndUpdate(txId, {
@@ -1226,6 +1315,7 @@ export class BostaService {
       bostaStatusLabel: 'محذوف من Bosta',
       bostaOrderId: '',
       bostaLastSync: new Date().toISOString(),
+      ...this.deletedEventPush(tx, 'manual', by),
     });
     this.emit('tx:updated', { _id: txId });
     return { success: true };
@@ -1309,6 +1399,7 @@ export class BostaService {
         bostaOrderId: '',
         bostaStatus: 'DELETED',
         bostaStatusLabel: 'محذوف من Bosta',
+        ...(tx.bostaOrderId ? this.deletedEventPush(tx, 'fix-city') : {}),
       });
       return { success: true, tx: info, fixed: { shippingGov: cityPart, shippingBostaCity: bostaEn, note: 'تم مسح bostaOrderId — يمكنك إعادة الإرسال' } };
     }

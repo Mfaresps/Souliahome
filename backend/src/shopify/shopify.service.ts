@@ -347,6 +347,7 @@ export class ShopifyService {
     const newUser = await this.usersService.findById(newEmployeeId);
     if (!newUser) return { success: false, error: 'الموظف غير موجود' };
     if (newUser.role !== 'staff') return { success: false, error: 'يمكن إسناد الأوردر لموظف (staff) فقط' };
+    if (newUser.isActive === false) return { success: false, error: 'لا يمكن إسناد الأوردر لموظف معطل' };
 
     const previousUserId = order.assignedTo || '';
     const previousName = order.assignedToName || '';

@@ -2842,8 +2842,6 @@ body.dark-mode .notif-center-btn{background:rgba(45,122,79,.08);border-color:rgb
 .mention-avatar{width:24px;height:24px;border-radius:50%;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0}
 .mention-name{font-weight:500;color:#0f172a;font-size:.8rem}
 .mention-role{display:none}
-.mention-chip{display:inline-block;background:rgba(0,49,30,.12);color:var(--primary);font-weight:700;border-radius:4px;padding:0 4px;font-size:.88em;cursor:default}
-body.dark-mode .mention-chip{background:rgba(134,239,172,.15);color:#86efac}
 .comment-mention-highlight{background:rgba(245,158,11,.18);border-radius:6px;outline:2px solid rgba(245,158,11,.55);animation:mentionPulse 1.2s ease 3}
 @keyframes mentionPulse{0%,100%{background:rgba(245,158,11,.18)}50%{background:rgba(245,158,11,.4)}}
 .notif-item.mention .notif-icon{background:rgba(139,92,246,.12);color:#7c3aed}
@@ -4780,6 +4778,28 @@ body.dark-mode .sp-new-badge{background:rgba(74,222,128,.16);color:#86efac}
 .sp-achip button:hover{background:color-mix(in srgb,var(--accent) 16%,transparent)}
 .sp-achip-clear{border:0;background:none;font:inherit;font-size:.72rem;font-weight:600;color:var(--accent);text-decoration:underline;cursor:pointer;padding:0 4px}
 body.dark-mode .sp-achip{background:rgba(74,222,128,.12);color:#86efac}
+
+/* ⚠ Was hand-styled with its own border-radius/border/bg and a hard-filled solid-color
+   confirm button — it sat beside .sp-tb-btn pills (8px radius, 1.5px var(--border),
+   var(--surface)) with none of their language, and the filled button read as a harsh
+   block against the soft outlined siblings. Now shares the same radius/border/surface
+   family, with a tinted (not solid) background stating "a selection is active" the
+   way .sp-achip already does, and its own buttons sized like .sp-tb-btn so nothing on
+   the row jumps out. */
+.sp-bulk-bar{display:flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--accent) 7%,var(--surface));border:1.5px solid color-mix(in srgb,var(--accent) 30%,var(--border));border-radius:9px;padding:6px 8px 6px 12px;white-space:nowrap;animation:spBulkIn .18s ease-out}
+@keyframes spBulkIn{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.sp-bulk-bar{animation:none}}
+[dir="rtl"] .sp-bulk-bar{padding:6px 12px 6px 8px}
+.sp-bulk-count{font-size:.8rem;font-weight:700;color:var(--text)}
+.sp-bulk-total{font-size:.76rem;color:var(--text-muted)}
+.sp-bulk-total b{color:var(--text);font-weight:700}
+.sp-bulk-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:7px;font-size:.78rem;font-weight:600;white-space:nowrap;border:1.5px solid transparent;cursor:pointer;transition:filter .15s,border-color .15s,color .15s}
+.sp-bulk-btn.is-primary{background:var(--accent);color:#fff}
+.sp-bulk-btn.is-primary:hover{filter:brightness(1.07)}
+.sp-bulk-btn.is-outline{background:var(--surface);border-color:var(--border);color:var(--text)}
+.sp-bulk-btn.is-outline:hover{border-color:var(--accent);color:var(--accent)}
+.sp-bulk-close{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:0;border-radius:50%;background:transparent;color:var(--text-muted);cursor:pointer;font-size:.9rem;line-height:1}
+.sp-bulk-close:hover{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
 @media(max-width:768px){
   #shopify-filters-top-row .sp-tb-btn > span:not(.sp-tb-badge){display:none}
   #shopify-filters-top-row .sp-tb-btn{padding:8px 10px!important}
@@ -4860,6 +4880,9 @@ body.dark-mode .sp-fp-pill.is-on{color:#86efac}
 @container (max-width:54px){
   .sp-items-cq .sp-ithumbs{display:none}
 }
+/* Photos turned off from الأعمدة (data-col="thumbs"): the count is then the only thing
+   identifying the order, so it is never shed on a narrow blocked row. */
+.sp-items-cq .sp-items-btn:has(.sp-ithumbs[style*="none"]) .mov-items-count{display:inline!important}
 .sp-items-btn.is-blocked{border-color:#f3c3bd;background:#fff7f6}
 body.dark-mode .sp-items-btn.is-blocked{border-color:rgba(248,113,113,.45);background:rgba(248,113,113,.08)}
 .sp-ithumbs{display:inline-flex;flex-shrink:0}
@@ -5083,8 +5106,10 @@ body.dark-mode .sp-pk-tl.is-decision .sp-pk-tl-b,body.dark-mode .sp-pk-empty.is-
    invisible button on every row — the room «جديد» needed beside the number).
    Starring stays one click away in the ⋮ menu («تمييز الأوردر»); the mobile card
    keeps its hover star. */
-#shopify-orders-table-body td[data-col="ref"] .sp-star:not(.is-on){display:none}
-#shopify-orders-table-body td[data-col="ref"] .sp-star{width:18px;margin-inline-end:3px}
+/* (Oct 5, round 4) At the user's request the star is drawn on EVERY row again, beside
+   the number — faint until starred, so it is findable without hovering. 18px, not 27. */
+#shopify-orders-table-body td[data-col="ref"] .sp-star{width:18px;margin-inline-end:3px;flex-shrink:0;opacity:.3}
+#shopify-orders-table-body td[data-col="ref"] .sp-star.is-on{opacity:1}
 .sp-cmt-open svg{flex-shrink:0}
 .sp-cmt-n{font-size:.72rem;font-weight:700;unicode-bidi:isolate}
 
@@ -10321,6 +10346,172 @@ body.dark-mode .mov-items-popover .mip-warn.is-warn{color:#fbbf24}
 body.dark-mode .mov-items-popover .mip-price{color:#4ade80}
 /* Shipping cell — billed price + loss diff stacked */
 .mov-ship-cell{display:inline-flex;flex-direction:column;align-items:center;gap:2px;line-height:1.2}
+/* ── AWB printed mark (shipping column, prep cards) ──
+   Quiet by design: a context fact, not an alert. Blue, like the supplier-credit
+   «nothing went wrong» tone, never green (green means money / done). */
+.mov-ship-line{display:inline-flex;align-items:center;gap:5px}
+.awb-mark{display:inline-flex;align-items:center;gap:2px;color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:1px 4px;line-height:1;flex-shrink:0;cursor:help}
+.awb-mark svg{width:11px;height:11px}
+.awb-mark b{font-size:.62rem;font-weight:700;unicode-bidi:isolate}
+body.dark-mode .awb-mark{color:#93c5fd;background:rgba(59,130,246,.14);border-color:rgba(147,197,253,.35)}
+.pw-chip.is-awb{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe}
+.pw-chip.is-awb svg{width:10px;height:10px}
+.pw-chip.is-sent{color:#b91c1c;background:#fef2f2;border-color:#fecaca}
+body.dark-mode .pw-chip.is-awb{color:#93c5fd;background:rgba(59,130,246,.14);border-color:rgba(147,197,253,.35)}
+body.dark-mode .pw-chip.is-sent{color:#fca5a5;background:rgba(239,68,68,.12);border-color:rgba(252,165,165,.3)}
+.pw-abtn.is-printed{color:#1d4ed8;border-color:#bfdbfe;background:#eff6ff}
+body.dark-mode .pw-abtn.is-printed{color:#93c5fd;border-color:rgba(147,197,253,.35);background:rgba(59,130,246,.12)}
+
+/* ── «تم التحضير → إرسال إلى بوسطة → طباعة» dialog ──
+   z-index 1450: above the prep modal (.modal-overlay 1300 / in-modal 1400),
+   below the OTP gates (1500) and the confirm dialog (99999).
+   Motion: the card springs in; between steps its HEIGHT morphs (.is-morph) and the
+   new step's parts rise in one after another (.bsf-in, staggered); the success
+   check draws itself. Only transform / opacity / height — and none of it under
+   prefers-reduced-motion. */
+.mov-bosta-line{display:inline-flex;align-items:center;gap:4px}
+/* ── comments: links, product chips, composer tools, product picker ── */
+.cmt-link{color:var(--blue,#1565c0);text-decoration:underline;text-decoration-color:color-mix(in srgb,currentColor 40%,transparent);text-underline-offset:2px;word-break:break-all;unicode-bidi:isolate}
+.cmt-link:hover{text-decoration-color:currentColor}
+body.dark-mode .cmt-link{color:#93c5fd}
+/* product mention — warm tint, so a product reads differently from a person */
+.cmt-prod{display:inline-flex;align-items:center;gap:6px;max-width:100%;vertical-align:middle;margin:1px 0;padding:2px 9px 2px 3px;border-radius:8px;border:1px solid #fed7aa;background:#fff7ed;color:#9a3412;font:inherit;font-size:.92em;font-weight:600;line-height:1.3;cursor:pointer;transition:border-color .13s,background .13s,box-shadow .13s}
+[dir="rtl"] .cmt-prod{padding:2px 3px 2px 9px}
+.cmt-prod:hover{border-color:#fb923c;background:#ffedd5;box-shadow:0 2px 8px rgba(234,88,12,.15)}
+.cmt-prod.is-missing{opacity:.6;text-decoration:line-through}
+.cmt-prod-th{position:relative;width:24px;height:24px;border-radius:6px;overflow:hidden;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:#ffedd5;color:#c2410c}
+.cmt-prod-th img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#fff}
+.cmt-prod-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+body.dark-mode .cmt-prod{border-color:rgba(251,146,60,.35);background:rgba(234,88,12,.12);color:#fdba74}
+body.dark-mode .cmt-prod:hover{background:rgba(234,88,12,.2)}
+body.dark-mode .cmt-prod-th{background:rgba(234,88,12,.2);color:#fdba74}
+/* person mention — a pill in the brand tint */
+.mention-chip{display:inline-flex;align-items:center;gap:1px;vertical-align:baseline;background:color-mix(in srgb,var(--primary) 10%,transparent);color:var(--primary);border:1px solid color-mix(in srgb,var(--primary) 22%,transparent);font-weight:700;border-radius:999px;padding:0 8px;font-size:.9em;line-height:1.55;cursor:default}
+.mention-chip b{font-weight:700;opacity:.6}
+body.dark-mode .mention-chip{background:rgba(134,239,172,.12);color:#86efac;border-color:rgba(134,239,172,.25)}
+/* product preview from a comment — its own layer, above every modal */
+.cmt-pv{position:fixed;inset:0;z-index:100002;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,20,0);transition:background .2s ease}
+.cmt-pv.is-on{background:rgba(15,23,20,.45)}
+.cmt-pv-card{width:min(360px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.28);outline:none;opacity:0;transform:translateY(10px) scale(.97);transition:opacity .18s ease,transform .26s cubic-bezier(.2,.9,.25,1.1)}
+.cmt-pv.is-on .cmt-pv-card{opacity:1;transform:none}
+.cmt-pv-top{display:flex;padding:10px 10px 0}
+.cmt-pv-back{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--text);font:inherit;font-size:.8rem;font-weight:600;cursor:pointer;transition:background .13s,border-color .13s}
+.cmt-pv-back:hover,.cmt-pv-back:focus-visible{background:var(--bg-alt);border-color:color-mix(in srgb,var(--primary) 35%,var(--border));outline:none}
+.cmt-pv-photo{position:relative;margin:10px;aspect-ratio:1/1;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff7ed;color:#fdba74}
+.cmt-pv-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff}
+body.dark-mode .cmt-pv-photo{background:rgba(234,88,12,.12)}
+.cmt-pv-body{padding:2px 16px 16px}
+.cmt-pv-name{font-size:1.02rem;font-weight:700;line-height:1.35}
+.cmt-pv-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
+.cmt-pv-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.74rem;color:var(--muted);background:var(--bg-alt);border:1px solid var(--border);border-radius:6px;padding:1px 7px}
+.cmt-pv-code bdi{unicode-bidi:isolate}
+.cmt-pv-st{font-size:.74rem;font-weight:700;border-radius:999px;padding:1px 9px}
+.cmt-pv-st.is-ok{color:#059669;background:color-mix(in srgb,#10b981 12%,transparent)}
+.cmt-pv-st.is-low{color:#b45309;background:#fffbeb}
+.cmt-pv-st.is-out{color:#dc2626;background:color-mix(in srgb,#ef4444 10%,transparent)}
+.cmt-pv-price{margin-top:10px;font-size:1.1rem;font-weight:700}
+.cmt-pv-facts{margin:12px 0 0;display:grid;gap:6px}
+.cmt-pv-facts div{display:flex;justify-content:space-between;gap:12px;font-size:.8rem;border-top:1px solid var(--border);padding-top:6px}
+.cmt-pv-facts dt{color:var(--muted)}
+.cmt-pv-facts dd{margin:0;font-weight:600;text-align:end}
+@media (prefers-reduced-motion:reduce){.cmt-pv,.cmt-pv-card{transition:none}}
+/* the bar above the comment field */
+.cmt-bar{display:flex;align-items:center;gap:6px;margin:0 0 6px}
+.cmt-tool{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font:inherit;font-size:.75rem;font-weight:600;cursor:pointer;transition:background .13s,color .13s,border-color .13s}
+.cmt-tool.is-user:hover,.cmt-tool.is-user:focus-visible{color:var(--primary);border-color:color-mix(in srgb,var(--primary) 35%,var(--border));background:color-mix(in srgb,var(--primary) 7%,transparent);outline:none}
+.cmt-tool.is-prod:hover,.cmt-tool.is-prod:focus-visible{color:#c2410c;border-color:#fdba74;background:#fff7ed;outline:none}
+body.dark-mode .cmt-tool.is-prod:hover{color:#fdba74;background:rgba(234,88,12,.12);border-color:rgba(251,146,60,.35)}
+.pmp{position:fixed;z-index:100001;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:12px;box-shadow:0 16px 44px rgba(0,0,0,.2);overflow:hidden;opacity:0;transform:translateY(4px);transition:opacity .14s ease,transform .18s cubic-bezier(.2,.9,.3,1.1)}
+.pmp.is-on{opacity:1;transform:none}
+.pmp-head{padding:8px;border-bottom:1px solid var(--border)}
+.pmp-q{width:100%;box-sizing:border-box;height:34px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-alt);font:inherit;font-size:.84rem;color:var(--text)}
+.pmp-q:focus{outline:2px solid var(--accent);outline-offset:-1px;background:var(--bg)}
+.pmp-list{max-height:280px;overflow-y:auto;padding:4px}
+.pmp-item{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:8px;cursor:pointer}
+.pmp-item.is-act,.pmp-item:hover{background:var(--primary-pale)}
+.pmp-th{width:30px;height:30px;border-radius:7px;overflow:hidden;flex-shrink:0;display:inline-flex;background:var(--bg-alt)}
+.pmp-th img,.pmp-th>*{width:100%!important;height:100%!important;object-fit:cover}
+.pmp-b{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px}
+.pmp-n{font-size:.83rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pmp-c{font-size:.7rem;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.pmp-c bdi{unicode-bidi:isolate}
+.pmp-st{font-size:.7rem;font-weight:600;white-space:nowrap;flex-shrink:0}
+.pmp-st.is-ok{color:#059669}
+.pmp-st.is-out{color:#dc2626}
+.pmp-empty{padding:18px 10px;text-align:center;color:var(--muted);font-size:.82rem}
+@media (prefers-reduced-motion:reduce){.pmp{transition:none}}
+.search-order-note{font-size:.66rem;color:var(--muted);white-space:nowrap}
+/* «سجل الشحنة» — an icon per event instead of the plain dot */
+.ord-tl-sub-event.ship-ev{align-items:center}
+.ship-ev-ic{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.ship-ev.is-ok .ship-ev-ic{color:#059669;background:color-mix(in srgb,#10b981 14%,transparent)}
+.ship-ev.is-info .ship-ev-ic{color:#1d4ed8;background:#eff6ff}
+.ship-ev.is-bad .ship-ev-ic{color:#dc2626;background:color-mix(in srgb,#ef4444 12%,transparent)}
+.ship-ev.is-bad .ord-tl-sub-text{color:#b91c1c}
+body.dark-mode .ship-ev.is-info .ship-ev-ic{color:#93c5fd;background:rgba(59,130,246,.14)}
+body.dark-mode .ship-ev.is-bad .ord-tl-sub-text{color:#fca5a5}
+.bsf-overlay{position:fixed;inset:0;z-index:1450;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,20,0);backdrop-filter:blur(0);transition:background .26s ease,backdrop-filter .26s ease}
+.bsf-overlay.is-on{background:rgba(15,23,20,.42);backdrop-filter:blur(3px)}
+.bsf-overlay.is-out{transition-duration:.2s}
+.bsf-card{width:min(420px,100%);background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.24),0 2px 6px rgba(0,0,0,.06);padding:20px;outline:none;overflow:hidden;
+  opacity:0;transform:translateY(14px) scale(.96);transition:opacity .22s ease,transform .38s cubic-bezier(.2,.9,.25,1.12)}
+.bsf-overlay.is-on .bsf-card{opacity:1;transform:none}
+.bsf-overlay.is-out .bsf-card{opacity:0;transform:translateY(6px) scale(.98);transition:opacity .18s ease,transform .2s ease}
+.bsf-card.is-morph{transition:height .32s cubic-bezier(.3,.8,.3,1),opacity .22s ease,transform .38s cubic-bezier(.2,.9,.25,1.12)}
+/* a step's parts rise in one after another */
+.bsf-stage .bsf-in{animation:bsfRise .36s cubic-bezier(.2,.8,.3,1) both}
+.bsf-stage .bsf-in:nth-child(1){animation-delay:.02s}
+.bsf-stage .bsf-in:nth-child(2){animation-delay:.07s}
+.bsf-stage .bsf-in:nth-child(3){animation-delay:.12s}
+.bsf-stage .bsf-in:nth-child(4){animation-delay:.16s}
+.bsf-stage .bsf-in:nth-child(5){animation-delay:.2s}
+.bsf-stage.no-enter .bsf-in,.bsf-stage.no-enter .bsf-ic,.bsf-stage.no-enter .bsf-draw{animation:none}
+@keyframes bsfRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.bsf-head{display:flex;align-items:center;gap:12px}
+.bsf-ic{width:44px;height:44px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;animation:bsfPop .5s cubic-bezier(.3,1.5,.5,1) both}
+.bsf-ic.is-ok{color:#059669;background:color-mix(in srgb,#10b981 14%,transparent)}
+.bsf-ic.is-ok::after{content:'';position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 0 color-mix(in srgb,#10b981 40%,transparent);animation:bsfRing .9s ease-out .15s both}
+.bsf-ic.is-err{color:#dc2626;background:color-mix(in srgb,#ef4444 12%,transparent)}
+@keyframes bsfPop{from{opacity:0;transform:scale(.55)}to{opacity:1;transform:none}}
+@keyframes bsfRing{from{box-shadow:0 0 0 0 color-mix(in srgb,#10b981 40%,transparent)}to{box-shadow:0 0 0 12px transparent}}
+.bsf-draw{stroke-dasharray:1;stroke-dashoffset:1;animation:bsfDraw .42s cubic-bezier(.6,0,.3,1) .18s forwards}
+@keyframes bsfDraw{to{stroke-dashoffset:0}}
+.bsf-ht{min-width:0}
+.bsf-title{font-size:1rem;font-weight:700;line-height:1.35}
+.bsf-sub{font-size:.8rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bsf-q{margin:16px 0 0;font-size:.9rem}
+.bsf-track{margin-top:14px;display:inline-flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);background:var(--bg-alt);border:1px solid var(--border);border-radius:8px;padding:5px 10px}
+.bsf-track bdi{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88rem;font-weight:700;color:var(--text);unicode-bidi:isolate}
+.bsf-note{margin-top:10px;display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--muted)}
+.bsf-bar{margin-top:14px;height:3px;border-radius:3px;background:var(--bg-alt);overflow:hidden}
+.bsf-bar span{display:block;height:100%;width:100%;background:#10b981;transform-origin:inline-start;transform:scaleX(0);animation:bsfBar 1.6s linear .1s forwards}
+[dir="rtl"] .bsf-bar span{transform-origin:right}
+[dir="ltr"] .bsf-bar span{transform-origin:left}
+@keyframes bsfBar{to{transform:scaleX(1)}}
+.bsf-warn{margin-top:12px;font-size:.8rem;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px}
+body.dark-mode .bsf-warn{color:#fcd34d;background:rgba(245,158,11,.1);border-color:rgba(252,211,77,.3)}
+.bsf-actions{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
+.bsf-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:0 16px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font:inherit;font-size:.86rem;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s,transform .12s,box-shadow .15s}
+.bsf-btn:hover:not([disabled]){background:var(--bg-alt)}
+.bsf-btn:active:not([disabled]){transform:scale(.97)}
+.bsf-btn.is-primary{flex:1;background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 2px 0 rgba(0,0,0,.08)}
+.bsf-btn.is-primary:hover:not([disabled]){background:var(--primary-light);border-color:var(--primary-light);box-shadow:0 6px 16px color-mix(in srgb,var(--primary) 30%,transparent)}
+.bsf-btn[disabled]{opacity:.6;cursor:default}
+.bsf-btn.is-busy[disabled]{opacity:.92}
+.bsf-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bsf-spin{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-inline-end-color:transparent;animation:bsfSpin .7s linear infinite;flex-shrink:0}
+@keyframes bsfSpin{to{transform:rotate(360deg)}}
+/* «جارٍ تجهيز البوليصة…» pill — only shown when a label is not ready at once */
+#awb-busy{position:fixed;inset-inline:0;bottom:24px;margin-inline:auto;width:max-content;z-index:1460;display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;background:var(--primary);color:#fff;font-size:.82rem;font-weight:600;box-shadow:0 10px 28px rgba(0,0,0,.22);opacity:0;transform:translateY(10px);transition:opacity .18s ease,transform .24s cubic-bezier(.2,.9,.3,1.1);pointer-events:none}
+#awb-busy.is-on{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  .bsf-overlay,.bsf-card,.bsf-card.is-morph,#awb-busy{transition:none}
+  .bsf-stage .bsf-in,.bsf-ic,.bsf-ic.is-ok::after{animation:none}
+  .bsf-draw{animation:none;stroke-dashoffset:0}
+  .bsf-bar span{animation:none;transform:scaleX(1)}
+  .bsf-spin{animation-duration:2s}
+}
+@media (max-width:480px){.bsf-actions{flex-direction:column}.bsf-btn{width:100%}}
 .mov-ship-loss{font-size:.68rem;font-weight:600;color:#dc2626;font-variant-numeric:tabular-nums}
 body.dark-mode .mov-ship-loss{color:#f87171}
 /* Uniform numeric price columns */
@@ -12245,14 +12436,10 @@ body.dark-mode .pw-chip.is-due{color:#93c5fd;background:#1e3a8a;border-color:#1e
 .pw-cust-refno{font-size:1.5rem;font-weight:800;color:var(--text);letter-spacing:-.01em;direction:ltr;unicode-bidi:isolate}
 .pw-copy{background:var(--bg-alt);border:1px solid var(--border);border-radius:7px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);transition:background .13s,color .13s;flex-shrink:0}
 .pw-copy:hover{background:var(--border);color:var(--text)}
-/* الاسم والهاتف سطر واحد — الهاتف بيان تعريفي يُقرأ مع الاسم لا تحته. */
+/* العنوان مبسّط: اسم العميل فقط. الهاتف حُذف من هذا الهيدر (كان على نفس
+   السطر) — موجود بالفعل في بطاقة الطلب بقائمة التنقّل. */
 .pw-cust-idline{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-top:4px}
 .pw-cust-name{font-size:1.02rem;font-weight:700;color:var(--text);line-height:1.3;word-break:break-word}
-/* ⚠ isolate لا direction:ltr — قلب اتجاه العنصر ينقل حافته الأولى للطرف المقابل
-   فيبتعد الرقم عن الاسم الذي يخصّه. نفس قاعدة سجل الخزنة. */
-.pw-cust-phone{display:inline-flex;align-items:center;gap:4px;font-size:.76rem;color:var(--muted);
-  font-family:monospace;unicode-bidi:isolate;text-decoration:none;border-bottom:1px dotted transparent}
-.pw-cust-phone:hover{color:var(--primary);border-bottom-color:currentColor}
 /* ⚠ سطر نصّي لا شرائح: الحالة/الشحن/الموظف **سياق لا قرار**، وحدودُ الشرائح كانت
    تمنحها ثقلاً بصرياً يساوي المال والملاحظات. */
 .pw-cust-meta{display:flex;align-items:center;flex-wrap:wrap;gap:0;margin-top:3px;
@@ -12395,7 +12582,11 @@ body.dark-mode .pw-mult-x{color:#b45309}
 .pw-item-body{gap:6px;justify-content:center}
 .pw-item-foot{flex-direction:column;align-items:flex-start;gap:2px}
 
-/* ── The prepare control now lives in the header, beside the order number ── */
+/* ── The prepare control lives at the far end of the header, as its own
+     flex item — clear of the ref/copy cluster so a tap on «نسخ» can never
+     be mistaken for a tap on «Prepared». .pw-head-tick carries no margin
+     trick: being the LAST child of the row flex (.pw-work-head) already
+     pins it to the row's end in both RTL and LTR. ── */
 .pw-cust-ref{gap:10px}
 .pw-tickhead{display:inline-flex;align-items:center;gap:8px;padding:7px 14px 7px 10px;border-radius:9px;border:1.5px solid color-mix(in srgb,#10b981 45%,var(--border));background:color-mix(in srgb,#10b981 7%,var(--surface));cursor:pointer;font-family:inherit;font-size:.84rem;font-weight:700;color:#047857;transition:background .18s,border-color .18s;white-space:nowrap;user-select:none}
 .pw-tickhead:hover{background:color-mix(in srgb,#10b981 15%,var(--surface));border-color:#10b981}
@@ -12403,6 +12594,8 @@ body.dark-mode .pw-mult-x{color:#b45309}
 .pw-tickhead.is-done{background:#10b981;border-color:#10b981;color:#fff}
 .pw-tickhead-c{width:20px;height:20px;border-radius:50%;border:2px solid color-mix(in srgb,#10b981 55%,var(--border));display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .18s,border-color .18s}
 .pw-tickhead.is-done .pw-tickhead-c{background:#fff;border-color:#fff}
+.pw-head-tick{flex-shrink:0;align-self:flex-start}
+@media (max-width:640px){.pw-head-tick{align-self:stretch;justify-content:center}}
 
 /* ── Completion-ordered navigator ──────────────────────────────────────────
    A prepared order slides to the bottom under a divider rather than vanishing.
@@ -15536,6 +15729,7 @@ body.dark-mode .csi-done-lines>div.is-warn b{color:#fbbf24}
         <span id="tx-cmt-count" style="margin-inline-start:auto;background:rgba(255,255,255,.25);border-radius:10px;font-size:.72rem;padding:1px 8px">0</span>
       </div>
       <div class="tx-comment-form">
+        <div class="cmt-bar" data-cmt-tools="tx-comment-text|__tx__"></div>
         <div class="tx-comment-input-row">
           <input type="text" id="tx-comment-text" data-i18n-placeholder="txAddCommentPlaceholder" placeholder="أضف تعليق… اكتب @ للإشارة" class="tx-comment-input" oninput="onMentionInput(this,'__tx__')" onkeydown="onMentionKey(event,'__tx__');if(event.key==='Enter'&&!_mentionDropdown){event.preventDefault();addTxComment()}">
           <button class="tx-comment-add-btn" onclick="addTxComment()" data-i18n-title="txSendComment" title="إرسال التعليق"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
@@ -25544,6 +25738,78 @@ const TRANSLATIONS = {
   ivAmountCollectedBy:{ar:'تحصيل المبلغ',en:'Amount collected by'},
   // Order timeline (buildOrderTimelineSection)
   ivTlOrderTimeline:{ar:'مسار الطلب',en:'Order Timeline'},
+  awbPrintTitle:{ar:'طباعة البوليصة',en:'AWB printed'},
+  cmtMentionPerson:{ar:'منشن شخص',en:'Mention a person'},
+  cmtToolUser:{ar:'مستخدم',en:'User'},
+  cmtPvBack:{ar:'رجوع للتعليقات',en:'Back to comments'},
+  cmtPvMaterial:{ar:'الخامة',en:'Material'},
+  cmtPvSize:{ar:'المقاس',en:'Size'},
+  cmtPvColors:{ar:'الألوان',en:'Colors'},
+  cmtToolProduct:{ar:'منتج',en:'Product'},
+  cmtMentionProduct:{ar:'منشن منتج من المخزن',en:'Mention a product from stock'},
+  cmtProductSearch:{ar:'ابحث باسم المنتج أو الكود…',en:'Search product name or code…'},
+  cmtProductNone:{ar:'لا يوجد منتج بهذا الاسم',en:'No matching product'},
+  cmtProductNoStock:{ar:'المخزن لم يُحمَّل بعد',en:'Stock is not loaded yet'},
+  cmtStockAvail:{ar:'متاح {n}',en:'{n} in stock'},
+  cmtStockOut:{ar:'نفد',en:'Out of stock'},
+  cmtOpenProduct:{ar:'فتح المنتج في المخزن',en:'Open in stock'},
+  cmtProductMissing:{ar:'المنتج غير موجود في المخزن',en:'Product not found in stock'},
+  gsStPending:{ar:'قيد الانتظار',en:'Pending'},
+  gsStPreparing:{ar:'قيد التجهيز',en:'Preparing'},
+  gsStReady:{ar:'جاهز للشحن',en:'Ready to Ship'},
+  gsStShipped:{ar:'تم الشحن',en:'Shipped'},
+  gsStDelivered:{ar:'تم التسليم',en:'Delivered'},
+  gsAwbDeleted:{ar:'البوليصة محذوفة من بوسطة',en:'AWB deleted at Bosta'},
+  gsAwbInvalid:{ar:'بوسطة رفضت البيانات',en:'Rejected by Bosta'},
+  shipLogTitle:{ar:'سجل الشحنة',en:'Shipment log'},
+  shipLogDesc:{ar:'{n} حركة — آخرها: {last}',en:'{n} events — last: {last}'},
+  shipEvSent:{ar:'أُرسلت إلى بوسطة',en:'Sent to Bosta'},
+  shipEvResent:{ar:'أُعيد الإرسال إلى بوسطة',en:'Re-sent to Bosta'},
+  shipEvPrinted:{ar:'طُبعت البوليصة',en:'AWB printed'},
+  shipEvDeleted:{ar:'حُذفت من بوسطة',en:'Deleted from Bosta'},
+  shipEvCancelled:{ar:'أُلغيت في بوسطة',en:'Cancelled at Bosta'},
+  shipEvDeletedBadge:{ar:'محذوفة',en:'Deleted'},
+  shipEvBy:{ar:'بواسطة {v}',en:'by {v}'},
+  shipEvReplaces:{ar:'بدل {v}',en:'replaces {v}'},
+  shipEvSrc_sync:{ar:'اكتُشف عند تحديث الحالة',en:'found on status sync'},
+  shipEvSrc_webhook:{ar:'إشعار من بوسطة',en:'Bosta notification'},
+  shipEvSrc_manual:{ar:'تعليم يدوي',en:'marked manually'},
+  'shipEvSrc_fix-city':{ar:'تصحيح المدينة',en:'city fix'},
+  awbPrintedTimes:{ar:'طُبعت {n} مرة — آخرها بواسطة {by}',en:'Printed {n}× — last by {by}'},
+  awbTlPrintN:{ar:'طباعة {n} — {by}',en:'Print {n} — {by}'},
+  awbPrintedMark:{ar:'طُبعت البوليصة',en:'AWB printed'},
+  awbMarkTitle:{ar:'طُبعت البوليصة {n} مرة — آخرها {when} بواسطة {by}',en:'AWB printed {n}× — last {when} by {by}'},
+  awbPrintedAtBy:{ar:'{when} — بواسطة {by}',en:'{when} — by {by}'},
+  awbReprintTitle:{ar:'البوليصة مطبوعة من قبل',en:'AWB already printed'},
+  awbReprintQ:{ar:'طُبعت بوليصة هذا الطلب من قبل. الطباعة مرة أخرى تُسجَّل كنسخة إضافية — تأكد أن الملصق القديم لم يُلصق على طرد آخر.',en:'This AWB was printed before. Printing again is logged as an extra copy — make sure the old label is not on another parcel.'},
+  awbReprintBtn:{ar:'اطبع مرة أخرى',en:'Print again'},
+  awbRowOrder:{ar:'الطلب',en:'Order'},
+  awbRowLast:{ar:'آخر طباعة',en:'Last printed'},
+  awbRowBy:{ar:'بواسطة',en:'By'},
+  awbRowCount:{ar:'عدد مرات الطباعة',en:'Times printed'},
+  awbRowFirst:{ar:'أول طباعة',en:'First printed'},
+  awbPrintBtn:{ar:'طباعة البوليصة',en:'Print AWB'},
+  awbPrintedToast:{ar:'تمت طباعة البوليصة',en:'AWB printed'},
+  bsfPrepared:{ar:'تم تحضير الطلب',en:'Order prepared'},
+  bsfAskQ:{ar:'إرسال الطلب إلى بوسطة الآن؟',en:'Send this order to Bosta now?'},
+  bsfSend:{ar:'إرسال إلى بوسطة',en:'Send to Bosta'},
+  bsfLater:{ar:'لاحقاً',en:'Later'},
+  bsfSending:{ar:'جارٍ الإرسال…',en:'Sending…'},
+  bsfSent:{ar:'تم الإرسال إلى بوسطة بنجاح',en:'Sent to Bosta'},
+  bsfAlreadySent:{ar:'الطلب مُرسل إلى بوسطة',en:'Order is with Bosta'},
+  bsfTracking:{ar:'رقم التتبع',en:'Tracking no.'},
+  bsfContinue:{ar:'متابعة التحضير',en:'Continue preparing'},
+  bsfPrinting:{ar:'جارٍ تجهيز البوليصة…',en:'Preparing the AWB…'},
+  bsfPrinted:{ar:'تمت طباعة البوليصة',en:'AWB printed'},
+  bsfFailed:{ar:'تعذر الإرسال إلى بوسطة',en:'Could not send to Bosta'},
+  bsfRetry:{ar:'إعادة المحاولة',en:'Retry'},
+  bsfSkip:{ar:'متابعة بدون إرسال',en:'Continue without sending'},
+  bsfMissing:{ar:'بيانات ناقصة: {v} — عدّل الطلب ثم أرسله من الفاتورة',en:'Missing: {v} — edit the order, then send it from the invoice'},
+  bsfMissAddr:{ar:'العنوان',en:'address'},
+  bsfMissCity:{ar:'المحافظة / المدينة',en:'city'},
+  bsfMissPhone:{ar:'رقم الهاتف',en:'phone'},
+  bsfBadData:{ar:'خطأ في بيانات الشحنة — راجع العنوان ورقم الهاتف',en:'Shipment data rejected — check the address and phone'},
+  bsfSentChip:{ar:'أُرسل لبوسطة',en:'With Bosta'},
   ivTlStepDone:{ar:'مكتمل',en:'Completed'},
   ivTlStepActive:{ar:'جارٍ',en:'In progress'},
   ivTlStepPending:{ar:'قادم',en:'Upcoming'},
@@ -31283,7 +31549,12 @@ function connectSocket() {
     } catch(e) { console.warn('tx:created handler', e); }
   });
   socket.on('tx:updated', async (payload) => {
-    const tx = payload?.tx; if (!tx) return;
+    const tx = payload?.tx;
+    /* ⚠ BostaService emits `tx:updated` with `{ _id }` only — sent, deleted at the
+       carrier, resent, cancelled, printed. This handler used to return here, so
+       none of it reached an open screen until a reload: the timeline never
+       followed the shipment. `_rtFetchTx` pulls the row and repaints. */
+    if (!tx) { if (payload?._id) _rtFetchTx(payload._id); return; }
     const i = transactions.findIndex(t => String(t._id) === String(tx._id));
     if (i >= 0) transactions[i] = tx;
     _rtFlashIds.add(String(tx._id));
@@ -31954,6 +32225,37 @@ function _buildPresenceBadge(initials, userName) {
 //   outcome is identical because every renderer here reads current state rather than the payload.
 let _rtPending = null;
 let _rtRaf = 0;
+/** Re-read one transaction after an id-only `tx:updated`, merge it into both
+ * in-memory copies, and repaint whatever is showing it. Coalesced per id — Bosta
+ * can emit several updates for one action. */
+const _rtFetchTimers = new Map();
+function _rtFetchTx(id) {
+  const sid = String(id);
+  clearTimeout(_rtFetchTimers.get(sid));
+  _rtFetchTimers.set(sid, setTimeout(async () => {
+    _rtFetchTimers.delete(sid);
+    let fresh;
+    try { fresh = await api(`/transactions/${encodeURIComponent(sid)}`); } catch (_) { return; }
+    if (!fresh || !fresh._id) return;
+    const i = (transactions || []).findIndex(t => String(t._id) === sid);
+    if (i >= 0) transactions[i] = { ...transactions[i], ...fresh, _fullyHydrated: true };
+    if (typeof _pickupOrders !== 'undefined') {
+      const po = (_pickupOrders || []).find(o => String(o._id) === sid);
+      // Shipment fields only — the pick-up row keeps its own prep state.
+      if (po) ['bostaOrderId','bostaTrackingNumber','bostaStatus','bostaStatusLabel','bostaAwbPrints','shipmentEvents','bostaLastSync']
+        .forEach(k => { if (k in fresh) po[k] = fresh[k]; });
+    }
+    if (typeof _awbForget === 'function' && (fresh.bostaStatus === 'DELETED' || !fresh.bostaOrderId)) _awbForget(sid);
+    markMovRecentlyUpdated(sid);
+    _rtRefreshUI({ movements: true });
+    try { refreshInvoiceView(sid); } catch (_) {}
+    try {
+      const g = typeof _pucoGetGroup === 'function' ? _pucoGetGroup() : null;
+      if (g && (g.orders || []).some(o => String(o._id) === sid)) _pucoRenderOrders(g);
+    } catch (_) {}
+  }, 250));
+}
+
 function _rtRefreshUI(opts = {}) {
   _rtPending = _rtPending || { movements: false, sidebar: false, notifications: false };
   if (opts.movements) _rtPending.movements = true;
@@ -32969,12 +33271,15 @@ function renderUsersStatus() {
   const grid = qs('#users-status-grid');
   if (!grid || !users || users.length === 0) return;
 
+  // ⚠ معطَّل لا يظهر في شريط "من متصل الآن" — حساب موقوف لا يُفترض أن يبدو
+  // كزميل قد يرد، لا متصلاً ولا غير متصل.
+  const activeUsers = users.filter(u => u.isActive !== false && u.active !== false);
   const isUserOnline = (u) => onlineUsers[String(u._id)]?.status === 'online';
-  const onlineCount = users.filter(isUserOnline).length;
+  const onlineCount = activeUsers.filter(isUserOnline).length;
 
   // Header count
   const countEl = qs('#dash-users-count');
-  if (countEl) countEl.textContent = t('dsUsersOnlineCount', { n: onlineCount, total: users.length });
+  if (countEl) countEl.textContent = t('dsUsersOnlineCount', { n: onlineCount, total: activeUsers.length });
 
   const formatLastSeen = (isoString) => {
     if (!isoString) return '';
@@ -32993,7 +33298,7 @@ function renderUsersStatus() {
 
   /* المتصلون الأول — الشريط بيتقرا من غير ما حد يدوّر على النقطة الخضرا وسط
      الرمادي. الترتيب مستقر جوّه كل مجموعة (الأسماء ما بتنطّش كل تحديث حالة). */
-  const sorted = [...users].sort((a, b) => Number(isUserOnline(b)) - Number(isUserOnline(a)));
+  const sorted = [...activeUsers].sort((a, b) => Number(isUserOnline(b)) - Number(isUserOnline(a)));
 
   grid.innerHTML = sorted.map(u => {
     const userId = String(u._id);
@@ -34449,17 +34754,301 @@ async function refreshMentionsFromServer() {
 }
 
 /** Render @mentions in comment text as styled chips (underscores → spaces for display) */
-function renderMentionText(text) {
+/* ══ Comment text: links, product mentions, @mentions ═══════════════════════
+   One renderer for every comment view (invoice page/modal, the new-transaction
+   form, the Shopify order panel, the prep workspace).
+
+   Stored text stays plain and readable everywhere it is shown raw (notifications,
+   exports): a product mention is the token  [📦 Name](product:CODE)  — readable
+   as text, and drawn here as a chip that opens the item in المخزن.
+   ⚠ Every piece is escaped on its own; a link is only ever http(s) (a `www.`
+   address becomes https), so a comment can never inject markup or a
+   javascript: URL. */
+const _CMT_TOKEN_RE = /(\[[^\]\n]{1,90}\]\(product:[^)\s]{1,80}\))|((?:https?:\/\/|www\.)[^\s<>"'`]+)|(@\S+)/g;
+function _cmtLinkHtml(raw) {
+  // Trailing punctuation belongs to the sentence, not the address.
+  let url = raw, tail = '';
+  const m = url.match(/[.,;:!?؟،)\]}»"']+$/);
+  if (m) { tail = m[0]; url = url.slice(0, -tail.length); }
+  if (!url) return esc(raw);
+  const href = /^https?:\/\//i.test(url) ? url : 'https://' + url;
+  let shown = url.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+  if (shown.length > 42) shown = shown.slice(0, 40) + '…';
+  return `<a class="cmt-link" href="${escHtml(href)}" target="_blank" rel="noopener noreferrer nofollow" title="${escHtml(url)}" onclick="event.stopPropagation()">${esc(shown)}</a>${esc(tail)}`;
+}
+/** Find a mentioned product: the warehouse row first, then the catalogue. */
+function _cmtFindProduct(key) {
+  const k = String(key || '');
+  const kl = k.toLowerCase();
+  const inv = (inventoryCache || []).find(r => String(r.code || '') === k || String(r.code || '').toLowerCase() === kl);
+  const prod = (products || []).find(p => String(p.code || '') === k || String(p._id || '') === k.replace(/^id:/, ''));
+  return { inv, prod };
+}
+const _CMT_BOX_SVG = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
+/** The product's photo — the same resolution the prep workspace uses (catalogue
+ * by id, then code, then name), so a mention shows the photo staff recognise. */
+function _cmtProductImg(label, inv, prod) {
+  const it = { productId: prod && prod._id, code: (prod && prod.code) || (inv && inv.code) || '', name: label, imageUrl: (prod && prod.imageUrl) || '' };
+  try { return typeof _pwItemImgUrl === 'function' ? (_pwItemImgUrl(it) || '') : (it.imageUrl || ''); } catch (_) { return it.imageUrl || ''; }
+}
+function _cmtProductHtml(name, key) {
+  const { inv, prod } = _cmtFindProduct(key);
+  const label = name.replace(/^📦\s*/, '');
+  const known = !!(inv || prod);
+  const img = known ? _cmtProductImg(label, inv, prod) : '';
+  // ⚠ The icon sits UNDER the photo: a broken URL removes the <img> and the
+  //   product icon shows, never a broken-image glyph or an empty circle.
+  return `<button type="button" class="cmt-prod${known ? '' : ' is-missing'}" onclick="event.stopPropagation();cmtOpenProduct('${escHtml(key)}')" title="${escHtml(known ? t('cmtOpenProduct') : t('cmtProductMissing'))}">`
+    + `<span class="cmt-prod-th">${_CMT_BOX_SVG}${img ? `<img src="${escHtml(img)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`
+    + `<span class="cmt-prod-n">${esc(label)}</span></button>`;
+}
+/** @param {{mentions?: boolean}} [opts] — `mentions:false` for text that is not a
+ * conversation (a customer's order note), where `@` means nothing. */
+function renderMentionText(text, opts) {
   if (!text) return '';
-  // Split on @mention tokens, escape each segment individually
-  return text.split(/(@\S+)/g).map(part => {
-    if (/^@\S+$/.test(part)) {
-      const display = part.replace(/_/g, ' ');
-      return `<span class="mention-chip">${esc(display)}</span>`;
+  const withMentions = !opts || opts.mentions !== false;
+  const s = String(text);
+  let out = '', last = 0, m;
+  _CMT_TOKEN_RE.lastIndex = 0;
+  while ((m = _CMT_TOKEN_RE.exec(s))) {
+    out += esc(s.slice(last, m.index));
+    if (m[1]) {
+      const pm = m[1].match(/^\[([^\]]+)\]\(product:([^)]+)\)$/);
+      out += pm ? _cmtProductHtml(pm[1], pm[2]) : esc(m[1]);
+    } else if (m[2]) {
+      out += _cmtLinkHtml(m[2]);
+    } else if (m[3]) {
+      out += withMentions ? `<span class="mention-chip"><b aria-hidden="true">@</b>${esc(m[3].slice(1).replace(/_/g, ' '))}</span>` : esc(m[3]);
     }
-    return esc(part);
+    last = m.index + m[0].length;
+  }
+  return out + esc(s.slice(last));
+}
+/* ── Product preview from a comment ─────────────────────────────────────────
+   ⚠ Its OWN layer, never openModal(): the comments often live in #modal-overlay
+   (the Shopify comments window), and openModal REPLACES that content — clicking a
+   product used to throw the comments away with no way back. This layer sits over
+   everything and leaves whatever is under it untouched; closing it (back button,
+   Esc, backdrop) is the return to the comments. */
+function cmtOpenProduct(key) {
+  const { inv, prod } = _cmtFindProduct(key);
+  if (!inv && !prod) { toast(t('cmtProductMissing'), true); return; }
+  closeCmtProductPreview();
+  const name = (prod && prod.name) || (inv && inv.name) || '';
+  const code = (prod && prod.code) || (inv && inv.code) || '';
+  const img = _cmtProductImg(name, inv, prod);
+  const price = Number((prod && prod.sellPrice) ?? (inv && inv.sellPrice)) || 0;
+  const stock = inv ? Number(inv.current) || 0
+    : (prod && typeof getProductAvailableStock === 'function' ? Number(getProductAvailableStock(prod._id)) || 0 : null);
+  const minS = Number(inv && inv.minStock) || 0;
+  const stTone = stock == null ? '' : stock <= 0 ? 'is-out' : stock <= minS ? 'is-low' : 'is-ok';
+  const stTxt = stock == null ? '' : stock <= 0 ? t('cmtStockOut') : t('cmtStockAvail', { n: fmtN(stock) });
+  const colors = Array.isArray(prod && prod.colors) ? prod.colors.filter(Boolean) : [];
+  const facts = [
+    prod && prod.material ? [t('cmtPvMaterial'), (currentLang !== 'en' && typeof PM_MATERIAL_AR !== 'undefined' && PM_MATERIAL_AR[prod.material]) || prod.material] : null,
+    prod && prod.size ? [t('cmtPvSize'), prod.size] : null,
+    colors.length ? [t('cmtPvColors'), colors.map(c => (typeof _pmColorLabel === 'function' ? _pmColorLabel(c) : c)).join('، ')] : null,
+  ].filter(Boolean);
+  const back = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="${document.dir === 'rtl' ? '9 18 15 12 9 6' : '15 18 9 12 15 6'}"/></svg>`;
+  const ov = document.createElement('div');
+  ov.id = 'cmt-pv';
+  ov.className = 'cmt-pv';
+  ov.setAttribute('role', 'dialog');
+  ov.setAttribute('aria-modal', 'true');
+  ov.setAttribute('aria-label', name);
+  ov.innerHTML = `<div class="cmt-pv-card" tabindex="-1">
+    <div class="cmt-pv-top">
+      <button type="button" class="cmt-pv-back" data-pv="close">${back}<span>${esc(t('cmtPvBack'))}</span></button>
+    </div>
+    <div class="cmt-pv-photo">${_CMT_BOX_SVG.replace('width="13" height="13"', 'width="40" height="40"')}${img ? `<img src="${escHtml(img)}" alt="${escHtml(name)}" onerror="this.remove()">` : ''}</div>
+    <div class="cmt-pv-body">
+      <div class="cmt-pv-name" dir="auto">${esc(name)}</div>
+      <div class="cmt-pv-meta">
+        ${code ? `<span class="cmt-pv-code"><bdi>${esc(code)}</bdi></span>` : ''}
+        ${stTxt ? `<span class="cmt-pv-st ${stTone}">${esc(stTxt)}</span>` : ''}
+      </div>
+      ${price ? `<div class="cmt-pv-price">${fmtJ(price)}</div>` : ''}
+      ${facts.length ? `<dl class="cmt-pv-facts">${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
+    </div>
+  </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('[data-pv="close"]')) closeCmtProductPreview(); });
+  // Capture phase: Esc closes THIS layer only — the comments window under it
+  // has its own Esc handling, which must not fire on the same key press.
+  ov._onKey = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); closeCmtProductPreview(); }
+  };
+  document.addEventListener('keydown', ov._onKey, true);
+  ov._returnFocus = document.activeElement;
+  document.body.appendChild(ov);
+  requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('is-on')));
+  ov.querySelector('.cmt-pv-back')?.focus({ preventScroll: true });
+}
+function closeCmtProductPreview() {
+  const ov = document.getElementById('cmt-pv');
+  if (!ov) return;
+  document.removeEventListener('keydown', ov._onKey, true);
+  ov.id = '';
+  ov.classList.remove('is-on');
+  setTimeout(() => ov.remove(), 180);
+  // Back to where the reader was — the chip they clicked, in the comments.
+  try { ov._returnFocus?.focus?.({ preventScroll: true }); } catch (_) {}
+}
+
+/* ── Composer toolbar: «@» and «منتج» ───────────────────────────────────── */
+function _cmtToolsHtml(inputId, ctxId) {
+  const at = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"/></svg>`;
+  // A bar above the field, not icons inside its row: the row is the field and
+  // the send button, and two more controls in it pushed «send» onto a new line.
+  return `<div class="cmt-bar" role="toolbar">`
+    + `<button type="button" class="cmt-tool is-user" onmousedown="event.preventDefault()" onclick="event.stopPropagation();cmtInsertMention('${inputId}','${ctxId}')" title="${escHtml(t('cmtMentionPerson'))}">${at}<span>${esc(t('cmtToolUser'))}</span></button>`
+    + `<button type="button" class="cmt-tool is-prod" onmousedown="event.preventDefault()" onclick="event.stopPropagation();openProductMentionPicker(this,'${inputId}')" title="${escHtml(t('cmtMentionProduct'))}">${_CMT_BOX_SVG}<span>${esc(t('cmtToolProduct'))}</span></button>`
+    + `</div>`;
+}
+/** Insert text at the caret of an input/textarea (keeps a space on both sides). */
+function _cmtInsertAt(input, text) {
+  const v = input.value;
+  const a = input.selectionStart ?? v.length, b = input.selectionEnd ?? a;
+  const pre = v.slice(0, a), post = v.slice(b);
+  const lead = pre && !/\s$/.test(pre) ? ' ' : '';
+  const ins = lead + text;
+  input.value = pre + ins + post;
+  const caret = (pre + ins).length;
+  input.focus();
+  input.setSelectionRange(caret, caret);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+function cmtInsertMention(inputId, ctxId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  _cmtInsertAt(input, '@');
+  // The input's own oninput opens the people list; call it directly too, for
+  // inputs (the prep composer) whose oninput does other work first.
+  onMentionInput(input, ctxId);
+}
+
+/* ── Product picker — reads المخزن ──────────────────────────────────────── */
+let _pmp = null; // { el, input, caret, items, idx }
+function _pmpKey(code, id) {
+  const c = String(code || '');
+  if (c && !/[\s)\]]/.test(c)) return c;
+  return id ? 'id:' + id : '';
+}
+function _pmpSource() {
+  // The warehouse rows carry the live balance; the catalogue is the fallback
+  // when the inventory has not been loaded on this screen.
+  const inv = Array.isArray(inventoryCache) ? inventoryCache : [];
+  if (inv.length) return inv.filter(r => r.active !== false).map(r => {
+    const p = (products || []).find(x => x.code && x.code === r.code);
+    return { key: _pmpKey(r.code, p && p._id), name: r.name, code: r.code || '', stock: Number(r.current) || 0, img: (p && p.imageUrl) || r.imageUrl || '' };
+  }).filter(x => x.key);
+  return (products || []).filter(p => p.active !== false).map(p => ({
+    key: _pmpKey(p.code, p._id), name: p.name, code: p.code || '',
+    stock: typeof getProductAvailableStock === 'function' ? Number(getProductAvailableStock(p._id)) || 0 : null, img: p.imageUrl || '',
+  }));
+}
+function openProductMentionPicker(btn, inputId) {
+  closeProductMentionPicker();
+  closeMentionDropdown?.();
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const el = document.createElement('div');
+  el.className = 'pmp';
+  el.setAttribute('role', 'dialog');
+  el.innerHTML = `<div class="pmp-head">
+      <input type="text" class="pmp-q" dir="auto" placeholder="${escHtml(t('cmtProductSearch'))}" autocomplete="off">
+    </div>
+    <div class="pmp-list" role="listbox"></div>`;
+  document.body.appendChild(el);
+  _pmp = { el, input, caret: input.selectionStart ?? input.value.length, items: [], idx: 0, anchor: btn };
+  const q = el.querySelector('.pmp-q');
+  q.addEventListener('input', () => _pmpRender(q.value));
+  q.addEventListener('keydown', e => {
+    e.stopPropagation(); // the prep workspace / modals own ↑/↓/Space elsewhere
+    if (e.key === 'ArrowDown') { e.preventDefault(); _pmpMove(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); _pmpMove(-1); }
+    else if (e.key === 'Enter') { e.preventDefault(); _pmpPick(_pmp?.idx ?? 0); }
+    else if (e.key === 'Escape') { e.preventDefault(); closeProductMentionPicker(true); }
+  });
+  el.addEventListener('mousedown', e => e.stopPropagation());
+  setTimeout(() => document.addEventListener('mousedown', _pmpOutside, true), 0);
+  _pmpRender('');
+  _pmpPlace();
+  requestAnimationFrame(() => el.classList.add('is-on'));
+  q.focus();
+}
+function _pmpOutside(e) { if (_pmp && !_pmp.el.contains(e.target)) closeProductMentionPicker(); }
+function closeProductMentionPicker(refocus) {
+  if (!_pmp) return;
+  const { el, input } = _pmp;
+  _pmp = null;
+  document.removeEventListener('mousedown', _pmpOutside, true);
+  el.remove();
+  if (refocus) input?.focus();
+}
+function _pmpPlace() {
+  if (!_pmp) return;
+  const r = (_pmp.anchor || _pmp.input).getBoundingClientRect();
+  const el = _pmp.el;
+  const w = Math.min(340, window.innerWidth - 16);
+  el.style.width = w + 'px';
+  const h = el.offsetHeight || 320;
+  let top = r.bottom + 6;
+  if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+  let left = document.dir === 'rtl' ? r.right - w : r.left;
+  left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+  el.style.top = top + 'px';
+  el.style.left = left + 'px';
+}
+function _pmpRender(query) {
+  if (!_pmp) return;
+  const qn = typeof _gsNorm === 'function' ? _gsNorm(query || '') : String(query || '').toLowerCase();
+  const all = _pmpSource();
+  const items = (qn
+    ? all.filter(x => (typeof _gsNorm === 'function' ? _gsNorm(x.name + ' ' + x.code) : (x.name + ' ' + x.code).toLowerCase()).includes(qn))
+    : all).slice(0, 40);
+  _pmp.items = items;
+  _pmp.idx = 0;
+  const list = _pmp.el.querySelector('.pmp-list');
+  if (!items.length) {
+    list.innerHTML = `<div class="pmp-empty">${esc(all.length ? t('cmtProductNone') : t('cmtProductNoStock'))}</div>`;
+    return;
+  }
+  list.innerHTML = items.map((x, i) => {
+    const st = x.stock == null ? '' : x.stock > 0
+      ? `<span class="pmp-st is-ok">${esc(t('cmtStockAvail', { n: fmtN(x.stock) }))}</span>`
+      : `<span class="pmp-st is-out">${esc(t('cmtStockOut'))}</span>`;
+    return `<div class="pmp-item${i === 0 ? ' is-act' : ''}" role="option" data-i="${i}" onmousedown="event.preventDefault()" onclick="_pmpPick(${i})">
+      <span class="pmp-th">${productThumbHtml(x.img, x.name, '')}</span>
+      <span class="pmp-b"><span class="pmp-n">${esc(x.name)}</span>${x.code ? `<span class="pmp-c"><bdi>${esc(x.code)}</bdi></span>` : ''}</span>
+      ${st}
+    </div>`;
   }).join('');
 }
+function _pmpMove(d) {
+  if (!_pmp || !_pmp.items.length) return;
+  _pmp.idx = Math.max(0, Math.min(_pmp.items.length - 1, _pmp.idx + d));
+  _pmp.el.querySelectorAll('.pmp-item').forEach((n, i) => n.classList.toggle('is-act', i === _pmp.idx));
+  _pmp.el.querySelector('.pmp-item.is-act')?.scrollIntoView({ block: 'nearest' });
+}
+function _pmpPick(i) {
+  if (!_pmp) return;
+  const x = _pmp.items[i];
+  if (!x) return;
+  const { input, caret } = _pmp;
+  closeProductMentionPicker();
+  // Names may hold «]» — it would end the token early; it is never needed.
+  const token = `[📦 ${String(x.name).replace(/[\[\]\n]/g, ' ').trim()}](product:${x.key}) `;
+  input.focus();
+  input.setSelectionRange(caret, caret);
+  _cmtInsertAt(input, token);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-cmt-tools]').forEach(el => {
+    const [inputId, ctx] = el.dataset.cmtTools.split('|');
+    el.outerHTML = _cmtToolsHtml(inputId, ctx);
+  });
+});
 
 /** Get all mentionable users (all users except self) */
 function getMentionableUsers(query) {
@@ -34612,7 +35201,9 @@ function selectMention(el, txId) {
   const uid = el.dataset.uid;
   const tokenName = String(name || '').replace(/\s+/g, '_');
   const inputId = txId === '__tx__' ? 'tx-comment-text' : `inv-comment-text-${txId}`;
-  const input = qs(`#${inputId}`);
+  // The input that opened the list wins — the prep composer (pw-cmt-text-…) and
+  // any future one work without being named here.
+  const input = (_mentionAnchorInput && document.body.contains(_mentionAnchorInput)) ? _mentionAnchorInput : qs(`#${inputId}`);
   if (!input) { closeMentionDropdown(); return; }
 
   const val = input.value;
@@ -46484,7 +47075,7 @@ function renderMovementTxRow(tx) {
     <td data-col="status" style="text-align:center;white-space:nowrap">${movementStatusCell(tx)}${vaultStatusBadge}${vaultHint}</td>
     <td data-col="discount" style="text-align:center;white-space:nowrap">${_movDiscountBadge(tx)}</td>
     <td data-col="pickup" style="text-align:center;white-space:nowrap">${tx.type==='مبيعات' ? _puStatusBadge(_puDisplayStatus(tx)) : '<span style="color:var(--muted);font-size:.8rem">—</span>'}</td>
-    <td data-col="bosta" style="text-align:center;white-space:nowrap">${_bostaStatusBadge(tx)}</td>
+    <td data-col="bosta" style="text-align:center;white-space:nowrap"><span class="mov-bosta-line">${_bostaStatusBadge(tx)}${_awbPrintedMarkHtml((tx.bostaAwbPrints || []).filter(p => !p.trackingNumber || !tx.bostaTrackingNumber || p.trackingNumber === tx.bostaTrackingNumber))}</span></td>
     <td data-col="tag" style="text-align:center" onclick="event.stopPropagation()" data-tag-cell="${esc(tx._id)}">${renderTxTagsCell(tx._id)}</td>
     <td data-col="employee" class="mov-col-employee"><div class="mov-col-employee-wrap" title="${esc(tx.employee||'')}">${tx.shopifyOrderId ? `<a href="https://admin.shopify.com/store/soulia-2/orders/${esc(tx.shopifyOrderId)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="mov-emp-initials-sm" title="فتح أوردر Shopify #${esc(tx.shopifyOrderId)}" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">${_SHOPIFY_LOGO_SVG}</a>` : `<span class="mov-emp-initials-sm">${_empInitialsText(tx.employee)}</span>`}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div></td>
     <td>
@@ -51290,6 +51881,7 @@ async function sendToBosta(id) {
     const po = (_pickupOrders || []).find(o => String(o._id) === String(id));
     if (po) po.pickupStatus = 'Ready';
     markMovRecentlyUpdated(id);
+    _awbForget(id); // a new shipment has a new label
     transactions = await api('/transactions').catch(() => transactions);
     renderMovements();
     if (typeof renderPickupBoard === 'function') renderPickupBoard();
@@ -51304,27 +51896,492 @@ async function sendToBosta(id) {
   }
 }
 
-async function printBostaAwb(id) {
-  // Open synchronously from the click so popup blockers allow the PDF tab.
-  const pdfTab = window.open('', '_blank');
-  if (!pdfTab) { toast('اسمح بفتح النوافذ المنبثقة لعرض بوليصة الشحن', true); return; }
-  pdfTab.document.write('<title>بوليصة الشحن</title><p style="font:16px sans-serif;padding:24px">جارٍ تحميل بوليصة الشحن…</p>');
-  try {
-    const res = await api(`/shipping/awb/${encodeURIComponent(id)}`, { method: 'POST' });
-    let encoded = res.pdfBase64 || res.data || res.pdf || '';
-    if (typeof encoded !== 'string' || !encoded) throw new Error('لم تُرجع Bosta ملف PDF');
-    encoded = encoded.replace(/^data:application\/pdf;base64,/i, '');
-    const raw = atob(encoded);
-    const bytes = new Uint8Array(raw.length);
-    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
-    pdfTab.location.href = url;
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  } catch (e) {
-    pdfTab.close();
-    toast('تعذر جلب بوليصة Bosta: ' + (e.message || 'خطأ غير معروف'), true);
+/* Bosta's label is an A6 thermal sticker (105×148mm). It is rendered with pdf.js
+   and printed from a page whose @page size is the PDF's OWN page size, margin 0,
+   so it prints 1:1 instead of being fitted onto the printer's default A4.
+   ⚠ The size is read from the PDF, never hardcoded.
+
+   ⚠ Printed from a hidden <iframe> IN THIS PAGE, not from a new tab. With a tab,
+   this window went to the background the moment the tab opened, Chrome throttled
+   it, and the label was not rendered until the user came back — the tab sat on
+   «جارٍ تحميل…». In-page, nothing is throttled, the print dialog opens over the
+   app, and `afterprint` tells us when it closed («تمت الطباعة»).
+
+   Speed: pdf.js + its worker are warmed at idle (_awbWarm), the label is prepared
+   ahead of the click (_awbPrepare — on hover, and as soon as Bosta accepts an
+   order in the prep flow), and labels are kept per order for the session. */
+const _AWB_PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+let _awbPdfJsPromise = null;
+let _awbWorker = null;
+const _awbBytesCache = new Map(); // txId → Uint8Array (this session only)
+const _awbPrepared = new Map();   // txId → Promise<{pages, w, h}>
+let _awbPrinting = false;
+function _awbLoadPdfJs() {
+  if (_awbPdfJsPromise) return _awbPdfJsPromise;
+  _awbPdfJsPromise = new Promise((resolve, reject) => {
+    const ready = () => {
+      const lib = window.pdfjsLib;
+      if (!lib) { reject(new Error('pdf.js')); return; }
+      lib.GlobalWorkerOptions.workerSrc = _AWB_PDFJS + 'pdf.worker.min.js';
+      // One long-lived worker: starting it is the slowest step (~290ms), so
+      // it is paid once, during warm-up, not on the click.
+      try { _awbWorker = _awbWorker || new lib.PDFWorker(); } catch (_) { _awbWorker = null; }
+      resolve(lib);
+    };
+    if (window.pdfjsLib) { ready(); return; }
+    const s = document.createElement('script');
+    s.src = _AWB_PDFJS + 'pdf.min.js';
+    s.onload = ready;
+    s.onerror = () => { _awbPdfJsPromise = null; reject(new Error('pdf.js')); };
+    document.head.appendChild(s);
+  });
+  _awbPdfJsPromise.catch(() => { _awbPdfJsPromise = null; });
+  return _awbPdfJsPromise;
+}
+/** Called wherever a «طباعة بوليصة Bosta» button is rendered. Idle-time, once. */
+function _awbWarm() {
+  if (_awbPdfJsPromise) return;
+  const go = () => { _awbLoadPdfJs().catch(() => {}); };
+  (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(go);
+}
+/** Forget an order's label (a re-send creates a new one). */
+function _awbForget(id) {
+  const sid = String(id);
+  _awbBytesCache.delete(sid);
+  const p = _awbPrepared.get(sid);
+  _awbPrepared.delete(sid);
+  p?.then(r => r.pages.forEach(u => URL.revokeObjectURL(u))).catch(() => {});
+}
+
+async function _awbFetchBytes(id) {
+  const sid = String(id);
+  if (_awbBytesCache.has(sid)) return _awbBytesCache.get(sid);
+  const res = await api(`/shipping/awb/${encodeURIComponent(sid)}`, { method: 'POST' });
+  let encoded = res.pdfBase64 || res.data || res.pdf || '';
+  if (typeof encoded !== 'string' || !encoded) throw new Error('لم تُرجع Bosta ملف PDF');
+  // The server falls back to A4 when Bosta refuses the A6 label — say so,
+  // or the operator loads sticker paper and gets a full sheet.
+  if (res.awbType && res.awbType !== 'A6') toast(`بوسطة لم تُتح بوليصة A6 لهذا الطلب — ستُطبع بمقاس ${res.awbType}`);
+  encoded = encoded.replace(/^data:application\/pdf;base64,/i, '');
+  const raw = atob(encoded);
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  if (!res.awbType || res.awbType === 'A6') _awbBytesCache.set(sid, bytes);
+  return bytes;
+}
+
+/** Fetch + render one order's label into page images. Cached as a promise, so a
+ * hover, the prep flow and the click all share the same work. */
+function _awbPrepare(id) {
+  const sid = String(id);
+  if (_awbPrepared.has(sid)) return _awbPrepared.get(sid);
+  const p = (async () => {
+    const [bytes, pdfjs] = await Promise.all([_awbFetchBytes(sid), _awbLoadPdfJs()]);
+    // pdf.js may detach the buffer it is given — pass a copy; the cache keeps the original.
+    const doc = await pdfjs.getDocument(_awbWorker ? { data: bytes.slice(), worker: _awbWorker } : { data: bytes.slice() }).promise;
+    const PT_TO_MM = 25.4 / 72;
+    const SCALE = 300 / 72; // 300dpi — sharp barcodes on 203/300dpi thermal heads
+    const pages = [];
+    let pageW = 0, pageH = 0;
+    for (let n = 1; n <= doc.numPages; n++) {
+      const page = await doc.getPage(n);
+      const base = page.getViewport({ scale: 1 });
+      if (n === 1) { pageW = base.width * PT_TO_MM; pageH = base.height * PT_TO_MM; }
+      const vp = page.getViewport({ scale: SCALE });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(vp.width); canvas.height = Math.ceil(vp.height);
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+      pages.push(URL.createObjectURL(blob));
+    }
+    doc.destroy();
+    // PDF points round the page by a fraction of a mm (A6 reads 105.2×148.2);
+    // that sliver is enough for some drivers to spill a blank second label.
+    // Snap to the standard size it is, else floor to 0.1mm.
+    const STD = [[105, 148], [100, 150], [101.6, 152.4], [148, 210], [210, 297]];
+    const std = STD.find(([sw, sh]) => Math.abs(pageW - sw) < 1.5 && Math.abs(pageH - sh) < 1.5);
+    return { pages, w: std ? std[0] : Math.floor(pageW * 10) / 10, h: std ? std[1] : Math.floor(pageH * 10) / 10 };
+  })();
+  _awbPrepared.set(sid, p);
+  p.catch(() => { if (_awbPrepared.get(sid) === p) _awbPrepared.delete(sid); });
+  return p;
+}
+/** Hover / focus on a print button — start the work before the click lands. */
+function _awbPrepareSoon(id) { _awbPrepare(id).catch(() => {}); }
+
+/** The label page HTML (used by the in-page print frame). */
+function _awbLabelHtml({ pages, w, h }) {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>بوليصة الشحن</title><style>
+@page{size:${w}mm ${h}mm;margin:0}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#fff}
+.lbl{width:${w}mm;height:${h}mm;page-break-after:always;break-after:page;overflow:hidden}
+.lbl:last-child{page-break-after:auto;break-after:auto}
+.lbl img{display:block;width:100%;height:100%}
+</style></head><body>${pages.map(src => `<div class="lbl"><img src="${src}" alt=""></div>`).join('')}</body></html>`;
+}
+
+/** Print through a hidden iframe. Resolves when the print dialog has closed. */
+function _awbPrintInFrame(prep) {
+  return new Promise((resolve) => {
+    const fr = document.createElement('iframe');
+    fr.setAttribute('aria-hidden', 'true');
+    fr.tabIndex = -1;
+    fr.style.cssText = 'position:fixed;bottom:0;width:0;height:0;border:0;visibility:hidden;pointer-events:none';
+    document.body.appendChild(fr);
+    const d = fr.contentDocument;
+    d.open(); d.write(_awbLabelHtml(prep)); d.close();
+    const w = fr.contentWindow;
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      setTimeout(() => fr.remove(), 500);
+      resolve();
+    };
+    // The images are blob: URLs already decoded in this page — near-instant.
+    const imgs = [...d.images];
+    Promise.all(imgs.map(im => (im.decode ? im.decode() : Promise.resolve()).catch(() => {}))).then(() => {
+      w.addEventListener('afterprint', finish, { once: true });
+      w.focus();
+      w.print(); // Chrome: blocks until the dialog closes (afterprint already fired)
+      // Browsers whose print() returns at once still fire afterprint; this is a net.
+      setTimeout(finish, 60000);
+    });
+  });
+}
+
+/** A small «جارٍ تجهيز البوليصة…» pill while the label is not ready yet. */
+function _awbBusy(on) {
+  let el = qs('#awb-busy');
+  if (on) {
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'awb-busy';
+      el.setAttribute('role', 'status');
+      el.innerHTML = `<span class="bsf-spin" aria-hidden="true"></span><span>${esc(t('bsfPrinting'))}</span>`;
+      document.body.appendChild(el);
+    }
+    requestAnimationFrame(() => el.classList.add('is-on'));
+  } else if (el) {
+    el.classList.remove('is-on');
+    setTimeout(() => el.remove(), 200);
   }
 }
+
+/** Resolves true once the print dialog has been shown for the label (and the
+ * print is logged). */
+async function printBostaAwb(id, opts = {}) {
+  if (_awbPrinting) return false; // a double click must not open two dialogs
+  // A label printed before → say when and by whom before printing a second copy.
+  const prev = _awbPrintsOf(id);
+  if (prev.length && !opts.skipWarn && !(await _awbConfirmReprint(id, prev))) return false;
+  _awbPrinting = true;
+  // Only show the pill if the label is not ready almost at once.
+  const busyT = setTimeout(() => _awbBusy(true), 150);
+  try {
+    let prep;
+    try {
+      prep = await _awbPrepare(id);
+    } catch (e) {
+      if (e?.message === 'pdf.js') {
+        // pdf.js could not load (offline CDN) → the raw PDF in a tab, as before.
+        // Still A6; the user picks «Actual size» in the print dialog.
+        const bytes = await _awbFetchBytes(id);
+        const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+        const tab = window.open(url, '_blank');
+        if (!tab) toast('اسمح بفتح النوافذ المنبثقة لعرض بوليصة الشحن', true);
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        if (!tab) return false;
+        await _awbRecordPrint(id);
+        return true;
+      }
+      throw e;
+    }
+    clearTimeout(busyT); _awbBusy(false);
+    await _awbPrintInFrame(prep);
+    // Release the page images once the frame is gone; the PDF bytes stay cached,
+    // so a reprint re-renders in ~80ms without asking the server again.
+    if (_awbPrepared.get(String(id))) _awbPrepared.delete(String(id));
+    setTimeout(() => prep.pages.forEach(u => URL.revokeObjectURL(u)), 2000);
+    await _awbRecordPrint(id);
+    toast(t('awbPrintedToast'));
+    return true;
+  } catch (e) {
+    toast('تعذر جلب بوليصة Bosta: ' + (e?.message || 'خطأ غير معروف'), true);
+    return false;
+  } finally {
+    clearTimeout(busyT); _awbBusy(false);
+    _awbPrinting = false;
+  }
+}
+
+
+/* ══ AWB print log + «prepared → send to Bosta → print» flow ══════════════════
+   Every print is recorded server-side (POST /shipping/awb/:id/printed →
+   tx.bostaAwbPrints [{at, by}]). That one log feeds the timeline step, the
+   printer mark in سجل المعاملات / the prep workspace, and the reprint warning.
+   ⚠ A print is recorded when the print page is READY, not when the PDF is
+   fetched — the server also fetches labels on its own (prefetch). */
+const _AWB_PRINTER_SVG = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>`;
+
+/** Both in-memory copies of an order (Movements + Pick-Up) — they are different objects. */
+function _awbOrderCopies(id) {
+  const sid = String(id);
+  return [
+    ...(transactions || []).filter(t => String(t._id) === sid),
+    ...(typeof _pickupOrders !== 'undefined' ? (_pickupOrders || []) : []).filter(o => String(o._id) === sid),
+  ];
+}
+function _awbPrintsOf(id) {
+  for (const c of _awbOrderCopies(id)) {
+    if (!Array.isArray(c.bostaAwbPrints) || !c.bostaAwbPrints.length) continue;
+    // ⚠ Only prints of the CURRENT label count. After a resend the new label has
+    //   never been printed — warning «printed before» about it would be false.
+    //   A print with no tracking number predates this rule and still counts.
+    const cur = String(c.bostaTrackingNumber || '');
+    return c.bostaAwbPrints.filter(p => !p.trackingNumber || !cur || p.trackingNumber === cur);
+  }
+  return [];
+}
+function _awbWhen(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleString(currentLang === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn',
+    { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+/** Small printer mark; '' when the order was never printed. */
+function _awbPrintedMarkHtml(prints, cls) {
+  if (!Array.isArray(prints) || !prints.length) return '';
+  const last = prints[prints.length - 1];
+  const title = t('awbMarkTitle', { n: fmtN(prints.length), when: _awbWhen(last.at), by: last.by || '—' });
+  return `<span class="awb-mark ${cls || ''}" title="${esc(title)}" aria-label="${esc(title)}">${_AWB_PRINTER_SVG}${prints.length > 1 ? `<b>${fmtN(prints.length)}</b>` : ''}</span>`;
+}
+
+/** Record a print, then repaint every view that shows it. Never throws. */
+async function _awbRecordPrint(id) {
+  try {
+    const res = await api(`/shipping/awb/${encodeURIComponent(id)}/printed`, { method: 'POST' });
+    const prints = Array.isArray(res?.prints) ? res.prints : null;
+    if (prints) _awbOrderCopies(id).forEach(c => { c.bostaAwbPrints = prints; });
+  } catch (_) {
+    // The label is already on paper — a failed log write must not look like a failed print.
+    const local = { at: new Date().toISOString(), by: currentUser?.name || currentUser?.username || '' };
+    _awbOrderCopies(id).forEach(c => { c.bostaAwbPrints = [...(c.bostaAwbPrints || []), local]; });
+  }
+  try { if (currentPage === 'movements' && typeof renderMovements === 'function') renderMovements(); } catch (_) {}
+  try { if (typeof refreshInvoiceView === 'function') refreshInvoiceView(id); } catch (_) {}
+  try {
+    const g = typeof _pucoGetGroup === 'function' ? _pucoGetGroup() : null;
+    if (g && (g.orders || []).some(o => String(o._id) === String(id))) _pucoRenderOrders(g);
+  } catch (_) {}
+}
+
+/** The reprint warning. Resolves true to print again. */
+function _awbConfirmReprint(id, prints) {
+  const tx = _awbOrderCopies(id)[0] || {};
+  const first = prints[0], last = prints[prints.length - 1];
+  const rows = [
+    [t('awbRowOrder'), `#${tx.ref || String(id).slice(-6)} — ${tx.client || ''}`],
+    [t('awbRowLast'), _awbWhen(last.at)],
+    [t('awbRowBy'), last.by || '—'],
+    [t('awbRowCount'), fmtN(prints.length)],
+  ];
+  if (prints.length > 1) rows.push([t('awbRowFirst'), `${_awbWhen(first.at)} — ${first.by || '—'}`]);
+  return showConfirm(esc(t('awbReprintQ')), {
+    title: t('awbReprintTitle'), icon: 'warn', rows, confirmLabel: t('awbReprintBtn'),
+  });
+}
+
+/* ── «تم التحضير» → إرسال إلى بوسطة → طباعة البوليصة ─────────────────────────
+   Offered from pucoTickOrder when an order is ticked prepared. Resolves when the
+   dialog closes, so the all-prepared «move to Ready» waits for it. */
+function _bsfIsBostaOrder(o) {
+  const code = String(o.carrierCode || '').trim();
+  if (code) return carrierIntegration(code) === 'bosta';
+  return /bosta|بوسط/i.test(String(o.shipCo || ''));
+}
+function _bsfIsSent(o) {
+  return !!o.bostaOrderId && !['VALIDATION_ERROR', 'DELETED'].includes(o.bostaStatus || '');
+}
+function _bsfMissing(o) {
+  const tx = (transactions || []).find(t => String(t._id) === String(o._id)) || o;
+  const miss = [];
+  if (!String(tx.shippingAddress || '').replace(/^العنوان:\s*/, '').trim()) miss.push(t('bsfMissAddr'));
+  if (!String(tx.shippingGov || tx.shippingCity || '').trim()) miss.push(t('bsfMissCity'));
+  if (!String(tx.phone || tx.clientPhone || '').replace(/\D/g, '')) miss.push(t('bsfMissPhone'));
+  return miss;
+}
+
+let _bsfState = null; // { id, resolve, stage, tracking, error, justSent }
+const _bsfReduced = () => !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+function _bsfMaybeOffer(o) {
+  if (!o || o.type && o.type !== 'مبيعات') return Promise.resolve();
+  if (!_bsfIsBostaOrder(o)) return Promise.resolve();
+  const sent = _bsfIsSent(o);
+  if (sent && _awbPrintsOf(o._id).length) return Promise.resolve(); // sent and printed — nothing to offer
+  if (_bsfState) return Promise.resolve();                          // one dialog at a time
+  if (sent) _awbPrepareSoon(o._id);                                 // label ready before «طباعة»
+  return new Promise(resolve => {
+    _bsfState = { id: String(o._id), resolve, stage: sent ? 'sent' : 'ask', tracking: o.bostaTrackingNumber || '' };
+    _bsfRender();
+  });
+}
+function _bsfClose() {
+  const st = _bsfState;
+  _bsfState = null;
+  const ov = qs('#bsf-overlay');
+  if (ov) {
+    ov.classList.add('is-out');
+    ov.classList.remove('is-on');
+    setTimeout(() => ov.remove(), _bsfReduced() ? 0 : 220);
+  }
+  st?.resolve?.();
+}
+/* Stage content. Each stage is a fresh .bsf-stage; _bsfRender morphs the card's
+   height from the old stage to the new one and lets the new content rise in. */
+function _bsfStageHtml(st, o) {
+  const miss = st.stage === 'ask' ? _bsfMissing(o) : [];
+  const ic = (svg, size) => svg.replace(/width="\d+" height="\d+"/, `width="${size}" height="${size}"`);
+  const TRUCK = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1.5"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`;
+  // pathLength=1 lets the CSS draw any stroke with the same dash numbers.
+  const CHECK = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline class="bsf-draw" pathLength="1" points="20 6 9 17 4 12"/></svg>`;
+  const ERR = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+  const PRINTER = ic(_AWB_PRINTER_SVG, 22);
+  const spin = `<span class="bsf-spin" aria-hidden="true"></span>`;
+  const head = (tone, icon, title, sub) => `
+    <div class="bsf-head bsf-in">
+      <span class="bsf-ic is-${tone}">${icon}</span>
+      <div class="bsf-ht"><div class="bsf-title">${title}</div><div class="bsf-sub">${sub}</div></div>
+    </div>`;
+  const who = `<bdi>#${esc(o.ref || '—')}</bdi> · ${esc(o.client || '—')}`;
+  const track = st.tracking ? `<div class="bsf-track bsf-in">${esc(t('bsfTracking'))} <bdi>${esc(st.tracking)}</bdi></div>` : '';
+  let body = '', btns = '';
+  if (st.stage === 'ask' || st.stage === 'sending') {
+    const busy = st.stage === 'sending';
+    body = head('ok', CHECK, esc(t('bsfPrepared')), who) +
+      `<p class="bsf-q bsf-in">${esc(t('bsfAskQ'))}</p>` +
+      (miss.length ? `<div class="bsf-warn bsf-in">${esc(t('bsfMissing', { v: miss.join(' • ') }))}</div>` : '');
+    btns = `<button type="button" class="bsf-btn is-primary${busy ? ' is-busy' : ''}" data-bsf="send" ${busy || miss.length ? 'disabled' : ''}>${busy ? spin + esc(t('bsfSending')) : ic(TRUCK, 15) + esc(t('bsfSend'))}</button>
+            <button type="button" class="bsf-btn" data-bsf="close" ${busy ? 'disabled' : ''}>${esc(t('bsfLater'))}</button>`;
+  } else if (st.stage === 'error') {
+    body = head('err', ERR, esc(t('bsfFailed')), who) + `<div class="bsf-warn bsf-in">${esc(st.error || '')}</div>`;
+    btns = `<button type="button" class="bsf-btn is-primary" data-bsf="send">${esc(t('bsfRetry'))}</button>
+            <button type="button" class="bsf-btn" data-bsf="close">${esc(t('bsfSkip'))}</button>`;
+  } else if (st.stage === 'sent' || st.stage === 'printing') {
+    const busy = st.stage === 'printing';
+    body = head('ok', st.justSent ? CHECK : TRUCK, esc(t(st.justSent ? 'bsfSent' : 'bsfAlreadySent')), who) + track;
+    btns = `<button type="button" class="bsf-btn is-primary${busy ? ' is-busy' : ''}" data-bsf="print" onpointerenter="_awbPrepareSoon('${esc(st.id)}')" ${busy ? 'disabled' : ''}>${busy ? spin + esc(t('bsfPrinting')) : ic(_AWB_PRINTER_SVG, 15) + esc(t('awbPrintBtn'))}</button>
+            <button type="button" class="bsf-btn" data-bsf="close" ${busy ? 'disabled' : ''}>${esc(t('bsfContinue'))}</button>`;
+  } else if (st.stage === 'printed') {
+    const last = _awbPrintsOf(st.id).slice(-1)[0];
+    body = head('ok', CHECK, esc(t('bsfPrinted')), who) + track +
+      (last ? `<div class="bsf-note bsf-in">${PRINTER.replace('width="22" height="22"', 'width="12" height="12"')}${esc(t('awbPrintedAtBy', { when: _awbWhen(last.at), by: last.by || '—' }))}</div>` : '') +
+      `<div class="bsf-bar bsf-in" aria-hidden="true"><span></span></div>`;
+    btns = `<button type="button" class="bsf-btn is-primary" data-bsf="close">${esc(t('bsfContinue'))}</button>`;
+  }
+  return `<div class="bsf-stage" data-stage="${st.stage}">${body}<div class="bsf-actions bsf-in">${btns}</div></div>`;
+}
+function _bsfRender() {
+  const st = _bsfState;
+  if (!st) return;
+  const o = _awbOrderCopies(st.id)[0] || {};
+  let ov = qs('#bsf-overlay');
+  const fresh = !ov;
+  if (fresh) {
+    ov = document.createElement('div');
+    ov.id = 'bsf-overlay';
+    ov.className = 'bsf-overlay';
+    ov.setAttribute('role', 'dialog');
+    ov.setAttribute('aria-modal', 'true');
+    ov.innerHTML = `<div class="bsf-card" tabindex="-1"></div>`;
+    ov.addEventListener('keydown', e => {
+      e.stopPropagation(); // the prep workspace owns ↑/↓/Space — not while this is up
+      if (e.key === 'Escape' && _bsfState && !['sending', 'printing'].includes(_bsfState.stage)) _bsfClose();
+    });
+    ov.addEventListener('click', e => {
+      const b = e.target.closest('[data-bsf]');
+      if (!b || b.disabled) return;
+      const a = b.dataset.bsf;
+      if (a === 'close') _bsfClose();
+      else if (a === 'send') _bsfSend();
+      else if (a === 'print') _bsfPrint();
+    });
+    document.body.appendChild(ov);
+  }
+  const card = ov.querySelector('.bsf-card');
+  const prev = card.querySelector('.bsf-stage');
+  const sameStage = prev && prev.dataset.stage === st.stage;
+  // A busy toggle inside one step (send → sending) must not replay the entrance.
+  const busyOnly = prev && ((prev.dataset.stage === 'ask' && st.stage === 'sending') || (prev.dataset.stage === 'sent' && st.stage === 'printing')
+    || (prev.dataset.stage === 'sending' && st.stage === 'ask') || (prev.dataset.stage === 'printing' && st.stage === 'sent'));
+  const h0 = card.offsetHeight;
+  card.innerHTML = _bsfStageHtml(st, o);
+  const stage = card.querySelector('.bsf-stage');
+  if (sameStage || busyOnly) {
+    stage.classList.add('no-enter');
+  } else if (!fresh && !_bsfReduced()) {
+    // Morph the card's height from the old step to the new one.
+    const h1 = card.offsetHeight;
+    if (Math.abs(h1 - h0) > 1) {
+      card.style.height = h0 + 'px';
+      void card.offsetHeight;
+      card.classList.add('is-morph');
+      card.style.height = h1 + 'px';
+      const done = () => { card.classList.remove('is-morph'); card.style.height = ''; };
+      card.addEventListener('transitionend', done, { once: true });
+      setTimeout(done, 400);
+    }
+  }
+  if (fresh) requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('is-on')));
+  (card.querySelector('.bsf-btn.is-primary:not([disabled])') || card)?.focus({ preventScroll: true });
+}
+async function _bsfSend() {
+  const st = _bsfState;
+  if (!st) return;
+  st.stage = 'sending'; _bsfRender();
+  try {
+    const res = await api(`/shipping/create-order/${encodeURIComponent(st.id)}`, { method: 'POST' });
+    if (_bsfState !== st) return;
+    const tracking = res.trackingNumber || res.bostaTrackingNumber || '';
+    // ⚠ pickupStatus is NOT moved to Ready locally: the order stays in its prep
+    //   group so the picker's list does not jump; the group move accepts it.
+    _awbOrderCopies(st.id).forEach(c => {
+      c.bostaOrderId = res.bostaOrderId || c.bostaOrderId;
+      c.bostaTrackingNumber = tracking || c.bostaTrackingNumber;
+      c.bostaStatus = 'CREATED';
+      c.bostaStatusLabel = 'تم الإنشاء';
+      c.bostaAwbPrints = c.bostaAwbPrints || [];
+    });
+    st.tracking = tracking;
+    st.justSent = true;
+    st.stage = 'sent';
+    // A new shipment has a new label — drop anything cached, then start
+    // preparing it now so «طباعة البوليصة» opens the dialog at once.
+    _awbForget(st.id);
+    _awbPrepareSoon(st.id);
+    try { markMovRecentlyUpdated(st.id); } catch (_) {}
+    try { const g = _pucoGetGroup(); if (g) _pucoRenderOrders(g); } catch (_) {}
+    _bsfRender();
+  } catch (e) {
+    if (_bsfState !== st) return;
+    const msg = e?.message || '';
+    st.error = (msg.includes('خطأ في بيانات') || e?.status === 422) ? t('bsfBadData') : msg;
+    st.stage = 'error'; _bsfRender();
+  }
+}
+async function _bsfPrint() {
+  const st = _bsfState;
+  if (!st) return;
+  st.stage = 'printing'; _bsfRender();
+  const ok = await printBostaAwb(st.id, { skipWarn: true });
+  if (_bsfState !== st) return;
+  st.stage = ok ? 'printed' : 'sent';
+  _bsfRender();
+  // The print dialog has closed by now — show «تمت الطباعة», then carry on.
+  if (ok) setTimeout(() => { if (_bsfState === st && st.stage === 'printed') _bsfClose(); }, 1600);
+}
+
 
 async function bulkSendToBosta() {
   if (!selectedMovIds.size) { toast('لم يتم تحديد أي معاملات', true); return; }
@@ -55852,7 +56909,7 @@ function showInvoiceDetail(id, highlightCommentId) {
         ? `<button class="btn btn-outline" onclick="closeInvoiceDetail();sendToBosta('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px">${_BOSTA_ICON} <span style="font-size:.85rem">${tx.bostaStatus==='VALIDATION_ERROR'?'Resend to Bosta':tx.bostaStatus==='DELETED'?'Resend to Bosta':'Send to Bosta'}</span></button>`
         : `<button class="btn btn-outline" onclick="closeInvoiceDetail();syncBostaStatus('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>${_BOSTA_ICON} <span style="font-size:.85rem">Update Bosta</span></button>`
       ) : ''}
-      ${!isPurchase && !isReturn && !tx.cancelled && tx.bostaOrderId && !['DELIVERED','RETURNED','CANCELLED','DELETED'].includes(tx.bostaStatus||'') ? `<button class="btn btn-outline" onclick="closeInvoiceDetail();printBostaAwb('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg><span style="font-size:.85rem">${currentLang === 'en' ? 'Print Bosta AWB' : 'طباعة بوليصة Bosta'}</span></button>` : ''}
+      ${!isPurchase && !isReturn && !tx.cancelled && tx.bostaOrderId && !['DELIVERED','RETURNED','CANCELLED','DELETED'].includes(tx.bostaStatus||'') ? (_awbWarm(), '') + `<button class="btn btn-outline" onpointerenter="_awbPrepareSoon('${esc(tx._id)}')" onclick="closeInvoiceDetail();printBostaAwb('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg><span style="font-size:.85rem">${currentLang === 'en' ? 'Print Bosta AWB' : 'طباعة بوليصة Bosta'}</span></button>` : ''}
       ${isExchangeSalePendingCollect(tx) ? `<button class="btn btn-primary" onclick="closeInvoiceDetail();openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg>${t('ivCollectExchangeDiff')} (${fmtJ(tx.remaining)})</button>` : ''}
       ${(tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx) ? `<button class="btn ${isPurchase ? 'btn-danger' : 'btn-primary'}" onclick="closeInvoiceDetail();openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${isPurchase ? '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>' : '<circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/>'}</svg>${isPurchase ? t('ivPaySupplier') : t('ivCollectFromCustomer')}</button>` : ''}
       ${isPurchase && (tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && isAdmin() ? `<button class="btn btn-outline" onclick="closeInvoiceDetail();openWriteOffModal('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:.85rem">${t('supWriteOffBtn')}</span></button>` : ''}
@@ -56704,7 +57761,7 @@ function renderInvoiceViewPage() {
       ? `<button class="inv2-btn" onclick="sendToBosta('${esc(tx._id)}')">${_BOSTA_ICON} <span>${tx.bostaStatus==='VALIDATION_ERROR'?'Resend to Bosta':tx.bostaStatus==='DELETED'?'Resend to Bosta':'Send to Bosta'}</span></button>`
       : `<button class="inv2-btn" onclick="syncBostaStatus('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>${_BOSTA_ICON} <span>Update Bosta</span></button>`
     ) : ''}
-    ${!isPurchase && !isReturn && !isSupplierReturn && !tx.cancelled && tx.bostaOrderId && !['DELIVERED','RETURNED','CANCELLED','DELETED'].includes(tx.bostaStatus||'') ? `<button class="inv2-btn" onclick="printBostaAwb('${esc(tx._id)}')" title="${currentLang === 'en' ? 'Print Bosta AWB' : 'طباعة بوليصة Bosta'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg><span>${currentLang === 'en' ? 'Print Bosta AWB' : 'طباعة بوليصة Bosta'}</span></button>` : ''}
+    ${!isPurchase && !isReturn && !isSupplierReturn && !tx.cancelled && tx.bostaOrderId && !['DELIVERED','RETURNED','CANCELLED','DELETED'].includes(tx.bostaStatus||'') ? (_awbWarm(), '') + `<button class="inv2-btn" onpointerenter="_awbPrepareSoon('${esc(tx._id)}')" onclick="printBostaAwb('${esc(tx._id)}')" title="${currentLang === 'en' ? 'Print Bosta AWB' : 'طباعة بوليصة Bosta'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg><span>${currentLang === 'en' ? 'Print Bosta AWB' : 'طباعة بوليصة Bosta'}</span></button>` : ''}
     ${isExchangeSalePendingCollect(tx) ? `<button class="inv2-btn inv2-btn-primary" onclick="openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg><span>${t('ivCollectExchangeDiff')} (${fmtJ(tx.remaining)})</span></button>` : ''}
     ${(tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx) ? `<button class="inv2-btn ${isPurchase ? 'inv2-btn-danger' : 'inv2-btn-primary'}" onclick="openCollectMovement('${esc(tx._id)}')"${_fdLockAttr(tx, 'fdLockCollect')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">${isPurchase ? '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>' : '<circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/>'}</svg><span>${isPurchase ? t('ivPaySupplier') : t('ivCollectFromCustomer')}</span></button>` : ''}
     ${isPurchase && (tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && isAdmin() ? `<button class="inv2-btn" onclick="openWriteOffModal('${esc(tx._id)}')" title="${escHtml(t('supWriteOffTitle'))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M20 6L9 17l-5-5"/></svg><span>${t('supWriteOffBtn')}</span></button>` : ''}
@@ -57307,6 +58364,31 @@ function highlightInvComment(commentId) {
 }
 // Track which tx is currently open in the invoice detail overlay
 window._currentInvoiceTxId = null;
+/* Shipment history for the timeline. `shipmentEvents` is the record; rows written
+   before it existed are reconstructed from what survives (the current shipment,
+   a DELETED status, the print log) so old orders still read sensibly. */
+const _SHIP_EV_META = {
+  sent:      { key: 'shipEvSent',      tone: 'ok',   icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1.5"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>` },
+  resent:    { key: 'shipEvResent',    tone: 'info', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>` },
+  printed:   { key: 'shipEvPrinted',   tone: 'info', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>` },
+  deleted:   { key: 'shipEvDeleted',   tone: 'bad',  icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>` },
+  cancelled: { key: 'shipEvCancelled', tone: 'bad',  icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>` },
+};
+function _shipmentLogOf(tx) {
+  const log = Array.isArray(tx.shipmentEvents) ? tx.shipmentEvents.slice() : [];
+  const has = (type) => log.some(e => e.type === type);
+  // Prints recorded before shipmentEvents existed live only in bostaAwbPrints.
+  if (!has('printed')) (tx.bostaAwbPrints || []).forEach(p => log.push({ type: 'printed', at: p.at, by: p.by, trackingNumber: p.trackingNumber }));
+  if (!has('sent') && !has('resent') && (tx.bostaTrackingNumber || tx.bostaOrderId)) {
+    const at = tx.bostaRawResponse?.createdAt || tx.shippedAt || tx.bostaLastSync || null;
+    if (at) log.push({ type: 'sent', at, trackingNumber: tx.bostaTrackingNumber || '', by: tx.shippedByName || '' });
+  }
+  if (!has('deleted') && (tx.bostaStatus || '') === 'DELETED' && tx.bostaLastSync) {
+    log.push({ type: 'deleted', at: tx.bostaLastSync, trackingNumber: tx.bostaTrackingNumber || '' });
+  }
+  return log.filter(e => e && e.at).sort((x, y) => new Date(x.at) - new Date(y.at));
+}
+
 function buildOrderTimelineSection(tx) {
   if (tx.type !== 'مبيعات') return '';
   const _fmtTs = (iso) => {
@@ -57414,6 +58496,37 @@ function buildOrderTimelineSection(tx) {
     t('ivTlSendToShipping'), isShipped ? t('ivTlSendToShippingDone') : t('ivTlSendToShippingPending'),
     isShipped ? 'completed' : 'pending', shippedAt,
     bostaLogoExtra, false);
+  // Step 3b: «سجل الشحنة» — every shipment action, in order: sent, printed,
+  // deleted at the carrier, resent, cancelled. Read from the append-only
+  // `shipmentEvents` log, because a resend OVERWRITES the bosta* fields and a
+  // deletion wipes bostaOrderId — derived from the current state, a deleted and
+  // resent order would look like it was only ever sent once.
+  const _shipLog = _shipmentLogOf(tx);
+  let stepAwb = '';
+  if (_shipLog.length) {
+    const lastE = _shipLog[_shipLog.length - 1];
+    const rows = _shipLog.map(e => {
+      const m = _SHIP_EV_META[e.type] || _SHIP_EV_META.sent;
+      const bits = [esc(t(m.key))];
+      if (e.trackingNumber) bits.push(`<span class="ord-tl-track">${_fdTrackLinkHtml(e.trackingNumber)}</span>`);
+      if (e.prevTrackingNumber) bits.push(`<span class="ord-tl-att-st">${esc(t('shipEvReplaces',{v:e.prevTrackingNumber}))}</span>`);
+      if (e.source && e.type === 'deleted') bits.push(`<span class="ord-tl-att-st">${esc(t('shipEvSrc_' + e.source) !== 'shipEvSrc_' + e.source ? t('shipEvSrc_' + e.source) : e.source)}</span>`);
+      if (e.by) bits.push(`<span class="ord-tl-att-st">${esc(t('shipEvBy',{v:e.by}))}</span>`);
+      return `<div class="ord-tl-sub-event ship-ev is-${m.tone}">
+        <span class="ship-ev-ic" aria-hidden="true">${m.icon}</span>
+        <span class="ord-tl-sub-text">${bits.join(' · ')}</span>
+        <span class="ord-tl-sub-time">${_fmtTs(e.at) || '—'}</span>
+      </div>`;
+    }).join('');
+    const lastMeta = _SHIP_EV_META[lastE.type] || _SHIP_EV_META.sent;
+    stepAwb = _stepHtml(
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`,
+      t('shipLogTitle'),
+      esc(t('shipLogDesc',{n:fmtN(_shipLog.length), last:t(lastMeta.key)})),
+      lastE.type === 'deleted' || lastE.type === 'cancelled' ? 'failed' : 'completed', lastE.at,
+      `<div class="ord-tl-sub-events">${rows}</div>`, false,
+      lastE.type === 'deleted' ? t('shipEvDeletedBadge') : lastE.type === 'cancelled' ? t('ivTlStepCancelled') : '');
+  }
   // Step 4: Shipping Status Updates
   const rawTransit = tx.bostaRawResponse?.TransitEvents || tx.bostaRawResponse?.transitEvents || [];
   const bostaEvents = [];
@@ -57563,13 +58676,14 @@ function buildOrderTimelineSection(tx) {
   // خطوتا إعادة الشحن (نتيجة السابقة + المحاولة الجديدة) تتحسبا في العداد كمان،
   // وإلا العدّاد يقول 3/5 والمعروض ٧ خطوات.
   const _reshipSteps = attempts.length ? 2 : 0;
-  const totalSteps = (isShopify ? 5 : 4) + (step5 ? 1 : 0) + _reshipSteps;
+  const totalSteps = (isShopify ? 5 : 4) + (step5 ? 1 : 0) + _reshipSteps + (stepAwb ? 1 : 0);
   /* العدّاد بيعدّ الخطوات اللي «خلصت» — والخطوة اللي انتهت بمرتجع أو فشل خلصت
      برضه. لو ما اتحسبتش هيفضل العدّاد ناقص للأبد على طلب مافيش فيه أي خطوة جاية. */
   const completedCount = [true, isShopify, prepEvent!=null||prepStatus==='completed', isShipped,
     step4StatusKey==='completed'||step4StatusKey==='failed',
     codStatus==='Collected'||(step5 && codStatus==='FailedCollection')].filter(Boolean).length
-    + (attempts.length ? 1 : 0); // نتيجة الشحنة السابقة خطوة مكتملة
+    + (attempts.length ? 1 : 0) // نتيجة الشحنة السابقة خطوة مكتملة
+    + (stepAwb ? 1 : 0);        // سجل الشحنة
   return `<div class="ord-timeline">
     <div class="ord-timeline-header" onclick="this.classList.toggle('expanded');this.nextElementSibling.classList.toggle('open')">
       <h5><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${t('ivTlOrderTimeline')}</h5>
@@ -57577,7 +58691,7 @@ function buildOrderTimelineSection(tx) {
       <svg class="otl-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
     <div class="ord-timeline-body">
-      <div class="ord-timeline-steps">${step1}${step1b}${step2}${step3}${stepReship}${step4}${step5}</div>
+      <div class="ord-timeline-steps">${step1}${step1b}${step2}${step3}${stepAwb}${stepReship}${step4}${step5}</div>
     </div>
   </div>`;
 }
@@ -57650,6 +58764,7 @@ function buildInvCommentsSection(tx) {
     <div class="inv-section-body">
       <div class="inv-section-content">
         <div class="inv-cmt-form">
+          ${_cmtToolsHtml('inv-comment-text-' + esc(tx._id), esc(tx._id))}
           <div class="inv-cmt-input-row">
             <input type="text" id="inv-comment-text-${esc(tx._id)}" placeholder="${esc(t('ivCmtAddPlaceholder'))}" class="inv-cmt-input" oninput="onMentionInput(this,'${esc(tx._id)}')" onkeydown="onMentionKey(event,'${esc(tx._id)}');if(event.key==='Enter'&&!_mentionDropdown){event.preventDefault();addInvoiceComment('${esc(tx._id)}')}">
             <button class="inv-cmt-send-btn" onclick="addInvoiceComment('${esc(tx._id)}')" title="${esc(t('ivCmtSend'))}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
@@ -73925,6 +75040,35 @@ function toggleLockSetting(kind, enabled) {
     : (currentLang==='en'?'Setting disabled':'تم التعطيل'));
 }
 /* ── Movements columns visibility menu ─────────────────────── */
+/* Column-visibility prefs are PER USER, not per browser/device — a shared PC with
+   several employees logging in must not mix one person's hidden columns into
+   another's. `_colsPrefKey(base)` appends the user id to the storage key; `_myUserId()`
+   returns '' before login, so the suffix is simply dropped rather than crashing.
+   ⚠ Falls back to reading the OLD un-suffixed key once, so whoever already set up
+   their columns before this change keeps them instead of silently resetting. */
+function _colsPrefKey(base) {
+  const uid = _myUserId();
+  return uid ? `${base}__u${uid}` : base;
+}
+function _readColsPref(base) {
+  try {
+    const key = _colsPrefKey(base);
+    let v = localStorage.getItem(key);
+    if (v === null && key !== base) v = localStorage.getItem(base); /* legacy fallback */
+    return v ? new Set(JSON.parse(v)) : new Set();
+  } catch (_) { return new Set(); }
+}
+function _writeColsPref(base, set) {
+  try { localStorage.setItem(_colsPrefKey(base), JSON.stringify(Array.from(set))); } catch (_) {}
+}
+function _clearColsPref(base) {
+  try {
+    const key = _colsPrefKey(base);
+    localStorage.removeItem(key);
+    if (key !== base) localStorage.removeItem(base); /* drop the legacy un-suffixed key too */
+  } catch (_) {}
+}
+
 const MOV_COLS_KEY = 'soulia_mov_cols_hidden';
 const MOV_COLS = [
   { id:'ref',       i18n:'colRef',            ar:'المرجع',         en:'Ref.' },
@@ -73943,13 +75087,8 @@ const MOV_COLS = [
   { id:'employee',  i18n:'colEmployee',       ar:'تم الإنشاء بواسطة', en:'Created By' },
   { id:'bosta',     i18n:null,                ar:'Bosta',          en:'Bosta' },
 ];
-function _getHiddenMovCols() {
-  try { const v = localStorage.getItem(MOV_COLS_KEY); return v ? new Set(JSON.parse(v)) : new Set(); }
-  catch (_) { return new Set(); }
-}
-function _setHiddenMovCols(set) {
-  try { localStorage.setItem(MOV_COLS_KEY, JSON.stringify(Array.from(set))); } catch (_) {}
-}
+function _getHiddenMovCols() { return _readColsPref(MOV_COLS_KEY); }
+function _setHiddenMovCols(set) { _writeColsPref(MOV_COLS_KEY, set); }
 function applyMovColsVisibility() {
   const hidden = _getHiddenMovCols();
   MOV_COLS.forEach(c => {
@@ -73965,7 +75104,7 @@ function toggleMovCol(colId) {
   _renderMovColsMenu();
 }
 function resetMovCols() {
-  try { localStorage.removeItem(MOV_COLS_KEY); } catch (_) {}
+  _clearColsPref(MOV_COLS_KEY);
   applyMovColsVisibility();
   _renderMovColsMenu();
   toast(currentLang==='en' ? 'Columns reset' : 'تم استعادة الأعمدة الافتراضية');
@@ -82339,11 +83478,46 @@ function _searchProIcon(item) {
   }
   return null;
 }
-const _SEARCH_BOSTA_LABEL_EN = {
-  'تم الإنشاء': 'Created', 'تم الاستلام': 'Picked Up', 'في الطريق': 'In Transit', 'خارج للتسليم': 'Out for Delivery',
-  'تم التسليم': 'Delivered', 'مُرتجع': 'Returned', 'محاولة فاشلة': 'Failed Attempt', 'فشل التسليم': 'Delivery Failed',
-  'ملغي': 'Cancelled', 'محذوف من Bosta': 'Deleted', 'خطأ في البيانات': 'Validation Error',
-};
+/* The status chip of an order in the search results — its REAL current state.
+   ⚠ It used to be the last Bosta label alone, and a shipment deleted at Bosta
+   keeps «محذوف من Bosta» forever: an order back to Ready (or already resent and
+   moving) read «Deleted». Resolved here with the same rule as the Movements
+   table (_puDisplayStatus), from the live in-memory row when there is one — it
+   follows socket updates — else from the fields the server now returns. */
+function _gsOrderStatus(item) {
+  const live = (transactions || []).find(t => String(t._id) === String(item.id));
+  const src = live
+    ? { ...live, hasShipment: !!live.bostaOrderId }
+    : { ...item, bostaOrderId: item.hasShipment ? 'x' : '' };
+  const code = String(src.bostaStatus || '').trim().toUpperCase();
+  const att = Array.isArray(src.shipmentAttempts) ? src.shipmentAttempts.length : (Number(src.shipmentAttempts) || 0);
+  const deleted = code === 'DELETED';
+  const note = deleted ? t('gsAwbDeleted') : code === 'VALIDATION_ERROR' ? t('gsAwbInvalid') : '';
+  if (src.cancelled) return { label: t('gsCancelled'), cls: 'search-order-badge-red', note: '' };
+  // A live shipment at the carrier: its own status is the order's state.
+  if (src.hasShipment && code && !['DELETED', 'VALIDATION_ERROR'].includes(code)) {
+    const CLS = {
+      DELIVERED: 'search-order-badge-green',
+      OUT_FOR_DELIVERY: 'search-order-badge-blue', IN_TRANSIT: 'search-order-badge-blue', PICKED_UP: 'search-order-badge-blue',
+      RETURNED: 'search-order-badge-red', FAILED_ATTEMPT: 'search-order-badge-red', DELIVERY_FAILED: 'search-order-badge-red', CANCELLED: 'search-order-badge-red',
+    };
+    return { label: _bostaStatusLabel(code), cls: CLS[code] || 'search-order-badge-bosta', note: '' };
+  }
+  // No live shipment (never sent, deleted, rejected): the order's own stage.
+  const stage = _puDisplayStatus(src);
+  if (stage !== 'Delivered' && att > 0) return { label: t('gsReshipPending', { v: fmtN(att + 1) }), cls: 'search-order-badge-amber', note };
+  const STAGE = {
+    Pending:     ['gsStPending',   'search-order-badge-bosta'],
+    Preparing:   ['gsStPreparing', 'search-order-badge-amber'],
+    Ready:       ['gsStReady',     'search-order-badge-blue'],
+    'Picked-Up': ['gsStReady',     'search-order-badge-blue'],
+    Shipped:     ['gsStShipped',   'search-order-badge-blue'],
+    Delivered:   ['gsStDelivered', 'search-order-badge-green'],
+  };
+  const [key, cls] = STAGE[stage] || STAGE.Pending;
+  return { label: t(key), cls, note };
+}
+
 function renderSearchDropdown() {
   const _sq = String(qs('#global-search')?.value || '').trim();
   const _phoneQueryAllowed = /^(010|011|012|015)/.test(_sq);
@@ -82376,38 +83550,11 @@ function renderSearchDropdown() {
       if (item.type === 'nav' && item.meta === '__nav_go__') {
         metaHtml = '<span class="search-nav-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span>';
       } else if (item.type === 'order') {
-        // `bostaEn` stays the canonical English name — it is the KEY into
-        // bostaColorMap below, so it must not be localized or every badge would
-        // fall through to the neutral grey class. `bostaLabel` is what's shown.
-        // ⚠ إعادة الشحن بتفضّي `bostaStatusLabel` لحد ما البوليصة الجديدة تتبعت،
-        // فالطلب اللي اتشحن ورجع كان بيقرا «لم تُشحن» — وده أسوأ من فاضي، لأنه
-        // بيقول للموظف عكس اللي حصل. لو فيه محاولات سابقة، البادج بيقول رقم
-        // المحاولة الجاية بدل ما يدّعي إنه ما اتشحنش.
-        const _att = Number(item.shipmentAttempts) || 0;
-        const bostaEn = _SEARCH_BOSTA_LABEL_EN[item.bostaStatusLabel] || 'Not Shipped';
-        const bostaLabel = item.bostaStatusLabel
-          ? (currentLang === 'en' ? bostaEn : item.bostaStatusLabel)
-          : (_att > 0 ? t('gsReshipPending', { v: fmtN(_att + 1) })
-                      : (currentLang === 'en' ? bostaEn : t('gsNotShipped')));
-        const bostaColorMap = {
-          'Delivered': 'search-order-badge-green',
-          'Out for Delivery': 'search-order-badge-blue',
-          'In Transit': 'search-order-badge-blue',
-          'Picked Up': 'search-order-badge-blue',
-          'Returned': 'search-order-badge-red',
-          'Failed Attempt': 'search-order-badge-red',
-          'Delivery Failed': 'search-order-badge-red',
-          'Cancelled': 'search-order-badge-red',
-        };
-        const _badgeCls = (!item.bostaStatusLabel && _att > 0)
-          ? 'search-order-badge-amber'
-          : (bostaColorMap[bostaEn] || 'search-order-badge-bosta');
-        // ⚠ الحركة الملغاة بتاخد بادج «ملغي» بدل بادج الشحن، مش بالإضافة له.
-        // حالة بوسطة على أوردر ملغي بتوصف بوليصة اتلغت، فعرض «تم التوصيل» جنب
-        // «ملغي» بيدّي الموظف معلومتين متناقضتين على نفس السطر.
-        const bostaBadge = item.cancelled
-          ? '<span class="search-order-badge search-order-badge-red">' + esc(t('gsCancelled')) + '</span>'
-          : '<span class="search-order-badge ' + _badgeCls + '">' + esc(bostaLabel) + '</span>';
+        // The chip states the order's real state (_gsOrderStatus); a deleted or
+        // rejected label rides beside it as a quiet note — context, not the status.
+        const _st = _gsOrderStatus(item);
+        const bostaBadge = '<span class="search-order-badge ' + _st.cls + '">' + esc(_st.label) + '</span>'
+          + (_st.note ? ' <span class="search-order-note">' + esc(_st.note) + '</span>' : '');
         const custName = String(item.subtitle || '').replace(/^\s*[^—]+—\s*/, '').trim();
         const dateStr = item.createdAt ? fmtDateShort(new Date(item.createdAt)) : '';
         metaHtml = '<div class="search-order-meta">'
@@ -89667,6 +90814,10 @@ async function puCardPrepTick(orderId, checked) {
   if (!o) return;
   _puSetLocalPrepChecked(orderId, checked);
   const savePrepCheck = _puPersistPrepCheck(orderId, checked);
+  // Same «prepared → send to Bosta → print» offer as the workspace tick.
+  const bostaFlow = (checked && _puPrepGroups.some(g => g.orders.some(x => x._id === orderId)))
+    ? new Promise(res => setTimeout(() => _bsfMaybeOffer(o).then(res, res), 0))
+    : Promise.resolve();
 
   // Update tick wrap and card visual immediately
   const wrap = qs(`#pu-tick-wrap-${orderId}`);
@@ -89716,7 +90867,7 @@ async function puCardPrepTick(orderId, checked) {
       // Auto-move after brief delay so user sees the banner
       setTimeout(() => {
         const stillAllDone = grp.orders.every(x => !!x.prepChecked);
-        savePrepCheck.then(() => {
+        Promise.all([savePrepCheck, bostaFlow]).then(() => {
           if (stillAllDone && grp.orders.every(x => !!x.prepChecked)) prepGroupMoveToReady(grp.prepRef);
         }).catch(() => {});
       }, 1400);
@@ -90032,10 +91183,22 @@ function _pwOrderCardHtml(o, isSel, isDone) {
         <span class="pw-chip is-units">${t('puUnitsCount',{n:fmtN(units)})}</span>
         ${noteN ? `<span class="pw-chip" title="${esc(t('puHasNotes'))}">${_PW_NOTE_SVG}<span data-pw-cmt-n>${fmtN(noteN)}</span></span>` : ''}
         ${(o.remaining||0) > 0 ? `<span class="pw-chip is-due">${t('puRemainingChip',{v:fmtJT(o.remaining)})}</span>` : ''}
+        ${_pwAwbChipHtml(o)}
       </div>
     </button>`;
 }
 
+
+/** «طُبعت البوليصة» (printer) or «أُرسل لبوسطة» — the shipping state of a card. */
+function _pwAwbChipHtml(o) {
+  const prints = _awbPrintsOf(o._id);
+  if (prints.length) {
+    const last = prints[prints.length - 1];
+    return `<span class="pw-chip is-awb" title="${esc(t('awbMarkTitle',{n:fmtN(prints.length),when:_awbWhen(last.at),by:last.by||'—'}))}">${_AWB_PRINTER_SVG}${esc(t('awbPrintedMark'))}</span>`;
+  }
+  if (_bsfIsSent(o)) return `<span class="pw-chip is-sent" title="${esc(o.bostaTrackingNumber||'')}">${esc(t('bsfSentChip'))}</span>`;
+  return '';
+}
 
 /** LEFT PANEL — the order navigator, ordered by completion. */
 function _pucoRenderOrders(group, filterQ) {
@@ -90149,30 +91312,18 @@ function _pwRenderWork() {
     <!-- ── Order header: who + what it is worth ── -->
     <div class="pw-work-head">
       <div class="pw-cust">
+        <!-- ⚠ العنوان مبسّط عمداً: رقم الأوردر + زر النسخ فقط. زر «Prepared» لم يعد
+             هنا — ازدحم بجانب أيقونة النسخ، فانتقل لأقصى الهيدر كعنصر مستقل
+             (انظر .pw-head-tick أسفل). الهاتف حُذف من هذا الهيدر؛ هو بيانٌ
+             تفصيلي موجود بالفعل في بطاقة الطلب بقائمة التنقّل. -->
         <div class="pw-cust-ref">
           <span class="pw-cust-refno">#${esc(o.ref||'—')}</span>
           <button type="button" class="pw-copy" onclick="pwCopyRef(this,'${esc(o.ref||'')}')" title="${esc(t('puCopyRef'))}" aria-label="${esc(t('puCopyRef'))}">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
           </button>
-          ${colType === 'prep' ? `
-          <button type="button" id="puco-tick-wrap-${esc(o._id)}" class="pw-tickhead${isDone?' is-done':''}"
-            aria-pressed="${isDone?'true':'false'}"
-            onclick="pucoTickOrder('${esc(o._id)}',${isDone?'false':'true'})">
-            <span class="pw-tickhead-c" id="puco-tick-circle-${esc(o._id)}">
-              ${isDone ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#10b981" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
-            </span>
-            <span id="puco-tick-lbl-${esc(o._id)}">${isDone ? esc(t('puTickDone')) : esc(t('puTickDo'))}</span>
-          </button>` : ''}
         </div>
-        <!-- ⚠ الاسم والهاتف على سطر واحد: الهاتف بيان تعريفي يُقرأ مع الاسم،
-             وإفراده بسطر كان يكلّف سطراً كاملاً من الهيدر لبيانٍ نادراً ما يُستعمل
-             أثناء التجهيز. الاسم يبقى الأكبر — هو هوية الطلب. -->
         <div class="pw-cust-idline">
           <span class="pw-cust-name">${esc(o.client||'—')}</span>
-          ${(o.phone||o.clientPhone) ? `<a class="pw-cust-phone" href="tel:${esc((o.phone||o.clientPhone||'').replace(/[^\d+]/g,''))}" onclick="event.stopPropagation()">
-            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>
-            <bdi>${esc(o.phone||o.clientPhone)}</bdi>
-          </a>` : ''}
         </div>
         <!-- ⚠ البيانات الثانوية (الحالة · الشحن · الموظف) لم تعد شرائح بحدود
              تنافس المال والملاحظات: هي **سياق لا قرار**، فصارت سطراً نصّياً واحداً
@@ -90200,6 +91351,15 @@ function _pwRenderWork() {
           <span class="pw-mtile-val">${fmtJT(o.remaining)}</span>
         </div>` : ''}
       </div>
+      ${colType === 'prep' ? `
+      <button type="button" id="puco-tick-wrap-${esc(o._id)}" class="pw-tickhead pw-head-tick${isDone?' is-done':''}"
+        aria-pressed="${isDone?'true':'false'}"
+        onclick="pucoTickOrder('${esc(o._id)}',${isDone?'false':'true'})">
+        <span class="pw-tickhead-c" id="puco-tick-circle-${esc(o._id)}">
+          ${isDone ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#10b981" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+        </span>
+        <span id="puco-tick-lbl-${esc(o._id)}">${isDone ? esc(t('puTickDone')) : esc(t('puTickDo'))}</span>
+      </button>` : ''}
     </div>
 
     <!-- ── Body: التعليمات في عمود، الأصناف في الآخر ──────────────────────
@@ -90222,6 +91382,13 @@ function _pwRenderWork() {
          order number, and two controls for one decision is how an order gets
          ticked by accident. ── -->
     <div class="pw-actions">
+      ${_bsfIsSent(o) ? (() => {
+        const pr = _awbPrintsOf(o._id), lp = pr[pr.length - 1];
+        const ttl = lp ? t('awbMarkTitle',{n:fmtN(pr.length),when:_awbWhen(lp.at),by:lp.by||'—'}) : t('awbPrintBtn');
+        return `<button type="button" class="pw-abtn${pr.length ? ' is-printed' : ''}" onpointerenter="_awbPrepareSoon('${esc(o._id)}')" onclick="printBostaAwb('${esc(o._id)}')" title="${esc(ttl)}">
+        ${_AWB_PRINTER_SVG.replace('width="12" height="12"','width="14" height="14"')}
+        ${esc(pr.length ? t('awbPrintedMark') : t('awbPrintBtn'))}
+      </button>`; })() : ''}
       <button type="button" class="pw-abtn" onclick="pucoShowInvoice('${esc(o._id)}')">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         ${esc(t('puViewInvoice'))}
@@ -90322,6 +91489,8 @@ document.addEventListener('keydown', e => {
   if (!modal || modal.style.display === 'none' || !_pucoGroupKey) return;
   // The invoice panel opens on top of this modal and owns the keyboard while it is up.
   if (qs('#inv-detail-overlay')?.classList.contains('active')) return;
+  // So do the Bosta send/print dialog and any confirm dialog.
+  if (qs('#bsf-overlay') || qs('#soulia-modal-overlay')?.classList.contains('active')) return;
   const tag = (e.target?.tagName || '').toLowerCase();
   // The add-order field runs its own ↑/↓ over its suggestion list; the search box
   // forwards to us explicitly via pwSearchKeydown.
@@ -90481,7 +91650,7 @@ function _pwNotesHtml(o) {
           <span class="pw-note-sub">${esc(t('puCustomerNoteSub'))}</span>
         </span>
       </header>
-      <div class="pw-note-body"><div class="pw-note-t">${esc(note)}</div></div>
+      <div class="pw-note-body"><div class="pw-note-t" dir="auto">${renderMentionText(note, { mentions: false })}</div></div>
     </section>` : '';
 
   const rows = all.map(c => {
@@ -90497,7 +91666,7 @@ function _pwNotesHtml(o) {
       ${_pwAuthorAvatar(who)}
       <div class="pw-cmt-b">
         <div class="pw-cmt-who">${esc(who || t('puUnknownAuthor'))}</div>
-        <div class="pw-note-t">${esc(c.text || '')}</div>
+        <div class="pw-note-t" dir="auto">${renderMentionText(c.text || '')}</div>
         ${when ? `<div class="pw-cmt-when"${full ? ` title="${escHtml(full)}"` : ''}>${esc(when)}</div>` : ''}
       </div>
     </li>`;
@@ -90539,11 +91708,11 @@ function _pwNotesHtml(o) {
  */
 function _pwCommentBoxHtml(o) {
   const id = esc(String(o._id || ''));
-  return `<div class="pw-cmt-add">
+  return `${_cmtToolsHtml('pw-cmt-text-' + id, id)}<div class="pw-cmt-add">
     <textarea id="pw-cmt-text-${id}" class="pw-cmt-input" rows="1"
       placeholder="${escHtml(t('addComment'))}"
       onkeydown="pwCommentKeydown(event,'${id}')"
-      oninput="_pwCmtGrow(this)"></textarea>
+      oninput="_pwCmtGrow(this);onMentionInput(this,'${id}')"></textarea>
     <button type="button" class="pw-cmt-send" id="pw-cmt-send-${id}"
       onclick="pwAddComment('${id}')" title="${escHtml(t('addCommentBtn'))}" aria-label="${escHtml(t('addCommentBtn'))}">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -90563,8 +91732,15 @@ function _pwCmtGrow(el) {
  *   الكتابة تُحرّك الاختيار أو تفتح الفاتورة.
  */
 function pwCommentKeydown(e, id) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); pwAddComment(id); }
   e.stopPropagation();
+  if (_mentionDropdown && ['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) {
+    // Enter with nothing highlighted picks the first person rather than sending.
+    if (e.key === 'Enter' && _mentionActiveIdx < 0) _mentionActiveIdx = 0;
+    onMentionKey(e, id);
+    if (e.key === 'Enter') e.preventDefault();
+    return;
+  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); pwAddComment(id); }
 }
 
 /**
@@ -90834,6 +92010,12 @@ function pucoTickOrder(orderId, checked) {
 
   _puSetLocalPrepChecked(orderId, checked);
   const savePrepCheck = _puPersistPrepCheck(orderId, checked);
+  /* Prepared → offer «إرسال إلى بوسطة» then «طباعة البوليصة». Opened after the
+     re-render below (setTimeout 0), so the list has already moved on to the next
+     order and closing the dialog just carries on. Only for Bosta orders. */
+  const bostaFlow = (checked && _pucoColType === 'prep')
+    ? new Promise(res => setTimeout(() => _bsfMaybeOffer(o).then(res, res), 0))
+    : Promise.resolve();
 
   // ── Completed orders sink to the bottom of the list, then the next order
   //    still waiting is selected and opened. ──
@@ -90878,7 +92060,8 @@ function pucoTickOrder(orderId, checked) {
       _puUpdatePrepGroupProgress(grp.prepRef);
       // The final move prompt waits until the last check is saved on the server.
       if (checked && grp.orders.every(x=>!!x.prepChecked)) {
-        savePrepCheck.then(() => setTimeout(() => {
+        // ⚠ Waits for the Bosta dialog too — the move prompt must not open over it.
+        Promise.all([savePrepCheck, bostaFlow]).then(() => setTimeout(() => {
           if (grp.orders.length && grp.orders.every(x => !!x.prepChecked)) {
             closePuCardOrdersModal();
             prepGroupMoveToReady(grp.prepRef);
@@ -94515,6 +95698,9 @@ const SP_COLS = [
      يغيّر عرض أي عمود ولا عدد colspan، فقط يُخفي [data-col="phone"]. */
   { id:'phone',    ar:'رقم الهاتف (تحت العميل)', en:'Phone (under client)' },
   { id:'items',    ar:'الأصناف',            en:'Items' },
+  /* ⚠ ليس عموداً، مثل phone: يُخفي مصغّرات الصور داخل خلية الأصناف فيبقى العدد وحده.
+     لا مدخل له في SP_COL_W عمداً. */
+  { id:'thumbs',   ar:'صور المنتجات (داخل الأصناف)', en:'Product photos (in Items)' },
   { id:'ship',     ar:'الشحن',              en:'Shipping' },
   { id:'discount', ar:'الخصم',              en:'Discount' },
   { id:'total',    ar:'الإجمالي',           en:'Total' },
@@ -94527,13 +95713,8 @@ const SP_COLS = [
   { id:'source',   ar:'المصدر',             en:'Source' },
   { id:'tracking', ar:'تتبع العميل',        en:'Tracking' },
 ];
-function _getHiddenSpCols() {
-  try { const v = localStorage.getItem(SP_COLS_KEY); return v ? new Set(JSON.parse(v)) : new Set(); }
-  catch (_) { return new Set(); }
-}
-function _setHiddenSpCols(set) {
-  try { localStorage.setItem(SP_COLS_KEY, JSON.stringify(Array.from(set))); } catch (_) {}
-}
+function _getHiddenSpCols() { return _readColsPref(SP_COLS_KEY); }
+function _setHiddenSpCols(set) { _writeColsPref(SP_COLS_KEY, set); }
 /* Declared width of each column, keyed by data-col — the single source the CSS
    widths and the table's min-width are both derived from.
    ⚠ These MUST equal the `width:` in the .sp-c-* rules. They are re-totalled at
@@ -94659,7 +95840,7 @@ function toggleSpCol(colId) {
   _renderSpColsMenu();
 }
 function resetSpCols() {
-  try { localStorage.removeItem(SP_COLS_KEY); } catch (_) {}
+  _clearColsPref(SP_COLS_KEY);
   applyShopifyColsVisibility();
   _renderSpColsMenu();
   toast(t('spColsReset'));
@@ -94794,7 +95975,7 @@ function _spItemsCell(o, idx) {
     ? (isEn ? `${blocked.short} short · ${blocked.missing} not linked — click for details` : `${fmtN(blocked.short)} ناقص · ${fmtN(blocked.missing)} غير مربوط — اضغط للتفاصيل`)
     : (isEn ? 'View items' : 'عرض الأصناف');
   return `<button class="mov-items-btn sp-items-btn${blocked ? ' is-blocked' : ''}" type="button" onclick="event.stopPropagation();showSpItemsPopover('${esc(String(o._id))}', this)" title="${escHtml(tip)}">
-    ${thumbs ? `<span class="sp-ithumbs">${thumbs}</span>` : ''}
+    ${thumbs ? `<span class="sp-ithumbs" data-col="thumbs">${thumbs}</span>` : ''}
     <span class="mov-items-count">${label}</span>${badge}
     <svg class="mov-items-chev" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
   </button>`;
@@ -96158,22 +97339,22 @@ function renderShopifyOrders() {
   const bulkBarSlot = qs('#sp-bulk-bar-slot');
   if (bulkBarSlot) {
     bulkBarSlot.innerHTML = _shopifySelectedIds.size ? `
-      <div id="sp-bulk-bar" style="display:flex;align-items:center;gap:8px;background:var(--bg-alt);border:1px solid var(--border);border-radius:9px;padding:7px 10px;white-space:nowrap">
-        <span style="font-size:.78rem;font-weight:700;color:var(--text)">${tf('spSelectedCount', { n: _shopifySelectedIds.size })}</span>
-        <span style="font-size:.74rem;color:var(--text-muted)">${t('spTotalLabel')} <b style="color:var(--text)">${fmtJ(_shopifyOrders.filter(o => _shopifySelectedIds.has(o._id)).reduce((s, o) => s + (o.total || 0), 0))}</b></span>
-        <button class="btn btn-sm" style="background:var(--accent);color:#fff;font-size:.74rem;display:inline-flex;align-items:center;gap:5px;padding:6px 10px" onclick="bulkSendShopifyOrders()">
+      <div id="sp-bulk-bar" class="sp-bulk-bar">
+        <span class="sp-bulk-count">${tf('spSelectedCount', { n: _shopifySelectedIds.size })}</span>
+        <span class="sp-bulk-total">${t('spTotalLabel')} <b>${fmtJ(_shopifyOrders.filter(o => _shopifySelectedIds.has(o._id)).reduce((s, o) => s + (o.total || 0), 0))}</b></span>
+        <button class="sp-bulk-btn is-primary" onclick="bulkSendShopifyOrders()">
           ${SP_CONFIRM_ICON}
           ${_shopifySelectedIds.size === 1 ? t('spSendToTransactionsLong') : t('spBulkConfirm')}
         </button>
-        ${isAdmin() ? `<button class="btn btn-sm" style="background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-size:.74rem;display:inline-flex;align-items:center;gap:5px;padding:6px 10px" onclick="openSpAssignModal([..._shopifySelectedIds])">
+        ${isAdmin() ? `<button class="sp-bulk-btn is-outline" onclick="openSpAssignModal([..._shopifySelectedIds])">
           <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
           ${currentLang === 'en' ? 'Assign' : 'إسناد'}
         </button>` : ''}
-        ${hasPerm('inventory') ? `<button class="btn btn-sm" style="background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-size:.74rem;display:inline-flex;align-items:center;gap:5px;padding:6px 10px" onclick="openShopifyDemandPlanning(this)" title="${t('spStockDemandTitle')}">
+        ${hasPerm('inventory') ? `<button class="sp-bulk-btn is-outline" onclick="openShopifyDemandPlanning(this)" title="${t('spStockDemandTitle')}">
           <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>
           ${t('spStockDemandAnalysis')}
         </button>` : ''}
-        <button class="btn btn-sm" style="background:transparent;border:none;color:var(--text-muted);font-size:.74rem;padding:6px 4px" onclick="_clearShopifySelection()">✕</button>
+        <button class="sp-bulk-close" onclick="_clearShopifySelection()" aria-label="${escHtml(t('cancel'))}">✕</button>
       </div>` : '';
   }
 
@@ -99028,6 +100209,7 @@ function _spRenderCommentsTab() {
   host.innerHTML = `
     <div class="inv-cmt-list sp-cmt-scroll" id="sp-cmt-scroll">${rows}</div>
     <div class="inv-cmt-form sp-cmt-compose">
+      ${_cmtToolsHtml(inputId, esc(order._id))}
       <div class="inv-cmt-input-row">
         <input type="text" id="${inputId}" class="inv-cmt-input" dir="auto"
           placeholder="${escHtml(t('ivCmtAddPlaceholder'))}"

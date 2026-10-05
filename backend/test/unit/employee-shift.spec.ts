@@ -85,9 +85,11 @@ function mockShiftModel(rows: any[]) {
   } as any;
 }
 
-function mockUsersService(users: Record<string, { role: string; name: string }>) {
+function mockUsersService(users: Record<string, { role: string; name: string; isActive?: boolean }>) {
   return {
     findById: async (id: string) => (users[id] ? { _id: id, ...users[id] } : null),
+    findActiveUserIds: async () =>
+      new Set(Object.keys(users).filter((id) => users[id].isActive !== false)),
   } as any;
 }
 
@@ -118,6 +120,23 @@ describe('EmployeeShiftService — resolveAssignee', () => {
     const sun = cairo(2026, 7, 2, 10, 0).toISOString();
     const res2 = await svc.resolveAssignee(sun);
     expect(res2?.userId).toBe('u1');
+  });
+
+  it('does not route to a disabled employee even though their shift still covers the time', async () => {
+    // Ahmed's account was disabled after the shift was scheduled — the row is untouched.
+    // Sara is on-call that day but her own shift does not cover this window, so a match
+    // for her here can only come from the on-call fallback, proving Ahmed's window was skipped.
+    const model = mockShiftModel([
+      { userId: 'u1', name: 'Ahmed', shiftStart: '09:00', shiftEnd: '17:00', daysOfWeek: [0, 1, 2], isActive: true, isOnCall: false },
+      { userId: 'u2', name: 'Sara', shiftStart: '20:00', shiftEnd: '23:00', daysOfWeek: [0, 1, 2], isOnCall: true, isActive: true },
+    ]);
+    const disabledUsers = { u1: { role: 'staff', name: 'Ahmed', isActive: false }, u2: { role: 'staff', name: 'Sara' } };
+    const svc = new EmployeeShiftService(model, mockUsersService(disabledUsers), mockLeaveService());
+    const sun = cairo(2026, 7, 2, 10, 0).toISOString();
+    const res = await svc.resolveAssignee(sun);
+    // Falls through past Ahmed's matching window to the on-call fallback, not to him.
+    expect(res?.userId).toBe('u2');
+    expect(res?.reason).toBe('on-call-fallback');
   });
 
   it('does not route to a shift on a day it does not cover, even if the time matches', async () => {
@@ -599,6 +618,15 @@ describe('EmployeeShiftService — business timezone (Cairo wall-clock)', () => 
     const r = await svc.getMyRoster('u1', cairo(2026, 7, 3, 10, 0).toISOString());
     expect(r.onShiftNow).toBe(true);
     expect(r.currentShift?.elapsedMinutes).toBe(60);   // one hour into 09:00
+  });
+
+  it('getDutyBoard drops a disabled employee entirely — their shift row outlives the account', async () => {
+    const disabled = { u1: { role: 'staff', name: 'Reem', isActive: false } };
+    const svc = new EmployeeShiftService(nineToNine(), mockUsersService(disabled), leave());
+    const b = await svc.getDutyBoard(cairo(2026, 7, 3, 10, 0).toISOString());
+    expect(b.onDuty).toEqual([]);
+    // Nobody left to cover this window → a coverage gap, not a silent miss.
+    expect(b.coverageGap).toBe(true);
   });
 
   it('resolveAssignee routes a Cairo-10:00 order to the employee on that window', async () => {

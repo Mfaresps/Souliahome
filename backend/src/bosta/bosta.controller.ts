@@ -89,6 +89,16 @@ export class BostaController {
     return this.bostaService.getAwb(txId);
   }
 
+  /** Record that the AWB was opened for printing (called by the client once the
+   * print page is ready — fetching alone is not printing: the server prefetches). */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('awb/:txId/printed')
+  async awbPrinted(@Param('txId') txId: string, @Req() req: any) {
+    const by: string = req.user?.name || req.user?.username || 'مستخدم';
+    const byId: string = String(req.user?.userId || req.user?._id || req.user?.sub || '');
+    return this.bostaService.recordAwbPrint(txId, by, byId);
+  }
+
   /** Sync Bosta status for a single transaction */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('sync/:txId')
@@ -130,8 +140,8 @@ export class BostaController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('mark-deleted/:txId')
   @Roles('admin')
-  async markDeleted(@Param('txId') txId: string) {
-    return this.bostaService.markAsDeleted(txId);
+  async markDeleted(@Param('txId') txId: string, @Req() req: any) {
+    return this.bostaService.markAsDeleted(txId, req.user?.name || req.user?.username || '');
   }
 
   /** Fix shippingBostaCity for a transaction by ref — admin only */
@@ -146,8 +156,8 @@ export class BostaController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('cancel/:txId')
   @Roles('admin')
-  async cancelOrder(@Param('txId') txId: string) {
-    const result = await this.bostaService.cancelOrder(txId);
+  async cancelOrder(@Param('txId') txId: string, @Req() req: any) {
+    const result = await this.bostaService.cancelOrder(txId, req.user?.name || req.user?.username || '');
     if (!result.success) {
       throw new HttpException(
         { message: result.error || 'فشل إلغاء الشحنة في Bosta' },

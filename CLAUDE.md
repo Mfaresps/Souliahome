@@ -279,6 +279,25 @@ backdrop close, comments layout, 7 widths, 390px mobile, zero page errors.
   1280/1100 (measured).
 - 83 browser assertions; backend Shopify specs 45/45; `node dist/main.js` loads.
 
+### Round 4 (same day)
+- **The star is drawn on every row again**, beside the number (faint `.3` until starred,
+  18px) — reverses Round 3's "unstarred star takes no space" at the user's request.
+- **Product photos are optional** from الأعمدة: `{id:'thumbs'}` in `SP_COLS` toggles
+  `.sp-ithumbs[data-col="thumbs"]`. ⚠ Like `phone`, it is **not** in `SP_COL_W`. With
+  photos off the count is never shed on a narrow blocked row (`:has()` rule).
+- **Column visibility is now per-user, not per-browser.** `MOV_COLS_KEY` and
+  `SP_COLS_KEY` were bare `localStorage` keys — one shared PC used by several
+  employees mixed everyone's hidden columns together. `_colsPrefKey(base)` appends
+  `_myUserId()` (`__u<id>`); `_readColsPref`/`_writeColsPref`/`_clearColsPref` are the
+  one shared implementation both `_getHiddenMovCols`/`_getHiddenSpCols` and their
+  `_set*`/`reset*` siblings now call. ⚠ **`_myUserId()` returns `''` before login**, so
+  the key falls back to the bare base — this is also how a pre-existing saved
+  preference (set before this change, with no suffix) keeps working: `_readColsPref`
+  reads the suffixed key first and falls back to the legacy unsuffixed one.
+  `_clearColsPref` removes both. Add any future per-column-set table (or any other
+  per-user UI prefs) through these same three helpers rather than a bare
+  `localStorage.getItem`.
+
 ### Still open
 - Widening الأصناف (+46) and the ref column (+24) makes every other column narrower at
   the same viewport; the time column still ellipsises below ~1440px.
@@ -2857,6 +2876,185 @@ unit price and total · totals + التفقيط · a **payment strip**: total / 
 Five invoices rendered through the SHIPPED functions in Chrome (sale partly paid / fully
 paid / unpaid, purchase, cancelled): each fits one A4 sheet, no overflow, no errors, the
 correct chip and cells. `amount-to-words.spec.ts` 24/24.
+
+---
+
+## Bosta AWB Prints at Its Real Size — A6 (Oct 5, 2026)
+
+The backend requests `requestedAwbType:'A6'` and re-requests when the cached copy
+(`bostaAwbType`) is from an older size. The print side was the gap: the PDF opened in
+the browser viewer, whose print dialog falls back to the printer's default paper
+(A4) and "fit to page", so the label came out scaled.
+
+`printBostaAwb` now renders the PDF with **pdf.js (cdnjs 3.11.174, lazy-loaded)** at
+300dpi and prints from a page with `@page{size:<PDF's own size>;margin:0}`, one label
+per page, 1:1.
+- ⚠ **The size is read from the PDF, never hardcoded**, then snapped to the nearest
+  standard (A6 105×148, 100×150, 4×6", A5, A4) within 1.5mm. PDF points round A6 to
+  105.2×148.2mm, and that sliver makes some thermal drivers print a blank second label.
+- ⚠ pdf.js gets `bytes.slice()` — it can detach the buffer, and the fallback needs it.
+- If pdf.js cannot load (offline), it falls back to the raw PDF as before; the user
+  then picks «الحجم الفعلي / Actual size» in the print dialog.
+- Verified in headless Chrome on the code in `index.html`: an A6 PDF → `@page{size:105mm 148mm}`.
+
+### «خطأ غير متوقع في الخادم» on print — Bosta's reason was being swallowed
+`getAwb` rejected its https promise with a plain `Error` on any non-2xx or unparseable
+reply, and the global filter turns every non-`HttpException` into a generic 500. Now:
+- `requestAwbPdf` makes one call; `getAwb` converts every failure into a
+  **`BadRequestException` carrying Bosta's message** and logs each attempt.
+- Per Bosta's docs (`/docs/how-to/print-awbs`): `requestedAwbType` is `"A6"` (Zebra)
+  or `"A4"` (original), `lang` is `"ar"`/`"en"`; send trackingNumbers OR ids.
+  Attempts: **A6/ar → A6/en → A4/ar**; the type received is cached in `bostaAwbType`
+  and returned as `awbType`, and the UI toasts when it is not A6.
+- If every attempt fails but an older cached copy exists, that copy is returned.
+- 5 cases in `test/unit/bosta-awb.spec.ts`. ⚠ It stubs `require('https').request` —
+  `jest.spyOn` on an `import * as https` namespace throws «Cannot redefine property».
+
+### The «جارٍ تحميل بوليصة الشحن…» wait
+Measured cold, all in sequence: Bosta ~600ms (first print of an order only) + pdf.js
+load 250ms + worker start 290ms + `toDataURL` 120ms. Now:
+- **`_awbWarm()`** loads pdf.js and one long-lived `PDFWorker` at idle time, called from
+  both templates that draw the «طباعة بوليصة Bosta» button. Render: 643ms → **83ms**.
+- The label request and the pdf.js load run **in parallel**; `toBlob` + blob URLs
+  replace `toDataURL`; the tab prints when its images load, not on a fixed timer.
+- `_awbBytesCache` keeps an A6 label per order for the session (reprint = no request).
+- **`createOrder` prefetches the label** 4s after a shipment is created
+  (`setTimeout` → `getAwb`, never awaited), so even the first print is a cache hit.
+  ⚠ Shipments created before this have no cached label until their first print.
+
+### Print log, reprint warning, and «prepared → Bosta → print» in the prep workspace
+- **`tx.bostaAwbPrints [{at, by, byId}]`** (`@Prop({type:[Object]})`), appended by
+  `POST /shipping/awb/:id/printed` → `recordAwbPrint`. ⚠ The client calls it when the
+  print page is READY (`_awbRecordPrint`), never on fetch — the server prefetches labels.
+- One log feeds: the timeline step «طباعة البوليصة» (`stepAwb` in
+  `buildOrderTimelineSection`, one sub-line per print, counted in the step badge),
+  `_awbPrintedMarkHtml` in `_movShipCell` (عمود الشحن), `_pwAwbChipHtml` on prep cards,
+  and the reprint warning (`_awbConfirmReprint` → `showConfirm` with date/by/count).
+  `printBostaAwb(id, {skipWarn})` now resolves **true/false**.
+- **`_bsfMaybeOffer(o)`** — the `#bsf-overlay` dialog (z 1450): ask → sending → sent
+  (tracking + «طباعة البوليصة») → printed → closes ~1.4s after the window regains
+  focus. Called from BOTH tick paths (`pucoTickOrder`, `puCardPrepTick`) via
+  `setTimeout 0` so the list has already advanced. Only for Bosta orders
+  (`carrierCode` integration, or a legacy `shipCo` naming Bosta); an order already
+  sent but unprinted opens at the print step; sent + printed → no dialog.
+  ⚠ The all-prepared «move to Ready» waits on `Promise.all([savePrepCheck, bostaFlow])`.
+  ⚠ The prep keydown listener bails while `#bsf-overlay` or a confirm dialog is open.
+- ⚠ **`createOrder` moves the order to `Ready` on the server**, so a prep group can
+  hold Preparing+prepared AND Ready orders. `confirmPickup` accepts that mix
+  (`mixedPreparedAndReady`, an `$or` filter) and still refuses an unprepared order.
+  Locally the sent order is NOT moved to Ready, so it stays in its group.
+- Tests: `bosta-awb.spec.ts` (+`recordAwbPrint`), `confirm-pickup-mixed.spec.ts` (3).
+  18 browser assertions over the shipped `index.html` (dialog states, A6 label, log
+  write, both in-memory copies, no repeat offer, non-Bosta skip, reprint cancel, marks,
+  timeline).
+
+### Round 3 — printing moved IN-PAGE; the mark moved to the Bosta column
+- ⚠ **The label is printed from a hidden `<iframe>` in this page, never a new tab.**
+  With a tab, this window went to the background as the tab opened, Chrome throttled
+  it, and the tab sat on «جارٍ تحميل بوليصة الشحن…» until the user switched back.
+  `_awbPrintInFrame` writes the label page into the frame, waits for the images to
+  decode, calls `print()`, and resolves on **`afterprint`** — that is when the
+  «تمت طباعة البوليصة» toast shows and the print is logged. Only the pdf.js-offline
+  fallback still opens a tab.
+- **`_awbPrepare(id)`** fetches + renders into blob images and is cached as a promise,
+  so hover (`onpointerenter="_awbPrepareSoon(id)"` on every print button), the prep
+  dialog's «sent» step and the click share one piece of work. Measured: prepared →
+  **24ms** click-to-dialog; cold with a 150ms server → ~240ms.
+  `_awbForget(id)` drops the cache whenever an order is (re)sent — a new shipment has
+  a new label. `_awbPrinting` makes a double click open one dialog.
+- The printer mark is in **عمود Bosta** (`.mov-bosta-line` beside `_bostaStatusBadge`),
+  no longer in Shipping.
+- Dialog motion: the card springs in; between steps its height morphs (`.is-morph`)
+  and the new step's parts rise in staggered (`.bsf-in`); the success check draws
+  (`pathLength=1` + dash); a send→sending / sent→printing toggle does NOT replay the
+  entrance (`.no-enter`). The «printed» step runs a 1.6s bar, then closes. All of it
+  is off under `prefers-reduced-motion`.
+- 26 browser assertions (adds: no tab opened, image decoded before `print()`, timing,
+  toast, confirmed reprint, double click, mark in Bosta not Shipping).
+
+### Round 4 — «سجل الشحنة»: every shipment action in the timeline, live
+- ⚠ **The bosta* fields cannot tell the story.** A deletion at the carrier wipes
+  `bostaOrderId` (four paths: status-sync 404, a delivery update with `isDeleted`,
+  admin «mark deleted», the city-fix tool) and a resend OVERWRITES the tracking
+  number — so a deleted-and-resent order looked like it was only ever sent once.
+- **`tx.shipmentEvents`** — append-only `{type, at, by?, source?, trackingNumber?,
+  bostaOrderId?, prevTrackingNumber?}`, `type` ∈ sent | resent | deleted | cancelled
+  | printed. Written by `shipEvent()` in every path: `createOrder` (sent/resent —
+  decided BEFORE it clears the fields; a resend records the label it replaces),
+  all four deletion paths via **`deletedEventPush()`** (only on the transition INTO
+  DELETED, so a repeated sync never duplicates it), `cancelOrder`, `recordAwbPrint`.
+  `markAsDeleted` / `cancelOrder` now take the operator's name from the controller.
+- Timeline: the print-only step became **«سجل الشحنة»** (`_shipmentLogOf` +
+  `_SHIP_EV_META`, an icon per event; red + badge «محذوفة» when the last event is a
+  deletion). Rows written before the log existed are reconstructed from what survives
+  (current shipment, a DELETED status, `bostaAwbPrints`).
+- Prints now carry `trackingNumber`, and **`_awbPrintsOf` counts only prints of the
+  current label** — after a resend the new label is not «printed before».
+- ⚠ **Live sync was broken for every Bosta event**: BostaService emits `tx:updated`
+  with `{ _id }` only, and the socket handler returned when `payload.tx` was missing.
+  **`_rtFetchTx(id)`** now refetches (coalesced per id, 250ms), merges into both
+  in-memory copies, and repaints the table, an open invoice and the prep workspace.
+- Tests: `bosta-shipment-events.spec.ts` (7 — incl. sent vs resent through the real
+  `createOrder`, no duplicate deletion), 11 browser assertions (order of events,
+  legacy reconstruction, per-label prints, a burst of id-only updates → one repaint).
+
+### Round 5 — the search result states the order's REAL state
+- The order chip in the header search was `bostaStatusLabel` alone. A shipment
+  deleted at Bosta keeps «محذوف من Bosta» forever, so an order back to Ready (or
+  already resent and moving) read «Deleted».
+- **`_gsOrderStatus(item)`**: cancelled → «ملغي»; a live shipment → its Bosta status;
+  otherwise the order's own stage via **`_puDisplayStatus`** (the Movements-table
+  rule — Pending / Preparing / Ready / Shipped / Delivered, or «re-ship attempt N»).
+  A deleted / rejected label is a quiet note beside the chip, never the status.
+  It reads the **live in-memory row first** (follows socket updates), else the
+  fields the server now returns: `orderItem` adds `bostaStatus`, `hasShipment`,
+  `pickupStatus`, `deliverySource` (all four search `select`s carry them).
+- `_SEARCH_BOSTA_LABEL_EN` and the label→colour map were deleted (no caller).
+- 11 browser assertions incl. the reported #1973 pair and a deleted-then-resent row.
+
+## Comments — Clickable Links, @ and Product Mentions (Oct 5, 2026)
+- **`renderMentionText(text, {mentions})`** is the one comment renderer (invoice page
+  and modal, new-transaction form, Shopify order panel, and now the prep workspace
+  thread + customer note, which used bare `esc()`). One tokenizer
+  (`_CMT_TOKEN_RE`) → product token | URL | @mention; every other run is escaped.
+  ⚠ Links are http(s) only (`www.` → https), trailing punctuation stays outside,
+  `target=_blank rel=noopener noreferrer nofollow`, `stopPropagation` so a row's
+  own click never fires. `{mentions:false}` for a customer note (`@` means nothing).
+- **Product mention = `[📦 Name](product:KEY)`** in the stored text — plain and
+  readable wherever a comment is shown raw (notifications, exports), drawn here as
+  `.cmt-prod`. KEY is the product code, or `id:<_id>` when the code holds a space
+  / `)` / `]` (`_pmpKey`). Click → `cmtOpenProduct` → `openInventoryDetail` (المخزن),
+  else the product modal; an item no longer found is struck through.
+- **Composer tools** (`_cmtToolsHtml(inputId, ctxId)`): «@» inserts `@` and opens the
+  existing people list; the box icon opens **`openProductMentionPicker`** — search
+  over `inventoryCache` (live balance «متاح N / نفد»), catalogue fallback; ↑/↓/Enter/
+  Esc; inserts the token at the saved caret. On all four composers; the static
+  new-transaction form fills its slot (`data-cmt-tools`) on DOMContentLoaded.
+- ⚠ `selectMention` now writes into **`_mentionAnchorInput`** (the input that opened
+  the list) — the prep composer (`pw-cmt-text-…`) had no @mentions before.
+  `pwCommentKeydown` hands ↑/↓/Enter/Esc to the list while it is open (Enter picks
+  the first person instead of sending).
+- The server stores comment text verbatim (no sanitising), so nothing strips tokens.
+- 21 browser assertions: links, `javascript:`/markup/quote injection, chips, «@»
+  button + Enter, picker stock/filter/insert, code-with-space → id, chip → المخزن.
+- **Round 2:** the composer tools are a labelled bar ABOVE the field
+  (`.cmt-bar`: «مستخدم / User», «منتج / Product») — inside the input row they pushed
+  the send button onto its own line. The product chip draws its own `<img>` over a
+  box icon (a broken URL removes the img), photo resolved with **`_pwItemImgUrl`**
+  like the prep workspace — `productThumbHtml`'s own sizing fought the 24px slot and
+  rendered a cropped oval. Product = warm/orange tint, person = brand-green pill
+  with «@»; the old `.mention-chip` rule (line ~2845) was removed so one definition
+  owns it. 9 browser assertions (bar above, send on the row, 24×24 photo loads,
+  distinct tints, both buttons, Arabic labels, dark mode).
+- **Round 3 — the product preview returns to the comments.** A chip used to call
+  `openInventoryDetail`, i.e. `openModal()`, which REPLACES `#modal-overlay` — the
+  Shopify comments window lives there, so clicking a product threw the comments away.
+  `cmtOpenProduct` now opens **`#cmt-pv`**, its own layer (z 100002) over every modal:
+  photo, name, code, stock, price, material / size / colours, and «رجوع للتعليقات».
+  Back button, Esc (capture phase + `stopImmediatePropagation`, so the window under
+  it does not close on the same key) and the backdrop all close only the preview;
+  focus returns to the chip. ⚠ Never route a comment's product click through
+  `openModal` again. 10 browser assertions, run inside the real shared modal.
 
 ---
 

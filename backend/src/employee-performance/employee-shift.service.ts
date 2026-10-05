@@ -163,12 +163,20 @@ export class EmployeeShiftService {
     // See businessParts() for what reading getUTCHours() here used to cost.
     const { time: timeOfDay, weekday, date: onDay } = this.businessParts(orderDate);
 
-    const activeShifts = await this.shiftModel.find({ isActive: true }).exec();
-    const onLeave = await this.leaveService.listUserIdsOnLeave(onDay);
+    // ⚠ A shift row outlives the account it was scheduled for — disabling an
+    // employee does not delete their shift. Without this set, a disabled
+    // employee's own shift window still wins routing and they'd be handed a
+    // live order nobody can reach them about.
+    const [activeShifts, onLeave, activeUserIds] = await Promise.all([
+      this.shiftModel.find({ isActive: true }).exec(),
+      this.leaveService.listUserIdsOnLeave(onDay),
+      this.usersService.findActiveUserIds(),
+    ]);
 
     const matches = activeShifts.filter(
       (s) =>
         !onLeave.has(String(s.userId)) &&
+        activeUserIds.has(String(s.userId)) &&
         this.coversWeekdayAtTime(s, weekday, timeOfDay),
     );
 
@@ -188,7 +196,10 @@ export class EmployeeShiftService {
     // Saturday still "belongs" to Saturday's on-call, not Sunday's).
     const onCallCandidates = await this.shiftModel.find({ isOnCall: true, isActive: true }).exec();
     const onCall = onCallCandidates.find(
-      (s) => !onLeave.has(String(s.userId)) && (s.daysOfWeek?.length ? s.daysOfWeek : ALL_DAYS).includes(weekday),
+      (s) =>
+        !onLeave.has(String(s.userId)) &&
+        activeUserIds.has(String(s.userId)) &&
+        (s.daysOfWeek?.length ? s.daysOfWeek : ALL_DAYS).includes(weekday),
     );
     if (onCall) {
       return { userId: onCall.userId, username: onCall.userUsername || '', name: onCall.name, reason: 'on-call-fallback' };
@@ -221,9 +232,14 @@ export class EmployeeShiftService {
 
       const { time: timeOfDay, weekday, date: onDay } = this.businessParts(at);
 
-      const activeShifts = await this.shiftModel.find({ isActive: true }).exec();
-      const onLeave = await this.leaveService.listUserIdsOnLeave(onDay);
-      const available = activeShifts.filter((s) => !onLeave.has(String(s.userId)));
+      const [activeShifts, onLeave, activeUserIds] = await Promise.all([
+        this.shiftModel.find({ isActive: true }).exec(),
+        this.leaveService.listUserIdsOnLeave(onDay),
+        this.usersService.findActiveUserIds(),
+      ]);
+      const available = activeShifts.filter(
+        (s) => !onLeave.has(String(s.userId)) && activeUserIds.has(String(s.userId)),
+      );
       const pick = (s: EmployeeShiftDocument) => ({ userId: s.userId, username: s.userUsername || '', name: s.name });
 
       const onCallDoc =
@@ -394,10 +410,15 @@ export class EmployeeShiftService {
       const ref = isNaN(parsed.getTime()) ? new Date() : parsed;
       const { date: todayDate, weekday, time: timeOfDay } = this.businessParts(ref);
 
-      const [rows, onLeaveIds] = await Promise.all([
+      const [rows0, onLeaveIds, activeUserIds] = await Promise.all([
         this.shiftModel.find({ isActive: true }).lean().exec(),
         this.leaveService.listUserIdsOnLeave(todayDate),
+        this.usersService.findActiveUserIds(),
       ]);
+      // ⚠ A disabled employee's shift row is not deleted — without this filter
+      // they'd still appear "on duty" / "next up" / the on-call fallback on a
+      // board whose whole point is showing a live, reachable roster.
+      const rows = rows0.filter((s) => activeUserIds.has(String(s.userId)));
 
       const availableToday = rows.filter(
         (s) =>

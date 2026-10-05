@@ -25,6 +25,10 @@ export interface SearchResultItem {
   readonly createdAt?: string;
   readonly payStatus?: string;
   readonly bostaStatusLabel?: string;
+  readonly bostaStatus?: string;
+  readonly hasShipment?: boolean;
+  readonly pickupStatus?: string;
+  readonly deliverySource?: string;
   /** عدد مرات الشحن السابقة — الواجهة بتعرض «بانتظار شحنة N» بدل «لم تُشحن». */
   readonly shipmentAttempts?: number;
   /**
