@@ -786,7 +786,12 @@ export class ShopifyService {
     const remaining = Math.max(0, Number(order.total) - paidNow);
     const payStatus = remaining <= 0 ? 'مكتمل' : 'معلق';
     const depMethod = paymentMethod || order.payment || 'كاش';
-    const employee = `Shopify (${approvedBy})`;
+    // ⚠ "Shopify" moved cash to nobody — it is the sales channel, not the person who took the
+    // deposit. The old `Shopify (${approvedBy})` named whoever happened to click «تأكيد», which is
+    // a review action and often not the employee actually handling the order. The assigned staff
+    // member (`order.assignedToName`) is who the order — and its deposit — belongs to; falling back
+    // to the confirmer's own name (never prefixed with "Shopify") only when nobody is assigned.
+    const employee = order.assignedToName || approvedBy || 'غير معروف';
 
     const now = new Date();
     // المعاملة بتتسجل بتاريخ إنشاء الأوردر الأصلي في شوبيفاي، مش تاريخ لحظة الإرسال لسجل المعاملات

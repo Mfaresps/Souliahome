@@ -2782,6 +2782,68 @@ const expenseTotal = filteredExpenses
 
 ---
 
+## Shopify Quick View Redesigned + One «Orders» Chip (Oct 7, 2026)
+
+`#sp-peek` (order # → quick view) and the table's customer-orders marks were
+redesigned. **Presentation only** — confirm, follow-up, comments and print go
+through the same functions as before.
+
+### The panel
+480px, one column: fixed head (ref + state pill, date, assignee avatar, print and
+close as icon buttons) → body of section cards on `--surface` → fixed foot
+(Comments + a full-width «تأكيد الطلب»). Order of the cards is the order of the
+decision: **customer → اشحنهم معاً → الدفع → الأصناف → التعليقات → المتابعة**.
+Each section head has one line icon (`_SP_PK_ICO`, muted) — no colour per section.
+- Customer: initials avatar, name in `<bdi>` (⚠ not `dir="auto"` on the block — that
+  also flips its alignment and threw an Arabic name to the far side of an English
+  panel), repeat-count badge, grouped phone + copy (`_spPeekCopyPhone`), three
+  equal contact buttons, address and customer note as labelled icon rows.
+- Payment: total as the lead figure, a single-hue meter of deposit/total, an
+  العربون | المتبقي pair, shipping/discount chips only when non-zero. The pill
+  (`_spPeekPayState`) is derived from the money, never a status field.
+- Items: 46px photo, name, code chip, stock mark, `× n`.
+- ⚠ The print button is no longer the first `.sp-pk-x`; auto-focus on open targets
+  `.sp-pk-close`.
+- `_spPeekRender` keeps scroll and does not animate when re-rendering the SAME
+  order; switching orders starts at the top and fades the cards in (`.is-in`).
+
+### The split layout was removed
+The 760px split (main + grey sibling rail) usually showed one small card above an
+empty column. Replaced by the **«اشحنهم معاً» card** (`_spPeekTogetherHtml`) under
+the customer: this order numbered 1 and marked «هذا الطلب», every unshipped sibling
+(pending Shopify AND recorded-but-unshipped sales, same `_unshippedSiblingIndex`),
+the combined value, a per-row confirm, and «تأكيد الطلبين».
+⚠ **«تأكيد الطلبين» is not a new write path.** `_spPeekConfirmBoth` opens the normal
+confirm dialog and ticks its existing `#shopify-confirm-both` chain box. Offered only
+with exactly ONE confirmable Shopify sibling — the dialog chains exactly one.
+Removed: `_spPeekSiblingRailHtml`, `_spPeekFocusRail`, the «+N» header chip and all
+`.sp-pk-sib-*` / `.is-split` CSS.
+
+### One chip in the table — `_spCustOrdersChipHtml`
+The client cell carried a grey «طلبان» pill AND a blue box icon, which in the
+ordinary case counted the same two orders twice in two shapes. Now one control:
+unshipped siblings → blue `.sp-cust-chip` (box + count that can share a parcel,
+opens the popover); otherwise the grey repeat count as before.
+⚠ With siblings the chip states the **unshipped** count, not the lifetime one
+(«📦 5» would read as five parcels); lifetime moves to the tooltip and popover foot.
+⚠ Shopify table only — Movements and the prep workspace keep
+`_unshippedSiblingBadgeHtml`, whose payload now also carries `stage`.
+
+### The popover (shared)
+`_openShipTogetherPopover` gained a head (icon + «اشحنهم معاً»), numbered rows with
+the stage in words (`_shipTogetherStageLabel`), a direction-aware chevron, and —
+when the caller passes `data-self` (the Shopify chip) — «هذا الطلب» first, the
+combined value and «فتح الطلب». It anchors to the chip's start edge in RTL too.
+
+### Verification
+52 browser assertions over the shipped `index.html` (en/ar, light/dark, 1440/390):
+card rows, combined 1,665, pay pill, repeat badge, grouped phone, trail, no
+horizontal overflow, panel width, single chip with no second mark, popover rows +
+open button in view, sibling row → its own quick view listing the first back, and
+«تأكيد الطلبين» ticking the chain box. Zero page errors.
+
+---
+
 ## Automatic Bosta Settlement — «تسويات بوسطة» / «كشف حساب بوسطة» (Oct 7, 2026)
 
 Every Bosta delivery settles itself a minute after DELIVERED: the real fee Bosta charged is read
@@ -2858,6 +2920,32 @@ no customer phone/address) because the stored `bostaRawResponse` lacks `wallet` 
 - **«من بوسطة» in الشحن والتسليم**: confirmed/delayed, attempt and call counts, last call, hubs,
   package (pieces · type · weight · description), may-open, each attempt (time, courier, hub, COD,
   succeeded/failed with Bosta's `exception.reason`), and package-size changes.
+
+### Round 2 — both cards split into primary / details (Oct 7, 2026)
+- **الشحن والتسليم** shows: carrier, الوجهة (zone · governorate on one row), cost, Bosta status,
+  the tracking number as a copy button, a **package tile** (`_bszTier` → icon + 4-step scale per
+  Bosta size: Normal / Large / Bulky / Heavy, plus weight · pieces · type), and two facts:
+  delivery attempts (with the last result) and opening the package. Everything else — pickup
+  status (once sent to Bosta), confirmed/on time, calls, hubs, contents, each attempt and size
+  changes — sits behind «تفاصيل الشحنة».
+- **تسوية شركة الشحن**: the net, then a two-step track (in the wallet → to the bank), collected,
+  and «مستحقات بوسطة» as a `<details>` whose summary is the fee and whose body is the breakdown;
+  under it the tariff on the invoice with «أقل/أعلى بـ X». The fees are the real cost, so it is
+  not printed twice.
+- ⚠ **A size change is stated in words** (`_bsdSizeChangeHtml`: «من Normal إلى Light Bulky»,
+  «التكلفة من 108.30 إلى 222.30 · زادت 114.00»). The old row had a `←` beside a `→`, i.e. two
+  arrows pointing opposite ways, because an Arabic arrow and a Latin price run do not share a
+  direction. Do not reintroduce an arrow there.
+- Facts row is three icon tiles: attempts · **calls** (accented blue when > 0, moved out of the
+  details) · opening the package.
+- ⚠ **One collection control for a Bosta delivery.** `_csCollectViaCard(tx)` decides it; when
+  true the header's «تحصيل من العميل» (full page AND legacy modal) is not drawn, and the card
+  shows «تحصيل وتسوية مع بوسطة» (→ `openCsSettlePreview`) with the expected net
+  (`remaining − fees`) and a quiet «تحصيل يدوي بدلاً من ذلك» link (→ `openCollectMovement`,
+  which deducts the full tariff). Without `carrier-settle-run` it returns false, so the header
+  keeps its button. Keep its condition identical to when the card draws the action.
+- ⚠ The open/closed state of both `<details>` lives in `_ivMore` — the live Bosta fetch
+  re-renders the whole invoice page, and a bare `<details>` would snap shut.
 
 ### Order timeline rebuilt
 Steps are collected as specs and ordered by the time each one SHOWS (date-only values sit right
@@ -3263,6 +3351,7 @@ leaked — the change there is defence against the same trap, not a bug fix.
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Oct 7, 2026 | Shopify quick view redesigned: one column of section cards (customer → ship together → payment → items → follow-up), the 760px sibling rail replaced by an «اشحنهم معاً» card with «تأكيد الطلبين»; the table's «طلبان» pill + box icon merged into one chip | See "Shopify Quick View Redesigned" above |
 | Oct 7, 2026 | Automatic Bosta settlement: each delivery books the net of Bosta's real fee a minute after DELIVERED; older orders settle by selection; review queue over a 20 EGP overcharge; «كشف حساب بوسطة» with transfers and fees; order timeline reordered by real time (291 → 0 out-of-order) | See "Automatic Bosta Settlement" above |
 | Oct 5, 2026 | Stock Demand Analysis rebuilt answer-first: «N of M orders ready» with per-order blocks + what to buy and the PO button, a coverage bar per product, the calculation as one chip chain; presentation only | See "Stock Demand Analysis — Rebuilt Answer-First" above |
 | Oct 5, 2026 | Printed invoice redesigned customer-first: product photos, a total/paid/remaining strip with a payment chip derived from the money; removed the terms strip, signatures and duplicate brand name; fixed every sale printing «لم يُحصّل أي مبلغ» (paid was fmtJ HTML compared as a number) | See "The Printed Invoice — Rebuilt Again" above |
