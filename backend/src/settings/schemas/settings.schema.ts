@@ -340,6 +340,31 @@ export class Settings {
   @Prop({ default: 5000 })
   codCollectionThreshold: number;
 
+  // ── Automatic Bosta settlement (carrier-auto-settle.service.ts) ─────────────────────────────
+  /** Master switch. Off by default: nothing settles until an admin turns it on. */
+  @Prop({ default: false })
+  autoSettleEnabled: boolean;
+
+  /** Stamped when the switch is first turned on. Deliveries before it are settled only by selection. */
+  @Prop({ default: '' })
+  autoSettleSince: string;
+
+  /** Largest overcharge above the invoice tariff (EGP) that settles without a human decision. */
+  @Prop({ default: 20 })
+  autoSettleReviewLimit: number;
+
+  /** Vault account Bosta settlements post to unless the user picks another one. */
+  @Prop({ default: 'تحويل بنكي' })
+  autoSettleVaultMethod: string;
+
+  /** Seconds between DELIVERED and reading the price — Bosta writes the final price just after delivery. */
+  @Prop({ default: 60 })
+  autoSettleReadDelaySec: number;
+
+  /** Default fee Bosta takes per transfer (EGP), pre-filled when a transfer is recorded. */
+  @Prop({ default: 25 })
+  carrierTransferFee: number;
+
   /** Employee performance scoring configuration (Customer Service Performance Dashboard) — points awarded per criterion, admin-tunable */
   @Prop({
     type: Object,

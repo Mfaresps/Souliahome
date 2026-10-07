@@ -429,6 +429,42 @@ export class BostaService {
     try { this.presence?.emitEvent(event, payload); } catch { /* swallow */ }
   }
 
+  /**
+   * One delivery's full record from Bosta — the only source of the price it charged (`log[]`).
+   * Public for the settlement service. A webhook body is NOT a substitute: it may not carry `log`.
+   * Bounded at 20s so a hung connection cannot stall the settlement cron.
+   */
+  async fetchDelivery(bostaOrderId: string): Promise<any> {
+    const apiKey = await this.resolveApiKey();
+    if (!apiKey) throw new BadRequestException('Bosta API Key غير مضبوط');
+    return Promise.race([
+      this.request<any>('GET', `/deliveries/${encodeURIComponent(bostaOrderId)}`, undefined, apiKey),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('انتهت مهلة الاتصال ببوسطة')), 20000)),
+    ]);
+  }
+
+  /** The `$set` fragment that queues an automatic settlement, or {} when none is due. */
+  private async autoSettleScheduleFor(tx: any, from: string, to: string, now: string): Promise<Record<string, unknown>> {
+    if (from === 'DELIVERED' || to !== 'DELIVERED') return {};
+    if (tx.type !== 'مبيعات' || tx.cancelled || tx.carrierSettlement) return {};
+    try {
+      const s: any = await this.settingsService.getSettings();
+      if (!s?.autoSettleEnabled) return {};
+      const delaySec = Math.max(0, Number(s.autoSettleReadDelaySec ?? 60) || 0);
+      return {
+        carrierSettlement: {
+          status: 'pending',
+          trigger: 'auto',
+          scheduledAt: now,
+          dueAt: new Date(Date.now() + delaySec * 1000).toISOString(),
+        },
+      };
+    } catch {
+      // Queuing is a convenience: an order that misses it is still settled by selection.
+      return {};
+    }
+  }
+
   // ── HTTP helpers ────────────────────────────────────────────────────────
 
   private request<T>(
@@ -1019,8 +1055,14 @@ export class BostaService {
         }
       : {};
 
+    // First arrival at DELIVERED queues the automatic settlement. Only a marker is written here —
+    // the price is read a minute later (see CarrierAutoSettleService), because Bosta writes the
+    // final price a fraction of a second AFTER the delivery event this update may be carrying.
+    const settleSchedule = await this.autoSettleScheduleFor(tx, currentStatus, statusCode, now);
+
     await this.txModel.findByIdAndUpdate(txId, {
       $set: {
+        ...settleSchedule,
         bostaStatus: statusCode,
         bostaStatusLabel: statusLabel,
         bostaShippingStatus: shippingStatus,
@@ -1476,6 +1518,9 @@ export class BostaService {
         bostaStatus: 'DELIVERED',
         codCollectionStatus: { $nin: ['Collected', 'CollectionProcessing', 'FailedCollection'] },
         $or: [{ bostaOriginalCod: { $gt: 0 } }, { remaining: { $gt: 0 } }],
+        // An automatic settlement queued, under review or done owns this order's cash — confirming
+        // it here as well would book the same COD twice (and this path books the gross COD).
+        'carrierSettlement.status': { $nin: ['pending', 'review', 'disputed', 'settled'] },
       },
       { $set: { codCollectionStatus: 'CollectionProcessing' } },
       { new: false }, // return the pre-update doc so we read the original values

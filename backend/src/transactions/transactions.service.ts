@@ -119,6 +119,8 @@ export interface DashboardData {
   netProfit: number;
   totalShipping: number;
   totalShipLoss: number;
+  /** Carrier took less than the invoice tariff (automatic Bosta settlement only). */
+  totalShipSaving?: number;
   returnCount: number;
   totalReturns: number;
   totalDiscounts: number;
@@ -1727,6 +1729,14 @@ export class TransactionsService {
     cancelledBy: string,
     structured?: { code?: string; note?: string; stage?: CancelStage },
   ): Promise<TransactionDocument> {
+    // An automatic Bosta settlement is undone FIRST and the document reloaded. Left in place, the
+    // COD reversal below would subtract the full COD (510) where the settlement booked the net
+    // (396), and the shipping outflow of a prepaid order would never come back.
+    if ((tx as any).carrierSettlement?.status === 'settled') {
+      await this.reverseCarrierSettlement(String(tx._id), cancelledBy, 'cancel');
+      const fresh = await this.transactionModel.findById(tx._id).exec();
+      if (fresh) tx = fresh;
+    }
     const previousDeposit = tx.deposit || 0;
     const previousTotal = tx.total || 0;
     const previousRemaining = tx.remaining || 0;
@@ -2650,6 +2660,14 @@ export class TransactionsService {
     by = 'مستخدم',
     callerRole = '',
     callerPerms: string[] = [],
+    /**
+     * Internal callers only — deliberately NOT a DTO field, so no HTTP request can switch it on.
+     * `carrierActual`: the carrier's real charge (dto.actualShipCost) is deducted EXACTLY, so a
+     * carrier that took less than the tariff credits the difference to the vault (shipSaving).
+     * Without it the full billed tariff is deducted, which is what manual collection has always
+     * done and keeps doing.
+     */
+    opts: { carrierActual?: boolean } = {},
   ): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) {
@@ -2657,6 +2675,11 @@ export class TransactionsService {
     }
     if (tx.cancelled) {
       throw new BadRequestException('لا يمكن تحصيل معاملة ملغية');
+    }
+    // A Bosta settlement in progress or awaiting review owns this order's collection. Collecting it
+    // here as well is how the same cash would be booked twice.
+    if (!opts.carrierActual && ['processing', 'review', 'pending'].includes((tx as any).carrierSettlement?.status || '')) {
+      throw new BadRequestException('هذا الطلب قيد تسوية بوسطة — راجع التسوية من الخزنة ← تسويات بوسطة');
     }
     if (tx.payStatus === 'مكتمل') {
       throw new BadRequestException('المعاملة محصلة بالفعل');
@@ -2711,12 +2734,24 @@ export class TransactionsService {
       collectedAt: tx.collectedAt || '',
       actualShipCost: Number(tx.actualShipCost) || 0,
       shipLoss: Number(tx.shipLoss) || 0,
+      shipSaving: Number((tx as any).shipSaving) || 0,
+      codCollectionStatus: tx.codCollectionStatus || '',
     };
 
     // حساب الشحن للمبيعات
     const billedShip = !isPurchase ? (Number(tx.shipCost) || 0) : 0;
     let shipExtra = 0; // الزيادة في الشحن الفعلي عن المحصل
-    if (!isPurchase && dto.actualShipCost !== undefined && dto.actualShipCost > 0) {
+    let carrierNet: number | null = null; // carrierActual: the exact net, replacing the formula below
+    if (!isPurchase && opts.carrierActual) {
+      const r2 = (n: number) => Math.round(n * 100) / 100;
+      const actual = r2(Number(dto.actualShipCost) || 0);
+      shipExtra = r2(Math.max(0, actual - billedShip));
+      const saving = billedShip > 0 ? r2(Math.max(0, billedShip - actual)) : 0;
+      tx.actualShipCost = actual;
+      tx.shipLoss = r2((Number(tx.shipLoss) || 0) + shipExtra);
+      (tx as any).shipSaving = r2((Number((tx as any).shipSaving) || 0) + saving);
+      carrierNet = r2(Math.max(0, payAmount - actual));
+    } else if (!isPurchase && dto.actualShipCost !== undefined && dto.actualShipCost > 0) {
       const actualShipCost = Number(dto.actualShipCost);
       shipExtra = Math.max(0, actualShipCost - billedShip);
       tx.actualShipCost = actualShipCost;
@@ -2730,7 +2765,9 @@ export class TransactionsService {
     // الخزنة = المتبقي - الشحن المحصل (الجزء المتبقي فقط) - زيادة الشحن
     // الشحن المحصل لا يدخل الخزنة (شركة الشحن تأخذه)
     // الزيادة = خسارة إضافية على الشركة
-    const netVaultAmount = isPurchase ? payAmount : Math.max(0, payAmount - remainingShipToDeduct - shipExtra);
+    const netVaultAmount = isPurchase
+      ? payAmount
+      : carrierNet !== null ? carrierNet : Math.max(0, payAmount - remainingShipToDeduct - shipExtra);
 
     tx.remaining = newRemaining;
     tx.payStatus = isFullyPaid ? 'مكتمل' : 'معلق';
@@ -2783,7 +2820,9 @@ export class TransactionsService {
         dto.collectMethod,
         isPurchase
           ? `سداد مشتريات #${tx.ref || tx._id} — ${tx.client || ''}${!isFullyPaid ? ` (جزئي — متبقي: ${newRemaining} ج)` : ' (مكتمل)'}`
-          : `تحصيل #${tx.ref || tx._id} — صافي: ${netVaultAmount} ج${billedShip > 0 ? ` (شحن: ${billedShip} ج${shipExtra > 0 ? ` + زيادة: ${shipExtra} ج` : ''})` : ''}`,
+          : carrierNet !== null
+            ? `تسوية بوسطة #${tx.ref || tx._id} — حصّلت ${payAmount} ج، مستحقاتها ${tx.actualShipCost} ج، الصافي ${netVaultAmount} ج`
+            : `تحصيل #${tx.ref || tx._id} — صافي: ${netVaultAmount} ج${billedShip > 0 ? ` (شحن: ${billedShip} ج${shipExtra > 0 ? ` + زيادة: ${shipExtra} ج` : ''})` : ''}`,
         paymentDate.split('T')[0],
         isPurchase ? 'مشتريات' : 'تحصيل',
         tx.ref || String(tx._id),
@@ -2853,6 +2892,8 @@ export class TransactionsService {
       collectedAt: string;
       actualShipCost: number;
       shipLoss: number;
+      shipSaving?: number;
+      codCollectionStatus?: string;
     };
 
     // عكس المبيعات = إرجاع المال للخزنة (لا خصم) — لا حاجة للتحقق من الرصيد
@@ -2870,6 +2911,9 @@ export class TransactionsService {
       tx.collectNote = snap.collectNote;
       tx.actualShipCost = snap.actualShipCost;
       tx.shipLoss = snap.shipLoss;
+      // Snapshots taken before these two fields existed lack them — leave the current values.
+      if (snap.shipSaving !== undefined) (tx as any).shipSaving = snap.shipSaving;
+      if (snap.codCollectionStatus !== undefined) tx.codCollectionStatus = snap.codCollectionStatus;
       if (snap.collectedAt) {
         tx.collectedAt = snap.collectedAt;
       } else {
@@ -2907,6 +2951,57 @@ export class TransactionsService {
     this.emit('tx:updated', { tx: saved, action: 'reverse-collect' });
     this.emit('vault:changed', { reason: 'tx:reverse-collect', txId: String(saved._id) });
     return { tx: saved, reversedAmount, vaultMethod };
+  }
+
+  /**
+   * Undoes an automatic Bosta settlement completely: the shipping-outflow entry, the collection,
+   * and the shipLoss / shipSaving / actualShipCost it wrote. Lives here, not in the settlement
+   * service, because performCancellation must call it — and that direction would be a cycle.
+   *
+   * ⚠ Order is load-bearing: the outflow entry goes first (by id), then reverseCollect(), which
+   *   deletes the newest تحصيل row for this ref. The collection must still be the LAST payment,
+   *   or reverseCollect would undo somebody else's.
+   */
+  async reverseCarrierSettlement(id: string, by: string, why: 'undo' | 'cancel' = 'undo'): Promise<TransactionDocument> {
+    const tx = await this.transactionModel.findById(id).exec();
+    if (!tx) throw new NotFoundException('المعاملة غير موجودة');
+    const cs: any = (tx as any).carrierSettlement;
+    if (!cs || cs.status !== 'settled') throw new BadRequestException('لا توجد تسوية بوسطة مسجلة لهذا الطلب');
+
+    if (cs.collectPaymentId) {
+      const pays = tx.payments || [];
+      const last: any = pays[pays.length - 1];
+      if (!last || last.id !== cs.collectPaymentId) {
+        throw new BadRequestException('يوجد تحصيل مسجل بعد التسوية — تراجع عنه أولاً');
+      }
+    }
+
+    if (cs.shortfallVaultEntryId) await this.vaultService.removeSystemEntryById(cs.shortfallVaultEntryId);
+    if (cs.collectPaymentId) {
+      await this.reverseCollect(id, by);
+    } else if (cs.snapshotBefore) {
+      // Prepaid path — nothing went through collect(), so the fields are restored from our own snapshot.
+      await this.transactionModel.findByIdAndUpdate(id, {
+        $set: {
+          actualShipCost: cs.snapshotBefore.actualShipCost || 0,
+          shipLoss: cs.snapshotBefore.shipLoss || 0,
+          shipSaving: cs.snapshotBefore.shipSaving || 0,
+        },
+      }).exec();
+    }
+
+    const now = new Date().toISOString();
+    const saved = await this.transactionModel.findByIdAndUpdate(
+      id,
+      {
+        $set: { carrierSettlement: { ...cs, status: 'reversed', reversedBy: by, reversedAt: now, reversedWhy: why }, carrierSettleLock: '' },
+        $push: { codCollectionHistory: { action: 'carrier-settle-reversed', by, at: now, amount: -(Number(cs.net) || 0), method: cs.vaultMethod || '', note: why === 'cancel' ? 'إلغاء الطلب' : 'تراجع عن تسوية بوسطة' } },
+      },
+      { new: true },
+    ).exec();
+    this.emit('tx:updated', { _id: id });
+    this.emit('settlement:changed', { txId: id, status: 'reversed' });
+    return saved as TransactionDocument;
   }
 
   /** Generate a stable id for a payment/deposit entry. */
@@ -3372,6 +3467,8 @@ export class TransactionsService {
 
     const totalShipping = salesTx.reduce((s, t) => s + (Number(t.shipCost) || 0), 0);
     const totalShipLoss = salesTx.reduce((s, t) => s + (Number(t.shipLoss) || 0), 0);
+    // The carrier took less than the invoice tariff — written only by the automatic Bosta settlement.
+    const totalShipSaving = salesTx.reduce((s, t) => s + (Number((t as any).shipSaving) || 0), 0);
     const grossProductSales = salesTx.reduce((s, t) => s + (Number(t.itemsTotal) || t.total - (Number(t.shipCost) || 0)), 0);
     const totalSales = Math.max(0, grossProductSales - totalReturns);
     // Purchases are reported NET of settled supplier returns — goods sent back are not spend we
@@ -3428,7 +3525,7 @@ export class TransactionsService {
       returnedProfit = 0;
     }
 
-    grossProfit = Math.max(0, grossProfit - returnedProfit - totalShipLoss);
+    grossProfit = Math.max(0, grossProfit - returnedProfit - totalShipLoss + totalShipSaving);
     const netProfit = grossProfit - expenseTotal;
     const salesMap: Record<string, number> = {};
     salesTx.forEach((tx) => {
@@ -3468,6 +3565,7 @@ export class TransactionsService {
       netProfit,
       totalShipping,
       totalShipLoss,
+      totalShipSaving,
       returnCount: approvedReturns.length,
       totalReturns,
       totalDiscounts,
@@ -3537,6 +3635,8 @@ export class TransactionsService {
     // الشحن: المحصل من العملاء والفرق المتحمل من الشركة
     const totalShipping = salesTx.reduce((s, t) => s + (Number(t.shipCost) || 0), 0);
     const totalShipLoss = salesTx.reduce((s, t) => s + (Number(t.shipLoss) || 0), 0);
+    // The carrier took less than the invoice tariff — written only by the automatic Bosta settlement.
+    const totalShipSaving = salesTx.reduce((s, t) => s + (Number((t as any).shipSaving) || 0), 0);
     // صافي المبيعات = إجمالي المنتجات فقط (بدون شحن) - المرتجعات
     const grossProductSales = salesTx.reduce((s, t) => s + (Number(t.itemsTotal) || t.total - (Number(t.shipCost) || 0)), 0);
     const totalSales = Math.max(0, grossProductSales - totalReturns);
@@ -3587,7 +3687,7 @@ export class TransactionsService {
       returnedProfit = 0;
     }
 
-    grossProfit = Math.max(0, grossProfit - returnedProfit - totalShipLoss);
+    grossProfit = Math.max(0, grossProfit - returnedProfit - totalShipLoss + totalShipSaving);
     console.log(`[getReports] Final grossProfit: ${grossProfit}`);
     const netProfit = grossProfit - expenseTotal;
 
@@ -3641,6 +3741,7 @@ export class TransactionsService {
       expenseTotal,
       totalShipping,
       totalShipLoss,
+      totalShipSaving,
       returnCount: approvedReturns.length,
       totalReturns,
       transactionCount: transactions.length,

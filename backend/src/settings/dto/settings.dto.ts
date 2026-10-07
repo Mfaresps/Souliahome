@@ -250,6 +250,34 @@ export class UpdateSettingsDto {
   @IsOptional()
   readonly codCollectionThreshold?: number;
 
+  // ⚠ Declared here or the whitelist pipe silently strips them at save.
+  @IsBoolean()
+  @IsOptional()
+  readonly autoSettleEnabled?: boolean;
+
+  @IsString()
+  @IsOptional()
+  readonly autoSettleSince?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly autoSettleReviewLimit?: number;
+
+  @IsString()
+  @IsOptional()
+  readonly autoSettleVaultMethod?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly autoSettleReadDelaySec?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly carrierTransferFee?: number;
+
   @IsObject()
   @IsOptional()
   readonly performanceConfig?: {

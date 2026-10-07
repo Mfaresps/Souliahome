@@ -15,6 +15,10 @@ import { ReferenceDetailService } from './reference-detail.service';
 import { ReportsExportService } from './reports-export.service';
 import { CarrierStatementService } from './carrier-statement.service';
 import { CarrierSettlementService } from './carrier-settlement.service';
+import { CarrierAutoSettleService } from './carrier-auto-settle.service';
+import { CarrierAutoSettleController } from './carrier-auto-settle.controller';
+import { CarrierPayout, CarrierPayoutSchema } from './schemas/carrier-payout.schema';
+import { BostaModule } from '../bosta/bosta.module';
 import {
   CarrierImport,
   CarrierImportSchema,
@@ -49,6 +53,8 @@ import { FollowUpsModule } from '../followups/followups.module';
       // Audit record for carrier settlement-file imports. Owned by this module because settling a
       // row goes through TransactionsService.collect() — see carrier-settlement.service.ts.
       { name: CarrierImport.name, schema: CarrierImportSchema },
+      // Transfers from Bosta recorded in «كشف حساب بوسطة» — see carrier-auto-settle.service.ts.
+      { name: CarrierPayout.name, schema: CarrierPayoutSchema },
     ]),
     ProductsModule,
     ExpensesModule,
@@ -65,14 +71,18 @@ import { FollowUpsModule } from '../followups/followups.module';
     // forwardRef because BostaModule already bridges these two in the other
     // direction, and this side must not be the one that decides load order.
     forwardRef(() => FollowUpsModule),
+    // The automatic settlement reads each delivery from Bosta. No cycle: BostaModule imports
+    // neither this module nor anything that does.
+    BostaModule,
   ],
-  controllers: [TransactionsController],
+  controllers: [TransactionsController, CarrierAutoSettleController],
   providers: [
     TransactionsService,
     ReferenceDetailService,
     ReportsExportService,
     CarrierStatementService,
     CarrierSettlementService,
+    CarrierAutoSettleService,
   ],
   exports: [TransactionsService, CarrierStatementService, CarrierSettlementService],
 })

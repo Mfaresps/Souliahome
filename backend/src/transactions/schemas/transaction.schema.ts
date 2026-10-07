@@ -187,6 +187,31 @@ export class Transaction {
   @Prop({ default: 0 })
   shipLoss: number;
 
+  /**
+   * The mirror of shipLoss: the carrier took LESS than the tariff on the invoice. Written only by
+   * the automatic Bosta settlement (collect() with `carrierActual`), which credits the difference
+   * to the vault. Reports add it back to profit; manual collection never writes it.
+   */
+  @Prop({ default: 0 })
+  shipSaving: number;
+
+  /**
+   * The automatic Bosta settlement for this order — see carrier-auto-settle.service.ts.
+   * A frozen statement of what Bosta reported and what was booked, so the record does not change
+   * if Bosta edits its data later. null = never evaluated.
+   * ⚠ `type: Object` is mandatory: a nullable object @Prop without it kills the API at boot.
+   */
+  @Prop({ type: Object, default: null })
+  carrierSettlement: Record<string, any> | null;
+
+  /**
+   * Single-flight lock for the settlement. A separate top-level string because Mongo cannot
+   * `$set` a nested path inside a null `carrierSettlement`, and the lock must be one atomic
+   * findOneAndUpdate. '' = free; otherwise the ISO time it was taken (stale after 10 minutes).
+   */
+  @Prop({ default: '' })
+  carrierSettleLock: string;
+
   @Prop({ default: false })
   cancelled: boolean;
 

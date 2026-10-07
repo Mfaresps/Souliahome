@@ -13,6 +13,7 @@ interface ReportShape {
   expenseTotal?: number;
   totalShipping?: number;
   totalShipLoss?: number;
+  totalShipSaving?: number;
   totalReturns?: number;
   returnCount?: number;
   transactionCount?: number;
@@ -105,6 +106,7 @@ export class ReportsExportService implements OnModuleDestroy {
       ['المتبقي على العملاء', report.totalRemaining ?? 0],
       ['الشحن المحصل', report.totalShipping ?? 0],
       ['فرق الشحن', report.totalShipLoss ?? 0],
+      ['وفر الشحن', report.totalShipSaving ?? 0],
       ['عدد المرتجعات', report.returnCount ?? 0],
       ['إجمالي المرتجعات', report.totalReturns ?? 0],
       [

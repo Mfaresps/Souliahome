@@ -1,0 +1,235 @@
+{
+ "_id": "j6Pivb84KWVaSL54WsXrs",
+ "trackingNumber": "1298882234",
+ "businessReference": "2638",
+ "cod": 510,
+ "state": {
+  "value": "Delivered",
+  "code": 45,
+  "deliveryTime": "2026-09-30T10:26:48.754Z"
+ },
+ "timeline": [
+  {
+   "value": "new",
+   "code": 10,
+   "done": true,
+   "date": "2026-09-29T10:01:36.892Z"
+  },
+  {
+   "value": "picked_up",
+   "code": 21,
+   "done": true,
+   "date": "2026-09-29T14:56:36.510Z"
+  },
+  {
+   "value": "in_transit",
+   "code": 30,
+   "done": true,
+   "date": "2026-09-30T02:13:01.491Z"
+  },
+  {
+   "value": "out_for_delivery",
+   "code": 41,
+   "done": true,
+   "date": "2026-09-30T07:37:52.049Z",
+   "desc": "1/3 attempts"
+  },
+  {
+   "value": "delivered",
+   "code": 45,
+   "done": true,
+   "date": "2026-09-30T10:26:48.754Z"
+  }
+ ],
+ "shipmentFees": 100,
+ "log": [
+  {
+   "time": "2026-09-29T16:39:41.144Z",
+   "actionType": "UPDATE",
+   "takenBy": {
+    "userRole": "HUB_COORDINATOR",
+    "userName": "hub"
+   },
+   "actionsList": {
+    "pricing_size__id": {
+     "before": "MbM7o7eIKM8t",
+     "after": "WVXxyVNmGWV2"
+    },
+    "pricing_size_name": {
+     "before": "Normal",
+     "after": "Large"
+    },
+    "pricing_size_alias": {
+     "before": "Normal",
+     "after": "Large"
+    },
+    "pricing_size_cost": {
+     "before": 0,
+     "after": 5
+    },
+    "pricing_insuranceFee_orderMinimumFees": {
+     "after": 5
+    },
+    "pricing_shippingFee": {
+     "before": 90,
+     "after": 95
+    },
+    "pricing_priceBeforeVat": {
+     "before": 95,
+     "after": 100
+    },
+    "pricing_priceAfterVat": {
+     "before": 108.3,
+     "after": 114
+    },
+    "pricing_sizeEffectCost": {
+     "before": 0,
+     "after": 5
+    },
+    "pricing_isBostaMaterialFee": {
+     "after": true
+    },
+    "pricing_bostaMaterialFee": {
+     "after": {
+      "amount": 55
+     }
+    },
+    "pricingPackageSize__id": {
+     "before": "MbM7o7eIKM8t",
+     "after": "WVXxyVNmGWV2"
+    },
+    "pricingPackageSize_name": {
+     "before": "Normal",
+     "after": "Large"
+    },
+    "pricingPackageSize_alias": {
+     "before": "Normal",
+     "after": "Large"
+    },
+    "pricingTier_changeType": {
+     "after": "POST_INITIAL_CHANGE"
+    }
+   }
+  },
+  {
+   "time": "2026-09-30T10:26:48.986Z",
+   "actionType": "UPDATE",
+   "takenBy": {
+    "userRole": "STAR",
+    "userName": "courier"
+   },
+   "actionsList": {
+    "pricingTier": {
+     "before": {
+      "_id": "FcsepcvPBk",
+      "name": "EGY-1A"
+     },
+     "after": {
+      "_id": "FcsepcvPBk",
+      "name": "EGY-1A",
+      "changeType": "POST_INITIAL_CHANGE"
+     }
+    },
+    "pricingPackageSize": {
+     "before": {
+      "_id": "WVXxyVNmGWV2",
+      "name": "Large",
+      "alias": "Large"
+     },
+     "after": {
+      "_id": "WVXxyVNmGWV2",
+      "name": "Large",
+      "alias": "Large"
+     }
+    },
+    "pricing": {
+     "before": {
+      "tier": {
+       "_id": "FcsepcvPBk",
+       "name": "EGY-1A",
+       "cost": 33
+      },
+      "transit": {
+       "_id": "cYdhJR_nKxt",
+       "originSectorId": "3",
+       "destinationSectorId": "1",
+       "cost": 31
+      },
+      "size": {
+       "_id": "WVXxyVNmGWV2",
+       "name": "Large",
+       "alias": "Large",
+       "rate": "DYNAMIC_RATE_TYPE",
+       "cost": 5,
+       "multiplier": 1
+      },
+      "serviceType": {
+       "_id": "eMkVzF4tTkPV",
+       "name": "SEND",
+       "rate": "DYNAMIC_RATE_TYPE",
+       "cost": 0
+      },
+      "insuranceFee": {
+       "amount": 5,
+       "percentage": 0.005,
+       "insurancePlanId": "QddwqE_3r48W"
+      },
+      "currency": "EGP",
+      "vat": 0.14,
+      "shippingFee": 95,
+      "priceBeforeVat": 100,
+      "priceAfterVat": 114,
+      "sizeEffectCost": 5,
+      "dropOffZoneFees": 0,
+      "pickupZoneFees": 0
+     },
+     "after": {
+      "tier": {
+       "_id": "FcsepcvPBk",
+       "name": "EGY-1A",
+       "cost": 33
+      },
+      "size": {
+       "_id": "WVXxyVNmGWV2",
+       "name": "Large",
+       "alias": "Large",
+       "rate": "DYNAMIC_RATE_TYPE",
+       "cost": 5,
+       "multiplier": 1
+      },
+      "transit": {
+       "_id": "cYdhJR_nKxt",
+       "originSectorId": 3,
+       "destinationSectorId": 1,
+       "cost": 31
+      },
+      "serviceType": {
+       "_id": "eMkVzF4tTkPV",
+       "name": "SEND",
+       "rate": "DYNAMIC_RATE_TYPE",
+       "cost": 0
+      },
+      "insuranceFee": {
+       "amount": 5,
+       "percentage": 0.005,
+       "insurancePlanId": "QddwqE_3r48W",
+       "orderMinimumFees": 5
+      },
+      "shippingFee": 95,
+      "isBostaMaterialFee": true,
+      "bostaMaterialFee": {
+       "amount": 55
+      },
+      "currency": "EGP",
+      "vat": 0.14,
+      "priceBeforeVat": 100,
+      "priceAfterVat": 114,
+      "sizeEffectCost": 5,
+      "dropOffZoneFees": 0,
+      "pickupZoneFees": 0
+     }
+    }
+   }
+  }
+ ]
+}

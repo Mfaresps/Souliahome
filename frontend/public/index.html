@@ -15019,6 +15019,156 @@ body.dark-mode .csi-done-lines>div.is-warn b{color:#fbbf24}
 .csi-vault-card.is-on .csi-vault-ico{opacity:1}
 .csi-vault-pick select[hidden]{display:none!important}
 .csi-foot-dest{display:flex;align-items:center;gap:5px;font-size:.76rem;color:var(--muted);margin-top:3px}
+
+/* ── تسويات بوسطة / كشف حساب بوسطة (Oct 7, 2026) ─────────────────────────────────────────
+   Tabs inside the unlocked vault. Restrained palette: green only for "done", amber for
+   "needs a look", red only for what stops money. Every figure is tabular and isolated. */
+/* ⚠ [hidden] is only a UA display:none and loses to the author display rules below. */
+.vst-tabs[hidden],.vst-badge[hidden],.vault-tab-content[hidden],.cs-sel[hidden],.cs-auto-tag[hidden]{display:none!important}
+.vst-tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin:0 0 14px;overflow-x:auto}
+.vst-tab{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;font:inherit;font-size:.86rem;color:var(--muted);cursor:pointer;white-space:nowrap}
+.vst-tab:hover{color:var(--text)}
+.vst-tab.is-on{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
+.vst-tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.vst-badge{font-size:.7rem;font-weight:700;background:rgba(217,119,6,.14);color:#b45309;border-radius:999px;padding:0 7px;line-height:1.6;font-variant-numeric:tabular-nums}
+body.dark-mode .vst-badge{color:#f2b45a;background:rgba(242,180,90,.14)}
+#vault-content[data-vview="settle"] .vault-log-only,#vault-content[data-vview="statement"] .vault-log-only{display:none!important}
+
+.cs-num{font-variant-numeric:tabular-nums;unicode-bidi:isolate;direction:ltr;display:inline-block;white-space:nowrap}
+.cs-kpis{display:grid;grid-template-columns:1.35fr repeat(3,minmax(0,1fr));border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden;margin-bottom:12px}
+.cs-kpi{padding:11px 14px;border-inline-start:1px solid var(--border);min-width:0}
+.cs-kpi:first-child{border-inline-start:0}
+.cs-kpi-k{font-size:.74rem;color:var(--muted)}
+.cs-kpi-v{display:block;font-size:1.12rem;font-weight:500;margin-top:2px;font-variant-numeric:tabular-nums;unicode-bidi:isolate;direction:ltr;text-align:start}
+.cs-kpi.is-lead .cs-kpi-v{font-size:1.45rem;color:var(--primary)}
+body.dark-mode .cs-kpi.is-lead .cs-kpi-v{color:var(--accent)}
+.cs-kpi-s{font-size:.72rem;color:var(--muted);margin-top:1px}
+.cs-up{color:var(--red)} .cs-down{color:var(--green)}
+@media (max-width:820px){.cs-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.cs-kpi:nth-child(3){border-inline-start:0}.cs-kpi:nth-child(n+3){border-top:1px solid var(--border)}}
+
+.cs-note{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:9px 12px;font-size:.82rem;color:var(--muted);margin-bottom:12px}
+.cs-note b{color:var(--text)}
+
+.cs-review{border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:14px}
+.cs-review-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:.82rem;color:var(--muted)}
+.cs-review-h b{color:var(--text);font-size:.88rem}
+.cs-rq{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)}
+.cs-rq:last-child{border-bottom:0}
+.cs-rq-why{font-size:.85rem;min-width:0}
+.cs-rq-why small{display:block;color:var(--muted);font-size:.76rem;margin-top:1px}
+.cs-rq-acts{display:flex;gap:6px;flex-wrap:wrap}
+@media (max-width:640px){.cs-rq{grid-template-columns:minmax(0,1fr)}}
+
+.cs-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
+.cs-seg{display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:.8rem;padding:5px 11px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer}
+.cs-seg:hover{color:var(--text)}
+.cs-seg.is-on{border-color:var(--accent);background:var(--primary-pale);color:var(--text);font-weight:600}
+.cs-seg .cs-num{font-size:.72rem;opacity:.8}
+.cs-bar .cs-search{flex:1 1 180px;min-width:150px;max-width:280px;width:auto}
+.cs-bar input[type=date]{width:auto;min-width:0;max-width:150px}
+
+.cs-sel{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;background:var(--primary-pale);border:1px solid var(--border);border-radius:10px;padding:7px 12px;margin-bottom:10px;font-size:.82rem}
+.cs-sel b{color:var(--text)}
+
+.cs-tbl-wrap{border:1px solid var(--border);border-radius:12px;overflow-x:auto;background:var(--surface)}
+.cs-tbl{width:100%;border-collapse:collapse;font-size:.83rem;min-width:820px}
+.cs-tbl th,.cs-tbl td{padding:9px 11px;border-bottom:1px solid var(--border);text-align:start;vertical-align:middle}
+.cs-tbl th{font-size:.74rem;color:var(--muted);font-weight:600;background:var(--bg);white-space:nowrap}
+.cs-tbl th.cs-n,.cs-tbl td.cs-n{text-align:end}
+.cs-tbl tbody tr:last-child td{border-bottom:0}
+.cs-tbl tbody tr.is-click{cursor:pointer}
+.cs-tbl tbody tr.is-click:hover td{background:var(--bg)}
+.cs-tbl tbody tr.is-sel td{background:var(--primary-pale)}
+.cs-tbl td.cs-cb,.cs-tbl th.cs-cb{width:34px;text-align:center}
+.cs-tbl input[type=checkbox]{width:16px;height:16px;margin:0;cursor:pointer}
+.cs-ref{font-variant-numeric:tabular-nums;color:var(--blue);font-weight:600;unicode-bidi:isolate}
+body.dark-mode .cs-ref{color:#8ab8f0}
+.cs-client{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cs-sub{display:block;font-size:.72rem;color:var(--muted)}
+.cs-empty{padding:28px 16px;text-align:center;color:var(--muted);font-size:.86rem}
+
+.cs-pill{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap;line-height:1.7}
+.cs-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.cs-pill.is-ok{color:#15803d;background:rgba(22,163,74,.11)}
+.cs-pill.is-warn{color:#b45309;background:rgba(217,119,6,.12)}
+.cs-pill.is-bad{color:#c62828;background:rgba(220,38,38,.1)}
+.cs-pill.is-info{color:#1d5fa8;background:rgba(21,101,192,.1)}
+.cs-pill.is-neu{color:var(--muted);background:var(--bg)}
+body.dark-mode .cs-pill.is-ok{color:#4ade80;background:rgba(74,222,128,.12)}
+body.dark-mode .cs-pill.is-warn{color:#f2b45a;background:rgba(242,180,90,.13)}
+body.dark-mode .cs-pill.is-bad{color:#f28b82;background:rgba(242,139,130,.13)}
+body.dark-mode .cs-pill.is-info{color:#8ab8f0;background:rgba(138,184,240,.13)}
+
+.cs-cards{display:none}
+@media (max-width:768px){
+  .cs-tbl-wrap.cs-has-cards{display:none}
+  .cs-cards{display:flex;flex-direction:column;gap:8px}
+  .cs-card{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:11px 12px;font-size:.84rem}
+  .cs-card.is-sel{border-color:var(--accent);background:var(--primary-pale)}
+  .cs-card-r{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .cs-card-r + .cs-card-r{margin-top:4px;color:var(--muted)}
+  .cs-sel{position:sticky;bottom:calc(env(safe-area-inset-bottom,0px) + 72px);z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.08)}
+}
+
+/* statement panel + dialogs */
+.cs-dlg-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.cs-dlg-h h3{margin:0;font-size:1rem}
+.cs-dlg-h .cs-sub{margin-top:2px}
+.cs-dlg-b{padding:14px 16px;display:flex;flex-direction:column;gap:12px;max-height:min(70vh,640px);overflow-y:auto}
+.cs-dlg-f{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--border)}
+.cs-sec{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--surface)}
+.cs-sec-l{font-size:.72rem;color:var(--muted);font-weight:600;margin-bottom:6px}
+.cs-ln{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:2px 0;font-size:.85rem}
+.cs-ln.is-sub{color:var(--muted);padding-inline-start:12px;font-size:.8rem}
+.cs-ln.is-tot{border-top:1px solid var(--border);margin-top:6px;padding-top:7px;font-weight:600}
+.cs-ln.is-hero{font-size:1rem;font-weight:600;color:var(--primary)}
+body.dark-mode .cs-ln.is-hero{color:var(--accent)}
+.cs-chg{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:baseline;font-size:.8rem;padding:6px 0;border-top:1px dashed var(--border)}
+.cs-chg:first-of-type{border-top:0}
+.cs-chg .cs-d{color:var(--muted);font-size:.74rem;font-variant-numeric:tabular-nums;unicode-bidi:isolate;direction:ltr}
+.cs-callout{border:1px solid var(--border);border-inline-start:3px solid #d97706;border-radius:8px;padding:9px 12px;font-size:.8rem;background:var(--surface)}
+.cs-callout.is-bad{border-inline-start-color:var(--red)}
+.cs-field label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px}
+.cs-field input,.cs-field textarea{box-sizing:border-box;width:100%}
+.cs-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.cs-grid2{grid-template-columns:minmax(0,1fr)}}
+.cs-skel{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--bg),var(--border),var(--bg));background-size:200% 100%;animation:csSk 1.2s linear infinite}
+@keyframes csSk{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.cs-skel{animation:none}}
+.cs-auto-tag{font-size:.68rem;font-weight:600;color:#15803d;background:rgba(22,163,74,.11);border-radius:999px;padding:1px 7px;white-space:nowrap}
+body.dark-mode .cs-auto-tag{color:#4ade80;background:rgba(74,222,128,.12)}
+.cs-inv-card .inv2-card-body{display:flex;flex-direction:column;gap:2px}
+.cs-led tr.is-payout td{background:var(--bg)}
+
+/* Invoice: carrier settlement card (Bosta wallet) + «من بوسطة» block in الشحن والتسليم. */
+.bw-hero{display:flex;flex-direction:column;gap:2px;padding:4px 0 10px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.bw-hero-k{font-size:.74rem;color:var(--muted)}
+.bw-hero-v{font-size:1.7rem;font-weight:600;line-height:1.2;color:var(--primary);font-variant-numeric:tabular-nums;unicode-bidi:isolate;direction:ltr;text-align:start}
+body.dark-mode .bw-hero-v{color:var(--accent)}
+.bw-hero-meta{display:flex;flex-direction:column;gap:1px;font-size:.76rem;color:var(--muted);margin-top:2px}
+.bw-hero-meta b{color:var(--text);font-weight:600}
+.bw-sec{display:flex;flex-direction:column;gap:3px;padding:6px 0;border-bottom:1px solid var(--border)}
+.bw-sec:last-of-type{border-bottom:0}
+.bw-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.84rem}
+.bw-row.is-strong{font-size:.9rem;margin-top:2px}
+.bw-row.is-sub{font-size:.78rem;color:var(--muted);padding-inline-start:12px}
+.bw-row.is-sub .cs-num{color:var(--text)}
+.bw-note{font-size:.74rem;color:var(--muted);padding:3px 0}
+.bsd-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.78rem;font-weight:600;color:var(--text)}
+.bsd-upd{display:inline-flex;align-items:center;gap:4px;font-size:.7rem;font-weight:400;color:var(--muted)}
+.bsd-refresh{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--muted);cursor:pointer;padding:0}
+.bsd-refresh:hover{color:var(--text)}
+.bsd-muted{color:var(--muted);font-size:.74rem}
+.bsd-desc{margin:-2px 0 2px}
+.bsd-sub{font-size:.74rem;font-weight:600;color:var(--muted);margin-top:6px}
+.bsd-atts{display:flex;flex-direction:column;gap:6px}
+.bsd-att{border:1px solid var(--border);border-radius:8px;padding:7px 9px;background:var(--surface);display:flex;flex-direction:column;gap:2px;font-size:.8rem}
+.bsd-att-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bsd-att-top .cs-pill{margin-inline-start:auto}
+.bsd-reason{font-size:.75rem;color:var(--text);background:var(--bg);border-radius:6px;padding:4px 7px}
+.bsd-chg{display:grid;grid-template-columns:minmax(0,1fr);gap:1px;font-size:.78rem;padding:5px 0;border-top:1px dashed var(--border)}
+.bsd-chg:first-of-type{border-top:0}
+.cs-led td.cs-bal{font-weight:600}
 </style>
 </head>
 <body>
@@ -18447,7 +18597,12 @@ body.dark-mode .csi-done-lines>div.is-warn b{color:#fbbf24}
       </div>
     </div>
 
-    <div class="oa-inputs" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+    <div class="oa-mode-toggle" style="display:flex;gap:6px;margin-bottom:10px">
+      <button type="button" class="tab-btn active" id="oa-mode-num" onclick="setAuditRangeMode('number')">نطاق أرقام</button>
+      <button type="button" class="tab-btn" id="oa-mode-date" onclick="setAuditRangeMode('date')">بالتاريخ</button>
+    </div>
+
+    <div class="oa-inputs" id="oa-inputs-number" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
       <div style="display:flex;flex-direction:column;gap:4px;min-width:130px;flex:1 1 130px">
         <label for="oa-from" style="font-size:.78rem;color:var(--muted)">من أوردر رقم</label>
         <input type="number" id="oa-from" min="1" step="1" placeholder="2231" onkeydown="if(event.key==='Enter')runOrderAudit()"
@@ -18484,14 +18639,32 @@ body.dark-mode .csi-done-lines>div.is-warn b{color:#fbbf24}
         </button>
       </div>
     </div>
+
+    <div class="oa-inputs" id="oa-inputs-date" style="display:none;gap:10px;align-items:flex-end;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:150px;flex:1 1 150px">
+        <label for="oa-date-from" style="font-size:.78rem;color:var(--muted)">من تاريخ</label>
+        <input type="date" id="oa-date-from" onkeydown="if(event.key==='Enter')runOrderAuditByDate()"
+          style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.9rem;width:100%;box-sizing:border-box">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:150px;flex:1 1 150px">
+        <label for="oa-date-to" style="font-size:.78rem;color:var(--muted)">إلى تاريخ</label>
+        <input type="date" id="oa-date-to" onkeydown="if(event.key==='Enter')runOrderAuditByDate()"
+          style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.9rem;width:100%;box-sizing:border-box">
+      </div>
+      <button class="btn btn-primary" id="oa-run-btn-date" onclick="runOrderAuditByDate()" style="flex:0 0 auto">
+        <svg viewBox="0 0 24 24" width="14" height="14" style="display:inline-block;vertical-align:-2px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        فحص النطاق
+      </button>
+      <div id="oa-date-resolved" style="font-size:.78rem;color:var(--muted);flex:1 1 180px"></div>
+    </div>
   </div>
 
   <!-- Empty state -->
   <div class="card" id="oa-empty" style="margin-top:16px">
     <div style="text-align:center;padding:44px 20px;color:var(--muted)">
       <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px;opacity:.4"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-      <div style="font-size:.95rem;margin-bottom:4px">أدخل نطاق أرقام الأوردرات ثم اضغط «فحص النطاق»</div>
-      <div style="font-size:.82rem;opacity:.75">مثال: من 2231 إلى 2279</div>
+      <div style="font-size:.95rem;margin-bottom:4px">أدخل نطاق أرقام الأوردرات، أو اختر «بالتاريخ» ثم اضغط «فحص النطاق»</div>
+      <div style="font-size:.82rem;opacity:.75">مثال: من 2231 إلى 2279 — أو من تاريخ إلى تاريخ</div>
     </div>
   </div>
 
@@ -19617,7 +19790,14 @@ body.dark-mode .csi-done-lines>div.is-warn b{color:#fbbf24}
 <button type="submit" class="btn btn-primary" data-i18n="vltUnlockBtn">فتح الخزنة</button>
 </form>
 <div id="vault-content" style="display:none">
-<!-- شريط التبويبات حُذف مع تبويب «التحليلات»: تبويب واحد ليس تبويباً. -->
+<!-- تبويبات الخزنة (Oct 7, 2026): السجل + تسويات بوسطة + كشف حساب بوسطة. يظهر الشريط فقط لمن
+     يملك carrier-settle-view — من لا يملكها يرى السجل وحده بلا شريط، كما كانت الصفحة.
+     ⚠ اللوحتان الجديدتان داخل #vault-content (عمق ٢)، فتختفيان مع قفل الخزنة. -->
+<div class="vst-tabs" id="vault-tabs" role="tablist" hidden>
+  <button type="button" class="vst-tab is-on" role="tab" data-vview="log" onclick="switchVaultView('log')"><span data-i18n="csTabLog">سجل الخزنة</span></button>
+  <button type="button" class="vst-tab" role="tab" data-vview="settle" onclick="switchVaultView('settle')"><span data-i18n="csTabSettle">تسويات بوسطة</span><span class="vst-badge" id="cs-review-badge" hidden></span></button>
+  <button type="button" class="vst-tab" role="tab" data-vview="statement" onclick="switchVaultView('statement')"><span data-i18n="csTabStatement">كشف حساب بوسطة</span></button>
+</div>
 <div class="vault-toolbar">
   <div class="vault-actions">
     <div id="vault-countdown-wrap" class="vault-countdown-wrap" style="display:none">
@@ -19629,11 +19809,11 @@ body.dark-mode .csi-done-lines>div.is-warn b{color:#fbbf24}
          يُخفى لغير المدير مع اللوحة نفسها في unlockVault. -->
     <!-- أيقونة تسوية (± على مقابض) لا علامة دولار: العملة هنا جنيه، و«$» تصف
          عملة أجنبية بدل أن تصف الإجراء. -->
-    <button id="vault-settle-btn" class="btn btn-outline btn-sm" onclick="toggleVaultSettle()" data-i18n-title="vltSettleBtn" title="تسوية يدوية"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="16" x2="20" y2="16"/><path d="M9 5.5v5M6.5 8h5"/><path d="M12.5 16h5"/></svg><span class="vault-btn-label" data-i18n="vltSettleBtn"> تسوية يدوية</span></button>
+    <button id="vault-settle-btn" class="btn btn-outline btn-sm vault-log-only" onclick="toggleVaultSettle()" data-i18n-title="vltSettleBtn" title="تسوية يدوية"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="16" x2="20" y2="16"/><path d="M9 5.5v5M6.5 8h5"/><path d="M12.5 16h5"/></svg><span class="vault-btn-label" data-i18n="vltSettleBtn"> تسوية يدوية</span></button>
     <button id="vault-sync-btn" class="btn btn-outline btn-sm" onclick="syncVaultAll()" title="تحديث البيانات" aria-label="تحديث البيانات"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg><span class="vault-btn-label" data-i18n="vltBtnRefresh"> تحديث</span></button>
     <button class="btn btn-outline btn-sm" onclick="lockVault()" title="قفل الخزنة" aria-label="قفل الخزنة"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span class="vault-btn-label" data-i18n="vltBtnLock"> قفل</span></button>
-    <button class="btn btn-outline btn-sm" onclick="exportVaultExcel()" title="تصدير Excel" aria-label="تصدير Excel"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="vault-btn-label" data-i18n="vltBtnExport"> تصدير</span></button>
-    <button class="btn btn-outline btn-sm" onclick="openArchiveExport('vault')" data-i18n-title="xpBtnTitle" title="تصدير نسخة أوفلاين كاملة (Excel متعدد الأوراق)" data-i18n-aria-label="xpBtnTitle" aria-label="تصدير نسخة أوفلاين كاملة"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg><span class="vault-btn-label" data-i18n="xpBtn"> نسخة كاملة</span></button>
+    <button class="btn btn-outline btn-sm vault-log-only" onclick="exportVaultExcel()" title="تصدير Excel" aria-label="تصدير Excel"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="vault-btn-label" data-i18n="vltBtnExport"> تصدير</span></button>
+    <button class="btn btn-outline btn-sm vault-log-only" onclick="openArchiveExport('vault')" data-i18n-title="xpBtnTitle" title="تصدير نسخة أوفلاين كاملة (Excel متعدد الأوراق)" data-i18n-aria-label="xpBtnTitle" aria-label="تصدير نسخة أوفلاين كاملة"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg><span class="vault-btn-label" data-i18n="xpBtn"> نسخة كاملة</span></button>
   </div>
 </div>
 
@@ -19764,6 +19944,8 @@ body.dark-mode .csi-done-lines>div.is-warn b{color:#fbbf24}
 </div>
 </div>
 <!-- End Tab 1: Overview -->
+<div id="vault-tab-settle" class="vault-tab-content" hidden></div>
+<div id="vault-tab-statement" class="vault-tab-content" hidden></div>
 </div>
 
 <!-- Tab 2: Analytics -->
@@ -20344,6 +20526,12 @@ body.dark-mode .csi-done-lines>div.is-warn b{color:#fbbf24}
         </details>
       </div>
 
+      <!-- Automatic Bosta settlement — rendered by renderCsSettingsCard() (values live in settings). -->
+      <div class="settings-section-label">
+        <span class="bosta-icon" style="width:14px;height:14px"></span>
+        <span data-i18n="csStgSection">التسوية التلقائية لبوسطة</span>
+      </div>
+      <div class="settings-card" id="stg-autosettle-card" data-stg-keywords="bosta settlement تسوية تحصيل تلقائي مستحقات خزنة تحويل"></div>
     </div><!-- /shipping -->
 
     <!-- ── TAB: Security (الأمان) ── -->
@@ -22992,13 +23180,16 @@ let currentLang = 'ar';
 const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export','carrier-import','vault','users','settings','shopify-orders','shopify-cancel','shopify-cancel-request','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import','delivery-manual-confirm','delivery-view-audit','purchase-create','purchase-view','purchase-edit-price','categories-view','categories-create','categories-edit','categories-delete','categories-assign-products','categories-link-suppliers',
   // Supplier account — six read tabs + six money actions. See supPerm() for the legacy alias rule.
   'suppliers-tab-invoices','suppliers-tab-pos','suppliers-tab-sreturns','suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-activity',
-  'suppliers-pay','suppliers-deposit','suppliers-ledger-adjust','suppliers-write-off','suppliers-reverse','suppliers-returns'];
+  'suppliers-pay','suppliers-deposit','suppliers-ledger-adjust','suppliers-write-off','suppliers-reverse','suppliers-returns',
+  // Bosta settlements — four levels of authority, mirrored on the backend controller.
+  'carrier-settle-view','carrier-settle-run','carrier-settle-approve','carrier-settle-reverse'];
 const PERMS_AR = {dashboard:'الرئيسية',transaction:'المعاملات',inventory:'المخزن',movements:'سجل المعاملات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',approvals:'الموافقات',reports:'التقارير',
   'reports-kpis':'التقارير - مؤشرات الأداء','reports-charts':'التقارير - المبيعات والمشتريات','reports-discounts':'التقارير - أكواد الخصم','reports-orderaudit':'التقارير - تحليل الطلبات','reports-cancellations':'التقارير - الإلغاءات','reports-shipping':'التقارير - تحليل الشحن','reports-export':'التقارير - تصدير Excel/PDF','carrier-import':'تحصيل من ملف شركة الشحن',
   vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات','shopify-orders':'أوردرات Shopify','shopify-cancel':'شوبيفاي - إلغاء أوردر مباشرة','shopify-cancel-request':'شوبيفاي - طلب إلغاء أوردر (بموافقة مدير)','csp-view':'دليل خدمة العملاء - عرض','csp-create':'دليل خدمة العملاء - إضافة بطاقات','csp-edit':'دليل خدمة العملاء - تعديل بطاقات','csp-delete':'دليل خدمة العملاء - حذف بطاقات','csp-manage-folders':'دليل خدمة العملاء - إدارة الفولدرات','csp-analytics':'دليل خدمة العملاء - الإحصائيات','csp-export':'دليل خدمة العملاء - تصدير','csp-import':'دليل خدمة العملاء - استيراد','delivery-manual-confirm':'تأكيد التسليم يدوياً','delivery-view-audit':'عرض سجل تدقيق التسليم','purchase-create':'المشتريات - إنشاء عملية شراء','purchase-view':'المشتريات - عرض فواتير الشراء','purchase-edit-price':'المشتريات - تعديل سعر الشراء',
   'categories-view':'التصنيفات - عرض','categories-create':'التصنيفات - إضافة تصنيف/مجموعة','categories-edit':'التصنيفات - تعديل تصنيف/مجموعة','categories-delete':'التصنيفات - حذف تصنيف/مجموعة','categories-assign-products':'التصنيفات - ربط الأصناف بالمجموعات','categories-link-suppliers':'التصنيفات - ربط الموردين بالمجموعات',
   'suppliers-tab-invoices':'حساب المورد - عرض الفواتير','suppliers-tab-pos':'حساب المورد - عرض أوامر الشراء','suppliers-tab-sreturns':'حساب المورد - عرض مرتجعات الموردين','suppliers-tab-payments':'حساب المورد - عرض سجل المدفوعات','suppliers-tab-ledger':'حساب المورد - عرض سجل المديونية','suppliers-tab-activity':'حساب المورد - عرض سجل النشاط',
-  'suppliers-pay':'حساب المورد - سداد دفعة للمورد','suppliers-deposit':'حساب المورد - دفع عربون / خصم على الحساب','suppliers-ledger-adjust':'حساب المورد - تسوية سجل المديونية','suppliers-write-off':'حساب المورد - إقفال متبقي الفاتورة','suppliers-reverse':'حساب المورد - التراجع عن دفعة','suppliers-returns':'حساب المورد - إنشاء وإدارة مرتجعات الموردين'};
+  'suppliers-pay':'حساب المورد - سداد دفعة للمورد','suppliers-deposit':'حساب المورد - دفع عربون / خصم على الحساب','suppliers-ledger-adjust':'حساب المورد - تسوية سجل المديونية','suppliers-write-off':'حساب المورد - إقفال متبقي الفاتورة','suppliers-reverse':'حساب المورد - التراجع عن دفعة','suppliers-returns':'حساب المورد - إنشاء وإدارة مرتجعات الموردين',
+  'carrier-settle-view':'تسويات بوسطة - عرض التسويات وكشف الحساب','carrier-settle-run':'تسويات بوسطة - جلب السعر وتسوية طلبات','carrier-settle-approve':'تسويات بوسطة - اعتماد المراجعة وتسجيل التحويلات','carrier-settle-reverse':'تسويات بوسطة - التراجع عن تسوية'};
 
 // Module grouping for the ERP-style hierarchical permissions UI
 const PERM_MODULES = [
@@ -23012,7 +23203,7 @@ const PERM_MODULES = [
   // and a manager granting "الموردون" (the list/nav) is making a different decision from granting
   // "who may move cash to a supplier". Same accordion machinery as every other module — no new UI.
   { key:'supplierAccount', label:'حساب المورد (الصلاحيات المالية)', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>', perms:['suppliers-tab-invoices','suppliers-tab-pos','suppliers-tab-sreturns','suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-activity','suppliers-pay','suppliers-deposit','suppliers-ledger-adjust','suppliers-write-off','suppliers-reverse','suppliers-returns'] },
-  { key:'vault', label:'الخزنة والمصاريف', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>', perms:['vault','expenses','carrier-import'] },
+  { key:'vault', label:'الخزنة والمصاريف', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>', perms:['vault','expenses','carrier-import','carrier-settle-view','carrier-settle-run','carrier-settle-approve','carrier-settle-reverse'] },
   { key:'reports', label:'التقارير', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-4"/></svg>', perms:['reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export'] },
   { key:'shopify', label:'Shopify ودليل خدمة العملاء', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1.5 5h9L18 2"/><path d="M3.5 7h17l-1.2 13.2a2 2 0 01-2 1.8H6.7a2 2 0 01-2-1.8L3.5 7z"/></svg>', perms:['shopify-orders','shopify-cancel','shopify-cancel-request','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import'] },
   { key:'delivery', label:'التسليم', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>', perms:['delivery-manual-confirm','delivery-view-audit'] },
@@ -23058,7 +23249,9 @@ const JOB_TEMPLATES = {
   accountant: { ar: 'محاسب', role: 'staff', perms: [
     'dashboard','movements','expenses','vault','clients','suppliers',
     'reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export',
-    'purchase-view','suppliers-tab-invoices','suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-pos'] },
+    'purchase-view','suppliers-tab-invoices','suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-pos',
+    // Read-only: settling moves vault money and stays a deliberate per-account grant.
+    'carrier-settle-view'] },
   cashier: { ar: 'أمين خزنة', role: 'staff', perms: [
     'dashboard','vault','expenses','movements','clients'] },
   purchasing: { ar: 'مشتريات وموردون', role: 'staff', perms: [
@@ -28543,6 +28736,10 @@ function applyLang() {
     if (currentPage === 'vault' && typeof renderVaultTable === 'function') renderVaultTable();
     // شريط الأرصدة وتسمية الفترة مبنيان في JS أيضاً
     if (currentPage === 'vault' && typeof renderVaultSegs === 'function') renderVaultSegs();
+    // Bosta settlement tabs build every label in JS — re-render them in the new language.
+    if (currentPage === 'vault' && typeof _vview !== 'undefined') {
+      try { if (_vview === 'settle' && _cs.loaded) { renderCsTab(); _csRenderList(); } else if (_vview === 'statement' && _cst.data) renderCsStatement(); } catch (_) {}
+    }
     if (currentPage === 'vault' && typeof _vltSyncPeriodLabel === 'function') _vltSyncPeriodLabel();
     if (currentPage === 'categories') renderCategories();
     // Clients: the KPI strip, both the grid cards and the list table (headers, debtor/settled
@@ -31596,6 +31793,16 @@ function connectSocket() {
       try { await refreshMentionsFromServer(); buildNotifications?.(); } catch(_) {}
     }
   });
+  // Bosta settlements: a settlement or transfer changed somewhere — refresh the open tab and the
+  // review badge. A new review also tells the people who can decide it.
+  socket.on('settlement:changed', () => { try { _csOnRemoteChange(); } catch(_) {} });
+  socket.on('settlement:review', (p) => {
+    try { _csOnRemoteChange(); } catch(_) {}
+    if (!(isAdmin() || hasPerm('carrier-settle-approve'))) return;
+    _rtToastEvent({ tone: 'warn', icon: 'truck', title: t('csToastReview'),
+      sub: p?.ref ? `<bdi>#${esc(p.ref)}</bdi> · ${esc(_csReasonLabel(p.reason))}` : '',
+      action: { label: t('csReview'), fn: () => openCsVault('review') } });
+  });
   socket.on('vault:changed', async (payload) => {
     try { window.vaultNotifier?.handle(payload); } catch(_) {}
     if (!payload?.balances) {
@@ -33720,6 +33927,17 @@ function buildNotifications() {
         refType: 'approvals' });
     });
   }
+  // Bosta settlements that stopped for a decision. Built from the in-memory rows like every other
+  // notification here — nothing is stored server-side for it.
+  if (isAdmin() || hasPerm('carrier-settle-approve')) {
+    (transactions || []).filter(tx => tx.carrierSettlement && tx.carrierSettlement.status === 'review').forEach(tx => {
+      const cs = tx.carrierSettlement;
+      notifs.push({ id: 'cs-review-' + tx._id, icon: ICON('warning'), type: cs.reason === 'variance-over-limit' ? 'urgent' : 'warning',
+        title: t('csNotifReview'),
+        desc: `#${tx.ref || '-'} — ${_csReasonLabel(cs.reason)}${cs.variance > 0 ? ` (+${fmtN(cs.variance)})` : ''}`,
+        page: 'vault', ts: cs.readAt || tx.deliveredAt || '', refType: 'carrier-settle', refId: String(tx._id) });
+    });
+  }
   // Cancel requests pending manager approval
   const pendingCancelReqs = (transactions || []).filter(tx => tx.cancelRequest && tx.cancelRequest.status === 'معلق');
   if (pendingCancelReqs.length > 0 && currentUser?.role === 'admin') {
@@ -33872,6 +34090,7 @@ function onNotifClick(page, notifId, fuId, refType, refId) {
   // شكوى: افتحها فعلياً في صفحة الشكاوى بدل الاكتفاء بفتح الصفحة.
   // _resolveCmpSlug يقبل الـ _id كما يقبل رقم الشكوى، فنمرّر refId مباشرةً.
   if (refType === 'complaint' && refId) { openComplaintBySlug(String(refId), true); return; }
+  if (refType === 'carrier-settle') { openCsVault('review'); return; }
   navigateTo(page);
   if (refType && (refType === 'tx' || refType === 'inventory' || refType === 'fu')) {
     _highlightNotifTarget(refType, refId);
@@ -34682,6 +34901,7 @@ function _ncNavigate(page, notifId, fuId, refType, refId) {
   if (fuId) { goToFuAndHighlight(fuId); return; }
   // نفس قاعدة onNotifClick — الشكوى تُفتح، لا يُكتفى بفتح صفحتها.
   if (refType === 'complaint' && refId) { openComplaintBySlug(String(refId), true); return; }
+  if (refType === 'carrier-settle') { openCsVault('review'); return; }
   navigateTo(page);
 }
 
@@ -47636,8 +47856,10 @@ function renderMovements() {
     return s + Math.max(0, actual - billed);
   }, 0);
   const returnsSales = activeTx.filter(t => t.type === 'مرتجع مبيعات' || t.type === 'مرتجع').reduce((s, t) => s + (t.total || 0), 0);
-  // المبيعات = سعر المنتجات - فرق الشحن الزائد
-  const totalRevenue = productSalesTotal - shipLossTotal;
+  // وفر الشحن: بوسطة أخذت أقل من التعريفة — تكتبه التسوية التلقائية وحدها، والخزنة استلمت الفرق فعلاً.
+  const shipSavingTotal = salesTx.reduce((s, t) => s + (Number(t.shipSaving) || 0), 0);
+  // المبيعات = سعر المنتجات - فرق الشحن الزائد + وفر الشحن
+  const totalRevenue = productSalesTotal - shipLossTotal + shipSavingTotal;
 
   // Purchases NET of settled supplier returns, matching the dashboard/reports KPIs.
   // Read from the supplierReturns orders, NOT the 'مرتجع مشتريات' transactions in activeTx: those
@@ -50917,6 +51139,14 @@ function _txSupplierLedgerDebt(tx) {
 
 function openCollectMovement(id) {
   const tx = transactions.find(t => t._id === id); if (!tx) return;
+  // A Bosta settlement queued or awaiting review owns this order's collection — collecting it here
+  // as well would book the same cash twice. The server refuses too; this says why before the form.
+  const _csSt = tx.carrierSettlement && tx.carrierSettlement.status;
+  if (_csSt === 'review' || _csSt === 'pending') {
+    toast(t(_csSt === 'review' ? 'csCollectBlockedReview' : 'csCollectBlockedPending'), true);
+    if (_csSt === 'review') openCsStatement(String(id));
+    return;
+  }
   if (tx.purchaseDetailsHidden) { toast('سداد مبالغ الشراء للمورد متاح للمدير فقط', true); return; }
   const isPurchase = tx.type === 'مشتريات';
   // Paying a supplier moves cash out of a vault and used to have NO gate at all here or on
@@ -53077,9 +53307,11 @@ function openProfitAnalysis() {
       const prod = products.find(p => p.code === item.code || p._id === item.productId);
       cost += (prod?.buyPrice || 0) * (item.qty || 1);
     });
-    const netProfit = revenue - cost - shipLoss - discount;
+    // Credited by the automatic Bosta settlement when Bosta took less than the tariff.
+    const shipSaving = Number(tx.shipSaving) || 0;
+    const netProfit = revenue - cost - shipLoss + shipSaving - discount;
     const margin    = revenue > 0 ? ((netProfit / revenue) * 100) : 0;
-    return { tx, revenue, cost, shipLoss, discount, netProfit, margin };
+    return { tx, revenue, cost, shipLoss, shipSaving, discount, netProfit, margin };
   });
 
   // Summary totals
@@ -56872,6 +57104,7 @@ function showInvoiceDetail(id, highlightCommentId) {
             return `<span class="meta-chip note" ${_needsPopup ? `onclick="this.classList.toggle('popup-open')"` : ''}><span class="k">${t('ivmNote')}</span><span class="v">${_escaped}</span>${_needsPopup ? `<span class="note-popup">${_escaped}</span>` : ''}</span>`;
           })()}
         </div>
+        ${!isPurchase && !isReturn ? (() => { const c = csInvoiceCardHtml(tx); return c ? `<div style="margin-top:10px">${c}</div>` : ''; })() : ''}
         ${tx.cancelReason ? `<div class="inv-notes cancel-reason"><div class="inv-notes-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>سبب الإلغاء</div><div class="inv-notes-text">${esc(tx.cancelReason)}</div></div>` : ''}
         ${!isPurchase && !isReturn && tx.deliverySource === 'MANUAL' ? `<div class="inv-notes" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1.5px solid #3b82f6;border-radius:10px;padding:12px 14px;margin-top:10px"><div class="inv-notes-label" style="display:flex;align-items:center;gap:6px;color:#1e40af;font-weight:700;font-size:.82rem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 6L9 17l-5-5"/></svg>${t('ivDeliveredManually')}</div><div class="inv-notes-text" style="color:#1e40af;font-size:.82rem;line-height:1.6">${t('ivmManualSource')} · ${t('ivDeliveredBy')}: ${esc(tx.deliveredBy||'—')} · ${t('ivDeliveredOn')}: ${tx.deliveredAt ? new Date(tx.deliveredAt).toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}${hasPerm('delivery-view-audit') && Array.isArray(tx.deliveryAuditLog) && tx.deliveryAuditLog.length ? (()=>{ const _last = tx.deliveryAuditLog[tx.deliveryAuditLog.length-1]; return `<br><span style="font-size:.8rem;opacity:.85">${t('ivDeliveryReason')}: ${esc(_last.reason||'')}${_last.note ? ` — ${esc(_last.note)}` : ''}</span>`; })() : ''}</div></div>` : ''}
         <!-- Supplier Attachments -->
@@ -57281,6 +57514,7 @@ function openFdCloseModal(id) {
       </button>
     </div>
   `, 'width:min(94vw,480px);max-width:480px;padding:0;overflow:hidden', { lockDismiss: true });
+  _csPrefillReturnFee(String(id));
 }
 
 /* اختيار «ضاعت» بيغيّر معنى الشاشة كلها: مافيش بضاعة راجعة، فالبانل بيبهت
@@ -57474,6 +57708,8 @@ function renderInvoiceViewPage() {
 
   // الحقول التقيلة (bostaRawResponse) مش بترجع مع القايمة — تُجلب هنا بلا انتظار.
   _ivHydrateFull(id);
+  // Live Bosta data (wallet + shipment details) — fills in when it lands, never blocks the page.
+  _ivLoadBostaDetails(id);
 
   const isPurchase = tx.type === 'مشتريات';
   const isReturn   = tx.type === 'مرتجع' || tx.type === 'مرتجع مبيعات';
@@ -57991,6 +58227,7 @@ function renderInvoiceViewPage() {
         ${_waybillRows}
         ${_shipRows && _deliveryRows ? '<div class="inv2-sec-div"></div>' : ''}
         ${_deliveryRows}
+        ${_hasDeliveryInfo ? _ivBostaShipHtml(tx) : ''}
       </div>
     </div>`;
   })() : '';
@@ -58231,6 +58468,7 @@ function renderInvoiceViewPage() {
       <div class="inv2-col-side">
         ${paymentCardHtml}
         ${shipDeliveryHtml}
+        ${csInvoiceCardHtml(tx)}
         ${shippingDetailsHtml}
         ${confirmationByFooterHtml}
       </div>
@@ -58418,7 +58656,15 @@ function buildOrderTimelineSection(tx) {
   /* sk = completed | active | pending | failed.
      ⚠ «failed» خطوة انتهت بنتيجة سلبية — مش نفس «مكتمل». الشارة بتاعتها بتيجي من
      lblOverride عشان تسمّي النتيجة بالظبط (مرتجع / فشل / ملغي) بدل كلمة عامة. */
-  const _stepHtml = (icon, title, desc, sk, timeIso, extra, isLast, lblOverride) => {
+  /* ⚠ Steps are COLLECTED as specs, then ordered by when each one actually happened, then drawn
+     (Oct 7, 2026). Drawing them in a fixed order put 291 of 358 Bosta orders' steps out of time
+     order — e.g. «التحضير» above the step it followed. `_stepHtml` keeps its old signature so every
+     call site below reads the same; the `isLast` argument is ignored and decided after sorting. */
+  let _stepSeq = 0;
+  const _stepHtml = (icon, title, desc, sk, timeIso, extra, _isLast, lblOverride) =>
+    ({ icon, title, desc, sk, timeIso, extra, lblOverride, seq: _stepSeq++ });
+  const _drawStep = (s, isLast) => _drawStepHtml(s.icon, s.title, s.desc, s.sk, s.timeIso, s.extra, isLast, s.lblOverride);
+  const _drawStepHtml = (icon, title, desc, sk, timeIso, extra, isLast, lblOverride) => {
     const lineClass = sk === 'completed' ? 'done' : sk === 'active' ? 'active' : sk === 'failed' ? 'failed' : '';
     const lbl = lblOverride || {completed:t('ivTlStepDone'), active:t('ivTlStepActive'), pending:t('ivTlStepPending'), failed:t('ivTlStepFailed')}[sk] || sk;
     return `<div class="ord-tl-step${sk === 'pending' ? ' pending-dim' : ''}">
@@ -58457,7 +58703,7 @@ function buildOrderTimelineSection(tx) {
   </div>` : '';
   const step1b = isShopify ? _stepHtml(
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>`,
-    t('ivTlOrderCreated'),
+    t('tlConfirmed'),
     t('ivTlOrderCreatedShopifyDesc'),
     'completed', tx.createdAt || tx.date, _flowLogos, false) : '';
   // Step 2: Preparing
@@ -58529,8 +58775,24 @@ function buildOrderTimelineSection(tx) {
   }
   // Step 4: Shipping Status Updates
   const rawTransit = tx.bostaRawResponse?.TransitEvents || tx.bostaRawResponse?.transitEvents || [];
+  /* ⚠ Bosta's v2 delivery carries `timeline[]` ({value, done, date, desc}); `TransitEvents` is the
+     old API's name and was present on 0 of 358 orders, so every journey rendered as undated
+     English placeholders. timeline[] is read first. (The list payload omits bostaRawResponse; the
+     invoice page hydrates it, so the journey fills in a moment after the page opens.) */
+  const rawTimeline = Array.isArray(tx.bostaRawResponse?.timeline) ? tx.bostaRawResponse.timeline
+    : Array.isArray(tx.bostaRawResponse?.data?.timeline) ? tx.bostaRawResponse.data.timeline : [];
+  const _TL_KEYS = { new: 'tlTr_new', picked_up: 'tlTr_picked_up', in_transit: 'tlTr_in_transit', out_for_delivery: 'tlTr_out_for_delivery',
+    delivered: 'tlTr_delivered', returned: 'tlTr_returned', returned_to_business: 'tlTr_returned', exception: 'tlTr_exception', canceled: 'tlTr_cancelled', cancelled: 'tlTr_cancelled' };
   const bostaEvents = [];
-  if (Array.isArray(rawTransit) && rawTransit.length) {
+  if (rawTimeline.some(e => e && e.done && e.date)) {
+    rawTimeline.filter(e => e && e.done && e.date).forEach(e => {
+      const v = String(e.value || '').toLowerCase();
+      const key = _TL_KEYS[v];
+      const att = /(\d+)\s*\/\s*(\d+)/.exec(String(e.desc || ''));
+      const label = (key ? t(key) : v.replace(/_/g, ' ')) + (att ? ' · ' + t('tlTrAttempt', { a: att[1], b: att[2] }) : '');
+      bostaEvents.push({ label, time: e.date, dotClass: ['returned', 'exception', 'canceled', 'cancelled'].includes(v) ? 'failed' : 'done' });
+    });
+  } else if (Array.isArray(rawTransit) && rawTransit.length) {
     const labelMap = {'created':'Received by Bosta','picked_up':'Picked Up from Sender','in_transit':'In Transit to Destination','out_for_delivery':'Out for Delivery','delivered':'Delivered','returned':'Returned','failed_attempt':'Failed Delivery Attempt','delivery_failed':'Delivery Failed','cancelled':'Cancelled'};
     rawTransit.forEach(ev => {
       const evStatus = (ev.state?.value || ev.code || ev.status || '').toLowerCase();
@@ -58541,9 +58803,10 @@ function buildOrderTimelineSection(tx) {
   } else if (hasBosta && tx.bostaStatus) {
     const seq = ['CREATED','PICKED_UP','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED'];
     const curIdx = seq.indexOf((tx.bostaStatus||'').toUpperCase());
-    const lm = {'CREATED':'Received by Bosta','PICKED_UP':'Picked Up from Sender','IN_TRANSIT':'In Transit to Destination','OUT_FOR_DELIVERY':'Out for Delivery','DELIVERED':'Delivered'};
+    const lm = {'CREATED':t('tlTr_new'),'PICKED_UP':t('tlTr_picked_up'),'IN_TRANSIT':t('tlTr_in_transit'),'OUT_FOR_DELIVERY':t('tlTr_out_for_delivery'),'DELIVERED':t('tlTr_delivered')};
+    // No dated journey available: name the stages reached, and date only the delivery itself.
     seq.forEach((s, idx) => {
-      if (idx <= curIdx) bostaEvents.push({label: lm[s]||s, time: idx===curIdx?tx.bostaLastSync:null, dotClass: idx<curIdx?'done':'active'});
+      if (idx <= curIdx) bostaEvents.push({label: lm[s]||s, time: s === 'DELIVERED' ? (tx.deliveredAt || null) : null, dotClass: idx<curIdx?'done':'active'});
     });
   }
   if (tx.deliverySource === 'MANUAL' && tx.bostaStatus === 'DELIVERED') {
@@ -58572,7 +58835,12 @@ function buildOrderTimelineSection(tx) {
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
     t('ivTlShippingUpdates'),
     step4Desc,
-    step4StatusKey, hasBosta ? tx.bostaLastSync : tx.deliveredAt, subEventsHtml, false,
+    // The step's time is the delivery (or the last dated journey event) — never «last sync», which
+    // showed a time hours after the parcel arrived on 119 of 342 delivered orders.
+    step4StatusKey,
+    (_bostaUp === 'DELIVERED' && (tx.bostaRawResponse?.state?.deliveryTime || tx.deliveredAt))
+      || ([...bostaEvents].reverse().find(e => e.time)?.time) || (hasBosta ? null : tx.deliveredAt),
+    subEventsHtml, false,
     _negShip ? t(_negShip.lbl) : '');
 
   /* المحاولات السابقة بتتقسم خطوتين عشان المسار يقرا بترتيبه الطبيعي:
@@ -58582,7 +58850,7 @@ function buildOrderTimelineSection(tx) {
      وهي أهم حدث في الطلب — كانت مدفونة كسطر فرعي جوّه خطوة عنوانها بيتكلم عن
      حاجة تانية خالص. */
   const attempts = Array.isArray(tx.shipmentAttempts) ? tx.shipmentAttempts : [];
-  let stepReship = '';
+  let stepReship = [];
   if (attempts.length) {
     const last = attempts[attempts.length - 1];
     const lastStatus = _bostaStatusLabel(last.finalStatus) || '';
@@ -58615,12 +58883,12 @@ function buildOrderTimelineSection(tx) {
       }</span>
       <span class="ord-tl-sub-time">${sent ? (_fmtTs(tx.shippedAt || tx.bostaLastSync) || '—') : '—'}</span>
     </div>`;
-    stepReship = stepPrev + _stepHtml(
+    stepReship = [stepPrev, _stepHtml(
       `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>`,
       t('fdTlReshipTitle', { v: fmtN(attempts.length + 1) }),
       sent ? t('fdTlReshipSentDesc') : t('fdTlReshipPendingDesc'),
       sent ? 'active' : 'pending', sent ? (tx.shippedAt || null) : null,
-      `<div class="ord-tl-sub-events">${newRows}</div>`, false);
+      `<div class="ord-tl-sub-events">${newRows}</div>`, false)];
   }
   // Step 5: COD Collection — only for sales with a remaining COD amount
   const hasCod = (tx.remaining || 0) > 0 || tx.codCollectionStatus;
@@ -58654,8 +58922,9 @@ function buildOrderTimelineSection(tx) {
       'FailedCollection':    t(_codFailDesc || 'ivTlCodFailed'),
     }[codStatus] || t('ivTlCodDefault');
     // الفشل بياخد وقت آخر مزامنة — من غيره الخطوة بتعرض «—» وكأنها ما حصلتش.
+    // ⚠ الانتظار بلا وقت: «آخر مزامنة» على خطوة لم تحدث كانت تبدو كأنها حدثت.
     const codTimeIso = codStatus === 'Collected' ? tx.codCollectedAt
-      : (codStatus === 'CODWaitingCollection' || _codFailed) ? tx.bostaLastSync
+      : _codFailed ? tx.bostaLastSync
       : null;
     const codCollectedBadge = codStatus === 'Collected'
       ? `<div style="margin-top:4px;display:inline-flex;align-items:center;gap:4px;font-size:.75rem;color:#10b981;font-weight:600"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>${t('ivTlVaultEntryRecorded')}</div>`
@@ -58673,17 +58942,92 @@ function buildOrderTimelineSection(tx) {
       // الشارة بتسمّي السبب: «مرتجع» لو الشحنة رجعت، «ملغي» لو اتلغت، وإلا «فشل».
       _codFailed ? t(_bostaUp === 'RETURNED' ? 'ivTlStepReturned' : _bostaUp === 'CANCELLED' ? 'ivTlStepCancelled' : 'ivTlStepFailed') : '');
   }
-  // خطوتا إعادة الشحن (نتيجة السابقة + المحاولة الجديدة) تتحسبا في العداد كمان،
-  // وإلا العدّاد يقول 3/5 والمعروض ٧ خطوات.
-  const _reshipSteps = attempts.length ? 2 : 0;
-  const totalSteps = (isShopify ? 5 : 4) + (step5 ? 1 : 0) + _reshipSteps + (stepAwb ? 1 : 0);
+  // ── الديبوزت — كان يظهر في سجل المدفوعات وحده ──
+  let stepDeposit = null;
+  {
+    const d0 = (Array.isArray(tx.deposits) ? tx.deposits : []).find(d => Number(d?.amount) > 0);
+    if (d0) stepDeposit = _stepHtml(
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>`,
+      t('tlDeposit'),
+      esc(t('tlDepositDesc', { v: _csMoney(d0.amount), m: _payMethodLabel(d0.method || tx.depMethod || '') || '—' })) + (d0.by ? ` · ${esc(t('shipEvBy', { v: d0.by }))}` : ''),
+      'completed', d0.date || null, '', false);
+  }
+
+  // ── تسوية بوسطة — تحل محل خطوة «تحصيل COD» متى وُجدت تسوية فعّالة ──
+  let stepSettle = null;
+  const _txCs = tx.carrierSettlement;
+  const _csIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h12"/><path d="M17 16l2 2 4-4"/></svg>`;
+  if (_txCs && ['settled', 'review', 'disputed', 'pending', 'reversed'].includes(_txCs.status)) {
+    const m = _payMethodLabel(_txCs.vaultMethod || '') || '—';
+    const sub = _txCs.status === 'settled'
+      ? `<div class="ord-tl-sub-events"><div class="ord-tl-sub-event"><div class="ord-tl-sub-dot done"></div><span class="ord-tl-sub-text">${esc(t('tlSettleLine', { c: _csMoney(_txCs.carrierCod), f: _csMoney(_txCs.fees?.priceAfterVat), n: _csMoney(_txCs.net) }))} · ${esc(m)}</span><span class="ord-tl-sub-time">${esc(_txCs.trigger === 'auto' ? t('tlSettleAuto') : (_txCs.settledBy || ''))}</span></div></div>`
+      : '';
+    const desc = _txCs.status === 'settled' ? esc(t('tlSettleDone'))
+      : _txCs.status === 'pending' ? esc(t('csPendingNote'))
+      : _txCs.status === 'reversed' ? esc(t('csReversedBy', { b: _txCs.reversedBy || '—', d: _csDateTime(_txCs.reversedAt) }))
+      : _txCs.status === 'disputed' ? esc(t('csDisputeNote', { n: _txCs.disputeNote || '' }))
+      : esc(_csReasonLabel(_txCs.reason));
+    stepSettle = _stepHtml(_csIcon, t('tlSettle'), desc,
+      _txCs.status === 'settled' ? 'completed' : _txCs.status === 'pending' ? 'pending' : _txCs.status === 'reversed' ? 'failed' : 'active',
+      _txCs.status === 'settled' ? _txCs.settledAt : _txCs.status === 'reversed' ? _txCs.reversedAt : _txCs.status === 'pending' ? null : (_txCs.readAt || null),
+      sub, false,
+      _txCs.status === 'review' ? t('csSt_review') : _txCs.status === 'disputed' ? t('csSt_disputed') : _txCs.status === 'reversed' ? t('csSt_reversed') : '');
+  }
+  const _settleReplacesCod = !!stepSettle && _txCs.status !== 'reversed';
+
+  // ── إنهاء معالجة فشل التوصيل ──
+  let stepFd = null;
+  if (tx.failedDelivery && tx.failedDelivery.closedAt) {
+    const fd = tx.failedDelivery;
+    stepFd = _stepHtml(
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>`,
+      t('tlFailedClosed'),
+      esc(t('tlFailedClosedDesc', { r: _csMoney(fd.refundAmount), s: _csMoney(fd.returnShipCost) })) + (fd.closedBy ? ` · ${esc(t('shipEvBy', { v: fd.closedBy }))}` : ''),
+      'completed', fd.closedAt, '', false);
+  }
+
+  // ── الإلغاء ──
+  let stepCancel = null;
+  if (tx.cancelled) {
+    stepCancel = _stepHtml(
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+      t('tlCancelled'),
+      esc(tx.cancelReason || '') + (tx.cancelledBy ? ` · ${esc(t('shipEvBy', { v: tx.cancelledBy }))}` : ''),
+      'failed', tx.cancelledAt || null, '', false, t('ivTlStepCancelled'));
+  }
+
+  /* ── Order by time ──────────────────────────────────────────────────────────────────────────
+     Each step sorts by the time it SHOWS — sorting by one time while showing another put steps
+     visibly out of order (the journey step sorted by its first scan but showed the delivery). A date with no clock
+     (prep dates are often just YYYY-MM-DD) cannot be placed inside its day, so it goes right after
+     the step that precedes it logically on that same day — never before it, which is how «التحضير»
+     used to jump above the order's own creation. Steps that have not happened keep their logical
+     order at the end. «تم الإرسال للشحن» is dropped once the shipment log exists: it repeated that
+     log's first line. */
+  const _specs = [step1, step1b, step2, (stepAwb && isShipped) ? null : step3, stepAwb, ...stepReship, step4,
+    stepDeposit, stepSettle, _settleReplacesCod ? null : step5, stepFd, stepCancel]
+    .filter(s => s && typeof s === 'object');
+  const _isDateOnly = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '').trim());
+  const _dayOf = (ms) => { const d = new Date(ms); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
+  let _prevKey = null;
+  [..._specs].sort((a, b) => a.seq - b.seq).forEach(s => {
+    const iso = s.sortIso || s.timeIso;
+    if (!iso) { s.key = null; return; }
+    if (_isDateOnly(iso)) {
+      const dayStart = new Date(String(iso).trim() + 'T00:00:00').getTime();
+      s.key = (_prevKey !== null && _dayOf(_prevKey) === _dayOf(dayStart)) ? _prevKey + 1 : dayStart;
+    } else {
+      const ms = new Date(iso).getTime();
+      s.key = isNaN(ms) ? null : ms;
+    }
+    if (s.key !== null) _prevKey = s.key;
+  });
+  _specs.sort((a, b) => (a.key === null) - (b.key === null) || (a.key !== null && b.key !== null ? a.key - b.key : 0) || a.seq - b.seq);
+  const totalSteps = _specs.length;
   /* العدّاد بيعدّ الخطوات اللي «خلصت» — والخطوة اللي انتهت بمرتجع أو فشل خلصت
      برضه. لو ما اتحسبتش هيفضل العدّاد ناقص للأبد على طلب مافيش فيه أي خطوة جاية. */
-  const completedCount = [true, isShopify, prepEvent!=null||prepStatus==='completed', isShipped,
-    step4StatusKey==='completed'||step4StatusKey==='failed',
-    codStatus==='Collected'||(step5 && codStatus==='FailedCollection')].filter(Boolean).length
-    + (attempts.length ? 1 : 0) // نتيجة الشحنة السابقة خطوة مكتملة
-    + (stepAwb ? 1 : 0);        // سجل الشحنة
+  const completedCount = _specs.filter(s => s.sk === 'completed' || s.sk === 'failed').length;
+  const _stepsHtml = _specs.map((s, i) => _drawStep(s, i === _specs.length - 1)).join('');
   return `<div class="ord-timeline">
     <div class="ord-timeline-header" onclick="this.classList.toggle('expanded');this.nextElementSibling.classList.toggle('open')">
       <h5><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${t('ivTlOrderTimeline')}</h5>
@@ -58691,7 +59035,7 @@ function buildOrderTimelineSection(tx) {
       <svg class="otl-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
     <div class="ord-timeline-body">
-      <div class="ord-timeline-steps">${step1}${step1b}${step2}${step3}${stepAwb}${stepReship}${step4}${step5}</div>
+      <div class="ord-timeline-steps">${_stepsHtml}</div>
     </div>
   </div>`;
 }
@@ -73233,6 +73577,74 @@ let auditFilter = 'all';
 let auditHistoryOpen = false;
 /** Daily-monitor alert payload — populated in loadAllData for admins. */
 var orderAuditAlert = null;
+/** 'number' (default) or 'date' — which range-bar panel is showing. */
+let auditRangeMode = 'number';
+
+/** Switches the range bar between a direct order-number range and a date range.
+ *  Purely a UI toggle — both paths end at the same runOrderAudit(from,to) call,
+ *  so the audit engine (order-number only) is never touched. */
+function setAuditRangeMode(mode) {
+  auditRangeMode = mode;
+  qs('#oa-mode-num')?.classList.toggle('active', mode === 'number');
+  qs('#oa-mode-date')?.classList.toggle('active', mode === 'date');
+  qs('#oa-inputs-number')?.style.setProperty('display', mode === 'number' ? 'flex' : 'none');
+  qs('#oa-inputs-date')?.style.setProperty('display', mode === 'date' ? 'flex' : 'none');
+}
+
+/** Resolves a date range to the min/max Shopify order numbers created in it,
+ *  fills #oa-from/#oa-to, and runs the normal number-based audit — the audit
+ *  engine itself (backend order-audit.service) has no notion of dates, it only
+ *  ever reconciles an order-number range. */
+async function runOrderAuditByDate() {
+  const fromEl = qs('#oa-date-from'), toEl = qs('#oa-date-to');
+  const fromDate = fromEl?.value, toDate = toEl?.value;
+  if (!fromDate || !toDate) { toast('اختر تاريخ البداية والنهاية', true); return; }
+  if (toDate < fromDate) { toast('تاريخ النهاية يجب أن يكون بعد أو يساوي تاريخ البداية', true); return; }
+
+  const resolvedEl = qs('#oa-date-resolved');
+  const btn = qs('#oa-run-btn-date');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+  if (resolvedEl) resolvedEl.textContent = 'جاري تحديد نطاق الأرقام…';
+
+  try {
+    let orders = _shopifyOrders;
+    if (!orders || !orders.length) orders = await api('/shopify/orders');
+    if (!orders || !orders.length) { toast('لا يوجد أوردرات Shopify مسجلة', true); if (resolvedEl) resolvedEl.textContent = ''; return; }
+
+    // Inclusive day window: start of fromDate .. end of toDate (local time).
+    const startMs = new Date(fromDate + 'T00:00:00').getTime();
+    const endMs = new Date(toDate + 'T23:59:59.999').getTime();
+
+    let minN = Infinity, maxN = -Infinity, count = 0;
+    orders.forEach(o => {
+      const t = new Date(o.createdAt || 0).getTime();
+      if (!t || t < startMs || t > endMs) return;
+      const n = Number(String(o.ref || '').replace('#', '')) || Number(o.orderNumber) || 0;
+      if (!n) return;
+      count++;
+      if (n < minN) minN = n;
+      if (n > maxN) maxN = n;
+    });
+
+    if (!count || !Number.isFinite(minN) || !Number.isFinite(maxN)) {
+      toast('لا توجد أوردرات Shopify في هذا النطاق الزمني', true);
+      if (resolvedEl) resolvedEl.textContent = '';
+      return;
+    }
+
+    const fromInput = qs('#oa-from'), toInput = qs('#oa-to');
+    if (fromInput) fromInput.value = minN;
+    if (toInput) toInput.value = maxN;
+    if (resolvedEl) resolvedEl.textContent = `النطاق: #${fmtNum(minN)} — #${fmtNum(maxN)} (${fmtNum(count)} أوردر Shopify في هذه الفترة)`;
+
+    await runOrderAudit();
+  } catch (e) {
+    toast(e.message || 'فشل تحديد نطاق الأرقام بالتاريخ', true);
+    if (resolvedEl) resolvedEl.textContent = '';
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  }
+}
 
 function fmtNum(n) { return (Number(n) || 0).toLocaleString('en-US'); }
 
@@ -74545,10 +74957,1133 @@ function renderVaultPage() {
     const segs = qs('#vault-segs'); if (segs) segs.style.display = admin ? '' : 'none';
     const filterCard = qs('.vault-filter-card'); if (filterCard) filterCard.style.display = admin ? '' : 'none';
     const overviewTab = qs('#vault-tab-overview'); if (overviewTab) overviewTab.style.display = 'block';
+    // Tabs for «تسويات بوسطة» / «كشف حساب بوسطة» — shown only with carrier-settle-view.
+    try { if (typeof _csApplyVaultView === 'function') _csApplyVaultView(); } catch (_) {}
     if (admin) _stopVaultCountdown();
     renderVaultSegs(); loadVaultLog();
     const lsEl = qs('#vault-last-sync'); if (lsEl && !lsEl.textContent) lsEl.textContent = 'جارٍ التحميل...';
   }
+}
+
+/* ══ BOSTA SETTLEMENTS — «تسويات بوسطة» / «كشف حساب بوسطة» (Oct 7, 2026) ═══════════════════
+   The server does every calculation (carrier-auto-settle.service.ts); this block only displays
+   and asks. Rules it follows:
+   • Three states, never two — loading ≠ empty ≠ failed (LOAD_FAIL).
+   • The list re-renders on its own (#cs-list), never the whole tab, so typing in the search box
+     keeps its focus.
+   • Every money figure is .cs-num (tabular + bidi-isolated); signs live inside the number.
+   • Nothing here moves money without a dialog that states the amount and the vault first. */
+Object.assign(TRANSLATIONS, {
+  csTabLog:{ar:'سجل الخزنة',en:'Vault log'},
+  csTabSettle:{ar:'تسويات بوسطة',en:'Bosta settlements'},
+  csTabStatement:{ar:'كشف حساب بوسطة',en:'Bosta statement'},
+  csKpiBalance:{ar:'رصيدنا عند بوسطة',en:'Held by Bosta'},
+  csKpiFees:{ar:'مستحقات بوسطة · هذا الشهر',en:'Bosta fees · this month'},
+  csKpiVariance:{ar:'فرق عن التعريفة',en:'Versus tariff'},
+  csKpiNet:{ar:'صافي الخزنة · هذا الشهر',en:'Net to vault · this month'},
+  csKpiOrders:{ar:'{n} طلب',en:'{n} orders'},
+  csKpiOverSaving:{ar:'زيادة {o} · وفر {s}',en:'Over {o} · saved {s}'},
+  csKpiOut:{ar:'منها مصروف شحن {v}',en:'incl. shipping outflow {v}'},
+  csKpiBalSub:{ar:'حصّلته ولم تحوّله بعد',en:'Collected, not yet transferred'},
+  csAutoOn:{ar:'التسوية التلقائية تعمل منذ {d} · حد المراجعة {l} ج · الخزنة {v}',en:'Auto settlement on since {d} · review limit {l} EGP · vault {v}'},
+  csAutoOff:{ar:'التسوية التلقائية متوقفة — الطلبات تُسوّى بالتحديد فقط.',en:'Auto settlement is off — orders settle only when selected.'},
+  csOpenSettings:{ar:'الإعدادات',en:'Settings'},
+  csNeedDecision:{ar:'تحتاج قرارك',en:'Needs your decision'},
+  csNoEntryYet:{ar:'لم يُسجَّل لها أي قيد',en:'Nothing booked yet'},
+  csSegAll:{ar:'الكل',en:'All'},
+  csSegSettled:{ar:'تمت',en:'Settled'},
+  csSegReview:{ar:'بانتظار المراجعة',en:'Awaiting review'},
+  csSegDisputed:{ar:'نزاع',en:'Disputed'},
+  csSegUnsettled:{ar:'لم تُسوَّ',en:'Unsettled'},
+  csSegPending:{ar:'خلال دقيقة',en:'Queued'},
+  csSearchPh:{ar:'بحث برقم الطلب أو العميل أو رقم التتبع',en:'Search by order, client or tracking'},
+  csColOrder:{ar:'الطلب',en:'Order'},
+  csColDelivered:{ar:'التسليم',en:'Delivered'},
+  csColRemaining:{ar:'المتبقي',en:'Remaining'},
+  csColFees:{ar:'مستحقات بوسطة',en:'Bosta fees'},
+  csColTariff:{ar:'التعريفة',en:'Tariff'},
+  csColVariance:{ar:'الفرق',en:'Difference'},
+  csColNet:{ar:'صافي الخزنة',en:'Net to vault'},
+  csColStatus:{ar:'الحالة',en:'Status'},
+  csEmpty:{ar:'لا توجد طلبات هنا',en:'No orders here'},
+  csEmptyFiltered:{ar:'لا توجد نتائج لهذا البحث',en:'No results for this search'},
+  csLoadFail:{ar:'تعذّر تحميل التسويات',en:'Could not load settlements'},
+  csRetry:{ar:'إعادة المحاولة',en:'Retry'},
+  csSelected:{ar:'{n} طلب محدد · المتبقي {v}',en:'{n} selected · remaining {v}'},
+  csClearSel:{ar:'إلغاء التحديد',en:'Clear selection'},
+  csFetchSettle:{ar:'جلب السعر الحقيقي وتسوية ({n})',en:'Fetch real price & settle ({n})'},
+  csFetchSettleOne:{ar:'جلب السعر الحقيقي وتسوية',en:'Fetch real price & settle'},
+  csSelectAll:{ar:'تحديد كل طلبات الصفحة',en:'Select all on this page'},
+  csSt_settled:{ar:'تمت',en:'Settled'},
+  csSt_settledOver:{ar:'تمت · زيادة',en:'Settled · over'},
+  csSt_review:{ar:'مراجعة',en:'Review'},
+  csSt_disputed:{ar:'نزاع',en:'Disputed'},
+  csSt_pending:{ar:'خلال دقيقة',en:'Queued'},
+  csSt_reversed:{ar:'تم التراجع',en:'Reversed'},
+  csSt_unsettled:{ar:'لم تُسوَّ',en:'Unsettled'},
+  csR_noPricing:{ar:'لم تُرجع بوسطة السعر',en:'Bosta returned no price'},
+  csR_notDelivered:{ar:'بوسطة لا تعرضه كمسلَّم',en:'Bosta does not show it delivered'},
+  csR_codMismatch:{ar:'مبلغ التحصيل عند بوسطة يختلف عن المتبقي',en:'Bosta COD differs from the remaining'},
+  csR_openConflict:{ar:'عليه مشكلة مفتوحة',en:'Has an open issue'},
+  csR_priorPayment:{ar:'سُجّل عليه تحصيل من قبل',en:'Already has a collection'},
+  csR_overLimit:{ar:'زيادة عن التعريفة فوق الحد',en:'Over the tariff beyond the limit'},
+  csR_vaultRefused:{ar:'الخزنة رفضت القيد',en:'The vault refused the entry'},
+  csR_collectRefused:{ar:'تعذّر تسجيل التحصيل',en:'Collection could not be recorded'},
+  csR_fetchFailed:{ar:'تعذّر الاتصال ببوسطة',en:'Could not reach Bosta'},
+  csR_disabled:{ar:'التسوية التلقائية متوقفة',en:'Auto settlement is off'},
+  csR_alreadyCollected:{ar:'محصَّل من قبل',en:'Already collected'},
+  csR_alreadySettled:{ar:'مُسوّى من قبل',en:'Already settled'},
+  csR_manualDelivery:{ar:'تسليم يدوي',en:'Manually delivered'},
+  csR_inReview:{ar:'قيد المراجعة',en:'Under review'},
+  csR_locked:{ar:'قيد المعالجة الآن',en:'Being processed'},
+  csR_other:{ar:'غير مؤهل',en:'Not eligible'},
+  csReview:{ar:'مراجعة',en:'Review'},
+  csStatement:{ar:'البيان',en:'Statement'},
+  csApprove:{ar:'اعتماد وتسجيل {v}',en:'Approve & book {v}'},
+  csApproveShort:{ar:'اعتماد',en:'Approve'},
+  csDispute:{ar:'نزاع مع بوسطة',en:'Dispute with Bosta'},
+  csReverse:{ar:'تراجع عن التسوية',en:'Undo settlement'},
+  csOpenOrder:{ar:'فتح الطلب',en:'Open order'},
+  csStmtTitle:{ar:'بيان تسوية بوسطة',en:'Bosta settlement statement'},
+  csSecCustomer:{ar:'من العميل',en:'From the customer'},
+  csOrderTotal:{ar:'إجمالي الطلب',en:'Order total'},
+  csDepositPaid:{ar:'ديبوزت مدفوع',en:'Deposit paid'},
+  csCollectedByBosta:{ar:'حصّلته بوسطة عند التسليم',en:'Collected by Bosta on delivery'},
+  csSecFees:{ar:'مستحقات بوسطة',en:'Bosta fees'},
+  csShippingFee:{ar:'سعر الشحن',en:'Shipping'},
+  csSizePart:{ar:'منها فرق الحجم {s}',en:'incl. size {s}'},
+  csInsurance:{ar:'التأمين',en:'Insurance'},
+  csExtraFees:{ar:'رسوم إضافية',en:'Other fees'},
+  csVat:{ar:'ضريبة {p}%',en:'VAT {p}%'},
+  csTotal:{ar:'الإجمالي',en:'Total'},
+  csSecCompare:{ar:'مقارنة بالتعريفة',en:'Versus the tariff'},
+  csTariffOnInvoice:{ar:'التعريفة على الفاتورة',en:'Tariff on the invoice'},
+  csBostaTook:{ar:'ما أخذته بوسطة',en:'What Bosta took'},
+  csOver:{ar:'زيادة على الشحن',en:'Shipping overcharge'},
+  csSaving:{ar:'وفر شحن',en:'Shipping saving'},
+  csMatch:{ar:'مطابق',en:'Matches'},
+  csNotBilled:{ar:'لا تعريفة على الفاتورة (شحن مجاني)',en:'No tariff billed (free shipping)'},
+  csSecWhy:{ar:'لماذا تغيّر السعر',en:'Why the price changed'},
+  csChgSize:{ar:'{r} غيّر الحجم من {a} إلى {b}',en:'{r} changed the size from {a} to {b}'},
+  csChgPrice:{ar:'{r} عدّل السعر',en:'{r} changed the price'},
+  csRole_HUB_COORDINATOR:{ar:'منسّق مركز الفرز',en:'Hub coordinator'},
+  csRole_STAR:{ar:'المندوب',en:'Courier'},
+  csRole_other:{ar:'بوسطة',en:'Bosta'},
+  csSecBooked:{ar:'ما سُجّل',en:'What was booked'},
+  csBookedCollect:{ar:'تحصيل · {v}',en:'Collection · {v}'},
+  csBookedOutflow:{ar:'مصروف شحن · {v}',en:'Shipping outflow · {v}'},
+  csVaultEffect:{ar:'أثر الطلب على الخزنة',en:'Effect on the vault'},
+  csWillBook:{ar:'عند الاعتماد يدخل الخزنة',en:'On approval the vault gets'},
+  csSettledAuto:{ar:'سُوّي تلقائياً · {d}',en:'Settled automatically · {d}'},
+  csSettledBy:{ar:'سُوّي بواسطة {b} · {d}',en:'Settled by {b} · {d}'},
+  csReversedBy:{ar:'تراجع {b} · {d}',en:'Reversed by {b} · {d}'},
+  csDisputeNote:{ar:'سبب النزاع: {n}',en:'Dispute: {n}'},
+  csNotSettledYet:{ar:'لم تُسوَّ بعد. اضغط لجلب ما أخذته بوسطة فعلاً وتسويته.',en:'Not settled yet. Fetch what Bosta actually took and settle it.'},
+  csPendingNote:{ar:'تُسوّى تلقائياً بعد دقيقة من التسليم.',en:'Settles automatically a minute after delivery.'},
+  csPvTitle:{ar:'تسوية {n} طلب من بوسطة',en:'Settle {n} orders from Bosta'},
+  csPvFetching:{ar:'جارٍ جلب الأسعار من بوسطة… لم يُسجَّل شيء بعد',en:'Fetching prices from Bosta… nothing booked yet'},
+  csPvFetched:{ar:'تم جلب {n} طلب · لم يُسجَّل شيء بعد',en:'Fetched {n} orders · nothing booked yet'},
+  csPvVault:{ar:'الخزنة التي يُسجَّل فيها الصافي ومصروف الشحن',en:'Vault for the net and shipping outflows'},
+  csPvVaultAll:{ar:'تنطبق على كل الطلبات في هذه الدفعة.',en:'Applies to every order in this batch.'},
+  csPvBalNow:{ar:'رصيدها الآن',en:'Balance now'},
+  csPvBalAfter:{ar:'بعد التسوية',en:'After settling'},
+  csPvColOutcome:{ar:'النتيجة',en:'Outcome'},
+  csOut_settle:{ar:'تسوية',en:'Settle'},
+  csOut_settleOver:{ar:'تسوية · زيادة',en:'Settle · over'},
+  csOut_review:{ar:'مراجعة',en:'Review'},
+  csOut_skip:{ar:'لن تُسوّى',en:'Skipped'},
+  csPvTotal:{ar:'صافي الخزنة · {v}',en:'Net to vault · {v}'},
+  csPvWarn:{ar:'تأكد أن تحصيل هذه الطلبات لم يُسجَّل في الخزنة بطريقة أخرى، مثل تسجيل تحويل بوسطة كمبلغ واحد.',en:'Make sure these orders were not already booked another way, such as a Bosta transfer recorded as one amount.'},
+  csPvReviewNote:{ar:'{n} طلب فوق حد المراجعة أو عليه تعارض — سيُنقل لقائمة المراجعة بلا قيد.',en:'{n} orders go to review without any entry.'},
+  csPvConfirm:{ar:'تسوية {n} طلب · {v}',en:'Settle {n} orders · {v}'},
+  csPvNothing:{ar:'لا يوجد طلب قابل للتسوية في هذا التحديد',en:'Nothing in this selection can be settled'},
+  csPvLoadFail:{ar:'تعذّر جلب الأسعار من بوسطة',en:'Could not fetch prices from Bosta'},
+  csResTitle:{ar:'نتيجة التسوية',en:'Settlement result'},
+  csResLine:{ar:'سُوّي {s} · للمراجعة {r} · تخطّى {k} · فشل {f}',en:'Settled {s} · review {r} · skipped {k} · failed {f}'},
+  csResNet:{ar:'الصافي في خزنة {m}',en:'Net to {m}'},
+  csResFailedKept:{ar:'الطلبات التي لم تُسوَّ ما زالت محددة لإعادة المحاولة.',en:'Orders that did not settle stay selected to retry.'},
+  csClose:{ar:'إغلاق',en:'Close'},
+  csApproveTitle:{ar:'اعتماد تسوية #{r}',en:'Approve settlement #{r}'},
+  csApproveWhy:{ar:'أخذت بوسطة {f} والتعريفة {b}، زيادة {v} فوق حد {l}.',en:'Bosta took {f} against a {b} tariff — {v} over the {l} limit.'},
+  csApproveNote:{ar:'الاعتماد يتجاوز حد السعر فقط. أي تعارض آخر يُبقي الطلب في المراجعة.',en:'Approval overrides the price limit only. Any other conflict keeps it in review.'},
+  csDisputeTitle:{ar:'نزاع مع بوسطة · #{r}',en:'Dispute with Bosta · #{r}'},
+  csDisputePh:{ar:'مثلاً: الوزن المسجل عند بوسطة أكبر من الحقيقي',en:'e.g. Bosta recorded a heavier weight than the parcel'},
+  csDisputeSave:{ar:'فتح النزاع',en:'Open dispute'},
+  csDisputeNeed:{ar:'اكتب سبب النزاع',en:'Write the reason'},
+  csReverseQ:{ar:'التراجع عن تسوية #{r}؟',en:'Undo settlement #{r}?'},
+  csReverseRow1:{ar:'يُعكس {v} من خزنة {m}',en:'{v} reverses from {m}'},
+  csReverseRow2:{ar:'يعود الطلب «لم تُسوَّ» ويمكن تسويته مرة أخرى',en:'The order returns to «unsettled» and can be settled again'},
+  csDone:{ar:'تمت التسوية',en:'Settled'},
+  csApproved:{ar:'اعتُمدت التسوية',en:'Settlement approved'},
+  csStillReview:{ar:'ما زال في المراجعة: {r}',en:'Still in review: {r}'},
+  csDisputed:{ar:'فُتح النزاع',en:'Dispute opened'},
+  csReversed:{ar:'تم التراجع عن التسوية',en:'Settlement undone'},
+  csToastReview:{ar:'تسوية بوسطة تحتاج مراجعة',en:'A Bosta settlement needs review'},
+  csNotifReview:{ar:'تسوية بوسطة تحتاج قرارك',en:'Bosta settlement needs your decision'},
+  csNoPermRun:{ar:'ليست لديك صلاحية تسوية طلبات بوسطة',en:'You cannot settle Bosta orders'},
+  csCollectBlockedReview:{ar:'هذا الطلب في مراجعة تسوية بوسطة — يُعتمد من الخزنة ← تسويات بوسطة',en:'This order is in Bosta settlement review — decide it from Vault → Bosta settlements'},
+  csCollectBlockedPending:{ar:'هذا الطلب يُسوّى تلقائياً خلال دقيقة من التسليم',en:'This order settles automatically within a minute of delivery'},
+  csInvCardTitle:{ar:'تسوية شركة الشحن',en:'Carrier settlement'},
+  csInvCollected:{ar:'حصّلت بوسطة',en:'Bosta collected'},
+  csInvFees:{ar:'مستحقاتها',en:'Its fees'},
+  csInvEffect:{ar:'أثر الخزنة',en:'Vault effect'},
+  csInvFull:{ar:'عرض البيان كاملاً',en:'Full statement'},
+  // statement tab
+  csLedNow:{ar:'رصيدنا عند بوسطة الآن',en:'Held by Bosta now'},
+  csLedIn:{ar:'لنا في الفترة',en:'Owed to us in period'},
+  csLedOut:{ar:'خصمته وحوّلته في الفترة',en:'Deducted & transferred in period'},
+  csLedUnbooked:{ar:'رسوم رجوع لم تدخل الخزنة',en:'Return fees not yet in vault'},
+  csLedUnbookedSub:{ar:'تُسجَّل مع التحويل القادم',en:'Booked with the next transfer'},
+  csLedRecord:{ar:'تسجيل تحويل من بوسطة',en:'Record a Bosta transfer'},
+  csLedColDate:{ar:'التاريخ',en:'Date'},
+  csLedColDesc:{ar:'البيان',en:'Description'},
+  csLedColRef:{ar:'المرجع',en:'Ref'},
+  csLedColIn:{ar:'لنا',en:'In'},
+  csLedColOut:{ar:'علينا',en:'Out'},
+  csLedColBal:{ar:'رصيد عند بوسطة',en:'Held by Bosta'},
+  csLedOpening:{ar:'رصيد أول المدة',en:'Opening balance'},
+  csLedTotals:{ar:'إجمالي الفترة',en:'Period totals'},
+  csLed_collection:{ar:'تحصيل طلب',en:'Order collected'},
+  csLed_fees:{ar:'مستحقات شحن',en:'Delivery fees'},
+  csLed_returnFee:{ar:'تكلفة رجوع شحنة',en:'Return-leg fee'},
+  csLed_payout:{ar:'تحويل إلى {v}',en:'Transfer to {v}'},
+  csLed_payoutNote:{ar:'لا يغيّر الخزنة · كل طلب سُجّل عند تسويته',en:'No vault change · each order was booked when settled'},
+  csLed_transferFee:{ar:'رسوم تحويل',en:'Transfer fee'},
+  csLed_transferFeeNote:{ar:'مصروف · رسوم تحويل',en:'Expense · transfer fee'},
+  csLed_adjustment:{ar:'فرق تحويل مسجّل',en:'Recorded transfer difference'},
+  csLedEmpty:{ar:'لا توجد حركات مع بوسطة في هذه الفترة',en:'No Bosta activity in this period'},
+  csLedDelete:{ar:'حذف التحويل',en:'Delete transfer'},
+  csLedDeleteQ:{ar:'حذف التحويل {r}؟',en:'Delete transfer {r}?'},
+  csLedDeleteRow:{ar:'تُعكس رسومه وأي فرق سُجّل له في الخزنة',en:'Its fee and any booked difference are reversed in the vault'},
+  csPayTitle:{ar:'تسجيل تحويل من بوسطة',en:'Record a Bosta transfer'},
+  csPayDate:{ar:'تاريخ التحويل',en:'Transfer date'},
+  csPayAmount:{ar:'المبلغ الذي وصل',en:'Amount received'},
+  csPayFee:{ar:'رسوم التحويل',en:'Transfer fee'},
+  csPayVault:{ar:'الخزنة التي وصل لها التحويل',en:'Vault it landed in'},
+  csPayRef:{ar:'مرجع بوسطة (اختياري)',en:'Bosta reference (optional)'},
+  csPayNote:{ar:'ملاحظة (اختياري)',en:'Note (optional)'},
+  csPayExpected:{ar:'المتوقع حسب الكشف',en:'Expected per statement'},
+  csPayDiff:{ar:'الفرق',en:'Difference'},
+  csPayReconciled:{ar:'يطابق الكشف',en:'Matches the statement'},
+  csPayBookDiff:{ar:'سجّل الفرق في الخزنة',en:'Book the difference in the vault'},
+  csPayBookDiffHint:{ar:'اختره إذا خصمت بوسطة مبلغاً غير مسجل. اتركه إذا كان الفرق سيصل لاحقاً.',en:'Choose it if Bosta deducted something unrecorded. Leave it if the difference will still arrive.'},
+  csPayReturnFees:{ar:'رسوم رجوع {v} تُخصم من الخزنة مع هذا التحويل',en:'{v} of return-leg fees leave the vault with this transfer'},
+  csPayNotIncome:{ar:'التحويل نفسه لا يدخل الخزنة — كل طلب دخلها عند تسويته. تُسجَّل الرسوم كمصروف بتاريخ التحويل.',en:'The transfer itself is not vault income — each order entered when settled. The fee is booked as an expense on the transfer date.'},
+  csPaySave:{ar:'تسجيل التحويل',en:'Record transfer'},
+  csPaySaved:{ar:'سُجّل التحويل {r}',en:'Transfer {r} recorded'},
+  csPayNeedAmount:{ar:'اكتب المبلغ الذي وصل',en:'Enter the amount received'},
+  // settings card
+  csStgSection:{ar:'التسوية التلقائية لبوسطة',en:'Automatic Bosta settlement'},
+  csStgTitle:{ar:'تسوية كل طلب تسلّمه بوسطة تلقائياً',en:'Settle every Bosta delivery automatically'},
+  csStgDesc:{ar:'بعد التسليم بدقيقة يقرأ النظام ما أخذته بوسطة فعلاً، ويسجّل الصافي في الخزنة. ما يزيد عن الحد ينتظر قرارك.',en:'A minute after delivery the system reads what Bosta actually took and books the net. Anything over the limit waits for you.'},
+  csStgEnabled:{ar:'تشغيل التسوية التلقائية',en:'Turn on automatic settlement'},
+  csStgSince:{ar:'تعمل منذ {d} — ما سُلّم قبل ذلك يُسوّى بالتحديد فقط.',en:'On since {d} — earlier deliveries settle only when selected.'},
+  csStgSinceNew:{ar:'عند التشغيل يُسجَّل تاريخ اليوم، وما سُلّم قبله لا يُسوّى إلا بالتحديد.',en:'Turning it on records today; earlier deliveries settle only when selected.'},
+  csStgLimit:{ar:'حد المراجعة (ج)',en:'Review limit (EGP)'},
+  csStgLimitHint:{ar:'أقصى زيادة عن التعريفة تُسوّى بلا مراجعة',en:'Largest overcharge that settles without review'},
+  csStgDelay:{ar:'الانتظار قبل قراءة السعر (ثانية)',en:'Wait before reading the price (sec)'},
+  csStgFee:{ar:'رسوم التحويل الافتراضية (ج)',en:'Default transfer fee (EGP)'},
+  csStgVault:{ar:'الخزنة الافتراضية لتسويات بوسطة',en:'Default vault for Bosta settlements'},
+  csStgSave:{ar:'حفظ',en:'Save'},
+  csStgSaved:{ar:'حُفظت إعدادات التسوية',en:'Settlement settings saved'},
+  csReturnFromBosta:{ar:'من بوسطة',en:'From Bosta'},
+  // order timeline (rebuilt Oct 7, 2026)
+  tlConfirmed:{ar:'تأكيد وتسجيل الطلب',en:'Order confirmed & recorded'},
+  tlTr_new:{ar:'استلمت بوسطة الطلب',en:'Received by Bosta'},
+  tlTr_picked_up:{ar:'استُلم من المخزن',en:'Picked up from us'},
+  tlTr_in_transit:{ar:'وصل مركز الفرز',en:'At the sorting hub'},
+  tlTr_out_for_delivery:{ar:'خرج للتوصيل',en:'Out for delivery'},
+  tlTr_delivered:{ar:'تم التسليم',en:'Delivered'},
+  tlTr_returned:{ar:'رجع للتاجر',en:'Returned to us'},
+  tlTr_exception:{ar:'تعذّر التسليم',en:'Delivery exception'},
+  tlTr_cancelled:{ar:'أُلغيت الشحنة',en:'Shipment cancelled'},
+  tlTrAttempt:{ar:'المحاولة {a} من {b}',en:'attempt {a} of {b}'},
+  tlDeposit:{ar:'دفع الديبوزت',en:'Deposit paid'},
+  tlDepositDesc:{ar:'{v} ج · {m}',en:'{v} EGP · {m}'},
+  tlSettle:{ar:'تسوية بوسطة',en:'Bosta settlement'},
+  tlSettleDone:{ar:'سُجّل ما حصّلته بوسطة صافياً من مستحقاتها',en:'Booked what Bosta collected, net of its fees'},
+  tlSettleLine:{ar:'حصّلت {c} · أخذت {f} · الصافي {n}',en:'Collected {c} · took {f} · net {n}'},
+  tlSettleAuto:{ar:'تلقائياً',en:'Automatic'},
+  tlFailedClosed:{ar:'إنهاء معالجة فشل التوصيل',en:'Failed delivery closed'},
+  tlFailedClosedDesc:{ar:'رُدّ {r} ج · تكلفة الرجوع {s} ج',en:'Refunded {r} EGP · return leg {s} EGP'},
+  tlCancelled:{ar:'أُلغي الطلب',en:'Order cancelled'},
+});
+
+var _vview = 'log';
+const _cs = { status: 'all', page: 1, limit: 50, search: '', from: '', to: '', rows: [], total: 0, counts: null,
+  summary: null, review: [], sel: new Map(), failed: false, err: '', loaded: false };
+const _cst = { from: '', to: '', data: null, failed: false, err: '' };
+let _csSearchTimer = null;
+let _csRemoteTimer = null;
+const CS_VAULTS = ['كاش', 'فودافون كاش', 'Instapay', 'تحويل بنكي'];
+
+function _csCan(p) { return isAdmin() || hasPerm('carrier-settle-' + p); }
+function _csR2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
+function _csMoney(n) { return (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function _csN(n) { return `<span class="cs-num">${_csMoney(n)}</span>`; }
+/** Sign inside the number — '−15.66', '+396.00'. Never '−EGP'. */
+function _csS(n) { const v = _csR2(n); return `<span class="cs-num">${v > 0 ? '+' : v < 0 ? '−' : ''}${_csMoney(Math.abs(v))}</span>`; }
+function _csToday() { return new Date().toISOString().slice(0, 10); }
+function _csMonthStart() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`; }
+function _csLoc() { return currentLang === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn'; }
+function _csDate(iso) { if (!iso) return '—'; const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleDateString(_csLoc(), { day: 'numeric', month: 'short' }); }
+function _csDateTime(iso) { if (!iso) return '—'; const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleString(_csLoc(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+
+const _CS_REASON_KEY = {
+  'no-pricing': 'csR_noPricing', 'not-delivered': 'csR_notDelivered', 'cod-mismatch': 'csR_codMismatch',
+  'open-conflict': 'csR_openConflict', 'prior-payment': 'csR_priorPayment', 'variance-over-limit': 'csR_overLimit',
+  'vault-refused': 'csR_vaultRefused', 'collect-refused': 'csR_collectRefused', 'fetch-failed': 'csR_fetchFailed',
+  'disabled': 'csR_disabled', 'already-collected': 'csR_alreadyCollected', 'already-settled': 'csR_alreadySettled',
+  'manual-delivery': 'csR_manualDelivery', 'in-review': 'csR_inReview', 'locked': 'csR_locked',
+};
+function _csReasonLabel(r) { return t(_CS_REASON_KEY[r] || 'csR_other'); }
+
+function _csStatusPill(cs) {
+  const st = cs && cs.status;
+  if (st === 'settled') return cs.varianceKind === 'over-small' || cs.varianceKind === 'over-large'
+    ? `<span class="cs-pill is-warn">${esc(t('csSt_settledOver'))}</span>`
+    : `<span class="cs-pill is-ok">${esc(t('csSt_settled'))}</span>`;
+  if (st === 'review') return `<span class="cs-pill is-bad">${esc(t('csSt_review'))}</span>`;
+  if (st === 'disputed') return `<span class="cs-pill is-info">${esc(t('csSt_disputed'))}</span>`;
+  if (st === 'pending') return `<span class="cs-pill is-neu">${esc(t('csSt_pending'))}</span>`;
+  if (st === 'reversed') return `<span class="cs-pill is-neu">${esc(t('csSt_reversed'))}</span>`;
+  return `<span class="cs-pill is-neu">${esc(t('csSt_unsettled'))}</span>`;
+}
+
+/** Keep the in-memory transaction in step so the invoice page and notifications agree with the tab. */
+function _csMergeRows(rows) {
+  if (!Array.isArray(transactions)) return;
+  (rows || []).forEach(r => {
+    const i = transactions.findIndex(x => String(x._id) === String(r._id));
+    if (i >= 0) transactions[i] = { ...transactions[i], carrierSettlement: r.carrierSettlement, payStatus: r.payStatus, remaining: r.remaining, deposit: r.deposit, codCollectionStatus: r.codCollectionStatus };
+  });
+}
+
+function _csVaultCardsHtml(selected, pickFn) {
+  return '<div class="csi-vaults" role="radiogroup">' + CS_VAULTS.map(v =>
+    `<button type="button" class="csi-vault-card${v === selected ? ' is-on' : ''}" role="radio" aria-checked="${v === selected}" data-val="${escHtml(v)}" onclick="${pickFn}('${v.replace(/'/g, "\\'")}')"><span class="csi-vault-ico">${payMethodIcon(v, 18)}</span><span class="csi-vault-nm">${esc(_payMethodLabel ? _payMethodLabel(v) : v)}</span></button>`
+  ).join('') + '</div>';
+}
+function _csMarkVault(scope, v) {
+  qsa(scope + ' .csi-vault-card').forEach(b => { const on = b.dataset.val === v; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', String(on)); });
+}
+
+// ── View switching ──────────────────────────────────────────────────────────────────────────
+function _csApplyVaultView() {
+  const can = _csCan('view');
+  const tabs = qs('#vault-tabs'); if (tabs) tabs.hidden = !can;
+  if (!can) _vview = 'log';
+  switchVaultView(_vview);
+  if (can) _csLoadBadge();
+}
+function switchVaultView(v) {
+  if (!['log', 'settle', 'statement'].includes(v) || (v !== 'log' && !_csCan('view'))) v = 'log';
+  _vview = v;
+  const vc = qs('#vault-content'); if (vc) vc.dataset.vview = v;
+  qsa('#vault-tabs .vst-tab').forEach(b => { const on = b.dataset.vview === v; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', String(on)); });
+  const ov = qs('#vault-tab-overview'); if (ov) ov.style.display = v === 'log' ? 'block' : 'none';
+  const st = qs('#vault-tab-settle'); if (st) st.hidden = v !== 'settle';
+  const sm = qs('#vault-tab-statement'); if (sm) sm.hidden = v !== 'statement';
+  if (v !== 'log') qs('#vault-settle-card')?.setAttribute('hidden', '');
+  if (v === 'settle') loadCsTab();
+  else if (v === 'statement') loadCsStatement();
+}
+function openCsVault(status) {
+  _vview = 'settle';
+  if (status) { _cs.status = status; _cs.page = 1; }
+  if (currentPage === 'vault') { if (vaultUnlocked) switchVaultView('settle'); }
+  else navigateTo('vault');
+}
+async function _csLoadBadge() {
+  try { const s = await api('/carrier-settlements/summary?from=' + _csMonthStart() + '&to=' + _csToday()); _cs.summary = s; _csSetBadge(s?.counts?.review); } catch (_) {}
+}
+function _csSetBadge(n) {
+  const b = qs('#cs-review-badge'); if (!b) return;
+  b.hidden = !(n > 0); b.textContent = n > 0 ? fmtN(n) : '';
+}
+function _csOnRemoteChange() {
+  clearTimeout(_csRemoteTimer);
+  _csRemoteTimer = setTimeout(() => {
+    if (currentPage !== 'vault' || !vaultUnlocked) return;
+    if (_vview === 'settle') loadCsTab(true);
+    else if (_vview === 'statement') loadCsStatement();
+    else _csLoadBadge();
+  }, 600);
+}
+
+// ── «تسويات بوسطة» ─────────────────────────────────────────────────────────────────────────
+function _csSkel(n) { return Array.from({ length: n || 4 }, () => `<div class="cs-skel" style="margin:14px 0"></div>`).join(''); }
+
+async function loadCsTab(quiet) {
+  const el = qs('#vault-tab-settle'); if (!el) return;
+  if (!_cs.loaded && !quiet) el.innerHTML = `<div class="cs-kpis">${'<div class="cs-kpi"><div class="cs-skel"></div></div>'.repeat(4)}</div>${_csSkel(6)}`;
+  try {
+    const [sum, rev] = await Promise.all([
+      api('/carrier-settlements/summary?from=' + _csMonthStart() + '&to=' + _csToday()),
+      api('/carrier-settlements?status=review&limit=20'),
+    ]);
+    _cs.summary = sum; _cs.review = rev.rows || [];
+    _csMergeRows(_cs.review);
+    _cs.failed = false;
+  } catch (e) { _cs.failed = true; _cs.err = e.message || ''; }
+  renderCsTab();
+  if (!_cs.failed) await _csLoadList();
+}
+
+function renderCsTab() {
+  const el = qs('#vault-tab-settle'); if (!el) return;
+  if (_cs.failed) {
+    el.innerHTML = `<div class="cs-empty"><div style="font-weight:600;color:var(--text)">${esc(t('csLoadFail'))}</div><div style="margin:4px 0 10px">${esc(_cs.err)}</div><button class="btn btn-outline btn-sm" onclick="loadCsTab()">${esc(t('csRetry'))}</button></div>`;
+    return;
+  }
+  _cs.loaded = true;
+  const s = _cs.summary || {};
+  const c = s.counts || {};
+  const varNet = _csR2((s.over || 0) - (s.saving || 0));
+  const kpis = `<div class="cs-kpis">
+    <div class="cs-kpi is-lead"><span class="cs-kpi-k">${esc(t('csKpiBalance'))}</span><span class="cs-kpi-v">${_csMoney(s.bostaBalance)}</span><div class="cs-kpi-s">${esc(t('csKpiBalSub'))}</div></div>
+    <div class="cs-kpi"><span class="cs-kpi-k">${esc(t('csKpiFees'))}</span><span class="cs-kpi-v">${_csMoney(s.fees)}</span><div class="cs-kpi-s">${esc(t('csKpiOrders', { n: fmtN(s.count || 0) }))}</div></div>
+    <div class="cs-kpi"><span class="cs-kpi-k">${esc(t('csKpiVariance'))}</span><span class="cs-kpi-v ${varNet > 0 ? 'cs-up' : varNet < 0 ? 'cs-down' : ''}">${varNet > 0 ? '+' : varNet < 0 ? '−' : ''}${_csMoney(Math.abs(varNet))}</span><div class="cs-kpi-s">${t('csKpiOverSaving', { o: `<span class="cs-up cs-num">${_csMoney(s.over)}</span>`, s: `<span class="cs-down cs-num">${_csMoney(s.saving)}</span>` })}</div></div>
+    <div class="cs-kpi"><span class="cs-kpi-k">${esc(t('csKpiNet'))}</span><span class="cs-kpi-v">${_csMoney(_csR2((s.netIn || 0) - (s.netOut || 0)))}</span><div class="cs-kpi-s">${t('csKpiOut', { v: _csN(s.netOut) })}</div></div>
+  </div>`;
+  const note = s.enabled
+    ? `<div class="cs-note"><span>${esc(t('csAutoOn', { d: _csDate(s.since), l: fmtN(s.reviewLimit), v: _payMethodLabel ? _payMethodLabel(s.defaultVault) : s.defaultVault }))}</span></div>`
+    : `<div class="cs-note"><span><b>${esc(t('csAutoOff'))}</b></span>${isAdmin() || hasPerm('settings') ? `<button class="btn btn-outline btn-sm" onclick="navigateTo('settings')">${esc(t('csOpenSettings'))}</button>` : ''}</div>`;
+  const review = _cs.review.length ? `<div class="cs-review"><div class="cs-review-h"><b>${esc(t('csNeedDecision'))}</b><span>${esc(t('csNoEntryYet'))}</span></div>${_cs.review.map(_csReviewRowHtml).join('')}</div>` : '';
+  const segs = [['all', 'csSegAll', c.all], ['settled', 'csSegSettled', c.settled], ['review', 'csSegReview', c.review], ['disputed', 'csSegDisputed', c.disputed], ['unsettled', 'csSegUnsettled', c.unsettled], ['pending', 'csSegPending', c.pending]]
+    .filter(([k, , n]) => k === 'all' || k === _cs.status || n > 0)
+    .map(([k, key, n]) => `<button type="button" class="cs-seg${_cs.status === k ? ' is-on' : ''}" onclick="_csSetStatus('${k}')">${esc(t(key))}<span class="cs-num">${fmtN(n || 0)}</span></button>`).join('');
+  el.innerHTML = `${kpis}${note}${review}
+    <div class="cs-bar">${segs}
+      <input type="search" id="cs-search" class="cs-search" placeholder="${escHtml(t('csSearchPh'))}" value="${escHtml(_cs.search)}" oninput="_csOnSearch(this.value)">
+      <input type="date" id="cs-from" value="${escHtml(_cs.from)}" onchange="_csOnDates()" aria-label="from">
+      <input type="date" id="cs-to" value="${escHtml(_cs.to)}" onchange="_csOnDates()" aria-label="to">
+    </div>
+    <div id="cs-list">${_csSkel(5)}</div>`;
+  _csSetBadge(c.review);
+}
+
+function _csReviewRowHtml(r) {
+  const cs = r.carrierSettlement || {};
+  const why = cs.reason === 'variance-over-limit'
+    ? `${t('csBostaTook')} ${_csN(cs.fees?.priceAfterVat)} · ${t('csTariffOnInvoice')} ${_csN(cs.billedShip)} · <b class="cs-up">${_csS(cs.variance)}</b>`
+    : esc(_csReasonLabel(cs.reason));
+  const chg = (cs.priceChanges || []).find(c => c.sizeBefore && c.sizeAfter && c.sizeBefore !== c.sizeAfter);
+  const sub = [chg ? t('csChgSize', { r: _csRoleLabel(chg.byRole), a: chg.sizeBefore, b: chg.sizeAfter }) : '', cs.reason === 'variance-over-limit' ? `${t('csWillBook')} ${_csMoney(cs.net)}` : ''].filter(Boolean).map(esc).join(' · ');
+  const canDecide = _csCan('approve');
+  return `<div class="cs-rq">
+    <div class="cs-rq-why"><span class="cs-ref">#${esc(r.ref || '')}</span> · ${why}${sub ? `<small>${sub}</small>` : ''}</div>
+    <div class="cs-rq-acts">
+      <button class="btn btn-outline btn-sm" onclick="openCsStatement('${r._id}')">${esc(t('csStatement'))}</button>
+      ${canDecide && cs.reason === 'variance-over-limit' ? `<button class="btn btn-outline btn-sm" onclick="openCsDispute('${r._id}')">${esc(t('csDispute'))}</button>` : ''}
+      ${canDecide ? `<button class="btn btn-primary btn-sm" onclick="openCsApprove('${r._id}')">${esc(t('csApproveShort'))}</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function _csSetStatus(st) { _cs.status = st; _cs.page = 1; renderCsTab(); _csLoadList(); }
+function _csOnSearch(v) { clearTimeout(_csSearchTimer); _csSearchTimer = setTimeout(() => { _cs.search = v.trim(); _cs.page = 1; _csLoadList(); }, 300); }
+function _csOnDates() { _cs.from = qs('#cs-from')?.value || ''; _cs.to = qs('#cs-to')?.value || ''; _cs.page = 1; _csLoadList(); }
+function csGoPage(p) { _cs.page = Number(p) || 1; _csLoadList(); }
+
+async function _csLoadList() {
+  const box = qs('#cs-list'); if (!box) return;
+  try {
+    const p = new URLSearchParams({ status: _cs.status, page: String(_cs.page), limit: String(_cs.limit), search: _cs.search, from: _cs.from, to: _cs.to });
+    const res = await api('/carrier-settlements?' + p.toString());
+    _cs.rows = res.rows || []; _cs.total = res.total || 0; _cs.counts = res.counts;
+    _csMergeRows(_cs.rows);
+    _csRenderList();
+  } catch (e) {
+    box.innerHTML = `<div class="cs-empty"><div style="font-weight:600;color:var(--text)">${esc(t('csLoadFail'))}</div><div style="margin:4px 0 10px">${esc(e.message || '')}</div><button class="btn btn-outline btn-sm" onclick="_csLoadList()">${esc(t('csRetry'))}</button></div>`;
+  }
+}
+
+function _csRowNums(r) {
+  const cs = r.carrierSettlement || {};
+  const known = cs.fees && cs.fees.priceAfterVat != null && ['settled', 'review', 'disputed', 'reversed'].includes(cs.status);
+  return {
+    fees: known ? _csN(cs.fees.priceAfterVat) : '—',
+    variance: known && cs.billedShip > 0 ? `<span class="${cs.variance > 0 ? 'cs-up' : cs.variance < 0 ? 'cs-down' : ''}">${_csS(cs.variance)}</span>` : '—',
+    net: cs.status === 'settled' ? _csS(cs.net) : '—',
+  };
+}
+
+function _csRenderList() {
+  const box = qs('#cs-list'); if (!box) return;
+  const selectable = _cs.status === 'unsettled' && _csCan('run');
+  const rows = _cs.rows;
+  if (!rows.length) {
+    const filtered = !!(_cs.search || _cs.from || _cs.to);
+    box.innerHTML = `<div class="cs-tbl-wrap"><div class="cs-empty">${esc(t(filtered ? 'csEmptyFiltered' : 'csEmpty'))}</div></div>`;
+    _csRenderSelBar(); return;
+  }
+  const pageAllSel = selectable && rows.every(r => _cs.sel.has(String(r._id)));
+  const head = `<tr>${selectable ? `<th class="cs-cb"><input type="checkbox" aria-label="${escHtml(t('csSelectAll'))}" ${pageAllSel ? 'checked' : ''} onclick="_csSelPage(this.checked)"></th>` : ''}
+    <th>${esc(t('csColOrder'))}</th><th>${esc(t('csColDelivered'))}</th><th class="cs-n">${esc(t('csColRemaining'))}</th><th class="cs-n">${esc(t('csColFees'))}</th><th class="cs-n">${esc(t('csColTariff'))}</th><th class="cs-n">${esc(t('csColVariance'))}</th><th class="cs-n">${esc(t('csColNet'))}</th><th>${esc(t('csColStatus'))}</th></tr>`;
+  const body = rows.map(r => {
+    const id = String(r._id), on = _cs.sel.has(id), n = _csRowNums(r);
+    return `<tr class="is-click${on ? ' is-sel' : ''}" onclick="openCsStatement('${id}')">
+      ${selectable ? `<td class="cs-cb" onclick="event.stopPropagation()"><input type="checkbox" ${on ? 'checked' : ''} onclick="_csToggle('${id}', this.checked)" aria-label="#${escHtml(r.ref || '')}"></td>` : ''}
+      <td><span class="cs-ref">#${esc(r.ref || '')}</span><span class="cs-sub cs-client">${esc(r.client || '')}</span></td>
+      <td>${esc(_csDate(r.carrierSettlement?.deliveredAt || r.deliveredAt))}</td>
+      <td class="cs-n">${_csN(r.carrierSettlement?.remaining ?? r.remaining)}</td>
+      <td class="cs-n">${n.fees}</td>
+      <td class="cs-n">${_csN(r.shipCost)}</td>
+      <td class="cs-n">${n.variance}</td>
+      <td class="cs-n">${n.net}</td>
+      <td>${_csStatusPill(r.carrierSettlement)}</td>
+    </tr>`;
+  }).join('');
+  const cards = rows.map(r => {
+    const id = String(r._id), on = _cs.sel.has(id), n = _csRowNums(r);
+    return `<div class="cs-card${on ? ' is-sel' : ''}" onclick="${selectable ? `_csToggle('${id}', !_cs.sel.has('${id}'))` : `openCsStatement('${id}')`}">
+      <div class="cs-card-r"><span>${selectable ? `<input type="checkbox" ${on ? 'checked' : ''} onclick="event.stopPropagation();_csToggle('${id}', this.checked)"> ` : ''}<span class="cs-ref">#${esc(r.ref || '')}</span></span>${_csStatusPill(r.carrierSettlement)}</div>
+      <div class="cs-card-r"><span>${esc(t('csColFees'))} ${n.fees} · ${esc(t('csColTariff'))} ${_csN(r.shipCost)}</span><span>${n.net !== '—' ? n.net : _csN(r.remaining)}</span></div>
+    </div>`;
+  }).join('');
+  box.innerHTML = `<div id="cs-selbar-slot"></div><div class="cs-tbl-wrap cs-has-cards"><table class="cs-tbl"><thead>${head}</thead><tbody>${body}</tbody></table></div><div class="cs-cards">${cards}</div><div id="cs-pager"></div>`;
+  try { renderPagination('cs-pager', _cs.total, _cs.page, _cs.limit, 'csGoPage'); } catch (_) {}
+  _csRenderSelBar();
+}
+
+function _csToggle(id, on) {
+  const r = _cs.rows.find(x => String(x._id) === id);
+  if (on) _cs.sel.set(id, Number(r?.remaining) || 0); else _cs.sel.delete(id);
+  _csRenderList();
+}
+function _csSelPage(on) { _cs.rows.forEach(r => { const id = String(r._id); if (on) _cs.sel.set(id, Number(r.remaining) || 0); else _cs.sel.delete(id); }); _csRenderList(); }
+function _csClearSel() { _cs.sel.clear(); _csRenderList(); }
+function _csRenderSelBar() {
+  const slot = qs('#cs-selbar-slot'); if (!slot) return;
+  const n = _cs.sel.size;
+  if (!n || !_csCan('run')) { slot.innerHTML = ''; return; }
+  const sum = [..._cs.sel.values()].reduce((s, v) => s + v, 0);
+  slot.innerHTML = `<div class="cs-sel"><span><b>${t('csSelected', { n: fmtN(n), v: _csN(sum) })}</b></span><span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-outline btn-sm" onclick="_csClearSel()">${esc(t('csClearSel'))}</button><button class="btn btn-primary btn-sm" onclick="openCsSettlePreview([..._cs.sel.keys()])">${esc(t('csFetchSettle', { n: fmtN(n) }))}</button></span></div>`;
+}
+
+// ── Preview → settle ────────────────────────────────────────────────────────────────────────
+let _csPv = null;
+async function openCsSettlePreview(ids) {
+  if (!_csCan('run')) { toast(t('csNoPermRun'), true); return; }
+  ids = [...new Set((ids || []).map(String))].slice(0, 100);
+  if (!ids.length) return;
+  _csPv = { ids, data: null, vault: settings?.autoSettleVaultMethod || 'تحويل بنكي', busy: false, result: null };
+  openModal(`<div class="cs-dlg-h"><div><h3>${esc(t('csPvTitle', { n: fmtN(ids.length) }))}</h3><span class="cs-sub" id="cs-pv-sub">${esc(t('csPvFetching'))}</span></div><button class="modal-x" onclick="closeModal()" aria-label="${escHtml(t('close'))}">&times;</button></div>
+    <div class="cs-dlg-b" id="cs-pv-body">${_csSkel(6)}</div>
+    <div class="cs-dlg-f" id="cs-pv-foot"><button class="btn" onclick="closeModal()">${esc(t('cancel'))}</button></div>`,
+    'width:min(96vw,800px);max-width:800px;padding:0;overflow:hidden', { lockDismiss: true });
+  try {
+    _csPv.data = await api('/carrier-settlements/preview', { method: 'POST', body: JSON.stringify({ txIds: ids }) });
+    if (_csPv.data.defaultVault) _csPv.vault = _csPv.data.defaultVault;
+  } catch (e) {
+    const b = qs('#cs-pv-body'); if (b) b.innerHTML = `<div class="cs-callout is-bad">${esc(t('csPvLoadFail'))} — ${esc(e.message || '')}</div>`;
+    return;
+  }
+  _csRenderPreview();
+}
+function _csPvPick(v) { if (!_csPv || _csPv.busy) return; _csPv.vault = v; _csMarkVault('#cs-pv-body', v); _csPvBal(); }
+function _csPvBal() {
+  const el = qs('#cs-pv-bal'); const d = _csPv?.data; if (!el || !d?.balances) return;
+  const now = Number(d.balances[_csPv.vault]) || 0;
+  el.innerHTML = `<div class="cs-ln"><span class="cs-sub" style="font-size:.8rem">${esc(t('csPvBalNow'))}</span>${_csN(now)}</div><div class="cs-ln"><span class="cs-sub" style="font-size:.8rem">${esc(t('csPvBalAfter'))}</span>${_csN(now + (d.totals.net || 0))}</div>`;
+}
+function _csOutcomePill(r) {
+  if (r.outcome === 'settle') return r.varianceKind === 'over-small' ? `<span class="cs-pill is-warn">${esc(t('csOut_settleOver'))}</span>` : `<span class="cs-pill is-ok">${esc(t('csOut_settle'))}</span>`;
+  if (r.outcome === 'review') return `<span class="cs-pill is-bad" title="${escHtml(_csReasonLabel(r.reason))}">${esc(t('csOut_review'))}</span>`;
+  return `<span class="cs-pill is-neu" title="${escHtml(r.error || '')}">${esc(_csReasonLabel(r.reason))}</span>`;
+}
+function _csRenderPreview() {
+  const d = _csPv.data, rows = d.rows || [], tot = d.totals || {};
+  const sub = qs('#cs-pv-sub'); if (sub) sub.textContent = t('csPvFetched', { n: fmtN(rows.length) });
+  const toSend = rows.filter(r => r.outcome === 'settle' || r.outcome === 'review');
+  const body = `
+    <div class="cs-sec"><div class="cs-sec-l">${esc(t('csPvVault'))}</div>${_csVaultCardsHtml(_csPv.vault, '_csPvPick')}
+      <div class="cs-sub" style="margin-top:6px">${esc(t('csPvVaultAll'))}</div><div id="cs-pv-bal" style="margin-top:6px"></div></div>
+    <div class="cs-tbl-wrap"><table class="cs-tbl" style="min-width:600px"><thead><tr><th>${esc(t('csColOrder'))}</th><th class="cs-n">${esc(t('csColRemaining'))}</th><th class="cs-n">${esc(t('csColFees'))}</th><th class="cs-n">${esc(t('csColVariance'))}</th><th class="cs-n">${esc(t('csColNet'))}</th><th>${esc(t('csPvColOutcome'))}</th></tr></thead>
+      <tbody>${rows.map(r => `<tr>
+        <td><span class="cs-ref">#${esc(r.ref || '')}</span><span class="cs-sub cs-client">${esc(r.client || '')}</span></td>
+        <td class="cs-n">${_csN(r.remaining)}</td>
+        <td class="cs-n">${r.fees != null ? _csN(r.fees) : '—'}</td>
+        <td class="cs-n">${r.fees != null && r.billedShip > 0 ? `<span class="${r.variance > 0 ? 'cs-up' : r.variance < 0 ? 'cs-down' : ''}">${_csS(r.variance)}</span>` : '—'}</td>
+        <td class="cs-n">${r.outcome === 'settle' ? _csS(r.net) : '—'}</td>
+        <td>${_csOutcomePill(r)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="cs-ln is-tot is-hero"><span>${esc(t('csColNet'))} · ${esc(_payMethodLabel ? _payMethodLabel(_csPv.vault) : _csPv.vault)}</span>${_csS(tot.net)}</div>
+    ${tot.review ? `<div class="cs-callout">${esc(t('csPvReviewNote', { n: fmtN(tot.review) }))}</div>` : ''}
+    <div class="cs-callout">${esc(t('csPvWarn'))}</div>`;
+  qs('#cs-pv-body').innerHTML = body;
+  _csPvBal();
+  qs('#cs-pv-foot').innerHTML = `<button class="btn" onclick="closeModal()">${esc(t('cancel'))}</button>` + (tot.settle
+    ? `<button class="btn btn-primary" id="cs-pv-go" onclick="_csPvConfirm()">${t('csPvConfirm', { n: fmtN(tot.settle), v: _csS(tot.net) })}</button>`
+    : toSend.length ? `<button class="btn btn-primary" id="cs-pv-go" onclick="_csPvConfirm()">${esc(t('csOut_review'))} (${fmtN(toSend.length)})</button>`
+      : `<span class="cs-sub" style="align-self:center">${esc(t('csPvNothing'))}</span>`);
+}
+async function _csPvConfirm() {
+  if (!_csPv || _csPv.busy) return;
+  const ids = (_csPv.data.rows || []).filter(r => r.outcome === 'settle' || r.outcome === 'review').map(r => r.txId);
+  if (!ids.length) return;
+  _csPv.busy = true;
+  const btn = qs('#cs-pv-go'); if (btn) { btn.disabled = true; btn.classList.add('is-busy'); }
+  try {
+    const res = await api('/carrier-settlements/settle', { method: 'POST', body: JSON.stringify({ txIds: ids, vaultMethod: _csPv.vault }) });
+    _csPv.result = res;
+    (res.results || []).forEach(r => { if (r.outcome === 'settled' || r.outcome === 'review') _cs.sel.delete(String(r.txId)); });
+    const fails = (res.results || []).filter(r => r.outcome === 'failed' || r.outcome === 'skipped' || r.outcome === 'locked');
+    qs('#cs-pv-body').innerHTML = `<div class="cs-sec"><div class="cs-sec-l">${esc(t('csResTitle'))}</div>
+      <div class="cs-ln"><span>${esc(t('csResLine', { s: fmtN(res.settled), r: fmtN(res.review), k: fmtN(res.skipped), f: fmtN(res.failed) }))}</span></div>
+      <div class="cs-ln is-tot is-hero"><span>${esc(t('csResNet', { m: _payMethodLabel(res.vaultMethod) }))}</span>${_csS(res.net)}</div></div>
+      ${fails.length ? `<div class="cs-sec">${fails.map(f => `<div class="cs-ln"><span class="cs-ref">#${esc(f.ref || '')}</span><span class="cs-sub">${esc(_csReasonLabel(f.reason))}${f.error ? ' — ' + esc(f.error) : ''}</span></div>`).join('')}<div class="cs-sub" style="margin-top:6px">${esc(t('csResFailedKept'))}</div></div>` : ''}`;
+    qs('#cs-pv-foot').innerHTML = `<button class="btn btn-primary" onclick="closeModal()">${esc(t('csClose'))}</button>`;
+    toast(t('csDone'));
+    if (currentPage === 'vault' && _vview === 'settle') loadCsTab(true);
+  } catch (e) {
+    toast(e.message || 'error', true);
+    if (btn) { btn.disabled = false; btn.classList.remove('is-busy'); }
+  } finally { if (_csPv) _csPv.busy = false; }
+}
+
+// ── Statement panel ─────────────────────────────────────────────────────────────────────────
+function _csFindRow(id) {
+  id = String(id);
+  return _cs.rows.find(r => String(r._id) === id) || _cs.review.find(r => String(r._id) === id)
+    || (transactions || []).find(r => String(r._id) === id) || null;
+}
+function _csRoleLabel(r) { const k = 'csRole_' + (r || ''); const v = t(k); return v === k ? t('csRole_other') : v; }
+
+function _csStatementHtml(tx) {
+  const cs = tx.carrierSettlement || {};
+  const st = cs.status || '';
+  const f = cs.fees || {};
+  const hasFees = f.priceAfterVat != null;
+  const deposit = _csR2((Number(tx.total) || 0) - (Number(cs.remaining ?? tx.remaining) || 0));
+  let feesSec = '';
+  if (hasFees) {
+    const pbv = f.priceBeforeVat, sf = f.shippingFee, pav = f.priceAfterVat;
+    const lines = [];
+    if (sf != null) {
+      lines.push(`<div class="cs-ln"><span>${esc(t('csShippingFee'))}</span>${_csN(sf)}</div>`);
+      if (f.sizeEffectCost > 0) lines.push(`<div class="cs-ln is-sub"><span>${esc(t('csSizePart', { s: f.sizeName || '' }))}</span>${_csN(f.sizeEffectCost)}</div>`);
+      if (pbv != null && _csR2(pbv - sf) > 0) {
+        const extra = _csR2(pbv - sf);
+        lines.push(`<div class="cs-ln"><span>${esc(f.insurance != null && Math.abs(extra - f.insurance) < 0.01 ? t('csInsurance') : t('csExtraFees'))}</span>${_csN(extra)}</div>`);
+      }
+      if (pbv != null && _csR2(pav - pbv) > 0) lines.push(`<div class="cs-ln"><span>${esc(t('csVat', { p: fmtN(_csR2((f.vatRate || 0) * 100)) }))}</span>${_csN(_csR2(pav - pbv))}</div>`);
+    }
+    lines.push(`<div class="cs-ln is-tot"><span>${esc(t('csTotal'))}</span>${_csN(pav)}</div>`);
+    feesSec = `<div class="cs-sec"><div class="cs-sec-l">${esc(t('csSecFees'))}</div>${lines.join('')}</div>`;
+    const v = _csR2(cs.variance);
+    const cmpLine = !(cs.billedShip > 0) ? `<div class="cs-ln is-tot"><span>${esc(t('csNotBilled'))}</span></div>`
+      : Math.abs(v) < 1 ? `<div class="cs-ln is-tot"><span>${esc(t('csMatch'))}</span>${_csS(v)}</div>`
+      : v > 0 ? `<div class="cs-ln is-tot cs-up"><span>${esc(t('csOver'))}</span>${_csN(v)}</div>`
+      : `<div class="cs-ln is-tot cs-down"><span>${esc(t('csSaving'))}</span>${_csN(-v)}</div>`;
+    feesSec += `<div class="cs-sec"><div class="cs-sec-l">${esc(t('csSecCompare'))}</div>
+      <div class="cs-ln"><span>${esc(t('csTariffOnInvoice'))}</span>${_csN(cs.billedShip)}</div>
+      <div class="cs-ln"><span>${esc(t('csBostaTook'))}</span>${_csN(pav)}</div>${cmpLine}</div>`;
+    if ((cs.priceChanges || []).length) {
+      feesSec += `<div class="cs-sec"><div class="cs-sec-l">${esc(t('csSecWhy'))}</div>${cs.priceChanges.map(c => `<div class="cs-chg"><span class="cs-d">${esc(_csDateTime(c.at))}</span><span>${esc(c.sizeBefore && c.sizeAfter && c.sizeBefore !== c.sizeAfter ? t('csChgSize', { r: _csRoleLabel(c.byRole), a: c.sizeBefore, b: c.sizeAfter }) : t('csChgPrice', { r: _csRoleLabel(c.byRole) }))}</span><span>${c.priceBefore != null ? _csN(c.priceBefore) + ' → ' : ''}${_csN(c.priceAfter)}</span></div>`).join('')}</div>`;
+    }
+  }
+  const head = st === 'settled'
+    ? (cs.trigger === 'auto' ? t('csSettledAuto', { d: _csDateTime(cs.settledAt) }) : t('csSettledBy', { b: cs.settledBy || '—', d: _csDateTime(cs.settledAt) }))
+    : st === 'reversed' ? t('csReversedBy', { b: cs.reversedBy || '—', d: _csDateTime(cs.reversedAt) }) : '';
+  let booked = '';
+  if (st === 'settled') {
+    const m = _payMethodLabel ? _payMethodLabel(cs.vaultMethod) : cs.vaultMethod;
+    booked = `<div class="cs-sec"><div class="cs-sec-l">${esc(t('csSecBooked'))}</div>
+      ${cs.collectPaymentId ? `<div class="cs-ln"><span>${esc(t('csBookedCollect', { v: m }))}</span>${_csS(cs.collectNet)}</div>` : ''}
+      ${cs.shortfall > 0 ? `<div class="cs-ln"><span>${esc(t('csBookedOutflow', { v: m }))}</span>${_csS(-cs.shortfall)}</div>` : ''}
+      <div class="cs-ln is-tot is-hero"><span>${esc(t('csVaultEffect'))}</span>${_csS(cs.net)}</div></div>`;
+  } else if ((st === 'review' || st === 'disputed') && hasFees) {
+    booked = `<div class="cs-sec"><div class="cs-ln is-hero"><span>${esc(t('csWillBook'))}</span>${_csS(cs.net)}</div></div>`;
+  }
+  const notes = [
+    st === 'review' ? `<div class="cs-callout is-bad">${esc(_csReasonLabel(cs.reason))}${cs.error ? ' — ' + esc(cs.error) : ''}</div>` : '',
+    st === 'disputed' && cs.disputeNote ? `<div class="cs-callout">${esc(t('csDisputeNote', { n: cs.disputeNote }))}</div>` : '',
+    st === 'pending' ? `<div class="cs-callout">${esc(t('csPendingNote'))}</div>` : '',
+    (!st || st === 'skipped' || st === 'reversed') ? `<div class="cs-callout">${esc(t('csNotSettledYet'))}${st === 'skipped' && cs.reason ? ' (' + esc(_csReasonLabel(cs.reason)) + ')' : ''}</div>` : '',
+  ].join('');
+  const fromCustomer = `<div class="cs-sec"><div class="cs-sec-l">${esc(t('csSecCustomer'))}</div>
+    <div class="cs-ln"><span>${esc(t('csOrderTotal'))}</span>${_csN(tx.total)}</div>
+    ${deposit > 0 ? `<div class="cs-ln is-sub"><span>${esc(t('csDepositPaid'))}</span>${_csS(-deposit)}</div>` : ''}
+    <div class="cs-ln is-tot"><span>${esc(t('csCollectedByBosta'))}</span>${_csN(cs.carrierCod != null ? cs.carrierCod : (cs.remaining ?? tx.remaining))}</div></div>`;
+  return { head, body: fromCustomer + feesSec + booked + notes };
+}
+
+function openCsStatement(id) {
+  const tx = _csFindRow(id); if (!tx) return;
+  const cs = tx.carrierSettlement || {};
+  const st = cs.status || '';
+  const s = _csStatementHtml(tx);
+  const acts = [`<button class="btn" onclick="closeModal();openOrderView('${tx._id}')">${esc(t('csOpenOrder'))}</button>`];
+  if (st === 'settled' && _csCan('reverse')) acts.push(`<button class="btn btn-outline" onclick="csReverse('${tx._id}')">${esc(t('csReverse'))}</button>`);
+  if ((st === 'review' || st === 'disputed') && _csCan('approve')) {
+    if (st === 'review' && cs.reason === 'variance-over-limit') acts.push(`<button class="btn btn-outline" onclick="openCsDispute('${tx._id}')">${esc(t('csDispute'))}</button>`);
+    acts.push(`<button class="btn btn-primary" onclick="openCsApprove('${tx._id}')">${esc(t('csApproveShort'))}</button>`);
+  }
+  if ((!st || st === 'skipped' || st === 'reversed') && _csCan('run') && (tx.bostaStatus === undefined || tx.bostaStatus === 'DELIVERED'))
+    acts.push(`<button class="btn btn-primary" onclick="closeModal();openCsSettlePreview(['${tx._id}'])">${esc(t('csFetchSettleOne'))}</button>`);
+  openModal(`<div class="cs-dlg-h"><div><span class="cs-sub">${esc(t('csStmtTitle'))}</span><h3><span class="cs-ref">#${esc(tx.ref || '')}</span>${cs.trackingNumber ? ` · <span class="cs-num">${esc(cs.trackingNumber)}</span>` : ''}</h3>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px">${_csStatusPill(cs)}${s.head ? `<span class="cs-sub">${esc(s.head)}</span>` : ''}</div></div>
+      <button class="modal-x" onclick="closeModal()" aria-label="${escHtml(t('close'))}">&times;</button></div>
+    <div class="cs-dlg-b">${s.body}</div>
+    <div class="cs-dlg-f">${acts.join('')}</div>`, 'width:min(96vw,500px);max-width:500px;padding:0;overflow:hidden');
+}
+
+// ── Review decisions ────────────────────────────────────────────────────────────────────────
+let _csAp = null;
+function openCsApprove(id) {
+  if (!_csCan('approve')) return;
+  const tx = _csFindRow(id); if (!tx) return;
+  const cs = tx.carrierSettlement || {};
+  _csAp = { id: String(id), vault: cs.vaultMethod || settings?.autoSettleVaultMethod || 'تحويل بنكي', busy: false };
+  const why = cs.reason === 'variance-over-limit'
+    ? t('csApproveWhy', { f: _csMoney(cs.fees?.priceAfterVat), b: _csMoney(cs.billedShip), v: _csMoney(cs.variance), l: fmtN(cs.limitUsed) })
+    : _csReasonLabel(cs.reason);
+  openModal(`<div class="cs-dlg-h"><h3>${esc(t('csApproveTitle', { r: tx.ref || '' }))}</h3><button class="modal-x" onclick="closeModal()" aria-label="${escHtml(t('close'))}">&times;</button></div>
+    <div class="cs-dlg-b" id="cs-ap-body">
+      <div class="cs-callout${cs.reason === 'variance-over-limit' ? '' : ' is-bad'}">${esc(why)}</div>
+      <div class="cs-sec"><div class="cs-sec-l">${esc(t('csPvVault'))}</div>${_csVaultCardsHtml(_csAp.vault, '_csApPick')}</div>
+      <div class="cs-ln is-hero"><span>${esc(t('csWillBook'))}</span>${_csS(cs.net)}</div>
+      <div class="cs-sub">${esc(t('csApproveNote'))}</div>
+    </div>
+    <div class="cs-dlg-f"><button class="btn" onclick="closeModal()">${esc(t('cancel'))}</button><button class="btn btn-primary" id="cs-ap-go" onclick="_csApConfirm()">${t('csApprove', { v: _csS(cs.net) })}</button></div>`,
+    'width:min(96vw,480px);max-width:480px;padding:0;overflow:hidden', { lockDismiss: true });
+}
+function _csApPick(v) { if (_csAp) { _csAp.vault = v; _csMarkVault('#cs-ap-body', v); } }
+async function _csApConfirm() {
+  if (!_csAp || _csAp.busy) return;
+  _csAp.busy = true;
+  const btn = qs('#cs-ap-go'); if (btn) btn.disabled = true;
+  try {
+    const r = await api(`/carrier-settlements/${_csAp.id}/approve`, { method: 'POST', body: JSON.stringify({ vaultMethod: _csAp.vault }) });
+    closeModal();
+    if (r.outcome === 'settled') toast(t('csApproved'));
+    else toast(t('csStillReview', { r: _csReasonLabel(r.reason) }), true);
+    if (currentPage === 'vault' && _vview === 'settle') loadCsTab(true);
+  } catch (e) { toast(e.message || 'error', true); if (btn) btn.disabled = false; }
+  finally { if (_csAp) _csAp.busy = false; }
+}
+function openCsDispute(id) {
+  if (!_csCan('approve')) return;
+  const tx = _csFindRow(id); if (!tx) return;
+  openModal(`<div class="cs-dlg-h"><h3>${esc(t('csDisputeTitle', { r: tx.ref || '' }))}</h3><button class="modal-x" onclick="closeModal()" aria-label="${escHtml(t('close'))}">&times;</button></div>
+    <div class="cs-dlg-b"><div class="cs-field"><textarea id="cs-dispute-note" rows="3" placeholder="${escHtml(t('csDisputePh'))}"></textarea><div class="cs-sub" id="cs-dispute-err" style="color:var(--red)"></div></div></div>
+    <div class="cs-dlg-f"><button class="btn" onclick="closeModal()">${esc(t('cancel'))}</button><button class="btn btn-primary" id="cs-dp-go" onclick="_csDisputeSave('${tx._id}')">${esc(t('csDisputeSave'))}</button></div>`,
+    'width:min(96vw,460px);max-width:460px;padding:0;overflow:hidden', { lockDismiss: true });
+  setTimeout(() => qs('#cs-dispute-note')?.focus(), 60);
+}
+async function _csDisputeSave(id) {
+  const note = (qs('#cs-dispute-note')?.value || '').trim();
+  if (!note) { qs('#cs-dispute-err').textContent = t('csDisputeNeed'); return; }
+  const btn = qs('#cs-dp-go'); if (btn) btn.disabled = true;
+  try {
+    await api(`/carrier-settlements/${id}/dispute`, { method: 'POST', body: JSON.stringify({ note }) });
+    closeModal(); toast(t('csDisputed'));
+    if (currentPage === 'vault' && _vview === 'settle') loadCsTab(true);
+  } catch (e) { toast(e.message || 'error', true); if (btn) btn.disabled = false; }
+}
+async function csReverse(id) {
+  if (!_csCan('reverse')) return;
+  const tx = _csFindRow(id); if (!tx) return;
+  const cs = tx.carrierSettlement || {};
+  const ok = await showConfirm(t('csReverseQ', { r: tx.ref || '' }), {
+    danger: true, confirmLabel: t('csReverse'),
+    rows: [[t('csVaultEffect'), _csMoney(-(Number(cs.net) || 0))], [t('csPayVault'), _payMethodLabel(cs.vaultMethod)], ['', t('csReverseRow2')]],
+  });
+  if (!ok) return;
+  try {
+    await api(`/carrier-settlements/${id}/reverse`, { method: 'POST' });
+    closeModal(); toast(t('csReversed'));
+    if (currentPage === 'vault' && _vview === 'settle') loadCsTab(true);
+  } catch (e) { toast(e.message || 'error', true); }
+}
+
+// ── «كشف حساب بوسطة» ───────────────────────────────────────────────────────────────────────
+async function loadCsStatement() {
+  const el = qs('#vault-tab-statement'); if (!el) return;
+  if (!_cst.from) { _cst.from = _csMonthStart(); _cst.to = _csToday(); }
+  if (!_cst.data) el.innerHTML = `<div class="cs-kpis">${'<div class="cs-kpi"><div class="cs-skel"></div></div>'.repeat(4)}</div>${_csSkel(6)}`;
+  try {
+    _cst.data = await api(`/carrier-settlements/statement?from=${_cst.from}&to=${_cst.to}`);
+    _cst.failed = false;
+  } catch (e) { _cst.failed = true; _cst.err = e.message || ''; }
+  renderCsStatement();
+}
+function _csLineLabel(l) {
+  switch (l.kind) {
+    case 'collection': return `${esc(t('csLed_collection'))}${l.party ? ` · ${esc(l.party)}` : ''}`;
+    case 'fees': return `${esc(t('csLed_fees'))}${l.note ? ` · ${esc(l.note)}` : ''}`;
+    case 'return-fee': return `${esc(t('csLed_returnFee'))}${l.party ? ` · ${esc(l.party)}` : ''}`;
+    case 'payout': return `${esc(t('csLed_payout', { v: _payMethodLabel ? _payMethodLabel(l.note) : l.note }))}<span class="cs-sub">${esc(t('csLed_payoutNote'))}</span>`;
+    case 'transfer-fee': return `${esc(t('csLed_transferFee'))}<span class="cs-sub">${esc(t('csLed_transferFeeNote'))}</span>`;
+    case 'adjustment': return esc(t('csLed_adjustment'));
+    default: return esc(l.kind);
+  }
+}
+function renderCsStatement() {
+  const el = qs('#vault-tab-statement'); if (!el) return;
+  if (_cst.failed) {
+    el.innerHTML = `<div class="cs-empty"><div style="font-weight:600;color:var(--text)">${esc(t('csLoadFail'))}</div><div style="margin:4px 0 10px">${esc(_cst.err)}</div><button class="btn btn-outline btn-sm" onclick="loadCsStatement()">${esc(t('csRetry'))}</button></div>`;
+    return;
+  }
+  const d = _cst.data || { lines: [], totals: {}, balance: 0, opening: 0 };
+  const kpis = `<div class="cs-kpis">
+    <div class="cs-kpi is-lead"><span class="cs-kpi-k">${esc(t('csLedNow'))}</span><span class="cs-kpi-v">${_csMoney(d.balance)}</span><div class="cs-kpi-s">${esc(t('csKpiBalSub'))}</div></div>
+    <div class="cs-kpi"><span class="cs-kpi-k">${esc(t('csLedIn'))}</span><span class="cs-kpi-v">${_csMoney(d.totals.in)}</span></div>
+    <div class="cs-kpi"><span class="cs-kpi-k">${esc(t('csLedOut'))}</span><span class="cs-kpi-v">${_csMoney(d.totals.out)}</span></div>
+    <div class="cs-kpi"><span class="cs-kpi-k">${esc(t('csLedUnbooked'))}</span><span class="cs-kpi-v">${_csMoney(d.unbookedReturnFees)}</span><div class="cs-kpi-s">${esc(t('csLedUnbookedSub'))}</div></div>
+  </div>`;
+  const bar = `<div class="cs-bar"><input type="date" id="cst-from" value="${escHtml(_cst.from)}" onchange="_cstDates()" aria-label="from"><input type="date" id="cst-to" value="${escHtml(_cst.to)}" onchange="_cstDates()" aria-label="to"><span style="flex:1"></span>${_csCan('approve') ? `<button class="btn btn-primary btn-sm" onclick="openCsPayout()">${esc(t('csLedRecord'))}</button>` : ''}</div>`;
+  const lines = d.lines || [];
+  const rows = lines.map(l => {
+    const ref = l.txId ? `<a href="javascript:void(0)" class="cs-ref" onclick="openOrderView('${l.txId}')">#${esc(l.ref || '')}</a>`
+      : `<span class="cs-num">${esc(l.ref || '')}</span>${l.kind === 'payout' && isAdmin() && l.payoutId ? ` <button class="btn btn-outline btn-sm" style="padding:1px 7px;font-size:.7rem" onclick="csDeletePayout('${l.payoutId}','${escHtml(l.ref)}')">${esc(t('csLedDelete'))}</button>` : ''}`;
+    return `<tr class="${l.kind === 'payout' || l.kind === 'transfer-fee' ? 'is-payout' : ''}">
+      <td>${esc(_csDate(l.at || l.date))}</td><td>${_csLineLabel(l)}</td><td>${ref}</td>
+      <td class="cs-n">${l.in ? _csN(l.in) : ''}</td><td class="cs-n">${l.out ? _csN(l.out) : ''}</td><td class="cs-n cs-bal">${_csN(l.balance)}</td></tr>`;
+  }).join('');
+  el.innerHTML = `${kpis}${bar}<div class="cs-tbl-wrap"><table class="cs-tbl cs-led"><thead><tr><th>${esc(t('csLedColDate'))}</th><th>${esc(t('csLedColDesc'))}</th><th>${esc(t('csLedColRef'))}</th><th class="cs-n">${esc(t('csLedColIn'))}</th><th class="cs-n">${esc(t('csLedColOut'))}</th><th class="cs-n">${esc(t('csLedColBal'))}</th></tr></thead>
+    <tbody><tr><td></td><td colspan="4"><b>${esc(t('csLedOpening'))}</b></td><td class="cs-n cs-bal">${_csN(d.opening)}</td></tr>
+    ${rows || `<tr><td colspan="6"><div class="cs-empty">${esc(t('csLedEmpty'))}</div></td></tr>`}
+    ${lines.length ? `<tr><td></td><td colspan="2"><b>${esc(t('csLedTotals'))}</b></td><td class="cs-n"><b>${_csN(d.totals.in)}</b></td><td class="cs-n"><b>${_csN(d.totals.out)}</b></td><td></td></tr>` : ''}
+    </tbody></table></div>`;
+}
+function _cstDates() { _cst.from = qs('#cst-from')?.value || ''; _cst.to = qs('#cst-to')?.value || ''; loadCsStatement(); }
+async function csDeletePayout(id, ref) {
+  const ok = await showConfirm(t('csLedDeleteQ', { r: ref }), { danger: true, confirmLabel: t('csLedDelete'), rows: [['', t('csLedDeleteRow')]] });
+  if (!ok) return;
+  try { await api(`/carrier-settlements/payouts/${id}`, { method: 'DELETE' }); loadCsStatement(); } catch (e) { toast(e.message || 'error', true); }
+}
+
+let _csPay = null;
+async function openCsPayout() {
+  if (!_csCan('approve')) return;
+  _csPay = { vault: settings?.autoSettleVaultMethod || 'تحويل بنكي', pv: null, busy: false };
+  const fee = Number(settings?.carrierTransferFee ?? 25);
+  openModal(`<div class="cs-dlg-h"><h3>${esc(t('csPayTitle'))}</h3><button class="modal-x" onclick="closeModal()" aria-label="${escHtml(t('close'))}">&times;</button></div>
+    <div class="cs-dlg-b" id="cs-pay-body">
+      <div class="cs-grid2">
+        <div class="cs-field"><label for="cs-pay-date">${esc(t('csPayDate'))}</label><input type="date" id="cs-pay-date" value="${_csToday()}" onchange="_csPayPreview()"></div>
+        <div class="cs-field"><label for="cs-pay-amount">${esc(t('csPayAmount'))}</label><input type="number" id="cs-pay-amount" min="0" step="0.01" inputmode="decimal" oninput="_csPaySync()"></div>
+        <div class="cs-field"><label for="cs-pay-fee">${esc(t('csPayFee'))}</label><input type="number" id="cs-pay-fee" min="0" step="0.01" value="${fee}" inputmode="decimal" oninput="_csPaySync()"></div>
+        <div class="cs-field"><label for="cs-pay-ref">${esc(t('csPayRef'))}</label><input type="text" id="cs-pay-ref"></div>
+      </div>
+      <div class="cs-sec"><div class="cs-sec-l">${esc(t('csPayVault'))}</div>${_csVaultCardsHtml(_csPay.vault, '_csPayPick')}</div>
+      <div class="cs-sec" id="cs-pay-calc">${_csSkel(2)}</div>
+      <div class="cs-field"><label for="cs-pay-note">${esc(t('csPayNote'))}</label><input type="text" id="cs-pay-note"></div>
+      <div class="cs-sub">${esc(t('csPayNotIncome'))}</div>
+    </div>
+    <div class="cs-dlg-f"><button class="btn" onclick="closeModal()">${esc(t('cancel'))}</button><button class="btn btn-primary" id="cs-pay-go" onclick="_csPaySave()">${esc(t('csPaySave'))}</button></div>`,
+    'width:min(96vw,520px);max-width:520px;padding:0;overflow:hidden', { lockDismiss: true });
+  _csPayPreview();
+}
+function _csPayPick(v) { if (_csPay) { _csPay.vault = v; _csMarkVault('#cs-pay-body', v); } }
+async function _csPayPreview() {
+  const d = qs('#cs-pay-date')?.value; if (!d || !_csPay) return;
+  try { _csPay.pv = await api('/carrier-settlements/payouts/preview?date=' + d); } catch (e) { _csPay.pv = null; const c = qs('#cs-pay-calc'); if (c) c.innerHTML = `<div class="cs-callout is-bad">${esc(e.message || '')}</div>`; return; }
+  _csPaySync();
+}
+function _csPaySync() {
+  const c = qs('#cs-pay-calc'); if (!c || !_csPay?.pv) return;
+  const amount = Number(qs('#cs-pay-amount')?.value) || 0;
+  const fee = Number(qs('#cs-pay-fee')?.value) || 0;
+  const pv = _csPay.pv;
+  const diff = _csR2(pv.expected - amount - fee);
+  const was = qs('#cs-pay-bookdiff')?.checked;
+  c.innerHTML = `<div class="cs-ln"><span>${esc(t('csPayExpected'))}</span>${_csN(pv.expected)}</div>
+    <div class="cs-ln"><span>${esc(t('csPayAmount'))} + ${esc(t('csPayFee'))}</span>${_csN(amount + fee)}</div>
+    <div class="cs-ln is-tot ${Math.abs(diff) < 0.01 ? 'cs-down' : 'cs-up'}"><span>${esc(Math.abs(diff) < 0.01 ? t('csPayReconciled') : t('csPayDiff'))}</span>${Math.abs(diff) < 0.01 ? '' : _csS(diff)}</div>
+    ${pv.unbookedReturnFees > 0 ? `<div class="cs-sub" style="margin-top:6px">${esc(t('csPayReturnFees', { v: _csMoney(pv.unbookedReturnFees) }))}</div>` : ''}
+    ${amount > 0 && Math.abs(diff) >= 0.01 ? `<label style="display:flex;gap:8px;align-items:flex-start;margin-top:8px;font-size:.82rem;cursor:pointer"><input type="checkbox" id="cs-pay-bookdiff" style="width:16px;height:16px;flex:none;margin-top:2px" ${was ? 'checked' : ''}><span>${esc(t('csPayBookDiff'))} (${_csS(-diff)})<span class="cs-sub">${esc(t('csPayBookDiffHint'))}</span></span></label>` : ''}`;
+}
+async function _csPaySave() {
+  if (!_csPay || _csPay.busy) return;
+  const amount = Number(qs('#cs-pay-amount')?.value) || 0;
+  if (!(amount > 0)) { toast(t('csPayNeedAmount'), true); qs('#cs-pay-amount')?.focus(); return; }
+  _csPay.busy = true;
+  const btn = qs('#cs-pay-go'); if (btn) btn.disabled = true;
+  try {
+    const p = await api('/carrier-settlements/payouts', { method: 'POST', body: JSON.stringify({
+      date: qs('#cs-pay-date')?.value, amount, fee: Number(qs('#cs-pay-fee')?.value) || 0, vaultMethod: _csPay.vault,
+      bostaRef: qs('#cs-pay-ref')?.value || '', note: qs('#cs-pay-note')?.value || '', bookDifference: !!qs('#cs-pay-bookdiff')?.checked,
+    }) });
+    closeModal(); toast(t('csPaySaved', { r: p.payoutNo || '' }));
+    loadCsStatement();
+  } catch (e) { toast(e.message || 'error', true); if (btn) btn.disabled = false; }
+  finally { if (_csPay) _csPay.busy = false; }
+}
+
+// ── Invoice: live Bosta data (wallet + shipment details) ────────────────────────────────────
+/* Read live from Bosta when an invoice opens (GET /carrier-settlements/:id/bosta-details) — the
+   stored bostaRawResponse is a snapshot from the last sync and lacks the wallet on most orders.
+   Three states, never two: loading ≠ unavailable ≠ failed. */
+Object.assign(TRANSLATIONS, {
+  bwTitle:{ar:'تسوية شركة الشحن',en:'Carrier settlement'},
+  bwNet:{ar:'الصافي في محفظة بوسطة',en:'Net in your Bosta wallet'},
+  bwNetPending:{ar:'الصافي المتوقع في المحفظة',en:'Expected net in the wallet'},
+  bwDeposited:{ar:'نزل في المحفظة',en:'Deposited to wallet'},
+  bwNotDeposited:{ar:'لم تودعه بوسطة في المحفظة بعد',en:'Not deposited to the wallet yet'},
+  bwNextCashout:{ar:'التحويل للبنك',en:'Bank transfer'},
+  bwCollected:{ar:'حصّلت من العميل',en:'Collected from customer'},
+  bwFees:{ar:'مستحقات بوسطة',en:'Bosta fees'},
+  bwShipping:{ar:'الشحن',en:'Shipping'},
+  bwInsurance:{ar:'التأمين',en:'Insurance'},
+  bwInsurancePct:{ar:'التأمين ({p} من قيمة الطلب)',en:'Insurance ({p} of order value)'},
+  bwInsurancePctMin:{ar:'التأمين ({p} · حد أدنى {m})',en:'Insurance ({p} · min {m})'},
+  bwVat:{ar:'ضريبة القيمة المضافة',en:'VAT'},
+  bwNoExtras:{ar:'لا توجد رسوم إضافية',en:'No additional fees'},
+  bwExtra_collection:{ar:'رسوم التحصيل',en:'Collection fee'},
+  bwExtra_cod:{ar:'رسوم الدفع عند الاستلام',en:'COD fee'},
+  bwExtra_pos:{ar:'رسوم الدفع بالكارت',en:'Card payment fee'},
+  bwExtra_expedite:{ar:'رسوم الشحن السريع',en:'Express fee'},
+  bwExtra_openingPackage:{ar:'رسوم فتح الشحنة',en:'Open-package fee'},
+  bwExtra_testingPackage:{ar:'رسوم تجربة المنتج',en:'Try-before-buy fee'},
+  bwExtra_flexShip:{ar:'رسوم الشحن المرن',en:'Flex-ship fee'},
+  bwExtra_fulfillment:{ar:'رسوم التخزين والتجهيز',en:'Fulfillment fee'},
+  bwExtra_escrow:{ar:'رسوم الضمان',en:'Escrow fee'},
+  bwExtra_zeroDiscount:{ar:'رسوم إضافية',en:'Additional fee'},
+  bwDisc_rto:{ar:'خصم المرتجعات',en:'Return discount'},
+  bwDisc_bundle:{ar:'خصم الباقة',en:'Bundle discount'},
+  bwDisc_promotion:{ar:'خصم عرض',en:'Promotion'},
+  bwDisc_credits:{ar:'من رصيد خصومات بوسطة',en:'Paid from Bosta credits'},
+  bwSize:{ar:'حجم الطرد',en:'Package size'},
+  bwTariff:{ar:'التعريفة على الفاتورة',en:'Tariff on the invoice'},
+  bwOver:{ar:'زيادة عن التعريفة',en:'Over the tariff'},
+  bwSaving:{ar:'أقل من التعريفة',en:'Under the tariff'},
+  bwLoading:{ar:'جارٍ جلب البيانات من بوسطة…',en:'Fetching from Bosta…'},
+  bwFail:{ar:'تعذّر جلب البيانات من بوسطة',en:'Could not fetch from Bosta'},
+  bwRetry:{ar:'إعادة المحاولة',en:'Retry'},
+  bwFromLog:{ar:'من سجل الشحنة — يتأكد عند الإيداع في المحفظة',en:'From the shipment log — confirmed once deposited'},
+  bwCompensation:{ar:'تعويض من بوسطة',en:'Bosta compensation'},
+  bsdTitle:{ar:'من بوسطة',en:'From Bosta'},
+  bsdUpdated:{ar:'تحديث {t}',en:'Updated {t}'},
+  bsdRefresh:{ar:'تحديث من بوسطة',en:'Refresh from Bosta'},
+  bsdConfirmed:{ar:'التسليم',en:'Delivery'},
+  bsdConfirmedYes:{ar:'مؤكد',en:'Confirmed'},
+  bsdConfirmedNo:{ar:'غير مؤكد',en:'Not confirmed'},
+  bsdDelayed:{ar:'متأخر',en:'Delayed'},
+  bsdOnTime:{ar:'في الموعد',en:'On time'},
+  bsdAttempts:{ar:'محاولات التوصيل',en:'Delivery attempts'},
+  bsdReturns:{ar:'محاولات الإرجاع',en:'Return attempts'},
+  bsdCalls:{ar:'المكالمات',en:'Calls'},
+  bsdLastCall:{ar:'آخر مكالمة {t}',en:'last {t}'},
+  bsdFirstHub:{ar:'مركز الفرز',en:'Sorting hub'},
+  bsdAssignedHub:{ar:'المركز المسؤول',en:'Delivering hub'},
+  bsdPackage:{ar:'الطرد',en:'Package'},
+  bsdPieces:{ar:'{n} قطعة',en:'{n} pcs'},
+  bsdKg:{ar:'{n} كجم',en:'{n} kg'},
+  bsdOpen:{ar:'السماح بفتح الشحنة',en:'Customer may open'},
+  bsdYes:{ar:'نعم',en:'Yes'},
+  bsdNo:{ar:'لا',en:'No'},
+  bsdAttemptsList:{ar:'محاولات التوصيل',en:'Delivery attempts'},
+  bsdAttemptN:{ar:'المحاولة {n}',en:'Attempt {n}'},
+  bsdReturnN:{ar:'محاولة إرجاع {n}',en:'Return attempt {n}'},
+  bsdSucceeded:{ar:'نجحت',en:'Succeeded'},
+  bsdFailed:{ar:'لم تنجح',en:'Failed'},
+  bsdInProgress:{ar:'جارية',en:'In progress'},
+  bsdToCollect:{ar:'تحصيل {v}',en:'collect {v}'},
+  bsdRescheduled:{ar:'أُعيد جدولتها إلى {t}',en:'rescheduled to {t}'},
+  bsdSizeChanges:{ar:'تغيّرات حجم الشحنة',en:'Package size changes'},
+  bsdNoSizeChanges:{ar:'لا تغييرات في حجم الشحنة',en:'No package size changes'},
+});
+
+const _ivBosta = new Map(); // txId → { state: 'loading'|'ok'|'fail', data, err }
+function _ivLoadBostaDetails(id, fresh) {
+  const tx = (transactions || []).find(t => String(t._id) === String(id));
+  if (!tx || tx.type !== 'مبيعات' || !tx.bostaOrderId) return;
+  const cur = _ivBosta.get(String(id));
+  if (cur && (cur.state === 'loading' || (cur.state === 'ok' && !fresh))) return;
+  _ivBosta.set(String(id), { state: 'loading', data: cur?.data || null });
+  if (fresh) _ivRepaintIfOpen(id);
+  api(`/carrier-settlements/${id}/bosta-details${fresh ? '?fresh=1' : ''}`)
+    .then(d => { _ivBosta.set(String(id), { state: 'ok', data: d }); })
+    .catch(e => { _ivBosta.set(String(id), { state: 'fail', data: cur?.data || null, err: e.message || '' }); })
+    .finally(() => _ivRepaintIfOpen(id));
+}
+function _ivRepaintIfOpen(id) {
+  if (currentPage === 'invoice-view' && String(window._invoiceViewTxId) === String(id)) renderInvoiceViewPage();
+}
+function _bwDT(iso) { if (!iso) return '—'; const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleString(_csLoc(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+function _bwD(iso) { if (!iso) return '—'; const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleDateString(_csLoc(), { weekday: 'long', day: 'numeric', month: 'long' }); }
+function _bwRow(label, valueHtml, cls) { return `<div class="bw-row${cls ? ' ' + cls : ''}"><span>${label}</span>${valueHtml}</div>`; }
+
+// ── Invoice card (both renderers call this) ─────────────────────────────────────────────────
+function csInvoiceCardHtml(tx) {
+  if (!tx || tx.type !== 'مبيعات' || !tx.bostaOrderId) return '';
+  const cs = tx.carrierSettlement;
+  const st = cs && cs.status;
+  const delivered = tx.bostaStatus === 'DELIVERED' && tx.deliverySource !== 'MANUAL';
+  if (!st && !delivered) return '';
+  const live = _ivBosta.get(String(tx._id));
+  const w = live?.data?.wallet || null;
+  const logFees = live?.data?.logFees || null;
+
+  // Hero — the figure the reader came for, large: what reached the wallet.
+  let hero = '';
+  if (w && w.depositedAmount != null) {
+    hero = `<div class="bw-hero"><span class="bw-hero-k">${esc(t('bwNet'))}</span><span class="bw-hero-v">${_csMoney(w.depositedAmount)}</span>
+      <div class="bw-hero-meta"><span>${esc(t('bwDeposited'))} · <b class="cs-num">${esc(_bwDT(w.depositedAt))}</b></span>
+      ${w.nextCashoutDate ? `<span>${esc(t('bwNextCashout'))} · <b>${esc(_bwD(w.nextCashoutDate))}</b></span>` : ''}</div></div>`;
+  } else if (st === 'settled' || st === 'review' || st === 'disputed') {
+    hero = `<div class="bw-hero"><span class="bw-hero-k">${esc(t('bwNetPending'))}</span><span class="bw-hero-v">${_csMoney(cs.net)}</span>
+      <div class="bw-hero-meta"><span>${esc(t('bwNotDeposited'))}</span></div></div>`;
+  }
+
+  // Breakdown — Bosta's own wallet record when present, otherwise the shipment log.
+  let breakdown = '';
+  if (w) {
+    const extras = Object.entries(w.extraFees || {}).filter(([, v]) => v > 0);
+    const discs = Object.entries(w.discounts || {}).filter(([, v]) => v > 0);
+    // The rate is a Latin run inside Arabic prose — isolated, or «0.5%» renders as «%0.5».
+    const _pct = w.insurancePct > 0 ? `<bdi>${Math.round(w.insurancePct * 10000) / 100}%</bdi>` : '';
+    const insLbl = !_pct ? esc(t('bwInsurance')) : w.insuranceMin > 0 ? t('bwInsurancePctMin', { p: _pct, m: `<bdi>${_csMoney(w.insuranceMin)}</bdi>` }) : t('bwInsurancePct', { p: _pct });
+    breakdown = `<div class="bw-sec">
+      ${_bwRow(esc(t('bwCollected')), _csN(w.cod))}
+      ${_bwRow(`<b>${esc(t('bwFees'))}</b>`, `<b>${_csS(-(w.bostaFees || 0))}</b>`, 'is-strong')}
+      ${w.shippingFees != null ? _bwRow(esc(t('bwShipping')), _csN(w.shippingFees), 'is-sub') : ''}
+      ${w.insuranceFees != null ? _bwRow(insLbl, _csN(w.insuranceFees), 'is-sub') : ''}
+      ${extras.map(([k, v]) => _bwRow(esc(t('bwExtra_' + k)), _csN(v), 'is-sub')).join('')}
+      ${w.vat != null ? _bwRow(esc(t('bwVat')), _csN(w.vat), 'is-sub') : ''}
+      ${discs.map(([k, v]) => _bwRow(esc(t('bwDisc_' + k)), `<span class="cs-down">${_csS(-v)}</span>`, 'is-sub')).join('')}
+      ${extras.length ? '' : `<div class="bw-note">${esc(t('bwNoExtras'))}</div>`}
+      ${w.compensation ? _bwRow(esc(t('bwCompensation')), `<span class="cs-down">${_csN(w.compensation.amount ?? w.compensation)}</span>`) : ''}
+    </div>`;
+  } else if (cs?.fees?.priceAfterVat != null || logFees) {
+    const f = cs?.fees?.priceAfterVat != null ? cs.fees : logFees;
+    const pbv = f.priceBeforeVat, sf = f.shippingFee, pav = f.priceAfterVat;
+    breakdown = `<div class="bw-sec">
+      ${cs?.carrierCod != null ? _bwRow(esc(t('bwCollected')), _csN(cs.carrierCod)) : ''}
+      ${_bwRow(`<b>${esc(t('bwFees'))}</b>`, `<b>${_csS(-pav)}</b>`, 'is-strong')}
+      ${sf != null ? _bwRow(esc(t('bwShipping')), _csN(sf), 'is-sub') : ''}
+      ${f.insurance != null ? _bwRow(esc(t('bwInsurance')), _csN(f.insurance), 'is-sub') : ''}
+      ${pbv != null ? _bwRow(esc(t('bwVat')), _csN(_csR2(pav - pbv)), 'is-sub') : ''}
+      <div class="bw-note">${esc(t('bwFromLog'))}</div>
+    </div>`;
+  }
+  const size = w?.size || cs?.fees?.sizeName || logFees?.sizeName || '';
+  const fees = w?.bostaFees ?? cs?.fees?.priceAfterVat ?? logFees?.priceAfterVat ?? null;
+  const billed = Number(tx.shipCost) || 0;
+  const v = fees != null && billed > 0 ? _csR2(fees - billed) : null;
+  const facts = `<div class="bw-sec">
+    ${size ? _bwRow(esc(t('bwSize')), `<b>${esc(size)}</b>`) : ''}
+    ${billed > 0 ? _bwRow(esc(t('bwTariff')), _csN(billed)) : ''}
+    ${v !== null && Math.abs(v) >= 1 ? _bwRow(esc(t(v > 0 ? 'bwOver' : 'bwSaving')), `<span class="${v > 0 ? 'cs-up' : 'cs-down'}">${_csN(Math.abs(v))}</span>`) : ''}
+  </div>`;
+
+  // Settlement status + its actions (unchanged behaviour).
+  let action = '';
+  if (st === 'review' || st === 'disputed') action = `<div class="bw-note">${esc(st === 'disputed' ? (cs.disputeNote || '') : _csReasonLabel(cs.reason))}</div>`;
+  else if (st === 'pending') action = `<div class="bw-note">${esc(t('csPendingNote'))}</div>`;
+  else if (st !== 'settled') {
+    const collected = tx.codCollectionStatus === 'Collected' || (tx.payStatus === 'مكتمل' && (tx.payments || []).some(p => !p.reversed));
+    if (!collected) action = `<div class="bw-note">${esc(t('csNotSettledYet'))}</div>`
+      + (_csCan('run') ? `<button class="btn btn-primary btn-sm" style="margin-top:8px;width:100%" onclick="openCsSettlePreview(['${tx._id}'])">${esc(t('csFetchSettleOne'))}</button>` : '');
+  }
+  const full = st && st !== 'pending' ? `<button class="btn btn-outline btn-sm" style="margin-top:8px;width:100%" onclick="_csOpenFromInvoice('${tx._id}')">${esc(t('csInvFull'))}</button>` : '';
+  const loading = live?.state === 'loading' && !w ? `<div class="bw-note">${esc(t('bwLoading'))}</div>` : '';
+  const failed = live?.state === 'fail' && !w ? `<div class="bw-note">${esc(t('bwFail'))} · <a href="javascript:void(0)" onclick="_ivLoadBostaDetails('${tx._id}', true)">${esc(t('bwRetry'))}</a></div>` : '';
+  return `<div class="inv2-card cs-inv-card"><div class="inv2-card-head"><span class="inv2-head-title"><span>${esc(t('bwTitle'))}</span></span>${_csStatusPill(cs)}</div>
+    <div class="inv2-card-body">${hero}${breakdown}${facts}${loading}${failed}${action}${full}</div></div>`;
+}
+
+/** «من بوسطة» block inside «الشحن والتسليم». */
+function _ivBostaShipHtml(tx) {
+  if (!tx || tx.type !== 'مبيعات' || !tx.bostaOrderId) return '';
+  const live = _ivBosta.get(String(tx._id));
+  const head = (extra) => `<div class="inv2-sec-div"></div><div class="bsd-head"><span>${esc(t('bsdTitle'))}</span>${extra || ''}</div>`;
+  if (!live || (live.state === 'loading' && !live.data)) return head() + `<div class="cs-skel" style="margin:6px 0"></div><div class="cs-skel" style="margin:6px 0;width:70%"></div>`;
+  if (!live.data) return head() + `<div class="bw-note">${esc(t('bwFail'))} · <a href="javascript:void(0)" onclick="_ivLoadBostaDetails('${tx._id}', true)">${esc(t('bwRetry'))}</a></div>`;
+  const d = live.data;
+  if (!d.available) return '';
+  const refresh = `<button type="button" class="bsd-refresh" title="${escHtml(t('bsdRefresh'))}" aria-label="${escHtml(t('bsdRefresh'))}" onclick="_ivLoadBostaDetails('${tx._id}', true)"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>`;
+  const upd = `<span class="bsd-upd">${esc(t('bsdUpdated', { t: _csDateTime(d.fetchedAt) }))}${refresh}</span>`;
+  const kv = (k, v) => `<div class="inv2-kv"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+  const yesNo = (b) => esc(t(b ? 'bsdYes' : 'bsdNo'));
+  const c = d.counts || {};
+  const pkg = [d.specs?.itemsCount != null ? t('bsdPieces', { n: fmtN(d.specs.itemsCount) }) : '', d.specs?.packageType || '', d.specs?.weight != null ? t('bsdKg', { n: d.specs.weight }) : ''].filter(Boolean).map(esc).join(' · ');
+  let delAttempt = 0, retAttempt = 0;
+  const attempts = (d.attempts || []).map(a => {
+    const isRet = a.type === 'return';
+    const n = isRet ? ++retAttempt : ++delAttempt;
+    const ok = !!a.succeededAt;
+    const pill = ok ? `<span class="cs-pill is-ok">${esc(t('bsdSucceeded'))}</span>` : a.reason ? `<span class="cs-pill is-bad">${esc(t('bsdFailed'))}</span>` : `<span class="cs-pill is-neu">${esc(t('bsdInProgress'))}</span>`;
+    const meta = [a.courier, a.hub, a.codAmount != null ? t('bsdToCollect', { v: _csMoney(a.codAmount) }) : ''].filter(Boolean).map(esc).join(' · ');
+    return `<div class="bsd-att"><div class="bsd-att-top"><b>${esc(t(isRet ? 'bsdReturnN' : 'bsdAttemptN', { n: fmtN(n) }))}</b><span class="cs-num bsd-muted">${esc(_bwDT(a.succeededAt || a.date))}</span>${pill}</div>
+      ${meta ? `<div class="bsd-muted">${meta}</div>` : ''}
+      ${a.reason ? `<div class="bsd-reason" dir="auto">${esc(a.reason)}${a.rescheduledFor ? ` · ${esc(t('bsdRescheduled', { t: _csDate(a.rescheduledFor) }))}` : ''}</div>` : ''}</div>`;
+  }).join('');
+  const sizes = (d.sizeChanges || []).length
+    ? d.sizeChanges.map(s => `<div class="bsd-chg"><span class="cs-num bsd-muted">${esc(_bwDT(s.at))}</span><span><b>${esc(s.sizeBefore)}</b> ← <b>${esc(s.sizeAfter)}</b> · ${esc(_csRoleLabel(s.byRole))}</span><span class="cs-num">${s.priceBefore != null ? _csMoney(s.priceBefore) + ' → ' : ''}${_csMoney(s.priceAfter)}</span></div>`).join('')
+    : `<div class="bw-note">${esc(t('bsdNoSizeChanges'))}</div>`;
+  return head(upd) + `
+    ${kv(esc(t('bsdConfirmed')), `${d.isConfirmedDelivery ? `<span class="cs-pill is-ok">${esc(t('bsdConfirmedYes'))}</span>` : `<span class="cs-pill is-neu">${esc(t('bsdConfirmedNo'))}</span>`} ${d.isDelayed || d.sla?.orderExceeded ? `<span class="cs-pill is-warn">${esc(t('bsdDelayed'))}</span>` : `<span class="cs-pill is-neu">${esc(t('bsdOnTime'))}</span>`}`)}
+    ${kv(esc(t('bsdAttempts')), `<b class="cs-num">${fmtN(c.deliveryAttempts ?? 0)}</b>${c.returnAttempts ? ` · ${esc(t('bsdReturns'))} <b class="cs-num">${fmtN(c.returnAttempts)}</b>` : ''}`)}
+    ${kv(esc(t('bsdCalls')), `<b class="cs-num">${fmtN(c.calls ?? 0)}</b>${c.lastCallTime ? ` <span class="bsd-muted">· ${esc(t('bsdLastCall', { t: _bwDT(c.lastCallTime) }))}</span>` : ''}`)}
+    ${d.firstHub?.name ? kv(esc(t('bsdFirstHub')), `${esc(d.firstHub.name)}${d.firstHub.at ? ` <span class="bsd-muted">· ${esc(_csDate(d.firstHub.at))}</span>` : ''}`) : ''}
+    ${d.assignedHub?.name ? kv(esc(t('bsdAssignedHub')), esc(d.assignedHub.name)) : ''}
+    ${pkg ? kv(esc(t('bsdPackage')), pkg) : ''}
+    ${d.specs?.description ? `<div class="bsd-muted bsd-desc" dir="auto">${esc(d.specs.description)}</div>` : ''}
+    ${kv(esc(t('bsdOpen')), yesNo(d.allowToOpenPackage))}
+    ${attempts ? `<div class="bsd-sub">${esc(t('bsdAttemptsList'))}</div><div class="bsd-atts">${attempts}</div>` : ''}
+    <div class="bsd-sub">${esc(t('bsdSizeChanges'))}</div>${sizes}`;
+}
+
+function _csOpenFromInvoice(id) {
+  const tx = (transactions || []).find(x => String(x._id) === String(id));
+  if (tx && !_cs.rows.find(r => String(r._id) === String(id))) _cs.review = [..._cs.review.filter(r => String(r._id) !== String(id)), tx];
+  openCsStatement(id);
+}
+
+// ── Failed-delivery dialog: return-leg fee from Bosta ───────────────────────────────────────
+async function _csPrefillReturnFee(id) {
+  const inp = qs('#fd-ship-cost'); if (!inp) return;
+  try {
+    const r = await api(`/carrier-settlements/${id}/return-fees`);
+    const cur = qs('#fd-ship-cost');
+    if (!cur || cur !== inp || r?.fees == null || Number(cur.value) > 0) return;
+    cur.value = String(r.fees);
+    const tag = document.createElement('span');
+    tag.className = 'cs-auto-tag'; tag.textContent = t('csReturnFromBosta');
+    cur.parentElement?.appendChild(tag);
+    cur.addEventListener('input', () => { tag.hidden = true; }, { once: true });
+  } catch (_) { /* a pre-fill is a convenience — the field simply stays as it was */ }
+}
+
+// ── Settings card ───────────────────────────────────────────────────────────────────────────
+let _csStgVault = 'تحويل بنكي';
+function renderCsSettingsCard() {
+  const el = qs('#stg-autosettle-card'); if (!el) return;
+  const s = settings || {};
+  _csStgVault = s.autoSettleVaultMethod || 'تحويل بنكي';
+  el.innerHTML = `<div class="stg-card-title"><div class="stg-card-title-icon"><span class="bosta-icon" style="width:18px;height:18px"></span></div>
+      <div class="stg-card-title-text"><strong>${esc(t('csStgTitle'))}</strong><span>${esc(t('csStgDesc'))}</span></div></div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:.86rem;font-weight:600;cursor:pointer;margin-bottom:4px"><input type="checkbox" id="cs-stg-on" style="width:18px;height:18px;flex:none" ${s.autoSettleEnabled ? 'checked' : ''}>${esc(t('csStgEnabled'))}</label>
+    <div class="cs-sub" style="margin-bottom:12px">${esc(s.autoSettleSince ? t('csStgSince', { d: _csDate(s.autoSettleSince) }) : t('csStgSinceNew'))}</div>
+    <div class="cs-grid2" style="margin-bottom:12px">
+      <div class="cs-field"><label for="cs-stg-limit">${esc(t('csStgLimit'))}</label><input type="number" id="cs-stg-limit" min="0" step="1" value="${Number(s.autoSettleReviewLimit ?? 20)}"><span class="cs-sub">${esc(t('csStgLimitHint'))}</span></div>
+      <div class="cs-field"><label for="cs-stg-fee">${esc(t('csStgFee'))}</label><input type="number" id="cs-stg-fee" min="0" step="0.5" value="${Number(s.carrierTransferFee ?? 25)}"></div>
+      <div class="cs-field"><label for="cs-stg-delay">${esc(t('csStgDelay'))}</label><input type="number" id="cs-stg-delay" min="0" step="10" value="${Number(s.autoSettleReadDelaySec ?? 60)}"></div>
+    </div>
+    <div class="cs-field" id="cs-stg-vault" style="margin-bottom:12px"><label>${esc(t('csStgVault'))}</label>${_csVaultCardsHtml(_csStgVault, '_csStgPick')}</div>
+    <button class="btn btn-primary btn-sm" id="cs-stg-save" onclick="saveCsSettings()">${esc(t('csStgSave'))}</button>`;
+}
+function _csStgPick(v) { _csStgVault = v; _csMarkVault('#cs-stg-vault', v); }
+async function saveCsSettings() {
+  const btn = qs('#cs-stg-save'); if (btn) btn.disabled = true;
+  const body = {
+    autoSettleEnabled: !!qs('#cs-stg-on')?.checked,
+    autoSettleReviewLimit: Math.max(0, Number(qs('#cs-stg-limit')?.value) || 0),
+    carrierTransferFee: Math.max(0, Number(qs('#cs-stg-fee')?.value) || 0),
+    autoSettleReadDelaySec: Math.max(0, Number(qs('#cs-stg-delay')?.value) || 0),
+    autoSettleVaultMethod: _csStgVault,
+  };
+  try {
+    const saved = await api('/settings', { method: 'PUT', body: JSON.stringify(body) });
+    if (settings) Object.assign(settings, body, { autoSettleSince: saved?.autoSettleSince || settings.autoSettleSince || '' });
+    toast(t('csStgSaved'));
+    renderCsSettingsCard();
+  } catch (e) { toast(e.message || 'error', true); }
+  finally { if (btn) btn.disabled = false; }
 }
 
 /** Refreshes settings (vault balances) from server and, if vault page is open/unlocked, re-renders it in real time */
@@ -77876,6 +79411,7 @@ async function deleteUser(id) {
 /* Settings */
 function renderSettings() {
   if (!settings) settings = {};
+  try { if (typeof renderCsSettingsCard === 'function') renderCsSettingsCard(); } catch (_) {}
   const companies = settings.shipCos || [];
   qs('#set-cairo-price').value = settings.cairoPrice || 0;
   qs('#set-gov-price').value = settings.govPrice || 0;

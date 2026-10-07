@@ -593,9 +593,20 @@ export class SettingsService {
 
   async updateSettings(dto: UpdateSettingsDto, rawBody?: Record<string, unknown>): Promise<SettingsDocument> {
     const existing = await this.getSettings();
+    const $set: Record<string, unknown> = { ...(dto as Record<string, unknown>) };
+    // The first switch-on fixes the date from which deliveries settle by themselves. Older
+    // deliveries are never swept up automatically — they settle only when a user selects them.
+    if (dto.autoSettleEnabled === true && !(existing as any).autoSettleSince) {
+      $set.autoSettleSince = new Date().toISOString();
+    }
+    // The client cannot move the activation date; it is a fact, not a preference.
+    if (dto.autoSettleEnabled !== true || (existing as any).autoSettleSince) delete $set.autoSettleSince;
+    if (dto.autoSettleVaultMethod !== undefined && !['كاش', 'فودافون كاش', 'Instapay', 'تحويل بنكي'].includes(dto.autoSettleVaultMethod)) {
+      throw new BadRequestException('خزنة غير معروفة لتسويات بوسطة');
+    }
     const updated = await this.settingsModel.findByIdAndUpdate(
       existing._id,
-      { $set: dto as Record<string, unknown> },
+      { $set },
       { new: true, upsert: false },
     ).exec();
     return updated ?? existing;

@@ -232,6 +232,23 @@ export class VaultService {
       .exec();
   }
 
+  /**
+   * Silent undo of ONE system entry by id — restores the segment balance and deletes the row,
+   * exactly what deleteLastEntryByRef does for collections. Used by the Bosta settlement undo for
+   * the shipping-outflow entry, which deleteLastEntryByRef cannot reach (it is not a تحصيل row).
+   * ⚠ Not cancelEntry(): that rewrites the linked transaction's payStatus to «رفض».
+   */
+  async removeSystemEntryById(id: string): Promise<boolean> {
+    if (!id || !isValidObjectId(id)) return false;
+    const entry = await this.vaultModel.findById(id).exec();
+    if (!entry) return false;
+    const seg = entry.seg || resolveVaultSegmentFromPaymentMethod(entry.method || 'كاش');
+    await this.settingsService.adjustVaultBalance(seg, -entry.amount);
+    await entry.deleteOne();
+    this.emit('vault:changed', { reason: 'system-undo', ref: entry.ref, txNo: entry.txNo });
+    return true;
+  }
+
   async deleteLastEntryByRef(ref: string): Promise<boolean> {
     try {
       const entry = await this.vaultModel.findOne(

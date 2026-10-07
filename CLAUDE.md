@@ -2782,6 +2782,100 @@ const expenseTotal = filteredExpenses
 
 ---
 
+## Automatic Bosta Settlement — «تسويات بوسطة» / «كشف حساب بوسطة» (Oct 7, 2026)
+
+Every Bosta delivery settles itself a minute after DELIVERED: the real fee Bosta charged is read
+from the API, the net enters the vault, and a frozen statement is kept on the order. Older orders
+settle by selection («جلب السعر الحقيقي وتسوية»). The Excel importer (`carrier-settlement.service.ts`)
+and manual collection are untouched.
+
+### Where Bosta's price lives
+`GET /deliveries/:id` → `log[]`. The closing entry carries `actionsList.pricing.{after}.priceAfterVat`;
+mid-route changes appear as flattened `pricing_priceAfterVat: {before, after}` (e.g. the hub
+reclassifying Normal → Large, 108.30 → 114). **The LAST closing price wins.** Measured: 341/341
+Bosta-delivered orders carry it; #2638 = 114.00, matching Bosta's dashboard «مستحقات بوسطة».
+`parseBostaPricing` / `decideSettlement` in `backend/src/shared/bosta-pricing.util.ts` are pure.
+
+⚠ **`bostaMaterialFee` is never read.** It is 55 on every order, outside `priceAfterVat`, and absent
+from the dashboard — the plan's packaging price, not a deduction (18,755 EGP of phantom expenses).
+
+⚠ **A webhook body is not a substitute** — it may lack `log`. The settlement always re-fetches.
+⚠ **Wait 60s** (`autoSettleReadDelaySec`): on #2638 the final price was written 232 ms AFTER the
+delivery event. The wait is a `carrierSettlement.status:'pending'` marker in Mongo plus a
+minute cron — never a `setTimeout`, so a restart loses nothing. No retry beyond that one read.
+
+### The one rule
+`net = remaining − priceAfterVat`. net ≥ 0 → `collect()` with **`opts.carrierActual`** (an internal
+argument, never a DTO field), which deducts the fee EXACTLY and credits a cheaper carrier to the
+vault as `shipSaving`. net < 0 (prepaid order, or fees > what Bosta collected) → the gap leaves the
+vault as one `مصروف` entry. Manual collection still deducts the full billed tariff (unchanged).
+
+Decision table (first match): no price → skip · not delivered → skip · Bosta COD ≠ our remaining
+(> 0.5) → review · open conflict / ship issue → review · prior collection → review · overcharge >
+`autoSettleReviewLimit` (20, inclusive) → review · else settle. A negative net is NOT a stop.
+Approval overrides only the price limit.
+
+### Safety
+- **Single-flight** via `carrierSettleLock` (top-level string, atomic `findOneAndUpdate`; Mongo cannot
+  `$set` inside a null `carrierSettlement`). Stale after 10 min.
+- **No retroactive sweep.** `autoSettleSince` is stamped server-side on the first switch-on.
+- **Manual collect is refused** while `pending`/`review` (frontend toast + server guard), and
+  `confirmCodCollection` excludes any order with an active settlement.
+- **Undo** = `TransactionsService.reverseCarrierSettlement` — outflow entry first (by id, via
+  `VaultService.removeSystemEntryById`), THEN `reverseCollect`. Order matters: reverseCollect deletes
+  the newest تحصيل row. `performCancellation` calls it first and reloads, or its COD reversal would
+  subtract the gross COD (510) where the net (396) was booked.
+- `reverseCollect` now also restores `shipSaving` and `codCollectionStatus` from the snapshot (old
+  snapshots without them are left as they were).
+- **Entries are dated**: automatic → delivery date; selection/approval → today (never rewrites a
+  closed month).
+
+### «كشف حساب بوسطة» and transfers
+Derived on request: + COD collected, − fees, − return-leg fees (`failedDelivery.returnShipCost`
+after activation), − transfers, − transfer fees, − booked differences. ⚠ **A Bosta transfer is not
+vault income** (each order entered on settlement). `CarrierPayout` books only: the fee as an
+approved expense (`رسوم تحويل`, default 25), the return-leg fees not yet in the vault, and — if the
+user ticks it — the unexplained difference.
+
+### Frontend
+Vault tabs (`switchVaultView`, `_vview`): سجل الخزنة / تسويات بوسطة / كشف حساب بوسطة, shown with
+`carrier-settle-view`. Perms: `-view`, `-run`, `-approve`, `-reverse`. `csInvoiceCardHtml` in BOTH
+invoice renderers. Settings card in الإعدادات ← الشحن. The failed-delivery dialog pre-fills the return
+fee from Bosta (`_csPrefillReturnFee`). Vault choice is per default, per batch, per approval, per
+transfer. Reports add `shipSaving` back to profit (backend + both frontend calculations).
+
+### Invoice page: live Bosta data
+`GET /carrier-settlements/:txId/bosta-details` reads the delivery LIVE (cached 2 min, read-only,
+no customer phone/address) because the stored `bostaRawResponse` lacks `wallet` on most orders.
+- **Settlement card** (side column, under الشحن والتسليم): hero = `wallet.cashCycle.deposited_amt`
+  (net in the Bosta wallet) with `deposited_at` and `next_cashout_date`; then collected, Bosta fees
+  broken down (shipping, insurance, every non-zero extra fee, VAT, discounts/credits), package size,
+  tariff and variance. Falls back to the log price when the wallet record is absent.
+- ⚠ **Insurance rate comes from `insurancePlanInfo.orderValueFeePercentage`**, not cashCycle's
+  `insurance_fees_percentage` — that one is rounded to 2dp (0.005 → "0.01" = a false 1%).
+- ⚠ The wallet figure is the authoritative fee: #2205's log says 125.40, the wallet charged 119.70;
+  #2191's log says 125.40, the wallet 114.00 after 11.40 of Bosta credits.
+- **«من بوسطة» in الشحن والتسليم**: confirmed/delayed, attempt and call counts, last call, hubs,
+  package (pieces · type · weight · description), may-open, each attempt (time, courier, hub, COD,
+  succeeded/failed with Bosta's `exception.reason`), and package-size changes.
+
+### Order timeline rebuilt
+Steps are collected as specs and ordered by the time each one SHOWS (date-only values sit right
+after the previous step of that day). Journey read from `bostaRawResponse.timeline[]` —
+`TransitEvents` existed on 0 of 358 orders. Delivery time is `state.deliveryTime`, never «last sync».
+New steps: deposit, Bosta settlement (replaces the COD step), failed-delivery close, cancellation.
+«تم الإرسال للشحن» is dropped once the shipment log exists. Measured: out-of-order 291/358 → 0/370.
+
+### Verification
+22 unit cases (`bosta-pricing.spec.ts`, real #2638 fixture; revert-checked); 41 end-to-end checks
+on real services against a scratch DB copy (settle, single-flight, approve, undo, cancel, cron,
+transfers); 31 browser checks over the shipped `index.html` wired to the real services (timeline
+over every order, tabs, preview, vault switch, review, statement, transfer, settings, English,
+dark, 390px). `node dist/main.js` starts. Suite 1115/1119 — the 4 failures are pre-existing
+`index.html`-extraction specs (staff-dashboard, shopify-order-edit), identical before this change.
+
+---
+
 ## Stock Demand Analysis — Rebuilt Answer-First (Oct 5, 2026)
 
 The «تحليل احتياج المخزون» modal (`#demand-planning-modal`, opened from the Shopify page
@@ -3169,6 +3263,7 @@ leaked — the change there is defence against the same trap, not a bug fix.
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Oct 7, 2026 | Automatic Bosta settlement: each delivery books the net of Bosta's real fee a minute after DELIVERED; older orders settle by selection; review queue over a 20 EGP overcharge; «كشف حساب بوسطة» with transfers and fees; order timeline reordered by real time (291 → 0 out-of-order) | See "Automatic Bosta Settlement" above |
 | Oct 5, 2026 | Stock Demand Analysis rebuilt answer-first: «N of M orders ready» with per-order blocks + what to buy and the PO button, a coverage bar per product, the calculation as one chip chain; presentation only | See "Stock Demand Analysis — Rebuilt Answer-First" above |
 | Oct 5, 2026 | Printed invoice redesigned customer-first: product photos, a total/paid/remaining strip with a payment chip derived from the money; removed the terms strip, signatures and duplicate brand name; fixed every sale printing «لم يُحصّل أي مبلغ» (paid was fmtJ HTML compared as a number) | See "The Printed Invoice — Rebuilt Again" above |
 | Oct 5, 2026 | Order toasts rebuilt (assignment card + status row, bottom-end, no emoji, real order/customer named) and «Open order» fixed — it opened a ShopifyOrder id as an invoice; new-order sound → cha-ching, vault sound → wood tap so the two never collide | See "Order Toasts & Sounds" above |
