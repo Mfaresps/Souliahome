@@ -463,6 +463,79 @@ describe('TransactionsService (integration with mocks)', () => {
   });
 
   /**
+   * A Shopify sale confirmed with deposit receipts carries one deposit line per receipt, each in
+   * the segment its money came into. Refunding the whole deposit from `depMethod` (what cancel did)
+   * would take 800 out of Instapay when only 500 ever went in there.
+   */
+  describe('cancel() — a receipt deposit is refunded per vault', () => {
+    function saleWithReceipts(overrides: Record<string, unknown> = {}) {
+      const tx: any = buildSaleTransaction({
+        _id: 'tx-dep-1',
+        type: 'مبيعات',
+        ref: '2719',
+        client: 'هالة محمد',
+        total: 1350,
+        deposit: 800,
+        remaining: 550,
+        depMethod: 'Instapay',
+        payment: 'Instapay',
+        cancelled: false,
+        deposits: [
+          { id: 'r1', amount: 500, method: 'Instapay', note: '', date: '', by: 'أحمد', source: 'deposit-receipt', receiptId: 'r1' },
+          { id: 'r2', amount: 300, method: 'كاش', note: '', date: '', by: 'رنا', source: 'deposit-receipt', receiptId: 'r2' },
+        ],
+        ...overrides,
+      });
+      tx.save = jest.fn().mockImplementation(async function (this: any) {
+        return this;
+      });
+      return tx;
+    }
+
+    it('posts one refund per vault, never the whole deposit from depMethod', async () => {
+      const tx = saleWithReceipts();
+      txModel.findById.mockReturnValue({ exec: jest.fn().mockResolvedValue(tx) });
+      await service.cancel('tx-dep-1', { cancelReason: 'x', cancelledBy: 'admin' });
+      const calls = vaultService.addSystemEntry.mock.calls.map((c: any[]) => [c[0], c[1]]);
+      expect(calls).toEqual([
+        [-500, 'Instapay'],
+        [-300, 'كاش'],
+      ]);
+    });
+
+    it('a deposit edited down after confirmation falls back to the single refund', async () => {
+      const tx = saleWithReceipts({ deposit: 600, remaining: 750 });
+      txModel.findById.mockReturnValue({ exec: jest.fn().mockResolvedValue(tx) });
+      await service.cancel('tx-dep-1', { cancelReason: 'x', cancelledBy: 'admin' });
+      const calls = vaultService.addSystemEntry.mock.calls.map((c: any[]) => [c[0], c[1]]);
+      expect(calls).toEqual([[-600, 'Instapay']]);
+    });
+
+    it('keeps a receipt sale live after a partial refund failure and resumes only the unpaid vault', async () => {
+      const tx = saleWithReceipts();
+      txModel.findById.mockReturnValue({exec:jest.fn().mockResolvedValue(tx)});
+      vaultService.addSystemEntry.mockResolvedValueOnce({_id:'refund-1'} as any)
+        .mockRejectedValueOnce(new Error('second vault failed'));
+      await expect(service.cancel('tx-dep-1',{cancelReason:'x',cancelledBy:'admin'})).rejects.toThrow('second vault failed');
+      expect(tx.cancelled).toBe(false);
+      expect(tx.cancellationDepositRefunds).toEqual([expect.objectContaining({method:'Instapay',amount:500,vaultEntryId:'refund-1'})]);
+      vaultService.addSystemEntry.mockClear();
+      await service.cancel('tx-dep-1',{cancelReason:'x',cancelledBy:'admin'});
+      expect(vaultService.addSystemEntry.mock.calls.map((c:any[])=>[c[0],c[1]])).toEqual([[-300,'كاش']]);
+      expect(tx.cancelled).toBe(true);
+    });
+
+    it('a reversed receipt line is not refunded twice', async () => {
+      const tx = saleWithReceipts({ deposit: 300, remaining: 1050 });
+      tx.deposits[0].reversed = true;
+      txModel.findById.mockReturnValue({ exec: jest.fn().mockResolvedValue(tx) });
+      await service.cancel('tx-dep-1', { cancelReason: 'x', cancelledBy: 'admin' });
+      const calls = vaultService.addSystemEntry.mock.calls.map((c: any[]) => [c[0], c[1]]);
+      expect(calls).toEqual([[-300, 'كاش']]);
+    });
+  });
+
+  /**
    * The shipping carrier used to be a free-text NAME, and the three paths that create a sale
    * disagreed completely: the manual form required one, Shopify's approveOrder never wrote one at
    * all, and Bosta never read it — so an order labelled «Mylerz» could ship through Bosta with
@@ -1589,6 +1662,67 @@ describe('TransactionsService (integration with mocks)', () => {
         (c: unknown[]) => [c[0] as number, c[1] as string],
       );
     }
+
+    function receiptSale() {
+      return buildSale({total:2450,deposit:1300,remaining:1150,depMethod:'فودافون كاش',
+        deposits:[{id:'r1',amount:500,method:'Instapay',source:'deposit-receipt'},
+          {id:'r2',amount:800,method:'فودافون كاش',source:'deposit-receipt'}],
+        depositReceipts:[{id:'r1',amount:500,method:'Instapay',imageKey:'receipts/one',vaultTxNo:'V1'},
+          {id:'r2',amount:800,method:'فودافون كاش',imageKey:'receipts/two',vaultTxNo:'V2'}]});
+    }
+    function mockReceiptCorrection(tx: any, failPersist=false) {
+      mockUpdatable(tx);
+      txModel.findOneAndUpdate.mockImplementation((_filter: any, update: any)=>({exec:jest.fn(async()=>{
+        if(failPersist) return null;
+        Object.assign(tx,update);return tx;
+      })}) as any);
+    }
+    it('corrects only the selected receipt vault and preserves both amounts and receipt images', async()=>{
+      const tx=receiptSale();mockReceiptCorrection(tx);
+      await service.update('tx-cash-rule',{depositVaultCorrections:[{id:'r1',method:'كاش'}]} as any,'Tester','','admin');
+      expect(vaultMoves()).toEqual([[-500,'Instapay'],[500,'كاش']]);
+      expect(tx.deposit).toBe(1300);expect(tx.remaining).toBe(1150);
+      expect(tx.deposits.map((d: any)=>[d.amount,d.method])).toEqual([[500,'كاش'],[800,'فودافون كاش']]);
+      expect(tx.depositReceipts[0]).toMatchObject({amount:500,method:'كاش',imageKey:'receipts/one',vaultTxNo:'V1'});
+      expect(tx.depMethod).toBe('فودافون كاش');
+      expect(tx.editHistory.at(-1).changes.join(' ')).toContain('r1');
+      expect(txModel.findByIdAndUpdate).not.toHaveBeenCalled();
+    });
+    it('corrects multiple receipt vaults independently',async()=>{
+      const tx=receiptSale();mockReceiptCorrection(tx);
+      await service.update('tx-cash-rule',{depositVaultCorrections:[{id:'r1',method:'كاش'},{id:'r2',method:'تحويل بنكي'}]} as any,'Tester','','admin');
+      expect(vaultMoves()).toEqual([[-500,'Instapay'],[500,'كاش'],[-800,'فودافون كاش'],[800,'تحويل بنكي']]);
+      expect(tx.depMethod).toBe('تحويل بنكي');expect(tx.deposit).toBe(1300);
+    });
+    it.each([
+      {deposit:1400}, {depMethod:'كاش'},
+      {depositVaultCorrections:[{id:'missing',method:'كاش'}]},
+      {depositVaultCorrections:[{id:'r1',method:'unknown'}]},
+      {depositVaultCorrections:[{id:'r1',method:'كاش'},{id:'r1',method:'كاش'}]},
+      {total:2600,depositVaultCorrections:[{id:'r1',method:'كاش'}]},
+    ])('rejects invalid receipt corrections before any ledger change: %j',async dto=>{
+      mockReceiptCorrection(receiptSale());
+      await expect(service.update('tx-cash-rule',dto as any,'Tester','','admin')).rejects.toThrow(BadRequestException);
+      expect(vaultMoves()).toEqual([]);expect(txModel.findOneAndUpdate).not.toHaveBeenCalled();
+    });
+    it('does not transfer funds when receipt vault is unchanged',async()=>{
+      mockReceiptCorrection(receiptSale());
+      await service.update('tx-cash-rule',{depositVaultCorrections:[{id:'r1',method:'Instapay'}]} as any,'Tester','','admin');
+      expect(vaultMoves()).toEqual([]);
+    });
+    it('restores the original vault if the destination credit fails',async()=>{
+      const tx=receiptSale();mockReceiptCorrection(tx);
+      vaultService.addSystemEntry.mockResolvedValueOnce({} as any).mockRejectedValueOnce(new Error('credit failed')).mockResolvedValueOnce({} as any);
+      await expect(service.update('tx-cash-rule',{depositVaultCorrections:[{id:'r1',method:'كاش'}]} as any,'Tester','','admin')).rejects.toThrow('credit failed');
+      expect(vaultMoves()).toEqual([[-500,'Instapay'],[500,'كاش'],[500,'Instapay']]);
+      expect(tx.deposits[0].method).toBe('Instapay');expect(txModel.findOneAndUpdate).not.toHaveBeenCalled();
+    });
+    it('reverses ledger transfers when the invoice changes concurrently',async()=>{
+      const tx=receiptSale();mockReceiptCorrection(tx,true);
+      await expect(service.update('tx-cash-rule',{depositVaultCorrections:[{id:'r1',method:'كاش'}]} as any,'Tester','','admin')).rejects.toThrow('تغيّرت الفاتورة');
+      expect(vaultMoves()).toEqual([[-500,'Instapay'],[500,'كاش'],[-500,'كاش'],[500,'Instapay']]);
+      expect(tx.deposits[0].method).toBe('Instapay');
+    });
 
     it('تغيير خزنة العربون وحده ينقل المال بقيدين متقابلين', async () => {
       mockUpdatable(buildSale());

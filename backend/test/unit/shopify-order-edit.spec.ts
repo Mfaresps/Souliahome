@@ -1052,7 +1052,8 @@ describe('Shopify — الخصم الإضافي يظهر ويُحسب في كل 
    *   سجل المعاملات عبر `_syncDiscountFromCodes`.
    */
   it('الترحيل إلى الحركة يجمع الخصومات الثلاثة في tx.discount', () => {
-    const i = be.indexOf('const tx = await this.txModel.create(');
+    const i = be.indexOf('tx = await this.txModel.create(');
+    expect(i).toBeGreaterThanOrEqual(0);
     const block = be.slice(i, i + 2600);
     const line = block.slice(block.indexOf('discount: Math.min('), block.indexOf('manualDiscount:'));
     expect(line).toContain('order.discount');

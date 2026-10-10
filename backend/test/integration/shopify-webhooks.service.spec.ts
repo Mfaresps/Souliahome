@@ -58,6 +58,7 @@ function serviceFor(order: any, tx: any) {
   };
   svc.logger = { log: jest.fn(), warn: jest.fn(), error: jest.fn() };
   svc.presence = { emitEvent: jest.fn() };
+  svc.depositReceipts = { settleOnCancel: jest.fn().mockResolvedValue({ refunded: [], voided: 0 }) };
   return { svc, updateOne };
 }
 

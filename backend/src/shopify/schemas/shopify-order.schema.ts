@@ -3,6 +3,63 @@ import { HydratedDocument } from 'mongoose';
 
 export type ShopifyOrderDocument = HydratedDocument<ShopifyOrder>;
 
+/**
+ * A deposit receipt — the photo of one transfer a customer made, and its review.
+ *
+ * Statuses (Arabic, stored as-is, the same convention as `cancelRequest.status`):
+ *   مسودة   uploaded and read by OCR, not yet submitted — invisible to everyone but its uploader
+ *   معلق    submitted, awaiting a manager
+ *   معتمد   approved — the money WAS booked into the vault at that moment (vaultEntryId)
+ *   مرفوض   rejected — image deleted, nothing booked
+ *   ملغي    the order was cancelled while this was still a draft / pending
+ *   مُسترد   was approved, then refunded out of the vault (order cancelled or manager refund)
+ *
+ * ⚠ The vault is moved by APPROVAL and REFUND only, never by confirming the order. Anything that
+ *   books a receipt's money a second time is the bug this structure exists to prevent.
+ */
+export interface DepositReceipt {
+  id: string;
+  status: 'مسودة' | 'معلق' | 'معتمد' | 'مرفوض' | 'ملغي' | 'مُسترد';
+  imageKey: string;
+  imageSha256: string;
+  imageBytes: number;
+  imageDeleted: boolean;
+  amount: number;
+  method: string;
+  ocr: {
+    amount: number | null;
+    method: string;
+    pattern: string;
+    reference: string;
+    dateText: string;
+    confident: boolean;
+    ran: boolean;
+    ms: number;
+  };
+  needsReview: boolean;
+  /** Non-blocking warnings shown to the manager (reused image / reused transfer reference). */
+  warnings: Array<{ code: 'same-image' | 'same-reference' | 'not-transfer' | 'ocr-unavailable'; orderRef: string }>;
+  warningAcknowledgedAt?: string;
+  warningAcknowledgedById?: string;
+  uploadedAt: string;
+  submittedBy: string;
+  submittedById: string;
+  submittedAt: string;
+  lastEditedBy?: string;
+  lastEditedAt?: string;
+  reviewedBy?: string;
+  reviewedById?: string;
+  reviewedAt?: string;
+  rejectedReason?: string;
+  vaultEntryId?: string;
+  vaultTxNo?: string;
+  refundedBy?: string;
+  refundedAt?: string;
+  refundReason?: string;
+  refundVaultEntryId?: string;
+  refundVaultTxNo?: string;
+}
+
 @Schema({ timestamps: true })
 export class ShopifyOrder {
   @Prop({ required: true, unique: true })
@@ -214,7 +271,44 @@ export class ShopifyOrder {
     at: string; // ISO
   }>;
 
-  // Deposit fields — parsed once from `notes` at approveOrder() time, never re-run
+  /**
+   * Transfer receipts for this order's deposit — see `DepositReceipt`. Several per order are
+   * normal (a customer pays in installments), and several may be pending at once.
+   *
+   * ⚠ `type: [Object]` is mandatory (the nullable/array @Prop rule — without it the API dies at
+   *   module load). Embedded rather than a separate collection because every reader already
+   *   holds the full order list in memory (`GET /shopify/orders`).
+   * ⚠ The Shopify webhook never writes this field — it is ours, like `manualDiscount`.
+   */
+  @Prop({ type: [Object], default: [] })
+  depositReceipts: DepositReceipt[];
+
+  /** Prevents receipt writes/confirmation from racing the pending-order refund sequence. */
+  @Prop({ default: '' })
+  receiptCancelLock: string;
+
+  /**
+   * The order was cancelled ON SHOPIFY while it carried approved deposit money.
+   *
+   * A webhook must not refund the vault on its own — a financial decision is never derived from
+   * an event (the rule all Shopify webhooks follow). The order stays pending and this flag tells
+   * staff to cancel it here, where the refund is shown and confirmed.
+   */
+  @Prop({ type: Object, default: null })
+  shopifyCancelConflict: {
+    at: string;
+    note: string;
+    approvedAmount: number;
+    resolved: boolean;
+    resolvedBy?: string;
+    resolvedAt?: string;
+  } | null;
+
+  /**
+   * Deposit summary — DERIVED from the approved `depositReceipts` (computeDepositFieldsFromReceipts).
+   * Kept because employee scoring and the staff dashboard read them. They used to be parsed from
+   * the Shopify note text; that path was removed with the receipt workflow.
+   */
   @Prop({ default: 0 })
   depositAmount: number;
 
@@ -318,3 +412,6 @@ export class ShopifyOrder {
 }
 
 export const ShopifyOrderSchema = SchemaFactory.createForClass(ShopifyOrder);
+// The receipt-image route and the duplicate checks look a receipt up by id / hash across orders.
+ShopifyOrderSchema.index({ 'depositReceipts.id': 1 });
+ShopifyOrderSchema.index({ 'depositReceipts.imageSha256': 1 });

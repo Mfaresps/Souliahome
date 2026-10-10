@@ -291,8 +291,6 @@ export class VaultService {
         );
       }
     }
-    const settings = await this.settingsService.adjustVaultBalance(seg, amount);
-
     // Generate smart description and accounting justification
     const { desc: finalDesc, justification: accountingJustification } = generateVaultTexts(
       amount,
@@ -305,27 +303,36 @@ export class VaultService {
 
     const entityLabel = entityContext?.customer || entityContext?.supplier || '';
     const txNo = await this.generateTxNo(source);
+    const settings = await this.settingsService.adjustVaultBalance(seg, amount);
 
-    const created = await this.vaultModel.create({
-      date,
-      desc: finalDesc,
-      amount,
-      seg,
-      method,
-      source,
-      ref,
-      balCash: settings.vaultCash,
-      balVodafone: settings.vaultVodafone,
-      balInstapay: settings.vaultInstapay,
-      balBank: settings.vaultBank,
-      balance: settings.vaultBalance,
-      status: 'completed',
-      transactionType: source,
-      accountingJustification,
-      entityLabel,
-      employee: employee || '',
-      txNo,
-    });
+    let created: VaultEntryDocument;
+    try {
+      created = await this.vaultModel.create({
+        date,
+        desc: finalDesc,
+        amount,
+        seg,
+        method,
+        source,
+        ref,
+        balCash: settings.vaultCash,
+        balVodafone: settings.vaultVodafone,
+        balInstapay: settings.vaultInstapay,
+        balBank: settings.vaultBank,
+        balance: settings.vaultBalance,
+        status: 'completed',
+        transactionType: source,
+        accountingJustification,
+        entityLabel,
+        employee: employee || '',
+        txNo,
+      });
+    } catch (error) {
+      // Receipt approval/refund can be retried after a rejected ledger write.
+      // Undo only this delta, preserving any concurrent balance adjustments.
+      await this.settingsService.adjustVaultBalance(seg, -amount);
+      throw error;
+    }
     this.emit('vault:changed', {
       reason: 'system',
       amount,

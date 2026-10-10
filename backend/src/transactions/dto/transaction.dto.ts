@@ -228,7 +228,21 @@ export class CreateTransactionDto {
   readonly purchaseOtpId?: string;
 }
 
+export class DepositVaultCorrectionDto {
+  @IsString()
+  @IsNotEmpty()
+  readonly id: string;
+
+  @IsIn(['كاش', 'فودافون كاش', 'Instapay', 'تحويل بنكي'])
+  readonly method: string;
+}
+
 export class UpdateTransactionDto {
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DepositVaultCorrectionDto)
+  readonly depositVaultCorrections?: DepositVaultCorrectionDto[];
   @IsString()
   @IsOptional()
   readonly transactionDate?: string;

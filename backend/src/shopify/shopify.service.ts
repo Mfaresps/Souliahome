@@ -26,7 +26,14 @@ import { VaultService } from '../vault/vault.service';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { normalizeCity, cityToShipZone } from '../shared/normalize-city.util';
 import { ShopifyAdminService } from './shopify-admin.service';
-import { computeDepositFields } from './deposit-parser.util';
+import {
+  approvedDepositTotal,
+  computeDepositFieldsFromReceipts,
+  DEPOSIT_TOLERANCE,
+  receiptsIn,
+  round2,
+} from './deposit-receipts.util';
+import { DepositReceiptsService } from './deposit-receipts.service';
 import { EmployeeShiftService } from '../employee-performance/employee-shift.service';
 import { EmployeeScoringService } from '../employee-performance/employee-scoring.service';
 import { MentionsService } from '../mentions/mentions.service';
@@ -69,7 +76,18 @@ export class ShopifyService {
     private readonly transactionsService: TransactionsService,
     private readonly settingsService: SettingsService,
     private readonly discountOtpService: DiscountOtpService,
+    private readonly depositReceipts: DepositReceiptsService,
   ) {}
+
+  /** Writes the deposit summary derived from APPROVED receipts onto the order (not saved). */
+  private applyDerivedDeposit(order: ShopifyOrderDocument, at = new Date().toISOString()): void {
+    const f = computeDepositFieldsFromReceipts(order);
+    order.depositAmount = f.depositAmount;
+    order.depositMethod = f.depositMethod;
+    order.depositStatus = f.depositStatus;
+    order.depositPercentage = f.depositPercentage;
+    order.depositDetectedAt = at;
+  }
 
   private emit(event: string, payload: unknown): void {
     try { this.presence?.emitEvent(event, payload); } catch { /* swallow */ }
@@ -179,14 +197,10 @@ export class ShopifyService {
         this.logger.warn(`Auto-assignment failed for order ${order._id}: ${(assignErr as Error).message}`);
       }
 
-      // تحليل الإيداع من الملاحظات فور وصول الأوردر — يُستخدم فوراً لتقييم أداء الموظف المسؤول
+      // ملخص العربون — من الإيصالات المعتمدة فقط (لا شيء بعد عند الوصول)، ويُسجَّل فوراً
+      // لتقييم الموظف المسؤول. لم يعد يُقرأ من نص الملاحظة.
       try {
-        const parsed = computeDepositFields({ notes: order.notes, tags: order.tags, total: order.total });
-        order.depositAmount = parsed.depositAmount;
-        order.depositMethod = parsed.depositMethod;
-        order.depositStatus = parsed.depositStatus;
-        order.depositPercentage = parsed.depositPercentage;
-        order.depositDetectedAt = new Date().toISOString();
+        this.applyDerivedDeposit(order);
         await order.save();
         this.employeeScoringService.scoreDepositDetection(order).catch((err) =>
           this.logger.error(`Deposit scoring failed for order ${order._id}: ${(err as Error).message}`),
@@ -377,12 +391,7 @@ export class ShopifyService {
     // للموظف الجديد. لا نلمس reviewedBy/reviewedAt أو نقاط سرعة التأكيد/التسليم إطلاقاً،
     // لأن توقيتات أوردر قديم لا تعطي قياس سرعة منطقي.
     if (order.status === 'pending' && !order.depositDetectedAt) {
-      const parsed = computeDepositFields({ notes: order.notes, tags: order.tags, total: order.total });
-      order.depositAmount = parsed.depositAmount;
-      order.depositMethod = parsed.depositMethod;
-      order.depositStatus = parsed.depositStatus;
-      order.depositPercentage = parsed.depositPercentage;
-      order.depositDetectedAt = now;
+      this.applyDerivedDeposit(order, now);
     }
 
     await order.save();
@@ -516,15 +525,10 @@ export class ShopifyService {
       // rawData يُحفظ دائماً — هو أرشيف ما أرسلته شوبيفاي، لا مصدر قرار
       order.rawData = orderData;
 
-      // إعادة تحليل الإيداع فقط طالما الأوردر لسه معلق — بعد التأكيد تتجمد قيم الإيداع
-      // لأنها بالفعل مرتبطة بحركة/خزنة تم إنشاؤها، وإعادة تحليلها هتفصل بين الرقم المسجل والفعلي
+      // الإجمالي قد يتغيّر بتعديل شوبيفاي، فتتغيّر نسبة العربون المعتمد منه — يُعاد الاشتقاق
+      // طالما الأوردر معلّق. ⚠ الإيصالات نفسها لا يلمسها هذا المسار إطلاقاً (حقلنا لا حقل شوبيفاي).
       if (order.status === 'pending') {
-        const parsed = computeDepositFields({ notes: order.notes, tags: order.tags, total: order.total });
-        order.depositAmount = parsed.depositAmount;
-        order.depositMethod = parsed.depositMethod;
-        order.depositStatus = parsed.depositStatus;
-        order.depositPercentage = parsed.depositPercentage;
-        order.depositDetectedAt = new Date().toISOString();
+        this.applyDerivedDeposit(order);
       }
 
       await order.save();
@@ -662,7 +666,25 @@ export class ShopifyService {
         return { handled: true, reason: 'تم تسجيل تعارض — الحركة تحتاج قراراً يدوياً' };
       }
 
-      // لا توجد حركة (أو ملغاة بالفعل) → الإلغاء آمن ويُطبَّق مباشرة
+      // أوردر معلّق عليه عربون معتمد: الفلوس دخلت الخزنة، وردّها قرار مالي لا يُتخذ من
+      // webhook. لا يُلغى هنا — يُرفع علم ليُلغيه موظف من النظام حيث يُعرض الرد ويُؤكَّد.
+      const approvedAmount = approvedDepositTotal(order);
+      if (!tx && approvedAmount > 0) {
+        order.shopifyCancelConflict = {
+          at,
+          note: summary,
+          approvedAmount,
+          resolved: false,
+        };
+        await order.save();
+        this.logger.warn(`أوردر أُلغي في شوبيفاي وعليه عربون معتمد ${approvedAmount} — ref=${order.ref}`);
+        this.emit('shopify:order-cancel-conflict', { shopifyOrderId: shopifyId, ref: order.ref });
+        return { handled: true, reason: 'عليه عربون معتمد — يحتاج إلغاءً يدوياً لرد المبلغ' };
+      }
+
+      // لا توجد حركة (أو ملغاة بالفعل) → الإلغاء آمن ويُطبَّق مباشرة. الإيصالات التي لم
+      // تُعتمد بعد تُلغى (لا مال تحرّك)، ولا يُرد شيء لأن لا معتمد.
+      if (!tx) await this.depositReceipts.settleOnCancel(String(order._id), 'Shopify', summary);
       order.cancelled = true;
       order.cancelledBy = 'Shopify';
       order.cancelledAt = at;
@@ -774,18 +796,39 @@ export class ShopifyService {
    *   shipping company at all — while the manual form refused to save without one. That single
    *   omission put the whole Shopify volume into the «غير محدد» bucket of the shipping report and
    *   left `order-audit.service.ts`'s per-company breakdown measuring nothing.
+   *
+   * ⚠ THE DEPOSIT IS NOT AN INPUT. It is the sum of this order's APPROVED deposit receipts, whose
+   *   money entered the vault when each receipt was approved (DepositReceiptsService.approve).
+   *   This method therefore books NOTHING into the vault — it records the figures on the
+   *   transaction. It used to take a typed `deposit` and call `addSystemEntry` here; with
+   *   receipts that would book the same money twice. An order with no receipt confirms with no
+   *   deposit (allowed — the owner made the deposit optional).
    */
-  async approveOrder(orderId: string, approvedBy: string, deposit = 0, paymentMethod?: string, carrierCode?: string): Promise<{ success: boolean; txId?: string }> {
+  async approveOrder(orderId: string, approvedBy: string, carrierCode?: string): Promise<{ success: boolean; txId?: string }> {
     const order = await this.shopifyOrderModel.findById(orderId);
     if (!order) throw new NotFoundException('الأوردر غير موجود');
-    if (order.status !== 'pending') {
+    if (order.status !== 'pending' || order.cancelled || order.receiptCancelLock) {
       return { success: false };
     }
 
-    const paidNow = Number(deposit) > 0 ? Number(deposit) : 0;
-    const remaining = Math.max(0, Number(order.total) - paidNow);
+    // A receipt still under review is money not yet decided — confirming now would freeze the
+    // order without it, and nothing could attach it afterwards.
+    if (receiptsIn(order, 'معلق').length) {
+      throw new BadRequestException('يوجد عربون قيد المراجعة على هذا الطلب — يجب اعتماده أو رفضه قبل التأكيد');
+    }
+    const approvedReceipts = receiptsIn(order, 'معتمد');
+    if (approvedReceipts.some(r => !r.vaultEntryId) || receiptsIn(order, 'مُسترد').some(r => !r.refundVaultEntryId)) {
+      throw new BadRequestException('تسجيل العربون في الخزنة لم يكتمل — أعد المحاولة بعد انتهاء المراجعة');
+    }
+    const paidNow = approvedDepositTotal(order);
+    if (paidNow > (Number(order.total) || 0) + DEPOSIT_TOLERANCE) {
+      throw new BadRequestException(
+        `العربون المعتمد (${paidNow} ج) أكبر من إجمالي الطلب (${Number(order.total) || 0} ج) — رُدّ الزيادة قبل التأكيد`,
+      );
+    }
+    const remaining = round2(Math.max(0, Number(order.total) - paidNow));
     const payStatus = remaining <= 0 ? 'مكتمل' : 'معلق';
-    const depMethod = paymentMethod || order.payment || 'كاش';
+    const depMethod = computeDepositFieldsFromReceipts(order).depositMethod || order.payment || 'كاش';
     // ⚠ "Shopify" moved cash to nobody — it is the sales channel, not the person who took the
     // deposit. The old `Shopify (${approvedBy})` named whoever happened to click «تأكيد», which is
     // a review action and often not the employee actually handling the order. The assigned staff
@@ -802,9 +845,34 @@ export class ShopifyService {
     // reviewedAt عن confirmedAt بفارق أجزاء الثانية بين الاثنين.
     const confirmedAt = now.toISOString();
 
-    const depositsLog = paidNow > 0
-      ? [{ id: `dep-${Date.now()}`, amount: paidNow, method: depMethod, note: 'ديبوزت أول - Shopify', date: now.toISOString(), by: employee }]
-      : [];
+    // One line per receipt, each with its own vault — a cancellation later refunds each from the
+    // segment it came into (performCancellation), not the whole deposit from one.
+    const depositsLog = approvedReceipts.map((r) => ({
+      id: r.id,
+      amount: r.amount,
+      method: r.method,
+      note: 'عربون — إيصال تحويل معتمد',
+      date: r.reviewedAt || now.toISOString(),
+      by: r.submittedBy,
+      source: 'deposit-receipt',
+      receiptId: r.id,
+      vaultTxNo: r.vaultTxNo || '',
+    }));
+    const depositReceiptsSnapshot = approvedReceipts.map((r) => ({
+      id: r.id,
+      amount: r.amount,
+      method: r.method,
+      imageKey: r.imageKey,
+      imageDeleted: !!r.imageDeleted,
+      needsReview: !!r.needsReview,
+      submittedBy: r.submittedBy,
+      submittedAt: r.submittedAt,
+      reviewedBy: r.reviewedBy || '',
+      reviewedAt: r.reviewedAt || '',
+      vaultTxNo: r.vaultTxNo || '',
+      ocrAmount: r.ocr?.amount ?? null,
+      ocrMethod: r.ocr?.method || '',
+    }));
 
     // تنظيف ref من أي # مسبقة (دعم بيانات قديمة)
     const cleanRef = String(order.ref || '').replace(/^#+/, '');
@@ -835,7 +903,26 @@ export class ShopifyService {
     // balance. Mirrors TransactionsService.create(); see recordInventoryMovementForSale.
     const invSnapshotBefore = await this.transactionsService.getInventory();
 
-    const tx = await this.txModel.create({
+    // Claim confirmation against the exact receipt snapshot. A concurrent upload, edit, refund,
+    // cancellation or second confirm must not record a stale deposit or create another sale.
+    this.applyDerivedDeposit(order);
+    const receiptSnapshot = order.toObject().depositReceipts || [];
+    const receiptMatch = receiptSnapshot.length
+      ? { depositReceipts: receiptSnapshot }
+      : { $or: [{ depositReceipts: { $size: 0 } }, { depositReceipts: { $exists: false } }] };
+    const claimed = await this.shopifyOrderModel.findOneAndUpdate(
+      { _id: order._id, status: 'pending', cancelled: { $ne: true }, receiptCancelLock: { $in: ['', null] }, total: order.total, ...receiptMatch },
+      { $set: {
+        status: 'approved', reviewedBy: approvedBy, reviewedAt: confirmedAt,
+        ...computeDepositFieldsFromReceipts(order), depositDetectedAt: order.depositDetectedAt,
+      } },
+      { new: true },
+    ).exec();
+    if (!claimed) throw new BadRequestException('تغيّر الأوردر أو العربون — حدّث البيانات وأعد المحاولة');
+
+    let tx: TransactionDocument;
+    try {
+      tx = await this.txModel.create({
       date,
       type: 'مبيعات',
       client: order.client,
@@ -848,6 +935,7 @@ export class ShopifyService {
       initialDeposit: paidNow,
       remaining,
       deposits: depositsLog,
+      depositReceipts: depositReceiptsSnapshot,
       items: order.items,
       total: order.total,
       itemsTotal: order.itemsTotal,
@@ -899,38 +987,21 @@ export class ShopifyService {
       pickupStatus: 'Pending',
       cancelled: false,
       archived: false,
-    });
-
-    // تأثير الخزنة — نفس منطق حركة المبيعات العادية
-    if (paidNow > 0) {
-      await this.vaultService.addSystemEntry(
-        paidNow,
-        depMethod,
-        `ديبوزت مبيعات #${cleanRef} — ${order.client || ''} (Shopify)`,
-        date,
-        'ديبوزت مبيعات',
-        cleanRef,
-        { customer: order.client },
-        employee,
-      );
+      });
+    } catch (err) {
+      // A failed create leaves no sale; restore the claimed order without touching receipts.
+      await this.shopifyOrderModel.updateOne(
+        { _id: order._id, status: 'approved', reviewedAt: confirmedAt },
+        { $set: { status: 'pending', reviewedBy: order.reviewedBy || '', reviewedAt: order.reviewedAt || '' } },
+      ).exec();
+      throw err;
     }
+
+    // ⚠ لا قيد خزنة هنا — العربون دخل الخزنة لحظة اعتماد كل إيصال. انظر تعليق الدالة.
 
     // سجل حركة المخزون — لازم يتكتب هنا لأن approveOrder بتكتب المعاملة مباشرة
     // على txModel وبتتخطى TransactionsService.create() اللي بتسجل الحركة عادة.
     await this.recordInventoryMovementForSale(tx, invSnapshotBefore, employee);
-
-    // تحليل الإيداع من الملاحظات مرة واحدة فقط عند التأكيد — يُستخدم لاحقاً في تقييم الأداء
-    const parsedDeposit = computeDepositFields({ notes: order.notes, tags: order.tags, total: order.total });
-    order.depositAmount = parsedDeposit.depositAmount;
-    order.depositMethod = parsedDeposit.depositMethod;
-    order.depositStatus = parsedDeposit.depositStatus;
-    order.depositPercentage = parsedDeposit.depositPercentage;
-    order.depositDetectedAt = new Date().toISOString();
-
-    order.status = 'approved';
-    order.reviewedBy = approvedBy;
-    order.reviewedAt = confirmedAt;
-    await order.save();
 
     // إرسال أحداث التحديث الفوري (inventory + transactions)
     this.emit('tx:created', { tx, by: employee });
@@ -940,6 +1011,9 @@ export class ShopifyService {
       txType: tx.type,
       items: (tx.items || []).map((it: any) => ({ name: it.name, qty: it.qty })),
     });
+
+    // Uploads abandoned before submission have no further use once the order is a transaction.
+    await this.depositReceipts.discardDrafts(String(order._id));
 
     this.logger.log(`✅ تم قبول أوردر Shopify: ${cleanRef}`);
     return { success: true, txId: String(tx._id) };
@@ -1532,17 +1606,30 @@ export class ShopifyService {
       reasonNote,
       reason,
     );
+    // ⚠ Approved deposits are real money in the vault — refunded (each from its own segment)
+    //   BEFORE the order is marked cancelled. A refund that fails throws, and the order stays
+    //   live: cancelling while keeping the customer's money is the failure to avoid.
+    await this.depositReceipts.settleOnCancel(orderId, cancelledBy, summary);
     order.cancelled = true;
     order.cancelledBy = cancelledBy;
     order.cancelledAt = new Date().toISOString();
     order.cancelReason = summary;
     order.cancelReasonCode = code;
     order.cancelReasonNote = code ? note : '';
+    this.resolveCancelConflict(order, cancelledBy);
     await order.save();
     this.logger.log(`🚫 تم إلغاء أوردر Shopify: ${order.ref}`);
     return { success: true };
   }
 
+
+  /** Cancelling here is the answer to a «cancelled on Shopify with approved deposit» flag. */
+  private resolveCancelConflict(order: ShopifyOrderDocument, by: string): void {
+    const c = order.shopifyCancelConflict;
+    if (c && !c.resolved) {
+      order.shopifyCancelConflict = { ...c, resolved: true, resolvedBy: by, resolvedAt: new Date().toISOString() };
+    }
+  }
 
   /**
    * Validates a cancellation reason for the shopify stage. Extracted so the direct-cancel path and
@@ -1643,6 +1730,9 @@ export class ShopifyService {
     }
     if (order.cancelled) throw new BadRequestException('الأوردر ملغي بالفعل');
 
+    // Same as the direct path: approved deposits are refunded first, or nothing is cancelled.
+    await this.depositReceipts.settleOnCancel(orderId, reviewedBy, cr.reason || '');
+    this.resolveCancelConflict(order, reviewedBy);
     order.cancelled = true;
     // The requester owns the cancellation, not the approver — the report attributes it to the
     // person who made the operational decision. `reviewedBy` below records who authorised it.

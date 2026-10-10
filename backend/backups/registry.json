@@ -1,5 +1,10 @@
 [
   {
+    "filename": "backup_auto_2026-10-10T00-00-00.json",
+    "date": "2026-10-10T00:00:01.485Z",
+    "auto": true
+  },
+  {
     "filename": "backup_2026-10-07T18-18-41.json",
     "date": "2026-10-07T18:21:21.652Z",
     "auto": false

@@ -1300,6 +1300,17 @@ export class TransactionsService {
     }
 
     const oldDeposit = existing.deposit || 0;
+    const receiptDeposits = (existing.deposits || []).filter((d: any) => d.source === 'deposit-receipt' && !d.reversed);
+    const vaultCorrections = this.planDepositVaultCorrections(existing, dto);
+    if (receiptDeposits.length && dto.deposit !== undefined && Number(dto.deposit) !== oldDeposit) {
+      throw new BadRequestException('مبالغ الإيصالات المعتمدة ثابتة — استخدم إجراءات العربون لتسجيل دفعة أو استرداد');
+    }
+    if (receiptDeposits.length && dto.depMethod !== undefined && dto.depMethod !== existing.depMethod) {
+      throw new BadRequestException('صحّح خزنة كل دفعة على حدة، بدل نقل إجمالي العربون إلى خزنة واحدة');
+    }
+    if (vaultCorrections.length && dto.total !== undefined && Number(dto.total) !== Number(existing.total)) {
+      throw new BadRequestException('احفظ تعديل إجمالي الفاتورة أولًا، ثم صحّح خزن الدفعات');
+    }
     const oldTotal = existing.total || 0;
     // Captured BEFORE any mutation — the supplier-ledger correction below is computed against it.
     const previousRemaining = existing.remaining || 0;
@@ -1342,6 +1353,7 @@ export class TransactionsService {
     if (totalDelta !== 0) changes.push(`الإجمالي: ${oldTotal} ← ${newTotal}`);
     if (depositDelta !== 0) changes.push(`الديبوزت: ${oldDeposit} ← ${newDeposit}`);
     if (depMethodChanged) changes.push(`خزنة العربون: ${oldDepMethod} ← ${newDepMethod}`);
+    for (const c of vaultCorrections) changes.push(`خزنة الدفعة ${c.id} (${c.amount}): ${c.from} ← ${c.to}`);
     if (discountDelta !== 0) changes.push(`الخصم: ${oldDiscount} ← ${newDiscount}`);
     if (shipCostDelta !== 0) changes.push(`الشحن: ${oldShipCost} ← ${newShipCost}`);
     if (newTransactionDate && newTransactionDate !== oldTransactionDate)
@@ -1409,9 +1421,37 @@ export class TransactionsService {
       priceOrigin: (existing as any).source === 'shopify' ? 'shopify' : undefined,
     });
 
-    const tx = await this.transactionModel
-      .findByIdAndUpdate(id, { ...dto, ...editCarrier, editHistory }, { new: true })
-      .exec();
+    const { depositVaultCorrections: _corrections, ...writeDto } = dto;
+    let tx: TransactionDocument | null;
+    if (vaultCorrections.length) {
+      const moved: typeof vaultCorrections = [];
+      try {
+        for (const c of vaultCorrections) {
+          await this.transferDepositVaultSegment(existing,c.from,c.to,c.amount,this.formatTxDateForVault(existing),existing.ref || id,editedBy);
+          moved.push(c);
+        }
+        const methods = new Map(vaultCorrections.map(c=>[c.id,c.to]));
+        const deposits = (existing.deposits || []).map((d: any)=>methods.has(d.id)
+          ? {...d,method:methods.get(d.id),note:`${d.note || ''} | تصحيح الخزنة: ${d.method} ← ${methods.get(d.id)}`} : d);
+        const depositReceipts = (existing.depositReceipts || []).map((r: any)=>methods.has(r.id) ? {...r,method:methods.get(r.id)} : r);
+        const primary = [...deposits].filter((d: any)=>!d.reversed && Number(d.amount)>0).sort((a: any,b: any)=>Number(b.amount)-Number(a.amount))[0];
+        Object.assign(historyEntry.before, {depositVaults: vaultCorrections.map(c=>({id:c.id,amount:c.amount,method:c.from}))});
+        Object.assign(historyEntry.after, {depMethod:primary?.method || existing.depMethod,depositVaults:vaultCorrections.map(c=>({id:c.id,amount:c.amount,method:c.to}))});
+        tx = await this.transactionModel.findOneAndUpdate(
+          {_id:id,cancelled:{$ne:true},deposits:existing.deposits,depositReceipts:existing.depositReceipts,deposit:oldDeposit},
+          {...writeDto,...editCarrier,editHistory,deposits,depositReceipts,depMethod:primary?.method || existing.depMethod},
+          {new:true},
+        ).exec();
+        if (!tx) throw new BadRequestException('تغيّرت الفاتورة أثناء تصحيح الخزن — أعد تحميلها');
+      } catch(error) {
+        for (const c of moved.reverse()) {
+          await this.transferDepositVaultSegment(existing,c.to,c.from,c.amount,this.formatTxDateForVault(existing),existing.ref || id,editedBy);
+        }
+        throw error;
+      }
+    } else {
+      tx = await this.transactionModel.findByIdAndUpdate(id, {...writeDto,...editCarrier,editHistory}, {new:true}).exec();
+    }
 
     // يُرفع عند أي تعديل على `deposits`، ليقرر الحفظ الختامي أسفل الدالة.
     let depositsTouched = false;
@@ -1763,7 +1803,16 @@ export class TransactionsService {
     // استرجاع الرصيد المحجوز إلى القيمة الأصلية عند الإلغاء الكامل
     tx.remaining = previousTotal;
 
-    const saved = await tx.save();
+    // Receipt deposits can span several vaults. Keep the sale live until every refund succeeds,
+    // and persist each completed segment so a retry never refunds that segment twice.
+    const deferReceiptCancellation = tx.type === 'مبيعات' &&
+      (tx.deposits || []).some((d: any) => d.source === 'deposit-receipt');
+    const saved = deferReceiptCancellation ? tx : await tx.save();
+    if (deferReceiptCancellation) {
+      tx.cancelled = false;
+      tx.payStatus = previousPayStatus;
+      tx.remaining = previousRemaining;
+    }
 
     // ── COD reversal: if COD was already collected, reverse the vault entry ──
     // This covers both admin-direct cancel and approve-cancel flows.
@@ -1886,15 +1935,55 @@ export class TransactionsService {
         );
       }
     } else if (previousDeposit > 0) {
-      // مبيعات / مرتجع: refund deposit to client — deduct from vault
-      await this.vaultService.addSystemEntry(
-        -previousDeposit,
-        vaultMethod,
-        `إلغاء معاملة #${tx.ref || tx._id} — ${tx.client || ''} (بواسطة: ${cancelledBy})`,
-        new Date().toISOString().split('T')[0],
-        'إلغاء',
-        tx.ref || String(tx._id),
-      );
+      // مبيعات / مرتجع: refund deposit to client — deduct from vault.
+      //
+      // ⚠ A Shopify sale's deposit can be several approved transfer receipts landing in DIFFERENT
+      //   segments (500 Instapay + 300 cash). Each receipt is refunded from the segment it came
+      //   into; refunding the whole deposit from `depMethod` would overdraw one segment and leave
+      //   another holding money that is no longer ours. Whatever the receipts do not explain
+      //   (an older single deposit) still goes back through `depMethod`, as before.
+      //   If the receipts add up to MORE than the deposit (it was edited down after confirmation),
+      //   they no longer describe it and the old single refund is used.
+      const receiptLines = (saved.deposits || []).filter((d: any) => d?.source === 'deposit-receipt' && !d.reversed);
+      const byMethod = new Map<string, number>();
+      for (const d of receiptLines) byMethod.set(d.method || vaultMethod, (byMethod.get(d.method || vaultMethod) || 0) + (Number(d.amount) || 0));
+      const receiptSum = Array.from(byMethod.values()).reduce((s, v) => s + v, 0);
+      if (receiptSum > previousDeposit + 0.005) byMethod.clear();
+      const fromReceipts = byMethod.size ? receiptSum : 0;
+      const rest = Math.round((previousDeposit - fromReceipts) * 100) / 100;
+      const today = new Date().toISOString().split('T')[0];
+      const ref = tx.ref || String(tx._id);
+      if (rest > 0.005) byMethod.set(vaultMethod, (byMethod.get(vaultMethod) || 0) + rest);
+      for (const [method, amount] of byMethod) {
+        if (amount <= 0) continue;
+        const already = deferReceiptCancellation
+          ? (tx.cancellationDepositRefunds || []).filter(r => r.method === method).reduce((s,r)=>s+r.amount,0)
+          : 0;
+        const due = Math.round((amount - already) * 100) / 100;
+        if (due <= 0.005) continue;
+        const entry = await this.vaultService.addSystemEntry(
+          -due,
+          method,
+          `إلغاء معاملة #${ref} — رد عربون ${method} — ${tx.client || ''} (بواسطة: ${cancelledBy})`,
+          today,
+          'إلغاء',
+          ref,
+        );
+        if (deferReceiptCancellation) {
+          tx.cancellationDepositRefunds = [...(tx.cancellationDepositRefunds || []),
+            {method,amount:due,vaultEntryId:String(entry?._id || ''),at:new Date().toISOString()}];
+          tx.cancelled = false;
+          tx.payStatus = previousPayStatus;
+          tx.remaining = previousRemaining;
+          await tx.save();
+        }
+      }
+    }
+    if (deferReceiptCancellation) {
+      tx.cancelled = true;
+      tx.payStatus = 'ملغي';
+      tx.remaining = previousTotal;
+      await tx.save();
     }
     try {
       const movementInfo = this.classifyInventoryMovement(saved);
@@ -4326,9 +4415,15 @@ export class TransactionsService {
           ref: (o as any).ref || String(o._id),
           client: (o as any).client || '',
           lostValue: Number((o as any).total) || 0,
-          // Nothing was ever taken, so nothing can be given back. Keeping this a hard 0 rather
-          // than reading a field is what makes the "cost of cancelling late" comparison honest.
-          refunded: 0,
+          // Before deposit receipts this was a hard 0: nothing was ever taken before confirmation.
+          // An APPROVED receipt is cash in the vault before the order is a transaction, and
+          // cancelling refunds it — so the figure is what was actually refunded, read from the
+          // receipts (status «مُسترد»), and still 0 for every order without one.
+          refunded: Math.round(
+            ((((o as any).depositReceipts || []) as any[])
+              .filter((r) => r?.status === 'مُسترد')
+              .reduce((s, r) => s + (Number(r.amount) || 0), 0)) * 100,
+          ) / 100,
           hoursToCancel: hoursBetween(
             (o as any).createdAt
               ? new Date((o as any).createdAt).toISOString()
@@ -4775,16 +4870,33 @@ export class TransactionsService {
       entityCtx,
       by,
     );
-    await this.vaultService.addSystemEntry(
-      amount,
-      toMethod,
-      `تصحيح خزنة ${kind} #${txRef} — ${party} | نقل من: ${fromMethod} | بواسطة: ${by}`,
-      txDate,
-      'تصحيح خزنة',
-      txRef,
-      entityCtx,
-      by,
-    );
+    try {
+      await this.vaultService.addSystemEntry(amount,toMethod,
+        `تصحيح خزنة ${kind} #${txRef} — ${party} | نقل من: ${fromMethod} | بواسطة: ${by}`,
+        txDate,'تصحيح خزنة',txRef,entityCtx,by);
+    } catch(error) {
+      await this.vaultService.addSystemEntry(amount,fromMethod,
+        `تراجع عن تصحيح خزنة ${kind} #${txRef} — تعذّر الإيداع في: ${toMethod}`,
+        txDate,'تصحيح خزنة',txRef,entityCtx,by);
+      throw error;
+    }
+  }
+
+  private planDepositVaultCorrections(tx: TransactionDocument, dto: UpdateTransactionDto) {
+    const input=dto.depositVaultCorrections || [];
+    if (!Array.isArray(input)) throw new BadRequestException('بيانات خزن الدفعات غير صالحة');
+    const allowed=['كاش','فودافون كاش','Instapay','تحويل بنكي'];
+    const lines=(tx.deposits || []).filter((d: any)=>d.source==='deposit-receipt' && !d.reversed && Number(d.amount)>0);
+    const seen=new Set<string>();
+    return input.flatMap(c=>{
+      if (!c || !c.id || seen.has(c.id) || !allowed.includes(c.method)) throw new BadRequestException('حدّد دفعة صحيحة وخزنة معروفة دون تكرار');
+      seen.add(c.id);
+      const line=lines.find((d: any)=>d.id===c.id);
+      if (!line || tx.cancelled) throw new BadRequestException('لا يمكن تعديل خزنة هذه الدفعة');
+      const snapshot=(tx.depositReceipts || []).find(r=>r.id===c.id);
+      if (!snapshot || Math.abs(Number(snapshot.amount)-Number(line.amount))>.005 || snapshot.method!==line.method) throw new BadRequestException('بيانات الدفعة غير متطابقة — راجع سجل العربون');
+      return line.method===c.method ? [] : [{id:c.id,from:line.method,to:c.method,amount:Number(line.amount)}];
+    });
   }
 
   private async recordVaultForTransaction(

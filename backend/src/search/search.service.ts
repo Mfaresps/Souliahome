@@ -19,6 +19,7 @@ import {
   ShopifyOrderDocument,
 } from '../shopify/schemas/shopify-order.schema';
 import { SearchResultItem, SearchResponse } from './dto/search.dto';
+import { toLatinDigits } from '../shared/digits.util';
 
 const MAX_RESULTS_PER_CATEGORY = 50;
 // تجميع العملاء بيجمع إجمالي الطلبات والمبيعات — الحركة الملغاة لازم تفضل
@@ -47,8 +48,6 @@ const TX_ANY_FILTER = {};
    التي لا تمر بهذا الـ endpoint. أي تعديل هنا يجب أن ينعكس هناك.
    ════════════════════════════════════════════════════════════════════ */
 
-/** أرقام عربية-هندية (٠-٩) وفارسية (۰-۹) — تُحوَّل إلى لاتينية قبل أي مقارنة */
-const AR_INDIC_DIGITS = /[٠-٩۰-۹]/g;
 /** فاصل الكلمات: أي شيء ليس حرفاً أو رقماً (يشمل - و _ و # و /) */
 const WORD_SPLIT = /[^\p{L}\p{N}]+/u;
 
@@ -124,13 +123,6 @@ interface ScoreCtx {
   phrase: string;
   numeric: boolean;
   fuzzy: boolean;
-}
-
-function toLatinDigits(s: string): string {
-  return s.replace(AR_INDIC_DIGITS, (d) => {
-    const c = d.charCodeAt(0);
-    return String(c >= 0x06f0 ? c - 0x06f0 : c - 0x0660);
-  });
 }
 
 /** تهريب المدخلات قبل حقنها في $regex — الاستعلام يأتي من المستخدم */

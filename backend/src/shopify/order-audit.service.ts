@@ -12,6 +12,7 @@ import { ShopifyOrder, ShopifyOrderDocument } from './schemas/shopify-order.sche
 import { OrderAudit, OrderAuditDocument } from './schemas/order-audit.schema';
 import { ShopifyAdminService } from './shopify-admin.service';
 import { PresenceGateway } from '../auth/presence.gateway';
+import { approvedDepositTotal, computeDepositFieldsFromReceipts, receiptsIn, round2 } from './deposit-receipts.util';
 
 /** A single line item as rendered into an audit row. */
 export interface AuditItem {
@@ -51,6 +52,13 @@ export interface AuditRow {
   hasShipping: boolean;
   notes: string;
   tags: string;
+  /**
+   * Pending orders only: the deposit as APPROVED deposit receipts state it (money already in the
+   * vault), and what is still awaiting a manager. Replaces reading a figure out of `notes`.
+   */
+  depositApproved: number;
+  depositMethod: string;
+  depositPending: number;
 }
 
 export type SyncStatus = 'synced' | 'missing' | 'failed' | 'cancelled' | 'pending';
@@ -269,6 +277,9 @@ export class OrderAuditService {
           hasShipping: shippingCost > 0 || actualShipCost > 0,
           notes: '',
           tags: '',
+          depositApproved: 0,
+          depositMethod: '',
+          depositPending: 0,
         });
         continue;
       }
@@ -330,6 +341,9 @@ export class OrderAuditService {
           hasShipping: (Number(so.shipCost) || 0) > 0,
           notes: String(so.notes || ''),
           tags: String(so.tags || ''),
+          depositApproved: approvedDepositTotal(so),
+          depositMethod: computeDepositFieldsFromReceipts(so).depositMethod,
+          depositPending: round2(receiptsIn(so, 'معلق').reduce((s, r) => s + (Number(r.amount) || 0), 0)),
         });
         continue;
       }
@@ -364,6 +378,9 @@ export class OrderAuditService {
         hasShipping: false,
         notes: '',
         tags: '',
+        depositApproved: 0,
+        depositMethod: '',
+        depositPending: 0,
       });
     }
 

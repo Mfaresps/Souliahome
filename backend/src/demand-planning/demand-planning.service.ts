@@ -10,6 +10,7 @@ import {
   TransactionDocument,
 } from '../transactions/schemas/transaction.schema';
 import { TransactionsService } from '../transactions/transactions.service';
+import { computeDepositFieldsFromReceipts } from '../shopify/deposit-receipts.util';
 import { ProductsService } from '../products/products.service';
 import { PurchaseOrdersService } from '../purchase-orders/purchase-orders.service';
 import { SuppliersService } from '../suppliers/suppliers.service';
@@ -648,9 +649,8 @@ export class DemandPlanningService {
             pickupStatus: '',
             bostaStatus: '',
             orderTotal: Number(order.total) || 0,
-            // Deposit is derived from notes/tags on the client — see AffectedOrder
-            deposit: 0,
-            payment: this.norm(order.payment),
+            deposit: computeDepositFieldsFromReceipts(order).depositAmount,
+            payment: computeDepositFieldsFromReceipts(order).depositMethod,
             notes: this.norm(order.notes),
             tags: this.norm(order.tags),
           });

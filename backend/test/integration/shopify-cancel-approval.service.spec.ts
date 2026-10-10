@@ -57,6 +57,8 @@ function serviceFor(order: any): any {
   const svc = Object.create(ShopifyServiceClass().prototype);
   svc.shopifyOrderModel = { findById: jest.fn().mockResolvedValue(order) };
   svc.logger = { log: jest.fn(), warn: jest.fn(), error: jest.fn() };
+  // Approved-deposit refunds on cancel are covered by shopify-deposit-receipts.service.spec.
+  svc.depositReceipts = { settleOnCancel: jest.fn().mockResolvedValue({ refunded: [], voided: 0 }) };
   return svc;
 }
 

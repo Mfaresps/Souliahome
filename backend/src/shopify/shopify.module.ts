@@ -28,6 +28,8 @@ import { InventoryMovementsModule } from '../inventory-movements/inventory-movem
 import { TransactionsModule } from '../transactions/transactions.module';
 import { SettingsModule } from '../settings/settings.module';
 import { DiscountOtpModule } from '../discount-otp/discount-otp.module';
+import { DepositReceiptsService } from './deposit-receipts.service';
+import { DepositReceiptOcrService } from './deposit-receipt-ocr.service';
 
 @Module({
   imports: [
@@ -63,6 +65,9 @@ import { DiscountOtpModule } from '../discount-otp/discount-otp.module';
     ShopifyAdminService,
     OrderAuditService,
     OrderAuditExportService,
+    // Deposit receipts: upload → OCR → manager approval → vault. Hosts the 04:30 cleanup cron.
+    DepositReceiptsService,
+    DepositReceiptOcrService,
   ],
   exports: [ShopifyAdminService, OrderAuditService],
 })

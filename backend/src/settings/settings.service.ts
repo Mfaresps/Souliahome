@@ -366,9 +366,13 @@ export class SettingsService {
     bucket?: string;
     enabled?: boolean;
     keep?: number;
+    receiptsMax?: number;
   }): Promise<void> {
     const settings = await this.getSettings();
     const $set: Record<string, unknown> = {};
+    if (typeof cfg.receiptsMax === 'number' && Number.isInteger(cfg.receiptsMax) && cfg.receiptsMax >= 1 && cfg.receiptsMax <= 50000) {
+      $set.r2ReceiptsMax = Math.floor(cfg.receiptsMax);
+    }
 
     // يُخزَّن مُطبَّعاً: لصق الرابط الكامل من لوحة Cloudflare هو السلوك الطبيعي،
     // وتخزينه كما هو يجعل الحقل يعرض قيمة تفشل عند أول اتصال.
@@ -890,6 +894,9 @@ export class SettingsService {
     'inventorymovements',
     // ── Per-segment vault balances (settings.vault* is only a mirror of these) ──
     'vaultbalances',
+    'carrierimports',
+    'carrierpayouts',
+    'orderaudits',
     // ── Operational / audit data ──
     'drafts',
     // Short-lived OTPs, but clear-data wipes them, so the pre-wipe safety backup must restore them.
@@ -916,6 +923,63 @@ export class SettingsService {
     return dir;
   }
 
+  /** New registered models are included without waiting for a manual backup-list update. */
+  private backupCollections(): string[] {
+    const registered = Object.values(this.connection.models || {})
+      .map(model => model.collection.collectionName)
+      .filter(name => name && name !== 'settings');
+    return [...new Set([...SettingsService.BACKUP_COLLECTIONS, ...registered])];
+  }
+
+  private backupConfiguration(raw: Record<string, any>): Record<string, any> {
+    const config = { ...raw };
+    for (const key of ['_id', '__v', 'createdAt', 'updatedAt', 'vaultPass', 'bostaApiKey',
+      'bostaWebhookSecret', 'r2SecretAccessKey', 'vaultBalance', 'vaultCash', 'vaultVodafone',
+      'vaultInstapay', 'vaultBank', 'r2LastRun']) delete config[key];
+    return config;
+  }
+
+  private async restoreConfiguration(raw: unknown): Promise<number> {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return 0;
+    const config = this.backupConfiguration(raw as Record<string, any>);
+    // Preserve the current image storage connection and credentials on restore.
+    for (const key of ['r2AccountId', 'r2AccessKeyId', 'r2Bucket']) delete config[key];
+    const current = await this.settingsModel.findOne().exec();
+    if (current) { current.set(config); await current.save(); }
+    else { await this.settingsModel.create(config); }
+    return 1;
+  }
+
+  private restoreSectionCollections(section: string, data: Record<string, unknown>): string[] | undefined {
+    const known = SettingsService.SECTION_COLLECTIONS[section];
+    if (!known) return undefined;
+    if (section !== 'other') return known;
+    const assigned = new Set(Object.values(SettingsService.SECTION_COLLECTIONS).flat());
+    return [...known, ...Object.keys(data).filter(name => !assigned.has(name) && name !== 'settings')];
+  }
+
+  /** Validate declared collection counts before a restore can delete any live records. */
+  private validateBackup(backup: any): void {
+    if (!backup?.data || typeof backup.data !== 'object' || Array.isArray(backup.data)) {
+      throw new Error('صيغة الملف غير صحيحة - لا يوجد حقل data');
+    }
+    if (backup.formatVersion === 2) {
+      const counts = backup.collectionCounts;
+      if (!counts || typeof counts !== 'object' || Array.isArray(counts)
+        || Object.keys(counts).length !== Object.keys(backup.data).length) {
+        throw new Error('النسخة الاحتياطية ناقصة - قائمة الجداول غير متطابقة');
+      }
+      for (const [name, count] of Object.entries(counts)) {
+        if (!Array.isArray(backup.data[name]) || backup.data[name].length !== count) {
+          throw new Error(`النسخة الاحتياطية ناقصة أو تالفة: ${name}`);
+        }
+      }
+      if (!backup.configuration || typeof backup.configuration !== 'object' || Array.isArray(backup.configuration)) {
+        throw new Error('النسخة الاحتياطية ناقصة - إعدادات النظام غير موجودة');
+      }
+    }
+  }
+
   private formatDateTime(): string {
     const now = new Date();
     return now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
@@ -929,6 +993,7 @@ export class SettingsService {
    * survives a lost or hand-edited registry.json.
    */
   async createBackup(auto = false): Promise<{ success: boolean; filename: string; message: string }> {
+    let temporaryPath: string | undefined;
     try {
       const backupDir = this.getBackupDir();
       const timestamp = this.formatDateTime();
@@ -938,20 +1003,21 @@ export class SettingsService {
       const settings = await this.settingsModel.findOne().exec();
 
       const data: Record<string, any[]> = {};
-      for (const col of SettingsService.BACKUP_COLLECTIONS) {
+      for (const col of this.backupCollections()) {
         try {
           data[col] = await this.connection.collection(col).find({}).toArray();
         } catch (e: any) {
-          // A collection that doesn't exist yet in this database reads as empty rather than
-          // aborting the whole backup.
-          this.logger.warn(`Backup: could not read collection ${col}: ${e?.message}`);
-          data[col] = [];
+          // An absent collection already returns []; a read failure must never become empty data.
+          throw new Error(`تعذّر نسخ جدول ${col}: ${e?.message || 'خطأ في قراءة البيانات'}`);
         }
       }
 
       const backupData = {
+        formatVersion: 2,
         timestamp: new Date().toISOString(),
         data,
+        collectionCounts: Object.fromEntries(Object.entries(data).map(([name, docs]) => [name, docs.length])),
+        configuration: this.backupConfiguration(settings?.toObject() || {}),
         vault_balances: {
           vaultCash: settings?.vaultCash || 0,
           vaultVodafone: settings?.vaultVodafone || 0,
@@ -964,12 +1030,18 @@ export class SettingsService {
         },
       };
 
-      fs.writeFileSync(filepath, JSON.stringify(backupData, null, 2));
+      temporaryPath = `${filepath}.${crypto.randomBytes(6).toString('hex')}.tmp`;
+      fs.writeFileSync(temporaryPath, JSON.stringify(backupData, null, 2));
+      fs.renameSync(temporaryPath, filepath);
+      temporaryPath = undefined;
       this.updateBackupRegistry(filename, auto);
       this.logger.log(`Backup created: ${filename}`);
 
       return { success: true, filename, message: `✓ تم إنشاء نسخة احتياطية: ${filename}` };
     } catch (e: any) {
+      if (temporaryPath) {
+        try { fs.unlinkSync(temporaryPath); } catch { /* A failed write may not create a file. */ }
+      }
       this.logger.error('createBackup failed', e?.stack || e?.message);
       return { success: false, filename: '', message: `❌ فشل إنشاء النسخة الاحتياطية: ${e?.message || 'خطأ غير معروف'}` };
     }
@@ -1342,6 +1414,8 @@ export class SettingsService {
         };
       }
 
+      this.validateBackup(backupData);
+
       // Extract filename, remove 'soulia-' prefix and use a clean standardized format
       let filename = file.originalname || `backup_${this.formatDateTime()}.json`;
 
@@ -1406,11 +1480,16 @@ export class SettingsService {
       return { success: false, message: 'ملف النسخة الاحتياطية تالف أو غير صالح' };
     }
 
-    if (!backupData?.data || typeof backupData.data !== 'object') {
-      return { success: false, message: 'صيغة الملف غير صحيحة - لا يوجد حقل data' };
-    }
+    try { this.validateBackup(backupData); }
+    catch (e: any) { return { success: false, message: e.message }; }
 
     const restoreResults: Record<string, number> = {};
+
+    try {
+      if (backupData.configuration) restoreResults['configuration'] = await this.restoreConfiguration(backupData.configuration);
+    } catch (e: any) {
+      return { success: false, message: `تعذّر استعادة إعدادات النظام: ${e.message}` };
+    }
 
     // Step 1: Delete current data.
     // ⚠ `users` is excluded from the WIPE but no longer from the restore — see step 2.
@@ -1616,12 +1695,12 @@ export class SettingsService {
   // produces a leaderboard of ids nobody can read.
   // Covered by the settings.service SECTION_COLLECTIONS coverage test.
   private static SECTION_COLLECTIONS: Record<string, string[]> = {
-    transactions:   ['transactions', 'returnrequests', 'inventorymovements'],
+    transactions:   ['transactions', 'returnrequests', 'inventorymovements', 'carrierimports', 'carrierpayouts'],
     products:       ['products', 'categories', 'collections', 'collectionproducts'],
     customers:      ['clients', 'suppliers', 'purchaseorders', 'supplierreturnorders', 'supplierledgerentries'],
     expenses:       ['expenses'],
     vault:          ['vaultentries', 'vaultbalances'],
-    other:          ['complaints', 'followups', 'tags', 'shopifyorders', 'mentions',
+    other:          ['complaints', 'followups', 'tags', 'shopifyorders', 'orderaudits', 'mentions',
                      'drafts', 'discountotps', 'securityauditlogs', 'employeeshifts',
                      'employeeleaves', 'employeeperformancelogs', 'demandanalysislogs', 'users',
                      'knowledgefolders', 'knowledgecards', 'knowledgeauditlogs', 'knowledgeimportlogs'],
@@ -1757,7 +1836,9 @@ export class SettingsService {
       return { success: false, message: 'ملف النسخة الاحتياطية تالف أو غير صالح' };
     }
 
-    const d = backupData?.data || {};
+    try { this.validateBackup(backupData); }
+    catch (e: any) { return { success: false, message: e.message }; }
+    const d = backupData.data;
     const preview: Record<string, any> = {};
 
     // ── Transactions ──────────────────────────────────────────────────────────
@@ -1765,9 +1846,13 @@ export class SettingsService {
       const bTx  = Array.isArray(d.transactions)    ? d.transactions    : [];
       const bRet = Array.isArray(d.returnrequests)  ? d.returnrequests  : [];
       const bMov = Array.isArray(d.inventorymovements) ? d.inventorymovements : [];
+      const bImports = Array.isArray(d.carrierimports) ? d.carrierimports : [];
+      const bPayouts = Array.isArray(d.carrierpayouts) ? d.carrierpayouts : [];
       const cTxCount  = await this.connection.collection('transactions').countDocuments().catch(()=>0);
       const cRetCount = await this.connection.collection('returnrequests').countDocuments().catch(()=>0);
       const cMovCount = await this.connection.collection('inventorymovements').countDocuments().catch(()=>0);
+      const cImportsCount = await this.connection.collection('carrierimports').countDocuments().catch(()=>0);
+      const cPayoutsCount = await this.connection.collection('carrierpayouts').countDocuments().catch(()=>0);
       const cLatestTx  = await this.getLatestDate('transactions');
       const cLatestRet = await this.getLatestDate('returnrequests');
       const cLatest = [cLatestTx, cLatestRet].filter(Boolean).sort().pop() || null;
@@ -1782,8 +1867,8 @@ export class SettingsService {
       ]);
 
       preview['transactions'] = {
-        backup:  bTx.length + bRet.length + bMov.length,
-        current: cTxCount + cRetCount + cMovCount,
+        backup:  bTx.length + bRet.length + bMov.length + bImports.length + bPayouts.length,
+        current: cTxCount + cRetCount + cMovCount + cImportsCount + cPayoutsCount,
         backupLatest: bLatest, currentLatest: cLatest,
         backupStats:  this.buildTransactionsStats(bTx, bRet),
         currentStats: this.buildTransactionsStats(cTxDocs as any[], cRetDocs as any[]),
@@ -1884,7 +1969,7 @@ export class SettingsService {
 
     // ── Other ─────────────────────────────────────────────────────────────────
     {
-      const cols = SettingsService.SECTION_COLLECTIONS['other'];
+      const cols = this.restoreSectionCollections('other', d)!;
       let bCount = 0, cCount = 0;
       const details: Record<string, {backup:number; current:number}> = {};
       for (const col of cols) {
@@ -1892,6 +1977,11 @@ export class SettingsService {
         const cLen = await this.connection.collection(col).countDocuments().catch(()=>0);
         bCount += bLen; cCount += cLen;
         details[col] = { backup: bLen, current: cLen };
+      }
+      if (backupData.configuration) {
+        const cLen = await this.connection.collection('settings').countDocuments().catch(()=>0);
+        details['configuration'] = { backup: 1, current: cLen };
+        bCount++; cCount += cLen;
       }
       preview['other'] = { backup: bCount, current: cCount, backupLatest: null, currentLatest: null, details };
     }
@@ -1930,9 +2020,8 @@ export class SettingsService {
       return { success: false, message: 'ملف النسخة الاحتياطية تالف أو غير صالح' };
     }
 
-    if (!backupData?.data || typeof backupData.data !== 'object') {
-      return { success: false, message: 'صيغة الملف غير صحيحة' };
-    }
+    try { this.validateBackup(backupData); }
+    catch (e: any) { return { success: false, message: e.message }; }
 
     const restoreResults: Record<string, number> = {};
 
@@ -1955,7 +2044,11 @@ export class SettingsService {
         continue;
       }
 
-      const collections = SettingsService.SECTION_COLLECTIONS[section];
+      if (section === 'other' && backupData.configuration) {
+        try { restoreResults['configuration'] = await this.restoreConfiguration(backupData.configuration); }
+        catch (e: any) { return { success: false, message: `تعذّر استعادة إعدادات النظام: ${e.message}` }; }
+      }
+      const collections = this.restoreSectionCollections(section, backupData.data);
       if (!collections) { this.logger.warn(`Unknown section: ${section}`); continue; }
 
       for (const col of collections) {

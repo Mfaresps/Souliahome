@@ -104,10 +104,27 @@ interface R2Response {
   body: string;
 }
 
+interface R2RawResponse {
+  status: number;
+  raw: Buffer;
+}
+
 function request(
   opts: { host: string; path: string; method: string; headers: Record<string, string> },
   payload?: Buffer,
 ): Promise<R2Response> {
+  return requestRaw(opts, payload).then((r) => ({ status: r.status, body: r.raw.toString('utf8') }));
+}
+
+/**
+ * ⚠ Chunks are kept as Buffers and joined once. Concatenating them into a string (what
+ * `request` used to do) decodes every chunk as UTF-8 on its own, which corrupts any binary body
+ * — an image comes back the right length and unreadable.
+ */
+function requestRaw(
+  opts: { host: string; path: string; method: string; headers: Record<string, string> },
+  payload?: Buffer,
+): Promise<R2RawResponse> {
   return new Promise((resolve, reject) => {
     const req = https.request(
       {
@@ -118,11 +135,11 @@ function request(
         timeout: 120000,
       },
       (res) => {
-        let body = '';
-        res.on('data', (c) => {
-          body += c;
+        const chunks: Buffer[] = [];
+        res.on('data', (c: Buffer) => {
+          chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
         });
-        res.on('end', () => resolve({ status: res.statusCode || 0, body }));
+        res.on('end', () => resolve({ status: res.statusCode || 0, raw: Buffer.concat(chunks) }));
       },
     );
     req.on('error', reject);
@@ -169,11 +186,15 @@ function hostFor(cfg: R2Config): string {
   return `${normalizeR2AccountId(cfg.accountId)}.r2.cloudflarestorage.com`;
 }
 
-/** يرفع ملفاً واحداً. يعيد رسالة الخطأ عند الفشل بدل رميه. */
+/**
+ * يرفع ملفاً واحداً. يعيد رسالة الخطأ عند الفشل بدل رميه.
+ * `contentType` اختياري — الافتراضي JSON لأن النسخ الاحتياطية هي المستخدم الأول.
+ */
 export async function r2PutObject(
   cfg: R2Config,
   key: string,
   body: Buffer,
+  contentType = 'application/json',
 ): Promise<{ ok: boolean; message: string }> {
   try {
     const host = hostFor(cfg);
@@ -189,7 +210,7 @@ export async function r2PutObject(
       host,
       extraHeaders: {
         'content-length': String(body.length),
-        'content-type': 'application/json',
+        'content-type': contentType,
       },
     });
 
@@ -331,6 +352,24 @@ export async function r2GetObject(
     return { ok: false, message: extractError(res.body, res.status), body: '' };
   } catch (e: any) {
     return { ok: false, message: e?.message || 'خطأ غير معروف', body: '' };
+  }
+}
+
+/** ينزّل ملفاً ثنائياً (صورة) كما هو — بلا تحويل لنص. */
+export async function r2GetObjectBuffer(
+  cfg: R2Config,
+  key: string,
+): Promise<{ ok: boolean; message: string; body: Buffer; status: number }> {
+  try {
+    const host = hostFor(cfg);
+    const canonicalUri = `/${encodePath(cfg.bucket)}/${encodePath(key)}`;
+    const payloadHash = sha256Hex('');
+    const headers = signRequest({ cfg, method: 'GET', canonicalUri, canonicalQuery: '', payloadHash, host });
+    const res = await requestRaw({ host, path: canonicalUri, method: 'GET', headers });
+    if (res.status >= 200 && res.status < 300) return { ok: true, message: 'تم', body: res.raw, status: res.status };
+    return { ok: false, message: extractError(res.raw.toString('utf8'), res.status), body: Buffer.alloc(0), status: res.status };
+  } catch (e: any) {
+    return { ok: false, message: e?.message || 'خطأ غير معروف', body: Buffer.alloc(0), status: 0 };
   }
 }
 

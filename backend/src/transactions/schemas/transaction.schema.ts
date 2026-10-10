@@ -315,7 +315,38 @@ export class Transaction {
     reversedAt?: string;
     reversedBy?: string;
     reversalReason?: string;
+    /** 'deposit-receipt' when this deposit came from an approved Shopify transfer receipt. */
+    source?: string;
+    receiptId?: string;
+    vaultTxNo?: string;
   }>;
+
+  /**
+   * The approved Shopify deposit receipts this sale was confirmed with (a snapshot taken by
+   * `ShopifyService.approveOrder`). Their money entered the vault when each was APPROVED, before
+   * this transaction existed — so it is shown here, never booked again.
+   * `type: [Object]` is mandatory (array @Prop rule).
+   */
+  @Prop({ type: [Object], default: [] })
+  depositReceipts: Array<{
+    id: string;
+    amount: number;
+    method: string;
+    imageKey: string;
+    imageDeleted: boolean;
+    needsReview: boolean;
+    submittedBy: string;
+    submittedAt: string;
+    reviewedBy: string;
+    reviewedAt: string;
+    vaultTxNo: string;
+    ocrAmount: number | null;
+    ocrMethod: string;
+  }>;
+
+  /** Completed deposit refunds if a receipt-based cancellation fails partway and is retried. */
+  @Prop({ type: [Object], default: [] })
+  cancellationDepositRefunds: Array<{ method: string; amount: number; vaultEntryId: string; at: string }>;
 
   /** Payment/Collection history log */
   @Prop({ type: [Object], default: [] })

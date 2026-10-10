@@ -3,30 +3,51 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Param,
   Body,
   Query,
   Headers,
   Req,
+  Res,
   HttpCode,
   Logger,
   BadRequestException,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   Request,
 } from '@nestjs/common';
-import { Request as ExpressRequest } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { Request as ExpressRequest, Response } from 'express';
 import { ShopifyService } from './shopify.service';
+import { DepositReceiptsService, MAX_RECEIPT_UPLOAD_BYTES, ReceiptActor } from './deposit-receipts.service';
+import { DepositReceiptEntryDto, DepositReceiptReasonDto } from './dto/deposit-receipt.dto';
+import { visibleReceipts } from './deposit-receipts.util';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
 import { PermsGuard } from '../core/guards/perms.guard';
 import { RequirePerms } from '../core/decorators/perms.decorator';
 
+function actorOf(req: any): ReceiptActor {
+  return {
+    id: String(req.user?.userId || req.user?.sub || req.user?._id || ''),
+    username: req.user?.username || '',
+    name: req.user?.name || req.user?.username || '',
+    isAdmin: req.user?.role === 'admin',
+  };
+}
+
 @Controller('shopify')
 export class ShopifyController {
   private readonly logger = new Logger(ShopifyController.name);
 
-  constructor(private readonly shopifyService: ShopifyService) {}
+  constructor(
+    private readonly shopifyService: ShopifyService,
+    private readonly depositReceipts: DepositReceiptsService,
+  ) {}
 
   // استقبال webhook من Shopify (بدون auth)
   @Post('webhook')
@@ -83,15 +104,15 @@ export class ShopifyController {
   // جلب الأوردرات المعلقة (للأدمن)
   @Get('orders/pending')
   @UseGuards(JwtAuthGuard)
-  async getPending() {
-    return this.shopifyService.getPendingOrders();
+  async getPending(@Request() req: any) {
+    return (await this.shopifyService.getPendingOrders()).map(o => visibleReceipts(o, actorOf(req).id));
   }
 
   // جلب كل الأوردرات
   @Get('orders')
   @UseGuards(JwtAuthGuard)
-  async getAll() {
-    return this.shopifyService.getAllOrders();
+  async getAll(@Request() req: any) {
+    return (await this.shopifyService.getAllOrders()).map(o => visibleReceipts(o, actorOf(req).id));
   }
 
   // جلب أوردرات قديمة مباشرة من Shopify (للاستيراد اليدوي)
@@ -120,18 +141,116 @@ export class ShopifyController {
     return this.shopifyService.importOrderById(shopifyId);
   }
 
-  // قبول أوردر
+  /**
+   * قبول أوردر.
+   * ⚠ لا يقبل `deposit`/`payment` من الطلب — العربون هو مجموع إيصالات التحويل المعتمدة،
+   *   ويُقرأ على الخادم. قبول رقم مكتوب هنا كان يتيح تجاوز مراجعة المدير من أي واجهة.
+   */
   @Patch('orders/:id/approve')
   @UseGuards(JwtAuthGuard)
   async approve(
     @Param('id') id: string,
-    @Body('deposit') deposit: number,
-    @Body('payment') payment: string,
     @Body('carrierCode') carrierCode: string,
     @Request() req: any,
   ) {
     const user = req.user?.username || req.user?.name || 'admin';
-    return this.shopifyService.approveOrder(id, user, deposit || 0, payment, carrierCode);
+    return this.shopifyService.approveOrder(id, user, carrierCode);
+  }
+
+  // ── Deposit receipts ──────────────────────────────────────────────────────────────────
+  // Upload / submit / edit / withdraw: the delegable `shopify-deposit-upload` perm.
+  // Approve / reject / refund: `@Roles('admin')` ONLY — never a perm a staff member could hold,
+  // so an uploader can never approve their own receipt (the approve-cancel rule).
+
+  @Post('orders/:id/deposit-receipts/upload')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
+  @RequirePerms('shopify-deposit-upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: MAX_RECEIPT_UPLOAD_BYTES },
+      fileFilter: (_req: any, file: any, cb: any) => {
+        if (!/^image\/(jpeg|png|webp)$/.test(file.mimetype)) {
+          return cb(new BadRequestException('الصورة يجب أن تكون JPG أو PNG أو WebP'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async uploadDepositReceipt(@Param('id') id: string, @UploadedFile() file: any, @Request() req: any) {
+    return this.depositReceipts.uploadDraft(id, file, actorOf(req));
+  }
+
+  @Patch('orders/:id/deposit-receipts/:rid/submit')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
+  @RequirePerms('shopify-deposit-upload')
+  async submitDepositReceipt(
+    @Param('id') id: string,
+    @Param('rid') rid: string,
+    @Body() body: DepositReceiptEntryDto,
+    @Request() req: any,
+  ) {
+    return this.depositReceipts.submit(id, rid, body, actorOf(req));
+  }
+
+  @Patch('orders/:id/deposit-receipts/:rid')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
+  @RequirePerms('shopify-deposit-upload')
+  async editDepositReceipt(
+    @Param('id') id: string,
+    @Param('rid') rid: string,
+    @Body() body: DepositReceiptEntryDto,
+    @Request() req: any,
+  ) {
+    return this.depositReceipts.editPending(id, rid, body, actorOf(req));
+  }
+
+  @Delete('orders/:id/deposit-receipts/:rid')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
+  @RequirePerms('shopify-deposit-upload')
+  async withdrawDepositReceipt(@Param('id') id: string, @Param('rid') rid: string, @Request() req: any) {
+    return this.depositReceipts.withdraw(id, rid, actorOf(req));
+  }
+
+  @Patch('orders/:id/deposit-receipts/:rid/approve')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async approveDepositReceipt(@Param('id') id: string, @Param('rid') rid: string, @Request() req: any) {
+    return this.depositReceipts.approve(id, rid, actorOf(req));
+  }
+
+  @Patch('orders/:id/deposit-receipts/:rid/reject')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async rejectDepositReceipt(
+    @Param('id') id: string,
+    @Param('rid') rid: string,
+    @Body() body: DepositReceiptReasonDto,
+    @Request() req: any,
+  ) {
+    return this.depositReceipts.reject(id, rid, actorOf(req), body?.reason || '');
+  }
+
+  @Patch('orders/:id/deposit-receipts/:rid/refund')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async refundDepositReceipt(
+    @Param('id') id: string,
+    @Param('rid') rid: string,
+    @Body() body: DepositReceiptReasonDto,
+    @Request() req: any,
+  ) {
+    return this.depositReceipts.refundApproved(id, rid, actorOf(req), body?.reason || '');
+  }
+
+  /** The receipt image, streamed from R2. Read through the API so the bucket stays private. */
+  @Get('deposit-receipts/:rid/image')
+  @UseGuards(JwtAuthGuard)
+  async depositReceiptImage(@Param('rid') rid: string, @Res() res: Response, @Request() req: any) {
+    const body = await this.depositReceipts.getImage(rid, actorOf(req));
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.send(body);
   }
 
   // إعادة إسناد أوردر لموظف آخر (أدمن فقط) — لا يؤثر على reviewedBy أو الإيداع أو سجل الأداء

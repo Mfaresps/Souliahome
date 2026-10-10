@@ -153,6 +153,7 @@ export class SettingsController {
       bucket: body?.bucket,
       enabled: body?.enabled,
       keep: body?.keep,
+      receiptsMax: body?.receiptsMax,
     });
     return { success: true, message: 'تم حفظ إعدادات النسخ السحابي' };
   }
