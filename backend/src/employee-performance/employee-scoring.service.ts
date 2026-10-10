@@ -1667,7 +1667,7 @@ export class EmployeeScoringService implements OnModuleInit {
     if (depositStatus === 'full') return { points: cfg?.depositFullPoints ?? 5, actionType: 'deposit_full' };
     if (depositPercentage >= 50) return { points: cfg?.depositPartial50Points ?? 3, actionType: 'deposit_partial_50' };
     if (depositPercentage > 0) return { points: cfg?.depositPartialLowPoints ?? 2, actionType: 'deposit_partial_low' };
-    return { points: cfg?.depositNonePoints ?? 1, actionType: 'deposit_none' };
+    return { points: cfg?.depositNonePoints ?? 0, actionType: 'deposit_none' };
   }
 
 }

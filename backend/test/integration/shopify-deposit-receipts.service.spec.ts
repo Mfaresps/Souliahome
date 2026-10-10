@@ -40,6 +40,7 @@ jest.mock('../../src/shared/r2-uploader.util', () => ({
 const { ShopifyOrderSchema } = require('../../src/shopify/schemas/shopify-order.schema');
 const { TransactionSchema } = require('../../src/transactions/schemas/transaction.schema');
 const { DepositReceiptsService } = require('../../src/shopify/deposit-receipts.service');
+const { ManualDepositReceiptSchema } = require('../../src/shopify/schemas/manual-deposit-receipt.schema');
 const ShopifyService = () => require('../../src/shopify/shopify.service').ShopifyService;
 /* eslint-enable @typescript-eslint/no-var-requires */
 
@@ -57,6 +58,7 @@ const ADMIN = { id: 'u-admin', username: 'admin', name: 'محمد أشرف', isA
 let conn: Connection;
 let orderModel: Model<any>;
 let txModel: Model<any>;
+let manualModel: Model<any>;
 
 /** A vault with real per-segment balances, so an overdraw on refund fails like the real one. */
 function makeVault() {
@@ -99,7 +101,7 @@ function setup(ocrResult?: Parameters<typeof makeOcr>[0], opts: { max?: number }
   };
   const scoring = { scoreDepositDetection: jest.fn(async () => undefined) };
   const presence = { emitEvent: jest.fn() };
-  const receipts = new DepositReceiptsService(orderModel, txModel, vault, settings, ocr, scoring, presence);
+  const receipts = new DepositReceiptsService(orderModel, txModel, vault, settings, ocr, scoring, presence, manualModel);
   receipts.logger = { log: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
   const shop = Object.create(ShopifyService().prototype);
@@ -149,6 +151,7 @@ beforeAll(async () => {
   conn = await mongoose.createConnection(URI, { serverSelectionTimeoutMS: 3000 }).asPromise();
   orderModel = conn.model('ShopifyOrder', ShopifyOrderSchema);
   txModel = conn.model('Transaction', TransactionSchema);
+  manualModel = conn.model('ManualDepositReceipt', ManualDepositReceiptSchema);
   await conn.dropDatabase();
 });
 
@@ -159,7 +162,82 @@ afterAll(async () => {
   }
 });
 
-beforeEach(() => mockR2.clear());
+beforeEach(async () => { mockR2.clear(); await manualModel.deleteMany({}); });
+
+async function confirmedManual(receipts: any, ref: string, client = '') {
+  const { receipt } = await receipts.scanManualReceipt({ ref, client }, img(), STAFF);
+  await receipts.confirmManualReceipt(receipt.id, { amount: 500, method: 'Instapay', total: 1500, confirmed: true }, STAFF);
+  return receipts.claimManualReceipt(receipt.id, { type: 'مبيعات', ref, client, deposit: 500, depMethod: 'Instapay', total: 1500 }, STAFF);
+}
+
+describe('manual sale receipt storage', () => {
+  it('uses the shared path and image API and survives orphan cleanup without a Shopify order', async () => {
+    const { receipts, vault } = setup();
+    const receipt = await confirmedManual(receipts, '91001', 'سارة أحمد');
+    expect(receipt.imageKey).toMatch(/^deposit-receipts\/\d{4}-\d{2}\/order-91001_سارة-أحمد\/order-91001_سارة-أحمد_dr_[a-z0-9]+\.jpg$/);
+    const tx = await txModel.create({ type: 'مبيعات', ref: '91001', date: '2026-10-10', employee: STAFF.name, total: 1500, depositReceipts: [receipt] });
+    await receipts.consumeManualReceipt(receipt.id, String(tx._id));
+    const image = await receipts.getImage(receipt.id, STAFF);
+    expect(image).toEqual(mockR2.get(receipt.imageKey));
+    await receipts.runCleanup();
+    expect(mockR2.has(receipt.imageKey)).toBe(true);
+    expect(vault.addSystemEntry).not.toHaveBeenCalled();
+    await txModel.deleteOne({ _id: tx._id });
+  });
+
+  it('includes manual images in the storage cap and marks their snapshots deleted', async () => {
+    const { receipts } = setup(undefined, { max: 1 });
+    const a = await confirmedManual(receipts, '91002');
+    const b = await confirmedManual(receipts, '91003');
+    const tx = await txModel.create({ type: 'مبيعات', ref: '91002', date: '2026-10-10', employee: STAFF.name, total: 1500, depositReceipts: [a, b] });
+    await receipts.runCleanup();
+    const saved: any = await txModel.findById(tx._id).lean();
+    expect(saved!.depositReceipts.filter((r: any) => r.imageDeleted)).toHaveLength(1);
+    expect([a, b].filter(r => mockR2.has(r.imageKey))).toHaveLength(1);
+    await txModel.deleteOne({ _id: tx._id });
+  });
+
+  it('rejects empty and unsupported images before storing anything', async () => {
+    const { receipts } = setup();
+    await expect(receipts.scanManualReceipt({}, { ...img(), buffer: Buffer.alloc(0) }, STAFF)).rejects.toThrow(BadRequestException);
+    await expect(receipts.scanManualReceipt({}, { ...img(), mimetype: 'image/gif' }, STAFF)).rejects.toThrow(BadRequestException);
+    expect(mockR2.size).toBe(0);
+  });
+
+  it('uploads and reads before amount entry and requires confirmation before sale creation', async () => {
+    const { receipts, ocr, vault } = setup();
+    const { receipt } = await receipts.scanManualReceipt({}, img(), STAFF);
+    expect(receipt).toMatchObject({ status: 'مسودة', amount: 0, method: '', ocr: { amount: 500, method: 'Instapay' } });
+    expect(ocr.read).toHaveBeenCalledTimes(1);
+    expect(vault.addSystemEntry).not.toHaveBeenCalled();
+    expect(await receipts.getImage(receipt.id, STAFF)).toEqual(mockR2.get(receipt.imageKey));
+    await expect(receipts.getImage(receipt.id, OTHER)).rejects.toThrow(ForbiddenException);
+    const sale = { type: 'مبيعات', ref: '91100', client: 'Manual client', deposit: 500, depMethod: 'Instapay', total: 1500 };
+    await expect(receipts.claimManualReceipt(receipt.id, sale, STAFF)).rejects.toThrow(BadRequestException);
+    await expect(receipts.confirmManualReceipt(receipt.id, { amount: 500, method: 'Instapay', total: 1500, confirmed: false }, STAFF)).rejects.toThrow(BadRequestException);
+    await receipts.confirmManualReceipt(receipt.id, { amount: 500, method: 'Instapay', total: 1500, confirmed: true }, STAFF);
+    const claims = await Promise.allSettled([receipts.claimManualReceipt(receipt.id, sale, STAFF), receipts.claimManualReceipt(receipt.id, sale, STAFF)]);
+    expect(claims.filter(r => r.status === 'fulfilled')).toHaveLength(1);
+    const snapshot: any = (claims.find(r => r.status === 'fulfilled') as PromiseFulfilledResult<any>).value;
+    expect(snapshot.imageKey).toContain('order-91100_Manual-client');
+    expect(mockR2.has(receipt.imageKey)).toBe(false);
+    expect(ocr.read).toHaveBeenCalledTimes(1);
+  });
+
+  it('retains image warnings and requires their acknowledgement with the employee confirmation', async () => {
+    const { receipts } = setup({ ran: false, amount: null, method: '', confident: false });
+    const { receipt } = await receipts.scanManualReceipt({}, img(), STAFF);
+    expect(receipt.warnings.some((w: any) => w.code === 'ocr-unavailable')).toBe(true);
+    const entry = { amount: 500, method: 'Instapay', total: 1500, confirmed: true };
+    await expect(receipts.confirmManualReceipt(receipt.id, entry, STAFF)).rejects.toThrow(BadRequestException);
+    const result = await receipts.confirmManualReceipt(receipt.id, { ...entry, acknowledgeImageWarning: true }, STAFF);
+    expect(result.receipt.needsReview).toBe(true);
+    expect(result.receipt.warningAcknowledgedById).toBe(STAFF.id);
+    const edited = await receipts.confirmManualReceipt(receipt.id, { ...entry, amount: 499 }, STAFF);
+    expect(edited.receipt.amount).toBe(499);
+    expect(edited.receipt.warningAcknowledgedById).toBe(STAFF.id);
+  });
+});
 
 describe('invoice receipt vault corrections with real MongoDB',()=>{
   it('persists the selected vault and preserves the separate payment records',async()=>{

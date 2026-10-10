@@ -268,7 +268,7 @@ export class SettingsService {
         depositFullPoints: 5,
         depositPartial50Points: 3,
         depositPartialLowPoints: 2,
-        depositNonePoints: 1,
+        depositNonePoints: 0,
       };
       const currentPerf = (settings as any).performanceConfig || {};
       const missingPerfKeys = Object.keys(perfDefaults).filter((k) => currentPerf[k] === undefined || currentPerf[k] === null);
@@ -608,6 +608,11 @@ export class SettingsService {
     if (dto.autoSettleVaultMethod !== undefined && !['كاش', 'فودافون كاش', 'Instapay', 'تحويل بنكي'].includes(dto.autoSettleVaultMethod)) {
       throw new BadRequestException('خزنة غير معروفة لتسويات بوسطة');
     }
+    // Same rule as autoSettleSince above — fixes when auto-approval started, never moved by the client.
+    if (dto.autoApproveDepositsEnabled === true && !(existing as any).autoApproveDepositsSince) {
+      $set.autoApproveDepositsSince = new Date().toISOString();
+    }
+    if (dto.autoApproveDepositsEnabled !== true || (existing as any).autoApproveDepositsSince) delete $set.autoApproveDepositsSince;
     const updated = await this.settingsModel.findByIdAndUpdate(
       existing._id,
       { $set },

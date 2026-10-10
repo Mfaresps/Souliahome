@@ -203,6 +203,10 @@ export class CreateTransactionDto {
 
   @IsString()
   @IsOptional()
+  readonly manualDepositReceiptId?: string;
+
+  @IsString()
+  @IsOptional()
   readonly payStatus?: string;
 
   @IsNumber()

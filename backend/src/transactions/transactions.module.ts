@@ -16,6 +16,7 @@ import { ReportsExportService } from './reports-export.service';
 import { CarrierStatementService } from './carrier-statement.service';
 import { CarrierSettlementService } from './carrier-settlement.service';
 import { CarrierAutoSettleService } from './carrier-auto-settle.service';
+import { CarrierBatchPayoutService } from './carrier-batch-payout.service';
 import { CarrierAutoSettleController } from './carrier-auto-settle.controller';
 import { CarrierPayout, CarrierPayoutSchema } from './schemas/carrier-payout.schema';
 import { BostaModule } from '../bosta/bosta.module';
@@ -83,6 +84,7 @@ import { FollowUpsModule } from '../followups/followups.module';
     CarrierStatementService,
     CarrierSettlementService,
     CarrierAutoSettleService,
+    CarrierBatchPayoutService,
   ],
   exports: [TransactionsService, CarrierStatementService, CarrierSettlementService],
 })

@@ -30,6 +30,8 @@ import { SettingsModule } from '../settings/settings.module';
 import { DiscountOtpModule } from '../discount-otp/discount-otp.module';
 import { DepositReceiptsService } from './deposit-receipts.service';
 import { DepositReceiptOcrService } from './deposit-receipt-ocr.service';
+import { DepositAutoApproveService } from './deposit-auto-approve.service';
+import { ManualDepositReceipt, ManualDepositReceiptSchema } from './schemas/manual-deposit-receipt.schema';
 
 @Module({
   imports: [
@@ -38,6 +40,7 @@ import { DepositReceiptOcrService } from './deposit-receipt-ocr.service';
       { name: Product.name, schema: ProductSchema },
       { name: ShopifyOrder.name, schema: ShopifyOrderSchema },
       { name: OrderAudit.name, schema: OrderAuditSchema },
+      { name: ManualDepositReceipt.name, schema: ManualDepositReceiptSchema },
     ]),
     VaultModule,
     AuthModule,
@@ -68,7 +71,10 @@ import { DepositReceiptOcrService } from './deposit-receipt-ocr.service';
     // Deposit receipts: upload → OCR → manager approval → vault. Hosts the 04:30 cleanup cron.
     DepositReceiptsService,
     DepositReceiptOcrService,
+    // Auto-approves only the receipts the review queue exists to filter OUT of — see its header.
+    // Hosts the once-a-minute cron; calls DepositReceiptsService.approve(), never writes directly.
+    DepositAutoApproveService,
   ],
-  exports: [ShopifyAdminService, OrderAuditService],
+  exports: [ShopifyAdminService, OrderAuditService, DepositReceiptsService],
 })
 export class ShopifyModule {}

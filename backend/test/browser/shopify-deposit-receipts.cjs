@@ -18,6 +18,8 @@ let failSubmit = false;
 let failOrders = false;
 let failWithdraw = false;
 let failUpload = false;
+let manualReceipt = null;
+let failManualSave = true;
 let releaseUpload;
 let checks = 0;
 function check(condition, message) { assert.ok(condition,message); checks++; }
@@ -40,6 +42,22 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
         if(url.pathname==='/config.js')return req.respond({status:200,contentType:'text/javascript',body:'window.__ENV__={API_BASE_URL:""};'});
         if(url.pathname.startsWith('/api/')) {
           seen.push({path:url.pathname,method:req.method(),headers:req.headers(),body:req.postData()||''});
+          if(url.pathname==='/api/transactions/deposit-receipts/upload') {
+            manualReceipt={id:'manual-receipt-1',status:'مسودة',amount:0,method:'',imageDeleted:false,
+              submittedBy:'Tester',submittedById:'staff-1',uploadedAt:new Date().toISOString(),submittedAt:'',
+              warnings:[],needsReview:true,ocr:{amount:500,method:'Instapay',confident:true}};
+            return reply({receipt:manualReceipt});
+          }
+          if(url.pathname==='/api/transactions/deposit-receipts/manual-receipt-1/submit') {
+            const body=JSON.parse(req.postData());
+            Object.assign(manualReceipt,{amount:body.amount,method:body.method,status:'معلق',submittedAt:new Date().toISOString()});
+            return reply({success:true,receipt:manualReceipt});
+          }
+          if(url.pathname==='/api/transactions/deposit-receipts/manual-receipt-1' && req.method()==='DELETE') {
+            manualReceipt=null;return reply({success:true});
+          }
+          if(url.pathname==='/api/transactions' && req.method()==='POST' && process.argv.includes('--manual-only'))
+            return failManualSave ? reply({message:'Sale save unavailable'},503) : reply({_id:'manual-sale-1',...JSON.parse(req.postData())});
           if(url.pathname==='/api/shopify/orders')return reply(failOrders?{message:'Refresh failed'}:orders,failOrders?503:200);
           if(url.pathname==='/api/settings/r2-config/test')return reply({success:true,message:'Shared connection verified'});
           if(url.pathname==='/api/settings/r2-config' && req.method()==='POST')return reply({success:true});
@@ -92,6 +110,53 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
       qs('#app').style.display='';
       qs('#splash-screen')?.remove();
     },orders);
+    if (process.argv.includes('--manual-only')) {
+      await page.evaluate(()=>{
+        currentUser.perms=[];
+        txType='مبيعات';txItems=[{productId:'p1',name:'Product',code:'P001',qty:1,price:1500}];renderTxFields();
+        qs('#tx-ref').value='91000';qs('#tx-client').value='Manual test';
+        openTxDepositReceiptForm();
+      });
+      check(await page.$eval('#tx-deposit',e=>e.type==='hidden' && Number(e.value)===0),'manual deposit begins with image upload before amount entry');
+      check(!await page.$('#spdep-amount'),'receipt amount is not requested before upload');
+      check(!!await page.$('#spdep-file') && !!await page.$('#spdep-paste-btn'),'manual receipt shares the Shopify upload and paste controls without requiring Shopify permissions');
+      await page.evaluate(async()=>{
+        const file=new File([new Uint8Array([1,2,3])],'manual-receipt.png',{type:'image/png'});
+        const transfer=new DataTransfer();transfer.items.add(file);
+        qs('#spdep-file').files=transfer.files;
+        await _spUploadReceipt(qs('#spdep-file'));
+      });
+      await page.waitForFunction(()=>_spReceiptForm && !_spReceiptForm.autofilling && qs('#spdep-amount')?.value==='500');
+      const upload=seen.find(r=>r.path==='/api/transactions/deposit-receipts/upload');
+      check(upload?.headers['content-type'].startsWith('multipart/form-data; boundary='),'photo is sent to the scanner immediately with its multipart boundary');
+      check(upload.headers.authorization==='Bearer test-token','manual receipt scanning is authenticated');
+      check(!seen.some(r=>r.path==='/api/transactions' && r.method==='POST'),'scanning creates no transaction');
+      check(await page.$eval('#spdep-method',e=>e.value==='Instapay'),'OCR payment method is suggested in the shared receipt form');
+      check(await page.$eval('#spdep-submit-btn',e=>e.disabled),'employee confirmation is required after scanning');
+      check(await page.$eval('#tx-deposit',e=>Number(e.value)===0),'scanned but unconfirmed receipt does not set the sale deposit');
+      await page.evaluate(async()=>{
+        qs('#spdep-confirm-check').checked=true;_spDepSyncConfirm();
+        await _spSubmitReceipt(qs('#spdep-submit-btn'));
+      });
+      const confirmation=seen.find(r=>r.path.endsWith('/manual-receipt-1/submit'));
+      check(JSON.parse(confirmation.body).confirmed===true && JSON.parse(confirmation.body).total>=1500,'confirmation sends the employee acknowledgement and current sale cap');
+      check(await page.$eval('#tx-deposit',e=>e.value==='500'),'confirmed receipt populates the manual sale deposit');
+      check(await page.$eval('#tx-deposit-receipt-preview',e=>e.textContent.includes('Checked and confirmed')),'manual receipt is ready for sale save without waiting for manager approval');
+      await page.evaluate(async()=>{
+        pendingTxData={type:'مبيعات',ref:'91000',deposit:500,depMethod:'Instapay',total:1500,client:'Manual test',items:[],manualDepositReceiptId:_txConfirmedReceipt().id};
+        await confirmTxSave();
+      });
+      check(await page.evaluate(()=>!!_txConfirmedReceipt() && !!pendingTxData),'failed sale save retains the checked receipt for retry');
+      const saleRequest=seen.find(r=>r.path==='/api/transactions' && r.method==='POST');
+      check(JSON.parse(saleRequest.body).manualDepositReceiptId==='manual-receipt-1','sale save refers to the server-checked receipt instead of uploading or scanning again');
+      failManualSave=false;
+      await page.evaluate(async()=>{_txSubmitHistory.clear();await confirmTxSave();});
+      check(await page.evaluate(()=>!_txReceiptOrder && !pendingTxData),'successful sale save clears the receipt form');
+      check(seen.filter(r=>r.path==='/api/transactions/deposit-receipts/upload').length===1,'scan is performed only once across confirmation and save retries');
+      check(errors.length===0,'no browser errors: '+errors.join('; '));
+      console.log(JSON.stringify({checks,errors,network:'fully mocked',scope:'manual receipts'},null,2));
+      return;
+    }
     await page.evaluate(()=>{
       settings={r2AccountId:'test-account',r2AccessKeyId:'test-access',r2SecretAccessKeySet:true,r2Bucket:'soulia-local-test',r2Enabled:false};
       _syncR2Card();

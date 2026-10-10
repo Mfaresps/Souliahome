@@ -315,16 +315,15 @@ export class Transaction {
     reversedAt?: string;
     reversedBy?: string;
     reversalReason?: string;
-    /** 'deposit-receipt' when this deposit came from an approved Shopify transfer receipt. */
+    /** 'deposit-receipt' for Shopify receipts and receipt-backed manual sale deposits. */
     source?: string;
     receiptId?: string;
     vaultTxNo?: string;
   }>;
 
   /**
-   * The approved Shopify deposit receipts this sale was confirmed with (a snapshot taken by
-   * `ShopifyService.approveOrder`). Their money entered the vault when each was APPROVED, before
-   * this transaction existed — so it is shown here, never booked again.
+   * Receipt snapshots displayed with the sale. Shopify deposits entered the vault on receipt
+   * approval before confirmation; manual sale deposits are booked once during create().
    * `type: [Object]` is mandatory (array @Prop rule).
    */
   @Prop({ type: [Object], default: [] })

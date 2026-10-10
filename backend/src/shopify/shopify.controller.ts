@@ -23,6 +23,7 @@ import { memoryStorage } from 'multer';
 import { Request as ExpressRequest, Response } from 'express';
 import { ShopifyService } from './shopify.service';
 import { DepositReceiptsService, MAX_RECEIPT_UPLOAD_BYTES, ReceiptActor } from './deposit-receipts.service';
+import { DepositAutoApproveService } from './deposit-auto-approve.service';
 import { DepositReceiptEntryDto, DepositReceiptReasonDto } from './dto/deposit-receipt.dto';
 import { visibleReceipts } from './deposit-receipts.util';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
@@ -47,6 +48,7 @@ export class ShopifyController {
   constructor(
     private readonly shopifyService: ShopifyService,
     private readonly depositReceipts: DepositReceiptsService,
+    private readonly depositAutoApprove: DepositAutoApproveService,
   ) {}
 
   // استقبال webhook من Shopify (بدون auth)
@@ -241,6 +243,27 @@ export class ShopifyController {
     @Request() req: any,
   ) {
     return this.depositReceipts.refundApproved(id, rid, actorOf(req), body?.reason || '');
+  }
+
+  // ── Auto-approve ────────────────────────────────────────────────────────────────────────
+  // The on/off switch itself is `settings.autoApproveDepositsEnabled`, written through the
+  // existing admin-only PUT /settings (it also stamps `autoApproveDepositsSince` on first
+  // turn-on). These two routes only read/act on top of that switch.
+
+  /** How many pending receipts right now would be approved if the cron ran this second. */
+  @Get('deposit-receipts/auto-approve/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async depositAutoApproveStatus() {
+    return { cleanCount: await this.depositAutoApprove.pendingCleanCount() };
+  }
+
+  /** Runs the same decision immediately, instead of waiting for the next minute's cron. */
+  @Post('deposit-receipts/auto-approve/run-now')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async depositAutoApproveRunNow() {
+    return this.depositAutoApprove.runNow();
   }
 
   /** The receipt image, streamed from R2. Read through the API so the bucket stays private. */

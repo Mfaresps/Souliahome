@@ -373,6 +373,15 @@ export class Settings {
   @Prop({ default: 25 })
   carrierTransferFee: number;
 
+  // ── Automatic deposit-receipt approval (deposit-auto-approve.service.ts) ────────────────────
+  /** Master switch. Off by default: every receipt waits for a manager until an admin turns it on. */
+  @Prop({ default: false })
+  autoApproveDepositsEnabled: boolean;
+
+  /** Stamped when the switch is first turned on, by whom. Receipts submitted before it are untouched. */
+  @Prop({ default: '' })
+  autoApproveDepositsSince: string;
+
   /** Employee performance scoring configuration (Customer Service Performance Dashboard) — points awarded per criterion, admin-tunable */
   @Prop({
     type: Object,
@@ -381,7 +390,7 @@ export class Settings {
       depositFullPoints: 5,
       depositPartial50Points: 3,
       depositPartialLowPoints: 2,
-      depositNonePoints: 1,
+      depositNonePoints: 0,
     },
   })
   performanceConfig: {

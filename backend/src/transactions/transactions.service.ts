@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
+import { bostaCashoutDueAt } from '../shared/bosta-cashout.util';
 import {
   Transaction,
   TransactionDocument,
@@ -43,6 +44,7 @@ import { MentionsService } from '../mentions/mentions.service';
 import { DiscountOtpService } from '../discount-otp/discount-otp.service';
 import { SettingsService } from '../settings/settings.service';
 import { ShopifyAdminService } from '../shopify/shopify-admin.service';
+import { DepositReceiptsService, ReceiptActor } from '../shopify/deposit-receipts.service';
 import { SupplierLedgerService } from '../supplier-ledger/supplier-ledger.service';
 import { SuppliersService } from '../suppliers/suppliers.service';
 import {
@@ -165,6 +167,7 @@ export class TransactionsService {
     // order says "done" while the ticket keeps escalating on somebody's screen.
     @Inject(forwardRef(() => FollowUpsService))
     private readonly followUpsService: FollowUpsService,
+    private readonly depositReceiptsService: DepositReceiptsService,
   ) {}
 
   // ── Concurrent edit lock: txId → { user, since } ──
@@ -863,7 +866,9 @@ export class TransactionsService {
     return carrierDef(code)?.en || carrierLabel(code, 'ar');
   }
 
-  async create(dto: CreateTransactionDto, callerRole?: string): Promise<TransactionDocument> {
+  async create(dto: CreateTransactionDto, callerRole?: string,
+    receiptUpload?: { draftId: string; actor: ReceiptActor }): Promise<TransactionDocument> {
+    if (dto.manualDepositReceiptId && !receiptUpload) throw new BadRequestException('أكّد فحص الإيصال قبل حفظ المعاملة');
     const employee = (dto as unknown as { employee?: string }).employee || '';
     // High-value discount OTP enforcement (admin is exempt; skip entirely when otpEnabled=false)
     const discountAmt = Number((dto as unknown as { discount?: number }).discount) || 0;
@@ -937,11 +942,22 @@ export class TransactionsService {
     //   full ISO timestamp is what produced 326 of 521 rows in the mixed state that made the
     //   last day of every report period drop those rows (see date-window.util.ts). The window
     //   helpers tolerate both formats; this stops new rows joining them.
-    const tx = await this.transactionModel.create({
-      ...dto,
-      ...carrier,
-      ...(dto.date ? { date: normalizeDateOnly(dto.date) } : {}),
-    });
+    const receipt = receiptUpload
+      ? await this.depositReceiptsService.claimManualReceipt(receiptUpload.draftId, dto, receiptUpload.actor)
+      : undefined;
+    let tx: TransactionDocument;
+    try {
+      tx = await this.transactionModel.create({
+        ...dto,
+        ...carrier,
+        ...(receipt ? { depositReceipts: [receipt] } : {}),
+        ...(dto.date ? { date: normalizeDateOnly(dto.date) } : {}),
+      });
+    } catch (error) {
+      if (receipt) await this.depositReceiptsService.releaseManualReceipt(receipt.id);
+      throw error;
+    }
+    if (receipt) await this.depositReceiptsService.consumeManualReceipt(receipt.id, String(tx._id));
 
     // Link discount OTP to created transaction (audit trail)
     const otpIdForLink = (dto as unknown as { highValueDiscountOtpId?: string }).highValueDiscountOtpId || '';
@@ -968,7 +984,8 @@ export class TransactionsService {
     if (deposit > 0) {
       if (!tx.deposits) tx.deposits = [];
       tx.deposits.push({
-        id: this.genPaymentId(),
+        id: receipt?.id || this.genPaymentId(),
+        ...(receipt ? { source: 'deposit-receipt', receiptId: receipt.id } : {}),
         amount: deposit,
         method: depMethod,
         note: 'ديبوزت أول - عند إنشاء المعاملة',
@@ -978,7 +995,7 @@ export class TransactionsService {
       await tx.save();
     }
 
-    await this.recordVaultForTransaction(tx);
+    await this.recordVaultForTransaction(tx, receipt?.id);
 
     if (tx.type === 'مشتريات' && this.transactionAddsSupplierPurchases(tx)) {
       const supplierId = await this.resolveSupplierIdForLedger(
@@ -1281,6 +1298,9 @@ export class TransactionsService {
     const existing = await this.transactionModel.findById(id).exec();
     if (!existing) {
       throw new NotFoundException('المعاملة غير موجودة');
+    }
+    if ((existing as any).carrierSettlement?.payoutId) {
+      throw new BadRequestException('الطلب مرتبط بدفعة بوسطة؛ يلزم مراجعة تسوية الدفعة قبل تعديل قيم الطلب');
     }
     this.assertNotExchangePendingCollect(existing);
     this.assertEditableByFulfillment(existing, callerRole);
@@ -1769,6 +1789,9 @@ export class TransactionsService {
     cancelledBy: string,
     structured?: { code?: string; note?: string; stage?: CancelStage },
   ): Promise<TransactionDocument> {
+    if ((tx as any).carrierSettlement?.payoutId) {
+      throw new BadRequestException('الطلب مرتبط بتحويل بوسطة مجمع — يلزم تسوية الدفعة قبل إلغاء الطلب');
+    }
     // An automatic Bosta settlement is undone FIRST and the document reloaded. Left in place, the
     // COD reversal below would subtract the full COD (510) where the settlement booked the net
     // (396), and the shipping outflow of a prepaid order would never come back.
@@ -2743,6 +2766,55 @@ export class TransactionsService {
     return { success: true, transaction: tx.toObject() };
   }
 
+  /** Close an order belonging to a single bank payout. The payout owns the only vault entry. */
+  async finalizeCarrierPayoutOrder(id: string, payoutId: string, date: string, by: string): Promise<void> {
+    const tx: any = await this.transactionModel.findById(id).lean().exec();
+    if (!tx) throw new NotFoundException('طلب دفعة بوسطة غير موجود');
+    const cs = tx.carrierSettlement;
+    if (cs?.payoutId !== payoutId) throw new BadRequestException('الطلب لا ينتمي لدفعة التحويل');
+    if (cs.finalizedPayoutId === payoutId) return;
+    if (tx.cancelled || Number(tx.remaining || 0) !== Number(cs.remaining || 0)) {
+      throw new BadRequestException('تغيّرت حالة الطلب أثناء تجهيز دفعة بوسطة');
+    }
+    const round = (n: number) => Math.round(n * 100) / 100;
+    const cod = Number(cs.carrierCod) || 0;
+    const now = new Date().toISOString();
+    const snapshotBefore = Object.fromEntries([
+      'deposit', 'remaining', 'payStatus', 'collectMethod', 'collectNote', 'collectedAt',
+      'actualShipCost', 'shipLoss', 'shipSaving', 'codCollectionStatus', 'codCollectedBy',
+      'codCollectedAt', 'codCollectionMethod',
+    ].map(k => [k, tx[k] ?? (['deposit', 'remaining', 'actualShipCost', 'shipLoss', 'shipSaving'].includes(k) ? 0 : '')]));
+    const paymentId = `carrier_${payoutId}_${id}`;
+    const cashoutAt = bostaCashoutDueAt({ wallet: { cashout: { next_cashout_date: date } } });
+    const next = {
+      actualShipCost: Number(cs.fees?.priceAfterVat) || 0,
+      shipLoss: round((Number(tx.shipLoss) || 0) + (Number(cs.shipLossAdd) || 0)),
+      shipSaving: round((Number(tx.shipSaving) || 0) + (Number(cs.shipSavingAdd) || 0)),
+      ...(cod > 0 ? {
+        deposit: round((Number(tx.deposit) || 0) + cod), remaining: 0, payStatus: 'مكتمل',
+        collectMethod: cs.vaultMethod, collectNote: `ضمن دفعة بوسطة ${payoutId}`, collectedAt: date,
+        codCollectionStatus: 'Collected', codCollectedBy: by, codCollectedAt: now, codCollectionMethod: cs.vaultMethod,
+      } : {}),
+      carrierSettlement: { ...cs, status: 'settled', phase: 'bank', finalizedPayoutId: payoutId,
+        scheduledCashoutDueAt: cs.cashoutDueAt, cashoutDueAt: cashoutAt,
+        settledAt: now, settledBy: by, bookDate: date, snapshotBefore,
+        collectPaymentId: cod > 0 ? paymentId : '', collectVaultEntryId: '', shortfallVaultEntryId: '' },
+    };
+    const result = await this.transactionModel.updateOne(
+      { _id: id, 'carrierSettlement.payoutId': payoutId, 'carrierSettlement.finalizedPayoutId': { $ne: payoutId },
+        cancelled: { $ne: true }, remaining: tx.remaining },
+      { $set: next, $push: {
+        ...(cod > 0 ? { payments: { id: paymentId, amount: cod, collectedAmount: cod, method: cs.vaultMethod,
+          note: `تحصيل ضمن دفعة بوسطة ${payoutId}`, date: cashoutAt, by,
+          remaining: tx.remaining, vaultDelta: 0, carrierPayoutId: payoutId, snapshotBefore } } : {}),
+        codCollectionHistory: { action: 'carrier-settled', by, at: now, amount: cod, method: cs.vaultMethod,
+          note: `دفعة مجمعة ${payoutId} — مستحقات بوسطة ${next.actualShipCost} ج` },
+      }, $inc: { __v: 1 } },
+    ).exec();
+    if (!result.modifiedCount) throw new BadRequestException('تغيّر الطلب أثناء تسوية دفعة بوسطة');
+    this.emit('tx:updated', { _id: id });
+  }
+
   async collect(
     id: string,
     dto: CollectTransactionDto,
@@ -2767,7 +2839,7 @@ export class TransactionsService {
     }
     // A Bosta settlement in progress or awaiting review owns this order's collection. Collecting it
     // here as well is how the same cash would be booked twice.
-    if (!opts.carrierActual && ['processing', 'review', 'pending'].includes((tx as any).carrierSettlement?.status || '')) {
+    if ((tx as any).carrierSettlement?.payoutId || (!opts.carrierActual && ['processing', 'review', 'pending'].includes((tx as any).carrierSettlement?.status || ''))) {
       throw new BadRequestException('هذا الطلب قيد تسوية بوسطة — راجع التسوية من الخزنة ← تسويات بوسطة');
     }
     if (tx.payStatus === 'مكتمل') {
@@ -2963,6 +3035,7 @@ export class TransactionsService {
 
     // آخر عملية تحصيل
     const lastPayment: any = payments[payments.length - 1];
+    if (lastPayment?.carrierPayoutId) throw new BadRequestException('هذا التحصيل ضمن دفعة بوسطة — التراجع يكون عن الدفعة كاملة');
     const isPurchase = tx.type === 'مشتريات';
     const txRef = tx.ref || String(tx._id);
 
@@ -3056,6 +3129,7 @@ export class TransactionsService {
     if (!tx) throw new NotFoundException('المعاملة غير موجودة');
     const cs: any = (tx as any).carrierSettlement;
     if (!cs || cs.status !== 'settled') throw new BadRequestException('لا توجد تسوية بوسطة مسجلة لهذا الطلب');
+    if (cs.payoutId) throw new BadRequestException('هذا الطلب ضمن تحويل مجمع — تراجع عن دفعة التحويل كاملة من كشف بوسطة');
 
     if (cs.collectPaymentId) {
       const pays = tx.payments || [];
@@ -3156,6 +3230,9 @@ export class TransactionsService {
 
     if (paymentIdx === -1 && depositIdx === -1) {
       throw new NotFoundException('الدفعة المستهدفة غير موجودة');
+    }
+    if (paymentIdx !== -1 && payments[paymentIdx]?.carrierPayoutId) {
+      throw new BadRequestException('هذا التحصيل ضمن دفعة بوسطة — التراجع يكون عن الدفعة كاملة');
     }
 
     const isPurchase = tx.type === 'مشتريات';
@@ -4901,6 +4978,7 @@ export class TransactionsService {
 
   private async recordVaultForTransaction(
     tx: TransactionDocument,
+    manualReceiptId?: string,
   ): Promise<void> {
     const txRef = tx.ref || String(tx._id);
     const txDate = this.formatTxDateForVault(tx);
@@ -4909,7 +4987,7 @@ export class TransactionsService {
       ? (tx.type === 'مشتريات' ? { supplier: tx.client } : { customer: tx.client })
       : undefined;
     if (tx.type === 'مبيعات' && (tx.deposit || 0) > 0) {
-      await this.vaultService.addSystemEntry(
+      const entry = await this.vaultService.addSystemEntry(
         tx.deposit,
         tx.depMethod || 'كاش',
         `ديبوزت مبيعات #${txRef} — ${tx.client || ''}`,
@@ -4919,6 +4997,11 @@ export class TransactionsService {
         entityCtx,
         emp,
       );
+      if (manualReceiptId) {
+        tx.depositReceipts = tx.depositReceipts.map(r => r.id === manualReceiptId ? { ...r, vaultTxNo: entry?.txNo || '' } : r);
+        tx.deposits = tx.deposits.map(d => d.id === manualReceiptId ? { ...d, vaultTxNo: entry?.txNo || '' } : d);
+        await tx.save();
+      }
       // If collected, also record the collected remaining
       if (
         tx.payStatus === 'مكتمل' &&

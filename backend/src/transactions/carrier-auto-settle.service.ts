@@ -10,30 +10,24 @@ import { SettingsService } from '../settings/settings.service';
 import { VaultService } from '../vault/vault.service';
 import { ExpensesService } from '../expenses/expenses.service';
 import { PresenceGateway } from '../auth/presence.gateway';
-import { parseBostaPricing, decideSettlement, r2, BostaPricing, SettleDecision } from '../shared/bosta-pricing.util';
+import { parseBostaPricing, parseBostaSettlementPricing, decideSettlement, r2, BostaPricing, SettleDecision } from '../shared/bosta-pricing.util';
+import { CarrierBatchPayoutService } from './carrier-batch-payout.service';
+import { bostaCashoutDueAt } from '../shared/bosta-cashout.util';
 import { dateOnly, inDateWindow, dateWindowQuery } from '../shared/date-window.util';
 
 /**
  * Automatic settlement of Bosta deliveries — the sibling of carrier-settlement.service.ts (which
  * settles from an uploaded file and is untouched by this one).
  *
- * ── WHAT ONE SETTLEMENT BOOKS ─────────────────────────────────────────────────────────────────
- *   net = remaining − Bosta's fee (priceAfterVat)
- *   net ≥ 0 → collect() with `carrierActual`, which books the net as a تحصيل and marks the order
- *             paid. The fee is deducted EXACTLY, so a carrier that took less than the tariff
- *             credits the difference (shipSaving).
- *   net < 0 → the gap (fees beyond what Bosta collected — a prepaid order is all gap) leaves the
- *             vault as one مصروف entry. collect() still runs when anything was owed, booking 0.
- *
- * ⚠ THE ONE ARCHITECTURAL RULE (same as the file importer): collection goes through
- *   TransactionsService.collect(). It owns the vault entry, payments[] and the snapshot undo uses.
+ * Each order records remaining − Bosta's fees in the carrier wallet. Prepaid orders contribute
+ * only their fees. CarrierBatchPayoutService posts one net bank credit for the scheduled group,
+ * and TransactionsService owns the order/payment updates without individual vault movements.
  *
  * ⚠ SINGLE-FLIGHT. `carrierSettleLock` is taken with one atomic findOneAndUpdate. Bosta repeats
  *   DELIVERED webhooks and users double-click; the second attempt finds nothing to lock.
  *
- * ⚠ THE BOSTA TRANSFER IS NOT INCOME. Each order entered the vault when it settled. A transfer
- *   books only its fee, the return-leg fees Bosta netted out, and (if the user chooses) any
- *   unexplained difference — see recordPayout().
+ * Delivered funds wait in the carrier wallet until noon Cairo on the scheduled bank day.
+ * The legacy recordPayout() reconciles transfers for orders already posted by the old flow.
  */
 
 export const SETTLE_VAULTS = ['كاش', 'فودافون كاش', 'Instapay', 'تحويل بنكي'];
@@ -46,7 +40,7 @@ export type SettleTrigger = 'auto' | 'manual-select' | 'approve';
 export interface SettleOneResult {
   txId: string;
   ref: string;
-  outcome: 'settled' | 'review' | 'skipped' | 'failed' | 'locked';
+  outcome: 'settled' | 'wallet' | 'review' | 'skipped' | 'failed' | 'locked';
   reason: string;
   error?: string;
   net?: number;
@@ -72,6 +66,7 @@ export class CarrierAutoSettleService {
     private readonly vaultService: VaultService,
     private readonly expensesService: ExpensesService,
     private readonly presence: PresenceGateway,
+    private readonly batchPayout: CarrierBatchPayoutService,
   ) {}
 
   private emit(event: string, payload: unknown): void {
@@ -90,10 +85,10 @@ export class CarrierAutoSettleService {
     if (tx.bostaStatus !== 'DELIVERED') return 'not-delivered';
     const cs = tx.carrierSettlement;
     if (cs?.status === 'settled') return 'already-settled';
-    if (tx.codCollectionStatus === 'Collected') return 'already-collected';
+    if (Number(tx.remaining || 0) > 0 && tx.codCollectionStatus === 'Collected') return 'already-collected';
     // Something was collected through the ordinary path and the order is closed.
     const livePays = (tx.payments || []).filter((p: any) => p && !p.reversed);
-    if (tx.payStatus === 'مكتمل' && livePays.length > 0) return 'already-collected';
+    if (Number(tx.remaining || 0) > 0 && tx.payStatus === 'مكتمل' && livePays.length > 0) return 'already-collected';
     return '';
   }
 
@@ -183,9 +178,10 @@ export class CarrierAutoSettleService {
 
     try {
       const cs = tx.carrierSettlement;
+      if (cs?.payoutId) return res('skipped', 'payout-in-progress');
       const settings: any = await this.settingsService.getSettings();
       const limit = Number(settings.autoSettleReviewLimit ?? 20);
-      const vaultMethod = ctx.vaultMethod || settings.autoSettleVaultMethod || 'تحويل بنكي';
+      const vaultMethod = ctx.vaultMethod || cs?.vaultMethod || settings.autoSettleVaultMethod || 'تحويل بنكي';
       if (!SETTLE_VAULTS.includes(vaultMethod)) return res('failed', 'bad-vault');
 
       // A review/dispute is decided by an approver, never re-run by the cron or a selection.
@@ -204,27 +200,36 @@ export class CarrierAutoSettleService {
       try {
         raw = await this.bostaService.fetchDelivery(tx.bostaOrderId);
       } catch (err: any) {
-        // No retry by design: the order stays available to «جلب السعر وتسوية».
-        await this.writeStatement(txId, { ...(cs || {}), trigger: ctx.trigger, status: 'skipped', reason: 'fetch-failed', error: String(err?.message || err), readAt: new Date().toISOString() });
+        // A transient outage must not release carrier-held funds to manual collection.
+        await this.writeStatement(txId, { ...(cs || {}), trigger: ctx.trigger,
+          status: cs?.phase === 'wallet' ? 'pending' : 'skipped',
+          ...(cs?.phase === 'wallet' ? { dueAt: new Date(Date.now() + 60 * 60 * 1000).toISOString() } : {}),
+          reason: 'fetch-failed', error: String(err?.message || err), readAt: new Date().toISOString() });
         return res('failed', 'fetch-failed', { error: String(err?.message || err) });
       }
 
-      const pricing = parseBostaPricing(raw);
+      const pricing = parseBostaSettlementPricing(raw);
       const livePays = (tx.payments || []).filter((p: any) => p && !p.reversed);
       const decision = decideSettlement({
         remaining: tx.remaining || 0,
         billedShip: tx.shipCost || 0,
         pricing,
         hasOpenConflict: CarrierAutoSettleService.hasOpenConflict(tx),
-        hasPriorCollection: livePays.length > 0,
+        hasPriorCollection: Number(tx.remaining || 0) > 0 && livePays.length > 0,
         reviewLimit: limit,
-        allowOverLimit: ctx.trigger === 'approve',
+        allowOverLimit: ctx.trigger === 'approve' || cs?.approvedFees === pricing?.priceAfterVat,
       });
-      const base = this.statementBase(tx, pricing, decision, ctx.trigger, vaultMethod, limit);
+      const base: Record<string, any> = this.statementBase(tx, pricing, decision, ctx.trigger, vaultMethod, limit);
+      // Review rows still belong to their scheduled batch, so it cannot post around them.
+      base.cashoutDueAt = bostaCashoutDueAt(raw);
+      if (pricing?.isDelivered) base.phase = 'wallet';
       const nums = { net: decision.net, fees: decision.fees, variance: decision.variance };
 
       if (decision.outcome === 'skip') {
-        await this.writeStatement(txId, { ...base, status: 'skipped', reason: decision.reason });
+        await this.writeStatement(txId, { ...base,
+          status: cs?.phase === 'wallet' ? 'pending' : 'skipped', reason: decision.reason,
+          ...(cs?.phase === 'wallet' ? { dueAt: new Date(Date.now() + 60 * 60 * 1000).toISOString() } : {}),
+        });
         return res('skipped', decision.reason, nums);
       }
       if (decision.outcome === 'review') {
@@ -233,87 +238,20 @@ export class CarrierAutoSettleService {
         return res('review', decision.reason, nums);
       }
 
-      // ── Book it ────────────────────────────────────────────────────────────────────────────
-      const by = ctx.by || 'system:auto';
-      // The automatic run dates entries on the delivery; a selection or an approval happens today
-      // and is dated today, so settling an old order never rewrites a closed month of the vault.
-      const bookDate = ctx.trigger === 'auto'
-        ? (dateOnly(pricing?.deliveredAt || tx.deliveredAt) || new Date().toISOString().slice(0, 10))
-        : new Date().toISOString().slice(0, 10);
-      const snapshotBefore = {
-        actualShipCost: Number(tx.actualShipCost) || 0,
-        shipLoss: Number(tx.shipLoss) || 0,
-        shipSaving: Number(tx.shipSaving) || 0,
-      };
-
-      let shortfallVaultEntryId = '';
-      if (decision.shortfall > 0) {
-        try {
-          const e = await this.vaultService.addSystemEntry(
-            -decision.shortfall,
-            vaultMethod,
-            `مستحقات بوسطة على طلب #${ref} — ${(tx.remaining || 0) > 0 ? `حصّلت ${r2(tx.remaining)} ج وأخذت ${decision.fees} ج` : `مدفوع مقدماً، أخذت ${decision.fees} ج`}`,
-            bookDate,
-            'مصروف',
-            ref,
-            { customer: tx.client || '' },
-            by,
-            { linkedTransactionId: txId, carrierSettlement: true },
-          );
-          shortfallVaultEntryId = String(e._id);
-        } catch (err: any) {
-          await this.writeStatement(txId, { ...base, status: 'review', reason: 'vault-refused', error: String(err?.message || err) });
-          return res('review', 'vault-refused', { ...nums, error: String(err?.message || err) });
-        }
-      }
-
-      let collectPaymentId = '';
-      let collectVaultEntryId = '';
-      if ((tx.remaining || 0) > 0) {
-        try {
-          const saved: any = await this.transactionsService.collect(
-            txId,
-            {
-              collectMethod: vaultMethod,
-              collectNote: `تسوية بوسطة ${ctx.trigger === 'auto' ? 'تلقائية' : ctx.trigger === 'approve' ? 'معتمدة' : 'يدوية'} — مستحقات ${decision.fees} ج`,
-              actualShipCost: decision.fees,
-              collectDate: bookDate,
-            } as any,
-            by,
-            'admin',
-            [],
-            { carrierActual: true },
-          );
-          const pays = saved?.payments || [];
-          collectPaymentId = String(pays[pays.length - 1]?.id || '');
-          const ve = await this.vaultService.findLatestByRef(ref, 'تحصيل');
-          collectVaultEntryId = ve ? String(ve._id) : '';
-        } catch (err: any) {
-          if (shortfallVaultEntryId) await this.vaultService.removeSystemEntryById(shortfallVaultEntryId);
-          await this.writeStatement(txId, { ...base, status: 'review', reason: 'collect-refused', error: String(err?.message || err) });
-          return res('review', 'collect-refused', { ...nums, error: String(err?.message || err) });
-        }
-      } else {
-        await this.txModel.updateOne({ _id: txId }, {
-          $set: {
-            actualShipCost: decision.fees,
-            shipLoss: r2(snapshotBefore.shipLoss + decision.shipLossAdd),
-            shipSaving: r2(snapshotBefore.shipSaving + decision.shipSavingAdd),
-          },
-        }).exec();
-      }
-
-      const now = new Date().toISOString();
-      await this.writeStatement(
-        txId,
-        {
-          ...base, status: 'settled', reason: '', error: '', settledAt: now, settledBy: by, bookDate,
-          collectPaymentId, collectVaultEntryId, shortfallVaultEntryId, snapshotBefore,
-        },
-        { action: 'carrier-settled', by, at: now, amount: decision.net, method: vaultMethod, note: `بوسطة أخذت ${decision.fees} ج` },
-      );
-      this.logger.log(`carrier-settled tx=${ref} trigger=${ctx.trigger} fees=${decision.fees} net=${decision.net} vault=${vaultMethod} by=${by}`);
-      return res('settled', '', nums);
+      // Order settlement only records Bosta's wallet. A batch owns the bank credit.
+      const dueAt = bostaCashoutDueAt(raw);
+      const delivery = raw?.data || raw;
+      const feeOnly = Number(tx.remaining || 0) === 0;
+      const depositedAt = delivery?.wallet?.cashCycle?.deposited_at || cs?.walletDepositedAt
+        || (feeOnly ? pricing?.deliveredAt || tx.deliveredAt || new Date().toISOString() : '');
+      await this.writeStatement(txId, {
+        ...base, status: 'pending', phase: 'wallet', error: '',
+        reason: !dueAt ? 'cashout-date-missing' : !depositedAt ? 'wallet-not-deposited' : 'awaiting-cashout',
+        walletDepositedAt: depositedAt, cashoutDueAt: dueAt,
+        dueAt: dueAt && Date.parse(dueAt) > Date.now() ? dueAt : new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        approvedFees: ctx.trigger === 'approve' ? decision.fees : cs?.approvedFees,
+      });
+      return res('wallet', 'awaiting-cashout', nums);
     } catch (err: any) {
       this.logger.error(`carrier-settle failed tx=${ref}: ${err?.message || err}`);
       return res('failed', 'error', { error: String(err?.message || err) });
@@ -331,21 +269,30 @@ export class CarrierAutoSettleService {
     try {
       const nowIso = new Date().toISOString();
       const settings: any = await this.settingsService.getSettings();
+      if (settings?.autoSettleEnabled) {
+        // Prepaid deliveries also incur fees, even though there is no customer COD to collect.
+        await this.txModel.updateMany({ type: 'مبيعات', cancelled: { $ne: true }, bostaStatus: 'DELIVERED',
+          bostaOrderId: { $exists: true, $nin: ['', null] }, deliverySource: { $ne: 'MANUAL' },
+          remaining: { $lte: 0 }, carrierSettlement: null,
+          deliveredAt: { $gte: settings.autoSettleSince || nowIso.slice(0, 10) },
+        }, { $set: { carrierSettlement: { status: 'pending', trigger: 'auto', scheduledAt: nowIso, dueAt: nowIso } } }).exec();
+      }
       if (!settings?.autoSettleEnabled) {
         // Switched off while orders were queued: release them to manual collection rather than
         // leave them blocking the ordinary collect button forever.
         await this.txModel.updateMany(
-          { 'carrierSettlement.status': 'pending' },
+          { 'carrierSettlement.status': 'pending', 'carrierSettlement.phase': { $ne: 'wallet' } },
           { $set: { 'carrierSettlement.status': 'skipped', 'carrierSettlement.reason': 'disabled' } },
         ).exec();
-        return;
       }
       const due = await this.txModel
-        .find({ 'carrierSettlement.status': 'pending', 'carrierSettlement.dueAt': { $lte: nowIso } })
+        .find({ 'carrierSettlement.status': 'pending', 'carrierSettlement.dueAt': { $lte: nowIso },
+          ...(!settings?.autoSettleEnabled ? { 'carrierSettlement.phase': 'wallet' } : {}) })
         .select('_id').limit(DUE_PER_RUN).lean().exec();
       for (const d of due) {
         await this.settleOne(String(d._id), { trigger: 'auto', by: 'system:auto' });
       }
+      await this.batchPayout.runDue();
     } catch (err: any) {
       this.logger.error(`carrier-auto-settle run failed: ${err?.message || err}`);
     } finally {
@@ -392,16 +339,21 @@ export class CarrierAutoSettleService {
       if (why) return { ...base, outcome: 'ineligible', reason: why };
       if (['review', 'disputed'].includes(tx.carrierSettlement?.status)) return { ...base, outcome: 'ineligible', reason: 'in-review' };
       try {
-        const pricing = parseBostaPricing(await this.bostaService.fetchDelivery(tx.bostaOrderId));
+        const raw = await this.bostaService.fetchDelivery(tx.bostaOrderId);
+        const pricing = parseBostaPricing(raw);
+        const cashoutDueAt = bostaCashoutDueAt(raw);
+        const delivery = raw?.data || raw;
+        const awaitsCashout = !cashoutDueAt || Date.now() < Date.parse(cashoutDueAt)
+          || !delivery?.wallet?.cashCycle?.deposited_at;
         const livePays = (tx.payments || []).filter((p: any) => p && !p.reversed);
         const d = decideSettlement({
           remaining: tx.remaining || 0, billedShip: tx.shipCost || 0, pricing,
-          hasOpenConflict: CarrierAutoSettleService.hasOpenConflict(tx), hasPriorCollection: livePays.length > 0, reviewLimit: limit,
+          hasOpenConflict: CarrierAutoSettleService.hasOpenConflict(tx), hasPriorCollection: Number(tx.remaining || 0) > 0 && livePays.length > 0, reviewLimit: limit,
         });
         return {
           ...base, outcome: d.outcome, reason: d.reason, fees: d.fees, variance: d.variance, varianceKind: d.varianceKind,
           net: d.net, carrierCod: pricing?.cod ?? null, deliveredAt: pricing?.deliveredAt || base.deliveredAt,
-          priceChanges: pricing?.priceChanges || [],
+          priceChanges: pricing?.priceChanges || [], cashoutDueAt, awaitsCashout,
         };
       } catch (err: any) {
         return { ...base, outcome: 'failed', reason: 'fetch-failed', error: String(err?.message || err) };
@@ -416,6 +368,7 @@ export class CarrierAutoSettleService {
         review: rows.filter((r: any) => r.outcome === 'review').length,
         skip: rows.filter((r: any) => ['skip', 'ineligible', 'failed'].includes(r.outcome)).length,
         net: r2(settleRows.reduce((s: number, r: any) => s + (r.net || 0), 0)),
+        vaultNet: 0, // Selection only records wallet rows; the batch creates the bank credit.
         fees: r2(settleRows.reduce((s: number, r: any) => s + (r.fees || 0), 0)),
       },
       defaultVault: settings.autoSettleVaultMethod || 'تحويل بنكي',
@@ -438,6 +391,7 @@ export class CarrierAutoSettleService {
     return {
       results,
       settled: settled.length,
+      wallet: results.filter((r) => r.outcome === 'wallet').length,
       review: results.filter((r) => r.outcome === 'review').length,
       skipped: results.filter((r) => r.outcome === 'skipped' || r.outcome === 'locked').length,
       failed: results.filter((r) => r.outcome === 'failed').length,
@@ -488,10 +442,10 @@ export class CarrierAutoSettleService {
       case 'unsettled': return {
         $and: [
           { $or: [{ carrierSettlement: null }, { 'carrierSettlement.status': { $in: ['skipped', 'reversed'] } }] },
-          { codCollectionStatus: { $ne: 'Collected' } },
+          { $or: [{ remaining: { $lte: 0 } }, { codCollectionStatus: { $ne: 'Collected' } }] },
           { $or: [
             { remaining: { $gt: 0 }, payStatus: { $ne: 'مكتمل' } },
-            { remaining: { $lte: 0 }, 'payments.0': { $exists: false } },
+            { remaining: { $lte: 0 } },
           ] },
         ],
       };
@@ -537,13 +491,15 @@ export class CarrierAutoSettleService {
     const inWin = settled.filter((t) => inDateWindow(t.carrierSettlement?.settledAt || t.carrierSettlement?.deliveredAt, from, to));
     const sum = (f: (cs: any) => number) => r2(inWin.reduce((s, t) => s + (f(t.carrierSettlement) || 0), 0));
     const stmt = await this.statement();
+    const batchPayouts: any[] = await this.payoutModel.find({ mode: 'batch', state: { $in: ['posted', 'completed'] } }).lean().exec();
+    const batchNet = r2(batchPayouts.filter(p => inDateWindow(p.date, from, to)).reduce((s, p) => s + p.amount, 0));
     const counts = await this.counts();
     const settings: any = await this.settingsService.getSettings();
     return {
       count: inWin.length,
       fees: sum((cs) => cs.fees?.priceAfterVat),
-      netIn: sum((cs) => (cs.net > 0 ? cs.net : 0)),
-      netOut: sum((cs) => (cs.net < 0 ? -cs.net : 0)),
+      netIn: r2(batchNet + sum((cs) => (!cs.payoutId && cs.net > 0 ? cs.net : 0))),
+      netOut: sum((cs) => (!cs.payoutId && cs.net < 0 ? -cs.net : 0)),
       over: sum((cs) => cs.shipLossAdd),
       saving: sum((cs) => cs.shipSavingAdd),
       bostaBalance: stmt.balance,
@@ -569,7 +525,10 @@ export class CarrierAutoSettleService {
     const since = settings.autoSettleSince || '';
 
     const [settledTx, failedTx, payouts] = await Promise.all([
-      this.txModel.find({ type: 'مبيعات', 'carrierSettlement.status': 'settled' })
+      this.txModel.find({ type: 'مبيعات', $or: [
+        { 'carrierSettlement.status': 'settled' },
+        { 'carrierSettlement.status': { $in: ['pending', 'review', 'disputed'] }, 'carrierSettlement.phase': 'wallet', 'carrierSettlement.walletDepositedAt': { $exists: true, $nin: ['', null] } },
+      ] })
         .select('ref client carrierSettlement').lean().exec(),
       since
         ? this.txModel.find({ type: 'مبيعات', 'failedDelivery.returnShipCost': { $gt: 0 }, 'failedDelivery.closedAt': { $gte: since } })
@@ -578,22 +537,26 @@ export class CarrierAutoSettleService {
       this.payoutModel.find({}).lean().exec(),
     ]);
 
-    type Line = { date: string; at: string; kind: string; ref: string; txId?: string; party?: string; in: number; out: number; payoutId?: string; note?: string };
+    type Line = { date: string; at: string; kind: string; ref: string; txId?: string; party?: string; in: number; out: number; payoutId?: string; note?: string; batch?: boolean };
     const lines: Line[] = [];
     for (const t of settledTx as any[]) {
       const cs = t.carrierSettlement;
-      const at = String(cs.deliveredAt || cs.settledAt || '');
+      const at = String(cs.walletDepositedAt || cs.deliveredAt || cs.settledAt || '');
       const date = dateOnly(at);
       if (Number(cs.carrierCod) > 0) lines.push({ date, at, kind: 'collection', ref: t.ref, txId: String(t._id), party: t.client, in: r2(cs.carrierCod), out: 0 });
       lines.push({ date, at, kind: 'fees', ref: t.ref, txId: String(t._id), party: t.client, in: 0, out: r2(cs.fees?.priceAfterVat || 0), note: cs.fees?.sizeName || '' });
+      if (cs.phase === 'bank' && cs.cashoutDueAt && !cs.payoutId) {
+        lines.push({ date: dateOnly(cs.cashoutDueAt), at: cs.cashoutDueAt, kind: 'bank-transfer', ref: t.ref, txId: String(t._id), in: 0, out: r2(cs.net), note: cs.vaultMethod });
+      }
     }
     for (const t of failedTx as any[]) {
       const at = String(t.failedDelivery.closedAt || '');
       lines.push({ date: dateOnly(at), at, kind: 'return-fee', ref: t.ref, txId: String(t._id), party: t.client, in: 0, out: r2(t.failedDelivery.returnShipCost) });
     }
     for (const p of payouts as any[]) {
+      if (p.mode === 'batch' && !['posted', 'completed'].includes(p.state)) continue;
       const at = `${p.date}T23:59:58`;
-      lines.push({ date: p.date, at, kind: 'payout', ref: p.payoutNo, payoutId: String(p._id), in: 0, out: r2(p.amount), note: p.vaultMethod });
+      lines.push({ date: p.date, at, kind: 'payout', ref: p.payoutNo, payoutId: String(p._id), in: 0, out: r2(p.amount), note: p.vaultMethod, ...(p.mode === 'batch' ? { batch: true } : {}) });
       if (p.fee > 0) lines.push({ date: p.date, at: `${p.date}T23:59:59`, kind: 'transfer-fee', ref: p.payoutNo, payoutId: String(p._id), in: 0, out: r2(p.fee) });
       if (p.adjustment) lines.push({ date: p.date, at: `${p.date}T23:59:59.5`, kind: 'adjustment', ref: p.payoutNo, payoutId: String(p._id), in: 0, out: r2(-p.adjustment) });
     }
@@ -654,6 +617,16 @@ export class CarrierAutoSettleService {
     if (!(amount > 0)) throw new BadRequestException('اكتب المبلغ الذي وصل');
     if (!SETTLE_VAULTS.includes(dto.vaultMethod)) throw new BadRequestException('اختر الخزنة التي وصل لها التحويل');
 
+    const batch: any = await this.payoutModel.findOne({ batchKey: date + ':' + dto.vaultMethod }).lean().exec();
+    const queued: any = await this.txModel.findOne({ 'carrierSettlement.phase': 'wallet',
+      'carrierSettlement.status': 'pending', 'carrierSettlement.cashoutDueAt': { $regex: '^' + date },
+      'carrierSettlement.vaultMethod': dto.vaultMethod }).lean().exec();
+    if (batch || queued) {
+      const dueAt = queued?.carrierSettlement?.cashoutDueAt || bostaCashoutDueAt({ wallet: { cashout: { next_cashout_date: date } } });
+      if (Date.now() < Date.parse(dueAt)) throw new BadRequestException('موعد تحويل هذه الدفعة لم يحن بعد');
+      return this.batchPayout.post(dueAt, dto.vaultMethod, by, { amount, fee,
+        note: dto.note, bostaRef: dto.bostaRef, bookDifference: dto.bookDifference });
+    }
     const pv = await this.payoutPreview(date);
     const difference = r2(pv.expected - amount - fee);
     const payoutNo = await this.nextPayoutNo();
@@ -712,6 +685,7 @@ export class CarrierAutoSettleService {
   async deletePayout(id: string) {
     const p: any = await this.payoutModel.findById(id).exec();
     if (!p) throw new NotFoundException('التحويل غير موجود');
+    if (p.mode === 'batch') throw new BadRequestException('لا يمكن حذف التحويل المجمع منفردًا؛ يلزم مراجعة وتسوية جميع الطلبات المرتبطة به');
     if (p.adjustmentVaultEntryId) await this.vaultService.removeSystemEntryById(p.adjustmentVaultEntryId);
     if (p.feeExpenseId) await this.expensesService.remove(p.feeExpenseId, true).catch(() => undefined);
     await p.deleteOne();

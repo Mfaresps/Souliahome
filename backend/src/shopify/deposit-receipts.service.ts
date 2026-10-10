@@ -18,6 +18,7 @@ import { PresenceGateway } from '../auth/presence.gateway';
 import { DepositReceiptOcrService } from './deposit-receipt-ocr.service';
 import { MAX_STORED_RECEIPT_BYTES, receiptContentWarnings } from './receipt-upload-policy.util';
 import { receiptImageKey } from './receipt-storage-path.util';
+import { ManualDepositReceipt, ManualDepositReceiptDocument } from './schemas/manual-deposit-receipt.schema';
 import { r2DeleteObject, r2GetObjectBuffer, r2ListObjects, r2PutObject } from '../shared/r2-uploader.util';
 import {
   DEPOSIT_TOLERANCE,
@@ -92,6 +93,8 @@ export class DepositReceiptsService {
     private readonly ocr: DepositReceiptOcrService,
     private readonly employeeScoringService: EmployeeScoringService,
     private readonly presence: PresenceGateway,
+    @InjectModel(ManualDepositReceipt.name)
+    private readonly manualReceiptModel?: Model<ManualDepositReceiptDocument>,
   ) {}
 
   private emit(orderId: string, receiptId: string, status: string): void {
@@ -184,7 +187,14 @@ export class DepositReceiptsService {
     const warnings: DepositReceipt['warnings'] = [];
     const or: any[] = [{ depositReceipts: { $elemMatch: { imageSha256: sha, status: { $in: LIVE_STATUSES } } } }];
     if (reference) or.push({ depositReceipts: { $elemMatch: { 'ocr.reference': reference, status: { $in: LIVE_STATUSES } } } });
-    const hits = await this.orderModel.find({ $or: or }).select('ref depositReceipts').lean().exec();
+    const hits: any[] = await this.orderModel.find({ $or: or }).select('ref depositReceipts').lean().exec();
+    if (this.manualReceiptModel) {
+      const manualOr: any[] = [{ 'receipt.imageSha256': sha }];
+      if (reference) manualOr.push({ 'receipt.ocr.reference': reference });
+      const manual = await this.manualReceiptModel.find({ state: { $in: ['submitted', 'claiming', 'consumed'] },
+        $or: manualOr }).select('ref receipt').lean().exec();
+      hits.push(...manual.map(d => ({ ref: d.ref, depositReceipts: [d.receipt] })));
+    }
     for (const o of hits as any[]) {
       for (const r of (o.depositReceipts || []) as DepositReceipt[]) {
         if (!LIVE_STATUSES.includes(r.status) || r.id === excludeId) continue;
@@ -200,26 +210,124 @@ export class DepositReceiptsService {
 
   // ── Employee side ────────────────────────────────────────────────────────────────────────
 
-  /**
-   * Stores the image and reads it. The result is a «مسودة» only its uploader sees; nothing is a
-   * claim on the order until `submit`. OCR runs HERE, on the server, so the suggestion the
-   * manager later compares against cannot be edited by the browser.
-   */
-  async uploadDraft(orderId: string, file: UploadedImage | undefined, actor: ReceiptActor) {
+  /** Upload and OCR happen before any amount is entered or any sale is created. */
+  async scanManualReceipt(meta: { ref?: string; client?: string }, file: UploadedImage, actor: ReceiptActor) {
+    if (!actor.id) throw new ForbiddenException('تعذّر تحديد الموظف');
+    const stored = await this.prepareReceiptImage(file);
+    const cfg = await this.r2();
+    const id = `dr_${Date.now().toString(36)}${crypto.randomBytes(4).toString('hex')}`;
+    const ref = String(meta.ref || '').slice(0, 60);
+    const client = String(meta.client || '').slice(0, 120);
+    const imageKey = receiptImageKey({ ref, client, _id: id }, businessDate().slice(0, 7), id);
+    const ocr = await this.ocr.read(file.buffer);
+    const sha = crypto.createHash('sha256').update(stored).digest('hex');
+    const warnings = [...receiptContentWarnings(ocr), ...await this.findDuplicates(sha, ocr.reference)];
+    const put = await r2PutObject(cfg, imageKey, stored, 'image/jpeg');
+    if (!put.ok) throw new BadRequestException(`تعذّر حفظ الصورة على التخزين السحابي: ${put.message}`);
+    const now = new Date().toISOString();
+    const receipt: DepositReceipt = { id, status: 'مسودة', imageKey, imageSha256: sha,
+      imageBytes: stored.length, imageDeleted: false, amount: 0, method: '', ocr,
+      needsReview: true, warnings, uploadedAt: now, submittedAt: '',
+      submittedBy: actor.name || actor.username, submittedById: actor.id };
+    try {
+      await this.manualReceiptModel!.create({ receiptId: id, ownerId: actor.id, ref, client, receipt,
+        expiresAt: new Date(Date.now() + DRAFT_TTL_MS).toISOString() });
+    } catch (error) { await this.deleteImage(imageKey); throw error; }
+    await this.trimReceiptImages();
+    return { receipt };
+  }
+
+  async confirmManualReceipt(id: string, body: { amount: unknown; method: unknown; total: number; confirmed: boolean; acknowledgeImageWarning?: boolean }, actor: ReceiptActor) {
+    const draft = await this.manualReceiptModel!.findOne({ receiptId: id, ownerId: actor.id,
+      state: { $in: ['draft', 'submitted'] }, expiresAt: { $gt: new Date().toISOString() } }).exec();
+    if (!draft) throw new BadRequestException('الإيصال غير متاح — ارفع الصورة مجددًا');
+    const { amount, method } = this.validateEntry(body.amount, body.method);
+    if (body.confirmed !== true) throw new BadRequestException('راجع بيانات الإيصال وأكّدها أولًا');
+    if (!Number.isFinite(body.total) || amount > body.total + DEPOSIT_TOLERANCE) throw new BadRequestException('الديبوزت يتجاوز إجمالي المعاملة');
+    const r = draft.receipt;
+    const contentWarnings = receiptContentWarnings(r.ocr);
+    if (contentWarnings.length && body.acknowledgeImageWarning !== true && !r.warningAcknowledgedAt) throw new BadRequestException('أكّد مراجعة تحذير الصورة أولًا');
+    const warnings = [...contentWarnings, ...await this.findDuplicates(r.imageSha256, r.ocr.reference, r.id)];
+    const now = new Date().toISOString();
+    const receipt = { ...r, status: 'معلق' as const, amount, method, warnings,
+      needsReview: this.needsReviewFor({ ...r, warnings }, amount, method), submittedAt: now,
+      ...(contentWarnings.length ? { warningAcknowledgedAt: now, warningAcknowledgedById: actor.id } : {}) };
+    const saved = await this.manualReceiptModel!.findOneAndUpdate({ _id: draft._id,
+      state: { $in: ['draft', 'submitted'] } }, { $set: { receipt, state: 'submitted' } }, { new: true }).exec();
+    if (!saved) throw new BadRequestException('تغيّر الإيصال — أعد المحاولة');
+    return { success: true, receipt: saved.receipt };
+  }
+
+  async withdrawManualReceipt(id: string, actor: ReceiptActor) {
+    const draft = await this.manualReceiptModel!.findOneAndUpdate({ receiptId: id, ownerId: actor.id,
+      state: { $in: ['draft', 'submitted'] } }, { $set: { state: 'withdrawn' } }, { new: true }).exec();
+    if (!draft) throw new BadRequestException('الإيصال مستخدم أو غير متاح');
+    await this.deleteImage(draft.receipt.imageKey);
+    return { success: true };
+  }
+
+  async claimManualReceipt(id: string, tx: { type: string; ref?: string; client?: string; deposit?: number; depMethod?: string; total: number }, actor: ReceiptActor): Promise<Transaction['depositReceipts'][number]> {
+    if (tx.type !== 'مبيعات') throw new BadRequestException('إيصال الديبوزت متاح للمبيعات فقط');
+    const { amount, method } = this.validateEntry(tx.deposit, tx.depMethod);
+    if (amount > tx.total + DEPOSIT_TOLERANCE) throw new BadRequestException('الديبوزت يتجاوز إجمالي المعاملة');
+    const draft = await this.manualReceiptModel!.findOneAndUpdate({ receiptId: id, ownerId: actor.id,
+      state: 'submitted', expiresAt: { $gt: new Date().toISOString() }, 'receipt.amount': amount,
+      'receipt.method': method }, { $set: { state: 'claiming', ref: tx.ref || '', client: tx.client || '' } }, { new: true }).exec();
+    if (!draft) throw new BadRequestException('ارفع الإيصال وافحصه وأكّد المبلغ وطريقة الدفع قبل الحفظ');
+    const r = draft.receipt;
+    // Customer/reference may have been completed after upload; retain the shared final folder naming.
+    const imageKey = receiptImageKey({ ...tx, _id: id }, r.imageKey.split('/')[1], id);
+    if (imageKey !== r.imageKey) {
+      try {
+        const cfg = await this.r2();
+        const image = await r2GetObjectBuffer(cfg, r.imageKey);
+        if (!image.ok) throw new BadRequestException('تعذّر قراءة صورة الإيصال');
+        const put = await r2PutObject(cfg, imageKey, image.body, 'image/jpeg');
+        if (!put.ok) throw new BadRequestException('تعذّر حفظ صورة الإيصال');
+        const oldKey = r.imageKey;
+        await this.manualReceiptModel!.updateOne({ _id: draft._id, state: 'claiming' }, { $set: { 'receipt.imageKey': imageKey } }).exec();
+        r.imageKey = imageKey;
+        await this.deleteImage(oldKey);
+      } catch (error) { await this.releaseManualReceipt(id); throw error; }
+    }
+    return { id, amount, method, imageKey: r.imageKey, imageDeleted: false, needsReview: r.needsReview,
+      submittedBy: r.submittedBy, submittedAt: r.submittedAt, reviewedBy: '', reviewedAt: '',
+      vaultTxNo: '', ocrAmount: r.ocr.amount, ocrMethod: r.ocr.method };
+  }
+
+  async releaseManualReceipt(id: string): Promise<void> {
+    await this.manualReceiptModel!.updateOne({ receiptId: id, state: 'claiming' }, { $set: { state: 'submitted' } }).exec();
+  }
+
+  async consumeManualReceipt(id: string, transactionId: string): Promise<void> {
+    await this.manualReceiptModel!.updateOne({ receiptId: id, state: 'claiming' }, { $set: { state: 'consumed', transactionId } }).exec();
+  }
+
+  private async prepareReceiptImage(file: UploadedImage | undefined): Promise<Buffer> {
     if (!file?.buffer?.length) throw new BadRequestException('لم يتم رفع صورة');
     if (!ACCEPTED_MIME.includes(file.mimetype)) throw new BadRequestException('الصورة يجب أن تكون JPG أو PNG أو WebP');
     if (Math.max(file.size || 0, file.buffer.length) > MAX_RECEIPT_UPLOAD_BYTES) throw new BadRequestException('حجم الصورة أكبر من 4 ميجا');
+    let stored: Buffer;
+    try { stored = await this.ocr.prepareForStorage(file.buffer); }
+    catch { throw new BadRequestException('الصورة غير صالحة أو متحركة أو أبعادها كبيرة جداً، أو لا يمكن ضغطها بوضوح إلى 180 كيلوبايت. أرسل لقطة واضحة للإيصال فقط'); }
+    if (stored.length > MAX_STORED_RECEIPT_BYTES) throw new BadRequestException('حجم الصورة المحفوظة أكبر من 180 كيلوبايت');
+    return stored;
+  }
 
+  private async trimReceiptImages(): Promise<void> {
+    const trim = this.imageLimitQueue.then(() => this.runCleanup(new Date(), true));
+    this.imageLimitQueue = trim.catch((err) => {
+      this.logger.warn(`Receipt limit cleanup failed: ${(err as Error).message}`);
+    });
+    await this.imageLimitQueue;
+  }
+
+  /** Stores and reads the image as a private draft until submission. */
+  async uploadDraft(orderId: string, file: UploadedImage | undefined, actor: ReceiptActor) {
+    if (!file?.buffer?.length) throw new BadRequestException('لم يتم رفع صورة');
+    const stored = await this.prepareReceiptImage(file);
     const order = await this.loadPendingOrder(orderId);
     const cfg = await this.r2();
-
-    let stored: Buffer;
-    try {
-      stored = await this.ocr.prepareForStorage(file.buffer);
-    } catch {
-      throw new BadRequestException('الصورة غير صالحة أو متحركة أو أبعادها كبيرة جداً، أو لا يمكن ضغطها بوضوح إلى 180 كيلوبايت. أرسل لقطة واضحة للإيصال فقط');
-    }
-    if (stored.length > MAX_STORED_RECEIPT_BYTES) throw new BadRequestException('حجم الصورة المحفوظة أكبر من 180 كيلوبايت');
 
     const id = `dr_${Date.now().toString(36)}${crypto.randomBytes(4).toString('hex')}`;
     const month = businessDate().slice(0, 7);
@@ -278,11 +386,7 @@ export class DepositReceiptsService {
     }
 
     // Serialize upload-triggered trimming so simultaneous uploads do not delete extra images.
-    const trim = this.imageLimitQueue.then(() => this.runCleanup(new Date(), true));
-    this.imageLimitQueue = trim.catch((err) => {
-      this.logger.warn(`Receipt limit cleanup failed: ${(err as Error).message}`);
-    });
-    await this.imageLimitQueue;
+    await this.trimReceiptImages();
     return { receipt: draft, cap: depositCapFor(saved) };
   }
 
@@ -619,9 +723,16 @@ export class DepositReceiptsService {
       .findOne({ 'depositReceipts.id': receiptId }, { depositReceipts: { $elemMatch: { id: receiptId } } })
       .lean()
       .exec();
-    const r = order?.depositReceipts?.[0];
+    const tx = order ? null : await this.txModel
+      .findOne({ 'depositReceipts.id': receiptId }, { depositReceipts: { $elemMatch: { id: receiptId } } })
+      .lean().exec();
+    const manual = !order && !tx && this.manualReceiptModel ? await this.manualReceiptModel
+      .findOne({ receiptId, state: { $in: ['draft', 'submitted'] }, expiresAt: { $gt: new Date().toISOString() } })
+      .lean().exec() : null;
+    if (manual && manual.ownerId !== actor.id) throw new ForbiddenException('الإيصال خاص بالموظف الذي رفعه');
+    const r = order?.depositReceipts?.[0] || tx?.depositReceipts?.[0] || manual?.receipt;
     if (!r) throw new NotFoundException('إيصال العربون غير موجود');
-    if (r.status === 'مسودة' && (!actor.id || r.submittedById !== actor.id)) {
+    if ('status' in r && r.status === 'مسودة' && (!actor.id || r.submittedById !== actor.id)) {
       throw new ForbiddenException('مسودة الإيصال خاصة بموظفها');
     }
     if (r.imageDeleted) throw new NotFoundException('صورة الإيصال حُذفت من التخزين');
@@ -658,6 +769,15 @@ export class DepositReceiptsService {
     const cutoff = new Date(now.getTime() - DRAFT_TTL_MS).toISOString();
 
     if (!capOnly) {
+    if (this.manualReceiptModel) {
+      const expired = await this.manualReceiptModel.find({ state: { $in: ['draft', 'submitted', 'withdrawn'] },
+        expiresAt: { $lt: now.toISOString() } }).lean().exec();
+      for (const d of expired) {
+        await this.manualReceiptModel.deleteOne({ _id: d._id, state: { $in: ['draft', 'submitted', 'withdrawn'] } }).exec();
+        await this.deleteImage(d.receipt.imageKey);
+        summary.drafts++;
+      }
+    }
     // 1. Abandoned drafts.
     const withDrafts = await this.orderModel
       .find({ depositReceipts: { $elemMatch: { status: 'مسودة', uploadedAt: { $lt: cutoff } } } })
@@ -704,6 +824,28 @@ export class DepositReceiptsService {
         if (!r.imageDeleted && r.imageKey) stored.push({ orderId: String(o._id), r });
       }
     }
+    // Manual sales have no Shopify order. Count their images once and protect them from orphan cleanup.
+    const transactions = await this.txModel.find({ 'depositReceipts.0': { $exists: true } })
+      .select('depositReceipts').lean().exec();
+    const seen = new Set(stored.map(x => x.r.id));
+    for (const tx of transactions as any[]) {
+      for (const r of tx.depositReceipts || []) {
+        if (r.imageDeleted || !r.imageKey || seen.has(r.id)) continue;
+        seen.add(r.id);
+        stored.push({ orderId: '', r: { ...r, status: 'معتمد', uploadedAt: r.submittedAt } });
+      }
+    }
+    if (this.manualReceiptModel) {
+      const manual = await this.manualReceiptModel.find({ state: { $in: ['draft', 'submitted', 'claiming'] } })
+        .select('receipt').lean().exec();
+      for (const d of manual) {
+        if (!d.receipt.imageDeleted && d.receipt.imageKey && !seen.has(d.receipt.id)) {
+          seen.add(d.receipt.id);
+          // Unconsumed manual uploads are evidence awaiting confirmation, never cap candidates.
+          stored.push({ orderId: '', r: { ...d.receipt, status: 'معلق' } });
+        }
+      }
+    }
     let excess = stored.length - max;
     if (excess > 0) {
       const removable = stored
@@ -735,7 +877,7 @@ export class DepositReceiptsService {
   }
 
   private async markImageDeleted(orderId: string, receiptId: string): Promise<void> {
-    await this.orderModel.updateOne(
+    if (orderId) await this.orderModel.updateOne(
       { _id: orderId, 'depositReceipts.id': receiptId },
       { $set: { 'depositReceipts.$.imageDeleted': true } },
     ).exec();

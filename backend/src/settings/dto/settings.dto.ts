@@ -278,6 +278,14 @@ export class UpdateSettingsDto {
   @IsOptional()
   readonly carrierTransferFee?: number;
 
+  @IsBoolean()
+  @IsOptional()
+  readonly autoApproveDepositsEnabled?: boolean;
+
+  @IsString()
+  @IsOptional()
+  readonly autoApproveDepositsSince?: string;
+
   @IsObject()
   @IsOptional()
   readonly performanceConfig?: {

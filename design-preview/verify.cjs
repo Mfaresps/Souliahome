@@ -1,0 +1,60 @@
+const path = require('node:path');
+const assert = require('node:assert/strict');
+const { pathToFileURL } = require('node:url');
+const puppeteer = require('../backend/node_modules/puppeteer');
+
+(async () => {
+  const browser = await puppeteer.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.setViewport({ width: 1600, height: 1000, deviceScaleFactor: 1 });
+    await page.goto(pathToFileURL(path.join(__dirname, 'index.html')).href);
+    await page.screenshot({ path: path.join(__dirname, 'desktop.png'), fullPage: false });
+    await page.keyboard.down('Control');
+    await page.keyboard.press('k');
+    await page.keyboard.up('Control');
+    assert.equal(await page.$eval('#search', el => el === document.activeElement), true);
+    await page.type('#search', 'Osama');
+    assert.equal(await page.$$eval('[role="option"]', rows => rows.length), 2);
+    await page.screenshot({ path: path.join(__dirname, 'search.png'), fullPage: false });
+    await page.keyboard.press('ArrowDown');
+    assert.equal(await page.$eval('#search', el => el.getAttribute('aria-activedescendant')), 'result-1');
+    await page.keyboard.press('Enter');
+    assert.equal(await page.$eval('#search-popover', el => el.hidden), true);
+    await page.focus('#search');
+    await page.type('#search', 'no-such-record');
+    assert.equal(await page.$$eval('[role="option"]', rows => rows.length), 0);
+    await page.keyboard.press('Escape');
+    await page.click('.fold');
+    assert.equal(await page.$eval('.sidebar', el => el.getBoundingClientRect().width <= 248), true);
+    await new Promise(resolve => setTimeout(resolve, 220));
+    assert.equal(await page.$eval('.sidebar', el => el.getBoundingClientRect().width), 76);
+    await page.$eval('.toast', el => { el.hidden = true; });
+    await page.screenshot({ path: path.join(__dirname, 'collapsed.png'), fullPage: false });
+    await page.click('.expand');
+    await page.click('#privacy');
+    assert.equal(await page.$eval('[data-amount]', el => el.textContent), '••••••');
+    await page.click('#privacy');
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    await new Promise(resolve => setTimeout(resolve, 250));
+    await page.screenshot({ path: path.join(__dirname, 'mobile.png'), fullPage: false });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.click('.mobile-menu');
+    await new Promise(resolve => setTimeout(resolve, 250));
+    assert.equal(await page.$eval('body', el => el.classList.contains('menu-open')), true);
+    await page.click('[data-name="Products"]');
+    await new Promise(resolve => setTimeout(resolve, 250));
+    assert.equal(await page.$eval('body', el => el.classList.contains('menu-open')), false);
+    await page.focus('#search');
+    await page.$eval('#search', el => { el.value = ''; el.dispatchEvent(new Event('input')); });
+    await page.type('#search', 'linen');
+    const bounds = await page.$eval('#search-popover', el => ({ left: el.getBoundingClientRect().left, right: el.getBoundingClientRect().right }));
+    assert.ok(bounds.left >= 0 && bounds.right <= 390, 'Mobile search panel stays inside viewport');
+    assert.deepEqual(errors, []);
+    console.log('Verified desktop and mobile: search, keyboard selection, empty state, sidebar, privacy, viewport bounds. Four screenshots saved.');
+  } finally {
+    await browser.close();
+  }
+})().catch(error => { console.error(error); process.exitCode = 1; });

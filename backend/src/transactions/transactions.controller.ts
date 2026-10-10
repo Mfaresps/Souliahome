@@ -46,6 +46,8 @@ import { RequirePerms } from '../core/decorators/perms.decorator';
 import { ExpensesService } from '../expenses/expenses.service';
 import { maskTransactionForRole, maskTransactionsForRole, filterPurchasesForPerms } from './purchase-mask.util';
 import { inDateWindow } from '../shared/date-window.util';
+import { DepositReceiptsService, MAX_RECEIPT_UPLOAD_BYTES, UploadedImage, ReceiptActor } from '../shopify/deposit-receipts.service';
+import { ConfirmManualDepositReceiptDto } from './dto/manual-deposit-receipt.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
 @Controller('transactions')
@@ -56,6 +58,7 @@ export class TransactionsController {
     private readonly expensesService: ExpensesService,
     private readonly reportsExportService: ReportsExportService,
     private readonly carrierSettlementService: CarrierSettlementService,
+    private readonly depositReceipts: DepositReceiptsService,
   ) {}
 
   // ── Carrier settlement-file import ────────────────────────────────────────────────────────
@@ -269,10 +272,38 @@ export class TransactionsController {
     return this.referenceDetailService.searchReferences(partial);
   }
 
+  private receiptActor(req: any): ReceiptActor {
+    const user = req.user || {};
+    return { id: String(user.sub || user._id || user.id || ''), username: user.username || '',
+      name: user.name || user.username || '', isAdmin: user.role === 'admin' };
+  }
+
+  @Post('deposit-receipts/upload')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_RECEIPT_UPLOAD_BYTES } }))
+  async uploadDepositReceipt(
+    @UploadedFile() file: UploadedImage | undefined,
+    @Body('ref') ref: string,
+    @Body('client') client: string,
+    @Req() req: any,
+  ) {
+    if (!file?.buffer?.length) throw new BadRequestException('لم يتم رفع صورة الإيصال');
+    return this.depositReceipts.scanManualReceipt({ ref, client }, file, this.receiptActor(req));
+  }
+
+  @Patch('deposit-receipts/:rid/submit')
+  async confirmDepositReceipt(@Param('rid') id: string, @Body() dto: ConfirmManualDepositReceiptDto, @Req() req: any) {
+    return this.depositReceipts.confirmManualReceipt(id, dto, this.receiptActor(req));
+  }
+
+  @Delete('deposit-receipts/:rid')
+  async withdrawDepositReceipt(@Param('rid') id: string, @Req() req: any) {
+    return this.depositReceipts.withdrawManualReceipt(id, this.receiptActor(req));
+  }
+
   @Post()
   async create(
     @Body() dto: CreateTransactionDto,
-    @Req() req: { user?: { role?: string; perms?: string[] } },
+    @Req() req: any,
   ) {
     if (dto.type === 'مشتريات' && req.user?.role !== 'admin') {
       const perms = req.user?.perms || [];
@@ -280,7 +311,8 @@ export class TransactionsController {
         throw new ForbiddenException('ليس لديك صلاحية إنشاء عملية شراء');
       }
     }
-    return this.transactionsService.create(dto, req.user?.role);
+    return this.transactionsService.create(dto, req.user?.role, dto.manualDepositReceiptId
+      ? { draftId: dto.manualDepositReceiptId, actor: this.receiptActor(req) } : undefined);
   }
 
   @Roles('admin')

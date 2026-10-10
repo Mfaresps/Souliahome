@@ -4,9 +4,10 @@ import { HydratedDocument } from 'mongoose';
 export type CarrierPayoutDocument = HydratedDocument<CarrierPayout>;
 
 /**
- * One transfer from Bosta to us, as recorded by a user in «كشف حساب بوسطة».
+ * One transfer from Bosta to us. `mode: batch` owns one net vault credit and the linked orders.
+ * Shipping, return and transfer fees have already reduced that credit; they never post again.
  *
- * ⚠ THE TRANSFER ITSELF IS NOT VAULT INCOME. Every delivered order already entered the vault on the
+ * Legacy transfers are reconciliation-only: every delivered order already entered the vault on the
  *   day it was settled (the automatic settlement books the net at delivery). Booking the transfer
  *   again would count the same money twice. What the transfer DOES book:
  *     • `fee` — Bosta's transfer fee, as an approved expense dated on the transfer (`feeExpenseId`);
@@ -17,6 +18,31 @@ export type CarrierPayoutDocument = HydratedDocument<CarrierPayout>;
  */
 @Schema({ timestamps: true })
 export class CarrierPayout {
+  /** A single scheduled transfer owns all its orders, including fee-only prepaid orders. */
+  @Prop()
+  batchKey?: string;
+
+  @Prop({ default: 'legacy' })
+  mode: string;
+
+  @Prop({ default: 'completed' })
+  state: string;
+
+  @Prop({ default: '' })
+  lockAt: string;
+
+  @Prop({ default: '' })
+  vaultEntryId: string;
+
+  @Prop({ type: [String], default: [] })
+  transactionIds: string[];
+
+  @Prop({ type: [String], default: [] })
+  returnTransactionIds: string[];
+
+  @Prop({ default: '' })
+  error: string;
+
   @Prop({ required: true })
   payoutNo: string;
 
@@ -75,3 +101,4 @@ export class CarrierPayout {
 }
 
 export const CarrierPayoutSchema = SchemaFactory.createForClass(CarrierPayout);
+CarrierPayoutSchema.index({ batchKey: 1 }, { unique: true, sparse: true });

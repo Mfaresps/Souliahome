@@ -107,6 +107,25 @@ export function parseBostaPricing(raw: any): BostaPricing | null {
 
 // ── The decision ────────────────────────────────────────────────────────────────────────────
 
+/** Wallet deductions are authoritative once available; shipment logs are the pre-deposit fallback. */
+export function parseBostaSettlementPricing(raw: any): BostaPricing | null {
+  const parsed = parseBostaPricing(raw);
+  const d = raw?.data || raw;
+  const cc = d?.wallet?.cashCycle;
+  const fees = num(cc?.bosta_fees);
+  const cod = num(cc?.cod);
+  if (fees === null || fees < 0) return parsed;
+  const state = typeof d.state === 'object' ? d.state?.code : d.state;
+  const fallback: BostaPricing = {
+    priceAfterVat: r2(fees), priceBeforeVat: null, shippingFee: num(cc.shipping_fees),
+    sizeEffectCost: null, insurance: num(cc.insurance_fees), vatRate: null, sizeName: String(cc.size || ''),
+    cod: r2(cod ?? d.cod ?? 0), deliveredAt: String(d.state?.deliveryTime || ''),
+    isDelivered: Number(state) === 45 || String(d.state?.value || '').toLowerCase() === 'delivered',
+    priceChanges: [],
+  };
+  return { ...(parsed || fallback), priceAfterVat: r2(fees), cod: r2(cod ?? parsed?.cod ?? d.cod ?? 0) };
+}
+
 export type SettleOutcome = 'settle' | 'review' | 'skip';
 export type SettleReason =
   | ''

@@ -21,6 +21,7 @@ import { MentionsService } from '../../src/mentions/mentions.service';
 import { DiscountOtpService } from '../../src/discount-otp/discount-otp.service';
 import { SettingsService } from '../../src/settings/settings.service';
 import { ShopifyAdminService } from '../../src/shopify/shopify-admin.service';
+import { DepositReceiptsService } from '../../src/shopify/deposit-receipts.service';
 import { SupplierLedgerService } from '../../src/supplier-ledger/supplier-ledger.service';
 import { SuppliersService } from '../../src/suppliers/suppliers.service';
 import { InventoryMovementsService } from '../../src/inventory-movements/inventory-movements.service';
@@ -61,6 +62,7 @@ describe('TransactionsService (integration with mocks)', () => {
   let inventoryMovementsService: ReturnType<
     typeof createMockInventoryMovementsService
   >;
+  let receiptService: { claimManualReceipt: jest.Mock; releaseManualReceipt: jest.Mock; consumeManualReceipt: jest.Mock };
 
   beforeEach(async () => {
     txModel = createMockMongooseModel();
@@ -73,10 +75,12 @@ describe('TransactionsService (integration with mocks)', () => {
     supplierLedgerService = createMockSupplierLedgerService();
     suppliersService = createMockSuppliersService();
     inventoryMovementsService = createMockInventoryMovementsService();
+    receiptService = { claimManualReceipt: jest.fn(), releaseManualReceipt: jest.fn(), consumeManualReceipt: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TransactionsService,
+        { provide: DepositReceiptsService, useValue: receiptService },
         { provide: getModelToken(Transaction.name), useValue: txModel },
         { provide: getModelToken(ReturnRequest.name), useValue: returnModel },
         {
@@ -113,6 +117,48 @@ describe('TransactionsService (integration with mocks)', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe('manual receipt creation', () => {
+    const actor = { id: 'staff1', name: 'Tester', username: 'tester', isAdmin: false };
+    const draftId = 'dr_manual';
+    const receipt = { id: 'dr_manual', amount: 50, method: 'Instapay', imageKey: 'deposit-receipts/manual.jpg', imageDeleted: false };
+    const dto = { type: 'مبيعات', ref: '90001', items: [{ code: 'P001', name: 'Test', qty: 1, price: 100, total: 100 }], date: '2026-10-10', employee: 'Tester',
+      client: 'Customer', total: 100, deposit: 50, depMethod: 'Instapay', remaining: 50, payStatus: 'معلق' } as any;
+
+    beforeEach(() => {
+      txModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(null) });
+      receiptService.claimManualReceipt.mockResolvedValue(receipt);
+      productsService.findAll.mockResolvedValue(mockProducts);
+      jest.spyOn(service, 'getInventory').mockResolvedValue([]);
+    });
+
+    it('persists the image with the sale and books its deposit exactly once', async () => {
+      const tx: any = { ...dto, _id: 'tx-manual', depositReceipts: [receipt], deposits: [], save: jest.fn() };
+      tx.save.mockResolvedValue(tx);
+      txModel.create.mockResolvedValue(tx);
+      vaultService.addSystemEntry.mockResolvedValue({ _id: 'vault-1', txNo: 'SAL-001' });
+      await service.create(dto, 'admin', { draftId, actor });
+      expect(txModel.create).toHaveBeenCalledWith(expect.objectContaining({ depositReceipts: [receipt] }));
+      expect(vaultService.addSystemEntry).toHaveBeenCalledTimes(1);
+      expect(vaultService.addSystemEntry.mock.calls[0].slice(0, 2)).toEqual([50, 'Instapay']);
+      expect(tx.deposits[0]).toMatchObject({ id: receipt.id, source: 'deposit-receipt', receiptId: receipt.id, vaultTxNo: 'SAL-001' });
+      expect(tx.depositReceipts[0].vaultTxNo).toBe('SAL-001');
+    });
+
+    it('does not create or book the sale if the image upload fails', async () => {
+      receiptService.claimManualReceipt.mockRejectedValue(new BadRequestException('Receipt not confirmed'));
+      await expect(service.create(dto, 'admin', { draftId, actor })).rejects.toThrow('Receipt not confirmed');
+      expect(txModel.create).not.toHaveBeenCalled();
+      expect(vaultService.addSystemEntry).not.toHaveBeenCalled();
+    });
+
+    it('releases the confirmed receipt for retry if transaction persistence fails', async () => {
+      txModel.create.mockRejectedValue(new Error('Database failed'));
+      await expect(service.create(dto, 'admin', { draftId, actor })).rejects.toThrow('Database failed');
+      expect(receiptService.releaseManualReceipt).toHaveBeenCalledWith(receipt.id);
+      expect(vaultService.addSystemEntry).not.toHaveBeenCalled();
+    });
   });
 
   describe('Reference validation', () => {
