@@ -3810,11 +3810,14 @@ body.dark-mode .fd-radio.is-nostock.on{border-color:#f87171;background:#2a1615;c
    One bordered box spanning the table width, like a Shopify-admin search bar —
    replaces the separate search box + row of outlined toolbar buttons. */
 #shopify-search-wrap{position:relative;flex:1;min-width:0;display:flex;align-items:center;gap:8px;
-  padding:0 6px 0 14px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg);
+  min-height:48px;box-sizing:border-box;padding:0 10px 0 14px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg);
   transition:border-color .2s}
 #shopify-search-wrap:focus-within{border-color:var(--accent)}
-.sp-field-seg{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;height:36px;
-  border:0;background:transparent;color:var(--text);font:inherit;font-size:.82rem;font-weight:600;
+/* Override the generic Arabic-search rule so changing languages cannot shrink this field. */
+#shopify-search{flex:1;min-width:0;width:auto;min-height:44px;box-sizing:border-box;border:0;background:transparent;font-size:1rem!important;font-weight:500;line-height:1.5;color:var(--text);outline:none;padding:10px 0;box-shadow:none}
+#shopify-search::placeholder{font-size:.95rem!important;font-weight:500!important;color:var(--muted);opacity:1}
+.sp-field-seg{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;height:44px;
+  border:0;background:transparent;color:var(--text);font:inherit;font-size:.9rem;font-weight:600;
   cursor:pointer;white-space:nowrap;padding:0}
 .sp-field-seg:hover,.sp-field-seg.is-pop-open{color:var(--accent)}
 .sp-field-seg.is-on{color:var(--accent)}
@@ -4805,23 +4808,17 @@ body.dark-mode .sp-mk.is-bad{color:#fca5a5}
 body.dark-mode .sp-mk.is-warn{color:#fdba74}
 
 /* ═══ «New» badge — a quiet pale pill, not a gradient sticker ═══ */
-/* «New» sits on the SAME line as the order number (user's call, Oct 5).
-   ⚠ That only fits because SP_COL_W.ref went 88 → 112 (with th.sp-c-ref): inline at
-   88 the badge was clipped off the ~57px compressed cell. The number never shrinks;
-   the badge is the compact form. */
-.sp-ref-line{display:flex;align-items:center;gap:4px;min-width:0;max-width:100%;container-type:inline-size}
-/* ⚠ De-emphasised to match .sp-ref-time's weight/size (the user's call) — the
-   order number is no longer the loud element on the row, it reads at the same
-   quiet register as the hour underneath it. */
-.sp-ref-line b{flex-shrink:0;font-weight:500;font-size:.78rem;color:var(--text)}
-.sp-ref-time{font-size:.72rem;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums;unicode-bidi:isolate;line-height:1.2}
-#shopify-orders-table-wrap .data-table td[data-col="ref"]{padding-inline:4px}
+/* Keep the badges beside the number when they fit, and wrap inside the cell when
+   the star, confirmation mark or edit indicator consumes the remaining space. */
+.sp-ref-line{display:flex;flex-wrap:wrap;align-items:center;gap:3px 4px;min-width:0;max-width:100%}
+.sp-ref-line .sp-ref-link{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Matches سجل المعاملات' order-number weight (movementRefCell: font-weight:700,
+   inherited .8rem base) — the two tables name the same kind of thing (an order
+   ref) and read it at the same register now, not a lighter one here. */
+.sp-ref-line b{flex-shrink:0;font-weight:700;font-size:.8rem;color:var(--text)}
+.sp-ref-time{font-size:.72rem;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums;unicode-bidi:isolate;line-height:1.45;white-space:normal;overflow-wrap:anywhere}
+#shopify-orders-table-wrap .data-table td[data-col="ref"]{padding-inline:4px;overflow:hidden}
 #shopify-orders-table-wrap .data-table .sp-ref-line .sp-new-badge{font-size:.6rem;padding:1px 5px}
-/* Below the width «#2690 جديد» needs, the badge becomes a dot — still on the same
-   line, still green, the word in its title — never clipped off the cell. */
-@container (max-width:62px){
-  #shopify-orders-table-wrap .data-table .sp-ref-line .sp-new-badge{font-size:0;width:8px;height:8px;padding:0;border-radius:50%;background:#16a34a}
-}
 .sp-new-badge{display:inline-flex;align-items:center;flex-shrink:0;padding:1px 7px;border-radius:5px;background:#dcefe2;color:#1f4d31;font-size:.66rem;font-weight:700;line-height:1.5;vertical-align:middle;white-space:nowrap}
 body.dark-mode .sp-new-badge{background:rgba(74,222,128,.16);color:#86efac}
 
@@ -5358,6 +5355,8 @@ body.dark-mode .sp-pk-tl.is-decision .sp-pk-tl-b,body.dark-mode .sp-pk-empty.is-
 #shopify-orders-table-body td[data-col="ref"] .sp-star.is-on{opacity:1}
 .sp-cmt-open svg{flex-shrink:0}
 .sp-cmt-n{font-size:.72rem;font-weight:700;unicode-bidi:isolate}
+.sp-cmt-preview{position:fixed;z-index:10000;width:min(300px,calc(100vw - 24px));box-sizing:border-box;padding:10px 12px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:9px;box-shadow:0 6px 20px rgba(0,0,0,.16);font-family:inherit;font-size:.875rem;font-weight:600;line-height:1.6;text-align:start;pointer-events:none}
+.sp-cmt-preview-text{white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:8;-webkit-box-orient:vertical;overflow:hidden}
 
 /* Follow-up marker — always clear, never faint: unlike the comment icon it only
    renders when a follow-up actually exists, so there's no "default" state to
@@ -5504,7 +5503,7 @@ body.dark-mode .sp-disc-guard.is-ok{color:#6ee7b7}
   #shopify-filters-bar{flex-direction:column;align-items:stretch;gap:8px;padding:8px 10px;border-radius:12px;border:1px solid var(--border)}
   #shopify-filters-top-row{display:flex;flex-wrap:nowrap;align-items:center;gap:6px}
   #shopify-filters-top-row #shopify-search-wrap{order:1;flex:1 1 auto;max-width:none;min-width:0}
-  #shopify-filters-top-row #shopify-search-wrap input{font-size:.8rem;min-width:0}
+  #shopify-filters-top-row #shopify-search-wrap input{min-width:0}
   /* ⚠ لا تُكتب `left` هنا — _positionShopifyDatePopover يحسبها ويقيّدها داخل الشاشة. */
   .sp-date-popover{width:calc(100vw - 24px);max-width:360px}
   .sp-date-input{flex:1;min-width:110px}
@@ -8190,8 +8189,11 @@ body.dark-mode .ent-table-card{box-shadow:0 1px 2px rgba(0,0,0,.25)}
 #mov-table th[data-col="type"],#mov-table td[data-col="type"]{width:96px}
 #mov-table th[data-col="client"],#mov-table td[data-col="client"]{width:180px}
 #mov-table th[data-col="invoice"],#mov-table td[data-col="invoice"]{width:84px}
-#mov-table th[data-col="paid"],#mov-table td[data-col="paid"]{width:84px}
-#mov-table th[data-col="remaining"],#mov-table td[data-col="remaining"]{width:84px}
+/* 94, not 84 — fmtJ now caps money at 2 decimals (see fmtMoneyN), but a clean 2dp figure like
+   "3,083.27" is still 8 characters at .86rem bold and was clipping against the old 84px, same
+   as a drifted float used to. */
+#mov-table th[data-col="paid"],#mov-table td[data-col="paid"]{width:94px}
+#mov-table th[data-col="remaining"],#mov-table td[data-col="remaining"]{width:94px}
 #mov-table th[data-col="ship"],#mov-table td[data-col="ship"]{width:74px}
 #mov-table th[data-col="items"],#mov-table td[data-col="items"]{width:104px}
 #mov-table .amt-masked{display:inline-flex;align-items:center;gap:4px;color:var(--muted);background:var(--bg-alt);border-radius:var(--r-pill,20px);padding:2px 9px;font-size:.72rem;font-weight:600}
@@ -20617,7 +20619,7 @@ body.dark-mode .spdep-reading.is-unread{color:#fbbf24}
           <div id="sp-filter-dropdown" class="sp-field-popover" role="listbox"></div>
           <span class="sp-field-sep"></span>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="flex-shrink:0;pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="shopify-search" type="search" dir="auto" autocomplete="off" data-i18n-placeholder="spSearchPlaceholder" placeholder="بحث — رقم الأوردر، العميل، الهاتف، الصنف..." oninput="shopifyPage=1;renderShopifyOrders()" style="flex:1;min-width:0;border:0;background:transparent;font-size:.85rem;outline:none;padding:0">
+          <input id="shopify-search" type="search" dir="auto" autocomplete="off" data-i18n-placeholder="spSearchPlaceholder" placeholder="بحث — رقم الأوردر، العميل، الهاتف، الصنف..." oninput="shopifyPage=1;renderShopifyOrders()">
           <!-- ⚠ «الفلاتر» is its own panel now (toggleSpFilterPanel). The funnel used to
                open the DATE popover, so the one filter control on the page filtered by
                date only and nothing said so. -->
@@ -30142,6 +30144,23 @@ function todayLocalISO() {
 function fmtN(n) { if (n == null || isNaN(n)) return '0'; return Number(n).toLocaleString('en-US'); }
 
 /**
+ * Money-only number formatting — at most 2 decimals, whole amounts print with none.
+ *
+ * ⚠ `fmtN` has no `maximumFractionDigits`, so a value carrying float drift from a chain of
+ * additions/subtractions (e.g. 1312.7599999999998, or a stored 634.3399999999999) prints every
+ * surviving decimal digit verbatim. Most rows in a table are whole or 2dp and fit their column;
+ * the rare drifted one prints 4-6 decimals, overflows the fixed-width money column (سجل
+ * المعاملات' المدفوع is 84px) and gets clipped by the cell's own ellipsis — a column that reads
+ * as "missing part of the amount" for exactly the rows where the figure matters most.
+ * `fmtN` itself is left untouched — it is also used for plain counts (`fmtN(ids.length)`), where
+ * forcing 2 decimals would be wrong in the other direction. This is the money-specific sibling.
+ */
+function fmtMoneyN(n) {
+  if (n == null || isNaN(n)) return '0';
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+/**
  * Live thousands-separator formatting for money inputs — "40000" shows as "40,000".
  *
  * IMPORTANT: the field must be `type="text" inputmode="decimal"`, NOT `type="number"`.
@@ -30287,7 +30306,7 @@ if (window.matchMedia && window.matchMedia('(hover:none)').matches) {
    من الأرقام — فمن غير عرض أدنى محسوب من طول الرقم كل جدول في النظام كان
    هيرتجف عند كل قفل/فتح. بيتحسب هنا مرة واحدة فكل الـ٥٢٩ موضع بياخدوه مجاناً. */
 function fmtJ(n) {
-  const num = fmtN(n);
+  const num = fmtMoneyN(n);
   return `<span class="amt-cur">EGP</span> <span class="amt-num" style="--amt-ch:${String(num).length}">${num}</span>`;
 }
 
@@ -30302,7 +30321,7 @@ function fmtJ(n) {
  *   اتجاه الحركة لا إشارة العدد: مبلغ خصم يُخزَّن موجباً ويُعرض سالباً.
  */
 function fmtJSigned(n, sign) {
-  const num = fmtN(Math.abs(Number(n) || 0));
+  const num = fmtMoneyN(Math.abs(Number(n) || 0));
   const s = sign === '+' ? '+' : sign === '−' || sign === '-' ? '−' : (Number(n) < 0 ? '−' : '');
   return `<span class="amt-cur">EGP</span> <span class="amt-num" style="--amt-ch:${String(num).length + (s ? 1 : 0)}">${s}${num}</span>`;
 }
@@ -30317,7 +30336,7 @@ function fmtJMasked(tx, field) {
 }
 function fmtJT(n) {
   // Plain-text version for toast / textContent contexts
-  return 'EGP ' + fmtN(n);
+  return 'EGP ' + fmtMoneyN(n);
 }
 function payMethodIcon(method, size) {
   const m = (method || '').toLowerCase();
@@ -43503,7 +43522,7 @@ function calcTxSummary() {
     depositInput.style.borderColor = depositInvalid ? 'var(--red)' : '';
     if (depositInvalidFormat) depositInput.title = currentLang==='en'?'Invalid format — digits only':'صيغة غير صحيحة — أرقام فقط';
     else if (depositNegative) depositInput.title = currentLang==='en'?'Deposit cannot be negative':'الديبوزت لا يمكن أن يكون سالباً';
-    else if (depositExceedsTotal) depositInput.title = currentLang==='en'?`Maximum: ${fmtN(total)} EGP`:`الحد الأقصى: ${fmtN(total)} EGP`;
+    else if (depositExceedsTotal) depositInput.title = currentLang==='en'?`Maximum: ${fmtMoneyN(total)} EGP`:`الحد الأقصى: ${fmtMoneyN(total)} EGP`;
     else depositInput.title = '';
   }
   // Use clamped deposit for display — actual save validation enforces the hard limit
@@ -48391,13 +48410,13 @@ function discBadgeHtml(disc, codeStr, itemsBase, opts = {}) {
   // When codeType is 'percent' and itemsBase is unknown, show the stored percent value directly
   const amtLabel = opts.codeType === 'percent'
     ? `${disc}%`
-    : (opts.codeType === 'fixed' ? `EGP ${fmtN(disc)}` : (pct > 0 ? `${pct}%` : `EGP ${fmtN(disc)}`));
+    : (opts.codeType === 'fixed' ? `EGP ${fmtMoneyN(disc)}` : (pct > 0 ? `${pct}%` : `EGP ${fmtMoneyN(disc)}`));
   // A percent code states its own rate, so the money figure is the extra fact;
   // anything else states money, so the rate is the extra fact — and only when
   // there is a base to measure it against.
   const tipAmt = opts.codeType === 'percent'
     ? `${disc}%`
-    : `EGP ${fmtN(disc)}${pct > 0 ? ` (${pct}%)` : ''}`;
+    : `EGP ${fmtMoneyN(disc)}${pct > 0 ? ` (${pct}%)` : ''}`;
   const tooltip = codeNames.length
     ? `${codeNames.length > 1 ? 'أكواد' : 'كود'}: ${codeNames.join(' + ')} — خصم ${tipAmt}`
     : `خصم ${tipAmt}`;
@@ -79702,7 +79721,7 @@ function formatVaultAmountHtml(v) {
   const amt = normalizeVaultSignedAmount(v);
   // الإشارة داخل .amt-num، لا قبل fmtJ: fmtJ يبدأ بـ«EGP»، فالبناء القديم
   // (`'−' + fmtJ(...)`) كان يُخرج «−EGP 12,000» — إشارة ملتصقة بالعملة لا بالرقم.
-  return `<span style="display:inline-block"><span class="amt-cur">EGP</span> <span class="amt-num">${amt < 0 ? '−' : ''}${fmtN(Math.abs(amt))}</span></span>`;
+  return `<span style="display:inline-block"><span class="amt-cur">EGP</span> <span class="amt-num">${amt < 0 ? '−' : ''}${fmtMoneyN(Math.abs(amt))}</span></span>`;
 }
 function formatVaultAmountCellHtml(v, extraCls) {
   const amt = normalizeVaultSignedAmount(v);
@@ -79928,7 +79947,7 @@ function renderVaultTable() {
       totalsEl.innerHTML = total ? `
         <span class="vlt-tot">${esc(t('vltTotalIn'))}<b class="text-green">${fmtJ(tIn)}</b></span>
         <span class="vlt-tot">${esc(t('vltTotalOut'))}<b class="text-red">${fmtJ(tOut)}</b></span>
-        <span class="vlt-tot is-net">${esc(t('vltNet'))}<b class="${net < 0 ? 'text-red' : 'text-green'}"><span class="amt-cur">EGP</span> <span class="amt-num">${net < 0 ? '−' : ''}${fmtN(Math.abs(net))}</span></b></span>` : '';
+        <span class="vlt-tot is-net">${esc(t('vltNet'))}<b class="${net < 0 ? 'text-red' : 'text-green'}"><span class="amt-cur">EGP</span> <span class="amt-num">${net < 0 ? '−' : ''}${fmtMoneyN(Math.abs(net))}</span></b></span>` : '';
     } else {
       // Staff see only individual rows, not the aggregates
       totalsEl.innerHTML = '';
@@ -80145,7 +80164,7 @@ function openVaultTransactionDetail(txId) {
         <div class="vtx-hero-lbl">${esc(t('colAmount'))}</div>
         <!-- الإشارة داخل .amt-num لا قبل fmtJ: fmtJ يُخرج «EGP» أولاً، فوضع «−»
              أمامه كان يطبع «−EGP 12,000» — الإشارة ملتصقة بالعملة لا بالرقم. -->
-        <div class="vtx-hero-amt ${signed < 0 ? 'text-red' : 'text-green'}"><span class="amt-cur">EGP</span> <span class="amt-num">${signed < 0 ? '−' : '+'}${fmtN(Math.abs(signed))}</span></div>
+        <div class="vtx-hero-amt ${signed < 0 ? 'text-red' : 'text-green'}"><span class="amt-cur">EGP</span> <span class="amt-num">${signed < 0 ? '−' : '+'}${fmtMoneyN(Math.abs(signed))}</span></div>
       </div>
       ${isAdmin() ? `<div class="vtx-hero-bal">
         <div class="vtx-hero-lbl">${esc(t('vltColBalAfter'))}</div>
@@ -97364,7 +97383,7 @@ function _renderPuEditTargetList() {
     const total = run.orders.reduce((sum, o) => sum + (o.total || 0), 0);
     // Keep this summary plain text. fmtJ returns styled HTML, which becomes
     // visible markup when it is interpolated into an escaped translation.
-    const totalText = `EGP ${fmtN(total)}`;
+    const totalText = `EGP ${fmtMoneyN(total)}`;
     const disabled = !_puEditSelectedIds.size;
     return `<div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);direction:rtl">
       <div style="min-width:0">
@@ -100138,16 +100157,36 @@ function _spPhoneDisplay(raw) {
   return /^01\d{9}$/.test(d) ? `${d.slice(0, 3)} ${d.slice(3, 7)} ${d.slice(7)}` : String(raw || '').trim();
 }
 
-/** The hour under the order number — the day separator above already names the day. */
-function _spRefTimeHtml(o) {
-  const v = o.shopifyCreatedAt || o.createdAt;
-  if (!v) return '';
+/** Relative time today, calendar-day labels with a 12-hour clock for older orders. */
+function _spOrderTimeLabel(v, nowMs = Date.now()) {
   const d = new Date(v);
-  if (isNaN(d)) return '';
-  /* en-GB: Latin digits, 24h «01:47» in both UI languages (ar-EG would need -u-nu-latn
-     and prints ص/م, which the narrow column cannot afford). Full date in the title. */
-  const hm = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-  return `<div class="sp-ref-time" title="${escHtml(_pwWhenFull(v))}">${hm}</div>`;
+  if (!v || !Number.isFinite(d.getTime())) return '';
+  const now = new Date(nowMs);
+  const en = currentLang === 'en';
+  const locale = en ? 'en-US' : 'ar-EG-u-nu-latn';
+  const sameDay = d.toDateString() === now.toDateString();
+  const diff = nowMs - d.getTime();
+  if (sameDay && diff >= 0) {
+    if (diff < 60000) return en ? 'Just now' : 'الآن';
+    const mins = Math.floor(diff / 60000);
+    const amount = mins < 60 ? mins : Math.floor(mins / 60);
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'always' }).format(-amount, mins < 60 ? 'minute' : 'hour');
+  }
+  const hm = d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const day = d.toDateString() === yesterday.toDateString()
+    ? (en ? 'Yesterday' : 'أمس')
+    : sameDay ? (en ? 'Today' : 'اليوم')
+    : d.toLocaleDateString(en ? 'en-GB' : locale, { day: 'numeric', month: 'short', ...(d.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}) });
+  return en ? `${day} at ${hm}` : `${day} الساعة ${hm}`;
+}
+
+function _spRefTimeHtml(o) {
+  const ms = _spOrderCreatedMs(o);
+  if (!Number.isFinite(ms)) return '';
+  const v = new Date(ms).toISOString();
+  return `<div class="sp-ref-time" dir="auto" title="${escHtml(_pwWhenFull(v))}">${escHtml(_spOrderTimeLabel(v))}</div>`;
 }
 
 /**
@@ -101560,7 +101599,29 @@ function showSpItemsPopover(orderId, btn) {
   }, 0);
 }
 
+/** Shopify creation time is authoritative; imported orders keep their original date. */
+function _spOrderCreatedMs(o) {
+  for (const value of [o.shopifyCreatedAt, o.createdAt]) {
+    if (!value) continue;
+    const ms = new Date(value).getTime();
+    if (Number.isFinite(ms)) return ms;
+  }
+  return -Infinity; // Undated orders follow all dated orders.
+}
+
+function _spCompareOrdersNewestFirst(a, b) {
+  const da = _spOrderCreatedMs(a), db = _spOrderCreatedMs(b);
+  if (da !== db) return db - da;
+  // Stable page boundaries even if the API returns equal timestamps in a new order.
+  for (const key of ['ref', 'shopifyId', '_id']) {
+    const cmp = String(b[key] || '').localeCompare(String(a[key] || ''), 'en', { numeric: true });
+    if (cmp) return cmp;
+  }
+  return 0;
+}
+
 function renderShopifyOrders() {
+  _spHideCommentPreview();
   const wrap = qs('#shopify-orders-table-body');
   const mobileList = qs('#sp-mobile-list');
   if (!wrap) return;
@@ -101623,51 +101684,9 @@ function renderShopifyOrders() {
   _spRenderToolbarState(data.length);
   _spUpdateTriggerLabel();
 
-  /* Sort: smart priority ranking */
-  if (_shopifyTab === 'pending') {
-    const _nowMs = Date.now();
-    const _24h = 24 * 60 * 60 * 1000;
-    /* rank: 1=today+need-contact, 2=confirmed, 3=today+followup, 4=old+need-contact, 5=old+followup, 8=admin-cancelled(always last)
-       ⚠ (Oct 10, 2026) A Shopify `cancelled`-family TAG no longer demotes an order — it used to drop
-       straight to rank 6/7 (near the bottom) the moment Shopify (or an app) applied the tag, with
-       no admin having reviewed or decided anything. A tag is not a decision: only `o.cancelled`
-       (the real cancellation, gone through the actual cancel flow) is allowed to move an order to
-       the end. `sv === 'cancelled'` now falls through to the SAME ranking a bare untagged order
-       gets — it stays exactly where its age/confirmed/followup state would put it regardless of
-       the tag, which is the whole point: the tag is a marker (_spCardTagMeta), not a sort input. */
-    const _smartRank = o => {
-      if (o.cancelled) return 8; // ملغي من الأدمن — يطلع دايماً في الآخر
-      /* A `cancelled`-family tag is treated as NO smart status here — same as an
-         order with no recognised tag at all — so it ranks purely on age/
-         confirmed/followup/pendingStatus like any other order. */
-      const smart0 = _shopifySmartStatus(o);
-      const smart = smart0 && smart0.value === 'cancelled' ? null : smart0;
-      const sv = smart ? smart.value : (o.pendingStatus || '');
-      const age = _nowMs - new Date(o.shopifyCreatedAt || o.createdAt || 0).getTime();
-      const isRecent = age < _24h;
-      if (isRecent) return 1;           // أي أوردر جديد (أقل من 24 ساعة) يطلع فوق الكل
-      if (sv === 'confirmed') return 2; // جاهز للتسجيل
-      if (!smart && !o.pendingStatus) return 3; // يحتاج تواصل قديم
-      if (sv === 'followup')  return 4; // متابعة قديم
-      return 5;
-    };
-    data = [...data].sort((a, b) => {
-      const pa = _smartRank(a), pb = _smartRank(b);
-      if (pa !== pb) return pa - pb;
-      const da = new Date(a.shopifyCreatedAt || a.createdAt).getTime();
-      const db = new Date(b.shopifyCreatedAt || b.createdAt).getTime();
-      return db - da;
-    });
-  } else {
-    // Non-pending tab: keep newest-first but always push admin-cancelled orders to the bottom
-    data = [...data].sort((a, b) => {
-      const ca = a.cancelled ? 1 : 0, cb = b.cancelled ? 1 : 0;
-      if (ca !== cb) return ca - cb;
-      const da = new Date(a.shopifyCreatedAt || a.createdAt).getTime();
-      const db = new Date(b.shopifyCreatedAt || b.createdAt).getTime();
-      return db - da;
-    });
-  }
+  /* Sort the full filtered list by Shopify creation time BEFORE pagination.
+     Status, tags and cancellation must not split a day into separate queues. */
+  data = [...data].sort(_spCompareOrdersNewestFirst);
 
   /* prune selection to orders still matching the active filters before computing summaries */
   const _spFilteredIds = new Set(data.filter(o => o.status === 'pending' && !o.cancelled).map(o => o._id));
@@ -101952,7 +101971,8 @@ function renderShopifyOrders() {
         _spLastDayKey = _dayKey;
         dayHeaderHtml = `<div class="sp-card-day-header">${_spDayLabel(_oDate)}</div>`;
       }
-      const _oTimeStr = _oDate.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
+      const _oCreatedMs = _spOrderCreatedMs(o);
+      const _oTimeStr = Number.isFinite(_oCreatedMs) ? _spOrderTimeLabel(new Date(_oCreatedMs).toISOString()) : '';
       const _receiptDeposit = _spDepositOf(o);
       const depositCardClass = _receiptDeposit.deposit>0 || _receiptDeposit.pending.length>0 ? 'sp-card-deposit-paid' : 'sp-card-deposit-none';
       const np = _receiptDeposit.deposit > 0 ? {amount:_receiptDeposit.deposit,method:_receiptDeposit.primaryMethod} : null;
@@ -105896,6 +105916,54 @@ function _spCardTagMeta(o) {
   return { ...meta, label: isEn ? meta.en : meta.ar, shortLabel: isEn ? meta.short.en : meta.short.ar };
 }
 
+let _spCommentPreview = null;
+let _spCommentPreviewAnchor = null;
+
+function _spHideCommentPreview() {
+  if (_spCommentPreviewAnchor) _spCommentPreviewAnchor.removeAttribute('aria-describedby');
+  if (_spCommentPreview) _spCommentPreview.remove();
+  _spCommentPreview = null;
+  _spCommentPreviewAnchor = null;
+}
+
+function _spShowCommentPreview(btn, orderId) {
+  _spHideCommentPreview();
+  const order = (_shopifyOrders || []).find(o => String(o._id) === String(orderId));
+  const comments = (Array.isArray(order?.comments) ? order.comments : []).filter(c => String(c.text || '').trim());
+  if (!comments.length) return;
+  // Select the newest comment without changing the conversation's stored order.
+  const latest = comments.reduce((a, b) => {
+    const ta = Date.parse(a.createdAt || a.timestamp || '') || 0;
+    const tb = Date.parse(b.createdAt || b.timestamp || '') || 0;
+    return tb >= ta ? b : a;
+  });
+  const tip = document.createElement('div');
+  tip.id = 'sp-comment-preview';
+  tip.className = 'sp-cmt-preview';
+  tip.setAttribute('role', 'tooltip');
+  tip.dir = currentLang === 'en' ? 'ltr' : 'rtl';
+  const text = document.createElement('div');
+  text.className = 'sp-cmt-preview-text';
+  text.dir = 'auto';
+  text.textContent = latest.text;
+  tip.append(text);
+  document.body.append(tip);
+  _spCommentPreview = tip;
+  _spCommentPreviewAnchor = btn;
+  btn.setAttribute('aria-describedby', tip.id);
+  const rect = btn.getBoundingClientRect();
+  const bounds = tip.getBoundingClientRect();
+  const left = Math.max(12, Math.min(rect.left + rect.width / 2 - bounds.width / 2, window.innerWidth - bounds.width - 12));
+  const above = rect.top - bounds.height - 8;
+  const top = above >= 12 ? above : Math.max(12, Math.min(rect.bottom + 8, window.innerHeight - bounds.height - 12));
+  tip.style.left = left + 'px';
+  tip.style.top = top + 'px';
+}
+
+window.addEventListener('scroll', _spHideCommentPreview, true);
+window.addEventListener('resize', _spHideCommentPreview);
+document.addEventListener('keydown', event => { if (event.key === 'Escape') _spHideCommentPreview(); });
+
 function _spCommentsBtnHtml(o, size) {
   const n = Array.isArray(o.comments) ? o.comments.length : 0;
   const px = size === 'sm' ? 26 : 30;
@@ -105904,7 +105972,10 @@ function _spCommentsBtnHtml(o, size) {
   //   والفرق بين الحالتين صار في اللون لا في الوجود — وهو ما يبقي الصفوف متطابقة.
   const has = n > 0;
   return `<span class="sp-cmt-slot"><button class="sp-cmt-open${has ? ' has-cmt' : ''}" style="height:${px}px"
-    title="${escHtml(has ? t('spTabComments') : t('spCmtAdd'))}" onclick="event.stopPropagation();openShopifyCommentsModal('${esc(o._id)}')">
+    ${has ? '' : `title="${escHtml(t('spCmtAdd'))}"`} aria-label="${escHtml(has ? t('spTabComments') : t('spCmtAdd'))}"
+    onmouseenter="_spShowCommentPreview(this,'${esc(o._id)}')" onmouseleave="_spHideCommentPreview()"
+    onfocus="_spShowCommentPreview(this,'${esc(o._id)}')" onblur="_spHideCommentPreview()"
+    onclick="event.stopPropagation();_spHideCommentPreview();openShopifyCommentsModal('${esc(o._id)}')">
     ${commentIconSvg(13)}
     ${has ? `<span class="sp-cmt-n">${n > 99 ? '99+' : n}</span>` : ''}
   </button></span>`;
