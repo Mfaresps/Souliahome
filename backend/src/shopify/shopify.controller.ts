@@ -353,12 +353,19 @@ export class ShopifyController {
     return this.shopifyService.updateOrderDiscount(id, body || {}, by, req.user?.role || '');
   }
 
-  /**
-   * تمييز أوردر / إزالة التمييز.
-   *
-   * ⚠ بلا حارس صلاحيات فوق JWT عمداً: النجمة علامة بصرية لا أثر لها على أي رقم،
-   *   وأي مستخدم يراها يجوز له وضعها ورفعها.
-   */
+  /** Alternative to adding a deposit, with the same delegable permission. */
+  @Patch('orders/:id/ship-without-deposit')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
+  @RequirePerms('shopify-deposit-upload')
+  async setShipWithoutDeposit(
+    @Param('id') id: string,
+    @Body('enabled') enabled: boolean,
+    @Request() req: any,
+  ) {
+    return this.shopifyService.setShipWithoutDeposit(id, enabled, req.user?.name || req.user?.username || '');
+  }
+
+  /** Visual marker; deliberately requires only authentication. */
   @Patch('orders/:id/star')
   @UseGuards(JwtAuthGuard)
   async toggleStar(

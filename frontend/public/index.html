@@ -4609,6 +4609,17 @@ body.dark-mode .sp-cr-waiting{color:#fbbf24;background:#f59e0b26}
 .sp-card-deposit-line .spdep-table-deposit,.sp-pk-pay-cell .spdep-table-deposit{flex-wrap:wrap;gap:6px}
 .sp-card-actions-row{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
 .sp-card-actions-row::-webkit-scrollbar{display:none}
+#sp-mobile-list .sp-card{display:flex;flex-direction:column;gap:8px;padding:12px;min-height:160px}
+#sp-mobile-list .sp-card-top{min-height:36px;margin:0}
+#sp-mobile-list .sp-card-menu>.dd-toggle{width:36px!important;height:36px!important;border-radius:8px}
+#sp-mobile-list .sp-card-subline{min-height:20px;font-size:.76rem;line-height:1.5}
+#sp-mobile-list .sp-card-deposit-line{margin:0}
+#sp-mobile-list .sp-mobile-deposit-options{margin:0}
+#sp-mobile-list .sp-card-actions-row{margin-top:auto;padding-top:8px;border-top:1px solid var(--border);min-height:44px}
+#sp-mobile-list .sp-card-actions>button,#sp-mobile-list .sp-card-shopify-link,#sp-mobile-list .sp-card-vrobo-link{min-height:36px;border-radius:8px}
+#sp-mobile-list .sp-card-actions>button{min-width:36px}
+#sp-mobile-list .sp-card-shopify-link,#sp-mobile-list .sp-card-vrobo-link{padding:6px 8px;font-size:.68rem;line-height:1.3}
+#sp-mobile-list .sp-card-assignee-chip .sp-assignee-avatar{width:30px;height:30px}
 .sp-card-shopify-link{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;font-size:.66rem;font-weight:600;color:var(--text-muted);text-decoration:none;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-alt);transition:color .15s,border-color .15s}
 .sp-card-shopify-link:hover{color:#95BF47;border-color:#95BF47}
 .sp-card-shopify-link svg{flex-shrink:0}
@@ -16017,8 +16028,34 @@ body.dark-mode .spdep-reading.is-unread{color:#fbbf24}
 .spdep-table-deposit .spdep-pending{display:inline-flex;align-items:center;gap:6px;padding:4px 6px;white-space:nowrap;margin-top:0}
 .spdep-empty{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
 .spdep-quick-add{display:inline-grid;place-items:center;width:26px;height:26px;padding:3px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--accent);cursor:pointer;flex-shrink:0}
-.spdep-quick-add:hover{border-color:var(--accent);background:var(--bg-alt)}
+.spdep-quick-add:hover:not(:disabled){border-color:var(--accent);background:var(--bg-alt)}
+.spdep-quick-add:disabled{opacity:.4;color:var(--muted);cursor:not-allowed}
 .spdep-quick-add:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.spdep-empty{flex-wrap:wrap;white-space:normal}
+.spdep-no-deposit{font-size:.72rem;line-height:1.35}
+.spdep-shipping-switch{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;max-width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);font:inherit;font-size:.75rem;line-height:1.4;text-align:start;cursor:pointer}
+.spdep-shipping-switch>span:first-child{min-width:0}
+.spdep-shipping-status{display:inline-flex;align-items:center;padding:4px 8px;border-radius:6px;background:rgba(34,197,94,.1);color:#15803d;font-size:.75rem;font-weight:600}
+.oa-payment-ready{color:#059669;font-weight:700;white-space:nowrap}
+.oa-payment-review{display:inline-block;margin-inline-start:5px;padding:2px 5px;border-radius:5px;background:#f59e0b18;color:#a46a13;font-size:.7rem;font-weight:500;white-space:nowrap}
+body.dark-mode .oa-payment-review{color:#fbbf24}
+.spdep-shipping-switch.is-on{color:#15803d;background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.4)}
+.spdep-switch-track{position:relative;display:block;flex:0 0 28px;width:28px;height:16px;border-radius:99px;background:var(--border);direction:ltr}
+.spdep-switch-track::after{content:'';position:absolute;inset-block-start:2px;left:2px;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0002;transition:transform .18s}
+.spdep-shipping-switch.is-on .spdep-switch-track{background:#16a34a}
+.spdep-shipping-switch.is-on .spdep-switch-track::after{transform:translateX(12px)}
+.spdep-shipping-switch:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.spdep-shipping-switch:disabled{cursor:default}
+.spdep-shipping-switch[aria-busy="true"]{opacity:.65;cursor:wait}
+.spdep-shipping-choice{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0}
+.sp-mobile-deposit-options{display:flex;align-items:center;gap:8px;width:100%;margin-block:10px 4px}
+.sp-mobile-deposit-options .spdep-shipping-switch{flex:0 1 auto;min-width:0;min-height:44px;padding:9px 10px;font-size:.82rem;gap:10px}
+.sp-mobile-deposit-options .spdep-quick-add{width:44px;height:44px;border-radius:9px}
+.sp-mobile-deposit-options .spdep-quick-add svg{width:20px;height:20px}
+.sp-mobile-deposit-options .spdep-switch-track{flex-basis:36px;width:36px;height:20px}
+.sp-mobile-deposit-options .spdep-switch-track::after{width:16px;height:16px}
+.sp-mobile-deposit-options .is-on .spdep-switch-track::after{transform:translateX(16px)}
+@media(prefers-reduced-motion:reduce){.spdep-switch-track::after{transition:none}}
 #spdep-success{display:grid;justify-items:center;text-align:center;gap:12px;padding:12px 0}
 #modal-overlay:has(.spdep-success-modal){align-items:center!important}
 #modal-content.spdep-success-modal{border-radius:16px!important;width:calc(100vw - 32px)!important;max-width:400px!important;animation:none!important}
@@ -19676,6 +19713,15 @@ body.dark-mode .spdep-reading.is-unread{color:#fbbf24}
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
         <h3 style="font-size:.95rem;color:var(--text);margin:0;font-weight:600">جدول التدقيق الكامل</h3>
+        <label style="display:flex;align-items:center;gap:7px;font-size:.8rem">حالة الدفع
+          <select id="oa-payment-filter" onchange="auditPage=1;renderAuditTable()" style="max-width:100%;min-height:36px;padding:5px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit">
+            <option value="all">كل حالات الدفع</option>
+            <option value="ship-without-deposit">شحن بدون عربون</option>
+            <option value="deposit-paid">عربون معتمد</option>
+            <option value="pending-review">عربون قيد المراجعة</option>
+            <option value="awaiting-deposit">بانتظار العربون</option>
+          </select>
+        </label>
         <input type="text" id="oa-search" placeholder="بحث برقم الأوردر أو العميل…" oninput="auditPage=1;renderAuditTable()"
           style="padding:5px 9px;width:220px;max-width:100%;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.85rem">
       </div>
@@ -19688,6 +19734,7 @@ body.dark-mode .spdep-reading.is-unread{color:#fbbf24}
         <button class="tab-btn" data-oa-filter="failed" onclick="setAuditFilter('failed',this)">فشل المزامنة <span class="oa-filter-count" data-oa-count="failed"></span></button>
         <button class="tab-btn" data-oa-filter="cancelled" onclick="setAuditFilter('cancelled',this)">الملغاة <span class="oa-filter-count" data-oa-count="cancelled"></span></button>
         <button class="tab-btn" data-oa-filter="pending" onclick="setAuditFilter('pending',this)">بانتظار الموافقة <span class="oa-filter-count" data-oa-count="pending"></span></button>
+        <button class="tab-btn" data-oa-filter="ship-without-deposit" onclick="setAuditFilter('ship-without-deposit',this)">شحن بدون عربون <span class="oa-filter-count" data-oa-count="ship-without-deposit"></span></button>
         <button class="tab-btn" data-oa-filter="highvalue" onclick="setAuditFilter('highvalue',this)">قيمة عالية <span class="oa-filter-count" data-oa-count="highvalue"></span></button>
         <button class="tab-btn" data-oa-filter="noprofit" onclick="setAuditFilter('noprofit',this)">بدون حساب ربح <span class="oa-filter-count" data-oa-count="noprofit"></span></button>
         <button class="tab-btn" data-oa-filter="noship" onclick="setAuditFilter('noship',this)">بدون تكلفة شحن <span class="oa-filter-count" data-oa-count="noship"></span></button>
@@ -28291,6 +28338,9 @@ const TRANSLATIONS = {
   spDepBulkDonePartial:{ar:'تم اعتماد {done} — فشل {failed}',en:'{done} approved — {failed} failed'},
   spDepBulkHasDuplicate:{ar:'{n} من المحدد به اشتباه تكرار — راجعها قبل المتابعة',en:'{n} of the selection is flagged as a possible duplicate — review before continuing'},
   spDepWithout:{ar:'بدون عربون',en:'No deposit'},
+  spShipWithoutDeposit:{ar:'شحن بدون عربون',en:'Ship without deposit'},
+  spShipWithoutDepositOnConfirm:{ar:'تأكيد شحن الطلب بدون عربون؟',en:'Ship this order without a deposit?'},
+  spShipWithoutDepositOffConfirm:{ar:'إيقاف شحن بدون عربون وإعادة خيار إضافة العربون لهذا الطلب؟',en:'Turn off shipping without a deposit and restore the add deposit option for this order?'},
   spColDeposit:{ar:'العربون والخزنة',en:'Deposit / vault'},
   spDepView:{ar:'عرض الإيصال',en:'View receipt'},
   spDepClose:{ar:'إغلاق',en:'Close'},
@@ -32993,6 +33043,10 @@ function connectSocket() {
   if (!token) return;
   const __socketUrl = window.__ENV__?.API_BASE_URL || location.origin;
   socket = io(__socketUrl, { auth: { token, device: (typeof __myDevice !== 'undefined' ? __myDevice : null) } });
+  socket.on('shopify:shipping-choice-changed', _spApplyShippingChoice);
+  socket.on('connect', () => {
+    if (_shopifyOrders.length || currentAuditData) loadShopifyOrders();
+  });
   socket.on('shopify:deposit-changed', () => { loadShopifyOrders(); });
   socket.on('shopify:order-cancel-conflict', () => { loadShopifyOrders(); });
   socket.on('users:status', (data) => {
@@ -75353,6 +75407,7 @@ async function runOrderAudit() {
   try {
     const data = await api(`/order-audit/run?from=${from}&to=${to}`);
     currentAuditData = data;
+    if (qs('#oa-payment-filter')) qs('#oa-payment-filter').value = 'all';
     auditFilter = 'all';
     auditPage = 1;
     qsa('#rep-panel-orderaudit .oa-filters .tab-btn').forEach(b =>
@@ -75683,6 +75738,35 @@ function setAuditPerPage(v) { auditPerPage = v; auditPage = 1; renderAuditTable(
 
 const AUDIT_HIGH_VALUE = 5000;
 
+function _auditShipsWithoutDeposit(r) {
+  return r.syncStatus === 'pending' && !r.registered && !r.cancelled && !!r.shipWithoutDeposit
+    && !(Number(r.depositApproved) > 0) && !(Number(r.depositPending) > 0);
+}
+
+function matchesAuditPaymentFilter(r, filter) {
+  if (filter === 'all') return true;
+  if (r.registered || r.cancelled || r.syncStatus !== 'pending') return false;
+  switch (filter) {
+    case 'ship-without-deposit': return _auditShipsWithoutDeposit(r);
+    case 'deposit-paid': return Number(r.depositApproved) > 0;
+    case 'pending-review': return Number(r.depositPending) > 0;
+    case 'awaiting-deposit': return !(Number(r.depositApproved) > 0) && !(Number(r.depositPending) > 0) && !_auditShipsWithoutDeposit(r);
+    default: return true;
+  }
+}
+
+function _auditPaymentCellHtml(r) {
+  if (r.registered || r.syncStatus !== 'pending') return esc(r.paymentStatus || '—');
+  const deposit = Number(r.depositApproved) || 0;
+  const pending = Number(r.depositPending) || 0;
+  const payments = [];
+  if (deposit > 0) payments.push(`<span class="oa-payment-ready">${fmtJ(deposit)}${r.depositMethod ? ` · ${esc(r.depositMethod)}` : ''}</span>`);
+  if (pending > 0) payments.push(`<span><span class="oa-payment-ready">${fmtJ(pending)}</span><span class="oa-payment-review">${esc(t('spDepPendingShort'))}</span></span>`);
+  if (payments.length) return `<span style="display:inline-flex;flex-direction:column;gap:4px">${payments.join('')}</span>`;
+  if (_auditShipsWithoutDeposit(r)) return `<span class="oa-payment-ready">${esc(t('spShipWithoutDeposit'))}</span>`;
+  return `<span style="color:var(--muted)">بدون عربون</span>`;
+}
+
 function matchesAuditFilter(r, filter) {
   switch (filter) {
     case 'missing':   return r.syncStatus === 'missing' || r.syncStatus === 'failed';
@@ -75690,6 +75774,7 @@ function matchesAuditFilter(r, filter) {
     case 'failed':    return r.syncStatus === 'failed';
     case 'cancelled': return !!r.cancelled;
     case 'pending':   return r.syncStatus === 'pending';
+    case 'ship-without-deposit': return _auditShipsWithoutDeposit(r);
     case 'highvalue': return r.orderTotal >= AUDIT_HIGH_VALUE;
     case 'noprofit':  return r.registered && !r.hasProfit;
     case 'noship':    return r.registered && !r.hasShipping;
@@ -75700,7 +75785,7 @@ function matchesAuditFilter(r, filter) {
 function renderAuditFilterCounts() {
   const d = currentAuditData;
   const rows = d?.rows || [];
-  const filters = ['all', 'missing', 'synced', 'failed', 'cancelled', 'pending', 'highvalue', 'noprofit', 'noship'];
+  const filters = ['all', 'missing', 'synced', 'failed', 'cancelled', 'pending', 'ship-without-deposit', 'highvalue', 'noprofit', 'noship'];
   filters.forEach(f => {
     const count = f === 'all' ? rows.length : rows.filter(r => matchesAuditFilter(r, f)).length;
     qsa(`.oa-filter-count[data-oa-count="${f}"]`).forEach(el => { el.textContent = `(${fmtNum(count)})`; });
@@ -75714,6 +75799,7 @@ function auditRowsFiltered() {
 
   const rows = (d.rows || []).filter(r => {
     if (!matchesAuditFilter(r, auditFilter)) return false;
+    if (!matchesAuditPaymentFilter(r, qs('#oa-payment-filter')?.value || 'all')) return false;
     if (!q) return true;
     return r.orderNumber.includes(q)
       || (r.client || '').toLowerCase().includes(q);
@@ -75726,7 +75812,7 @@ function auditRowsFiltered() {
   // the raw paymentStatus string, so sort by that same parsed amount instead.
   const depositOf = (r) => {
     if (r.registered) return null;
-    return r.syncStatus === 'pending' ? Number(r.depositApproved) || 0 : 0;
+    return r.syncStatus === 'pending' ? (Number(r.depositApproved) || 0) + (Number(r.depositPending) || 0) : 0;
   };
 
   rows.sort((a, b) => {
@@ -75775,18 +75861,9 @@ function renderAuditTable() {
     const dateTxt = r.shopifyCreatedAt ? String(r.shopifyCreatedAt).slice(0, 10) : '—';
     const checked = auditSelected.has(r.orderNumber);
 
-    // Pending/unregistered orders don't have a committed transaction yet, but the order
-    // total, product cost and shipping cost are already knowable from Shopify + the
-    // product cost table, and any deposit noted by staff (in notes/tags) can be parsed
-    // the same way the Shopify orders page does. Net profit is shown as an estimate
-    // (marked with ~) since discounts/actual shipping burden aren't finalized yet.
-    let depositCell = esc(r.paymentStatus || '—');
-    if (!r.registered && r.syncStatus === 'pending') {
-      const dep = {deposit:Number(r.depositApproved)||0,payment:r.depositMethod||''};
-      depositCell = dep.deposit > 0
-        ? `<span style="color:#059669;font-weight:700">${fmtJ(dep.deposit)}${dep.payment ? ` · ${esc(dep.payment)}` : ''}</span>`
-        : `<span style="color:var(--muted)">بدون عربون</span>`;
-    }
+    // Pending orders use approved receipts and the saved shipping choice.
+    // Their profit remains an estimate until a sale is committed.
+    const depositCell = _auditPaymentCellHtml(r);
 
     const estProfit = (r.orderTotal || 0) - (r.productCost || 0) - (r.shippingCost || 0);
     const profitValue = r.registered ? r.netProfit : estProfit;
@@ -98983,7 +99060,19 @@ async function loadShopifyOrders() {
   const wrap = qs('#shopify-orders-table-body');
   if (wrap && !_shopifyOrders.length) renderSkeleton(wrap, { rows: 8, columns: 6 });
   try {
-    _shopifyOrders = await api('/shopify/orders');
+    const fetchedOrders = await api('/shopify/orders');
+    // Keep a newer socket update if it arrived while this request was in flight.
+    const priorOrders = new Map(_shopifyOrders.map(o => [String(o._id),o]));
+    for (const o of fetchedOrders) {
+      const prior = priorOrders.get(String(o._id));
+      if (prior?.shipWithoutDepositAt && prior.shipWithoutDepositAt > (o.shipWithoutDepositAt || '')) {
+        o.shipWithoutDeposit = prior.shipWithoutDeposit;
+        o.shipWithoutDepositAt = prior.shipWithoutDepositAt;
+        o.shipWithoutDepositBy = prior.shipWithoutDepositBy;
+      }
+    }
+    _shopifyOrders = fetchedOrders;
+    _spSyncAuditPaymentRows();
     _spReceiptLoadError = '';
     _spRefreshReceiptViews();
     // Set baseline on first ever load so new orders after that trigger the badge
@@ -99123,6 +99212,17 @@ function _spStockBlock(o, idx) {
    Shopify note text, and that path is gone. */
 
 const SP_FILTERS = [
+  {
+    key: 'ship-without-deposit',
+    ar: 'شحن بدون عربون', en: 'Ship without deposit',
+    tone: '#16a34a',
+    icon: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h11v11H3zM14 10h4l3 4v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
+    test: (o) => !o.cancelled && _spShipsWithoutDeposit(o),
+    kpis: (rows) => [
+      { label: currentLang === 'en' ? 'Orders' : 'عدد الأوردرات', value: fmtN(rows.length), strong: true },
+      { label: currentLang === 'en' ? 'Order value' : 'قيمة الأوردرات', value: fmtJ(rows.reduce((sum,o) => sum + (Number(o.total)||0),0)) },
+    ],
+  },
   {
     key: 'deposit-paid',
     ar: 'مدفوع ديبوزت', en: 'Deposit paid',
@@ -100643,7 +100743,7 @@ function _spPeekHtml(o) {
       <div class="sp-pk-meter" role="img" aria-label="${escHtml((isEn ? 'Paid ' : 'مدفوع ') + pay.pct + '%')}"><i style="width:${pay.pct}%"></i></div>
       <div class="sp-pk-pay-grid">
         <div class="sp-pk-pay-cell"><span>${isEn ? 'Deposit' : 'العربون'}</span>
-          ${deposit > 0 || _dep.pending.length ? _spDepositCellHtml(o,false) : `<b class="is-none">${esc(t('spDepWithout'))}</b>`}</div>
+          ${_spDepositCellHtml(o,false)}</div>
         <div class="sp-pk-pay-cell is-due"><span>${isEn ? 'Remaining' : 'المتبقي'}</span><b>${fmtJ(Math.max(0, total - (deposit || 0)))}</b></div>
       </div>
       ${metaChips ? `<div class="sp-pk-m-meta">${metaChips}</div>` : ''}
@@ -102019,7 +102119,7 @@ function renderShopifyOrders() {
       const _oCreatedMs = _spOrderCreatedMs(o);
       const _oTimeStr = Number.isFinite(_oCreatedMs) ? _spOrderTimeLabel(new Date(_oCreatedMs).toISOString()) : '';
       const _receiptDeposit = _spDepositOf(o);
-      const depositCardClass = _receiptDeposit.deposit>0 || _receiptDeposit.pending.length>0 ? 'sp-card-deposit-paid' : 'sp-card-deposit-none';
+      const depositCardClass = _spDepositCardClass(o);
       const np = _receiptDeposit.deposit > 0 ? {amount:_receiptDeposit.deposit,method:_receiptDeposit.primaryMethod} : null;
       const _depMethodIcon = {
         'كاش': '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
@@ -102082,7 +102182,6 @@ function renderShopifyOrders() {
           ${_cardCmtBtn}
           ${_cardFuMark}
           ${_cardFuLastIcon}
-          ${_spMobileDepositActionHtml(o)}
         </div>` : (o.status === 'pending' && o.cancelled && isAdmin()) ? `
         <div class="sp-card-actions" onclick="event.stopPropagation()">
           ${_cardCmtBtn}${_cardFuMark}${_cardFuLastIcon}
@@ -102096,7 +102195,8 @@ function renderShopifyOrders() {
           ? `<div class="sp-card-actions" onclick="event.stopPropagation()">${_cardCmtBtn}${_cardFuMark}${_cardFuLastIcon}</div>`
           : '');
       const depositFollowup = _spDepositNeedsFollowup(o);
-      const depositBadgeHtml = depositFollowup ? `<span class="sp-deposit-followup" role="status">${esc(t('spDepFollowup'))}</span>` : _spDepositCellHtml(o,false);
+      const depositBadgeHtml = _spMobileDepositSummaryHtml(o);
+      const mobilePaymentHtml = _spMobileDepositActionHtml(o);
       const _spOrderUrl = (o.shopifyOrderId ? `https://admin.shopify.com/store/soulia-2/orders/${o.shopifyOrderId}` : null)
         || (o.rawData?.id ? `https://admin.shopify.com/store/soulia-2/orders/${o.rawData.id}` : null)
         || o.orderStatusUrl || o.rawData?.order_status_url;
@@ -102138,10 +102238,11 @@ function renderShopifyOrders() {
             ${_cardMenuHtml}
           </div>
         </div>
-        <div class="sp-card-deposit-line">${depositBadgeHtml}</div>
+        ${depositBadgeHtml?`<div class="sp-card-deposit-line">${depositBadgeHtml}</div>`:''}
         <div class="sp-card-subline sp-card-items-toggle" onclick="event.stopPropagation();(function(el){var l=document.getElementById('${itemsId}');if(!l)return;var open=l.style.display!=='none';l.style.display=open?'none':'block';el.classList.toggle('sp-card-items-toggle-open',!open);})(this)">
           <span>${tf(o.items?.length === 1 ? 'spItemsCountOne' : 'spItemsCount', { n: o.items?.length || 0 })}</span><span class="sp-card-subline-dot">•</span><span dir="auto" ${Number.isFinite(_oCreatedMs) ? `data-sp-created-at="${new Date(_oCreatedMs).toISOString()}" title="${escHtml(_pwWhenFull(new Date(_oCreatedMs).toISOString()))}"` : ''}>${escHtml(_oTimeStr)}</span><span class="sp-card-subline-dot">•</span><span class="sp-card-client">${esc(o.client || o.phone || '—')}</span>
         </div>
+        ${mobilePaymentHtml}
         ${_cardFuLast}
         ${itemsListHtml}
         <div class="sp-card-actions-row" onclick="event.stopPropagation()">
@@ -102248,7 +102349,7 @@ function _spDepIcon(name) {
 }
 
 function _spDepositNeedsFollowup(o) {
-  if(o.cancelled || o.status!=='pending') return false;
+  if(o.cancelled || o.status!=='pending' || _spShipsWithoutDeposit(o)) return false;
   const d=_spDepositOf(o);
   const created=Date.parse(o.shopifyCreatedAt || o.createdAt || '');
   return d.deposit<=0 && !d.pending.length && Number.isFinite(created) && Date.now()-created>=12*60*60*1000;
@@ -102256,27 +102357,118 @@ function _spDepositNeedsFollowup(o) {
 function _spOrderConfirmationMark(o) {
   if(o.cancelled || !['pending','approved'].includes(o.status)) return '';
   const d=_spDepositOf(o),paid=d.deposit>0 || d.pending.length>0;
-  const label=t(paid?'spDepPresent':_spDepositNeedsFollowup(o)?'spDepFollowup':'spDepAwaiting');
-  const icon=paid ? SP_CONFIRM_ICON : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
-  return `<span class="sp-order-confirmation ${paid?'is-paid':'is-waiting'}" role="img" title="${esc(label)}" aria-label="${esc(label)}">${icon}</span>`;
+  const ready=paid || _spShipsWithoutDeposit(o);
+  const label=t(paid?'spDepPresent':ready?'spShipWithoutDeposit':_spDepositNeedsFollowup(o)?'spDepFollowup':'spDepAwaiting');
+  const icon=ready ? SP_CONFIRM_ICON : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+  return `<span class="sp-order-confirmation ${ready?'is-paid':'is-waiting'}" role="img" title="${esc(label)}" aria-label="${esc(label)}">${icon}</span>`;
 }
 function _spVaultAmountHtml(method, amount) {
   return `<span class="spdep-vault-amount" title="${esc(_payMethodLabel(method))}">${payMethodIcon(method,20)}<span><bdi>${fmtJ(amount)}</bdi></span></span>`;
 }
 
 function _spCanAddDeposit(o) {
-  return o.status === 'pending' && !o.cancelled && hasPerm('shopify-deposit-upload');
+  return o.status === 'pending' && !o.cancelled && hasPerm('shopify-deposit-upload') && !_spShipsWithoutDeposit(o);
 }
 
-/* A deposit-less order still gets the full-width «إضافة عربون» button — it is
-   the action the card exists to prompt. Once a deposit exists, «إضافة عربون آخر»
-   is secondary and moved into the ⋮ menu instead (Oct 10, 2026) so a paid order
-   doesn't carry a second full-width button. */
+function _spCanChooseShipping(o) {
+  return o.status === 'pending' && !o.cancelled && hasPerm('shopify-deposit-upload') && !_spHasDepositRecorded(o);
+}
+
+function _spShipsWithoutDeposit(o) {
+  return !!o.shipWithoutDeposit && !_spHasDepositRecorded(o);
+}
+
+function _spSyncAuditPaymentRows() {
+  if (!currentAuditData) return;
+  const orders = new Map(_shopifyOrders.map(o => [String(o.ref || '').replace(/^#+/,''),o]));
+  for (const r of currentAuditData.rows || []) {
+    if (r.registered || r.syncStatus !== 'pending') continue;
+    const o = orders.get(String(r.orderNumber));
+    if (!o) continue;
+    const d = _spDepositOf(o);
+    r.depositApproved = d.deposit;
+    r.depositPending = d.pending.reduce((sum,receipt) => sum + (Number(receipt.amount)||0),0);
+    r.depositMethod = Object.keys(d.byMethod || {}).join(' + ');
+    r.shipWithoutDeposit = o.status === 'pending' && !o.cancelled && _spShipsWithoutDeposit(o);
+    r.shipWithoutDepositAt = o.shipWithoutDepositAt || '';
+  }
+  renderAuditTable();
+}
+
+function _spApplyShippingChoice(change) {
+  if (!change || typeof change.shipWithoutDeposit !== 'boolean') return;
+  const o = _spOrderById(String(change.orderId));
+  const apply = target => {
+    if (change.shipWithoutDepositAt && target.shipWithoutDepositAt && change.shipWithoutDepositAt < target.shipWithoutDepositAt) return;
+    target.shipWithoutDeposit = change.shipWithoutDeposit;
+    target.shipWithoutDepositAt = change.shipWithoutDepositAt || target.shipWithoutDepositAt || '';
+    target.shipWithoutDepositBy = change.shipWithoutDepositBy || '';
+  };
+  if (o) { apply(o); _spRefreshOrderRow(); }
+  const r = currentAuditData?.rows?.find(r => String(r.orderNumber) === String(change.ref || '').replace(/^#+/,''));
+  if (r && !r.registered && r.syncStatus === 'pending') { apply(r); renderAuditTable(); }
+}
+
+function _spDepositCardClass(o) {
+  return _spHasDepositRecorded(o) || _spShipsWithoutDeposit(o) ? 'sp-card-deposit-paid' : 'sp-card-deposit-none';
+}
+
+function _spMobileDepositSummaryHtml(o) {
+  if (_spDepositNeedsFollowup(o)) return `<span class="sp-deposit-followup" role="status">${esc(t('spDepFollowup'))}</span>`;
+  // Editable cards show their shipping control once, in the dedicated payment row.
+  return _spCanChooseShipping(o) ? '' : _spDepositCellHtml(o,false);
+}
+
+function _spDepositAddButtonHtml(o) {
+  if (!_spCanChooseShipping(o)) return '';
+  return `<button type="button" class="spdep-quick-add" ${_spCanAddDeposit(o)?'':'disabled'} title="${esc(t('spDepUpload'))}" aria-label="${esc(t('spDepUpload'))}" onclick="event.stopPropagation();openSpReceiptForm(${_spReceiptJs(String(o._id))})">${_spDepIcon('add')}</button>`;
+}
+
+const _spShippingSwitchBusy = new Set();
+function _spShippingSwitchHtml(o, editable = true) {
+  if (_spHasDepositRecorded(o)) return '';
+  const on = _spShipsWithoutDeposit(o);
+  const canEdit = editable && _spCanChooseShipping(o);
+  if (!canEdit && !on) return `<span class="spdep-no-deposit">${esc(t('spDepWithout'))}</span>`;
+  if (!canEdit) return `<span class="spdep-shipping-status" role="status">${esc(t('spShipWithoutDeposit'))}</span>`;
+  const busy = _spShippingSwitchBusy.has(String(o._id));
+  return `<button type="button" role="switch" aria-checked="${on}" aria-label="${esc(t('spShipWithoutDeposit'))}" aria-busy="${busy}" class="spdep-shipping-switch${on?' is-on':''}" ${!canEdit || busy?'disabled':''} onclick="event.stopPropagation();_spToggleShipWithoutDeposit(${_spReceiptJs(String(o._id))})"><span>${esc(t('spShipWithoutDeposit'))}</span><span class="spdep-switch-track" aria-hidden="true"></span></button>`;
+}
+
+async function _spToggleShipWithoutDeposit(orderId) {
+  orderId = String(orderId);
+  const o = _spOrderById(orderId);
+  if (!o || !_spCanChooseShipping(o) || _spShippingSwitchBusy.has(orderId)) return;
+  const prev = !!o.shipWithoutDeposit;
+  const prevAt = o.shipWithoutDepositAt;
+  _spShippingSwitchBusy.add(orderId);
+  _spRefreshOrderRow();
+  try {
+    if (!await showConfirm(t(prev?'spShipWithoutDepositOffConfirm':'spShipWithoutDepositOnConfirm'), {title:t('spShipWithoutDeposit')})) return;
+    if (!_spCanChooseShipping(o)) return;
+    o.shipWithoutDeposit = !prev;
+    _spRefreshOrderRow();
+    const result = await api(`/shopify/orders/${encodeURIComponent(orderId)}/ship-without-deposit`, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({enabled:!prev}),
+    });
+    _spApplyShippingChoice({...result,orderId,ref:result.ref || o.ref});
+  } catch (e) {
+    const current = _spOrderById(orderId) || o;
+    if (current.shipWithoutDepositAt === prevAt) current.shipWithoutDeposit = prev;
+    toast(t('spErrorPrefix') + (e?.message || t('spSaveError')), true);
+  } finally {
+    _spShippingSwitchBusy.delete(orderId);
+    _spRefreshOrderRow();
+  }
+}
+
+/* Without a recorded deposit, staff choose either adding one or shipping without it. */
 function _spMobileDepositActionHtml(o) {
   const d = _spDepositOf(o);
   const added = d.deposit > 0 || d.pending.length > 0;
-  if (added || !_spCanAddDeposit(o)) return '';
-  return `<button type="button" class="sp-confirm-btn is-lg sp-mobile-deposit" onclick="openSpReceiptForm(${_spReceiptJs(String(o._id))})">${_spDepIcon('add')}<span>${esc(t('spDepUpload'))}</span></button>`;
+  if (added || !_spCanChooseShipping(o)) return '';
+  return `<div class="sp-mobile-deposit-options" onclick="event.stopPropagation()">${_spShippingSwitchHtml(o)}${_spDepositAddButtonHtml(o)}</div>`;
 }
 
 function _spMobileDepositMenuItemHtml(o) {
@@ -102292,7 +102484,7 @@ function _spDepositCellHtml(o, allowAdd = true) {
   const d = _spDepositOf(o);
   const pendingBy = {};
   for (const r of d.pending) pendingBy[r.method] = (pendingBy[r.method] || 0) + (Number(r.amount)||0);
-  if (!d.deposit && !d.pending.length) return `<span class="spdep-empty"><span class="spdep-no-deposit">${esc(t('spDepWithout'))}</span>${allowAdd && _spCanAddDeposit(o) ? `<button type="button" class="spdep-quick-add" title="${esc(t('spDepUpload'))}" aria-label="${esc(t('spDepUpload'))}" onclick="event.stopPropagation();openSpReceiptForm(${_spReceiptJs(String(o._id))})">${_spDepIcon('add')}</button>` : ''}</span>`;
+  if (!d.deposit && !d.pending.length) return `<span class="spdep-empty"><span class="spdep-shipping-choice">${_spShippingSwitchHtml(o,allowAdd)}</span>${allowAdd?_spDepositAddButtonHtml(o):''}</span>`;
   return `<div class="spdep-table-deposit">${Object.entries(d.byMethod).map(([m,a])=>`<span class="spdep-approved">${_spVaultAmountHtml(m,a)}</span>`).join('')}
     ${d.pending.length ? `<div class="spdep-pending" aria-label="${esc(t('spDepWaiting'))}">${Object.entries(pendingBy).map(([m,a])=>_spVaultAmountHtml(m,a)).join('')}</div>` : ''}</div>`;
 }
@@ -102357,7 +102549,7 @@ function _spReceiptRowHtml(o, r, readOnly = false, hideRefund = false) {
 
 function _spPeekReceiptsHtml(o, readOnly = false, embedded = false, confirmation = false) {
   const rows = (o.depositReceipts || []).filter(r => r.status !== 'مسودة' || _spReceiptOwner(r));
-  const canUpload = !confirmation && !readOnly && o.status === 'pending' && !o.cancelled && hasPerm('shopify-deposit-upload');
+  const canUpload = !confirmation && !readOnly && _spCanAddDeposit(o);
   if (readOnly && !rows.length) return '';
   return `<section class="${embedded ? 'spdep-embedded' : 'sp-pk-sec'} spdep-section spdep-compact"><div class="sp-pk-sec-h"><span>${esc(t('spDepReceipts'))}</span>
     ${canUpload ? `<button type="button" class="btn btn-primary btn-sm spdep-add" onclick="openSpReceiptForm(${_spReceiptJs(String(o._id))})">${_spDepIcon('add')}${esc(t(rows.some(r=>r.status==='معلق'||r.status==='معتمد') ? 'spDepAddAnother' : 'spDepUpload'))}</button>` : ''}</div>
@@ -102595,6 +102787,7 @@ function _spReceiptAmountCap(o,r) {
 function openSpReceiptForm(orderId, receiptId, session) {
   const o = _spOrderById(orderId);
   if (!o || o.status !== 'pending' || o.cancelled || (!o.manualReceipt && !hasPerm('shopify-deposit-upload'))) return;
+  if (!receiptId && _spShipsWithoutDeposit(o)) return;
   // Resume an existing draft instead of replacing an uploaded customer's receipt.
   const r = receiptId ? (o.depositReceipts || []).find(r => r.id === receiptId)
     : (o.depositReceipts || []).find(r => r.status === 'مسودة' && _spReceiptOwner(r));

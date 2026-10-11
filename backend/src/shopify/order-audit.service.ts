@@ -59,6 +59,8 @@ export interface AuditRow {
   depositApproved: number;
   depositMethod: string;
   depositPending: number;
+  shipWithoutDeposit: boolean;
+  shipWithoutDepositAt?: string;
 }
 
 export type SyncStatus = 'synced' | 'missing' | 'failed' | 'cancelled' | 'pending';
@@ -280,6 +282,7 @@ export class OrderAuditService {
           depositApproved: 0,
           depositMethod: '',
           depositPending: 0,
+          shipWithoutDeposit: false,
         });
         continue;
       }
@@ -344,6 +347,9 @@ export class OrderAuditService {
           depositApproved: approvedDepositTotal(so),
           depositMethod: computeDepositFieldsFromReceipts(so).depositMethod,
           depositPending: round2(receiptsIn(so, 'معلق').reduce((s, r) => s + (Number(r.amount) || 0), 0)),
+          shipWithoutDeposit: isPending && !!so.shipWithoutDeposit
+            && approvedDepositTotal(so) === 0 && receiptsIn(so, 'معلق', 'معتمد').length === 0,
+          shipWithoutDepositAt: so.shipWithoutDepositAt || '',
         });
         continue;
       }
@@ -381,6 +387,7 @@ export class OrderAuditService {
         depositApproved: 0,
         depositMethod: '',
         depositPending: 0,
+        shipWithoutDeposit: false,
       });
     }
 

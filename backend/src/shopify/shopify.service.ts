@@ -1485,14 +1485,39 @@ export class ShopifyService {
     return { success: true, total, totalDiscount };
   }
 
-  /**
-   * تبديل تمييز الأوردر.
-   *
-   * ⚠ متاح في كل الحالات ولأي مستخدم: النجمة علامة شخصية على أوردر يريد الموظف
-   *   العودة إليه، ولا تحرّك مالاً ولا مخزوناً ولا تدخل تقريراً. تقييدها بصلاحية
-   *   يحوّلها إلى قرار إداري وهي ليست كذلك.
-   * ⚠ لا تُسجَّل في editHistory — وضع علامة ليس تعديلاً على الأوردر.
-   */
+  /** Save the explicit shipping choice without booking money or changing receipt totals. */
+  async setShipWithoutDeposit(orderId: string, enabled: boolean, by = '') {
+    if (typeof enabled !== 'boolean') throw new BadRequestException('enabled must be a boolean');
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) throw new NotFoundException('الأوردر غير موجود');
+    const updated = await this.shopifyOrderModel.findOneAndUpdate(
+      {
+        _id: orderId, status: 'pending', cancelled: { $ne: true },
+        receiptCancelLock: { $in: ['', null] },
+        ...(enabled ? {
+          // Receipts are authoritative; legacy depositAmount summaries may be stale.
+          depositReceipts: { $not: { $elemMatch: { status: { $in: ['معلق', 'معتمد'] } } } },
+        } : {}),
+      },
+      { $set: {
+        shipWithoutDeposit: enabled,
+        shipWithoutDepositBy: by,
+        shipWithoutDepositAt: new Date().toISOString(),
+      } },
+      { new: true },
+    );
+    if (!updated) throw new BadRequestException('تعذر تغيير خيار الشحن: تأكد أن الطلب ما زال معلقًا ولا توجد إيصالات عربون معتمدة أو قيد المراجعة، ثم حدّث الطلب وأعد المحاولة');
+    const change = {
+      orderId: String(updated._id), ref: updated.ref,
+      shipWithoutDeposit: updated.shipWithoutDeposit,
+      shipWithoutDepositAt: updated.shipWithoutDepositAt,
+      shipWithoutDepositBy: updated.shipWithoutDepositBy,
+    };
+    this.emit('shopify:shipping-choice-changed', change);
+    return { success: true, ...change };
+  }
+
+  /** Personal visual marker, available in every state; does not change money or stock. */
   async toggleOrderStar(
     orderId: string,
     starred: boolean,

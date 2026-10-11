@@ -312,6 +312,16 @@ export class ShopifyOrder {
   @Prop({ default: 0 })
   depositAmount: number;
 
+  /** Staff choice; separate from money received and preserved by Shopify updates. */
+  @Prop({ default: false })
+  shipWithoutDeposit: boolean;
+
+  @Prop({ default: '' })
+  shipWithoutDepositBy: string;
+
+  @Prop({ default: '' })
+  shipWithoutDepositAt: string;
+
   @Prop({ default: '' })
   depositMethod: string;
 
