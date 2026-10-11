@@ -19,7 +19,12 @@ export type ShopifyOrderDocument = HydratedDocument<ShopifyOrder>;
  */
 export interface DepositReceipt {
   id: string;
-  status: 'مسودة' | 'معلق' | 'معتمد' | 'مرفوض' | 'ملغي' | 'مُسترد';
+  status: 'مسودة' | 'معلق' | 'معتمد' | 'مرفوض' | 'ملغي' | 'مُسترد' | 'مسحوب';
+  senderName?: string;
+  senderHandle?: string;
+  senderPhone?: string;
+  screenshotTime?: string;
+  screenshotTimeSource?: string;
   imageKey: string;
   imageSha256: string;
   imageBytes: number;
@@ -27,6 +32,11 @@ export interface DepositReceipt {
   amount: number;
   method: string;
   ocr: {
+    senderName?: string;
+    senderHandle?: string;
+    senderPhone?: string;
+    screenshotTime?: string;
+    screenshotTimeSource?: string;
     amount: number | null;
     method: string;
     pattern: string;

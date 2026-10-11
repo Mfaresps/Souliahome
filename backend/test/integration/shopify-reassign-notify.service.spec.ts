@@ -39,7 +39,10 @@ function setup(orderOverrides: Record<string, unknown> = {}) {
   const created: any[] = [];
   svc.mentionsService = { createMany: jest.fn().mockImplementation(async (rows: any[]) => { created.push(...rows); return rows; }) };
   svc.presence = { emitToUser: jest.fn() };
-  svc.employeeScoringService = { scoreDepositDetection: jest.fn().mockResolvedValue(undefined) };
+  svc.employeeScoringService = {
+    scoreDepositDetection: jest.fn().mockResolvedValue(undefined),
+    removeAssignmentScore: jest.fn().mockResolvedValue(undefined),
+  };
   return { svc, order, created };
 }
 
@@ -82,5 +85,45 @@ describe('ShopifyService.reassignOrder — notification', () => {
     const { svc, order, created } = setup({ assignedToName: 'Gannh' });
     await svc.notifyOrderAssigned(order, 'u2');
     expect(firstLine(created.find((r) => r.targetUserId === 'u2'))).toBe('أوردر جديد مُسند إليك: #2685');
+  });
+});
+
+describe('ShopifyService.reassignOrder — unassign (empty newEmployeeId)', () => {
+  it('clears assignedTo/assignedToName/assignedAt and refuses an already-unassigned order', async () => {
+    const { svc, order } = setup({ assignedTo: 'u3', assignedToName: 'Hassan Ammar', assignedAt: '2026-10-01T00:00:00Z', assignmentReason: 'manual' });
+    const res = await svc.reassignOrder('o1', '', '', 'Reem', 'a1');
+    await flush();
+    expect(res).toEqual({ success: true });
+    expect(order.assignedTo).toBe('');
+    expect(order.assignedToName).toBe('');
+    expect(order.assignedAt).toBe('');
+    expect(order.assignmentReason).toBe('');
+
+    const res2 = await svc.reassignOrder('o1', '', '', 'Reem', 'a1');
+    expect(res2).toEqual({ success: false, error: 'الأوردر غير مُسند لأحد' });
+  });
+
+  it('never calls findById for a staff user when unassigning', async () => {
+    const { svc } = setup({ assignedTo: 'u3', assignedToName: 'Hassan Ammar' });
+    await svc.reassignOrder('o1', '', '', 'Reem', 'a1');
+    expect(svc.usersService.findById).not.toHaveBeenCalled();
+  });
+
+  it('deletes the deposit-detection score row via removeAssignmentScore, never scoreDepositDetection', async () => {
+    const { svc } = setup({ assignedTo: 'u3', assignedToName: 'Hassan Ammar' });
+    await svc.reassignOrder('o1', '', '', 'Reem', 'a1');
+    await flush();
+    expect(svc.employeeScoringService.removeAssignmentScore).toHaveBeenCalledWith('o1');
+    expect(svc.employeeScoringService.scoreDepositDetection).not.toHaveBeenCalled();
+  });
+
+  it('notifies the previous assignee and admins that the order was unassigned, naming nobody as the new holder', async () => {
+    const { svc, created } = setup({ assignedTo: 'u3', assignedToName: 'Hassan Ammar' });
+    await svc.reassignOrder('o1', '', '', 'Reem', 'a1');
+    await flush();
+    expect(created.map((r: any) => r.targetUserId).sort()).toEqual(['a2', 'u3']);
+    expect(firstLine(created.find((r: any) => r.targetUserId === 'u3'))).toBe('تم إلغاء إسناد الأوردر منك: #2685');
+    expect(firstLine(created.find((r: any) => r.targetUserId === 'a2'))).toBe('تم إلغاء إسناد الأوردر: #2685');
+    for (const r of created) expect(firstLine(r)).not.toMatch(/مُسند إليك|مُسند إلى/);
   });
 });

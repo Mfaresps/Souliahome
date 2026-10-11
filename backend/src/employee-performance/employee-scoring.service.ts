@@ -297,6 +297,22 @@ export class EmployeeScoringService implements OnModuleInit {
   }
 
   /**
+   * Called when an order is UNASSIGNED (not reassigned to someone else). The
+   * deposit-detection row always credits the current assignee — with nobody
+   * assigned, that credit has no owner and must not sit with whoever it was
+   * last given to. `delivery_completed` is untouched: that credits real
+   * completed work (a delivery that happened), not an open assignment, and
+   * removing the assignee after delivery must not claw it back.
+   */
+  async removeAssignmentScore(orderId: string): Promise<void> {
+    try {
+      await this.logModel.deleteOne({ orderId: String(orderId), actionType: { $in: this.depositActionTypes } }).exec();
+    } catch (err) {
+      this.logger.error(`removeAssignmentScore failed for order ${orderId}: ${(err as Error).message}`);
+    }
+  }
+
+  /**
    * Called from BostaService when a transaction transitions into DELIVERED status
    * and is linked to a Shopify order. Never throws.
    */

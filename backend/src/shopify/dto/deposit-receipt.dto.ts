@@ -8,6 +8,25 @@ import { DEPOSIT_VAULT_METHODS } from '../deposit-receipts.util';
  */
 export class DepositReceiptEntryDto {
   @IsOptional()
+  @IsString()
+  @MaxLength(5)
+  screenshotTime?: string;
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  senderPhone?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  senderName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  senderHandle?: string;
+
+  @IsOptional()
   @IsBoolean()
   acknowledgeImageWarning?: boolean;
 

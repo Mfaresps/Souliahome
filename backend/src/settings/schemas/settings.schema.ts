@@ -148,6 +148,10 @@ export class Settings {
   @Prop({ default: 0 })
   vaultBank: number;
 
+  /** Durable receipt operation markers; never prune while the ledger can be retried. */
+  @Prop({ type: [String], default: [] })
+  vaultReceiptOperations: string[];
+
   @Prop({ default: 'ar' })
   lang: string;
 

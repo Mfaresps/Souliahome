@@ -47,6 +47,9 @@ export class VaultEntry {
   @Prop({ default: '' })
   txNo: string;
 
+  @Prop()
+  idempotencyKey?: string;
+
   // Enhanced Fields
   @Prop({ default: 'completed', enum: ['completed', 'pending', 'frozen', 'cancelled'] })
   status: string;
@@ -102,3 +105,4 @@ VaultEntrySchema.index({ date: 1, source: 1, transactionType: 1 });
 VaultEntrySchema.index({ status: 1 });
 VaultEntrySchema.index({ employee: 1 });
 VaultEntrySchema.index({ ref: 1 });
+VaultEntrySchema.index({ idempotencyKey: 1 }, { unique: true, sparse: true });

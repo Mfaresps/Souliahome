@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -29,14 +30,16 @@ export class PurchaseOrdersService {
   private async generatePoNumber(): Promise<string> {
     const year = new Date().getFullYear();
     const prefix = `PO-${year}-`;
-    const count = await this.poModel
-      .countDocuments({ poNumber: { $regex: `^${prefix}` } })
-      .exec();
-    return `${prefix}${String(count + 1).padStart(3, '0')}`;
+    const existing = await this.poModel
+      .find({ poNumber: { $regex: `^${prefix}\\d+$` } }, { poNumber: 1 })
+      .lean().exec();
+    // Deletions leave gaps; count+1 can permanently collide with an existing number.
+    // Compare numerically so PO-...-1000 comes after PO-...-999.
+    const highest = existing.reduce((max, po) => Math.max(max, Number(po.poNumber.slice(prefix.length))), 0);
+    return `${prefix}${String(highest + 1).padStart(3, '0')}`;
   }
 
   async create(dto: CreatePurchaseOrderDto): Promise<PurchaseOrderDocument> {
-    const poNumber = await this.generatePoNumber();
     const createdDate = new Date().toISOString().split('T')[0];
     const items = (dto.items || []).map((item) => ({
       productCode: item.productCode,
@@ -46,9 +49,8 @@ export class PurchaseOrdersService {
       unitPrice: item.unitPrice ?? 0,
       total: (item.qty || 0) * (item.unitPrice ?? 0),
     }));
-    return this.poModel.create({
+    const data = {
       ...dto,
-      poNumber,
       createdDate,
       status: 'معلق',
       items,
@@ -60,7 +62,19 @@ export class PurchaseOrdersService {
           changedAt: new Date().toISOString(),
         },
       ],
-    });
+    };
+    // The unique index arbitrates across users and server processes. Only retry
+    // a poNumber collision; unrelated database/validation failures must propagate.
+    for (let attempt = 0; attempt < 50; attempt++) {
+      const poNumber = await this.generatePoNumber();
+      try {
+        return await this.poModel.create({ ...data, poNumber });
+      } catch (error) {
+        const duplicate = error as { code?: number; keyPattern?: Record<string, unknown>; keyValue?: Record<string, unknown> };
+        if (duplicate.code !== 11000 || !(duplicate.keyPattern?.poNumber || duplicate.keyValue?.poNumber)) throw error;
+      }
+    }
+    throw new ConflictException('تعذر تخصيص رقم أمر الشراء بسبب طلبات متزامنة كثيرة — حاول مرة أخرى');
   }
 
   async findAll(): Promise<PurchaseOrderDocument[]> {

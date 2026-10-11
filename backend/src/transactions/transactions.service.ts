@@ -4996,6 +4996,7 @@ export class TransactionsService {
         txRef,
         entityCtx,
         emp,
+        manualReceiptId ? { receiptId: manualReceiptId, transactionId: String(tx._id) } : undefined,
       );
       if (manualReceiptId) {
         tx.depositReceipts = tx.depositReceipts.map(r => r.id === manualReceiptId ? { ...r, vaultTxNo: entry?.txNo || '' } : r);

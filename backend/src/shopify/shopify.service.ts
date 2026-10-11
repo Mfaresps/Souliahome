@@ -294,6 +294,7 @@ export class ShopifyService {
   ): Promise<void> {
     const cleanRef = String(order.ref || '').replace(/^#+/, '');
     const newName = order.assignedToName || '-';
+    const isUnassign = !newUserId;
     const tail = [
       `العميل: ${order.client || '-'}`,
       `الإجمالي: ${order.total || 0} EGP`,
@@ -302,16 +303,21 @@ export class ShopifyService {
     ];
     const admins = await this.usersService.findAdmins();
     const targets = new Map<string, string>();   // userId → first line
-    for (const a of admins) targets.set(String(a._id), `تم إسناد الأوردر إلى ${newName}: #${cleanRef}`);
-    if (previousUserId && previousUserId !== newUserId) targets.set(String(previousUserId), `تم نقل الأوردر منك إلى ${newName}: #${cleanRef}`);
-    targets.set(String(newUserId), `تم إسناد الأوردر إليك: #${cleanRef}`);
+    if (isUnassign) {
+      for (const a of admins) targets.set(String(a._id), `تم إلغاء إسناد الأوردر: #${cleanRef}`);
+      if (previousUserId) targets.set(String(previousUserId), `تم إلغاء إسناد الأوردر منك: #${cleanRef}`);
+    } else {
+      for (const a of admins) targets.set(String(a._id), `تم إسناد الأوردر إلى ${newName}: #${cleanRef}`);
+      if (previousUserId && previousUserId !== newUserId) targets.set(String(previousUserId), `تم نقل الأوردر منك إلى ${newName}: #${cleanRef}`);
+      targets.set(String(newUserId), `تم إسناد الأوردر إليك: #${cleanRef}`);
+    }
     if (changedById) targets.delete(String(changedById));
     if (!targets.size) return;
 
     const rows = [...targets.entries()].map(([targetUserId, first]) => ({
       targetUserId,
       targetUsername: '',
-      targetName: newName,
+      targetName: isUnassign ? '' : newName,
       fromUserId: 'system',
       fromName: 'نظام التوزيع',
       txId: String(order._id),
@@ -345,8 +351,14 @@ export class ShopifyService {
   /**
    * Admin-only manual reassignment. Changes ONLY routing metadata (assignedTo/
    * assignedToName/assignedAt/assignmentReason) and appends to assignmentHistory —
-   * never touches reviewedBy/reviewedAt, deposit fields, or any EmployeePerformanceLog
-   * row, so historical scoring/attribution is unaffected by a later reassignment.
+   * never touches reviewedBy/reviewedAt or deposit fields, so historical
+   * scoring/attribution is unaffected by a REASSIGNMENT to someone else.
+   *
+   * ⚠ Passing an empty `newEmployeeId` means UNASSIGN, not "assign to nobody in
+   * particular" — it skips the staff-user validation entirely and also deletes
+   * the order's deposit-detection EmployeePerformanceLog row via
+   * `removeAssignmentScore`: that credit always follows the current assignee, and
+   * with nobody assigned there is no one left for it to belong to.
    */
   async reassignOrder(
     orderId: string,
@@ -358,27 +370,35 @@ export class ShopifyService {
     const order = await this.shopifyOrderModel.findById(orderId);
     if (!order) return { success: false, error: 'الأوردر غير موجود' };
 
-    const newUser = await this.usersService.findById(newEmployeeId);
-    if (!newUser) return { success: false, error: 'الموظف غير موجود' };
-    if (newUser.role !== 'staff') return { success: false, error: 'يمكن إسناد الأوردر لموظف (staff) فقط' };
-    if (newUser.isActive === false) return { success: false, error: 'لا يمكن إسناد الأوردر لموظف معطل' };
+    // newEmployeeId فاضي = إلغاء الإسناد، لا إسناد لموظف جديد
+    const isUnassign = !newEmployeeId;
+    let newName = '';
+    let newUsername = '';
+    if (!isUnassign) {
+      const newUser = await this.usersService.findById(newEmployeeId);
+      if (!newUser) return { success: false, error: 'الموظف غير موجود' };
+      if (newUser.role !== 'staff') return { success: false, error: 'يمكن إسناد الأوردر لموظف (staff) فقط' };
+      if (newUser.isActive === false) return { success: false, error: 'لا يمكن إسناد الأوردر لموظف معطل' };
+      newName = newUser.name || newUser.username || '';
+      newUsername = newUser.username || '';
+    }
 
     const previousUserId = order.assignedTo || '';
     const previousName = order.assignedToName || '';
-    const newName = newUser.name || newUser.username || '';
+    if (isUnassign && !previousUserId) return { success: false, error: 'الأوردر غير مُسند لأحد' };
     const now = new Date().toISOString();
 
-    order.assignedTo = newEmployeeId;
-    order.assignedToUsername = newUser.username || '';
+    order.assignedTo = newEmployeeId || '';
+    order.assignedToUsername = newUsername;
     order.assignedToName = newName;
-    order.assignedAt = now;
-    order.assignmentReason = 'manual';
+    order.assignedAt = isUnassign ? '' : now;
+    order.assignmentReason = isUnassign ? '' : 'manual';
     order.assignmentHistory = [
       ...(order.assignmentHistory || []),
       {
         previousUserId,
         previousName,
-        newUserId: newEmployeeId,
+        newUserId: newEmployeeId || '',
         newName,
         changedBy,
         reason: reason || '',
@@ -396,7 +416,11 @@ export class ShopifyService {
 
     await order.save();
 
-    if (order.status === 'pending') {
+    if (isUnassign) {
+      this.employeeScoringService.removeAssignmentScore(String(order._id)).catch((err) =>
+        this.logger.error(`removeAssignmentScore failed after unassign for order ${order._id}: ${(err as Error).message}`),
+      );
+    } else if (order.status === 'pending') {
       this.employeeScoringService.scoreDepositDetection(order).catch((err) =>
         this.logger.error(`Deposit scoring failed after reassignment for order ${order._id}: ${(err as Error).message}`),
       );
@@ -870,6 +894,11 @@ export class ShopifyService {
       reviewedBy: r.reviewedBy || '',
       reviewedAt: r.reviewedAt || '',
       vaultTxNo: r.vaultTxNo || '',
+      senderName: r.senderName ?? r.ocr?.senderName ?? '',
+      senderHandle: r.senderHandle ?? r.ocr?.senderHandle ?? '',
+      senderPhone: r.senderPhone ?? r.ocr?.senderPhone ?? '',
+      screenshotTime: r.screenshotTime ?? r.ocr?.screenshotTime ?? '',
+      screenshotTimeSource: r.screenshotTimeSource || r.ocr?.screenshotTimeSource || '',
       ocrAmount: r.ocr?.amount ?? null,
       ocrMethod: r.ocr?.method || '',
     }));

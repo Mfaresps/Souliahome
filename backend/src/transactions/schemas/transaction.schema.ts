@@ -339,6 +339,11 @@ export class Transaction {
     reviewedBy: string;
     reviewedAt: string;
     vaultTxNo: string;
+    senderName?: string;
+    senderHandle?: string;
+    senderPhone?: string;
+    screenshotTime?: string;
+    screenshotTimeSource?: string;
     ocrAmount: number | null;
     ocrMethod: string;
   }>;

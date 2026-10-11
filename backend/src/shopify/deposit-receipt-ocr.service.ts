@@ -6,10 +6,13 @@ import { mergeReceiptPasses, parseReceiptText, ParsedReceipt } from './deposit-r
 import { receiptOcrRegion, receiptTealAmount } from './receipt-image.util';
 import { readArabicTealAmount } from './receipt-digit.util';
 import { compressReceipt } from './receipt-upload-policy.util';
+import { parseScreenClock, screenClockCrops } from './receipt-screen-time.util';
 
 const OCR_TIMEOUT_MS = 20_000;
 
 export interface OcrResult extends ParsedReceipt {
+  screenshotTime?: string;
+  screenshotTimeSource?: 'screen-status-bar' | 'embedded-status-bar';
   /** false when OCR could not run (timeout / worker failure) — the employee types the figure. */
   ran: boolean;
   ms: number;
@@ -123,6 +126,7 @@ export class DepositReceiptOcrService implements OnModuleInit, OnModuleDestroy {
       amount: null, method: '', pattern: '', reference: '', dateText: '', confident: false, ran: false, ms: 0,
     };
     let timer: NodeJS.Timeout | undefined;
+    let receiptResult: ParsedReceipt | undefined;
     try {
       const work = (async () => {
         const worker = await this.getWorker();
@@ -157,7 +161,25 @@ export class DepositReceiptOcrService implements OnModuleInit, OnModuleDestroy {
             await worker.setParameters({ tessedit_pageseg_mode: '11' as any });
           }
         }
-        return mergeReceiptPasses(parsed);
+        const merged = mergeReceiptPasses(parsed);
+        receiptResult = merged;
+        // Keep receipt OCR independent; clock crops must never contribute an amount or reference.
+        try {
+          const {crops,source}=await screenClockCrops(image);
+          const clocks: string[]=[];
+          await worker.reinitialize('eng');
+          await worker.setParameters({ tessedit_pageseg_mode: '7' as any, tessedit_char_whitelist: '0123456789٠١٢٣٤٥٦٧٨٩:：' });
+          for(const crop of crops){
+            const {data}=await worker.recognize(crop);
+            const clock=parseScreenClock(data.text || '');if(clock)clocks.push(clock);
+          }
+          if(clocks.length && new Set(clocks).size===1)return {...merged,screenshotTime:clocks[0],screenshotTimeSource:source};
+        } catch { /* An unreadable clock does not invalidate the transfer receipt. */ }
+        finally {
+          await worker.reinitialize('ara+eng');
+          await worker.setParameters({ tessedit_pageseg_mode: '11' as any, tessedit_char_whitelist: '' });
+        }
+        return merged;
       })();
       const timeout = new Promise<never>((_, reject) => {
         timer = setTimeout(() => reject(new Error('OCR timeout')), OCR_TIMEOUT_MS);
@@ -167,6 +189,7 @@ export class DepositReceiptOcrService implements OnModuleInit, OnModuleDestroy {
     } catch (err) {
       this.logger.warn(`Receipt OCR failed after ${Date.now() - started}ms: ${(err as Error).message}`);
       await this.dropWorker();
+      if (receiptResult) return { ...receiptResult, ran: true, ms: Date.now() - started };
       return { ...empty, ms: Date.now() - started };
     } finally {
       if (timer) clearTimeout(timer);

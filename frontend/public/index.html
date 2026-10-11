@@ -4861,6 +4861,14 @@ body.dark-mode .sp-new-badge{background:rgba(74,222,128,.16);color:#86efac}
 .sp-asg-name small{font-size:.66rem;font-weight:600;color:var(--accent)}
 .sp-asg-load{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .sp-asg-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--border)}
+/* إلغاء الإسناد — خيار منفصل بصرياً (أحمر مكتوم) ومُباعَد عن قائمة الموظفين،
+   لأنه مغاير في طبيعته: إزالة لا تحويل. لا يُحدَّد تلقائياً أبداً. */
+.sp-asg-opt-unassign{margin-bottom:4px;padding-bottom:6px;border-bottom:1px dashed var(--border)}
+.sp-asg-opt-unassign .sp-asg-card{color:var(--muted)}
+.sp-asg-opt-unassign .sp-asg-unassign-ico{display:flex;flex-shrink:0;color:var(--muted)}
+.sp-asg-opt-unassign input:checked + .sp-asg-card{border-color:var(--red);background:color-mix(in srgb,var(--red) 7%,var(--bg));box-shadow:inset 0 0 0 1px var(--red)}
+.sp-asg-opt-unassign input:checked + .sp-asg-card .sp-asg-unassign-ico,
+.sp-asg-opt-unassign input:checked + .sp-asg-card .sp-asg-name{color:var(--red)}
 
 /* ═══ Toolbar ═══ */
 .sp-result-count{font-size:.76rem;color:var(--muted);white-space:nowrap}
@@ -16121,6 +16129,8 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 
 </style>
 <link rel="stylesheet" href="/navigation-shell.css">
+<link rel="stylesheet" href="/deposit-history.css">
+<link rel="stylesheet" href="/deposit-transfer.css">
 </head>
 <body>
 <div id="splash-screen" aria-hidden="true" role="status" aria-label="جارٍ التحميل">
@@ -16964,6 +16974,16 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
         <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="8" y1="8" x2="16" y2="16"/></svg>
         <span data-i18n="txPickerOosOnly">غير متوفر</span>
       </button>
+    </div>
+    <div id="po-picker-tabs" style="display:none;gap:8px;align-items:center;flex-wrap:wrap;padding:0 14px 12px">
+      <div role="tablist" style="display:flex;gap:6px;flex-wrap:wrap" aria-label="Purchase order products">
+        <button type="button" class="btn btn-outline btn-sm" role="tab" id="po-tab-all" aria-selected="true" onclick="_poSetProductTab('all')" data-i18n="poAllProducts">كل المنتجات</button>
+        <button type="button" class="btn btn-outline btn-sm" role="tab" id="po-tab-best" aria-selected="false" onclick="_poSetProductTab('best')" data-i18n="poBestSelling">الأكثر مبيعًا</button>
+      </div>
+      <select id="po-sales-period" onchange="filterPoPickerList(qs('#tx-picker-q')?.value || '')" aria-label="Sales period" style="padding:7px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:.78rem">
+        <option value="30" data-i18n="poLast30Days">آخر ٣٠ يوم</option>
+        <option value="month" data-i18n="poThisMonth">هذا الشهر</option>
+      </select>
     </div>
     <div class="tx-picker-list" id="tx-picker-list">
       <div class="tx-picker-empty" data-i18n="txPickerLoading">جارٍ التحميل…</div>
@@ -20644,6 +20664,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       <span data-i18n="spDepTab">عربونات قيد المراجعة</span>
       <span class="spdep-tab-count" id="sp-subnav-deposits-n" hidden></span>
     </button>
+    <button class="mov-main-tab" id="sp-subnav-deposit-log" onclick="switchShopifySubnav('deposit-log')" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span data-i18n="spDepHistory">سجل العربون</span></button>
     <button class="mov-main-tab" id="sp-subnav-perf" onclick="switchShopifySubnav('perf')" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
       <span>Performance Hub</span>
@@ -20715,6 +20736,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 
   <!-- Deposit receipts awaiting review (admin-only) — renderSpDepositReview() -->
   <div id="sp-deposits-tab-content" style="display:none"></div>
+  <div id="sp-deposit-log-content" style="display:none"></div>
 
   <!-- Customer Service Performance Dashboard (admin-only) -->
   <div id="sp-perf-dashboard-content" style="display:none;max-width:980px;margin:0 auto">
@@ -23019,6 +23041,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 </div>
 
+<script src="/deposit-history.js"></script>
 <script>
 const qs = (s, p) => (p || document).querySelector(s);
 const qsa = (s, p) => [...(p || document).querySelectorAll(s)];
@@ -24824,6 +24847,19 @@ const TRANSLATIONS = {
   supPoColExpected:{ar:'التسليم المتوقع',en:'Expected delivery'},
   supPoColItems:{ar:'الأصناف',en:'Items'},
   supPoPrint:{ar:'طباعة',en:'Print'},
+  poPrintOptions:{ar:'طباعة أمر الشراء',en:'Print purchase order'},
+  poAllProducts:{ar:'كل المنتجات',en:'All products'},
+  poBestSelling:{ar:'الأكثر مبيعًا',en:'Best sellers'},
+  poLast30Days:{ar:'آخر 30 يوم',en:'Last 30 days'},
+  poThisMonth:{ar:'هذا الشهر',en:'This month'},
+  poTopFive:{ar:'ضمن أعلى 5 · #{rank}',en:'Top 5 · #{rank}'},
+  poSoldUnits:{ar:'{n} وحدة مباعة',en:'{n} units sold'},
+  poNoRecentSales:{ar:'لا توجد مبيعات للمنتجات خلال الفترة المختارة',en:'No product sales during the selected period'},
+  poPrintPrices:{ar:'إظهار أسعار الشراء والإجمالي',en:'Show purchase prices and totals'},
+  poPrintPriceHint:{ar:'يُستخدم سعر الأمر المسجل، أو سعر الشراء الحالي للصنف إذا لم يُسجّل سعر.',en:'Uses the recorded order price, or the current product purchase price when none was recorded.'},
+  poPrintPricePermission:{ar:'عرض الأسعار يتطلب صلاحية عرض المشتريات.',en:'Showing prices requires purchase viewing permission.'},
+  poPrintGo:{ar:'فتح الطباعة',en:'Open print dialog'},
+  poPrintPdfGo:{ar:'فتح الحفظ بصيغة PDF',en:'Open PDF print dialog'},
   supPoDownloadPdf:{ar:'تنزيل PDF',en:'Download PDF'},
   supPoConvertBtn:{ar:'تحويل إلى فاتورة',en:'Convert to invoice'},
   supSrColNumber:{ar:'رقم المرتجع',en:'Return no.'},
@@ -27509,6 +27545,17 @@ const TRANSLATIONS = {
   invAdjQtyPlaceholder:{ar:'مثال: -5 أو 10',en:'e.g. -5 or 10'},
   invAdjReasonLabel:{ar:'السبب (مطلوب)',en:'Reason (required)'},
   invAdjReasonPlaceholder:{ar:'سبب التسوية...',en:'Reason for the adjustment...'},
+  invAdjReasonChoose:{ar:'اختر سببًا أو اكتب سببًا مخصصًا',en:'Choose a reason or write your own'},
+  invAdjReasonDetails:{ar:'تفاصيل إضافية أو سبب مخصص',en:'Additional details or a custom reason'},
+  invAdjReasonDetailsHint:{ar:'اختياري مع سبب جاهز، ومطلوب عند كتابة سبب مخصص',en:'Optional with a preset; required for a custom reason'},
+  invAdjReasonUnavailable:{ar:'لعدم توفره في المخزن',en:'Item unavailable in the warehouse'},
+  invAdjReasonAvailable:{ar:'لتوفره فعليًا في المخزن',en:'Item physically available in the warehouse'},
+  invAdjReasonCount:{ar:'تسوية فرق الجرد',en:'Reconcile a stock count difference'},
+  invAdjReasonDamage:{ar:'تالف أو غير صالح للبيع',en:'Damaged or unsuitable for sale'},
+  invAdjReasonLost:{ar:'فقد أو نقص في المخزون',en:'Missing stock'},
+  invAdjReasonFound:{ar:'العثور على كمية غير مسجلة',en:'Unrecorded stock found'},
+  invAdjReasonCorrection:{ar:'تصحيح تسجيل سابق للكمية',en:'Correct a previous quantity entry'},
+  invAdjReasonOther:{ar:'سبب آخر — اكتب التفاصيل',en:'Other — enter the reason'},
   saveAdjustment:{ar:'حفظ التسوية',en:'Save adjustment'},
   errAdminOnlyAction:{ar:'هذا الإجراء متاح للمدير فقط',en:'This action is available to admins only'},
   errSelectProduct:{ar:'اختر صنفاً',en:'Select a product'},
@@ -28280,6 +28327,8 @@ const TRANSLATIONS = {
   spNameMismatch:{ar:'اسم مختلف: Shopify="{a}"، النظام="{b}"',en:'Name differs: Shopify="{a}", system="{b}"'},
   spNoDeposit:{ar:'بدون عربون',en:'No deposit'},
   spAssignedTo:{ar:'الموظف المسؤول: {name}',en:'Assigned to: {name}'},
+  spDepHistory:{ar:'سجل العربون',en:'Deposit history'},
+  spDepWithdrawn:{ar:'مسحوب',en:'Withdrawn'},
   spDepTab:{ar:'عربونات قيد المراجعة',en:'Deposits awaiting review'},
   spDepPendingShort:{ar:'قيد المراجعة',en:'In review'},
   spDepDraft:{ar:'جاهز للإرسال',en:'Ready to submit'},
@@ -29123,6 +29172,7 @@ const TRANSLATIONS = {
   puNewOrderBtn:{ar:'أمر Pick-Up جديد',en:'New Pick-Up order'},
   /* Board KPIs */
   puKpiPending:{ar:'معلق',en:'Pending'},
+  puNavPendingCount:{ar:'{n} طلبات تحتاج التجهيز أو التسليم للشحن',en:'{n} orders awaiting preparation or pickup'},
   puKpiPrep:{ar:'قيد التحضير',en:'Preparing'},
   puKpiReady:{ar:'Ready to Ship',en:'Ready to Ship'},
   /* Column quick-filters on the Movements Pick-Up / Bosta headers */
@@ -30090,6 +30140,7 @@ function applyLang() {
     if (currentPage === 'shopify-orders' && typeof renderShopifyOrders === 'function') renderShopifyOrders();
     // Deposit-review tab: every row is a JS template literal.
     if (currentPage === 'shopify-orders' && _spSubnavTab === 'deposits' && typeof renderSpDepositReview === 'function') renderSpDepositReview();
+    if (currentPage === 'shopify-orders' && _spSubnavTab === 'deposit-log') renderSpDepositHistory();
     // Performance Hub: the KPI labels read _perfPeriodLabel() (which follows currentLang) and the
     // period arrows are direction-dependent — '‹' and '›' swap roles between RTL and LTR, so a
     // language flip without this leaves "previous" pointing at "next". Only when the tab is open.
@@ -33107,7 +33158,7 @@ function connectSocket() {
     _rtFlashIds.add(String(tx._id));
     setTimeout(() => _rtFlashIds.delete(String(tx._id)), 3000);
     markMovRecentlyUpdated(tx._id);
-    _rtRefreshUI({ movements: true });
+    _rtRefreshUI({ movements: true, sidebar: true });
     if (payload?.action === 'collect') {
       _rtRefreshUI({ sidebar: true });
       try { window.txNotifier?.onTxCollect(tx, payload.action); } catch(_) {}
@@ -33608,6 +33659,7 @@ function connectSocket() {
       }
 
     } catch(e) { console.warn('pickup:updated handler', e); }
+    finally { _rtRefreshUI({ sidebar: true }); }
   });
 
   socket.on('followup:changed', async (payload) => {
@@ -33788,7 +33840,7 @@ function _rtFetchTx(id) {
     }
     if (typeof _awbForget === 'function' && (fresh.bostaStatus === 'DELETED' || !fresh.bostaOrderId)) _awbForget(sid);
     markMovRecentlyUpdated(sid);
-    _rtRefreshUI({ movements: true });
+    _rtRefreshUI({ movements: true, sidebar: true });
     try { refreshInvoiceView(sid); } catch (_) {}
     try {
       const g = typeof _pucoGetGroup === 'function' ? _pucoGetGroup() : null;
@@ -33811,6 +33863,8 @@ function _rtRefreshUI(opts = {}) {
       if (o.movements && currentPage === 'movements') renderMovements?.();
       if (o.sidebar) buildSidebar?.();
       if (o.notifications) buildNotifications?.();
+      if (o.movements && qs('#tx-picker-overlay')?._poMode) filterPoPickerList(qs('#tx-picker-q')?.value || '');
+      if (o.movements && currentPage === 'shopify-orders' && _spSubnavTab === 'deposit-log') _depLogBackgroundRefresh();
       if (currentPage === 'dashboard') renderDashboard?.();
     } catch(_) {}
   });
@@ -34876,6 +34930,12 @@ function renderUsersStatus() {
   }).join('');
 }
 
+function _puSidebarOrderCount() {
+  const active = new Set(['Pending', 'Preparing', 'Ready', 'Picked-Up']);
+  return (transactions || []).filter(tx => tx.type === 'مبيعات' && !tx.cancelled && !tx.archived
+    && active.has(_puDisplayStatus(tx))).length;
+}
+
 function buildSidebar() {
   const sb = qs('#sidebar');
   const navLabel = (n) => currentLang === 'en' ? (n.labelEn || n.label) : n.label;
@@ -34907,6 +34967,13 @@ function buildSidebar() {
     let badge = '';
     if (n.id === 'approvals' && totalApprovalsBadge > 0) badge = ` <span class="nav-badge">${totalApprovalsBadge}</span>`;
     if (n.id === 'movements' && newMovCount > 0) badge = ` <span class="nav-badge">+${newMovCount}</span>`;
+    if (n.id === 'pickup-orders') {
+      const count = _puSidebarOrderCount();
+      if (count > 0) {
+        const hint = tf('puNavPendingCount', { n: fmtN(count) });
+        badge = ` <span class="nav-badge" title="${esc(hint)}" aria-label="${esc(hint)}">${fmtN(count)}</span>`;
+      }
+    }
     const fuUnseenCount = typeof _fuUnseenCount === 'function' ? _fuUnseenCount() : 0;
     const totalComplaintsBadge = pendingCmpCount + fuUnseenCount;
     if (n.id === 'complaints' && totalComplaintsBadge > 0) badge = ` <span class="nav-badge">${totalComplaintsBadge}</span>`;
@@ -37840,6 +37907,10 @@ function markTxDirty() {
 }
 function handleHashChange() {
   const hash = location.hash.slice(1);
+  if (hash.split('/')[0] === 'shopify-orders' && hash.includes('/') && hasPerm(NAV_ITEMS.find(n => n.id === 'shopify-orders')?.perm)) {
+    navigateTo('shopify-orders', false);
+    return;
+  }
   if (hash && hash !== currentPage) {
     const validPages = [...NAV_ITEMS.map(n => n.id), 'userhub', 'supplier-profile', 'collection-profile', 'category-profile', 'followups'];
     if (validPages.includes(hash) && (hash === 'userhub' || hasPerm(NAV_ITEMS.find(n => n.id === hash)?.perm))) {
@@ -37946,8 +38017,9 @@ function onPageEnter(page) {
       localStorage.setItem('shopify_seen_count', String((_shopifyOrders || []).filter(o => o.status === 'pending').length));
       loadShopifyOrders();
       buildSidebar();
-      const _spSubTab = location.hash.slice(1).split('/')[1] || 'orders';
-      const _spActiveTab = ((_spSubTab === 'perf' || _spSubTab === 'deposits') && isAdmin()) ? _spSubTab : 'orders';
+      const _spParts = location.hash.slice(1).split('?')[0].split('/');
+      const _spSubTab = _spParts[1] === 'deposits' && _spParts[2] === 'log' ? 'deposit-log' : (_spParts[1] || 'orders');
+      const _spActiveTab = ((_spSubTab === 'perf' || _spSubTab === 'deposits' || _spSubTab === 'deposit-log') && isAdmin()) ? _spSubTab : 'orders';
       switchShopifySubnav(_spActiveTab, true);
       break;
     }
@@ -38162,6 +38234,7 @@ async function loadAllData() {
        لما الرد يوصل، فالشارة بتظهر متأخرة جزء من ثانية بدل ما الصفحة كلها تستنى. */
     refreshMentionsFromServer().then(() => { try { buildNotifications(); } catch (_) {} }).catch(() => {});
     buildNotifications();
+    buildSidebar();
     // ختم وقت آخر تحميل ناجح — مصدر نص «آخر تحديث».
     _rfzLastAt = Date.now(); _rfzStartTimer(); _rfzSyncLabels();
     // Poll for new mentions every 20s
@@ -41895,6 +41968,7 @@ function closeProductPicker() {
   const overlay = qs('#tx-picker-overlay');
   if (overlay) {
     overlay.style.display = 'none';
+    if (qs('#po-picker-tabs')) qs('#po-picker-tabs').style.display = 'none';
     const qInput = qs('#tx-picker-q');
     if (overlay._poMode) {
       if (qInput) qInput.oninput = () => filterTxPicker(qInput.value);
@@ -46802,6 +46876,14 @@ function _iapKey(e) {
   else if (e.key === 'Escape' && e.target.value) { e.stopPropagation(); e.target.value = ''; _iapRender(''); }
 }
 
+const _invAdjustmentReasons = ['invAdjReasonUnavailable', 'invAdjReasonAvailable', 'invAdjReasonCount', 'invAdjReasonDamage', 'invAdjReasonLost', 'invAdjReasonFound', 'invAdjReasonCorrection'];
+function _invAdjustmentReason() {
+  const choice = qs('#inv-adj-reason-choice')?.value || '';
+  const preset = _invAdjustmentReasons.includes(choice) ? t(choice) : '';
+  const details = (qs('#inv-adj-reason')?.value || '').trim();
+  return [preset, details].filter(Boolean).join(' — ');
+}
+
 function openInventoryAdjustModal() {
   if (!isAdmin()) { toast(t('errAdminOnlyAction'), true); return; }
   _iapRows = [];
@@ -46824,7 +46906,15 @@ function openInventoryAdjustModal() {
         <input type="number" id="inv-adj-qty" placeholder="${escHtml(t('invAdjQtyPlaceholder'))}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">
       </label>
       <label>${esc(t('invAdjReasonLabel'))}
-        <textarea id="inv-adj-reason" rows="3" placeholder="${escHtml(t('invAdjReasonPlaceholder'))}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)"></textarea>
+        <select id="inv-adj-reason-choice" style="width:100%;min-height:40px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">
+          <option value="">${esc(t('invAdjReasonChoose'))}</option>
+          ${_invAdjustmentReasons.map(key => `<option value="${key}">${esc(t(key))}</option>`).join('')}
+          <option value="other">${esc(t('invAdjReasonOther'))}</option>
+        </select>
+      </label>
+      <label>${esc(t('invAdjReasonDetails'))}
+        <textarea id="inv-adj-reason" rows="2" aria-describedby="inv-adj-reason-hint" placeholder="${escHtml(t('invAdjReasonPlaceholder'))}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)"></textarea>
+        <small id="inv-adj-reason-hint" style="display:block;margin-top:4px;color:var(--muted)">${esc(t('invAdjReasonDetailsHint'))}</small>
       </label>
     </div>
     <div style="display:flex;gap:8px;margin-top:16px">
@@ -46849,7 +46939,7 @@ function openInventoryAdjustModal() {
 async function submitInventoryAdjustment() {
   const productId = qs('#inv-adj-product')?.value;
   const qtyDelta = Number(qs('#inv-adj-qty')?.value);
-  const reason = (qs('#inv-adj-reason')?.value || '').trim();
+  const reason = _invAdjustmentReason();
   if (!productId) { toast(t('errSelectProduct'), true); return; }
   if (!qtyDelta || Number.isNaN(qtyDelta)) { toast(t('errInvalidAdjQty'), true); return; }
   if (!reason) { toast(t('errReasonRequired'), true); return; }
@@ -69523,7 +69613,7 @@ function renderPoItems() {
         <span class="tx-item-num-badge">${i + 1}</span>
       </div>
       <div class="tx-item-info">
-        <div class="tx-item-name" title="${esc(item.productName)}">${esc(item.productName)}</div>
+        <div class="tx-item-name" title="${esc(item.productName)}">${esc(item.productName)}${_poInactiveBadge(item)}</div>
         <div class="tx-item-meta">${item.productCode ? `<span class="tx-item-code">${esc(item.productCode)}</span>` : ''}</div>
       </div>
       <div class="tx-item-price" style="color:var(--muted);font-size:.78rem;justify-content:center">—</div>
@@ -69550,6 +69640,8 @@ function openPoProductPicker() {
   const overlay = qs('#tx-picker-overlay');
   if (!overlay) return;
   overlay._poMode = true;
+  if (qs('#po-picker-tabs')) qs('#po-picker-tabs').style.display = 'flex';
+  _poProductTab = 'all';
   if (window.innerWidth >= 769) overlay.classList.add('desktop');
   else overlay.classList.remove('desktop');
   overlay.style.display = 'flex';
@@ -69562,7 +69654,7 @@ function openPoProductPicker() {
     qInput.value = '';
     qInput.oninput = () => filterPoPickerList(qInput.value);
   }
-  filterPoPickerList('');
+  _poSetProductTab('all');
   _updatePoSelectedBadge();
   setTimeout(() => qs('#tx-picker-q')?.focus(), 120);
 }
@@ -69571,12 +69663,51 @@ function closePoProductPicker() {
   const overlay = qs('#tx-picker-overlay');
   if (!overlay) return;
   overlay._poMode = false;
+  if (qs('#po-picker-tabs')) qs('#po-picker-tabs').style.display = 'none';
   overlay.style.display = 'none';
   const qInput = qs('#tx-picker-q');
   if (qInput) qInput.oninput = () => filterTxPicker(qInput.value);
   const badge = qs('#po-picker-selected-badge');
   if (badge) badge.style.display = 'none';
   document.body.style.overflow = '';
+}
+
+let _poProductTab = 'all';
+let _poSalesStats = new Map();
+function _poProductSales(period, now = new Date()) {
+  const today = now.toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
+  const cutoff = new Date(today + 'T12:00:00Z');
+  cutoff.setUTCDate(cutoff.getUTCDate() - 29);
+  const from = period === 'month' ? today.slice(0, 7) + '-01' : cutoff.toISOString().slice(0, 10);
+  const byId = new Map(products.map(p => [String(p._id), p]));
+  const byCode = new Map(products.filter(p => p.code).map(p => [String(p.code), p]));
+  const byName = new Map(products.map(p => [p.name, p]));
+  const quantities = new Map();
+  for (const tx of transactions || []) {
+    const date = String(tx.date || tx.createdAt || '').slice(0, 10);
+    if (tx.type !== 'مبيعات' || tx.cancelled || tx.payStatus === 'ملغي' || !date || date < from || date > today) continue;
+    for (const item of tx.items || []) {
+      const product = byId.get(String(item.productId || '')) || byCode.get(String(item.code || '')) || (!item.productId && !item.code ? byName.get(item.name) : null);
+      const qty = Number(item.qty);
+      if (product && Number.isFinite(qty) && qty > 0) quantities.set(String(product._id), (quantities.get(String(product._id)) || 0) + qty);
+    }
+  }
+  return new Map([...quantities.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([id, qty], i) => [id, { qty, rank: i + 1 }]));
+}
+function _poSetProductTab(tab) {
+  _poProductTab = tab === 'best' ? 'best' : 'all';
+  for (const [id, value] of [['po-tab-all','all'], ['po-tab-best','best']]) {
+    const button = qs('#' + id);
+    if (button) { button.classList.toggle('btn-primary', _poProductTab === value); button.classList.toggle('btn-outline', _poProductTab !== value); button.setAttribute('aria-selected', String(_poProductTab === value)); }
+  }
+  filterPoPickerList(qs('#tx-picker-q')?.value || '');
+}
+
+function _poInactiveBadge(item) {
+  const product = products.find(p => p._id === item.productId || p._id === item._id
+    || (item.productCode && p.code === item.productCode));
+  return product && !isProductListable(product) ? ` <span class="inactive-badge">${esc(t('inactiveBadge'))}</span>` : '';
 }
 
 function _poPickerItemHtml(p) {
@@ -69599,7 +69730,9 @@ function _poPickerItemHtml(p) {
       <div class="tx-picker-name">${esc(p.name)}</div>
       <div class="tx-picker-meta-row" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         ${p.code ? `<span class="tx-picker-code">${esc(p.code)}</span>` : ''}
-        ${stockBadge}
+        ${stockBadge}${_poInactiveBadge(p)}
+        ${_poSalesStats.get(String(p._id))?.rank <= 5 ? `<span class="badge badge-orange" style="font-size:.68rem">${esc(tf('poTopFive', {rank:fmtN(_poSalesStats.get(String(p._id)).rank)}))}</span>` : ''}
+        ${_poProductTab === 'best' ? `<span style="font-size:.72rem;color:var(--muted)">${esc(tf('poSoldUnits', {n:fmtN(_poSalesStats.get(String(p._id))?.qty || 0)}))}</span>` : ''}
       </div>
     </div>
     ${addCtrl}
@@ -69607,23 +69740,24 @@ function _poPickerItemHtml(p) {
 }
 
 function filterPoPickerList(q) {
+  _poSalesStats = _poProductSales(qs('#po-sales-period')?.value || '30');
   const tokens = normalizeUiSearch(q).split(/\s+/).filter(Boolean);
   let list = products.filter(p => {
-    if (!isProductListable(p) && !poItems.some(it => it.productId === p._id)) return false;
     const blob = normalizeUiSearch([p.name, p.code || ''].join(' '));
     return !tokens.length || tokens.every(t => blob.includes(t));
   });
   list = applyPickerStockFilter(list);
+  if (_poProductTab === 'best') list = list.filter(p => _poSalesStats.has(String(p._id))).sort((a, b) => _poSalesStats.get(String(a._id)).rank - _poSalesStats.get(String(b._id)).rank);
   const listEl = qs('#tx-picker-list');
   if (!listEl) return;
-  if (!list.length) { listEl.innerHTML = renderEmptyState({ type: 'no-results', title: t('emptyProducts'), size: 'sm' }); return; }
+  if (!list.length) { listEl.innerHTML = renderEmptyState({ type: 'no-results', title: t(_poProductTab === 'best' && !tokens.length && txPickerFilter === 'all' ? 'poNoRecentSales' : 'emptyProducts'), size: 'sm' }); return; }
   // An explicit stock filter already scopes the list — the collapsible
   // "out of stock" drawer would just hide the very rows the user asked for.
-  if (txPickerFilter !== 'all') { listEl.innerHTML = list.map(_poPickerItemHtml).join(''); return; }
+  if (_poProductTab === 'best' || tokens.length || txPickerFilter !== 'all') { listEl.innerHTML = list.map(_poPickerItemHtml).join(''); return; }
   const inStock = [], outOfStock = [];
   list.forEach(p => {
     const stock = getProductAvailableStock(p._id);
-    (stock === 0 ? outOfStock : inStock).push(p);
+    (getPickerStockStatus(p._id) === 'out' ? outOfStock : inStock).push(p);
   });
   const inStockHtml = inStock.map(_poPickerItemHtml).join('');
   let outHtml = '';
@@ -69709,8 +69843,10 @@ async function addSupplierLog(supplierId, action, detail) {
   } catch (_) {}
 }
 
+let _poCreateSaving = false;
 async function saveNewPo(supplierId, supplierName) {
   const btn = qs('#po-save-btn');
+  if (_poCreateSaving || btn?.disabled) return;
   if (!poItems.length) { toast('أضف صنفاً واحداً على الأقل', true); return; }
   const items = poItems.map(it => ({
     productCode: it.productCode || it.productName,
@@ -69719,6 +69855,7 @@ async function saveNewPo(supplierId, supplierName) {
     qty: it.qty || 1,
     unitPrice: 0,
   }));
+  _poCreateSaving = true;
   if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
   try {
     const body = {
@@ -69738,7 +69875,7 @@ async function saveNewPo(supplierId, supplierName) {
     renderSupplierProfile();
     if (canSeeSupTab('pos')) setSpTab('pos', qs('#sp-tab-btn-pos'));
   } catch (e) { toast('خطأ: ' + e.message, true); }
-  finally { if (btn) { btn.disabled = false; btn.style.opacity = ''; } }
+  finally { _poCreateSaving = false; if (btn) { btn.disabled = false; btn.style.opacity = ''; } }
 }
 
 /* ── Edit PO Modal ── */
@@ -69852,7 +69989,7 @@ function openPoDetailModal(poId) {
         ${item.productImage ? `<img src="${esc(item.productImage)}" style="width:36px;height:36px;object-fit:contain;border-radius:4px">` : '—'}
       </td>
       <td style="padding:6px 8px;font-size:.78rem;color:var(--muted)">${esc(item.productCode || '')}</td>
-      <td style="padding:6px 8px">${esc(item.productName || '')}</td>
+      <td style="padding:6px 8px">${esc(item.productName || '')}${_poInactiveBadge(item)}</td>
       <td style="padding:6px 8px;text-align:center">${fmtJ(item.qty)}</td>
       <td style="padding:6px 8px;text-align:center">${item.unitPrice ? fmtJ(item.unitPrice) + ' ج' : '—'}</td>
     </tr>`).join('');
@@ -70615,16 +70752,27 @@ ${notes ? `<p style="font-size:13px"><span class="label">ملاحظة:</span> ${
 }
 
 /* ── Print / PDF PO ── */
-function _buildPoDocHtml(po, s, compact) {
-  const itemRows = (po.items || []).map(item => `
+function _poPrintUnitPrice(item) {
+  if (Number(item.unitPrice) > 0) return Number(item.unitPrice);
+  const p = products.find(p => p._id === item.productId || (item.productCode && p.code === item.productCode));
+  const value = p?.buyPrice;
+  return value !== undefined && value !== null && value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : null;
+}
+function _buildPoDocHtml(po, s, compact, showPrices = false) {
+  const money = value => Number(value).toLocaleString('en-EG', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const prices = (po.items || []).map(_poPrintUnitPrice);
+  const totalQty = (po.items || []).reduce((sum, item) => sum + Number(item.qty || 0), 0);
+  const total = (po.items || []).reduce((sum, item, i) => sum + (prices[i] ?? 0) * Number(item.qty || 0), 0);
+  const itemRows = (po.items || []).map((item, i) => `
     <tr>
+      <td class="num">${i + 1}</td>
       <td style="padding:${compact?'5px':'8px'};border:1px solid #ddd;text-align:center">
-        ${item.productImage ? `<img src="${esc(item.productImage)}" style="width:${compact?'28px':'44px'};height:${compact?'28px':'44px'};object-fit:contain">` : '—'}
+        ${item.productImage ? `<img src="${esc(sanitizeUrl(item.productImage))}" style="width:${compact?'28px':'44px'};height:${compact?'28px':'44px'};object-fit:contain">` : '—'}
       </td>
       <td style="padding:${compact?'5px':'8px'};border:1px solid #ddd">${esc(item.productCode||'')}</td>
-      <td style="padding:${compact?'5px':'8px'};border:1px solid #ddd">${esc(item.productName||'')}</td>
+      <td style="padding:${compact?'5px':'8px'};border:1px solid #ddd">${esc(item.productName||'')}${_poInactiveBadge(item)}</td>
       <td style="padding:${compact?'5px':'8px'};border:1px solid #ddd;text-align:center">${item.qty}</td>
-      <td style="padding:${compact?'5px':'8px'};border:1px solid #ddd;text-align:center">${item.unitPrice ? item.unitPrice + ' ج' : '—'}</td>
+      ${showPrices ? `<td class="num">${prices[i] !== null ? money(prices[i]) : '—'}</td><td class="num">${prices[i] !== null ? money(prices[i] * Number(item.qty || 0)) : '—'}</td>` : ''}
     </tr>`).join('');
   const pageSize = compact ? 'A5' : 'A4';
   const margin = compact ? '1cm' : '1.5cm';
@@ -70644,11 +70792,21 @@ function _buildPoDocHtml(po, s, compact) {
   .header{display:flex;justify-content:space-between;margin-bottom:${compact?'12px':'20px'};align-items:flex-start}
   .label{color:#666;font-size:${compact?'10px':'12px'}}
   .badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:#dcfce7;color:#15803d}
+  body{line-height:1.5} .header{border-bottom:3px solid #287b50;padding-bottom:14px}
+  .brand{color:#287b50;letter-spacing:2px;font-size:15px;font-weight:bold;margin-bottom:5px}
+  th{background:#edf5f0;color:#24543d;font-weight:700} td{vertical-align:middle}
+  .num{text-align:center;padding:${compact?'4px':'8px'};border:1px solid #ddd;white-space:nowrap;font-variant-numeric:tabular-nums}
+  tr{break-inside:avoid} thead{display:table-header-group} table{table-layout:auto} td{overflow-wrap:anywhere}
+  .summary{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#edf5f0;border:1px solid #d8e6dd;border-radius:8px;padding:12px;margin-top:14px;break-inside:avoid}
+  .signatures{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:32px;padding-top:12px;border-top:1px solid #ddd;color:#555;break-inside:avoid}
+  .inactive-badge{display:inline-block;padding:1px 5px;border:1px solid #ddd;border-radius:6px;font-size:10px;color:#777;margin-inline-start:4px}
+  @media print{body{margin:0}th,.summary{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style>
 </head>
 <body>
 <div class="header">
   <div>
+    <div class="brand">SOULIA HOME</div>
     <h2>أمر شراء</h2>
     <p class="label" style="margin:4px 0">${esc(po.poNumber)}</p>
     <span class="badge">${esc(po.status)}</span>
@@ -70659,7 +70817,7 @@ function _buildPoDocHtml(po, s, compact) {
     ${s?.address ? `<p class="label" style="margin:3px 0">${esc(s.address)}</p>` : ''}
   </div>
 </div>
-<div style="display:flex;gap:24px;font-size:${baseFont};margin-bottom:8px">
+<div style="display:flex;flex-wrap:wrap;gap:8px 24px;font-size:${baseFont};margin-bottom:8px">
   <span><span class="label">تاريخ الإنشاء:</span> ${esc(po.createdDate||'')}</span>
   ${po.expectedDeliveryDate ? `<span><span class="label">التسليم المتوقع:</span> ${esc(po.expectedDeliveryDate)}</span>` : ''}
 </div>
@@ -70667,41 +70825,52 @@ ${po.notes ? `<p style="font-size:${baseFont}"><span class="label">ملاحظا�
 <table>
   <thead>
     <tr>
-      <th style="width:50px">صورة</th>
+      <th style="width:${compact?'16px':'24px'}">#</th>
+      <th style="width:${compact?'30px':'50px'}">صورة</th>
       <th>كود الصنف</th>
       <th>اسم الصنف</th>
-      <th style="text-align:center;width:60px">الكمية</th>
-      <th style="text-align:center;width:80px">سعر الشراء</th>
+      <th style="text-align:center;width:${compact?'34px':'60px'}">الكمية</th>
+      ${showPrices ? `<th style="text-align:center;width:${compact?'55px':'80px'}">سعر الشراء (ج.م)</th><th style="text-align:center;width:${compact?'60px':'90px'}">الإجمالي (ج.م)</th>` : ''}
     </tr>
   </thead>
   <tbody>${itemRows}</tbody>
 </table>
+<div class="summary"><span>عدد الأصناف: <b>${fmtN((po.items || []).length)}</b></span><span>إجمالي الوحدات: <b>${fmtN(totalQty)}</b></span>${showPrices ? `<span>${prices.some(p => p === null) ? 'إجمالي الأصناف المسعّرة' : 'إجمالي أمر الشراء'}: <b>${money(total)} ج.م</b></span>` : ''}</div>
+${showPrices ? '<p class="label">الأسعار غير المسجلة بالأمر مأخوذة من سعر الشراء الحالي للصنف. علامة — تعني أن السعر غير متوفر.</p>' : ''}
+<div class="signatures"><span>إعداد: ${esc(po.createdBy || '—')}</span><span>اعتماد المورد: __________________</span><span>الاستلام: __________________</span></div>
 <div style="margin-top:${compact?'14px':'24px'};font-size:${compact?'10px':'11px'};color:#999;text-align:center">تم إنشاء هذا الأمر بواسطة نظام SOULIA</div>
 </body>
 </html>`;
 }
 
 function printPo(poId) {
+  _openPoPrintOptions(poId, false);
+}
+
+function _openPoPrintOptions(poId, compact) {
+  const po = purchaseOrders.find(p => p._id === poId);
+  if (!po) return;
+  const canPrice = isAdmin() || hasPerm('purchase-view');
+  openModal(`<h3>${esc(t('poPrintOptions'))} · <bdi>${esc(po.poNumber)}</bdi></h3>
+    <label style="display:flex;align-items:center;gap:10px;padding:14px 0"><input type="checkbox" id="po-print-prices" ${canPrice ? '' : 'disabled'}><span>${esc(t('poPrintPrices'))}</span></label>
+    <p class="text-muted" style="font-size:.82rem;line-height:1.6">${esc(t(canPrice ? 'poPrintPriceHint' : 'poPrintPricePermission'))}</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px"><button class="btn btn-primary" onclick="_printPoDocument(${escHtml(JSON.stringify(poId))},${compact})">${esc(t(compact ? 'poPrintPdfGo' : 'poPrintGo'))}</button><button class="btn btn-outline" onclick="closeModal()">${esc(t('cancel'))}</button></div>`, 'max-width:480px');
+}
+
+function _printPoDocument(poId, compact) {
   const po = purchaseOrders.find(p => p._id === poId);
   if (!po) return;
   const s = suppliers.find(x => x._id === po.supplierId);
   const pw = window.open('', '_blank');
   if (!pw) { toast('يرجى السماح بالنوافذ المنبثقة للطباعة', true); return; }
-  pw.document.write(_buildPoDocHtml(po, s, false));
+  const showPrices = !!qs('#po-print-prices')?.checked && (isAdmin() || hasPerm('purchase-view'));
+  pw.onload = () => { pw.focus(); pw.print(); };
+  pw.document.write(_buildPoDocHtml(po, s, compact, showPrices));
   pw.document.close();
-  setTimeout(() => { pw.print(); }, 300);
 }
 
 function downloadPoPdf(poId) {
-  const po = purchaseOrders.find(p => p._id === poId);
-  if (!po) return;
-  const s = suppliers.find(x => x._id === po.supplierId);
-  const pw = window.open('', '_blank');
-  if (!pw) { toast('يرجى السماح بالنوافذ المنبثقة للحفظ كـ PDF', true); return; }
-  pw.document.write(_buildPoDocHtml(po, s, true));
-  pw.document.close();
-  toast('اختر "حفظ كـ PDF" من نافذة الطباعة لتنزيل الملف');
-  setTimeout(() => { pw.print(); }, 300);
+  _openPoPrintOptions(poId, true);
 }
 
 /* Expenses */
@@ -77679,14 +77848,19 @@ const _ivBosta = new Map(); // txId → { state: 'loading'|'ok'|'fail', data, er
 function _ivLoadBostaDetails(id, fresh) {
   const tx = (transactions || []).find(t => String(t._id) === String(id));
   if (!tx || tx.type !== 'مبيعات' || !tx.bostaOrderId) return;
-  const cur = _ivBosta.get(String(id));
-  if (cur && (cur.state === 'loading' || (cur.state === 'ok' && !fresh))) return;
-  _ivBosta.set(String(id), { state: 'loading', data: cur?.data || null });
+  const key = String(id);
+  const shipment = String(tx.bostaOrderId);
+  const cached = _ivBosta.get(key);
+  const cur = cached?.shipment === shipment ? cached : null;
+  // A failed request must stay failed until explicit retry. Repainting is not a retry.
+  if (cur && (cur.state === 'loading' || !fresh)) return;
+  const request = { state: 'loading', shipment, data: cur?.data || null };
+  _ivBosta.set(key, request);
   if (fresh) _ivRepaintIfOpen(id);
-  api(`/carrier-settlements/${id}/bosta-details${fresh ? '?fresh=1' : ''}`)
-    .then(d => { _ivBosta.set(String(id), { state: 'ok', data: d }); })
-    .catch(e => { _ivBosta.set(String(id), { state: 'fail', data: cur?.data || null, err: e.message || '' }); })
-    .finally(() => _ivRepaintIfOpen(id));
+  return api(`/carrier-settlements/${id}/bosta-details${fresh ? '?fresh=1' : ''}`)
+    .then(d => { if (_ivBosta.get(key) === request) Object.assign(request, { state: 'ok', data: d }); })
+    .catch(e => { if (_ivBosta.get(key) === request) Object.assign(request, { state: 'fail', err: e.message || '' }); })
+    .finally(() => { if (_ivBosta.get(key) === request) _ivRepaintIfOpen(id); });
 }
 function _ivRepaintIfOpen(id) {
   if (currentPage === 'invoice-view' && String(window._invoiceViewTxId) === String(id)) renderInvoiceViewPage();
@@ -97650,6 +97824,7 @@ async function loadPickupOrders() {
       _puSyncPrepStatusToTransactions();
       if (typeof renderMovements === 'function' && currentPage === 'movements') renderMovements();
     }
+    buildSidebar();
     // Refresh live Bosta status for shipped-but-not-yet-delivered orders in the background —
     // the runs table below reads `bostaStatus` through _puDisplayStatus(), so a shipment that
     // actually arrived (DELIVERED at the carrier) must not keep reading "Shipped" here just
@@ -98267,14 +98442,19 @@ function _initShopifySubnav() {
   if (btn) btn.style.display = isAdmin() ? '' : 'none';
   const dep = qs('#sp-subnav-deposits');
   if (dep) dep.style.display = isAdmin() ? '' : 'none';
+  const log = qs('#sp-subnav-deposit-log');
+  if (log) log.style.display = isAdmin() ? '' : 'none';
 }
 
 /** Which sub-tab is showing — read by the deposit-review refresh path. */
 let _spSubnavTab = 'orders';
 
 function switchShopifySubnav(tab, skipHash) {
-  if ((tab === 'perf' || tab === 'deposits') && !isAdmin()) return;
+  if ((tab === 'perf' || tab === 'deposits' || tab === 'deposit-log') && !isAdmin()) return;
   _spSubnavTab = tab;
+  qs('#sp-subnav-deposit-log')?.classList.toggle('active', tab === 'deposit-log');
+  const logEl = qs('#sp-deposit-log-content');
+  if (logEl) logEl.style.display = tab === 'deposit-log' ? '' : 'none';
   qs('#sp-subnav-orders')?.classList.toggle('active', tab === 'orders');
   qs('#sp-subnav-perf')?.classList.toggle('active', tab === 'perf');
   qs('#sp-subnav-deposits')?.classList.toggle('active', tab === 'deposits');
@@ -98286,8 +98466,9 @@ function switchShopifySubnav(tab, skipHash) {
   if (depEl) depEl.style.display = tab === 'deposits' ? '' : 'none';
   if (tab === 'perf') renderPerformanceDashboard();
   if (tab === 'deposits') renderSpDepositReview();
+  if (tab === 'deposit-log') renderSpDepositHistory(!!skipHash);
   if (!skipHash) {
-    const hashVal = tab === 'orders' ? 'shopify-orders' : `shopify-orders/${tab}`;
+    const hashVal = tab === 'orders' ? 'shopify-orders' : tab === 'deposit-log' ? _depLogUrl().slice(1) : `shopify-orders/${tab}`;
     if (location.hash !== '#' + hashVal) history.pushState(null, '', '#' + hashVal);
   }
 }
@@ -99086,6 +99267,7 @@ async function loadShopifyOrders() {
   } catch(e) {
     _spReceiptLoadError = e.message || t('spLoadFailed');
     if (_spSubnavTab === 'deposits') renderSpDepositReview();
+  if (_spSubnavTab === 'deposit-log') _depLogBackgroundRefresh();
     console.error('خطأ في تحميل أوردرات Shopify', e);
     if (wrap && !_shopifyOrders.length) wrap.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-muted)">${t('spLoadFailed')}</div>`;
   }
@@ -101047,7 +101229,18 @@ function openSpAssignModal(ids) {
   const cur = single ? String(single.assignedTo || '') : '';
   const assignedNow = list.filter(o => o.assignedTo).length;
 
-  const opts = staff.length ? staff.map(u => {
+  /* إلغاء الإسناد يظهر فقط إذا كان أحد الأوردرات المختارة مُسنداً فعلاً — لا جدوى من
+     الخيار على أوردر غير مُسند من الأساس. */
+  const anyAssigned = list.some(o => o.assignedTo);
+  const unassignOpt = anyAssigned ? `<label class="sp-asg-opt sp-asg-opt-unassign">
+      <input type="radio" name="sp-asg-user" value="" onchange="_spAsgPicked()">
+      <span class="sp-asg-card">
+        <span class="sp-asg-unassign-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6"/><line x1="16" y1="16" x2="22" y2="22"/><line x1="22" y1="16" x2="16" y2="22"/></svg></span>
+        <span class="sp-asg-name">${isEn ? 'Unassign' : 'إلغاء الإسناد'}</span>
+      </span>
+    </label>` : '';
+
+  const opts = unassignOpt + (staff.length ? staff.map(u => {
     const id = String(u._id);
     const n = openLoad(id);
     return `<label class="sp-asg-opt">
@@ -101058,7 +101251,7 @@ function openSpAssignModal(ids) {
         <span class="sp-asg-load" title="${escHtml(isEn ? 'Open orders assigned' : 'أوردرات مفتوحة مسندة إليه')}">${isEn ? `${fmtN(n)} open` : `${fmtN(n)} مفتوح`}</span>
       </span>
     </label>`;
-  }).join('') : `<div class="sp-pk-empty">${esc(t('spReassignNoStaff'))}</div>`;
+  }).join('') : `<div class="sp-pk-empty">${esc(t('spReassignNoStaff'))}</div>`);
 
   const title = single
     ? (isEn ? `Assign order #${esc(String(single.ref || '').replace(/^#+/, ''))}` : `إسناد الأوردر #${esc(String(single.ref || '').replace(/^#+/, ''))}`)
@@ -101085,20 +101278,28 @@ function openSpAssignModal(ids) {
 
 function _spAsgPicked() {
   const btn = qs('#sp-asg-save');
-  if (btn) btn.disabled = !qs('input[name="sp-asg-user"]:checked');
+  const checked = qs('input[name="sp-asg-user"]:checked');
+  if (!btn) return;
+  btn.disabled = !checked;
+  if (checked) {
+    const isEn = currentLang === 'en';
+    btn.textContent = checked.value ? (isEn ? 'Assign' : 'إسناد') : (isEn ? 'Unassign' : 'إلغاء الإسناد');
+  }
 }
 
 async function saveSpAssign(ids) {
-  const uid = qs('input[name="sp-asg-user"]:checked')?.value || '';
-  if (!uid) { toast(t('spReassignPick'), true); return; }
+  const checked = qs('input[name="sp-asg-user"]:checked');
+  if (!checked) { toast(t('spReassignPick'), true); return; }
+  const uid = checked.value || '';
+  const isUnassign = !uid;
   const btn = qs('#sp-asg-save');
-  if (btn) { btn.disabled = true; btn.textContent = currentLang === 'en' ? 'Assigning…' : 'جارٍ الإسناد…'; }
+  if (btn) { btn.disabled = true; btn.textContent = currentLang === 'en' ? (isUnassign ? 'Unassigning…' : 'Assigning…') : (isUnassign ? 'جارٍ إلغاء الإسناد…' : 'جارٍ الإسناد…'); }
   let done = 0, skipped = 0;
   const failed = [];
   for (const id of ids) {
     const o = _spOrderById(id);
     if (!o) continue;
-    if (String(o.assignedTo || '') === uid) { skipped++; continue; }  /* already theirs — no history entry for a no-op */
+    if (String(o.assignedTo || '') === uid) { skipped++; continue; }  /* already theirs/unassigned — no history entry for a no-op */
     try {
       const r = await api(`/shopify/orders/${id}/reassign`, { method: 'PATCH', body: JSON.stringify({ newEmployeeId: uid }) });
       if (r && r.success === false) { failed.push(`#${String(o.ref || '').replace(/^#+/, '')}`); console.warn('assign refused', o.ref, r.error); }
@@ -101113,11 +101314,13 @@ async function saveSpAssign(ids) {
     /* FSI…PDI (U+2068/U+2069) isolate each ref — «#2663» is a Latin run inside Arabic and
        its # jumps to the wrong end otherwise. */
     const refs = failed.slice(0, 5).map(r => '\u2068' + r + '\u2069').join('، ') + (failed.length > 5 ? '…' : '');
-    toast(isEn ? `Assigned ${done}, could not assign ${failed.length}: ${refs}` : `أُسند ${fmtN(done)}، وتعذّر إسناد ${fmtN(failed.length)}: ${refs}`, true);
+    const verb = isUnassign ? (isEn ? 'unassign' : 'إلغاء إسناد') : (isEn ? 'assign' : 'إسناد');
+    toast(isEn ? `${isUnassign ? 'Unassigned' : 'Assigned'} ${done}, could not ${verb} ${failed.length}: ${refs}` : `${isUnassign ? 'أُلغي إسناد' : 'أُسند'} ${fmtN(done)}، وتعذّر ${verb} ${fmtN(failed.length)}: ${refs}`, true);
   } else if (done) {
-    toast(ids.length === 1 ? t('spReassignedOk') : (isEn ? `${done} orders assigned` : `تم إسناد ${fmtN(done)} أوردر`));
+    if (isUnassign) toast(isEn ? (ids.length === 1 ? 'Order unassigned' : `${done} orders unassigned`) : (ids.length === 1 ? 'تم إلغاء إسناد الأوردر' : `تم إلغاء إسناد ${fmtN(done)} أوردر`));
+    else toast(ids.length === 1 ? t('spReassignedOk') : (isEn ? `${done} orders assigned` : `تم إسناد ${fmtN(done)} أوردر`));
   } else if (skipped) {
-    toast(isEn ? 'Already assigned to this employee' : 'مسند لنفس الموظف بالفعل');
+    toast(isUnassign ? (isEn ? 'Already unassigned' : 'غير مُسند بالفعل') : (isEn ? 'Already assigned to this employee' : 'مسند لنفس الموظف بالفعل'));
   }
   if (ids.length > 1 && !failed.length) { try { _shopifySelectedIds.clear(); } catch (_) {} }
   await loadShopifyOrders();
@@ -102329,7 +102532,7 @@ function _spReceiptOwner(r) {
 
 function _spReceiptStatus(status) {
   const key = { 'مسودة':'spDepDraft', 'معلق':'spDepPendingShort', 'معتمد':'spDepApproved',
-    'مرفوض':'spDepRejected', 'ملغي':'spDepVoided', 'مُسترد':'spDepRefunded' }[status];
+    'مرفوض':'spDepRejected', 'ملغي':'spDepVoided', 'مُسترد':'spDepRefunded', 'مسحوب':'spDepWithdrawn' }[status];
   return key ? t(key) : status;
 }
 
@@ -102526,6 +102729,7 @@ function _spReceiptPreviewHtml(r) {
     ${_spDepIcon('image')}<img alt="${esc(t('spDepReceipts'))}"><span class="spdep-thumb-view">${_spDepIcon('view')}</span></button>`;
 }
 
+const _spReceiptBusy = new Set();
 function _spReceiptRowHtml(o, r, readOnly = false, hideRefund = false) {
   const editable = !readOnly && o.status === 'pending' && !o.cancelled;
   const canEdit = editable && hasPerm('shopify-deposit-upload') && (isAdmin() || _spReceiptOwner(r));
@@ -102534,6 +102738,7 @@ function _spReceiptRowHtml(o, r, readOnly = false, hideRefund = false) {
   return `<article class="spdep-row"><div class="spdep-receipt-main"><div class="spdep-preview-wrap">${_spReceiptPreviewHtml(r)}${r.status === 'مسودة' ? `<span class="spdep-image-saved">${_spDepIcon('approve')}${esc(t('spDepImageSaved'))}</span>` : ''}</div><div class="spdep-receipt-data">
     <div class="spdep-row-head"><div class="spdep-money"><small>${esc(t('spDepAmount'))}</small><b><bdi>${fmtJ(r.amount || r.ocr?.amount || 0)}</bdi></b></div><span class="spdep-status spdep-status-${r.status === 'معلق' ? 'pending' : r.status === 'معتمد' ? 'approved' : 'other'}">${esc(_spReceiptStatus(r.status))}</span></div>
     <div class="spdep-method-label">${payMethodIcon(r.method || r.ocr?.method || '',24)}<span>${esc(_payMethodLabel(r.method || r.ocr?.method || '') || t('spDepChooseMethod'))}</span></div>
+    ${_depLogReceiptSenderHtml(r)}${_depLogScreenTimeHtml(r)}
     <small>${esc(r.submittedBy || '')}${r.submittedAt ? ` · <time title="${esc(fmtDateTime(r.submittedAt))}">${esc(new Date(r.submittedAt).toLocaleString(currentLang==='en'?'en-GB':'ar-EG-u-nu-latn',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}))}</time>` : ''}</small>
     ${r.reviewedBy ? `<small>${esc(t('spDepReviewedBy'))}: ${esc(r.reviewedBy)}${r.vaultTxNo ? ` · <bdi>${esc(r.vaultTxNo)}</bdi>` : ''}</small>` : ''}
     </div></div>${_spReceiptNoticeHtml(r)}
@@ -102542,7 +102747,8 @@ function _spReceiptRowHtml(o, r, readOnly = false, hideRefund = false) {
       ${r.imageDeleted ? `<small>${esc(t('spDepImageGone'))}</small>` : ''}
       ${canEdit && (r.status === 'مسودة' || r.status === 'معلق') ? `<button type="button" class="btn btn-outline btn-sm spdep-action spdep-icon-action" title="${esc(t('spDepEdit'))}" aria-label="${esc(t('spDepEdit'))}" onclick="openSpReceiptForm(${args})">${_spDepIcon('edit')}</button>${action('withdraw','spDepWithdraw')}` : ''}
       ${editable && isAdmin() && r.status === 'معلق' ? action('approve','spDepApprove') + action('reject','spDepReject') : ''}
-      ${editable && isAdmin() && r.status === 'معتمد' && !hideRefund ? action('refund','spDepRefund') : ''}
+      ${editable && isAdmin() && r.status === 'معتمد' && !r.vaultEntryId ? action('approve','spDepApprove') : ''}
+      ${editable && isAdmin() && ((r.status === 'معتمد' && r.vaultEntryId) || (r.status === 'مُسترد' && !r.refundVaultEntryId)) && !hideRefund ? action('refund','spDepRefund') : ''}
     </div>
   </article>`;
 }
@@ -102630,7 +102836,7 @@ function renderSpDepositReview() {
      إيصالاً اعتُمد أو سُحب من مكان آخر (الفاتورة، لوحة الطلب). */
   const liveIds = new Set(rows.map(({r}) => r.id));
   for (const id of [..._spDepSelectedIds]) if (!liveIds.has(id)) _spDepSelectedIds.delete(id);
-  host.innerHTML = `<div class="spdep-review"><div class="sp-pk-sec-h"><span>${esc(t('spDepTab'))} (${rows.length})</span><div class="spdep-head-actions">${_spAutoApproveBtnHtml()}<button class="btn btn-outline btn-sm" onclick="loadShopifyOrders()">${esc(t('spDepRefresh'))}</button></div></div>
+  host.innerHTML = `<div class="spdep-review"><div class="sp-pk-sec-h"><span>${esc(t('spDepTab'))} (${rows.length})</span><div class="spdep-head-actions"><a class="btn btn-outline btn-sm" href="#shopify-orders/deposits/log" onclick="event.preventDefault();switchShopifySubnav('deposit-log')">${esc(t('spDepHistory'))}</a>${_spAutoApproveBtnHtml()}<button class="btn btn-outline btn-sm" onclick="loadShopifyOrders()">${esc(t('spDepRefresh'))}</button></div></div>
     <div id="spdep-auto-banner">${_spAutoApproveBannerHtml()}</div>
     ${_spReceiptLoadError ? `<div class="spdep-warning" role="alert">${esc(_spReceiptLoadError)}</div>` : ''}
     <div id="spdep-bulk-bar"></div>
@@ -102745,11 +102951,14 @@ async function _spDepRunBulkApprove(picked) {
   btn.disabled = true;
   let done = 0, failed = 0;
   for (const { o, r } of picked) {
+    if (_spReceiptBusy.has(r.id)) { failed++; continue; }
+    _spReceiptBusy.add(r.id);
     try {
       const result = await api(`/shopify/orders/${o._id}/deposit-receipts/${r.id}/approve`, { method: 'PATCH', body: JSON.stringify({ reason: '' }) });
       if (!result.success) throw new Error('');
       done++;
     } catch (_) { failed++; }
+    finally { _spReceiptBusy.delete(r.id); }
   }
   if (qs('#spdep-bulk-decision')) closeModal();
   _spDepSelectedIds.clear();
@@ -102766,6 +102975,7 @@ function _spRefreshReceiptViews() {
   const badge = qs('#sp-subnav-deposits-n');
   if (badge) { badge.textContent = String(n); badge.hidden = !n; }
   if (_spSubnavTab === 'deposits') renderSpDepositReview();
+  if (_spSubnavTab === 'deposit-log') _depLogBackgroundRefresh();
   if (qs('#sp-peek')) _spPeekRender();
   const modal = qs('#shopify-confirm-modal');
   if (modal?._orderId) {
@@ -102802,6 +103012,7 @@ function openSpReceiptForm(orderId, receiptId, session) {
   openModal(`<div id="sp-receipt-form"><header class="spdep-form-header"><span class="spdep-form-icon">${_spDepIcon('add')}</span><div><h3>${esc(t('spDepUpload'))} <bdi>#${esc(o.ref)}</bdi></h3><bdi class="spdep-form-customer">${esc(o.client || '—')}</bdi></div></header><div class="spdep-form-body">
     ${r ? `<div class="spdep-analysis"><div class="spdep-analysis-image"><div class="spdep-preview-wrap">${_spReceiptPreviewHtml(r)}${r.status === 'مسودة' ? `<span class="spdep-image-saved">${_spDepIcon('approve')}${esc(t('spDepImageSaved'))}</span>` : ''}</div></div><div class="spdep-analysis-details"><small>${esc(r.submittedBy || '')}</small><label class="spdep-field">${esc(t('spDepAmount'))}<input id="spdep-amount" type="number" inputmode="decimal" min="0.01" step="0.01" max="${cap}" value="${amount != null ? Number(amount) : ''}"></label>${_spReceiptReadingHtml(r)}</div></div>` : `<div class="spdep-upload-box"><span class="spdep-upload-icon">${_spDepIcon('upload')}</span><p>${esc(t('spDepChooseFile'))}</p><div class="spdep-upload-buttons"><label class="btn btn-primary spdep-file-pick">${_spDepIcon('image')}${esc(t('spDepSelectImage'))}<input id="spdep-file" type="file" accept="image/jpeg,image/png,image/webp" onchange="_spUploadReceipt(this)"></label><button type="button" class="btn btn-outline" id="spdep-paste-btn" onclick="_spPasteReceiptFromClipboard(this)">${esc(t('spDepPasteHint'))}</button></div><small>${esc(t('spDepFileLimit'))}</small></div><div id="spdep-upload-preview" class="spdep-upload-preview" hidden><button type="button" class="spdep-local-thumb" onclick="_spViewLocalReceipt()" aria-label="${esc(t('spDepView'))}"><img alt="${esc(t('spDepReceipts'))}"><i class="spdep-scan-line"></i><span>${_spDepIcon('view')}</span></button><div role="status" aria-live="polite"><span class="spdep-scanning-icon">${_spDepIcon('image')}</span><p id="spdep-progress-stage">${esc(t('spDepUploading'))}</p><b id="spdep-progress-value" dir="ltr">0%</b><progress id="spdep-progress" max="100" value="0" aria-label="${esc(t('spDepScanning'))}"></progress></div></div>`}
     ${r ? `
+    <label class="spdep-field">${esc(_depLogText('screenTime'))}<input id="spdep-screen-time" type="time" dir="ltr" value="${esc(r.screenshotTime ?? r.ocr?.screenshotTime ?? '')}"><small>${esc(_depLogText('screenTimeHint'))}</small></label><div class="dep-log-sender-fields"><label class="spdep-field">${esc(_depLogText('senderPhone'))}<input id="spdep-sender-phone" type="tel" dir="ltr" maxlength="30" placeholder="01xxxxxxxxx" value="${esc(r.senderPhone ?? r.ocr?.senderPhone ?? '')}"></label><label class="spdep-field">${esc(_depLogText('senderName'))}<input id="spdep-sender-name" maxlength="120" value="${esc(r.senderName ?? r.ocr?.senderName ?? '')}"></label><label class="spdep-field">${esc(_depLogText('senderHandle'))}<input id="spdep-sender-handle" dir="ltr" maxlength="120" placeholder="name@instapay" value="${esc(r.senderHandle ?? r.ocr?.senderHandle ?? '')}"></label></div>
     ${r.ocr?.amount != null || r.ocr?.method ? `<p class="spdep-suggestion">${_spDepIcon('image')}${esc(t('spDepSuggestion'))}</p>` : ''}
     ${(r.warnings || []).length ? `<p class="spdep-warning" role="alert">${esc(r.warnings.map(_spReceiptWarningText).join(' · '))}</p>` : ''}
     ${r.status==='مسودة' && _spReceiptHasImageWarning(r) ? `<label class="spdep-confirm-check"><input type="checkbox" id="spdep-warning-ack" onchange="_spDepSyncConfirm()"><span class="spdep-confirm-box">${_spDepIcon('approve')}</span><span class="spdep-confirm-text">${esc(t(o.manualReceipt ? 'txReceiptWarningAck' : 'spDepSkipImageWarning'))}</span></label>` : ''}
@@ -103136,7 +103347,7 @@ async function _spSubmitReceipt(btn) {
   context.submitting = true;
   try {
     const suffix = r.status === 'مسودة' ? '/submit' : '';
-    const result = await api(_spReceiptApiPath(context,context.manual ? '/submit' : suffix), {method:'PATCH',body:JSON.stringify({amount,method,acknowledgeImageWarning,
+    const result = await api(_spReceiptApiPath(context,context.manual ? '/submit' : suffix), {method:'PATCH',body:JSON.stringify({amount,method,acknowledgeImageWarning,senderName:qs('#spdep-sender-name')?.value || '',senderHandle:qs('#spdep-sender-handle')?.value || '',senderPhone:qs('#spdep-sender-phone')?.value || '',screenshotTime:qs('#spdep-screen-time')?.value || '',
       ...(context.manual ? {total:o.total,confirmed:true} : {})})});
     if (!result.success) throw new Error(t('spDepOrderChanged'));
     Object.assign(r,result.receipt);
@@ -103202,7 +103413,7 @@ async function _spCopyReceiptMessage(btn) {
 }
 
 async function _spReceiptAction(orderId, receiptId, action, btn) {
-  if (btn?.disabled) return;
+  if (btn?.disabled || _spReceiptBusy.has(receiptId)) return;
   const o = _spOrderById(orderId);
   const r = o?.depositReceipts?.find(r=>r.id===receiptId);
   if (!r) return;
@@ -103215,7 +103426,8 @@ async function _spReceiptAction(orderId, receiptId, action, btn) {
     <p id="spdep-error" class="spdep-warning" role="alert" hidden></p><div class="spdep-actions"><button class="btn btn-outline" onclick="closeModal()">${esc(t('spCancelShort'))}</button><button id="spdep-decide" class="btn btn-primary">${esc(label)}</button></div></div>`, 'max-width:540px', {lockDismiss:true});
   qs('#modal-content').classList.add('spdep-modal','spdep-decision-modal');
   qs('#spdep-decide').onclick = async function() {
-    if (this.disabled) return;
+    if (this.disabled || _spReceiptBusy.has(receiptId)) return;
+    _spReceiptBusy.add(receiptId);
     this.disabled = true;
     try {
       const suffix = action === 'withdraw' ? '' : '/' + action;
@@ -103225,7 +103437,7 @@ async function _spReceiptAction(orderId, receiptId, action, btn) {
       toast(t(action === 'approve' ? 'spDepApprovedOk' : 'spDepActionOk'));
       await loadShopifyOrders();
     } catch(e) { _spReceiptError(e); }
-    finally { this.disabled=false; }
+    finally { _spReceiptBusy.delete(receiptId); this.disabled=false; }
   };
 }
 

@@ -267,6 +267,13 @@ export class ShopifyController {
   }
 
   /** The receipt image, streamed from R2. Read through the API so the bucket stays private. */
+  @Get('deposit-receipts/history')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async depositReceiptHistory(@Query() query: Record<string, string>, @Request() req: any) {
+    return this.depositReceipts.history(query, actorOf(req));
+  }
+
   @Get('deposit-receipts/:rid/image')
   @UseGuards(JwtAuthGuard)
   async depositReceiptImage(@Param('rid') rid: string, @Res() res: Response, @Request() req: any) {

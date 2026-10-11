@@ -309,6 +309,7 @@ export class SettingsService {
 
   stripSensitive(doc: SettingsDocument): Record<string, unknown> {
     const obj = doc.toObject() as unknown as Record<string, unknown>;
+    delete obj.vaultReceiptOperations;
     delete obj['vaultPass'];
     // Replace bostaApiKey with a masked flag — never expose raw key to frontend
     obj['bostaApiKeySet'] = !!(obj['bostaApiKey'] as string);
@@ -650,26 +651,39 @@ export class SettingsService {
     amount: number,
   ): Promise<SettingsDocument> {
     const settings = await this.getSettings();
-    switch (segment) {
-      case 'vodafone':
-        settings.vaultVodafone = (settings.vaultVodafone || 0) + amount;
-        break;
-      case 'instapay':
-        settings.vaultInstapay = (settings.vaultInstapay || 0) + amount;
-        break;
-      case 'bank':
-        settings.vaultBank = (settings.vaultBank || 0) + amount;
-        break;
-      default:
-        settings.vaultCash = (settings.vaultCash || 0) + amount;
-        break;
-    }
-    settings.vaultBalance =
-      (settings.vaultCash || 0) +
-      (settings.vaultVodafone || 0) +
-      (settings.vaultInstapay || 0) +
-      (settings.vaultBank || 0);
-    return settings.save();
+    if (!Number.isFinite(amount)) throw new BadRequestException('مبلغ الخزنة غير صالح');
+    const field = ({ vodafone:'vaultVodafone', instapay:'vaultInstapay', bank:'vaultBank' } as Record<string,string>)[segment] || 'vaultCash';
+    const updated = await this.settingsModel.findOneAndUpdate({ _id: settings._id }, [
+      { $set: { [field]: { $add: [{ $ifNull: [`$${field}`, 0] }, amount] } } },
+      { $set: { vaultBalance: { $sum: ['$vaultCash','$vaultVodafone','$vaultInstapay','$vaultBank'] } } },
+    ], { new: true }).exec();
+    if (!updated) throw new BadRequestException('تعذر تحديث رصيد الخزنة');
+    return updated;
+  }
+
+  /** Balance delta and retry marker are committed in the same Mongo document write. */
+  async adjustReceiptVaultBalance(segment: string, amount: number, key: string): Promise<SettingsDocument> {
+    if (!key || !Number.isFinite(amount) || amount === 0) throw new BadRequestException('عملية العربون غير صالحة');
+    const settings = await this.getSettings();
+    const field = ({ vodafone:'vaultVodafone', instapay:'vaultInstapay', bank:'vaultBank' } as Record<string,string>)[segment] || 'vaultCash';
+    const result = await this.settingsModel.findOneAndUpdate({
+      _id: settings._id, vaultReceiptOperations: { $ne: key },
+      ...(amount < 0 ? { [field]: { $gte: -amount } } : {}),
+    }, [
+      { $set: {
+        [field]: { $add: [{ $ifNull: [`$${field}`, 0] }, amount] },
+        vaultReceiptOperations: { $concatArrays: [{ $ifNull: ['$vaultReceiptOperations', []] }, [key]] },
+      } },
+      { $set: { vaultBalance: { $sum: ['$vaultCash','$vaultVodafone','$vaultInstapay','$vaultBank'] } } },
+    ], { new: true }).exec();
+    if (result) return result;
+    const current = await this.settingsModel.findById(settings._id).exec();
+    if (current?.vaultReceiptOperations?.includes(key)) return current;
+    throw new BadRequestException('رصيد الخزنة غير كافٍ لرد العربون');
+  }
+
+  async hasReceiptVaultOperation(key: string): Promise<boolean> {
+    return !!await this.settingsModel.exists({ vaultReceiptOperations:key });
   }
 
   async getDiscountCodes(): Promise<SettingsDocument['discountCodes']> {
@@ -885,6 +899,7 @@ export class SettingsService {
     'expenses',
     'complaints',
     'shopifyorders',
+    'depositreceiptidentities',
     'followups',
     'mentions',
     'tags',
@@ -940,7 +955,7 @@ export class SettingsService {
     const config = { ...raw };
     for (const key of ['_id', '__v', 'createdAt', 'updatedAt', 'vaultPass', 'bostaApiKey',
       'bostaWebhookSecret', 'r2SecretAccessKey', 'vaultBalance', 'vaultCash', 'vaultVodafone',
-      'vaultInstapay', 'vaultBank', 'r2LastRun']) delete config[key];
+      'vaultInstapay', 'vaultBank', 'vaultReceiptOperations', 'r2LastRun']) delete config[key];
     return config;
   }
 
@@ -1028,6 +1043,7 @@ export class SettingsService {
           vaultVodafone: settings?.vaultVodafone || 0,
           vaultInstapay: settings?.vaultInstapay || 0,
           vaultBank: settings?.vaultBank || 0,
+          vaultReceiptOperations: settings?.vaultReceiptOperations || [],
         },
         offers: {
           discountCodes: (settings?.discountCodes as any[]) || [],
@@ -1530,7 +1546,7 @@ export class SettingsService {
         const fixedDocs = (docs as any[]).map((doc: any) => {
           const fixed: any = { ...doc };
           // Convert _id string → ObjectId
-          if (fixed._id) {
+          if (fixed._id && collectionName !== 'depositreceiptidentities') {
             const rawId = typeof fixed._id === 'string' ? fixed._id : fixed._id?.$oid;
             if (rawId) {
               try { fixed._id = new ObjectId(rawId); } catch { delete fixed._id; }
@@ -1584,6 +1600,7 @@ export class SettingsService {
           settings.vaultVodafone = Number(backupData.vault_balances.vaultVodafone) || 0;
           settings.vaultInstapay = Number(backupData.vault_balances.vaultInstapay) || 0;
           settings.vaultBank = Number(backupData.vault_balances.vaultBank) || 0;
+          settings.vaultReceiptOperations = Array.isArray(backupData.vault_balances.vaultReceiptOperations) ? backupData.vault_balances.vaultReceiptOperations.filter((key: unknown) => typeof key === 'string') : [];
           settings.vaultBalance = settings.vaultCash + settings.vaultVodafone + settings.vaultInstapay + settings.vaultBank;
           restoreResults['vault_balances'] = 1;
         }
@@ -1705,7 +1722,7 @@ export class SettingsService {
     customers:      ['clients', 'suppliers', 'purchaseorders', 'supplierreturnorders', 'supplierledgerentries'],
     expenses:       ['expenses'],
     vault:          ['vaultentries', 'vaultbalances'],
-    other:          ['complaints', 'followups', 'tags', 'shopifyorders', 'orderaudits', 'mentions',
+    other:          ['complaints', 'followups', 'tags', 'shopifyorders', 'depositreceiptidentities', 'orderaudits', 'mentions',
                      'drafts', 'discountotps', 'securityauditlogs', 'employeeshifts',
                      'employeeleaves', 'employeeperformancelogs', 'demandanalysislogs', 'users',
                      'knowledgefolders', 'knowledgecards', 'knowledgeauditlogs', 'knowledgeimportlogs'],
@@ -2039,6 +2056,7 @@ export class SettingsService {
             settings.vaultVodafone = Number(backupData.vault_balances.vaultVodafone) || 0;
             settings.vaultInstapay = Number(backupData.vault_balances.vaultInstapay) || 0;
             settings.vaultBank = Number(backupData.vault_balances.vaultBank) || 0;
+            settings.vaultReceiptOperations = Array.isArray(backupData.vault_balances.vaultReceiptOperations) ? backupData.vault_balances.vaultReceiptOperations.filter((key: unknown) => typeof key === 'string') : [];
             settings.vaultBalance = settings.vaultCash + settings.vaultVodafone + settings.vaultInstapay + settings.vaultBank;
             await settings.save();
             restoreResults['vault_balances'] = 1;
@@ -2082,7 +2100,7 @@ export class SettingsService {
           if (docs.length > 0) {
             const fixedDocs = docs.map((doc: any) => {
               const fixed: any = { ...doc };
-              if (fixed._id) {
+              if (fixed._id && col !== 'depositreceiptidentities') {
                 const rawId = typeof fixed._id === 'string' ? fixed._id : fixed._id?.$oid;
                 if (rawId) { try { fixed._id = new ObjectId(rawId); } catch { delete fixed._id; } }
               }

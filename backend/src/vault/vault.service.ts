@@ -242,6 +242,7 @@ export class VaultService {
     if (!id || !isValidObjectId(id)) return false;
     const entry = await this.vaultModel.findById(id).exec();
     if (!entry) return false;
+    this.assertReceiptEntryLocked(entry);
     const seg = entry.seg || resolveVaultSegmentFromPaymentMethod(entry.method || 'كاش');
     await this.settingsService.adjustVaultBalance(seg, -entry.amount);
     await entry.deleteOne();
@@ -280,6 +281,9 @@ export class VaultService {
     employee = '',
     meta?: Record<string, unknown>,
   ): Promise<VaultEntryDocument> {
+    if (typeof meta?.receiptId === 'string' && meta.receiptId) {
+      return this.addReceiptEntry(amount, method, desc, date, source, ref, entityContext, employee, meta);
+    }
     const seg = resolveVaultSegmentFromPaymentMethod(method);
     // Block any deduction if balance is insufficient
     if (amount < 0) {
@@ -355,6 +359,57 @@ export class VaultService {
     return created;
   }
 
+  private async addReceiptEntry(amount: number, method: string, desc: string, date: string, source: string,
+    ref: string, context: { customer?: string; supplier?: string; category?: string; itemCount?: number } | undefined,
+    employee: string, meta: Record<string, unknown>): Promise<VaultEntryDocument> {
+    if (!Number.isFinite(amount) || amount === 0) throw new BadRequestException('مبلغ العربون غير صالح');
+    const key = `receipt:${meta.receiptId}:${amount > 0 ? 'approve' : 'refund'}`;
+    const seg = resolveVaultSegmentFromPaymentMethod(method);
+    let entry = await this.vaultModel.findOne({ idempotencyKey: key }).exec();
+    if (!entry) {
+      const texts = generateVaultTexts(amount, method, desc, source, ref, context);
+      try {
+        entry = await this.vaultModel.create({ idempotencyKey:key, date, desc:texts.desc, amount, seg, method,
+          source, ref, employee, txNo:await this.generateTxNo(source), status:'pending', transactionType:source,
+          accountingJustification:texts.justification, entityLabel:context?.customer || context?.supplier || '',
+        });
+      } catch (error) {
+        if ((error as any)?.code !== 11000) throw error;
+        entry = await this.vaultModel.findOne({ idempotencyKey:key }).exec();
+        if (!entry) throw error;
+      }
+    }
+    if (entry.amount !== amount || entry.method !== method || entry.ref !== ref || entry.source !== source) {
+      throw new BadRequestException('تم تسجيل عملية لهذا الإيصال ببيانات مختلفة — لا يمكن تغيير المبلغ أو الخزنة أثناء إعادة المحاولة');
+    }
+    if (entry.status === 'completed') return entry;
+    if (entry.status !== 'pending') throw new BadRequestException('عملية العربون موقوفة — راجع سجل الخزنة');
+    const settings = await this.settingsService.adjustReceiptVaultBalance(seg, amount, key);
+    const completed = await this.vaultModel.findOneAndUpdate({ _id:entry._id, status:'pending' }, { $set: {
+      status:'completed', balCash:settings.vaultCash, balVodafone:settings.vaultVodafone,
+      balInstapay:settings.vaultInstapay, balBank:settings.vaultBank, balance:settings.vaultBalance,
+    } }, { new:true }).exec();
+    const saved = completed || await this.vaultModel.findById(entry._id).exec();
+    if (!saved || saved.status !== 'completed') throw new BadRequestException('تسجيل العربون لم يكتمل — أعد المحاولة');
+    if (completed) this.emit('vault:changed', { reason:'receipt', amount, seg, source, ref, txNo:saved.txNo, ...meta });
+    return saved;
+  }
+
+  async receiptOperationApplied(receiptId: string, operation: 'approve' | 'refund'): Promise<boolean> {
+    return this.settingsService.hasReceiptVaultOperation(`receipt:${receiptId}:${operation}`);
+  }
+
+  async receiptOperationStarted(receiptId: string, operation: 'approve' | 'refund'): Promise<boolean> {
+    return !!await this.vaultModel.exists({ idempotencyKey: `receipt:${receiptId}:${operation}` })
+      || await this.receiptOperationApplied(receiptId, operation);
+  }
+
+  private assertReceiptEntryLocked(entry: VaultEntryDocument): void {
+    if (entry.idempotencyKey?.startsWith('receipt:')) {
+      throw new BadRequestException('حركة عربون مرتبطة بإيصال — استخدم إجراءات العربون في الطلب لضمان عدم تكرار الأموال');
+    }
+  }
+
   async getById(id: string): Promise<VaultEntryDocument> {
     const entry = await this.vaultModel.findById(id).exec();
     if (!entry) throw new NotFoundException('المعاملة غير موجودة');
@@ -363,6 +418,7 @@ export class VaultService {
 
   async updateEntry(id: string, dto: UpdateVaultEntryDto, editor: string): Promise<VaultEntryDocument> {
     const entry = await this.getById(id);
+    this.assertReceiptEntryLocked(entry);
     const changes: Record<string, { oldValue: unknown; newValue: unknown }> = {};
 
     // Track changes
@@ -416,6 +472,7 @@ export class VaultService {
 
   async freezeEntry(id: string, reason: string, freezer: string): Promise<VaultEntryDocument> {
     const entry = await this.getById(id);
+    this.assertReceiptEntryLocked(entry);
     if (entry.status === 'frozen') throw new BadRequestException('المعاملة مجمدة بالفعل');
     if (entry.status === 'cancelled') throw new BadRequestException('لا يمكن تجميد معاملة ملغاة');
 
@@ -447,6 +504,7 @@ export class VaultService {
 
   async unfreezeEntry(id: string, unfreezer: string): Promise<VaultEntryDocument> {
     const entry = await this.getById(id);
+    this.assertReceiptEntryLocked(entry);
     if (entry.status !== 'frozen') throw new BadRequestException('المعاملة ليست مجمدة');
 
     // Check if the entry was 'completed' when it was frozen (by looking at editHistory)
@@ -489,6 +547,7 @@ export class VaultService {
 
   async cancelEntry(id: string, canceller: string, reason?: string): Promise<VaultEntryDocument> {
     const entry = await this.getById(id);
+    this.assertReceiptEntryLocked(entry);
     if (entry.status === 'cancelled') throw new BadRequestException('المعاملة ملغاة بالفعل');
 
     const oldStatus = entry.status;

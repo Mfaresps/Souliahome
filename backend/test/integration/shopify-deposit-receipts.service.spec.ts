@@ -42,6 +42,10 @@ const { TransactionSchema } = require('../../src/transactions/schemas/transactio
 const { DepositReceiptsService } = require('../../src/shopify/deposit-receipts.service');
 const { ManualDepositReceiptSchema } = require('../../src/shopify/schemas/manual-deposit-receipt.schema');
 const ShopifyService = () => require('../../src/shopify/shopify.service').ShopifyService;
+const { SettingsSchema } = require('../../src/settings/schemas/settings.schema');
+const { SettingsService } = require('../../src/settings/settings.service');
+const { VaultEntrySchema } = require('../../src/vault/schemas/vault-entry.schema');
+const { VaultService } = require('../../src/vault/vault.service');
 /* eslint-enable @typescript-eslint/no-var-requires */
 
 const URI = process.env.TEST_MONGODB_URI || `mongodb://localhost:27017/soulia_test_deposit_receipts_${process.pid}_${Date.now()}`;
@@ -59,6 +63,8 @@ let conn: Connection;
 let orderModel: Model<any>;
 let txModel: Model<any>;
 let manualModel: Model<any>;
+let settingsModel: Model<any>;
+let vaultModel: Model<any>;
 
 /** A vault with real per-segment balances, so an overdraw on refund fails like the real one. */
 function makeVault() {
@@ -136,7 +142,7 @@ async function newOrder(over: Record<string, unknown> = {}) {
   });
 }
 
-const img = () => ({ buffer: Buffer.from('jpeg-bytes'), mimetype: 'image/jpeg', size: 10 });
+const img = () => ({ buffer: Buffer.from(`jpeg-bytes-${++seq}`), mimetype: 'image/jpeg', size: 10 });
 
 /** upload + submit in one step. */
 async function addPending(receipts: any, orderId: string, amount: number, method: string, actor = STAFF) {
@@ -147,12 +153,147 @@ async function addPending(receipts: any, orderId: string, amount: number, method
 
 const fresh = (id: string) => orderModel.findById(id).lean().exec() as Promise<any>;
 
+async function secureSetup() {
+  await settingsModel.deleteMany({});
+  await vaultModel.deleteMany({});
+  await settingsModel.create({ vaultCash:0, vaultInstapay:0, vaultVodafone:0, vaultBank:0 });
+  const settings = Object.create(SettingsService.prototype);
+  settings.settingsModel = settingsModel;
+  settings.getSettings = () => settingsModel.findOne().exec();
+  const vault = Object.create(VaultService.prototype);
+  vault.settingsService = settings;
+  vault.vaultModel = vaultModel;
+  vault.presence = { emitEvent:jest.fn() };
+  vault.generateTxNo = async () => `SEC-${++seq}`;
+  const fixture = setup();
+  fixture.receipts.vaultService = vault;
+  return { ...fixture, vault, settings };
+}
+
+describe('deposit security with real Mongo balances and ledger', () => {
+  it('credits and refunds only once under 30 simultaneous calls each', async () => {
+    const { vault, settings } = await secureSetup();
+    const credit = () => vault.addSystemEntry(500, 'Instapay', 'deposit', '2026-10-11', 'ديبوزت مبيعات', '8000', {}, 'staff', {receiptId:'stress-a'});
+    const entries = await Promise.all(Array.from({length:30}, credit));
+    expect(new Set(entries.map(e=>String(e._id))).size).toBe(1);
+    expect(await vaultModel.countDocuments()).toBe(1);
+    expect((await settings.getSettings()).vaultInstapay).toBe(500);
+    await Promise.all(Array.from({length:30}, () => vault.addSystemEntry(-500,'Instapay','refund','2026-10-11','إلغاء','8000',{},'admin',{receiptId:'stress-a'})));
+    expect(await vaultModel.countDocuments()).toBe(2);
+    expect((await settings.getSettings()).vaultInstapay).toBe(0);
+    expect((await settings.getSettings()).vaultBalance).toBe(0);
+  });
+
+  it('does not lose balances when different deposits arrive together', async () => {
+    const { vault, settings } = await secureSetup();
+    await Promise.all(Array.from({length:30}, (_,i)=>vault.addSystemEntry(10,'Instapay','deposit','2026-10-11','ديبوزت مبيعات',`${i}`,{},'staff',{receiptId:`different-${i}`})));
+    expect((await settings.getSettings()).vaultInstapay).toBe(300);
+    expect(await vaultModel.countDocuments()).toBe(30);
+    await Promise.all(Array.from({length:30}, ()=>settings.adjustVaultBalance('cash',10)));
+    expect((await settings.getSettings()).vaultBalance).toBe(600);
+  });
+
+  it('recovers approval after a balance write succeeds but ledger completion fails', async () => {
+    const { receipts, vault, settings } = await secureSetup();
+    const o=await newOrder(); const id=await addPending(receipts,String(o._id),500,'Instapay');
+    const failed=jest.spyOn(vaultModel,'findOneAndUpdate').mockImplementationOnce(() => ({exec:async()=>{throw new Error('connection lost after balance');}}) as any);
+    await expect(receipts.approve(String(o._id),id,ADMIN)).rejects.toThrow('connection lost');
+    failed.mockRestore();
+    expect((await settings.getSettings()).vaultInstapay).toBe(500);
+    expect((await fresh(String(o._id))).depositReceipts[0].status).toBe('معتمد');
+    await expect(receipts.approve(String(o._id),id,ADMIN)).rejects.toThrow(BadRequestException);
+    await orderModel.updateOne({_id:o._id,'depositReceipts.id':id},{$set:{'depositReceipts.$.reviewedAt':'2020-01-01T00:00:00.000Z'}});
+    await receipts.approve(String(o._id),id,ADMIN);
+    expect((await fresh(String(o._id))).depositReceipts[0].vaultEntryId).toBeTruthy();
+    expect((await settings.getSettings()).vaultInstapay).toBe(500);
+    expect(await vaultModel.countDocuments()).toBe(1);
+    await expect(vault.addSystemEntry(501,'Instapay','changed','2026-10-11','ديبوزت مبيعات',o.ref,{},'staff',{receiptId:id})).rejects.toThrow(BadRequestException);
+  });
+
+  it('recovers a refund without a second deduction after completion fails', async () => {
+    const { receipts, settings } = await secureSetup();
+    const o=await newOrder(); const id=await addPending(receipts,String(o._id),500,'Instapay');
+    await receipts.approve(String(o._id),id,ADMIN);
+    const failed=jest.spyOn(vaultModel,'findOneAndUpdate').mockImplementationOnce(() => ({exec:async()=>{throw new Error('lost refund response');}}) as any);
+    await expect(receipts.refundApproved(String(o._id),id,ADMIN)).rejects.toThrow('lost refund');
+    failed.mockRestore();
+    expect((await settings.getSettings()).vaultInstapay).toBe(0);
+    expect((await fresh(String(o._id))).depositReceipts[0].status).toBe('مُسترد');
+    await orderModel.updateOne({_id:o._id,'depositReceipts.id':id},{$set:{'depositReceipts.$.refundedAt':'2020-01-01T00:00:00.000Z'}});
+    await receipts.refundApproved(String(o._id),id,ADMIN);
+    expect((await settings.getSettings()).vaultInstapay).toBe(0);
+    expect(await vaultModel.countDocuments()).toBe(2);
+    await expect(receipts.refundApproved(String(o._id),id,ADMIN)).rejects.toThrow(BadRequestException);
+  });
+
+  it('prevents simultaneous refunds from overdrawing a vault', async () => {
+    const { vault, settings } = await secureSetup();
+    await settings.adjustVaultBalance('instapay',500);
+    const results=await Promise.allSettled(['refund-a','refund-b'].map(receiptId=>vault.addSystemEntry(-500,'Instapay','refund','2026-10-11','إلغاء','8001',{},'admin',{receiptId})));
+    expect(results.filter(r=>r.status==='fulfilled')).toHaveLength(1);
+    expect((await settings.getSettings()).vaultInstapay).toBe(0);
+  });
+
+  it('blocks direct editing, freezing, and cancellation of linked receipt ledger entries', async () => {
+    const { vault } = await secureSetup();
+    const e=await vault.addSystemEntry(500,'Instapay','deposit','2026-10-11','ديبوزت مبيعات','8002',{},'staff',{receiptId:'locked-entry'});
+    await expect(vault.updateEntry(String(e._id),{amount:999},'admin')).rejects.toThrow(BadRequestException);
+    await expect(vault.freezeEntry(String(e._id),'reason','admin')).rejects.toThrow(BadRequestException);
+    await expect(vault.cancelEntry(String(e._id),'admin')).rejects.toThrow(BadRequestException);
+  });
+
+  it('blocks the same original screenshot concurrently across Shopify and manual orders', async () => {
+    const { receipts }=setup(); const o=await newOrder(); const file=img();
+    const results=await Promise.allSettled([
+      receipts.uploadDraft(String(o._id),file,STAFF), receipts.scanManualReceipt({},file,OTHER),
+    ]);
+    expect(results.filter(r=>r.status==='fulfilled')).toHaveLength(1);
+    expect(results.filter(r=>r.status==='rejected')).toHaveLength(1);
+  });
+
+  it('keeps a screenshot blocked after withdrawal and deletion of its stored image', async () => {
+    const { receipts }=setup(); const o=await newOrder(); const file=img();
+    const {receipt}=await receipts.uploadDraft(String(o._id),file,STAFF);
+    await receipts.withdraw(String(o._id),receipt.id,STAFF);
+    await expect(receipts.uploadDraft(String(o._id),file,OTHER)).rejects.toThrow(BadRequestException);
+  });
+
+  it('restricts history to admins and preserves registered sender details after withdrawal', async () => {
+    const { receipts }=setup(); const o=await newOrder();
+    const {receipt}=await receipts.uploadDraft(String(o._id),img(),STAFF);
+    await receipts.submit(String(o._id),receipt.id,{amount:500,method:'Instapay',senderName:'Sender',senderHandle:'sender@instapay',senderPhone:'+20 1021646494'},STAFF);
+    await expect(receipts.history({},STAFF)).rejects.toThrow(ForbiddenException);
+    expect((await receipts.history({sender:'sender@',method:'Instapay'},ADMIN)).rows[0]).toMatchObject({id:receipt.id,status:'معلق',senderName:'Sender'});
+    expect((await receipts.history({sender:'01021646494'},ADMIN)).rows[0]).toMatchObject({senderPhone:'01021646494'});
+    await receipts.withdraw(String(o._id),receipt.id,STAFF);
+    const result=await receipts.history({},ADMIN);
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]).toMatchObject({id:receipt.id,status:'مسحوب',imageDeleted:true,amount:500,submittedBy:STAFF.name});
+    expect((await fresh(String(o._id))).depositReceipts[0].status).toBe('مسحوب');
+  });
+
+  it('blocks the same OCR transfer reference in different images during concurrent submission', async () => {
+    const { receipts }=setup({reference:`unique-transfer-${++seq}`});
+    const a=await newOrder(); const b=await newOrder();
+    const ra=(await receipts.uploadDraft(String(a._id),img(),STAFF)).receipt;
+    const rb=(await receipts.uploadDraft(String(b._id),img(),OTHER)).receipt;
+    const results=await Promise.allSettled([
+      receipts.submit(String(a._id),ra.id,{amount:500,method:'Instapay'},STAFF),
+      receipts.submit(String(b._id),rb.id,{amount:500,method:'Instapay'},OTHER),
+    ]);
+    expect(results.filter(r=>r.status==='fulfilled')).toHaveLength(1);
+  });
+});
+
 beforeAll(async () => {
   conn = await mongoose.createConnection(URI, { serverSelectionTimeoutMS: 3000 }).asPromise();
   orderModel = conn.model('ShopifyOrder', ShopifyOrderSchema);
   txModel = conn.model('Transaction', TransactionSchema);
   manualModel = conn.model('ManualDepositReceipt', ManualDepositReceiptSchema);
   await conn.dropDatabase();
+  settingsModel = conn.model('Settings', SettingsSchema);
+  vaultModel = conn.model('VaultEntry', VaultEntrySchema);
+  await vaultModel.init();
 });
 
 afterAll(async () => {
@@ -162,7 +303,10 @@ afterAll(async () => {
   }
 });
 
-beforeEach(async () => { mockR2.clear(); await manualModel.deleteMany({}); });
+beforeEach(async () => {
+  mockR2.clear();
+  await Promise.all([manualModel.deleteMany({}), orderModel.deleteMany({}), txModel.deleteMany({}), conn.collection('depositreceiptidentities').deleteMany({})]);
+});
 
 async function confirmedManual(receipts: any, ref: string, client = '') {
   const { receipt } = await receipts.scanManualReceipt({ ref, client }, img(), STAFF);
@@ -338,15 +482,14 @@ describe('receipt races and access', () => {
     expect(rows).toHaveLength(3);
   });
 
-  it('rechecks duplicate images at submission, even when both uploads preceded submission', async () => {
+  it('blocks duplicate images before submission, including drafts', async () => {
     const { receipts, ocr } = setup();
     ocr.prepareForStorage.mockImplementation(async()=>Buffer.from('same-image'));
     const o1=await newOrder(); const o2=await newOrder();
     const a=(await receipts.uploadDraft(String(o1._id),img(),STAFF)).receipt;
-    const b=(await receipts.uploadDraft(String(o2._id),img(),OTHER)).receipt;
     await receipts.submit(String(o1._id),a.id,{amount:500,method:W},STAFF);
-    await receipts.submit(String(o2._id),b.id,{amount:500,method:W},OTHER);
-    expect((await fresh(String(o2._id))).depositReceipts[0].warnings).toEqual([{code:'same-image',orderRef:o1.ref}]);
+    await expect(receipts.uploadDraft(String(o2._id),img(),OTHER)).rejects.toThrow(BadRequestException);
+    expect((await fresh(String(o2._id))).depositReceipts).toHaveLength(0);
   });
 
   it('submitting the same draft twice creates only one pending claim', async () => {
@@ -524,14 +667,13 @@ describe('employee side — upload and submit', () => {
     expect(mockR2.has(receipt.imageKey)).toBe(false);
   });
 
-  it('warns when the same image is used on two orders', async () => {
+  it('rejects the same image on two orders', async () => {
     const { receipts, ocr } = setup();
     ocr.prepareForStorage.mockImplementation(async () => Buffer.from('identical-image'));
     const o1 = await newOrder();
     const o2 = await newOrder();
     await addPending(receipts, String(o1._id), 200, W);
-    const { receipt } = await receipts.uploadDraft(String(o2._id), img(), STAFF);
-    expect(receipt.warnings).toEqual([{ code: 'same-image', orderRef: o1.ref }]);
+    await expect(receipts.uploadDraft(String(o2._id), img(), STAFF)).rejects.toThrow(BadRequestException);
   });
 });
 

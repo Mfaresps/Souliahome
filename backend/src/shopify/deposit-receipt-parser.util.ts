@@ -20,11 +20,15 @@
  *                  told, the method is left blank.
  */
 import { toLatinDigits } from '../shared/digits.util';
+import { normalizeReceiptPhone } from './receipt-phone.util';
 
 export type ReceiptVault = '' | 'Instapay' | 'فودافون كاش';
 export type ReceiptPattern = '' | 'instapay' | 'wallet-app' | 'ussd';
 
 export interface ParsedReceipt {
+  senderPhone?: string;
+  senderName?: string;
+  senderHandle?: string;
   amount: number | null;
   method: ReceiptVault;
   pattern: ReceiptPattern;
@@ -203,6 +207,32 @@ function dateTextOf(lines: string[]): string {
   return l ? l.slice(0, 48) : '';
 }
 
+/** Only read the sender inside an explicit From section; never guess from the recipient or chat. */
+function senderOf(text: string): { senderName?: string; senderHandle?: string; senderPhone?: string } {
+  const lines = text.split('\n').map(s => s.trim()).filter(Boolean);
+  const label = /^(?:from|من)(?:\s*[:：]\s*|\s+|$)/i;
+  const reverseLabel = /\s+(?:from|من)\s*[:：]?$/i;
+  const index = lines.findIndex(s => label.test(s) || reverseLabel.test(s));
+  if (index < 0) return {};
+  const anchor = lines[index].replace(label, '').replace(reverseLabel, '').trim();
+  const before = lines[index - 1] || '';
+  // RTL OCR can put the number before its standalone label. Keep that row alone.
+  const precedingPhone = !anchor && normalizeReceiptPhone(before);
+  let section = precedingPhone ? before : anchor;
+  if (!precedingPhone) {
+    for (let i = index + 1; i < Math.min(lines.length, index + 5); i++) {
+      if (/^(?:to\b|إلى|الى|إلي|الي|account\b|الحساب|حالة العملية|تاريخ العملية|الرسوم)/i.test(lines[i]) || /\s+(?:to|إلى|الى|إلي|الي)\s*$/i.test(lines[i])) break;
+      section += '\n' + lines[i];
+    }
+  }
+  const senderHandle = section.match(/[a-z0-9._+-]+\s*@\s*instapay\b/i)?.[0].replace(/\s/g, '').toLowerCase();
+  const phones = [...new Set((section.match(/(?:\+20|0020|20|0)[\s-]*1[0125](?:[\s-]*\d){8}(?!\d)/g) || []).map(normalizeReceiptPhone).filter(Boolean))];
+  if (phones.length > 1) return {};
+  const senderPhone = phones.length === 1 ? phones[0] : '';
+  const senderName = section.split('\n').map(s => s.trim()).find(s => s && !/@|\baccount\b|الحساب|vodafone|فودافون|^[\d\s*+()\-]+$/i.test(s) && /[a-z\u0600-\u06ff]/i.test(s));
+  return { ...(senderName ? { senderName: senderName.slice(0, 120) } : {}), ...(senderHandle ? { senderHandle } : {}), ...(senderPhone ? { senderPhone } : {}) };
+}
+
 /** Parses one OCR pass. */
 export function parseReceiptText(rawText: string, walletLayout = false): ParsedReceipt {
   const text = normalizeOcrText(rawText);
@@ -215,6 +245,7 @@ export function parseReceiptText(rawText: string, walletLayout = false): ParsedR
     amount,
     method,
     pattern,
+    ...senderOf(text),
     reference: referenceOf(text),
     dateText: dateTextOf(lines),
     confident: amount != null && method !== '',
@@ -242,5 +273,10 @@ export function mergeReceiptPasses(passes: ParsedReceipt[]): ParsedReceipt {
   const pattern = (passes.find((p) => p.pattern)?.pattern || '') as ReceiptPattern;
   const reference = passes.find((p) => p.reference)?.reference || '';
   const dateText = passes.find((p) => p.dateText)?.dateText || '';
-  return { amount, method, pattern, reference, dateText, confident: amount != null && method !== '' };
+  const senders: any = {};
+  for (const field of ['senderName', 'senderHandle', 'senderPhone'] as const) {
+    const values = [...new Set(passes.map(p => p[field]).filter(Boolean))];
+    if (values.length === 1) senders[field] = values[0];
+  }
+  return { amount, method, pattern, reference, dateText, ...senders, confident: amount != null && method !== '' };
 }
