@@ -1301,6 +1301,7 @@ body.dark-mode .pm-desc-lang-btn.is-on{color:var(--bg)}
 .pm-sel-btn:focus-visible{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-pale)}
 .pm-sel.is-open .pm-sel-btn{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-pale)}
 .pm-sel-btn[disabled]{opacity:.55;cursor:not-allowed;background:var(--bg-alt)}
+#tx-fields .pm-sel-btn{min-height:44px;padding:10px 12px;font-size:.875rem}
 .pm-sel-txt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pm-sel-txt.is-empty{color:var(--muted)}
 .pm-sel-caret{flex-shrink:0;width:14px;height:14px;color:var(--muted);transition:transform .18s ease}
@@ -1327,6 +1328,7 @@ body.dark-mode .pm-sel-panel{background:var(--surface);box-shadow:0 12px 40px rg
 .pm-sel-opt:hover,.pm-sel-opt.is-active{background:var(--primary-pale)}
 .pm-sel-opt.is-selected{color:var(--primary);font-weight:600}
 .pm-sel-opt.is-placeholder{color:var(--muted)}
+.pm-sel-opt:disabled{opacity:.45;cursor:not-allowed}
 .pm-sel-optlbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pm-sel-empty{padding:10px;font-size:.76rem;color:var(--muted);text-align:center}
 /* أيقونة الخامة: تُرسم بـ currentColor فترث لون النص والوضع الليلي وحالة الاختيار تلقائياً. */
@@ -41110,10 +41112,15 @@ function renderTxFields() {
         <input type="text" id="tx-emp" value="${esc(currentUser?.name || '')}" readonly style="background:transparent;border-color:var(--border);cursor:default;color:var(--muted);font-size:.83rem">
       </div>`;
   }
+  if (_pmSelOpen?.sel.closest('#tx-fields')) _pmSelClose();
   qs('#tx-fields').innerHTML = html;
   // The markup above carries data-i18n labels, but applyLang()'s document sweep already
   // ran before this render — re-apply them scoped to the subtree we just injected.
   applyLangIn(qs('#tx-fields'));
+  if (txType === 'مشتريات') {
+    qs('#tx-supplier').dataset.searchable = 'true';
+    _pmEnhanceSelects(qs('#tx-fields'));
+  }
   if (txType === 'مبيعات') {
     renderDepMethodBtns();
     _applyDefaultDepMethod();
@@ -50901,7 +50908,7 @@ function _onNewSupplierChange(sel) {
   const opt = sel.options[sel.selectedIndex];
   const phone = opt ? (opt.dataset.phone || '') : '';
   const ph = qs('#tx-phone');
-  if (ph && phone) ph.value = phone;
+  if (ph) ph.value = phone;
   const err = qs('#err-supplier');
   if (err) err.textContent = '';
   _refreshTxSupplierCredit(sel.value);
@@ -63120,18 +63127,30 @@ function _pmEnhanceSelects(root) {
        built a SECOND, full-width .pm-sel trigger under the real .fsel row — the
        duplicated filter bar on #page-complaints. .fsel owns them; skip. */
     if (sel.closest('.fsel') || sel.dataset.fselReady === '1') return;
+    if (sel.hidden || sel.style.display === 'none') return;
     const wrap = document.createElement('div');
     wrap.className = 'pm-sel';
     sel.parentNode.insertBefore(wrap, sel);
     wrap.appendChild(sel);
+    sel.tabIndex = -1;
+    sel.setAttribute('aria-hidden', 'true');
 
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'pm-sel-btn';
+    btn.setAttribute('aria-haspopup', 'listbox');
+    btn.setAttribute('aria-expanded', 'false');
+    const label = wrap.parentElement?.querySelector('label');
+    if (label) btn.setAttribute('aria-label', label.textContent.trim());
     btn.innerHTML = '<span class="pm-sel-txt"></span>'
       + '<svg class="pm-sel-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
       + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
     btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); _pmSelToggle(wrap); });
+    btn.addEventListener('keydown', e => {
+      if (!_pmSelOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        e.preventDefault(); e.stopPropagation(); _pmSelToggle(wrap);
+      }
+    });
     wrap.appendChild(btn);
 
     // تغييرات برمجية على الـ <select> (مثل إعادة تعبئة المجموعات) تُحدّث الزر تلقائياً.
@@ -63194,11 +63213,12 @@ function _pmSelOpen1(wrap) {
 
   const panel = document.createElement('div');
   panel.className = 'pm-sel-panel';
+  panel.setAttribute('role', 'listbox');
   // عجلة الفأرة فوق اللوحة تُمرّر القائمة فقط ولا تصل للمودال خلفها — وإلا تحرّك
   // المودال تحتها فابتعد الزر عن اللوحة (overscroll-behavior وحده لا يكفي في كل المتصفحات).
   panel.addEventListener('wheel', e => e.stopPropagation(), { passive: true });
   // البحث يظهر فقط للقوائم الطويلة — لا معنى له مع ٣ خيارات.
-  const searchable = sel.options.length > 8;
+  const searchable = sel.dataset.searchable === 'true' || sel.options.length > 8;
   if (searchable) {
     const inp = document.createElement('input');
     inp.type = 'text';
@@ -63206,7 +63226,6 @@ function _pmSelOpen1(wrap) {
     // The Arabic value starts with "بحث" so it inherits the global small-font search rule.
     inp.placeholder = t('csSearchPlaceholder');
     inp.addEventListener('input', () => _pmSelFilter(panel, inp.value));
-    inp.addEventListener('keydown', e => _pmSelKeyNav(e, panel, sel, wrap));
     panel.appendChild(inp);
   }
   const list = document.createElement('div');
@@ -63227,6 +63246,9 @@ function _pmSelOpen1(wrap) {
       b.textContent = optLabel;
     }
     b.dataset.idx = String(i);
+    b.disabled = o.disabled || !!o.parentElement?.disabled;
+    b.setAttribute('role', 'option');
+    b.setAttribute('aria-selected', String(i === sel.selectedIndex));
     b.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();
       _pmSelPick(wrap, i);
@@ -63238,6 +63260,7 @@ function _pmSelOpen1(wrap) {
 
   _pmSelPosition(panel, btn);
   wrap.classList.add('is-open');
+  btn.setAttribute('aria-expanded', 'true');
   requestAnimationFrame(() => panel.classList.add('show'));
 
   const onDoc = e => { if (!panel.contains(e.target) && !wrap.contains(e.target)) _pmSelClose(); };
@@ -63253,7 +63276,7 @@ function _pmSelOpen1(wrap) {
     if (r.bottom < 0 || r.top > window.innerHeight) { _pmSelClose(); return; }
     _pmSelPosition(panel, btn);
   };
-  setTimeout(() => document.addEventListener('mousedown', onDoc), 0);
+  document.addEventListener('mousedown', onDoc);
   document.addEventListener('keydown', onKey);
   window.addEventListener('resize', onScroll);
   document.addEventListener('scroll', onScroll, true);
@@ -63268,7 +63291,7 @@ function _pmSelOpen1(wrap) {
   const sea = panel.querySelector('.pm-sel-search');
   if (sea) sea.focus();
   const cur = list.querySelector('.is-selected');
-  if (cur) cur.scrollIntoView({ block: 'nearest' });
+  if (cur && !cur.disabled) { cur.classList.add('is-active'); cur.scrollIntoView({ block: 'nearest' }); }
 }
 
 /** يضع اللوحة تحت الزر، أو فوقه إن ضاقت المساحة أسفل الشاشة. */
@@ -63292,9 +63315,12 @@ function _pmSelPosition(panel, btn) {
 function _pmSelPick(wrap, idx) {
   const sel = wrap.querySelector('select');
   if (!sel) return;
+  const option = sel.options[idx];
+  if (sel.disabled || !option || option.disabled || option.parentElement?.disabled) return;
   sel.selectedIndex = idx;
   _pmSelClose();
   _pmSelSyncBtn(wrap);
+  wrap.querySelector('.pm-sel-btn')?.focus();
   sel.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
@@ -63306,6 +63332,7 @@ function _pmSelFilter(panel, q) {
   qsa('.pm-sel-opt', list).forEach(o => {
     const hit = !needle || o.textContent.toLowerCase().includes(needle);
     o.style.display = hit ? '' : 'none';
+    o.classList.remove('is-active');
     if (hit) shown++;
   });
   let empty = panel.querySelector('.pm-sel-empty');
@@ -63319,8 +63346,9 @@ function _pmSelFilter(panel, q) {
 
 /** تنقل بالكيبورد: أسهم/Enter/Escape داخل اللوحة المفتوحة. */
 function _pmSelKeyNav(e, panel, sel, wrap) {
+  if (e.key === 'Tab') { _pmSelClose(); return; }
   if (e.key === 'Escape') { e.preventDefault(); _pmSelClose(); wrap.querySelector('.pm-sel-btn')?.focus(); return; }
-  const opts = qsa('.pm-sel-opt', panel).filter(o => o.style.display !== 'none');
+  const opts = qsa('.pm-sel-opt', panel).filter(o => o.style.display !== 'none' && !o.disabled);
   if (!opts.length) return;
   const cur = opts.findIndex(o => o.classList.contains('is-active'));
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -63345,6 +63373,7 @@ function _pmSelClose() {
   _pmSelOpen = null;
   cleanup();
   wrap.classList.remove('is-open');
+  wrap.querySelector('.pm-sel-btn')?.setAttribute('aria-expanded', 'false');
   panel.classList.remove('show');
   setTimeout(() => panel.remove(), 180);
 }
@@ -100157,7 +100186,7 @@ function _spPhoneDisplay(raw) {
   return /^01\d{9}$/.test(d) ? `${d.slice(0, 3)} ${d.slice(3, 7)} ${d.slice(7)}` : String(raw || '').trim();
 }
 
-/** Relative time today, calendar-day labels with a 12-hour clock for older orders. */
+/** Recent minutes stay relative across midnight; older orders use calendar labels. */
 function _spOrderTimeLabel(v, nowMs = Date.now()) {
   const d = new Date(v);
   if (!v || !Number.isFinite(d.getTime())) return '';
@@ -100166,18 +100195,23 @@ function _spOrderTimeLabel(v, nowMs = Date.now()) {
   const locale = en ? 'en-US' : 'ar-EG-u-nu-latn';
   const sameDay = d.toDateString() === now.toDateString();
   const diff = nowMs - d.getTime();
-  if (sameDay && diff >= 0) {
+  if (diff >= 0 && (diff < 3600000 || sameDay)) {
     if (diff < 60000) return en ? 'Just now' : 'الآن';
     const mins = Math.floor(diff / 60000);
     const amount = mins < 60 ? mins : Math.floor(mins / 60);
-    return new Intl.RelativeTimeFormat(locale, { numeric: 'always' }).format(-amount, mins < 60 ? 'minute' : 'hour');
+    const relative = new Intl.RelativeTimeFormat(locale, { numeric: 'always' }).format(-amount, mins < 60 ? 'minute' : 'hour');
+    return en ? relative : relative.replace(/^قبل /, 'منذ ');
   }
   const hm = d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
+  const weekStart = new Date(now);
+  weekStart.setDate(weekStart.getDate() - 6);
+  weekStart.setHours(0, 0, 0, 0);
   const day = d.toDateString() === yesterday.toDateString()
     ? (en ? 'Yesterday' : 'أمس')
     : sameDay ? (en ? 'Today' : 'اليوم')
+    : diff >= 0 && d >= weekStart ? d.toLocaleDateString(locale, { weekday: 'long' })
     : d.toLocaleDateString(en ? 'en-GB' : locale, { day: 'numeric', month: 'short', ...(d.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}) });
   return en ? `${day} at ${hm}` : `${day} الساعة ${hm}`;
 }
@@ -100186,8 +100220,19 @@ function _spRefTimeHtml(o) {
   const ms = _spOrderCreatedMs(o);
   if (!Number.isFinite(ms)) return '';
   const v = new Date(ms).toISOString();
-  return `<div class="sp-ref-time" dir="auto" title="${escHtml(_pwWhenFull(v))}">${escHtml(_spOrderTimeLabel(v))}</div>`;
+  return `<div class="sp-ref-time" dir="auto" data-sp-created-at="${v}" title="${escHtml(_pwWhenFull(v))}">${escHtml(_spOrderTimeLabel(v))}</div>`;
 }
+
+// Update just the time labels, preserving selection, popovers and the current page.
+function _spRefreshOrderTimes() {
+  if (currentPage !== 'shopify-orders' || document.hidden) return;
+  const nowMs = Date.now();
+  document.querySelectorAll('#page-shopify-orders [data-sp-created-at]').forEach(el => {
+    el.textContent = _spOrderTimeLabel(el.getAttribute('data-sp-created-at'), nowMs);
+  });
+}
+setInterval(_spRefreshOrderTimes, 60000);
+document.addEventListener('visibilitychange', _spRefreshOrderTimes);
 
 /**
  * Egyptian number → international digits for wa.me / Vrobo.
@@ -102095,7 +102140,7 @@ function renderShopifyOrders() {
         </div>
         <div class="sp-card-deposit-line">${depositBadgeHtml}</div>
         <div class="sp-card-subline sp-card-items-toggle" onclick="event.stopPropagation();(function(el){var l=document.getElementById('${itemsId}');if(!l)return;var open=l.style.display!=='none';l.style.display=open?'none':'block';el.classList.toggle('sp-card-items-toggle-open',!open);})(this)">
-          <span>${tf(o.items?.length === 1 ? 'spItemsCountOne' : 'spItemsCount', { n: o.items?.length || 0 })}</span><span class="sp-card-subline-dot">•</span><span>${_oTimeStr}</span><span class="sp-card-subline-dot">•</span><span class="sp-card-client">${esc(o.client || o.phone || '—')}</span>
+          <span>${tf(o.items?.length === 1 ? 'spItemsCountOne' : 'spItemsCount', { n: o.items?.length || 0 })}</span><span class="sp-card-subline-dot">•</span><span dir="auto" ${Number.isFinite(_oCreatedMs) ? `data-sp-created-at="${new Date(_oCreatedMs).toISOString()}" title="${escHtml(_pwWhenFull(new Date(_oCreatedMs).toISOString()))}"` : ''}>${escHtml(_oTimeStr)}</span><span class="sp-card-subline-dot">•</span><span class="sp-card-client">${esc(o.client || o.phone || '—')}</span>
         </div>
         ${_cardFuLast}
         ${itemsListHtml}
