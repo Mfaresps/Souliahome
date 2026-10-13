@@ -49,6 +49,14 @@ Unsaved draft receipts, comment edits/deletions, purchases, synchronization of a
 
 ## Server configuration
 
+### Successful live deployment notifications
+
+On `main`, Jenkins runs **Notify live release** after deployment and a successful frontend/API health check. The helper runs inside the live backend container and checks `http://frontend/version.json` against the expected CI build before writing anything. Build-only jobs, other branches, failed health checks and mismatched frontend versions do not announce a release.
+
+Every active admin/staff/viewer receives a persisted bell entry: **🚀 تم رفع نسخة جديدة · SOULIA**, with the deployed version and timestamp. Device delivery follows the existing master switch and subscription permissions; it has no separate category switch. Arabic/English wording follows the existing recipient language rules. Event identity is `release:<BUILD_NUMBER>`, so rerunning the stage does not duplicate existing bell entries or device jobs. Notification failures can be retried through the same stage. The existing version watcher continues to prompt open sessions to refresh.
+
+The helper reads database/VAPID configuration from the backend container environment. No new public endpoint, deployment secret or manual version bump is needed.
+
 The maintained `web-push` dependency is server-only. Local VAPID keys were generated in ignored `backend/.env`, without printing them. For another environment, generate a separate stable pair on a trusted server:
 
 ```sh

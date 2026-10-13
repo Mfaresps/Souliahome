@@ -398,7 +398,7 @@ export class ShopifyController {
     @Body('comments') comments: any[],
     @Request() req: any,
   ) {
-    return this.shopifyService.updateOrderComments(id, comments || []);
+    return this.shopifyService.updateOrderComments(id, comments || [], actorOf(req).id);
   }
 
   // رفض أوردر

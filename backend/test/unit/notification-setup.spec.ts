@@ -6,7 +6,7 @@ function database() {
   const config = { findOne: jest.fn(async () => saved), updateOne: jest.fn(async (_query, update) => { saved ||= { ...update.$setOnInsert }; }) };
   const accounts = { createIndex: jest.fn(), findOne: jest.fn(async () => null) };
   const jobs = { createIndex: jest.fn() };
-  const connection: any = { collection: (name: string) => ({ notificationaccounts: accounts, notificationjobs: jobs, notificationpointchanges: jobs, notificationconfig: config } as any)[name] };
+  const connection: any = { collection: (name: string) => ({ notificationaccounts: accounts, notificationjobs: jobs, notificationinbox: jobs, notificationpointchanges: jobs, notificationconfig: config } as any)[name] };
   return { connection, config, saved: () => saved };
 }
 const user = { userId: '507f1f77bcf86cd799439011', role: 'admin' };

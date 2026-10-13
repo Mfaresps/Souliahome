@@ -3391,7 +3391,7 @@ export class TransactionsService {
   }
 
 
-  async addComments(id: string, comments: Array<any>): Promise<TransactionDocument> {
+  async addComments(id: string, comments: Array<any>, actorUserId = ''): Promise<TransactionDocument> {
     const before = await this.transactionModel.findById(id).lean();
     const oldIds = new Set((before?.comments || []).map(c => String(c.id)));
     // Update ONLY comments field - without triggering editHistory
@@ -3403,7 +3403,7 @@ export class TransactionsService {
     if (!tx) {
       throw new NotFoundException('المعاملة غير موجودة');
     }
-    for (const c of comments) if (c.id != null && !oldIds.has(String(c.id))) await this.notifications?.enqueue('comment', 'comment:tx:' + id + ':' + c.id, tx.ref, 'tx:' + id, undefined, undefined, { actorName: c.employee, commentId: c.id, commentText: c.text });
+    for (const c of comments) if (c.id != null && !oldIds.has(String(c.id))) await this.notifications?.enqueue('comment', 'comment:tx:' + id + ':' + c.id, tx.ref, 'tx:' + id, undefined, undefined, { actorUserId, actorName: c.employee, commentId: c.id, commentText: c.text });
     return tx;
   }
 

@@ -17,14 +17,52 @@ function setup() {
     if (update.$pull) account.subscriptions = [];
   }) };
   const stored = new Map();
+  const historyRows = new Map();
+  const inbox = { updateOne: jest.fn(async (filter: any, update: any) => {
+    if (update.$setOnInsert && !historyRows.has(filter._id)) historyRows.set(filter._id, { _id: filter._id, ...update.$setOnInsert });
+    if (update.$set && historyRows.get(filter._id)?.userId === filter.userId) Object.assign(historyRows.get(filter._id), update.$set);
+  }) };
   const jobs = { updateOne: jest.fn(async (filter, update) => { if (update.$setOnInsert && !stored.has(filter.eventId)) stored.set(filter.eventId, update.$setOnInsert); }), findOneAndUpdate: jest.fn(async () => null) };
-  const connection: any = { collection: (name: string) => ({ users, notificationaccounts: accounts, notificationjobs: jobs } as any)[name] };
+  const connection: any = { collection: (name: string) => ({ users, notificationaccounts: accounts, notificationjobs: jobs, notificationinbox: inbox } as any)[name] };
   const service = new NotificationsService(connection);
   const push = { sendNotification: jest.fn(async () => ({})) };
   (service as any).push = push;
-  return { service, push, account, accounts, jobs, users, stored };
+  return { service, push, account, accounts, jobs, users, stored, inbox, historyRows };
 }
 describe('Web Push settings, security and delivery', () => {
+  it('persists full comment history with push disabled and preserves read state on retry', async () => {
+    const { service, account, stored, historyRows } = setup();
+    account.preferences.enabled = false;
+    (service as any).push = undefined;
+    const text = 'A full comment\nwith more details';
+    await service.enqueue('comment', 'comment-fixture', '100', 'tx:' + admin.userId, undefined, undefined, { actorName: 'Mona', commentId: 123, commentText: text });
+    expect(stored.size).toBe(0); expect(historyRows.size).toBe(1);
+    const row: any = [...historyRows.values()][0];
+    expect(row).toEqual(expect.objectContaining({ userId: admin.userId, commentText: text, actorName: 'Mona', event: '123', ref: '100', readAt: null }));
+    expect(row.url).toContain('pushEvent=123'); expect(row.createdAt).toBeInstanceOf(Date);
+    await service.markHistoryRead({ ...admin, userId: 'another-user' }, row._id); expect(row.readAt).toBeNull();
+    await service.markHistoryRead(admin, row._id); expect(row.readAt).toBeInstanceOf(Date);
+    const readAt = row.readAt;
+    await service.enqueue('comment', 'comment-fixture', '100', 'tx:' + admin.userId);
+    expect(historyRows.size).toBe(1); expect(row.readAt).toBe(readAt);
+  });
+  it.each(['comment', 'followup'] as const)('excludes the %s actor on all devices while queuing other eligible accounts', async type => {
+    const { service, accounts, jobs, users, stored } = setup();
+    const otherId = '507f1f77bcf86cd799439012';
+    users.find.mockReturnValue({ toArray: async () => [
+      { ...admin, _id: admin.userId },
+      { ...admin, _id: otherId, userId: otherId, role: 'staff' },
+    ] });
+    accounts.findOne.mockImplementation(async ({ userId }: any = {}) => ({ userId, preferences: { ...DEFAULTS, enabled: true }, subscriptions: [subscription, { ...subscription, endpoint: subscription.endpoint + '-second' }] }));
+    jobs.updateOne.mockImplementation(async (_filter: any, update: any) => {
+      const job = update.$setOnInsert;
+      if (job) stored.set(job.userId + ':' + job.endpoint, job);
+    });
+    await service.enqueue(type, 'actor-event', '100', 'followup:f1', undefined, undefined, { actorUserId: admin.userId, actorName: 'Same name' });
+    expect(stored.size).toBe(2);
+    expect([...stored.values()].every(job => job.userId === otherId)).toBe(true);
+    expect(accounts.findOne).not.toHaveBeenCalledWith({ userId: admin.userId });
+  });
   it('guards every endpoint with JWT', () => expect(Reflect.getMetadata(GUARDS_METADATA, NotificationsController)).toContain(JwtAuthGuard));
   it.each(['staff', 'viewer'])('allows %s operational notifications while keeping deposits administrator-only', async role => {
     const { service } = setup(); const user = { ...admin, role };

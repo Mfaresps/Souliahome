@@ -49,6 +49,7 @@ COPY package*.json ./
 RUN npm install --omit=dev --legacy-peer-deps
 
 COPY --from=builder /app/dist ./dist
+COPY scripts/notify-release.cjs ./scripts/notify-release.cjs
 
 EXPOSE 3000
 

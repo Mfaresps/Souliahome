@@ -116,13 +116,17 @@ body.dark-mode .an-st.is-sched{color:var(--accent)}
 }
 
 /* ── Recipient popup — a native <dialog>: top layer, focus trap, Esc = «لاحقاً» ── */
-.an-dlg{border:1px solid var(--border);border-radius:18px;padding:0;width:min(480px,calc(100vw - 24px));max-height:min(86vh,640px);background:var(--surface);color:var(--text);box-shadow:0 24px 64px rgba(0,0,0,.22),0 4px 16px rgba(0,0,0,.08);overflow:hidden;font-family:var(--font-app)}
-/* ⚠ Centring is explicit: the app's global reset zeroes the UA `margin:auto` on <dialog>,
-   which pinned it to the top corner. */
-.an-dlg[open]{display:flex;flex-direction:column;position:fixed;inset:0;margin:auto;height:fit-content;animation:anIn .32s cubic-bezier(.34,1.4,.64,1)}
+/* ⚠ The <dialog> itself is a full-screen TRANSPARENT layer that centres .an-dlg-card with
+   flexbox. Sizing the dialog to its content (margin:auto + height:fit-content) worked in
+   Chrome but on iPhone Safari it collapsed the body to one clipped line — a `flex:1` body
+   inside an intrinsically-sized column resolves to ~0 there. A click on the layer outside
+   the card is the backdrop click («لاحقاً»). */
+.an-dlg{border:none;margin:0;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));width:100%;height:100%;max-width:none;max-height:none;background:transparent;color:var(--text);overflow:hidden;font-family:var(--font-app);box-sizing:border-box}
+.an-dlg[open]{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
 .an-dlg::backdrop{background:rgba(10,20,14,.42);backdrop-filter:blur(2px)}
+.an-dlg-card{display:flex;flex-direction:column;width:min(480px,100%);max-height:min(640px,100%);background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 24px 64px rgba(0,0,0,.22),0 4px 16px rgba(0,0,0,.08);overflow:hidden;animation:anIn .32s cubic-bezier(.34,1.4,.64,1)}
 @keyframes anIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
-.an-dlg-head{display:flex;align-items:center;gap:12px;padding:14px 16px 12px;border-bottom:1px solid var(--border)}
+.an-dlg-head{display:flex;align-items:center;gap:12px;padding:14px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
 .an-dlg-icon{width:38px;height:38px;border-radius:11px;background:var(--primary-pale);color:var(--primary);display:grid;place-items:center;flex-shrink:0}
 body.dark-mode .an-dlg-icon{color:var(--accent)}
 .an-dlg-icon svg{width:19px;height:19px}
@@ -130,26 +134,29 @@ body.dark-mode .an-dlg-icon{color:var(--accent)}
 .an-dlg-sub{font-size:.73rem;color:var(--muted);margin-top:2px}
 .an-dlg-x{margin-inline-start:auto;background:none;border:none;cursor:pointer;color:var(--muted);padding:6px;border-radius:8px;display:flex;flex-shrink:0}
 .an-dlg-x:hover{background:var(--bg-alt);color:var(--text)}
-.an-dlg-body{padding:16px 18px 14px;overflow-y:auto;flex:1}
+/* `flex:1 1 auto` (basis = content), never `flex:1` (basis 0): see the note on .an-dlg. */
+.an-dlg-body{padding:16px 18px 14px;overflow-y:auto;flex:1 1 auto;min-height:0;-webkit-overflow-scrolling:touch}
 .an-chip{display:inline-flex;align-items:center;gap:6px;font-size:.74rem;font-weight:650;padding:4px 10px;border-radius:99px;background:var(--bg-alt);color:var(--text)}
 .an-chip.is-important{background:rgba(217,119,6,.12);color:#b45309}
 body.dark-mode .an-chip.is-important{color:#fbbf24}
 .an-dlg-msg{margin-top:12px;font-size:.95rem;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere;unicode-bidi:plaintext}
 .an-dlg-meta{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:.74rem;color:var(--muted)}
 .an-dlg-meta b{color:var(--text);font-weight:600}
-.an-dlg-foot{display:flex;align-items:center;gap:8px;padding:11px 16px;border-top:1px solid var(--border);background:var(--bg-alt)}
+.an-dlg-foot{display:flex;align-items:center;gap:8px;padding:11px 16px;border-top:1px solid var(--border);background:var(--bg-alt);flex-shrink:0}
 .an-dlg-foot .an-dlg-done{margin-inline-start:auto;display:inline-flex;align-items:center;gap:6px}
 .an-dlg-foot .an-dlg-done svg{width:14px;height:14px}
 .an-dlg-read{margin-inline-start:auto;font-size:.74rem;color:var(--muted);display:inline-flex;align-items:center;gap:5px}
 .an-dlg-read svg{width:13px;height:13px;color:var(--accent)}
 .an-dlg-pos{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums}
 @media (max-width:600px){
-  /* Bottom sheet on phones — within thumb reach, like the mentions popup. */
-  .an-dlg{width:calc(100vw - 16px);border-radius:16px}
-  .an-dlg[open]{margin:auto auto 8px}
+  /* Centred on phones too: a bottom sheet sat under the home indicator and got clipped. */
+  .an-dlg-card{border-radius:16px}
+  .an-dlg-body{padding:14px 16px 12px}
+  .an-dlg-msg{font-size:.92rem}
+  .an-dlg-foot{padding:10px 12px}
   .an-dlg-foot .btn{min-height:40px}
 }
-@media (prefers-reduced-motion:reduce){.an-dlg[open]{animation:none}.an-skel{animation:none}}
+@media (prefers-reduced-motion:reduce){.an-dlg-card{animation:none}.an-skel{animation:none}}
 
 /* ── مركز الإشعارات ← الإعلانات ── */
 .an-nc-item{display:flex;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;align-items:flex-start;background:transparent;border-inline:none;border-top:none;width:100%;text-align:start;font-family:inherit;color:var(--text)}

@@ -22,6 +22,22 @@ function fixture(kind: string, type: string, event = '123') {
   return { context, element };
 }
 describe('Notification event routing', () => {
+  it('marks the persisted notification read when opening it from a phone push', async () => {
+    const { context } = fixture('tx', 'comment');
+    const notificationId = 'a'.repeat(64);
+    context.location.href += '&pushNotification=' + notificationId;
+    await context.souliaNavigateNotification(context.location.href);
+    expect(context.api).toHaveBeenCalledWith('/notifications/history/' + notificationId + '/read', { method: 'POST' });
+  });
+  it('waits for delayed transaction comment rendering and supports repeat inbox navigation', async () => {
+    const { context } = fixture('tx', 'comment');
+    context.highlightInvComment.mockReturnValueOnce(false).mockReturnValueOnce(false).mockReturnValue(true);
+    await context.souliaOpenPendingPush();
+    expect(context.highlightInvComment).toHaveBeenCalledTimes(3);
+    await context.souliaNavigateNotification('/?pushRecord=tx:' + id + '&pushType=comment&pushEvent=456');
+    expect(context.highlightInvComment).toHaveBeenLastCalledWith(456);
+    expect(await context.souliaNavigateNotification('https://external.test/?pushRecord=tx:' + id)).toBe(false);
+  });
   it('opens the authenticated employee profile for their own points notification', async () => {
     const { context } = fixture('performance', 'performance'); context.currentUser = { id, role: 'staff' };
     await context.souliaOpenPendingPush();

@@ -20,6 +20,7 @@ const TITLES = {
 export function notificationTitle(type: NotificationType, details: NotificationDetails = {}, language: 'ar' | 'en' = 'ar', test = false) {
   let title: readonly string[] = TITLES[type];
   if (test) title = ['🔔', 'إشعار SOULIA تجريبي', 'SOULIA test notification'];
+  else if (type === 'announcement' && details.releaseVersion) title = ['🚀', 'تم رفع نسخة جديدة', 'New Version Is Live'];
   // Already names SOULIA — the « · SOULIA» suffix would print the brand twice.
   else if (type === 'announcement') return `${TITLES.announcement[0]} ${TITLES.announcement[language === 'en' ? 2 : 1]}`;
   else if (type === 'performance') title = details.weekly ? ['📊', 'ملخص الأداء الأسبوعي', 'Weekly Performance Summary'] : (details.pointDelta || 0) < 0 ? ['⚠️', 'نقاط مخصومة', 'Points Deducted'] : ['⭐', 'نقاط مكتسبة', 'Points Earned'];

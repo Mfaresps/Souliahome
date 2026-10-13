@@ -78,6 +78,42 @@ function _depLogTransferLabel(r) {
 function _depLogStatusHtml(r) {
   return `<span class="dep-log-status ${r.status==='معتمد'?'approved':r.status==='معلق'?'pending':'neutral'}"><i aria-hidden="true"></i>${esc(r.status==='مسحوب'?_depLogText('withdrawn'):_spReceiptStatus(r.status))}</span>`;
 }
+/* Phone list. The table's own phone CSS stacked all nine columns into a 2-column grid
+   with a label over every value, so one receipt took ~420px. These cards state what the
+   log is read for — how much, for which order, where it stands — and leave the rest
+   (transfer reference, sender, screenshot clock, ledger no.) to the details window the
+   whole card opens. ⚠ Dates go through `-u-nu-latn`: plain `ar-EG` prints ٠-٩. */
+function _depLogDayKey(value){const d=new Date(value);return Number.isFinite(d.getTime())?d.toLocaleDateString('en-CA',{timeZone:'Africa/Cairo'}):'';}
+function _depLogDayLabel(key){
+  if(!key)return '—';
+  const today=_depLogDayKey(Date.now()),yesterday=_depLogDayKey(Date.now()-864e5);
+  if(key===today)return _depLogText('today');if(key===yesterday)return _depLogText('yesterday');
+  return new Date(key+'T12:00:00Z').toLocaleDateString(currentLang==='en'?'en-GB':'ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',weekday:'long',day:'numeric',month:'short'});
+}
+function _depLogTime(value){const d=new Date(value);return Number.isFinite(d.getTime())?d.toLocaleTimeString(currentLang==='en'?'en-GB':'ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',hour:'2-digit',minute:'2-digit',hour12:false}):'';}
+const _DLC_CHECK='<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+const _DLC_CHEV='<svg class="dlc-chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>';
+function _depLogCardsHtml(rows, linkOf){
+  let day='',out='';
+  for(const r of rows){
+    const key=_depLogDayKey(r.submittedAt);
+    if(key!==day){day=key;out+=`<div class="dlc-day">${esc(_depLogDayLabel(key))}</div>`;}
+    const st=r.status==='معتمد'?'approved':r.status==='معلق'?'pending':'neutral';
+    const open=`_depLogOpenDetails(decodeURIComponent('${_depLogId(r.id)}'))`, link=linkOf(r);
+    const order=link?`<button class="dlc-order" onclick="event.stopPropagation();${link}">#${esc(String(r.orderNumber||'').replace(/^#+/,''))||'—'}</button>`:`<span class="dlc-order is-manual">${esc(_depLogText('manual'))}</span>`;
+    const meta=[`<time datetime="${esc(r.submittedAt)}">${esc(_depLogTime(r.submittedAt))}</time>`,
+      r.submittedBy?esc(r.submittedBy):'',r.reviewedBy?`<span class="dlc-rev" title="${esc(_depLogText('approver'))}">${_DLC_CHECK}${esc(r.reviewedBy)}</span>`:'']
+      .filter(Boolean).join('<i class="dlc-dot" aria-hidden="true"></i>');
+    out+=`<article class="dlc is-${st}" role="button" tabindex="0" aria-label="${esc(_depLogText('viewDetails'))}" onclick="${open}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${open}}">
+      <span class="dlc-vault" title="${esc(_payMethodLabel(r.method))}">${payMethodIcon(r.method,20)}</span>
+      <div class="dlc-main">
+        <div class="dlc-top"><bdi class="dlc-amt">${fmtJ(r.amount)}</bdi>${_depLogStatusHtml(r)}</div>
+        <div class="dlc-who">${order}<span class="dlc-client">${esc(r.client||'—')}</span></div>
+        <div class="dlc-meta">${meta}</div>
+      </div>${_DLC_CHEV}</article>`;
+  }
+  return `<div class="dep-log-cards">${out}</div>`;
+}
 function _depLogSenderHtml(r) {
   return `<div class="dep-log-sender"><span class="dep-log-person-icon" aria-hidden="true">${esc((r.senderName||r.senderHandle||'').slice(0,1).toUpperCase()||'↗')}</span><div>${esc(r.senderName||'—')}${r.senderPhone?`<small><bdi class="dep-log-phone">${esc(r.senderPhone)}</bdi></small>`:''}${r.senderHandle?`<small><bdi>${esc(r.senderHandle)}</bdi></small>`:''}</div></div>`;
 }
@@ -143,15 +179,16 @@ async function _depLogLoad(silent=false) {
     const L=k=>esc(_depLogText(k));
     qs('#dep-log-summary').innerHTML=[['count',data.total],['sum',data.summary.totalAmount],['pending',data.summary.pending],['approved',data.summary.approved]].map(([k,v])=>`<div class="dep-log-kpi" data-kpi="${k}"><small>${L(k)}${k==='sum'?` <span class="dep-log-kpi-info" tabindex="0" title="${L('sumsHint')}" aria-label="${L('sumsHint')}">ⓘ</span>`:''}</small><strong><bdi>${esc(fmtN(v))}</bdi>${k==='sum'?'<span class="dep-log-kpi-currency">EGP</span>':''}</strong></div>`).join('');
     const columns=['transfer','screenTime','order','amount','person','employee','approver','status','details'];
+    const linkOf=r=>r.source==='shopify'?`openSpOrderPeek(decodeURIComponent('${_depLogId(r.orderId)}'))`:r.orderId?`openOrderView(decodeURIComponent('${_depLogId(r.orderId)}'))`:'';
     qs('#dep-log-results').innerHTML=data.rows.length?`<div class="dep-log-table-wrap"><table class="dep-log-table"><thead><tr>${columns.map(k=>`<th scope="col">${L(k)}</th>`).join('')}</tr></thead><tbody>${data.rows.map(r=>{
-      const link=r.source==='shopify'?`openSpOrderPeek(decodeURIComponent('${_depLogId(r.orderId)}'))`:r.orderId?`openOrderView(decodeURIComponent('${_depLogId(r.orderId)}'))`:'';
+      const link=linkOf(r);
       const cells=[`<button class="dep-log-reference" title="${esc(r.reference||r.id)}" onclick="_depLogOpenDetails(decodeURIComponent('${_depLogId(r.id)}'))"><bdi>${esc(_depLogTransferLabel(r))}</bdi></button><small><time datetime="${esc(r.submittedAt)}">${esc(_depLogDate(r.submittedAt))}</time></small>`,_depLogScreenTimeHtml(r,true) || '—',`${link?`<button class="dep-log-order" onclick="${link}">#${esc(String(r.orderNumber).replace(/^#+/,''))||'—'}</button>`:`<b>${L('manual')}</b>`}<small>${esc(r.client||'—')}</small>`,
         `<bdi class="dep-log-money">${fmtJ(r.amount)}</bdi><small class="dep-log-method">${payMethodIcon(r.method,16)}${esc(_payMethodLabel(r.method))}</small>`,_depLogSenderHtml(r),
         esc(r.submittedBy||'—'),`${esc(r.reviewedBy||'—')}${r.reviewedAt?`<small>${esc(_depLogDate(r.reviewedAt))}</small>`:''}`,
         _depLogStatusHtml(r),
         `<button class="btn btn-outline dep-log-view" onclick="_depLogOpenDetails(decodeURIComponent('${_depLogId(r.id)}'))">${L('viewDetails')}</button>`];
       return `<tr>${cells.map((cell,i)=>`<td data-label="${L(columns[i])}">${cell}</td>`).join('')}</tr>`;
-    }).join('')}</tbody></table></div>`:`<div class="dep-log-empty">${L('empty')}</div>`;
+    }).join('')}</tbody></table></div>${_depLogCardsHtml(data.rows,linkOf)}`:`<div class="dep-log-empty">${L('empty')}</div>`;
     qs('#dep-log-pagination').innerHTML=`<span>${data.total} · ${data.page} / ${data.pages}</span><div><button class="btn btn-outline" ${data.page<=1?'disabled':''} onclick="_depLogPage(${data.page-1})">${L('previous')}</button><button class="btn btn-outline" ${data.page>=data.pages?'disabled':''} onclick="_depLogPage(${data.page+1})">${L('next')}</button></div>`;
   }catch(error){if(sequence!==_depLogSequence||_spSubnavTab!=='deposit-log')return;const e=qs('#dep-log-error');e.textContent=error.message||String(error);e.hidden=false;}
   finally{if(sequence===_depLogSequence&&_spSubnavTab==='deposit-log')progress.hidden=true;}

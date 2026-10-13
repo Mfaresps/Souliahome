@@ -626,11 +626,15 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
       const source=_spPeekHtml({..._shopifyOrders[0],items:[{name:'Test organizer',code:'C1',qty:1}]});
       const doc=new DOMParser().parseFromString(source,'text/html');
       const body=doc.querySelector('.sp-pk-body');
-      const customer=body.querySelector('.sp-pk-cust');
+      const after=(a,b)=>!!(a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING);
+      const fu=body.querySelector('#sp-pk-fu');
+      const comments=body.querySelector('.sp-pk-cmt-sec');
       const items=body.querySelector('.sp-pk-items').closest('section');
       const payment=body.querySelector('.spdep-embedded').parentElement;
-      return !!(customer.compareDocumentPosition(items)&Node.DOCUMENT_POSITION_FOLLOWING) && !!(items.compareDocumentPosition(payment)&Node.DOCUMENT_POSITION_FOLLOWING);
-    }),'order sections are customer then items then payment with embedded receipts');
+      // Oct 13, 2026: the customer moved into the head; the body opens on the follow-up, then comments.
+      const customerInHead=!!doc.querySelector('.sp-pk-head .sp-pk-cust-top');
+      return customerInHead && fu && comments &&after(fu,comments) && after(comments,items) && after(items,payment);
+    }),'quick view: customer in head; body is follow-up, comments, items, then payment with embedded receipts');
     await page.evaluate(()=>currentLang='en');
     check(await page.evaluate(()=>_spDepositCellHtml(_shopifyOrders[0]).includes('Instapay') && _spDepositCellHtml(_shopifyOrders[0]).includes('500')),'approved deposit cell shows amount with vault branding');
     await page.evaluate(()=>{currentLang='en';approveShopifyOrder('order-1');});

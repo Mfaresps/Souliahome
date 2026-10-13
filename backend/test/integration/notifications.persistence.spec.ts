@@ -14,7 +14,27 @@ beforeAll(async () => {
 afterAll(async () => {
   if (connection) { if (!/^soulia_test_push_\d+_\d+$/.test(connection.name)) throw new Error('Unsafe scratch database'); await connection.dropDatabase(); await connection.close(); }
 });
-beforeEach(async () => { await connection.collection('notificationaccounts').deleteMany({}); await connection.collection('notificationjobs').deleteMany({}); await connection.collection('notificationpointchanges').deleteMany({}); await connection.collection('employeeperformancelogs').deleteMany({}); });
+beforeEach(async () => { await connection.collection('notificationinbox').deleteMany({}); await connection.collection('notificationaccounts').deleteMany({}); await connection.collection('notificationjobs').deleteMany({}); await connection.collection('notificationpointchanges').deleteMany({}); await connection.collection('employeeperformancelogs').deleteMany({}); });
+it('keeps account-scoped history across restart, without push subscriptions, with pagination and read state', async () => {
+  const text = 'Comment details\nSecond line';
+  await Promise.all(Array.from({ length: 5 }, () => service.enqueue('comment', 'history-event', '100', 'tx:' + user.userId, undefined, undefined, { actorName: 'Mona', commentId: 123, commentText: text })));
+  const restarted = new NotificationsService(connection);
+  const first = await restarted.history(user);
+  expect(first.items).toHaveLength(1);
+  expect(first.items[0]).toEqual(expect.objectContaining({ commentText: text, actorName: 'Mona', event: '123', readAt: null }));
+  const rowId = String(first.items[0]._id);
+  await restarted.markHistoryRead({ ...user, userId: new Types.ObjectId().toString() }, rowId);
+  expect((await restarted.history(user)).items[0].readAt).toBeNull();
+  await restarted.markHistoryRead(user, rowId);
+  expect((await restarted.history(user)).items[0].readAt).toBeInstanceOf(Date);
+  await expect(restarted.history({ ...user, userId: new Types.ObjectId().toString() }, rowId)).rejects.toThrow('unavailable');
+  for (let i = 0; i < 51; i++) await service.enqueue('followup', 'history-' + i, String(i));
+  const page = await restarted.history(user);
+  expect(page.items).toHaveLength(50); expect(page.next).toBeTruthy();
+  const older = await restarted.history(user, page.next);
+  expect(older.items).toHaveLength(2);
+  expect(new Set([...page.items, ...older.items].map(r => String(r._id))).size).toBe(52);
+});
 it('persists account preferences across service restart without mixing devices', async () => {
   await service.preferences(user, { enabled: true, delivered: false, language: 'en' }); await service.subscribe(user, sub);
   const restarted = new NotificationsService(connection); const state = await restarted.settings(user);
@@ -55,6 +75,25 @@ it('atomically deduplicates concurrent webhook notifications in MongoDB', async 
   await service.preferences(user, { enabled: true }); await service.subscribe(user, sub);
   await Promise.all(Array.from({ length: 5 }, () => service.enqueue('delivered', 'delivery:fixture', '100')));
   expect(await connection.collection('notificationjobs').countDocuments({})).toBe(1);
+});
+it('records a live release for every active role and sends only to enabled devices, once per build', async () => {
+  const { announceRelease } = require('../../scripts/notify-release.cjs');
+  const staffId = new Types.ObjectId().toString(), viewerId = new Types.ObjectId().toString(), inactiveId = new Types.ObjectId().toString();
+  await connection.collection('users').insertMany([
+    { _id: new Types.ObjectId(staffId), role: 'staff', isActive: true },
+    { _id: new Types.ObjectId(viewerId), role: 'viewer', isActive: true },
+    { _id: new Types.ObjectId(inactiveId), role: 'staff', isActive: false },
+  ]);
+  await service.preferences(user, { enabled: true }); await service.subscribe(user, sub);
+  const release = { build: '125', version: '1.0.125' };
+  await announceRelease(service, connection, release); await announceRelease(service, connection, release);
+  const history = await connection.collection('notificationinbox').find({ eventId: 'release:125' }).toArray();
+  expect(history.some(row => row.userId === staffId)).toBe(true);
+  expect(history.some(row => row.userId === viewerId)).toBe(true);
+  expect(history.some(row => row.userId === inactiveId)).toBe(false);
+  expect(history.filter(row => row.userId === user.userId)).toHaveLength(1);
+  const jobs = await connection.collection('notificationjobs').find({ eventId: 'release:125' }).toArray();
+  expect(jobs).toHaveLength(1); expect(JSON.parse(jobs[0].payload).title).toBe('🚀 تم رفع نسخة جديدة · SOULIA');
 });
 it.each(['en', 'ar'])('personalizes a new order only for its assigned employee in %s, retaining admin and other staff delivery', async language => {
   const assignee = { ...user, role: 'staff', userId: new Types.ObjectId().toString() };

@@ -1583,6 +1583,7 @@ export class ShopifyService {
   async updateOrderComments(
     orderId: string,
     comments: any[],
+    actorUserId = '',
   ): Promise<{ success: boolean }> {
     const order = await this.shopifyOrderModel.findById(orderId);
     if (!order) throw new NotFoundException('الأوردر غير موجود');
@@ -1591,7 +1592,7 @@ export class ShopifyService {
     order.comments = comments;
     order.markModified('comments');
     await order.save();
-    for (const c of comments) if (c.id != null && !oldIds.has(String(c.id))) await this.notifications?.enqueue('comment', 'comment:shopify:' + orderId + ':' + c.id, order.ref, 'shopify:' + orderId, undefined, undefined, { actorName: c.employee, commentId: c.id, commentText: c.text });
+    for (const c of comments) if (c.id != null && !oldIds.has(String(c.id))) await this.notifications?.enqueue('comment', 'comment:shopify:' + orderId + ':' + c.id, order.ref, 'shopify:' + orderId, undefined, undefined, { actorUserId, actorName: c.employee, commentId: c.id, commentText: c.text });
     return { success: true };
   }
 

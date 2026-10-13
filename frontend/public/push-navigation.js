@@ -2,6 +2,13 @@
   'use strict';
   // Capture the notification before startup navigation changes the current URL.
   let pending = new URL(location.href), opening = false;
+  window.souliaNavigateNotification = async function (url) {
+    if (opening) return false;
+    const target = new URL(url, location.href);
+    if (target.origin !== new URL(location.href).origin) return false;
+    pending = target;
+    return window.souliaOpenPendingPush();
+  };
   async function highlight(selector) {
     for (let attempt = 0; attempt < 20; attempt++) {
       const element = document.querySelector(selector);
@@ -101,10 +108,16 @@
         if (!tx?._id) throw new Error(currentLang === 'en' ? 'Order unavailable.' : 'الأوردر غير متاح.');
         const index = transactions.findIndex(t => String(t._id) === id);
         if (index < 0) transactions.unshift(tx); else transactions[index] = tx;
-        openOrderView(id);
+        if (typeof closeInvoiceDetail === 'function') closeInvoiceDetail();
+        await openOrderView(id);
         if (type === 'comment' && /^\d+$/.test(event)) {
           await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-          highlightInvComment(Number(event));
+          let found = false;
+          for (let attempt = 0; attempt < 30; attempt++) {
+            if (highlightInvComment(Number(event)) !== false) { found = true; break; }
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          if (!found) toast(currentLang === 'en' ? 'This comment is no longer available.' : 'هذا التعليق لم يعد متاحًا.', true);
         } else if (type === 'deposit') {
           const receipt = (tx.depositReceipts || []).some(r => String(r.id) === event);
           if (receipt) await highlight(`[data-push-receipt-id="${CSS.escape(event)}"]`);
@@ -115,7 +128,12 @@
         }
       }
       const clean = new URL(location.href);
-      ['pushRecord', 'pushType', 'pushEvent'].forEach(key => clean.searchParams.delete(key));
+      const notificationId = params.get('pushNotification') || '';
+      if (/^[a-f0-9]{64}$/.test(notificationId)) {
+        try { await api('/notifications/history/' + notificationId + '/read', { method: 'POST' }); } catch (_) {}
+        window.souliaRefreshNotificationHistory?.();
+      }
+      ['pushRecord', 'pushType', 'pushEvent', 'pushNotification'].forEach(key => clean.searchParams.delete(key));
       history.replaceState(null, '', clean);
     } catch (error) {
       navigateTo('movements'); toast(error.message, true);

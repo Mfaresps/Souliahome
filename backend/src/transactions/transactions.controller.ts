@@ -703,8 +703,9 @@ export class TransactionsController {
   async addComments(
     @Param('id') id: string,
     @Body() body: { comments: Array<any> },
+    @Req() req: any,
   ) {
-    return this.transactionsService.addComments(id, body.comments);
+    return this.transactionsService.addComments(id, body.comments, String(req.user?.userId || req.user?.sub || req.user?._id || ''));
   }
 
   @Patch(':id/tags')

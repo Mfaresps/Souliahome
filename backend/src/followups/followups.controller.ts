@@ -23,7 +23,7 @@ export class FollowUpsController {
 
   @Post()
   async create(@Body() dto: CreateFollowUpDto, @Req() req: AuthRequest) {
-    const doc = await this.service.create(dto);
+    const doc = await this.service.create(dto, String(req.user?.userId || req.user?.sub || ''));
     // Emit real-time update to all connected users
     try { this.presence.emitEvent('followup:changed', { action: 'create', id: String(doc._id) }); } catch (_) {}
     return doc;
@@ -33,7 +33,7 @@ export class FollowUpsController {
   async update(@Param('id') id: string, @Body() dto: UpdateFollowUpDto, @Req() req: AuthRequest) {
     const doc = await this.service.update(id, dto);
     // If reason changed and responsible user exists, emit notification
-    if (dto.reason && doc) {
+    if (dto.reason && doc && String((doc as any).responsibleId) !== String(req.user?.userId || req.user?.sub || '')) {
       try {
         this.presence.emitToUser(String((doc as any).responsibleId), 'followup:notify', {
           id: String((doc as any)._id),

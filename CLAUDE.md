@@ -2834,9 +2834,14 @@ an announcement has recipients and a read state.
   label (unless generic) + message, ≤160 chars. Tap → `?pushRecord=announcement:<id>` →
   `window.souliaOpenAnnouncement(id)`. Staff push language is the admin-managed employee
   language, not the staff member's own choice.
-- **Popup** is a native `<dialog>` (top layer, Esc = «لاحقاً»). ⚠ The app's global reset
-  zeroes the UA `margin:auto` on `<dialog>` — centring is explicit in the CSS; on phones it is
-  a bottom sheet. It **waits** while another dialog, a confirm, `#modal-overlay` or the invoice
+- **Popup** is a native `<dialog>` (top layer, Esc = «لاحقاً»). ⚠ The dialog is a **full-screen
+  transparent layer** that centres `.an-dlg-card` with flexbox, on phones too. Sizing the dialog to
+  its content (`margin:auto` + `height:fit-content`, bottom sheet on phones) looked right in Chrome
+  but on iPhone Safari collapsed the message to one clipped line: a `flex:1` (basis 0) body inside
+  an intrinsically-sized column resolves to ~0 there. The body is `flex:1 1 auto; min-height:0` and
+  scrolls; head and foot never shrink. The position reads «1 من 2» (a «1 / 2» run reversed in RTL).
+  ⚠ **Bump `?v=` on both `announcements.*` links in index.html when they change** — static
+  CSS/JS is not served no-cache, so phones kept the old file. It **waits** while another dialog, a confirm, `#modal-overlay` or the invoice
   overlay is open (a live arrival then shows a toast), so it never interrupts a form.
   «لاحقاً» hides it **for this session only**; unacknowledged ones return on next open and are
   always listed in مركز الإشعارات ← الإعلانات. A backlog shows oldest first as «1 / 2».
@@ -2862,6 +2867,41 @@ an announcement has recipients and a read state.
 ### Still open
 - No withdraw/edit of a **sent** announcement (a scheduled one can be cancelled and re-created).
 - Delivery can lag its time by up to ~20s (the worker interval).
+
+---
+
+## Shopify Quick View — Compact, Follow-up First (Oct 13, 2026)
+
+`#sp-peek` was compacted and reordered: **follow-up → comments → delivery
+(address + note) → ship together → items → payment**. Presentation only — every
+write still goes through the same functions.
+- **The customer moved into the head** (`custTopHtml`: name, phone + copy, the
+  three contact buttons) so the body can open on the two threads. Address + note
+  are their own `.sp-pk-cust` section (`custFactsHtml`), omitted when both are empty.
+- **Follow-up facts are one row of chips** (`.sp-pk-fchips`: owner · reason · calls ·
+  opened), not a 2×2 grid; each chip's label is in `title` + a `.sp-pk-sr` prefix.
+  The trail button reads «Add note or call» and still opens `openFuCommentPopup`.
+- **Comments are always drawn** (`.sp-pk-cmt-sec`, empty state + «Add comment»),
+  because the footer «Comments» button was removed — it duplicated the section.
+  The footer now holds only «تأكيد الطلب» and is omitted when the order can't be confirmed.
+- **Threads have no inner box** and larger text (.86rem). Stored prose uses
+  `.sp-pk-txt` (`unicode-bidi:plaintext` + alignment pinned to the panel), so an
+  Arabic note in an English panel stays left-aligned instead of drifting right.
+- **Payment meter**: approved money solid, money in review striped amber
+  (`i.is-pend`), and المتبقي adds «بعد الاعتماد X». Remaining itself stays on
+  approved money only — that is what confirming records.
+- ⚠ **Blank Vrobo button fixed**: `.sp-pk-contact.is-compact .sp-ct-btn>span` (the
+  visually-hidden label rule) also matched the logo's `<span class="sp-vrobo-ic">`
+  wrapper and clipped it to nothing. Now `>span:not(.sp-vrobo-ic)`.
+- `shopify-deposit-receipts.cjs` asserted the old customer→items→payment order; it
+  now asserts customer-in-head and follow-up → comments → items → payment.
+  ⚠ That suite already failed before this change at unrelated stale table/mobile
+  assertions («empty order deposit cell says no deposit», «mobile main action adds
+  a deposit»), so it does not reach this check today.
+- Verified: 28 browser assertions over the shipped page (en light 1440, ar dark 1440,
+  en 390): section order, customer in head, Vrobo visible (17px, no clip), striped
+  pending + «after approval 250», single footer action, 4 chips, no spill, trail
+  alignment per language, zero page errors — 3 consecutive clean runs.
 
 ---
 
@@ -3430,10 +3470,63 @@ leaked — the change there is defence against the same trap, not a bug fix.
 
 ---
 
+## Phone: Drawer Behind the Page, Shopify Head Rebuilt (Oct 13, 2026)
+
+### The menu opened BEHIND the page
+Every sticky page head (`.prod/.inv/.cs/.sp-sticky-head`) is `z-index:60`; the mobile
+drawer was 50 and its dim layer 45 — so on every page the title, tabs and KPI strip
+painted over the open menu. ⚠ **The owner is `navigation-shell.css`** (loaded after
+index.html's styles, and it sets `#sidebar` z and `#sidebar-overlay{z-index:…!important}`),
+not index.html. Now drawer **90**, overlay **85** (below the header's 100). Its `<link>`
+carries `?v=` — bump it when that file changes.
+
+### On phones no sticky head has ever pinned (in Chrome)
+`#main` (~line 8690) and `.page` (~line 9030) are `overflow-x:hidden` on phones. That
+computes `overflow-y:auto`, so each becomes the sticky element's scroll container — and
+neither scrolls (the window does). ⚠ **`overflow-x:clip`** hides the same overflow without
+creating a scroll container. Applied only to the Shopify page
+(`#main:has(#page-shopify-orders.active)` + `#page-shopify-orders`); the other pages
+keep their phone behaviour — switching them would suddenly pin Inventory's 7-tile head.
+
+### Shopify page on a phone
+- **The whole head pins** (title, «آخر تحديث», refresh/export, tabs, search) and only the
+  order list scrolls — the owner's call. `#page-shopify-orders .sp-sticky-head` is sticky
+  under the header, compacted to ~151px (was ~360px): subtitle hidden, 32px actions beside
+  the title, tabs as one line of 32px pills, a 44px search field. «آخر تحديث» is hidden
+  under 360px. Page padding 20→12px — ⚠ the head bleeds by exactly −12px, so change both
+  together.
+- Tabs scroll sideways; `switchShopifySubnav` scrolls the chosen pill into view (rect
+  deltas — same code in RTL and LTR).
+- **Date window** (`.sp-date-popover`): ranges are 32px chips, three per row; both dates on
+  one row; 320×143 (was ~330×150 of 40px+ buttons and full-width date fields). ⚠ The
+  global phone rule gives every `.btn`/input a 40px+ min-height — that is what made it
+  tower; the overrides are `min-height:…!important`. Date inputs keep 16px text so iOS
+  does not zoom on focus.
+- **Profile menu** (≤640px): a 236px dropdown under the avatar on its side. ⚠ It was
+  styled as a full-width bottom sheet with a drag handle while `toggleProfileMenu()` sets
+  an inline `top` under the trigger — so a full-width "sheet" hung from the top.
+- **«سجل العربون» on a phone** is a card list (`_depLogCardsHtml` in `deposit-history.js`),
+  not the table's CSS-stacked rows (9 labelled cells, ~420px per receipt → **81px**).
+  Grouped under day headers; amount + status pill; `#order · client`; one meta line
+  (time · registered by · ✓ reviewer); a status stripe on the start edge. The card opens
+  the details window, the order number opens the order (`stopPropagation`). The vault
+  is the icon (name in `title`). ⚠ Times are 24h through `-u-nu-latn`. The desktop
+  table is untouched; both are emitted and CSS picks one at 640px. `?v=` bumped on
+  both deposit-history links. 29 browser assertions (ar/en/dark/desktop).
+- Desktop is unchanged (everything is inside phone media queries).
+- Verified: 66 assertions in headless Chrome at 390/320px, ar+en: head pinned with the
+  list scrolling under it, the date window / filter list / filters panel / profile menu
+  all inside the screen, one-line tabs, drawer on top of the Shopify and Inventory heads,
+  no page overflow, no page errors.
+
+---
+
 ## Recent Changes Summary
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Oct 13, 2026 | Shopify quick view compacted, follow-up first: customer moved into the head, then follow-up → comments → delivery → items → payment; follow-up facts as chips, readable threads, striped «in review» deposit on the meter, one footer action; fixed the blank Vrobo button | See "Shopify Quick View — Compact, Follow-up First" above |
+| Oct 13, 2026 | Phone: the side menu opened behind every sticky page head (z 50 vs 60) — fixed in navigation-shell.css; Shopify page on phones: compact head (title, refresh, tabs, search) stays pinned while only the list scrolls, tabs became one line of pills, date window and profile menu sized for the phone | See "Phone: Drawer Behind the Page, Shopify Head Rebuilt" above |
 | Oct 13, 2026 | Staff announcements: admins send a typed message to all or chosen employees from Settings ← الإعلانات; recipients get a popup until acknowledged, an instant Web Push, and a «الإعلانات» tab in the notification centre; read status per recipient; can be scheduled for later and cancelled before it goes out; announcement push cannot be switched off per type | See "Staff Announcements" above |
 | Oct 7, 2026 | Shopify quick view redesigned: one column of section cards (customer → ship together → payment → items → follow-up), the 760px sibling rail replaced by an «اشحنهم معاً» card with «تأكيد الطلبين»; the table's «طلبان» pill + box icon merged into one chip | See "Shopify Quick View Redesigned" above |
 | Oct 7, 2026 | Automatic Bosta settlement: each delivery books the net of Bosta's real fee a minute after DELIVERED; older orders settle by selection; review queue over a 20 EGP overcharge; «كشف حساب بوسطة» with transfers and fees; order timeline reordered by real time (291 → 0 out-of-order) | See "Automatic Bosta Settlement" above |

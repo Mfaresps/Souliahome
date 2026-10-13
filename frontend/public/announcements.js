@@ -117,7 +117,8 @@
     const multi = !single && queue.length > 1;
     const sub = multi ? text(`${fmtNum(queue.length)} إعلانات لم تطّلع عليها`, `${fmtNum(queue.length)} unread announcements`) : text('رسالة من الإدارة', 'A message from management');
     const isLast = qPos >= queue.length - 1;
-    d.innerHTML = `
+    // The <dialog> is a full-screen transparent layer; the visible box is .an-dlg-card.
+    d.innerHTML = `<div class="an-dlg-card">
       <div class="an-dlg-head">
         <div class="an-dlg-icon">${SVG.mega}</div>
         <div style="flex:1;min-width:0">
@@ -132,13 +133,14 @@
         <div class="an-dlg-meta">${avatar(a.createdById, a.createdByName, 22)}<span><b>${escH(a.createdByName || text('الإدارة', 'Management'))}</b> · <span title="${escH(fullDate(a.createdAt))}">${escH(when(a.createdAt))}</span></span></div>
       </div>
       <div class="an-dlg-foot">
-        ${multi ? `<span class="an-dlg-pos"><bdi>${fmtNum(qPos + 1)} / ${fmtNum(queue.length)}</bdi></span>` : ''}
+        ${multi ? `<span class="an-dlg-pos">${escH(text(`${fmtNum(qPos + 1)} من ${fmtNum(queue.length)}`, `${fmtNum(qPos + 1)} of ${fmtNum(queue.length)}`))}</span>` : ''}
         ${a.ackAt
           ? `<span class="an-dlg-read">${SVG.check}${escH(text('تم الاطلاع', 'Acknowledged'))} · ${escH(fullDate(a.ackAt))}</span>
              <button type="button" class="btn btn-outline btn-sm" data-an="close">${escH(text('إغلاق', 'Close'))}</button>`
           : `<button type="button" class="btn btn-outline btn-sm" data-an="later">${escH(text('لاحقاً', 'Later'))}</button>
              <button type="button" class="btn btn-primary btn-sm an-dlg-done" data-an="ack">${SVG.check}<span>${escH(isLast || single ? text('تم الاطلاع', 'Got it') : text('تم الاطلاع · التالي', 'Got it · Next'))}</span></button>`}
-      </div>`;
+      </div>
+    </div>`;
     d.querySelectorAll('[data-an]').forEach(b => b.addEventListener('click', () => {
       const act = b.dataset.an;
       if (act === 'ack') ack(b); else if (act === 'close') closeDialog(); else later();

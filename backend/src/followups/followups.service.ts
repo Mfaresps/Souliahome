@@ -437,10 +437,10 @@ export class FollowUpsService implements OnModuleInit {
     return `FU-${datePart}-N${String(seq).padStart(3, '0')}`;
   }
 
-  async create(dto: CreateFollowUpDto) {
+  async create(dto: CreateFollowUpDto, actorUserId = '') {
     const ticketNo = await this.generateTicketNo(dto.orderRef);
     const doc = await this.model.create({ ...dto, ticketNo });
-    await this.notifications?.enqueue('followup', 'followup:' + doc._id, doc.orderRef, 'followup:' + doc._id);
+    await this.notifications?.enqueue('followup', 'followup:' + doc._id, doc.orderRef, 'followup:' + doc._id, undefined, undefined, { actorUserId });
     return doc;
   }
 
@@ -535,7 +535,7 @@ export class FollowUpsService implements OnModuleInit {
     const newComments = (doc?.comments as any[]) || [];
     const newCommentId = newComments.length ? String(newComments[newComments.length - 1]._id) : '';
 
-    if (newCommentId) await this.notifications?.enqueue('comment', 'comment:followup:' + id + ':' + newCommentId, before.orderRef, 'followup:' + id, undefined, undefined, { actorName: authorName, commentId: newCommentId, commentText: text });
+    if (newCommentId) await this.notifications?.enqueue('comment', 'comment:followup:' + id + ':' + newCommentId, before.orderRef, 'followup:' + id, undefined, undefined, { actorUserId: authorId, actorName: authorName, commentId: newCommentId, commentText: text });
     const preview = text.length > 80 ? `${text.slice(0, 80)}…` : text;
     const commentText = `تعليق جديد على متابعة #${before.orderRef}: ${preview}`;
     for (const targetUserId of participantIds) {

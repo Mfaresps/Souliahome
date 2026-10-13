@@ -14,7 +14,7 @@ export const DEFAULTS = { performance: true, otp: true, approval: true, shopifyC
 const TITLES = { announcement: 'إعلان من SOULIA', performance: 'نقاط الأداء', otp: 'طلب OTP', approval: 'التعديلات والموافقات', shopifyChange: 'تعديل طلب شوبيفاي', security: 'تنبيه أمان', deposit: 'عربون جديد', comment: 'تعليق جديد', followup: 'متابعة جديدة', order: 'طلب جديد', deliveryProblem: 'مشكلة في التسليم', delivered: 'تم تسليم الطلب', mention: 'إشارة جديدة إليك' };
 const EN_TITLES = { announcement: 'SOULIA Announcement', performance: 'Performance points', otp: 'OTP Request', approval: 'Modifications & Approvals', shopifyChange: 'Shopify Order Changed', security: 'Security Alert', deposit: 'New Deposit', comment: 'New Comment', followup: 'New Follow-up', order: 'New Order', deliveryProblem: 'Delivery Issue', delivered: 'Order Delivered', mention: 'You Were Mentioned' };
 export const STAFF_TYPES = TYPES.filter(type => !(ADMIN_TYPES as readonly string[]).includes(type));
-export interface NotificationDetails { announcementText?: string; announcementCategory?: string; pointDelta?: number; pointReason?: string; weekly?: boolean; balance?: number; earned?: number; deducted?: number; assignedUserId?: string; assignedToYou?: boolean; actionKey?: string; status?: 'pending' | 'approved' | 'rejected' | 'modified'; changedFields?: string[]; expiresAt?: string; actorName?: string; amount?: number; pendingApproval?: boolean; vaultName?: string; commentId?: string | number; receiptId?: string; depositId?: string; commentText?: string; followupComment?: boolean; orderTotal?: number; deliveryStatus?: string; }
+export interface NotificationDetails { releaseVersion?: string; announcementText?: string; announcementCategory?: string; pointDelta?: number; pointReason?: string; weekly?: boolean; balance?: number; earned?: number; deducted?: number; assignedUserId?: string; assignedToYou?: boolean; actionKey?: string; status?: 'pending' | 'approved' | 'rejected' | 'modified'; changedFields?: string[]; expiresAt?: string; actorUserId?: string; actorName?: string; amount?: number; pendingApproval?: boolean; vaultName?: string; commentId?: string | number; receiptId?: string; depositId?: string; commentText?: string; followupComment?: boolean; orderTotal?: number; deliveryStatus?: string; }
 function cleanText(value: string | undefined, length: number) {
   return String(value || '').replace(/[\p{Cc}\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, length);
 }
@@ -23,6 +23,10 @@ export function notificationBody(type: NotificationType, ref: string, details: N
   const actor = cleanText(details.actorName, 36) || (language === 'en' ? 'A team member' : 'أحد الموظفين');
   const orderLabel = language === 'en' ? (reference ? `Order #${reference}` : 'Order') : (reference ? `الطلب #${reference}` : 'الطلب');
   if (type === 'announcement') {
+    if (details.releaseVersion) {
+      const version = cleanText(details.releaseVersion, 64);
+      return language === 'en' ? `Version ${version} is now live. Refresh the app to use the latest update.` : `تم رفع النسخة ${version} على اللايف بنجاح. حدّث الصفحة لاستخدام آخر تحديث.`;
+    }
     // Body = the message itself; a non-generic category leads with its own label.
     const category = ANNOUNCEMENT_CATEGORIES.find(c => c.code === details.announcementCategory);
     const prefix = category && category.code !== 'announcement' ? `${category.emoji} ${language === 'en' ? category.en : category.ar} · ` : '';
@@ -127,6 +131,7 @@ export class NotificationsService implements OnModuleInit {
   constructor(@InjectConnection() private readonly connection: Connection) {}
   private get accounts() { return this.connection.collection('notificationaccounts'); }
   private get jobs() { return this.connection.collection('notificationjobs'); }
+  private get inbox() { return this.connection.collection('notificationinbox'); }
   get configured() { return !!this.push; }
   async onModuleInit() {
     await this.accounts.createIndex({ userId: 1 }, { unique: true });
@@ -135,6 +140,8 @@ export class NotificationsService implements OnModuleInit {
     await this.jobs.createIndex({ nextAt: 1, attempts: 1 });
     await this.jobs.createIndex({ done: 1, nextAt: 1, attempts: 1 });
     await this.jobs.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+    await this.inbox.createIndex({ userId: 1, eventId: 1 }, { unique: true });
+    await this.inbox.createIndex({ userId: 1, createdAt: -1, _id: -1 });
     try {
       const points = this.connection.collection('notificationpointchanges');
       await points.createIndex({ sourceLogId: 1 });
@@ -225,9 +232,28 @@ export class NotificationsService implements OnModuleInit {
     return { queued: true };
   }
   // Safe to await after business commit: failures cannot change the business result.
+  async history(user: any, before = '') {
+    const userId = String(user.userId || user.sub || user._id || '');
+    const scope: any = { userId, ...(user.role !== 'admin' ? { type: { $nin: [...ADMIN_TYPES] } } : {}) };
+    const query: any = { ...scope };
+    if (before) {
+      if (!/^[a-f0-9]{64}$/.test(before)) throw new BadRequestException('Invalid notification cursor');
+      const cursor = await this.inbox.findOne({ userId, _id: before as any });
+      if (!cursor) throw new BadRequestException('Notification unavailable');
+      query.$or = [{ createdAt: { $lt: cursor.createdAt } }, { createdAt: cursor.createdAt, _id: { $lt: cursor._id } }];
+    }
+    const rows = await this.inbox.find(query).sort({ createdAt: -1, _id: -1 }).limit(51).toArray();
+    const items = rows.slice(0, 50);
+    const unread = await this.inbox.countDocuments({ ...scope, readAt: null });
+    return { items, unread, next: rows.length > 50 ? String(items[items.length - 1]._id) : '' };
+  }
+  async markHistoryRead(user: any, id: string) {
+    if (!/^[a-f0-9]{64}$/.test(id)) throw new BadRequestException('Invalid notification ID');
+    await this.inbox.updateOne({ _id: id as any, userId: String(user.userId || user.sub || user._id || '') }, { $set: { readAt: new Date() } });
+    return { success: true };
+  }
   async enqueue(type: NotificationType, eventId: string, ref: string, recordId = '', onlyUser?: string | string[], deliveryStatus?: string, details: NotificationDetails = {}) {
     try {
-      if (!this.configured) return;
       if (['mention', 'performance'].includes(type) && !onlyUser) return;
       if (type === 'performance' && !details.weekly && (!Number.isFinite(details.pointDelta) || details.pointDelta === 0)) return;
       const employeeLanguage = await this.employeeLanguage();
@@ -236,11 +262,12 @@ export class NotificationsService implements OnModuleInit {
       const eventTimestamp = Date.now();
       const queued = await Promise.allSettled(users.map(async user => {
         const userId = String(user._id);
+        // Exclude the account that performed the action, across all its devices.
+        if ((type === 'comment' || type === 'followup') && details.actorUserId && userId === String(details.actorUserId)) return;
         // An announcement names several recipients; every other event names at most one.
         if (onlyUser && (Array.isArray(onlyUser) ? !onlyUser.includes(userId) : userId !== onlyUser)) return;
         const account: any = await this.accounts.findOne({ userId });
         const test = eventId.startsWith('test:') && !!onlyUser;
-        if (!eligible(user, { ...DEFAULTS, ...account?.preferences, ...(test ? { [type]: true } : {}) }, type)) return;
         const reference = String(ref || '').replace(/[^\p{L}\p{N}# _-]/gu, '').slice(0, 40);
         const language = user.role === 'admin' ? account?.language === 'en' ? 'en' : 'ar' : employeeLanguage;
         const titles = language === 'en' ? EN_TITLES : TITLES;
@@ -251,11 +278,23 @@ export class NotificationsService implements OnModuleInit {
           assignedToYou: type === 'order' && user.role === 'staff' && !!details.assignedUserId && details.assignedUserId === userId };
         const body = test ? (language === 'en' ? 'SOULIA notifications are working.' : 'تم تفعيل إشعارات SOULIA بنجاح.') : notificationBody(type, reference, recipientDetails, language) || (reference ? '#' + reference : titles[type]);
         const target = new URLSearchParams({ pushRecord: recordId, pushType: type });
+        const inboxId = createHash('sha256').update(JSON.stringify([userId, eventId])).digest('hex');
+        if (!test) target.set('pushNotification', inboxId);
         const event = type === 'comment' ? details.commentId : details.receiptId || details.depositId;
         if (event != null) target.set('pushEvent', String(event));
         const title = notificationTitle(type, recipientDetails, language, test);
         const payload = JSON.stringify({ title, body, timestamp: eventTimestamp, lang: language, dir: language === 'en' ? 'ltr' : 'rtl',
           url: recordId ? '/?' + target.toString() : '/', tag: createHash('sha256').update(eventId).digest('hex') });
+        if (!test) {
+          try {
+            await this.inbox.updateOne({ _id: inboxId as any, userId }, { $setOnInsert: {
+              eventId, userId, type, title, body, ref: reference, recordId, event: event == null ? '' : String(event),
+              actorName: details.actorName || '', commentText: details.commentText || '',
+              url: recordId ? '/?' + target.toString() : '/', createdAt: new Date(eventTimestamp), readAt: null,
+            } }, { upsert: true });
+          } catch { this.logger.warn('Notification history could not be recorded'); }
+        }
+        if (!this.configured || !eligible(user, { ...DEFAULTS, ...account?.preferences, ...(test ? { [type]: true } : {}) }, type)) return;
         for (const subscription of account?.subscriptions || []) {
           await this.jobs.updateOne({ eventId, userId, endpoint: subscription.endpoint }, { $setOnInsert: {
             eventId, userId, endpoint: subscription.endpoint, type, payload, ...(type === 'otp' ? { otpId: recordId.slice(4) } : {}), attempts: 0, done: false,

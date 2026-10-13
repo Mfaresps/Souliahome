@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -2744,11 +2744,16 @@ body.dark-mode .pm-item .pm-meta{background:rgba(255,255,255,.08)}
 .pm-item[aria-pressed="true"] .pm-switch{background:var(--accent)}
 .pm-item[aria-pressed="true"] .pm-switch::after{transform:translateX(14px)}
 [dir="rtl"] .pm-item[aria-pressed="true"] .pm-switch::after{transform:translateX(-14px)}
+/* Phone: a compact dropdown under the avatar, not a sheet. ⚠ It used to be styled as
+   a full-width bottom sheet with a drag handle, but toggleProfileMenu() sets an inline
+   `top` under the trigger — so the "sheet" hung from the top across the whole screen.
+   The avatar sits at the header's inline END in both languages, hence the dir pair. */
 @media (max-width:640px){
-  .profile-menu{position:fixed;top:auto;bottom:0;left:0;right:0;width:100%;min-width:0;border-radius:16px 16px 0 0;padding:10px 8px calc(10px + env(safe-area-inset-bottom));transform:translateY(12px);box-shadow:0 -12px 40px rgba(0,0,0,.22)}
-  .profile-menu.open{transform:translateY(0)}
-  .profile-menu::before{content:'';display:block;width:38px;height:4px;background:var(--border);border-radius:2px;margin:2px auto 8px}
-  .pm-item{padding:13px 14px;font-size:.92rem}
+  .profile-menu{width:236px;min-width:0;max-width:calc(100vw - 24px);right:12px;left:auto;padding:4px;border-radius:12px}
+  [dir="rtl"] .profile-menu{left:12px;right:auto}
+  .profile-menu>div:first-child{padding:8px 10px!important}
+  .pm-item,#header .profile-menu .pm-item{padding:10px;gap:10px;font-size:.84rem;min-height:40px}
+  .pm-item .pm-icon{width:17px;height:17px}
 }
 #header button{color:#2d5a3d;opacity:.85;transition:opacity .2s}
 #header button:hover{opacity:1}
@@ -5186,8 +5191,14 @@ body.dark-mode .sp-ip-sum .is-warn{color:#fdba74}
 @media (prefers-reduced-motion:reduce){.sp-peek,.sp-peek-overlay{transition:none}}
 
 /* Head */
-.sp-pk-head{display:flex;align-items:flex-start;gap:10px;padding:18px 20px 14px;background:var(--bg);border-bottom:1px solid var(--border)}
+.sp-pk-head{display:flex;flex-direction:column;gap:10px;padding:14px 16px 12px;background:var(--bg);border-bottom:1px solid var(--border)}
+.sp-pk-head-row{display:flex;align-items:flex-start;gap:10px}
 .sp-pk-head-main{flex:1;min-width:0}
+/* Oct 13, 2026 — the customer sits in the head (compact), so the body can open on the follow-up */
+.sp-pk-head .sp-pk-cust-top{padding-top:10px;border-top:1px solid var(--border)}
+.sp-pk-head .sp-pk-cust-top .sp-pk-av{width:36px;height:36px;font-size:.8rem}
+.sp-pk-head .sp-pk-client{font-size:.95rem}
+.sp-pk-cust .sp-pk-facts{margin-top:0;padding-top:0;border-top:0}
 .sp-pk-ref{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:1.32rem;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}
 .sp-pk-sub{display:flex;align-items:center;flex-wrap:wrap;gap:4px 14px;margin-top:7px;font-size:.74rem;color:var(--muted)}
 .sp-pk-sub-i{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
@@ -5202,13 +5213,22 @@ body.dark-mode .sp-ip-sum .is-warn{color:#fdba74}
 body.dark-mode .sp-pk-pill.is-ok{--pk:#86efac}body.dark-mode .sp-pk-pill.is-bad{--pk:#fca5a5}body.dark-mode .sp-pk-pill.is-warn{--pk:#fdba74}body.dark-mode .sp-pk-pill.is-info{--pk:#93c5fd}
 
 /* Body — cards on the surface */
-.sp-pk-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:14px;display:flex;flex-direction:column;gap:12px}
+.sp-pk-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:10px;display:flex;flex-direction:column;gap:8px}
 .sp-pk-body.is-in > *{animation:spPkIn .26s ease both}
 .sp-pk-body.is-in > *:nth-child(2){animation-delay:.03s}.sp-pk-body.is-in > *:nth-child(3){animation-delay:.06s}.sp-pk-body.is-in > *:nth-child(n+4){animation-delay:.09s}
 @keyframes spPkIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.sp-pk-body.is-in > *{animation:none}}
-.sp-pk-sec{flex-shrink:0;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
-.sp-pk-sec-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:12px}
+.sp-pk-sec{flex-shrink:0;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.sp-pk-sec-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.82rem;font-weight:700;color:var(--text);margin-bottom:10px}
+.sp-pk-sec-h .sp-pk-link{display:inline-flex;align-items:center;gap:5px;min-height:30px;padding:0 8px;border-radius:8px}
+.sp-pk-sec-h .sp-pk-link:hover{background:var(--primary-pale);text-decoration:none}
+.sp-pk-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.sp-pk-none{font-size:.8rem;color:var(--muted)}
+/* Stored prose (comments, trail notes, the customer note) — each paragraph picks its
+   own direction so Arabic and Latin runs never reorder, but it stays ALIGNED with the
+   panel, so an Arabic note in an English panel no longer drifts to the far edge. */
+.sp-pk-txt{unicode-bidi:plaintext;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere}
+.sp-peek-overlay[dir="rtl"] .sp-pk-txt{text-align:right}
 .sp-pk-sec-h > svg{color:var(--muted);flex-shrink:0}
 .sp-pk-h-end{margin-inline-start:auto}
 .sp-pk-count{font-size:.66rem;font-weight:700;color:var(--primary-light);background:var(--primary-pale);border-radius:999px;padding:0 7px;line-height:1.6}
@@ -5265,8 +5285,11 @@ body.dark-mode .sp-pk-tg-row.is-self .sp-pk-tg-num{background:#60a5fa;color:#0b1
 /* Payment */
 .sp-pk-pay-total small{display:block;font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:2px}
 .sp-pk-pay-total b{font-size:1.5rem;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}
-.sp-pk-meter{height:6px;border-radius:999px;background:var(--surface2);margin:12px 0 14px;overflow:hidden}
-.sp-pk-meter i{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .4s ease}
+.sp-pk-meter{display:flex;height:6px;border-radius:999px;background:var(--surface2);margin:10px 0 12px;overflow:hidden}
+.sp-pk-meter i{display:block;height:100%;background:var(--accent);transition:width .4s ease}
+/* Money still in review: striped amber, never the solid «paid» fill */
+.sp-pk-meter i.is-pend{background:repeating-linear-gradient(135deg,#e9b45a 0 5px,#f4d49b 5px 10px)}
+body.dark-mode .sp-pk-meter i.is-pend{background:repeating-linear-gradient(135deg,#b7802a 0 5px,#7a5620 5px 10px)}
 .sp-pk-pay-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .sp-pk-pay-cell{display:flex;flex-direction:column;gap:2px;min-width:0;padding:10px 12px}
 .sp-pk-pay-cell + .sp-pk-pay-cell{border-inline-start:1px solid var(--border)}
@@ -5304,19 +5327,30 @@ body.dark-mode .sp-pk-meta-chip.is-disc{color:#4ade80;background:rgba(74,222,128
 .sp-pk-dl dd{margin:2px 0 0;font-size:.8rem;font-weight:500;overflow:hidden;text-overflow:ellipsis}
 .sp-pk-who{display:flex;align-items:center;gap:6px}
 .sp-pk-trail-h{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;color:var(--text);margin:4px 0 8px}
-.sp-pk-trail{list-style:none;margin:0 0 10px;padding:4px 12px;max-height:280px;overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--border);border-radius:10px;background:var(--bg)}
-.sp-pk-tl{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
-.sp-pk-tl:last-child{border-bottom:0}
-.sp-pk-tl-av{display:flex}
-.sp-pk-tl-b{min-width:0;font-size:.8rem;line-height:1.55;word-break:break-word}
+/* Threads (follow-up trail + comments) — no inner box: rows sit straight on the
+   section card, separated by hairlines, so the text gets the full width. */
+.sp-pk-trail{list-style:none;margin:0 0 10px;padding:0;max-height:260px;overflow-y:auto;overscroll-behavior:contain}
+.sp-pk-cmts{margin-bottom:0}
+.sp-pk-tl{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.sp-pk-tl:first-child{padding-top:2px}
+.sp-pk-tl:last-child{border-bottom:0;padding-bottom:2px}
+.sp-pk-tl-av{display:flex;padding-top:1px}
+.sp-pk-tl-b{min-width:0;font-size:.86rem;line-height:1.6;word-break:break-word;color:var(--text)}
 .sp-pk-tl-top{display:flex;align-items:baseline;gap:8px;margin-bottom:1px}
 .sp-pk-tl-top b{font-size:.76rem;font-weight:700}
-.sp-pk-tl-top time{margin-inline-start:auto;font-size:.66rem;color:var(--muted);white-space:nowrap;unicode-bidi:isolate}
+.sp-pk-tl-top time{margin-inline-start:auto;font-size:.68rem;color:var(--muted);white-space:nowrap;unicode-bidi:isolate}
+/* Follow-up facts — one wrapping row of chips */
+.sp-pk-fchips{display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 10px}
+.sp-pk-fchip{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 10px 0 8px;border-radius:999px;background:var(--surface);font-size:.76rem;font-weight:500;color:var(--text);max-width:100%;min-width:0}
+.sp-pk-fchip > svg{color:var(--muted);flex-shrink:0}
+.sp-pk-fchip > bdi,.sp-pk-fchip > span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-pk-fchip.is-quiet{color:var(--muted)}
+.sp-pk-empty.is-row{flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .sp-pk-tl.is-decision .sp-pk-tl-b{color:#b42318}
 .sp-pk-call{display:inline-block;font-size:.72rem;font-weight:600;border-radius:4px;padding:0 6px}
 .sp-pk-call.is-ok{color:#15803d;background:rgba(22,163,74,.1)}
 .sp-pk-call.is-bad{color:#b42318;background:rgba(220,38,38,.08)}
-.sp-pk-trail-btn{width:100%;justify-content:center;display:inline-flex;align-items:center;gap:6px}
+.sp-pk-trail-btn{width:100%;min-height:38px;justify-content:center;display:inline-flex;align-items:center;gap:7px}
 .sp-pk-fu-others{display:flex;flex-direction:column;gap:6px}
 .sp-pk-fu-other{display:flex;align-items:center;gap:8px;width:100%;text-align:start;font:inherit;font-size:.76rem;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);cursor:pointer}
 .sp-pk-fu-other:hover{border-color:var(--accent)}
@@ -5329,13 +5363,15 @@ body.dark-mode .sp-pk-meta-chip.is-disc{color:#4ade80;background:rgba(74,222,128
 @media (prefers-reduced-motion:reduce){.sp-pk-fu-skel span{animation:none}}
 
 /* Foot — one secondary, one primary that takes the remaining width */
-.sp-pk-foot{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border-top:1px solid var(--border)}
-.sp-pk-foot-sec{display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 14px;flex-shrink:0}
-.sp-pk-foot-go{flex:1;height:42px}
+.sp-pk-foot{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-top:1px solid var(--border)}
+.sp-pk-foot-go{flex:1;height:46px}
 @media (max-width:560px){
   .sp-peek{width:100vw}
-  .sp-pk-body{padding:10px;gap:10px}
-  .sp-pk-sec{padding:12px 14px}
+  .sp-pk-head{padding:10px 12px}
+  .sp-pk-body{padding:8px;gap:8px}
+  .sp-pk-sec{padding:12px}
+  .sp-pk-x{width:40px;height:40px}
+  .sp-pk-foot{padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
 }
 body.dark-mode .sp-peek{box-shadow:0 0 40px rgba(0,0,0,.5)}
 body.dark-mode .sp-pk-call.is-bad{color:#fca5a5;background:rgba(248,113,113,.16)}
@@ -5529,8 +5565,6 @@ body.dark-mode .sp-disc-guard.is-ok{color:#6ee7b7}
   #shopify-filters-top-row #shopify-search-wrap{order:1;flex:1 1 auto;max-width:none;min-width:0}
   #shopify-filters-top-row #shopify-search-wrap input{min-width:0}
   /* ⚠ لا تُكتب `left` هنا — _positionShopifyDatePopover يحسبها ويقيّدها داخل الشاشة. */
-  .sp-date-popover{width:calc(100vw - 24px);max-width:360px}
-  .sp-date-input{flex:1;min-width:110px}
   .sp-desktop-only{display:none!important}
   .sp-mobile-only{display:block}
   /* hide table, show cards */
@@ -5542,6 +5576,71 @@ body.dark-mode .sp-disc-guard.is-ok{color:#6ee7b7}
   #shopify-edit-modal > div{width:100%!important;max-width:100%!important;height:100%!important;max-height:100%!important;border-radius:0!important}
   .sp-edit-item-row{flex-direction:column;align-items:stretch;gap:10px}
   .sp-edit-item-controls{justify-content:space-between;width:100%}
+
+  /* ── Phone: the whole head pins, compact — only the order list scrolls ────────
+     Title + refresh/actions + tabs + search stay fixed under the app header (owner's
+     call, Oct 13). It used to be ~360px of chrome; compacted to ~150px: subtitle
+     hidden, one-line title row with 32px actions, tabs as one line of pills, a 44px
+     search field. ⚠ Selectors carry #page-shopify-orders / .sp-sticky-head to outrank
+     the desktop .sp-sticky-head rules (~line 9880, later in the file); the
+     !importants beat inline styles in the markup. */
+  /* ⚠ #main is overflow-x:hidden on phones (~line 8690). That computes overflow-y to
+     auto, making #main the sticky element's scroll container — and #main never
+     scrolls (the window does), so nothing pinned in Chrome. `clip` hides the same
+     overflow without creating a scroll container. Scoped to this page so the other
+     pages' phone behaviour does not change. */
+  #main:has(#page-shopify-orders.active){overflow-x:clip}
+  /* overflow: same trap — .page is overflow-x:hidden on phones (~line 9030).
+     padding 20→12: the cards gain 16px, and the head bleeds by exactly -12px to the
+     frame's edges. ⚠ Change the padding and those -12px margins together. */
+  #page-shopify-orders{overflow-x:clip;padding:12px 12px 24px}
+  #page-shopify-orders .sp-sticky-head{position:sticky;top:var(--header-h);z-index:60;margin:-12px -12px 10px;
+    padding:10px 12px 8px;background:var(--bg);border-bottom:1px solid var(--border);border-radius:12px 12px 0 0}
+  body.ann-visible #page-shopify-orders .sp-sticky-head{top:calc(var(--header-h) + 36px)}
+
+  .sp-sticky-head #shopify-page-header{flex-direction:row;align-items:center;margin:0 0 8px}
+  #shopify-page-header>div{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-width:0}
+  #shopify-page-header h2{font-size:1.1rem!important;flex-shrink:0}
+  #shopify-page-header p{margin:0!important;gap:2px!important;flex-wrap:nowrap!important;min-width:0}
+  #shopify-page-header [data-i18n="spSubtitle"]{display:none}
+  #shopify-page-header .sp-icon-btn{width:32px;height:32px;min-height:32px;border-radius:9px}
+  #shopify-last-refresh{order:-1;margin-inline-end:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+
+  /* Tabs: one line of pills that scrolls sideways. As underline tabs they wrapped
+     «عربونات قيد المراجعة» onto three lines and pushed «Performance» off-screen. */
+  .sp-sticky-head #sp-subnav{flex-wrap:nowrap;overflow-x:auto;gap:6px;margin:0 -12px 8px;padding:0 12px;
+    border-bottom:0;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-padding-inline:12px}
+  #sp-subnav::-webkit-scrollbar{display:none}
+  #sp-subnav .mov-main-tab{flex:0 0 auto;white-space:nowrap;height:32px;min-height:32px;padding:0 12px;margin:0;gap:6px;
+    border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--muted);font-size:.78rem}
+  #sp-subnav .mov-main-tab svg{width:14px;height:14px}
+  #sp-subnav .mov-main-tab:not(.active):hover{background:var(--surface);color:var(--text)}
+  #sp-subnav .mov-main-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  #sp-subnav .mov-main-tab.active .spdep-tab-count{background:rgba(255,255,255,.22);color:#fff}
+
+  /* Search bar: part of the pinned head now, so it carries no frame of its own. */
+  .sp-sticky-head #shopify-filters-bar{margin:0;padding:0;gap:8px;border:0;border-radius:0;background:transparent}
+  #shopify-filters-top-row #shopify-search-wrap{min-height:44px;padding:0 6px 0 12px;border-radius:12px;background:var(--surface)}
+  #shopify-search{min-height:40px}
+  #shopify-search-wrap .sp-field-seg{height:40px}
+  #shopify-search-wrap .sp-field-icon{width:34px;height:34px;min-height:34px;border-radius:9px}
+
+  /* Date window: compact. Ranges are small chips, three per row; both dates share one
+     row. The global phone rule gives every .btn/input a 40px+ min-height, which is
+     what made this window tower over the list — hence the min-height overrides. */
+  .sp-date-popover{width:min(320px,calc(100vw - 24px));max-width:none;padding:10px;gap:6px}
+  .sp-date-popover .sp-date-quick-btn{flex:1 1 calc(33.33% - 6px);min-width:0;height:32px;min-height:32px!important;
+    padding:0 4px;font-size:.74rem;line-height:1;border-radius:8px;white-space:nowrap}
+  .sp-date-popover .sp-date-sep{flex-basis:100%;width:auto;height:1px;margin:2px 0}
+  .sp-date-popover .sp-date-input{flex:1 1 0;min-width:0;width:auto;height:34px;min-height:34px!important;padding:0 6px;font-size:.76rem}
+  .sp-date-popover .sp-date-arrow{font-size:.72rem}
+  .sp-date-popover #shopify-date-clear-btn{flex-basis:100%;height:32px;min-height:32px!important;padding:0}
+}
+@media(max-width:480px){
+  body.ann-visible #page-shopify-orders .sp-sticky-head{top:calc(var(--header-h) + 34px)}
+}
+@media(max-width:360px){
+  #shopify-last-refresh{display:none}
 }
 #sidebar .nav-item[data-page="shopify-orders"] svg{stroke:none!important}
 #main{margin-top:var(--header-h);margin-right:var(--sidebar-w);padding:24px;min-height:calc(100vh - var(--header-h));transition:margin-right .3s}
@@ -8697,6 +8796,8 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
 
   /* Sidebar overlay */
   #sidebar-overlay{backdrop-filter:blur(2px)}
+  /* ⚠ The drawer's mobile z-index lives in navigation-shell.css (loaded after this),
+     not here: 90 / overlay 85 — above the sticky page heads (z 60), below the header. */
 
   /* Hamburger moved next to logo, top-right */
   .hamburger{display:inline-flex!important;width:32px;height:32px;color:#1a2e22;border-radius:8px}
@@ -15879,7 +15980,10 @@ body.dark-mode .spdep-review-notice{color:#fbbf24}
 .spdep-image-overlay img{max-width:100%;max-height:80vh;object-fit:contain}
 .sp-pk-cust-top .sp-pk-contact.is-compact{display:flex;gap:4px;margin:0;flex-shrink:0}
 .sp-pk-contact.is-compact .sp-ct-btn{width:30px;height:30px;min-height:30px;padding:5px;border-radius:9px;position:relative}
-.sp-pk-contact.is-compact .sp-ct-btn>span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* ⚠ :not(.sp-vrobo-ic) is load-bearing: the Vrobo logo's wrapper is ALSO a direct
+   <span> child, and this visually-hidden rule clipped it to nothing — the blank
+   middle button in the quick view (Oct 13, 2026). Only the text label is hidden. */
+.sp-pk-contact.is-compact .sp-ct-btn>span:not(.sp-vrobo-ic){position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .sp-pk-contact.is-compact .sp-ct-btn svg,.sp-pk-contact.is-compact .sp-ct-btn img{width:17px;height:17px;object-fit:contain}
 /* ⚠ القاعدة فوق بتوصل لـ<img>/<svg> مباشرة، لكن أيقونة Vrobo ملفوفة في
    <span class="sp-vrobo-ic"> (المربّع الأحمر اللي الصورة بترسم جواه) — القاعدة
@@ -16164,15 +16268,15 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 @media(prefers-reduced-motion:reduce){.spdep-scanning-icon,.is-scanning .spdep-scan-line{animation:none}}
 
 </style>
-<link rel="stylesheet" href="/navigation-shell.css">
-<link rel="stylesheet" href="/deposit-history.css">
+<link rel="stylesheet" href="/navigation-shell.css?v=20261013">
+<link rel="stylesheet" href="/deposit-history.css?v=20261013">
 <link rel="stylesheet" href="/deposit-transfer.css">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#00311e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="/push-icon-192.png">
 <link rel="stylesheet" href="/notification-settings.css">
-<link rel="stylesheet" href="/announcements.css">
+<link rel="stylesheet" href="/announcements.css?v=3">
 <link rel="stylesheet" href="/settings-responsive.css">
 </head>
 <body>
@@ -23146,7 +23250,8 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 </div>
 
-<script src="/deposit-history.js"></script>
+<script src="/deposit-history.js?v=20261013"></script>
+<script src="/invoice-image.js?v=20261013"></script>
 <script>
 const qs = (s, p) => (p || document).querySelector(s);
 const qsa = (s, p) => [...(p || document).querySelectorAll(s)];
@@ -35352,6 +35457,7 @@ let _notifLastUpdatedAt = null;
 
 /** Mark a notification id as read (persisted) */
 function _markNotifRead(id) {
+  if (typeof window.souliaMarkHistoryRead === 'function') window.souliaMarkHistoryRead(id);
   if (!_notifReadIds.includes(id)) {
     _notifReadIds.push(id);
     localStorage.setItem('notifReadIds', JSON.stringify(_notifReadIds));
@@ -35406,6 +35512,7 @@ function buildStockNotifs() {
 function buildNotifications() {
   _updateNotifTimestamp();
   const notifs = [];
+  if (typeof window.souliaHistoryNotifs === 'function') notifs.push(...window.souliaHistoryNotifs());
   // النسخ السحابي متوقف أو فشل — إنذار وليس بطاقة تُزار.
   // بطاقة الإعدادات تخبرك بالحال إن ذهبت تسأل؛ هذا يخبرك دون أن تسأل، وهو
   // الفرق بين اكتشاف توقّف النسخ بعد يوم واكتشافه بعد شهر يوم تحتاجه.
@@ -35548,7 +35655,7 @@ function buildNotifications() {
   const stockVisible = stockAll.filter(n => !notifDismissed.includes(n.id));
   const badge = qs('#notif-badge');
   const unreadMentions = (typeof buildMentionNotifsList === 'function') ? buildMentionNotifsList().filter(m => !m.read).length : 0;
-  const totalBadge = notifs.filter(n => !notifDismissed.includes(n.id)).length + unreadMentions + stockVisible.length + (window.souliaAnnUnread || 0);
+  const totalBadge = notifs.filter(n => !n.history && !notifDismissed.includes(n.id)).length + (window.souliaHistoryUnread?.() || 0) + unreadMentions + stockVisible.length + (window.souliaAnnUnread || 0);
   if (badge) badge.textContent = totalBadge > 0 ? totalBadge : '';
   const stockCountEl = qs('#notif-stock-count');
   if (stockCountEl) {
@@ -35561,7 +35668,7 @@ function buildNotifications() {
   const list = qs('#notif-list');
   if (!list) return;
   list.innerHTML = visible.length ? visible.map(n => {
-    const isUnread = !_notifReadIds.includes(n.id);
+    const isUnread = n.history ? !n.historyRead : !_notifReadIds.includes(n.id);
     const refAttrs = n.refId ? `data-ref-id="${esc(n.refId)}" data-ref-type="${esc(n.refType||'')}"` : `data-ref-type="${esc(n.refType||'')}"`;
 
     return `<div class="notif-item ${n.type}${isUnread?' unread-notif':''}" ${refAttrs}
@@ -35569,11 +35676,12 @@ function buildNotifications() {
       <div class="notif-icon">${n.icon}</div>
       <div class="notif-body">
         <div class="notif-title">${esc(n.title)}</div>
-        <div class="notif-desc">${n.desc}</div>
+        <div class="notif-desc">${n.history ? esc(n.desc) : n.desc}</div>
         ${n.ts ? `<div class="notif-time">${fmtDateTime(n.ts)}</div>` : ''}
       </div>
     </div>`;
   }).join('') : `<div class="notif-empty">${t('noNotifications')}</div>`;
+  if (typeof window.souliaHistoryMoreButton === 'function') list.insertAdjacentHTML('beforeend', window.souliaHistoryMoreButton());
   _startNotifOtpCountdowns();
 }
 
@@ -35583,6 +35691,7 @@ function toggleNotifPanel(e) {
   const willShow = !panel.classList.contains('show');
   panel.classList.toggle('show');
   if (willShow) {
+    window.souliaRefreshNotificationHistory?.();
     window._notifTab = window._notifTab || 'all';
     _syncFilterBar(window._notifTab);
     refreshMentionsFromServer().then(() => switchNotifTab(window._notifTab));
@@ -35600,6 +35709,7 @@ function toggleNotifPanel(e) {
 function _highlightNotifTarget(refType, refId) { }
 
 function onNotifClick(page, notifId, fuId, refType, refId) {
+  if (refType === 'history') { window.souliaOpenHistory?.(refId); return; }
   qs('#notif-panel').classList.remove('show');
   // Dismiss
   if (!notifDismissed.includes(notifId)) {
@@ -35666,6 +35776,7 @@ function _bidiIsolateHandles(escapedTxt) {
 
 function _buildNcUpdates() {
   const notifs = [];
+  if (typeof window.souliaHistoryNotifs === 'function') notifs.push(...window.souliaHistoryNotifs());
   const pendingExp = expenses.filter(e => e.status === 'معلق');
   if (pendingExp.length > 0 && currentUser?.role === 'admin') {
     pendingExp.forEach(exp => {
@@ -35732,6 +35843,7 @@ function _buildNcUpdates() {
 }
 
 function openNotifCenter() {
+  window.souliaRefreshNotificationHistory?.();
   qs('#notif-panel')?.classList.remove('show');
   _ncTab = 'updates';
   _ncSelectedId = null;
@@ -35788,7 +35900,7 @@ function _renderNcContent() {
 }
 
 function _ncItemHtml(n, isSelected) {
-  const isUnread = !_notifReadIds.includes(n.id);
+  const isUnread = n.history ? !n.historyRead : !_notifReadIds.includes(n.id);
   const typeColor = { urgent: 'var(--red)', warning: 'var(--orange)', info: 'var(--blue)' };
   return `<div class="nc-item ${n.type}${isSelected ? ' selected' : ''}" onclick="_selectNcItem('${esc(n.id)}')">
     ${isUnread ? '<div class="nc-unread-dot"></div>' : '<div style="width:7px;flex-shrink:0"></div>'}
@@ -35840,7 +35952,7 @@ function _renderNcUpdatesList(main) {
   main.innerHTML = `<div class="nc-list">${groups.map(g =>
     `<div class="nc-time-label">${g.label}</div>` +
     g.items.map(n => _ncItemHtml(n, _ncSelectedId === n.id)).join('')
-  ).join('')}</div>`;
+  ).join('')}${typeof window.souliaHistoryMoreButton === 'function' ? window.souliaHistoryMoreButton() : ''}</div>`;
 }
 
 /* ── Copy OTP helper ── */
@@ -36418,6 +36530,7 @@ function _renderNcDetail(n) {
 }
 
 function _ncNavigate(page, notifId, fuId, refType, refId) {
+  if (refType === 'history') { window.souliaOpenHistory?.(refId); return; }
   closeNotifCenter();
   if (!notifDismissed.includes(notifId)) {
     notifDismissed.push(notifId);
@@ -36488,6 +36601,7 @@ function _warnMentionFailed(targets) {
 
 /** Fetch mentions for current user from backend */
 async function refreshMentionsFromServer() {
+  window.souliaRefreshNotificationHistory?.();
   try {
     const list = await api('/mentions');
     _mentionsCache = Array.isArray(list) ? list : [];
@@ -48620,6 +48734,7 @@ function renderMovMobileCard(tx) {
             <div class="dd-item" onclick="openOrderView('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg> ${t('openInvoice')}</div>
             ${waItem}
             ${txEditGate(tx).ok ? `<div class="dd-item" onclick="openEditMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> ${t('editAction')}</div>` : ''}
+          ${invoiceImageActions('transaction', tx._id)}
             <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة</div>
             ${!isCancelled && hasPerm('complaints') && tx.type!=='مشتريات' ? `<div class="dd-item" onclick="convertTxToFollowUp('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M5 8.2V13a4 4 0 004 4h1.5" stroke-dasharray="3 3"/></svg> ${t('spConvertToFollowup')}</div>` : ''}
             ${rem > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل</div>` : ''}
@@ -49094,6 +49209,7 @@ function renderMovementTxRow(tx) {
           <!-- 3. تعديل -->
           ${editItem}
           <!-- 4. طباعة -->
+          ${invoiceImageActions('transaction', tx._id)}
           <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> ${t('printPdf')}</div>
           <!-- 4.5 تحويل لمتابعة -->
           ${!tx.cancelled && hasPerm('complaints') && tx.type!=='مشتريات' ? `<div class="dd-item" onclick="convertTxToFollowUp('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M5 8.2V13a4 4 0 004 4h1.5" stroke-dasharray="3 3"/></svg> ${t('spConvertToFollowup')}</div>` : ''}
@@ -50370,6 +50486,7 @@ function renderMovGridCard(tx) {
         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         ${t('view')}
       </button>
+      ${invoiceImageActions('transaction', tx._id, true)}
       <button class="mgc-action-btn" onclick="printInvoice('${esc(tx._id)}')">
         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         ${t('print')}
@@ -58622,6 +58739,17 @@ function bulkPrintPDF() {
   w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><style>${_invoiceSharedCss()}</style></head><body>${allHtml}${_invPrintTrigger()}</body></html>`);
   w.document.close();
   toast(`جارٍ طباعة ${selected.length} فاتورة`);
+}
+
+function invoiceImageActions(source, id, buttons = false) {
+  const en = currentLang === 'en';
+  const arg = escHtml(JSON.stringify(String(id)));
+  return ['download', 'copy'].map(action => {
+    const label = action === 'download'
+      ? (en ? 'Download invoice image' : 'تحميل صورة الفاتورة')
+      : (en ? 'Copy invoice image' : 'نسخ صورة الفاتورة');
+    return `<button type="button" class="${buttons ? 'mgc-action-btn' : 'dd-item'}" onclick="exportInvoiceImage('${source}',${arg},'${action}')">${action === 'download' ? '↓' : '▣'} ${label}</button>`;
+  }).join('');
 }
 
 function printInvoice(id) {
@@ -88826,7 +88954,7 @@ async function loadComplaints() {
   }
 }
 
-function switchMainTab(tab, skipHash) {
+function switchMainTab(tab, skipHash, deferLoad = false) {
   const fuSection = qs('#fu-orders-section');
   const cmpSection = qs('#cmp-complaints-section');
   const btnFu = qs('#main-tab-fu');
@@ -88856,7 +88984,7 @@ function switchMainTab(tab, skipHash) {
     if (btnNewFu) btnNewFu.style.display = '';
     // One archive button serves both tabs — it reads this attribute to know which resource to export.
     if (btnXpCs) btnXpCs.dataset.xpRes = 'followups';
-    loadFollowUps();
+    if (!deferLoad) loadFollowUps();
     _fuMarkAllSeen();
     _fuUpdateBadges();
   } else {
@@ -91584,8 +91712,7 @@ async function openFuTicketBySlug(slug) {
 // should not have their existing hash rewritten underneath them.
 async function goToFuAndHighlight(fuId, openThread = false, highlightCommentId = '', pushTicketHash = false) {
   navigateTo('complaints');
-  setTimeout(async ()=>{
-    if(typeof switchMainTab==='function') switchMainTab('fu');
+    if(typeof switchMainTab==='function') switchMainTab('fu', false, true);
 
     // switchMainTab('fu') kicks off an async loadFollowUps() fetch — wait for
     // it (and any filters that would hide this item) before hunting for the
@@ -91607,6 +91734,7 @@ async function goToFuAndHighlight(fuId, openThread = false, highlightCommentId =
     // Jump to whichever page this follow-up actually lands on, mirroring
     // renderFollowUps' own sort (active first, then done, both newest-first).
     const f = (followUps||[]).find(x => String(x._id) === String(fuId));
+    if (!f) { toast(t('fuNotFound'), true); return; }
     // Descriptive, shareable URL for this ticket — replaceState (not push) so
     // arriving via a pasted ticket link doesn't stack a duplicate history entry.
     if (f && pushTicketHash) {
@@ -91624,10 +91752,8 @@ async function goToFuAndHighlight(fuId, openThread = false, highlightCommentId =
     }
     renderFollowUps();
 
-    let tries = 0;
-    const tryHighlight = () => {
       const candidates = [qs(`#fu-row-${fuId}`), qs(`.fu-card[data-fu-id="${fuId}"]`)];
-      const found = candidates.some(el => {
+      candidates.some(el => {
         if (!el || el.offsetParent === null) return false;
         el.classList.remove('nav-highlight-fu'); void el.offsetWidth;
         el.classList.add('nav-highlight-fu');
@@ -91635,11 +91761,7 @@ async function goToFuAndHighlight(fuId, openThread = false, highlightCommentId =
         setTimeout(()=>el.classList.remove('nav-highlight-fu'),3000);
         return true;
       });
-      if (!found && tries < 10) { tries++; setTimeout(tryHighlight, 150); return; }
       if (openThread) openFuCommentPopup(fuId, highlightCommentId);
-    };
-    tryHighlight();
-  },320);
 }
 
 /* ── Shopify order # → متابعة الطلبات ─────────────────────────────────────────
@@ -98655,6 +98777,14 @@ function switchShopifySubnav(tab, skipHash) {
   qs('#sp-subnav-orders')?.classList.toggle('active', tab === 'orders');
   qs('#sp-subnav-perf')?.classList.toggle('active', tab === 'perf');
   qs('#sp-subnav-deposits')?.classList.toggle('active', tab === 'deposits');
+  // Phone: the tabs are one sideways-scrolling row of pills — keep the chosen one in
+  // view. Rect deltas, not scrollLeft, so it is the same code in RTL and LTR.
+  const _spBar = qs('#sp-subnav'), _spAct = _spBar?.querySelector('.mov-main-tab.active');
+  if (_spAct && _spBar.scrollWidth > _spBar.clientWidth) {
+    const a = _spAct.getBoundingClientRect(), b = _spBar.getBoundingClientRect();
+    if (a.left < b.left) _spBar.scrollBy({ left: a.left - b.left - 12, behavior: 'smooth' });
+    else if (a.right > b.right) _spBar.scrollBy({ left: a.right - b.right + 12, behavior: 'smooth' });
+  }
   const ordersEl = qs('#sp-orders-tab-content');
   const perfEl = qs('#sp-perf-dashboard-content');
   const depEl = qs('#sp-deposits-tab-content');
@@ -100869,8 +100999,8 @@ function _spPeekFuHtml(o) {
   const list = _spFollowUpsFor(o);
   if (!list.length) {
     const canOpen = hasPerm('complaints');
-    return `${title}<div class="sp-pk-empty">
-      <div>${isEn ? 'No employee has opened a follow-up for this order.' : 'لم يفتح أي موظف متابعة لهذا الأوردر.'}</div>
+    return `${title}<div class="sp-pk-empty is-row">
+      <div>${isEn ? 'No follow-up opened for this order.' : 'لم تُفتح متابعة لهذا الأوردر.'}</div>
       ${canOpen ? `<button type="button" class="btn btn-outline btn-sm" onclick="closeSpOrderPeek();convertShopifyOrderToFollowUp('${esc(String(o._id))}')">${isEn ? 'Open a follow-up' : 'فتح متابعة'}</button>` : ''}
     </div>`;
   }
@@ -100883,7 +101013,7 @@ function _spPeekFuHtml(o) {
   const lastCall = calls[calls.length - 1];
   const callTxt = calls.length
     ? `${fmtN(calls.length)}/3 · ${lastCall.callOutcome === 'answered' ? (isEn ? 'answered' : 'رد') : (isEn ? 'no answer' : 'لم يرد')}`
-    : (isEn ? 'none yet' : 'لا يوجد');
+    : (isEn ? 'No calls yet' : 'لا مكالمات بعد');
   const _users = Array.isArray(users) ? users : [];
   const respUser = _users.find(u => String(u._id) === String(f.responsibleId)) || { name: f.responsibleName };
   const fid = esc(String(f._id));
@@ -100893,8 +101023,8 @@ function _spPeekFuHtml(o) {
     const isCall = c.kind === 'call';
     const outcome = c.callOutcome === 'answered' ? (isEn ? 'answered' : 'رد') : (isEn ? 'no answer' : 'لم يرد');
     const body = isCall
-      ? `<span class="sp-pk-call ${c.callOutcome === 'answered' ? 'is-ok' : 'is-bad'}">${isEn ? `Call attempt ${fmtN(c.callAttemptNo || 0)}` : `محاولة اتصال ${fmtN(c.callAttemptNo || 0)}`} — ${outcome}</span>${c.text ? `<div dir="auto">${esc(c.text)}</div>` : ''}`
-      : `<div dir="auto">${typeof renderMentionText === 'function' ? renderMentionText(c.text || '') : esc(c.text || '')}</div>`;
+      ? `<span class="sp-pk-call ${c.callOutcome === 'answered' ? 'is-ok' : 'is-bad'}">${isEn ? `Call attempt ${fmtN(c.callAttemptNo || 0)}` : `محاولة اتصال ${fmtN(c.callAttemptNo || 0)}`} — ${outcome}</span>${c.text ? `<div class="sp-pk-txt">${esc(c.text)}</div>` : ''}`
+      : `<div class="sp-pk-txt">${typeof renderMentionText === 'function' ? renderMentionText(c.text || '') : esc(c.text || '')}</div>`;
     return `<li class="sp-pk-tl">
       <span class="sp-pk-tl-av">${userAvatarHtml(u, 24)}</span>
       <div class="sp-pk-tl-b">
@@ -100906,7 +101036,7 @@ function _spPeekFuHtml(o) {
   const decision = f.cancelled
     ? `<li class="sp-pk-tl is-decision"><span class="sp-pk-tl-av">${userAvatarHtml({ name: f.cancelledByName }, 24)}</span><div class="sp-pk-tl-b">
         <div class="sp-pk-tl-top"><b>${esc(f.cancelledByName || '—')}</b><time title="${escHtml(_pwWhenFull(f.cancelledAt))}">${esc(_pwWhen(f.cancelledAt))}</time></div>
-        <div dir="auto">${isEn ? 'Decision: cancel' : 'القرار: إلغاء'}${f.cancelReason ? ` — ${esc(f.cancelReason)}` : ''}</div></div></li>`
+        <div class="sp-pk-txt">${isEn ? 'Decision: cancel' : 'القرار: إلغاء'}${f.cancelReason ? ` — ${esc(f.cancelReason)}` : ''}</div></div></li>`
     : '';
 
   const others = list.slice(1).map(x => {
@@ -100917,21 +101047,24 @@ function _spPeekFuHtml(o) {
     </button>`;
   }).join('');
 
+  /* Compact facts: one wrapping row of chips instead of a 2×2 grid. Each chip's
+     label lives in its title and a visually-hidden prefix, so it still reads as
+     «Calls: 0/3» to a screen reader. */
+  const fchip = (ico, label, val, cls = '') => `<span class="sp-pk-fchip${cls}" title="${escHtml(label)}"><span class="sp-pk-sr">${esc(label)}: </span>${ico}${val}</span>`;
   return `<div class="sp-pk-sec-h">${_SP_PK_ICO.route}<span>${isEn ? 'Follow-up' : 'المتابعة'}</span>${f.ticketNo ? ` <bdi class="sp-pk-mono">${esc(f.ticketNo)}</bdi>` : ''}
-      <span class="sp-pk-fu-chip" style="background:${st.bg};color:${st.color}"><i style="background:${st.dot || st.color}"></i>${esc(_fuStatusLabel(f.status) || '—')}</span></div>
-    <dl class="sp-pk-dl">
-      <div><dt>${isEn ? 'Handled by' : 'المسؤول'}</dt><dd class="sp-pk-who">${userAvatarHtml(respUser, 20)}<span>${esc(f.responsibleName || '—')}</span></dd></div>
-      ${reason ? `<div><dt>${isEn ? 'Reason' : 'السبب'}</dt><dd dir="auto">${esc(reason)}</dd></div>` : ''}
-      <div><dt>${isEn ? 'Calls' : 'محاولات الاتصال'}</dt><dd>${callTxt}</dd></div>
-      <div><dt>${isEn ? 'Opened' : 'فُتحت'}</dt><dd title="${escHtml(_pwWhenFull(f.createdAt))}">${esc(_pwWhen(f.createdAt) || '—')}</dd></div>
-    </dl>
-    <div class="sp-pk-trail-h">${isEn ? 'Follow-up trail' : 'مسار المتابعة'} <span class="sp-pk-count">${fmtN(comments.length)}</span></div>
+      <span class="sp-pk-fu-chip sp-pk-h-end" style="background:${st.bg};color:${st.color}"><i style="background:${st.dot || st.color}"></i>${esc(_fuStatusLabel(f.status) || '—')}</span></div>
+    <div class="sp-pk-fchips">
+      ${fchip(userAvatarHtml(respUser, 18), isEn ? 'Handled by' : 'المسؤول', `<span>${esc(f.responsibleName || '—')}</span>`)}
+      ${reason ? fchip(_SP_PK_ICO.tag, isEn ? 'Reason' : 'السبب', `<bdi>${esc(reason)}</bdi>`) : ''}
+      ${fchip(_SP_PK_ICO.phone, isEn ? 'Calls' : 'محاولات الاتصال', esc(callTxt), calls.length ? '' : ' is-quiet')}
+      <span class="sp-pk-fchip" title="${escHtml((isEn ? 'Opened ' : 'فُتحت ') + _pwWhenFull(f.createdAt))}"><span class="sp-pk-sr">${isEn ? 'Opened' : 'فُتحت'}: </span>${_SP_PK_ICO.clock}${esc(_pwWhen(f.createdAt) || '—')}</span>
+    </div>
     ${trail || decision
-      ? `<ol class="sp-pk-trail" id="sp-pk-trail">${trail}${decision}</ol>`
+      ? `<ol class="sp-pk-trail" id="sp-pk-trail" aria-label="${escHtml(isEn ? 'Follow-up trail' : 'مسار المتابعة')}">${trail}${decision}</ol>`
       : `<div class="sp-pk-empty">${isEn ? 'No entries in the trail yet.' : 'لا توجد إدخالات في المسار بعد.'}</div>`}
     <button type="button" class="btn btn-outline btn-sm sp-pk-trail-btn" onclick="_spPeekOpenTrail('${fid}')">
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M5 8.2V13a4 4 0 004 4h1.5" stroke-dasharray="3 3"/></svg>
-      ${f.cancelled ? (isEn ? 'Open follow-up trail' : 'فتح مسار المتابعة') : (isEn ? 'Open trail · add note or call' : 'فتح المسار · إضافة تعليق أو مكالمة')}
+      ${_SP_PK_ICO.notePlus}
+      <span>${f.cancelled ? (isEn ? 'Open follow-up trail' : 'فتح مسار المتابعة') : (isEn ? 'Add note or call' : 'إضافة ملاحظة أو مكالمة')}</span>
     </button>
     ${others ? `<div class="sp-pk-trail-h">${isEn ? 'Other follow-ups on this order' : 'متابعات أخرى على الأوردر'}</div><div class="sp-pk-fu-others">${others}</div>` : ''}`;
 }
@@ -100961,6 +101094,9 @@ const _SP_PK_ICO = {
   route:  _spPkSvg('<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M6 8.5V13a4 4 0 004 4h5.5"/>'),
   chat:   _spPkSvg('<path d="M21 12a8 8 0 01-11.6 7.1L4 20l1-4.6A8 8 0 1121 12z"/>'),
   chev:   _spPkSvg('<polyline points="9 6 15 12 9 18"/>', 14, 2),
+  phone:  _spPkSvg('<path d="M5 4h3.5l1.5 4-2 1.3a11 11 0 006.7 6.7L16 14l4 1.5V19a1.5 1.5 0 01-1.6 1.5A16 16 0 013.5 5.6 1.5 1.5 0 015 4z"/>', 13),
+  tag:    _spPkSvg('<path d="M3 12V4a1 1 0 011-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.3"/>', 13),
+  notePlus: _spPkSvg('<path d="M5 18.5V7a2 2 0 012-2h10a2 2 0 012 2v7a2 2 0 01-2 2H8.5z"/><path d="M12 8v5M9.5 10.5h5"/>', 15),
 };
 
 /* Payment state of a not-yet-recorded order, derived from the money only —
@@ -101087,7 +101223,6 @@ function _spPeekHtml(o) {
   const addr = (o.shippingAddress || '').replace(/^العنوان:\s*/, '').trim()
     || (() => { const a = o.rawData?.shipping_address; if (!a) return ''; return [a.address1, a.address2, a.city, a.province].filter(Boolean).join('، '); })();
   const note = (o.notes || '').trim().startsWith('العنوان:') ? '' : (o.notes || '').trim();
-  const nCmt = Array.isArray(o.comments) ? o.comments.length : 0;
   const canConfirm = o.status === 'pending' && !o.cancelled && _spCancelReqState(o) !== 'req';
   const repeat = _spCustomerOrderNth(o, _spBuildCustomerOrderIndex());
   const _users = Array.isArray(users) ? users : [];
@@ -101096,7 +101231,10 @@ function _spPeekHtml(o) {
   /* ── Customer ── the name is isolated with <bdi> rather than dir="auto" on its
      block: dir="auto" on a block also flips its ALIGNMENT, which threw an Arabic
      name to the far edge of an English panel, away from its own phone number. */
-  const custHtml = `<section class="sp-pk-sec sp-pk-cust">
+  /* ⚠ Oct 13, 2026 — compact layout: WHO lives in the header (name, phone,
+     contact buttons) so the body can lead with the follow-up and the comments —
+     the two threads the operator reads first. Address + note follow them. */
+  const custTopHtml = `
       <div class="sp-pk-cust-top">
         <span class="sp-pk-av" aria-hidden="true">${_spPeekInitials(o.client)}</span>
         <div class="sp-pk-cust-id">
@@ -101105,17 +101243,25 @@ function _spPeekHtml(o) {
             <button type="button" class="sp-pk-copy" onclick="_spPeekCopyPhone('${escHtml(phone.replace(/[^\d+]/g, ''))}')" title="${escHtml(isEn ? 'Copy number' : 'نسخ الرقم')}" aria-label="${escHtml(isEn ? 'Copy number' : 'نسخ الرقم')}">${_SP_PK_ICO.copy}</button></div>` : ''}
         </div>
         ${phone ? _spContactLinksHtml(o, 'compact') : ''}
-      </div>
-      ${addr || note ? `<div class="sp-pk-facts">
+      </div>`;
+  const custFactsHtml = addr || note ? `<section class="sp-pk-sec sp-pk-cust" aria-label="${escHtml(isEn ? 'Delivery' : 'التسليم')}">
+      <div class="sp-pk-facts">
         ${addr ? `<div class="sp-pk-fact">${_SP_PK_ICO.pin}<div><small>${isEn ? 'Delivery address' : 'عنوان التسليم'}</small><bdi>${esc(addr)}</bdi></div></div>` : ''}
-        ${note ? `<div class="sp-pk-fact is-note">${_SP_PK_ICO.note}<div><small>${isEn ? 'Customer note' : 'ملاحظة العميل'}</small><bdi class="sp-pk-note-txt">${esc(note)}</bdi></div></div>` : ''}
-      </div>` : ''}
-    </section>`;
+        ${note ? `<div class="sp-pk-fact is-note">${_SP_PK_ICO.note}<div><small>${isEn ? 'Customer note' : 'ملاحظة العميل'}</small><span class="sp-pk-note-txt sp-pk-txt">${esc(note)}</span></div></div>` : ''}
+      </div>
+    </section>` : '';
 
   /* ── Payment ── the total is the lead figure; the meter states how much of it is
      already in hand (single hue — a share of one total, the vault-strip rule);
      العربون / المتبقي pair below it; shipping and discount only when they exist. */
   const pay = _spPeekPayState(total, deposit);
+  /* The meter shows approved money solid and money still in review striped, so a
+     300 receipt waiting for approval no longer reads as «nothing paid» beside a
+     Remaining that has not dropped yet. Remaining stays on APPROVED money only —
+     that is what the confirm will record. */
+  const pendAmt = (_dep.pending || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  const pctA = total > 0 ? Math.min(100, (deposit || 0) / total * 100) : 0;
+  const pctP = total > 0 ? Math.max(0, Math.min(100 - pctA, pendAmt / total * 100)) : 0;
   const metaChips = [
     ship > 0 ? `<span class="sp-pk-meta-chip">${isEn ? 'Shipping' : 'الشحن'} ${fmtJ(ship)}</span>` : '',
     disc > 0 ? `<span class="sp-pk-meta-chip is-disc">${isEn ? 'Discount' : 'الخصم'} ${fmtJSigned(disc, '−')}</span>` : '',
@@ -101123,11 +101269,12 @@ function _spPeekHtml(o) {
   const payHtml = `<section class="sp-pk-sec spdep-payment-card">
       <div class="sp-pk-sec-h">${_SP_PK_ICO.wallet}<span>${isEn ? 'Payment' : 'الدفع'}</span><span class="sp-pk-pill ${_dep.pending.length ? 'spdep-pending' : pay.cls} sp-pk-h-end">${_dep.pending.length ? esc(t('spDepPendingShort')) : pay.label}</span></div>
       <div class="sp-pk-pay-total"><small>${isEn ? 'Order total' : 'إجمالي الطلب'}</small><b>${fmtJ(total)}</b></div>
-      <div class="sp-pk-meter" role="img" aria-label="${escHtml((isEn ? 'Paid ' : 'مدفوع ') + pay.pct + '%')}"><i style="width:${pay.pct}%"></i></div>
+      <div class="sp-pk-meter" role="img" aria-label="${escHtml((isEn ? 'Paid ' : 'مدفوع ') + pay.pct + '%' + (pendAmt > 0 ? (isEn ? ', more in review' : '، ومبلغ قيد المراجعة') : ''))}"><i style="width:${pctA}%"></i>${pctP > 0 ? `<i class="is-pend" style="width:${pctP}%"></i>` : ''}</div>
       <div class="sp-pk-pay-grid">
         <div class="sp-pk-pay-cell"><span>${isEn ? 'Deposit' : 'العربون'}</span>
           ${_spDepositCellHtml(o,false)}</div>
-        <div class="sp-pk-pay-cell is-due"><span>${isEn ? 'Remaining' : 'المتبقي'}</span><b>${fmtJ(Math.max(0, total - (deposit || 0)))}</b></div>
+        <div class="sp-pk-pay-cell is-due"><span>${isEn ? 'Remaining' : 'المتبقي'}</span><b>${fmtJ(Math.max(0, total - (deposit || 0)))}</b>
+          ${pendAmt > 0 ? `<small>${isEn ? 'After approval' : 'بعد الاعتماد'} <bdi>${fmtJ(Math.max(0, total - (deposit || 0) - pendAmt))}</bdi></small>` : ''}</div>
       </div>
       ${metaChips ? `<div class="sp-pk-m-meta">${metaChips}</div>` : ''}
       ${_spPeekReceiptsHtml(o,false,true)}
@@ -101147,6 +101294,7 @@ function _spPeekHtml(o) {
   }).join('');
 
   return `<header class="sp-pk-head">
+      <div class="sp-pk-head-row">
       <div class="sp-pk-head-main">
         <div class="sp-pk-ref" id="sp-pk-title"><bdi>#${esc(ref || '—')}</bdi>${_spPeekStatePill(o)}</div>
         <div class="sp-pk-sub">
@@ -101160,20 +101308,21 @@ function _spPeekHtml(o) {
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
         </button>
       </div>
+      </div>
+      ${custTopHtml}
     </header>
     <div class="sp-pk-body">
       ${_spCancelConflictBannerHtml(o)}
-      ${custHtml}
+      <section class="sp-pk-sec sp-pk-fu" id="sp-pk-fu" aria-live="polite">${_spPeekFuHtml(o)}</section>
+      ${_spPeekCommentsHtml(o)}
+      ${custFactsHtml}
       ${_spPeekTogetherHtml(o, canConfirm)}
       ${items.length ? `<section class="sp-pk-sec"><div class="sp-pk-sec-h">${_SP_PK_ICO.bag}<span>${isEn ? 'Items' : 'الأصناف'}</span><span class="sp-pk-count">${fmtN(_spItemsCount(o))}</span></div><ul class="sp-pk-items">${itemsHtml}</ul></section>` : ''}
       ${payHtml}
-      ${_spPeekCommentsHtml(o)}
-      <section class="sp-pk-sec sp-pk-fu" id="sp-pk-fu" aria-live="polite">${_spPeekFuHtml(o)}</section>
     </div>
-    <footer class="sp-pk-foot">
-      <button type="button" class="btn btn-outline sp-pk-foot-sec" onclick="openShopifyCommentsModal('${esc(String(o._id))}')">${commentIconSvg(15)}<span>${isEn ? 'Comments' : 'التعليقات'}</span>${nCmt ? `<span class="sp-pk-count">${fmtN(nCmt)}</span>` : ''}</button>
-      ${canConfirm ? `<button type="button" class="sp-confirm-btn is-lg sp-pk-foot-go" onclick="closeSpOrderPeek();approveShopifyOrder('${esc(String(o._id))}')">${SP_CONFIRM_ICON}<span>${t('spSendToTransactions')}</span></button>` : ''}
-    </footer>`;
+    ${canConfirm ? `<footer class="sp-pk-foot">
+      <button type="button" class="sp-confirm-btn is-lg sp-pk-foot-go" onclick="closeSpOrderPeek();approveShopifyOrder('${esc(String(o._id))}')">${SP_CONFIRM_ICON}<span>${t('spSendToTransactions')}</span></button>
+    </footer>` : ''}`;
 }
 
 const _SP_PRINT_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>';
@@ -101234,22 +101383,26 @@ function printSpPeekPreview(orderId) {
  */
 function _spPeekCommentsHtml(o) {
   const list = Array.isArray(o.comments) ? o.comments : [];
-  if (!list.length) return '';
   const isEn = currentLang === 'en';
+  const oid = esc(String(o._id));
+  /* ⚠ Oct 13, 2026 — always drawn, even empty: the footer «Comments» button was
+     removed (it duplicated this section), so this is now the only way in. */
   const rows = list.map(c => {
     const u = (typeof _pwFindUser === 'function' && _pwFindUser(c.employee)) || { name: c.employee || '؟' };
     return `<li class="sp-pk-tl">
       <span class="sp-pk-tl-av">${userAvatarHtml(u, 24)}</span>
       <div class="sp-pk-tl-b">
         <div class="sp-pk-tl-top"><b>${esc(c.employee || '؟')}</b><time>${_cmtTimeHtml(c)}</time></div>
-        <div dir="auto">${renderMentionText(c.text || '')}</div>
+        <div class="sp-pk-txt">${renderMentionText(c.text || '')}</div>
       </div>
     </li>`;
   }).join('');
-  return `<section class="sp-pk-sec">
-    <div class="sp-pk-sec-h">${_SP_PK_ICO.chat}<span>${isEn ? 'Comments' : 'التعليقات'}</span><span class="sp-pk-count">${fmtN(list.length)}</span>
-      <button type="button" class="sp-pk-link" onclick="openShopifyCommentsModal('${esc(String(o._id))}')">${isEn ? 'Reply' : 'رد / إضافة'}</button></div>
-    <ol class="sp-pk-trail sp-pk-cmts" id="sp-pk-cmts">${rows}</ol>
+  return `<section class="sp-pk-sec sp-pk-cmt-sec">
+    <div class="sp-pk-sec-h">${_SP_PK_ICO.chat}<span>${isEn ? 'Comments' : 'التعليقات'}</span>${list.length ? `<span class="sp-pk-count">${fmtN(list.length)}</span>` : ''}
+      <button type="button" class="sp-pk-link" onclick="openShopifyCommentsModal('${oid}')">${_SP_PK_ICO.notePlus}${isEn ? (list.length ? 'Reply' : 'Add comment') : (list.length ? 'رد' : 'إضافة تعليق')}</button></div>
+    ${list.length
+      ? `<ol class="sp-pk-trail sp-pk-cmts" id="sp-pk-cmts" aria-label="${escHtml(isEn ? 'Comments' : 'التعليقات')}">${rows}</ol>`
+      : `<div class="sp-pk-none">${isEn ? 'No comments on this order yet.' : 'لا توجد تعليقات على هذا الأوردر بعد.'}</div>`}
   </section>`;
 }
 
@@ -102444,6 +102597,7 @@ function renderShopifyOrders() {
                   <div class="actions-dd">
                     <button class="dd-toggle" style="width:30px;height:30px" onclick="toggleActionMenu(event)">⋮</button>
                     <div class="dd-menu">
+              ${invoiceImageActions('shopify', o._id)}
                       <div class="dd-item" onclick="editShopifyOrder('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> ${t('spEdit')}</div>
                       <div class="dd-item" onclick="openShopifyCommentsModal('${o._id}')">${commentIconSvg(null, 1.5)} ${t('spTabComments')}${(o.comments||[]).length ? ` (${o.comments.length})` : ''}</div>
                       <div class="dd-item" onclick="_spToggleStar('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.1 8.6 22 9.6 17 14.5 18.2 21.4 12 18.1 5.8 21.4 7 14.5 2 9.6 8.9 8.6 12 2"/></svg> ${o.starred ? t('spStarRemove') : t('spStarAdd')}</div>
@@ -102569,6 +102723,7 @@ function renderShopifyOrders() {
             <div class="dd-menu">
               <button type="button" class="dd-item sp-mobile-confirm" onclick="approveShopifyOrder('${o._id}')">${SP_CONFIRM_ICON}<span>${esc(t('spSendToTransactions'))}</span></button>
               ${_spMobileDepositMenuItemHtml(o)}
+              ${invoiceImageActions('shopify', o._id)}
               <div class="dd-item" onclick="editShopifyOrder('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</div>
               <div class="dd-item" onclick="openShopifyCommentsModal('${o._id}')">${commentIconSvg(null, 1.5)} ${t('spTabComments')}${(o.comments||[]).length ? ` (${o.comments.length})` : ''}</div>
               <div class="dd-item" onclick="_spToggleStar('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.1 8.6 22 9.6 17 14.5 18.2 21.4 12 18.1 5.8 21.4 7 14.5 2 9.6 8.9 8.6 12 2"/></svg> ${o.starred ? t('spStarRemove') : t('spStarAdd')}</div>
@@ -106450,11 +106605,11 @@ async function _spProcessMentions(order, text, commentId) {
  */
 async function openShopifyOrderComments(orderId, commentId) {
   navigateTo('shopify-orders');
-  if (!Array.isArray(_shopifyOrders) || !_shopifyOrders.length) {
+  if (commentId || !Array.isArray(_shopifyOrders) || !_shopifyOrders.length) {
     try { await loadShopifyOrders(); } catch (_) {}
   }
   // الانتظار حتى ترسم الصفحة قبل فتح المودال فوقها.
-  setTimeout(() => {
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     if (!_spOrderById(orderId)) { toast(t('spOrderNotFound'), true); return; }
     // ⚠ نافذة التعليقات المستقلة لا مودال التعديل: تبويب التعليقات حُذف من هناك،
     //   فاستدعاؤه كان يفتح التعديل على الأصناف والمنشن لا يظهر إطلاقاً.
@@ -106471,7 +106626,6 @@ async function openShopifyOrderComments(orderId, commentId) {
         setTimeout(() => el.classList.remove('comment-mention-highlight'), 4000);
       }));
     }
-  }, 260);
 }
 
 /**
@@ -106798,7 +106952,8 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/customer-service-layout.css">
 <script src="/bosta-pickup.js"></script>
 <script src="/notification-settings.js"></script>
-<script src="/announcements.js"></script>
+<script src="/announcements.js?v=3"></script>
 <script src="/push-navigation.js"></script>
+<script src="/notification-history.js"></script>
 </body>
 </html>

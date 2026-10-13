@@ -69,9 +69,9 @@ pipeline {
               -H 'Content-Type: application/json' \
               -d '{"username":"__healthcheck__","password":"__healthcheck__"}' 2>/dev/null || echo 000)
             backend_state=$(docker inspect -f '{{.State.Status}}' soulia-backend 2>/dev/null || echo missing)
-            # أي رد HTTP حقيقي (401 المتوقع، أو 400/429) يعني أن الـ API حيّ ويوجّه.
-            # 000 = لا اتصال، و 502 = nginx وجد الباك-إند ميتاً.
-            if [ "$frontend_ok" = true ] && [ "$api_code" != "000" ] && [ "$api_code" != "502" ] && [ "$api_code" != "504" ]; then
+            # 401 المتوقع، أو 400/429، يثبت أن مسار المصادقة يعمل.
+            # أخطاء الاتصال أو الخادم لا تُحسب نجاحًا ولا تُرسل إعلان نسخة جديدة.
+            if [ "$frontend_ok" = true ] && { [ "$api_code" = "401" ] || [ "$api_code" = "400" ] || [ "$api_code" = "429" ]; }; then
               echo "SOULIA deployed and healthy (login endpoint responded $api_code)"
               exit 0
             fi
@@ -95,6 +95,14 @@ pipeline {
           df -h / || true
           exit 1
         '''
+      }
+    }
+    stage('Notify live release') {
+      when { branch 'main' }
+      steps {
+        // Runs only after Deploy and Health check succeeded. The helper verifies that
+        // frontend/version.json matches this build, then records one event per account.
+        sh 'docker exec soulia-backend node scripts/notify-release.cjs ${BUILD_NUMBER}'
       }
     }
   }
