@@ -1,0 +1,45 @@
+/* Keep settings grid items inside the available width rather than clipping them. */
+#page-settings .settings-page-inner,
+#page-settings .stg-layout,
+#page-settings .stg-mobile-nav-wrap,
+#page-settings .stg-panels,
+#page-settings .stg-panel,
+#page-settings .settings-card,
+#page-settings .settings-stack,
+#page-settings .stg-card-title-text,
+#page-settings .form-group{min-width:0;max-width:100%;box-sizing:border-box}
+#page-settings .stg-layout{grid-template-columns:220px minmax(0,1fr)}
+#page-settings .stg-grid-2,#page-settings .settings-price-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+#page-settings .settings-card{overflow-wrap:anywhere}
+#page-settings .form-group input,#page-settings .form-group select,#page-settings textarea{min-width:0;max-width:100%;box-sizing:border-box}
+#notification-settings .push-heading>div{min-width:0}
+
+@media(max-width:900px){
+  #page-settings .stg-layout{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:640px){
+  #page-settings{width:100%;padding:12px;box-sizing:border-box}
+  #page-settings .settings-page-inner{padding:0;width:100%}
+  #page-settings .stg-layout{gap:14px}
+  #page-settings .stg-grid-2,#page-settings .settings-price-grid{grid-template-columns:minmax(0,1fr)}
+  #page-settings .settings-card{padding:12px}
+  #page-settings .settings-pref-body .flex{min-width:0;align-items:flex-start}
+  #page-settings .settings-pref-body .flex>span{min-width:0;white-space:normal}
+  #page-settings .settings-pref-body .flex>input[type="checkbox"]{flex-shrink:0}
+  #page-settings .settings-card>.flex{flex-wrap:wrap}
+  #page-settings .page-header>div{min-width:0;max-width:100%}
+  #notification-settings{padding:12px!important}
+  #notification-settings .push-setting-row{display:grid!important;grid-template-columns:32px minmax(0,1fr) 44px;gap:8px;padding:12px 10px!important}
+  #notification-settings .push-master{padding:12px 10px!important}
+  #notification-settings .push-setting-copy{overflow-wrap:anywhere}
+  #notification-settings .push-switch{margin-inline-start:0}
+  #notification-settings .push-language-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,115px);gap:10px}
+  #notification-settings #push-language{width:100%;max-width:115px;min-width:0}
+  #notification-settings .push-device-card{padding:12px;min-width:0}
+  #notification-settings .push-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #notification-settings .push-action{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+}
+@media(max-width:380px){
+  #notification-settings .push-actions{grid-template-columns:minmax(0,1fr)}
+  #notification-settings .push-action{width:100%;margin:0}
+}

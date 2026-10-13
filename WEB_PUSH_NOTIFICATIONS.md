@@ -47,13 +47,17 @@ VAPID_SUBJECT=https://admin.soulia.store
 SHOPIFY_WEBHOOK_SECRET=<the existing Shopify app webhook signing secret>
 ```
 
-`VAPID_SUBJECT` may instead be a valid `mailto:` address. The frontend receives only the public key from an authenticated endpoint. Keep keys stable between deployments; rotating them requires devices to unsubscribe and subscribe again. Missing VAPID configuration leaves notifications unavailable without preventing normal app startup.
+`VAPID_SUBJECT` may instead be a valid `mailto:` address. The frontend receives only the public key from an authenticated endpoint. Keep keys stable between deployments; rotating them requires devices to unsubscribe and subscribe again. When neither key is supplied, the server uses the persisted automatic configuration described below. An incomplete or invalid explicit configuration leaves notifications unavailable without preventing normal app startup.
 
 Shopify webhook verification now rejects missing, incorrect or unconfigured HMAC signatures using the raw body and constant-time comparison. **Configure the existing Shopify signing secret before deploying**, or Shopify webhook ingestion will reject requests. Authenticated Shopify API sync remains available. Bosta webhook secret validation and status mapping remain unchanged.
 
 ## Actual deployment: Docker Compose / Jenkins
 
-`docker-compose.yml` passes the four variables to the backend container. Set them through the host's ignored root `.env` or Jenkins secret environment bindings in the deployment workspace. The local `backend/.env` is for local Nest execution; Compose does not automatically read that file. No production host was changed during this implementation.
+`docker-compose.yml` passes the variables to the backend container. Explicit keys can be set through the host's ignored root `.env` or Jenkins secret environment bindings. The local `backend/.env` is for local Nest execution; Compose does not automatically read that file.
+
+When neither VAPID key is supplied, the server now creates one stable pair in the server-only `notificationconfig` collection. Subsequent deployments reuse that pair; only its public key is returned to the browser. Existing explicit pairs remain authoritative. A partial explicit pair is reported as incomplete instead of generating a replacement and breaking existing device subscriptions. The default subject is `https://admin.soulia.store`; other installations can override `VAPID_SUBJECT`. Keep the configuration collection with the same database as notification subscriptions. Configuration failures leave the app available and return a non-secret status code.
+
+The device card shows when the server is not configured; the Enable button remains visible and can recheck server readiness. Permission is requested only on a separate explicit click after readiness is confirmed. Application JavaScript is revalidated after deployment. No production host was changed during this implementation.
 
 1. Configure those variables securely before the Jenkins deployment stage.
 2. Keep HTTPS termination on the public reverse proxy for `admin.soulia.store`. This repository's frontend nginx listens on internal HTTP port 80; its TLS terminator and certificate configuration are outside this repository and were not verified here. Ensure the public certificate is trusted and HTTP redirects to HTTPS. Do not enable HSTS until the site's HTTPS setup has been verified.

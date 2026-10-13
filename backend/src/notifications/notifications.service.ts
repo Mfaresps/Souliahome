@@ -81,6 +81,8 @@ export class NotificationsService implements OnModuleInit {
   private readonly logger = new Logger(NotificationsService.name);
   private running = false;
   private push: any;
+  private publicKey?: string;
+  private configurationIssue = '';
   constructor(@InjectConnection() private readonly connection: Connection) {}
   private get accounts() { return this.connection.collection('notificationaccounts'); }
   private get jobs() { return this.connection.collection('notificationjobs'); }
@@ -91,9 +93,32 @@ export class NotificationsService implements OnModuleInit {
     await this.jobs.createIndex({ eventId: 1, userId: 1, endpoint: 1 }, { unique: true });
     await this.jobs.createIndex({ nextAt: 1, attempts: 1 });
     await this.jobs.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-    if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.VAPID_SUBJECT) {
-      this.push = require('web-push');
-      this.push.setVapidDetails(process.env.VAPID_SUBJECT, process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
+    const publicKey = process.env.VAPID_PUBLIC_KEY?.trim();
+    const privateKey = process.env.VAPID_PRIVATE_KEY?.trim();
+    if (!!publicKey !== !!privateKey) { this.configurationIssue = 'incomplete_keys'; this.logger.warn('Push configuration has an incomplete VAPID key pair'); return; }
+    try {
+      const push = require('web-push');
+      let keys = { publicKey, privateKey };
+      if (!publicKey) {
+        // One stable server-only pair, retained across container replacements.
+        const config = this.connection.collection('notificationconfig');
+        let saved: any = await config.findOne({ _id: 'vapid' as any });
+        if (!saved) {
+          const generated = push.generateVAPIDKeys();
+          try { await config.updateOne({ _id: 'vapid' as any }, { $setOnInsert: { ...generated, createdAt: new Date() } }, { upsert: true }); }
+          catch (error) { if (error.code !== 11000) throw error; }
+          saved = await config.findOne({ _id: 'vapid' as any });
+        }
+        if (!saved?.publicKey || !saved?.privateKey) throw new Error('Push configuration is unavailable');
+        keys = saved;
+      }
+      push.setVapidDetails(process.env.VAPID_SUBJECT?.trim() || 'https://admin.soulia.store', keys.publicKey, keys.privateKey);
+      this.publicKey = keys.publicKey;
+      this.push = push;
+      this.configurationIssue = '';
+    } catch {
+      this.configurationIssue = 'setup_failed';
+      this.logger.warn('Push setup failed; verify server configuration and database access');
     }
   }
   authorize(user: any) {
@@ -103,7 +128,8 @@ export class NotificationsService implements OnModuleInit {
     this.authorize(user);
     const account: any = await this.accounts.findOne({ userId: user.userId });
     return { preferences: { ...DEFAULTS, ...account?.preferences }, configured: this.configured,
-      publicKey: this.configured ? process.env.VAPID_PUBLIC_KEY : null, devices: (account?.subscriptions || []).length,
+      publicKey: this.configured ? this.publicKey || process.env.VAPID_PUBLIC_KEY : null, devices: (account?.subscriptions || []).length,
+      configurationIssue: this.configurationIssue || null,
       language: account?.language || null,
       allowedTypes: user.role === 'admin' ? [...TYPES] : ['mention'] };
   }

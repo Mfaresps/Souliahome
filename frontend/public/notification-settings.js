@@ -6,7 +6,7 @@
   const englishLabels = {
     enabled: ['Enable notifications', 'Pause delivery without changing your category preferences.'],
     deposit: ['New deposit', 'Deposit amounts, employee names and order references.'],
-    comment: ['Comments & follow-ups', 'New comments without exposing their content.'],
+    comment: ['Comments & follow-ups', 'The commenter’s name and a short excerpt.'],
     order: ['New order', 'When a new order is first saved in SOULIA.'],
     deliveryProblem: ['Delivery issues', 'Failed attempts or returns before delivery.'],
     delivered: ['Successful delivery', 'Confirmed delivery updates from your carrier.'],
@@ -30,7 +30,7 @@
   const labels = {
     enabled: ['تفعيل جميع الإشعارات', 'إيقافها يحفظ اختيارات الأنواع كما هي.'],
     deposit: ['عربون جديد', 'اسم الموظف وقيمة العربون ورقم الطلب.'],
-    comment: ['تعليق أو تعليق متابعة', 'تنبيه بوجود تعليق جديد بدون عرض محتواه.'],
+    comment: ['تعليق أو تعليق متابعة', 'اسم صاحب التعليق ومقتطف مختصر من محتواه.'],
     order: ['طلب جديد', 'عند تسجيل الطلب لأول مرة في النظام.'],
     deliveryProblem: ['مشكلة في التسليم', 'محاولة فاشلة أو مرتجع قبل التسليم وفق حالات Bosta.'],
     delivered: ['تم التسليم بنجاح', 'عند تأكيد التسليم من شركة الشحن.'],
@@ -53,6 +53,12 @@
     const el = document.getElementById('push-device-status');
     if (!el) return;
     if (!supported()) { el.textContent = text('هذا المتصفح لا يدعم الإشعارات، أو الاتصال ليس HTTPS.', 'Push notifications require a supported browser and HTTPS.'); el.dataset.state = 'unsupported'; return; }
+    if (!settings?.configured) {
+      el.dataset.state = 'unconfigured';
+      el.textContent = text('الإشعارات غير جاهزة على الخادم. اضغط التفعيل للتحقق مجددًا.', 'Notifications are not ready on the server. Click Enable to check again.');
+      document.querySelectorAll('#notification-settings [data-push-action]').forEach(button => button.disabled = button.dataset.pushAction !== 'enable');
+      return;
+    }
     const registration = await navigator.serviceWorker.getRegistration('/');
     const subscription = await registration?.pushManager.getSubscription();
     document.querySelectorAll('#notification-settings [data-push-action]').forEach(button => {
@@ -108,17 +114,23 @@
     for (const [label, action] of [[text('تفعيل إشعارات هذا الجهاز', 'Enable on this device'), enable], [text('إرسال إشعار تجريبي', 'Send a test'), test], [text('إلغاء اشتراك هذا الجهاز', 'Disconnect device'), disable]]) {
       const button = document.createElement('button'); button.type = 'button'; button.className = 'push-action' + (action === enable ? ' push-action-primary' : action === disable ? ' push-action-quiet' : ''); button.textContent = label;
       button.dataset.pushAction = action === enable ? 'enable' : action === test ? 'test' : 'disable';
-      button.disabled = !settings.configured || !supported();
+      button.disabled = !supported() || (action !== enable && !settings.configured);
       button.addEventListener('click', async () => { button.disabled = true; try { await action(); } catch (error) { message(errorMessage(error), true); } finally { button.disabled = false; await deviceStatus().catch(() => message(text('تعذر قراءة حالة الجهاز.', 'Unable to check device status.'), true)); } }); actions.append(button);
     }
     device.append(actions); panel.append(device);
     const hint = document.createElement('details'); hint.className = 'push-install-help';
     hint.innerHTML = `<summary>${text('تفعيل الإشعارات على الآيفون', 'How to enable notifications on iPhone')}</summary><p>${text('من Safari: مشاركة ← إضافة إلى الشاشة الرئيسية. افتحي SOULIA من الأيقونة، ثم فعّلي إشعارات هذا الجهاز. يتطلب iOS 16.4 أو أحدث.', 'In Safari, tap Share → Add to Home Screen. Open SOULIA from its icon, then enable notifications on this device. Requires iOS 16.4 or later.')}</p>`; panel.append(hint);
     const feedback = document.createElement('p'); feedback.id = 'push-feedback'; feedback.setAttribute('role', 'status'); feedback.setAttribute('aria-live', 'polite'); panel.append(feedback);
-    if (!settings.configured) message('الإرسال غير جاهز: يلزم ضبط مفاتيح VAPID على السيرفر.', true);
+    if (!settings.configured) message(text('الإشعارات غير جاهزة على الخادم. اضغط التفعيل للتحقق مجددًا.', 'Notifications are not ready on the server. Click Enable to check again.'), true);
     deviceStatus().catch(() => message('تعذر قراءة حالة الجهاز.', true));
   }
   async function enable() {
+    if (!supported()) throw new Error(text('هذا المتصفح لا يدعم الإشعارات، أو الاتصال ليس HTTPS.', 'Push notifications require a supported browser and HTTPS.'));
+    if (!settings.configured) {
+      settings = await api('/notifications'); render();
+      if (!settings.configured) throw new Error(text('الإشعارات غير جاهزة على الخادم. يلزم تحديث الخادم أو استكمال إعداد الإشعارات.', 'Notifications are not ready on the server. Update the server or complete notification setup.'));
+      message(text('الإشعارات جاهزة الآن. اضغط تفعيل إشعارات هذا الجهاز للسماح بها.', 'Notifications are ready. Click Enable on this device to grant permission.')); return;
+    }
     if (iphone() && !standalone()) throw new Error('أضيفي SOULIA إلى الشاشة الرئيسية وافتحيه منها أولًا.');
     // Permission is requested directly inside the explicit click, before network work.
     const permission = await Notification.requestPermission();
