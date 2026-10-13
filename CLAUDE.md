@@ -2801,8 +2801,8 @@ an announcement has recipients and a read state.
 
 ### Routes
 `GET config` (any user) · `PATCH config` (admin, `maxLength` 50–2000, default 500) ·
-`GET mine` · `GET /` (admin history) · `POST /` (admin) · `POST :id/ack`.
-⚠ `config`/`mine` are declared before `:id/ack`.
+`GET mine` · `GET /` (admin history) · `POST /` (admin, optional `sendAt`) · `POST :id/cancel` (admin) ·
+`POST :id/ack`. ⚠ `config`/`mine` are declared before the `:id/…` routes.
 
 ### Rules that matter
 - **Recipients are a snapshot taken at send time** (`recipients[{userId,name,ackAt}]`), so
@@ -2811,14 +2811,25 @@ an announcement has recipients and a read state.
   the author would believe that person was told.
 - **`mine` projects only the caller's own entry** (`$elemMatch`): a recipient never sees
   who else got it or who read it.
+- **Scheduling** (`sendAt`, 2 minutes to 60 days ahead): `status` is `scheduled → sending → sent`, or
+  `cancelled` / `failed`; a row with no `status` is a pre-scheduling `sent`. ⚠ **A scheduled row has NO
+  `recipients`** — they are resolved at delivery, so a new hire gets «كل الموظفين», a deactivated
+  chosen person is skipped (`skippedCount`), and `mine()` cannot leak it (it matches
+  `recipients.userId`). The selection is still validated at scheduling time, strictly, while the
+  author is on screen. `deliverDue` (@Cron every 20s) **claims each row atomically**
+  (`findOneAndUpdate` scheduled→sending); a claim older than 10 minutes is retried; nobody left to
+  receive it → `failed` with a reason, never an endless retry. Cancel is an atomic
+  `scheduled→cancelled`, so a row already claimed cannot be cancelled. Recipients see the
+  **delivery** time (`sentAt`), and the author's list refreshes via `announcement:read`.
 - **The socket ping carries the id only** (`announcement:new` via `emitToUser`); content is
   re-fetched from `/mine`. Never put the message in a broadcast.
 - **Idempotent**: `requestKey` + a unique partial index on `{createdById, requestKey}`. The
   client keeps the same key across a failed retry and drops it when the content changes.
   Push jobs are deduped too (`eventId = announcement:<id>`).
-- **Push** rides the existing queue as type `announcement` (in `TYPES`/`DEFAULTS`, default
-  on). It has **no toggle** in notification settings (no label there), so it follows the master
-  switch. `enqueue`'s `onlyUser` now also accepts an array. Title is
+- **Push** rides the existing queue as type `announcement`. It is in `TYPES` but **not in
+  `DEFAULTS`** and is listed in `MANDATORY_TYPES`: `eligible()` checks only the master switch for it,
+  and `PATCH /notifications/preferences {announcement:false}` is rejected as an unknown key (400).
+  Management messages are not optional per type. `enqueue`'s `onlyUser` now also accepts an array. Title is
   `📢 SOULIA Announcement` / `📢 إعلان من SOULIA` (no « · SOULIA» suffix); body = category
   label (unless generic) + message, ≤160 chars. Tap → `?pushRecord=announcement:<id>` →
   `window.souliaOpenAnnouncement(id)`. Staff push language is the admin-managed employee
@@ -2834,6 +2845,10 @@ an announcement has recipients and a read state.
 - Message cleaning keeps line breaks, strips control and bidi-override characters.
 
 ### Verification
+- Scheduling: 7 more cases in the same spec (held back, delivered once with 3 concurrent workers,
+  resolution at delivery, failure, stale-claim retry, cancel, time bounds) — **revert-checked**: a
+  non-atomic claim delivers twice; the mandatory-push rule in `notifications.spec.ts` fails when
+  removed. 20 browser assertions for the schedule UI, live delivery at its time, and cancel.
 - `test/integration/announcements.service.spec.ts` — 11 cases on a scratch DB with the real
   `NotificationsService`. **Revert-checked**: the array `onlyUser` filter (4 fail) and the
   idempotency index (1 fails).
@@ -2845,9 +2860,8 @@ an announcement has recipients and a read state.
   390px, centred/bottom sheet, composer hidden for staff. Zero page errors.
 
 ### Still open
-- No withdraw/edit of a sent announcement, and no scheduling.
-- `announcement` can still be switched off through the API (`PATCH /notifications/preferences`)
-  even though the UI shows no toggle.
+- No withdraw/edit of a **sent** announcement (a scheduled one can be cancelled and re-created).
+- Delivery can lag its time by up to ~20s (the worker interval).
 
 ---
 
@@ -3420,7 +3434,7 @@ leaked — the change there is defence against the same trap, not a bug fix.
 
 | Date | Change | Impact |
 |------|--------|--------|
-| Oct 13, 2026 | Staff announcements: admins send a typed message to all or chosen employees from Settings ← الإعلانات; recipients get a popup until acknowledged, an instant Web Push, and a «الإعلانات» tab in the notification centre; read status per recipient | See "Staff Announcements" above |
+| Oct 13, 2026 | Staff announcements: admins send a typed message to all or chosen employees from Settings ← الإعلانات; recipients get a popup until acknowledged, an instant Web Push, and a «الإعلانات» tab in the notification centre; read status per recipient; can be scheduled for later and cancelled before it goes out; announcement push cannot be switched off per type | See "Staff Announcements" above |
 | Oct 7, 2026 | Shopify quick view redesigned: one column of section cards (customer → ship together → payment → items → follow-up), the 760px sibling rail replaced by an «اشحنهم معاً» card with «تأكيد الطلبين»; the table's «طلبان» pill + box icon merged into one chip | See "Shopify Quick View Redesigned" above |
 | Oct 7, 2026 | Automatic Bosta settlement: each delivery books the net of Bosta's real fee a minute after DELIVERED; older orders settle by selection; review queue over a 20 EGP overcharge; «كشف حساب بوسطة» with transfers and fees; order timeline reordered by real time (291 → 0 out-of-order) | See "Automatic Bosta Settlement" above |
 | Oct 5, 2026 | Stock Demand Analysis rebuilt answer-first: «N of M orders ready» with per-order blocks + what to buy and the PO button, a coverage bar per product, the calculation as one chip chain; presentation only | See "Stock Demand Analysis — Rebuilt Answer-First" above |

@@ -220,9 +220,22 @@
   };
 
   /* ── Composer (admin) ───────────────────────────────────────── */
-  const form = { category: 'announcement', audience: 'all', selected: new Set(), search: '', requestKey: '', sending: false };
+  const form = { category: 'announcement', audience: 'all', selected: new Set(), search: '', requestKey: '', sending: false, when: 'now', sendAt: '' };
   let cfg = null, history = null, historyFailed = false, composerLang = '', composerToken = '', historyTimer = null;
   const newKey = () => (crypto?.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 12));
+  // <input type="datetime-local"> speaks the browser's local wall-clock time; the server gets ISO.
+  const pad = n => String(n).padStart(2, '0');
+  const localInput = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  function scheduleBounds() {
+    const lead = (cfg?.scheduleMinLeadMinutes || 2) + 1;
+    return { min: new Date(Date.now() + lead * 60000), max: new Date(Date.now() + (cfg?.scheduleMaxDays || 60) * 86400000) };
+  }
+  function defaultSendAt() {
+    // The next round half-hour at least 15 minutes out — a sensible first suggestion.
+    const d = new Date(Date.now() + 15 * 60000); d.setSeconds(0, 0);
+    d.setMinutes(d.getMinutes() < 30 ? 30 : 60);
+    return localInput(d);
+  }
   function activeStaff() {
     const list = (typeof users !== 'undefined' && Array.isArray(users)) ? users : [];
     return list.filter(u => u && u._id && u.isActive !== false && ['admin', 'staff', 'viewer'].includes(u.role || 'staff') && String(u._id) !== myId());
@@ -287,10 +300,23 @@
           <span class="an-counter" id="an-counter" aria-live="polite"></span>
         </div>
       </div>
+      <div class="an-field">
+        <div class="an-field-head"><span class="an-label">${escH(text('وقت الإرسال', 'When to send'))}</span></div>
+        <div class="an-when">
+          <div class="an-seg">
+            <button type="button" data-when="now" class="${form.when === 'now' ? 'is-on' : ''}" aria-pressed="${form.when === 'now'}">${escH(text('الآن', 'Now'))}</button>
+            <button type="button" data-when="later" class="${form.when === 'later' ? 'is-on' : ''}" aria-pressed="${form.when === 'later'}">${escH(text('جدولة لوقت لاحق', 'Schedule for later'))}</button>
+          </div>
+          <span class="an-when-pick" id="an-when-pick"${form.when === 'later' ? '' : ' hidden'}>
+            <input type="datetime-local" id="an-send-at" aria-label="${escH(text('موعد الإرسال', 'Send time'))}" value="${escH(form.sendAt || '')}" min="${localInput(scheduleBounds().min)}" max="${localInput(scheduleBounds().max)}">
+          </span>
+        </div>
+        <div class="an-hint" id="an-when-hint" style="margin-top:6px"${form.when === 'later' ? '' : ' hidden'}>${escH(text('يصل للموظفين في هذا الموعد: يظهر داخل النظام ويُرسل إشعار الهاتف وقتها. يمكنك إلغاؤه قبل موعده من السجل بالأسفل.', 'Delivered at this time: shown in SOULIA and pushed to phones then. You can cancel it before then from the list below.'))}</div>
+      </div>
       <div class="an-err" id="an-err" role="alert"></div>
       <div class="an-actions">
         <span class="an-summary" id="an-summary"></span>
-        <button type="button" class="btn btn-primary an-send" id="an-send">${SVG.send}<span>${escH(text('إرسال الإعلان', 'Send announcement'))}</span></button>
+        <button type="button" class="btn btn-primary an-send" id="an-send">${SVG.send}<span id="an-send-lbl"></span></button>
       </div>
       <div class="an-hist">
         <div class="an-hist-head"><span class="an-label">${escH(text('الإعلانات المرسلة', 'Sent announcements'))}</span><button type="button" class="an-link" id="an-hist-reload">${escH(text('تحديث', 'Refresh'))}</button></div>
@@ -317,6 +343,20 @@
     host.querySelector('#an-limit-edit').addEventListener('click', () => { host.querySelector('#an-limit-view').hidden = true; host.querySelector('#an-limit-form').hidden = false; host.querySelector('#an-limit-input').focus(); });
     host.querySelector('#an-limit-cancel').addEventListener('click', () => { host.querySelector('#an-limit-view').hidden = false; host.querySelector('#an-limit-form').hidden = true; });
     host.querySelector('#an-limit-save').addEventListener('click', saveLimit);
+    host.querySelectorAll('[data-when]').forEach(b => b.addEventListener('click', () => {
+      form.when = b.dataset.when; form.requestKey = '';
+      host.querySelectorAll('[data-when]').forEach(x => { x.classList.toggle('is-on', x === b); x.setAttribute('aria-pressed', String(x === b)); });
+      host.querySelector('#an-when-pick').hidden = form.when !== 'later';
+      host.querySelector('#an-when-hint').hidden = form.when !== 'later';
+      if (form.when === 'later') {
+        const input = host.querySelector('#an-send-at');
+        const bounds = scheduleBounds(); input.min = localInput(bounds.min); input.max = localInput(bounds.max);
+        if (!input.value) { input.value = defaultSendAt(); form.sendAt = input.value; }
+        input.focus();
+      }
+      setErr(''); summary();
+    }));
+    host.querySelector('#an-send-at').addEventListener('input', e => { form.sendAt = e.target.value; form.requestKey = ''; setErr(''); summary(); });
     host.querySelector('#an-send').addEventListener('click', send);
     host.querySelector('#an-hist-reload').addEventListener('click', loadHistory);
     renderPeople(); counter(); summary(); renderHistory();
@@ -372,7 +412,11 @@
     const el = document.getElementById('an-summary');
     if (!el) return;
     const n = recipientCount();
-    el.textContent = n ? text(`سيصل إلى: ${audienceText()}`, `Goes to: ${audienceText()}`) : '';
+    const at = form.when === 'later' && form.sendAt ? new Date(form.sendAt) : null;
+    const whenTxt = at && !isNaN(at) ? text(` · في ${fullDate(at)}`, ` · on ${fullDate(at)}`) : '';
+    el.textContent = n ? text(`سيصل إلى: ${audienceText()}`, `Goes to: ${audienceText()}`) + whenTxt : '';
+    const lbl = document.getElementById('an-send-lbl');
+    if (lbl) lbl.textContent = form.when === 'later' ? text('جدولة الإعلان', 'Schedule announcement') : text('إرسال الإعلان', 'Send announcement');
   }
   function setErr(msg) { const el = document.getElementById('an-err'); if (el) el.textContent = msg || ''; }
   async function saveLimit() {
@@ -395,14 +439,26 @@
     if (message.length > max) { msgEl.classList.add('is-err'); msgEl.focus(); setErr(text(`الرسالة أطول من ${max} حرفاً`, `The message is longer than ${max} characters`)); return; }
     if (form.audience === 'selected' && !form.selected.size) { setErr(text('اختر موظفاً واحداً على الأقل', 'Choose at least one employee')); document.getElementById('an-people-q')?.focus(); return; }
     if (!recipientCount()) { setErr(text('لا يوجد موظفون نشطون لإرسال الإعلان إليهم', 'There are no active employees to send to')); return; }
+    let sendAt = null;
+    if (form.when === 'later') {
+      const at = form.sendAt ? new Date(form.sendAt) : null;
+      const input = document.getElementById('an-send-at');
+      const maxDays = cfg?.scheduleMaxDays || 60;
+      if (!at || isNaN(at)) { setErr(text('اختر موعد الإرسال', 'Choose when to send it')); input?.focus(); return; }
+      if (at < new Date(Date.now() + (cfg?.scheduleMinLeadMinutes || 2) * 60000)) { setErr(text('الموعد يجب أن يكون بعد دقيقتين على الأقل من الآن، أو اختر «الآن»', 'Pick a time at least two minutes from now, or choose “Now”')); input?.focus(); return; }
+      if (at > scheduleBounds().max) { setErr(text(`لا يمكن الجدولة لأكثر من ${maxDays} يوماً`, `You can schedule up to ${maxDays} days ahead`)); input?.focus(); return; }
+      sendAt = at.toISOString();
+    }
     setErr('');
     const c = cat(form.category);
     const excerpt = message.length > 220 ? message.slice(0, 220) + '…' : message;
     const ok = await showConfirm(
       `<div dir="auto" style="white-space:pre-wrap;overflow-wrap:anywhere;text-align:start;padding:10px 12px;border-radius:10px;background:var(--bg-alt);font-size:.84rem;line-height:1.75">${escH(excerpt)}</div>`,
-      { title: text('إرسال الإعلان؟', 'Send this announcement?'), icon: 'info',
-        rows: [[text('النوع', 'Type'), `${c.emoji} ${catLabel(c)}`], [text('المستلمون', 'Recipients'), audienceText()], [text('الطول', 'Length'), text(`${fmtNum(message.length)} حرف`, `${fmtNum(message.length)} characters`)]],
-        confirmLabel: text('إرسال', 'Send') });
+      { title: sendAt ? text('جدولة الإعلان؟', 'Schedule this announcement?') : text('إرسال الإعلان؟', 'Send this announcement?'), icon: 'info',
+        rows: [[text('النوع', 'Type'), `${c.emoji} ${catLabel(c)}`], [text('المستلمون', 'Recipients'), audienceText()],
+          [text('الموعد', 'When'), sendAt ? fullDate(sendAt) : text('الآن', 'Now')],
+          [text('الطول', 'Length'), text(`${fmtNum(message.length)} حرف`, `${fmtNum(message.length)} characters`)]],
+        confirmLabel: sendAt ? text('جدولة', 'Schedule') : text('إرسال', 'Send') });
     if (!ok) return;
     if (!form.requestKey) form.requestKey = newKey();
     const btn = document.getElementById('an-send');
@@ -410,12 +466,16 @@
     try {
       const res = await api('/announcements', { method: 'POST', body: JSON.stringify({
         category: form.category, message, audience: form.audience,
-        recipientIds: form.audience === 'selected' ? [...form.selected] : undefined, requestKey: form.requestKey,
+        recipientIds: form.audience === 'selected' ? [...form.selected] : undefined, requestKey: form.requestKey, sendAt: sendAt || undefined,
       }) });
       if (typeof toast === 'function') toast(res?.duplicate
         ? text('هذا الإعلان أُرسل بالفعل', 'This announcement was already sent')
-        : text(`تم إرسال الإعلان إلى ${fmtNum(res?.recipientCount || 0)} موظف`, `Announcement sent to ${fmtNum(res?.recipientCount || 0)} employees`));
+        : res?.status === 'scheduled'
+          ? text(`تمت جدولة الإعلان، يُرسل ${fullDate(res.sendAt)}`, `Scheduled, goes out ${fullDate(res.sendAt)}`)
+          : text(`تم إرسال الإعلان إلى ${fmtNum(res?.recipientCount || 0)} موظف`, `Announcement sent to ${fmtNum(res?.recipientCount || 0)} employees`));
       form.draft = ''; form.requestKey = ''; if (msgEl) msgEl.value = '';
+      // Back to «الآن»: the next message should not inherit this one's schedule by accident.
+      if (form.when === 'later') { form.when = 'now'; form.sendAt = ''; renderComposer(); }
       counter();
       if (res?.id) { history = [res, ...(history || []).filter(h => h.id !== res.id)]; renderHistory(); }
     } catch (e) {
@@ -437,16 +497,48 @@
       const pct = h.recipientCount ? Math.round(h.ackCount / h.recipientCount * 100) : 0;
       const aud = h.audience === 'all' ? text('كل الموظفين', 'All employees') : (h.recipientCount === 1 ? (h.recipients?.[0]?.name || '') : text(`${fmtNum(h.recipientCount)} موظفين`, `${fmtNum(h.recipientCount)} employees`));
       const rcp = (h.recipients || []).slice().sort((a, b) => (a.ackAt ? 1 : 0) - (b.ackAt ? 1 : 0));
+      const st = h.status || 'sent';
+      // Not delivered (yet): the right column states the plan instead of a read count.
+      const chip = (cls, label, sub) => `<span class="an-hist-read"><span class="an-st ${cls}">${escH(label)}</span>${sub ? `<small style="display:block;margin-top:4px">${escH(sub)}</small>` : ''}</span>`;
+      const side = st === 'scheduled' ? chip('is-sched', text('مجدول', 'Scheduled'), fullDate(h.sendAt))
+        : st === 'sending' ? chip('is-sched', text('جارٍ الإرسال', 'Sending'))
+        : st === 'cancelled' ? chip('is-off', text('أُلغي', 'Cancelled'))
+        : st === 'failed' ? chip('is-bad', text('لم يُرسل', 'Not sent'))
+        : `<span class="an-hist-read"><b><bdi>${fmtNum(h.ackCount)} / ${fmtNum(h.recipientCount)}</bdi></b><small>${escH(text('اطّلعوا', 'acknowledged'))}</small><span class="an-meter" aria-hidden="true"><i style="width:${pct}%"></i></span></span>`;
+      const at = st === 'sent' ? (h.sentAt || h.createdAt) : h.createdAt;
+      const atTxt = st === 'sent' ? when(at) : text('أُنشئ ', 'created ') + when(at);
+      const skipped = h.skippedCount ? ' · ' + text(`تُخطّي ${fmtNum(h.skippedCount)} (حساب معطّل)`, `${fmtNum(h.skippedCount)} skipped (inactive)`) : '';
       return `<details class="an-hist-item" data-id="${escH(h.id)}"${open.has(h.id) ? ' open' : ''}>
         <summary>
           <span class="an-hist-emo" aria-hidden="true">${c.emoji}</span>
           <span class="an-hist-main"><span class="an-hist-cat">${escH(catLabel(c))}</span><span class="an-hist-text" dir="auto">${escH(h.message)}</span>
-            <span class="an-hist-meta" style="display:block">${escH(aud)} · ${escH(h.createdByName || '')} · <span title="${escH(fullDate(h.createdAt))}">${escH(when(h.createdAt))}</span></span></span>
-          <span class="an-hist-read"><b><bdi>${fmtNum(h.ackCount)} / ${fmtNum(h.recipientCount)}</bdi></b><small>${escH(text('اطّلعوا', 'acknowledged'))}</small><span class="an-meter" aria-hidden="true"><i style="width:${pct}%"></i></span></span>
+            <span class="an-hist-meta" style="display:block">${escH(aud)} · ${escH(h.createdByName || '')} · <span title="${escH(fullDate(at))}">${escH(atTxt)}</span>${escH(skipped)}</span></span>
+          ${side}
         </summary>
-        <div class="an-hist-body">${rcp.map(r => `<span class="an-rcp${r.ackAt ? ' is-read' : ''}" title="${escH(r.ackAt ? text('اطّلع ', 'Read ') + fullDate(r.ackAt) : text('لم يطّلع بعد', 'Not yet read'))}"><i></i>${escH(r.name || '—')}</span>`).join('')}</div>
+        ${st === 'scheduled' ? `<div class="an-hist-body"><span class="an-hint">${escH(text(`يصل إلى ${fmtNum(h.recipientCount)} موظف في موعده.`, `Reaches ${fmtNum(h.recipientCount)} employees at that time.`))}</span><button type="button" class="an-link" data-cancel="${escH(h.id)}" style="margin-inline-start:auto;color:var(--red)">${escH(text('إلغاء الجدولة', 'Cancel'))}</button></div>` : ''}
+        ${st === 'failed' && h.failReason ? `<div class="an-hist-body"><span class="an-hint">${escH(h.failReason)}</span></div>` : ''}
+        <div class="an-hist-body"${st === 'sent' ? '' : ' hidden'}>${rcp.map(r => `<span class="an-rcp${r.ackAt ? ' is-read' : ''}" title="${escH(r.ackAt ? text('اطّلع ', 'Read ') + fullDate(r.ackAt) : text('لم يطّلع بعد', 'Not yet read'))}"><i></i>${escH(r.name || '—')}</span>`).join('')}</div>
       </details>`;
     }).join('')}</div>`;
+    body.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); cancelScheduled(b.dataset.cancel, b); }));
+  }
+  async function cancelScheduled(id, btn) {
+    const h = (history || []).find(x => x.id === id);
+    const ok = await showConfirm(escH(text('لن يُرسل هذا الإعلان، ولا يمكن التراجع عن الإلغاء.', 'This announcement will not be sent. This cannot be undone.')),
+      { title: text('إلغاء الإعلان المجدول؟', 'Cancel the scheduled announcement?'), icon: 'warn', danger: true,
+        rows: h ? [[text('الموعد', 'When'), fullDate(h.sendAt)]] : [], confirmLabel: text('إلغاء الجدولة', 'Cancel it'), cancelLabel: text('رجوع', 'Back') });
+    if (!ok) return;
+    btn.disabled = true;
+    try {
+      const row = await api('/announcements/' + encodeURIComponent(id) + '/cancel', { method: 'POST' });
+      history = (history || []).map(x => x.id === id ? row : x);
+      renderHistory();
+      if (typeof toast === 'function') toast(text('تم إلغاء الإعلان المجدول', 'Scheduled announcement cancelled'));
+    } catch (e) {
+      btn.disabled = false;
+      if (typeof toast === 'function') toast(e.message, true);
+      loadHistory();
+    }
   }
 
   /* ── Lifecycle: one interval, the same pattern as notification-settings.js ── */

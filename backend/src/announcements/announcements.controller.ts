@@ -4,7 +4,7 @@ import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
 import { AnnouncementsService } from './announcements.service';
 
-// ⚠ `config` and `mine` are declared before `:id/ack` — Nest matches in declaration order.
+// ⚠ `config` and `mine` are declared before the `:id/…` routes — Nest matches in declaration order.
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('announcements')
 export class AnnouncementsController {
@@ -27,6 +27,10 @@ export class AnnouncementsController {
   @Post()
   @Roles('admin')
   create(@Req() req: any, @Body() body: any) { return this.service.create(req.user, body); }
+
+  @Post(':id/cancel')
+  @Roles('admin')
+  cancel(@Param('id') id: string) { return this.service.cancel(id); }
 
   @Post(':id/ack')
   acknowledge(@Req() req: any, @Param('id') id: string) { return this.service.acknowledge(req.user, id); }

@@ -10,7 +10,7 @@ import { createHash, randomUUID } from 'crypto';
 
 export const TYPES = ['deposit', 'comment', 'followup', 'order', 'deliveryProblem', 'delivered', 'mention', 'otp', 'approval', 'shopifyChange', 'security', 'performance', 'announcement'] as const;
 export type NotificationType = typeof TYPES[number];
-export const DEFAULTS = { announcement: true, performance: true, otp: true, approval: true, shopifyChange: true, security: true, enabled: false, deposit: true, comment: true, followup: true, order: true, deliveryProblem: true, delivered: true, mention: true };
+export const DEFAULTS = { performance: true, otp: true, approval: true, shopifyChange: true, security: true, enabled: false, deposit: true, comment: true, followup: true, order: true, deliveryProblem: true, delivered: true, mention: true };
 const TITLES = { announcement: 'إعلان من SOULIA', performance: 'نقاط الأداء', otp: 'طلب OTP', approval: 'التعديلات والموافقات', shopifyChange: 'تعديل طلب شوبيفاي', security: 'تنبيه أمان', deposit: 'عربون جديد', comment: 'تعليق جديد', followup: 'متابعة جديدة', order: 'طلب جديد', deliveryProblem: 'مشكلة في التسليم', delivered: 'تم تسليم الطلب', mention: 'إشارة جديدة إليك' };
 const EN_TITLES = { announcement: 'SOULIA Announcement', performance: 'Performance points', otp: 'OTP Request', approval: 'Modifications & Approvals', shopifyChange: 'Shopify Order Changed', security: 'Security Alert', deposit: 'New Deposit', comment: 'New Comment', followup: 'New Follow-up', order: 'New Order', deliveryProblem: 'Delivery Issue', delivered: 'Order Delivered', mention: 'You Were Mentioned' };
 export const STAFF_TYPES = TYPES.filter(type => !(ADMIN_TYPES as readonly string[]).includes(type));
@@ -109,8 +109,12 @@ export function validatePreferences(value: any) {
       Object.keys(value).some(key => key === 'language' ? !['ar', 'en'].includes(value[key]) : !Object.prototype.hasOwnProperty.call(DEFAULTS, key) || typeof value[key] !== 'boolean')) throw new BadRequestException('Invalid preferences');
   return value;
 }
+// Management announcements follow the master switch only: they have no per-type
+// preference, so `PATCH /notifications/preferences {announcement:false}` is rejected as an
+// unknown key, and any value stored before this rule is ignored here.
+export const MANDATORY_TYPES = ['announcement'] as const;
 export function eligible(user: any, preferences: any, type: NotificationType) {
-  return ['admin', 'staff', 'viewer'].includes(user?.role) && (!(ADMIN_TYPES as readonly string[]).includes(type) || user.role === 'admin') && user.isActive !== false && preferences?.enabled === true && preferences[type] === true;
+  return ['admin', 'staff', 'viewer'].includes(user?.role) && (!(ADMIN_TYPES as readonly string[]).includes(type) || user.role === 'admin') && user.isActive !== false && preferences?.enabled === true && ((MANDATORY_TYPES as readonly string[]).includes(type) || preferences[type] === true);
 }
 
 @Injectable()

@@ -1,4 +1,4 @@
-import { NotificationsService, DEFAULTS, TYPES, STAFF_TYPES, eligible, validatePreferences, validateSubscription, notificationBody } from '../../src/notifications/notifications.service';
+import { NotificationsService, DEFAULTS, TYPES, MANDATORY_TYPES, STAFF_TYPES, eligible, validatePreferences, validateSubscription, notificationBody } from '../../src/notifications/notifications.service';
 import { MentionsService } from '../../src/mentions/mentions.service';
 import { NotificationsController } from '../../src/notifications/notifications.controller';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
@@ -35,7 +35,16 @@ describe('Web Push settings, security and delivery', () => {
     expect(eligible(user, { ...DEFAULTS, enabled: true }, 'deposit')).toBe(false);
   });
   it('rejects inactive administrators', () => expect(() => setup().service.authorize({ ...admin, isActive: false })).toThrow());
-  it.each(TYPES)('respects independent %s preferences and master', async type => {
+  it('cannot switch off management announcements except through the master switch', async () => {
+    expect(() => validatePreferences({ announcement: false })).toThrow();
+    const { service, account, stored } = setup();
+    await expect(service.preferences({ ...admin, role: 'staff' }, { announcement: false })).rejects.toThrow();
+    account.preferences.announcement = false; // a value stored before the rule existed
+    await service.enqueue('announcement', 'stored-off', '', 'announcement:' + admin.userId, [admin.userId]); expect(stored.size).toBe(1);
+    account.preferences.enabled = false;
+    await service.enqueue('announcement', 'master-off', '', 'announcement:' + admin.userId, [admin.userId]); expect(stored.size).toBe(1);
+  });
+  it.each(TYPES.filter(type => !(MANDATORY_TYPES as readonly string[]).includes(type)))('respects independent %s preferences and master', async type => {
     const { service, account, stored } = setup();
     account.preferences[type] = false;
     await service.enqueue(type, 'off', '100'); expect(stored.size).toBe(0);

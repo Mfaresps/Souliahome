@@ -32,3 +32,7 @@ export const ANNOUNCEMENT_HARD_MAX = 2000;
 export const ANNOUNCEMENT_MAX_RECIPIENTS = 500;
 
 export const ANNOUNCEMENT_ROLES = ['admin', 'staff', 'viewer'];
+
+/** Scheduling: at least this far ahead (else it is just «send now»), at most this far out. */
+export const ANNOUNCEMENT_SCHEDULE_MIN_LEAD_MS = 2 * 60 * 1000;
+export const ANNOUNCEMENT_SCHEDULE_MAX_DAYS = 60;

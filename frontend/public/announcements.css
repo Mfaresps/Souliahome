@@ -66,6 +66,17 @@
 .an-send svg{width:14px;height:14px}
 .an-send.is-busy{opacity:.65;pointer-events:none}
 
+/* When to send */
+.an-when{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.an-when-pick[hidden],.an-hint[hidden],.an-hist-body[hidden]{display:none}
+.an-when-pick input{width:auto!important;margin:0;padding:6px 10px;font-size:.8rem;border-radius:9px;font-family:inherit}
+.an-st{display:inline-block;font-size:.7rem;font-weight:650;padding:2px 9px;border-radius:99px;background:var(--bg-alt);color:var(--muted)}
+.an-st.is-sched{background:var(--primary-pale);color:var(--primary)}
+body.dark-mode .an-st.is-sched{color:var(--accent)}
+.an-st.is-bad{background:rgba(220,38,38,.1);color:var(--red)}
+.an-hist-body .an-hint{align-self:center}
+@media (max-width:600px){.an-when-pick{flex-basis:100%}.an-when-pick input{width:100%!important}}
+
 /* Sent history */
 .an-hist{margin-top:22px}
 .an-hist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}

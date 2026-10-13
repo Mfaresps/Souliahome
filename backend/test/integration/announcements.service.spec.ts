@@ -175,3 +175,109 @@ describe('Announcements — validation and limits', () => {
     expect(payload.body.endsWith('…')).toBe(true);
   });
 });
+
+describe('Announcements — scheduled for later', () => {
+  const inMinutes = (m: number) => new Date(Date.now() + m * 60000).toISOString();
+  const makeDue = (annId: string) => connection.collection('announcements').updateOne({ _id: new Types.ObjectId(annId) }, { $set: { sendAt: new Date(Date.now() - 1000) } });
+
+  it('holds a scheduled announcement back entirely until its time, then delivers it', async () => {
+    const row = await service.create(admin, { category: 'reminder', audience: 'all', message: 'اجتماع الغد الساعة 10', sendAt: inMinutes(30) });
+    expect(row.status).toBe('scheduled');
+    expect(row.recipientCount).toBe(4); // the plan, shown to the author
+    expect(emitted).toHaveLength(0);
+    expect(await connection.collection('notificationjobs').countDocuments()).toBe(0);
+    for (const u of [admin2, staffA, staffB, viewer]) expect(await service.mine(u)).toHaveLength(0);
+    await expect(service.acknowledge(staffA, row.id)).rejects.toThrow(); // not addressed to anyone yet
+
+    await service.deliverDue();
+    expect((await service.history())[0].status).toBe('scheduled'); // not due: untouched
+
+    await makeDue(row.id);
+    await service.deliverDue();
+    const [sent] = await service.history();
+    expect(sent.status).toBe('sent'); expect(sent.recipientCount).toBe(4); expect(sent.sentAt).toBeInstanceOf(Date);
+    expect(emitted.filter(e => e.event === 'announcement:new').map(e => e.userId).sort()).toEqual([admin2.userId, staffA.userId, staffB.userId, viewer.userId].sort());
+    expect(emitted).toContainEqual({ userId: admin.userId, event: 'announcement:read', payload: { id: row.id } }); // author's list refreshes
+    expect(await connection.collection('notificationjobs').countDocuments()).toBe(3);
+    const mine = await service.mine(staffA);
+    expect(mine).toHaveLength(1);
+    expect(new Date(mine[0].createdAt).getTime()).toBe(sent.sentAt.getTime()); // recipients see the delivery time
+  });
+
+  it('delivers exactly once when several workers run at the same moment', async () => {
+    const row = await service.create(admin, { category: 'announcement', audience: 'all', message: 'مرة واحدة', sendAt: inMinutes(10) });
+    await makeDue(row.id);
+    const workers = [service, new AnnouncementsService(connection, notifications, presence), new AnnouncementsService(connection, notifications, presence)];
+    await Promise.all(workers.map(w => w.deliverDue()));
+    expect(emitted.filter(e => e.event === 'announcement:new')).toHaveLength(4);
+    expect(await connection.collection('notificationjobs').countDocuments()).toBe(3);
+  });
+
+  it('resolves recipients at delivery: new hires get «all», deactivated ones are skipped', async () => {
+    const later = await service.create(admin, { category: 'announcement', audience: 'all', message: 'للجميع', sendAt: inMinutes(10) });
+    const picked = await service.create(admin, { category: 'announcement', audience: 'selected', recipientIds: [staffA.userId, viewer.userId], message: 'لكما', sendAt: inMinutes(10) });
+    const hire = new Types.ObjectId();
+    await connection.collection('users').insertOne({ _id: hire, name: 'جديد', username: 'new', role: 'staff', isActive: true });
+    await connection.collection('users').updateOne({ _id: new Types.ObjectId(viewer.userId) }, { $set: { isActive: false } });
+    try {
+      await makeDue(later.id); await makeDue(picked.id);
+      await service.deliverDue();
+      const rows = await service.history();
+      const all = rows.find(r => r.id === later.id)!, sel = rows.find(r => r.id === picked.id)!;
+      expect(all.recipients.map((r: any) => r.userId)).toContain(String(hire));
+      expect(all.recipients.map((r: any) => r.userId)).not.toContain(viewer.userId);
+      expect(sel.status).toBe('sent');
+      expect(sel.recipients.map((r: any) => r.userId)).toEqual([staffA.userId]);
+      expect(sel.skippedCount).toBe(1);
+    } finally {
+      await connection.collection('users').deleteOne({ _id: hire });
+      await connection.collection('users').updateOne({ _id: new Types.ObjectId(viewer.userId) }, { $set: { isActive: true } });
+    }
+  });
+
+  it('records a failure instead of retrying forever when nobody is left to receive it', async () => {
+    const row = await service.create(admin, { category: 'announcement', audience: 'selected', recipientIds: [viewer.userId], message: 'x', sendAt: inMinutes(10) });
+    await connection.collection('users').updateOne({ _id: new Types.ObjectId(viewer.userId) }, { $set: { isActive: false } });
+    try {
+      await makeDue(row.id);
+      await service.deliverDue(); await service.deliverDue();
+      const [h] = await service.history();
+      expect(h.status).toBe('failed'); expect(h.failReason).toBeTruthy();
+      expect(await connection.collection('notificationjobs').countDocuments()).toBe(0);
+    } finally {
+      await connection.collection('users').updateOne({ _id: new Types.ObjectId(viewer.userId) }, { $set: { isActive: true } });
+    }
+  });
+
+  it('retries a delivery whose worker died mid-send, without duplicating push', async () => {
+    const row = await service.create(admin, { category: 'announcement', audience: 'all', message: 'retry', sendAt: inMinutes(10) });
+    await connection.collection('announcements').updateOne({ _id: new Types.ObjectId(row.id) }, { $set: { status: 'sending', claimedAt: new Date(Date.now() - 11 * 60000) } });
+    await service.deliverDue();
+    expect((await service.history())[0].status).toBe('sent');
+    expect(await connection.collection('notificationjobs').countDocuments()).toBe(3);
+  });
+
+  it('can be cancelled before its time, and then is never delivered', async () => {
+    const row = await service.create(admin, { category: 'announcement', audience: 'all', message: 'ملغي', sendAt: inMinutes(10) });
+    const cancelled = await service.cancel(row.id);
+    expect(cancelled.status).toBe('cancelled');
+    await makeDue(row.id);
+    await service.deliverDue();
+    expect((await service.history())[0].status).toBe('cancelled');
+    expect(emitted).toHaveLength(0);
+    for (const u of [staffA, viewer]) expect(await service.mine(u)).toHaveLength(0);
+    await expect(service.cancel(row.id)).rejects.toThrow(/بالفعل/);
+    const sent = await service.create(admin, { category: 'announcement', audience: 'all', message: 'now' });
+    await expect(service.cancel(sent.id)).rejects.toThrow(/تم إرساله/);
+    await expect(service.cancel('nope')).rejects.toThrow();
+  });
+
+  it('rejects a time in the past, too soon, too far, or unreadable', async () => {
+    for (const sendAt of [inMinutes(-5), inMinutes(1), inMinutes(61 * 24 * 60), 'tomorrow-ish']) {
+      await expect(service.create(admin, { category: 'announcement', audience: 'all', message: 'x', sendAt })).rejects.toThrow();
+    }
+    expect(await connection.collection('announcements').countDocuments()).toBe(0);
+    // A bad selection fails at scheduling time, while the author is still on screen.
+    await expect(service.create(admin, { category: 'announcement', audience: 'selected', recipientIds: [inactive.userId], message: 'x', sendAt: inMinutes(30) })).rejects.toThrow(/معطلة/);
+  });
+});
