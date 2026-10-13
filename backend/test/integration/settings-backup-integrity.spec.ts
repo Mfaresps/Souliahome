@@ -41,6 +41,7 @@ describe('complete backups and receipt data independent of image storage', () =>
       discountCodes: [], discountBundles: [], vaultPass: 'test-password',
       bostaApiKey: 'test-api-key', bostaWebhookSecret: 'test-webhook-secret',
       shopifyWebhookSecret: 'test-shopify-signing-secret', shopifyAccessToken: 'test-shopify-admin-token',
+      shopifyClientId: 'test-app-id', shopifyClientSecret: 'test-private-app-secret',
       r2SecretAccessKey: 'test-storage-secret', r2AccountId: 'current-account', r2AccessKeyId: 'current-key', r2Bucket: 'current-bucket' };
     const settingsDoc: Record<string, any> = {
       ...config,
@@ -82,7 +83,7 @@ describe('complete backups and receipt data independent of image storage', () =>
     expect(backup.data.newfeaturedata).toEqual(source.newfeaturedata);
     for (const name of ['carrierimports', 'carrierpayouts', 'orderaudits']) expect(backup.data[name]).toEqual(source[name]);
     expect(backup.configuration).toMatchObject({ r2ReceiptsMax: 500, r2Keep: 3, performanceConfig: { depositFullPoints: 8 } });
-    for (const secret of ['vaultPass', 'bostaApiKey', 'bostaWebhookSecret', 'shopifyWebhookSecret', 'shopifyAccessToken', 'r2SecretAccessKey']) expect(backup.configuration[secret]).toBeUndefined();
+    for (const secret of ['vaultPass', 'bostaApiKey', 'bostaWebhookSecret', 'shopifyWebhookSecret', 'shopifyAccessToken', 'shopifyClientSecret', 'r2SecretAccessKey']) expect(backup.configuration[secret]).toBeUndefined();
     expect(backup.data.settings).toBeUndefined();
     expect(backup.vault_balances.vaultInstapay).toBe(750);
     for (const [name, docs] of Object.entries(backup.data)) expect(backup.collectionCounts[name]).toBe((docs as any[]).length);

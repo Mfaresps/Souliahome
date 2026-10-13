@@ -17,7 +17,7 @@ async function main() {
     try {
       await connection.asPromise();
       stored = await connection.collection('settings').findOne({}, {
-        projection: { shopifyWebhookSecret: 1, shopifyStoreName: 1, shopifyAccessToken: 1 },
+        projection: { shopifyWebhookSecret: 1, shopifyStoreName: 1, shopifyAccessToken: 1, shopifyClientId: 1, shopifyClientSecret: 1 },
       }) || {};
     } catch {
       throw new Error('Unable to read persistent Shopify settings');
@@ -29,6 +29,8 @@ async function main() {
     webhookSecret: stored.shopifyWebhookSecret || process.env.SHOPIFY_WEBHOOK_SECRET || '',
     storeName: stored.shopifyStoreName || process.env.SHOPIFY_STORE_NAME || '',
     accessToken: stored.shopifyAccessToken || process.env.SHOPIFY_ACCESS_TOKEN || '',
+    clientId: stored.shopifyClientId || process.env.SHOPIFY_CLIENT_ID || '',
+    clientSecret: stored.shopifyClientSecret || process.env.SHOPIFY_CLIENT_SECRET || '',
   };
   if (!config.webhookSecret.trim()) {
     console.warn('Shopify order webhooks are NOT configured. Save the signing key in Settings > Shipping > Shopify.');
@@ -63,17 +65,23 @@ async function main() {
   req.end(body);
 }
 
-function checkAdminApi(config) {
-  if (!/^[a-z0-9][a-z0-9-]*$/i.test(config.storeName) || !config.accessToken.trim()) {
+async function checkAdminApi(config) {
+  const usesAppCredentials = !!(config.clientId || config.clientSecret);
+  if (!/^[a-z0-9][a-z0-9-]*$/i.test(config.storeName) || (usesAppCredentials ? !config.clientId || !config.clientSecret : !config.accessToken.trim())) {
     console.warn('Shopify Admin API is NOT configured. New-order webhooks work independently; configure imports and order edits in Settings > Shipping > Shopify.');
     return;
   }
   const warn = () => console.warn('Shopify Admin API order read failed. Verify the store, token and read_orders permission in Settings > Shipping > Shopify. New-order webhooks work independently.');
+  let accessToken = config.accessToken;
+  if (usesAppCredentials) {
+    try { accessToken = await require('./shopify-token.cjs').createShopifyTokenProvider().getToken(config); }
+    catch { console.warn('Shopify app authentication failed. Verify Client ID, Client secret, installation and organization in Settings > Shipping > Shopify.'); return; }
+  }
   const req = https.request({
     hostname: config.storeName + '.myshopify.com',
     path: '/admin/api/2024-01/orders.json?limit=1&status=any&fields=id',
     method: 'GET', timeout: 10000,
-    headers: { 'X-Shopify-Access-Token': config.accessToken },
+    headers: { 'X-Shopify-Access-Token': accessToken },
   }, res => {
     let data = '';
     res.setEncoding('utf8');

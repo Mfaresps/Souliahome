@@ -32509,6 +32509,7 @@ async function api(path, options = {}) {
       }
     }
     const apiError = new Error(msg);
+    apiError.status = res.status;
     if (path === '/shipping/pickups') apiError.pickupReason = err.pickupReason || '';
     throw apiError;
   }
@@ -33362,6 +33363,8 @@ function connectSocket() {
   });
   socket.on('shopify:deposit-changed', () => { loadShopifyOrders(); });
   socket.on('shopify:order-cancel-conflict', () => { loadShopifyOrders(); });
+  socket.on('shopify:phone-changed', () => { loadShopifyOrders(); });
+  socket.on('shopify:items-changed', () => { loadShopifyOrders(); });
   socket.on('users:status', (data) => {
     // Update from WebSocket with full user data including lastSeen
     if (data && data.users && Array.isArray(data.users)) {
@@ -103207,10 +103210,46 @@ function _spCancelConflictBannerHtml(o) {
 function _spDepositBlockReason(o) {
   const d = _spDepositOf(o);
   if (o.cancelled || o.status !== 'pending' || o.receiptCancelLock) return t('spDepOrderChanged');
+  if (o.itemSyncConflict) return currentLang === 'en' ? 'Review the Shopify item conflict before confirming.' : 'راجع تعارض أصناف Shopify قبل تأكيد الطلب.';
   if (d.pending.length) return t('spDepConfirmBlocked');
   if (d.approved.some(r => !r.vaultEntryId) || (o.depositReceipts || []).some(r => r.status === 'مُسترد' && !r.refundVaultEntryId)) return t('spDepBooking');
   if (d.deposit > (Number(o.total) || 0) + .005) return t('spDepOverTotal');
   return '';
+}
+
+function _spItemSyncConflictHtml(o) {
+  const conflict = o?.itemSyncConflict;
+  if (!conflict || o.status !== 'pending') return '';
+  const en = currentLang === 'en';
+  const keyOf = i => i.productId ? 'product:' + String(i.productId) : i.code && i.code !== 'SHOPIFY' ? 'code:' + String(i.code) : 'name:' + String(i.shopifyName || i.name || '');
+  const side = (rows, key) => {
+    const list = (rows || []).filter(i => keyOf(i) === key);
+    return list.length ? list.map(i => `${esc(i.name || i.code)} · ${fmtN(i.qty)} × ${fmtJ(i.price)}`).join('<br>') : esc(en ? 'Removed' : 'الصنف محذوف');
+  };
+  return `<div class="spdep-warning" role="status" style="margin:10px 0">
+    <b>${en ? 'Review conflicting item changes' : 'مراجعة تعارض تعديل الأصناف'}</b>
+    <p>${en ? 'Your local changes are saved. These products also changed in Shopify.' : 'تعديلاتك المحلية محفوظة. نفس الأصناف اتغيّرت في Shopify كمان.'}</p>
+    <div style="overflow:auto"><table style="width:100%;font-size:.8rem"><thead><tr><th>${en ? 'SOULIA' : 'السيستم'}</th><th>Shopify</th></tr></thead><tbody>${conflict.conflictingKeys.map(key => `<tr><td>${side(o.items, key)}</td><td>${side(conflict.shopifyItems, key)}</td></tr>`).join('')}</tbody></table></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn btn-outline btn-sm" onclick="_spResolveItemSyncConflict(${_spReceiptJs(o._id)},'local',${_spReceiptJs(conflict.revision || conflict.detectedAt)})">${en ? 'Keep local changes' : 'الاحتفاظ بتعديلات السيستم'}</button>
+      <button class="btn btn-outline btn-sm" onclick="_spResolveItemSyncConflict(${_spReceiptJs(o._id)},'shopify',${_spReceiptJs(conflict.revision || conflict.detectedAt)})">${en ? 'Use Shopify for these products' : 'استخدام Shopify للأصناف دي'}</button>
+    </div></div>`;
+}
+
+async function _spResolveItemSyncConflict(id, source, revision) {
+  const en = currentLang === 'en';
+  if (document.getElementById('shopify-edit-modal') && typeof _spEditDirty === 'function' && _spEditDirty()) {
+    toast(en ? 'Save or discard your unsaved changes before reviewing this conflict.' : 'احفظ أو تراجع عن التعديلات غير المحفوظة قبل مراجعة التعارض.', true);
+    return;
+  }
+  if (source === 'shopify' && !confirm(en ? 'Use the Shopify rows shown for the conflicting products? Other local changes will be kept.' : 'استخدام أصناف Shopify المعروضة للتعارض؟ باقي تعديلاتك المحلية هتفضل محفوظة.')) return;
+  try {
+    await api('/shopify/orders/' + id + '/item-sync-conflict', { method: 'PATCH', body: JSON.stringify({ source, revision }) });
+    await loadShopifyOrders();
+    if (document.getElementById('shopify-edit-modal')) editShopifyOrder(id);
+    _spRefreshReceiptViews();
+    toast(en ? 'Item conflict reviewed.' : 'تمت مراجعة تعارض الأصناف.');
+  } catch (e) { toast(e.message || (en ? 'Unable to review item changes.' : 'تعذر مراجعة تعارض الأصناف.'), true); }
 }
 
 function _spReceiptSummaryHtml(o) {
@@ -103221,6 +103260,7 @@ function _spReceiptSummaryHtml(o) {
   const discounts=[['spApproveDiscount',Number(o.discount)||0,''],['spDiscCodes',Number(o.codesDiscount)||0,o.discountCode||''],['spDiscManual',Number(o.manualDiscount)||0,'']];
   const base=(o.items||[]).reduce((sum,i)=>sum+(Number(i.qty)||1)*(Number(i.price)||0),0) || ((Number(o.total)||0)+discounts.reduce((sum,row)=>sum+row[1],0));
   return `<div class="spd-sum spdep-order-summary">
+    ${typeof _spItemSyncConflictHtml === 'function' ? _spItemSyncConflictHtml(o) : ''}
     <div class="spd-row"><span>${esc(t('spApproveClient'))}</span><b>${esc(o.client||'')}</b></div>
     <div class="spd-row"><span>${esc(t('spApproveItems'))}</span><b>${tf(o.items?.length===1?'spItemsCountOne':'spItemsCount',{n:o.items?.length||0})}${_spStockTickHtml(stock)}</b></div>
     <div class="spd-row"><span>${esc(t('spApproveShipping'))}</span><b>${fmtJ(o.shipCost||0)}</b></div>
@@ -105405,14 +105445,15 @@ function _shopifyEditOutsideClick(e) {
 function _renderShopifyEditItems() {
   const host = document.getElementById('shopify-edit-items');
   if (!host) return;
+  const syncNotice = typeof _spItemSyncConflictHtml === 'function' ? _spItemSyncConflictHtml(_spEditOrder) : '';
 
   if (!_shopifyEditItems.length) {
-    host.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:.88rem">${t('spEditEmpty')}</div>`;
+    host.innerHTML = syncNotice + `<div style="text-align:center;padding:30px;color:var(--muted);font-size:.88rem">${t('spEditEmpty')}</div>`;
     _updateShopifyEditSummary();
     return;
   }
 
-  host.innerHTML = _shopifyEditItems.map((item, idx) => {
+  host.innerHTML = syncNotice + _shopifyEditItems.map((item, idx) => {
     const prod = Array.isArray(products) ? products.find(p => p._id === item.productId || p.code === item.code) : null;
     const inv = Array.isArray(inventoryCache) ? inventoryCache.find(p => p._id === item.productId || p.code === item.code) : null;
     const stock = inv ? inv.current : null;

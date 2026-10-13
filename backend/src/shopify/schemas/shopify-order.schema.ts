@@ -201,6 +201,18 @@ export class ShopifyOrder {
   @Prop({ default: '' })
   tags: string;
 
+  /** Last remote item list used to distinguish local changes from Shopify changes. */
+  @Prop({ type: [Object], default: null })
+  localItemsBaseline: any[] | null;
+
+  @Prop({ type: Object, default: null })
+  itemSyncConflict: {
+    shopifyItems: any[];
+    conflictingKeys: string[];
+    detectedAt: string;
+    revision: string;
+  } | null;
+
   /**
    * تغيّرت أصناف/قيمة أوردر مؤكد في شوبيفاي بعد إنشاء حركته.
    *

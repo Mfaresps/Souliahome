@@ -326,6 +326,12 @@ export class ShopifyController {
   }
 
   // تعديل items أوردر
+  @Patch('orders/:id/item-sync-conflict')
+  @UseGuards(JwtAuthGuard)
+  async resolveItemSyncConflict(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    return this.shopifyService.resolveItemSyncConflict(id, body?.source, body?.revision, req.user?.name || req.user?.username || '');
+  }
+
   @Patch('orders/:id/items')
   @UseGuards(JwtAuthGuard)
   async updateItems(

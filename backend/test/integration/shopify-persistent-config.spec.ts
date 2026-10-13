@@ -9,7 +9,7 @@ import { RolesGuard } from '../../src/core/guards/roles.guard';
 import { Reflector } from '@nestjs/core';
 
 describe('Persistent Shopify configuration', () => {
-  const keys = ['SHOPIFY_WEBHOOK_SECRET', 'SHOPIFY_STORE_NAME', 'SHOPIFY_ACCESS_TOKEN'];
+  const keys = ['SHOPIFY_WEBHOOK_SECRET', 'SHOPIFY_STORE_NAME', 'SHOPIFY_ACCESS_TOKEN', 'SHOPIFY_CLIENT_ID', 'SHOPIFY_CLIENT_SECRET'];
   const originals = Object.fromEntries(keys.map(key => [key, process.env[key]]));
   let stored: Record<string, string>;
   let model: any;
@@ -47,7 +47,7 @@ describe('Persistent Shopify configuration', () => {
     const service = settingsService();
     await service.saveShopifyConfig({ webhookSecret: 'persisted-signing-key', storeName: 'https://My-Store.myshopify.com/', accessToken: 'valid-test-token' });
     await service.saveShopifyConfig({ storeName: 'my-store', webhookSecret: ' ', accessToken: '' });
-    expect(await settingsService().getShopifyConfig()).toEqual({ webhookSecret: 'persisted-signing-key', storeName: 'my-store', accessToken: 'valid-test-token' });
+    expect(await settingsService().getShopifyConfig()).toMatchObject({ webhookSecret: 'persisted-signing-key', storeName: 'my-store', accessToken: 'valid-test-token' });
     expect(model.findByIdAndUpdate.mock.calls[1][1].$set).toEqual({ shopifyStoreName: 'my-store' });
   });
   it('uses saved values ahead of old deployment environment and lets the Admin API see changes immediately', async () => {
@@ -106,5 +106,16 @@ describe('Persistent Shopify configuration', () => {
       expect(guard.canActivate(context('viewer'))).toBe(false);
       expect(guard.canActivate(context('admin'))).toBe(true);
     }
+  });
+  it('persists app credentials without returning the client secret or including it in downloadable backups', async () => {
+    const service = settingsService();
+    await service.saveShopifyConfig({ storeName: 'my-store', clientId: 'saved-client-id', clientSecret: 'private-client-secret' });
+    await service.saveShopifyConfig({ clientId: 'saved-client-id', clientSecret: '' });
+    expect(await settingsService().getShopifyConfig()).toMatchObject({ clientId: 'saved-client-id', clientSecret: 'private-client-secret' });
+    const safe = service.stripSensitive({ toObject: () => ({ ...stored }) } as any);
+    expect(safe.shopifyClientId).toBe('saved-client-id');
+    expect(safe.shopifyClientSecretSet).toBe(true);
+    expect(safe.shopifyClientSecret).toBeUndefined();
+    expect((service as any).backupConfiguration(stored).shopifyClientSecret).toBeUndefined();
   });
 });

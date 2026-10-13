@@ -67,22 +67,20 @@ pipeline {
         // يعيد تشغيل الحاوية بعد كل انهيار، فـ `.State.Status` يقرأ "running" حتى
         // بينما NestJS يموت ويعود في حلقة. هكذا نجح بناءٌ كامل بينما كان الـ API
         // ميتاً ورسالة «خطأ في الطلب» تظهر عند تسجيل الدخول: كان الفحص يسأل
-        // السؤال الخطأ. رد 401 على بيانات وهمية دليلٌ على صحة المسار كاملاً
-        // (Nest + Mongo + المصادقة)، أما رفض الاتصال فليس كذلك.
+        // السؤال الخطأ. /api/health يختبر Nest واتصال Mongo عبر البروكسي.
+        // الفحص لا يسجل محاولة دخول وهمية ولا يرسل إشعار أمان عند كل رفع.
         sh '''
           for i in $(seq 1 60); do
             frontend_ok=false
             curl -sf -o /dev/null http://localhost:8080/ && frontend_ok=true
             api_code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 \
-              -X POST http://localhost:8080/api/auth/login \
-              -H 'Content-Type: application/json' \
-              -d '{"username":"__healthcheck__","password":"__healthcheck__"}' 2>/dev/null || echo 000)
+              http://localhost:8080/api/health 2>/dev/null || echo 000)
             backend_state=$(docker inspect -f '{{.State.Status}}' soulia-backend 2>/dev/null || echo missing)
-            # 401 المتوقع، أو 400/429، يثبت أن مسار المصادقة يعمل.
+            # 200 وحده يثبت جاهزية الـ API وقاعدة البيانات.
             # أخطاء الاتصال أو الخادم لا تُحسب نجاحًا ولا تُرسل إعلان نسخة جديدة.
-            if [ "$frontend_ok" = true ] && { [ "$api_code" = "401" ] || [ "$api_code" = "400" ] || [ "$api_code" = "429" ]; }; then
+            if [ "$frontend_ok" = true ] && [ "$api_code" = "200" ]; then
               docker exec soulia-backend node scripts/check-shopify-webhook.cjs || exit 1
-              echo "SOULIA deployed and healthy (login endpoint responded $api_code)"
+              echo "SOULIA deployed and healthy (readiness endpoint responded $api_code)"
               exit 0
             fi
             sleep 2

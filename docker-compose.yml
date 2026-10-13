@@ -33,6 +33,8 @@ services:
       SHOPIFY_WEBHOOK_SECRET: ${SHOPIFY_WEBHOOK_SECRET:-}
       SHOPIFY_STORE_NAME: ${SHOPIFY_STORE_NAME:-}
       SHOPIFY_ACCESS_TOKEN: ${SHOPIFY_ACCESS_TOKEN:-}
+      SHOPIFY_CLIENT_ID: ${SHOPIFY_CLIENT_ID:-}
+      SHOPIFY_CLIENT_SECRET: ${SHOPIFY_CLIENT_SECRET:-}
       # ⚠ الحاوية كانت شغّالة UTC (مافيش TZ)، والسيرفر المحلي UTC+3 — فنفس الكود
       # كان بيدّي نتيجتين مختلفتين حسب مكان التشغيل. ده بيأثر على كل حساب بيبني
       # تاريخاً بتوقيت السيرفر: بداية الشهر في `resolvePeriod` (نقاط اتكسبت بين

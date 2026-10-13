@@ -308,6 +308,12 @@ export class Settings {
   @Prop({ default: '' })
   shopifyAccessToken: string;
 
+  @Prop({ default: '' })
+  shopifyClientId: string;
+
+  @Prop({ default: '' })
+  shopifyClientSecret: string;
+
   // ─── النسخ الاحتياطي السحابي (Cloudflare R2) ───────────────────────────
   // نفس نمط bostaApiKey: يُخزَّن هنا ولا يُعاد إلى الواجهة أبداً (انظر
   // getSettings، حيث يُستبدل بعَلَم r2SecretAccessKeySet).

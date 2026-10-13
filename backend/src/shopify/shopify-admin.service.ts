@@ -1,22 +1,34 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import * as https from 'https';
 import { SettingsService } from '../settings/settings.service';
+const { createShopifyTokenProvider } = require('../../scripts/shopify-token.cjs');
 
 export interface ShopifyAdminConfig {
   storeName: string;   // e.g. "soulia-2"
   accessToken: string; // shpat_...
+  clientId?: string;
+  clientSecret?: string;
 }
 
 @Injectable()
 export class ShopifyAdminService {
   private readonly logger = new Logger(ShopifyAdminService.name);
+  private readonly tokenProvider = createShopifyTokenProvider();
 
   constructor(@Optional() private readonly settingsService?: SettingsService) {}
 
   private async getConfig(): Promise<ShopifyAdminConfig | null> {
     const stored = await this.settingsService?.getShopifyConfig();
     const storeName   = stored?.storeName || process.env.SHOPIFY_STORE_NAME || '';
-    const accessToken = stored?.accessToken || process.env.SHOPIFY_ACCESS_TOKEN || '';
+    let accessToken = stored?.accessToken || process.env.SHOPIFY_ACCESS_TOKEN || '';
+    const clientId = stored?.clientId || process.env.SHOPIFY_CLIENT_ID || '';
+    const clientSecret = stored?.clientSecret || process.env.SHOPIFY_CLIENT_SECRET || '';
+    if (clientId || clientSecret) {
+      if (!storeName || !clientId || !clientSecret) return null;
+      try { accessToken = await this.tokenProvider.getToken({ storeName, clientId, clientSecret }); }
+      catch (error) { this.logger.warn(error.message); return null; }
+      return { storeName, accessToken, clientId, clientSecret };
+    }
     if (!storeName || !accessToken) return null;
     return { storeName, accessToken };
   }
@@ -26,6 +38,7 @@ export class ShopifyAdminService {
     path: string,
     body?: unknown,
     config?: ShopifyAdminConfig,
+    retried = false,
   ): Promise<T> {
     const cfg = config || await this.getConfig();
     if (!cfg) return Promise.reject(new Error('Shopify Admin API غير مضبوط — أضف SHOPIFY_STORE_NAME و SHOPIFY_ACCESS_TOKEN في .env'));
@@ -47,6 +60,13 @@ export class ShopifyAdminService {
         let data = '';
         res.on('data', (chunk) => { data += chunk; });
         res.on('end', () => {
+          if (res.statusCode === 401 && !retried && cfg.clientId && cfg.clientSecret) {
+            this.tokenProvider.invalidate(cfg, cfg.accessToken);
+            this.tokenProvider.getToken(cfg)
+              .then((accessToken: string) => this.request<T>(method, path, body, { ...cfg, accessToken }, true))
+              .then(resolve, reject);
+            return;
+          }
           try {
             const parsed = data ? JSON.parse(data) : {};
             if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {

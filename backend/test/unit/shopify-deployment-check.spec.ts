@@ -18,6 +18,7 @@ function run(options: { missingSecret?: boolean; missingToken?: boolean; invalid
   const consoleMock = { log: jest.fn(), warn: jest.fn(), error: jest.fn() };
   const requests: any[] = [];
   const close = jest.fn(async () => {});
+  const tokenExchange = jest.fn(async (_config: any) => 'generated-token');
   const mongo = { createConnection: () => ({ asPromise: async () => {}, close,
     collection: () => ({ findOne: async () => options.stored }) }) };
   let completion: any;
@@ -47,6 +48,7 @@ function run(options: { missingSecret?: boolean; missingToken?: boolean; invalid
         ? { request: (_url: string, config: any, cb: any) => request('proxy', config, cb) }
         : name === 'node:https' ? { request: (config: any, cb: any) => request('admin', config, cb) }
         : name === 'mongoose' ? mongo
+        : name === './shopify-token.cjs' ? { createShopifyTokenProvider: () => ({ getToken: tokenExchange }) }
         : { createHmac },
       Buffer, process: proc, console: consoleMock,
     });
@@ -54,7 +56,7 @@ function run(options: { missingSecret?: boolean; missingToken?: boolean; invalid
     if (error.exitCode !== 1) throw error;
     proc.exitCode = error.exitCode;
   }
-  return { proc, consoleMock, requests, completion, close };
+  return { proc, consoleMock, requests, completion, close, tokenExchange };
 }
 
 describe('Shopify deployment health check', () => {
@@ -92,5 +94,12 @@ describe('Shopify deployment health check', () => {
     expect(result.requests[0].config.headers['X-Shopify-Hmac-Sha256']).toBe(createHmac('sha256', 'saved-in-database').update('{}').digest('base64'));
     expect(result.requests[1].config).toMatchObject({ hostname: 'saved-store.myshopify.com', headers: { 'X-Shopify-Access-Token': 'saved-token' } });
     expect(result.close).toHaveBeenCalledTimes(1);
+  });
+  it('uses persistent app credentials for the deployment API read check instead of an expired static token', async () => {
+    const result = run({ stored: { shopifyWebhookSecret: 'saved-key', shopifyStoreName: 'saved-store', shopifyClientId: 'app-id', shopifyClientSecret: 'app-secret', shopifyAccessToken: 'expired-token' } });
+    await result.completion; await Promise.resolve();
+    expect(result.tokenExchange).toHaveBeenCalledWith(expect.objectContaining({ clientId: 'app-id', clientSecret: 'app-secret', storeName: 'saved-store' }));
+    expect(result.requests[1].config.headers['X-Shopify-Access-Token']).toBe('generated-token');
+    expect(result.proc.exitCode).toBe(0);
   });
 });

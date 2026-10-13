@@ -291,8 +291,20 @@ export class SettingsController {
       webhookSecret: body?.webhookSecret,
       storeName: body?.storeName,
       accessToken: body?.accessToken,
+      clientId: body?.clientId,
+      clientSecret: body?.clientSecret,
     });
-    return { success: true };
+    const config = await this.settingsService.getShopifyConfig();
+    return {
+      success: true,
+      settings: {
+        shopifyWebhookSecretSet: !!config.webhookSecret,
+        shopifyAccessTokenSet: !!config.accessToken,
+        shopifyStoreName: config.storeName,
+        shopifyClientId: config.clientId,
+        shopifyClientSecretSet: !!config.clientSecret,
+      },
+    };
   }
 
   @Roles('admin')

@@ -56,6 +56,9 @@ import { TransactionsService } from '../transactions/transactions.service';
 import { SettingsService } from '../settings/settings.service';
 import { DiscountOtpService } from '../discount-otp/discount-otp.service';
 import { carrierLabel, isValidCarrier } from '../shared/carriers.constants';
+import { resolveShopifyPhone } from './shopify-phone.util';
+import { shopifyLineQuantity } from './shopify-line-quantity.util';
+import { applyShopifyConflictItems, differingItemKeys, itemKey, mergeShopifyItems } from './shopify-item-merge.util';
 
 @Injectable()
 export class ShopifyService {
@@ -119,7 +122,8 @@ export class ShopifyService {
 
   async getConnectionStatus(): Promise<{ webhookConfigured: boolean; adminApiConfigured: boolean; adminApiReachable: boolean | null }> {
     const config = await this.settingsService.getShopifyConfig();
-    const adminApiConfigured = !!(config.storeName && config.accessToken);
+    const usesAppCredentials = !!(config.clientId || config.clientSecret);
+    const adminApiConfigured = !!(config.storeName && (usesAppCredentials ? config.clientId && config.clientSecret : config.accessToken));
     const check = adminApiConfigured ? await this.shopifyAdminService.listOrders({ limit: 1, status: 'any' }) : null;
     return {
       webhookConfigured: !!config.webhookSecret,
@@ -148,7 +152,7 @@ export class ShopifyService {
       const customer = orderData.customer || {};
       const clientName = [customer.first_name, customer.last_name]
         .filter(Boolean).join(' ') || 'عميل Shopify';
-      const clientPhone = customer.phone || orderData.shipping_address?.phone || '';
+      const clientPhone = resolveShopifyPhone(orderData) || '';
       const address = this.formatAddress(orderData.shipping_address);
       const city = this.formatCity(orderData.shipping_address);
       const bostaCity = city; // formatCity already returns English Bosta-accepted city name
@@ -482,11 +486,11 @@ export class ShopifyService {
       orderNumber: o.order_number,
       createdAt: o.created_at,
       client: [o.customer?.first_name, o.customer?.last_name].filter(Boolean).join(' ') || 'عميل Shopify',
-      phone: o.customer?.phone || o.shipping_address?.phone || '',
+      phone: resolveShopifyPhone(o) || '',
       total: this.parsePrice(o.total_price),
       financialStatus: o.financial_status || '',
       fulfillmentStatus: o.fulfillment_status || '',
-      itemsCount: (o.line_items || []).length,
+      itemsCount: (o.line_items || []).filter((item: any) => shopifyLineQuantity(item) > 0).length,
       alreadyImported: existingIds.has(String(o.id)),
     }));
 
@@ -532,6 +536,7 @@ export class ShopifyService {
       const govArabic = orderData.shipping_address?.province || orderData.shipping_address?.city || '';
       const tags = orderData.tags || '';
       const financialStatus = orderData.financial_status || order.financialStatus;
+      const phone = resolveShopifyPhone(orderData, order.rawData, order.phone || '');
 
       const items = await this.mapItems(orderData.line_items || []);
       const shipCost = this.parsePrice(orderData.shipping_lines?.[0]?.price);
@@ -540,6 +545,7 @@ export class ShopifyService {
       const total = Math.max(0, itemsTotal + shipCost - discount);
 
       order.notes = notes;
+      if (phone !== undefined) order.phone = phone;
       // العنوان على سجل الأوردر يتتبّع شوبيفاي دائماً — هذا السجل يمثّل ما يقوله المتجر،
       // والتجميد يحدث على الحركة/الشحنة أدناه حيث توجد Bosta. الاثنان يختلفان عمداً عند
       // التعارض، وهو بالضبط ما يجعل الاختلاف قابلاً للعرض بدل أن يُمحى.
@@ -558,12 +564,41 @@ export class ShopifyService {
       //
       //   تغيير قيمة أوردر مؤكد قرار مالي — يُسجَّل كتعارض ويقرره الموظف.
       const itemsFrozen = order.status !== 'pending';
+      const itemSnapshot = (rows: any[]) => rows.map(i => [i.productId, i.code, i.name, i.qty, i.price]);
+      const previousItemsSnapshot = JSON.stringify(itemSnapshot(order.items || []));
+      const previousConflictRevision = order.itemSyncConflict?.revision || order.itemSyncConflict?.detectedAt;
       const totalChanged = itemsFrozen && Math.abs((order.total || 0) - total) > 0.01;
 
       if (!itemsFrozen) {
-        order.items = items;
+        // Existing locally edited rows may predate explicit baseline tracking.
+        if (order.localItemsBaseline == null && order.rawData?.line_items &&
+            (order.editHistory || []).some(h => h.action === 'تعديل الأصناف' &&
+              Array.isArray(h.after?.items) && !differingItemKeys(h.after.items as any[], order.items || []).length)) {
+          order.localItemsBaseline = await this.mapItems(order.rawData.line_items as any[]);
+        }
+        if (order.localItemsBaseline != null) {
+          const merged = mergeShopifyItems(order.localItemsBaseline, order.items || [], items);
+          const remainingDifferences = new Set(differingItemKeys(merged.items, items));
+          const conflictingKeys = [...new Set([
+            ...merged.conflictingKeys,
+            ...(order.itemSyncConflict?.conflictingKeys || []).filter(key => remainingDifferences.has(key)),
+          ])];
+          order.items = merged.items;
+          if (conflictingKeys.length) {
+            const previous = order.itemSyncConflict;
+            const sameConflict = previous && !differingItemKeys(previous.shopifyItems, items).length &&
+              JSON.stringify([...previous.conflictingKeys].sort()) === JSON.stringify([...conflictingKeys].sort());
+            const revision = crypto.createHash('sha256').update(JSON.stringify([
+              items.map(i => [itemKey(i), Number(i.qty), Number(i.price)]).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+              [...conflictingKeys].sort(),
+            ])).digest('hex');
+            order.itemSyncConflict = { shopifyItems: items, conflictingKeys, revision,
+              detectedAt: sameConflict ? previous.detectedAt : new Date().toISOString() };
+          } else order.itemSyncConflict = null;
+          order.localItemsBaseline = items;
+        } else order.items = items;
         order.shipCost = shipCost;
-        order.itemsTotal = itemsTotal;
+        order.itemsTotal = order.items.reduce((sum, item) => sum + Number(item.price) * Number(item.qty), 0);
         order.discount = discount;
         // ⚠ الإجمالي يُعاد حسابه عبر computeShopifyOrderTotal، لا من أرقام شوبيفاي وحدها.
         //   `total` أعلاه يعرف خصم شوبيفاي فقط، فإسناده مباشرة كان يمحو الخصم اليدوي من
@@ -606,6 +641,7 @@ export class ShopifyService {
       // tags في Shopify نص مفصول بفواصل، transaction تحتفظ بها كمصفوفة
       const txTags = tags ? tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [];
       const txUpdate: any = { notes, tags: txTags };
+      if (phone !== undefined) txUpdate.phone = phone;
 
       // ⚠ العنوان لا يُكتب فوقه بعد الشحن.
       //
@@ -661,6 +697,14 @@ export class ShopifyService {
       }
       if (totalChanged) {
         this.emit('shopify:value-conflict', { shopifyOrderId: shopifyId, ref: order.ref });
+      }
+      const itemsChanged = !itemsFrozen && previousItemsSnapshot !== JSON.stringify(itemSnapshot(order.items || []));
+      if (itemsChanged || previousConflictRevision !== (order.itemSyncConflict?.revision || order.itemSyncConflict?.detectedAt)) {
+        this.emit('shopify:items-changed', { shopifyOrderId: shopifyId, ref: order.ref });
+      }
+      if (phone !== undefined) {
+        this.emit('shopify:phone-changed', { shopifyOrderId: shopifyId, ref: order.ref });
+        if (tx?._id) this.emit('tx:updated', { _id: String(tx._id) });
       }
 
       this.logger.log(`🔄 تحديث أوردر Shopify: ${order.ref}`);
@@ -874,6 +918,7 @@ export class ShopifyService {
     if (order.status !== 'pending' || order.cancelled || order.receiptCancelLock) {
       return { success: false };
     }
+    if (order.itemSyncConflict) throw new BadRequestException('راجع تعارض أصناف Shopify قبل تأكيد الطلب');
 
     // A receipt still under review is money not yet decided — confirming now would freeze the
     // order without it, and nothing could attach it afterwards.
@@ -1411,6 +1456,7 @@ export class ShopifyService {
     if (order.status !== 'pending') throw new NotFoundException('لا يمكن تعديل أوردر غير معلق');
 
     const oldItems = (order.items || []).map(i => ({ ...i }));
+    if (order.localItemsBaseline == null) order.localItemsBaseline = oldItems.map(i => ({ ...i }));
     const oldItemsTotal = order.itemsTotal || 0;
     const oldTotal = order.total || 0;
 
@@ -1441,6 +1487,28 @@ export class ShopifyService {
     await order.save();
 
     this.logger.log(`✏️ تم تعديل أوردر Shopify: ${order.ref}`);
+    return { success: true };
+  }
+
+  async resolveItemSyncConflict(orderId: string, source: string, revision: string, editedBy = ''): Promise<{ success: boolean }> {
+    if (!['local', 'shopify'].includes(source)) throw new BadRequestException('اختر أصناف السيستم أو Shopify');
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) throw new NotFoundException('الأوردر غير موجود');
+    if (order.status !== 'pending' || order.cancelled) throw new BadRequestException('يمكن مراجعة أصناف أوردر معلق فقط');
+    const conflict = order.itemSyncConflict;
+    if (!conflict || revision !== (conflict.revision || conflict.detectedAt)) throw new BadRequestException('تغيّرت حالة التعارض — حدّث الأوردر وراجع الأصناف مجددًا');
+    const oldItems = (order.items || []).map(i => ({ ...i }));
+    const oldTotal = order.total;
+    if (source === 'shopify') order.items = applyShopifyConflictItems(order.items || [], conflict.shopifyItems, conflict.conflictingKeys);
+    order.itemsTotal = order.items.reduce((sum, i) => sum + Number(i.price) * Number(i.qty), 0);
+    order.total = this.computeShopifyOrderTotal(order).total;
+    order.itemSyncConflict = null;
+    this.applyDerivedDeposit(order);
+    this.pushOrderHistory(order, { action: 'مراجعة تعارض الأصناف', editedBy,
+      before: { items: oldItems, total: oldTotal }, after: { items: order.items, total: order.total },
+      changes: [source === 'local' ? 'الاحتفاظ بالتعديلات المحلية' : 'استخدام أصناف Shopify المتعارضة'] });
+    await order.save();
+    this.emit('shopify:items-changed', { shopifyOrderId: order.shopifyId, ref: order.ref });
     return { success: true };
   }
 
@@ -1948,7 +2016,10 @@ export class ShopifyService {
 
   private async mapItems(lineItems: any[]) {
     return Promise.all(
-      lineItems.map(async (item) => {
+      lineItems
+        .map(item => ({ item, qty: shopifyLineQuantity(item) }))
+        .filter(({ qty }) => qty > 0)
+        .map(async ({ item, qty }) => {
         const sku = item.sku || '';
         const shopifyPrice = this.parsePrice(item.price);
         const product = sku
@@ -1975,9 +2046,9 @@ export class ShopifyService {
           productId: product ? String((product as any)._id) : '',
           code: sku || 'SHOPIFY',
           name: product ? (product as any).name : (item.title || item.name || 'منتج'),
-          qty: item.quantity || 1,
+          qty,
           price: product ? (product as any).sellPrice : shopifyPrice,
-          total: (product ? (product as any).sellPrice : shopifyPrice) * (item.quantity || 1),
+          total: (product ? (product as any).sellPrice : shopifyPrice) * qty,
           imageUrl: product ? ((product as any).imageUrl || '') : '',
           shopifyPrice,
           shopifyName: item.title || item.name || '',

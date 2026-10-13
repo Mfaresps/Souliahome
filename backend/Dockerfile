@@ -51,6 +51,7 @@ RUN npm install --omit=dev --legacy-peer-deps
 COPY --from=builder /app/dist ./dist
 COPY scripts/notify-release.cjs ./scripts/notify-release.cjs
 COPY scripts/check-shopify-webhook.cjs ./scripts/check-shopify-webhook.cjs
+COPY scripts/shopify-token.cjs ./scripts/shopify-token.cjs
 
 EXPOSE 3000
 

@@ -322,6 +322,9 @@ export class SettingsService {
     obj['shopifyStoreName'] = obj['shopifyStoreName'] || process.env.SHOPIFY_STORE_NAME || '';
     delete obj['shopifyWebhookSecret'];
     delete obj['shopifyAccessToken'];
+    obj['shopifyClientId'] = obj['shopifyClientId'] || process.env.SHOPIFY_CLIENT_ID || '';
+    obj['shopifyClientSecretSet'] = !!obj['shopifyClientSecret'] || !!process.env.SHOPIFY_CLIENT_SECRET;
+    delete obj['shopifyClientSecret'];
     // WARN: R2 secret never leaves the server - the frontend sees only a flag.
     // index.html is shipped whole to every user's browser, so any key passing
     // through here would be effectively published.
@@ -363,17 +366,19 @@ export class SettingsService {
     return (settings as any).bostaWebhookSecret || process.env.BOSTA_WEBHOOK_SECRET || '';
   }
 
-  async getShopifyConfig(): Promise<{ webhookSecret: string; storeName: string; accessToken: string }> {
+  async getShopifyConfig(): Promise<{ webhookSecret: string; storeName: string; accessToken: string; clientId: string; clientSecret: string }> {
     // Read only the integration fields: webhook delivery must not run settings migrations.
-    const s = await this.settingsModel.findOne().select('shopifyWebhookSecret shopifyStoreName shopifyAccessToken').lean();
+    const s = await this.settingsModel.findOne().select('shopifyWebhookSecret shopifyStoreName shopifyAccessToken shopifyClientId shopifyClientSecret').lean();
     return {
       webhookSecret: s?.shopifyWebhookSecret || process.env.SHOPIFY_WEBHOOK_SECRET || '',
       storeName: s?.shopifyStoreName || process.env.SHOPIFY_STORE_NAME || '',
       accessToken: s?.shopifyAccessToken || process.env.SHOPIFY_ACCESS_TOKEN || '',
+      clientId: s?.shopifyClientId || process.env.SHOPIFY_CLIENT_ID || '',
+      clientSecret: s?.shopifyClientSecret || process.env.SHOPIFY_CLIENT_SECRET || '',
     };
   }
 
-  async saveShopifyConfig(input: { webhookSecret?: string; storeName?: string; accessToken?: string }): Promise<void> {
+  async saveShopifyConfig(input: { webhookSecret?: string; storeName?: string; accessToken?: string; clientId?: string; clientSecret?: string }): Promise<void> {
     const changes: Record<string, string> = {};
     if (typeof input?.webhookSecret === 'string' && input.webhookSecret.trim()) {
       if (input.webhookSecret.trim().length > 1024) throw new BadRequestException('Invalid Shopify signing secret');
@@ -387,6 +392,13 @@ export class SettingsService {
     if (typeof input?.accessToken === 'string' && input.accessToken.trim()) {
       if (input.accessToken.trim().length > 2048 || /[\r\n]/.test(input.accessToken.trim())) throw new BadRequestException('Invalid Shopify access token');
       changes.shopifyAccessToken = input.accessToken.trim();
+    }
+    for (const [key, field] of [['clientId', 'shopifyClientId'], ['clientSecret', 'shopifyClientSecret']] as const) {
+      const value = input?.[key];
+      if (typeof value === 'string' && value.trim()) {
+        if (value.trim().length > 2048 || /[\r\n]/.test(value.trim())) throw new BadRequestException('Invalid Shopify app credentials');
+        changes[field] = value.trim();
+      }
     }
     if (!Object.keys(changes).length) throw new BadRequestException('Enter a Shopify setting to save');
     const settings = await this.getSettings();
@@ -998,7 +1010,7 @@ export class SettingsService {
   private backupConfiguration(raw: Record<string, any>): Record<string, any> {
     const config = { ...raw };
     for (const key of ['_id', '__v', 'createdAt', 'updatedAt', 'vaultPass', 'bostaApiKey',
-      'bostaWebhookSecret', 'shopifyWebhookSecret', 'shopifyStoreName', 'shopifyAccessToken', 'r2SecretAccessKey', 'vaultBalance', 'vaultCash', 'vaultVodafone',
+      'bostaWebhookSecret', 'shopifyWebhookSecret', 'shopifyStoreName', 'shopifyAccessToken', 'shopifyClientId', 'shopifyClientSecret', 'r2SecretAccessKey', 'vaultBalance', 'vaultCash', 'vaultVodafone',
       'vaultInstapay', 'vaultBank', 'vaultReceiptOperations', 'r2LastRun']) delete config[key];
     return config;
   }
