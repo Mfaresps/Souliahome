@@ -298,6 +298,16 @@ export class Settings {
   @Prop({ default: '' })
   bostaWebhookSecret: string;
 
+  /** Shopify credentials remain server-only and persist across deployments. */
+  @Prop({ default: '' })
+  shopifyWebhookSecret: string;
+
+  @Prop({ default: '' })
+  shopifyStoreName: string;
+
+  @Prop({ default: '' })
+  shopifyAccessToken: string;
+
   // ─── النسخ الاحتياطي السحابي (Cloudflare R2) ───────────────────────────
   // نفس نمط bostaApiKey: يُخزَّن هنا ولا يُعاد إلى الواجهة أبداً (انظر
   // getSettings، حيث يُستبدل بعَلَم r2SecretAccessKeySet).

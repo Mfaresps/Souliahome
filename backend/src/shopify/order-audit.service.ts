@@ -685,7 +685,7 @@ export class OrderAuditService {
     const num = this.normRef(orderNumber);
     if (!num) throw new BadRequestException('رقم أوردر غير صالح');
 
-    if (!this.shopifyAdminService.isConfigured()) {
+    if (!(await this.shopifyAdminService.isConfigured())) {
       return {
         success: false,
         message: 'Shopify Admin API غير مضبوط — أضف SHOPIFY_STORE_NAME و SHOPIFY_ACCESS_TOKEN',

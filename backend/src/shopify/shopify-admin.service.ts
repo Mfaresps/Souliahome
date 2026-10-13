@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import * as https from 'https';
+import { SettingsService } from '../settings/settings.service';
 
 export interface ShopifyAdminConfig {
   storeName: string;   // e.g. "soulia-2"
@@ -10,20 +11,23 @@ export interface ShopifyAdminConfig {
 export class ShopifyAdminService {
   private readonly logger = new Logger(ShopifyAdminService.name);
 
-  private getConfig(): ShopifyAdminConfig | null {
-    const storeName   = process.env.SHOPIFY_STORE_NAME || '';
-    const accessToken = process.env.SHOPIFY_ACCESS_TOKEN || '';
+  constructor(@Optional() private readonly settingsService?: SettingsService) {}
+
+  private async getConfig(): Promise<ShopifyAdminConfig | null> {
+    const stored = await this.settingsService?.getShopifyConfig();
+    const storeName   = stored?.storeName || process.env.SHOPIFY_STORE_NAME || '';
+    const accessToken = stored?.accessToken || process.env.SHOPIFY_ACCESS_TOKEN || '';
     if (!storeName || !accessToken) return null;
     return { storeName, accessToken };
   }
 
-  private request<T>(
+  private async request<T>(
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     path: string,
     body?: unknown,
     config?: ShopifyAdminConfig,
   ): Promise<T> {
-    const cfg = config || this.getConfig();
+    const cfg = config || await this.getConfig();
     if (!cfg) return Promise.reject(new Error('Shopify Admin API غير مضبوط — أضف SHOPIFY_STORE_NAME و SHOPIFY_ACCESS_TOKEN في .env'));
 
     return new Promise((resolve, reject) => {
@@ -77,7 +81,7 @@ export class ShopifyAdminService {
     trackingCompany = 'Bosta',
     trackingUrl = '',
   ): Promise<{ success: boolean; fulfillmentId?: string; error?: string }> {
-    const cfg = this.getConfig();
+    const cfg = await this.getConfig();
     if (!cfg) {
       this.logger.warn('Shopify Admin API غير مضبوط — تم تخطي Fulfillment');
       return { success: false, error: 'Shopify Admin API غير مضبوط' };
@@ -134,7 +138,7 @@ export class ShopifyAdminService {
     reason: 'customer' | 'fraud' | 'inventory' | 'declined' | 'other' = 'other',
     email = false,
   ): Promise<{ success: boolean; error?: string }> {
-    const cfg = this.getConfig();
+    const cfg = await this.getConfig();
     if (!cfg) {
       this.logger.warn('Shopify Admin API غير مضبوط — تم تخطي إلغاء الطلب');
       return { success: false, error: 'Shopify Admin API غير مضبوط' };
@@ -160,7 +164,7 @@ export class ShopifyAdminService {
     shopifyOrderId: string,
     fields: { note?: string; tags?: string },
   ): Promise<{ success: boolean; error?: string }> {
-    const cfg = this.getConfig();
+    const cfg = await this.getConfig();
     if (!cfg) {
       this.logger.warn('Shopify Admin API غير مضبوط — تم تخطي تحديث الملاحظات');
       return { success: false, error: 'Shopify Admin API غير مضبوط' };
@@ -188,7 +192,7 @@ export class ShopifyAdminService {
     amount: number,
     currency = 'EGP',
   ): Promise<{ success: boolean; error?: string }> {
-    const cfg = this.getConfig();
+    const cfg = await this.getConfig();
     if (!cfg) {
       this.logger.warn('Shopify Admin API غير مضبوط — تم تخطي تحديث حالة الدفع');
       return { success: false, error: 'Shopify Admin API غير مضبوط' };
@@ -226,7 +230,7 @@ export class ShopifyAdminService {
     createdAtMax?: string;
     name?: string; // order number/name search e.g. "1023" or "#1023"
   } = {}): Promise<{ success: boolean; orders?: any[]; error?: string }> {
-    const cfg = this.getConfig();
+    const cfg = await this.getConfig();
     if (!cfg) {
       return { success: false, error: 'Shopify Admin API غير مضبوط' };
     }
@@ -265,7 +269,7 @@ export class ShopifyAdminService {
 
   // ── Get a single order by its Shopify ID ────────────────────────────────────
   async getOrder(shopifyOrderId: string): Promise<{ success: boolean; order?: any; error?: string }> {
-    const cfg = this.getConfig();
+    const cfg = await this.getConfig();
     if (!cfg) {
       return { success: false, error: 'Shopify Admin API غير مضبوط' };
     }
@@ -279,7 +283,7 @@ export class ShopifyAdminService {
     }
   }
 
-  isConfigured(): boolean {
-    return !!this.getConfig();
+  async isConfigured(): Promise<boolean> {
+    return !!(await this.getConfig());
   }
 }

@@ -317,6 +317,11 @@ export class SettingsService {
     // Same treatment for the webhook secret
     obj['bostaWebhookSecretSet'] = !!(obj['bostaWebhookSecret'] as string);
     delete obj['bostaWebhookSecret'];
+    obj['shopifyWebhookSecretSet'] = !!obj['shopifyWebhookSecret'] || !!process.env.SHOPIFY_WEBHOOK_SECRET;
+    obj['shopifyAccessTokenSet'] = !!obj['shopifyAccessToken'] || !!process.env.SHOPIFY_ACCESS_TOKEN;
+    obj['shopifyStoreName'] = obj['shopifyStoreName'] || process.env.SHOPIFY_STORE_NAME || '';
+    delete obj['shopifyWebhookSecret'];
+    delete obj['shopifyAccessToken'];
     // WARN: R2 secret never leaves the server - the frontend sees only a flag.
     // index.html is shipped whole to every user's browser, so any key passing
     // through here would be effectively published.
@@ -356,6 +361,36 @@ export class SettingsService {
   async getBostaWebhookSecret(): Promise<string> {
     const settings = await this.getSettings();
     return (settings as any).bostaWebhookSecret || process.env.BOSTA_WEBHOOK_SECRET || '';
+  }
+
+  async getShopifyConfig(): Promise<{ webhookSecret: string; storeName: string; accessToken: string }> {
+    // Read only the integration fields: webhook delivery must not run settings migrations.
+    const s = await this.settingsModel.findOne().select('shopifyWebhookSecret shopifyStoreName shopifyAccessToken').lean();
+    return {
+      webhookSecret: s?.shopifyWebhookSecret || process.env.SHOPIFY_WEBHOOK_SECRET || '',
+      storeName: s?.shopifyStoreName || process.env.SHOPIFY_STORE_NAME || '',
+      accessToken: s?.shopifyAccessToken || process.env.SHOPIFY_ACCESS_TOKEN || '',
+    };
+  }
+
+  async saveShopifyConfig(input: { webhookSecret?: string; storeName?: string; accessToken?: string }): Promise<void> {
+    const changes: Record<string, string> = {};
+    if (typeof input?.webhookSecret === 'string' && input.webhookSecret.trim()) {
+      if (input.webhookSecret.trim().length > 1024) throw new BadRequestException('Invalid Shopify signing secret');
+      changes.shopifyWebhookSecret = input.webhookSecret.trim();
+    }
+    if (typeof input?.storeName === 'string' && input.storeName.trim()) {
+      const store = input.storeName.trim().replace(/^https?:\/\//i, '').replace(/\.myshopify\.com\/?$/i, '');
+      if (!/^[a-z0-9][a-z0-9-]{0,100}$/i.test(store)) throw new BadRequestException('Use the Shopify store name or its myshopify.com domain');
+      changes.shopifyStoreName = store.toLowerCase();
+    }
+    if (typeof input?.accessToken === 'string' && input.accessToken.trim()) {
+      if (input.accessToken.trim().length > 2048 || /[\r\n]/.test(input.accessToken.trim())) throw new BadRequestException('Invalid Shopify access token');
+      changes.shopifyAccessToken = input.accessToken.trim();
+    }
+    if (!Object.keys(changes).length) throw new BadRequestException('Enter a Shopify setting to save');
+    const settings = await this.getSettings();
+    await this.settingsModel.findByIdAndUpdate(settings._id, { $set: changes }).exec();
   }
 
   // --- Cloud backup (Cloudflare R2) ----------------------------------------
@@ -963,7 +998,7 @@ export class SettingsService {
   private backupConfiguration(raw: Record<string, any>): Record<string, any> {
     const config = { ...raw };
     for (const key of ['_id', '__v', 'createdAt', 'updatedAt', 'vaultPass', 'bostaApiKey',
-      'bostaWebhookSecret', 'r2SecretAccessKey', 'vaultBalance', 'vaultCash', 'vaultVodafone',
+      'bostaWebhookSecret', 'shopifyWebhookSecret', 'shopifyStoreName', 'shopifyAccessToken', 'r2SecretAccessKey', 'vaultBalance', 'vaultCash', 'vaultVodafone',
       'vaultInstapay', 'vaultBank', 'vaultReceiptOperations', 'r2LastRun']) delete config[key];
     return config;
   }

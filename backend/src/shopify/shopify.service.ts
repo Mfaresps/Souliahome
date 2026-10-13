@@ -100,8 +100,7 @@ export class ShopifyService {
     try { this.presence?.emitEvent(event, payload); } catch { /* swallow */ }
   }
 
-  verifyWebhook(rawBody: Buffer, signature: string): boolean {
-    const secret = process.env.SHOPIFY_WEBHOOK_SECRET || '';
+  verifyWebhook(rawBody: Buffer, signature: string, secret = process.env.SHOPIFY_WEBHOOK_SECRET || ''): boolean {
     if (!secret || !Buffer.isBuffer(rawBody) || typeof signature !== 'string') return false;
     const hash = crypto
       .createHmac('sha256', secret)
@@ -110,6 +109,23 @@ export class ShopifyService {
     const supplied = Buffer.from(signature);
     const expected = Buffer.from(hash);
     return supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
+  }
+
+  async verifyWebhookRequest(rawBody: Buffer, signature: string): Promise<boolean> {
+    if (!Buffer.isBuffer(rawBody) || typeof signature !== 'string') return false;
+    const config = await this.settingsService.getShopifyConfig();
+    return this.verifyWebhook(rawBody, signature, config.webhookSecret);
+  }
+
+  async getConnectionStatus(): Promise<{ webhookConfigured: boolean; adminApiConfigured: boolean; adminApiReachable: boolean | null }> {
+    const config = await this.settingsService.getShopifyConfig();
+    const adminApiConfigured = !!(config.storeName && config.accessToken);
+    const check = adminApiConfigured ? await this.shopifyAdminService.listOrders({ limit: 1, status: 'any' }) : null;
+    return {
+      webhookConfigured: !!config.webhookSecret,
+      adminApiConfigured,
+      adminApiReachable: check ? !!check.success : null,
+    };
   }
 
   // استقبال الأوردر من Shopify وحفظه للمراجعة

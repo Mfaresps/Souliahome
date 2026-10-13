@@ -12,7 +12,7 @@ describe('Shopify webhook HTTP ingress', () => {
   const originalSecret = process.env.SHOPIFY_WEBHOOK_SECRET;
   const secret = 'test-only-shopify-signing-secret';
   const service = {
-    verifyWebhook: ShopifyService.prototype.verifyWebhook,
+    verifyWebhookRequest: async (raw: Buffer, signature: string) => ShopifyService.prototype.verifyWebhook.call({}, raw, signature),
     handleOrder: jest.fn(), handleOrderUpdate: jest.fn(),
     handleOrderEdited: jest.fn(), handleOrderCancelled: jest.fn(),
     handleFulfillment: jest.fn(),

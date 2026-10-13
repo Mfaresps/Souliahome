@@ -62,7 +62,7 @@ export class ShopifyController {
     const rawBody: Buffer = (req as any).rawBody;
 
     {
-      const isValid = this.shopifyService.verifyWebhook(rawBody, signature);
+      const isValid = await this.shopifyService.verifyWebhookRequest(rawBody, signature);
       if (!isValid) {
         this.logger.warn('⚠️ Webhook غير موثوق');
         throw new BadRequestException('Invalid webhook signature');
@@ -102,6 +102,13 @@ export class ShopifyController {
   }
 
   // جلب الأوردرات المعلقة (للأدمن)
+  @Get('connection-status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async connectionStatus() {
+    return this.shopifyService.getConnectionStatus();
+  }
+
   @Get('orders/pending')
   @UseGuards(JwtAuthGuard)
   async getPending(@Request() req: any) {

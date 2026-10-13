@@ -21787,6 +21787,8 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
         </details>
       </div>
 
+      <div class="settings-card" id="stg-shopify-card" style="display:none" data-stg-keywords="shopify webhook شوبيفاي أوردرات ربط اتصال"></div>
+
       <!-- Automatic Bosta settlement — rendered by renderCsSettingsCard() (values live in settings). -->
       <div class="settings-section-label">
         <span class="bosta-icon" style="width:14px;height:14px"></span>
@@ -81968,6 +81970,7 @@ function renderSettings() {
     if (urlEl) urlEl.textContent = window.location.origin + '/api/shipping/webhook';
   }
   // Render version footer
+  if (typeof renderShopifySettings === 'function') renderShopifySettings();
   renderVersionFooter();
   // Load backup list when settings page is rendered (silently, without notifications)
   loadBackupList(false).catch(() => {});
@@ -107007,5 +107010,6 @@ function _spRenderHistoryTab() {
 <script src="/announcements.js?v=4"></script>
 <script src="/push-navigation.js"></script>
 <script src="/notification-history.js"></script>
+<script src="/shopify-settings.js"></script>
 </body>
 </html>

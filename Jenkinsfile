@@ -10,8 +10,9 @@ pipeline {
     stage('Shopify deployment config') {
       when { branch 'main' }
       steps {
-        // Validate required secrets before building or replacing live containers.
-        // --quiet never prints resolved credentials.
+        // Validate Compose before building or replacing live containers. Shopify
+        // credentials can also be saved in the application Settings; --quiet
+        // never prints resolved environment credentials.
         sh 'docker compose -p soulia config --quiet'
       }
     }

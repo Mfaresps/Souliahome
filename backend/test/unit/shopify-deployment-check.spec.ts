@@ -6,16 +6,21 @@ import { createHmac } from 'crypto';
 
 const script = readFileSync(resolve(__dirname, '../../scripts/check-shopify-webhook.cjs'), 'utf8');
 
-function run(options: { missingSecret?: boolean; missingToken?: boolean; invalidStore?: boolean; proxyStatus?: number; adminStatus?: number; adminBody?: any; proxyTimeout?: boolean; adminTimeout?: boolean } = {}) {
+function run(options: { missingSecret?: boolean; missingToken?: boolean; invalidStore?: boolean; proxyStatus?: number; adminStatus?: number; adminBody?: any; proxyTimeout?: boolean; adminTimeout?: boolean; stored?: any } = {}) {
   const env: Record<string, string> = {
     SHOPIFY_WEBHOOK_SECRET: 'test-secret', SHOPIFY_STORE_NAME: 'test-store', SHOPIFY_ACCESS_TOKEN: 'test-token',
   };
   if (options.missingSecret) delete env.SHOPIFY_WEBHOOK_SECRET;
   if (options.missingToken) delete env.SHOPIFY_ACCESS_TOKEN;
   if (options.invalidStore) env.SHOPIFY_STORE_NAME = 'unexpected.example/path';
+  if (options.stored) env.MONGODB_URI = 'mongodb://test-only/settings';
   const proc = { env, exitCode: 0, exit: (code: number) => { throw { exitCode: code }; } };
   const consoleMock = { log: jest.fn(), warn: jest.fn(), error: jest.fn() };
   const requests: any[] = [];
+  const close = jest.fn(async () => {});
+  const mongo = { createConnection: () => ({ asPromise: async () => {}, close,
+    collection: () => ({ findOne: async () => options.stored }) }) };
+  let completion: any;
   function request(kind: 'proxy' | 'admin', config: any, callback: any) {
     requests.push({ kind, config });
     const req: any = new EventEmitter();
@@ -37,10 +42,11 @@ function run(options: { missingSecret?: boolean; missingToken?: boolean; invalid
     return req;
   }
   try {
-    runInNewContext(script, {
+    completion = runInNewContext(script, {
       require: (name: string) => name === 'node:http'
         ? { request: (_url: string, config: any, cb: any) => request('proxy', config, cb) }
         : name === 'node:https' ? { request: (config: any, cb: any) => request('admin', config, cb) }
+        : name === 'mongoose' ? mongo
         : { createHmac },
       Buffer, process: proc, console: consoleMock,
     });
@@ -48,7 +54,7 @@ function run(options: { missingSecret?: boolean; missingToken?: boolean; invalid
     if (error.exitCode !== 1) throw error;
     proc.exitCode = error.exitCode;
   }
-  return { proc, consoleMock, requests };
+  return { proc, consoleMock, requests, completion, close };
 }
 
 describe('Shopify deployment health check', () => {
@@ -61,18 +67,30 @@ describe('Shopify deployment health check', () => {
     const logs = JSON.stringify(result.consoleMock.log.mock.calls);
     for (const sensitive of ['test-secret', 'test-token', '111']) expect(logs).not.toContain(sensitive);
   });
-  it.each([
-    { missingSecret: true }, { missingToken: true }, { invalidStore: true },
-    { proxyStatus: 400 }, { adminStatus: 401 }, { adminStatus: 403 },
-    { adminBody: { errors: 'bad token' } }, { proxyTimeout: true }, { adminTimeout: true },
-  ])('fails rather than reporting a working integration: %j', options => {
+  it.each([{ proxyStatus: 400 }, { proxyTimeout: true }])('fails when configured webhook reception is broken: %j', options => {
     const result = run(options);
     expect(result.proc.exitCode).toBe(1);
     expect(result.consoleMock.error).toHaveBeenCalled();
+  });
+  it.each([
+    { missingSecret: true }, { missingToken: true }, { invalidStore: true },
+    { adminStatus: 401 }, { adminStatus: 403 }, { adminBody: { errors: 'bad token' } }, { adminTimeout: true },
+  ])('reports incomplete setup without preventing admin access or working new-order webhooks: %j', options => {
+    const result = run(options);
+    expect(result.proc.exitCode).toBe(0);
+    expect(result.consoleMock.warn).toHaveBeenCalled();
   });
   it('does not send the API token when the proxy check fails or store name is invalid', () => {
     for (const options of [{ proxyStatus: 400 }, { invalidStore: true }]) {
       expect(run(options).requests.map(r => r.kind)).toEqual(['proxy']);
     }
+  });
+  it('checks the persisted signing key after deploy rather than an obsolete environment value', async () => {
+    const result = run({ stored: { shopifyWebhookSecret: 'saved-in-database', shopifyStoreName: 'saved-store', shopifyAccessToken: 'saved-token' } });
+    await result.completion;
+    expect(result.proc.exitCode).toBe(0);
+    expect(result.requests[0].config.headers['X-Shopify-Hmac-Sha256']).toBe(createHmac('sha256', 'saved-in-database').update('{}').digest('base64'));
+    expect(result.requests[1].config).toMatchObject({ hostname: 'saved-store.myshopify.com', headers: { 'X-Shopify-Access-Token': 'saved-token' } });
+    expect(result.close).toHaveBeenCalledTimes(1);
   });
 });

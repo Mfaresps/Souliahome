@@ -285,6 +285,17 @@ export class SettingsController {
   // ─── Bosta API Key ───────────────────────────────────────────────────────
 
   @Roles('admin')
+  @Post('shopify-config')
+  async saveShopifyConfig(@Body() body: any) {
+    await this.settingsService.saveShopifyConfig({
+      webhookSecret: body?.webhookSecret,
+      storeName: body?.storeName,
+      accessToken: body?.accessToken,
+    });
+    return { success: true };
+  }
+
+  @Roles('admin')
   @Post('bosta-api-key')
   async saveBostaApiKey(@Body('key') key: string) {
     if (!key || typeof key !== 'string') {
