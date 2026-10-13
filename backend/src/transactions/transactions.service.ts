@@ -1,3 +1,5 @@
+import { NotificationsService } from '../notifications/notifications.service';
+import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import {
   Injectable,
   Inject,
@@ -135,6 +137,8 @@ export interface DashboardData {
 
 @Injectable()
 export class TransactionsService {
+  @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
+
   private readonly logger = new Logger(TransactionsService.name);
 
   constructor(
@@ -867,7 +871,7 @@ export class TransactionsService {
   }
 
   async create(dto: CreateTransactionDto, callerRole?: string,
-    receiptUpload?: { draftId: string; actor: ReceiptActor }): Promise<TransactionDocument> {
+    receiptUpload?: { draftId: string; actor: ReceiptActor }, notificationActor?: string): Promise<TransactionDocument> {
     if (dto.manualDepositReceiptId && !receiptUpload) throw new BadRequestException('أكّد فحص الإيصال قبل حفظ المعاملة');
     const employee = (dto as unknown as { employee?: string }).employee || '';
     // High-value discount OTP enforcement (admin is exempt; skip entirely when otpEnabled=false)
@@ -1061,6 +1065,11 @@ export class TransactionsService {
         `[create] inventory movement logging failed for tx ${tx._id}: ${(err as Error).message}`,
         (err as Error).stack,
       );
+    }
+    if (tx.type === 'مبيعات' && !tx.shopifyOrderId) {
+      await this.notifications?.enqueue('order', 'order:tx:' + tx._id, tx.ref, 'tx:' + tx._id, undefined, undefined, { orderTotal: tx.total });
+      for (const d of tx.deposits || []) await this.notifications?.enqueue('deposit', 'deposit:' + (d.receiptId || String(tx._id) + ':' + d.id), tx.ref, 'tx:' + tx._id, undefined, undefined,
+        { actorName: receipt?.submittedBy || notificationActor || d.by, amount: d.amount, vaultName: d.method, receiptId: d.receiptId, depositId: d.id });
     }
     this.emit('tx:created', { tx, by: employee });
     this.emit('inventory:changed', {
@@ -1294,6 +1303,7 @@ export class TransactionsService {
     editedBy = '',
     approvedBy = '',
     callerRole = '',
+    notificationActor?: string,
   ): Promise<TransactionDocument> {
     const existing = await this.transactionModel.findById(id).exec();
     if (!existing) {
@@ -1714,6 +1724,11 @@ export class TransactionsService {
       await tx.save();
     }
 
+    if (depositDelta > 0 && tx?.type === 'مبيعات') {
+      const d = tx.deposits[tx.deposits.length - 1];
+      await this.notifications?.enqueue('deposit', 'deposit:' + tx._id + ':' + d.id, tx.ref, 'tx:' + tx._id, undefined, undefined,
+        { actorName: notificationActor || d.by, amount: d.amount, vaultName: d.method, receiptId: d.receiptId, depositId: d.id });
+    }
     return tx!;
   }
 
@@ -3372,6 +3387,8 @@ export class TransactionsService {
 
 
   async addComments(id: string, comments: Array<any>): Promise<TransactionDocument> {
+    const before = await this.transactionModel.findById(id).lean();
+    const oldIds = new Set((before?.comments || []).map(c => String(c.id)));
     // Update ONLY comments field - without triggering editHistory
     const tx = await this.transactionModel.findByIdAndUpdate(
       id,
@@ -3381,6 +3398,7 @@ export class TransactionsService {
     if (!tx) {
       throw new NotFoundException('المعاملة غير موجودة');
     }
+    for (const c of comments) if (c.id != null && !oldIds.has(String(c.id))) await this.notifications?.enqueue('comment', 'comment:tx:' + id + ':' + c.id, tx.ref, 'tx:' + id, undefined, undefined, { actorName: c.employee, commentId: c.id, commentText: c.text });
     return tx;
   }
 

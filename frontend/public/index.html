@@ -3881,7 +3881,10 @@ body.dark-mode .sp-field-popover{box-shadow:0 10px 28px rgba(0,0,0,.5)}
 #shopify-date-clear-btn{font-size:.72rem;color:#ef4444;border:1.5px solid #ef444440;background:#ef444410;border-radius:8px;padding:5px 10px}
 /* ── Table (desktop) ── */
 #shopify-orders-table-wrap{background:var(--bg);border-radius:12px;border:1px solid var(--border);overflow:hidden}
-#shopify-filters-bar{border-radius:var(--radius) var(--radius) 0 0}
+/* #shopify-filters-bar moved out of #shopify-orders-table-wrap into .sp-sticky-head
+   (see the HTML comment there) — it is now a standalone card, not the top of the same
+   rounded box as the table, so it gets its own full radius + bottom border + margin. */
+#shopify-filters-bar{border-radius:var(--radius);border:1px solid var(--border);margin-bottom:12px}
 #shopify-orders-table-wrap .sp-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:0 0 var(--radius) var(--radius)}
 /* Matches the compact-table standard shared with #mov-table / .cmp-table:
    same padding, header typography, neutral hover, subtle column dividers. */
@@ -9793,6 +9796,39 @@ body.dark-mode #vault-table tbody tr:hover td.vlt-hero{background:rgba(148,163,1
 
 /* ================ Unified Filter & Sort Toolbar (Inventory + Products) ================ */
 .fx-toolbar{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px;margin-bottom:14px;display:flex;flex-direction:column;gap:10px}
+/* Products page: title + tabs + the items-tab toolbar (#prod-toolbar) stay reachable
+   while the grid/table scrolls, instead of scrolling away with it. #prod-toolbar is a
+   DIRECT CHILD of .prod-sticky-head (see the HTML) rather than a second sticky element
+   of its own — two independent `position:sticky` elements anchored at the SAME `top`
+   do NOT stack below one another; each computes its stuck position independently, so
+   they land on the same line and the shorter/higher-z-index one is painted over and
+   disappears the moment both are stuck. Nesting them in one sticky block is the only
+   way the second one reliably sits below the first.
+   #main scrolls with the window (not its own container), so "top" must clear
+   var(--header-h) or the fixed app header (z:100) covers this — same rule as
+   .csp-search-wrap. z-index stays below 100 so it tucks under that header. */
+.prod-sticky-head{position:sticky;top:var(--header-h);z-index:60;background:var(--bg);padding-top:16px;margin-top:-16px}
+.prod-sticky-head .page-header{margin-bottom:10px}
+/* Inventory page: same pattern as .prod-sticky-head above — title, main tab bar, and
+   whichever tab's own KPI/toolbar block is active (#inv-kpi-scroll+#inv-toolbar for
+   "list", #inv-log-sticky-actions for "log") all live inside ONE sticky wrapper so they
+   stick together instead of two independent sticky siblings overlapping. */
+.inv-sticky-head{position:sticky;top:var(--header-h);z-index:60;background:var(--bg);padding-top:16px;margin-top:-16px}
+.inv-sticky-head .inv-page-header{margin-bottom:10px}
+.inv-sticky-head .mov-tab-bar{margin-bottom:10px}
+/* Customer Service page (#page-complaints): same pattern — title, the fu/complaints main
+   tab switcher, and whichever tab's own KPI/toolbar/filter block is active
+   (#fu-kpi-toolbar-row for "متابعة الطلبات", #cmp-header-block for "الشكاوى") all live
+   inside ONE sticky wrapper so they stick together instead of two independent sticky
+   siblings overlapping. */
+.cs-sticky-head{position:sticky;top:var(--header-h);z-index:60;background:var(--bg);padding-top:16px;margin-top:-16px}
+/* Shopify Orders page: same pattern — title, the Orders/Deposits/Performance subnav, and
+   the orders-tab's own search+filter toolbar (#shopify-filters-bar) all live inside ONE
+   sticky wrapper so they stick together instead of two independent sticky siblings
+   overlapping. #shopify-filters-bar is shown only on the "orders" subnav tab. */
+.sp-sticky-head{position:sticky;top:var(--header-h);z-index:60;background:var(--bg);padding-top:16px;margin-top:-16px}
+.sp-sticky-head #shopify-page-header{margin-bottom:10px}
+.sp-sticky-head #sp-subnav{margin-bottom:12px}
 .fx-toolbar-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 /* Vertical divider between the status-filter group and the search/controls group on a merged single row */
 .fx-row-sep{width:1px;align-self:stretch;min-height:26px;background:var(--border);margin:0 2px;flex:0 0 auto}
@@ -16131,6 +16167,11 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/navigation-shell.css">
 <link rel="stylesheet" href="/deposit-history.css">
 <link rel="stylesheet" href="/deposit-transfer.css">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#00311e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/push-icon-192.png">
+<link rel="stylesheet" href="/notification-settings.css">
 </head>
 <body>
 <div id="splash-screen" aria-hidden="true" role="status" aria-label="جارٍ التحميل">
@@ -17478,6 +17519,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <!-- Inventory -->
 <div class="page" id="page-inventory">
 
+<div class="inv-sticky-head">
   <!-- ── Page Header ── -->
   <div class="inv-page-header">
     <div>
@@ -17513,14 +17555,18 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     </button>
   </div>
 
-  <div id="inv-panel-list">
-    <!-- ── KPI Summary Cards ── -->
-    <div class="inv-kpi-scroll">
-      <div id="inv-summary-cards" class="kpi-strip kpi-strip-sm inv-kpi-grid"></div>
-    </div>
+  <!-- ── KPI Summary Cards (list tab) ──
+       Lives INSIDE .inv-sticky-head (not inside #inv-panel-list) so it sticks together
+       with the title/tabs as ONE block — two independent `position:sticky` elements
+       anchored at the same `top` do not stack below one another; each computes its own
+       stuck position and the taller one paints over the other. See the CSS comment on
+       .inv-sticky-head. switchInvTab toggles this element's own display directly. -->
+  <div class="inv-kpi-scroll" id="inv-kpi-scroll">
+    <div id="inv-summary-cards" class="kpi-strip kpi-strip-sm inv-kpi-grid"></div>
+  </div>
 
-    <!-- ── Unified Filter & Sort Toolbar ── -->
-    <div class="fx-toolbar" id="inv-toolbar">
+  <!-- ── Unified Filter & Sort Toolbar (list tab) ── -->
+  <div class="fx-toolbar" id="inv-toolbar">
       <div class="fx-toolbar-row">
         <button class="fx-btn active" data-status="all" onclick="setInvFilter('all',this)">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -17559,22 +17605,13 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
         <span class="fx-results-count" id="inv-results-count"></span>
       </div>
       <div class="fx-chips" id="inv-chips"></div>
-    </div>
-
-    <!-- ── Desktop Table ── -->
-    <div class="table-card">
-      <div class="overflow-x"><table id="inv-table"><thead><tr><th style="width:60px" data-i18n="colImage">صورة</th><th data-i18n="colCode">الكود</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice" class="inv-buyprice-col">سعر الشراء</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colPurchases" data-i18n-title="colPurchasesTip" title="من المورد فقط">المشتريات</th><th data-i18n="colReturnToStock" data-i18n-title="colReturnToStockTip" title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th data-i18n="colSales">المبيعات</th><th data-i18n="colCurrentBal">الرصيد الحالي</th><th data-i18n="status">الحالة</th></tr></thead><tbody id="inv-tbody"></tbody></table></div>
-    </div>
-
-    <!-- ── Mobile Card List ── -->
-    <div id="inv-mobile-list" class="inv-mobile-list"></div>
-
-    <!-- ── Pagination ── -->
-    <div id="inv-pagination" style="margin-top:16px"></div>
   </div>
+  <!-- /#inv-toolbar -->
 
-  <!-- ── Inventory Movement Log panel ── -->
-  <div id="inv-panel-log" style="display:none">
+  <!-- ── Inventory Movement Log header-actions + toolbar (log tab) ──
+       Also inside .inv-sticky-head, hidden by default; switchInvTab shows this and
+       hides #inv-kpi-scroll/#inv-toolbar when the log tab is active, and vice versa. -->
+  <div id="inv-log-sticky-actions" style="display:none">
     <div class="inv-header-actions" style="justify-content:flex-end;margin-bottom:12px">
       <button class="btn btn-primary btn-sm" id="inv-adjust-btn" onclick="openInventoryAdjustModal()" style="display:none">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -17604,7 +17641,25 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       </div>
       <div class="fx-chips" id="invLog-chips"></div>
     </div>
+  </div>
+</div>
+<!-- /.inv-sticky-head -->
 
+  <div id="inv-panel-list">
+    <!-- ── Desktop Table ── -->
+    <div class="table-card">
+      <div class="overflow-x"><table id="inv-table"><thead><tr><th style="width:60px" data-i18n="colImage">صورة</th><th data-i18n="colCode">الكود</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice" class="inv-buyprice-col">سعر الشراء</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colPurchases" data-i18n-title="colPurchasesTip" title="من المورد فقط">المشتريات</th><th data-i18n="colReturnToStock" data-i18n-title="colReturnToStockTip" title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th data-i18n="colSales">المبيعات</th><th data-i18n="colCurrentBal">الرصيد الحالي</th><th data-i18n="status">الحالة</th></tr></thead><tbody id="inv-tbody"></tbody></table></div>
+    </div>
+
+    <!-- ── Mobile Card List ── -->
+    <div id="inv-mobile-list" class="inv-mobile-list"></div>
+
+    <!-- ── Pagination ── -->
+    <div id="inv-pagination" style="margin-top:16px"></div>
+  </div>
+
+  <!-- ── Inventory Movement Log panel ── -->
+  <div id="inv-panel-log" style="display:none">
     <div class="table-card">
       <div class="overflow-x">
         <table id="inv-log-table">
@@ -18126,6 +18181,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 
 <!-- Products -->
 <div class="page" id="page-products">
+<div class="prod-sticky-head">
 <div class="page-header">
 <div><h2 class="page-title" data-i18n="products">الأصناف</h2><p class="page-subtitle" data-i18n="productsSubtitle">إدارة قائمة المنتجات وأسعارها ومستوياتها</p></div>
 <div class="flex gap-8">
@@ -18148,28 +18204,11 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
   </button>
 </div>
 
-<div id="prod-pane-drafts" style="display:none">
-  <div class="fx-toolbar">
-    <div class="fx-toolbar-row" style="justify-content:space-between">
-      <div class="fx-search" style="max-width:320px">
-        <svg class="fx-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-        <input type="text" id="spec-draft-search" data-i18n-placeholder="specDraftSearchPh" placeholder="بحث بالاسم أو المورد..." oninput="renderSpecDrafts()">
-      </div>
-      <button class="btn btn-primary btn-sm" onclick="openSpecSheetModal()" data-i18n="specDraftNewBtn">+ نموذج تصنيع جديد</button>
-    </div>
-  </div>
-  <div class="table-card"><div class="overflow-x">
-    <table id="spec-draft-table">
-      <thead><tr>
-        <th data-i18n="date">التاريخ</th><th data-i18n="colProductName">اسم المنتج</th><th data-i18n="colCode">الكود</th><th data-i18n="colSupplier">المورد</th>
-        <th data-i18n="colMaterial">الخامة</th><th data-i18n="colSize">المقاس</th><th data-i18n="qty">الكمية</th><th data-i18n="colDelivery">التسليم</th><th data-i18n="colCreatedBy">أنشأه</th><th data-i18n="colActions">إجراءات</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div></div>
-</div>
-
-<div id="prod-pane-items">
+<!-- Items-tab toolbar lives INSIDE .prod-sticky-head (not as a separate sibling sticky
+     element) so it sticks for free as part of the same block — see the CSS comment on
+     .prod-sticky-head for why two independent sticky siblings at the same "top" don't
+     stack automatically; they overlap instead. Hidden/shown with its own display via JS
+     (switchProductsTab toggles #prod-toolbar directly, not a wrapping pane). -->
 <div class="fx-toolbar" id="prod-toolbar">
   <div class="fx-toolbar-row">
     <button class="fx-btn active" data-status="all" onclick="setProdFilter('all',this)">
@@ -18243,7 +18282,31 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     <button class="btn btn-outline btn-sm" onclick="deselectAllProducts()" data-i18n="deselectAll">✕ إلغاء التحديد</button>
   </div>
 </div>
+</div>
+<!-- /.prod-sticky-head: title + tabs + items-tab toolbar, all sticky together -->
 
+<div id="prod-pane-drafts" style="display:none">
+  <div class="fx-toolbar">
+    <div class="fx-toolbar-row" style="justify-content:space-between">
+      <div class="fx-search" style="max-width:320px">
+        <svg class="fx-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="spec-draft-search" data-i18n-placeholder="specDraftSearchPh" placeholder="بحث بالاسم أو المورد..." oninput="renderSpecDrafts()">
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openSpecSheetModal()" data-i18n="specDraftNewBtn">+ نموذج تصنيع جديد</button>
+    </div>
+  </div>
+  <div class="table-card"><div class="overflow-x">
+    <table id="spec-draft-table">
+      <thead><tr>
+        <th data-i18n="date">التاريخ</th><th data-i18n="colProductName">اسم المنتج</th><th data-i18n="colCode">الكود</th><th data-i18n="colSupplier">المورد</th>
+        <th data-i18n="colMaterial">الخامة</th><th data-i18n="colSize">المقاس</th><th data-i18n="qty">الكمية</th><th data-i18n="colDelivery">التسليم</th><th data-i18n="colCreatedBy">أنشأه</th><th data-i18n="colActions">إجراءات</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div></div>
+</div>
+
+<div id="prod-pane-items">
 <!-- Grid view -->
 <div id="prod-grid-view" class="prod-grid-view" style="display:none"></div>
 <!-- List view -->
@@ -18747,6 +18810,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <!-- Complaints -->
 <div class="page" id="page-complaints">
 
+<div class="cs-sticky-head">
 <!-- Page header -->
 <div class="page-header" style="margin-bottom:0">
   <div style="display:flex;align-items:center;gap:10px">
@@ -18799,13 +18863,12 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
   </button>
 </div>
 
-<!-- ═══════════════════════════════════════
-     SECTION A — Follow-up Orders
-═══════════════════════════════════════ -->
-<div id="fu-orders-section" style="padding-top:16px">
-
-  <!-- KPI strip + toolbar — same row on desktop -->
-  <div class="fu-kpi-toolbar-row" style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+<!-- KPI strip + toolbar (follow-ups tab) — lives inside .cs-sticky-head (not inside
+     #fu-orders-section) so it sticks together with the title/main-tabs as ONE block.
+     Two independent `position:sticky` elements anchored at the same `top` do NOT stack
+     below one another — see the CSS comment on .cs-sticky-head. switchMainTab toggles
+     this element's own display directly, alongside #fu-orders-section's. -->
+<div class="fu-kpi-toolbar-row" id="fu-kpi-toolbar-row" style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
   <!-- KPI strip — compact inline numbers -->
   <div id="fu-kpi" class="fu-kpi-strip" style="display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;flex-shrink:0;padding-bottom:2px"></div>
 
@@ -18845,7 +18908,12 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
   </div>
-  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SECTION A — Follow-up Orders
+═══════════════════════════════════════ -->
+<div id="fu-orders-section" style="padding-top:16px">
 
   <!-- Table (desktop/tablet) -->
   <div class="fu-table-wrap cmp-table-wrap">
@@ -18903,11 +18971,11 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
   <div id="fu-pagination" style="padding:10px 16px;display:flex;justify-content:flex-end;border-top:1px solid var(--border)"></div>
 </div>
 
-<!-- ═══════════════════════════════════════
-     SECTION B — Complaints
-═══════════════════════════════════════ -->
-<div id="cmp-complaints-section" style="display:none;padding-top:20px">
-
+<!-- Complaints tab header block (mobile search bar, quick chips, stat cards, filters,
+     status sub-tabs) — also lives inside .cs-sticky-head, hidden by default since the
+     fu tab is the default. switchMainTab toggles this element's own display, alongside
+     #cmp-complaints-section's (which now holds only the table/cards/alert below). -->
+<div id="cmp-header-block" style="display:none">
   <!-- Mobile-only compact header: search + filter trigger, sits above chips/cards -->
   <div class="cmp-mobile-bar">
     <div class="cmp-mobile-search">
@@ -19008,7 +19076,14 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       <span data-i18n="cmpTabFollowup">المتابعة</span> <span class="s-tab-count cnt-blue" id="cmp-count-followup">0</span>
     </button>
   </div>
+</div>
+</div>
+<!-- /.cs-sticky-head -->
 
+<!-- ═══════════════════════════════════════
+     SECTION B — Complaints
+═══════════════════════════════════════ -->
+<div id="cmp-complaints-section" style="display:none;padding-top:20px">
   <!-- Table (desktop/tablet) -->
   <div class="cmp-table-wrap">
   <div class="overflow-x">
@@ -20038,6 +20113,9 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="pu-ready-search" data-i18n-placeholder="puSearchReadyPh" placeholder="بحث في الجاهزة…" oninput="renderPickupBoard()" autocomplete="off">
         </div>
+        <div style="padding:0 10px 8px">
+          <button type="button" class="pu-card-btn" style="width:100%;justify-content:center;white-space:normal" onclick="openBostaPickup(this)" data-i18n="puRequestBostaPickup">طلب استلام من بوسطا</button>
+        </div>
         <div class="pu-board-col-body" id="pu-ready-col"
           ondragover="puBoardDragOver(event,'ready')"
           ondragleave="puBoardDragLeave(event)"
@@ -20633,6 +20711,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 
 <!-- Shopify Orders -->
 <div class="page" id="page-shopify-orders">
+<div class="sp-sticky-head">
   <!-- Header -->
   <div id="shopify-page-header">
     <div>
@@ -20670,11 +20749,17 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       <span>Performance Hub</span>
     </button>
   </div>
-  <div id="sp-orders-tab-content">
-  <!-- Table (desktop) + Cards (mobile), with search + filters merged into the table toolbar -->
-  <div id="shopify-orders-table-wrap">
-    <!-- Search + Filters (part of table toolbar) -->
-    <div id="shopify-filters-bar">
+
+  <!-- Search + Filters (table toolbar) — lives inside .sp-sticky-head (not inside
+       #shopify-orders-table-wrap) so the title/subnav/filters stick together as ONE
+       block. Two independent `position:sticky` elements anchored at the same `top`
+       do NOT stack below one another — see the CSS comment on .sp-sticky-head.
+       ⚠ Also fixes a second, independent problem: #shopify-orders-table-wrap has
+       `overflow:hidden` for its rounded corners, which would have clipped a sticky
+       element the moment it scrolled past the wrap's own box.
+       Shown only on the "orders" subnav tab — switchShopifySubnav toggles this
+       element's own display directly. -->
+  <div id="shopify-filters-bar">
       <div id="shopify-filters-top-row">
         <div id="sp-bulk-bar-slot" class="sp-desktop-only"></div>
         <!-- One combined field: [All ▾ — SP_FILTERS, single-select] | search input | [Filters][Date][Columns] icons -->
@@ -20727,7 +20812,13 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
              #sp-filter-select-btn above is the replacement — see SP_FILTERS. -->
       </div>
       <div id="sp-active-chips" class="sp-active-chips" hidden></div>
-    </div>
+  </div>
+</div>
+<!-- /.sp-sticky-head -->
+
+  <div id="sp-orders-tab-content">
+  <!-- Table (desktop) + Cards (mobile) -->
+  <div id="shopify-orders-table-wrap">
     <div id="shopify-orders-table-body"></div>
   </div>
   <div id="sp-mobile-list"></div>
@@ -21143,6 +21234,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 
     <!-- ── TAB: General (عام) ── -->
     <div class="stg-panel active" id="stg-panel-general" role="tabpanel">
+<section id="notification-settings" class="settings-card" hidden></section>
 
       <!-- Appearance & Language -->
       <div class="settings-section-label">
@@ -21486,6 +21578,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       </div>
 
       <!-- Bosta Webhook (automatic status push) -->
+      <div class="settings-card" id="stg-bosta-pickup-policy" data-stg-keywords="bosta pickup استلام إجازات موعد"></div>
       <div class="settings-section-label">
         <span class="bosta-icon" style="width:14px;height:14px"></span>
         <span data-i18n="stgWebhookSection">تحديث حالة الشحنة تلقائياً (Webhook)</span>
@@ -29538,6 +29631,7 @@ const TRANSLATIONS = {
   puBulkNoneMatched:{ar:'لم يُعثر على أي طلب مطابق',en:'No matching order found'},
   /* Send-group-to-Bosta flow (puGroupSendToBosta) */
   puGrpBostaEmpty:{ar:'لا توجد طلبات في هذه المجموعة',en:'No orders in this group'},
+  puRequestBostaPickup:{ar:'طلب استلام من بوسطا',en:'Request Bosta pickup'},
   puGrpBostaNotReady:{ar:'{n} طلب ليس في حالة Ready to Ship — لا يمكن الإرسال',en:'{n} order(s) not in Ready to Ship status — cannot send'},
   puGrpBostaAllSent:{ar:'كل الطلبات في هذه المجموعة مرسلة بالفعل لـ Bosta',en:'All orders in this group have already been sent to Bosta'},
   puGrpBostaConfirm:{ar:'إرسال {n} طلب{extra} من المجموعة {g} إلى Bosta للشحن؟',en:'Send {n} order(s){extra} from group {g} to Bosta for shipping?'},
@@ -32252,7 +32346,9 @@ async function api(path, options = {}) {
         }
       }
     }
-    throw new Error(msg);
+    const apiError = new Error(msg);
+    if (path === '/shipping/pickups') apiError.pickupReason = err.pickupReason || '';
+    throw apiError;
   }
   if (options.responseType === 'blob') return res.blob();
   const text = await res.text();
@@ -32901,6 +32997,7 @@ function updateRememberBox(checked) {
 }
 
 async function doLogout() {
+  if (window.souliaPushLogout) await window.souliaPushLogout();
   disconnectSocket();
   if (window._mentionPollTimer) { clearInterval(window._mentionPollTimer); window._mentionPollTimer = null; }
   _mentionsCache = [];
@@ -32936,6 +33033,7 @@ async function checkAuth() {
 }
 
 async function showApp() {
+  window.souliaPushAppReady = false;
   qs('#login-page').style.display = 'none'; qs('#app').style.display = 'block';
   /* ⚠ قبل أي رسم للبيانات. لو اتنادت بعد loadAllData الأرقام هتبان لجزء من
      الثانية قبل ما تتقفل — وده بالظبط اللي وضع الخصوصية موجود عشان يمنعه. */
@@ -32965,6 +33063,8 @@ async function showApp() {
   // block below — that block returns early on several paths, which would skip this.
   try { initAppUpdateWatcher(); } catch(_) {}
   try { initToTop(); } catch(_) {}
+  window.souliaPushAppReady = true;
+  if (typeof window.souliaOpenPendingPush === 'function' && await window.souliaOpenPendingPush()) return;
 
   /* ⚠ توست الترحيب القديم اتشال من هنا — كان بيظهر مع ترحيب لوحة التحكم
      (renderDashWelcome) في نفس اللحظة تقريباً على أغلب الحسابات (findFirstAllowedPage
@@ -37040,7 +37140,7 @@ function extractMentions(text) {
 }
 
 /** Called after a comment is saved — sends mentions to backend so target users get notified */
-async function processMentionsInComment(commentText, txId, txRef) {
+async function processMentionsInComment(commentText, txId, txRef, savedCommentId) {
   if (!txId) return;
   const mentioned = extractMentions(commentText);
   if (!mentioned.length) return;
@@ -37049,7 +37149,10 @@ async function processMentionsInComment(commentText, txId, txRef) {
   if (!txExists) return;
 
   const ref = txRef || txId;
-  const commentId = Date.now();
+  const tx = transactions.find(t => String(t._id) === String(txId));
+  const savedComment = [...(tx?.comments || [])].reverse().find(c => c.text === commentText);
+  const commentId = Number(savedCommentId || savedComment?.id);
+  if (!Number.isSafeInteger(commentId) || commentId <= 0) { _warnMentionFailed(mentioned); return; }
 
   const payload = mentioned.map(u => ({
     targetUserId: String(u._id || u.id || ''),
@@ -37661,6 +37764,9 @@ function navigateTo(page, updateHash = true) {
   _doNavigateTo(page, updateHash);
 }
 function _doNavigateTo(page, updateHash = true) {
+  // A .fx-sort-menu left open is portaled onto <body> while open (see _positionFxMenu) —
+  // close it before leaving, or it survives as an orphan on whichever page loads next.
+  try { _closeAllFxSortMenus(); } catch(_) {}
   // Tear down pull-to-refresh when leaving Movements
   if (currentPage === 'movements' && page !== 'movements') {
     try { window.movementsPTR?.detach(); } catch(_) {}
@@ -45411,7 +45517,7 @@ function addTxComment() {
   if (!window._pendingTxCommentMentions) window._pendingTxCommentMentions = [];
   extractMentions(text).forEach(u => {
     if (!window._pendingTxCommentMentions.find(m => m.uid === String(u._id))) {
-      window._pendingTxCommentMentions.push({ uid: String(u._id), name: u.name || u.username, text });
+      window._pendingTxCommentMentions.push({ uid: String(u._id), name: u.name || u.username, text, commentId: comment.id });
     }
   });
   qs('#tx-comment-text').value = '';
@@ -45899,7 +46005,7 @@ async function confirmTxSave() {
       const savedTx = Array.isArray(transactions) ? transactions[transactions.length - 1] : null;
       const savedId = savedTx?._id || '';
       const savedRef = savedTx?.ref || '';
-      window._pendingTxCommentMentions.forEach(m => processMentionsInComment(m.text, savedId, savedRef));
+      window._pendingTxCommentMentions.forEach(m => processMentionsInComment(m.text, savedId, savedRef, m.commentId));
       window._pendingTxCommentMentions = [];
       _updateMentionBadge();
     }
@@ -46981,8 +47087,7 @@ function _prodQuickSelVal(setObj) {
   return setObj.size === 1 ? [...setObj][0] : '';
 }
 function _closeProdQuickMenus() {
-  qsa('.fx-sort-menu.show').forEach(m => m.classList.remove('show'));
-  qsa('.fx-quick-btn.menu-open').forEach(b => b.classList.remove('menu-open'));
+  _closeAllFxSortMenus();
 }
 function setProdQuickCategory(catId) {
   const s = fxState.prod;
@@ -47033,8 +47138,7 @@ function toggleProdQuickMenu(kind, e) {
   const menu = qs('#prod-quick-' + kind + '-menu');
   if (!menu) return;
   const isOpen = menu.classList.contains('show');
-  qsa('.fx-sort-menu.show').forEach(m => m.classList.remove('show'));
-  qsa('.fx-quick-btn.menu-open').forEach(b => b.classList.remove('menu-open'));
+  _closeAllFxSortMenus();
   if (isOpen) return;
 
   const s = fxState.prod;
@@ -47168,8 +47272,7 @@ function toggleFxSortMenu(ctx, e) {
   const menu = qs('#' + ctx + '-sort-menu');
   if (!menu) return;
   const isOpen = menu.classList.contains('show');
-  qsa('.fx-sort-menu.show').forEach(m => m.classList.remove('show'));
-  qsa('.fx-quick-btn.menu-open').forEach(b => b.classList.remove('menu-open'));
+  _closeAllFxSortMenus();
   if (isOpen) return;
   const opts = FX_SORT_OPTIONS[ctx];
   const current = fxState[ctx].sort;
@@ -47186,8 +47289,7 @@ function toggleFxSortMenu(ctx, e) {
 document.addEventListener('click', (e) => {
   if (e.target.closest('.fx-sort-wrap')) return;
   if (e.target.closest('.fx-sort-menu')) return;
-  qsa('.fx-sort-menu.show').forEach(m => m.classList.remove('show'));
-  qsa('.fx-quick-btn.menu-open').forEach(b => b.classList.remove('menu-open'));
+  _closeAllFxSortMenus();
 });
 
 function setFxSort(ctx, sortId) {
@@ -47195,7 +47297,7 @@ function setFxSort(ctx, sortId) {
   const opt = FX_SORT_OPTIONS[ctx].find(o => o.id === sortId);
   const labelEl = qs('#' + ctx + '-sort-label');
   if (labelEl && opt) labelEl.textContent = _fxSortLabel(opt);
-  qsa('.fx-sort-menu.show').forEach(m => m.classList.remove('show'));
+  _closeAllFxSortMenus();
   if (ctx === 'mov') _saveMovSortPref(sortId);
   if (ctx === 'inv') { invPage = 1; renderInventory(); }
   else if (ctx === 'prod') { prodPage = 1; renderProducts(); }
@@ -50042,7 +50144,7 @@ function toggleMovTagMoreMenu(e) {
   const menu = qs('#mov-tag-more-menu');
   if (!btn || !menu) return;
   const isOpen = menu.classList.contains('show');
-  qsa('.fx-sort-menu.show').forEach(m => m.classList.remove('show'));
+  _closeAllFxSortMenus();
   if (isOpen) return;
 
   const counts = _movTagCounts();
@@ -50351,8 +50453,58 @@ window.addEventListener('DOMContentLoaded', () => {
   } catch(_) {}
 });
 
-/* ===== Date quick-filter dropdown ===== */
+/* ===== Date quick-filter dropdown =====
+ * `.fx-sort-menu` popovers (sort / quick category / quick collection / tag "more") are
+ * positioned `fixed` from the opening button's rect, but they live wherever their HTML
+ * was written — inside `.fx-toolbar`, inside `.page`. `.page` carries `animation:pageEnter`,
+ * which animates `transform`, and ANY ancestor with a transform becomes the containing
+ * block for `position:fixed` descendants — so the "fixed" menu was actually positioned
+ * relative to `.page` and scrolled away with it the moment the page content scrolled.
+ * Same trap as the Shopify date popover (`_toggleShopifyDatePopover`) and the same fix:
+ * move the menu to <body> while open, track scroll/resize, and put it back on close. */
+let _fxMenuHome = null; // {menu, placeholder, btn} for whichever .fx-sort-menu is currently open
+function _fxMenuReposition() {
+  if (!_fxMenuHome) return;
+  const menu = _fxMenuHome.menu;
+  const btn = _fxMenuHome.btn;
+  if (!menu || !btn || !menu.classList.contains('show')) return;
+  const r = btn.getBoundingClientRect();
+  if (r.bottom < 0 || r.top > window.innerHeight) { _closeAllFxSortMenus(); return; }
+  _positionFxMenu(btn, menu);
+}
+function _fxMenuHomeFor(menu) {
+  if (_fxMenuHome && _fxMenuHome.menu === menu) return;
+  _fxMenuRestore();
+  const placeholder = document.createComment('fx-menu-home');
+  menu.parentNode.insertBefore(placeholder, menu);
+  document.body.appendChild(menu);
+  _fxMenuHome = { menu, placeholder, btn: null };
+}
+function _fxMenuRestore() {
+  if (!_fxMenuHome) return;
+  const { menu, placeholder } = _fxMenuHome;
+  if (placeholder && placeholder.parentNode) {
+    placeholder.parentNode.insertBefore(menu, placeholder);
+    placeholder.remove();
+  }
+  menu.style.top = ''; menu.style.left = ''; menu.style.right = ''; menu.style.bottom = '';
+  _fxMenuHome = null;
+}
+function _closeAllFxSortMenus() {
+  qsa('.fx-sort-menu.show').forEach(m => m.classList.remove('show'));
+  qsa('.fx-quick-btn.menu-open').forEach(b => b.classList.remove('menu-open'));
+  _fxMenuRestore();
+  window.removeEventListener('scroll', _fxMenuReposition, true);
+  window.removeEventListener('resize', _fxMenuReposition);
+}
+
 function _positionFxMenu(btn, menu) {
+  _fxMenuHomeFor(menu);
+  _fxMenuHome.btn = btn;
+  window.removeEventListener('scroll', _fxMenuReposition, true);
+  window.removeEventListener('resize', _fxMenuReposition);
+  window.addEventListener('scroll', _fxMenuReposition, true);
+  window.addEventListener('resize', _fxMenuReposition);
   const r = btn.getBoundingClientRect();
   const vw = window.innerWidth;
   const isMobile = vw <= 640;
@@ -50393,7 +50545,7 @@ function toggleMovDateMenu(e) {
   const menu = qs('#mov-date-menu');
   if (!menu) return;
   const isOpen = menu.classList.contains('show');
-  qsa('.fx-sort-menu.show').forEach(m => m.classList.remove('show'));
+  _closeAllFxSortMenus();
   if (isOpen) return;
   const fs = fxState.mov;
   const _svgCal = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
@@ -56349,6 +56501,13 @@ function switchInvTab(tab, btn, skipHash) {
   }
   qs('#inv-panel-list').style.display = tab === 'list' ? 'block' : 'none';
   qs('#inv-panel-log').style.display = tab === 'log' ? 'block' : 'none';
+  // #inv-kpi-scroll/#inv-toolbar (list) and #inv-log-sticky-actions (log) live inside
+  // .inv-sticky-head so the title/tabs/toolbar stick together as one block — toggled
+  // here independently of the content panels above.
+  const isLog = tab === 'log';
+  qs('#inv-kpi-scroll') && (qs('#inv-kpi-scroll').style.display = isLog ? 'none' : '');
+  qs('#inv-toolbar') && (qs('#inv-toolbar').style.display = isLog ? 'none' : '');
+  qs('#inv-log-sticky-actions') && (qs('#inv-log-sticky-actions').style.display = isLog ? '' : 'none');
   if (tab === 'log') loadInventoryLog();
   if (!skipHash) {
     const hashVal = tab === 'list' ? 'inventory' : `inventory/${tab}`;
@@ -58686,11 +58845,11 @@ function showInvoiceDetail(id, highlightCommentId) {
   // Repeat-customer detection (sales only): prior orders from same client, matched by phone (fallback name)
   let _custHistory = [];
   if (!isPurchase && !isReturn) {
-    const _custKey = (tx.phone || '').replace(/\D/g,'') || (tx.client || '').trim().toLowerCase();
+    const _custKey = _spPhoneKey(tx.phone) || (tx.client || '').trim().toLowerCase();
     if (_custKey) {
       _custHistory = transactions.filter(t => {
         if (t._id === tx._id || t.type !== 'مبيعات') return false;
-        const k = (t.phone || '').replace(/\D/g,'') || (t.client || '').trim().toLowerCase();
+        const k = _spPhoneKey(t.phone) || (t.client || '').trim().toLowerCase();
         return k === _custKey;
       }).sort((a,b) => new Date(b.transactionDate||b.date||b.createdAt||0) - new Date(a.transactionDate||a.date||a.createdAt||0));
     }
@@ -59492,11 +59651,11 @@ function renderInvoiceViewPage() {
   // Repeat-customer detection (sales only): prior orders from same client, matched by phone (fallback name)
   let _custHistory = [];
   if (!isPurchase && !isReturn && !isSupplierReturn) {
-    const _custKey = (tx.phone || '').replace(/\D/g,'') || (tx.client || '').trim().toLowerCase();
+    const _custKey = _spPhoneKey(tx.phone) || (tx.client || '').trim().toLowerCase();
     if (_custKey) {
       _custHistory = transactions.filter(t => {
         if (t._id === tx._id || t.type !== 'مبيعات') return false;
-        const k = (t.phone || '').replace(/\D/g,'') || (t.client || '').trim().toLowerCase();
+        const k = _spPhoneKey(t.phone) || (t.client || '').trim().toLowerCase();
         return k === _custKey;
       }).sort((a,b) => new Date(b.transactionDate||b.date||b.createdAt||0) - new Date(a.transactionDate||a.date||a.createdAt||0));
     }
@@ -61553,7 +61712,7 @@ async function addInvoiceComment(txId) {
     });
 
     toast(currentLang==='en'?'Comment added successfully':'تم إضافة التعليق بنجاح');
-    processMentionsInComment(text, txId, tx.ref);
+    processMentionsInComment(text, txId, tx.ref, newComment.id);
     _updateMentionBadge();
     textInput.value = '';
 
@@ -64608,6 +64767,9 @@ function switchProductsTab(tab, skipHash) {
   const isDrafts = tab === 'drafts';
   qs('#prod-pane-items') && (qs('#prod-pane-items').style.display = isDrafts ? 'none' : '');
   qs('#prod-pane-drafts') && (qs('#prod-pane-drafts').style.display = isDrafts ? '' : 'none');
+  // #prod-toolbar lives inside .prod-sticky-head (not inside #prod-pane-items) so it can
+  // stick together with the title/tabs — it must be toggled on its own here.
+  qs('#prod-toolbar') && (qs('#prod-toolbar').style.display = isDrafts ? 'none' : '');
   qs('#prod-tab-items')?.classList.toggle('active', !isDrafts);
   qs('#prod-tab-drafts')?.classList.toggle('active', isDrafts);
   if (isDrafts) loadSpecDrafts().then(renderSpecDrafts);
@@ -65535,7 +65697,7 @@ function showInvoicePaymentHistory(txId) {
     const icon = methodIcons[e.method] || '';
     const isLast = i === allEntries.length - 1;
     return `
-    <div style="display:flex;gap:12px;align-items:flex-start;padding-bottom:${isLast ? '0' : '14px'};${isLast ? '' : 'border-bottom:1px dashed var(--border)'}">
+    <div data-push-payment-id="${escHtml(String(e.id || ''))}" style="display:flex;gap:12px;align-items:flex-start;padding-bottom:${isLast ? '0' : '14px'};${isLast ? '' : 'border-bottom:1px dashed var(--border)'}">
       <div style="flex-shrink:0;width:30px;height:30px;border-radius:50%;background:${kindBg};border:2px solid ${kindColor};display:flex;align-items:center;justify-content:center">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="${kindColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="12" cy="14.5" r="2"/></svg>
       </div>
@@ -81603,6 +81765,7 @@ function renderSettings() {
     if (isAdmin()) _syncR2Card();
   }
   // Bosta key status indicator
+  if (typeof renderBostaPickupPolicy === 'function') renderBostaPickupPolicy();
   const bostaCard = qs('#stg-bosta-card');
   if (bostaCard) {
     bostaCard.style.display = isAdmin() ? '' : 'none';
@@ -88655,11 +88818,18 @@ function switchMainTab(tab, skipHash) {
   const btnNewCmp = qs('#btn-new-complaint');
   const btnNewFu = qs('#btn-new-fu');
   const btnXpCs = qs('#btn-archive-export-cs');
+  // #fu-kpi-toolbar-row and #cmp-header-block live inside .cs-sticky-head (not inside
+  // their respective sections) so the title/main-tabs/active-tab's-own-header stick
+  // together as one block — toggled here alongside the section panels.
+  const fuHead = qs('#fu-kpi-toolbar-row');
+  const cmpHead = qs('#cmp-header-block');
 
   if (tab === 'fu') {
     _fuPage = 1;
     fuSection.style.display = 'block';
     cmpSection.style.display = 'none';
+    if (fuHead) fuHead.style.display = 'flex';
+    if (cmpHead) cmpHead.style.display = 'none';
     btnFu.style.borderBottomColor = 'var(--primary)';
     btnFu.style.color = 'var(--primary)';
     btnCmp.style.borderBottomColor = 'transparent';
@@ -88675,6 +88845,8 @@ function switchMainTab(tab, skipHash) {
   } else {
     fuSection.style.display = 'none';
     cmpSection.style.display = 'block';
+    if (fuHead) fuHead.style.display = 'none';
+    if (cmpHead) cmpHead.style.display = 'block';
     btnCmp.style.borderBottomColor = 'var(--primary)';
     btnCmp.style.color = 'var(--primary)';
     btnFu.style.borderBottomColor = 'transparent';
@@ -92429,7 +92601,11 @@ async function saveFuComment() {
     if (_fuEditingCommentId) {
       updated = await api(`/followups/${fuCommentTargetId}/comments/${_fuEditingCommentId}`, { method: 'PATCH', body: JSON.stringify({ text }) });
     } else {
-      updated = await api(`/followups/${fuCommentTargetId}/comments`, { method: 'POST', body: JSON.stringify({ text }) });
+      const pending = window._fuPushRequest;
+      const requestId = pending && pending.id === fuCommentTargetId && pending.text === text ? pending.requestId : crypto.randomUUID();
+      window._fuPushRequest = { id: fuCommentTargetId, text, requestId };
+      updated = await api(`/followups/${fuCommentTargetId}/comments`, { method: 'POST', body: JSON.stringify({ text, requestId }) });
+      window._fuPushRequest = null;
     }
     const idx = followUps.findIndex(f => String(f._id) === String(fuCommentTargetId));
     if (idx !== -1) followUps[idx] = { ...followUps[idx], ...updated };
@@ -95670,7 +95846,7 @@ async function pwAddComment(id) {
       body: JSON.stringify({ comments: o.comments }),
     });
     /* المنشن يتبع نفس مسار الفاتورة — بدونه لا يصل التنبيه لمن ذُكر. */
-    try { await processMentionsInComment(text, id, o.ref); _updateMentionBadge(); } catch (_) {}
+    try { await processMentionsInComment(text, id, o.ref, comment.id); _updateMentionBadge(); } catch (_) {}
     /* نفس المعاملة قد تكون محمّلة في صفحة الحركات — نُبقي النسختين متطابقتين. */
     const tx = (typeof transactions !== 'undefined' ? transactions : []).find(t2 => String(t2._id) === String(id));
     if (tx) tx.comments = o.comments;
@@ -98464,6 +98640,10 @@ function switchShopifySubnav(tab, skipHash) {
   if (ordersEl) ordersEl.style.display = tab === 'orders' ? '' : 'none';
   if (perfEl) perfEl.style.display = tab === 'perf' ? '' : 'none';
   if (depEl) depEl.style.display = tab === 'deposits' ? '' : 'none';
+  // #shopify-filters-bar lives inside .sp-sticky-head (not inside #sp-orders-tab-content)
+  // so title/subnav/filters stick together — only relevant on the "orders" tab.
+  const filtersBar = qs('#shopify-filters-bar');
+  if (filtersBar) filtersBar.style.display = tab === 'orders' ? '' : 'none';
   if (tab === 'perf') renderPerformanceDashboard();
   if (tab === 'deposits') renderSpDepositReview();
   if (tab === 'deposit-log') renderSpDepositHistory(!!skipHash);
@@ -102735,7 +102915,7 @@ function _spReceiptRowHtml(o, r, readOnly = false, hideRefund = false) {
   const canEdit = editable && hasPerm('shopify-deposit-upload') && (isAdmin() || _spReceiptOwner(r));
   const args = `${_spReceiptJs(String(o._id || ''))},${_spReceiptJs(r.id)}`;
   const action = (name, key) => `<button type="button" class="btn btn-outline btn-sm spdep-action" onclick="_spReceiptAction(${args},${_spReceiptJs(name)},this)">${_spDepIcon(name)}${esc(t(key))}</button>`;
-  return `<article class="spdep-row"><div class="spdep-receipt-main"><div class="spdep-preview-wrap">${_spReceiptPreviewHtml(r)}${r.status === 'مسودة' ? `<span class="spdep-image-saved">${_spDepIcon('approve')}${esc(t('spDepImageSaved'))}</span>` : ''}</div><div class="spdep-receipt-data">
+  return `<article class="spdep-row" data-push-receipt-id="${escHtml(String(r.id || ''))}"><div class="spdep-receipt-main"><div class="spdep-preview-wrap">${_spReceiptPreviewHtml(r)}${r.status === 'مسودة' ? `<span class="spdep-image-saved">${_spDepIcon('approve')}${esc(t('spDepImageSaved'))}</span>` : ''}</div><div class="spdep-receipt-data">
     <div class="spdep-row-head"><div class="spdep-money"><small>${esc(t('spDepAmount'))}</small><b><bdi>${fmtJ(r.amount || r.ocr?.amount || 0)}</bdi></b></div><span class="spdep-status spdep-status-${r.status === 'معلق' ? 'pending' : r.status === 'معتمد' ? 'approved' : 'other'}">${esc(_spReceiptStatus(r.status))}</span></div>
     <div class="spdep-method-label">${payMethodIcon(r.method || r.ocr?.method || '',24)}<span>${esc(_payMethodLabel(r.method || r.ocr?.method || '') || t('spDepChooseMethod'))}</span></div>
     ${_depLogReceiptSenderHtml(r)}${_depLogScreenTimeHtml(r)}
@@ -105114,7 +105294,10 @@ function _shopifyEditRemoveItem(idx) {
 function _updateShopifyEditSummary() {
   const el = document.getElementById('shopify-edit-summary');
   if (!el) return;
-  const total = _shopifyEditItems.reduce((s,i) => s + (i.qty||1)*(i.price||0), 0);
+  const subtotal = _shopifyEditItems.reduce((s,i) => s + (i.qty||1)*(i.price||0), 0);
+  const discount = Math.min(subtotal, (Number(_spEditOrder?.discount) || 0)
+    + _spCodesTotal(subtotal) + _spManualAmount(subtotal));
+  const total = Math.max(0, subtotal - discount + (Number(_spEditOrder?.shipCost) || 0));
   const unmatched = _shopifyEditItems.filter(i => !i.productId).length;
   /* ⚠ لا لاحقة «EGP» بعد fmtJ: هو يُخرج مقطع العملة بنفسه، فالسطر القديم
        (`${fmtJ(total)} EGP`) كان يطبعها مرّتين — «EGP 1,200 EGP».
@@ -105463,7 +105646,8 @@ function _spSetDiscType(type) {
 
 /** الخصم اليدوي بالجنيه من القيمة المكتوبة ونوعها. */
 function _spManualAmount(itemsTotal) {
-  const raw = Number(qs('#sp-disc-value')?.value) || 0;
+  const input = qs('#sp-disc-value');
+  const raw = Number(input ? input.value : _spDiscInputValue(_spEditOrder)) || 0;
   if (raw <= 0) return 0;
   return _spDiscType === 'percent'
     ? Math.round(itemsTotal * Math.min(raw, 100) / 100)
@@ -105605,13 +105789,18 @@ function _spApplySuggestion(codeId) {
  *   (تبديل نوع، اختيار كود) ويبدو الخصم المحفوظ وكأنه لم يُطبَّق. تُقرأ من الحقل نفسه
  *   إن كان موجوداً (تعديل جارٍ لم يُحفظ بعد)، وإلا من القيمة المحفوظة.
  * ⚠ المحفوظ دائماً مبلغ ثابت بالجنيه — النسبة تُحوَّل وقت التطبيق. فلا تُعرض القيمة
- *   المحفوظة في وضع النسبة، وإلا قرأ الموظف «200» على أنها 200% وهي 200 جنيه.
+ *   المحفوظة مباشرةً في وضع النسبة؛ تُحوَّل إلى نسبة من إجمالي الأصناف المحفوظ.
  */
 function _spDiscInputValue(order) {
   const live = qs('#sp-disc-value');
-  if (live && live.value !== '') return esc(live.value);
-  const saved = Number(order.manualDiscount) || 0;
-  return saved > 0 && _spDiscType === 'fixed' ? esc(saved) : '';
+  // An empty live field is an intentional removal, not a request to restore the saved discount.
+  if (live) return esc(live.value);
+  const saved = Number(order?.manualDiscount) || 0;
+  if (saved <= 0) return '';
+  if (_spDiscType === 'fixed') return esc(saved);
+  // The server stores money even for percentages. Recover the rate using the saved basket.
+  const base = Number(order?.itemsTotal) || 0;
+  return base > 0 ? esc(Number((saved * 100 / base).toFixed(6))) : '';
 }
 
 /**
@@ -105705,6 +105894,7 @@ function _spRenderDiscountTab() {
 
     <div class="sp-disc-sum" id="sp-disc-sum">${_spDiscSummaryHtml(itemsTotal, shopDisc, codesDisc, manualDisc, shipCost, grand)}</div>
   `;
+  _updateShopifyEditSummary();
 }
 
 /* ⚠ فوق مستهلكهما: `const` لا يُرفع، ووضعهما أسفل الدالة يرمي TDZ عند أول رسم. */
@@ -105768,6 +105958,7 @@ function _spRenderDiscountPreview() {
 
   const sum = qs('#sp-disc-sum');
   if (sum) sum.innerHTML = _spDiscSummaryHtml(itemsTotal, shopDisc, codesDisc, manualDisc, shipCost, grand);
+  _updateShopifyEditSummary();
 
   const err = qs('#sp-disc-err');
   if (err) {
@@ -106582,5 +106773,8 @@ function _spRenderHistoryTab() {
 // ===================== End Shopify Orders =====================
 </script>
 <script src="/navigation-shell.js"></script>
+<script src="/bosta-pickup.js"></script>
+<script src="/notification-settings.js"></script>
+<script src="/push-navigation.js"></script>
 </body>
 </html>

@@ -1,3 +1,5 @@
+import { NotificationsService } from '../notifications/notifications.service';
+import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron } from '@nestjs/schedule';
@@ -53,6 +55,8 @@ const ESCALATION_HOURS = [12, 24, 48, 72, 96, 120, 144, 168];
 
 @Injectable()
 export class FollowUpsService implements OnModuleInit {
+  @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
+
   private readonly logger = new Logger(FollowUpsService.name);
 
   constructor(
@@ -501,16 +505,19 @@ export class FollowUpsService implements OnModuleInit {
       .lean();
   }
 
-  async addComment(id: string, authorId: string, authorName: string, text: string) {
+  async addComment(id: string, authorId: string, authorName: string, text: string, requestId?: string) {
     const before = await this.model.findById(id).lean();
     if (!before) return null;
+    const requestKey = requestId ? authorId + ':' + requestId : undefined;
+    if (requestKey && before.comments.some(c => c.requestKey === requestKey)) return before;
     const doc = await this.model
-      .findByIdAndUpdate(
-        id,
-        { $push: { comments: { authorId, authorName, text, edited: false } } },
+      .findOneAndUpdate(
+        { _id: id, ...(requestKey ? { 'comments.requestKey': { $ne: requestKey } } : {}) },
+        { $push: { comments: { authorId, authorName, text, edited: false, ...(requestKey ? { requestKey } : {}) } } },
         { new: true },
       )
       .lean();
+    if (!doc) return this.model.findById(id).lean();
     // Notify everyone already involved in this thread (responsible user +
     // anyone who has commented before) except whoever just wrote this one —
     // computed from the pre-push snapshot so the author's own new entry
@@ -526,6 +533,7 @@ export class FollowUpsService implements OnModuleInit {
     const newComments = (doc?.comments as any[]) || [];
     const newCommentId = newComments.length ? String(newComments[newComments.length - 1]._id) : '';
 
+    if (newCommentId) await this.notifications?.enqueue('comment', 'comment:followup:' + id + ':' + newCommentId, before.orderRef, 'followup:' + id, undefined, undefined, { actorName: authorName, commentId: newCommentId, commentText: text });
     const preview = text.length > 80 ? `${text.slice(0, 80)}…` : text;
     const commentText = `تعليق جديد على متابعة #${before.orderRef}: ${preview}`;
     for (const targetUserId of participantIds) {

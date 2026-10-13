@@ -66,12 +66,13 @@ export class FollowUpsController {
   }
 
   @Post(':id/comments')
-  async addComment(@Param('id') id: string, @Body() body: { text: string }, @Req() req: AuthRequest) {
+  async addComment(@Param('id') id: string, @Body() body: { text: string; requestId?: string }, @Req() req: AuthRequest) {
     const authorId = String(req.user?.userId || req.user?.sub || '');
     const authorName = req.user?.name || req.user?.username || '';
     const text = String(body?.text || '').trim();
     if (!text) throw new ForbiddenException('نص التعليق مطلوب');
-    const doc = await this.service.addComment(id, authorId, authorName, text);
+    if (body.requestId !== undefined && (typeof body.requestId !== 'string' || !/^[a-f0-9-]{36}$/i.test(body.requestId))) throw new ForbiddenException('Invalid request ID');
+    const doc = await this.service.addComment(id, authorId, authorName, text, body.requestId);
     try { this.presence.emitEvent('followup:changed', { action: 'update', id }); } catch (_) {}
     return doc;
   }

@@ -21,6 +21,7 @@ import { Roles } from '../core/decorators/roles.decorator';
 import { PermsGuard } from '../core/guards/perms.guard';
 import { RequirePerms } from '../core/decorators/perms.decorator';
 import { MarkDeliveredManualDto } from './dto/mark-delivered-manual.dto';
+import { CreatePickupDto } from './dto/create-pickup.dto';
 
 @Controller('shipping')
 export class BostaController {
@@ -66,7 +67,31 @@ export class BostaController {
     return { received: true, ...result };
   }
 
-  /** Create a Bosta delivery order for a sales transaction */
+  /** Warehouse collection is a separate request from creating deliveries. */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('pickup-preview')
+  async pickupPreview() {
+    return this.bostaService.pickupPreview();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('pickup-locations')
+  async pickupLocations() {
+    return this.bostaService.pickupLocations();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('pickup-schedule')
+  async pickupSchedule(@Query('businessLocationId') businessLocationId?: string) {
+    return this.bostaService.getPickupSchedule(businessLocationId || '');
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('pickups')
+  async createPickup(@Body() body: CreatePickupDto, @Req() req: any) {
+    return this.bostaService.createPickup(body, req.user?.username || req.user?.name || 'system');
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('create-order/:txId')
   async createOrder(@Param('txId') txId: string, @Req() req: any) {

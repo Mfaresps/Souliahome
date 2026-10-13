@@ -45,6 +45,78 @@ function extractFn(src: string, name: string): string {
   throw new Error('أقواس غير متوازنة: ' + name);
 }
 
+describe('Shopify discount survives apply, redraw and reopening', () => {
+  function editor() {
+    const src = fs.readFileSync(INDEX_HTML, 'utf8').replace(/\r\n/g, '\n');
+    const functions = ['_spCodeAmount', '_spCodesTotal', '_spManualAmount', '_spDiscInputValue',
+      '_spRenderDiscountTab', '_spRenderDiscountPreview', '_updateShopifyEditSummary',
+      '_spDiscAmounts', '_spDiscountPreflight', '_spPersistDiscount', '_spSaveDiscount', '_spIsEditable']
+      .map(name => extractFn(src, name)).join('\n');
+    return new Function(`
+      let _spEditOrder, _shopifyEditItems=[], _spDiscCodes=[], _spDiscType='fixed';
+      let input=null, summary=[], payload=null, _spDiscOtpId='', _spDiscOtpAmount=0, _spEditBaseline='';
+      const footer={innerHTML:''}, sum={innerHTML:''};
+      const host={set innerHTML(html) { input={value:html.match(/id="sp-disc-value"[^>]*value="([^"]*)"/)[1]}; }};
+      const document={getElementById:()=>footer};
+      const qs=s=>({'#sp-disc-value':input,'#sp-pane-discount':host,'#sp-disc-sum':sum}[s] || null);
+      const esc=String, escHtml=String, t=String, tf=(k,v)=>k+JSON.stringify(v), fmtJ=String, fmtN=String;
+      const _spActiveCodes=()=>[], _spSuggestionsHtml=()=>'', _spDiscGuardHtml=()=>'';
+      const _spDiscSummaryHtml=(...args)=>{summary=args;return JSON.stringify(args);};
+      const _isOtpRequired=()=>false, _logBundleDiscAction=()=>{}, toast=()=>{};
+      const _spEditSnapshot=()=>'', _spDiscFlashSaved=()=>{}, _spRefreshOrderRow=()=>{};
+      const api=async (url, options)=>{
+        payload=JSON.parse(options.body);
+        return {total:Math.max(0,_spEditOrder.itemsTotal-Math.min(_spEditOrder.itemsTotal,
+          _spEditOrder.discount+payload.manualDiscount+payload.codesDiscount)+_spEditOrder.shipCost)};
+      };
+      ${functions}
+      return {
+        open(order) { _spEditOrder=order; _shopifyEditItems=[{qty:1,price:order.itemsTotal}];
+          _spDiscType=order.manualDiscountType || 'fixed'; input=null; _spRenderDiscountTab(); },
+        enter(value) { input.value=String(value); _spRenderDiscountPreview(); },
+        code(value) { _spDiscCodes=[{id:'code',code:'CODE',type:'fixed',value}]; _spRenderDiscountTab(); },
+        redraw:_spRenderDiscountTab, apply:_spSaveDiscount,
+        state() { return {input:input.value,summary,payload,footer:footer.innerHTML,order:_spEditOrder}; }
+      };
+    `)();
+  }
+  const order = () => ({_id:'o1',status:'pending',itemsTotal:4389,discount:120,shipCost:120,manualDiscount:100});
+
+  it('includes the saved fixed discount on the first render and after Apply', async () => {
+    const env=editor(); env.open(order());
+    expect(env.state().summary).toEqual([4389,120,0,100,120,4289]);
+    await env.apply(); env.redraw();
+    expect(env.state().payload.manualDiscount).toBe(100);
+    expect(env.state().summary[5]).toBe(4289);
+    expect(env.state().footer).toContain('4289');
+    env.open({...env.state().order});
+    expect(env.state().summary[3]).toBe(100);
+  });
+
+  it('preserves both Shopify and selected code discounts when applying an additional amount', async () => {
+    const env=editor(); env.open(order()); env.code(190); env.enter(100); await env.apply();
+    expect(env.state().payload).toMatchObject({manualDiscount:100,codesDiscount:190});
+    expect(env.state().order.discount).toBe(120);
+    expect(env.state().summary[5]).toBe(4099);
+  });
+
+  it('keeps an intentionally cleared discount empty through redraw and persists removal', async () => {
+    const env=editor(); env.open(order()); env.enter(''); env.redraw(); await env.apply();
+    expect(env.state().input).toBe('');
+    expect(env.state().payload.manualDiscount).toBe(0);
+    expect(env.state().summary[5]).toBe(4389);
+  });
+
+  it('reopens a saved percentage as a rate and does not erase it on Apply', async () => {
+    const env=editor(); env.open({...order(),itemsTotal:2000,manualDiscount:200,manualDiscountType:'percent'});
+    expect(env.state().input).toBe('10');
+    expect(env.state().summary[3]).toBe(200);
+    await env.apply(); env.open({...env.state().order});
+    expect(env.state().payload.manualDiscount).toBe(200);
+    expect(env.state().summary[3]).toBe(200);
+  });
+});
+
 interface DiscEnv {
   codeAmount(c: { type: string; value: number }, itemsTotal: number): number;
   codesTotal(itemsTotal: number): number;
@@ -1084,7 +1156,7 @@ describe('Shopify — الخصم الإضافي يظهر ويُحسب في كل 
   it('حقل الخصم يحتفظ بالقيمة', () => {
     const fn = extractFn(src, '_spDiscInputValue');
     expect(fn).toContain("qs('#sp-disc-value')");
-    expect(fn).toContain('order.manualDiscount');
+    expect(fn).toMatch(/order\??\.manualDiscount/);
     expect(fn).toContain("_spDiscType === 'fixed'");
   });
 

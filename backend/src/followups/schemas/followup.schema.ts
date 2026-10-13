@@ -7,6 +7,9 @@ export type FollowUpDocument = HydratedDocument<FollowUp>;
 export class FollowUpComment {
   _id?: Types.ObjectId;
 
+  @Prop()
+  requestKey?: string;
+
   @Prop({ required: true })
   authorId: string;
 

@@ -7,6 +7,9 @@ import {
   IsObject,
   Min,
   IsIn,
+  Matches,
+  ArrayMaxSize,
+  ArrayUnique,
 } from 'class-validator';
 
 export class DiscountCodeDto {
@@ -88,6 +91,11 @@ export class DiscountBundleDto {
 }
 
 export class UpdateSettingsDto {
+  @IsOptional() @IsString() @Matches(/^(?:[01]\d|2[0-3]):[0-5]\d$/)
+  readonly bostaPickupCutoffTime?: string;
+
+  @IsOptional() @IsArray() @ArrayMaxSize(366) @ArrayUnique() @IsString({ each: true }) @Matches(/^\d{4}-\d{2}-\d{2}$/, { each: true })
+  readonly bostaPickupHolidayDates?: string[];
   @IsNumber()
   @Min(0)
   @IsOptional()

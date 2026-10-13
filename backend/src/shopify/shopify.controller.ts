@@ -61,7 +61,7 @@ export class ShopifyController {
   ) {
     const rawBody: Buffer = (req as any).rawBody;
 
-    if (rawBody && signature) {
+    {
       const isValid = this.shopifyService.verifyWebhook(rawBody, signature);
       if (!isValid) {
         this.logger.warn('⚠️ Webhook غير موثوق');

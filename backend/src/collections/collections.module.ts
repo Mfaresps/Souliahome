@@ -15,6 +15,7 @@ import { CategoriesService } from './categories.service';
 import { CategoriesController } from './categories.controller';
 import { CollectionsService } from './collections.service';
 import { CollectionsController } from './collections.controller';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { CollectionsController } from './collections.controller';
       { name: Product.name, schema: ProductSchema },
       { name: Supplier.name, schema: SupplierSchema },
     ]),
+    AuthModule,
   ],
   controllers: [CategoriesController, CollectionsController],
   providers: [CategoriesService, CollectionsService],

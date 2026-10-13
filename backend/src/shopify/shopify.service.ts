@@ -1,3 +1,5 @@
+import { NotificationsService } from '../notifications/notifications.service';
+import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import {
   Injectable,
   Inject,
@@ -54,6 +56,8 @@ import { carrierLabel, isValidCarrier } from '../shared/carriers.constants';
 
 @Injectable()
 export class ShopifyService {
+  @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
+
   private readonly logger = new Logger(ShopifyService.name);
 
   constructor(
@@ -95,15 +99,14 @@ export class ShopifyService {
 
   verifyWebhook(rawBody: Buffer, signature: string): boolean {
     const secret = process.env.SHOPIFY_WEBHOOK_SECRET || '';
-    if (!secret) return true;
+    if (!secret || !Buffer.isBuffer(rawBody) || typeof signature !== 'string') return false;
     const hash = crypto
       .createHmac('sha256', secret)
       .update(rawBody)
       .digest('base64');
-    if (hash === signature) return true;
-    // log mismatch for debugging but allow through
-    this.logger.warn(`⚠️ Webhook signature mismatch — expected: ${hash} | got: ${signature}`);
-    return true;
+    const supplied = Buffer.from(signature);
+    const expected = Buffer.from(hash);
+    return supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
   }
 
   // استقبال الأوردر من Shopify وحفظه للمراجعة
@@ -209,6 +212,7 @@ export class ShopifyService {
         this.logger.warn(`Deposit parsing failed for order ${order._id}: ${(depositErr as Error).message}`);
       }
 
+      await this.notifications?.enqueue('order', 'order:shopify:' + shopifyId, order.ref, 'shopify:' + order._id, undefined, undefined, { orderTotal: order.total });
       return { saved: true, id: String(order._id) };
     } catch (err) {
       this.logger.error(`❌ خطأ: ${err.message}`);
@@ -1577,9 +1581,11 @@ export class ShopifyService {
     const order = await this.shopifyOrderModel.findById(orderId);
     if (!order) throw new NotFoundException('الأوردر غير موجود');
 
+    const oldIds = new Set((order.comments || []).map(c => String(c.id)));
     order.comments = comments;
     order.markModified('comments');
     await order.save();
+    for (const c of comments) if (c.id != null && !oldIds.has(String(c.id))) await this.notifications?.enqueue('comment', 'comment:shopify:' + orderId + ':' + c.id, order.ref, 'shopify:' + orderId, undefined, undefined, { actorName: c.employee, commentId: c.id, commentText: c.text });
     return { success: true };
   }
 

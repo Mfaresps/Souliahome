@@ -1,3 +1,4 @@
+import { NotificationsModule } from './notifications/notifications.module';
 import { Module, OnModuleInit } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -43,6 +44,7 @@ import { SeedService } from './seed/seed.service';
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     ScheduleModule.forRoot(),
     CoreModule,
+    NotificationsModule,
     AuthModule,
     UsersModule,
     ProductsModule,

@@ -55,7 +55,7 @@ export class MentionsController {
         commentText: String(m.commentText || ''),
         read: false,
       }));
-    const created = await this.mentionsService.createMany(rows);
+    const created = await this.mentionsService.createMany(rows, true);
     // Emit a real-time event to each target user (best-effort)
     created.forEach((m: any) => {
       const payload = {

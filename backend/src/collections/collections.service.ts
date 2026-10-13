@@ -21,6 +21,7 @@ import {
   CreateCollectionDto,
   UpdateCollectionDto,
 } from './dto/collection.dto';
+import { PresenceGateway } from '../auth/presence.gateway';
 
 @Injectable()
 export class CollectionsService {
@@ -35,7 +36,12 @@ export class CollectionsService {
     private readonly productModel: Model<ProductDocument>,
     @InjectModel(Supplier.name)
     private readonly supplierModel: Model<SupplierDocument>,
+    private readonly presence: PresenceGateway,
   ) {}
+
+  private emit(event: string, payload: unknown): void {
+    try { this.presence?.emitEvent(event, payload); } catch { /* swallow */ }
+  }
 
   private async logActivity(
     collectionId: string,
@@ -199,7 +205,7 @@ export class CollectionsService {
     productIds: string[],
     actor: string,
   ): Promise<{ added: number; skipped: number }> {
-    await this.findById(collectionId);
+    const collection = await this.findById(collectionId);
 
     const products = await this.productModel
       .find({ _id: { $in: productIds } })
@@ -220,6 +226,13 @@ export class CollectionsService {
     );
     const now = new Date().toISOString();
     if (toAdd.length > 0) {
+      // A product belongs to exactly one collection — the same invariant
+      // syncCollectionLink() enforces from the product-modal side. Drop any
+      // link this product has to a DIFFERENT collection before adding the
+      // new one, or it would end up in two collections' join rows at once.
+      await this.collectionProductModel
+        .deleteMany({ productId: { $in: toAdd }, collectionId: { $ne: collectionId } })
+        .exec();
       await this.collectionProductModel.insertMany(
         toAdd.map((productId) => ({
           collectionId,
@@ -228,12 +241,26 @@ export class CollectionsService {
           addedAt: now,
         })),
       );
+      // Mirror the join-table change onto the product's OWN categoryId/collectionId
+      // fields — the product modal reads those directly (p.categoryId/p.collectionId
+      // in openProductModal), not the join table. Without this, a product assigned
+      // here keeps showing "— None —" in the modal despite being linked.
+      await this.productModel
+        .updateMany(
+          { _id: { $in: toAdd } },
+          { $set: { categoryId: collection.categoryId || null, collectionId } },
+        )
+        .exec();
       await this.logActivity(
         collectionId,
         'إضافة أصناف',
         `تمت إضافة ${toAdd.length} صنف إلى المجموعة`,
         actor,
       );
+      // Same event the product modal's own save path emits — the frontend refetches
+      // `products` on this event, so an already-open product list/modal picks up the
+      // new categoryId/collectionId without a manual reload.
+      this.emit('product:changed', { action: 'updated', productIds: toAdd });
     }
 
     return {
@@ -253,6 +280,20 @@ export class CollectionsService {
       .findOneAndDelete({ collectionId, productId })
       .exec();
     if (!result) throw new NotFoundException('الصنف غير مرتبط بهذه المجموعة');
+
+    // Mirror onto the product's own categoryId/collectionId fields — same reason
+    // as assignProducts. Only clear them if they still point at THIS collection;
+    // if the product was since reassigned elsewhere, those fields already describe
+    // the new collection and this removal (of the old link) must not touch them.
+    if (product && product.collectionId === collectionId) {
+      await this.productModel
+        .updateOne(
+          { _id: productId },
+          { $set: { categoryId: null, collectionId: null } },
+        )
+        .exec();
+      this.emit('product:changed', { action: 'updated', productIds: [productId] });
+    }
 
     await this.logActivity(
       collectionId,

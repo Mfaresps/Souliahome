@@ -5,13 +5,16 @@
 export const createMockMongooseModel = <T = unknown>() => {
   const mock: any = {
     create: jest.fn(),
+    insertMany: jest.fn().mockResolvedValue([]),
     find: jest.fn().mockReturnThis(),
     findOne: jest.fn().mockReturnThis(),
     findById: jest.fn().mockReturnThis(),
     findByIdAndUpdate: jest.fn().mockReturnThis(),
     findByIdAndDelete: jest.fn().mockReturnThis(),
     findOneAndUpdate: jest.fn().mockReturnThis(),
+    findOneAndDelete: jest.fn().mockReturnThis(),
     updateOne: jest.fn().mockReturnThis(),
+    updateMany: jest.fn().mockReturnThis(),
     deleteOne: jest.fn().mockReturnThis(),
     deleteMany: jest.fn().mockReturnThis(),
     countDocuments: jest.fn().mockReturnThis(),

@@ -339,6 +339,11 @@ export class SettingsService {
     return (settings as any).bostaApiKey || process.env.BOSTA_API_KEY || '';
   }
 
+  async getBostaPickupPolicy() {
+    const settings = await this.getSettings();
+    return { cutoffTime: settings.bostaPickupCutoffTime || '16:00', holidayDates: settings.bostaPickupHolidayDates || [] };
+  }
+
   async saveBostaWebhookSecret(secret: string): Promise<void> {
     const settings = await this.getSettings();
     await this.settingsModel.findByIdAndUpdate(
@@ -597,6 +602,10 @@ export class SettingsService {
   }
 
   async updateSettings(dto: UpdateSettingsDto, rawBody?: Record<string, unknown>): Promise<SettingsDocument> {
+    if (dto.bostaPickupHolidayDates?.some(value => {
+      const day = new Date(value + 'T00:00:00Z');
+      return !Number.isFinite(day.getTime()) || day.toISOString().slice(0, 10) !== value;
+    })) throw new BadRequestException('تاريخ غير صحيح في إجازات استلام بوسطا');
     const existing = await this.getSettings();
     const $set: Record<string, unknown> = { ...(dto as Record<string, unknown>) };
     // The first switch-on fixes the date from which deliveries settle by themselves. Older

@@ -9,6 +9,7 @@ import {
   ShopifyOrderSchema,
 } from '../shopify/schemas/shopify-order.schema';
 import { BostaService } from './bosta.service';
+import { BostaPickup, BostaPickupSchema } from './schemas/bosta-pickup.schema';
 import { BostaController } from './bosta.controller';
 import { AuthModule } from '../auth/auth.module';
 import { SettingsModule } from '../settings/settings.module';
@@ -20,6 +21,7 @@ import { FollowUpsModule } from '../followups/followups.module';
 @Module({
   imports: [
     MongooseModule.forFeature([
+      { name: BostaPickup.name, schema: BostaPickupSchema },
       { name: Transaction.name, schema: TransactionSchema },
       { name: ShopifyOrder.name, schema: ShopifyOrderSchema },
     ]),

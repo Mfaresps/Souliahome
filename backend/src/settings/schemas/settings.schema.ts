@@ -288,6 +288,12 @@ export class Settings {
   @Prop({ default: '' })
   bostaApiKey: string;
 
+  @Prop({ default: '16:00' })
+  bostaPickupCutoffTime: string;
+
+  @Prop({ type: [String], default: [] })
+  bostaPickupHolidayDates: string[];
+
   /** Secret token used to verify inbound Bosta webhook calls (sent as ?token= query param) */
   @Prop({ default: '' })
   bostaWebhookSecret: string;

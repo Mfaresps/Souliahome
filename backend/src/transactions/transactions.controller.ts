@@ -312,7 +312,7 @@ export class TransactionsController {
       }
     }
     return this.transactionsService.create(dto, req.user?.role, dto.manualDepositReceiptId
-      ? { draftId: dto.manualDepositReceiptId, actor: this.receiptActor(req) } : undefined);
+      ? { draftId: dto.manualDepositReceiptId, actor: this.receiptActor(req) } : undefined, req.user?.name || req.user?.username || '');
   }
 
   @Roles('admin')
@@ -692,6 +692,7 @@ export class TransactionsController {
         editedBy,
         approvedBy,
         callerRole,
+        req.user.name || req.user.username || '',
       );
     } finally {
       this.transactionsService.releaseEditLock(id);

@@ -1,3 +1,5 @@
+import { NotificationsService } from '../notifications/notifications.service';
+import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import {
   BadRequestException,
   ForbiddenException,
@@ -81,6 +83,8 @@ function cleanRef(ref: unknown): string {
  */
 @Injectable()
 export class DepositReceiptsService {
+  @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
+
   private readonly logger = new Logger(DepositReceiptsService.name);
   private imageLimitQueue: Promise<unknown> = Promise.resolve();
 
@@ -498,6 +502,8 @@ export class DepositReceiptsService {
     ).exec();
     if (!saved) throw new BadRequestException('تعذّر الإرسال — تغيّر الإيصال أو الأوردر، أعد المحاولة');
 
+    await this.notifications?.enqueue('deposit', 'deposit:receipt:' + receiptId, saved.ref, 'shopify:' + orderId, undefined, undefined,
+      { actorName: r.submittedBy || actor.name || actor.username, amount, pendingApproval: true, vaultName: method, receiptId });
     this.emit(orderId, receiptId, 'معلق');
     return { success: true, receipt: this.findReceipt(saved, receiptId) };
   }
@@ -650,6 +656,8 @@ export class DepositReceiptsService {
 
     await this.refreshDerived(String(claimed._id));
     this.emit(orderId, receiptId, 'معتمد');
+    await this.notifications?.enqueue('deposit', 'deposit:receipt:' + receiptId, claimed.ref, 'shopify:' + orderId, undefined, undefined,
+      { actorName: r.submittedBy, amount: r.amount, vaultName: r.method, receiptId });
     return { success: true, vaultTxNo: entry?.txNo || '' };
   }
 
