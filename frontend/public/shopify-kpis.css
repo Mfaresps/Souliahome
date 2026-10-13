@@ -1,0 +1,95 @@
+/* Shopify orders — period KPI strip (shopify-kpis.js).
+   Tints are semantic only (green = confirmed — with OR without a deposit —,
+   blue = follow-up, red = cancelled); «received» and the rate stay neutral. Each tile derives its
+   pale fill from its ink with color-mix, so dark mode only re-states the inks. */
+#sp-kpi{margin:2px 0 14px}
+#sp-kpi:empty{display:none}
+#sp-kpi[hidden]{display:none}
+/* The header toggle: tinted while the strip is shown, plain once it is hidden. */
+#sp-kpi-toggle{color:var(--accent)}
+#sp-kpi-toggle.is-off{color:var(--text-muted,var(--muted))}
+.spk-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.spk-seg{display:inline-flex;padding:3px;gap:2px;border-radius:10px;background:var(--bg-alt);border:1px solid var(--border)}
+.spk-seg-btn{border:0;background:none;font:inherit;font-size:.78rem;font-weight:500;color:var(--text-muted,var(--muted));
+  padding:5px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s,box-shadow .15s}
+.spk-seg-btn:hover{color:var(--text)}
+.spk-seg-btn.is-on{background:var(--bg);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(15,31,22,.08)}
+.spk-seg-btn:focus-visible,.spk-report-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.spk-range{font-size:.78rem;color:var(--text-muted,var(--muted))}
+.spk-open{font-size:.74rem;color:var(--text-muted,var(--muted))}
+.spk-open::before{content:'·';margin-inline-end:8px}
+.spk-warn{font-size:.74rem;color:#b54708}
+.spk-report-btn{margin-inline-start:auto;display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:.78rem;font-weight:500;
+  color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:6px 12px;cursor:pointer;
+  transition:background .15s,border-color .15s}
+.spk-report-btn:hover{background:var(--bg-alt);border-color:color-mix(in srgb,var(--accent) 35%,var(--border))}
+
+.spk-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.spk-tile{--spk-c:#4b6356;position:relative;min-width:0;border-radius:14px;padding:12px 14px 12px;
+  background:color-mix(in srgb,var(--spk-c) 8%,var(--bg));border:1px solid color-mix(in srgb,var(--spk-c) 16%,var(--border))}
+.spk-tile.is-received,.spk-tile.is-rate{--spk-c:#4b6356;background:var(--surface);border-color:var(--border)}
+.spk-tile.is-confirmed{--spk-c:#067647}
+.spk-tile.is-followup{--spk-c:#1d4ed8}
+.spk-tile.is-cancelled{--spk-c:#b42318}
+.spk-tile-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.spk-lbl{font-size:.74rem;font-weight:500;color:var(--text);opacity:.82;line-height:1.3;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spk-ic{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;
+  background:var(--bg);color:var(--spk-c);box-shadow:0 0 0 1px color-mix(in srgb,var(--spk-c) 14%,transparent)}
+.spk-val{margin-top:6px;font-size:1.55rem;font-weight:600;line-height:1.1;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.spk-val bdi,.spk-sub bdi{unicode-bidi:isolate}
+.spk-sub{margin-top:4px;font-size:.7rem;color:var(--text-muted,var(--muted));line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spk-delta-n{font-weight:600;color:var(--text)}
+.spk-meter{margin-top:7px;height:4px;border-radius:99px;background:var(--primary-pale);overflow:hidden}
+.spk-meter i{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .35s ease}
+
+/* skeleton */
+.spk-tile.is-skel{background:var(--surface);border-color:var(--border);min-height:86px}
+.spk-tile.is-skel span{display:block;height:10px;width:55%;border-radius:6px;background:var(--bg-alt);animation:spkPulse 1.2s ease-in-out infinite}
+.spk-tile.is-skel span+span{margin-top:16px;height:20px;width:35%}
+@keyframes spkPulse{50%{opacity:.45}}
+
+body.dark-mode .spk-tile.is-received,body.dark-mode .spk-tile.is-rate{--spk-c:#9fb8aa}
+body.dark-mode .spk-tile.is-confirmed{--spk-c:#4ade80}
+body.dark-mode .spk-tile.is-followup{--spk-c:#60a5fa}
+body.dark-mode .spk-tile.is-cancelled{--spk-c:#f87171}
+body.dark-mode .spk-tile{background:color-mix(in srgb,var(--spk-c) 9%,var(--surface))}
+body.dark-mode .spk-tile.is-received,body.dark-mode .spk-tile.is-rate{background:var(--surface)}
+body.dark-mode .spk-ic{background:var(--surface2)}
+body.dark-mode .spk-seg-btn.is-on{background:var(--surface2);box-shadow:none}
+body.dark-mode .spk-warn{color:#fbbf24}
+
+/* Report preview modal */
+.spk-rep-period{font-weight:500;color:var(--text-muted,var(--muted))}
+.spk-rep-prev{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg-alt);display:flex;justify-content:center}
+.spk-rep-prev img{display:block;width:100%;height:auto}
+.spk-rep-skel{width:100%;aspect-ratio:1080/1366;animation:spkPulse 1.2s ease-in-out infinite;background:var(--bg-alt)}
+.spk-rep-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.spk-rep-actions .btn{flex:1 1 auto}
+
+@media (max-width:1180px){
+  .spk-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .spk-tile.is-rate{grid-column:span 2}   /* 3 + 2: the rate takes the rest of row two */
+}
+@media (max-width:640px){
+  #sp-kpi{margin:0 0 12px}
+  .spk-head{gap:8px}
+  .spk-seg{flex:1 1 auto}
+  .spk-seg-btn{flex:1 1 0;padding:6px 6px;min-height:32px!important}
+  .spk-range{order:3;width:100%}
+  .spk-report-btn{min-height:32px!important;padding:6px 10px}
+  .spk-open{order:4}
+  .spk-grid{gap:8px}
+  .spk-tile{padding:9px 10px;border-radius:12px}
+  .spk-ic{width:22px;height:22px}
+  .spk-ic svg{width:13px;height:13px}
+  /* Labels wrap to two lines here — «الأوردرات الواردة» in a ~105px tile would otherwise
+     ellipsise, and a cut label no longer names its number. */
+  .spk-lbl{font-size:.68rem;white-space:normal;overflow:visible;line-height:1.3;min-height:2.7em}
+  .spk-val{font-size:1.2rem;margin-top:4px}
+  .spk-sub{display:none}
+  .spk-tile.is-rate .spk-sub{display:block}
+}
+@media (prefers-reduced-motion:reduce){
+  .spk-meter i{transition:none}
+  .spk-tile.is-skel span,.spk-rep-skel{animation:none}
+}

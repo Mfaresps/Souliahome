@@ -17,10 +17,20 @@ const script = fs.readFileSync(path.join(root, 'frontend/public/invoice-image.js
   try {
     const page = await browser.newPage();
     const errors = [];
+    const imageRequests = [];
     page.on('pageerror', error => errors.push(error.message));
+    await page.setRequestInterception(true);
+    page.on('request', request => {
+      imageRequests.push(request.url());
+      if (request.url().endsWith('/slow.svg')) return;
+      if (request.url().endsWith('/missing.svg')) return request.respond({status:404, body:''});
+      return request.respond({status:200, contentType:'image/svg+xml',
+        headers:request.url().endsWith('/blocked.svg') ? {} : {'Access-Control-Allow-Origin':'*'},
+        body:'<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="#ff0000"/></svg>'});
+    });
     await page.setContent('<html lang="ar"><body></body></html>');
     await page.addScriptTag({ content: `
-      var currentLang = 'ar', settings = { companyLegalName: 'SOULIA' };
+      var currentLang = 'ar', settings = { companyLegalName: 'SOULIA' }, products = [];
       var messages = [], downloads = [], written = [];
       function toast(message, error) { messages.push({message, error: !!error}); }
       function t(key) { return key; }
@@ -41,7 +51,9 @@ const script = fs.readFileSync(path.join(root, 'frontend/public/invoice-image.js
     const escapeHelper = html.slice(html.indexOf('function esc(str) {'), html.indexOf('\n/**', html.indexOf('function esc(str) {')));
     const escapeAttributeHelper = html.match(/function escHtml\(s\) \{[^\n]+/)[0];
     const menuHelper = html.slice(html.indexOf('function closeAllMenus() {'), html.indexOf("document.addEventListener('click', closeAllMenus);"));
-    await page.addScriptTag({ content: 'function closeDatePicker() {}\n' + escapeHelper + '\n' + escapeAttributeHelper + '\n' + menuHelper + '\n' + adapter + '\n' + actionsHelper + '\n' + script });
+    const sanitizeHelper = html.slice(html.indexOf('function sanitizeUrl(url) {'), html.indexOf('\n/**', html.indexOf('function sanitizeUrl(url) {')));
+    const imageHelper = html.slice(html.indexOf('function _pwItemImgUrl(it) {'), html.indexOf('\n/**', html.indexOf('function _pwItemImgUrl(it) {')));
+    await page.addScriptTag({ content: 'function closeDatePicker() {}\n' + escapeHelper + '\n' + escapeAttributeHelper + '\n' + menuHelper + '\n' + adapter + '\n' + actionsHelper + '\n' + sanitizeHelper + '\n' + imageHelper + '\n' + script });
     const result = await page.evaluate(async () => {
       const text = [];
       const original = CanvasRenderingContext2D.prototype.fillText;
@@ -54,7 +66,7 @@ const script = fs.readFileSync(path.join(root, 'frontend/public/invoice-image.js
         const portal = buttons[buttons.length - 1];
         const before = messages.length;
         portal.querySelectorAll('.dd-item')[action === 'copy' ? 1 : 0].click();
-        for (let i = 0; messages.length === before && i < 100; i++) await new Promise(resolve => setTimeout(resolve, 10));
+        for (let i = 0; messages.length === before && i < 350; i++) await new Promise(resolve => setTimeout(resolve, 10));
         if (messages.length === before) throw new Error('Menu click did not trigger invoice action: ' + source + '/' + action);
       }
       await clickMenu('transaction', 'tx-1', 'download');
@@ -89,8 +101,38 @@ const script = fs.readFileSync(path.join(root, 'frontend/public/invoice-image.js
       await exportInvoiceImage('transaction', 'tx-1', 'download');
       const english = text.splice(0);
       const actions = invoiceImageActions('transaction', 'tx-1');
+      currentLang = 'ar';
+      const sample = {...transactions[0].items[0], name:'منتج تجريبي', imageUrl:'http://images.test/good.svg'};
+      products = [{_id:'catalogue-1', code:'CAT', imageUrl:'http://images.test/catalogue.svg'}];
+      const photos = await loadInvoiceThumbnails([sample, sample,
+        {...sample,imageUrl:'',productId:'catalogue-1'},
+        {...sample,imageUrl:'http://images.test/missing.svg'},
+        {...sample,imageUrl:'http://images.test/blocked.svg'}]);
+      const photoFlags = photos.map(Boolean);
+      const deduped = photos[0] === photos[1];
+      const portrait = await buildCompactInvoiceCanvas({...transactions[0],items:[sample]});
+      const portraitPixels = portrait.getContext('2d').getImageData(0,0,portrait.width,portrait.height).data;
+      let redPixels = 0;
+      for (let i=0;i<portraitPixels.length;i+=4) if (portraitPixels[i]>240 && portraitPixels[i+1]<20 && portraitPixels[i+2]<20) redPixels++;
+      const layouts = [];
+      let landscapePreview;
+      for (const count of [5,6,12,30,60]) {
+        const multi = {...transactions[0],items:Array.from({length:count},(_,i)=>({...sample,name:'منتج رقم '+(i+1)}))};
+        const start = text.length;
+        const sheet = await buildCompactInvoiceCanvas(multi);
+        const rendered = text.slice(start);
+        layouts.push({count,width:sheet.width,height:sheet.height,
+          allItems:multi.items.every(item=>rendered.includes(item.name)),png:sheet.toDataURL('image/png').startsWith('data:image/png')});
+        if(count===12) landscapePreview=sheet.toDataURL('image/png');
+      }
+      const started = performance.now();
+      const slow = await buildCompactInvoiceCanvas({...transactions[0],items:[{...sample,imageUrl:'http://images.test/slow.svg'}]});
+      const slowMs = performance.now()-started;
+      const fallbackPng = slow.toDataURL('image/png').startsWith('data:image/png');
       return {info, arText, previewText, unsupported, copied, shopifyCopied, denied, restricted,
-        longHeight:long.height, english, actions, written, downloads};
+        longHeight:long.height, english, actions, written, downloads,
+        photoFlags,deduped,redPixels,layouts,slowMs,fallbackPng,
+        portraitPreview:portrait.toDataURL('image/png'),landscapePreview};
     });
     assert.equal(result.info.type, 'image/png');
     assert.equal(result.info.width, 1440);
@@ -111,7 +153,27 @@ const script = fs.readFileSync(path.join(root, 'frontend/public/invoice-image.js
     assert.ok(result.english.includes('Invoice summary'));
     assert.ok(result.actions.includes('Download invoice image'));
     assert.equal(result.downloads[0].name, 'invoice-2719.png');
+    assert.deepEqual(result.photoFlags,[true,true,true,false,false]);
+    assert.equal(result.deduped,true);
+    assert.ok(imageRequests.includes('http://images.test/catalogue.svg'));
+    assert.ok(result.redPixels>1000, 'product photo actually appears in the exported pixels');
+    for (const layout of result.layouts) {
+      assert.equal(layout.allItems,true, 'every item rendered at count '+layout.count);
+      assert.equal(layout.png,true);
+      if(layout.count>=6) assert.ok(layout.width>layout.height, 'horizontal image at count '+layout.count);
+      else assert.equal(layout.width,1440);
+    }
+    assert.ok(result.slowMs<2600, 'slow image does not block receipt generation');
+    assert.equal(result.fallbackPng,true);
+    if(process.argv.includes('--preview')) {
+      const folder=require('node:os').tmpdir();
+      for(const [name,data] of [['portrait',result.portraitPreview],['landscape',result.landscapePreview]]) {
+        const file=path.join(folder,'soulia-invoice-'+name+'.png');
+        fs.writeFileSync(file,Buffer.from(data.split(',')[1],'base64'));
+        console.log('Preview: '+file);
+      }
+    }
     assert.equal(errors.length, 0, errors.join('\n'));
-    console.log('PASS: transaction and Shopify menu clicks, PNG rendering, totals, approved deposit, wrapping, clipboard, restrictions, and shipped HTML syntax');
+    console.log('PASS: menu clicks, totals, clipboard, product photos, CORS/error/timeout fallback, landscape grids (6–60 items), and shipped HTML syntax');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

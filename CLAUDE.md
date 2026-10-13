@@ -2870,6 +2870,55 @@ an announcement has recipients and a read state.
 
 ---
 
+## Shopify Orders — Period KPIs + Report Image (Oct 13, 2026)
+
+A strip above the orders table (`#sp-kpi`, **`frontend/public/shopify-kpis.js` + `.css`**,
+own file like announcements) with a period switch **اليوم / أمس / آخر 7 أيام** and five tiles:
+الأوردرات الواردة · مؤكد (with its split «N بعربون · N بدون عربون») · متابعة · ملغي · نسبة التأكيد. «تقرير»
+opens a preview of a 1080px PNG with **تحميل الصورة**, **نسخ النص** (the team's WhatsApp
+text format, emojis included) and **مشاركة** where the browser can share files (phones).
+Read-only — no request, no write.
+
+### The buckets (first match wins, so they always add up to «الواردة»)
+cancelled (`cancelled` or status `rejected`) → **confirmed**, in two halves counted apart:
+with a deposit (`_spHasDepositRecorded`: approved OR in review) and **without** one
+(`_spShipsWithoutDeposit`, or already recorded — status ≠ pending — with none) →
+**follow-up** = an open follow-up (`_spFollowUpsFor` + `!_fuIsSettled`) and nothing else →
+**open** (no action yet). «open» has no tile; when > 0 it is stated beside the period
+(«N لم يُتخذ فيها إجراء بعد») and as a line in the report — never dropped silently.
+⚠ Reuse those helpers; a local copy of any rule would make the strip disagree with the row marks.
+
+- ⚠ **An order shipping without a deposit IS confirmed** — the owner's rule (Oct 13, 2026). It
+  has no tile of its own; it is part of «مؤكد» and shown in its split (sub-line + `title`, since
+  the sub-line is hidden on phones). The copied text lists it as indented `💰` / `⏳` lines.
+- **Rate = confirmed ÷ received**, cancelled in the denominator. The tile's sub-line states it
+  («3 من 9») and its `title` the formula.
+- **Period is its own** — independent of the table's search/date/filters (the counting
+  comment in `renderShopifyOrders` says so). Days are local calendar days built with
+  `new Date(y, m, d + k)` (DST-safe), dated by `shopifyCreatedAt || createdAt` like the table.
+- **The received delta compares at the same clock time** (today 11:00 vs yesterday up to
+  11:00), or every morning would read as a drop.
+- States: skeleton while the first load runs, «تعذّر تحميل الأوردرات» on failure (no zeros),
+  and a warning when `loadFailed('followups')` — «متابعة» would otherwise undercount silently.
+  Wired by three one-line calls in `loadShopifyOrders` and one in `renderShopifyOrders`.
+- The image is drawn on a canvas in the UI language (`ctx.direction`, logical-x helper `X()`),
+  light theme always, after `document.fonts.load` for Cairo + Inter.
+- **Hide / show**: `#sp-kpi-toggle`, an icon button in the page header beside refresh/export —
+  not inside the strip, which it hides. The choice is saved in `localStorage` under
+  `_colsPrefKey('soulia_sp_kpi_hidden')`, so it survives a reload and is **per user** on a
+  shared PC. A hidden strip renders nothing (no counting) and stays hidden through live updates.
+- ⚠ Bump `?v=` on both `shopify-kpis.*` links when they change (static files are cached).
+
+### Verification
+`backend/test/browser/shopify-kpis.cjs` — 37 checks over the shipped page: today 9 / 3 / 4 / 2
+and 33% (the owner's example), without-deposit counted as confirmed (3 = 1 + 2 → 60%), the
+split on the tile, settled follow-up not counted,
+rejected = cancelled, 8-days-ago excluded, table search does not move the strip, image
+1080px, copied text line-for-line, download name, ar/en, dark, 390px (3 columns, labels
+wrap, no spill), loading/error states, hide → reload → still hidden (and per user), zero page errors from this code.
+
+---
+
 ## Shopify Quick View — Compact, Follow-up First (Oct 13, 2026)
 
 `#sp-peek` was compacted and reordered: **follow-up → comments → delivery
@@ -3525,6 +3574,7 @@ keep their phone behaviour — switching them would suddenly pin Inventory's 7-t
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Oct 13, 2026 | Shopify orders page: period KPI strip (Today / Yesterday / Last 7 days — received, confirmed (incl. shipping without deposit), follow-up, cancelled, confirmation rate) and a «تقرير» button that makes a shareable report image + copyable text | See "Shopify Orders — Period KPIs + Report Image" above |
 | Oct 13, 2026 | Shopify quick view compacted, follow-up first: customer moved into the head, then follow-up → comments → delivery → items → payment; follow-up facts as chips, readable threads, striped «in review» deposit on the meter, one footer action; fixed the blank Vrobo button | See "Shopify Quick View — Compact, Follow-up First" above |
 | Oct 13, 2026 | Phone: the side menu opened behind every sticky page head (z 50 vs 60) — fixed in navigation-shell.css; Shopify page on phones: compact head (title, refresh, tabs, search) stays pinned while only the list scrolls, tabs became one line of pills, date window and profile menu sized for the phone | See "Phone: Drawer Behind the Page, Shopify Head Rebuilt" above |
 | Oct 13, 2026 | Staff announcements: admins send a typed message to all or chosen employees from Settings ← الإعلانات; recipients get a popup until acknowledged, an instant Web Push, and a «الإعلانات» tab in the notification centre; read status per recipient; can be scheduled for later and cancelled before it goes out; announcement push cannot be switched off per type | See "Staff Announcements" above |

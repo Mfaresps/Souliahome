@@ -4624,10 +4624,43 @@ body.dark-mode .sp-cr-waiting{color:#fbbf24;background:#f59e0b26}
 #sp-mobile-list .sp-card-deposit-line{margin:0}
 #sp-mobile-list .sp-mobile-deposit-options{margin:0}
 #sp-mobile-list .sp-card-actions-row{margin-top:auto;padding-top:8px;border-top:1px solid var(--border);min-height:44px}
-#sp-mobile-list .sp-card-actions>button,#sp-mobile-list .sp-card-shopify-link,#sp-mobile-list .sp-card-vrobo-link{min-height:36px;border-radius:8px}
+#sp-mobile-list .sp-card-actions-row button,#sp-mobile-list .sp-card-shopify-link,#sp-mobile-list .sp-card-vrobo-link{height:36px;min-height:36px;box-sizing:border-box;border-radius:8px}
 #sp-mobile-list .sp-card-actions>button{min-width:36px}
 #sp-mobile-list .sp-card-shopify-link,#sp-mobile-list .sp-card-vrobo-link{padding:6px 8px;font-size:.68rem;line-height:1.3}
-#sp-mobile-list .sp-card-assignee-chip .sp-assignee-avatar{width:30px;height:30px}
+#sp-mobile-list .sp-card-assignee-chip .sp-assignee-avatar{width:36px;height:36px}
+/* ── Card refinement (Oct 13, 2026) ──
+   One height (36px) and one radius for every footer control — they were 30 / 36
+   and mixed, and the 44px table slot (.sp-cmt-slot) reserved for column
+   alignment pushed the row past the card edge. Work tools sit at the start,
+   contact + Shopify + owner are grouped at the end. */
+#sp-mobile-list .sp-card-actions-row .sp-cmt-slot{width:auto}
+#sp-mobile-list .sp-card-actions-row .sp-cmt-open,
+#sp-mobile-list .sp-card-actions-row .sp-fu-mark,
+#sp-mobile-list .sp-card-actions-row .sp-fu-last-ic{height:36px!important;min-width:36px;border-radius:8px}
+#sp-mobile-list .sp-card-actions-end{display:flex;align-items:center;gap:6px;margin-inline-start:auto;flex:0 1 auto;min-width:0}
+/* On a 320px phone the Vrobo status phrase is what yields (ellipsis, full text in
+   title) — never an icon button or the owner's avatar. */
+#sp-mobile-list .sp-card-vrobo-link{flex-shrink:1;min-width:0}
+#sp-mobile-list .sp-card-vrobo-link>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp-mobile-list .sp-card-actions-end .sp-card-assignee-chip{margin-inline-start:2px}
+#sp-mobile-list .sp-card-shopify-link{width:36px;padding:0;justify-content:center}
+/* The customer is the identity of the order — first and in body ink, not the
+   muted last item after the time. The chevron says the line opens the items. */
+/* ⚠ --muted, not --text-muted: --text-muted is defined nowhere in the app, so it
+   inherited the nearest colour — dark ink on the dark card in dark mode. */
+#sp-mobile-list .sp-card-subline,#sp-mobile-list .sp-card-fu-last{color:var(--muted)}
+#sp-mobile-list .sp-card-client{font-weight:600;color:var(--text);max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp-mobile-list .sp-card-time-lbl{unicode-bidi:isolate}
+.sp-card-sub-chev{flex-shrink:0;opacity:.55;transition:transform .15s}
+.sp-card-items-toggle-open .sp-card-sub-chev{transform:rotate(180deg)}
+/* Money with money: the deposit sits under the total (end side), not under the
+   order number where it read as part of the ref. */
+#sp-mobile-list .sp-card-deposit-line{justify-content:flex-end;margin-top:-4px}
+#sp-mobile-list .sp-card:has(.sp-card-top .sp-card-menu) .sp-card-deposit-line{padding-inline-end:44px}
+/* The follow-up note is inside a bordered card already — a second border made
+   a box in a box. The tint alone separates it. */
+#sp-mobile-list .sp-card-fu-last{margin:0;border:0}
+@media (prefers-reduced-motion:reduce){.sp-card-sub-chev{transition:none}}
 .sp-card-shopify-link{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;font-size:.66rem;font-weight:600;color:var(--text-muted);text-decoration:none;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-alt);transition:color .15s,border-color .15s}
 .sp-card-shopify-link:hover{color:#95BF47;border-color:#95BF47}
 .sp-card-shopify-link svg{flex-shrink:0}
@@ -16277,6 +16310,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="apple-touch-icon" href="/push-icon-192.png">
 <link rel="stylesheet" href="/notification-settings.css">
 <link rel="stylesheet" href="/announcements.css?v=3">
+<link rel="stylesheet" href="/shopify-kpis.css?v=3">
 <link rel="stylesheet" href="/settings-responsive.css">
 </head>
 <body>
@@ -20835,6 +20869,11 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
         <button class="btn btn-sm sp-icon-btn" onclick="openArchiveExport('shopify')" data-i18n-title="xpBtnTitle" title="تصدير نسخة أوفلاين كاملة (Excel متعدد الأوراق)" data-i18n-aria-label="xpBtnTitle" aria-label="تصدير نسخة أوفلاين كاملة">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
         </button>
+        <!-- Show / hide the period KPI strip (shopify-kpis.js). Lives here, not in the
+             strip, so it stays reachable while the strip is hidden. -->
+        <button class="btn btn-sm sp-icon-btn" id="sp-kpi-toggle" type="button" onclick="_spkToggle()" aria-controls="sp-kpi" aria-pressed="true" title="إخفاء الملخص">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="8" rx="1"/><rect x="10" y="7" width="4" height="13" rx="1"/><rect x="17" y="3" width="4" height="17" rx="1"/></svg>
+        </button>
         <span id="shopify-last-refresh" style="font-size:.72rem;color:var(--text-muted)"></span>
       </p>
     </div>
@@ -20925,6 +20964,9 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <!-- /.sp-sticky-head -->
 
   <div id="sp-orders-tab-content">
+  <!-- Period KPIs (اليوم / أمس / آخر 7 أيام) + report image — shopify-kpis.js.
+       Its own period, independent of the table's search/date/filters. -->
+  <section id="sp-kpi" aria-live="polite"></section>
   <!-- Table (desktop) + Cards (mobile) -->
   <div id="shopify-orders-table-wrap">
     <div id="shopify-orders-table-body"></div>
@@ -23251,7 +23293,8 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 
 <script src="/deposit-history.js?v=20261013"></script>
-<script src="/invoice-image.js?v=20261013"></script>
+<script src="/shopify-kpis.js?v=3"></script>
+<script src="/invoice-image.js?v=20261013-2"></script>
 <script>
 const qs = (s, p) => (p || document).querySelector(s);
 const qsa = (s, p) => [...(p || document).querySelectorAll(s)];
@@ -99571,6 +99614,7 @@ async function loadShopifyOrders() {
   _initShopifySubnav();
   const wrap = qs('#shopify-orders-table-body');
   if (wrap && !_shopifyOrders.length) renderSkeleton(wrap, { rows: 8, columns: 6 });
+  if (typeof _spkRender === 'function') _spkRender('loading');
   try {
     const fetchedOrders = await api('/shopify/orders');
     // Keep a newer socket update if it arrived while this request was in flight.
@@ -99584,6 +99628,7 @@ async function loadShopifyOrders() {
       }
     }
     _shopifyOrders = fetchedOrders;
+    if (typeof _spkRender === 'function') _spkState = 'ready';
     _spSyncAuditPaymentRows();
     _spReceiptLoadError = '';
     _spRefreshReceiptViews();
@@ -99600,6 +99645,7 @@ async function loadShopifyOrders() {
     if (_spSubnavTab === 'deposits') renderSpDepositReview();
   if (_spSubnavTab === 'deposit-log') _depLogBackgroundRefresh();
     console.error('خطأ في تحميل أوردرات Shopify', e);
+    if (typeof _spkRender === 'function') _spkRender('error');
     if (wrap && !_shopifyOrders.length) wrap.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-muted)">${t('spLoadFailed')}</div>`;
   }
 }
@@ -100800,12 +100846,16 @@ function _spPhoneDisplay(raw) {
 }
 
 /** Recent minutes stay relative across midnight; older orders use calendar labels. */
-function _spOrderTimeLabel(v, nowMs = Date.now()) {
+/* `timeOnly` — the mobile card sits under a day header that already names the
+   day, so «السبت الساعة 12:55 م» said the day twice; the card shows «12:55 م». */
+function _spOrderTimeLabel(v, nowMs = Date.now(), timeOnly = false) {
   const d = new Date(v);
   if (!v || !Number.isFinite(d.getTime())) return '';
   const now = new Date(nowMs);
   const en = currentLang === 'en';
   const locale = en ? 'en-US' : 'ar-EG-u-nu-latn';
+  const hm = d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+  if (timeOnly) return hm;
   const sameDay = d.toDateString() === now.toDateString();
   const diff = nowMs - d.getTime();
   if (diff >= 0 && (diff < 3600000 || sameDay)) {
@@ -100815,7 +100865,6 @@ function _spOrderTimeLabel(v, nowMs = Date.now()) {
     const relative = new Intl.RelativeTimeFormat(locale, { numeric: 'always' }).format(-amount, mins < 60 ? 'minute' : 'hour');
     return en ? relative : relative.replace(/^قبل /, 'منذ ');
   }
-  const hm = d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
   const weekStart = new Date(now);
@@ -100841,7 +100890,7 @@ function _spRefreshOrderTimes() {
   if (currentPage !== 'shopify-orders' || document.hidden) return;
   const nowMs = Date.now();
   document.querySelectorAll('#page-shopify-orders [data-sp-created-at]').forEach(el => {
-    el.textContent = _spOrderTimeLabel(el.getAttribute('data-sp-created-at'), nowMs);
+    el.textContent = _spOrderTimeLabel(el.getAttribute('data-sp-created-at'), nowMs, el.hasAttribute('data-sp-time-only'));
   });
 }
 setInterval(_spRefreshOrderTimes, 60000);
@@ -102331,6 +102380,9 @@ function renderShopifyOrders() {
   const pending = _shopifyOrders.filter(o => o.status === 'pending');
   const el = qs('#shopify-pending-count');
   if (el) el.textContent = pending.length;
+  /* Period KPI strip (shopify-kpis.js) — counts ALL orders in its own period, so it is
+     drawn before, and independent of, the search/date/filter pipeline below. */
+  if (typeof _spkRender === 'function') _spkRender();
 
   /* ── Filter pipeline ───────────────────────────────────────────────
      ⚠ ORDER IS LOAD-BEARING. tab → search → date give the `base` the filter
@@ -102342,9 +102394,10 @@ function renderShopifyOrders() {
 
      The old four-KPI strip that used to be computed here is gone with the
      markup it wrote into; each card now states the numbers for its own rows.
-     ⚠ Do not re-add a page-level KPI here: it would state a period figure
-     beside four cards that state filter figures, and nothing on screen would
-     say why the two disagree. */
+     The period KPI strip above the table (#sp-kpi, shopify-kpis.js — Oct 13,
+     2026, at the owner's request) is the ONE page-level summary. It names its
+     own period (اليوم / أمس / آخر 7 أيام) and never reads this pipeline's
+     search/date/filters. ⚠ Do not add a second one here. */
   const searchQ = (qs('#shopify-search')?.value || '').trim().toLowerCase();
   let data = _shopifyTab === 'pending' ? pending : _shopifyOrders;
   if (searchQ) data = data.filter(o => _spMatchesSearch(o, searchQ));
@@ -102675,7 +102728,7 @@ function renderShopifyOrders() {
         dayHeaderHtml = `<div class="sp-card-day-header">${_spDayLabel(_oDate)}</div>`;
       }
       const _oCreatedMs = _spOrderCreatedMs(o);
-      const _oTimeStr = Number.isFinite(_oCreatedMs) ? _spOrderTimeLabel(new Date(_oCreatedMs).toISOString()) : '';
+      const _oTimeStr = Number.isFinite(_oCreatedMs) ? _spOrderTimeLabel(new Date(_oCreatedMs).toISOString(), Date.now(), true) : '';
       const _receiptDeposit = _spDepositOf(o);
       const depositCardClass = _spDepositCardClass(o);
       const np = _receiptDeposit.deposit > 0 ? {amount:_receiptDeposit.deposit,method:_receiptDeposit.primaryMethod} : null;
@@ -102759,9 +102812,10 @@ function renderShopifyOrders() {
       const _spOrderUrl = (o.shopifyOrderId ? `https://admin.shopify.com/store/soulia-2/orders/${o.shopifyOrderId}` : null)
         || (o.rawData?.id ? `https://admin.shopify.com/store/soulia-2/orders/${o.rawData.id}` : null)
         || o.orderStatusUrl || o.rawData?.order_status_url;
-      const shopifyLinkHtml = _spOrderUrl ? `<a href="${_spOrderUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Open in Shopify" class="sp-card-shopify-link">
-        <span>View order</span>
-        <svg viewBox="0 0 110 125" xmlns="http://www.w3.org/2000/svg" width="10" height="12"><image href="/shopify-glyph-color-2026-65613845c170.svg" width="110" height="125"/></svg>
+      /* Icon-only on the card: «View order» spelled out pushed the row past the
+         card edge. The label lives in title/aria-label. */
+      const shopifyLinkHtml = _spOrderUrl ? `<a href="${_spOrderUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="${escHtml(t('ivViewInShopify'))}" aria-label="${escHtml(t('ivViewInShopify'))}" class="sp-card-shopify-link">
+        <svg viewBox="0 0 110 125" xmlns="http://www.w3.org/2000/svg" width="13" height="15" aria-hidden="true"><image href="/shopify-glyph-color-2026-65613845c170.svg" width="110" height="125"/></svg>
       </a>` : '';
       const assigneeChipHtml = o.assignedToName ? `<span class="sp-card-assignee-chip" title="${esc(tf('spAssignedTo', { name: o.assignedToName }))}">
         <span class="sp-assignee-avatar">${esc(o.assignedToName.trim().charAt(0).toUpperCase())}</span>
@@ -102799,16 +102853,14 @@ function renderShopifyOrders() {
         </div>
         ${depositBadgeHtml?`<div class="sp-card-deposit-line">${depositBadgeHtml}</div>`:''}
         <div class="sp-card-subline sp-card-items-toggle" onclick="event.stopPropagation();(function(el){var l=document.getElementById('${itemsId}');if(!l)return;var open=l.style.display!=='none';l.style.display=open?'none':'block';el.classList.toggle('sp-card-items-toggle-open',!open);})(this)">
-          <span>${tf(o.items?.length === 1 ? 'spItemsCountOne' : 'spItemsCount', { n: o.items?.length || 0 })}</span><span class="sp-card-subline-dot">•</span><span dir="auto" ${Number.isFinite(_oCreatedMs) ? `data-sp-created-at="${new Date(_oCreatedMs).toISOString()}" title="${escHtml(_pwWhenFull(new Date(_oCreatedMs).toISOString()))}"` : ''}>${escHtml(_oTimeStr)}</span><span class="sp-card-subline-dot">•</span><span class="sp-card-client">${esc(o.client || o.phone || '—')}</span>
+          <span class="sp-card-client" dir="auto">${esc(o.client || o.phone || '—')}</span><span class="sp-card-subline-dot">•</span><span>${tf(o.items?.length === 1 ? 'spItemsCountOne' : 'spItemsCount', { n: o.items?.length || 0 })}</span><span class="sp-card-subline-dot">•</span><span class="sp-card-time-lbl" dir="auto" ${Number.isFinite(_oCreatedMs) ? `data-sp-created-at="${new Date(_oCreatedMs).toISOString()}" data-sp-time-only title="${escHtml(_pwWhenFull(new Date(_oCreatedMs).toISOString()))}"` : ''}>${escHtml(_oTimeStr)}</span><svg class="sp-card-sub-chev" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         ${mobilePaymentHtml}
         ${_cardFuLast}
         ${itemsListHtml}
         <div class="sp-card-actions-row" onclick="event.stopPropagation()">
           ${actionHtml}
-          ${assigneeChipHtml}
-          ${vroboLinkHtml}
-          ${shopifyLinkHtml}
+          ${(vroboLinkHtml || shopifyLinkHtml || assigneeChipHtml) ? `<div class="sp-card-actions-end">${vroboLinkHtml}${shopifyLinkHtml}${assigneeChipHtml}</div>` : ''}
         </div>
       </div>`;
     }).join('');
