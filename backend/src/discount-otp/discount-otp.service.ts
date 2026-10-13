@@ -1,3 +1,6 @@
+import { notifyApproval } from '../notifications/admin-events';
+import { NotificationsService } from '../notifications/notifications.service';
+import { Inject, Optional } from '@nestjs/common';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -94,6 +97,16 @@ interface ExportExcelOtpArgs {
 
 @Injectable()
 export class DiscountOtpService {
+  @Optional() @Inject(NotificationsService) private readonly notifications?: NotificationsService;
+  private async createOtpDocument(values: any): Promise<DiscountOtpDocument> {
+    const doc = await this.otpModel.create(values);
+    try {
+      const details = { actorName: doc.requestedByName || doc.requestedByUsername, actionKey: doc.kind || 'discount', expiresAt: doc.expiresAt };
+      await this.notifications?.enqueue('otp', 'otp:' + doc._id, doc.txRef || String(doc._id), 'otp:' + doc._id, undefined, undefined, details);
+      await this.notifications?.enqueue('approval', 'approval:otp:' + doc._id + ':pending', doc.txRef || String(doc._id), 'otp:' + doc._id, undefined, undefined, { ...details, status: 'pending' });
+    } catch { /* The request has already been committed. */ }
+    return doc;
+  }
   constructor(
     @InjectModel(DiscountOtp.name)
     private readonly otpModel: Model<DiscountOtpDocument>,
@@ -137,6 +150,7 @@ export class DiscountOtpService {
    * only the live cue, so losing it costs nothing.
    */
   private emitEditTxDecision(doc: DiscountOtpDocument, decision: 'approved' | 'rejected', reviewedBy: string): void {
+    void notifyApproval(this.notifications, 'approval:otp:' + doc._id + ':' + decision, doc.txRef || String(doc._id), 'otp:' + doc._id, { actorName: doc.requestedByName || doc.requestedByUsername, actionKey: 'edit-tx', status: decision });
     try {
       if (!doc.requestedById) return;
       this.presence.emitToUser(String(doc.requestedById), 'edit-tx:decision', {
@@ -198,7 +212,7 @@ export class DiscountOtpService {
     const expiresAt = new Date(now.getTime() + ttlMin * 60 * 1000);
     const otp = this.generateOtp();
 
-    const doc = await this.otpModel.create({
+    const doc = await this.createOtpDocument({
       otp,
       discountAmount: args.discountAmount,
       itemsTotal: args.itemsTotal,
@@ -271,6 +285,7 @@ export class DiscountOtpService {
       doc.attempts = (doc.attempts || 0) + 1;
       await doc.save();
 
+      try { await this.auditService.log({ userId: doc.requestedById || 'unknown', username: doc.requestedByUsername || '', violationType: 'otp_violation', action: 'OTP verification failed' }); } catch { /* Keep validation and lockout independent of alerts. */ }
       // Lock the requester's account after too many wrong OTP entries
       if (doc.attempts >= MAX_OTP_ATTEMPTS && doc.requestedById) {
         const requester = await this.usersService.findById(doc.requestedById).catch(() => null);
@@ -311,6 +326,7 @@ export class DiscountOtpService {
     doc.status = 'used';
     doc.usedAt = now.toISOString();
     await doc.save();
+    await notifyApproval(this.notifications, 'approval:otp:' + doc._id + ':approved', doc.txRef || String(doc._id), 'otp:' + doc._id, { actorName: doc.requestedByName || doc.requestedByUsername, actionKey: doc.kind || 'discount', status: 'approved' });
     return { valid: true };
   }
 
@@ -351,7 +367,7 @@ export class DiscountOtpService {
     const expiresAt = new Date(now.getTime() + ttlMin * 60 * 1000);
     const otp = this.generateOtp();
 
-    const doc = await this.otpModel.create({
+    const doc = await this.createOtpDocument({
       otp,
       discountAmount: 0,
       itemsTotal: args.itemsTotal,
@@ -427,7 +443,7 @@ export class DiscountOtpService {
     const expiresAt = new Date(now.getTime() + ttlMin * 60 * 1000);
     const otp = this.generateOtp();
 
-    const doc = await this.otpModel.create({
+    const doc = await this.createOtpDocument({
       otp,
       discountAmount: 0,
       itemsTotal: 0,
@@ -503,7 +519,7 @@ export class DiscountOtpService {
       ? args.productName.split('،\n').map(s => s.trim()).filter(Boolean)
       : args.productName ? [args.productName] : [];
 
-    const doc = await this.otpModel.create({
+    const doc = await this.createOtpDocument({
       otp,
       discountAmount: 0,
       itemsTotal: 0,
@@ -572,7 +588,7 @@ export class DiscountOtpService {
     const expiresAt = new Date(now.getTime() + ttlMin * 60 * 1000);
     const otp = this.generateOtp();
 
-    const doc = await this.otpModel.create({
+    const doc = await this.createOtpDocument({
       otp,
       discountAmount: 0,
       itemsTotal: 0,
@@ -639,7 +655,7 @@ export class DiscountOtpService {
     const expiresAt = new Date(now.getTime() + ttlMin * 60 * 1000);
     const otp = this.generateOtp();
 
-    const doc = await this.otpModel.create({
+    const doc = await this.createOtpDocument({
       otp,
       discountAmount: 0,
       itemsTotal: args.amount,
@@ -708,7 +724,7 @@ export class DiscountOtpService {
     const expiresAt = new Date(now.getTime() + ttlMin * 60 * 1000);
     const otp = this.generateOtp();
 
-    const doc = await this.otpModel.create({
+    const doc = await this.createOtpDocument({
       otp,
       discountAmount: 0,
       itemsTotal: 0,
@@ -769,7 +785,7 @@ export class DiscountOtpService {
 
     const label = `إضافة صنف: ${args.productName}${args.productCode ? ' [' + args.productCode + ']' : ''}`;
 
-    const doc = await this.otpModel.create({
+    const doc = await this.createOtpDocument({
       otp,
       discountAmount: 0,
       itemsTotal: 0,
@@ -830,7 +846,7 @@ export class DiscountOtpService {
     const expiresAt = new Date(now.getTime() + ttlMin * 60 * 1000);
     const otp = this.generateOtp();
 
-    const doc = await this.otpModel.create({
+    const doc = await this.createOtpDocument({
       otp,
       discountAmount: 0,
       itemsTotal: 0,
@@ -907,7 +923,7 @@ export class DiscountOtpService {
     const otp = this.generateOtp();
 
     const typeLabel = args.txType === 'مشتريات' ? 'مشتريات' : 'مبيعات';
-    const doc = await this.otpModel.create({
+    const doc = await this.createOtpDocument({
       otp,
       discountAmount: 0,
       itemsTotal: 0,

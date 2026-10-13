@@ -312,13 +312,13 @@ export class BostaService {
 
   async pickupLocations() {
     const apiKey = await this.resolveApiKey();
-    if (!apiKey) throw new BadRequestException('أضف مفتاح بوسطا من إعدادات الشحن');
+    if (!apiKey) throw new BadRequestException('أضف مفتاح بوسطة من إعدادات الشحن');
     try {
       const response = await this.request<any>('GET', '/pickup-locations', undefined, apiKey, 'https://app.bosta.co/api/v2');
       if (response?.success === false || response?.success === 'false') throw new Error(response.message);
       const data = response.data;
       const locations = Array.isArray(data) ? data : data?.list || data?.pickupLocations || data?.locations;
-      if (!Array.isArray(locations)) throw new Error('تعذر قراءة مخازن الاستلام من بوسطا');
+      if (!Array.isArray(locations)) throw new Error('تعذر قراءة مخازن الاستلام من بوسطة');
       return locations.filter(l => l._id || l.id).map(l => ({
         id: String(l._id || l.id), name: String(l.locationName || l.name || l.address?.firstLine || l._id || l.id),
         contactName: String(l.contactPerson?.name || l.contact?.name || ''),
@@ -328,8 +328,8 @@ export class BostaService {
   }
 
   async pickupPreview() {
-    const requests = await this.pickupModel!.find({ status: { $in: ['pending', 'created'] } }).lean();
-    const reserved = new Set(requests.flatMap(r => r.orderIds));
+    const requests = await this.pickupModel!.find({}).lean();
+    const reserved = new Set(requests.filter(r => ['pending', 'created'].includes(r.status)).flatMap(r => r.orderIds));
     const ready = await this.txModel.find({
       type: 'مبيعات', cancelled: { $ne: true }, archived: { $ne: true },
       pickupStatus: { $in: ['Ready', 'Picked-Up'] },
@@ -337,7 +337,9 @@ export class BostaService {
     }).select('_id ref pickupRef').lean();
     const orders = ready.filter(o => !reserved.has(String(o._id)));
     return { orders: orders.map(o => ({ id: String(o._id), ref: o.ref, group: o.pickupRef })), numberOfParcels: orders.length,
-      requests: requests.filter(r => r.orderIds.some(id => ready.some(o => String(o._id) === id))).map(r => ({
+      requests: requests.sort((a: any, b: any) => new Date(b.createdAt || b.scheduledDate).getTime() - new Date(a.createdAt || a.scheduledDate).getTime()).map((r: any) => ({
+        id: String(r._id), orderIds: r.orderIds, requestedBy: r.requestedBy || '', createdAt: r.createdAt,
+        bostaPickupId: r.bostaPickupId || '', businessLocationId: r.businessLocationId,
         scheduledDate: r.scheduledDate, numberOfParcels: r.numberOfParcels, status: r.status,
       })) };
   }
@@ -369,9 +371,9 @@ export class BostaService {
   async createPickup(dto: CreatePickupDto, operator: string) {
     await this.assertPickupDate(dto.scheduledDate, dto.businessLocationId);
     const apiKey = await this.resolveApiKey();
-    if (!apiKey) throw new BadRequestException('أضف مفتاح بوسطا من إعدادات الشحن');
+    if (!apiKey) throw new BadRequestException('أضف مفتاح بوسطة من إعدادات الشحن');
     const locations = await this.pickupLocations();
-    if (!locations.some(l => l.id === dto.businessLocationId)) throw new BadRequestException('اختر مخزن استلام مسجلًا في حساب بوسطا');
+    if (!locations.some(l => l.id === dto.businessLocationId)) throw new BadRequestException('اختر مخزن استلام مسجلًا في حساب بوسطة');
     const preview = await this.pickupPreview();
     const expected = new Set(dto.orderIds);
     if (!preview.orders.length || expected.size !== preview.orders.length || preview.orders.some(o => !expected.has(o.id))) {
@@ -386,7 +388,7 @@ export class BostaService {
       record = await this.pickupModel!.findOneAndUpdate({ ...identity, status: 'rejected' }, { $set: values }, { new: true })
         || await this.pickupModel!.create(values);
     } catch (e: any) {
-      if (e.code === 11000) throw new BadRequestException('يوجد طلب استلام مسجل لهذا المخزن في نفس اليوم أو لهذه الأوردرات — راجعه في بوسطا');
+      if (e.code === 11000) throw new BadRequestException('يوجد طلب استلام مسجل لهذا المخزن في نفس اليوم أو لهذه الأوردرات — راجعه في بوسطة');
       throw e;
     }
     // Keep an uncertain request reserved: a timeout can occur after Bosta accepts it.
@@ -406,7 +408,7 @@ export class BostaService {
         notes: `SOULIA: ${[...new Set(preview.orders.map(o => o.group).filter(Boolean))].join(', ')}`,
       }, apiKey, 'https://app.bosta.co/api/v2');
       if (response?.success !== true && response?.success !== 'true') {
-        const err: any = new Error(response?.message || 'بوسطا لم تؤكد طلب الاستلام');
+        const err: any = new Error(response?.message || 'بوسطة لم تؤكد طلب الاستلام');
         err.rejectedByBosta = response?.success === false || response?.success === 'false';
         err.bostaErrorCode = Number(response?.errorCode || 0);
         throw err;
@@ -417,7 +419,7 @@ export class BostaService {
       const rejected = e.rejectedByBosta || !!reason || (e.statusCode >= 400 && e.statusCode < 500);
       await this.pickupModel!.updateOne({ _id: record._id }, { $set: { status: rejected ? 'rejected' : 'pending', active: !rejected, error: e.message, bostaErrorCode: carrierCode } });
       throw new BadRequestException({
-        message: rejected ? (reason ? pickupReasonMessage(reason) : e.message) : 'لم نتمكن من تأكيد نتيجة الطلب — راجع طلبات الاستلام في بوسطا قبل إعادة المحاولة',
+        message: rejected ? (reason ? pickupReasonMessage(reason) : e.message) : 'لم نتمكن من تأكيد نتيجة الطلب — راجع طلبات الاستلام في بوسطة قبل إعادة المحاولة',
         pickupReason: reason || (rejected ? '' : 'uncertain'),
       });
     }

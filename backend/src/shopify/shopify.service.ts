@@ -1,3 +1,5 @@
+import { notifyApproval } from '../notifications/admin-events';
+import { shopifyChangeEvent } from '../notifications/admin-events';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import {
@@ -212,7 +214,8 @@ export class ShopifyService {
         this.logger.warn(`Deposit parsing failed for order ${order._id}: ${(depositErr as Error).message}`);
       }
 
-      await this.notifications?.enqueue('order', 'order:shopify:' + shopifyId, order.ref, 'shopify:' + order._id, undefined, undefined, { orderTotal: order.total });
+      await this.notifications?.enqueue('order', 'order:shopify:' + shopifyId, order.ref, 'shopify:' + order._id, undefined, undefined, { orderTotal: order.total, assignedUserId: order.assignedTo || undefined });
+      await notifyApproval(this.notifications, 'approval:shopify:' + shopifyId + ':pending', order.ref, 'shopify:' + order._id, { actorName: order.assignedToName || 'Shopify', actionKey: 'order', status: 'pending' });
       return { saved: true, id: String(order._id) };
     } catch (err) {
       this.logger.error(`❌ خطأ: ${err.message}`);
@@ -551,6 +554,7 @@ export class ShopifyService {
         );
       }
       // rawData يُحفظ دائماً — هو أرشيف ما أرسلته شوبيفاي، لا مصدر قرار
+      const pushChange = shopifyChangeEvent(order.rawData, orderData);
       order.rawData = orderData;
 
       // الإجمالي قد يتغيّر بتعديل شوبيفاي، فتتغيّر نسبة العربون المعتمد منه — يُعاد الاشتقاق
@@ -629,6 +633,7 @@ export class ShopifyService {
       }
 
       this.logger.log(`🔄 تحديث أوردر Shopify: ${order.ref}`);
+      try { if (pushChange.fields.length) await this.notifications?.enqueue('shopifyChange', 'shopify:update:' + pushChange.fingerprint, order.ref, 'shopify:' + order._id, undefined, undefined, { changedFields: pushChange.fields }); } catch { /* Keep the successful webhook result. */ }
       return { updated: true };
     } catch (err) {
       this.logger.error(`❌ خطأ في تحديث الأوردر: ${err.message}`);
@@ -1049,6 +1054,7 @@ export class ShopifyService {
     await this.depositReceipts.discardDrafts(String(order._id));
 
     this.logger.log(`✅ تم قبول أوردر Shopify: ${cleanRef}`);
+    await notifyApproval(this.notifications, 'approval:shopify:' + orderId + ':approved', order.ref, 'shopify:' + orderId, { actorName: employee, actionKey: 'order', status: 'approved' });
     return { success: true, txId: String(tx._id) };
   }
 
@@ -1634,6 +1640,7 @@ export class ShopifyService {
     await order.save();
 
     this.logger.log(`❌ تم رفض أوردر Shopify: ${order.ref}`);
+    await notifyApproval(this.notifications, 'approval:shopify:' + orderId + ':rejected', order.ref, 'shopify:' + orderId, { actorName: order.assignedToName || rejectedBy, actionKey: 'order', status: 'rejected' });
     return { success: true };
   }
 
@@ -1767,6 +1774,7 @@ export class ShopifyService {
     };
     await order.save();
     this.logger.log(`🔔 طلب إلغاء أوردر Shopify: ${order.ref} (بواسطة ${requestedBy})`);
+    await notifyApproval(this.notifications, 'approval:shopify-cancel:' + orderId + ':' + order.cancelRequest?.requestedAt + ':pending', order.ref, 'shopify:' + orderId, { actorName: requestedBy, actionKey: 'cancel', status: 'pending' });
     return { success: true };
   }
 
@@ -1809,6 +1817,7 @@ export class ShopifyService {
     };
     await order.save();
     this.logger.log(`✅ اعتماد إلغاء أوردر Shopify: ${order.ref} (بواسطة ${reviewedBy})`);
+    await notifyApproval(this.notifications, 'approval:shopify-cancel:' + orderId + ':' + order.cancelRequest?.requestedAt + ':approved', order.ref, 'shopify:' + orderId, { actorName: cr.requestedBy, actionKey: 'cancel', status: 'approved' });
     return { success: true };
   }
 
@@ -1833,6 +1842,7 @@ export class ShopifyService {
     };
     await order.save();
     this.logger.log(`🚫 رفض طلب إلغاء أوردر Shopify: ${order.ref} (بواسطة ${reviewedBy})`);
+    await notifyApproval(this.notifications, 'approval:shopify-cancel:' + orderId + ':' + order.cancelRequest?.requestedAt + ':rejected', order.ref, 'shopify:' + orderId, { actorName: cr.requestedBy, actionKey: 'cancel', status: 'rejected' });
     return { success: true };
   }
 

@@ -1,3 +1,5 @@
+import { SecurityAuditService } from '../../security-audit/security-audit.service';
+import { Inject, Optional } from '@nestjs/common';
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PERMS_KEY } from '../decorators/perms.decorator';
@@ -28,6 +30,14 @@ const LEGACY_PERM_ALIASES: Record<string, string[]> = {
 
 @Injectable()
 export class PermsGuard implements CanActivate {
+  @Optional() @Inject(SecurityAuditService) private readonly audit?: SecurityAuditService;
+  private reportDenied(request: any) {
+    if (!request.user?.userId || request.securityDenialAudited) return;
+    request.securityDenialAudited = true;
+    try {
+      void this.audit?.log({ userId: request.user.userId, username: request.user.username || request.user.name || '', violationType: 'unauthorized_access', action: 'Unauthorized access attempt', ipAddress: request.ip }).catch(() => {});
+    } catch { /* Keep the permission decision independent of auditing. */ }
+  }
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -38,7 +48,8 @@ export class PermsGuard implements CanActivate {
     if (!requiredPerms || requiredPerms.length === 0) {
       return true;
     }
-    const { user } = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest();
+    const { user } = request;
     if (!user) {
       return false;
     }
@@ -46,10 +57,12 @@ export class PermsGuard implements CanActivate {
       return true;
     }
     const perms: string[] = user.perms || [];
-    return requiredPerms.every(
+    const allowed = requiredPerms.every(
       (p) =>
         perms.includes(p) ||
         (LEGACY_PERM_ALIASES[p] || []).some((alias) => perms.includes(alias)),
     );
+    if (!allowed) this.reportDenied(request);
+    return allowed;
   }
 }

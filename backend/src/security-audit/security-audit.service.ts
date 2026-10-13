@@ -1,3 +1,5 @@
+import { NotificationsService } from '../notifications/notifications.service';
+import { Inject, Optional } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -11,6 +13,7 @@ import { fetchGeo, formatGeoLabel } from '../shared/geo-lookup.util';
 
 @Injectable()
 export class SecurityAuditService {
+  @Optional() @Inject(NotificationsService) private readonly notifications?: NotificationsService;
   constructor(
     @InjectModel(SecurityAuditLog.name)
     private readonly logModel: Model<SecurityAuditLogDocument>,
@@ -58,6 +61,9 @@ export class SecurityAuditService {
     });
 
     this.resolveLocation(doc._id.toString(), ipAddress);
+    try {
+      await this.notifications?.enqueue('security', 'audit:' + doc._id, '', 'audit:' + doc._id, undefined, undefined, { actorName: entry.username, actionKey: entry.violationType });
+    } catch { /* Notification failure must never change the audit result. */ }
     return doc;
   }
 
@@ -82,6 +88,9 @@ export class SecurityAuditService {
       });
   }
 
+  async findById(id: string) {
+    return this.logModel.findById(id).lean().exec();
+  }
   async markResolved(logId: string, adminId: string): Promise<void> {
     await this.logModel
       .findByIdAndUpdate(logId, { resolvedBy: adminId, resolvedAt: new Date() })

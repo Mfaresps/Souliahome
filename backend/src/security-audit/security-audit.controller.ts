@@ -16,6 +16,12 @@ export class SecurityAuditController {
   ) {}
 
   @Roles('admin')
+  @Get('logs/:id')
+  async getLog(@Param('id') id: string) {
+    if (!/^[a-f0-9]{24}$/.test(id)) return null;
+    return this.auditService.findById(id);
+  }
+  @Roles('admin')
   @Get('logs')
   async getAllLogs() {
     return this.auditService.findAll();

@@ -274,6 +274,13 @@ export class DiscountOtpController {
     return { ok: true };
   }
 
+  @Roles('admin')
+  @Get('record/:id')
+  async getNotificationRecord(@Param('id') id: string) {
+    if (!/^[a-f0-9]{24}$/.test(id)) return null;
+    return this.otpService.getEditTxOtp(id);
+  }
+
   @Get(':id/edit-tx-details')
   async getEditTxDetails(@Param('id') id: string) {
     const doc = await this.otpService.getEditTxOtp(id);

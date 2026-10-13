@@ -18,10 +18,10 @@ const previewDir = require('node:os').tmpdir();
     await page.evaluate(() => {
       window.currentUser = { role: 'admin' }; localStorage.setItem('token', 'fixture');
       window.currentLang = 'ar';
-      window.state = { preferences: { enabled: true, deposit: true, comment: true, order: true, deliveryProblem: true, delivered: true, mention: true }, allowedTypes: ['deposit', 'comment', 'order', 'deliveryProblem', 'delivered', 'mention'], configured: true, publicKey: 'fixture', devices: 0 };
+      window.state = { preferences: { enabled: true, deposit: true, comment: true, followup: true, order: true, deliveryProblem: true, delivered: true, mention: true, performance: true, otp: true, approval: true, shopifyChange: true, security: true }, allowedTypes: ['deposit', 'comment', 'followup', 'order', 'deliveryProblem', 'delivered', 'mention', 'performance', 'otp', 'approval', 'shopifyChange', 'security'], configured: true, publicKey: 'fixture', devices: 0 };
       window.api = async (url, options) => {
         if (window.failSave) throw new Error('fixture save failure');
-        if (options?.method === 'PATCH') { const body = JSON.parse(options.body); if (body.language) state.language = body.language; else Object.assign(state.preferences, body); }
+        if (options?.method === 'PATCH') { const body = JSON.parse(options.body); if (body.employeeLanguage) state.employeeLanguage = body.employeeLanguage; else if (body.language) state.language = body.language; else Object.assign(state.preferences, body); }
         return JSON.parse(JSON.stringify(state));
       };
       window.permissionCalls = 0;
@@ -29,7 +29,15 @@ const previewDir = require('node:os').tmpdir();
       navigator.serviceWorker.getRegistration = async () => null;
     });
     await page.addScriptTag({ content: script }); await page.waitForSelector('input[role="switch"]');
-    assert.equal(await page.$$eval('input[role="switch"]', els => els.length), 7); checks++;
+    assert.equal(await page.$$eval('input[role="switch"]', els => els.length), 13); checks++;
+    await page.select('#push-employee-language', 'en'); await page.waitForFunction(() => state.employeeLanguage === 'en'); checks++;
+    for (const category of ['otp', 'approval', 'shopifyChange', 'security']) {
+      await page.click(`input[data-preference="${category}"]`);
+      await page.waitForFunction(key => state.preferences[key] === false, {}, category); checks++;
+      assert.equal(await page.evaluate(key => Object.entries(state.preferences).filter(([name]) => ['otp', 'approval', 'shopifyChange', 'security'].includes(name) && name !== key).every(([, enabled]) => enabled), category), true); checks++;
+      await page.click(`input[data-preference="${category}"]`);
+      await page.waitForFunction(key => state.preferences[key] === true, {}, category); checks++;
+    }
     assert.equal(await page.evaluate(() => permissionCalls), 0); checks++;
     assert.equal(await page.$eval('[data-push-action="test"]', el => el.disabled), true); checks++;
     await page.click('input[aria-label="عربون جديد"]');
@@ -85,8 +93,8 @@ const previewDir = require('node:os').tmpdir();
     await page.waitForFunction(() => document.querySelector('#push-feedback').textContent.includes('جاهزة الآن')); checks++;
     assert.equal(await page.evaluate(() => permissionCalls), permissionCount); checks++;
     assert.equal(await page.$eval('[data-push-action="enable"]', el => el.disabled), false); checks++;
-    await page.evaluate(() => { currentUser = { role: 'viewer' }; state.allowedTypes = ['mention']; localStorage.setItem('token', 'viewer'); });
-    await page.waitForFunction(() => document.querySelectorAll('input[role="switch"]').length === 2); checks++;
+    await page.evaluate(() => { currentUser = { role: 'viewer' }; state.allowedTypes = ['comment', 'followup', 'order', 'deliveryProblem', 'delivered', 'mention']; localStorage.setItem('token', 'viewer'); });
+    await page.waitForFunction(() => document.querySelectorAll('input[role="switch"]').length === 7); checks++;
     await page.click('#push-settings-shortcut'); await page.waitForFunction(() => document.querySelector('dialog').open); checks++;
     await page.evaluate(() => { currentUser = null; localStorage.removeItem('token'); });
     await page.waitForFunction(() => document.getElementById('notification-settings').hidden && !document.querySelector('dialog').open); checks++;

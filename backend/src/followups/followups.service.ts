@@ -439,7 +439,9 @@ export class FollowUpsService implements OnModuleInit {
 
   async create(dto: CreateFollowUpDto) {
     const ticketNo = await this.generateTicketNo(dto.orderRef);
-    return this.model.create({ ...dto, ticketNo });
+    const doc = await this.model.create({ ...dto, ticketNo });
+    await this.notifications?.enqueue('followup', 'followup:' + doc._id, doc.orderRef, 'followup:' + doc._id);
+    return doc;
   }
 
   /**

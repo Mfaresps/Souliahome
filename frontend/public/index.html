@@ -16172,6 +16172,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="/push-icon-192.png">
 <link rel="stylesheet" href="/notification-settings.css">
+<link rel="stylesheet" href="/announcements.css">
 <link rel="stylesheet" href="/settings-responsive.css">
 </head>
 <body>
@@ -18844,7 +18845,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 
 <!-- Main tab switcher -->
-<div style="display:flex;gap:0;margin:20px 0 0;border-bottom:2px solid var(--border)">
+<div class="cs-main-tabs" style="display:flex;gap:0;margin:20px 0 0;border-bottom:2px solid var(--border)">
   <button id="main-tab-fu" onclick="switchMainTab('fu')"
     style="display:inline-flex;align-items:center;gap:7px;padding:10px 20px;font-size:.88rem;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid var(--primary);margin-bottom:-2px;color:var(--primary);transition:all .2s">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -18882,7 +18883,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
   <!-- Toolbar — icon-only filters, one row (desktop/tablet) -->
   <div class="fu-toolbar" style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;flex:1;min-width:0">
     <!-- Search -->
-    <div style="position:relative;flex:1;min-width:140px;max-width:260px">
+    <div class="fu-search-field" style="position:relative;flex:1;min-width:140px;max-width:260px">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="fu-search" placeholder="بحث..." data-i18n-placeholder="csSearchPlaceholder" style="width:100%;height:28px;font-size:.78rem;padding:0 28px 0 8px;box-sizing:border-box;border:1px solid var(--border);border-radius:7px;background:var(--bg)" oninput="_fuFilterChange()">
     </div>
@@ -18898,78 +18899,17 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       <option value="" data-i18n="csResponsible">المسؤول</option>
     </select>
     <!-- Date range -->
-    <div style="display:flex;align-items:center;gap:4px;min-width:0;flex-shrink:1">
+    <div class="fu-date-range" style="display:flex;align-items:center;gap:4px;min-width:0;flex-shrink:1">
       <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       <input type="date" id="fu-from" class="date-filter-icon" style="height:28px;font-size:.75rem;border:1px solid var(--border);border-radius:7px;background:var(--bg)" onchange="_fuFilterChange()">
       <span style="font-size:.72rem;color:var(--muted)">—</span>
       <input type="date" id="fu-to" class="date-filter-icon" style="height:28px;font-size:.75rem;border:1px solid var(--border);border-radius:7px;background:var(--bg)" onchange="_fuFilterChange()">
     </div>
     <!-- Clear btn -->
-    <button onclick="clearFuFilters()" title="مسح الفلاتر" data-i18n-title="csClearFilters" style="height:28px;width:28px;padding:0;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
+    <button class="fu-clear-filters" onclick="clearFuFilters()" title="مسح الفلاتر" data-i18n-title="csClearFilters" aria-label="مسح الفلاتر" data-i18n-aria-label="csClearFilters" style="height:28px;width:28px;padding:0;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
   </div>
-</div>
-
-<!-- ═══════════════════════════════════════
-     SECTION A — Follow-up Orders
-═══════════════════════════════════════ -->
-<div id="fu-orders-section" style="padding-top:16px">
-
-  <!-- Table (desktop/tablet) -->
-  <div class="fu-table-wrap cmp-table-wrap">
-    <div class="overflow-x">
-      <table id="fu-table" class="cmp-table">
-        <thead><tr>
-            <th title="Ticket Number">
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><path d="M3 9a2 2 0 012-2h14a2 2 0 012 2v1.5a1.5 1.5 0 000 3V15a2 2 0 01-2 2H5a2 2 0 01-2-2v-1.5a1.5 1.5 0 000-3z"/><line x1="12" y1="8" x2="12" y2="16" stroke-dasharray="2 2"/></svg>
-              Ticket #
-            </th>
-            <th>
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              <span data-i18n="fuTableOrderClient">الطلب / العميل</span>
-            </th>
-            <th title="تاريخ إنشاء طلب المتابعة" data-i18n-title="fuTableCreatedAtTitle">
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <span data-i18n="fuTableCreatedAt">تاريخ الإنشاء</span>
-            </th>
-            <th style="text-align:center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:middle;opacity:.5"><path d="M11.42 9.49c-.19-.09-1.1-.54-1.27-.61s-.29-.09-.42.1-.48.6-.59.73-.21.14-.4 0a5.13 5.13 0 0 1-1.49-.92 5.25 5.25 0 0 1-1-1.29c-.11-.18 0-.28.08-.38s.18-.21.28-.32a1.39 1.39 0 0 0 .18-.31.38.38 0 0 0 0-.33c0-.09-.42-1-.58-1.37s-.3-.32-.41-.32h-.4a.72.72 0 0 0-.5.23 2.1 2.1 0 0 0-.65 1.55A3.59 3.59 0 0 0 5 8.2 8.32 8.32 0 0 0 8.19 11c.44.19.78.3 1.05.39a2.53 2.53 0 0 0 1.17.07 1.93 1.93 0 0 0 1.26-.88 1.67 1.67 0 0 0 .11-.88c-.05-.07-.17-.12-.36-.21z"/><path d="M13.29 2.68A7.36 7.36 0 0 0 8 .5a7.44 7.44 0 0 0-6.41 11.15l-1 3.85 3.94-1a7.4 7.4 0 0 0 3.55.9H8a7.44 7.44 0 0 0 5.29-12.72zM8 14.12a6.12 6.12 0 0 1-3.15-.87l-.22-.13-2.34.61.62-2.28-.14-.23a6.18 6.18 0 0 1 9.6-7.65 6.12 6.12 0 0 1 1.81 4.37A6.19 6.19 0 0 1 8 14.12z"/></svg>
-            </th>
-            <th style="text-align:center" title="محاولات الاتصال" data-i18n-title="fuTableCallAttempts">
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-              <span data-i18n="fuTableCallAttempts">محاولات الاتصال</span>
-            </th>
-            <th>
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              <span data-i18n="fuTableReason">السبب</span>
-            </th>
-            <th data-i18n="csStatus">الحالة</th>
-            <th>
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span data-i18n="fuTableLastUpdate">آخر تحديث</span>
-            </th>
-            <th style="text-align:center" title="مسار المتابعة" data-i18n-title="fuTableTrail">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M5 8.2V13a4 4 0 004 4h1.5" stroke-dasharray="3 3"/></svg>
-            </th>
-            <th>
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <span data-i18n="csResponsible">المسؤول</span>
-            </th>
-            <th>TAG</th>
-            <th style="text-align:center" title="خيارات" data-i18n-title="csOptions">
-              <span data-i18n="csOptions">خيارات</span>
-            </th>
-        </tr></thead>
-        <tbody id="fu-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Cards (mobile) -->
-  <div id="fu-cards" class="fu-cards"></div>
-
-  <div id="fu-pagination" style="padding:10px 16px;display:flex;justify-content:flex-end;border-top:1px solid var(--border)"></div>
 </div>
 
 <!-- Complaints tab header block (mobile search bar, quick chips, stat cards, filters,
@@ -19080,6 +19020,69 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 </div>
 <!-- /.cs-sticky-head -->
+
+<!-- ═══════════════════════════════════════
+     SECTION A — Follow-up Orders
+═══════════════════════════════════════ -->
+<div id="fu-orders-section" style="padding-top:16px">
+
+  <!-- Table (desktop/tablet) -->
+  <div class="fu-table-wrap cmp-table-wrap">
+    <div class="overflow-x">
+      <table id="fu-table" class="cmp-table">
+        <thead><tr>
+            <th title="Ticket Number">
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><path d="M3 9a2 2 0 012-2h14a2 2 0 012 2v1.5a1.5 1.5 0 000 3V15a2 2 0 01-2 2H5a2 2 0 01-2-2v-1.5a1.5 1.5 0 000-3z"/><line x1="12" y1="8" x2="12" y2="16" stroke-dasharray="2 2"/></svg>
+              Ticket #
+            </th>
+            <th>
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span data-i18n="fuTableOrderClient">الطلب / العميل</span>
+            </th>
+            <th title="تاريخ إنشاء طلب المتابعة" data-i18n-title="fuTableCreatedAtTitle">
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span data-i18n="fuTableCreatedAt">تاريخ الإنشاء</span>
+            </th>
+            <th style="text-align:center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:middle;opacity:.5"><path d="M11.42 9.49c-.19-.09-1.1-.54-1.27-.61s-.29-.09-.42.1-.48.6-.59.73-.21.14-.4 0a5.13 5.13 0 0 1-1.49-.92 5.25 5.25 0 0 1-1-1.29c-.11-.18 0-.28.08-.38s.18-.21.28-.32a1.39 1.39 0 0 0 .18-.31.38.38 0 0 0 0-.33c0-.09-.42-1-.58-1.37s-.3-.32-.41-.32h-.4a.72.72 0 0 0-.5.23 2.1 2.1 0 0 0-.65 1.55A3.59 3.59 0 0 0 5 8.2 8.32 8.32 0 0 0 8.19 11c.44.19.78.3 1.05.39a2.53 2.53 0 0 0 1.17.07 1.93 1.93 0 0 0 1.26-.88 1.67 1.67 0 0 0 .11-.88c-.05-.07-.17-.12-.36-.21z"/><path d="M13.29 2.68A7.36 7.36 0 0 0 8 .5a7.44 7.44 0 0 0-6.41 11.15l-1 3.85 3.94-1a7.4 7.4 0 0 0 3.55.9H8a7.44 7.44 0 0 0 5.29-12.72zM8 14.12a6.12 6.12 0 0 1-3.15-.87l-.22-.13-2.34.61.62-2.28-.14-.23a6.18 6.18 0 0 1 9.6-7.65 6.12 6.12 0 0 1 1.81 4.37A6.19 6.19 0 0 1 8 14.12z"/></svg>
+            </th>
+            <th style="text-align:center" title="محاولات الاتصال" data-i18n-title="fuTableCallAttempts">
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+              <span data-i18n="fuTableCallAttempts">محاولات الاتصال</span>
+            </th>
+            <th>
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span data-i18n="fuTableReason">السبب</span>
+            </th>
+            <th data-i18n="csStatus">الحالة</th>
+            <th>
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span data-i18n="fuTableLastUpdate">آخر تحديث</span>
+            </th>
+            <th style="text-align:center" title="مسار المتابعة" data-i18n-title="fuTableTrail">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M5 8.2V13a4 4 0 004 4h1.5" stroke-dasharray="3 3"/></svg>
+            </th>
+            <th>
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span data-i18n="csResponsible">المسؤول</span>
+            </th>
+            <th>TAG</th>
+            <th style="text-align:center" title="خيارات" data-i18n-title="csOptions">
+              <span data-i18n="csOptions">خيارات</span>
+            </th>
+        </tr></thead>
+        <tbody id="fu-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Cards (mobile) -->
+  <div id="fu-cards" class="fu-cards"></div>
+
+  <div id="fu-pagination" style="padding:10px 16px;display:flex;justify-content:flex-end;border-top:1px solid var(--border)"></div>
+</div>
+
+
 
 <!-- ═══════════════════════════════════════
      SECTION B — Complaints
@@ -20115,7 +20118,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
           <input type="text" id="pu-ready-search" data-i18n-placeholder="puSearchReadyPh" placeholder="بحث في الجاهزة…" oninput="renderPickupBoard()" autocomplete="off">
         </div>
         <div style="padding:0 10px 8px">
-          <button type="button" class="pu-card-btn" style="width:100%;justify-content:center;white-space:normal" onclick="openBostaPickup(this)" data-i18n="puRequestBostaPickup">طلب استلام من بوسطا</button>
+          <button type="button" class="bp-request-button" onclick="openBostaPickup(this)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 4h12v13H3zM15 9h4l3 4v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg><span data-i18n="puRequestBostaPickup">طلب استلام من بوسطة</span></button>
         </div>
         <div class="pu-board-col-body" id="pu-ready-col"
           ondragover="puBoardDragOver(event,'ready')"
@@ -22035,6 +22038,11 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     <!-- ── TAB: Advertising (الإعلانات) ── -->
     <div class="stg-panel" id="stg-panel-advertising" role="tabpanel">
 
+      <!-- إعلانات للموظفين (admin only) — يملؤها announcements.js. منفصلة عن الشريط
+           الإعلاني أدناه: الشريط عرض عام بلا مستلمين، وهذه رسالة لها مستلمون وحالة اطلاع. -->
+      <div class="settings-section-label an-section-label" id="an-section-label" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.4 5.6a9 9 0 0 1 0 12.8"/></svg><span>رسائل للموظفين</span></div>
+      <div class="settings-card an-card" id="an-composer" hidden style="margin-bottom:26px" data-stg-keywords="announcement broadcast staff message إعلان رسالة موظفين إشعار تعميم"></div>
+
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div class="settings-section-label" style="margin-bottom:0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
@@ -22519,6 +22527,9 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     </div>
   </div>
 
+  <div class="uh-actions" style="margin-top:16px">
+    <button id="push-profile-shortcut" class="uh-btn uh-btn-ghost" type="button" onclick="window.souliaOpenPushSettings?.()">إعدادات الإشعارات</button>
+  </div>
   <!-- Footer with profile picture -->
   <div class="uh-footer">
     <div class="uh-footer-avatar" id="uh-footer-avatar">—</div>
@@ -29632,7 +29643,7 @@ const TRANSLATIONS = {
   puBulkNoneMatched:{ar:'لم يُعثر على أي طلب مطابق',en:'No matching order found'},
   /* Send-group-to-Bosta flow (puGroupSendToBosta) */
   puGrpBostaEmpty:{ar:'لا توجد طلبات في هذه المجموعة',en:'No orders in this group'},
-  puRequestBostaPickup:{ar:'طلب استلام من بوسطا',en:'Request Bosta pickup'},
+  puRequestBostaPickup:{ar:'طلب استلام من بوسطة',en:'Request Bosta pickup'},
   puGrpBostaNotReady:{ar:'{n} طلب ليس في حالة Ready to Ship — لا يمكن الإرسال',en:'{n} order(s) not in Ready to Ship status — cannot send'},
   puGrpBostaAllSent:{ar:'كل الطلبات في هذه المجموعة مرسلة بالفعل لـ Bosta',en:'All orders in this group have already been sent to Bosta'},
   puGrpBostaConfirm:{ar:'إرسال {n} طلب{extra} من المجموعة {g} إلى Bosta للشحن؟',en:'Send {n} order(s){extra} from group {g} to Bosta for shipping?'},
@@ -35537,7 +35548,7 @@ function buildNotifications() {
   const stockVisible = stockAll.filter(n => !notifDismissed.includes(n.id));
   const badge = qs('#notif-badge');
   const unreadMentions = (typeof buildMentionNotifsList === 'function') ? buildMentionNotifsList().filter(m => !m.read).length : 0;
-  const totalBadge = notifs.filter(n => !notifDismissed.includes(n.id)).length + unreadMentions + stockVisible.length;
+  const totalBadge = notifs.filter(n => !notifDismissed.includes(n.id)).length + unreadMentions + stockVisible.length + (window.souliaAnnUnread || 0);
   if (badge) badge.textContent = totalBadge > 0 ? totalBadge : '';
   const stockCountEl = qs('#notif-stock-count');
   if (stockCountEl) {
@@ -35747,6 +35758,8 @@ function _renderNcTabBar() {
     { key: 'updates', label: t('notifTabUpdates'), icon: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>', count: _ncAllNotifs.length },
     { key: 'mentions', label: t('notifTabMentions'), icon: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"/></svg>', count: _ncAllMentions.filter(m=>!m.read).length },
     { key: 'stock', label: t('notifTabStock'), icon: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>', count: _ncAllStock.length },
+    // announcements.js — only present once that script is loaded and a user is signed in.
+    ...(typeof window.souliaAnnNcTab === 'function' && window.souliaAnnNcTab() ? [window.souliaAnnNcTab()] : []),
   ];
   sidebar.innerHTML = `<div class="nc-filter-group">${t('ncSection')}</div>` +
     tabs.map(tb => `
@@ -35771,6 +35784,7 @@ function _renderNcContent() {
   if (_ncTab === 'updates') _renderNcUpdatesList(main);
   else if (_ncTab === 'mentions') _renderNcMentionsList(main);
   else if (_ncTab === 'stock') _renderNcStockList(main);
+  else if (_ncTab === 'announcements' && typeof window.souliaRenderNcAnnouncements === 'function') window.souliaRenderNcAnnouncements(main);
 }
 
 function _ncItemHtml(n, isSelected) {
@@ -44673,7 +44687,7 @@ function _selectCity(city) {
     const g = _getCityGroup(city);
     const gov = g ? g.label : '';
     const bostaEn = g ? (g.bostaEn || '') : '';
-    // حفظ المحافظة العربية والإنجليزية الجاهزة لبوسطا مباشرةً
+    // حفظ المحافظة العربية والإنجليزية الجاهزة لبوسطة مباشرةً
     _cityActiveInput.dataset.gov = gov;
     _cityActiveInput.dataset.bostaEn = bostaEn;
     _cityActiveInput.dataset.cityOnly = city;
@@ -54739,12 +54753,12 @@ async function submitManualDelivery() {
   }
 }
 
-// تنبيهات شوبيفاي: تُغلق يدوياً فقط — النظام لا يستطيع معرفة أن الموظف اتصل ببوسطا أو
+// تنبيهات شوبيفاي: تُغلق يدوياً فقط — النظام لا يستطيع معرفة أن الموظف اتصل ببوسطة أو
 // ألغى الحركة. الإغلاق إقرار بشري بأن الأمر عولج، وليس استنتاجاً.
 // ⚠ لا يُعدّل أي عنوان ولا تُلغى أي حركة — العنوان المشحون يبقى كما هو لأنه يصف أين ذهبت
 //   الشحنة فعلاً، وإلغاء حركة مؤكدة يعكس المخزون والخزنة فيبقى قراراً يدوياً مستقلاً.
 const _SHOPIFY_CONFLICT_ASK = {
-  address:     'تأكيد أنه تم التعامل مع تغيير العنوان (تواصل مع بوسطا أو إعادة إنشاء الشحنة)؟',
+  address:     'تأكيد أنه تم التعامل مع تغيير العنوان (تواصل مع بوسطة أو إعادة إنشاء الشحنة)؟',
   cancel:      'تأكيد أنه تم التعامل مع إلغاء الأوردر في شوبيفاي؟ لن تُلغى الحركة تلقائياً.',
   fulfillment: 'تأكيد أنه تم التعامل مع الشحنة التي أُنشئت خارج النظام؟',
 };
@@ -59691,7 +59705,7 @@ function renderInvoiceViewPage() {
       </div>
       <div class="inv2-addr-conflict-body">
         <div class="inv2-addr-row"><span class="inv2-addr-tag is-old">سبب الإلغاء</span><span dir="auto">${esc(_scc.reason || '—')}</span></div>
-        ${_scc.shipped ? `<div class="inv2-addr-row"><span class="inv2-addr-tag is-old">تنبيه</span><span>الشحنة خرجت بالفعل إلى بوسطا — أوقفها قبل أي إجراء آخر.</span></div>` : ''}
+        ${_scc.shipped ? `<div class="inv2-addr-row"><span class="inv2-addr-tag is-old">تنبيه</span><span>الشحنة خرجت بالفعل إلى بوسطة — أوقفها قبل أي إجراء آخر.</span></div>` : ''}
       </div>
       <div class="inv2-addr-conflict-foot">
         <span>لم يُلغَ شيء تلقائياً: إلغاء الحركة يعكس المخزون والخزنة، وهو قرار يدوي.</span>
@@ -59734,7 +59748,7 @@ function renderInvoiceViewPage() {
         </div>
       </div>
       <div class="inv2-addr-conflict-foot">
-        <span>بوسطا لا تسمح بتعديل عنوان شحنة قائمة — تواصل معهم أو ألغِ الشحنة وأعد إنشاءها.</span>
+        <span>بوسطة لا تسمح بتعديل عنوان شحنة قائمة — تواصل معهم أو ألغِ الشحنة وأعد إنشاءها.</span>
         <button class="btn btn-sm" onclick="resolveShopifyConflict('${tx._id}','address')">تم التعامل معه</button>
       </div>
     </div>` : '';
@@ -72817,7 +72831,7 @@ function renderOtpTablePage() {
       ? `<td id="otp-chev-${idx}" style="padding:5px 6px;text-align:center;color:var(--muted);transition:transform .2s;cursor:pointer">${_svgChev}</td>`
       : `<td style="padding:5px 6px"></td>`;
     const clickHandler = hasDetail ? `onclick="toggleOtpDetail(${idx})"` : '';
-    tbody += `<tr style="font-size:.78rem;border-bottom:1px solid var(--border);cursor:${hasDetail?'pointer':'default'};transition:background .1s" ${clickHandler} onmouseover="this.style.background='var(--bg-alt)'" onmouseout="this.style.background=''">
+    tbody += `<tr data-push-otp-id="${esc(String(r._id))}" style="font-size:.78rem;border-bottom:1px solid var(--border);cursor:${hasDetail?'pointer':'default'};transition:background .1s" ${clickHandler} onmouseover="this.style.background='var(--bg-alt)'" onmouseout="this.style.background=''">
       ${chevCell}
       <td style="padding:5px 8px">
         <div style="display:inline-flex;align-items:center;gap:5px;font-weight:600;color:${m.color};white-space:nowrap">
@@ -73544,7 +73558,7 @@ async function completeSupplierReturnFromAppr(id) {
 /* History Hub (سجل التعديلات) */
 let apprActiveTab = 'approvals';
 
-function switchApprTab(tab, btn) {
+function switchApprTab(tab, btn, load = true) {
   apprActiveTab = tab;
   /* ⚠ 'block', never '' — these three are bare <div>s with no CSS rule of their own,
      so an emptied inline style falls through to `.page.active{display:block}` and the
@@ -73557,7 +73571,7 @@ function switchApprTab(tab, btn) {
   qsa('#page-approvals .s-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   if (tab === 'hub') renderHistoryHub();
-  if (tab === 'otp') renderOtpAudit();
+  if (tab === 'otp' && load) renderOtpAudit();
 }
 
 function clearHubFilters() {
@@ -81194,7 +81208,7 @@ function _renderSecurityLogPage() {
     // Row tint is a class, never inline hex — the panel has a dark theme.
     const rowCls = log.violationType === 'account_locked' ? ' sec-row-danger'
                  : log.violationType === 'account_unlocked' ? ' sec-row-ok' : '';
-    return `<tr class="sec-row${rowCls}">
+    return `<tr class="sec-row${rowCls}" data-push-audit-id="${esc(String(log._id))}">
       <td style="padding:8px 12px;font-weight:500">${esc(log.username)}</td>
       <td style="padding:8px 12px"><span style="display:inline-flex;align-items:center;gap:4px">${icon}${esc(label)}</span></td>
       <td style="padding:8px 12px;color:var(--muted);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(log.action)}">${esc(log.action)}</td>
@@ -81246,6 +81260,8 @@ async function loadSecurityPanel() {
 
   // Render audit log with pagination
   _securityLogs = logsRes || [];
+  const pushRecord = window.souliaPushSecurityRecord;
+  if (pushRecord?._id && isAdmin()) _securityLogs = [pushRecord, ..._securityLogs.filter(log => String(log._id) !== String(pushRecord._id))];
   _securityLogPage = 0;
   _renderSecurityLogPage();
 }
@@ -94635,6 +94651,7 @@ function _puBuildGroupCard(group, colType) {
           ${group.pickupRef ? `<span class="pu-ref-hero">${esc(group.pickupRef)}</span>` : ''}
           <span class="pu-prep-order-count"><svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.7"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${t('puOrdersCount',{n:fmtN(group.orders.length)})}</span>
           ${prepSummary}
+          ${typeof bostaPickupCardBadge === 'function' ? bostaPickupCardBadge(group.orders) : ''}
           ${shipcos.map(s=>`<span class="pu-group-chip">${S.truck} ${esc(s)}</span>`).join('')}
         </div>
         ${readyEmployees.length ? `<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:4px">
@@ -94708,7 +94725,6 @@ function _puBuildGroupCard(group, colType) {
     <div style="display:flex;align-items:center;gap:5px">
       ${colType==='ready' && !allShipped ? `<button class="pu-card-btn" onclick="event.stopPropagation();openPuEditModal('${esc(group.key)}')" title="${esc(t('puEditRun'))}" style="gap:4px">${S.edit || '✎'} ${t('puEditRun')}</button>` : ''}
       ${colType==='pending' ? `<button class="pu-card-btn pu-card-btn-primary" onclick="event.stopPropagation();puMovePendingGroupToPrep('${esc(group.key)}')">${S.truck} ${t('puPrepareGroup')}</button>` : ''}
-      ${colType==='ready' && !allShipped ? `<button class="pu-card-btn" onclick="event.stopPropagation();puGroupSendToBosta('${esc(group.key)}')" style="background:#c7282e;color:#fff;border-color:#c7282e;gap:4px;display:inline-flex;align-items:center" title="${esc(t('puSendGroupToBosta'))}">${_BOSTA_ICON} <span style="font-family:sans-serif;font-weight:700;font-size:.78em">+ bosta</span></button>` : ''}
       ${colType==='ready' && allShipped ? `<span style="font-size:.72rem;color:#7c3aed;font-weight:700;display:inline-flex;align-items:center;gap:4px;background:#ede9fe;border:1px solid #c4b5fd;padding:3px 9px;border-radius:20px">${S.truck} ${t('puShippedDone')}</span>` : ''}
     </div>
   `;
@@ -94765,6 +94781,7 @@ function _puBuildOrderCard(o, colType) {
       </div>
       ${o.client ? `<div style="font-size:.82rem;font-weight:700;color:var(--text);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(o.client)}${o.phone||o.clientPhone ? `<span style="font-size:.71rem;font-weight:400;color:var(--muted);margin-right:6px;direction:ltr;display:inline-block">${esc(o.phone||o.clientPhone)}</span>` : ''}</div>` : ''}
       <div class="pu-card-meta">
+        ${colType === 'ready' && typeof bostaPickupCardBadge === 'function' ? bostaPickupCardBadge([o]) : ''}
         <span class="pu-card-chip">${S.pkg} ${t('puItemsCount',{n:fmtN(items.length)})}</span>
         ${o.shipCo    ? `<span class="pu-card-chip">${S.truck} ${esc(o.shipCo)}</span>` : ''}
         ${o.employee  ? `<span class="pu-card-chip">${S.user} ${esc(o.employee)}</span>` : ''}
@@ -97976,6 +97993,9 @@ async function puRefreshOrders() {
 async function loadPickupOrders() {
   try {
     _pickupOrders = await api('/transactions/pickup-orders');
+    if (typeof refreshBostaPickupRequests === 'function') {
+      try { await refreshBostaPickupRequests(); } catch(e) { console.warn('Pickup requests could not be refreshed', e); }
+    }
     _pickupPage = 1;
     _puLoadPrepGroups(_pickupOrders);
     _puPopulateShipCoFilter();
@@ -106774,8 +106794,11 @@ function _spRenderHistoryTab() {
 // ===================== End Shopify Orders =====================
 </script>
 <script src="/navigation-shell.js"></script>
+<link rel="stylesheet" href="/bosta-pickup.css">
+<link rel="stylesheet" href="/customer-service-layout.css">
 <script src="/bosta-pickup.js"></script>
 <script src="/notification-settings.js"></script>
+<script src="/announcements.js"></script>
 <script src="/push-navigation.js"></script>
 </body>
 </html>

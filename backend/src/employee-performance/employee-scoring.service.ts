@@ -1,3 +1,5 @@
+import { NotificationsService } from '../notifications/notifications.service';
+import { Inject, Optional } from '@nestjs/common';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -194,6 +196,11 @@ const MY_ADJUSTMENTS_MAX = 50;
 
 @Injectable()
 export class EmployeeScoringService implements OnModuleInit {
+  @Optional() @Inject(NotificationsService) private readonly notifications?: NotificationsService;
+  private async notifyPointChange(eventId: string, employeeId: string, delta: number, reason: string, ref = '', previous?: any) {
+    try { await this.notifications?.recordPointChange(eventId, employeeId, delta, reason, ref, previous); }
+    catch { /* Points have been committed; notifications cannot change scoring. */ }
+  }
   private readonly logger = new Logger(EmployeeScoringService.name);
 
   constructor(
@@ -282,7 +289,7 @@ export class EmployeeScoringService implements OnModuleInit {
         await this.logModel.deleteOne({ _id: existing._id }).exec();
       }
 
-      await this.logModel.create({
+      const created = await this.logModel.create({
         employeeId: order.assignedTo,
         employeeUsername: await this.usernameForId(order.assignedTo),
         orderId: String(order._id),
@@ -291,6 +298,9 @@ export class EmployeeScoringService implements OnModuleInit {
         note: `تحليل إيداع عند وصول الأوردر — ${order.depositPercentage}% — ${order.depositAmount} EGP`,
         meta: { depositPercentage: order.depositPercentage, depositAmount: order.depositAmount },
       });
+      if (existing && existing.employeeId !== order.assignedTo) await this.notifyPointChange(String(created._id) + ':transfer-out', existing.employeeId, -existing.points, 'تغيير الموظف المسؤول عن الطلب — ' + existing.note, order.ref, existing);
+      const delta = depositScore.points - (existing?.employeeId === order.assignedTo ? existing.points : 0);
+      await this.notifyPointChange(String(created._id), order.assignedTo, delta, created.note, order.ref, existing?.employeeId === order.assignedTo ? existing : undefined);
     } catch (err) {
       this.logger.error(`scoreDepositDetection failed for order ${order._id}: ${(err as Error).message}`);
     }
@@ -306,7 +316,11 @@ export class EmployeeScoringService implements OnModuleInit {
    */
   async removeAssignmentScore(orderId: string): Promise<void> {
     try {
-      await this.logModel.deleteOne({ orderId: String(orderId), actionType: { $in: this.depositActionTypes } }).exec();
+      let existing: any = null;
+      try { existing = await this.logModel.findOne({ orderId: String(orderId), actionType: { $in: this.depositActionTypes } }).lean().exec(); }
+      catch { /* A notification snapshot failure must not prevent removal of the score. */ }
+      const removed = await this.logModel.deleteOne({ orderId: String(orderId), actionType: { $in: this.depositActionTypes } }).exec();
+      if (existing && removed.deletedCount) await this.notifyPointChange(String(existing._id) + ':removed', existing.employeeId, -existing.points, 'إلغاء إسناد الطلب — ' + existing.note, '', existing);
     } catch (err) {
       this.logger.error(`removeAssignmentScore failed for order ${orderId}: ${(err as Error).message}`);
     }
@@ -356,7 +370,7 @@ export class EmployeeScoringService implements OnModuleInit {
       const settings = await this.settingsService.getSettings();
       const points = settings.performanceConfig?.deliveryPoints ?? 2;
 
-      await this.logModel.create({
+      const created = await this.logModel.create({
         employeeId,
         employeeUsername,
         orderId: String(order._id),
@@ -365,6 +379,7 @@ export class EmployeeScoringService implements OnModuleInit {
         note: `تسليم ناجح — الأوردر #${order.ref}`,
         meta: { txId: String(tx._id) },
       });
+      await this.notifyPointChange(String(created._id), employeeId, points, created.note, order.ref);
     } catch (err) {
       this.logger.error(`scoreDelivery failed for tx ${tx._id}: ${(err as Error).message}`);
     }
@@ -1138,7 +1153,7 @@ export class EmployeeScoringService implements OnModuleInit {
     reason: string,
     adjustedBy: string,
   ): Promise<EmployeePerformanceLogDocument> {
-    return this.logModel.create({
+    const created = await this.logModel.create({
       employeeId,
       employeeUsername: await this.usernameForId(employeeId),
       orderId: '',
@@ -1147,6 +1162,8 @@ export class EmployeeScoringService implements OnModuleInit {
       note: reason,
       meta: { adjustedBy },
     });
+    await this.notifyPointChange(String(created._id), employeeId, points, reason);
+    return created;
   }
 
   /**

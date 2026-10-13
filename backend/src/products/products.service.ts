@@ -1,3 +1,6 @@
+import { notifyApproval } from '../notifications/admin-events';
+import { NotificationsService } from '../notifications/notifications.service';
+import { Inject as PushInject, Optional as PushOptional } from '@nestjs/common';
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
@@ -13,6 +16,7 @@ import { MentionsService } from '../mentions/mentions.service';
 
 @Injectable()
 export class ProductsService {
+  @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
   constructor(
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductDocument>,
@@ -527,6 +531,7 @@ export class ProductsService {
     await product.save();
 
     this.emit('product:changed', { action: 'edit-requested', id });
+    await notifyApproval(this.notifications, 'approval:product:' + id + ':' + product.editRequest?.requestedAt + ':pending', product.code, 'product:' + id, { actorName: dto.requestedBy, actionKey: 'product', status: 'pending' });
     return product;
   }
 
@@ -594,6 +599,7 @@ export class ProductsService {
 
     this.emit('product:changed', { action: 'edit-approved', id });
     this.emit('inventory:changed', { reason: 'product:edit-approved', code: product.code });
+    await notifyApproval(this.notifications, 'approval:product:' + id + ':' + product.editRequest?.requestedAt + ':approved', product.code, 'product:' + id, { actorName: req.requestedBy, actionKey: 'product', status: 'approved' });
     return product;
   }
 
@@ -629,6 +635,7 @@ export class ProductsService {
     } catch { /* notification failure must not break rejection */ }
 
     this.emit('product:changed', { action: 'edit-rejected', id });
+    await notifyApproval(this.notifications, 'approval:product:' + id + ':' + product.editRequest?.requestedAt + ':rejected', product.code, 'product:' + id, { actorName: req.requestedBy, actionKey: 'product', status: 'rejected' });
     return product;
   }
 

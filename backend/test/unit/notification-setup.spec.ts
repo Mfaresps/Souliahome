@@ -6,7 +6,7 @@ function database() {
   const config = { findOne: jest.fn(async () => saved), updateOne: jest.fn(async (_query, update) => { saved ||= { ...update.$setOnInsert }; }) };
   const accounts = { createIndex: jest.fn(), findOne: jest.fn(async () => null) };
   const jobs = { createIndex: jest.fn() };
-  const connection: any = { collection: (name: string) => ({ notificationaccounts: accounts, notificationjobs: jobs, notificationconfig: config } as any)[name] };
+  const connection: any = { collection: (name: string) => ({ notificationaccounts: accounts, notificationjobs: jobs, notificationpointchanges: jobs, notificationconfig: config } as any)[name] };
   return { connection, config, saved: () => saved };
 }
 const user = { userId: '507f1f77bcf86cd799439011', role: 'admin' };
@@ -37,7 +37,7 @@ describe('Live push server configuration', () => {
     const pair = webPush.generateVAPIDKeys(); process.env.VAPID_PUBLIC_KEY = pair.publicKey; process.env.VAPID_PRIVATE_KEY = pair.privateKey;
     const db = database(), service = new NotificationsService(db.connection);
     await service.onModuleInit(); expect(service.configured).toBe(true); expect((await service.settings(user)).publicKey).toBe(pair.publicKey);
-    expect(db.config.findOne).not.toHaveBeenCalled();
+    expect(db.config.findOne).not.toHaveBeenCalledWith({ _id: 'vapid' });
   });
   it('does not replace a partially configured pair or silently rotate registered devices', async () => {
     process.env.VAPID_PUBLIC_KEY = webPush.generateVAPIDKeys().publicKey;

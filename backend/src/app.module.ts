@@ -33,6 +33,7 @@ import { SupplierLedgerBackfillModule } from './supplier-ledger/backfill/supplie
 import { DraftsModule } from './drafts/drafts.module';
 import { CustomerServicePlaybookModule } from './customer-service-playbook/customer-service-playbook.module';
 import { EmployeePerformanceModule } from './employee-performance/employee-performance.module';
+import { AnnouncementsModule } from './announcements/announcements.module';
 import { SeedService } from './seed/seed.service';
 
 @Module({
@@ -73,6 +74,7 @@ import { SeedService } from './seed/seed.service';
     DraftsModule,
     CustomerServicePlaybookModule,
     EmployeePerformanceModule,
+    AnnouncementsModule,
   ],
   providers: [SeedService],
 })

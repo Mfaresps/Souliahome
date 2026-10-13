@@ -1,3 +1,4 @@
+import { notifyApproval } from '../notifications/admin-events';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import {
@@ -505,6 +506,7 @@ export class DepositReceiptsService {
     await this.notifications?.enqueue('deposit', 'deposit:receipt:' + receiptId, saved.ref, 'shopify:' + orderId, undefined, undefined,
       { actorName: r.submittedBy || actor.name || actor.username, amount, pendingApproval: true, vaultName: method, receiptId });
     this.emit(orderId, receiptId, 'معلق');
+    await notifyApproval(this.notifications, 'approval:receipt:' + receiptId + ':pending', saved.ref, 'shopify:' + orderId, { actorName: this.findReceipt(saved, receiptId).submittedBy, actionKey: 'deposit', status: 'pending', receiptId });
     return { success: true, receipt: this.findReceipt(saved, receiptId) };
   }
 
@@ -658,6 +660,7 @@ export class DepositReceiptsService {
     this.emit(orderId, receiptId, 'معتمد');
     await this.notifications?.enqueue('deposit', 'deposit:receipt:' + receiptId, claimed.ref, 'shopify:' + orderId, undefined, undefined,
       { actorName: r.submittedBy, amount: r.amount, vaultName: r.method, receiptId });
+    await notifyApproval(this.notifications, 'approval:receipt:' + receiptId + ':approved', claimed.ref, 'shopify:' + orderId, { actorName: r.submittedBy, actionKey: 'deposit', status: 'approved', receiptId });
     return { success: true, vaultTxNo: entry?.txNo || '' };
   }
 
@@ -685,6 +688,7 @@ export class DepositReceiptsService {
       ).exec();
     }
     this.emit(orderId, receiptId, 'مرفوض');
+    await notifyApproval(this.notifications, 'approval:receipt:' + receiptId + ':rejected', saved.ref, 'shopify:' + orderId, { actorName: r.submittedBy, actionKey: 'deposit', status: 'rejected', receiptId });
     return { success: true };
   }
 

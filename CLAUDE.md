@@ -2782,6 +2782,75 @@ const expenseTotal = filteredExpenses
 
 ---
 
+## Staff Announcements — «رسائل للموظفين» (Oct 13, 2026)
+
+Settings ← الإعلانات now opens with a composer (admin only) that sends a message to
+**all employees or chosen ones**. Each recipient gets a popup inside SOULIA until they
+press «تم الاطلاع», plus an instant Web Push on phones with notifications enabled.
+Separate from the ticker below it: the ticker is a passive banner with no recipients;
+an announcement has recipients and a read state.
+
+### Where it lives
+- Backend: `backend/src/announcements/` — raw collections `announcements` and
+  `announcementconfig` (no Mongoose schema, same style as `NotificationsService`).
+- Frontend: `frontend/public/announcements.js` + `.css` (own file, own `text(ar,en)`
+  helper — no `TRANSLATIONS` keys). index.html only carries the two slots
+  (`#an-section-label`, `#an-composer`), the bell-badge term, and the notification-centre tab.
+- ⚠ `ANNOUNCEMENT_CATEGORIES` (backend) ↔ `ANN_CATEGORIES` (frontend) is a hand-kept
+  mirror. `code` is stored — never rename one.
+
+### Routes
+`GET config` (any user) · `PATCH config` (admin, `maxLength` 50–2000, default 500) ·
+`GET mine` · `GET /` (admin history) · `POST /` (admin) · `POST :id/ack`.
+⚠ `config`/`mine` are declared before `:id/ack`.
+
+### Rules that matter
+- **Recipients are a snapshot taken at send time** (`recipients[{userId,name,ackAt}]`), so
+  «قرأه X من Y» stays true. «كل الموظفين» = every active admin/staff/viewer **except the
+  author**. A selection naming an inactive or unknown account is **refused, not trimmed** —
+  the author would believe that person was told.
+- **`mine` projects only the caller's own entry** (`$elemMatch`): a recipient never sees
+  who else got it or who read it.
+- **The socket ping carries the id only** (`announcement:new` via `emitToUser`); content is
+  re-fetched from `/mine`. Never put the message in a broadcast.
+- **Idempotent**: `requestKey` + a unique partial index on `{createdById, requestKey}`. The
+  client keeps the same key across a failed retry and drops it when the content changes.
+  Push jobs are deduped too (`eventId = announcement:<id>`).
+- **Push** rides the existing queue as type `announcement` (in `TYPES`/`DEFAULTS`, default
+  on). It has **no toggle** in notification settings (no label there), so it follows the master
+  switch. `enqueue`'s `onlyUser` now also accepts an array. Title is
+  `📢 SOULIA Announcement` / `📢 إعلان من SOULIA` (no « · SOULIA» suffix); body = category
+  label (unless generic) + message, ≤160 chars. Tap → `?pushRecord=announcement:<id>` →
+  `window.souliaOpenAnnouncement(id)`. Staff push language is the admin-managed employee
+  language, not the staff member's own choice.
+- **Popup** is a native `<dialog>` (top layer, Esc = «لاحقاً»). ⚠ The app's global reset
+  zeroes the UA `margin:auto` on `<dialog>` — centring is explicit in the CSS; on phones it is
+  a bottom sheet. It **waits** while another dialog, a confirm, `#modal-overlay` or the invoice
+  overlay is open (a live arrival then shows a toast), so it never interrupts a form.
+  «لاحقاً» hides it **for this session only**; unacknowledged ones return on next open and are
+  always listed in مركز الإشعارات ← الإعلانات. A backlog shows oldest first as «1 / 2».
+- The composer renders **once** after its data loads (skeleton before) — a second render
+  wiped what the admin was typing and the inline error.
+- Message cleaning keeps line breaks, strips control and bidi-override characters.
+
+### Verification
+- `test/integration/announcements.service.spec.ts` — 11 cases on a scratch DB with the real
+  `NotificationsService`. **Revert-checked**: the array `onlyUser` filter (4 fail) and the
+  idempotency index (1 fails).
+- HTTP over the compiled API: staff 403 on send/config/history, 400 over the limit, duplicate key
+  → same id, author excluded, ack → 1/11.
+- 35 browser assertions (Puppeteer, real UI + API): compose/validate/confirm, live arrival,
+  «لاحقاً» → returns after reopen, ack → author's count updates live, notification-centre tab,
+  all-employees + login backlog, push deep link (and a non-recipient is refused), dark/English,
+  390px, centred/bottom sheet, composer hidden for staff. Zero page errors.
+
+### Still open
+- No withdraw/edit of a sent announcement, and no scheduling.
+- `announcement` can still be switched off through the API (`PATCH /notifications/preferences`)
+  even though the UI shows no toggle.
+
+---
+
 ## Shopify Quick View Redesigned + One «Orders» Chip (Oct 7, 2026)
 
 `#sp-peek` (order # → quick view) and the table's customer-orders marks were
@@ -3351,6 +3420,7 @@ leaked — the change there is defence against the same trap, not a bug fix.
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Oct 13, 2026 | Staff announcements: admins send a typed message to all or chosen employees from Settings ← الإعلانات; recipients get a popup until acknowledged, an instant Web Push, and a «الإعلانات» tab in the notification centre; read status per recipient | See "Staff Announcements" above |
 | Oct 7, 2026 | Shopify quick view redesigned: one column of section cards (customer → ship together → payment → items → follow-up), the 760px sibling rail replaced by an «اشحنهم معاً» card with «تأكيد الطلبين»; the table's «طلبان» pill + box icon merged into one chip | See "Shopify Quick View Redesigned" above |
 | Oct 7, 2026 | Automatic Bosta settlement: each delivery books the net of Bosta's real fee a minute after DELIVERED; older orders settle by selection; review queue over a 20 EGP overcharge; «كشف حساب بوسطة» with transfers and fees; order timeline reordered by real time (291 → 0 out-of-order) | See "Automatic Bosta Settlement" above |
 | Oct 5, 2026 | Stock Demand Analysis rebuilt answer-first: «N of M orders ready» with per-order blocks + what to buy and the PO button, a coverage bar per product, the calculation as one chip chain; presentation only | See "Stock Demand Analysis — Rebuilt Answer-First" above |

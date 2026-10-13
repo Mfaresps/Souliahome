@@ -1,4 +1,4 @@
-import { NotificationsService, DEFAULTS, TYPES, eligible, validatePreferences, validateSubscription, notificationBody } from '../../src/notifications/notifications.service';
+import { NotificationsService, DEFAULTS, TYPES, STAFF_TYPES, eligible, validatePreferences, validateSubscription, notificationBody } from '../../src/notifications/notifications.service';
 import { MentionsService } from '../../src/mentions/mentions.service';
 import { NotificationsController } from '../../src/notifications/notifications.controller';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
@@ -26,10 +26,10 @@ function setup() {
 }
 describe('Web Push settings, security and delivery', () => {
   it('guards every endpoint with JWT', () => expect(Reflect.getMetadata(GUARDS_METADATA, NotificationsController)).toContain(JwtAuthGuard));
-  it.each(['staff', 'viewer'])('allows %s personal mentions but rejects business preferences', async role => {
+  it.each(['staff', 'viewer'])('allows %s operational notifications while keeping deposits administrator-only', async role => {
     const { service } = setup(); const user = { ...admin, role };
-    expect((await service.settings(user)).allowedTypes).toEqual(['mention']);
-    await expect(service.preferences(user, { enabled: true, mention: false })).resolves.toBeDefined();
+    expect((await service.settings(user)).allowedTypes).toEqual(STAFF_TYPES);
+    await expect(service.preferences(user, { enabled: true, mention: false, comment: true, followup: true, order: true, deliveryProblem: true, delivered: true })).resolves.toBeDefined();
     await expect(service.preferences(user, { deposit: true })).rejects.toThrow();
     expect(eligible(user, { ...DEFAULTS, enabled: true }, 'mention')).toBe(true);
     expect(eligible(user, { ...DEFAULTS, enabled: true }, 'deposit')).toBe(false);
@@ -42,7 +42,7 @@ describe('Web Push settings, security and delivery', () => {
     account.preferences[type] = true; account.preferences.enabled = false;
     await service.enqueue(type, 'master-off', '100'); expect(stored.size).toBe(0);
     account.preferences.enabled = true;
-    await service.enqueue(type, 'on', '100', '', type === 'mention' ? admin.userId : undefined); expect(stored.size).toBe(1);
+    await service.enqueue(type, 'on', '100', type === 'otp' ? 'otp:' + admin.userId : '', ['mention', 'performance'].includes(type) ? admin.userId : undefined, undefined, { pointDelta: 2, expiresAt: new Date(Date.now() + 60000).toISOString() }); expect(stored.size).toBe(1);
   });
   it('preserves individual preferences across master off/on and new login', async () => {
     const { service } = setup();
@@ -58,19 +58,45 @@ describe('Web Push settings, security and delivery', () => {
   });
   it.each(TYPES)('deduplicates durable %s events and excludes private payload data', async type => {
     const { service, stored } = setup();
-    const recipient = type === 'mention' ? admin.userId : undefined;
-    await service.enqueue(type, 'stable', '100', 'tx:' + admin.userId, recipient); await service.enqueue(type, 'stable', '100', '', recipient);
+    const recipient = ['mention', 'performance'].includes(type) ? admin.userId : undefined;
+    await service.enqueue(type, 'stable', '100', (type === 'otp' ? 'otp:' : 'tx:') + admin.userId, recipient, undefined, { pointDelta: 2, expiresAt: new Date(Date.now() + 60000).toISOString() }); await service.enqueue(type, 'stable', '100', type === 'otp' ? 'otp:' + admin.userId : '', recipient, undefined, { pointDelta: 2, expiresAt: new Date(Date.now() + 60000).toISOString() });
     expect(stored.size).toBe(1); const payload = JSON.parse(stored.get('stable').payload);
     expect(payload.body).toContain(type === 'mention' ? '100' : '#100'); expect(payload.url).toContain('pushRecord=');
     expect(Object.keys(payload).sort()).toEqual(['body', 'dir', 'lang', 'tag', 'timestamp', 'title', 'url']);
   });
-  it('selects only active admins and isolates a user test', async () => {
-    expect(eligible({ role: 'staff', isActive: true }, { ...DEFAULTS, enabled: true }, 'order')).toBe(false);
+  it('allows active staff orders and isolates a user test', async () => {
+    expect(eligible({ role: 'staff', isActive: true }, { ...DEFAULTS, enabled: true }, 'order')).toBe(true);
     const { service, stored } = setup(); await service.enqueue('order', 'test', '100', '', 'another-user'); expect(stored.size).toBe(0);
   });
   it('never throws when queuing fails after a business commit', async () => {
     const { service, users } = setup(); users.find.mockImplementation(() => { throw new Error('Database unavailable'); });
     await expect(service.enqueue('deposit', 'event', '100')).resolves.toBeUndefined();
+  });
+  it.each(STAFF_TYPES.filter(type => !['mention', 'performance'].includes(type)))('queues %s to all opted-in staff and uses one timestamp across devices', async type => {
+    const { service, users, accounts, stored } = setup();
+    const staff1 = '507f1f77bcf86cd799439012', staff2 = '507f1f77bcf86cd799439013';
+    users.find.mockReturnValue({ toArray: async () => [{ _id: staff1, role: 'staff' }, { _id: staff2, role: 'staff' }] } as any);
+    (accounts.findOne as jest.Mock).mockImplementation(async ({ userId }: any) => ({ userId, preferences: { ...DEFAULTS, enabled: true }, subscriptions: [subscription] }));
+    // Store each recipient independently, matching the queue's compound identity.
+    const jobs = (service as any).jobs;
+    jobs.updateOne.mockImplementation(async (_filter: any, update: any) => { const job = update.$setOnInsert; if (job) stored.set(job.userId, job); });
+    await service.enqueue(type, 'shared-event', '2771', 'tx:' + admin.userId);
+    expect(stored.size).toBe(2);
+    expect(new Set([...stored.values()].map(job => JSON.parse(job.payload).timestamp)).size).toBe(1);
+    expect(users.find).toHaveBeenCalledWith({ role: { $in: ['admin', 'staff', 'viewer'] }, isActive: { $ne: false } });
+  });
+  it('starts sending to a second device while the first provider request is still pending', async () => {
+    const { service, jobs, push } = setup();
+    jobs.findOneAndUpdate.mockResolvedValueOnce({ _id: 'first', userId: admin.userId, endpoint: subscription.endpoint, type: 'comment', payload: 'first', attempts: 1 } as never)
+      .mockResolvedValueOnce({ _id: 'second', userId: admin.userId, endpoint: subscription.endpoint, type: 'comment', payload: 'second', attempts: 1 } as never);
+    let finishFirst!: () => void;
+    const firstPending = new Promise<void>(resolve => finishFirst = resolve);
+    push.sendNotification.mockImplementationOnce(async () => { await firstPending; return {}; });
+    const work = service.dispatch();
+    for (let i = 0; i < 100 && push.sendNotification.mock.calls.length < 2; i++) await Promise.resolve();
+    expect(push.sendNotification).toHaveBeenCalledTimes(2);
+    finishFirst(); await work;
+    expect(jobs.updateOne).toHaveBeenCalledWith({ _id: 'second' }, { $set: { done: true } });
   });
   it.each([404, 410])('removes expired subscriptions on %s', async statusCode => {
     const { service, push, accounts, jobs } = setup();
@@ -115,7 +141,8 @@ describe('SOULIA notification message formats', () => {
     const { service, stored, account } = setup(); account.language = 'en';
     await service.enqueue(type, 'format', '2771', kind + admin.userId, undefined, status, details);
     const payload = JSON.parse(stored.get('format').payload);
-    expect(payload.title).toBe(title); expect(payload.body).toBe(body);
+    const emoji = kind === 'followup:' ? '📌' : { deposit: '💰', comment: '💬', order: '🛍️', deliveryProblem: '🚨', delivered: '📦' }[type];
+    expect(payload.title).toBe(`${emoji} ${title}`); expect(payload.body).toBe(body);
     const url = new URL(payload.url, 'https://soulia.test');
     expect(url.searchParams.get('pushRecord')).toBe(kind + admin.userId);
     expect(url.searchParams.get('pushType')).toBe(type);
@@ -144,7 +171,7 @@ describe('SOULIA notification message formats', () => {
   });
   it.each(TYPES)('sends English %s titles and bodies for English recipients', async type => {
     const { service, account, stored } = setup(); account.language = 'en';
-    await service.enqueue(type, 'english', '2638', '', type === 'mention' ? admin.userId : undefined, 'FAILED_ATTEMPT', { actorName: 'Ahmed Ali', amount: 500 });
+    await service.enqueue(type, 'english', '2638', type === 'otp' ? 'otp:' + admin.userId : '', ['mention', 'performance'].includes(type) ? admin.userId : undefined, 'FAILED_ATTEMPT', { pointDelta: 2, actorName: 'Ahmed Ali', amount: 500, expiresAt: new Date(Date.now() + 60000).toISOString() });
     const payload = JSON.parse(stored.get('english').payload);
     expect(payload.lang).toBe('en'); expect(payload.dir).toBe('ltr'); expect(payload.title).not.toMatch(/[\u0600-\u06ff]/); expect(payload.body).not.toMatch(/[\u0600-\u06ff]/);
     if (type === 'deposit') expect(payload.body).toBe('Ahmed Ali added EGP 500 · Unspecified vault · #2638');
@@ -154,7 +181,7 @@ describe('SOULIA notification message formats', () => {
     const { service, account, stored } = setup(); account.language = 'en';
     await service.enqueue('deposit', 'pending', '2638', '', undefined, undefined, { actorName: 'Ahmed', amount: 500, pendingApproval: true });
     expect(JSON.parse(stored.get('pending').payload).body).toBe('Ahmed added EGP 500 · Unspecified vault · #2638 · Review Required');
-    await service.test(admin); const test = [...stored.values()].find(j => j.eventId.startsWith('test:')); expect(JSON.parse(test.payload).title).toBe('SOULIA test notification');
+    await service.test(admin); const test = [...stored.values()].find(j => j.eventId.startsWith('test:')); expect(JSON.parse(test.payload).title).toBe('🔔 SOULIA test notification');
   });
   it('includes the depositing employee, amount and order with correct formal grammar', () => {
     expect(notificationBody('deposit', '#2638', { actorName: 'أحمد علي', amount: 500, vaultName: 'Instapay' })).toBe('أحمد علي أضاف 500 ج.م. · Instapay · #2638');
@@ -164,7 +191,7 @@ describe('SOULIA notification message formats', () => {
     const { service, stored } = setup();
     await service.enqueue('deposit', 'receipt', '2638', '', undefined, undefined, { actorName: 'أحمد علي', amount: 500, pendingApproval: true });
     const payload = JSON.parse(stored.get('receipt').payload);
-    expect(payload.title).toBe('عربون جديد · SOULIA'); expect(payload.body).toBe('أحمد علي أضاف 500 ج.م. · خزنة غير محددة · #2638 · مطلوب مراجعة');
+    expect(payload.title).toBe('💰 عربون جديد · SOULIA'); expect(payload.body).toBe('أحمد علي أضاف 500 ج.م. · خزنة غير محددة · #2638 · مطلوب مراجعة');
     expect(payload.body.length).toBeLessThan(160); expect(payload.timestamp).toEqual(expect.any(Number));
   });
   it('does not invent a financial amount or expose unsafe control characters', () => {

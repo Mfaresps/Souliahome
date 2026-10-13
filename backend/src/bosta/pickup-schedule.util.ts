@@ -42,10 +42,10 @@ export function pickupSchedule(now: Date, policy: PickupPolicy, blocked: PickupB
 
 export function pickupReasonMessage(reason: string): string {
   return ({ invalid: 'اختر تاريخ استلام صحيحًا', past: 'لا يمكن اختيار تاريخ استلام في الماضي',
-    friday: 'الجمعة إجازة — اختر أقرب يوم متاح', holiday: 'هذا اليوم إجازة لبوسطا — اختر يومًا آخر',
+    friday: 'الجمعة إجازة — اختر أقرب يوم متاح', holiday: 'هذا اليوم إجازة لبوسطة — اختر يومًا آخر',
     cutoff: 'انتهى وقت طلب استلام اليوم — اختر أقرب يوم متاح',
-    duplicate: 'يوجد طلب استلام لهذا المخزن في هذا اليوم — راجعه في بوسطا',
-    uncertain: 'نتيجة طلب سابق غير مؤكدة — راجع بوسطا قبل إنشاء طلب جديد لهذا اليوم',
+    duplicate: 'يوجد طلب استلام لهذا المخزن في هذا اليوم — راجعه في بوسطة',
+    uncertain: 'نتيجة طلب سابق غير مؤكدة — راجع بوسطة قبل إنشاء طلب جديد لهذا اليوم',
   } as Record<string, string>)[reason] || 'الموعد غير متاح للاستلام';
 }
 

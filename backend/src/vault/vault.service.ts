@@ -1,3 +1,6 @@
+import { notifyApproval } from '../notifications/admin-events';
+import { NotificationsService } from '../notifications/notifications.service';
+import { Inject as PushInject, Optional as PushOptional } from '@nestjs/common';
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
@@ -11,6 +14,7 @@ import { dateOnly, dateWindowQuery, normalizeDateOnly } from '../shared/date-win
 
 @Injectable()
 export class VaultService {
+  @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
   constructor(
     @InjectModel(VaultEntry.name)
     private readonly vaultModel: Model<VaultEntryDocument>,
@@ -206,6 +210,7 @@ export class VaultService {
         total: settings.vaultBalance || 0,
       },
     });
+    if (entry.requiresApproval && !entry.isApproved) await notifyApproval(this.notifications, 'approval:vault:' + entry._id + ':pending', entry.txNo, 'vault:' + entry._id, { actorName: entry.employee, actionKey: 'vault', status: 'pending' });
     return entry;
   }
 
@@ -467,7 +472,9 @@ export class VaultService {
       changes,
     });
 
-    return entry.save();
+    const saved = await entry.save();
+    await notifyApproval(this.notifications, 'approval:vault:' + id + ':' + entry.editHistory?.[entry.editHistory.length - 1]?.editedAt, entry.txNo, 'vault:' + id, { actorName: editor, actionKey: 'vault', status: 'modified' });
+    return saved;
   }
 
   async freezeEntry(id: string, reason: string, freezer: string): Promise<VaultEntryDocument> {
@@ -589,7 +596,9 @@ export class VaultService {
       editedAt: new Date().toISOString(),
       changes: { isApproved: { oldValue: false, newValue: true } },
     });
-    return entry.save();
+    const saved = await entry.save();
+    await notifyApproval(this.notifications, 'approval:vault:' + id + ':approved', entry.txNo, 'vault:' + id, { actorName: entry.employee, actionKey: 'vault', status: 'approved' });
+    return saved;
   }
 
   async searchAndFilter(filters: {

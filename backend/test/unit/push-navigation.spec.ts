@@ -22,6 +22,56 @@ function fixture(kind: string, type: string, event = '123') {
   return { context, element };
 }
 describe('Notification event routing', () => {
+  it('opens the authenticated employee profile for their own points notification', async () => {
+    const { context } = fixture('performance', 'performance'); context.currentUser = { id, role: 'staff' };
+    await context.souliaOpenPendingPush();
+    expect(context.navigateTo).toHaveBeenCalledWith('userhub'); expect(context.api).not.toHaveBeenCalled();
+  });
+  it('does not open another employee performance record', async () => {
+    const { context } = fixture('performance', 'performance'); context.currentUser = { id: 'another', role: 'staff' };
+    await context.souliaOpenPendingPush();
+    expect(context.navigateTo).not.toHaveBeenCalledWith('userhub'); expect(context.toast).toHaveBeenCalled();
+  });
+  it.each(['otp', 'audit', 'return', 'vault', 'product', 'expense', 'supplierReturn'])('blocks staff navigation to admin-only %s events', async kind => {
+    const { context } = fixture(kind, 'approval'); context.currentUser.role = 'staff';
+    expect(await context.souliaOpenPendingPush()).toBe(false); expect(context.api).not.toHaveBeenCalled();
+  });
+  it('opens the exact security event even when it is outside the recent log page', async () => {
+    const { context, element } = fixture('audit', 'security');
+    context._securityLogs = []; context._securityLogPage = 1;
+    context.loadSecurityPanel = jest.fn(async () => {}); context._renderSecurityLogPage = jest.fn();
+    await context.souliaOpenPendingPush();
+    expect(context.api).toHaveBeenCalledWith('/security-audit/logs/' + id);
+    expect(context.navigateTo).toHaveBeenCalledWith('users'); expect(context._securityLogPage).toBe(0);
+    expect(element.scrollIntoView).toHaveBeenCalled();
+  });
+  it('opens the exact OTP request beyond the recent 500 rows without loading twice', async () => {
+    const { context, element } = fixture('otp', 'otp');
+    context.api.mockImplementation(async (url: string) => url === '/discount-otp' ? [] : { _id: id });
+    context.document.getElementById = jest.fn(() => ({ value: '' }));
+    context.switchApprTab = jest.fn(); context.renderOtpAudit = jest.fn(async () => {});
+    context.renderOtpTablePage = jest.fn(); context.OTP_PAGE_SIZE = 25;
+    context._otpAuditAllRows = []; context._otpAuditPage = 1;
+    await context.souliaOpenPendingPush();
+    expect(context.api).toHaveBeenCalledWith('/discount-otp/record/' + id);
+    expect(context.switchApprTab.mock.calls[0][2]).toBe(false);
+    expect(context._otpAuditAllRows[0]._id).toBe(id); expect(element.scrollIntoView).toHaveBeenCalled();
+  });
+  it('opens the notified vault entry with the existing detail viewer', async () => {
+    const { context } = fixture('vault', 'approval'); context.vaultLog = []; context.openVaultTransactionDetail = jest.fn();
+    await context.souliaOpenPendingPush();
+    expect(context.api).toHaveBeenCalledWith('/vault/' + id);
+    expect(context.openVaultTransactionDetail).toHaveBeenCalledWith(id);
+  });
+  it('preserves the cash register lock and defers its target until unlock', async () => {
+    const { context } = fixture('vault', 'approval');
+    context.vaultLog = []; context.vaultUnlocked = false;
+    context.openVaultTx = jest.fn(); context.openVaultTransactionDetail = jest.fn();
+    context.api.mockResolvedValue({ _id: id, txNo: 'VLT-1' });
+    await context.souliaOpenPendingPush();
+    expect(context.openVaultTx).toHaveBeenCalledWith('VLT-1');
+    expect(context.openVaultTransactionDetail).not.toHaveBeenCalled();
+  });
   it('waits for login and startup data before opening the exact transaction comment', async () => {
     const { context } = fixture('tx', 'comment'); context.currentUser = null; context.souliaPushAppReady = false;
     expect(await context.souliaOpenPendingPush()).toBe(false); expect(context.api).not.toHaveBeenCalled();
@@ -59,9 +109,9 @@ describe('Notification event routing', () => {
     const { context } = fixture('followup', 'comment', id); await context.souliaOpenPendingPush();
     expect(context.goToFuAndHighlight).toHaveBeenCalledWith(id, true, id, true);
   });
-  it('keeps regular staff business notifications protected', async () => {
+  it('opens staff order comments through the authenticated transaction API', async () => {
     const { context } = fixture('tx', 'comment'); context.currentUser.role = 'staff';
-    expect(await context.souliaOpenPendingPush()).toBe(false); expect(context.api).not.toHaveBeenCalled();
+    expect(await context.souliaOpenPendingPush()).toBe(true); expect(context.api).toHaveBeenCalledWith('/transactions/' + id); expect(context.highlightInvComment).toHaveBeenCalledWith(123);
   });
   it('routes staff mentions through the existing authorized mention flow', async () => {
     const { context } = fixture('mention', 'mention'); context.currentUser.role = 'staff';

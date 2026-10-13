@@ -1,3 +1,6 @@
+import { notifyApproval } from '../notifications/admin-events';
+import { NotificationsService } from '../notifications/notifications.service';
+import { Inject as PushInject, Optional as PushOptional } from '@nestjs/common';
 import {
   Injectable,
   NotFoundException,
@@ -48,6 +51,7 @@ const NON_TERMINAL_STATUSES = ['مسودة', 'معلق', 'معتمد'];
 
 @Injectable()
 export class SupplierReturnsService {
+  @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
   constructor(
     @InjectModel(SupplierReturnOrder.name)
     private readonly srModel: Model<SupplierReturnOrderDocument>,
@@ -501,6 +505,7 @@ export class SupplierReturnsService {
       detail: `مرتجع ${returnNumber} — ${itemsTotal} ج${created.originalRef ? ' من الفاتورة ' + created.originalRef : ''}${autoApprove ? ' (معتمد تلقائياً)' : ''}`,
       by: requestedBy,
     });
+    if (!dto.saveAsDraft) await notifyApproval(this.notifications, 'approval:supplier-return:' + created._id + ':' + (autoApprove ? 'approved' : 'pending'), returnNumber, 'supplierReturn:' + created._id, { actorName: requestedBy, actionKey: 'supplier-return', status: autoApprove ? 'approved' : 'pending' });
     return created;
   }
 
@@ -589,7 +594,9 @@ export class SupplierReturnsService {
       changedBy: by,
       changedAt: new Date().toISOString(),
     });
-    return r.save();
+    const saved = await r.save();
+    await notifyApproval(this.notifications, 'approval:supplier-return:' + id + ':pending', r.returnNumber, 'supplierReturn:' + id, { actorName: r.createdBy || by, actionKey: 'supplier-return', status: 'pending' });
+    return saved;
   }
 
   async approve(
@@ -632,6 +639,7 @@ export class SupplierReturnsService {
       detail: `مرتجع ${r.returnNumber} — بانتظار الإتمام`,
       by: approvedBy,
     });
+    await notifyApproval(this.notifications, 'approval:supplier-return:' + id + ':approved', r.returnNumber, 'supplierReturn:' + id, { actorName: r.createdBy, actionKey: 'supplier-return', status: 'approved' });
     return saved;
   }
 
@@ -818,7 +826,9 @@ export class SupplierReturnsService {
       changedAt: r.approvedAt,
       note: rejectedReason,
     });
-    return r.save();
+    const saved = await r.save();
+    await notifyApproval(this.notifications, 'approval:supplier-return:' + id + ':rejected', r.returnNumber, 'supplierReturn:' + id, { actorName: r.createdBy, actionKey: 'supplier-return', status: 'rejected' });
+    return saved;
   }
 
   async cancel(

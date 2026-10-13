@@ -55,6 +55,21 @@ describe('Bosta warehouse pickup', () => {
     await expect(svc.createPickup(dto, 'operator')).rejects.toThrow('تغيرت');
     expect(svc.request).not.toHaveBeenCalled();
   });
+  it('keeps request history and sender after collection without reserving rejected orders', async () => {
+    const svc = setup();
+    const sentAt = new Date('2026-10-13T10:00:00Z');
+    svc.pickupModel.find.mockReturnValue({ lean: async () => [
+      { _id: 'collected', orderIds: ['collected-order'], status: 'created', scheduledDate: '2026-10-14', numberOfParcels: 1, requestedBy: 'Mona', createdAt: sentAt, bostaPickupId: 'B-1', businessLocationId: 'warehouse' },
+      { _id: 'rejected', orderIds: [id1], status: 'rejected', scheduledDate: '2026-10-13', numberOfParcels: 1, requestedBy: 'Ali' },
+    ] });
+    const preview = await svc.pickupPreview();
+    expect(preview.orders.map((o: any) => o.id)).toEqual([id1, id2]);
+    expect(preview.requests[0].id).toBe('collected');
+    expect(preview.requests).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'collected', orderIds: ['collected-order'], requestedBy: 'Mona', createdAt: sentAt, bostaPickupId: 'B-1' }),
+      expect.objectContaining({ id: 'rejected', status: 'rejected', requestedBy: 'Ali' }),
+    ]));
+  });
   it('rejects a stale preview when an order was added or removed', async () => {
     const svc = setup();
     await expect(svc.createPickup({ ...dto, orderIds: [id1] }, 'operator')).rejects.toThrow('تغيرت');

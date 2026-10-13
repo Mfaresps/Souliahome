@@ -1,3 +1,4 @@
+import { notifyApproval } from '../notifications/admin-events';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import {
@@ -1729,6 +1730,7 @@ export class TransactionsService {
       await this.notifications?.enqueue('deposit', 'deposit:' + tx._id + ':' + d.id, tx.ref, 'tx:' + tx._id, undefined, undefined,
         { actorName: notificationActor || d.by, amount: d.amount, vaultName: d.method, receiptId: d.receiptId, depositId: d.id });
     }
+    if (changes.length) await notifyApproval(this.notifications, 'approval:tx:' + id + ':' + historyEntry.editedAt, tx!.ref, 'tx:' + id, { actorName: editedBy || notificationActor, actionKey: 'edit-tx', status: 'modified' });
     return tx!;
   }
 
@@ -2602,6 +2604,7 @@ export class TransactionsService {
         { new: true },
       )
       .exec();
+    await notifyApproval(this.notifications, 'approval:cancel:' + id + ':' + updated!.cancelRequest?.requestedAt + ':pending', updated!.ref, 'tx:' + id, { actorName: requestedBy, actionKey: 'cancel', status: 'pending' });
     return updated!;
   }
 
@@ -2670,6 +2673,7 @@ export class TransactionsService {
         this.emit('mentions:changed', { targetUserId: reqId, targetUsername: reqUsername });
       } catch { /* swallow */ }
     }
+    await notifyApproval(this.notifications, 'approval:cancel:' + id + ':' + tx.cancelRequest?.requestedAt + ':approved', tx.ref, 'tx:' + id, { actorName: reqName, actionKey: 'cancel', status: 'approved' });
     return result;
   }
 
@@ -2721,6 +2725,7 @@ export class TransactionsService {
         this.emit('mentions:changed', { targetUserId: reqId, targetUsername: reqUsername });
       } catch { /* swallow */ }
     }
+    await notifyApproval(this.notifications, 'approval:cancel:' + id + ':' + tx.cancelRequest?.requestedAt + ':rejected', tx.ref, 'tx:' + id, { actorName: reqName, actionKey: 'cancel', status: 'rejected' });
     return updated!;
   }
 

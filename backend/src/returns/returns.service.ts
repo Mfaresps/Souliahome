@@ -1,3 +1,6 @@
+import { notifyApproval } from '../notifications/admin-events';
+import { NotificationsService } from '../notifications/notifications.service';
+import { Inject as PushInject, Optional as PushOptional } from '@nestjs/common';
 import {
   Injectable,
   NotFoundException,
@@ -34,6 +37,7 @@ import {
  */
 @Injectable()
 export class ReturnsService {
+  @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
   private readonly logger = new Logger(ReturnsService.name);
 
   constructor(
@@ -166,7 +170,7 @@ export class ReturnsService {
     const sequence = existingReturns.length + 1;
     const originalRef = dto.originalRef || dto.originalTransactionId;
 
-    return this.returnModel.create({
+    const created = await this.returnModel.create({
       originalTransactionId: dto.originalTransactionId,
       originalRef,
       originalDate: dto.originalDate,
@@ -195,6 +199,8 @@ export class ReturnsService {
       daysRemaining,
       maxReturnDays: MAX_RETURN_DAYS,
     });
+    await notifyApproval(this.notifications, 'approval:return:' + created._id + ':pending', originalRef, 'return:' + created._id, { actorName: requestedBy, actionKey: 'return', status: 'pending' });
+    return created;
   }
 
   /**
@@ -336,6 +342,7 @@ export class ReturnsService {
       );
     }
 
+    await notifyApproval(this.notifications, 'approval:return:' + id + ':approved', ret.originalRef, 'return:' + id, { actorName: ret.requestedBy, actionKey: 'return', status: 'approved' });
     return ret;
   }
 
@@ -355,7 +362,9 @@ export class ReturnsService {
     ret.approvedBy = approvedBy;
     ret.approvedAt = new Date().toISOString();
     ret.rejectedReason = rejectedReason;
-    return ret.save();
+    const saved = await ret.save();
+    await notifyApproval(this.notifications, 'approval:return:' + id + ':rejected', ret.originalRef, 'return:' + id, { actorName: ret.requestedBy, actionKey: 'return', status: 'rejected' });
+    return saved;
   }
 
   async updateVaultAccount(

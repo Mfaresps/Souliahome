@@ -100,6 +100,7 @@ export class AuthService {
     const user = await this.usersService.findByUsername(loginDto.username);
 
     if (!user) {
+      try { await this.auditService.log({ userId: 'unknown', username: loginDto.username, violationType: 'failed_login', action: 'Failed login: unknown account', ipAddress, client }); } catch { /* Keep the existing authentication response. */ }
       // Unknown username — still audit so we catch brute-force on valid names
       throw new UnauthorizedException('اسم المستخدم أو كلمة المرور غير صحيحة');
     }
@@ -229,7 +230,10 @@ export class AuthService {
     if (!user || !user.totpSecret) throw new UnauthorizedException('بيانات غير صحيحة');
 
     const valid = this.totpService.verifyToken(user.totpSecret, token);
-    if (!valid) throw new UnauthorizedException('رمز التحقق غير صحيح');
+    if (!valid) {
+      try { await this.auditService.log({ userId: String(user._id), username: user.username, violationType: 'otp_violation', action: 'Two-factor authentication verification failed' }); } catch { /* Preserve authentication denial. */ }
+      throw new UnauthorizedException('رمز التحقق غير صحيح');
+    }
 
     if (trustDevice) {
       const newToken = this.totpService.generateDeviceToken();
@@ -256,7 +260,10 @@ export class AuthService {
     const user = await this.usersService.findById(userId);
     if (!user || !user.totpSecret) throw new UnauthorizedException('بيانات غير صحيحة');
     const valid = this.totpService.verifyToken(user.totpSecret, token);
-    if (!valid) throw new UnauthorizedException('رمز التحقق غير صحيح');
+    if (!valid) {
+      try { await this.auditService.log({ userId: String(user._id), username: user.username, violationType: 'otp_violation', action: 'Two-factor authentication verification failed' }); } catch { /* Preserve authentication denial. */ }
+      throw new UnauthorizedException('رمز التحقق غير صحيح');
+    }
     const resetToken = crypto.randomBytes(32).toString('hex');
     resetTokens.set(resetToken, { userId, expiresAt: Date.now() + 10 * 60 * 1000 }); // 10 minutes
     return { resetToken };

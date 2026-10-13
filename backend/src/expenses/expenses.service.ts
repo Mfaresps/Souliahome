@@ -1,3 +1,6 @@
+import { notifyApproval } from '../notifications/admin-events';
+import { NotificationsService } from '../notifications/notifications.service';
+import { Inject as PushInject, Optional as PushOptional } from '@nestjs/common';
 import {
   Injectable,
   NotFoundException,
@@ -13,6 +16,7 @@ import { VaultService } from '../vault/vault.service';
 
 @Injectable()
 export class ExpensesService {
+  @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
   constructor(
     @InjectModel(Expense.name)
     private readonly expenseModel: Model<ExpenseDocument>,
@@ -39,7 +43,9 @@ export class ExpensesService {
 
   async create(dto: CreateExpenseDto): Promise<ExpenseDocument> {
     const expenseNo = dto.expenseNo || this.generateExpenseNo();
-    return this.expenseModel.create({ ...dto, status: 'معلق', expenseNo });
+    const created = await this.expenseModel.create({ ...dto, status: 'معلق', expenseNo });
+    await notifyApproval(this.notifications, 'approval:expense:' + created._id + ':pending', expenseNo, 'expense:' + created._id, { actorName: created.employee, actionKey: 'expense', status: 'pending' });
+    return created;
   }
 
   /**
@@ -64,6 +70,7 @@ export class ExpensesService {
       'مصروف',
       String(expense._id),
     );
+    await notifyApproval(this.notifications, 'approval:expense:' + expense._id + ':approved', expense.expenseNo || String(expense._id), 'expense:' + expense._id, { actorName: expense.employee || approvedBy, actionKey: 'expense', status: 'approved' });
     return expense;
   }
 
@@ -107,6 +114,7 @@ export class ExpensesService {
       'مصروف',
       String(expense._id),
     );
+    await notifyApproval(this.notifications, 'approval:expense:' + id + ':approved', expense.expenseNo, 'expense:' + id, { actorName: expense.employee, actionKey: 'expense', status: 'approved' });
     return saved;
   }
 
@@ -121,7 +129,9 @@ export class ExpensesService {
     expense.status = 'مرفوض';
     expense.approvedBy = approvedBy;
     expense.approvedAt = new Date().toISOString();
-    return expense.save();
+    const saved = await expense.save();
+    await notifyApproval(this.notifications, 'approval:expense:' + id + ':rejected', expense.expenseNo, 'expense:' + id, { actorName: expense.employee, actionKey: 'expense', status: 'rejected' });
+    return saved;
   }
 
   getAttachmentsDir(): string {

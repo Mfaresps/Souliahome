@@ -47,6 +47,7 @@
 #notification-settings #push-feedback{font-size:.78rem;color:var(--primary,#00311e);margin:12px 0 0;line-height:1.7}
 #notification-settings #push-feedback:empty{display:none}
 #notification-settings #push-feedback[data-error="true"]{color:var(--danger,#b42318)}
+.push-onboarding-dialog{padding:22px;line-height:1.8}.push-onboarding-dialog h3{margin:0 0 10px}.push-onboarding-dialog p{overflow-wrap:anywhere}.push-onboarding-dialog small{display:block;margin-top:14px;color:var(--muted)}.push-onboarding-actions{display:flex;gap:10px;flex-wrap:wrap}.push-onboarding-actions button{flex:1;min-height:44px}.push-onboarding-dialog #push-onboarding-feedback{color:var(--danger,#b42318)}
 .push-settings-dialog{width:min(650px,calc(100vw - 24px));max-height:88vh;overflow:auto;background:var(--surface,#fff);color:var(--text,#17251e);border:1px solid var(--border,#ddd);border-radius:18px;padding:12px}.push-settings-dialog::backdrop{background:rgba(0,0,0,.4)}#push-settings-shortcut{margin:8px}
 @container (max-width:640px){#notification-settings .push-category-grid{grid-template-columns:1fr}}
 @media(max-width:600px){#notification-settings{padding:16px!important}#notification-settings .push-category-grid{grid-template-columns:1fr;gap:10px}#notification-settings .push-setting-row{padding:14px 12px!important;gap:10px}#notification-settings .push-heading-icon{width:42px;height:42px}#notification-settings .push-heading{gap:10px;margin-bottom:18px}#notification-settings h3{font-size:1rem}#notification-settings .push-category-icon{width:32px;height:32px;border-radius:9px}#notification-settings .push-category-icon svg{width:19px;height:19px}#notification-settings .push-setting-copy small{font-size:.72rem}#notification-settings .push-switch{margin-inline-start:2px}#notification-settings .push-language-row{gap:12px}#notification-settings #push-language{width:115px}#notification-settings .push-device-card{padding:14px}#notification-settings .push-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}#notification-settings .push-action-primary{grid-column:1/-1}#notification-settings .push-action-quiet{margin:0}#notification-settings .push-action{padding:10px 8px;font-size:.73rem}}
@@ -56,3 +57,19 @@
 #notification-settings .push-setting-copy strong,#notification-settings .push-language-row strong,#notification-settings .push-device-card h4{font-size:14px}
 #notification-settings .push-setting-copy small,#notification-settings .push-language-row small,#notification-settings .push-section-title{font-size:12px}
 #notification-settings .push-action,#notification-settings #push-language,#notification-settings #push-device-status,#notification-settings #push-feedback,#notification-settings .push-install-help{font-size:13px}
+.push-settings-dialog{position:fixed!important;inset:0!important;margin:auto!important;width:min(650px,calc(100vw - 32px));max-width:calc(100vw - 32px);height:fit-content;max-height:calc(100dvh - 40px);box-sizing:border-box;overflow:auto;font-family:var(--font-app,inherit);font-size:14px;line-height:1.7;overscroll-behavior:contain}
+.push-onboarding-dialog{width:min(540px,calc(100vw - 32px));padding:24px}
+.push-settings-dialog>button:first-child{display:block;margin-inline-start:auto;min-height:40px}
+.push-onboarding-dialog h3{font-size:20px;line-height:1.5}
+.push-onboarding-dialog p{font-size:14px;margin:8px 0 16px}
+.push-onboarding-dialog small{font-size:12px;line-height:1.7}
+.push-activation-guide{margin:18px 0;padding:16px;border:1px solid var(--border,#dde6e0);border-radius:12px;background:var(--surface,#fff);text-align:start}
+.push-activation-guide h4{margin:0 0 14px;font-size:15px}
+.push-activation-guide ol{list-style:none;padding:0;margin:0;display:grid;gap:14px}
+.push-activation-guide li{display:flex;align-items:flex-start;gap:12px}
+.push-activation-guide li>span{flex:none;white-space:nowrap;direction:ltr;font-size:11px;font-weight:700;letter-spacing:.06em;border-radius:7px;padding:5px 7px;background:var(--primary-pale,#e9f3ed);color:var(--primary,#00311e)}
+.push-activation-guide li p{font-size:13px;line-height:1.8;margin:0;overflow-wrap:anywhere}
+#notification-settings .push-language-select{width:150px;max-width:100%;flex:none;min-height:40px;padding:8px 12px;border:1px solid var(--border,#dde6e0);border-radius:9px;background:var(--surface,#fff);color:var(--text,#20332b);font:inherit}
+#notification-settings .push-managed-language{font-size:13px;white-space:normal;text-align:end;max-width:45%}
+#notification-settings [hidden]{display:none!important}
+@media(max-width:600px){.push-settings-dialog{padding:10px;border-radius:16px;max-height:calc(100dvh - 32px)}.push-onboarding-dialog{padding:20px}.push-onboarding-dialog h3{font-size:18px}.push-activation-guide{padding:12px}.push-activation-guide li{gap:9px}.push-onboarding-actions{display:grid;grid-template-columns:1fr;width:100%}#notification-settings .push-language-select{width:110px}}

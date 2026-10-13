@@ -14,6 +14,25 @@ function bosta(tx: any) {
   service.followUpsService = { openShippingIssueFollowUp: jest.fn(async () => null) };
   return { service, enqueue };
 }
+it('new Shopify orders pass the saved assignee into the same new-order push event and skip duplicates', async () => {
+  const service: any = Object.create(ShopifyService.prototype);
+  const employeeId = '507f1f77bcf86cd799439011';
+  let stored: any = null;
+  const order: any = { _id: '507f1f77bcf86cd799439012', ref: '2771', total: 2450, save: jest.fn(async () => order) };
+  service.shopifyOrderModel = { findOne: () => ({ lean: async () => stored }), create: jest.fn(async () => { stored = order; return order; }) };
+  service.logger = { log() {}, warn() {}, error() {} };
+  service.mapItems = async () => []; service.pickOrderDiscountApplication = () => undefined;
+  service.applyDerivedDeposit = jest.fn();
+  service.employeeShiftService = { resolveAssignee: async () => ({ userId: employeeId, username: 'ahmed', name: 'Ahmed', reason: 'shift' }) };
+  service.employeeScoringService = { scoreDepositDetection: async () => {} };
+  service.notifyOrderAssigned = jest.fn(async () => {});
+  service.notifications = { enqueue: jest.fn(async () => {}) };
+  expect((await service.handleOrder({ id: 1, name: '#2771' })).saved).toBe(true);
+  expect(service.notifications.enqueue).toHaveBeenCalledWith('order', 'order:shopify:1', '2771', 'shopify:' + order._id, undefined, undefined, { orderTotal: 2450, assignedUserId: employeeId });
+  const before = service.notifications.enqueue.mock.calls.length;
+  expect((await service.handleOrder({ id: 1, name: '#2771' })).saved).toBe(false);
+  expect(service.notifications.enqueue).toHaveBeenCalledTimes(before);
+});
 it.each(['CREATED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'UNKNOWN'])('does not alert on intermediate Bosta %s', async status => {
   const { service, enqueue } = bosta({ _id: 't1', ref: '100', bostaStatus: 'CREATED' });
   await service.applyDeliveryUpdate('t1', { _id: 't1', ref: '100', bostaStatus: 'CREATED' }, { status }, 'webhook'); expect(enqueue).not.toHaveBeenCalled();
@@ -55,6 +74,16 @@ it('follow-up retries with the same actor/request ID do not add a comment or ale
   const service: any = Object.create(FollowUpsService.prototype); const before = { comments: [{ requestKey: 'u1:nonce' }] };
   service.model = { findById: () => ({ lean: async () => before }), findOneAndUpdate: jest.fn() }; service.notifications = { enqueue: jest.fn() };
   expect(await service.addComment('f1', 'u1', 'Test', 'fixture', 'nonce')).toBe(before); expect(service.model.findOneAndUpdate).not.toHaveBeenCalled(); expect(service.notifications.enqueue).not.toHaveBeenCalled();
+});
+it('notifies a new follow-up only after the ticket was saved', async () => {
+  const service: any = Object.create(FollowUpsService.prototype);
+  service.generateTicketNo = jest.fn(async () => 'FU-2771-N001');
+  service.model = { create: jest.fn(async () => ({ _id: 'f1', orderRef: '2771' })) };
+  service.notifications = { enqueue: jest.fn(async () => {}) };
+  await service.create({ orderRef: '2771' });
+  expect(service.notifications.enqueue).toHaveBeenCalledWith('followup', 'followup:f1', '2771', 'followup:f1');
+  service.notifications.enqueue.mockClear(); service.model.create.mockRejectedValueOnce(new Error('save failed'));
+  await expect(service.create({ orderRef: '2771' })).rejects.toThrow('save failed'); expect(service.notifications.enqueue).not.toHaveBeenCalled();
 });
 it.each([undefined, 444])('uses a saved transaction comment ID for mention routing and retry suppression (%p)', async savedCommentId => {
   const html = readFileSync(resolve(__dirname, '../../../frontend/public/index.html'), 'utf8');

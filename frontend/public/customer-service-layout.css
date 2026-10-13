@@ -1,0 +1,45 @@
+/* Customer service header: statistics and filters each have their own row. */
+#page-complaints{min-width:0;box-sizing:border-box}
+#page-complaints .cs-sticky-head{padding-bottom:16px;border-bottom:1px solid var(--border)}
+#page-complaints .page-header{gap:16px;flex-wrap:wrap}
+#page-complaints .page-title{font-size:1.4rem;line-height:1.35}
+#page-complaints .page-subtitle{line-height:1.5}
+#page-complaints #cmp-header-actions{flex-wrap:wrap}
+#page-complaints .cs-main-tabs{margin:18px 0 16px!important;gap:6px!important;align-items:center}
+#page-complaints .cs-main-tabs>button{min-height:42px;padding:10px 16px!important;font-family:inherit;white-space:nowrap}
+#page-complaints #fu-kpi-toolbar-row{flex-wrap:wrap;gap:14px!important;margin-bottom:0!important}
+#page-complaints #fu-kpi{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px!important;width:100%;min-width:0;padding:0!important;overflow:visible!important;flex:0 0 100%}
+#page-complaints .fu-kpi-pill{min-width:0;min-height:46px;box-sizing:border-box;border-radius:10px;padding:10px 14px;gap:8px;white-space:normal}
+#page-complaints .fu-kpi-label{font-size:.8rem;line-height:1.4}
+#page-complaints .fu-kpi-val{margin-inline-start:auto;font-size:1rem}
+#page-complaints .fu-toolbar{flex:1 1 100%!important;flex-wrap:wrap!important;gap:8px!important;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--bg-alt);box-sizing:border-box}
+#page-complaints .fu-search-field{flex:1 1 240px!important;min-width:180px!important;max-width:none!important}
+#page-complaints .fu-search-field>svg{right:auto!important;left:auto!important;inset-inline-end:12px!important;width:15px;height:15px}
+#page-complaints #fu-search{height:38px!important;padding-inline:12px 36px!important;border-radius:9px!important;font-size:.82rem!important}
+#page-complaints .fu-toolbar .fsel{width:160px;min-width:130px;flex:0 1 160px}
+#page-complaints .fu-toolbar .fsel-btn,#page-complaints .fu-filter-select:not(.fsel-native){height:38px;border-radius:9px;font-size:.82rem;padding-inline:10px}
+#page-complaints .fu-date-range{gap:6px!important;flex:0 0 auto}
+#page-complaints .fu-date-range>svg{display:none}
+#page-complaints .fu-date-range input.date-filter-icon{height:38px!important;border-radius:9px!important}
+#page-complaints .fu-clear-filters{height:38px!important;width:38px!important;border-radius:9px!important;background:var(--bg)!important}
+#page-complaints .fu-clear-filters:hover{color:var(--text);border-color:var(--primary)!important}
+#page-complaints #fu-orders-section{padding-top:16px!important}
+#page-complaints .fu-table-wrap{margin-top:0}
+#page-complaints #fu-table th{padding-block:12px;font-size:.7rem;letter-spacing:.02em}
+#page-complaints .fu-toolbar input:focus-visible,#page-complaints .cs-main-tabs>button:focus-visible,#page-complaints .fu-clear-filters:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+@media(max-width:1100px) and (min-width:769px){
+  #page-complaints .fu-search-field{flex-basis:100%!important}
+  #page-complaints .fu-toolbar .fsel{flex:1 1 150px}
+}
+@media(max-width:768px){
+  #page-complaints .page-title{font-size:1.1rem}
+  #page-complaints .cs-sticky-head{padding-bottom:12px}
+  #page-complaints .cs-main-tabs{margin:12px 0!important;gap:0!important}
+  #page-complaints .cs-main-tabs>button{flex:1;justify-content:center;padding:10px 8px!important;font-size:.8rem!important}
+  #page-complaints #fu-kpi-toolbar-row{display:flex!important;align-items:center;gap:10px!important}
+  #page-complaints #fu-kpi{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:0!important;flex:1 1 0;width:auto;margin-bottom:0!important;overflow:hidden!important}
+  #page-complaints .fu-kpi-pill{min-height:62px;white-space:normal}
+  #page-complaints .fu-kpi-val{margin-inline-start:0}
+  #page-complaints #fu-filter-trigger-btn{flex:0 0 40px;min-height:40px;width:40px;margin:0}
+  #page-complaints .fu-toolbar{display:none!important}
+}

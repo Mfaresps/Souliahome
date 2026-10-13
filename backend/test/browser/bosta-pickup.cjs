@@ -7,9 +7,11 @@ assert.ok(html.includes('onclick="openBostaPickup(this)"'));
   const browser = await puppeteer.launch({ headless: true });
   try {
     const page = await browser.newPage();
+    page.on('pageerror', error => console.error('Browser error:', error.message));
     await page.setViewport({ width: 390, height: 844 });
     await page.setContent('<html dir="rtl"><body><div id="modal-content"></div></body></html>');
     await page.addStyleTag({ content: html.match(/<style[^>]*>([\s\S]*?)<\/style>/i)[1] });
+    await page.addStyleTag({ path: path.join(publicDir, 'bosta-pickup.css') });
     await page.evaluate(() => {
       window.currentLang = 'ar'; window.qs = s => document.querySelector(s);
       window.esc = window.escHtml = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -26,7 +28,7 @@ assert.ok(html.includes('onclick="openBostaPickup(this)"'));
         if (url.startsWith('/shipping/pickup-schedule')) return JSON.parse(JSON.stringify(mockSchedule));
         if (url === '/settings') { window.savedPolicy = JSON.parse(options.body); return {}; }
         if (url.endsWith('pickup-preview')) return { orders, numberOfParcels: orders.length, requests };
-        if (url.endsWith('pickup-locations')) return [{ id: 'warehouse', name: '<Warehouse>', contactName: 'Contact', contactPhone: '01114701237' }];
+        if (url.endsWith('pickup-locations')) { if (window.failLocations) throw new Error('Warehouse unavailable'); return [{ id: 'warehouse', name: '<Warehouse>', contactName: 'Contact', contactPhone: '01114701237' }]; }
         if (options?.method === 'POST') {
           calls.push(JSON.parse(options.body));
           if (window.fail) throw new Error('Date unavailable');
@@ -36,7 +38,7 @@ assert.ok(html.includes('onclick="openBostaPickup(this)"'));
             const e = new Error('Holiday'); e.pickupReason = 'holiday'; throw e;
           }
           await new Promise(resolve => setTimeout(resolve, 100));
-          orders = []; requests = [{ scheduledDate: calls.at(-1).scheduledDate, numberOfParcels: 2, status: 'created' }];
+          requests = [{ scheduledDate: calls.at(-1).scheduledDate, numberOfParcels: 2, status: 'created', orderIds: orders.map(o => o.id), requestedBy: '<Mona>', createdAt: '2026-10-13T10:00:00Z', bostaPickupId: 'B-1' }]; orders = [];
           return { success: true, scheduledDate: calls.at(-1).scheduledDate, numberOfParcels: 2 };
         }
         throw new Error('Unexpected request');
@@ -72,6 +74,7 @@ assert.ok(html.includes('onclick="openBostaPickup(this)"'));
     await page.evaluate(() => { failHoliday = false; });
     await page.evaluate(() => { fail = false; calls = []; const form = qs('#bosta-pickup-form'); submitBostaPickup(form); submitBostaPickup(form); });
     await page.waitForFunction(() => document.querySelector('#modal-content').textContent.includes('تم طلب الاستلام'));
+    assert.ok(await page.$('.bp-success-icon svg'));
     assert.equal(await page.evaluate(() => calls.length), 1);
     const sent = await page.evaluate(() => calls[0]);
     assert.equal(sent.orderIds.length, 2); assert.equal(sent.businessLocationId, 'warehouse');
@@ -79,8 +82,19 @@ assert.ok(html.includes('onclick="openBostaPickup(this)"'));
     assert.equal(sent.scheduledDate, '2099-10-18');
     await page.evaluate(() => { currentLang = 'en'; }); await page.evaluate(() => openBostaPickup());
     assert.ok((await page.$eval('#modal-content', el => el.textContent)).includes('Pickup requested'));
+    assert.ok((await page.$eval('.bp-history', el => el.textContent)).includes('<Mona>'));
+    assert.equal(await page.$('.bp-history Mona'), null);
+    assert.ok((await page.evaluate(() => bostaPickupCardBadge([{ _id: '507f1f77bcf86cd799439011' }]))).includes('Pickup requested'));
+    assert.ok((await page.evaluate(() => bostaPickupCardBadge([{ _id: '507f1f77bcf86cd799439011' }, { _id: 'new' }]))).includes('(1/2)'));
+    assert.equal(await page.evaluate(() => bostaPickupCardBadge([{ _id: 'new' }])), '');
+    assert.ok(await page.evaluate(() => { _bpSetRequests([{ status: 'pending', orderIds: ['uncertain'], scheduledDate: '2099-10-18' }]); return bostaPickupCardBadge([{ _id: 'uncertain' }]).includes('awaiting confirmation'); }));
     assert.equal(await page.$('#bosta-pickup-form'), null);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.evaluate(() => { failLocations = true; });
+    await page.evaluate(() => openBostaPickup());
+    assert.ok((await page.$eval('.bp-history', el => el.textContent)).includes('<Mona>'));
+    assert.ok((await page.$eval('#modal-content', el => el.textContent)).includes('Warehouse unavailable'));
+    await page.evaluate(() => { failLocations = false; });
     await page.evaluate(() => {
       orders = [{ id: 'new' }]; mockSchedule.dates.forEach(d => d.reason = 'holiday'); mockSchedule.earliestDate = '';
     });
