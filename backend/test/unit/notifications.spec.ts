@@ -30,6 +30,33 @@ function setup() {
   return { service, push, account, accounts, jobs, users, stored, inbox, historyRows };
 }
 describe('Web Push settings, security and delivery', () => {
+  it.each(['ar', 'en'] as const)('hides internal record IDs in admin notification text (%s)', language => {
+    const details = { actorName: 'Hassan Ammar', actionKey: 'export-excel', status: 'pending' as const };
+    for (const ref of ['6ace9cd9a61c2ed6e4726e67', '#6ACE9CD9A61C2ED6E4726E67']) {
+      const action = language === 'en' ? 'Export data' : 'تصدير بيانات';
+      expect(notificationBody('otp', ref, details, language)).toBe(`Hassan Ammar · ${action} · OTP: {OTP}`);
+      for (const type of ['approval', 'security'] as const) {
+        const status = language === 'en' ? 'Pending approval' : 'بانتظار الموافقة';
+        expect(notificationBody(type, ref, details, language)).toBe(`Hassan Ammar · ${action} · ${status}`);
+      }
+    }
+  });
+  it.each(['2776', 'CUS-45-ALB-BEI'])('preserves business references in OTP and approval text: %s', ref => {
+    for (const language of ['ar', 'en'] as const) {
+      for (const type of ['otp', 'approval'] as const) {
+        expect(notificationBody(type, ref, { actorName: 'Hassan Ammar', actionKey: 'product', status: 'pending' }, language)).toContain('#' + ref);
+      }
+    }
+  });
+  it('omits the internal ID from the push body while preserving the request destination', async () => {
+    const { service, stored, account } = setup(); account.language = 'en';
+    const id = '6ace9cd9a61c2ed6e4726e67';
+    await service.enqueue('approval', 'approval:otp:' + id + ':pending', id, 'otp:' + id, undefined, undefined,
+      { actorName: 'Hassan Ammar', actionKey: 'export-excel', status: 'pending' });
+    const payload = JSON.parse(stored.get('approval:otp:' + id + ':pending').payload);
+    expect(payload.body).toBe('Hassan Ammar · Export data · Pending approval');
+    expect(payload.url).toContain(id);
+  });
   it('persists full comment history with push disabled and preserves read state on retry', async () => {
     const { service, account, stored, historyRows } = setup();
     account.preferences.enabled = false;

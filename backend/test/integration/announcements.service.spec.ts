@@ -64,7 +64,13 @@ describe('Announcements — all employees', () => {
     expect(ar.title).toBe('📢 إعلان من SOULIA');
     expect(en.body).toBe('🎉 Holiday Greeting · عيد سعيد للجميع 🎉 إجازة يوم الخميس');
     expect(ar.body).toBe('🎉 تهنئة بمناسبة · عيد سعيد للجميع 🎉 إجازة يوم الخميس');
-    expect(en.url).toBe(`/?pushRecord=announcement%3A${row.id}&pushType=announcement`);
+    const destination = new URL(en.url, 'https://soulia.test');
+    expect(destination.pathname).toBe('/');
+    expect(destination.searchParams.get('pushRecord')).toBe(`announcement:${row.id}`);
+    expect(destination.searchParams.get('pushType')).toBe('announcement');
+    const historyRow = await connection.collection('notificationinbox').findOne({ userId: admin2.userId, recordId: `announcement:${row.id}` });
+    expect(historyRow).not.toBeNull();
+    expect(destination.searchParams.get('pushNotification')).toBe(historyRow!._id);
 
     const send = (notifications as any).push.sendNotification; send.mockClear();
     await notifications.dispatch();

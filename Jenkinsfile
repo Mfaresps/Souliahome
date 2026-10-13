@@ -7,6 +7,14 @@ pipeline {
   }
 
   stages {
+    stage('Shopify deployment config') {
+      when { branch 'main' }
+      steps {
+        // Validate required secrets before building or replacing live containers.
+        // --quiet never prints resolved credentials.
+        sh 'docker compose -p soulia config --quiet'
+      }
+    }
     // فحص مبكر يطبع — في أول أسطر الـ console — سبب أشهر نوعين من الفشل البيئي:
     // امتلاء القرص، وانقطاع الوصول لسجل npm. #74/#75 فشلا على كود سبق نجاحه (#71
     // على نفس revision #74)، فالسبب بيئي بالضرورة — هذه المرحلة تجعله مقروءاً
@@ -72,6 +80,7 @@ pipeline {
             # 401 المتوقع، أو 400/429، يثبت أن مسار المصادقة يعمل.
             # أخطاء الاتصال أو الخادم لا تُحسب نجاحًا ولا تُرسل إعلان نسخة جديدة.
             if [ "$frontend_ok" = true ] && { [ "$api_code" = "401" ] || [ "$api_code" = "400" ] || [ "$api_code" = "429" ]; }; then
+              docker exec soulia-backend node scripts/check-shopify-webhook.cjs || exit 1
               echo "SOULIA deployed and healthy (login endpoint responded $api_code)"
               exit 0
             fi

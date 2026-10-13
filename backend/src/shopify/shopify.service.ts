@@ -10,6 +10,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -485,7 +486,21 @@ export class ShopifyService {
     return this.handleOrder(res.order);
   }
 
-  // مزامنة تحديث الأوردر من Shopify (note + tags فقط)
+  async handleOrderEdited(payload: any): Promise<{ updated: boolean; reason?: string }> {
+    const orderId = String(payload?.order_edit?.order_id ?? '');
+    if (!/^\d+$/.test(orderId)) {
+      throw new BadRequestException('Missing or invalid order_edit.order_id');
+    }
+    const result = await this.shopifyAdminService.getOrder(orderId);
+    if (!result.success || !result.order || String(result.order.id) !== orderId) {
+      // A temporary API/config failure must not acknowledge and lose the edit.
+      // Do not apply partial delta fields: missing fields would erase order data.
+      throw new ServiceUnavailableException('Unable to fetch edited order from Shopify');
+    }
+    return this.handleOrderUpdate(result.order);
+  }
+
+  // مزامنة تحديث الأوردر الكامل من Shopify
   async handleOrderUpdate(orderData: any): Promise<{ updated: boolean; reason?: string }> {
     try {
       const shopifyId = String(orderData.id);

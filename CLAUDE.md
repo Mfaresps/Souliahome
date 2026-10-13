@@ -1261,7 +1261,10 @@ disagreement.) Now `valueChangeConflict`, on the same rule as the deposit.
 
 ⚠ **`orders/edited` is a different topic from `orders/updated`.** It fires for the official Edit
 order flow (add/remove line, change qty) and was never handled — so item edits reached nothing.
-It routes to the same handler, which freezes rather than silently rewrites.
+Its payload is an `order_edit` delta, not a complete order. `handleOrderEdited` fetches
+the full order using `order_edit.order_id` (not the edit's own `id`) before routing to
+`handleOrderUpdate`, which freezes rather than silently rewrites. Failed/mismatched
+fetches return 503 for retry without applying partial data.
 
 ### Cancellation splits by whether a transaction exists
 - No transaction → nothing moved; cancel directly, `cancelledBy: 'Shopify'`.

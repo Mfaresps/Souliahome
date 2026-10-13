@@ -224,6 +224,8 @@
   /* ── Composer (admin) ───────────────────────────────────────── */
   const form = { category: 'announcement', audience: 'all', selected: new Set(), search: '', requestKey: '', sending: false, when: 'now', sendAt: '' };
   let cfg = null, history = null, historyFailed = false, composerLang = '', composerToken = '', historyTimer = null;
+  const historyPageSize = 5;
+  let historyPage = 1;
   const newKey = () => (crypto?.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 12));
   // <input type="datetime-local"> speaks the browser's local wall-clock time; the server gets ISO.
   const pad = n => String(n).padStart(2, '0');
@@ -479,7 +481,7 @@
       // Back to «الآن»: the next message should not inherit this one's schedule by accident.
       if (form.when === 'later') { form.when = 'now'; form.sendAt = ''; renderComposer(); }
       counter();
-      if (res?.id) { history = [res, ...(history || []).filter(h => h.id !== res.id)]; renderHistory(); }
+      if (res?.id) { history = [res, ...(history || []).filter(h => h.id !== res.id)]; historyPage = 1; renderHistory(); }
     } catch (e) {
       // The key is kept: a retry of the same content cannot create a second announcement.
       setErr(e.message || text('تعذر الإرسال', 'Could not send'));
@@ -494,7 +496,10 @@
     if (!history) return;
     if (!history.length) { body.innerHTML = `<div class="an-empty">${escH(text('لم يتم إرسال أي إعلان بعد.', 'No announcements sent yet.'))}</div>`; return; }
     const open = new Set([...body.querySelectorAll('details[open]')].map(d => d.dataset.id));
-    body.innerHTML = `<div class="an-hist-list">${history.slice(0, 30).map(h => {
+    const pages = Math.ceil(history.length / historyPageSize);
+    historyPage = Math.max(1, Math.min(historyPage, pages));
+    const start = (historyPage - 1) * historyPageSize;
+    body.innerHTML = `<div class="an-hist-list">${history.slice(start, start + historyPageSize).map(h => {
       const c = cat(h.category);
       const pct = h.recipientCount ? Math.round(h.ackCount / h.recipientCount * 100) : 0;
       const aud = h.audience === 'all' ? text('كل الموظفين', 'All employees') : (h.recipientCount === 1 ? (h.recipients?.[0]?.name || '') : text(`${fmtNum(h.recipientCount)} موظفين`, `${fmtNum(h.recipientCount)} employees`));
@@ -517,11 +522,26 @@
             <span class="an-hist-meta" style="display:block">${escH(aud)} · ${escH(h.createdByName || '')} · <span title="${escH(fullDate(at))}">${escH(atTxt)}</span>${escH(skipped)}</span></span>
           ${side}
         </summary>
+        <div class="an-hist-message" dir="auto">${escH(h.message)}</div>
         ${st === 'scheduled' ? `<div class="an-hist-body"><span class="an-hint">${escH(text(`يصل إلى ${fmtNum(h.recipientCount)} موظف في موعده.`, `Reaches ${fmtNum(h.recipientCount)} employees at that time.`))}</span><button type="button" class="an-link" data-cancel="${escH(h.id)}" style="margin-inline-start:auto;color:var(--red)">${escH(text('إلغاء الجدولة', 'Cancel'))}</button></div>` : ''}
         ${st === 'failed' && h.failReason ? `<div class="an-hist-body"><span class="an-hint">${escH(h.failReason)}</span></div>` : ''}
         <div class="an-hist-body"${st === 'sent' ? '' : ' hidden'}>${rcp.map(r => `<span class="an-rcp${r.ackAt ? ' is-read' : ''}" title="${escH(r.ackAt ? text('اطّلع ', 'Read ') + fullDate(r.ackAt) : text('لم يطّلع بعد', 'Not yet read'))}"><i></i>${escH(r.name || '—')}</span>`).join('')}</div>
       </details>`;
-    }).join('')}</div>`;
+    }).join('')}</div>
+      <nav class="an-hist-pages" aria-label="${escH(text('صفحات الإعلانات المرسلة', 'Sent announcement pages'))}">
+        <span class="an-hint">${escH(text(`${fmtNum(start + 1)}–${fmtNum(Math.min(start + historyPageSize, history.length))} من ${fmtNum(history.length)}`, `${fmtNum(start + 1)}–${fmtNum(Math.min(start + historyPageSize, history.length))} of ${fmtNum(history.length)}`))}</span>
+        <div class="an-hist-page-actions">
+          <button type="button" class="an-link" data-history-page="${historyPage - 1}"${historyPage === 1 ? ' disabled' : ''}>${escH(text('السابق', 'Previous'))}</button>
+          <span class="an-hint" aria-live="polite">${escH(text(`صفحة ${fmtNum(historyPage)} من ${fmtNum(pages)}`, `Page ${fmtNum(historyPage)} of ${fmtNum(pages)}`))}</span>
+          <button type="button" class="an-link" data-history-page="${historyPage + 1}"${historyPage === pages ? ' disabled' : ''}>${escH(text('التالي', 'Next'))}</button>
+        </div>
+      </nav>`;
+    body.querySelectorAll('[data-history-page]').forEach(btn => btn.addEventListener('click', () => {
+      historyPage = Number(btn.dataset.historyPage);
+      renderHistory();
+      body.querySelector('.an-hist-list').scrollTop = 0;
+      body.querySelector(`[data-history-page="${historyPage === 1 ? historyPage + 1 : historyPage - 1}"]`)?.focus({ preventScroll: true });
+    }));
     body.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); cancelScheduled(b.dataset.cancel, b); }));
   }
   async function cancelScheduled(id, btn) {
@@ -564,7 +584,7 @@
     if (token !== state.token) {
       // Account switch: nothing from the previous account may survive.
       state.token = token; state.mine = []; state.loaded = false; state.dismissed = new Set();
-      window.souliaAnnUnread = 0; history = null; cfg = null; composerToken = ''; form.selected = new Set(); form.draft = '';
+      window.souliaAnnUnread = 0; history = null; historyPage = 1; cfg = null; composerToken = ''; form.selected = new Set(); form.draft = '';
       if (dlg?.open) dlg.close();
     }
     if (!loggedIn() || !window.souliaPushAppReady) return;

@@ -9,7 +9,14 @@
 #sp-kpi-toggle{color:var(--accent)}
 #sp-kpi-toggle.is-off{color:var(--text-muted,var(--muted))}
 .spk-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-.spk-seg{display:inline-flex;padding:3px;gap:2px;border-radius:10px;background:var(--bg-alt);border:1px solid var(--border)}
+.spk-seg{display:inline-flex;flex-wrap:wrap;min-width:0;padding:3px;gap:2px;border-radius:10px;background:var(--bg-alt);border:1px solid var(--border)}
+.spk-date-filter{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.spk-date-field{display:flex;flex-direction:column;gap:4px;flex:1 1 180px;min-width:0;font-size:.76rem;color:var(--text)}
+.spk-date-field input{width:100%;min-width:0;box-sizing:border-box;margin:0;font:inherit;padding:7px 9px;direction:ltr}
+.spk-date-named{font-size:.72rem;color:var(--muted);overflow-wrap:anywhere}
+.spk-date-error{flex-basis:100%;font-size:.74rem;color:var(--red)}
+.spk-date-error:empty{display:none}
+.spk-date-filter .spk-report-btn{margin-inline-start:0;min-height:36px}
 .spk-seg-btn{border:0;background:none;font:inherit;font-size:.78rem;font-weight:500;color:var(--text-muted,var(--muted));
   padding:5px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s,box-shadow .15s}
 .spk-seg-btn:hover{color:var(--text)}

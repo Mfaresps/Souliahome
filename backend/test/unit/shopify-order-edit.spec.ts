@@ -439,14 +439,16 @@ describe('Shopify order edit — التعليقات مطابقة لنظام ال
 
   it('يعيد استخدام أصناف الفاتورة لا أصنافاً خاصة — فالشكل واحد', () => {
     const fn = extractFn(src, '_spRenderCommentsTab');
-    for (const cls of ['inv-cmt-item', 'tx-cmt-avatar', 'tx-cmt-author', 'tx-cmt-time', 'tx-cmt-text', 'inv-cmt-list']) {
+    for (const cls of ['inv-cmt-item', 'tx-cmt-body', 'tx-cmt-author', 'tx-cmt-time', 'tx-cmt-text', 'inv-cmt-list']) {
       expect(fn).toContain(cls);
     }
   });
 
-  it('يعرض صورة الحرفين والوقت النسبي بنفس مساعدات الفاتورة', () => {
+  it('يعرض صورة الكاتب أو الأحرف الأولى والوقت النسبي بالمساعدات المشتركة', () => {
     const fn = extractFn(src, '_spRenderCommentsTab');
-    expect(fn).toContain('_cmtInitials');
+    expect(fn).toContain('userAvatarHtml(_au, 30)');
+    expect(fn).toContain('_pwFindUser(c.employee)');
+    expect(fn).toContain("{ name: c.employee || '؟' }");
     expect(fn).toContain('_cmtTimeHtml');
   });
 
@@ -1032,7 +1034,7 @@ describe('Shopify — نجمة تمييز الأوردر', () => {
   const src = fs.readFileSync(INDEX_HTML, 'utf8').replace(/\r\n/g, '\n');
 
   it('النجمة بجانب رقم الطلب في الجدول والبطاقة', () => {
-    expect(src).toMatch(/data-col="ref">\$\{_spStarHtml\(o\)\}/);
+    expect(src).toMatch(/data-col="ref"><div class="sp-ref-line">\$\{_spStarHtml\(o\)\}/);
     expect(src).toMatch(/class="sp-card-ref">\$\{_spStarHtml\(o\)\}/);
   });
 
@@ -1072,9 +1074,11 @@ describe('Shopify — نجمة تمييز الأوردر', () => {
     expect(fn).toContain('event.stopPropagation()');
   });
 
-  /** المميَّزة ظاهرة دائماً — وهذا هو الغرض كله؛ غير المميَّزة تظهر بالمرور فقط. */
-  it('المميَّزة ظاهرة دائماً وغيرها بالمرور', () => {
-    expect(src).toMatch(/\.sp-star\{[^}]*opacity:0/);
+  /** المميَّزة ظاهرة دائماً، وغيرها باهتة ويقوى ظهورها بالمرور. */
+  it('المميَّزة ظاهرة دائماً وغيرها باهتة وتبرز بالمرور', () => {
+    const opacity = Number((src.match(/\.sp-star\{[^}]*opacity:([\d.]+)/) || [])[1]);
+    expect(opacity).toBeGreaterThan(0);
+    expect(opacity).toBeLessThan(1);
     expect(src).toMatch(/\.sp-star\.is-on\{[^}]*opacity:1/);
     expect(src).toMatch(/tr:hover \.sp-star/);
   });
@@ -1095,25 +1099,34 @@ describe('Shopify — الخصم الإضافي يظهر ويُحسب في كل 
   const be = fs.readFileSync(
     path.resolve(__dirname, '../../src/shopify/shopify.service.ts'), 'utf8');
 
+  function renderApprovalSummary() {
+    const fn = extractFn(src, '_spReceiptSummaryHtml');
+    return new Function('o', '_spDepositOf', '_spStockVerdict', '_spStockTickHtml',
+      't', 'esc', 'tf', 'fmtJ', 'discBadgeHtml', '_spDepositBlockReason',
+      `${fn}; return _spReceiptSummaryHtml(o);`)(
+      { client: 'Test', items: [{ qty: 1, price: 1000 }], shipCost: 50,
+        discount: 100, codesDiscount: 80, manualDiscount: 20, total: 850 },
+      () => ({ deposit: 0, pending: [], pendingTotal: 0, byMethod: {} }),
+      () => ({ ok: true }), () => '', (key: string) => key, String,
+      (key: string) => key, (value: number) => `[${value}]`, () => '', () => '',
+    ) as string;
+  }
+
   /**
    * ⚠ كانت نافذة التأكيد تعرض `order.discount` وحده (خصم شوبيفاي)، فالموظف يؤكّد
    *   على إجمالي لا يفسّره ما يراه: الإجمالي منخفض والسبب غير معروض.
    */
   it('نافذة التأكيد تعرض الخصومات الثلاثة كسطور مستقلة', () => {
-    // ⚠ يُقتطع من صف الإجمالي إلى الوراء: مفتاح spApproveClient يظهر أولاً في جدول
-    //   الترجمات لا في المودال، فالاقتطاع من أول ظهور له كان يقيس الكتلة الخطأ.
-    const iTotal = src.indexOf('<div class="spd-row spd-row-total">');
-    expect(iTotal).toBeGreaterThan(-1);
-    const dlg = src.slice(iTotal - 1800, iTotal + 200);
-    expect(dlg).toContain('spApproveDiscount');   // خصم شوبيفاي
-    expect(dlg).toContain('spDiscCodes');         // خصم الأكواد
-    expect(dlg).toContain('spDiscManual');        // الخصم اليدوي
-    expect(dlg).toContain('fmtJ(order.total)');   // الإجمالي بعدها كلها
+    const dlg = renderApprovalSummary();
+    expect(dlg).toContain('spApproveDiscount');
+    expect(dlg).toContain('spDiscCodes');
+    expect(dlg).toContain('spDiscManual');
+    expect(dlg.match(/class="spd-row spdep-discount-row"/g)).toHaveLength(3);
+    for (const amount of [100, 80, 20]) expect(dlg).toContain(`− [${amount}]`);
   });
 
   it('إجمالي النافذة يقرأ order.total المحسوب بالخصومات كلها', () => {
-    const dlg = src.slice(src.indexOf("t('spApproveTotal')"), src.indexOf("t('spApproveTotal')") + 220);
-    expect(dlg).toMatch(/fmtJ\(order\.total\)/);
+    expect(renderApprovalSummary()).toContain('spApproveTotal</small><b>[850]</b>');
   });
 
   /**

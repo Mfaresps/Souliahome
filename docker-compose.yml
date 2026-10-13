@@ -28,7 +28,11 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
-      SHOPIFY_WEBHOOK_SECRET: ${SHOPIFY_WEBHOOK_SECRET:-}
+      # The webhook rejects every order without this secret. Fail before replacing
+      # a working container instead of deploying a healthy-looking broken integration.
+      SHOPIFY_WEBHOOK_SECRET: ${SHOPIFY_WEBHOOK_SECRET:?Set SHOPIFY_WEBHOOK_SECRET in the server .env or Jenkins deployment environment}
+      SHOPIFY_STORE_NAME: ${SHOPIFY_STORE_NAME:?Set SHOPIFY_STORE_NAME for Shopify order edit resolution and recovery}
+      SHOPIFY_ACCESS_TOKEN: ${SHOPIFY_ACCESS_TOKEN:?Set SHOPIFY_ACCESS_TOKEN for Shopify order edit resolution and recovery}
       # ⚠ الحاوية كانت شغّالة UTC (مافيش TZ)، والسيرفر المحلي UTC+3 — فنفس الكود
       # كان بيدّي نتيجتين مختلفتين حسب مكان التشغيل. ده بيأثر على كل حساب بيبني
       # تاريخاً بتوقيت السيرفر: بداية الشهر في `resolvePeriod` (نقاط اتكسبت بين

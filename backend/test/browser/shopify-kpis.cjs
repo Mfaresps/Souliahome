@@ -96,6 +96,32 @@ const SPEC = [
     const v7 = await vals();
     check(v7.received === '15' && v7.cancelled === '3', 'last 7 days: 15 received, rejected counts as cancelled, 8-days-ago excluded');
 
+    await page.evaluate(() => _spkSetPeriod('three'));
+    check((await vals()).received === '14', 'last 3 calendar days: today and yesterday included, 3-days-ago excluded');
+    check(await page.$eval('.spk-seg-btn.is-on', e => e.textContent === 'Last 3 days'), '3-day preset is selected');
+    check(await page.evaluate(() => _spkReportText(_spkStats('three')).startsWith('📦 Orders Report — Last 3 Days')), '3-day report uses its own title');
+    await page.evaluate(() => {
+      _spkSetPeriod('custom');
+      const n = new Date(), day = offset => _spkYmd(new Date(n.getFullYear(), n.getMonth(), n.getDate() + offset));
+      document.getElementById('spk-from').value = day(-8);
+      document.getElementById('spk-to').value = day(-3);
+      _spkApplyDates({ preventDefault() {} });
+    });
+    check((await vals()).received === '2' && (await vals()).cancelled === '1', 'custom range includes the whole last day and orders older than 7 days');
+    check(await page.$eval('#spk-from-named', e => /[A-Za-z]+/.test(e.textContent)), 'date controls spell out English month names');
+    check(await page.evaluate(() => !_spkReportText(_spkStats('custom')).includes('Last 7 Days')), 'custom report has no incorrect 7-day title');
+    await page.evaluate(() => {
+      document.getElementById('spk-from').value = _spkYmd(new Date());
+      _spkApplyDates({ preventDefault() {} });
+    });
+    check(await page.$eval('#spk-date-error', e => !!e.textContent), 'reversed date range shows a validation error');
+    check((await vals()).received === '2', 'invalid date range does not change the applied figures');
+    await page.evaluate(() => {
+      _spkDateDraft('from', document.getElementById('spk-to').value);
+      _spkRender();
+    });
+    check(await page.evaluate(() => document.getElementById('spk-from').value === _spkDraftFrom), 'draft dates survive live re-renders');
+
     /* The strip does not follow the table's search. */
     await page.evaluate(() => { _spkSetPeriod('today'); qs('#shopify-search').value = '2701'; renderShopifyOrders(); });
     check((await vals()).received === '9', 'table search does not change the strip');
@@ -158,6 +184,15 @@ const SPEC = [
     check(await page.$eval('#sp-kpi', e => e.getBoundingClientRect().width > 330), '390px: strip uses the phone width');
     check(await page.$$eval('#sp-kpi .spk-lbl', ls => ls.every(l => l.scrollWidth <= l.clientWidth + 1 && l.scrollHeight <= l.clientHeight + 1)), '390px: no tile label is clipped');
     check(await noOverflow(), '390px: nothing spills, no page overflow');
+    await page.evaluate(() => _spkSetPeriod('custom'));
+    check(await page.$eval('#spk-to-named', e => /[\u0600-\u06ff]/.test(e.textContent)), 'custom controls spell out Arabic month names');
+    check(await noOverflow(), '390px Arabic: date controls and five presets do not spill');
+    await page.setViewport({ width: 320, height: 800 });
+    await new Promise(r => setTimeout(r, 400));
+    check(await noOverflow(), '320px Arabic: custom dates do not spill');
+    await page.evaluate(() => { currentLang = 'en'; document.documentElement.dir = 'ltr'; _spkRender(); });
+    check(await noOverflow(), '320px English: custom dates do not spill');
+    await page.evaluate(() => _spkSetPeriod('today'));
     if (shotsDir) await (await page.$('#sp-kpi')).screenshot({ path: path.join(shotsDir, 'strip-ar-390.png') });
 
     /* Loading / error states */

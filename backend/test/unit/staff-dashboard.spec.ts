@@ -324,14 +324,27 @@ describe('staff dashboard — the panels are wired and admin-guarded', () => {
     expect(load).toContain('/employee-performance/my-roster');
   });
 
-  it('follow-ups render as clickable tickets that open the specific ticket', () => {
+  it('follow-ups render as clickable tickets that open the specific ticket', async () => {
     const fn = extractFn(src, 'renderMyFollowUps');
     expect(fn).toContain('ds-fu-tk');
     expect(fn).toContain('openMyFollowUp');
     // Lands on the ticket, not on an unfiltered list the employee must search again.
     const open = extractFn(src, 'openMyFollowUp');
-    expect(open).toContain('fu-search');
-    expect(open).toContain('followups');
+    const tickets: any[] = [{ _id: 'target-ticket', ticketNo: '123', orderRef: '2771' }];
+    const highlight = jest.fn();
+    const load = jest.fn(async () => { tickets.push({ _id: 'loaded-ticket', ticketNo: '124' }); });
+    const navigate = jest.fn();
+    const run = new Function('followUps', 'goToFuAndHighlight', 'loadFollowUps', 'navigateTo',
+      `${open}; return openMyFollowUp;`)(tickets, highlight, load, navigate);
+    run('123');
+    expect(highlight).toHaveBeenLastCalledWith('target-ticket');
+    run('', '2771');
+    expect(highlight).toHaveBeenLastCalledWith('target-ticket');
+    run('124');
+    await Promise.resolve();
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(highlight).toHaveBeenLastCalledWith('loaded-ticket');
+    expect(navigate).not.toHaveBeenCalled();
   });
 });
 

@@ -79,12 +79,10 @@ export class ShopifyController {
       return this.shopifyService.handleOrderUpdate(req.body);
     }
 
-    // ⚠ «orders/edited» يصل عند التعديل عبر خاصية Edit order الرسمية (إضافة/حذف صنف،
-    //   تغيير كمية) — وهو topic مختلف عن «orders/updated». كان يُرمى بصمت، فتعديل
-    //   الأصناف لا يصل النظام إطلاقاً. الحمولة تحمل نفس شكل الأوردر فيتولاها نفس المعالج،
-    //   الذي يجمّد الأصناف بعد التأكيد ويرفع تعارضاً بدل التعديل الصامت.
+    // orders/edited contains an order_edit delta, not a complete order. Resolve
+    // order_edit.order_id through the Admin API before applying normal updates.
     if (topic === 'orders/edited') {
-      return this.shopifyService.handleOrderUpdate(req.body);
+      return this.shopifyService.handleOrderEdited(req.body);
     }
 
     if (topic === 'orders/cancelled') {

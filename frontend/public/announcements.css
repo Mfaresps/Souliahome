@@ -80,7 +80,14 @@ body.dark-mode .an-st.is-sched{color:var(--accent)}
 /* Sent history */
 .an-hist{margin-top:22px}
 .an-hist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.an-hist-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.an-hist-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;max-height:420px;overflow-y:auto;overscroll-behavior:contain}
+.an-hist-item{flex-shrink:0}
+.an-hist-pages{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px}
+.an-hist-page-actions{display:flex;align-items:center;gap:8px;margin-inline-start:auto}
+.an-hist-pages button{min-height:36px}
+.an-hist-pages button:disabled{opacity:.4;cursor:default}
+.an-hist-pages button:disabled:hover{background:none}
+.an-hist-message{padding:0 12px 12px;font-size:.8rem;color:var(--text);line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
 .an-hist-item{border-bottom:1px solid var(--border)}
 .an-hist-item:last-child{border-bottom:none}
 .an-hist-item>summary{list-style:none;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:start;padding:11px 12px;cursor:pointer}
@@ -89,7 +96,7 @@ body.dark-mode .an-st.is-sched{color:var(--accent)}
 .an-hist-emo{font-size:1.05rem;line-height:1.3}
 .an-hist-main{min-width:0}
 .an-hist-cat{font-size:.72rem;font-weight:650;color:var(--muted)}
-.an-hist-text{font-size:.8rem;color:var(--text);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;overflow-wrap:anywhere}
+.an-hist-text{display:block;font-size:.8rem;color:var(--text);line-height:1.6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .an-hist-meta{font-size:.7rem;color:var(--muted);margin-top:3px}
 .an-hist-read{text-align:end;min-width:92px}
 .an-hist-read b{display:block;font-size:.76rem;font-weight:650;color:var(--text);font-variant-numeric:tabular-nums}

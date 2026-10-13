@@ -50,10 +50,13 @@ export function notificationBody(type: NotificationType, ref: string, details: N
     return base + (reason ? (language === 'en' ? ' Reason: ' : ' السبب: ') + reason : '');
   }
   if (type === 'otp' || type === 'approval' || type === 'security') {
+    // Requests without a business reference fall back to a MongoDB record ID.
+    // Keep that ID for navigation, but do not present it as an order/product number.
+    const displayReference = /^[a-f\d]{24}$/i.test(ref.replace(/^#+/, '').trim()) ? '' : reference;
     const action = actionLabel(details.actionKey, language);
     const statuses = { pending: ['بانتظار الموافقة', 'Pending approval'], approved: ['تمت الموافقة', 'Approved'], rejected: ['مرفوض', 'Rejected'], modified: ['تم التعديل', 'Modified'] };
     const status = details.status && statuses[details.status]?.[language === 'en' ? 1 : 0];
-    return [actor, action, reference ? '#' + reference : '', type === 'otp' ? 'OTP: {OTP}' : status || ''].filter(Boolean).join(' · ');
+    return [actor, action, displayReference ? '#' + displayReference : '', type === 'otp' ? 'OTP: {OTP}' : status || ''].filter(Boolean).join(' · ');
   }
   if (type === 'shopifyChange') return orderLabel + ' · ' + (details.changedFields || []).map(key => FIELD_LABELS[key]?.[language === 'en' ? 1 : 0]).filter(Boolean).join(', ');
   if (type === 'followup') return `${orderLabel} · ${language === 'en' ? 'New Follow-up' : 'متابعة جديدة'}`;

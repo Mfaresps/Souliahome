@@ -1,4 +1,5 @@
-/* Shopify orders — period KPIs (اليوم / أمس / آخر 7 أيام) and a shareable report image.
+/* Shopify orders — period KPIs (today / yesterday / last 3 or 7 days / custom dates)
+   and a shareable report image.
    Read-only: every figure is counted from `_shopifyOrders` + `followUps`, already in memory,
    with the SAME rules the table uses (`_spHasDepositRecorded`, `_spShipsWithoutDeposit`,
    `_spFollowUpsFor`, `_fuIsSettled`). Nothing here writes or changes an order.
@@ -14,6 +15,7 @@
    it answers "how did today go", not "what is on screen". The period is named beside it. */
 
 let _spkPeriod = 'today';
+let _spkCustomFrom = '', _spkCustomTo = '', _spkDraftFrom = '', _spkDraftTo = '';
 /* Hidden / shown survives a reload, per user (same key scheme as the column prefs —
    one shared PC is used by several employees). */
 const SPK_HIDDEN_KEY = 'soulia_sp_kpi_hidden';
@@ -42,6 +44,9 @@ let _spkState = 'ready';   /* 'loading' | 'error' | 'ready' */
 const _SPK_L = {
   title: ['ملخص الأوردرات', 'Orders summary'],
   today: ['اليوم', 'Today'], yesterday: ['أمس', 'Yesterday'], week: ['آخر 7 أيام', 'Last 7 days'],
+  three: ['آخر 3 أيام', 'Last 3 days'], custom: ['فترة مخصصة', 'Custom range'],
+  from: ['من', 'From'], to: ['إلى', 'To'], apply: ['تطبيق', 'Apply'],
+  invalidRange: ['اختر تاريخين صحيحين، بداية الفترة قبل نهايتها أو في نفس اليوم، وحتى اليوم.', 'Choose valid dates, with the start on or before the end, up to today.'],
   received: ['الأوردرات الواردة', 'Received orders'],
   confirmed: ['مؤكد', 'Confirmed'],
   deposit: ['بعربون', 'With deposit'], nodep: ['بدون عربون', 'Without deposit'],
@@ -55,10 +60,12 @@ const _SPK_L = {
   vsToday: ['عن نفس الوقت أمس', 'vs same time yesterday'],
   vsYesterday: ['عن أول أمس', 'vs the day before'],
   vsWeek: ['عن الـ7 أيام السابقة', 'vs previous 7 days'],
+  vsThree: ['عن الـ3 أيام السابقة', 'vs previous 3 days'], vsCustom: ['عن الفترة السابقة بنفس المدة', 'vs previous period of the same length'],
   noChange: ['بدون تغيير', 'no change'],
   report: ['تقرير', 'Report'], reportTitle: ['تقرير الأوردرات', 'Orders report'],
   dailyReport: ['تقرير الأوردرات اليومي', 'Daily Orders Report'],
   weeklyReport: ['تقرير الأوردرات — آخر 7 أيام', 'Orders Report — Last 7 Days'],
+  threeReport: ['تقرير الأوردرات — آخر 3 أيام', 'Orders Report — Last 3 Days'],
   date: ['التاريخ', 'Date'], period: ['الفترة', 'Period'],
   download: ['تحميل الصورة', 'Download image'], share: ['مشاركة', 'Share'], copy: ['نسخ النص', 'Copy text'],
   copied: ['تم نسخ التقرير', 'Report copied'], copyFail: ['تعذّر النسخ', 'Could not copy'],
@@ -76,12 +83,52 @@ function _spkN(n) { return Number(n || 0).toLocaleString('en-US'); }
 
 /* ── Periods ── local calendar days, the same boundary the table's date filter uses. */
 function _spkRange(period) {
+  if (period === 'custom' && _spkCustomFrom && _spkCustomTo) {
+    const from = _spkParseDate(_spkCustomFrom), last = _spkParseDate(_spkCustomTo);
+    const to = new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1);
+    const days = (Date.UTC(last.getFullYear(), last.getMonth(), last.getDate()) - Date.UTC(from.getFullYear(), from.getMonth(), from.getDate())) / 86400000 + 1;
+    return { from, to, days };
+  }
   const n = new Date();
   const y = n.getFullYear(), m = n.getMonth(), d = n.getDate();
-  const start = period === 'yesterday' ? -1 : period === 'week' ? -6 : 0;
-  const days = period === 'week' ? 7 : 1;
+  const start = period === 'yesterday' ? -1 : period === 'week' ? -6 : period === 'three' ? -2 : 0;
+  const days = period === 'week' ? 7 : period === 'three' ? 3 : 1;
   /* new Date(y, m, d + k) rather than ms arithmetic — a DST change makes a day 23/25h. */
   return { from: new Date(y, m, d + start), to: new Date(y, m, d + start + days), days };
+}
+function _spkYmd(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function _spkParseDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [y, m, d] = value.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return _spkYmd(date) === value ? date : null;
+}
+function _spkNamedDate(value) {
+  const d = _spkParseDate(value);
+  return d ? d.toLocaleDateString(_spkLoc(), { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+}
+function _spkDateDraft(which, value) {
+  if (which === 'from') _spkDraftFrom = value; else _spkDraftTo = value;
+  const hint = document.getElementById(`spk-${which}-named`);
+  if (hint) hint.textContent = _spkNamedDate(value);
+}
+function _spkApplyDates(event) {
+  event.preventDefault();
+  const from = document.getElementById('spk-from').value, to = document.getElementById('spk-to').value;
+  if (!_spkParseDate(from) || !_spkParseDate(to) || from > to || to > _spkYmd(new Date())) {
+    document.getElementById('spk-date-error').textContent = _spkT('invalidRange');
+    return;
+  }
+  _spkCustomFrom = _spkDraftFrom = from; _spkCustomTo = _spkDraftTo = to;
+  _spkRender();
+}
+function _spkDateControls() {
+  if (_spkPeriod !== 'custom') return '';
+  const field = (key, value) => `<label class="spk-date-field"><span>${_spkEsc(_spkT(key))}</span>
+    <input type="date" id="spk-${key}" value="${_spkEsc(value)}" max="${_spkYmd(new Date())}" required oninput="_spkDateDraft('${key}',this.value)" aria-describedby="spk-${key}-named spk-date-error">
+    <span class="spk-date-named" id="spk-${key}-named">${_spkEsc(_spkNamedDate(value))}</span></label>`;
+  return `<form class="spk-date-filter" onsubmit="_spkApplyDates(event)">${field('from', _spkDraftFrom)}${field('to', _spkDraftTo)}
+    <button type="submit" class="spk-report-btn">${_spkEsc(_spkT('apply'))}</button><span class="spk-date-error" id="spk-date-error" role="alert"></span></form>`;
 }
 function _spkOrderMs(o) { return new Date(o.shopifyCreatedAt || o.createdAt || 0).getTime(); }
 
@@ -115,7 +162,7 @@ function _spkStats(period) {
   const shift = (ms) => { const x = new Date(ms); x.setDate(x.getDate() - r.days); return x.getTime(); };
   const prevTo = shift(Math.min(r.to.getTime(), Date.now()));
   const prev = _spkCount(shift(r.from.getTime()), prevTo);
-  return Object.assign(s, { from: r.from, to: r.to, days: r.days, prevReceived: prev.received });
+  return Object.assign(s, { period, from: r.from, to: r.to, days: r.days, prevReceived: prev.received });
 }
 
 /* ── Formatting ── */
@@ -123,8 +170,9 @@ function _spkLoc() { return currentLang === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn'; 
 function _spkRangeLabel(s) {
   const last = new Date(s.to.getTime() - 1);
   if (s.days === 1) return s.from.toLocaleDateString(_spkLoc(), { weekday: 'long', day: 'numeric', month: 'long' });
-  const a = s.from.toLocaleDateString(_spkLoc(), { day: 'numeric', month: 'short' });
-  const b = last.toLocaleDateString(_spkLoc(), { day: 'numeric', month: 'short' });
+  const options = { day: 'numeric', month: 'long', ...(s.from.getFullYear() !== last.getFullYear() || s.from.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) };
+  const a = s.from.toLocaleDateString(_spkLoc(), options);
+  const b = last.toLocaleDateString(_spkLoc(), options);
   return `${a} – ${b}`;
 }
 /* d/m/yyyy — the shape the team already writes reports in («3/10/2026»). */
@@ -135,7 +183,7 @@ function _spkReportDate(s) {
 }
 function _spkDeltaText(s) {
   const d = s.received - s.prevReceived;
-  const vs = _spkT(_spkPeriod === 'today' ? 'vsToday' : _spkPeriod === 'yesterday' ? 'vsYesterday' : 'vsWeek');
+  const vs = _spkT(({ today: 'vsToday', yesterday: 'vsYesterday', three: 'vsThree', week: 'vsWeek', custom: 'vsCustom' })[s.period || _spkPeriod]);
   if (!d) return `${_spkT('noChange')} ${vs}`;
   return `<bdi class="spk-delta-n">${d > 0 ? '+' : '−'}${_spkN(Math.abs(d))}</bdi> ${vs}`;
 }
@@ -159,7 +207,7 @@ function _spkRender(state) {
   _spkSyncToggle(hidden);
   host.hidden = hidden;
   if (hidden) { host.innerHTML = ''; return; }
-  const seg = ['today', 'yesterday', 'week'].map(p =>
+  const seg = ['today', 'yesterday', 'three', 'week', 'custom'].map(p =>
     `<button type="button" role="tab" class="spk-seg-btn${p === _spkPeriod ? ' is-on' : ''}" aria-selected="${p === _spkPeriod}" onclick="_spkSetPeriod('${p}')">${_spkEsc(_spkT(p))}</button>`).join('');
 
   if (_spkState === 'loading' && !(_shopifyOrders || []).length) {
@@ -198,6 +246,7 @@ function _spkRender(state) {
         ${_spkIco('report', 14)}<span>${_spkEsc(_spkT('report'))}</span>
       </button>
     </div>
+    ${_spkDateControls()}
     <div class="spk-grid">
       ${tile('received', _spkN(s.received), _spkDeltaText(s))}
       ${tile('confirmed', _spkN(s.confirmed),
@@ -213,15 +262,23 @@ function _spkRender(state) {
 }
 
 function _spkSetPeriod(p) {
-  if (!['today', 'yesterday', 'week'].includes(p)) return;
+  if (!['today', 'yesterday', 'three', 'week', 'custom'].includes(p)) return;
+  if (p === 'custom' && !_spkCustomFrom) {
+    const range = _spkRange(_spkPeriod);
+    _spkCustomFrom = _spkDraftFrom = _spkYmd(range.from);
+    _spkCustomTo = _spkDraftTo = _spkYmd(new Date(range.to.getTime() - 1));
+  }
   _spkPeriod = p;
   _spkRender();
 }
 
 /* ── Report: text + image ── */
+function _spkReportTitle(s) {
+  return _spkT(s.days === 1 ? 'dailyReport' : s.period === 'week' ? 'weeklyReport' : s.period === 'three' ? 'threeReport' : 'reportTitle');
+}
 function _spkReportText(s) {
   const en = currentLang === 'en';
-  const title = s.days === 1 ? _spkT('dailyReport') : _spkT('weeklyReport');
+  const title = _spkReportTitle(s);
   const lines = [
     `📦 ${title}`,
     `📅 ${_spkT(s.days === 1 ? 'date' : 'period')}: ${_spkReportDate(s)}`,
@@ -289,7 +346,7 @@ async function _spkDrawReport(s) {
   text('SOULIA', P + (logo ? 82 : 0), y + 43);
   y += 64 + 34;
 
-  const title = s.days === 1 ? _spkT('dailyReport') : _spkT('weeklyReport');
+  const title = _spkReportTitle(s);
   x.fillStyle = '#0f1f16'; font(700, 54);
   text(title, P, y + 50);
   y += 66;
@@ -397,7 +454,10 @@ async function _spkOpenReport() {
 function _spkFileName() {
   const s = _spkRepStats, d = s ? s.from : new Date();
   const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  return `soulia-orders-${_spkPeriod === 'week' ? '7d-' : ''}${ymd}.png`;
+  const period = s?.period || _spkPeriod;
+  const prefix = period === 'week' ? '7d-' : period === 'three' ? '3d-' : '';
+  const end = period === 'custom' && s ? '-to-' + _spkYmd(new Date(s.to.getTime() - 1)) : '';
+  return `soulia-orders-${prefix}${ymd}${end}.png`;
 }
 function _spkBlob() {
   return new Promise((res, rej) => _spkRepCanvas ? _spkRepCanvas.toBlob(b => b ? res(b) : rej(new Error('blob')), 'image/png') : rej(new Error('no canvas')));
