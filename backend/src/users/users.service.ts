@@ -19,8 +19,8 @@ export class UsersService {
     return this.userModel.find().sort({ role: 1, createdAt: 1 }).exec();
   }
 
-  async findMentionable(): Promise<{ _id: string; name: string; username: string; role: string; active: boolean; avatar: string }[]> {
-    const docs = await this.userModel.find({ isActive: { $ne: false } }).select('_id name username role isActive avatar').lean().exec();
+  async findMentionable(): Promise<{ _id: string; name: string; username: string; role: string; active: boolean; avatar: string; jobTitle: string }[]> {
+    const docs = await this.userModel.find({ isActive: { $ne: false } }).select('_id name username role isActive avatar jobTitle').lean().exec();
     return docs.map(u => ({
       _id: String(u._id),
       name: u.name || '',
@@ -28,6 +28,7 @@ export class UsersService {
       role: u.role || 'staff',
       active: u.isActive !== false,
       avatar: u.avatar || '',
+      jobTitle: u.jobTitle || '',
     }));
   }
 

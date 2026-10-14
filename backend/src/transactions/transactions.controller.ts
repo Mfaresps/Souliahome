@@ -675,7 +675,7 @@ export class TransactionsController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateTransactionDto,
-    @Req() req: { user: { name: string; username: string; role?: string } },
+    @Req() req: { user: { name: string; username: string; role?: string; perms?: string[] } },
     @Query('editedBy') editedByOverride?: string,
     @Query('approvedBy') approvedByOverride?: string,
   ) {
@@ -693,6 +693,7 @@ export class TransactionsController {
         approvedBy,
         callerRole,
         req.user.name || req.user.username || '',
+        req.user.perms || [],
       );
     } finally {
       this.transactionsService.releaseEditLock(id);

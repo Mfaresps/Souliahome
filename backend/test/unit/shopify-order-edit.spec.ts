@@ -45,6 +45,39 @@ function extractFn(src: string, name: string): string {
   throw new Error('أقواس غير متوازنة: ' + name);
 }
 
+it('submits a combined edit once and resumes the same save after the OTP gate', async () => {
+  const src = fs.readFileSync(INDEX_HTML, 'utf8').replace(/\r\n/g, '\n');
+  const fn = extractFn(src, '_saveShopifyEdit');
+  const env = new Function(`
+    const calls=[],messages=[]; let callback=null, closed=false, accepted=false;
+    const _spEditOrder={_id:'o1',ref:'2820'};
+    const _spConfirmEditSubmission=async()=>accepted;
+    const currentLang='en', _shopifyEditId='o1', _shopifyEditItems=[{productId:'p1',qty:2,price:1000}];
+    const _spDiscType='fixed', _spDiscCodes=[{id:'c1',code:'SAVE'}], _spDiscOtpId='otp1';
+    const document={getElementById:()=>null,removeEventListener:()=>{}};
+    const toast=message=>messages.push(message),t=String,tf=String,confirm=()=>true;
+    const _shopifyEditOutsideClick=()=>{},_spDiscountDirty=()=>true;
+    const _spDiscountPreflight=async cb=>{callback=cb;return true;};
+    const _spDiscAmounts=()=>({manualDisc:300,codesDisc:100});
+    const api=async (url,opts)=>{calls.push({url,body:JSON.parse(opts.body)});return {pendingApproval:true};};
+    const _spEditRemoveModal=()=>{closed=true;},loadShopifyOrders=async()=>{};
+    ${fn}
+    return {run:_saveShopifyEdit,accept:()=>{accepted=true;},state:()=>({calls,messages,closed,sameCallback:callback===_saveShopifyEdit})};
+  `)();
+  await env.run();
+  expect(env.state().calls).toEqual([]); expect(env.state().closed).toBe(false);
+  env.accept();
+  await env.run();
+  expect(env.state().calls).toEqual([{ url: '/shopify/orders/o1/edit', body: {
+    items: [{ productId: 'p1', qty: 2, price: 1000 }], discount: {
+      manualDiscount: 300, manualDiscountType: 'fixed', codesDiscount: 100,
+      discountCodeId: 'c1', discountCode: 'SAVE', highValueDiscountOtpId: 'otp1',
+    },
+  } }]);
+  expect(env.state().closed).toBe(true); expect(env.state().sameCallback).toBe(true);
+  expect(env.state().messages).toContain('Changes sent for admin approval.');
+});
+
 describe('Shopify discount survives apply, redraw and reopening', () => {
   function editor() {
     const src = fs.readFileSync(INDEX_HTML, 'utf8').replace(/\r\n/g, '\n');
@@ -55,6 +88,9 @@ describe('Shopify discount survives apply, redraw and reopening', () => {
     return new Function(`
       let _spEditOrder, _shopifyEditItems=[], _spDiscCodes=[], _spDiscType='fixed';
       let input=null, summary=[], payload=null, _spDiscOtpId='', _spDiscOtpAmount=0, _spEditBaseline='';
+      let pending=false, closed=false, reloads=0,accepted=true;
+      const _spConfirmEditSubmission=async()=>accepted;
+      const currentLang='en', _spEditRemoveModal=()=>{closed=true;}, loadShopifyOrders=async()=>{reloads++;};
       const footer={innerHTML:''}, sum={innerHTML:''};
       const host={set innerHTML(html) { input={value:html.match(/id="sp-disc-value"[^>]*value="([^"]*)"/)[1]}; }};
       const document={getElementById:()=>footer};
@@ -66,6 +102,7 @@ describe('Shopify discount survives apply, redraw and reopening', () => {
       const _spEditSnapshot=()=>'', _spDiscFlashSaved=()=>{}, _spRefreshOrderRow=()=>{};
       const api=async (url, options)=>{
         payload=JSON.parse(options.body);
+        if (pending) return {pendingApproval:true};
         return {total:Math.max(0,_spEditOrder.itemsTotal-Math.min(_spEditOrder.itemsTotal,
           _spEditOrder.discount+payload.manualDiscount+payload.codesDiscount)+_spEditOrder.shipCost)};
       };
@@ -76,11 +113,25 @@ describe('Shopify discount survives apply, redraw and reopening', () => {
         enter(value) { input.value=String(value); _spRenderDiscountPreview(); },
         code(value) { _spDiscCodes=[{id:'code',code:'CODE',type:'fixed',value}]; _spRenderDiscountTab(); },
         redraw:_spRenderDiscountTab, apply:_spSaveDiscount,
-        state() { return {input:input.value,summary,payload,footer:footer.innerHTML,order:_spEditOrder}; }
+        pending() {pending=true;},
+        cancel() {accepted=false;},
+        state() { return {input:input.value,summary,payload,footer:footer.innerHTML,order:_spEditOrder,closed,reloads}; }
       };
     `)();
   }
   const order = () => ({_id:'o1',status:'pending',itemsTotal:4389,discount:120,shipCost:120,manualDiscount:100});
+
+  it('closes a pending discount request without applying its proposal to the local order', async () => {
+    const env=editor(); env.open(order()); env.enter(200); env.pending(); await env.apply();
+    expect(env.state().order.manualDiscount).toBe(100);
+    expect(env.state().payload.manualDiscount).toBe(200);
+    expect(env.state().closed).toBe(true); expect(env.state().reloads).toBe(1);
+  });
+  it('does not send or apply a discount when the employee returns to editing', async () => {
+    const env=editor(); env.open(order()); env.enter(200); env.cancel(); await env.apply();
+    expect(env.state().payload).toBeNull(); expect(env.state().order.manualDiscount).toBe(100);
+    expect(env.state().closed).toBe(false);
+  });
 
   it('includes the saved fixed discount on the first render and after Apply', async () => {
     const env=editor(); env.open(order());
@@ -349,10 +400,11 @@ describe('Shopify order edit — بنية الواجهة في index.html', () =>
     expect(src).toContain('.sp-tab-pane[hidden]{display:none!important}');
   });
 
-  it('كل تبويب يحفظ عبر مسار خاص به — لا حفظ موحّد', () => {
-    expect(src).toContain('/discount`');
-    expect(src).toContain('/comments`');
-    expect(src).toContain('/items`');
+  it('يحفظ الأصناف والخصم كطلب تعديل واحد والتعليقات مستقلة', () => {
+    expect(extractFn(src, '_saveShopifyEdit')).toContain('/edit`');
+    expect(extractFn(src, '_saveShopifyEdit')).not.toContain('_spPersistDiscount({ silent: true })');
+    expect(extractFn(src, '_spPersistDiscount')).toContain('/discount`');
+    expect(src.includes('/comments`')).toBe(true);
   });
 
   /**
@@ -1184,7 +1236,8 @@ describe('Shopify — الخصم الإضافي يظهر ويُحسب في كل 
     const fn = extractFn(src, '_spPersistDiscount');
     expect(fn).toContain('_spDiscFlashSaved()');
     expect(fn).toContain('_spRefreshOrderRow()');
-    expect(fn).not.toContain('loadShopifyOrders');
+    // Proposals reload the review status; already-applied edits still refresh the row.
+    expect(fn).toContain('res?.pendingApproval');
   });
 });
 

@@ -24,14 +24,15 @@ it('new Shopify orders pass the saved assignee into the same new-order push even
   const order: any = { _id: '507f1f77bcf86cd799439012', ref: '2771', total: 2450, save: jest.fn(async () => order) };
   service.shopifyOrderModel = { findOne: () => ({ lean: async () => stored }), create: jest.fn(async () => { stored = order; return order; }) };
   service.logger = { log() {}, warn() {}, error() {} };
-  service.mapItems = async () => []; service.pickOrderDiscountApplication = () => undefined;
+  service.mapItems = async () => [{ qty: 2, price: 100 }, { qty: 3, price: 200 }]; service.pickOrderDiscountApplication = () => undefined;
   service.applyDerivedDeposit = jest.fn();
   service.employeeShiftService = { resolveAssignee: async () => ({ userId: employeeId, username: 'ahmed', name: 'Ahmed', reason: 'shift' }) };
   service.employeeScoringService = { scoreDepositDetection: async () => {} };
   service.notifyOrderAssigned = jest.fn(async () => {});
   service.notifications = { enqueue: jest.fn(async () => {}) };
   expect((await service.handleOrder({ id: 1, name: '#2771' })).saved).toBe(true);
-  expect(service.notifications.enqueue).toHaveBeenCalledWith('order', 'order:shopify:1', '2771', 'shopify:' + order._id, undefined, undefined, { orderTotal: 2450, assignedUserId: employeeId });
+  expect(service.notifications.enqueue).toHaveBeenCalledTimes(1);
+  expect(service.notifications.enqueue).toHaveBeenCalledWith('order', 'order:shopify:1', '2771', 'shopify:' + order._id, undefined, undefined, { orderTotal: 2450, itemCount: 5, assignedUserId: employeeId });
   const before = service.notifications.enqueue.mock.calls.length;
   expect((await service.handleOrder({ id: 1, name: '#2771' })).saved).toBe(false);
   expect(service.notifications.enqueue).toHaveBeenCalledTimes(before);

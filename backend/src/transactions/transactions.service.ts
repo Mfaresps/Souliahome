@@ -1,4 +1,5 @@
 import { notifyApproval } from '../notifications/admin-events';
+import { normalizeInvoiceEdit } from '../shopify/order-edit.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import {
@@ -1068,7 +1069,8 @@ export class TransactionsService {
       );
     }
     if (tx.type === 'مبيعات' && !tx.shopifyOrderId) {
-      await this.notifications?.enqueue('order', 'order:tx:' + tx._id, tx.ref, 'tx:' + tx._id, undefined, undefined, { orderTotal: tx.total });
+      const itemCount = (tx.items || []).reduce((sum, item) => sum + item.qty, 0);
+      await this.notifications?.enqueue('order', 'order:tx:' + tx._id, tx.ref, 'tx:' + tx._id, undefined, undefined, { orderTotal: tx.total, itemCount });
       for (const d of tx.deposits || []) await this.notifications?.enqueue('deposit', 'deposit:' + (d.receiptId || String(tx._id) + ':' + d.id), tx.ref, 'tx:' + tx._id, undefined, undefined,
         { actorName: receipt?.submittedBy || notificationActor || d.by, amount: d.amount, vaultName: d.method, receiptId: d.receiptId, depositId: d.id });
     }
@@ -1305,16 +1307,27 @@ export class TransactionsService {
     approvedBy = '',
     callerRole = '',
     notificationActor?: string,
+    callerPerms: string[] = [],
   ): Promise<TransactionDocument> {
     const existing = await this.transactionModel.findById(id).exec();
     if (!existing) {
       throw new NotFoundException('المعاملة غير موجودة');
     }
+    if (existing.shopifyOrderId && existing.type === 'مبيعات') dto = { ...dto, ...normalizeInvoiceEdit(existing, dto) };
+    if (existing.shopifyOrderId && callerRole !== 'admin') {
+      if (!callerPerms.includes('shopify-edit-direct')) throw new ForbiddenException('تعديل طلب Shopify يحتاج موافقة المدير؛ أرسل طلب تعديل');
+      if (dto.discount !== undefined && dto.discount !== existing.discount) {
+        const settings = await this.settingsService.getSettings();
+        if (settings.otpEnabled !== false && dto.discount > Number(settings.highValueDiscountLimit ?? 200)) {
+          await this.discountOtpService.assertOtpForTransaction(dto.highValueDiscountOtpId || '', dto.discount);
+        }
+      }
+    }
     if ((existing as any).carrierSettlement?.payoutId) {
       throw new BadRequestException('الطلب مرتبط بدفعة بوسطة؛ يلزم مراجعة تسوية الدفعة قبل تعديل قيم الطلب');
     }
     this.assertNotExchangePendingCollect(existing);
-    this.assertEditableByFulfillment(existing, callerRole);
+    this.assertEditableByFulfillment(existing, existing.shopifyOrderId && callerPerms.includes('shopify-edit-direct') ? 'admin' : callerRole);
     if (dto.ref !== undefined) {
       await this.assertRetailRefForPersist(
         existing.type,

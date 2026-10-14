@@ -1747,7 +1747,9 @@ A `T | null` union erases to no usable design-time metadata, so `@nestjs/mongoos
 ⚠ **`npm run build` does not catch this.** The only check that does is actually starting the compiled output — `node dist/main.js`. Do that once before pushing anything that touches a schema.
 
 ### The health check was asking the wrong question
-`restart: unless-stopped` in [docker-compose.yml](docker-compose.yml) resurrects the container after every crash, so `docker inspect -f '{{.State.Status}}'` reports **`running`** while NestJS is dying in a loop. The build therefore went green over a completely dead API. The check now POSTs to `/api/auth/login` through nginx and accepts any real HTTP status (401 is the expected one) while rejecting `000`/`502`/`504`; the failure branch also prints `RestartCount`, which is what exposes a boot-crash loop at a glance.
+`restart: unless-stopped` in [docker-compose.yml](docker-compose.yml) resurrects the container after every crash, so `docker inspect -f '{{.State.Status}}'` reports **`running`** while NestJS is dying in a loop. Deployment readiness uses **GET `/api/health` through nginx**, requires HTTP 200, and checks MongoDB with a read-only ping. Never probe `/api/auth/login` with dummy accounts (`__hc__`, `__healthcheck__`): those requests correctly create failed-login security events and notify administrators. Jenkins jobs with an inline Pipeline must replace that legacy login probe or switch to the repository's `Jenkinsfile`.
+
+After the readiness and Shopify webhook checks succeed, `Notify live release` runs `backend/scripts/notify-release.cjs`. It verifies that the live frontend build matches the deployment, then records the **New Version Is Live** announcement with a stable `release:<build>` event ID. Retrying this stage does not create a duplicate announcement. Real failed logins continue to be audited; release events must never be relabelled as login failures.
 
 ---
 
@@ -2906,6 +2908,17 @@ with a deposit (`_spHasDepositRecorded`: approved OR in review) and **without** 
   Wired by three one-line calls in `loadShopifyOrders` and one in `renderShopifyOrders`.
 - The image is drawn on a canvas in the UI language (`ctx.direction`, logical-x helper `X()`),
   light theme always, after `document.fonts.load` for Cairo + Inter.
+- **Period picker = one calendar icon beside «تقرير»** (Oct 14, 2026 — the five-tab strip
+  plus the custom-dates bar took two rows). `_spkPeriodHtml()` → `#spk-period-btn` opens
+  `#spk-period-menu`: Today / Yesterday / Last 3 days / Last 7 days / Custom range; the
+  custom date fields live INSIDE the menu and «تطبيق» closes it. The applied period is
+  named in `.spk-range` («**Today** · Wednesday 14 October») and in the button's
+  `aria-label`; the icon is tinted (`.is-set`) when the period is not today. ↑/↓, Escape
+  (focus back to the button) and outside click (one capture `mousedown` listener) close it.
+  ⚠ `_spkMenuOpen` survives live re-renders. ⚠ `_spkSetPeriod` must always re-render
+  itself — `_spkCloseMenu()` returns early when the menu is closed, so routing through it
+  left the old figures on screen. ⚠ The menu anchors to `.spk-actions` (the outer edge of
+  the button group), not the icon — anchored on the icon it ran 22px off a 320px screen.
 - **Hide / show**: `#sp-kpi-toggle`, an icon button in the page header beside refresh/export —
   not inside the strip, which it hides. The choice is saved in `localStorage` under
   `_colsPrefKey('soulia_sp_kpi_hidden')`, so it survives a reload and is **per user** on a
@@ -3573,10 +3586,40 @@ keep their phone behaviour — switching them would suddenly pin Inventory's 7-t
 
 ---
 
+## Header Presence Dot, First Name + Job Title, Job Title in Comments (Oct 14, 2026)
+
+- **Header avatar carries a presence dot** (`#header-presence` inside `.pt-av-wrap`, on the
+  photo's outer bottom corner via `inset-inline-end`; 10px desktop, 9px phone).
+  `syncHeaderPresence()` = network up AND `__isOffline` false AND the socket connected —
+  green «متصل / Online», grey otherwise. Called from `updateHeader`, socket
+  `connect`/`disconnect`, and `showOfflineBanner`/`showOnlineBanner`.
+- **The header shows the FIRST name over the job title at every width**, phone included
+  (the two phone `#header-name{display:none}` rules were removed, and
+  `navigation-shell.css` no longer hides the wrap at 769–950px — `?v=` bumped). Full name
+  in `title` and in the profile menu. Both lines ellipsise (150px desktop, 92px phone).
+- **`userTitleLabel(u)`** is the one rule for what a person is called under their name:
+  `jobTitleLabel(jobTitle)`, else the role, localised (مدير/موظف/مشاهد). The header used
+  an English-only role map before.
+- **`cmtJobTitleHtml(who)`** adds a small `.cmt-jt` line under the author in all six
+  threads: new-transaction form, invoice page, Shopify comments window, prep workspace,
+  Shopify quick view (order comments + follow-up trail) and the follow-up timeline. Takes
+  a user object or the stored author name (matched with `_pwFindUser`); a free-text author
+  matching no account gets no line. ⚠ **Job title only — never the role** (owner's call):
+  an account with no `jobTitle` gets no line, not «Admin»/«Staff». (The header still
+  falls back to the role, via `userTitleLabel`.) ⚠ `unicode-bidi:isolate`, not `dir="auto"` — `auto`
+  threw a Latin title («Customer Service») to the far side of an Arabic panel.
+- ⚠ `/users/mentionable` (the user list non-admins load) now returns `jobTitle`; without
+  it every staff member saw no titles.
+- Verified: 60 browser assertions over the shipped page (1440/860/390/320, ar/en, dark):
+  first name + title visible, dot overlaps the photo on the outer edge, online/offline/
+  socket states, no page overflow, titles under authors in two real renderers.
+
 ## Recent Changes Summary
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Oct 14, 2026 | Shopify KPI strip: the five period tabs + custom-dates bar became one calendar icon beside «Report» with a small menu | See "Shopify Orders — Period KPIs + Report Image" above |
+| Oct 14, 2026 | Header: green/grey presence dot on the avatar, first name + job title shown on phone and desktop; comment threads show each author's job title in small type under the name | See "Header Presence Dot, First Name + Job Title" above |
 | Oct 13, 2026 | Shopify orders page: period KPI strip (Today / Yesterday / Last 7 days — received, confirmed (incl. shipping without deposit), follow-up, cancelled, confirmation rate) and a «تقرير» button that makes a shareable report image + copyable text | See "Shopify Orders — Period KPIs + Report Image" above |
 | Oct 13, 2026 | Shopify quick view compacted, follow-up first: customer moved into the head, then follow-up → comments → delivery → items → payment; follow-up facts as chips, readable threads, striped «in review» deposit on the meter, one footer action; fixed the blank Vrobo button | See "Shopify Quick View — Compact, Follow-up First" above |
 | Oct 13, 2026 | Phone: the side menu opened behind every sticky page head (z 50 vs 60) — fixed in navigation-shell.css; Shopify page on phones: compact head (title, refresh, tabs, search) stays pinned while only the list scrolls, tabs became one line of pills, date window and profile menu sized for the phone | See "Phone: Drawer Behind the Page, Shopify Head Rebuilt" above |

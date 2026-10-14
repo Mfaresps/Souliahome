@@ -9,24 +9,37 @@
 #sp-kpi-toggle{color:var(--accent)}
 #sp-kpi-toggle.is-off{color:var(--text-muted,var(--muted))}
 .spk-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-.spk-seg{display:inline-flex;flex-wrap:wrap;min-width:0;padding:3px;gap:2px;border-radius:10px;background:var(--bg-alt);border:1px solid var(--border)}
-.spk-date-filter{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
-.spk-date-field{display:flex;flex-direction:column;gap:4px;flex:1 1 180px;min-width:0;font-size:.76rem;color:var(--text)}
+.spk-actions{position:relative;margin-inline-start:auto;display:inline-flex;align-items:center;gap:6px}
+/* Period picker — a calendar icon beside «Report», opening a small menu. */
+/* The menu anchors to the OUTER edge of the button group, not the icon — at 320px the
+   icon sits mid-row and a menu hung from it ran off the screen. */
+.spk-period{display:inline-flex}
+.spk-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;
+  color:var(--text-muted,var(--muted));background:var(--bg);border:1px solid var(--border);border-radius:9px;cursor:pointer;
+  transition:background .15s,border-color .15s,color .15s}
+.spk-icon-btn:hover,.spk-icon-btn.is-open{background:var(--bg-alt);color:var(--text);border-color:color-mix(in srgb,var(--accent) 35%,var(--border))}
+.spk-icon-btn.is-set{color:var(--accent)}   /* a period other than today is applied */
+.spk-icon-btn:focus-visible,.spk-pm-item:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.spk-pmenu{position:absolute;top:calc(100% + 6px);inset-inline-end:0;z-index:40;width:248px;padding:5px;
+  background:var(--bg);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 28px rgba(15,31,22,.14)}
+.spk-pm-item{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:34px;padding:6px 10px;
+  border:0;border-radius:8px;background:none;font:inherit;font-size:.8rem;color:var(--text);cursor:pointer;text-align:start}
+.spk-pm-item:hover{background:var(--bg-alt)}
+.spk-pm-item.is-on{font-weight:600;color:var(--accent)}
+.spk-date-filter{display:flex;flex-direction:column;gap:8px;margin:5px 0 0;padding:9px 5px 4px;border-top:1px solid var(--border)}
+.spk-date-field{display:flex;flex-direction:column;gap:4px;min-width:0;font-size:.74rem;color:var(--text)}
 .spk-date-field input{width:100%;min-width:0;box-sizing:border-box;margin:0;font:inherit;padding:7px 9px;direction:ltr}
 .spk-date-named{font-size:.72rem;color:var(--muted);overflow-wrap:anywhere}
-.spk-date-error{flex-basis:100%;font-size:.74rem;color:var(--red)}
+.spk-date-error{font-size:.74rem;color:var(--red)}
 .spk-date-error:empty{display:none}
-.spk-date-filter .spk-report-btn{margin-inline-start:0;min-height:36px}
-.spk-seg-btn{border:0;background:none;font:inherit;font-size:.78rem;font-weight:500;color:var(--text-muted,var(--muted));
-  padding:5px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s,box-shadow .15s}
-.spk-seg-btn:hover{color:var(--text)}
-.spk-seg-btn.is-on{background:var(--bg);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(15,31,22,.08)}
-.spk-seg-btn:focus-visible,.spk-report-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.spk-range{font-size:.78rem;color:var(--text-muted,var(--muted))}
+.spk-date-filter .spk-report-btn{justify-content:center;min-height:34px}
+.spk-report-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.spk-range{font-size:.78rem;color:var(--text-muted,var(--muted));min-width:0}
+.spk-range b{font-weight:600;color:var(--text)}
 .spk-open{font-size:.74rem;color:var(--text-muted,var(--muted))}
 .spk-open::before{content:'·';margin-inline-end:8px}
 .spk-warn{font-size:.74rem;color:#b54708}
-.spk-report-btn{margin-inline-start:auto;display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:.78rem;font-weight:500;
+.spk-report-btn{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:.78rem;font-weight:500;
   color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:6px 12px;cursor:pointer;
   transition:background .15s,border-color .15s}
 .spk-report-btn:hover{background:var(--bg-alt);border-color:color-mix(in srgb,var(--accent) 35%,var(--border))}
@@ -62,7 +75,7 @@ body.dark-mode .spk-tile.is-cancelled{--spk-c:#f87171}
 body.dark-mode .spk-tile{background:color-mix(in srgb,var(--spk-c) 9%,var(--surface))}
 body.dark-mode .spk-tile.is-received,body.dark-mode .spk-tile.is-rate{background:var(--surface)}
 body.dark-mode .spk-ic{background:var(--surface2)}
-body.dark-mode .spk-seg-btn.is-on{background:var(--surface2);box-shadow:none}
+body.dark-mode .spk-pmenu{background:var(--surface);box-shadow:0 10px 28px rgba(0,0,0,.45)}
 body.dark-mode .spk-warn{color:#fbbf24}
 
 /* Report preview modal */
@@ -80,11 +93,12 @@ body.dark-mode .spk-warn{color:#fbbf24}
 @media (max-width:640px){
   #sp-kpi{margin:0 0 12px}
   .spk-head{gap:8px}
-  .spk-seg{flex:1 1 auto}
-  .spk-seg-btn{flex:1 1 0;padding:6px 6px;min-height:32px!important}
-  .spk-range{order:3;width:100%}
+  .spk-icon-btn{width:32px;height:32px;min-height:32px!important}
   .spk-report-btn{min-height:32px!important;padding:6px 10px}
-  .spk-open{order:4}
+  .spk-pmenu{width:min(248px,calc(100vw - 32px))}
+  .spk-date-field input{font-size:16px}   /* iOS zooms into a field under 16px */
+  .spk-open{order:4;width:100%}
+  .spk-open::before{content:none}
   .spk-grid{gap:8px}
   .spk-tile{padding:9px 10px;border-radius:12px}
   .spk-ic{width:22px;height:22px}

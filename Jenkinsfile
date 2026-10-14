@@ -69,6 +69,8 @@ pipeline {
         // ميتاً ورسالة «خطأ في الطلب» تظهر عند تسجيل الدخول: كان الفحص يسأل
         // السؤال الخطأ. /api/health يختبر Nest واتصال Mongo عبر البروكسي.
         // الفحص لا يسجل محاولة دخول وهمية ولا يرسل إشعار أمان عند كل رفع.
+        // Inline Jenkins jobs must use this readiness probe too; authentication
+        // requests correctly generate security alerts and are not readiness checks.
         sh '''
           for i in $(seq 1 60); do
             frontend_ok=false

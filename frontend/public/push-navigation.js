@@ -96,7 +96,9 @@
         await loadShopifyOrders();
         const order = _spOrderById(id);
         if (!order) throw new Error(currentLang === 'en' ? 'Order unavailable.' : 'الأوردر غير متاح.');
-        if (type === 'deposit' || (type === 'approval' && event)) {
+        if (type === 'orderEdit' || (type === 'approval' && event && (order.editRequest?.id === event || (order.editRequestHistory || []).some(r => r.id === event)))) {
+          navigateTo('shopify-orders'); openShopifyEditReview(id, event);
+        } else if (type === 'deposit' || (type === 'approval' && event)) {
           navigateTo('shopify-orders'); openSpOrderPeek(id);
           await highlight(event ? `#sp-peek [data-push-receipt-id="${CSS.escape(event)}"]` : '#sp-peek .spdep-section');
         } else if (type === 'comment' || !type) {

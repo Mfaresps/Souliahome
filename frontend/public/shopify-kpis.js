@@ -16,6 +16,10 @@
 
 let _spkPeriod = 'today';
 let _spkCustomFrom = '', _spkCustomTo = '', _spkDraftFrom = '', _spkDraftTo = '';
+/* The period picker is a calendar icon beside «Report» that opens a small menu
+   (Oct 14, 2026 — the five-tab strip + the custom-dates bar took two rows). Its open
+   state lives here so a live re-render of the strip does not snap it shut. */
+let _spkMenuOpen = false;
 /* Hidden / shown survives a reload, per user (same key scheme as the column prefs —
    one shared PC is used by several employees). */
 const SPK_HIDDEN_KEY = 'soulia_sp_kpi_hidden';
@@ -76,6 +80,7 @@ const _SPK_L = {
   generated: ['أُنشئ', 'Generated'],
   close: ['إغلاق', 'Close'],
   hide: ['إخفاء الملخص', 'Hide summary'], show: ['عرض الملخص', 'Show summary'],
+  pickPeriod: ['الفترة', 'Period'],
 };
 function _spkT(k) { const v = _SPK_L[k]; return v ? v[currentLang === 'en' ? 1 : 0] : k; }
 function _spkEsc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -120,10 +125,10 @@ function _spkApplyDates(event) {
     return;
   }
   _spkCustomFrom = _spkDraftFrom = from; _spkCustomTo = _spkDraftTo = to;
-  _spkRender();
+  _spkCloseMenu(true);
 }
 function _spkDateControls() {
-  if (_spkPeriod !== 'custom') return '';
+  if (_spkPeriod !== 'custom' || !_spkMenuOpen) return '';
   const field = (key, value) => `<label class="spk-date-field"><span>${_spkEsc(_spkT(key))}</span>
     <input type="date" id="spk-${key}" value="${_spkEsc(value)}" max="${_spkYmd(new Date())}" required oninput="_spkDateDraft('${key}',this.value)" aria-describedby="spk-${key}-named spk-date-error">
     <span class="spk-date-named" id="spk-${key}-named">${_spkEsc(_spkNamedDate(value))}</span></label>`;
@@ -195,6 +200,8 @@ const _SPK_ICO = {
   cancelled: '<circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/>',
   rate: '<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/>',
   report: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/>',
+  calendar: '<rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/>',
+  check: '<path d="m5 12 5 5 9-10"/>',
 };
 function _spkIco(k, size) { return `<svg viewBox="0 0 24 24" width="${size || 15}" height="${size || 15}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${_SPK_ICO[k]}</svg>`; }
 
@@ -207,17 +214,16 @@ function _spkRender(state) {
   _spkSyncToggle(hidden);
   host.hidden = hidden;
   if (hidden) { host.innerHTML = ''; return; }
-  const seg = ['today', 'yesterday', 'three', 'week', 'custom'].map(p =>
-    `<button type="button" role="tab" class="spk-seg-btn${p === _spkPeriod ? ' is-on' : ''}" aria-selected="${p === _spkPeriod}" onclick="_spkSetPeriod('${p}')">${_spkEsc(_spkT(p))}</button>`).join('');
+  const seg = _spkPeriodHtml();
 
   if (_spkState === 'loading' && !(_shopifyOrders || []).length) {
-    host.innerHTML = `<div class="spk-head"><div class="spk-seg" role="tablist">${seg}</div></div>
+    host.innerHTML = `<div class="spk-head"><div class="spk-actions">${seg}</div></div>
       <div class="spk-grid" aria-busy="true">${'<div class="spk-tile is-skel"><span></span><span></span></div>'.repeat(6)}</div>`;
     return;
   }
   if (_spkState === 'error' && !(_shopifyOrders || []).length) {
-    host.innerHTML = `<div class="spk-head"><div class="spk-seg" role="tablist">${seg}</div>
-      <span class="spk-warn">${_spkEsc(_spkT('loadFail'))}</span></div>`;
+    host.innerHTML = `<div class="spk-head"><span class="spk-warn">${_spkEsc(_spkT('loadFail'))}</span>
+      <div class="spk-actions">${seg}</div></div>`;
     return;
   }
 
@@ -239,14 +245,15 @@ function _spkRender(state) {
 
   host.innerHTML = `
     <div class="spk-head">
-      <div class="spk-seg" role="tablist" aria-label="${_spkEsc(_spkT('title'))}">${seg}</div>
-      <span class="spk-range">${_spkEsc(_spkRangeLabel(s))}</span>
+      <span class="spk-range">${_spkPeriod === 'custom' ? '' : `<b>${_spkEsc(_spkT(_spkPeriod))}</b> · `}${_spkEsc(_spkRangeLabel(s))}</span>
       ${openNote}${fuWarn}
-      <button type="button" class="spk-report-btn" onclick="_spkOpenReport()" title="${_spkEsc(_spkT('reportTitle'))}">
-        ${_spkIco('report', 14)}<span>${_spkEsc(_spkT('report'))}</span>
-      </button>
+      <div class="spk-actions">
+        ${seg}
+        <button type="button" class="spk-report-btn" onclick="_spkOpenReport()" title="${_spkEsc(_spkT('reportTitle'))}">
+          ${_spkIco('report', 14)}<span>${_spkEsc(_spkT('report'))}</span>
+        </button>
+      </div>
     </div>
-    ${_spkDateControls()}
     <div class="spk-grid">
       ${tile('received', _spkN(s.received), _spkDeltaText(s))}
       ${tile('confirmed', _spkN(s.confirmed),
@@ -261,15 +268,70 @@ function _spkRender(state) {
     </div>`;
 }
 
+const _SPK_PERIODS = ['today', 'yesterday', 'three', 'week', 'custom'];
+/* Calendar icon button + its menu. The period is NAMED in .spk-range at the start of the
+   row, so the button itself can stay an icon; its title / aria-label state it too. */
+function _spkPeriodHtml() {
+  const cur = _spkT(_spkPeriod);
+  const items = _SPK_PERIODS.map(p => `
+    <button type="button" role="menuitemradio" aria-checked="${p === _spkPeriod}" class="spk-pm-item${p === _spkPeriod ? ' is-on' : ''}" onclick="_spkSetPeriod('${p}')">
+      <span>${_spkEsc(_spkT(p))}</span>${p === _spkPeriod ? _spkIco('check', 14) : ''}</button>`).join('');
+  return `<div class="spk-period">
+    <button type="button" class="spk-icon-btn${_spkMenuOpen ? ' is-open' : ''}${_spkPeriod !== 'today' ? ' is-set' : ''}" id="spk-period-btn"
+      aria-haspopup="menu" aria-expanded="${_spkMenuOpen}" aria-controls="spk-period-menu" onclick="_spkToggleMenu()" onkeydown="_spkMenuKey(event)"
+      title="${_spkEsc(_spkT('pickPeriod') + ': ' + cur)}" aria-label="${_spkEsc(_spkT('pickPeriod') + ': ' + cur)}">${_spkIco('calendar', 16)}</button>
+    ${_spkMenuOpen ? `<div class="spk-pmenu" id="spk-period-menu" role="menu" aria-label="${_spkEsc(_spkT('pickPeriod'))}" onkeydown="_spkMenuKey(event)">
+      ${items}${_spkDateControls()}</div>` : ''}
+  </div>`;
+}
+function _spkToggleMenu() {
+  if (_spkMenuOpen) { _spkCloseMenu(true); return; }
+  _spkMenuOpen = true;
+  _spkRender();
+  const on = document.querySelector('#spk-period-menu .spk-pm-item.is-on') || document.querySelector('#spk-period-menu .spk-pm-item');
+  if (on) on.focus();
+}
+function _spkCloseMenu(refocus) {
+  if (!_spkMenuOpen) return;
+  _spkMenuOpen = false;
+  _spkRender();
+  if (refocus) document.getElementById('spk-period-btn')?.focus();
+}
+/* Up/Down walk the items, Escape closes and returns focus to the button. Keys typed in
+   the date fields are left alone (only Escape is taken there). */
+function _spkMenuKey(e) {
+  if (e.key === 'Escape' && _spkMenuOpen) { e.preventDefault(); e.stopPropagation(); _spkCloseMenu(true); return; }
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  e.preventDefault();
+  if (!_spkMenuOpen) { _spkToggleMenu(); return; }
+  const items = [...document.querySelectorAll('#spk-period-menu .spk-pm-item')];
+  const i = items.indexOf(document.activeElement);
+  const next = items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length];
+  if (next) next.focus();
+}
+/* A click anywhere outside the picker closes it. Bound once; inert while closed. */
+document.addEventListener('mousedown', e => {
+  if (_spkMenuOpen && !(e.target.closest && e.target.closest('.spk-period'))) _spkCloseMenu(false);
+}, true);
+
 function _spkSetPeriod(p) {
-  if (!['today', 'yesterday', 'three', 'week', 'custom'].includes(p)) return;
+  if (!_SPK_PERIODS.includes(p)) return;
   if (p === 'custom' && !_spkCustomFrom) {
     const range = _spkRange(_spkPeriod);
     _spkCustomFrom = _spkDraftFrom = _spkYmd(range.from);
     _spkCustomTo = _spkDraftTo = _spkYmd(new Date(range.to.getTime() - 1));
   }
   _spkPeriod = p;
+  /* A named period applies at once and closes the menu; «Custom range» keeps it open
+     on its date fields, which apply with their own button. */
+  /* ⚠ Always re-render here — _spkCloseMenu() returns early when the menu is already
+     closed, so routing a closed-menu call through it left the old period's figures. */
+  const wasOpen = _spkMenuOpen;
+  if (p !== 'custom') _spkMenuOpen = false;
   _spkRender();
+  if (p === 'custom') { const f = document.getElementById('spk-from'); if (f) f.focus(); }
+  else if (wasOpen) document.getElementById('spk-period-btn')?.focus();
 }
 
 /* ── Report: text + image ── */

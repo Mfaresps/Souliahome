@@ -192,6 +192,18 @@ export class ShopifyOrder {
   @Prop({ default: '' })
   reviewedBy: string;
 
+  /** Proposed staff changes are kept separate until an administrator decides. */
+  @Prop({ type: Object, default: null })
+  editRequest: {
+    id: string; status: string; requestedBy: string; requestedById: string;
+    requestedByUsername: string; requestedAt: string; before: Record<string, any>;
+    patch: Record<string, any>; changes: string[]; transactionId?: string;
+    reviewedBy?: string; reviewedAt?: string; rejectedReason?: string;
+  } | null;
+
+  @Prop({ type: [Object], default: [] })
+  editRequestHistory: any[];
+
   @Prop({ default: '' })
   reviewedAt: string;
 

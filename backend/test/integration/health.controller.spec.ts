@@ -55,6 +55,8 @@ describe('Deployment readiness endpoint', () => {
     expect(health).toContain('http://localhost:8080/api/health');
     expect(health).not.toContain('/api/auth/login');
     expect(health).not.toContain('__healthcheck__');
+    expect(pipeline).not.toContain('__hc__');
+    expect(pipeline).not.toContain('/api/auth/login');
     expect(health).toContain('[ "$api_code" = "200" ]');
   });
 });

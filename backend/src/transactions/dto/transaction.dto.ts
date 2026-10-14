@@ -242,6 +242,9 @@ export class DepositVaultCorrectionDto {
 }
 
 export class UpdateTransactionDto {
+  @IsString()
+  @IsOptional()
+  readonly highValueDiscountOtpId?: string;
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

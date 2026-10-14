@@ -101,7 +101,8 @@ export class DiscountOtpService {
   private async createOtpDocument(values: any): Promise<DiscountOtpDocument> {
     const doc = await this.otpModel.create(values);
     try {
-      const details = { actorName: doc.requestedByName || doc.requestedByUsername, actionKey: doc.kind || 'discount', expiresAt: doc.expiresAt };
+      const details = { actorName: doc.requestedByName || doc.requestedByUsername, actionKey: doc.kind || 'discount', expiresAt: doc.expiresAt,
+        ...(doc.kind === 'discount' || !doc.kind ? { amount: doc.discountAmount } : {}) };
       await this.notifications?.enqueue('otp', 'otp:' + doc._id, doc.txRef || String(doc._id), 'otp:' + doc._id, undefined, undefined, details);
       await this.notifications?.enqueue('approval', 'approval:otp:' + doc._id + ':pending', doc.txRef || String(doc._id), 'otp:' + doc._id, undefined, undefined, { ...details, status: 'pending' });
     } catch { /* The request has already been committed. */ }

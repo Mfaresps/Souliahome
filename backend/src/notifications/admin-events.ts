@@ -19,6 +19,7 @@ export const ACTIONS: Record<string, [string, string]> = {
   vault: ['اعتماد حركة خزنة', 'Cash register approval'],
   product: ['تعديل منتج', 'Modify product'], expense: ['اعتماد مصروف', 'Expense approval'],
   'supplier-return': ['مرتجع مورد', 'Supplier return approval'],
+  'edit-shopify': ['تعديل طلب شوبيفاي', 'Shopify order edit'],
   failed_login: ['فشل تسجيل الدخول', 'Failed login'], account_locked: ['قفل حساب', 'Account locked'],
   otp_violation: ['فشل التحقق من OTP', 'OTP verification failed'], vault_violation: ['محاولة دخول الخزنة', 'Cash register access violation'],
   unauthorized_access: ['محاولة وصول غير مصرح', 'Unauthorized access'], settings_tampering: ['محاولة تعديل إعدادات', 'Settings access violation'],

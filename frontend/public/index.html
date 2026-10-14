@@ -1140,6 +1140,9 @@ body.dark-mode .eh-val.is-after{color:#6ee7b7;background:rgba(52,211,153,.14)}
    Same fix as .inv-detail-overlay.inv-over-modal (z-index:1400) above. */
 #export-otp-modal,#hv-otp-modal,#pur-otp-modal,#import-otp-modal,#del-prod-otp-modal,
 #add-prod-otp-modal,#del-supplier-otp-modal,#vault-otp-modal,#supplier-pay-otp-modal{z-index:1500}
+/* Shopify's editor is a body portal at 9999; its gates must sit above it. */
+#modal-overlay.shopify-edit-review{z-index:10040}
+#hv-otp-modal{z-index:10060}
 .modal{background:var(--bg);border-radius:var(--radius);padding:24px;width:90vw;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);background-image:none !important;box-sizing:border-box;display:flex;flex-direction:column}
 @media(max-width:768px){.modal{width:95vw;max-height:95vh;padding:16px}}
 @media(max-width:480px){.modal{padding:12px}}
@@ -2711,7 +2714,22 @@ body.dark-mode #header .notif-btn:hover,body.dark-mode #header .adb-reopen-btn:h
 .profile-trigger{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.05);border:1px solid rgba(0,0,0,.09);cursor:pointer;padding:3px 10px 3px 4px;border-radius:999px;color:#1a2e22;font-size:.85rem;min-height:38px;transition:background .15s,transform .15s}
 .profile-trigger .header-name-wrap{display:flex;flex-direction:column;align-items:flex-start;line-height:1.2}
 [dir="rtl"] .profile-trigger .header-name-wrap{align-items:flex-end}
-.profile-trigger #header-jobtitle{font-size:.62rem;font-weight:400;color:inherit;opacity:.6;direction:ltr}
+.profile-trigger #header-jobtitle{font-size:.62rem;font-weight:400;color:inherit;opacity:.6;unicode-bidi:isolate}
+/* First name over the job title; both ellipsise rather than widen the header. */
+.profile-trigger .header-name-wrap{min-width:0;max-width:150px}
+.profile-trigger #header-name,.profile-trigger #header-jobtitle{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile-trigger #header-name{font-weight:600}
+/* Presence dot — overlaps the photo's outer bottom corner. State comes from
+   syncHeaderPresence(): network up AND the live socket connected. */
+/* Job title under a comment author's name — one rule for every thread. */
+.cmt-who{display:inline-flex;flex-direction:column;min-width:0;line-height:1.25}
+.tx-cmt-meta:has(.cmt-who){align-items:baseline}
+.pw-cmt-b .cmt-jt{margin:-1px 0 3px}
+.cmt-jt{display:block;unicode-bidi:isolate;font-size:.66rem;font-weight:400;color:var(--muted);line-height:1.2;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:start}
+.profile-trigger .pt-av-wrap{position:relative;display:inline-flex;flex-shrink:0}
+.profile-trigger .pt-presence{position:absolute;bottom:-1px;inset-inline-end:-1px;width:10px;height:10px;border-radius:50%;background:#9ca3af;box-shadow:0 0 0 2px var(--shell-white,#fff);transition:background .25s}
+.profile-trigger .pt-presence.is-online{background:#22c55e}
+body.dark-mode .profile-trigger .pt-presence{box-shadow:0 0 0 2px var(--shell-white,#161d18)}
 [dir="rtl"] .profile-trigger{padding:3px 4px 3px 10px}
 .profile-trigger:hover{background:rgba(0,0,0,.1)}
 .profile-trigger:active{transform:scale(.96)}
@@ -8842,7 +8860,6 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
   #header{padding:0 14px;gap:8px;height:56px;box-shadow:0 2px 12px rgba(0,0,0,.18)}
   :root{--header-h:56px}
   #header-date{display:none!important}
-  #header-name{display:none!important}
   #header .logo img{height:32px}
   #header .header-actions{gap:6px}
   #header button[onclick*="toggleCalc"]{display:none!important}
@@ -8856,7 +8873,12 @@ body.dark-mode .mov-grid-card .mgc-avatar{background:#334155!important;color:#cb
   #header .profile-trigger{height:34px;padding:2px 8px 2px 3px;gap:6px}
   [dir="rtl"] #header .profile-trigger{padding:2px 3px 2px 8px}
   #header .profile-trigger .avatar{width:28px!important;height:28px!important;font-size:.74rem!important}
-  #header .profile-trigger #header-name{display:none!important}
+  /* Phone: first name + job title stay visible (owner's call, Oct 14, 2026), capped so
+     a long name ellipsises instead of pushing the header icons off-screen. */
+  #header .profile-trigger .header-name-wrap{max-width:92px}
+  #header .profile-trigger #header-name{font-size:.74rem}
+  #header .profile-trigger #header-jobtitle{font-size:.6rem}
+  #header .profile-trigger .pt-presence{width:9px;height:9px;box-shadow:0 0 0 2px var(--shell-white,#fff)}
   #header .profile-trigger .pt-caret{width:12px;height:12px}
   #header button{opacity:.9}
   /* ── Search mobile: removed from header entirely, lives only in bottom nav ── */
@@ -15356,6 +15378,10 @@ body.dark-mode .dashboard-v2 .ds-ship-tab.is-danger .ds-ship-tab-count{backgroun
 #soulia-modal-errmsg{font-size:.72rem;color:var(--red);margin-top:5px;display:none}
 #soulia-modal-errmsg.show{display:block}
 #soulia-modal-footer{display:flex;gap:10px;padding:14px 22px 20px;justify-content:flex-end}
+#soulia-modal-overlay.shopify-edit-decision #soulia-modal{max-height:calc(100dvh - 32px);display:flex;flex-direction:column}
+#soulia-modal-overlay.shopify-edit-decision #soulia-modal-body{min-height:0;overflow-y:auto;overflow-wrap:anywhere}
+#soulia-modal-overlay.shopify-edit-decision #soulia-modal-header,#soulia-modal-overlay.shopify-edit-decision #soulia-modal-footer{flex-shrink:0}
+#soulia-modal-overlay.shopify-edit-decision #soulia-modal-footer{flex-wrap:wrap}
 .sm-btn{padding:10px 22px;border-radius:10px;font-family:var(--font-app);font-size:.875rem;font-weight:700;border:1px solid transparent;cursor:pointer;transition:background .15s,border-color .15s,transform .1s,opacity .15s}
 .sm-btn:active{transform:scale(.97)}
 .sm-btn-cancel{background:transparent;color:var(--text);border-color:var(--border)}
@@ -16301,7 +16327,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 @media(prefers-reduced-motion:reduce){.spdep-scanning-icon,.is-scanning .spdep-scan-line{animation:none}}
 
 </style>
-<link rel="stylesheet" href="/navigation-shell.css?v=20261013">
+<link rel="stylesheet" href="/navigation-shell.css?v=20261014">
 <link rel="stylesheet" href="/deposit-history.css?v=20261013">
 <link rel="stylesheet" href="/deposit-transfer.css">
 <link rel="manifest" href="/manifest.webmanifest">
@@ -16310,7 +16336,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="apple-touch-icon" href="/push-icon-192.png">
 <link rel="stylesheet" href="/notification-settings.css">
 <link rel="stylesheet" href="/announcements.css?v=4">
-<link rel="stylesheet" href="/shopify-kpis.css?v=4">
+<link rel="stylesheet" href="/shopify-kpis.css?v=5">
 <link rel="stylesheet" href="/settings-responsive.css">
 </head>
 <body>
@@ -16502,7 +16528,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <button class="profile-trigger" id="profile-trigger" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="profile-menu" onclick="toggleProfileMenu(event)" onkeydown="handleProfileTriggerKey(event)" title="الملف الشخصي" data-i18n-title="pmProfileTitle">
   <svg class="pt-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
   <span class="header-name-wrap"><span id="header-name"></span><span id="header-jobtitle"></span></span>
-  <div class="avatar" id="header-avatar"></div>
+  <span class="pt-av-wrap"><div class="avatar" id="header-avatar"></div><span class="pt-presence" id="header-presence" role="img"></span></span>
 </button>
 <div class="profile-menu" id="profile-menu" role="menu" aria-labelledby="profile-trigger">
   <div style="padding:8px 12px 10px;border-bottom:1px solid var(--border);margin-bottom:4px;text-align:left;direction:ltr">
@@ -23295,7 +23321,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 
 <script src="/deposit-history.js?v=20261013"></script>
-<script src="/shopify-kpis.js?v=4"></script>
+<script src="/shopify-kpis.js?v=5"></script>
 <script src="/invoice-image.js?v=20261013-2"></script>
 <script>
 const qs = (s, p) => (p || document).querySelector(s);
@@ -24530,7 +24556,7 @@ let vaultUnlocked = false;
 let reportCharts = {};
 let currentLang = 'ar';
 
-const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export','carrier-import','vault','users','settings','shopify-orders','shopify-cancel','shopify-cancel-request','shopify-deposit-upload','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import','delivery-manual-confirm','delivery-view-audit','purchase-create','purchase-view','purchase-edit-price','categories-view','categories-create','categories-edit','categories-delete','categories-assign-products','categories-link-suppliers',
+const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export','carrier-import','vault','users','settings','shopify-orders','shopify-cancel','shopify-cancel-request','shopify-deposit-upload','shopify-edit-direct','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import','delivery-manual-confirm','delivery-view-audit','purchase-create','purchase-view','purchase-edit-price','categories-view','categories-create','categories-edit','categories-delete','categories-assign-products','categories-link-suppliers',
   // Supplier account — six read tabs + six money actions. See supPerm() for the legacy alias rule.
   'suppliers-tab-invoices','suppliers-tab-pos','suppliers-tab-sreturns','suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-activity',
   'suppliers-pay','suppliers-deposit','suppliers-ledger-adjust','suppliers-write-off','suppliers-reverse','suppliers-returns',
@@ -24538,7 +24564,7 @@ const PERMS = ['dashboard','transaction','inventory','movements','clients','prod
   'carrier-settle-view','carrier-settle-run','carrier-settle-approve','carrier-settle-reverse'];
 const PERMS_AR = {dashboard:'الرئيسية',transaction:'المعاملات',inventory:'المخزن',movements:'سجل المعاملات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',approvals:'الموافقات',reports:'التقارير',
   'reports-kpis':'التقارير - مؤشرات الأداء','reports-charts':'التقارير - المبيعات والمشتريات','reports-discounts':'التقارير - أكواد الخصم','reports-orderaudit':'التقارير - تحليل الطلبات','reports-cancellations':'التقارير - الإلغاءات','reports-shipping':'التقارير - تحليل الشحن','reports-export':'التقارير - تصدير Excel/PDF','carrier-import':'تحصيل من ملف شركة الشحن',
-  vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات','shopify-orders':'أوردرات Shopify','shopify-cancel':'شوبيفاي - إلغاء أوردر مباشرة','shopify-cancel-request':'شوبيفاي - طلب إلغاء أوردر (بموافقة مدير)','shopify-deposit-upload':'شوبيفاي - رفع إيصال تحويل العربون (الاعتماد للمدير فقط)','csp-view':'دليل خدمة العملاء - عرض','csp-create':'دليل خدمة العملاء - إضافة بطاقات','csp-edit':'دليل خدمة العملاء - تعديل بطاقات','csp-delete':'دليل خدمة العملاء - حذف بطاقات','csp-manage-folders':'دليل خدمة العملاء - إدارة الفولدرات','csp-analytics':'دليل خدمة العملاء - الإحصائيات','csp-export':'دليل خدمة العملاء - تصدير','csp-import':'دليل خدمة العملاء - استيراد','delivery-manual-confirm':'تأكيد التسليم يدوياً','delivery-view-audit':'عرض سجل تدقيق التسليم','purchase-create':'المشتريات - إنشاء عملية شراء','purchase-view':'المشتريات - عرض فواتير الشراء','purchase-edit-price':'المشتريات - تعديل سعر الشراء',
+  vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات','shopify-orders':'أوردرات Shopify','shopify-cancel':'شوبيفاي - إلغاء أوردر مباشرة','shopify-cancel-request':'شوبيفاي - طلب إلغاء أوردر (بموافقة مدير)','shopify-edit-direct':'شوبيفاي - تعديل مباشر بدون موافقة المدير (مع تطبيق حد الخصم)','shopify-deposit-upload':'شوبيفاي - رفع إيصال تحويل العربون (الاعتماد للمدير فقط)','csp-view':'دليل خدمة العملاء - عرض','csp-create':'دليل خدمة العملاء - إضافة بطاقات','csp-edit':'دليل خدمة العملاء - تعديل بطاقات','csp-delete':'دليل خدمة العملاء - حذف بطاقات','csp-manage-folders':'دليل خدمة العملاء - إدارة الفولدرات','csp-analytics':'دليل خدمة العملاء - الإحصائيات','csp-export':'دليل خدمة العملاء - تصدير','csp-import':'دليل خدمة العملاء - استيراد','delivery-manual-confirm':'تأكيد التسليم يدوياً','delivery-view-audit':'عرض سجل تدقيق التسليم','purchase-create':'المشتريات - إنشاء عملية شراء','purchase-view':'المشتريات - عرض فواتير الشراء','purchase-edit-price':'المشتريات - تعديل سعر الشراء',
   'categories-view':'التصنيفات - عرض','categories-create':'التصنيفات - إضافة تصنيف/مجموعة','categories-edit':'التصنيفات - تعديل تصنيف/مجموعة','categories-delete':'التصنيفات - حذف تصنيف/مجموعة','categories-assign-products':'التصنيفات - ربط الأصناف بالمجموعات','categories-link-suppliers':'التصنيفات - ربط الموردين بالمجموعات',
   'suppliers-tab-invoices':'حساب المورد - عرض الفواتير','suppliers-tab-pos':'حساب المورد - عرض أوامر الشراء','suppliers-tab-sreturns':'حساب المورد - عرض مرتجعات الموردين','suppliers-tab-payments':'حساب المورد - عرض سجل المدفوعات','suppliers-tab-ledger':'حساب المورد - عرض سجل المديونية','suppliers-tab-activity':'حساب المورد - عرض سجل النشاط',
   'suppliers-pay':'حساب المورد - سداد دفعة للمورد','suppliers-deposit':'حساب المورد - دفع عربون / خصم على الحساب','suppliers-ledger-adjust':'حساب المورد - تسوية سجل المديونية','suppliers-write-off':'حساب المورد - إقفال متبقي الفاتورة','suppliers-reverse':'حساب المورد - التراجع عن دفعة','suppliers-returns':'حساب المورد - إنشاء وإدارة مرتجعات الموردين',
@@ -24558,7 +24584,7 @@ const PERM_MODULES = [
   { key:'supplierAccount', label:'حساب المورد (الصلاحيات المالية)', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>', perms:['suppliers-tab-invoices','suppliers-tab-pos','suppliers-tab-sreturns','suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-activity','suppliers-pay','suppliers-deposit','suppliers-ledger-adjust','suppliers-write-off','suppliers-reverse','suppliers-returns'] },
   { key:'vault', label:'الخزنة والمصاريف', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>', perms:['vault','expenses','carrier-import','carrier-settle-view','carrier-settle-run','carrier-settle-approve','carrier-settle-reverse'] },
   { key:'reports', label:'التقارير', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-4"/></svg>', perms:['reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export'] },
-  { key:'shopify', label:'Shopify ودليل خدمة العملاء', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1.5 5h9L18 2"/><path d="M3.5 7h17l-1.2 13.2a2 2 0 01-2 1.8H6.7a2 2 0 01-2-1.8L3.5 7z"/></svg>', perms:['shopify-orders','shopify-cancel','shopify-cancel-request','shopify-deposit-upload','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import'] },
+  { key:'shopify', label:'Shopify ودليل خدمة العملاء', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1.5 5h9L18 2"/><path d="M3.5 7h17l-1.2 13.2a2 2 0 01-2 1.8H6.7a2 2 0 01-2-1.8L3.5 7z"/></svg>', perms:['shopify-orders','shopify-cancel','shopify-cancel-request','shopify-deposit-upload','shopify-edit-direct','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import'] },
   { key:'delivery', label:'التسليم', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>', perms:['delivery-manual-confirm','delivery-view-audit'] },
   { key:'settings', label:'المستخدمون والإعدادات', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>', perms:['users','settings'] },
 ];
@@ -28859,6 +28885,7 @@ const TRANSLATIONS = {
   spReqCancelWithdrawConfirm:{ar:'سيُسحب طلب الإلغاء ويعود الأوردر لحالته الطبيعية. لن يُلغى شيء.',en:'The cancellation request will be withdrawn and the order returns to normal. Nothing is cancelled.'},
   spReqCancelWithdrawn:{ar:'تم التراجع عن طلب الإلغاء',en:'Cancellation request withdrawn'},
   spReqCancelReason:{ar:'السبب',en:'Reason'},
+  apprKindShopifyEdit:{ar:'تعديل أوردر شوبيفاي',en:'Shopify order edit'},
   apprKindShopifyCancel:{ar:'إلغاء أوردر شوبيفاي',en:'Shopify order cancellation'},
   spRestoreTitle:{ar:'استرجاع الأوردر',en:'Restore order'},
   spRestoreBody:{ar:'سيتم استرجاع هذا الأوردر ليعود ضمن الإحصائيات.',en:'This order will be restored and counted in statistics again.'},
@@ -31843,6 +31870,19 @@ async function oqUpdateBadges() {
 
 // Detect "should I queue this?" — offline OR a fetch failure indicating server unreachable
 function isLikelyOffline() { return !navigator.onLine || __isOffline; }
+/** Green dot on the header avatar = this session is live: the network is up, the
+ *  server answers, and the real-time socket is connected. Grey otherwise. */
+function syncHeaderPresence() {
+  const el = qs('#header-presence');
+  if (!el) return;
+  let online = navigator.onLine;
+  try { if (__isOffline) online = false; } catch (_) {}
+  try { if (socket && !socket.connected) online = false; } catch (_) {}
+  el.classList.toggle('is-online', online);
+  const label = online ? (currentLang === 'en' ? 'Online' : 'متصل') : (currentLang === 'en' ? 'Offline' : 'غير متصل');
+  el.title = label;
+  el.setAttribute('aria-label', label);
+}
 function isNetworkError(err) {
   const msg = String(err?.message || err || '').toLowerCase();
   return msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('load failed') || msg.includes('network request failed');
@@ -33306,14 +33346,19 @@ function updateHeader() {
   const avatarUrl = sanitizeUrl(currentUser.avatar) || placeholderAvatarUrl(currentUser._id || currentUser.username);
   const headerInitials = (currentUser.name || currentUser.username || '?').slice(0, 2);
   qs('#header-avatar').innerHTML = `<img src="${esc(avatarUrl)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="_avatarImgFallback(this,'${esc(headerInitials)}')">`;
-  qs('#header-name').textContent = currentUser.name || currentUser.username;
-  const _roleMapEn = { admin: 'Admin', staff: 'Staff', viewer: 'Viewer', manager: 'Manager' };
-  // jobTitleLabel is safe here: this runs post-login, long after the module-level
+  // The header carries the FIRST name only (the full name is in the profile menu and
+  // the tooltip); the job title sits beneath it.
+  const _fullName = currentUser.name || currentUser.username || '';
+  const hName = qs('#header-name');
+  hName.textContent = _fullName.trim().split(/\s+/)[0] || _fullName;
+  hName.title = _fullName;
+  // userTitleLabel is safe here: this runs post-login, long after the module-level
   // JOB_TITLE_MAP const has evaluated.
-  const jobTitleText = jobTitleLabel(currentUser.jobTitle) || _roleMapEn[currentUser.role] || currentUser.role || '';
+  const jobTitleText = userTitleLabel(currentUser);
   const pmName = qs('#pm-user-name'); if (pmName) pmName.textContent = currentUser.name || currentUser.username || '';
   const pmJobTitle = qs('#pm-user-jobtitle'); if (pmJobTitle) pmJobTitle.textContent = jobTitleText;
   const hJobTitle = qs('#header-jobtitle'); if (hJobTitle) hJobTitle.textContent = jobTitleText;
+  syncHeaderPresence();
   const now = new Date();
   const loc = currentLang === 'en' ? 'en-US' : 'ar-EG';
   const dayName = now.toLocaleDateString(loc, { weekday: 'long' });
@@ -33364,6 +33409,7 @@ function connectSocket() {
   socket.on('shopify:deposit-changed', () => { loadShopifyOrders(); });
   socket.on('shopify:order-cancel-conflict', () => { loadShopifyOrders(); });
   socket.on('shopify:phone-changed', () => { loadShopifyOrders(); });
+  socket.on('shopify:edit-changed', async () => { await loadShopifyOrders(); if (currentPage === 'approvals') renderApprovals(); });
   socket.on('shopify:items-changed', () => { loadShopifyOrders(); });
   socket.on('users:status', (data) => {
     // Update from WebSocket with full user data including lastSeen
@@ -33571,7 +33617,8 @@ function connectSocket() {
     try { applyEditTxDecision(payload); } catch (e) { console.warn('edit-tx:decision handler', e); }
   });
 
-  socket.on('disconnect', () => { console.log('Socket disconnected'); });
+  socket.on('disconnect', () => { console.log('Socket disconnected'); syncHeaderPresence(); });
+  socket.on('connect', syncHeaderPresence);
 
   // ===== Real-time Pickup Orders Sync (surgical DOM — no fetch, no full re-render) =====
   socket.on('pickup:updated', (payload) => {
@@ -35212,7 +35259,7 @@ function buildSidebar() {
   // Shopify cancellation requests count toward the same badge — a request a manager cannot see
   // is a request that sits unanswered while the customer waits.
   const pendingShopifyCancelCount = (_shopifyOrders || []).filter(o => o.cancelRequest && o.cancelRequest.status === 'معلق').length;
-  const totalApprovalsBadge = (isAdmin() ? pendingExpCount + pendingCancelCount + pendingReturnCount + pendingProductEditCount + pendingShopifyCancelCount : 0);
+  const totalApprovalsBadge = (isAdmin() ? pendingExpCount + pendingCancelCount + pendingReturnCount + pendingProductEditCount + pendingShopifyCancelCount + (_shopifyOrders || []).filter(o => o.editRequest?.status === 'معلق').length : 0);
   const _movTotal = transactions.filter(t => !t.cancelled).length;
   const _movSeen = parseInt(localStorage.getItem('mov_seen_count') ?? '-1');
   const newMovCount = _movSeen >= 0 ? Math.max(0, _movTotal - _movSeen) : 0;
@@ -38323,7 +38370,7 @@ function onPageEnter(page) {
       // filled by the Shopify page — which a manager arriving straight at Approvals may never
       // have opened. Fetch, then re-render; renderApprovals() above already drew the rest, so
       // a failure here costs the Shopify rows, not the page.
-      if (isAdmin() && !(_shopifyOrders || []).length) {
+      if (isAdmin()) {
         api('/shopify/orders')
           .then(list => { _shopifyOrders = list || []; renderApprovals(); })
           .catch(() => {});
@@ -41148,7 +41195,7 @@ function txEditGate(tx) {
   if (stage === 'closed') return { ok: false, reason: 'editTxDeliveredBlocked' };
   // في الطريق → الموظف ممنوع (تعديله مش هيوصل للمندوب)، الأدمن يصلّح مع تحذير.
   if (stage === 'transit') {
-    if (!isAdmin()) return { ok: false, reason: 'editTxInTransitBlocked' };
+    if (!isAdmin() && !(tx.shopifyOrderId && hasPerm('shopify-edit-direct'))) return { ok: false, reason: 'editTxInTransitBlocked' };
     return { ok: true, warn: 'editTxInTransitWarn' };
   }
   return { ok: true };
@@ -45734,7 +45781,7 @@ function renderTxComments() {
       <div class="tx-cmt-avatar">${_cmtInitials(c.employee)}</div>
       <div class="tx-cmt-body">
         <div class="tx-cmt-meta">
-          <span class="tx-cmt-author">${esc(c.employee || '؟')}</span>
+          <span class="cmt-who"><span class="tx-cmt-author">${esc(c.employee || '؟')}</span>${cmtJobTitleHtml(c.employee)}</span>
           <span class="tx-cmt-time">${_cmtTimeHtml(c)}</span>
         </div>
         <div class="tx-cmt-text" data-comment-id="${c.id}">${renderMentionText(c.text)}</div>
@@ -52762,6 +52809,20 @@ async function saveEditMovement(id) {
   // ═══════════════════════════════════════════════════════
   // جدار الحماية: المستخدم العادي لا يحفظ مباشرة — يطلب OTP من المدير
   // ═══════════════════════════════════════════════════════
+  if (tx.shopifyOrderId && tx.type === 'مبيعات') {
+    try {
+      const limit = getHighValueDiscountLimit();
+      if (_isOtpRequired() && Number(body.discount || 0) !== Number(tx.discount || 0) && Number(body.discount || 0) > limit && !body.highValueDiscountOtpId) {
+        _hvOtpCtx = { discount: Number(body.discount), itemsTotal: (body.items || tx.items || []).reduce((sum, item) => sum + item.qty * item.price, 0),
+          otpId: '', expiresAt: '', client: tx.client || '', txRef: tx.ref || '', txType: 'مبيعات',
+          onSuccess: async () => { body.highValueDiscountOtpId = _hvOtpCtx.otpId; await _submitShopifyInvoiceEdit(id, body); } };
+        await _requestShopifyInvoiceDiscountOtp();
+        return;
+      }
+      await _submitShopifyInvoiceEdit(id, body);
+    } catch (e) { toast(e.message, true); }
+    return;
+  }
   if (currentUser?.role !== 'admin') {
     try {
       const changesText = changes.map(c => c.text || c);
@@ -61214,7 +61275,7 @@ function buildInvCommentsSection(tx) {
     return `<div class="inv-cmt-item" id="inv-cmt-${c.id}">
       <div class="tx-cmt-avatar">${_cmtInitials(c.employee)}</div>
       <div class="tx-cmt-body">
-        <div class="tx-cmt-meta"><span class="tx-cmt-author">${esc(c.employee || '؟')}</span><span class="tx-cmt-time">${_cmtTimeHtml(c)}</span></div>
+        <div class="tx-cmt-meta"><span class="cmt-who"><span class="tx-cmt-author">${esc(c.employee || '؟')}</span>${cmtJobTitleHtml(c.employee)}</span><span class="tx-cmt-time">${_cmtTimeHtml(c)}</span></div>
         <div class="tx-cmt-text" data-comment-id="${c.id}">${renderMentionText(c.text)}</div>
       </div>
       ${actions}
@@ -73115,6 +73176,8 @@ function renderApprovals() {
   const allProductEdits = (products || []).filter(p => p.editRequest && p.editRequest.status);
   const allSupplierReturns = supplierReturns || [];
   const allShopifyCancels = (_shopifyOrders || []).filter(o => o.cancelRequest && o.cancelRequest.status);
+  const allShopifyEdits = (_shopifyOrders || []).filter(o => o.editRequest?.status);
+  const pendingShopifyEdits = allShopifyEdits.filter(o => o.editRequest.status === 'معلق');
   const pendingExp = allExpenses.filter(e => e.status === 'معلق');
   const pendingRet = allReturns.filter(r => r.status === 'معلق');
   const pendingCancel = allCancelReqs.filter(tx => tx.cancelRequest.status === 'معلق');
@@ -73123,18 +73186,18 @@ function renderApprovals() {
   const pendingShopifyCancels = allShopifyCancels.filter(o => o.cancelRequest.status === 'معلق');
   const approvedExp = allExpenses.filter(e => e.status === 'معتمد');
   const approvedRet = allReturns.filter(r => r.status === 'معتمد');
-  const rejectedAll = allExpenses.filter(e => e.status === 'مرفوض').length + allReturns.filter(r => r.status === 'مرفوض').length + allCancelReqs.filter(tx => tx.cancelRequest.status === 'مرفوض').length + allProductEdits.filter(p => p.editRequest.status === 'مرفوض').length + allShopifyCancels.filter(o => o.cancelRequest.status === 'مرفوض').length;
+  const rejectedAll = allExpenses.filter(e => e.status === 'مرفوض').length + allReturns.filter(r => r.status === 'مرفوض').length + allCancelReqs.filter(tx => tx.cancelRequest.status === 'مرفوض').length + allProductEdits.filter(p => p.editRequest.status === 'مرفوض').length + allShopifyCancels.filter(o => o.cancelRequest.status === 'مرفوض').length + allShopifyEdits.filter(o => o.editRequest.status === 'مرفوض').length;
   // Only "معلقة" — the one number that demands action — is coloured. The rest
   // are neutral counts; colouring all eight made none of them read as urgent.
-  const totalPending = pendingExp.length + pendingRet.length + pendingCancel.length + pendingProductEdits.length + pendingSupplierReturns.length + pendingShopifyCancels.length;
+  const totalPending = pendingExp.length + pendingRet.length + pendingCancel.length + pendingProductEdits.length + pendingSupplierReturns.length + pendingShopifyCancels.length + pendingShopifyEdits.length;
   qs('#appr-kpi').innerHTML = `
     <div class="kpi" data-tooltip="إجمالي الطلبات التي تنتظر قراراً"><div class="kpi-val text-orange">${totalPending}</div><div class="kpi-label">معلقة</div></div>
     <div class="kpi" data-tooltip="قيمة المصاريف المعلقة"><div class="kpi-val">${fmtJ(pendingExp.reduce((s, e) => s + (e.amount || 0), 0))}</div><div class="kpi-label">مصاريف معلقة</div></div>
     <div class="kpi"><div class="kpi-val">${pendingRet.length}</div><div class="kpi-label">مرتجع/استبدال</div></div>
     <div class="kpi"><div class="kpi-val">${pendingCancel.length + pendingShopifyCancels.length}</div><div class="kpi-label">طلبات إلغاء</div></div>
-    <div class="kpi"><div class="kpi-val">${pendingProductEdits.length}</div><div class="kpi-label">تعديل أصناف</div></div>
+    <div class="kpi"><div class="kpi-val">${pendingProductEdits.length + pendingShopifyEdits.length}</div><div class="kpi-label">تعديل أصناف</div></div>
     <div class="kpi"><div class="kpi-val">${pendingSupplierReturns.length}</div><div class="kpi-label">مرتجعات موردين</div></div>
-    <div class="kpi"><div class="kpi-val">${approvedExp.length + approvedRet.length}</div><div class="kpi-label">معتمدة</div></div>
+    <div class="kpi"><div class="kpi-val">${approvedExp.length + approvedRet.length + allShopifyEdits.filter(o => o.editRequest.status === 'معتمد').length}</div><div class="kpi-label">معتمدة</div></div>
     <div class="kpi"><div class="kpi-val">${rejectedAll}</div><div class="kpi-label">مرفوضة</div></div>`;
   let expData = allExpenses;
   if (kindFilter && kindFilter !== 'expense') expData = [];
@@ -73165,6 +73228,13 @@ function renderApprovals() {
   if (actFrom) shopifyCancelData = shopifyCancelData.filter(o => o.cancelRequest.reviewedAt && o.cancelRequest.reviewedAt.slice(0, 10) >= actFrom);
   if (actTo) shopifyCancelData = shopifyCancelData.filter(o => o.cancelRequest.reviewedAt && o.cancelRequest.reviewedAt.slice(0, 10) <= actTo);
   let productEditData = allProductEdits;
+  let shopifyEditData = allShopifyEdits;
+  if (kindFilter && kindFilter !== 'shopify-edit') shopifyEditData = [];
+  if (filter) shopifyEditData = shopifyEditData.filter(o => o.editRequest.status === filter);
+  if (dateFrom) shopifyEditData = shopifyEditData.filter(o => o.editRequest.requestedAt.slice(0, 10) >= dateFrom);
+  if (dateTo) shopifyEditData = shopifyEditData.filter(o => o.editRequest.requestedAt.slice(0, 10) <= dateTo);
+  if (actFrom) shopifyEditData = shopifyEditData.filter(o => o.editRequest.reviewedAt && o.editRequest.reviewedAt.slice(0, 10) >= actFrom);
+  if (actTo) shopifyEditData = shopifyEditData.filter(o => o.editRequest.reviewedAt && o.editRequest.reviewedAt.slice(0, 10) <= actTo);
   if (kindFilter && kindFilter !== 'product-edit') productEditData = [];
   if (filter) productEditData = productEditData.filter(p => p.editRequest.status === filter);
   if (dateFrom) productEditData = productEditData.filter(p => (p.editRequest.requestedAt || '').slice(0, 10) >= dateFrom);
@@ -73184,10 +73254,11 @@ function renderApprovals() {
     ...cancelData.map(tx => ({ ...tx, _type: 'cancel', _status: tx.cancelRequest.status, _sortDate: tx.cancelRequest.reviewedAt || tx.cancelRequest.requestedAt || '' })),
     ...productEditData.map(p => ({ ...p, _type: 'product-edit', _status: p.editRequest.status, _sortDate: p.editRequest.reviewedAt || p.editRequest.requestedAt || '' })),
     ...shopifyCancelData.map(o => ({ ...o, _type: 'shopify-cancel', _status: o.cancelRequest.status, _sortDate: o.cancelRequest.reviewedAt || o.cancelRequest.requestedAt || '' })),
+    ...shopifyEditData.map(o => ({ ...o, _type: 'shopify-edit', _status: o.editRequest.status, _sortDate: o.editRequest.reviewedAt || o.editRequest.requestedAt || '' })),
     ...supplierReturnData.map(r => ({ ...r, _type: 'supplier-return' })),
   ].sort((a, b) => {
     const pendingFirst = !filter || filter === 'معلق';
-    const _hasOwnStatus = (x) => x._type === 'cancel' || x._type === 'product-edit' || x._type === 'shopify-cancel';
+    const _hasOwnStatus = (x) => x._type === 'cancel' || x._type === 'product-edit' || x._type === 'shopify-cancel' || x._type === 'shopify-edit';
     const aStatus = _hasOwnStatus(a) ? a._status : a.status;
     const bStatus = _hasOwnStatus(b) ? b._status : b.status;
     if (pendingFirst) {
@@ -73259,6 +73330,7 @@ function buildApprRow(item) {
     case 'expense': return _apprRowExpense(item);
     case 'cancel': return _apprRowCancel(item);
     case 'shopify-cancel': return _apprRowShopifyCancel(item);
+    case 'shopify-edit': return _apprRowShopifyEdit(item);
     case 'product-edit': return _apprRowProductEdit(item);
     case 'supplier-return': return _apprRowSupplierReturn(item);
     default: return _apprRowReturn(item);
@@ -81514,6 +81586,29 @@ function jobTitleLabel(v) {
   const hit = JOB_TITLE_MAP[v];
   return hit ? (currentLang === 'en' ? v : hit.ar) : v;
 }
+/** What a person is called under their name: the job title chosen for them, else
+ *  their role. One rule for the header, the profile menu and every comment thread,
+ *  so the same person is never labelled two ways. */
+const _USER_ROLE_LABEL = { admin: { ar: 'مدير', en: 'Admin' }, staff: { ar: 'موظف', en: 'Staff' }, viewer: { ar: 'مشاهد', en: 'Viewer' }, manager: { ar: 'مدير', en: 'Manager' } };
+function userTitleLabel(u) {
+  if (!u) return '';
+  const jt = jobTitleLabel(u.jobTitle);
+  if (jt) return jt;
+  const r = _USER_ROLE_LABEL[u.role];
+  return r ? (currentLang === 'en' ? r.en : r.ar) : '';
+}
+/** Small job-title line for a comment author. `who` is a user object or the stored
+ *  author name (comments store a name, so it is matched with _pwFindUser). An author
+ *  who matches no account, or has no job title, gets no line rather than a guess. */
+function cmtJobTitleHtml(who) {
+  const u = (who && typeof who === 'object') ? who : (typeof _pwFindUser === 'function' ? _pwFindUser(who) : null);
+  if (!u || (!u._id && !u.username)) return '';
+  // ⚠ Job title ONLY — no role fallback here (owner's call, Oct 14, 2026): «Admin» /
+  // «Staff» under a name is a permission level, not what the person does. No job
+  // title set → no line.
+  const label = jobTitleLabel(u.jobTitle);
+  return label ? `<span class="cmt-jt">${esc(label)}</span>` : '';
+}
 /* Role cards. The old `<select>` embedded an SVG inside each `<option>` —
    browsers strip markup there, so those icons never rendered at all. */
 const UM_ROLE_CARDS = [
@@ -87026,6 +87121,7 @@ function _modalRejectDismiss() {
 }
 
 function openModal(html, style, opts) {
+  qs('#modal-overlay').classList.remove('shopify-edit-review');
   const el = qs('#modal-content');
   el.className = 'modal';
   el.innerHTML = html;
@@ -87055,7 +87151,7 @@ function closeModal() {
   // ويُغلق أيضاً من الخلفية وESC — فلو بقيت المسوّدة، فتحُ جدول موظف آخر قد يقرأ حالة
   // الموظف السابق قبل إعادة التهيئة.
   if (typeof _wsRelease === 'function') _wsRelease();
-  qs('#modal-overlay').classList.remove('active');
+  qs('#modal-overlay').classList.remove('active', 'shopify-edit-review');
 }
 
 /**
@@ -92401,7 +92497,7 @@ function _fuRenderCommentThread() {
       <div class="fu-timeline-content" style="background:${ac.bg};border:1px solid ${ac.bd}">
         <div class="fu-timeline-top">
           <div class="fu-timeline-who">
-            <span class="fu-timeline-name" style="color:${ac.text}">${esc(c.authorName || '—')}</span>
+            <span class="cmt-who"><span class="fu-timeline-name" style="color:${ac.text}">${esc(c.authorName || '—')}</span>${cmtJobTitleHtml(u)}</span>
             <span class="fu-timeline-time" title="${esc(fmtDateTime(c.createdAt))}">${esc(_fuRelTime(c.createdAt))}</span>
           </div>
           ${menuBtn}
@@ -93244,6 +93340,7 @@ let __pingTimer = null;
 function showOfflineBanner() {
   if (__isOffline) return;
   __isOffline = true;
+  syncHeaderPresence();
   const b = qs('#offline-banner');
   if (!b) return;
   b.classList.remove('online-restored');
@@ -93253,6 +93350,7 @@ function showOfflineBanner() {
 function showOnlineBanner() {
   if (!__isOffline) return;
   __isOffline = false;
+  syncHeaderPresence();
   const b = qs('#offline-banner');
   if (!b) return;
   b.classList.add('online-restored');
@@ -95916,7 +96014,7 @@ function _pwNotesHtml(o) {
     return `<li class="pw-cmt">
       ${_pwAuthorAvatar(who)}
       <div class="pw-cmt-b">
-        <div class="pw-cmt-who">${esc(who || t('puUnknownAuthor'))}</div>
+        <div class="pw-cmt-who">${esc(who || t('puUnknownAuthor'))}</div>${cmtJobTitleHtml(who)}
         <div class="pw-note-t" dir="auto">${renderMentionText(c.text || '')}</div>
         ${when ? `<div class="pw-cmt-when"${full ? ` title="${escHtml(full)}"` : ''}>${esc(when)}</div>` : ''}
       </div>
@@ -101083,7 +101181,7 @@ function _spPeekFuHtml(o) {
     return `<li class="sp-pk-tl">
       <span class="sp-pk-tl-av">${userAvatarHtml(u, 24)}</span>
       <div class="sp-pk-tl-b">
-        <div class="sp-pk-tl-top"><b>${esc(c.authorName || '—')}</b><time title="${escHtml(_pwWhenFull(c.createdAt))}">${esc(_pwWhen(c.createdAt))}</time></div>
+        <div class="sp-pk-tl-top"><span class="cmt-who"><b>${esc(c.authorName || '—')}</b>${cmtJobTitleHtml(u)}</span><time title="${escHtml(_pwWhenFull(c.createdAt))}">${esc(_pwWhen(c.createdAt))}</time></div>
         ${body}
       </div>
     </li>`;
@@ -101447,7 +101545,7 @@ function _spPeekCommentsHtml(o) {
     return `<li class="sp-pk-tl">
       <span class="sp-pk-tl-av">${userAvatarHtml(u, 24)}</span>
       <div class="sp-pk-tl-b">
-        <div class="sp-pk-tl-top"><b>${esc(c.employee || '؟')}</b><time>${_cmtTimeHtml(c)}</time></div>
+        <div class="sp-pk-tl-top"><span class="cmt-who"><b>${esc(c.employee || '؟')}</b>${cmtJobTitleHtml(c.employee)}</span><time>${_cmtTimeHtml(c)}</time></div>
         <div class="sp-pk-txt">${renderMentionText(c.text || '')}</div>
       </div>
     </li>`;
@@ -102621,7 +102719,7 @@ function renderShopifyOrders() {
             <td class="sp-c-check">${_spSelectable ? `<input type="checkbox" class="sp-row-check" data-id="${o._id}" onclick="_toggleSelectShopifyRow('${o._id}',this,event)" ${_shopifySelectedIds.has(o._id) ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">` : ''}</td>
             <td style="white-space:nowrap" data-col="ref"><div class="sp-ref-line">${_spStarHtml(o)}${o.ref
               ? `<a href="javascript:void(0)" class="sp-ref-link" title="${escHtml(t('spOpenOrderPeek'))}" onclick="event.stopPropagation();openSpOrderPeek('${esc(String(o._id))}')"><b>${fmtRef(String(o.ref).replace(/^#+/, ''))}</b></a>`
-              : '<b>-</b>'}${_spOrderConfirmationMark(o)}${_oNewBadge}${(o.editHistory && o.editHistory.length) ? `<span class="mov-edited-mini" title="${escHtml(t('editedTitle'))}" onclick="event.stopPropagation();_spOpenOrderHistory('${esc(String(o._id))}')"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>` : ''}</div>${_spRefTimeHtml(o)}</td>
+              : '<b>-</b>'}${_spOrderConfirmationMark(o)}${_spOrderEditMark(o)}${_oNewBadge}${(o.editHistory && o.editHistory.length) ? `<span class="mov-edited-mini" title="${escHtml(t('editedTitle'))}" onclick="event.stopPropagation();_spOpenOrderHistory('${esc(String(o._id))}')"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>` : ''}</div>${_spRefTimeHtml(o)}</td>
             <td style="font-size:.85rem" data-col="client"><div class="sp-client-cq"><div class="sp-client-txt"><div class="sp-client-nameline"><div class="sp-client-name" dir="auto" title="${escHtml(o.client || '')}">${o.client ? esc(o.client) : '<span style="color:var(--text-muted)">—</span>'}</div>${_spCustOrdersChipHtml(o, _spCtx.cust, _spCtx.unshipped)}</div>${_spPhone(o) ? `<div class="sp-client-phone" data-col="phone"><a class="sp-client-tel" href="tel:${escHtml(_spPhone(o).replace(/[^\d+]/g, ''))}" onclick="event.stopPropagation()" title="${escHtml(t('spCallClient') + ' ' + _spPhone(o))}">${esc(_spPhoneDisplay(_spPhone(o)))}</a></div>` : ''}</div>${_spPhone(o) ? `<span class="sp-ct-stack" data-col="phone">${_spContactLinksHtml(o, 'icons')}</span>` : ''}</div></td>
             <td style="text-align:center" data-col="items"><div class="sp-items-cq">${_spItemsCell(o, _spCtx.inv)}</div></td>
             <!-- ⚠ NO inline text-align here. The stylesheet end-aligns الشحن / الخصم /
@@ -103244,11 +103342,13 @@ async function _spResolveItemSyncConflict(id, source, revision) {
   }
   if (source === 'shopify' && !confirm(en ? 'Use the Shopify rows shown for the conflicting products? Other local changes will be kept.' : 'استخدام أصناف Shopify المعروضة للتعارض؟ باقي تعديلاتك المحلية هتفضل محفوظة.')) return;
   try {
-    await api('/shopify/orders/' + id + '/item-sync-conflict', { method: 'PATCH', body: JSON.stringify({ source, revision }) });
+    const order = _spOrderById(id);
+    if (!order || !(await _spConfirmEditSubmission(order, { itemConflict: { source, revision } }))) return;
+    const res = await api('/shopify/orders/' + id + '/item-sync-conflict', { method: 'PATCH', body: JSON.stringify({ source, revision }) });
     await loadShopifyOrders();
     if (document.getElementById('shopify-edit-modal')) editShopifyOrder(id);
     _spRefreshReceiptViews();
-    toast(en ? 'Item conflict reviewed.' : 'تمت مراجعة تعارض الأصناف.');
+    toast(res?.pendingApproval ? (en ? 'Changes sent for admin approval.' : 'تم إرسال التعديل لموافقة المدير') : (en ? 'Item conflict reviewed.' : 'تمت مراجعة تعارض الأصناف.'));
   } catch (e) { toast(e.message || (en ? 'Unable to review item changes.' : 'تعذر مراجعة تعارض الأصناف.'), true); }
 }
 
@@ -105423,6 +105523,8 @@ async function _spCloseEdit() {
 /** ESC مسارُ إغلاقٍ ضمني ثانٍ، فيمرّ بالحارس نفسه. */
 function _spEditKeydown(e) {
   if (e.key !== 'Escape') return;
+  if (qs('#hv-otp-modal')?.classList.contains('active') || qs('#soulia-modal-overlay')?.classList.contains('active')
+    || (qs('#modal-overlay')?.classList.contains('active') && qs('#modal-overlay')?.classList.contains('shopify-edit-review'))) return;
   if (!document.getElementById('shopify-edit-modal')) {
     document.removeEventListener('keydown', _spEditKeydown);
     return;
@@ -105748,15 +105850,8 @@ function _spDiscountDirty() {
 
 /**
  * حفظ الأصناف والخصم معاً من زر «حفظ التغييرات».
- *
- * ⚠ كان يرسل `items` وحدها. الخصم يعيش في endpoint منفصل يُستدعى من زر «تطبيق
- *   الخصم» الصغير فقط، فموظف يختار كوداً ثم يضغط الزر الرئيسي كان **يفقد الخصم
- *   بصمت**: الطلب لا يحمله، والخادم يعيد حساب الإجمالي من الخصم *المخزَّن* (صفر)،
- *   فيبقى الإجمالي كما هو ولا شيء يقول إن شيئاً سقط.
- *
- * ⚠ الترتيب مُلزِم: الأصناف أولاً ثم الخصم. الخادم يقصّ الخصم عند `itemsTotal`
- *   (`computeShopifyOrderTotal`)، فحفظ خصم 500 على سلة قيمتها 400 قبل حفظ السلة
- *   الجديدة التي قيمتها 900 يقصّه إلى 400 ويخسر 100 بلا سبب.
+ * يُرسل اقتراحًا واحدًا؛ الخادم يحسب الخصم على الأصناف المقترحة، ثم يحفظ
+ * الطلب للمراجعة أو يطبّقه مباشرة لمن يملك الصلاحية. يستأنف OTP المسار نفسه.
  */
 async function _saveShopifyEdit() {
   const btn = document.getElementById('shopify-edit-save-btn');
@@ -105768,25 +105863,29 @@ async function _saveShopifyEdit() {
 
   /* البوابة تُفحص قبل أي كتابة: رفضٌ بعد حفظ الأصناف يترك الأوردر نصف محفوظ. */
   const needDisc = _spDiscountDirty();
-  if (needDisc && !(await _spDiscountPreflight())) {
+  if (needDisc && !(await _spDiscountPreflight(_saveShopifyEdit))) {
     return;   // _spDiscountPreflight تولّت الرسالة أو فتحت بوابة الـOTP
   }
 
-  if (btn) { btn.disabled = true; btn.innerHTML = t('spSaving'); }
   try {
-    await api(`/shopify/orders/${_shopifyEditId}/items`, {
+    const discount = needDisc ? _spDiscAmounts() : null;
+    const proposal = { items: _shopifyEditItems, ...(needDisc ? { discount: {
+      manualDiscount: discount.manualDisc, manualDiscountType: _spDiscType,
+      codesDiscount: discount.codesDisc, discountCodeId: _spDiscCodes.map(c => c.id).join(','),
+      discountCode: _spDiscCodes.map(c => c.code).join('+'), highValueDiscountOtpId: _spDiscOtpId || '',
+    } } : {}) };
+    if (!(await _spConfirmEditSubmission(_spEditOrder, proposal))) return;
+    if (btn) { btn.disabled = true; btn.innerHTML = t('spSaving'); }
+    const res = await api(`/shopify/orders/${_shopifyEditId}/edit`, {
       method: 'PATCH',
-      body: JSON.stringify({ items: _shopifyEditItems }),
+      body: JSON.stringify(proposal),
       headers: { 'Content-Type': 'application/json' }
     });
-    /* ⚠ بعد الأصناف لا قبلها — انظر تعليق الترتيب أعلاه. ولا يمرّ بـ
-         `_spSaveDiscount` كي لا يُعيد فحص البوابة ولا يرسم لوحةً على وشك الإغلاق. */
-    if (needDisc) await _spPersistDiscount({ silent: true });
     /* ⚠ الحفظ يُغلق بلا سؤال — التعديل لم يعد مُهدَّداً. يمرّ بـ`_spEditRemoveModal`
          لا بـ`remove()` مباشرةً كي يُنزع مستمع ESC معه. */
     _spEditRemoveModal();
     document.removeEventListener('click', _shopifyEditOutsideClick, true);
-    toast(t('spEditSavedOk'));
+    toast(res?.pendingApproval ? (currentLang === 'en' ? 'Changes sent for admin approval.' : 'تم إرسال التعديلات لموافقة المدير') : t('spEditSavedOk'));
     await loadShopifyOrders();
   } catch(e) {
     toast(t('spErrorPrefix') + (e?.message || t('spSaveError')), true);
@@ -105796,8 +105895,8 @@ async function _saveShopifyEdit() {
 /* ===================== Shopify order edit — tabs, discount, comments, history =====================
    المودال أصبح أربعة تبويبات على نفس الأوردر بدل قائمة أصناف فقط. المبادئ:
 
-   ⚠ كل تبويب يحفظ عبر endpoint خاص به. لا يوجد «حفظ الكل» — حفظ الأصناف والخصم معاً
-     يجعل فشل أحدهما يترك الآخر محفوظاً بلا أثر مرئي، وكل واحد له حارسه على الخادم.
+   الأصناف والخصم يُرسلان معًا كطلب تعديل واحد للمراجعة، ويُطبّقان معًا بعد القبول.
+   التعليقات لها مسار مستقل لأنها تواصل على الطلب ولا تغيّر قيمته أو مخزونه.
 
    ⚠ خصم شوبيفاي (`discount`) وخصمنا (`manualDiscount`/`codesDiscount`) حقلان منفصلان.
      هذا ليس تفصيلاً شكلياً: الويب هوك يكتب فوق الأول عند كل orders/updated، فدمجهما
@@ -105820,7 +105919,7 @@ function _spOrderById(id) {
 
 /** الأوردر معلق وغير ملغى — الشرط الذي يفرضه الخادم على الأصناف والخصم. */
 function _spIsEditable(order) {
-  return !!order && order.status === 'pending' && !order.cancelled;
+  return !!order && order.status === 'pending' && !order.cancelled && order.editRequest?.status !== 'معلق';
 }
 
 function _spSetTab(tab) {
@@ -106320,18 +106419,23 @@ async function _spPersistDiscount(opts = {}) {
   const btn = opts.silent ? null : qs('#sp-disc-save');
   if (btn) { btn.disabled = true; btn.textContent = t('spSaving'); }
   try {
+    const proposal = {
+      manualDiscount: manualDisc, manualDiscountType: _spDiscType, codesDiscount: codesDisc,
+      discountCodeId: _spDiscCodes.map(c => c.id).join(','), discountCode: _spDiscCodes.map(c => c.code).join('+'),
+      highValueDiscountOtpId: _spDiscOtpId || '',
+    };
+    if (!(await _spConfirmEditSubmission(order, { discount: proposal }))) return;
     const res = await api(`/shopify/orders/${order._id}/discount`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        manualDiscount: manualDisc,
-        manualDiscountType: _spDiscType,
-        codesDiscount: codesDisc,
-        discountCodeId: _spDiscCodes.map(c => c.id).join(','),
-        discountCode: _spDiscCodes.map(c => c.code).join('+'),
-        highValueDiscountOtpId: _spDiscOtpId || '',
-      }),
+      body: JSON.stringify(proposal),
     });
+    if (res?.pendingApproval) {
+      _spEditRemoveModal();
+      toast(currentLang === 'en' ? 'Discount sent for admin approval.' : 'تم إرسال الخصم لموافقة المدير');
+      await loadShopifyOrders();
+      return;
+    }
     // تحديث النسخة المحلية حتى لا يعرض الملخص رقماً قديماً قبل إعادة التحميل.
     order.manualDiscount = manualDisc;
     order.manualDiscountType = _spDiscType;
@@ -106490,7 +106594,7 @@ function _spRenderCommentsTab() {
         return `<div class="inv-cmt-item" id="sp-cmt-${Number(c.id)}">
           <div class="sp-cmt-av">${userAvatarHtml(_au, 30)}</div>
           <div class="tx-cmt-body">
-            <div class="tx-cmt-meta"><span class="tx-cmt-author">${esc(c.employee || '؟')}</span><span class="tx-cmt-time">${_cmtTimeHtml(c)}</span></div>
+            <div class="tx-cmt-meta"><span class="cmt-who"><span class="tx-cmt-author">${esc(c.employee || '؟')}</span>${cmtJobTitleHtml(c.employee)}</span><span class="tx-cmt-time">${_cmtTimeHtml(c)}</span></div>
             <div class="tx-cmt-text" data-comment-id="${Number(c.id)}" dir="auto">${renderMentionText(c.text)}</div>
           </div>
           ${actions}
@@ -107044,6 +107148,7 @@ function _spRenderHistoryTab() {
 // ===================== End Shopify Orders =====================
 </script>
 <script src="/navigation-shell.js"></script>
+<script src="/shopify-edit-approvals.js"></script>
 <link rel="stylesheet" href="/bosta-pickup.css">
 <link rel="stylesheet" href="/customer-service-layout.css">
 <script src="/bosta-pickup.js"></script>

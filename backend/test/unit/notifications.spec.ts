@@ -116,7 +116,7 @@ describe('Web Push settings, security and delivery', () => {
     account.preferences[type] = true; account.preferences.enabled = false;
     await service.enqueue(type, 'master-off', '100'); expect(stored.size).toBe(0);
     account.preferences.enabled = true;
-    await service.enqueue(type, 'on', '100', type === 'otp' ? 'otp:' + admin.userId : '', ['mention', 'performance'].includes(type) ? admin.userId : undefined, undefined, { pointDelta: 2, expiresAt: new Date(Date.now() + 60000).toISOString() }); expect(stored.size).toBe(1);
+    await service.enqueue(type, 'on', '100', type === 'otp' ? 'otp:' + admin.userId : '', ['mention', 'performance', 'orderEdit'].includes(type) ? admin.userId : undefined, undefined, { pointDelta: 2, expiresAt: new Date(Date.now() + 60000).toISOString() }); expect(stored.size).toBe(1);
   });
   it('preserves individual preferences across master off/on and new login', async () => {
     const { service } = setup();
@@ -132,7 +132,7 @@ describe('Web Push settings, security and delivery', () => {
   });
   it.each(TYPES)('deduplicates durable %s events and excludes private payload data', async type => {
     const { service, stored } = setup();
-    const recipient = ['mention', 'performance'].includes(type) ? admin.userId : undefined;
+    const recipient = ['mention', 'performance', 'orderEdit'].includes(type) ? admin.userId : undefined;
     await service.enqueue(type, 'stable', '100', (type === 'otp' ? 'otp:' : 'tx:') + admin.userId, recipient, undefined, { pointDelta: 2, expiresAt: new Date(Date.now() + 60000).toISOString() }); await service.enqueue(type, 'stable', '100', type === 'otp' ? 'otp:' + admin.userId : '', recipient, undefined, { pointDelta: 2, expiresAt: new Date(Date.now() + 60000).toISOString() });
     expect(stored.size).toBe(1); const payload = JSON.parse(stored.get('stable').payload);
     expect(payload.body).toContain(type === 'mention' ? '100' : '#100'); expect(payload.url).toContain('pushRecord=');
@@ -146,7 +146,7 @@ describe('Web Push settings, security and delivery', () => {
     const { service, users } = setup(); users.find.mockImplementation(() => { throw new Error('Database unavailable'); });
     await expect(service.enqueue('deposit', 'event', '100')).resolves.toBeUndefined();
   });
-  it.each(STAFF_TYPES.filter(type => !['mention', 'performance'].includes(type)))('queues %s to all opted-in staff and uses one timestamp across devices', async type => {
+  it.each(STAFF_TYPES.filter(type => !['mention', 'performance', 'orderEdit'].includes(type)))('queues %s to all opted-in staff and uses one timestamp across devices', async type => {
     const { service, users, accounts, stored } = setup();
     const staff1 = '507f1f77bcf86cd799439012', staff2 = '507f1f77bcf86cd799439013';
     users.find.mockReturnValue({ toArray: async () => [{ _id: staff1, role: 'staff' }, { _id: staff2, role: 'staff' }] } as any);
@@ -208,7 +208,7 @@ describe('SOULIA notification message formats', () => {
     ['deposit', 'New Deposit · SOULIA', 'Fares added EGP 1,600 · InstaPay · #2771 · Review Required', { actorName: 'Fares', amount: 1600, vaultName: 'Instapay', pendingApproval: true }, 'tx:', undefined],
     ['comment', 'New Comment · SOULIA', 'Ahmed commented on Order #2771: "Customer requested a delivery update…"', { actorName: 'Ahmed', commentText: 'Customer requested a delivery update…', commentId: 123 }, 'tx:', undefined],
     ['comment', 'New Follow-up · SOULIA', 'Ahmed · Order #2771: "Call the customer tomorrow…"', { actorName: 'Ahmed', commentText: 'Call the customer tomorrow…', commentId: admin.userId }, 'followup:', undefined],
-    ['order', 'New Order · SOULIA', 'Order #2771 · EGP 2,450 · New Order Received', { orderTotal: 2450 }, 'tx:', undefined],
+    ['order', 'New Order · SOULIA', 'Order #2771 · EGP 2,450 · 5 items · New Order Received', { orderTotal: 2450, itemCount: 5 }, 'tx:', undefined],
     ['deliveryProblem', 'Delivery Issue · SOULIA', 'Order #2771 · Delivery Failed · Action Required', {}, 'tx:', 'FAILED_ATTEMPT'],
     ['delivered', 'Order Delivered · SOULIA', 'Order #2771 · Successfully Delivered', {}, 'tx:', undefined],
   ] as const)('formats %s as specified: %s', async (type, title, body, details, kind, status) => {
@@ -238,6 +238,14 @@ describe('SOULIA notification message formats', () => {
     expect(notificationBody('order', '2771', {}, 'en')).toBe('Order #2771 · New Order Received');
     expect(notificationBody('deliveryProblem', '2771', { deliveryStatus: 'RETURNED' }, 'en')).toBe('Order #2771 · Returned Before Delivery · Action Required');
   });
+  it('formats item quantities in both languages and omits invalid counts', () => {
+    expect(notificationBody('order', '2771', { itemCount: 1 }, 'en')).toBe('Order #2771 · 1 item · New Order Received');
+    expect(notificationBody('order', '2771', { itemCount: 5 }, 'ar')).toBe('الطلب #2771 · عدد القطع: 5 · تم استلام طلب جديد');
+    expect(notificationBody('order', '2771', { itemCount: 5, assignedToYou: true }, 'en')).toBe('Order #2771 · 5 items · Assigned to You');
+    for (const itemCount of [-1, NaN, Infinity, 1.5]) {
+      expect(notificationBody('order', '2771', { itemCount }, 'en')).toBe('Order #2771 · New Order Received');
+    }
+  });
   it('persists notification language separately without changing categories', async () => {
     const { service } = setup(); await service.preferences(admin, { language: 'en' });
     const state = await service.settings(admin); expect(state.language).toBe('en'); expect(state.preferences).toEqual({ ...DEFAULTS, enabled: true });
@@ -245,7 +253,7 @@ describe('SOULIA notification message formats', () => {
   });
   it.each(TYPES)('sends English %s titles and bodies for English recipients', async type => {
     const { service, account, stored } = setup(); account.language = 'en';
-    await service.enqueue(type, 'english', '2638', type === 'otp' ? 'otp:' + admin.userId : '', ['mention', 'performance'].includes(type) ? admin.userId : undefined, 'FAILED_ATTEMPT', { pointDelta: 2, actorName: 'Ahmed Ali', amount: 500, expiresAt: new Date(Date.now() + 60000).toISOString() });
+    await service.enqueue(type, 'english', '2638', type === 'otp' ? 'otp:' + admin.userId : '', ['mention', 'performance', 'orderEdit'].includes(type) ? admin.userId : undefined, 'FAILED_ATTEMPT', { pointDelta: 2, actorName: 'Ahmed Ali', amount: 500, expiresAt: new Date(Date.now() + 60000).toISOString() });
     const payload = JSON.parse(stored.get('english').payload);
     expect(payload.lang).toBe('en'); expect(payload.dir).toBe('ltr'); expect(payload.title).not.toMatch(/[\u0600-\u06ff]/); expect(payload.body).not.toMatch(/[\u0600-\u06ff]/);
     if (type === 'deposit') expect(payload.body).toBe('Ahmed Ali added EGP 500 · Unspecified vault · #2638');

@@ -2,6 +2,9 @@
 #page-complaints{min-width:0;box-sizing:border-box}
 #page-complaints .cs-sticky-head{padding-bottom:16px;border-bottom:1px solid var(--border)}
 #page-complaints .page-header{gap:16px;flex-wrap:wrap}
+#page-complaints .page-header>div:first-child{min-width:0;flex-wrap:wrap}
+#page-complaints .page-header>div:first-child>div{min-width:0;flex:1 1 220px}
+#page-complaints #cmp-ctx-back:empty{display:none}
 #page-complaints .page-title{font-size:1.4rem;line-height:1.35}
 #page-complaints .page-subtitle{line-height:1.5}
 #page-complaints #cmp-header-actions{flex-wrap:wrap}
@@ -32,13 +35,23 @@
   #page-complaints .fu-toolbar .fsel{flex:1 1 150px}
 }
 @media(max-width:768px){
+  /* #main's overflow creates a sticky container on mobile; a header offset
+     here adds an empty band inside the page instead of clearing the app bar. */
+  #page-complaints .cs-sticky-head{position:static;margin-top:0;padding-top:0;padding-bottom:12px}
+  #page-complaints .page-header{width:100%;align-items:stretch;gap:12px}
+  #page-complaints .page-header>div:first-child{width:100%;gap:8px!important}
+  #page-complaints #cmp-ctx-back{flex:0 0 100%}
+  #page-complaints .page-header>div:first-child>div{flex:1 1 100%}
   #page-complaints .page-title{font-size:1.1rem}
-  #page-complaints .cs-sticky-head{padding-bottom:12px}
+  #page-complaints #cmp-header-actions{width:100%;gap:8px}
+  #page-complaints #cmp-header-actions>.btn{min-height:36px;justify-content:center}
   #page-complaints .cs-main-tabs{margin:12px 0!important;gap:0!important}
-  #page-complaints .cs-main-tabs>button{flex:1;justify-content:center;padding:10px 8px!important;font-size:.8rem!important}
+  #page-complaints .cs-main-tabs>button{flex:1;min-width:0;justify-content:center;padding:10px 8px!important;font-size:.8rem!important;white-space:normal}
+  #page-complaints .cs-main-tabs>button>svg,#page-complaints .cs-main-tabs>button>span[id]{flex-shrink:0}
   #page-complaints #fu-kpi-toolbar-row{display:flex!important;align-items:center;gap:10px!important}
   #page-complaints #fu-kpi{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:0!important;flex:1 1 0;width:auto;margin-bottom:0!important;overflow:hidden!important}
   #page-complaints .fu-kpi-pill{min-height:62px;white-space:normal}
+  #page-complaints .fu-kpi-label{font-size:.68rem;line-height:1.3}
   #page-complaints .fu-kpi-val{margin-inline-start:0}
   #page-complaints #fu-filter-trigger-btn{flex:0 0 40px;min-height:40px;width:40px;margin:0}
   #page-complaints .fu-toolbar{display:none!important}

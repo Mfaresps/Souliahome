@@ -39,7 +39,7 @@ const SPEC = [
       const reply = (d, s = 200) => req.respond({ status: s, contentType: 'application/json', body: JSON.stringify(d) });
       if (url.origin === 'http://soulia.test' && url.pathname === '/') return req.respond({ status: 200, contentType: 'text/html', body: html });
       if (url.pathname === '/config.js') return req.respond({ status: 200, contentType: 'text/javascript', body: 'window.__ENV__={API_BASE_URL:""};' });
-      const local = { '/shopify-kpis.js': 'text/javascript', '/shopify-kpis.css': 'text/css', '/soulia-logo.svg': 'image/svg+xml' }[url.pathname];
+      const local = { '/shopify-kpis.js': 'text/javascript', '/shopify-kpis.css': 'text/css', '/shopify-edit-approvals.js': 'text/javascript', '/soulia-logo.svg': 'image/svg+xml' }[url.pathname];
       if (local) return req.respond({ status: 200, contentType: local, body: fs.readFileSync(path.join(PUB, url.pathname.slice(1))) });
       /* The real local stylesheets (navigation-shell.css hides the sidebar on phones). */
       if (url.origin === 'http://soulia.test' && url.pathname.endsWith('.css') && fs.existsSync(path.join(PUB, url.pathname.slice(1))))
@@ -84,13 +84,34 @@ const SPEC = [
     check(await page.$eval('#sp-kpi .is-received .spk-sub', e => /same time yesterday/.test(e.textContent)), 'received states its comparison window');
     check(await page.$eval('#sp-kpi .spk-tile.is-rate .spk-meter i', e => e.style.width === '33%'), 'rate meter at 33%');
 
+    /* The period picker is ONE calendar icon beside «Report», opening a menu. */
+    check(await page.$$eval('#sp-kpi .spk-seg, #sp-kpi .spk-seg-btn', e => e.length === 0), 'no five-tab period strip any more');
+    check(await page.$eval('#spk-period-btn', b => b.closest('.spk-actions') && b.closest('.spk-actions').querySelector('.spk-report-btn') && !b.textContent.trim()), 'period control is an icon button beside Report');
+    check(await page.$eval('#spk-period-btn', b => { const r = b.getBoundingClientRect(); return r.width <= 36 && r.height <= 36; }), 'icon button is small (≤36px)');
+    check(await page.$eval('#sp-kpi .spk-range b', e => e.textContent === 'Today'), 'the applied period is named beside the date');
+    check(await page.$eval('#spk-period-btn', b => b.getAttribute('aria-label') === 'Period: Today' && b.getAttribute('aria-expanded') === 'false'), 'icon button states the period in its label');
+    await page.click('#spk-period-btn');
+    check(await page.$$eval('#spk-period-menu .spk-pm-item', i => i.length === 5), 'click opens a menu of five periods');
+    check(await page.$eval('#spk-period-btn', b => b.getAttribute('aria-expanded') === 'true'), 'button reports expanded');
+    check(await page.evaluate(() => document.activeElement.classList.contains('is-on')), 'focus lands on the current period');
+    await page.keyboard.press('ArrowDown');
+    check(await page.evaluate(() => document.activeElement.textContent.trim() === 'Yesterday'), 'ArrowDown walks the menu');
+    await page.keyboard.press('Escape');
+    check(await page.evaluate(() => !document.getElementById('spk-period-menu') && document.activeElement.id === 'spk-period-btn'), 'Escape closes and returns focus');
+    await page.click('#spk-period-btn');
+    await page.mouse.click(5, 5);
+    check(await page.evaluate(() => !document.getElementById('spk-period-menu')), 'outside click closes the menu');
+    await page.click('#spk-period-btn');
+    await page.evaluate(() => [...document.querySelectorAll('#spk-period-menu .spk-pm-item')].find(i => i.textContent.trim() === 'Yesterday').click());
+    check(await page.evaluate(() => !document.getElementById('spk-period-menu') && _spkPeriod === 'yesterday'), 'choosing a period applies it and closes the menu');
     await page.evaluate(() => _spkSetPeriod('yesterday'));
     const v1 = await vals();
     check(v1.received === '5' && v1.confirmed === '3' && v1.followup === '0' && v1.cancelled === '0', 'yesterday: shipping without a deposit counts as confirmed; settled follow-up is not counted');
     check(await page.$eval('.spk-tile.is-confirmed .spk-sub', e => /1\s*With deposit · 2\s*Without deposit/.test(e.textContent)), 'confirmed tile states the split 1 + 2');
     check(v1.rate === '60%', 'yesterday: rate = confirmed ÷ received (3/5)');
     check(await page.$eval('#sp-kpi .spk-open', e => e.textContent.trim().startsWith('2')), 'yesterday: 2 orders with no action are stated');
-    check(await page.$eval('.spk-seg-btn.is-on', e => e.textContent.trim() === 'Yesterday'), 'segment shows the chosen period');
+    check(await page.$eval('#sp-kpi .spk-range b', e => e.textContent.trim() === 'Yesterday'), 'the chosen period is named in the row');
+    check(await page.$eval('#spk-period-btn', b => b.classList.contains('is-set')), 'icon is tinted while a period other than today applies');
 
     await page.evaluate(() => _spkSetPeriod('week'));
     const v7 = await vals();
@@ -98,16 +119,19 @@ const SPEC = [
 
     await page.evaluate(() => _spkSetPeriod('three'));
     check((await vals()).received === '14', 'last 3 calendar days: today and yesterday included, 3-days-ago excluded');
-    check(await page.$eval('.spk-seg-btn.is-on', e => e.textContent === 'Last 3 days'), '3-day preset is selected');
+    check(await page.$eval('#spk-period-btn', b => b.getAttribute('aria-label') === 'Period: Last 3 days'), '3-day preset is selected');
     check(await page.evaluate(() => _spkReportText(_spkStats('three')).startsWith('📦 Orders Report — Last 3 Days')), '3-day report uses its own title');
+    await page.evaluate(() => { _spkToggleMenu(); _spkSetPeriod('custom'); });
+    check(await page.evaluate(() => !!document.querySelector('#spk-period-menu #spk-from') && document.activeElement.id === 'spk-from'), 'custom range opens its dates inside the menu, focused');
     await page.evaluate(() => {
-      _spkSetPeriod('custom');
       const n = new Date(), day = offset => _spkYmd(new Date(n.getFullYear(), n.getMonth(), n.getDate() + offset));
       document.getElementById('spk-from').value = day(-8);
       document.getElementById('spk-to').value = day(-3);
       _spkApplyDates({ preventDefault() {} });
     });
     check((await vals()).received === '2' && (await vals()).cancelled === '1', 'custom range includes the whole last day and orders older than 7 days');
+    check(await page.evaluate(() => !document.getElementById('spk-period-menu')), 'applying the dates closes the menu');
+    await page.evaluate(() => _spkToggleMenu());
     check(await page.$eval('#spk-from-named', e => /[A-Za-z]+/.test(e.textContent)), 'date controls spell out English month names');
     check(await page.evaluate(() => !_spkReportText(_spkStats('custom')).includes('Last 7 Days')), 'custom report has no incorrect 7-day title');
     await page.evaluate(() => {
@@ -184,7 +208,8 @@ const SPEC = [
     check(await page.$eval('#sp-kpi', e => e.getBoundingClientRect().width > 330), '390px: strip uses the phone width');
     check(await page.$$eval('#sp-kpi .spk-lbl', ls => ls.every(l => l.scrollWidth <= l.clientWidth + 1 && l.scrollHeight <= l.clientHeight + 1)), '390px: no tile label is clipped');
     check(await noOverflow(), '390px: nothing spills, no page overflow');
-    await page.evaluate(() => _spkSetPeriod('custom'));
+    await page.evaluate(() => { _spkToggleMenu(); _spkSetPeriod('custom'); });
+    check(await page.$eval('#spk-period-menu', m => { const r = m.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }), '390px: the period menu stays inside the screen');
     check(await page.$eval('#spk-to-named', e => /[\u0600-\u06ff]/.test(e.textContent)), 'custom controls spell out Arabic month names');
     check(await noOverflow(), '390px Arabic: date controls and five presets do not spill');
     await page.setViewport({ width: 320, height: 800 });

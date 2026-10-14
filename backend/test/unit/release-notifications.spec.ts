@@ -36,4 +36,17 @@ describe('Successful live release notifications', () => {
     expect(pipeline.slice(pipeline.indexOf("stage('Notify live release')"))).toContain("when { branch 'main' }");
     expect(readFileSync(resolve(__dirname, '../../Dockerfile'), 'utf8')).toContain('COPY scripts/notify-release.cjs');
   });
+  it('provides the live inline deploy job with readiness and a release announcement after health succeeds', () => {
+    const pipeline = readFileSync(resolve(__dirname, '../../../Jenkins.deploy.groovy'), 'utf8');
+    expect(pipeline).toContain('cd /opt/Souliahome');
+    expect(pipeline).toContain('http://127.0.0.1:8082/api/health');
+    expect(pipeline).toContain('[ "$api" = "200" ]');
+    expect(pipeline).not.toContain('/api/auth/login');
+    expect(pipeline).not.toContain('__hc__');
+    expect(pipeline.indexOf("stage('Notify live release')")).toBeGreaterThan(pipeline.indexOf("stage('Health check')"));
+    expect(pipeline).toContain('scripts/notify-release.cjs "$BUILD_NUMBER"');
+    // This is an inline job, not a multibranch job: branch conditions would
+    // silently skip its health or announcement stages.
+    expect(pipeline).not.toContain("when { branch");
+  });
 });

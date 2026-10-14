@@ -8,6 +8,7 @@ const TITLES = {
   comment: ['💬', 'تعليق جديد', 'New Comment'],
   followup: ['📌', 'متابعة جديدة', 'New Follow-up'],
   order: ['🛍️', 'طلب جديد', 'New Order'],
+  orderEdit: ['✏️', 'قرار تعديل الطلب', 'Order Edit Decision'],
   deliveryProblem: ['🚨', 'مشكلة في التسليم', 'Delivery Issue'],
   delivered: ['📦', 'تم تسليم الطلب', 'Order Delivered'],
   mention: ['💬', 'إشارة جديدة إليك', 'You Were Mentioned'],
@@ -25,6 +26,7 @@ export function notificationTitle(type: NotificationType, details: NotificationD
   else if (type === 'announcement') return `${TITLES.announcement[0]} ${TITLES.announcement[language === 'en' ? 2 : 1]}`;
   else if (type === 'performance') title = details.weekly ? ['📊', 'ملخص الأداء الأسبوعي', 'Weekly Performance Summary'] : (details.pointDelta || 0) < 0 ? ['⚠️', 'نقاط مخصومة', 'Points Deducted'] : ['⭐', 'نقاط مكتسبة', 'Points Earned'];
   else if (type === 'order' && details.assignedToYou) title = ['🛍️', 'طلب جديد مُسند إليك', 'New Order Assigned'];
+  else if (type === 'orderEdit') title = details.status === 'approved' ? ['✅', 'تم قبول تعديل الطلب', 'Order Edit Approved'] : ['🚫', 'تم رفض تعديل الطلب', 'Order Edit Rejected'];
   else if (type === 'comment' && details.followupComment) title = ['📌', 'تعليق متابعة جديد', 'New Follow-up'];
   else if (type === 'security' && details.actionKey === 'failed_login') title = ['❌', 'محاولة تسجيل دخول فاشلة', 'Failed Login Attempt'];
   else if (type === 'approval') {
@@ -33,7 +35,7 @@ export function notificationTitle(type: NotificationType, details: NotificationD
     else if (details.status === 'modified') title = details.actionKey === 'edit-tx'
       ? ['🔄', 'تم تعديل المعاملة', 'Transaction Modified']
       : ['✏️', 'تم تعديل السجل', 'Record Modified'];
-    else if (details.status === 'pending' && ['edit-tx', 'product'].includes(details.actionKey || '')) title = ['✏️', 'طلب تعديل', 'Modification Request'];
+    else if (details.status === 'pending' && ['edit-tx', 'edit-shopify', 'product'].includes(details.actionKey || '')) title = ['✏️', 'طلب تعديل', 'Modification Request'];
   }
   return `${title[0]} ${title[language === 'en' ? 2 : 1]}${test ? '' : ' · SOULIA'}`;
 }

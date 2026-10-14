@@ -31,6 +31,12 @@ import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
 import { PermsGuard } from '../core/guards/perms.guard';
 import { RequirePerms } from '../core/decorators/perms.decorator';
+import { OrderEditActor, OrderEditInput } from './order-edit.util';
+import { UpdateTransactionDto } from '../transactions/dto/transaction.dto';
+
+function editActorOf(req: any): OrderEditActor {
+  return { ...actorOf(req), role: req.user?.role || '', perms: req.user?.perms || [] };
+}
 
 function actorOf(req: any): ReceiptActor {
   return {
@@ -329,7 +335,33 @@ export class ShopifyController {
   @Patch('orders/:id/item-sync-conflict')
   @UseGuards(JwtAuthGuard)
   async resolveItemSyncConflict(@Param('id') id: string, @Body() body: any, @Request() req: any) {
-    return this.shopifyService.resolveItemSyncConflict(id, body?.source, body?.revision, req.user?.name || req.user?.username || '');
+    return this.shopifyService.submitOrderEdit(id, { itemConflict: { source: body?.source, revision: body?.revision } }, editActorOf(req));
+  }
+
+  @Patch('transactions/:id/edit')
+  @UseGuards(JwtAuthGuard)
+  async submitConfirmedEdit(@Param('id') id: string, @Body() body: UpdateTransactionDto, @Request() req: any) {
+    return this.shopifyService.submitConfirmedOrderEdit(id, body, editActorOf(req));
+  }
+
+  @Patch('orders/:id/edit')
+  @UseGuards(JwtAuthGuard)
+  async submitEdit(@Param('id') id: string, @Body() body: OrderEditInput, @Request() req: any) {
+    return this.shopifyService.submitOrderEdit(id, body || {}, editActorOf(req));
+  }
+
+  @Patch('orders/:id/edit-request/:requestId/approve')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async approveEdit(@Param('id') id: string, @Param('requestId') requestId: string, @Request() req: any) {
+    return this.shopifyService.decideOrderEdit(id, requestId, true, editActorOf(req));
+  }
+
+  @Patch('orders/:id/edit-request/:requestId/reject')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async rejectEdit(@Param('id') id: string, @Param('requestId') requestId: string, @Body('reason') reason: string, @Request() req: any) {
+    return this.shopifyService.decideOrderEdit(id, requestId, false, editActorOf(req), reason);
   }
 
   @Patch('orders/:id/items')
@@ -339,8 +371,7 @@ export class ShopifyController {
     @Body('items') items: any[],
     @Request() req: any,
   ) {
-    const by = req.user?.name || req.user?.username || '';
-    return this.shopifyService.updateOrderItems(id, items || [], by);
+    return this.shopifyService.submitOrderEdit(id, { items: items || [] }, editActorOf(req));
   }
 
   /**
@@ -367,8 +398,7 @@ export class ShopifyController {
     },
     @Request() req: any,
   ) {
-    const by = req.user?.name || req.user?.username || '';
-    return this.shopifyService.updateOrderDiscount(id, body || {}, by, req.user?.role || '');
+    return this.shopifyService.submitOrderEdit(id, { discount: body || {} }, editActorOf(req));
   }
 
   /** Alternative to adding a deposit, with the same delegable permission. */

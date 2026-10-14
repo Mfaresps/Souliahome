@@ -8,13 +8,13 @@ import { Cron } from '@nestjs/schedule';
 import { Connection } from 'mongoose';
 import { createHash, randomUUID } from 'crypto';
 
-export const TYPES = ['deposit', 'comment', 'followup', 'order', 'deliveryProblem', 'delivered', 'mention', 'otp', 'approval', 'shopifyChange', 'security', 'performance', 'announcement'] as const;
+export const TYPES = ['deposit', 'comment', 'followup', 'order', 'orderEdit', 'deliveryProblem', 'delivered', 'mention', 'otp', 'approval', 'shopifyChange', 'security', 'performance', 'announcement'] as const;
 export type NotificationType = typeof TYPES[number];
-export const DEFAULTS = { performance: true, otp: true, approval: true, shopifyChange: true, security: true, enabled: false, deposit: true, comment: true, followup: true, order: true, deliveryProblem: true, delivered: true, mention: true };
-const TITLES = { announcement: 'إعلان من SOULIA', performance: 'نقاط الأداء', otp: 'طلب OTP', approval: 'التعديلات والموافقات', shopifyChange: 'تعديل طلب شوبيفاي', security: 'تنبيه أمان', deposit: 'عربون جديد', comment: 'تعليق جديد', followup: 'متابعة جديدة', order: 'طلب جديد', deliveryProblem: 'مشكلة في التسليم', delivered: 'تم تسليم الطلب', mention: 'إشارة جديدة إليك' };
-const EN_TITLES = { announcement: 'SOULIA Announcement', performance: 'Performance points', otp: 'OTP Request', approval: 'Modifications & Approvals', shopifyChange: 'Shopify Order Changed', security: 'Security Alert', deposit: 'New Deposit', comment: 'New Comment', followup: 'New Follow-up', order: 'New Order', deliveryProblem: 'Delivery Issue', delivered: 'Order Delivered', mention: 'You Were Mentioned' };
+export const DEFAULTS = { performance: true, otp: true, approval: true, shopifyChange: true, security: true, enabled: false, deposit: true, comment: true, followup: true, order: true, orderEdit: true, deliveryProblem: true, delivered: true, mention: true };
+const TITLES = { orderEdit: 'قرار تعديل الطلب', announcement: 'إعلان من SOULIA', performance: 'نقاط الأداء', otp: 'طلب OTP', approval: 'التعديلات والموافقات', shopifyChange: 'تعديل طلب شوبيفاي', security: 'تنبيه أمان', deposit: 'عربون جديد', comment: 'تعليق جديد', followup: 'متابعة جديدة', order: 'طلب جديد', deliveryProblem: 'مشكلة في التسليم', delivered: 'تم تسليم الطلب', mention: 'إشارة جديدة إليك' };
+const EN_TITLES = { orderEdit: 'Order Edit Decision', announcement: 'SOULIA Announcement', performance: 'Performance points', otp: 'OTP Request', approval: 'Modifications & Approvals', shopifyChange: 'Shopify Order Changed', security: 'Security Alert', deposit: 'New Deposit', comment: 'New Comment', followup: 'New Follow-up', order: 'New Order', deliveryProblem: 'Delivery Issue', delivered: 'Order Delivered', mention: 'You Were Mentioned' };
 export const STAFF_TYPES = TYPES.filter(type => !(ADMIN_TYPES as readonly string[]).includes(type));
-export interface NotificationDetails { releaseVersion?: string; announcementText?: string; announcementCategory?: string; pointDelta?: number; pointReason?: string; weekly?: boolean; balance?: number; earned?: number; deducted?: number; assignedUserId?: string; assignedToYou?: boolean; actionKey?: string; status?: 'pending' | 'approved' | 'rejected' | 'modified'; changedFields?: string[]; expiresAt?: string; actorUserId?: string; actorName?: string; amount?: number; pendingApproval?: boolean; vaultName?: string; commentId?: string | number; receiptId?: string; depositId?: string; commentText?: string; followupComment?: boolean; orderTotal?: number; deliveryStatus?: string; }
+export interface NotificationDetails { editRequestId?: string; releaseVersion?: string; announcementText?: string; announcementCategory?: string; pointDelta?: number; pointReason?: string; weekly?: boolean; balance?: number; earned?: number; deducted?: number; assignedUserId?: string; assignedToYou?: boolean; actionKey?: string; status?: 'pending' | 'approved' | 'rejected' | 'modified'; changedFields?: string[]; expiresAt?: string; actorUserId?: string; actorName?: string; amount?: number; pendingApproval?: boolean; vaultName?: string; commentId?: string | number; receiptId?: string; depositId?: string; commentText?: string; followupComment?: boolean; orderTotal?: number; itemCount?: number; deliveryStatus?: string; }
 function cleanText(value: string | undefined, length: number) {
   return String(value || '').replace(/[\p{Cc}\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, length);
 }
@@ -56,9 +56,12 @@ export function notificationBody(type: NotificationType, ref: string, details: N
     const action = actionLabel(details.actionKey, language);
     const statuses = { pending: ['بانتظار الموافقة', 'Pending approval'], approved: ['تمت الموافقة', 'Approved'], rejected: ['مرفوض', 'Rejected'], modified: ['تم التعديل', 'Modified'] };
     const status = details.status && statuses[details.status]?.[language === 'en' ? 1 : 0];
-    return [actor, action, displayReference ? '#' + displayReference : '', type === 'otp' ? 'OTP: {OTP}' : status || ''].filter(Boolean).join(' · ');
+    const discount = details.actionKey === 'discount' && Number.isFinite(details.amount)
+      ? language === 'en' ? `Discount: EGP ${details.amount}` : `الخصم: ${details.amount} ج.م.` : '';
+    return [actor, action, displayReference ? '#' + displayReference : '', discount, type === 'otp' ? 'OTP: {OTP}' : status || ''].filter(Boolean).join(' · ');
   }
   if (type === 'shopifyChange') return orderLabel + ' · ' + (details.changedFields || []).map(key => FIELD_LABELS[key]?.[language === 'en' ? 1 : 0]).filter(Boolean).join(', ');
+  if (type === 'orderEdit') return `${orderLabel} · ${language === 'en' ? details.status === 'approved' ? 'Edit approved' : 'Edit rejected' : details.status === 'approved' ? 'تم قبول التعديل' : 'تم رفض التعديل'} · ${actor}`;
   if (type === 'followup') return `${orderLabel} · ${language === 'en' ? 'New Follow-up' : 'متابعة جديدة'}`;
   if (type === 'comment') {
     const prefix = details.followupComment ? `${actor} · ${orderLabel}` : language === 'en' ? `${actor} commented on ${orderLabel}` : `${actor} علّق على ${orderLabel}`;
@@ -76,7 +79,9 @@ export function notificationBody(type: NotificationType, ref: string, details: N
   if (type === 'order') {
     const amount = Number.isFinite(details.orderTotal) && details.orderTotal! >= 0 ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(details.orderTotal!) : '';
     const status = details.assignedToYou ? language === 'en' ? 'Assigned to You' : 'مُسند إليك' : language === 'en' ? 'New Order Received' : 'تم استلام طلب جديد';
-    return `${orderLabel}${amount ? language === 'en' ? ` · EGP ${amount}` : ` · ${amount} ج.م.` : ''} · ${status}`;
+    const count = details.itemCount;
+    const items = Number.isInteger(count) && count! >= 0 ? language === 'en' ? `${count} ${count === 1 ? 'item' : 'items'}` : `عدد القطع: ${count}` : '';
+    return `${orderLabel}${amount ? language === 'en' ? ` · EGP ${amount}` : ` · ${amount} ج.م.` : ''}${items ? ` · ${items}` : ''} · ${status}`;
   }
   if (type === 'deliveryProblem') return `${orderLabel} · ${details.deliveryStatus === 'RETURNED' ? language === 'en' ? 'Returned Before Delivery' : 'مرتجع قبل التسليم' : language === 'en' ? 'Delivery Failed' : 'فشل التسليم'} · ${language === 'en' ? 'Action Required' : 'مطلوب إجراء'}`;
   if (type === 'delivered') return `${orderLabel} · ${language === 'en' ? 'Successfully Delivered' : 'تم التسليم بنجاح'}`;
@@ -257,7 +262,7 @@ export class NotificationsService implements OnModuleInit {
   }
   async enqueue(type: NotificationType, eventId: string, ref: string, recordId = '', onlyUser?: string | string[], deliveryStatus?: string, details: NotificationDetails = {}) {
     try {
-      if (['mention', 'performance'].includes(type) && !onlyUser) return;
+      if (['mention', 'performance', 'orderEdit'].includes(type) && !onlyUser) return;
       if (type === 'performance' && !details.weekly && (!Number.isFinite(details.pointDelta) || details.pointDelta === 0)) return;
       const employeeLanguage = await this.employeeLanguage();
       if (type === 'otp' && (!/^otp:[a-f0-9]{24}$/.test(recordId) || !(Date.parse(details.expiresAt || '') > Date.now()))) return;
@@ -283,7 +288,7 @@ export class NotificationsService implements OnModuleInit {
         const target = new URLSearchParams({ pushRecord: recordId, pushType: type });
         const inboxId = createHash('sha256').update(JSON.stringify([userId, eventId])).digest('hex');
         if (!test) target.set('pushNotification', inboxId);
-        const event = type === 'comment' ? details.commentId : details.receiptId || details.depositId;
+        const event = type === 'comment' ? details.commentId : details.receiptId || details.depositId || details.editRequestId;
         if (event != null) target.set('pushEvent', String(event));
         const title = notificationTitle(type, recipientDetails, language, test);
         const payload = JSON.stringify({ title, body, timestamp: eventTimestamp, lang: language, dir: language === 'en' ? 'ltr' : 'rtl',

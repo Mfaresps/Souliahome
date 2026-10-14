@@ -59,6 +59,8 @@ import { carrierLabel, isValidCarrier } from '../shared/carriers.constants';
 import { resolveShopifyPhone } from './shopify-phone.util';
 import { shopifyLineQuantity } from './shopify-line-quantity.util';
 import { applyShopifyConflictItems, differingItemKeys, itemKey, mergeShopifyItems } from './shopify-item-merge.util';
+import { OrderEditActor, OrderEditInput, orderEditSnapshot, transactionEditSnapshot, normalizeInvoiceEdit, validEditItems, validDiscountAmount } from './order-edit.util';
+import { UpdateTransactionDto } from '../transactions/dto/transaction.dto';
 
 @Injectable()
 export class ShopifyService {
@@ -235,8 +237,9 @@ export class ShopifyService {
         this.logger.warn(`Deposit parsing failed for order ${order._id}: ${(depositErr as Error).message}`);
       }
 
-      await this.notifications?.enqueue('order', 'order:shopify:' + shopifyId, order.ref, 'shopify:' + order._id, undefined, undefined, { orderTotal: order.total, assignedUserId: order.assignedTo || undefined });
-      await notifyApproval(this.notifications, 'approval:shopify:' + shopifyId + ':pending', order.ref, 'shopify:' + order._id, { actorName: order.assignedToName || 'Shopify', actionKey: 'order', status: 'pending' });
+      // Arrival has one push event; the order remains pending for review.
+      const itemCount = items.reduce((sum, item) => sum + item.qty, 0);
+      await this.notifications?.enqueue('order', 'order:shopify:' + shopifyId, order.ref, 'shopify:' + order._id, undefined, undefined, { orderTotal: order.total, itemCount, assignedUserId: order.assignedTo || undefined });
       return { saved: true, id: String(order._id) };
     } catch (err) {
       this.logger.error(`❌ خطأ: ${err.message}`);
@@ -919,6 +922,7 @@ export class ShopifyService {
       return { success: false };
     }
     if (order.itemSyncConflict) throw new BadRequestException('راجع تعارض أصناف Shopify قبل تأكيد الطلب');
+    if (order.editRequest?.status === 'معلق') throw new BadRequestException('راجع طلب تعديل الأوردر قبل تأكيده');
 
     // A receipt still under review is money not yet decided — confirming now would freeze the
     // order without it, and nothing could attach it afterwards.
@@ -1025,7 +1029,7 @@ export class ShopifyService {
       ? { depositReceipts: receiptSnapshot }
       : { $or: [{ depositReceipts: { $size: 0 } }, { depositReceipts: { $exists: false } }] };
     const claimed = await this.shopifyOrderModel.findOneAndUpdate(
-      { _id: order._id, status: 'pending', cancelled: { $ne: true }, receiptCancelLock: { $in: ['', null] }, total: order.total, ...receiptMatch },
+      { _id: order._id, status: 'pending', cancelled: { $ne: true }, 'editRequest.status': { $ne: 'معلق' }, receiptCancelLock: { $in: ['', null] }, total: order.total, ...receiptMatch },
       { $set: {
         status: 'approved', reviewedBy: approvedBy, reviewedAt: confirmedAt,
         ...computeDepositFieldsFromReceipts(order), depositDetectedAt: order.depositDetectedAt,
@@ -1444,6 +1448,229 @@ export class ShopifyService {
       if (oldV.price !== newV.price) lines.push(`سعر ${newV.name}: ${oldV.price} ← ${newV.price}`);
     }
     return lines;
+  }
+
+  private editWriteFilter(order: any) {
+    return { _id: order._id, status: 'pending', cancelled: { $ne: true },
+      ...(order.updatedAt ? { updatedAt: order.updatedAt } : { __v: order.__v ?? 0 }) };
+  }
+
+  private async prepareOrderEdit(order: any, input: OrderEditInput, actor: OrderEditActor) {
+    if (order.status !== 'pending' || order.cancelled) throw new BadRequestException('يمكن تعديل أوردر معلق غير ملغى فقط؛ عدّل الفاتورة للأوردر المؤكد');
+    const before = orderEditSnapshot(order);
+    const patch: Record<string, any> = {};
+    const changes: string[] = [];
+    if (input.items && input.itemConflict) throw new BadRequestException('اختر مسار تعديل أصناف واحد');
+    if (input.items || input.itemConflict) {
+      let items = input.items;
+      if (input.itemConflict) {
+        const { source, revision } = input.itemConflict;
+        const conflict = order.itemSyncConflict;
+        if (!['local', 'shopify'].includes(source) || !conflict || revision !== (conflict.revision || conflict.detectedAt)) {
+          throw new BadRequestException('تغيّر تعارض الأصناف — حدّث الأوردر وراجعه مجددًا');
+        }
+        items = source === 'shopify' ? applyShopifyConflictItems(order.items || [], conflict.shopifyItems, conflict.conflictingKeys) : order.items;
+        patch.itemSyncConflict = null;
+        changes.push(source === 'shopify' ? 'استخدام أصناف Shopify المتعارضة' : 'الاحتفاظ بأصناف النظام');
+      }
+      patch.items = validEditItems(items!);
+      patch.itemsTotal = patch.items.reduce((sum: number, item: any) => sum + item.price * item.qty, 0);
+      if (!Number.isFinite(patch.itemsTotal)) throw new BadRequestException('إجمالي الأصناف غير صالح');
+      patch.localItemsBaseline = order.localItemsBaseline ?? before.items;
+      changes.push(...this.diffOrderItems(before.items, patch.items));
+      if (patch.itemsTotal !== before.itemsTotal) changes.push(`إجمالي الأصناف: ${before.itemsTotal} ← ${patch.itemsTotal}`);
+    }
+    if (input.discount) {
+      const discount = input.discount;
+      patch.manualDiscount = validDiscountAmount(discount.manualDiscount);
+      patch.codesDiscount = validDiscountAmount(discount.codesDiscount);
+      patch.manualDiscountType = discount.manualDiscountType === 'percent' ? 'percent' : 'fixed';
+      patch.discountCodeId = String(discount.discountCodeId || '');
+      patch.discountCode = String(discount.discountCode || '');
+      const amount = patch.manualDiscount + patch.codesDiscount;
+      if (amount > (patch.itemsTotal ?? before.itemsTotal)) throw new BadRequestException('الخصم يتجاوز إجمالي الأصناف');
+      // A direct-edit permission never bypasses the manual-entry discount ceiling.
+      if (amount > 0 && actor.role !== 'admin') {
+        const settings = await this.settingsService.getSettings();
+        if (settings.otpEnabled !== false && amount > Number(settings.highValueDiscountLimit ?? 200)) {
+          const otp = await this.discountOtpService.assertOtpForTransaction(discount.highValueDiscountOtpId || '', amount);
+          if (otp.requestedById !== actor.id || String(otp.txRef).replace(/^#+/, '') !== String(order.ref).replace(/^#+/, '') || (otp.kind && otp.kind !== 'discount') || Date.parse(otp.expiresAt) <= Date.now()) {
+            throw new BadRequestException('كود الخصم لا يخص هذا الموظف والأوردر أو انتهت صلاحيته');
+          }
+          patch.highValueDiscountOtpId = discount.highValueDiscountOtpId;
+        }
+      }
+      for (const [key, label] of [['manualDiscount', 'الخصم اليدوي'], ['codesDiscount', 'خصم الأكواد'], ['discountCode', 'كود الخصم'], ['manualDiscountType', 'نوع الخصم']] as const) {
+        if (before[key] !== patch[key]) changes.push(`${label}: ${before[key]} ← ${patch[key]}`);
+      }
+    }
+    patch.total = this.computeShopifyOrderTotal({ ...before, ...patch }).total;
+    if (patch.total !== before.total) changes.push(`الإجمالي: ${before.total} ← ${patch.total}`);
+    return { before, patch, changes };
+  }
+
+  async submitOrderEdit(orderId: string, input: OrderEditInput, actor: OrderEditActor) {
+    if (!actor.id || !['admin', 'staff'].includes(actor.role)) throw new ForbiddenException('ليس لديك صلاحية تعديل الطلب');
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) throw new NotFoundException('الأوردر غير موجود');
+    if (order.editRequest?.status === 'معلق') throw new BadRequestException('يوجد طلب تعديل ينتظر المراجعة');
+    const { before, patch, changes } = await this.prepareOrderEdit(order, input, actor);
+    if (!changes.length) return { success: true, pendingApproval: false, total: order.total };
+    const direct = actor.role === 'admin' || actor.perms.includes('shopify-edit-direct');
+    const now = new Date().toISOString();
+    const request = { id: crypto.randomUUID(), status: direct ? 'معتمد' : 'معلق', requestedBy: actor.name,
+      requestedById: actor.id, requestedByUsername: actor.username, requestedAt: now,
+      before, patch, changes, ...(direct ? { reviewedBy: actor.name, reviewedAt: now } : {}) };
+    const update: any = { $set: { editRequest: request, ...(direct ? patch : {}) }, $inc: { __v: 1 } };
+    if (direct) update.$push = { editRequestHistory: request, editHistory: {
+      action: 'تعديل أوردر', editedAt: now, editedBy: actor.name, approvedBy: actor.name, before, after: patch, changes,
+    } };
+    const saved = await this.shopifyOrderModel.findOneAndUpdate({ ...this.editWriteFilter(order), 'editRequest.status': { $ne: 'معلق' } }, update, { new: true });
+    if (!saved) throw new BadRequestException('تغيّر الأوردر أثناء التعديل — حدّثه وأعد المحاولة');
+    if (!direct) await notifyApproval(this.notifications, 'shopify-edit:' + request.id + ':pending', order.ref, 'shopify:' + orderId,
+      { actorName: actor.name, actionKey: 'edit-shopify', status: 'pending', editRequestId: request.id });
+    this.emit('shopify:edit-changed', { orderId, status: request.status });
+    return { success: true, pendingApproval: !direct, requestId: request.id, total: saved.total,
+      totalDiscount: this.computeShopifyOrderTotal(saved).totalDiscount };
+  }
+
+  async decideOrderEdit(orderId: string, requestId: string, approve: boolean, actor: OrderEditActor, reason = '') {
+    if (actor.role !== 'admin') throw new ForbiddenException('الاعتماد والرفض للمدير فقط');
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) throw new NotFoundException('الأوردر غير موجود');
+    const request = order.editRequest;
+    if (!request || request.id !== requestId || request.status !== 'معلق') throw new BadRequestException('طلب التعديل غير معلق أو تمت مراجعته');
+    if (request.transactionId) return this.decideConfirmedOrderEdit(order, request, approve, actor, reason);
+    if (approve && (order.status !== 'pending' || order.cancelled || JSON.stringify(orderEditSnapshot(order)) !== JSON.stringify(request.before))) {
+      throw new BadRequestException('تغيّر الأوردر منذ إرسال الطلب — ارفض الطلب واطلب تعديلًا جديدًا');
+    }
+    const reviewedAt = new Date().toISOString();
+    const decided = { ...request, status: approve ? 'معتمد' : 'مرفوض', reviewedBy: actor.name, reviewedAt,
+      rejectedReason: approve ? '' : String(reason || '').trim().slice(0, 500) };
+    const update: any = { $set: { editRequest: decided, ...(approve ? request.patch : {}) },
+      $inc: { __v: 1 }, $push: { editRequestHistory: decided } };
+    if (approve) update.$push.editHistory = { action: 'اعتماد تعديل أوردر', editedAt: reviewedAt,
+      editedBy: request.requestedBy, approvedBy: actor.name, before: request.before, after: request.patch, changes: request.changes };
+    const saved = await this.shopifyOrderModel.findOneAndUpdate({
+      ...(approve ? this.editWriteFilter(order) : {}),
+      _id: orderId, 'editRequest.id': requestId, 'editRequest.status': 'معلق',
+    }, update, { new: true });
+    if (!saved) throw new BadRequestException('تغيّر الطلب أثناء المراجعة — حدّث الصفحة');
+    await this.notifyOrderEditDecision(saved, decided, actor);
+    this.emit('shopify:edit-changed', { orderId, status: decided.status });
+    return { success: true };
+  }
+
+  private async notifyOrderEditDecision(order: any, request: any, actor: OrderEditActor) {
+    const status = request.status === 'معتمد' ? 'approved' : 'rejected';
+    try {
+      await this.notifications?.enqueue('orderEdit', 'shopify-edit:' + request.id + ':' + status, order.ref,
+        'shopify:' + order._id, request.requestedById, undefined, { actorName: actor.name, status, editRequestId: request.id });
+      const text = `تم ${status === 'approved' ? 'قبول' : 'رفض'} تعديل الأوردر #${order.ref} بواسطة ${actor.name}${request.rejectedReason ? ' — ' + request.rejectedReason : ''}`;
+      const rows = await this.mentionsService.createMany([{ targetUserId: request.requestedById,
+        targetUsername: request.requestedByUsername, targetName: request.requestedBy, fromUserId: actor.id,
+        fromName: actor.name, txId: 'shopify:' + order._id, txRef: order.ref, commentId: 0, commentText: text }]);
+      for (const row of rows) this.presence.emitToUser(request.requestedById, 'mention:new', row);
+    } catch { this.logger.warn('تعذر إرسال إشعار قرار تعديل الأوردر'); }
+  }
+
+  async submitConfirmedOrderEdit(txId: string, dto: UpdateTransactionDto, actor: OrderEditActor) {
+    if (!actor.id || !['admin', 'staff'].includes(actor.role)) throw new ForbiddenException('ليس لديك صلاحية تعديل الطلب');
+    const tx = await this.txModel.findById(txId);
+    if (!tx?.shopifyOrderId || tx.type !== 'مبيعات') throw new BadRequestException('هذه الفاتورة ليست لطلب مبيعات Shopify');
+    const order = await this.shopifyOrderModel.findOne({ shopifyId: tx.shopifyOrderId });
+    if (!order || order.cancelled || tx.cancelled) throw new BadRequestException('لا يمكن تعديل طلب ملغى');
+    if (order.editRequest?.status === 'معلق' || order.editRequest?.status === 'قيد التنفيذ') throw new BadRequestException('يوجد طلب تعديل ينتظر المراجعة');
+    const patch = normalizeInvoiceEdit(tx, dto);
+    const before = transactionEditSnapshot(tx);
+    if (patch.items) patch.items = validEditItems(patch.items);
+    const changedKeys = Object.keys(patch).filter(key => key in before && JSON.stringify(patch[key]) !== JSON.stringify(before[key]));
+    const labels: Record<string, string> = { ref: 'المرجع', client: 'العميل', phone: 'الهاتف', notes: 'الملاحظات',
+      payment: 'طريقة الدفع', total: 'الإجمالي', discount: 'الخصم', shipCost: 'الشحن', shipCo: 'شركة الشحن',
+      carrierCode: 'شركة الشحن', shipZone: 'منطقة الشحن', shippingAddress: 'العنوان', shippingCity: 'المدينة',
+      shippingGov: 'المحافظة', deposit: 'العربون', depMethod: 'خزنة العربون', remaining: 'المتبقي', payStatus: 'حالة الدفع',
+      transactionDate: 'تاريخ الفاتورة', discountCode: 'كود الخصم', discountCodeId: 'أكواد الخصم',
+      itemsTotal: 'إجمالي الأصناف', manualDiscount: 'الخصم اليدوي', manualDiscountType: 'نوع الخصم', discountCodeType: 'نوع كود الخصم' };
+    const changes = changedKeys.flatMap(key => key === 'items' ? this.diffOrderItems(before.items || [], patch.items)
+      : [`${labels[key] || key}: ${before[key] ?? '—'} ← ${patch[key]}`]);
+    if (patch.depositVaultCorrections?.length) changes.push(...patch.depositVaultCorrections.map((c: any) => `تصحيح خزنة الدفعة ${c.id}: ${c.method}`));
+    if (!changes.length) return { success: true, pendingApproval: false };
+    const amount = validDiscountAmount(patch.discount ?? tx.discount);
+    const itemsTotal = (patch.items || tx.items || []).reduce((sum: number, item: any) => sum + Number(item.qty) * Number(item.price), 0);
+    if (amount > itemsTotal) throw new BadRequestException('الخصم يتجاوز إجمالي الأصناف');
+    if (actor.role !== 'admin' && amount !== Number(tx.discount || 0)) {
+      const settings = await this.settingsService.getSettings();
+      if (settings.otpEnabled !== false && amount > Number(settings.highValueDiscountLimit ?? 200)) {
+        const otp = await this.discountOtpService.assertOtpForTransaction(patch.highValueDiscountOtpId || '', amount);
+        if (otp.requestedById !== actor.id || String(otp.txRef).replace(/^#+/, '') !== String(tx.ref).replace(/^#+/, '') || (otp.kind && otp.kind !== 'discount') || Date.parse(otp.expiresAt) <= Date.now()) {
+          throw new BadRequestException('كود الخصم لا يخص هذا الموظف والأوردر أو انتهت صلاحيته');
+        }
+      }
+    }
+    const now = new Date().toISOString();
+    const request = { id: crypto.randomUUID(), status: 'معلق', requestedBy: actor.name, requestedById: actor.id,
+      requestedByUsername: actor.username, requestedAt: now, transactionId: txId, before, patch,
+      changes };
+    const saved = await this.shopifyOrderModel.findOneAndUpdate({ _id: order._id,
+      ...((order as any).updatedAt ? { updatedAt: (order as any).updatedAt } : {}),
+      'editRequest.status': { $nin: ['معلق', 'قيد التنفيذ'] } }, { $set: { editRequest: request } }, { new: true });
+    if (!saved) throw new BadRequestException('تغيّر طلب التعديل — حدّث الصفحة');
+    if (actor.role === 'admin' || actor.perms.includes('shopify-edit-direct')) {
+      await this.decideConfirmedOrderEdit(saved, request, true, actor, '', true);
+      return { success: true, pendingApproval: false };
+    }
+    await notifyApproval(this.notifications, 'shopify-edit:' + request.id + ':pending', order.ref, 'shopify:' + order._id,
+      { actorName: actor.name, actionKey: 'edit-shopify', status: 'pending', editRequestId: request.id });
+    this.emit('shopify:edit-changed', { orderId: String(order._id), status: 'معلق' });
+    return { success: true, pendingApproval: true, requestId: request.id };
+  }
+
+  private async decideConfirmedOrderEdit(order: any, request: any, approve: boolean, actor: OrderEditActor, reason: string, direct = false) {
+    const reviewedAt = new Date().toISOString();
+    let appliedPatch: Record<string, any> = {};
+    const decided = { ...request, status: approve ? 'معتمد' : 'مرفوض', reviewedBy: actor.name, reviewedAt,
+      rejectedReason: approve ? '' : String(reason || '').trim().slice(0, 500) };
+    if (approve) {
+      // The existing invoice editor owns stock, deposits, vault deltas and shipping
+      // locks. Never patch a confirmed order's totals without going through it.
+      this.transactionsService.acquireEditLock(request.transactionId, actor.name);
+      let claimed = false;
+      try {
+        const tx = await this.txModel.findById(request.transactionId);
+        if (!tx || JSON.stringify(transactionEditSnapshot(tx)) !== JSON.stringify(request.before)) {
+          throw new BadRequestException('تغيّرت الفاتورة منذ إرسال التعديل — ارفض الطلب وأعد إرساله');
+        }
+        const lock = await this.shopifyOrderModel.findOneAndUpdate({ _id: order._id, cancelled: { $ne: true },
+          'editRequest.id': request.id, 'editRequest.status': 'معلق' }, { $set: { 'editRequest.status': 'قيد التنفيذ' } });
+        if (!lock) throw new BadRequestException('تمت مراجعة الطلب بالفعل');
+        claimed = true;
+        const updatedTx = await this.transactionsService.update(request.transactionId, request.patch, request.requestedBy, actor.name,
+          direct ? actor.role : 'admin', actor.name, direct ? actor.perms : []);
+        // Keep the order list aligned with the authoritative invoice after its
+        // inventory and money effects have been applied by the invoice service.
+        appliedPatch = {
+          items: updatedTx.items, itemsTotal: updatedTx.itemsTotal, total: updatedTx.total,
+          client: updatedTx.client, phone: updatedTx.phone, notes: updatedTx.notes,
+          shipCost: updatedTx.shipCost, shippingAddress: updatedTx.shippingAddress,
+          shippingCity: updatedTx.shippingCity, shippingGov: updatedTx.shippingGov,
+        };
+      } catch (error) {
+        if (claimed) await this.shopifyOrderModel.updateOne({ _id: order._id, 'editRequest.id': request.id,
+          'editRequest.status': 'قيد التنفيذ' }, { $set: { 'editRequest.status': 'معلق' } });
+        throw error;
+      } finally { this.transactionsService.releaseEditLock(request.transactionId); }
+    }
+    const saved = await this.shopifyOrderModel.findOneAndUpdate({ _id: order._id, 'editRequest.id': request.id,
+      'editRequest.status': approve ? 'قيد التنفيذ' : 'معلق' }, {
+      $set: { editRequest: decided, ...appliedPatch }, $push: { editRequestHistory: decided, ...(approve ? { editHistory: {
+        action: 'اعتماد تعديل الفاتورة', editedAt: reviewedAt, editedBy: request.requestedBy,
+        approvedBy: actor.name, before: request.before, after: request.patch, changes: request.changes,
+      } } : {}) },
+    }, { new: true });
+    if (!saved) throw new BadRequestException('تعذر تسجيل قرار المراجعة — حدّث الصفحة');
+    if (!direct) await this.notifyOrderEditDecision(saved, decided, actor);
+    this.emit('shopify:edit-changed', { orderId: String(order._id), status: decided.status });
+    return { success: true };
   }
 
   async updateOrderItems(
