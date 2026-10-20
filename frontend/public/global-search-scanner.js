@@ -172,6 +172,7 @@
     });
   }
   window.addEventListener('keydown', event => {
+    if (window.SalesScanner?.ownsKeyboard(event)) return;
     const scanShortcut = event.code === 'KeyF' || String(event.key || '').toLowerCase() === 'f' || event.key === 'ب';
     if (event.defaultPrevented || event.repeat || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || !scanShortcut) return;
     if (!allowed() || getComputedStyle(app).display === 'none' || visibleModal()) return;

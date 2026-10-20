@@ -30,7 +30,8 @@ export function notificationTitle(type: NotificationType, details: NotificationD
   else if (type === 'comment' && details.followupComment) title = ['📌', 'تعليق متابعة جديد', 'New Follow-up'];
   else if (type === 'security' && details.actionKey === 'failed_login') title = ['❌', 'محاولة تسجيل دخول فاشلة', 'Failed Login Attempt'];
   else if (type === 'approval') {
-    if (details.status === 'approved') title = ['✅', 'تمت الموافقة على الطلب', 'Request Approved'];
+    if (details.status === 'approved' && details.actionKey === 'order') title = ['📦', 'جارٍ تحضير الطلب للشحن', 'Order is being prepared for shipment'];
+    else if (details.status === 'approved') title = ['✅', 'تمت الموافقة على الطلب', 'Request Approved'];
     else if (details.status === 'rejected') title = ['🚫', 'تم رفض الطلب', 'Request Rejected'];
     else if (details.status === 'modified') title = details.actionKey === 'edit-tx'
       ? ['🔄', 'تم تعديل المعاملة', 'Transaction Modified']

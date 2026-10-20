@@ -29,6 +29,6 @@ describe('warehouse and pack backup maintenance guards', () => {
     const backup = complete();
     backup.warehousetransfers.push({});
     backup.inventorypacks.push({});
-    await expect(assertInventoryUnitMaintenance(connection(), Object.keys(backup), backup, true)).resolves.toBeUndefined();
+    await expect(assertInventoryUnitMaintenance(connection(), Object.keys(backup), backup, true)).resolves.toBe(true);
   });
 });

@@ -11,10 +11,12 @@ import {
   Request,
   UseGuards,
   BadRequestException,
+  Optional,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { OrderAuditService } from './order-audit.service';
 import { OrderAuditExportService } from './order-audit-export.service';
+import { OrderAuditMarketingService } from './order-audit-marketing.service';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { PermsGuard } from '../core/guards/perms.guard';
 import { RequirePerms } from '../core/decorators/perms.decorator';
@@ -31,6 +33,7 @@ export class OrderAuditController {
   constructor(
     private readonly auditService: OrderAuditService,
     private readonly exportService: OrderAuditExportService,
+    @Optional() private readonly marketing?: OrderAuditMarketingService,
   ) {}
 
   private user(req: any): string {
@@ -44,11 +47,31 @@ export class OrderAuditController {
     @Query('to') to: string,
     @Query('persist') persist: string,
     @Request() req: any,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+    @Query('months') months?: string,
+    @Query('year') year?: string,
   ) {
+    if (fromDate || toDate || months) return this.auditService.runAuditPeriod({ fromDate, toDate, months, year }, { persist: persist !== 'false', generatedBy: this.user(req), source: 'date',shippingLive:true });
     return this.auditService.runAudit(Number(from), Number(to), {
       persist: persist !== 'false',
       generatedBy: this.user(req),
       source: 'manual',
+      shippingLive:true,
+    });
+  }
+
+  @Get('advertising-expenses')
+  advertisingExpenses(@Query() query: Record<string,string>) { return this.marketing!.list(query); }
+
+  @Post('marketing-analysis')
+  marketingAnalysis(@Body() body: any) { return this.marketing!.analyze(body); }
+
+  /** Audit history log */
+  @Get('period')
+  async period(@Query() query: Record<string, string>, @Request() req: any) {
+    return this.auditService.runAuditPeriod({ fromDate: query.fromDate, toDate: query.toDate, months: query.months, year: query.year }, {
+      persist: query.persist !== 'false', generatedBy: this.user(req), source: 'date',shippingLive:true,
     });
   }
 
@@ -100,6 +123,10 @@ export class OrderAuditController {
     @Query('format') format: string,
     @Request() req: any,
     @Res() res: Response,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+    @Query('months') months?: string,
+    @Query('year') year?: string,
   ) {
     const fmt = (format || 'excel').toLowerCase();
     if (fmt !== 'excel' && fmt !== 'pdf') {
@@ -107,9 +134,11 @@ export class OrderAuditController {
     }
 
     // Export must not pollute the audit history with a duplicate entry.
-    const result = await this.auditService.runAudit(Number(from), Number(to), {
+    const exportOptions = { persist: false, generatedBy: this.user(req),shippingLive:true };
+    const result = fromDate || toDate || months ? await this.auditService.runAuditPeriod({ fromDate, toDate, months, year }, exportOptions) : await this.auditService.runAudit(Number(from), Number(to), {
       persist: false,
       generatedBy: this.user(req),
+      shippingLive:true,
     });
 
     const base = `order_audit_${result.from}_${result.to}`;

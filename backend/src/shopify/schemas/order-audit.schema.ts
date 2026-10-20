@@ -10,6 +10,8 @@ export type OrderAuditDocument = HydratedDocument<OrderAudit>;
  */
 @Schema({ timestamps: true })
 export class OrderAudit {
+  @Prop({ type: Object })
+  period?: { fromDate: string; toDate: string; months?: number[]; year?: number };
   /** First Shopify order number in the audited range */
   @Prop({ required: true })
   fromOrder: number;

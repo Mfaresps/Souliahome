@@ -234,13 +234,24 @@ async function exportInvoiceImage(source, id, action) {
   const blobPromise = buildCompactInvoiceCanvas(tx, source === 'shopify').then(canvas => new Promise((resolve, reject) => {
     canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('PNG generation failed')), 'image/png');
   }));
+  // Observe rendering failures even if the browser rejects the clipboard immediately.
+  blobPromise.catch(() => {});
+  let renderingFailed = false;
+  const renderedBlob = () => blobPromise.catch(error => { renderingFailed = true; throw error; });
   try {
     if (copy) {
-      // Start clipboard.write in the click event, before awaiting fonts/rendering (Safari).
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blobPromise })]);
+      try {
+        // Safari needs write() during the click, before fonts/images finish loading.
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blobPromise })]);
+      } catch (_) {
+        // Older Chromium versions accept a Blob but reject Promise-valued items.
+        // Reuse the same render so identities and product images stay consistent.
+        const blob = await renderedBlob();
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      }
       toast(en ? 'Invoice image copied' : 'تم نسخ صورة الفاتورة');
     } else {
-      const url = URL.createObjectURL(await blobPromise);
+      const url = URL.createObjectURL(await renderedBlob());
       const a = document.createElement('a');
       a.href = url;
       a.download = `invoice-${String(tx.ref || id).replace(/[^\p{L}\p{N}_-]/gu, '_')}.png`;
@@ -249,10 +260,14 @@ async function exportInvoiceImage(source, id, action) {
       toast(en ? 'Invoice image downloaded' : 'تم تحميل صورة الفاتورة');
     }
   } catch (error) {
-    fail(copy ? (en ? 'Could not copy image. Use Download invoice image.' : 'تعذّر نسخ الصورة. استخدم تحميل صورة الفاتورة.')
-      : (en ? 'Could not create invoice image' : 'تعذّر إنشاء صورة الفاتورة'));
-  } finally {
-    // A rejected clipboard write may leave the asynchronous rendering promise unconsumed.
-    blobPromise.catch(() => {});
+    if (renderingFailed) {
+      fail((en ? 'Could not create invoice image: ' : 'تعذّر إنشاء صورة الفاتورة: ') + error.message);
+    } else if (copy && (error.name === 'NotAllowedError' || error.name === 'SecurityError')) {
+      fail(en ? 'Allow clipboard access in your browser site settings, then try copying again. You can also download the invoice image.'
+        : 'اسمح بالوصول للحافظة من إعدادات الموقع في المتصفح، ثم جرّب النسخ مجددًا. يمكنك أيضًا تحميل صورة الفاتورة.');
+    } else {
+      fail(copy ? (en ? 'Could not copy image. Use Download invoice image.' : 'تعذّر نسخ الصورة. استخدم تحميل صورة الفاتورة.')
+        : (en ? 'Could not create invoice image' : 'تعذّر إنشاء صورة الفاتورة'));
+    }
   }
 }

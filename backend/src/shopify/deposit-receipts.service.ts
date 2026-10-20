@@ -11,7 +11,7 @@ import {
 import { depositHistory, receiptSender } from './deposit-receipt-history.util';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron } from '@nestjs/schedule';
-import { Model } from 'mongoose';
+import { Model, ClientSession } from 'mongoose';
 import * as crypto from 'crypto';
 import { DepositReceipt, ShopifyOrder, ShopifyOrderDocument } from './schemas/shopify-order.schema';
 import { Transaction, TransactionDocument } from '../transactions/schemas/transaction.schema';
@@ -329,18 +329,19 @@ export class DepositReceiptsService {
     return { success: true };
   }
 
-  async claimManualReceipt(id: string, tx: { type: string; ref?: string; client?: string; deposit?: number; depMethod?: string; total: number }, actor: ReceiptActor): Promise<Transaction['depositReceipts'][number]> {
+  async claimManualReceipt(id: string, tx: { type: string; ref?: string; client?: string; deposit?: number; depMethod?: string; total: number }, actor: ReceiptActor, session?: ClientSession): Promise<Transaction['depositReceipts'][number]> {
     if (tx.type !== 'مبيعات') throw new BadRequestException('إيصال الديبوزت متاح للمبيعات فقط');
     const { amount, method } = this.validateEntry(tx.deposit, tx.depMethod);
     if (amount > tx.total + DEPOSIT_TOLERANCE) throw new BadRequestException('الديبوزت يتجاوز إجمالي المعاملة');
     const draft = await this.manualReceiptModel!.findOneAndUpdate({ receiptId: id, ownerId: actor.id,
       state: 'submitted', expiresAt: { $gt: new Date().toISOString() }, 'receipt.amount': amount,
-      'receipt.method': method }, { $set: { state: 'claiming', ref: tx.ref || '', client: tx.client || '' } }, { new: true }).exec();
+      'receipt.method': method }, { $set: { state: 'claiming', ref: tx.ref || '', client: tx.client || '' } }, { new: true, ...(session ? { session } : {}) }).exec();
     if (!draft) throw new BadRequestException('ارفع الإيصال وافحصه وأكّد المبلغ وطريقة الدفع قبل الحفظ');
     const r = draft.receipt;
     // Customer/reference may have been completed after upload; retain the shared final folder naming.
     const imageKey = receiptImageKey({ ...tx, _id: id }, r.imageKey.split('/')[1], id);
-    if (imageKey !== r.imageKey) {
+    // An atomic scanned sale keeps the already-uploaded key: R2 moves cannot be rolled back with MongoDB.
+    if (!session && imageKey !== r.imageKey) {
       try {
         const cfg = await this.r2();
         const image = await r2GetObjectBuffer(cfg, r.imageKey);
@@ -358,12 +359,12 @@ export class DepositReceiptsService {
       vaultTxNo: '', senderName: r.senderName ?? r.ocr?.senderName ?? '', senderHandle: r.senderHandle ?? r.ocr?.senderHandle ?? '', senderPhone: r.senderPhone ?? r.ocr?.senderPhone ?? '', screenshotTime: r.screenshotTime ?? r.ocr?.screenshotTime ?? '', screenshotTimeSource: r.screenshotTimeSource || r.ocr?.screenshotTimeSource || '', ocrAmount: r.ocr.amount, ocrMethod: r.ocr.method };
   }
 
-  async releaseManualReceipt(id: string): Promise<void> {
-    await this.manualReceiptModel!.updateOne({ receiptId: id, state: 'claiming' }, { $set: { state: 'submitted' } }).exec();
+  async releaseManualReceipt(id: string, session?: ClientSession): Promise<void> {
+    await this.manualReceiptModel!.updateOne({ receiptId: id, state: 'claiming' }, { $set: { state: 'submitted' } }, ...(session ? [{ session }] as const : [] as const)).exec();
   }
 
-  async consumeManualReceipt(id: string, transactionId: string): Promise<void> {
-    await this.manualReceiptModel!.updateOne({ receiptId: id, state: 'claiming' }, { $set: { state: 'consumed', transactionId } }).exec();
+  async consumeManualReceipt(id: string, transactionId: string, session?: ClientSession): Promise<void> {
+    await this.manualReceiptModel!.updateOne({ receiptId: id, state: 'claiming' }, { $set: { state: 'consumed', transactionId } }, ...(session ? [{ session }] as const : [] as const)).exec();
   }
 
   private async prepareReceiptImage(file: UploadedImage | undefined): Promise<Buffer> {

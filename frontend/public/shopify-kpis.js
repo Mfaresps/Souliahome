@@ -237,7 +237,7 @@ function _spkRender(state) {
 
   if (_spkState === 'loading' && !(_shopifyOrders || []).length) {
     host.innerHTML = `<div class="spk-head"><div class="spk-actions">${seg}</div></div>
-      <div class="spk-grid" aria-busy="true">${'<div class="spk-tile is-skel"><span></span><span></span></div>'.repeat(6)}</div>`;
+      <div class="spk-grid" aria-busy="true">${['received','confirmed','followup','cancelled','rate'].map(key => `<div class="spk-tile is-skel is-${key}"><span></span><span></span></div>`).join('')}</div>`;
     return;
   }
   if (_spkState === 'error' && !(_shopifyOrders || []).length) {

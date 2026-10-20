@@ -56,7 +56,8 @@ describe('Warehouse routing and visibility', () => {
   it('persists Shopify approval in MAIN and checks MAIN first', async () => {
     const service = shopify();
     await expect(service.approveOrder('order-1', 'Admin')).resolves.toMatchObject({ success: true });
-    expect(service.transactionsService.assertWarehouseSale).toHaveBeenCalledWith([item(2)], 'MAIN');
+    expect(service.transactionsService.assertWarehouseSale).toHaveBeenCalledWith([item(2)], 'MAIN', expect.any(Array));
+    expect(service.transactionsService.getInventory).toHaveBeenCalledTimes(1);
     expect(service.txModel.create).toHaveBeenCalledWith(expect.objectContaining({ type: 'مبيعات', source: 'shopify', warehouseCode: 'MAIN' }));
   });
   it('leaves a Shopify order pending when MAIN is short, even with other stock', async () => {
@@ -64,6 +65,12 @@ describe('Warehouse routing and visibility', () => {
     await expect(service.approveOrder('order-1', 'Admin')).rejects.toThrow('رصيد المخزن');
     expect(service.txModel.create).not.toHaveBeenCalled();
     expect(service.shopifyOrderModel.findOneAndUpdate).not.toHaveBeenCalled();
+  });
+  it('validates the request-local stock snapshot without recalculating inventory', async () => {
+    const service = stock(20);
+    const snapshot = [{ _id: productId, code: 'SKU-1', name: 'Basket', current: 2, warehouseBalances: { MAIN: 2 } }];
+    await expect(service.assertWarehouseSale([item(3)], 'MAIN', snapshot)).rejects.toThrow('رصيد المخزن');
+    expect(service.getInventory).not.toHaveBeenCalled();
   });
   it('records the linked invoice warehouse in movement entries', async () => {
     const service: any = Object.create(InventoryMovementsService.prototype);

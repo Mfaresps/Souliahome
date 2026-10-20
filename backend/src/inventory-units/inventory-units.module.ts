@@ -11,6 +11,7 @@ import { TransactionsModule } from '../transactions/transactions.module';
 import { UnitManualCodesService } from './unit-manual-codes.service';
 import { InventoryPacksService } from './inventory-packs.service';
 import { InventoryPacksController } from './inventory-packs.controller';
+import { ScannedSaleService } from './scanned-sale.service';
 
 /** Identity aliases initialize their own indexes; existing unit identities and stock are never rewritten. */
 @Module({
@@ -20,7 +21,7 @@ import { InventoryPacksController } from './inventory-packs.controller';
     { name: InventoryUnitOperation.name, schema: InventoryUnitOperationSchema },
   ]), TransactionsModule],
   controllers: [InventoryUnitsController, InventoryPacksController],
-  providers: [InventoryUnitsService, InventoryPacksService, InventoryScanningService, ManualPurchaseReceivingService, UnitManualCodesService],
+  providers: [InventoryUnitsService, InventoryPacksService, InventoryScanningService, ManualPurchaseReceivingService, UnitManualCodesService, ScannedSaleService],
   exports: [MongooseModule, InventoryUnitsService],
 })
 export class InventoryUnitsModule {}

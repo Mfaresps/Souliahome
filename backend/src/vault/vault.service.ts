@@ -290,9 +290,8 @@ export class VaultService {
     meta?: Record<string, unknown>,
     context?: DatabaseWriteContext,
   ): Promise<VaultEntryDocument> {
-    if (context && meta?.receiptId) throw new BadRequestException('سياق استلام المورد لا يقبل إيصال عربون مبيعات');
     if (typeof meta?.receiptId === 'string' && meta.receiptId) {
-      return this.addReceiptEntry(amount, method, desc, date, source, ref, entityContext, employee, meta);
+      return this.addReceiptEntry(amount, method, desc, date, source, ref, entityContext, employee, meta, context);
     }
     const seg = resolveVaultSegmentFromPaymentMethod(method);
     // Block any deduction if balance is insufficient
@@ -373,20 +372,21 @@ export class VaultService {
 
   private async addReceiptEntry(amount: number, method: string, desc: string, date: string, source: string,
     ref: string, context: { customer?: string; supplier?: string; category?: string; itemCount?: number } | undefined,
-    employee: string, meta: Record<string, unknown>): Promise<VaultEntryDocument> {
+    employee: string, meta: Record<string, unknown>, writeContext?: DatabaseWriteContext): Promise<VaultEntryDocument> {
     if (!Number.isFinite(amount) || amount === 0) throw new BadRequestException('مبلغ العربون غير صالح');
     const key = `receipt:${meta.receiptId}:${amount > 0 ? 'approve' : 'refund'}`;
     const seg = resolveVaultSegmentFromPaymentMethod(method);
-    let entry = await this.vaultModel.findOne({ idempotencyKey: key }).exec();
+    let entry = await sessionQuery(this.vaultModel.findOne({ idempotencyKey: key }), writeContext?.session).exec();
     if (!entry) {
       const texts = generateVaultTexts(amount, method, desc, source, ref, context);
       try {
-        entry = await this.vaultModel.create({ idempotencyKey:key, date, desc:texts.desc, amount, seg, method,
-          source, ref, employee, txNo:await this.generateTxNo(source), status:'pending', transactionType:source,
+        const data = { idempotencyKey:key, date, desc:texts.desc, amount, seg, method,
+          source, ref, employee, txNo:await this.generateTxNo(source, writeContext), status:'pending', transactionType:source,
           accountingJustification:texts.justification, entityLabel:context?.customer || context?.supplier || '',
-        });
+        };
+        entry = writeContext ? (await this.vaultModel.create([data], { session: writeContext.session }))[0] : await this.vaultModel.create(data);
       } catch (error) {
-        if ((error as any)?.code !== 11000) throw error;
+        if ((error as any)?.code !== 11000 || writeContext) throw error;
         entry = await this.vaultModel.findOne({ idempotencyKey:key }).exec();
         if (!entry) throw error;
       }
@@ -396,14 +396,17 @@ export class VaultService {
     }
     if (entry.status === 'completed') return entry;
     if (entry.status !== 'pending') throw new BadRequestException('عملية العربون موقوفة — راجع سجل الخزنة');
-    const settings = await this.settingsService.adjustReceiptVaultBalance(seg, amount, key);
+    const settings = writeContext ? await this.settingsService.adjustReceiptVaultBalance(seg, amount, key, writeContext.session) : await this.settingsService.adjustReceiptVaultBalance(seg, amount, key);
     const completed = await this.vaultModel.findOneAndUpdate({ _id:entry._id, status:'pending' }, { $set: {
       status:'completed', balCash:settings.vaultCash, balVodafone:settings.vaultVodafone,
       balInstapay:settings.vaultInstapay, balBank:settings.vaultBank, balance:settings.vaultBalance,
-    } }, { new:true }).exec();
-    const saved = completed || await this.vaultModel.findById(entry._id).exec();
+    } }, { new:true, ...(writeContext ? { session: writeContext.session } : {}) }).exec();
+    const saved = completed || await sessionQuery(this.vaultModel.findById(entry._id), writeContext?.session).exec();
     if (!saved || saved.status !== 'completed') throw new BadRequestException('تسجيل العربون لم يكتمل — أعد المحاولة');
-    if (completed) this.emit('vault:changed', { reason:'receipt', amount, seg, source, ref, txNo:saved.txNo, ...meta });
+    if (completed) {
+      const emit = () => this.emit('vault:changed', { reason:'receipt', amount, seg, source, ref, txNo:saved.txNo, ...meta });
+      if (writeContext) writeContext.afterCommit.push(emit); else emit();
+    }
     return saved;
   }
 

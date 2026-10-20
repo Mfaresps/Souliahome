@@ -62,7 +62,7 @@ export class AuthController {
   async updateLastSeen(@Req() req: Request) {
     try {
       const user = req.user as Record<string, unknown> | undefined;
-      const userId = user?.sub as string;
+      const userId = (user?.userId || user?.sub) as string;
       if (!userId) {
         return { success: false, message: 'No userId' };
       }
@@ -86,8 +86,8 @@ export class AuthController {
   @Get('users-status')
   async getUsersStatus() {
     try {
-      const onlineIds = this.presenceGateway.getOnlineUserIds();
       const allUsers = await this.usersService.findAll();
+      const onlineIds = this.presenceGateway.getOnlineUserIds();
       const usersWithStatus = allUsers.map(u => ({
         id: u._id.toString(),
         username: u.username,

@@ -131,7 +131,8 @@ export class InventoryPacksService implements OnModuleInit {
     const pack:any=await this.packs().findOneAndUpdate({...packCodeFilter(dto.identifier),state:'sealed'},{$inc:{revision:1}},{session,returnDocument:'after',includeResultMetadata:false});
     if(!pack)throw new ConflictException('Pack is open or unknown; scan the individual pieces instead');
     const members=await this.units.find({_id:{$in:pack.unitIds.map((id:string)=>this.id(id))}}).session(session).lean();
-    if(members.length!==pack.quantity||members.some(u=>u.packId!==String(pack._id)||u.productId!==pack.productId||warehouseCode(u.warehouseCode)!==pack.warehouseCode||u.status!=='available'||u.assignment))throw new ConflictException('Pack was already scanned, is assigned, or contains unavailable pieces');
+    if(members.length!==pack.quantity||members.some(u=>u.packId!==String(pack._id)||u.productId!==pack.productId||warehouseCode(u.warehouseCode)!==pack.warehouseCode||
+      !((u.status==='available'&&!u.assignment)||(u.status==='reserved'&&u.assignment?.transactionId===transactionId&&u.assignment?.lineId===dto.lineId))))throw new ConflictException('Pack was already scanned, is assigned, or contains unavailable pieces');
     const results:any[]=[];
     for(const unit of members)results.push(await this.tracking.pickUnitInSession(transactionId,{...dto,identifier:unit.barcode},actor,session,name,String(pack._id)));
     await this.packs().updateOne({_id:pack._id},{$push:{history:{action:'scanned',at:new Date().toISOString(),by:name,byUserId:actor.userId,transactionId,lineId:dto.lineId,reason:dto.reason}} as any},{session});

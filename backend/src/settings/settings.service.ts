@@ -63,6 +63,7 @@ function migrateDoc(collection: string, doc: any): void {
     // Normalise items
     if (Array.isArray(doc.items)) {
       doc.items = doc.items.map((it: any) => ({
+        ...it,
         productId: it.productId ?? '',
         code: it.code ?? '',
         name: it.name ?? '',
@@ -727,9 +728,9 @@ export class SettingsService {
   }
 
   /** Balance delta and retry marker are committed in the same Mongo document write. */
-  async adjustReceiptVaultBalance(segment: string, amount: number, key: string): Promise<SettingsDocument> {
+  async adjustReceiptVaultBalance(segment: string, amount: number, key: string, session?: ClientSession): Promise<SettingsDocument> {
     if (!key || !Number.isFinite(amount) || amount === 0) throw new BadRequestException('عملية العربون غير صالحة');
-    const settings = await this.getSettings();
+    const settings = session ? await this.getSettings(session) : await this.getSettings();
     const field = ({ vodafone:'vaultVodafone', instapay:'vaultInstapay', bank:'vaultBank' } as Record<string,string>)[segment] || 'vaultCash';
     const result = await this.settingsModel.findOneAndUpdate({
       _id: settings._id, vaultReceiptOperations: { $ne: key },
@@ -740,9 +741,10 @@ export class SettingsService {
         vaultReceiptOperations: { $concatArrays: [{ $ifNull: ['$vaultReceiptOperations', []] }, [key]] },
       } },
       { $set: { vaultBalance: { $sum: ['$vaultCash','$vaultVodafone','$vaultInstapay','$vaultBank'] } } },
-    ], { new: true }).exec();
+    ], { new: true, ...(session ? { session } : {}) }).exec();
     if (result) return result;
-    const current = await this.settingsModel.findById(settings._id).exec();
+    const currentQuery = this.settingsModel.findById(settings._id);
+    const current = await (session ? currentQuery.session(session) : currentQuery).exec();
     if (current?.vaultReceiptOperations?.includes(key)) return current;
     throw new BadRequestException('رصيد الخزنة غير كافٍ لرد العربون');
   }
@@ -1033,13 +1035,15 @@ export class SettingsService {
     return config;
   }
 
-  private async restoreConfiguration(raw: unknown): Promise<number> {
+  private async restoreConfiguration(raw: unknown, session?: ClientSession): Promise<number> {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return 0;
     const config = this.backupConfiguration(raw as Record<string, any>);
     // Preserve the current image storage connection and credentials on restore.
     for (const key of ['r2AccountId', 'r2AccessKeyId', 'r2Bucket']) delete config[key];
-    const current = await this.settingsModel.findOne().exec();
-    if (current) { current.set(config); await current.save(); }
+    const query = this.settingsModel.findOne();
+    const current = await (session ? query.session(session) : query).exec();
+    if (current) { current.set(config); await current.save(session ? { session } : undefined); }
+    else if (session) { await this.settingsModel.create([config], { session }); }
     else { await this.settingsModel.create(config); }
     return 1;
   }
@@ -1091,7 +1095,9 @@ export class SettingsService {
     try {
       const backupDir = this.getBackupDir();
       const timestamp = this.formatDateTime();
-      const filename = `backup_${auto ? 'auto_' : ''}${timestamp}.json`;
+      const base = `backup_${auto ? 'auto_' : ''}${timestamp}`;
+      const filename = fs.existsSync(path.join(backupDir, `${base}.json`))
+        ? `${base}_${crypto.randomBytes(6).toString('hex')}.json` : `${base}.json`;
       const filepath = path.join(backupDir, filename);
 
       const settings = await this.settingsModel.findOne().exec();
@@ -1578,17 +1584,49 @@ export class SettingsService {
       return { success: false, message: 'ملف النسخة الاحتياطية تالف أو غير صالح' };
     }
 
+    let atomic: boolean | void;
     try {
       this.validateBackup(backupData);
-      await assertInventoryUnitMaintenance(this.connection, Object.keys(backupData.data), backupData.data, true);
+      atomic = await assertInventoryUnitMaintenance(this.connection, Object.keys(backupData.data), backupData.data, true);
     }
     catch (e: any) { return { success: false, message: e.message }; }
 
+    if (!atomic) return this.restoreBackupData(backupData, safeFilename);
+
+    let session: ClientSession | undefined;
+    try {
+      // Keep a recovery file as well as the transaction rollback. The unique
+      // filename prevents this safety copy from overwriting the selected backup.
+      const safety = await this.createBackup();
+      if (!safety.success) return { success: false, message: 'تعذّر إنشاء نسخة أمان قبل الاستعادة؛ لم تتغير البيانات' };
+      session = await this.connection.startSession();
+      let result: any;
+      await session.withTransaction(async () => {
+        result = await this.restoreBackupData(backupData, safeFilename, session);
+      }, { readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' } });
+      return { ...result, safetyBackup: safety.filename };
+    } catch (e: any) {
+      this.logger.error('Coordinated restore failed', e?.message);
+      const transactionHint = e?.code === 20 || /Transaction numbers are only allowed|replica set|mongos/i.test(e?.message || '')
+        ? ' تتطلب العملية MongoDB replica set يدعم المعاملات.' : '';
+      return { success: false, message: `تعذّرت الاستعادة الكاملة للمخزون وتم إلغاء التغييرات.${transactionHint} ${e.message}` };
+    } finally {
+      if (session) await session.endSession();
+    }
+  }
+
+  private async restoreBackupData(backupData: any, safeFilename: string, session?: ClientSession) {
+    const options = session ? { session } : {};
     const restoreResults: Record<string, number> = {};
 
+    // Accounts are matched by username, while inventory/audit records reference
+    // their IDs. Resolve those references before writing any restored documents.
+    backupData = await this.remapBackupUsers(backupData, session);
+
     try {
-      if (backupData.configuration) restoreResults['configuration'] = await this.restoreConfiguration(backupData.configuration);
+      if (backupData.configuration) restoreResults['configuration'] = await this.restoreConfiguration(backupData.configuration, session);
     } catch (e: any) {
+      if (session) throw e;
       return { success: false, message: `تعذّر استعادة إعدادات النظام: ${e.message}` };
     }
 
@@ -1600,8 +1638,9 @@ export class SettingsService {
     const collections = Object.keys(backupData.data).filter(c => c !== 'users');
     for (const collectionName of collections) {
       try {
-        await this.connection.collection(collectionName).deleteMany({});
+        await this.connection.collection(collectionName).deleteMany({}, options);
       } catch (e: any) {
+        if (session) throw e;
         this.logger.warn(`Could not clear collection ${collectionName}: ${e?.message}`);
       }
     }
@@ -1614,7 +1653,7 @@ export class SettingsService {
       // logs whose employeeId pointed at users that did not exist, so the leaderboard
       // came back empty even though its rows had been captured correctly.
       if (collectionName === 'users') {
-        restoreResults['users'] = await this.restoreUsersMerge(docs as any[]);
+        restoreResults['users'] = await this.restoreUsersMerge(docs as any[], session);
         continue;
       }
       try {
@@ -1626,7 +1665,7 @@ export class SettingsService {
         const fixedDocs = (docs as any[]).map((doc: any) => {
           const fixed: any = { ...doc };
           // Convert _id string → ObjectId
-          if (fixed._id && !['depositreceiptidentities', 'inventoryunitoperations'].includes(collectionName)) {
+          if (fixed._id && !['depositreceiptidentities', 'inventoryunitoperations', 'inventoryunitcodecounters'].includes(collectionName)) {
             const rawId = typeof fixed._id === 'string' ? fixed._id : fixed._id?.$oid;
             if (rawId) {
               try { fixed._id = new ObjectId(rawId); } catch { delete fixed._id; }
@@ -1657,15 +1696,17 @@ export class SettingsService {
         });
 
         try {
-          await this.connection.collection(collectionName).insertMany(fixedDocs, { ordered: false });
+          await this.connection.collection(collectionName).insertMany(fixedDocs, { ...options, ordered: !!session });
           restoreResults[collectionName] = fixedDocs.length;
         } catch (bulkErr: any) {
+          if (session) throw bulkErr;
           // MongoBulkWriteError with partial success
           const inserted = bulkErr?.result?.insertedCount ?? bulkErr?.insertedCount ?? 0;
           this.logger.warn(`Partial restore on ${collectionName}: inserted=${inserted}, err=${bulkErr?.message}`);
           restoreResults[collectionName] = inserted;
         }
       } catch (e: any) {
+        if (session) throw e;
         this.logger.error(`Failed to restore collection ${collectionName}`, e?.message);
         restoreResults[collectionName] = -1;
       }
@@ -1673,7 +1714,8 @@ export class SettingsService {
 
     // Step 3: Restore vault balances and offers
     try {
-      const settings = await this.settingsModel.findOne().exec();
+      const query = this.settingsModel.findOne();
+      const settings = await (session ? query.session(session) : query).exec();
       if (settings) {
         if (backupData.vault_balances) {
           settings.vaultCash = Number(backupData.vault_balances.vaultCash) || 0;
@@ -1696,9 +1738,10 @@ export class SettingsService {
             restoreResults['discountBundles'] = backupData.offers.discountBundles.length;
           }
         }
-        await settings.save();
+        await settings.save(session ? { session } : undefined);
       }
     } catch (e: any) {
+      if (session) throw e;
       this.logger.error('Failed to restore vault balances / offers', e?.message);
       restoreResults['vault_balances'] = 0;
       restoreResults['offers'] = 0;
@@ -1738,7 +1781,37 @@ export class SettingsService {
    * jobTitle, phone, avatar, isActive — which is exactly what was missing, and what
    * `employeeperformancelogs.employeeId` needs to resolve to a person.
    */
-  private async restoreUsersMerge(docs: any[]): Promise<number> {
+  private async remapBackupUsers(backup: any, session?: ClientSession): Promise<any> {
+    const ids = new Map<string, string>();
+    for (const user of backup.data.users || []) {
+      const username = String(user.username || '').trim();
+      const backupId = typeof user._id === 'string' ? user._id : user._id?.$oid;
+      if (!username || !backupId) continue;
+      const existing = await this.connection.collection('users').findOne({ username }, session ? { session } : {});
+      if (existing && String(existing._id) !== backupId) ids.set(backupId, String(existing._id));
+    }
+    if (!ids.size) return backup;
+
+    const referenceFields = new Set([
+      'userId', 'userIds', 'actorId', 'employeeId', 'employeeIds', 'authorId',
+      'assignedTo', 'responsibleId', 'byId', 'lockedBy', 'resolvedBy',
+    ]);
+    const isReference = (key: string) => referenceFields.has(key) || /UserIds?$|ByIds?$/.test(key);
+    const rewrite = (value: any, key = ''): any => {
+      if (typeof value === 'string') return isReference(key) ? ids.get(value) || value : value;
+      if (Array.isArray(value)) return value.map(item => rewrite(item, key));
+      if (!value || typeof value !== 'object') return value;
+      if (isReference(key) && typeof value.$oid === 'string' && ids.has(value.$oid)) {
+        return { ...value, $oid: ids.get(value.$oid) };
+      }
+      return Object.fromEntries(Object.entries(value).map(([field, item]) => [field, rewrite(item, field)]));
+    };
+    // Do not mutate the parsed backup: withTransaction can retry this callback.
+    // Document IDs, operation hashes, product IDs and display names stay intact.
+    return { ...backup, data: rewrite(backup.data), configuration: rewrite(backup.configuration) };
+  }
+
+  private async restoreUsersMerge(docs: any[], session?: ClientSession): Promise<number> {
     if (!Array.isArray(docs) || docs.length === 0) return 0;
     const col = this.connection.collection('users');
     let touched = 0;
@@ -1751,7 +1824,7 @@ export class SettingsService {
 
         migrateDoc('users', doc);
 
-        const existing = await col.findOne({ username });
+        const existing = await col.findOne({ username }, session ? { session } : {});
         if (existing) {
           // Update the identity/authorisation fields only. Anything absent from the
           // backup doc is left untouched rather than blanked — a backup taken before a
@@ -1762,7 +1835,7 @@ export class SettingsService {
           }
           if (Array.isArray(doc.perms)) $set.perms = doc.perms;
           if (Object.keys($set).length) {
-            await col.updateOne({ _id: existing._id }, { $set });
+            await col.updateOne({ _id: existing._id }, { $set }, session ? { session } : {});
           }
           touched++;
           continue;
@@ -1778,9 +1851,10 @@ export class SettingsService {
             try { doc._id = new ObjectId(rawId); } catch { delete doc._id; }
           }
         }
-        await col.insertOne(doc);
+        await col.insertOne(doc, session ? { session } : {});
         touched++;
       } catch (e: any) {
+        if (session) throw e;
         // One malformed account must not abort the rest — and must not abort the restore,
         // which by this point has already rewritten every other collection.
         this.logger.warn(`restoreUsersMerge: skipped user ${raw?.username}: ${e?.message}`);

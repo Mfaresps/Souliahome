@@ -50,6 +50,7 @@ describe('complete backups and receipt data independent of image storage', () =>
       markModified: jest.fn(), save: jest.fn(async (): Promise<Record<string, any>> => settingsDoc),
     };
     const connection: any = {
+      startSession: async () => ({ withTransaction: async (work: () => Promise<void>) => work(), endSession: async () => undefined }),
       models: { FutureFeature: { collection: { collectionName: 'newfeaturedata' } }, Settings: { collection: { collectionName: 'settings' } } },
       collection: (name: string) => ({
         find: () => ({ toArray: async () => {
@@ -62,7 +63,10 @@ describe('complete backups and receipt data independent of image storage', () =>
         findOne: async () => null,
       }),
     };
-    service = new SettingsService({ findOne: () => ({ exec: async () => settingsDoc }) } as any, connection);
+    service = new SettingsService({ findOne: () => {
+      const query = { exec: async () => settingsDoc, session: (_session: any) => query };
+      return query;
+    } } as any, connection);
     (service as any).getBackupDir = () => directory;
     (service as any).logger = { log: jest.fn(), warn: jest.fn(), error: jest.fn() };
   });

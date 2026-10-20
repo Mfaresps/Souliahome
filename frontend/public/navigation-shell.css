@@ -49,3 +49,76 @@ body.sidebar-collapsed #sidebar .nav-item{min-height:34px;padding-block:7px}
 .shell-breadcrumb [aria-current=page]{color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(min-width:769px){#main .shell-page-breadcrumb,#main .cat-breadcrumb{display:none!important}}
 @media(max-width:768px){#sidebar .nav-item{min-height:36px;font-size:.85rem}.shell-nav-section{margin-bottom:8px}}
+
+/* Green identity, scoped to navigation so the work area keeps its contrast. */
+#sidebar{
+  --shell-line:#ffffff14;--shell-white:#0a2117;--shell-muted:#a0bdac;
+  --shell-hover:#ffffff0b;--shell-nav-text:#d1e3d8;--text:#f1fff6;
+  --accent:#8cdeb0;--primary-pale:#68c58d20;
+  background:radial-gradient(ellipse at 5% 6%,#123d29 0%,#0a2117 48%,#06150f 100%);
+  border-color:#ffffff12;box-shadow:none;
+}
+#sidebar .shell-brand img{filter:brightness(0) invert(1);opacity:.96}
+#sidebar .shell-brand-name{color:#f1fff6}
+#sidebar .shell-brand-name small{color:#9cbeaa}
+#sidebar .nav-item:hover,#sidebar .nav-sub-item:hover{background:#ffffff0c;color:#f1fff6}
+#sidebar .nav-item.active{background:#6bc79024;color:#b9f2cf;box-shadow:inset 0 0 0 1px #8cdeb012}
+#sidebar .nav-item.active:before{background:#8cdeb0}
+#sidebar .nav-item .nav-badge{background:#8cdeb01c;color:#c5f6d9}
+#sidebar .nav-bottom-group{background:#030d0622}
+
+/* Mobile SPACE dock: one opaque surface, anchored independently of page scroll. */
+@media(max-width:768px){
+  #mobile-bottom-nav{
+    position:fixed;inset:auto 12px calc(28px + env(safe-area-inset-bottom,0px));
+    width:auto;max-width:360px;height:56px;box-sizing:border-box;margin-inline:auto;
+    display:flex;align-items:center;gap:2px;padding:5px;direction:ltr;
+    border:1px solid #365d47;border-radius:21px;
+    background:linear-gradient(115deg,#123d29,#0a2117 70%);
+    box-shadow:0 8px 28px #06150f30,inset 0 1px 0 #ffffff0d;
+    pointer-events:auto;isolation:isolate;z-index:80;
+    transform:none;-webkit-transform:none;will-change:auto;transition:opacity .15s ease;
+  }
+  #mobile-bottom-nav .m-nav-row,
+  body.dark-mode #mobile-bottom-nav .m-nav-row{
+    display:flex;flex:4 1 0;min-width:0;gap:2px;height:100%;padding:0;
+    border:0;border-radius:0;background:transparent;box-shadow:none;
+    backdrop-filter:none;-webkit-backdrop-filter:none;
+  }
+  #mobile-bottom-nav .m-nav-item,
+  #mobile-bottom-nav .m-nav-search-fab,
+  body.dark-mode #mobile-bottom-nav .m-nav-search-fab{
+    display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0;
+    width:auto;height:44px;min-height:44px;padding:0;border:1px solid transparent;
+    border-radius:15px;background:transparent;color:#c5dfcf;box-shadow:none;
+    backdrop-filter:none;-webkit-backdrop-filter:none;
+    transform:none;opacity:1;transition:color .15s ease,background-color .15s ease;
+  }
+  #mobile-bottom-nav .m-nav-item.active,
+  #mobile-bottom-nav .m-nav-search-fab.active,
+  body.dark-mode #mobile-bottom-nav .m-nav-search-fab.active{
+    color:#e3ffed;background:linear-gradient(145deg,#ffffff30,#b9f2cf14);border-color:#dcffea4d;
+    box-shadow:inset 0 1px 0 #ffffff40,inset 0 -1px 0 #b9f2cf0d,0 2px 8px #00000012;
+    backdrop-filter:blur(12px) saturate(150%);-webkit-backdrop-filter:blur(12px) saturate(150%);
+  }
+  #mobile-bottom-nav .m-nav-item svg,
+  #mobile-bottom-nav .m-nav-fab-icon svg,
+  #mobile-bottom-nav .m-nav-search-fab svg{
+    width:28px;height:28px;transform:none;transition:none;
+  }
+  #mobile-bottom-nav .m-nav-item.active svg,
+  #mobile-bottom-nav .m-nav-item.active .m-nav-fab-icon svg,
+  #mobile-bottom-nav .m-nav-search-fab.active svg{transform:none;stroke:currentColor}
+  #mobile-bottom-nav .m-nav-item:active,
+  #mobile-bottom-nav .m-nav-search-fab:active{transform:none;opacity:1;background:#ffffff18}
+  #mobile-bottom-nav .active:active{background:linear-gradient(145deg,#ffffff30,#b9f2cf14)}
+  #mobile-bottom-nav button:focus-visible{outline:2px solid #e1ffed;outline-offset:-3px}
+  #mobile-bottom-nav .m-nav-dot{display:none}
+  #sidebar.open ~ #mobile-bottom-nav{visibility:hidden;opacity:0;transform:none;pointer-events:none}
+  #main{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+}
+@media(max-width:359px){
+  #mobile-bottom-nav{inset-inline:8px}
+  #mobile-bottom-nav .m-nav-row{gap:2px}
+}
+@media(prefers-reduced-motion:reduce){#mobile-bottom-nav,#mobile-bottom-nav button{transition:none!important}}

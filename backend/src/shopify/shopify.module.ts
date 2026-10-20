@@ -1,4 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { Expense, ExpenseSchema } from '../expenses/schemas/expense.schema';
+import { OrderAuditMarketingService } from './order-audit-marketing.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ShopifyController } from './shopify.controller';
 import { ShopifyService } from './shopify.service';
@@ -36,6 +38,7 @@ import { ManualDepositReceipt, ManualDepositReceiptSchema } from './schemas/manu
 @Module({
   imports: [
     MongooseModule.forFeature([
+      { name: Expense.name, schema: ExpenseSchema },
       { name: Transaction.name, schema: TransactionSchema },
       { name: Product.name, schema: ProductSchema },
       { name: ShopifyOrder.name, schema: ShopifyOrderSchema },
@@ -64,6 +67,7 @@ import { ManualDepositReceipt, ManualDepositReceiptSchema } from './schemas/manu
   ],
   controllers: [ShopifyController, OrderAuditController],
   providers: [
+    OrderAuditMarketingService,
     ShopifyService,
     ShopifyAdminService,
     OrderAuditService,

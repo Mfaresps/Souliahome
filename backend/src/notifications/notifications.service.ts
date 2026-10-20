@@ -5,7 +5,7 @@ import { notificationTitle } from './notification-titles';
 import { BadRequestException, ForbiddenException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Cron } from '@nestjs/schedule';
-import { Connection } from 'mongoose';
+import { Connection, Types } from 'mongoose';
 import { createHash, randomUUID } from 'crypto';
 
 export const TYPES = ['deposit', 'comment', 'followup', 'order', 'orderEdit', 'deliveryProblem', 'delivered', 'mention', 'otp', 'approval', 'shopifyChange', 'security', 'performance', 'announcement'] as const;
@@ -53,6 +53,12 @@ export function notificationBody(type: NotificationType, ref: string, details: N
     // Requests without a business reference fall back to a MongoDB record ID.
     // Keep that ID for navigation, but do not present it as an order/product number.
     const displayReference = /^[a-f\d]{24}$/i.test(ref.replace(/^#+/, '').trim()) ? '' : reference;
+    if (type === 'approval' && details.actionKey === 'order' && details.status === 'approved') {
+      const order = language === 'en' ? (displayReference ? `Order #${displayReference}` : 'Order') : (displayReference ? `الطلب #${displayReference}` : 'الطلب');
+      return language === 'en'
+        ? `${order} is being prepared for shipment · ${actor}`
+        : `${order} قيد التحضير للشحن · ${actor}`;
+    }
     const action = actionLabel(details.actionKey, language);
     const statuses = { pending: ['بانتظار الموافقة', 'Pending approval'], approved: ['تمت الموافقة', 'Approved'], rejected: ['مرفوض', 'Rejected'], modified: ['تم التعديل', 'Modified'] };
     const status = details.status && statuses[details.status]?.[language === 'en' ? 1 : 0];
@@ -150,6 +156,7 @@ export class NotificationsService implements OnModuleInit {
     await this.jobs.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
     await this.inbox.createIndex({ userId: 1, eventId: 1 }, { unique: true });
     await this.inbox.createIndex({ userId: 1, createdAt: -1, _id: -1 });
+    await this.connection.collection('notificationreadstates').createIndex({ userId: 1, notificationId: 1 }, { unique: true });
     try {
       const points = this.connection.collection('notificationpointchanges');
       await points.createIndex({ sourceLogId: 1 });
@@ -251,14 +258,62 @@ export class NotificationsService implements OnModuleInit {
       query.$or = [{ createdAt: { $lt: cursor.createdAt } }, { createdAt: cursor.createdAt, _id: { $lt: cursor._id } }];
     }
     const rows = await this.inbox.find(query).sort({ createdAt: -1, _id: -1 }).limit(51).toArray();
-    const items = rows.slice(0, 50);
+    const items: any[] = rows.slice(0, 50);
     const unread = await this.inbox.countDocuments({ ...scope, readAt: null });
-    return { items, unread, next: rows.length > 50 ? String(items[items.length - 1]._id) : '' };
+    const actorIds = [...new Set(items.map(item => item.actorUserId).filter(id => /^[a-f\d]{24}$/i.test(String(id))))];
+    const actorNames = [...new Set(items.filter(item => !item.actorUserId && item.actorName).map(item => item.actorName))];
+    const actors = actorIds.length || actorNames.length ? await this.connection.collection('users').find({ $or: [
+      { _id: { $in: actorIds.map(id => new Types.ObjectId(String(id))) } },
+      { name: { $in: actorNames } }, { username: { $in: actorNames } },
+    ] }, { projection: { _id: 1, name: 1, username: 1, avatar: 1 } }).toArray() : [];
+    return { items: items.map(item => {
+      const matches = actors.filter(actor => item.actorUserId ? String(actor._id) === String(item.actorUserId) : actor.name === item.actorName || actor.username === item.actorName);
+      const actor = matches.length === 1 ? matches[0] : null;
+      return { ...item, actorUserId: item.actorUserId || (actor ? String(actor._id) : ''), actorAvatar: actor?.avatar || '' };
+    }), unread, next: rows.length > 50 ? String(items[items.length - 1]._id) : '' };
+  }
+  async readState(user: any) {
+    this.authorize(user);
+    const rows = await this.connection.collection('notificationreadstates').find({ userId: String(user.userId || user.sub || user._id || '') }).sort({ readAt: -1 }).limit(10000).toArray();
+    return { ids: rows.map(row => row.notificationId) };
+  }
+  async saveReadState(user: any, body: any) {
+    this.authorize(user);
+    if (!Array.isArray(body?.ids) || !body.ids.length || body.ids.length > 100 || body.ids.some((id: unknown) => typeof id !== 'string' || !id.trim() || id.length > 160 || /[\p{Cc}\p{Cf}]/u.test(id))) throw new BadRequestException('Invalid notification IDs');
+    const userId = String(user.userId || user.sub || user._id || '');
+    await this.connection.collection('notificationreadstates').bulkWrite([...new Set<string>(body.ids)].map(notificationId => ({ updateOne: {
+      filter: { userId, notificationId }, update: { $setOnInsert: { userId, notificationId, readAt: new Date() } }, upsert: true,
+    } })));
+    return { success: true };
+  }
+  async markAllRead(user: any, body: any) {
+    this.authorize(user);
+    const timestamp = typeof body?.before === 'string' ? Date.parse(body.before) : NaN;
+    const ids = body?.ids;
+    if (!Number.isFinite(timestamp) || !Array.isArray(ids) || ids.length > 10000 || ids.some((id: unknown) => typeof id !== 'string' || !id.trim() || id.length > 160 || /[\p{Cc}\p{Cf}]/u.test(id))) throw new BadRequestException('Invalid notification read state');
+    const before = new Date(Math.min(timestamp, Date.now()));
+    const userId = String(user.userId || user.sub || user._id || '');
+    const scope = { userId, ...(user.role !== 'admin' ? { type: { $nin: [...ADMIN_TYPES] } } : {}) };
+    if (ids.length) await this.connection.collection('notificationreadstates').bulkWrite([...new Set<string>(ids)].map(notificationId => ({ updateOne: {
+      filter: { userId, notificationId }, update: { $setOnInsert: { userId, notificationId, readAt: new Date() } }, upsert: true,
+    } })));
+    await this.inbox.updateMany({ ...scope, readAt: null, createdAt: { $lte: before } }, { $set: { readAt: new Date() } });
+    const recipients: any[] = [{ targetUserId: userId }];
+    if (user.username) recipients.push({ targetUsername: String(user.username).toLowerCase() });
+    await this.connection.collection('mentions').updateMany({ $or: recipients, read: false, createdAt: { $lte: before } }, { $set: { read: true } });
+    const unread = await this.inbox.countDocuments({ ...scope, readAt: null });
+    return { success: true, before: before.toISOString(), unread };
   }
   async markHistoryRead(user: any, id: string) {
     if (!/^[a-f0-9]{64}$/.test(id)) throw new BadRequestException('Invalid notification ID');
-    await this.inbox.updateOne({ _id: id as any, userId: String(user.userId || user.sub || user._id || '') }, { $set: { readAt: new Date() } });
+    const userId = String(user.userId || user.sub || user._id || '');
+    const row = await this.inbox.findOne({ _id: id as any, userId });
+    await this.inbox.updateOne({ _id: id as any, userId }, { $set: { readAt: new Date() } });
+    if (row && /^mention:[a-f\d]{24}$/i.test(row.recordId || '')) await this.connection.collection('mentions').updateOne({ _id: new Types.ObjectId(row.recordId.slice(8)), targetUserId: userId }, { $set: { read: true } });
     return { success: true };
+  }
+  async markMentionRead(userId: string, mentionId: string) {
+    await this.inbox.updateMany({ userId, recordId: 'mention:' + mentionId }, { $set: { readAt: new Date() } });
   }
   async enqueue(type: NotificationType, eventId: string, ref: string, recordId = '', onlyUser?: string | string[], deliveryStatus?: string, details: NotificationDetails = {}) {
     try {
@@ -297,7 +352,7 @@ export class NotificationsService implements OnModuleInit {
           try {
             await this.inbox.updateOne({ _id: inboxId as any, userId }, { $setOnInsert: {
               eventId, userId, type, title, body, ref: reference, recordId, event: event == null ? '' : String(event),
-              actorName: details.actorName || '', commentText: details.commentText || '',
+              actorUserId: details.actorUserId || '', actorName: details.actorName || '', commentText: details.commentText || '',
               url: recordId ? '/?' + target.toString() : '/', createdAt: new Date(eventTimestamp), readAt: null,
             } }, { upsert: true });
           } catch { this.logger.warn('Notification history could not be recorded'); }

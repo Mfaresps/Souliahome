@@ -22,7 +22,7 @@ export class MentionsService {
     if (notifyPush) for (const mention of saved) {
       if (!mention.targetUserId || mention.targetUserId === mention.fromUserId || mention.fromUserId === 'system' || !mention.commentId) continue;
       const event = createHash('sha256').update(JSON.stringify([mention.targetUserId, mention.fromUserId, mention.txId, mention.commentId])).digest('hex');
-      await this.notifications?.enqueue('mention', 'mention:' + event, mention.txRef || '', 'mention:' + mention._id, mention.targetUserId, undefined, { actorName: mention.fromName });
+      await this.notifications?.enqueue('mention', 'mention:' + event, mention.txRef || '', 'mention:' + mention._id, mention.targetUserId, undefined, { actorUserId: mention.fromUserId, actorName: mention.fromName, commentId: mention.commentId });
     }
     return saved;
   }
@@ -33,8 +33,11 @@ export class MentionsService {
     return this.mentionModel.find({ $or: or }).sort({ createdAt: -1 }).limit(200).lean().exec() as unknown as MentionDocument[];
   }
 
-  async markRead(id: string): Promise<void> {
-    await this.mentionModel.findByIdAndUpdate(id, { read: true }).exec();
+  async markRead(id: string, userId: string, username?: string): Promise<void> {
+    const or: Record<string, unknown>[] = [{ targetUserId: userId }];
+    if (username) or.push({ targetUsername: username.toLowerCase() });
+    await this.mentionModel.updateOne({ _id: id, $or: or }, { $set: { read: true } }).exec();
+    await this.notifications?.markMentionRead(userId, id);
   }
 
   async markAllRead(userId: string, username?: string): Promise<void> {

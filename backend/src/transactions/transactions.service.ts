@@ -808,7 +808,7 @@ export class TransactionsService {
      * against one would misreport every such order as a manual override.
      */
     priceOrigin?: TxShipTariff['source'];
-  }): Promise<{ carrierCode: string; shipCo: string; shipTariff: TxShipTariff | null }> {
+  }, session?: ClientSession): Promise<{ carrierCode: string; shipCo: string; shipTariff: TxShipTariff | null }> {
     const rawCode = String(input.carrierCode || '').trim();
     const rawName = String(input.shipCo || '').trim();
 
@@ -837,7 +837,7 @@ export class TransactionsService {
     // Configured tariff wins as the reference point; the seed value only covers a carrier that was
     // never given a price in Settings. `??` not `||` — a genuinely free (0) shipment is a real
     // tariff, and treating it as missing is the falsy bug this registry exists to avoid.
-    const configured = await this.carrierTariffFromSettings(code, zone);
+    const configured = await this.carrierTariffFromSettings(code, zone, session);
     const reference = configured ?? carrierSeedPrice(code, zone);
 
     const source: TxShipTariff['source'] =
@@ -864,9 +864,9 @@ export class TransactionsService {
    * ⚠ Matches on `code` first and only then on the display name — a settings row written before
    * the registry existed has no code until SettingsService backfills it.
    */
-  private async carrierTariffFromSettings(code: string, zone: ShipZone): Promise<number | undefined> {
+  private async carrierTariffFromSettings(code: string, zone: ShipZone, session?: ClientSession): Promise<number | undefined> {
     try {
-      const settings = await this.settingsService.getSettings();
+      const settings = session ? await this.settingsService.getSettings(session) : await this.settingsService.getSettings();
       const cos: any[] = Array.isArray((settings as any).shipCos) ? (settings as any).shipCos : [];
       const row = cos.find((c) => (c?.code || carrierCodeFromName(c?.name || '')) === code);
       if (!row) return undefined;
@@ -885,8 +885,8 @@ export class TransactionsService {
 
   async create(dto: CreateTransactionDto, callerRole?: string,
     receiptUpload?: { draftId: string; actor: ReceiptActor }, notificationActor?: string,
-    context?: DatabaseWriteContext): Promise<TransactionDocument> {
-    if (context && (!['مشتريات', 'مرتجع مشتريات'].includes(dto.type) || receiptUpload)) throw new BadRequestException('سياق المخزون الذري مخصص لمشتريات المورد أو مرتجعاته');
+    context?: DatabaseWriteContext, scannedSale = false): Promise<TransactionDocument> {
+    if (context && !(scannedSale && dto.type === 'مبيعات') && (!['مشتريات', 'مرتجع مشتريات'].includes(dto.type) || receiptUpload)) throw new BadRequestException('سياق المخزون الذري مخصص لمشتريات المورد أو مرتجعاته');
     if (context && dto.type === 'مشتريات' && !this.transactionAddsSupplierPurchases(dto as unknown as TransactionDocument)) throw new BadRequestException('تحويل الاستلام يتطلب مشتريات مورد فعلية، وليس سجلاً قديماً لمرتجع عميل');
     if (dto.manualDepositReceiptId && !receiptUpload) throw new BadRequestException('أكّد فحص الإيصال قبل حفظ المعاملة');
     const employee = (dto as unknown as { employee?: string }).employee || '';
@@ -959,14 +959,14 @@ export class TransactionsService {
       shipCo: (dto as unknown as { shipCo?: string }).shipCo,
       shipZone: (dto as unknown as { shipZone?: string }).shipZone,
       shipCost: (dto as unknown as { shipCost?: number }).shipCost,
-    });
+    }, context?.session);
 
     // ⚠ `date` is normalised to YYYY-MM-DD rather than stored as the client sent it. Sending a
     //   full ISO timestamp is what produced 326 of 521 rows in the mixed state that made the
     //   last day of every report period drop those rows (see date-window.util.ts). The window
     //   helpers tolerate both formats; this stops new rows joining them.
     const receipt = receiptUpload
-      ? await this.depositReceiptsService.claimManualReceipt(receiptUpload.draftId, dto, receiptUpload.actor)
+      ? await this.depositReceiptsService.claimManualReceipt(receiptUpload.draftId, dto, receiptUpload.actor, context?.session)
       : undefined;
     let tx: TransactionDocument;
     try {
@@ -979,10 +979,10 @@ export class TransactionsService {
       };
       tx = context ? (await this.transactionModel.create([data], { session: context.session }))[0] : await this.transactionModel.create(data);
     } catch (error) {
-      if (receipt) await this.depositReceiptsService.releaseManualReceipt(receipt.id);
+      if (receipt) await this.depositReceiptsService.releaseManualReceipt(receipt.id, context?.session);
       throw error;
     }
-    if (receipt) await this.depositReceiptsService.consumeManualReceipt(receipt.id, String(tx._id));
+    if (receipt) await this.depositReceiptsService.consumeManualReceipt(receipt.id, String(tx._id), context?.session);
 
     // Link discount OTP to created transaction (audit trail)
     const otpIdForLink = (dto as unknown as { highValueDiscountOtpId?: string }).highValueDiscountOtpId || '';
@@ -1097,10 +1097,13 @@ export class TransactionsService {
       );
     }
     if (tx.type === 'مبيعات' && !tx.shopifyOrderId) {
+      const notifySale = async () => {
       const itemCount = (tx.items || []).reduce((sum, item) => sum + item.qty, 0);
       await this.notifications?.enqueue('order', 'order:tx:' + tx._id, tx.ref, 'tx:' + tx._id, undefined, undefined, { orderTotal: tx.total, itemCount });
       for (const d of tx.deposits || []) await this.notifications?.enqueue('deposit', 'deposit:' + (d.receiptId || String(tx._id) + ':' + d.id), tx.ref, 'tx:' + tx._id, undefined, undefined,
         { actorName: receipt?.submittedBy || notificationActor || d.by, amount: d.amount, vaultName: d.method, receiptId: d.receiptId, depositId: d.id });
+      };
+      if (context) context.afterCommit.push(notifySale); else await notifySale();
     }
     const emit = () => { this.emit('tx:created', { tx, by: employee });
     this.emit('inventory:changed', {
@@ -3609,12 +3612,12 @@ export class TransactionsService {
     await this.transactionModel.deleteMany({}).exec();
   }
 
-  async assertWarehouseSale(items: any[], location = MAIN_WAREHOUSE) {
+  async assertWarehouseSale(items: any[], location = MAIN_WAREHOUSE, snapshot?: InventoryItem[]) {
     const code = await requireWarehouse(this.transactionModel.db, location);
-    return this.assertWarehouseChange(null, { type: 'مبيعات', warehouseCode: code, items });
+    return this.assertWarehouseChange(null, { type: 'مبيعات', warehouseCode: code, items }, undefined, snapshot);
   }
 
-  private async assertWarehouseChange(before: any, after: any, session?: ClientSession) {
+  private async assertWarehouseChange(before: any, after: any, session?: ClientSession, snapshot?: InventoryItem[]) {
     const differences = new Map<string, { code: string; location: string; quantity: number }>();
     const receiptLocations = await legacyReceiptLocations(this.transactionModel.db, [before, after].filter(Boolean), session);
     const accumulate = (tx: any, multiplier: number) => {
@@ -3630,7 +3633,9 @@ export class TransactionsService {
     };
     accumulate(before, -1); accumulate(after, 1);
     if (![...differences.values()].some(change => change.quantity < 0)) return;
-    const inventory = await this.getInventory(session);
+    // A caller may reuse the fresh, request-local snapshot also used for its audit log.
+    // Never cache this across requests: every sale must validate its own current stock.
+    const inventory = snapshot ?? await this.getInventory(session);
     for (const change of differences.values()) {
       if (change.quantity >= 0) continue;
       const product = inventory.find(row => String(row.code).trim() === change.code);
@@ -3750,7 +3755,8 @@ export class TransactionsService {
       .find({ archived: { $ne: true } })
       .exec();
     const activeTx = transactions.filter((t) => !t.cancelled);
-    const lowStockCount = inventory.filter((p) => p.status !== 'ok').length;
+    const stockAlerts = inventory.filter((p) => p.isActive !== false && p.status !== 'ok');
+    const lowStockCount = stockAlerts.length;
     const salesTx = activeTx.filter((t) => t.type === 'مبيعات');
 
     // احسب المرتجعات المقبولة (مرة واحدة فقط)
@@ -3847,9 +3853,7 @@ export class TransactionsService {
     const topSellers = sorted.slice(0, 5);
     const lowSellers =
       sorted.length > 5 ? sorted.slice(-5).reverse() : [...sorted].reverse();
-    const lowStockItems = inventory
-      .filter((p) => p.status !== 'ok')
-      .slice(0, 8);
+    const lowStockItems = stockAlerts.slice(0, 8);
     const recentTransactions = await this.transactionModel
       .find()
       .sort({ createdAt: -1 })
@@ -5134,7 +5138,7 @@ export class TransactionsService {
       ? (tx.type === 'مشتريات' ? { supplier: tx.client } : { customer: tx.client })
       : undefined;
     if (tx.type === 'مبيعات' && (tx.deposit || 0) > 0) {
-      const entry = await this.vaultService.addSystemEntry(
+      const entry = await purchaseEntry(
         tx.deposit,
         tx.depMethod || 'كاش',
         `ديبوزت مبيعات #${txRef} — ${tx.client || ''}`,
@@ -5148,7 +5152,7 @@ export class TransactionsService {
       if (manualReceiptId) {
         tx.depositReceipts = tx.depositReceipts.map(r => r.id === manualReceiptId ? { ...r, vaultTxNo: entry?.txNo || '' } : r);
         tx.deposits = tx.deposits.map(d => d.id === manualReceiptId ? { ...d, vaultTxNo: entry?.txNo || '' } : d);
-        await tx.save();
+        if (context) await tx.save({ session: context.session }); else await tx.save();
       }
       // If collected, also record the collected remaining
       if (
@@ -5158,7 +5162,7 @@ export class TransactionsService {
       ) {
         const collectedAmount = (tx.total || 0) - (tx.deposit || 0);
         if (collectedAmount > 0) {
-          await this.vaultService.addSystemEntry(
+          await purchaseEntry(
             collectedAmount,
             tx.collectMethod,
             `تحصيل مُستعاد #${txRef} — ${tx.client || ''}`,
@@ -5367,11 +5371,12 @@ export class TransactionsService {
   // ─── Pick-Up Management ───────────────────────────────────────────────────
 
   /** Return all sales transactions eligible for pick-up tracking */
-  async findPickupOrders(): Promise<TransactionDocument[]> {
+  async findPickupOrders() {
     return this.transactionModel
       .find({ type: 'مبيعات', cancelled: { $ne: true }, archived: { $ne: true } })
       .select(TransactionsService.LIST_EXCLUDED_FIELDS)
       .sort({ createdAt: -1 })
+      .lean()
       .exec();
   }
 
@@ -5455,7 +5460,7 @@ export class TransactionsService {
       throw new BadRequestException('تغيّرت حالة بعض الطلبات؛ حدّث الصفحة وحاول مرة أخرى');
     }
     if (result.modifiedCount === validIds.length) {
-      this.emit('pickup:updated', { ids: validIds, action: 'preparing', pickupRef: prepRef, by });
+      this.emit('pickup:updated', { ids: validIds, action: 'preparing', pickupRef: prepRef, by, groupMeta });
     }
     return { updated: result.modifiedCount };
   }

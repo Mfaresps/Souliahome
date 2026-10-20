@@ -67,7 +67,10 @@ export class OrderAuditExportService implements OnModuleDestroy {
       ['—', ''],
       ['إجمالي المبيعات', r.financials.totalSales],
       ['إجمالي تكلفة المنتجات', r.financials.totalProductCost],
-      ['إجمالي تكلفة الشحن', r.financials.totalShippingCost],
+      ['إجمالي تكلفة الشحن الفعلية المؤكدة', r.shipping.measuredCount?r.financials.totalShippingCost:'—'],
+      ['طلبات بتكلفة شحن مؤكدة',r.shipping.measuredCount||0],
+      ['طلبات بدون تكلفة شحن مؤكدة',r.shipping.unconfirmedCount||0],
+      ['الشحن المحصّل من العميل',r.financials.billedShippingCost||0],
       ['إجمالي الربح', r.financials.totalProfit],
       ['متوسط قيمة الأوردر', r.financials.avgOrderValue],
       ['هامش الربح', `${r.financials.profitMargin}%`],
@@ -98,6 +101,7 @@ export class OrderAuditExportService implements OnModuleDestroy {
     ];
     summaryRows.forEach(([k, v]) => summary.addRow({ k, v }));
     summary.getColumn('v').numFmt = NUM_FMT;
+    summary.eachRow(row=>{if(['إجمالي تكلفة الشحن الفعلية المؤكدة','الشحن المحصّل من العميل','متوسط تكلفة الشحن للأوردر'].includes(String(row.getCell(1).value)))row.getCell(2).numFmt='#,##0.00';});
     summary.getColumn('k').font = { name: XL_FONT, size: 10, bold: true };
     styleBody(summary);
     summary.views = [{ rightToLeft: true, state: 'frozen', ySplit: 1 }];
@@ -163,13 +167,14 @@ export class OrderAuditExportService implements OnModuleDestroy {
         products: row.productsLabel || '—',
         total: row.orderTotal,
         cost: Math.round(row.productCost),
-        ship: row.shippingCost,
+        ship: row.actualShippingKnown?row.actualShipCost:null,
         profit: Math.round(row.netProfit),
         reg: row.registered ? 'نعم' : 'لا',
         sync: row.syncLabel,
       }),
     );
     ['total', 'cost', 'ship', 'profit'].forEach((k) => (detail.getColumn(k).numFmt = NUM_FMT));
+    detail.getColumn('ship').numFmt='#,##0.00';
     detail.getColumn('date').numFmt = 'yyyy-mm-dd hh:mm';
     styleBody(detail);
     detail.views = [{ rightToLeft: true, state: 'frozen', ySplit: 1 }];
@@ -187,7 +192,7 @@ export class OrderAuditExportService implements OnModuleDestroy {
     r.shipping.companies.forEach((c) =>
       ship.addRow({ name: c.name, orders: c.orders, total: c.totalCost, avg: c.avgCost }),
     );
-    ['total', 'avg'].forEach((k) => (ship.getColumn(k).numFmt = NUM_FMT));
+    ['total', 'avg'].forEach((k) => (ship.getColumn(k).numFmt = '#,##0.00'));
     ship.getColumn('orders').numFmt = '#,##0';
     styleBody(ship);
     ship.views = [{ rightToLeft: true, state: 'frozen', ySplit: 1 }];
@@ -339,7 +344,7 @@ function renderAuditHtml(r: AuditResult): string {
   const finCards = [
     { label: 'إجمالي المبيعات', value: fmt(r.financials.totalSales) },
     { label: 'تكلفة المنتجات', value: fmt(r.financials.totalProductCost) },
-    { label: 'تكلفة الشحن', value: fmt(r.financials.totalShippingCost) },
+    { label: 'تكلفة الشحن الفعلية', value: r.shipping.measuredCount?fmt(r.financials.totalShippingCost):'—' },
     { label: 'إجمالي الربح', value: fmt(r.financials.totalProfit) },
     { label: 'متوسط قيمة الأوردر', value: fmt(r.financials.avgOrderValue) },
     { label: 'هامش الربح', value: `${r.financials.profitMargin}%` },
@@ -374,7 +379,7 @@ function renderAuditHtml(r: AuditResult): string {
       <td>${escapeHtml(row.orderStatus || '—')}</td>
       <td class="num">${fmt(row.orderTotal)}</td>
       <td class="num">${fmt(row.productCost)}</td>
-      <td class="num">${fmt(row.shippingCost)}</td>
+      <td class="num">${row.actualShippingKnown?fmt(row.actualShipCost):'—'}</td>
       <td class="num ${row.netProfit >= 0 ? 'pos' : 'neg'}">${fmt(row.netProfit)}</td>
       <td>${escapeHtml(row.syncLabel)}</td>
     </tr>`,
@@ -467,14 +472,15 @@ function renderAuditHtml(r: AuditResult): string {
 
   <h2>تحليل الشحن</h2>
   <div class="fins">
-    <div class="fin"><div class="fin-l">إجمالي تكلفة الشحن</div><div class="fin-v">${fmt(r.shipping.totalShippingCost)}</div></div>
-    <div class="fin"><div class="fin-l">متوسط التكلفة للأوردر</div><div class="fin-v">${fmt(r.shipping.avgShippingCost)}</div></div>
+    <div class="fin"><div class="fin-l">إجمالي تكلفة الشحن الفعلية</div><div class="fin-v">${r.shipping.measuredCount?fmt(r.shipping.totalShippingCost):'—'}</div></div>
+    <div class="fin"><div class="fin-l">متوسط التكلفة المؤكدة للأوردر</div><div class="fin-v">${r.shipping.measuredCount?fmt(r.shipping.avgShippingCost):'—'}</div></div>
     <div class="fin"><div class="fin-l">أعلى أوردر شحناً</div><div class="fin-v">${
       r.shipping.highestOrder
         ? `#${escapeHtml(r.shipping.highestOrder.orderNumber)} — ${fmt(r.shipping.highestOrder.cost)}`
         : '—'
     }</div></div>
   </div>
+  <p>تكلفة الشركة الفعلية فقط؛ لا تشمل مبلغ الشحن المحصّل من العميل. ${r.shipping.measuredCount||0} طلبات مؤكدة، و${r.shipping.unconfirmedCount||0} بدون تكلفة مؤكدة.</p>
   ${
     shipRows
       ? `<table><thead><tr><th>شركة الشحن</th><th>عدد الأوردرات</th><th>إجمالي التكلفة</th><th>متوسط التكلفة</th></tr></thead><tbody>${shipRows}</tbody></table>`

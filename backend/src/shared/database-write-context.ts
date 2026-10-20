@@ -1,6 +1,6 @@
 import { ClientSession } from 'mongoose';
 
-/** Explicit atomic purchase receipt (PO or manual). External effects run after commit. */
+/** Explicit atomic inventory/financial operation. External effects run after commit. */
 export interface DatabaseWriteContext {
   session: ClientSession;
   afterCommit: Array<() => void | Promise<void>>;

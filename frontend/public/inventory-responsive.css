@@ -1,0 +1,31 @@
+/* The full inventory summary must scroll away on a phone so products stay reachable. */
+@media(max-width:768px){
+  #page-inventory{padding:16px 12px;min-width:0}
+  #page-inventory .inv-sticky-head{position:static;top:auto;z-index:auto;padding-top:0;margin-top:0;min-width:0}
+  #page-inventory .inv-page-header{gap:14px;margin-bottom:16px;align-items:flex-start}
+  #page-inventory .inv-page-header>div:first-child{width:100%;min-width:0}
+  #page-inventory .page-title{font-size:1.1rem;line-height:1.4}
+  #page-inventory .page-subtitle{font-size:.76rem;line-height:1.6;margin-top:6px!important}
+  #page-inventory .inv-header-actions{display:flex;flex-wrap:wrap;gap:8px;width:100%;min-width:0}
+  #page-inventory .inv-header-actions .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px!important;flex:1 1 85px;min-width:0;padding:8px;border-radius:11px;line-height:1.4}
+  #page-inventory .inv-header-actions .btn svg{flex-shrink:0;width:16px;height:16px}
+  #page-inventory .inv-sticky-head>.mov-tab-bar{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px;padding:0;border:0;background:transparent;overflow:visible}
+  #page-inventory .inv-sticky-head>.mov-tab-bar .mov-main-tab{min-width:0;min-height:44px;height:auto;padding:8px;gap:6px;font-size:.76rem;line-height:1.5;white-space:normal;border:1px solid var(--border);border-radius:11px;margin:0;background:var(--surface);color:var(--text)}
+  #page-inventory .inv-sticky-head>.mov-tab-bar .mov-main-tab::after{display:none}
+  #page-inventory .inv-sticky-head>.mov-tab-bar .mov-main-tab.active{background:var(--primary-pale);color:var(--primary);border-color:color-mix(in srgb,var(--primary) 35%,var(--border))}
+  #page-inventory .inv-kpi-scroll{overflow:visible;margin:0 0 16px;padding:0;scroll-snap-type:none}
+  #page-inventory .inv-kpi-grid{width:100%;min-width:0;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
+  #page-inventory .inv-kpi-grid .kpi{min-width:0;padding:12px 8px;border-radius:12px;box-shadow:none}
+  #page-inventory .inv-kpi-grid .kpi:last-child:nth-child(odd){grid-column:1/-1}
+  #page-inventory .inv-kpi-grid .kpi .kpi-icon{margin-bottom:6px}
+  #page-inventory .inv-kpi-grid .kpi .kpi-val{font-size:1rem;line-height:1.4}
+  #page-inventory .inv-kpi-grid .kpi .kpi-label{font-size:.68rem;line-height:1.5;white-space:normal;color:var(--text)}
+  #page-inventory #inv-toolbar{padding:10px;gap:10px;border-radius:14px;min-width:0}
+  #page-inventory #inv-toolbar>.fx-toolbar-row:first-child{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  #page-inventory #inv-toolbar>.fx-toolbar-row:first-child .fx-btn{min-width:0;min-height:40px;justify-content:center;white-space:normal;padding:8px 6px;font-size:.73rem}
+  #page-inventory #inv-toolbar .fx-search{flex:1 1 100%;min-width:0}
+  #page-inventory #inv-toolbar .fx-search input{min-width:0;width:100%;font-size:16px!important}
+  #page-inventory #inv-toolbar .fx-results-count{flex:1 1 100%;margin:0;text-align:start}
+  #page-inventory #wh-inventory-toolbar.wh-toolbar{flex:1 1 100%;min-width:0;max-width:100%}
+  #page-inventory .inv-product-card{margin-bottom:0;border-radius:12px}
+}

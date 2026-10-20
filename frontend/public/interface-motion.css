@@ -1,0 +1,32 @@
+/* Opacity-only entries keep sticky headers, menus and the mobile dock anchored. */
+:root{--ui-entry-duration:240ms;--ui-tab-duration:220ms;--ui-motion-ease:cubic-bezier(.22,.61,.36,1)}
+@keyframes uiPageReveal{from{opacity:.45}to{opacity:1}}
+@keyframes uiPanelReveal{from{opacity:.65}to{opacity:1}}
+#main .page{animation:uiPageReveal var(--ui-entry-duration) var(--ui-motion-ease);transform:none}
+
+/* Hidden panels restart on entry; route and selection updates remain immediate. */
+#main :is([role="tabpanel"],#sp-orders-tab-content,#sp-deposits-tab-content,#sp-deposit-log-content,#sp-perf-dashboard-content,
+  #inv-panel-list,#inv-panel-log,#prod-pane-items,#prod-pane-drafts,
+  #mov-panel-list,#mov-panel-archive,#mov-panel-collections,#sup-panel-cards,#sup-panel-payments,
+  #fu-panel,#cmp-panel){animation:uiPanelReveal var(--ui-tab-duration) var(--ui-motion-ease)}
+
+/* Soften the handoff from first-load placeholders to the actual order list. */
+#page-shopify-orders :is(#sp-mobile-list,#shopify-orders-table-wrap){animation:uiPanelReveal var(--ui-tab-duration) var(--ui-motion-ease)}
+
+#main :is(.mov-main-tab,.inv-tab,.vault-tab,[role="tab"]),
+#page-shopify-orders .sp-subnav-shell #sp-subnav .mov-main-tab{
+  transition:background-color var(--ui-tab-duration) var(--ui-motion-ease),
+    color var(--ui-tab-duration) var(--ui-motion-ease),
+    border-color var(--ui-tab-duration) var(--ui-motion-ease),
+    box-shadow var(--ui-tab-duration) var(--ui-motion-ease);
+}
+
+@media(prefers-reduced-motion:reduce){
+  #main .page,
+  #main :is([role="tabpanel"],#sp-orders-tab-content,#sp-deposits-tab-content,#sp-deposit-log-content,#sp-perf-dashboard-content,
+    #inv-panel-list,#inv-panel-log,#prod-pane-items,#prod-pane-drafts,
+    #mov-panel-list,#mov-panel-archive,#mov-panel-collections,#sup-panel-cards,#sup-panel-payments,#fu-panel,#cmp-panel),
+  #page-shopify-orders :is(#sp-mobile-list,#shopify-orders-table-wrap){animation:none!important}
+  #main :is(.mov-main-tab,.inv-tab,.vault-tab,[role="tab"]),
+  #page-shopify-orders .sp-subnav-shell #sp-subnav .mov-main-tab{transition:none!important}
+}

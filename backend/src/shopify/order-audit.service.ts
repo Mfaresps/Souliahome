@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, Optional, Inject, forwardRef } from '@nestjs/common';
 import { carrierLabel, LEGACY_CARRIER_AR, LEGACY_CARRIER_CODE } from '../shared/carriers.constants';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -13,6 +13,8 @@ import { OrderAudit, OrderAuditDocument } from './schemas/order-audit.schema';
 import { ShopifyAdminService } from './shopify-admin.service';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { approvedDepositTotal, computeDepositFieldsFromReceipts, receiptsIn, round2 } from './deposit-receipts.util';
+import { CarrierAutoSettleService } from '../transactions/carrier-auto-settle.service';
+import { auditShippingCharge, isAuditBosta } from './order-audit-shipping.util';
 
 /** A single line item as rendered into an audit row. */
 export interface AuditItem {
@@ -40,6 +42,9 @@ export interface AuditRow {
   productCost: number;
   shippingCost: number;
   actualShipCost: number;
+  actualShippingKnown?: boolean;
+  actualShippingSource?: string;
+  actualShippingReadAt?: string;
   netProfit: number;
   registered: boolean;
   syncStatus: SyncStatus;
@@ -66,6 +71,7 @@ export interface AuditRow {
 export type SyncStatus = 'synced' | 'missing' | 'failed' | 'cancelled' | 'pending';
 
 export interface AuditResult {
+  period?: { fromDate: string; toDate: string; months?: number[]; year?: number };
   from: number;
   to: number;
   sequence: {
@@ -94,6 +100,7 @@ export interface AuditResult {
     totalProductCost: number;
     totalShippingCost: number;
     totalActualShippingCost: number;
+    billedShippingCost?:number;
     totalProfit: number;
     avgOrderValue: number;
     profitMargin: number;
@@ -103,6 +110,13 @@ export interface AuditResult {
     avgShippingCost: number;
     highestOrder: { orderNumber: string; cost: number; client: string } | null;
     companies: Array<{ name: string; orders: number; totalCost: number; avgCost: number }>;
+    source?:string;
+    measuredCount?:number;
+    unconfirmedCount?:number;
+    bostaMeasuredCount?:number;
+    liveFailedCount?:number;
+    liveSkippedCount?:number;
+    lastReadAt?:string;
   };
   dateRange: {
     firstOrder: { orderNumber: string; date: string; time: string } | null;
@@ -118,6 +132,7 @@ export interface AuditResult {
 @Injectable()
 export class OrderAuditService {
   private readonly logger = new Logger(OrderAuditService.name);
+  private shippingReads=new Map<string,{deliveryId:string;at:number;data:any}>();
 
   constructor(
     @InjectModel(Transaction.name)
@@ -130,7 +145,30 @@ export class OrderAuditService {
     private readonly auditModel: Model<OrderAuditDocument>,
     private readonly shopifyAdminService: ShopifyAdminService,
     private readonly presence: PresenceGateway,
+    @Optional() @Inject(forwardRef(()=>CarrierAutoSettleService)) private readonly carrierDetails?:CarrierAutoSettleService,
   ) {}
+
+  private async readShipping(txs:any[],live:boolean) {
+    this.shippingReads ||= new Map();
+    let failed=0,skipped=0,index=0;
+    const candidates=txs.filter(tx=>!tx.cancelled&&tx.bostaOrderId&&isAuditBosta(tx));
+    if(live&&this.carrierDetails) {
+      const deadline=Date.now()+20000;
+      await Promise.all(Array.from({length:Math.min(4,candidates.length)},async()=>{
+        while(index<candidates.length) {
+          const tx=candidates[index++],key=String(tx._id),deliveryId=String(tx.bostaOrderId),cached=this.shippingReads.get(key);
+          if(cached?.deliveryId===deliveryId&&Date.now()-cached.at<120000)continue;
+          if(Date.now()>deadline){skipped++;continue;}
+          try {
+            const data=await this.carrierDetails!.bostaDetails(key,cached?.deliveryId!==deliveryId);
+            this.shippingReads.delete(key);this.shippingReads.set(key,{deliveryId,at:Date.now(),data});
+            if(this.shippingReads.size>5000)this.shippingReads.delete(this.shippingReads.keys().next().value!);
+          } catch {failed++;}
+        }
+      }));
+    }
+    return{failed,skipped};
+  }
 
   private emit(event: string, payload: unknown): void {
     try {
@@ -156,10 +194,45 @@ export class OrderAuditService {
   }
 
   // ── Core: run the audit over a numeric order range ────────────────────────
+  async runAuditPeriod(input: { fromDate?: string; toDate?: string; months?: string; year?: string }, opts: { persist?: boolean; generatedBy?: string; source?: string;shippingLive?:boolean } = {}): Promise<AuditResult> {
+    const { fromDate = '', toDate = '' } = input;
+    const validDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+    if (!validDate(fromDate) || !validDate(toDate) || fromDate > toDate) throw new BadRequestException('اختر نطاق تاريخ صحيح');
+    const months = input.months ? [...new Set(input.months.split(',').map(Number))] : [];
+    const year = Number(input.year);
+    if (months.length && (months.some(month => !Number.isInteger(month) || month < 1 || month > 12) || !Number.isInteger(year) || year < 1970 || year > 2100)) throw new BadRequestException('اختر شهوراً وسنة صحيحة');
+    const dateFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const dateKey = (value: any) => {
+      const date = new Date(value || '');
+      if (!Number.isFinite(date.getTime())) return '';
+      const parts = dateFormatter.formatToParts(date);
+      const part = (type: string) => parts.find(item => item.type === type)?.value || '';
+      return `${part('year')}-${part('month')}-${part('day')}`;
+    };
+    const [transactions, orders] = await Promise.all([
+      this.txModel.find({ type: 'مبيعات', ref: { $exists: true, $ne: '' } }).lean(),
+      this.shopifyOrderModel.find({}).lean(),
+    ]);
+    const dates = new Map<string, string>();
+    for (const tx of transactions as any[]) dates.set(this.normRef(tx.ref), dateKey(tx.shopifyCreatedAt || tx.date || tx.createdAt));
+    for (const order of orders as any[]) {
+      const date = dateKey(order.shopifyCreatedAt || order.createdAt);
+      if (date) dates.set(this.normRef(order.ref || order.orderNumber), date);
+    }
+    const selected = [...dates].filter(([ref, date]) => /^\d+$/.test(ref) && Number(ref) > 0 && date && date >= fromDate && date <= toDate && (!months.length || (Number(date.slice(0, 4)) === year && months.includes(Number(date.slice(5, 7)))))).map(([ref]) => ref);
+    if (selected.length > 5000) throw new BadRequestException('الحد الأقصى 5000 طلب — اختر فترة أقصر');
+    const numbers = selected.map(Number);
+    const result = await this.runAudit(numbers.length ? Math.min(...numbers) : 1, numbers.length ? Math.max(...numbers) : 1, { ...opts, persist: false, orderNumbers: selected });
+    result.period = { fromDate, toDate, ...(months.length ? { months, year } : {}) };
+    if (!numbers.length) { result.from = 0; result.to = 0; }
+    if (opts.persist !== false) await this.saveAuditLog(result, opts.generatedBy || '', opts.source || 'date');
+    return result;
+  }
+
   async runAudit(
     fromOrder: number,
     toOrder: number,
-    opts: { persist?: boolean; generatedBy?: string; source?: string } = {},
+    opts: { persist?: boolean; generatedBy?: string; source?: string; orderNumbers?: string[];shippingLive?:boolean } = {},
   ): Promise<AuditResult> {
     const from = Math.floor(Number(fromOrder));
     const to = Math.floor(Number(toOrder));
@@ -173,15 +246,15 @@ export class OrderAuditService {
     if (to < from) {
       throw new BadRequestException('رقم الأوردر الأخير يجب أن يكون أكبر من أو يساوي الأول');
     }
-    if (to - from + 1 > 5000) {
+    if ((opts.orderNumbers ? opts.orderNumbers.length : to - from + 1) > 5000) {
       throw new BadRequestException('النطاق كبير جداً — الحد الأقصى 5000 أوردر في المرة الواحدة');
     }
 
-    const expectedCount = to - from + 1;
+    const expectedCount = opts.orderNumbers ? new Set(opts.orderNumbers).size : to - from + 1;
 
     // Build the expected sequence
-    const expected: string[] = [];
-    for (let n = from; n <= to; n++) expected.push(String(n));
+    const expected: string[] = opts.orderNumbers ? [...new Set(opts.orderNumbers)].sort((a, b) => Number(a) - Number(b)) : [];
+    if (!opts.orderNumbers) for (let n = from; n <= to; n++) expected.push(String(n));
     const expectedSet = new Set(expected);
 
     // ── Load Soulia transactions whose ref falls in range ───────────────────
@@ -204,6 +277,7 @@ export class OrderAuditService {
     }
 
     // ── Load the Shopify mirror for the same range ─────────────────────────
+    const shippingRead=await this.readShipping([...txByRef.values()],opts.shippingLive===true);
     const shopifyOrders = await this.shopifyOrderModel.find({}).lean();
     const shopByRef = new Map<string, any>();
     for (const o of shopifyOrders) {
@@ -238,7 +312,9 @@ export class OrderAuditService {
         );
         const itemsTotal = items.reduce((s, i) => s + i.price * i.qty, 0);
         const shippingCost = Number(tx.shipCost) || 0;
-        const actualShipCost = Number(tx.actualShipCost) || 0;
+        const live=this.shippingReads.get(String(tx._id));
+        const actualCharge=auditShippingCharge(tx,live?.deliveryId===String(tx.bostaOrderId||'')?live.data:undefined);
+        const actualShipCost = actualCharge.amount ?? (Number(tx.actualShipCost)||0);
         const orderTotal = Number(tx.total) || 0;
         const discount = Number(tx.discount) || 0;
 
@@ -267,13 +343,16 @@ export class OrderAuditService {
           productCost,
           shippingCost,
           actualShipCost,
+          actualShippingKnown:actualCharge.amount!==null,
+          actualShippingSource:actualCharge.source,
+          actualShippingReadAt:actualCharge.readAt,
           netProfit,
           registered: true,
           syncStatus,
           syncLabel: cancelled ? 'ملغي' : 'متزامن',
           cancelled,
           shipCo: String(tx.shipCo || tx.prepShipCo || ''),
-          carrierCode: String((tx as any).carrierCode || ''),
+          carrierCode: isAuditBosta(tx)?'bosta':String((tx as any).carrierCode || ''),
           txId: String(tx._id || ''),
           hasProfit: productCost > 0,
           hasShipping: shippingCost > 0 || actualShipCost > 0,
@@ -429,8 +508,9 @@ export class OrderAuditService {
     const financialRows = rows.filter((r) => r.registered && !r.cancelled);
     const totalSales = financialRows.reduce((s, r) => s + r.orderTotal, 0);
     const totalProductCost = financialRows.reduce((s, r) => s + r.productCost, 0);
-    const totalShippingCost = financialRows.reduce((s, r) => s + r.shippingCost, 0);
-    const totalActualShippingCost = financialRows.reduce((s, r) => s + r.actualShipCost, 0);
+    const billedShippingCost = financialRows.reduce((s, r) => s + r.shippingCost, 0);
+    const totalActualShippingCost = financialRows.reduce((s, r) => s + (r.actualShippingKnown?r.actualShipCost:0), 0);
+    const totalShippingCost=totalActualShippingCost;
     const totalProfit = financialRows.reduce((s, r) => s + r.netProfit, 0);
     const avgOrderValue =
       financialRows.length > 0 ? Math.round(totalSales / financialRows.length) : 0;
@@ -438,8 +518,8 @@ export class OrderAuditService {
       totalSales > 0 ? Math.round((totalProfit / totalSales) * 1000) / 10 : 0;
 
     // ── Shipping analysis ──────────────────────────────────────────────────
-    const shipRows = financialRows.filter((r) => r.hasShipping);
-    const shipCostOf = (r: AuditRow) => (r.actualShipCost > 0 ? r.actualShipCost : r.shippingCost);
+    const shipRows = financialRows.filter((r) => r.actualShippingKnown);
+    const shipCostOf = (r: AuditRow) => r.actualShipCost;
     const shippingTotal = shipRows.reduce((s, r) => s + shipCostOf(r), 0);
 
     let highestOrder: { orderNumber: string; cost: number; client: string } | null = null;
@@ -471,8 +551,8 @@ export class OrderAuditService {
         code: v.code,
         name: v.name,
         orders: v.orders,
-        totalCost: Math.round(v.totalCost),
-        avgCost: v.orders > 0 ? Math.round(v.totalCost / v.orders) : 0,
+        totalCost: round2(v.totalCost),
+        avgCost: v.orders > 0 ? round2(v.totalCost / v.orders) : 0,
       }))
       .sort((a, b) => b.totalCost - a.totalCost);
 
@@ -525,20 +605,25 @@ export class OrderAuditService {
       financials: {
         totalSales: Math.round(totalSales),
         totalProductCost: Math.round(totalProductCost),
-        totalShippingCost: Math.round(totalShippingCost),
-        totalActualShippingCost: Math.round(totalActualShippingCost),
+        totalShippingCost: round2(totalShippingCost),
+        totalActualShippingCost: round2(totalActualShippingCost),
+        billedShippingCost:round2(billedShippingCost),
         totalProfit: Math.round(totalProfit),
         avgOrderValue,
         profitMargin,
       },
       shipping: {
-        totalShippingCost: Math.round(shippingTotal),
+        totalShippingCost: round2(shippingTotal),
         avgShippingCost:
-          shipRows.length > 0 ? Math.round(shippingTotal / shipRows.length) : 0,
+          shipRows.length > 0 ? round2(shippingTotal / shipRows.length) : 0,
         highestOrder: highestOrder
-          ? { ...highestOrder, cost: Math.round(highestOrder.cost) }
+          ? { ...highestOrder, cost: round2(highestOrder.cost) }
           : null,
         companies,
+        source:'carrier-actual-v1',measuredCount:shipRows.length,unconfirmedCount:financialRows.length-shipRows.length,
+        bostaMeasuredCount:shipRows.filter(row=>row.actualShippingSource?.startsWith('bosta-')).length,
+        liveFailedCount:shippingRead.failed,liveSkippedCount:shippingRead.skipped,
+        lastReadAt:shipRows.map(row=>row.actualShippingReadAt||'').filter(Boolean).sort().slice(-1)[0]||'',
       },
       dateRange,
       storeName: this.storeName(),
@@ -583,6 +668,7 @@ export class OrderAuditService {
       await this.auditModel.create({
         fromOrder: result.from,
         toOrder: result.to,
+        period: result.period,
         expectedCount: result.sequence.expectedCount,
         registeredCount: result.sequence.registeredCount,
         missingCount: result.sequence.missingCount,

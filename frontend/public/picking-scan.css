@@ -165,3 +165,28 @@ body.dark-mode #pw-work .pw-piece-status{background:var(--surface)}
 body.dark-mode #pw-work .pw-unit-scan-row.is-complete:not(.has-skips):not(.has-error) .pw-piece-status{background:#19392b;border-color:#3e7958;color:#a2dfb8}
 body.dark-mode #pw-work .pw-unit-scan-row.is-complete:not(.has-skips):not(.has-error) .pw-piece-status>bdi{background:#28523b;color:#c0efcf}
 body.dark-mode #pw-work .pw-unit-scan-row.has-skips .pw-piece-status{background:#3a301e;border-color:#75613a}
+/* Hands-free scan station: no permanent input and no mobile keyboard on entry. */
+#pw-work:focus{outline:none}
+.pw-reader-bar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;min-height:44px}
+.pw-reader-bar strong{flex:1;min-width:140px;font-size:.78rem;font-weight:650;color:var(--text)}
+.pw-reader-light{display:grid;place-items:center;flex:0 0 23px;width:23px;height:23px;border-radius:50%;background:#e2f4e9;color:#187348;border:1px solid #a9d8bc}
+.pw-reader-light:empty::after{content:'';width:7px;height:7px;border-radius:50%;background:#238052}
+.pw-reader-light.is-busy:empty::after{width:11px;height:11px;background:none;border:2px solid #b7d9c2;border-top-color:#238052;animation:pwReaderSpin .6s linear infinite}
+.pw-manual-toggle{border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--primary);font:inherit;font-size:.72rem;padding:7px 10px;cursor:pointer;min-height:36px}
+.pw-manual-toggle:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.pw-manual-form{margin:8px 0 0}
+.pw-scan-compact.is-confirmed .pw-manual-form input,.pw-scan-compact.is-confirmed .pw-manual-form button{display:block}
+.pw-scan-feedback{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 11px;border:1px solid var(--border);border-radius:9px;margin-top:8px;font-size:.77rem;line-height:1.6}
+.pw-scan-feedback small{flex:1 0 100%;font-size:.72rem;opacity:.9}
+.pw-scan-feedback code{font-size:.76rem;overflow-wrap:anywhere;unicode-bidi:isolate}
+.pw-scan-feedback.is-success{background:#eef8f1;border-color:#afd5bb;color:#19683f}
+.pw-scan-feedback.is-error{background:#fff2f0;border-color:#efc0b8;color:#9c3024}
+.pw-scan-feedback.is-pending{background:var(--surface);color:var(--muted)}
+.pw-item.pw-scan-success{animation-duration:.3s}
+.pw-scan-success .pw-scan-check{animation-duration:.35s}
+.pw-dot-pop{animation-duration:.2s}
+body.dark-mode .pw-scan-feedback.is-success{background:#19392b;border-color:#3e7958;color:#a2dfb8}
+body.dark-mode .pw-scan-feedback.is-error{background:#432924;border-color:#84483d;color:#ffd1c7}
+@keyframes pwReaderSpin{to{transform:rotate(360deg)}}
+@media(max-width:600px){.pw-manual-form input{font-size:16px}.pw-reader-bar strong{min-width:130px}.pw-scan-feedback code{max-width:100%}}
+@media(prefers-reduced-motion:reduce){.pw-reader-light.is-busy:empty::after{animation:none}}

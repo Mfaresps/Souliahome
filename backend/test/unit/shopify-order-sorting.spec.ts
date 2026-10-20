@@ -28,6 +28,7 @@ const run = new Function('orders', 'page', 'perPage', 'tab', 'filter', `
   const _spFilterDef = key => ({ test: o => o.pendingStatus === key });
   const _spApplyPanel = data => data, _renderShopifyDepositSummary = () => {};
   const _spHideCommentPreview = () => {};
+  const _spEnsureOrdersLayout = () => 'table', _spRevealOrders = () => {};
   ${shippedFunction('_spOrderCreatedMs')}
   ${shippedFunction('_spCompareOrdersNewestFirst')}
   ${pipeline}

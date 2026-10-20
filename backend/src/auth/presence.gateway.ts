@@ -68,7 +68,7 @@ export class PresenceGateway
       const payload = this.jwtService.verify(token);
       const user = await this.usersService.findById(payload.sub);
 
-      if (!user) {
+      if (!user || user.isActive === false || !client.connected) {
         client.disconnect();
         return;
       }
@@ -136,13 +136,17 @@ export class PresenceGateway
     }
   }
 
-  handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket) {
     const lockedTxId = this.editingLocks.get(client.id);
     if (lockedTxId) {
       this.editingLocks.delete(client.id);
       this.server.emit('tx:editing-done', { txId: lockedTxId });
     }
+    const disconnected = this.connectedUsers.get(client.id);
     this.connectedUsers.delete(client.id);
+    if (disconnected && !this.getOnlineUserIds().includes(disconnected.userId)) {
+      await this.usersService.updateLastSeen(disconnected.userId).catch(() => {});
+    }
     this.broadcastOnlineUsers();
   }
 
@@ -210,8 +214,9 @@ export class PresenceGateway
   }
 
   private async broadcastOnlineUsers() {
-    const onlineIds = this.getOnlineUserIds();
     const allUsers = await this.usersService.findAll();
+    // Read live sockets after the database await; a disconnect may have occurred meanwhile.
+    const onlineIds = this.getOnlineUserIds();
     const usersWithStatus = allUsers.map((u) => ({
       id: u._id.toString(),
       username: u.username,

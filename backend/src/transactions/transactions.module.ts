@@ -86,6 +86,6 @@ import { FollowUpsModule } from '../followups/followups.module';
     CarrierAutoSettleService,
     CarrierBatchPayoutService,
   ],
-  exports: [TransactionsService, CarrierStatementService, CarrierSettlementService],
+  exports: [TransactionsService, CarrierStatementService, CarrierSettlementService, CarrierAutoSettleService],
 })
 export class TransactionsModule {}

@@ -1,7 +1,7 @@
 /* Uploaded logos retain their original colours and aspect ratios. */
 #header .logo img.soulia-custom-brand,#splash-screen .splash-logo.soulia-custom-brand,.lfp-logo.soulia-custom-brand,.shell-brand-home img.soulia-custom-brand{filter:none!important;object-fit:contain}
 #header .logo img.soulia-custom-brand{max-width:170px;max-height:40px;width:auto;height:auto}
-#splash-screen .splash-logo.soulia-custom-brand{max-width:min(300px,75vw);max-height:110px;width:auto;height:auto}
+#splash-screen .splash-logo.soulia-custom-brand{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain}
 .lfp-logo.soulia-custom-brand{max-width:200px;max-height:80px;width:auto;height:auto}
 .shell-brand-home img.soulia-custom-brand{max-width:42px;max-height:38px;width:auto;height:auto}
 #page-settings #stg-branding-card[hidden]{display:none!important}
@@ -9,8 +9,8 @@
 #stg-branding-card .brand-slot{min-width:0;border:1px solid var(--border);border-radius:10px;padding:12px}
 #stg-branding-card label{display:block;margin:0;color:var(--text);font-size:.76rem;font-weight:600;min-width:0}
 #stg-branding-card .brand-preview{display:flex;align-items:center;justify-content:center;height:100px;border-radius:8px;background:var(--bg-alt);border:1px solid var(--border);margin:10px 0;padding:12px;box-sizing:border-box}
-#stg-branding-card .brand-preview-splash{background:#00311e}
-#stg-branding-card .brand-preview-splash .brand-preview-original{filter:brightness(0) invert(1)}
+#stg-branding-card .brand-preview-splash{background:radial-gradient(ellipse at center,#0b2419,#030b07)}
+#stg-branding-card .brand-preview-splash .brand-preview-original{filter:none}
 #stg-branding-card .brand-preview img{display:block;max-width:100%;max-height:100%;object-fit:contain}
 #stg-branding-card .brand-preview-tab img{width:40px;height:40px}
 #stg-branding-card select,#stg-branding-card input[type=text]{width:100%;min-width:0;max-width:100%;box-sizing:border-box;font:inherit;font-size:.78rem;min-height:34px;padding:6px 9px;margin:5px 0 0}

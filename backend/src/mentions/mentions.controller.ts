@@ -102,8 +102,8 @@ export class MentionsController {
   }
 
   @Post(':id/read')
-  async markRead(@Param('id') id: string) {
-    await this.mentionsService.markRead(id);
+  async markRead(@Param('id') id: string, @Req() req: AuthRequest) {
+    await this.mentionsService.markRead(id, String(req.user?.userId || req.user?.sub || ''), req.user?.username);
     return { ok: true };
   }
 

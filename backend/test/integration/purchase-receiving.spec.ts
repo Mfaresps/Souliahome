@@ -28,12 +28,17 @@ import { JwtAuthGuard } from '../../src/core/guards/jwt-auth.guard';
 import { ManualPurchaseReceivingService } from '../../src/inventory-units/manual-purchase-receiving.service';
 import { InventoryUnitsController } from '../../src/inventory-units/inventory-units.controller';
 import { InventoryScanningService } from '../../src/inventory-units/inventory-scanning.service';
+import { ScannedSaleService } from '../../src/inventory-units/scanned-sale.service';
+import { InventoryPacksService } from '../../src/inventory-units/inventory-packs.service';
+import { DepositReceiptsService } from '../../src/shopify/deposit-receipts.service';
+import { ManualDepositReceiptSchema } from '../../src/shopify/schemas/manual-deposit-receipt.schema';
 
 describe('Atomic purchase receiving with actual financial writers on disposable replica set', () => {
   let mongo: Awaited<ReturnType<typeof trackingMongo>>, models: Record<string, Model<any>>;
   let transactions: TransactionsService, units: InventoryUnitsService, receiving: PurchaseReceivingService, orders: PurchaseOrdersService;
   let vault: VaultService, ledger: SupplierLedgerService, movements: InventoryMovementsService;
   let manual: ManualPurchaseReceivingService;
+  let scannedSales: ScannedSaleService;
   let productId: string, supplierId: string, actorId: string, actor: any, presence: any, app: INestApplication, base: string;
   const id = () => new Types.ObjectId().toHexString();
   const raw = (name: string) => mongo.connection.collection(name);
@@ -56,7 +61,7 @@ describe('Atomic purchase receiving with actual financial writers on disposable 
     mongo = await trackingMongo(); models = {};
     for (const [name, schema] of Object.entries({ Product: ProductSchema, Transaction: TransactionSchema, PurchaseOrder: PurchaseOrderSchema,
       Settings: SettingsSchema, VaultEntry: VaultEntrySchema, SupplierLedgerEntry: SupplierLedgerEntrySchema, InventoryMovement: InventoryMovementSchema,
-      InventoryUnit: InventoryUnitSchema, InventoryUnitEvent: InventoryUnitEventSchema, InventoryUnitOperation: InventoryUnitOperationSchema })) {
+      InventoryUnit: InventoryUnitSchema, InventoryUnitEvent: InventoryUnitEventSchema, InventoryUnitOperation: InventoryUnitOperationSchema, ManualDepositReceipt: ManualDepositReceiptSchema })) {
       models[name] = mongo.connection.model(name, schema);
       await models[name].createCollection();
       if (!name.startsWith('InventoryUnit')) await models[name].createIndexes();
@@ -77,10 +82,14 @@ describe('Atomic purchase receiving with actual financial writers on disposable 
     units = new InventoryUnitsService(mongo.connection, models.InventoryUnit, models.InventoryUnitEvent, models.InventoryUnitOperation, transactions, manualCodes);
     receiving = new PurchaseReceivingService(mongo.connection, units, transactions);
     manual = new ManualPurchaseReceivingService(mongo.connection, units, transactions);
+    scannedSales = new ScannedSaleService(mongo.connection, units, transactions);
+    const receiptService: any = Object.create(DepositReceiptsService.prototype); receiptService.manualReceiptModel = models.ManualDepositReceipt;
+    (transactions as any).depositReceiptsService = receiptService;
     orders = new PurchaseOrdersService(models.PurchaseOrder, transactions, receiving);
     const module = await Test.createTestingModule({ controllers: [PurchaseOrdersController, InventoryUnitsController], providers: [
       { provide: PurchaseOrdersService, useValue: orders }, { provide: PurchaseReceivingService, useValue: receiving },
       { provide: InventoryUnitsService, useValue: units }, { provide: ManualPurchaseReceivingService, useValue: manual },
+      { provide: ScannedSaleService, useValue: scannedSales },
       { provide: InventoryScanningService, useValue: new InventoryScanningService(mongo.connection, models.InventoryUnit, models.InventoryUnitEvent, models.InventoryUnitOperation, units) },
     ] }).overrideGuard(JwtAuthGuard).useValue({ canActivate(context: any) {
       const request = context.switchToHttp().getRequest(), role = request.headers['x-test-role'];
@@ -92,7 +101,7 @@ describe('Atomic purchase receiving with actual financial writers on disposable 
   }, 40000);
   beforeEach(async () => {
     await raw('warehouses').updateOne({ code: 'ACTUAL-SHELF-A' }, { $setOnInsert: { code: 'ACTUAL-SHELF-A', active: true } }, { upsert: true });
-    for (const name of ['products', 'transactions', 'purchaseorders', 'settings', 'vaultentries', 'supplierledgerentries', 'inventorymovements', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'users', 'suppliers']) await raw(name).deleteMany({});
+    for (const name of ['products', 'transactions', 'purchaseorders', 'settings', 'vaultentries', 'supplierledgerentries', 'inventorymovements', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'manualdepositreceipts', 'users', 'suppliers', 'inventorypacks']) await raw(name).deleteMany({});
     productId = id(); supplierId = id(); actorId = id(); actor = { userId: actorId, role: 'admin', name: 'Forged Request Name' };
     await raw('users').insertOne({ _id: new Types.ObjectId(actorId), name: 'Authenticated Receiver', role: 'admin', isActive: true });
     await raw('suppliers').insertOne({ _id: new Types.ObjectId(supplierId), name: 'Supplier One' });
@@ -102,6 +111,100 @@ describe('Atomic purchase receiving with actual financial writers on disposable 
     presence.emitEvent.mockClear();
   });
   afterAll(async () => { await app?.close(); await mongo?.close(); });
+
+  async function scannedPayload(count = 1) {
+    const pieces: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const pieceId = id(); pieces.push(pieceId);
+      await raw('inventoryunits').insertOne({ _id: new Types.ObjectId(pieceId), barcode: 'SU-' + pieceId.toUpperCase(), productId,
+        warehouseCode: 'MAIN', status: 'available', assignment: null, __v: 0, registeredBy: 'Authenticated Receiver', registeredByUserId: actorId, origin: { kind: 'legacy-unknown', reconciliationRef: 'TEST-COUNT' } });
+    }
+    return { operationKey: id(), invoice: { type: 'مبيعات', date: '2026-10-20', ref: '200', warehouseCode: 'MAIN', client: 'Customer', employee: 'Forged employee', carrierCode: 'bosta', shipCo: 'Bosta',
+      items: [{ productId, code: 'SKU-1', name: 'Basket', qty: count, price: 30, total: count * 30 }], itemsTotal: count * 30,
+      total: count * 30, deposit: 10, remaining: count * 30 - 10, depMethod: 'كاش' }, bindings: [{ productId, unitIds: pieces }] };
+  }
+  it('saves a scanned sale, money, stock movement and exact physical reservations once', async () => {
+    const request = await scannedPayload(2);
+    const [first, concurrent] = await Promise.all([scannedSales.create(request as any, actor), scannedSales.create(request as any, actor)]);
+    expect(String(concurrent.transaction._id)).toBe(String(first.transaction._id));
+    const replay = await new ScannedSaleService(mongo.connection, units, transactions).create(request as any, actor);
+    expect(String(first.transaction._id)).toBe(String(replay.transaction._id));
+    expect(await models.Transaction.countDocuments()).toBe(1);
+    expect((await transactions.getInventory())[0].current).toBe(5);
+    expect((await models.Settings.findOne())!.vaultCash).toBe(1010);
+    expect(await models.VaultEntry.countDocuments()).toBe(1);
+    const pieces = await models.InventoryUnit.find().lean();
+    expect(pieces.every(piece => piece.status === 'reserved' && piece.assignment.transactionId === String(first.transaction._id) && piece.assignment.lineId === first.transaction.items[0].lineId)).toBe(true);
+    expect(await models.InventoryUnitEvent.countDocuments({ action: 'reserved' })).toBe(2);
+    expect(await models.InventoryMovement.countDocuments()).toBe(1);
+    await expect(scannedSales.create({ ...request, invoice: { ...request.invoice, ref: '999' } } as any, actor)).rejects.toThrow('different payload');
+  });
+  it('rolls back sale and money when a later physical reservation fails', async () => {
+    const request = await scannedPayload(2), before = await baseline();
+    const real = units.actionInSession.bind(units); let calls = 0;
+    const spy = jest.spyOn(units, 'actionInSession').mockImplementation(async (...args) => {
+      if (++calls === 2) throw new Error('Injected second piece failure');
+      return real(...args);
+    });
+    try { await expect(scannedSales.create(request as any, actor)).rejects.toThrow('second piece'); }
+    finally { spy.mockRestore(); }
+    expect(await baseline()).toEqual(before);
+    expect(await models.InventoryUnit.countDocuments({ status: 'reserved' })).toBe(0);
+    expect(await models.InventoryUnitEvent.countDocuments()).toBe(0);
+    expect(presence.emitEvent.mock.calls.some((row: any[]) => row[0] === 'tx:created')).toBe(false);
+  });
+  it('does not sell the same physical piece to two concurrent scanned orders', async () => {
+    const request = await scannedPayload();
+    const results = await Promise.allSettled([scannedSales.create(request as any, actor), scannedSales.create({ ...request, operationKey: id(), invoice: { ...request.invoice, ref: '201' } } as any, actor)]);
+    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+    expect(await models.Transaction.countDocuments()).toBe(1);
+    expect((await models.Settings.findOne())!.vaultCash).toBe(1010);
+  });
+  it('rejects a mismatched warehouse and quantity before creating any financial entry', async () => {
+    const request = await scannedPayload(2);
+    await raw('inventoryunits').updateOne({ _id: new Types.ObjectId(request.bindings[0].unitIds[0]) }, { $set: { warehouseCode: 'ACTUAL-SHELF-A' } });
+    await expect(scannedSales.create(request as any, actor)).rejects.toThrow('warehouse');
+    expect(await models.Transaction.countDocuments()).toBe(0);
+    const smaller = { ...request, invoice: { ...request.invoice, items: [{ ...request.invoice.items[0], qty: 1, total: 30 }], itemsTotal: 30, total: 30, remaining: 20 } };
+    await expect(scannedSales.create(smaller as any, actor)).rejects.toThrow('quantity');
+  });
+  it('keeps deposit receipt claiming and consumption in the same transaction as scanned reservations', async () => {
+    const request: any = await scannedPayload(); request.invoice.manualDepositReceiptId = 'receipt-scanned-sale';
+    await models.ManualDepositReceipt.create({ receiptId: request.invoice.manualDepositReceiptId, ownerId: actorId, state: 'submitted', expiresAt: new Date(Date.now() + 60000).toISOString(),
+      receipt: { amount: 10, method: 'كاش', imageKey: 'receipts/manual/draft/image.jpg', submittedBy: 'Uploader', submittedAt: new Date().toISOString(), needsReview: false, ocr: { amount: 10, method: 'كاش' } } });
+    const spy = jest.spyOn(units, 'actionInSession').mockRejectedValueOnce(new Error('Reject piece'));
+    await expect(scannedSales.create(request, actor)).rejects.toThrow('Reject piece'); spy.mockRestore();
+    expect((await models.ManualDepositReceipt.findOne())!.state).toBe('submitted');
+    expect(await models.Transaction.countDocuments()).toBe(0);
+    await scannedSales.create(request, actor);
+    expect((await models.ManualDepositReceipt.findOne())!.state).toBe('consumed');
+    expect((await models.Settings.findOne())!.vaultCash).toBe(1010);
+    expect(await vault.receiptOperationApplied(request.invoice.manualDepositReceiptId, 'approve')).toBe(true);
+    await vault.addSystemEntry(-10, 'كاش', 'Receipt refund', '2026-10-20', 'Refund', '200', undefined, 'Operator', { receiptId: request.invoice.manualDepositReceiptId });
+    await vault.addSystemEntry(-10, 'كاش', 'Receipt refund', '2026-10-20', 'Refund', '200', undefined, 'Operator', { receiptId: request.invoice.manualDepositReceiptId });
+    expect((await models.Settings.findOne())!.vaultCash).toBe(1000);
+  });
+  it('reserves a sealed pack together and accepts its later preparation scan for that order', async () => {
+    const request: any = await scannedPayload(2), packId = id();
+    await raw('inventorypacks').insertOne({ _id: new Types.ObjectId(packId), barcode: 'PK-' + packId.toUpperCase(), productId, warehouseCode: 'MAIN', state: 'sealed', quantity: 2, unitIds: request.bindings[0].unitIds, revision: 0 });
+    await raw('inventoryunits').updateMany({}, { $set: { packId } });
+    request.bindings = [{ productId, packIds: [packId] }];
+    const result = await scannedSales.create(request, actor);
+    await models.Transaction.updateOne({ _id: result.transaction._id }, { $set: { pickupStatus: 'Preparing' } });
+    const packs = new InventoryPacksService(mongo.connection, models.InventoryUnit, units);
+    const scanned = await packs.scan(String(result.transaction._id), { operationKey: id(), reason: 'Physical pack verified', identifier: 'PK-' + packId.toUpperCase(), lineId: result.transaction.items[0].lineId, physicalPossessionConfirmed: true }, actor);
+    expect(scanned.quantity).toBe(2);
+    expect(await models.InventoryUnit.countDocuments({ status: 'picking' })).toBe(2);
+  });
+  it('protects the scanned-sale HTTP route with authentication, allocation permission and nested DTO validation', async () => {
+    const request = await scannedPayload();
+    const http = (role?: string, body: any = request) => fetch(base + '/inventory-units/sales', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(role ? { 'x-test-role': role } : {}) }, body: JSON.stringify(body) });
+    expect((await http()).status).toBe(401);
+    expect((await http('viewer')).status).toBe(403);
+    expect((await http('admin', { ...request, bindings: [{ productId, unitIds: ['invalid'] }] })).status).toBe(400);
+    const response = await http('admin'); const result = await response.json();
+    expect({ status: response.status, result }).toMatchObject({ status: 201, result: { reservedPieces: 1 } });
+  });
 
   function manualPayload(extra: any = {}) {
     return { operationKey: id(), tracking: payload().tracking, invoice: { type: 'مشتريات', date: '2026-10-17', transactionDate: '2026-10-17', ref: '100',

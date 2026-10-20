@@ -15,7 +15,7 @@ export const ACTIONS: Record<string, [string, string]> = {
   'vault-access': ['فتح الخزنة', 'Open cash register'], 'add-product': ['إضافة منتج', 'Add product'],
   'export-excel': ['تصدير بيانات', 'Export data'], 'edit-tx': ['تعديل فاتورة', 'Modify invoice'],
   cancel: ['إلغاء طلب', 'Cancel order'], deposit: ['اعتماد عربون', 'Deposit approval'],
-  order: ['اعتماد طلب', 'Order approval'], return: ['طلب استرجاع', 'Return request'],
+  order: ['تحضير وشحن', 'Prepare & Ship'], return: ['طلب استرجاع', 'Return request'],
   vault: ['اعتماد حركة خزنة', 'Cash register approval'],
   product: ['تعديل منتج', 'Modify product'], expense: ['اعتماد مصروف', 'Expense approval'],
   'supplier-return': ['مرتجع مورد', 'Supplier return approval'],

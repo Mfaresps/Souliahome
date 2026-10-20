@@ -9,12 +9,20 @@ import { EligibleScanQueryDto, ScanRequestDto } from './inventory-scan.dto';
 import { ManualPurchaseReceivingService } from './manual-purchase-receiving.service';
 import { ManualPurchaseReceiptDto } from './manual-purchase.dto';
 import { InventoryPacksService } from './inventory-packs.service';
+import { ScannedSaleService } from './scanned-sale.service';
+import { ScannedSaleDto } from './scanned-sale.dto';
 
 @Controller('inventory-units')
 @UseGuards(JwtAuthGuard, PermsGuard)
 export class InventoryUnitsController {
   constructor(private readonly service: InventoryUnitsService, private readonly scanning: InventoryScanningService,
-    private readonly manualReceiving: ManualPurchaseReceivingService, @Optional() private readonly packs?: InventoryPacksService) {}
+    private readonly manualReceiving: ManualPurchaseReceivingService, @Optional() private readonly packs?: InventoryPacksService,
+    @Optional() private readonly scannedSales?: ScannedSaleService) {}
+  @Post('sales') @RequirePerms('inventory-units-view', 'inventory-units-allocate')
+  scannedSale(@Body() dto: ScannedSaleDto, @Req() req: { user: TrackingActor }) {
+    if (!this.scannedSales) throw new ServiceUnavailableException('Scanned sale service unavailable');
+    return this.scannedSales.create(dto, req.user);
+  }
   @Get('legacy-stock/summary') @RequirePerms('inventory-units-view', 'inventory-units-register')
   legacySummary(@Query('productId') productId: string, @Query('warehouseCode') warehouseCode: string) { return this.service.legacyStockSummary(productId, warehouseCode); }
   @Post('legacy-stock/identify') @RequirePerms('inventory-units-view', 'inventory-units-register')

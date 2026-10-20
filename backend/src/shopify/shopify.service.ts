@@ -921,13 +921,13 @@ export class ShopifyService {
     if (order.status !== 'pending' || order.cancelled || order.receiptCancelLock) {
       return { success: false };
     }
-    if (order.itemSyncConflict) throw new BadRequestException('راجع تعارض أصناف Shopify قبل تأكيد الطلب');
-    if (order.editRequest?.status === 'معلق') throw new BadRequestException('راجع طلب تعديل الأوردر قبل تأكيده');
+    if (order.itemSyncConflict) throw new BadRequestException('راجع تعارض أصناف Shopify قبل التحضير والشحن');
+    if (order.editRequest?.status === 'معلق') throw new BadRequestException('راجع طلب تعديل الأوردر قبل التحضير والشحن');
 
     // A receipt still under review is money not yet decided — confirming now would freeze the
     // order without it, and nothing could attach it afterwards.
     if (receiptsIn(order, 'معلق').length) {
-      throw new BadRequestException('يوجد عربون قيد المراجعة على هذا الطلب — يجب اعتماده أو رفضه قبل التأكيد');
+      throw new BadRequestException('يوجد عربون قيد المراجعة على هذا الطلب — يجب اعتماده أو رفضه قبل التحضير والشحن');
     }
     const approvedReceipts = receiptsIn(order, 'معتمد');
     if (approvedReceipts.some(r => !r.vaultEntryId) || receiptsIn(order, 'مُسترد').some(r => !r.refundVaultEntryId)) {
@@ -936,7 +936,7 @@ export class ShopifyService {
     const paidNow = approvedDepositTotal(order);
     if (paidNow > (Number(order.total) || 0) + DEPOSIT_TOLERANCE) {
       throw new BadRequestException(
-        `العربون المعتمد (${paidNow} ج) أكبر من إجمالي الطلب (${Number(order.total) || 0} ج) — رُدّ الزيادة قبل التأكيد`,
+        `العربون المعتمد (${paidNow} ج) أكبر من إجمالي الطلب (${Number(order.total) || 0} ج) — رُدّ الزيادة قبل التحضير والشحن`,
       );
     }
     const remaining = round2(Math.max(0, Number(order.total) - paidNow));
@@ -1003,7 +1003,10 @@ export class ShopifyService {
     // default keeps a caller that omits it working, but an UNKNOWN code is rejected rather than
     // dropped: the operator is still on screen to correct it, and a silently dropped carrier is
     // the failure this whole change exists to end.
-    const settingsDoc = await this.settingsService.getSettings();
+    const [settingsDoc, invSnapshotBefore] = await Promise.all([
+      this.settingsService.getSettings(),
+      this.transactionsService.getInventory(),
+    ]);
     const resolvedCarrier =
       String(carrierCode || '').trim() || String((settingsDoc as any).defaultCarrierCode || '').trim();
     if (resolvedCarrier && !isValidCarrier(resolvedCarrier)) {
@@ -1019,8 +1022,7 @@ export class ShopifyService {
     // Pre-creation stock snapshot for the Inventory Movement Log — taken BEFORE the
     // transaction exists so this order's own items don't pollute their own "before"
     // balance. Mirrors TransactionsService.create(); see recordInventoryMovementForSale.
-    const invSnapshotBefore = await this.transactionsService.getInventory();
-    await this.transactionsService.assertWarehouseSale(order.items, 'MAIN');
+    await this.transactionsService.assertWarehouseSale(order.items, 'MAIN', invSnapshotBefore);
 
     // Claim confirmation against the exact receipt snapshot. A concurrent upload, edit, refund,
     // cancellation or second confirm must not record a stale deposit or create another sale.
@@ -1133,10 +1135,12 @@ export class ShopifyService {
     });
 
     // Uploads abandoned before submission have no further use once the order is a transaction.
-    await this.depositReceipts.discardDrafts(String(order._id));
-
     this.logger.log(`✅ تم قبول أوردر Shopify: ${cleanRef}`);
-    await notifyApproval(this.notifications, 'approval:shopify:' + orderId + ':approved', order.ref, 'shopify:' + orderId, { actorName: employee, actionKey: 'order', status: 'approved' });
+    // Independent post-commit work; persist the notification and clean drafts together.
+    await Promise.all([
+      this.depositReceipts.discardDrafts(String(order._id)),
+      notifyApproval(this.notifications, 'approval:shopify:' + orderId + ':approved', order.ref, 'shopify:' + orderId, { actorName: employee, actionKey: 'order', status: 'approved' }),
+    ]);
     return { success: true, txId: String(tx._id) };
   }
 
@@ -1183,6 +1187,7 @@ export class ShopifyService {
           productCode: code,
           productName: item.name || invRow.name,
           type: 'مبيعات',
+          warehouseCode: tx.warehouseCode || 'MAIN',
           qtyDelta,
           qtyBefore,
           qtyAfter: qtyBefore + qtyDelta,

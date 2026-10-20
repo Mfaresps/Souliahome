@@ -4,8 +4,8 @@ let _bostaPickupBusy = false;
 let _bostaPickupRequests = [];
 const _bpCheck = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
 function _bpSetRequests(requests) { _bostaPickupRequests = requests || []; }
-async function refreshBostaPickupRequests() {
-  const preview = await api('/shipping/pickup-preview');
+async function refreshBostaPickupRequests(options = {}) {
+  const preview = await api('/shipping/pickup-preview', options);
   _bpSetRequests(preview.requests);
   return preview;
 }

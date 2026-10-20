@@ -80,3 +80,22 @@
 #notification-settings .push-language-select{min-height:34px;padding:5px 9px;font-size:12px}
 #notification-settings [hidden]{display:none!important}
 @media(max-width:600px){.push-settings-dialog{padding:10px;border-radius:16px;max-height:calc(100dvh - 32px)}.push-onboarding-dialog{padding:20px}.push-onboarding-dialog h3{font-size:18px}.push-activation-guide{padding:12px}.push-activation-guide li{gap:9px}.push-onboarding-actions{display:grid;grid-template-columns:1fr;width:100%}#notification-settings .push-language-select{width:110px}}
+.push-preferences-dialog{width:min(440px,calc(100vw - 24px));max-height:min(540px,calc(100dvh - 32px));padding:12px;border-radius:12px;font-size:12px;line-height:1.5}
+.push-preferences-dialog>button:first-child{min-height:28px;padding:3px 9px;font-size:12px}
+.push-preferences-dialog #notification-settings{padding:8px!important;border:0;box-shadow:none}
+.push-preferences-dialog #notification-settings .push-heading{gap:8px;margin-bottom:10px}
+.push-preferences-dialog #notification-settings h3{font-size:16px;margin-bottom:2px}
+.push-preferences-dialog #notification-settings .push-heading p{font-size:11px;line-height:1.5}
+.push-preferences-dialog #notification-settings .push-heading-icon{width:28px;height:28px;border-radius:8px}
+.push-preferences-dialog #notification-settings .push-section-title{margin:12px 0 6px;font-size:11px}
+.push-preferences-dialog #notification-settings .push-category-grid{grid-template-columns:1fr;gap:4px}
+.push-preferences-dialog #notification-settings .push-setting-row{padding:7px 8px!important;gap:8px;border-radius:7px}
+.push-preferences-dialog #notification-settings .push-category-icon{width:24px;height:24px;border-radius:6px}
+.push-preferences-dialog #notification-settings .push-category-icon svg{width:16px;height:16px}
+.push-preferences-dialog #notification-settings .push-setting-copy strong{font-size:12px;line-height:1.4}
+.push-preferences-dialog #notification-settings .push-setting-copy small{display:none}
+.push-preferences-dialog #notification-settings .push-language-row{padding:10px 0;gap:8px;margin-top:0}
+.push-preferences-dialog #notification-settings .push-language-row strong,.push-preferences-dialog #notification-settings .push-device-card h4{font-size:12px}
+.push-preferences-dialog #notification-settings .push-language-row small{font-size:11px}
+.push-preferences-dialog #notification-settings .push-device-card{padding:10px;border-radius:8px}
+.push-preferences-dialog #notification-settings .push-install-help{margin-top:10px;padding-top:10px;font-size:11px}

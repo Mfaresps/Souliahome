@@ -7,6 +7,9 @@ export class NotificationsController {
   constructor(private readonly service: NotificationsService) {}
   @Get() settings(@Req() req: any) { return this.service.settings(req.user); }
   @Get('history') history(@Req() req: any, @Query('before') before?: string) { return this.service.history(req.user, before); }
+  @Get('read-state') readState(@Req() req: any) { return this.service.readState(req.user); }
+  @Post('read-state') saveReadState(@Req() req: any, @Body() body: any) { return this.service.saveReadState(req.user, body); }
+  @Post('read-all') readAll(@Req() req: any, @Body() body: any) { return this.service.markAllRead(req.user, body); }
   @Post('history/:id/read') read(@Req() req: any, @Param('id') id: string) { return this.service.markHistoryRead(req.user, id); }
   @Patch('preferences') preferences(@Req() req: any, @Body() body: any) { return this.service.preferences(req.user, body); }
   @Post('subscriptions') subscribe(@Req() req: any, @Body() body: any) { return this.service.subscribe(req.user, body); }

@@ -41,6 +41,28 @@ it('persists account preferences across service restart without mixing devices',
   expect(state.preferences.enabled).toBe(true); expect(state.preferences.delivered).toBe(false); expect(state.devices).toBe(1);
   expect(state.language).toBe('en');
 });
+it('persists legacy read receipts per user and resolves the actor avatar for history', async () => {
+  const actorId = new Types.ObjectId();
+  await connection.collection('users').insertOne({ _id: actorId, name: 'Avatar Actor', avatar: '/avatar-fixture.png', role: 'staff' });
+  await service.enqueue('comment', 'actor-avatar-fixture', '100', 'tx:fixture', user.userId, undefined, { actorUserId: actorId.toString(), actorName: 'Avatar Actor', commentId: 12 });
+  const page = await service.history(user);
+  expect(page.items[0].actorAvatar).toBe('/avatar-fixture.png');
+  expect(page.items[0].actorUserId).toBe(actorId.toString());
+  await service.saveReadState(user, { ids: ['cmp-pending-fixture'] });
+  const restarted = new NotificationsService(connection);
+  expect((await restarted.readState(user)).ids).toContain('cmp-pending-fixture');
+  expect((await restarted.readState({ ...user, userId: new Types.ObjectId().toString() })).ids).toEqual([]);
+});
+it('synchronizes history reads with the recipient mention without affecting another recipient', async () => {
+  const mentionId = new Types.ObjectId();
+  await connection.collection('mentions').insertOne({ _id: mentionId, targetUserId: user.userId, read: false });
+  await service.enqueue('mention', 'mention-read-fixture', '100', 'mention:' + mentionId, user.userId);
+  const page = await service.history(user);
+  await service.markHistoryRead({ ...user, userId: new Types.ObjectId().toString() }, String(page.items[0]._id));
+  expect((await connection.collection('mentions').findOne({ _id: mentionId }))?.read).toBe(false);
+  await service.markHistoryRead(user, String(page.items[0]._id));
+  expect((await connection.collection('mentions').findOne({ _id: mentionId }))?.read).toBe(true);
+});
 it('only admins control the language applied to every employee, overriding old staff choices', async () => {
   const staff = { ...user, userId: new Types.ObjectId().toString(), role: 'staff' };
   await service.preferences(user, { employeeLanguage: 'en' });

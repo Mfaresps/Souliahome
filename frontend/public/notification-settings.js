@@ -119,7 +119,7 @@
       const row = document.createElement('label'); row.className = 'push-setting-row' + (key === 'enabled' ? ' push-master' : ''); row.dataset.category = key;
       const symbol = document.createElement('span'); symbol.className = 'push-category-icon'; symbol.innerHTML = icon(key);
       const copy = document.createElement('span'); copy.className = 'push-setting-copy'; const heading = document.createElement('strong'); heading.textContent = title;
-      const description = document.createElement('small'); description.textContent = explanation; copy.append(heading, description);
+      const description = document.createElement('small'); description.textContent = explanation; copy.append(heading, description); row.title = explanation;
       const toggle = document.createElement('span'); toggle.className = 'push-switch';
       const input = document.createElement('input'); input.type = 'checkbox'; input.setAttribute('role', 'switch'); input.setAttribute('aria-label', title); input.checked = !!settings.preferences[key]; input.dataset.preference = key;
       const track = document.createElement('span'); track.className = 'push-switch-track'; track.setAttribute('aria-hidden', 'true'); toggle.append(input, track);
@@ -254,7 +254,7 @@
     finally { loading = false; }
   }
   const panelHome = document.getElementById('notification-settings').parentElement;
-  const dialog = document.createElement('dialog'); dialog.className = 'push-settings-dialog'; dialog.setAttribute('aria-label', 'إعدادات الإشعارات');
+  const dialog = document.createElement('dialog'); dialog.className = 'push-settings-dialog push-preferences-dialog'; dialog.setAttribute('aria-label', 'إعدادات الإشعارات');
   const close = document.createElement('button'); close.type = 'button'; close.className = 'btn btn-outline'; close.textContent = 'إغلاق'; close.addEventListener('click', () => dialog.close()); dialog.append(close);
   dialog.addEventListener('close', () => { panelHome.prepend(document.getElementById('notification-settings')); }); document.body.append(dialog);
   window.souliaOpenPushSettings = function () {
@@ -321,12 +321,13 @@
   }
   const header = document.querySelector('#notif-panel .notif-header');
   if (header) {
-    const button = document.createElement('button'); button.id = 'push-settings-shortcut'; button.className = 'btn btn-outline'; button.type = 'button'; button.textContent = 'إعدادات الإشعارات'; button.hidden = true;
-    button.addEventListener('click', () => window.souliaOpenPushSettings()); header.append(button);
+    const button = document.createElement('button'); button.id = 'push-settings-shortcut'; button.className = 'push-settings-icon'; button.type = 'button'; button.title = text('إعدادات الإشعارات', 'Notification settings'); button.setAttribute('aria-label', button.title); button.hidden = true;
+    button.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9.5 3-.6 2.2-2 .9-2-.6-2.4 4.1 1.6 1.6v2.3l-1.6 1.6 2.4 4.1 2-.6 2 .9.6 2.2h5l.6-2.2 2-.9 2 .6 2.4-4.1-1.6-1.6v-2.3l1.6-1.6-2.4-4.1-2 .6-2-.9-.6-2.2z"/><circle cx="12" cy="12" r="3"/></svg>';
+    button.addEventListener('click', () => window.souliaOpenPushSettings()); (header.querySelector('.notif-header-top > div') || header.querySelector('.notif-header-top') || header).append(button);
   }
   setInterval(() => {
     const title = text('إعدادات الإشعارات', 'Notification settings'); dialog.setAttribute('aria-label', title); close.textContent = text('إغلاق', 'Close');
-    const shortcut = document.getElementById('push-settings-shortcut'); if (shortcut) shortcut.textContent = title;
+    const shortcut = document.getElementById('push-settings-shortcut'); if (shortcut) { shortcut.title = title; shortcut.setAttribute('aria-label', title); }
     const profileShortcut = document.getElementById('push-profile-shortcut'); if (profileShortcut) profileShortcut.textContent = title;
     if (settings && renderedLanguage !== (english() ? 'en' : 'ar')) render();
     sync();

@@ -47,7 +47,7 @@ const script = fs.readFileSync(path.join(root, 'frontend/public/invoice-image.js
     ` });
     // Use the shipped Shopify preview adapter rather than a second money implementation.
     const adapter = html.slice(html.indexOf('function _spPeekPrintTx(o) {'), html.indexOf('function printSpPeekPreview(orderId)'));
-    const actionsHelper = html.slice(html.indexOf('function invoiceImageActions('), html.indexOf('function printInvoice(id)'));
+    const actionsHelper = html.slice(html.indexOf('function invoiceImageActions('), html.indexOf('async function printInvoice(id)'));
     const escapeHelper = html.slice(html.indexOf('function esc(str) {'), html.indexOf('\n/**', html.indexOf('function esc(str) {')));
     const escapeAttributeHelper = html.match(/function escHtml\(s\) \{[^\n]+/)[0];
     const menuHelper = html.slice(html.indexOf('function closeAllMenus() {'), html.indexOf("document.addEventListener('click', closeAllMenus);"));
@@ -87,9 +87,36 @@ const script = fs.readFileSync(path.join(root, 'frontend/public/invoice-image.js
       const copied = messages.at(-1);
       await clickMenu('shopify', 'order-1', 'copy');
       const shopifyCopied = messages.at(-1);
+      const modernClipboardItem = window.ClipboardItem;
+      window.ClipboardItem = class {
+        constructor(data) {
+          if (!(data['image/png'] instanceof Blob)) throw new TypeError('Expected Blob');
+          this.data = data;
+        }
+      };
+      await clickMenu('shopify', 'order-1', 'copy');
+      const legacyCopied = messages.at(-1);
+      window.ClipboardItem = modernClipboardItem;
+      const modernWrite = navigator.clipboard.write;
+      navigator.clipboard.write = async items => {
+        if (!(items[0].data['image/png'] instanceof Blob)) throw new TypeError('Promise data unsupported');
+        return modernWrite(items);
+      };
+      await clickMenu('shopify', 'order-1', 'copy');
+      const legacyWriteCopied = messages.at(-1);
+      navigator.clipboard.write = async () => { throw new DOMException('Permission denied', 'NotAllowedError'); };
+      currentLang = 'en';
+      await exportInvoiceImage('shopify', 'order-1', 'copy');
+      const permissionDenied = messages.at(-1);
+      currentLang = 'ar';
       navigator.clipboard.write = async () => { throw new Error('Permission denied'); };
       await exportInvoiceImage('transaction', 'tx-1', 'copy');
       const denied = messages.at(-1);
+      const buildCanvas = buildCompactInvoiceCanvas;
+      buildCompactInvoiceCanvas = async () => { throw new Error('Identity lookup failed'); };
+      await exportInvoiceImage('shopify', 'order-1', 'copy');
+      const renderFailed = messages.at(-1);
+      buildCompactInvoiceCanvas = buildCanvas;
       transactions[0].purchaseDetailsHidden = true;
       const before = downloads.length;
       await exportInvoiceImage('transaction', 'tx-1', 'download');
@@ -129,7 +156,8 @@ const script = fs.readFileSync(path.join(root, 'frontend/public/invoice-image.js
       const slow = await buildCompactInvoiceCanvas({...transactions[0],items:[{...sample,imageUrl:'http://images.test/slow.svg'}]});
       const slowMs = performance.now()-started;
       const fallbackPng = slow.toDataURL('image/png').startsWith('data:image/png');
-      return {info, arText, previewText, unsupported, copied, shopifyCopied, denied, restricted,
+      return {info, arText, previewText, unsupported, copied, shopifyCopied, legacyCopied, legacyWriteCopied,
+        permissionDenied, renderFailed, denied, restricted,
         longHeight:long.height, english, actions, written, downloads,
         photoFlags,deduped,redPixels,layouts,slowMs,fallbackPng,
         portraitPreview:portrait.toDataURL('image/png'),landscapePreview};
@@ -144,8 +172,14 @@ const script = fs.readFileSync(path.join(root, 'frontend/public/invoice-image.js
     assert.equal(result.unsupported.error, true);
     assert.equal(result.copied.error, false);
     assert.equal(result.shopifyCopied.error, false);
-    assert.equal(result.written.length, 2);
+    assert.equal(result.legacyCopied.error, false);
+    assert.equal(result.legacyWriteCopied.error, false);
+    assert.equal(result.written.length, 4);
     assert.equal(result.written[0].type, 'image/png');
+    assert.equal(result.permissionDenied.error, true);
+    assert.match(result.permissionDenied.message, /Allow clipboard access/);
+    assert.equal(result.renderFailed.error, true);
+    assert.match(result.renderFailed.message, /Identity lookup failed/);
     assert.equal(result.denied.error, true);
     assert.equal(result.restricted.message.error, true);
     assert.equal(result.restricted.unchanged, true);
@@ -165,6 +199,33 @@ const script = fs.readFileSync(path.join(root, 'frontend/public/invoice-image.js
     }
     assert.ok(result.slowMs<2600, 'slow image does not block receipt generation');
     assert.equal(result.fallbackPng,true);
+    // Exercise the real ClipboardItem and OS clipboard, with a trusted click on localhost.
+    const clipboardPage = await browser.newPage();
+    await clipboardPage.setRequestInterception(true);
+    clipboardPage.on('request', request => request.respond({status:200, contentType:'text/html', body:'<button id="copy" onclick="exportInvoiceImage(\'shopify\',\'order-1\',\'copy\')">Copy</button>'}));
+    await clipboardPage.goto('http://localhost:18765');
+    await browser.defaultBrowserContext().overridePermissions('http://localhost:18765', ['clipboard-read', 'clipboard-write', 'clipboard-sanitized-write']);
+    await clipboardPage.addScriptTag({content: `
+      var currentLang = 'en', settings = {}, messages = [];
+      function toast(message, error) { messages.push({message, error:!!error}); }
+      function t(key) { return key; }
+      function _spOrderById() { return {ref:'real-clipboard', items:[{name:'Product', qty:1, price:100, total:100}], total:100}; }
+      function _spDepositOf() { return {deposit:0}; }
+    ` + adapter + '\n' + script});
+    await clipboardPage.bringToFront();
+    await clipboardPage.click('#copy');
+    await clipboardPage.waitForFunction('messages.length > 0');
+    const realMessage = await clipboardPage.evaluate(() => messages.at(-1));
+    assert.equal(realMessage.error, false, realMessage.message);
+    const realClipboard = await clipboardPage.evaluate(async () => {
+      const items = await navigator.clipboard.read();
+      const png = await items[0].getType('image/png');
+      return {message:messages.at(-1), type:png.type, size:png.size};
+    });
+    assert.equal(realClipboard.message.error, false, realClipboard.message.message);
+    assert.equal(realClipboard.type, 'image/png');
+    assert.ok(realClipboard.size > 1000);
+    await clipboardPage.close();
     if(process.argv.includes('--preview')) {
       const folder=require('node:os').tmpdir();
       for(const [name,data] of [['portrait',result.portraitPreview],['landscape',result.landscapePreview]]) {
@@ -174,6 +235,6 @@ const script = fs.readFileSync(path.join(root, 'frontend/public/invoice-image.js
       }
     }
     assert.equal(errors.length, 0, errors.join('\n'));
-    console.log('PASS: menu clicks, totals, clipboard, product photos, CORS/error/timeout fallback, landscape grids (6–60 items), and shipped HTML syntax');
+    console.log('PASS: real PNG clipboard write/read, legacy clipboard fallbacks, permission/render errors, menu clicks, totals, photos, landscape grids, and shipped HTML syntax');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

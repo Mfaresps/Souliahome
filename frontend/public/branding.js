@@ -4,7 +4,7 @@
   const CACHE = 'soulia_branding_v1';
   const SLOTS = ['splash', 'header', 'tab'];
   const UUID = /^[a-f0-9-]{36}$/i;
-  const original = slot => slot === 'tab' ? '/favicon.png' : '/soulia-logo.svg';
+  const original = slot => slot === 'tab' ? '/favicon.png' : slot === 'splash' ? '/soulia-startup-logo.svg' : '/soulia-logo.svg';
   const empty = () => ({ splash: null, header: null, tab: null });
   const state = { public: { selection: empty(), logos: [] }, logos: [], draft: empty(), loaded: false, loading: false,
     dirty: false, busy: false, file: null, uploadName: '', message: '', error: false, lastRefresh: 0 };
@@ -27,10 +27,20 @@
     Object.entries(groups).forEach(([slot, selector]) => {
       const id = state.public.selection[slot];
       document.querySelectorAll(selector).forEach(img => {
+        const startup = img.matches('#splash-screen .splash-logo') && img.closest('#splash-screen').style.display !== 'none';
+        // Resolve the cached choice once before the first paint. A background
+        // refresh updates the next visit instead of swapping the visible logo.
+        if (startup && img.dataset.startupBrandLocked === '1') return;
+        if (startup) {
+          img.dataset.startupBrandLocked = '1';
+          img.addEventListener('load', () => img.classList.add('is-ready'));
+        }
         const src = id ? url(id, slot) : original(slot);
         if (img.dataset.failedBrandUrl === src) return;
         if (img.getAttribute('src') !== src) img.setAttribute('src', src);
+        if (startup) img.parentElement.querySelector('.splash-contour-source')?.setAttribute('href', src);
         img.classList.toggle('soulia-custom-brand', !!id);
+        if (startup && img.complete && img.naturalWidth > 0) img.classList.add('is-ready');
         if (!img.dataset.brandFallbackBound) {
           img.dataset.brandFallbackBound = '1';
           img.addEventListener('error', () => {
@@ -38,6 +48,7 @@
             img.dataset.failedBrandUrl = img.getAttribute('src');
             img.classList.remove('soulia-custom-brand');
             img.src = original(slot);
+            if (startup) img.parentElement.querySelector('.splash-contour-source')?.setAttribute('href', original(slot));
           });
         }
       });

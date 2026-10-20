@@ -18,7 +18,7 @@ function setup() {
   }) };
   const stored = new Map();
   const historyRows = new Map();
-  const inbox = { updateOne: jest.fn(async (filter: any, update: any) => {
+  const inbox = { findOne: jest.fn(async (filter: any) => historyRows.get(filter._id)?.userId === filter.userId ? historyRows.get(filter._id) : null), updateOne: jest.fn(async (filter: any, update: any) => {
     if (update.$setOnInsert && !historyRows.has(filter._id)) historyRows.set(filter._id, { _id: filter._id, ...update.$setOnInsert });
     if (update.$set && historyRows.get(filter._id)?.userId === filter.userId) Object.assign(historyRows.get(filter._id), update.$set);
   }) };
@@ -307,7 +307,7 @@ describe('SOULIA notification message formats', () => {
     const model: any = { insertMany: jest.fn(async () => [row]) };
     const service: any = new MentionsService(model); service.notifications = { enqueue: jest.fn(async () => {}) };
     await service.createMany([row], true); const first = service.notifications.enqueue.mock.calls[0];
-    expect(first).toEqual(['mention', expect.stringMatching(/^mention:/), '2638', 'mention:' + admin.userId, 'target', undefined, { actorName: 'أحمد' }]);
+    expect(first).toEqual(['mention', expect.stringMatching(/^mention:/), '2638', 'mention:' + admin.userId, 'target', undefined, { actorName: 'أحمد', actorUserId: 'author', commentId: 15 }]);
     await service.createMany([row], true); expect(service.notifications.enqueue.mock.calls[1][1]).toBe(first[1]);
     expect(JSON.stringify(first)).not.toContain(row.commentText);
     service.notifications.enqueue.mockClear(); await service.createMany([row]); expect(service.notifications.enqueue).not.toHaveBeenCalled();

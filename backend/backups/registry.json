@@ -1,5 +1,40 @@
 [
   {
+    "filename": "backup_2026-10-20T21-43-50.json",
+    "date": "2026-10-20T21:43:52.195Z",
+    "auto": false
+  },
+  {
+    "filename": "backup_2026-10-20T02-25-42.json",
+    "date": "2026-10-20T21:43:50.238Z",
+    "auto": false
+  },
+  {
+    "filename": "backup_2026-10-20T21-41-01.json",
+    "date": "2026-10-20T21:41:02.740Z",
+    "auto": false
+  },
+  {
+    "filename": "backup_2026-10-20T02-25-42.json",
+    "date": "2026-10-20T21:41:00.555Z",
+    "auto": false
+  },
+  {
+    "filename": "backup_2026-10-20T02-25-42.json",
+    "date": "2026-10-20T21:38:26.516Z",
+    "auto": false
+  },
+  {
+    "filename": "backup_2026-10-20T02-25-42.json",
+    "date": "2026-10-20T21:28:42.526Z",
+    "auto": false
+  },
+  {
+    "filename": "backup_2026-10-20T02-25-42.json",
+    "date": "2026-10-20T21:28:25.362Z",
+    "auto": false
+  },
+  {
     "filename": "backup_auto_2026-10-20T00-00-00.json",
     "date": "2026-10-20T00:00:01.538Z",
     "auto": true
