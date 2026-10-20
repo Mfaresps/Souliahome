@@ -158,4 +158,34 @@ describe('complete backups and receipt data independent of image storage', () =>
     expect(fs.existsSync(path.join(directory, 'backup_incomplete.json'))).toBe(false);
     expect(await service.getBackupList()).toHaveLength(1);
   });
+
+  it('backs up and fully restores unit identity/provenance/events without generating replacements', async () => {
+    const unit = { _id: '507f1f77bcf86cd799439021', productId: '507f1f77bcf86cd799439022',
+      barcode: 'SU-507F1F77BCF86CD799439021', status: 'inspection-required',
+      registeredByUserId: '507f1f77bcf86cd799439024', registeredBy: 'Counter',
+      origin: { kind: 'legacy-unknown', reconciliationRef: 'COUNT-1' }, __v: 3,
+      createdAt: '2026-10-17T10:00:00.000Z' };
+    const event = { _id: '507f1f77bcf86cd799439023', unitId: unit._id, sequence: 1, operationKey: 'count:1', action: 'registered',
+      byUserId: unit.registeredByUserId, by: 'Counter', toStatus: unit.status };
+    source.products = [{ _id: unit.productId, code: 'EXISTING', name: 'Existing', openingBalance: 1 }];
+    source.inventoryunits = [unit]; source.inventoryunitevents = [event];
+    const receipt = { _id: 'a'.repeat(64), fingerprint: 'b'.repeat(64), actorId: unit.registeredByUserId,
+      kind: 'register', result: { unit }, createdAt: '2026-10-17T10:00:00.000Z' };
+    source.inventoryunitoperations = [receipt];
+    const result = await service.createBackup();
+    expect(result.success).toBe(true);
+    // Simulate a separate restoration target with no tracking data.
+    source.inventoryunits = []; source.inventoryunitevents = [];
+    source.inventoryunitoperations = [];
+    expect((await service.restoreBackup(result.filename)).success).toBe(true);
+    expect(String(inserted.inventoryunits[0]._id)).toBe(unit._id);
+    expect(inserted.inventoryunits[0]).toMatchObject({ barcode: unit.barcode, origin: unit.origin, __v: 3 });
+    expect(inserted.inventoryunits[0].createdAt).toBeInstanceOf(Date);
+    expect(String(inserted.inventoryunitevents[0]._id)).toBe(event._id);
+    expect(inserted.inventoryunitevents[0].unitId).toBe(unit._id);
+    expect(inserted.inventoryunitevents[0].operationKey).toBe('count:1');
+    expect(inserted.inventoryunitoperations[0]._id).toBe(receipt._id);
+    expect(inserted.inventoryunitoperations[0].fingerprint).toBe(receipt.fingerprint);
+    expect(inserted.inventoryunitoperations[0].createdAt).toBeInstanceOf(Date);
+  });
 });

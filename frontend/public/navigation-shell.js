@@ -28,7 +28,7 @@ function syncNavigationShell() {
     const sections = [
       [shellText('نظرة عامة','OVERVIEW'),['dashboard','transaction']],
       [shellText('المبيعات والطلبات','SALES & ORDERS'),['shopify-orders','movements','pickup-orders']],
-      [shellText('الكتالوج','CATALOG'),['inventory','products','categories']],
+      [shellText('الكتالوج','CATALOG'),['inventory','barcodes','products','categories']],
       [shellText('خدمة العملاء','CUSTOMER CARE'),['complaints','csp','clients']],
       [shellText('المالية والفريق','FINANCE & TEAM'),['approvals','suppliers','expenses','reports','vault','users']]
     ];

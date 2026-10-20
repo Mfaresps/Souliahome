@@ -1,0 +1,3 @@
+﻿const fs=require('fs'),cp=require('child_process');const p='frontend/public/index.html';let s=fs.readFileSync(p,'utf8').replace(/\r\n/g,'\n');fs.writeFileSync('artifacts/index-before-startup-fix.html',s);const base=cp.execFileSync('git',['show','HEAD:frontend/public/index.html'],{encoding:'utf8',maxBuffer:20*1024*1024}).replace(/\r\n/g,'\n');let count=0;
+for(const line of base.split('\n')){if(!line.includes('`n'))continue;const damaged=line.replaceAll('`n','\n');const needle='\n'+damaged+'\n';if(s.includes(needle)){s=s.replaceAll(needle,()=> '\n'+line+'\n');count++;}}
+fs.writeFileSync(p,s);console.log('Restored '+count+' damaged lines against original content.');

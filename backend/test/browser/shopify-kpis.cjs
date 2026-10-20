@@ -73,6 +73,8 @@ const SPEC = [
       currentPage = 'shopify-orders';
       renderShopifyOrders();
     }, SPEC);
+    await page.waitForNetworkIdle({idleTime:300,timeout:10000});
+    await page.addStyleTag({content:'*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}'});
     await setup();
 
     const vals = () => page.$$eval('#sp-kpi .spk-tile', ts => Object.fromEntries(ts.map(t => [t.className.match(/is-(\w+)/)[1], t.querySelector('.spk-val').textContent.trim()])));
@@ -83,6 +85,31 @@ const SPEC = [
     check(await page.$eval('#sp-kpi', e => !e.querySelector('.spk-open')), 'no «no action» note when every order is bucketed');
     check(await page.$eval('#sp-kpi .is-received .spk-sub', e => /same time yesterday/.test(e.textContent)), 'received states its comparison window');
     check(await page.$eval('#sp-kpi .spk-tile.is-rate .spk-meter i', e => e.style.width === '33%'), 'rate meter at 33%');
+
+    for (const [key,count] of [['received',9],['confirmed',3],['followup',4],['cancelled',2],['rate',3]]) {
+      await page.click(`#sp-kpi .spk-tile.is-${key}`);
+      try { await page.waitForFunction((key,count)=>document.querySelector(`#sp-kpi .spk-tile.is-${key}`)?.getAttribute('aria-pressed')==='true'&&document.querySelectorAll('#sp-mobile-list .sp-card').length===count,{timeout:5000},key,count); }
+      catch(error){console.error(await page.evaluate(()=>({filter:_spkFilter,matched:_shopifyOrders.filter(_spkMatchesOrder).length,cards:document.querySelectorAll('#sp-mobile-list .sp-card').length,active:document.activeElement?.outerHTML?.slice(0,200),body:document.body.className})));throw error;}
+      check(await page.$$eval('#sp-mobile-list .sp-card',rows=>rows.length)===count,`${key} KPI filters the actual orders`);
+      check(await page.$eval(`#sp-kpi .spk-tile.is-${key}`,b=>b.getAttribute('aria-pressed')==='true'),`${key} KPI indicates selection`);
+      await page.click(`#sp-kpi .spk-tile.is-${key}`);
+      check(await page.evaluate(()=>_spkFilter===''),`${key} second click clears its filter`);
+    }
+    await page.focus('#sp-kpi .spk-tile.is-confirmed');await page.keyboard.press('Enter');
+    check(await page.$$eval('#sp-mobile-list .sp-card',rows=>rows.length)===3,'KPI supports keyboard activation');
+    await page.evaluate(()=>_spkSetPeriod('yesterday'));
+    check(await page.$$eval('#sp-mobile-list .sp-card',rows=>rows.length)===3,'active KPI follows a changed reporting period');
+    await page.evaluate(()=>{_spkSetPeriod('today');clearAllSpFilters();_shopifyTab='pending';renderShopifyOrders();});
+    check(await page.evaluate(()=>_spkFilter===''),'Clear filters also clears the KPI selection');
+
+    for(const lang of ['ar','en'])for(const width of [320,390]){
+      await page.setViewport({width,height:900});
+      await page.evaluate(lang=>{currentLang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';_shopifyOrders.forEach(o=>o.client='Fatma Hassan Abdelrahman Mohamed Mahmoud');renderShopifyOrders();},lang);
+      check(await page.$eval('#sp-mobile-list .sp-card-client',e=>{const s=getComputedStyle(e);return e.textContent==='Fatma Hassan Abdelrahman Mohamed Mahmoud'&&s.whiteSpace==='normal'&&s.textOverflow!=='ellipsis'&&e.scrollWidth<=e.clientWidth+1;}),`${lang} ${width}: full customer name wraps`);
+      check(await page.$eval('#sp-mobile-list .sp-card:has(.sp-card-deposit-inline)',card=>{const total=card.querySelector('.sp-total-neutral').getBoundingClientRect(),deposit=card.querySelector('.sp-card-deposit-inline').getBoundingClientRect();return deposit.top>=total.bottom-1;}),`${lang} ${width}: deposit is below the total`);
+      check(await page.$eval('#sp-mobile-list .spdep-switch-track',e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e,'::after');return r.width>=30&&r.height>=18&&parseFloat(s.borderRadius)>=7&&s.display!=='none';}),`${lang} ${width}: without-deposit has a rounded toggle`);
+    }
+    await page.setViewport({width:1440,height:1000});await page.evaluate(()=>{currentLang='en';document.documentElement.dir='ltr';renderShopifyOrders();});
 
     /* The period picker is ONE calendar icon beside «Report», opening a menu. */
     check(await page.$$eval('#sp-kpi .spk-seg, #sp-kpi .spk-seg-btn', e => e.length === 0), 'no five-tab period strip any more');
@@ -121,7 +148,7 @@ const SPEC = [
     check((await vals()).received === '14', 'last 3 calendar days: today and yesterday included, 3-days-ago excluded');
     check(await page.$eval('#spk-period-btn', b => b.getAttribute('aria-label') === 'Period: Last 3 days'), '3-day preset is selected');
     check(await page.evaluate(() => _spkReportText(_spkStats('three')).startsWith('📦 Orders Report — Last 3 Days')), '3-day report uses its own title');
-    await page.evaluate(() => { _spkToggleMenu(); _spkSetPeriod('custom'); });
+    await page.evaluate(() => { _spkCloseMenu(false); _spkToggleMenu(); _spkSetPeriod('custom'); });
     check(await page.evaluate(() => !!document.querySelector('#spk-period-menu #spk-from') && document.activeElement.id === 'spk-from'), 'custom range opens its dates inside the menu, focused');
     await page.evaluate(() => {
       const n = new Date(), day = offset => _spkYmd(new Date(n.getFullYear(), n.getMonth(), n.getDate() + offset));
@@ -155,7 +182,7 @@ const SPEC = [
     let copied = '';
     await page.exposeFunction('__copied', t => { copied = t; });
     await page.evaluate(() => { _copyTextWithFallback = async t => { await window.__copied(t); return true; }; });
-    await page.click('.spk-report-btn');
+    await page.click('.spk-actions > .spk-report-btn');
     await page.waitForSelector('#spk-rep-prev img', { timeout: 8000 });
     const img = await page.$eval('#spk-rep-prev img', i => new Promise(r => i.complete ? r([i.naturalWidth, i.naturalHeight]) : i.onload = () => r([i.naturalWidth, i.naturalHeight])));
     check(img[0] === 1080 && img[1] > 1200, `report image drawn ${img[0]}×${img[1]}`);
@@ -190,7 +217,7 @@ const SPEC = [
     check(await page.$eval('.spk-tile.is-received .spk-lbl', e => e.textContent === 'الأوردرات الواردة'), 'Arabic labels');
     check(await noOverflow(), 'desktop ar dark: nothing spills');
     if (shotsDir) await (await page.$('#sp-kpi')).screenshot({ path: path.join(shotsDir, 'strip-ar-dark.png') });
-    await page.click('.spk-report-btn');
+    await page.click('.spk-actions > .spk-report-btn');
     await page.waitForSelector('#spk-rep-prev img', { timeout: 8000 });
     check(true, 'Arabic report image drawn');
     if (shotsDir) {
@@ -208,7 +235,7 @@ const SPEC = [
     check(await page.$eval('#sp-kpi', e => e.getBoundingClientRect().width > 330), '390px: strip uses the phone width');
     check(await page.$$eval('#sp-kpi .spk-lbl', ls => ls.every(l => l.scrollWidth <= l.clientWidth + 1 && l.scrollHeight <= l.clientHeight + 1)), '390px: no tile label is clipped');
     check(await noOverflow(), '390px: nothing spills, no page overflow');
-    await page.evaluate(() => { _spkToggleMenu(); _spkSetPeriod('custom'); });
+    await page.evaluate(() => { _spkCloseMenu(false); _spkToggleMenu(); _spkSetPeriod('custom'); });
     check(await page.$eval('#spk-period-menu', m => { const r = m.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }), '390px: the period menu stays inside the screen');
     check(await page.$eval('#spk-to-named', e => /[\u0600-\u06ff]/.test(e.textContent)), 'custom controls spell out Arabic month names');
     check(await noOverflow(), '390px Arabic: date controls and five presets do not spill');

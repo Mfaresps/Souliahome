@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import { restrictInventoryParentDeletion } from '../../inventory-units/inventory-unit-integrity';
 
 export type TransactionDocument = HydratedDocument<Transaction>;
 
@@ -37,6 +38,8 @@ export class TransactionItem {
 
 @Schema({ timestamps: true })
 export class Transaction {
+  @Prop({ default: 'MAIN' })
+  warehouseCode: string;
   @Prop({ required: true })
   date: string;
 
@@ -422,6 +425,14 @@ export class Transaction {
   /** Preparation tick: true when this order has been marked ready within its prep group */
   @Prop({ default: false })
   prepChecked: boolean;
+
+  /** Serializes barcode pickup transitions against the prep-complete check. */
+  @Prop({ default: 0 })
+  unitTrackingRevision: number;
+
+  /** Audited one-piece damaged-label exceptions; never barcode matches. */
+  @Prop({ type: [Object], default: [] })
+  pickingExceptions: any[];
 
   /** Prep group metadata — persisted so groups survive localStorage wipe */
   @Prop({ default: '' })
@@ -823,3 +834,4 @@ export class Transaction {
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
+restrictInventoryParentDeletion(TransactionSchema, ['origin.purchaseTransactionId', 'assignment.transactionId'], ['transactionId']);

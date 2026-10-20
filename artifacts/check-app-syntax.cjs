@@ -1,0 +1,1 @@
+﻿const fs=require('fs'),vm=require('vm');const h=fs.readFileSync('frontend/public/index.html','utf8');let n=0;for(const m of h.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)){if(!m[1].trim())continue;try{new vm.Script(m[1],{filename:'inline-'+(++n)})}catch(e){console.error(e.stack);process.exitCode=1}}

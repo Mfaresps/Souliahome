@@ -7,7 +7,9 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, ClientSession, Types } from 'mongoose';
+import { DatabaseWriteContext } from '../shared/database-write-context';
+import { InventoryUnitsService } from '../inventory-units/inventory-units.service';
 import {
   SupplierReturnOrder,
   SupplierReturnOrderDocument,
@@ -60,7 +62,26 @@ export class SupplierReturnsService {
     private readonly supplierLedgerService: SupplierLedgerService,
     private readonly allocationService: SrAllocationService,
     private readonly productsService: ProductsService,
+    private readonly unitTracking: InventoryUnitsService,
   ) {}
+
+  private async atomic<T>(work: (context: DatabaseWriteContext) => Promise<T>, id?: string): Promise<T> {
+    const session = await this.srModel.db.startSession(); let result!: T;
+    let effects: DatabaseWriteContext['afterCommit'] = [];
+    try {
+      await session.withTransaction(async () => {
+        effects = [];
+        if (id) await this.srModel.updateOne({ _id: id }, { $inc: { unitTrackingRevision: 1 } }, { session });
+        result = await work({ session, afterCommit: effects });
+      }, { readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' } });
+    } finally { await session.endSession(); }
+    for (const effect of effects) { try { await effect(); } catch { /* Committed records remain authoritative. */ } }
+    return result;
+  }
+
+  private logAfter(context: DatabaseWriteContext, supplierId: string, entry: { action: string; detail: string; by: string }) {
+    context.afterCommit.push(async () => { await this.suppliersService.addLog(supplierId, entry); });
+  }
 
   /**
    * صورة الصنف بالكود، للمسار العام اللي مافيهوش فاتورة أصلية واحدة نقرأ منها.
@@ -76,6 +97,35 @@ export class SupplierReturnsService {
     } catch {
       return '';
     }
+  }
+
+  async lookupPiece(identifier: string, supplierId?: string) {
+    const data = await this.unitTracking.lookup(identifier);
+    if (supplierId && Types.ObjectId.isValid(supplierId) && data.unit.origin?.purchaseTransactionId && !['supplier-return-pending', 'returned-to-supplier'].includes(data.unit.status)) {
+      const source: any = await this.srModel.db.collection('transactions').findOne({ _id: new Types.ObjectId(data.unit.origin.purchaseTransactionId) });
+      const supplier: any = await this.srModel.db.collection('suppliers').findOne({ _id: new Types.ObjectId(supplierId) });
+      if (!source || !supplier || source.cancelled || source.archived || (source.supplierId ? String(source.supplierId) !== supplierId : String(source.client || '').trim() !== String(supplier.name).trim())) {
+        throw new BadRequestException({ code: 'SR_WRONG_SUPPLIER', message: 'Return piece belongs to another supplier' });
+      }
+    }
+    const product = await this.srModel.db.collection('products').findOne({ _id: new Types.ObjectId(data.unit.productId) },
+      { projection: { name: 1, code: 1 } });
+    return { unit: data.unit, product, supplierReturn: data.supplierReturn };
+  }
+
+  async linkPieces(id: string, dto: UpdateSupplierReturnDto, by: string, actorId: string, context?: DatabaseWriteContext): Promise<SupplierReturnOrderDocument> {
+    if (!context) return this.atomic(ctx => this.linkPieces(id, dto, by, actorId, ctx), id);
+    const r = await this.findById(id, context.session);
+    if (!NON_TERMINAL_STATUSES.includes(r.status)) throw new BadRequestException({ code: 'SR_LINK_CLOSED', message: 'Return is no longer editable' });
+    if (!dto.items || dto.items.length !== r.items.length || dto.items.some(input => !r.items.some(item => item.code === input.code && item.qty === input.qty))) {
+      throw new BadRequestException({ code: 'SR_PIECE_COUNT', message: 'Return products and quantities must match' });
+    }
+    await this.unitTracking.finishSupplierReturnUnits(r, actorId, by, context, true);
+    r.warehouseCode = dto.warehouseCode || r.warehouseCode || 'MAIN';
+    await this.unitTracking.reserveSupplierReturnUnits(r.items, dto.items, r, actorId, by, context);
+    r.markModified('items');
+    r.statusHistory.push({ status: r.status, changedBy: by, changedAt: new Date().toISOString(), note: 'ربط القطع الفعلية بالمسح أو الإدخال اليدوي' });
+    return r.save({ session: context.session });
   }
 
   private async generateReturnNumber(): Promise<string> {
@@ -424,8 +474,8 @@ export class SupplierReturnsService {
     return this.srModel.find({ supplierId }).sort({ createdAt: -1 }).exec();
   }
 
-  async findById(id: string): Promise<SupplierReturnOrderDocument> {
-    const r = await this.srModel.findById(id).exec();
+  async findById(id: string, session?: ClientSession): Promise<SupplierReturnOrderDocument> {
+    const r = await this.srModel.findById(id).session(session || null).exec();
     if (!r) {
       throw new NotFoundException('مرتجع المورد غير موجود');
     }
@@ -436,7 +486,9 @@ export class SupplierReturnsService {
     dto: CreateSupplierReturnDto,
     requestedBy: string,
     isAdminRequester = false,
+    actorId = '', context?: DatabaseWriteContext,
   ): Promise<SupplierReturnOrderDocument> {
+    if (!context) return this.atomic(ctx => this.create(dto, requestedBy, isAdminRequester, actorId, ctx));
     // Not required at create-time — see SupplierReturnOrder.vaultRefundAccount. An invalid label is
     // still rejected; an absent one just defers the choice to complete().
     if (dto.vaultRefundAccount && !normalizeVaultAccountLabel(dto.vaultRefundAccount)) {
@@ -478,7 +530,7 @@ export class SupplierReturnsService {
           ? 'إنشاء واعتماد تلقائي (بواسطة مدير)'
           : 'إنشاء وإرسال للاعتماد',
     };
-    const created = await this.srModel.create({
+    const data: any = {
       supplierId: dto.supplierId,
       supplierName: dto.supplierName,
       returnNumber,
@@ -499,13 +551,18 @@ export class SupplierReturnsService {
       linkedTransactionId: '',
       statusHistory: [statusEntry],
       ...(autoApprove ? { approvedBy: requestedBy, approvedAt: now } : {}),
-    });
-    await this.suppliersService.addLog(dto.supplierId, {
+      warehouseCode: dto.warehouseCode || 'MAIN',
+    };
+    const created = new this.srModel(data);
+    await this.unitTracking.reserveSupplierReturnUnits(items, dto.items, created, actorId, requestedBy, context);
+    created.items = items; created.markModified('items');
+    await created.save({ session: context.session });
+    this.logAfter(context, dto.supplierId, {
       action: 'إنشاء مرتجع مورد',
       detail: `مرتجع ${returnNumber} — ${itemsTotal} ج${created.originalRef ? ' من الفاتورة ' + created.originalRef : ''}${autoApprove ? ' (معتمد تلقائياً)' : ''}`,
       by: requestedBy,
     });
-    if (!dto.saveAsDraft) await notifyApproval(this.notifications, 'approval:supplier-return:' + created._id + ':' + (autoApprove ? 'approved' : 'pending'), returnNumber, 'supplierReturn:' + created._id, { actorName: requestedBy, actionKey: 'supplier-return', status: autoApprove ? 'approved' : 'pending' });
+    if (!dto.saveAsDraft) context.afterCommit.push(() => notifyApproval(this.notifications, 'approval:supplier-return:' + created._id + ':' + (autoApprove ? 'approved' : 'pending'), returnNumber, 'supplierReturn:' + created._id, { actorName: requestedBy, actionKey: 'supplier-return', status: autoApprove ? 'approved' : 'pending' }));
     return created;
   }
 
@@ -514,8 +571,10 @@ export class SupplierReturnsService {
     id: string,
     dto: UpdateSupplierReturnDto,
     by: string,
+    actorId = '', context?: DatabaseWriteContext,
   ): Promise<SupplierReturnOrderDocument> {
-    const r = await this.findById(id);
+    if (!context) return this.atomic(ctx => this.update(id, dto, by, actorId, ctx), id);
+    const r = await this.findById(id, context.session);
     if (!['مسودة', 'معلق'].includes(r.status)) {
       throw new BadRequestException(
         'لا يمكن تعديل هذا الطلب بعد اعتماده أو إتمامه أو رفضه',
@@ -549,6 +608,11 @@ export class SupplierReturnsService {
         dto.items,
         String(r._id),
       );
+      await this.unitTracking.finishSupplierReturnUnits(r, actorId, by, context, true);
+      r.warehouseCode = dto.warehouseCode || r.warehouseCode || 'MAIN';
+      if (dto.reason) r.reason = dto.reason;
+      if (dto.reasonDetails !== undefined) r.reasonDetails = dto.reasonDetails;
+      await this.unitTracking.reserveSupplierReturnUnits(items, dto.items, r, actorId, by, context);
       r.items = items;
       r.linkedInvoices = linkedInvoices;
       r.allocationMethod = allocationMethod;
@@ -571,8 +635,8 @@ export class SupplierReturnsService {
       changedAt: new Date().toISOString(),
       note: 'تعديل بيانات المرتجع',
     });
-    const saved = await r.save();
-    await this.suppliersService.addLog(r.supplierId, {
+    const saved = await r.save({ session: context.session });
+    this.logAfter(context, r.supplierId, {
       action: 'تعديل مرتجع مورد',
       detail: `مرتجع ${r.returnNumber} — ${r.total} ج`,
       by,
@@ -583,8 +647,10 @@ export class SupplierReturnsService {
   async submitForApproval(
     id: string,
     by: string,
+    context?: DatabaseWriteContext,
   ): Promise<SupplierReturnOrderDocument> {
-    const r = await this.findById(id);
+    if (!context) return this.atomic(ctx => this.submitForApproval(id, by, ctx), id);
+    const r = await this.findById(id, context.session);
     if (r.status !== 'مسودة') {
       throw new BadRequestException('لا يمكن إرسال هذا الطلب — ليس في حالة مسودة');
     }
@@ -594,16 +660,18 @@ export class SupplierReturnsService {
       changedBy: by,
       changedAt: new Date().toISOString(),
     });
-    const saved = await r.save();
-    await notifyApproval(this.notifications, 'approval:supplier-return:' + id + ':pending', r.returnNumber, 'supplierReturn:' + id, { actorName: r.createdBy || by, actionKey: 'supplier-return', status: 'pending' });
+    const saved = await r.save({ session: context.session });
+    context.afterCommit.push(() => notifyApproval(this.notifications, 'approval:supplier-return:' + id + ':pending', r.returnNumber, 'supplierReturn:' + id, { actorName: r.createdBy || by, actionKey: 'supplier-return', status: 'pending' }));
     return saved;
   }
 
   async approve(
     id: string,
     approvedBy: string,
+    context?: DatabaseWriteContext,
   ): Promise<SupplierReturnOrderDocument> {
-    const r = await this.findById(id);
+    if (!context) return this.atomic(ctx => this.approve(id, approvedBy, ctx), id);
+    const r = await this.findById(id, context.session);
     if (r.status !== 'معلق') {
       throw new BadRequestException('الطلب ليس معلقاً');
     }
@@ -633,13 +701,13 @@ export class SupplierReturnsService {
       changedBy: approvedBy,
       changedAt: r.approvedAt,
     });
-    const saved = await r.save();
-    await this.suppliersService.addLog(r.supplierId, {
+    const saved = await r.save({ session: context.session });
+    this.logAfter(context, r.supplierId, {
       action: 'اعتماد مرتجع مورد',
       detail: `مرتجع ${r.returnNumber} — بانتظار الإتمام`,
       by: approvedBy,
     });
-    await notifyApproval(this.notifications, 'approval:supplier-return:' + id + ':approved', r.returnNumber, 'supplierReturn:' + id, { actorName: r.createdBy, actionKey: 'supplier-return', status: 'approved' });
+    context.afterCommit.push(() => notifyApproval(this.notifications, 'approval:supplier-return:' + id + ':approved', r.returnNumber, 'supplierReturn:' + id, { actorName: r.createdBy, actionKey: 'supplier-return', status: 'approved' }));
     return saved;
   }
 
@@ -680,8 +748,11 @@ export class SupplierReturnsService {
     settlementMode?: 'debt-offset' | 'refund' | 'credit',
     remainderMode?: 'refund' | 'credit',
     vaultRefundAccount?: string,
+    actorId = '', context?: DatabaseWriteContext,
   ): Promise<SupplierReturnOrderDocument> {
-    const r = await this.findById(id);
+    if (!context) return this.atomic(ctx => this.complete(id, completedBy, settlementMode, remainderMode, vaultRefundAccount, actorId, ctx), id);
+    const r = await this.findById(id, context.session);
+    if (r.status === 'مكتمل' && r.linkedTransactionId && !r.reversal) return r;
     if (r.status !== 'معتمد') {
       throw new BadRequestException('يجب اعتماد الطلب أولاً قبل إتمامه');
     }
@@ -692,7 +763,7 @@ export class SupplierReturnsService {
 
     // STEP 1: read current ledger balance BEFORE this return is applied.
     const { balance: debtBefore } = await this.supplierLedgerService.getBalanceSummary(
-      r.supplierId,
+      r.supplierId, context,
     );
 
     // STEP 2: compute the split.
@@ -725,6 +796,7 @@ export class SupplierReturnsService {
     // only the cash-refund portion, not the full return value. Items list is unchanged —
     // inventory impact was never about cash, it's driven by the item quantities.
     const txDto = {
+      warehouseCode: r.warehouseCode || 'MAIN',
       date: returnDate,
       type: 'مرتجع مشتريات' as const,
       client: r.supplierName,
@@ -743,7 +815,8 @@ export class SupplierReturnsService {
       discount: 0,
       shipCost: 0,
     };
-    const tx = await this.transactionsService.create(txDto as never);
+    await this.unitTracking.finishSupplierReturnUnits(r, actorId, completedBy, context);
+    const tx = await this.transactionsService.create(txDto as never, undefined, undefined, undefined, context);
 
     // STEP 4: post ledger entries (debt-offset + credit + refund-audit-row).
     const settlementResult = await this.supplierLedgerService.postReturnSettlement({
@@ -758,7 +831,7 @@ export class SupplierReturnsService {
       // يربط صف «رد نقدي» في كشف الحساب بعملية الخزنة التي خرجت/دخلت فعلاً.
       refundTxRef: tx?.ref || '',
       employee: completedBy,
-    });
+    }, context);
 
     // STEP 5: persist settlement outcome + status on the return order.
     r.status = 'مكتمل';
@@ -798,8 +871,8 @@ export class SupplierReturnsService {
           .join(' + ') +
         ` — معاملة #${tx.ref}`,
     });
-    const saved = await r.save();
-    await this.suppliersService.addLog(r.supplierId, {
+    const saved = await r.save({ session: context.session });
+    this.logAfter(context, r.supplierId, {
       action: 'اكتمال مرتجع مورد',
       detail: `مرتجع ${r.returnNumber} — ${r.settlement.settlementType} — الرصيد بعد التسوية: ${settlementResult.balanceAfter} ج`,
       by: completedBy,
@@ -811,8 +884,10 @@ export class SupplierReturnsService {
     id: string,
     by: string,
     rejectedReason = '',
+    actorId = '', context?: DatabaseWriteContext,
   ): Promise<SupplierReturnOrderDocument> {
-    const r = await this.findById(id);
+    if (!context) return this.atomic(ctx => this.reject(id, by, rejectedReason, actorId, ctx), id);
+    const r = await this.findById(id, context.session);
     if (r.status !== 'معلق') {
       throw new BadRequestException('الطلب ليس معلقاً');
     }
@@ -826,8 +901,9 @@ export class SupplierReturnsService {
       changedAt: r.approvedAt,
       note: rejectedReason,
     });
-    const saved = await r.save();
-    await notifyApproval(this.notifications, 'approval:supplier-return:' + id + ':rejected', r.returnNumber, 'supplierReturn:' + id, { actorName: r.createdBy, actionKey: 'supplier-return', status: 'rejected' });
+    await this.unitTracking.finishSupplierReturnUnits(r, actorId, by, context, true);
+    const saved = await r.save({ session: context.session });
+    context.afterCommit.push(() => notifyApproval(this.notifications, 'approval:supplier-return:' + id + ':rejected', r.returnNumber, 'supplierReturn:' + id, { actorName: r.createdBy, actionKey: 'supplier-return', status: 'rejected' }));
     return saved;
   }
 
@@ -835,8 +911,10 @@ export class SupplierReturnsService {
     id: string,
     by: string,
     reason = '',
+    actorId = '', context?: DatabaseWriteContext,
   ): Promise<SupplierReturnOrderDocument> {
-    const r = await this.findById(id);
+    if (!context) return this.atomic(ctx => this.cancel(id, by, reason, actorId, ctx), id);
+    const r = await this.findById(id, context.session);
     if (!NON_TERMINAL_STATUSES.includes(r.status)) {
       throw new BadRequestException(
         'لا يمكن إلغاء هذا الطلب في حالته الحالية',
@@ -849,7 +927,8 @@ export class SupplierReturnsService {
       changedAt: new Date().toISOString(),
       note: reason,
     });
-    return r.save();
+    await this.unitTracking.finishSupplierReturnUnits(r, actorId, by, context, true);
+    return r.save({ session: context.session });
   }
 
   /**

@@ -308,6 +308,7 @@ export class ReturnsService {
       returnShipCo: ret.returnShipCo || '',
       returnTrackingNumber: ret.returnTrackingNumber || '',
       returnRequestId: String(ret._id),
+      warehouseCode: originalTx.warehouseCode || 'MAIN',
     };
 
     let createdTx: { _id: unknown; ref?: string };

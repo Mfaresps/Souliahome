@@ -370,10 +370,10 @@ export class TransactionsController {
   @Post('pickup-orders/undo')
   async undoPickup(
     @Body() body: { ids: string[] },
-    @Req() req: { user: { name: string; username: string } },
+    @Req() req: { user: { name: string; username: string; userId: string } },
   ) {
     const by = req.user.name || req.user.username || 'مستخدم';
-    return this.transactionsService.undoPickup(body.ids, by);
+    return this.transactionsService.undoPickup(body.ids, by, req.user.userId);
   }
 
   @Post('pickup-orders/add-to-run')
@@ -389,11 +389,11 @@ export class TransactionsController {
   @Patch('pickup-orders/:id/prep-check')
   async setPrepChecked(
     @Param('id') id: string,
-    @Body() body: { prepChecked: boolean },
+    @Body() body: { prepChecked: boolean; reason?: string },
     @Req() req: { user: { name: string; username: string } },
   ) {
     const by = req.user.name || req.user.username || 'مستخدم';
-    return this.transactionsService.setPrepChecked(id, body.prepChecked, by);
+    return this.transactionsService.setPrepChecked(id, body.prepChecked, by, body.reason || '');
   }
 
   @Get('by-ref/:ref')

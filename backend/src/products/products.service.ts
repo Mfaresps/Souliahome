@@ -1,9 +1,9 @@
 import { notifyApproval } from '../notifications/admin-events';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Inject as PushInject, Optional as PushOptional } from '@nestjs/common';
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, isValidObjectId } from 'mongoose';
+import { Model, isValidObjectId, ClientSession } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
 import { Transaction, TransactionDocument } from '../transactions/schemas/transaction.schema';
 import {
@@ -13,6 +13,7 @@ import {
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { MentionsService } from '../mentions/mentions.service';
+import { isDuplicateProductKey, nextProductCode } from './product-code.util';
 
 @Injectable()
 export class ProductsService {
@@ -112,10 +113,33 @@ export class ProductsService {
   ): Promise<string> {
     const prefix = this.buildProductCodePrefix(name, colors, size);
     const regexSafePrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const count = await this.productModel
-      .countDocuments({ code: { $regex: `^${regexSafePrefix}-` } })
-      .exec();
-    return `${prefix}-${String(count + 1).padStart(3, '0')}`;
+    const rows = await this.productModel
+      .find({ code: { $regex: `^${regexSafePrefix}-\\d+$` } }, { code: 1 })
+      .lean().exec();
+    return nextProductCode(prefix, rows.map(row => row.code));
+  }
+
+  /** Read-only prerequisite: never create/sync indexes from this write path. */
+  private async assertSkuUniqueIndex(): Promise<void> {
+    try {
+      const indexes = await this.productModel.collection.indexes();
+      if (indexes.some(index => index.unique && !index.sparse && !index.partialFilterExpression &&
+        Object.keys(index.key).length === 1 && index.key.code === 1)) return;
+    } catch { /* Missing collection/index or denied inspection must fail closed. */ }
+    throw new ServiceUnavailableException('تعذر التحقق من فهرس SKU الفريد — راجع فهارس المنتجات قبل الإضافة أو الاستيراد');
+  }
+
+  private assertSkuUnchanged(product: { code: string }, patch: Record<string, unknown>): void {
+    // Compare exactly: legacy whitespace/case must never be normalized by an unrelated edit.
+    if (Object.prototype.hasOwnProperty.call(patch, 'code') && patch.code !== product.code) {
+      throw new BadRequestException('لا يمكن تغيير SKU بعد إنشاء الصنف');
+    }
+  }
+
+  private rethrowProductConflict(error: unknown): never {
+    if (isDuplicateProductKey(error, 'name')) throw new ConflictException('الاسم موجود بالفعل');
+    if (isDuplicateProductKey(error, 'code')) throw new ConflictException('الكود موجود بالفعل');
+    throw error;
   }
 
   private async syncCollectionLink(
@@ -150,8 +174,10 @@ export class ProductsService {
       .exec();
   }
 
-  async findAll(): Promise<ProductDocument[]> {
-    return this.productModel.find().sort({ code: 1 }).exec();
+  async findAll(session?: ClientSession): Promise<ProductDocument[]> {
+    const query = this.productModel.find().sort({ code: 1 });
+    if (session) query.session(session);
+    return query.exec();
   }
 
   async findById(id: string): Promise<ProductDocument> {
@@ -178,9 +204,8 @@ export class ProductsService {
     }
 
     let code = String(dto.code || '').trim();
-    if (!code) {
-      code = await this.generateProductCode(name, dto.colors, dto.size);
-    } else {
+    const generated = !code;
+    if (!generated) {
       const codeConflict = await this.findByCode(code);
       if (codeConflict) {
         throw new ConflictException('الكود موجود بالفعل');
@@ -191,13 +216,20 @@ export class ProductsService {
       0,
       Math.floor(Number(dto.openingBalance ?? 0)),
     );
-    const created = await this.productModel.create({
-      ...dto,
-      code,
-      name,
-      openingBalance,
-      createdBy: actor,
-    });
+    await this.assertSkuUniqueIndex();
+    let created: ProductDocument | undefined;
+    for (let attempt = 0; attempt < 50; attempt++) {
+      if (generated) code = await this.generateProductCode(name, dto.colors, dto.size);
+      try {
+        created = await this.productModel.create({ ...dto, code, name, openingBalance, createdBy: actor });
+        break;
+      } catch (error) {
+        // The database unique index arbitrates across processes. Never retry name/other failures.
+        if (generated && isDuplicateProductKey(error, 'code')) continue;
+        this.rethrowProductConflict(error);
+      }
+    }
+    if (!created) throw new ConflictException('تعذر تخصيص SKU بسبب طلبات متزامنة كثيرة — حاول مرة أخرى');
 
     if (dto.collectionId) {
       await this.syncCollectionLink(created._id.toString(), dto.collectionId, actor);
@@ -219,15 +251,8 @@ export class ProductsService {
     const current = await this.productModel.findById(id).exec();
     if (!current) throw new NotFoundException('الصنف غير موجود');
 
-    let oldCode: string | undefined;
-    let newCode: string | undefined;
-    if (dto.code !== undefined) {
-      newCode = String(dto.code).trim();
-      const conflict = await this.productModel.findOne({ code: newCode, _id: { $ne: id } }).exec();
-      if (conflict) throw new ConflictException('الكود موجود بالفعل');
-      if (current.code !== newCode) oldCode = current.code;
-      patch.code = newCode;
-    }
+    this.assertSkuUnchanged(current, patch);
+    delete patch.code; // Older clients may echo the unchanged SKU. Do not write it.
 
     let oldName: string | undefined;
     let newName: string | undefined;
@@ -297,9 +322,9 @@ export class ProductsService {
     this.emit('product:changed', { action: 'updated', product });
     this.emit('inventory:changed', { reason: 'product:updated', code: product.code });
 
-    // Sync name, code, and productId on all matching transaction items
-    if (oldName || oldCode) {
-      await this.syncTransactionItemRefs(id, oldName, product.name, oldCode, product.code);
+    // Preserve existing name display synchronization, without changing historical identifiers.
+    if (oldName) {
+      await this.syncTransactionItemRefs(id, oldName, product.name, undefined, product.code);
     }
 
     return product;
@@ -312,6 +337,9 @@ export class ProductsService {
     oldCode: string | undefined,
     newCode: string,
   ): Promise<number> {
+    if (oldCode !== undefined && oldCode !== newCode) {
+      throw new BadRequestException('لا يمكن تغيير SKU بعد إنشاء الصنف');
+    }
     // Match items by productId, or by old name, or by old code
     const orClauses: object[] = [{ 'items.productId': productId }];
     if (oldName) orClauses.push({ 'items.name': oldName });
@@ -327,9 +355,9 @@ export class ProductsService {
         const matchByOldName = oldName && item['name'] === oldName;
         const matchByOldCode = oldCode && item['code'] === oldCode;
         if (matchById || matchByOldName || matchByOldCode) {
-          if (item['productId'] !== productId) { item['productId'] = productId; changed = true; }
           if (item['name'] !== newName) { item['name'] = newName; changed = true; }
-          if (item['code'] !== newCode) { item['code'] = newCode; changed = true; }
+          // Name edits retain their existing display synchronization, but never rewrite
+          // historical SKU/productId references (including unmatched legacy lines).
         }
       }
       if (changed) {
@@ -371,6 +399,9 @@ export class ProductsService {
       supplier?: string;
     },
   ): Promise<number> {
+    if (Object.prototype.hasOwnProperty.call(fields, 'code')) {
+      throw new BadRequestException('لا يمكن تغيير SKU بالتعديل الجماعي');
+    }
     const update: Record<string, number | string> = {};
     if (fields.sellPrice !== undefined && fields.sellPrice >= 0)
       update.sellPrice = fields.sellPrice;
@@ -479,6 +510,7 @@ export class ProductsService {
   ): Promise<ProductDocument> {
     const product = await this.productModel.findById(id).exec();
     if (!product) throw new NotFoundException('الصنف غير موجود');
+    this.assertSkuUnchanged(product, dto.changes);
     if (product.editRequest && product.editRequest.status === 'معلق') {
       throw new BadRequestException('يوجد طلب تعديل معلق بالفعل لهذا الصنف');
     }
@@ -509,7 +541,7 @@ export class ProductsService {
     };
 
     const changes = Object.entries(dto.changes)
-      .filter(([field]) => FIELD_LABELS[field] !== undefined)
+      .filter(([field]) => field !== 'code' && FIELD_LABELS[field] !== undefined)
       .map(([field, newValue]) => ({
         field,
         label: FIELD_LABELS[field] || field,
@@ -543,7 +575,8 @@ export class ProductsService {
 
     const patch: Record<string, unknown> = {};
     for (const change of req.changes as Array<{ field: string; newValue: unknown }>) {
-      patch[change.field] = change.newValue;
+      this.assertSkuUnchanged(product, { [change.field]: change.newValue });
+      if (change.field !== 'code') patch[change.field] = change.newValue;
     }
     if (patch.openingBalance !== undefined) {
       patch.openingBalance = Math.max(0, Math.floor(Number(patch.openingBalance)));
@@ -664,6 +697,17 @@ export class ProductsService {
     }[],
     actor = '',
   ): Promise<{ created: number; updated: number }> {
+    await this.assertSkuUniqueIndex();
+    // Validate identities before any row writes. Imports are keyed by SKU, never by name.
+    for (const item of items) {
+      const code = String(item.code || '').trim();
+      if (!code) throw new BadRequestException('SKU مطلوب لكل صنف مستورد');
+      const existing = await this.findByCode(code);
+      const nameMatch = await this.findByName(String(item.name || '').trim());
+      if (nameMatch && (!existing || String(nameMatch._id) !== String(existing._id))) {
+        throw new ConflictException('الاسم مرتبط بصنف آخر — لا يمكن استخدام الاستيراد لتغيير SKU');
+      }
+    }
     let created = 0;
     let updated = 0;
     for (const item of items) {
@@ -688,7 +732,8 @@ export class ProductsService {
             throw new ConflictException(`الاسم "${newNameTrimmed}" موجود بالفعل لصنف آخر`);
           }
         }
-        await this.productModel.findByIdAndUpdate(existing._id, row).exec();
+        const { code: _sku, ...patch } = row;
+        await this.productModel.findByIdAndUpdate(existing._id, patch).exec();
         if (item.collectionId !== undefined) {
           await this.syncCollectionLink(existing._id.toString(), item.collectionId || null, actor);
         }
@@ -699,7 +744,10 @@ export class ProductsService {
         if (nameConflict) {
           throw new ConflictException(`الاسم "${String(item.name || '').trim()}" موجود بالفعل`);
         }
-        const createdProduct = await this.productModel.create(row);
+        let createdProduct: ProductDocument;
+        try {
+          createdProduct = await this.productModel.create({ ...row, createdBy: actor });
+        } catch (error) { this.rethrowProductConflict(error); }
         if (item.collectionId) {
           await this.syncCollectionLink(createdProduct._id.toString(), item.collectionId, actor);
         }

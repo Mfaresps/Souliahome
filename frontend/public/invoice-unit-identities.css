@@ -1,0 +1,40 @@
+.invoice-piece-identities{margin-top:8px;font-size:11px;font-weight:400;max-width:100%;min-width:0;text-align:start}
+.col-piece-identity{width:150px;min-width:120px;text-align:start!important}
+.col-piece-identity .invoice-piece-identities,.inv2-line-identity .invoice-piece-identities{margin:0}
+.inv2-items.has-piece-column{--inv2-cols:20px 32px minmax(100px,1fr) 140px 44px 90px 96px}
+.inv2-items.has-piece-column .inv2-line,.inv2-items.has-piece-column .inv2-items-head{column-gap:10px}
+.inv2-line-identity{min-width:0}.inv2-h-piece{text-align:start}
+.ivi-open-details{display:inline-flex;align-items:center;justify-content:space-between;gap:7px;max-width:100%;min-height:30px;padding:3px 5px;border:0;border-radius:6px;background:transparent;color:var(--text,#18392e);font:inherit;text-align:start;cursor:pointer}
+.ivi-open-details:hover{background:var(--surface2,#eef4f0)}.ivi-open-details:focus-visible{outline:2px solid var(--primary,#14563f);outline-offset:2px}
+.ivi-open-details code{font-size:10px;white-space:normal;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.ivi-open-details svg{width:16px;height:16px;flex:none;color:var(--muted,#718078)}
+dialog.ivi-dialog{position:fixed;inset:0;margin:auto!important;width:560px;height:fit-content;max-width:calc(100vw - 28px);max-height:calc(100dvh - 32px);padding:0;border:1px solid var(--border,#dfe8e2);border-radius:14px;background:var(--surface,#fff);color:var(--text,#18392e);font-family:inherit;box-shadow:0 20px 80px #10291b33;overflow:hidden}
+dialog.ivi-dialog[open]{display:flex;flex-direction:column}dialog.ivi-dialog:not([open]){display:none}
+.ivi-dialog::backdrop{background:#17332970;backdrop-filter:blur(3px)}
+.ivi-dialog .ivi-dialog-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;margin:0;border-bottom:1px solid var(--border,#dfe8e2);flex:none}
+.ivi-dialog-header h2{margin:0;font-size:16px;line-height:1.6}.ivi-dialog-header button{display:grid;place-items:center;width:34px;height:34px;padding:7px;border:1px solid var(--border,#dfe8e2);border-radius:8px;background:transparent;color:inherit;cursor:pointer}.ivi-dialog-header svg{width:18px;height:18px}
+.ivi-dialog-body{padding:16px 20px;min-height:0;overflow:auto;overscroll-behavior:contain;display:grid;gap:10px}.ivi-dialog .ivi-piece{margin:0}.ivi-dialog .ivi-trace details span{display:block;overflow-wrap:anywhere}
+@media(max-width:900px) and (min-width:641px){.inv2-items.has-piece-column{--inv2-cols:18px 28px minmax(80px,1fr) 120px 36px 76px 84px}.inv2-items.has-piece-column .inv2-line,.inv2-items.has-piece-column .inv2-items-head{column-gap:7px}}
+@media(max-width:640px){
+  .inv2-items.has-piece-column .inv2-line{grid-template-columns:22px 34px auto auto 1fr;gap:4px 10px}
+  .inv2-items.has-piece-column .inv2-line-identity{grid-column:3/-1;grid-row:2;display:flex;align-items:center;gap:8px}
+  .inv2-line-identity:before{content:attr(data-l);font-size:10px;color:var(--muted,#718078)}
+  .inv2-items.has-piece-column .inv2-line-qty{grid-row:3;grid-column:3}
+  .inv2-items.has-piece-column .inv2-line-price{grid-row:3;grid-column:4}
+  .inv2-items.has-piece-column .inv2-line-total{grid-row:4;grid-column:3/-1}
+  .ivi-dialog .ivi-dialog-header,.ivi-dialog-body{padding:14px}
+}
+@media(max-width:380px){.inv2-items.has-piece-column .inv2-line{grid-template-columns:18px 30px auto 1fr}.inv2-items.has-piece-column .inv2-line-price{grid-row:4;grid-column:3/-1}.inv2-items.has-piece-column .inv2-line-total{grid-row:5}}
+.ivi-caption{font-size:10px;color:var(--muted,#75867d);margin-bottom:5px}.ivi-empty{display:block;color:var(--muted,#75867d);font-size:10px;line-height:1.7}
+.ivi-piece{margin-top:5px;border:1px solid var(--border,#dfe8e2);border-radius:8px;padding:7px 9px;background:var(--surface,#fff)}
+.ivi-piece-head{display:flex;gap:6px 10px;align-items:center;flex-wrap:wrap}.ivi-piece-head code{font-size:10px;overflow-wrap:anywhere;white-space:normal}.ivi-piece-head>span{font-size:10px;color:var(--primary,#14563f)}
+.ivi-piece.is-returned{border-color:#d9ae68}.ivi-piece.is-returned .ivi-piece-head>span{color:#94611c}.ivi-piece details{margin-top:4px}.ivi-piece summary{font-size:10px;color:var(--muted,#75867d);cursor:pointer}
+.ivi-trace{display:grid;gap:4px;padding-top:6px;font-size:10px;line-height:1.8;color:var(--muted,#75867d);overflow-wrap:anywhere}.ivi-trace code{font-size:9px}
+.ivi-error{color:var(--red,#b42318);font-size:10px}.ivi-retry{border:0;background:none;color:var(--primary,#14563f);font:inherit;cursor:pointer;text-decoration:underline;margin-inline-start:6px}
+.invoice-piece-identities{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.invoice-piece-identities .ivi-status-badge{display:inline-flex;align-items:center;gap:5px;max-width:100%;min-height:25px;padding:3px 6px;margin:0;border:1px solid #e6cfa0;border-radius:7px;background:#fff8e9;color:#855c18;font:inherit;font-size:10px;font-weight:500;line-height:1.4;text-align:start;cursor:pointer;box-sizing:border-box}
+.ivi-status-badge svg{width:13px;height:13px;flex:none}.ivi-status-badge span{min-width:0}.ivi-status-badge b{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:17px;padding:0 3px;border-radius:4px;background:#f2e2bd;color:#6a4710;font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;box-sizing:border-box;flex:none}.invoice-piece-identities .ivi-status-badge.is-error{background:#fff0ed;border-color:#efc5bd;color:#a13825}.ivi-status-badge:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.ivi-invoice-actions{display:flex;align-items:center;justify-content:flex-end;padding:9px 14px;border-top:1px solid var(--border,#dfe8e2);background:var(--surface,#fff)}.ivi-invoice-actions .ivi-return-button{display:inline-flex;align-items:center;gap:7px;width:auto;max-width:100%;margin:0;padding:6px 10px;border:1px solid var(--border,#dfe8e2);border-radius:7px;background:transparent;color:var(--primary,#14563f);font:inherit;font-size:11px;line-height:1.5;cursor:pointer}.ivi-return-button svg{width:14px;height:14px;flex:none}.ivi-detail-warning{margin:0;padding:10px 12px;background:#fff8e9;border:1px solid #e6cfa0;border-radius:8px;color:#855c18;font-size:12px;line-height:1.8}
+body.dark-mode .ivi-status-badge,body.dark-mode .ivi-detail-warning{background:#3b301b;border-color:#715b32;color:#efd19a}body.dark-mode .ivi-status-badge b{background:#65512a;color:#fff0cb}
+@media print{.ivi-invoice-actions{display:none!important}}
+@media print{.ivi-piece details:not([open]) .ivi-trace{display:grid}.ivi-piece summary,.ivi-retry{display:none}.ivi-piece{break-inside:avoid}}

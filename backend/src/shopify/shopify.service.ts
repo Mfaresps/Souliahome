@@ -1020,6 +1020,7 @@ export class ShopifyService {
     // transaction exists so this order's own items don't pollute their own "before"
     // balance. Mirrors TransactionsService.create(); see recordInventoryMovementForSale.
     const invSnapshotBefore = await this.transactionsService.getInventory();
+    await this.transactionsService.assertWarehouseSale(order.items, 'MAIN');
 
     // Claim confirmation against the exact receipt snapshot. A concurrent upload, edit, refund,
     // cancellation or second confirm must not record a stale deposit or create another sale.
@@ -1042,6 +1043,7 @@ export class ShopifyService {
     try {
       tx = await this.txModel.create({
       date,
+      warehouseCode: 'MAIN',
       type: 'مبيعات',
       client: order.client,
       phone: order.phone,
@@ -1154,7 +1156,7 @@ export class ShopifyService {
    */
   private async recordInventoryMovementForSale(
     tx: TransactionDocument,
-    snapshotBefore: Array<{ _id: string; code: string; name: string; current: number }>,
+    snapshotBefore: Array<{ _id: string; code: string; name: string; current: number; warehouseBalances?: Record<string, number> }>,
     employee: string,
   ): Promise<void> {
     try {
@@ -1174,7 +1176,7 @@ export class ShopifyService {
           skipped.push(`${item.name || '?'}${code ? ` (${code})` : ' (بدون كود)'}`);
           continue;
         }
-        const qtyBefore = invRow.current;
+        const qtyBefore = Number(invRow.warehouseBalances?.[tx.warehouseCode || 'MAIN'] ?? invRow.current);
         const qtyDelta = -(Number(item.qty) || 0);
         entries.push({
           productId: invRow._id,

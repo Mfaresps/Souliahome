@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import { restrictInventoryParentDeletion } from '../../inventory-units/inventory-unit-integrity';
 
 export type PurchaseOrderDocument = HydratedDocument<PurchaseOrder>;
 
@@ -61,3 +62,4 @@ export class PurchaseOrder {
 export const PurchaseOrderSchema = SchemaFactory.createForClass(PurchaseOrder);
 PurchaseOrderSchema.index({ supplierId: 1, status: 1 });
 PurchaseOrderSchema.index({ poNumber: 1 }, { unique: true });
+restrictInventoryParentDeletion(PurchaseOrderSchema, ['origin.purchaseOrderId']);

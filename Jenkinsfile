@@ -46,6 +46,16 @@ pipeline {
       }
     }
 
+    stage('Inventory readiness before deployment') {
+      when { branch 'main' }
+      steps {
+        // Run the new image against the configured DB with read-only inspection.
+        // A failed gate leaves the existing live backend/frontend containers running.
+        sh 'docker compose -p soulia build backend'
+        sh 'docker compose -p soulia run --rm --no-deps backend node scripts/check-inventory-readiness.cjs'
+      }
+    }
+
     stage('Deploy') {
       when { branch 'main' }
       steps {

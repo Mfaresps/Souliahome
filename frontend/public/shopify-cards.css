@@ -1,0 +1,128 @@
+/* Compact order cards. Payment and follow-up actions retain their original handlers. */
+#sp-mobile-list .sp-card{gap:5px;padding:9px 10px;min-height:0;margin-bottom:7px;border-radius:11px;box-shadow:none}
+#sp-mobile-list .sp-card-top{min-height:30px;flex-wrap:nowrap;gap:6px}
+#sp-mobile-list .sp-card-top>div:last-child{gap:6px!important;min-width:0}
+#sp-mobile-list .sp-card-ref{font-size:.92rem;gap:4px}
+#sp-mobile-list .sp-card-menu>.dd-toggle{width:30px!important;height:30px!important;min-height:30px;border-radius:7px}
+#sp-mobile-list .sp-card-money{display:flex;align-items:flex-end;flex-direction:column;gap:2px;min-width:0}
+#sp-mobile-list .sp-card-money .sp-total-neutral{font-size:.88rem;line-height:1.3;white-space:nowrap}
+#sp-mobile-list .sp-card-deposit-inline{font-size:.65rem;line-height:1.2;color:var(--muted);max-width:100%}
+#sp-mobile-list .sp-card-deposit-inline .spdep-vault-amount{gap:3px;font-size:.65rem;padding:1px 4px}
+#sp-mobile-list .sp-card-deposit-inline .spdep-vault-amount>span{gap:3px}
+#sp-mobile-list .sp-card-deposit-inline .spdep-vault-amount img,#sp-mobile-list .sp-card-deposit-inline .spdep-vault-amount svg{max-width:13px;max-height:13px}
+#sp-mobile-list .sp-card-deposit-inline .sp-deposit-followup{font-size:.6rem;padding:2px 4px;line-height:1.2;white-space:nowrap}
+#sp-mobile-list .sp-card-deposit-inline:has(.sp-deposit-followup){max-width:none;flex-shrink:0}
+#sp-mobile-list .sp-card-deposit-inline .spdep-table-deposit{gap:3px;flex-wrap:wrap;justify-content:flex-end}
+#sp-mobile-list .sp-card-deposit-inline .spdep-pending{padding:1px 3px;gap:3px}
+#sp-mobile-list .sp-card-subline{flex-wrap:nowrap;gap:4px;min-height:20px;font-size:.7rem;line-height:1.35}
+#sp-mobile-list .sp-card-client{flex:1 1 auto;max-width:none;min-width:0;font-size:.75rem}
+#sp-mobile-list .sp-card-subline>span:not(.sp-card-client){flex-shrink:0;white-space:nowrap}
+#sp-mobile-list .sp-mobile-deposit-options{gap:6px;margin:0;width:100%}
+#sp-mobile-list .sp-mobile-deposit-options .spdep-shipping-switch{flex:1 1 auto;min-height:32px;height:32px;padding:4px 7px;gap:5px;font-size:.69rem;border-radius:7px}
+#sp-mobile-list .sp-mobile-deposit-options .spdep-quick-add{display:inline-flex;align-items:center;justify-content:center;gap:4px;flex:0 0 auto;width:auto;height:32px;min-height:32px;padding:4px 8px;font:inherit;font-size:.69rem;font-weight:600;border-radius:7px;background:var(--primary-pale);color:var(--accent)}
+#sp-mobile-list .sp-mobile-deposit-options .spdep-quick-add svg{width:14px;height:14px}
+#sp-mobile-list .sp-mobile-deposit-options .spdep-switch-track{flex-basis:26px;width:26px;height:16px}
+#sp-mobile-list .sp-mobile-deposit-options .spdep-switch-track::after{width:12px;height:12px}
+#sp-mobile-list .sp-mobile-deposit-options .is-on .spdep-switch-track::after{transform:translateX(10px)}
+#sp-mobile-list .sp-card-fu-last{align-items:center;width:100%;min-height:28px;gap:5px;padding:4px 6px;margin:0;border:0;border-radius:6px;background:var(--bg-alt);font:inherit;text-align:start;color:var(--muted)}
+#sp-mobile-list .sp-card-fu-last>svg{margin:0}
+#sp-mobile-list .sp-card-fu-last-b{flex-direction:row;align-items:center;gap:5px;font-size:.68rem;line-height:1.4;overflow:hidden}
+#sp-mobile-list .sp-card-fu-last-b>b{max-width:27%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+#sp-mobile-list .sp-card-fu-last-b>span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sp-mobile-list .sp-card-fu-last>time{font-size:.6rem}
+#sp-mobile-list .sp-card-actions-row{min-height:36px;padding-top:5px;margin-top:0;gap:5px;overflow:visible}
+#sp-mobile-list .sp-card-actions-row button,#sp-mobile-list .sp-card-actions-row .sp-cmt-open,#sp-mobile-list .sp-card-actions-row .sp-fu-mark,#sp-mobile-list .sp-card-actions-row .sp-fu-last-ic,#sp-mobile-list .sp-card-shopify-link,#sp-mobile-list .sp-card-vrobo-link{height:30px!important;min-height:30px;min-width:30px;border-radius:7px}
+#sp-mobile-list .sp-card-shopify-link{width:30px}
+#sp-mobile-list .sp-card-actions,#sp-mobile-list .sp-card-actions-end{gap:5px}
+#sp-mobile-list .sp-card-assignee-chip .sp-assignee-avatar{width:28px;height:28px;font-size:.65rem}
+#sp-mobile-list .sp-card-vrobo-link{font-size:.64rem;padding:3px 6px}
+#sp-mobile-list .sp-card button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:350px){#sp-mobile-list .sp-card-fu-last>time{display:none}#sp-mobile-list .sp-card-ref{font-size:.85rem}#sp-mobile-list .sp-mobile-deposit-options .spdep-quick-add{padding-inline:6px}}
+/* Approved prototype: solid state colours and inline customer/date metadata. */
+#sp-mobile-list .sp-card{background:#f7fbf8;border-color:#dae5de;border-inline-start:3px solid #4f956b}
+#sp-mobile-list .sp-card.sp-card-deposit-none,#sp-mobile-list .sp-card.sp-card-deposit-followup,#sp-mobile-list .sp-card.sp-cancel-req{background:#fffdf8;border-color:#e9dfc8;border-inline-start-color:#c89538}
+#sp-mobile-list .sp-card.sp-cancel-rej{background:#fffcfb;border-color:#ead7d2;border-inline-start-color:#c67b6c}
+#sp-mobile-list .sp-card.sp-card-cancelled{background:#fafbfa;border-color:#dfe5e1;border-inline-start-color:#a4b4aa}
+#sp-mobile-list .sp-card-subline{cursor:default;padding-inline-start:20px;gap:4px}
+#sp-mobile-list .sp-card-customer-meta{display:flex;align-items:center;gap:4px;flex:1;min-width:0}
+#sp-mobile-list .sp-card-client{flex:0 1 auto;min-width:0;font-size:.7rem}
+#sp-mobile-list .sp-card-time-lbl,#sp-mobile-list .sp-card-date{flex-shrink:0;white-space:nowrap;font-size:.6rem;color:var(--muted)}
+#sp-mobile-list .sp-card-products-toggle{display:inline-flex;align-items:center;gap:3px;flex-shrink:0;min-height:27px;padding:3px 5px;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--muted);font:inherit;font-size:.6rem;cursor:pointer}
+#sp-mobile-list .sp-card-products-toggle:hover,#sp-mobile-list .sp-card-products-toggle[aria-expanded="true"]{background:#edf3ef;color:#315c43}
+#sp-mobile-list .sp-card-items{gap:0;padding:2px 7px;border:1px solid #e2e9e4;border-radius:7px;background:#f8faf8}
+#sp-mobile-list .sp-card-item-row{gap:7px;padding:5px 0;border-radius:0;background:transparent;font-size:.7rem}
+#sp-mobile-list .sp-card-item-row+.sp-card-item-row{border-top:1px solid #e6ece7}
+#sp-mobile-list .sp-card-item-name{flex:1;min-width:0}
+#sp-mobile-list .sp-mobile-deposit-options .spdep-shipping-switch{flex:0 0 auto;gap:6px;font-size:.63rem;height:28px;min-height:28px;padding:3px 7px}
+#sp-mobile-list .sp-mobile-deposit-options .spdep-quick-add{height:28px;min-height:28px;font-size:.63rem;padding:3px 7px}
+#sp-mobile-list .sp-mobile-deposit-options .spdep-switch-track{order:-1;flex-basis:12px;width:12px;height:12px;border:1px solid var(--border);border-radius:3px;background:var(--surface)}
+#sp-mobile-list .sp-mobile-deposit-options .spdep-switch-track::after{display:none}
+#sp-mobile-list .sp-mobile-deposit-options .is-on .spdep-switch-track{background:#2c8c53;border-color:#2c8c53}
+#sp-mobile-list .sp-mobile-deposit-options .is-on .spdep-switch-track::after{display:block;width:6px;height:3px;border:solid white;border-width:0 0 1.5px 1.5px;background:none;border-radius:0;left:2px;top:2px;transform:rotate(-45deg);box-shadow:none}
+#sp-mobile-list .sp-card-fu-last{align-items:flex-start;padding:6px 7px;border:1px solid #e5e1ed;border-inline-start:2px solid #a99bbf;border-radius:7px;background:#f7f6fa;color:#5e6561}
+#sp-mobile-list .sp-card-fu-last>svg{margin-top:2px;color:#8b7ba3}
+#sp-mobile-list .sp-card-fu-last-b{display:flex;flex-direction:column;align-items:stretch;gap:2px;min-width:0}
+#sp-mobile-list .sp-card-fu-last-b>.sp-card-comment-meta{display:flex;align-items:center;gap:5px;font-size:.58rem;white-space:nowrap;min-width:0;color:#91889f}
+#sp-mobile-list .sp-card-comment-meta>b{color:#625776;font-weight:600;max-width:40%;overflow:hidden;text-overflow:ellipsis}
+#sp-mobile-list .sp-card-comment-meta>time{margin-inline-start:auto;overflow:hidden;text-overflow:ellipsis;font-size:.57rem;color:#8b8494}
+#sp-mobile-list .sp-card-fu-last-b>.sp-card-comment-text{display:block;font-size:.68rem;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.dark-mode #sp-mobile-list .sp-card{background:#192b23;border-color:#354b3e;border-inline-start-color:#5f9c78}
+body.dark-mode #sp-mobile-list .sp-card.sp-card-deposit-none,body.dark-mode #sp-mobile-list .sp-card.sp-card-deposit-followup,body.dark-mode #sp-mobile-list .sp-card.sp-cancel-req{background:#30291c;border-color:#645235;border-inline-start-color:#ba913d}
+body.dark-mode #sp-mobile-list .sp-card.sp-cancel-rej{background:#302322;border-color:#62413a;border-inline-start-color:#b57366}
+body.dark-mode #sp-mobile-list .sp-card.sp-card-cancelled{background:#252b28;border-color:#454f49}
+body.dark-mode #sp-mobile-list .sp-card-items{background:#202d25;border-color:#3b4c40}
+body.dark-mode #sp-mobile-list .sp-card-item-row+.sp-card-item-row{border-color:#3b4c40}
+body.dark-mode #sp-mobile-list .sp-card-fu-last{background:#2c2935;border-color:#4d455d;color:#d5cedf}
+body.dark-mode #sp-mobile-list .sp-card-comment-meta>b{color:#c6bad9}
+body.dark-mode #sp-mobile-list .sp-card-products-toggle[aria-expanded="true"]{background:#304237;color:#b9d3c3}
+@media(max-width:350px){#sp-mobile-list .sp-card-subline{padding-inline-start:0}#sp-mobile-list .sp-card-client{font-size:.65rem}#sp-mobile-list .sp-card-time-lbl,#sp-mobile-list .sp-card-date{font-size:.55rem}#sp-mobile-list .sp-card-customer-meta{gap:3px}}
+/* Match the supplied sample: order | customer, timestamp below, deposit beside total. */
+#sp-mobile-list .sp-card-top{align-items:flex-start;gap:7px;min-height:36px}
+#sp-mobile-list .sp-card-heading{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+#sp-mobile-list .sp-card-heading-line{display:flex;align-items:center;gap:4px;min-width:0;height:21px}
+#sp-mobile-list .sp-card-heading-line .sp-card-ref{flex:0 0 auto;font-size:.85rem;gap:3px}
+#sp-mobile-list .sp-card-heading-line .sp-card-client{font-size:.63rem;line-height:1.3;flex:1;min-width:0;font-weight:600}
+#sp-mobile-list .sp-card-name-divider{font-size:.68rem;color:var(--muted);flex-shrink:0}
+#sp-mobile-list .sp-card-heading-time{display:flex;align-items:center;gap:4px;padding-inline-start:40px;line-height:1.3;white-space:nowrap}
+#sp-mobile-list .sp-card-heading-time .sp-card-date,#sp-mobile-list .sp-card-heading-time .sp-card-time-lbl{font-size:.56rem}
+#sp-mobile-list .sp-card-top>div:last-child{flex:0 1 auto;max-width:49%;gap:7px!important}
+#sp-mobile-list .sp-card-money{flex-direction:row;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;min-height:28px}
+#sp-mobile-list .sp-card-money .sp-total-neutral{font-size:.84rem;flex-shrink:0}
+#sp-mobile-list .sp-card-deposit-inline{max-width:100px;font-size:.6rem;line-height:1.2}
+#sp-mobile-list .sp-card-subline{justify-content:flex-end;padding:0;min-height:23px}
+#sp-mobile-list .sp-card-products-toggle{min-height:23px;font-size:.6rem}
+#sp-mobile-list .sp-card-menu>.dd-toggle{width:28px!important;height:28px!important;min-height:28px}
+@media(max-width:350px){#sp-mobile-list .sp-card-heading-line{gap:3px}#sp-mobile-list .sp-card-heading-line .sp-card-ref{font-size:.78rem}#sp-mobile-list .sp-card-heading-line .sp-card-client{font-size:.58rem}#sp-mobile-list .sp-card-heading-time{padding-inline-start:18px}#sp-mobile-list .sp-card-money{gap:3px}#sp-mobile-list .sp-card-deposit-inline{max-width:78px}}
+/* Arabic needs more breathing room around the divider and joined letterforms. */
+[dir="rtl"] #sp-mobile-list .sp-card{padding:10px 11px;gap:6px;text-align:start}
+[dir="rtl"] #sp-mobile-list .sp-card-heading-line{gap:6px;height:23px}
+[dir="rtl"] #sp-mobile-list .sp-card-heading-line .sp-card-client{font-size:.69rem;line-height:1.6}
+[dir="rtl"] #sp-mobile-list .sp-card-name-divider{margin-inline:1px;color:var(--muted)}
+[dir="rtl"] #sp-mobile-list .sp-card-ref .sp-ref-link{direction:ltr;unicode-bidi:isolate}
+[dir="rtl"] #sp-mobile-list .sp-card-heading-time{padding-inline-start:38px;gap:6px;margin-top:1px;line-height:1.6}
+[dir="rtl"] #sp-mobile-list .sp-card-heading-time .sp-card-date,[dir="rtl"] #sp-mobile-list .sp-card-heading-time .sp-card-time-lbl{unicode-bidi:isolate;font-size:.59rem}
+[dir="rtl"] #sp-mobile-list .sp-card-top{gap:9px}
+[dir="rtl"] #sp-mobile-list .sp-card-money{column-gap:8px;row-gap:3px}
+[dir="rtl"] #sp-mobile-list .sp-card-money .sp-total-neutral{unicode-bidi:isolate;line-height:1.6}
+[dir="rtl"] #sp-mobile-list .sp-card-subline{margin-top:-2px}
+[dir="rtl"] #sp-mobile-list .sp-card-products-toggle{gap:5px;padding-inline:6px;font-size:.65rem}
+[dir="rtl"] #sp-mobile-list .sp-mobile-deposit-options{gap:8px}
+[dir="rtl"] #sp-mobile-list .sp-mobile-deposit-options button{padding-inline:8px;font-size:.67rem;line-height:1.6}
+[dir="rtl"] #sp-mobile-list .sp-card-fu-last{padding:6px 8px;gap:7px}
+[dir="rtl"] #sp-mobile-list .sp-card-comment-meta{gap:6px;line-height:1.6}
+[dir="rtl"] #sp-mobile-list .sp-card-comment-meta>b{font-size:.62rem}
+[dir="rtl"] #sp-mobile-list .sp-card-fu-last-b>.sp-card-comment-text{font-size:.7rem;line-height:1.7}
+[dir="rtl"] #sp-mobile-list .sp-card-actions-row{gap:7px;padding-top:6px}
+[dir="rtl"] #sp-mobile-list .sp-card-actions-end{gap:6px}
+@media(max-width:350px){[dir="rtl"] #sp-mobile-list .sp-card{padding-inline:9px}[dir="rtl"] #sp-mobile-list .sp-card-heading-line{gap:4px}[dir="rtl"] #sp-mobile-list .sp-card-heading-line .sp-card-client{font-size:.65rem}[dir="rtl"] #sp-mobile-list .sp-card-heading-time{padding-inline-start:18px;gap:4px}[dir="rtl"] #sp-mobile-list .sp-card-money{column-gap:5px}[dir="rtl"] #sp-mobile-list .sp-card-top{gap:6px}}
+/* Full customer names, total above deposit, and a true on/off shipping switch. */
+#sp-mobile-list .sp-card-heading-line,[dir="rtl"] #sp-mobile-list .sp-card-heading-line{height:auto;min-height:23px;align-items:flex-start}
+#sp-mobile-list .sp-card-heading-line .sp-card-client,[dir="rtl"] #sp-mobile-list .sp-card-heading-line .sp-card-client{flex:0 1 auto;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;max-width:none;line-height:1.6;font-size:.7rem}
+[dir="rtl"] #sp-mobile-list .sp-card-heading-line .sp-card-client{flex:0 1 auto;text-align:right}
+#sp-mobile-list .sp-card-money,[dir="rtl"] #sp-mobile-list .sp-card-money{flex-direction:column;align-items:flex-end;flex-wrap:nowrap;gap:3px;min-height:0}
+#sp-mobile-list .sp-mobile-deposit-options .spdep-switch-track{order:0;flex:0 0 32px;width:32px;height:18px;border:0;border-radius:999px;background:#cad7d0;position:relative;direction:ltr;transition:background .18s}
+#sp-mobile-list .sp-mobile-deposit-options .spdep-switch-track::after,#sp-mobile-list .sp-mobile-deposit-options .is-on .spdep-switch-track::after{content:'';display:block;position:absolute;left:2px;top:2px;width:14px;height:14px;border:0;border-radius:50%;background:#fff;box-shadow:0 1px 3px #15302130;transform:translateX(0);transition:transform .18s}
+#sp-mobile-list .sp-mobile-deposit-options .is-on .spdep-switch-track{background:#249653;border:0}
+#sp-mobile-list .sp-mobile-deposit-options .is-on .spdep-switch-track::after{transform:translateX(14px)}
+#sp-mobile-list .sp-mobile-deposit-options .spdep-shipping-switch{gap:7px;min-height:30px}
+@media(prefers-reduced-motion:reduce){#sp-mobile-list .spdep-switch-track,#sp-mobile-list .spdep-switch-track::after{transition:none}}

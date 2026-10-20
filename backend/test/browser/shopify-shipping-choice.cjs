@@ -14,7 +14,7 @@ function fn(name) {
   return src.slice(start,src.indexOf('\n}',start)+2);
 }
 const render = new Function(`
-  const _spShippingSwitchBusy=new Set(),hasPerm=()=>true,esc=v=>v,t=key=>({spDepWithout:'بدون عربون',spShipWithoutDeposit:'شحن بدون عربون',spDepUpload:'إضافة عربون'}[key]||key);
+  const currentLang='ar',_spShippingSwitchBusy=new Set(),hasPerm=()=>true,esc=v=>v,t=key=>({spDepWithout:'بدون عربون',spShipWithoutDeposit:'شحن بدون عربون',spDepUpload:'إضافة عربون'}[key]||key);
   const _spReceiptJs=JSON.stringify,_spDepositOf=o=>({deposit:0,pending:[]});
   ${['_spDepIcon','_spHasDepositRecorded','_spCanAddDeposit','_spCanChooseShipping','_spShipsWithoutDeposit','_spShippingSwitchHtml','_spMobileDepositActionHtml','_spDepositCellHtml','_spDepositAddButtonHtml','_spDepositCardClass','_spDepositNeedsFollowup','_spMobileDepositSummaryHtml'].map(fn).join('\n')}
   const o={_id:'o1',status:'pending',shipWithoutDeposit:true};

@@ -114,3 +114,7 @@ body.dark-mode .spk-warn{color:#fbbf24}
   .spk-meter i{transition:none}
   .spk-tile.is-skel span,.spk-rep-skel{animation:none}
 }
+button.spk-tile{font:inherit;color:inherit;text-align:start;cursor:pointer;appearance:none}
+button.spk-tile:hover{border-color:var(--accent,#287d52);box-shadow:0 2px 8px #15302112}
+button.spk-tile.is-active{outline:2px solid var(--accent,#287d52);outline-offset:-2px}
+button.spk-tile:focus-visible{outline:3px solid var(--accent,#287d52);outline-offset:2px}

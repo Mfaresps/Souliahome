@@ -1,0 +1,49 @@
+/* Uploaded logos retain their original colours and aspect ratios. */
+#header .logo img.soulia-custom-brand,#splash-screen .splash-logo.soulia-custom-brand,.lfp-logo.soulia-custom-brand,.shell-brand-home img.soulia-custom-brand{filter:none!important;object-fit:contain}
+#header .logo img.soulia-custom-brand{max-width:170px;max-height:40px;width:auto;height:auto}
+#splash-screen .splash-logo.soulia-custom-brand{max-width:min(300px,75vw);max-height:110px;width:auto;height:auto}
+.lfp-logo.soulia-custom-brand{max-width:200px;max-height:80px;width:auto;height:auto}
+.shell-brand-home img.soulia-custom-brand{max-width:42px;max-height:38px;width:auto;height:auto}
+#page-settings #stg-branding-card[hidden]{display:none!important}
+#stg-branding-card .brand-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+#stg-branding-card .brand-slot{min-width:0;border:1px solid var(--border);border-radius:10px;padding:12px}
+#stg-branding-card label{display:block;margin:0;color:var(--text);font-size:.76rem;font-weight:600;min-width:0}
+#stg-branding-card .brand-preview{display:flex;align-items:center;justify-content:center;height:100px;border-radius:8px;background:var(--bg-alt);border:1px solid var(--border);margin:10px 0;padding:12px;box-sizing:border-box}
+#stg-branding-card .brand-preview-splash{background:#00311e}
+#stg-branding-card .brand-preview-splash .brand-preview-original{filter:brightness(0) invert(1)}
+#stg-branding-card .brand-preview img{display:block;max-width:100%;max-height:100%;object-fit:contain}
+#stg-branding-card .brand-preview-tab img{width:40px;height:40px}
+#stg-branding-card select,#stg-branding-card input[type=text]{width:100%;min-width:0;max-width:100%;box-sizing:border-box;font:inherit;font-size:.78rem;min-height:34px;padding:6px 9px;margin:5px 0 0}
+#stg-branding-card small{display:block;font-size:.68rem;color:var(--muted);line-height:1.7;margin-top:5px}
+#stg-branding-card .brand-selection-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+#stg-branding-card .brand-selection-actions small{margin:0}
+#stg-branding-card :is(h4,p){margin:0}
+#stg-branding-card h4{font-size:.86rem;line-height:1.6}
+#stg-branding-card .brand-upload-form{margin-top:20px;padding:16px;border:1px dashed var(--border);border-radius:10px;background:var(--bg-alt)}
+#stg-branding-card .brand-upload-form p{font-size:.72rem;color:var(--muted);line-height:1.8;margin-top:4px}
+#stg-branding-card .brand-upload-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) auto;align-items:end;gap:10px;margin-top:12px}
+#stg-branding-card input[type=file]{width:100%;min-width:0;max-width:100%;box-sizing:border-box;padding:5px;font-size:.7rem;margin:5px 0 0;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+#stg-branding-card input[type=file]::file-selector-button{padding:4px 8px;margin-inline-end:8px;border:0;border-radius:5px;background:var(--primary-pale);color:var(--primary);cursor:pointer}
+#stg-branding-card .brand-library-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 12px}
+#stg-branding-card .brand-library-heading span{color:var(--muted);font-size:.7rem;margin-inline-start:5px}
+#stg-branding-card .brand-library{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-height:430px;overflow:auto;scrollbar-width:thin}
+#stg-branding-card .brand-library-item{min-width:0;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+#stg-branding-card .brand-library-image{height:82px;display:flex;align-items:center;justify-content:center;padding:12px;margin-bottom:10px;border-radius:7px;background:repeating-conic-gradient(var(--bg-alt) 0% 25%,var(--surface) 0% 50%) 50%/16px 16px;box-sizing:border-box}
+#stg-branding-card .brand-library-image img{max-width:100%;max-height:100%;object-fit:contain}
+#stg-branding-card .brand-library-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px}
+#stg-branding-card .brand-library-meta small{font-size:.62rem;margin:0}
+#stg-branding-card .brand-library-meta .btn{font-size:.65rem;min-height:28px;padding:4px 7px}
+#stg-branding-card .brand-library-empty{grid-column:1/-1;padding:22px;text-align:center;font-size:.76rem;color:var(--muted)}
+#stg-branding-card #brand-feedback{font-size:.76rem;line-height:1.8;margin-top:12px;color:var(--primary);overflow-wrap:anywhere}
+#stg-branding-card #brand-feedback:empty{display:none}
+#stg-branding-card #brand-feedback[data-error=true]{color:var(--red)}
+@media(max-width:640px){
+  #stg-branding-card .brand-slots{grid-template-columns:minmax(0,1fr)}
+  #stg-branding-card .brand-slot{display:grid;grid-template-columns:76px minmax(0,1fr);gap:5px 12px;align-items:center}
+  #stg-branding-card .brand-slot>label,#stg-branding-card .brand-slot>select,#stg-branding-card .brand-slot>small{grid-column:2}
+  #stg-branding-card .brand-preview{grid-column:1;grid-row:1/4;height:76px;margin:0;padding:8px}
+  #stg-branding-card .brand-upload-fields{grid-template-columns:minmax(0,1fr)}
+  #stg-branding-card .brand-upload-fields .btn{justify-self:start}
+  #stg-branding-card .brand-library{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #header .logo img.soulia-custom-brand{max-height:32px;max-width:115px}
+}

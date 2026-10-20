@@ -1,9 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import { restrictInventoryParentDeletion } from '../../inventory-units/inventory-unit-integrity';
 
 export type InventoryMovementDocument = HydratedDocument<InventoryMovement>;
 
 export type InventoryMovementType =
+  | 'نقل مخزني'
   | 'مبيعات'
   | 'مشتريات'
   | 'مرتجع مبيعات'
@@ -11,6 +13,7 @@ export type InventoryMovementType =
   | 'تسوية مخزون';
 
 export type InventoryMovementSourceType =
+  | 'warehouse-transfer'
   | 'transaction-create'
   | 'transaction-update'
   | 'transaction-cancel'
@@ -19,6 +22,10 @@ export type InventoryMovementSourceType =
 
 @Schema({ timestamps: true })
 export class InventoryMovement {
+  @Prop({ default: '' })
+  warehouseTransferId: string;
+  @Prop({ type: String, default: '' })
+  warehouseCode: string;
   /** Random, unique per-row transaction ID for this movement — independent of any linked
    * transaction's own ref (see sourceTransactionRef). Never reused across rows. */
   @Prop({ required: true, unique: true })
@@ -68,6 +75,7 @@ export class InventoryMovement {
 }
 
 export const InventoryMovementSchema = SchemaFactory.createForClass(InventoryMovement);
+restrictInventoryParentDeletion(InventoryMovementSchema, [], ['inventoryMovementId']);
 InventoryMovementSchema.index({ movementId: 1 }, { unique: true });
 InventoryMovementSchema.index({ productCode: 1, createdAt: -1 });
 InventoryMovementSchema.index({ type: 1, createdAt: -1 });

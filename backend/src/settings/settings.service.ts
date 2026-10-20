@@ -1,7 +1,8 @@
 import { Injectable, BadRequestException, Logger, NotFoundException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { Connection, Model } from 'mongoose';
+import { Connection, Model, ClientSession } from 'mongoose';
+import { assertInventoryUnitMaintenance } from '../inventory-units/inventory-unit-maintenance';
 import { ObjectId } from 'mongodb';
 import { Settings, SettingsDocument } from './schemas/settings.schema';
 import { UpdateSettingsDto, DiscountCodeDto, DiscountBundleDto } from './dto/settings.dto';
@@ -241,7 +242,12 @@ export class SettingsService {
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
-  async getSettings(): Promise<SettingsDocument> {
+  async getSettings(session?: ClientSession): Promise<SettingsDocument> {
+    if (session) {
+      const existing = await this.settingsModel.findOne().session(session).exec();
+      if (!existing) throw new BadRequestException('يجب إعداد الخزنة قبل الاستلام؛ لا تُنشأ إعدادات مالية أثناء المعاملة');
+      return existing;
+    }
     let settings = await this.settingsModel.findOne().exec();
     if (!settings) {
       settings = await this.settingsModel.create({
@@ -705,14 +711,17 @@ export class SettingsService {
   async adjustVaultBalance(
     segment: string,
     amount: number,
+    session?: ClientSession,
   ): Promise<SettingsDocument> {
-    const settings = await this.getSettings();
+    const settings = session ? await this.getSettings(session) : await this.getSettings();
     if (!Number.isFinite(amount)) throw new BadRequestException('مبلغ الخزنة غير صالح');
     const field = ({ vodafone:'vaultVodafone', instapay:'vaultInstapay', bank:'vaultBank' } as Record<string,string>)[segment] || 'vaultCash';
-    const updated = await this.settingsModel.findOneAndUpdate({ _id: settings._id }, [
+    const updated = await this.settingsModel.findOneAndUpdate({ _id: settings._id,
+      ...(session && amount < 0 ? { $expr: { $gte: [{ $ifNull: [`$${field}`, 0] }, -amount] } } : {}),
+    }, [
       { $set: { [field]: { $add: [{ $ifNull: [`$${field}`, 0] }, amount] } } },
       { $set: { vaultBalance: { $sum: ['$vaultCash','$vaultVodafone','$vaultInstapay','$vaultBank'] } } },
-    ], { new: true }).exec();
+    ], { new: true, ...(session ? { session } : {}) }).exec();
     if (!updated) throw new BadRequestException('تعذر تحديث رصيد الخزنة');
     return updated;
   }
@@ -946,6 +955,7 @@ export class SettingsService {
    * and performance logs whose employeeId resolved to nobody.
    */
   static readonly BACKUP_COLLECTIONS = [
+    'brandlogos',
     'transactions',
     'products',
     'vaultentries',
@@ -968,6 +978,14 @@ export class SettingsService {
     'collectionproducts',
     // ── Stock audit trail — without it, restored stock levels have no history ──
     'inventorymovements',
+    // Raw-driver warehouse collections are not discovered through Mongoose models.
+    'warehouses',
+    'warehousetransfers',
+    'inventorypacks', 'inventoryunits',
+    'inventoryunitevents',
+    'inventoryunitoperations',
+    'inventoryunitcodes',
+    'inventoryunitcodecounters',
     // ── Per-segment vault balances (settings.vault* is only a mirror of these) ──
     'vaultbalances',
     'carrierimports',
@@ -1315,6 +1333,9 @@ export class SettingsService {
     const allowed = SettingsService.ALLOWED_COLLECTIONS;
     const safeCollections = selectedCollections.filter(c => allowed.includes(c));
 
+    try { await assertInventoryUnitMaintenance(this.connection, safeCollections); }
+    catch (e: any) { return { success: false, message: e.message }; }
+
     // Step 1: Create backup first
     const backup = await this.createBackup();
     if (!backup.success) {
@@ -1557,7 +1578,10 @@ export class SettingsService {
       return { success: false, message: 'ملف النسخة الاحتياطية تالف أو غير صالح' };
     }
 
-    try { this.validateBackup(backupData); }
+    try {
+      this.validateBackup(backupData);
+      await assertInventoryUnitMaintenance(this.connection, Object.keys(backupData.data), backupData.data, true);
+    }
     catch (e: any) { return { success: false, message: e.message }; }
 
     const restoreResults: Record<string, number> = {};
@@ -1602,7 +1626,7 @@ export class SettingsService {
         const fixedDocs = (docs as any[]).map((doc: any) => {
           const fixed: any = { ...doc };
           // Convert _id string → ObjectId
-          if (fixed._id && collectionName !== 'depositreceiptidentities') {
+          if (fixed._id && !['depositreceiptidentities', 'inventoryunitoperations'].includes(collectionName)) {
             const rawId = typeof fixed._id === 'string' ? fixed._id : fixed._id?.$oid;
             if (rawId) {
               try { fixed._id = new ObjectId(rawId); } catch { delete fixed._id; }
@@ -1774,11 +1798,12 @@ export class SettingsService {
   // Covered by the settings.service SECTION_COLLECTIONS coverage test.
   private static SECTION_COLLECTIONS: Record<string, string[]> = {
     transactions:   ['transactions', 'returnrequests', 'inventorymovements', 'carrierimports', 'carrierpayouts'],
+    inventoryUnits: ['warehouses', 'warehousetransfers', 'inventorypacks', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'inventoryunitcodes', 'inventoryunitcodecounters'],
     products:       ['products', 'categories', 'collections', 'collectionproducts'],
     customers:      ['clients', 'suppliers', 'purchaseorders', 'supplierreturnorders', 'supplierledgerentries'],
     expenses:       ['expenses'],
     vault:          ['vaultentries', 'vaultbalances'],
-    other:          ['complaints', 'followups', 'tags', 'shopifyorders', 'depositreceiptidentities', 'orderaudits', 'mentions',
+    other:          ['brandlogos', 'complaints', 'followups', 'tags', 'shopifyorders', 'depositreceiptidentities', 'orderaudits', 'mentions',
                      'drafts', 'discountotps', 'securityauditlogs', 'employeeshifts',
                      'employeeleaves', 'employeeperformancelogs', 'demandanalysislogs', 'users',
                      'knowledgefolders', 'knowledgecards', 'knowledgeauditlogs', 'knowledgeimportlogs'],
@@ -2098,7 +2123,11 @@ export class SettingsService {
       return { success: false, message: 'ملف النسخة الاحتياطية تالف أو غير صالح' };
     }
 
-    try { this.validateBackup(backupData); }
+    try {
+      this.validateBackup(backupData);
+      const collections = sections.flatMap(section => this.restoreSectionCollections(section, backupData.data) || []);
+      await assertInventoryUnitMaintenance(this.connection, collections, backupData.data);
+    }
     catch (e: any) { return { success: false, message: e.message }; }
 
     const restoreResults: Record<string, number> = {};
@@ -2156,7 +2185,7 @@ export class SettingsService {
           if (docs.length > 0) {
             const fixedDocs = docs.map((doc: any) => {
               const fixed: any = { ...doc };
-              if (fixed._id && col !== 'depositreceiptidentities') {
+              if (fixed._id && !['depositreceiptidentities', 'inventoryunitoperations'].includes(col)) {
                 const rawId = typeof fixed._id === 'string' ? fixed._id : fixed._id?.$oid;
                 if (rawId) { try { fixed._id = new ObjectId(rawId); } catch { delete fixed._id; } }
               }

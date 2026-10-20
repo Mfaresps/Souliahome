@@ -8,6 +8,9 @@ import {
   IsBoolean,
   Min,
   ValidateNested,
+  ArrayUnique,
+  ArrayMaxSize,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -34,6 +37,9 @@ export class SrAllocationDetailDto {
 }
 
 export class SupplierReturnItemDto {
+  @IsOptional() @IsArray() @ArrayUnique() @ArrayMaxSize(1000)
+  @IsString({ each: true }) @Matches(/^[a-f\d]{24}$/i, { each: true })
+  readonly unitIds?: string[];
   @IsString()
   @IsNotEmpty()
   readonly code: string;
@@ -66,6 +72,7 @@ export class SupplierReturnItemDto {
 }
 
 export class CreateSupplierReturnDto {
+  @IsOptional() @IsString() readonly warehouseCode?: string;
   @IsString()
   @IsNotEmpty()
   readonly supplierId: string;
@@ -123,6 +130,7 @@ export class CreateSupplierReturnDto {
 }
 
 export class UpdateSupplierReturnDto {
+  @IsOptional() @IsString() readonly warehouseCode?: string;
   @IsString()
   @IsOptional()
   @IsIn(['تلف المنتج', 'منتج خاطئ', 'مشكلة جودة', 'أخرى'])

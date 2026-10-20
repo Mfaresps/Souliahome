@@ -3,6 +3,8 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  Optional,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -17,7 +19,8 @@ import {
   ConvertPoToInvoiceDto,
 } from './dto/purchase-order.dto';
 import { TransactionsService } from '../transactions/transactions.service';
-import { CreateTransactionDto } from '../transactions/dto/transaction.dto';
+import { PurchaseReceivingService } from './purchase-receiving.service';
+import { TrackingActor } from '../inventory-units/inventory-units.service';
 
 @Injectable()
 export class PurchaseOrdersService {
@@ -25,6 +28,7 @@ export class PurchaseOrdersService {
     @InjectModel(PurchaseOrder.name)
     private readonly poModel: Model<PurchaseOrderDocument>,
     private readonly transactionsService: TransactionsService,
+    @Optional() private readonly receiving?: PurchaseReceivingService,
   ) {}
 
   private async generatePoNumber(): Promise<string> {
@@ -129,7 +133,7 @@ export class PurchaseOrdersService {
     }
 
     const updated = await this.poModel
-      .findByIdAndUpdate(id, update, { new: true })
+      .findOneAndUpdate({ _id: id, linkedTransactionId: { $in: ['', null] } }, update, { new: true })
       .exec();
     if (!updated) throw new NotFoundException('أمر الشراء غير موجود');
     return updated;
@@ -159,7 +163,7 @@ export class PurchaseOrdersService {
       }));
     }
     const updated = await this.poModel
-      .findByIdAndUpdate(id, patch, { new: true })
+      .findOneAndUpdate({ _id: id, linkedTransactionId: { $in: ['', null] } }, patch, { new: true })
       .exec();
     if (!updated) throw new NotFoundException('أمر الشراء غير موجود');
     return updated;
@@ -172,7 +176,8 @@ export class PurchaseOrdersService {
         'لا يمكن حذف أمر شراء محوّل إلى فاتورة بالفعل',
       );
     }
-    await this.poModel.findByIdAndDelete(id).exec();
+    const removed = await this.poModel.findOneAndDelete({ _id: id, linkedTransactionId: { $in: ['', null] } }).exec();
+    if (!removed) throw new ConflictException('أمر الشراء تغيّر أثناء الحذف؛ أعد التحميل');
     return { deleted: true };
   }
 
@@ -180,83 +185,9 @@ export class PurchaseOrdersService {
     id: string,
     dto: ConvertPoToInvoiceDto,
     callerRole?: string,
-  ): Promise<{ po: PurchaseOrderDocument; transaction: any }> {
-    const po = await this.findById(id);
-
-    if (po.status !== 'مستلم') {
-      throw new BadRequestException(
-        'يجب أن يكون أمر الشراء في حالة "مستلم" قبل التحويل إلى فاتورة',
-      );
-    }
-    if (po.linkedTransactionId) {
-      throw new BadRequestException(
-        'تم تحويل هذا الأمر إلى فاتورة بالفعل',
-      );
-    }
-
-    // Items sent from frontend already have {productId, code, name, qty, price, total}
-    // Items from PO fallback have {productCode, productName, qty, unitPrice}
-    const sourceItems = (dto.items?.length ? dto.items : po.items).map((item: any) => {
-      const price = item.price ?? item.unitPrice ?? 0;
-      const qty = item.qty || 0;
-      return {
-        productId: item.productId || '',
-        code: item.code || item.productCode || '',
-        name: item.name || item.productName || '',
-        qty,
-        price,
-        total: qty * price,
-      };
-    });
-
-    const itemsTotal = sourceItems.reduce((s, i) => s + i.total, 0);
-    const discount = Math.max(0, Math.min(dto.discount ?? 0, itemsTotal));
-    const total = itemsTotal - discount;
-    const deposit = Math.min(dto.deposit ?? 0, total);
-    const account = dto.depMethod || 'كاش';
-    const today = new Date().toISOString().split('T')[0];
-
-    const txDto: CreateTransactionDto = {
-      date: dto.date || today,
-      transactionDate: dto.date || today,
-      type: 'مشتريات',
-      client: po.supplierName,
-      ref: dto.ref,
-      notes: dto.notes || `محوّل من أمر شراء ${po.poNumber}`,
-      items: sourceItems,
-      itemsTotal,
-      total,
-      discount,
-      deposit,
-      remaining: Math.max(0, total - deposit),
-      payStatus: deposit >= total ? 'مكتمل' : 'معلق',
-      depMethod: account,
-      payment: account,
-      employee: dto.createdBy,
-      purchaseOtpId: dto.purchaseOtpId || '',
-      invoiceImages: dto.invoiceImages || [],
-    } as unknown as CreateTransactionDto;
-
-    const tx = await this.transactionsService.create(txDto, callerRole);
-
-    const updatedPo = await this.poModel
-      .findByIdAndUpdate(
-        id,
-        {
-          linkedTransactionId: String(tx._id),
-          $push: {
-            statusHistory: {
-              status: 'محوّل إلى فاتورة',
-              changedBy: dto.createdBy,
-              changedAt: new Date().toISOString(),
-              note: `فاتورة رقم ${dto.ref}`,
-            },
-          },
-        },
-        { new: true },
-      )
-      .exec();
-
-    return { po: updatedPo!, transaction: tx };
+    actor?: TrackingActor,
+  ): Promise<any> {
+    if (!this.receiving || !actor) throw new ServiceUnavailableException('Authenticated atomic purchase receiving service is required');
+    return this.receiving.convert(id, dto, actor);
   }
 }

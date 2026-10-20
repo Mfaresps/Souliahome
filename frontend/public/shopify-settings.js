@@ -10,7 +10,7 @@ function renderShopifySettings() {
   if (!isAdmin()) { card.innerHTML = ''; return; }
   const text = _shopifySettingsText;
   card.innerHTML = `
-    <h3 style="margin:0 0 8px">Shopify</h3>
+    <h3 class="stg-provider-heading"><span class="stg-provider-logo stg-provider-shopify" aria-hidden="true"><img src="/shopify-glyph-color-2026-65613845c170.svg" alt="" width="24" height="28"></span><span>Shopify</span></h3>
     <p class="text-xs text-muted">${esc(text('احفظ مفتاح الاستقبال مرة واحدة؛ يظل محفوظًا بعد تحديث البرنامج.', 'Save the signing key once. It stays saved after application updates.'))}</p>
     <p id="shopify-signing-status" role="status" class="text-xs">${esc(settings?.shopifyWebhookSecretSet
       ? text('مفتاح استقبال الأوردرات محفوظ.', 'Order webhook signing key is configured.')
@@ -61,6 +61,7 @@ async function saveShopifySettings() {
       }
     }
     renderShopifySettings();
+    if (typeof stgRefreshProviderConnections === 'function') stgRefreshProviderConnections(true);
     toast(_shopifySettingsText('تم حفظ ربط Shopify.', 'Shopify connection saved.'));
   } catch (error) {
     const message = _shopifySaveError(error);
@@ -97,6 +98,7 @@ async function testShopifySettings() {
   if (status) status.textContent = _shopifySettingsText('جارٍ الفحص…', 'Checking…');
   try {
     const result = await api('/shopify/connection-status');
+    if (typeof stgSetProviderConnectionState === 'function') stgSetProviderConnectionState('shopify', result.adminApiConfigured ? (result.adminApiReachable ? 'connected' : 'disconnected') : (result.webhookConfigured ? 'configured' : 'unconfigured'));
     const text = _shopifySettingsText;
     const messages = [result.webhookConfigured
       ? text('مفتاح الاستقبال محفوظ؛ اختبر وصول الطلب من Shopify باستخدام Send test.', 'Signing key is configured; verify delivery with Send test in Shopify.')
@@ -110,6 +112,7 @@ async function testShopifySettings() {
           : text('الاتصال بـ Admin API فشل؛ راجع اسم المتجر والتوكن وصلاحية قراءة الأوردرات.', 'Admin API connection failed; check the store, token and order read permission.'));
     if (status) status.textContent = messages.join(' ');
   } catch (_) {
+    if (typeof stgSetProviderConnectionState === 'function') stgSetProviderConnectionState('shopify', 'error');
     if (status) status.textContent = _shopifySettingsText('تعذر الفحص. حاول مرة أخرى.', 'Unable to check. Try again.');
   } finally {
     if (button) button.disabled = false;

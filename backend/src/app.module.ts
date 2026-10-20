@@ -28,6 +28,7 @@ import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { DemandPlanningModule } from './demand-planning/demand-planning.module';
 import { SupplierReturnsModule } from './supplier-returns/supplier-returns.module';
 import { InventoryMovementsModule } from './inventory-movements/inventory-movements.module';
+import { InventoryUnitsModule } from './inventory-units/inventory-units.module';
 import { SupplierLedgerModule } from './supplier-ledger/supplier-ledger.module';
 import { SupplierLedgerBackfillModule } from './supplier-ledger/backfill/supplier-ledger-backfill.module';
 import { DraftsModule } from './drafts/drafts.module';
@@ -35,6 +36,7 @@ import { CustomerServicePlaybookModule } from './customer-service-playbook/custo
 import { EmployeePerformanceModule } from './employee-performance/employee-performance.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
 import { SeedService } from './seed/seed.service';
+import { WarehousesModule } from './warehouses/warehouses.module';
 
 @Module({
   imports: [
@@ -69,6 +71,8 @@ import { SeedService } from './seed/seed.service';
     DemandPlanningModule,
     SupplierReturnsModule,
     InventoryMovementsModule,
+    InventoryUnitsModule,
+    WarehousesModule,
     SupplierLedgerModule,
     SupplierLedgerBackfillModule,
     DraftsModule,

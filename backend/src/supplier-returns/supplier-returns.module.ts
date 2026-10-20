@@ -11,6 +11,7 @@ import { TransactionsModule } from '../transactions/transactions.module';
 import { SuppliersModule } from '../suppliers/suppliers.module';
 import { SupplierLedgerModule } from '../supplier-ledger/supplier-ledger.module';
 import { ProductsModule } from '../products/products.module';
+import { InventoryUnitsModule } from '../inventory-units/inventory-units.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ProductsModule } from '../products/products.module';
     // اللي مافيهوش فاتورة أصلية واحدة نقرأ منها. مفيش دورة: ProductsModule
     // مابيستوردش supplier-returns.
     ProductsModule,
+    InventoryUnitsModule,
   ],
   controllers: [SupplierReturnsController],
   providers: [SupplierReturnsService, SrAllocationService],

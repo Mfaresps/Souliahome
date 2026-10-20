@@ -1,0 +1,127 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),puppeteer=require('puppeteer');
+const root=path.resolve(__dirname,'../../../frontend/public'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const code=html.slice(html.indexOf('function _pwScanFocus('),html.indexOf('async function pwUndoLastPick('));
+const artifactDir=path.resolve(__dirname,'../../../artifacts');fs.mkdirSync(artifactDir,{recursive:true});
+const css=html.match(/<style[^>]*>([\s\S]*?)<\/style>/i)[1];
+const cardStart=html.indexOf('  const itemCards = items.length ? items.map(it => {',html.indexOf('function _pwRenderWork('));
+const cards=html.slice(cardStart,html.indexOf('  host.innerHTML = `',cardStart));
+(async()=>{const browser=await puppeteer.launch({headless:true});try{
+ const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.setRequestInterception(true);page.on('request',request=>request.respond({status:200,contentType:'text/html',body:'<meta charset="utf-8"><div id="pw-work"></div>'}));await page.goto('http://localhost/picking-scan-test');await page.addStyleTag({content:css});await page.addStyleTag({path:path.join(root,'picking-scan.css')});
+ await page.addScriptTag({content:`
+ window.currentLang='ar';window._pwSelId='demo';window.hasPerm=()=>true;window.qs=s=>document.querySelector(s);window.esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));window.fmtN=String;window.toasts=[];window.toast=(...args)=>toasts.push(args);window.calls=[];window.acceptConfirm=true;window.showConfirm=async()=>acceptConfirm;window.promptAnswer="1";window.showPrompt=async()=>acceptConfirm?promptAnswer:null;
+ window.order={_id:'demo',items:[{lineId:'a',qty:2,name:'Cotton shirt',code:'SKU-A',price:150},{lineId:'b',qty:1,name:'Linen trousers',code:'SKU-B',price:300}]};window.server={lines:[{lineId:'a',productId:'product-a',qty:2,availableCount:2,units:[],skippedCount:0,exceptions:[]},{lineId:'b',productId:'product-b',qty:1,availableCount:1,units:[],skippedCount:0,exceptions:[]}]};window.state={summary:structuredClone(server),loading:false};window._pwPickState=()=>state;window._puSetLocalPrepChecked=(id,checked)=>{order.prepChecked=checked;};
+ window._pwAutoPrepareScannedOrder=async()=>{};window._pwLoadPickSummary=async()=>{state.summary=structuredClone(server);};
+ window.api=async(url,options)=>{if(!options){const barcode=decodeURIComponent(url.split('/').pop());return {unit:{status:'available',productId:barcode.startsWith('B')?'product-b':barcode.startsWith('X')?'not-in-order':'product-a'}};}const body=JSON.parse(options.body);calls.push({url,body});await new Promise(done=>setTimeout(done,80));const line=server.lines.find(l=>l.lineId===body.lineId);if(url.endsWith('/exceptions')){if(body.action==='skip'){for(let i=0;i<(body.quantity||1);i++){line.exceptions.push({id:'exception-'+calls.length+'-'+i,active:true});line.skippedCount++;}}else{line.exceptions.find(e=>e.id===body.exceptionId).active=false;line.skippedCount--;}return {barcodeMatched:false,prepChecked:false};}if(body.identifier==='WRONG')throw Error('Barcode does not match this product');if(line.units.some(u=>u.barcode===body.identifier))throw Error('Already scanned');const unit={barcode:body.identifier,status:'picking'};line.units.push(unit);line.availableCount--;return {unit};};
+ ${code}
+ window.fmtJT=value=>'EGP '+value;window.t=key=>({puUnitPriceLabel:'Unit price',puTotalLabel:'Total',puCodeLabel:'Code'}[key]||key);window._pwItemImgUrl=()=>'';window.productThumbHtml=()=>'<div class="product-thumb" style="background:#e9eee8;display:grid;place-items:center;color:#7b927e;font-size:30px">▧</div>';
+ window._pwRenderWork=()=>{const o=order,items=o.items,canBarcodePick=true,pickState=state;${cards}document.querySelector('#pw-work').innerHTML='<div class="pw-barcode-tools">'+_pwScanIntroHtml(order,state)+'</div><div class="pw-grid scan-demo-items">'+itemCards+'</div>';_pwAnimatePendingScan(order._id);};_pwRenderWork();
+ `});
+ await page.addStyleTag({content:'#pw-work{max-width:820px;margin:20px auto;padding:12px}.scan-demo-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}@media(max-width:600px){#pw-work{margin:0;padding:10px}.scan-demo-items{grid-template-columns:minmax(0,1fr)}}'});
+ for(const lang of ['ar','en'])for(const width of [320,390,720]){await page.setViewport({width,height:900});await page.evaluate(lang=>{currentLang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';_pwRenderWork();},lang);assert.equal(await page.$('#pw-physical-scan-confirm'),null);assert.equal(await page.$eval('#pw-scan-demo-a',el=>el.disabled),false);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));}
+ await page.evaluate(()=>{document.getElementById('pw-work').classList.add('pw-items-wrap');});
+ for(const width of [620,720,1024]){await page.setViewport({width,height:900});assert.ok(await page.$$eval('.pw-item',els=>Math.abs(els[0].getBoundingClientRect().top-els[1].getBoundingClientRect().top)<1),'Two products share a row at '+width);}
+ await page.setViewport({width:720,height:900});
+ await page.evaluate(()=>{currentLang='ar';document.documentElement.dir='rtl';_pwRenderWork();});
+ assert.ok(await page.$eval('.pw-scan-intro',el=>el.getBoundingClientRect().height<85),'Scanner bar stays compact');
+ assert.notEqual(await page.$eval('.pw-mult',el=>getComputedStyle(el).display),'none','Quantity badge is visible');
+ assert.ok(await page.$eval('.product-thumb',el=>el.getBoundingClientRect().width>=130),'Product images stay readable with two cards per row');
+ assert.ok(await page.$eval('.pw-mult-n',el=>parseFloat(getComputedStyle(el).fontSize)>=25),'Quantity is prominent');
+ await page.screenshot({path:path.join(artifactDir,'picking-scan-waiting.png'),fullPage:true});
+ await page.type('#pw-order-scan','WRONG');await page.keyboard.press('Enter');await page.waitForSelector('.pw-scan-feedback.is-error');assert.equal(await page.$eval('#pw-order-scan',el=>el.value),'WRONG');assert.equal(await page.$eval('.pw-scan-progress',el=>el.value),0);
+ await page.evaluate(()=>{document.getElementById('pw-scan-demo-a').value='A1';});
+ await page.evaluate(()=>Promise.all([pwScanOrderUnit('demo','a','pw-scan-demo-a'),pwScanOrderUnit('demo','a','pw-scan-demo-a')]));assert.equal(await page.evaluate(()=>calls.length),2);assert.equal(await page.$eval('.pw-scan-progress',el=>el.value),1);
+ await page.waitForSelector('.pw-scan-success');assert.ok(await page.$('.pw-dot-pop'));assert.equal(await page.$$eval('.pw-scan-feedback:not(.is-error)',els=>els.length),0,'Success does not add explanatory messages');
+ assert.equal(await page.$eval('.pw-item[data-pw-line="a"] .pw-scanned-codes code',el=>el.textContent),'A1');
+ await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);assert.equal(await page.$eval('.pw-scan-success',el=>getComputedStyle(el).animationName),'none');await page.emulateMediaFeatures([]);
+ await page.evaluate(()=>{window.showPrompt=async()=>{throw Error('Single remaining piece must not prompt');};});
+ await page.evaluate(()=>{acceptConfirm=true;});await page.evaluate(()=>pwSkipDamagedLabel('demo','a'));assert.equal(await page.$eval('.pw-scan-progress',el=>el.value),2);assert.equal(await page.$eval('#pw-scan-demo-a',el=>el.disabled),true);assert.equal(await page.evaluate(()=>document.activeElement.id),'pw-order-scan');assert.equal(await page.$$eval('.pw-piece-dots .skipped',els=>els.length),1);
+ await page.screenshot({path:path.join(artifactDir,'picking-scan-skipped.png'),fullPage:true});
+ assert.equal(await page.evaluate(()=>calls.at(-1).body.quantity),1);await page.evaluate(()=>{window.showPrompt=async()=>acceptConfirm?promptAnswer:null;});
+ assert.equal(await page.$eval('.pw-piece-dots .skipped',el=>getComputedStyle(el).backgroundColor),'rgb(35, 128, 82)');assert.ok(await page.$('.pw-piece-dots .skipped svg path'));
+
+ await page.evaluate(()=>{state={summary:structuredClone(server),loading:false};_pwRenderWork();});assert.equal(await page.$$eval('.pw-piece-dots .skipped',els=>els.length),1,'Skip survives fresh UI state');
+ await page.evaluate(()=>{order.prepChecked=true;_pwRenderWork();});assert.ok(await page.$('.pw-skip-actions button'));await page.evaluate(()=>pwSkipDamagedLabel('demo','a',server.lines[0].exceptions[0].id));assert.equal(await page.evaluate(()=>order.prepChecked),false);assert.equal(await page.$eval('#pw-order-scan',el=>el.disabled),false);assert.equal(await page.$$eval('.pw-piece-dots .skipped',els=>els.length),0);assert.equal(await page.$eval('#pw-scan-demo-a',el=>el.disabled),false);
+ await page.type('#pw-order-scan','A2');await page.keyboard.press('Enter');await page.waitForFunction(()=>document.activeElement.id==='pw-order-scan' && !state.loading);
+ await page.type('#pw-order-scan','B1');await page.keyboard.press('Enter');await page.waitForFunction(()=>document.querySelector('.pw-scan-progress').value===3);assert.equal(await page.$$eval('.pw-piece-dots .matched',els=>els.length),3);
+ assert.ok(await page.$eval('.pw-scan-intro',el=>el.getBoundingClientRect().height<85));assert.equal(await page.$eval('#pw-order-scan',el=>getComputedStyle(el).display),'none');assert.ok(await page.$('.pw-scan-done'));
+ assert.equal(await page.$eval('.pw-unit-scan-row.is-complete:not(.has-skips) .pw-piece-status',el=>getComputedStyle(el).color),'rgb(25, 104, 63)','Matched status is green');
+ await page.screenshot({path:path.join(artifactDir,'picking-scan-complete.png'),fullPage:true});
+ await page.evaluate(()=>{server.lines.forEach(line=>{line.units=[];line.skippedCount=0;line.exceptions=[];});state={summary:structuredClone(server),loading:false};_pwRenderWork();window._pucoColType='prep';const modal=document.createElement('div');modal.id='pu-card-orders-modal';document.body.append(modal);});
+ const beforeAuto=await page.evaluate(()=>calls.length);
+ await page.type('#pw-order-scan','B000001');await page.keyboard.press('Enter');await page.waitForFunction(()=>server.lines[1].units.length===1&&!state.loading&&!state.routing);
+ assert.equal(await page.evaluate(()=>calls.at(-1).body.lineId),'b','A barcode entered at product A is routed to product B');
+ assert.equal(await page.$$eval('.pw-item[data-pw-line="a"] .pw-piece-dots .matched',els=>els.length),0);
+ assert.equal(await page.$$eval('.pw-item[data-pw-line="b"] .pw-piece-dots .matched',els=>els.length),1);
+ await page.type('#pw-order-scan','X000001');await page.keyboard.press('Enter');await page.waitForSelector('.pw-scan-feedback.is-error');assert.equal(await page.evaluate(()=>calls.length),beforeAuto+1,'Unknown product cannot create a picking scan');
+ await page.evaluate(()=>{document.activeElement.blur();document.body.focus();});
+ await page.keyboard.type('A000001',{delay:5});await page.keyboard.press('Enter');await page.waitForFunction(()=>server.lines[0].units.length===1&&!state.loading&&!state.routing);
+ assert.equal(await page.$$eval('.pw-item[data-pw-line="a"] .pw-piece-dots .waiting',els=>els.length),1,'One piece remains grey until the second scan');
+ await page.setViewport({width:390,height:1000});await page.evaluate(()=>new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done))));assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.$('#pw-work').then(el=>el.screenshot({path:path.join(artifactDir,'picking-items-mobile-v2.png')}));
+ const beforeSwitch=await page.evaluate(()=>calls.length);
+ await page.evaluate(async()=>{document.getElementById('pw-order-scan').value='A000002';const pending=pwScanAnyOrderUnit('demo');_pwSelId='other-order';await pending;_pwSelId='demo';_pwRenderWork();});assert.equal(await page.evaluate(()=>calls.length),beforeSwitch,'Switching orders during lookup cancels the write');
+ await page.evaluate(()=>{const input=document.createElement('textarea');input.id='test-comment';document.body.append(input);input.focus();});await page.keyboard.type('A000003',{delay:5});await page.keyboard.press('Enter');assert.equal(await page.evaluate(()=>calls.length),beforeSwitch,'Typing a comment is never captured as a scan');
+ const gateStart=html.indexOf('function _pwIncompletePickLines('),gateEnd=html.indexOf('  /* Acknowledge the press on the button',gateStart);
+ await page.addScriptTag({content:`${html.slice(gateStart,gateEnd)}window.preparedCount++;}\nwindow.preparedCount=0;window._pickupOrders=[order];window._pucoColType='prep';window._pwEnsurePickLines=async()=>{};window.alerts=[];window.showAlert=async(message)=>alerts.push(message);window.showConfirm=async(message,options)=>{window.warning={message,options};return acceptConfirm;};window.api=async(url,options)=>{if(!options)return structuredClone(server);return {ok:true};};server.lines.forEach(line=>{line.units=[];line.skippedCount=0;line.availableCount=0;});order.items[0].name='Cotton shirt';order.items[1].name='Linen trousers';acceptConfirm=false;`});
+ await page.evaluate(()=>pucoTickOrder('demo',true));assert.equal(await page.evaluate(()=>preparedCount),0);assert.equal(await page.evaluate(()=>warning.options.rows.length),2);assert.equal(await page.evaluate(()=>warning.options.confirmLabel),'متابعة المسح');
+ await page.evaluate(()=>{acceptConfirm=true;return pucoTickOrder('demo',true);});assert.equal(await page.evaluate(()=>preparedCount),0);assert.equal(await page.evaluate(()=>document.activeElement.id),'pw-order-scan');
+ await page.evaluate(()=>{server.lines[0].units=[{status:'picking',unitId:'u1',version:0}];server.lines[0].skippedCount=1;server.lines[1].skippedCount=1;return pucoTickOrder('demo',true);});assert.equal(await page.evaluate(()=>preparedCount),1);
+ await page.evaluate(()=>{server.lines=[];return pucoTickOrder('demo',true);});assert.equal(await page.evaluate(()=>preparedCount),1,'Missing summary lines cannot bypass completion');
+ const summaryLoader=html.slice(html.indexOf('async function _pwLoadPickSummary('),html.indexOf('async function _pwEnsurePickLines('));await page.addScriptTag({content:summaryLoader});
+ await page.evaluate(async()=>{order.prepChecked=true;server.prepChecked=false;state.loading=false;await _pwLoadPickSummary('demo',true);});assert.equal(await page.evaluate(()=>order.prepChecked),false,'Reloaded server flags clear a stale approved state');
+ const undoCode=html.slice(html.indexOf('async function pwUndoLastPick('),html.indexOf('/** RIGHT PANEL',html.indexOf('async function pwUndoLastPick(')));
+ await page.addScriptTag({content:undoCode});
+ await page.evaluate(()=>{
+  const packId='a'.repeat(24);window.testPackId=packId;order.items=[{lineId:'a',qty:6,name:'Six-piece pack A',code:'SKU-A',price:10},{lineId:'b',qty:6,name:'Six-piece pack B',code:'SKU-B',price:10}];order.prepChecked=false;
+  server={prepChecked:false,lines:['a','b'].map(id=>({lineId:id,productId:'product-'+id,qty:6,availableCount:24,units:[],skippedCount:0,exceptions:[]}))};state={summary:structuredClone(server),loading:false};
+  window._pwAutoPrepareScannedOrder=async()=>{};window.showConfirm=async()=>true;
+  window.api=async(url,options)=>{
+   if(!options){if(url.endsWith('/picking'))return structuredClone(server);const other=/PK-B/i.test(decodeURIComponent(url));return {unit:{_id:other?'b'.repeat(24):packId,isPack:true,quantity:6,productId:other?'product-b':'product-a',status:'available'}};}
+   const body=JSON.parse(options.body);calls.push({url,body});
+   if(url.endsWith('/exceptions')){const line=server.lines.find(l=>l.lineId===body.lineId);if(body.action==='skip'){for(let i=0;i<body.quantity;i++){line.exceptions.push({id:'batch-'+calls.length+'-'+i,active:true});line.skippedCount++;}}else{line.exceptions.find(e=>e.id===body.exceptionId).active=false;line.skippedCount--;}return {prepChecked:false};}
+   if(url.endsWith('/undo-scan')){server.lines[/PK-B/i.test(url)?1:0].units=[];server.prepChecked=false;return {quantity:6};}
+   const line=server.lines.find(l=>l.lineId===body.lineId),scanPackId=line.lineId==='a'?packId:'b'.repeat(24);line.units=Array.from({length:6},(_,i)=>({unitId:line.lineId+'-member-'+i,barcode:'SU-'+i,packId:scanPackId,status:'picking',version:0,updatedAt:new Date().toISOString()}));
+   return {isPack:true,packId:scanPackId,quantity:6,unit:{...line.units[0],barcode:'PK-'+scanPackId.toUpperCase()}};
+  };_pwRenderWork();
+ });
+ await page.addScriptTag({path:path.join(root,'barcode-input.js')});
+ await page.type('#pw-order-scan',']Q3pk-aaaaaaaaaaaaaaaaaaaaaaaa');await page.keyboard.press('Enter');
+ await page.waitForFunction(()=>server.lines[0].units.length===6&&!state.loading&&!state.routing);
+ assert.ok((await page.evaluate(()=>calls.at(-1).url)).startsWith('/inventory-packs/orders/'),'Pack scan uses atomic pack endpoint');
+ assert.equal(await page.$$eval('.pw-piece-dots .matched',els=>els.length),6,'One pack marks six physical pieces');
+ assert.equal(await page.$$eval('.pw-item[data-pw-line="a"] .pw-scanned-codes code',els=>els.length),1,'Pack code appears once for six pieces');
+ assert.equal(await page.$eval('.pw-item[data-pw-line="a"] .pw-scanned-codes code',el=>el.textContent),'PK-'+ 'A'.repeat(24));
+ await page.evaluate(()=>{state.last=null;_pwRenderWork();});
+ assert.equal(await page.$eval('.pw-item[data-pw-line="a"] .pw-scanned-codes code',el=>el.textContent),'PK-'+ 'A'.repeat(24),'Code is restored from persisted line identities');
+ assert.equal(await page.$$eval('.pw-item[data-pw-line="b"] .pw-piece-dots .matched',els=>els.length),0,'Other product stays waiting');
+ assert.equal(await page.$eval('.pw-scan-progress',el=>el.value),6);
+ assert.match(await page.$eval('.pw-item[data-pw-line="a"] .pw-piece-status',el=>el.textContent),/6/);
+ await page.type('#pw-order-scan','PK-BBBBBBBBBBBBBBBBBBBBBBBB');await page.keyboard.press('Enter');
+ await page.waitForFunction(()=>server.lines[1].units.length===6&&!state.loading&&!state.routing);
+ assert.equal(await page.$$eval('.pw-piece-dots .matched',els=>els.length),12,'Two packs mark twelve physical pieces');
+ await page.screenshot({path:path.join(artifactDir,'picking-two-six-piece-packs.png'),fullPage:true});
+ await page.evaluate(()=>{server.prepChecked=true;order.prepChecked=true;server.lines.forEach(line=>line.units.forEach(unit=>unit.status='prepared'));return pwUndoLastPick('demo');});
+ assert.ok((await page.evaluate(()=>calls.at(-1).url)).endsWith('/undo-scan'),'Undo applies to the complete pack');
+ assert.equal(await page.evaluate(()=>server.lines[1].units.length),0);
+ assert.equal(await page.$$eval('.pw-item[data-pw-line="b"] .pw-scanned-codes',els=>els.length),0,'Undo removes the code from its product card');
+ assert.equal(await page.evaluate(()=>order.prepChecked),false,'Undo of a prepared pack reopens approval');
+ assert.equal(await page.evaluate(()=>server.lines[0].units.length),6,'Undoing the last pack preserves the first pack');
+ await page.evaluate(()=>{promptAnswer='7';return pwSkipDamagedLabel('demo','b');});
+ assert.equal(await page.evaluate(()=>server.lines[1].skippedCount),0,'Reject quantity above remaining pieces');
+ await page.evaluate(()=>{promptAnswer='٤';return pwSkipDamagedLabel('demo','b');});
+ assert.equal(await page.evaluate(()=>calls.at(-1).body.quantity),4,'Arabic quantity is submitted in one request');
+ assert.equal(await page.$$eval('.pw-item[data-pw-line="b"] .pw-piece-dots .skipped svg',els=>els.length),4);
+ assert.equal(await page.$$eval('.pw-item[data-pw-line="b"] .pw-piece-dots .waiting',els=>els.length),2);
+ assert.equal(await page.evaluate(()=>server.lines[0].skippedCount),0,'Other product is unchanged');
+ await page.evaluate(()=>pwSkipDamagedLabel('demo','b',server.lines[1].exceptions.at(-1).id));
+ assert.equal(await page.evaluate(()=>server.lines[1].skippedCount),3,'Undo restores one piece to waiting');
+ await page.evaluate(()=>{order.items[1].qty=3;const line=server.lines[1];line.qty=3;line.units=[{unitId:'mixed-1',status:'picking'},{unitId:'mixed-2',status:'prepared'}];line.skippedCount=0;line.exceptions=[];state.summary=structuredClone(server);window.showPrompt=async()=>{throw Error('One remaining piece must not prompt');};_pwRenderWork();});
+ assert.equal(await page.$$eval('.pw-item[data-pw-line="b"] .pw-piece-dots .matched',els=>els.length),2);
+ assert.equal(await page.$eval('.pw-item[data-pw-line="b"] .pw-skip-actions button',el=>el.disabled),false);
+ await page.evaluate(()=>pwSkipDamagedLabel('demo','b'));
+ assert.equal(await page.evaluate(()=>calls.at(-1).body.quantity),1);
+ assert.equal(await page.$$eval('.pw-item[data-pw-line="b"] .pw-piece-dots .matched',els=>els.length),2);
+ assert.equal(await page.$$eval('.pw-item[data-pw-line="b"] .pw-piece-dots .skipped',els=>els.length),1);
+ assert.equal(await page.$$eval('.pw-item[data-pw-line="b"] .pw-piece-dots .waiting',els=>els.length),0);
+ assert.deepEqual(errors,[]);console.log('PASS: compact item cards, physical scan routing, quantity skips, mixed 2 scanned + 1 unscanned, preparation gate, six-piece pack scan and atomic pack undo.');
+ }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

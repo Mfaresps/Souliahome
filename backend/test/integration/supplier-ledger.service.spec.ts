@@ -382,7 +382,7 @@ describe('SupplierLedgerService', () => {
         refundAmount: 2400,
         refundTxRef: '900001-SRET',
       });
-      expect(vaultService.findLatestByRef).toHaveBeenCalledWith('900001-SRET');
+      expect(vaultService.findLatestByRef).toHaveBeenCalledWith('900001-SRET', undefined, undefined);
       const refundRow = res.entries.find((e) => e.entryType === 'refund-paid');
       expect(refundRow?.vaultTxNo).toBe('RET-003');
       expect(refundRow?.vaultEntryId).toBe('v-9');

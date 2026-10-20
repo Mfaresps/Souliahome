@@ -71,5 +71,12 @@
 .push-activation-guide li p{font-size:13px;line-height:1.8;margin:0;overflow-wrap:anywhere}
 #notification-settings .push-language-select{width:150px;max-width:100%;flex:none;min-height:40px;padding:8px 12px;border:1px solid var(--border,#dde6e0);border-radius:9px;background:var(--surface,#fff);color:var(--text,#20332b);font:inherit}
 #notification-settings .push-managed-language{font-size:13px;white-space:normal;text-align:end;max-width:45%}
+#notification-settings .push-action{min-height:32px;padding:6px 10px;font-size:12px;border-radius:7px}
+#notification-settings .push-actions{gap:7px;margin-top:12px}
+#notification-settings .push-heading{gap:10px;margin-bottom:16px}
+#notification-settings .push-heading-icon{width:36px;height:36px;border-radius:10px}
+#notification-settings .push-heading-icon svg{width:19px;height:19px}
+#notification-settings .push-device-card{padding:14px}
+#notification-settings .push-language-select{min-height:34px;padding:5px 9px;font-size:12px}
 #notification-settings [hidden]{display:none!important}
 @media(max-width:600px){.push-settings-dialog{padding:10px;border-radius:16px;max-height:calc(100dvh - 32px)}.push-onboarding-dialog{padding:20px}.push-onboarding-dialog h3{font-size:18px}.push-activation-guide{padding:12px}.push-activation-guide li{gap:9px}.push-onboarding-actions{display:grid;grid-template-columns:1fr;width:100%}#notification-settings .push-language-select{width:110px}}

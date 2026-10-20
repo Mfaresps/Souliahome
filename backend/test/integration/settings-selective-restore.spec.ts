@@ -16,6 +16,7 @@ describe('SettingsService.selectiveRestoreBackup — destructive safety', () => 
   let deleted: string[];
   let inserted: Record<string, any[]>;
   let service: SettingsService;
+  let trackingPresent: boolean;
 
   const BACKUP_FILE = 'backup_test-restore.json';
 
@@ -31,7 +32,7 @@ describe('SettingsService.selectiveRestoreBackup — destructive safety', () => 
         return { insertedCount: docs.length };
       },
       find: () => ({ toArray: async () => [] }),
-      countDocuments: async () => 0,
+      countDocuments: async () => trackingPresent && name === 'inventoryunits' ? 1 : 0,
       findOne: async () => null,
     }),
   });
@@ -45,6 +46,7 @@ describe('SettingsService.selectiveRestoreBackup — destructive safety', () => 
 
   beforeEach(() => {
     deleted = [];
+    trackingPresent = false;
     inserted = {};
     originalCwd = process.cwd();
     // getBackupDir() resolves against process.cwd(), so isolate it to a temp dir.
@@ -107,5 +109,16 @@ describe('SettingsService.selectiveRestoreBackup — destructive safety', () => 
     // migrateDoc() backfills fields added after older backups were written.
     expect(inserted['categories'][0].isActive).toBe(true);
     expect(inserted['products'][0].sellPrice).toBe(0);
+  });
+
+  it.each(['full', 'selective', 'reset'])('blocks %s inventory maintenance before deletion when units exist', async mode => {
+    trackingPresent = true;
+    writeBackup({ products: [] });
+    const result = mode === 'full' ? await service.restoreBackup(BACKUP_FILE)
+      : mode === 'selective' ? await service.selectiveRestoreBackup(BACKUP_FILE, ['products'])
+      : await service.resetSelectiveData(['products'], false);
+    expect(result.success).toBe(false);
+    expect(result.message).toContain('coordinated offline');
+    expect(deleted).toEqual([]); expect(inserted).toEqual({});
   });
 });

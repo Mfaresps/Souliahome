@@ -24,14 +24,16 @@ import {
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
+import { PermsGuard } from '../core/guards/perms.guard';
+import { RequirePerms } from '../core/decorators/perms.decorator';
 
-type ReqUser = { user?: { name?: string; username?: string; role?: string; perms?: string[] } };
+type ReqUser = { user?: { userId?: string; name?: string; username?: string; role?: string; perms?: string[] } };
 
 function actorOf(req: ReqUser): string {
   return req.user?.name || req.user?.username || 'مستخدم';
 }
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermsGuard)
 @Controller('products')
 export class ProductsController {
   constructor(
@@ -60,11 +62,13 @@ export class ProductsController {
   }
 
   @Post()
+  @RequirePerms('products-sku-manage')
   async create(@Body() dto: CreateProductDto, @Request() req: ReqUser) {
     return this.productsService.create(dto, actorOf(req));
   }
 
   @Post('import')
+  @RequirePerms('products-sku-manage')
   async importProducts(@Body() dto: ImportProductsDto, @Request() req: ReqUser) {
     return this.productsService.importProducts(dto.items, actorOf(req));
   }
@@ -77,29 +81,33 @@ export class ProductsController {
   }
 
   @Post('bulk-delete')
+  @RequirePerms('products-sku-manage')
   async bulkDelete(@Body() dto: BulkDeleteProductDto) {
     const count = await this.productsService.bulkDelete(dto.ids);
     return { message: `تم حذف ${count} صنف`, deletedCount: count };
   }
 
   @Post('batch-delete')
+  @RequirePerms('products-sku-manage')
   async batchDelete(@Body() body: { codes: string[] }) {
     const count = await this.productsService.batchDeleteByCodes(body.codes);
     return { message: `تم حذف ${count} صنف`, deletedCount: count };
   }
 
   @Post('sync-product-refs')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
   async syncProductRefs() {
     const result = await this.productsService.syncProductRefs();
     return { message: `تم تحديث ${result.txUpdated} معاملة و ${result.itemsPatched} صنف`, ...result };
   }
 
   @Post(':id/request-edit')
-  async requestEdit(@Param('id') id: string, @Body() dto: RequestProductEditDto) {
+  async requestEdit(@Param('id') id: string, @Body() dto: RequestProductEditDto, @Request() req: ReqUser) {
     return this.productsService.requestProductEdit(id, {
-      requestedBy: dto.requestedBy,
-      requestedById: dto.requestedById,
-      requestedByUsername: dto.requestedByUsername,
+      requestedBy: actorOf(req),
+      requestedById: req.user?.userId,
+      requestedByUsername: req.user?.username,
       changes: dto.changes || {},
     });
   }
@@ -136,6 +144,7 @@ export class ProductsController {
   }
 
   @Delete(':id')
+  @RequirePerms('products-sku-manage')
   async remove(@Param('id') id: string) {
     await this.productsService.remove(id);
     return { message: 'تم حذف الصنف' };

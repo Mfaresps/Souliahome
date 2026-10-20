@@ -4,9 +4,11 @@
   "description": "Soulia Frontend Server",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "vendor:scanner": "node scripts/vendor-scanner.cjs"
   },
   "dependencies": {
+    "@zxing/browser": "0.2.1",
     "express": "^4.18.2",
     "http-proxy-middleware": "^2.0.6"
   }

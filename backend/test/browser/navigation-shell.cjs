@@ -23,7 +23,7 @@ const pause = () => new Promise(resolve => setTimeout(resolve, 250));
       const url = new URL(request.url());
       if (url.origin === 'http://soulia.test') {
         if (url.pathname === '/') return request.respond({status:200,contentType:'text/html',body:html});
-        if (['/navigation-shell.js','/navigation-shell.css','/soulia-logo.svg'].includes(url.pathname)) return request.respond({status:200,contentType:url.pathname.endsWith('.js')?'text/javascript':url.pathname.endsWith('.css')?'text/css':'image/svg+xml',body:fs.readFileSync(path.join(publicDir,url.pathname.slice(1)))});
+        if (['/navigation-shell.js','/navigation-shell.css','/soulia-logo.svg','/inventory-scanner.js','/inventory-scanner.css','/global-search-scanner.js','/global-search-scanner.css'].includes(url.pathname)) return request.respond({status:200,contentType:url.pathname.endsWith('.js')?'text/javascript':url.pathname.endsWith('.css')?'text/css':'image/svg+xml',body:fs.readFileSync(path.join(publicDir,url.pathname.slice(1)))});
         if (url.pathname === '/config.js') return request.respond({status:200,contentType:'text/javascript',body:'window.__ENV__={API_BASE_URL:""};'});
         if (url.pathname.startsWith('/api/')) return request.respond({status:200,contentType:'application/json',body:'[]'});
       }
@@ -44,6 +44,7 @@ const pause = () => new Promise(resolve => setTimeout(resolve, 250));
     check(await page.$eval('.shell-breadcrumb',el=>el.textContent.includes('Dashboard')), 'Dashboard breadcrumb');
     check(await page.$$eval('.shell-nav-label',rows=>rows.length===5), 'Five permission-aware groups');
     check(await page.$eval('#sidebar',el=>Math.round(el.getBoundingClientRect().width)===248), 'Expanded sidebar width');
+    check(await page.evaluate(()=>NAV_ITEMS.find(item=>item.id==='barcodes')?.icon===NAV_ICONS.barcodes && NAV_ICONS.barcodes!==NAV_ICONS.inventory), 'Barcode page uses a distinct barcode icon');
     await page.setViewport({width:1440,height:768});await pause();
     check(await page.$eval('.shell-nav-scroll',el=>el.scrollHeight<=el.clientHeight+1),'All main navigation items fit laptop height');
     check(await page.$eval('body',el=>getComputedStyle(el).fontFamily.startsWith('Inter') && getComputedStyle(el).fontFamily.includes('Cairo')),'Latin font with unchanged Arabic fallback');
@@ -150,9 +151,31 @@ const pause = () => new Promise(resolve => setTimeout(resolve, 250));
     await page.screenshot({path:path.join(root,'design-preview/implemented-mobile.png')});
     await page.keyboard.press('Escape');
     check(await page.$eval('.header-search',el=>!el.classList.contains('m-search-open')),'Mobile Escape closes search');
+    for (const direction of ['rtl','ltr']) {
+      await page.evaluate(direction=>{currentLang=direction==='rtl'?'ar':'en';document.documentElement.dir=direction;buildSidebar();},direction);
+      for (const width of [320,390,768,1024,1440]) {
+        await page.setViewport({width,height:900});
+        await page.evaluate(width=>{qs('.header-search').classList.toggle('m-search-open',width<=768);qs('#global-search').value='layout';toggleSearchClear('layout');},width);
+        await pause();
+        const layout=await page.evaluate(()=>{
+          const input=qs('#global-search'),box=input.getBoundingClientRect(),style=getComputedStyle(input);
+          const start=box.left+parseFloat(style.paddingLeft),end=box.right-parseFloat(style.paddingRight);
+          const controls=['#global-search-scan','#search-clear-btn','.shell-search-shortcut','.search-icon-btn'].map(selector=>qs(selector)).filter(el=>el&&getComputedStyle(el).display!=='none').map(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right};});
+          return {start,end,left:box.left,right:box.right,controls};
+        });
+        check(layout.end-layout.start>40,`Search text space ${direction} ${width}: ${JSON.stringify(layout)}`);
+        check(layout.controls.every(c=>c.left>=layout.left-1&&c.right<=layout.right+1&&(c.right<=layout.start+1||c.left>=layout.end-1)),`Search icons outside text ${direction} ${width}: ${JSON.stringify(layout)}`);
+        check(layout.controls.every((a,i)=>layout.controls.slice(i+1).every(b=>a.right<=b.left||b.right<=a.left)),`Search icons separated ${direction} ${width}: ${JSON.stringify(layout)}`);
+        if ([390,1440].includes(width)) await page.screenshot({path:path.join(root,`design-preview/search-controls-${direction}-${width}.png`)});
+      }
+    }
+    await page.evaluate(()=>{qs('.header-search').classList.remove('m-search-open');closeSearchDropdown();});
     await page.evaluate(()=>{currentUser.role='staff';currentUser.perms=['products'];buildSidebar();});
     check(await page.$$eval('#sidebar [data-page="reports"]',rows=>rows.length===0),'No unauthorized reports row');
     check(await page.$$eval('#sidebar [data-page="products"]',rows=>rows.length===1),'Authorized product row remains');
+    await page.evaluate(()=>{document.documentElement.dir='rtl';});await pause();
+    check(await page.$eval('#global-search-scan',el=>el.hidden),'Scanner hidden without unit-view permission');
+    check(await page.evaluate(()=>{const input=qs('#global-search'),style=getComputedStyle(input),shortcut=qs('.shell-search-shortcut').getBoundingClientRect();return shortcut.right<=input.getBoundingClientRect().left+parseFloat(style.paddingLeft);}), 'RTL shortcut remains outside text without scanner permission');
     assert.deepEqual(errors,[],'No browser runtime errors');
     console.log(`Navigation shell: ${checks} checks passed. Desktop and mobile screenshots saved.`);
   } finally {await browser.close();}

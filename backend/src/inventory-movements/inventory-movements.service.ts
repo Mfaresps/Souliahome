@@ -6,7 +6,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, ClientSession, Types } from 'mongoose';
+import { DatabaseWriteContext, sessionQuery } from '../shared/database-write-context';
 import {
   InventoryMovement,
   InventoryMovementDocument,
@@ -15,8 +16,10 @@ import {
 } from './schemas/inventory-movement.schema';
 import { ProductsService } from '../products/products.service';
 import { TransactionsService } from '../transactions/transactions.service';
+import { MAIN_WAREHOUSE, requireWarehouse, warehouseCode } from '../warehouses/warehouse-storage';
 
 export interface RecordMovementEntry {
+  warehouseCode?: string;
   productId: string;
   productCode: string;
   productName: string;
@@ -61,8 +64,19 @@ export class InventoryMovementsService {
   ) {}
 
   /** Internal — called from TransactionsService lifecycle hooks. Never throws. */
-  async record(entries: RecordMovementEntry[]): Promise<void> {
+  async record(entries: RecordMovementEntry[], context?: DatabaseWriteContext): Promise<void> {
     if (!entries.length) return;
+    const transactionIds = [...new Set(entries.filter(entry => !entry.warehouseCode && /^[a-f\d]{24}$/i.test(entry.sourceTransactionId || '')).map(entry => entry.sourceTransactionId!))];
+    const linked = transactionIds.length ? await this.model.db.collection('transactions').find({ _id: { $in: transactionIds.map(id => new Types.ObjectId(id)) } }, { session: context?.session, projection: { warehouseCode: 1 } }).toArray() : [];
+    entries = entries.map(entry => ({ ...entry, warehouseCode: warehouseCode(entry.warehouseCode || linked.find(tx => String(tx._id) === entry.sourceTransactionId)?.warehouseCode) }));
+    if (context) {
+      for (const entry of entries) await new this.model({ ...entry,
+        movementId: await this.generateMovementId(context), sourceTransactionId: entry.sourceTransactionId || '',
+        sourceTransactionRef: entry.sourceTransactionRef || '', byUserId: entry.byUserId || '',
+        reason: entry.reason || '', notes: entry.notes || '',
+      }).save({ session: context.session });
+      return; // Strict: an audit failure aborts the whole receipt instead of being swallowed.
+    }
     try {
       const withIds = await Promise.all(
         entries.map(async (e) => ({
@@ -86,10 +100,10 @@ export class InventoryMovementsService {
 
   /** Random 6-digit movement transaction ID, unique per row and independent of any linked
    * transaction's own ref. Retries on the rare collision. */
-  private async generateMovementId(): Promise<string> {
+  private async generateMovementId(context?: DatabaseWriteContext): Promise<string> {
     for (let attempt = 0; attempt < 5; attempt++) {
       const candidate = String(Math.floor(100000 + Math.random() * 900000));
-      const exists = await this.model.exists({ movementId: candidate });
+      const exists = await sessionQuery(this.model.exists({ movementId: candidate }), context?.session);
       if (!exists) return candidate;
     }
     // Extremely unlikely fallback: timestamp-suffixed to guarantee uniqueness.
@@ -99,6 +113,7 @@ export class InventoryMovementsService {
   /** Admin-only manual stock correction. This IS a primary action — throws on invalid input. */
   async adjustStock(params: {
     productId: string;
+    warehouseCode?: string;
     qtyDelta: number;
     reason: string;
     by: string;
@@ -116,12 +131,15 @@ export class InventoryMovementsService {
     const product = await this.productsService.findById(params.productId);
     const inventory = await this.transactionsService.getInventory();
     const invRow = inventory.find((i) => i._id === String(product._id));
-    const qtyBefore = invRow ? invRow.current : 0;
+    const location = await requireWarehouse(this.model.db, params.warehouseCode);
+    const qtyBefore = Number(invRow?.warehouseBalances?.[location] || 0);
     const qtyAfter = qtyBefore + qtyDelta;
+    if (qtyAfter < 0) throw new BadRequestException('التسوية تتجاوز الرصيد المتاح في المخزن المختار');
     const adjustmentRef = await this.generateAdjustmentRef();
     const movementId = await this.generateMovementId();
 
     return this.model.create({
+      warehouseCode: location,
       movementId,
       productId: String(product._id),
       productCode: product.code,
@@ -154,13 +172,13 @@ export class InventoryMovementsService {
    *
    * Returned as a Map keyed by trimmed productCode so the callers stay O(products), not O(n²).
    */
-  async getManualAdjustmentQtyByProductCode(): Promise<Map<string, number>> {
+  async getManualAdjustmentQtyByProductCode(session?: ClientSession): Promise<Map<string, number>> {
     const map = new Map<string, number>();
     try {
-      const rows = await this.model
+      const rows = await sessionQuery(this.model
         .find({ sourceType: 'manual-adjustment' })
         .select('productCode qtyDelta')
-        .lean()
+        .lean(), session)
         .exec();
       for (const r of rows) {
         const code = String(r.productCode || '').trim();
@@ -168,6 +186,7 @@ export class InventoryMovementsService {
         map.set(code, (map.get(code) || 0) + (Number(r.qtyDelta) || 0));
       }
     } catch (err) {
+      if (session) throw err;
       // A failure here must not take the inventory screen down with it. Returning an empty map
       // degrades to pre-adjustment figures rather than throwing — but it IS wrong stock, so it is
       // logged at error level, not swallowed silently.
@@ -220,6 +239,10 @@ export class InventoryMovementsService {
     return `ADJ-${String(count + 1).padStart(6, '0')}`;
   }
 
+  async getManualAdjustmentWarehouseRows(session?: ClientSession) {
+    return sessionQuery(this.model.find({ sourceType: 'manual-adjustment' }).select('productCode qtyDelta warehouseCode').lean(), session).exec();
+  }
+
   async findAll(
     filters: InventoryMovementFilters,
     page = 1,
@@ -263,6 +286,13 @@ export class InventoryMovementsService {
       this.model.countDocuments(q).exec(),
     ]);
 
-    return { items, total, page: safePage, limit: safeLimit };
+    const ids = [...new Set(items.filter(item => !item.warehouseCode && /^[a-f\d]{24}$/i.test(item.sourceTransactionId || '')).map(item => item.sourceTransactionId))];
+    const transactions = ids.length ? await this.model.db.collection('transactions').find({ _id: { $in: ids.map(id => new Types.ObjectId(id)) } }, { projection: { warehouseCode: 1 } }).toArray() : [];
+    const warehouses = await this.model.db.collection('warehouses').find({}, { projection: { code: 1, name: 1 } }).toArray();
+    const enriched = items.map(item => {
+      const code = warehouseCode(item.warehouseCode || transactions.find(tx => String(tx._id) === item.sourceTransactionId)?.warehouseCode);
+      return { ...item, warehouseCode: code, warehouseName: warehouses.find(location => location.code === code)?.name || (code === MAIN_WAREHOUSE ? 'المخزن الرئيسي' : code) };
+    });
+    return { items: enriched as unknown as InventoryMovementDocument[], total, page: safePage, limit: safeLimit };
   }
 }

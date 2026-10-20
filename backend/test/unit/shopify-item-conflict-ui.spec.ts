@@ -11,6 +11,8 @@ function view() {
   const context: any = { currentLang: 'en', esc, fmtN: String, fmtJ: String,
     _spReceiptJs: (value: any) => esc(JSON.stringify(value)), confirm: jest.fn(() => true),
     api: jest.fn(async () => ({ success: true })), toast: jest.fn(),
+    _spOrderById: jest.fn(() => ({ _id: 'o1', status: 'pending' })),
+    _spConfirmEditSubmission: jest.fn(async () => true),
     loadShopifyOrders: jest.fn(async () => {}), _spRefreshReceiptViews: jest.fn(),
     editShopifyOrder: jest.fn(), document: { getElementById: jest.fn(() => null) }, _spEditDirty: jest.fn(() => false) };
   runInNewContext(fn('_spItemSyncConflictHtml') + '\n' + fn('_spResolveItemSyncConflict'), context);

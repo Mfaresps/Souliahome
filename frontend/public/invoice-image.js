@@ -38,6 +38,7 @@ async function loadInvoiceThumbnails(items) {
 }
 
 async function buildCompactInvoiceCanvas(tx, preview = false) {
+  await window.InvoiceUnitIdentities?.ensure(tx);
   const items = tx.items || [];
   const [thumbnails] = await Promise.all([loadInvoiceThumbnails(items), document.fonts.ready]);
   const en = currentLang === 'en';
@@ -95,9 +96,10 @@ async function buildCompactInvoiceCanvas(tx, preview = false) {
     const textWidth = cellWidth - 144;
     const name = wrap(item.name || item.code || '—', textWidth, 20, true);
     const details = wrap(`${label('الكمية', 'Qty')}: ${Number(item.qty) || 0} × ${money(item.price)}`, textWidth, 18);
-    return { name, details, thumbnail: thumbnails[index],
+    const identities = (window.InvoiceUnitIdentities?.imageLines(tx, item) || []).flatMap(line => wrap(line, textWidth, 14));
+    return { name, details, identities, thumbnail: thumbnails[index],
       total: money(item.total ?? ((Number(item.qty) || 0) * (Number(item.price) || 0))),
-      height: Math.max(96, name.length * 32 + details.length * 30 + 32) + 24 };
+      height: Math.max(96, name.length * 32 + details.length * 30 + 32 + identities.length * 22) + 24 };
   });
   const grid = { kind: 'items', height: 0, bands: [] };
   if (cards.length) rows.push(grid);
@@ -110,6 +112,8 @@ async function buildCompactInvoiceCanvas(tx, preview = false) {
   const remaining = Math.max(0, Number(tx.remaining) || 0);
   const purchase = tx.type === 'مشتريات';
   const returned = ['مرتجع', 'مرتجع مبيعات', 'مرتجع مشتريات'].includes(tx.type);
+  const pendingDeposit = Math.max(0, Number(tx.pendingDepositAmount) || 0);
+  if (pendingDeposit > 0) pair(label('\u0639\u0631\u0628\u0648\u0646 \u0642\u064a\u062f \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629', 'Deposit awaiting review'), money(pendingDeposit), true);
   if (returned) {
     pair(label('نوع المستند', 'Document type'), tx.type);
   } else {
@@ -169,6 +173,8 @@ async function buildCompactInvoiceCanvas(tx, preview = false) {
     ctx.font = font(20, true);
     ctx.fillStyle = '#00633c';
     ctx.fillText(card.total, textX, lineY, cellWidth - 144);
+    lineY += 30; ctx.font = font(14, false); ctx.fillStyle = '#53685b';
+    card.identities.forEach(line => { ctx.fillText(line, textX, lineY); lineY += 22; });
   }
   for (const row of rows) {
     if (row.kind === 'items') {
@@ -207,6 +213,8 @@ async function exportInvoiceImage(source, id, action) {
     const order = _spOrderById(id);
     if (!order) return fail(t('spOrderNotFound'));
     tx = _spPeekPrintTx(order);
+    const pendingReceipts = (order.depositReceipts || []).filter(receipt => receipt.status === '\u0645\u0639\u0644\u0642');
+    tx.pendingDepositAmount = pendingReceipts.reduce((sum, receipt) => sum + (Number(receipt.amount) || 0), 0);
     tx.ref = order.ref;
     tx.cancelled = order.cancelled;
   } else {
@@ -214,6 +222,11 @@ async function exportInvoiceImage(source, id, action) {
     if (!tx) return fail(en ? 'Invoice not found' : 'الفاتورة غير موجودة');
   }
   if (tx.purchaseDetailsHidden) return fail(en ? 'Purchase details are restricted to admins' : 'تفاصيل الشراء متاحة للمدير فقط');
+  if (source !== 'shopify' && tx.shopifyOrderId) {
+    const order = (_shopifyOrders || []).find(item => String(item.shopifyId || '') === String(tx.shopifyOrderId));
+    const pendingReceipts = (order?.depositReceipts || []).filter(receipt => receipt.status === '\u0645\u0639\u0644\u0642');
+    tx = { ...tx, pendingDepositAmount: pendingReceipts.reduce((sum, receipt) => sum + (Number(receipt.amount) || 0), 0) };
+  }
   const copy = action === 'copy';
   if (copy && (!window.isSecureContext || !navigator.clipboard?.write || !window.ClipboardItem)) {
     return fail(en ? 'Image copying is unavailable here. Use Download invoice image.' : 'نسخ الصور غير متاح هنا. استخدم تحميل صورة الفاتورة.');

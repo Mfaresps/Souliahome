@@ -329,6 +329,11 @@ export class ImportProductsDto {
 }
 
 export class BulkUpdateProductDto {
+  // Retain attempted SKU writes through ValidationPipe so the service rejects them explicitly.
+  @IsString()
+  @IsOptional()
+  readonly code?: string;
+
   @IsArray()
   readonly ids: string[];
 

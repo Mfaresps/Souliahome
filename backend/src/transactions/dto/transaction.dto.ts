@@ -15,6 +15,9 @@ import { CANCEL_REASON_CODES } from '../../shared/cancellation.constants';
 export class TransactionItemDto {
   @IsString()
   @IsOptional()
+  readonly lineId?: string;
+  @IsString()
+  @IsOptional()
   readonly productId?: string;
 
   @IsString()
@@ -63,6 +66,8 @@ export class TransactionItemDto {
 }
 
 export class CreateTransactionDto {
+  @IsOptional() @IsString()
+  readonly warehouseCode?: string;
   @IsString()
   @IsNotEmpty()
   readonly date: string;
@@ -242,6 +247,8 @@ export class DepositVaultCorrectionDto {
 }
 
 export class UpdateTransactionDto {
+  @IsOptional() @IsString()
+  readonly warehouseCode?: string;
   @IsString()
   @IsOptional()
   readonly highValueDiscountOtpId?: string;

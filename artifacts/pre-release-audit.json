@@ -1,0 +1,143 @@
+{
+  "generatedAt": "2026-10-20T00:06:25.312Z",
+  "decision": "HOLD_RELEASE",
+  "scope": "Local build, disposable database tests, browser checks and deployment source review. No live deployment or live business writes.",
+  "build": "passed",
+  "localHealth": "GET /api/health returned status ok",
+  "localStartup": "passed: login appeared, splash dismissed, no page JavaScript errors",
+  "frontend": {
+    "checkedScripts": 30,
+    "syntaxFailures": [],
+    "missingAssets": []
+  },
+  "results": {
+    "unit": {
+      "completed": true,
+      "success": false,
+      "suites": {
+        "passed": 73,
+        "failed": 6,
+        "total": 79
+      },
+      "tests": {
+        "passed": 1446,
+        "failed": 42,
+        "total": 1488
+      },
+      "failedSuites": [
+        "inventory-unit-backend.spec.ts",
+        "shopify-shipping-choice.spec.ts",
+        "shopify-item-conflict-ui.spec.ts",
+        "inventory-unit-ui.spec.ts",
+        "inventory-unit-schema.spec.ts",
+        "inventory-unit-model.mongo.spec.ts"
+      ]
+    },
+    "integration": {
+      "completed": true,
+      "success": false,
+      "suites": {
+        "passed": 29,
+        "failed": 16,
+        "total": 45
+      },
+      "tests": {
+        "passed": 459,
+        "failed": 179,
+        "total": 638
+      },
+      "failedSuites": [
+        "inventory-unit-backend.spec.ts",
+        "shopify-deposit-receipts.service.spec.ts",
+        "supplier-returns-complete.service.spec.ts",
+        "supplier-returns-reverse.service.spec.ts",
+        "branding.spec.ts",
+        "purchase-receiving.spec.ts",
+        "global-search-scanner-ui.spec.ts",
+        "inventory-piece-actions-ui.spec.ts",
+        "inventory-unit-ui.spec.ts",
+        "inventory-scanning-ui.spec.ts",
+        "manual-purchase-ui.spec.ts",
+        "inventory-scanning.spec.ts",
+        "transactions.service.spec.ts",
+        "inventory-unit-model.mongo.spec.ts",
+        "supplier-ledger.service.spec.ts",
+        "settings-backup-coverage.spec.ts"
+      ]
+    },
+    "maintenance": {
+      "completed": true,
+      "success": true,
+      "suites": {
+        "passed": 4,
+        "failed": 0,
+        "total": 4
+      },
+      "tests": {
+        "passed": 33,
+        "failed": 0,
+        "total": 33
+      },
+      "failedSuites": []
+    },
+    "deposit": {
+      "completed": true,
+      "success": false,
+      "suites": {
+        "passed": 0,
+        "failed": 1,
+        "total": 1
+      },
+      "tests": {
+        "passed": 52,
+        "failed": 6,
+        "total": 58
+      },
+      "failedSuites": [
+        "shopify-deposit-receipts.service.spec.ts"
+      ]
+    },
+    "core-retry": {
+      "completed": true,
+      "success": false,
+      "suites": {
+        "passed": 4,
+        "failed": 3,
+        "total": 7
+      },
+      "tests": {
+        "passed": 67,
+        "failed": 54,
+        "total": 121
+      },
+      "failedSuites": [
+        "inventory-unit-ui.spec.ts",
+        "inventory-scanning-ui.spec.ts",
+        "inventory-scanning.spec.ts"
+      ]
+    }
+  },
+  "overlappingTestRuns": true,
+  "fixes": [
+    "Added warehouses and warehousetransfers to backup and coordinated restore section.",
+    "Protected pack identities and warehouse transfer history from partial maintenance; added four regression tests.",
+    "Added production config.js with same-origin API routing; development already serves the same configuration dynamically."
+  ],
+  "blockers": [
+    "Checked-in docker-compose Mongo service has no replica set configuration; tracking writes require transactions. Actual production topology remains unverified.",
+    "Required tracking index migration is explicit and is not performed by current deployment pipeline. Production indexes remain unverified.",
+    "Required new backend/frontend files are untracked in Git; deployment must include a reviewed committed release.",
+    "Test runs are not fully passing; fixtures have missing dependencies and browser checks require further triage. See individual result files."
+  ],
+  "integrations": {
+    "shopify": "Local mocked configuration/webhook/token tests passed; actual live credentials, webhook delivery and scopes not verified.",
+    "bosta": "Actual live credentials, webhook delivery and shipment creation not verified.",
+    "cloudflareR2": "Local backup tests passed; live upload, download and restore not verified. Did not execute write-based connection test."
+  },
+  "beforeRelease": [
+    "Inspect production Mongo topology and indexes with read-only access, then plan any required migration and rollback.",
+    "Resolve failing test coverage and rerun relevant suites on the final release commit.",
+    "Verify external integrations against staging, including shipment/webhook and backup restore workflows.",
+    "Take and verify a full production backup; deploy only the reviewed commit after release blockers are resolved."
+  ]
+}

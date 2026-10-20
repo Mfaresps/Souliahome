@@ -8,6 +8,7 @@ import {
 } from './schemas/supplier-ledger-entry.schema';
 import { VaultService } from '../vault/vault.service';
 import { SR_VAULT_SEG_LABELS } from './dto/supplier-ledger.dto';
+import { DatabaseWriteContext, sessionQuery } from '../shared/database-write-context';
 
 export interface SrBalanceSummary {
   balance: number;
@@ -53,18 +54,25 @@ export class SupplierLedgerService {
   ) {}
 
   /** Fast-path: latest entry's runningBalance, or 0 if the supplier has no entries yet. */
-  async getCurrentBalance(supplierId: string): Promise<number> {
+  async getCurrentBalance(supplierId: string, context?: DatabaseWriteContext): Promise<number> {
     if (!supplierId) return 0;
-    const last = await this.ledgerModel
+    const last = await sessionQuery(this.ledgerModel
       .findOne({ supplierId })
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1 }), context?.session)
       .exec();
+    if (context && last) {
+      const createdAt = (last as any).createdAt;
+      const stored = await this.ledgerModel.collection.findOne({ _id: last._id }, { session: context.session, projection: { createdAt: 1 } });
+      if (!createdAt || !(stored?.createdAt instanceof Date) || !Number.isFinite(new Date(createdAt).getTime()) || new Date(createdAt).getTime() > Date.now()) throw new BadRequestException('توقيت رصيد المورد التاريخي غير واضح أو مستقبلي؛ يلزم مراجعة مالية');
+      const ties = await this.ledgerModel.find({ supplierId, createdAt }).select('runningBalance').session(context.session).lean().exec();
+      if (ties.some(row => row.runningBalance !== last.runningBalance)) throw new BadRequestException('رصيد المورد التاريخي ملتبس عند نفس التوقيت؛ يلزم مراجعة مالية دون تخمين الرصيد');
+    }
     return last ? last.runningBalance : 0;
   }
 
   /** balance > 0 => we owe supplier (debt); balance < 0 => supplier owes us / standing credit. */
-  async getBalanceSummary(supplierId: string): Promise<SrBalanceSummary> {
-    const balance = await this.getCurrentBalance(supplierId);
+  async getBalanceSummary(supplierId: string, context?: DatabaseWriteContext): Promise<SrBalanceSummary> {
+    const balance = context ? await this.getCurrentBalance(supplierId, context) : await this.getCurrentBalance(supplierId);
     return {
       balance,
       debt: Math.max(0, balance),
@@ -173,10 +181,12 @@ export class SupplierLedgerService {
   /** Core internal poster — all public post* methods funnel through this so runningBalance bookkeeping lives in ONE place. */
   private async postEntry(
     input: PostEntryInput,
+    context?: DatabaseWriteContext,
   ): Promise<SupplierLedgerEntryDocument> {
-    const currentBalance = await this.getCurrentBalance(input.supplierId);
+    const currentBalance = context ? await this.getCurrentBalance(input.supplierId, context) : await this.getCurrentBalance(input.supplierId);
     const runningBalance = currentBalance + input.amount;
-    return this.ledgerModel.create({
+    const latest: any = context ? await this.ledgerModel.findOne({ supplierId: input.supplierId }).sort({ createdAt: -1 }).session(context.session).select('createdAt').lean().exec() : null;
+    const data = {
       supplierId: input.supplierId,
       supplierName: input.supplierName,
       date: input.date,
@@ -193,7 +203,10 @@ export class SupplierLedgerService {
       refNo: input.refNo || '',
       employee: input.employee || '',
       meta: input.meta ?? null,
-    });
+      // Preserve old reads/records; new serialized receipt rows get a strictly increasing audit timestamp.
+      ...(context ? { createdAt: new Date(Math.max(Date.now(), latest?.createdAt ? new Date(latest.createdAt).getTime() + 1 : 0)) } : {}),
+    };
+    return context ? (await this.ledgerModel.create([data], { session: context.session }))[0] : this.ledgerModel.create(data);
   }
 
   /** Called from TransactionsService.create() when a new مشتريات invoice is booked with an unpaid remainder. */
@@ -206,7 +219,7 @@ export class SupplierLedgerService {
     total: number;
     upfrontDeposit: number;
     employee: string;
-  }): Promise<SupplierLedgerEntryDocument | null> {
+  }, context?: DatabaseWriteContext): Promise<SupplierLedgerEntryDocument | null> {
     if (!params.supplierId) {
       this.logger.warn(
         `postPurchaseDebt skipped — no supplierId resolvable for transaction ${params.transactionRef}`,
@@ -226,7 +239,7 @@ export class SupplierLedgerService {
       sourceId: params.transactionId,
       sourceRef: params.transactionRef,
       employee: params.employee,
-    });
+    }, context);
   }
 
   /** Called from TransactionsService.collect() after a supplier payment is recorded. */
@@ -284,13 +297,13 @@ export class SupplierLedgerService {
      */
     refundTxRef?: string;
     employee: string;
-  }): Promise<ReturnSettlementResult> {
+  }, context?: DatabaseWriteContext): Promise<ReturnSettlementResult> {
     const entries: SupplierLedgerEntryDocument[] = [];
     let refundVaultId = params.vaultEntryId || '';
     let refundVaultTxNo = params.vaultTxNo || '';
     if (params.refundAmount > 0 && !refundVaultTxNo && params.refundTxRef) {
       try {
-        const ve = await this.vaultService.findLatestByRef(params.refundTxRef);
+        const ve = await this.vaultService.findLatestByRef(params.refundTxRef, undefined, context);
         if (ve) {
           refundVaultId = refundVaultId || String(ve._id);
           refundVaultTxNo = ve.txNo || '';
@@ -315,7 +328,7 @@ export class SupplierLedgerService {
           sourceId: params.returnId,
           sourceRef: params.returnNumber,
           employee: params.employee,
-        }),
+        }, context),
       );
     }
     if (params.creditAmount > 0) {
@@ -331,7 +344,7 @@ export class SupplierLedgerService {
           sourceId: params.returnId,
           sourceRef: params.returnNumber,
           employee: params.employee,
-        }),
+        }, context),
       );
     }
     if (params.refundAmount > 0) {
@@ -352,10 +365,10 @@ export class SupplierLedgerService {
           vaultTxNo: refundVaultTxNo,
           employee: params.employee,
           meta: { refundAmount: params.refundAmount },
-        }),
+        }, context),
       );
     }
-    const balanceAfter = await this.getCurrentBalance(params.supplierId);
+    const balanceAfter = await this.getCurrentBalance(params.supplierId, context);
     return {
       entries,
       debtOffsetAmount: params.debtOffsetAmount,
@@ -374,7 +387,7 @@ export class SupplierLedgerService {
     date: string;
     amount: number;
     employee: string;
-  }): Promise<SupplierLedgerEntryDocument | null> {
+  }, context?: DatabaseWriteContext): Promise<SupplierLedgerEntryDocument | null> {
     const amount = Number(params.amount) || 0;
     if (amount <= 0) return null;
     return this.postEntry({
@@ -388,7 +401,7 @@ export class SupplierLedgerService {
       sourceId: params.transactionId,
       sourceRef: params.transactionRef,
       employee: params.employee,
-    });
+    }, context);
   }
 
   /**

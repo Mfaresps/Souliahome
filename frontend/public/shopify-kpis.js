@@ -15,6 +15,24 @@
    it answers "how did today go", not "what is on screen". The period is named beside it. */
 
 let _spkPeriod = 'today';
+let _spkFilter = '';
+function _spkSetFilter(key) {
+  if (key && !['received','confirmed','followup','cancelled','rate'].includes(key)) return;
+  _spkFilter = key && _spkFilter !== key ? key : '';
+  shopifyPage = 1;
+  if (_spkFilter && typeof switchShopifyTab === 'function') switchShopifyTab('all');
+  else if (typeof renderShopifyOrders === 'function') renderShopifyOrders();
+  else _spkRender();
+}
+function _spkMatchesOrder(order) {
+  if (!_spkFilter) return true;
+  const range = _spkRange(_spkPeriod), ms = _spkOrderMs(order);
+  if (!(ms >= range.from.getTime() && ms < range.to.getTime())) return false;
+  const bucket = _spkBucket(order);
+  if (_spkFilter === 'received') return true;
+  if (_spkFilter === 'confirmed' || _spkFilter === 'rate') return bucket === 'deposit' || bucket === 'nodep';
+  return bucket === _spkFilter;
+}
 let _spkCustomFrom = '', _spkCustomTo = '', _spkDraftFrom = '', _spkDraftTo = '';
 /* The period picker is a calendar icon beside «Report» that opens a small menu
    (Oct 14, 2026 — the five-tab strip + the custom-dates bar took two rows). Its open
@@ -126,6 +144,7 @@ function _spkApplyDates(event) {
   }
   _spkCustomFrom = _spkDraftFrom = from; _spkCustomTo = _spkDraftTo = to;
   _spkCloseMenu(true);
+  if (_spkFilter && typeof renderShopifyOrders === 'function') { shopifyPage = 1; renderShopifyOrders(); }
 }
 function _spkDateControls() {
   if (_spkPeriod !== 'custom' || !_spkMenuOpen) return '';
@@ -229,11 +248,11 @@ function _spkRender(state) {
 
   const s = _spkStats(_spkPeriod);
   const tile = (key, value, sub, attrs, inner) => `
-    <div class="spk-tile is-${key}"${attrs || ''}>
+    <button type="button" class="spk-tile is-${key}${_spkFilter === key ? ' is-active' : ''}" aria-pressed="${_spkFilter === key}" onclick="_spkSetFilter('${key}')"${attrs || ''}>
       <div class="spk-tile-top"><span class="spk-lbl">${_spkEsc(_spkT(key))}</span><span class="spk-ic">${_spkIco(key)}</span></div>
       <div class="spk-val"><bdi>${value}</bdi></div>
       ${sub ? `<div class="spk-sub">${sub}</div>` : ''}${inner || ''}
-    </div>`;
+    </button>`;
   const rateVal = s.rate == null ? '—' : `${s.rate}%`;
   const rateSub = s.received
     ? `<bdi>${_spkN(s.confirmed)}</bdi> ${_spkEsc(_spkT('of'))} <bdi>${_spkN(s.received)}</bdi>`
@@ -332,6 +351,7 @@ function _spkSetPeriod(p) {
   _spkRender();
   if (p === 'custom') { const f = document.getElementById('spk-from'); if (f) f.focus(); }
   else if (wasOpen) document.getElementById('spk-period-btn')?.focus();
+  if (_spkFilter && typeof renderShopifyOrders === 'function') { shopifyPage = 1; renderShopifyOrders(); }
 }
 
 /* ── Report: text + image ── */

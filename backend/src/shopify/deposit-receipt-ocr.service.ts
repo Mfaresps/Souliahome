@@ -48,7 +48,7 @@ export class DepositReceiptOcrService implements OnModuleInit, OnModuleDestroy {
   onModuleInit(): void {
     // Warm the worker off the boot path, so the first upload after a deploy is not the one that
     // waits for the language data. Never in tests.
-    if (process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test') return;
+    if (process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test' || process.env.SKIP_OCR_WARMUP === 'true') return;
     setTimeout(() => {
       this.getWorker().catch((err) => this.logger.warn(`OCR warm-up failed: ${(err as Error).message}`));
     }, 15_000);

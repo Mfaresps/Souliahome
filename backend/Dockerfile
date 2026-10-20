@@ -52,6 +52,7 @@ COPY --from=builder /app/dist ./dist
 COPY scripts/notify-release.cjs ./scripts/notify-release.cjs
 COPY scripts/check-shopify-webhook.cjs ./scripts/check-shopify-webhook.cjs
 COPY scripts/shopify-token.cjs ./scripts/shopify-token.cjs
+COPY scripts/check-inventory-readiness.cjs ./scripts/check-inventory-readiness.cjs
 
 EXPOSE 3000
 

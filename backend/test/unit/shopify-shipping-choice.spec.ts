@@ -12,6 +12,7 @@ function shipped(name: string) {
 function ui(order: any, api: any = jest.fn().mockResolvedValue({shipWithoutDeposit:true}), showConfirm: any = jest.fn().mockResolvedValue(true)) {
   return new Function('order', 'api', 'showConfirm', `
     const _spShippingSwitchBusy = new Set();
+    const currentLang = 'en';
     const _spDepositOf = o => ({deposit:o.depositAmount || 0,pending:o.pending || [],byMethod:o.depositAmount?{Instapay:o.depositAmount}:{}});
     const hasPerm = () => true, esc = v => v, t = v => v;
     const _spReceiptJs = JSON.stringify, _spOrderById = () => order;

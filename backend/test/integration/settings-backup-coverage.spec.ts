@@ -82,12 +82,25 @@ describe('SettingsService backup coverage', () => {
     for (const col of [
       'categories', 'collections', 'collectionproducts',
       'inventorymovements', 'supplierledgerentries', 'supplierreturnorders',
+      'inventoryunits', 'inventoryunitevents',
       'vaultbalances',
       'carrierimports', 'carrierpayouts', 'orderaudits',
       'depositreceiptidentities',
     ]) {
       expect(BACKUP).toContain(col);
       expect(sectionCols).toContain(col);
+    }
+  });
+
+  it('retains unit identity/audit together and excludes both from generic clear-data', () => {
+    expect(SECTIONS.inventoryUnits).toEqual(['warehouses', 'warehousetransfers', 'inventorypacks', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'inventoryunitcodes', 'inventoryunitcodecounters']);
+    expect(ALLOWED).not.toContain('inventoryunits');
+    expect(ALLOWED).not.toContain('inventoryunitevents');
+    expect(ALLOWED).not.toContain('inventoryunitoperations');
+    for (const collection of ['warehouses','warehousetransfers','inventorypacks','inventoryunitcodes','inventoryunitcodecounters']) {
+      expect(BACKUP).toContain(collection);
+      expect(SECTIONS.inventoryUnits).toContain(collection);
+      expect(ALLOWED).not.toContain(collection);
     }
   });
 });

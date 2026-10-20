@@ -7,10 +7,16 @@ import {
   IsIn,
   Min,
   ValidateNested,
+  IsBoolean,
+  IsInt,
+  MaxLength,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class PurchaseOrderItemDto {
+  @IsOptional() @IsInt() @Min(0)
+  readonly purchaseOrderLineIndex?: number;
   @IsString()
   @IsOptional()
   readonly productCode?: string;
@@ -119,7 +125,19 @@ export class UpdatePoDto {
   readonly items?: PurchaseOrderItemDto[];
 }
 
+export class PurchaseReceiptTrackingDto {
+  @IsBoolean() readonly physicalPossessionConfirmed: boolean;
+  @IsOptional() @IsBoolean() readonly inspectionPassed?: boolean;
+  @IsString() @IsNotEmpty() @MaxLength(120) readonly warehouseCode: string;
+  @IsOptional() @IsString() @MaxLength(1000) readonly reason?: string;
+  @IsOptional() @IsBoolean() readonly acceptQuantityDifference?: boolean;
+  @IsOptional() @IsString() @Matches(/^[A-Za-z0-9:_-]{8,120}$/) readonly operationKey?: string;
+}
 export class ConvertPoToInvoiceDto {
+  @IsOptional() @IsString()
+  readonly warehouseCode?: string;
+  @IsOptional() @ValidateNested() @Type(() => PurchaseReceiptTrackingDto)
+  readonly tracking?: PurchaseReceiptTrackingDto;
   @IsString()
   @IsNotEmpty()
   readonly ref: string;

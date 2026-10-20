@@ -12,6 +12,8 @@ export class SrAllocationDetail {
 }
 
 export class SupplierReturnItem {
+  unitIds?: string[];
+  units?: Array<{ unitId: string; barcode: string; manualCode: string; previousStatus: string; warehouseCode: string }>;
   code: string;
   name: string;
   /** صورة الصنف — بيحلّها السيرفر من الفاتورة الأصلية بالكود، مش بتتبعت من العميل.
@@ -66,6 +68,8 @@ export class SrReversalInfo {
 
 @Schema({ timestamps: true })
 export class SupplierReturnOrder {
+  @Prop({ default: 'MAIN' }) warehouseCode: string;
+  @Prop({ default: 0 }) unitTrackingRevision: number;
   @Prop({ required: true })
   supplierId: string;
 

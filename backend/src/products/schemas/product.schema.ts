@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import { restrictInventoryParentDeletion } from '../../inventory-units/inventory-unit-integrity';
 
 export type ProductDocument = HydratedDocument<Product>;
 
@@ -26,7 +27,7 @@ export class ProductActivityEntry {
 
 @Schema({ timestamps: true })
 export class Product {
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true, unique: true, immutable: true })
   code: string;
 
   @Prop({ required: true, unique: true })
@@ -123,3 +124,4 @@ export class Product {
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
+restrictInventoryParentDeletion(ProductSchema, ['productId']);

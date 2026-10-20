@@ -118,7 +118,7 @@ function setup(ocrResult?: Parameters<typeof makeOcr>[0], opts: { max?: number }
   shop.presence = presence;
   shop.employeeScoringService = scoring;
   shop.depositReceipts = receipts;
-  shop.transactionsService = { getInventory: jest.fn(async () => []) };
+  shop.transactionsService = { getInventory: jest.fn(async () => []), assertWarehouseSale: jest.fn(async () => undefined) };
   shop.recordInventoryMovementForSale = jest.fn(async () => undefined);
   shop.logger = { log: jest.fn(), warn: jest.fn(), error: jest.fn() };
   return { receipts, shop, vault, ocr, scoring };

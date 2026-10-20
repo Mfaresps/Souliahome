@@ -11,6 +11,7 @@ import { generateVaultTexts } from './vault-description.util';
 import { CreateVaultEntryDto, UpdateVaultEntryDto } from './dto/vault.dto';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { dateOnly, dateWindowQuery, normalizeDateOnly } from '../shared/date-window.util';
+import { DatabaseWriteContext, sessionQuery } from '../shared/database-write-context';
 
 @Injectable()
 export class VaultService {
@@ -70,7 +71,7 @@ export class VaultService {
     return this.vaultModel.find(filter).sort({ createdAt: -1 }).exec();
   }
 
-  private async generateTxNo(source?: string): Promise<string> {
+  private async generateTxNo(source?: string, context?: DatabaseWriteContext): Promise<string> {
     // Map source to prefix
     const prefixes: Record<string, string> = {
       'ديبوزت مبيعات': 'SAL',
@@ -89,16 +90,16 @@ export class VaultService {
     const prefix = prefixes[source || ''] || 'TXN';
 
     // Get count of transactions with same prefix
-    const count = await this.vaultModel.countDocuments({
+    const count = await sessionQuery(this.vaultModel.countDocuments({
       txNo: { $regex: `^${prefix}-` },
-    });
+    }), context?.session);
 
     const nextNumber = (count + 1).toString().padStart(3, '0');
     return `${prefix}-${nextNumber}`;
   }
 
-  async getSegmentBalance(seg: string): Promise<number> {
-    const settings = await this.settingsService.getSettings();
+  async getSegmentBalance(seg: string, context?: DatabaseWriteContext): Promise<number> {
+    const settings = context ? await this.settingsService.getSettings(context.session) : await this.settingsService.getSettings();
     switch (seg) {
       case 'vodafone': return settings.vaultVodafone || 0;
       case 'instapay': return settings.vaultInstapay || 0;
@@ -107,9 +108,9 @@ export class VaultService {
     }
   }
 
-  async assertSufficientBalance(method: string, amount: number): Promise<void> {
+  async assertSufficientBalance(method: string, amount: number, context?: DatabaseWriteContext): Promise<void> {
     const seg = resolveVaultSegmentFromPaymentMethod(method);
-    const balance = await this.getSegmentBalance(seg);
+    const balance = context ? await this.getSegmentBalance(seg, context) : await this.getSegmentBalance(seg);
     if (balance < amount) {
       const segLabel: Record<string, string> = { cash: 'كاش', vodafone: 'فودافون كاش', instapay: 'Instapay', bank: 'تحويل بنكي' };
       throw new BadRequestException(
@@ -228,12 +229,14 @@ export class VaultService {
   async findLatestByRef(
     ref: string,
     source?: string,
+    context?: DatabaseWriteContext,
   ): Promise<VaultEntryDocument | null> {
     if (!ref) return null;
     const query: Record<string, unknown> = { ref };
     if (source) query.source = source;
     return this.vaultModel
       .findOne(query, null, { sort: { createdAt: -1 } })
+      .session(context?.session || null)
       .exec();
   }
 
@@ -285,14 +288,16 @@ export class VaultService {
     entityContext?: { customer?: string; supplier?: string; category?: string; itemCount?: number },
     employee = '',
     meta?: Record<string, unknown>,
+    context?: DatabaseWriteContext,
   ): Promise<VaultEntryDocument> {
+    if (context && meta?.receiptId) throw new BadRequestException('سياق استلام المورد لا يقبل إيصال عربون مبيعات');
     if (typeof meta?.receiptId === 'string' && meta.receiptId) {
       return this.addReceiptEntry(amount, method, desc, date, source, ref, entityContext, employee, meta);
     }
     const seg = resolveVaultSegmentFromPaymentMethod(method);
     // Block any deduction if balance is insufficient
     if (amount < 0) {
-      const balance = await this.getSegmentBalance(seg);
+      const balance = context ? await this.getSegmentBalance(seg, context) : await this.getSegmentBalance(seg);
       if (balance + amount < 0) {
         const segLabel: Record<string, string> = { cash: 'كاش', vodafone: 'فودافون كاش', instapay: 'Instapay', bank: 'تحويل بنكي' };
         throw new BadRequestException(
@@ -311,12 +316,12 @@ export class VaultService {
     );
 
     const entityLabel = entityContext?.customer || entityContext?.supplier || '';
-    const txNo = await this.generateTxNo(source);
-    const settings = await this.settingsService.adjustVaultBalance(seg, amount);
+    const txNo = context ? await this.generateTxNo(source, context) : await this.generateTxNo(source);
+    const settings = context ? await this.settingsService.adjustVaultBalance(seg, amount, context.session) : await this.settingsService.adjustVaultBalance(seg, amount);
 
     let created: VaultEntryDocument;
     try {
-      created = await this.vaultModel.create({
+      const data = {
         date,
         desc: finalDesc,
         amount,
@@ -335,14 +340,15 @@ export class VaultService {
         entityLabel,
         employee: employee || '',
         txNo,
-      });
+      };
+      created = context ? (await this.vaultModel.create([data], { session: context.session }))[0] : await this.vaultModel.create(data);
     } catch (error) {
       // Receipt approval/refund can be retried after a rejected ledger write.
       // Undo only this delta, preserving any concurrent balance adjustments.
-      await this.settingsService.adjustVaultBalance(seg, -amount);
+      if (!context) await this.settingsService.adjustVaultBalance(seg, -amount);
       throw error;
     }
-    this.emit('vault:changed', {
+    const emit = () => this.emit('vault:changed', {
       reason: 'system',
       amount,
       seg,
@@ -361,6 +367,7 @@ export class VaultService {
       },
       ...(meta || {}),
     });
+    if (context) context.afterCommit.push(emit); else emit();
     return created;
   }
 

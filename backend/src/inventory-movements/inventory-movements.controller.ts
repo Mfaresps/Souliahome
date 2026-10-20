@@ -48,6 +48,7 @@ export class InventoryMovementsController {
     const by = req.user?.name || req.user?.username || 'مستخدم';
     return this.service.adjustStock({
       productId: dto.productId,
+      warehouseCode: dto.warehouseCode,
       qtyDelta: dto.qtyDelta,
       reason: dto.reason,
       by,

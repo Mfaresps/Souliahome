@@ -1,4 +1,7 @@
 import { notifyApproval } from '../notifications/admin-events';
+import { pickingExceptions } from '../inventory-units/picking-exceptions';
+import { resetPickupPreparation } from '../inventory-units/pickup-preparation-reset';
+import { normalizePurchaseEdit } from '../inventory-units/purchase-edit-integrity';
 import { normalizeInvoiceEdit } from '../shopify/order-edit.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
@@ -12,7 +15,8 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, isValidObjectId } from 'mongoose';
+import { Model, isValidObjectId, ClientSession } from 'mongoose';
+import { DatabaseWriteContext, sessionQuery } from '../shared/database-write-context';
 import { bostaCashoutDueAt } from '../shared/bosta-cashout.util';
 import {
   Transaction,
@@ -87,7 +91,10 @@ type TxShipTariff = {
   at: string;
 };
 
+import { MAIN_WAREHOUSE, requireWarehouse, warehouseCode, legacyReceiptLocations } from '../warehouses/warehouse-storage';
+
 export interface InventoryItem {
+  warehouseBalances: Record<string, number>;
   _id: string;
   code: string;
   name: string;
@@ -233,6 +240,10 @@ export class TransactionsService {
 
   private emit(event: string, payload: unknown): void {
     try { this.presence?.emitEvent(event, payload); } catch { /* swallow */ }
+  }
+
+  notifyUnitIdentitiesChanged(transactionId?: string, unitId?: string): void {
+    this.emit('inventory:unit-identities-changed', { transactionId, unitId });
   }
 
   /**
@@ -873,13 +884,16 @@ export class TransactionsService {
   }
 
   async create(dto: CreateTransactionDto, callerRole?: string,
-    receiptUpload?: { draftId: string; actor: ReceiptActor }, notificationActor?: string): Promise<TransactionDocument> {
+    receiptUpload?: { draftId: string; actor: ReceiptActor }, notificationActor?: string,
+    context?: DatabaseWriteContext): Promise<TransactionDocument> {
+    if (context && (!['مشتريات', 'مرتجع مشتريات'].includes(dto.type) || receiptUpload)) throw new BadRequestException('سياق المخزون الذري مخصص لمشتريات المورد أو مرتجعاته');
+    if (context && dto.type === 'مشتريات' && !this.transactionAddsSupplierPurchases(dto as unknown as TransactionDocument)) throw new BadRequestException('تحويل الاستلام يتطلب مشتريات مورد فعلية، وليس سجلاً قديماً لمرتجع عميل');
     if (dto.manualDepositReceiptId && !receiptUpload) throw new BadRequestException('أكّد فحص الإيصال قبل حفظ المعاملة');
     const employee = (dto as unknown as { employee?: string }).employee || '';
     // High-value discount OTP enforcement (admin is exempt; skip entirely when otpEnabled=false)
     const discountAmt = Number((dto as unknown as { discount?: number }).discount) || 0;
     if (discountAmt > 0 && callerRole !== 'admin') {
-      const settings = await this.settingsService.getSettings();
+      const settings = context ? await this.settingsService.getSettings(context.session) : await this.settingsService.getSettings();
       const otpEnabled = settings.otpEnabled !== false; // default true
       if (otpEnabled) {
         const limit = Number(settings.highValueDiscountLimit ?? 200);
@@ -889,18 +903,20 @@ export class TransactionsService {
         }
       }
     }
-    this.assertNotDuplicateSubmission(
+    if (!context) this.assertNotDuplicateSubmission(
       dto.type,
       String(dto.ref ?? ''),
       String((dto as unknown as { client?: string }).client ?? ''),
       Number((dto as unknown as { total?: number }).total) || 0,
       employee,
     );
-    await this.assertRetailRefForPersist(dto.type, dto.ref, undefined);
+    await this.assertRetailRefForPersist(dto.type, dto.ref, undefined, context?.session);
+    const destinationWarehouse = await requireWarehouse(this.transactionModel.db, dto.warehouseCode, context?.session);
+    await this.assertWarehouseChange(null, { ...dto, warehouseCode: destinationWarehouse }, context?.session);
     await this.assertOutboundWithinAvailableStock(dto.type, dto.items);
     // Purchase OTP enforcement (staff only, when purchaseOtpEnabled=true)
     if (dto.type === 'مشتريات' && callerRole !== 'admin') {
-      const purchaseSettings = await this.settingsService.getSettings();
+      const purchaseSettings = context ? await this.settingsService.getSettings(context.session) : await this.settingsService.getSettings();
       if (purchaseSettings.purchaseOtpEnabled) {
         await this.discountOtpService.assertPurchaseOtp(dto.purchaseOtpId || '');
       }
@@ -910,7 +926,8 @@ export class TransactionsService {
       const depositPaid = (dto as unknown as { deposit?: number }).deposit || 0;
       if (depositPaid > 0) {
         const method = (dto as unknown as { depMethod?: string }).depMethod || 'كاش';
-        await this.vaultService.assertSufficientBalance(method, depositPaid);
+        if (context) await this.vaultService.assertSufficientBalance(method, depositPaid, context);
+        else await this.vaultService.assertSufficientBalance(method, depositPaid);
       }
       // Applying standing supplier credit: verify it's actually available right before acting —
       // matches this codebase's existing check-then-act posture for stock/vault checks above,
@@ -924,7 +941,7 @@ export class TransactionsService {
         if (!supplierId) {
           throw new BadRequestException('لا يمكن تطبيق رصيد آجل بدون تحديد المورد');
         }
-        const { credit } = await this.supplierLedgerService.getBalanceSummary(supplierId);
+        const { credit } = context ? await this.supplierLedgerService.getBalanceSummary(supplierId, context) : await this.supplierLedgerService.getBalanceSummary(supplierId);
         if (creditApplied > credit) {
           throw new BadRequestException(
             `الرصيد الآجل المتاح (${credit} ج) أقل من المبلغ المطلوب تطبيقه (${creditApplied} ج)`,
@@ -934,7 +951,7 @@ export class TransactionsService {
     }
     // Pre-creation stock snapshot for the Inventory Movement Log — taken BEFORE the transaction
     // exists so this transaction's own items don't pollute their own "before" balance.
-    const _invSnapshotBefore = await this.getInventory();
+    const _invSnapshotBefore = context ? await this.getInventory(context.session) : await this.getInventory();
 
     const carrier = await this.resolveCarrierForWrite({
       type: dto.type,
@@ -953,12 +970,14 @@ export class TransactionsService {
       : undefined;
     let tx: TransactionDocument;
     try {
-      tx = await this.transactionModel.create({
+      const data = {
         ...dto,
+        warehouseCode: destinationWarehouse,
         ...carrier,
         ...(receipt ? { depositReceipts: [receipt] } : {}),
         ...(dto.date ? { date: normalizeDateOnly(dto.date) } : {}),
-      });
+      };
+      tx = context ? (await this.transactionModel.create([data], { session: context.session }))[0] : await this.transactionModel.create(data);
     } catch (error) {
       if (receipt) await this.depositReceiptsService.releaseManualReceipt(receipt.id);
       throw error;
@@ -969,7 +988,8 @@ export class TransactionsService {
     const otpIdForLink = (dto as unknown as { highValueDiscountOtpId?: string }).highValueDiscountOtpId || '';
     if (otpIdForLink && discountAmt > 0) {
       try {
-        await this.discountOtpService.attachToTransaction(otpIdForLink, String(tx._id), tx.ref || '');
+        const attach = () => this.discountOtpService.attachToTransaction(otpIdForLink, String(tx._id), tx.ref || '').catch(() => {});
+        if (context) context.afterCommit.push(attach); else await attach();
       } catch {
         // non-fatal
       }
@@ -977,7 +997,8 @@ export class TransactionsService {
     // Link purchase OTP to created transaction (audit trail)
     if (dto.purchaseOtpId && dto.type === 'مشتريات') {
       try {
-        await this.discountOtpService.attachToTransaction(dto.purchaseOtpId, String(tx._id), tx.ref || '');
+        const attach = () => this.discountOtpService.attachToTransaction(dto.purchaseOtpId!, String(tx._id), tx.ref || '').catch(() => {});
+        if (context) context.afterCommit.push(attach); else await attach();
       } catch {
         // non-fatal
       }
@@ -998,10 +1019,11 @@ export class TransactionsService {
         date: new Date().toISOString(),
         by: employee,
       });
-      await tx.save();
+      if (context) await tx.save({ session: context.session }); else await tx.save();
     }
 
-    await this.recordVaultForTransaction(tx, receipt?.id);
+    if (context) await this.recordVaultForTransaction(tx, receipt?.id, context);
+    else await this.recordVaultForTransaction(tx, receipt?.id);
 
     if (tx.type === 'مشتريات' && this.transactionAddsSupplierPurchases(tx)) {
       const supplierId = await this.resolveSupplierIdForLedger(
@@ -1010,7 +1032,7 @@ export class TransactionsService {
       );
       const creditApplied = Number((dto as unknown as { creditApplied?: number }).creditApplied) || 0;
       if (supplierId) {
-        await this.supplierLedgerService.postPurchaseDebt({
+        const debt = {
           supplierId,
           supplierName: tx.client || '',
           transactionId: String(tx._id),
@@ -1021,9 +1043,11 @@ export class TransactionsService {
           // credit itself is separately consumed via postCreditUsed below.
           upfrontDeposit: (Number(tx.deposit) || 0) + creditApplied,
           employee,
-        });
+        };
+        if (context) await this.supplierLedgerService.postPurchaseDebt(debt, context);
+        else await this.supplierLedgerService.postPurchaseDebt(debt);
         if (creditApplied > 0) {
-          await this.supplierLedgerService.postCreditUsed({
+          const creditEntry = {
             supplierId,
             supplierName: tx.client || '',
             transactionId: String(tx._id),
@@ -1031,7 +1055,9 @@ export class TransactionsService {
             date: this.formatTxDateForVault(tx),
             amount: creditApplied,
             employee,
-          });
+          };
+          if (context) await this.supplierLedgerService.postCreditUsed(creditEntry, context);
+          else await this.supplierLedgerService.postCreditUsed(creditEntry);
         }
       }
     }
@@ -1044,7 +1070,7 @@ export class TransactionsService {
           const code = String(item.code || '').trim();
           const invRow = byCodeBefore.get(code);
           if (!invRow) continue;
-          const qtyBefore = invRow.current;
+          const qtyBefore = Number(invRow.warehouseBalances?.[warehouseCode(tx.warehouseCode)] || 0);
           const qtyDelta = movementInfo.sign * (Number(item.qty) || 0);
           movementEntries.push({
             productId: invRow._id,
@@ -1060,9 +1086,11 @@ export class TransactionsService {
             by: employee || 'مستخدم',
           });
         }
-        await this.inventoryMovementsService.record(movementEntries);
+        if (context) await this.inventoryMovementsService.record(movementEntries, context);
+        else await this.inventoryMovementsService.record(movementEntries);
       }
     } catch (err) {
+      if (context) throw err;
       this.logger.error(
         `[create] inventory movement logging failed for tx ${tx._id}: ${(err as Error).message}`,
         (err as Error).stack,
@@ -1074,13 +1102,15 @@ export class TransactionsService {
       for (const d of tx.deposits || []) await this.notifications?.enqueue('deposit', 'deposit:' + (d.receiptId || String(tx._id) + ':' + d.id), tx.ref, 'tx:' + tx._id, undefined, undefined,
         { actorName: receipt?.submittedBy || notificationActor || d.by, amount: d.amount, vaultName: d.method, receiptId: d.receiptId, depositId: d.id });
     }
-    this.emit('tx:created', { tx, by: employee });
+    const emit = () => { this.emit('tx:created', { tx, by: employee });
     this.emit('inventory:changed', {
       reason: 'tx:created',
       txId: String(tx._id),
       txType: tx.type,
       items: (tx.items || []).map((it) => ({ name: it.name, qty: it.qty })),
     });
+    };
+    if (context) context.afterCommit.push(emit); else emit();
     // vault:changed is already emitted by vaultService.addSystemEntry with full payload (amount, seg, balances)
     return tx;
   }
@@ -1092,6 +1122,7 @@ export class TransactionsService {
     type: string,
     refRaw: string | undefined,
     excludeId?: string,
+    session?: ClientSession,
   ): Promise<void> {
     if (type !== 'مبيعات' && type !== 'مشتريات') {
       return;
@@ -1116,7 +1147,7 @@ export class TransactionsService {
     if (excludeId) {
       conflictQuery._id = { $ne: excludeId };
     }
-    const exists = await this.transactionModel.findOne(conflictQuery).exec();
+    const exists = await sessionQuery(this.transactionModel.findOne(conflictQuery), session).exec();
     if (exists) {
       throw new BadRequestException(
         'هذا الرقم المرجعي مسجّل مسبقاً في معاملة أخرى',
@@ -1313,6 +1344,21 @@ export class TransactionsService {
     if (!existing) {
       throw new NotFoundException('المعاملة غير موجودة');
     }
+    const purchaseEdit = existing.type === 'مشتريات' && dto.items !== undefined;
+    if (purchaseEdit) dto = { ...dto, items: await normalizePurchaseEdit(this.transactionModel.db, existing, dto.items!) };
+    const purchaseFilter = purchaseEdit ? { items: existing.items, $or: [
+      { unitTrackingRevision: existing.unitTrackingRevision || 0 },
+      ...(!existing.unitTrackingRevision ? [{ unitTrackingRevision: { $exists: false } }] : []),
+    ] } : {};
+    const purchaseRevision = purchaseEdit ? { $inc: { unitTrackingRevision: 1 } } : {};
+    const legacyLocation = (await legacyReceiptLocations(this.transactionModel.db, [existing])).get(String(existing._id));
+    const existingLocation = legacyLocation || warehouseCode(existing.warehouseCode);
+    if (dto.warehouseCode !== undefined && warehouseCode(dto.warehouseCode) !== existingLocation) throw new BadRequestException('استخدم نقل المخزون لتغيير مخزن فاتورة محفوظة');
+    if (dto.items !== undefined) {
+      await requireWarehouse(this.transactionModel.db, existingLocation);
+      await this.assertWarehouseChange(existing, { ...existing.toObject(), ...dto });
+      if (legacyLocation) dto = { ...dto, warehouseCode: legacyLocation };
+    }
     if (existing.shopifyOrderId && existing.type === 'مبيعات') dto = { ...dto, ...normalizeInvoiceEdit(existing, dto) };
     if (existing.shopifyOrderId && callerRole !== 'admin') {
       if (!callerPerms.includes('shopify-edit-direct')) throw new ForbiddenException('تعديل طلب Shopify يحتاج موافقة المدير؛ أرسل طلب تعديل');
@@ -1482,8 +1528,8 @@ export class TransactionsService {
         Object.assign(historyEntry.before, {depositVaults: vaultCorrections.map(c=>({id:c.id,amount:c.amount,method:c.from}))});
         Object.assign(historyEntry.after, {depMethod:primary?.method || existing.depMethod,depositVaults:vaultCorrections.map(c=>({id:c.id,amount:c.amount,method:c.to}))});
         tx = await this.transactionModel.findOneAndUpdate(
-          {_id:id,cancelled:{$ne:true},deposits:existing.deposits,depositReceipts:existing.depositReceipts,deposit:oldDeposit},
-          {...writeDto,...editCarrier,editHistory,deposits,depositReceipts,depMethod:primary?.method || existing.depMethod},
+          {_id:id,...purchaseFilter,cancelled:{$ne:true},deposits:existing.deposits,depositReceipts:existing.depositReceipts,deposit:oldDeposit},
+          {...writeDto,...editCarrier,editHistory,...purchaseRevision,deposits,depositReceipts,depMethod:primary?.method || existing.depMethod},
           {new:true},
         ).exec();
         if (!tx) throw new BadRequestException('تغيّرت الفاتورة أثناء تصحيح الخزن — أعد تحميلها');
@@ -1494,7 +1540,8 @@ export class TransactionsService {
         throw error;
       }
     } else {
-      tx = await this.transactionModel.findByIdAndUpdate(id, {...writeDto,...editCarrier,editHistory}, {new:true}).exec();
+      tx = await this.transactionModel.findOneAndUpdate({_id:id,...purchaseFilter}, {...writeDto,...editCarrier,editHistory,...purchaseRevision}, {new:true}).exec();
+      if (!tx) throw new BadRequestException('تغيرت الفاتورة أو أكواد القطع أثناء التعديل؛ حدّث البيانات وأعد المحاولة');
     }
 
     // يُرفع عند أي تعديل على `deposits`، ليقرر الحفظ الختامي أسفل الدالة.
@@ -1684,7 +1731,7 @@ export class TransactionsService {
             const invRow = invByCode.get(code);
             if (!invRow) continue;
             const qtyDelta = movementInfo.sign * lineDelta;
-            const currentStock = invRow.current; // post-update stock — getInventory() ran after findByIdAndUpdate
+            const currentStock = Number(invRow.warehouseBalances?.[warehouseCode(tx.warehouseCode)] || 0);
             movementEntries.push({
               productId: invRow._id,
               productCode: code,
@@ -1819,6 +1866,10 @@ export class TransactionsService {
     cancelledBy: string,
     structured?: { code?: string; note?: string; stage?: CancelStage },
   ): Promise<TransactionDocument> {
+    const legacyLocation = (await legacyReceiptLocations(this.transactionModel.db, [tx])).get(String(tx._id));
+    if (legacyLocation) tx.warehouseCode = legacyLocation;
+    if (this.classifyInventoryMovement(tx)) await requireWarehouse(this.transactionModel.db, tx.warehouseCode);
+    await this.assertWarehouseChange(tx, null);
     if ((tx as any).carrierSettlement?.payoutId) {
       throw new BadRequestException('الطلب مرتبط بتحويل بوسطة مجمع — يلزم تسوية الدفعة قبل إلغاء الطلب');
     }
@@ -2059,7 +2110,7 @@ export class TransactionsService {
           const invRow = invByCode.get(code);
           if (!invRow) continue;
           const qtyDelta = -movementInfo.sign * (Number(item.qty) || 0); // reverse of the original effect
-          const currentStock = invRow.current; // post-cancellation stock — getInventory() reflects cancelled:true already
+          const currentStock = Number(invRow.warehouseBalances?.[warehouseCode(saved.warehouseCode)] || 0);
           movementEntries.push({
             productId: invRow._id,
             productCode: code,
@@ -3536,7 +3587,7 @@ export class TransactionsService {
       const invRow = invByCode.get(code);
       if (!invRow) continue;
       const qtyDelta = movementInfo.sign * (Number(item.qty) || 0);
-      const currentStock = invRow.current;
+      const currentStock = Number(invRow.warehouseBalances?.[warehouseCode(restored.warehouseCode)] || 0);
       movementEntries.push({
         productId: invRow._id,
         productCode: code,
@@ -3558,17 +3609,65 @@ export class TransactionsService {
     await this.transactionModel.deleteMany({}).exec();
   }
 
-  async getInventory(): Promise<InventoryItem[]> {
-    const products = await this.productsService.findAll();
-    const transactions = await this.transactionModel
-      .find({ cancelled: { $ne: true }, archived: { $ne: true } })
-      .exec();
+  async assertWarehouseSale(items: any[], location = MAIN_WAREHOUSE) {
+    const code = await requireWarehouse(this.transactionModel.db, location);
+    return this.assertWarehouseChange(null, { type: 'مبيعات', warehouseCode: code, items });
+  }
+
+  private async assertWarehouseChange(before: any, after: any, session?: ClientSession) {
+    const differences = new Map<string, { code: string; location: string; quantity: number }>();
+    const receiptLocations = await legacyReceiptLocations(this.transactionModel.db, [before, after].filter(Boolean), session);
+    const accumulate = (tx: any, multiplier: number) => {
+      if (!tx || tx.cancelled || tx.archived) return;
+      const location = receiptLocations.get(String(tx._id)) || warehouseCode(tx.warehouseCode);
+      for (const item of tx.items || []) {
+        const code = String(item.code || '').trim();
+        const delta = this.transactionAddsSupplierPurchases(tx) ? Number(item.qty) : this.transactionAddsReturnToStock(tx) ? this.returnedItemQtyForStock(item) : ['مبيعات', 'مرتجع مشتريات'].includes(tx.type) ? -Number(item.qty) : 0;
+        const key = location + ':' + code;
+        const current = differences.get(key) || { code, location, quantity: 0 };
+        current.quantity += multiplier * delta; differences.set(key, current);
+      }
+    };
+    accumulate(before, -1); accumulate(after, 1);
+    if (![...differences.values()].some(change => change.quantity < 0)) return;
+    const inventory = await this.getInventory(session);
+    for (const change of differences.values()) {
+      if (change.quantity >= 0) continue;
+      const product = inventory.find(row => String(row.code).trim() === change.code);
+      if (Number(product?.warehouseBalances?.[change.location] || 0) + change.quantity < -0.000001) throw new BadRequestException(`رصيد المخزن لا يكفي للصنف ${product?.name || change.code}؛ راجع المخزن المختار أو حركة النقل`);
+    }
+  }
+
+  async getInventory(session?: ClientSession): Promise<InventoryItem[]> {
+    const products = session ? await this.productsService.findAll(session) : await this.productsService.findAll();
+    const query = this.transactionModel.find({ cancelled: { $ne: true }, archived: { $ne: true } });
+    if (session) query.session(session);
+    const transactions = await query.exec();
+    const receiptLocations = await legacyReceiptLocations(this.transactionModel.db, transactions, session);
+    const transfers = await this.transactionModel.db.collection('warehousetransfers').find({}, { session, projection: { lines: 1, from: 1, to: 1 } }).toArray();
+    const transferBalances = new Map<string, Record<string, number>>();
+    for (const transfer of transfers) for (const line of transfer.lines || []) {
+      const balances = transferBalances.get(line.productId) || Object.create(null);
+      balances[transfer.from] = (balances[transfer.from] || 0) - line.quantity;
+      balances[transfer.to] = (balances[transfer.to] || 0) + line.quantity;
+      transferBalances.set(line.productId, balances);
+    }
     // Manual stock corrections are a fourth term alongside purchases/returns/sales — see
     // getManualAdjustmentQtyByProductCode(). Must stay in step with getAvailableQtyByProductCode:
     // if the two disagree, the oversell guard and this screen report different on-hand figures.
     const adjustmentsByCode =
-      await this.inventoryMovementsService.getManualAdjustmentQtyByProductCode();
+      session ? await this.inventoryMovementsService.getManualAdjustmentQtyByProductCode(session) : await this.inventoryMovementsService.getManualAdjustmentQtyByProductCode();
+    const adjustmentLocations = await this.inventoryMovementsService.getManualAdjustmentWarehouseRows(session);
+    const warehouseAdjustments = new Map<string, Record<string, number>>();
+    for (const adjustment of adjustmentLocations) {
+      const code = String(adjustment.productCode || '').trim(), location = warehouseCode(adjustment.warehouseCode);
+      const balances = warehouseAdjustments.get(code) || Object.create(null);
+      balances[location] = (balances[location] || 0) + Number(adjustment.qtyDelta || 0);
+      warehouseAdjustments.set(code, balances);
+    }
     return products.map((product) => {
+      const warehouseBalances: Record<string, number> = Object.create(null);
+      const addWarehouse = (code: string, quantity: number) => { warehouseBalances[code] = (warehouseBalances[code] || 0) + quantity; };
       let purchases = 0;
       let sales = 0;
       let returnsToStock = 0;
@@ -3583,12 +3682,14 @@ export class TransactionsService {
           if (this.transactionAddsSupplierPurchases(tx)) {
             // Supplier purchases: add to purchases count
             purchases += item.qty;
+            addWarehouse(receiptLocations.get(String(tx._id)) || warehouseCode(tx.warehouseCode), item.qty);
           } else if (this.transactionAddsReturnToStock(tx)) {
             // Customer returns: add to stock
             // Formula: current = opening + purchases + returns - sales
             // where sales = direct sales only (not reduced by returns)
             // A تالف unit contributes 0 — see returnedItemQtyForStock.
             returnsToStock += this.returnedItemQtyForStock(item);
+            addWarehouse(warehouseCode(tx.warehouseCode), this.returnedItemQtyForStock(item));
             const refStr = String(tx.ref || '').trim();
             if (refStr) {
               returnRefSet.add(refStr);
@@ -3601,6 +3702,7 @@ export class TransactionsService {
             // Sales / supplier returns (stock leaving the warehouse back to the supplier):
             // both consume stock the same way.
             sales += item.qty;
+            addWarehouse(warehouseCode(tx.warehouseCode), -item.qty);
           }
         });
       });
@@ -3609,6 +3711,9 @@ export class TransactionsService {
         Math.floor(Number(product.openingBalance) || 0),
       );
       const adjustments = adjustmentsByCode.get(productCodeNorm) || 0;
+      addWarehouse(MAIN_WAREHOUSE, openingBal);
+      for (const [location, quantity] of Object.entries(warehouseAdjustments.get(productCodeNorm) || {})) addWarehouse(location, quantity);
+      for (const [location, quantity] of Object.entries(transferBalances.get(String(product._id)) || {})) addWarehouse(location, quantity);
       const current = openingBal + purchases + returnsToStock - sales + adjustments;
       let status: 'ok' | 'low' | 'zero' = 'ok';
       if (current <= 0) {
@@ -3617,6 +3722,7 @@ export class TransactionsService {
         status = 'low';
       }
       return {
+        warehouseBalances,
         _id: product._id.toString(),
         code: product.code,
         name: product.name,
@@ -5015,7 +5121,12 @@ export class TransactionsService {
   private async recordVaultForTransaction(
     tx: TransactionDocument,
     manualReceiptId?: string,
+    context?: DatabaseWriteContext,
   ): Promise<void> {
+    const purchaseEntry = (...args: Parameters<VaultService['addSystemEntry']>) => {
+      if (context) args[9] = context;
+      return this.vaultService.addSystemEntry(...args);
+    };
     const txRef = tx.ref || String(tx._id);
     const txDate = this.formatTxDateForVault(tx);
     const emp = (tx as unknown as { employee?: string }).employee || '';
@@ -5063,7 +5174,7 @@ export class TransactionsService {
       if (this.transactionAddsSupplierPurchases(tx)) {
         const depositPaid = Number(tx.deposit) || 0;
         if (depositPaid > 0) {
-          await this.vaultService.addSystemEntry(
+          await purchaseEntry(
             -depositPaid,
             tx.depMethod || 'كاش',
             `مشتريات #${txRef} — ${tx.client || ''}${depositPaid < (tx.total || 0) ? ' (عربون)' : ''}`,
@@ -5080,7 +5191,7 @@ export class TransactionsService {
           (tx.total || 0) > depositPaid
         ) {
           const remainingPaid = (tx.total || 0) - depositPaid;
-          await this.vaultService.addSystemEntry(
+          await purchaseEntry(
             -remainingPaid,
             tx.collectMethod,
             `دفع متبقي مشتريات #${txRef} — ${tx.client || ''}`,
@@ -5409,23 +5520,12 @@ export class TransactionsService {
   }
 
   /** Undo pick-up for one or more transaction IDs — reverts Ready or Preparing → Pending */
-  async undoPickup(ids: string[], by: string): Promise<{ updated: number }> {
+  async undoPickup(ids: string[], by: string, actorId?: string): Promise<{ updated: number }> {
     const validIds = [...new Set(ids.filter(id => isValidObjectId(id)))];
     if (!validIds.length) return { updated: 0 };
-    const now = new Date().toISOString().slice(0, 10);
-    const historyEntry = { action: 'undo', date: now, by };
-    const result = await this.transactionModel.updateMany(
-      { _id: { $in: validIds }, type: 'مبيعات', pickupStatus: { $in: ['Ready', 'Picked-Up', 'Preparing'] } },
-      {
-        $set: { pickupStatus: 'Pending', pickupDate: null, pickupBy: null, pickupRef: null, prepChecked: false },
-        $unset: { prepNote: 1, prepShipCo: 1, prepCreatedAt: 1, prepCreatedBy: 1 },
-        $push: { pickupHistory: historyEntry },
-      },
-    );
-    if (result.modifiedCount === validIds.length) {
-      this.emit('pickup:updated', { ids: validIds, action: 'undo' });
-    }
-    return { updated: result.modifiedCount };
+    const changed = await resetPickupPreparation(this.transactionModel, validIds, by, actorId);
+    if (changed.length) this.emit('pickup:updated', { ids: changed, action: 'undo', scansReset: true });
+    return { updated: changed.length };
   }
 
   /** Move one or more Ready orders into another active pickup run. */
@@ -5476,14 +5576,18 @@ export class TransactionsService {
   }
 
   /** Toggle the per-order preparation tick inside a prep group */
-  async setPrepChecked(id: string, prepChecked: boolean, by: string): Promise<{ ok: boolean; updated: number }> {
+  async setPrepChecked(id: string, prepChecked: boolean, by: string, reason = ''): Promise<{ ok: boolean; updated: number }> {
     if (!isValidObjectId(id) || typeof prepChecked !== 'boolean') return { ok: false, updated: 0 };
+    if (!prepChecked && !reason.trim()) throw new BadRequestException('Ø³Ø¨Ø¨ Ø§Ù„ØªØ±Ø§Ø¬Ø¹ Ù…Ø·Ù„ÙˆØ¨');
     const now = new Date().toISOString();
+    const trackingRevision = prepChecked ? await this.assertTrackedPickupPrepared(id) : null;
     const result = await this.transactionModel.updateOne(
-      { _id: id, pickupStatus: 'Preparing', cancelled: { $ne: true } },
+      { _id: id, pickupStatus: 'Preparing', cancelled: { $ne: true }, prepChecked: { $ne: prepChecked },
+        ...(trackingRevision == null ? {} : { $or: [{ unitTrackingRevision: trackingRevision }, { unitTrackingRevision: { $exists: false } }] }) },
       {
         $set: { prepChecked },
-        $push: { pickupHistory: { action: 'prep-check', date: now, by, prepChecked } },
+        ...(trackingRevision == null ? {} : { $inc: { unitTrackingRevision: 1 } }),
+        $push: { pickupHistory: { action: prepChecked ? 'prep-check' : 'prep-check-undo', date: now, by, prepChecked, ...(reason.trim() ? { note: reason.trim().slice(0, 300) } : {}) } },
       },
     );
     if (!result.modifiedCount) return { ok: false, updated: 0 };
@@ -5494,6 +5598,42 @@ export class TransactionsService {
       pickupHistory: tx?.pickupHistory || [],
     });
     return { ok: true, updated: result.modifiedCount };
+  }
+
+  notifyPickingReopened(id: string, pickupRef: string | null, pickupHistory: any[]) {
+    this.emit('pickup:updated', { ids: [id], action: 'prepCheck', prepChecked: false, pickupRef, pickupHistory });
+  }
+
+  private async assertTrackedPickupPrepared(id: string): Promise<number | null> {
+    const db = this.transactionModel.db;
+    if (!db || typeof db.collection !== 'function') return null;
+    const sale: any = await this.transactionModel.findById(id).select('items pickupStatus cancelled archived unitTrackingRevision pickingExceptions').lean();
+    if (!sale || sale.pickupStatus !== 'Preparing' || sale.cancelled || sale.archived) return null;
+    const products = await db.collection('products').find({}, { projection: { _id: 1, code: 1 } }).toArray();
+    const units = db.collection('inventoryunits');
+    for (const line of sale.items || []) {
+      const matches = products.filter((product: any) => String(product.code || '').trim() === String(line.code || '').trim());
+      const skipped = pickingExceptions(sale, line).length;
+      const qty = Number(line.qty) || 0;
+      if (!Number.isSafeInteger(qty) || qty <= 0) throw new BadRequestException('Invalid preparation quantity');
+      if (skipped === qty) {
+        const assigned = await units.countDocuments({ 'assignment.transactionId': String(sale._id), 'assignment.lineId': line.lineId, status: { $in: ['reserved', 'picking', 'prepared'] } });
+        if (assigned) throw new BadRequestException('Scanned/assigned units and damaged-label exceptions exceed the required quantity');
+        continue;
+      }
+      if (matches.length !== 1) throw new BadRequestException(`Scan or record a damaged-label exception for every piece of ${line.code || line.name} before completing preparation`);
+      const productId = String(matches[0]._id), transactionId = String(sale._id), lineId = String(line.lineId || '');
+      const [available, assigned] = await Promise.all([
+        units.countDocuments({ productId, status: 'available', assignment: null }),
+        lineId ? units.countDocuments({ productId, 'assignment.transactionId': transactionId, 'assignment.lineId': lineId,
+          status: { $in: ['reserved', 'picking', 'prepared'] } }) : Promise.resolve(0),
+      ]);
+      const trackedCapacity = available + assigned + skipped;
+      if (!lineId || trackedCapacity < qty) throw new BadRequestException(`Barcode identity coverage is incomplete for ${line.code}; reconcile unit identities before preparing this order`);
+      const prepared = await units.countDocuments({ productId, 'assignment.transactionId': transactionId, 'assignment.lineId': lineId, status: 'prepared' });
+      if (prepared + skipped !== qty) throw new BadRequestException(`Scan and prepare all ${qty} identified units for ${line.code}, or record a damaged-label exception, before marking the order ready`);
+    }
+    return Number(sale.unitTrackingRevision) || 0;
   }
 
   /** Revert delivered → Ready when payment is reversed */

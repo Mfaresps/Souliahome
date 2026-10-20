@@ -4,6 +4,9 @@ import { Settings, SettingsSchema } from './schemas/settings.schema';
 import { SettingsService } from './settings.service';
 import { SettingsController } from './settings.controller';
 import { DeployController } from './deploy.controller';
+import { BrandLogo, BrandLogoSchema } from './schemas/brand-logo.schema';
+import { BrandingService } from './branding.service';
+import { BrandingController } from './branding.controller';
 import { UsersModule } from '../users/users.module';
 import { SecurityAuditModule } from '../security-audit/security-audit.module';
 import { AuthModule } from '../auth/auth.module';
@@ -12,13 +15,14 @@ import { AuthModule } from '../auth/auth.module';
   imports: [
     MongooseModule.forFeature([
       { name: Settings.name, schema: SettingsSchema },
+      { name: BrandLogo.name, schema: BrandLogoSchema },
     ]),
     forwardRef(() => UsersModule),
     forwardRef(() => SecurityAuditModule),
     forwardRef(() => AuthModule),
   ],
-  controllers: [SettingsController, DeployController],
-  providers: [SettingsService],
+  controllers: [SettingsController, DeployController, BrandingController],
+  providers: [SettingsService, BrandingService],
   exports: [SettingsService],
 })
 export class SettingsModule {}

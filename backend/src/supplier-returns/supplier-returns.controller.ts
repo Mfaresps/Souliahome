@@ -5,6 +5,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -49,6 +50,15 @@ export class SupplierReturnsController {
     return this.supplierReturnsService.findBySupplier(supplierId);
   }
 
+  @Get('pieces/:identifier') @RequirePerms('suppliers-returns')
+  piece(@Param('identifier') identifier: string, @Query('supplierId') supplierId?: string) { return this.supplierReturnsService.lookupPiece(identifier, supplierId); }
+
+  @Put(':id/pieces') @RequirePerms('suppliers-returns')
+  pieces(@Param('id') id: string, @Body() dto: UpdateSupplierReturnDto,
+    @Req() req: { user: { userId: string; name: string; username: string } }) {
+    return this.supplierReturnsService.linkPieces(id, dto, req.user.name || req.user.username, req.user.userId);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.supplierReturnsService.findById(id);
@@ -58,13 +68,13 @@ export class SupplierReturnsController {
   @Post()
   async create(
     @Body() dto: CreateSupplierReturnDto,
-    @Req() req: { user: { name: string; username: string; role: string } },
+    @Req() req: { user: { userId: string; name: string; username: string; role: string } },
   ) {
     const requestedBy = req.user.name || req.user.username;
     return this.supplierReturnsService.create(
       dto,
       requestedBy,
-      req.user.role === 'admin',
+      req.user.role === 'admin', req.user.userId,
     );
   }
 
@@ -73,17 +83,17 @@ export class SupplierReturnsController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateSupplierReturnDto,
-    @Req() req: { user: { name: string; username: string } },
+    @Req() req: { user: { userId: string; name: string; username: string } },
   ) {
     const by = req.user.name || req.user.username;
-    return this.supplierReturnsService.update(id, dto, by);
+    return this.supplierReturnsService.update(id, dto, by, req.user.userId);
   }
 
   @RequirePerms('suppliers-returns')
   @Post(':id/submit')
   async submit(
     @Param('id') id: string,
-    @Req() req: { user: { name: string; username: string } },
+    @Req() req: { user: { userId: string; name: string; username: string } },
   ) {
     const by = req.user.name || req.user.username;
     return this.supplierReturnsService.submitForApproval(id, by);
@@ -93,7 +103,7 @@ export class SupplierReturnsController {
   @Post(':id/approve')
   async approve(
     @Param('id') id: string,
-    @Req() req: { user: { name: string; username: string } },
+    @Req() req: { user: { userId: string; name: string; username: string } },
   ) {
     const approvedBy = req.user.name || req.user.username;
     return this.supplierReturnsService.approve(id, approvedBy);
@@ -104,10 +114,10 @@ export class SupplierReturnsController {
   async reject(
     @Param('id') id: string,
     @Body() dto: RejectSupplierReturnDto,
-    @Req() req: { user: { name: string; username: string } },
+    @Req() req: { user: { userId: string; name: string; username: string } },
   ) {
     const by = req.user.name || req.user.username;
-    return this.supplierReturnsService.reject(id, by, dto.rejectedReason);
+    return this.supplierReturnsService.reject(id, by, dto.rejectedReason, req.user.userId);
   }
 
   @RequirePerms('suppliers-returns')
@@ -115,7 +125,7 @@ export class SupplierReturnsController {
   async complete(
     @Param('id') id: string,
     @Body() dto: CompleteSupplierReturnDto,
-    @Req() req: { user: { name: string; username: string } },
+    @Req() req: { user: { userId: string; name: string; username: string } },
   ) {
     const completedBy = req.user.name || req.user.username;
     return this.supplierReturnsService.complete(
@@ -123,7 +133,7 @@ export class SupplierReturnsController {
       completedBy,
       dto?.settlementMode,
       dto?.remainderMode,
-      dto?.vaultRefundAccount,
+      dto?.vaultRefundAccount, req.user.userId,
     );
   }
 
@@ -132,10 +142,10 @@ export class SupplierReturnsController {
   async cancel(
     @Param('id') id: string,
     @Body() dto: CancelSupplierReturnDto,
-    @Req() req: { user: { name: string; username: string } },
+    @Req() req: { user: { userId: string; name: string; username: string } },
   ) {
     const by = req.user.name || req.user.username;
-    return this.supplierReturnsService.cancel(id, by, dto.reason);
+    return this.supplierReturnsService.cancel(id, by, dto.reason, req.user.userId);
   }
 
   @RequirePerms('suppliers-returns')
@@ -143,7 +153,7 @@ export class SupplierReturnsController {
   async reverse(
     @Param('id') id: string,
     @Body() dto: ReverseSupplierReturnDto,
-    @Req() req: { user: { name: string; username: string } },
+    @Req() req: { user: { userId: string; name: string; username: string } },
   ) {
     const by = req.user.name || req.user.username;
     return this.supplierReturnsService.reverseReturn(id, by, dto.reason);
