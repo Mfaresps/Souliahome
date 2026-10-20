@@ -1,7 +1,7 @@
 /* Barcode workspace: server-issued physical identities only; selection never creates stock. */
 (function () {
   'use strict';
-  const VERSION = '20261020-invoice-date';
+  const VERSION = '20261020-pack-print-coverage';
   const state = {
     generation: 0, actor: '', ready: false, busy: false, selectionBusy: false, refreshQueued: false, config: null,
     selected: new Map(), sizeId: '', preview: null, pendingPrint: null, view: 'receipts',
@@ -1046,7 +1046,8 @@
       if (!state.pendingPrint) invalidatePreview();
       void refreshData();
     },
-    refreshAfterPackChange: () => { state.selected.clear(); syncUnitChecks(); renderBatch(); if (state.unitsReady) void loadUnits(); },
+    refreshAfterPackChange: () => { state.selected.clear(); syncUnitChecks(); renderBatch(); void refreshData(); },
+    refreshAfterPackPrint: refreshData,
     selection: () => ({ ids: selectedIds(), units: [...state.selected.values()], sizeId: state.sizeId, ready: state.ready, busy: state.busy, config: state.config }) };
   if (typeof currentPage !== 'undefined' && currentPage === 'barcodes') window.renderBarcodeManagement();
 }());

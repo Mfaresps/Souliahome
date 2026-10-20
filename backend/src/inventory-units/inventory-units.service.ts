@@ -285,8 +285,12 @@ export class InventoryUnitsService {
     }).sort({ createdAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit).toArray();
     const invoiceIds = invoices.map(row => String(row._id).toLowerCase());
     const unitRows: any[] = invoiceIds.length ? await this.units.find({ 'origin.purchaseTransactionId': { $in: invoiceIds } })
-      .select('_id productId origin status').lean() : [];
+      .select('_id productId origin status packId').lean() : [];
     const printCounts = await this.labelPrintCounts(unitRows.map(unit => String(unit._id)));
+    const packIds = [...new Set(unitRows.map(unit=>unit.packId).filter(id=>OBJECT_ID_PATTERN.test(String(id||''))))];
+    const printedPacks = packIds.length ? await this.connection.collection('inventorypacks').find({_id:{$in:packIds.map(id=>this.id(String(id)))},state:'sealed',printCount:{$gt:0}},
+      {projection:{unitIds:1,quantity:1}}).toArray() : [];
+    const packCoverage = new Map(printedPacks.filter(pack=>pack.unitIds?.length===pack.quantity).map(pack=>[String(pack._id),new Set((pack.unitIds||[]).map(String))]));
     const productIds = [...new Set(unitRows.map(unit => unit.productId))];
     const invoiceSkus = [...new Set(invoices.flatMap((invoice: any) => (invoice.items || []).map((line: any) => String(line.code || '').trim())).filter(Boolean))];
     const productFilters: any[] = [];
@@ -331,7 +335,7 @@ export class InventoryUnitsService {
         return { lineIndex, lineId: typeof line.lineId === 'string' ? line.lineId : '', sku: String(line.code || ''),
           name: String(line.name || line.productName || product?.name || ''), imageUrl, quantity: Number(line.qty) || 0, change,
           createdUnits: exact.length + unassigned.length, onHandUnits: [...exact, ...unassigned].filter(onHand).length, unassignedUnits: unassigned.length,
-          printedUnits: [...exact, ...unassigned].filter(unit => (printCounts.get(String(unit._id)) || 0) > 0).length,
+          printedUnits: [...exact, ...unassigned].filter(unit => (printCounts.get(String(unit._id)) || 0) > 0 || packCoverage.get(String(unit.packId))?.has(String(unit._id))).length,
           printRequests: [...exact, ...unassigned].reduce((sum, unit) => sum + (printCounts.get(String(unit._id)) || 0), 0) };
       }),
       get orphanedUnits() { return invoiceUnits.filter(unit => !represented.has(String(unit._id))).length; },

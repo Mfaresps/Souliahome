@@ -61,7 +61,12 @@ export class DepositReceiptOcrService implements OnModuleInit, OnModuleDestroy {
   private getWorker(): Promise<Worker> {
     if (!this.worker) {
       const cachePath = process.env.OCR_CACHE_DIR || path.join(process.cwd(), 'tessdata-cache');
-      this.worker = createWorker(['ara', 'eng'], 1, { cachePath }).then(async (w) => {
+      this.worker = createWorker(['ara', 'eng'], 1, {
+        cachePath,
+        // Tesseract also reports rejections from a worker event callback. Without this
+        // handler it throws outside our promise catch and terminates the API process.
+        errorHandler: error => this.logger.warn(`OCR worker failed: ${String(error)}`),
+      }).then(async (w) => {
         // Sparse-text segmentation: a receipt is scattered labels and figures, not paragraphs.
         await w.setParameters({ tessedit_pageseg_mode: '11' as any });
         return w;

@@ -7,7 +7,7 @@ const QRCode=require('qrcode');
 const publicDir=path.resolve(__dirname,'../../../frontend/public');
 const sizes=[{id:'50x25',widthMm:50,heightMm:25,qrMm:17,marginMm:1},{id:'60x40',widthMm:60,heightMm:40,qrMm:25,marginMm:2}];
 const units=Array.from({length:24},(_,i)=>{const _id=(1000+i).toString(16).padStart(24,'0');return {_id,barcode:'SU-'+_id.toUpperCase(),productId:'a'.repeat(24),product:{code:'CUSHION-6',name:'Fringe Cushion'},status:'available',warehouseCode:'MAIN',invoiceRef:'88',origin:{kind:'purchase',purchaseTransactionId:'c'.repeat(24)}};});
-let packs=[],calls=[];
+let packs=[],calls=[],printedCoverage=0;
 const previousPack={_id:'9'.repeat(24),barcode:'PK-'+ '9'.repeat(24),quantity:6,state:'sealed',availabilityStatus:'available',product:{name:'Previous pack',code:'CUSHION-6'}};
 const html=`<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/inventory-units.css"><link rel="stylesheet" href="/inventory-packs.css"><style>body{font:14px Arial;margin:12px}</style></head><body><main id="page-barcodes"></main><script>let currentLang='ar',currentPage='barcodes',currentUser={_id:'${'f'.repeat(24)}'};function hasPerm(){return true}async function api(p,o={}){const r=await fetch('/api'+p,{...o,headers:{'Content-Type':'application/json'}});const d=await r.json();if(!r.ok){let e=new Error(d.message);e.status=r.status;throw e}return d}</script><script src="/inventory-units.js"></script><script src="/inventory-packs.js"></script></body></html>`;
 async function main(){
@@ -18,13 +18,13 @@ async function main(){
    if(!url.pathname.startsWith('/api/')){res.setHeader('Content-Type',url.pathname.endsWith('.js')?'text/javascript':'text/css');res.end(fs.readFileSync(path.join(publicDir,path.basename(url.pathname))));return;}
    let text='';for await(const chunk of req)text+=chunk;const data=text?JSON.parse(text):null;calls.push({path:url.pathname,data});res.setHeader('Content-Type','application/json');
    if(url.pathname.endsWith('/config'))res.end(JSON.stringify({statuses:['available'],labelSizes:sizes}));
-   else if(url.pathname.endsWith('/purchases/receipts'))res.end(JSON.stringify({receipts:[{transactionId:'c'.repeat(24),ref:'88',supplier:'Supplier',date:'2026-10-20',lines:[{lineIndex:0,name:'Fringe Cushion',sku:'CUSHION-6',quantity:24,createdUnits:24,printedUnits:24}]}],total:1}));
+   else if(url.pathname.endsWith('/purchases/receipts'))res.end(JSON.stringify({receipts:[{transactionId:'c'.repeat(24),ref:'88',supplier:'Supplier',date:'2026-10-20',lines:[{lineIndex:0,name:'Fringe Cushion',sku:'CUSHION-6',quantity:24,createdUnits:24,printedUnits:printedCoverage}]}],total:1}));
    else if(url.pathname==='/api/inventory-units')res.end(JSON.stringify({units,total:units.length,page:1,limit:30,invoiceMatch:url.searchParams.get('q')==='88',products:url.searchParams.get('q')==='88'?[{_id:'a'.repeat(24),name:'Fringe Cushion',code:'CUSHION-6'}]:[]}));
    else if(url.pathname==='/api/inventory-packs'&&req.method==='POST'){
     assert.equal(data.unitIds.length,24);assert.equal(data.piecesPerPack,6);
     packs=Array.from({length:4},(_,i)=>{const _id=(2000+i).toString(16).padStart(24,'0');return {_id,manualCode:'PK-'+String(i+1).padStart(6,'0')+'-'+[8,6,4,2][i],barcode:'PK-'+_id.toUpperCase(),quantity:6,state:'sealed',availabilityStatus:'available',product:{name:'Fringe Cushion',code:'CUSHION-6'}};});res.end(JSON.stringify({packs,singleUnitIds:[]}));
    }else if(url.pathname==='/api/inventory-packs')res.end(JSON.stringify({packs:[previousPack,...packs],total:packs.length+1,page:1}));
-   else if(url.pathname.includes('/labels/')){const labels=await Promise.all(packs.filter(p=>data.packIds.includes(p._id)).map(async p=>({unitId:p._id,barcode:p.barcode,isPack:true,quantity:6,invoiceDate:'2026-10-20',manualCode:p.manualCode||p.barcode,productName:p.product.name,sku:p.product.code,printCount:0,svg:await QRCode.toString(p.barcode,{type:'svg',margin:2})})));res.end(JSON.stringify({labels,size:sizes.find(s=>s.id===data.sizeId)}));}
+   else if(url.pathname.includes('/labels/')){if(url.pathname.endsWith('/requests'))printedCoverage=24;const labels=await Promise.all(packs.filter(p=>data.packIds.includes(p._id)).map(async p=>({unitId:p._id,barcode:p.barcode,isPack:true,quantity:6,invoiceDate:'2026-10-20',manualCode:p.manualCode||p.barcode,productName:p.product.name,sku:p.product.code,printCount:0,svg:await QRCode.toString(p.barcode,{type:'svg',margin:2})})));res.end(JSON.stringify({labels,size:sizes.find(s=>s.id===data.sizeId)}));}
    else{res.statusCode=404;res.end(JSON.stringify({message:'Unknown fixture route'}));}
   }catch(e){res.statusCode=500;res.end(JSON.stringify({message:e.message}));}
  });

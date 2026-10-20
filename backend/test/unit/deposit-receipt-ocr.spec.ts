@@ -14,6 +14,19 @@ describe('receipt OCR fallbacks', () => {
     image = await sharp({ create: { width: 80, height: 120, channels: 3, background: '#fff' } }).png().toBuffer();
   });
   afterEach(async () => { await service.onModuleDestroy(); });
+  it('handles language download failure without an uncaught worker error and allows a later retry',async()=>{
+    jest.spyOn((service as any).logger,'warn').mockImplementation(()=>undefined);
+    (createWorker as jest.Mock).mockImplementationOnce((_languages,_engine,options)=>{
+      expect(typeof options.errorHandler).toBe('function');
+      expect(()=>options.errorHandler(new Error('fetch failed'))).not.toThrow();
+      return Promise.reject(new Error('fetch failed'));
+    });
+    await expect(service.read(image)).resolves.toMatchObject({ran:false,amount:null,confident:false});
+    const w=worker();w.recognize.mockResolvedValue({data:{text:''}});
+    (createWorker as jest.Mock).mockResolvedValue(w);
+    await expect(service.read(image)).resolves.toMatchObject({ran:true});
+    expect(createWorker).toHaveBeenCalledTimes(2);
+  });
   it('checks isolated icon digits in English before accepting an amount', async () => {
     const w = worker(); (createWorker as jest.Mock).mockResolvedValue(w);
     w.recognize.mockResolvedValueOnce({ data: { text: 'Transaction Successful\n9\nsender@instapay\nreceiver@instapay' } })

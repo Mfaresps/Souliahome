@@ -32,11 +32,11 @@
 #page-settings .stg-provider-tabs small{display:block;color:var(--muted);font-size:.65rem;line-height:1.6;margin-top:2px}
 #page-settings .stg-provider-connection{display:inline-flex;align-items:center;gap:5px;margin-top:5px;font-size:10px;font-weight:600;line-height:1.5;color:var(--muted)}
 #page-settings .stg-provider-connection::before{content:"";width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:currentColor}
-#page-settings .stg-provider-connection[data-state=connected]{color:#16834a}
-#page-settings .stg-provider-connection[data-state=connected]::before{box-shadow:0 0 0 3px #16834a16}
+#page-settings .stg-provider-connection:is([data-state=connected],[data-state=webhook]){color:#16834a}
+#page-settings .stg-provider-connection:is([data-state=connected],[data-state=webhook])::before{box-shadow:0 0 0 3px #16834a16}
 #page-settings .stg-provider-connection:is([data-state=configured],[data-state=error]){color:#a66b08}
 #page-settings .stg-provider-connection[data-state=disconnected]{color:#d14343}
-body.dark-mode #page-settings .stg-provider-connection[data-state=connected]{color:#5fce91}
+body.dark-mode #page-settings .stg-provider-connection:is([data-state=connected],[data-state=webhook]){color:#5fce91}
 body.dark-mode #page-settings .stg-provider-connection:is([data-state=configured],[data-state=error]){color:#e8b860}
 body.dark-mode #page-settings .stg-provider-connection[data-state=disconnected]{color:#f18b8b}
 #page-settings #stg-shopify-card>input{display:block;max-width:460px;min-height:34px;padding:6px 9px;box-sizing:border-box}

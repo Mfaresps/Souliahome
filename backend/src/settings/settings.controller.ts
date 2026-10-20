@@ -331,31 +331,32 @@ export class SettingsController {
   @Post('bosta-api-key/test')
   async testBostaApiKey(@Body('key') key: string) {
     const apiKey = (key || '').trim() || await this.settingsService.getBostaApiKey();
-    if (!apiKey) return { success: false, message: 'لم يتم إدخال API Key' };
+    if (!apiKey) return { success: false, state: 'unconfigured', message: 'لم يتم إدخال API Key' };
     try {
-      // Test using /api/v2/users/profile — returns 200 on valid key, 401 on invalid
-      const result = await new Promise<{ ok: boolean; message: string }>((resolve) => {
+      // Carrier API keys authorize pickup locations; the user-profile route can reject a working carrier key.
+      const result = await new Promise<{ ok: boolean; state: string; message: string }>((resolve) => {
         const https = require('https');
         const req = https.request(
-          { hostname: 'app.bosta.co', path: '/api/v2/users/profile', method: 'GET',
+          { hostname: 'app.bosta.co', path: '/api/v2/pickup-locations', method: 'GET', timeout: 10000,
             headers: { Authorization: apiKey, 'Content-Type': 'application/json' } },
           (res: any) => {
             let data = '';
             res.on('data', (c: any) => { data += c; });
             res.on('end', () => {
-              if (res.statusCode === 200) resolve({ ok: true, message: 'الاتصال بـ Bosta ناجح ✅' });
+              if (res.statusCode >= 200 && res.statusCode < 300) resolve({ ok: true, state: 'connected', message: 'الاتصال بـ Bosta ناجح ✅' });
               else if (res.statusCode === 401 || res.statusCode === 403)
-                resolve({ ok: false, message: 'المفتاح غير صحيح أو منتهي الصلاحية ❌' });
-              else resolve({ ok: false, message: `استجابة غير متوقعة: HTTP ${res.statusCode}` });
+                resolve({ ok: false, state: 'disconnected', message: 'المفتاح غير صحيح أو لا يملك الصلاحية المطلوبة ❌' });
+              else resolve({ ok: false, state: 'error', message: `تعذر فحص الاتصال: HTTP ${res.statusCode}` });
             });
           },
         );
-        req.on('error', (e: any) => resolve({ ok: false, message: `خطأ في الاتصال: ${e.message}` }));
+        req.on('timeout', () => req.destroy(new Error('Connection check timed out')));
+        req.on('error', (e: any) => resolve({ ok: false, state: 'error', message: `تعذر فحص الاتصال: ${e.message}` }));
         req.end();
       });
-      return { success: result.ok, message: result.message };
+      return { success: result.ok, state: result.state, message: result.message };
     } catch (e: any) {
-      return { success: false, message: `خطأ: ${e.message}` };
+      return { success: false, state: 'error', message: `خطأ: ${e.message}` };
     }
   }
 

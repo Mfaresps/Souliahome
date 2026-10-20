@@ -98,7 +98,7 @@ async function testShopifySettings() {
   if (status) status.textContent = _shopifySettingsText('جارٍ الفحص…', 'Checking…');
   try {
     const result = await api('/shopify/connection-status');
-    if (typeof stgSetProviderConnectionState === 'function') stgSetProviderConnectionState('shopify', result.adminApiConfigured ? (result.adminApiReachable ? 'connected' : 'disconnected') : (result.webhookConfigured ? 'configured' : 'unconfigured'));
+    if (typeof stgSetProviderConnectionState === 'function') stgSetProviderConnectionState('shopify', result.adminApiReachable === true ? 'connected' : result.webhookConfigured ? 'webhook' : result.adminApiConfigured ? 'disconnected' : 'unconfigured');
     const text = _shopifySettingsText;
     const messages = [result.webhookConfigured
       ? text('مفتاح الاستقبال محفوظ؛ اختبر وصول الطلب من Shopify باستخدام Send test.', 'Signing key is configured; verify delivery with Send test in Shopify.')

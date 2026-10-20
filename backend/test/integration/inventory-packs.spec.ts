@@ -39,6 +39,24 @@ describe('Sealed physical packs',()=>{
     unitIds=units.map((u:any)=>String(u._id));
   });
   afterAll(async()=>{await mongo?.close();});
+  it('counts sealed printed pack members once in purchase label coverage and clears their coverage when ungrouped',async()=>{
+    const purchaseId=id();await raw('transactions').insertOne({_id:new Types.ObjectId(purchaseId),type:'مشتريات',ref:'PACK-PRINT',date:'2026-10-20',items:[{code:'PACK-TEST',qty:24,lineId:'purchase-1'}]});
+    await raw('inventoryunits').updateMany({},{$set:{'origin.kind':'purchase','origin.purchaseTransactionId':purchaseId,'origin.purchaseLineId':'purchase-1'}});
+    const receipt=async()=> (await tracking.purchaseReceipts()).find(row=>row.transactionId===purchaseId)!.lines[0];
+    const created=await create();
+    await packs.labels({...req(),packIds:[created.packs[0]._id],sizeId:'50x25'},actor);
+    expect((await receipt()).printedUnits).toBe(0);
+    const firstPrint={...req(),packIds:[created.packs[0]._id],sizeId:'50x25'};
+    await packs.labels(firstPrint,actor,true);await packs.labels(firstPrint,actor,true);
+    expect((await receipt()).printedUnits).toBe(6);
+    await packs.labels({...req(),packIds:[created.packs[0]._id],sizeId:'50x25'},actor,true);
+    expect((await receipt()).printedUnits).toBe(6);
+    await packs.labels({...req(),packIds:created.packs.slice(1).map((pack:any)=>pack._id),sizeId:'50x25'},actor,true);
+    expect((await receipt()).printedUnits).toBe(24);
+    await packs.open(created.packs[0].barcode,req(),actor);
+    expect((await receipt()).printedUnits).toBe(18);
+    expect(await raw('inventoryunitevents').countDocuments({action:{$in:['label-print-requested','label-reprint-requested']}})).toBe(0);
+  });
   it('prints the source purchase invoice date for piece and pack labels',async()=>{
     const purchaseId=id();await raw('transactions').insertOne({_id:new Types.ObjectId(purchaseId),type:'مشتريات',ref:'INV-20',date:'2026-10-20',createdAt:new Date('2026-10-21'),items:[{code:'PACK-TEST',qty:24,lineId:'purchase-1'}]});
     await raw('inventoryunits').updateMany({},{$set:{'origin.kind':'purchase','origin.purchaseTransactionId':purchaseId,'origin.purchaseLineId':'purchase-1'}});

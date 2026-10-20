@@ -16424,7 +16424,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/notification-settings.css?v=20261019-compact">
 <link rel="stylesheet" href="/announcements.css?v=4">
 <link rel="stylesheet" href="/shopify-kpis.css?v=6">
-<link rel="stylesheet" href="/settings-responsive.css?v=20261019-branding-9">
+<link rel="stylesheet" href="/settings-responsive.css?v=20261020-connection-status">
 <link rel="stylesheet" href="/branding.css?v=20261019-1">
 <link rel="stylesheet" href="/shopify-tabs.css?v=20261019-1">
 <link rel="stylesheet" href="/shopify-cards.css?v=20261020-8">
@@ -80626,6 +80626,7 @@ function stgRenderProviderConnections() {
     unknown: ['لم يُفحص', 'Not checked'], checking: ['جارٍ الفحص', 'Checking'],
     connected: ['متصل', 'Connected'], disconnected: ['غير متصل', 'Disconnected'],
     unconfigured: ['غير مربوط', 'Not connected'], configured: ['الربط محفوظ', 'Configured'],
+    webhook: ['مربوط عبر Webhook', 'Linked via webhook'],
     error: ['تعذّر الفحص', 'Check unavailable']
   };
   qsa('#stg-provider-tabs [data-connection-provider]').forEach(badge => {
@@ -80634,7 +80635,9 @@ function stgRenderProviderConnections() {
     badge.dataset.state = state;
     const label = labels[state][en ? 1 : 0];
     if (badge.textContent !== label) badge.textContent = label;
-    badge.title = state === 'configured'
+    badge.title = state === 'webhook'
+      ? (en ? 'Order reception via webhook is configured. Admin API connectivity is checked separately below.' : 'ربط استقبال الطلبات عبر Webhook محفوظ. فحص Admin API منفصل وتظهر نتيجته أدناه.')
+      : state === 'configured'
       ? (en ? 'Webhook is configured. Receiving orders must be verified with a Shopify test webhook.' : 'مفتاح الاستقبال محفوظ. يُتحقق من استقبال الأوردرات بإرسال Webhook تجريبي من Shopify.')
       : state === 'connected'
         ? (en ? 'The saved connection responded successfully to the latest check.' : 'نجح فحص الاتصال باستخدام إعدادات الربط المحفوظة.')
@@ -80662,12 +80665,10 @@ async function stgRefreshProviderConnections(force = false) {
     try {
       if (provider === 'shopify') {
         const result = await stgProviderConnectionRequest('/shopify/connection-status');
-        record.state = result.adminApiConfigured
-          ? (result.adminApiReachable ? 'connected' : 'disconnected')
-          : (result.webhookConfigured ? 'configured' : 'unconfigured');
+        record.state = result.adminApiReachable === true ? 'connected' : result.webhookConfigured ? 'webhook' : result.adminApiConfigured ? 'disconnected' : 'unconfigured';
       } else if (provider === 'bosta') {
         const result = await stgProviderConnectionRequest('/settings/bosta-api-key/test', { method: 'POST', body: '{}' });
-        record.state = result.success ? 'connected' : 'disconnected';
+        record.state = result.success ? 'connected' : result.state || 'error';
       } else {
         // Listing uses the stored credentials and does not write test objects or change configuration.
         const result = await stgProviderConnectionRequest('/settings/r2-backups');
@@ -85785,7 +85786,7 @@ async function testBostaKey() {
   try {
     const body = key ? JSON.stringify({ key }) : '{}';
     const res = await api('/settings/bosta-api-key/test', { method: 'POST', body });
-    if (!key) stgSetProviderConnectionState('bosta', res.success ? 'connected' : 'disconnected');
+    if (!key) stgSetProviderConnectionState('bosta', res.success ? 'connected' : res.state || 'error');
     if (statusEl) {
       statusEl.innerHTML = res.success
         ? `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> <span style="color:#10b981">${res.message}</span>`
@@ -96352,13 +96353,25 @@ async function _pwEnsurePickLines(order) {
   state.identifyAttempted = true;
   try {
     const result = await api(`/inventory-units/orders/${encodeURIComponent(order._id)}/identify-lines`, { method: 'POST',
-      body: JSON.stringify({ operationKey: `pickup-lines-${order._id}`, reason: 'Assign stable line identities for barcode-assisted pickup preparation' }) });
-    const tx = [_pickupOrders || [], Array.isArray(transactions) ? transactions : [], ...(_puPrepGroups || []).map(group => group.orders || [])].flat().find(row => String(row._id) === String(order._id));
-    if (tx && Array.isArray(result.items)) tx.items = result.items;
-    state.summary = null;
+      body: JSON.stringify({ operationKey: state.identifyOperationKey ||= `pickup-lines-${crypto.randomUUID()}`, reason: 'Assign stable line identities for barcode-assisted pickup preparation' }) });
+    if (!Array.isArray(result.items) || result.items.some(item=>!item.lineId) || new Set(result.items.map(item=>item.lineId)).size!==result.items.length) throw new Error(currentLang==='en'?'Could not load stable product lines.':'تعذر تحميل هوية أصناف الطلب.');
+    const copies = [order, ...(_pickupOrders || []), ...(Array.isArray(transactions) ? transactions : []), ...(_puPrepGroups || []).flatMap(group=>group.orders || [])];
+    for (const tx of copies) if (String(tx?._id)===String(order._id)) tx.items=result.items;
+    if (typeof _puSavePrepGroups==='function') _puSavePrepGroups();
+    delete state.identifyOperationKey;
+    state.summary = null;state.attempted=false;state.identifyAttempted=false;state.error='';
   } catch (error) { state.error = error.message || String(error); }
   finally { state.identifying = false; }
   if (String(_pwSelId) === String(order._id)) _pwRenderWork();
+}
+async function pwRetryOrderScan(orderId) {
+  const state=_pwPickState(orderId);
+  if(state.loading||state.identifying||state.routing)return;
+  const order=(_pucoGetGroup()?.orders || []).find(row=>String(row._id)===String(orderId));
+  if(!order)return;
+  state.identifyAttempted=false;state.attempted=false;state.error='';
+  await _pwEnsurePickLines(order);
+  if((order.items||[]).every(item=>item.lineId))await _pwLoadPickSummary(orderId,true);
 }
 function _pwScanFocus(orderId, inputId) {
   if (String(_pwSelId) !== String(orderId)) return;
@@ -96375,8 +96388,8 @@ function _pwScanIntroHtml(o, state) {
   const matched = lines.reduce((sum,line)=>sum+(line.units||[]).filter(unit=>['picking','prepared'].includes(unit.status)).length,0);
   const skipped = lines.reduce((sum,line)=>sum+(Number(line.skippedCount)||0),0);
   const complete = total > 0 && matched + skipped >= total;
-  const disabled = state?.loading || state?.routing || !state?.summary || complete || o.prepChecked;
-  return `<div class="pw-scan-intro pw-scan-compact${complete?' is-confirmed':''}"><div class="pw-order-scan"><label for="pw-order-scan">${en?'Scan barcode':'امسح الباركود'}</label><div>${complete?`<span class="pw-scan-done" role="status">✓ ${en?'All pieces checked':'اكتملت القطع'}</span>`:''}<input id="pw-order-scan" type="text" dir="ltr" autocomplete="off" spellcheck="false" oninput="_pwPickState('${esc(String(o._id))}').orderScanDraft=this.value" ${disabled?'disabled':''} value="${esc(state?.orderScanDraft||'')}" placeholder="${en?'Scan barcode…':'امسح الباركود…'}" onkeydown="if(event.key==='Enter'){event.preventDefault();pwScanAnyOrderUnit('${esc(String(o._id))}','pw-order-scan')}"><button type="button" ${disabled?'disabled':''} onclick="pwScanAnyOrderUnit('${esc(String(o._id))}','pw-order-scan')">${state?.routing||state?.loading?'…':en?'Scan':'مسح'}</button><span class="pw-scan-count" aria-label="${en?'Pieces checked':'القطع التي تمت مراجعتها'}">${fmtN(matched+skipped)} / ${fmtN(total)}</span>${skipped?`<span class="pw-skip-total">${fmtN(skipped)} ${en?'skipped':'متخطى'}</span>`:''}</div></div>${total?`<progress class="pw-scan-progress" value="${Math.min(total,matched+skipped)}" max="${total}" aria-label="${en?'Preparation progress':'تقدم التجهيز'}"></progress>`:''}${state?.feedback?.error?`<div class="pw-scan-feedback is-error" role="alert">${esc(state.feedback.text)}</div>`:''}</div>`;
+  const disabled = state?.loading || state?.routing || state?.identifying || !!state?.error || !state?.summary || (o.items||[]).some(item=>!item.lineId) || complete || o.prepChecked;
+  return `<div class="pw-scan-intro pw-scan-compact${complete?' is-confirmed':''}"><div class="pw-order-scan"><label for="pw-order-scan">${en?'Scan barcode':'امسح الباركود'}</label><div>${complete?`<span class="pw-scan-done" role="status">✓ ${en?'All pieces checked':'اكتملت القطع'}</span>`:''}<input id="pw-order-scan" type="text" dir="ltr" autocomplete="off" spellcheck="false" oninput="_pwPickState('${esc(String(o._id))}').orderScanDraft=this.value" ${disabled?'disabled':''} value="${esc(state?.orderScanDraft||'')}" placeholder="${en?'Scan barcode…':'امسح الباركود…'}" onkeydown="if(event.key==='Enter'){event.preventDefault();pwScanAnyOrderUnit('${esc(String(o._id))}','pw-order-scan')}"><button type="button" ${disabled?'disabled':''} onclick="pwScanAnyOrderUnit('${esc(String(o._id))}','pw-order-scan')">${state?.routing||state?.loading?'…':en?'Scan':'مسح'}</button><span class="pw-scan-count" aria-label="${en?'Pieces checked':'القطع التي تمت مراجعتها'}">${fmtN(matched+skipped)} / ${fmtN(total)}</span>${skipped?`<span class="pw-skip-total">${fmtN(skipped)} ${en?'skipped':'متخطى'}</span>`:''}</div></div>${total?`<progress class="pw-scan-progress" value="${Math.min(total,matched+skipped)}" max="${total}" aria-label="${en?'Preparation progress':'تقدم التجهيز'}"></progress>`:''}${state?.error?`<div class="pw-scan-feedback is-error" role="alert">${esc(state.error)} <button type="button" onclick="pwRetryOrderScan('${esc(String(o._id))}')">${en?'Retry':'إعادة المحاولة'}</button></div>`:state?.feedback?.error?`<div class="pw-scan-feedback is-error" role="alert">${esc(state.feedback.text)}</div>`:''}</div>`;
 }
 
 function _pwScanGuidanceHtml() { return ''; }
@@ -96794,7 +96807,18 @@ function _pwRenderWork() {
 /** Selecting an order — the single entry point. Never mutates data. */
 function pwSelectOrder(id, opts) {
   if (!id) return;
+  const changed = String(_pwSelId) !== String(id);
   _pwSelId = id;
+  if (_pucoColType === 'prep' && changed) {
+    const state = _pwPickState(id);
+    state.focusOrderScan = true;
+    if (!state.loading && !state.identifying) {
+      state.summary = null;
+      state.attempted = false;
+      state.identifyAttempted = false;
+      state.error = '';
+    }
+  }
   qsa('#puco-orders-list .pw-ocard').forEach(el => {
     const on = el.dataset.orderId === id;
     el.classList.toggle('is-sel', on);
@@ -97501,7 +97525,7 @@ async function _pucoTickOrderImpl(orderId, checked) {
         const nxt = _pwNextPending(_pwOrderForDisplay(grpNav.orders), orderId);
         if (nxt) advanceTo = nxt._id;
       }
-      if (advanceTo) _pwSelId = advanceTo;
+      if (advanceTo) pwSelectOrder(advanceTo, { keepPanel: true });
       _pwFlipRender(grpNav, checked ? orderId : null);
       if (advanceTo) {
         qs(`#puco-orders-list .pw-ocard[data-order-id="${CSS.escape(advanceTo)}"]`)
@@ -108342,7 +108366,7 @@ function _spRenderHistoryTab() {
 <script src="/announcements.js?v=4"></script>
 <script src="/push-navigation.js"></script>
 <script src="/notification-history.js"></script>
-<script src="/shopify-settings.js?v=20261019-connection"></script>
+<script src="/shopify-settings.js?v=20261020-connection-status"></script>
 <link rel="stylesheet" href="/inventory-units.css?v=20261020-invoice-date">
 <link rel="stylesheet" href="/supplier-return-pieces.css?v=20261020-1">
 <script src="/supplier-return-pieces.js?v=20261020-1"></script>
@@ -108355,9 +108379,9 @@ function _spRenderHistoryTab() {
 <script src="/global-search-scanner.js?v=20261020-short-packs"></script>
 <link rel="stylesheet" href="/warehouses.css?v=20261019-4">
 <script src="/warehouses.js?v=20261019-5"></script>
-<script src="/inventory-units.js?v=20261020-invoice-date"></script>
+<script src="/inventory-units.js?v=20261020-pack-print-coverage"></script>
 <link rel="stylesheet" href="/inventory-packs.css?v=20261020-short-code12">
-<script src="/inventory-packs.js?v=20261020-short-code12"></script>
+<script src="/inventory-packs.js?v=20261020-pack-print-coverage"></script>
 <script src="/legacy-stock-labels.js?v=20261020-2"></script>
 <link rel="stylesheet" href="/purchase-receiving.css?v=20261020-compact">
 <script src="/purchase-receiving.js?v=20261020-compact"></script>

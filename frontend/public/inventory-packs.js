@@ -148,6 +148,7 @@
       await Promise.all([...popup.document.querySelectorAll('link')].map(link=>link.sheet?Promise.resolve():new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Print stylesheet timeout')),15000);link.onload=()=>{clearTimeout(timer);resolve();};link.onerror=()=>{clearTimeout(timer);reject(new Error('Print stylesheet unavailable'));};})));
       await window.InventoryUnitLabels.waitForLayout(popup.document);popup.focus();popup.print();
       el('ip-preview').innerHTML=window.InventoryUnitLabels.previewSheets(batch);window.InventoryUnitLabels.printSuccess(batch.labels.length,el('ip-message'));
+      await window.InventoryUnitLabels.refreshAfterPackPrint?.();
     }catch(error){if(popup&&!popup.closed)popup.close();throw error;}
   }
   async function run(work){if(busy)return;lock(true);try{await work();}catch(error){notice(error.message||String(error),true);}finally{lock(false);}}
