@@ -282,7 +282,7 @@ export class DepositReceiptsService {
     try { sha = await this.reserveImage(stored, file.buffer, id); }
     catch (error) { await this.releaseUnusedIdentity(id); throw error; }
     const warnings = [...receiptContentWarnings(ocr), ...await this.findDuplicates(sha, ocr.reference)];
-    const put = await r2PutObject(cfg, imageKey, stored, 'image/jpeg');
+    const put = await r2PutObject(cfg, imageKey, stored, 'image/jpeg', 30_000);
     if (!put.ok) { await this.releaseUnusedIdentity(id); throw new BadRequestException(`تعذّر حفظ الصورة على التخزين السحابي: ${put.message}`); }
     const now = new Date().toISOString();
     const receipt: DepositReceipt = { id, status: 'مسودة', imageKey, imageSha256: sha,
@@ -293,7 +293,7 @@ export class DepositReceiptsService {
       await this.manualReceiptModel!.create({ receiptId: id, ownerId: actor.id, ref, client, receipt,
         expiresAt: new Date(Date.now() + DRAFT_TTL_MS).toISOString() });
     } catch (error) { await this.releaseUnusedIdentity(id); throw error; }
-    await this.trimReceiptImages();
+    void this.trimReceiptImages();
     return { receipt };
   }
 
@@ -378,8 +378,11 @@ export class DepositReceiptsService {
     return stored;
   }
 
-  private async trimReceiptImages(): Promise<void> {
-    const trim = this.imageLimitQueue.then(() => this.runCleanup(new Date(), true));
+  private async trimReceiptImages(staleKeys: string[] = []): Promise<void> {
+    const trim = this.imageLimitQueue.then(async () => {
+      for (const key of staleKeys) await this.deleteImage(key);
+      return this.runCleanup(new Date(), true);
+    });
     this.imageLimitQueue = trim.catch((err) => {
       this.logger.warn(`Receipt limit cleanup failed: ${(err as Error).message}`);
     });
@@ -406,7 +409,7 @@ export class DepositReceiptsService {
     //   the re-encoded JPEG lost one amount (16/17) that the original yields (17/17). Storage
     //   gets the small copy, the reader gets the sharp one.
     const [put, ocr] = await Promise.all([
-      r2PutObject(cfg, imageKey, stored, 'image/jpeg'),
+      r2PutObject(cfg, imageKey, stored, 'image/jpeg', 30_000),
       this.ocr.read(file.buffer),
     ]);
     if (!put.ok) { await this.releaseUnusedIdentity(id); throw new BadRequestException(`تعذّر حفظ الصورة على التخزين السحابي: ${put.message}`); }
@@ -451,11 +454,10 @@ export class DepositReceiptsService {
         { _id: order._id },
         { $pull: { depositReceipts: { id: { $in: stale.map((r) => r.id) }, status: 'مسودة' } } },
       ).exec();
-      for (const r of stale) await this.deleteImage(r.imageKey);
     }
 
     // Serialize upload-triggered trimming so simultaneous uploads do not delete extra images.
-    await this.trimReceiptImages();
+    void this.trimReceiptImages(stale.map(r => r.imageKey));
     return { receipt: draft, cap: depositCapFor(saved) };
   }
 

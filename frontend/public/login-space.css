@@ -57,7 +57,7 @@
   .login-meteor{left:8%;top:12%;width:60px}
   .login-meteor:nth-child(2){left:68%;top:88%}
 }
-@media(prefers-reduced-motion:reduce){
+@media(max-width:820px),(pointer:coarse),(prefers-reduced-motion:reduce){
   .login-meteor{animation:none;display:none}
   #login-form .lfp-btn-login[aria-busy="true"]::before{animation:none}
   #login-quote-text,#mobile-quote-text{transition:none}

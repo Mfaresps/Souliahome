@@ -115,7 +115,7 @@ function _spEditRequestDetail(order) {
   return `<p>${esc(spEditText('مقدم الطلب', 'Requested by'))}: ${esc(r.requestedBy)} · ${fmtDateTime(r.requestedAt)}</p>
     <ul>${(r.changes || []).map(change => `<li>${esc(change)}</li>`).join('')}</ul>
     ${r.status === 'معلق' ? `<p>${esc(spEditText('التغييرات لم تُطبّق بعد على الأوردر.', 'These changes have not been applied to the order.'))}</p>` : ''}
-    ${r.reviewedBy ? `<p>${esc(r.status)} · ${esc(r.reviewedBy)} · ${fmtDateTime(r.reviewedAt)}</p>` : ''}
+    ${r.reviewedBy ? `<p>${esc(_apprStatusLabel(r.status))} · ${esc(r.reviewedBy)} · ${fmtDateTime(r.reviewedAt)}</p>` : ''}
     ${r.rejectedReason ? `<p>${esc(spEditText('سبب الرفض', 'Rejection reason'))}: ${esc(r.rejectedReason)}</p>` : ''}`;
 }
 
@@ -199,7 +199,7 @@ function _apprRowShopifyEdit(order) {
   return { key: 'shopify-edit:' + order._id, kindLabel: spEditText('تعديل أوردر شوبيفاي', 'Shopify order edit'),
     isPending: pending, amount: r.patch.total ?? order.total,
     title: `#${esc(order.ref)}`, subtitle: esc(order.client || ''), party: r.requestedBy,
-    dateLabel: fmtDate(r.requestedAt), statusLabel: r.status, statusClass: _APPR_STATUS_CLASS[r.status] || 'st-pending',
+    dateLabel: fmtDate(r.requestedAt), statusLabel: _apprStatusLabel(r.status), statusClass: _APPR_STATUS_CLASS[r.status] || 'st-pending',
     actions: _spEditReviewActions(order), detail: _spEditRequestDetail(order),
     haystack: [order.ref, order.client, r.requestedBy, ...(r.changes || [])].join(' ').toLowerCase() };
 }

@@ -110,7 +110,7 @@ interface R2RawResponse {
 }
 
 function request(
-  opts: { host: string; path: string; method: string; headers: Record<string, string> },
+  opts: { host: string; path: string; method: string; headers: Record<string, string>; timeoutMs?: number },
   payload?: Buffer,
 ): Promise<R2Response> {
   return requestRaw(opts, payload).then((r) => ({ status: r.status, body: r.raw.toString('utf8') }));
@@ -122,31 +122,38 @@ function request(
  * — an image comes back the right length and unreadable.
  */
 function requestRaw(
-  opts: { host: string; path: string; method: string; headers: Record<string, string> },
+  opts: { host: string; path: string; method: string; headers: Record<string, string>; timeoutMs?: number },
   payload?: Buffer,
 ): Promise<R2RawResponse> {
   return new Promise((resolve, reject) => {
+    let deadline: NodeJS.Timeout | undefined;
+    const fail = (error: Error) => { if (deadline) clearTimeout(deadline); reject(error); };
     const req = https.request(
       {
         hostname: opts.host,
         path: opts.path,
         method: opts.method,
         headers: opts.headers,
-        timeout: 120000,
+        timeout: opts.timeoutMs || 120000,
       },
       (res) => {
         const chunks: Buffer[] = [];
         res.on('data', (c: Buffer) => {
           chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
         });
-        res.on('end', () => resolve({ status: res.statusCode || 0, raw: Buffer.concat(chunks) }));
+        res.on('error', fail);
+        res.on('aborted', () => fail(new Error('انقطع الاتصال بـ R2')));
+        res.on('end', () => { if (deadline) clearTimeout(deadline); resolve({ status: res.statusCode || 0, raw: Buffer.concat(chunks) }); });
       },
     );
-    req.on('error', reject);
+    req.on('error', fail);
     req.on('timeout', () => {
       req.destroy();
-      reject(new Error('انتهت مهلة الاتصال بـ R2'));
+      fail(new Error('انتهت مهلة الاتصال بـ R2'));
     });
+    // Socket inactivity timeouts do not cover DNS/connection setup or a response
+    // that keeps trickling bytes. Enforce an absolute request deadline as well.
+    deadline = setTimeout(() => { req.destroy(); fail(new Error('انتهت مهلة الاتصال بـ R2')); }, opts.timeoutMs || 120000);
     if (payload) req.write(payload);
     req.end();
   });
@@ -158,6 +165,25 @@ function extractError(body: string, status: number): string {
   const code = /<Code>([\s\S]*?)<\/Code>/.exec(body || '');
   if (m) return `${code ? code[1] + ': ' : ''}${m[1]}`;
   return `HTTP ${status}`;
+}
+
+/** Node's AggregateError may have an empty message; retain the actionable cause. */
+function connectionError(error: any): string {
+  const codes = new Set<string>();
+  const visit = (value: any, depth: number) => {
+    if (!value || depth > 2) return;
+    if (typeof value.code === 'string') codes.add(value.code);
+    if (Array.isArray(value.errors)) value.errors.slice(0, 8).forEach((item: any) => visit(item, depth + 1));
+    visit(value.cause, depth + 1);
+  };
+  visit(error, 0);
+  if (codes.has('EACCES') || codes.has('EPERM')) return 'بيئة تشغيل الخادم تمنع الاتصال بخدمة R2 (EACCES / EPERM)';
+  if (codes.has('ETIMEDOUT') || codes.has('ESOCKETTIMEDOUT')) return 'انتهت مهلة الاتصال بخدمة R2 (ETIMEDOUT)';
+  if (codes.has('ENOTFOUND') || codes.has('EAI_AGAIN')) return 'تعذّر الوصول إلى عنوان خدمة R2؛ تحقق من اتصال الخادم وإعدادات الحساب (DNS)';
+  if (codes.has('ECONNRESET') || codes.has('ECONNREFUSED')) return `انقطع اتصال الخادم بخدمة R2 (${[...codes].join(', ')})`;
+  if (typeof error?.message === 'string' && error.message.trim()) return error.message;
+  if (typeof error === 'string' && error.trim()) return error;
+  return codes.size ? `تعذّر الاتصال بخدمة R2 (${[...codes].join(', ')})` : 'تعذّر الاتصال بخدمة R2';
 }
 
 /**
@@ -195,6 +221,7 @@ export async function r2PutObject(
   key: string,
   body: Buffer,
   contentType = 'application/json',
+  timeoutMs = 120000,
 ): Promise<{ ok: boolean; message: string }> {
   try {
     const host = hostFor(cfg);
@@ -214,11 +241,11 @@ export async function r2PutObject(
       },
     });
 
-    const res = await request({ host, path: canonicalUri, method: 'PUT', headers }, body);
+    const res = await request({ host, path: canonicalUri, method: 'PUT', headers, timeoutMs }, body);
     if (res.status >= 200 && res.status < 300) return { ok: true, message: 'تم الرفع' };
     return { ok: false, message: extractError(res.body, res.status) };
   } catch (e: any) {
-    return { ok: false, message: e?.message || 'خطأ غير معروف' };
+    return { ok: false, message: connectionError(e) };
   }
 }
 
@@ -296,7 +323,7 @@ export async function r2ListObjects(
 
     return { ok: true, message: 'تم', objects };
   } catch (e: any) {
-    return { ok: false, message: e?.message || 'خطأ غير معروف', objects: [] };
+    return { ok: false, message: connectionError(e), objects: [] };
   }
 }
 
@@ -324,7 +351,7 @@ export async function r2DeleteObject(
     if (res.status >= 200 && res.status < 300) return { ok: true, message: 'تم الحذف' };
     return { ok: false, message: extractError(res.body, res.status) };
   } catch (e: any) {
-    return { ok: false, message: e?.message || 'خطأ غير معروف' };
+    return { ok: false, message: connectionError(e) };
   }
 }
 
@@ -351,7 +378,7 @@ export async function r2GetObject(
     if (res.status >= 200 && res.status < 300) return { ok: true, message: 'تم', body: res.body };
     return { ok: false, message: extractError(res.body, res.status), body: '' };
   } catch (e: any) {
-    return { ok: false, message: e?.message || 'خطأ غير معروف', body: '' };
+    return { ok: false, message: connectionError(e), body: '' };
   }
 }
 
@@ -369,7 +396,7 @@ export async function r2GetObjectBuffer(
     if (res.status >= 200 && res.status < 300) return { ok: true, message: 'تم', body: res.raw, status: res.status };
     return { ok: false, message: extractError(res.raw.toString('utf8'), res.status), body: Buffer.alloc(0), status: res.status };
   } catch (e: any) {
-    return { ok: false, message: e?.message || 'خطأ غير معروف', body: Buffer.alloc(0), status: 0 };
+    return { ok: false, message: connectionError(e), body: Buffer.alloc(0), status: 0 };
   }
 }
 

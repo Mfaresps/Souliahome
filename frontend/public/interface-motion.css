@@ -21,7 +21,7 @@
     box-shadow var(--ui-tab-duration) var(--ui-motion-ease);
 }
 
-@media(prefers-reduced-motion:reduce){
+@media(max-width:820px),(pointer:coarse),(prefers-reduced-motion:reduce){
   #main .page,
   #main :is([role="tabpanel"],#sp-orders-tab-content,#sp-deposits-tab-content,#sp-deposit-log-content,#sp-perf-dashboard-content,
     #inv-panel-list,#inv-panel-log,#prod-pane-items,#prod-pane-drafts,

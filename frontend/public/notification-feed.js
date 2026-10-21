@@ -58,7 +58,8 @@
   window.souliaNotificationTitle = n => escHtml(['delivered', 'deliveryProblem'].includes(n.eventType) ? String(n.title || '').replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, '') : n.title || '');
   window.souliaNotificationDescription = n => {
     const check = '<svg class="notification-check" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
-    return n.eventType === 'delivered' ? '<span class="notification-delivered-copy">' + check + escHtml(n.desc || '') + '</span>' : escHtml(n.desc || '');
+    const description = !n.history && !n.mention && typeof _stripHtml === 'function' ? _stripHtml(n.desc || '') : n.desc || '';
+    return n.eventType === 'delivered' ? '<span class="notification-delivered-copy">' + check + escHtml(description) + '</span>' : escHtml(description);
   };
   window.souliaMarkNotificationsOpened = function (openedAt = Date.now()) {
     window.souliaSyncNotificationAccount();
@@ -161,10 +162,10 @@
     pending.set(id, task); return task;
   };
   window.souliaOpenMentionNotification = async function (id) {
-    await window.souliaReadNotification('mention-' + id);
+    window.souliaReadNotification('mention-' + id);
     const mention = getMentionNotifs().find(m => String(m.id || m._id) === String(id));
     if (!mention) return;
-    closeNotifCenter();
+    closeNotifCenter({ navigation: true });
     await onMentionNotifClick(id, mention.txId, mention.commentId);
   };
   // Only cards actually in the visible, open list qualify, after a full second.

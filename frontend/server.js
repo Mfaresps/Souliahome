@@ -3,7 +3,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
-const zlib = require('zlib');
+const { createStaticResponder } = require('./lib/static-response.cjs');
 
 // Load .env manually (no extra dependencies)
 const envPath = path.join(__dirname, '.env');
@@ -17,6 +17,7 @@ if (fs.existsSync(envPath)) {
 const app = express();
 const PORT = process.env.PORT || 8080;
 const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:4000';
+const publicFiles = createStaticResponder(path.join(__dirname, 'public'));
 
 // Serve runtime config to the frontend
 // Browser uses relative /api paths so requests go through this proxy — never expose the internal backend URL
@@ -39,25 +40,9 @@ app.get('/version.json', (req, res) => {
   res.json({ version: `1.0.${build}`, build });
 });
 
-// Never cache the app shell — a cached index.html would make a "reload" re-serve the old
-// build, trapping the force-update dialog in a loop. Mirrors the nginx rule in production.
-//
-// The shell is ~4.5MB and, being no-store, is re-fetched on every load, so it is gzipped
-// here too (~1MB) to match what nginx does in production — otherwise dev feels artificially
-// slow and hides the real bandwidth profile. Uses built-in zlib rather than the `compression`
-// package, keeping this server dependency-light like the hand-rolled .env parser above.
-app.get(['/', '/index.html'], (req, res) => {
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Vary', 'Accept-Encoding');   // correctness for any proxy in between
-  const file = path.join(__dirname, 'public', 'index.html');
-  if (/\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
-    res.setHeader('Content-Encoding', 'gzip');
-    fs.createReadStream(file).pipe(zlib.createGzip({ level: 6 })).pipe(res);
-  } else {
-    fs.createReadStream(file).pipe(res);
-  }
-});
+// Revalidate on every visit: an unchanged shell returns 304 with no body, while
+// a new release is fetched immediately. Compressed public files are reused in memory.
+app.get(['/', '/index.html'], publicFiles.shell);
 
 // Proxy /api requests to backend
 const apiProxy = createProxyMiddleware({
@@ -94,6 +79,7 @@ app.get('/s/:slug', (req, res) => {
 // nginx.conf — keep the two in agreement, or dev and production disagree about staleness.
 // "no-cache" still caches; it just forces revalidation, so an unchanged asset costs a 304.
 const REVALIDATE_ASSET = /\.(svg|png|jpg|jpeg|gif|ico|webp|woff2?|ttf|eot)$/i;
+app.get(/\.(js|css|svg)$/i, publicFiles.asset);
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res, filePath) => {
     if (REVALIDATE_ASSET.test(filePath)) res.setHeader('Cache-Control', 'no-cache');
@@ -101,9 +87,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 
 // SPA fallback
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+app.get('*', publicFiles.shell);
 
 // Create HTTP server explicitly so we can attach WebSocket upgrade handler
 const server = http.createServer(app);

@@ -23,6 +23,8 @@ const puppeteer = require('../backend/node_modules/puppeteer');
         if (!request.url().startsWith('http://localhost:8080')) {
           // Deliberately slow libraries must not delay the sign-in screen.
           setTimeout(() => request.respond({ status: 200, contentType: 'text/javascript', body: '' }).catch(() => {}), 6000);
+        } else if (/\/vendor\/(xlsx-|chart-|socket\.io-)/.test(request.url())) {
+          setTimeout(() => request.continue().catch(() => {}), 6000);
         } else if (new URL(request.url()).pathname === '/api/auth/me') {
           setTimeout(() => request.respond({ status: 401, contentType: 'application/json', body: '{"message":"Unauthorized"}' }).catch(() => {}), 1200);
         } else request.continue();

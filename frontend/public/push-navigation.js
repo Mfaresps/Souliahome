@@ -6,6 +6,14 @@
     if (opening) return false;
     const target = new URL(url, location.href);
     if (target.origin !== new URL(location.href).origin) return false;
+    if (!target.searchParams.has('pushRecord')) {
+      const slug = target.hash.slice(1).split('/')[0];
+      const page = typeof _pageIdFromSlug === 'function' ? _pageIdFromSlug(slug) : slug;
+      const item = NAV_ITEMS.find(item => item.id === page);
+      if (!item || (item.adminOnly && !isAdmin()) || (item.perm && !hasPerm(item.perm))) return false;
+      navigateTo(page);
+      return true;
+    }
     pending = target;
     return window.souliaOpenPendingPush();
   };
@@ -14,7 +22,7 @@
       const element = document.querySelector(selector);
       if (element) {
         const details = element.closest('details'); if (details) details.open = true;
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.scrollIntoView({ behavior: matchMedia('(max-width:760px), (prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth', block: 'center' });
         element.classList.add('comment-mention-highlight');
         setTimeout(() => element.classList.remove('comment-mention-highlight'), 4000);
         return;

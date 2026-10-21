@@ -15,13 +15,13 @@ const functions=html.slice(html.indexOf('function _spVisibleSubnavTabs()'),html.
       await page.addScriptTag({content:'window.qs=s=>document.querySelector(s);window.isAdmin=()=>true;window.renderPerformanceDashboard=()=>{};window.renderSpDepositReview=()=>{};window.renderSpDepositHistory=()=>{};window._depLogUrl=()=>"#shopify-orders/deposit-log";'+functions+';_initShopifySubnav();switchShopifySubnav("orders",true);'});
       await page.evaluate(()=>switchShopifySubnav('deposits'));
       const entered=await page.$eval('#sp-deposits-tab-content',el=>({name:getComputedStyle(el).animationName,transform:getComputedStyle(el).transform,duration:getComputedStyle(el).animationDuration}));
-      assert.equal(entered.name,'uiPanelReveal');assert.equal(entered.transform,'none');assert.equal(entered.duration,'0.22s');
+      assert.equal(entered.name,width<=820?'none':'uiPanelReveal');assert.equal(entered.transform,'none');assert.equal(entered.duration,width<=820?'0s':'0.22s');
       await page.evaluate(()=>{switchShopifySubnav('perf');switchShopifySubnav('orders');switchShopifySubnav('deposit-log');});
       assert.equal(await page.$eval('#sp-subnav-deposit-log',el=>el.getAttribute('aria-selected')),'true');
       assert.equal(await page.$eval('#sp-orders-tab-content',el=>getComputedStyle(el).display),'none');
-      assert.equal(await page.$eval('#sp-subnav-orders',el=>getComputedStyle(el).transitionDuration.split(',')[0]),'0.22s');
+      assert.equal(await page.$eval('#sp-subnav-orders',el=>getComputedStyle(el).transitionDuration.split(',')[0]),width<=820?'0s':'0.22s');
       await page.evaluate(()=>{document.getElementById('page-shopify-orders').classList.remove('active');document.getElementById('page-inventory').classList.add('active');});
-      assert.equal(await page.$eval('#page-inventory',el=>getComputedStyle(el).animationName),'uiPageReveal');
+      assert.equal(await page.$eval('#page-inventory',el=>getComputedStyle(el).animationName),width<=820?'none':'uiPageReveal');
       assert.equal(await page.$eval('#page-inventory',el=>getComputedStyle(el).transform),'none');
       await page.$eval('#page-inventory',el=>Promise.all(el.getAnimations().map(animation=>animation.finished)));
       assert.equal(await page.$eval('#page-inventory',el=>getComputedStyle(el).opacity),'1');

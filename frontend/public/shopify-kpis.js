@@ -42,13 +42,16 @@ let _spkMenuOpen = false;
    one shared PC is used by several employees). */
 const SPK_HIDDEN_KEY = 'soulia_sp_kpi_hidden';
 function _spkHidden() {
-  try { return localStorage.getItem(_colsPrefKey(SPK_HIDDEN_KEY)) === '1'; } catch (_) { return false; }
+  try {
+    const saved = localStorage.getItem(_colsPrefKey(SPK_HIDDEN_KEY));
+    return saved === null ? matchMedia('(max-width:768px)').matches : saved === '1';
+  } catch (_) { return matchMedia('(max-width:768px)').matches; }
 }
 function _spkToggle() {
   const hide = !_spkHidden();
   try {
     if (hide) localStorage.setItem(_colsPrefKey(SPK_HIDDEN_KEY), '1');
-    else localStorage.removeItem(_colsPrefKey(SPK_HIDDEN_KEY));
+    else localStorage.setItem(_colsPrefKey(SPK_HIDDEN_KEY), '0');
   } catch (_) {}
   _spkRender();
 }
@@ -57,6 +60,8 @@ function _spkSyncToggle(hidden) {
   if (!b) return;
   const label = _spkT(hidden ? 'show' : 'hide');
   b.title = label;
+  const text = document.getElementById('sp-kpi-toggle-label');
+  if (text) text.textContent = label;
   b.setAttribute('aria-label', label);
   b.setAttribute('aria-pressed', String(!hidden));
   b.classList.toggle('is-off', hidden);
@@ -497,12 +502,11 @@ async function _spkDrawReport(s) {
   return c;
 }
 
-let _spkRepCanvas = null, _spkRepStats = null;
+let _spkRepCanvas = null, _spkRepStats = null, _spkRepFile = null;
 
 async function _spkOpenReport() {
   const s = _spkStats(_spkPeriod);
-  _spkRepStats = s; _spkRepCanvas = null;
-  const canShareFiles = !!(navigator.canShare && navigator.share);
+  _spkRepStats = s; _spkRepCanvas = null; _spkRepFile = null;
   openModal(`
     <div class="modal-head">
       <h3 style="margin:0">${_spkEsc(_spkT('reportTitle'))} · <span class="spk-rep-period">${_spkEsc(_spkT(_spkPeriod))}</span></h3>
@@ -511,7 +515,7 @@ async function _spkOpenReport() {
     <div class="spk-rep-prev" id="spk-rep-prev"><div class="spk-rep-skel"></div></div>
     <div class="spk-rep-actions">
       <button type="button" class="btn btn-primary" id="spk-rep-dl" onclick="_spkDownload()" disabled>${_spkEsc(_spkT('download'))}</button>
-      ${canShareFiles ? `<button type="button" class="btn btn-outline" id="spk-rep-share" onclick="_spkShare()" disabled hidden>${_spkEsc(_spkT('share'))}</button>` : ''}
+      <button type="button" class="btn btn-outline" id="spk-rep-share" onclick="_spkShare()" disabled>${_spkEsc(_spkT('share'))}</button>
       <button type="button" class="btn btn-outline" onclick="_spkCopyText()">${_spkEsc(_spkT('copy'))}</button>
     </div>`, 'max-width:460px');
   try {
@@ -521,11 +525,11 @@ async function _spkOpenReport() {
     const prev = document.getElementById('spk-rep-prev');
     if (prev) prev.innerHTML = `<img src="${c.toDataURL('image/png')}" alt="${_spkEsc(_spkT('reportTitle'))}">`;
     const dl = document.getElementById('spk-rep-dl'); if (dl) dl.disabled = false;
-    const sh = document.getElementById('spk-rep-share');
-    if (sh) {
-      const probe = new File([new Blob([''], { type: 'image/png' })], 'r.png', { type: 'image/png' });
-      if (navigator.canShare({ files: [probe] })) { sh.hidden = false; sh.disabled = false; }
-    }
+    // Prepare the image before the click so native sharing keeps user activation.
+    const b = await new Promise(resolve => c.toBlob(resolve, 'image/png'));
+    if (_spkRepStats !== s) return;
+    _spkRepFile = b ? new File([b], _spkFileName(), { type: 'image/png' }) : null;
+    const sh = document.getElementById('spk-rep-share'); if (sh) sh.disabled = false;
   } catch (e) {
     console.error('report draw failed', e);
     const prev = document.getElementById('spk-rep-prev');
@@ -557,9 +561,12 @@ async function _spkDownload() {
 }
 async function _spkShare() {
   try {
-    const b = await _spkBlob();
-    const f = new File([b], _spkFileName(), { type: 'image/png' });
-    await navigator.share({ files: [f], text: _spkReportText(_spkRepStats) });
+    if (!_spkRepStats || !_spkRepCanvas) return;
+    const text = _spkReportText(_spkRepStats);
+    if (typeof navigator.share !== 'function') { await _spkCopyText(); return; }
+    const data = { text };
+    if (_spkRepFile && navigator.canShare?.({ files: [_spkRepFile] })) data.files = [_spkRepFile];
+    await navigator.share(data);
   } catch (e) { if (e && e.name !== 'AbortError') toast(_spkT('drawFail'), true); }
 }
 async function _spkCopyText() {

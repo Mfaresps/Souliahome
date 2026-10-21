@@ -38,7 +38,9 @@ async function loadInvoiceThumbnails(items) {
 }
 
 async function buildCompactInvoiceCanvas(tx, preview = false) {
-  await window.InvoiceUnitIdentities?.ensure(tx);
+  preview = preview || tx?._invoicePreview === true;
+  // A Shopify preview has an order ID, not a persisted sales transaction ID.
+  if (!preview) await window.InvoiceUnitIdentities?.ensure(tx);
   const items = tx.items || [];
   const [thumbnails] = await Promise.all([loadInvoiceThumbnails(items), document.fonts.ready]);
   const en = currentLang === 'en';
@@ -96,7 +98,7 @@ async function buildCompactInvoiceCanvas(tx, preview = false) {
     const textWidth = cellWidth - 144;
     const name = wrap(item.name || item.code || '—', textWidth, 20, true);
     const details = wrap(`${label('الكمية', 'Qty')}: ${Number(item.qty) || 0} × ${money(item.price)}`, textWidth, 18);
-    const identities = (window.InvoiceUnitIdentities?.imageLines(tx, item) || []).flatMap(line => wrap(line, textWidth, 14));
+    const identities = (preview ? [] : window.InvoiceUnitIdentities?.imageLines(tx, item) || []).flatMap(line => wrap(line, textWidth, 14));
     return { name, details, identities, thumbnail: thumbnails[index],
       total: money(item.total ?? ((Number(item.qty) || 0) * (Number(item.price) || 0))),
       height: Math.max(96, name.length * 32 + details.length * 30 + 32 + identities.length * 22) + 24 };
@@ -259,6 +261,7 @@ async function exportInvoiceImage(source, id, action) {
       setTimeout(() => URL.revokeObjectURL(url), 60000);
       toast(en ? 'Invoice image downloaded' : 'تم تحميل صورة الفاتورة');
     }
+    return true;
   } catch (error) {
     if (renderingFailed) {
       fail((en ? 'Could not create invoice image: ' : 'تعذّر إنشاء صورة الفاتورة: ') + error.message);
@@ -269,5 +272,6 @@ async function exportInvoiceImage(source, id, action) {
       fail(copy ? (en ? 'Could not copy image. Use Download invoice image.' : 'تعذّر نسخ الصورة. استخدم تحميل صورة الفاتورة.')
         : (en ? 'Could not create invoice image' : 'تعذّر إنشاء صورة الفاتورة'));
     }
+    return false;
   }
 }

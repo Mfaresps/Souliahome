@@ -1,0 +1,33 @@
+/* Keep navigation and secondary actions in one row above the order search. */
+#page-shopify-orders #shopify-page-header.sp-compact-header{display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:8px;margin-bottom:8px;overflow:visible}
+#page-shopify-orders #shopify-page-header.sp-compact-header h2{margin-inline-end:auto!important;font-size:1.1rem!important;white-space:nowrap}
+#page-shopify-orders .sp-header-menu{position:relative;min-width:0;flex:0 0 auto}
+#page-shopify-orders #sp-subnav-shell{display:block;margin:0}
+#page-shopify-orders .sp-header-menu>summary{display:flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:0 10px;list-style:none;cursor:pointer;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-size:.8rem;font-weight:650;white-space:nowrap}
+#page-shopify-orders .sp-header-menu>summary::-webkit-details-marker{display:none}
+#page-shopify-orders .sp-header-menu>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#page-shopify-orders #sp-tools-menu>summary{width:38px;padding:0}
+#page-shopify-orders .sp-header-menu[open]>summary{border-color:var(--accent);background:var(--primary-pale)}
+#page-shopify-orders .sp-subnav-shell #sp-subnav,#page-shopify-orders .sp-tools-panel{position:absolute;inset-inline-end:0;top:calc(100% + 6px);z-index:220;display:flex;flex-direction:column;align-items:stretch;gap:4px;width:240px;max-width:calc(100vw - 40px);max-height:65dvh;overflow:auto;margin:0;padding:6px;border:1px solid var(--border);border-radius:12px;background:var(--bg);box-shadow:0 10px 32px #15302126}
+#page-shopify-orders .sp-header-menu:not([open])>#sp-subnav,#page-shopify-orders .sp-header-menu:not([open])>.sp-tools-panel{display:none!important}
+#page-shopify-orders .sp-subnav-shell #sp-subnav .mov-main-tab,#page-shopify-orders #shopify-page-header .sp-tools-panel button{display:flex;align-items:center;justify-content:flex-start;gap:9px;width:100%;height:auto;min-height:44px!important;margin:0;padding:10px 12px;border:0;border-radius:8px;white-space:normal;text-align:start;background:transparent;color:var(--text);font-size:.8rem;box-sizing:border-box}
+#page-shopify-orders .sp-subnav-shell #sp-subnav .mov-main-tab.active{background:var(--primary-pale);color:var(--accent)}
+#page-shopify-orders #shopify-page-header .sp-tools-panel button:hover{background:var(--surface)}
+#page-shopify-orders .sp-tools-panel button svg{width:17px;height:17px;flex-shrink:0}
+#page-shopify-orders #shopify-last-refresh{display:block;margin:0;padding:8px 12px;border-top:1px solid var(--border);font-size:.7rem;color:var(--text-muted)}
+#sp-section-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 4px;border-radius:20px;background:var(--primary-pale);color:var(--accent);font-size:11px}
+#sp-section-count[hidden]{display:none}
+.sp-pull-indicator{position:fixed;top:80px;left:50%;z-index:230;display:grid;place-items:center;width:38px;height:38px;border:1px solid var(--border);border-radius:50%;background:var(--bg);color:var(--accent);box-shadow:0 3px 12px #15302126;pointer-events:none;transform:translate(-50%,-20px);opacity:0}
+.sp-pull-indicator.is-visible{opacity:1}
+.sp-pull-indicator svg{width:22px;height:22px}
+.sp-pull-indicator.is-loading svg{animation:spPullSpin .7s linear infinite}
+@keyframes spPullSpin{to{transform:rotate(360deg)}}
+@media(max-width:768px){
+  #page-shopify-orders .sp-sticky-head{padding-top:8px;padding-bottom:8px}
+  #page-shopify-orders #shopify-page-header .sp-refresh-btn{display:none!important}
+  #page-shopify-orders #shopify-page-header.sp-compact-header h2{font-size:1rem!important;gap:4px!important}
+  #page-shopify-orders .sp-header-menu>summary{min-height:40px;padding-inline:8px;font-size:.75rem}
+  #page-shopify-orders #sp-tools-menu>summary{width:40px;padding:0}
+  #page-shopify-orders #sp-subnav{width:210px}
+}
+@media(prefers-reduced-motion:reduce){.sp-pull-indicator.is-loading svg{animation-duration:1.4s}}

@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import * as path from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import sharp from 'sharp';
 import { createWorker, Worker } from 'tesseract.js';
 import { mergeReceiptPasses, parseReceiptText, ParsedReceipt } from './deposit-receipt-parser.util';
@@ -43,6 +44,8 @@ export interface OcrResult extends ParsedReceipt {
 export class DepositReceiptOcrService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(DepositReceiptOcrService.name);
   private worker: Promise<Worker> | null = null;
+  private workerInstance: Worker | null = null;
+  private startup: Promise<Worker> | null = null;
   private queue: Promise<unknown> = Promise.resolve();
 
   onModuleInit(): void {
@@ -60,27 +63,49 @@ export class DepositReceiptOcrService implements OnModuleInit, OnModuleDestroy {
 
   private getWorker(): Promise<Worker> {
     if (!this.worker) {
-      const cachePath = process.env.OCR_CACHE_DIR || path.join(process.cwd(), 'tessdata-cache');
-      this.worker = createWorker(['ara', 'eng'], 1, {
+      // Tesseract can leave its startup promise pending on a language-load error.
+      // Do not spawn another worker on every subsequent upload in that state.
+      if (this.startup) throw new Error('OCR initialization is still pending; manual entry is available');
+      const localLanguages = ['ara', 'eng'].every(lang => existsSync(path.join(process.cwd(), `${lang}.traineddata`)));
+      const cachePath = process.env.OCR_CACHE_DIR || (localLanguages ? process.cwd() : path.join(process.cwd(), 'tessdata-cache'));
+      mkdirSync(cachePath, { recursive: true });
+      const startup = createWorker(['ara', 'eng'], 1, {
         cachePath,
         // Tesseract also reports rejections from a worker event callback. Without this
         // handler it throws outside our promise catch and terminates the API process.
         errorHandler: error => this.logger.warn(`OCR worker failed: ${String(error)}`),
-      }).then(async (w) => {
+      });
+      this.startup = startup;
+      const ready = startup.then(async (w) => {
+        if (this.startup === startup) this.startup = null;
+        if (this.worker !== ready) {
+          void w.terminate().catch(() => undefined);
+          throw new Error('OCR worker initialization expired');
+        }
+        this.workerInstance = w;
         // Sparse-text segmentation: a receipt is scattered labels and figures, not paragraphs.
         await w.setParameters({ tessedit_pageseg_mode: '11' as any });
         return w;
       });
-      this.worker.catch(() => { this.worker = null; });
+      this.worker = ready;
+      ready.catch(() => {
+        if (this.startup === startup) this.startup = null;
+        if (this.worker === ready) { this.worker = null; this.workerInstance = null; }
+      });
     }
     return this.worker;
   }
 
   private async dropWorker(): Promise<void> {
-    const w = this.worker;
+    const w = this.workerInstance;
     this.worker = null;
+    this.workerInstance = null;
     if (!w) return;
-    try { await (await w).terminate(); } catch { /* already gone */ }
+    // A pending createWorker() or terminate() must not defeat the OCR deadline.
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([w.terminate().catch(() => undefined), new Promise<void>(resolve => { timer = setTimeout(resolve, 1000); })]);
+    } finally { if (timer) clearTimeout(timer); }
   }
 
   /**
@@ -120,25 +145,39 @@ export class DepositReceiptOcrService implements OnModuleInit, OnModuleDestroy {
 
   /** Never throws: a failed read is an empty suggestion, never a failed upload. */
   read(image: Buffer): Promise<OcrResult> {
-    const job = this.queue.then(() => this.readNow(image));
+    const started = Date.now();
+    let expired = false;
+    let timer: NodeJS.Timeout | undefined;
+    const fallback = (): OcrResult => ({ amount: null, method: '', pattern: '', reference: '', dateText: '', confident: false, ran: false, ms: Date.now() - started });
+    // The caller's budget includes time waiting behind other receipts.
+    const deadline = new Promise<OcrResult>(resolve => {
+      timer = setTimeout(() => { expired = true; resolve(fallback()); }, OCR_TIMEOUT_MS + 1000);
+    });
+    const job = this.queue.then(() => {
+      const remaining = OCR_TIMEOUT_MS - (Date.now() - started);
+      return expired || remaining <= 0 ? fallback() : this.readNow(image, remaining);
+    });
     this.queue = job.catch(() => undefined);
-    return job;
+    return Promise.race([job, deadline]).finally(() => { if (timer) clearTimeout(timer); });
   }
 
-  private async readNow(image: Buffer): Promise<OcrResult> {
+  private async readNow(image: Buffer, timeoutMs = OCR_TIMEOUT_MS): Promise<OcrResult> {
     const started = Date.now();
     const empty: OcrResult = {
       amount: null, method: '', pattern: '', reference: '', dateText: '', confident: false, ran: false, ms: 0,
     };
     let timer: NodeJS.Timeout | undefined;
     let receiptResult: ParsedReceipt | undefined;
+    let cancelled = false;
     try {
       const work = (async () => {
         const worker = await this.getWorker();
+        if (cancelled) throw new Error('OCR request expired');
         const parsed: ParsedReceipt[] = [];
         const texts: string[] = [];
         const preparedPasses = await this.passes(image);
         for (const prepared of preparedPasses.slice(0, 3)) {
+          if (cancelled) throw new Error('OCR request expired');
           const { data } = await worker.recognize(prepared);
           texts.push(data.text || '');
           parsed.push(parseReceiptText(data.text || ''));
@@ -187,7 +226,7 @@ export class DepositReceiptOcrService implements OnModuleInit, OnModuleDestroy {
         return merged;
       })();
       const timeout = new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error('OCR timeout')), OCR_TIMEOUT_MS);
+        timer = setTimeout(() => { cancelled = true; reject(new Error('OCR timeout')); }, timeoutMs);
       });
       const merged = await Promise.race([work, timeout]);
       return { ...merged, ran: true, ms: Date.now() - started };

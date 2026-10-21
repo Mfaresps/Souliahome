@@ -31,18 +31,22 @@ describe('Global search shared unit scanner in Chromium', () => {
         if (mode === 'denied') { res.statusCode = 403; res.end(JSON.stringify({ message: 'Permission denied' })); return; }
         if (url.pathname.endsWith('/scans/validate')) {
           if (mode === 'pending') { res.statusCode = 503; res.end('{}'); return; }
-          const result = { outcome: mode === 'unknown' ? 'rejected' : 'accepted', code: mode === 'unknown' ? 'UNKNOWN_BARCODE' : 'VALIDATED', operationId: 'f'.repeat(64), unit: { _id: id, barcode } };
+          const result = { outcome: mode === 'unknown' ? 'rejected' : 'accepted', code: mode === 'unknown' ? 'UNKNOWN_BARCODE' : 'VALIDATED', operationId: 'f'.repeat(64), unit: { _id: id, barcode, productId: 'product-1' } };
           receipts.set(data.operationKey, result); res.end(JSON.stringify(result)); return;
         }
         if (url.pathname.includes('/operations/')) {
           const result = receipts.get(url.pathname.split('/').pop()!); res.end(JSON.stringify(result ? { state: 'resolved', result } : { state: 'unresolved' })); return;
         }
         if (mode === 'details-fail') { res.statusCode = 500; res.end('{}'); return; }
+        if (['slow-stock','failed-stock'].includes(mode) && (url.pathname === '/api/transactions/inventory' || url.searchParams.has('productId'))) {
+          if (mode === 'failed-stock') { res.statusCode = 500; res.end('{}'); return; }
+          await new Promise(done => setTimeout(done, 1800));
+        }
         const statuses = ['available','reserved','picking','prepared','shipped','delivered'];
         const status = statuses.includes(mode) ? mode : ['stale-search','missing-order'].includes(mode) ? 'picking' : 'inspection-required';
         const assignment = ['reserved','picking','prepared','shipped','delivered'].includes(status) ? {transactionId:'507f1f77bcf86cd799439040',lineId:'line-1'} : null;
         if (url.pathname === '/api/inventory-units/' + barcode) { res.end(JSON.stringify({unit:{_id:id,barcode,productId:'product-1',warehouseCode:'Main',status,assignment},purchaseInvoice:{transactionId:'507f1f77bcf86cd799439041',ref:'PUR-88',date:'2026-10-17',createdAt:'2026-10-17T10:00:00Z'},assignmentOrder:assignment && mode !== 'missing-order' ? {transactionId:assignment.transactionId,ref:'2773',client:'Fatma Hassan',pickupStatus:'Preparing',date:'2026-10-20'} : null}));return; }
-        if (url.pathname.startsWith('/api/products/')) { res.end(JSON.stringify({ _id: 'product-1', name: '<img src=x onerror=alert(1)> Basket', code: 'Code 02', sellPrice: 249.5, buyPrice: 50, size: 'Large', colors: ['Red'] })); return; }
+        if (url.pathname.startsWith('/api/products/')) { res.end(JSON.stringify({ _id: 'product-1', name: '<img src=x onerror=alert(1)> Basket', code: 'Code 02', sellPrice: 249.5, buyPrice: 50, size: 'Large', colors: ['Red'], ...(mode === 'slow-stock' ? {imageUrl:'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="30" height="30"/%3E'} : {}) })); return; }
         if(url.pathname==='/api/transactions/inventory'){res.end(JSON.stringify([]));return;}
         res.end(JSON.stringify({ total:3,units: [{ _id: id, barcode, productId: 'product-1', warehouseCode: 'Main', status: mode==='stale-search'?'available':status,assignment,product: { name: 'Basket', code: 'Code 02' } }] })); return;
       }
@@ -60,6 +64,22 @@ describe('Global search shared unit scanner in Chromium', () => {
   async function scan() { await page.type('[data-scan-input]', barcode); await page.keyboard.press('Enter'); }
   const result = () => page.waitForSelector('[data-gs-result] .gs-unit-price');
   const scans = () => requests.filter(row => row.path.endsWith('/scans/validate'));
+  it('shows the product and loaded eager image while slow stock calculations are still pending', async () => {
+    mode='slow-stock'; await open(); await scan(); await result();
+    expect(await page.$eval('.gs-unit-available', el => el.textContent)).toContain('loading');
+    await page.waitForFunction(() => {const image=document.querySelector<HTMLImageElement>('.gs-product-image');return image?.complete && image.naturalWidth>0;}, {timeout:1200});
+    expect(await page.$eval('.gs-product-image', el => [(el as HTMLImageElement).loading,(el as HTMLImageElement).fetchPriority])).toEqual(['eager','high']);
+    expect(requests.filter(row => row.path === '/api/inventory-units' && !row.data)).toHaveLength(1);
+    await page.waitForFunction(() => document.querySelector('.gs-unit-available')?.textContent === 'Available to sell: 3');
+  });
+  it('keeps the identified product when stock fails and retries only stock without validating again', async () => {
+    mode='failed-stock'; await open(); await scan(); await result();
+    await page.waitForSelector('.gs-unit-available button');
+    expect(await page.$eval('.gs-unit-price', el=>el.textContent)).toContain('249.50');
+    mode=''; await page.click('.gs-unit-available button');
+    await page.waitForFunction(() => document.querySelector('.gs-unit-available')?.textContent === 'Available to sell: 3');
+    expect(scans()).toHaveLength(1);
+  });
   it('preserves ordinary general search and requests no camera/scan on typing', async () => {
     await page.type('#global-search', 'Basket');
     expect(await page.evaluate(() => (window as any).eval('queries').at(-1))).toBe('Basket');

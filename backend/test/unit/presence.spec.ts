@@ -3,14 +3,58 @@ import { AuthController } from '../../src/auth/auth.controller';
 
 jest.mock('../../src/shared/geo-lookup.util', () => ({ fetchGeo: jest.fn(async () => null) }));
 
-function fixture() {
+function fixture(store: { config: any } = { config: null }) {
   const user = { _id: 'alice', name: 'Alice', username: 'alice', role: 'staff', isActive: true };
   const users = { findById: jest.fn(async () => user), findAll: jest.fn(async () => [user]), updateLastSeen: jest.fn(async () => {}) };
-  const gateway = new PresenceGateway({ verify: () => ({ sub: 'alice' }) } as any, users as any);
+  const collection = {
+    findOne: jest.fn(async () => store.config ? { config: store.config } : null),
+    updateOne: jest.fn(async (_filter, update) => { store.config = update.$set.config; }),
+  };
+  const gateway = new PresenceGateway({ verify: () => ({ sub: 'alice' }) } as any, users as any, { collection: () => collection } as any);
   gateway.server = { emit: jest.fn() } as any;
   const client = (id: string) => ({ id, connected: true, handshake: { auth: { token: 'test' }, headers: {}, address: '127.0.0.1' }, on: jest.fn(), emit: jest.fn(), disconnect: jest.fn() } as any);
-  return { gateway, users, user, client };
+  return { gateway, users, user, client, collection, store };
 }
+
+it('returns disabled state instead of leaving stale employee banners visible', async () => {
+  const { gateway, client } = fixture();
+  const employee = client('employee');
+  await gateway.handleConnection(employee);
+  expect(employee.emit).toHaveBeenCalledWith('banner:changed', { enabled: false });
+});
+
+it('persists administrator visibility changes and restores them after a gateway restart', async () => {
+  const { gateway, user, client, collection, store } = fixture();
+  user.role = 'admin';
+  const admin = client('admin');
+  await gateway.handleConnection(admin);
+  const publish = admin.on.mock.calls.find(([event]: any[]) => event === 'banner:publish')[1];
+  const send = (cfg: any) => new Promise(resolve => publish(cfg, resolve));
+  expect(await send({ enabled: true, messages: ['Hello'] })).toEqual({ ok: true });
+  expect(await send({ enabled: false, messages: ['Hello'] })).toEqual({ ok: true });
+  expect(collection.updateOne).toHaveBeenCalledTimes(2);
+  expect(gateway.server.emit).toHaveBeenCalledWith('banner:changed', { enabled: false, messages: ['Hello'] });
+  const restarted = fixture(store), employee = restarted.client('reconnected');
+  await restarted.gateway.handleConnection(employee);
+  expect(employee.emit).toHaveBeenCalledWith('banner:changed', store.config);
+});
+
+it('rejects employee publishing and reports failed saves without broadcasting them', async () => {
+  const { gateway, client, collection } = fixture();
+  const employee = client('employee');
+  await gateway.handleConnection(employee);
+  const publish = employee.on.mock.calls.find(([event]: any[]) => event === 'banner:publish')[1], ack = jest.fn();
+  publish({ enabled: true }, ack);
+  expect(ack).toHaveBeenCalledWith({ ok: false });
+  expect(collection.updateOne).not.toHaveBeenCalled();
+  const adminFixture = fixture(); adminFixture.user.role = 'admin';
+  const admin = adminFixture.client('admin'); await adminFixture.gateway.handleConnection(admin);
+  adminFixture.collection.updateOne.mockRejectedValueOnce(new Error('database unavailable'));
+  const adminPublish = admin.on.mock.calls.find(([event]: any[]) => event === 'banner:publish')[1];
+  const result = await new Promise(resolve => adminPublish({ enabled: false }, resolve));
+  expect(result).toEqual({ ok: false });
+  expect(adminFixture.gateway.server.emit).not.toHaveBeenCalledWith('banner:changed', expect.anything());
+});
 
 it('keeps a user online until their final tab disconnects and records last seen', async () => {
   const { gateway, users, client } = fixture();

@@ -12,7 +12,7 @@
     if (key !== actor) { actor = key; cache.clear(); pending.clear(); revisions.clear(); }
     return key;
   }
-  const isSale = tx => tx?.type === 'مبيعات' && /^[a-f\d]{24}$/i.test(String(tx._id || ''));
+  const isSale = tx => tx?._invoicePreview !== true && tx?.type === 'مبيعات' && /^[a-f\d]{24}$/i.test(String(tx._id || ''));
   const names = { picking: ['Scanned / preparing', 'تم المسح / قيد التحضير'], prepared: ['Prepared', 'مجهزة'], shipped: ['With carrier', 'مع شركة الشحن'],
     delivered: ['Delivered', 'تم تسليمها'], returned: ['Returned to warehouse', 'عادت للمخزن'], available: ['Available', 'متاحة'],
     'inspection-required': ['Awaiting inspection', 'بانتظار الفحص'], damaged: ['Damaged', 'تالفة'], lost: ['Lost', 'مفقودة'],

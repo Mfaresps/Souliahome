@@ -95,6 +95,35 @@ afterEach(() => {
   spy.mockReset();
 });
 
+it('bounds receipt storage even when DNS/connection setup never completes', async () => {
+  jest.useFakeTimers();
+  const req: any = new EventEmitter();
+  req.write = jest.fn(); req.end = jest.fn(); req.destroy = jest.fn();
+  spy.mockReturnValue(req);
+  try {
+    const result = r2PutObject(CFG, 'deposit-receipts/test.jpg', Buffer.from('image'), 'image/jpeg', 30_000);
+    await jest.advanceTimersByTimeAsync(30_000);
+    await expect(result).resolves.toMatchObject({ ok: false });
+    expect(req.destroy).toHaveBeenCalled();
+  } finally { jest.useRealTimers(); }
+});
+
+it.each(['EACCES', 'ETIMEDOUT', 'ECONNRESET'])('preserves %s from a connection AggregateError with an empty message', async code => {
+  const nested = Object.assign(new Error(''), { code });
+  const error = Object.assign(new Error(''), { name: 'AggregateError', errors: [nested] });
+  spy.mockImplementation(() => {
+    const req: any = new EventEmitter();
+    req.write = jest.fn(); req.destroy = jest.fn();
+    req.end = () => queueMicrotask(() => req.emit('error', error));
+    return req;
+  });
+  const result = await r2PutObject(CFG, 'deposit-receipts/test.jpg', Buffer.from('image'), 'image/jpeg');
+  expect(result.ok).toBe(false);
+  expect(result.message).toContain(code);
+  expect(result.message).not.toContain('خطأ غير معروف');
+  expect(result.message).not.toContain(CFG.secretAccessKey);
+});
+
 function authOf(rec: Captured): string {
   return rec.headers['Authorization'] || '';
 }

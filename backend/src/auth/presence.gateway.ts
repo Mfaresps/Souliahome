@@ -7,6 +7,8 @@ import {
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 import {
   buildClientContext,
   extractIpFrom,
@@ -30,9 +32,6 @@ interface ConnectedUser {
   lastActivity: string;
 }
 
-// Latest published banner config — persists in-process so new connections receive it
-let latestBannerCfg: unknown = null;
-
 @WebSocketGateway({
   cors: { origin: true },
   namespace: '/',
@@ -48,10 +47,12 @@ export class PresenceGateway
 
   // Map socketId -> txId being edited (for cleanup on disconnect)
   private editingLocks = new Map<string, string>();
+  private bannerWrites: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -112,25 +113,32 @@ export class PresenceGateway
       });
 
       // Banner publish: admin emits banner:publish → server stores + rebroadcasts to all clients
-      client.on('banner:publish', (cfg: unknown) => {
+      client.on('banner:publish', (cfg: unknown, ack?: (result: { ok: boolean }) => void) => {
         const sender = this.connectedUsers.get(client.id);
-        if (!sender || sender.role !== 'admin') return; // only admins may publish
-        if (!cfg || typeof cfg !== 'object') return;
-        latestBannerCfg = cfg;
-        this.server.emit('banner:changed', cfg);
-      });
-
-      // Send current banner state to the newly connected client immediately
-      if (latestBannerCfg) {
-        client.emit('banner:changed', latestBannerCfg);
-      }
-
-      // Allow any authenticated client to request current banner state
-      client.on('banner:request', () => {
-        if (latestBannerCfg) {
-          client.emit('banner:changed', latestBannerCfg);
+        if (!sender || sender.role !== 'admin' || !cfg || typeof cfg !== 'object' || typeof (cfg as any).enabled !== 'boolean') {
+          if (typeof ack === 'function') ack({ ok: false });
+          return;
         }
+        // Serialize saves so a rapid disable cannot be overtaken by an older publish.
+        this.bannerWrites = this.bannerWrites.then(async () => {
+          await this.connection.collection<{ _id: string; config: object }>('bannerconfig').updateOne(
+            { _id: 'current' }, { $set: { config: cfg } }, { upsert: true },
+          );
+          this.server.emit('banner:changed', cfg);
+          if (typeof ack === 'function') ack({ ok: true });
+        }).catch(() => { if (typeof ack === 'function') ack({ ok: false }); });
       });
+
+      // Always answer, including an unconfigured/disabled banner, to clear stale caches.
+      const sendBanner = async () => {
+        try {
+          await this.bannerWrites;
+          const saved = await this.connection.collection<{ _id: string; config: object }>('bannerconfig').findOne({ _id: 'current' });
+          if (client.connected) client.emit('banner:changed', saved?.config || { enabled: false });
+        } catch { if (client.connected) client.emit('banner:changed', { enabled: false }); }
+      };
+      client.on('banner:request', sendBanner);
+      await sendBanner();
     } catch {
       client.disconnect();
     }

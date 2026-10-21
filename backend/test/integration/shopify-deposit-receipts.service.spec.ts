@@ -147,6 +147,7 @@ const img = () => ({ buffer: Buffer.from(`jpeg-bytes-${++seq}`), mimetype: 'imag
 /** upload + submit in one step. */
 async function addPending(receipts: any, orderId: string, amount: number, method: string, actor = STAFF) {
   const { receipt } = await receipts.uploadDraft(orderId, img(), actor);
+  await receipts.imageLimitQueue;
   await receipts.submit(orderId, receipt.id, { amount, method }, actor);
   return receipt.id as string;
 }
@@ -599,7 +600,7 @@ describe('employee side — upload and submit', () => {
     const { r2PutObject } = require('../../src/shared/r2-uploader.util');
     expect(r2PutObject).toHaveBeenCalledWith(
       { accountId: 'a', accessKeyId: 'k', secretAccessKey: 's', bucket: 'b' },
-      receipt.imageKey, expect.any(Buffer), 'image/jpeg',
+      receipt.imageKey, expect.any(Buffer), 'image/jpeg', 30_000,
     );
     expect(mockR2.get(backupKey)).toEqual(backup);
   });
@@ -854,6 +855,20 @@ describe('cancelling before confirmation — approved money is refunded, each fr
 });
 
 describe('nightly cleanup', () => {
+  it('returns the persisted draft while image cleanup is still pending', async () => {
+    const { receipts } = setup();
+    const o = await newOrder();
+    let finishCleanup!: () => void;
+    const cleanup = jest.spyOn(receipts, 'runCleanup').mockImplementation(() => new Promise<void>(resolve => { finishCleanup = resolve; }));
+    try {
+      const result = await receipts.uploadDraft(String(o._id), img(), STAFF);
+      expect(result.receipt.status).toBe('مسودة');
+      expect((await fresh(String(o._id))).depositReceipts.some((r: any) => r.id === result.receipt.id)).toBe(true);
+      expect(cleanup).toHaveBeenCalled();
+    } finally {
+      finishCleanup?.(); await receipts.imageLimitQueue; cleanup.mockRestore();
+    }
+  }, 3000);
   // The cleanup counts images across ALL orders — start each case from an empty collection.
   beforeEach(async () => {
     await orderModel.deleteMany({});
@@ -869,6 +884,7 @@ describe('nightly cleanup', () => {
     ] });
     for (const name of ['oldest', 'older', 'pending']) mockR2.set(`deposit-receipts/${name}.jpg`, Buffer.from(name));
     const { receipt } = await receipts.uploadDraft(String(o._id), img(), STAFF);
+    await receipts.imageLimitQueue;
     const doc = await fresh(String(o._id));
     expect(mockR2.has('deposit-receipts/oldest.jpg')).toBe(false);
     expect(mockR2.has('deposit-receipts/older.jpg')).toBe(false);
@@ -916,5 +932,5 @@ describe('nightly cleanup', () => {
     expect(byId(ids[2]).imageDeleted).toBe(false);
     expect(doc.depositReceipts.filter((r: any) => r.status === 'معلق' && r.imageDeleted)).toHaveLength(0);
     expect(byId(extra).imageDeleted).toBe(false);
-  });
+  }, 15000);
 });

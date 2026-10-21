@@ -41,33 +41,31 @@
     resultHost.hidden = false;
     resultHost.textContent = tr('Loading product details…', 'جارٍ تحميل تفاصيل المنتج…');
     try {
-      const [response, identity] = await Promise.all([
-        api('/inventory-units?q=' + encodeURIComponent(unit.barcode) + '&limit=1', { signal: AbortSignal.timeout(10000) }),
-        api('/inventory-units/' + encodeURIComponent(unit.barcode), { signal: AbortSignal.timeout(10000) })
+      // Validation already supplies the exact product ID. Fetch it alongside the
+      // fresh identity instead of repeating a broad unit/catalogue search.
+      const loadProduct = id => api('/products/' + encodeURIComponent(id), { signal: AbortSignal.timeout(10000) });
+      const [identity, earlyProduct] = await Promise.all([
+        api('/inventory-units/' + encodeURIComponent(unit.barcode), { signal: AbortSignal.timeout(10000) }),
+        unit.productId ? loadProduct(unit.productId) : Promise.resolve(null)
       ]);
       if (request !== generation || !dialog.open || actorId() !== openingActor) return;
       if (!allowed()) throw new Error(tr('Permission denied.', 'ليس لديك صلاحية العرض.'));
-      const found = response.units?.find(item => String(item._id) === String(unit._id));
       if (String(identity.unit?._id) !== String(unit._id)) throw new Error(tr('Unit details changed. Scan again.', 'تغيّرت بيانات القطعة. أعد المسح.'));
-      const row = found ? { ...found, ...identity.unit, product: found.product } : identity.unit?.isPack ? {...identity.unit,product:{}} : null;
-      if ((!row?.product?.code && !row?.isPack) || !row.productId) throw new Error(tr('The matched product is unavailable.', 'الصنف المرتبط بهذه الوحدة غير متاح.'));
-      const [product, inventory, availableUnits] = await Promise.all([
-        api('/products/' + encodeURIComponent(row.productId), { signal: AbortSignal.timeout(10000) }),
-        api('/transactions/inventory', { signal: AbortSignal.timeout(10000) }),
-        api('/inventory-units?productId=' + encodeURIComponent(row.productId) + '&status=available&limit=1', { signal: AbortSignal.timeout(10000) })
-      ]);
+      const row = identity.unit;
+      if (!row.productId || (unit.productId && String(row.productId) !== String(unit.productId))) throw new Error(tr('The matched product is unavailable.', 'الصنف المرتبط بهذه الوحدة غير متاح.'));
+      const product = earlyProduct || await loadProduct(row.productId);
       if (request !== generation || !dialog.open || actorId() !== openingActor || !allowed()) return;
-      if (String(product._id) !== String(row.productId) || (!row.isPack && product.code !== row.product.code)) throw new Error(tr('Product details changed. Reload the details.', 'تغيّرت بيانات الصنف. أعد تحميل البيانات.'));
+      if (String(product._id) !== String(row.productId) || !product.code) throw new Error(tr('Product details changed. Reload the details.', 'تغيّرت بيانات الصنف. أعد تحميل البيانات.'));
       resultHost.replaceChildren();
       const card = document.createElement('div'); card.className = 'gs-product-card';
-      const image = document.createElement('img'); image.className = 'gs-product-image'; image.alt = product.name || ''; image.loading = 'lazy';
+      const image = document.createElement('img'); image.className = 'gs-product-image'; image.alt = product.name || ''; image.loading = 'eager'; image.fetchPriority = 'high'; image.decoding = 'async';
       image.onerror = () => { image.hidden = true; card.classList.add('gs-no-image'); };
       const imageUrl = product.imageUrl || product.image;
       if (imageUrl) image.src = imageUrl;
       else { image.hidden = true; card.classList.add('gs-no-image'); }
       card.append(image);
       const details = document.createElement('div'); details.className = 'gs-product-details';
-      const name = document.createElement('h3'); name.textContent = product.name || row.product.name || ''; details.append(name);
+      const name = document.createElement('h3'); name.textContent = product.name || ''; details.append(name);
       const statusNames = { opened: ['Opened pack','باك مفتوح'], mixed:['Mixed status','حالات مختلفة'], inconsistent:['Review pack','راجع الباك'], available: ['Available','متاحة'], reserved: ['Reserved','محجوزة'], picking: ['Being prepared','قيد التحضير'], prepared: ['Prepared','مجهّزة'], shipped: ['Shipped','مع شركة الشحن'], delivered: ['Delivered','تم التسليم'], returned: ['Returned','مرتجعة'], 'inspection-required': ['Awaiting inspection','بانتظار الفحص'], damaged: ['Damaged','تالفة'], lost: ['Lost','مفقودة'], retired: ['Retired','مستبعدة'], 'supplier-return-pending': ['Reserved for supplier return','محجوزة لمرتجع مورد'], 'returned-to-supplier': ['Returned to supplier','مرتجعة للمورد'] };
       const state = document.createElement('div'); state.className = 'gs-unit-state'; state.dataset.status = row.status;
       const badge = document.createElement('span'); badge.className = 'gs-unit-status'; badge.setAttribute('role','status');
@@ -119,16 +117,36 @@
       amount.textContent = typeof product.sellPrice === 'number' && Number.isFinite(product.sellPrice) && product.sellPrice >= 0
         ? new Intl.NumberFormat('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(product.sellPrice) + tr(' EGP', ' ج.م') : tr('Unavailable', 'غير متاح');
       price.append(priceLabel, amount); details.append(price);
-      const stock = inventory.find(item => String(item._id) === String(row.productId) || item.code === product.code);
       const qty = document.createElement('p'); qty.className = 'gs-unit-available';
-      qty.textContent = tr('Available to sell: ', 'متاح للبيع: ') + (Number.isFinite(Number(availableUnits.total)) ? Number(availableUnits.total) : '—');
+      qty.textContent = tr('Available to sell: loading…', 'متاح للبيع: جارٍ التحميل…');
       details.append(qty);
-      if (stock && Number.isFinite(Number(stock.current))) {
-        const onHand = document.createElement('p'); onHand.className = 'gs-unit-stock';
-        onHand.textContent = tr('Stock on hand: ', 'إجمالي رصيد المخزن: ') + Number(stock.current);
-        details.append(onHand);
-      }
+      const onHand = document.createElement('p'); onHand.className = 'gs-unit-stock';
+      onHand.textContent = tr('Stock on hand: loading…', 'إجمالي رصيد المخزن: جارٍ التحميل…'); details.append(onHand);
       card.append(details); resultHost.append(card);
+      // Stock calculation must never hold up the product/photo. Each figure
+      // refreshes independently; a failed request leaves the identified card usable.
+      const current = () => request === generation && dialog.open && actorId() === openingActor && allowed();
+      const refresh = (element, path, label, value) => {
+        const load = async () => {
+          if (!current()) return;
+          element.textContent = label + tr('loading…', 'جارٍ التحميل…');
+          try {
+            const response = await api(path, { signal: AbortSignal.timeout(10000), background: true });
+            if (!current()) return;
+            const number = value(response);
+            element.textContent = label + (number !== null && number !== undefined && Number.isFinite(Number(number))
+              ? Number(number) : tr('Unavailable', 'غير متاح'));
+          } catch {
+            if (!current()) return;
+            element.textContent = label + tr('Unavailable ', 'غير متاح ');
+            const retry = document.createElement('button'); retry.type = 'button'; retry.className = 'btn btn-outline';
+            retry.textContent = tr('Retry', 'إعادة المحاولة'); retry.onclick = load; element.append(retry);
+          }
+        };
+        void load();
+      };
+      refresh(qty, '/inventory-units?productId=' + encodeURIComponent(row.productId) + '&status=available&limit=1', tr('Available to sell: ', 'متاح للبيع: '), response => response.total);
+      refresh(onHand, '/transactions/inventory', tr('Stock on hand: ', 'إجمالي رصيد المخزن: '), response => response.find(item => String(item._id) === String(row.productId) || item.code === product.code)?.current);
     } catch (error) {
       if (request !== generation || !dialog.open || actorId() !== openingActor) return;
       resultHost.textContent = tr('Unit was validated, but product details could not load. ', 'تم التحقق من الوحدة، لكن تعذر تحميل تفاصيل المنتج. ') + error.message;

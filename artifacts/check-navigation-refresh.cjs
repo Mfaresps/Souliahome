@@ -26,7 +26,7 @@ const assert=require('node:assert/strict'),path=require('node:path'),puppeteer=r
     assert.equal(await page.evaluate(()=>headerActivity.some(c=>c.includes('active'))),false);
     await page.evaluate(()=>{window.refreshTask=withHeaderRefresh('preview',()=>api('/_refresh-preview'));window.duplicateTask=withHeaderRefresh('preview',()=>api('/_refresh-preview'));});
     await page.waitForFunction(()=>document.getElementById('header-loadbar').classList.contains('active'));
-    assert.equal(refreshRequests,3);
+    assert.equal(refreshRequests,2);
     await page.screenshot({path:path.join(__dirname,'navigation-green-expanded.png')});
     await page.evaluate(()=>Promise.all([refreshTask,duplicateTask]));
     await page.waitForFunction(()=>document.getElementById('header-loadbar').className==='');

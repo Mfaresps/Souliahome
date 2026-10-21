@@ -32,3 +32,44 @@ body.dark-mode .notification-delivery-issue :is(.notif-title,.notif-desc,.nc-ite
 .notif-icon:has(.notification-avatar),.nc-item-icon:has(.notification-avatar){background:transparent}
 .notif-item,.nc-item{transition:background-color .18s ease}
 @media(prefers-reduced-motion:reduce){.notif-item,.nc-item{transition:none}.notif-panel.show{animation:none}}
+
+/* A single, stable inbox page. Only its list scrolls, including after Clear all. */
+#nc-overlay{display:none;position:fixed;inset:0;padding:0;background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none;opacity:1;transition:none;z-index:2000}
+#nc-overlay.active{display:block}
+#nc-overlay .nc-modal{width:100%;max-width:none;height:100dvh;max-height:none;margin:0;border:0;border-radius:0;box-shadow:none;animation:none;transform:none;background:var(--bg)}
+#nc-overlay .nc-head{width:100%;max-width:800px;margin-inline:auto;box-sizing:border-box;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;min-height:68px;gap:12px}
+#nc-overlay .nc-head-title{font-size:18px;line-height:1.4}
+#nc-overlay .nc-head>div:first-of-type{flex:1;min-width:0}
+#nc-overlay .nc-head-subtitle{font-size:12px;line-height:1.5}
+.nc-page-actions{display:flex;align-items:center;gap:6px;flex:none}
+.nc-clear-all,.nc-settings{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px;border:0;border-radius:8px;background:transparent;color:var(--muted);font:inherit;font-size:12px;cursor:pointer}
+.nc-settings{width:40px;padding:8px}
+.nc-clear-all:hover,.nc-settings:hover{background:var(--primary-pale);color:var(--primary)}
+.nc-clear-all[hidden]{display:none}
+#nc-overlay .nc-close{order:-1;width:40px;height:40px;border:0;background:transparent;color:var(--text);border-radius:8px}
+[dir="rtl"] #nc-overlay .nc-close svg{transform:rotate(180deg)}
+#nc-overlay .nc-body{flex-direction:column;min-height:0;flex:1;width:100%;max-width:800px;margin-inline:auto}
+#nc-overlay .nc-sidebar{display:flex;align-items:center;gap:6px;width:100%;min-height:50px;box-sizing:border-box;padding:6px 16px;overflow-x:auto;overflow-y:hidden;flex-shrink:0;border:0;border-bottom:1px solid var(--border);background:var(--bg);scrollbar-width:none}
+#nc-overlay .nc-filter-group{display:none}
+#nc-overlay .nc-filter-btn{width:auto;min-height:36px;flex:none;gap:6px;padding:8px 12px;margin:0;border-radius:18px;white-space:nowrap;font-size:12px}
+#nc-overlay .nc-filter-btn .nc-f-count{margin-inline-start:2px}
+#nc-overlay .nc-main{width:100%;min-height:0;flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:env(safe-area-inset-bottom);scrollbar-gutter:stable}
+#nc-overlay .nc-list{padding:0 8px 16px}
+#nc-overlay .nc-time-label{padding:14px 8px 6px;font-size:11px;letter-spacing:0;text-transform:none;opacity:1}
+#nc-overlay .nc-item{gap:10px;padding:10px 8px;margin:0;border:0;border-radius:8px;min-height:68px;box-sizing:border-box;align-items:flex-start;animation:none;transition:background-color .12s}
+#nc-overlay .nc-item.unread-notif{background:color-mix(in srgb,var(--accent) 7%,var(--surface));box-shadow:none}
+#nc-overlay .nc-item-icon,#nc-overlay .notification-avatar{width:34px;height:34px;min-width:34px;min-height:34px;border-radius:50%}
+#nc-overlay .nc-item-title{font-size:13px;line-height:1.5;font-weight:600;margin:0 0 2px;overflow-wrap:anywhere}
+#nc-overlay .nc-item-desc{font-size:12px;line-height:1.5;white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+#nc-overlay .nc-item-time{font-size:11px;line-height:1.5;margin-top:4px}
+#nc-overlay .nc-unread-dot{width:6px;height:6px;margin-top:7px}
+#nc-overlay .nc-empty-state{min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;gap:12px}
+#nc-overlay .nc-item:focus-visible,#nc-overlay button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+@media(max-width:760px){
+  #nc-overlay .nc-head{padding-inline:12px;gap:8px}
+  #nc-overlay .nc-head-title{font-size:17px}
+  #nc-overlay .nc-sidebar{padding-inline:12px}
+  #nc-overlay .nc-item{padding-block:10px}
+  #nc-overlay .nc-item{transition:none}
+  .notifications-page-open #mobile-bottom-nav{visibility:hidden}
+}

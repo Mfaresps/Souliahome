@@ -1,0 +1,90 @@
+const assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs'),puppeteer=require('../backend/node_modules/puppeteer');
+(async()=>{
+  const browser=await puppeteer.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',pipe:true});
+  try{
+    const page=await browser.newPage();await page.setViewport({width:390,height:844,isMobile:true,hasTouch:true});
+    const errors=[];page.on('pageerror',error=>errors.push(error.message));
+    const tx='507f1f77bcf86cd799439013',audit='507f1f77bcf86cd799439014';
+    const user={_id:'507f1f77bcf86cd799439011',name:'Preview',role:'admin',perms:[]};
+    const rows=Array.from({length:18},(_,i)=>({_id:i.toString(16).padStart(64,'0'),type:i===0?'delivered':i===1?'security':i===2?'comment':'deliveryProblem',title:['Order delivered','Security event','New comment'][i]||'Delivery issue',body:'Order #2745 · Notification fixture '+i,ref:'2745',recordId:i===1?'audit:'+audit:'tx:'+tx,event:i===2?'42':'',actorName:'Mona',actorAvatar:'/broken-avatar-fixture.png',createdAt:new Date(Date.now()+(i===0?60000:-i*60000)).toISOString(),readAt:null}));
+    let slowReadFinished=false;
+    await page.evaluateOnNewDocument(user=>{localStorage.clear();localStorage.setItem('token','preview-only');localStorage.setItem('user',JSON.stringify(user));localStorage.setItem('soulia_lang_pref','en');},user);
+    await page.setRequestInterception(true);
+    page.on('request',request=>{
+      const url=new URL(request.url());
+      if(url.origin!=='http://localhost:8080')return request.respond({status:200,contentType:request.resourceType()==='stylesheet'?'text/css':'text/javascript',body:''});
+      if(url.pathname==='/broken-avatar-fixture.png')return request.respond({status:404,body:''});
+      if(url.pathname.startsWith('/socket.io/'))return request.abort();
+      if(url.pathname.startsWith('/api/')){
+        let data=[];
+        if(url.pathname==='/api/auth/me')data=user;
+        if(url.pathname==='/api/settings')data={lang:'en'};
+        if(url.pathname==='/api/notifications/history')data={items:rows,unread:rows.filter(r=>!r.readAt).length,next:''};
+        if(url.pathname==='/api/notifications/read-state')data={ids:[]};
+        if(url.pathname==='/api/notifications/read-all'){
+          const body=JSON.parse(request.postData());for(const row of rows)if(Date.parse(row.createdAt)<=Date.parse(body.before))row.readAt=body.before;
+          data={success:true,before:body.before,unread:rows.filter(r=>!r.readAt).length};
+        }
+        if(url.pathname==='/api/transactions/'+tx)data={_id:tx,ref:'2745',type:'مبيعات',items:[]};
+        if(url.pathname==='/api/security-audit/logs/'+audit)data={_id:audit,action:'login_failed'};
+        if(url.pathname==='/api/transactions/inventory')data=[{code:'SKU-1',name:'Preview product',current:0,minStock:2}];
+        if(url.pathname==='/api/notifications'||url.pathname==='/api/notifications/preferences')data={configured:false,language:'en',preferences:{enabled:false},devices:0};
+        if(/^\/api\/notifications\/history\/[^/]+\/read$/.test(url.pathname))return void setTimeout(()=>{slowReadFinished=true;request.respond({status:200,contentType:'application/json',body:'{}'}).catch(()=>{});},1500);
+        return request.respond({status:200,contentType:'application/json',body:JSON.stringify(data)});
+      }
+      if(url.pathname==='/config.js')return request.respond({contentType:'text/javascript',body:'window.__ENV__={API_BASE_URL:""};'});
+      const root=path.resolve(__dirname,'../frontend/public'),file=path.resolve(root,url.pathname==='/'?'index.html':'.'+url.pathname);
+      if(!file.startsWith(root+path.sep)||!fs.existsSync(file))return request.respond({status:404,body:''});
+      return request.respond({status:200,contentType:({'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png'}[path.extname(file)]||'application/octet-stream'),body:fs.readFileSync(file)});
+    });
+    await page.goto('http://localhost:8080/#inventory',{waitUntil:'domcontentloaded'});
+    await page.waitForFunction(()=>!document.querySelector('#splash-screen')&&typeof souliaMergeNotifications==='function');
+    await page.evaluate(async()=>{await refreshMentionsFromServer();await souliaRefreshNotificationHistory();});
+    const open=async()=>{await page.evaluate(()=>toggleNotifPanel({stopPropagation(){}}));await page.waitForSelector('#nc-overlay.active .nc-item');};
+    const measure=()=>page.$eval('#nc-overlay .nc-modal',el=>{const r=el.getBoundingClientRect();return {width:r.width,height:r.height,x:r.x,y:r.y};});
+    await open();
+    assert.deepEqual(await measure(),{width:390,height:844,x:0,y:0});
+    assert.equal(await page.$eval('#nc-overlay',el=>getComputedStyle(el).backdropFilter),'none');
+    assert.equal(await page.$eval('#nc-overlay .nc-modal',el=>el.getAttribute('role')),'region');
+    assert.equal(await page.$$eval('#nc-main .nc-item',els=>els.length),18);
+    assert(await page.$eval('#nc-main .nc-item',el=>el.getBoundingClientRect().height<100));
+    await page.waitForFunction(()=>!document.querySelector('#nc-main img[src="/broken-avatar-fixture.png"]'));
+    await page.screenshot({path:path.join(__dirname,'notification-page-mobile-en.png')});
+    await page.evaluate(()=>{window.notificationOrders=[];window.openOrderView=id=>notificationOrders.push(id);});
+    await page.click('#nc-main [data-notification-id="history-'+rows[0]._id+'"]');
+    await page.waitForFunction(()=>notificationOrders.length===1);
+    assert.equal(await page.evaluate(()=>notificationOrders[0]),tx);
+    assert.equal(slowReadFinished,false,'Opening the event must not await its read receipt');
+    assert.equal(await page.$eval('#nc-overlay',el=>el.classList.contains('active')),false);
+    assert.equal(await page.$$eval('.nc-detail-pane',els=>els.length),0);
+    await page.evaluate(()=>{window.highlightedNotificationComment=null;window.highlightInvComment=id=>{highlightedNotificationComment=id;return true;};});
+    await open();await page.click('#nc-main [data-notification-id="history-'+rows[2]._id+'"]');
+    await page.waitForFunction(()=>highlightedNotificationComment===42);
+    await page.evaluate(id=>{window.notificationPages=[];window.navigateTo=page=>notificationPages.push(page);window.loadSecurityPanel=async()=>{};window._renderSecurityLogPage=()=>{};const node=document.createElement('div');node.dataset.pushAuditId=id;document.body.append(node);},audit);
+    await open();await page.click('#nc-main [data-notification-id="history-'+rows[1]._id+'"]');
+    await page.waitForFunction(()=>window.souliaPushSecurityRecord?._id===document.querySelector('[data-push-audit-id]').dataset.pushAuditId);
+    assert.equal(await page.evaluate(()=>notificationPages.at(-1)),'users');
+    await page.evaluate(()=>{window.notificationProduct='';window.goToInventoryAndHighlight=name=>{notificationProduct=name;};});
+    await open();await page.evaluate(()=>_setNcTab('stock'));
+    await page.waitForSelector('#nc-main [data-notification-id="stock-out-SKU-1"]');
+    await page.click('#nc-main [data-notification-id="stock-out-SKU-1"]');
+    await page.waitForFunction(()=>notificationProduct==='Preview product');
+    await open();await page.click('#nc-overlay .nc-settings');await page.waitForSelector('.push-settings-dialog[open]');
+    await page.evaluate(()=>document.querySelector('.push-settings-dialog[open]').close());
+    const before=await measure();await page.click('#nc-overlay .nc-clear-all');
+    await page.waitForFunction(()=>document.querySelectorAll('#nc-main .nc-item').length===0);
+    assert.deepEqual(await measure(),before);
+    await page.evaluate(()=>{buildNotifications();_ncAllNotifs=_buildNcUpdates();_renderNcContent();});
+    assert.equal(await page.$$eval('#nc-main .nc-item',els=>els.length),0);
+    await page.screenshot({path:path.join(__dirname,'notification-page-empty-mobile.png')});
+    await page.evaluate(()=>{notifDismissed=[];currentLang='ar';applyLang();document.documentElement.dir='rtl';_ncAllNotifs=_buildNcUpdates();_renderNcTabBar();_renderNcContent();});
+    await page.screenshot({path:path.join(__dirname,'notification-page-mobile-ar.png')});
+    await page.setViewport({width:320,height:568,isMobile:true,hasTouch:true});assert.equal((await measure()).width,320);
+    assert.equal(await page.evaluate(()=>document.querySelector('#nc-overlay').scrollWidth>innerWidth),false);
+    await page.setViewport({width:1440,height:900,isMobile:true,hasTouch:true});assert.deepEqual(await measure(),{width:1440,height:900,x:0,y:0});
+    await page.screenshot({path:path.join(__dirname,'notification-page-desktop.png')});
+    await page.evaluate(()=>history.back());await page.waitForFunction(()=>!document.querySelector('#nc-overlay').classList.contains('active'));
+    assert.equal(await page.evaluate(()=>document.body.style.overflow),'');assert.deepEqual(errors,[]);
+    console.log('PASS: compact full-page inbox, stable Clear all, RTL and desktop, exact order/comment/security targets, slow read receipt, settings and browser Back.');
+  }finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});

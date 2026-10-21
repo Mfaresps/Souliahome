@@ -14,6 +14,42 @@ describe('receipt OCR fallbacks', () => {
     image = await sharp({ create: { width: 80, height: 120, channels: 3, background: '#fff' } }).png().toBuffer();
   });
   afterEach(async () => { await service.onModuleDestroy(); });
+  it('bounds a worker startup that never resolves and expires queued reads instead of hanging uploads', async () => {
+    jest.useFakeTimers();
+    jest.spyOn((service as any).logger, 'warn').mockImplementation(() => undefined);
+    let finishStartup!: (value: any) => void;
+    (createWorker as jest.Mock).mockImplementationOnce(() => new Promise(resolve => { finishStartup = resolve; }));
+    try {
+      const first = service.read(image), queued = service.read(image);
+      await jest.advanceTimersByTimeAsync(21_000);
+      await expect(first).resolves.toMatchObject({ ran: false, amount: null });
+      await expect(queued).resolves.toMatchObject({ ran: false, amount: null });
+      expect(createWorker).toHaveBeenCalledTimes(1);
+    } finally { jest.useRealTimers(); }
+    await expect(service.read(image)).resolves.toMatchObject({ ran: false });
+    expect(createWorker).toHaveBeenCalledTimes(1); // No growing pool of stuck worker threads.
+    const expired = worker(); finishStartup(expired);
+    await new Promise(resolve => setImmediate(resolve));
+    expect(expired.terminate).toHaveBeenCalled();
+    const next = worker(); next.recognize.mockResolvedValue({ data: { text: '' } });
+    (createWorker as jest.Mock).mockResolvedValue(next);
+    await expect(service.read(image)).resolves.toMatchObject({ ran: true });
+  });
+  it('returns the manual-entry fallback when recognition and worker termination both hang', async () => {
+    jest.useFakeTimers();
+    const stalled = worker();
+    stalled.recognize.mockImplementation(() => new Promise(() => {}));
+    stalled.terminate.mockImplementation(() => new Promise(() => {}));
+    (createWorker as jest.Mock).mockResolvedValue(stalled);
+    jest.spyOn(service as any, 'passes').mockResolvedValue([image]);
+    jest.spyOn((service as any).logger, 'warn').mockImplementation(() => undefined);
+    try {
+      const result = service.read(image);
+      await jest.advanceTimersByTimeAsync(21_000);
+      await expect(result).resolves.toMatchObject({ ran: false, amount: null });
+      expect(stalled.terminate).toHaveBeenCalled();
+    } finally { jest.useRealTimers(); }
+  });
   it('handles language download failure without an uncaught worker error and allows a later retry',async()=>{
     jest.spyOn((service as any).logger,'warn').mockImplementation(()=>undefined);
     (createWorker as jest.Mock).mockImplementationOnce((_languages,_engine,options)=>{

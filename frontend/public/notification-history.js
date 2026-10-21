@@ -63,11 +63,21 @@
   window.souliaOpenHistory = async function (id) {
     const row = rows.find(r => r._id === id);
     if (!row) return;
-    try { await window.souliaMarkHistoryRead('history-' + id); }
-    catch (_) { toast(currentLang === 'en' ? 'Could not save read status. Please try again.' : 'تعذّر حفظ حالة القراءة. حاول مجددًا.', true); }
+    // Opening the event must not wait for the read-receipt request.
+    window.souliaMarkHistoryRead('history-' + id).catch(() => {
+      toast(currentLang === 'en' ? 'Could not save read status. Please try again.' : 'تعذّر حفظ حالة القراءة. حاول مجددًا.', true);
+    });
     qs('#notif-panel')?.classList.remove('show');
-    if (typeof closeNotifCenter === 'function') closeNotifCenter();
-    if (row.recordId) await window.souliaNavigateNotification(row.url);
+    if (typeof closeNotifCenter === 'function') closeNotifCenter({ navigation: true });
+    const target = new URL(row.url || '/', location.href);
+    if (row.recordId) {
+      target.searchParams.set('pushRecord', row.recordId);
+      target.searchParams.set('pushType', row.type || '');
+      if (row.event != null) target.searchParams.set('pushEvent', String(row.event));
+    }
+    if (!await window.souliaNavigateNotification(target.href)) {
+      toast(currentLang === 'en' ? 'This event is no longer available or you do not have access.' : 'الحدث لم يعد متاحًا أو ليس لديك صلاحية لفتحه.', true);
+    }
     repaint();
   };
   setInterval(() => { if (typeof currentUser !== 'undefined' && currentUser && !document.hidden) window.souliaRefreshNotificationHistory(); }, 20000);

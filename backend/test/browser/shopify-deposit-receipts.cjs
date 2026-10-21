@@ -87,6 +87,7 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
           if(url.pathname==='/api/version.json')return reply({version:'test'});
           return reply([]);
         }
+        if(url.pathname==='/deposit-history.js')return req.respond({status:200,contentType:'text/javascript',body:fs.readFileSync(path.resolve(__dirname,'../../../frontend/public/deposit-history.js'))});
         // No request escapes to a real site, including CDNs, Shopify, or payment providers.
         if(req.resourceType()==='script')return req.respond({status:200,contentType:'text/javascript',body:'window.Chart=class{static register(){} destroy(){}};window.XLSX={utils:{}};window.io=()=>({on(){},emit(){},disconnect(){}});'});
         if(req.resourceType()==='image') {
@@ -110,6 +111,187 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
       qs('#app').style.display='';
       qs('#splash-screen')?.remove();
     },orders);
+    if(process.argv.includes('--replacement-only')) {
+      const fixture=path.join(os.tmpdir(),'soulia-replacement-'+process.pid+'.png');fs.writeFileSync(fixture,png);
+      await page.evaluate(()=>{window.replacementOriginalApi=api;});
+      try {
+        for(const lang of ['ar','en']) {
+          await page.setViewport({width:390,height:844});
+          await page.evaluate(lang=>{
+            currentLang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';_shopifyOrders[0].depositReceipts=[];
+            window.replacementCalls=[];window.replacementFail=true;window.releaseReplacement=null;
+            api=async(path,options)=>{
+              if(!path.endsWith('/deposit-receipts/upload'))return replacementOriginalApi(path,options);
+              replacementCalls.push(path);
+              const serial=replacementCalls.length;await new Promise(resolve=>releaseReplacement=resolve);releaseReplacement=null;
+              if(replacementFail)throw new Error('هذه الصورة رُفعت بالفعل — لا يمكن استخدام نفس إيصال العربون مرة أخرى');
+              return {receipt:{id:'replacement-'+serial,status:'مسودة',amount:0,method:'',submittedBy:'Tester',submittedById:'staff-1',warnings:[],ocr:{amount:500,method:'Instapay',confident:true}}};
+            };
+            openSpReceiptForm('order-1');
+          },lang);
+          await (await page.$('#spdep-file')).uploadFile(fixture);
+          await page.waitForFunction(()=>typeof releaseReplacement==='function');
+          await page.evaluate(()=>releaseReplacement());
+          await page.waitForSelector('#spdep-error [data-spdep-replace-image]');
+          check(await page.$eval('#spdep-error',e=>e.textContent.includes(t('spDepDuplicateAlertTitle'))&&!!e.querySelector('.spdep-recovery-message')?.textContent),'duplicate alert title and reason visible '+lang);
+          check(await page.$eval('#spdep-error button',e=>e.textContent.trim()===t('spDepUploadAnotherHint')),'replacement instruction itself is the translated button '+lang);
+          check(await page.$$eval('#sp-receipt-form [data-spdep-replace-image], #sp-receipt-form .spdep-file-pick',els=>els.filter(e=>e.getClientRects().length).length===1),'one visible upload action while the alert is open '+lang);
+          check(await page.$eval('#spdep-error button',e=>{const r=e.getBoundingClientRect(),body=e.closest('.spdep-form-body').getBoundingClientRect();return r.top>=body.top&&r.bottom<=body.bottom+1;}),'replacement action is fully visible above the phone footer '+lang);
+          await page.screenshot({path:path.resolve(__dirname,'../../../artifacts/deposit-replace-image-'+lang+'.png')});
+          const choose=async()=>{const [picker]=await Promise.all([page.waitForFileChooser(),page.click('#spdep-error [data-spdep-replace-image]')]);await picker.accept([fixture]);await page.waitForFunction(()=>typeof releaseReplacement==='function');};
+          await choose();await page.evaluate(()=>{replacementFail=false;releaseReplacement();});
+          await page.waitForFunction(()=>_spReceiptForm.receiptId==='replacement-2'&&!_spReceiptForm.uploading&&!_spReceiptForm.autofilling,{timeout:5000});
+          check(!!await page.$('#spdep-replacement-file'),'draft has a dedicated replacement image picker');
+          await page.evaluate(()=>_spReceiptError(new Error('الإيصال أو رقم التحويل مستخدم في عربون آخر — لا يمكن اعتماده مرة ثانية')));
+          await choose();
+          check(await page.evaluate(()=>_spReceiptForm.receiptId==='replacement-2'&&_shopifyOrders[0].depositReceipts.some(r=>r.id==='replacement-2')),'original draft remains while replacement uploads '+lang);
+          await page.evaluate(()=>{qs('#spdep-confirm-check').checked=true;_spDepSyncConfirm();});
+          check(await page.$eval('#spdep-submit-btn',e=>e.disabled),'deposit cannot submit during image replacement '+lang);
+          await page.evaluate(()=>{replacementFail=true;releaseReplacement();});
+          await page.waitForFunction(()=>!_spReceiptForm.uploading);
+          check(await page.evaluate(()=>_spReceiptForm.receiptId==='replacement-2'&&_shopifyOrders[0].depositReceipts.some(r=>r.id==='replacement-2')),'failed replacement preserves original draft '+lang);
+          await choose();await page.evaluate(()=>{replacementFail=false;releaseReplacement();});
+          await page.waitForFunction(()=>_spReceiptForm.receiptId==='replacement-4'&&!_spReceiptForm.uploading&&!_spReceiptForm.autofilling);
+          check(await page.evaluate(()=>_shopifyOrders[0].depositReceipts.length===1&&_shopifyOrders[0].depositReceipts[0].id==='replacement-4'),'successful replacement refreshes the displayed draft '+lang);
+          await page.evaluate(()=>_spReceiptError(new Error(t('spDepUploadTimedOut')),true));
+          check(!await page.$('#spdep-error [data-spdep-replace-image]'),'ambiguous timeout asks to verify the order before reuploading '+lang);
+          await page.evaluate(()=>_spReceiptError(new Error(t('spDepAmountRequired'))));
+          check(!await page.$('#spdep-error [data-spdep-replace-image]'),'amount validation does not ask for another receipt '+lang);
+          await page.evaluate(()=>{const r=_shopifyOrders[0].depositReceipts[0];r.warnings=[{code:'not-transfer'}];openSpReceiptForm('order-1',r.id,_spReceiptForm);});
+          check(await page.$$eval('.spdep-form-body>.spdep-image-recovery',els=>els.length===1),'receipt content warning is one combined alert '+lang);
+          const [warningPicker]=await Promise.all([page.waitForFileChooser(),page.click('.spdep-image-recovery [data-spdep-replace-image]')]);
+          await warningPicker.accept([fixture]);await page.waitForFunction(()=>typeof releaseReplacement==='function');
+          await page.evaluate(()=>releaseReplacement());
+          await page.waitForFunction(()=>_spReceiptForm.receiptId==='replacement-5'&&!_spReceiptForm.uploading&&!_spReceiptForm.autofilling);
+          check(await page.evaluate(()=>_shopifyOrders[0].depositReceipts.length===1&&_shopifyOrders[0].depositReceipts[0].id==='replacement-5'),'clicking the warning instruction replaces the image '+lang);
+          check(await page.evaluate(()=>replacementCalls.length===5&&replacementCalls.every(path=>path.endsWith('/upload'))),'image recovery makes no payment or approval writes '+lang);
+          await page.setViewport({width:320,height:568});
+          check(await page.$eval('#modal-content',e=>e.scrollWidth<=e.clientWidth+1),'recovery fits narrow phones '+lang);
+        }
+        check(errors.length===0,'no browser errors: '+errors.join('; '));
+        console.log(JSON.stringify({checks,errors,network:'fully mocked',scope:'duplicate receipt image recovery'},null,2));return;
+      }finally{fs.unlinkSync(fixture);}
+    }
+    if(process.argv.includes('--entry-progress-only')) {
+      for(const lang of ['ar','en']) {
+        await page.evaluate(lang=>{currentLang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';openSpReceiptForm('order-1');},lang);
+        for(const size of [{width:320,height:568},{width:390,height:844},{width:1440,height:1000}]) {
+          await page.setViewport(size);await new Promise(resolve=>setTimeout(resolve,180));
+          check(await page.$eval('#modal-content',e=>{const r=e.getBoundingClientRect();return e.scrollWidth<=e.clientWidth+1&&r.top>=0&&r.bottom<=innerHeight+1&&Math.abs((r.top+r.bottom)/2-innerHeight/2)<2;}),'deposit entry centered and fits '+lang+'/'+size.width);
+        }
+      }
+      await page.setViewport({width:390,height:844});
+      await page.screenshot({path:path.resolve(__dirname,'../../../artifacts/deposit-entry-centered.png')});
+      await page.evaluate(()=>{window.receiptOriginalReload=loadShopifyOrders;window.receiptReloadCalls=0;loadShopifyOrders=()=>{receiptReloadCalls++;return new Promise(()=>{});};});
+      for(const shouldFail of [true,false]) {
+        failUpload=shouldFail;
+        await page.evaluate(base64=>{
+          const input=qs('#spdep-file'),data=new DataTransfer();data.items.add(new File([Uint8Array.from(atob(base64),c=>c.charCodeAt(0))],'receipt.png',{type:'image/png'}));input.files=data.files;
+          window.receiptUploadTask=_spUploadReceipt(input);
+        },png.toString('base64'));
+        await page.waitForFunction(()=>qs('#spdep-file').disabled);
+        while(!releaseUpload)await new Promise(resolve=>setTimeout(resolve,25));
+        await page.evaluate(()=>_spReceiptProgress(_spReceiptForm,0,'upload'));
+        check(await page.$eval('#spdep-progress-value',e=>e.textContent==='0%'&&!e.hidden),'new upload starts at zero');
+        await page.evaluate(()=>_spReceiptProgress(_spReceiptForm,50,'upload'));
+        check(await page.$eval('#spdep-progress-value',e=>e.textContent==='35%'),'combined progress tracks uploaded bytes');
+        await page.evaluate(()=>_spReceiptProgress(_spReceiptForm,100,'analysis'));
+        await page.waitForFunction(()=>parseInt(qs('#spdep-progress-value').textContent)>=95);
+        check(await page.$eval('#spdep-progress-value',e=>parseInt(e.textContent)<100&&!e.hidden),'analysis advances quickly but awaits server completion');
+        check(await page.$eval('#spdep-progress-stage',e=>e.textContent.includes('estimated')),'estimated server analysis is labelled honestly');
+        check(await page.$eval('#spdep-progress',e=>e.getBoundingClientRect().width<=1),'percentage replaces the loading line');
+        if(!shouldFail)await page.screenshot({path:path.resolve(__dirname,'../../../artifacts/deposit-analysis-percentage.png')});
+        releaseUpload();releaseUpload=null;await page.evaluate(()=>receiptUploadTask);
+        if(shouldFail) {
+          check(await page.evaluate(()=>_spReceiptForm.progress<100&&_spReceiptForm.progressTimer===null),'failed upload stops timer without reaching 100');
+          check(!await page.$('.spdep-upload-ready'),'failed upload never shows success');
+        } else {
+          const completed=await page.evaluate(()=>({progress:_spReceiptForm.progress,stage:_spReceiptForm.progressStage,timer:_spReceiptForm.progressTimer,error:qs('#spdep-error')?.textContent,receiptId:_spReceiptForm.receiptId}));
+          check(completed.progress===100&&completed.stage==='complete'&&completed.timer===null,'successful analysis reaches 100 and stops timer '+JSON.stringify(completed));
+          check(await page.evaluate(()=>receiptReloadCalls===0),'successful upload does not wait for an unrelated order-list refresh');
+          check(await page.$eval('.spdep-upload-ready',e=>e.textContent.includes(t('spDepUploadReady'))&&e.textContent.includes('100%')&&e.textContent.includes(t('spDepUploadReviewNext'))),'simple upload success and next step remain visible');
+          await page.waitForFunction(()=>!_spReceiptForm.autofilling&&qs('#spdep-amount')?.value==='500');
+          check(await page.$eval('#spdep-amount',e=>e.value==='500'),'OCR amount still populated');
+          check(await page.$eval('#spdep-amount',e=>getComputedStyle(e).textAlign==='center'&&e.getBoundingClientRect().width<=133),'transfer amount is centered in a narrow field');
+          check(await page.$$eval('.spdep-summary-cell>span',els=>els.map(e=>e.textContent).join('/')==='Total/Paid/Remaining'),'compact three-column summary labels');
+          check(await page.$eval('#spdep-total-value',e=>e.textContent.includes('1,500'))&&await page.$eval('#spdep-paid-value',e=>e.textContent.includes('500'))&&await page.$eval('#spdep-remaining-value',e=>e.textContent.includes('1,000')),'summary previews total, current deposit and remaining');
+          await page.evaluate(()=>{_shopifyOrders[0].depositReceipts.push({id:'approved-summary-test',status:'معتمد',amount:200});_spReceiptRemaining(_shopifyOrders[0],_shopifyOrders[0].depositReceipts[0]);});
+          check(await page.$eval('#spdep-paid-value',e=>e.textContent.includes('700'))&&await page.$eval('#spdep-remaining-value',e=>e.textContent.includes('800')),'summary includes existing approved payments once');
+          await page.evaluate(()=>{const o=_shopifyOrders[0];o.depositReceipts=o.depositReceipts.filter(r=>r.id!=='approved-summary-test');qs('#spdep-amount').value='1500';_spReceiptRemaining(o,o.depositReceipts[0]);});
+          check(await page.$eval('#spdep-remaining-value',e=>e.textContent.includes('0')&&!e.querySelector('svg')),'fully covered order still shows a numeric remaining balance');
+          await page.evaluate(()=>{qs('#spdep-amount').value='500';_spReceiptRemaining(_shopifyOrders[0],_shopifyOrders[0].depositReceipts[0]);});
+          await page.evaluate(()=>{currentLang='ar';document.documentElement.dir='rtl';openSpReceiptForm('order-1','receipt-1',_spReceiptForm);});
+          check(await page.$eval('.spdep-upload-ready strong',e=>e.textContent==='تم رفع الإيصال بنجاح'),'upload success is translated in Arabic');
+          await page.screenshot({path:path.resolve(__dirname,'../../../artifacts/deposit-upload-ready.png')});
+          await page.setViewport({width:390,height:460});await new Promise(resolve=>setTimeout(resolve,180));
+          check(await page.$eval('.spdep-form-footer',e=>e.getBoundingClientRect().bottom<=innerHeight+1),'footer remains accessible with phone keyboard');
+          await page.evaluate(()=>{loadShopifyOrders=receiptOriginalReload;return _spCancelReceiptForm();});
+        }
+      }
+      const transport=await page.evaluate(async()=>{
+        const ActualXHR=window.XMLHttpRequest;let request;
+        window.XMLHttpRequest=class{constructor(){request=this;}open(){}setRequestHeader(){}send(){}upload={};};
+        try {
+          const options={method:'POST',body:new FormData(),onUploadProgress(){}};
+          const timed=_apiUploadWithProgress('/test',options,{}).catch(error=>error.message);
+          const deadline=request.timeout;request.ontimeout();const message=await timed;
+          const disconnected=_apiUploadWithProgress('/test',options,{}).catch(error=>error.message);
+          request.status=0;request.onload();const connection=await disconnected;
+          return {deadline,timeout:message===t('spDepUploadTimedOut'),connection:!!connection};
+        }finally{window.XMLHttpRequest=ActualXHR;}
+      });
+      check(transport.deadline===75000&&transport.timeout,'lost upload response ends with a clear verification message');
+      check(transport.connection,'empty disconnected response rejects instead of leaving the upload promise pending');
+      check(errors.length===0,'no browser errors: '+errors.join('; '));
+      console.log(JSON.stringify({checks,errors,network:'fully mocked',scope:'centered deposit entry and staged percentage'},null,2));return;
+    }
+    if(process.argv.includes('--success-actions-only')) {
+      await page.addScriptTag({content:fs.readFileSync(path.resolve(__dirname,'../../../frontend/public/invoice-image.js'),'utf8')});
+      await page.evaluate(()=>{
+        _shopifyOrders[0].depositReceipts=[{id:'receipt-1',amount:500,method:'Instapay',status:'معلق'}];
+        window.receiptDownloads=[];window.receiptCopies=[];
+        HTMLAnchorElement.prototype.click=function(){receiptDownloads.push({name:this.download,url:this.href});};
+        Object.defineProperty(window,'isSecureContext',{configurable:true,value:true});
+        window.ClipboardItem=class{constructor(data){this.data=data;}};
+        Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.copiedReceiptMessage=text;},write:async items=>{const blob=await items[0].data['image/png'];receiptCopies.push({type:blob.type,size:blob.size});}}});
+      });
+      for(const lang of ['ar','en']) {
+        await page.evaluate(lang=>{currentLang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';_spReceiptSuccess(_shopifyOrders[0],_shopifyOrders[0].depositReceipts[0]);},lang);
+        for(const size of [{width:320,height:568},{width:390,height:844},{width:1440,height:1000}]) {
+          await page.setViewport(size);
+          check(await page.$eval('#modal-content',e=>{const r=e.getBoundingClientRect();return e.scrollWidth<=e.clientWidth+1&&r.top>=0&&r.bottom<=innerHeight+1;}),'success modal fits '+lang+'/'+size.width);
+        }
+        check(await page.$eval('#spdep-download-invoice',e=>e.textContent.trim()===t('spDepDownloadInvoice')),'download label '+lang);
+        await page.click('#spdep-download-invoice');
+        await page.waitForFunction(()=>!qs('#spdep-download-invoice').disabled);
+        check(await page.$eval('#spdep-action-feedback',e=>e.textContent===t('spDepInvoiceDownloaded')&&e.dataset.error==='false'),'download success feedback '+lang);
+        check(await page.evaluate(()=>receiptDownloads.at(-1).name==='invoice-2719.png'),'correct invoice filename '+lang);
+        await page.click('#spdep-copy-invoice');
+        await page.waitForFunction(()=>!qs('#spdep-copy-invoice').disabled);
+        check(await page.$eval('#spdep-action-feedback',e=>e.textContent===t('spDepInvoiceCopied')&&e.dataset.error==='false'),'copy success feedback '+lang);
+        check(await page.evaluate(()=>receiptCopies.at(-1).type==='image/png'&&receiptCopies.at(-1).size>100),'actual PNG copied '+lang);
+        await page.click('#spdep-copy-message');await page.waitForSelector('a#spdep-copy-message');
+        check(await page.evaluate(()=>copiedReceiptMessage===qs('#spdep-customer-message').value),'exact customer message copied '+lang);
+        check(await page.$eval('#spdep-action-feedback',e=>e.textContent===t('spDepCopied')),'message copy feedback '+lang);
+        await page.setViewport({width:390,height:844});
+        await page.screenshot({path:path.resolve(__dirname,'../../../artifacts/deposit-success-'+lang+'.png')});
+      }
+      await page.evaluate(()=>{Object.defineProperty(window,'isSecureContext',{configurable:true,value:false});});
+      await page.click('#spdep-copy-invoice');await page.waitForFunction(()=>!qs('#spdep-copy-invoice').disabled);
+      check(await page.$eval('#spdep-action-feedback',e=>e.dataset.error==='true'&&e.textContent===t('spDepInvoiceCopyFailed')),'unsupported image clipboard gives download fallback');
+      // Keep a slow render pending and verify repeat clicks cannot start another export.
+      await page.evaluate(()=>{window.realReceiptExport=exportInvoiceImage;window.invoiceCalls=0;exportInvoiceImage=()=>{invoiceCalls++;return new Promise(resolve=>window.finishReceiptExport=resolve);};});
+      await page.click('#spdep-download-invoice');
+      check(await page.$$eval('.spdep-invoice-actions button',buttons=>buttons.every(b=>b.disabled)),'both invoice actions blocked during render');
+      await page.evaluate(()=>{void _spReceiptInvoice(qs('#spdep-copy-invoice'),'copy');});
+      check(await page.evaluate(()=>invoiceCalls===1),'duplicate exports prevented');
+      await page.evaluate(()=>finishReceiptExport(false));
+      await page.waitForFunction(()=>!qs('#spdep-download-invoice').disabled);
+      check(await page.$eval('#spdep-action-feedback',e=>e.dataset.error==='true'),'failed render does not claim success');
+      check(seen.filter(row=>row.path.includes('/deposit-receipts')||row.path.startsWith('/api/shopify/orders')||row.path==='/api/transactions').every(row=>row.method==='GET'),'no payment writes from invoice actions');
+      check(errors.length===0,'no browser errors: '+errors.join('; '));
+      console.log(JSON.stringify({checks,errors,scope:'deposit success invoice actions, real PNG and clipboard',network:'fully mocked'},null,2));return;
+    }
     if (process.argv.includes('--manual-only')) {
       await page.evaluate(()=>{
         currentUser.perms=[];
@@ -244,7 +426,7 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
     check(await page.$eval('#spdep-error',e=>e.textContent==='No photo in clipboard.'),'empty clipboard shows an actionable error without starting upload');
     await page.setViewport({width:390,height:844});
     await new Promise(resolve=>setTimeout(resolve,350));
-    check(await page.$eval('#modal-content',e=>{const r=e.getBoundingClientRect();return r.width===390 && r.bottom<=845 && r.height<844*.6;}),'initial phone sheet is compact and fills the phone width');
+    check(await page.$eval('#modal-content',e=>{const r=e.getBoundingClientRect();return r.width<=366 && r.bottom<=845 && r.height<844*.6 && Math.abs((r.top+r.bottom)/2-innerHeight/2)<2;}),'initial deposit dialog is compact and centered with phone margins');
     await page.screenshot({path:path.join(os.tmpdir(),'soulia-deposit-mobile-upload.png')});
     await page.setViewport({width:1440,height:1000});
     check(await page.evaluate(()=>{const dt=new DataTransfer();dt.setData('text/plain','Text paste');const e=new ClipboardEvent('paste',{clipboardData:dt,bubbles:true,cancelable:true});document.dispatchEvent(e);return !e.defaultPrevented;}),'text paste is not intercepted');
@@ -276,10 +458,12 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
     await page.evaluate(()=>{_spReceiptProgress(_spReceiptForm,0,'upload');});
     check(await page.$eval('#spdep-progress-value',e=>!e.hidden && e.textContent==='0%'),'starting a new upload resets to zero');
     await page.evaluate(()=>{window.receiptProgressCallback(.42,'upload');});
-    check(await page.$eval('#spdep-progress-value',e=>e.textContent==='42%'),'progress percentage updates with upload bytes');
+    check(await page.$eval('#spdep-progress-value',e=>e.textContent==='29%'),'upload bytes contribute to the combined upload/analysis percentage');
     await page.evaluate(()=>{window.receiptProgressCallback(1,'analysis');_apiUploadWithProgress=window.originalReceiptTransport;});
     check(await page.$eval('#spdep-progress-stage',e=>e.textContent.includes('Analyzing')),'server analysis is labeled separately from upload');
-    check(await page.$eval('#spdep-progress-value',e=>e.hidden && e.textContent==='') && await page.$eval('#spdep-progress',e=>!e.hasAttribute('value')),'analysis shows indeterminate activity instead of a fabricated percentage');
+    check(await page.$eval('#spdep-progress-value',e=>!e.hidden && parseInt(e.textContent)>=70 && parseInt(e.textContent)<100) && await page.$eval('#spdep-progress-stage',e=>e.textContent.includes('estimated')),'analysis shows a labelled estimated percentage');
+    await page.waitForFunction(()=>parseInt(qs('#spdep-progress-value').textContent)>=95);
+    check(await page.$eval('#spdep-progress',e=>e.value<100),'estimated analysis advances quickly without claiming completion');
     await page.screenshot({path:path.join(os.tmpdir(),'soulia-deposit-scan-centered.png')});
     check(await page.$eval('#spdep-file',e=>e.disabled),'upload prevents duplicate clicks while scanning');
     await page.evaluate(()=>_spViewLocalReceipt());
@@ -307,7 +491,7 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
     check(await page.$eval('#spdep-remaining-value',e=>e.textContent.includes('1,000')),'remaining amount previews the current deposit deduction');
     await page.setViewport({width:390,height:844});
     await new Promise(resolve=>setTimeout(resolve,350));
-    check(await page.$eval('#modal-content',e=>{const r=e.getBoundingClientRect();return r.width===390 && r.height>740 && r.height<762 && e.scrollWidth<=e.clientWidth;}),'receipt details expand to ninety percent without horizontal clipping');
+    check(await page.$eval('#modal-content',e=>{const r=e.getBoundingClientRect();return r.width<=366 && r.height>650 && r.height<762 && e.scrollWidth<=e.clientWidth && Math.abs((r.top+r.bottom)/2-innerHeight/2)<2;}),'receipt details remain centered and fit the viewport without horizontal clipping');
     check(await page.$eval('#spdep-amount',e=>getComputedStyle(e).fontSize==='24px'),'phone amount is readable without input zoom');
     check(await page.evaluate(()=>{
       const body=qs('.spdep-form-body'),footer=qs('.spdep-form-footer');

@@ -199,6 +199,51 @@ const script = fs.readFileSync(path.join(root, 'frontend/public/invoice-image.js
     }
     assert.ok(result.slowMs<2600, 'slow image does not block receipt generation');
     assert.equal(result.fallbackPng,true);
+    // Shopify Mongo IDs must never be queried as persisted sales transaction IDs.
+    await page.addScriptTag({content: fs.readFileSync(path.join(root, 'frontend/public/invoice-unit-identities.js'), 'utf8')});
+    const identities = await page.evaluate(async () => {
+      window.currentUser = {_id:'507f1f77bcf86cd799439030'};
+      window.hasPerm = () => true;
+      currentLang = 'en';
+      const requests = [];
+      window.api = async path => { requests.push(path); throw new Error('Sales invoice not found'); };
+      order._id = '507f1f77bcf86cd799439031';
+      order.items = [{name:'Product',code:'SKU-1',lineId:'line-1',qty:1,price:650,total:650}];
+      const preview = _spPeekPrintTx(order);
+      await InvoiceUnitIdentities.ensure(preview);
+      const hidden = [InvoiceUnitIdentities.placeholder(preview,preview.items[0]),
+        InvoiceUnitIdentities.actions(preview), InvoiceUnitIdentities.printLineHtml(preview,preview.items[0])];
+      const previewLines = InvoiceUnitIdentities.imageLines(preview,preview.items[0]);
+      const downloaded = await exportInvoiceImage('shopify',order._id,'download');
+      navigator.clipboard.write = async items => {
+        const blob = await items[0].data['image/png'];
+        if (blob.type !== 'image/png' || blob.size < 1000) throw new Error('Invalid invoice PNG');
+      };
+      const copied = await exportInvoiceImage('shopify',order._id,'copy');
+      const previewRequests = requests.slice();
+      const actual = {...preview,_invoicePreview:false,_id:'507f1f77bcf86cd799439032'};
+      transactions.push(actual);
+      const missing = await exportInvoiceImage('transaction',actual._id,'download');
+      const missingMessage = messages.at(-1);
+      window.api = async path => {
+        requests.push(path);
+        return {transactionId:actual._id,lines:[{lineId:'line-1',sku:'SKU-1',
+          current:[{unitId:'piece-1',manualCode:'U-0000-0060-4',orderStatus:'prepared'}],history:[]}]};
+      };
+      const actualDownloaded = await exportInvoiceImage('transaction',actual._id,'download');
+      return {downloaded,copied,hidden,previewLines,previewRequests,missing,missingMessage,
+        actualDownloaded,requests,actualLines:InvoiceUnitIdentities.imageLines(actual,actual.items[0])};
+    });
+    assert.equal(identities.downloaded,true);
+    assert.equal(identities.copied,true);
+    assert.deepEqual(identities.hidden,['','','']);
+    assert.deepEqual(identities.previewLines,[]);
+    assert.deepEqual(identities.previewRequests,[]);
+    assert.equal(identities.missing,false);
+    assert.match(identities.missingMessage.message,/Sales invoice not found/);
+    assert.equal(identities.actualDownloaded,true);
+    assert.deepEqual(identities.requests,Array(2).fill('/inventory-units/orders/507f1f77bcf86cd799439032/identities'));
+    assert.ok(identities.actualLines.some(line=>line.includes('U-0000-0060-4')));
     // Exercise the real ClipboardItem and OS clipboard, with a trusted click on localhost.
     const clipboardPage = await browser.newPage();
     await clipboardPage.setRequestInterception(true);

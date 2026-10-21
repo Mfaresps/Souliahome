@@ -18,6 +18,8 @@
 @media(max-width:480px){.gs-unit-dialog{padding:14px}.gs-unit-dialog-heading h2{font-size:16px}}
 @media(max-width:560px){.gs-product-card{grid-template-columns:1fr;gap:12px}.gs-product-image{height:min(38vh,220px)}.gs-product-details h3{font-size:19px}}
 @media(prefers-reduced-motion:reduce){.gs-unit-dialog,.gs-unit-dialog::backdrop{transition:none}.gs-unit-result{animation:none}}
+/* The lookup should appear immediately on touch devices. */
+@media(max-width:768px){.gs-unit-dialog,.gs-unit-dialog::backdrop{transition:none}.gs-unit-dialog[open]{opacity:1;transform:none}.gs-unit-result{animation:none}}
 .gs-unit-state{display:flex;align-items:flex-start;gap:9px;flex-wrap:wrap;margin:10px 0 14px;padding:10px;border:1px solid var(--border,#dde5e0);border-radius:9px;background:var(--surface2,#f6f8f7)}
 .gs-unit-status{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:650;line-height:1.6;background:#eeeef3;color:#606473;white-space:nowrap}
 .gs-unit-status::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
