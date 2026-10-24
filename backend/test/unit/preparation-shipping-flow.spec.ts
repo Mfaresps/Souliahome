@@ -22,7 +22,7 @@ function fixture() {
   return {c: context, orders, state: () => runInNewContext('_bsfState', context)};
 }
 
-it('releases preparation on Send before the carrier response and preserves the original order identity', async () => {
+it('holds preparation through Send and preserves the original order identity', async () => {
   const {c, orders, state} = fixture();
   let sent: any;
   c.api.mockReturnValue(new Promise(resolve => {sent = resolve;}));
@@ -30,18 +30,19 @@ it('releases preparation on Send before the carrier response and preserves the o
   c._bsfMaybeOffer(orders[0]).then(() => {released = true;});
   const task = c._bsfSend();
   await turn();
-  expect(released).toBe(true);
-  expect(state().docked).toBe(true);
-  expect(c._pwScanFocus).toHaveBeenCalledWith('2');
+  expect(released).toBe(false);
+  expect(state().docked).toBeUndefined();
+  expect(c._pwScanFocus).not.toHaveBeenCalled();
   expect(c.api.mock.calls[0][0]).toBe('/shipping/create-order/1');
   sent({bostaOrderId: 'shipment', trackingNumber: 'TR-1'});
   await task;
   expect(state().stage).toBe('sent');
   expect(orders[0]).toMatchObject({bostaOrderId: 'shipment', bostaTrackingNumber: 'TR-1'});
   expect((orders[1] as any).bostaOrderId).toBeUndefined();
+  expect(released).toBe(false);
 });
 
-it('keeps preparation available while printing and permits retry after a cancelled or failed print', async () => {
+it('holds the current order while printing and permits retry after a cancelled or failed print', async () => {
   const {c, orders, state} = fixture();
   Object.assign(orders[0], {bostaOrderId:'shipment'});
   let complete: any;
@@ -49,19 +50,20 @@ it('keeps preparation available while printing and permits retry after a cancell
   let released = false;
   c._bsfMaybeOffer(orders[0]).then(() => {released = true;});
   const printing = c._bsfPrint(); await turn();
-  expect(released).toBe(true);
+  expect(released).toBe(false);
   expect(state().stage).toBe('printing');
-  expect(state().docked).toBe(true);
+  expect(state().docked).toBeUndefined();
   complete(false); await printing;
   expect(state().stage).toBe('sent');
   expect(c.setTimeout).not.toHaveBeenCalled();
+  expect(released).toBe(false);
 });
 
 it('shows a retryable shipping error without rolling back successful preparation', async () => {
   const {c, orders, state} = fixture();
   c.api.mockRejectedValue(new Error('Carrier unavailable'));
   c._bsfMaybeOffer(orders[0]); await c._bsfSend();
-  expect(state()).toMatchObject({stage:'error', docked:true, error:'Carrier unavailable'});
+  expect(state()).toMatchObject({stage:'error', error:'Carrier unavailable'});
   c.api.mockResolvedValue({bostaOrderId:'shipment'}); await c._bsfSend();
   expect(state().stage).toBe('sent');
 });
@@ -82,4 +84,68 @@ it('shows the prepared reference in the success title with the customer undernea
   const content = c._bsfStageHtml({stage:'ask'}, orders[0]);
   expect(content).toContain('Order #3101 prepared successfully');
   expect(content).toContain('<div class="bsf-sub">Customer 1</div>');
+});
+
+it('waits for confirmed printing and the success scene before releasing the next order', async () => {
+  const { c, orders, state } = fixture();
+  Object.assign(orders[0], { bostaOrderId: 'shipment', bostaTrackingNumber: 'TR-1' });
+  let result: any = 'pending';
+  c._bsfMaybeOffer(orders[0]).then((printed: boolean) => { result = printed; });
+  c.printBostaAwb.mockResolvedValue(true);
+  await c._bsfPrint();
+  expect(result).toBe('pending');
+  expect(state().stage).toBe('printed');
+  expect(c._bsfStageHtml(state(), orders[0])).toContain('bsf-ps-feed');
+  expect(c.setTimeout).toHaveBeenCalledWith(expect.any(Function), 4300);
+  c.setTimeout.mock.calls[0][0]();
+  await turn();
+  expect(result).toBe(true);
+});
+
+it('postponing shipping does not authorize automatic advancement', async () => {
+  const { c, orders } = fixture();
+  const decision = c._bsfMaybeOffer(orders[0]);
+  c._bsfClose();
+  await expect(decision).resolves.toBe(false);
+});
+
+it.each([false, true])('records a print only after the user confirms physical output (confirmed=%s)', async confirmed => {
+  const c: any = {
+    currentLang: 'en', showConfirm: jest.fn().mockResolvedValue(confirmed),
+    _awbPrinting: false, _awbPrintsOf: () => [],
+    _awbPrepare: jest.fn().mockResolvedValue({ pages: [] }), _awbPrintInFrame: jest.fn().mockResolvedValue(undefined),
+    _awbPrepared: new Map(), _awbRecordPrint: jest.fn(), _awbBusy: jest.fn(),
+    setTimeout: jest.fn(), clearTimeout: jest.fn(), toast: jest.fn(), t: String
+  };
+  runInNewContext(html.slice(html.indexOf('function _awbConfirmPrinted('), html.indexOf('/* ══ AWB print log')), c);
+  await expect(c.printBostaAwb('1')).resolves.toBe(confirmed);
+  expect(c._awbRecordPrint).toHaveBeenCalledTimes(confirmed ? 1 : 0);
+  expect(c.showConfirm).toHaveBeenCalledTimes(1);
+});
+
+it.each([1, 2])('keeps completed orders in preparation and advances only after successful print (group size=%s)', async count => {
+  const orders = Array.from({ length: count }, (_, i) => ({ _id: String(i + 1), items: [{ lineId: 'line', qty: 1 }], prepChecked: false }));
+  const group = { prepRef: 'group', orders };
+  let printed: any;
+  const c: any = {
+    _pickupOrders: orders, _puPrepGroups: [group], _pucoColType: 'prep', _pucoGroupKey: 'group', _pwSelId: '1',
+    qs: () => null, CSS: { escape: String }, window: { matchMedia: () => ({ matches: true }) },
+    _pwEnsurePickLines: jest.fn(), api: jest.fn().mockResolvedValue({ lines: [{ lineId: 'line', qty: 1, units: [{ status: 'prepared' }] }] }),
+    _pwIncompletePickLines: () => [], _pwPickState: () => ({}), _pwLoadPickSummary: jest.fn(),
+    _puSetLocalPrepChecked: (id: string, checked: boolean) => { orders.find(o => o._id === id)!.prepChecked = checked; },
+    _puPersistPrepCheck: jest.fn().mockResolvedValue(undefined), _bsfIsBostaOrder: () => true,
+    _bsfMaybeOffer: () => new Promise(resolve => { printed = resolve; }), _pwFlipRender: jest.fn(),
+    _pwOrderForDisplay: (rows: any[]) => rows, _pwNextPending: (rows: any[]) => rows.find(o => !o.prepChecked),
+    pwSelectOrder: jest.fn(), _pucoUpdateProgress: jest.fn(), _puUpdatePrepGroupProgress: jest.fn(), _puSavePrepGroups: jest.fn(),
+    closePuCardOrdersModal: jest.fn(), prepGroupMoveToReady: jest.fn()
+  };
+  runInNewContext(html.slice(html.indexOf('async function _pucoTickOrderImpl('), html.indexOf('let _pucoAddSuggestIdx')), c);
+  await c._pucoTickOrderImpl('1', true);
+  expect(orders[0].prepChecked).toBe(true);
+  expect(c._pucoUpdateProgress).toHaveBeenCalledWith(group);
+  expect(c.pwSelectOrder).not.toHaveBeenCalled();
+  printed(true); await turn();
+  expect(c.pwSelectOrder).toHaveBeenCalledTimes(count === 2 ? 1 : 0);
+  expect(c.closePuCardOrdersModal).not.toHaveBeenCalled();
+  expect(c.prepGroupMoveToReady).not.toHaveBeenCalled();
 });

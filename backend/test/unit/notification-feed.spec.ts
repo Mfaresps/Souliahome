@@ -31,6 +31,32 @@ it('merges mentions and comment/history copies into one newest-first event with 
   expect(items.map((n: any) => n.id)).toEqual(['mention-m1', 'old-warning']);
   expect(c.souliaNotificationUnread(items, [])).toBe(2);
 });
+it('merges a follow-up comment with its participant notification and reads both together', async () => {
+  const c = fixture(); c.souliaSyncNotificationAccount();
+  c._mentionsCache = [{ id: 'm-followup', fromName: 'Sallonaz', txId: 'fu1', commentId: 0, fuCommentId: 'comment1', read: false,
+    commentText: 'تعليق جديد على متابعة #2907: Dont forget ya ganna', ts: '2026-10-24T00:47:00Z' }];
+  c.history = [
+    { id: 'h1', history: true, recordId: 'followup:fu1', eventType: 'comment', event: 'comment1', historyRead: false },
+    { id: 'other-comment', history: true, recordId: 'followup:fu1', eventType: 'comment', event: 'comment2', historyRead: false },
+    { id: 'other-thread', history: true, recordId: 'followup:fu2', eventType: 'comment', event: 'comment1', historyRead: false },
+    { id: 'other-record', history: true, recordId: 'tx:fu1', eventType: 'comment', event: 'comment1', historyRead: false },
+  ]; c.unread = 4;
+  const items = c.souliaMergeNotifications(c.history);
+  expect(items.map((n: any) => n.id)).toEqual(['mention-m-followup', 'other-comment', 'other-record', 'other-thread']);
+  expect(c.souliaNotificationUnread(items, [])).toBe(4);
+  expect(items[0].historyIds).toEqual(['h1']);
+  expect(items[0].mention.fuCommentId).toBe('comment1');
+  await c.souliaReadNotification('mention-m-followup');
+  expect(c.api).toHaveBeenCalledWith('/mentions/m-followup/read', { method: 'POST' });
+  expect(c.souliaMarkHistoryRead).toHaveBeenCalledWith('h1');
+  expect(c.souliaIsNotificationUnread(items[0])).toBe(false);
+});
+it('does not merge unrelated follow-up notices with an empty comment identifier', () => {
+  const c = fixture();
+  c._mentionsCache = [{ id: 'm1', txId: 'fu1', commentId: 0, fuCommentId: '' }];
+  const items = c.souliaMergeNotifications([{ id: 'h1', history: true, recordId: 'followup:fu1', eventType: 'comment', event: '0' }]);
+  expect(items).toHaveLength(2);
+});
 it('formats live relative notification times with Arabic singular, dual and plural units', () => {
   const c = fixture(); c.currentLang = 'ar';
   const now = Date.parse('2026-10-21T12:00:00Z');

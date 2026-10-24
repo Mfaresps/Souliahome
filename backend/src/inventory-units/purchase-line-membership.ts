@@ -15,3 +15,9 @@ export function purchaseLineOrigins(items: any[], line: any) {
   }
   return clauses.length ? { $or: clauses } : { _id: { $in: [] } };
 }
+
+/** Existing identities remain usable after increasing a receipt's quantity. */
+export function purchaseReceiptCoverageValid(line: any, represented: number): boolean {
+  return !!line && Number.isSafeInteger(line.qty) && line.qty > 0
+    && Number.isSafeInteger(represented) && represented > 0 && represented <= line.qty;
+}

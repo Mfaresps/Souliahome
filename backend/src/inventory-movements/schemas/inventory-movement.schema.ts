@@ -23,6 +23,20 @@ export type InventoryMovementSourceType =
 @Schema({ timestamps: true })
 export class InventoryMovement {
   @Prop({ default: '' })
+  afterSalesId: string;
+  @Prop({ default: '' })
+  afterSalesRef: string;
+  @Prop({ default: '' })
+  originalInvoiceRef: string;
+  @Prop({ default: '' })
+  lifecycle: string;
+  @Prop({ default: 0 })
+  physicalQty: number;
+  @Prop({ default: 0 })
+  quarantinedQty: number;
+  @Prop({ type: [String], default: [] })
+  unitIds: string[];
+  @Prop({ default: '' })
   warehouseTransferId: string;
   @Prop({ type: String, default: '' })
   warehouseCode: string;

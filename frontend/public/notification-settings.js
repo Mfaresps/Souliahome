@@ -196,10 +196,10 @@
     if (activationToken !== localStorage.getItem('token')) return;
     settings = await api('/notifications/preferences', { method: 'PATCH', body: JSON.stringify({ enabled: true }) });
     try { localStorage.setItem(promptKey(), 'enabled'); } catch (_) {}
-    render(); message(text('تم تفعيل إشعارات سوليا بنجاح 🎉🥳', 'SOULIA notifications enabled successfully 🎉🥳'));
+    render(); message(text('تم تفعيل الإشعارات بنجاح 🎉🥳', 'Notifications enabled successfully 🎉🥳'));
     if (!wasEnabled || !hadSubscription) {
       const en = settings.language === 'en';
-      try { await registration.showNotification(en ? '🎉 SOULIA notifications enabled successfully 🥳' : '🎉 تم تفعيل إشعارات سوليا بنجاح 🥳', {
+      try { await registration.showNotification(en ? '🎉 Notifications enabled successfully 🥳' : '🎉 تم تفعيل الإشعارات بنجاح 🥳', {
         body: en ? 'Your selected notifications will now reach this device.' : 'ستصلك الإشعارات التي اخترتها على هذا الجهاز.',
         icon: '/push-icon-192.png', tag: 'soulia-notifications-activated', lang: en ? 'en' : 'ar', dir: en ? 'ltr' : 'rtl', data: { url: '/' },
       }); } catch (_) { /* Activation remains successful if the browser cannot display its confirmation. */ }
@@ -311,7 +311,7 @@
             offer.querySelector('#push-onboarding-feedback').textContent = document.getElementById('push-feedback')?.textContent || text('اضغط التفعيل مجددًا بعد تجهيز الخدمة.', 'Click Enable again when the service is ready.'); return;
           }
           localStorage.setItem(key, 'enabled');
-          offer.innerHTML = `<h3>${text('تم تفعيل إشعارات سوليا بنجاح 🎉🥳', 'SOULIA notifications enabled successfully 🎉🥳')}</h3><p>${text('سيصلك الآن ما فعّلته من تعليقات ومتابعات وطلبات وتسليم ومشكلات ومنشنات على هذا الجهاز.', 'Your selected comments, follow-ups, orders, deliveries, issues and mentions will now reach this device.')}</p><button class="btn btn-primary" type="button" id="push-onboarding-done">${text('تم', 'Done')}</button>`;
+          offer.innerHTML = `<h3>${text('تم تفعيل الإشعارات بنجاح 🎉🥳', 'Notifications enabled successfully 🎉🥳')}</h3><p>${text('سيصلك الآن ما فعّلته من تعليقات ومتابعات وطلبات وتسليم ومشكلات ومنشنات على هذا الجهاز.', 'Your selected comments, follow-ups, orders, deliveries, issues and mentions will now reach this device.')}</p><button class="btn btn-primary" type="button" id="push-onboarding-done">${text('تم', 'Done')}</button>`;
           offer.querySelector('#push-onboarding-done').onclick = () => offer.close();
         } catch (error) { if (offer.querySelector('#push-onboarding-feedback')) offer.querySelector('#push-onboarding-feedback').textContent = errorMessage(error); }
         finally { offerBusy = false; offer.querySelectorAll('button').forEach(button => button.disabled = false); }

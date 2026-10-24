@@ -64,12 +64,41 @@ describe('createOrder — sent vs resent', () => {
   const base = { type: 'مبيعات', pickupStatus: 'Preparing', phone: '01000000000', shippingAddress: 'شارع 9',
     shippingGov: 'القاهرة', shippingBostaCity: 'Cairo', client: 'سارة', total: 900, remaining: 900, items: [{ name: 'Bag', qty: 1 }] };
 
+  it.each([
+    ['  سارة   أحمد  ', 'سارة', 'أحمد'],
+    ['\tسارة\nأحمد\tعلي\n', 'سارة', 'أحمد علي'],
+    ['\u00a0Sara\u00a0\u00a0Ahmed\u00a0', 'Sara', 'Ahmed'],
+    ['  سارة  ', 'سارة', '-'],
+  ])('sends the edited name %j with nonempty receiver fields', async (client, firstName, lastName) => {
+    const { svc } = run({ ...base, _id: 't1', client });
+    expect((await svc.createOrder('t1', 'Reem')).success).toBe(true);
+    expect(svc.request).toHaveBeenCalledWith('POST', '/deliveries', expect.objectContaining({
+      receiver: { firstName, lastName, phone: '01000000000' },
+    }), 'KEY');
+  });
+
+  it.each(['', ' \t\n ', undefined])('rejects an empty saved name %j before sending or clearing a previous shipment', async client => {
+    const { svc, updates } = run({ ...base, _id: 't1', client, bostaOrderId: 'old-id', bostaStatus: 'VALIDATION_ERROR' });
+    const result = await svc.createOrder('t1', 'Reem');
+    expect(result).toMatchObject({ success: false, code: 'VALIDATION_ERROR' });
+    expect(result.error).toContain('اسم العميل فارغ');
+    expect(svc.request).not.toHaveBeenCalled();
+    expect(updates).toEqual([]);
+  });
+
   it('first send → "sent"', async () => {
     const { svc, updates } = run({ ...base, _id: 't1' });
     const r = await svc.createOrder('t1', 'Reem');
     expect(r.success).toBe(true);
     const ev = updates.map(u => u.$push?.shipmentEvents).find(Boolean);
     expect(ev).toMatchObject({ type: 'sent', trackingNumber: 'T2', by: 'Reem' });
+    expect(updates.find(u => u.bostaOrderId === 'B2').pickupStatus).toBe('Preparing');
+  });
+
+  it('keeps an order already transferred to pickup Ready after registration', async () => {
+    const { svc, updates } = run({ ...base, _id: 't1', pickupStatus: 'Ready' });
+    await svc.createOrder('t1', 'Reem');
+    expect(updates.find(u => u.bostaOrderId === 'B2').pickupStatus).toBe('Ready');
   });
 
   it('after a deletion → "resent", naming the label it replaces', async () => {

@@ -29,6 +29,7 @@ import { ManualPurchaseReceivingService } from '../../src/inventory-units/manual
 import { InventoryUnitsController } from '../../src/inventory-units/inventory-units.controller';
 import { InventoryScanningService } from '../../src/inventory-units/inventory-scanning.service';
 import { ScannedSaleService } from '../../src/inventory-units/scanned-sale.service';
+import { HttpExceptionFilter } from '../../src/core/filters/http-exception.filter';
 import { InventoryPacksService } from '../../src/inventory-units/inventory-packs.service';
 import { DepositReceiptsService } from '../../src/shopify/deposit-receipts.service';
 import { ManualDepositReceiptSchema } from '../../src/shopify/schemas/manual-deposit-receipt.schema';
@@ -97,6 +98,7 @@ describe('Atomic purchase receiving with actual financial writers on disposable 
       request.user = { ...actor, role: role === 'admin' ? 'admin' : 'staff', perms: role === 'buyer' ? ['purchase-create'] : role === 'viewer' ? ['purchase-view'] : role === 'receiver' ? ['purchase-create', 'purchase-view', 'inventory-units-receive'] : [] }; return true;
     } }).compile();
     app = module.createNestApplication(); app.useLogger(false); app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalFilters(new HttpExceptionFilter());
     await app.listen(0, '127.0.0.1'); base = await app.getUrl();
   }, 40000);
   beforeEach(async () => {
@@ -196,6 +198,35 @@ describe('Atomic purchase receiving with actual financial writers on disposable 
     expect(scanned.quantity).toBe(2);
     expect(await models.InventoryUnit.countDocuments({ status: 'picking' })).toBe(2);
   });
+  it.each([false, true])('scans and approves existing receipt pieces after a quantity increase, while rejecting later overcoverage (reduce=%s)', async reduce => {
+    const receipt = await manual.receive(manualPayload(), actor);
+    const unitId = receipt.receipt.unitIds[0];
+    const initial: any = await models.InventoryUnit.findById(unitId).lean();
+    await units.action(unitId, { operationKey: id(), reason: 'Physical inspection', action: 'inspect', expectedVersion: initial.__v,
+      physicalPossessionConfirmed: true, inspectionPassed: true }, actor);
+    await models.Transaction.updateOne({ _id: receipt.transaction._id }, { $set: { 'items.0.qty': 5 } });
+    const saleId = id();
+    await raw('transactions').insertOne({ _id: new Types.ObjectId(saleId), type: 'مبيعات', ref: 'SALE-PREP', warehouseCode: initial.warehouseCode, pickupStatus: 'Preparing',
+      items: [{ lineId: 'sale-line', code: 'SKU-1', productId, qty: 1, price: 30 }] });
+    const before = await baseline();
+    const post = (path: string, data: any) => fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-test-role': 'admin' }, body: JSON.stringify(data) });
+    const scanned = await post(`/inventory-units/orders/${saleId}/picking/scans`, { operationKey: id(), reason: 'Physical piece scanned', identifier: initial.barcode,
+      lineId: 'sale-line', physicalPossessionConfirmed: true });
+    expect(scanned.status).toBe(201);
+    const picked: any = await models.InventoryUnit.findById(unitId).lean();
+    if (reduce) await models.Transaction.updateOne({ _id: receipt.transaction._id }, { $set: { 'items.0.qty': 2 } });
+    const approved = await post(`/inventory-units/${unitId}/actions`, { operationKey: id(), reason: 'Approve physical piece', action: 'prepare',
+      expectedVersion: picked.__v, transactionId: saleId, lineId: 'sale-line', physicalPossessionConfirmed: true });
+    expect(approved.status).toBe(reduce ? 409 : 201);
+    const response: any = await approved.json();
+    if (reduce) expect(response).toMatchObject({ code: 'PURCHASE_RECEIPT_RECONCILIATION_REQUIRED', purchaseTransactionId: String(receipt.transaction._id), invoiceQuantity: 2, registeredQuantity: 3 });
+    else {
+      expect(response.unit.status).toBe('prepared');
+      expect(await baseline()).toEqual(before);
+    }
+    expect((await models.InventoryUnit.findById(unitId).lean() as any).status).toBe(reduce ? 'picking' : 'prepared');
+  });
+
   it('protects the scanned-sale HTTP route with authentication, allocation permission and nested DTO validation', async () => {
     const request = await scannedPayload();
     const http = (role?: string, body: any = request) => fetch(base + '/inventory-units/sales', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(role ? { 'x-test-role': role } : {}) }, body: JSON.stringify(body) });

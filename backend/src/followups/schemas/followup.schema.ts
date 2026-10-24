@@ -109,6 +109,24 @@ export class FollowUp {
   @Prop({ default: '' })
   resolution: string; // free-text resolution method when status === 'تم حل المشكلة'
 
+  @Prop({ default: '' })
+  orderOutcome: string; // confirmed | cancelled; set only after the order operation commits
+
+  @Prop()
+  closedAt?: Date;
+
+  @Prop({ type: Date, default: null })
+  deferredUntil?: Date | null;
+
+  @Prop({ default: '' })
+  deferReason: string; // customer_postponed | carrier_delay | awaiting_return
+
+  @Prop({ default: '' })
+  deferNote: string;
+
+  @Prop({ default: false })
+  deferReminderSent: boolean;
+
   @Prop({ type: [String], default: [] })
   tags: string[];
 

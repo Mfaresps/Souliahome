@@ -44,6 +44,10 @@ export class ReturnItem {
 
 @Schema({ timestamps: true })
 export class ReturnRequest {
+  /** Versioned after-sales workflow; legacy requests retain their original approval behavior. */
+  @Prop({ type: Object, default: null })
+  workflow?: Record<string, any>;
+
   @Prop({ required: true })
   originalTransactionId: string;
 

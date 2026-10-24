@@ -3,7 +3,7 @@ import { DatabaseWriteContext } from '../shared/database-write-context';
 import { UnitManualCodesService } from './unit-manual-codes.service';
 import { manualPackCode, packCodeFilter } from './pack-manual-codes';
 import { pickingExceptions } from './picking-exceptions';
-import { purchaseLineOrigins, resolvePurchaseLine } from './purchase-line-membership';
+import { purchaseLineOrigins, resolvePurchaseLine, purchaseReceiptCoverageValid } from './purchase-line-membership';
 import { requireWarehouse, warehouseCode as normalizeWarehouseCode } from '../warehouses/warehouse-storage';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model, Types, ClientSession } from 'mongoose';
@@ -724,6 +724,10 @@ export class InventoryUnitsService {
     const saleId = String(this.id(transactionId));
     dto = { ...dto, reason: dto.reason?.trim() || 'استلام مرتجع بدون ملصق' };
     return this.write(`customer-piece-return:${saleId}`, dto, actor, 'inventory-units-condition', async (session, name, context) => {
+      if (await this.connection.collection('returnrequests').findOne({ originalTransactionId: saleId, 'workflow.version': 2,
+        'workflow.selectedUnits': dto.unitId, 'workflow.stage': { $nin: ['cancelled', 'closed'] } }, { session })) {
+        throw new ConflictException('استلم القطعة من ملف الاسترجاع والاستبدال المفتوح لضمان تزامن الفاتورة والمخزن');
+      }
       if (!dto.physicalPossessionConfirmed) throw new BadRequestException({ code: 'RETURN_CUSTODY_REQUIRED', message: 'أكد استلام القطعة فعليًا أولًا' });
       const unit: any = await this.units.findById(this.id(dto.unitId)).session(session);
       if (!unit) throw new NotFoundException('Unit not found');
@@ -782,7 +786,13 @@ export class InventoryUnitsService {
       products.some(product => String(product._id) === String(unit.productId) && String(product.code || '').trim() === String(line.code || '').trim());
     const makeIdentity = (unit: any, lineId: string, active: boolean) => {
       const events: any[] = facts.filter((event: any) => event.unitId === String(unit._id) && event.lineId === lineId);
-      const last = (action: string) => { const matches = events.filter(event => event.action === action); return matches[matches.length - 1]; };
+      const retries = events.filter(event => event.action === 'prepared' && event.details?.failedDelivery === true);
+      const retryStart = retries[retries.length - 1]?.sequence || 0;
+      const last = (action: string) => {
+        const matches = events.filter(event => event.action === action &&
+          (!['shipped', 'delivered', 'returned'].includes(action) || event.sequence >= retryStart));
+        return matches[matches.length - 1];
+      };
       const returned = last('returned'), shipped = last('shipped'), delivered = last('delivered');
       const prepared = last('prepared'), picked = last('picking-started');
       // Order status may confirm dispatch before a separate identity lifecycle event is written.
@@ -906,7 +916,13 @@ export class InventoryUnitsService {
         const sourceLine = source ? resolvePurchaseLine(source.items || [], unit.origin.purchaseLineId, String(product.code || '').trim()) : null;
         const sourceQty = sourceLine ? await this.units.countDocuments({ 'origin.purchaseTransactionId': unit.origin.purchaseTransactionId,
           productId: unit.productId, ...purchaseLineOrigins(source?.items || [], sourceLine) }).session(session) : 0;
-        if (!sourceLine || !Number.isSafeInteger(sourceLine.qty) || sourceQty !== sourceLine.qty) throw new ConflictException('Purchase receipt needs reconciliation before picking');
+        // Registering the remaining pieces of an increased receipt is independent of
+        // picking identities already backed by that receipt. Excess coverage still blocks.
+        if (!purchaseReceiptCoverageValid(sourceLine, sourceQty)) throw new ConflictException({
+          code: 'PURCHASE_RECEIPT_RECONCILIATION_REQUIRED', message: 'Purchase receipt needs reconciliation before picking',
+          purchaseTransactionId: unit.origin.purchaseTransactionId, purchaseRef: source?.ref || '',
+          invoiceQuantity: sourceLine?.qty ?? null, registeredQuantity: sourceQty,
+        });
       }
       const from = unit.status; unit.status = 'picking'; unit.markModified('status'); await unit.save({ session });
       await this.event(unit, 'picking-started', from, dto, actor, name, session, { transactionId: String(sale._id), lineId: dto.lineId,
@@ -993,16 +1009,26 @@ export class InventoryUnitsService {
   async actionInSession(identifier: string, dto: UnitActionDto, actor: TrackingActor, session: ClientSession, name: string, packId?: string, context?: DatabaseWriteContext) {
       const unit: any = await this.units.findOne(await this.identifierFilter(identifier, session)).session(session);
       if (!unit) throw new NotFoundException('Unit not found');
+      if (dto.action === 'return') {
+        const owner = await this.connection.collection('returnrequests').findOne({ 'workflow.version': 2,
+          'workflow.selectedUnits': String(unit._id), 'workflow.stage': { $nin: ['closed', 'cancelled'] } }, { session });
+        if (owner && context?.afterSalesCaseId !== String(owner._id)) throw new ConflictException('استلم القطعة من ملف الاسترجاع والاستبدال المرتبط');
+      }
       if (unit.packId && unit.packId !== packId && !['inspect','prepare','ship','deliver'].includes(dto.action)) throw new ConflictException('Open the sealed pack before acting on one piece');
       const product = await this.lockProduct(unit.productId, session);
-      if ((unit.origin.purchaseOrderId || unit.origin.purchaseLineId) && ['inspect', 'reserve', 'picking', 'prepare', 'ship', 'deliver'].includes(dto.action)) {
+      if ((unit.origin.purchaseTransactionId || unit.origin.purchaseLineId) && ['inspect', 'reserve', 'picking', 'prepare', 'ship', 'deliver'].includes(dto.action)) {
         const source = await this.connection.collection('transactions').findOneAndUpdate({ _id: this.id(unit.origin.purchaseTransactionId),
           type: 'مشتريات', cancelled: { $ne: true }, archived: { $ne: true } }, { $inc: { unitTrackingRevision: 1 } },
           { session, returnDocument: 'after', includeResultMetadata: false });
         const line = source ? resolvePurchaseLine(source.items || [], unit.origin.purchaseLineId, String(product.code || '').trim()) : null;
         const represented = line ? await this.units.countDocuments({ 'origin.purchaseTransactionId': unit.origin.purchaseTransactionId,
           productId: unit.productId, ...purchaseLineOrigins(source?.items || [], line) }).session(session) : 0;
-        if (!source || !line || !Number.isSafeInteger(line.qty) || represented !== line.qty) throw new ConflictException('Receipt reversed, edited or archived; financial/custody reconciliation required before making units available');
+        if (!source || !purchaseReceiptCoverageValid(line, represented)) throw new ConflictException({
+          code: 'PURCHASE_RECEIPT_RECONCILIATION_REQUIRED',
+          message: 'Receipt reversed, edited or archived; financial/custody reconciliation required before making units available',
+          purchaseTransactionId: unit.origin.purchaseTransactionId, purchaseRef: source?.ref || '',
+          invoiceQuantity: line?.qty ?? null, registeredQuantity: represented,
+        });
       }
       if (unit.__v !== dto.expectedVersion) throw new ConflictException('Stale unit version');
       const from = unit.status;
@@ -1015,6 +1041,7 @@ export class InventoryUnitsService {
       if (['release', 'undo-picking'].includes(dto.action) && unit.assignment) {
         const order: any = await this.connection.collection('transactions').findOneAndUpdate({ _id: this.id(unit.assignment.transactionId), type: 'مبيعات' },
           { $inc: { unitTrackingRevision: 1 } }, { session, returnDocument: 'after', includeResultMetadata: false });
+        if (order?.afterSales?.shipmentPending) throw new ConflictException('البديل مرتبط ببوليصة استبدال؛ راجع ملف الطلب قبل فك التجهيز');
         if (order && (order.shippedAt || ['Shipped', 'Delivered'].includes(order.pickupStatus) || order.bostaStatus === 'DELIVERED')) {
           throw new ConflictException('تم شحن الطلب؛ لا يمكن إزالة هوية القطعة بالتراجع. سجّل استلام مرتجع فعليًا عند رجوعها');
         }

@@ -182,6 +182,16 @@ export class EmployeePerformanceController {
     return this.scoringService.getMyWorkspace(String(userId), period, periodKey);
   }
 
+  @Get('team-workspace')
+  @Roles('admin')
+  getTeamWorkspace() { return this.scoringService.getTeamWorkspace(); }
+
+  @Get('team-workspace/:employeeId')
+  @Roles('admin')
+  getTeamEmployeeWorkspace(@Param('employeeId') employeeId: string) {
+    return this.scoringService.getTeamEmployeeWorkspace(employeeId);
+  }
+
   /** The caller's own shift schedule + leave, and where they stand in today's window. */
   @Get('my-roster')
   async getMyRoster(@Request() req: any) {

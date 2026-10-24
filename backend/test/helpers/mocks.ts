@@ -143,5 +143,6 @@ export const createMockInventoryMovementsService = () => ({
 // TransactionsService injects this with forwardRef (FollowUpsModule ↔ TransactionsModule cycle);
 // only closeShippingIssueFollowUp is called from the service, on the shipping-issue paths.
 export const createMockFollowUpsService = () => ({
+  closeForOrder: jest.fn().mockResolvedValue(undefined),
   closeShippingIssueFollowUp: jest.fn().mockResolvedValue(undefined),
 });

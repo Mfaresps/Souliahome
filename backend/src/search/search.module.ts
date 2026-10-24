@@ -18,11 +18,13 @@ import {
   ShopifyOrderSchema,
 } from '../shopify/schemas/shopify-order.schema';
 import { SearchService } from './search.service';
+import { ReturnRequest, ReturnRequestSchema } from '../returns/schemas/return-request.schema';
 import { SearchController } from './search.controller';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
+      { name: ReturnRequest.name, schema: ReturnRequestSchema },
       { name: Product.name, schema: ProductSchema },
       { name: Transaction.name, schema: TransactionSchema },
       { name: Supplier.name, schema: SupplierSchema },

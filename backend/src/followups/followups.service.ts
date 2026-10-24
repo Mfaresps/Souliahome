@@ -1,11 +1,11 @@
 import { NotificationsService } from '../notifications/notifications.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron } from '@nestjs/schedule';
 import { Model } from 'mongoose';
 import { FollowUp, FollowUpDocument } from './schemas/followup.schema';
-import { CreateFollowUpDto, UpdateFollowUpDto } from './dto/followup.dto';
+import { CreateFollowUpDto, UpdateFollowUpDto, DeferFollowUpDto } from './dto/followup.dto';
 import { MentionsService } from '../mentions/mentions.service';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { EmployeeShiftService } from '../employee-performance/employee-shift.service';
@@ -214,6 +214,8 @@ export class FollowUpsService implements OnModuleInit {
         }
 
         existing.autoTrigger = trigger;
+        existing.deferredUntil = null;
+        existing.deferReminderSent = false;
         await existing.save();
         this.presence.emitEvent('followup:changed', { action: 'update', id: String(existing._id) });
         if (wasSettled && existing.responsibleId) {
@@ -356,26 +358,20 @@ export class FollowUpsService implements OnModuleInit {
    */
   async closeShippingIssueFollowUp(transactionId: string, outcomeLabel: string, by: string): Promise<void> {
     try {
-      const doc = await this.model
-        .findOne({ transactionId: String(transactionId), autoSource: 'shipping-issue' })
-        .sort({ createdAt: -1 })
-        .exec();
-      if (!doc) return;
-      if (doc.cancelled || DONE_STATUSES.includes(doc.status)) return;
-
-      doc.status = 'تم حل المشكلة';
-      doc.resolution = outcomeLabel;
-      doc.escalationBaseline = new Date();
-      doc.escalationLevel = 0;
-      (doc.comments as any[]).push({
-        authorId: 'system',
-        authorName: 'النظام',
-        text: `أُغلقت المشكلة: ${outcomeLabel}${by ? ` — بواسطة ${by}` : ''}`,
-        edited: false,
-        kind: 'note',
-      });
-      await doc.save();
-      this.presence.emitEvent('followup:changed', { action: 'update', id: String(doc._id) });
+      const at = new Date();
+      // Close every open auto-ticket, including legacy duplicates. Repeated
+      // courier updates must neither append duplicate notes nor reopen work.
+      const result = await this.model.updateMany({
+        transactionId: String(transactionId), autoSource: 'shipping-issue',
+        cancelled: { $ne: true }, status: { $nin: DONE_STATUSES },
+      }, {
+        $set: { status: 'تم حل المشكلة', resolution: outcomeLabel, closedAt: at,
+          escalationBaseline: at, escalationLevel: 0 },
+        $push: { comments: { authorId: 'system', authorName: 'النظام',
+          text: `أُغلقت المشكلة: ${outcomeLabel}${by ? ` — بواسطة ${by}` : ''}`,
+          edited: false, kind: 'note', createdAt: at, updatedAt: at } },
+      }).exec();
+      if (result.modifiedCount) this.presence.emitEvent('followup:changed', { action: 'update', transactionId: String(transactionId) });
     } catch (err: any) {
       this.logger.error(`closeShippingIssueFollowUp failed for tx=${transactionId}: ${err.message}`);
     }
@@ -471,16 +467,82 @@ export class FollowUpsService implements OnModuleInit {
     }
   }
 
+  async defer(id: string, dto: DeferFollowUpDto, userId: string, role: string, name: string) {
+    const until = new Date(dto.until), now = new Date();
+    const labels: Record<string, string> = { customer_postponed: 'تأجيل بناءً على طلب العميل', carrier_delay: 'بانتظار شركة الشحن', awaiting_return: 'بانتظار استلام المرتجع' };
+    if (!labels[dto.reason] || !Number.isFinite(until.getTime()) || until <= now || until.getTime() > now.getTime() + 30 * 86400000) throw new BadRequestException('اختر موعد متابعة قادم خلال 30 يومًا');
+    const doc = await this.model.findOneAndUpdate({ _id: id, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES },
+      ...(role === 'admin' ? {} : { responsibleId: userId }),
+    }, { $set: { deferredUntil: until, deferReason: dto.reason, deferNote: String(dto.note || '').trim(), deferReminderSent: false,
+      escalationBaseline: until, escalationLevel: 0 },
+      $push: { comments: { authorId: userId, authorName: name, kind: 'note', edited: false,
+        text: `${labels[dto.reason]} — موعد المتابعة: ${until.toISOString()}${dto.note ? ` — ${dto.note.trim()}` : ''}`, createdAt: now, updatedAt: now } },
+    }, { new: true }).lean();
+    if (!doc) throw new ForbiddenException('يمكنك تأجيل متابعاتك المفتوحة فقط');
+    try {
+      const recipients = await this.notifications?.notifyFollowUpSchedule({ id, orderRef: doc.orderRef, responsibleId: doc.responsibleId,
+        until: until.toISOString(), reason: dto.reason }, false, userId, name);
+      for (const recipient of recipients || []) this.presence.emitToUser(recipient, 'followup:notify', { id, orderRef: doc.orderRef, reason: 'تم تحديد موعد المتابعة', fromName: name });
+    } catch (err: any) { this.logger.warn(`Follow-up schedule notification failed: ${err.message}`); }
+    this.presence.emitEvent('followup:changed', { action: 'update', id });
+    return doc;
+  }
+
   async update(id: string, dto: UpdateFollowUpDto) {
     const existing = await this.model.findById(id).lean();
+    if (existing?.orderOutcome) throw new ForbiddenException('المتابعة مغلقة بنتيجة الطلب');
     const patch: Record<string, unknown> = { ...dto };
     const statusChanged = dto.status !== undefined && existing && dto.status !== existing.status;
     const reasonChanged = dto.reason !== undefined && existing && dto.reason !== existing.reason;
     if (statusChanged || reasonChanged) {
+      patch.deferredUntil = null;
+      patch.deferReminderSent = false;
       patch.escalationBaseline = new Date();
       patch.escalationLevel = 0;
     }
-    return this.model.findByIdAndUpdate(id, patch, { new: true }).lean();
+    return this.model.findOneAndUpdate({ _id: id, orderOutcome: { $in: ['', null] } }, patch, { new: true }).lean();
+  }
+
+  /** Called after confirmation/cancellation succeeds, never when it is merely requested. */
+  async closeForOrder(order: {
+    transactionId?: string; shopifyOrderIds?: string[]; orderRef?: string;
+  }, outcome: 'confirmed' | 'cancelled', detail: string, by = ''): Promise<void> {
+    const links: Record<string, unknown>[] = [];
+    if (order.transactionId) links.push({ transactionId: String(order.transactionId) });
+    const shopifyIds = (order.shopifyOrderIds || []).filter(Boolean).map(String);
+    if (shopifyIds.length) links.push({ shopifyOrderId: { $in: shopifyIds } });
+    const ref = String(order.orderRef || '').replace(/^#/, '').trim();
+    // Legacy trails may only have a reference, or still carry the local Shopify
+    // ID after conversion to a transaction (whose Shopify ID is the remote ID).
+    if (ref) links.push({ orderRef: { $in: [ref, '#' + ref] },
+      transactionId: { $in: ['', null] },
+      ...(!order.transactionId ? { shopifyOrderId: { $in: ['', null] } } : {}) });
+    if (!links.length) return;
+    const at = new Date();
+    const text = outcome === 'confirmed'
+      ? `العميل أكد الطلب — ${detail}`
+      : `تم إلغاء الطلب — السبب: ${detail || 'لم يُسجل سبب'}`;
+    try {
+      const result = await this.model.updateMany({
+        $or: links,
+        orderOutcome: outcome === 'confirmed' ? { $in: ['', null] } : { $ne: 'cancelled' },
+        ...(outcome === 'confirmed' ? { cancelled: { $ne: true }, autoSource: { $ne: 'shipping-issue' } } : {}),
+      }, {
+        $set: {
+          status: outcome === 'confirmed' ? 'تمت عملية التأكيد' : 'العميل ألغى الطلب',
+          orderOutcome: outcome, closedAt: at, resolution: detail,
+          ...(order.transactionId ? { transactionId: String(order.transactionId) } : {}),
+          escalationBaseline: at, escalationLevel: 0,
+        },
+        $push: { comments: { authorId: 'system', authorName: 'النظام',
+          text: text + (by ? ` — بواسطة ${by}` : ''), kind: 'decision', edited: false,
+          createdAt: at, updatedAt: at } },
+      }).exec();
+      if (result.modifiedCount) this.presence.emitEvent('followup:changed', { action: 'update' });
+    } catch (err: any) {
+      // The order and its money have already committed; retain an explicit operational error.
+      this.logger.error(`Follow-up closure failed for ${ref || order.transactionId}: ${err.message}`);
+    }
   }
 
   markNotified(id: string) {
@@ -491,10 +553,12 @@ export class FollowUpsService implements OnModuleInit {
     return this.model.findByIdAndDelete(id);
   }
 
-  cancel(id: string, cancelReason: string, userId: string, userName: string) {
+  async cancel(id: string, cancelReason: string, userId: string, userName: string) {
+    const existing = await this.model.findById(id).lean();
+    if (existing?.orderOutcome) throw new ForbiddenException('المتابعة مغلقة بنتيجة الطلب');
     return this.model
-      .findByIdAndUpdate(
-        id,
+      .findOneAndUpdate(
+        { _id: id, orderOutcome: { $in: ['', null] } },
         {
           cancelled: true,
           cancelReason,
@@ -510,11 +574,12 @@ export class FollowUpsService implements OnModuleInit {
   async addComment(id: string, authorId: string, authorName: string, text: string, requestId?: string) {
     const before = await this.model.findById(id).lean();
     if (!before) return null;
+    if (before.orderOutcome) throw new ForbiddenException('المتابعة مغلقة بنتيجة الطلب');
     const requestKey = requestId ? authorId + ':' + requestId : undefined;
     if (requestKey && before.comments.some(c => c.requestKey === requestKey)) return before;
     const doc = await this.model
       .findOneAndUpdate(
-        { _id: id, ...(requestKey ? { 'comments.requestKey': { $ne: requestKey } } : {}) },
+        { _id: id, orderOutcome: { $in: ['', null] }, ...(requestKey ? { 'comments.requestKey': { $ne: requestKey } } : {}) },
         { $push: { comments: { authorId, authorName, text, edited: false, ...(requestKey ? { requestKey } : {}) } } },
         { new: true },
       )
@@ -574,14 +639,15 @@ export class FollowUpsService implements OnModuleInit {
   async addCallAttempt(id: string, authorId: string, authorName: string, outcome: 'answered' | 'no_answer') {
     const before = await this.model.findById(id).lean();
     if (!before) return null;
+    if (before.orderOutcome) throw new ForbiddenException('المتابعة مغلقة بنتيجة الطلب');
     const existingAttempts = ((before.comments as any[]) || []).filter((c) => c.kind === 'call').length;
     if (existingAttempts >= 3) throw new Error('CALL_LIMIT_REACHED');
     const attemptNo = existingAttempts + 1;
     const outcomeLabel = outcome === 'answered' ? 'تم الرد' : 'لم يتم الرد';
     const text = `محاولة اتصال رقم ${attemptNo} بالعميل — ${outcomeLabel}`;
     const doc = await this.model
-      .findByIdAndUpdate(
-        id,
+      .findOneAndUpdate(
+        { _id: id, orderOutcome: { $in: ['', null] } },
         { $push: { comments: { authorId, authorName, text, edited: false, kind: 'call', callAttemptNo: attemptNo, callOutcome: outcome } } },
         { new: true },
       )
@@ -633,6 +699,7 @@ export class FollowUpsService implements OnModuleInit {
     if (!doc) return null;
     const entry = (doc.comments as any[]).find((c) => String(c._id) === String(commentId));
     if (!entry) return null;
+    if (entry.authorId === 'system' && entry.kind === 'decision') throw new ForbiddenException('لا يمكن تعديل نتيجة النظام');
     if (!isAdmin && String(entry.authorId) !== String(authorId)) {
       throw new Error('FORBIDDEN');
     }
@@ -647,6 +714,7 @@ export class FollowUpsService implements OnModuleInit {
     if (!doc) return null;
     const entry = (doc.comments as any[]).find((c) => String(c._id) === String(commentId));
     if (!entry) return null;
+    if (entry.authorId === 'system' && entry.kind === 'decision') throw new ForbiddenException('لا يمكن حذف نتيجة النظام');
     if (!isAdmin && String(entry.authorId) !== String(authorId)) {
       throw new Error('FORBIDDEN');
     }
@@ -661,12 +729,36 @@ export class FollowUpsService implements OnModuleInit {
    * change. Runs as a backstop cron rather than a client timer so the
    * reminder still fires even if nobody has the app open.
    */
+  @Cron('0 * * * * *')
+  async scheduledDeferredScan(): Promise<void> {
+    const now = new Date();
+    try {
+      const due = await this.model.find({ cancelled: { $ne: true }, status: { $nin: DONE_STATUSES },
+        deferredUntil: { $ne: null, $lte: now }, deferReminderSent: { $ne: true } }).lean();
+      for (const f of due) {
+        const claimed = await this.model.findOneAndUpdate({ _id: f._id, deferredUntil: f.deferredUntil,
+          deferReminderSent: { $ne: true }, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES } },
+          { $set: { deferReminderSent: true } }, { new: true }).lean();
+        if (!claimed) continue;
+        try {
+          const recipients = await this.notifications?.notifyFollowUpSchedule({ id: String(f._id), orderRef: f.orderRef,
+            responsibleId: f.responsibleId, until: new Date(f.deferredUntil!).toISOString(), reason: f.deferReason }, true);
+          for (const recipient of recipients || []) this.presence.emitToUser(recipient, 'followup:changed', { action: 'reminder', id: String(f._id) });
+        } catch (err) {
+          await this.model.updateOne({ _id: f._id, deferredUntil: f.deferredUntil }, { $set: { deferReminderSent: false } }).exec();
+          this.logger.warn(`Deferred reminder failed for ${f._id}`);
+        }
+      }
+    } catch (err: any) { this.logger.error(`Deferred scan failed: ${err.message}`); }
+  }
+
   @Cron('0 */15 * * * *')
   async scheduledEscalationScan(): Promise<void> {
     try {
       const open = await this.model.find({ status: { $nin: DONE_STATUSES }, cancelled: { $ne: true } }).lean();
       const now = Date.now();
       for (const f of open as any[]) {
+        if (f.deferredUntil && new Date(f.deferredUntil).getTime() > now) continue;
         const baseline = f.escalationBaseline ? new Date(f.escalationBaseline).getTime() : new Date(f.createdAt).getTime();
         const hoursElapsed = (now - baseline) / 3_600_000;
         const currentLevel = f.escalationLevel || 0;

@@ -191,6 +191,9 @@
   }
   window.addEventListener('keydown', event => {
     if (window.SalesScanner?.ownsKeyboard(event)) return;
+    // Preparation owns reader keys as soon as it opens, including its fade-in.
+    // Otherwise an F inside a barcode can open global search before document capture.
+    if (document.getElementById('pu-card-orders-modal')?.getClientRects().length) return;
     const scanShortcut = event.code === 'KeyF' || String(event.key || '').toLowerCase() === 'f' || event.key === 'ب';
     if (event.defaultPrevented || event.repeat || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || !scanShortcut) return;
     if (!allowed() || getComputedStyle(app).display === 'none' || visibleModal()) return;

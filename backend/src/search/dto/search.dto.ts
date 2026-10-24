@@ -14,6 +14,7 @@ export interface SearchResultItem {
     | 'customer'
     | 'supplier'
     | 'complaint'
+    | 'after_sales'
     | 'shopify_order';
   readonly title: string;
   readonly subtitle: string;

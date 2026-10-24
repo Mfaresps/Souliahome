@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { ReturnRequest } from '../returns/schemas/return-request.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Product, ProductDocument } from '../products/schemas/product.schema';
@@ -243,6 +244,7 @@ export class SearchService {
     private readonly complaintModel: Model<ComplaintDocument>,
     @InjectModel(ShopifyOrder.name)
     private readonly shopifyOrderModel: Model<ShopifyOrderDocument>,
+    @Optional() @InjectModel(ReturnRequest.name) private readonly returnModel?: Model<any>,
   ) {}
 
   async search(query: string): Promise<SearchResponse> {
@@ -268,6 +270,12 @@ export class SearchService {
       results = await this.runPass(trimmed, numeric, isPhone, true);
     }
 
+    if (this.returnModel) {
+      const rx = new RegExp(trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const cases: any[] = await this.returnModel.find({ 'workflow.version': 2, $or: ['originalRef', 'returnTxRef', 'workflow.replacementRef', 'client', 'phone', 'workflow.ref', 'workflow.shipment.trackingNumber'].map(field => ({ [field]: rx })) }).sort({ createdAt: -1 }).limit(20).lean();
+      results.push(...cases.map(row => ({ id: String(row._id), type: 'after_sales' as const, title: `${row.requestKind === 'exchange' ? 'استبدال' : 'استرجاع'} #${row.originalRef}`,
+        subtitle: `${row.client} · ${row.workflow.ref}`, icon: '↩', meta: row.workflow.stage, total: row.total, score: row.originalRef === trimmed || row.workflow.shipment?.trackingNumber === trimmed ? 160 : 70 })));
+    }
     results.sort((a, b) => (b.score || 0) - (a.score || 0));
     return { results, total: results.length };
   }
@@ -460,7 +468,7 @@ export class SearchService {
       // resent and moving. The client resolves the chip from these, with the same
       // rule as the Movements table (_puDisplayStatus).
       bostaStatus: tx.bostaStatus || '',
-      hasShipment: !!tx.bostaOrderId,
+      hasShipment: !!(tx.bostaOrderId || tx.afterSales?.shipments?.[tx.afterSales?.caseId]?.deliveryId),
       pickupStatus: tx.pickupStatus || '',
       deliverySource: tx.deliverySource || '',
       // عدد مرات الشحن السابقة. لازم يوصل للواجهة لأن إعادة الشحن بتفضّي
@@ -498,7 +506,7 @@ export class SearchService {
     const transactions = await this.transactionModel
       .find({ ...TX_ANY_FILTER, ref: { $regex: `^${escapeRegex(ref)}`, $options: 'i' } })
       .select(
-        'ref client phone type total payStatus items createdAt bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts notes cancelled cancelledAt cancelReason',
+        'ref client phone type total payStatus items createdAt afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts notes cancelled cancelledAt cancelReason',
       )
       .sort({ ref: 1 })
       .limit(200)
@@ -528,7 +536,7 @@ export class SearchService {
         bostaTrackingNumber: { $regex: `^${escapeRegex(trackingNo)}`, $options: 'i' },
       })
       .select(
-        'ref client phone type total payStatus items createdAt bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts notes cancelled cancelledAt cancelReason',
+        'ref client phone type total payStatus items createdAt afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts notes cancelled cancelledAt cancelReason',
       )
       .sort({ createdAt: -1 })
       .limit(200)
@@ -609,7 +617,7 @@ export class SearchService {
     const transactions = await this.transactionModel
       .find({ ...TX_ANY_FILTER, phone: { $regex: escapeRegex(phone), $options: 'i' } })
       .select(
-        'ref client phone type total payStatus items createdAt bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts notes cancelled cancelledAt cancelReason',
+        'ref client phone type total payStatus items createdAt afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts notes cancelled cancelledAt cancelReason',
       )
       .sort({ createdAt: -1 })
       .limit(300)
@@ -717,7 +725,7 @@ export class SearchService {
     const transactions = await this.transactionModel
       .find(TX_ANY_FILTER)
       .select(
-        'ref client phone type total payStatus notes items createdAt bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts cancelled cancelledAt cancelReason',
+        'ref client phone type total payStatus notes items createdAt afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts cancelled cancelledAt cancelReason',
       )
       .sort({ createdAt: -1 })
       .limit(2000)

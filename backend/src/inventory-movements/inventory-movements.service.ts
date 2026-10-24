@@ -19,6 +19,13 @@ import { TransactionsService } from '../transactions/transactions.service';
 import { MAIN_WAREHOUSE, requireWarehouse, warehouseCode } from '../warehouses/warehouse-storage';
 
 export interface RecordMovementEntry {
+  afterSalesId?: string;
+  afterSalesRef?: string;
+  originalInvoiceRef?: string;
+  lifecycle?: string;
+  physicalQty?: number;
+  quarantinedQty?: number;
+  unitIds?: string[];
   warehouseCode?: string;
   productId: string;
   productCode: string;
@@ -254,6 +261,8 @@ export class InventoryMovementsService {
         { productCode: { $regex: escapeRegex(filters.productCode), $options: 'i' } },
         { productName: { $regex: escapeRegex(filters.productCode), $options: 'i' } },
         { sourceTransactionRef: { $regex: escapeRegex(filters.productCode), $options: 'i' } },
+        { originalInvoiceRef: { $regex: escapeRegex(filters.productCode), $options: 'i' } },
+        { afterSalesRef: { $regex: escapeRegex(filters.productCode), $options: 'i' } },
         { movementId: { $regex: escapeRegex(filters.productCode), $options: 'i' } },
       ];
     }

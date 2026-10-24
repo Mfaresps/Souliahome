@@ -56,6 +56,16 @@ it('does not regress a live Ready transition when an older snapshot arrives', as
   expect(c.transactions[0].pickupRef).toBe('RUN');
 });
 
+it('applies a direct return to Preparing without showing Pending or retaining the old run date', () => {
+  const { context: c } = fixture([order({pickupStatus:'Ready',pickupRef:'OLD',pickupDate:'2026-10-23',pickupBy:'Old user',prepChecked:true})]);
+  c._pwBarcodePickStates.set('one', {checked:true});
+  c._puApplyRealtimeEvent({ids:['one'],action:'preparing',pickupRef:'PREP-RETURN',pickupDate:null,
+    by:'Admin',pickupBy:null,preparationPreserved:true,groupMeta:{prepNote:'Returned'}});
+  expect(c._pickupOrders[0]).toMatchObject({pickupStatus:'Preparing',pickupRef:'PREP-RETURN',pickupDate:null,pickupBy:null,prepChecked:true,prepNote:'Returned'});
+  expect(c.transactions[0].pickupStatus).toBe('Preparing');
+  expect(c._pwBarcodePickStates.get('one')).toEqual({checked:true});
+});
+
 it('does not resurrect a cancelled or deleted order from an in-flight snapshot', async () => {
   const { context: c } = fixture([order()]);
   let release: any;

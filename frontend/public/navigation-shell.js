@@ -12,19 +12,53 @@ function syncSidebarToggle() {
     button.title = label;
   });
 }
-function syncNavigationShell() {
+// Patch navigation in place so live badges do not reload the brand image,
+// restart hover transitions, drop keyboard focus or reset the scroll container.
+function syncShellChildren(parent, incoming) {
+  const key = node => node.nodeType === 1
+    ? node.tagName + ':' + (node.dataset.page || node.dataset.repSub || node.id || node.dataset.shellSection || node.className)
+    : '#' + node.nodeType;
+  const available = [...parent.childNodes];
+  incoming.forEach((next, index) => {
+    const matchIndex = available.findIndex(node => key(node) === key(next));
+    const current = matchIndex < 0 ? next : available.splice(matchIndex, 1)[0];
+    if (parent.childNodes[index] !== current) parent.insertBefore(current, parent.childNodes[index] || null);
+    if (current === next) return;
+    if (next.nodeType !== 1) {
+      if (current.nodeValue !== next.nodeValue) current.nodeValue = next.nodeValue;
+      return;
+    }
+    [...current.attributes].forEach(attr => { if (!next.hasAttribute(attr.name)) current.removeAttribute(attr.name); });
+    [...next.attributes].forEach(attr => {
+      if (current.getAttribute(attr.name) !== attr.value) current.setAttribute(attr.name, attr.value);
+    });
+    syncShellChildren(current, [...next.childNodes]);
+  });
+  available.forEach(node => node.remove());
+}
+function renderSidebarContent(html) {
+  const staging = document.createElement('div');
+  staging.innerHTML = html;
+  syncNavigationShell([...staging.children]);
+}
+function syncNavigationShell(incomingRows) {
   const sidebar = qs('#sidebar');
   if (!sidebar) return;
-  if (!sidebar.querySelector('.shell-brand') && sidebar.children.length) {
-    const rows = [...sidebar.children];
+  if (incomingRows || (!sidebar.querySelector('.shell-brand') && sidebar.children.length)) {
+    const rows = incomingRows || [...sidebar.children];
     const bottom = rows.find(el => el.classList.contains('nav-bottom-group'));
-    const brand = document.createElement('div');
-    brand.className = 'shell-brand';
-    brand.innerHTML = '<a class="shell-brand-home" href="#dashboard" onclick="event.preventDefault();goHomeFromLogo();closeSidebar()"><img src="/soulia-logo.svg" alt="Soulia"><span class="shell-brand-name">Soulia<small>WORKSPACE</small></span></a><button class="shell-fold" type="button" onclick="toggleSidebar()">'+shellPanelIcon()+'</button>';
-    sidebar.replaceChildren(brand);
-    const expand = document.createElement('button');
-    expand.className = 'shell-fold shell-expand'; expand.type = 'button'; expand.innerHTML = shellPanelIcon(); expand.addEventListener('click', toggleSidebar); sidebar.append(expand);
-    const scroll = document.createElement('div'); scroll.className = 'shell-nav-scroll'; sidebar.append(scroll);
+    if (!sidebar.querySelector('.shell-brand')) {
+      const brand = document.createElement('div');
+      brand.className = 'shell-brand';
+      brand.innerHTML = '<a class="shell-brand-home" href="#dashboard" onclick="event.preventDefault();goHomeFromLogo();closeSidebar()"><img src="/soulia-logo.svg" alt="Soulia"><span class="shell-brand-name">Soulia<small>WORKSPACE</small></span></a><button class="shell-fold" type="button" onclick="toggleSidebar()">'+shellPanelIcon()+'</button>';
+      sidebar.replaceChildren(brand);
+      const expand = document.createElement('button');
+      expand.className = 'shell-fold shell-expand'; expand.type = 'button'; expand.innerHTML = shellPanelIcon(); expand.addEventListener('click', toggleSidebar); sidebar.append(expand);
+      const scroll = document.createElement('div'); scroll.className = 'shell-nav-scroll'; sidebar.append(scroll);
+    }
+    const scroll = sidebar.querySelector('.shell-nav-scroll');
+    const content = document.createElement('div');
+    const grouped = new Set();
     const sections = [
       [shellText('نظرة عامة','OVERVIEW'),['dashboard','transaction']],
       [shellText('المبيعات والطلبات','SALES & ORDERS'),['shopify-orders','movements','pickup-orders']],
@@ -33,19 +67,24 @@ function syncNavigationShell() {
       [shellText('المالية والفريق','FINANCE & TEAM'),['approvals','suppliers','expenses','reports','vault','users']]
     ];
     for (const [label, ids] of sections) {
-      const section = document.createElement('div'); section.className = 'shell-nav-section';
+      const section = document.createElement('div'); section.className = 'shell-nav-section'; section.dataset.shellSection = ids[0];
       const title = document.createElement('div'); title.className = 'shell-nav-label'; title.textContent = label; section.append(title);
       for (const id of ids) {
         const row = rows.find(el => el.dataset.page === id);
         if (!row) continue;
+        grouped.add(row);
         section.append(row);
-        if (id === 'reports') { const sub = rows.find(el => el.id === 'nav-sub-reports'); if (sub) section.append(sub); }
+        if (id === 'reports') { const sub = rows.find(el => el.id === 'nav-sub-reports'); if (sub) { grouped.add(sub); section.append(sub); } }
       }
-      if (section.children.length > 1) scroll.append(section);
+      if (section.children.length > 1) content.append(section);
     }
     // Keep future or plugin-provided rows visible even if absent from the grouping map.
-    rows.filter(el => !el.classList.contains('nav-sep') && el !== bottom && !sidebar.contains(el)).forEach(el => scroll.append(el));
-    if (bottom) sidebar.append(bottom);
+    rows.filter(el => !el.classList.contains('nav-sep') && el !== bottom && !grouped.has(el)).forEach(el => content.append(el));
+    syncShellChildren(scroll, [...content.children]);
+    const previousBottom = sidebar.querySelector('.nav-bottom-group');
+    if (bottom && previousBottom) syncShellChildren(previousBottom, [...bottom.children]);
+    else if (bottom) sidebar.append(bottom);
+    else previousBottom?.remove();
   }
   qsa('#sidebar .nav-item').forEach(row => {
     const label = row.querySelector('span:nth-child(2)')?.childNodes[0]?.textContent?.trim() || row.textContent.trim();

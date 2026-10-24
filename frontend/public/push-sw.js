@@ -6,7 +6,7 @@ self.addEventListener('push', event => {
   let payload = {};
   try { payload = event.data.json(); } catch (_) {}
   const url = new URL(payload.url || '/', self.location.origin);
-  event.waitUntil(self.registration.showNotification(String(payload.title || 'SOULIA').slice(0, 80), {
+  event.waitUntil(self.registration.showNotification(String(payload.title || (payload.lang === 'en' ? 'Notification' : 'إشعار')).slice(0, 80), {
     body: String(payload.body || '').slice(0, 160), icon: '/push-icon-192.png',
     tag: String(payload.tag || 'soulia').slice(0, 80),
     lang: payload.lang === 'en' ? 'en' : 'ar', dir: payload.lang === 'en' ? 'ltr' : 'rtl',

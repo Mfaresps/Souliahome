@@ -27,7 +27,7 @@ describe('Successful live release notifications', () => {
   });
   it.each(['ar', 'en'] as const)('includes the deployed version in the %s message', language => {
     const details = { releaseVersion: '1.0.125' };
-    expect(notificationTitle('announcement', details, language)).toBe(language === 'ar' ? '🚀 تم رفع نسخة جديدة · SOULIA' : '🚀 New Version Is Live · SOULIA');
+    expect(notificationTitle('announcement', details, language)).toBe(language === 'ar' ? '🚀 تم رفع نسخة جديدة' : '🚀 New Version Is Live');
     expect(notificationBody('announcement', '', details, language)).toContain('1.0.125');
   });
   it('runs notifications only on main after the health check and ships the helper in the backend image', () => {

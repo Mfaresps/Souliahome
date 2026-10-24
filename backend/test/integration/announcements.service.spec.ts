@@ -60,8 +60,8 @@ describe('Announcements — all employees', () => {
     expect(jobs.map(j => j.userId).sort()).toEqual([admin2.userId, staffA.userId, staffB.userId].sort());
     const ar = JSON.parse(jobs.find(j => j.userId === staffA.userId)!.payload);
     const en = JSON.parse(jobs.find(j => j.userId === admin2.userId)!.payload);
-    expect(en.title).toBe('📢 SOULIA Announcement');
-    expect(ar.title).toBe('📢 إعلان من SOULIA');
+    expect(en.title).toBe('📢 Announcement');
+    expect(ar.title).toBe('📢 إعلان');
     expect(en.body).toBe('🎉 Holiday Greeting · عيد سعيد للجميع 🎉 إجازة يوم الخميس');
     expect(ar.body).toBe('🎉 تهنئة بمناسبة · عيد سعيد للجميع 🎉 إجازة يوم الخميس');
     const destination = new URL(en.url, 'https://soulia.test');

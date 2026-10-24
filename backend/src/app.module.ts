@@ -16,6 +16,7 @@ import { SettingsModule } from './settings/settings.module';
 import { VaultModule } from './vault/vault.module';
 import { SearchModule } from './search/search.module';
 import { ReturnsModule } from './returns/returns.module';
+import { AfterSalesModule } from './after-sales/after-sales.module';
 import { ComplaintsModule } from './complaints/complaints.module';
 import { MentionsModule } from './mentions/mentions.module';
 import { FollowUpsModule } from './followups/followups.module';
@@ -59,6 +60,7 @@ import { WarehousesModule } from './warehouses/warehouses.module';
     VaultModule,
     SearchModule,
     ReturnsModule,
+    AfterSalesModule,
     ComplaintsModule,
     MentionsModule,
     FollowUpsModule,

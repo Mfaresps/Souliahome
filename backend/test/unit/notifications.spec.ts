@@ -8,9 +8,9 @@ import { createHmac } from 'crypto';
 
 const admin = { userId: '507f1f77bcf86cd799439011', role: 'admin', isActive: true };
 const subscription = { endpoint: 'https://web.push.apple.com/test', keys: { p256dh: Buffer.alloc(65, 4).toString('base64url'), auth: Buffer.alloc(16).toString('base64url') } };
-function setup() {
+function setup(role = 'admin') {
   let account: any = { userId: admin.userId, preferences: { ...DEFAULTS, enabled: true }, subscriptions: [subscription] };
-  const users = { find: jest.fn(() => ({ toArray: async () => [{ ...admin, _id: admin.userId }] })), findOne: jest.fn(async () => ({ ...admin })) };
+  const users = { find: jest.fn(() => ({ toArray: async () => [{ ...admin, role, _id: admin.userId }] })), findOne: jest.fn(async () => ({ ...admin, role })) };
   const accounts = { findOne: jest.fn(async () => account), updateMany: jest.fn(), updateOne: jest.fn(async (_filter, update) => {
     for (const [key, value] of Object.entries(update.$set || {})) if (key.startsWith('preferences.')) account.preferences[key.split('.')[1]] = value;
     if (update.$set?.language) account.language = update.$set.language;
@@ -30,6 +30,79 @@ function setup() {
   return { service, push, account, accounts, jobs, users, stored, inbox, historyRows };
 }
 describe('Web Push settings, security and delivery', () => {
+  it('notifies the assignee, managers and admins about schedules and due times, including the scheduler themselves', async () => {
+    const {service, users, historyRows, jobs}=setup('staff');
+    const employee='507f1f77bcf86cd799439012', manager='507f1f77bcf86cd799439013', other='507f1f77bcf86cd799439014';
+    const management=[{_id:admin.userId,role:'admin'}, {_id:manager,role:'staff',jobTitle:'Operations Manager'}];
+    users.find.mockImplementation((query?: any)=>({toArray:async()=>query?.$or ? management : [...management,{_id:employee,role:'staff'},{_id:other,role:'staff'}]}) as any);
+    const followup={id:'ticket',orderRef:'123',responsibleId:employee,until:'2026-10-25T09:00:00.000Z',reason:'carrier_delay'};
+    const recipients=await service.notifyFollowUpSchedule(followup,false,employee,'Sara');
+    expect(recipients.sort()).toEqual([employee,admin.userId,manager].sort());
+    expect([...historyRows.values()].map(row=>row.userId).sort()).toEqual(recipients.sort());
+    expect(users.find).toHaveBeenNthCalledWith(1, expect.objectContaining({isActive:{$ne:false},$or:expect.arrayContaining([{role:'admin'}])}));
+    for(const row of historyRows.values()) {
+      expect(row.title).toContain('تم تحديد موعد المتابعة');
+      expect(row.body).toContain('123');expect(row.body).toContain('بانتظار شركة الشحن');
+      expect(row.recordId).toBe('followup:ticket');
+    }
+    expect(jobs.updateOne).toHaveBeenCalledTimes(3);
+    await service.notifyFollowUpSchedule(followup,false,employee,'Sara');
+    expect(historyRows.size).toBe(3);
+    await service.notifyFollowUpSchedule(followup,true);
+    expect(historyRows.size).toBe(6);
+    expect([...historyRows.values()].filter(row=>row.title.includes('حان موعد المتابعة'))).toHaveLength(3);
+    await service.notifyFollowUpSchedule(followup,true);
+    expect(historyRows.size).toBe(6);
+  });
+  it('sends a deduction only to the affected employee, excluding other employees and administrators', async () => {
+    const { service, users, accounts, jobs, historyRows } = setup('staff');
+    const employee = '507f1f77bcf86cd799439012';
+    users.find.mockReturnValue({ toArray: async () => [
+      { _id: admin.userId, role: 'admin' },
+      { _id: employee, role: 'staff' },
+      { _id: '507f1f77bcf86cd799439013', role: 'staff' },
+    ] } as any);
+    await service.enqueue('performance', 'deduction', '', 'performance:' + employee, employee, undefined, { pointDelta: -5, pointReason: 'خصم مسجل' });
+    expect([...historyRows.values()].map(row => row.userId)).toEqual([employee]);
+    expect(jobs.updateOne).toHaveBeenCalledTimes(1);
+    expect(jobs.updateOne.mock.calls[0][0].userId).toBe(employee);
+    expect(accounts.findOne).toHaveBeenCalledTimes(1);
+    await service.enqueue('performance', 'admin-deduction', '', 'performance:' + admin.userId, admin.userId, undefined, { pointDelta: -5 });
+    await service.enqueue('performance', 'broadcast-deduction', '', 'performance:' + employee, [employee, admin.userId], undefined, { pointDelta: -5 });
+    await service.enqueue('performance', 'wrong-employee', '', 'performance:' + employee, admin.userId, undefined, { pointDelta: -5 });
+    expect(jobs.updateOne).toHaveBeenCalledTimes(1);
+    expect(historyRows.size).toBe(1);
+  });
+  it.each(['admin', 'staff'])('discards a previously queued deduction belonging to someone else for %s', async role => {
+    const { service, jobs, push } = setup(role);
+    jobs.findOneAndUpdate.mockResolvedValueOnce({ _id: 'private-job', type: 'performance', userId: admin.userId,
+      eventId: 'old-deduction', payload: JSON.stringify({ url: '/?pushRecord=performance:someone-else' }) } as never);
+    await service.dispatch();
+    expect(push.sendNotification).not.toHaveBeenCalled();
+    expect(jobs.updateOne).toHaveBeenCalledWith({ _id: 'private-job' }, { $set: { done: true } });
+  });
+  it('keeps the new deposit notification without creating a duplicate approval request', async () => {
+    const { service, stored, historyRows } = setup();
+    const details = { actorName: 'Gannh', amount: 2500, vaultName: 'فودافون كاش', pendingApproval: true, receiptId: 'receipt-1' };
+    await service.enqueue('deposit', 'deposit:receipt-1', '2906', 'shopify:' + admin.userId, undefined, undefined, details);
+    await service.enqueue('approval', 'approval:receipt:receipt-1:pending', '2906', 'shopify:' + admin.userId, undefined, undefined, { actionKey: 'deposit', status: 'pending', receiptId: 'receipt-1' });
+    expect(stored.size).toBe(1);
+    expect(historyRows.size).toBe(1);
+    expect(JSON.parse(stored.get('deposit:receipt-1').payload).title).toBe('💰 عربون جديد');
+  });
+  it('discards a duplicate deposit approval request already queued for delivery', async () => {
+    const { service, push, jobs } = setup();
+    jobs.findOneAndUpdate.mockResolvedValueOnce({ _id: 'job', type: 'approval', eventId: 'approval:receipt:receipt-1:pending' } as never);
+    await service.dispatch();
+    expect(push.sendNotification).not.toHaveBeenCalled();
+    expect(jobs.updateOne).toHaveBeenCalledWith({ _id: 'job' }, { $set: { done: true } });
+  });
+  it.each(['approved', 'rejected'] as const)('preserves the deposit decision notification: %s', async status => {
+    const { service, stored, historyRows } = setup();
+    await service.enqueue('approval', 'approval:receipt:receipt-1:' + status, '2906', 'shopify:' + admin.userId, undefined, undefined, { actionKey: 'deposit', status });
+    expect(stored.size).toBe(1);
+    expect(historyRows.size).toBe(1);
+  });
   it.each(['ar', 'en'] as const)('hides internal record IDs in admin notification text (%s)', language => {
     const details = { actorName: 'Hassan Ammar', actionKey: 'export-excel', status: 'pending' as const };
     for (const ref of ['6ace9cd9a61c2ed6e4726e67', '#6ACE9CD9A61C2ED6E4726E67']) {
@@ -110,13 +183,13 @@ describe('Web Push settings, security and delivery', () => {
     await service.enqueue('announcement', 'master-off', '', 'announcement:' + admin.userId, [admin.userId]); expect(stored.size).toBe(1);
   });
   it.each(TYPES.filter(type => !(MANDATORY_TYPES as readonly string[]).includes(type)))('respects independent %s preferences and master', async type => {
-    const { service, account, stored } = setup();
+    const { service, account, stored } = setup(type === 'performance' ? 'staff' : 'admin');
     account.preferences[type] = false;
     await service.enqueue(type, 'off', '100'); expect(stored.size).toBe(0);
     account.preferences[type] = true; account.preferences.enabled = false;
     await service.enqueue(type, 'master-off', '100'); expect(stored.size).toBe(0);
     account.preferences.enabled = true;
-    await service.enqueue(type, 'on', '100', type === 'otp' ? 'otp:' + admin.userId : '', ['mention', 'performance', 'orderEdit'].includes(type) ? admin.userId : undefined, undefined, { pointDelta: 2, expiresAt: new Date(Date.now() + 60000).toISOString() }); expect(stored.size).toBe(1);
+    await service.enqueue(type, 'on', '100', type === 'performance' ? 'performance:' + admin.userId : type === 'otp' ? 'otp:' + admin.userId : '', ['mention', 'performance', 'orderEdit'].includes(type) ? admin.userId : undefined, undefined, { pointDelta: 2, expiresAt: new Date(Date.now() + 60000).toISOString() }); expect(stored.size).toBe(1);
   });
   it('preserves individual preferences across master off/on and new login', async () => {
     const { service } = setup();
@@ -131,9 +204,10 @@ describe('Web Push settings, security and delivery', () => {
     expect(() => validateSubscription({ ...subscription, keys: { p256dh: 'bad', auth: 'bad' } })).toThrow();
   });
   it.each(TYPES)('deduplicates durable %s events and excludes private payload data', async type => {
-    const { service, stored } = setup();
+    const { service, stored } = setup(type === 'performance' ? 'staff' : 'admin');
     const recipient = ['mention', 'performance', 'orderEdit'].includes(type) ? admin.userId : undefined;
-    await service.enqueue(type, 'stable', '100', (type === 'otp' ? 'otp:' : 'tx:') + admin.userId, recipient, undefined, { pointDelta: 2, expiresAt: new Date(Date.now() + 60000).toISOString() }); await service.enqueue(type, 'stable', '100', type === 'otp' ? 'otp:' + admin.userId : '', recipient, undefined, { pointDelta: 2, expiresAt: new Date(Date.now() + 60000).toISOString() });
+    const recordId = (type === 'performance' ? 'performance:' : type === 'otp' ? 'otp:' : 'tx:') + admin.userId;
+    await service.enqueue(type, 'stable', '100', recordId, recipient, undefined, { pointDelta: 2, expiresAt: new Date(Date.now() + 60000).toISOString() }); await service.enqueue(type, 'stable', '100', recordId, recipient, undefined, { pointDelta: 2, expiresAt: new Date(Date.now() + 60000).toISOString() });
     expect(stored.size).toBe(1); const payload = JSON.parse(stored.get('stable').payload);
     expect(payload.body).toContain(type === 'mention' ? '100' : '#100'); expect(payload.url).toContain('pushRecord=');
     expect(Object.keys(payload).sort()).toEqual(['body', 'dir', 'lang', 'tag', 'timestamp', 'title', 'url']);
@@ -161,8 +235,8 @@ describe('Web Push settings, security and delivery', () => {
   });
   it('starts sending to a second device while the first provider request is still pending', async () => {
     const { service, jobs, push } = setup();
-    jobs.findOneAndUpdate.mockResolvedValueOnce({ _id: 'first', userId: admin.userId, endpoint: subscription.endpoint, type: 'comment', payload: 'first', attempts: 1 } as never)
-      .mockResolvedValueOnce({ _id: 'second', userId: admin.userId, endpoint: subscription.endpoint, type: 'comment', payload: 'second', attempts: 1 } as never);
+    jobs.findOneAndUpdate.mockResolvedValueOnce({ _id: 'first', userId: admin.userId, endpoint: subscription.endpoint, type: 'comment', payload: '{"title":"first"}', attempts: 1 } as never)
+      .mockResolvedValueOnce({ _id: 'second', userId: admin.userId, endpoint: subscription.endpoint, type: 'comment', payload: '{"title":"second"}', attempts: 1 } as never);
     let finishFirst!: () => void;
     const firstPending = new Promise<void>(resolve => finishFirst = resolve);
     push.sendNotification.mockImplementationOnce(async () => { await firstPending; return {}; });
@@ -187,6 +261,13 @@ describe('Web Push settings, security and delivery', () => {
     expect(jobs.updateOne).toHaveBeenCalledWith({ _id: 'job' }, expect.objectContaining({ $set: expect.objectContaining({ done: true }) }));
     expect(accounts.updateOne).not.toHaveBeenCalled();
   });
+  it('removes branding from a notification queued before the template change', async () => {
+    const { service, push, jobs } = setup();
+    const message = { title: '🔔 SOULIA test notification', body: 'SOULIA notifications are working.', url: '/', lang: 'en' };
+    jobs.findOneAndUpdate.mockResolvedValueOnce({ _id: 'job', userId: admin.userId, endpoint: subscription.endpoint, type: 'order', payload: JSON.stringify(message), attempts: 1 } as never);
+    await service.dispatch();
+    expect(push.sendNotification).toHaveBeenCalledWith(subscription, JSON.stringify({ ...message, title: '🔔 Test notification', body: 'Notifications are working.' }), { TTL: 3600, timeout: 10000 });
+  });
   it('rechecks current authorization and preferences before dispatch', async () => {
     const { service, push, jobs, account } = setup(); account.preferences.enabled = false;
     jobs.findOneAndUpdate.mockResolvedValueOnce({ _id: 'job', userId: admin.userId, endpoint: subscription.endpoint, type: 'order' } as never);
@@ -205,12 +286,12 @@ describe('Web Push settings, security and delivery', () => {
 
 describe('SOULIA notification message formats', () => {
   it.each([
-    ['deposit', 'New Deposit · SOULIA', 'Fares added EGP 1,600 · InstaPay · #2771 · Review Required', { actorName: 'Fares', amount: 1600, vaultName: 'Instapay', pendingApproval: true }, 'tx:', undefined],
-    ['comment', 'New Comment · SOULIA', 'Ahmed commented on Order #2771: "Customer requested a delivery update…"', { actorName: 'Ahmed', commentText: 'Customer requested a delivery update…', commentId: 123 }, 'tx:', undefined],
-    ['comment', 'New Follow-up · SOULIA', 'Ahmed · Order #2771: "Call the customer tomorrow…"', { actorName: 'Ahmed', commentText: 'Call the customer tomorrow…', commentId: admin.userId }, 'followup:', undefined],
-    ['order', 'New Order · SOULIA', 'Order #2771 · EGP 2,450 · 5 items · New Order Received', { orderTotal: 2450, itemCount: 5 }, 'tx:', undefined],
-    ['deliveryProblem', 'Delivery Issue · SOULIA', 'Order #2771 · Delivery Failed · Action Required', {}, 'tx:', 'FAILED_ATTEMPT'],
-    ['delivered', 'Order Delivered · SOULIA', 'Order #2771 · Successfully Delivered', {}, 'tx:', undefined],
+    ['deposit', 'New Deposit', 'Fares added EGP 1,600 · InstaPay · #2771 · Review Required', { actorName: 'Fares', amount: 1600, vaultName: 'Instapay', pendingApproval: true }, 'tx:', undefined],
+    ['comment', 'New Comment', 'Ahmed commented on Order #2771: "Customer requested a delivery update…"', { actorName: 'Ahmed', commentText: 'Customer requested a delivery update…', commentId: 123 }, 'tx:', undefined],
+    ['comment', 'New Follow-up', 'Ahmed · Order #2771: "Call the customer tomorrow…"', { actorName: 'Ahmed', commentText: 'Call the customer tomorrow…', commentId: admin.userId }, 'followup:', undefined],
+    ['order', 'New Order', 'Order #2771 · EGP 2,450 · 5 items · New Order Received', { orderTotal: 2450, itemCount: 5 }, 'tx:', undefined],
+    ['deliveryProblem', 'Delivery Issue', 'Order #2771 · Delivery Failed · Action Required', {}, 'tx:', 'FAILED_ATTEMPT'],
+    ['delivered', 'Order Delivered', 'Order #2771 · Successfully Delivered', {}, 'tx:', undefined],
   ] as const)('formats %s as specified: %s', async (type, title, body, details, kind, status) => {
     const { service, stored, account } = setup(); account.language = 'en';
     await service.enqueue(type, 'format', '2771', kind + admin.userId, undefined, status, details);
@@ -252,8 +333,9 @@ describe('SOULIA notification message formats', () => {
     expect(() => validatePreferences({ language: 'fr' })).toThrow();
   });
   it.each(TYPES)('sends English %s titles and bodies for English recipients', async type => {
-    const { service, account, stored } = setup(); account.language = 'en';
-    await service.enqueue(type, 'english', '2638', type === 'otp' ? 'otp:' + admin.userId : '', ['mention', 'performance', 'orderEdit'].includes(type) ? admin.userId : undefined, 'FAILED_ATTEMPT', { pointDelta: 2, actorName: 'Ahmed Ali', amount: 500, expiresAt: new Date(Date.now() + 60000).toISOString() });
+    const { service, account, stored } = setup(type === 'performance' ? 'staff' : 'admin'); account.language = 'en';
+    if (type === 'performance') jest.spyOn(service as any, 'employeeLanguage').mockResolvedValue('en');
+    await service.enqueue(type, 'english', '2638', type === 'performance' ? 'performance:' + admin.userId : type === 'otp' ? 'otp:' + admin.userId : '', ['mention', 'performance', 'orderEdit'].includes(type) ? admin.userId : undefined, 'FAILED_ATTEMPT', { pointDelta: 2, actorName: 'Ahmed Ali', amount: 500, expiresAt: new Date(Date.now() + 60000).toISOString() });
     const payload = JSON.parse(stored.get('english').payload);
     expect(payload.lang).toBe('en'); expect(payload.dir).toBe('ltr'); expect(payload.title).not.toMatch(/[\u0600-\u06ff]/); expect(payload.body).not.toMatch(/[\u0600-\u06ff]/);
     if (type === 'deposit') expect(payload.body).toBe('Ahmed Ali added EGP 500 · Unspecified vault · #2638');
@@ -263,7 +345,7 @@ describe('SOULIA notification message formats', () => {
     const { service, account, stored } = setup(); account.language = 'en';
     await service.enqueue('deposit', 'pending', '2638', '', undefined, undefined, { actorName: 'Ahmed', amount: 500, pendingApproval: true });
     expect(JSON.parse(stored.get('pending').payload).body).toBe('Ahmed added EGP 500 · Unspecified vault · #2638 · Review Required');
-    await service.test(admin); const test = [...stored.values()].find(j => j.eventId.startsWith('test:')); expect(JSON.parse(test.payload).title).toBe('🔔 SOULIA test notification');
+    await service.test(admin); const test = [...stored.values()].find(j => j.eventId.startsWith('test:')); expect(JSON.parse(test.payload).title).toBe('🔔 Test notification');
   });
   it('includes the depositing employee, amount and order with correct formal grammar', () => {
     expect(notificationBody('deposit', '#2638', { actorName: 'أحمد علي', amount: 500, vaultName: 'Instapay' })).toBe('أحمد علي أضاف 500 ج.م. · Instapay · #2638');
@@ -273,7 +355,7 @@ describe('SOULIA notification message formats', () => {
     const { service, stored } = setup();
     await service.enqueue('deposit', 'receipt', '2638', '', undefined, undefined, { actorName: 'أحمد علي', amount: 500, pendingApproval: true });
     const payload = JSON.parse(stored.get('receipt').payload);
-    expect(payload.title).toBe('💰 عربون جديد · SOULIA'); expect(payload.body).toBe('أحمد علي أضاف 500 ج.م. · خزنة غير محددة · #2638 · مطلوب مراجعة');
+    expect(payload.title).toBe('💰 عربون جديد'); expect(payload.body).toBe('أحمد علي أضاف 500 ج.م. · خزنة غير محددة · #2638 · مطلوب مراجعة');
     expect(payload.body.length).toBeLessThan(160); expect(payload.timestamp).toEqual(expect.any(Number));
   });
   it('does not invent a financial amount or expose unsafe control characters', () => {

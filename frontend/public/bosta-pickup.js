@@ -2,12 +2,25 @@
 let _bostaPickupForm = null;
 let _bostaPickupBusy = false;
 let _bostaPickupRequests = [];
+let _bostaPickupRequestsKnown = false;
+let _bostaPickupRequestsState = 'idle';
 const _bpCheck = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
-function _bpSetRequests(requests) { _bostaPickupRequests = requests || []; }
+function _bpSetRequests(requests) {
+  _bostaPickupRequests = requests || [];
+  _bostaPickupRequestsKnown = true;
+  _bostaPickupRequestsState = 'ready';
+}
 async function refreshBostaPickupRequests(options = {}) {
-  const preview = await api('/shipping/pickup-preview', options);
-  _bpSetRequests(preview.requests);
-  return preview;
+  if (!_bostaPickupRequestsKnown) _bostaPickupRequestsState = 'loading';
+  try {
+    const preview = await api('/shipping/pickup-preview', options);
+    _bpSetRequests(preview.requests);
+    return preview;
+  } catch (error) {
+    if (!_bostaPickupRequestsKnown) _bostaPickupRequestsState = 'error';
+    if (typeof _puQueueLivePaint === 'function') _puQueueLivePaint();
+    throw error;
+  }
 }
 function bostaPickupCardBadge(orders) {
   const covered = orders.map(o => _bostaPickupRequests.find(r => ['created', 'pending'].includes(r.status) && (r.orderIds || []).includes(String(o._id)))).filter(Boolean);

@@ -160,7 +160,8 @@ export class ShopifyController {
    *   ويُقرأ على الخادم. قبول رقم مكتوب هنا كان يتيح تجاوز مراجعة المدير من أي واجهة.
    */
   @Patch('orders/:id/approve')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PermsGuard)
+  @RequirePerms('shopify-prepare-ship')
   async approve(
     @Param('id') id: string,
     @Body('carrierCode') carrierCode: string,

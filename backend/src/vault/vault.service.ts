@@ -268,6 +268,7 @@ export class VaultService {
       if (!entry) return false;
 
       // عكس الرصيد: المبلغ الذي أُضيف وقت التحصيل يُخصم الآن (والعكس)
+      this.assertReceiptEntryLocked(entry);
       const seg = entry.seg || resolveVaultSegmentFromPaymentMethod(entry.method || 'كاش');
       await this.settingsService.adjustVaultBalance(seg, -entry.amount);
 
@@ -315,7 +316,8 @@ export class VaultService {
     );
 
     const entityLabel = entityContext?.customer || entityContext?.supplier || '';
-    const txNo = context ? await this.generateTxNo(source, context) : await this.generateTxNo(source);
+    const txNo = meta?.afterSalesId && meta?.afterSales ? `${ref}-${(meta.afterSales as Record<string, any>).kind === 'refund' ? 'RF' : (meta.afterSales as Record<string, any>).kind === 'collection' ? 'CL' : 'CR'}`
+      : context ? await this.generateTxNo(source, context) : await this.generateTxNo(source);
     const settings = context ? await this.settingsService.adjustVaultBalance(seg, amount, context.session) : await this.settingsService.adjustVaultBalance(seg, amount);
 
     let created: VaultEntryDocument;
@@ -323,6 +325,8 @@ export class VaultService {
       const data = {
         date,
         desc: finalDesc,
+        ...(typeof meta?.afterSalesId === 'string' ? { afterSalesId: meta.afterSalesId } : {}),
+        ...(meta?.afterSales ? { afterSales: meta.afterSales } : {}),
         amount,
         seg,
         method,
@@ -420,6 +424,7 @@ export class VaultService {
   }
 
   private assertReceiptEntryLocked(entry: VaultEntryDocument): void {
+    if (entry.afterSalesId) throw new BadRequestException('حركة مرتبطة بتسوية استرجاع أو استبدال؛ راجع ملف الطلب بدل تعديل الخزنة منفردة');
     if (entry.idempotencyKey?.startsWith('receipt:')) {
       throw new BadRequestException('حركة عربون مرتبطة بإيصال — استخدم إجراءات العربون في الطلب لضمان عدم تكرار الأموال');
     }

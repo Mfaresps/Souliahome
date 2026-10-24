@@ -126,6 +126,7 @@
     ['Invalid line units response', 'تعذر قراءة قطع الصنف. حدّث الفاتورة وحاول مجددًا.']
   ];
   const codes = {
+    PURCHASE_RECEIPT_RECONCILIATION_REQUIRED: ['The purchase receipt quantity does not match its registered piece codes. Review the purchase receipt before preparation.', 'كمية فاتورة الشراء لا تطابق عدد أكواد القطع المسجلة. راجع فاتورة الشراء قبل التحضير.'],
     PURCHASE_ORIGIN_MISMATCH: ['This piece cannot be matched unambiguously to the same product in its purchase invoice. Review the invoice before packing.', 'لا يمكن ربط القطعة ببند واضح لنفس المنتج في فاتورة شرائها. راجع الفاتورة قبل التجميع.'],
     PURCHASE_CODED_REDUCTION: ['This product has registered piece identities. Do not delete it or reduce its quantity below its registered identities. Use a supplier return and select the actual piece codes to remove stock.', 'المنتج له هويات قطع مسجلة. لا تحذف المنتج أو تقلل كميته عن عدد الهويات؛ استخدم مرتجع المورد وحدد أكواد القطع لإخراجها من المخزن.'],
     PURCHASE_LINE_AMBIGUOUS: ['Purchase lines have duplicate or ambiguous identities. Refresh the invoice and review the piece links before changing quantities.', 'بنود الشراء لها هويات مكررة أو ربط غير واضح. حدّث الفاتورة وراجع ربط القطع قبل تغيير الكميات.'],

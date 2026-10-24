@@ -18,7 +18,7 @@ function fixture() {
     _pucoGetGroup: () => ({ orders: [order] }), _pwEnsurePickLines: jest.fn().mockResolvedValue(undefined),
     _pwLoadPickSummary: jest.fn().mockImplementation(async () => state.summary), _pwAutoPrepareScannedOrder: jest.fn().mockResolvedValue(undefined),
     _pwRenderWork: jest.fn(), hasPerm: () => true, esc: String, fmtN: String, toast: jest.fn(),
-    crypto: { randomUUID: () => 'operation-' + ++operation }, setTimeout, requestAnimationFrame: (fn: any) => fn(), showConfirm: jest.fn().mockResolvedValue(true),
+    crypto: { randomUUID: () => 'operation-' + ++operation }, setTimeout, clearTimeout, requestAnimationFrame: (fn: any) => fn(), showConfirm: jest.fn().mockResolvedValue(true),
     performance: { now: () => at += 10 }, window: {}, HTMLInputElement: class {}, Event: class {},
     document: { activeElement: null, addEventListener: jest.fn(), querySelector: () => null,
       getElementById: (id: string) => id === 'pu-card-orders-modal' ? { getClientRects: () => [{}] } : id === 'pw-work' ? root : null },
@@ -38,6 +38,41 @@ it('has no visible barcode fields until Manual entry is opened', () => {
   expect(c._pwUnitScanHtml(order, order.items[0], state)).not.toContain('<input');
   state.manualOpen = true;
   expect(c._pwScanIntroHtml(order, state)).toContain('id="pw-order-scan"');
+});
+
+it('expires a rejection after eight seconds without extending it on re-render or altering saved scans', () => {
+  jest.useFakeTimers();
+  try {
+    const { c, state, order } = fixture();
+    state.summary.lines[0].units = [{ barcode: 'saved-piece', status: 'picking' }];
+    state.feedback = { error: true, lineId: 'line', text: 'Rejected' };
+    c._pwScanIntroHtml(order, state);
+    jest.advanceTimersByTime(5000);
+    c._pwScanIntroHtml(order, state);
+    jest.advanceTimersByTime(2999);
+    expect(state.feedback.error).toBe(true);
+    jest.advanceTimersByTime(1);
+    expect(state.feedback).toBeNull();
+    expect(state.summary.lines[0].units).toHaveLength(1);
+    expect(c._pwUnitScanHtml(order, order.items[0], state)).not.toContain('Scan not accepted');
+    expect(c._pwRenderWork).not.toHaveBeenCalled();
+  } finally { jest.useRealTimers(); }
+});
+
+it.each([false, true])('an expired rejection cannot clear a newer result (new rejection=%s)', rejected => {
+  jest.useFakeTimers();
+  try {
+    const { c, state, order } = fixture();
+    state.feedback = { error: true, text: 'First rejection' };
+    c._pwScanIntroHtml(order, state);
+    jest.advanceTimersByTime(5000);
+    const next = state.feedback = { error: rejected, text: 'New result' };
+    c._pwScanIntroHtml(order, state);
+    jest.advanceTimersByTime(3000);
+    expect(state.feedback).toBe(next);
+    jest.advanceTimersByTime(5000);
+    expect(state.feedback).toBe(rejected ? null : next);
+  } finally { jest.useRealTimers(); }
 });
 
 it.each(['en', 'ar'])('accepts a physical scan without focusing an input (%s keyboard)', async language => {
@@ -68,6 +103,56 @@ it('serializes fast scans received during an in-flight lookup and avoids duplica
   expect(c.api.mock.calls.filter((row: any[]) => row[1]?.method === 'POST')).toHaveLength(2);
   expect(state.summary.lines[0].units).toHaveLength(2);
   expect(c._pwLoadPickSummary).not.toHaveBeenCalled();
+});
+
+it.each(['Shift', 'CapsLock'])('keeps the full hardware barcode across %s events without focusing the manual field', async modifier => {
+  const { c, state } = fixture();
+  state.manualOpen = true;
+  const send = (key: string, extra = {}) => c._pwCaptureReaderKey({ key, target: { closest: () => null },
+    preventDefault: jest.fn(), stopImmediatePropagation: jest.fn(), ...extra });
+  const code = 'SU-6AD6BF985124D5601B2B3ED5';
+  for (const char of code) {
+    if (/[A-Z]/.test(char)) send(modifier);
+    send(char, { code: /[A-Z]/.test(char) ? 'Key' + char : /\d/.test(char) ? 'Digit' + char : 'Minus', shiftKey: /[A-Z]/.test(char) });
+  }
+  send('Enter'); await tick();
+  const write = c.api.mock.calls.find((row: any[]) => row[1]?.method === 'POST');
+  expect(write).toBeDefined();
+  expect(JSON.parse(write[1].body).identifier).toBe(code);
+});
+
+it.each(['en', 'ar'])('explains purchase coverage rejection with the invoice and quantities (%s)', language => {
+  const { c } = fixture(); c.currentLang = language;
+  const result = c._pwScanError({ message: 'The data or operation state changed. Refresh it before continuing.',
+    originalMessage: 'Purchase receipt needs reconciliation before picking', code: 'PURCHASE_RECEIPT_RECONCILIATION_REQUIRED',
+    details: { purchaseTransactionId: '6ad6bf985124d5601b2b3d35', purchaseRef: '900016', invoiceQuantity: 10, registeredQuantity: 8 } });
+  expect(result.text).toContain('900016');
+  expect(result.hint).toContain('10'); expect(result.hint).toContain('8');
+  expect(result.purchaseTransactionId).toBe('6ad6bf985124d5601b2b3d35');
+});
+
+it('reads a device without an Enter suffix, including repeated digit events', async () => {
+  jest.useFakeTimers();
+  try {
+    const { c, state } = fixture();
+    for (const char of '111111111') c._pwCaptureReaderKey({ key: char, code: 'Digit1', repeat: true,
+      target: { closest: () => null }, preventDefault: jest.fn(), stopImmediatePropagation: jest.fn() });
+    await jest.advanceTimersByTimeAsync(501);
+    expect(state.summary.lines[0].units).toHaveLength(1);
+    expect(JSON.parse(c.api.mock.calls.find((row: any[]) => row[1]?.method)?.[1].body).identifier).toBe('111111111');
+  } finally { jest.useRealTimers(); }
+});
+
+it('discards an unterminated device scan when the selected order changes', async () => {
+  jest.useFakeTimers();
+  try {
+    const { c } = fixture();
+    for (const key of '123456789') c._pwCaptureReaderKey({ key, target: { closest: () => null },
+      preventDefault: jest.fn(), stopImmediatePropagation: jest.fn() });
+    c._pwSelId = 'other';
+    await jest.advanceTimersByTimeAsync(501);
+    expect(c.api).not.toHaveBeenCalled();
+  } finally { jest.useRealTimers(); }
 });
 
 it('shows the committed code and check immediately, before subsequent preparation finishes', async () => {

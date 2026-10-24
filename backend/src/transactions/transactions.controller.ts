@@ -369,11 +369,20 @@ export class TransactionsController {
 
   @Post('pickup-orders/undo')
   async undoPickup(
-    @Body() body: { ids: string[] },
+    @Body() body: { ids: string[]; sourceRef?: string },
     @Req() req: { user: { name: string; username: string; userId: string } },
   ) {
     const by = req.user.name || req.user.username || 'مستخدم';
-    return this.transactionsService.undoPickup(body.ids, by, req.user.userId);
+    return this.transactionsService.undoPickup(body.ids, by, req.user.userId, body.sourceRef);
+  }
+
+  @Post('pickup-orders/return-to-preparing')
+  async returnPickupToPreparing(
+    @Body() body: { ids: string[]; prepRef: string; note?: string; shipCo?: string; sourceRef?: string; joinExisting?: boolean },
+    @Req() req: { user: { name: string; username: string; userId: string } },
+  ) {
+    const by = req.user.name || req.user.username || 'User';
+    return this.transactionsService.returnPickupToPreparing(body.ids, by, req.user.userId, body.prepRef, body);
   }
 
   @Post('pickup-orders/add-to-run')
@@ -534,7 +543,13 @@ export class TransactionsController {
     @Req() req: any,
   ) {
     const by = req.user?.name || req.user?.username || 'مستخدم';
-    return this.transactionsService.closeFailedDelivery(id, dto, by);
+    return this.transactionsService.closeFailedDelivery(id, dto, by, req.user?.userId || req.user?._id || req.user?.id);
+  }
+
+  /** Same access as the failed-delivery dialog; only the pieces on this invoice. */
+  @Get(':id/failed-delivery/identities')
+  failedDeliveryIdentities(@Param('id') id: string) {
+    return this.transactionsService.failedDeliveryIdentities(id);
   }
 
   /** "Not yet" — the courier says it is coming; the order stays on the card. */
@@ -552,7 +567,7 @@ export class TransactionsController {
     @Req() req: any,
   ) {
     const by = req.user?.name || req.user?.username || 'مستخدم';
-    return this.transactionsService.reshipFailedDelivery(id, dto, by);
+    return this.transactionsService.reshipFailedDelivery(id, dto, by, req.user?.userId || req.user?._id || req.user?.id);
   }
 
   /**

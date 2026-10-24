@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { FollowUpsService } from './followups.service';
-import { CreateFollowUpDto, UpdateFollowUpDto } from './dto/followup.dto';
+import { CreateFollowUpDto, UpdateFollowUpDto, DeferFollowUpDto } from './dto/followup.dto';
 import { PresenceGateway } from '../auth/presence.gateway';
 
 interface AuthRequest {
@@ -63,6 +63,11 @@ export class FollowUpsController {
     const doc = await this.service.cancel(id, reason, userId, userName);
     try { this.presence.emitEvent('followup:changed', { action: 'update', id }); } catch (_) {}
     return doc;
+  }
+
+  @Post(':id/defer')
+  async defer(@Param('id') id: string, @Body() dto: DeferFollowUpDto, @Req() req: AuthRequest) {
+    return this.service.defer(id, dto, String(req.user?.userId || req.user?.sub || ''), req.user?.role || '', req.user?.name || req.user?.username || '');
   }
 
   @Post(':id/comments')

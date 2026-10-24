@@ -1,6 +1,7 @@
 import { notifyApproval } from '../notifications/admin-events';
 import { shopifyChangeEvent } from '../notifications/admin-events';
 import { NotificationsService } from '../notifications/notifications.service';
+import { FollowUpsService } from '../followups/followups.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import {
   Injectable,
@@ -57,6 +58,7 @@ import { SettingsService } from '../settings/settings.service';
 import { DiscountOtpService } from '../discount-otp/discount-otp.service';
 import { carrierLabel, isValidCarrier } from '../shared/carriers.constants';
 import { resolveShopifyPhone } from './shopify-phone.util';
+import { resolveShopifyClientName } from './shopify-client-name.util';
 import { shopifyLineQuantity } from './shopify-line-quantity.util';
 import { applyShopifyConflictItems, differingItemKeys, itemKey, mergeShopifyItems } from './shopify-item-merge.util';
 import { OrderEditActor, OrderEditInput, orderEditSnapshot, transactionEditSnapshot, normalizeInvoiceEdit, validEditItems, validDiscountAmount } from './order-edit.util';
@@ -65,6 +67,7 @@ import { UpdateTransactionDto } from '../transactions/dto/transaction.dto';
 @Injectable()
 export class ShopifyService {
   @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
+  @PushOptional() @PushInject(FollowUpsService) private readonly followUpsService?: FollowUpsService;
 
   private readonly logger = new Logger(ShopifyService.name);
 
@@ -151,9 +154,7 @@ export class ShopifyService {
       }
 
       const items = await this.mapItems(orderData.line_items || []);
-      const customer = orderData.customer || {};
-      const clientName = [customer.first_name, customer.last_name]
-        .filter(Boolean).join(' ') || 'عميل Shopify';
+      const clientName = resolveShopifyClientName(orderData) || 'عميل Shopify';
       const clientPhone = resolveShopifyPhone(orderData) || '';
       const address = this.formatAddress(orderData.shipping_address);
       const city = this.formatCity(orderData.shipping_address);
@@ -488,7 +489,7 @@ export class ShopifyService {
       name: o.name,
       orderNumber: o.order_number,
       createdAt: o.created_at,
-      client: [o.customer?.first_name, o.customer?.last_name].filter(Boolean).join(' ') || 'عميل Shopify',
+      client: resolveShopifyClientName(o) || 'عميل Shopify',
       phone: resolveShopifyPhone(o) || '',
       total: this.parsePrice(o.total_price),
       financialStatus: o.financial_status || '',
@@ -540,6 +541,7 @@ export class ShopifyService {
       const tags = orderData.tags || '';
       const financialStatus = orderData.financial_status || order.financialStatus;
       const phone = resolveShopifyPhone(orderData, order.rawData, order.phone || '');
+      const clientName = resolveShopifyClientName(orderData, order.rawData, order.client || '');
 
       const items = await this.mapItems(orderData.line_items || []);
       const shipCost = this.parsePrice(orderData.shipping_lines?.[0]?.price);
@@ -548,6 +550,7 @@ export class ShopifyService {
       const total = Math.max(0, itemsTotal + shipCost - discount);
 
       order.notes = notes;
+      if (clientName !== undefined) order.client = clientName;
       if (phone !== undefined) order.phone = phone;
       // العنوان على سجل الأوردر يتتبّع شوبيفاي دائماً — هذا السجل يمثّل ما يقوله المتجر،
       // والتجميد يحدث على الحركة/الشحنة أدناه حيث توجد Bosta. الاثنان يختلفان عمداً عند
@@ -644,6 +647,7 @@ export class ShopifyService {
       // tags في Shopify نص مفصول بفواصل، transaction تحتفظ بها كمصفوفة
       const txTags = tags ? tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [];
       const txUpdate: any = { notes, tags: txTags };
+      if (clientName !== undefined) txUpdate.client = clientName;
       if (phone !== undefined) txUpdate.phone = phone;
 
       // ⚠ العنوان لا يُكتب فوقه بعد الشحن.
@@ -707,6 +711,11 @@ export class ShopifyService {
       }
       if (phone !== undefined) {
         this.emit('shopify:phone-changed', { shopifyOrderId: shopifyId, ref: order.ref });
+      }
+      if (clientName !== undefined) {
+        this.emit('shopify:client-changed', { shopifyOrderId: shopifyId, ref: order.ref });
+      }
+      if (phone !== undefined || clientName !== undefined) {
         if (tx?._id) this.emit('tx:updated', { _id: String(tx._id) });
       }
 
@@ -807,6 +816,7 @@ export class ShopifyService {
       await order.save();
 
       this.logger.log(`تم إلغاء أوردر Shopify من المتجر: ${order.ref}`);
+      await this.followUpsService?.closeForOrder({ shopifyOrderIds: [String(order._id), order.shopifyId], orderRef: order.ref }, 'cancelled', summary, 'Shopify');
       this.emit('shopify:order-cancelled', { shopifyOrderId: shopifyId, ref: order.ref });
       return { handled: true };
     } catch (err) {
@@ -1136,6 +1146,7 @@ export class ShopifyService {
 
     // Uploads abandoned before submission have no further use once the order is a transaction.
     this.logger.log(`✅ تم قبول أوردر Shopify: ${cleanRef}`);
+    await this.followUpsService?.closeForOrder({ transactionId: String(tx._id), shopifyOrderIds: [String(order._id), order.shopifyId], orderRef: order.ref }, 'confirmed', paidNow > 0 ? 'تم دفع الديبوزت' : 'سيتم الشحن بدون ديبوزت', approvedBy);
     // Independent post-commit work; persist the notification and clean drafts together.
     await Promise.all([
       this.depositReceipts.discardDrafts(String(order._id)),
@@ -2020,6 +2031,7 @@ export class ShopifyService {
     this.resolveCancelConflict(order, cancelledBy);
     await order.save();
     this.logger.log(`🚫 تم إلغاء أوردر Shopify: ${order.ref}`);
+    await this.followUpsService?.closeForOrder({ shopifyOrderIds: [String(order._id), order.shopifyId], orderRef: order.ref }, 'cancelled', summary, cancelledBy);
     return { success: true };
   }
 
@@ -2151,6 +2163,7 @@ export class ShopifyService {
     };
     await order.save();
     this.logger.log(`✅ اعتماد إلغاء أوردر Shopify: ${order.ref} (بواسطة ${reviewedBy})`);
+    await this.followUpsService?.closeForOrder({ shopifyOrderIds: [String(order._id), order.shopifyId], orderRef: order.ref }, 'cancelled', order.cancelReason, reviewedBy);
     await notifyApproval(this.notifications, 'approval:shopify-cancel:' + orderId + ':' + order.cancelRequest?.requestedAt + ':approved', order.ref, 'shopify:' + orderId, { actorName: cr.requestedBy, actionKey: 'cancel', status: 'approved' });
     return { success: true };
   }

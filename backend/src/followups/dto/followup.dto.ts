@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsIn, IsISO8601, MaxLength } from 'class-validator';
+
+export class DeferFollowUpDto {
+  @IsIn(['customer_postponed', 'carrier_delay', 'awaiting_return']) reason: string;
+  @IsISO8601() until: string;
+  @IsOptional() @IsString() @MaxLength(500) note?: string;
+}
 
 export class CreateFollowUpDto {
   @IsString() orderRef: string;

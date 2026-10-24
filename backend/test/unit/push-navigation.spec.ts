@@ -8,9 +8,12 @@ function fixture(kind: string, type: string, event = '123') {
   const element = { closest: jest.fn(() => ({ open: false })), scrollIntoView: jest.fn(), classList: { add: jest.fn(), remove: jest.fn() } };
   const context: any = {
     URL, CSS: { escape: (s: string) => s },
+    matchMedia: jest.fn(() => ({ matches: false })),
     location: { href: `https://soulia.test/?pushRecord=${kind}:${id}&pushType=${type}&pushEvent=${event}` },
     history: { replaceState: jest.fn() }, currentUser: { role: 'admin' }, currentLang: 'en', souliaPushAppReady: false,
     transactions: [], api: jest.fn(async () => ({ _id: id, comments: [{ id: 123 }], depositReceipts: [] })),
+    _requirePageAccess: jest.fn(() => true),
+    _canAccessPage: jest.fn(() => true), findFirstAllowedPage: jest.fn(() => 'dashboard'),
     navigateTo: jest.fn(), openOrderView: jest.fn(), highlightInvComment: jest.fn(), showInvoicePaymentHistory: jest.fn(),
     loadShopifyOrders: jest.fn(async () => {}), _spOrderById: jest.fn(() => ({ _id: id })),
     openShopifyOrderComments: jest.fn(async () => {}), openSpOrderPeek: jest.fn(), goToFuAndHighlight: jest.fn(async () => {}),
@@ -22,6 +25,26 @@ function fixture(kind: string, type: string, event = '123') {
   return { context, element };
 }
 describe('Notification event routing', () => {
+  it('does not open a destination denied by page permissions', async () => {
+    const { context } = fixture('tx', 'order');
+    context._requirePageAccess.mockReturnValue(false);
+    expect(await context.souliaOpenPendingPush()).toBe(false);
+    expect(context.api).not.toHaveBeenCalled();
+  });
+  it('opens the linked after-sales case after verifying access through the API', async () => {
+    const { context } = fixture('after-sales', 'order');
+    context.AfterSales = { open: jest.fn(async () => {}) };
+    await context.souliaOpenPendingPush();
+    expect(context.api).toHaveBeenCalledWith('/after-sales/' + id);
+    expect(context.AfterSales.open).toHaveBeenCalledWith(id);
+  });
+  it('does not open an after-sales case when API access is denied', async () => {
+    const { context } = fixture('after-sales', 'order');
+    context.AfterSales = { open: jest.fn(async () => {}) };
+    context.api.mockRejectedValue(new Error('Forbidden'));
+    await context.souliaOpenPendingPush();
+    expect(context.AfterSales.open).not.toHaveBeenCalled();
+  });
   it('marks the persisted notification read when opening it from a phone push', async () => {
     const { context } = fixture('tx', 'comment');
     const notificationId = 'a'.repeat(64);

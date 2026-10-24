@@ -36,10 +36,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
     let status: number;
     let message: string | string[];
     let errorName: string;
+    const receiptDetails: Record<string, unknown> = {};
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
+      if (typeof exceptionResponse === 'object' && (exceptionResponse as any).code === 'PURCHASE_RECEIPT_RECONCILIATION_REQUIRED') {
+        // Keep the actionable receipt details through the production HTTP error filter.
+        for (const key of ['code', 'purchaseTransactionId', 'purchaseRef', 'invoiceQuantity', 'registeredQuantity']) {
+          receiptDetails[key] = (exceptionResponse as any)[key];
+        }
+      }
       message =
         typeof exceptionResponse === 'string'
           ? exceptionResponse
@@ -66,6 +73,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     const body: ExceptionResponseBody = {
+      ...receiptDetails,
       statusCode: status,
       message,
       error: errorName,

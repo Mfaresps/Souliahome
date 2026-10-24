@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { FollowUpsModule } from '../followups/followups.module';
 import { Expense, ExpenseSchema } from '../expenses/schemas/expense.schema';
 import { OrderAuditMarketingService } from './order-audit-marketing.service';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -37,6 +38,7 @@ import { ManualDepositReceipt, ManualDepositReceiptSchema } from './schemas/manu
 
 @Module({
   imports: [
+    FollowUpsModule,
     MongooseModule.forFeature([
       { name: Expense.name, schema: ExpenseSchema },
       { name: Transaction.name, schema: TransactionSchema },

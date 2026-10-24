@@ -22,8 +22,8 @@ it('uses Cairo Sunday boundaries across a DST change without assuming a seven-da
   expect((week.end.getTime() - week.start.getTime()) / 3600000).toBe(169);
 });
 it('uses the exact recorded positive/negative values and reason with concise bodies', () => {
-  expect(notificationTitle('performance', { pointDelta: 10 }, 'en')).toBe('⭐ Points Earned · SOULIA');
-  expect(notificationTitle('performance', { pointDelta: -5 }, 'en')).toBe('⚠️ Points Deducted · SOULIA');
+  expect(notificationTitle('performance', { pointDelta: 10 }, 'en')).toBe('⭐ Points Earned');
+  expect(notificationTitle('performance', { pointDelta: -5 }, 'en')).toBe('⚠️ Points Deducted');
   expect(notificationBody('performance', '', { pointDelta: -5, pointReason: 'خصم مسجل' })).toBe('تم خصم -5 نقاط من رصيدك. السبب: خصم مسجل');
   expect(notificationBody('performance', '', { weekly: true, balance: 125, earned: 20, deducted: 5 })).toBe('رصيد نقاطك الحالي: 125 نقطة. نقاط مكتسبة هذا الأسبوع: +20. نقاط مخصومة: -5.');
   expect(notificationBody('performance', '2771', { pointDelta: 10, pointReason: 'سبب طويل '.repeat(100) }).length).toBeLessThanOrEqual(160);

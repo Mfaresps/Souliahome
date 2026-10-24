@@ -5,6 +5,11 @@ export type VaultEntryDocument = HydratedDocument<VaultEntry>;
 
 @Schema({ timestamps: true })
 export class VaultEntry {
+  @Prop({ type: Object, default: null })
+  afterSales?: Record<string, any>;
+  @Prop({ default: '' })
+  afterSalesId: string;
+
   @Prop({ required: true })
   date: string;
 

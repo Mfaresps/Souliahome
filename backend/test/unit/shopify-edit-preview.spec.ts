@@ -36,10 +36,15 @@ it('shows quantities, prices, discounts and total before the employee can send',
   const ui = preview();
   const pending = ui.env._spConfirmEditSubmission(order, { items: [{ productId: 'p1', name: 'Chair', qty: 2, price: 900 }], discount: { manualDiscount: 100 } });
   const overlay = ui.overlay();
-  expect(overlay.innerHTML).toContain('Quantity Chair: 1 → 2');
-  expect(overlay.innerHTML).toContain('Price Chair: EGP 1000 → EGP 900');
-  expect(overlay.innerHTML).toContain('Manual discount: EGP 0 → EGP 100');
-  expect(overlay.innerHTML).toContain('Total: EGP 1000 → EGP 1700');
+  expect(overlay.innerHTML).toContain('Before');
+  expect(overlay.innerHTML).toContain('After');
+  expect(overlay.innerHTML).toContain('Quantity');
+  expect(overlay.innerHTML).toContain('Unit price');
+  expect(overlay.innerHTML).toContain('EGP 1,000');
+  expect(overlay.innerHTML).toContain('EGP 900');
+  expect(overlay.innerHTML).toContain('Manual discount');
+  expect(overlay.innerHTML).toContain('EGP 100');
+  expect(overlay.innerHTML).toContain('EGP 1,700');
   expect(overlay.innerHTML).toContain('Send to admin for approval');
   overlay.querySelector('[data-send]').click();
   expect(await pending).toBe(true); expect(overlay.removed).toBe(true);
@@ -60,7 +65,9 @@ it('summarizes invoice changes and safely escapes customer-entered text', async 
   const ui = preview();
   const pending = ui.env._spConfirmEditSubmission({ ...order, phone: '01000', notes: 'Old note' },
     { invoice: { phone: '01111', notes: '<img src=x onerror=alert(1)>', total: 900 } });
-  expect(ui.overlay().innerHTML).toContain('Phone: 01000 → 01111');
+  expect(ui.overlay().innerHTML).toContain('Phone');
+  expect(ui.overlay().innerHTML).toContain('01000');
+  expect(ui.overlay().innerHTML).toContain('01111');
   expect(ui.overlay().innerHTML).toContain('&lt;img');
   expect(ui.overlay().innerHTML).not.toContain('<img');
   ui.overlay().querySelector('[data-back]').click(); await pending;
@@ -78,6 +85,64 @@ it('does not create a dialog or submit a request when nothing changed', async ()
   const ui = preview();
   expect(await ui.env._spConfirmEditSubmission(order, { items: order.items, discount: { manualDiscount: 0 } })).toBe(false);
   expect(ui.overlay()).toBeUndefined(); expect(ui.env.toast).toHaveBeenCalled();
+});
+
+it('never escapes money markup into visible text, even when the shared formatter returns HTML', () => {
+  const ui = preview();
+  ui.env.fmtJ = value => `<span class="amt-cur">EGP</span><span>${value}</span>`;
+  const changes = ui.env._spEditProposalChanges(order, { items: [{ ...order.items[0], price: 900 }] });
+  expect(changes.join(' ')).toContain('EGP 1,000');
+  expect(changes.join(' ')).not.toContain('<span');
+  const html = ui.env._spEditComparisonHtml(order, { total: 900 });
+  expect(html).not.toContain('&lt;span');
+  expect(html).toContain('EGP 900');
+});
+
+it('shows added and removed products with quantities, unit prices and item totals', () => {
+  const ui = preview();
+  const html = ui.env._spEditComparisonHtml(order, {
+    items: [{ productId: 'p2', name: 'Basket', qty: 2, price: 300 }], total: 600,
+  });
+  expect(html).toContain('Product added');
+  expect(html).toContain('Product removed');
+  expect(html).toContain('Chair');
+  expect(html).toContain('Basket');
+  expect(html).toContain('Quantity');
+  expect(html).toContain('Unit price');
+  expect(html).toContain('EGP 300');
+  expect(html).toContain('EGP 600');
+});
+
+it('uses the saved before snapshot for reviewed requests instead of the current order', () => {
+  const ui = preview();
+  ui.env.fmtDateTime = value => value;
+  ui.env._apprStatusLabel = value => value;
+  const html = ui.env._spEditRequestDetail({ ...order, total: 9999, editRequest: {
+    before: order, patch: { total: 900 }, status: 'معتمد', requestedBy: 'Employee', requestedAt: '2026-10-24',
+  } });
+  expect(html).toContain('EGP 1,000');
+  expect(html).toContain('EGP 900');
+  expect(html).not.toContain('9,999');
+});
+
+it('gives employees and administrators distinct visible pending labels without decision buttons for employees', () => {
+  for (const admin of [false, true]) {
+    const ui = preview(admin);
+    const pendingOrder = { ...order, _id: 'o1', editRequest: { status: 'معلق' } };
+    expect(ui.env._spOrderEditMark(pendingOrder)).toContain(admin ? 'Edit request needs approval' : 'Awaiting edit approval');
+    expect(ui.env._spEditReviewActions(pendingOrder).includes('decideShopifyEdit')).toBe(admin);
+    pendingOrder.editRequest.status = 'معتمد';
+    expect(ui.env._spOrderEditMark(pendingOrder)).toContain('Edit approved');
+  }
+});
+
+it('renders legacy arrow changes with labelled before and after values and escapes notes', () => {
+  const ui = preview();
+  const html = ui.env._spEditLegacyComparisonHtml(['Quantity Chair: 1 ← 2', 'Note: <script>alert(1)</script>']);
+  expect(html).toContain('Before');
+  expect(html).toContain('After');
+  expect(html).toContain('Quantity Chair');
+  expect(html).not.toContain('<script>');
 });
 
 function decisionPreview() {

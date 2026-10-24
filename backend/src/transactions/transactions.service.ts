@@ -1,6 +1,7 @@
 import { notifyApproval } from '../notifications/admin-events';
 import { pickingExceptions } from '../inventory-units/picking-exceptions';
 import { resetPickupPreparation } from '../inventory-units/pickup-preparation-reset';
+import { checkReturnedIdentities, finishFailedDeliveryIdentities, ReturnedIdentity } from '../inventory-units/failed-delivery-identities';
 import { normalizePurchaseEdit } from '../inventory-units/purchase-edit-integrity';
 import { normalizeInvoiceEdit } from '../shopify/order-edit.util';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -13,9 +14,10 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, isValidObjectId, ClientSession } from 'mongoose';
+import { Model, isValidObjectId, ClientSession, Types } from 'mongoose';
 import { DatabaseWriteContext, sessionQuery } from '../shared/database-write-context';
 import { bostaCashoutDueAt } from '../shared/bosta-cashout.util';
 import {
@@ -244,6 +246,12 @@ export class TransactionsService {
 
   notifyUnitIdentitiesChanged(transactionId?: string, unitId?: string): void {
     this.emit('inventory:unit-identities-changed', { transactionId, unitId });
+  }
+  notifyAfterSalesChanged(id: string, originalTransactionId: string): void {
+    this.emit('after-sales:updated', { id, originalTransactionId });
+  }
+  notifyAfterSalesTransactionChanged(id: string): void {
+    this.emit('tx:updated', { _id: id });
   }
 
   /**
@@ -747,6 +755,7 @@ export class TransactionsService {
     if (!tx) {
       throw new NotFoundException('المعاملة غير موجودة');
     }
+    this.assertNotExchangePendingCollect(tx);
     if (!tx.archived) {
       throw new BadRequestException('يمكن حذف المعاملات المجمدة فقط');
     }
@@ -763,6 +772,49 @@ export class TransactionsService {
       throw new NotFoundException('المعاملة غير موجودة');
     }
     return tx;
+  }
+
+  async cancelAfterSalesReplacement(id: string, caseId: string, reason: string, by: string, context: DatabaseWriteContext) {
+    const tx = await this.transactionModel.findById(id).session(context.session);
+    if (!tx || tx.cancelled || tx.afterSales?.caseId !== caseId || tx.afterSales?.role !== 'replacement' || tx.afterSales.shipmentPending) throw new BadRequestException('لا يمكن إلغاء البديل في حالته الحالية');
+    const inventory = await this.getInventory(context.session);
+    const entries: RecordMovementEntry[] = [];
+    for (const line of tx.items) {
+      const item = inventory.find(i => i.code === line.code);
+      if (!item) throw new BadRequestException('الصنف غير موجود');
+      const before = Number(item.warehouseBalances?.[warehouseCode(tx.warehouseCode)] || 0);
+      entries.push({ productId: item._id, productCode: line.code, productName: line.name,
+        type: 'مرتجع مبيعات', qtyDelta: line.qty, qtyBefore: before, qtyAfter: before + line.qty,
+        sourceTransactionId: id, sourceTransactionRef: tx.ref, sourceType: 'transaction-cancel', by,
+        warehouseCode: tx.warehouseCode, afterSalesId: caseId, afterSalesRef: tx.afterSales.caseRef || '',
+        originalInvoiceRef: tx.afterSales.originalRef || '', lifecycle: 'replacement-cancelled', reason });
+      if (item.warehouseBalances) item.warehouseBalances[warehouseCode(tx.warehouseCode)] = before + line.qty;
+    }
+    tx.cancelled = true; tx.cancelReason = reason; tx.cancelledBy = by; tx.cancelledAt = new Date().toISOString();
+    await tx.save({ session: context.session });
+    await this.inventoryMovementsService.record(entries, context);
+    context.afterCommit.push(() => { this.emit('tx:cancelled', { txId: id, tx, by }); this.emit('inventory:changed', { reason: 'after-sales-cancel', txId: id }); });
+  }
+
+  async recordAfterSalesDelivery(id: string, by: string, context: DatabaseWriteContext) {
+    const tx = await this.transactionModel.findById(id).session(context.session);
+    if (!tx?.afterSales?.caseId) throw new BadRequestException('البديل غير مرتبط بطلب استبدال');
+    const inventory = await this.getInventory(context.session);
+    const units = await this.transactionModel.db.collection('inventoryunits').find({ 'assignment.transactionId': id }, { session: context.session }).toArray();
+    const entries: RecordMovementEntry[] = tx.items.map(line => {
+      const item = inventory.find(i => i.code === line.code);
+      if (!item) throw new BadRequestException('الصنف غير موجود');
+      const balance = Number(item.warehouseBalances?.[warehouseCode(tx.warehouseCode)] || 0);
+      return { productId: item._id, productCode: line.code, productName: line.name, type: 'مبيعات',
+        qtyDelta: 0, qtyBefore: balance, qtyAfter: balance, physicalQty: -Number(line.qty),
+        sourceTransactionId: id, sourceTransactionRef: tx.ref, sourceType: 'transaction-update', by,
+        warehouseCode: tx.warehouseCode, afterSalesId: tx.afterSales!.caseId, afterSalesRef: tx.afterSales!.caseRef || '',
+        originalInvoiceRef: tx.afterSales!.originalRef || '', lifecycle: 'replacement-delivered',
+        unitIds: units.filter(u => u.productId === String(item._id)).map(u => String(u._id)),
+        reason: 'تأكيد خروج وتسليم البديل؛ الرصيد مخصوم سابقًا عند الحجز' };
+    });
+    await this.inventoryMovementsService.record(entries, context);
+    context.afterCommit.push(() => this.emit('inventory:changed', { reason: 'after-sales-delivery', txId: id }));
   }
 
   async findByRef(ref: string, type?: string): Promise<TransactionDocument> {
@@ -885,8 +937,9 @@ export class TransactionsService {
 
   async create(dto: CreateTransactionDto, callerRole?: string,
     receiptUpload?: { draftId: string; actor: ReceiptActor }, notificationActor?: string,
-    context?: DatabaseWriteContext, scannedSale = false): Promise<TransactionDocument> {
-    if (context && !(scannedSale && dto.type === 'مبيعات') && (!['مشتريات', 'مرتجع مشتريات'].includes(dto.type) || receiptUpload)) throw new BadRequestException('سياق المخزون الذري مخصص لمشتريات المورد أو مرتجعاته');
+    context?: DatabaseWriteContext, scannedSale = false, afterSalesInternal = false): Promise<TransactionDocument> {
+    if (afterSalesInternal && (!context || !['مبيعات', 'مرتجع'].includes(dto.type))) throw new BadRequestException('After-sales documents require an atomic workflow');
+    if (context && !afterSalesInternal && !(scannedSale && dto.type === 'مبيعات') && (!['مشتريات', 'مرتجع مشتريات'].includes(dto.type) || receiptUpload)) throw new BadRequestException('سياق المخزون الذري مخصص لمشتريات المورد أو مرتجعاته');
     if (context && dto.type === 'مشتريات' && !this.transactionAddsSupplierPurchases(dto as unknown as TransactionDocument)) throw new BadRequestException('تحويل الاستلام يتطلب مشتريات مورد فعلية، وليس سجلاً قديماً لمرتجع عميل');
     if (dto.manualDepositReceiptId && !receiptUpload) throw new BadRequestException('أكّد فحص الإيصال قبل حفظ المعاملة');
     const employee = (dto as unknown as { employee?: string }).employee || '';
@@ -1008,7 +1061,7 @@ export class TransactionsService {
     const deposit = (dto as unknown as { deposit?: number }).deposit || 0;
     const depMethod = (dto as unknown as { depMethod?: string }).depMethod || 'كاش';
 
-    if (deposit > 0) {
+    if (deposit > 0 && !afterSalesInternal) {
       if (!tx.deposits) tx.deposits = [];
       tx.deposits.push({
         id: receipt?.id || this.genPaymentId(),
@@ -1022,8 +1075,10 @@ export class TransactionsService {
       if (context) await tx.save({ session: context.session }); else await tx.save();
     }
 
-    if (context) await this.recordVaultForTransaction(tx, receipt?.id, context);
-    else await this.recordVaultForTransaction(tx, receipt?.id);
+    if (!afterSalesInternal) {
+      if (context) await this.recordVaultForTransaction(tx, receipt?.id, context);
+      else await this.recordVaultForTransaction(tx, receipt?.id);
+    }
 
     if (tx.type === 'مشتريات' && this.transactionAddsSupplierPurchases(tx)) {
       const supplierId = await this.resolveSupplierIdForLedger(
@@ -1071,7 +1126,10 @@ export class TransactionsService {
           const invRow = byCodeBefore.get(code);
           if (!invRow) continue;
           const qtyBefore = Number(invRow.warehouseBalances?.[warehouseCode(tx.warehouseCode)] || 0);
-          const qtyDelta = movementInfo.sign * (Number(item.qty) || 0);
+          const qtyDelta = movementInfo.sign * (tx.type === 'مرتجع' ? this.returnedItemQtyForStock(item) : (Number(item.qty) || 0));
+          const afterSales = tx.afterSales;
+          const damagedReceipt = afterSalesInternal && tx.type === 'مرتجع' && item.condition === 'تالف';
+          if (!qtyDelta && !damagedReceipt) continue;
           movementEntries.push({
             productId: invRow._id,
             productCode: code,
@@ -1084,7 +1142,14 @@ export class TransactionsService {
             sourceTransactionRef: tx.ref || String(tx._id),
             sourceType: 'transaction-create',
             by: employee || 'مستخدم',
+            ...(afterSales?.caseId ? { afterSalesId: afterSales.caseId, afterSalesRef: afterSales.caseRef || '',
+              originalInvoiceRef: afterSales.originalRef || '', warehouseCode: tx.warehouseCode,
+              lifecycle: tx.type === 'مرتجع' ? damagedReceipt ? 'returned-damaged' : 'returned-sound' : 'replacement-reserved',
+              physicalQty: tx.type === 'مرتجع' ? Number(item.qty) : 0, quarantinedQty: damagedReceipt ? Number(item.qty) : 0,
+              unitIds: (item as any).unitIds || [], reason: tx.type === 'مرتجع' ? damagedReceipt ? 'استلام مرتجع تالف — عزل دون زيادة المتاح للبيع' : 'استلام وفحص مرتجع سليم — إضافة للمتاح للبيع' : 'حجز كمية فاتورة البديل — لم يتم التسليم بعد',
+              notes: `${afterSales.caseRef || ''} — الفاتورة الأصلية #${afterSales.originalRef || ''}` } : {}),
           });
+          if (invRow.warehouseBalances) invRow.warehouseBalances[warehouseCode(tx.warehouseCode)] = qtyBefore + qtyDelta;
         }
         if (context) await this.inventoryMovementsService.record(movementEntries, context);
         else await this.inventoryMovementsService.record(movementEntries);
@@ -1096,7 +1161,7 @@ export class TransactionsService {
         (err as Error).stack,
       );
     }
-    if (tx.type === 'مبيعات' && !tx.shopifyOrderId) {
+    if (tx.type === 'مبيعات' && !tx.shopifyOrderId && !afterSalesInternal) {
       const notifySale = async () => {
       const itemCount = (tx.items || []).reduce((sum, item) => sum + item.qty, 0);
       await this.notifications?.enqueue('order', 'order:tx:' + tx._id, tx.ref, 'tx:' + tx._id, undefined, undefined, { orderTotal: tx.total, itemCount });
@@ -1270,6 +1335,8 @@ export class TransactionsService {
    * Blocks edit/cancel/delete for exchange replacement sales that still owe the company.
    */
   private assertNotExchangePendingCollect(tx: TransactionDocument): void {
+    if (tx.afterSales?.hasCases) throw new BadRequestException('الفاتورة لها طلب استرجاع أو استبدال مرتبط؛ لا يمكن تغيير مستندها الأصلي');
+    if (tx.afterSales?.caseId) throw new BadRequestException('هذه المعاملة مرتبطة بخدمة ما بعد البيع؛ استخدم ملف الاسترجاع أو الاستبدال لتسويتها');
     const ref = String(tx.ref || '');
     const remaining = tx.remaining || 0;
     const isLocked =
@@ -2138,6 +2205,10 @@ export class TransactionsService {
       );
     }
     this.emit('tx:cancelled', { tx: saved, by: cancelledBy });
+    if (saved.type === 'مبيعات') {
+      await this.followUpsService?.closeForOrder({ transactionId: String(saved._id),
+        shopifyOrderIds: [String((saved as any).shopifyOrderId || '')], orderRef: saved.ref }, 'cancelled', reason, cancelledBy);
+    }
 
     // ── إلغاء الطلب في شوبيفاي تلقائياً ──────────────────────────────────────
     const shopifyOrderId = (saved as any).shopifyOrderId || '';
@@ -2234,6 +2305,14 @@ export class TransactionsService {
    *   the one outcome that must not cancel — cancelling would credit us stock we
    *   do not have — so it records the loss and closes without touching inventory.
    */
+  async failedDeliveryIdentities(id: string) {
+    const sale = await this.transactionModel.findById(id).select('type').lean();
+    if (!sale || sale.type !== 'مبيعات') throw new NotFoundException('فاتورة المبيعات غير موجودة');
+    const units = await this.transactionModel.db.collection('inventoryunits').find({ 'assignment.transactionId': id },
+      { projection: { _id: 1, barcode: 1, manualCode: 1, status: 1 } }).toArray();
+    return { receiptIdentities: units.map(unit => ({ unitId: String(unit._id), barcode: unit.barcode, manualCode: unit.manualCode, status: unit.status })) };
+  }
+
   async closeFailedDelivery(
     id: string,
     dto: {
@@ -2241,8 +2320,10 @@ export class TransactionsService {
       returnShipCost?: number;
       refundAmount?: number;
       note?: string;
+      identities?: ReturnedIdentity[];
     },
     by: string,
+    actorId?: string,
   ): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) throw new NotFoundException('المعاملة غير موجودة');
@@ -2288,6 +2369,12 @@ export class TransactionsService {
     let retainedVaultEntryId = '';
 
     if (goodsBack) {
+      const units = await checkReturnedIdentities(this.transactionModel, id, dto.identities || [], undefined, actorId);
+      if (units.length && !/^[a-f\d]{24}$/i.test(actorId || '')) throw new BadRequestException('Authenticated actor required');
+      if (units.length) {
+        const actor = await this.transactionModel.db.collection('users').findOne({ _id: new Types.ObjectId(actorId) });
+        if (!actor || actor.active === false || actor.isActive === false) throw new BadRequestException('Actor is inactive');
+      }
       // Cancels, refunds the full deposit to the vault, reverses a collected COD,
       // returns the stock and writes the movement rows.
       await this.performCancellation(tx, `فشل توصيل — ${outcomeLabel}`, by);
@@ -2323,7 +2410,7 @@ export class TransactionsService {
       }
     }
 
-    const finalTx = await this.transactionModel
+    const finalize = (session?: any) => this.transactionModel
       .findByIdAndUpdate(
         id,
         {
@@ -2344,9 +2431,11 @@ export class TransactionsService {
             },
           },
         },
-        { new: true },
+        { new: true, ...(session ? { session } : {}) },
       )
       .exec();
+
+    const finalTx = goodsBack ? await finishFailedDeliveryIdentities(this.transactionModel, id, 'stock', dto.identities || [], by, actorId, finalize) : await finalize();
 
     await this.followUpsService.closeShippingIssueFollowUp(String(id), outcomeLabel, by);
 
@@ -2398,6 +2487,7 @@ export class TransactionsService {
     id: string,
     dto: { addShipCost?: number; chargeCustomer?: boolean; note?: string },
     by: string,
+    actorId?: string,
   ): Promise<TransactionDocument> {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) throw new NotFoundException('المعاملة غير موجودة');
@@ -2443,7 +2533,7 @@ export class TransactionsService {
       }
     }
 
-    const updated = await this.transactionModel
+    const finalize = (session?: any) => this.transactionModel
       .findByIdAndUpdate(
         id,
         {
@@ -2462,9 +2552,11 @@ export class TransactionsService {
             },
           },
         },
-        { new: true },
+        { new: true, ...(session ? { session } : {}) },
       )
       .exec();
+
+    const updated = await finishFailedDeliveryIdentities(this.transactionModel, id, 'reship', [], by, actorId, finalize);
 
     await this.followUpsService.closeShippingIssueFollowUp(
       String(id),
@@ -2571,7 +2663,7 @@ export class TransactionsService {
 
     const candidates = await this.transactionModel.find(query).exec();
     const rows: Array<{ ref: string; client: string; bostaStatus: string; action: string }> = [];
-    const RESOLVING = ['DELIVERED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'PICKED_UP'];
+    const RESOLVING = ['DELIVERED'];
     let updated = 0;
 
     for (const tx of candidates) {
@@ -2616,6 +2708,9 @@ export class TransactionsService {
             },
           },
         ).exec();
+        await this.followUpsService?.closeShippingIssueFollowUp?.(
+          String(tx._id), delivered ? 'تم تسليم الطلب للعميل' : `استؤنفت حركة الشحنة: ${bostaStatus}`, 'system:backfill',
+        );
         updated++;
       }
     }
@@ -2925,6 +3020,7 @@ export class TransactionsService {
       throw new BadRequestException('لا يمكن تحصيل معاملة ملغية');
     }
     // A Bosta settlement in progress or awaiting review owns this order's collection. Collecting it
+    if (tx.afterSales?.caseId) throw new BadRequestException('سجل التحصيل من ملف الاسترجاع والاستبدال المرتبط');
     // here as well is how the same cash would be booked twice.
     if ((tx as any).carrierSettlement?.payoutId || (!opts.carrierActual && ['processing', 'review', 'pending'].includes((tx as any).carrierSettlement?.status || ''))) {
       throw new BadRequestException('هذا الطلب قيد تسوية بوسطة — راجع التسوية من الخزنة ← تسويات بوسطة');
@@ -5525,11 +5621,58 @@ export class TransactionsService {
   }
 
   /** Undo pick-up for one or more transaction IDs — reverts Ready or Preparing → Pending */
-  async undoPickup(ids: string[], by: string, actorId?: string): Promise<{ updated: number }> {
+  async undoPickup(ids: string[], by: string, actorId?: string, sourceRef?: string): Promise<{ updated: number }> {
     const validIds = [...new Set(ids.filter(id => isValidObjectId(id)))];
     if (!validIds.length) return { updated: 0 };
-    const changed = await resetPickupPreparation(this.transactionModel, validIds, by, actorId);
+    const changed = await resetPickupPreparation(this.transactionModel, validIds, by, actorId, sourceRef);
     if (changed.length) this.emit('pickup:updated', { ids: changed, action: 'undo', scansReset: true });
+    return { updated: changed.length };
+  }
+
+  /** Return a Ready ticket without changing scans, unit assignments or preparation checks. */
+  async returnPickupToPreparing(ids: string[], by: string, actorId: string, prepRef: string,
+    meta?: { note?: string; shipCo?: string; sourceRef?: string; joinExisting?: boolean }): Promise<{ updated: number }> {
+    const validIds = [...new Set((ids || []).filter(id => isValidObjectId(id)))];
+    if (!validIds.length || validIds.length !== ids.length || !String(prepRef || '').trim()) {
+      throw new BadRequestException('Valid orders and a preparation reference are required');
+    }
+    const now = new Date().toISOString();
+    const newGroupMeta = { prepNote: meta?.note || '', prepShipCo: meta?.shipCo || '', prepCreatedAt: now, prepCreatedBy: by };
+    let groupMeta = { ...newGroupMeta };
+    const session = await this.transactionModel.db.startSession();
+    let changed: string[] = [];
+    try {
+      await session.withTransaction(async () => {
+        changed = [];
+        const orders = await this.transactionModel.find({ _id: { $in: validIds }, type: 'مبيعات',
+          cancelled: { $ne: true }, archived: { $ne: true }, pickupStatus: { $in: ['Ready', 'Picked-Up'] },
+        }).session(session).lean();
+        if (orders.length !== validIds.length || (meta?.sourceRef !== undefined && orders.some(o =>
+          (o.pickupRef || `noref-${o._id}`) !== meta.sourceRef))) {
+          throw new ConflictException('تم تغيير المجموعة أو إرجاعها بالفعل بواسطة موظف آخر. تم تحديث القائمة؛ راجع مكان الطلبات الحالي.');
+        }
+        if (orders.length !== validIds.length || orders.some(o => o.shippedAt || o.deliveredAt ||
+          (o.bostaStatus && !['CREATED', 'VALIDATION_ERROR'].includes(o.bostaStatus)))) {
+          throw new BadRequestException('Some orders are no longer awaiting courier pickup. Refresh and try again.');
+        }
+        const target = await this.transactionModel.findOne({ type: 'مبيعات', pickupRef: prepRef.trim(),
+          pickupStatus: 'Preparing', cancelled: { $ne: true }, archived: { $ne: true },
+        }).session(session).lean();
+        if (meta?.joinExisting && !target) throw new ConflictException('مجموعة التحضير المختارة لم تعد متاحة. حدّث القائمة واختر مجموعة أخرى.');
+        groupMeta = target ? { prepNote: target.prepNote || '', prepShipCo: target.prepShipCo || '',
+          prepCreatedAt: target.prepCreatedAt || now, prepCreatedBy: target.prepCreatedBy || by } : { ...newGroupMeta };
+        if (target) await this.transactionModel.updateOne({ _id: target._id }, { $inc: { unitTrackingRevision: 1 } }, { session });
+        const result = await this.transactionModel.updateMany({ _id: { $in: validIds } }, {
+          $set: { pickupStatus: 'Preparing', pickupRef: prepRef.trim(), pickupDate: null, pickupBy: null, ...groupMeta },
+          $push: { pickupHistory: { action: 'preparing', date: now, by,
+            pickupRef: prepRef.trim(), note: 'Returned to preparation; existing scans and piece identities preserved' } },
+        }, { session });
+        if (result.modifiedCount !== validIds.length) throw new BadRequestException('Some orders changed. Refresh and try again.');
+        changed = validIds;
+      });
+    } finally { await session.endSession(); }
+    if (changed.length) this.emit('pickup:updated', { ids: changed, action: 'preparing', preparationPreserved: true,
+      pickupRef: prepRef.trim(), pickupDate: null, pickupBy: null, by, groupMeta });
     return { updated: changed.length };
   }
 
@@ -5588,6 +5731,7 @@ export class TransactionsService {
     const trackingRevision = prepChecked ? await this.assertTrackedPickupPrepared(id) : null;
     const result = await this.transactionModel.updateOne(
       { _id: id, pickupStatus: 'Preparing', cancelled: { $ne: true }, prepChecked: { $ne: prepChecked },
+        'afterSales.shipmentPending': { $ne: true },
         ...(trackingRevision == null ? {} : { $or: [{ unitTrackingRevision: trackingRevision }, { unitTrackingRevision: { $exists: false } }] }) },
       {
         $set: { prepChecked },

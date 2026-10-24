@@ -38,6 +38,11 @@ export class TransactionItem {
 
 @Schema({ timestamps: true })
 export class Transaction {
+  @Prop({ type: [Object], default: [] })
+  afterSalesEvents?: Array<Record<string, any>>;
+  @Prop({ type: Object, default: null })
+  afterSales?: Record<string, any>;
+
   @Prop({ default: 'MAIN' })
   warehouseCode: string;
   @Prop({ required: true })

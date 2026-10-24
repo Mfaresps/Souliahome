@@ -81,10 +81,16 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
     await page.screenshot({path:path.join(__dirname,'notification-page-mobile-ar.png')});
     await page.setViewport({width:320,height:568,isMobile:true,hasTouch:true});assert.equal((await measure()).width,320);
     assert.equal(await page.evaluate(()=>document.querySelector('#nc-overlay').scrollWidth>innerWidth),false);
-    await page.setViewport({width:1440,height:900,isMobile:true,hasTouch:true});assert.deepEqual(await measure(),{width:1440,height:900,x:0,y:0});
+    await page.setViewport({width:1440,height:900,isMobile:true,hasTouch:true});
+    assert.deepEqual(await measure(),{width:480,height:660,x:480,y:120});
     await page.screenshot({path:path.join(__dirname,'notification-page-desktop.png')});
+    await page.mouse.click(1200,450);await page.waitForFunction(()=>!document.querySelector('#nc-overlay').classList.contains('active'));
+    await page.waitForFunction(()=>!history.state?.souliaNotifications);
+    await open();await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('#nc-overlay').classList.contains('active'));
+    await page.waitForFunction(()=>!history.state?.souliaNotifications);
+    await open();
     await page.evaluate(()=>history.back());await page.waitForFunction(()=>!document.querySelector('#nc-overlay').classList.contains('active'));
     assert.equal(await page.evaluate(()=>document.body.style.overflow),'');assert.deepEqual(errors,[]);
-    console.log('PASS: compact full-page inbox, stable Clear all, RTL and desktop, exact order/comment/security targets, slow read receipt, settings and browser Back.');
+    console.log('PASS: mobile inbox and desktop popup, outside click, Escape, stable Clear all, RTL, exact order/comment/security targets, slow read receipt, settings and browser Back.');
   }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -422,7 +422,24 @@ export class CancelTransactionDto {
 }
 
 /** The closing decision on a shipment that never reached the customer. */
+export class ReturnedIdentityDto {
+  @IsString() @IsOptional()
+  readonly printOperationKey?: string;
+
+  @IsString() @IsNotEmpty()
+  readonly unitId: string;
+
+  @IsIn(['intact', 'reprinted'])
+  readonly labelState: string;
+
+  @IsBoolean()
+  readonly labelAttached: boolean;
+}
+
 export class CloseFailedDeliveryDto {
+  @IsArray() @ValidateNested({ each: true }) @Type(() => ReturnedIdentityDto) @IsOptional()
+  readonly identities?: ReturnedIdentityDto[];
+
   /** refused | unreachable | bad-address | courier-error | lost */
   @IsString()
   @IsNotEmpty()

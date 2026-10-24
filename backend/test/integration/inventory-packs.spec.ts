@@ -204,7 +204,9 @@ describe('Sealed physical packs',()=>{
     await tracking.pickException(saleId,{...req(),lineId:'line-1',action:'skip'},actor);
     for(const unit of await Unit.find({packId:pack._id}))await tracking.action(unit.barcode,{...req(),action:'prepare',expectedVersion:unit.__v,transactionId:saleId,lineId:'line-1',physicalPossessionConfirmed:true},actor);
     await raw('transactions').updateOne({_id:new Types.ObjectId(saleId)},{$set:{pickupStatus:'Ready',prepChecked:true,pickupRef:'TEST-RUN'}});
-    expect(await pickup.undoPickup([saleId],'Pack operator',actor.userId)).toEqual({updated:1});
+    expect((await tracking.invoiceIdentities(saleId)).lines[0].current).toHaveLength(6);
+    expect(await pickup.undoPickup([saleId],'Pack operator',actor.userId,'TEST-RUN')).toEqual({updated:1});
+    expect((await tracking.invoiceIdentities(saleId)).lines[0]).toMatchObject({sku:'PACK-TEST',current:[],history:[]});
     const summary=await tracking.pickingSummary(saleId);
     expect(summary).toMatchObject({prepChecked:false,lines:[{units:[],skippedCount:0}]});
     expect(await Unit.countDocuments({packId:pack._id,status:'available',assignment:null})).toBe(6);
@@ -217,6 +219,95 @@ describe('Sealed physical packs',()=>{
     expect(await pickup.undoPickup([saleId],'Pack operator',actor.userId)).toEqual({updated:0});
     await raw('transactions').updateOne({_id:new Types.ObjectId(saleId)},{$set:{pickupStatus:'Preparing'}});
     await expect(scan(pack.barcode)).resolves.toMatchObject({quantity:6});
+  });
+  it('returns Ready orders directly to Preparing while preserving every scanned identity and preparation state',async()=>{
+    const {packs:created}=await create();await scan(created[0].barcode);
+    for (const unit of await Unit.find({'assignment.transactionId':saleId})) {
+      unit.status='prepared';await unit.save();
+    }
+    await raw('transactions').updateOne({_id:new Types.ObjectId(saleId)},{$set:{pickupStatus:'Ready',pickupRef:'READY-OLD',prepChecked:true,bostaStatus:'CREATED'}});
+    const unitsBefore=await Unit.find({'assignment.transactionId':saleId}).sort({_id:1}).lean();
+    const eventsBefore=await raw('inventoryunitevents').countDocuments({transactionId:saleId});
+    const packBefore=await raw('inventorypacks').findOne({_id:new Types.ObjectId(created[0]._id)});
+    pickup.emit.mockClear();
+    expect(await pickup.returnPickupToPreparing([saleId],'Pack operator',actor.userId,'PREP-RETURN',{note:'Return ticket',shipCo:'Bosta'})).toEqual({updated:1});
+    const sale:any=await raw('transactions').findOne({_id:new Types.ObjectId(saleId)});
+    expect(sale).toMatchObject({pickupStatus:'Preparing',pickupRef:'PREP-RETURN',prepChecked:true,prepNote:'Return ticket',prepShipCo:'Bosta',pickupDate:null});
+    expect(sale.pickupHistory.at(-1)).toMatchObject({action:'preparing',pickupRef:'PREP-RETURN'});
+    expect(sale.pickupHistory.at(-1).scansReset).not.toBe(true);
+    expect(await Unit.find({'assignment.transactionId':saleId}).sort({_id:1}).lean()).toEqual(unitsBefore);
+    expect(unitsBefore).toHaveLength(6);
+    expect(await raw('inventoryunitevents').countDocuments({transactionId:saleId})).toBe(eventsBefore);
+    expect(await raw('inventorypacks').findOne({_id:new Types.ObjectId(created[0]._id)})).toEqual(packBefore);
+    expect((await raw('products').findOne({_id:new Types.ObjectId(productId)}))!.stock).toBe(24);
+    expect(pickup.emit).toHaveBeenCalledTimes(1);
+    expect(pickup.emit).toHaveBeenCalledWith('pickup:updated',expect.objectContaining({action:'preparing',pickupRef:'PREP-RETURN',preparationPreserved:true}));
+    expect(pickup.emit.mock.calls[0][1].scansReset).not.toBe(true);
+  });
+  it('joins a selected preparation group without overwriting its metadata or scanned identities',async()=>{
+    const {packs:created}=await create();await scan(created[0].barcode);
+    await raw('transactions').updateOne({_id:new Types.ObjectId(saleId)},{$set:{pickupStatus:'Ready',pickupRef:'READY-OLD',prepChecked:true}});
+    const targetId=id(),meta={prepNote:'Existing group',prepShipCo:'Bosta',prepCreatedAt:'2026-10-20T09:00:00Z',prepCreatedBy:'Original owner'};
+    await raw('transactions').insertOne({_id:new Types.ObjectId(targetId),type:'مبيعات',pickupStatus:'Preparing',pickupRef:'PREP-TARGET',...meta});
+    const before=await tracking.invoiceIdentities(saleId);
+    await pickup.returnPickupToPreparing([saleId],'Employee',actor.userId,'PREP-TARGET',{joinExisting:true,sourceRef:'READY-OLD',note:'Do not overwrite',shipCo:'Other'});
+    expect((await raw('transactions').findOne({_id:new Types.ObjectId(saleId)}))!).toMatchObject({pickupStatus:'Preparing',pickupRef:'PREP-TARGET',prepChecked:true,...meta});
+    expect((await tracking.invoiceIdentities(saleId)).lines[0].current).toEqual(before.lines[0].current);
+  });
+  it('rejects a missing selected preparation group and a stale Pending return without clearing identities',async()=>{
+    const {packs:created}=await create();await scan(created[0].barcode);
+    await raw('transactions').updateOne({_id:new Types.ObjectId(saleId)},{$set:{pickupStatus:'Ready',pickupRef:'READY-OLD',prepChecked:true}});
+    const before=await tracking.invoiceIdentities(saleId);
+    await expect(pickup.returnPickupToPreparing([saleId],'Employee',actor.userId,'MISSING',{joinExisting:true,sourceRef:'READY-OLD'})).rejects.toMatchObject({status:409});
+    await expect(pickup.undoPickup([saleId],'Employee',actor.userId,'STALE-REF')).rejects.toMatchObject({status:409});
+    expect((await tracking.invoiceIdentities(saleId)).lines[0].current).toEqual(before.lines[0].current);
+    expect((await raw('transactions').findOne({_id:new Types.ObjectId(saleId)}))!).toMatchObject({pickupStatus:'Ready',prepChecked:true});
+  });
+  it('preserves each returned order completion flag and active picking exceptions individually',async()=>{
+    const otherId=id();
+    await raw('transactions').updateOne({_id:new Types.ObjectId(saleId)},{$set:{pickupStatus:'Ready',pickupRef:'READY-OLD',prepChecked:true}});
+    const exceptions=[{id:'exception-1',active:true,note:'Existing physical preparation exception'}];
+    await raw('transactions').insertOne({_id:new Types.ObjectId(otherId),type:'مبيعات',pickupStatus:'Ready',pickupRef:'READY-OLD',prepChecked:false,pickingExceptions:exceptions});
+    await pickup.returnPickupToPreparing([saleId,otherId],'Pack operator',actor.userId,'PREP-RETURN');
+    expect((await raw('transactions').findOne({_id:new Types.ObjectId(saleId)}))!.prepChecked).toBe(true);
+    const other=await raw('transactions').findOne({_id:new Types.ObjectId(otherId)});
+    expect(other).toMatchObject({pickupStatus:'Preparing',pickupRef:'PREP-RETURN',prepChecked:false,pickingExceptions:exceptions});
+  });
+  it('rejects a partially stale return group without changing any order or emitting Pending',async()=>{
+    await raw('transactions').updateOne({_id:new Types.ObjectId(saleId)},{$set:{pickupStatus:'Ready',pickupRef:'READY-OLD',bostaStatus:'CREATED'}});
+    const otherId=id();await raw('transactions').insertOne({_id:new Types.ObjectId(otherId),type:'مبيعات',pickupStatus:'Ready',bostaStatus:'PICKED_UP'});
+    pickup.emit.mockClear();
+    await expect(pickup.returnPickupToPreparing([saleId,otherId],'Pack operator',actor.userId,'PREP-RETURN')).rejects.toThrow('awaiting courier');
+    expect((await raw('transactions').findOne({_id:new Types.ObjectId(saleId)}))!.pickupStatus).toBe('Ready');
+    expect(pickup.emit).not.toHaveBeenCalled();
+  });
+  it('allows only one of two employees to return the same ticket and records one transition',async()=>{
+    const {packs:created}=await create();await scan(created[0].barcode);
+    await raw('transactions').updateOne({_id:new Types.ObjectId(saleId)},{$set:{pickupStatus:'Ready',pickupRef:'READY-OLD',prepChecked:true}});
+    const unitsBefore=await Unit.find({'assignment.transactionId':saleId}).sort({_id:1}).lean();
+    pickup.emit.mockClear();
+    const results=await Promise.allSettled([
+      pickup.returnPickupToPreparing([saleId],'Employee A',actor.userId,'PREP-A',{sourceRef:'READY-OLD'}),
+      pickup.returnPickupToPreparing([saleId],'Employee B',actor.userId,'PREP-B',{sourceRef:'READY-OLD'}),
+    ]);
+    expect(results.filter(result=>result.status==='fulfilled')).toHaveLength(1);
+    const rejected=results.find(result=>result.status==='rejected') as PromiseRejectedResult;
+    expect(rejected.reason.getStatus()).toBe(409);
+    const sale:any=await raw('transactions').findOne({_id:new Types.ObjectId(saleId)});
+    expect(['PREP-A','PREP-B']).toContain(sale.pickupRef);
+    expect(sale).toMatchObject({pickupStatus:'Preparing',prepChecked:true});
+    expect(sale.pickupHistory.filter(entry=>entry.action==='preparing')).toHaveLength(1);
+    expect(pickup.emit).toHaveBeenCalledTimes(1);
+    expect(await Unit.find({'assignment.transactionId':saleId}).sort({_id:1}).lean()).toEqual(unitsBefore);
+    await expect(pickup.returnPickupToPreparing([saleId],'Employee A',actor.userId,'PREP-RETRY',{sourceRef:'READY-OLD'})).rejects.toMatchObject({status:409});
+    expect(pickup.emit).toHaveBeenCalledTimes(1);
+  });
+  it('rejects a stale return after another employee transfers the order to a different Ready ticket',async()=>{
+    await raw('transactions').updateOne({_id:new Types.ObjectId(saleId)},{$set:{pickupStatus:'Ready',pickupRef:'READY-NEW',prepChecked:true}});
+    pickup.emit.mockClear();
+    await expect(pickup.returnPickupToPreparing([saleId],'Employee',actor.userId,'PREP-RETURN',{sourceRef:'READY-OLD'})).rejects.toMatchObject({status:409});
+    expect((await raw('transactions').findOne({_id:new Types.ObjectId(saleId)}))!).toMatchObject({pickupStatus:'Ready',pickupRef:'READY-NEW',prepChecked:true});
+    expect(pickup.emit).not.toHaveBeenCalled();
   });
   it('reset is atomic across orders and rejects dispatch or missing actor without discarding scans',async()=>{
     const {packs:created}=await create();await scan(created[0].barcode);

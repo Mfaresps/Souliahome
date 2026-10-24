@@ -34,16 +34,26 @@
     if (opening || !window.souliaPushAppReady || typeof currentUser === 'undefined' || !currentUser) return false;
     const params = pending?.searchParams;
     const record = params?.get('pushRecord');
-    if (!record || !/^(tx|shopify|followup|mention|otp|audit|return|vault|product|expense|supplierReturn|performance|announcement):[a-f0-9]{24}$/.test(record)) return false;
+    if (!record || !/^(tx|shopify|followup|mention|otp|audit|return|vault|product|expense|supplierReturn|performance|announcement|after-sales):[a-f0-9]{24}$/.test(record)) return false;
     const [kind, id] = record.split(':');
     if (!['admin', 'staff', 'viewer'].includes(currentUser.role)) return false;
+    const destination = { tx: 'invoice-view', shopify: 'shopify-orders', followup: 'followups',
+      return: 'movements', vault: 'vault', product: 'approvals', expense: 'approvals',
+      supplierReturn: 'approvals', otp: 'approvals', audit: 'users', performance: 'userhub' }[kind];
+    if (destination && !_requirePageAccess(destination)) {
+      pending = null;
+      return false;
+    }
     const type = params.get('pushType') || '';
     if ((['otp', 'audit', 'return', 'vault', 'product', 'expense', 'supplierReturn'].includes(kind) || ['otp', 'approval', 'security', 'shopifyChange'].includes(type)) && currentUser.role !== 'admin') return false;
     const rawEvent = params.get('pushEvent') || '';
     const event = /^[A-Za-z0-9_-]{1,80}$/.test(rawEvent) ? rawEvent : '';
     opening = true;
     try {
-      if (kind === 'performance') {
+      if (kind === 'after-sales') {
+        await api('/after-sales/' + id);
+        await window.AfterSales.open(id);
+      } else if (kind === 'performance') {
         if (String(currentUser.userId || currentUser._id || currentUser.id) !== id) throw new Error('Performance notification unavailable for this account.');
         navigateTo('userhub');
       } else if (kind === 'otp') {
@@ -146,7 +156,7 @@
       ['pushRecord', 'pushType', 'pushEvent', 'pushNotification'].forEach(key => clean.searchParams.delete(key));
       history.replaceState(null, '', clean);
     } catch (error) {
-      navigateTo('movements'); toast(error.message, true);
+      navigateTo(_canAccessPage('movements') ? 'movements' : findFirstAllowedPage()); toast(error.message, true);
     } finally { opening = false; pending = null; }
     return true;
   };

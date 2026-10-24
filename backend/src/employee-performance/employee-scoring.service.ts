@@ -1,8 +1,8 @@
 import { NotificationsService } from '../notifications/notifications.service';
 import { Inject, Optional } from '@nestjs/common';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   EmployeePerformanceLog,
   EmployeePerformanceLogDocument,
@@ -17,6 +17,7 @@ import { SettingsService } from '../settings/settings.service';
 import { Settings } from '../settings/schemas/settings.schema';
 import { FollowUp, FollowUpDocument } from '../followups/schemas/followup.schema';
 import { DONE_STATUSES } from '../followups/followups.service';
+import { followUpLastActivityAt, followUpLatestComment } from './followup-last-activity';
 
 /**
  * The scoring period. Points are NOT deleted at the end of a period — they are
@@ -125,13 +126,17 @@ export interface MyWorkspaceResult {
   assignedOrdersTotal: number;
   /** Same count bounded by the selected period — the one comparable to `points`. */
   assignedOrdersInPeriod: number;
+  pendingConfirmationCount: number;
   deliveredInPeriod: number;
   openFollowUpsCount: number;
+  deliveryIssueFollowUpsCount: number;
+  deferredFollowUps: Array<{ id: string; until: Date }>;
   orders: Array<{
     id: string;
     shopifyId: string;
     ref: string;
     client: string;
+    phone: string;
     total: number;
     status: string;
     depositStatus: string;
@@ -148,6 +153,10 @@ export interface MyWorkspaceResult {
     reason: string;
     status: string;
     autoSource: string;
+    deferredUntil?: Date | null;
+    deferReason?: string;
+    deferNote?: string;
+    latestComment: ReturnType<typeof followUpLatestComment>;
     updatedAt: string;
   }>;
   /**
@@ -839,6 +848,49 @@ export class EmployeeScoringService implements OnModuleInit {
    * this into a name match.
    * ─────────────────────────────────────────────────────────────────────────────
    */
+  async getTeamWorkspace() {
+    const range = this.resolvePeriod('month', new Date());
+    const now = new Date();
+    const [users, orders, followUps, points] = await Promise.all([
+      this.userModel.find({ role: { $in: ['staff', 'viewer'] }, isActive: { $ne: false } }).select('name username avatar jobTitle isActive').lean().exec(),
+      this.shopifyOrderModel.aggregate([
+        { $match: { cancelled: { $ne: true } } },
+        { $group: { _id: '$assignedTo', orders: { $sum: 1 }, pending: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } } } },
+      ]),
+      this.followUpModel.aggregate([
+        { $match: { cancelled: { $ne: true }, status: { $nin: DONE_STATUSES } } },
+        { $group: { _id: '$responsibleId', followUps: { $sum: 1 },
+          deferred: { $sum: { $cond: [{ $gt: ['$deferredUntil', now] }, 1, 0] } },
+          issues: { $sum: { $cond: [{ $or: [{ $eq: ['$autoSource', 'shipping-issue'] }, { $in: ['$autoTrigger', ['FAILED_ATTEMPT', 'RETURNED']] }, { $eq: ['$reason', 'مشكلة في الاستلام'] }] }, 1, 0] } },
+        } },
+      ]),
+      this.logModel.aggregate([
+        { $match: this.periodMatch(range) },
+        { $group: { _id: '$employeeId', points: { $sum: '$points' }, delivered: { $sum: { $cond: [{ $eq: ['$actionType', 'delivery_completed'] }, 1, 0] } } } },
+      ]),
+    ]);
+    const map = (rows: any[]) => new Map(rows.map(row => [String(row._id || ''), row]));
+    const orderMap = map(orders), fuMap = map(followUps), pointMap = map(points);
+    const employees = users.map(user => {
+      const id = String(user._id), o = orderMap.get(id), f = fuMap.get(id), p = pointMap.get(id);
+      return { id, name: user.name || user.username, username: user.username, avatar: user.avatar || '', jobTitle: user.jobTitle || '', active: user.isActive !== false,
+        orders: o?.orders || 0, pending: o?.pending || 0, followUps: f?.followUps || 0, deferred: f?.deferred || 0,
+        actionable: Math.max(0, (f?.followUps || 0) - (f?.deferred || 0)), issues: f?.issues || 0, points: p?.points || 0, delivered: p?.delivered || 0 };
+    }).sort((a, b) => b.issues - a.issues || b.actionable - a.actionable || b.pending - a.pending || a.name.localeCompare(b.name));
+    const totals = employees.reduce((sum, user) => ({ orders: sum.orders + user.orders, pending: sum.pending + user.pending,
+      followUps: sum.followUps + user.followUps, issues: sum.issues + user.issues, deferred: sum.deferred + user.deferred }),
+      { orders: 0, pending: 0, followUps: 0, issues: 0, deferred: 0 });
+    return { employees, totals, periodLabel: this.periodLabel(range), updatedAt: now.toISOString() };
+  }
+
+  async getTeamEmployeeWorkspace(employeeId: string) {
+    if (!Types.ObjectId.isValid(employeeId)) throw new NotFoundException('الموظف غير موجود');
+    const employee = await this.userModel.findOne({ _id: employeeId, role: { $in: ['staff', 'viewer'] }, isActive: { $ne: false } }).select('name username avatar jobTitle isActive').lean().exec();
+    if (!employee) throw new NotFoundException('الموظف غير موجود');
+    const { adjustments, adjustmentsTruncated, ...workspace } = await this.getMyWorkspace(employeeId, 'month');
+    return { employee: { id: String(employee._id), name: employee.name || employee.username, avatar: employee.avatar || '' }, ...workspace };
+  }
+
   async getMyWorkspace(
     userId: string,
     period?: string,
@@ -864,6 +916,10 @@ export class EmployeeScoringService implements OnModuleInit {
       myFollowUps,
       myAdjustments,
       myAdjustmentsCount,
+      pendingConfirmationCount,
+      openFollowUpsCount,
+      deferredFollowUps,
+      deliveryIssueFollowUpsCount,
     ] = await Promise.all([
       this.logModel.aggregate([
         { $match: { employeeId: userId, ...inPeriod } },
@@ -918,7 +974,7 @@ export class EmployeeScoringService implements OnModuleInit {
       this.logModel.countDocuments({ employeeId: userId, actionType: 'delivery_completed', ...inPeriod }),
       this.shopifyOrderModel
         .find({ assignedTo: userId, cancelled: { $ne: true } })
-        .select('shopifyId ref client depositStatus depositAmount total status assignedAt')
+        .select('shopifyId ref client phone depositStatus depositAmount total status assignedAt')
         .sort({ assignedAt: -1 })
         .limit(MY_ORDERS_MAX)
         .lean()
@@ -932,8 +988,8 @@ export class EmployeeScoringService implements OnModuleInit {
           cancelled: { $ne: true },
           status: { $nin: DONE_STATUSES },
         })
-        .select('ticketNo orderRef transactionId clientName clientPhone reason status autoSource updatedAt')
-        .sort({ updatedAt: -1 })
+        .select('ticketNo orderRef transactionId shopifyOrderId clientName clientPhone reason status autoSource autoTrigger updatedAt createdAt escalationBaseline escalationLevel comments.createdAt comments.updatedAt comments.text comments.authorId comments.authorName deferredUntil deferReason deferNote')
+        .sort({ deferredUntil: 1, autoSource: -1, escalationBaseline: 1, createdAt: 1 })
         .limit(MY_FOLLOWUPS_MAX)
         .lean()
         .exec(),
@@ -949,6 +1005,13 @@ export class EmployeeScoringService implements OnModuleInit {
         .lean()
         .exec(),
       this.logModel.countDocuments({ employeeId: userId, actionType: 'manual_bonus', ...inPeriod }),
+      // Counts are independent of the bounded preview lists: an older pending
+      // order must never produce a false "all tasks complete" message.
+      this.shopifyOrderModel.countDocuments({ assignedTo: userId, status: 'pending', cancelled: { $ne: true } }),
+      this.followUpModel.countDocuments({ responsibleId: userId, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES } }),
+      this.followUpModel.find({ responsibleId: userId, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES }, deferredUntil: { $gt: new Date() } }).select('deferredUntil').lean().exec(),
+      this.followUpModel.countDocuments({ responsibleId: userId, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES },
+        $or: [{ autoSource: 'shipping-issue' }, { autoTrigger: { $in: ['FAILED_ATTEMPT', 'RETURNED'] } }, { reason: 'مشكلة في الاستلام' }] }),
     ]);
 
     // The shipment side of MY orders, joined on shopifyId → Transaction.shopifyOrderId.
@@ -1004,13 +1067,17 @@ export class EmployeeScoringService implements OnModuleInit {
       adjustmentsTruncated: myAdjustmentsCount > MY_ADJUSTMENTS_MAX,
       assignedOrdersTotal: assignedTotal,
       assignedOrdersInPeriod: assignedInPeriod,
+      pendingConfirmationCount,
       deliveredInPeriod,
-      openFollowUpsCount: myFollowUps.length,
+      openFollowUpsCount,
+      deliveryIssueFollowUpsCount,
+      deferredFollowUps: deferredFollowUps.map(f => ({ id: String(f._id), until: f.deferredUntil! })),
       orders: myOrders.map((o) => ({
         id: String(o._id),
         shopifyId: String(o.shopifyId || ''),
         ref: o.ref || '',
         client: o.client || '',
+        phone: o.phone || '',
         total: o.total || 0,
         status: o.status || '',
         depositStatus: o.depositStatus || 'none',
@@ -1022,11 +1089,21 @@ export class EmployeeScoringService implements OnModuleInit {
         ticketNo: f.ticketNo || '',
         orderRef: f.orderRef || '',
         transactionId: f.transactionId || '',
+        shopifyOrderId: f.shopifyOrderId || '',
         clientName: f.clientName || '',
         clientPhone: f.clientPhone || '',
         reason: f.reason || '',
         status: f.status || '',
         autoSource: f.autoSource || '',
+        deferredUntil: f.deferredUntil || null,
+        deferReason: f.deferReason || '',
+        deferNote: f.deferNote || '',
+        latestComment: followUpLatestComment(f as Parameters<typeof followUpLatestComment>[0]),
+        autoTrigger: f.autoTrigger || '',
+        escalationBaseline: f.escalationBaseline || null,
+        lastActivityAt: followUpLastActivityAt(f as Parameters<typeof followUpLastActivityAt>[0]),
+        escalationLevel: f.escalationLevel || 0,
+        createdAt: (f as { createdAt?: Date }).createdAt || null,
         updatedAt: (f as { updatedAt?: Date }).updatedAt
           ? new Date((f as { updatedAt?: Date }).updatedAt as Date).toISOString()
           : '',

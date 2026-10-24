@@ -57,6 +57,7 @@ function serviceFor(order: any): any {
   const svc = Object.create(ShopifyServiceClass().prototype);
   svc.shopifyOrderModel = { findById: jest.fn().mockResolvedValue(order) };
   svc.logger = { log: jest.fn(), warn: jest.fn(), error: jest.fn() };
+  svc.followUpsService = { closeForOrder: jest.fn().mockResolvedValue(undefined) };
   // Approved-deposit refunds on cancel are covered by shopify-deposit-receipts.service.spec.
   svc.depositReceipts = { settleOnCancel: jest.fn().mockResolvedValue({ refunded: [], voided: 0 }) };
   return svc;
@@ -66,7 +67,9 @@ describe('ShopifyService — cancellation request/approval', () => {
   describe('requestCancelOrder()', () => {
     it('records the request WITHOUT cancelling the order', async () => {
       const o = buildOrder();
-      await serviceFor(o).requestCancelOrder('o1', 'موظف', 'out-of-stock', '', 'u1', 'staff1');
+      const svc = serviceFor(o);
+      await svc.requestCancelOrder('o1', 'موظف', 'out-of-stock', '', 'u1', 'staff1');
+      expect(svc.followUpsService.closeForOrder).not.toHaveBeenCalled();
 
       // The load-bearing assertion: a request is not an outcome.
       expect(o.cancelled).toBe(false);
@@ -132,7 +135,10 @@ describe('ShopifyService — cancellation request/approval', () => {
           requestedAt: '2026-08-28T00:00:00.000Z', status: 'معلق',
         },
       });
-      await serviceFor(o).approveCancelRequest('o1', 'مدير');
+      const svc = serviceFor(o);
+      await svc.approveCancelRequest('o1', 'مدير');
+      expect(svc.followUpsService.closeForOrder).toHaveBeenCalledWith(
+        expect.objectContaining({ orderRef: '2450' }), 'cancelled', 'الصنف غير متوفر', 'مدير');
 
       expect(o.cancelled).toBe(true);
       // The approver decides WHETHER, not WHY — losing the code here would send every approved

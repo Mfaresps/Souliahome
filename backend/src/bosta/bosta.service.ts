@@ -1,8 +1,9 @@
+import { projectAfterSalesShipment } from '../after-sales/after-sales-shipment';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as https from 'https';
 import {
@@ -250,9 +251,6 @@ const BOSTA_STATUS_RANK: Record<string, number> = {
  */
 const SHIP_ISSUE_RESOLVING_STATUSES = [
   'DELIVERED',
-  'IN_TRANSIT',
-  'OUT_FOR_DELIVERY',
-  'PICKED_UP',
 ];
 
 export interface BostaCreateResult {
@@ -264,6 +262,7 @@ export interface BostaCreateResult {
 }
 
 export interface BostaTrackResult {
+  trackingNumber?: string;
   success: boolean;
   status?: string;
   statusLabel?: string;
@@ -311,6 +310,188 @@ export class BostaService {
   }
 
   async pickupLocations() {
+    return this.getPickupLocations();
+  }
+
+  async afterSalesCities() {
+    const response: any = await this.request('GET', '/cities', undefined, '', 'https://app.bosta.co/api/v2');
+    const rows = response?.data?.list || response?.data;
+    if (!Array.isArray(rows)) throw new BadRequestException('تعذر تحميل محافظات بوسطة');
+    return rows.map(c => ({ id: String(c._id), name: String(c.name || ''), nameAr: String(c.nameAr || c.name || '') }));
+  }
+  async afterSalesDistricts(cityId: string) {
+    if (!/^[\w-]{3,100}$/.test(cityId)) throw new BadRequestException('اختر المحافظة أولًا');
+    const response: any = await this.request('GET', `/cities/${encodeURIComponent(cityId)}/districts`, undefined, '', 'https://app.bosta.co/api/v2');
+    const rows = response?.data?.list || response?.data;
+    if (!Array.isArray(rows)) throw new BadRequestException('تعذر تحميل مناطق بوسطة');
+    return rows.filter(d => d.districtId).map(d => ({ id: String(d.districtId), name: String(d.districtName || ''), nameAr: String(d.districtOtherName || d.districtName || ''),
+      pickupAvailability: d.pickupAvailability, dropOffAvailability: d.dropOffAvailability }));
+  }
+  async createAfterSalesShipment(row: any) {
+    const apiKey = await this.resolveApiKey();
+    const tx: any = await this.txModel.findById(row.originalTransactionId).lean();
+    const selected = row.workflow.customerAddress;
+    let city = tx?.shippingBostaCity || normalizeCity(tx?.shippingGov || String(tx?.shippingCity || '').split(/[—–]/)[0]);
+    const firstLine = String(selected?.firstLine || tx?.shippingAddress || '').trim();
+    const phone = String(selected?.phone || tx?.phone || row.phone || '').replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 1632)).replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 1776)).replace(/\D/g, '');
+    const names = String(selected?.customerName || tx?.client || row.client || '').trim().split(/\s+/);
+    const missing: string[] = [];
+    if (!apiKey) missing.push('مفتاح بوسطة غير مضبوط؛ راجع إعدادات شركة الشحن');
+    if (!city && !selected?.cityId) missing.push('اختر محافظة العميل');
+    if (firstLine.length < 6) missing.push('أدخل عنوان العميل بالتفصيل (6 أحرف على الأقل)');
+    if (phone.length < 10 || phone.length > 15) missing.push('أدخل رقم هاتف العميل الصحيح (10 إلى 15 رقمًا)');
+    if (!names[0]) missing.push('أدخل اسم العميل');
+    if (missing.length) {
+      const error: any = new BadRequestException(missing.join(' — '));
+      error.beforeSend = true; throw error;
+    }
+    const w = row.workflow, exchange = row.requestKind === 'exchange';
+    const spec = (items: any[]) => ({ size: 'MEDIUM', packageType: 'Parcel', packageDetails: {
+      itemsCount: items.reduce((n, i) => n + Number(i.qty), 0), description: items.map(i => `${i.name || i.code} × ${i.qty}`).join(' | '),
+    } });
+    const replacement: any = exchange ? await this.txModel.findById(w.replacementTxId).lean() : null;
+    // V2 requires the customer's district. Reuse the original delivery destination,
+    // never the business pickup address or a district guessed from the governorate.
+    let originalDeliveryId = tx.bostaOrderId;
+    if (!originalDeliveryId && tx.afterSales?.caseId) {
+      const parent: any = await this.txModel.db.collection('returnrequests').findOne({ _id: new Types.ObjectId(tx.afterSales.caseId) });
+      originalDeliveryId = parent?.workflow?.shipment?.deliveryId;
+    }
+    let originalAddress: any;
+    try {
+      if (selected?.cityId && selected?.districtId) {
+        const cities = await this.afterSalesCities();
+        const pickedCity = cities.find(c => c.id === selected.cityId);
+        if (!pickedCity) throw new Error('Invalid city');
+        const districts = await this.afterSalesDistricts(selected.cityId);
+        const district = districts.find(d => d.id === selected.districtId);
+        if (!district || (exchange ? district.dropOffAvailability === false : district.pickupAvailability === false)) throw new Error('District unavailable');
+        city = pickedCity.name;
+        originalAddress = { districtId: district.id, cityId: pickedCity.id };
+      } else if (originalDeliveryId) {
+        const original: any = await this.fetchDelivery(originalDeliveryId);
+        originalAddress = (original?.data || original)?.dropOffAddress;
+      }
+    } catch {
+      const error: any = new BadRequestException(selected?.cityId ? 'تعذر التحقق من المنطقة المختارة أو الخدمة غير متاحة بها. أعد تحميل المناطق واختر منطقة متاحة؛ لم يتم إرسال شحنة.' : 'تعذر قراءة عنوان البوليصة القديمة. اختر المحافظة والمنطقة في هذه النافذة لإرسال الشحنة مباشرة؛ لم يتم إنشاء شحنة.');
+      error.beforeSend = true; throw error;
+    }
+    const enteredDistrict = selected?.districtId ? '' : String(w.customerDistrictName || '').trim();
+    const districtId = enteredDistrict ? '' : String(originalAddress?.districtId || originalAddress?.district?._id || '').trim();
+    const districtName = enteredDistrict || String(originalAddress?.districtName || originalAddress?.district?.name || '').trim();
+    const cityId = String(originalAddress?.cityId || originalAddress?.city?._id || '').trim();
+    if (!districtId && !(districtName && cityId)) {
+      const error: any = new BadRequestException(cityId ? 'منطقة العميل غير موجودة في البوليصة الأصلية. اكتب اسم منطقة العميل في خانة المنطقة ثم أعد المحاولة؛ لم يتم إنشاء شحنة.' : 'بيانات منطقة ومحافظة العميل غير مكتملة في بوليصة بوسطة الأصلية. راجع عنوان التسليم في بوسطة؛ لم يتم إنشاء شحنة.');
+      error.beforeSend = true; throw error;
+    }
+    const address: any = { city, firstLine, ...(districtId ? { districtId } : { districtName, cityId }) };
+    for (const key of ['secondLine', 'buildingNumber', 'floor', 'apartment']) {
+      if (originalAddress?.[key] != null) address[key] = String(originalAddress[key]);
+    }
+    const payload: any = { type: exchange ? 30 : 25, cod: exchange ? w.quote.collectDue : 0,
+      businessReference: w.ref, receiver: { firstName: names[0], lastName: names.slice(1).join(' ') || '-', phone },
+      specs: spec(exchange ? replacement.items : w.selectedLines), returnSpecs: spec(w.selectedLines),
+      goodsInfo: { amount: exchange ? w.quote.replacement : w.quote.credit }, notes: w.ref, returnNotes: row.notes || '',
+      escrowInfo: { isExcluded: true }, [exchange ? 'dropOffAddress' : 'pickupAddress']: address };
+    if (w.policy?.businessLocationId) payload.businessLocationId = w.policy.businessLocationId;
+    let response: any;
+    try { response = await this.request('POST', '/deliveries?apiVersion=1', payload, apiKey, 'https://app.bosta.co/api/v2'); }
+    catch (error: any) {
+      // An explicit validation/auth rejection created no delivery. Timeouts and server failures remain ambiguous.
+      if ([400, 401, 403, 422].includes(error.statusCode)) error.beforeSend = true;
+      throw error;
+    }
+    const data = response.data || response;
+    if (response.success === false || !data._id || !data.trackingNumber) throw new Error('لم تؤكد بوسطة رقم البوليصة؛ يلزم مطابقة الطلب');
+    return { deliveryId: String(data._id), trackingNumber: String(data.trackingNumber) };
+  }
+
+  async fetchAfterSalesShipment(id: string) {
+    if (!/^[\w-]{3,100}$/.test(id)) throw new BadRequestException('رقم بوليصة غير صالح');
+    return this.fetchDelivery(id);
+  }
+
+  async applyAfterSalesUpdate(payload: any): Promise<boolean> {
+    const d = payload?.data || payload || {}, alternatives: any[] = [];
+    const id = String(d._id || d.id || d.deliveryId || '');
+    const tracking = String(d.trackingNumber || '');
+    const reference = String(d.businessReference || '');
+    if (id) alternatives.push({ 'workflow.shipment.deliveryId': id });
+    if (tracking) alternatives.push({ 'workflow.shipment.trackingNumber': tracking });
+    if (reference.startsWith('AS-')) alternatives.push({ 'workflow.ref': reference, 'workflow.shipment.status': { $in: ['creating', 'reconcile'] } });
+    if (!alternatives.length || !this.txModel.db?.collection) return false;
+    const collection = this.txModel.db.collection('returnrequests');
+    const row: any = await collection.findOne({ 'workflow.version': 2, $or: alternatives });
+    if (!row) return false;
+    const code = Number(d.state?.code ?? d.state ?? d.status?.code ?? d.status);
+    const status = normalizeBostaStatus(code) || resolveBostaStatus(d, payload);
+    // Carrier custody never creates stock, refunds, or proof of replacement delivery.
+    const stamp = new Date(d.updatedAt || d.timestamp || Date.now());
+    if (Number.isNaN(stamp.getTime())) return true;
+    const previous = row.workflow.shipment;
+    if (previous.lastEventAt && new Date(previous.lastEventAt) > stamp) return true;
+    if (previous.carrierCode === code && previous.carrierStatus === status) {
+      const syncSession = await this.txModel.db.startSession();
+      try {
+        await syncSession.withTransaction(async () => {
+          await collection.updateOne({ _id: row._id }, { $set: { 'workflow.shipment.lastSyncAt': new Date().toISOString() } }, { session: syncSession });
+          const current = await collection.findOne({ _id: row._id }, { session: syncSession });
+          await projectAfterSalesShipment(this.txModel.db, current, syncSession);
+        });
+      } finally { await syncSession.endSession(); }
+      for (const txId of [row.originalTransactionId, row.workflow.replacementTxId, row.returnTxId].filter(Boolean)) this.presence?.emitEvent('tx:updated', { _id: String(txId) });
+      return true;
+    }
+    if (![d.updatedAt, d.timestamp].some(Boolean) && [45, 46, 48, 49].includes(previous.carrierCode) && code < previous.carrierCode) return true;
+    const set: any = { 'workflow.shipment.carrierCode': Number.isFinite(code) ? code : null,
+      'workflow.shipment.carrierStatus': status, 'workflow.shipment.carrierLabel': BOSTA_STATUS_LABELS[status] || status,
+      'workflow.shipment.lastEventAt': stamp.toISOString(), 'workflow.shipment.lastSyncAt': new Date().toISOString() };
+    if (id) set['workflow.shipment.deliveryId'] = id;
+    if (tracking) { set['workflow.shipment.trackingNumber'] = tracking; set.returnTrackingNumber = tracking; }
+    if ([47, 48, 49, 100, 101, 102, 103].includes(code) && !row.workflow.exception) set['workflow.exception'] = `بوسطة: ${d.state?.value || status}`;
+    const event = { action: 'carrier-status', by: 'Bosta', at: stamp.toISOString(), note: set['workflow.shipment.carrierLabel'],
+      eventId: `carrier:${row._id}:${stamp.toISOString()}:${code}:${status}`, caseId: String(row._id), caseRef: row.workflow.ref, kind: row.requestKind,
+      originalRef: row.originalRef, replacementRef: row.workflow.replacementRef || '', returnRef: row.returnTxRef || '' };
+    const session = await this.txModel.db.startSession(); let changed = false;
+    try {
+      await session.withTransaction(async () => {
+        const result = await collection.updateOne({ _id: row._id, 'workflow.shipment.lastEventAt': previous.lastEventAt || { $exists: false } },
+          { $set: set, $push: { 'workflow.history': event } } as any, { session });
+        changed = !!result.modifiedCount;
+        if (!changed) return;
+        const updated = await collection.findOne({ _id: row._id }, { session });
+        await projectAfterSalesShipment(this.txModel.db, updated, session);
+        const ids = [row.originalTransactionId, row.workflow.replacementTxId, row.returnTxId].filter(Boolean).map(value => new Types.ObjectId(value));
+        await this.txModel.db.collection('transactions').updateMany({ _id: { $in: ids }, 'afterSalesEvents.eventId': { $ne: event.eventId } },
+          { $push: { afterSalesEvents: event } } as any, { session });
+      });
+    } finally { await session.endSession(); }
+    if (changed) {
+      for (const txId of [row.originalTransactionId, row.workflow.replacementTxId, row.returnTxId].filter(Boolean)) this.presence?.emitEvent('tx:updated', { _id: String(txId) });
+      this.presence?.emitEvent('after-sales:updated', { id: String(row._id), originalTransactionId: row.originalTransactionId });
+      await this.notifications?.enqueue('order', event.eventId, row.workflow.ref, `after-sales:${row._id}`, undefined, undefined,
+        { afterSalesAction: 'carrier-status', actorName: 'Bosta' });
+    }
+    return true;
+  }
+
+  private afterSalesSyncRunning = false;
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async syncAfterSalesShipments() {
+    if (this.afterSalesSyncRunning || !this.txModel.db?.collection) return;
+    this.afterSalesSyncRunning = true;
+    try {
+      const cases = await this.txModel.db.collection('returnrequests').find({ 'workflow.version': 2,
+        'workflow.stage': { $nin: ['closed', 'cancelled'] }, 'workflow.shipment.deliveryId': { $exists: true, $nin: ['', null] } })
+        .sort({ 'workflow.shipment.lastSyncAt': 1 }).limit(100).toArray();
+      for (const row of cases) {
+        try { await this.applyAfterSalesUpdate(await this.fetchAfterSalesShipment(row.workflow.shipment.deliveryId)); }
+        catch { this.logger.warn(`After-sales shipment sync deferred: ${row._id}`); }
+      }
+    } finally { this.afterSalesSyncRunning = false; }
+  }
+
+  private async getPickupLocations() {
     const apiKey = await this.resolveApiKey();
     if (!apiKey) throw new BadRequestException('أضف مفتاح بوسطة من إعدادات الشحن');
     try {
@@ -572,6 +753,7 @@ export class BostaService {
 
   /** The `$set` fragment that queues an automatic settlement, or {} when none is due. */
   private async autoSettleScheduleFor(tx: any, from: string, to: string, now: string): Promise<Record<string, unknown>> {
+    if (tx.afterSales?.caseId) return {};
     if (from === 'DELIVERED' || to !== 'DELIVERED') return {};
     if (tx.type !== 'مبيعات' || tx.cancelled || tx.carrierSettlement) return {};
     try {
@@ -661,12 +843,19 @@ export class BostaService {
     const tx = await this.txModel.findById(txId).lean();
     if (!tx) return { success: false, error: 'المعاملة غير موجودة' };
     if (tx.type !== 'مبيعات') return { success: false, error: 'الشحن متاح للمبيعات فقط' };
+    if (tx.afterSales?.caseId) return { success: false, error: 'أنشئ بوليصة الاستبدال من ملف الاسترجاع والاستبدال المرتبط' };
     const resendableStatuses = ['VALIDATION_ERROR', 'DELETED'];
     const isResendable = resendableStatuses.includes(tx.bostaStatus || '');
     if (tx.bostaOrderId && !isResendable) {
       return { success: false, error: 'تم إرسال هذا الطلب إلى Bosta مسبقاً' };
     }
     if (!['Preparing', 'Ready', 'Picked-Up'].includes(tx.pickupStatus)) return { success: false, error: 'يجب نقل الطلب إلى قيد التجهيز قبل إنشاء بوليصة Bosta' };
+    // Edited names may contain leading spaces, repeated spaces or line breaks.
+    // Split the saved name into nonempty parts before building the receiver.
+    const nameParts = String(tx.client || '').trim().split(/\s+/).filter(Boolean);
+    if (!nameParts.length) {
+      return { success: false, error: 'اسم العميل فارغ — افتح المعاملة وأدخل اسم العميل ثم أعد الإرسال إلى بوسطة', code: 'VALIDATION_ERROR' };
+    }
     // Was there a shipment before? Read BEFORE the fields below are cleared.
     const prevTracking = String(tx.bostaTrackingNumber || '');
     const isResend = !!(tx.bostaOrderId || prevTracking
@@ -783,8 +972,8 @@ export class BostaService {
         phone: phoneClean || '01000000000',
       },
       receiver: {
-        firstName: (tx.client || 'عميل').split(' ')[0],
-        lastName: (tx.client || '').split(' ').slice(1).join(' ') || '-',
+        firstName: nameParts[0],
+        lastName: nameParts.slice(1).join(' ') || '-',
         phone: phoneClean || '01000000000',
       },
       businessReference: businessRef,
@@ -830,10 +1019,9 @@ export class BostaService {
           phone: phoneClean || '',
           sentAt: new Date().toISOString(),
         },
-        // Creating a Bosta order only registers the shipment — the courier has not collected it
-        // yet, so it stays "Ready to Ship". syncStatus() promotes it to 'Shipped' once Bosta
-        // reports PICKED_UP, which is when it is actually on its way.
-        pickupStatus: 'Ready',
+        // Registering a label does not move a preparation group. The picker explicitly
+        // transfers completed orders after checking and printing their labels.
+        pickupStatus: tx.pickupStatus === 'Preparing' ? 'Preparing' : 'Ready',
         shippedByName: operatorName || '',
         $push: {
           shipmentEvents: this.shipEvent(isResend ? 'resent' : 'sent',
@@ -894,6 +1082,15 @@ export class BostaService {
 
     const tx = await this.txModel.findById(txId).lean();
     if (!tx) return { success: false, error: 'المعاملة غير موجودة' };
+    if (tx.afterSales?.caseId) {
+      const row: any = await this.txModel.db.collection('returnrequests').findOne({ _id: new Types.ObjectId(tx.afterSales.caseId) });
+      if (!row?.workflow?.shipment?.deliveryId) return { success: false, error: 'لم يتم إنشاء بوليصة لهذا الطلب بعد' };
+      try {
+        await this.applyAfterSalesUpdate(await this.fetchAfterSalesShipment(row.workflow.shipment.deliveryId));
+        const updated: any = await this.txModel.findById(txId).lean();
+        return { success: true, status: updated.bostaStatus, statusLabel: updated.bostaStatusLabel, trackingNumber: updated.bostaTrackingNumber };
+      } catch (error: any) { return { success: false, error: error.message }; }
+    }
     if (!tx.bostaOrderId) return { success: false, error: 'لم يتم ربط هذا الطلب بـ Bosta بعد' };
 
     try {
@@ -1007,6 +1204,7 @@ export class BostaService {
       { new: true },
     ).lean();
 
+    await this.followUpsService?.closeShippingIssueFollowUp?.(txId, 'تم تأكيد تسليم الطلب للعميل', operator);
     this.emit('tx:updated', { _id: txId });
     this.logger.log(`Manual delivery confirmed — tx=${txId} by=${operator} reason="${reason}"`);
 
@@ -1291,11 +1489,12 @@ export class BostaService {
     //
     // The rule mirrors the one above, in the opposite direction: there, an order
     // already delivered can never enter a delivery problem; here, an order that
-    // reaches the customer — or simply goes back on the road — is no longer one.
+    // reaches the customer is resolved. Resumed movement alone leaves the issue
+    // open; employees can schedule the next check while waiting for an outcome.
     //
     // ⚠ Only 'open'/'awaiting' are touched. 'reshipped' and 'closed' are human
     // decisions and stay untouched; '' means there was never a problem.
-    if (currentStatus !== statusCode && SHIP_ISSUE_RESOLVING_STATUSES.includes(statusCode)) {
+    if (SHIP_ISSUE_RESOLVING_STATUSES.includes(statusCode)) {
       const openState = (tx as any).shipIssueState || '';
       if (openState === 'open' || openState === 'awaiting') {
         const delivered = statusCode === 'DELIVERED';
@@ -1325,6 +1524,15 @@ export class BostaService {
           `Shipping issue auto-closed by courier update — tx=${txId} ${openState} → closed (${statusCode})`,
         );
       }
+      // A closed transaction must not leave an open employee alert behind.
+      // Also reconcile repeated syncs for issues closed before this link existed.
+      if (openState || tx.shipIssueTrigger || tx.failedDelivery) {
+        await this.followUpsService?.closeShippingIssueFollowUp?.(
+          txId,
+          statusCode === 'DELIVERED' ? 'تم تسليم الطلب للعميل' : `استؤنفت حركة الشحنة: ${statusLabel}`,
+          `bosta:${source}`,
+        );
+      }
     }
 
     return { success: true, status: statusCode, statusLabel, raw: res };
@@ -1347,6 +1555,7 @@ export class BostaService {
    *     auto-link the Bosta fields onto that transaction the first time we see it.
    */
   async processWebhook(payload: any): Promise<BostaTrackResult> {
+    if (await this.applyAfterSalesUpdate(payload)) return { success: true, code: 'AFTER_SALES' };
     const d = payload?.data || payload || {};
     const bostaOrderId   = String(d._id || d.id || d.deliveryId || '');
     const trackingNumber = String(d.trackingNumber || d.waybillNumber || d.TrackingNumber || '');
@@ -1649,6 +1858,7 @@ export class BostaService {
         type: 'مبيعات',
         bostaStatus: 'DELIVERED',
         codCollectionStatus: { $nin: ['Collected', 'CollectionProcessing', 'FailedCollection'] },
+        'afterSales.caseId': { $exists: false },
         $or: [{ bostaOriginalCod: { $gt: 0 } }, { remaining: { $gt: 0 } }],
         // An automatic settlement queued, under review or done owns this order's cash — confirming
         // it here as well would book the same COD twice (and this path books the gross COD).

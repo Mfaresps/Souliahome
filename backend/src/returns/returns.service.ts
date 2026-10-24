@@ -97,12 +97,10 @@ export class ReturnsService {
       throw new BadRequestException(msg || 'بيانات الطلب غير صالحة');
     }
 
-    // Exchange is not wired yet (the replacement-sale leg cannot be created — a 'مبيعات' ref must
-    // be digits-only). Say so instead of silently downgrading the request to a plain refund, which
-    // would refund a customer who asked to swap an item.
+    // Legacy approval cannot own replacement stock or settlement. Exchanges use the atomic after-sales workflow.
     if (String(rawBody.requestKind || '') === 'exchange') {
       throw new BadRequestException(
-        'الاستبدال غير متاح حالياً — سجّل استرجاعاً ثم فاتورة بيع جديدة للبديل',
+        'سجل الاستبدال من ملف خدمة ما بعد البيع المرتبط بالفاتورة',
       );
     }
 
@@ -117,6 +115,7 @@ export class ReturnsService {
     const tx = await this.transactionsService.findById(
       dto.originalTransactionId,
     );
+    if (tx.afterSales?.hasCases || tx.afterSales?.caseId || tx.deliveredAt || tx.pickupStatus === 'Delivered' || tx.bostaStatus === 'DELIVERED') throw new BadRequestException('سجل طلب العميل من ملف الاسترجاع والاستبدال المرتبط بالفاتورة');
     if (tx.cancelled) {
       throw new BadRequestException('لا يمكن استرجاع معاملة ملغية');
     }
@@ -218,6 +217,7 @@ export class ReturnsService {
     approvedBy: string,
   ): Promise<ReturnRequestDocument> {
     const ret = await this.returnModel.findById(id).exec();
+    if (ret?.workflow?.version === 2) throw new BadRequestException('استخدم ملف الاسترجاع والاستبدال لاعتماد هذا الطلب');
     if (!ret) {
       throw new NotFoundException('طلب الاسترجاع غير موجود');
     }
@@ -353,6 +353,7 @@ export class ReturnsService {
     rejectedReason = '',
   ): Promise<ReturnRequestDocument> {
     const ret = await this.returnModel.findById(id).exec();
+    if (ret?.workflow?.version === 2) throw new BadRequestException('استخدم ملف الاسترجاع والاستبدال لإلغاء هذا الطلب');
     if (!ret) {
       throw new NotFoundException('طلب الاسترجاع غير موجود');
     }
@@ -374,6 +375,7 @@ export class ReturnsService {
     vaultCollectAccount?: string,
   ): Promise<ReturnRequestDocument> {
     const ret = await this.returnModel.findById(id).exec();
+    if (ret?.workflow?.version === 2) throw new BadRequestException('حدد الخزنة عند التسوية الفعلية في ملف الاسترجاع والاستبدال');
     if (!ret) {
       throw new NotFoundException('طلب الاسترجاع غير موجود');
     }

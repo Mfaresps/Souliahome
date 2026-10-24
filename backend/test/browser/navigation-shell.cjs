@@ -23,6 +23,7 @@ const pause = () => new Promise(resolve => setTimeout(resolve, 250));
       const url = new URL(request.url());
       if (url.origin === 'http://soulia.test') {
         if (url.pathname === '/') return request.respond({status:200,contentType:'text/html',body:html});
+        if (url.pathname === '/shopify-edit-approvals.js') return request.respond({status:200,contentType:'text/javascript',body:fs.readFileSync(path.join(publicDir,'shopify-edit-approvals.js'),'utf8')});
         if (['/navigation-shell.js','/navigation-shell.css','/soulia-logo.svg','/inventory-scanner.js','/inventory-scanner.css','/global-search-scanner.js','/global-search-scanner.css'].includes(url.pathname)) return request.respond({status:200,contentType:url.pathname.endsWith('.js')?'text/javascript':url.pathname.endsWith('.css')?'text/css':'image/svg+xml',body:fs.readFileSync(path.join(publicDir,url.pathname.slice(1)))});
         if (url.pathname === '/config.js') return request.respond({status:200,contentType:'text/javascript',body:'window.__ENV__={API_BASE_URL:""};'});
         if (url.pathname.startsWith('/api/')) return request.respond({status:200,contentType:'application/json',body:'[]'});
@@ -45,6 +46,78 @@ const pause = () => new Promise(resolve => setTimeout(resolve, 250));
     check(await page.$$eval('.shell-nav-label',rows=>rows.length===5), 'Five permission-aware groups');
     check(await page.$eval('#sidebar',el=>Math.round(el.getBoundingClientRect().width)===248), 'Expanded sidebar width');
     check(await page.evaluate(()=>NAV_ITEMS.find(item=>item.id==='barcodes')?.icon===NAV_ICONS.barcodes && NAV_ICONS.barcodes!==NAV_ICONS.inventory), 'Barcode page uses a distinct barcode icon');
+    // Frequent realtime refreshes must preserve the loaded logo, focused row
+    // and scrolled position while still updating badges and permissions.
+    await page.setViewport({width:1440,height:420});await pause();
+    const stability = await page.evaluate(() => {
+      const brand = qs('.shell-brand'), logo = brand.querySelector('img');
+      const scroll = qs('.shell-nav-scroll'), row = qs('#sidebar [data-page="products"]');
+      row.focus();scroll.scrollTop = 120;
+      const top = scroll.scrollTop, y = row.getBoundingClientRect().y;
+      const previousExpenses = expenses;
+      const results = [];
+      try {
+        for (let i = 0; i < 20; i++) {
+          expenses = Array.from({length:i + 1}, () => ({status:'معلق'}));
+          buildSidebar();
+          results.push(brand === qs('.shell-brand') && logo === qs('.shell-brand img')
+            && scroll === qs('.shell-nav-scroll') && scroll.scrollTop === top
+            && row === document.activeElement && row.getBoundingClientRect().y === y
+            && qs('#sidebar [data-page="approvals"] .nav-badge')?.textContent === String(i + 1));
+        }
+      } finally { expenses = previousExpenses;buildSidebar(); }
+      return {scrolled:top > 0, stable:results.every(Boolean)};
+    });
+    check(stability.scrolled, 'Stability check exercises a scrolled sidebar');
+    check(stability.stable, 'Repeated badge updates preserve logo, focus and scroll without shifting rows');
+    if (process.argv.includes('--sidebar-stability')) {
+      for (const direction of ['ltr','rtl']) {
+        for (const width of [1440,390]) {
+          await page.setViewport({width,height:420});
+          await page.evaluate(direction => {
+            document.documentElement.dir=direction;currentLang=direction==='ltr'?'en':'ar';
+            buildSidebar();qs('#sidebar').classList.add('open');
+          },direction);
+          await pause();
+          check(await page.evaluate(() => {
+            const scroll=qs('.shell-nav-scroll'),logo=qs('.shell-brand img');
+            const row=qs('#sidebar [data-page="products"]');
+            row.focus();scroll.scrollTop=100;const top=scroll.scrollTop;
+            for(let i=0;i<20;i++) buildSidebar();
+            return logo===qs('.shell-brand img') && row===document.activeElement && scroll.scrollTop===top;
+          }),`Stable repeated updates ${direction} ${width}`);
+        }
+      }
+      await page.evaluate(()=>{currentUser.role='staff';currentUser.perms=['products'];buildSidebar();});
+      check(await page.$$eval('#sidebar [data-page="reports"]',rows=>rows.length===0),'Permission change removes reports');
+      check(await page.$$eval('#sidebar [data-page="products"]',rows=>rows.length===1),'Permission change retains products');
+      for (const width of [320,390,768]) {
+        await page.setViewport({width,height:844});
+        const dock = await page.evaluate(() => {
+          closeSidebar();initMobileNav();
+          const results=[];
+          for (const direction of ['ltr','rtl']) for (const dark of [false,true]) {
+            document.documentElement.dir=direction;document.body.classList.toggle('dark-mode',dark);
+            for (const perms of [[],['shopify-orders'],['dashboard','shopify-orders','complaints'],['dashboard','shopify-orders','movements','complaints','inventory']]) {
+              currentUser={role:'staff',perms};_syncMobileNavPermissions();
+              const nav=qs('#mobile-bottom-nav'),style=getComputedStyle(nav);
+              const buttons=[...nav.querySelectorAll('button')].filter(el=>getComputedStyle(el).display!=='none');
+              const boxes=buttons.map(el=>el.getBoundingClientRect()).sort((a,b)=>a.left-b.left);
+              const bounds=nav.getBoundingClientRect();
+              results.push(boxes.length>=1 && boxes.every(box=>Math.abs(box.width-boxes[0].width)<1)
+                && Math.abs(boxes[0].left-bounds.left-parseFloat(style.borderLeftWidth)-parseFloat(style.paddingLeft))<1
+                && Math.abs(bounds.right-boxes.at(-1).right-parseFloat(style.borderRightWidth)-parseFloat(style.paddingRight))<1
+                && boxes.slice(1).every((box,i)=>Math.abs(box.left-boxes[i].right-2)<1));
+            }
+          }
+          return results.every(Boolean);
+        });
+        check(dock,`Visible dock buttons fill equal widths for staff permissions, Arabic/English, light/dark at ${width}px`);
+      }
+      assert.deepEqual(errors,[],'No browser runtime errors');
+      console.log(`Navigation stability: ${checks} checks passed, including 100 sidebar refreshes and equal dock widths across 48 permission/theme/direction/viewport combinations.`);
+      return;
+    }
     await page.setViewport({width:1440,height:768});await pause();
     check(await page.$eval('.shell-nav-scroll',el=>el.scrollHeight<=el.clientHeight+1),'All main navigation items fit laptop height');
     check(await page.$eval('body',el=>getComputedStyle(el).fontFamily.startsWith('Inter') && getComputedStyle(el).fontFamily.includes('Cairo')),'Latin font with unchanged Arabic fallback');

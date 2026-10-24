@@ -411,7 +411,7 @@ describe('ReturnsService', () => {
 
   it('rejects an exchange request explicitly instead of silently filing a refund', async () => {
     const body = baseBody({ requestKind: 'exchange', reason: 'مقاس أو لون مختلف' });
-    await expect(service.create(body, 'staff')).rejects.toThrow(/الاستبدال غير متاح/);
+    await expect(service.create(body, 'staff')).rejects.toThrow(/خدمة ما بعد البيع/);
   });
 
   it('rejects an exchange-only reason on a plain return', async () => {

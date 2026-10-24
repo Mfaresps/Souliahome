@@ -122,6 +122,9 @@ export class DiscountBundle {
 @Schema({ timestamps: true })
 export class Settings {
   @Prop({ type: Object, default: null })
+  afterSalesPolicy?: Record<string, any>;
+
+  @Prop({ type: Object, default: null })
   branding: { splash: string | null; header: string | null; tab: string | null } | null;
 
   @Prop({ default: 110 })

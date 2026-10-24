@@ -50,22 +50,25 @@ body.sidebar-collapsed #sidebar .nav-item{min-height:34px;padding-block:7px}
 @media(min-width:769px){#main .shell-page-breadcrumb,#main .cat-breadcrumb{display:none!important}}
 @media(max-width:768px){#sidebar .nav-item{min-height:36px;font-size:.85rem}.shell-nav-section{margin-bottom:8px}}
 
-/* Green identity, scoped to navigation so the work area keeps its contrast. */
+/* Light neutral surfaces with the system green marking the selected page. */
 #sidebar{
-  --shell-line:#ffffff14;--shell-white:#0a2117;--shell-muted:#a0bdac;
-  --shell-hover:#ffffff0b;--shell-nav-text:#d1e3d8;--text:#f1fff6;
-  --accent:#8cdeb0;--primary-pale:#68c58d20;
-  background:radial-gradient(ellipse at 5% 6%,#123d29 0%,#0a2117 48%,#06150f 100%);
-  border-color:#ffffff12;box-shadow:none;
+  --shell-line:#dce5df;--shell-white:#f6f8f6;--shell-muted:#53675a;
+  --shell-hover:#e8f0eb;--shell-nav-text:#293e32;--text:#20382a;
+  --accent:#236443;--primary-pale:#e8f0eb;
+  background:#f6f8f6;border-color:#dce5df;box-shadow:none;
 }
-#sidebar .shell-brand img{filter:brightness(0) invert(1);opacity:.96}
-#sidebar .shell-brand-name{color:#f1fff6}
-#sidebar .shell-brand-name small{color:#9cbeaa}
-#sidebar .nav-item:hover,#sidebar .nav-sub-item:hover{background:#ffffff0c;color:#f1fff6}
-#sidebar .nav-item.active{background:#6bc79024;color:#b9f2cf;box-shadow:inset 0 0 0 1px #8cdeb012}
-#sidebar .nav-item.active:before{background:#8cdeb0}
-#sidebar .nav-item .nav-badge{background:#8cdeb01c;color:#c5f6d9}
-#sidebar .nav-bottom-group{background:#030d0622}
+#sidebar .shell-brand img{filter:invert(27%) sepia(40%) saturate(600%) hue-rotate(110deg) brightness(60%) contrast(110%);opacity:1}
+#sidebar .shell-brand-home img{flex:0 0 36px;width:36px;height:36px;max-width:36px;max-height:36px}
+#sidebar .shell-brand-name{color:#20382a}
+#sidebar .shell-brand-name small{color:#53675a}
+#sidebar .nav-item:hover,#sidebar .nav-sub-item:hover{background:#e8f0eb;color:#20382a}
+#sidebar .nav-item.active{background:#dcebe1;color:#23583a;font-weight:600;box-shadow:none}
+#sidebar .nav-item.active>span:first-child{color:#23583a}
+#sidebar .nav-item.active:before{background:#719b7f}
+#sidebar .nav-item .nav-badge{background:#e3ebe6;color:#31533e}
+#sidebar .nav-item.active .nav-badge{background:#cadfd1;color:#23583a}
+#sidebar .nav-sub-item.active{background:#dcebe1;color:#23583a;font-weight:600}
+#sidebar .nav-bottom-group{background:#f0f4f1}
 
 /* Mobile SPACE dock: one opaque surface, anchored independently of page scroll. */
 @media(max-width:768px){
@@ -73,15 +76,16 @@ body.sidebar-collapsed #sidebar .nav-item{min-height:34px;padding-block:7px}
     position:fixed;inset:auto 12px calc(28px + env(safe-area-inset-bottom,0px));
     width:auto;max-width:360px;height:56px;box-sizing:border-box;margin-inline:auto;
     display:flex;align-items:center;gap:2px;padding:5px;direction:ltr;
-    border:1px solid #365d47;border-radius:21px;
-    background:linear-gradient(115deg,#123d29,#0a2117 70%);
-    box-shadow:0 8px 28px #06150f30,inset 0 1px 0 #ffffff0d;
+    border:1px solid #dce5df;border-radius:21px;
+    background:#f6f8f6;
+    box-shadow:0 6px 20px #20382a1a;
     pointer-events:auto;isolation:isolate;z-index:80;
     transform:none;-webkit-transform:none;will-change:auto;transition:opacity .15s ease;
   }
   #mobile-bottom-nav .m-nav-row,
   body.dark-mode #mobile-bottom-nav .m-nav-row{
-    display:flex;flex:4 1 0;min-width:0;gap:2px;height:100%;padding:0;
+    /* Share the dock equally with home/search, regardless of permitted pages. */
+    display:contents;
     border:0;border-radius:0;background:transparent;box-shadow:none;
     backdrop-filter:none;-webkit-backdrop-filter:none;
   }
@@ -90,16 +94,16 @@ body.sidebar-collapsed #sidebar .nav-item{min-height:34px;padding-block:7px}
   body.dark-mode #mobile-bottom-nav .m-nav-search-fab{
     display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0;
     width:auto;height:44px;min-height:44px;padding:0;border:1px solid transparent;
-    border-radius:15px;background:transparent;color:#c5dfcf;box-shadow:none;
+    border-radius:15px;background:transparent;color:#425d4b;box-shadow:none;
     backdrop-filter:none;-webkit-backdrop-filter:none;
     transform:none;opacity:1;transition:color .15s ease,background-color .15s ease;
   }
   #mobile-bottom-nav .m-nav-item.active,
   #mobile-bottom-nav .m-nav-search-fab.active,
   body.dark-mode #mobile-bottom-nav .m-nav-search-fab.active{
-    color:#e3ffed;background:linear-gradient(145deg,#ffffff30,#b9f2cf14);border-color:#dcffea4d;
-    box-shadow:inset 0 1px 0 #ffffff40,inset 0 -1px 0 #b9f2cf0d,0 2px 8px #00000012;
-    backdrop-filter:blur(12px) saturate(150%);-webkit-backdrop-filter:blur(12px) saturate(150%);
+    color:#23583a;background:#dcebe1;border-color:#cbded1;
+    box-shadow:none;
+    backdrop-filter:none;-webkit-backdrop-filter:none;
   }
   #mobile-bottom-nav .m-nav-item svg,
   #mobile-bottom-nav .m-nav-fab-icon svg,
@@ -109,10 +113,14 @@ body.sidebar-collapsed #sidebar .nav-item{min-height:34px;padding-block:7px}
   #mobile-bottom-nav .m-nav-item.active svg,
   #mobile-bottom-nav .m-nav-item.active .m-nav-fab-icon svg,
   #mobile-bottom-nav .m-nav-search-fab.active svg{transform:none;stroke:currentColor}
+  #mobile-bottom-nav .m-nav-item:hover,
+  #mobile-bottom-nav .m-nav-search-fab:hover{background:#e8f0eb;color:#20382a}
   #mobile-bottom-nav .m-nav-item:active,
-  #mobile-bottom-nav .m-nav-search-fab:active{transform:none;opacity:1;background:#ffffff18}
-  #mobile-bottom-nav .active:active{background:linear-gradient(145deg,#ffffff30,#b9f2cf14)}
-  #mobile-bottom-nav button:focus-visible{outline:2px solid #e1ffed;outline-offset:-3px}
+  #mobile-bottom-nav .m-nav-search-fab:active{transform:none;opacity:1;background:#e3ebe6}
+  #mobile-bottom-nav .m-nav-item.active:hover,
+  #mobile-bottom-nav .m-nav-search-fab.active:hover,
+  #mobile-bottom-nav .active:active{background:#dcebe1;color:#23583a}
+  #mobile-bottom-nav button:focus-visible{outline:2px solid #236443;outline-offset:2px}
   #mobile-bottom-nav .m-nav-dot{display:none}
   #sidebar.open ~ #mobile-bottom-nav{visibility:hidden;opacity:0;transform:none;pointer-events:none}
   #main{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}

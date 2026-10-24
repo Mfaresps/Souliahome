@@ -15,6 +15,14 @@ afterAll(async () => {
   if (connection) { if (!/^soulia_test_push_\d+_\d+$/.test(connection.name)) throw new Error('Unsafe scratch database'); await connection.dropDatabase(); await connection.close(); }
 });
 beforeEach(async () => { await connection.collection('notificationinbox').deleteMany({}); await connection.collection('notificationaccounts').deleteMany({}); await connection.collection('notificationjobs').deleteMany({}); await connection.collection('notificationpointchanges').deleteMany({}); await connection.collection('employeeperformancelogs').deleteMany({}); });
+it('hides branding in old inbox entries without modifying stored records or destinations', async () => {
+  const entry = { _id: 'a'.repeat(64) as any, userId: user.userId, type: 'order', title: '🛍️ طلب جديد · SOULIA', body: 'الطلب #2906', ref: '2906', url: '/?pushRecord=tx:2906', createdAt: new Date(), readAt: null };
+  await connection.collection('notificationinbox').insertOne(entry);
+  const result = await service.history(user);
+  expect(result.items[0]).toMatchObject({ title: '🛍️ طلب جديد', body: entry.body, ref: '2906', url: entry.url });
+  expect(result.unread).toBe(1);
+  expect((await connection.collection('notificationinbox').findOne({ _id: entry._id }))?.title).toBe(entry.title);
+});
 it('keeps account-scoped history across restart, without push subscriptions, with pagination and read state', async () => {
   const text = 'Comment details\nSecond line';
   await Promise.all(Array.from({ length: 5 }, () => service.enqueue('comment', 'history-event', '100', 'tx:' + user.userId, undefined, undefined, { actorName: 'Mona', commentId: 123, commentText: text })));
@@ -90,7 +98,7 @@ it('tracks gross changes and weekly totals without changing the current points b
   expect(summaries).toHaveLength(1);
   const payload = JSON.parse(summaries[0].payload);
   expect(payload.body).toBe('رصيد نقاطك الحالي: 10 نقطة. نقاط مكتسبة هذا الأسبوع: +15. نقاط مخصومة: -5.');
-  expect(payload.title).toBe('📊 ملخص الأداء الأسبوعي · SOULIA');
+  expect(payload.title).toBe('📊 ملخص الأداء الأسبوعي');
   expect(await connection.collection('employeeperformancelogs').countDocuments({})).toBe(1);
 });
 it('atomically deduplicates concurrent webhook notifications in MongoDB', async () => {
@@ -115,7 +123,7 @@ it('records a live release for every active role and sends only to enabled devic
   expect(history.some(row => row.userId === inactiveId)).toBe(false);
   expect(history.filter(row => row.userId === user.userId)).toHaveLength(1);
   const jobs = await connection.collection('notificationjobs').find({ eventId: 'release:125' }).toArray();
-  expect(jobs).toHaveLength(1); expect(JSON.parse(jobs[0].payload).title).toBe('🚀 تم رفع نسخة جديدة · SOULIA');
+  expect(jobs).toHaveLength(1); expect(JSON.parse(jobs[0].payload).title).toBe('🚀 تم رفع نسخة جديدة');
 });
 it.each(['en', 'ar'])('personalizes a new order only for its assigned employee in %s, retaining admin and other staff delivery', async language => {
   const assignee = { ...user, role: 'staff', userId: new Types.ObjectId().toString() };
@@ -132,11 +140,11 @@ it.each(['en', 'ar'])('personalizes a new order only for its assigned employee i
   const jobs = await connection.collection('notificationjobs').find({}).toArray();
   expect(jobs).toHaveLength(3);
   const assigned = JSON.parse(jobs.find(job => job.userId === assignee.userId)!.payload);
-  expect(assigned.title).toBe(language === 'en' ? '🛍️ New Order Assigned · SOULIA' : '🛍️ طلب جديد مُسند إليك · SOULIA');
+  expect(assigned.title).toBe(language === 'en' ? '🛍️ New Order Assigned' : '🛍️ طلب جديد مُسند إليك');
   expect(assigned.body).toBe(language === 'en' ? 'Order #2771 · EGP 2,450 · Assigned to You' : 'الطلب #2771 · 2,450 ج.م. · مُسند إليك');
   for (const recipient of [user, other]) {
     const payload = JSON.parse(jobs.find(job => job.userId === recipient.userId)!.payload);
-    expect(payload.title).toBe(language === 'en' ? '🛍️ New Order · SOULIA' : '🛍️ طلب جديد · SOULIA');
+    expect(payload.title).toBe(language === 'en' ? '🛍️ New Order' : '🛍️ طلب جديد');
     expect(payload.body).toBe(language === 'en' ? 'Order #2771 · EGP 2,450 · New Order Received' : 'الطلب #2771 · 2,450 ج.م. · تم استلام طلب جديد');
     expect(payload.timestamp).toBe(assigned.timestamp);
   }
@@ -155,7 +163,7 @@ it('retains normal notifications for unassigned orders and never personalizes an
   const jobs = await connection.collection('notificationjobs').find({}).toArray();
   expect(jobs).toHaveLength(2);
   for (const job of jobs) {
-    expect(JSON.parse(job.payload).title).toBe('🛍️ New Order · SOULIA');
+    expect(JSON.parse(job.payload).title).toBe('🛍️ New Order');
     expect(JSON.parse(job.payload).body).toContain('New Order Received');
   }
 });

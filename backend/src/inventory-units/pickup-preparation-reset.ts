@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { Model, Types } from 'mongoose';
 
 /** Returning to Pending invalidates current custody claims, never the immutable audit or stock ledger. */
-export async function resetPickupPreparation(transactions: Model<any>, ids: string[], by: string, actorId?: string): Promise<string[]> {
+export async function resetPickupPreparation(transactions: Model<any>, ids: string[], by: string, actorId?: string, sourceRef?: string): Promise<string[]> {
   const connection = transactions.db;
   const session = await connection.startSession();
   let changed: string[] = [];
@@ -11,7 +11,12 @@ export async function resetPickupPreparation(transactions: Model<any>, ids: stri
     await session.withTransaction(async () => {
       changed = [];
       const orders: any[] = await transactions.find({ _id: { $in: ids }, type: 'مبيعات',
-        pickupStatus: { $in: ['Ready', 'Picked-Up', 'Preparing'] } }).session(session).lean();
+        ...(sourceRef !== undefined ? { cancelled: { $ne: true }, archived: { $ne: true } } : {}),
+        pickupStatus: { $in: sourceRef !== undefined ? ['Ready', 'Picked-Up'] : ['Ready', 'Picked-Up', 'Preparing'] } }).session(session).lean();
+      if (sourceRef !== undefined && (orders.length !== ids.length || orders.some(o =>
+        (o.pickupRef || `noref-${o._id}`) !== sourceRef || (o.bostaStatus && !['CREATED', 'VALIDATION_ERROR'].includes(o.bostaStatus))))) {
+        throw new ConflictException('تغيّرت حالة الطلب أو مجموعته. حدّث القائمة وحاول مرة أخرى.');
+      }
       if (!orders.length) return;
       if (orders.some(o => o.shippedAt || o.deliveredAt || o.bostaStatus === 'DELIVERED')) {
         throw new ConflictException('لا يمكن إعادة طلب تم شحنه إلى Pending. سجّل استلام المرتجع أولًا.');

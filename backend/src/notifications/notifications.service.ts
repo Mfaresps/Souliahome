@@ -1,7 +1,7 @@
 import { ANNOUNCEMENT_CATEGORIES } from '../announcements/announcement.constants';
 import { previousPerformanceWeek } from './performance-notifications';
 import { ADMIN_TYPES, actionLabel, FIELD_LABELS } from './admin-events';
-import { notificationTitle } from './notification-titles';
+import { notificationTitle, unbrandedNotificationTitle, unbrandedNotificationBody } from './notification-titles';
 import { BadRequestException, ForbiddenException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Cron } from '@nestjs/schedule';
@@ -11,14 +11,15 @@ import { createHash, randomUUID } from 'crypto';
 export const TYPES = ['deposit', 'comment', 'followup', 'order', 'orderEdit', 'deliveryProblem', 'delivered', 'mention', 'otp', 'approval', 'shopifyChange', 'security', 'performance', 'announcement'] as const;
 export type NotificationType = typeof TYPES[number];
 export const DEFAULTS = { performance: true, otp: true, approval: true, shopifyChange: true, security: true, enabled: false, deposit: true, comment: true, followup: true, order: true, orderEdit: true, deliveryProblem: true, delivered: true, mention: true };
-const TITLES = { orderEdit: 'قرار تعديل الطلب', announcement: 'إعلان من SOULIA', performance: 'نقاط الأداء', otp: 'طلب OTP', approval: 'التعديلات والموافقات', shopifyChange: 'تعديل طلب شوبيفاي', security: 'تنبيه أمان', deposit: 'عربون جديد', comment: 'تعليق جديد', followup: 'متابعة جديدة', order: 'طلب جديد', deliveryProblem: 'مشكلة في التسليم', delivered: 'تم تسليم الطلب', mention: 'إشارة جديدة إليك' };
-const EN_TITLES = { orderEdit: 'Order Edit Decision', announcement: 'SOULIA Announcement', performance: 'Performance points', otp: 'OTP Request', approval: 'Modifications & Approvals', shopifyChange: 'Shopify Order Changed', security: 'Security Alert', deposit: 'New Deposit', comment: 'New Comment', followup: 'New Follow-up', order: 'New Order', deliveryProblem: 'Delivery Issue', delivered: 'Order Delivered', mention: 'You Were Mentioned' };
+const TITLES = { orderEdit: 'قرار تعديل الطلب', announcement: 'إعلان', performance: 'نقاط الأداء', otp: 'طلب OTP', approval: 'التعديلات والموافقات', shopifyChange: 'تعديل طلب شوبيفاي', security: 'تنبيه أمان', deposit: 'عربون جديد', comment: 'تعليق جديد', followup: 'متابعة جديدة', order: 'طلب جديد', deliveryProblem: 'مشكلة في التسليم', delivered: 'تم تسليم الطلب', mention: 'إشارة جديدة إليك' };
+const EN_TITLES = { orderEdit: 'Order Edit Decision', announcement: 'Announcement', performance: 'Performance points', otp: 'OTP Request', approval: 'Modifications & Approvals', shopifyChange: 'Shopify Order Changed', security: 'Security Alert', deposit: 'New Deposit', comment: 'New Comment', followup: 'New Follow-up', order: 'New Order', deliveryProblem: 'Delivery Issue', delivered: 'Order Delivered', mention: 'You Were Mentioned' };
 export const STAFF_TYPES = TYPES.filter(type => !(ADMIN_TYPES as readonly string[]).includes(type));
-export interface NotificationDetails { editRequestId?: string; releaseVersion?: string; announcementText?: string; announcementCategory?: string; pointDelta?: number; pointReason?: string; weekly?: boolean; balance?: number; earned?: number; deducted?: number; assignedUserId?: string; assignedToYou?: boolean; actionKey?: string; status?: 'pending' | 'approved' | 'rejected' | 'modified'; changedFields?: string[]; expiresAt?: string; actorUserId?: string; actorName?: string; amount?: number; pendingApproval?: boolean; vaultName?: string; commentId?: string | number; receiptId?: string; depositId?: string; commentText?: string; followupComment?: boolean; orderTotal?: number; itemCount?: number; deliveryStatus?: string; }
+export interface NotificationDetails { followupAt?: string; followupReason?: string; afterSalesAction?: string; editRequestId?: string; releaseVersion?: string; announcementText?: string; announcementCategory?: string; pointDelta?: number; pointReason?: string; weekly?: boolean; balance?: number; earned?: number; deducted?: number; assignedUserId?: string; assignedToYou?: boolean; actionKey?: string; status?: 'pending' | 'approved' | 'rejected' | 'modified'; changedFields?: string[]; expiresAt?: string; actorUserId?: string; actorName?: string; amount?: number; pendingApproval?: boolean; vaultName?: string; commentId?: string | number; receiptId?: string; depositId?: string; commentText?: string; followupComment?: boolean; orderTotal?: number; itemCount?: number; deliveryStatus?: string; }
 function cleanText(value: string | undefined, length: number) {
   return String(value || '').replace(/[\p{Cc}\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, length);
 }
 export function notificationBody(type: NotificationType, ref: string, details: NotificationDetails = {}, language: 'ar' | 'en' = 'ar') {
+  if (details.afterSalesAction) return notificationTitle(type, details, language) + ' · #' + cleanText(ref, 40) + ' · ' + cleanText(details.actorName, 36);
   const reference = cleanText(ref.replace(/^#+/, ''), 24);
   const actor = cleanText(details.actorName, 36) || (language === 'en' ? 'A team member' : 'أحد الموظفين');
   const orderLabel = language === 'en' ? (reference ? `Order #${reference}` : 'Order') : (reference ? `الطلب #${reference}` : 'الطلب');
@@ -68,6 +69,13 @@ export function notificationBody(type: NotificationType, ref: string, details: N
   }
   if (type === 'shopifyChange') return orderLabel + ' · ' + (details.changedFields || []).map(key => FIELD_LABELS[key]?.[language === 'en' ? 1 : 0]).filter(Boolean).join(', ');
   if (type === 'orderEdit') return `${orderLabel} · ${language === 'en' ? details.status === 'approved' ? 'Edit approved' : 'Edit rejected' : details.status === 'approved' ? 'تم قبول التعديل' : 'تم رفض التعديل'} · ${actor}`;
+  if (type === 'followup' && ['followup-scheduled', 'followup-due'].includes(details.actionKey || '')) {
+    const reasons: Record<string, string[]> = { customer_postponed: ['تأجيل بناءً على طلب العميل', 'Postponed by customer'], carrier_delay: ['بانتظار شركة الشحن', 'Waiting for carrier'], awaiting_return: ['بانتظار استلام المرتجع', 'Awaiting returned goods'] };
+    const reason = reasons[details.followupReason || '']?.[language === 'en' ? 1 : 0] || '';
+    const at = new Date(details.followupAt || '');
+    const date = Number.isFinite(at.getTime()) ? new Intl.DateTimeFormat(language === 'en' ? 'en-GB' : 'ar-EG', {timeZone:'Africa/Cairo',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}).format(at) : '';
+    return cleanText([orderLabel, reason, date, details.actorName].filter(Boolean).join(' · '), 160);
+  }
   if (type === 'followup') return `${orderLabel} · ${language === 'en' ? 'New Follow-up' : 'متابعة جديدة'}`;
   if (type === 'comment') {
     const prefix = details.followupComment ? `${actor} · ${orderLabel}` : language === 'en' ? `${actor} commented on ${orderLabel}` : `${actor} علّق على ${orderLabel}`;
@@ -269,7 +277,7 @@ export class NotificationsService implements OnModuleInit {
     return { items: items.map(item => {
       const matches = actors.filter(actor => item.actorUserId ? String(actor._id) === String(item.actorUserId) : actor.name === item.actorName || actor.username === item.actorName);
       const actor = matches.length === 1 ? matches[0] : null;
-      return { ...item, actorUserId: item.actorUserId || (actor ? String(actor._id) : ''), actorAvatar: actor?.avatar || '' };
+      return { ...item, title: unbrandedNotificationTitle(item.title), body: unbrandedNotificationBody(item.body), actorUserId: item.actorUserId || (actor ? String(actor._id) : ''), actorAvatar: actor?.avatar || '' };
     }), unread, next: rows.length > 50 ? String(items[items.length - 1]._id) : '' };
   }
   async readState(user: any) {
@@ -317,7 +325,11 @@ export class NotificationsService implements OnModuleInit {
   }
   async enqueue(type: NotificationType, eventId: string, ref: string, recordId = '', onlyUser?: string | string[], deliveryStatus?: string, details: NotificationDetails = {}) {
     try {
+      // The new-deposit notification already tells admins that review is required.
+      if (type === 'approval' && details.actionKey === 'deposit' && details.status === 'pending') return;
       if (['mention', 'performance', 'orderEdit'].includes(type) && !onlyUser) return;
+      // Point changes are private to one employee, never an administrator broadcast.
+      if (type === 'performance' && (typeof onlyUser !== 'string' || !onlyUser.trim() || recordId !== 'performance:' + onlyUser)) return;
       if (type === 'performance' && !details.weekly && (!Number.isFinite(details.pointDelta) || details.pointDelta === 0)) return;
       const employeeLanguage = await this.employeeLanguage();
       if (type === 'otp' && (!/^otp:[a-f0-9]{24}$/.test(recordId) || !(Date.parse(details.expiresAt || '') > Date.now()))) return;
@@ -325,8 +337,10 @@ export class NotificationsService implements OnModuleInit {
       const eventTimestamp = Date.now();
       const queued = await Promise.allSettled(users.map(async user => {
         const userId = String(user._id);
+        if (details.afterSalesAction && user.role !== 'admin' && !['transaction', 'movements', 'reports', 'inventory-units-condition', 'shopify-prepare-ship'].some(p => (user.perms || []).includes(p))) return;
+        if (type === 'performance' && user.role !== 'staff') return;
         // Exclude the account that performed the action, across all its devices.
-        if ((type === 'comment' || type === 'followup') && details.actorUserId && userId === String(details.actorUserId)) return;
+        if ((type === 'comment' || type === 'followup') && !['followup-scheduled', 'followup-due'].includes(details.actionKey || '') && details.actorUserId && userId === String(details.actorUserId)) return;
         // An announcement names several recipients; every other event names at most one.
         if (onlyUser && (Array.isArray(onlyUser) ? !onlyUser.includes(userId) : userId !== onlyUser)) return;
         const account: any = await this.accounts.findOne({ userId });
@@ -339,7 +353,7 @@ export class NotificationsService implements OnModuleInit {
         // Administrators always receive the ordinary new-order notification.
         const recipientDetails = { ...details, followupComment, deliveryStatus,
           assignedToYou: type === 'order' && user.role === 'staff' && !!details.assignedUserId && details.assignedUserId === userId };
-        const body = test ? (language === 'en' ? 'SOULIA notifications are working.' : 'تم تفعيل إشعارات SOULIA بنجاح.') : notificationBody(type, reference, recipientDetails, language) || (reference ? '#' + reference : titles[type]);
+        const body = test ? (language === 'en' ? 'Notifications are working.' : 'تم تفعيل الإشعارات بنجاح.') : notificationBody(type, reference, recipientDetails, language) || (reference ? '#' + reference : titles[type]);
         const target = new URLSearchParams({ pushRecord: recordId, pushType: type });
         const inboxId = createHash('sha256').update(JSON.stringify([userId, eventId])).digest('hex');
         if (!test) target.set('pushNotification', inboxId);
@@ -368,6 +382,18 @@ export class NotificationsService implements OnModuleInit {
       if (queued.some(result => result.status === 'rejected')) this.logger.warn('Some notification recipients could not be queued');
     } catch { this.logger.warn('Notification enqueue failed'); }
   }
+  async notifyFollowUpSchedule(followUp: { id: string; orderRef: string; responsibleId: string; until: string; reason: string }, due: boolean, actorUserId = '', actorName = '') {
+    const users = await this.connection.collection('users').find({ isActive: { $ne: false },
+      $or: [{ role: 'admin' }, { jobTitle: { $in: ['General Manager', 'Operations Manager', 'مدير عام', 'مدير العمليات', 'مدير عمليات'] } }],
+    }).toArray();
+    const recipients = [...new Set([followUp.responsibleId, ...users.map(user => String(user._id))].filter(Boolean))];
+    const actionKey = due ? 'followup-due' : 'followup-scheduled';
+    const eventId = `${actionKey}:${followUp.id}:${followUp.until}`;
+    await this.enqueue('followup', eventId, followUp.orderRef, 'followup:' + followUp.id, recipients, undefined,
+      { actionKey, followupAt: followUp.until, followupReason: followUp.reason, actorUserId, actorName });
+    return recipients;
+  }
+
   async recordPointChange(eventId: string, employeeId: string, delta: number, reason: string, ref = '', previous?: any) {
     try {
       const changes = this.connection.collection('notificationpointchanges');
@@ -435,7 +461,18 @@ export class NotificationsService implements OnModuleInit {
   }
 
   private async dispatchJob(job: any) {
+        // Also suppress duplicate requests queued before this rule was deployed.
+        if (job.type === 'approval' && /^approval:receipt:.+:pending$/.test(job.eventId || '')) {
+          await this.jobs.updateOne({ _id: job._id }, { $set: { done: true } }); return;
+        }
         const user = await this.connection.collection('users').findOne({ _id: new (require('mongoose').Types.ObjectId)(job.userId) });
+        if (job.type === 'performance') {
+          let recipientRecord = '';
+          try { recipientRecord = new URL(JSON.parse(job.payload).url, 'https://soulia.invalid').searchParams.get('pushRecord') || ''; } catch { /* Invalid legacy payloads must not be sent. */ }
+          if (user?.role !== 'staff' || recipientRecord !== 'performance:' + job.userId) {
+            await this.jobs.updateOne({ _id: job._id }, { $set: { done: true } }); return;
+          }
+        }
         const account: any = await this.accounts.findOne({ userId: job.userId });
         const subscription = account?.subscriptions?.find((s: any) => s.endpoint === job.endpoint);
         const test = job.eventId?.startsWith('test:');
@@ -444,7 +481,10 @@ export class NotificationsService implements OnModuleInit {
         }
         try {
           validateSubscription(subscription);
-          let payload = job.payload, ttl = 3600;
+          const message = JSON.parse(job.payload);
+          if (typeof message.title === 'string') message.title = unbrandedNotificationTitle(message.title);
+          if (typeof message.body === 'string') message.body = unbrandedNotificationBody(message.body);
+          let payload = JSON.stringify(message), ttl = 3600;
           if (job.type === 'otp') {
             const otp = /^[a-f0-9]{24}$/.test(job.otpId || '') ? await this.connection.collection('discountotps').findOne({ _id: new (require('mongoose').Types.ObjectId)(job.otpId) }) : null;
             ttl = Math.min(3600, Math.floor((Date.parse(otp?.expiresAt || '') - Date.now()) / 1000));
