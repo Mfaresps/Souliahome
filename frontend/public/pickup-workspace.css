@@ -154,8 +154,8 @@ body.dark-mode #page-pickup-orders #pu-board-filters-row input[type=date] { colo
   border-radius: 12px; box-shadow: 0 2px 7px #142a2010; overflow: hidden;
   transform: none; transition: border-color .15s, box-shadow .15s;
 }
-#page-pickup-orders .pu-stage-ready { --pu-stage: #d97706; }
-#page-pickup-orders .pu-stage-shipped { --pu-stage: #64748b; }
+#page-pickup-orders .pu-stage-ready { --pu-stage: #ca8a04; }
+#page-pickup-orders .pu-stage-shipped { --pu-stage: #7c3aed; }
 #page-pickup-orders #pu-prep-col,
 #page-pickup-orders #pu-ready-col,
 #page-pickup-orders #pu-shipped-col { gap: 12px; }
@@ -911,3 +911,59 @@ body.dark-mode #page-pickup-orders #pu-runs-table .pu-run-ready .pu-ref-chip { c
   #page-pickup-orders .pu-date-popover { inset-inline-end: auto; inset-inline-start: 0; }
   #page-pickup-orders .pu-bkpi { padding: 5px 7px; }
 }
+
+/* Match the status palette across column headers, group cards and actions. */
+#page-pickup-orders .pu-col-pending { --pu-column:#64748b; --pu-column-ink:#64748b; --pu-column-fill:#f1f5f9; }
+#page-pickup-orders .pu-col-prep { --pu-column:#2563eb; --pu-column-ink:#1e40af; --pu-column-fill:#dbeafe; }
+#page-pickup-orders .pu-col-ready { --pu-column:#ca8a04; --pu-column-ink:#713f12; --pu-column-fill:#fef3c7; }
+#page-pickup-orders .pu-col-shipped { --pu-column:#7c3aed; --pu-column-ink:#5b21b6; --pu-column-fill:#ede9fe; }
+#page-pickup-orders .pu-board-col .pu-board-col-header {
+  background:color-mix(in srgb,var(--pu-column-fill) 52%,var(--surface));
+  border-bottom-color:color-mix(in srgb,var(--pu-column) 16%,var(--border));
+}
+#page-pickup-orders .pu-board-col .pu-board-col-header-left>svg { color:var(--pu-column-ink); }
+#page-pickup-orders .pu-board-col .pu-col-count {
+  color:var(--pu-column-ink); background:var(--pu-column-fill);
+  border-color:color-mix(in srgb,var(--pu-column) 22%,var(--border));
+}
+#page-pickup-orders .pu-board-col .pu-board-col-body,
+#page-pickup-orders .pu-board-col .pu-pending-actions-bar {
+  background:color-mix(in srgb,var(--pu-column-fill) 18%,var(--surface));
+}
+#page-pickup-orders .pu-stage-preparing { --pu-stage:#2563eb; --pu-stage-ink:#1e40af; --pu-stage-fill:#dbeafe; }
+#page-pickup-orders .pu-stage-ready { --pu-stage:#ca8a04; --pu-stage-ink:#713f12; --pu-stage-fill:#fef3c7; }
+#page-pickup-orders .pu-stage-shipped { --pu-stage:#7c3aed; --pu-stage-ink:#5b21b6; --pu-stage-fill:#ede9fe; }
+#page-pickup-orders .pu-stage-card { border-color:color-mix(in srgb,var(--pu-stage) 24%,var(--border)); }
+#page-pickup-orders .pu-stage-card .pu-ref-hero { color:var(--pu-stage-ink); }
+#page-pickup-orders .pu-stage-card .pu-prep-order-count,
+#page-pickup-orders .pu-stage-card .pu-daily-count {
+  color:var(--pu-stage-ink); background:var(--pu-stage-fill);
+  border-color:color-mix(in srgb,var(--pu-stage) 20%,var(--border));
+}
+#page-pickup-orders .pu-stage-card .pu-group-footer {
+  background:color-mix(in srgb,var(--pu-stage-fill) 24%,var(--surface));
+  border-top-color:color-mix(in srgb,var(--pu-stage) 14%,var(--border));
+}
+#page-pickup-orders .pu-stage-card .pu-prep-open,
+#page-pickup-orders .pu-stage-card .pu-prep-move {
+  color:var(--pu-stage-ink); background:var(--pu-stage-fill);
+  border-color:color-mix(in srgb,var(--pu-stage) 22%,var(--border)); box-shadow:none;
+}
+#page-pickup-orders .pu-stage-card .pu-prep-move { background:var(--surface); }
+#page-pickup-orders .pu-stage-card .pu-prep-open:hover:not(:disabled),
+#page-pickup-orders .pu-stage-card .pu-prep-move:hover:not(:disabled) {
+  background:color-mix(in srgb,var(--pu-stage) 15%,var(--surface)); border-color:var(--pu-stage);
+}
+/* A completed preparation check stays blue; green belongs to delivered orders. */
+#page-pickup-orders .pu-stage-preparing.pu-all-checked {
+  border-color:var(--pu-stage)!important; animation:none;
+}
+#page-pickup-orders .pu-stage-preparing .pu-prep-progress-bar-fill.all-done { background:var(--pu-stage); }
+body.dark-mode #page-pickup-orders .pu-col-pending { --pu-column:#94a3b8; --pu-column-ink:#cbd5e1; --pu-column-fill:#243041; }
+body.dark-mode #page-pickup-orders .pu-col-prep { --pu-column:#60a5fa; --pu-column-ink:#93c5fd; --pu-column-fill:#172b49; }
+body.dark-mode #page-pickup-orders .pu-col-ready { --pu-column:#facc15; --pu-column-ink:#fde68a; --pu-column-fill:#362b13; }
+body.dark-mode #page-pickup-orders .pu-col-shipped { --pu-column:#a78bfa; --pu-column-ink:#c4b5fd; --pu-column-fill:#2d2047; }
+body.dark-mode #page-pickup-orders .pu-stage-preparing { --pu-stage:#60a5fa; --pu-stage-ink:#93c5fd; --pu-stage-fill:#172b49; }
+body.dark-mode #page-pickup-orders .pu-stage-ready { --pu-stage:#facc15; --pu-stage-ink:#fde68a; --pu-stage-fill:#362b13; }
+body.dark-mode #page-pickup-orders .pu-stage-shipped { --pu-stage:#a78bfa; --pu-stage-ink:#c4b5fd; --pu-stage-fill:#2d2047; }
+body.dark-mode #page-pickup-orders .pu-stage-card .pu-prep-open { color:var(--pu-stage-ink); }

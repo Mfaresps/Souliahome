@@ -75,6 +75,13 @@ describe('Bosta warehouse pickup', () => {
     await expect(svc.createPickup({ ...dto, orderIds: [id1] }, 'operator')).rejects.toThrow('تغيرت');
     expect(svc.pickupModel.create).not.toHaveBeenCalled();
   });
+  it('reserves uncertain additions without presenting them as confirmed order coverage', async () => {
+    const svc = setup();
+    svc.pickupModel.find.mockReturnValue({ lean: async () => [{ _id: 'existing', orderIds: ['old', id1], pendingOrderIds: [id1], numberOfParcels: 30, pendingNumberOfParcels: 31, status: 'created', updateState: 'uncertain', scheduledDate: dto.scheduledDate, bostaPickupId: 'B-1', businessLocationId: 'warehouse' }] });
+    const preview = await svc.pickupPreview();
+    expect(preview.orders.map((o: any) => o.id)).toEqual([id2]);
+    expect(preview.requests[0]).toMatchObject({ orderIds: ['old'], pendingOrderIds: [id1], updateState: 'uncertain', numberOfParcels: 30, pendingNumberOfParcels: 31, canExtend: false });
+  });
   it('prevents concurrent requests before sending to Bosta', async () => {
     const svc = setup();
     svc.pickupModel.create.mockRejectedValue({ code: 11000 });

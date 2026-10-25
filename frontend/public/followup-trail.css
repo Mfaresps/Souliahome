@@ -71,3 +71,6 @@ body.dark-mode #fu-comment-popup .fu-timeline-item:not(:last-child)::before{bord
   #fu-comment-popup .fu-thread-composer-box textarea{max-height:64px}
 }
 @media(prefers-reduced-motion:reduce){#fu-comment-popup,#fu-comment-popup .fu-thread-modal{animation:none}}
+.sp-pk-fu-outcome{display:flex;flex-direction:column;gap:4px;padding:10px 12px;margin:10px 0;border-inline-start:3px solid #dc2626;border-radius:8px;background:color-mix(in srgb,#dc2626 7%,var(--surface));color:var(--text);font-size:.75rem;line-height:1.6}
+.sp-pk-fu-outcome strong{color:#b91c1c;font-weight:700}
+body.dark-mode .sp-pk-fu-outcome strong{color:#fca5a5}

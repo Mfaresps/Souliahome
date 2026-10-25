@@ -167,8 +167,8 @@ export class ShopifyController {
     @Body('carrierCode') carrierCode: string,
     @Request() req: any,
   ) {
-    const user = req.user?.username || req.user?.name || 'admin';
-    return this.shopifyService.approveOrder(id, user, carrierCode);
+    const actor = actorOf(req);
+    return this.shopifyService.approveOrder(id, actor.name || actor.username || 'admin', carrierCode, actor.id);
   }
 
   // ── Deposit receipts ──────────────────────────────────────────────────────────────────

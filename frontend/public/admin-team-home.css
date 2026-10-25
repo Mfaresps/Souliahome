@@ -25,7 +25,7 @@
 .ath-performance{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;font-size:12px;color:#526171}
 .ath-performance>span{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#e9eef5}
 .ath-performance bdi{color:#17212d;font-size:16px;font-weight:700}
-.ath-person-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ath-person-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .ath-person-metrics>span{display:flex;flex-direction:column;gap:7px;background:#fff;border:1px solid #e0e6ed;border-radius:10px;padding:10px;font-size:11px;line-height:1.5;color:#526171}
 .ath-person-metrics bdi{font-size:22px;font-weight:700;color:#17212d}
 .ath-filters{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0}
@@ -53,3 +53,5 @@
   .ath-layout{grid-template-columns:minmax(0,1fr);gap:10px}.ath-employee-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:220px}.ath-workspace{padding:12px}.ath-employees{padding:10px}
   .admin-team-home .ath-person{padding:9px;gap:6px}.ath-person-name{font-size:12px}.ath-person-counts{font-size:10px;gap:4px}.ath-task-main button{padding:8px 10px;font-size:11px}.ath-header h3{font-size:16px}
 }
+
+.ath-controls{display:flex;align-items:end;gap:10px;flex-wrap:wrap}.ath-controls label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#526171}.ath-controls input{font:inherit;min-height:40px;box-sizing:border-box;max-width:100%;padding:6px 10px;border:1px solid #d8e1e9;border-radius:9px;background:#fff;color:#17212d}.ath-controls input:focus-visible{outline:2px solid #236443;outline-offset:2px}.ath-period-help,.ath-totals small{font-size:11px;color:#526171;line-height:1.6}.ath-period-help{margin:10px 0 0}

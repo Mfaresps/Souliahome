@@ -10,7 +10,8 @@
 .bp-count strong{font-size:1.6rem;color:var(--accent)}
 .bp-dialog form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .bp-dialog .form-group{margin:0;min-width:0}
-.bp-dialog .form-group:nth-child(2),.bp-dialog form>p,.bp-dialog form>div:last-child{grid-column:1/-1}
+.bp-dialog .form-group:nth-child(-n+3),.bp-dialog form>p,.bp-dialog form>div:last-child{grid-column:1/-1}
+.bp-dialog [hidden]{display:none!important}
 .bp-dialog input,.bp-dialog select{box-sizing:border-box;width:100%;min-height:42px}
 .bp-dialog #bp-error:empty{display:none}
 .bp-empty{padding:12px;border-radius:10px;background:var(--surface2);font-size:.88rem}

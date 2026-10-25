@@ -210,10 +210,10 @@ dialog.iu-reprint-confirm{position:fixed!important;inset:0!important;margin:auto
 .iu-log-invoice{font-size:11px;line-height:1.7;overflow-wrap:anywhere;min-width:85px}
 .iu-badge.is-available{display:inline-flex;align-items:center;gap:5px}
 .iu-badge.is-available:before{content:'';width:6px;height:6px;flex:none;border-radius:50%;background:#21a35c}
-@container barcode (max-width:1100px){.iu-unit-log .iu-log-invoice{grid-column:2/-1;grid-row:4}.iu-log-invoice:before{content:attr(data-label);font-size:9px;color:var(--iu-muted);margin-inline-end:6px}}
+@container barcode (max-width:760px){.iu-unit-log .iu-log-invoice{grid-column:2/-1;grid-row:4}.iu-log-invoice:before{content:attr(data-label);font-size:9px;color:var(--iu-muted);margin-inline-end:6px}}
 @container iu-modal (max-width:680px){.iu-dialog-body .iu-unit-log .iu-log-invoice{grid-column:2;grid-row:6}.iu-dialog-body .iu-log-invoice:before{content:attr(data-label);font-size:9px;color:var(--iu-muted);margin-inline-end:6px}}
 #iu-line-units .iu-unit-log{max-height:none}
-@container barcode (max-width:1100px){
+@container barcode (max-width:760px){
   .iu-unit-log table{min-width:0;display:block}
   .iu-unit-log thead{display:none}
   .iu-unit-log tbody{display:block}
@@ -330,3 +330,47 @@ dialog.iu-reprint-confirm{position:fixed!important;inset:0!important;margin:auto
 body.dark-mode .iu-print-success,body.dark-mode .iu-badge.is-printed{background:#193c28;border-color:#3c7450;color:#9de0b5!important}
 .iu-purchase-change{display:grid;gap:5px;padding:12px 16px;border-block-end:1px solid #d2e3d8;background:#f0f7f3;color:#285b43;font-size:12px;line-height:1.8}.iu-purchase-change strong{font-size:13px}.iu-purchase-change p{margin:0}.iu-purchase-change small{display:block;font-size:11px}.iu-purchase-change.has-conflict{background:#fff6e8;color:#805714;border-color:#e8d1a9}.iu-purchase-change .iu-link{justify-self:start}
 .iu-receipt-product.is-quantity-edited{border-color:#adcdb9}.iu-line-change{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:9px 0;padding:7px 9px;background:#edf6f0;border-radius:7px;color:#2a6247;font-size:11px;line-height:1.7}.iu-line-change strong{font-size:11px}.iu-line-change bdi{font-weight:750;font-variant-numeric:tabular-nums}.iu-line-change small{flex-basis:100%;font-size:10px}.iu-line-change.has-conflict{background:#fff2df;color:#8c5a12}body.dark-mode .iu-purchase-change,body.dark-mode .iu-line-change{background:#1d3529;color:#b6dcc5;border-color:#476951}body.dark-mode .iu-purchase-change.has-conflict,body.dark-mode .iu-line-change.has-conflict{background:#3b301d;color:#edcf9c;border-color:#745f38}
+
+/* Find a piece: a compact, task-focused register. */
+#page-barcodes .iu-registry .iu-panel-heading{padding:14px 16px;background:var(--iu-surface)}
+#page-barcodes .iu-registry .iu-panel-heading p{font-size:11px;margin-top:2px!important}
+#page-barcodes .iu-registry .iu-search-panel{padding:12px 16px 8px;border:0;gap:8px}
+#page-barcodes .iu-registry .iu-field{background:var(--iu-surface);padding:9px 10px}
+#page-barcodes .iu-registry .iu-field input{font-size:13px}
+.iu-quick-filters{display:flex;gap:6px;flex-wrap:wrap;padding:0 16px 12px;border-bottom:1px solid var(--iu-border)}
+.iu-quick-filters button{padding:5px 10px;border:1px solid var(--iu-border);border-radius:20px;background:var(--iu-surface);color:var(--iu-muted);font-size:11px;line-height:1.5}
+.iu-quick-filters button[aria-pressed=true]{color:var(--iu-accent);border-color:var(--iu-accent);background:var(--iu-soft);font-weight:600}
+#page-barcodes .iu-registry-tools{padding:8px 16px;gap:16px;background:var(--iu-soft)}
+#page-barcodes .iu-log-caption{padding:8px 16px;min-height:38px;background:var(--iu-surface);flex-wrap:wrap}
+.iu-column-picker{position:relative;order:3;margin-inline-start:auto;color:var(--iu-text);font-size:11px;z-index:3}
+.iu-column-picker summary{cursor:pointer;padding:5px 8px;border:1px solid var(--iu-border);border-radius:6px;list-style-position:inside}
+.iu-column-picker>div{position:absolute;inset-inline-end:0;top:calc(100% + 6px);min-width:185px;padding:8px;border:1px solid var(--iu-border);border-radius:9px;background:var(--iu-surface);box-shadow:0 8px 24px #15372220;display:grid;gap:4px}
+.iu-column-picker label{display:flex;align-items:center;gap:9px;padding:7px;cursor:pointer}
+.iu-column-picker input{accent-color:var(--iu-accent);width:15px;height:15px}
+.iu-hide-invoice .iu-log-invoice,.iu-hide-invoice .iu-col-invoice,.iu-hide-warehouse .iu-log-location,.iu-hide-warehouse .iu-col-warehouse,.iu-hide-registered .iu-log-date,.iu-hide-registered .iu-col-registered{display:none!important}
+#page-barcodes .iu-unit-log td{padding-block:10px;vertical-align:middle}
+#page-barcodes .iu-unit-log th{padding-block:10px;font-size:10px;font-weight:650;letter-spacing:.02em}
+#page-barcodes .iu-unit-log table{min-width:720px}
+#page-barcodes .iu-product-open{display:block;border:0;padding:0;background:none;color:var(--iu-text);font-size:13px;font-weight:650;line-height:1.5;text-align:start;overflow-wrap:anywhere}
+#page-barcodes .iu-product-open:hover{color:var(--iu-accent);text-decoration:underline;text-underline-offset:3px}
+#page-barcodes .iu-log-code>code{font-size:11px;font-weight:600}
+#page-barcodes .iu-log-invoice{font-size:12px;font-variant-numeric:tabular-nums}
+#page-barcodes .iu-log-location{font-size:11px}
+#page-barcodes .iu-log-date{font-size:11px}
+#page-barcodes .iu-log-date small{font-size:10px;margin-top:1px}
+#page-barcodes .iu-status-pill{--status-ink:#476350;--status-fill:#eef2ef;display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:5px 8px;border:1px solid color-mix(in srgb,var(--status-ink) 20%,transparent);border-radius:20px;background:var(--status-fill);color:var(--status-ink);font-family:inherit;font-weight:600;line-height:1.5;font-size:11px;text-align:start}
+#page-barcodes .iu-status-pill[data-tone=ready]{--status-ink:#176747;--status-fill:#eaf6ef}
+#page-barcodes .iu-status-pill[data-tone=progress]{--status-ink:#295da5;--status-fill:#edf3ff}
+#page-barcodes .iu-status-pill[data-tone=attention]{--status-ink:#996015;--status-fill:#fff5e3}
+.iu-status-pill>i{width:6px;height:6px;flex:none;border-radius:50%;background:currentColor}
+#page-barcodes .iu-status-pill svg{width:13px;height:13px;opacity:.7}
+#page-barcodes button.iu-status-pill:hover{box-shadow:0 0 0 2px color-mix(in srgb,var(--status-ink) 15%,transparent)}
+.iu-row-meta{display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap}
+#page-barcodes .iu-row-meta .iu-link{font-size:10px;font-weight:500}
+.iu-row-meta>span{display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--iu-muted)}
+#page-barcodes .iu-row-meta svg{width:12px;height:12px}
+#page-barcodes .iu-log-status{min-width:155px;max-width:210px}
+body.dark-mode #page-barcodes .iu-status-pill{background:color-mix(in srgb,var(--iu-surface) 88%,var(--status-ink));color:color-mix(in srgb,var(--status-ink) 40%,#fff)}
+@container barcode (min-width:871px) and (max-width:1200px){.iu-workspace[data-view=units]{grid-template-columns:minmax(0,1fr)}.iu-workspace[data-view=units] .iu-label-panel{position:static;grid-column:1}.iu-workspace[data-view=units] .iu-print-body{display:grid;grid-template-columns:1fr 1fr;gap:20px}.iu-workspace[data-view=units] .iu-print-second{margin:0;padding:0;border:0}}
+@container barcode (max-width:760px){#page-barcodes .iu-unit-log table{min-width:0}#page-barcodes .iu-unit-log td{padding:0}#page-barcodes .iu-log-status{min-width:0;max-width:145px!important}.iu-row-meta{justify-content:flex-end;gap:5px}#page-barcodes .iu-log-code>code{font-size:11px}#page-barcodes .iu-log-product .iu-product-open{font-size:12px}.iu-log-caption>span:not(#iu-log-loading){display:none}}
+@container barcode (max-width:440px){#page-barcodes .iu-registry .iu-panel-heading{padding:12px}#page-barcodes .iu-registry .iu-search-panel{padding-inline:12px}.iu-quick-filters{padding-inline:12px}#page-barcodes .iu-registry .iu-unit-search{order:0}#iu-reset-search{order:3}#page-barcodes .iu-log-status{max-width:125px!important}#page-barcodes .iu-status-pill{font-size:10px}.iu-row-meta>span{display:none}#page-barcodes .iu-registry-tools{gap:8px;padding-inline:12px}}

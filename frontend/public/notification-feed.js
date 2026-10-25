@@ -4,6 +4,45 @@
   const entries = new Map(), pending = new Map(), openedUnreadIds = new Set(), failedAvatars = new Map();
   const account = () => String(currentUser?._id || currentUser?.userId || currentUser?.sub || currentUser?.id || '');
   const loadLocal = key => { try { const value = JSON.parse(localStorage.getItem(_notifStorageKey(key)) || '[]'); return Array.isArray(value) ? value : []; } catch (_) { return []; } };
+  // Preserve live cards, loaded photos, keyboard focus and scroll position on refresh.
+  window.souliaRenderNotificationContent = function (root, html) {
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    const cards = new Map([...root.querySelectorAll('[data-notification-id]')].map(node => [node.dataset.notificationId, node]));
+    const scrollTop = root.scrollTop;
+    function patch(node, next) {
+      if (node.nodeType !== 1) {
+        if (node.nodeValue !== next.nodeValue) node.nodeValue = next.nodeValue;
+        return;
+      }
+      if (node.matches('.notification-avatar') && next.matches('.notification-avatar') &&
+        node.getAttribute('title') === next.getAttribute('title') &&
+        node.querySelector('img')?.getAttribute('src') === next.querySelector('img')?.getAttribute('src') &&
+        node.querySelector('.notification-avatar-fallback')?.innerHTML === next.querySelector('.notification-avatar-fallback')?.innerHTML) return;
+      for (const attr of [...node.attributes]) if (!next.hasAttribute(attr.name)) node.removeAttribute(attr.name);
+      for (const attr of [...next.attributes]) if (node.getAttribute(attr.name) !== attr.value) node.setAttribute(attr.name, attr.value);
+      reconcile(node, next);
+    }
+    function reconcile(parent, nextParent) {
+      let cursor = parent.firstChild;
+      for (const next of [...nextParent.childNodes]) {
+        const key = next.nodeType === 1 ? next.dataset.notificationId : '';
+        let node = key ? cards.get(key) : cursor;
+        if (!key && node?.nodeType === 1 && node.hasAttribute('data-notification-id')) node = null;
+        if (!node || node.nodeType !== next.nodeType || node.nodeName !== next.nodeName) {
+          node = next.cloneNode(true);
+          parent.insertBefore(node, cursor);
+        } else {
+          if (node !== cursor) parent.insertBefore(node, cursor);
+          patch(node, next);
+        }
+        cursor = node.nextSibling;
+      }
+      while (cursor) { const next = cursor.nextSibling; cursor.remove(); cursor = next; }
+    }
+    reconcile(root, template.content);
+    root.scrollTop = scrollTop;
+  };
   function repaint() {
     buildNotifications();
     if (window._notifTab === 'stock') renderStockNotifsList();
@@ -30,7 +69,7 @@
       scheduleRepaint();
     }).catch(() => { if (id === account()) stateRequest = null; });
   };
-  window.souliaIsNotificationUnread = n => !_notifReadIds.includes(n.id) && (n.mention ? !n.mention.read : n.history ? !n.historyRead : true);
+  window.souliaIsNotificationUnread = n => n.history ? !n.historyRead : !_notifReadIds.includes(n.id) && (n.mention ? !n.mention.read : true);
   window.souliaIsNotificationHighlighted = n => window.souliaIsNotificationUnread(n) ||
     (openedUnreadIds.has(n.id) && (qs('#notif-panel')?.classList.contains('show') || qs('#nc-overlay')?.classList.contains('active')));
   window.souliaNotificationRelativeTime = function (iso, now = Date.now()) {
@@ -59,7 +98,16 @@
   window.souliaNotificationDescription = n => {
     const check = '<svg class="notification-check" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
     const description = !n.history && !n.mention && typeof _stripHtml === 'function' ? _stripHtml(n.desc || '') : n.desc || '';
-    return n.eventType === 'delivered' ? '<span class="notification-delivered-copy">' + check + escHtml(description) + '</span>' : escHtml(description);
+    const money = /(?:\bEGP\s+([\d٠-٩۰-۹][\d٠-٩۰-۹,٬]*(?:[.٫][\d٠-٩۰-۹]+)?)|([\d٠-٩۰-۹][\d٠-٩۰-۹,٬]*(?:[.٫][\d٠-٩۰-۹]+)?)\s*ج\.\s*م\.?)/g;
+    let formatted = '', offset = 0;
+    for (const match of String(description).matchAll(money)) {
+      formatted += escHtml(String(description).slice(offset, match.index));
+      const amount = '<strong class="notification-amount">' + escHtml(match[1] || match[2]) + '</strong>';
+      formatted += '<bdi class="notification-money">' + (match[1] ? 'EGP ' + amount : amount + ' ج.م.') + '</bdi>';
+      offset = match.index + match[0].length;
+    }
+    formatted += escHtml(String(description).slice(offset));
+    return n.eventType === 'delivered' ? '<span class="notification-delivered-copy">' + check + formatted + '</span>' : formatted;
   };
   window.souliaMarkNotificationsOpened = function (openedAt = Date.now()) {
     window.souliaSyncNotificationAccount();
@@ -85,6 +133,35 @@
   };
   window.souliaMergeNotifications = function (input) {
     const history = input.filter(n => n.history), consumed = new Set(), merged = [];
+    // Reconcile older receipt entries too; never group different receipts by order number.
+    const receipts = new Map();
+    for (const notice of history) {
+      const decision = notice.eventType === 'approval' && /^approval:receipt:.+:(approved|rejected)$/.test(notice.eventId || '');
+      if (!notice.recordId || !notice.event || (notice.eventType !== 'deposit' && !decision)) continue;
+      const key = JSON.stringify([notice.recordId, String(notice.event)]);
+      if (!receipts.has(key)) receipts.set(key, []);
+      receipts.get(key).push({ notice, decision });
+    }
+    for (const group of receipts.values()) {
+      if (group.length < 2) continue;
+      group.sort((a, b) => Number(b.decision) - Number(a.decision) || (Date.parse(b.notice.ts) || 0) - (Date.parse(a.notice.ts) || 0));
+      const notice = group[0].notice;
+      merged.push({ ...notice, historyIds: group.slice(1).map(item => item.notice.id) });
+      group.forEach(item => consumed.add(item.notice.id));
+    }
+    // A follow-up's unseen card and its persisted creation notice describe one event.
+    // Match the creation event explicitly so scheduled reminders and comments remain separate.
+    const followupCards = new Map(input.filter(n => !n.history && n.refType === 'fu' && n.refId && n.id === 'fu-unseen-' + n.refId)
+      .map(n => [String(n.refId), n]));
+    for (const notice of history) {
+      if (notice.eventType !== 'followup' || !notice.recordId?.startsWith('followup:') || notice.eventId !== notice.recordId) continue;
+      const card = followupCards.get(notice.recordId.slice('followup:'.length));
+      if (!card) continue;
+      consumed.add(card.id);
+      // Keep the responsible person's name and reason from the more descriptive card.
+      merged.push({ ...notice, desc: card.desc || notice.desc });
+      consumed.add(notice.id);
+    }
     for (const mention of buildMentionNotifsList()) {
       const id = String(mention.id || mention._id || '');
       if (!id) continue;
@@ -148,10 +225,11 @@
       if (n.mention) {
         await api('/mentions/' + encodeURIComponent(n.refId) + '/read', { method: 'POST' });
         await Promise.all((n.historyIds || []).map(key => window.souliaMarkHistoryRead(key)));
-      } else if (n.history) await window.souliaMarkHistoryRead(id);
+      } else if (n.history) await Promise.all([id, ...(n.historyIds || [])].map(key => window.souliaMarkHistoryRead(key)));
       else await api('/notifications/read-state', { method: 'POST', body: JSON.stringify({ ids: [id] }) });
       if (user !== account()) return;
       if (n.mention) n.mention.read = true;
+      if (n.history) n.historyRead = true;
       _notifReadIds = [...new Set([..._notifReadIds, id])];
       localStorage.setItem(_notifStorageKey('notifReadIds'), JSON.stringify(_notifReadIds));
       scheduleRepaint();

@@ -661,8 +661,6 @@ export class DepositReceiptsService {
 
     await this.refreshDerived(String(claimed._id));
     this.emit(orderId, receiptId, 'معتمد');
-    await this.notifications?.enqueue('deposit', 'deposit:receipt:' + receiptId, claimed.ref, 'shopify:' + orderId, undefined, undefined,
-      { actorName: r.submittedBy, amount: r.amount, vaultName: r.method, receiptId });
     await notifyApproval(this.notifications, 'approval:receipt:' + receiptId + ':approved', claimed.ref, 'shopify:' + orderId, { actorName: r.submittedBy, actionKey: 'deposit', status: 'approved', receiptId });
     return { success: true, vaultTxNo: entry?.txNo || '' };
   }

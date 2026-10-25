@@ -20,6 +20,7 @@ function setup(role = 'admin') {
   const historyRows = new Map();
   const inbox = { findOne: jest.fn(async (filter: any) => historyRows.get(filter._id)?.userId === filter.userId ? historyRows.get(filter._id) : null), updateOne: jest.fn(async (filter: any, update: any) => {
     if (update.$setOnInsert && !historyRows.has(filter._id)) historyRows.set(filter._id, { _id: filter._id, ...update.$setOnInsert });
+    if (update.$set && !historyRows.has(filter._id)) historyRows.set(filter._id, { ...filter });
     if (update.$set && historyRows.get(filter._id)?.userId === filter.userId) Object.assign(historyRows.get(filter._id), update.$set);
   }) };
   const jobs = { updateOne: jest.fn(async (filter, update) => { if (update.$setOnInsert && !stored.has(filter.eventId)) stored.set(filter.eventId, update.$setOnInsert); }), findOneAndUpdate: jest.fn(async () => null) };
@@ -89,6 +90,34 @@ describe('Web Push settings, security and delivery', () => {
     expect(stored.size).toBe(1);
     expect(historyRows.size).toBe(1);
     expect(JSON.parse(stored.get('deposit:receipt-1').payload).title).toBe('💰 عربون جديد');
+  });
+  it.each(['approved', 'rejected'] as const)('updates the same receipt card and push tag on %s, without overwriting it on submission retries', async status => {
+    const { service, stored, historyRows } = setup();
+    const details = { receiptId: 'receipt-1', actorName: 'Malak', pendingApproval: true, amount: 500 };
+    await service.enqueue('deposit', 'deposit:receipt:receipt-1', '2950', 'shopify:order1', undefined, undefined, details);
+    const original = [...historyRows.values()][0];
+    original.readAt = new Date();
+    await service.enqueue('approval', 'approval:receipt:receipt-1:' + status, '2950', 'shopify:order1', undefined, undefined,
+      { actionKey: 'deposit', status, receiptId: 'receipt-1' });
+    expect(historyRows.size).toBe(1);
+    expect(original.type).toBe('approval');
+    expect(original.readAt).toBeNull();
+    const messages = [...stored.values()].map(job => JSON.parse(job.payload));
+    expect(messages[0].tag).toBe(messages[1].tag);
+    expect(messages[0].url.split('pushNotification=')[1]).toBe(messages[1].url.split('pushNotification=')[1]);
+    await service.enqueue('deposit', 'deposit:receipt:receipt-1', '2950', 'shopify:order1', undefined, undefined, details);
+    expect(original.type).toBe('approval');
+    await service.enqueue('deposit', 'deposit:receipt:receipt-2', '2950', 'shopify:order1', undefined, undefined, { receiptId: 'receipt-2' });
+    expect(historyRows.size).toBe(2);
+  });
+  it('discards a pending receipt push when its decision has already updated the card', async () => {
+    const { service, push, jobs } = setup();
+    await service.enqueue('approval', 'approval:receipt:r1:approved', '2950', 'shopify:o1', undefined, undefined,
+      { actionKey: 'deposit', status: 'approved', receiptId: 'r1' });
+    jobs.findOneAndUpdate.mockResolvedValueOnce({ _id: 'old-deposit', type: 'deposit', userId: admin.userId, eventId: 'deposit:receipt:r1' } as never);
+    await service.dispatch();
+    expect(push.sendNotification).not.toHaveBeenCalled();
+    expect(jobs.updateOne).toHaveBeenCalledWith({ _id: 'old-deposit' }, { $set: { done: true } });
   });
   it('discards a duplicate deposit approval request already queued for delivery', async () => {
     const { service, push, jobs } = setup();

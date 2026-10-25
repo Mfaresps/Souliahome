@@ -5,7 +5,7 @@ const fs = require('node:fs'), path = require('node:path'), assert = require('no
 const puppeteer = require('puppeteer');
 const root = path.resolve(__dirname, '../../..'), publicDir = path.join(root, 'frontend/public');
 const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
-const output = path.join(root, 'artifacts/pickup-daily-shipping');
+const output = path.join(root, 'artifacts/pickup-stage-colors');
 fs.mkdirSync(output, { recursive: true });
 const settle = () => new Promise(resolve => setTimeout(resolve, 350));
 (async () => {
@@ -21,7 +21,7 @@ const settle = () => new Promise(resolve => setTimeout(resolve, 350));
     page.on('request', request => {
       const url = new URL(request.url());
       if (url.origin === 'http://soulia.test' && url.pathname === '/') return request.respond({ status: 200, contentType: 'text/html', body: html });
-      if (['/pickup-daily-shipping.js','/pickup-daily-shipping.css','/pickup-workspace.css','/awb-preview.js','/awb-preview.css','/pickup-ready-return.js','/pickup-ready-return.css','/bosta-pickup.js','/bosta-pickup.css','/shopify-edit-approvals.js'].includes(url.pathname)) {
+      if (['/order-status.js','/order-status.css','/pickup-daily-shipping.js','/pickup-daily-shipping.css','/pickup-workspace.css','/awb-preview.js','/awb-preview.css','/pickup-ready-return.js','/pickup-ready-return.css','/bosta-pickup.js','/bosta-pickup.css','/shopify-edit-approvals.js'].includes(url.pathname)) {
         return request.respond({ status: 200, contentType: url.pathname.endsWith('.js') ? 'text/javascript' : 'text/css', body: fs.readFileSync(path.join(publicDir, url.pathname.slice(1))) });
       }
       if (request.resourceType() === 'script') return request.respond({ status: 200, contentType: 'text/javascript', body: 'window.Chart=class{static register(){} destroy(){}};window.XLSX={utils:{}};window.io=()=>({on(){},emit(){},disconnect(){}});' });

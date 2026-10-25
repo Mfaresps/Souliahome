@@ -455,15 +455,38 @@ export class FollowUpsService implements OnModuleInit {
         .sort({ createdAt: 1 })
         .lean()
         .exec();
-      if (!missing.length) return;
       for (const f of missing as any[]) {
         const when = f.createdAt ? new Date(f.createdAt) : new Date();
         const ticketNo = await this.generateTicketNo(f.orderRef, when);
         await this.model.updateOne({ _id: f._id }, { ticketNo }).exec();
       }
-      this.logger.log(`Backfilled ticketNo on ${missing.length} follow-up(s)`);
+      if (missing.length) this.logger.log(`Backfilled ticketNo on ${missing.length} follow-up(s)`);
     } catch (err: any) {
       this.logger.error(`ticketNo backfill failed: ${err.message}`);
+    }
+    await this.reconcileCancelledOrders();
+  }
+
+  /** Repair trails left open by cancellations recorded before outcome syncing existed. */
+  async reconcileCancelledOrders(): Promise<void> {
+    try {
+      const open = await this.model.find({ cancelled: { $ne: true }, status: { $nin: DONE_STATUSES },
+        orderOutcome: { $in: ['', null] } }).select('orderRef').lean().exec();
+      const refs = [...new Set(open.map(f => String(f.orderRef || '').replace(/^#/, '').trim()).filter(Boolean))];
+      if (!refs.length) return;
+      for (const collection of ['shopifyorders', 'transactions']) {
+        const orders = await this.model.db.collection(collection).find({ cancelled: true,
+          ref: { $in: refs.flatMap(ref => [ref, '#' + ref]) },
+          ...(collection === 'transactions' ? { type: 'مبيعات' } : {}),
+        }, { projection: { _id: 1, ref: 1, shopifyId: 1, shopifyOrderId: 1, cancelReason: 1, cancelledBy: 1, cancelledAt: 1 } }).toArray();
+        for (const order of orders) await this.closeForOrder({
+          ...(collection === 'transactions' ? { transactionId: String(order._id) } : {}),
+          shopifyOrderIds: collection === 'shopifyorders' ? [String(order._id), order.shopifyId] : [order.shopifyOrderId],
+          orderRef: order.ref, cancelledAt: order.cancelledAt,
+        }, 'cancelled', order.cancelReason || '', order.cancelledBy || '');
+      }
+    } catch (err: any) {
+      this.logger.error(`Cancelled order follow-up reconciliation failed: ${err.message}`);
     }
   }
 
@@ -505,7 +528,7 @@ export class FollowUpsService implements OnModuleInit {
 
   /** Called after confirmation/cancellation succeeds, never when it is merely requested. */
   async closeForOrder(order: {
-    transactionId?: string; shopifyOrderIds?: string[]; orderRef?: string;
+    transactionId?: string; shopifyOrderIds?: string[]; orderRef?: string; cancelledAt?: string | Date;
   }, outcome: 'confirmed' | 'cancelled', detail: string, by = ''): Promise<void> {
     const links: Record<string, unknown>[] = [];
     if (order.transactionId) links.push({ transactionId: String(order.transactionId) });
@@ -518,7 +541,8 @@ export class FollowUpsService implements OnModuleInit {
       transactionId: { $in: ['', null] },
       ...(!order.transactionId ? { shopifyOrderId: { $in: ['', null] } } : {}) });
     if (!links.length) return;
-    const at = new Date();
+    const cancelledAt = order.cancelledAt ? new Date(order.cancelledAt) : null;
+    const at = outcome === 'cancelled' && cancelledAt && Number.isFinite(cancelledAt.getTime()) ? cancelledAt : new Date();
     const text = outcome === 'confirmed'
       ? `العميل أكد الطلب — ${detail}`
       : `تم إلغاء الطلب — السبب: ${detail || 'لم يُسجل سبب'}`;
@@ -531,6 +555,7 @@ export class FollowUpsService implements OnModuleInit {
         $set: {
           status: outcome === 'confirmed' ? 'تمت عملية التأكيد' : 'العميل ألغى الطلب',
           orderOutcome: outcome, closedAt: at, resolution: detail,
+          deferredUntil: null, deferReminderSent: false,
           ...(order.transactionId ? { transactionId: String(order.transactionId) } : {}),
           escalationBaseline: at, escalationLevel: 0,
         },

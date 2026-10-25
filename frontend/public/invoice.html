@@ -6,6 +6,8 @@
 <title>فاتورة — Soulia</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 <script src="/config.js"></script>
+<script src="/order-status.js?v=20261025-status-only"></script>
+<link rel="stylesheet" href="/order-status.css?v=20261025-confirm-icons">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -104,7 +106,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 .col-img-fallback{width:38px;height:38px;border-radius:7px;border:1px solid var(--border);background:#f8fafc;display:flex;align-items:center;justify-content:center}
 .col-img-fallback svg{width:16px;height:16px;color:#cbd5e1}
 .col-product{font-weight:600;color:var(--text)}
-.col-code{font-size:.68rem;color:#94a3b8;direction:ltr;margin-top:1px;font-family:monospace}
+.col-code{font-size:.68rem;color:#64748b;direction:ltr;unicode-bidi:isolate;margin-top:1px;font-family:ui-monospace,Consolas,monospace;font-variant-ligatures:none;letter-spacing:.035em}
 .col-qty{text-align:center;font-weight:700;color:#475569;width:48px}
 .col-price,.col-total{direction:ltr;text-align:left}
 .col-total{font-weight:700;color:var(--text)}
@@ -441,6 +443,7 @@ function renderInvoice(tx) {
         ${!isPurchase && tx.shipCo ? `<span class="ship-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="15" height="10" rx="1.5"/><path d="M16 9h3l3 4v3h-6z"/><circle cx="6.5" cy="18" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>${esc(tx.shipCo)}</span>` : ''}
       </div>
     </div>
+    ${!isPurchase && !isReturn ? `<div class="inv-order-state">${SouliaOrderStatus.badge(SouliaOrderStatus.resolve(tx, 'transaction', document.documentElement.lang || 'ar'))}</div>` : ''}
     <!-- Status -->
     <div class="inv-status-banner ${statusClass}">
       ${statusIcon}

@@ -184,12 +184,12 @@ export class EmployeePerformanceController {
 
   @Get('team-workspace')
   @Roles('admin')
-  getTeamWorkspace() { return this.scoringService.getTeamWorkspace(); }
+  getTeamWorkspace(@Query('period') period?: string, @Query('periodKey') periodKey?: string) { return this.scoringService.getTeamWorkspace(period, periodKey); }
 
   @Get('team-workspace/:employeeId')
   @Roles('admin')
-  getTeamEmployeeWorkspace(@Param('employeeId') employeeId: string) {
-    return this.scoringService.getTeamEmployeeWorkspace(employeeId);
+  getTeamEmployeeWorkspace(@Param('employeeId') employeeId: string, @Query('period') period?: string, @Query('periodKey') periodKey?: string) {
+    return this.scoringService.getTeamEmployeeWorkspace(employeeId, period, periodKey);
   }
 
   /** The caller's own shift schedule + leave, and where they stand in today's window. */

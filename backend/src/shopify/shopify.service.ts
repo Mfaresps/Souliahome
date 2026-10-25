@@ -925,7 +925,7 @@ export class ShopifyService {
    *   receipts that would book the same money twice. An order with no receipt confirms with no
    *   deposit (allowed — the owner made the deposit optional).
    */
-  async approveOrder(orderId: string, approvedBy: string, carrierCode?: string): Promise<{ success: boolean; txId?: string }> {
+  async approveOrder(orderId: string, approvedBy: string, carrierCode?: string, actorUserId?: string): Promise<{ success: boolean; txId?: string }> {
     const order = await this.shopifyOrderModel.findById(orderId);
     if (!order) throw new NotFoundException('الأوردر غير موجود');
     if (order.status !== 'pending' || order.cancelled || order.receiptCancelLock) {
@@ -1133,10 +1133,10 @@ export class ShopifyService {
 
     // سجل حركة المخزون — لازم يتكتب هنا لأن approveOrder بتكتب المعاملة مباشرة
     // على txModel وبتتخطى TransactionsService.create() اللي بتسجل الحركة عادة.
-    await this.recordInventoryMovementForSale(tx, invSnapshotBefore, employee);
+    await this.recordInventoryMovementForSale(tx, invSnapshotBefore, approvedBy);
 
     // إرسال أحداث التحديث الفوري (inventory + transactions)
-    this.emit('tx:created', { tx, by: employee });
+    this.emit('tx:created', { tx, by: approvedBy });
     this.emit('inventory:changed', {
       reason: 'tx:created',
       txId: String(tx._id),
@@ -1150,7 +1150,7 @@ export class ShopifyService {
     // Independent post-commit work; persist the notification and clean drafts together.
     await Promise.all([
       this.depositReceipts.discardDrafts(String(order._id)),
-      notifyApproval(this.notifications, 'approval:shopify:' + orderId + ':approved', order.ref, 'shopify:' + orderId, { actorName: employee, actionKey: 'order', status: 'approved' }),
+      notifyApproval(this.notifications, 'approval:shopify:' + orderId + ':approved', order.ref, 'shopify:' + orderId, { actorName: approvedBy, actorUserId, actionKey: 'order', status: 'approved' }),
     ]);
     return { success: true, txId: String(tx._id) };
   }

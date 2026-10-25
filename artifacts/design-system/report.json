@@ -1,0 +1,3030 @@
+{
+  "checks": 566,
+  "errors": [],
+  "results": [
+    {
+      "id": "products",
+      "lang": "ar",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "prod-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 918.171875,
+        "y": 113,
+        "width": 224.828125,
+        "height": 33.59375,
+        "top": 113,
+        "right": 1143,
+        "bottom": 146.59375,
+        "left": 918.171875
+      }
+    },
+    {
+      "id": "inventory",
+      "lang": "ar",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "inv-search-input",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 915.84375,
+        "y": 113,
+        "width": 227.15625,
+        "height": 33.59375,
+        "top": 113,
+        "right": 1143,
+        "bottom": 146.59375,
+        "left": 915.84375
+      }
+    },
+    {
+      "id": "complaints",
+      "lang": "ar",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "fu-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 865.125,
+        "y": 113,
+        "width": 277.875,
+        "height": 33.59375,
+        "top": 113,
+        "right": 1143,
+        "bottom": 146.59375,
+        "left": 865.125
+      }
+    },
+    {
+      "id": "approvals",
+      "lang": "ar",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "appr-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 65,
+        "y": 113,
+        "width": 1078,
+        "height": 33.59375,
+        "top": 113,
+        "right": 1143,
+        "bottom": 146.59375,
+        "left": 65
+      }
+    },
+    {
+      "id": "clients",
+      "lang": "ar",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 947.6875,
+        "y": 113,
+        "width": 195.3125,
+        "height": 33.59375,
+        "top": 113,
+        "right": 1143,
+        "bottom": 146.59375,
+        "left": 947.6875
+      }
+    },
+    {
+      "id": "suppliers",
+      "lang": "ar",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 974.15625,
+        "y": 113,
+        "width": 168.84375,
+        "height": 33.59375,
+        "top": 113,
+        "right": 1143,
+        "bottom": 146.59375,
+        "left": 974.15625
+      }
+    },
+    {
+      "id": "expenses",
+      "lang": "ar",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 985.296875,
+        "y": 113,
+        "width": 157.703125,
+        "height": 38,
+        "top": 113,
+        "right": 1143,
+        "bottom": 151,
+        "left": 985.296875
+      }
+    },
+    {
+      "id": "reports",
+      "lang": "ar",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 938.328125,
+        "y": 113,
+        "width": 204.671875,
+        "height": 33.59375,
+        "top": 113,
+        "right": 1143,
+        "bottom": 146.59375,
+        "left": 938.328125
+      }
+    },
+    {
+      "id": "settings",
+      "lang": "ar",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 827.921875,
+        "y": 113,
+        "width": 295.078125,
+        "height": 33.59375,
+        "top": 113,
+        "right": 1123,
+        "bottom": 146.59375,
+        "left": 827.921875
+      }
+    },
+    {
+      "id": "shopify-orders",
+      "lang": "ar",
+      "width": 1440,
+      "title": null,
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": null
+    },
+    {
+      "id": "pickup-orders",
+      "lang": "ar",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 855.484375,
+        "y": 113,
+        "width": 287.515625,
+        "height": 33.59375,
+        "top": 113,
+        "right": 1143,
+        "bottom": 146.59375,
+        "left": 855.484375
+      }
+    },
+    {
+      "id": "movements",
+      "lang": "ar",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "mov-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 975.1875,
+        "y": 113,
+        "width": 167.8125,
+        "height": 33.59375,
+        "top": 113,
+        "right": 1143,
+        "bottom": 146.59375,
+        "left": 975.1875
+      }
+    },
+    {
+      "id": "transaction",
+      "lang": "ar",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 928.21875,
+        "y": 113,
+        "width": 214.78125,
+        "height": 33.59375,
+        "top": 113,
+        "right": 1143,
+        "bottom": 146.59375,
+        "left": 928.21875
+      }
+    },
+    {
+      "id": "vault",
+      "lang": "ar",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 878.671875,
+        "y": 113,
+        "width": 264.328125,
+        "height": 33.59375,
+        "top": 113,
+        "right": 1143,
+        "bottom": 146.59375,
+        "left": 878.671875
+      }
+    },
+    {
+      "id": "users",
+      "lang": "ar",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 954.125,
+        "y": 113,
+        "width": 188.875,
+        "height": 33.59375,
+        "top": 113,
+        "right": 1143,
+        "bottom": 146.59375,
+        "left": 954.125
+      }
+    },
+    {
+      "id": "products",
+      "lang": "ar",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "prod-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 518.171875,
+        "y": 97,
+        "width": 224.828125,
+        "height": 33.59375,
+        "top": 97,
+        "right": 743,
+        "bottom": 130.59375,
+        "left": 518.171875
+      }
+    },
+    {
+      "id": "inventory",
+      "lang": "ar",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "inv-search-input",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 515.84375,
+        "y": 97,
+        "width": 227.15625,
+        "height": 33.59375,
+        "top": 97,
+        "right": 743,
+        "bottom": 130.59375,
+        "left": 515.84375
+      }
+    },
+    {
+      "id": "complaints",
+      "lang": "ar",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "fu-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 465.125,
+        "y": 97,
+        "width": 277.875,
+        "height": 33.59375,
+        "top": 97,
+        "right": 743,
+        "bottom": 130.59375,
+        "left": 465.125
+      }
+    },
+    {
+      "id": "approvals",
+      "lang": "ar",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "appr-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 49,
+        "y": 97,
+        "width": 694,
+        "height": 33.59375,
+        "top": 97,
+        "right": 743,
+        "bottom": 130.59375,
+        "left": 49
+      }
+    },
+    {
+      "id": "clients",
+      "lang": "ar",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 547.6875,
+        "y": 97,
+        "width": 195.3125,
+        "height": 33.59375,
+        "top": 97,
+        "right": 743,
+        "bottom": 130.59375,
+        "left": 547.6875
+      }
+    },
+    {
+      "id": "suppliers",
+      "lang": "ar",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 574.15625,
+        "y": 97,
+        "width": 168.84375,
+        "height": 33.59375,
+        "top": 97,
+        "right": 743,
+        "bottom": 130.59375,
+        "left": 574.15625
+      }
+    },
+    {
+      "id": "expenses",
+      "lang": "ar",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 585.296875,
+        "y": 97,
+        "width": 157.703125,
+        "height": 38,
+        "top": 97,
+        "right": 743,
+        "bottom": 135,
+        "left": 585.296875
+      }
+    },
+    {
+      "id": "reports",
+      "lang": "ar",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 538.328125,
+        "y": 97,
+        "width": 204.671875,
+        "height": 33.59375,
+        "top": 97,
+        "right": 743,
+        "bottom": 130.59375,
+        "left": 538.328125
+      }
+    },
+    {
+      "id": "settings",
+      "lang": "ar",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 427.921875,
+        "y": 97,
+        "width": 295.078125,
+        "height": 33.59375,
+        "top": 97,
+        "right": 723,
+        "bottom": 130.59375,
+        "left": 427.921875
+      }
+    },
+    {
+      "id": "shopify-orders",
+      "lang": "ar",
+      "width": 1024,
+      "title": null,
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": null
+    },
+    {
+      "id": "pickup-orders",
+      "lang": "ar",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 455.484375,
+        "y": 97,
+        "width": 287.515625,
+        "height": 33.59375,
+        "top": 97,
+        "right": 743,
+        "bottom": 130.59375,
+        "left": 455.484375
+      }
+    },
+    {
+      "id": "movements",
+      "lang": "ar",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "mov-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 575.1875,
+        "y": 97,
+        "width": 167.8125,
+        "height": 33.59375,
+        "top": 97,
+        "right": 743,
+        "bottom": 130.59375,
+        "left": 575.1875
+      }
+    },
+    {
+      "id": "transaction",
+      "lang": "ar",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 528.21875,
+        "y": 97,
+        "width": 214.78125,
+        "height": 33.59375,
+        "top": 97,
+        "right": 743,
+        "bottom": 130.59375,
+        "left": 528.21875
+      }
+    },
+    {
+      "id": "vault",
+      "lang": "ar",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 478.671875,
+        "y": 97,
+        "width": 264.328125,
+        "height": 33.59375,
+        "top": 97,
+        "right": 743,
+        "bottom": 130.59375,
+        "left": 478.671875
+      }
+    },
+    {
+      "id": "users",
+      "lang": "ar",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 554.125,
+        "y": 97,
+        "width": 188.875,
+        "height": 33.59375,
+        "top": 97,
+        "right": 743,
+        "bottom": 130.59375,
+        "left": 554.125
+      }
+    },
+    {
+      "id": "products",
+      "lang": "ar",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "prod-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 718,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "inventory",
+      "lang": "ar",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "inv-search-input",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 718,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "complaints",
+      "lang": "ar",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 718,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "approvals",
+      "lang": "ar",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "appr-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 37,
+        "y": 89,
+        "width": 706,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 37
+      }
+    },
+    {
+      "id": "clients",
+      "lang": "ar",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 718,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "suppliers",
+      "lang": "ar",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 718,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "expenses",
+      "lang": "ar",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 597.4375,
+        "y": 89,
+        "width": 145.5625,
+        "height": 38,
+        "top": 89,
+        "right": 743,
+        "bottom": 127,
+        "left": 597.4375
+      }
+    },
+    {
+      "id": "reports",
+      "lang": "ar",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 554.0625,
+        "y": 89,
+        "width": 188.9375,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 554.0625
+      }
+    },
+    {
+      "id": "settings",
+      "lang": "ar",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 45,
+        "y": 89,
+        "width": 678,
+        "height": 28,
+        "top": 89,
+        "right": 723,
+        "bottom": 117,
+        "left": 45
+      }
+    },
+    {
+      "id": "shopify-orders",
+      "lang": "ar",
+      "width": 768,
+      "title": null,
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": null
+    },
+    {
+      "id": "pickup-orders",
+      "lang": "ar",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 718,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "movements",
+      "lang": "ar",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "mov-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 314.078125,
+        "y": 89,
+        "width": 139.84375,
+        "height": 28,
+        "top": 89,
+        "right": 453.921875,
+        "bottom": 117,
+        "left": 314.078125
+      }
+    },
+    {
+      "id": "transaction",
+      "lang": "ar",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 544.734375,
+        "y": 89,
+        "width": 198.265625,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 544.734375
+      }
+    },
+    {
+      "id": "vault",
+      "lang": "ar",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 499.015625,
+        "y": 89,
+        "width": 243.984375,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 499.015625
+      }
+    },
+    {
+      "id": "users",
+      "lang": "ar",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 718,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "products",
+      "lang": "ar",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "prod-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "inventory",
+      "lang": "ar",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "inv-search-input",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "complaints",
+      "lang": "ar",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "approvals",
+      "lang": "ar",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "appr-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 37,
+        "y": 89,
+        "width": 328,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 37
+      }
+    },
+    {
+      "id": "clients",
+      "lang": "ar",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "suppliers",
+      "lang": "ar",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "expenses",
+      "lang": "ar",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 219.4375,
+        "y": 89,
+        "width": 145.5625,
+        "height": 38,
+        "top": 89,
+        "right": 365,
+        "bottom": 127,
+        "left": 219.4375
+      }
+    },
+    {
+      "id": "reports",
+      "lang": "ar",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 176.0625,
+        "y": 89,
+        "width": 188.9375,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 176.0625
+      }
+    },
+    {
+      "id": "settings",
+      "lang": "ar",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "shopify-orders",
+      "lang": "ar",
+      "width": 390,
+      "title": null,
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": null
+    },
+    {
+      "id": "pickup-orders",
+      "lang": "ar",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "movements",
+      "lang": "ar",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "mov-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 125.078125,
+        "y": 89,
+        "width": 139.84375,
+        "height": 28,
+        "top": 89,
+        "right": 264.921875,
+        "bottom": 117,
+        "left": 125.078125
+      }
+    },
+    {
+      "id": "transaction",
+      "lang": "ar",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 166.734375,
+        "y": 89,
+        "width": 198.265625,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 166.734375
+      }
+    },
+    {
+      "id": "vault",
+      "lang": "ar",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 121.015625,
+        "y": 89,
+        "width": 243.984375,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 121.015625
+      }
+    },
+    {
+      "id": "users",
+      "lang": "ar",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "products",
+      "lang": "ar",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "prod-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "inventory",
+      "lang": "ar",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "inv-search-input",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "complaints",
+      "lang": "ar",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "approvals",
+      "lang": "ar",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "appr-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 37,
+        "y": 89,
+        "width": 258,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 37
+      }
+    },
+    {
+      "id": "clients",
+      "lang": "ar",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "suppliers",
+      "lang": "ar",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "expenses",
+      "lang": "ar",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 149.4375,
+        "y": 89,
+        "width": 145.5625,
+        "height": 38,
+        "top": 89,
+        "right": 295,
+        "bottom": 127,
+        "left": 149.4375
+      }
+    },
+    {
+      "id": "reports",
+      "lang": "ar",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 106.0625,
+        "y": 89,
+        "width": 188.9375,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 106.0625
+      }
+    },
+    {
+      "id": "settings",
+      "lang": "ar",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "shopify-orders",
+      "lang": "ar",
+      "width": 320,
+      "title": null,
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": null
+    },
+    {
+      "id": "pickup-orders",
+      "lang": "ar",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "movements",
+      "lang": "ar",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "mov-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 90.078125,
+        "y": 89,
+        "width": 139.84375,
+        "height": 28,
+        "top": 89,
+        "right": 229.921875,
+        "bottom": 117,
+        "left": 90.078125
+      }
+    },
+    {
+      "id": "transaction",
+      "lang": "ar",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 96.734375,
+        "y": 89,
+        "width": 198.265625,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 96.734375
+      }
+    },
+    {
+      "id": "vault",
+      "lang": "ar",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 51.015625,
+        "y": 89,
+        "width": 243.984375,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 51.015625
+      }
+    },
+    {
+      "id": "users",
+      "lang": "ar",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "products",
+      "lang": "en",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "prod-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 297,
+        "y": 113,
+        "width": 226.0625,
+        "height": 33.59375,
+        "top": 113,
+        "right": 523.0625,
+        "bottom": 146.59375,
+        "left": 297
+      }
+    },
+    {
+      "id": "inventory",
+      "lang": "en",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "inv-search-input",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 297,
+        "y": 113,
+        "width": 221.578125,
+        "height": 33.59375,
+        "top": 113,
+        "right": 518.578125,
+        "bottom": 146.59375,
+        "left": 297
+      }
+    },
+    {
+      "id": "complaints",
+      "lang": "en",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "fu-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 297,
+        "y": 113,
+        "width": 319.40625,
+        "height": 33.59375,
+        "top": 113,
+        "right": 616.40625,
+        "bottom": 146.59375,
+        "left": 297
+      }
+    },
+    {
+      "id": "approvals",
+      "lang": "en",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "appr-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 297,
+        "y": 113,
+        "width": 1078,
+        "height": 33.59375,
+        "top": 113,
+        "right": 1375,
+        "bottom": 146.59375,
+        "left": 297
+      }
+    },
+    {
+      "id": "clients",
+      "lang": "en",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 297,
+        "y": 113,
+        "width": 250.515625,
+        "height": 33.59375,
+        "top": 113,
+        "right": 547.515625,
+        "bottom": 146.59375,
+        "left": 297
+      }
+    },
+    {
+      "id": "suppliers",
+      "lang": "en",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 297,
+        "y": 113,
+        "width": 141.6875,
+        "height": 33.59375,
+        "top": 113,
+        "right": 438.6875,
+        "bottom": 146.59375,
+        "left": 297
+      }
+    },
+    {
+      "id": "expenses",
+      "lang": "en",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 297,
+        "y": 113,
+        "width": 204.875,
+        "height": 38,
+        "top": 113,
+        "right": 501.875,
+        "bottom": 151,
+        "left": 297
+      }
+    },
+    {
+      "id": "reports",
+      "lang": "en",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 297,
+        "y": 113,
+        "width": 214.484375,
+        "height": 33.59375,
+        "top": 113,
+        "right": 511.484375,
+        "bottom": 146.59375,
+        "left": 297
+      }
+    },
+    {
+      "id": "settings",
+      "lang": "en",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 317,
+        "y": 113,
+        "width": 281.1875,
+        "height": 33.59375,
+        "top": 113,
+        "right": 598.1875,
+        "bottom": 146.59375,
+        "left": 317
+      }
+    },
+    {
+      "id": "shopify-orders",
+      "lang": "en",
+      "width": 1440,
+      "title": null,
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": null
+    },
+    {
+      "id": "pickup-orders",
+      "lang": "en",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 297,
+        "y": 113,
+        "width": 360.109375,
+        "height": 33.59375,
+        "top": 113,
+        "right": 657.109375,
+        "bottom": 146.59375,
+        "left": 297
+      }
+    },
+    {
+      "id": "movements",
+      "lang": "en",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "mov-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 297,
+        "y": 113,
+        "width": 132,
+        "height": 33.59375,
+        "top": 113,
+        "right": 429,
+        "bottom": 146.59375,
+        "left": 297
+      }
+    },
+    {
+      "id": "transaction",
+      "lang": "en",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 297,
+        "y": 113,
+        "width": 239.234375,
+        "height": 33.59375,
+        "top": 113,
+        "right": 536.234375,
+        "bottom": 146.59375,
+        "left": 297
+      }
+    },
+    {
+      "id": "vault",
+      "lang": "en",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 297,
+        "y": 113,
+        "width": 236.109375,
+        "height": 33.59375,
+        "top": 113,
+        "right": 533.109375,
+        "bottom": 146.59375,
+        "left": 297
+      }
+    },
+    {
+      "id": "users",
+      "lang": "en",
+      "width": 1440,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 297,
+        "y": 113,
+        "width": 171.296875,
+        "height": 33.59375,
+        "top": 113,
+        "right": 468.296875,
+        "bottom": 146.59375,
+        "left": 297
+      }
+    },
+    {
+      "id": "products",
+      "lang": "en",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "prod-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 281,
+        "y": 97,
+        "width": 226.0625,
+        "height": 33.59375,
+        "top": 97,
+        "right": 507.0625,
+        "bottom": 130.59375,
+        "left": 281
+      }
+    },
+    {
+      "id": "inventory",
+      "lang": "en",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "inv-search-input",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 281,
+        "y": 97,
+        "width": 221.578125,
+        "height": 33.59375,
+        "top": 97,
+        "right": 502.578125,
+        "bottom": 130.59375,
+        "left": 281
+      }
+    },
+    {
+      "id": "complaints",
+      "lang": "en",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "fu-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 281,
+        "y": 97,
+        "width": 319.40625,
+        "height": 33.59375,
+        "top": 97,
+        "right": 600.40625,
+        "bottom": 130.59375,
+        "left": 281
+      }
+    },
+    {
+      "id": "approvals",
+      "lang": "en",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "appr-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 281,
+        "y": 97,
+        "width": 694,
+        "height": 33.59375,
+        "top": 97,
+        "right": 975,
+        "bottom": 130.59375,
+        "left": 281
+      }
+    },
+    {
+      "id": "clients",
+      "lang": "en",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 281,
+        "y": 97,
+        "width": 250.515625,
+        "height": 33.59375,
+        "top": 97,
+        "right": 531.515625,
+        "bottom": 130.59375,
+        "left": 281
+      }
+    },
+    {
+      "id": "suppliers",
+      "lang": "en",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 281,
+        "y": 97,
+        "width": 141.6875,
+        "height": 33.59375,
+        "top": 97,
+        "right": 422.6875,
+        "bottom": 130.59375,
+        "left": 281
+      }
+    },
+    {
+      "id": "expenses",
+      "lang": "en",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 281,
+        "y": 97,
+        "width": 204.875,
+        "height": 38,
+        "top": 97,
+        "right": 485.875,
+        "bottom": 135,
+        "left": 281
+      }
+    },
+    {
+      "id": "reports",
+      "lang": "en",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 281,
+        "y": 97,
+        "width": 214.484375,
+        "height": 33.59375,
+        "top": 97,
+        "right": 495.484375,
+        "bottom": 130.59375,
+        "left": 281
+      }
+    },
+    {
+      "id": "settings",
+      "lang": "en",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 301,
+        "y": 97,
+        "width": 281.1875,
+        "height": 33.59375,
+        "top": 97,
+        "right": 582.1875,
+        "bottom": 130.59375,
+        "left": 301
+      }
+    },
+    {
+      "id": "shopify-orders",
+      "lang": "en",
+      "width": 1024,
+      "title": null,
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": null
+    },
+    {
+      "id": "pickup-orders",
+      "lang": "en",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 281,
+        "y": 97,
+        "width": 360.109375,
+        "height": 33.59375,
+        "top": 97,
+        "right": 641.109375,
+        "bottom": 130.59375,
+        "left": 281
+      }
+    },
+    {
+      "id": "movements",
+      "lang": "en",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "mov-search",
+          "height": 40,
+          "font": "14px"
+        }
+      ],
+      "titleBounds": {
+        "x": 281,
+        "y": 97,
+        "width": 132,
+        "height": 33.59375,
+        "top": 97,
+        "right": 413,
+        "bottom": 130.59375,
+        "left": 281
+      }
+    },
+    {
+      "id": "transaction",
+      "lang": "en",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 281,
+        "y": 97,
+        "width": 239.234375,
+        "height": 33.59375,
+        "top": 97,
+        "right": 520.234375,
+        "bottom": 130.59375,
+        "left": 281
+      }
+    },
+    {
+      "id": "vault",
+      "lang": "en",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 281,
+        "y": 97,
+        "width": 236.109375,
+        "height": 33.59375,
+        "top": 97,
+        "right": 517.109375,
+        "bottom": 130.59375,
+        "left": 281
+      }
+    },
+    {
+      "id": "users",
+      "lang": "en",
+      "width": 1024,
+      "title": "24px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 281,
+        "y": 97,
+        "width": 171.296875,
+        "height": 33.59375,
+        "top": 97,
+        "right": 452.296875,
+        "bottom": 130.59375,
+        "left": 281
+      }
+    },
+    {
+      "id": "products",
+      "lang": "en",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "prod-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 718,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "inventory",
+      "lang": "en",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "inv-search-input",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 718,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "complaints",
+      "lang": "en",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 718,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "approvals",
+      "lang": "en",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "appr-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 706,
+        "height": 28,
+        "top": 89,
+        "right": 731,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "clients",
+      "lang": "en",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 718,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "suppliers",
+      "lang": "en",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 718,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "expenses",
+      "lang": "en",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 189.109375,
+        "height": 38,
+        "top": 89,
+        "right": 214.109375,
+        "bottom": 127,
+        "left": 25
+      }
+    },
+    {
+      "id": "reports",
+      "lang": "en",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 197.984375,
+        "height": 28,
+        "top": 89,
+        "right": 222.984375,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "settings",
+      "lang": "en",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 45,
+        "y": 89,
+        "width": 678,
+        "height": 28,
+        "top": 89,
+        "right": 723,
+        "bottom": 117,
+        "left": 45
+      }
+    },
+    {
+      "id": "shopify-orders",
+      "lang": "en",
+      "width": 768,
+      "title": null,
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": null
+    },
+    {
+      "id": "pickup-orders",
+      "lang": "en",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 718,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "movements",
+      "lang": "en",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "mov-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 329,
+        "y": 89,
+        "width": 110,
+        "height": 28,
+        "top": 89,
+        "right": 439,
+        "bottom": 117,
+        "left": 329
+      }
+    },
+    {
+      "id": "transaction",
+      "lang": "en",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 220.828125,
+        "height": 28,
+        "top": 89,
+        "right": 245.828125,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "vault",
+      "lang": "en",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 217.953125,
+        "height": 28,
+        "top": 89,
+        "right": 242.953125,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "users",
+      "lang": "en",
+      "width": 768,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 718,
+        "height": 28,
+        "top": 89,
+        "right": 743,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "products",
+      "lang": "en",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "prod-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "inventory",
+      "lang": "en",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "inv-search-input",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "complaints",
+      "lang": "en",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "approvals",
+      "lang": "en",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "appr-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 328,
+        "height": 28,
+        "top": 89,
+        "right": 353,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "clients",
+      "lang": "en",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "suppliers",
+      "lang": "en",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "expenses",
+      "lang": "en",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 189.109375,
+        "height": 38,
+        "top": 89,
+        "right": 214.109375,
+        "bottom": 127,
+        "left": 25
+      }
+    },
+    {
+      "id": "reports",
+      "lang": "en",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 197.984375,
+        "height": 28,
+        "top": 89,
+        "right": 222.984375,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "settings",
+      "lang": "en",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "shopify-orders",
+      "lang": "en",
+      "width": 390,
+      "title": null,
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": null
+    },
+    {
+      "id": "pickup-orders",
+      "lang": "en",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "movements",
+      "lang": "en",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "mov-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 140,
+        "y": 89,
+        "width": 110,
+        "height": 28,
+        "top": 89,
+        "right": 250,
+        "bottom": 117,
+        "left": 140
+      }
+    },
+    {
+      "id": "transaction",
+      "lang": "en",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 220.828125,
+        "height": 28,
+        "top": 89,
+        "right": 245.828125,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "vault",
+      "lang": "en",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 217.953125,
+        "height": 28,
+        "top": 89,
+        "right": 242.953125,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "users",
+      "lang": "en",
+      "width": 390,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 340,
+        "height": 28,
+        "top": 89,
+        "right": 365,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "products",
+      "lang": "en",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "prod-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "inventory",
+      "lang": "en",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "inv-search-input",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "complaints",
+      "lang": "en",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "approvals",
+      "lang": "en",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "appr-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 258,
+        "height": 28,
+        "top": 89,
+        "right": 283,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "clients",
+      "lang": "en",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "suppliers",
+      "lang": "en",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "expenses",
+      "lang": "en",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 189.109375,
+        "height": 38,
+        "top": 89,
+        "right": 214.109375,
+        "bottom": 127,
+        "left": 25
+      }
+    },
+    {
+      "id": "reports",
+      "lang": "en",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 197.984375,
+        "height": 28,
+        "top": 89,
+        "right": 222.984375,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "settings",
+      "lang": "en",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "shopify-orders",
+      "lang": "en",
+      "width": 320,
+      "title": null,
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": null
+    },
+    {
+      "id": "pickup-orders",
+      "lang": "en",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "movements",
+      "lang": "en",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [
+        {
+          "id": "mov-search",
+          "height": 44,
+          "font": "16px"
+        }
+      ],
+      "titleBounds": {
+        "x": 105,
+        "y": 89,
+        "width": 110,
+        "height": 28,
+        "top": 89,
+        "right": 215,
+        "bottom": 117,
+        "left": 105
+      }
+    },
+    {
+      "id": "transaction",
+      "lang": "en",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 220.828125,
+        "height": 28,
+        "top": 89,
+        "right": 245.828125,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "vault",
+      "lang": "en",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 217.953125,
+        "height": 28,
+        "top": 89,
+        "right": 242.953125,
+        "bottom": 117,
+        "left": 25
+      }
+    },
+    {
+      "id": "users",
+      "lang": "en",
+      "width": 320,
+      "title": "20px",
+      "header": 64,
+      "overflow": false,
+      "controls": [],
+      "titleBounds": {
+        "x": 25,
+        "y": 89,
+        "width": 270,
+        "height": 28,
+        "top": 89,
+        "right": 295,
+        "bottom": 117,
+        "left": 25
+      }
+    }
+  ]
+}

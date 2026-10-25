@@ -1,0 +1,25 @@
+.order-state{--state-ink:#64748b;--state-fill:#f1f5f9;display:inline-flex;align-items:center;gap:4px;max-width:100%;padding:1px 6px;border:1px solid color-mix(in srgb,var(--state-ink) 18%,transparent);border-radius:5px;background:var(--state-fill);color:var(--state-ink);font-size:10px;font-weight:500;line-height:18px;vertical-align:middle;text-align:start;white-space:nowrap;overflow:hidden;flex-shrink:1;min-width:0;box-sizing:border-box;font-family:inherit}
+.order-state[data-tone=confirmed],.order-state[data-tone=delivered]{--state-ink:#047857;--state-fill:#ecfdf5}
+.order-state[data-tone=preparing]{--state-ink:#1e40af;--state-fill:#dbeafe}
+.order-state[data-tone=ready]{--state-ink:#713f12;--state-fill:#fef3c7}
+.order-state[data-tone=shipping]{--state-ink:#5b21b6;--state-fill:#ede9fe}
+.order-state[data-tone=issue]{--state-ink:#c2410c;--state-fill:#fff7ed}
+.order-state[data-tone=cancelled]{--state-ink:#b91c1c;--state-fill:#fef2f2}
+.order-state-dot{flex:0 0 4px;width:4px;height:4px;border-radius:50%;background:currentColor}
+.order-state-label{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.order-state-carrier{flex:0 1 auto;min-width:0;padding-inline-start:5px;border-inline-start:1px solid color-mix(in srgb,currentColor 24%,transparent);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px}
+body.dark-mode .order-state{background:color-mix(in srgb,var(--state-ink) 16%,#111827);color:color-mix(in srgb,var(--state-ink) 40%,white);border-color:color-mix(in srgb,var(--state-ink) 40%,transparent)}
+.inv-order-state{display:flex;justify-content:center;padding:12px;border-bottom:1px solid var(--border,#e2e8f0)}
+.sp-card-order-state{padding:0 12px 9px}.sp-ref-line>.order-state{margin-block:3px}.sp-ref-line{flex-wrap:wrap}
+.inv-order-state-heading{margin-block-start:7px}.ds-shc-trk>.order-state{margin-block-end:7px}
+.sp-table-confirmation{width:20px;height:20px}.sp-table-confirmation.is-waiting{color:#64748b;background:#f1f5f9}.sp-table-confirmation.is-paid{color:#047857;background:#ecfdf5}body.dark-mode .sp-table-confirmation.is-waiting{color:#94a3b8;background:#243041}body.dark-mode .sp-table-confirmation.is-paid{color:#6ee7b7;background:#12382d}
+.order-state.is-compact{font-size:10px;line-height:17px;padding:1px 5px}.order-state-cell{display:inline-flex;align-items:center;gap:4px;max-width:100%;min-width:0;vertical-align:middle;white-space:nowrap}.order-state-cell .bosta-track-link,.order-state-info{flex:0 0 auto}.order-state-info{font-size:11px;color:var(--muted);cursor:help}.order-state.is-compact .order-state-label{font-weight:500}
+@media print{.order-state{box-shadow:none;print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+.order-state-info{display:inline-flex;align-items:center;justify-content:center;width:16px;height:18px;color:#a16207;background:#fffbeb;border-radius:4px;vertical-align:middle;line-height:1}.order-state-info svg{display:block}.order-state-info:focus-visible{outline:2px solid #ca8a04;outline-offset:2px}body.dark-mode .order-state-info{color:#fbbf24;background:#422006}
+
+/* Payment and type labels remain neutral in both themes. */
+html body :is(.badge-type-sales,.badge-type-purchase,.badge-type-return,.badge-type-exchange,.mov-type-inline.t-sales,.mov-type-inline.t-purchase,.mov-type-inline.t-return,.mov-type-inline.t-exchange,.badge-status-done,.badge-status-pending,.badge-status-debt,.badge-status-wait,.badge-status-cancelled),
+html body.dark-mode :is(.badge-type-sales,.badge-type-purchase,.badge-type-return,.badge-type-exchange,.mov-type-inline.t-sales,.mov-type-inline.t-purchase,.mov-type-inline.t-return,.mov-type-inline.t-exchange,.badge-status-done,.badge-status-pending,.badge-status-debt,.badge-status-wait,.badge-status-cancelled){
+  color:var(--text);background:var(--bg-alt,#f3f4f6);border:1px solid var(--border,#d1d5db);box-shadow:none;
+  display:inline-flex;align-items:center;gap:4px;border-radius:5px;font-size:10px;font-weight:500;line-height:18px;padding:1px 6px;white-space:nowrap;vertical-align:middle;
+}

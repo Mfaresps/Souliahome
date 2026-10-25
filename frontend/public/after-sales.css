@@ -33,6 +33,30 @@ dialog.as-dialog.as-compact{width:min(620px,calc(100vw - 32px))}
 @media(max-width:640px){.as-dialog .as-foot{bottom:-13px;gap:8px}.as-dialog .as-foot .btn{flex:1 1 120px;margin:0}.as-dialog .as-row{flex-wrap:wrap}.as-dialog .as-row>.as-field{flex-basis:100%}.as-case-path{padding:13px}.as-case-path-head{flex-wrap:wrap}.as-case-path-head button{width:100%}.as-invoice-timeline .as-badge{white-space:normal;overflow-wrap:anywhere}}
 
 /* Searchable Bosta locations stay inside the dialog instead of opening a native menu off screen. */
+/* Keep invoice after-sales content inset from the product card and compact at any column width. */
+.as-invoice-section{margin:16px;padding-top:14px;border-top:1px solid var(--border,#d9e0e9);min-width:0;text-align:start}
+.as-invoice-section .as-invoice-tools{margin:0;padding:0;border:0;border-radius:0;gap:12px;align-items:flex-start}
+.as-invoice-section .as-invoice-tools small{flex:1 1 240px;min-width:0;font-size:.78rem;line-height:1.7;overflow-wrap:anywhere}
+.as-invoice-buttons{display:flex;flex-wrap:wrap;gap:8px;min-width:0;max-width:100%}
+.as-invoice-section .btn,.as-invoice-timeline .btn{min-height:36px;max-width:100%;padding:7px 12px;line-height:1.5;white-space:normal;overflow-wrap:anywhere}
+.as-invoice-section>.as-banner{margin:12px 0 0}
+.as-invoice-section .as-invoice-timeline{margin:18px 0 0}
+.as-invoice-timeline h3{font-size:.86rem;margin-bottom:10px}
+.as-invoice-timeline .as-case-path{padding:14px;margin:10px 0 0;border-radius:10px}
+.as-invoice-timeline .as-case-path-head{align-items:center;flex-wrap:wrap;gap:10px}
+.as-invoice-timeline .as-case-path-head>div{flex:1 1 220px}
+.as-case-path-head strong{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:.86rem;line-height:1.6;overflow-wrap:anywhere}
+.as-case-path-head bdi{overflow-wrap:anywhere}
+.as-invoice-timeline .as-case-path-head p{margin:4px 0 0;font-size:.73rem}
+.as-invoice-timeline .as-path-status{margin:12px 0;padding:8px 10px;font-size:.76rem;line-height:1.7;overflow-wrap:anywhere}
+.as-invoice-timeline .as-path-events{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px 20px;margin:14px 0 0;padding:0}
+.as-invoice-timeline .as-path-events li{padding:0;gap:10px;min-width:0}
+.as-invoice-timeline .as-path-events li:before{display:none}
+.as-invoice-timeline .as-event-dot{width:26px;height:26px;font-size:.72rem}
+.as-invoice-timeline .as-event-content{flex:1;overflow-wrap:anywhere;font-size:.77rem}
+.as-invoice-timeline .as-event-content time{font-size:.7rem;line-height:1.7}
+@media(max-width:640px){.as-invoice-section{margin:12px;padding-top:12px}.as-invoice-buttons{width:100%}.as-invoice-buttons .btn{flex:1 1 130px}.as-invoice-timeline .as-case-path-head>div{flex-basis:100%}.as-invoice-timeline .as-case-path-head button{width:auto;flex:1 1 auto}.as-invoice-timeline .as-path-events{grid-template-columns:minmax(0,1fr);gap:0}.as-invoice-timeline .as-path-events li{padding-bottom:16px}.as-invoice-timeline .as-path-events li:last-child{padding-bottom:0}.as-invoice-timeline .as-path-events li:not(:last-child):before{display:block;inset-inline-start:12px;top:26px;bottom:0}}
+
 .as-combo-field{position:relative;min-width:0}.as-combo{position:relative;min-width:0}.as-dialog .as-combo-native{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;opacity:0;pointer-events:none;inset-inline-start:0;top:0}
 .as-dialog .as-combo input[type=search]{padding-inline:12px 34px;background:var(--surface2,#f8fafc);cursor:text}.as-combo:after{content:'⌄';position:absolute;inset-inline-end:13px;top:8px;color:var(--muted,#64748b);font-size:22px;pointer-events:none}
 .as-combo-list{position:absolute;z-index:20;inset-inline:0;top:calc(100% + 4px);max-height:min(240px,38dvh);overflow:auto;overscroll-behavior:contain;padding:5px;background:var(--surface,#fff);border:1px solid var(--border,#d9e0e9);border-radius:10px;box-shadow:0 12px 30px #0002}.as-combo-list[hidden]{display:none!important}

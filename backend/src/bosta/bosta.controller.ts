@@ -22,6 +22,7 @@ import { PermsGuard } from '../core/guards/perms.guard';
 import { RequirePerms } from '../core/decorators/perms.decorator';
 import { MarkDeliveredManualDto } from './dto/mark-delivered-manual.dto';
 import { CreatePickupDto } from './dto/create-pickup.dto';
+import { ExtendPickupDto } from './dto/extend-pickup.dto';
 
 @Controller('shipping')
 export class BostaController {
@@ -90,6 +91,18 @@ export class BostaController {
   @Post('pickups')
   async createPickup(@Body() body: CreatePickupDto, @Req() req: any) {
     return this.bostaService.createPickup(body, req.user?.username || req.user?.name || 'system');
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('pickups/:id/add-orders')
+  async extendPickup(@Param('id') id: string, @Body() body: ExtendPickupDto, @Req() req: any) {
+    return this.bostaService.extendPickup(id, body, req.user?.username || req.user?.name || 'system');
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('pickups/:id/verify-update')
+  async verifyPickupUpdate(@Param('id') id: string) {
+    return this.bostaService.verifyPickupUpdate(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

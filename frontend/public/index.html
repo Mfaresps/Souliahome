@@ -38,6 +38,8 @@
 })();
 </script>
 <script src="/config.js"></script>
+<script src="/order-status.js?v=20261025-status-only"></script>
+<link rel="stylesheet" href="/order-status.css?v=20261025-confirm-icons">
 <script>
 // Load same-origin libraries on demand; startup never downloads Excel or charts.
 (function () {
@@ -8441,14 +8443,14 @@ body.dark-mode .ent-table-card{box-shadow:0 1px 2px rgba(0,0,0,.25)}
 #inv-table tbody tr.inv-row-selected{background:rgba(var(--primary-rgb),.07)!important}
 #inv-table tbody tr.inv-row-selected td:first-child{border-right:3px solid var(--primary)}
 #mov-table{table-layout:fixed;width:100%;max-width:none}
-#mov-table tbody tr td{padding:6px clamp(4px,.45vw,10px);border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap;font-size:.8rem;line-height:1.25;min-height:42px;box-sizing:border-box}
+#mov-table tbody tr td{padding:6px clamp(4px,.45vw,10px);border-bottom:none;vertical-align:middle;white-space:nowrap;font-size:.8rem;line-height:1.25;min-height:42px;box-sizing:border-box}
 #mov-table tbody tr td:not(:first-child):not(:last-child):not([data-col="status"]):not([data-col="date"]):not([data-col="pickup"]):not([data-col="bosta"]):not([data-col="items"]){overflow:hidden;text-overflow:ellipsis}
 #mov-table td[data-col="tag"]{overflow:hidden;white-space:normal}
 #mov-table tbody tr:last-child td{border-bottom:none}
-#mov-table thead th{padding:9px clamp(4px,.45vw,10px);font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;background:var(--surface);white-space:nowrap;border-bottom:1px solid var(--border)}
+#mov-table thead th{padding:9px clamp(4px,.45vw,10px);font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;background:var(--surface);white-space:nowrap;border-bottom:none}
 /* Soft vertical column separators — subtle rhythm, not a heavy grid */
 #mov-table thead th:not(:first-child),
-#mov-table tbody td:not(:first-child){border-inline-start:1px solid rgba(var(--muted-rgb,100,116,139),.08)}
+#mov-table tbody td:not(:first-child){border-inline-start:none}
 /* Column width discipline — fixed widths for compact/status/numeric columns,
    client column flexes to absorb remaining space */
 /* 140px, not 118: the ref no longer ellipsizes (see below), so the column must fit the
@@ -8748,6 +8750,9 @@ body.dark-mode .badge-status-wait{background:#422006;color:#fcd34d;border-color:
 .mov-cancel-req-pill{display:inline-flex;align-items:center;gap:3px;font-size:.65rem;font-weight:700;background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:10px;margin-top:3px;border:1px solid #fde68a}
 body.dark-mode .mov-cancel-req-pill{background:#422006;color:#fcd34d;border-color:#78350f}
 .mov-tab-bar{display:flex;gap:6px;border-bottom:2px solid var(--border);padding-bottom:0;margin-bottom:20px}
+#mov-page-header{align-items:center;margin-bottom:14px}
+#mov-page-header .page-title{margin:0;font-size:1.25rem}
+#mov-page-header .as-launcher{margin:0}
 .mov-tab-bar .mov-main-tab{display:flex;align-items:center;gap:7px;padding:10px 18px;font-size:.85rem;font-weight:600;border:none;background:none;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;border-radius:0}
 .mov-tab-bar .mov-main-tab:hover{color:var(--text);background:var(--primary-pale)}
 .mov-tab-bar .mov-main-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
@@ -11399,7 +11404,7 @@ input[type="date"].sdp-input.date-filter-icon:hover::-webkit-calendar-picker-ind
 .mov-type-dd.open .fx-chevron{transform:rotate(180deg)}
 .mov-type-dd-trigger .fx-btn-count{background:var(--primary-pale);color:var(--accent);border-radius:999px;padding:1px 7px;font-size:.68rem;min-width:auto;height:auto}
 .mov-command-tabs.mov-type-dd-panel{
-  display:none;position:absolute;top:calc(100% + 6px);right:0;
+  display:none;position:absolute;top:calc(100% + 6px);inset-inline-start:0;
   background:var(--bg);border:1px solid var(--border);border-radius:10px;
   box-shadow:0 4px 14px rgba(0,0,0,.1);padding:6px;min-width:170px;
   flex-direction:column;gap:2px;z-index:60;overflow:visible;
@@ -16504,10 +16509,37 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 @media(max-width:540px){.spdep-vault-options{grid-template-columns:repeat(2,minmax(0,1fr))}.spdep-vault-option{min-height:80px}.sp-pk-cust-top{gap:8px}.sp-pk-cust-top .sp-pk-av{width:34px;height:34px}.spdep-money>b{font-size:1.16rem}.spdep-preview-wrap{flex-basis:72px}.spdep-thumb{width:72px;height:90px}.spdep-receipt-main{gap:9px}}
 @media(prefers-reduced-motion:reduce){.spdep-scanning-icon,.is-scanning .spdep-scan-line{animation:none}}
 
+
+/* Transactions: compact identity, carrier status, and a quiet Pick-Up line. */
+#mov-grid-list .mov-compact-card,#mov-mobile-list .mov-compact-card{padding:14px!important;min-width:0;cursor:pointer}
+.mov-compact-header{display:flex;align-items:flex-start;gap:10px;justify-content:space-between}
+.mov-compact-identity{flex:1;min-width:0}
+.mov-compact-title{display:flex;align-items:baseline;gap:8px;min-width:0}
+.mov-compact-ref{font-size:.85rem;font-weight:750;color:var(--text);text-decoration:none;flex-shrink:0;max-width:48%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mov-compact-name{font-size:.78rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mov-compact-date{font-size:.67rem;color:var(--muted);margin-top:3px;line-height:1.5}
+.mov-compact-date .mov-date-shopify{display:flex;flex-direction:row;flex-wrap:wrap;gap:4px;font-size:inherit;line-height:inherit}
+.mov-compact-date .ds-time{font-size:inherit}
+.mov-compact-card .dd-toggle{width:36px;height:36px;font-size:1.3rem}
+.mov-compact-shipping{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-top:10px;padding:9px 10px;border-radius:9px;background:var(--surface2)}
+.mov-compact-carrier{font-size:.8rem;font-weight:700;overflow-wrap:anywhere;min-width:0}
+.mov-compact-shipping-status{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-inline-start:auto;min-width:0;max-width:100%}
+.mov-compact-shipping-status .bosta-badge{font-size:.72rem;white-space:normal;overflow-wrap:anywhere}
+.mov-compact-shipping-empty{font-size:.7rem;color:var(--muted)}
+.mov-compact-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;min-height:22px}
+.mov-compact-pickup{display:inline-flex;align-items:center;gap:7px;font-size:.65rem;color:var(--muted)}
+.mov-compact-pickup .pu-badge{font-size:.65rem;padding:2px 7px;line-height:1.4}
+.mov-compact-menu{width:272px;max-width:calc(100vw - 40px);max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior:contain}
+.mov-compact-summary{padding:6px 8px 8px}
+.mov-compact-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:.72rem;color:var(--muted)}
+.mov-compact-amounts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0;font-size:.65rem;color:var(--muted)}
+.mov-compact-amounts strong{display:block;font-size:.8rem;color:var(--text);margin-top:3px;overflow-wrap:anywhere}
+.mov-compact-menu .dd-item{white-space:normal}
+
 </style>
 <link rel="stylesheet" href="/navigation-shell.css?v=20261024-permission-dock">
 <link rel="stylesheet" href="/employee-home.css?v=20261024-task-tabs">
-<link rel="stylesheet" href="/admin-team-home.css?v=20261024-active-staff">
+<link rel="stylesheet" href="/admin-team-home.css?v=20261024-period">
 <link rel="stylesheet" href="/deposit-history.css?v=20261019">
 <link rel="stylesheet" href="/shopify-edit-approvals.css?v=20261024-review-images">
 <link rel="stylesheet" href="/pickup-daily-shipping.css?v=20261024">
@@ -16523,20 +16555,20 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/branding.css?v=20261020-green-contour">
 <link rel="stylesheet" href="/login-space.css?v=20261020-1">
 <link rel="stylesheet" href="/shopify-tabs.css?v=20261019-1">
-<link rel="stylesheet" href="/followup-trail.css?v=20261022-composer">
+<link rel="stylesheet" href="/followup-trail.css?v=20261025-cancelled-outcome">
 <link rel="stylesheet" href="/shopify-order-peek.css?v=20261022-history">
 <link rel="stylesheet" href="/shopify-cards.css?v=20261022-compact-confirmed">
 <link rel="stylesheet" href="/shopify-responsive.css?v=20261022-pagination">
 <link rel="stylesheet" href="/products-mobile.css?v=20261022">
 <link rel="stylesheet" href="/deposit-entry-compact.css?v=20261022">
 <link rel="stylesheet" href="/inventory-responsive.css?v=20261020-1">
-<link rel="stylesheet" href="/pickup-workspace.css?v=20261024-prep-system-green">
+<link rel="stylesheet" href="/pickup-workspace.css?v=20261025-stage-colors">
 <link rel="stylesheet" href="/awb-preview.css?v=20261024">
 <link rel="stylesheet" href="/pickup-ready-return.css?v=20261024-new-group">
 <link rel="stylesheet" href="/picking-scan.css?v=20261020-always-ready">
 <link rel="stylesheet" href="/interface-motion.css?v=20261020-1">
 <link rel="stylesheet" href="/approvals-compact.css?v=20261022-footer">
-<link rel="stylesheet" href="/notification-feed.css?v=20261022-page-1">
+<link rel="stylesheet" href="/notification-feed.css?v=20261025-stable-1">
 <link rel="stylesheet" href="/order-audit-financials.css?v=20261020-1">
 <link rel="stylesheet" href="/order-audit-marketing.css?v=20261021-5">
 <link rel="stylesheet" href="/order-audit-insights.css?v=20261021-5">
@@ -17868,9 +17900,6 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
   <div class="inv-page-header">
     <div>
       <h2 class="page-title" style="margin-bottom:2px;display:flex;align-items:center;gap:10px">
-        <span class="inv-title-icon">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>
-        </span>
         <span data-i18n="inventory">المخزن</span>
       </h2>
       <p class="page-subtitle" style="margin:0" data-i18n="inventorySubtitle">مراقبة الأرصدة وحالة المخزون لكل الأصناف</p>
@@ -17992,7 +18021,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
   <div id="inv-panel-list">
     <!-- ── Desktop Table ── -->
     <div class="table-card">
-      <div class="overflow-x"><table id="inv-table"><thead><tr><th style="width:60px" data-i18n="colImage">صورة</th><th data-i18n="colCode">الكود</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice" class="inv-buyprice-col">سعر الشراء</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colPurchases" data-i18n-title="colPurchasesTip" title="من المورد فقط">المشتريات</th><th data-i18n="colReturnToStock" data-i18n-title="colReturnToStockTip" title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th data-i18n="colSales">المبيعات</th><th data-i18n="colCurrentBal">الرصيد الحالي</th><th data-i18n="status">الحالة</th></tr></thead><tbody id="inv-tbody"></tbody></table></div>
+      <div class="overflow-x"><table id="inv-table"><thead><tr><th style="width:60px" data-i18n="colImage">صورة</th><th data-i18n="colCode">SKU</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice" class="inv-buyprice-col">سعر الشراء</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colPurchases" data-i18n-title="colPurchasesTip" title="من المورد فقط">المشتريات</th><th data-i18n="colReturnToStock" data-i18n-title="colReturnToStockTip" title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th data-i18n="colSales">المبيعات</th><th data-i18n="colCurrentBal">الرصيد الحالي</th><th data-i18n="invActivationStatus">Product status</th><th data-i18n="invStockStatus">Stock status</th></tr></thead><tbody id="inv-tbody"></tbody></table></div>
     </div>
 
     <!-- ── Mobile Card List ── -->
@@ -18011,7 +18040,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
             <th data-i18n="colTxNo">رقم المعاملة</th>
             <th data-i18n="colDateTime">التاريخ والوقت</th>
             <th data-i18n="product">الصنف</th>
-            <th data-i18n="colCode">الكود</th>
+            <th data-i18n="colCode">SKU</th>
             <th data-i18n="colMovementType">نوع الحركة</th><th data-i18n="warehouseLabel">المخزن</th>
             <th data-i18n="colChange">التغيير</th>
             <th data-i18n="colBalanceBefore">الرصيد قبل</th>
@@ -18031,6 +18060,10 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 
 <!-- Movements -->
 <div class="page" id="page-movements">
+
+<div class="page-header" id="mov-page-header">
+  <h2 class="page-title" data-i18n="movements">سجل المعاملات</h2>
+</div>
 
 <!-- Main tab bar -->
 <div class="mov-tab-bar">
@@ -18645,7 +18678,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
   <div class="table-card"><div class="overflow-x">
     <table id="spec-draft-table">
       <thead><tr>
-        <th data-i18n="date">التاريخ</th><th data-i18n="colProductName">اسم المنتج</th><th data-i18n="colCode">الكود</th><th data-i18n="colSupplier">المورد</th>
+        <th data-i18n="date">التاريخ</th><th data-i18n="colProductName">اسم المنتج</th><th data-i18n="colCode">SKU</th><th data-i18n="colSupplier">المورد</th>
         <th data-i18n="colMaterial">الخامة</th><th data-i18n="colSize">المقاس</th><th data-i18n="qty">الكمية</th><th data-i18n="colDelivery">التسليم</th><th data-i18n="colCreatedBy">أنشأه</th><th data-i18n="colActions">إجراءات</th>
       </tr></thead>
       <tbody></tbody>
@@ -18659,7 +18692,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <!-- List view -->
 <div id="prod-list-view" class="prod-list-view" style="display:none"></div>
 <!-- Table view (default — matches the Inventory page) -->
-<div class="table-card prod-table-card"><div class="overflow-x"><table id="prod-table"><thead><tr><th><input type="checkbox" id="prod-select-all" onchange="toggleAllProducts(this.checked)"></th><th data-i18n="colImage">صورة</th><th data-i18n="colCode">الكود</th><th data-i18n="colName">الاسم</th><th data-i18n="colSupplier">المورد</th><th data-i18n="colCategory">التصنيف</th><th data-i18n="colCollection">المجموعة</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice">سعر الشراء</th><th data-i18n="minStock">الحد الأدنى</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colActions">إجراءات</th></tr></thead><tbody></tbody></table></div></div>
+<div class="table-card prod-table-card"><div class="overflow-x"><table id="prod-table"><thead><tr><th><input type="checkbox" id="prod-select-all" onchange="toggleAllProducts(this.checked)"></th><th data-i18n="colImage">صورة</th><th data-i18n="colCode">SKU</th><th data-i18n="colName">الاسم</th><th data-i18n="colSupplier">المورد</th><th data-i18n="colCategory">التصنيف</th><th data-i18n="colCollection">المجموعة</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice">سعر الشراء</th><th data-i18n="minStock">الحد الأدنى</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colActions">إجراءات</th></tr></thead><tbody></tbody></table></div></div>
 <!-- Mobile cards list (legacy) -->
 <div id="prod-mobile-list" class="prod-mobile-list" style="display:none"></div>
 <div id="prod-pagination" style="margin-top:16px"></div>
@@ -18724,7 +18757,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     <thead>
       <tr>
         <th class="cols-col-name" data-i18n="colCollection">المجموعة</th>
-        <th class="cols-col-code" data-i18n="colCode">الكود</th>
+        <th class="cols-col-code" data-i18n="colCode">SKU</th>
         <th class="cols-col-type" data-i18n="type">النوع</th>
         <th class="cols-col-sup" data-i18n="suppliers">الموردون</th>
         <th class="cols-col-status" data-i18n="status">الحالة</th>
@@ -18766,7 +18799,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       <table class="colp-table">
         <thead>
           <tr>
-            <th data-i18n="colCode">الكود</th>
+            <th data-i18n="colCode">SKU</th>
             <th data-i18n="colName">الاسم</th>
             <th data-i18n="colSellPrice">سعر البيع</th>
             <th data-i18n="colStock">المخزون</th>
@@ -19966,7 +19999,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
         <thead>
           <tr style="background:var(--surface2);border-bottom:1px solid var(--border)">
             <th style="padding:8px 10px;text-align:right">#</th>
-            <th style="padding:8px 10px;text-align:right">الكود</th>
+            <th style="padding:8px 10px;text-align:right">SKU</th>
             <th style="padding:8px 10px;text-align:right">الوصف</th>
             <th style="padding:8px 10px;text-align:center">النوع</th>
             <th style="padding:8px 10px;text-align:center">مرات الاستخدام</th>
@@ -20267,7 +20300,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <div class="page" id="page-pickup-orders">
 
   <!-- Header -->
-  <div class="flex-between pu-page-header" style="flex-wrap:wrap;gap:10px;margin-bottom:16px">
+  <div class="page-header pu-page-header">
     <div>
       <h2 class="page-title" style="margin-bottom:2px">Pick-Up Orders</h2>
       <p class="page-subtitle" style="margin:0" data-i18n="puSubtitle">إدارة وتتبع طلبات الاستلام · اسحب البطاقات لتغيير الحالة</p>
@@ -23516,11 +23549,11 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 
 <script src="/deposit-history.js?v=20261019"></script>
-<script src="/shopify-kpis.js?v=8"></script>
+<script src="/shopify-kpis.js?v=20261025-order-state"></script>
 <link rel="stylesheet" href="/invoice-unit-identities.css?v=20261020-returns2">
 <script src="/invoice-unit-identities.js?v=20261022-preview-identity"></script>
 <link rel="stylesheet" href="/after-sales.css?v=20261024-operation-icons-10">
-<script src="/after-sales.js?v=20261024-operation-icons-9"></script>
+<script src="/after-sales.js?v=20261025-approval-actions"></script>
 <link rel="stylesheet" href="/customer-piece-return.css?v=20261020-1">
 <script src="/customer-piece-return.js?v=20261020-1"></script>
 <script src="/failed-delivery-identities.js?v=20261024-1"></script>
@@ -23918,7 +23951,10 @@ function toggleActionMenu(e) {
   requestAnimationFrame(() => portal.classList.add('show'));
 }
 document.addEventListener('click', closeAllMenus);
-window.addEventListener('scroll', closeAllMenus, true);
+window.addEventListener('scroll', e => {
+  if (e.target instanceof Element && e.target.closest('.mov-compact-menu')) return;
+  closeAllMenus();
+}, true);
 window.addEventListener('resize', closeAllMenus);
 
 let currentUser = null;
@@ -23939,8 +23975,8 @@ let currentPage = 'dashboard';
 let movFilter = 'all';
 let movStatusFilter = '';
 const _BOSTA_STATUS_LABELS = {
-  CREATED: 'تم الإنشاء', PICKED_UP: 'تم الاستلام', IN_TRANSIT: 'في الطريق', OUT_FOR_DELIVERY: 'خارج للتسليم',
-  DELIVERED: 'تم التسليم', RETURNED: 'مُرتجع', FAILED_ATTEMPT: 'محاولة فاشلة', DELIVERY_FAILED: 'فشل التسليم',
+  CREATED: 'تم الإنشاء', PICKED_UP: 'تم الاستلام بواسطة شركة الشحن', IN_TRANSIT: 'في الطريق', OUT_FOR_DELIVERY: 'خارج للتسليم',
+  DELIVERED: 'تم التسليم', RETURNED: 'مرتجع', FAILED_ATTEMPT: 'محاولة تسليم فاشلة', DELIVERY_FAILED: 'فشل التسليم',
   CANCELLED: 'ملغي', DELETED: 'محذوف من Bosta', VALIDATION_ERROR: 'خطأ في البيانات',
 };
 const _BOSTA_STATUS_LABELS_EN = {
@@ -23951,10 +23987,11 @@ const _BOSTA_STATUS_LABELS_EN = {
 /* Bosta status codes are API values; only the human-facing label is localized. Falls back to the
    raw code so an unknown status Bosta adds later still renders something meaningful. */
 function _bostaStatusLabel(code) {
-  const k = String(code || '').trim();
-  if (!k) return '';
+  const key = String(code || '').trim().toUpperCase();
+  if (!key) return '';
+  if (key !== 'DELETED' && key !== 'VALIDATION_ERROR') return SouliaOrderStatus.text(key === 'CREATED' ? 'Ready' : key, currentLang);
   const map = currentLang === 'en' ? _BOSTA_STATUS_LABELS_EN : _BOSTA_STATUS_LABELS;
-  return map[k] || _BOSTA_STATUS_LABELS[k] || k;
+  return map[key] || key;
 }
 let movViewMode = 'list'; // 'list' | 'grid'
 let movTagFilter = '';
@@ -24430,7 +24467,7 @@ function _sppToggleHtml(idp, opts) {
         <input type="checkbox" ${on ? 'checked' : ''} onchange="_sppToggle('${esc(idp)}',this)">
         <span class="spp-box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
         <span class="spp-txt">
-          <span class="spp-title">${esc(t(o.bulk ? 'sppLabelBulk' : 'sppLabel'))} <span class="pu-badge pu-badge-prep spp-badge">Preparing</span></span>
+          <span class="spp-title">${esc(t(o.bulk ? 'sppLabelBulk' : 'sppLabel'))} ${_orderStateBadge({pickupStatus:"Preparing"})}</span>
           <span class="spp-sub">${esc(t(o.bulk ? 'sppHintBulk' : 'sppHint'))}</span>
         </span>
       </label>
@@ -26137,7 +26174,7 @@ const TRANSLATIONS = {
   langPolicySaveFailed:{ar:'تعذّر حفظ سياسة اللغة.',en:'Could not save the language policy.'},
   headerLangTitle:{ar:'تغيير اللغة',en:'Change language'},
   docTitle:{ar:'Soulia - Business Management',en:'Soulia - Business Management'},
-  colCode:{ar:'الكود',en:'Code'},colName:{ar:'الاسم',en:'Name'},colSupplier:{ar:'المورد',en:'Supplier'},
+  colCode:{ar:'SKU',en:'SKU'},colName:{ar:'الاسم',en:'Name'},colSupplier:{ar:'المورد',en:'Supplier'},
   colSellPrice:{ar:'سعر البيع',en:'Sale price'},colBuyPrice:{ar:'سعر الشراء',en:'Purchase price'},
   colOpeningBal:{ar:'الرصيد الافتتاحي',en:'Opening balance'},colPurchases:{ar:'المشتريات',en:'Purchases'},
   colPurchasesTip:{ar:'من المورد فقط',en:'From supplier only'},colReturnToStock:{ar:'إرجاع للمخزن',en:'Return to stock'},
@@ -26695,7 +26732,7 @@ const TRANSLATIONS = {
   txLeaveWithoutSaving:{ar:'مغادرة بدون حفظ',en:'Leave Without Saving'},
   txClearAndLeave:{ar:'مسح وخروج',en:'Clear & Leave'},
   txPickerTitle:{ar:'اختر صنف',en:'Select Item'},
-  txPickerSearchPlaceholder:{ar:'ابحث عن صنف بالاسم أو الكود أو الباركود',en:'Search for an item by name, code, or barcode'},
+  txPickerSearchPlaceholder:{ar:'ابحث عن صنف بالاسم أو SKU أو الباركود',en:'Search for an item by name, SKU, or barcode'},
   txPickerAll:{ar:'الكل',en:'All'},
   txPickerAvailOnly:{ar:'متوفر فقط',en:'Available only'},
   txPickerLowOnly:{ar:'منخفض',en:'Low stock'},
@@ -27113,18 +27150,18 @@ const TRANSLATIONS = {
   requestNotFound:{ar:'الطلب غير موجود',en:'Request not found'},
   returnExchangeRequestDetailsTitle:{ar:'تفاصيل طلب الاسترجاع / الاستبدال',en:'Return / exchange request details'},
   // Movements — Bosta & pickup status maps
-  pickupStatusPending:{ar:'قيد الانتظار',en:'Pending'},
+  pickupStatusPending:{ar:'مسجّل · بانتظار التجهيز',en:'Registered · Awaiting Prep'},
   pickupStatusPreparing:{ar:'قيد التجهيز',en:'Preparing'},
   pickupStatusReady:{ar:'جاهز للشحن',en:'Ready to Ship'},
   pickupStatusShipped:{ar:'تم الشحن',en:'Shipped'},
   pickupStatusDelivered:{ar:'تم التسليم',en:'Delivered'},
-  bostaStatusCreated:{ar:'تم الإنشاء',en:'Created'},
-  bostaStatusPickedUp:{ar:'تم الاستلام',en:'Picked Up'},
+  bostaStatusCreated:{ar:'جاهز للشحن',en:'Ready to Ship'},
+  bostaStatusPickedUp:{ar:'تم الاستلام بواسطة شركة الشحن',en:'Picked Up'},
   bostaStatusInTransit:{ar:'في الطريق',en:'In Transit'},
   bostaStatusOutForDelivery:{ar:'خارج للتسليم',en:'Out for Delivery'},
   bostaStatusDelivered:{ar:'تم التسليم',en:'Delivered'},
-  bostaStatusReturned:{ar:'مُرتجع',en:'Returned'},
-  bostaStatusFailedAttempt:{ar:'محاولة فاشلة',en:'Failed Attempt'},
+  bostaStatusReturned:{ar:'مرتجع',en:'Returned'},
+  bostaStatusFailedAttempt:{ar:'محاولة تسليم فاشلة',en:'Failed Attempt'},
   bostaStatusDeliveryFailed:{ar:'فشل التسليم',en:'Delivery Failed'},
   bostaStatusCancelled:{ar:'ملغي',en:'Cancelled'},
   bostaStatusDeleted:{ar:'محذوف من Bosta',en:'Deleted from Bosta'},
@@ -27537,7 +27574,7 @@ const TRANSLATIONS = {
   fdTlPrevResultFallback:{ar:'أُعيدت',en:'came back'},
   fdTlPrevResultDesc:{ar:'خرجت الشحنة إلى العميل وعادت. هذه بوليصتها ونتيجتها.',en:'The shipment went out and came back. This is its waybill and outcome.'},
   fdTlReshipSentDesc:{ar:'أُرسل إلى شركة الشحن ببوليصة جديدة.',en:'Sent to the courier on a new waybill.'},
-  fdTlReshipPendingDesc:{ar:'الطلب جاهز لإعادة الشحن — لم يُرسل إلى شركة الشحن بعد.',en:'Ready to ship again — not sent to the courier yet, press "Send to Bosta".'},
+  fdTlReshipPendingDesc:{ar:'الطلب جاهز لإعادة الشحن — لم يُرسل إلى شركة الشحن بعد.',en:'Ready to Ship again — not sent to the courier yet, press "Send to Bosta".'},
   fdTlAwaitingWaybill:{ar:'في انتظار بوليصة جديدة',en:'awaiting a new waybill'},
   fdPrevShipment:{ar:'الشحنة السابقة',en:'Previous shipment'},
   fdCurrentShipment:{ar:'الشحنة الحالية',en:'Current shipment'},
@@ -27587,7 +27624,7 @@ const TRANSLATIONS = {
   fdErrNoReason:{ar:'اختر سبب فشل التوصيل',en:'Pick why the delivery failed'},
   fdToastClosed:{ar:'تم إنهاء المعالجة — أُعيدت البضاعة إلى المخزون',en:'Closed — the stock is back'},
   fdToastAwaiting:{ar:'تم التسجيل — الطلب في انتظار وصول المرتجع',en:'Recorded — waiting for the return to arrive'},
-  fdToastReship:{ar:'الطلب جاهز لإعادة الشحن — أرسله إلى شركة الشحن',en:'Ready to ship again — send it to the courier'},
+  fdToastReship:{ar:'الطلب جاهز لإعادة الشحن — أرسله إلى شركة الشحن',en:'Ready to Ship again — send it to the courier'},
   fdReshipTitle:{ar:'إعادة الشحن',en:'Ship again'},
   fdReshipIntro:{ar:'الطلب نفسه برقمه نفسه — بوليصة شحن جديدة، وتُحفظ المحاولة السابقة في سجل المحاولات',en:'Same order, same number — a new waybill, with the failed attempt kept in the attempts log'},
   fdReshipCost:{ar:'تكلفة الشحن الجديدة',en:'New shipping cost'},
@@ -27659,7 +27696,7 @@ const TRANSLATIONS = {
   ivZoneGov:{ar:'المحافظات',en:'Governorates'},
   ivReturnShipCo:{ar:'شركة شحن المرتجع',en:'Return shipping company'},
   ivReturnTracking:{ar:'رقم تتبع المرتجع',en:'Return tracking number'},
-  ivPickupStatus:{ar:'حالة الالتقاط',en:'Pickup status'},
+  ivPickupStatus:{ar:'حالة الطلب',en:'Order status'},
   ivTrackingNumber:{ar:'رقم التتبع',en:'Tracking number'},
   ivCopyTrackingTitle:{ar:'انقر لنسخ رقم التتبع',en:'Click to copy tracking number'},
   ivTrackingCopied:{ar:'تم نسخ رقم التتبع',en:'Tracking number copied'},
@@ -27707,14 +27744,14 @@ const TRANSLATIONS = {
   cmtToolProduct:{ar:'منتج',en:'Product'},
   cmtMentionProduct:{ar:'منشن منتج من المخزن',en:'Mention a product from stock'},
   cmtSuggestLabel:{ar:'تعليقات مقترحة',en:'Suggested comments'},
-  cmtProductSearch:{ar:'ابحث باسم المنتج أو الكود…',en:'Search product name or code…'},
+  cmtProductSearch:{ar:'ابحث باسم المنتج أو SKU…',en:'Search product name or SKU…'},
   cmtProductNone:{ar:'لا يوجد منتج بهذا الاسم',en:'No matching product'},
   cmtProductNoStock:{ar:'المخزن لم يُحمَّل بعد',en:'Stock is not loaded yet'},
   cmtStockAvail:{ar:'متاح {n}',en:'{n} in stock'},
   cmtStockOut:{ar:'نفد',en:'Out of stock'},
   cmtOpenProduct:{ar:'فتح المنتج في المخزن',en:'Open in stock'},
   cmtProductMissing:{ar:'المنتج غير موجود في المخزن',en:'Product not found in stock'},
-  gsStPending:{ar:'قيد الانتظار',en:'Pending'},
+  gsStPending:{ar:'مسجّل · بانتظار التجهيز',en:'Registered · Awaiting Prep'},
   gsStPreparing:{ar:'قيد التجهيز',en:'Preparing'},
   gsStReady:{ar:'جاهز للشحن',en:'Ready to Ship'},
   gsStShipped:{ar:'تم الشحن',en:'Shipped'},
@@ -27753,6 +27790,10 @@ const TRANSLATIONS = {
   bsfPrepared:{ar:'تم تحضير الطلب #{ref} بنجاح',en:'Order #{ref} prepared successfully'},
   bsfAskQ:{ar:'إرسال الطلب إلى بوسطة الآن؟',en:'Send this order to Bosta now?'},
   bsfSend:{ar:'إرسال إلى بوسطة',en:'Send to Bosta'},
+  bsfCase:{ar:'ملف الاستبدال',en:'Exchange case'},
+  bsfCaseShipping:{ar:'شحنة الاستبدال تسلّم البديل وتستلم القديم. أكمل الشحن من ملف الاستبدال.',en:'An exchange shipment delivers the replacement and collects the original. Continue from the exchange case.'},
+  bsfCaseUnavailable:{ar:'تعذر فتح ملف الاستبدال. حدّث الصفحة وأعد المحاولة.',en:'Could not open the exchange case. Refresh and retry.'},
+  bsfBulkCases:{ar:'تم استبعاد {n} طلب مرتبط؛ الشحن من ملف الاستبدال.',en:'Skipped {n} linked order(s); ship from the exchange case.'},
   bsfLater:{ar:'لاحقاً',en:'Later'},
   bsfSending:{ar:'جارٍ الإرسال…',en:'Sending…'},
   bsfSent:{ar:'تم الإرسال إلى بوسطة بنجاح',en:'Sent to Bosta'},
@@ -28011,6 +28052,9 @@ const TRANSLATIONS = {
   optChoose:{ar:'— اختر —',en:'— Choose —'},
   moreOptions:{ar:'خيارات أخرى',en:'More options'},
   inactiveBadge:{ar:'غير مفعّل',en:'Inactive'},
+  invActive:{ar:'مفعّل',en:'Active'},
+  invActivationStatus:{ar:'حالة التفعيل',en:'Product status'},
+  invStockStatus:{ar:'حالة المخزون',en:'Stock status'},
   statusActive:{ar:'نشط',en:'Active'},
   statusInactive:{ar:'غير نشط',en:'Inactive'},
   allStatuses:{ar:'كل الحالات',en:'All statuses'},
@@ -28105,8 +28149,8 @@ const TRANSLATIONS = {
 
   // ── Inventory (المخزن) ──
   invMovementLog:{ar:'سجل حركة المخزون',en:'Stock Movement Log'},
-  invSearchPlaceholder:{ar:'بحث بالاسم أو الكود...',en:'Search by name or code...'},
-  invLogSearchPlaceholder:{ar:'بحث بالاسم أو الكود أو رقم المرجع...',en:'Search by name, code or reference no...'},
+  invSearchPlaceholder:{ar:'بحث بالاسم أو SKU...',en:'Search by name or SKU...'},
+  invLogSearchPlaceholder:{ar:'بحث بالاسم أو SKU أو رقم المرجع...',en:'Search by name, SKU or reference no...'},
   invManualAdjust:{ar:'تسوية مخزون يدوية',en:'Manual stock adjustment'},
   invLogEmpty:{ar:'لا توجد حركات مسجلة',en:'No movements recorded'},
   kpiFieldDetails:{ar:'تفاصيل الحقل',en:'Field details'},
@@ -28121,7 +28165,7 @@ const TRANSLATIONS = {
   balanceLabel:{ar:'الرصيد:',en:'Balance:'},
   viewLinkedTransaction:{ar:'عرض المعاملة المرتبطة',en:'View linked transaction'},
   typeStockAdjustment:{ar:'تسوية مخزون',en:'Stock adjustment'},
-  invAdjSearchPlaceholder:{ar:'ابحث بالاسم أو الكود...',en:'Search by name or code...'},
+  invAdjSearchPlaceholder:{ar:'ابحث بالاسم أو SKU...',en:'Search by name or SKU...'},
   invAdjNoMatch:{ar:'لا يوجد صنف مطابق',en:'No matching product'},
   invAdjSelected:{ar:'المختار:',en:'Selected:'},
   invAdjMoreResults:{ar:'يُعرض {shown} من {total} — واصل الكتابة لتضييق النتائج',en:'Showing {shown} of {total} — keep typing to narrow'},
@@ -28159,7 +28203,7 @@ const TRANSLATIONS = {
   prodTabSpecDrafts:{ar:'نماذج التصنيع',en:'Tech Packs'},
   specDraftSearchPh:{ar:'بحث بالاسم أو المورد...',en:'Search by name or supplier...'},
   specDraftNewBtn:{ar:'+ نموذج تصنيع جديد',en:'+ New Tech Pack'},
-  prodSearchPh:{ar:'بحث بالاسم، الكود أو المورد...',en:'Search by name, code or supplier...'},
+  prodSearchPh:{ar:'بحث بالاسم، SKU أو المورد...',en:'Search by name, SKU or supplier...'},
   prodQuickCatTitle:{ar:'تصفية سريعة حسب التصنيف',en:'Quick filter by category'},
   prodQuickColTitle:{ar:'تصفية سريعة حسب المجموعة',en:'Quick filter by collection'},
   prodAllCategories:{ar:'كل التصنيفات',en:'All categories'},
@@ -28193,9 +28237,9 @@ const TRANSLATIONS = {
   /* التصنيف والمجموعة اختياريان — بلا نجمة، تماماً كحقل المورد. */
   pmCategoryLabel:{ar:'التصنيف',en:'Category'},
   pmCollectionLabel:{ar:'المجموعة',en:'Collection'},
-  pmNameAndCode:{ar:'الاسم والكود',en:'Name & code'},
+  pmNameAndCode:{ar:'الاسم وSKU',en:'Name & SKU'},
   pmProductNameReq:{ar:'اسم الصنف *',en:'Product name *'},
-  pmCodeSku:{ar:'الكود / SKU',en:'Code / SKU'},
+  pmCodeSku:{ar:'SKU',en:'SKU'},
   pmSkuImmutable:{ar:'SKU ثابت بعد إنشاء الصنف',en:'SKU is fixed after product creation'},
   pmSkuGeneratedOnSave:{ar:'سيُخصص SKU فريد عند الحفظ',en:'A unique SKU will be assigned when saved'},
   pmSkuPermission:{ar:'تحتاج صلاحية إدارة SKU لإنشاء أو استيراد أو حذف الأصناف',en:'SKU management permission is required to create, import or delete products'},
@@ -28211,7 +28255,7 @@ const TRANSLATIONS = {
   pmFeatures:{ar:'المميزات',en:'Features'},
   pmDuplicate:{ar:'نسخ الصنف',en:'Duplicate'},
   pmDuplicateTitle:{ar:'نسخ صنف',en:'Duplicate product'},
-  pmDuplicateBanner:{ar:'نسخة من «{name}» — الكود والرصيد الافتتاحي لا يُنسخان. راجع البيانات ثم اضغط إضافة.',en:'Copy of “{name}” — code and opening balance are not copied. Review, then press Add.'},
+  pmDuplicateBanner:{ar:'نسخة من «{name}» — SKU والرصيد الافتتاحي لا يُنسخان. راجع البيانات ثم اضغط إضافة.',en:'Copy of “{name}” — SKU and opening balance are not copied. Review, then press Add.'},
   pmCopySuffix:{ar:'نسخة',en:'copy'},
   pmProductNotFound:{ar:'الصنف غير موجود',en:'Product not found'},
   modalLockedHint:{ar:'استخدم زر «إلغاء» أو «حفظ» لإغلاق النافذة',en:'Use Cancel or Save to close this window'},
@@ -28232,8 +28276,8 @@ const TRANSLATIONS = {
   errEnterImageUrl:{ar:'أدخل رابط الصورة',en:'Enter the image URL'},
   errUrlMustStartHttp:{ar:'الرابط يجب أن يبدأ بـ http',en:'The link must start with http'},
   errImageAlreadyAdded:{ar:'هذه الصورة مضافة بالفعل',en:'This image is already added'},
-  errCodeInUse:{ar:'الكود "{code}" مستخدم بالفعل للصنف: {name}',en:'Code "{code}" is already used by product: {name}'},
-  errNameInUse:{ar:'الاسم "{name}" مستخدم بالفعل (كود: {code})',en:'Name "{name}" is already used (code: {code})'},
+  errCodeInUse:{ar:'SKU "{code}" مستخدم بالفعل للصنف: {name}',en:'SKU "{code}" is already used by product: {name}'},
+  errNameInUse:{ar:'الاسم "{name}" مستخدم بالفعل (SKU: {code})',en:'Name "{name}" is already used (SKU: {code})'},
   errOpeningBalInvalid:{ar:'الرصيد الافتتاحي يجب أن يكون رقماً صحيحاً ≥ 0',en:'Opening balance must be a whole number ≥ 0'},
   errProductNameRequired:{ar:'اسم الصنف مطلوب',en:'Product name is required'},
   errBadProductId:{ar:'حدث خطأ في تحديد الصنف — أعد فتح الصفحة',en:'Product identification error — reopen the page'},
@@ -28242,7 +28286,7 @@ const TRANSLATIONS = {
   errProductNotFound:{ar:'الصنف غير موجود',en:'Product not found'},
   editRequestSent:{ar:'تم إرسال طلب التعديل — في انتظار موافقة المدير ✅',en:'Edit request sent — awaiting manager approval ✅'},
   errPendingEditRequest:{ar:'يوجد طلب تعديل معلق بالفعل لهذا الصنف',en:'There is already a pending edit request for this product'},
-  errCodeTakenPickAnother:{ar:'الكود مستخدم بالفعل — اختر كوداً مختلفاً',en:'Code already in use — choose a different one'},
+  errCodeTakenPickAnother:{ar:'SKU مستخدم بالفعل — اختر SKU مختلفاً',en:'SKU already in use — choose a different one'},
   errNameTakenPickAnother:{ar:'الاسم مستخدم بالفعل — اختر اسماً مختلفاً',en:'Name already in use — choose a different one'},
   prodTabItems:{ar:'الأصناف',en:'Products'},
   prodSearchClearAria:{ar:'مسح',en:'Clear'},
@@ -28330,8 +28374,8 @@ const TRANSLATIONS = {
   ssConvertTitle:{ar:'تحويل النموذج إلى صنف',en:'Convert sheet into a product'},
   ssConvertSubtitle:{ar:'سيتم فتح نافذة إضافة صنف بالبيانات التالية',en:'The add-product window will open with the following data'},
   ssConvertMissingNote:{ar:'التصنيف والمجموعة والأسعار غير موجودة في نموذج التصنيع — أكملها في النافذة التالية قبل الحفظ.',en:'Category, collection and prices are not part of a Tech Pack — fill them in on the next screen before saving.'},
-  ssDupNameWarn:{ar:'تنبيه: يوجد صنف بنفس الاسم «{name}» (كود: {code}).',en:'Warning: a product with the same name "{name}" already exists (code: {code}).'},
-  ssDupCodeWarn:{ar:'تنبيه: الكود «{code}» مستخدم بالفعل للصنف «{name}».',en:'Warning: code "{code}" is already used by product "{name}".'},
+  ssDupNameWarn:{ar:'تنبيه: يوجد صنف بنفس الاسم «{name}» (SKU: {code}).',en:'Warning: a product with the same name "{name}" already exists (SKU: {code}).'},
+  ssDupCodeWarn:{ar:'تنبيه: SKU «{code}» مستخدم بالفعل للصنف «{name}».',en:'Warning: SKU "{code}" is already used by product "{name}".'},
   ssConvertCanProceed:{ar:'يمكنك المتابعة وتعديل البيانات قبل الحفظ.',en:'You can continue and edit the data before saving.'},
   ssContinueAction:{ar:'متابعة',en:'Continue'},
   ssPrefillHint:{ar:'راجع البيانات وأكمل التصنيف والمجموعة والأسعار ثم اضغط إضافة',en:'Review the data, fill in the category, collection and prices, then press Add'},
@@ -28403,7 +28447,7 @@ const TRANSLATIONS = {
   removeFromCollection:{ar:'إزالة من المجموعة',en:'Remove from collection'},
   assignProductsTitle:{ar:'إضافة أصناف للمجموعة',en:'Add products to collection'},
   assignProductsSubtitle:{ar:'اختر الأصناف التي تريد ربطها بهذه المجموعة',en:'Select the products you want to link to this collection'},
-  searchByNameOrCode:{ar:'بحث بالاسم أو الكود',en:'Search by name or code'},
+  searchByNameOrCode:{ar:'بحث بالاسم أو SKU',en:'Search by name or SKU'},
   noProductSelected:{ar:'لم يتم اختيار أي صنف',en:'No product selected'},
   addSelected:{ar:'إضافة المحدد',en:'Add selected'},
   nProducts:{ar:'{n} صنف',en:'{n} products'},
@@ -28592,7 +28636,7 @@ const TRANSLATIONS = {
   // and the dropdown chrome (searchRecentTitle / searchRecentClear / searchLoading /
   // searchNoResults / searchError) already have keys defined above — reused, not
   // duplicated here. Only what was still hardcoded Arabic gets new keys below.
-  gsCode:{ar:'كود:',en:'Code:'},
+  gsCode:{ar:'SKU:',en:'SKU:'},
   // Header profile menu
   pmLanguage:{ar:'اللغة',en:'Language'},
   pmCalculator:{ar:'الآلة الحاسبة',en:'Calculator'},
@@ -28945,8 +28989,8 @@ const TRANSLATIONS = {
   spDepAwaiting:{ar:'بانتظار العربون',en:'Awaiting deposit'},
   spDepFollowup:{ar:'يحتاج متابعة العربون',en:'Deposit follow-up needed'},
   spCardDepositDue:{ar:'عربون مستحق',en:'Deposit Due'},
-  spCardConfirmed:{ar:'مؤكد',en:'Confirmed'},
-  spCardUnconfirmed:{ar:'بانتظار التأكيد',en:'Awaiting confirmation'},
+  spCardConfirmed:{ar:'مؤكّد · بانتظار التجهيز',en:'Confirmed · Awaiting Prep'},
+  spCardUnconfirmed:{ar:'بانتظار تأكيد العميل',en:'Awaiting Confirmation'},
   spCardActions:{ar:'إجراءات الطلب',en:'Order actions'},
   spDepReviewMatch:{ar:'طابق المبلغ والخزنة مع الإيصال قبل الاعتماد.',en:'Match the amount and vault to the receipt before approval.'},
   spDepManualScanReview:{ar:'إدخال يدوي · تعذّر الفحص وتم تخطي التحذير · راجع المبلغ والخزنة قبل الاعتماد.',en:'Manual entry · Scan unavailable; warning skipped · Verify amount and vault before approval.'},
@@ -29117,7 +29161,7 @@ const TRANSLATIONS = {
 
   /* Status labels (display-only; stored values stay Arabic) */
   spStatusContactNow:{ar:'تواصل الآن مع العميل للتأكيد',en:'Contact the customer now to confirm'},
-  spStatusReady:{ar:'جاهز للتسجيل',en:'Ready to record'},
+  spStatusReady:{ar:'مؤكّد · بانتظار التجهيز',en:'Confirmed · Awaiting Prep'},
   spStatusFollowup:{ar:'متابعة مع العميل',en:'Customer follow-up'},
   spStatusUnconfirmed:{ar:'طلب غير مؤكد',en:'Unconfirmed order'},
   spStatusCancelled:{ar:'ملغي',en:'Cancelled'},
@@ -29193,7 +29237,7 @@ const TRANSLATIONS = {
   spCantSendMissing:{ar:'لا يمكن التحضير والشحن — {n} صنف غير موجود في المخزن:\n{names}',en:'Cannot Prepare & Ship — {n} items not found in inventory:\n{names}'},
   spCantSendLowStock:{ar:'لا يمكن التحضير والشحن — كمية غير كافية في المخزن:\n{items}',en:'Cannot Prepare & Ship — insufficient stock:\n{items}'},
   spItemNeedHave:{ar:'• {name} — مطلوب: {need}، متاح: {have}',en:'• {name} — required: {need}, available: {have}'},
-  spItemWithCode:{ar:'• {name} (كود: {code})',en:'• {name} (code: {code})'},
+  spItemWithCode:{ar:'• {name} (SKU: {code})',en:'• {name} (SKU: {code})'},
   spSentOk:{ar:'تم إرسال الطلب للتحضير والشحن وإضافته إلى سجل المعاملات',en:'Order added to the transactions log for preparation and shipping'},
   spSendError:{ar:'حدث خطأ أثناء الإرسال للتحضير والشحن',en:'An error occurred during Prepare & Ship'},
   spUpdateError:{ar:'حدث خطأ أثناء التحديث',en:'An error occurred while updating'},
@@ -29248,7 +29292,7 @@ const TRANSLATIONS = {
   /* Edit-items modal */
   spEditTitle:{ar:'تعديل أصناف الطلب',en:'Edit order items'},
   spEditAddItem:{ar:'إضافة صنف',en:'Add item'},
-  spEditSearchPlaceholder:{ar:'ابحث بالاسم أو الكود...',en:'Search by name or code...'},
+  spEditSearchPlaceholder:{ar:'ابحث بالاسم أو SKU...',en:'Search by name or SKU...'},
   spEditPickReplacement:{ar:'ابحث واختر منتجاً بديلاً...',en:'Search and pick a replacement product...'},
   spEditSave:{ar:'حفظ التعديلات',en:'Save changes'},
   spEditEmpty:{ar:'لا توجد أصناف — أضف منتجات من الأسفل',en:'No items — add products below'},
@@ -29385,7 +29429,7 @@ const TRANSLATIONS = {
   dpBuyNoteSafety:{ar:'منها {n} أمان',en:'incl. {n} safety'},
   dpClose:{ar:'إغلاق',en:'Close'},
   dpTabAnalysis:{ar:'تحليل المخزون',en:'Stock analysis'},
-  dpTabReady:{ar:'جاهز للشحن',en:'Ready to ship'},
+  dpTabReady:{ar:'جاهز للشحن',en:'Ready to Ship'},
   dpTabMissing:{ar:'نواقص الطلبات',en:'Order shortages'},
   dpFilterAll:{ar:'الكل',en:'All'},
   dpFilterShortage:{ar:'نقص',en:'Shortage'},
@@ -29798,21 +29842,21 @@ const TRANSLATIONS = {
   puCreatePrepGroup:{ar:'إنشاء مجموعة تحضير',en:'Create prep group'},
   puNewOrderBtn:{ar:'أمر Pick-Up جديد',en:'New Pick-Up order'},
   /* Board KPIs */
-  puKpiPending:{ar:'معلق',en:'Pending'},
+  puKpiPending:{ar:'مسجّل · بانتظار التجهيز',en:'Registered · Awaiting Prep'},
   puNavPendingCount:{ar:'{n} طلبات تحتاج التجهيز أو التسليم للشحن',en:'{n} orders awaiting preparation or pickup'},
-  puKpiPrep:{ar:'قيد التحضير',en:'Preparing'},
-  puKpiReady:{ar:'Ready to Ship',en:'Ready to Ship'},
+  puKpiPrep:{ar:'قيد التجهيز',en:'Preparing'},
+  puKpiReady:{ar:'جاهز للشحن',en:'Ready to Ship'},
   /* Column quick-filters on the Movements Pick-Up / Bosta headers */
   puQfPickupTitle:{ar:'فلترة حسب حالة الاستلام',en:'Filter by pick-up status'},
   puQfBostaTitle:{ar:'فلترة حسب حالة Bosta',en:'Filter by Bosta status'},
   puQfClear:{ar:'مسح',en:'Clear'},
-  puFltPending:{ar:'Pending',en:'Pending'},
-  puFltPreparing:{ar:'Preparing',en:'Preparing'},
-  puFltReady:{ar:'Ready to Ship',en:'Ready to Ship'},
-  puFltShipped:{ar:'Shipped',en:'Shipped'},
+  puFltPending:{ar:'مسجّل · بانتظار التجهيز',en:'Registered · Awaiting Prep'},
+  puFltPreparing:{ar:'قيد التجهيز',en:'Preparing'},
+  puFltReady:{ar:'جاهز للشحن',en:'Ready to Ship'},
+  puFltShipped:{ar:'تم الشحن',en:'Shipped'},
   puFltDelivered:{ar:'Delivered',en:'Delivered'},
   /* Ready-to-Ship table view */
-  puViewReady:{ar:'جاهز للشحن',en:'Ready to ship'},
+  puViewReady:{ar:'جاهز للشحن',en:'Ready to Ship'},
   puViewReadyTitle:{ar:'عرض الطلبات الجاهزة للشحن فقط',en:'Show only orders ready to ship'},
   puRdySearchPh:{ar:'بحث برقم، عميل، تليفون…',en:'Search by ref, client, phone…'},
   puRdyCount:{ar:'{n} طلب · {v}',en:'{n} order(s) · {v}'},
@@ -29843,13 +29887,13 @@ const TRANSLATIONS = {
   puAllCompanies:{ar:'كل الشركات',en:'All companies'},
   puClear:{ar:'مسح',en:'Clear'},
   /* Board columns */
-  puColPending:{ar:'معلق',en:'Pending'},
+  puColPending:{ar:'مسجّل · بانتظار التجهيز',en:'Registered · Awaiting Prep'},
   puColPendingSub:{ar:'بانتظار التجميع',en:'Awaiting grouping'},
-  puColPrep:{ar:'قيد التحضير - Preparing',en:'Preparing'},
+  puColPrep:{ar:'قيد التجهيز',en:'Preparing'},
   puColPrepSub:{ar:'اسحب للاستلام ←',en:'Drag to pick-up →'},
-  puColReady:{ar:'Ready to Ship',en:'Ready to Ship'},
+  puColReady:{ar:'جاهز للشحن',en:'Ready to Ship'},
   puColReadySub:{ar:'بانتظار المندوب',en:'Awaiting courier'},
-  puColShipped:{ar:'Shipped',en:'Shipped'},
+  puColShipped:{ar:'تم الشحن',en:'Shipped'},
   puColShippedSub:{ar:'تم الشحن',en:'Shipped'},
   puSearchPendingPh:{ar:'بحث في المعلقة…',en:'Search pending…'},
   puSearchPrepPh:{ar:'بحث في التحضير…',en:'Search preparing…'},
@@ -29958,7 +30002,7 @@ const TRANSLATIONS = {
   puUnitsCount:{ar:'{n} قطعة',en:'{n} unit(s)'},
   puItemsUnitsSub:{ar:'{items} صنف · {units} قطعة',en:'{items} item(s) · {units} unit(s)'},
   puUnitPriceLabel:{ar:'سعر الوحدة',en:'Unit price'},
-  puCodeLabel:{ar:'كود',en:'Code'},
+  puCodeLabel:{ar:'SKU',en:'SKU'},
   puRemainingLabel:{ar:'المتبقي',en:'Remaining'},
   puCopyRef:{ar:'نسخ رقم الطلب',en:'Copy order reference'},
   puPickAnOrder:{ar:'اختر طلباً من القائمة لبدء التحضير',en:'Pick an order from the list to start preparing'},
@@ -29997,10 +30041,10 @@ const TRANSLATIONS = {
   puGroupDeleted:{ar:'تم حذف مجموعة التحضير — الطلبات عادت للمعلق',en:'Prep group deleted — its orders are back in pending'},
   puMovedToReady:{ar:'تم نقل {n} طلب إلى Ready to Ship · {ref}',en:'Moved {n} order(s) to Ready to Ship · {ref}'},
   puMovedLocally:{ar:'تم النقل محلياً · {v}',en:'Moved locally · {v}'},
-  puGroupStatusPending:{ar:'معلق',en:'Pending'},
-  puGroupStatusShipped:{ar:'Shipped',en:'Shipped'},
+  puGroupStatusPending:{ar:'مسجّل · بانتظار التجهيز',en:'Registered · Awaiting Prep'},
+  puGroupStatusShipped:{ar:'تم الشحن',en:'Shipped'},
   puGroupStatusPartial:{ar:'Partial Shipped',en:'Partial Shipped'},
-  puGroupStatusReady:{ar:'Ready to Ship',en:'Ready to Ship'},
+  puGroupStatusReady:{ar:'جاهز للشحن',en:'Ready to Ship'},
   puReturnGroup:{ar:'إرجاع المجموعة',en:'Return group'},
   puJoinPrepPlaceholder:{ar:'إضافة لمجموعة تحضير…',en:'Add to a prep group…'},
   puJoinPrepTitle:{ar:'إضافة للمجموعة المحددة',en:'Add to the selected group'},
@@ -30184,7 +30228,7 @@ const TRANSLATIONS = {
   puRefreshError:{ar:'خطأ في التحديث: {v}',en:'Refresh error: {v}'},
   puDataLoadError:{ar:'خطأ في تحميل البيانات: {v}',en:'Error loading data: {v}'},
   /* Realtime (socket) toasts */
-  puRtReadyTitle:{ar:'جاهز للشحن',en:'Ready to ship'},
+  puRtReadyTitle:{ar:'جاهز للشحن',en:'Ready to Ship'},
   puRtDeliveredOne:{ar:'تم التسليم',en:'Delivered'},
   puRtDeliveredMany:{ar:'تم تسليم {n} طلبات',en:'{n} orders delivered'},
   puRtRevertDeliveredTitle:{ar:'تم التراجع عن تسليم {n} طلب',en:'Delivery reverted · {n}'},
@@ -34204,6 +34248,7 @@ function connectSocket() {
 
   socket.on('followup:changed', async (payload) => {
     try { followUps = await api('/followups'); _dashFuLoaded = true; } catch(_) {}
+    if (_spPeekId) _spPeekRefreshFu();
     if (fuCommentTargetId && qs('#fu-comment-popup')?.classList.contains('show')) {
       _fuRenderCommentThread();
       const activeTrail = followUps.find(f => String(f._id) === String(fuCommentTargetId));
@@ -36054,7 +36099,7 @@ function buildNotifications() {
   if (tab !== 'all') return;
   const list = qs('#notif-list');
   if (!list) return;
-  list.innerHTML = visible.length ? visible.map(n => {
+  let notificationHtml = visible.length ? visible.map(n => {
     const isUnread = window.souliaIsNotificationHighlighted ? window.souliaIsNotificationHighlighted(n) : n.history ? !n.historyRead : !_notifReadIds.includes(n.id);
     const refAttrs = n.refId ? `data-ref-id="${esc(n.refId)}" data-ref-type="${esc(n.refType||'')}"` : `data-ref-type="${esc(n.refType||'')}"`;
 
@@ -36063,12 +36108,14 @@ function buildNotifications() {
       <div class="notif-icon">${window.souliaNotificationAvatar ? window.souliaNotificationAvatar(n) : n.icon}</div>
       <div class="notif-body">
         <div class="notif-title">${window.souliaNotificationTitle?.(n) || esc(n.title)}</div>
-        <div class="notif-desc">${n.history && window.souliaNotificationDescription ? window.souliaNotificationDescription(n) : n.history ? esc(n.desc) : n.desc}</div>
+        <div class="notif-desc">${window.souliaNotificationDescription ? window.souliaNotificationDescription(n) : n.history ? esc(n.desc) : n.desc}</div>
         ${n.ts ? `<div class="notif-time">${window.souliaNotificationTimeHtml?.(n.ts) || fmtDateTime(n.ts)}</div>` : ''}
       </div>
     </div>`;
   }).join('') : `<div class="notif-empty">${t('noNotifications')}</div>`;
-  if (typeof window.souliaHistoryMoreButton === 'function') list.insertAdjacentHTML('beforeend', window.souliaHistoryMoreButton());
+  if (typeof window.souliaHistoryMoreButton === 'function') notificationHtml += window.souliaHistoryMoreButton();
+  if (window.souliaRenderNotificationContent) window.souliaRenderNotificationContent(list, notificationHtml);
+  else list.innerHTML = notificationHtml;
   _startNotifOtpCountdowns();
 }
 
@@ -36320,10 +36367,12 @@ function _renderNcUpdatesList(main) {
     return;
   }
   const groups = _ncGroupByTime(_ncAllNotifs, n => n.ts);
-  main.innerHTML = `<div class="nc-list">${groups.map(g =>
+  const notificationHtml = `<div class="nc-list">${groups.map(g =>
     `<div class="nc-time-label">${g.label}</div>` +
     g.items.map(n => _ncItemHtml(n, _ncSelectedId === n.id)).join('')
   ).join('')}${typeof window.souliaHistoryMoreButton === 'function' ? window.souliaHistoryMoreButton() : ''}</div>`;
+  if (window.souliaRenderNotificationContent) window.souliaRenderNotificationContent(main, notificationHtml);
+  else main.innerHTML = notificationHtml;
 }
 
 /* ── Copy OTP helper ── */
@@ -41294,7 +41343,7 @@ const _DASH_TRACK = [
   { key: 'dsTrkTransit',   at: 3, ico: 'transit' },  // بيغطي IN_TRANSIT (3) و OUT_FOR_DELIVERY (4)
   { key: 'dsTrkDelivered', at: 5, ico: 'delivered' },
 ];
-function _dashTrackHtml(status) {
+function _dashTrackHtml(status, tx) {
   if (!status) return '';
   const rank = Number(status.rank || 0);
   /* rank 0 = مرتجع/فشل توصيل. */
@@ -41353,7 +41402,7 @@ function _dashTrackHtml(status) {
      بتحمل `background` كمان مش لون بس — فحطّها على جذر المسار كان بيصبغ خلية
      الجدول كلها بأزرق فاتح. الـdata attribute بيدّي نفس التمييز من غير ما يجرّ
      معاه ستايل الشارة. */
-  return `<span class="ds-trk${broken ? ' is-broken' : ''}" data-st="${escHtml(status.key || '')}"${broken ? ' data-broken="1"' : ''} role="img" aria-label="${escHtml(status.label)}">${stations}</span>`;
+  return `${tx ? _orderStateBadge(tx) : ''}<span class="ds-trk${broken ? ' is-broken' : ''}" data-st="${escHtml(status.key || '')}"${broken ? ' data-broken="1"' : ''} role="img" aria-label="${escHtml(status.label)}">${stations}</span>`;
 }
 
 /* شبكة أعمدة (CSS grid) مش صفوف flex حرة. على شاشة عريضة الصف كان بيتمدّد بعرض
@@ -41460,7 +41509,7 @@ function renderDashShipList(sel, items, emptyMsg, totalCount, showArt) {
            بعض. كانت بعد المسار فكانت بتفصل بين المسار وأزراره. */''}
       <div class="ds-shc-age">${ageCell}</div>
       <div class="ds-shc-trk">
-        ${_dashTrackHtml(status)}
+        ${_dashTrackHtml(status, tx)}
         ${_extras ? `<span class="ds-trk-extra">${_extras}</span>` : ''}
       </div>
       <div class="ds-shc-act">${bostaBizBtn}${menu}</div>
@@ -47806,28 +47855,95 @@ function openInventoryMovementDetail(id) {
   const deltaColor = m.qtyDelta > 0 ? 'var(--green,#16a34a)' : 'var(--red,#dc2626)';
   const deltaSign = m.qtyDelta > 0 ? '+' : '';
   openModal(`
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+    <style>
+      .inv-movement-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+      .inv-movement-header>div{min-width:0;overflow-wrap:anywhere}
+      .inv-movement-header>.badge{flex-shrink:0}
+      .inv-movement-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:16px;font-size:.82rem;overflow-wrap:anywhere}
+      .inv-movement-meta .inv-movement-wide{grid-column:1/-1}
+      .inv-movement-ledger .as-card{margin:0;font-size:.82rem;line-height:1.65;overflow-wrap:anywhere}
+      .inv-movement-ledger .as-card p{margin:8px 0 0}
+      .inv-movement-ledger .btn{max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:start}
+      .inv-movement-actions{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+      .inv-movement-actions .btn{flex:0 1 auto;max-width:100%;white-space:normal}
+      @media(max-width:540px){.inv-movement-meta{grid-template-columns:minmax(0,1fr)}.inv-movement-actions .btn{min-height:40px}.inv-movement-ledger .as-card{padding:14px}}
+    </style>
+    <div class="inv-movement-header">
       <div>
         <h3 style="margin:0">${esc(m.productName)}</h3>
         <p style="margin:4px 0 0;font-size:.78rem;color:var(--muted)">${esc(m.productCode)}</p>
       </div>
       <span class="badge ${badgeCls}" style="font-size:.8rem">${esc(_invLogTypeLabel(m.type))}</span>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;font-size:.82rem">
+    <div class="inv-movement-meta">
       <div><span style="color:var(--muted)">${esc(t('colTxNo'))}:</span> ${esc(m.movementId || '—')}</div>
       <div><span style="color:var(--muted)">${esc(t('date'))}:</span> ${esc(_invLogDateTime(m.createdAt))}</div>
       <div><span style="color:var(--muted)">${currentLang === 'en' ? 'Warehouse' : 'المخزن'}:</span> <strong data-warehouse-name="${esc(m.warehouseCode || 'MAIN')}">${esc(m.warehouseName || window.SouliaWarehouses?.name(m.warehouseCode) || 'المخزن الرئيسي')}</strong></div><div><span style="color:var(--muted)">${esc(t('colBy'))}:</span> ${esc(m.by)}</div>
       <div><span style="color:var(--muted)">${esc(t('colChange'))}:</span> <span style="color:${deltaColor};font-weight:600">${deltaSign}${fmtN(m.qtyDelta)}</span></div>
       <div><span style="color:var(--muted)">${esc(t('balanceLabel'))}</span> ${fmtN(m.qtyBefore)} ← ${fmtN(m.qtyAfter)}</div>
-      ${m.sourceTransactionRef ? `<div style="grid-column:span 2"><span style="color:var(--muted)">${esc(t('colLinkedRef'))}:</span> ${esc(m.sourceTransactionRef)}</div>` : ''}
-      ${(m.reason || m.notes) ? `<div dir="auto" style="grid-column:span 2"><span style="color:var(--muted)">${esc(t('colNotesHdr'))}:</span> ${_invLogNoteHtml(m.reason || m.notes)}</div>` : ''}
+      ${m.sourceTransactionRef ? `<div class="inv-movement-wide"><span style="color:var(--muted)">${esc(t('colLinkedRef'))}:</span> ${esc(m.sourceTransactionRef)}</div>` : ''}
+      ${(m.reason || m.notes) ? `<div dir="auto" class="inv-movement-wide"><span style="color:var(--muted)">${esc(t('colNotesHdr'))}:</span> ${_invLogNoteHtml(m.reason || m.notes)}</div>` : ''}
     </div>
-    <div style="display:flex;gap:8px">
-      ${window.AfterSales?.ledgerDetails(m)||''}
+    <div class="inv-movement-ledger">${window.AfterSales?.ledgerDetails(m)||''}</div>
+    ${hasPerm('inventory-units-view') ? '<section id="inv-movement-pieces" style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px" aria-live="polite"></section>' : ''}
+    <div class="inv-movement-actions">
       ${m.sourceTransactionId ? `<button class="btn btn-outline btn-sm" onclick="closeModal(); navigateTo('movements'); setTimeout(()=>showInvoiceDetail('${esc(m.sourceTransactionId)}'), 250)">${esc(t('viewLinkedTransaction'))}</button>` : ''}
       <button class="btn btn-outline btn-sm" onclick="closeModal()">${esc(t('close'))}</button>
     </div>
   `);
+  if (hasPerm('inventory-units-view')) loadInventoryMovementPieces(id);
+}
+
+async function loadInventoryMovementPieces(id, page = 1) {
+  const host = qs('#inv-movement-pieces');
+  if (!host) return;
+  const en = currentLang === 'en';
+  host.textContent = en ? 'Loading piece identities…' : 'جارٍ تحميل هويات القطع…';
+  try {
+    const data = await api('/inventory-movements/' + encodeURIComponent(id) + '/pieces?page=' + page);
+    if (qs('#inv-movement-pieces') !== host) return;
+    const date = value => value ? esc(_invLogDateTime(value)) : '—';
+    const warehouse = value => value ? esc(window.SouliaWarehouses?.name(value) || value) : '—';
+    const labels = {
+      shipped: en ? 'Left warehouse · Shipped' : 'خروج من المخزن · شحن',
+      returned: en ? 'Entered warehouse · Customer return' : 'دخول المخزن · مرتجع عميل',
+      'supplier-returned': en ? 'Left warehouse · Supplier return' : 'خروج من المخزن · مرتجع للمورد',
+      'warehouse-changed': en ? 'Warehouse transfer' : 'نقل بين المخازن',
+    };
+    host.innerHTML = `<h4 style="margin:0 0 10px">${en ? 'Piece identities & warehouse history' : 'هويات القطع وحركتها بالمخزن'} <span style="color:var(--muted)">(${fmtN(data.total)})</span></h4>`
+      + (!data.items.length ? `<p style="color:var(--muted)">${en ? 'No piece identities linked to this movement.' : 'لا توجد هويات قطع مرتبطة بهذه الحركة.'}</p>` : data.items.map(piece => {
+        const purchase = piece.purchase;
+        const origin = piece.originKind === 'opening-stock' ? (en ? 'Opening stock' : 'رصيد افتتاحي') : (en ? 'Purchase source not recorded' : 'مصدر الشراء غير مسجل');
+        return `<article style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;overflow-wrap:anywhere">
+          <strong dir="ltr">${esc(piece.manualCode || piece.barcode || piece.unitId)}</strong>
+          ${piece.manualCode && piece.barcode ? `<div dir="ltr" style="font-size:.72rem;color:var(--muted);margin-top:3px">${esc(piece.barcode)}</div>` : ''}
+          <div style="font-size:.8rem;margin-top:8px">${en ? 'Source purchase invoice' : 'فاتورة الشراء الأصلية'}:
+            ${purchase ? `<button class="btn btn-outline btn-sm" data-piece-invoice="${esc(purchase.id)}" onclick="closeModal();navigateTo('movements');showInvoiceDetail(this.dataset.pieceInvoice)">#${esc(purchase.ref || purchase.id)}</button>
+            <div style="color:var(--muted);margin-top:5px">${en ? 'Purchase invoice date' : 'تاريخ فاتورة الشراء'}: ${date(purchase.date)}</div>` : esc(origin)}
+          </div>
+          <div style="display:grid;gap:7px;margin-top:10px;font-size:.78rem">
+          ${piece.history.length ? piece.history.map(event => {
+            const label = event.action === 'registered' ? (piece.registeredAtReceipt
+              ? (en ? 'Entered warehouse · Purchase receipt' : 'دخول المخزن · استلام مشتريات')
+              : (en ? 'Identity registered in warehouse' : 'تسجيل الهوية بالمخزن')) : labels[event.action];
+            const location = event.action === 'warehouse-changed'
+              ? `${warehouse(event.fromWarehouseCode)} → ${warehouse(event.toWarehouseCode)}`
+              : warehouse(['shipped', 'supplier-returned'].includes(event.action) ? event.fromWarehouseCode : event.toWarehouseCode);
+            return `<div><b>${esc(label || event.action)}</b><div style="color:var(--muted)">${date(event.date)} · ${location}</div></div>`;
+          }).join('') : `<div style="color:var(--muted)">${en ? 'Warehouse entry and exit dates are not recorded.' : 'تواريخ الدخول والخروج من المخزن غير مسجلة.'}</div>`}
+          ${!piece.history.some(event => ['shipped', 'supplier-returned'].includes(event.action)) ? `<div style="color:var(--muted)">${en ? 'No warehouse exit recorded.' : 'لا يوجد خروج مسجل من المخزن.'}</div>` : ''}
+          </div>
+        </article>`;
+      }).join(''))
+      + (data.total > data.limit ? `<div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-outline btn-sm" ${data.page <= 1 ? 'disabled' : ''} onclick="loadInventoryMovementPieces('${esc(id)}',${data.page - 1})">${en ? 'Previous' : 'السابق'}</button>
+        <span>${fmtN(data.page)} / ${fmtN(Math.ceil(data.total / data.limit))}</span>
+        <button class="btn btn-outline btn-sm" ${data.page * data.limit >= data.total ? 'disabled' : ''} onclick="loadInventoryMovementPieces('${esc(id)}',${data.page + 1})">${en ? 'Next' : 'التالي'}</button>
+      </div>` : '');
+  } catch (err) {
+    if (qs('#inv-movement-pieces') !== host) return;
+    host.innerHTML = `<p>${en ? 'Could not load piece identities.' : 'تعذر تحميل هويات القطع.'}</p><button class="btn btn-outline btn-sm" onclick="loadInventoryMovementPieces('${esc(id)}',${page})">${en ? 'Retry' : 'إعادة المحاولة'}</button>`;
+  }
 }
 
 /* ── منتقي الصنف بالبحث ──
@@ -48471,7 +48587,7 @@ function openFxDrawer(ctx) {
     const bostaHtml = bostaOptions.map(o => `
       <label class="fx-checkbox">
         <input type="checkbox" data-fx="bosta" value="${esc(o.val)}" ${s.bosta.has(o.val)?'checked':''}>
-        <span class="bosta-badge ${o.cls}" style="font-size:.65rem;padding:1px 6px">${esc(o.label)}</span>
+        ${_orderFilterBadge('bosta', o.val)}
         <span class="fx-checkbox-count">${fmtN(bostaCounts.get(o.val)||0)}</span>
       </label>`).join('');
     const pickupOptions = _PU_FILTER_OPTIONS;
@@ -48485,7 +48601,7 @@ function openFxDrawer(ctx) {
     const pickupHtml = pickupOptions.map(o => `
       <label class="fx-checkbox">
         <input type="checkbox" data-fx="pickup" value="${esc(o.val)}" ${s.pickup.has(o.val)?'checked':''}>
-        <span class="pu-badge ${o.cls}" style="font-size:.65rem;padding:1px 6px">${esc(_puFilterLabel(o))}</span>
+        ${_orderFilterBadge('pickup', o.val)}
         <span class="fx-checkbox-count">${fmtN(pickupCounts.get(o.val)||0)}</span>
       </label>`).join('');
     const _chevron = `<svg class="fx-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
@@ -49130,19 +49246,20 @@ function renderInventory() {
     }
     return `<td style="vertical-align:top"><div style="font-weight:700;color:#6d28d9;cursor:pointer;user-select:none" onclick="showReturnDetails('${esc(r.code || r.name)}', '${esc(refs)}', '${esc(dates)}')" title="${escHtml(t('clickForDetails'))}">${fmtN(q)}</div></td>`;
   };
-  const statusBadgeOld = (r) => r.isActive === false ? `<span class="inactive-badge">${esc(t('inactiveBadge'))}</span>` : r.current <= 0 ? `<span class="badge badge-red">${esc(t('invOut'))}</span>` : (r.current <= (r.minStock || 0) ? `<span class="badge badge-orange">${esc(t('invLow'))}</span>` : `<span class="badge badge-green">${esc(t('invAvailable'))}</span>`);
+  const activationBadge = r => `<span class="inv-activation-badge ${r.isActive === false ? 'is-inactive' : 'is-active'}">${esc(t(r.isActive === false ? 'inactiveBadge' : 'invActive'))}</span>`;
+  const statusBadgeOld = (r) => r.current <= 0 ? `<span class="badge badge-red">${esc(t('invOut'))}</span>` : (r.current <= (r.minStock || 0) ? `<span class="badge badge-orange">${esc(t('invLow'))}</span>` : `<span class="badge badge-green">${esc(t('invAvailable'))}</span>`);
 
   const tbody = qs('#inv-tbody');
   if (tbody) {
     tbody.innerHTML = pageData.length ? pageData.map((r, i) => {
       const key = r.code || r.name;
       const inactiveCls = r.isActive === false ? ' is-inactive-row' : '';
-      const inactiveBadge = r.isActive === false ? ` <span class="inactive-badge">${esc(t('inactiveBadge'))}</span>` : '';
       return `<tr class="inv-row${inactiveCls}" data-key="${esc(key)}" style="animation-delay:${Math.min(i,20)*18}ms">
         <td onclick="openInventoryDetail('${esc(key)}')">${productThumbHtml(r.imageUrl, r.name, 'inv-thumb')}</td>
-        <td onclick="openInventoryDetail('${esc(key)}')">${esc(r.code || '-')}</td><td onclick="openInventoryDetail('${esc(key)}')" style="font-weight:600">${esc(r.name)}${inactiveBadge}</td><td onclick="openInventoryDetail('${esc(key)}')">${fmtJ(r.sellPrice)}</td><td class="inv-buyprice-col" onclick="openInventoryDetail('${esc(key)}')">${fmtJ(r.buyPrice)}</td>
+        <td onclick="openInventoryDetail('${esc(key)}')"><bdi class="product-sku" dir="ltr">${esc(r.code || '-')}</bdi></td><td onclick="openInventoryDetail('${esc(key)}')" style="font-weight:600">${esc(r.name)}</td><td onclick="openInventoryDetail('${esc(key)}')">${fmtJ(r.sellPrice)}</td><td class="inv-buyprice-col" onclick="openInventoryDetail('${esc(key)}')">${fmtJ(r.buyPrice)}</td>
         <td onclick="openInventoryDetail('${esc(key)}')">${fmtN(r.openingBalance)}</td><td class="text-green" onclick="openInventoryDetail('${esc(key)}')">${fmtN(r.purchases)}</td><td onclick="openInventoryDetail('${esc(key)}')">${invReturnCell(r).replace(/<td[^>]*>|<\/td>/g, '')}</td><td class="text-blue" onclick="openInventoryDetail('${esc(key)}')">${fmtN(r.sales)}</td>
         <td onclick="openInventoryDetail('${esc(key)}')">${stockBar(r)}${window.LegacyStockLabels?.button(r._id) || ''}</td>
+        <td class="inv-activation-cell" onclick="openInventoryDetail('${esc(key)}')">${activationBadge(r)}</td>
         <td onclick="openInventoryDetail('${esc(key)}')">${statusBadgeOld(r)}</td>
       </tr>`;
     }).join('') : `<tr><td colspan="12" style="padding:0">${_invEmptyHtml}</td></tr>`;
@@ -49156,17 +49273,16 @@ function renderInventory() {
       const key = r.code || r.name;
       /* `status` stays raw Arabic — it is used as a CSS class name
          (`#page-inventory .inv-status-badge.متوفر{...}`). `statusLabel` is the visible text. */
-      const status = r.isActive === false ? 'inactive' : r.current <= 0 ? 'نفد' : (r.current <= (r.minStock || 0) ? 'منخفض' : 'متوفر');
-      const statusLabel = r.isActive === false ? t('inactiveBadge') : r.current <= 0 ? t('invOut') : (r.current <= (r.minStock || 0) ? t('invLow') : t('invAvailable'));
-      const statusEmoji = r.isActive === false ? '' : r.current <= 0 ? ICON('error') : (r.current <= (r.minStock || 0) ? ICON('warning') : ICON('success'));
+      const status = r.current <= 0 ? 'نفد' : (r.current <= (r.minStock || 0) ? 'منخفض' : 'متوفر');
+      const statusLabel = r.current <= 0 ? t('invOut') : (r.current <= (r.minStock || 0) ? t('invLow') : t('invAvailable'));
+      const statusEmoji = r.current <= 0 ? ICON('error') : (r.current <= (r.minStock || 0) ? ICON('warning') : ICON('success'));
       const inactiveCls = r.isActive === false ? ' is-inactive-row' : '';
-      const inactiveBadge = r.isActive === false ? ` <span class="inactive-badge">${esc(t('inactiveBadge'))}</span>` : '';
       return `<div class="inv-product-card${inactiveCls}" style="animation-delay:${Math.min(i,20)*18}ms" onclick="openInventoryDetail('${esc(key)}')">
         <div class="inv-card-header">
           ${productThumbHtml(r.imageUrl, r.name, 'inv-card-thumb')}
           <div class="inv-card-info">
             <div class="inv-card-code">${esc(r.code || '-')}</div>
-            <div class="inv-card-name">${esc(r.name)}${inactiveBadge}</div>
+            <div class="inv-card-name">${esc(r.name)}</div><div class="inv-card-activation" aria-label="${esc(t('invActivationStatus'))}">${activationBadge(r)}</div>
             ${isAdminUser ? `<div class="inv-card-price">${fmtJ(r.sellPrice)}<span class="inv-card-price-sep">•</span>${t('invCardValue', { v: fmtJ((r.current || 0) * (r.sellPrice || 0)) })}</div>` : ''}
           </div>
           <span class="inv-status-badge ${status}" style="flex-shrink:0">
@@ -49558,38 +49674,44 @@ function _empShortName(name) {
   return esc(parts[0]);
 }
 
-function renderMovMobileCard(tx) {
+// Shared compact presentation for desktop grid and mobile list.
+function renderMovMobileCard(tx) { return renderMovCompactCard(tx, false); }
+function renderMovCompactCard(tx, grid = false) {
+  const en = currentLang === 'en';
   const isCancelled = tx.cancelled || isStatusCancelled(tx.payStatus);
-  const typeBadge = _txTypeInlineBadge(tx);
-  const statusHtml = movementStatusCell(tx);
   const rem = Number(tx.remaining) || 0;
-  const dep = exchangeSalePaidDisplayAmount(tx);
-  const billedShip = tx.type === 'مبيعات' ? (Number(tx.shipCost) || 0) : 0;
-  const actualShip = tx.type === 'مبيعات' ? (Number(tx.actualShipCost) || 0) : 0;
-  const shipLoss = Math.max(0, actualShip - billedShip);
-  const dateHtml = _fmtShopifyDate(tx.date, tx.createdAt || tx.date);
+  const sale = tx.type === 'مبيعات';
   const phoneClean = (tx.phone || '').replace(/\D/g, '');
   const waItem = (tx.type === 'مبيعات' && phoneClean)
     ? `<div class="dd-item" onclick="event.stopPropagation();window.open('https://wa.me/${encodeURIComponent(phoneClean)}','_blank','noopener')"><svg viewBox="0 0 512 512" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1.05em;height:1.05em;margin-right:4px" preserveAspectRatio="xMidYMid meet"><path fill="#25d366" d="M373.3 306.8c-6.4-3.2-37.7-18.5-43.5-20.7-5.8-2.1-10.1-3.2-14.3 3.3-4.2 6.3-16.4 20.6-20.2 24.8-3.7 4.2-7.4 4.5-13.7 1.7-6.4-3.2-26.9-9.9-51.3-31.7-19-16.9-31.7-37.7-35.4-44.2-3.7-6.3-.4-9.9 2.8-13.1 2.9-2.9 6.4-7.3 9.7-11.2 3.1-3.8 4.1-6.4 6.3-10.6 2.1-4.5 1-8-.6-11.2s-14.3-34.6-19.7-47.1c-5.1-12.4-10.4-10.8-14.3-10.8-3.7-.3-7.9-.3-12.2-.3-4.2 0-11.2 1.6-17 7.7-5.8 6.4-22.3 21.7-22.3 52.8s22.8 61.2 26 65.7c3.2 4.2 44.9 68.2 108.8 95.7 15.3 6.4 27.1 10.3 36.3 13.4 15.3 4.8 29.2 4.2 40.2 2.6 12.2-2 37.7-15.4 43-30.4 5.4-15.1 5.4-27.6 3.8-30.4-1.6-2.9-5.7-4.5-12.2-7.3zM257.3 464h-.3c-37.8 0-75.3-10.3-107.9-29.4l-7.7-4.6-80 20.8L82.9 373l-5.2-8c-21.1-33.6-32.3-72.3-32.3-112.2 0-116.2 95.1-210.9 212.1-210.9 56.7 0 109.8 22.1 149.8 62.1 40 39.7 62.1 92.8 62.1 149.2-.1 116.1-95.2 210.8-212.1 210.8M437.7 73.6C389.1 26.6 325.1 0 257 0 116.6 0 2.2 113.8 2.2 253.7c0 44.7 11.7 88.3 34 126.8L0 512l135.2-35.3c37.2 20.1 79.2 30.8 121.8 30.9h.1c140.5 0 254.8-113.8 254.9-253.8 0-67.7-26.4-131.5-74.6-179.4z"/></svg> واتساب</div>`
     : '';
-  const tagsHtml = (typeof renderTxTagsCell === 'function') ? renderTxTagsCell(tx._id) : '';
-  const _isNewShopifyMobile = tx.shopifyOrderId && tx.createdAt && (Date.now() - new Date(tx.createdAt).getTime() < 86400000);
-  const itemsCount = _movItemsCount(tx);
-  const shippingBadgeHtml = tx.type==='مبيعات' ? _puStatusBadge(_puDisplayStatus(tx)) : '';
-  const bostaBadgeHtml = tx.bostaOrderId ? `<span onclick="event.stopPropagation();syncBostaStatus('${esc(tx._id)}')" title="Bosta — اضغط لتحديث الحالة" style="cursor:pointer;display:inline-flex;align-items:center;gap:3px"><span class="bosta-icon" style="width:11px;height:11px"></span>${_bostaStatusBadge(tx)}</span>` : '';
-  const empOrShopifyHtml = tx.shopifyOrderId ? `<a href="https://admin.shopify.com/store/soulia-2/orders/${esc(tx.shopifyOrderId)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="mov-card-emp mov-emp-initials" title="فتح أوردر Shopify" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">${_SHOPIFY_LOGO_SVG}</a>` : `<span class="mov-card-emp mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span>`;
-  return `<div class="mov-card${isCancelled ? ' mov-card-cancelled' : ''}${_isNewShopifyMobile ? ' mov-card-new-shopify' : ''}" onclick="openOrderView('${esc(tx._id)}')">
-    <div class="mov-card-top">
-      <div style="display:flex;align-items:baseline;gap:7px;min-width:0;flex:1">
-        <span class="mov-client-name" title="${escHtml(movOpenOrderTitle(tx))}">${tx.client ? esc(tx.client) : `<span style="color:var(--muted)">${esc(t('noName'))}</span>`}</span>
-        <span class="mov-card-date-inline">${dateHtml}</span>
+
+  const carrier = tx.shipCo || (tx.bostaOrderId || tx.bostaStatus ? 'Bosta' : '');
+  const shipping = tx.bostaOrderId || tx.bostaStatus
+    ? _bostaStatusBadge(tx)
+    : `<span class="mov-compact-shipping-empty">${en ? 'No shipment status' : 'لا توجد حالة شحن'}</span>`;
+  const tagsHtml = typeof renderTxTagsCell === 'function' ? renderTxTagsCell(tx._id) : '';
+  const flash = _rtFlashIds.has(String(tx._id)) ? ' rt-flash' : '';
+  return `<div class="${grid ? 'mov-grid-card' : 'mov-card'} mov-compact-card${isCancelled ? ' is-cancelled mov-card-cancelled' : ''}${flash}" onclick="openOrderView('${esc(tx._id)}')">
+    <div class="mov-compact-header">
+      <div class="mov-compact-identity">
+        <div class="mov-compact-title"><a href="#" class="mov-compact-ref" onclick="event.preventDefault();event.stopPropagation();openOrderView('${esc(tx._id)}')">#${esc(tx.ref || '—')}</a><span class="mov-compact-name" title="${esc(tx.client || t('noName'))}">${esc(tx.client || t('noName'))}</span></div>
+        <div class="mov-compact-date">${_fmtShopifyDate(tx.date, tx.createdAt || tx.date)}</div>
       </div>
-      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-        ${tx.ref ? `<a href="#" onclick="event.preventDefault();event.stopPropagation();openOrderView('${esc(tx._id)}')" class="mov-card-ref" title="${escHtml(movOpenOrderTitle(tx))}">#${esc(tx.ref)}</a>` : ''}
-        ${typeBadge}
-        <div class="actions-dd" onclick="event.stopPropagation()">
-          <button class="dd-toggle" onclick="toggleActionMenu(event)" style="width:30px;height:30px">⋮</button>
-          <div class="dd-menu">
+      <div class="actions-dd" onclick="event.stopPropagation()">
+        <button type="button" class="dd-toggle" aria-label="${en ? 'Order details and actions' : 'تفاصيل وإجراءات الطلب'}" onclick="toggleActionMenu(event)">⋮</button>
+        <div class="dd-menu"><div class="mov-compact-menu">
+          <div class="mov-compact-summary" onclick="event.stopPropagation()">
+            <div class="mov-compact-meta">${movementKindBadgeCompact(tx)}${movementStatusCell(tx)}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}${getVaultEntryStatusBadge(tx._id)}</div>
+            <div class="mov-compact-amounts">
+              <span>${t('gcTotal')}<strong>${fmtJMasked(tx, 'total')}</strong></span>
+              <span>${t('gcPaid')}<strong>${tx.purchaseDetailsHidden ? amtMaskedBadge() : exchangeSalePaidDisplayAmount(tx)}</strong></span>
+              <span>${t('gcRemaining')}<strong>${tx.purchaseDetailsHidden ? amtMaskedBadge() : fmtJ(rem)}</strong></span>
+            </div>
+            <div class="mov-compact-meta">${_movItemsCell(tx)}<span>${esc(tx.employee || '')}</span></div>
+            <div class="mov-compact-meta" data-tag-cell="${esc(tx._id)}">${tagsHtml}</div>
+          </div>
+          <div class="dd-divider"></div>
             <div class="dd-item" onclick="openOrderView('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg> ${t('openInvoice')}</div>
             ${waItem}
             ${txEditGate(tx).ok ? `<div class="dd-item" onclick="openEditMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> ${t('editAction')}</div>` : ''}
@@ -49600,19 +49722,12 @@ function renderMovMobileCard(tx) {
             ${tx.type === 'مبيعات' && (tx.payments||[]).length > 0 && !tx.cancelled && isAdmin() ? `<div class="dd-item" style="color:var(--orange)" onclick="openReverseCollect('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.4 7.4 11.5 4 18 5.5"/><path d="M21 17v-6h-6"/><path d="M21 11c-2.4 5.6-8.5 9-15 7.5"/></svg> ${t('undoCollection')}</div>` : ''}
             ${tx.type !== 'مبيعات' && ((tx.payments||[]).length > 0 || (tx.deposits||[]).length > 0) && !tx.cancelled && isAdmin() ? `<div class="dd-item" style="color:#f97316" onclick="openUndoPaymentSelector('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 010 8h-3"/></svg> ${t('undoSpecificPayment')}</div>` : ''}
             ${!isCancelled ? `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg> إلغاء</div>` : ''}
-          </div>
-        </div>
+          ${tx.bostaOrderId ? `<div class="dd-item" onclick="syncBostaStatus('${esc(tx._id)}')">${en ? 'Refresh shipping status' : 'تحديث حالة الشحن'}</div>` : ''}
+        </div></div>
       </div>
     </div>
-    ${itemsCount ? `<div class="mov-card-items-subline">${currentLang==='en'?'Items':'الأصناف'}: ${_movItemsCell(tx)}</div>` : ''}
-    <div class="mov-card-grid">
-      <div class="mov-item"><span class="mov-label">الإجمالي</span><span class="mov-val mov-col-total">${fmtJMasked(tx, 'total')}</span></div>
-      <div class="mov-item"><span class="mov-label">المدفوع</span><span class="mov-val mov-col-paid">${tx.purchaseDetailsHidden ? amtMaskedBadge() : dep}</span></div>
-      <div class="mov-item"><span class="mov-label">المتبقي</span><span class="mov-val ${rem > 0 ? 'mov-col-remaining-pos' : 'mov-col-remaining-zero'}">${tx.purchaseDetailsHidden ? amtMaskedBadge() : fmtJ(rem)}</span></div>
-      ${(billedShip > 0 || actualShip > 0) ? `<div class="mov-item"><span class="mov-label">الشحن</span><span class="mov-val">${fmtJ(billedShip)}${shipLoss > 0 ? ` <span class="mov-ship-loss">−${fmtJ(shipLoss)}</span>` : ''}</span></div>` : ''}
-    </div>
-    <div class="mov-card-statusrow">${statusHtml}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}${shippingBadgeHtml}${bostaBadgeHtml}${empOrShopifyHtml}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div>
-    ${tagsHtml ? `<div class="mov-card-tags" onclick="event.stopPropagation()" data-tag-cell="${esc(tx._id)}">${tagsHtml}</div>` : ''}
+    ${sale || carrier ? `<div class="mov-compact-shipping"><span class="mov-compact-carrier" title="${esc(carrier)}">${esc(carrier || (en ? 'No carrier' : 'بدون شركة شحن'))}</span><div class="mov-compact-shipping-status" onclick="event.stopPropagation()">${shipping}</div></div>` : ''}
+    <div class="mov-compact-footer">${sale ? `<span class="mov-compact-pickup"><span>${t('ivPickupStatus')}</span>${_puStatusBadge(_puDisplayStatus(tx), tx)}</span>` : _txTypeInlineBadge(tx)}${isCancelled ? `<span class="badge badge-status-cancelled">${esc(_statusLabel('ملغي'))}</span>` : ''}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div>
   </div>`;
 }
 
@@ -50053,7 +50168,7 @@ function renderMovementTxRow(tx) {
     <td data-col="items" style="text-align:center">${_movItemsCell(tx)}</td>
     <td data-col="status" style="text-align:center;white-space:nowrap">${movementStatusCell(tx)}${vaultStatusBadge}${vaultHint}</td>
     <td data-col="discount" style="text-align:center;white-space:nowrap">${_movDiscountBadge(tx)}</td>
-    <td data-col="pickup" style="text-align:center;white-space:nowrap">${tx.type==='مبيعات' ? _puStatusBadge(_puDisplayStatus(tx)) : '<span style="color:var(--muted);font-size:.8rem">—</span>'}</td>
+    <td data-col="pickup" style="text-align:center;white-space:nowrap">${tx.type==='مبيعات' ? _puStatusBadge(_puDisplayStatus(tx), tx, true) : '<span style="color:var(--muted);font-size:.8rem">—</span>'}</td>
     <td data-col="bosta" style="text-align:center;white-space:nowrap"><span class="mov-bosta-line">${_bostaStatusBadge(tx)}${_awbPrintedMarkHtml((tx.bostaAwbPrints || []).filter(p => !p.trackingNumber || !tx.bostaTrackingNumber || p.trackingNumber === tx.bostaTrackingNumber))}</span></td>
     <td data-col="tag" style="text-align:center" onclick="event.stopPropagation()" data-tag-cell="${esc(tx._id)}">${renderTxTagsCell(tx._id)}</td>
     <td data-col="employee" class="mov-col-employee"><div class="mov-col-employee-wrap" title="${esc(tx.employee||'')}">${tx.shopifyOrderId ? `<a href="https://admin.shopify.com/store/soulia-2/orders/${esc(tx.shopifyOrderId)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="mov-emp-initials-sm" title="فتح أوردر Shopify #${esc(tx.shopifyOrderId)}" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">${_SHOPIFY_LOGO_SVG}</a>` : `<span class="mov-emp-initials-sm">${_empInitialsText(tx.employee)}</span>`}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div></td>
@@ -51291,86 +51406,8 @@ function _fmtCardDate(dateStr, createdAt) {
   if (yesterday) return `أمس، ${timeParts}`;
   return dt.toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' }) + '، ' + timeParts;
 }
-function renderMovGridCard(tx) {
-  const isCancelled = tx.cancelled || isStatusCancelled(tx.payStatus);
-  const color = _txTypeColor(tx.type);
-  const rem = tx.remaining || 0;
-  const dep = exchangeSalePaidDisplayAmount(tx);
-  const tags = getTxTagObjects(tx._id);
-  const tagHtml = tags.map(tag => `<span class="tx-tag" style="--tag-c:${esc(tag.bg)}">${esc(tag.label)}<span class="tag-del" onclick="event.stopPropagation();deleteTxTag('${esc(tx._id)}','${esc(tag.label)}')">✕</span></span>`).join('');
-  const _rtFlash = _rtFlashIds.has(String(tx._id)) ? ' rt-flash' : '';
-  const itemsPreview = (tx.items || []).slice(0, 3).map(it =>
-    `<div class="mgci"><span class="mgci-name">${esc(it.name||it.code||'—')}</span><span class="mgci-total">${fmtJ(it.total||0)}</span></div>`
-  ).join('');
-  const moreItems = (tx.items||[]).length > 3 ? `<div class="mgc-more">+${(tx.items.length-3)} ${currentLang==='en'?'more items':'أصناف أخرى'}</div>` : '';
-  const isPurchase = tx.type === 'مشتريات';
-  return `<div class="mov-grid-card${isCancelled?' is-cancelled':''}${isPurchase?' is-purchase-card':''}${_rtFlash}" style="--gc-color:${color}${isPurchase?';background:rgba(33,150,243,.04);border-color:rgba(33,150,243,.25)':''}" onclick="openOrderView('${esc(tx._id)}')">
-    <div class="mgc-header">
-      <div class="mgc-avatar" style="background:${color};animation:mgcAvatarPop .35s cubic-bezier(.2,.8,.3,1.1) both" onclick="event.stopPropagation();openOrderView('${esc(tx._id)}')" title="${escHtml(txTypeLabel(tx.type))}">${_txTypeIcon(tx)}</div>
-      <div class="mgc-meta">
-        <div class="mgc-ref">${tx.ref ? `<a href="#" onclick="event.preventDefault();event.stopPropagation();openOrderView('${esc(tx._id)}')" style="color:inherit;text-decoration:none" title="${escHtml(movOpenOrderTitle(tx))}">#${esc(tx.ref)}</a>` : '—'} · <span class="mov-emp-initials" title="${esc(tx.employee||'')}">${_empInitials(tx.employee)}</span><span data-presence-tx="${esc(tx._id)}" style="display:none;margin-right:4px"></span></div>
-        <div class="mgc-date">${_fmtCardDate(tx.date, tx.createdAt)}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-        <div style="display:flex;align-items:center;gap:5px">${movementKindBadge(tx)}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}</div>
-        ${getVaultEntryStatusBadge(tx._id)}
-        ${tx.type==='مبيعات' ? _puStatusBadge(tx.pickupStatus||'Pending') : ''}
-      </div>
-    </div>
-    <div class="mgc-client" style="display:flex;align-items:center;gap:7px;overflow:hidden;flex-wrap:wrap">
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tx.client ? esc(tx.client) : '<span style="color:var(--muted)">بدون اسم</span>'}</span>
-      ${tx.type === 'مبيعات' && tx.phone ? `<a class="wa-btn" href="https://wa.me/${encodeURIComponent((tx.phone||'').replace(/\D/g,''))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="${escHtml(t('whatsappLabel', { v: tx.phone }))}" aria-label="${escHtml(t('whatsappLabel', { v: tx.phone }))}">${_WA_ICON_SVG}</a>` : ''}
-      ${(tx.comments && tx.comments.length) ? `<a class="mov-comment-ic" href="#" onclick="event.preventDefault();event.stopPropagation();openOrderView('${esc(tx._id)}')" title="${escHtml(t('commentsCountTitle', { n: tx.comments.length }))}">${commentIconSvg(13, 1.7)}</a>` : ''}
-    </div>
-    ${itemsPreview ? `<div class="mgc-items-preview">${itemsPreview}${moreItems}</div>` : ''}
-    <div class="mgc-financials">
-      <div class="mgc-fin-item">
-        <div class="mgc-fin-label">${t('gcTotal')}</div>
-        <div class="mgc-fin-val">${fmtJ(tx.total)}</div>
-      </div>
-      <div class="mgc-fin-item">
-        <div class="mgc-fin-label">${t('gcPaid')}</div>
-        <div class="mgc-fin-val is-green">${dep}</div>
-      </div>
-      <div class="mgc-fin-item">
-        <div class="mgc-fin-label">${t('gcRemaining')}</div>
-        <div class="mgc-fin-val ${rem>0?'is-red':''}">${fmtJ(rem)}</div>
-      </div>
-    </div>
-    ${movementStatusCell(tx)}
-    <div style="margin:8px 0 4px 0;display:flex;gap:4px;flex-wrap:wrap;align-items:center" onclick="event.stopPropagation()">
-      ${tagHtml}
-      <button class="tx-tag-add" onclick="openTagDropdown('${esc(tx._id)}',this)" title="${escHtml(t('addTagTitle'))}">
-        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> TAG
-      </button>
-    </div>
-    <div class="mgc-actions" onclick="event.stopPropagation()">
-      <button class="mgc-action-btn" onclick="openOrderView('${esc(tx._id)}')">
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        ${t('view')}
-      </button>
-      ${invoiceImageActions('transaction', tx._id, true)}
-      <button class="mgc-action-btn" onclick="printInvoice('${esc(tx._id)}')">
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        ${t('print')}
-      </button>
-      ${rem>0&&!isCancelled?`<button class="mgc-action-btn" onclick="openCollectMovement('${esc(tx._id)}')">
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-        ${t('collect')}
-      </button>`:''}
-      <div class="actions-dd" style="flex:0 0 auto">
-        <button class="dd-toggle mgc-action-btn" style="flex:0 0 auto;width:32px;padding:6px 0" onclick="toggleActionMenu(event)">⋮</button>
-        <div class="dd-menu">
-          ${txEditGate(tx).ok?`<div class="dd-item" onclick="openEditMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> ${t('editAction')}</div>`:''}
-          ${hasPerm('complaints') && !isPurchase ? `<div class="dd-item" onclick="convertTxToFollowUp('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M5 8.2V13a4 4 0 004 4h1.5" stroke-dasharray="3 3"/></svg> ${t('spConvertToFollowup')}</div>` : ''}
-          ${tx.type==='مبيعات'&&(tx.payments||[]).length>0&&!isCancelled&&isAdmin()?`<div class="dd-item" style="color:var(--orange)" onclick="openReverseCollect('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.4 7.4 11.5 4 18 5.5"/><path d="M21 17v-6h-6"/><path d="M21 11c-2.4 5.6-8.5 9-15 7.5"/></svg> تراجع تحصيل</div>`:''}
-          ${tx.type!=='مبيعات'&&((tx.payments||[]).length>0||(tx.deposits||[]).length>0)&&!isCancelled&&isAdmin()?`<div class="dd-item" style="color:#f97316" onclick="openUndoPaymentSelector('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 010 8h-3"/></svg> تراجع دفعة</div>`:''}
-          ${!isCancelled&&isAdmin()?`<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg> إلغاء</div>`:''}
-        </div>
-      </div>
-    </div>
-  </div>`;
-}
+function renderMovGridCard(tx) { return renderMovCompactCard(tx, true); }
+
 function renderRetGridCard(r) {
   const kindLabel = r.requestKind === 'exchange' ? 'استبدال' : 'استرجاع';
   return `<div class="mov-grid-card" style="--gc-color:#f97316;cursor:pointer" onclick="showReturnRequestMovementDetail('${esc(r._id)}')">
@@ -54846,10 +54883,14 @@ async function deleteMovement(id) { return archiveMovement(id); }
 
 // ── إرسال مجموعة Ready to Ship كاملة إلى Bosta ───────────────────────────
 async function puGroupSendToBosta(groupKey) {
-  const group = _pickupOrders.filter(o =>
+  const candidates = _pickupOrders.filter(o =>
     ['Ready','Picked-Up'].includes(o.pickupStatus||'') && (o.pickupRef||'') === groupKey
   );
-  if (!group.length) { toast(t('puGrpBostaEmpty'), true); return; }
+  if (!candidates.length) { toast(t('puGrpBostaEmpty'), true); return; }
+  const group = candidates.filter(o => !_bostaCaseId(o));
+  const linkedCount = candidates.length - group.length;
+  if (linkedCount) toast(t('bsfBulkCases', { n: fmtN(linkedCount) }));
+  if (!group.length) return;
 
   const notReady = group.filter(o => !['Ready','Picked-Up'].includes(o.pickupStatus||''));
   if (notReady.length) {
@@ -54914,6 +54955,7 @@ async function puGroupSendToBosta(groupKey) {
 async function sendToBosta(id) {
   const tx = transactions.find(t => t._id === id);
   if (!tx) { toast('المعاملة غير موجودة', true); return; }
+  if (_bostaCaseId(tx)) { await _bostaOpenCase(tx); return; }
   // Allow re-send if no prior order, or if status is resendable (deleted/validation error)
   const resendable = ['VALIDATION_ERROR', 'DELETED', ''].includes(tx.bostaStatus || '');
   if (!resendable) { toast('تم إرسال هذا الطلب إلى Bosta مسبقاً', true); return; }
@@ -55104,7 +55146,7 @@ html,body{background:#fff}
 
 /** Print through a hidden iframe. Resolves when the print dialog has closed. */
 function _awbPrintInFrame(prep) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const fr = document.createElement('iframe');
     fr.setAttribute('aria-hidden', 'true');
     fr.tabIndex = -1;
@@ -55125,10 +55167,10 @@ function _awbPrintInFrame(prep) {
     Promise.all(imgs.map(im => (im.decode ? im.decode() : Promise.resolve()).catch(() => {}))).then(() => {
       w.addEventListener('afterprint', finish, { once: true });
       w.focus();
-      w.print(); // Chrome: blocks until the dialog closes (afterprint already fired)
-      // Browsers whose print() returns at once still fire afterprint; this is a net.
-      setTimeout(finish, 60000);
-    });
+      // print() may return before preview opens. Only afterprint can release
+      // the confirmation; elapsed time does not mean the dialog has closed.
+      w.print();
+    }).catch(error => { fr.remove(); reject(error); });
   });
 }
 
@@ -55150,14 +55192,31 @@ function _awbBusy(on) {
   }
 }
 
-/** Resolves true once the print dialog has been shown for the label (and the
- * print is logged). */
+/** PDF viewer fallback: wait until the operator returns from the label tab. */
+function _awbWaitForLabelTab(tab) {
+  return new Promise(resolve => {
+    let left = document.hidden || !document.hasFocus();
+    const check = () => {
+      if (document.hidden || !document.hasFocus()) left = true;
+      if (!tab.closed && !(left && !document.hidden && document.hasFocus())) return;
+      clearInterval(poll);
+      window.removeEventListener('focus', check);
+      document.removeEventListener('visibilitychange', check);
+      resolve();
+    };
+    const poll = setInterval(check, 250);
+    window.addEventListener('focus', check);
+    document.addEventListener('visibilitychange', check);
+  });
+}
+
+/** Confirm physical output only after leaving the print preview. */
 function _awbConfirmPrinted() {
   const en = currentLang === 'en';
-  return showConfirm(en ? 'Did the shipping label print successfully? Confirm only after checking the printed label.' : 'هل تمت طباعة البوليصة بنجاح؟ أكّد بعد التأكد من خروج البوليصة من الطابعة.', {
+  return showConfirm(en ? 'Label printed?' : 'البوليصة اتطبعت؟', {
     title: en ? 'Confirm printing' : 'تأكيد الطباعة', icon: 'info',
-    confirmLabel: en ? 'Printed successfully' : 'تمت الطباعة بنجاح',
-    cancelLabel: en ? 'Not printed — retry' : 'لم تتم الطباعة — إعادة المحاولة'
+    confirmLabel: en ? 'Yes, printed' : 'نعم، اتطبعت',
+    cancelLabel: en ? 'No, again' : 'لا، إعادة'
   });
 }
 async function printBostaAwb(id, opts = {}) {
@@ -55182,6 +55241,8 @@ async function printBostaAwb(id, opts = {}) {
         if (!tab) toast('اسمح بفتح النوافذ المنبثقة لعرض بوليصة الشحن', true);
         setTimeout(() => URL.revokeObjectURL(url), 60000);
         if (!tab) return false;
+        clearTimeout(busyT); _awbBusy(false);
+        await _awbWaitForLabelTab(tab);
         if (!(await _awbConfirmPrinted())) return false;
         await _awbRecordPrint(id);
         return true;
@@ -55292,6 +55353,22 @@ function _bsfIsBostaOrder(o) {
   if (code) return carrierIntegration(code) === 'bosta';
   return /bosta|بوسط/i.test(String(o.shipCo || ''));
 }
+// Resolve either in-memory copy so a sparse pickup row still uses its linked workflow.
+function _bostaCaseId(o) {
+  if (!o) return '';
+  return o.afterSales?.caseId || _awbOrderCopies(o._id).find(copy => copy.afterSales?.caseId)?.afterSales.caseId || '';
+}
+function _bostaSendLabel(o) {
+  if (_bostaCaseId(o)) return t('bsfCase');
+  return t(['VALIDATION_ERROR', 'DELETED'].includes(o.bostaStatus || '') ? 'resendBosta' : 'sendBosta');
+}
+async function _bostaOpenCase(o) {
+  const caseId = _bostaCaseId(o);
+  if (!caseId) return;
+  if (!window.AfterSales?.open) { toast(t('bsfCaseUnavailable'), true); return; }
+  try { await window.AfterSales.open(caseId); }
+  catch (_) { toast(t('bsfCaseUnavailable'), true); }
+}
 function _bsfIsSent(o) {
   return !!o.bostaOrderId && !['VALIDATION_ERROR', 'DELETED'].includes(o.bostaStatus || '');
 }
@@ -55324,7 +55401,7 @@ function _bsfMaybeOffer(o) {
   if (sent) _awbPrepareSoon(o._id);                                 // label ready before «طباعة»
   let done;
   const decision = new Promise(resolve => { done = resolve; });
-  _bsfState = { id: String(o._id), order: o, resolve: done, decision, stage: sent ? 'sent' : 'ask', tracking: o.bostaTrackingNumber || '' };
+  _bsfState = { id: String(o._id), order: o, resolve: done, decision, stage: sent ? 'sent' : _bostaCaseId(o) ? 'case' : 'ask', tracking: o.bostaTrackingNumber || '' };
   _bsfRender();
   return decision;
 }
@@ -55398,7 +55475,12 @@ function _bsfStageHtml(st, o) {
   const identity = `<bdi>#${esc(o.ref || '—')}</bdi> · ${who}`;
   const track = st.tracking ? `<div class="bsf-track bsf-in">${esc(t('bsfTracking'))} <bdi>${esc(st.tracking)}</bdi></div>` : '';
   let body = '', btns = '';
-  if (st.stage === 'ask' || st.stage === 'sending') {
+  if (st.stage === 'case') {
+    body = head('ok', CHECK, esc(t('bsfPrepared', {ref:o.ref || '—'})), who) +
+      `<p class="bsf-q bsf-in">${esc(t('bsfCaseShipping'))}</p>`;
+    btns = `<button type="button" class="bsf-btn is-primary" data-bsf="case">${ic(TRUCK, 15)}${esc(t('bsfCase'))}</button>
+            <button type="button" class="bsf-btn" data-bsf="close">${esc(t('bsfLater'))}</button>`;
+  } else if (st.stage === 'ask' || st.stage === 'sending') {
     const busy = st.stage === 'sending';
     body = head('ok', CHECK, esc(t('bsfPrepared', {ref:o.ref || '—'})), who) +
       `<p class="bsf-q bsf-in">${esc(t('bsfAskQ'))}</p>` +
@@ -55452,6 +55534,7 @@ function _bsfRender() {
       if (!b || b.disabled) return;
       const a = b.dataset.bsf;
       if (a === 'close') _bsfClose();
+      else if (a === 'case') { const order = _bsfState?.order; _bsfClose(); void _bostaOpenCase(order); }
       else if (a === 'send') _bsfSend();
       else if (a === 'print') _bsfPrint();
     });
@@ -55489,6 +55572,7 @@ function _bsfRender() {
 async function _bsfSend() {
   const st = _bsfState;
   if (!st || st.stage === 'sending') return;
+  if (_bostaCaseId(st.order)) { st.stage = 'case'; _bsfRender(); return; }
   st.stage = 'sending';
   _bsfRender();
   try {
@@ -55544,9 +55628,13 @@ async function _bsfPrint() {
 
 async function bulkSendToBosta() {
   if (!selectedMovIds.size) { toast('لم يتم تحديد أي معاملات', true); return; }
-  const eligible = [...selectedMovIds]
+  const selected = [...selectedMovIds]
     .map(id => transactions.find(t => t._id === id))
     .filter(t => t && t.type === 'مبيعات' && !t.cancelled && !t.bostaOrderId && ['Preparing', 'Ready', 'Picked-Up', 'Shipped'].includes(t.pickupStatus || ''));
+  const eligible = selected.filter(tx => !_bostaCaseId(tx));
+  const linkedCount = selected.length - eligible.length;
+  if (linkedCount) toast(t('bsfBulkCases', { n: fmtN(linkedCount) }));
+  if (!eligible.length && linkedCount) return;
   if (!eligible.length) { toast('لا توجد معاملات جاهزة للإرسال — يجب أن تكون في حالة "Preparing" على الأقل', true); return; }
   const confirmed = await showConfirm(
     `إرسال ${eligible.length} طلب إلى Bosta؟`,
@@ -60106,7 +60194,7 @@ function showInvoiceDetail(id, highlightCommentId) {
         <div class="inv-meta-chips">
           <span class="meta-chip"><span class="k meta-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span><span class="v">${_noCashMovedM ? t('ivPaidFromCredit') : esc(_payMethodLabel(tx.depMethod || tx.payment || (isPurchase ? 'تحويل بنكي' : 'نقدي')))}</span></span>
           <span class="meta-chip"><span class="k meta-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="v">${esc(tx.employee || '-')}</span></span>
-          ${!isPurchase && !isReturn ? `<span class="meta-chip"><span class="k meta-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.27 6.96L12 12.01l8.73-5.05"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span class="v">${_puStatusBadge(tx.pickupStatus || 'Pending')}</span></span>${tx.pickupDate ? `<span class="meta-chip"><span class="k meta-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span class="v">${esc(tx.pickupDate)}</span></span>` : ''}` : ''}
+          ${!isPurchase && !isReturn ? `<span class="meta-chip"><span class="k meta-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.27 6.96L12 12.01l8.73-5.05"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span class="v">${_puStatusBadge(tx.pickupStatus || 'Pending', tx)}</span></span>${tx.pickupDate ? `<span class="meta-chip"><span class="k meta-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span class="v">${esc(tx.pickupDate)}</span></span>` : ''}` : ''}
           ${!isPurchase && !isReturn ? `<span class="meta-chip"><span class="k">Bosta</span><span class="v" style="display:flex;align-items:center;gap:6px">${_bostaStatusBadge(tx)}${tx.bostaLastSync ? `<span style="font-size:.7rem;color:var(--muted)">${new Date(tx.bostaLastSync).toLocaleTimeString(_dtLocale,{hour:'2-digit',minute:'2-digit'})}</span>` : ''}</span></span>` : ''}
           ${(()=>{
             if (!tx.notes) return '';
@@ -60213,9 +60301,9 @@ function openTxInNewTab(id) {
 
    Reuses `toggleActionMenu` / `.actions-dd` / `.dd-menu` verbatim (the portal
    pattern), so no new JS is needed — see the Movements ⋮ action-menu notes.  */
-function _invMoreMenuHtml(tx, editLocked) {
+function _invMoreMenuHtml(tx, editLocked, secondaryActionsHtml = '') {
   const id = esc(tx._id);
-  const items = [];
+  const items = secondaryActionsHtml.trim() ? [secondaryActionsHtml, '<div class="dd-divider"></div>'] : [];
   const div = () => { if (items.length && items[items.length - 1] !== '<div class="dd-divider"></div>') items.push('<div class="dd-divider"></div>'); };
 
   // Edit — only when the header button is missing (locked); the reason is stated
@@ -61026,34 +61114,39 @@ function renderInvoiceViewPage() {
     </div>`;
   })();
 
-  const actionButtonsHtml = `
-    ${shopifyOrderUrl ? `<a href="${esc(shopifyOrderUrl)}" target="_blank" rel="noopener" class="inv2-btn inv2-btn-icon" title="${esc(t('ivViewInShopify'))}" aria-label="${esc(t('ivViewInShopify'))}">
+  const secondaryActionsHtml = `
+    ${shopifyOrderUrl ? `<a href="${esc(shopifyOrderUrl)}" target="_blank" rel="noopener" class="dd-item inv2-menu-action" title="${esc(t('ivViewInShopify'))}" aria-label="${esc(t('ivViewInShopify'))}">
       <svg class="inv2-shopify-mark" viewBox="0 0 110 125" width="15" height="15" aria-hidden="true"><image href="/shopify-glyph-color-2026-65613845c170.svg" width="110" height="125"/></svg>
+      <span>${t('ivViewInShopify')}</span>
     </a>` : ''}
+    ${!_editLocked ? `<button onclick="openEditMovement('${esc(tx._id)}')" class="dd-item inv2-menu-action" title="${esc(t('ivEditTx'))}" aria-label="${esc(t('ivEditTx'))}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="15" height="15"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <span>${t('ivEditTx')}</span>
+    </button>` : ''}
+    ${!isPurchase && !isReturn && !isSupplierReturn && !tx.cancelled && ['Preparing','Ready','Picked-Up','Shipped'].includes(tx.pickupStatus||'') ? (['VALIDATION_ERROR','DELETED',''].includes(tx.bostaStatus||'')
+      ? `<button class="dd-item inv2-menu-action" onclick="sendToBosta('${esc(tx._id)}')">${_BOSTA_ICON} <span>${tx.bostaStatus==='VALIDATION_ERROR'?'Resend to Bosta':tx.bostaStatus==='DELETED'?'Resend to Bosta':'Send to Bosta'}</span></button>`
+      : `<button class="dd-item inv2-menu-action" onclick="syncBostaStatus('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>${_BOSTA_ICON} <span>Update Bosta</span></button>`
+    ) : ''}
+    ${!isPurchase && !isReturn && !isSupplierReturn && !tx.cancelled && tx.bostaOrderId && !['DELIVERED','RETURNED','CANCELLED','DELETED'].includes(tx.bostaStatus||'') ? (_awbWarm(), '') + `<button class="dd-item inv2-menu-action" onpointerenter="_awbPrepareSoon('${esc(tx._id)}')" onclick="printBostaAwb('${esc(tx._id)}')" title="${currentLang === 'en' ? 'Print Bosta AWB' : 'طباعة بوليصة Bosta'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg><span>${currentLang === 'en' ? 'Print Bosta AWB' : 'طباعة بوليصة Bosta'}</span></button>` : ''}
+    ${isPurchase && (tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && isAdmin() ? `<button class="dd-item inv2-menu-action" onclick="openWriteOffModal('${esc(tx._id)}')" title="${escHtml(t('supWriteOffTitle'))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M20 6L9 17l-5-5"/></svg><span>${t('supWriteOffBtn')}</span></button>` : ''}
+    ${!isPurchase && !isReturn && !isSupplierReturn && !tx.cancelled && tx.bostaStatus !== 'DELIVERED' && hasPerm('delivery-manual-confirm') ? `<button class="dd-item inv2-menu-action" onclick="openManualDeliveryModal('${esc(String(tx._id))}')"${_fdLockAttr(tx, 'fdLockManualDeliver')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M20 6L9 17l-5-5"/></svg><span>${t('ivConfirmManualDelivery')}</span></button>` : ''}
+    ${!isPurchase && !isReturn && !isSupplierReturn && !tx.cancelled && tx.deliverySource === 'MANUAL' && hasPerm('delivery-manual-confirm') ? `<button class="dd-item inv2-menu-action" onclick="undoManualDelivery('${esc(String(tx._id))}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg><span>${t('ivUndoManualDelivery')}</span></button>` : ''}
+  `;
+  const actionButtonsHtml = `
     <button onclick="printInvoice('${esc(tx._id)}')" class="inv2-btn inv2-btn-icon" title="${esc(t('ivPrint'))}" aria-label="${esc(t('ivPrint'))}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
     </button>
-    ${!_editLocked ? `<button onclick="openEditMovement('${esc(tx._id)}')" class="inv2-btn inv2-btn-icon" title="${esc(t('ivEditTx'))}" aria-label="${esc(t('ivEditTx'))}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="15" height="15"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-    </button>` : ''}
-    ${!isPurchase && !isReturn && !isSupplierReturn && !tx.cancelled && ['Preparing','Ready','Picked-Up','Shipped'].includes(tx.pickupStatus||'') ? (['VALIDATION_ERROR','DELETED',''].includes(tx.bostaStatus||'')
-      ? `<button class="inv2-btn" onclick="sendToBosta('${esc(tx._id)}')">${_BOSTA_ICON} <span>${tx.bostaStatus==='VALIDATION_ERROR'?'Resend to Bosta':tx.bostaStatus==='DELETED'?'Resend to Bosta':'Send to Bosta'}</span></button>`
-      : `<button class="inv2-btn" onclick="syncBostaStatus('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>${_BOSTA_ICON} <span>Update Bosta</span></button>`
-    ) : ''}
-    ${!isPurchase && !isReturn && !isSupplierReturn && !tx.cancelled && tx.bostaOrderId && !['DELIVERED','RETURNED','CANCELLED','DELETED'].includes(tx.bostaStatus||'') ? (_awbWarm(), '') + `<button class="inv2-btn" onpointerenter="_awbPrepareSoon('${esc(tx._id)}')" onclick="printBostaAwb('${esc(tx._id)}')" title="${currentLang === 'en' ? 'Print Bosta AWB' : 'طباعة بوليصة Bosta'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg><span>${currentLang === 'en' ? 'Print Bosta AWB' : 'طباعة بوليصة Bosta'}</span></button>` : ''}
     ${isExchangeSalePendingCollect(tx) ? `<button class="inv2-btn inv2-btn-primary" onclick="openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg><span>${t('ivCollectExchangeDiff')} (${fmtJ(tx.remaining)})</span></button>` : ''}
     ${(tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx) && !_csCollectViaCard(tx) ? `<button class="inv2-btn ${isPurchase ? 'inv2-btn-danger' : 'inv2-btn-primary'}" onclick="openCollectMovement('${esc(tx._id)}')"${_fdLockAttr(tx, 'fdLockCollect')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">${isPurchase ? '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>' : '<circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/>'}</svg><span>${isPurchase ? t('ivPaySupplier') : t('ivCollectFromCustomer')}</span></button>` : ''}
-    ${isPurchase && (tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && isAdmin() ? `<button class="inv2-btn" onclick="openWriteOffModal('${esc(tx._id)}')" title="${escHtml(t('supWriteOffTitle'))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M20 6L9 17l-5-5"/></svg><span>${t('supWriteOffBtn')}</span></button>` : ''}
-    ${!isPurchase && !isReturn && !isSupplierReturn && !tx.cancelled && tx.bostaStatus !== 'DELIVERED' && hasPerm('delivery-manual-confirm') ? `<button class="inv2-btn" onclick="openManualDeliveryModal('${esc(String(tx._id))}')"${_fdLockAttr(tx, 'fdLockManualDeliver')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M20 6L9 17l-5-5"/></svg><span>${t('ivConfirmManualDelivery')}</span></button>` : ''}
-    ${!isPurchase && !isReturn && !isSupplierReturn && !tx.cancelled && tx.deliverySource === 'MANUAL' && hasPerm('delivery-manual-confirm') ? `<button class="inv2-btn" onclick="undoManualDelivery('${esc(String(tx._id))}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg><span>${t('ivUndoManualDelivery')}</span></button>` : ''}
-    ${_invMoreMenuHtml(tx, _editLocked)}
+    ${_invMoreMenuHtml(tx, _editLocked, secondaryActionsHtml)}
   `;
 
   // Party card (Customer Information)
   const partyCardHtml = `
-    ${window.SouliaWarehouses?.invoiceChip(tx) || ''}<div class="inv2-card">
+    <div class="inv2-card">
       <div class="inv2-card-head"><span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${(isPurchase||isSupplierReturn)?t('ivSupplierInfo'):t('ivCustomerInfo')}</span></div>
       <div class="inv2-card-body">
+        ${window.SouliaWarehouses?.invoiceChip(tx) || ''}
         <div class="inv-party-card">
           <div>
             <div style="font-size:.93rem;font-weight:400;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
@@ -61286,10 +61379,12 @@ function renderInvoiceViewPage() {
         </div>` : '';
 
     /* حالة الالتقاط سياق قبل الشحن — بعد ما الطلب اتبعت لبوسطة بتتنقل لـ«تفاصيل الشحنة». */
-    const _pickupRow = `<div class="inv2-kv"><span class="k">${t('ivPickupStatus')}</span><span class="v">${_puStatusBadge(tx.pickupStatus || 'Pending')}${tx.pickupDate ? ` <span style="color:var(--muted);font-size:.72rem">· ${esc(tx.pickupDate)}</span>` : ''}</span></div>`;
+    // The heading owns the order state; carrier details do not repeat its badge.
+    const _pickupRow = tx.pickupDate ? `<div class="inv2-kv"><span class="k">${t('ivPickupStatus')}</span><span class="v">${esc(tx.pickupDate)}</span></div>` : '';
+    const _carrierDetails = _bostaStatusBadge(tx, { hideStatus: true });
     const _deliveryRows = _hasDeliveryInfo ? `
-        ${tx.bostaOrderId ? '' : _pickupRow}
-        <div class="inv2-kv"><span class="k">Bosta</span><span class="v">${_bostaStatusBadge(tx)}${tx.bostaLastSync ? `<span style="font-size:.7rem;color:var(--muted);font-weight:400" class="cs-num">${new Date(tx.bostaLastSync).toLocaleString(_invLoc,{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>` : ''}</span></div>
+        ${_pickupRow}
+        ${_carrierDetails || tx.bostaLastSync ? `<div class="inv2-kv"><span class="k">Bosta</span><span class="v">${_carrierDetails}${tx.bostaLastSync ? `<span style="font-size:.7rem;color:var(--muted);font-weight:400" class="cs-num">${new Date(tx.bostaLastSync).toLocaleString(_invLoc,{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>` : ''}</span></div>` : ''}
         ${tx.bostaTrackingNumber ? `<div class="inv2-kv"><span class="k">${t('ivTrackingNumber')}</span><span class="v" style="gap:6px"><button type="button" class="bsd-track" onclick="navigator.clipboard?.writeText('${esc(String(tx.bostaTrackingNumber))}').then(()=>toast(t('ivTrackingCopied')))" title="${esc(t('ivCopyTrackingTitle'))}" aria-label="${esc(t('ivCopyTrackingTitle'))}"><bdi>${esc(tx.bostaTrackingNumber)}</bdi><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>${_awbPrintedMarkHtml(_awbPrintsOf(tx._id))}</span></div>` : ''}
         ${tx.deliverySource === 'MANUAL' ? `<div style="background:var(--bg-alt);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:.78rem;margin-top:2px">
           <div style="display:flex;align-items:center;gap:6px;color:var(--text);font-weight:700"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M20 6L9 17l-5-5"/></svg>${t('ivDeliveredManually')}</div>
@@ -61309,7 +61404,7 @@ function renderInvoiceViewPage() {
         ${_waybillRows}
         ${_shipRows && _deliveryRows ? '<div class="inv2-sec-div"></div>' : ''}
         ${_deliveryRows}
-        ${_hasDeliveryInfo ? _ivBostaShipHtml(tx, tx.bostaOrderId ? _pickupRow : '') : ''}
+        ${_hasDeliveryInfo ? _ivBostaShipHtml(tx, '') : ''}
       </div>
     </div>`;
   })() : '';
@@ -61521,16 +61616,17 @@ function renderInvoiceViewPage() {
       <span style="color:var(--text);font-weight:600">${invNumber}</span>
     </div>
     <!-- Page Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-      <div style="display:flex;align-items:center;gap:10px">
+    <div class="inv2-page-header">
+      <div class="inv2-page-heading">
         ${navBackBtnHtml({ forPage: 'invoice-view' })}
         <div>
           <h2 style="font-size:1.05rem;font-weight:700;color:var(--text);margin:0">${typeTitle} ${invNumber}</h2>
           <div style="font-size:.75rem;color:var(--muted);margin-top:1px">${dateShort} · ${timeStr}</div>
+          ${!isPurchase && !isReturn && !isSupplierReturn ? `<div class="inv-order-state-heading">${_orderStateBadge(tx)}</div>` : ''}
         </div>
         ${orderNavHtml}
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">${actionButtonsHtml}</div>
+      <div class="inv2-header-actions">${actionButtonsHtml}</div>
     </div>
 
     ${failedDeliveryHtml}
@@ -63362,7 +63458,7 @@ function renderProducts() {
     return `
     <tr class="${inactiveRowCls.trim()}"><td><input type="checkbox" class="prod-chk" value="${esc(p._id)}" onchange="updateProdBulkBar()"></td>
       <td>${productThumbHtml(p.imageUrl, p.name, 'inv-thumb')}</td>
-      <td>${esc(p.code || '-')}</td><td>${esc(p.name)}${inactiveBadge}</td><td>${esc(p.supplier || '-')}</td>
+      <td><bdi class="product-sku" dir="ltr">${esc(p.code || '-')}</bdi></td><td>${esc(p.name)}${inactiveBadge}</td><td>${esc(p.supplier || '-')}</td>
       <td>${link ? esc(link.categoryName || '-') : '<span style="color:var(--muted)">—</span>'}</td>
       <td>${link ? esc(link.collectionName || '-') : '<span style="color:var(--muted)">—</span>'}</td>
       <td>${fmtJ(p.sellPrice)}</td><td>${fmtJ(p.buyPrice)}</td>
@@ -63734,11 +63830,11 @@ const PM_SIZE_AR = { Small:'صغير', Medium:'وسط', Large:'كبير' };
 const PM_DESC_L10N = {
   ar: { specs:'المواصفات', care:'تعليمات العناية', category:'التصنيف', collection:'المجموعة',
         material:'الخامة', size:'المقاس', colors:'الألوان المتاحة', pattern:'النقشة',
-        features:'المميزات', otherFeatures:'أخرى', code:'كود الصنف', patterned:'منقوش',
+        features:'المميزات', otherFeatures:'أخرى', code:'SKU', patterned:'منقوش',
         len:'الطول', wid:'العرض', hei:'الارتفاع', cm:'سم', sep:' - ' },
   en: { specs:'SPECIFICATIONS', care:'CARE INSTRUCTIONS', category:'Category', collection:'Collection',
         material:'Material', size:'Size', colors:'Available Colors', pattern:'Pattern',
-        features:'FEATURES', otherFeatures:'Other', code:'Product Code', patterned:'Patterned',
+        features:'FEATURES', otherFeatures:'Other', code:'SKU', patterned:'Patterned',
         len:'Length', wid:'Width', hei:'Height', cm:'cm', sep:' / ' },
 };
 
@@ -70400,7 +70496,7 @@ function _buildSupplierReturnPrintHtml({ returnNumber, status, supplierName, sup
   <thead>
     <tr>
       <th style="width:50px">صورة</th>
-      <th>كود الصنف</th>
+      <th>SKU</th>
       <th>اسم الصنف</th>
       <th style="text-align:center;width:60px">الكمية</th>
       <th style="text-align:center;width:80px">السعر</th>
@@ -71373,7 +71469,7 @@ function openPoDetailModal(poId) {
       <table style="width:100%;font-size:.82rem;border-collapse:collapse">
         <thead><tr style="background:var(--surface2)">
           <th style="padding:6px 8px;text-align:right;width:44px">صورة</th>
-          <th style="padding:6px 8px;text-align:right">الكود</th>
+          <th style="padding:6px 8px;text-align:right">SKU</th>
           <th style="padding:6px 8px;text-align:right">الصنف</th>
           <th style="padding:6px 8px;text-align:center">الكمية</th>
           <th style="padding:6px 8px;text-align:center">السعر</th>
@@ -72098,7 +72194,7 @@ ${notes ? `<p style="font-size:13px"><span class="label">ملاحظة:</span> ${
 <table>
   <thead>
     <tr>
-      <th>كود الصنف</th>
+      <th>SKU</th>
       <th>اسم الصنف</th>
       <th style="text-align:center">الكمية المستلمة</th>
       <th style="text-align:center">سعر الشراء</th>
@@ -72197,7 +72293,7 @@ ${po.notes ? `<p style="font-size:${baseFont}"><span class="label">ملاحظا�
     <tr>
       <th style="width:${compact?'16px':'24px'}">#</th>
       <th style="width:${compact?'30px':'50px'}">صورة</th>
-      <th>كود الصنف</th>
+      <th>SKU</th>
       <th>اسم الصنف</th>
       <th style="text-align:center;width:${compact?'34px':'60px'}">الكمية</th>
       ${showPrices ? `<th style="text-align:center;width:${compact?'55px':'80px'}">سعر الشراء (ج.م)</th><th style="text-align:center;width:${compact?'60px':'90px'}">الإجمالي (ج.م)</th>` : ''}
@@ -73940,7 +74036,7 @@ function _otpDetailRows(r, idx) {
       const code = codeMatch?.[1] || r.txRef || '';
       const lines = [];
       if (name) lines.push(`اسم الصنف: <b>${esc(name)}</b>`);
-      if (code) lines.push(`كود الصنف: <b style="font-family:monospace">${esc(code)}</b>`);
+      if (code) lines.push(`SKU: <b style="font-family:monospace">${esc(code)}</b>`);
       lines.push(`<span style="color:#b91c1c;font-weight:600">⚠ تم حذف هذا الصنف نهائياً من المخزون</span>`);
       inner = lines.map(l => `<div style="font-size:.73rem;color:var(--muted);padding:2px 0">${l}</div>`).join('');
     }
@@ -80139,6 +80235,7 @@ const MOV_COL_FIT = {
   bosta:[90,118,1], tag:[90,168,3], employee:[44,44,0],
 };
 let _movFitObserver = null;
+let _movFitFrame = 0;
 function fitMovTableColumns() {
   const table = qs('#mov-table'), scroll = qs('#mov-table-wrap .ent-table-scroll');
   if (!table || !scroll || !scroll.clientWidth) return;
@@ -80157,21 +80254,40 @@ function fitMovTableColumns() {
   const baseRoom = normal - minimum;
   const remaining = Math.max(0, target - normal);
   const growWeight = visible.reduce((sum, [, spec]) => sum + spec[2], 0) || 1;
+  // Round the cumulative allocation, not each column independently: individual
+  // rounding can add several pixels and repeatedly toggle scrollbars at zoom.
+  let allocated = 0, cumulative = 0;
+  const setSize = (name, value) => {
+    if (table.style.getPropertyValue(name) !== value) table.style.setProperty(name, value);
+  };
   for (const [id, [min, base, grow]] of visible) {
     const width = min + (baseRoom ? towardsNormal * (base - min) / baseRoom : 0) + remaining * grow / growWeight;
-    table.style.setProperty('--mov-col-' + id, Math.round(width) + 'px');
+    cumulative += width;
+    const edge = Math.round(cumulative);
+    setSize('--mov-col-' + id, (edge - allocated) + 'px');
+    allocated = edge;
   }
   for (const id of Object.keys(MOV_COL_FIT)) if (hidden.has(id)) {
-    table.style.setProperty('--mov-col-' + id, '0px');
+    setSize('--mov-col-' + id, '0px');
   }
-  table.style.minWidth = minimum + 'px';
-  table.style.width = target + 'px';
+  setSize('min-width', minimum + 'px');
+  setSize('width', target + 'px');
 }
 function watchMovTableFit() {
   if (_movFitObserver || !window.ResizeObserver) return;
   const scroll = qs('#mov-table-wrap .ent-table-scroll');
   if (!scroll) return;
-  _movFitObserver = new ResizeObserver(() => fitMovTableColumns());
+  let lastWidth = -1;
+  _movFitObserver = new ResizeObserver(() => {
+    const width = scroll.clientWidth;
+    if (width === lastWidth) return;
+    lastWidth = width;
+    cancelAnimationFrame(_movFitFrame);
+    _movFitFrame = requestAnimationFrame(() => {
+      _movFitFrame = 0;
+      fitMovTableColumns();
+    });
+  });
   _movFitObserver.observe(scroll);
 }
 function _getHiddenMovCols() { return _readColsPref(MOV_COLS_KEY); }
@@ -89026,36 +89142,8 @@ function _searchProIcon(item) {
    follows socket updates — else from the fields the server now returns. */
 function _gsOrderStatus(item) {
   const live = (transactions || []).find(t => String(t._id) === String(item.id));
-  const src = live
-    ? { ...live, hasShipment: !!live.bostaOrderId }
-    : { ...item, bostaOrderId: item.hasShipment ? 'x' : '' };
-  const code = String(src.bostaStatus || '').trim().toUpperCase();
-  const att = Array.isArray(src.shipmentAttempts) ? src.shipmentAttempts.length : (Number(src.shipmentAttempts) || 0);
-  const deleted = code === 'DELETED';
-  const note = deleted ? t('gsAwbDeleted') : code === 'VALIDATION_ERROR' ? t('gsAwbInvalid') : '';
-  if (src.cancelled) return { label: t('gsCancelled'), cls: 'search-order-badge-red', note: '' };
-  // A live shipment at the carrier: its own status is the order's state.
-  if (src.hasShipment && code && !['DELETED', 'VALIDATION_ERROR'].includes(code)) {
-    const CLS = {
-      DELIVERED: 'search-order-badge-green',
-      OUT_FOR_DELIVERY: 'search-order-badge-blue', IN_TRANSIT: 'search-order-badge-blue', PICKED_UP: 'search-order-badge-blue',
-      RETURNED: 'search-order-badge-red', FAILED_ATTEMPT: 'search-order-badge-red', DELIVERY_FAILED: 'search-order-badge-red', CANCELLED: 'search-order-badge-red',
-    };
-    return { label: _bostaStatusLabel(code), cls: CLS[code] || 'search-order-badge-bosta', note: '' };
-  }
-  // No live shipment (never sent, deleted, rejected): the order's own stage.
-  const stage = _puDisplayStatus(src);
-  if (stage !== 'Delivered' && att > 0) return { label: t('gsReshipPending', { v: fmtN(att + 1) }), cls: 'search-order-badge-amber', note };
-  const STAGE = {
-    Pending:     ['gsStPending',   'search-order-badge-bosta'],
-    Preparing:   ['gsStPreparing', 'search-order-badge-amber'],
-    Ready:       ['gsStReady',     'search-order-badge-blue'],
-    'Picked-Up': ['gsStReady',     'search-order-badge-blue'],
-    Shipped:     ['gsStShipped',   'search-order-badge-blue'],
-    Delivered:   ['gsStDelivered', 'search-order-badge-green'],
-  };
-  const [key, cls] = STAGE[stage] || STAGE.Pending;
-  return { label: t(key), cls, note };
+  const meta = _orderStateMeta(live || item.orderState || item);
+  return { ...meta, cls: 'search-order-badge-' + meta.tone };
 }
 
 function renderSearchDropdown() {
@@ -89094,8 +89182,7 @@ function renderSearchDropdown() {
         // The chip states the order's real state (_gsOrderStatus); a deleted or
         // rejected label rides beside it as a quiet note — context, not the status.
         const _st = _gsOrderStatus(item);
-        const bostaBadge = '<span class="search-order-badge ' + _st.cls + '">' + esc(_st.label) + '</span>'
-          + (_st.note ? ' <span class="search-order-note">' + esc(_st.note) + '</span>' : '');
+        const bostaBadge = SouliaOrderStatus.badge(_st);
         const custName = String(item.subtitle || '').replace(/^\s*[^—]+—\s*/, '').trim();
         const dateStr = item.createdAt ? fmtDateShort(new Date(item.createdAt)) : '';
         metaHtml = '<div class="search-order-meta">'
@@ -89110,7 +89197,8 @@ function renderSearchDropdown() {
       } else if (item.type === 'shopify_order') {
         const custName = String(item.subtitle || '').replace(/^\s*[^—]+—\s*/, '').trim();
         const dateStr = item.createdAt ? fmtDateShort(new Date(item.createdAt)) : '';
-        const statusBadgeClass = item.shopifyCancelled ? 'search-order-badge-red' : 'search-order-badge-blue';
+        const liveOrder = (_shopifyOrders || []).find(o => String(o._id) === String(item.id));
+        const stateBadge = _orderStateBadge(liveOrder || item.orderState || { status: 'pending', cancelled: item.shopifyCancelled }, 'shopify');
         metaHtml = '<div class="search-order-meta">'
           + '<div class="search-order-top">'
             + '<span class="search-order-ref">' + _gsHighlight(item.title, _hlTokens) + '</span>'
@@ -89118,7 +89206,7 @@ function renderSearchDropdown() {
             + '<span class="search-order-amount">' + fmtJ(item.total || 0) + '</span>'
           + '</div>'
           + '<div class="search-order-sub">' + esc(t('gsItemsCount', { n: fmtN(item.itemsCount || 0) }))
-            + (dateStr ? ' · ' + esc(dateStr) : '') + ' · <span class="search-order-badge ' + statusBadgeClass + '" style="font-size:.65rem">' + esc(item.shopifyStatus || '') + '</span></div>'
+            + (dateStr ? ' · ' + esc(dateStr) : '') + ' · ' + stateBadge + '</div>'
         + '</div>';
       } else if (item.type === 'product') {
         const stock = getProductAvailableStock(item.id);
@@ -89173,7 +89261,7 @@ function renderSearchDropdown() {
       const infoInner = (item.type === 'order' || item.type === 'shopify_order')
         ? metaHtml
         : ('<div class="search-title">' + _gsHighlight(item.title, _hlTokens) + '</div>'
-          + '<div class="search-subtitle">' + _gsHighlight(_subtitle, _hlTokens) + '</div>'
+          + '<div class="search-subtitle' + (item.type === 'product' ? ' search-product-sku' : '') + '">' + _gsHighlight(_subtitle, _hlTokens) + '</div>'
           + (item.type === 'product' ? metaHtml : ''));
       const trailingMeta = (item.type === 'product' || item.type === 'order' || item.type === 'shopify_order') ? '' : metaHtml;
       const excludeBtn = '';
@@ -89601,7 +89689,7 @@ function _xpTxSheets(txs) {
     header: ['المرجع', 'النوع', 'التاريخ', 'العميل / المورد', 'الهاتف', 'الموظف', 'طريقة الدفع', 'حالة الدفع', 'حالة الطلب',
              'إجمالي الأصناف', 'الخصم', 'تكلفة الشحن', 'الإجمالي', 'المدفوع', 'المتبقي', 'عدد الأصناف', 'ملاحظات'] };
   const items = { name: 'الأصناف', numeric: new Set([4, 5, 6]), rows: [],
-    header: ['المرجع', 'التاريخ', 'كود الصنف', 'اسم الصنف', 'الكمية', 'سعر الوحدة', 'الإجمالي'] };
+    header: ['المرجع', 'التاريخ', 'SKU', 'اسم الصنف', 'الكمية', 'سعر الوحدة', 'الإجمالي'] };
   const pays = { name: 'المدفوعات', numeric: new Set([4, 5]), rows: [],
     header: ['المرجع', 'التاريخ', 'النوع', 'الطريقة', 'المبلغ', 'المتبقي بعدها', 'بواسطة', 'ملاحظة', 'ملغاة'] };
   const ship = { name: 'الشحن', numeric: new Set([4, 5]), rows: [],
@@ -91291,7 +91379,7 @@ function _cmpResolveItem(it) {
 }
 
 function _cmpOrderRowHtml(t) {
-  const statusHtml = t.pickupStatus ? _puStatusBadge(t.pickupStatus) : '';
+  const statusHtml = t.pickupStatus ? _puStatusBadge(t.pickupStatus, t) : '';
   return `<div class="cmp-order-row" onclick="cmpPickOrder('${esc(t._id)}')">
     <div class="cmp-order-row-main">
       <span class="cmp-order-row-ref">${esc(t.ref || t._id)}</span>
@@ -91342,7 +91430,7 @@ function renderCmpWizard() {
       <div class="cmp-card" style="margin-bottom:14px">
         <div class="cmp-card-top">
           <span class="cmp-card-customer" style="font-size:.88rem">${esc(tx.ref || tx._id)}</span>
-          ${tx.pickupStatus ? _puStatusBadge(tx.pickupStatus) : ''}
+          ${tx.pickupStatus ? _puStatusBadge(tx.pickupStatus, tx) : ''}
         </div>
         <div class="cmp-card-row"><span class="cmp-card-label">${t('csClient')}</span><span>${esc(tx.client || '—')}</span></div>
         <div class="cmp-card-row"><span class="cmp-card-label">${t('csPhone')}</span><span style="direction:ltr">${esc(tx.phone || '—')}</span></div>
@@ -96350,7 +96438,7 @@ function _puBuildGroupCard(group, colType) {
           </span>
         </div>
       </div>
-      <span class="pu-group-status ${statusClass}">${statusLabel}</span>
+      ${SouliaOrderStatus.badge({key:colType === 'pending' ? 'Pending' : _grpAllShipped ? 'Shipped' : 'Ready',label:statusLabel,tone:colType === 'pending' ? 'waiting' : _grpAllShipped ? 'shipping' : 'ready'})}
     `;
   }
   wrap.appendChild(header);
@@ -99564,34 +99652,17 @@ const _BOSTA_ICON = `<span class="bosta-icon"></span>`;
 // Bosta icon + text — used for buttons and modal titles
 const _BOSTA_LOGO = `<span class="bosta-icon" style="width:14px;height:14px"></span><span style="font-family:sans-serif;font-weight:700;font-size:.85em;letter-spacing:.5px">bosta</span>`;
 
-function _bostaStatusBadge(tx) {
+function _bostaStatusBadge(tx, options = {}) {
   const linked = window.AfterSales?.shippingBadges(tx, true) || "";
-  return _bostaPrimaryStatusBadge(tx) + linked;
+  return _bostaPrimaryStatusBadge(tx, options) + linked;
 }
-function _bostaPrimaryStatusBadge(tx) {
-  const status = tx.bostaStatus || '';
-  const map = {
-    'created':          ['bosta-badge-created',   'Created'],
-    'picked_up':        ['bosta-badge-transit',   'Picked Up'],
-    'in_transit':       ['bosta-badge-transit',   'In Transit'],
-    'out_for_delivery': ['bosta-badge-out',        'Out for Delivery'],
-    'delivered':        ['bosta-badge-delivered',  'Delivered'],
-    'returned':         ['bosta-badge-returned',   'Returned'],
-    'failed_attempt':   ['bosta-badge-failed',     'Failed Attempt'],
-    'delivery_failed':  ['bosta-badge-failed',     'Delivery Failed'],
-    'cancelled':         ['bosta-badge-cancelled',  'Cancelled'],
-    'deleted':           ['bosta-badge-deleted',    'Deleted from Bosta'],
-    'validation_error':  ['bosta-badge-validation', 'Validation Error'],
-  };
-  if (!status) return tx.bostaOrderId
-    ? `<span class="bosta-badge bosta-badge-created">Sent</span>`
-    : `<span class="bosta-badge bosta-badge-none">—</span>`;
-  const [cls, label] = map[status.toLowerCase()] || ['bosta-badge-none', status];
+function _bostaPrimaryStatusBadge(tx, options = {}) {
+  if (!tx.bostaOrderId && !tx.bostaStatus) return options.hideStatus ? '' : '<span class="bosta-badge bosta-badge-none">?</span>';
+  const meta = _orderStateMeta(tx);
   const tracking = tx.bostaTrackingNumber || '';
-  const trackLink = tracking
-    ? `<a href="https://bosta.co/ar-eg/tracking-shipments?shipment-number=${tracking}" target="_blank" rel="noopener" title="Track: ${tracking}" onclick="event.stopPropagation()" class="bosta-track-link"><span class="bosta-icon"></span></a>`
-    : '';
-  return `<span style="display:inline-flex;align-items:center;gap:4px"><span class="bosta-badge ${cls}">${label}</span>${trackLink}</span>`;
+  const link = tracking ? `<a href="https://bosta.co/ar-eg/tracking-shipments?shipment-number=${encodeURIComponent(tracking)}" target="_blank" rel="noopener" title="${escHtml(tracking)}" onclick="event.stopPropagation()" class="bosta-track-link"><span class="bosta-icon"></span></a>` : '';
+  if (options.hideStatus && !meta.note && !link) return '';
+  return `<span class="order-state-cell">${options.hideStatus ? '' : SouliaOrderStatus.badge(meta, {compact:true,hideCarrier:true})}${meta.note ? `<span class="order-state-info" tabindex="0" role="img" title="${escHtml(meta.note)}" aria-label="${escHtml(meta.note)}"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.7v3.8"/><circle cx="8" cy="11" r=".7" fill="currentColor" stroke="none"/></svg></span>` : ''}${link}</span>`;
 }
 /**
  * The Pick-Up status to *display* for a sales transaction.
@@ -99608,15 +99679,25 @@ function _bostaPrimaryStatusBadge(tx) {
  * @returns {string} One of the _puStatusBadge keys.
  */
 function _puDisplayStatus(tx) {
-  const bosta = (tx.bostaStatus || '').trim();
+  const bosta = (tx.bostaStatus || '').trim().toUpperCase();
   if (bosta === 'DELIVERED') return 'Delivered';
-  const tracked = (tx.bostaOrderId || tx.afterSales?.shipments?.[tx.afterSales?.caseId]?.deliveryId) && !['VALIDATION_ERROR', 'DELETED', ''].includes(bosta);
+  const tracked = (tx.bostaOrderId || tx.afterSales?.shipments?.[tx.afterSales?.caseId]?.deliveryId) && !['VALIDATION_ERROR', 'DELETED'].includes(bosta);
   if (tx.deliverySource === 'MANUAL') return 'Shipped';
-  if (tracked) return bosta === 'CREATED' ? 'Ready' : 'Shipped';
+  if (tracked) return !bosta || bosta === 'CREATED' ? 'Ready' : 'Shipped';
   return tx.pickupStatus || 'Pending';
 }
 /** Resolves a _PU_FILTER_OPTIONS label at render time (the const itself can't hold a t() call). */
 function _puFilterLabel(o) { return t(o.labelKey); }
+
+function _orderFilterBadge(kind, value) {
+  let meta;
+  if (kind === 'bosta' && ['DELETED', 'VALIDATION_ERROR'].includes(value)) {
+    meta = {key:value,label:_bostaStatusLabel(value),tone:value === 'DELETED' ? 'waiting' : 'issue'};
+  } else {
+    meta = _orderStateMeta(kind === 'pickup' ? {pickupStatus:value} : {bostaStatus:value,hasShipment:true});
+  }
+  return SouliaOrderStatus.badge(meta, {compact:true,hideCarrier:true});
+}
 
 /* ── Column quick-filters (Pick-Up / Bosta) ──────────────────────────────
    A small dropdown on the column header that writes straight into fxState.mov.pickup /
@@ -99636,7 +99717,7 @@ function _puQuickFilterHtml(kind) {
     const on = sel.has(o.val);
     return `<button type="button" class="mov-qf-item${on ? ' is-on' : ''}" role="menuitemcheckbox" aria-checked="${on}"
       onclick="_movQuickFilterToggle('${kind}','${esc(o.val)}')">
-      <span class="${o.cls}">${esc(o.label)}</span>
+      ${_orderFilterBadge(kind, o.val)}
       ${on ? check : ''}
     </button>`;
   }).join('');
@@ -99758,24 +99839,23 @@ function toggleMovQuickFilter(kind) {
   };
   setTimeout(() => document.addEventListener('click', onDocClick, true), 0);
 }
-function _puStatusBadge(status) {
-  const pkgIcon   = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
-  const truckIcon = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`;
-  const map = {
-    'Pending':    ['pu-badge-pending',   'Pending',        ''],
-    'Preparing':  ['pu-badge-prep',      'Preparing',      ''],
-    'Ready':      ['pu-badge-pickedup',  'Ready to Ship',  pkgIcon],
-    'Picked-Up':  ['pu-badge-pickedup',  'Ready to Ship',  pkgIcon],
-    'Shipped':    ['pu-badge-shipped',   'Shipped',        truckIcon],
-    'Delivered':  ['pu-badge-delivered', 'Delivered',      ''],
-  };
-  const [cls, label, icon] = map[status] || ['pu-badge-pending', status || 'Pending', ''];
-  return `<span class="pu-badge ${cls}">${icon}${label}</span>`;
+function _orderStateMeta(order, kind = 'transaction') {
+  if (kind === 'shopify' && order?.status === 'approved') {
+    const linked = (transactions || []).find(tx => String(tx._id) === String(order.transactionId));
+    if (linked) return SouliaOrderStatus.resolve(linked, 'transaction', currentLang);
+  }
+  return SouliaOrderStatus.resolve(order, kind, currentLang);
+}
+function _orderStateBadge(order, kind = 'transaction') {
+  return SouliaOrderStatus.badge(_orderStateMeta(order, kind));
+}
+function _puStatusBadge(status, order, compact = false) {
+  return SouliaOrderStatus.badge(_orderStateMeta(order || { pickupStatus: status }), {compact,hideCarrier:compact});
 }
 function _puPayBadge(ps) {
   // 'مكتمل'/'معلق' are stored DB values — compared as-is, localized only for display.
-  if (ps === 'مكتمل') return `<span class="badge badge-green" style="font-size:.72rem">${esc(_statusLabel('مكتمل'))}</span>`;
-  return `<span class="badge badge-orange" style="font-size:.72rem">${esc(_statusLabel('معلق'))}</span>`;
+  if (ps === 'مكتمل') return `<span class="badge badge-status-done">${esc(_statusLabel('مكتمل'))}</span>`;
+  return `<span class="badge badge-status-pending">${esc(_statusLabel('معلق'))}</span>`;
 }
 
 // ── Main render — Runs table ───────────────────────────────────
@@ -99902,7 +99982,7 @@ function renderPickupRuns() {
                         ${o.remaining > 0 ? `<div style="font-size:.7rem;color:var(--red);margin-top:1px">${t('puRemainingInline',{v:fmtJT(o.remaining)})}</div>` : ''}
                       </td>
                       <td>${_puPayBadge(o.payStatus)}</td>
-                      <td>${_puStatusBadge(_puDisplayStatus(o))}</td>
+                      <td>${_puStatusBadge(_puDisplayStatus(o), o, true)}</td>
                       <td>
                         <button class="btn btn-outline btn-sm" style="padding:4px 12px;font-size:.76rem;border-radius:6px" onclick="showInvoiceDetail('${esc(o._id)}')">${t('puView')}</button>
                       </td>
@@ -100356,7 +100436,7 @@ async function exportPickupRun(pickupRef) {
   if (!run || !run.orders.length) return toast(t('puNoData'), true);
   const rows = [[t('puXlOrderNo'),t('puXlClient'),t('puXlTotal'),t('puXlRemaining'),t('puXlPayStatus'),t('puXlShipCo'),t('puXlStatus')]];
   run.orders.forEach(o => {
-    rows.push([o.ref||'',o.client||'',o.total||0,o.remaining||0,_statusLabel(o.payStatus||''),o.shipCo||'',o.pickupStatus||'']);
+    rows.push([o.ref||'',o.client||'',o.total||0,o.remaining||0,_statusLabel(o.payStatus||''),o.shipCo||'',_orderStateMeta(o).label]);
   });
   if (typeof XLSX !== 'undefined') {
     const wb = XLSX.utils.book_new();
@@ -102429,7 +102509,7 @@ const SP_FILTERS = [
       return [
         { label: currentLang === 'en' ? 'Order value' : 'قيمة الأوردرات', value: fmtJ(tot), strong: true },
         { label: currentLang === 'en' ? 'Collected' : 'المُحصَّل', value: fmtJ(dep) },
-        { label: currentLang === 'en' ? 'Ready to ship' : 'جاهزة للشحن', value: fmtN(rows.length) },
+        { label: currentLang === 'en' ? 'Ready to Ship' : 'جاهزة للشحن', value: fmtN(rows.length) },
       ];
     },
   },
@@ -103550,14 +103630,7 @@ function _spFlagFuFlash(orderId) {
 
 /** The order's own state, in one short pill. */
 function _spPeekStatePill(o) {
-  const isEn = currentLang === 'en';
-  if (o.cancelled) return `<span class="sp-pk-pill is-bad">${isEn ? 'Cancelled' : 'ملغي'}</span>`;
-  if (o.status && o.status !== 'pending') return `<span class="sp-pk-pill is-ok">${isEn ? 'Recorded' : 'تم التسجيل'}</span>`;
-  if (_spCancelReqState(o) === 'req') return `<span class="sp-pk-pill is-warn">${isEn ? 'Cancel requested' : 'طلب إلغاء معلّق'}</span>`;
-  if (_spDepositOf(o).pending.length) return `<span class="sp-pk-pill is-warn">${esc(t('spDepPendingShort'))}</span>`;
-  const sm = _shopifySmartStatus(o);
-  if (sm) return `<span class="sp-pk-pill" style="--pk:${sm.color}">${esc(sm.label)}</span>`;
-  return `<span class="sp-pk-pill is-warn">${isEn ? 'Needs contact' : 'يحتاج تواصل'}</span>`;
+  return _orderStateBadge(o, 'shopify');
 }
 
 function _spPeekFuHtml(o) {
@@ -103579,7 +103652,10 @@ function _spPeekFuHtml(o) {
     </div>`;
   }
   const f = list[0];
-  const st = FU_STATUS_STYLES[f.status] || { bg: 'var(--bg-alt)', color: 'var(--text)', dot: '#9ca3af' };
+  const orderCancelled = f.orderOutcome === 'cancelled' || !!(o.cancelled || o.shopifyCancelled);
+  const trailClosed = orderCancelled || !!(f.cancelled || f.orderOutcome);
+  const followupStatus = orderCancelled ? 'العميل ألغى الطلب' : f.status;
+  const st = FU_STATUS_STYLES[followupStatus] || { bg: 'var(--bg-alt)', color: 'var(--text)', dot: '#9ca3af' };
   const reason = f.reason === 'أخرى' ? (f.reasonOther || _fuReasonLabel('أخرى')) : _fuReasonLabel(f.reason);
   const comments = (Array.isArray(f.comments) ? f.comments : []).slice()
     .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
@@ -103626,19 +103702,20 @@ function _spPeekFuHtml(o) {
      «Calls: 0/3» to a screen reader. */
   const fchip = (ico, label, val, cls = '') => `<span class="sp-pk-fchip${cls}" title="${escHtml(label)}"><span class="sp-pk-sr">${esc(label)}: </span>${ico}${val}</span>`;
   return `<div class="sp-pk-sec-h">${_SP_PK_ICO.route}<span>${isEn ? 'Follow-up' : 'المتابعة'}</span>${f.ticketNo ? ` <bdi class="sp-pk-mono">${esc(f.ticketNo)}</bdi>` : ''}
-      <span class="sp-pk-fu-chip sp-pk-h-end" style="background:${st.bg};color:${st.color}"><i style="background:${st.dot || st.color}"></i>${esc(_fuStatusLabel(f.status) || '—')}</span></div>
+      <span class="sp-pk-fu-chip sp-pk-h-end" style="background:${st.bg};color:${st.color}"><i style="background:${st.dot || st.color}"></i>${esc(_fuStatusLabel(followupStatus) || '—')}</span></div>
     <div class="sp-pk-fchips">
       ${fchip(userAvatarHtml(respUser, 18), isEn ? 'Handled by' : 'المسؤول', `<span>${esc(f.responsibleName || '—')}</span>`)}
       ${reason ? fchip(_SP_PK_ICO.tag, isEn ? 'Reason' : 'السبب', `<bdi>${esc(reason)}</bdi>`) : ''}
       ${fchip(_SP_PK_ICO.phone, isEn ? 'Calls' : 'محاولات الاتصال', esc(callTxt), calls.length ? '' : ' is-quiet')}
       <span class="sp-pk-fchip" title="${escHtml((isEn ? 'Opened ' : 'فُتحت ') + _pwWhenFull(f.createdAt))}"><span class="sp-pk-sr">${isEn ? 'Opened' : 'فُتحت'}: </span>${_SP_PK_ICO.clock}${esc(_pwWhen(f.createdAt) || '—')}</span>
     </div>
+    ${orderCancelled ? `<div class="sp-pk-fu-outcome" role="status"><strong>${isEn ? 'Order cancelled — follow-up closed' : 'تم إلغاء الطلب — المتابعة مغلقة'}</strong>${(f.resolution || o.cancelReason) ? `<span>${esc(f.resolution || o.cancelReason)}</span>` : ''}</div>` : ''}
     ${trail || decision
       ? _spPeekHistoryHtml(trail + decision, 'sp-pk-trail', isEn ? 'Follow-up trail' : 'مسار المتابعة')
       : `<div class="sp-pk-empty">${isEn ? 'No entries in the trail yet.' : 'لا توجد إدخالات في المسار بعد.'}</div>`}
     <button type="button" class="btn btn-outline btn-sm sp-pk-trail-btn" onclick="_spPeekOpenTrail('${fid}')">
       ${_SP_PK_ICO.notePlus}
-      <span>${f.cancelled ? (isEn ? 'Open follow-up trail' : 'فتح مسار المتابعة') : (isEn ? 'Add note or call' : 'إضافة ملاحظة أو مكالمة')}</span>
+      <span>${trailClosed ? (isEn ? 'Open follow-up trail' : 'فتح مسار المتابعة') : (isEn ? 'Add note or call' : 'إضافة ملاحظة أو مكالمة')}</span>
     </button>
     ${others ? `<div class="sp-pk-trail-h">${isEn ? 'Other follow-ups on this order' : 'متابعات أخرى على الأوردر'}</div><div class="sp-pk-fu-others">${others}</div>` : ''}`;
 }
@@ -103698,9 +103775,9 @@ function _shipTogetherStageLabel(s) {
   const isEn = currentLang === 'en';
   if (s.kind === 'shopify') return isEn ? 'Not recorded yet' : 'لم يُسجَّل بعد';
   return ({
-    Pending:   isEn ? 'Recorded · pending' : 'مسجّل · معلق',
-    Preparing: isEn ? 'Being prepared' : 'قيد التحضير',
-    Ready:     isEn ? 'Ready to ship' : 'جاهز للشحن',
+    Pending:   isEn ? 'Registered · Awaiting Prep' : 'مسجّل · بانتظار التجهيز',
+    Preparing: isEn ? 'Preparing' : 'قيد التجهيز',
+    Ready:     isEn ? 'Ready to Ship' : 'جاهز للشحن',
   })[s.stage] || (isEn ? 'Not shipped' : 'لم يُشحن');
 }
 
@@ -104045,6 +104122,8 @@ function _spPeekRefreshFu() {
   const host = qs('#sp-pk-fu');
   const o = _spPeekId && _spOrderById(_spPeekId);
   if (!host || !o) return;
+  const statePill = qs('#sp-pk-title .order-state');
+  if (statePill) statePill.outerHTML = _spPeekStatePill(o);
   const historyState = _spPeekHistoryState(host);
   host.innerHTML = _spPeekFuHtml(o);
   _spPeekScrollTrail(historyState, host);
@@ -104377,17 +104456,16 @@ function _spTagList(o) { return String(o.tags || '').split(',').map(x => x.trim(
 function _spOrderStatusKey(o) {
   if (o.cancelled) return 'void';
   if (_spCancelReqState(o) === 'req') return 'cancel-req';
-  const sm = _shopifySmartStatus(o);
-  return sm ? sm.value : 'contact';
+  const key = _orderStateMeta(o, 'shopify').key;
+  return key === 'confirmed' ? 'confirmed' : key === 'rejected' ? 'rejected' : 'contact';
 }
 
 function _spStatusDefs() {
   const isEn = currentLang === 'en';
   return [
-    { k: 'contact',    label: isEn ? 'Needs contact' : 'يحتاج تواصل' },
+    { k: 'contact',    label: isEn ? 'Awaiting Confirmation' : 'بانتظار تأكيد العميل' },
     { k: 'confirmed',  label: t('spStatusReady') },
-    { k: 'followup',   label: t('spStatusFollowup') },
-    { k: 'cancelled',  label: t('spStatusUnconfirmed') },
+    { k: 'rejected',   label: t('spStatusRejected') },
     { k: 'cancel-req', label: isEn ? 'Cancel requested' : 'طلب إلغاء معلّق' },
     { k: 'void',       label: t('spStatusCancelled') },
   ];
@@ -105349,7 +105427,7 @@ function renderShopifyOrders() {
       const depositCardClass = _spDepositCardClass(o);
       // The checkmark follows the same deposit/shipping rule as the card background.
       const _cardTagMeta = _spCardTagMeta(o);
-      const _cardConfirmed = !o.cancelled && o.status !== 'rejected' && depositCardClass === 'sp-card-deposit-paid';
+      const _cardConfirmed = _orderStateMeta(o, 'shopify').key === 'confirmed';
       const _cardConfirmationLabel = t(_cardConfirmed ? 'spCardConfirmed' : 'spCardUnconfirmed');
       const _cardConfirmationHtml = o.cancelled || o.status === 'rejected' ? '' : `<span class="sp-order-confirmation ${_cardConfirmed?'is-paid':'is-waiting'}" role="img" title="${escHtml(_cardConfirmationLabel)}" aria-label="${escHtml(_cardConfirmationLabel)}">${_cardConfirmed ? SP_CONFIRM_ICON : _SP_ICONS.clock}</span>`;
       const itemsId = `sp-items-${o._id}`;
@@ -105462,6 +105540,7 @@ function renderShopifyOrders() {
             ${_cardMenuHtml}
           </div>
         </div>
+        <div class="sp-card-order-state">${_orderStateBadge(o, 'shopify')}</div>
         ${o.editRequest?.status === 'معتمد' ? '' : _spOrderEditMark(o)}
         ${!compactCard || mobilePaymentHtml ? `<div class="sp-card-options">
         ${compactCard ? '' : productsToggleHtml}
@@ -105579,12 +105658,11 @@ function _spDepositNeedsFollowup(o) {
   return d.deposit<=0 && !d.pending.length && Number.isFinite(created) && Date.now()-created>=12*60*60*1000;
 }
 function _spOrderConfirmationMark(o) {
-  if(o.cancelled || !['pending','approved'].includes(o.status)) return '';
-  const d=_spDepositOf(o),paid=d.deposit>0 || d.pending.length>0;
-  const ready=paid || _spShipsWithoutDeposit(o);
-  const label=t(paid?'spDepPresent':ready?'spShipWithoutDeposit':_spDepositNeedsFollowup(o)?'spDepFollowup':'spDepAwaiting');
-  const icon=ready ? SP_CONFIRM_ICON : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
-  return `<span class="sp-order-confirmation ${ready?'is-paid':'is-waiting'}" role="img" title="${esc(label)}" aria-label="${esc(label)}">${icon}</span>`;
+  const meta = _orderStateMeta(o, 'shopify');
+  if (!['confirmed', 'awaiting_confirmation'].includes(meta.key)) return SouliaOrderStatus.badge(meta);
+  const confirmed = meta.key === 'confirmed';
+  const path = confirmed ? '<path d="m5 12 4 4L19 6"/>' : '<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/>';
+  return `<span class="sp-order-confirmation sp-table-confirmation ${confirmed ? 'is-paid' : 'is-waiting'}" role="img" data-order-state="${meta.key}" title="${escHtml(meta.label)}" aria-label="${escHtml(meta.label)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg></span>`;
 }
 function _spVaultAmountHtml(method, amount) {
   return `<span class="spdep-vault-amount" title="${esc(_payMethodLabel(method))}">${payMethodIcon(method,20)}<span><bdi>${fmtJ(amount)}</bdi></span></span>`;
@@ -107236,15 +107314,8 @@ const _SP_ICONS = {
 function _shopifySmartStatus(order) {
   /* strip emojis for clean matching */
   const tags = (order.tags || '').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{1F300}-\u{1F9FF}✅❌💲📥💸🎉]/gu, '').toLowerCase();
-  const note = (order.notes || '').trim().startsWith('العنوان:') ? '' : (order.notes || '').trim();
-
-  /* confirmed — any signal of payment takes priority over everything */
-  const confirmedTags = ['تم دفع الاوردر بالكامل', 'تم دفع ديبوزت', 'contact verified by otp', 'verified via whatsapp'];
-  const hasConfirmedTag = confirmedTags.some(t => tags.includes(t.toLowerCase()));
-  const hasDepositInNote = note && /(\d[\d,.]*)/.test(note);
-  if (hasConfirmedTag || hasDepositInNote) {
-    return { label: t('spStatusReady'), color: '#10b981', iconKey: 'check', value: 'confirmed' };
-  }
+  const state = _orderStateMeta(order, 'shopify');
+  if (state.key === 'confirmed') return { label: state.label, color: '#10b981', iconKey: 'check', value: 'confirmed' };
 
   /* cancelled */
   const cancelledTags = ['cancelled via whatsapp', 'customer cancelled order', 'cancelled❌', 'cancelled'];
@@ -107311,12 +107382,7 @@ function _buildShopifyWaUrl(order) {
 }
 
 function _shopifyStatusBadge(status, phone, orderId, pendingStatus, order) {
-  if (order?.cancelled) {
-    return `<span class="sp-status-badge" style="display:inline-flex;align-items:center;gap:5px;background:#ef444422;color:#ef4444;border-radius:6px;padding:4px 9px;font-size:.72rem;font-weight:600">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      <span data-shopify-ps-label>${t('spStatusCancelled')}</span>
-    </span>`;
-  }
+  if (order?.cancelled) return _orderStateBadge(order, 'shopify');
   // A pending request must be visible ON the order, not only in Approvals: the requester needs
   // to see their request landed, and anyone else needs to know before working the order.
   if (order?.cancelRequest?.status === 'معلق') {
@@ -107347,34 +107413,11 @@ function _shopifyStatusBadge(status, phone, orderId, pendingStatus, order) {
     const _base = _shopifyStatusBadge(status, phone, orderId, pendingStatus, { ...order, cancelRequest: null });
     return `<span style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:0;max-width:100%">${_base}${_rejBadge}</span>`;
   }
-  if (status === 'pending') {
-    const clean = (phone || '').replace(/\D/g, '');
-    const waUrl = order ? _buildShopifyWaUrl(order) : (clean ? `https://wa.me/${clean}` : '');
-
-    /* Smart status from tags/notes, fallback to manual pendingStatus, then default */
-    const smart = order ? _shopifySmartStatus(order) : null;
-    let color, label, iconKey;
-    if (smart) {
-      color = smart.color; label = smart.label; iconKey = smart.iconKey;
-    } else {
-      const info = _shopifyPendingStatusInfo(pendingStatus);
-      color = info.color; label = _spStatusLabel(info); iconKey = info.icon || 'clock';
-    }
-    /* when iconKey is whatsapp, wrap it as a clickable link — no duplicate wa icon */
-    const isWaIcon = iconKey === 'whatsapp';
-    const iconSvgInner = _SP_ICONS[iconKey] || _SP_ICONS.clock;
-    const iconSvg = isWaIcon && waUrl
-      ? `<a href="${waUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="${t('spWhatsapp')}" style="display:inline-flex;align-items:center;flex-shrink:0;color:inherit">${iconSvgInner}</a>`
-      : `<span style="display:inline-flex;align-items:center;flex-shrink:0">${iconSvgInner}</span>`;
-
-    const waHtml = (!isWaIcon && waUrl)
-      ? `<a href="${waUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" data-shopify-ps-wa="${orderId}" title="واتساب" style="display:inline-flex;align-items:center;margin-right:2px;flex-shrink:0"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="${color}" viewBox="0 0 16 16"><path d="${_WA_PATH}"/></svg></a>`
-      : '';
-    return `<span class="sp-status-badge" data-shopify-ps-id="${orderId}" oncontextmenu="_shopifyPendingContextMenu(event,'${orderId}')" title="${esc(label)} — ${t('spRightClickToChange')}" style="display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb,${color} 12%,transparent);color:${color};border-radius:6px;padding:4px 9px;font-size:.72rem;cursor:context-menu;user-select:none;transition:background .25s,color .25s">${iconSvg}<span data-shopify-ps-label="${orderId}">${label}</span>${waHtml}</span>`;
-  }
-  if (status === 'approved') return `<span style="background:#10b98122;color:#10b981;border-radius:99px;padding:2px 10px;font-size:.78rem">${t('spStatusApproved')}</span>`;
-  if (status === 'rejected') return `<span style="background:#ef444422;color:#ef4444;border-radius:99px;padding:2px 10px;font-size:.78rem">${t('spStatusRejected')}</span>`;
-  return status;
+  const row = order || { status, pendingStatus };
+  const badge = _orderStateBadge(row, 'shopify');
+  if (status !== 'pending') return badge;
+  const wa = order ? _buildShopifyWaUrl(order) : '';
+  return `<span class="sp-status-badge" data-shopify-ps-id="${esc(orderId)}" oncontextmenu="_shopifyPendingContextMenu(event,'${esc(orderId)}')"><span data-shopify-ps-label="${esc(orderId)}">${badge}</span>${wa ? `<a href="${escHtml(wa)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="${escHtml(t('spWhatsapp'))}" style="display:inline-flex;margin-inline-start:5px">${_SP_ICONS.whatsapp}</a>` : ''}</span>`;
 }
 
 function _shopifyPendingContextMenu(e, orderId) {
@@ -107425,17 +107468,8 @@ async function _setShopifyPendingStatus(orderId, pendingStatus) {
     await api(`/shopify/orders/${orderId}/pending-status`, { method: 'PATCH', body: JSON.stringify({ pendingStatus }) });
     order.pendingStatus = pendingStatus;
     const info = _shopifyPendingStatusInfo(pendingStatus);
-    const badge = document.querySelector(`[data-shopify-ps-id="${orderId}"]`);
-    if (badge) {
-      badge.style.background = `color-mix(in srgb,${info.color} 12%,transparent)`;
-      badge.style.color = info.color;
-      const dot = badge.querySelector('svg circle');
-      if (dot) dot.setAttribute('fill', info.color);
-      const lbl = badge.querySelector(`[data-shopify-ps-label="${orderId}"]`);
-      if (lbl) lbl.textContent = _spStatusLabel(info);
-      const waEl = badge.querySelector(`a[data-shopify-ps-wa] svg`);
-      if (waEl) waEl.setAttribute('fill', info.color);
-    }
+    renderShopifyOrders();
+    if (_spPeekId) _spPeekRender();
   } catch(err) { console.error(err); toast(t('spUpdateError'), true); }
 }
 
@@ -109822,25 +109856,25 @@ function _spRenderHistoryTab() {
 // ===================== End Shopify Orders =====================
 </script>
 <script src="/navigation-shell.js?v=20261024-stable-sidebar"></script>
-<script src="/admin-team-home.js?v=20261024-active-staff"></script>
+<script src="/admin-team-home.js?v=20261024-issue-state"></script>
 <script src="/shopify-edit-approvals.js?v=20261024-review-images"></script>
-<link rel="stylesheet" href="/bosta-pickup.css">
+<link rel="stylesheet" href="/bosta-pickup.css?v=20261024-add-orders">
 <link rel="stylesheet" href="/customer-service-layout.css">
-<script src="/bosta-pickup.js"></script>
+<script src="/bosta-pickup.js?v=20261024-add-orders"></script>
 <script src="/pickup-daily-shipping.js?v=20261024-run-table"></script>
 <script src="/awb-preview.js?v=20261024"></script>
 <script src="/pickup-ready-return.js?v=20261024-new-group"></script>
 <script src="/notification-settings.js?v=20261021-3"></script>
 <script src="/announcements.js?v=4"></script>
 <script src="/push-navigation.js"></script>
-<script src="/notification-feed.js?v=20261022-page-1"></script>
+<script src="/notification-feed.js?v=20261025-stable-1"></script>
 <script src="/order-audit-financials.js?v=20261020-2"></script>
 <script src="/order-audit-insights.js?v=20261021-6"></script>
 <script src="/order-audit-marketing.js?v=20261021-7"></script>
 <script src="/order-audit-periods.js?v=20261021-2"></script>
-<script src="/notification-history.js?v=20261022-page-1"></script>
+<script src="/notification-history.js?v=20261025-dedup-1"></script>
 <script src="/shopify-settings.js?v=20261020-connection-status"></script>
-<link rel="stylesheet" href="/inventory-units.css?v=20261020-invoice-date">
+<link rel="stylesheet" href="/inventory-units.css?v=20261024-compact-registry">
 <link rel="stylesheet" href="/supplier-return-pieces.css?v=20261020-1">
 <script src="/supplier-return-pieces.js?v=20261020-1"></script>
 <link rel="stylesheet" href="/legacy-stock-labels.css?v=20261020-2">
@@ -109849,10 +109883,10 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/inventory-scanner.css?v=20261020-sreturn">
 <script src="/inventory-scanner.js?v=20261020-short-packs"></script>
 <link rel="stylesheet" href="/global-search-scanner.css?v=20261022-fast-lookup">
-<script src="/global-search-scanner.js?v=20261022-fast-lookup"></script>
+<script src="/global-search-scanner.js?v=20261025-order-state"></script>
 <link rel="stylesheet" href="/warehouses.css?v=20261019-4">
 <script src="/warehouses.js?v=20261019-5"></script>
-<script src="/inventory-units.js?v=20261020-pack-print-coverage"></script>
+<script src="/inventory-units.js?v=20261024-compact-registry"></script>
 <link rel="stylesheet" href="/inventory-packs.css?v=20261020-short-code12">
 <script src="/inventory-packs.js?v=20261020-pack-print-coverage"></script>
 <script src="/legacy-stock-labels.js?v=20261020-2"></script>
@@ -109862,5 +109896,6 @@ function _spRenderHistoryTab() {
 <script src="/sales-scanner.js?v=20261021-search-routing"></script>
 <link rel="stylesheet" href="/shopify-compact-header.css?v=20261021-1">
 <script src="/shopify-compact-header.js?v=20261021-1"></script>
+<link rel="stylesheet" href="/design-system.css?v=20261025-1">
 </body>
 </html>

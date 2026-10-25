@@ -29,6 +29,22 @@ assert.ok(html.includes('onclick="openBostaPickup(this)"'));
         if (url === '/settings') { window.savedPolicy = JSON.parse(options.body); return {}; }
         if (url.endsWith('pickup-preview')) return { orders, numberOfParcels: orders.length, requests };
         if (url.endsWith('pickup-locations')) { if (window.failLocations) throw new Error('Warehouse unavailable'); return [{ id: 'warehouse', name: '<Warehouse>', contactName: 'Contact', contactPhone: '01114701237' }]; }
+        if (url.endsWith('/add-orders')) {
+          const body=JSON.parse(options.body); calls.push({url,...body});
+          await new Promise(resolve=>setTimeout(resolve,100));
+          if(window.extensionUncertain) {
+            requests[0]={...requests[0],canExtend:false,updateState:'uncertain',pendingOrderIds:body.orderIds,pendingNumberOfParcels:32};orders=[];
+            throw new Error('Addition awaiting confirmation — verify with Bosta');
+          }
+          requests[0]={...requests[0],numberOfParcels:32,orderIds:[...requests[0].orderIds,...body.orderIds]};orders=[];
+          return {success:true,id:requests[0].id,numberOfParcels:32,scheduledDate:requests[0].scheduledDate,bostaPickupId:requests[0].bostaPickupId};
+        }
+        if (url.endsWith('/verify-update')) {
+          calls.push({url});
+          if(!window.remoteConfirmed)throw new Error('Bosta has not confirmed the requested total');
+          requests[0]={...requests[0],numberOfParcels:32,orderIds:[...requests[0].orderIds,...requests[0].pendingOrderIds],pendingOrderIds:[],pendingNumberOfParcels:0,updateState:'idle'};
+          return {success:true};
+        }
         if (options?.method === 'POST') {
           calls.push(JSON.parse(options.body));
           if (window.fail) throw new Error('Date unavailable');
@@ -101,6 +117,47 @@ assert.ok(html.includes('onclick="openBostaPickup(this)"'));
     await page.evaluate(() => openBostaPickup());
     assert.equal(await page.$eval('button[type="submit"]', el => el.disabled), true);
     assert.ok((await page.$eval('#bp-error', el => el.textContent)).includes('No dates available'));
+    for(const language of ['ar','en']) {
+      await page.evaluate(language=>{
+        currentLang=language;document.documentElement.dir=language==='ar'?'rtl':'ltr';calls=[];
+        orders=[{id:'new-1'},{id:'new-2'}];
+        requests=[{id:'existing',businessLocationId:'warehouse',scheduledDate:'2099-10-18',status:'created',canExtend:true,numberOfParcels:30,orderIds:['old'],bostaPickupId:'B-30'}];
+      },language);
+      await page.evaluate(()=>openBostaPickup());
+      assert.equal(await page.$eval('#bp-target',el=>el.value),'existing');
+      assert.ok((await page.$eval('#bp-extension-summary',el=>el.textContent)).includes('30 + 2 = 32'));
+      assert.equal(await page.$eval('#bp-date',el=>el.disabled&&el.closest('.form-group').hidden),true);
+      assert.equal(await page.$eval('#bosta-pickup-form',el=>el.reportValidity()),true);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+      await page.select('#bp-target','');
+      assert.equal(await page.$eval('#bp-name',el=>el.disabled||el.closest('.form-group').hidden),false);
+      await page.select('#bp-target','existing');
+      fs.mkdirSync(path.join(publicDir,'../../artifacts/bosta-pickup-extension'),{recursive:true});
+      await page.evaluate(()=>document.getAnimations().forEach(animation=>animation.finish()));
+      await page.screenshot({path:path.join(publicDir,`../../artifacts/bosta-pickup-extension/${language}-390.png`),fullPage:true});
+      assert.equal(await page.evaluate(()=>{const box=qs('.bp-dialog').getBoundingClientRect();return box.left>=0&&box.right<=innerWidth&&qs('.bp-dialog').scrollWidth<=qs('.bp-dialog').clientWidth;}),true);
+      await page.evaluate(()=>{const form=qs('#bosta-pickup-form');submitBostaPickup(form);submitBostaPickup(form);});
+      await page.waitForSelector('.bp-success');
+      assert.ok((await page.$eval('.bp-success',el=>el.textContent)).includes('30 + 2 = 32'));
+      assert.equal(await page.evaluate(()=>calls.length),1);
+      assert.equal(await page.evaluate(()=>calls[0].expectedNumberOfParcels),30);
+    }
+    await page.evaluate(()=>{
+      extensionUncertain=true;calls=[];orders=[{id:'new-1'},{id:'new-2'}];
+      requests=[{id:'existing',businessLocationId:'warehouse',scheduledDate:'2099-10-18',status:'created',canExtend:true,numberOfParcels:30,orderIds:['old'],bostaPickupId:'B-30'}];
+    });
+    await page.evaluate(()=>openBostaPickup());
+    await page.click('button[type="submit"]');
+    await page.waitForSelector('[data-pickup-verify]');
+    assert.equal(await page.$('#bosta-pickup-form'),null);
+    assert.ok((await page.$eval('.bp-history',el=>el.textContent)).includes('30 parcels'));
+    assert.ok((await page.evaluate(()=>bostaPickupCardBadge([{_id:'new-1'}]))).includes('awaiting Bosta confirmation'));
+    await page.click('[data-pickup-verify]');
+    await page.waitForFunction(()=>document.querySelector('.bp-verify-error').textContent.includes('not confirmed'));
+    await page.evaluate(()=>{remoteConfirmed=true;});await page.click('[data-pickup-verify]');
+    await page.waitForFunction(()=>!document.querySelector('[data-pickup-verify]'));
+    assert.equal(await page.evaluate(()=>calls.filter(c=>c.url.endsWith('/add-orders')).length),1);
+    assert.ok((await page.$eval('.bp-history',el=>el.textContent)).includes('32 parcels'));
     await page.evaluate(() => {
       closeModal(); document.body.insertAdjacentHTML('beforeend', '<div id="stg-bosta-pickup-policy"></div>');
       window.settings = {}; window.isAdmin = () => true; renderBostaPickupPolicy();

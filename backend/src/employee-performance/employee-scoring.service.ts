@@ -18,6 +18,7 @@ import { Settings } from '../settings/schemas/settings.schema';
 import { FollowUp, FollowUpDocument } from '../followups/schemas/followup.schema';
 import { DONE_STATUSES } from '../followups/followups.service';
 import { followUpLastActivityAt, followUpLatestComment } from './followup-last-activity';
+import { isOpenShippingIssue } from './shipping-issue-state';
 
 /**
  * The scoring period. Points are NOT deleted at the end of a period — they are
@@ -848,26 +849,49 @@ export class EmployeeScoringService implements OnModuleInit {
    * this into a name match.
    * ─────────────────────────────────────────────────────────────────────────────
    */
-  async getTeamWorkspace() {
-    const range = this.resolvePeriod('month', new Date());
+  private async getTeamDeliveryIssueTickets(range: PerformancePeriodRange, employeeId?: string) {
+    const tickets = await this.followUpModel.aggregate([
+      { $match: {
+        cancelled: { $ne: true }, status: { $nin: DONE_STATUSES }, ...this.periodMatch(range),
+        ...(employeeId ? { responsibleId: employeeId } : {}),
+        $or: [{ autoSource: 'shipping-issue' }, { autoTrigger: { $in: ['FAILED_ATTEMPT', 'RETURNED', 'DELIVERY_FAILED'] } }, { reason: 'مشكلة في الاستلام' }],
+      } },
+      { $lookup: {
+        from: this.txModel.collection.name,
+        let: { transactionId: { $ifNull: ['$transactionId', ''] }, transactionObjectId: { $convert: { input: '$transactionId', to: 'objectId', onError: null, onNull: null } }, orderRef: '$orderRef' },
+        pipeline: [{ $match: { $expr: { $cond: [
+          { $ne: ['$$transactionId', ''] },
+          { $eq: ['$_id', '$$transactionObjectId'] },
+          { $and: [{ $ne: [{ $ifNull: ['$$orderRef', ''] }, ''] }, { $eq: ['$ref', '$$orderRef'] }] },
+        ] } } }],
+        as: 'issueTransaction',
+      } },
+      { $unwind: '$issueTransaction' },
+      { $project: { responsibleId: 1, issueTransaction: 1 } },
+    ]);
+    return tickets.filter(ticket => isOpenShippingIssue(ticket.issueTransaction));
+  }
+
+  async getTeamWorkspace(period?: string, periodKey?: string) {
+    const range = this.resolvePeriod(period, new Date(), periodKey);
     const now = new Date();
-    const [users, orders, followUps, points] = await Promise.all([
+    const [users, orders, followUps, points, issueTickets] = await Promise.all([
       this.userModel.find({ role: { $in: ['staff', 'viewer'] }, isActive: { $ne: false } }).select('name username avatar jobTitle isActive').lean().exec(),
       this.shopifyOrderModel.aggregate([
-        { $match: { cancelled: { $ne: true } } },
+        { $match: { cancelled: { $ne: true }, ...this.periodMatchIsoString(range, 'assignedAt') } },
         { $group: { _id: '$assignedTo', orders: { $sum: 1 }, pending: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } } } },
       ]),
       this.followUpModel.aggregate([
-        { $match: { cancelled: { $ne: true }, status: { $nin: DONE_STATUSES } } },
+        { $match: { cancelled: { $ne: true }, status: { $nin: DONE_STATUSES }, ...this.periodMatch(range) } },
         { $group: { _id: '$responsibleId', followUps: { $sum: 1 },
           deferred: { $sum: { $cond: [{ $gt: ['$deferredUntil', now] }, 1, 0] } },
-          issues: { $sum: { $cond: [{ $or: [{ $eq: ['$autoSource', 'shipping-issue'] }, { $in: ['$autoTrigger', ['FAILED_ATTEMPT', 'RETURNED']] }, { $eq: ['$reason', 'مشكلة في الاستلام'] }] }, 1, 0] } },
         } },
       ]),
       this.logModel.aggregate([
         { $match: this.periodMatch(range) },
         { $group: { _id: '$employeeId', points: { $sum: '$points' }, delivered: { $sum: { $cond: [{ $eq: ['$actionType', 'delivery_completed'] }, 1, 0] } } } },
       ]),
+      this.getTeamDeliveryIssueTickets(range),
     ]);
     const map = (rows: any[]) => new Map(rows.map(row => [String(row._id || ''), row]));
     const orderMap = map(orders), fuMap = map(followUps), pointMap = map(points);
@@ -875,28 +899,41 @@ export class EmployeeScoringService implements OnModuleInit {
       const id = String(user._id), o = orderMap.get(id), f = fuMap.get(id), p = pointMap.get(id);
       return { id, name: user.name || user.username, username: user.username, avatar: user.avatar || '', jobTitle: user.jobTitle || '', active: user.isActive !== false,
         orders: o?.orders || 0, pending: o?.pending || 0, followUps: f?.followUps || 0, deferred: f?.deferred || 0,
-        actionable: Math.max(0, (f?.followUps || 0) - (f?.deferred || 0)), issues: f?.issues || 0, points: p?.points || 0, delivered: p?.delivered || 0 };
+        actionable: Math.max(0, (f?.followUps || 0) - (f?.deferred || 0)),
+        issues: new Set(issueTickets.filter(ticket => String(ticket.responsibleId) === id).map(ticket => String(ticket.issueTransaction._id))).size,
+        points: p?.points || 0, delivered: p?.delivered || 0 };
     }).sort((a, b) => b.issues - a.issues || b.actionable - a.actionable || b.pending - a.pending || a.name.localeCompare(b.name));
     const totals = employees.reduce((sum, user) => ({ orders: sum.orders + user.orders, pending: sum.pending + user.pending,
       followUps: sum.followUps + user.followUps, issues: sum.issues + user.issues, deferred: sum.deferred + user.deferred }),
       { orders: 0, pending: 0, followUps: 0, issues: 0, deferred: 0 });
-    return { employees, totals, periodLabel: this.periodLabel(range), updatedAt: now.toISOString() };
+    return { employees, totals, period: range.period, periodKey: range.key, periodLabel: this.periodLabel(range), updatedAt: now.toISOString() };
   }
 
-  async getTeamEmployeeWorkspace(employeeId: string) {
+  async getTeamEmployeeWorkspace(employeeId: string, period?: string, periodKey?: string) {
     if (!Types.ObjectId.isValid(employeeId)) throw new NotFoundException('الموظف غير موجود');
     const employee = await this.userModel.findOne({ _id: employeeId, role: { $in: ['staff', 'viewer'] }, isActive: { $ne: false } }).select('name username avatar jobTitle isActive').lean().exec();
     if (!employee) throw new NotFoundException('الموظف غير موجود');
-    const { adjustments, adjustmentsTruncated, ...workspace } = await this.getMyWorkspace(employeeId, 'month');
-    return { employee: { id: String(employee._id), name: employee.name || employee.username, avatar: employee.avatar || '' }, ...workspace };
+    const { adjustments, adjustmentsTruncated, ...workspace } = await this.getMyWorkspace(employeeId, period, periodKey, true);
+    const issueTickets = await this.getTeamDeliveryIssueTickets(this.resolvePeriod(period, new Date(), periodKey), employeeId);
+    const issueIds = new Set(issueTickets.map(ticket => String(ticket._id)));
+    return {
+      employee: { id: String(employee._id), name: employee.name || employee.username, avatar: employee.avatar || '' },
+      ...workspace,
+      deliveryIssueFollowUpsCount: new Set(issueTickets.map(ticket => String(ticket.issueTransaction._id))).size,
+      followUps: workspace.followUps.map(ticket => ({ ...ticket, isDeliveryIssue: issueIds.has(ticket.id) })),
+    };
   }
 
   async getMyWorkspace(
     userId: string,
     period?: string,
     periodKey?: string,
+    scopeWorkloadToPeriod = false,
   ): Promise<MyWorkspaceResult> {
     const range = this.resolvePeriod(period, new Date(), periodKey);
+    // Admin period review scopes queues; staff retain their complete open workload.
+    const orderWindow = scopeWorkloadToPeriod ? this.periodMatchIsoString(range, 'assignedAt') : {};
+    const followUpWindow = scopeWorkloadToPeriod ? this.periodMatch(range) : {};
     const prev = this.previousPeriod(range);
     const inPeriod = this.periodMatch(range);
 
@@ -973,7 +1010,7 @@ export class EmployeeScoringService implements OnModuleInit {
       }),
       this.logModel.countDocuments({ employeeId: userId, actionType: 'delivery_completed', ...inPeriod }),
       this.shopifyOrderModel
-        .find({ assignedTo: userId, cancelled: { $ne: true } })
+        .find({ assignedTo: userId, cancelled: { $ne: true }, ...orderWindow })
         .select('shopifyId ref client phone depositStatus depositAmount total status assignedAt')
         .sort({ assignedAt: -1 })
         .limit(MY_ORDERS_MAX)
@@ -984,6 +1021,7 @@ export class EmployeeScoringService implements OnModuleInit {
       // it under "needs your follow-up" reads as work still owed.
       this.followUpModel
         .find({
+          ...followUpWindow,
           responsibleId: userId,
           cancelled: { $ne: true },
           status: { $nin: DONE_STATUSES },
@@ -1007,10 +1045,10 @@ export class EmployeeScoringService implements OnModuleInit {
       this.logModel.countDocuments({ employeeId: userId, actionType: 'manual_bonus', ...inPeriod }),
       // Counts are independent of the bounded preview lists: an older pending
       // order must never produce a false "all tasks complete" message.
-      this.shopifyOrderModel.countDocuments({ assignedTo: userId, status: 'pending', cancelled: { $ne: true } }),
-      this.followUpModel.countDocuments({ responsibleId: userId, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES } }),
-      this.followUpModel.find({ responsibleId: userId, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES }, deferredUntil: { $gt: new Date() } }).select('deferredUntil').lean().exec(),
-      this.followUpModel.countDocuments({ responsibleId: userId, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES },
+      this.shopifyOrderModel.countDocuments({ assignedTo: userId, status: 'pending', cancelled: { $ne: true }, ...orderWindow }),
+      this.followUpModel.countDocuments({ ...followUpWindow, responsibleId: userId, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES } }),
+      this.followUpModel.find({ ...followUpWindow, responsibleId: userId, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES }, deferredUntil: { $gt: new Date() } }).select('deferredUntil').lean().exec(),
+      this.followUpModel.countDocuments({ ...followUpWindow, responsibleId: userId, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES },
         $or: [{ autoSource: 'shipping-issue' }, { autoTrigger: { $in: ['FAILED_ATTEMPT', 'RETURNED'] } }, { reason: 'مشكلة في الاستلام' }] }),
     ]);
 

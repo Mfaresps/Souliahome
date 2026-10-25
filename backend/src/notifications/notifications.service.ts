@@ -355,20 +355,27 @@ export class NotificationsService implements OnModuleInit {
           assignedToYou: type === 'order' && user.role === 'staff' && !!details.assignedUserId && details.assignedUserId === userId };
         const body = test ? (language === 'en' ? 'Notifications are working.' : 'تم تفعيل الإشعارات بنجاح.') : notificationBody(type, reference, recipientDetails, language) || (reference ? '#' + reference : titles[type]);
         const target = new URLSearchParams({ pushRecord: recordId, pushType: type });
-        const inboxId = createHash('sha256').update(JSON.stringify([userId, eventId])).digest('hex');
+        // A receipt submission and its decision share one inbox card and browser notification.
+        const receiptDecision = type === 'approval' && details.actionKey === 'deposit' && ['approved', 'rejected'].includes(details.status || '');
+        const receiptId = details.receiptId || (receiptDecision ? /^approval:receipt:(.+):(approved|rejected)$/.exec(eventId)?.[1] : '');
+        const notificationEventId = receiptId && (type === 'deposit' || receiptDecision) ? 'deposit:receipt:' + receiptId : eventId;
+        const inboxId = createHash('sha256').update(JSON.stringify([userId, notificationEventId])).digest('hex');
         if (!test) target.set('pushNotification', inboxId);
-        const event = type === 'comment' ? details.commentId : details.receiptId || details.depositId || details.editRequestId;
+        const event = type === 'comment' ? details.commentId : receiptId || details.depositId || details.editRequestId;
         if (event != null) target.set('pushEvent', String(event));
         const title = notificationTitle(type, recipientDetails, language, test);
         const payload = JSON.stringify({ title, body, timestamp: eventTimestamp, lang: language, dir: language === 'en' ? 'ltr' : 'rtl',
-          url: recordId ? '/?' + target.toString() : '/', tag: createHash('sha256').update(eventId).digest('hex') });
+          url: recordId ? '/?' + target.toString() : '/', tag: createHash('sha256').update(notificationEventId).digest('hex') });
         if (!test) {
           try {
-            await this.inbox.updateOne({ _id: inboxId as any, userId }, { $setOnInsert: {
-              eventId, userId, type, title, body, ref: reference, recordId, event: event == null ? '' : String(event),
-              actorUserId: details.actorUserId || '', actorName: details.actorName || '', commentText: details.commentText || '',
-              url: recordId ? '/?' + target.toString() : '/', createdAt: new Date(eventTimestamp), readAt: null,
-            } }, { upsert: true });
+            const existing = receiptDecision ? await this.inbox.findOne({ _id: inboxId as any, userId }) : null;
+            if (existing?.eventId !== eventId) {
+              await this.inbox.updateOne({ _id: inboxId as any, userId }, { [receiptDecision ? '$set' : '$setOnInsert']: {
+                eventId, userId, type, title, body, ref: reference, recordId, event: event == null ? '' : String(event),
+                actorUserId: details.actorUserId || '', actorName: details.actorName || '', commentText: details.commentText || '',
+                url: recordId ? '/?' + target.toString() : '/', createdAt: new Date(eventTimestamp), readAt: null,
+              } }, { upsert: true });
+            }
           } catch { this.logger.warn('Notification history could not be recorded'); }
         }
         if (!this.configured || !eligible(user, { ...DEFAULTS, ...account?.preferences, ...(test ? { [type]: true } : {}) }, type)) return;
@@ -461,6 +468,13 @@ export class NotificationsService implements OnModuleInit {
   }
 
   private async dispatchJob(job: any) {
+        if (job.type === 'deposit' && /^deposit:receipt:/.test(job.eventId || '')) {
+          const id = createHash('sha256').update(JSON.stringify([job.userId, job.eventId])).digest('hex');
+          const current = await this.inbox.findOne({ _id: id as any, userId: job.userId });
+          if (current?.type === 'approval') {
+            await this.jobs.updateOne({ _id: job._id }, { $set: { done: true } }); return;
+          }
+        }
         // Also suppress duplicate requests queued before this rule was deployed.
         if (job.type === 'approval' && /^approval:receipt:.+:pending$/.test(job.eventId || '')) {
           await this.jobs.updateOne({ _id: job._id }, { $set: { done: true } }); return;

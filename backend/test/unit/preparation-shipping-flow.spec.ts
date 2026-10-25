@@ -123,6 +123,67 @@ it.each([false, true])('records a print only after the user confirms physical ou
   expect(c.showConfirm).toHaveBeenCalledTimes(1);
 });
 
+it('keeps confirmation hidden until the print preview closes', async () => {
+  let closePreview: any;
+  const c: any = {
+    currentLang: 'en', showConfirm: jest.fn().mockResolvedValue(true),
+    _awbPrinting: false, _awbPrintsOf: () => [],
+    _awbPrepare: async () => ({ pages: [] }),
+    _awbPrintInFrame: () => new Promise(resolve => { closePreview = resolve; }),
+    _awbPrepared: new Map(), _awbRecordPrint: jest.fn(), _awbBusy: jest.fn(),
+    setTimeout: jest.fn(), clearTimeout: jest.fn(), toast: jest.fn(), t: String
+  };
+  runInNewContext(html.slice(html.indexOf('function _awbConfirmPrinted('), html.indexOf('/* ══ AWB print log')), c);
+  const printing = c.printBostaAwb('1');
+  await turn();
+  expect(c.showConfirm).not.toHaveBeenCalled();
+  expect(c._awbRecordPrint).not.toHaveBeenCalled();
+  closePreview();
+  await printing;
+  expect(c.showConfirm).toHaveBeenCalledWith('Label printed?', expect.objectContaining({
+    confirmLabel: 'Yes, printed', cancelLabel: 'No, again'
+  }));
+});
+
+it('waits for afterprint even when print returns immediately and preview stays open', async () => {
+  let afterprint: any;
+  const fr: any = {
+    setAttribute: jest.fn(), style: {}, remove: jest.fn(),
+    contentDocument: { open() {}, write() {}, close() {}, images: [] },
+    contentWindow: { addEventListener: (_event: string, callback: any) => { afterprint = callback; }, focus() {}, print: jest.fn() }
+  };
+  const c: any = {
+    document: { createElement: () => fr, body: { appendChild() {} } },
+    _awbLabelHtml: () => '', setTimeout: jest.fn()
+  };
+  runInNewContext(html.slice(html.indexOf('function _awbPrintInFrame('), html.indexOf('function _awbBusy(')), c);
+  let completed = false;
+  const printing = c._awbPrintInFrame({}).then(() => { completed = true; });
+  await turn();
+  expect(fr.contentWindow.print).toHaveBeenCalled();
+  expect(completed).toBe(false);
+  expect(c.setTimeout).not.toHaveBeenCalled();
+  afterprint();
+  await printing;
+  expect(completed).toBe(true);
+});
+
+it('waits for return from the fallback PDF tab before asking for confirmation', async () => {
+  let focused = true;
+  let check: any;
+  const c: any = {
+    document: { hidden: false, hasFocus: () => focused, addEventListener() {}, removeEventListener() {} },
+    window: { addEventListener() {}, removeEventListener() {} },
+    setInterval: (callback: any) => { check = callback; return 1; }, clearInterval: jest.fn()
+  };
+  runInNewContext(html.slice(html.indexOf('function _awbWaitForLabelTab('), html.indexOf('function _awbConfirmPrinted(')), c);
+  let completed = false;
+  const waiting = c._awbWaitForLabelTab({ closed: false }).then(() => { completed = true; });
+  check(); await turn(); expect(completed).toBe(false);
+  focused = false; check(); await turn(); expect(completed).toBe(false);
+  focused = true; check(); await waiting; expect(completed).toBe(true);
+});
+
 it.each([1, 2])('keeps completed orders in preparation and advances only after successful print (group size=%s)', async count => {
   const orders = Array.from({ length: count }, (_, i) => ({ _id: String(i + 1), items: [{ lineId: 'line', qty: 1 }], prepChecked: false }));
   const group = { prepRef: 'group', orders };

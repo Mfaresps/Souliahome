@@ -4,6 +4,7 @@ import {
   forwardRef,
   Logger,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ClientSession, Types } from 'mongoose';
@@ -69,6 +70,64 @@ export class InventoryMovementsService {
     @Inject(forwardRef(() => TransactionsService))
     private readonly transactionsService: TransactionsService,
   ) {}
+
+  /** Read only: SKU matches alone never establish an individual piece's provenance. */
+  async movementPieces(id: string, requestedPage = 1) {
+    const validId = (value: unknown) => /^[a-f\d]{24}$/i.test(String(value || ''));
+    if (!validId(id)) throw new BadRequestException('Invalid movement ID');
+    const movement = await this.model.findById(id).lean();
+    if (!movement) throw new NotFoundException('Inventory movement not found');
+    const page = Math.max(1, Math.floor(Number.isFinite(requestedPage) ? requestedPage : 1)), limit = 30;
+    const db = this.model.db;
+    const exactIds = (movement.unitIds || []).filter(validId);
+    const eventLinks: any[] = await db.collection('inventoryunitevents').find({
+      $or: [
+        { inventoryMovementId: id },
+        ...(validId(movement.sourceTransactionId) ? [{ transactionId: movement.sourceTransactionId,
+          action: { $in: ['shipped', 'delivered', 'returned', 'supplier-returned'] } }] : []),
+      ],
+    }, { projection: { unitId: 1 } }).toArray();
+    const linkedIds = [...new Set([...exactIds, ...eventLinks.map(event => event.unitId)].filter(validId))];
+    const links: any[] = linkedIds.length ? [{ _id: { $in: linkedIds.map(unitId => new Types.ObjectId(unitId)) } }] : [];
+    if (!exactIds.length && validId(movement.sourceTransactionId)) {
+      links.push({ 'origin.purchaseTransactionId': movement.sourceTransactionId });
+      links.push({ 'assignment.transactionId': movement.sourceTransactionId,
+        status: { $in: ['picking', 'prepared', 'shipped', 'delivered', 'damaged', 'lost'] } });
+    }
+    if (!links.length) return { items: [], total: 0, page, limit };
+    // Explicit movement membership takes priority over invoice-wide membership.
+    const filter: any = { productId: String(movement.productId),
+      ...(exactIds.length ? { _id: { $in: exactIds.map(unitId => new Types.ObjectId(unitId)) } } : { $or: links }) };
+    const [units, total] = await Promise.all([
+      db.collection('inventoryunits').find(filter).sort({ _id: 1 }).skip((page - 1) * limit).limit(limit).toArray(),
+      db.collection('inventoryunits').countDocuments(filter),
+    ]);
+    const unitIds = units.map(unit => String(unit._id));
+    const purchaseIds = [...new Set(units.map(unit => unit.origin?.purchaseTransactionId).filter(validId))];
+    const [events, purchases, codes] = await Promise.all([
+      db.collection('inventoryunitevents').find({ unitId: { $in: unitIds },
+        action: { $in: ['registered', 'shipped', 'returned', 'supplier-returned', 'warehouse-changed'] } }).sort({ sequence: 1 }).toArray(),
+      db.collection('transactions').find({ _id: { $in: purchaseIds.map(purchaseId => new Types.ObjectId(purchaseId)) }, type: 'مشتريات' },
+        { projection: { ref: 1, date: 1 } }).toArray(),
+      db.collection('inventoryunitcodes').find({ _id: { $in: units.map(unit => unit._id) } }).toArray(),
+    ]);
+    return { total, page, limit, items: units.map(unit => {
+      const purchase = purchases.find(invoice => String(invoice._id) === unit.origin?.purchaseTransactionId);
+      const code = codes.find(row => String(row._id) === String(unit._id))?.code;
+      return { unitId: String(unit._id), barcode: unit.barcode,
+        manualCode: code ? `U-${code.slice(0, 4)}-${code.slice(4, 8)}-${code.slice(8)}` : null,
+        originKind: unit.origin?.kind,
+        registeredAtReceipt: String(unit.origin?.reconciliationRef || '').startsWith('receipt:'),
+        purchase: purchase ? { id: String(purchase._id), ref: purchase.ref, date: purchase.date } : null,
+        history: events.filter(event => event.unitId === String(unit._id)).map(event => ({
+          action: event.action, date: event.createdAt,
+          fromWarehouseCode: event.details?.fromWarehouseCode || null,
+          toWarehouseCode: event.details?.toWarehouseCode || event.details?.warehouseCode || null,
+          registrationKind: event.details?.registrationKind || null,
+        })),
+      };
+    }) };
+  }
 
   /** Internal — called from TransactionsService lifecycle hooks. Never throws. */
   async record(entries: RecordMovementEntry[], context?: DatabaseWriteContext): Promise<void> {

@@ -12,7 +12,7 @@ const output = path.join(root, 'artifacts/after-sales'); fs.mkdirSync(output, { 
     page.on('request', r => {
       const url = new URL(r.url());
       if(url.origin === 'http://soulia.test' && url.pathname === '/') return r.respond({status:200,contentType:'text/html',body:fs.readFileSync(path.join(dir,'index.html'),'utf8')});
-      if(['/after-sales.js','/after-sales.css'].includes(url.pathname)) return r.respond({status:200,contentType:url.pathname.endsWith('.js')?'text/javascript':'text/css',body:fs.readFileSync(path.join(dir,url.pathname.slice(1)))});
+      if(['/after-sales.js','/after-sales.css','/order-status.js','/design-system.css','/approvals-compact.css'].includes(url.pathname)) return r.respond({status:200,contentType:url.pathname.endsWith('.js')?'text/javascript':'text/css',body:fs.readFileSync(path.join(dir,url.pathname.slice(1)))});
       if(r.resourceType()==='script') return r.respond({status:200,contentType:'text/javascript',body:'window.Chart=class{static register(){} destroy(){}};window.XLSX={utils:{}};window.io=()=>({on(){},emit(){},disconnect(){}});'});
       return r.respond({status:200,contentType:'application/json',body:'[]'});
     });
@@ -137,7 +137,7 @@ const output = path.join(root, 'artifacts/after-sales'); fs.mkdirSync(output, { 
     assert.doesNotMatch(returnText,/Replacement Pending|Prepare replacement|Replacement delivery|Replacement value|Difference collected|credit transferred to replacement/i);
     assert.match(returnText,/Net customer refund/);
     assert.equal(await page.$('[data-as-action=delivery]'),null);
-    assert.match(await page.$eval('[data-as-action=ship]',e=>e.textContent),/return collection/i);
+    assert.match(await page.$eval('[data-as-action=ship]',e=>e.textContent),/collect return/i);
     await page.screenshot({path:path.join(output,'return-path-mobile.png')});
     assert.match(await page.$eval('.as-next-step',e=>e.textContent),/customer address/);
     await page.click('[data-as-action=ship]');

@@ -45,6 +45,38 @@ describe('Order outcomes close follow-up trails', () => {
     expect(service.model.updateMany).not.toHaveBeenCalled();
   });
 
+  it('reconciles historical cancellations at startup even when all tickets already have numbers', async () => {
+    const { service } = fixture();
+    const select = jest.fn().mockReturnThis();
+    const query = { select, sort: jest.fn().mockReturnThis(), lean: jest.fn().mockReturnThis(),
+      exec: jest.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([{ orderRef: '#2856' }]) };
+    select.mockReturnValue(query);
+    service.model.find = jest.fn(() => query);
+    const cancelledAt = '2026-10-22T14:23:48.849Z';
+    const find = jest.fn(() => ({ toArray: jest.fn().mockResolvedValueOnce([
+      { _id: 'local1', shopifyId: 'remote1', ref: '2856', cancelReason: 'الرقم غلط', cancelledBy: 'Manager', cancelledAt },
+    ]) }));
+    const transactionFind = jest.fn(() => ({ toArray: async () => [] }));
+    service.model.db = { collection: (name: string) => ({ find: name === 'shopifyorders' ? find : transactionFind }) };
+    service.logger.log = jest.fn();
+    await service.onModuleInit();
+    expect(service.model.find).toHaveBeenLastCalledWith({ cancelled: { $ne: true }, status: { $nin: expect.any(Array) }, orderOutcome: { $in: ['', null] } });
+    expect(find).toHaveBeenCalledWith({ cancelled: true, ref: { $in: ['2856', '#2856'] } }, expect.any(Object));
+    const [filter, update] = service.model.updateMany.mock.calls[0];
+    expect(filter.$or).toContainEqual({ shopifyOrderId: { $in: ['local1', 'remote1'] } });
+    expect(update.$set).toMatchObject({ status: 'العميل ألغى الطلب', orderOutcome: 'cancelled', closedAt: new Date(cancelledAt), deferredUntil: null });
+    expect(update.$push.comments.text).toContain('الرقم غلط — بواسطة Manager');
+  });
+
+  it('does not scan orders or update anything when there are no open trails', async () => {
+    const { service } = fixture();
+    service.model.find = () => ({ select: () => ({ lean: () => ({ exec: async () => [] }) }) });
+    service.model.db = { collection: jest.fn() };
+    await service.reconcileCancelledOrders();
+    expect(service.model.db.collection).not.toHaveBeenCalled();
+    expect(service.model.updateMany).not.toHaveBeenCalled();
+  });
+
   it('logs a persistence failure without failing an already committed order', async () => {
     const { service, exec } = fixture();
     exec.mockRejectedValueOnce(new Error('database offline'));

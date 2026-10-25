@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Body, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, Req, UseGuards } from '@nestjs/common';
+import { PermsGuard } from '../core/guards/perms.guard';
+import { RequirePerms } from '../core/decorators/perms.decorator';
 import { InventoryMovementsService } from './inventory-movements.service';
 import { AdjustInventoryDto } from './dto/inventory-movement.dto';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
@@ -9,6 +11,13 @@ import { Roles } from '../core/decorators/roles.decorator';
 @Controller('inventory-movements')
 export class InventoryMovementsController {
   constructor(private readonly service: InventoryMovementsService) {}
+
+  @Get(':id/pieces')
+  @UseGuards(PermsGuard)
+  @RequirePerms('inventory-units-view')
+  pieces(@Param('id') id: string, @Query('page') page?: string) {
+    return this.service.movementPieces(id, Number(page) || 1);
+  }
 
   @Get()
   async findAll(

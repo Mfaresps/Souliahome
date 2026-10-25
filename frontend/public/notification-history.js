@@ -36,7 +36,7 @@
   window.souliaHistoryNotifs = function () {
     syncOwner();
     return rows.map(r => ({ id: 'history-' + r._id, history: true, historyRead: !!r.readAt, icon: ICON(r.type === 'comment' ? 'info' : 'alarm'), type: 'info',
-      eventType: r.type, recordId: r.recordId, event: r.event, actorUserId: r.actorUserId, actorName: r.actorName, actorAvatar: r.actorAvatar,
+      eventType: r.type, eventId: r.eventId, recordId: r.recordId, event: r.event, actorUserId: r.actorUserId, actorName: r.actorName, actorAvatar: r.actorAvatar,
       title: r.title + (r.ref ? ' · #' + r.ref : ''), desc: r.commentText ? [r.actorName, r.commentText].filter(Boolean).join(' · ') : r.body,
       ts: r.createdAt, page: r.recordId?.startsWith('followup:') ? 'complaints' : r.recordId?.startsWith('shopify:') ? 'shopify-orders' : 'movements',
       refType: 'history', refId: r._id }));

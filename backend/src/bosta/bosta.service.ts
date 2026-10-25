@@ -23,7 +23,8 @@ import { EmployeeScoringService } from '../employee-performance/employee-scoring
 import { FollowUpsService } from '../followups/followups.service';
 import { BostaPickup, BostaPickupDocument } from './schemas/bosta-pickup.schema';
 import { CreatePickupDto } from './dto/create-pickup.dto';
-import { pickupSchedule, pickupDateReason, pickupReasonMessage, pickupCarrierReason } from './pickup-schedule.util';
+import { ExtendPickupDto } from './dto/extend-pickup.dto';
+import { pickupSchedule, pickupDateReason, pickupReasonMessage, pickupCarrierReason, pickupClock } from './pickup-schedule.util';
 
 // ── Bosta status → Arabic label map ────────────────────────────────────────
 const BOSTA_STATUS_LABELS: Record<string, string> = {
@@ -510,6 +511,7 @@ export class BostaService {
 
   async pickupPreview() {
     const requests = await this.pickupModel!.find({}).lean();
+    const policy = await this.settingsService.getBostaPickupPolicy();
     const reserved = new Set(requests.filter(r => ['pending', 'created'].includes(r.status)).flatMap(r => r.orderIds));
     const ready = await this.txModel.find({
       type: 'مبيعات', cancelled: { $ne: true }, archived: { $ne: true },
@@ -519,9 +521,11 @@ export class BostaService {
     const orders = ready.filter(o => !reserved.has(String(o._id)));
     return { orders: orders.map(o => ({ id: String(o._id), ref: o.ref, group: o.pickupRef })), numberOfParcels: orders.length,
       requests: requests.sort((a: any, b: any) => new Date(b.createdAt || b.scheduledDate).getTime() - new Date(a.createdAt || a.scheduledDate).getTime()).map((r: any) => ({
-        id: String(r._id), orderIds: r.orderIds, requestedBy: r.requestedBy || '', createdAt: r.createdAt,
+        id: String(r._id), orderIds: r.orderIds.filter((id: string) => !(r.pendingOrderIds || []).includes(id)), requestedBy: r.requestedBy || '', createdAt: r.createdAt,
+        pendingOrderIds: r.pendingOrderIds || [], updateState: r.updateState || 'idle', pendingNumberOfParcels: r.pendingNumberOfParcels || 0,
         bostaPickupId: r.bostaPickupId || '', businessLocationId: r.businessLocationId,
         scheduledDate: r.scheduledDate, numberOfParcels: r.numberOfParcels, status: r.status,
+        canExtend: r.status === 'created' && !!r.bostaPickupId && !['pending', 'uncertain'].includes(r.updateState) && !pickupDateReason(r.scheduledDate, new Date(), policy),
       })) };
   }
 
@@ -607,6 +611,107 @@ export class BostaService {
     const bostaPickupId = String(response.data?._id || response.data?.id || response.data?.pickupRequestId || '');
     await this.pickupModel!.updateOne({ _id: record._id }, { $set: { status: 'created', bostaPickupId } });
     return { success: true, numberOfParcels: preview.numberOfParcels, scheduledDate: dto.scheduledDate, bostaPickupId };
+  }
+
+  private async readCarrierPickup(record: BostaPickupDocument, apiKey: string) {
+    const reply = await this.request<any>('GET', '/pickups/' + encodeURIComponent(record.bostaPickupId), undefined, apiKey, 'https://app.bosta.co/api/v2');
+    const data = reply?.data;
+    if (![true, 'true'].includes(reply?.success) || !data || String(data._id) !== record.bostaPickupId || String(data.businessLocationId) !== record.businessLocationId) {
+      throw new BadRequestException('تعذر التحقق من طلب الاستلام ومخزنه في بوسطة — راجع الطلب في بوسطة');
+    }
+    const rawDate = String(data.scheduledDate || '');
+    const parsed = new Date(rawDate);
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : Number.isFinite(parsed.getTime()) ? pickupClock(parsed).today : '';
+    if (date !== record.scheduledDate || !Number.isInteger(data.numberOfParcels) || data.numberOfParcels < 1) {
+      throw new BadRequestException('بوسطة لم توفر عدد الطرود أو موعدًا مطابقًا يمكن التحقق منه — راجع الطلب في لوحة بوسطة');
+    }
+    return data;
+  }
+
+  private async confirmPickupAddition(record: BostaPickupDocument) {
+    const result = await this.pickupModel!.updateOne(
+      { _id: record._id, updateState: { $in: ['pending', 'uncertain'] }, pendingNumberOfParcels: record.pendingNumberOfParcels, pendingOrderIds: record.pendingOrderIds },
+      { $set: { numberOfParcels: record.pendingNumberOfParcels, updateState: 'idle', pendingOrderIds: [], pendingNumberOfParcels: 0, error: '' },
+        $push: { updateHistory: { at: new Date(), by: record.updateRequestedBy, from: record.numberOfParcels, to: record.pendingNumberOfParcels, orderIds: record.pendingOrderIds, outcome: 'confirmed' } } },
+    );
+    if (!result.modifiedCount) throw new BadRequestException('تغير طلب الاستلام أثناء التحقق — أعد فتح النافذة لمراجعة حالته');
+    return { success: true, id: String(record._id), bostaPickupId: record.bostaPickupId, scheduledDate: record.scheduledDate, numberOfParcels: record.pendingNumberOfParcels };
+  }
+
+  async extendPickup(id: string, dto: ExtendPickupDto, operator: string) {
+    if (!Types.ObjectId.isValid(id)) throw new BadRequestException('طلب الاستلام غير موجود');
+    const existing = await this.pickupModel!.findById(id);
+    if (!existing || existing.status !== 'created' || !existing.bostaPickupId) throw new BadRequestException('اختر طلب استلام مؤكدًا من بوسطة');
+    if (['pending', 'uncertain'].includes(existing.updateState)) throw new BadRequestException('يوجد تعديل قيد التأكيد — تحقق من بوسطة قبل أي محاولة أخرى');
+    if (existing.numberOfParcels !== dto.expectedNumberOfParcels) throw new BadRequestException('تغير العدد — أعد فتح النافذة لمراجعة الإجمالي');
+    const policy = await this.settingsService.getBostaPickupPolicy();
+    const reason = pickupDateReason(existing.scheduledDate, new Date(), policy);
+    if (reason) throw new BadRequestException(pickupReasonMessage(reason));
+    const apiKey = await this.resolveApiKey();
+    if (!apiKey) throw new BadRequestException('أضف مفتاح بوسطة من إعدادات الشحن');
+    const preview = await this.pickupPreview();
+    const expected = new Set(dto.orderIds);
+    if (!preview.orders.length || expected.size !== preview.orders.length || preview.orders.some(o => !expected.has(o.id))) throw new BadRequestException('تغيرت الأوردرات الجاهزة — أعد فتح النافذة لمراجعة العدد');
+    const total = existing.numberOfParcels + preview.numberOfParcels;
+    let record: BostaPickupDocument | null;
+    await this.pickupModel!.init();
+    try {
+      // Atomic reservation also arbitrates against creation and updates on other devices.
+      record = await this.pickupModel!.findOneAndUpdate(
+        { _id: id, status: 'created', numberOfParcels: existing.numberOfParcels, updateState: { $nin: ['pending', 'uncertain'] } },
+        { $set: { updateState: 'pending', pendingOrderIds: dto.orderIds, pendingNumberOfParcels: total, updateRequestedBy: operator, updateRequestedAt: new Date(), error: '' },
+          $addToSet: { orderIds: { $each: dto.orderIds } } }, { new: true },
+      );
+    } catch (e: any) {
+      if (e.code === 11000) throw new BadRequestException('الأوردرات محجوزة لطلب استلام آخر — أعد فتح النافذة');
+      throw e;
+    }
+    if (!record) throw new BadRequestException('يوجد تعديل آخر أو تغير العدد — أعد فتح النافذة');
+    let sent = false, accepted = false;
+    try {
+      const carrier = await this.readCarrierPickup(record, apiKey);
+      if (carrier.state !== 'Requested') throw new BadRequestException('طلب بوسطة بدأ تنفيذه أو لم يعد قابلًا للتعديل — راجع بوسطة');
+      if (carrier.numberOfParcels !== existing.numberOfParcels) throw new BadRequestException('عدد الطرود في بوسطة مختلف عن المسجل — راجع الطلب قبل الإضافة');
+      const latestReason = pickupDateReason(record.scheduledDate, new Date(), policy);
+      if (latestReason) throw new BadRequestException(pickupReasonMessage(latestReason));
+      sent = true;
+      const reply = await this.request<any>('PUT', '/pickups/' + encodeURIComponent(record.bostaPickupId), { numberOfParcels: total }, apiKey, 'https://app.bosta.co/api/v2');
+      if (![true, 'true'].includes(reply?.success)) {
+        const err: any = new Error(reply?.message || 'بوسطة لم تؤكد تعديل طلب الاستلام');
+        err.rejectedByBosta = reply?.success === false || reply?.success === 'false';
+        throw err;
+      }
+      accepted = true;
+      const verified = await this.readCarrierPickup(record, apiKey);
+      if (verified.numberOfParcels !== total || verified.state !== 'Requested') throw new Error('لم يتم التحقق من العدد الجديد وحالة الطلب في بوسطة');
+      return await this.confirmPickupAddition(record);
+    } catch (e: any) {
+      const rejected = !sent || (!accepted && (e.rejectedByBosta || (e.statusCode >= 400 && e.statusCode < 500 && ![408, 429].includes(e.statusCode))));
+      if (rejected) {
+        await this.pickupModel!.updateOne({ _id: id, updateState: 'pending', pendingNumberOfParcels: total }, {
+          $pull: { orderIds: { $in: dto.orderIds } },
+          $set: { updateState: 'idle', pendingOrderIds: [], pendingNumberOfParcels: 0, error: e.message },
+          $push: { updateHistory: { at: new Date(), by: operator, from: existing.numberOfParcels, to: total, orderIds: dto.orderIds, outcome: 'rejected', error: e.message } },
+        });
+        throw new BadRequestException(e.message);
+      }
+      await this.pickupModel!.updateOne({ _id: id, updateState: 'pending', pendingNumberOfParcels: total }, { $set: { updateState: 'uncertain', error: e.message } });
+      throw new BadRequestException('نتيجة التعديل غير مؤكدة — الطلبات الجديدة محجوزة لحين التحقق من بوسطة. لا تعِد الإرسال');
+    }
+  }
+
+  async verifyPickupUpdate(id: string) {
+    if (!Types.ObjectId.isValid(id)) throw new BadRequestException('طلب الاستلام غير موجود');
+    const record = await this.pickupModel!.findById(id);
+    if (!record || record.status !== 'created' || !['pending', 'uncertain'].includes(record.updateState) || !record.pendingOrderIds.length) throw new BadRequestException('لا يوجد تعديل يحتاج التحقق');
+    // Never reconcile while a live PUT may still be in flight. A crashed worker's reservation remains reviewable.
+    if (record.updateState === 'pending' && Date.now() - new Date(record.updateRequestedAt || 0).getTime() < 120000) throw new BadRequestException('التعديل جارٍ — انتظر انتهاء المحاولة قبل التحقق');
+    const apiKey = await this.resolveApiKey();
+    if (!apiKey) throw new BadRequestException('أضف مفتاح بوسطة من إعدادات الشحن');
+    const carrier = await this.readCarrierPickup(record, apiKey);
+    const validStates = ['Requested', 'Route Assigned', 'Accepted', 'Picking up', 'Arrived at business', 'Receiving', 'Picked up', 'En route to warehouse', 'Arrived at warehouse', 'Done'];
+    if (!validStates.includes(carrier.state) || carrier.numberOfParcels !== record.pendingNumberOfParcels) throw new BadRequestException('لم تؤكد بوسطة العدد المطلوب بعد — راجع الطلب في بوسطة. لم تتم إعادة الإرسال');
+    return this.confirmPickupAddition(record);
   }
 
   /** Request one printable AWB from Bosta's v2 API. The carrier returns a

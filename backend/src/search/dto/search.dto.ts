@@ -42,6 +42,8 @@ export interface SearchResultItem {
   readonly cancelReason?: string;
   readonly shopifyStatus?: string;
   readonly shopifyCancelled?: boolean;
+  /** Minimal workflow data for the shared order-state renderer. */
+  readonly orderState?: Record<string, unknown>;
   /**
    * درجة الصلة (relevance). الواجهة ترتّب بها العناصر داخل كل قسم، وترتّب
    * الأقسام بأعلى درجة داخلها — بدلاً من قائمة أولويات ثابتة.

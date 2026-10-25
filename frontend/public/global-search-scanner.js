@@ -74,8 +74,7 @@
       let salesInvoice;
       if (row.assignment?.transactionId) {
         const order = identity.assignmentOrder;
-        const orderStates = { Pending:['Pending','معلّق'], Preparing:['Preparing','قيد التحضير'], Ready:['Ready','جاهز للشحن'], 'Picked-Up':['Picked up','تم الاستلام'], Shipped:['Shipped','تم الشحن'], Delivered:['Delivered','تم التسليم'] };
-        if (order) { const status = document.createElement('span'); status.className = 'gs-linked-order-status'; status.textContent = tr('Order status: ','حالة الطلب: ') + (order.cancelled ? tr('Cancelled','ملغى') : order.archived ? tr('Archived','مؤرشف') : orderStates[order.pickupStatus] ? tr(...orderStates[order.pickupStatus]) : order.pickupStatus || tr('Not specified','غير محددة')); state.append(status); }
+        if (order) { const status = document.createElement('span'); status.className = 'gs-linked-order-status'; status.innerHTML = SouliaOrderStatus.badge(SouliaOrderStatus.resolve(order, 'transaction', tr('en','ar'))); state.append(status); }
         const relation = document.createElement('div'); relation.className = 'gs-unit-order gs-unit-invoice gs-sales-invoice';
         const ref = document.createElement('strong'); ref.textContent = order ? tr('Sales invoice ', 'فاتورة البيع ') + (order.ref ? '#' + String(order.ref).replace(/^#+/,'') : tr('(no reference)', '(بدون رقم)')) : tr('Linked order unavailable', 'الطلب المرتبط غير متاح');
         relation.append(ref);

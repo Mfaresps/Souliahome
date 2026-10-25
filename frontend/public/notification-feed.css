@@ -1,11 +1,15 @@
 #notif-tab-mentions{display:none!important}
 .notif-panel{width:420px;max-height:min(620px,calc(100dvh - 100px))}
-.notif-panel.show{animation:notificationPanelReveal .14s ease-out}
+.notif-panel.show{animation:none}
 @keyframes notificationPanelReveal{from{opacity:0}to{opacity:1}}
 .notif-panel .notif-item{padding:11px 14px;gap:10px}
 .notif-panel .notif-title{font-size:.8rem}
 .notif-panel .notif-desc{font-size:.73rem;line-height:1.5}
 .notif-panel .notif-time{font-size:.68rem;margin-top:4px}
+.notif-panel .notif-list{scrollbar-gutter:stable}
+.notification-money{white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--text)}
+.notification-amount{font-weight:750}
+.notif-time,.nc-item-time{font-variant-numeric:tabular-nums}
 .notif-item.unread-notif,.nc-item.unread-notif{background:color-mix(in srgb,var(--accent) 12%,var(--surface));box-shadow:inset 3px 0 var(--accent)}
 [dir="rtl"] .notif-item.unread-notif,[dir="rtl"] .nc-item.unread-notif{box-shadow:inset -3px 0 var(--accent)}
 .notif-item.unread-notif .notif-title,.nc-item.unread-notif .nc-item-title{font-weight:750}

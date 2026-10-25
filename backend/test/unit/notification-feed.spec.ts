@@ -57,6 +57,51 @@ it('does not merge unrelated follow-up notices with an empty comment identifier'
   const items = c.souliaMergeNotifications([{ id: 'h1', history: true, recordId: 'followup:fu1', eventType: 'comment', event: '0' }]);
   expect(items).toHaveLength(2);
 });
+it('shows one follow-up creation notice with the responsible person, reason and one unread count', async () => {
+  const c = fixture(); c.souliaSyncNotificationAccount();
+  const card = { id: 'fu-unseen-fu1', refType: 'fu', refId: 'fu1', desc: 'Malak Abbas — عملية تأكيد الطلب', ts: '2026-10-25T10:00:00Z' };
+  c.history = [{ id: 'history-created', history: true, eventType: 'followup', eventId: 'followup:fu1', recordId: 'followup:fu1',
+    historyRead: false, actorAvatar: '/actor.png', desc: 'Order #2949 · New Follow-up', ts: card.ts }];
+  c.unread = 1;
+  const items = c.souliaMergeNotifications([...c.history, card]);
+  expect(items).toHaveLength(1);
+  expect(items[0]).toEqual(expect.objectContaining({ id: 'history-created', desc: card.desc, actorAvatar: '/actor.png' }));
+  expect(c.souliaNotificationUnread(items, [])).toBe(1);
+  await c.souliaReadNotification(items[0].id);
+  expect(c.souliaMarkHistoryRead).toHaveBeenCalledWith('history-created');
+});
+it('keeps distinct follow-ups, comments, scheduled reminders and due reminders separate', () => {
+  const c = fixture();
+  const card = { id: 'fu-unseen-fu1', refType: 'fu', refId: 'fu1' };
+  const notices = [
+    { id: 'scheduled', eventType: 'followup', eventId: 'followup-scheduled:fu1:date', recordId: 'followup:fu1' },
+    { id: 'due', eventType: 'followup', eventId: 'followup-due:fu1:date', recordId: 'followup:fu1' },
+    { id: 'comment', eventType: 'comment', eventId: 'comment:fu1:c1', recordId: 'followup:fu1' },
+    { id: 'other-followup', eventType: 'followup', eventId: 'followup:fu2', recordId: 'followup:fu2' },
+  ].map(n => ({ ...n, history: true }));
+  expect(c.souliaMergeNotifications([...notices, card])).toHaveLength(5);
+  expect(c.souliaMergeNotifications([card])[0].id).toBe(card.id);
+});
+it('merges legacy receipt submission and decision cards, reads both, and preserves other receipts and orders', async () => {
+  const c = fixture(); c.souliaSyncNotificationAccount();
+  const deposit = { id: 'deposit1', history: true, historyRead: false, eventType: 'deposit', recordId: 'shopify:o1', event: 'r1', ts: '2026-10-25T10:00:00Z' };
+  const decision = { ...deposit, id: 'approved1', eventType: 'approval', eventId: 'approval:receipt:r1:approved', ts: '2026-10-25T10:01:00Z' };
+  c.history = [deposit, decision, { ...deposit, id: 'deposit2', event: 'r2' }, { ...deposit, id: 'other-order', recordId: 'shopify:o2' }];
+  c.unread = 4;
+  const items = c.souliaMergeNotifications(c.history);
+  expect(items).toHaveLength(3);
+  expect(items[0].id).toBe('approved1');
+  expect(c.souliaNotificationUnread(items, [])).toBe(3);
+  await c.souliaReadNotification('approved1');
+  expect(c.souliaMarkHistoryRead).toHaveBeenCalledWith('approved1');
+  expect(c.souliaMarkHistoryRead).toHaveBeenCalledWith('deposit1');
+  expect(c.souliaIsNotificationUnread(items[0])).toBe(false);
+});
+it('shows an updated receipt decision as unread even when its previous submission was read', () => {
+  const c = fixture();
+  c._notifReadIds = ['receipt'];
+  expect(c.souliaIsNotificationUnread({ id: 'receipt', history: true, historyRead: false })).toBe(true);
+});
 it('formats live relative notification times with Arabic singular, dual and plural units', () => {
   const c = fixture(); c.currentLang = 'ar';
   const now = Date.parse('2026-10-21T12:00:00Z');
@@ -88,6 +133,16 @@ it('uses vector delivery icons, removes delivery emoji prefixes, and escapes del
   expect(c.souliaNotificationDescription(item)).toContain('&lt;unsafe&gt;');
   expect(c.souliaNotificationTone({ eventType: 'deliveryProblem' })).toBe('notification-delivery-issue');
   expect(c.souliaNotificationAvatar(item)).toContain('<svg');
+});
+it('emphasizes currency amounts in English and Arabic while escaping text and keeping order numbers plain', () => {
+  const c = fixture();
+  c.escHtml = (s: string) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const english = c.souliaNotificationDescription({ history: true, desc: 'Malak added EGP 1,250.50 · #2950 <img src=x>' });
+  expect(english).toContain('EGP <strong class="notification-amount">1,250.50</strong>');
+  expect(english).toContain('#2950 &lt;img src=x&gt;');
+  expect(english.match(/<strong/g)).toHaveLength(1);
+  const arabic = c.souliaNotificationDescription({ history: true, desc: 'أضاف ٥٠٠٫٥٠ ج.م. · #2950' });
+  expect(arabic).toContain('<strong class="notification-amount">٥٠٠٫٥٠</strong> ج.م.');
 });
 it('keeps a fallback icon present during photo loading and avoids retrying failed photos on every repaint', () => {
   const c = fixture();

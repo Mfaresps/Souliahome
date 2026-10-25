@@ -400,16 +400,18 @@ for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))
       ]};
       window.teamDetails={sara:{employee:{id:'sara',name:'سارة أحمد'},orders:[{id:'order2929',ref:'2929',client:'Dina',status:'pending'},{id:'order2928',ref:'2928',client:'Ali',status:'approved'}],followUps:[
         {id:'issue777',orderRef:'777',clientName:'Heba',status:'قيد المتابعة',reason:'مشكلة في الاستلام',autoSource:'shipping-issue',latestComment:{text:'تم التواصل مع العميل لتحديد موعد تسليم جديد',authorName:'سارة'}},
+        {id:'stale-issue',orderRef:'2771',clientName:'Resolved issue',status:'قيد المتابعة',autoSource:'shipping-issue',isDeliveryIssue:false},
+        {id:'duplicate-issue',orderRef:'777',clientName:'Heba',status:'قيد المتابعة',autoSource:'shipping-issue',isDeliveryIssue:true},
         {id:'fu500',orderRef:'500',clientName:'Mona',status:'بانتظار العميل',reason:'أجل الاستلام',deferredUntil:new Date(Date.now()+86400000).toISOString()},
       ]},omar:{employee:{id:'omar',name:'عمر علي'},orders:[{id:'order111',ref:'111',client:'Omar client',status:'pending'}],followUps:[]}};
-      api=async url=>{if(url==='/employee-performance/team-workspace')return window.teamFixture;if(url.startsWith('/employee-performance/team-workspace/'))return window.teamDetails[url.split('/').at(-1)];return window.teamOriginalApi(url);};
+      window.teamRequests=[];api=async url=>{window.teamRequests.push(url);if(url.split('?')[0]==='/employee-performance/team-workspace')return window.teamFixture;if(url.startsWith('/employee-performance/team-workspace/'))return window.teamDetails[url.split('?')[0].split('/').at(-1)];return window.teamOriginalApi(url);};
       await loadAdminTeamWorkspace();
     });
     for(const language of ['ar','en']) for(const width of [390,1440]) {
       await page.setViewport({width,height:1000});
       await page.evaluate(language=>{currentLang=language;document.documentElement.dir=language==='ar'?'rtl':'ltr';renderAdminTeamWorkspace();},language);
       const teamState=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,employees:qsa('.ath-person').length,selected:qs('.ath-person-header h4').textContent,
-        count:qs('.ath-person-metrics').textContent.includes('250'),note:qs('.ath-task.is-issue').textContent.includes('تم التواصل مع العميل'),noMessages:!qs('#dash-admin-team .employee-adjustments')}));
+        count:!qs('.ath-person-metrics').textContent.includes('250')&&qsa('.ath-person-metrics>span').length===3&&!qs('[data-filter=orders]')&&!!qs('[data-team-period]'),note:qs('.ath-task.is-issue').textContent.includes('تم التواصل مع العميل'),noMessages:!qs('#dash-admin-team .employee-adjustments')}));
       assert.deepEqual(teamState,{overflow:false,employees:2,selected:'سارة أحمد',count:true,note:true,noMessages:true});
       assert.equal(await page.$('#admin-team-search'),null,'Employee search was removed');
       assert.equal(await page.$$eval('.ath-totals>div',cards=>cards.length),3,'Team assigned orders summary was removed');
@@ -417,6 +419,10 @@ for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))
       fs.mkdirSync(path.join(root,'artifacts/admin-team-home'),{recursive:true});
       await page.screenshot({path:path.join(root,`artifacts/admin-team-home/${language}-${width}.png`)});
     }
+    await page.evaluate(()=>{const input=qs('[data-team-period]');input.value='2026-09';input.dispatchEvent(new Event('change',{bubbles:true}));});
+    await page.waitForFunction(()=>window.teamRequests.includes('/employee-performance/team-workspace/sara?period=month&periodKey=2026-09')&&!!qs('.ath-task'));
+    assert.ok(await page.evaluate(()=>window.teamRequests.includes('/employee-performance/team-workspace?period=month&periodKey=2026-09')));
+    assert.equal(await page.$eval('[data-team-period]',input=>input.value),'2026-09');
     await page.click('[data-filter="waiting"]');
     assert.equal(await page.$$eval('.ath-task',rows=>rows.length),1);
     assert.ok(await page.$eval('.ath-task',el=>el.textContent.includes('#500')));

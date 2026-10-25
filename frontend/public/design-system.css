@@ -1,0 +1,174 @@
+/* Shared screen contract. Loaded after feature styles; print documents keep
+   their own layout. Page-specific data density and column widths remain local.
+   !important is limited to properties also set inline/by legacy important rules. */
+@media screen {
+  :root {
+    --header-h:64px;
+    --ui-page-gap:24px;
+    --ui-title-size:24px;
+    --ui-control-height:40px;
+    --ui-control-font:14px;
+    --ui-control-radius:8px;
+    --ui-card-radius:12px;
+    --fs-dash-title:var(--ui-title-size);
+    --fs-th:13px;
+    --fw-th:600;
+    --fs-td:14px;
+  }
+  #header {height:var(--header-h);padding-inline:var(--ui-page-gap)}
+  #header .header-search input {height:var(--ui-control-height);border-radius:var(--ui-control-radius);font-size:14px}
+  #header .header-search input::placeholder {font-size:13px!important}
+  #main {padding:var(--ui-page-gap);min-width:0}
+  #main > .page {min-width:0;padding:var(--ui-page-gap)}
+  /* Reserve the vertical scrollbar so row wrapping/zoom cannot feed back into
+     the movement table's measured width. Horizontal overflow remains usable. */
+  #mov-table-wrap .ent-table-scroll {scrollbar-gutter:stable;overflow-x:auto}
+  #main > #page-pickup-orders {
+    margin:0;border:1px solid var(--border);border-radius:var(--ui-card-radius);
+    background:var(--bg);box-shadow:var(--shadow-xs);
+  }
+  #main #page-pickup-orders .pu-board-kpis {max-width:none}
+  #main #page-pickup-orders #pu-board-filters-row {
+    padding:12px;margin-bottom:16px;border-radius:var(--ui-card-radius);box-shadow:none;
+  }
+  #main #page-pickup-orders #pu-board-filters-row :is(.pu-filter-bar-search,.pu-filter-date-grp,.pu-filter-shipco,.pu-filter-clear),
+  #main #page-pickup-orders :is(#pu-sync-bosta-btn,.pu-view-toggle button,.pu-actions-menu>summary) {
+    min-height:var(--ui-control-height);border-radius:var(--ui-control-radius);font-size:13px;
+  }
+  #main #page-pickup-orders #pu-board-search {
+    height:calc(var(--ui-control-height) - 2px);font-size:var(--ui-control-font)!important;
+  }
+  #main #page-pickup-orders #pu-board-search::placeholder {font-size:inherit!important}
+  #main :is(.prod-sticky-head,.inv-sticky-head,.cs-sticky-head) {margin-top:0;padding-top:0}
+  #main .page :is(.page-header,.inv-page-header) {
+    gap:16px;align-items:center;flex-wrap:wrap;margin-block:0 24px!important;
+    padding-inline:0;min-width:0;text-align:start;
+  }
+  #main .page :is(.page-header,.inv-page-header)>div {min-width:0;max-width:100%}
+  #main .page .page-title,
+  #main #page-shopify-orders #shopify-page-header.sp-compact-header h2 {
+    font-family:var(--font-app);font-size:var(--ui-title-size)!important;
+    font-weight:700;line-height:1.4;letter-spacing:0;margin-block:0 4px;
+    white-space:normal;overflow-wrap:anywhere;
+  }
+  #main .page .page-subtitle {font-size:13px;line-height:1.6;letter-spacing:0;color:var(--muted);margin-top:4px}
+  :is(#main,#modal-body) :is(.product-sku,.inv-card-code,.inv-detail-hero-code,.pgc-code,.plr-code,.inv2-line-code,.tx-item-code,.tx-picker-code,.iap-row-code,.col-code),
+  #header .search-product-sku {
+    font-family:ui-monospace,'Cascadia Code',Consolas,'Liberation Mono',monospace;
+    font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;
+    font-variant-ligatures:none;letter-spacing:.035em;direction:ltr;unicode-bidi:isolate;
+    color:var(--text);line-height:1.6;
+  }
+  #main .product-sku {display:inline-block;padding:2px 6px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);white-space:nowrap}
+  #main .inv-activation-badge {display:inline-flex;align-items:center;gap:5px;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap}
+  #main .inv-activation-badge::before {content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+  #main .inv-activation-badge.is-active {color:#17643c;background:#e7f5ec;border:1px solid #c3e3cf}
+  #main .inv-activation-badge.is-inactive {color:var(--muted);background:var(--surface2);border:1px solid var(--border)}
+  #main .inv-card-activation {margin-block:4px}
+  body.dark-mode #main .inv-activation-badge.is-active {color:#98e4b5;background:#173b27;border-color:#326044}
+  #page-invoice-view .inv2-header-actions {display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0;max-width:100%}
+  #page-invoice-view .inv2-page-header {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+  #page-invoice-view .inv2-page-heading {display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
+  #page-invoice-view .inv2-header-actions {margin-inline-start:auto}
+  #page-invoice-view .inv2-card-body > .wh-invoice-chip {
+    display:flex;flex-wrap:wrap;gap:6px;padding:0;margin:0 0 8px;
+    border:0;border-radius:0;background:none;color:var(--muted);font-size:11px;
+  }
+  #page-invoice-view .inv2-card-body > .wh-invoice-chip strong {font-size:11px;font-weight:400;color:var(--muted)}
+  .dd-menu-portal .inv2-menu-action {width:100%;border:0;background:none;text-align:start;text-decoration:none;font:inherit;font-size:13px;white-space:normal}
+  .dd-menu-portal .inv2-menu-action svg {width:15px;height:15px;flex-shrink:0}
+  .dd-menu-portal .inv2-menu-action:hover {background:var(--primary-pale)}
+  .dd-menu-portal .inv2-menu-action:disabled {opacity:.45;cursor:not-allowed}
+  .dd-menu-portal .inv2-menu-action:focus-visible {outline:2px solid var(--accent);outline-offset:-2px}
+  #page-invoice-view .inv2-header-actions .inv2-btn {
+    min-height:30px;padding:5px 9px;gap:5px;font-size:12px;line-height:1.5;border-radius:7px;
+    justify-content:center;max-width:100%;white-space:normal;text-decoration:none;
+  }
+  #page-invoice-view .inv2-header-actions .inv2-btn svg {width:13px;height:13px}
+  #page-invoice-view .inv2-header-actions :is(.inv2-btn-icon,.dd-toggle) {width:30px;height:30px;min-height:30px;padding:0;border-radius:7px}
+  #page-invoice-view .inv2-header-actions :is(button,a):focus-visible {outline:2px solid var(--accent);outline-offset:2px}
+  @media(pointer:coarse) {
+    #page-invoice-view .inv2-header-actions .inv2-btn {min-height:44px}
+    #page-invoice-view .inv2-header-actions :is(.inv2-btn-icon,.dd-toggle) {width:44px;height:44px;min-height:44px}
+  }
+  #main #page-approvals .page-header .as-launcher {margin:0;padding:0;max-width:100%}
+  #main :is(.page-header,.inv-header-actions) :is(.flex,.prod-page-actions) {flex-wrap:wrap;gap:8px}
+  #main :is(.page-header,.inv-header-actions) .btn {
+    min-height:var(--ui-control-height)!important;border-radius:var(--ui-control-radius);
+    font-size:13px;line-height:1.5;padding:8px 12px;white-space:normal;
+  }
+  #main :is(.card,.filter-card,.fx-toolbar) {border-radius:var(--ui-card-radius)}
+  #main .card:hover {transform:none;box-shadow:var(--shadow-xs)}
+  #main :is(.fx-toolbar,.fu-toolbar,.filter-card) {border-color:var(--border);box-shadow:none}
+  #main :is(.fx-toolbar,.fu-toolbar) {padding:12px;gap:12px;border-radius:var(--ui-card-radius);margin-bottom:16px}
+  #main :is(.fx-toolbar-row,.filter-bar) {gap:8px;align-items:center;flex-wrap:wrap;min-width:0}
+  #main :is(.fx-search,.fu-search-field) {min-width:0;flex:1 1 240px}
+  #main :is(.fx-search input,#fu-search,#appr-search) {
+    height:var(--ui-control-height)!important;min-height:var(--ui-control-height);
+    font-size:var(--ui-control-font)!important;font-weight:400!important;
+    border-radius:var(--ui-control-radius)!important;line-height:1.5;
+  }
+  #main :is(.fx-search input,#fu-search,#appr-search)::placeholder {
+    font-size:inherit!important;font-weight:400!important;letter-spacing:0;
+  }
+  #main .fx-search input {border-width:1px;padding-inline:38px;background:var(--bg)}
+  #main .fx-search-icon {left:auto;right:auto;inset-inline-start:12px}
+  #main .fx-search-clear {left:auto;right:auto;inset-inline-end:8px}
+  #main .fx-sort-menu {left:auto;right:auto;inset-inline-end:0;max-width:calc(100vw - 48px)}
+  #main .fx-sort-menu:not(.show) {visibility:hidden}
+  #main :is(.fx-btn,.filter-bar>.btn,.fu-toolbar .fsel-btn,.fu-filter-select:not(.fsel-native),.fu-clear-filters,.fu-date-range input.date-filter-icon) {
+    min-height:var(--ui-control-height)!important;height:auto;border-radius:var(--ui-control-radius)!important;
+    font-size:13px;border-width:1px;line-height:1.5;
+  }
+  #main .appr-search-field {min-height:calc(var(--ui-control-height) + 2px);border-width:1px;border-radius:var(--ui-control-radius);margin-bottom:16px}
+  #main #page-approvals #appr-filter {height:var(--ui-control-height);font-size:13px}
+  #main #page-approvals #appr-search {border-radius:0!important}
+  #main :is(.appr-search-clear,.appr-filter-toggle) {min-height:var(--ui-control-height)}
+  #main .form-group {min-width:0}
+  #main .form-group label {font-size:13px;line-height:1.5;margin-bottom:6px;color:var(--text);letter-spacing:0}
+  #main :is(.form-group,.filter-bar,.appr-filter-popover) :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=file]):not([type=range]):not([type=color]),select:not(.fsel-native),textarea) {
+    min-height:var(--ui-control-height);font-size:var(--ui-control-font);border:1px solid var(--border);
+    border-radius:var(--ui-control-radius);padding:8px 12px;max-width:100%;color:var(--text);background:var(--surface);
+  }
+  #main .form-group textarea {min-height:96px;resize:vertical}
+  #main :is(input,select,textarea):focus-visible {outline:2px solid var(--accent);outline-offset:2px;box-shadow:none}
+  #main :is(input,select,textarea)[aria-invalid=true] {border-color:var(--red)}
+  #main :is(input,select,textarea):disabled {opacity:.65;cursor:not-allowed}
+  #main :is(.section-tab-bar,.mov-tab-bar) {gap:8px;margin-bottom:16px}
+  #main :is(.s-tab,.mov-main-tab) {min-height:40px;font-size:13px;line-height:1.5;letter-spacing:0}
+  /* Typography is shared; semantic per-column alignment wins over this default. */
+  :where(#main .page) :is(th,td) {text-align:start}
+  #main .page thead th {font-size:var(--fs-th);font-weight:var(--fw-th);line-height:1.5;letter-spacing:0;text-transform:none;padding-block:12px;vertical-align:middle}
+  #main .page tbody td {font-size:var(--fs-td);line-height:1.5;vertical-align:middle}
+  #main .page :is(th,td):is(.num,.sl-num,[data-align=number]) {text-align:end;font-variant-numeric:tabular-nums}
+  #main .page :is(th,td)[data-align=center] {text-align:center}
+  #main #prod-table :is(th,td):nth-child(n+8):nth-child(-n+11) {text-align:end;font-variant-numeric:tabular-nums}
+  #main #prod-table :is(th,td):is(:first-child,:nth-child(2),:last-child) {text-align:center}
+  #main :is(.table-wrap,.table-responsive,.fu-table-wrap) {max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
+  #main .page :is(.btn,.fx-btn):hover {transform:none}
+  #main .page :is(.btn,.fx-btn):focus-visible {outline:2px solid var(--accent);outline-offset:2px}
+  /* Sidebar uses the same semantic palette in both themes. */
+  body.dark-mode #sidebar {--shell-white:var(--surface);--shell-line:var(--border);--shell-muted:var(--muted);--shell-nav-text:var(--text);--shell-hover:var(--surface2);background:var(--surface);border-color:var(--border);color:var(--text)}
+  body.dark-mode #sidebar :is(.shell-brand-name,.nav-item,.nav-sub-item) {color:#d6e6da}
+  body.dark-mode #sidebar :is(.nav-item,.nav-sub-item):hover,
+  body.dark-mode #sidebar :is(.nav-item,.nav-sub-item).active {background:#254332;color:#dcf4e3}
+  body.dark-mode #sidebar .nav-bottom-group {background:var(--surface2)}
+  body.dark-mode #sidebar .shell-brand-name small {color:#a8c1af}
+  @media (min-width:769px) and (max-width:1100px) {:root {--ui-page-gap:16px}}
+  @media (max-width:768px) {
+    :root {--ui-page-gap:12px;--ui-title-size:20px;--ui-control-height:44px;--ui-control-font:16px}
+    #main {padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+    #main > .page {padding:12px}
+    #main .page :is(.page-header,.inv-page-header) {gap:12px;margin-bottom:16px!important}
+    #main .page .page-subtitle {font-size:12px}
+    #main .page :is(.page-header,.inv-page-header)>div:first-child {width:100%;text-align:start}
+    #sidebar:not(.open) {box-shadow:none}
+    #main :is(.fx-search,.fu-search-field) {flex-basis:100%;width:100%;max-width:none!important}
+    #main :is(.fx-toolbar,.fu-toolbar) {padding:10px}
+    #main .fx-btn {white-space:normal;max-width:100%;padding-inline:10px}
+    #main :is(.s-tab,.mov-main-tab) {min-height:44px}
+    #main .appr-filter-popover {width:min(330px,calc(100vw - 48px))}
+    #main #page-shopify-orders #shopify-page-header.sp-compact-header {flex-wrap:wrap}
+    #main #page-shopify-orders #shopify-page-header.sp-compact-header h2 {flex:1 1 100%}
+  }
+}

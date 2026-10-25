@@ -1,13 +1,13 @@
 /* Shopify orders — period KPIs (today / yesterday / last 3 or 7 days / custom dates)
    and a shareable report image.
    Read-only: every figure is counted from `_shopifyOrders` + `followUps`, already in memory,
-   with the SAME rules the table uses (`_spHasDepositRecorded`, `_spShipsWithoutDeposit`,
+   with the SAME approval rules the table uses (`_spDepositOf`, `shipWithoutDeposit`,
    `_spFollowUpsFor`, `_fuIsSettled`). Nothing here writes or changes an order.
 
    ⚠ Each order lands in exactly ONE bucket, first match wins:
      cancelled → confirmed → follow-up (an open follow-up and nothing else) → open (no action yet).
-   «Confirmed» has two halves, counted apart and shown as a split: with a deposit (approved or
-   in review) and WITHOUT one (marked «Ship without deposit», or already recorded with none).
+   «Confirmed» has two halves, counted apart and shown as a split: with an approved deposit
+   and WITHOUT one (marked «Ship without deposit», or already recorded with none).
    ⚠ An order shipping without a deposit IS confirmed — the owner's rule (Oct 13, 2026).
    So the buckets always add up to «الأوردرات الواردة»; «open» is stated, never dropped.
 
@@ -163,8 +163,8 @@ function _spkOrderMs(o) { return new Date(o.shopifyCreatedAt || o.createdAt || 0
 
 function _spkBucket(o) {
   if (o.cancelled || o.status === 'rejected') return 'cancelled';
-  if (_spHasDepositRecorded(o)) return 'deposit';
-  if (_spShipsWithoutDeposit(o) || (o.status && o.status !== 'pending')) return 'nodep';
+  if (_spDepositOf(o).deposit > 0) return 'deposit';
+  if (o.shipWithoutDeposit === true || o.status === 'approved') return 'nodep';
   if (_spFollowUpsFor(o).some(f => !_fuIsSettled(f))) return 'followup';
   return 'open';
 }
