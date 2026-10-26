@@ -53,7 +53,7 @@ describe('Actual barcode management script in Chromium', () => {
           response.end(JSON.stringify({ size: sizes.find(size => size.id === data.sizeId), labels: labels.filter(label => data.unitIds.includes(label.unitId)), physicalPrintingVerified: false }));
         } else {
           const q = url.searchParams.get('q') || '';
-          const found = units.filter(unit => (!q || [unit.barcode, unit._id, unit.product.name, unit.product.code, 'XL', 'Red'].some(value => value.toLowerCase().includes(q.toLowerCase()))) && (!url.searchParams.get('status') || unit.status === url.searchParams.get('status')));
+          const found = units.filter(unit => (!url.searchParams.get('unitIds') || url.searchParams.get('unitIds')!.split(',').includes(unit._id)) && (!q || [unit.barcode, unit._id, unit.product.name, unit.product.code, 'XL', 'Red'].some(value => value.toLowerCase().includes(q.toLowerCase()))) && (!url.searchParams.get('status') || unit.status === url.searchParams.get('status')));
           const index = Number(url.searchParams.get('page') || 1), limit = Number(url.searchParams.get('limit') || 30);
           response.end(JSON.stringify({ products: q && !found.length ? [] : [{ _id: 'product-1', name: 'Cotton Shirt', code: 'SKU-1', size: 'XL', colors: ['Red'] }], units: found.slice((index - 1) * limit, index * limit), total: found.length, page: index, limit }));
         }
@@ -78,6 +78,23 @@ describe('Actual barcode management script in Chromium', () => {
     await page.click('#iu-select-page'); await page.waitForFunction(() => [...document.querySelectorAll<HTMLInputElement>('[data-unit-id]')].every(input => input.checked));
     await page.select('#iu-size', size); await page.click('#iu-preview'); await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('#iu-print')!.disabled);
   }
+  it('previews only the exact stocktake IDs passed from the product count', async () => {
+    await page.evaluate(ids => window.InventoryUnitLabels.openStockUnits({ unitIds: ids, preview: true }), [units[1]._id]);
+    await page.waitForFunction(() => !!document.querySelector('#iu-preview-section[open]') && !document.querySelector<HTMLButtonElement>('#iu-print')!.disabled);
+    expect(await page.evaluate(() => window.InventoryUnitLabels.selection().ids)).toEqual([units[1]._id]);
+    expect(await page.$$('#iu-previews .iu-label')).toHaveLength(1);
+    expect(calls.some(call => call.search?.includes('unitIds=' + units[1]._id))).toBe(true);
+  });
+  it('shows confirmed order delivery instead of the older prepared unit status', async () => {
+    units[0] = { ...units[0], status: 'prepared', displayStatus: 'delivered', statusSource: 'order' };
+    units[1] = { ...units[1], status: 'prepared', displayStatus: 'prepared', statusSource: 'unit' };
+    await page.evaluate(() => window.renderBarcodeManagement());
+    await page.waitForSelector('#iu-units [data-unit-id]');
+    expect(await page.$eval(`[data-log-unit="${units[0]._id}"] .iu-status-pill`, el => el.textContent)).toBe('Delivered');
+    expect(await page.$eval(`[data-log-unit="${units[1]._id}"] .iu-status-pill`, el => el.textContent)).toBe('Prepared');
+    await page.evaluate(() => { currentLang = 'ar'; return window.renderBarcodeManagement(); });
+    expect(await page.$eval(`[data-log-unit="${units[0]._id}"] .iu-status-pill`, el => el.textContent)).toBe('تم تسليمها');
+  });
   it('fits long product text and invoice dates on 50x25 labels without shrinking the QR', async () => {
     labels[0] = { ...labels[0], productName: 'Sandora-Deep Gray- organize L', sku: 'RIVA-COASTER-SMALL', manualCode: 'U-0000-0166-9', invoiceDate: '2026-10-26' };
     labels[1] = { ...labels[1], productName: 'سلة تنظيم رمادي غامق كبيرة', sku: 'RIVA-TISSUE', manualCode: 'U-0000-0167-7', invoiceDate: '2026-10-26' };

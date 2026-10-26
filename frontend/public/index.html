@@ -49421,7 +49421,7 @@ function renderInventory() {
         <td onclick="openInventoryDetail('${esc(key)}')">${productThumbHtml(r.imageUrl, r.name, 'inv-thumb')}</td>
         <td onclick="openInventoryDetail('${esc(key)}')"><bdi class="product-sku" dir="ltr">${esc(r.code || '-')}</bdi></td><td onclick="openInventoryDetail('${esc(key)}')" style="font-weight:600">${esc(r.name)}</td><td onclick="openInventoryDetail('${esc(key)}')">${fmtJ(r.sellPrice)}</td><td class="inv-buyprice-col" onclick="openInventoryDetail('${esc(key)}')">${fmtJ(r.buyPrice)}</td>
         <td onclick="openInventoryDetail('${esc(key)}')">${fmtN(r.openingBalance)}</td><td class="text-green" onclick="openInventoryDetail('${esc(key)}')">${fmtN(r.purchases)}</td><td onclick="openInventoryDetail('${esc(key)}')">${invReturnCell(r).replace(/<td[^>]*>|<\/td>/g, '')}</td><td class="text-blue" onclick="openInventoryDetail('${esc(key)}')">${fmtN(r.sales)}</td>
-        <td onclick="openInventoryDetail('${esc(key)}')">${stockBar(r)}${window.LegacyStockLabels?.button(r._id) || ''}</td>
+        <td onclick="openInventoryDetail('${esc(key)}')">${stockBar(r)}${window.LegacyStockLabels?.button(r._id) || ''}${window.ProductStocktake?.button(r._id) || ''}</td>
         <td class="inv-activation-cell" onclick="openInventoryDetail('${esc(key)}')">${activationBadge(r)}</td>
         <td onclick="openInventoryDetail('${esc(key)}')">${statusBadgeOld(r)}</td>
       </tr>`;
@@ -49453,7 +49453,7 @@ function renderInventory() {
             <span class="inv-status-badge-qty">${fmtN(r.current)}</span>
           </span>
         </div>
-        ${window.LegacyStockLabels?.button(r._id) || ''}
+        ${window.LegacyStockLabels?.button(r._id) || ''}${window.ProductStocktake?.button(r._id) || ''}
       </div>`;
     }).join('') : _invEmptyHtml;
   }
@@ -110070,6 +110070,7 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/supplier-return-pieces.css?v=20261020-1">
 <script src="/supplier-return-pieces.js?v=20261020-1"></script>
 <link rel="stylesheet" href="/legacy-stock-labels.css?v=20261020-2">
+<link rel="stylesheet" href="/product-stocktake.css?v=20261027-1">
 <script src="/barcode-input.js?v=20261020-short-packs"></script>
 <script src="/inventory-errors.js?v=20261020-pack-origin"></script>
 <link rel="stylesheet" href="/inventory-scanner.css?v=20261020-sreturn">
@@ -110082,6 +110083,7 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/inventory-packs.css?v=20261020-short-code12">
 <script src="/inventory-packs.js?v=20261020-pack-print-coverage"></script>
 <script src="/legacy-stock-labels.js?v=20261020-2"></script>
+<script src="/product-stocktake.js?v=20261027-1"></script>
 <link rel="stylesheet" href="/purchase-receiving.css?v=20261020-compact">
 <script src="/purchase-receiving.js?v=20261020-compact"></script>
 <link rel="stylesheet" href="/sales-scanner.css?v=20261020-1">

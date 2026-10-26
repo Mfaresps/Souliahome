@@ -218,11 +218,40 @@ export class InventoryUnitsService {
       byUserId: actor.userId, by: name, reason: dto.reason, ...extra }).save({ session });
   }
 
+  // Delivery can be confirmed on the order before a separate unit event exists.
+  // Project that current evidence without rewriting immutable unit history/stock.
+  private deliveryDisplayStages(): any[] {
+    return [
+      { $lookup: { from: 'transactions', let: {
+        saleId: { $convert: { input: '$assignment.transactionId', to: 'objectId', onError: null, onNull: null } },
+        lineId: '$assignment.lineId',
+      }, pipeline: [
+        { $match: { type: 'مبيعات', cancelled: { $ne: true },
+          bostaStatus: { $nin: ['RETURNED', 'RETURNED_TO_BUSINESS', 'CANCELLED'] },
+          $or: [{ pickupStatus: 'Delivered' }, { bostaStatus: 'DELIVERED' }],
+          $expr: { $and: [{ $eq: ['$_id', '$$saleId'] },
+            { $in: ['$$lineId', { $map: { input: { $ifNull: ['$items', []] }, as: 'line', in: '$$line.lineId' } }] }] } } },
+        { $project: { _id: 1 } },
+      ], as: '_deliveryOrder' } },
+      { $set: { displayStatus: { $cond: [
+        { $and: [{ $in: ['$status', ['prepared', 'shipped']] }, { $gt: [{ $size: '$_deliveryOrder' }, 0] }] },
+        'delivered', '$status',
+      ] } } },
+      { $set: { statusSource: { $cond: [{ $ne: ['$displayStatus', '$status'] }, 'order', 'unit'] } } },
+      { $unset: '_deliveryOrder' },
+    ];
+  }
+
   async search(query: Record<string, string>, sourceFilter: Record<string, any> = {}) {
     const page = Math.max(1, Math.min(10000, Number(query.page) || 1));
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 30));
     if (!Number.isInteger(page) || !Number.isInteger(limit)) throw new BadRequestException('Invalid pagination');
     const filter: any = { ...sourceFilter };
+    if (query.unitIds) {
+      const ids = query.unitIds.split(',');
+      if (ids.length > 100 || !ids.every(id => OBJECT_ID_PATTERN.test(id)) || new Set(ids).size !== ids.length) throw new BadRequestException('Invalid unit selection');
+      filter._id = { $in: ids.map(id => this.id(id)) };
+    }
     if (query.reconciliationRef) {
       if (query.reconciliationRef.length > 120) throw new BadRequestException('Invalid search');
       filter['origin.reconciliationRef'] = query.reconciliationRef;
@@ -230,7 +259,7 @@ export class InventoryUnitsService {
     if (query.warehouseCode) filter.warehouseCode = { $in: normalizeWarehouseCode(query.warehouseCode) === 'MAIN' ? ['MAIN', 'main', 'المخزن الرئيسي', '', null] : [normalizeWarehouseCode(query.warehouseCode)] };
     if (query.status) {
       if (!(INVENTORY_UNIT_STATUSES as readonly string[]).includes(query.status)) throw new BadRequestException('Unknown unit status');
-      filter.status = query.status;
+      if (!['prepared', 'shipped', 'delivered'].includes(query.status)) filter.status = query.status;
     }
     if (query.productId) filter.productId = String(this.id(query.productId));
     if (query.purchaseTransactionId) filter['origin.purchaseTransactionId'] = String(this.id(query.purchaseTransactionId));
@@ -251,7 +280,14 @@ export class InventoryUnitsService {
     if (needle) filter.$or = [{ barcode: pattern }, { productId: { $in: products.map(product => String(product._id)) } },
       { 'origin.purchaseTransactionId': { $in: matchingInvoices.map(invoice => String(invoice._id)) } },
       ...(OBJECT_ID_PATTERN.test(needle) ? [{ _id: this.id(needle) }] : []), ...(manualId ? [{ _id: manualId }] : [])];
-    const [rows, total] = await Promise.all([this.units.find(filter).sort({ _id: -1 }).skip((page - 1) * limit).limit(limit).lean(), this.units.countDocuments(filter)]);
+    const deliveryFilter = ['prepared', 'shipped', 'delivered'].includes(query.status);
+    const [result] = await this.units.aggregate([
+      { $match: filter }, { $sort: { _id: -1 } },
+      ...(deliveryFilter ? [...this.deliveryDisplayStages(), { $match: { displayStatus: query.status } }] : []),
+      { $facet: { rows: [{ $skip: (page - 1) * limit }, { $limit: limit },
+        ...(!deliveryFilter ? this.deliveryDisplayStages() : [])], counts: [{ $count: 'total' }] } },
+    ]);
+    const rows: any[] = result.rows, total: number = result.counts[0]?.total || 0;
     const productIds = [...new Set(rows.map((row: any) => row.productId))];
     const associated = await this.connection.collection('products').find({ _id: { $in: productIds.map(id => this.id(id)) } },
       { projection: { name: 1, code: 1, colors: 1, size: 1 } }).toArray();
@@ -443,7 +479,8 @@ export class InventoryUnitsService {
     const purchase: any = unit.origin?.purchaseTransactionId ? await this.connection.collection('transactions').findOne({ _id: this.id(unit.origin.purchaseTransactionId), type: 'مشتريات' },
       { projection: { ref: 1, date: 1, createdAt: 1 } }) : null;
     const purchaseInvoice = purchase ? { transactionId: String(purchase._id), ref: purchase.ref || '', date: purchase.date || null, createdAt: purchase.createdAt || null } : null;
-    const [identified] = await this.withManualCodes([unit]);
+    const [displayUnit] = await this.units.aggregate([{ $match: { _id: unit._id } }, ...this.deliveryDisplayStages()]);
+    const [identified] = await this.withManualCodes([displayUnit || unit]);
     return { unit: identified, assignmentOrder, purchaseInvoice, supplierReturn: await this.supplierReturnInfo(unit), events: await this.events.find({ unitId: String(unit._id) }).sort({ sequence: -1 }).limit(200).lean() };
   }
 
@@ -553,6 +590,15 @@ export class InventoryUnitsService {
     return { product: { _id: String(product._id), name: product.name, code: product.code, imageUrl: product.imageUrl || '' },
       warehouseCode: location, balance, registered, assigned: units.length - registered,
       missing: Math.max(0, balance - registered), discrepancy: registered > balance || !Number.isSafeInteger(balance) || balance < 0 };
+  }
+
+  async stocktake(productId: string, warehouseCode: string) {
+    const summary = await this.legacyStockSummary(productId, warehouseCode);
+    const aliases = summary.warehouseCode === 'MAIN' ? ['MAIN', 'main', 'المخزن الرئيسي', '', null] : [summary.warehouseCode];
+    const units = await this.units.find({ productId: summary.product._id, warehouseCode: { $in: aliases }, assignment: null,
+      status: { $in: ['available', 'returned', 'inspection-required', 'damaged', 'supplier-return-pending'] } }).sort({ _id: 1 }).lean();
+    if (units.length !== summary.registered) throw new ConflictException('Stock changed while loading. Reload the count.');
+    return { ...summary, units: await this.withManualCodes(units) };
   }
 
   identifyLegacyStock(dto: LegacyStockIdentifyDto, actor: TrackingActor) {

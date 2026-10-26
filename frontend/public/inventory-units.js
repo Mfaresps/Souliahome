@@ -34,6 +34,7 @@
   const statusLabel = value => statuses[value] ? tr(...statuses[value]) : value;
   const statusTone = value => ['available', 'delivered'].includes(value) ? 'ready' : ['reserved', 'picking', 'prepared', 'shipped', 'supplier-return-pending'].includes(value) ? 'progress' : ['returned', 'inspection-required', 'damaged', 'lost'].includes(value) ? 'attention' : 'quiet';
   function pieceStatus(unit, interactive = false) {
+    unit = { ...unit, status: unit.displayStatus || unit.status };
     const label = html(statusLabel(unit.status));
     return interactive ? `<button type="button" class="iu-status-pill" data-tone="${statusTone(unit.status)}" data-piece-actions="${html(unit._id)}" aria-label="${html(tr('Open actions & history: ', 'فتح الإجراءات والسجل: ') + statusLabel(unit.status))}"><i aria-hidden="true"></i>${label}${icon('eye')}</button>` : `<span class="iu-status-pill" data-tone="${statusTone(unit.status)}"><i aria-hidden="true"></i>${label}</span>`;
   }
@@ -755,6 +756,7 @@
     try {
       const scope = state.stockScope;
       const response = await api('/inventory-units?' + new URLSearchParams({ q: state.q, status: state.status, page: String(state.page), limit: scope ? '100' : '30',
+        ...(scope?.unitIds ? { unitIds: scope.unitIds.join(',') } : {}),
         ...(scope?.purchaseTransactionId ? { purchaseTransactionId: scope.purchaseTransactionId } : {}), ...(scope?.productId ? { productId: scope.productId } : {}), ...(scope?.warehouseCode ? { warehouseCode: scope.warehouseCode } : {}),
         ...(scope?.reconciliationRef ? { reconciliationRef: scope.reconciliationRef } : {}) }), { background: true });
       if (generation !== state.generation || request !== state.unitRequest) return;
@@ -1171,6 +1173,9 @@
       renderBatch();
       if (state.stockScope?.preview && state.unitsReady) {
         state.stockScope.preview = false;
+        if (state.stockScope.unitIds && (state.rows.length !== state.stockScope.unitIds.length || state.rows.some(unit => !state.stockScope.unitIds.includes(String(unit._id))))) {
+          message(tr('Some selected pieces changed. Review the count before printing.', 'تغيرت بعض القطع المختارة. راجع الجرد قبل الطباعة.'), true); return;
+        }
         for (const unit of state.rows) state.selected.set(String(unit._id), unit);
         syncUnitChecks(); renderBatch();
         await preview();

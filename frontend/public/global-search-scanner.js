@@ -67,9 +67,10 @@
       const details = document.createElement('div'); details.className = 'gs-product-details';
       const name = document.createElement('h3'); name.textContent = product.name || ''; details.append(name);
       const statusNames = { opened: ['Opened pack','باك مفتوح'], mixed:['Mixed status','حالات مختلفة'], inconsistent:['Review pack','راجع الباك'], available: ['Available','متاحة'], reserved: ['Reserved','محجوزة'], picking: ['Being prepared','قيد التحضير'], prepared: ['Prepared','مجهّزة'], shipped: ['Shipped','مع شركة الشحن'], delivered: ['Delivered','تم التسليم'], returned: ['Returned','مرتجعة'], 'inspection-required': ['Awaiting inspection','بانتظار الفحص'], damaged: ['Damaged','تالفة'], lost: ['Lost','مفقودة'], retired: ['Retired','مستبعدة'], 'supplier-return-pending': ['Reserved for supplier return','محجوزة لمرتجع مورد'], 'returned-to-supplier': ['Returned to supplier','مرتجعة للمورد'] };
-      const state = document.createElement('div'); state.className = 'gs-unit-state'; state.dataset.status = row.status;
+      const displayStatus = row.displayStatus || row.status;
+      const state = document.createElement('div'); state.className = 'gs-unit-state'; state.dataset.status = displayStatus;
       const badge = document.createElement('span'); badge.className = 'gs-unit-status'; badge.setAttribute('role','status');
-      badge.textContent = (row.isPack ? `${row.quantity} ${tr('pieces / pack','قطع / باك')} · ` : '') + (statusNames[row.status] ? tr(...statusNames[row.status]) : row.status);
+      badge.textContent = (row.isPack ? `${row.quantity} ${tr('pieces / pack','قطع / باك')} · ` : '') + (statusNames[displayStatus] ? tr(...statusNames[displayStatus]) : displayStatus);
       state.append(badge);
       let salesInvoice;
       if (row.assignment?.transactionId) {
@@ -121,6 +122,12 @@
       details.append(qty);
       const onHand = document.createElement('p'); onHand.className = 'gs-unit-stock';
       onHand.textContent = tr('Stock on hand: loading…', 'إجمالي رصيد المخزن: جارٍ التحميل…'); details.append(onHand);
+      if (window.ProductStocktake && hasPerm('inventory-units-view')) {
+        const stocktake = document.createElement('button'); stocktake.type = 'button'; stocktake.className = 'btn btn-outline';
+        stocktake.textContent = tr('Product stocktake', 'جرد المنتج');
+        stocktake.onclick = () => { close(); window.ProductStocktake.open(row.productId); };
+        details.append(stocktake);
+      }
       card.append(details); resultHost.append(card);
       // Stock calculation must never hold up the product/photo. Each figure
       // refreshes independently; a failed request leaves the identified card usable.

@@ -25,6 +25,8 @@ export class InventoryUnitsController {
   }
   @Get('legacy-stock/summary') @RequirePerms('inventory-units-view', 'inventory-units-register')
   legacySummary(@Query('productId') productId: string, @Query('warehouseCode') warehouseCode: string) { return this.service.legacyStockSummary(productId, warehouseCode); }
+  @Get('stocktake') @RequirePerms('inventory-units-view')
+  stocktake(@Query('productId') productId: string, @Query('warehouseCode') warehouseCode: string) { return this.service.stocktake(productId, warehouseCode); }
   @Post('legacy-stock/identify') @RequirePerms('inventory-units-view', 'inventory-units-register')
   legacyIdentify(@Body() dto: LegacyStockIdentifyDto, @Req() req: { user: TrackingActor }) { return this.service.identifyLegacyStock(dto, req.user); }
   @Post('purchases/receive') @RequirePerms('purchase-create', 'inventory-units-receive')

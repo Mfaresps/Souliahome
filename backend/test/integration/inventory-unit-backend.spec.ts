@@ -71,6 +71,62 @@ describe('Tracking backend on isolated transaction-capable MongoDB', () => {
     const response = await fetch(base + '/config', { headers: { 'x-test-role': 'reader' } });
     expect(response.status).toBe(200); expect(await response.json()).toMatchObject({ symbology: 'QR', enforcementEnabled: false });
   });
+  it('counts warehouse stock and creates only genuinely uncoded identities with retry protection', async () => {
+    const inventory = jest.spyOn((service as any).transactions, 'getInventory').mockResolvedValue([{ _id: productId, code: 'SKU-1', current: 25, warehouseBalances: { MAIN: 25 } }] as never);
+    try {
+      await raw('inventoryunits').insertMany(Array.from({ length: 20 }, () => { const id = new Types.ObjectId(); return {
+        _id: id, barcode: 'SU-' + String(id).toUpperCase(), productId, status: 'available', warehouseCode: 'MAIN', assignment: null,
+        origin: { kind: 'legacy-unknown', reconciliationRef: 'stocktake-test' }, registeredByUserId: actorId, registeredBy: 'Verified Operator', __v: 0,
+      }; }));
+      const assignedId = new Types.ObjectId();
+      await raw('inventoryunits').insertOne({ _id: assignedId, productId, status: 'prepared', warehouseCode: 'MAIN', assignment: { transactionId: saleId, lineId: 'line-1' } });
+      const endpoint = await fetch(base + '/stocktake?productId=' + productId + '&warehouseCode=MAIN', { headers: { 'x-test-role': 'reader' } });
+      expect(endpoint.status).toBe(200);
+      const summary = await endpoint.json();
+      expect(summary).toMatchObject({ balance: 25, registered: 20, missing: 5, assigned: 1 }); expect(summary.units).toHaveLength(20);
+      expect(summary.units.every((unit: any) => unit.manualCode && !unit.assignment)).toBe(true);
+      const dto = { ...req(), productId, warehouseCode: 'MAIN', physicalQuantity: 25, expectedRegistered: 20, expectedBalance: 25, physicalPossessionConfirmed: true, inspectionPassed: true };
+      const first = await service.identifyLegacyStock(dto, actor);
+      const retry = await service.identifyLegacyStock(dto, actor);
+      expect(first).toMatchObject({ createdUnits: 5, stockChanged: false, registered: 25 });
+      expect(retry.unitIds).toEqual(first.unitIds);
+      expect(await Unit.countDocuments({ assignment: null })).toBe(25);
+      expect(await Event.countDocuments({ action: 'registered' })).toBe(5);
+      expect((await service.stocktake(productId, 'MAIN')).missing).toBe(0);
+      const selection = await service.search({ unitIds: [summary.units[18]._id, ...first.unitIds].join(','), productId, warehouseCode: 'MAIN' });
+      expect(selection.total).toBe(6); expect(selection.units).toHaveLength(6);
+      await expect(service.search({ unitIds: 'bad-id' })).rejects.toThrow('Invalid unit selection');
+      await expect(service.identifyLegacyStock({ ...dto, operationKey: key() }, actor)).rejects.toThrow('LEGACY_STOCK_CHANGED');
+    } finally { inventory.mockRestore(); }
+  });
+  it('projects delivered orders in the piece register, filters and lookup without rewriting unit history', async () => {
+    await raw('transactions').updateOne({ _id: new Types.ObjectId(saleId) }, { $set: { bostaStatus: 'DELIVERED', pickupStatus: 'Shipped' } });
+    const ids = Array.from({ length: 5 }, () => new Types.ObjectId());
+    await raw('inventoryunits').insertMany(['prepared', 'shipped', 'returned', 'prepared', 'available'].map((status, index) => ({
+      _id: ids[index], barcode: 'SU-' + String(ids[index]).toUpperCase(), productId, status,
+      origin: { kind: 'purchase', purchaseTransactionId: purchaseId },
+      assignment: index === 3 ? { transactionId: saleId, lineId: 'wrong-line' } : { transactionId: saleId, lineId: 'line-1' },
+    })));
+    const result = await service.search({});
+    expect(result.total).toBe(5);
+    expect(result.units.find((unit: any) => String(unit._id) === String(ids[0]))).toMatchObject({ status: 'prepared', displayStatus: 'delivered', statusSource: 'order' });
+    const delivered = await service.search({ status: 'delivered', limit: '1', page: '2' });
+    expect(delivered.total).toBe(2); expect(delivered.units).toHaveLength(1);
+    expect(delivered.units[0].displayStatus).toBe('delivered');
+    expect((await service.search({ status: 'prepared' })).total).toBe(1);
+    expect((await service.search({ status: 'shipped' })).total).toBe(0);
+    expect((await service.search({ status: 'returned' })).total).toBe(1);
+    expect((await service.lookup(String(ids[0]))).unit).toMatchObject({ status: 'prepared', displayStatus: 'delivered' });
+    expect((await service.purchaseLineUnits(purchaseId, 0)).units.find((unit: any) => String(unit._id) === String(ids[0]))?.displayStatus).toBe('delivered');
+    expect((await raw('inventoryunits').findOne({ _id: ids[0] }))?.status).toBe('prepared');
+    expect(await Event.countDocuments()).toBe(0);
+    await raw('transactions').updateOne({ _id: new Types.ObjectId(saleId) }, { $set: { bostaStatus: '', pickupStatus: 'Delivered' } });
+    expect((await service.search({ status: 'delivered' })).total).toBe(2);
+    await raw('transactions').updateOne({ _id: new Types.ObjectId(saleId) }, { $set: { bostaStatus: 'RETURNED' } });
+    expect((await service.search({ status: 'delivered' })).total).toBe(0);
+    await raw('transactions').updateOne({ _id: new Types.ObjectId(saleId) }, { $set: { bostaStatus: 'DELIVERED', cancelled: true } });
+    expect((await service.search({ status: 'delivered' })).total).toBe(0);
+  });
 
   it('requires explicit indexes, never applies them during readiness', async () => {
     expect((await service.readiness()).writesReady).toBe(true);

@@ -18,7 +18,7 @@ describe('Global search shared unit scanner in Chromium', () => {
   function handleGlobalSearch(q){queries.push(q)}function debouncedGlobalSearch(q){handleGlobalSearch(q)}
   const shortcut=document.createElement('kbd');shortcut.className='shell-search-shortcut';shortcut.textContent='Ctrl K';document.querySelector('.search-wrap').append(shortcut);
   async function api(path,options={}){const r=await fetch('/api'+path,{...options,headers:{'Content-Type':'application/json'}});const d=await r.json();if(!r.ok){const e=new Error(d.message);e.status=r.status;throw e}return d}
-  </script><script src="/barcode-input.js"></script><script src="/inventory-scanner.js"></script><script src="/global-search-scanner.js"></script></body></html>`;
+  </script><script src="/order-status.js"></script><script src="/barcode-input.js"></script><script src="/inventory-scanner.js"></script><script src="/global-search-scanner.js"></script></body></html>`;
   beforeAll(async () => {
     browser = await puppeteer.launch({ headless: true, timeout: 20000 });
     server = createServer(async (req, res) => {
@@ -43,14 +43,14 @@ describe('Global search shared unit scanner in Chromium', () => {
           await new Promise(done => setTimeout(done, 1800));
         }
         const statuses = ['available','reserved','picking','prepared','shipped','delivered'];
-        const status = statuses.includes(mode) ? mode : ['stale-search','missing-order'].includes(mode) ? 'picking' : 'inspection-required';
+        const status = mode === 'order-delivered' ? 'prepared' : statuses.includes(mode) ? mode : ['stale-search','missing-order'].includes(mode) ? 'picking' : 'inspection-required';
         const assignment = ['reserved','picking','prepared','shipped','delivered'].includes(status) ? {transactionId:'507f1f77bcf86cd799439040',lineId:'line-1'} : null;
-        if (url.pathname === '/api/inventory-units/' + barcode) { res.end(JSON.stringify({unit:{_id:id,barcode,productId:'product-1',warehouseCode:'Main',status,assignment},purchaseInvoice:{transactionId:'507f1f77bcf86cd799439041',ref:'PUR-88',date:'2026-10-17',createdAt:'2026-10-17T10:00:00Z'},assignmentOrder:assignment && mode !== 'missing-order' ? {transactionId:assignment.transactionId,ref:'2773',client:'Fatma Hassan',pickupStatus:'Preparing',date:'2026-10-20'} : null}));return; }
+        if (url.pathname === '/api/inventory-units/' + barcode) { res.end(JSON.stringify({unit:{_id:id,barcode,productId:'product-1',warehouseCode:'Main',status,displayStatus:mode==='order-delivered'?'delivered':status,assignment},purchaseInvoice:{transactionId:'507f1f77bcf86cd799439041',ref:'PUR-88',date:'2026-10-17',createdAt:'2026-10-17T10:00:00Z'},assignmentOrder:assignment && mode !== 'missing-order' ? {transactionId:assignment.transactionId,ref:'2773',client:'Fatma Hassan',pickupStatus:mode==='order-delivered'?'Delivered':'Preparing',date:'2026-10-20'} : null}));return; }
         if (url.pathname.startsWith('/api/products/')) { res.end(JSON.stringify({ _id: 'product-1', name: '<img src=x onerror=alert(1)> Basket', code: 'Code 02', sellPrice: 249.5, buyPrice: 50, size: 'Large', colors: ['Red'], ...(mode === 'slow-stock' ? {imageUrl:'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="30" height="30"/%3E'} : {}) })); return; }
         if(url.pathname==='/api/transactions/inventory'){res.end(JSON.stringify([]));return;}
         res.end(JSON.stringify({ total:3,units: [{ _id: id, barcode, productId: 'product-1', warehouseCode: 'Main', status: mode==='stale-search'?'available':status,assignment,product: { name: 'Basket', code: 'Code 02' } }] })); return;
       }
-      if (['/barcode-input.js', '/inventory-scanner.js', '/inventory-scanner.css', '/global-search-scanner.js', '/global-search-scanner.css', '/navigation-shell.css', '/vendor/zxing-browser-0.2.1.min.js'].includes(url.pathname)) {
+      if (['/order-status.js', '/barcode-input.js', '/inventory-scanner.js', '/inventory-scanner.css', '/global-search-scanner.js', '/global-search-scanner.css', '/navigation-shell.css', '/vendor/zxing-browser-0.2.1.min.js'].includes(url.pathname)) {
         res.setHeader('Content-Type', url.pathname.endsWith('.css') ? 'text/css' : 'application/javascript'); res.end(readFileSync(publicDir + url.pathname)); return;
       }
       res.statusCode = 404; res.end();
@@ -64,6 +64,15 @@ describe('Global search shared unit scanner in Chromium', () => {
   async function scan() { await page.type('[data-scan-input]', barcode); await page.keyboard.press('Enter'); }
   const result = () => page.waitForSelector('[data-gs-result] .gs-unit-price');
   const scans = () => requests.filter(row => row.path.endsWith('/scans/validate'));
+  it.each(['en', 'ar'])('uses confirmed delivery for the scanned piece badge in %s', async lang => {
+    mode = 'order-delivered';
+    await page.evaluate(lang => { (window as any).eval('currentLang=' + JSON.stringify(lang)); }, lang);
+    await open(); await scan(); await result();
+    expect(await page.$eval('.gs-unit-state', el => (el as HTMLElement).dataset.status)).toBe('delivered');
+    expect(await page.$eval('.gs-unit-status', el => el.textContent)).toBe(lang === 'en' ? 'Delivered' : 'تم التسليم');
+    expect(await page.$eval('.gs-unit-state', el => el.textContent)).not.toMatch(/Prepared|مجهّزة/);
+    expect(await page.$eval('.gs-sales-invoice', el => el.textContent)).toContain('#2773');
+  });
   it('shows the product and loaded eager image while slow stock calculations are still pending', async () => {
     mode='slow-stock'; await open(); await scan(); await result();
     expect(await page.$eval('.gs-unit-available', el => el.textContent)).toContain('loading');
