@@ -38,7 +38,7 @@
 })();
 </script>
 <script src="/config.js"></script>
-<script src="/order-status.js?v=20261025-status-only"></script>
+<script src="/order-status.js?v=20261026-customer-cancellation"></script>
 <link rel="stylesheet" href="/order-status.css?v=20261025-confirm-icons">
 <script>
 // Load same-origin libraries on demand; startup never downloads Excel or charts.
@@ -11630,6 +11630,22 @@ body.dark-mode .ent-bulk-btn-danger:hover{background:rgba(248,113,113,.15)}
 @keyframes fxFadeEnter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
 @media (max-width:640px){
+  #page-movements #mov-kpi-strip{display:none!important}
+  #page-movements .mov-command-bar-v2{display:grid;grid-template-columns:minmax(0,1fr) auto 34px 34px 34px;gap:7px 6px;padding:8px;align-items:center}
+  #page-movements .mov-command-search{display:contents}
+  #page-movements .mov-command-search .fx-search-icon{grid-column:1/-1;grid-row:1;justify-self:start;margin-inline-start:12px;width:16px;height:16px;z-index:1;pointer-events:none}
+  #page-movements .mov-command-search input#mov-search{grid-column:1/-1;grid-row:1;box-sizing:border-box;width:100%;min-width:0;height:42px;margin:0;padding:0 36px;border:1px solid var(--border);border-radius:9px;background:var(--surface);font-size:16px;line-height:normal}
+  #page-movements .mov-command-search input#mov-search:focus{border:1px solid var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 12%,transparent)}
+  #page-movements .mov-command-search .mov-search-count{grid-column:1;grid-row:2;justify-self:start;min-width:0;width:auto;margin:0;padding:0;font-size:.62rem;line-height:1.35;text-align:start;white-space:normal;order:0}
+  #page-movements .mov-command-search .fx-search-clear{grid-column:1/-1;grid-row:1;justify-self:end;margin-inline-end:8px;z-index:1}
+  #page-movements .mov-type-dd{grid-column:2;grid-row:2;order:1;min-width:0}
+  #page-movements .mov-type-dd-trigger{min-height:34px;padding:5px 8px;font-size:.72rem}
+  #page-movements .mov-icon-ctrl{grid-row:2;order:2}
+  #page-movements .mov-command-bar-v2>.fx-date-quick{grid-column:3}
+  #page-movements .mov-command-bar-v2>.fx-sort-wrap{grid-column:4}
+  #page-movements .mov-command-bar-v2 .fx-btn-icon-only{width:34px;height:34px;padding:5px!important}
+  #page-movements .mov-more-dd{grid-column:5;grid-row:2;order:3;margin:0}
+  #page-movements .mov-command-sep{display:none}
   .fx-toolbar{padding:8px;border-radius:12px}
   .fx-search{min-width:100%;flex:1 1 100%;order:-1}
   .fx-btn{padding:8px 11px;font-size:.78rem}
@@ -11700,6 +11716,20 @@ body.dark-mode .ent-bulk-btn-danger:hover{background:rgba(248,113,113,.15)}
   .inv-header-actions .btn:first-child{display:none}
   .inv-tab{padding:7px 10px;font-size:.76rem;gap:4px}
   .inv-detail-grid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  #page-inventory .inv-kpi-scroll{overflow:visible;margin:0 0 8px;padding:0}
+  #page-inventory #inv-summary-cards.inv-kpi-grid{width:100%;min-width:0;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px;margin:0}
+  #page-inventory #inv-summary-cards .kpi{min-width:0;padding:7px 8px;border-radius:10px;box-shadow:none}
+  #page-inventory #inv-summary-cards .kpi .kpi-icon{width:19px;height:19px;margin-bottom:2px;font-size:.9rem}
+  #page-inventory #inv-summary-cards .kpi .kpi-icon svg{width:17px;height:17px}
+  #page-inventory #inv-summary-cards .kpi .kpi-val{font-size:.92rem;line-height:1.15;margin:1px 0 0}
+  #page-inventory #inv-summary-cards .kpi .kpi-label{font-size:.61rem;line-height:1.25;margin-top:2px}
+  #page-inventory #inv-summary-cards .ds-kpi-info-btn{top:4px!important;inset-inline-end:4px!important;width:16px;height:16px;padding:0;font-size:10px;line-height:14px}
+  #page-inventory .inv-page-header{gap:7px;margin-bottom:9px}
+  #page-inventory .inv-page-header .page-subtitle{font-size:.65rem;line-height:1.35}
+  #page-inventory .mov-tab-bar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:9px}
+  #page-inventory .mov-main-tab{justify-content:center;min-width:0;padding:7px 5px;font-size:.7rem;gap:4px}
 }
 @media(max-width:380px){
   .inv-kpi-grid{grid-template-columns:1fr 1fr}
@@ -16157,6 +16187,24 @@ body.dark-mode .spdep-review-notice{color:#fbbf24}
 .spdep-review-card .spdep-actions [onclick*="approve"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .spdep-review-card .spdep-actions [onclick*="reject"]{color:var(--red);border-color:#ef444460}
 .spdep-review-card .spdep-actions [onclick*="withdraw"]{border-style:dashed;color:var(--muted);font-weight:600}
+@media(max-width:640px){
+  #sp-deposits-tab-content{min-width:0;overflow:clip}
+  #sp-deposits-tab-content .spdep-review{width:100%;box-sizing:border-box;margin:10px auto;padding:0 8px}
+  #sp-deposits-tab-content .sp-pk-sec-h{align-items:flex-start;flex-wrap:wrap;gap:10px}
+  #sp-deposits-tab-content .spdep-head-actions{width:100%;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  #sp-deposits-tab-content .spdep-head-actions>*{min-width:0;max-width:100%;justify-content:center;text-align:center;white-space:normal;line-height:1.35}
+  #sp-deposits-tab-content .spdep-review-grid{grid-template-columns:minmax(0,1fr);gap:10px}
+  #sp-deposits-tab-content .spdep-review-card{min-width:0}
+  #sp-deposits-tab-content .spdep-review-order{min-width:0;gap:6px;flex-wrap:wrap;overflow-wrap:anywhere}
+  #sp-deposits-tab-content .spdep-review-order>span{min-width:0;overflow-wrap:anywhere}
+  #sp-deposits-tab-content .spdep-review-card .spdep-receipt-main{padding:12px 10px 0;gap:9px}
+  #sp-deposits-tab-content .spdep-review-card .spdep-preview-wrap{flex:0 0 58px}
+  #sp-deposits-tab-content .spdep-review-card .spdep-thumb{width:58px;height:76px}
+  #sp-deposits-tab-content .spdep-review-card .spdep-row>small{padding:0 10px;overflow-wrap:anywhere}
+  #sp-deposits-tab-content .spdep-review-card .spdep-notice{margin-inline:10px}
+  #sp-deposits-tab-content .spdep-review-card .spdep-actions{margin:8px 10px 10px;gap:6px}
+  #sp-deposits-tab-content .spdep-review-card .spdep-actions .btn{min-width:0;white-space:normal;line-height:1.3}
+}
 
 /* Bulk-approve selection — checkbox per card + a sticky summary bar. */
 .spdep-review-card{position:relative}
@@ -16520,6 +16568,10 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 .mov-compact-date{font-size:.67rem;color:var(--muted);margin-top:3px;line-height:1.5}
 .mov-compact-date .mov-date-shopify{display:flex;flex-direction:row;flex-wrap:wrap;gap:4px;font-size:inherit;line-height:inherit}
 .mov-compact-date .ds-time{font-size:inherit}
+.mov-compact-markers{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:6px;min-width:0}
+.mov-compact-markers[hidden]{display:none}
+.mov-compact-discount,.mov-compact-tags{display:inline-flex;align-items:center;flex-wrap:wrap;min-width:0;max-width:100%}
+.mov-compact-tags:empty{display:none}
 .mov-compact-card .dd-toggle{width:36px;height:36px;font-size:1.3rem}
 .mov-compact-shipping{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-top:10px;padding:9px 10px;border-radius:9px;background:var(--surface2)}
 .mov-compact-carrier{font-size:.8rem;font-weight:700;overflow-wrap:anywhere;min-width:0}
@@ -16530,17 +16582,13 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 .mov-compact-pickup{display:inline-flex;align-items:center;gap:7px;font-size:.65rem;color:var(--muted)}
 .mov-compact-pickup .pu-badge{font-size:.65rem;padding:2px 7px;line-height:1.4}
 .mov-compact-menu{width:272px;max-width:calc(100vw - 40px);max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior:contain}
-.mov-compact-summary{padding:6px 8px 8px}
-.mov-compact-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:.72rem;color:var(--muted)}
-.mov-compact-amounts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0;font-size:.65rem;color:var(--muted)}
-.mov-compact-amounts strong{display:block;font-size:.8rem;color:var(--text);margin-top:3px;overflow-wrap:anywhere}
 .mov-compact-menu .dd-item{white-space:normal}
 
 </style>
 <link rel="stylesheet" href="/navigation-shell.css?v=20261024-permission-dock">
-<link rel="stylesheet" href="/employee-home.css?v=20261024-task-tabs">
+<link rel="stylesheet" href="/employee-home.css?v=20261026-due-followup-notice">
 <link rel="stylesheet" href="/admin-team-home.css?v=20261024-period">
-<link rel="stylesheet" href="/deposit-history.css?v=20261019">
+<link rel="stylesheet" href="/deposit-history.css?v=20261026-mobile">
 <link rel="stylesheet" href="/shopify-edit-approvals.css?v=20261024-review-images">
 <link rel="stylesheet" href="/pickup-daily-shipping.css?v=20261024">
 <link rel="stylesheet" href="/deposit-transfer.css">
@@ -16557,7 +16605,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/shopify-tabs.css?v=20261019-1">
 <link rel="stylesheet" href="/followup-trail.css?v=20261025-cancelled-outcome">
 <link rel="stylesheet" href="/shopify-order-peek.css?v=20261022-history">
-<link rel="stylesheet" href="/shopify-cards.css?v=20261022-compact-confirmed">
+<link rel="stylesheet" href="/shopify-cards.css?v=20261026-white-cards">
 <link rel="stylesheet" href="/shopify-responsive.css?v=20261022-pagination">
 <link rel="stylesheet" href="/products-mobile.css?v=20261022">
 <link rel="stylesheet" href="/deposit-entry-compact.css?v=20261022">
@@ -18351,7 +18399,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
               <span class="mov-qf-wrap">
                 <button type="button" id="mov-qf-btn-pickup" class="mov-qf-btn" onclick="event.stopPropagation();toggleMovQuickFilter('pickup')" data-i18n-title="puQfPickupTitle" title="فلترة سريعة">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                  Pick-Up
+                  <span data-i18n="colPickup">حالة الطلب</span>
                   <span class="mov-qf-count" style="display:none"></span>
                   <svg class="mov-qf-caret" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
@@ -18359,12 +18407,10 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
             </th>
             <th data-col="bosta" style="text-align:center;white-space:nowrap">
               <div class="mov-qf-wrap">
-                <button type="button" id="mov-qf-btn-bosta" class="mov-qf-btn" onclick="event.stopPropagation();toggleMovQuickFilter('bosta')" data-i18n-title="puQfBostaTitle" title="فلترة سريعة">
+                <span class="mov-qf-btn">
                   <span class="bosta-icon"></span>
                   Bosta
-                  <span class="mov-qf-count" style="display:none"></span>
-                  <svg class="mov-qf-caret" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
+                </span>
                 <button id="bosta-sync-all-btn" onclick="syncAllBostaStatuses()" title="تحديث حالات Bosta للطلبات النشطة" style="background:none;border:none;cursor:pointer;padding:2px;display:inline-flex;align-items:center;color:var(--muted);border-radius:4px" onmouseover="this.style.color='#FF0000'" onmouseout="this.style.color='var(--muted)'">
                   <svg id="bosta-sync-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
                 </button>
@@ -19701,9 +19747,9 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 
 <!-- OTP Filters -->
-<div class="card" style="margin-bottom:14px;padding:12px 16px">
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;align-items:end">
-    <div>
+<div class="card otp-audit-filters" style="margin-bottom:14px;padding:12px 16px">
+  <div id="otp-audit-filter-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;align-items:end">
+    <div class="otp-audit-field">
       <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px">نوع العملية</label>
       <select id="otp-audit-kind" style="width:100%;font-size:.8rem" onchange="renderOtpAudit()">
         <option value="">الكل</option>
@@ -19719,7 +19765,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
         <option value="supplier-pay">سداد المورد</option>
       </select>
     </div>
-    <div>
+    <div class="otp-audit-field">
       <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px">الحالة</label>
       <select id="otp-audit-status" style="width:100%;font-size:.8rem" onchange="renderOtpAudit()">
         <option value="">الكل</option>
@@ -19728,23 +19774,23 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
         <option value="expired">منتهي الصلاحية</option>
       </select>
     </div>
-    <div>
+    <div class="otp-audit-field">
       <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px">بحث بكود OTP</label>
       <input type="text" id="otp-audit-code" placeholder="أدخل الكود…" maxlength="6" style="width:100%;font-family:monospace;font-size:.82rem;letter-spacing:.1em" oninput="otpCodeSearch()">
     </div>
-    <div>
+    <div class="otp-audit-field">
       <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px">من تاريخ</label>
       <input type="date" id="otp-audit-from" class="date-filter-icon" style="font-size:.8rem" onchange="renderOtpAudit()">
     </div>
-    <div>
+    <div class="otp-audit-field">
       <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px">إلى تاريخ</label>
       <input type="date" id="otp-audit-to" class="date-filter-icon" style="font-size:.8rem" onchange="renderOtpAudit()">
     </div>
-    <div>
+    <div class="otp-audit-field">
       <label style="font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px">الموظف</label>
       <input type="text" id="otp-audit-emp" placeholder="اسم أو يوزر…" style="width:100%;font-size:.8rem" oninput="renderOtpAuditDebounced()">
     </div>
-    <div style="display:flex;align-items:flex-end">
+    <div class="otp-audit-reset" style="display:flex;align-items:flex-end">
       <button class="btn btn-outline btn-sm" style="width:100%;font-size:.78rem" onclick="clearOtpAuditFilters()">مسح الفلاتر</button>
     </div>
   </div>
@@ -24077,7 +24123,11 @@ const _PU_FILTER_OPTIONS = [
   { val: 'Preparing', labelKey: 'puFltPreparing', cls: 'pu-badge-prep'     },
   { val: 'Ready',     labelKey: 'puFltReady',     cls: 'pu-badge-pickedup' },
   { val: 'Shipped',   labelKey: 'puFltShipped',   cls: 'pu-badge-shipped'  },
+  ...['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY']
+    .map(val => ({ val, labelKey: '', cls: '' })),
   { val: 'Delivered', labelKey: 'puFltDelivered', cls: 'pu-badge-delivered'},
+  ...['RETURNED', 'FAILED_ATTEMPT', 'DELIVERY_FAILED', 'CANCELLED']
+    .map(val => ({ val, labelKey: '', cls: '' })),
 ];
 const _BOSTA_BADGE_CLS = {
   CREATED:          'bosta-badge-created',
@@ -25514,13 +25564,12 @@ const TRANSLATIONS = {
   dashShipOrderCount:{ar:'{n} طلب',en:'{n} orders'},
   dashShipColOrder:{ar:'الطلب',en:'Order'},
   dashShipColSince:{ar:'منذ',en:'Since'},
-  dashShipColTrack:{ar:'المسار',en:'Progress'},
-  /* محطات المسار — الأسماء مختصرة عن قصد: دي تسميات لنقطة 7px في عمود ضيق،
-     مش عناوين. الاسم الكامل للمرحلة الحالية موجود في شارة «الحالة» جنبها. */
-  dsTrkCreated:{ar:'الإنشاء',en:'Created'},
-  dsTrkPicked:{ar:'الاستلام',en:'Picked up'},
-  dsTrkTransit:{ar:'في الطريق',en:'In transit'},
-  dsTrkDelivered:{ar:'التسليم',en:'Delivered'},
+  dashShipColTrack:{ar:'مراحل الشحن',en:'Shipping stages'},
+  /* أسماء المحطات تصف ما حدث في الشحنة، بينما الشارة المجاورة تعرض حالتها الحالية. */
+  dsTrkCreated:{ar:'إنشاء الشحنة',en:'Shipment created'},
+  dsTrkPicked:{ar:'استلام الناقل',en:'Carrier received'},
+  dsTrkTransit:{ar:'نقل الشحنة',en:'In transit'},
+  dsTrkDelivered:{ar:'تم التسليم',en:'Delivered'},
   dsTrkDone:{ar:'تم',en:'done'},
   dsTrkNow:{ar:'الآن',en:'current'},
   dsTrkWaiting:{ar:'لم تبدأ',en:'not yet'},
@@ -26921,7 +26970,7 @@ const TRANSLATIONS = {
   movToggleFiltersAria:{ar:'إخفاء/إظهار الفلاتر',en:'Show/hide filters'},
   colPayStatus:{ar:'حالة الدفع',en:'Payment status'},
   colDiscount:{ar:'الخصم',en:'Discount'},
-  colPickup:{ar:'Pick-Up',en:'Pick-Up'},
+  colPickup:{ar:'حالة الطلب',en:'Order status'},
   colTag:{ar:'TAG',en:'TAG'},
   bostaSyncAllTitle:{ar:'تحديث حالات Bosta للطلبات النشطة',en:'Refresh Bosta status for active orders'},
   // Movements — collections panel
@@ -29847,7 +29896,7 @@ const TRANSLATIONS = {
   puKpiPrep:{ar:'قيد التجهيز',en:'Preparing'},
   puKpiReady:{ar:'جاهز للشحن',en:'Ready to Ship'},
   /* Column quick-filters on the Movements Pick-Up / Bosta headers */
-  puQfPickupTitle:{ar:'فلترة حسب حالة الاستلام',en:'Filter by pick-up status'},
+  puQfPickupTitle:{ar:'فلترة حسب مرحلة الطلب',en:'Filter by order stage'},
   puQfBostaTitle:{ar:'فلترة حسب حالة Bosta',en:'Filter by Bosta status'},
   puQfClear:{ar:'مسح',en:'Clear'},
   puFltPending:{ar:'مسجّل · بانتظار التجهيز',en:'Registered · Awaiting Prep'},
@@ -34249,6 +34298,7 @@ function connectSocket() {
   socket.on('followup:changed', async (payload) => {
     try { followUps = await api('/followups'); _dashFuLoaded = true; } catch(_) {}
     if (_spPeekId) _spPeekRefreshFu();
+    if (currentPage === 'shopify-orders') renderShopifyOrders();
     if (fuCommentTargetId && qs('#fu-comment-popup')?.classList.contains('show')) {
       _fuRenderCommentThread();
       const activeTrail = followUps.find(f => String(f._id) === String(fuCommentTargetId));
@@ -39918,6 +39968,7 @@ function renderMyKpis() {
   }
   const w = _myWorkspace;
   if (!w) { renderSkeleton(el, { variant: 'cards', cards: 3 }); return; }
+  scheduleMyDueFollowUpWakeup();
   const noFollowUps = myFollowUpPriorities().every(row => row.f.isConfirmation) && Number(w.openFollowUpsCount || 0) === 0;
   const pendingOrders = myPendingConfirmationCount();
 
@@ -39951,10 +40002,10 @@ function renderMyKpis() {
     {
       cls: 'is-followups',
       stateClass: noFollowUps ? (pendingOrders ? 'is-confirmation' : 'is-complete') : '',
-      label: noFollowUps ? (pendingOrders ? (currentLang === 'en' ? 'Orders awaiting confirmation' : 'طلبات بانتظار التأكيد') : (currentLang === 'en' ? 'Your current tasks are complete' : 'اكتملت مهامك الحالية')) : (currentLang === 'en' ? 'My orders & follow-ups' : 'طلباتي ومتابعاتي'),
+      label: noFollowUps ? (pendingOrders ? (currentLang === 'en' ? 'Orders awaiting confirmation' : 'طلبات بانتظار التأكيد') : (currentLang === 'en' ? 'Your current tasks are complete' : 'اكتملت مهامك الحالية')) : (currentLang === 'en' ? 'Follow-ups needing action now' : 'متابعات تحتاج إجراء الآن'),
       icon: ico('<path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>'),
       val: noFollowUps ? (pendingOrders ? fmtN(pendingOrders) : '✓') : fmtN(myActionableFollowUpCount()),
-      sub: noFollowUps ? (pendingOrders ? (currentLang === 'en' ? 'No pending follow-ups. Review your orders awaiting confirmation.' : 'لا توجد متابعات معلّقة. راجع الطلبات التي تنتظر التأكيد.') : (currentLang === 'en' ? 'You have completed your assigned follow-ups. No orders currently require confirmation or follow-up.' : 'أتممت المتابعات المسندة إليك. لا توجد طلبات تحتاج إلى تأكيد أو متابعة حاليًا.')) : (currentLang === 'en' ? 'Open follow-ups' : 'متابعات مفتوحة') + (pendingOrders ? (currentLang === 'en' ? ` · ${fmtN(pendingOrders)} orders awaiting confirmation` : ` · ${fmtN(pendingOrders)} طلب بانتظار التأكيد`) : ''),
+      sub: noFollowUps ? (pendingOrders ? (currentLang === 'en' ? 'No open follow-ups. These orders still need confirmation.' : 'لا توجد متابعات مفتوحة. هذه الطلبات ما زالت تحتاج إلى تأكيد.') : (currentLang === 'en' ? 'You have completed your assigned follow-ups. No orders currently require confirmation or follow-up.' : 'أتممت المتابعات المسندة إليك. لا توجد طلبات تحتاج إلى تأكيد أو متابعة حاليًا.')) : (currentLang === 'en' ? 'Excludes scheduled follow-ups.' : 'لا تشمل المتابعات المؤجّلة.') + (pendingOrders ? (currentLang === 'en' ? ` Orders awaiting confirmation: ${fmtN(pendingOrders)}. An order may also have an open follow-up.` : ` طلبات بانتظار التأكيد: ${fmtN(pendingOrders)}. قد يكون للطلب نفسه متابعة مفتوحة أيضًا.`) : ''),
       extra: renderMyFollowUpPreview(),
     },
   ];
@@ -39963,7 +40014,7 @@ function renderMyKpis() {
     const task = cards.find(c => c.cls === 'is-followups');
     task.label = currentLang === 'en' ? 'No urgent follow-ups right now' : 'لا توجد متابعات عاجلة حاليًا';
     task.val = '0';
-    task.sub = currentLang === 'en' ? 'Waiting requests remain open. We will remind you at their scheduled time.' : 'الطلبات المنتظرة لم تُغلق. سنذكّرك بها في الموعد المحدد.';
+    task.sub = currentLang === 'en' ? 'Scheduled follow-ups remain open. We will remind you when they are due.' : 'المتابعات المؤجّلة ما زالت مفتوحة. سنذكّرك بها في موعدها.';
   }
   el.innerHTML = cards.map(c => `
     <div class="ds-me-kpi ${c.cls} ${c.stateClass || ''}${c.onclick ? ' is-link' : ''}"${c.onclick ? ` onclick="${c.onclick}" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"` : ''}>
@@ -39997,7 +40048,21 @@ function renderMyHomeAdjustments() {
 // Activity comes from status changes and comment timestamps. Automatic
 // reminder writes to updatedAt do not reset an employee's waiting time.
 let _myShowOtherTasks = false;
+let _myShowAllPriorities = false;
 const _myDueRemindersSeen = new Set();
+let _myDueReminderTimer = null;
+function scheduleMyDueFollowUpWakeup() {
+  clearTimeout(_myDueReminderTimer);
+  _myDueReminderTimer = null;
+  const now = Date.now();
+  const times = (_myWorkspace?.followUps || []).filter(f => !_fuIsSettled(f)).map(f => Date.parse(f.deferredUntil || '')).filter(time => time > now);
+  if (!times.length) return;
+  const employeeId = String(currentUser?._id || '');
+  _myDueReminderTimer = setTimeout(() => {
+    if (employeeId !== String(currentUser?._id || '') || isAdmin()) return;
+    syncMyFollowUpWaitLabels();
+  }, Math.min(2147483647, Math.max(1, Math.min(...times) - now + 50)));
+}
 function myDeferredFollowUps() {
   return (_myWorkspace?.followUps || []).filter(f => Date.parse(f.deferredUntil || '') > Date.now());
 }
@@ -40008,11 +40073,23 @@ function myDeferredFollowUpCount() {
 function myActionableFollowUpCount() {
   return Math.max(0, Number(_myWorkspace?.openFollowUpsCount || 0) - myDeferredFollowUpCount());
 }
+function _customerCancelledConfirmation(order, kind = 'shopify') {
+  const norm = value => String(value || '').trim().replace(/^#+/, '');
+  const ids = [order?._id, order?.id, order?.shopifyId, order?.shopifyOrderId].filter(Boolean).map(String);
+  const ref = norm(order?.ref || order?.orderRef);
+  return (typeof followUps !== 'undefined' && Array.isArray(followUps) ? followUps : []).some(f =>
+    !f.cancelled && !f.orderOutcome && f.reason === 'عملية تأكيد الطلب' && f.autoSource !== 'shipping-issue'
+    && f.status === 'العميل ألغى الطلب'
+    && ((f.shopifyOrderId && ids.includes(String(f.shopifyOrderId)))
+      || (kind === 'transaction' && f.transactionId && String(f.transactionId) === String(order?._id))
+      || (ref && norm(f.orderRef) === ref)));
+}
 function myFollowUpPriorities(includeOtherView = true) {
   const now = Date.now();
-  const followups = (Array.isArray(_myWorkspace?.followUps) ? _myWorkspace.followUps : []).filter(f => !(Date.parse(f.deferredUntil || '') > now));
+  const followups = (Array.isArray(_myWorkspace?.followUps) ? _myWorkspace.followUps : []).filter(f =>
+    !_fuIsSettled(f) && !(f.reason === 'عملية تأكيد الطلب' && f.autoSource !== 'shipping-issue' && _customerCancelledConfirmation(f, 'followup')) && !(Date.parse(f.deferredUntil || '') > now));
   const pending = (Array.isArray(_myWorkspace?.orders) ? _myWorkspace.orders : [])
-    .filter(order => order.status === 'pending' && !order.cancelled)
+    .filter(order => (order.needsConfirmation ?? (order.status === 'pending' && !order.cancelled)) && !_customerCancelledConfirmation(order))
     .map(order => ({ orderRef: order.ref, shopifyOrderId: order.id, shopifyId: order.shopifyId,
       clientName: order.client, clientPhone: order.phone || '', isConfirmation: true,
       reason: currentLang === 'en' ? 'Order awaiting confirmation' : 'طلب بانتظار التأكيد', lastActivityAt: order.assignedAt }));
@@ -40020,8 +40097,10 @@ function myFollowUpPriorities(includeOtherView = true) {
     const baseline = Date.parse(f.lastActivityAt || f.escalationBaseline || f.createdAt || '');
     const minutes = Number.isFinite(baseline) ? Math.max(0, Math.floor((now - baseline) / 60000)) : null;
     const shippingIssue = f.autoSource === 'shipping-issue' || ['FAILED_ATTEMPT', 'RETURNED'].includes(f.autoTrigger) || f.reason === 'مشكلة في الاستلام';
-    return { f, minutes, shippingIssue };
-  }).sort((a, b) => Number(b.shippingIssue) - Number(a.shippingIssue) || Number(!!a.f.isConfirmation) - Number(!!b.f.isConfirmation) || (b.minutes ?? -1) - (a.minutes ?? -1));
+    const dueAt = Date.parse(f.deferredUntil || '');
+    const due = Number.isFinite(dueAt) && dueAt <= now;
+    return { f, minutes, shippingIssue, due, dueAt };
+  }).sort((a, b) => Number(b.due) - Number(a.due) || (a.due && b.due ? a.dueAt - b.dueAt : 0) || Number(b.shippingIssue) - Number(a.shippingIssue) || Number(!!a.f.isConfirmation) - Number(!!b.f.isConfirmation) || (b.minutes ?? -1) - (a.minutes ?? -1));
   const unique = [], norm = value => String(value || '').trim().replace(/^#+/, '').toLowerCase();
   for (const row of sorted) {
     const ids = [row.f.shopifyOrderId, row.f.shopifyId].filter(Boolean).map(String);
@@ -40034,9 +40113,47 @@ function myFollowUpPriorities(includeOtherView = true) {
     if (!duplicate) unique.push(row);
   }
   if (!includeOtherView) return unique;
-  return _myShowOtherTasks || !myDeliveryIssueCount() ? unique.filter(row => !row.shippingIssue) : unique.filter(row => row.shippingIssue);
+  return _myShowOtherTasks || !myDeliveryIssueCount() ? unique.filter(row => row.due || !row.shippingIssue) : unique.filter(row => row.due || row.shippingIssue);
 }
 function toggleMyOtherTasks() { _myShowOtherTasks = true; renderMyKpis(); }
+let _myPriorityCardsAnimating = false;
+async function toggleMyPriorityCards() {
+  if (_myPriorityCardsAnimating) return;
+  const previous = qs('#employee-home-tasks-panel .employee-order-stack');
+  const previousHeight = previous?.getBoundingClientRect().height || 0;
+  const restoreFocus = document.activeElement?.classList.contains('employee-stack-more');
+  _myShowAllPriorities = !_myShowAllPriorities;
+  renderMyKpis();
+  const next = qs('#employee-home-tasks-panel .employee-order-stack');
+  const button = qs('#employee-home-tasks-panel .employee-stack-more');
+  if (restoreFocus) button?.focus({ preventScroll: true });
+  if (!previous || !next || !next.animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const nextHeight = next.getBoundingClientRect().height;
+  const expanding = _myShowAllPriorities;
+  const stack = expanding ? next : previous;
+  if (!expanding) next.replaceWith(previous);
+  _myPriorityCardsAnimating = true;
+  if (button) button.disabled = true;
+  stack.classList.add('is-animating');
+  try {
+    const motion = stack.animate([
+      { height: `${previousHeight}px` },
+      { height: `${nextHeight}px` },
+    ], { duration: 420, easing: 'cubic-bezier(.22,1,.36,1)' });
+    if (expanding) {
+      [...stack.children].slice(1).forEach((card, index) => card.animate([
+        { opacity: 0, transform: 'translateY(10px)' },
+        { opacity: 1, transform: 'translateY(0)' },
+      ], { duration: 240, delay: Math.min(index * 25, 160), fill: 'backwards', easing: 'ease-out' }));
+    }
+    await motion.finished.catch(() => {});
+  } finally {
+    stack.classList.remove('is-animating');
+    if (!expanding && previous.isConnected) previous.replaceWith(next);
+    if (button) button.disabled = false;
+    _myPriorityCardsAnimating = false;
+  }
+}
 function myTaskTabKey(event) {
   if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
   event.preventDefault();
@@ -40062,18 +40179,29 @@ function renderMyDeliveryIssuesButton() {
 }
 function renderMyTaskTabs() {
   const en = currentLang === 'en', other = _myShowOtherTasks || !myDeliveryIssueCount();
-  return `<div class="employee-task-switches employee-task-tabs" role="tablist" aria-label="${escHtml(en ? 'Task view' : 'عرض المهام')}">${renderMyDeliveryIssuesButton()}<button type="button" id="employee-other-tasks-tab" class="employee-other-tasks" role="tab" aria-selected="${other}" aria-controls="employee-home-tasks-panel" tabindex="${other ? '0' : '-1'}" onkeydown="myTaskTabKey(event)" onclick="toggleMyOtherTasks()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M3 6l1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2"/></svg><span>${esc(en ? 'Show remaining tasks' : 'عرض بقية مهامي')}</span></button></div>`;
+  return `<div class="employee-task-switches employee-task-tabs" role="tablist" aria-label="${escHtml(en ? 'Task view' : 'عرض المهام')}">${renderMyDeliveryIssuesButton()}<button type="button" id="employee-other-tasks-tab" class="employee-other-tasks" role="tab" aria-selected="${other}" aria-controls="employee-home-tasks-panel" tabindex="${other ? '0' : '-1'}" onkeydown="myTaskTabKey(event)" onclick="toggleMyOtherTasks()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M3 6l1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2"/></svg><span>${esc(en ? 'Confirmation & follow-up' : 'التأكيد والمتابعة')}</span></button></div>`;
 }
 function myDeferReasonLabel(reason) {
   const labels = currentLang === 'en'
-    ? {customer_postponed:'Postponed by customer',carrier_delay:'Waiting for carrier',awaiting_return:'Awaiting returned goods'}
-    : {customer_postponed:'تأجيل بناءً على طلب العميل',carrier_delay:'بانتظار شركة الشحن',awaiting_return:'بانتظار استلام المرتجع'};
+    ? {confirmation_contact:'Contact customer to confirm order',awaiting_deposit:'Follow up deposit payment',confirm_details:'Confirm order details with customer',awaiting_customer:'Waiting for customer reply',customer_postponed:'Postponed by customer',carrier_delay:'Waiting for carrier',awaiting_return:'Awaiting returned goods'}
+    : {confirmation_contact:'إعادة التواصل لتأكيد الطلب',awaiting_deposit:'متابعة سداد العربون',confirm_details:'تأكيد بيانات الطلب مع العميل',awaiting_customer:'بانتظار رد العميل',customer_postponed:'تأجيل بناءً على طلب العميل',carrier_delay:'بانتظار شركة الشحن',awaiting_return:'بانتظار استلام المرتجع'};
   return labels[reason] || '';
 }
 function renderMyDeferredWork() {
   const waiting = myDeferredFollowUps(), count = myDeferredFollowUpCount(), en = currentLang === 'en';
   if (!count) return '';
-  return `<details class="employee-deferred-work"><summary>${esc(en ? `Waiting for scheduled follow-up (${count})` : `بانتظار موعد المتابعة (${fmtN(count)})`)}</summary><p>${esc(en ? 'These requests remain open and will return to your priorities at the scheduled time.' : 'هذه الطلبات لم تُغلق. تعود تلقائيًا إلى الأولوية في موعد المتابعة.')}</p>${waiting.map(f => `<div class="employee-deferred-row"><bdi>#${esc(f.orderRef || f.ticketNo)}</bdi><span class="employee-deferred-issue">${esc(en ? 'Open issue' : 'المشكلة قائمة')}</span><span>${esc(myDeferReasonLabel(f.deferReason))}</span><small>${esc(fmtDateTime(f.deferredUntil))}</small><button type="button" class="btn btn-outline" onclick="goToFuAndHighlight('${escHtml(f.id)}',true,'',true)">${esc(en ? 'View follow-up' : 'عرض المتابعة')}</button>${renderMyFollowUpComment(f)}</div>`).join('')}${count > waiting.length ? `<button type="button" class="btn btn-outline" onclick="navigateTo('followups')">${esc(en ? 'View all waiting requests' : 'عرض جميع الطلبات المنتظرة')}</button>` : ''}</details>`;
+  return `<details class="employee-deferred-work"><summary>${esc(en ? `Waiting for scheduled follow-up (${count})` : `بانتظار موعد المتابعة (${fmtN(count)})`)}</summary><p>${esc(en ? 'Returns to your priorities when due.' : 'تعود إلى الأولوية تلقائيًا في موعد المتابعة.')}</p>${waiting.map(f => `<div class="employee-deferred-row"><div class="employee-deferred-heading"><bdi>#${esc(f.orderRef || f.ticketNo)}</bdi><span dir="auto">${esc(f.clientName || '')}</span></div><span class="employee-deferred-issue">${esc(en ? 'Scheduled' : 'متابعة مجدولة')}</span><span class="employee-deferred-reason">${esc(myDeferReasonLabel(f.deferReason))}</span>${renderMyDeferredTime(f.deferredUntil)}<button type="button" class="btn btn-outline" onclick="openMyFollowUpTrail('${escHtml(f.id)}','',this)">${esc(en ? 'View follow-up' : 'عرض المتابعة')}</button>${renderMyFollowUpComment(f.latestComment ? { ...f, latestComment: { ...f.latestComment, text: f.latestComment.text.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g, value => new Intl.DateTimeFormat(en ? 'en-GB' : 'ar-EG', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(value))) } } : f)}</div>`).join('')}${count > waiting.length ? `<button type="button" class="btn btn-outline" onclick="navigateTo('followups')">${esc(en ? 'View all waiting requests' : 'عرض جميع الطلبات المنتظرة')}</button>` : ''}</details>`;
+}
+function renderMyDeferredTime(value) {
+  const due = new Date(value), en = currentLang === 'en';
+  if (!Number.isFinite(due.getTime())) return '';
+  const locale = en ? 'en-GB' : 'ar-EG';
+  const sameDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' });
+  const time = new Intl.DateTimeFormat(locale, { timeZone: 'Africa/Cairo', hour: 'numeric', minute: '2-digit', hour12: true, ...(sameDay.format(due) === sameDay.format(new Date()) ? {} : { day: 'numeric', month: 'short' }) }).format(due);
+  const mins = Math.max(0, Math.ceil((due.getTime() - Date.now()) / 60000));
+  const duration = mins >= 1440 ? `${fmtN(Math.floor(mins / 1440))}${en ? 'd' : 'ي'} ${fmtN(Math.floor(mins % 1440 / 60))}${en ? 'h' : 'س'}` : mins >= 60 ? `${fmtN(Math.floor(mins / 60))}${en ? 'h' : 'س'} ${fmtN(mins % 60)}${en ? 'm' : 'د'}` : `${fmtN(mins)}${en ? 'm' : 'د'}`;
+  const remaining = mins ? (en ? `In ${duration}` : `متبقي ${duration}`) : (en ? 'Due now' : 'حان الموعد');
+  return `<div class="employee-deferred-time"><time datetime="${escHtml(due.toISOString())}" title="${escHtml(fmtDateTime(value))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><bdi>${esc(time)}</bdi></time><span role="timer" aria-live="off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 2h6m-3 0v3m6 1 2-2M12 9v4l2 2"/><circle cx="12" cy="14" r="8"/></svg>${esc(remaining)}</span></div>`;
 }
 function openMyFollowUpDeferral(index) {
   const row = myFollowUpPriorities()[index];
@@ -40111,21 +40239,46 @@ function myDeliveryIssueLabel(f) {
   if (f.autoTrigger === 'RETURNED') return en ? 'Shipment returned' : 'الشحنة مرتجعة';
   return (f.reason || (en ? 'Delivery issue — contact the customer' : 'مشكلة توصيل — يُرجى التواصل مع العميل')).slice(0, 90);
 }
-function renderMyFollowUpContacts(f) {
+function renderMyFollowUpContacts(f, iconsOnly = false) {
   const en = currentLang === 'en', phone = _fdWaPhone(f.clientPhone || '');
   const valid = /^\d{7,15}$/.test(phone);
   const call = en ? 'Call customer' : 'اتصال بالعميل';
   const chat = en ? 'Contact via Vrobo' : 'التواصل عبر Vrobo';
   const missing = en ? 'Customer phone unavailable' : 'رقم هاتف العميل غير متاح';
-  return `<div class="employee-sample-contacts">${valid
-    ? `<a class="employee-contact-shortcut" href="tel:+${phone}" title="${escHtml(call)}" aria-label="${escHtml(call)}">${_FDC_PHONE_ICON}<span>${esc(en ? 'Call' : 'اتصال')}</span></a><a class="employee-contact-shortcut is-vrobo" href="${escHtml(_fdVroboUrl(phone))}" target="_blank" rel="noopener" title="${escHtml(chat)}" aria-label="${escHtml(chat)}">${_SP_VROBO_ICON}<span>Vrobo</span></a>`
+  return `<div class="employee-sample-contacts${iconsOnly ? ' employee-contact-icons' : ''}">${valid
+    ? `<a class="employee-contact-shortcut" href="tel:+${phone}" title="${escHtml(call)}" aria-label="${escHtml(call)}">${_FDC_PHONE_ICON}${iconsOnly ? '' : `<span>${esc(en ? 'Call' : 'اتصال')}</span>`}</a><a class="employee-contact-shortcut is-vrobo" href="${escHtml(_fdVroboUrl(phone))}" target="_blank" rel="noopener" title="${escHtml(chat)}" aria-label="${escHtml(chat)}">${_SP_VROBO_ICON}${iconsOnly ? '' : '<span>Vrobo</span>'}</a>`
     : `<span class="employee-contact-unavailable">${_FDC_PHONE_ICON}${esc(missing)}</span>`}</div>`;
+}
+let _myTrailOpenRequest = 0;
+async function openMyFollowUpTrail(id, commentId = '', trigger = null) {
+  if (!id || !_requirePageAccess('followups')) return;
+  const request = ++_myTrailOpenRequest;
+  trigger?.setAttribute('aria-busy', 'true');
+  try {
+    const latest = await api('/followups');
+    if (request !== _myTrailOpenRequest) return;
+    if (!Array.isArray(latest)) throw new Error(t('fuNotFound'));
+    followUps = latest;
+    if (!followUps.some(f => String(f._id) === String(id))) { toast(t('fuNotFound'), true); return; }
+    openFuCommentPopup(String(id), String(commentId || ''));
+  } catch (error) {
+    if (request === _myTrailOpenRequest) toast(error.message || t('fuNotFound'), true);
+  } finally {
+    trigger?.removeAttribute('aria-busy');
+  }
 }
 function renderMyFollowUpComment(f) {
   const comment = f.latestComment;
   if (!comment?.text?.trim()) return '';
   const en = currentLang === 'en';
-  return `<div class="employee-sample-comment"><span class="employee-sample-comment-label">${esc(en ? 'Latest comment' : 'آخر تعليق')}</span><p dir="auto">${esc(comment.text)}</p>${comment.authorName || comment.at ? `<small>${comment.authorName ? `<span dir="auto">${esc(comment.authorName)}</span>` : ''}${comment.at ? `<bdi>${esc(fmtDateTime(comment.at))}</bdi>` : ''}</small>` : ''}</div>`;
+  const author = [currentUser, ...(typeof users !== 'undefined' && Array.isArray(users) ? users : [])].find(user => user && ((comment.authorId && String(user._id) === String(comment.authorId)) || (comment.authorName && user.name === comment.authorName)));
+  const profile = { ...(author || {}), name: comment.authorName || author?.name || '', avatar: comment.authorAvatar || author?.avatar || '' };
+  const date = new Date(comment.at || '');
+  const timestamp = Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat(en ? 'en-GB' : 'ar-EG', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(date) : '';
+  return `<button type="button" class="employee-sample-comment employee-comment-message" data-followup-id="${escHtml(f.id || f._id || '')}" data-comment-id="${escHtml(comment.id || '')}" onclick="event.stopPropagation();openMyFollowUpTrail(this.dataset.followupId,this.dataset.commentId,this)" ${!(f.id || f._id) || !_canAccessPage('followups') ? 'disabled' : ''} title="${escHtml(en ? 'Open follow-up trail' : 'فتح مسار المتابعة')}">
+    <span class="employee-comment-avatar">${userAvatarHtml(profile, 26)}</span>
+    <span class="employee-comment-content"><span class="employee-comment-bubble" dir="auto">${esc(comment.text)}</span><span class="employee-comment-meta">${profile.name ? `<span dir="auto">${esc(profile.name)}</span>` : ''}${timestamp ? `<time datetime="${escHtml(comment.at)}" title="${escHtml(fmtDateTime(comment.at))}">${esc(timestamp)}</time>` : ''}</span></span>
+  </button>`;
 }
 function renderMyCompletedWork() {
   const w = _myWorkspace, en = currentLang === 'en';
@@ -40133,7 +40286,7 @@ function renderMyCompletedWork() {
   return `<div class="employee-achievements"><p>${esc(en ? 'Your achievements' : 'إنجازاتك')} <small>${esc(w.periodLabel || '')}</small></p><div><span><bdi>${fmtN(w.assignedOrdersInPeriod || 0)}</bdi>${esc(en ? 'Orders assigned this period' : 'طلباتك المسندة خلال الفترة')}</span><span><bdi>${fmtN(w.points?.total || 0)}</bdi>${esc(en ? 'My Points' : 'نقاطك')}</span></div></div>${pending && _canAccessPage('shopify-orders') ? `<button type="button" class="employee-followup-go employee-confirm-go" onclick="openMyConfirmationOrders()">${esc(en ? 'Review orders' : 'مراجعة الطلبات')}</button>` : ''}`;
 }
 function myPendingConfirmationCount() {
-  return Number(_myWorkspace?.pendingConfirmationCount ?? (_myWorkspace?.orders || []).filter(order => order.status === 'pending' && !order.cancelled).length) || 0;
+  return Number(_myWorkspace?.pendingConfirmationCount ?? (_myWorkspace?.orders || []).filter(order => (order.needsConfirmation ?? (order.status === 'pending' && !order.cancelled))).length) || 0;
 }
 function openMyConfirmationOrders() {
   if (!_requirePageAccess('shopify-orders')) return;
@@ -40149,12 +40302,18 @@ function myFollowUpWaitLabel(minutes) {
   return (en ? 'No update for ' : 'دون تحديث منذ ') + duration;
 }
 function syncMyFollowUpWaitLabels() {
-  for (const f of _myWorkspace?.followUps || []) {
-    const due = Date.parse(f.deferredUntil || '');
+  const newlyDue = [];
+  for (const row of myFollowUpPriorities(false)) {
+    const f = row.f;
     const key = `${currentUser?._id || ''}:${f.id}:${f.deferredUntil}`;
-    if (Number.isFinite(due) && due <= Date.now() && !_myDueRemindersSeen.has(key)) {
-      _myDueRemindersSeen.add(key); _myShowOtherTasks = false;
+    if (row.due && !_myDueRemindersSeen.has(key)) {
+      _myDueRemindersSeen.add(key); newlyDue.push(f);
     }
+  }
+  if (newlyDue.length) {
+    const en = currentLang === 'en', first = newlyDue[0];
+    toast(en ? `Follow-up due: #${first.orderRef || first.ticketNo} ${first.clientName || ''}${newlyDue.length > 1 ? ` (+${newlyDue.length - 1})` : ''}` : `حان موعد المتابعة: #${first.orderRef || first.ticketNo} ${first.clientName || ''}${newlyDue.length > 1 ? ` (+${fmtN(newlyDue.length - 1)})` : ''}`);
+    window.refreshMyFollowUpSession?.();
   }
   if ((_myWorkspace?.followUps || []).some(f => f.deferredUntil)) { renderMyKpis(); return; }
   const rows = myFollowUpPriorities();
@@ -40171,20 +40330,23 @@ function renderMyFollowUpPreview() {
   const en = currentLang === 'en';
   const priorities = myFollowUpPriorities();
   const hasDeliveryIssue = !_myShowOtherTasks && myDeliveryIssueCount() > 0;
-  const rows = priorities.slice(0, hasDeliveryIssue ? 2 : 3);
+  const previewLimit = hasDeliveryIssue ? 2 : 3;
+  const rows = _myShowAllPriorities ? priorities : priorities.slice(0, previewLimit);
   const allowed = _canAccessPage(hasDeliveryIssue ? 'followups' : 'shopify-orders');
   const panelStart = `<div id="employee-home-tasks-panel" class="employee-task-panel" role="tabpanel" aria-labelledby="${hasDeliveryIssue?'employee-delivery-issues-tab':'employee-other-tasks-tab'}">`;
   if (!rows.length && myActionableFollowUpCount() === 0) return renderMyTaskTabs() + panelStart + renderMyCompletedWork() + renderMyDeferredWork() + '</div>';
   const remaining = Math.max(0, priorities.length - rows.length);
-  const preview = rows.length ? `<div class="employee-followup-preview"><p>${esc(priorities.some(row => row.shippingIssue) ? (en ? 'Delivery issues take priority' : 'الأولوية لمشكلات التوصيل') : (en ? 'Start with the longest waiting' : 'ابدأ بالأطول انتظارًا'))}</p>
-    <div class="employee-order-stack${hasDeliveryIssue?' employee-delivery-grid':''}">${rows.map(({ f, minutes, shippingIssue }, i) => `<article class="employee-followup-sample${shippingIssue ? ' is-delivery-issue' : ''}${minutes !== null && minutes >= 30 ? ' is-late' : ''}"><button type="button" class="employee-sample-open" ${_canAccessPage(shippingIssue ? 'followups' : 'shopify-orders') ? `onclick="openMyHomeFollowUp(${i})"` : 'disabled'} aria-label="${escHtml((en ? 'Follow up on order #' : 'متابعة الطلب #') + (f.orderRef || f.ticketNo || '—'))}">
-      <span class="employee-sample-top"><span class="employee-sample-status"><span aria-hidden="true">${shippingIssue ? '!' : '◷'}</span>${esc(shippingIssue ? (en ? 'Delivery issue' : 'مشكلة توصيل') : f.isConfirmation ? (en ? 'Awaiting confirmation' : 'بانتظار التأكيد') : _fuStatusLabel(f.status || ''))}</span><span class="employee-sample-wait"${!myFollowUpWaitLabel(minutes) ? ' hidden' : ''}>${esc(myFollowUpWaitLabel(minutes))}</span></span>
+  const preview = rows.length ? `<div class="employee-followup-preview"><p>${esc(priorities.some(row => row.due) ? (en ? 'Scheduled follow-ups due now come first' : 'ابدأ بالطلبات التي حان موعد متابعتها') : priorities.some(row => row.shippingIssue) ? (en ? 'Delivery issues take priority' : 'الأولوية لمشكلات التوصيل') : (en ? 'Start with the longest waiting' : 'ابدأ بالأطول انتظارًا'))}</p>
+    <div class="employee-order-stack${_myShowAllPriorities ? ' is-expanded' : ''}${hasDeliveryIssue?' employee-delivery-grid':''}">${rows.map(({ f, minutes, shippingIssue, due }, i) => `<article class="employee-followup-sample${shippingIssue ? ' is-delivery-issue' : ''}${due ? ' is-followup-due' : ''}${minutes !== null && minutes >= 30 ? ' is-late' : ''}"><div class="employee-sample-open">
+      <span class="employee-sample-top"><span class="employee-sample-status"><span aria-hidden="true">${shippingIssue ? '!' : '◷'}</span>${esc(shippingIssue ? (en ? 'Delivery issue' : 'مشكلة توصيل') : f.isConfirmation ? (en ? 'Awaiting confirmation' : 'بانتظار التأكيد') : _fuStatusLabel(f.status || ''))}</span>${due ? `<span class="employee-due-notice" role="status"><span aria-hidden="true">◷</span>${esc(en ? 'Follow-up due — contact the customer' : 'حان موعد المتابعة — تواصل مع العميل')}</span>` : `<span class="employee-sample-wait"${!myFollowUpWaitLabel(minutes) ? ' hidden' : ''}>${esc(myFollowUpWaitLabel(minutes))}</span>`}</span>
       <span class="employee-sample-order"><bdi>#${esc(f.orderRef || f.ticketNo || '—')}</bdi>${f.clientName ? `<small dir="auto">${esc(f.clientName)}</small>` : ''}</span>
-      <span class="employee-sample-footer"><span class="employee-sample-reason" dir="auto">${esc(shippingIssue ? myDeliveryIssueLabel(f) : f.reason || '')}</span><span class="employee-sample-call">${esc(en ? 'Contact the customer now' : 'تواصل مع العميل الآن')} <span aria-hidden="true">${en ? '→' : '←'}</span></span></span>
-    </button>${shippingIssue ? renderMyFollowUpComment(f) : ''}${renderMyFollowUpContacts(f)}${shippingIssue ? `${f.id && _canAccessPage('followups') ? renderMyFollowUpDeferralButton(i) : ''}<p class="employee-shipping-alert-end">${esc(en ? 'Schedule the next action while waiting. The issue stays open until successful delivery or final return handling. A comment alone does not close it.' : 'حدّد موعد المتابعة أثناء الانتظار. تظل المشكلة قائمة حتى التسليم أو إنهاء معالجة المرتجع. إضافة تعليق وحدها لا تُغلق المشكلة.')}</p>` : ''}</article>`).join('')}</div>
-    ${remaining > 0 ? `<button type="button" class="employee-stack-more" onclick="openMyHomeTasks()"${allowed ? '' : ' disabled'} aria-label="${escHtml(en ? `View ${fmtN(remaining)} more follow-ups` : `عرض ${fmtN(remaining)} متابعات أخرى`)}"><bdi>+${fmtN(remaining)}</bdi><span>${esc(en ? 'more orders' : 'طلبات أخرى')}</span></button>` : ''}</div>` : '';
+      <span class="employee-sample-footer"><span class="employee-sample-reason" dir="auto">${esc(shippingIssue ? myDeliveryIssueLabel(f) : f.reason || '')}</span><button type="button" class="employee-sample-call" ${_canAccessPage(shippingIssue ? 'followups' : 'shopify-orders') ? `onclick="openMyHomeFollowUp(${i})"` : 'disabled'} aria-label="${escHtml((en ? 'View order #' : 'عرض الطلب #') + (f.orderRef || f.ticketNo || '—'))}">${esc(en ? 'View order' : 'عرض الطلب')} <span aria-hidden="true">${en ? '→' : '←'}</span></button></span>
+    </div>${renderMyFollowUpComment(f)}${renderMyFollowUpContacts(f)}${shippingIssue ? `${f.id && _canAccessPage('followups') ? renderMyFollowUpDeferralButton(i) : ''}<p class="employee-shipping-alert-end">${esc(en ? 'Schedule the next action while waiting. The issue stays open until successful delivery or final return handling. A comment alone does not close it.' : 'حدّد موعد المتابعة أثناء الانتظار. تظل المشكلة قائمة حتى التسليم أو إنهاء معالجة المرتجع. إضافة تعليق وحدها لا تُغلق المشكلة.')}</p>` : ''}</article>`).join('')}</div>
+    ${priorities.length > previewLimit ? `<button type="button" class="employee-stack-more" onclick="toggleMyPriorityCards()" aria-expanded="${_myShowAllPriorities}" aria-label="${escHtml(_myShowAllPriorities ? (en ? 'Show fewer priority orders' : 'عرض عدد أقل من الطلبات') : (en ? `Show ${fmtN(remaining)} more priority orders` : `عرض ${fmtN(remaining)} طلبات أولوية أخرى`))}">${_myShowAllPriorities ? '' : `<bdi>+${fmtN(remaining)}</bdi>`}<span>${esc(_myShowAllPriorities ? (en ? 'Show less' : 'عرض أقل') : (en ? 'priority orders' : 'طلبات أولوية'))}</span></button>` : ''}</div>` : '';
   const empty = !rows.length ? `<p class="employee-task-view-empty">${esc(hasDeliveryIssue ? (en ? 'No delivery issues need action now. Review scheduled requests below.' : 'لا توجد مشكلات توصيل تتطلب إجراءً الآن. راجع الطلبات المنتظرة أدناه.') : (en ? 'No other urgent tasks. Delivery issues remain open.' : 'لا توجد مهام عاجلة أخرى. مشكلات التوصيل ما زالت قائمة.'))}</p>` : '';
-  return renderMyTaskTabs() + (allowed ? `<div class="employee-followup-actions"><button type="button" class="employee-followup-go" onclick="openMyHomeTasks()">${esc(hasDeliveryIssue ? (en ? 'Customer service' : 'خدمة العملاء') : (en ? 'View my orders' : 'عرض طلباتي'))} <span aria-hidden="true">${en ? '→' : '←'}</span></button>${rows.length ? `<button type="button" class="employee-coach-open" onclick="openMyFollowUpCoach()">${esc(en ? 'View follow-up priority' : 'عرض أولوية المتابعة')}</button>` : ''}</div>` : '') + panelStart + empty + preview + renderMyDeferredWork() + '</div>';
+  const sessionCount = myFollowUpPriorities(false).filter(row => row.f.id && !row.f.isConfirmation).length;
+  const sessionAvailable = _canAccessPage('followups') && sessionCount > 0;
+  return renderMyTaskTabs() + (allowed || sessionAvailable ? `<div class="employee-followup-actions">${sessionAvailable ? `<button type="button" class="employee-session-start" onclick="startMyFollowUpSession()"><span class="employee-session-start-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 6 2 2 3-4M12 6h8M4 13l2 2 3-4M12 13h8M12 20h8"/></svg></span><span class="employee-session-start-label"><strong>${esc(en ? 'Start following up now' : 'ابدأ المتابعات الآن')}</strong><small><bdi>${fmtN(sessionCount)}</bdi> ${esc(en ? 'follow-ups due' : 'متابعة مستحقة')}</small></span><span class="employee-session-start-arrow" aria-hidden="true">${en ? '→' : '←'}</span></button>` : ''}${allowed ? `<button type="button" class="employee-followup-go" onclick="openMyHomeTasks()">${esc(hasDeliveryIssue ? (en ? 'Customer service' : 'خدمة العملاء') : (en ? 'View related orders' : 'عرض الطلبات المرتبطة'))} <span aria-hidden="true">${en ? '→' : '←'}</span></button>` : ''}${rows.length && !sessionAvailable ? `<button type="button" class="employee-coach-open" onclick="openMyFollowUpCoach()">${esc(en ? 'View follow-up priority' : 'عرض أولوية المتابعة')}</button>` : ''}</div>` : '') + panelStart + empty + preview + renderMyDeferredWork() + '</div>';
 }
 function openMyHomeTasks() {
   if (!_myShowOtherTasks && myDeliveryIssueCount() > 0) return navigateTo('followups');
@@ -40540,6 +40702,7 @@ async function loadMyWorkspace() {
   renderMyKpis();
   renderMyShift();
   _renderStaffDashboard(false);
+  window.refreshMyFollowUpSession?.();
   scheduleMyFollowUpCoach();
 }
 
@@ -48595,7 +48758,7 @@ function openFxDrawer(ctx) {
     txs.forEach(t => {
       if (t.type !== 'مبيعات') return;
       // Same masked status the column renders and the filter matches on — see _puDisplayStatus.
-      const displayed = _puDisplayStatus(t);
+      const displayed = _movOrderFilterStatus(t);
       pickupCounts.set(displayed, (pickupCounts.get(displayed)||0)+1);
     });
     const pickupHtml = pickupOptions.map(o => `
@@ -49687,31 +49850,23 @@ function renderMovCompactCard(tx, grid = false) {
     : '';
 
   const carrier = tx.shipCo || (tx.bostaOrderId || tx.bostaStatus ? 'Bosta' : '');
+  const visibleCarrierName = /^(bosta|بوسطة)$/i.test(String(carrier).trim()) ? '' : carrier;
   const shipping = tx.bostaOrderId || tx.bostaStatus
-    ? _bostaStatusBadge(tx)
+    ? _bostaStatusBadge(tx, { hideStatus: true })
     : `<span class="mov-compact-shipping-empty">${en ? 'No shipment status' : 'لا توجد حالة شحن'}</span>`;
-  const tagsHtml = typeof renderTxTagsCell === 'function' ? renderTxTagsCell(tx._id) : '';
   const flash = _rtFlashIds.has(String(tx._id)) ? ' rt-flash' : '';
+  const discountHtml = Number(tx.discount) > 0 ? _movDiscountBadge(tx) : '';
+  const existingTagsHtml = getTxTagObjects(tx._id).length ? renderTxTagsCell(tx._id) : '';
   return `<div class="${grid ? 'mov-grid-card' : 'mov-card'} mov-compact-card${isCancelled ? ' is-cancelled mov-card-cancelled' : ''}${flash}" onclick="openOrderView('${esc(tx._id)}')">
     <div class="mov-compact-header">
       <div class="mov-compact-identity">
         <div class="mov-compact-title"><a href="#" class="mov-compact-ref" onclick="event.preventDefault();event.stopPropagation();openOrderView('${esc(tx._id)}')">#${esc(tx.ref || '—')}</a><span class="mov-compact-name" title="${esc(tx.client || t('noName'))}">${esc(tx.client || t('noName'))}</span></div>
         <div class="mov-compact-date">${_fmtShopifyDate(tx.date, tx.createdAt || tx.date)}</div>
+        <div class="mov-compact-markers"${discountHtml || existingTagsHtml ? '' : ' hidden'} onclick="event.stopPropagation()">${discountHtml ? `<span class="mov-compact-discount">${discountHtml}</span>` : ''}<span class="mov-compact-tags" data-tag-cell="${esc(tx._id)}" data-tag-existing-only>${existingTagsHtml}</span></div>
       </div>
       <div class="actions-dd" onclick="event.stopPropagation()">
-        <button type="button" class="dd-toggle" aria-label="${en ? 'Order details and actions' : 'تفاصيل وإجراءات الطلب'}" onclick="toggleActionMenu(event)">⋮</button>
+        <button type="button" class="dd-toggle" aria-label="${en ? 'Order actions' : 'إجراءات الطلب'}" onclick="toggleActionMenu(event)">⋮</button>
         <div class="dd-menu"><div class="mov-compact-menu">
-          <div class="mov-compact-summary" onclick="event.stopPropagation()">
-            <div class="mov-compact-meta">${movementKindBadgeCompact(tx)}${movementStatusCell(tx)}${Number(tx.discount)>0 ? _movDiscountBadge(tx) : ''}${getVaultEntryStatusBadge(tx._id)}</div>
-            <div class="mov-compact-amounts">
-              <span>${t('gcTotal')}<strong>${fmtJMasked(tx, 'total')}</strong></span>
-              <span>${t('gcPaid')}<strong>${tx.purchaseDetailsHidden ? amtMaskedBadge() : exchangeSalePaidDisplayAmount(tx)}</strong></span>
-              <span>${t('gcRemaining')}<strong>${tx.purchaseDetailsHidden ? amtMaskedBadge() : fmtJ(rem)}</strong></span>
-            </div>
-            <div class="mov-compact-meta">${_movItemsCell(tx)}<span>${esc(tx.employee || '')}</span></div>
-            <div class="mov-compact-meta" data-tag-cell="${esc(tx._id)}">${tagsHtml}</div>
-          </div>
-          <div class="dd-divider"></div>
             <div class="dd-item" onclick="openOrderView('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg> ${t('openInvoice')}</div>
             ${waItem}
             ${txEditGate(tx).ok ? `<div class="dd-item" onclick="openEditMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> ${t('editAction')}</div>` : ''}
@@ -49726,7 +49881,12 @@ function renderMovCompactCard(tx, grid = false) {
         </div></div>
       </div>
     </div>
-    ${sale || carrier ? `<div class="mov-compact-shipping"><span class="mov-compact-carrier" title="${esc(carrier)}">${esc(carrier || (en ? 'No carrier' : 'بدون شركة شحن'))}</span><div class="mov-compact-shipping-status" onclick="event.stopPropagation()">${shipping}</div></div>` : ''}
+    ${sale || carrier ? `<div class="mov-compact-shipping">${visibleCarrierName ? `<span class="mov-compact-carrier" title="${esc(visibleCarrierName)}">${esc(visibleCarrierName)}</span>` : ''}<div class="mov-compact-shipping-status" onclick="event.stopPropagation()">${shipping}</div></div>` : ''}
+    <div class="mov-compact-financials" aria-label="${esc(en ? 'Order amounts' : 'مبالغ الطلب')}">
+      <span><small>${esc(t('gcTotal'))}</small><bdi>${fmtJMasked(tx, 'total')}</bdi></span>
+      <span class="is-paid"><small>${esc(t('gcPaid'))}</small><bdi>${tx.purchaseDetailsHidden ? amtMaskedBadge() : exchangeSalePaidDisplayAmount(tx)}</bdi></span>
+      <span class="is-remaining"><small>${esc(t('gcRemaining'))}</small><bdi>${tx.purchaseDetailsHidden ? amtMaskedBadge() : fmtJ(rem)}</bdi></span>
+    </div>
     <div class="mov-compact-footer">${sale ? `<span class="mov-compact-pickup"><span>${t('ivPickupStatus')}</span>${_puStatusBadge(_puDisplayStatus(tx), tx)}</span>` : _txTypeInlineBadge(tx)}${isCancelled ? `<span class="badge badge-status-cancelled">${esc(_statusLabel('ملغي'))}</span>` : ''}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div>
   </div>`;
 }
@@ -50169,7 +50329,7 @@ function renderMovementTxRow(tx) {
     <td data-col="status" style="text-align:center;white-space:nowrap">${movementStatusCell(tx)}${vaultStatusBadge}${vaultHint}</td>
     <td data-col="discount" style="text-align:center;white-space:nowrap">${_movDiscountBadge(tx)}</td>
     <td data-col="pickup" style="text-align:center;white-space:nowrap">${tx.type==='مبيعات' ? _puStatusBadge(_puDisplayStatus(tx), tx, true) : '<span style="color:var(--muted);font-size:.8rem">—</span>'}</td>
-    <td data-col="bosta" style="text-align:center;white-space:nowrap"><span class="mov-bosta-line">${_bostaStatusBadge(tx)}${_awbPrintedMarkHtml((tx.bostaAwbPrints || []).filter(p => !p.trackingNumber || !tx.bostaTrackingNumber || p.trackingNumber === tx.bostaTrackingNumber))}</span></td>
+    <td data-col="bosta" style="text-align:center;white-space:nowrap"><span class="mov-bosta-line">${_bostaStatusBadge(tx, { hideStatus: true })}${_awbPrintedMarkHtml((tx.bostaAwbPrints || []).filter(p => !p.trackingNumber || !tx.bostaTrackingNumber || p.trackingNumber === tx.bostaTrackingNumber))}</span></td>
     <td data-col="tag" style="text-align:center" onclick="event.stopPropagation()" data-tag-cell="${esc(tx._id)}">${renderTxTagsCell(tx._id)}</td>
     <td data-col="employee" class="mov-col-employee"><div class="mov-col-employee-wrap" title="${esc(tx.employee||'')}">${tx.shopifyOrderId ? `<a href="https://admin.shopify.com/store/soulia-2/orders/${esc(tx.shopifyOrderId)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="mov-emp-initials-sm" title="فتح أوردر Shopify #${esc(tx.shopifyOrderId)}" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">${_SHOPIFY_LOGO_SVG}</a>` : `<span class="mov-emp-initials-sm">${_empInitialsText(tx.employee)}</span>`}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div></td>
     <td>
@@ -50656,7 +50816,7 @@ function renderMovements() {
       if (tx.type !== 'مبيعات') return false;
       // Must use the same masked status the Pick-Up column renders, or filtering by a status
       // hides rows that visibly show it.
-      if (!fs.pickup.has(_puDisplayStatus(tx))) return false;
+      if (!fs.pickup.has(_movOrderFilterStatus(tx))) return false;
     }
     if (fs.bosta.size > 0 && ![tx.bostaStatus || '', ...Object.values(tx.afterSales?.shipments || {}).map(s => s.status)].some(status => fs.bosta.has(status.trim()))) return false;
     // Multi-ref OR search: match if any token is found in the ref number itself.
@@ -51196,7 +51356,14 @@ async function deleteInvViewTag(txId, label) {
 function _refreshTagCell(txId) {
   // Update all tag cells for this txId without full re-render
   const cells = document.querySelectorAll(`[data-tag-cell="${CSS.escape(String(txId))}"]`);
-  cells.forEach(c => { c.innerHTML = renderTxTagsCell(txId); });
+  cells.forEach(c => {
+    const existingOnly = c.hasAttribute('data-tag-existing-only');
+    c.innerHTML = existingOnly && !getTxTagObjects(txId).length ? '' : renderTxTagsCell(txId);
+    if (existingOnly) {
+      const markers = c.closest('.mov-compact-markers');
+      if (markers) markers.hidden = !c.innerHTML && !markers.querySelector('.mov-compact-discount');
+    }
+  });
   _rebuildTagFilterRow();
 }
 const MOV_TAG_COMPACT_LIMIT = 6;
@@ -74049,9 +74216,13 @@ function _otpDetailRows(r, idx) {
       </div>`).join('');
   }
 
-  return `<tr id="otp-detail-${idx}" style="display:none;background:var(--bg-alt)">
-    <td colspan="8" style="padding:6px 14px 8px 42px;border-bottom:2px solid var(--border)">${inner}</td>
-  </tr>`;
+  return inner;
+}
+
+function _otpHasDetail(r) {
+  return (r.kind === 'edit-tx' && r.editChanges?.length) || (r.kind === 'purchase' && r.purchaseItems?.length) ||
+    (r.kind === 'discount' && (r.client || r.txRef)) || r.kind === 'vault-access' || r.kind === 'delete-product' ||
+    (r.kind === 'import-products' && r.importItemNames?.length);
 }
 
 let _otpAuditAllRows = [];
@@ -74119,7 +74290,7 @@ function renderOtpTablePage() {
       <td style="padding:5px 8px;color:var(--muted);white-space:nowrap;font-size:.7rem">${r.createdAt ? fmtDateTime(r.createdAt) : '-'}</td>
       <td style="padding:5px 8px;color:${r.usedAt ? '#059669' : 'var(--muted)'};white-space:nowrap;font-size:.7rem">${r.usedAt ? fmtDateTime(r.usedAt) : '—'}</td>
     </tr>
-    ${_otpDetailRows(r, idx)}`;
+    ${hasDetail ? `<tr id="otp-detail-${idx}" style="display:none;background:var(--bg-alt)"><td colspan="8" style="padding:6px 14px 8px 42px;border-bottom:2px solid var(--border)">${_otpDetailRows(r, idx)}</td></tr>` : ''}`;
   }
 
   const pager = pages > 1 ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 4px;font-size:.78rem;color:var(--muted)">
@@ -74134,7 +74305,19 @@ function renderOtpTablePage() {
     </div>
   </div>` : '';
 
-  wrap.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">${thead}<tbody>${tbody}</tbody></table></div>${pager}`;
+  const cards = slice.map((r, i) => {
+    const idx = pageOffset + i, m = otpKindMeta(r.kind || 'discount');
+    const person = r.requestedByName || r.requestedByUsername || '-';
+    const detail = _otpDetailText(r), hasDetail = _otpHasDetail(r);
+    return `<article class="otp-audit-card" data-push-otp-id="${esc(String(r._id))}">
+      <div class="otp-audit-card-head"><span class="otp-audit-kind" style="color:${m.color}"><i style="background:${m.bg};color:${m.color}">${m.svg}</i>${m.label}</span><bdi class="otp-audit-code">${esc(r.otp || '—')}</bdi></div>
+      <div class="otp-audit-card-state">${otpStatusBadge(r.status)}${(r.attempts||0)>0?`<span class="otp-audit-attempts">${_svgWarn}${r.attempts}</span>`:''}</div>
+      <div class="otp-audit-card-detail">${detail}</div>
+      <div class="otp-audit-card-meta"><span class="otp-audit-card-person">${_svgUser}${esc(person)}</span><span class="otp-audit-card-time"><small>${esc(currentLang === 'en' ? 'Requested' : 'تاريخ الطلب')}</small><time>${r.createdAt?fmtDateTime(r.createdAt):'—'}</time></span>${r.usedAt?`<span class="otp-audit-card-time is-used"><small>${esc(currentLang === 'en' ? 'Used' : 'تاريخ الاستخدام')}</small><time>${fmtDateTime(r.usedAt)}</time></span>`:''}</div>
+      ${hasDetail?`<details class="otp-audit-card-more"><summary>تفاصيل إضافية</summary><div>${_otpDetailRows(r,idx)}</div></details>`:''}
+    </article>`;
+  }).join('');
+  wrap.innerHTML = `<div class="otp-audit-cards">${cards}</div><div class="otp-audit-table-wrap" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">${thead}<tbody>${tbody}</tbody></table></div>${pager}`;
 }
 
 let _otpAuditDebTimer = null;
@@ -80222,7 +80405,7 @@ const MOV_COLS = [
   { id:'status',    i18n:'status',            ar:'الحالة',         en:'Status' },
   { id:'tag',       i18n:null,                ar:'TAG',           en:'Tag' },
   { id:'discount',  i18n:null,                ar:'الخصم',          en:'Discount' },
-  { id:'pickup',    i18n:null,                ar:'Pick-Up',        en:'Pick-Up' },
+  { id:'pickup',    i18n:'colPickup',         ar:'حالة الطلب',    en:'Order status' },
   { id:'employee',  i18n:'colEmployee',       ar:'تم الإنشاء بواسطة', en:'Created By' },
   { id:'bosta',     i18n:null,                ar:'Bosta',          en:'Bosta' },
 ];
@@ -99660,7 +99843,7 @@ function _bostaPrimaryStatusBadge(tx, options = {}) {
   if (!tx.bostaOrderId && !tx.bostaStatus) return options.hideStatus ? '' : '<span class="bosta-badge bosta-badge-none">?</span>';
   const meta = _orderStateMeta(tx);
   const tracking = tx.bostaTrackingNumber || '';
-  const link = tracking ? `<a href="https://bosta.co/ar-eg/tracking-shipments?shipment-number=${encodeURIComponent(tracking)}" target="_blank" rel="noopener" title="${escHtml(tracking)}" onclick="event.stopPropagation()" class="bosta-track-link"><span class="bosta-icon"></span></a>` : '';
+  const link = tracking ? `<a href="https://bosta.co/ar-eg/tracking-shipments?shipment-number=${encodeURIComponent(tracking)}" target="_blank" rel="noopener" title="${escHtml(tracking)}" onclick="event.stopPropagation()" class="bosta-track-link"><span class="bosta-icon"></span>${options.showTrackingNumber ? `<bdi>${esc(tracking)}</bdi>` : ''}</a>` : '';
   if (options.hideStatus && !meta.note && !link) return '';
   return `<span class="order-state-cell">${options.hideStatus ? '' : SouliaOrderStatus.badge(meta, {compact:true,hideCarrier:true})}${meta.note ? `<span class="order-state-info" tabindex="0" role="img" title="${escHtml(meta.note)}" aria-label="${escHtml(meta.note)}"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.7v3.8"/><circle cx="8" cy="11" r=".7" fill="currentColor" stroke="none"/></svg></span>` : ''}${link}</span>`;
 }
@@ -99687,7 +99870,11 @@ function _puDisplayStatus(tx) {
   return tx.pickupStatus || 'Pending';
 }
 /** Resolves a _PU_FILTER_OPTIONS label at render time (the const itself can't hold a t() call). */
-function _puFilterLabel(o) { return t(o.labelKey); }
+function _puFilterLabel(o) { return o.labelKey ? t(o.labelKey) : _orderStateMeta({ pickupStatus: o.val }).label; }
+function _movOrderFilterStatus(tx) {
+  const key = _orderStateMeta(tx).key;
+  return key === 'DELIVERED' ? 'Delivered' : key;
+}
 
 function _orderFilterBadge(kind, value) {
   let meta;
@@ -99840,6 +100027,9 @@ function toggleMovQuickFilter(kind) {
   setTimeout(() => document.addEventListener('click', onDocClick, true), 0);
 }
 function _orderStateMeta(order, kind = 'transaction') {
+  if (kind === 'shopify' && _customerCancelledConfirmation(order, kind)) {
+    return SouliaOrderStatus.resolve({ ...order, followUpOutcome: 'cancelled' }, kind, currentLang);
+  }
   if (kind === 'shopify' && order?.status === 'approved') {
     const linked = (transactions || []).find(tx => String(tx._id) === String(order.transactionId));
     if (linked) return SouliaOrderStatus.resolve(linked, 'transaction', currentLang);
@@ -105533,14 +105723,14 @@ function renderShopifyOrders() {
           <div class="sp-card-heading"><div class="sp-card-heading-line">
             <div class="sp-card-ref">${_spStarHtml(o)}${_cardConfirmationHtml}${o.ref
               ? `<a href="javascript:void(0)" class="sp-ref-link" title="${escHtml(t('spOpenOrderPeek'))}" onclick="event.stopPropagation();openSpOrderPeek('${esc(String(o._id))}')">#${esc(String(o.ref).replace(/^#+/, ''))}</a>`
-              : `#${esc(String(o.shopifyOrderId || '—'))}`}${o.editRequest?.status === 'معتمد' ? _spOrderEditMark(o) : ''}</div>
+              : `#${esc(String(o.shopifyOrderId || '—'))}`}${o.editRequest?.status === 'معتمد' ? _spOrderEditMark(o) : ''}</div>${_cardConfirmed ? `<span class="sp-card-order-state sp-card-order-state-inline">${_orderStateBadge(o, 'shopify')}</span>` : ''}
             </div><div class="sp-card-meta"><span class="sp-card-client" dir="auto">${esc(o.client || o.phone || '—')}</span><div class="sp-card-heading-time"><span class="sp-card-date">${Number.isFinite(_oCreatedMs) ? escHtml(new Intl.DateTimeFormat(currentLang === 'en' ? 'en-GB' : 'ar-EG', {day:'numeric',month:'short'}).format(new Date(_oCreatedMs))) : ''}</span> <span class="sp-card-time-lbl" dir="auto" ${Number.isFinite(_oCreatedMs) ? `data-sp-created-at="${new Date(_oCreatedMs).toISOString()}" data-sp-time-only title="${escHtml(_pwWhenFull(new Date(_oCreatedMs).toISOString()))}"` : ''}>${escHtml(_oTimeStr)}</span></div></div></div>
           <div class="sp-card-money-tools" onclick="event.stopPropagation()">
             <div class="sp-card-money"><div class="sp-card-amount-val sp-total-neutral">${fmtJ(o.total)}</div>${depositBadgeHtml ? `<div class="sp-card-deposit-inline">${depositBadgeHtml}</div>` : ''}</div>
             ${_cardMenuHtml}
           </div>
         </div>
-        <div class="sp-card-order-state">${_orderStateBadge(o, 'shopify')}</div>
+        ${_cardConfirmed ? '' : `<div class="sp-card-order-state">${_orderStateBadge(o, 'shopify')}</div>`}
         ${o.editRequest?.status === 'معتمد' ? '' : _spOrderEditMark(o)}
         ${!compactCard || mobilePaymentHtml ? `<div class="sp-card-options">
         ${compactCard ? '' : productsToggleHtml}
@@ -105605,7 +105795,9 @@ function _spReceiptJs(value) { return escHtml(JSON.stringify(value)); }
 function _spDepositOf(order) {
   const all = Array.isArray(order?.depositReceipts) ? order.depositReceipts : [];
   const approved = all.filter(r => r.status === 'معتمد');
-  const pending = all.filter(r => r.status === 'معلق' && (r.workflow?.version !== 2 || r.workflow.stage === 'requested'));
+  // Any submitted receipt means the customer has already responded with a deposit.
+  // `workflow.stage` controls the review queue, not whether confirmation is still owed.
+  const pending = all.filter(r => r.status === 'معلق');
   const byMethod = {};
   for (const r of approved) byMethod[r.method] = (byMethod[r.method] || 0) + (Number(r.amount) || 0);
   for (const m of Object.keys(byMethod)) byMethod[m] = Math.round(byMethod[m] * 100) / 100;
@@ -109856,7 +110048,7 @@ function _spRenderHistoryTab() {
 // ===================== End Shopify Orders =====================
 </script>
 <script src="/navigation-shell.js?v=20261024-stable-sidebar"></script>
-<script src="/admin-team-home.js?v=20261024-issue-state"></script>
+<script src="/admin-team-home.js?v=20261026-confirmation"></script>
 <script src="/shopify-edit-approvals.js?v=20261024-review-images"></script>
 <link rel="stylesheet" href="/bosta-pickup.css?v=20261024-add-orders">
 <link rel="stylesheet" href="/customer-service-layout.css">
@@ -109884,7 +110076,7 @@ function _spRenderHistoryTab() {
 <script src="/inventory-scanner.js?v=20261020-short-packs"></script>
 <link rel="stylesheet" href="/global-search-scanner.css?v=20261022-fast-lookup">
 <script src="/global-search-scanner.js?v=20261025-order-state"></script>
-<link rel="stylesheet" href="/warehouses.css?v=20261019-4">
+<link rel="stylesheet" href="/warehouses.css?v=20261026-mobile-compact">
 <script src="/warehouses.js?v=20261019-5"></script>
 <script src="/inventory-units.js?v=20261024-compact-registry"></script>
 <link rel="stylesheet" href="/inventory-packs.css?v=20261020-short-code12">
@@ -109894,8 +110086,14 @@ function _spRenderHistoryTab() {
 <script src="/purchase-receiving.js?v=20261020-compact"></script>
 <link rel="stylesheet" href="/sales-scanner.css?v=20261020-1">
 <script src="/sales-scanner.js?v=20261021-search-routing"></script>
-<link rel="stylesheet" href="/shopify-compact-header.css?v=20261021-1">
-<script src="/shopify-compact-header.js?v=20261021-1"></script>
+<link rel="stylesheet" href="/shopify-compact-header.css?v=20261026-mobile">
+<script src="/shopify-compact-header.js?v=20261026-mobile"></script>
+<link rel="stylesheet" href="/otp-audit.css?v=20261026-mobile-filters-time-labels">
+<link rel="stylesheet" href="/transaction-mobile-card.css?v=20261026-white-cards">
+<link rel="stylesheet" href="/employee-followup-session.css?v=20261026-ten-minute-reminder">
+<script src="/employee-followup-session.js?v=20261026-ten-minute-reminder"></script>
+<link rel="stylesheet" href="/employee-followup-tour.css?v=20261026-visible-help-color">
+<script src="/employee-followup-tour.js?v=20261026-ten-minute-reminder"></script>
 <link rel="stylesheet" href="/design-system.css?v=20261025-1">
 </body>
 </html>

@@ -6,7 +6,7 @@
   background:var(--sp-card-bg);border:1px solid var(--sp-card-border);border-inline-start:4px solid var(--sp-status-accent);border-radius:12px;
   box-shadow:0 1px 3px #172b2008,0 4px 14px var(--sp-status-shadow);transition:border-color .15s,box-shadow .15s;
 }
-#page-shopify-orders #sp-mobile-list .sp-card.sp-card-deposit-none{--sp-card-bg:#fffbeb;--sp-card-border:#e5a623}
+#page-shopify-orders #sp-mobile-list .sp-card.sp-card-deposit-none{--sp-card-bg:#fff;--sp-card-border:#e5a623}
 #page-shopify-orders #sp-mobile-list .sp-card:is(.sp-card-deposit-none,.sp-cancel-req){--sp-status-accent:#df981b;--sp-status-shadow:rgba(223,152,27,.14)}
 #page-shopify-orders #sp-mobile-list .sp-card:is(.sp-card-cancelled,.sp-cancel-rej,.sp-card-rejected){--sp-status-accent:#d85b64;--sp-status-shadow:rgba(216,91,100,.14)}
 #page-shopify-orders #sp-mobile-list .sp-card:is(.sp-card-cancelled,.sp-cancel-rej){--sp-card-border:#e7d4d8}
@@ -14,9 +14,11 @@
 #page-shopify-orders #sp-mobile-list .sp-card-top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:8px;min-height:0;margin:0}
 #page-shopify-orders #sp-mobile-list .sp-card-heading{display:flex;flex-direction:column;gap:3px;min-width:0}
 #page-shopify-orders #sp-mobile-list .sp-card-heading-line{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 5px;height:auto;min-height:0}
-#page-shopify-orders #sp-mobile-list .sp-card-ref{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;font-size:.92rem;line-height:1.5}
+#page-shopify-orders #sp-mobile-list .sp-card-confirmed .sp-card-heading-line{align-items:center;gap:4px 5px}
+#page-shopify-orders #sp-mobile-list .sp-card-order-state-inline{display:inline-flex;align-items:center;flex:0 0 auto;margin:0;padding:0;line-height:1}
+#page-shopify-orders #sp-mobile-list .sp-card-ref{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;font-size:1.25rem;line-height:1.2;font-weight:800;letter-spacing:-.025em;color:var(--text)}
 #page-shopify-orders #sp-mobile-list .sp-card-meta{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px;min-width:0}
-#page-shopify-orders #sp-mobile-list .sp-card-meta .sp-card-client{flex:0 1 auto;min-width:0;max-width:100%;font-size:.72rem;line-height:1.5;color:var(--text-muted);font-weight:500;white-space:normal;overflow:visible;overflow-wrap:anywhere;text-overflow:clip;text-align:start;unicode-bidi:isolate}
+#page-shopify-orders #sp-mobile-list .sp-card-meta .sp-card-client{flex:0 1 auto;min-width:0;max-width:100%;box-sizing:border-box;padding:4px 8px;border-radius:8px;background:var(--surface2);font-size:.75rem;line-height:1.4;color:var(--text-muted);font-weight:600;white-space:normal;overflow:visible;overflow-wrap:anywhere;text-overflow:clip;text-align:start;unicode-bidi:isolate}
 #page-shopify-orders #sp-mobile-list .sp-card-heading-time{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:0;margin:0;line-height:1.4}
 #page-shopify-orders #sp-mobile-list .sp-card-heading-time :is(.sp-card-date,.sp-card-time-lbl){font-size:.6rem;line-height:1.4;color:var(--text-muted);unicode-bidi:isolate;white-space:nowrap}
 #page-shopify-orders #sp-mobile-list .sp-order-confirmation{width:21px;height:21px;flex-shrink:0;color:#9a650b;background:#fff2ce}
@@ -100,7 +102,7 @@ body.dark-mode #page-shopify-orders #sp-mobile-list .sp-card-followup-badge{back
   #page-shopify-orders #sp-mobile-list .sp-card-top{gap:6px}
   #page-shopify-orders #sp-mobile-list .sp-card-money-tools{gap:4px}
   #page-shopify-orders #sp-mobile-list .sp-card-money .sp-total-neutral{font-size:.92rem}
-  #page-shopify-orders #sp-mobile-list .sp-card-ref{font-size:.84rem}
+  #page-shopify-orders #sp-mobile-list .sp-card-ref{font-size:1.1rem}
 }
 /* These classes also travel with the menu when it is portalled to body. */
 .sp-invoice-label-short{display:none}

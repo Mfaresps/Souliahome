@@ -3,6 +3,22 @@
   const host = document.getElementById('page-shopify-orders');
   if (!host) return;
   const menus = [...host.querySelectorAll('.sp-header-menu')];
+  const subnav = document.getElementById('sp-subnav');
+  let subnavPlaceholder = null;
+  const placeSubnav = () => {
+    const menu = subnav;
+    const summary = document.querySelector('#sp-subnav-shell > summary');
+    if (!menu || !summary || !matchMedia('(max-width:768px)').matches) return;
+    const rect = summary.getBoundingClientRect(), width = Math.min(240, innerWidth - 24);
+    menu.classList.add('sp-subnav-portal');
+    menu.style.position = 'fixed';
+    menu.style.width = width + 'px';
+    menu.style.maxWidth = width + 'px';
+    menu.style.insetInlineEnd = 'auto';
+    menu.style.left = Math.max(12, Math.min(rect.right - width, innerWidth - width - 12)) + 'px';
+    menu.style.right = 'auto';
+    menu.style.top = Math.min(rect.bottom + 6, innerHeight - 120) + 'px';
+  };
   function sync() {
     const active = host.querySelector('#sp-subnav .active span[data-i18n]');
     const label = document.getElementById('sp-section-label');
@@ -23,11 +39,23 @@
   menus.forEach(menu => {
     menu.addEventListener('toggle', () => {
       if (menu.open) menus.forEach(other => { if (other !== menu) other.open = false; });
+      if (menu.id === 'sp-subnav-shell' && menu.open && matchMedia('(max-width:768px)').matches) {
+        subnavPlaceholder = document.createComment('shopify section menu');
+        subnav.before(subnavPlaceholder);
+        document.body.append(subnav);
+        requestAnimationFrame(placeSubnav);
+      } else if (menu.id === 'sp-subnav-shell' && !menu.open && subnavPlaceholder?.isConnected) {
+        subnavPlaceholder.replaceWith(subnav);
+        subnavPlaceholder = null;
+        subnav.classList.remove('sp-subnav-portal');
+        subnav.removeAttribute('style');
+      }
     });
     menu.addEventListener('keydown', event => {
       if (event.key === 'Escape') { menu.open = false; menu.querySelector('summary').focus(); }
     });
   });
+  window.addEventListener('resize', placeSubnav);
   document.addEventListener('click', event => {
     menus.forEach(menu => {
       if (!menu.contains(event.target) || event.target.closest('button')) menu.open = false;

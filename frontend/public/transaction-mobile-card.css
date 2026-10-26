@@ -1,0 +1,29 @@
+﻿/* Phone transaction cards: clear identity, three amounts and the current status. */
+.mov-compact-financials{display:none}
+@media(max-width:640px){
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px;position:relative;min-width:0;padding:14px!important;border:1px solid var(--border);border-radius:18px;background:#fff;box-shadow:0 5px 18px rgba(21,45,35,.045);overflow:visible}
+  body.dark-mode :is(#mov-mobile-list,#mov-grid-list) .mov-compact-card{background:var(--surface)}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-header{grid-column:1/-1;align-items:flex-start;gap:10px}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-title{align-items:center;flex-wrap:wrap;gap:6px 9px}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-ref{max-width:100%;padding:0;border:0;border-radius:0;background:none;box-shadow:none;color:var(--text);font-size:1.25rem;font-weight:800;line-height:1.2;letter-spacing:-.025em}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-name{min-width:0;max-width:100%;padding:4px 8px;border-radius:8px;background:var(--surface2);color:var(--text-muted,var(--muted));font-size:.75rem;font-weight:600;line-height:1.4}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-date{margin-top:6px;color:var(--muted);font-size:.69rem;line-height:1.4}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-card .dd-toggle{display:flex;align-items:center;justify-content:center;width:34px;height:36px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text-muted,var(--muted));font-size:1.25rem}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-card .mov-compact-financials{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:13px 0 11px;padding:13px 0 2px;border-top:1px solid var(--border)}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-financials>span{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-width:0;padding:0 5px;border:0;border-radius:0;background:none;text-align:center}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-financials>span+span{border-inline-start:1px solid var(--border)}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-financials small{color:var(--text-muted,var(--muted));font-size:.7rem;font-weight:600;line-height:1.3}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-financials bdi{display:inline-flex;align-items:baseline;justify-content:center;flex-wrap:wrap;gap:3px;max-width:100%;color:var(--text);font-size:clamp(.9rem,4vw,1.1rem);font-weight:750;font-variant-numeric:tabular-nums;line-height:1.3;overflow-wrap:anywhere}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-financials .amt-cur{margin:0;color:var(--muted);font-size:.55em;font-weight:500;letter-spacing:0}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-financials .is-paid bdi{color:#087443}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-financials .is-remaining bdi{color:#c95513}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-footer{grid-column:1;grid-row:3;align-self:center;min-width:0;margin:0;padding:7px 0 0;border:0}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-pickup{flex-wrap:wrap;gap:7px;color:var(--text-muted,var(--muted));font-size:.68rem}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-pickup .pu-badge{border-radius:8px;padding:5px 8px;font-size:.73rem;font-weight:650;line-height:1.3}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-shipping{grid-column:2;grid-row:3;align-self:center;max-width:125px;min-width:0;margin:0;padding:6px 8px;border:0;border-radius:9px;background:var(--surface2);gap:4px}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-shipping-status{margin:0}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-carrier{font-size:.68rem}
+  :is(#mov-mobile-list,#mov-grid-list) .mov-compact-shipping-empty{font-size:.62rem}
+  body.dark-mode :is(#mov-mobile-list,#mov-grid-list) .mov-compact-financials .is-paid bdi{color:#6ee7b7}
+  body.dark-mode :is(#mov-mobile-list,#mov-grid-list) .mov-compact-financials .is-remaining bdi{color:#fdba74}
+}

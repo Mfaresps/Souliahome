@@ -1,13 +1,13 @@
-import { followUpLastActivityAt, followUpLatestComment } from '../../src/employee-performance/followup-last-activity';
+import { followUpLastActivityAt, followUpLatestComment, followUpLatestContact } from '../../src/employee-performance/followup-last-activity';
 
 describe('latest visible follow-up comment', () => {
   it('shows the latest human comment, ignoring newer system messages and blank comments', () => {
     expect(followUpLatestComment({comments:[
       {authorId:'employee',authorName:'Sara',text:'تم التواصل مع العميل',createdAt:'2026-10-24T09:00:00Z'},
-      {authorId:'admin',authorName:'Manager',text:'إعادة المحاولة غدًا',createdAt:'2026-10-24T10:00:00Z'},
+      {_id:'comment-latest',authorId:'admin',authorName:'Manager',text:'إعادة المحاولة غدًا',createdAt:'2026-10-24T10:00:00Z'},
       {authorId:'system',text:'تحديث آلي',createdAt:'2026-10-24T11:00:00Z'},
       {authorId:'employee',text:'  ',createdAt:'2026-10-24T12:00:00Z'},
-    ]})).toEqual({text:'إعادة المحاولة غدًا',authorName:'Manager',at:'2026-10-24T10:00:00.000Z'});
+    ]})).toEqual({id:'comment-latest',text:'إعادة المحاولة غدًا',authorId:'admin',authorName:'Manager',at:'2026-10-24T10:00:00.000Z'});
   });
   it('uses edits and bounds long comment previews', () => {
     const result=followUpLatestComment({comments:[
@@ -18,6 +18,25 @@ describe('latest visible follow-up comment', () => {
     expect(result?.at).toBe('2026-10-24T11:00:00.000Z');
     expect(followUpLatestComment({comments:[{authorId:'system',text:'auto'}]})).toBeNull();
     expect(followUpLatestComment({})).toBeNull();
+  });
+});
+
+describe('latest recorded customer contact', () => {
+  it('keeps the last call separate from a newer ordinary comment or system reminder', () => {
+    const contact = followUpLatestContact({ comments: [
+      { _id: 'call', authorId: 'agent', authorName: 'Sara', kind: 'call', callOutcome: 'no_answer', text: 'No answer', createdAt: '2026-10-26T10:00:00Z' },
+      { _id: 'note', authorId: 'agent', kind: 'note', text: 'Internal update', createdAt: '2026-10-26T11:00:00Z' },
+      { _id: 'system', authorId: 'system', kind: 'call', text: 'Automated reminder', createdAt: '2026-10-26T12:00:00Z' },
+    ] });
+    expect(contact).toMatchObject({ id: 'call', channel: 'phone', outcome: 'no_answer', authorName: 'Sara', at: '2026-10-26T10:00:00.000Z' });
+  });
+  it('includes explicitly recorded Vrobo contact notes', () => {
+    expect(followUpLatestContact({ comments: [{ _id: 'message', authorId: 'agent', kind: 'note', contactChannel: 'vrobo', text: 'Customer requested a callback', createdAt: '2026-10-26T12:00:00Z' }] }))
+      .toMatchObject({ id: 'message', channel: 'vrobo', outcome: '' });
+  });
+  it('does not infer customer contact from an ordinary note', () => {
+    expect(followUpLatestContact({ comments: [{ authorId: 'agent', kind: 'note', text: 'Internal update' }] })).toBeNull();
+    expect(followUpLatestContact({})).toBeNull();
   });
 });
 

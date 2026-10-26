@@ -1,4 +1,5 @@
 import { notifyApproval } from '../notifications/admin-events';
+import { FollowUpsService } from '../followups/followups.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import {
@@ -84,6 +85,7 @@ function cleanRef(ref: unknown): string {
  */
 @Injectable()
 export class DepositReceiptsService {
+  @PushOptional() @PushInject(FollowUpsService) private readonly followUpsService?: FollowUpsService;
   @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
 
   private readonly logger = new Logger(DepositReceiptsService.name);
@@ -506,6 +508,8 @@ export class DepositReceiptsService {
     ).exec();
     if (!saved) throw new BadRequestException('تعذّر الإرسال — تغيّر الإيصال أو الأوردر، أعد المحاولة');
 
+    await this.followUpsService?.closeConfirmationForDeposit(saved, actor.name || actor.username);
+
     await this.notifications?.enqueue('deposit', 'deposit:receipt:' + receiptId, saved.ref, 'shopify:' + orderId, undefined, undefined,
       { actorName: r.submittedBy || actor.name || actor.username, amount, pendingApproval: true, vaultName: method, receiptId });
     this.emit(orderId, receiptId, 'معلق');
@@ -660,6 +664,7 @@ export class DepositReceiptsService {
     ).exec();
 
     await this.refreshDerived(String(claimed._id));
+    await this.followUpsService?.closeConfirmationForDeposit(claimed, admin.name || admin.username);
     this.emit(orderId, receiptId, 'معتمد');
     await notifyApproval(this.notifications, 'approval:receipt:' + receiptId + ':approved', claimed.ref, 'shopify:' + orderId, { actorName: r.submittedBy, actionKey: 'deposit', status: 'approved', receiptId });
     return { success: true, vaultTxNo: entry?.txNo || '' };

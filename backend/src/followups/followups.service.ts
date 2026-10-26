@@ -3,12 +3,13 @@ import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import { Injectable, Logger, OnModuleInit, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron } from '@nestjs/schedule';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { FollowUp, FollowUpDocument } from './schemas/followup.schema';
 import { CreateFollowUpDto, UpdateFollowUpDto, DeferFollowUpDto } from './dto/followup.dto';
 import { MentionsService } from '../mentions/mentions.service';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { EmployeeShiftService } from '../employee-performance/employee-shift.service';
+import { CUSTOMER_CANCELLATION_QUERY } from '../employee-performance/customer-cancellation';
 
 /**
  * A follow-up in any of these needs no further action.
@@ -436,6 +437,10 @@ export class FollowUpsService implements OnModuleInit {
   async create(dto: CreateFollowUpDto, actorUserId = '') {
     const ticketNo = await this.generateTicketNo(dto.orderRef);
     const doc = await this.model.create({ ...dto, ticketNo });
+    if (doc.status === 'العميل ألغى الطلب' && doc.reason === 'عملية تأكيد الطلب') {
+      try { await this.closeCustomerCancellationSiblings(doc); }
+      catch (err: any) { this.logger.error(`Customer cancellation follow-up closure failed: ${err.message}`); }
+    }
     await this.notifications?.enqueue('followup', 'followup:' + doc._id, doc.orderRef, 'followup:' + doc._id, undefined, undefined, { actorUserId });
     return doc;
   }
@@ -465,6 +470,45 @@ export class FollowUpsService implements OnModuleInit {
       this.logger.error(`ticketNo backfill failed: ${err.message}`);
     }
     await this.reconcileCancelledOrders();
+    await this.reconcileDepositConfirmations();
+    await this.reconcileCustomerCancellations();
+  }
+
+  /** A submitted deposit confirms the customer, independently of financial approval. */
+  async closeConfirmationForDeposit(order: any, by = ''): Promise<void> {
+    if (!order || order.cancelled || order.status === 'rejected') return;
+    const receipts = (order.depositReceipts || []).filter((r: any) =>
+      ['معلق', 'معتمد'].includes(r.status) && Number(r.amount) > 0);
+    if (!receipts.length) return;
+    await this.closeForOrder({ shopifyOrderIds: [String(order._id), order.shopifyId], orderRef: order.ref },
+      'confirmed', receipts.some((r: any) => r.status === 'معتمد')
+        ? 'تم تسجيل ديبوزت معتمد' : 'تم تسجيل ديبوزت بانتظار المراجعة', by, true);
+  }
+
+  /** Repairs existing trails and retries closure if a receipt event could not be saved. */
+  @Cron('15 * * * * *')
+  async reconcileDepositConfirmations(): Promise<void> {
+    try {
+      const open = await this.model.find({ reason: 'عملية تأكيد الطلب', cancelled: { $ne: true },
+        autoSource: { $ne: 'shipping-issue' }, status: { $nin: DONE_STATUSES },
+        orderOutcome: { $in: ['', null] } }).select('orderRef shopifyOrderId').lean().exec();
+      if (!open.length) return;
+      // Batch the lookup rather than scanning all historical orders every minute.
+      for (let offset = 0; offset < open.length; offset += 200) {
+        const batch = open.slice(offset, offset + 200);
+        const ids = [...new Set(batch.map(f => String(f.shopifyOrderId || '')).filter(Boolean))];
+        const refs = [...new Set(batch.map(f => String(f.orderRef || '').replace(/^#/, '').trim()).filter(Boolean))];
+        const orders = await this.model.db.collection('shopifyorders').find({
+          cancelled: { $ne: true }, status: { $ne: 'rejected' },
+          depositReceipts: { $elemMatch: { status: { $in: ['معلق', 'معتمد'] }, amount: { $gt: 0 } } },
+          $or: [{ _id: { $in: ids.filter(id => Types.ObjectId.isValid(id)).map(id => new Types.ObjectId(id)) } },
+            { shopifyId: { $in: ids } }, { ref: { $in: refs.flatMap(ref => [ref, '#' + ref]) } }],
+        }, { projection: { _id: 1, ref: 1, shopifyId: 1, status: 1, cancelled: 1, depositReceipts: 1 } }).toArray();
+        for (const order of orders) await this.closeConfirmationForDeposit(order);
+      }
+    } catch (err: any) {
+      this.logger.error(`Deposit confirmation reconciliation failed: ${err.message}`);
+    }
   }
 
   /** Repair trails left open by cancellations recorded before outcome syncing existed. */
@@ -492,16 +536,30 @@ export class FollowUpsService implements OnModuleInit {
 
   async defer(id: string, dto: DeferFollowUpDto, userId: string, role: string, name: string) {
     const until = new Date(dto.until), now = new Date();
-    const labels: Record<string, string> = { customer_postponed: 'تأجيل بناءً على طلب العميل', carrier_delay: 'بانتظار شركة الشحن', awaiting_return: 'بانتظار استلام المرتجع' };
+    const labels: Record<string, string> = { confirmation_contact: 'إعادة التواصل لتأكيد الطلب', awaiting_deposit: 'متابعة سداد العربون', confirm_details: 'تأكيد بيانات الطلب مع العميل', awaiting_customer: 'بانتظار رد العميل', customer_postponed: 'تأجيل بناءً على طلب العميل', carrier_delay: 'بانتظار شركة الشحن', awaiting_return: 'بانتظار استلام المرتجع' };
     if (!labels[dto.reason] || !Number.isFinite(until.getTime()) || until <= now || until.getTime() > now.getTime() + 30 * 86400000) throw new BadRequestException('اختر موعد متابعة قادم خلال 30 يومًا');
     const doc = await this.model.findOneAndUpdate({ _id: id, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES },
+      ...(['confirmation_contact', 'awaiting_deposit', 'confirm_details'].includes(dto.reason) ? { reason: 'عملية تأكيد الطلب', autoSource: { $ne: 'shipping-issue' } } : {}),
+      orderOutcome: { $in: ['', null] },
+      ...(dto.requestId ? { 'comments.requestKey': { $ne: dto.requestId } } : {}),
       ...(role === 'admin' ? {} : { responsibleId: userId }),
     }, { $set: { deferredUntil: until, deferReason: dto.reason, deferNote: String(dto.note || '').trim(), deferReminderSent: false,
       escalationBaseline: until, escalationLevel: 0 },
       $push: { comments: { authorId: userId, authorName: name, kind: 'note', edited: false,
+        ...(dto.requestId ? { requestKey: dto.requestId } : {}),
+        ...(dto.channel ? { contactChannel: dto.channel } : {}),
         text: `${labels[dto.reason]} — موعد المتابعة: ${until.toISOString()}${dto.note ? ` — ${dto.note.trim()}` : ''}`, createdAt: now, updatedAt: now } },
     }, { new: true }).lean();
-    if (!doc) throw new ForbiddenException('يمكنك تأجيل متابعاتك المفتوحة فقط');
+    if (!doc) {
+      if (dto.requestId) {
+        const saved = await this.model.findOne({ _id: id,
+          ...(role === 'admin' ? {} : { responsibleId: userId }),
+          comments: { $elemMatch: { requestKey: dto.requestId, authorId: userId } },
+        }).lean();
+        if (saved) return saved;
+      }
+      throw new ForbiddenException('يمكنك تأجيل متابعاتك المفتوحة فقط');
+    }
     try {
       const recipients = await this.notifications?.notifyFollowUpSchedule({ id, orderRef: doc.orderRef, responsibleId: doc.responsibleId,
         until: until.toISOString(), reason: dto.reason }, false, userId, name);
@@ -523,13 +581,52 @@ export class FollowUpsService implements OnModuleInit {
       patch.escalationBaseline = new Date();
       patch.escalationLevel = 0;
     }
-    return this.model.findOneAndUpdate({ _id: id, orderOutcome: { $in: ['', null] } }, patch, { new: true }).lean();
+    const updated = await this.model.findOneAndUpdate({ _id: id, orderOutcome: { $in: ['', null] } }, patch, { new: true }).lean();
+    if (updated?.status === 'العميل ألغى الطلب' && updated.reason === 'عملية تأكيد الطلب' && updated.autoSource !== 'shipping-issue') {
+      try { await this.closeCustomerCancellationSiblings(updated); }
+      catch (err: any) { this.logger.error(`Customer cancellation follow-up closure failed: ${err.message}`); }
+    }
+    return updated;
   }
 
-  /** Called after confirmation/cancellation succeeds, never when it is merely requested. */
+  /** Older tickets on the same order must not keep asking the customer to confirm. */
+  async closeCustomerCancellationSiblings(source: any): Promise<void> {
+    const links: Record<string, unknown>[] = [];
+    if (source.shopifyOrderId) links.push({ shopifyOrderId: String(source.shopifyOrderId) });
+    if (source.transactionId) links.push({ transactionId: String(source.transactionId) });
+    const ref = String(source.orderRef || '').trim().replace(/^#+/, '');
+    if (ref) links.push({ orderRef: { $in: [ref, '#' + ref] } });
+    if (!links.length) return;
+    const now = new Date();
+    const result = await this.model.updateMany({
+      _id: { $ne: source._id }, $or: links,
+      reason: 'عملية تأكيد الطلب', autoSource: { $ne: 'shipping-issue' },
+      cancelled: { $ne: true }, status: { $nin: DONE_STATUSES }, orderOutcome: { $in: ['', null] },
+    }, {
+      $set: { status: 'العميل ألغى الطلب', orderOutcome: 'cancelled', closedAt: now,
+        resolution: 'العميل ألغى الطلب في متابعة أخرى لنفس الطلب',
+        deferredUntil: null, deferReminderSent: false, escalationLevel: 0, escalationBaseline: now },
+      $push: { comments: { authorId: 'system', authorName: 'النظام', kind: 'decision', edited: false,
+        text: `أُغلقت متابعة التأكيد — العميل ألغى الطلب في المتابعة ${source.ticketNo || String(source._id)}`,
+        createdAt: now, updatedAt: now } },
+    }).exec();
+    if (result.modifiedCount) this.presence.emitEvent('followup:changed', { action: 'update' });
+  }
+
+  /** Also repair records saved before cancellation was shared across tickets. */
+  @Cron('30 * * * * *')
+  async reconcileCustomerCancellations(): Promise<void> {
+    try {
+      const sources = await this.model.find(CUSTOMER_CANCELLATION_QUERY)
+        .select('shopifyOrderId transactionId orderRef ticketNo').lean().exec();
+      for (const source of sources) await this.closeCustomerCancellationSiblings(source);
+    } catch (err: any) { this.logger.error(`Customer cancellation reconciliation failed: ${err.message}`); }
+  }
+
+  /** Records a customer-confirmation outcome or a completed cancellation. */
   async closeForOrder(order: {
     transactionId?: string; shopifyOrderIds?: string[]; orderRef?: string; cancelledAt?: string | Date;
-  }, outcome: 'confirmed' | 'cancelled', detail: string, by = ''): Promise<void> {
+  }, outcome: 'confirmed' | 'cancelled', detail: string, by = '', confirmationOnly = false): Promise<void> {
     const links: Record<string, unknown>[] = [];
     if (order.transactionId) links.push({ transactionId: String(order.transactionId) });
     const shopifyIds = (order.shopifyOrderIds || []).filter(Boolean).map(String);
@@ -551,6 +648,7 @@ export class FollowUpsService implements OnModuleInit {
         $or: links,
         orderOutcome: outcome === 'confirmed' ? { $in: ['', null] } : { $ne: 'cancelled' },
         ...(outcome === 'confirmed' ? { cancelled: { $ne: true }, autoSource: { $ne: 'shipping-issue' } } : {}),
+        ...(confirmationOnly ? { reason: 'عملية تأكيد الطلب', status: { $nin: DONE_STATUSES } } : {}),
       }, {
         $set: {
           status: outcome === 'confirmed' ? 'تمت عملية التأكيد' : 'العميل ألغى الطلب',

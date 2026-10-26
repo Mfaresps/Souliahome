@@ -30,6 +30,9 @@ export class FollowUpComment {
 
   @Prop()
   callOutcome?: string; // 'answered' | 'no_answer' — set only when kind === 'call'
+
+  @Prop({ enum: ['phone', 'vrobo'] })
+  contactChannel?: string; // channel explicitly recorded with a customer-contact note
 }
 
 export const FollowUpCommentSchema = SchemaFactory.createForClass(FollowUpComment);
@@ -119,7 +122,7 @@ export class FollowUp {
   deferredUntil?: Date | null;
 
   @Prop({ default: '' })
-  deferReason: string; // customer_postponed | carrier_delay | awaiting_return
+  deferReason: string; // confirmation_contact | awaiting_deposit | confirm_details | awaiting_customer | customer_postponed | carrier_delay | awaiting_return
 
   @Prop({ default: '' })
   deferNote: string;

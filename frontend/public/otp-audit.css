@@ -1,0 +1,41 @@
+#page-approvals #otp-audit-filter-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+#page-approvals .otp-audit-cards{display:none}
+#page-approvals .otp-audit-card-more summary{cursor:pointer;color:var(--accent);font-size:.78rem;padding:8px 0 2px}
+#page-approvals .otp-audit-card-more>div{padding:8px 10px;border-radius:8px;background:var(--bg-alt);font-size:.78rem;line-height:1.6}
+@media(max-width:640px){
+  #page-approvals #otp-audit-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-areas:"kind status" "code employee" "from to" "reset reset";gap:12px 10px}
+  #page-approvals #otp-audit-filter-grid>.otp-audit-field:nth-child(1){grid-area:kind}
+  #page-approvals #otp-audit-filter-grid>.otp-audit-field:nth-child(2){grid-area:status}
+  #page-approvals #otp-audit-filter-grid>.otp-audit-field:nth-child(3){grid-area:code}
+  #page-approvals #otp-audit-filter-grid>.otp-audit-field:nth-child(4){grid-area:from}
+  #page-approvals #otp-audit-filter-grid>.otp-audit-field:nth-child(5){grid-area:to}
+  #page-approvals #otp-audit-filter-grid>.otp-audit-field:nth-child(6){grid-area:employee}
+  #page-approvals .otp-audit-filters{padding:14px!important}
+  #page-approvals .otp-audit-field{min-width:0}
+  #page-approvals .otp-audit-field label{font-size:.74rem!important;line-height:1.35;min-height:0;margin-bottom:5px!important;color:var(--text)!important}
+  #page-approvals .otp-audit-field :is(input,select){display:block;width:100%;max-width:100%;min-width:0;height:44px;box-sizing:border-box;padding:8px 10px;font-size:16px!important;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text)}
+  #page-approvals .otp-audit-field input[type="date"]{width:100%!important;min-width:0;max-width:100%;padding-inline:8px;appearance:none;-webkit-appearance:none}
+  #page-approvals .otp-audit-reset{grid-area:reset;display:block!important}
+  #page-approvals .otp-audit-reset button{min-height:42px;border-radius:10px}
+  #page-approvals .otp-audit-table-wrap{display:none}
+  #page-approvals .otp-audit-cards{display:grid;gap:9px}
+  #page-approvals .otp-audit-card{min-width:0;padding:11px 12px;border:1px solid var(--border);border-radius:13px;background:var(--surface);box-shadow:0 2px 8px #163a2410}
+  #page-approvals .otp-audit-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+  #page-approvals .otp-audit-kind{display:flex;align-items:center;gap:7px;min-width:0;font-weight:700;font-size:.9rem}
+  #page-approvals .otp-audit-kind>i{display:grid;place-items:center;width:29px;height:29px;flex:0 0 29px;border-radius:8px;font-style:normal}
+  #page-approvals .otp-audit-kind svg{width:16px;height:16px}
+  #page-approvals .otp-audit-code{direction:ltr;flex:0 0 auto;padding:4px 8px;border:1px solid var(--border);border-radius:7px;background:var(--bg-alt);font:700 .95rem/1.2 ui-monospace,monospace;letter-spacing:.12em}
+  #page-approvals .otp-audit-card-state{display:flex;align-items:center;gap:7px;margin-top:8px}
+  #page-approvals .otp-audit-attempts{display:inline-flex;align-items:center;gap:3px;color:var(--red);font-size:.75rem}
+  #page-approvals .otp-audit-attempts svg{width:13px;height:13px}
+  #page-approvals .otp-audit-card-detail{margin-top:8px;color:var(--text);font-size:.82rem;line-height:1.5;overflow-wrap:anywhere}
+  #page-approvals .otp-audit-card-meta{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:7px 10px;margin-top:9px;padding-top:8px;border-top:1px solid var(--border);color:var(--muted);font-size:.7rem}
+  #page-approvals .otp-audit-card-meta>span{display:inline-flex;align-items:center;gap:4px}
+  #page-approvals .otp-audit-card-meta>.otp-audit-card-person{grid-column:1/-1}
+  #page-approvals .otp-audit-card-time{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0}
+  #page-approvals .otp-audit-card-time small{font-size:.65rem;color:var(--muted)}
+  #page-approvals .otp-audit-card-meta svg{width:13px;height:13px}
+  #page-approvals .otp-audit-card-meta time{font-variant-numeric:tabular-nums;white-space:normal}
+  #page-approvals .otp-audit-card-meta .is-used{color:var(--accent)}
+  #page-approvals .otp-audit-card-more{margin-top:4px}
+}

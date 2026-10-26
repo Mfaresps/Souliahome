@@ -1,9 +1,11 @@
-import { IsString, IsOptional, IsArray, IsIn, IsISO8601, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsIn, IsISO8601, IsUUID, MaxLength } from 'class-validator';
 
 export class DeferFollowUpDto {
-  @IsIn(['customer_postponed', 'carrier_delay', 'awaiting_return']) reason: string;
+  @IsIn(['confirmation_contact', 'awaiting_deposit', 'confirm_details', 'awaiting_customer', 'customer_postponed', 'carrier_delay', 'awaiting_return']) reason: string;
   @IsISO8601() until: string;
   @IsOptional() @IsString() @MaxLength(500) note?: string;
+  @IsOptional() @IsUUID() requestId?: string;
+  @IsOptional() @IsIn(['phone', 'vrobo']) channel?: string;
 }
 
 export class CreateFollowUpDto {

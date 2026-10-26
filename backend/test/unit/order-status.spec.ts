@@ -4,7 +4,7 @@ describe('Order lifecycle vocabulary and precedence', () => {
   it.each([
     [{}, 'awaiting_confirmation'],
     [{ notes: '500', tags: 'confirmed, verified via whatsapp', pendingStatus: 'confirmed' }, 'awaiting_confirmation'],
-    [{ depositReceipts: [{ status: 'معلق', amount: 500 }] }, 'awaiting_confirmation'],
+    [{ depositReceipts: [{ status: 'معلق', amount: 500 }] }, 'confirmed'],
     [{ depositReceipts: [{ status: 'مرفوض', amount: 500 }] }, 'awaiting_confirmation'],
     [{ depositReceipts: [{ status: 'معتمد', amount: 0 }] }, 'awaiting_confirmation'],
     [{ depositReceipts: [{ status: 'معتمد', amount: 500 }] }, 'confirmed'],
@@ -12,7 +12,7 @@ describe('Order lifecycle vocabulary and precedence', () => {
     [{ confirmationApproved: true }, 'confirmed'],
     [{ cancelled: true, shipWithoutDeposit: true }, 'CANCELLED'],
     [{ status: 'rejected', shipWithoutDeposit: true }, 'rejected'],
-  ])('uses recorded approval for Shopify confirmation: %j', (row, key) => {
+  ])('uses submitted deposits or recorded approval for Shopify confirmation: %j', (row, key) => {
     expect(orderStates.resolve({ status: 'pending', ...row }, 'shopify', 'en').key).toBe(key);
   });
   it.each([

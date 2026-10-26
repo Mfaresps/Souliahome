@@ -1,3 +1,4 @@
+import { needsOrderConfirmation, needsOrderConfirmationExpression } from './order-confirmation';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Inject, Optional } from '@nestjs/common';
 import { Injectable, Logger, OnModuleInit, NotFoundException } from '@nestjs/common';
@@ -17,8 +18,9 @@ import { SettingsService } from '../settings/settings.service';
 import { Settings } from '../settings/schemas/settings.schema';
 import { FollowUp, FollowUpDocument } from '../followups/schemas/followup.schema';
 import { DONE_STATUSES } from '../followups/followups.service';
-import { followUpLastActivityAt, followUpLatestComment } from './followup-last-activity';
+import { followUpLastActivityAt, followUpLatestComment, followUpLatestContact } from './followup-last-activity';
 import { isOpenShippingIssue } from './shipping-issue-state';
+import { CUSTOMER_CANCELLATION_QUERY, customerCancellationExclusions } from './customer-cancellation';
 
 /**
  * The scoring period. Points are NOT deleted at the end of a period — they are
@@ -133,6 +135,7 @@ export interface MyWorkspaceResult {
   deliveryIssueFollowUpsCount: number;
   deferredFollowUps: Array<{ id: string; until: Date }>;
   orders: Array<{
+    needsConfirmation: boolean;
     id: string;
     shopifyId: string;
     ref: string;
@@ -157,7 +160,8 @@ export interface MyWorkspaceResult {
     deferredUntil?: Date | null;
     deferReason?: string;
     deferNote?: string;
-    latestComment: ReturnType<typeof followUpLatestComment>;
+    latestComment: (NonNullable<ReturnType<typeof followUpLatestComment>> & { authorAvatar?: string }) | null;
+    latestContact: ReturnType<typeof followUpLatestContact>;
     updatedAt: string;
   }>;
   /**
@@ -879,7 +883,7 @@ export class EmployeeScoringService implements OnModuleInit {
       this.userModel.find({ role: { $in: ['staff', 'viewer'] }, isActive: { $ne: false } }).select('name username avatar jobTitle isActive').lean().exec(),
       this.shopifyOrderModel.aggregate([
         { $match: { cancelled: { $ne: true }, ...this.periodMatchIsoString(range, 'assignedAt') } },
-        { $group: { _id: '$assignedTo', orders: { $sum: 1 }, pending: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } } } },
+        { $group: { _id: '$assignedTo', orders: { $sum: 1 }, pending: { $sum: { $cond: [needsOrderConfirmationExpression, 1, 0] } } } },
       ]),
       this.followUpModel.aggregate([
         { $match: { cancelled: { $ne: true }, status: { $nin: DONE_STATUSES }, ...this.periodMatch(range) } },
@@ -934,6 +938,9 @@ export class EmployeeScoringService implements OnModuleInit {
     // Admin period review scopes queues; staff retain their complete open workload.
     const orderWindow = scopeWorkloadToPeriod ? this.periodMatchIsoString(range, 'assignedAt') : {};
     const followUpWindow = scopeWorkloadToPeriod ? this.periodMatch(range) : {};
+    const customerCancellations = await this.followUpModel.find(CUSTOMER_CANCELLATION_QUERY)
+      .select('shopifyOrderId transactionId orderRef').lean().exec();
+    const cancellationExclusions = customerCancellationExclusions(customerCancellations);
     const prev = this.previousPeriod(range);
     const inPeriod = this.periodMatch(range);
 
@@ -1011,7 +1018,7 @@ export class EmployeeScoringService implements OnModuleInit {
       this.logModel.countDocuments({ employeeId: userId, actionType: 'delivery_completed', ...inPeriod }),
       this.shopifyOrderModel
         .find({ assignedTo: userId, cancelled: { $ne: true }, ...orderWindow })
-        .select('shopifyId ref client phone depositStatus depositAmount total status assignedAt')
+        .select('shopifyId ref client phone depositStatus depositAmount total status assignedAt shipWithoutDeposit confirmationApproved depositReceipts')
         .sort({ assignedAt: -1 })
         .limit(MY_ORDERS_MAX)
         .lean()
@@ -1025,8 +1032,9 @@ export class EmployeeScoringService implements OnModuleInit {
           responsibleId: userId,
           cancelled: { $ne: true },
           status: { $nin: DONE_STATUSES },
+          ...cancellationExclusions.followUps,
         })
-        .select('ticketNo orderRef transactionId shopifyOrderId clientName clientPhone reason status autoSource autoTrigger updatedAt createdAt escalationBaseline escalationLevel comments.createdAt comments.updatedAt comments.text comments.authorId comments.authorName deferredUntil deferReason deferNote')
+        .select('ticketNo orderRef transactionId shopifyOrderId clientName clientPhone reason status autoSource autoTrigger updatedAt createdAt escalationBaseline escalationLevel comments._id comments.createdAt comments.updatedAt comments.text comments.authorId comments.authorName comments.kind comments.callOutcome comments.contactChannel deferredUntil deferReason deferNote')
         .sort({ deferredUntil: 1, autoSource: -1, escalationBaseline: 1, createdAt: 1 })
         .limit(MY_FOLLOWUPS_MAX)
         .lean()
@@ -1045,12 +1053,19 @@ export class EmployeeScoringService implements OnModuleInit {
       this.logModel.countDocuments({ employeeId: userId, actionType: 'manual_bonus', ...inPeriod }),
       // Counts are independent of the bounded preview lists: an older pending
       // order must never produce a false "all tasks complete" message.
-      this.shopifyOrderModel.countDocuments({ assignedTo: userId, status: 'pending', cancelled: { $ne: true }, ...orderWindow }),
-      this.followUpModel.countDocuments({ ...followUpWindow, responsibleId: userId, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES } }),
-      this.followUpModel.find({ ...followUpWindow, responsibleId: userId, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES }, deferredUntil: { $gt: new Date() } }).select('deferredUntil').lean().exec(),
+      this.shopifyOrderModel.countDocuments({ assignedTo: userId, status: 'pending', cancelled: { $ne: true }, $expr: needsOrderConfirmationExpression, ...orderWindow, ...cancellationExclusions.orders }),
+      this.followUpModel.countDocuments({ ...followUpWindow, responsibleId: userId, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES }, ...cancellationExclusions.followUps }),
+      this.followUpModel.find({ ...followUpWindow, responsibleId: userId, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES }, deferredUntil: { $gt: new Date() }, ...cancellationExclusions.followUps }).select('deferredUntil').lean().exec(),
       this.followUpModel.countDocuments({ ...followUpWindow, responsibleId: userId, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES },
         $or: [{ autoSource: 'shipping-issue' }, { autoTrigger: { $in: ['FAILED_ATTEMPT', 'RETURNED'] } }, { reason: 'مشكلة في الاستلام' }] }),
     ]);
+
+    const latestComments = new Map(myFollowUps.map(f => [String(f._id), followUpLatestComment(f as Parameters<typeof followUpLatestComment>[0])]));
+    const commentAuthorIds = [...new Set([...latestComments.values()].map(comment => comment?.authorId).filter((id): id is string => !!id && Types.ObjectId.isValid(id)))];
+    const commentAuthors = commentAuthorIds.length
+      ? await this.userModel.find({ _id: { $in: commentAuthorIds } }).select('avatar').lean().exec()
+      : [];
+    const commentAvatars = new Map(commentAuthors.map(author => [String(author._id), author.avatar || '']));
 
     // The shipment side of MY orders, joined on shopifyId → Transaction.shopifyOrderId.
     // An order assigned to me but never approved into a transaction has no shipment
@@ -1118,6 +1133,7 @@ export class EmployeeScoringService implements OnModuleInit {
         phone: o.phone || '',
         total: o.total || 0,
         status: o.status || '',
+        needsConfirmation: needsOrderConfirmation(o) && !cancellationExclusions.isCancelledOrder(o),
         depositStatus: o.depositStatus || 'none',
         depositAmount: o.depositAmount || 0,
         assignedAt: o.assignedAt || '',
@@ -1136,7 +1152,11 @@ export class EmployeeScoringService implements OnModuleInit {
         deferredUntil: f.deferredUntil || null,
         deferReason: f.deferReason || '',
         deferNote: f.deferNote || '',
-        latestComment: followUpLatestComment(f as Parameters<typeof followUpLatestComment>[0]),
+        latestComment: latestComments.get(String(f._id)) ? {
+          ...latestComments.get(String(f._id))!,
+          authorAvatar: commentAvatars.get(latestComments.get(String(f._id))!.authorId) || '',
+        } : null,
+        latestContact: followUpLatestContact(f as Parameters<typeof followUpLatestContact>[0]),
         autoTrigger: f.autoTrigger || '',
         escalationBaseline: f.escalationBaseline || null,
         lastActivityAt: followUpLastActivityAt(f as Parameters<typeof followUpLastActivityAt>[0]),

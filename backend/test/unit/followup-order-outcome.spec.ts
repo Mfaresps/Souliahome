@@ -14,6 +14,65 @@ function fixture() {
 }
 
 describe('Order outcomes close follow-up trails', () => {
+  it('closes older confirmation tickets when the customer cancels in another ticket', async () => {
+    const { service } = fixture();
+    const source = { _id: 'latest', ticketNo: 'FU-2909-2', shopifyOrderId: 'local-2909', orderRef: '2909',
+      reason: 'عملية تأكيد الطلب', status: 'العميل ألغى الطلب' };
+    service.model.findById = () => ({ lean: async () => ({ ...source, status: 'في انتظار العميل' }) });
+    service.model.findOneAndUpdate = jest.fn(() => ({ lean: async () => source }));
+    await service.update('latest', { status: source.status });
+    const [query, update] = service.model.updateMany.mock.calls[0];
+    expect(query).toMatchObject({ _id: { $ne: 'latest' }, reason: source.reason,
+      autoSource: { $ne: 'shipping-issue' }, status: { $nin: expect.arrayContaining(['العميل ألغى الطلب']) } });
+    expect(query.$or).toContainEqual({ orderRef: { $in: ['2909', '#2909'] } });
+    expect(update.$set).toMatchObject({ status: source.status, orderOutcome: 'cancelled', deferredUntil: null, escalationLevel: 0 });
+    expect(update.$push.comments.text).toContain(source.ticketNo);
+  });
+  it.each(['معلق', 'معتمد'])('closes only confirmation tasks when a deposit is %s', async status => {
+    const { service, exec } = fixture();
+    const order = { _id: 'local1', shopifyId: 'remote1', ref: '2952', status: 'pending',
+      depositReceipts: [{ status, amount: 810 }] };
+    await service.closeConfirmationForDeposit(order, 'Agent');
+    const [query, update] = service.model.updateMany.mock.calls[0];
+    expect(query).toMatchObject({ reason: 'عملية تأكيد الطلب', autoSource: { $ne: 'shipping-issue' },
+      status: { $nin: expect.arrayContaining(['تمت عملية التأكيد']) }, orderOutcome: { $in: ['', null] } });
+    expect(query.$or).toContainEqual({ shopifyOrderId: { $in: ['local1', 'remote1'] } });
+    expect(update.$set).toMatchObject({ status: 'تمت عملية التأكيد', orderOutcome: 'confirmed', deferredUntil: null });
+    expect(update.$set.resolution).toBe(status === 'معلق' ? 'تم تسجيل ديبوزت بانتظار المراجعة' : 'تم تسجيل ديبوزت معتمد');
+    exec.mockResolvedValueOnce({ modifiedCount: 0 });
+    service.presence.emitEvent.mockClear();
+    await service.closeConfirmationForDeposit(order);
+    expect(service.presence.emitEvent).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { depositReceipts: [] },
+    { depositReceipts: [{ status: 'مسودة', amount: 810 }] },
+    { depositReceipts: [{ status: 'مرفوض', amount: 810 }] },
+    { depositReceipts: [{ status: 'مُسترد', amount: 810 }] },
+    { depositReceipts: [{ status: 'معلق', amount: 0 }] },
+    { cancelled: true, depositReceipts: [{ status: 'معتمد', amount: 810 }] },
+    { status: 'rejected', depositReceipts: [{ status: 'معتمد', amount: 810 }] },
+  ])('does not close confirmation without a valid deposit: %j', async order => {
+    const { service } = fixture();
+    await service.closeConfirmationForDeposit({ _id: 'local1', ...order });
+    expect(service.model.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('repairs historical confirmation trails using linked order ids as well as references', async () => {
+    const { service } = fixture();
+    service.model.find = jest.fn(() => ({ select: () => ({ lean: () => ({ exec: async () =>
+      [{ shopifyOrderId: 'remote1', orderRef: '#2952' }] }) }) }));
+    const find = jest.fn((_query: any, _options: any) => ({ toArray: async () => [{ _id: 'local1', shopifyId: 'remote1', ref: '2952',
+      status: 'pending', depositReceipts: [{ status: 'معتمد', amount: 810 }] }] }));
+    service.model.db = { collection: jest.fn(() => ({ find })) };
+    await service.reconcileDepositConfirmations();
+    expect(find.mock.calls[0][0]).toMatchObject({ depositReceipts: { $elemMatch: {
+      status: { $in: ['معلق', 'معتمد'] }, amount: { $gt: 0 } } } });
+    expect(find.mock.calls[0][0].$or).toContainEqual({ shopifyId: { $in: ['remote1'] } });
+    expect(service.model.updateMany.mock.calls[0][1].$set.status).toBe('تمت عملية التأكيد');
+  });
+
   it.each(['تم دفع الديبوزت', 'سيتم الشحن بدون ديبوزت'])('records confirmation and payment outcome: %s', async detail => {
     const { service } = fixture();
     await service.closeForOrder({ transactionId: 'tx1', shopifyOrderIds: ['local1', 'remote1'], orderRef: '#2871' }, 'confirmed', detail, 'Agent');
@@ -49,7 +108,7 @@ describe('Order outcomes close follow-up trails', () => {
     const { service } = fixture();
     const select = jest.fn().mockReturnThis();
     const query = { select, sort: jest.fn().mockReturnThis(), lean: jest.fn().mockReturnThis(),
-      exec: jest.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([{ orderRef: '#2856' }]) };
+      exec: jest.fn().mockResolvedValue([]).mockResolvedValueOnce([]).mockResolvedValueOnce([{ orderRef: '#2856' }]) };
     select.mockReturnValue(query);
     service.model.find = jest.fn(() => query);
     const cancelledAt = '2026-10-22T14:23:48.849Z';
@@ -60,7 +119,7 @@ describe('Order outcomes close follow-up trails', () => {
     service.model.db = { collection: (name: string) => ({ find: name === 'shopifyorders' ? find : transactionFind }) };
     service.logger.log = jest.fn();
     await service.onModuleInit();
-    expect(service.model.find).toHaveBeenLastCalledWith({ cancelled: { $ne: true }, status: { $nin: expect.any(Array) }, orderOutcome: { $in: ['', null] } });
+    expect(service.model.find).toHaveBeenCalledWith({ cancelled: { $ne: true }, status: { $nin: expect.any(Array) }, orderOutcome: { $in: ['', null] } });
     expect(find).toHaveBeenCalledWith({ cancelled: true, ref: { $in: ['2856', '#2856'] } }, expect.any(Object));
     const [filter, update] = service.model.updateMany.mock.calls[0];
     expect(filter.$or).toContainEqual({ shopifyOrderId: { $in: ['local1', 'remote1'] } });

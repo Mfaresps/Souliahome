@@ -16,12 +16,15 @@ function fixture() {
   service.logger = { error: jest.fn(), warn: jest.fn() };
   return { service, row };
 }
-it.each(['customer_postponed', 'carrier_delay', 'awaiting_return'])('persists %s and an audit note without resolving the issue', async reason => {
+it.each(['confirmation_contact', 'awaiting_deposit', 'confirm_details', 'awaiting_customer', 'customer_postponed', 'carrier_delay', 'awaiting_return'])('persists %s and an audit note without resolving the issue', async reason => {
   const { service } = fixture();
   const until = new Date(Date.now() + 3600000).toISOString();
   await service.defer('ticket', { reason, until, note: 'موعد متفق عليه' }, 'employee', 'staff', 'Sara');
   const [filter, update] = service.model.findOneAndUpdate.mock.calls[0];
   expect(filter).toMatchObject({ responsibleId: 'employee', cancelled: { $ne: true }, status: { $nin: DONE_STATUSES } });
+  if (['confirmation_contact', 'awaiting_deposit', 'confirm_details'].includes(reason)) {
+    expect(filter).toMatchObject({ reason: 'عملية تأكيد الطلب', autoSource: { $ne: 'shipping-issue' } });
+  }
   expect(update.$set).toMatchObject({ deferredUntil: new Date(until), deferReason: reason, deferReminderSent: false, escalationBaseline: new Date(until) });
   expect(update.$set.status).toBeUndefined();
   expect(update.$push.comments.text).toContain('موعد متفق عليه');
@@ -36,6 +39,20 @@ it('rejects invalid/past reminder times and inaccessible or closed tickets', asy
   expect(service.model.findOneAndUpdate).not.toHaveBeenCalled();
   service.model.findOneAndUpdate.mockReturnValue({ lean: async () => null });
   await expect(service.defer('ticket', { reason: 'carrier_delay', until: new Date(Date.now() + 100000).toISOString() }, 'other', 'staff', 'Other')).rejects.toThrow('متابعاتك المفتوحة');
+});
+it('retries a saved task action without duplicating the note or notifications', async () => {
+  const { service, row } = fixture();
+  const requestId = 'a50cbd99-a110-4db8-a1b8-a6670a744c84';
+  const dto = { reason: 'awaiting_customer', until: new Date(Date.now() + 3600000).toISOString(), note: 'Contacted via Vrobo', requestId, channel: 'vrobo' };
+  service.model.findOneAndUpdate.mockReturnValueOnce({ lean: async () => row }).mockReturnValueOnce({ lean: async () => null });
+  service.model.findOne = jest.fn(() => ({ lean: async () => row }));
+  await service.defer('ticket', dto, 'employee', 'staff', 'Sara');
+  await expect(service.defer('ticket', dto, 'employee', 'staff', 'Sara')).resolves.toEqual(row);
+  expect(service.model.findOneAndUpdate.mock.calls[0][0]).toMatchObject({ 'comments.requestKey': { $ne: requestId }, orderOutcome: { $in: ['', null] } });
+  expect(service.model.findOneAndUpdate.mock.calls[0][1].$push.comments.requestKey).toBe(requestId);
+  expect(service.model.findOneAndUpdate.mock.calls[0][1].$push.comments.contactChannel).toBe('vrobo');
+  expect(service.model.findOne).toHaveBeenCalledWith({ _id: 'ticket', responsibleId: 'employee', comments: { $elemMatch: { requestKey: requestId, authorId: 'employee' } } });
+  expect(service.notifications.notifyFollowUpSchedule).toHaveBeenCalledTimes(1);
 });
 it('reminds the employee and management when due and claims a reminder only once', async () => {
   const { service } = fixture();

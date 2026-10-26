@@ -17,10 +17,18 @@ function fixture() {
     _spOrderById: () => order, qs: (selector: string) => selector === '#sp-pk-fu' ? host : pill,
     _spPeekHistoryState: () => new Map(), _spPeekScrollTrail: () => {}, _spPeekFuHtml: () => 'Follow-up',
   };
-  runInNewContext(['_orderStateMeta', '_orderStateBadge', '_spPeekStatePill', '_puStatusBadge', '_puDisplayStatus', '_gsOrderStatus', '_spPeekRefreshFu'].map(name => shippedFunction(name)).join('\n'), context);
+  runInNewContext(['_customerCancelledConfirmation', '_orderStateMeta', '_orderStateBadge', '_spPeekStatePill', '_puStatusBadge', '_puDisplayStatus', '_gsOrderStatus', '_spPeekRefreshFu'].map(name => shippedFunction(name)).join('\n'), context);
   return { context, order, pill };
 }
 describe('The same order state is rendered across application views', () => {
+  it('replaces awaiting confirmation with the recorded customer cancellation', () => {
+    const { context, order, pill } = fixture();
+    context.followUps = [{ shopifyOrderId: order._id, reason: 'عملية تأكيد الطلب', status: 'العميل ألغى الطلب' }];
+    context._spPeekRefreshFu();
+    expect(pill.outerHTML).toContain('customer_cancelled');
+    expect(pill.outerHTML).toContain('العميل ألغى الطلب');
+    expect(pill.outerHTML).not.toContain('awaiting_confirmation');
+  });
   it.each(['ar', 'en'])('shows cancellation prominently and replaces the composer shortcut with the closed trail (%s)', lang => {
     const context: any = {
       currentLang: lang, _SP_PK_ICO: {}, _spPeekFuState: 'ready',

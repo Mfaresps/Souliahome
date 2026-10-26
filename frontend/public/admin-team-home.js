@@ -25,7 +25,7 @@
     const followups = (detail.followUps || []).map(f => ({kind:'followup', id:f.id, ref:f.orderRef || f.ticketNo, name:f.clientName,
       status:f.status, reason:f.reason, issue:issue(f), waiting:waiting(f), until:f.deferredUntil, note:f.latestComment, at:f.lastActivityAt}));
     const orders = (detail.orders || []).map(o => ({kind:'order', id:o.id, ref:o.ref, name:o.client, status:o.status,
-      reason:'', issue:false, waiting:false, at:o.assignedAt, pending:o.status === 'pending'}));
+      reason:'', issue:false, waiting:false, at:o.assignedAt, pending:o.needsConfirmation ?? (o.status === 'pending')}));
     let rows;
     if (filter === 'issues') {
       const seen = new Set();

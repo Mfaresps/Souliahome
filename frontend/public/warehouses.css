@@ -126,7 +126,11 @@ select.wh-native-select{position:absolute!important;width:1px!important;height:1
 .wh-deleted-list>summary{cursor:pointer}
 .wh-deleted-list>div{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border,#dce4de);font-size:12px}
 @media(max-width:600px){
-  .wh-header-actions{width:100%}.wh-header-actions>.btn{flex:1}
+  #page-inventory .inv-header-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:6px}
+  #page-inventory .inv-header-actions .wh-header-actions{display:contents}
+  #page-inventory .inv-header-actions .wh-header-actions>.btn:first-child{display:inline-flex!important}
+  #page-inventory .inv-header-actions>.btn,#page-inventory .wh-header-actions>.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:36px;padding:6px 7px;border-radius:9px;font-size:.68rem;white-space:nowrap}
+  #page-inventory .inv-header-actions .btn svg{width:13px;height:13px}
   #wh-inventory-toolbar.wh-toolbar{flex:1 1 180px;max-width:none}
   .wh-warehouse-list{grid-template-columns:1fr}
   .wh-transfer-locations{grid-template-columns:1fr;gap:6px;padding:12px}

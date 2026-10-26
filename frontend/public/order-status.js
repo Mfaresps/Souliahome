@@ -15,6 +15,7 @@
     DELIVERY_FAILED: ['فشل التسليم', 'Delivery Failed', 'issue'],
     RETURNED: ['مرتجع', 'Returned', 'issue'],
     CANCELLED: ['ملغي', 'Cancelled', 'cancelled'],
+    customer_cancelled: ['العميل ألغى الطلب', 'Cancelled by customer', 'cancelled'],
     rejected: ['مرفوض', 'Rejected', 'issue'],
   };
   function text(key, lang) {
@@ -29,11 +30,12 @@
     const shopify = kind === 'shopify' && o.status !== 'approved';
     let key;
     if (o.cancelled || o.shopifyCancelled || ['ملغي', 'محذوف'].includes(o.payStatus)) key = 'CANCELLED';
+    else if (kind === 'shopify' && o.followUpOutcome === 'cancelled') key = 'customer_cancelled';
     else if (shopify) {
       if (o.status === 'rejected') key = 'rejected';
       else {
         const confirmed = o.confirmationApproved === true || o.shipWithoutDeposit === true
-          || (Array.isArray(o.depositReceipts) && o.depositReceipts.some(r => r.status === 'معتمد' && Number(r.amount) > 0));
+          || (Array.isArray(o.depositReceipts) && o.depositReceipts.some(r => ['معتمد', 'معلق'].includes(r.status) && Number(r.amount) > 0));
         key = confirmed ? 'confirmed' : 'awaiting_confirmation';
       }
     } else if (code === 'DELIVERED') key = code;
