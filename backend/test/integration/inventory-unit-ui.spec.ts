@@ -78,6 +78,35 @@ describe('Actual barcode management script in Chromium', () => {
     await page.click('#iu-select-page'); await page.waitForFunction(() => [...document.querySelectorAll<HTMLInputElement>('[data-unit-id]')].every(input => input.checked));
     await page.select('#iu-size', size); await page.click('#iu-preview'); await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('#iu-print')!.disabled);
   }
+  it('fits long product text and invoice dates on 50x25 labels without shrinking the QR', async () => {
+    labels[0] = { ...labels[0], productName: 'Sandora-Deep Gray- organize L', sku: 'RIVA-COASTER-SMALL', manualCode: 'U-0000-0166-9', invoiceDate: '2026-10-26' };
+    labels[1] = { ...labels[1], productName: 'سلة تنظيم رمادي غامق كبيرة', sku: 'RIVA-TISSUE', manualCode: 'U-0000-0167-7', invoiceDate: '2026-10-26' };
+    await selectPreview('50x25');
+    const check = async (target: Page) => target.evaluate(async () => {
+      const root = document.querySelector('#iu-previews') || document;
+      await window.InventoryUnitLabels?.waitForLayout(root);
+      return [...root.querySelectorAll('.iu-label')].map(label => {
+        const image = label.querySelector('img')!, text = label.querySelector('.iu-label-text')!, code = label.querySelector('.iu-label-value')!;
+        const last = [...text.children].filter(child => getComputedStyle(child).display !== 'none').at(-1)!;
+        return { qr: getComputedStyle(image).width, font: parseFloat(getComputedStyle(label.querySelector('.iu-label-name')!).fontSize), bottom: last.getBoundingClientRect().bottom, codeTop: code.getBoundingClientRect().top };
+      });
+    });
+    for (const row of await check(page)) { expect(parseFloat(row.qr)).toBeCloseTo(20 * 96 / 25.4, 1); expect(row.font).toBeGreaterThanOrEqual(2 * 96 / 25.4 - .01); expect(row.bottom).toBeLessThanOrEqual(row.codeTop); }
+    const folder = resolve(__dirname, '../../../artifacts/label-fit'); mkdirSync(folder, { recursive: true });
+    await page.screenshot({ path: resolve(folder, 'compact-preview.png') });
+    await page.select('#iu-preview-zoom', '200');
+    await check(page);
+    const target = browser.waitForTarget(target => target.type() === 'page' && target.url() === 'about:blank');
+    await page.click('#iu-print'); const popup = await (await target).page();
+    await page.waitForFunction(() => !!document.querySelector('#iu-preview-section .iu-print-success'));
+    for (const row of await check(popup!)) { expect(parseFloat(row.qr)).toBeCloseTo(20 * 96 / 25.4, 1); expect(row.bottom).toBeLessThanOrEqual(row.codeTop); }
+    await popup!.close();
+    await page.click('#iu-preview-section [data-iu-close]');
+    labels[0].productName = 'W'.repeat(600);
+    await page.click('#iu-select-page'); await page.select('#iu-size', '50x25'); await page.click('#iu-preview');
+    await page.waitForFunction(() => document.querySelector('#iu-message')!.textContent!.includes('Product text is too long'));
+    expect(await page.$eval('#iu-print', el => (el as HTMLButtonElement).disabled)).toBe(true);
+  }, 15000);
   async function addFixtureUnit(invoice: any, line: any) {
     const id = String(1000 + units.length).padStart(24, '0'), barcode = 'SU-' + id.toUpperCase();
     const label = { unitId: id, barcode, productName: line.name, sku: line.sku, sellPrice: 249.5, svg: await QRCode.toString(barcode, { type: 'svg', margin: 4 }) };
@@ -106,6 +135,56 @@ describe('Actual barcode management script in Chromium', () => {
     try { await page.waitForFunction(count => document.querySelector('#iu-stat-selected')!.textContent === String(count), { timeout: 3000 }, count); }
     catch { throw new Error(`Expected ${count} selected: ` + await page.$eval('#page-barcodes', e => e.textContent)); }
   }
+  it('audits physical labels across pages, rejects duplicates and foreign codes, and previews only unchecked identities', async () => {
+    await invoiceWorkspace(true);
+    units[0].manualCode = 'U-0000-0001-1';
+    await page.select('#iu-size', '60x40');
+    await page.click('[data-view-line="0"]');
+    await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('#iu-audit-start')!.disabled);
+    await page.click('#iu-audit-start');
+    await page.waitForSelector('#iu-audit-code');
+    const scan = async (code: string) => { await page.type('#iu-audit-code', code); await page.keyboard.press('Enter'); };
+    await scan(units[0].manualCode);
+    await scan(units[0].barcode);
+    expect(await page.$eval('#iu-audit-feedback', el => el.textContent)).toContain('Already checked');
+    await scan(units[120].barcode);
+    expect(await page.$eval('#iu-audit-feedback', el => el.textContent)).toContain('does not belong');
+    // A piece on a different API page must still be recognized.
+    await scan(units[119].barcode);
+    expect(await page.$eval('#iu-label-audit', el => el.textContent)).toContain('2 checked');
+    const auditArtifacts = resolve(__dirname, '../../../artifacts/label-audit'); mkdirSync(auditArtifacts, { recursive: true });
+    await page.screenshot({ path: resolve(auditArtifacts, 'desktop.png') });
+    await page.setViewport({ width: 390, height: 844 });
+    expect(await page.$eval('#iu-label-audit', el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await page.screenshot({ path: resolve(auditArtifacts, 'mobile.png') });
+    await page.setViewport({ width: 1440, height: 1000 });
+    await page.click('#iu-line-next');
+    await page.waitForFunction(() => document.querySelector('#iu-line-units-meta')!.textContent!.includes('page 2'));
+    expect(await page.$eval('#iu-label-audit', el => el.textContent)).toContain('2 checked');
+    await page.click('#iu-audit-preview');
+    await page.waitForSelector('#iu-preview-section[open]');
+    await expectSelected(100);
+    const selected = await page.evaluate(() => window.InventoryUnitLabels.selection().ids);
+    expect(selected).not.toContain(units[0]._id);
+    expect(selected).not.toContain(units[119]._id);
+    expect(selected.every((id: string) => units.slice(0, 120).some(unit => unit._id === id))).toBe(true);
+    expect(calls.some(call => call.path.endsWith('/requests') || call.path.endsWith('/identify'))).toBe(false);
+    await page.click('#iu-preview-section [data-iu-close]');
+    await page.click('[data-view-line="0"]');
+    await page.waitForSelector('.iu-audit-mark[data-checked="true"]');
+    await page.click('.iu-audit-mark[data-checked="true"]');
+    expect(await page.$eval('#iu-label-audit', el => el.textContent)).toContain('1 checked');
+    await page.click('#iu-audit-reset');
+    await page.waitForFunction(() => document.querySelector('#iu-label-audit')!.textContent!.includes('0 checked'));
+    await page.evaluate(() => { currentLang = 'ar'; return window.renderBarcodeManagement(); });
+    await page.click('[data-view-line="0"]');
+    await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('#iu-audit-start')!.disabled);
+    await page.click('#iu-audit-start');
+    await page.waitForSelector('#iu-audit-code');
+    await scan(units[0].manualCode);
+    expect(await page.$eval('#iu-audit-feedback', el => el.textContent)).toContain('تم فحص الملصق');
+    await page.screenshot({ path: resolve(auditArtifacts, 'arabic.png') });
+  }, 15000);
   it('opens the shared scanner only on demand and validates without purchasing or printing', async () => {
     expect(await page.$('[data-scan-input]')).toBeNull(); await page.click('#iu-open-scanner');
     await page.type('[data-scan-input]', labels[0].barcode); await page.keyboard.press('Enter');
@@ -240,6 +319,34 @@ describe('Actual barcode management script in Chromium', () => {
     expect(requests).toHaveLength(2); expect(requests[0].data).toEqual(requests[1].data);
     expect(new Set(requests[0].data.unitIds).size).toBe(2);
   });
+  it('clears printed product selection on preview close but retains unprinted and failed batches', async () => {
+    await invoiceWorkspace();
+    await page.click('[data-select-line="0"]'); await expectSelected(20);
+    await page.select('#iu-size', '60x40'); await page.click('#iu-preview');
+    await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('#iu-print')!.disabled);
+    await page.click('#iu-preview-section [data-iu-close]');
+    await expectSelected(20);
+    await page.click('#iu-preview');
+    await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('#iu-print')!.disabled);
+    failOnce = true;
+    await page.click('#iu-print');
+    await page.waitForFunction(() => document.querySelector('#iu-message')!.textContent!.includes('Retry uses the same request key'));
+    await page.click('#iu-preview-section [data-iu-close]');
+    await expectSelected(20);
+    await page.click('#iu-preview');
+    await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('#iu-print')!.disabled);
+    const target = browser.waitForTarget(target => target.type() === 'page' && target.url() === 'about:blank');
+    await page.click('#iu-print'); const popup = await (await target).page();
+    await page.waitForFunction(() => !!document.querySelector('#iu-preview-section .iu-print-success') && !window.InventoryUnitLabels.selection().busy);
+    await popup!.close();
+    await page.keyboard.press('Escape');
+    await expectSelected(0);
+    expect(await page.$eval('[data-select-line="0"]', el => (el as HTMLInputElement).checked)).toBe(false);
+    expect(await page.$eval('#iu-select-invoice', el => (el as HTMLInputElement).indeterminate)).toBe(false);
+    await page.click('[data-select-line="1"]'); await expectSelected(20);
+    const selected = await page.evaluate(() => window.InventoryUnitLabels.selection().ids);
+    expect(selected.every((id: string) => units.find(unit => unit._id === id)?.product.code === 'BLANKET-1')).toBe(true);
+  }, 15000);
   it('blocks overflowing labels, unsafe text and mismatched barcode identities', async () => {
     labels[0].productName = 'W'.repeat(600);
     await page.click('#iu-select-page'); await page.select('#iu-size', '60x40'); await page.click('#iu-preview');

@@ -23,7 +23,8 @@ dialog.iu-reprint-confirm{position:fixed!important;inset:0!important;margin:auto
 .iu-label.iu-label-50x25 .iu-label-brand{font-size:1.8mm;line-height:1.05}
 .iu-label.iu-label-50x25 .iu-label-layout{grid-template-columns:20mm minmax(0,1fr);gap:.8mm;align-items:stretch}
 .iu-label.iu-label-50x25 .iu-label-layout>img{width:20mm;height:20mm;object-fit:contain;align-self:center}
-.iu-label.iu-label-50x25 .iu-label-text{display:flex;flex-direction:column;justify-content:center;padding-bottom:3.3mm}
+.iu-label.iu-label-50x25 .iu-label-text{display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;height:20mm;padding-bottom:3.3mm}
+.iu-label.iu-label-50x25 .iu-label-text>*{flex-shrink:0}
 .iu-label.iu-label-50x25 .iu-label-name{font-size:3mm;line-height:1.1;font-weight:700;margin:0 0 .7mm}
 .iu-label.iu-label-50x25 .iu-label-price{font-size:2.3mm;line-height:1.1;font-weight:600;margin:0}
 .iu-label.iu-label-50x25 .iu-label-sku{font-size:2.15mm;line-height:1.15;font-weight:700;margin:.65mm 0 0;padding-top:.5mm;border-top:.15mm solid #777}
@@ -374,3 +375,12 @@ body.dark-mode #page-barcodes .iu-status-pill{background:color-mix(in srgb,var(-
 @container barcode (min-width:871px) and (max-width:1200px){.iu-workspace[data-view=units]{grid-template-columns:minmax(0,1fr)}.iu-workspace[data-view=units] .iu-label-panel{position:static;grid-column:1}.iu-workspace[data-view=units] .iu-print-body{display:grid;grid-template-columns:1fr 1fr;gap:20px}.iu-workspace[data-view=units] .iu-print-second{margin:0;padding:0;border:0}}
 @container barcode (max-width:760px){#page-barcodes .iu-unit-log table{min-width:0}#page-barcodes .iu-unit-log td{padding:0}#page-barcodes .iu-log-status{min-width:0;max-width:145px!important}.iu-row-meta{justify-content:flex-end;gap:5px}#page-barcodes .iu-log-code>code{font-size:11px}#page-barcodes .iu-log-product .iu-product-open{font-size:12px}.iu-log-caption>span:not(#iu-log-loading){display:none}}
 @container barcode (max-width:440px){#page-barcodes .iu-registry .iu-panel-heading{padding:12px}#page-barcodes .iu-registry .iu-search-panel{padding-inline:12px}.iu-quick-filters{padding-inline:12px}#page-barcodes .iu-registry .iu-unit-search{order:0}#iu-reset-search{order:3}#page-barcodes .iu-log-status{max-width:125px!important}#page-barcodes .iu-status-pill{font-size:10px}.iu-row-meta>span{display:none}#page-barcodes .iu-registry-tools{gap:8px;padding-inline:12px}}
+/* Physical label reconciliation inside the invoice's piece dialog. */
+.iu-label-audit { padding: 16px; margin-block: 12px 20px; border: 1px solid #caddd3; border-radius: 12px; background: #eef6f1; }
+.iu-label-audit svg { width: 18px; height: 18px; }
+#page-barcodes .iu-label-audit > p { margin-block: 10px; overflow-wrap: anywhere; }
+.iu-audit-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.iu-audit-controls input { flex: 1; min-width: 160px; padding: 12px; border: 1px solid #b8cfc2; border-radius: 8px; background: white; color: #183b2c; }
+.iu-audit-mark { display: block; margin-block-start: 8px; font-size: 12px; }
+.iu-audit-mark[data-checked="true"] { color: #08734e; }
+.iu-audit-mark[data-checked="false"] { color: #876321; opacity: 1; }

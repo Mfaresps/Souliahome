@@ -12,6 +12,7 @@
     receiptTimer: null, unitTimer: null,
     pieceAction: null, pieceActionRequest: 0,
     stockScope: null,
+    labelAudit: null,
   };
   const tr = (en, ar) => typeof currentLang !== 'undefined' && currentLang === 'en' ? en : ar;
   const get = id => document.getElementById(id);
@@ -109,8 +110,17 @@
   }
   function closeDialog(id) {
     if (state.busy) return;
+    const printedIds = id === 'iu-preview-section' ? state.preview?.printedIds : null;
     const dialog = get(id); dialog?.close();
     if (dialog) dialog.hidden = true;
+    if (printedIds?.length) {
+      for (const unitId of printedIds) {
+        const unit = state.selected.get(unitId);
+        if (unit?.sourceKey) state.ranges.delete(unit.sourceKey);
+        state.selected.delete(unitId);
+      }
+      selectionChanged();
+    }
     if (id === 'iu-units-dialog') { state.unitScope = null; ++state.unitDialogRequest; }
     if (id === 'iu-action-dialog') { state.pieceAction = null; ++state.pieceActionRequest; }
   }
@@ -251,6 +261,33 @@
     await Promise.all([...doc.querySelectorAll('img')].map(img => img.complete ? (img.naturalWidth ? Promise.resolve() : Promise.reject(new Error('Barcode image failed to load'))) : new Promise((resolve, reject) => { img.onload = resolve; img.onerror = () => reject(new Error('Barcode image failed to load')); })));
     const fonts = (doc.ownerDocument || doc).fonts;
     if (fonts?.ready) await fonts.ready;
+    // Keep the QR at its physical size; fit only the product name and SKU into
+    // the compact label's text area, above the separate piece code.
+    for (const label of doc.querySelectorAll('.iu-label-50x25')) {
+      const text = label.querySelector('.iu-label-text');
+      const view = label.ownerDocument.defaultView;
+      const fits = () => {
+        const box = text.getBoundingClientRect();
+        const scale = box.height / text.offsetHeight;
+        const bottom = box.bottom - parseFloat(view.getComputedStyle(text).paddingBottom) * scale;
+        return [...text.children].filter(child => view.getComputedStyle(child).display !== 'none').every(child => {
+          const rect = child.getBoundingClientRect();
+          return rect.top >= box.top - .5 && rect.bottom <= bottom + .5 && child.scrollWidth <= child.clientWidth + 1;
+        });
+      };
+      const fields = [[text.querySelector('.iu-label-name'), 2], [text.querySelector('.iu-label-sku'), 1.6]];
+      // Reset before measuring so preview zoom and print use identical fitting.
+      for (const [field] of fields) field.style.removeProperty('font-size');
+      for (let step = 0; !fits() && step < 20; step++) {
+        let changed = false;
+        for (const [field, minMm] of fields) {
+          const current = parseFloat(view.getComputedStyle(field).fontSize), minimum = minMm * 96 / 25.4;
+          if (current > minimum + .01) { field.style.fontSize = Math.max(minimum, current - .25) + 'px'; changed = true; }
+        }
+        if (!changed) break;
+      }
+      if (!fits()) throw new Error(tr('Product text is too long for this label. Shorten the name/SKU or choose a larger label.', 'نص الصنف أطول من مساحة الملصق. اختصر الاسم أو SKU أو اختر مقاسًا أكبر.'));
+    }
     // Check actual rendered content, including long names/SKUs; never silently shrink the barcode.
     for (const label of doc.querySelectorAll('.iu-label')) {
       const content = label.querySelector('.iu-label-value').getBoundingClientRect(), box = label.getBoundingClientRect();
@@ -743,6 +780,8 @@
     if (!line) return;
     const request = ++state.unitDialogRequest, generation = state.generation;
     state.unitScope = { invoice, line, page, rows: [], total: 0 };
+    if (state.labelAudit?.key !== sourceKey(invoice, line)) state.labelAudit = null;
+    renderLabelAudit();
     get('iu-units-title').textContent = (line.name || line.sku) + ' · ' + tr('Unit identities', 'هويات القطع');
     get('iu-line-units').innerHTML = '<div class="iu-skeleton"></div>';
     get('iu-line-units-meta').textContent = tr('Loading registered pieces…', 'جارٍ تحميل القطع المسجلة…');
@@ -753,10 +792,79 @@
       if (!Array.isArray(response.units) || !Number.isSafeInteger(response.total)) throw new Error(tr('Could not read this product’s pieces. Refresh the invoice.', 'تعذر قراءة قطع الصنف. حدّث الفاتورة.'));
       const rows = response.units.map(validateUnit).map(u => ({ ...u, sourceKey: sourceKey(invoice, line), invoiceRef: invoice.ref }));
       state.unitScope = { invoice, line, page, rows, total: response.total };
+      if (state.labelAudit && state.labelAudit.units.length !== response.total) state.labelAudit = null;
       get('iu-line-units').innerHTML = unitRows(rows);
+      renderLabelAudit();
       get('iu-line-units-meta').textContent = tr(`Invoice #${invoice.ref} · page ${page} · ${response.total} pieces`, `فاتورة #${invoice.ref} · صفحة ${page} · ${response.total} قطعة`);
       get('iu-line-prev').disabled = page <= 1; get('iu-line-next').disabled = page * 30 >= response.total;
     } catch (error) { if (request === state.unitDialogRequest && generation === state.generation) get('iu-line-units').innerHTML = emptyState(tr('Units could not be loaded', 'تعذر تحميل القطع'), error.message); }
+  }
+  function renderLabelAudit() {
+    const host = get('iu-label-audit');
+    if (!host) return;
+    const audit = state.labelAudit;
+    host.innerHTML = !audit ? `<button type="button" class="btn btn-outline" id="iu-audit-start">${icon('scan')}${tr('Check physical labels', 'فحص وجرد الملصقات')}</button>` : `
+      <strong>${tr('Physical label check', 'جرد الملصقات الفعلية')}</strong>
+      <p class="iu-help">${tr('Scan each existing label or enter its piece code, then press Enter. Unchecked pieces may need printing. Refreshing the page or changing products resets this check.', 'امسح كل ملصق موجود أو أدخل كود القطعة ثم اضغط Enter. القطع غير المفحوصة قد تحتاج للطباعة. يُصفّر الفحص عند تحديث الصفحة أو تغيير الصنف.')}</p>
+      <form id="iu-audit-form" class="iu-audit-controls"><input id="iu-audit-code" dir="ltr" autocomplete="off" maxlength="160" aria-label="${tr('Scan label or enter piece code', 'امسح الملصق أو أدخل كود القطعة')}" placeholder="${tr('Scan / piece code', 'مسح / كود القطعة')}"><button class="btn btn-primary" type="submit">${tr('Check', 'فحص')}</button></form>
+      <p id="iu-audit-feedback" role="status" aria-live="polite"></p>
+      <p><b>${audit.checked.size}</b> ${tr('checked', 'تم فحصها')} · <b>${audit.units.length - audit.checked.size}</b> ${tr('unchecked', 'لم تُفحص')} · ${audit.units.length} ${tr('total across all pages', 'الإجمالي في كل الصفحات')}</p>
+      <div class="iu-audit-controls"><button id="iu-audit-preview" class="btn btn-outline" type="button" ${audit.checked.size === audit.units.length || !has('inventory-units-print') ? 'disabled' : ''}>${icon('printer')}${tr('Preview unchecked labels', 'معاينة ملصقات غير المفحوص')}</button><button id="iu-audit-reset" class="iu-link" type="button">${tr('Start a new check', 'بدء فحص جديد')}</button></div>
+      <p class="iu-help">${tr('Replaces the label batch with up to 100 unchecked pieces. Printing alone does not mark a piece as checked; scan its label afterward.', 'يستبدل دفعة الطباعة بما يصل إلى 100 قطعة غير مفحوصة. الطباعة وحدها لا تؤكد الفحص؛ امسح الملصق بعد خروجه.')}</p>`;
+    if (!audit) { get('iu-audit-start').onclick = startLabelAudit; get('iu-audit-start').disabled = !state.unitScope?.total; return; }
+    get('iu-audit-form').onsubmit = checkLabel;
+    get('iu-audit-reset').onclick = startLabelAudit;
+    get('iu-audit-preview').onclick = previewUncheckedLabels;
+    for (const row of get('iu-line-units').querySelectorAll('[data-log-unit]')) {
+      row.querySelector('.iu-audit-mark')?.remove();
+      const checked = audit.checked.has(row.dataset.logUnit);
+      const mark = document.createElement('button');
+      mark.type = 'button'; mark.className = 'iu-audit-mark iu-link';
+      mark.dataset.checked = String(checked);
+      mark.textContent = checked ? tr('✓ Checked · undo', '✓ تم الفحص · تراجع') : tr('Not checked', 'لم تُفحص');
+      mark.disabled = !checked;
+      mark.onclick = () => { if (state.busy) return; audit.checked.delete(row.dataset.logUnit); renderLabelAudit(); };
+      row.querySelector('.iu-log-identity').append(mark);
+    }
+  }
+  async function startLabelAudit() {
+    if (state.busy || !state.ready || !state.unitScope) return;
+    const scope = state.unitScope, generation = state.generation;
+    setBusy(true);
+    try {
+      const units = await lineRange(scope.invoice, scope.line, 0, scope.total);
+      if (generation !== state.generation || state.unitScope !== scope) return;
+      state.labelAudit = { key: sourceKey(scope.invoice, scope.line), units, checked: new Set() };
+      renderLabelAudit();
+      get('iu-audit-code').focus();
+    } catch (error) { message(error.message, true); }
+    finally { if (generation === state.generation) setBusy(false); }
+  }
+  function checkLabel(event) {
+    event.preventDefault();
+    if (state.busy || !state.labelAudit) return;
+    const input = get('iu-audit-code'), code = input.value.trim().toUpperCase();
+    if (!code) return;
+    const audit = state.labelAudit;
+    const unit = audit.units.find(unit => [unit.barcode, unit.manualCode].some(value => value && String(value).toUpperCase() === code));
+    let feedback;
+    if (!unit) feedback = tr('This code does not belong to this invoice product. Nothing counted.', 'الكود لا يخص قطع هذا الصنف في الفاتورة. لم يتم احتسابه.');
+    else if (audit.checked.has(String(unit._id))) feedback = tr('Already checked. Not counted twice.', 'تم فحص القطعة من قبل. لم تُحتسب مرتين.');
+    else { audit.checked.add(String(unit._id)); feedback = tr('Label checked: ', 'تم فحص الملصق: ') + (unit.manualCode || unit.barcode); }
+    renderLabelAudit();
+    get('iu-audit-feedback').textContent = feedback;
+    get('iu-audit-code').focus();
+  }
+  async function previewUncheckedLabels() {
+    if (state.busy || !state.ready || !state.labelAudit || !has('inventory-units-print')) return;
+    const units = state.labelAudit.units.filter(unit => !state.labelAudit.checked.has(String(unit._id))).slice(0, 100);
+    if (!units.length) return;
+    state.selected.clear();
+    units.forEach(unit => state.selected.set(String(unit._id), unit));
+    selectionChanged();
+    closeDialog('iu-units-dialog');
+    if (state.sizeId) await preview();
+    else message(tr('Unchecked pieces selected. Choose the label dimensions, then preview and print.', 'تم تحديد القطع غير المفحوصة. اختر مقاس الملصق ثم عاين واطبع.'));
   }
   function previewSheets(batch) {
     return batch.labels.map((label, index) => `<figure class="iu-preview-sheet"><figcaption><span>${tr('Label', 'ملصق')} ${index + 1}</span><bdi>${html(label.sku)}</bdi></figcaption>${labelHtml(label, batch.size)}<small class="iu-print-count">${tr('Recorded print requests: ', 'طلبات الطباعة المسجلة: ')}<b>${Number(label.printCount) || 0}</b></small></figure>`).join('');
@@ -829,6 +937,7 @@
       await waitForLayout(popup.document);
       if (popup.closed) throw new Error(tr('Print window closed. The request remains recorded.', 'أُغلقت نافذة الطباعة. يظل الطلب مسجلًا.'));
       popup.focus(); popup.print(); state.pendingPrint = null;
+      state.preview.printedIds = [...ids];
       printSuccess(batch.labels.length);
     } catch (error) {
       if (popup && !popup.closed) popup.close();
@@ -990,7 +1099,7 @@
   function dialogsHtml() { return actionDialogMarkup() + baseDialogsHtml(); }
   function baseDialogsHtml() {
     return `<dialog id="iu-register-dialog" class="iu-dialog iu-register-dialog" aria-labelledby="iu-register-title" hidden><form id="iu-register-form"><header class="iu-dialog-header"><h2 id="iu-register-title"></h2><button class="btn iu-icon-button" type="button" data-iu-close="iu-register-dialog" aria-label="${tr('Close', 'إغلاق')}">${icon('close')}</button></header><div class="iu-dialog-body"><p id="iu-register-detail" class="iu-help"></p><label class="iu-form-field">${tr('Physical count now', 'العدد الموجود فعليًا الآن')}<input name="physicalQuantity" type="number" step="1" required></label><label class="iu-form-field">${tr('Warehouse / location', 'المخزن / الموقع')}<select name="warehouseCode" data-warehouse-select required>${window.SouliaWarehouses?.options() || '<option value="MAIN">المخزن الرئيسي</option>'}</select></label><label class="iu-form-field">${tr('Count reference / reason', 'مرجع الجرد / سبب التسجيل')}<input name="reason" maxlength="1000" required></label><label class="iu-check iu-confirm"><input name="physicalPossessionConfirmed" type="checkbox" required><span>${tr('I physically counted these pieces from this invoice.', 'أؤكد أنني عددت هذه القطع من هذه الفاتورة فعليًا.')}</span></label><p class="iu-help">${tr('This records missing identities only. It does not add stock or duplicate the purchase. New pieces await quality inspection.', 'يسجل الهويات الناقصة فقط. لا يضيف مخزونًا ولا يكرر الشراء. تنتظر القطع الجديدة فحص الجودة.')}</p><p data-dialog-message role="status"></p></div><footer class="iu-dialog-footer"><button class="btn btn-outline" type="button" data-iu-close="iu-register-dialog">${tr('Cancel', 'إلغاء')}</button><button class="btn btn-primary" type="submit">${tr('Register unit codes', 'تسجيل أكواد القطع')}</button></footer></form></dialog>
-      <dialog id="iu-units-dialog" class="iu-dialog iu-wide-dialog" aria-labelledby="iu-units-title" hidden><header class="iu-dialog-header"><h2 id="iu-units-title"></h2><button class="btn iu-icon-button" type="button" data-iu-close="iu-units-dialog" aria-label="${tr('Close', 'إغلاق')}">${icon('close')}</button></header><div class="iu-dialog-body"><p id="iu-line-units-meta" class="iu-help"></p><p data-dialog-message role="status"></p><div id="iu-line-units"></div></div><footer class="iu-dialog-footer"><button id="iu-line-prev" class="btn btn-outline" type="button">${tr('Previous', 'السابق')}</button><button id="iu-line-next" class="btn btn-outline" type="button">${tr('Next', 'التالي')}</button><button id="iu-line-preview" class="btn btn-primary" type="button">${tr('Back to label batch', 'الرجوع لدفعة الملصقات')}</button></footer></dialog>
+      <dialog id="iu-units-dialog" class="iu-dialog iu-wide-dialog" aria-labelledby="iu-units-title" hidden><header class="iu-dialog-header"><h2 id="iu-units-title"></h2><button class="btn iu-icon-button" type="button" data-iu-close="iu-units-dialog" aria-label="${tr('Close', 'إغلاق')}">${icon('close')}</button></header><div class="iu-dialog-body"><p id="iu-line-units-meta" class="iu-help"></p><section id="iu-label-audit" class="iu-label-audit"></section><p data-dialog-message role="status"></p><div id="iu-line-units"></div></div><footer class="iu-dialog-footer"><button id="iu-line-prev" class="btn btn-outline" type="button">${tr('Previous', 'السابق')}</button><button id="iu-line-next" class="btn btn-outline" type="button">${tr('Next', 'التالي')}</button><button id="iu-line-preview" class="btn btn-primary" type="button">${tr('Back to label batch', 'الرجوع لدفعة الملصقات')}</button></footer></dialog>
       <dialog id="iu-preview-section" class="iu-dialog iu-preview-dialog" aria-labelledby="iu-preview-title" hidden><header class="iu-dialog-header"><h2 id="iu-preview-title">${tr('Label preview', 'معاينة الملصقات')}</h2><button class="btn iu-icon-button" type="button" data-iu-close="iu-preview-section" aria-label="${tr('Close', 'إغلاق')}">${icon('close')}</button></header><div class="iu-preview-layout"><div class="iu-preview-summary"><strong id="iu-preview-total"></strong><p id="iu-preview-size" dir="ltr"></p></div><div class="iu-preview-stage"><div class="iu-preview-toolbar"><span>${tr('Check your labels before printing', 'راجع الملصقات قبل الطباعة')}</span><label>${tr('Zoom', 'نسبة التكبير')}<select dir="ltr" id="iu-preview-zoom" aria-label="${tr('Preview zoom', 'تكبير المعاينة')}"><option value="100">${tr('100%', '100٪')}</option><option value="125">${tr('125%', '125٪')}</option><option value="150">${tr('150%', '150٪')}</option><option value="200">${tr('200%', '200٪')}</option></select></label></div><div id="iu-previews" class="iu-previews"></div><p class="iu-preview-stage-note">${tr('Print at 100% scale with matching paper and no margins.', 'اطبع بمقياس 100٪ وبمقاس الورق المطابق دون هوامش.')}</p></div><p class="iu-preview-message" data-dialog-message role="status"></p></div><footer class="iu-dialog-footer"><button class="btn btn-outline" type="button" data-iu-close="iu-preview-section">${tr('Back to selection', 'الرجوع للتحديد')}</button><button id="iu-print" class="btn btn-primary" type="button" disabled>${icon('printer')}${tr('Print / reprint', 'طباعة / إعادة طباعة')}</button></footer></dialog>`;
   }
   window.renderBarcodeManagement = async function () {
@@ -1004,7 +1113,7 @@
     if (state.stockScope?.actor && state.stockScope.actor !== actorId) state.stockScope = null;
     if (actorId !== state.actor) { state.selected.clear(); state.activeInvoice = null; state.sizeId = ''; state.registrationRequests.clear(); state.ranges.clear(); state.receipts = []; state.actor = actorId; }
     if (!has('inventory-units-view')) { state.selected.clear(); root.innerHTML = emptyState(tr('Permission denied', 'الصلاحية غير متاحة'), tr('Ask an administrator for inventory-unit access.', 'تواصل مع المسؤول لإتاحة الوصول إلى القطع.')); return; }
-    state.ready = false; state.config = null; state.preview = null; state.unitsReady = false; state.unitLoading = false; state.receiptLoading = false;
+    state.labelAudit = null; state.ready = false; state.config = null; state.preview = null; state.unitsReady = false; state.unitLoading = false; state.receiptLoading = false;
     const match = location.hash.match(/^#barcodes\/receipt\/([a-f\d]{24})(?:\/([^/]+))?$/i), linkedId = match?.[1]?.toLowerCase();
     const canPurchase = has('purchase-view'); if (!canPurchase) state.view = 'units'; else if (linkedId) state.view = 'receipts';
     root.dir = tr('ltr', 'rtl'); root.classList.add('iu-option-a');
