@@ -289,7 +289,7 @@
       if (!fits()) throw new Error(tr('Product text is too long for this label. Shorten the name/SKU or choose a larger label.', 'نص الصنف أطول من مساحة الملصق. اختصر الاسم أو SKU أو اختر مقاسًا أكبر.'));
     }
     // Check actual rendered content, including long names/SKUs; never silently shrink the barcode.
-    for (const label of doc.querySelectorAll('.iu-label')) {
+    for (const label of doc.querySelectorAll('.iu-label:not(.iu-label-separator)')) {
       const content = label.querySelector('.iu-label-value').getBoundingClientRect(), box = label.getBoundingClientRect();
       if (label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1 || content.bottom > box.bottom - 3) throw new Error(tr('Label content overflows. Choose a larger supported label or review the product text.', 'محتوى الملصق يتجاوز الأبعاد. اختر مقاساً أكبر أو راجع نص الصنف.'));
     }
@@ -866,8 +866,29 @@
     if (state.sizeId) await preview();
     else message(tr('Unchecked pieces selected. Choose the label dimensions, then preview and print.', 'تم تحديد القطع غير المفحوصة. اختر مقاس الملصق ثم عاين واطبع.'));
   }
-  function previewSheets(batch) {
-    return batch.labels.map((label, index) => `<figure class="iu-preview-sheet"><figcaption><span>${tr('Label', 'ملصق')} ${index + 1}</span><bdi>${html(label.sku)}</bdi></figcaption>${labelHtml(label, batch.size)}<small class="iu-print-count">${tr('Recorded print requests: ', 'طلبات الطباعة المسجلة: ')}<b>${Number(label.printCount) || 0}</b></small></figure>`).join('');
+  function groupedLabelSheets(batch) {
+    const groups = new Map();
+    for (const label of batch.labels) {
+      const key = String(label.sku);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(label);
+    }
+    const sheets = [];
+    for (const labels of groups.values()) {
+      if (sheets.length) sheets.push({ separator: true });
+      sheets.push(...labels.map(label => ({ label })));
+    }
+    return sheets;
+  }
+  function separatorHtml(size) {
+    return `<article class="iu-label iu-label-separator" style="--label-width:${Number(size.widthMm)}mm;--label-height:${Number(size.heightMm)}mm;--separator-font:${Math.min(10, Number(size.heightMm) / 4)}mm" aria-label="فاصل"><strong dir="rtl">فاصل</strong></article>`;
+  }
+  function previewSheets(batch, separateProducts = false) {
+    const sheets = separateProducts ? groupedLabelSheets(batch) : batch.labels.map(label => ({ label }));
+    let index = 0;
+    return sheets.map(({ label, separator }) => separator
+      ? `<figure class="iu-preview-sheet"><figcaption>${tr('Product separator', 'فاصل بين المنتجات')}</figcaption>${separatorHtml(batch.size)}<small class="iu-print-count">${tr('Extra roll label', 'ملصق إضافي على الرول')}</small></figure>`
+      : `<figure class="iu-preview-sheet"><figcaption><span>${tr('Label', 'ملصق')} ${++index}</span><bdi>${html(label.sku)}</bdi></figcaption>${labelHtml(label, batch.size)}<small class="iu-print-count">${tr('Recorded print requests: ', 'طلبات الطباعة المسجلة: ')}<b>${Number(label.printCount) || 0}</b></small></figure>`).join('');
   }
   async function preview() {
     if (!state.ready || state.busy || !state.sizeId || !state.selected.size) return;
@@ -883,7 +904,9 @@
       get('iu-preview-section').querySelector('.iu-preview-stage-note').textContent = tr(
         `Printer stock: width ${batch.size.widthMm} mm across the roll × ${batch.size.heightMm} mm feed length. Use 100% scale, zero margins, headers/footers off, and disable driver rotation.`,
         `إعداد ورق الطابعة: عرض ${batch.size.widthMm} مم عبر الرول × طول تغذية ${batch.size.heightMm} مم. استخدم مقياس 100٪، وهوامش صفر، وأوقف الترويسات والتذييلات وتدوير تعريف الطابعة.`);
-      get('iu-previews').innerHTML = previewSheets(batch);
+      get('iu-previews').innerHTML = previewSheets(batch, true);
+      const separatorCount = groupedLabelSheets(batch).length - batch.labels.length;
+      if (separatorCount) get('iu-preview-total').textContent += tr(` + ${separatorCount} separator(s)`, ` + ${separatorCount} فاصل`);
       await waitForLayout(get('iu-previews'));
       if (generation !== state.generation) return;
       state.preview = { batch, ids, sizeId }; message(tr('Preview validated. Check the paper dimensions before printing.', 'تم التحقق من المعاينة. راجع مقاس الورق قبل الطباعة.'));
@@ -903,7 +926,7 @@
       if (!state.pendingPrint) {
         const fresh = validateBatch(await post('/labels/preview', { unitIds: ids, sizeId, operationKey: requestKey(), reason: 'Check recorded print history before label printing' }), ids, sizeId);
         const reprints = fresh.labels.filter(label => Number(label.printCount) > 0);
-        state.preview.batch = fresh; get('iu-previews').innerHTML = previewSheets(fresh);
+        state.preview.batch = fresh; get('iu-previews').innerHTML = previewSheets(fresh, true);
         if (reprints.length) {
           popup.close();popup=await confirmReprint(reprints);
           if (!popup) { message(tr('Reprint cancelled. No new print request recorded.', 'تم إلغاء إعادة الطباعة دون تسجيل طلب جديد.')); return; }
@@ -912,7 +935,7 @@
         state.pendingPrint = { unitIds: ids, sizeId, operationKey: requestKey(), allowReprint: reprints.length > 0, reason: 'Operator requested browser label printing; physical outcome unverified' };
       }
       const batch = validateBatch(await post('/labels/requests', state.pendingPrint), ids, sizeId), size = batch.size;
-      state.preview.batch = batch; get('iu-previews').innerHTML = previewSheets(batch);
+      state.preview.batch = batch; get('iu-previews').innerHTML = previewSheets(batch, true);
       const printedInvoiceIds = [...new Set(batch.labels.map(label => state.selected.get(label.unitId)?.origin?.purchaseTransactionId).filter(Boolean))];
       if (printedInvoiceIds.length && has('purchase-view')) void refreshPrintedInvoices(printedInvoiceIds);
       for (const label of batch.labels) {
@@ -927,7 +950,7 @@
         .iu-print-sheet{page:unit-label;display:block;position:relative;box-sizing:border-box;width:${size.widthMm}mm;height:${size.heightMm}mm;margin:0;padding:0;overflow:hidden;break-inside:avoid;page-break-inside:avoid;break-after:page;page-break-after:always}
         .iu-print-sheet:last-child{break-after:auto;page-break-after:auto}
         .iu-print-sheet>.iu-label{display:block;width:${size.widthMm}mm!important;height:${size.heightMm}mm!important;margin:0!important;transform:none!important;zoom:1!important;break-inside:avoid;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-        </style></head><body>${batch.labels.map(label => `<section class="iu-print-sheet">${labelHtml(label, size)}</section>`).join('')}</body></html>`);
+        </style></head><body>${groupedLabelSheets(batch).map(({ label, separator }) => `<section class="iu-print-sheet">${separator ? separatorHtml(size) : labelHtml(label, size)}</section>`).join('')}</body></html>`);
       popup.document.close();
       await new Promise((resolve, reject) => {
         const css = popup.document.querySelector('link'), timeout = setTimeout(() => reject(new Error(tr('Print stylesheet timed out.', 'انتهت مهلة تحميل تنسيق الطباعة.'))), 15000);

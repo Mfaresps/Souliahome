@@ -135,6 +135,37 @@ describe('Actual barcode management script in Chromium', () => {
     try { await page.waitForFunction(count => document.querySelector('#iu-stat-selected')!.textContent === String(count), { timeout: 3000 }, count); }
     catch { throw new Error(`Expected ${count} selected: ` + await page.$eval('#page-barcodes', e => e.textContent)); }
   }
+  it('prints one separator between grouped products and none for a single product', async () => {
+    await invoiceWorkspace();
+    const line = receipts[0].lines[1]; line.quantity = line.createdUnits = line.onHandUnits = 10;
+    const removed = new Set(units.filter(unit => unit.product.code === line.sku).slice(10).map(unit => unit._id));
+    units = units.filter(unit => !removed.has(unit._id)); labels = labels.filter(label => !removed.has(label.unitId));
+    const a = labels.filter(label => label.sku === 'BASKET-1'), b = labels.filter(label => label.sku === 'BLANKET-1');
+    labels = [...a.flatMap((label, i) => b[i] ? [label, b[i]] : [label]), ...labels.filter(label => !['BASKET-1', 'BLANKET-1'].includes(label.sku))];
+    await page.reload(); await page.waitForSelector('[data-select-line="0"]');
+    await page.click('[data-select-line="0"]'); await expectSelected(20);
+    await page.select('#iu-size', '50x25'); await page.click('#iu-preview');
+    await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('#iu-print')!.disabled);
+    expect(await page.$$('.iu-label-separator')).toHaveLength(0);
+    await page.click('#iu-preview-section [data-iu-close]');
+    await page.click('[data-select-line="1"]'); await expectSelected(30);
+    await page.click('#iu-preview');
+    await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('#iu-print')!.disabled);
+    expect(await page.$eval('#iu-preview-total', el => el.textContent)).toBe('30 piece label(s) + 1 separator(s)');
+    const order = await page.$$eval('#iu-previews .iu-label', els => els.map(el => el.classList.contains('iu-label-separator') ? 'separator' : el.querySelector('.iu-label-sku')!.textContent));
+    expect(order).toEqual([...Array(20).fill('SKU: BASKET-1'), 'separator', ...Array(10).fill('SKU: BLANKET-1')]);
+    const target = browser.waitForTarget(target => target.type() === 'page' && target.url() === 'about:blank');
+    await page.click('#iu-print'); const popup = await (await target).page();
+    await page.waitForFunction(() => !!document.querySelector('#iu-preview-section .iu-print-success'));
+    expect(await popup!.$$eval('.iu-print-sheet', els => els.length)).toBe(31);
+    expect(await popup!.$eval('.iu-label-separator', el => el.textContent)).toBe('فاصل');
+    expect(await popup!.$$eval('.iu-label-separator img', els => els.length)).toBe(0);
+    expect(await popup!.$$eval('.iu-label', els => els.map(el => el.classList.contains('iu-label-separator') ? 'separator' : el.querySelector('.iu-label-sku')!.textContent))).toEqual(order);
+    const pdf = Buffer.from(await popup!.pdf({ preferCSSPageSize: true })).toString('latin1');
+    expect((pdf.match(/\/Type \/Page\b/g) || []).length).toBe(31);
+    expect(calls.find(call => call.path.endsWith('/requests')).data.unitIds).toHaveLength(30);
+    await popup!.close();
+  }, 15000);
   it('audits physical labels across pages, rejects duplicates and foreign codes, and previews only unchecked identities', async () => {
     await invoiceWorkspace(true);
     units[0].manualCode = 'U-0000-0001-1';
