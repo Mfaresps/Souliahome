@@ -218,7 +218,7 @@ export class InventoryUnitsService {
       byUserId: actor.userId, by: name, reason: dto.reason, ...extra }).save({ session });
   }
 
-  // Delivery can be confirmed on the order before a separate unit event exists.
+  // Shipping/delivery can be confirmed on the order before a separate unit event exists.
   // Project that current evidence without rewriting immutable unit history/stock.
   private deliveryDisplayStages(): any[] {
     return [
@@ -227,15 +227,20 @@ export class InventoryUnitsService {
         lineId: '$assignment.lineId',
       }, pipeline: [
         { $match: { type: 'مبيعات', cancelled: { $ne: true },
+          pickupStatus: { $nin: ['Returned', 'Cancelled'] },
           bostaStatus: { $nin: ['RETURNED', 'RETURNED_TO_BUSINESS', 'CANCELLED'] },
-          $or: [{ pickupStatus: 'Delivered' }, { bostaStatus: 'DELIVERED' }],
+          $or: [{ pickupStatus: { $in: ['Shipped', 'Delivered'] } },
+            { bostaStatus: { $in: ['DELIVERED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'FAILED_ATTEMPT', 'DELIVERY_FAILED'] } },
+            { shippedAt: { $exists: true, $nin: [null, ''] } }],
           $expr: { $and: [{ $eq: ['$_id', '$$saleId'] },
             { $in: ['$$lineId', { $map: { input: { $ifNull: ['$items', []] }, as: 'line', in: '$$line.lineId' } }] }] } } },
-        { $project: { _id: 1 } },
+        { $project: { _id: 1, displayStatus: { $cond: [
+          { $or: [{ $eq: ['$pickupStatus', 'Delivered'] }, { $eq: ['$bostaStatus', 'DELIVERED'] }] }, 'delivered', 'shipped',
+        ] } } },
       ], as: '_deliveryOrder' } },
       { $set: { displayStatus: { $cond: [
         { $and: [{ $in: ['$status', ['prepared', 'shipped']] }, { $gt: [{ $size: '$_deliveryOrder' }, 0] }] },
-        'delivered', '$status',
+        { $arrayElemAt: ['$_deliveryOrder.displayStatus', 0] }, '$status',
       ] } } },
       { $set: { statusSource: { $cond: [{ $ne: ['$displayStatus', '$status'] }, 'order', 'unit'] } } },
       { $unset: '_deliveryOrder' },

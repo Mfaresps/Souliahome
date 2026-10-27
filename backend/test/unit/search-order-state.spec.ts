@@ -1,4 +1,7 @@
 import { SearchService } from '../../src/search/search.service';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import { runInNewContext } from 'vm';
 
 function fixture(rows: any[]) {
   const service: any = Object.create(SearchService.prototype);
@@ -12,6 +15,28 @@ function fixture(rows: any[]) {
   return { service, query };
 }
 describe('Search payload contains the authoritative order stage', () => {
+  it('returns the invoice dates for orders found by reference', async () => {
+    const row = { _id: 't1', ref: '2880', transactionDate: '2026-10-19', date: '2026-10-27T01:50:00Z', createdAt: '2026-10-27T01:50:00Z' };
+    const { service, query } = fixture([row]);
+    service.transactionModel = service.shopifyOrderModel;
+    const [result] = await service.searchOrdersByRef('2880', {});
+    expect(query.select.mock.calls[0][0]).toContain('transactionDate date');
+    expect(result).toMatchObject({ transactionDate: row.transactionDate, date: row.date, createdAt: row.createdAt });
+  });
+  it.each(['ar', 'en'])('shows the invoice business date in %s, including unloaded orders', lang => {
+    const html = readFileSync(resolve(__dirname, '../../../frontend/public/index.html'), 'utf8');
+    const source = html.slice(html.indexOf('function _gsOrderDate('), html.indexOf('function renderSearchDropdown()', html.indexOf('function _gsOrderDate(')));
+    const context = { transactions: [] as any[], currentLang: lang };
+    const format = runInNewContext(source + '\n_gsOrderDate', context);
+    const item = { id: 't1', transactionDate: '2026-10-19', date: '2026-10-20T01:50:00Z', createdAt: '2026-10-27T01:50:00Z' };
+    expect(format(item)).toContain('19');
+    expect(format(item)).not.toContain('27');
+    expect(format({ ...item, transactionDate: '' })).toContain('20');
+    expect(format({ ...item, transactionDate: '', date: '' })).toContain('27');
+    context.transactions.push({ ...item, _id: 't1', transactionDate: '2026-10-18' });
+    expect(format(item)).toContain('18');
+    expect(format({ id: 'empty' })).toBe('');
+  });
   it.each([
     [{ status: 'pending' }, false, 'بانتظار تأكيد العميل'],
     [{ status: 'pending', shipWithoutDeposit: true }, true, 'مؤكّد · بانتظار التجهيز'],

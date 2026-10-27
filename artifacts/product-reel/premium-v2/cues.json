@@ -1,0 +1,289 @@
+[
+  {
+    "scene": 1,
+    "start": 0,
+    "end": 2.5,
+    "title": "EVERY ORDER STARTS A JOURNEY.",
+    "layout": "hook"
+  },
+  {
+    "scene": 1,
+    "start": 2.5,
+    "end": 5,
+    "title": "ONE SYSTEM CONTROLS IT ALL.",
+    "layout": "connect"
+  },
+  {
+    "scene": 2,
+    "start": 5,
+    "end": 7,
+    "title": "ORDER RECEIVED.",
+    "layout": "stack"
+  },
+  {
+    "scene": 2,
+    "start": 7,
+    "end": 9.5,
+    "title": "EVERY DETAIL. RIGHT HERE.",
+    "layout": "stack"
+  },
+  {
+    "scene": 2,
+    "start": 9.5,
+    "end": 12,
+    "title": "ONE ORDER. ONE CLEAR VIEW.",
+    "layout": "focus"
+  },
+  {
+    "scene": 3,
+    "start": 12,
+    "end": 14.5,
+    "title": "CONFIRM. VERIFY.",
+    "layout": "stack"
+  },
+  {
+    "scene": 3,
+    "start": 14.5,
+    "end": 17,
+    "title": "MOVE FORWARD.",
+    "layout": "focus"
+  },
+  {
+    "scene": 3,
+    "start": 17,
+    "end": 19,
+    "title": "CLEAR STATUS. NEXT STEP.",
+    "layout": "status"
+  },
+  {
+    "scene": 4,
+    "start": 19,
+    "end": 21,
+    "title": "THE RIGHT ORDER.",
+    "layout": "handoff"
+  },
+  {
+    "scene": 4,
+    "start": 21,
+    "end": 23,
+    "title": "THE RIGHT PERSON.",
+    "layout": "focus"
+  },
+  {
+    "scene": 4,
+    "start": 23,
+    "end": 25,
+    "title": "OWNERSHIP. MADE CLEAR.",
+    "layout": "stack"
+  },
+  {
+    "scene": 5,
+    "start": 25,
+    "end": 27.5,
+    "title": "STOCK CHECKED.",
+    "layout": "focus"
+  },
+  {
+    "scene": 5,
+    "start": 27.5,
+    "end": 30,
+    "title": "PRODUCTS CONTROLLED.",
+    "layout": "products"
+  },
+  {
+    "scene": 5,
+    "start": 30,
+    "end": 32,
+    "title": "KNOW WHAT’S AVAILABLE.",
+    "layout": "stack"
+  },
+  {
+    "scene": 6,
+    "start": 32,
+    "end": 34,
+    "title": "PICK.",
+    "layout": "focus"
+  },
+  {
+    "scene": 6,
+    "start": 34,
+    "end": 36.5,
+    "title": "PACK.",
+    "layout": "stack"
+  },
+  {
+    "scene": 6,
+    "start": 36.5,
+    "end": 39,
+    "title": "VERIFY.",
+    "layout": "scan"
+  },
+  {
+    "scene": 7,
+    "start": 39,
+    "end": 41.5,
+    "title": "READY TO SHIP.",
+    "layout": "focus"
+  },
+  {
+    "scene": 7,
+    "start": 41.5,
+    "end": 44,
+    "title": "ORDER. SHIPMENT. CONNECTED.",
+    "layout": "dispatch"
+  },
+  {
+    "scene": 7,
+    "start": 44,
+    "end": 46,
+    "title": "LABEL ACCESS. IN ONE PLACE.",
+    "layout": "focus"
+  },
+  {
+    "scene": 8,
+    "start": 46,
+    "end": 48,
+    "title": "FROM DISPATCH…",
+    "layout": "tracking"
+  },
+  {
+    "scene": 8,
+    "start": 48,
+    "end": 50,
+    "title": "…TO DELIVERY.",
+    "layout": "tracking"
+  },
+  {
+    "scene": 8,
+    "start": 50,
+    "end": 52,
+    "title": "JOURNEY COMPLETE.",
+    "layout": "status"
+  },
+  {
+    "scene": 9,
+    "start": 52,
+    "end": 54,
+    "title": "EVERY TRANSACTION.",
+    "layout": "focus"
+  },
+  {
+    "scene": 9,
+    "start": 54,
+    "end": 56,
+    "title": "ACCOUNTED FOR.",
+    "layout": "stack"
+  },
+  {
+    "scene": 9,
+    "start": 56,
+    "end": 58,
+    "title": "SUPPLIERS. ORGANIZED.",
+    "layout": "focus"
+  },
+  {
+    "scene": 9,
+    "start": 58,
+    "end": 60,
+    "title": "RETURNS. IN VIEW.",
+    "layout": "stack"
+  },
+  {
+    "scene": 10,
+    "start": 60,
+    "end": 62,
+    "title": "YOUR TEAM.",
+    "layout": "focus"
+  },
+  {
+    "scene": 10,
+    "start": 62,
+    "end": 64,
+    "title": "YOUR WORKFLOWS.",
+    "layout": "focus"
+  },
+  {
+    "scene": 10,
+    "start": 64,
+    "end": 66,
+    "title": "YOUR CONTROL.",
+    "layout": "focus"
+  },
+  {
+    "scene": 10,
+    "start": 66,
+    "end": 68,
+    "title": "AFTER THE SALE. STILL CONNECTED.",
+    "layout": "stack"
+  },
+  {
+    "scene": 11,
+    "start": 68,
+    "end": 70.5,
+    "title": "EVERY DETAIL.",
+    "layout": "report"
+  },
+  {
+    "scene": 11,
+    "start": 70.5,
+    "end": 72.5,
+    "title": "ONE CLEAR PICTURE.",
+    "layout": "metrics"
+  },
+  {
+    "scene": 11,
+    "start": 72.5,
+    "end": 74.5,
+    "title": "OVERVIEW. MEET DETAIL.",
+    "layout": "stack"
+  },
+  {
+    "scene": 11,
+    "start": 74.5,
+    "end": 77,
+    "title": "EVERYTHING. CONNECTED.",
+    "layout": "connect"
+  },
+  {
+    "scene": 12,
+    "start": 77,
+    "end": 79,
+    "title": "ONE CONNECTED OPERATION.",
+    "layout": "converge"
+  },
+  {
+    "scene": 12,
+    "start": 79,
+    "end": 81,
+    "title": "EVERY MODULE. ONE SYSTEM.",
+    "layout": "converge"
+  },
+  {
+    "scene": 12,
+    "start": 81,
+    "end": 83.5,
+    "title": "YOUR ENTIRE BUSINESS.",
+    "layout": "dashboard"
+  },
+  {
+    "scene": 12,
+    "start": 83.5,
+    "end": 86,
+    "title": "CONNECTED.",
+    "layout": "dashboard"
+  },
+  {
+    "scene": 12,
+    "start": 86,
+    "end": 88,
+    "title": "ONE SYSTEM.",
+    "layout": "brand"
+  },
+  {
+    "scene": 12,
+    "start": 88,
+    "end": 90,
+    "title": "ONE SYSTEM. TOTAL CONTROL.",
+    "layout": "brand"
+  }
+]

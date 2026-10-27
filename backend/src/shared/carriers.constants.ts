@@ -99,6 +99,13 @@ export const CARRIERS: CarrierDef[] = [
     integration: 'none',
     tariff: [{ zone: 'cairo', price: 110 }, { zone: 'gov', price: 150 }],
   },
+  {
+    code: 'soulia',
+    ar: 'الشحن بواسطة سوليا',
+    en: 'Shipping by Soulia',
+    integration: 'none',
+    tariff: [{ zone: 'cairo', price: 0 }, { zone: 'gov', price: 0 }],
+  },
 ];
 
 export const CARRIER_CODES = CARRIERS.map((c) => c.code);
@@ -152,6 +159,8 @@ export function carrierIntegration(code: string): CarrierIntegration {
 export function carrierCodeFromName(name: string): string {
   const n = String(name || '').trim().toLowerCase();
   if (!n) return '';
+  // Accept the already-saved self-delivery name, including its common typo.
+  if (/^(?:shipping|shipiing)\s+by\s+soulia$/.test(n)) return 'soulia';
   if (BY_CODE.has(n)) return n;
   for (const c of CARRIERS) {
     if (c.ar.toLowerCase() === n || c.en.toLowerCase() === n || c.code === n) return c.code;

@@ -1,0 +1,4 @@
+{
+ "name":"soulia-premium-product-film","version":"2.0.0","private":true,
+ "scripts":{"capture":"node capture.cjs && node prepare-assets.cjs","audio":"node audio.cjs","preview":"node server.cjs","storyboard":"node render.cjs --preview","render":"node render.cjs","verify":"node verify.cjs","build":"npm run capture && npm run audio && npm run render && npm run verify"}
+}

@@ -967,3 +967,32 @@ body.dark-mode #page-pickup-orders .pu-stage-preparing { --pu-stage:#60a5fa; --p
 body.dark-mode #page-pickup-orders .pu-stage-ready { --pu-stage:#facc15; --pu-stage-ink:#fde68a; --pu-stage-fill:#362b13; }
 body.dark-mode #page-pickup-orders .pu-stage-shipped { --pu-stage:#a78bfa; --pu-stage-ink:#c4b5fd; --pu-stage-fill:#2d2047; }
 body.dark-mode #page-pickup-orders .pu-stage-card .pu-prep-open { color:var(--pu-stage-ink); }
+
+/* Keep dates quiet and complete; make the order quantity the visual anchor. */
+#page-pickup-orders .pu-date-preview.pu-date-simple,
+#pu-edit-modal .pu-date-preview.pu-date-simple {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px;
+  padding: 0; border: 0; border-radius: 0; background: none;
+  line-height: 1.6;
+}
+#page-pickup-orders .pu-date-simple .pu-date-caption,
+#pu-edit-modal .pu-date-simple .pu-date-caption { font-size: .68rem; }
+#page-pickup-orders .pu-date-simple .pu-date-value,
+#pu-edit-modal .pu-date-simple .pu-date-value {
+  color: var(--text); font-size: .8rem; font-weight: 600;
+}
+#page-pickup-orders .pu-stage-card .pu-prep-order-count,
+#page-pickup-orders .pu-stage-card .pu-daily-count {
+  min-width: 76px; min-height: 48px; box-sizing: border-box;
+  padding: 7px 12px; gap: 7px; border-radius: 10px;
+  border: 1px solid color-mix(in srgb,var(--pu-stage) 35%,var(--border));
+}
+#page-pickup-orders .pu-stage-card .pu-prep-order-count>bdi,
+#page-pickup-orders .pu-stage-card .pu-daily-count>bdi {
+  font-size: 1.8rem; font-weight: 850; line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+#page-pickup-orders .pu-stage-card .pu-prep-order-count>span,
+#page-pickup-orders .pu-stage-card .pu-daily-count>span {
+  color: var(--pu-stage-ink); font-size: .75rem; font-weight: 700;
+}

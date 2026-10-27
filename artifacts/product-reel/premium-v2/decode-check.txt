@@ -1,0 +1,135 @@
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'D:\website\Souliahome\artifacts\product-reel\premium-v2\Soulia-From-Order-to-Delivery-90s.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf60.16.100
+  Duration: 00:01:30.00, start: 0.000000, bitrate: 1792 kb/s
+  Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt470bg/unknown/unknown, progressive), 1080x1920 [SAR 1:1 DAR 9:16], 1517 kb/s, 30 fps, 30 tbr, 15360 tbn (default)
+    Metadata:
+      handler_name    : VideoHandler
+      vendor_id       : [0][0][0][0]
+      encoder         : Lavc60.31.102 libx264
+  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 266 kb/s (default)
+    Metadata:
+      handler_name    : SoundHandler
+      vendor_id       : [0][0][0][0]
+Stream mapping:
+  Stream #0:0 -> #0:0 (h264 (native) -> wrapped_avframe (native))
+  Stream #0:1 -> #0:1 (aac (native) -> pcm_s16le (native))
+Press [q] to stop, [?] for help
+Output #0, null, to 'pipe:':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf60.16.100
+  Stream #0:0(und): Video: wrapped_avframe, yuv420p(tv, bt470bg/unknown/unknown, progressive), 1080x1920 [SAR 1:1 DAR 9:16], q=2-31, 200 kb/s, 30 fps, 30 tbn (default)
+    Metadata:
+      handler_name    : VideoHandler
+      vendor_id       : [0][0][0][0]
+      encoder         : Lavc60.31.102 wrapped_avframe
+  Stream #0:1(und): Audio: pcm_s16le, 48000 Hz, stereo, s16, 1536 kb/s (default)
+    Metadata:
+      handler_name    : SoundHandler
+      vendor_id       : [0][0][0][0]
+      encoder         : Lavc60.31.102 pcm_s16le
+frame=    1 fps=0.0 q=-0.0 size=N/A time=00:00:00.49 bitrate=N/A speed=  18x    frame=  428 fps=0.0 q=-0.0 size=N/A time=00:00:14.76 bitrate=N/A speed=  28x    frame=  823 fps=796 q=-0.0 size=N/A time=00:00:27.90 bitrate=N/A speed=  27x    frame= 1214 fps=790 q=-0.0 size=N/A time=00:00:40.93 bitrate=N/A speed=26.6x    frame= 1629 fps=800 q=-0.0 size=N/A time=00:00:54.78 bitrate=N/A speed=26.9x    frame= 2087 fps=823 q=-0.0 size=N/A time=00:01:10.03 bitrate=N/A speed=27.6x    frame= 2537 fps=835 q=-0.0 size=N/A time=00:01:25.03 bitrate=N/A speed=  28x    [out#0/null @ 0000019b03d4d880] video:1266kB audio:16876kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: unknown
+frame= 2700 fps=841 q=-0.0 Lsize=N/A time=00:01:29.98 bitrate=N/A speed=  28x    
+
+frame=1
+fps=0.00
+stream_0_0_q=-0.0
+bitrate=N/A
+total_size=N/A
+out_time_us=490667
+out_time_ms=490667
+out_time=00:00:00.490667
+dup_frames=0
+drop_frames=0
+speed=  18x
+progress=continue
+frame=428
+fps=0.00
+stream_0_0_q=-0.0
+bitrate=N/A
+total_size=N/A
+out_time_us=14762667
+out_time_ms=14762667
+out_time=00:00:14.762667
+dup_frames=0
+drop_frames=0
+speed=  28x
+progress=continue
+frame=823
+fps=795.68
+stream_0_0_q=-0.0
+bitrate=N/A
+total_size=N/A
+out_time_us=27904000
+out_time_ms=27904000
+out_time=00:00:27.904000
+dup_frames=0
+drop_frames=0
+speed=  27x
+progress=continue
+frame=1214
+fps=790.21
+stream_0_0_q=-0.0
+bitrate=N/A
+total_size=N/A
+out_time_us=40938667
+out_time_ms=40938667
+out_time=00:00:40.938667
+dup_frames=0
+drop_frames=0
+speed=26.6x
+progress=continue
+frame=1629
+fps=799.90
+stream_0_0_q=-0.0
+bitrate=N/A
+total_size=N/A
+out_time_us=54784000
+out_time_ms=54784000
+out_time=00:00:54.784000
+dup_frames=0
+drop_frames=0
+speed=26.9x
+progress=continue
+frame=2087
+fps=822.70
+stream_0_0_q=-0.0
+bitrate=N/A
+total_size=N/A
+out_time_us=70037333
+out_time_ms=70037333
+out_time=00:01:10.037333
+dup_frames=0
+drop_frames=0
+speed=27.6x
+progress=continue
+frame=2537
+fps=835.37
+stream_0_0_q=-0.0
+bitrate=N/A
+total_size=N/A
+out_time_us=85034667
+out_time_ms=85034667
+out_time=00:01:25.034667
+dup_frames=0
+drop_frames=0
+speed=  28x
+progress=continue
+frame=2700
+fps=840.85
+stream_0_0_q=-0.0
+bitrate=N/A
+total_size=N/A
+out_time_us=89984000
+out_time_ms=89984000
+out_time=00:01:29.984000
+dup_frames=0
+drop_frames=0
+speed=  28x
+progress=end

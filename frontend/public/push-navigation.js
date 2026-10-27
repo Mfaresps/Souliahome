@@ -1,11 +1,13 @@
 (function () {
   'use strict';
   // Capture the notification before startup navigation changes the current URL.
-  let pending = new URL(location.href), opening = false;
+  let pending = new URL(location.href), opening = false, queued = null;
   window.souliaNavigateNotification = async function (url) {
-    if (opening) return false;
     const target = new URL(url, location.href);
     if (target.origin !== new URL(location.href).origin) return false;
+    // A second click is a navigation request, not an access failure. Keep the
+    // latest destination until the current navigation finishes.
+    if (opening) { queued = target; return true; }
     if (!target.searchParams.has('pushRecord')) {
       const slug = target.hash.slice(1).split('/')[0];
       const page = typeof _pageIdFromSlug === 'function' ? _pageIdFromSlug(slug) : slug;
@@ -15,6 +17,8 @@
       return true;
     }
     pending = target;
+    // Startup will consume the captured target once account data is ready.
+    if (currentUser && !window.souliaPushAppReady) return true;
     return window.souliaOpenPendingPush();
   };
   async function highlight(selector) {
@@ -111,6 +115,9 @@
       } else if (kind === 'followup') {
         await goToFuAndHighlight(id, true, type === 'comment' ? event : '', true);
       } else if (kind === 'shopify') {
+        if (type === 'comment' || !type) {
+          await openShopifyOrderComments(id, /^\d+$/.test(event) ? event : undefined);
+        } else {
         await loadShopifyOrders();
         const order = _spOrderById(id);
         if (!order) throw new Error(currentLang === 'en' ? 'Order unavailable.' : 'الأوردر غير متاح.');
@@ -119,9 +126,8 @@
         } else if (type === 'deposit' || (type === 'approval' && event)) {
           navigateTo('shopify-orders'); openSpOrderPeek(id);
           await highlight(event ? `#sp-peek [data-push-receipt-id="${CSS.escape(event)}"]` : '#sp-peek .spdep-section');
-        } else if (type === 'comment' || !type) {
-          await openShopifyOrderComments(id, /^\d+$/.test(event) ? event : undefined);
         } else { navigateTo('shopify-orders'); openSpOrderPeek(id); }
+        }
       } else {
         // Refresh the target even if this tab has an older cached transaction.
         const tx = await api('/transactions/' + id);
@@ -157,7 +163,13 @@
       history.replaceState(null, '', clean);
     } catch (error) {
       navigateTo(_canAccessPage('movements') ? 'movements' : findFirstAllowedPage()); toast(error.message, true);
-    } finally { opening = false; pending = null; }
+    } finally {
+      opening = false; pending = null;
+      if (queued) {
+        const next = queued; queued = null;
+        await window.souliaNavigateNotification(next.href);
+      }
+    }
     return true;
   };
   if (window.souliaPushAppReady) window.souliaOpenPendingPush();

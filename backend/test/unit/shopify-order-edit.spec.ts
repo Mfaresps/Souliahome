@@ -79,11 +79,38 @@ it('submits a combined edit once and resumes the same save after the OTP gate', 
 });
 
 describe('Shopify discount survives apply, redraw and reopening', () => {
+  it('deducts approved deposits from the edited balance without changing the order total or receipts', () => {
+    const src = fs.readFileSync(INDEX_HTML, 'utf8').replace(/\r\n/g, '\n');
+    const render = new Function('_spEditOrder', 'grand', `
+      const currentLang='en', t=String, esc=String, fmtJ=String, _payMethodLabel=String;
+      const fmtJSigned=(amount,sign)=>sign+amount;
+      ${extractFn(src, '_spDepositOf')}
+      ${extractFn(src, '_spDiscSummaryHtml')}
+      return _spDiscSummaryHtml(grand,0,0,0,0,grand);
+    `);
+    const order = {depositReceipts:[
+      {status:'معتمد',amount:1500,method:'cash'},
+      {status:'معلق',amount:200,method:'cash'},
+      {status:'مرفوض',amount:400,method:'cash'},
+      {status:'مُسترد',amount:300,method:'cash'},
+    ]};
+    const before = JSON.stringify(order);
+    const markup = render(order,3410);
+    expect(markup).toContain('>3410<');
+    expect(markup).toContain('>−1500<');
+    expect(markup).toContain('>1910<');
+    expect(markup).toContain('Deposit awaiting approval (not deducted)');
+    expect(render(order,1000)).toContain('Excess paid — requires settlement');
+    expect(render(order,1000)).toContain('>500<');
+    expect(render(order,1500)).toContain('>0<');
+    expect(render({depositReceipts:[]},3410)).not.toContain('spDepApprovedTotal');
+    expect(JSON.stringify(order)).toBe(before);
+  });
   function editor() {
     const src = fs.readFileSync(INDEX_HTML, 'utf8').replace(/\r\n/g, '\n');
     const functions = ['_spCodeAmount', '_spCodesTotal', '_spManualAmount', '_spDiscInputValue',
       '_spRenderDiscountTab', '_spRenderDiscountPreview', '_updateShopifyEditSummary',
-      '_spDiscAmounts', '_spDiscountPreflight', '_spPersistDiscount', '_spSaveDiscount', '_spIsEditable']
+      '_spDiscAmounts', '_spDiscountPreflight', '_spPersistDiscount', '_spSaveDiscount', '_spIsEditable', '_spDepositOf']
       .map(name => extractFn(src, name)).join('\n');
     return new Function(`
       let _spEditOrder, _shopifyEditItems=[], _spDiscCodes=[], _spDiscType='fixed';
@@ -97,6 +124,7 @@ describe('Shopify discount survives apply, redraw and reopening', () => {
       const qs=s=>({'#sp-disc-value':input,'#sp-pane-discount':host,'#sp-disc-sum':sum}[s] || null);
       const esc=String, escHtml=String, t=String, tf=(k,v)=>k+JSON.stringify(v), fmtJ=String, fmtN=String;
       const _spActiveCodes=()=>[], _spSuggestionsHtml=()=>'', _spDiscGuardHtml=()=>'';
+      const _payMethodLabel=String;
       const _spDiscSummaryHtml=(...args)=>{summary=args;return JSON.stringify(args);};
       const _isOtpRequired=()=>false, _logBundleDiscAction=()=>{}, toast=()=>{};
       const _spEditSnapshot=()=>'', _spDiscFlashSaved=()=>{}, _spRefreshOrderRow=()=>{};
@@ -498,7 +526,7 @@ describe('Shopify order edit — التعليقات مطابقة لنظام ال
 
   it('يعرض صورة الكاتب أو الأحرف الأولى والوقت النسبي بالمساعدات المشتركة', () => {
     const fn = extractFn(src, '_spRenderCommentsTab');
-    expect(fn).toContain('userAvatarHtml(_au, 30)');
+    expect(fn).toContain('userAvatarHtml(_au, 36)');
     expect(fn).toContain('_pwFindUser(c.employee)');
     expect(fn).toContain("{ name: c.employee || '؟' }");
     expect(fn).toContain('_cmtTimeHtml');
@@ -526,7 +554,8 @@ describe('Shopify order edit — التعليقات مطابقة لنظام ال
   it('الإكمال التلقائي للمنشن موصول بالحقل', () => {
     const fn = extractFn(src, '_spRenderCommentsTab');
     expect(fn).toContain('onMentionInput');
-    expect(fn).toContain('onMentionKey');
+    expect(fn).toContain('_spCommentKey');
+    expect(extractFn(src, '_spCommentKey')).toContain('onMentionKey');
   });
 
   /**
@@ -534,7 +563,7 @@ describe('Shopify order edit — التعليقات مطابقة لنظام ال
    *   الاسم الذي يتصفّحه المستخدم.
    */
   it('Enter لا يرسل بينما قائمة المنشن مفتوحة', () => {
-    expect(extractFn(src, '_spRenderCommentsTab')).toContain('!_mentionDropdown');
+    expect(extractFn(src, '_spCommentKey')).toContain('!choosingMention');
   });
 
   it('التعديل يستخدم نفس شكل ومفاتيح startEditInvComment', () => {
@@ -1041,7 +1070,7 @@ describe('Shopify — تناسق العمود وشكل التعليق', () => {
    *   بشكل واحد أينما ظهر.
    */
   it('فقاعة التعليق معرَّفة كصندوق لا نص عائم', () => {
-    const bubble = (src.match(/\.tx-cmt-text\{[\s\S]*?\}/) || [''])[0];
+    const bubble = (src.match(/\n\.tx-cmt-text\{[\s\S]*?\}/) || [''])[0];
     expect(bubble).toContain('background:var(--bg-alt)');
     expect(bubble).toContain('border:1px solid var(--border)');
     expect(bubble).toContain('border-radius:12px');

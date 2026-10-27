@@ -99,6 +99,23 @@ describe('Tracking backend on isolated transaction-capable MongoDB', () => {
       await expect(service.identifyLegacyStock({ ...dto, operationKey: key() }, actor)).rejects.toThrow('LEGACY_STOCK_CHANGED');
     } finally { inventory.mockRestore(); }
   });
+  it.each([{ pickupStatus: 'Shipped' }, { bostaStatus: 'PICKED_UP' }, { bostaStatus: 'IN_TRANSIT' }, { shippedAt: new Date() }])('projects shipped pieces consistently from order evidence %j', async evidence => {
+    const id = new Types.ObjectId();
+    await raw('inventoryunits').insertOne({ _id: id, barcode: 'SU-' + String(id).toUpperCase(), productId, status: 'prepared',
+      origin: { kind: 'purchase', purchaseTransactionId: purchaseId }, assignment: { transactionId: saleId, lineId: 'line-1' } });
+    await raw('transactions').updateOne({ _id: new Types.ObjectId(saleId) }, { $set: evidence });
+    expect((await service.search({ status: 'shipped' })).total).toBe(1);
+    expect((await service.search({ status: 'prepared' })).total).toBe(0);
+    expect((await service.lookup(String(id))).unit).toMatchObject({ status: 'prepared', displayStatus: 'shipped', statusSource: 'order' });
+    expect((await service.purchaseLineUnits(purchaseId, 0)).units[0].displayStatus).toBe('shipped');
+    await raw('transactions').updateOne({ _id: new Types.ObjectId(saleId) }, { $set: { bostaStatus: 'DELIVERED' } });
+    expect((await service.search({ status: 'shipped' })).total).toBe(0);
+    expect((await service.lookup(String(id))).unit.displayStatus).toBe('delivered');
+    await raw('transactions').updateOne({ _id: new Types.ObjectId(saleId) }, { $set: { bostaStatus: 'RETURNED' } });
+    expect((await service.lookup(String(id))).unit.displayStatus).toBe('prepared');
+    expect((await Unit.findById(id).lean() as any).status).toBe('prepared');
+    expect(await Event.countDocuments()).toBe(0);
+  });
   it('projects delivered orders in the piece register, filters and lookup without rewriting unit history', async () => {
     await raw('transactions').updateOne({ _id: new Types.ObjectId(saleId) }, { $set: { bostaStatus: 'DELIVERED', pickupStatus: 'Shipped' } });
     const ids = Array.from({ length: 5 }, () => new Types.ObjectId());

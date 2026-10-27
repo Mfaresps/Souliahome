@@ -624,6 +624,13 @@ describe('TransactionsService (integration with mocks)', () => {
       expect(written.shipCo).toBe('Bosta');
     });
 
+    it('records Soulia self-delivery with a zero shipping tariff', async () => {
+      const written = await (service as any).resolveCarrierForWrite(saleDto({ carrierCode: 'soulia', shipZone: 'cairo', shipCost: 0 }));
+      expect(written.carrierCode).toBe('soulia');
+      expect(written.shipCo).toBe('Shipping by Soulia');
+      expect(written.shipTariff).toMatchObject({ zone: 'cairo', price: 0, source: 'settings' });
+    });
+
     it('freezes the tariff with the zone, the price and when it was taken', async () => {
       const written = await runCreate(saleDto({ carrierCode: 'bosta', shipZone: 'cairo', shipCost: 110 }));
       expect(written.shipTariff).toMatchObject({ zone: 'cairo', price: 110, source: 'settings' });

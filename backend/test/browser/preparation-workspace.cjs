@@ -126,6 +126,38 @@ fs.mkdirSync(output, { recursive: true });
       assert.equal(await page.evaluate(()=>scanWrites.length),1,'Duplicate never writes another piece');
       await page.click('.pw-manual-toggle'); await page.type('#pw-order-scan','typed-draft');
       assert.equal(await page.evaluate(()=>{_pwRenderWork();return qs('#pw-order-scan')===document.activeElement&&qs('#pw-order-scan').value==='typed-draft';}),true);
+      const afterSales = await page.evaluate(async () => {
+        const result=[];
+        const originalApi=api, originalOpen=window.open;
+        try {
+          for(const kind of ['exchange','return']) {
+            const order=_pickupOrders[0];
+            order.afterSales={caseId:'case-'+kind,caseRef:'AS-1',kind,role:kind==='exchange'?'replacement':'return',originalRef:'2790'};
+            const row={_id:order.afterSales.caseId,requestKind:kind,originalRef:'2790',client:'Test customer',reason:'customer-choice',items:[{name:'Returned basket',code:'OLD',qty:1,price:100}],exchangeItems:[{name:'Replacement basket',code:'NEW',qty:2,price:100}],workflow:{ref:'AS-1',stage:'approved',quote:{credit:100,replacement:200,customerFee:0,collectDue:kind==='exchange'?100:0,refundDue:kind==='return'?100:0}}};
+            api=async url=>url.startsWith('/after-sales/')?row:originalApi(url);
+            const holder=document.createElement('div');
+            holder.innerHTML=_pwOrderCardHtml(order,true,false);
+            const intact=holder.children.length===1&&holder.firstElementChild.querySelector('.pw-oc-name')?.textContent===order.client&&!holder.querySelector('button button');
+            pwSelectOrder(order._id);
+            await AfterSales.loadPreparationDetails(qs('#pw-work'));
+            const content=qs('[data-as-preparation-content]').textContent;
+            const frame=document.createElement('iframe');document.body.append(frame);
+            let printed=false;
+            window.open=()=>({document:frame.contentDocument,closed:false,focus(){},print(){printed=true;},requestAnimationFrame(fn){fn();}});
+            await AfterSales.printOrderCase(row._id);
+            result.push({kind,intact,returned:content.includes('Returned basket'),replacement:content.includes('Replacement basket'),printed,printItems:frame.contentDocument.body.textContent.includes('Returned basket')});
+            frame.remove();
+          }
+        } finally {api=originalApi;window.open=originalOpen;}
+        return result;
+      });
+      for(const row of afterSales) {
+        assert.equal(row.intact,true,'After-sales badge must not break the order button');
+        assert.equal(row.returned,true);
+        assert.equal(row.replacement,row.kind==='exchange');
+        assert.equal(row.printed,true);
+        assert.equal(row.printItems,true);
+      }
       assert.deepEqual(errors,[]);
       console.log(`PASS ${lang} ${width}px: retained photos/draft/focus/scroll; 12 UI updates ${Math.round(preservation.elapsed)}ms; scan and duplicate checks.`);
       await page.close();

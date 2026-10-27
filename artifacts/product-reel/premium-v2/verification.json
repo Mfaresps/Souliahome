@@ -1,0 +1,192 @@
+{
+  "duration": 90,
+  "width": 1080,
+  "height": 1920,
+  "seeks": [
+    {
+      "time": 0.01,
+      "readyState": 4
+    },
+    {
+      "time": 2.5,
+      "readyState": 4
+    },
+    {
+      "time": 5,
+      "readyState": 4
+    },
+    {
+      "time": 7,
+      "readyState": 4
+    },
+    {
+      "time": 9.5,
+      "readyState": 4
+    },
+    {
+      "time": 12,
+      "readyState": 4
+    },
+    {
+      "time": 14.5,
+      "readyState": 4
+    },
+    {
+      "time": 17,
+      "readyState": 4
+    },
+    {
+      "time": 19,
+      "readyState": 4
+    },
+    {
+      "time": 21,
+      "readyState": 4
+    },
+    {
+      "time": 23,
+      "readyState": 4
+    },
+    {
+      "time": 25,
+      "readyState": 4
+    },
+    {
+      "time": 27.5,
+      "readyState": 4
+    },
+    {
+      "time": 30,
+      "readyState": 4
+    },
+    {
+      "time": 32,
+      "readyState": 4
+    },
+    {
+      "time": 34,
+      "readyState": 4
+    },
+    {
+      "time": 36.5,
+      "readyState": 4
+    },
+    {
+      "time": 39,
+      "readyState": 4
+    },
+    {
+      "time": 41.5,
+      "readyState": 4
+    },
+    {
+      "time": 44,
+      "readyState": 4
+    },
+    {
+      "time": 46,
+      "readyState": 4
+    },
+    {
+      "time": 48,
+      "readyState": 4
+    },
+    {
+      "time": 50,
+      "readyState": 4
+    },
+    {
+      "time": 52,
+      "readyState": 4
+    },
+    {
+      "time": 54,
+      "readyState": 4
+    },
+    {
+      "time": 56,
+      "readyState": 4
+    },
+    {
+      "time": 58,
+      "readyState": 4
+    },
+    {
+      "time": 60,
+      "readyState": 4
+    },
+    {
+      "time": 62,
+      "readyState": 4
+    },
+    {
+      "time": 64,
+      "readyState": 4
+    },
+    {
+      "time": 66,
+      "readyState": 4
+    },
+    {
+      "time": 68,
+      "readyState": 4
+    },
+    {
+      "time": 70.5,
+      "readyState": 4
+    },
+    {
+      "time": 72.5,
+      "readyState": 4
+    },
+    {
+      "time": 74.5,
+      "readyState": 4
+    },
+    {
+      "time": 77,
+      "readyState": 4
+    },
+    {
+      "time": 79,
+      "readyState": 4
+    },
+    {
+      "time": 81,
+      "readyState": 4
+    },
+    {
+      "time": 83.5,
+      "readyState": 4
+    },
+    {
+      "time": 86,
+      "readyState": 4
+    },
+    {
+      "time": 88,
+      "readyState": 4
+    },
+    {
+      "time": 89.966,
+      "readyState": 4
+    }
+  ],
+  "playedToEnd": true,
+  "decodedFrames": 2700,
+  "fps": 30,
+  "scenes": 12,
+  "editorialBeats": 41,
+  "maxBeatDuration": 2.5,
+  "audio": {
+    "codec": "AAC",
+    "sampleRate": 48000,
+    "channels": 2,
+    "lufs": -14.3,
+    "truePeakDbfs": -1.1
+  },
+  "fullDecode": "passed",
+  "captureErrors": [],
+  "encodedVisualSamples": 41,
+  "sizeBytes": 20168488
+}

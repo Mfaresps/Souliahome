@@ -18,6 +18,7 @@ export class AfterSalesController {
   @Post() create(@Body() body: any, @Req() req: any) { return this.service.create(body, req.user); }
   @Get(':id') get(@Param('id') id: string) { return this.service.get(id); }
   @Post(':id/approve') @Roles('admin') approve(@Param('id') id: string, @Body() body: any, @Req() req: any) { return this.service.approve(id, body, req.user); }
+  @Post(':id/rollback') @Roles('admin') rollback(@Param('id') id: string, @Body() body: any, @Req() req: any) { return this.service.rollback(id, body, req.user); }
   @Post(':id/cancel') @Roles('admin') cancel(@Param('id') id: string, @Body() body: any, @Req() req: any) { return this.service.cancel(id, body, req.user); }
   @Post(':id/ship') ship(@Param('id') id: string, @Body() body: any, @Req() req: any) { return this.service.ship(id, body, req.user); }
   @Post(':id/sync') sync(@Param('id') id: string) { return this.service.sync(id); }

@@ -1,18 +1,19 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Model, Types } from 'mongoose';
+import { DatabaseWriteContext } from '../shared/database-write-context';
 
 /** Returning to Pending invalidates current custody claims, never the immutable audit or stock ledger. */
-export async function resetPickupPreparation(transactions: Model<any>, ids: string[], by: string, actorId?: string, sourceRef?: string): Promise<string[]> {
+export async function resetPickupPreparation(transactions: Model<any>, ids: string[], by: string, actorId?: string, sourceRef?: string, context?: DatabaseWriteContext): Promise<string[]> {
   const connection = transactions.db;
-  const session = await connection.startSession();
+  const session = context?.session || await connection.startSession();
   let changed: string[] = [];
   try {
-    await session.withTransaction(async () => {
+    const work = async () => {
       changed = [];
       const orders: any[] = await transactions.find({ _id: { $in: ids }, type: 'مبيعات',
         ...(sourceRef !== undefined ? { cancelled: { $ne: true }, archived: { $ne: true } } : {}),
-        pickupStatus: { $in: sourceRef !== undefined ? ['Ready', 'Picked-Up'] : ['Ready', 'Picked-Up', 'Preparing'] } }).session(session).lean();
+        pickupStatus: { $in: sourceRef !== undefined ? ['Ready', 'Picked-Up'] : context ? ['Pending', 'Ready', 'Picked-Up', 'Preparing'] : ['Ready', 'Picked-Up', 'Preparing'] } }).session(session).lean();
       if (sourceRef !== undefined && (orders.length !== ids.length || orders.some(o =>
         (o.pickupRef || `noref-${o._id}`) !== sourceRef || (o.bostaStatus && !['CREATED', 'VALIDATION_ERROR'].includes(o.bostaStatus))))) {
         throw new ConflictException('تغيّرت حالة الطلب أو مجموعته. حدّث القائمة وحاول مرة أخرى.');
@@ -70,7 +71,8 @@ export async function resetPickupPreparation(transactions: Model<any>, ids: stri
         }, { session });
       }
       changed = orderIds;
-    });
+    };
+    if (context) await work(); else await session.withTransaction(work);
     return changed;
-  } finally { await session.endSession(); }
+  } finally { if (!context) await session.endSession(); }
 }

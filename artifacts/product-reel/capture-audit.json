@@ -1,0 +1,87 @@
+{
+  "blocked": 10,
+  "local": 106,
+  "errors": [],
+  "shots": [
+    {
+      "name": "dashboard",
+      "selector": "#dash-stats",
+      "text": "Dashboard\n\nOverview of sales, inventory, and vault performance\n\n＋ Create\nLast update\nFull Archive\nDE\nUnknown\nDE\nUnknown\nConnection status unavailable\nTOTAL SALES\ni\n••••••\n \nNET PROFIT\ni\n••••••\n \nTOTAL PURCHASES\ni\n••••••\n \nOutstanding / Debts\n••••\ni\nApproved Expenses\n••••\ni\nReturns\n••••\ni\nShipping Collected\n••••\ni\nDeposits Collected\n••••\ni\nCustomer Discounts\n••••\ni\nLow Stock Items\n••••\ni\nIn Shipping\nIn Shipping\n0\nDelivered\n0\nShipping Issues\n0\nToday\nYesterday\nLast 3 days\nLast 7 Days\nLast 2 weeks\nLast month\nLast 2 months\nLast 3 months\nAll time\n0 orders\n0\nDelivered\n0\nIn transit\n0\nIssues\nNo orders currently in shipping\nView all ›"
+    },
+    {
+      "name": "overview",
+      "selector": "#sp-kpi",
+      "text": "Orders\nOrders\nAll\nToday · Tuesday 27 October\nReport\nReceived orders\n1\nConfirmed\n0\nFollow-up\n1\nCancelled\n0\nConfirmation rate\n0%\n0 of 1\nToday\n#DEMO-1001\nDemo customer\n27 Oct\n8:39 pm\nEGP 300\n⋮\nUnconfirmed\n2 items\nNo deposit\nDeposit\nD\n1–1 of 1\nPer page\n15\n30\n50\n100"
+    },
+    {
+      "name": "orders",
+      "selector": "#page-shopify-orders",
+      "text": "Orders\nOrders\nAll\nToday · Tuesday 27 October\nReport\nReceived orders\n1\nConfirmed\n0\nFollow-up\n1\nCancelled\n0\nConfirmation rate\n0%\n0 of 1\nToday\n#DEMO-1001\nDemo customer\n27 Oct\n8:39 pm\nEGP 300\n⋮\nUnconfirmed\n2 items\nNo deposit\nDeposit\nD\n1–1 of 1\nPer page\n15\n30\n50\n100"
+    },
+    {
+      "name": "order-search",
+      "selector": "#page-shopify-orders",
+      "text": "Orders\nOrders\nAll\nActive:\nSearch: DEMO-1001\nClear all\nToday · Tuesday 27 October\nReport\nReceived orders\n1\nConfirmed\n0\nFollow-up\n1\nCancelled\n0\nConfirmation rate\n0%\n0 of 1\nToday\n#DEMO-1001\nDemo customer\n27 Oct\n8:39 pm\nEGP 300\n⋮\nUnconfirmed\n2 items\nNo deposit\nDeposit\nD\n1–1 of 1\nPer page\n15\n30\n50\n100"
+    },
+    {
+      "name": "followup",
+      "selector": "#page-complaints",
+      "text": "Customer service & after-sales\nExport Excel\nFull Archive\nNew Complaint\nOrder Follow-ups\nComplaints\n#DEMO-1001\nDemo customer\nOrder confirmation\n4s\n⋮\nAwaiting customer\nDEMO-FU-01\n27/10/2026\nNo trail yet — tap to add\nD\nDemo specialist\n+\n1–1 of 1\nRows:\n10\n20\n30\n50\n100"
+    },
+    {
+      "name": "products",
+      "selector": "#page-products",
+      "text": "Products\n\nManage products, prices, and stock levels\n\n+ Add product\nTech Pack\nProducts\nTech Packs\nAll\n4\nAvailable\n3\nLow\n1\nOut of Stock\n0\nAll categories\nAll collections\nFilters\nName: A → Z\nResults: 4 of 4\nLow\nCotton basket\nDEMO-04\nEGP 150\nStock: 3\nAvailable\nGlass serving tray\nDEMO-03\nEGP 150\nStock: 6\nAvailable\nRiva dining bowl\nDEMO-02\nEGP 150\nStock: 9\nAvailable\nWoven tissue box\nDEMO-01\nEGP 150\nStock: 12"
+    },
+    {
+      "name": "inventory",
+      "selector": "#page-inventory",
+      "text": "Inventory\n\nStock levels and status for every product\n\nإدارة المخازن\nنقل المنتجات\nFull Archive\nExport\nInventory\nStock Movement Log\ni\n4\nTotal products\ni\n0\nTotal stock\ni\nEGP 0\nSale value\ni\nEGP 0\nCost value\ni\n0\nAvailable\ni\n0\nLow stock\ni\n4\nOut of stock\nAll\n4\nAvailable\n0\nLow stock\n0\nOut of stock\n4\nFilters\nName: A → Z\nرصيد المخزن\nAll warehouses\nالمخزن الرئيسي\nالمخزن الرئيسي\nResults: 4 of 4\nDEMO-04\nCotton basket\nActive\nEGP 150•Value EGP 0\nOut of stock\n0\nPiece codes / existing stockStocktake\nDEMO-03\nGlass serving tray\nActive\nEGP 150•Value EGP 0\nOut of stock\n0\nPiece codes / existing stockStocktake\nDEMO-02\nRiva dining bowl\nActive\nEGP 150•Value EGP 0\nOut of stock\n0\nPiece codes / existing stockStocktake\nDEMO-01\nWoven tissue box\nActive\nEGP 150•Value EGP 0\nOut of stock\n0\nPiece codes / existing stockStocktake"
+    },
+    {
+      "name": "preparation",
+      "selector": "#pu-card-orders-modal",
+      "text": "Pick-Up Orders\n\nManage and track pick-up orders · drag the cards to change status\n\nBoard\nTable\nReady to Ship\nRefresh\nActions\nRegistered · Awaiting Prep\n—\nPreparing\n—\nReady to Ship\n—\nDelivered\n—\nDelivery rate\n—\nDate range\nAll shipping companies\nClear\nSync shipping status\nRegistered · Awaiting Prep\n0\nAwaiting grouping\nCreate prep group\nEnter by reference numbers\nPreparing\n0\nDrag to pick-up →\nReady to Ship\n0\nAwaiting courier\nRequest Bosta pickup\n0\nShipped\n0\nShipped"
+    },
+    {
+      "name": "picking",
+      "selector": "#pu-card-orders-modal",
+      "text": "Pick-Up Orders\n\nManage and track pick-up orders · drag the cards to change status\n\nBoard\nTable\nReady to Ship\nRefresh\nActions\nRegistered · Awaiting Prep\n—\nPreparing\n—\nReady to Ship\n—\nDelivered\n—\nDelivery rate\n—\nDate range\nAll shipping companies\nClear\nSync shipping status\nRegistered · Awaiting Prep\n0\nAwaiting grouping\nCreate prep group\nEnter by reference numbers\nPreparing\n0\nDrag to pick-up →\nReady to Ship\n0\nAwaiting courier\nRequest Bosta pickup\n0\nShipped\n0\nShipped"
+    },
+    {
+      "name": "shipping",
+      "selector": "#page-movements",
+      "text": "Transactions\nManage returns and exchanges\nTransactions\nArchive\nCollections Log\nAll\n1\nResults: 1 of 1\n#DEMO-1001\nDemo customer\nToday\nat 08:39 PM\n⋮\nTotal\nEGP\n300\nPaid\nEGP\n0\nRemaining\nEGP\n300\nOrder status\nOut for Delivery\n1–1 of 1\nRows:\n10\n20\n50\n100"
+    },
+    {
+      "name": "expenses",
+      "selector": "#page-expenses",
+      "text": "Expenses\n\nManage and track company expenses\n\nFull Archive\nExport\nNew expense\nEGP\n20\nTotal expenses\nEGP\n20\n▲ 2000%\nThis month\nEGP\n0\nAwaiting approval (0)\nEGP\n0\nRejected\nAll\n1\nAwaiting approval\n0\nApproved\n1\nRejected\n0\nAll categories\nRent\nAdvertising\nPackaging\nTransport & travel\nSubscriptions\nSalaries\nElectricity & water\nOffice supplies\nClient hospitality\nOther\nAll accounts\nCash\nVodafone Cash\nInstapay\nBank transfer\nClear\n-\nPackaging\nEGP 20\nApproved\nToday\n-\n⋮\n1–1 of 1\nRows:\n25\n50\n100"
+    },
+    {
+      "name": "suppliers",
+      "selector": "#page-suppliers",
+      "text": "Suppliers\n\nSuppliers and their details\n\nExport Excel\nFull Archive\n+ Add supplier\n Suppliers\n Payments log\nSort: Name\nSort: Highest debt\nSort: Highest purchases\nSort: Invoice count\n1 of 1 suppliers\nDS\nDemo supplier\nNo phone\nNo invoices\nView profile\nInvoices\n⋮"
+    },
+    {
+      "name": "team",
+      "selector": "#page-users",
+      "text": "Users\n\nStaff accounts and permissions\n\nFull Archive\n+ إضافة مستخدم\nكل الأدوار\nمدير\nموظف\nمشاهد\n2 مستخدم\nDe\nDemo administrator\n@demo-admin\n⋮\nمدير\nمفعّل\n—\nDe\nDemo specialist\n@demo-agent\n⋮\nموظف\nمفعّل\n—\nالجلسات النشطة الآن\n— موقع كل مستخدم متصل\nالحوادث الأمنية والحسابات المُعطَّلة\nتحديث\nالحسابات المُعطَّلة\n\nلا توجد حسابات مُعطَّلة حالياً\n\nسجل الأحداث الأمنية\nالمستخدم\tنوع الحادثة\tالتفاصيل\tمصدر المحاولة\tالوقت\nلا توجد أحداث أمنية"
+    },
+    {
+      "name": "reports",
+      "selector": "#spk-rep-prev",
+      "text": "Orders\nOrders\nAll\nToday · Tuesday 27 October\nReport\nReceived orders\n1\nConfirmed\n0\nFollow-up\n1\nCancelled\n0\nConfirmation rate\n0%\n0 of 1\nToday\n#DEMO-1001\nDemo customer\n27 Oct\n8:39 pm\nEGP 300\n⋮\nUnconfirmed\n2 items\nNo deposit\nDeposit\nD\n1–1 of 1\nPer page\n15\n30\n50\n100"
+    },
+    {
+      "name": "history",
+      "selector": "#page-movements",
+      "text": "Transactions\nManage returns and exchanges\nTransactions\nArchive\nCollections Log\nAll\n1\nResults: 1 of 1\n#DEMO-1001\nDemo customer\nToday\nat 08:39 PM\n⋮\nTotal\nEGP\n300\nPaid\nEGP\n0\nRemaining\nEGP\n300\nOrder status\nOut for Delivery\n1–1 of 1\nRows:\n10\n20\n50\n100"
+    },
+    {
+      "name": "closing",
+      "selector": "#dash-stats",
+      "text": "Dashboard\n\nOverview of sales, inventory, and vault performance\n\n＋ Create\nLast update\nFull Archive\nDE\nUnknown\nDE\nUnknown\nConnection status unavailable\nTOTAL SALES\ni\n••••••\n \nNET PROFIT\ni\n••••••\n \nTOTAL PURCHASES\ni\n••••••\n \nOutstanding / Debts\n••••\ni\nApproved Expenses\n••••\ni\nReturns\n••••\ni\nShipping Collected\n••••\ni\nDeposits Collected\n••••\ni\nCustomer Discounts\n••••\ni\nLow Stock Items\n••••\ni\nIn Shipping\nIn Shipping\n0\nDelivered\n0\nShipping Issues\n0\nToday\nYesterday\nLast 3 days\nLast 7 Days\nLast 2 weeks\nLast month\nLast 2 months\nLast 3 months\nAll time\n0 orders\n0\nDelivered\n0\nIn transit\n0\nIssues\nNo orders currently in shipping\nView all ›"
+    }
+  ]
+}

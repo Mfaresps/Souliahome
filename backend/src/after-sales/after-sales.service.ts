@@ -95,7 +95,56 @@ export class AfterSalesService {
       row.workflow.replacementPickupStatus = replacement?.pickupStatus || 'Pending';
       row.workflow.replacementPrepared = replacement?.prepChecked === true;
     }
+    row.rollback = await this.rollbackOption(row);
     return row;
+  }
+  private async rollbackOption(row: any, session?: any) {
+    const w = row.workflow;
+    const blocked = (reason: string) => ({ available: false as const, reason });
+    if (['closed', 'cancelled'].includes(w.stage)) return blocked('الطلب مغلق؛ لا توجد خطوة تنفيذ مفتوحة للتراجع');
+    if (w.refund || w.collection || w.carrierSettlement) return blocked('يوجد دفع أو تحصيل فعلي؛ يجب عكس التسوية المالية بإجراء مستقل أولًا');
+    if (w.receivedAt || w.replacementDeliveredAt || row.returnTxId) return blocked('يوجد استلام أو تسليم فعلي؛ راجع حركة المخزون قبل التراجع');
+    if (w.shipment) return blocked('يوجد طلب شحن؛ يلزم إلغاء البوليصة أو مطابقتها مع بوسطة أولًا');
+    let replacement: any = null, pieces: any[] = [];
+    if (w.replacementTxId) {
+      replacement = await this.connection.collection('transactions').findOne({ _id: this.id(w.replacementTxId) }, { session });
+      if (!replacement || replacement.cancelled || replacement.archived || replacement.afterSales?.caseId !== String(row._id) || replacement.afterSales?.role !== 'replacement') return blocked('فاتورة البديل غير فعالة أو غير مرتبطة بهذا الطلب');
+      if (replacement.afterSales.shipmentPending || replacement.bostaOrderId || replacement.shippedAt || replacement.deliveredAt ||
+        ['Shipped', 'Delivered'].includes(replacement.pickupStatus) || (replacement.bostaStatus && !['CREATED', 'VALIDATION_ERROR'].includes(replacement.bostaStatus))) return blocked('البديل دخل الشحن؛ راجع البوليصة قبل التراجع');
+      pieces = await this.connection.collection('inventoryunits').find({ 'assignment.transactionId': w.replacementTxId }, { session, projection: { status: 1, __v: 1 } }).sort({ _id: 1 }).toArray();
+      if (pieces.some(unit => !['reserved', 'picking', 'prepared'].includes(unit.status))) return blocked('حالة إحدى قطع البديل تتطلب مراجعة المخزون قبل التراجع');
+    }
+    const step = !w.approvedAt ? 'request' : replacement && (pieces.length || replacement.prepChecked || ['Preparing', 'Ready', 'Picked-Up'].includes(replacement.pickupStatus)) ? 'preparation' : 'approval';
+    const token = createHash('sha256').update(JSON.stringify({ step, history: w.history, replacementId: w.replacementTxId,
+      status: replacement?.pickupStatus, checked: replacement?.prepChecked, revision: replacement?.unitTrackingRevision, pieces })).digest('hex');
+    return { available: true as const, step, token, reason: step === 'request' ? 'التراجع عن تسجيل الطلب سيُلغي الطلب الحالي ويتيح تقديم طلب جديد.' :
+      step === 'preparation' ? 'سيعود البديل إلى انتظار التجهيز وتُلغى اختيارات القطع وتجهيزها، مع الاحتفاظ بالاعتماد.' :
+        'سيعود الطلب إلى انتظار الاعتماد. تُلغى فاتورة البديل الحالية ويُعاد رصيدها، مع الاحتفاظ بالسجل.' };
+  }
+  rollback(id: string, body: any, actor: any) {
+    if (actor?.role !== 'admin') throw new ForbiddenException('التراجع عن خطوات الطلب متاح للمسؤول فقط');
+    if (!String(body.note || '').trim() || body.confirmed !== true) throw new BadRequestException('حدد سبب التراجع وأكد الخطوة المطلوبة');
+    return this.mutate(id, 'step-rolled-back', body, actor, async (row, ctx, by) => {
+      const option = await this.rollbackOption(row, ctx.session);
+      if (!option.available) throw new ConflictException(option.reason);
+      if (option.token !== body.expectedToken || option.step !== body.step) throw new ConflictException('تغيرت خطوات الطلب؛ حدّث الملف قبل التراجع');
+      const w = row.workflow, replacementId = w.replacementTxId;
+      if (option.step === 'request') {
+        row.status = 'مرفوض'; w.stage = 'cancelled'; w.cancelledAt = new Date().toISOString(); w.cancelledBy = by;
+      } else if (option.step === 'preparation') {
+        await this.transactions.undoAfterSalesPreparation(replacementId, String(row._id), by, actor.userId, ctx);
+        w.replacementPrepared = false; w.replacementPickupStatus = 'Pending';
+      } else {
+        if (replacementId) {
+          await this.transactions.cancelAfterSalesReplacement(replacementId, String(row._id), body.note, by, ctx);
+          w.revertedReplacements = [...(w.revertedReplacements || []), { transactionId: replacementId, ref: w.replacementRef, by, at: new Date().toISOString() }];
+          delete w.replacementTxId; delete w.replacementRef; delete w.replacementPrepared; delete w.replacementPickupStatus;
+        }
+        delete w.approvedAt; delete w.approvedBy; w.stage = 'requested'; row.status = 'معلق';
+      }
+      w.lastRollback = { step: option.step, by, note: body.note, at: new Date().toISOString() };
+      if (replacementId) ctx.afterCommit.push(() => this.transactions.notifyUnitIdentitiesChanged(replacementId));
+    });
   }
   async invoice(id: string) {
     const tx = await this.transactions.findById(String(this.id(id)));
@@ -195,7 +244,7 @@ export class AfterSalesService {
       const original = await this.connection.collection('transactions').updateOne({ _id: this.id(row.originalTransactionId), cancelled: { $ne: true } }, { $inc: { unitTrackingRevision: 1 } }, { session: context.session });
       if (!original.matchedCount) throw new ConflictException('الفاتورة الأصلية غير فعالة');
       await work(row, context, by);
-      this.history(row, action, by, { note: String(body.note || '').slice(0, 1000) });
+      this.history(row, action, by, { note: String(body.note || '').slice(0, 1000), ...(action === 'step-rolled-back' ? { step: body.step } : {}) });
       row.workflow.operations.push({ key: body.operationKey, fingerprint });
       this.closeIfComplete(row);
       row.markModified('workflow'); await row.save({ session: context.session });

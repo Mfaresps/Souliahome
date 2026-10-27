@@ -460,6 +460,8 @@ export class SearchService {
       total: tx.total,
       itemsCount: Array.isArray(tx.items) ? tx.items.length : 0,
       createdAt: tx.createdAt,
+      transactionDate: tx.transactionDate,
+      date: tx.date,
       payStatus: tx.payStatus,
       bostaStatusLabel: tx.bostaStatusLabel || '',
       // The order's REAL state, not just the last Bosta label. A shipment deleted at
@@ -513,7 +515,7 @@ export class SearchService {
     const transactions = await this.transactionModel
       .find({ ...TX_ANY_FILTER, ref: { $regex: `^${escapeRegex(ref)}`, $options: 'i' } })
       .select(
-        'ref client phone type total payStatus items createdAt afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts prepChecked shipCo carrierCode notes cancelled cancelledAt cancelReason',
+        'ref client phone type total payStatus items createdAt transactionDate date afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts prepChecked shipCo carrierCode notes cancelled cancelledAt cancelReason',
       )
       .sort({ ref: 1 })
       .limit(200)
@@ -543,7 +545,7 @@ export class SearchService {
         bostaTrackingNumber: { $regex: `^${escapeRegex(trackingNo)}`, $options: 'i' },
       })
       .select(
-        'ref client phone type total payStatus items createdAt afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts prepChecked shipCo carrierCode notes cancelled cancelledAt cancelReason',
+        'ref client phone type total payStatus items createdAt transactionDate date afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts prepChecked shipCo carrierCode notes cancelled cancelledAt cancelReason',
       )
       .sort({ createdAt: -1 })
       .limit(200)
@@ -627,7 +629,7 @@ export class SearchService {
     const transactions = await this.transactionModel
       .find({ ...TX_ANY_FILTER, phone: { $regex: escapeRegex(phone), $options: 'i' } })
       .select(
-        'ref client phone type total payStatus items createdAt afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts prepChecked shipCo carrierCode notes cancelled cancelledAt cancelReason',
+        'ref client phone type total payStatus items createdAt transactionDate date afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts prepChecked shipCo carrierCode notes cancelled cancelledAt cancelReason',
       )
       .sort({ createdAt: -1 })
       .limit(300)
@@ -735,7 +737,7 @@ export class SearchService {
     const transactions = await this.transactionModel
       .find(TX_ANY_FILTER)
       .select(
-        'ref client phone type total payStatus notes items createdAt afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts prepChecked shipCo carrierCode cancelled cancelledAt cancelReason',
+        'ref client phone type total payStatus notes items createdAt transactionDate date afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts prepChecked shipCo carrierCode cancelled cancelledAt cancelReason',
       )
       .sort({ createdAt: -1 })
       .limit(2000)

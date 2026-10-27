@@ -71,6 +71,71 @@ describe('After-sales atomic workflow (isolated Mongo replica set)', () => {
     expect(afterSalesQuote('return', 'customer-choice', 500, 0, 50)).toMatchObject({ refundDue: 450 });
     expect(() => afterSalesQuote('exchange', 'defect', 500, 500, 50)).toThrow();
   });
+  const undo = async (id: string) => {
+    const view: any = await service.get(id);
+    return op({ step: view.rollback.step, expectedToken: view.rollback.token, note: 'Correct accidental workflow action', confirmed: true });
+  };
+  it('undoes approval once, restores replacement stock, and permits a fresh approval', async () => {
+    const row: any = await service.create(request('exchange'), actor), id = String(row._id);
+    const before = (await transactions.getInventory())[0].current;
+    const approved: any = await service.approve(id, op(), actor), replacementId = approved.workflow.replacementTxId;
+    expect((await transactions.getInventory())[0].current).toBe(before - 1);
+    const body = await undo(id);
+    expect(body.step).toBe('approval');
+    const reverted: any = await service.rollback(id, body, actor);
+    expect(reverted.workflow.stage).toBe('requested'); expect(reverted.workflow.approvedAt).toBeUndefined(); expect(reverted.workflow.replacementTxId).toBeUndefined();
+    expect((await Tx.findById(replacementId).lean()).cancelled).toBe(true);
+    expect((await transactions.getInventory())[0].current).toBe(before);
+    await service.rollback(id, body, actor);
+    expect((await Cases.findById(id).lean()).workflow.history.filter((h: any) => h.action === 'step-rolled-back')).toHaveLength(1);
+    expect(await mongo.connection.collection('vaultentries').countDocuments()).toBe(0);
+    const again: any = await service.approve(id, op(), actor);
+    expect(again.workflow.replacementTxId).not.toBe(replacementId);
+    expect((await transactions.getInventory())[0].current).toBe(before - 1);
+    await expect(service.rollback(id, { ...body, operationKey: op().operationKey }, actor)).rejects.toThrow('تغيرت');
+  });
+  it('undoes replacement preparation and releases scanned identities without cancelling approval', async () => {
+    const row: any = await service.create(request('exchange'), actor), id = String(row._id);
+    const approved: any = await service.approve(id, op(), actor), replacementId = approved.workflow.replacementTxId;
+    await Tx.updateOne({ _id: replacementId }, { $set: { pickupStatus: 'Preparing', prepChecked: true, 'items.0.lineId': 'replacement-line' } });
+    const piece = await Unit.create({ productId, status: 'prepared', warehouseCode: 'MAIN', assignment: { transactionId: replacementId, lineId: 'replacement-line' },
+      origin: { kind: 'legacy-unknown', reconciliationRef: 'undo-prep' }, registeredByUserId: actor.userId, registeredBy: 'Test operator' });
+    const before = (await transactions.getInventory())[0].current, body = await undo(id);
+    expect(body.step).toBe('preparation');
+    await service.rollback(id, body, actor);
+    expect(await Unit.findById(piece._id).lean()).toMatchObject({ status: 'available', assignment: null });
+    expect(await Tx.findById(replacementId).lean()).toMatchObject({ pickupStatus: 'Pending', prepChecked: false, cancelled: false });
+    expect((await service.get(id)).rollback.step).toBe('approval');
+    expect((await transactions.getInventory())[0].current).toBe(before);
+    expect(await Event.countDocuments({ unitId: String(piece._id), action: 'picking-undone' })).toBe(1);
+  });
+  it('undoes initial submission explicitly as cancellation and rejects stale or unauthorized undo', async () => {
+    const row: any = await service.create(request(), actor), id = String(row._id), body = await undo(id);
+    expect(body.step).toBe('request');
+    expect(() => service.rollback(id, body, { ...actor, role: 'staff' })).toThrow();
+    expect(() => service.rollback(id, { ...body, confirmed: false }, actor)).toThrow();
+    await service.approve(id, op(), actor);
+    await expect(service.rollback(id, body, actor)).rejects.toThrow('تغيرت');
+    await service.rollback(id, await undo(id), actor);
+    await service.rollback(id, await undo(id), actor);
+    expect((await service.get(id)).workflow.stage).toBe('cancelled');
+    expect((await service.get(id)).rollback.available).toBe(false);
+  });
+  it('blocks undo after shipping or stock receipt and rolls back all partial database effects', async () => {
+    const row: any = await service.create(request('exchange'), actor), id = String(row._id);
+    const approved: any = await service.approve(id, op(), actor), body = await undo(id);
+    await Cases.updateOne({ _id: id }, { $set: { 'workflow.shipment': { status: 'creating' } } });
+    expect((await service.get(id)).rollback.available).toBe(false);
+    await expect(service.rollback(id, body, actor)).rejects.toThrow('شحن');
+    await Cases.updateOne({ _id: id }, { $unset: { 'workflow.shipment': 1 }, $set: { 'workflow.receivedAt': new Date().toISOString() } });
+    await expect(service.rollback(id, body, actor)).rejects.toThrow('استلام');
+    await Cases.updateOne({ _id: id }, { $unset: { 'workflow.receivedAt': 1 } });
+    const cancel = transactions.cancelAfterSalesReplacement.bind(transactions);
+    const spy = jest.spyOn(transactions, 'cancelAfterSalesReplacement').mockImplementation(async (...args: any[]) => { await cancel(...args); throw new Error('Injected failure'); });
+    await expect(service.rollback(id, await undo(id), actor)).rejects.toThrow('Injected failure'); spy.mockRestore();
+    expect((await Cases.findById(id).lean()).workflow.stage).toBe('approved');
+    expect((await Tx.findById(approved.workflow.replacementTxId).lean()).cancelled).toBe(false);
+  });
   it('receives the original identity once, credits the invoice and refunds only on physical payment', async () => {
     const body = request(), row: any = await service.create(body, actor);
     expect(String((await service.create(body, actor))._id)).toBe(String(row._id));

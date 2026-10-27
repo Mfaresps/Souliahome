@@ -24,6 +24,8 @@ export interface SearchResultItem {
   readonly total?: number;
   readonly itemsCount?: number;
   readonly createdAt?: string;
+  readonly transactionDate?: string;
+  readonly date?: string;
   readonly payStatus?: string;
   readonly bostaStatusLabel?: string;
   readonly bostaStatus?: string;

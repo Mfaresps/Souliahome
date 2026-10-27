@@ -25,6 +25,26 @@ function fixture(kind: string, type: string, event = '123') {
   return { context, element };
 }
 describe('Notification event routing', () => {
+  it('queues a comment clicked while another notification is still opening', async () => {
+    const { context } = fixture('tx', 'comment');
+    let release!: () => void;
+    context.api.mockImplementationOnce(() => new Promise(resolve => { release = () => resolve({ _id: id }); }));
+    const first = context.souliaOpenPendingPush();
+    expect(await context.souliaNavigateNotification('/?pushRecord=shopify:' + id + '&pushType=comment&pushEvent=456')).toBe(true);
+    release(); await first;
+    expect(context.openShopifyOrderComments).toHaveBeenCalledWith(id, '456');
+    expect(context.loadShopifyOrders).not.toHaveBeenCalled();
+    expect(context.toast).not.toHaveBeenCalled();
+  });
+  it('retains a comment clicked during startup instead of reporting missing access', async () => {
+    const { context } = fixture('tx', 'comment');
+    context.souliaPushAppReady = false;
+    expect(await context.souliaNavigateNotification('/?pushRecord=shopify:' + id + '&pushType=comment&pushEvent=456')).toBe(true);
+    expect(context.openShopifyOrderComments).not.toHaveBeenCalled();
+    context.souliaPushAppReady = true;
+    await context.souliaOpenPendingPush();
+    expect(context.openShopifyOrderComments).toHaveBeenCalledWith(id, '456');
+  });
   it('does not open a destination denied by page permissions', async () => {
     const { context } = fixture('tx', 'order');
     context._requirePageAccess.mockReturnValue(false);
@@ -122,9 +142,9 @@ describe('Notification event routing', () => {
     expect(context.openOrderView).toHaveBeenCalledWith(id); expect(context.highlightInvComment).toHaveBeenCalledWith(123);
     expect(await context.souliaOpenPendingPush()).toBe(false);
   });
-  it('opens the precise Shopify comment after loading orders', async () => {
+  it('delegates Shopify comment loading to the comment opener without a duplicate fetch', async () => {
     const { context } = fixture('shopify', 'comment'); await context.souliaOpenPendingPush();
-    expect(context.loadShopifyOrders).toHaveBeenCalledTimes(1); expect(context.openShopifyOrderComments).toHaveBeenCalledWith(id, '123');
+    expect(context.loadShopifyOrders).not.toHaveBeenCalled(); expect(context.openShopifyOrderComments).toHaveBeenCalledWith(id, '123');
   });
   it('opens Shopify receipts and highlights the notified receipt', async () => {
     const { context, element } = fixture('shopify', 'deposit', 'receipt-123'); await context.souliaOpenPendingPush();

@@ -9,6 +9,33 @@ import {
   carrierSeedPrice,
   isValidCarrier,
 } from '../../src/shared/carriers.constants';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import { runInNewContext } from 'vm';
+
+describe('Soulia self-delivery', () => {
+  it.each(['Shipping by soulia', 'shipiing by soulia', ' SHIPPING  BY  SOULIA ', 'الشحن بواسطة سوليا', 'soulia'])('resolves saved name %s on frontend and backend', name => {
+    const html = readFileSync(resolve(__dirname, '../../../frontend/public/index.html'), 'utf8');
+    const source = html.slice(html.indexOf('const CARRIERS = ['), html.indexOf('function _pickCarrier('));
+    const c: any = { settings: { shipCos: [{ name, code: '', cairo: 0, gov: 25 }] }, currentLang: 'en', esc: String, t: String, fmtJ: String };
+    runInNewContext(source, c);
+    expect(carrierCodeFromName(name)).toBe('soulia');
+    expect(c.carrierCodeFromName(name)).toBe('soulia');
+    expect(c.carrierOptions()).toEqual([{ code: 'soulia', name: 'Shipping by Soulia', cairo: 0, gov: 25, integration: 'none' }]);
+    const picker = c._carrierPickerHtml('sp', 'soulia', 'cairo');
+    expect(picker).toContain('value="soulia"');
+    expect(picker).toContain('Shipping by Soulia');
+    expect(picker).not.toContain('cpk-link');
+    c.currentLang = 'ar';
+    expect(c.carrierOptions()[0].name).toBe('الشحن بواسطة سوليا');
+  });
+  it('accepts self-delivery without an external integration and preserves a zero tariff', () => {
+    expect(isValidCarrier('soulia')).toBe(true);
+    expect(carrierIntegration('soulia')).toBe('none');
+    expect(carrierSeedPrice('soulia', 'cairo')).toBe(0);
+    expect(carrierSeedPrice('soulia', 'gov')).toBe(0);
+  });
+});
 
 describe('carriers registry', () => {
   describe('the code is the stored value', () => {

@@ -1,0 +1,185 @@
+[
+  {
+    "duration": 7,
+    "chapter": "THE BIG PICTURE",
+    "title": [
+      "YOUR ENTIRE BUSINESS.",
+      "ONE SYSTEM."
+    ],
+    "caption": "From daily operations to business control.",
+    "shots": [
+      "dashboard",
+      "orders"
+    ],
+    "detail": "One connected workspace",
+    "crops": [
+      0,
+      1
+    ]
+  },
+  {
+    "duration": 6,
+    "chapter": "BUSINESS OVERVIEW",
+    "title": [
+      "EVERYTHING,",
+      "AT A GLANCE."
+    ],
+    "caption": "See order activity. Know what needs attention.",
+    "shots": [
+      "overview",
+      "orders"
+    ],
+    "detail": "Received · Confirmed · Follow-up",
+    "crops": [
+      0,
+      1
+    ]
+  },
+  {
+    "duration": 11,
+    "chapter": "ORDER MANAGEMENT",
+    "title": [
+      "EVERY ORDER.",
+      "CLEARLY ORGANIZED."
+    ],
+    "caption": "Find the order. Keep the details together.",
+    "shots": [
+      "orders",
+      "order-search"
+    ],
+    "detail": "Following order DEMO-1001",
+    "crops": [
+      1,
+      1
+    ]
+  },
+  {
+    "duration": 8,
+    "chapter": "CUSTOMER CONFIRMATION",
+    "title": [
+      "LESS MANUAL WORK.",
+      "SMARTER FOLLOW-UP."
+    ],
+    "caption": "A clear status. A responsible team member.",
+    "shots": [
+      "followup",
+      "followup"
+    ],
+    "detail": "Order confirmation · Awaiting customer"
+  },
+  {
+    "duration": 9,
+    "chapter": "PRODUCTS & INVENTORY",
+    "title": [
+      "PRODUCTS AND STOCK.",
+      "UNDER CONTROL."
+    ],
+    "caption": "Product records with stock visibility.",
+    "shots": [
+      "products",
+      "products"
+    ],
+    "detail": "The same products, ready for preparation",
+    "crops": [
+      0.45,
+      1
+    ]
+  },
+  {
+    "duration": 9,
+    "chapter": "WAREHOUSE & FULFILLMENT",
+    "title": [
+      "EVERY STEP.",
+      "VERIFIED."
+    ],
+    "caption": "Preparation, piece scanning and order checks.",
+    "shots": [
+      "preparation",
+      "picking"
+    ],
+    "detail": "DEMO-1001 · 2 items to prepare",
+    "crops": [
+      0,
+      0.34
+    ]
+  },
+  {
+    "duration": 8,
+    "chapter": "SHIPPING & DELIVERY",
+    "title": [
+      "FROM DISPATCH",
+      "TO DELIVERY."
+    ],
+    "caption": "Keep shipment status beside the order.",
+    "shots": [
+      "shipping",
+      "shipping"
+    ],
+    "detail": "Bosta status display · Offline demonstration"
+  },
+  {
+    "duration": 9,
+    "chapter": "FINANCE & SUPPLIERS",
+    "title": [
+      "EVERY TRANSACTION.",
+      "ACCOUNTED FOR."
+    ],
+    "caption": "Organized expenses and supplier records.",
+    "shots": [
+      "expenses",
+      "suppliers"
+    ],
+    "detail": "Visibility across purchasing and spending",
+    "crops": [
+      1,
+      0
+    ]
+  },
+  {
+    "duration": 8,
+    "chapter": "TEAM & CUSTOMER SERVICE",
+    "title": [
+      "THE RIGHT TASK.",
+      "THE RIGHT PERSON."
+    ],
+    "caption": "Roles, responsibilities and customer follow-up.",
+    "shots": [
+      "team",
+      "followup"
+    ],
+    "detail": "Administrator · Specialist · Customer service",
+    "crops": [
+      0.08,
+      0
+    ]
+  },
+  {
+    "duration": 8,
+    "chapter": "REPORTS & HISTORY",
+    "title": [
+      "COMPLETE VISIBILITY.",
+      "BETTER DECISIONS."
+    ],
+    "caption": "From a daily summary to the order record.",
+    "shots": [
+      "reports",
+      "history"
+    ],
+    "detail": "Daily order report · Transaction history"
+  },
+  {
+    "duration": 7,
+    "chapter": "SOULIA",
+    "title": [
+      "ONE SYSTEM.",
+      "TOTAL CONTROL."
+    ],
+    "caption": "Orders. Inventory. Shipping. Finance. Teams.",
+    "shots": [
+      "closing",
+      "closing"
+    ],
+    "detail": "SOULIA",
+    "end": true
+  }
+]

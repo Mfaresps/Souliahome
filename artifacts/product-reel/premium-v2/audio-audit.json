@@ -1,0 +1,11 @@
+{
+  "duration": 90,
+  "sampleRate": 48000,
+  "channels": 2,
+  "bpm": 120,
+  "peakDbfs": -1.1103465569966273,
+  "rmsDbfs": -14.67723687954688,
+  "original": true,
+  "thirdPartySamples": false,
+  "transitionCues": 41
+}

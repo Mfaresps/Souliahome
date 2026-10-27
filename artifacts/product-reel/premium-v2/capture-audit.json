@@ -1,0 +1,207 @@
+{
+  "blocked": 18,
+  "local": 106,
+  "errors": [],
+  "shots": [
+    {
+      "name": "dashboard",
+      "selector": "#dash-stats",
+      "text": "TOTAL SALES\ni\n••••••\n \nNET PROFIT\ni\n••••••\n \nTOTAL PURCHASES\ni\n••••••\n \nOutstanding / Debts\n••••\ni\nApproved Expenses\n••••\ni\nReturns\n••••\ni\nShipping Collected\n••••\ni\nDeposits Collected\n••••\ni\nCustomer Discounts\n••••\ni\nLow Stock Items\n••••\ni"
+    },
+    {
+      "name": "overview",
+      "selector": "#sp-kpi",
+      "text": "Today · Tuesday 27 October\nReport\nReceived orders\n1\nConfirmed\n0\nFollow-up\n1\nCancelled\n0\nConfirmation rate\n0%\n0 of 1"
+    },
+    {
+      "name": "orders",
+      "selector": "#page-shopify-orders",
+      "text": "Orders\nOrders\nAll\nToday · Tuesday 27 October\nReport\nReceived orders\n1\nConfirmed\n0\nFollow-up\n1\nCancelled\n0\nConfirmation rate\n0%\n0 of 1\nToday\n#DEMO-1001\nDemo customer\n27 Oct\n1:00 pm\nEGP 300\n⋮\nUnconfirmed\n2 items\nNo deposit\nDeposit\n1\nD\n1–1 of 1\nPer page\n15\n30\n50\n100"
+    },
+    {
+      "name": "order-card",
+      "selector": "#sp-mobile-list .sp-card",
+      "text": "#DEMO-1001\nDemo customer\n27 Oct\n1:00 pm\nEGP 300\n⋮\nUnconfirmed\n2 items\nNo deposit\nDeposit\n1\nD"
+    },
+    {
+      "name": "order-detail",
+      "selector": ".sp-peek",
+      "text": "#DEMO-1001\nUnconfirmed\n27 October 2026 · 13:00\nDS\nDemo specialist\nDC\nDemo customer\nFollow-up\nDEMO-FU-01\nAwaiting customer\nHandled by:\nDS\nDemo specialist\nReason:\nOrder confirmation\nCalls:\nNo calls yet\nOpened:\n7h\nNo entries in the trail yet.\nAdd note or call\nComments\n1\nReply\nDS\nDemo specialist\n7 hours ago\nProtect fragile items.\nDelivery details\nDemo address · Cairo\nItems\n2\nWT\nWoven tissue box\nDEMO-01\n12 available\n× 1\nRD\nRiva dining bowl\nDEMO-02\n9 available\n× 1\nPayment\nNo deposit\nOrder total\nEGP 300\nDeposit\nNo deposit\nRemaining\nEGP 300\nDeposit receipts\nAdd deposit\nNo receipt — no approved deposit recorded"
+    },
+    {
+      "name": "customer",
+      "selector": ".sp-pk-cust",
+      "text": "Delivery details\nDemo address · Cairo\nDelivery address\nDemo address · Cairo\nCustomer note\nProtect fragile items."
+    },
+    {
+      "name": "order-items",
+      "selector": ".sp-pk-items-section",
+      "text": "Items\n2\nWT\nWoven tissue box\nDEMO-01\n12 available\n× 1\nRD\nRiva dining bowl\nDEMO-02\n9 available\n× 1"
+    },
+    {
+      "name": "payment",
+      "selector": ".spdep-payment-card",
+      "text": "Payment\nNo deposit\nOrder total\nEGP 300\nDeposit\nNo deposit\nRemaining\nEGP 300\nDeposit receipts\nAdd deposit\nNo receipt — no approved deposit recorded"
+    },
+    {
+      "name": "assignment",
+      "selector": ".sp-asg",
+      "text": "Assign order #DEMO-1001\nCurrently assigned to: Demo specialist\nUnassign\nDS\nDemo specialist\ncurrent\n1 open\nCancel\nAssign"
+    },
+    {
+      "name": "confirmation",
+      "selector": ".spd",
+      "text": "Prepare & Ship order\n#DEMO-1001\nORDER SUMMARY\nPrepare & Ship will deduct stock from: المخزن الرئيسي\nClient\nDemo customer\nItems\n2 items\nShipping\nEGP 0\nTotal\nEGP 300\nPaid\nEGP 0\nRemaining\nEGP 300\nDeposit receipts\nNo receipt — no approved deposit recorded\nSHIPPING & PREPARATION\nShipping carrier\nBosta\nEGP 0\nConnected\nThe shipping amount comes from the Shopify order and does not change with the carrier.\nSend straight to \nPreparing\n Enters a prep group as soon as it is recorded.\nCancel\nPrepare & Ship"
+    },
+    {
+      "name": "confirmation-summary",
+      "selector": ".spd-col:first-child",
+      "text": "ORDER SUMMARY\nPrepare & Ship will deduct stock from: المخزن الرئيسي\nClient\nDemo customer\nItems\n2 items\nShipping\nEGP 0\nTotal\nEGP 300\nPaid\nEGP 0\nRemaining\nEGP 300\nDeposit receipts\nNo receipt — no approved deposit recorded"
+    },
+    {
+      "name": "confirmation-actions",
+      "selector": ".spd-actions",
+      "text": "Cancel\nPrepare & Ship"
+    },
+    {
+      "name": "carrier",
+      "selector": ".spd-col:nth-child(2)",
+      "text": "SHIPPING & PREPARATION\nShipping carrier\nBosta\nEGP 0\nConnected\nThe shipping amount comes from the Shopify order and does not change with the carrier.\nSend straight to \nPreparing\n Enters a prep group as soon as it is recorded."
+    },
+    {
+      "name": "confirmed-card",
+      "selector": ".sp-pk-head",
+      "text": "#DEMO-1001\nAwaiting Prep\n27 October 2026 · 13:00\nDS\nDemo specialist\nDC\nDemo customer"
+    },
+    {
+      "name": "order-search",
+      "selector": "#page-shopify-orders",
+      "text": "Orders\nOrders\nAll\nActive:\nSearch: DEMO-1001\nClear all\nToday · Tuesday 27 October\nReport\nReceived orders\n1\nConfirmed\n1\nFollow-up\n0\nCancelled\n0\nConfirmation rate\n100%\n1 of 1\nToday\n#DEMO-1001\nConfirmed\nDemo customer\n27 Oct\n1:00 pm\nEGP 300\n⋮\nNo deposit\nDeposit\n2 items\n1\nD\n1–1 of 1\nPer page\n15\n30\n50\n100"
+    },
+    {
+      "name": "followup",
+      "selector": "#page-complaints",
+      "text": "Customer service & after-sales\nExport Excel\nFull Archive\nNew Complaint\nOrder Follow-ups\nComplaints\n#DEMO-1001\nDemo customer\nOrder confirmation\n7h\n⋮\nAwaiting customer\nDEMO-FU-01\n27/10/2026\nNo trail yet — tap to add\nD\nDemo specialist\n+\n1–1 of 1\nRows:\n10\n20\n30\n50\n100"
+    },
+    {
+      "name": "products",
+      "selector": "#page-products",
+      "text": "Products\n\nManage products, prices, and stock levels\n\n+ Add product\nTech Pack\nProducts\nTech Packs\nAll\n4\nAvailable\n3\nLow\n1\nOut of Stock\n0\nAll categories\nAll collections\nFilters\nName: A → Z\nResults: 4 of 4\nLow\nCotton basket\nDEMO-04\nEGP 150\nStock: 3\nAvailable\nGlass serving tray\nDEMO-03\nEGP 150\nStock: 6\nAvailable\nRiva dining bowl\nDEMO-02\nEGP 150\nStock: 9\nAvailable\nWoven tissue box\nDEMO-01\nEGP 150\nStock: 12"
+    },
+    {
+      "name": "product-one",
+      "selector": ".prod-grid-card:nth-child(4)",
+      "text": "Available\nWoven tissue box\nDEMO-01\nEGP 150\nStock: 12"
+    },
+    {
+      "name": "product-two",
+      "selector": ".prod-grid-card:nth-child(3)",
+      "text": "Available\nRiva dining bowl\nDEMO-02\nEGP 150\nStock: 9"
+    },
+    {
+      "name": "inventory",
+      "selector": "#page-inventory",
+      "text": "Inventory\n\nStock levels and status for every product\n\nإدارة المخازن\nنقل المنتجات\nFull Archive\nExport\nInventory\nStock Movement Log\ni\n4\nTotal products\ni\n30\nTotal stock\ni\nEGP 4,500\nSale value\ni\nEGP 3,000\nCost value\ni\n3\nAvailable\ni\n1\nLow stock\ni\n0\nOut of stock\nAll\n4\nAvailable\n3\nLow stock\n1\nOut of stock\n0\nFilters\nName: A → Z\nرصيد المخزن\nAll warehouses\nالمخزن الرئيسي\nالمخزن الرئيسي\nResults: 4 of 4\nDEMO-04\nCotton basket\nActive\nEGP 150•Value EGP 450\nLow stock\n3\nPiece codes / existing stockStocktake\nDEMO-03\nGlass serving tray\nActive\nEGP 150•Value EGP 900\nAvailable\n6\nPiece codes / existing stockStocktake\nDEMO-02\nRiva dining bowl\nActive\nEGP 150•Value EGP 1,350\nAvailable\n9\nPiece codes / existing stockStocktake\nDEMO-01\nWoven tissue box\nActive\nEGP 150•Value EGP 1,800\nAvailable\n12\nPiece codes / existing stockStocktake"
+    },
+    {
+      "name": "inventory-card",
+      "selector": ".inv-product-card:last-child",
+      "text": "DEMO-01\nWoven tissue box\nActive\nEGP 150•Value EGP 1,800\nAvailable\n12\nPiece codes / existing stockStocktake"
+    },
+    {
+      "name": "preparation",
+      "selector": "#pu-card-orders-modal",
+      "text": "Prep group orders\nDEMO-PREP\n1 order(s)\nPreparation\n0/1\n#DEMO-1001\nEGP 300\nDemo customer\n2 unit(s)\nInternal comments\n1\nRemaining EGP 300\n1 order(s)\n↑\n↓\nto navigate\n·\nSpace\nhold Space for invoice"
+    },
+    {
+      "name": "picking",
+      "selector": "#pu-card-orders-modal",
+      "text": "Prep group orders\nDEMO-PREP\n1 order(s)\nPreparation\n0/1\n#DEMO-1001\nDemo customer\nPending\n·\nBosta\n·\nDemo specialist\n·\nOrder date: 27 October 2026 · 03:00\nReview internal comments\n1\nTotal\nEGP 300\nRemaining\nEGP 300\nPrepare this order\nCustomer note\nCame with the order — affects delivery\nProtect fragile items.\nInternal comments\nVisible to staff only\n1\nDS\nDemo specialist\nProtect fragile items.\n7h\nUser\nProduct\nItems\n2 item(s) · 2 unit(s)\n2\nRequired pieces\n0\nScanned\n2\nRemaining\nScanner ready — scan a piece\n0 / 2\nManual entry\n✓\n1\n×\nScan next\nWoven tissue box\nSKU DEMO-01\nUnit price EGP 150\nTotal EGP 150\nAwaiting scan\n0 / 1\nPrepare without scan\n✓\n1\n×\nRiva dining bowl\nSKU DEMO-02\nUnit price EGP 150\nTotal EGP 150\nAwaiting scan\n0 / 1\nPrepare without scan\nView invoice\nReturn to pending\nPrepare orders first"
+    },
+    {
+      "name": "pick-item",
+      "selector": "#pw-work .pw-item",
+      "text": "✓\n1\n×\nScan next\nWoven tissue box\nSKU DEMO-01\nUnit price EGP 150\nTotal EGP 150\nAwaiting scan\n0 / 1\nPrepare without scan"
+    },
+    {
+      "name": "scan-before",
+      "selector": ".pw-scan-overview",
+      "text": "2\nRequired pieces\n0\nScanned\n2\nRemaining"
+    },
+    {
+      "name": "scan-after",
+      "selector": ".pw-scan-overview",
+      "text": "2\nRequired pieces\n2\nScanned\n0\nRemaining"
+    },
+    {
+      "name": "pick-verified",
+      "selector": "#pw-work .pw-item",
+      "text": "✓\n1\n×\nWoven tissue box\nSKU DEMO-01\nUnit price EGP 150\nTotal EGP 150\nMatched ✓\n1 / 1\nDEMO-PIECE-0"
+    },
+    {
+      "name": "shipping",
+      "selector": "#page-movements",
+      "text": "Transactions\nManage returns and exchanges\nTransactions\nArchive\nCollections Log\nAll\n1\nResults: 1 of 1\n#DEMO-1001\nDemo customer\nToday\nat 01:00 PM\n⋮\nTotal\nEGP\n300\nPaid\nEGP\n0\nRemaining\nEGP\n300\nOrder status\nOut for Delivery\n1–1 of 1\nRows:\n10\n20\n50\n100"
+    },
+    {
+      "name": "dispatch-card",
+      "selector": ".pu-daily-order",
+      "text": "#DEMO-1001\nOut for delivery\nDemo customer\nOrder total\nEGP 300\nTracking: DEMO-TRACK\nNo pickup request recorded\nProducts (2)\nView invoice\nPreview label\nOpen in Bosta ↗"
+    },
+    {
+      "name": "delivered-card",
+      "selector": ".pu-daily-order",
+      "text": "#DEMO-1001\nDelivered\nDemo customer\nOrder total\nEGP 300\nTracking: DEMO-TRACK\nNo pickup request recorded\nProducts (2)\nView invoice\nPreview label\nOpen in Bosta ↗"
+    },
+    {
+      "name": "expenses",
+      "selector": "#page-expenses",
+      "text": "Expenses\n\nManage and track company expenses\n\nFull Archive\nExport\nNew expense\nEGP\n20\nTotal expenses\nEGP\n20\n▲ 2000%\nThis month\nEGP\n0\nAwaiting approval (0)\nEGP\n0\nRejected\nAll\n1\nAwaiting approval\n0\nApproved\n1\nRejected\n0\nAll categories\nRent\nAdvertising\nPackaging\nTransport & travel\nSubscriptions\nSalaries\nElectricity & water\nOffice supplies\nClient hospitality\nOther\nAll accounts\nCash\nVodafone Cash\nInstapay\nBank transfer\nClear\n-\nPackaging\nEGP 20\nApproved\nToday\n-\n⋮\n1–1 of 1\nRows:\n25\n50\n100"
+    },
+    {
+      "name": "suppliers",
+      "selector": "#page-suppliers",
+      "text": "Suppliers\n\nSuppliers and their details\n\nExport Excel\nFull Archive\n+ Add supplier\n Suppliers\n Payments log\nSort: Name\nSort: Highest debt\nSort: Highest purchases\nSort: Invoice count\n1 of 1 suppliers\nDS\nDemo supplier\nNo phone\nNo invoices\nView profile\nInvoices\n⋮"
+    },
+    {
+      "name": "team",
+      "selector": "#page-users",
+      "text": "Users\n\nStaff accounts and permissions\n\nFull Archive\n+ إضافة مستخدم\nكل الأدوار\nمدير\nموظف\nمشاهد\n2 مستخدم\nDe\nDemo administrator\n@demo-admin\n⋮\nمدير\nمفعّل\n—\nDe\nDemo specialist\n@demo-agent\n⋮\nموظف\nمفعّل\n—\nالجلسات النشطة الآن\n— موقع كل مستخدم متصل\nالحوادث الأمنية والحسابات المُعطَّلة\nتحديث\nالحسابات المُعطَّلة\n\nلا توجد حسابات مُعطَّلة حالياً\n\nسجل الأحداث الأمنية\nالمستخدم\tنوع الحادثة\tالتفاصيل\tمصدر المحاولة\tالوقت\nلا توجد أحداث أمنية"
+    },
+    {
+      "name": "permissions",
+      "selector": ".um2",
+      "text": "DE\nتعديل مستخدم\nDemo specialist · @demo-agent\nالحساب\nالصلاحيات\n2\nموظف\nيتعامل مع المبيعات والعملاء\nمشاهد\nيطّلع فقط بدون تعديل\nمدير\nصلاحيات كاملة\nتغطية الصلاحيات\n2 / 73\nقوالب الوظائف:\nمدير عمليات\nمبيعات\nخدمة عملاء\nأمين مخزن\nتجهيز وشحن\nمحاسب\nأمين خزنة\nمشتريات وموردون\nتسويق ومحتوى\nتحديد الكل\nإلغاء الكل\nمُفعّل: 2 من 73 صلاحية\nتتبع الوحدات والباركود\n0/9\nالوحدات - عرض وبحث\nالوحدات - تسجيل القطع الفعلية\nالوحدات - استلام من فاتورة أمر شراء\nالوحدات - حجز وتجهيز وإفراج\nالوحدات - فحص وحالة وحيازة\nالوحدات - مطابقة وتوثيق الجرد\nالوحدات - مراجعة أدلة الجرد\nالوحدات - طباعة وإعادة طباعة\nالوحدات - اختيار يدوي مع تأكيد وتدقيق\nالرئيسية\n0/1\nالرئيسية\nالمخزن والأصناف\n0/3\nالمخزن\nالأصناف\nالأصناف - إنشاء واستيراد وحذف SKU (لا يسمح بتغيير SKU)\nالتصنيفات والمجموعات\n0/6\nالتصنيفات - عرض\nالتصنيفات - إضافة تصنيف/مجموعة\nالتصنيفات - تعديل تصنيف/مجموعة\nالتصنيفات - حذف تصنيف/مجموعة\nالتصنيفات - ربط الأصناف بالمجموعات\nالتصنيفات - ربط الموردين بالمجموعات\nالمعاملات والحركات\n0/3\nالمعاملات\nسجل المعاملات\nالموافقات\nالمشتريات\n0/3\nالمشتريات - إنشاء عملية شراء\nالمشتريات - عرض فواتير الشراء\nالمشتريات - تعديل سعر الشراء\nالعملاء والموردون\n1/3\nالعملاء\nالموردون\nخدمة العملاء\nحساب المورد (الصلاحيات المالية)\n0/12\nحساب المورد - عرض الفواتير\nحساب المورد - عرض أوامر الشراء\nحساب المورد - عرض مرتجعات الموردين\nحساب المورد - عرض سجل المدفوعات\nحساب المورد - عرض سجل المديونية\nحساب المورد - عرض سجل النشاط\nحساب المورد - سداد دفعة للمورد\nحساب المورد - دفع عربون / خصم على الحساب\nحساب المورد - تسوية سجل المديونية\nحساب المورد - إقفال متبقي الفاتورة\nحساب المورد - التراجع عن دفعة\nحساب المورد - إنشاء وإدارة مرتجعات الموردين\nالخزنة والمصاريف\n0/7\nالخزنة\nالمصاريف\nتحصيل من ملف شركة الشحن\nتسويات بوسطة - عرض التسويات وكشف الحساب\nتسويات بوسطة - جلب السعر وتسوية طلبات\nتسويات بوسطة - اعتماد المراجعة وتسجيل التحويلات\nتسويات بوسطة - التراجع عن تسوية\nالتقارير\n0/8\nالتقارير\nالتقارير - مؤشرات الأداء\nالتقارير - المبيعات والمشتريات\nالتقارير - أكواد الخصم\nالتقارير - تحليل الطلبات\nالتقارير - الإلغاءات\nالتقارير - تحليل الشحن\nالتقارير - تصدير Excel/PDF\nShopify ودليل خدمة العملاء\n1/14\nأوردرات Shopify\nشوبيفاي - تحضير وشحن الطلبات\nشوبيفاي - إلغاء أوردر مباشرة\nشوبيفاي - طلب إلغاء أوردر (بموافقة مدير)\nشوبيفاي - رفع إيصال تحويل العربون (الاعتماد للمدير فقط)\nشوبيفاي - تعديل مباشر بدون موافقة المدير (مع تطبيق حد الخصم)\nدليل خدمة العملاء - عرض\nدليل خدمة العملاء - إضافة بطاقات\nدليل خدمة العملاء - تعديل بطاقات\nدليل خدمة العملاء - حذف بطاقات\nدليل خدمة العملاء - إدارة الفولدرات\nدليل خدمة العملاء - الإحصائيات\nدليل خدمة العملاء - تصدير\nدليل خدمة العملاء - استيراد\nالتسليم\n0/2\nتأكيد التسليم يدوياً\nعرض سجل تدقيق التسليم\nالمستخدمون والإعدادات\n0/2\nالمستخدمون\nالإعدادات\n2 صلاحية مفعّلة\nإلغاء\nحفظ التعديلات"
+    },
+    {
+      "name": "returns",
+      "selector": "[data-as-section=\"status\"]",
+      "text": "Case status\nAwaiting approval\nOriginal invoice #DEMO-1001\n\nReason: Customer preference ·\n\nRETURNED ITEM\tQTY\tVALUE\n\n▧\nWoven tissue box\nDEMO-01\n\t1\t150 EGP"
+    },
+    {
+      "name": "return-steps",
+      "selector": ".as-steps",
+      "text": "1\nReturn request\n2\nApproval\n3\nReturn collection\n4\nReceive and inspect return\n5\nRefund customer\n6\nSettle and close"
+    },
+    {
+      "name": "reports",
+      "selector": "#spk-rep-prev",
+      "text": ""
+    },
+    {
+      "name": "report-counts",
+      "selector": "#sp-kpi",
+      "text": "Today · Tuesday 27 October\nReport\nReceived orders\n1\nConfirmed\n1\nFollow-up\n0\nCancelled\n0\nConfirmation rate\n100%\n1 of 1"
+    },
+    {
+      "name": "history",
+      "selector": "#page-movements",
+      "text": "Transactions\nManage returns and exchanges\nTransactions\nArchive\nCollections Log\nAll\n1\nResults: 1 of 1\n#DEMO-1001\nDemo customer\nToday\nat 01:00 PM\n⋮\nTotal\nEGP\n300\nPaid\nEGP\n0\nRemaining\nEGP\n300\nOrder status\nDelivered\n1–1 of 1\nRows:\n10\n20\n50\n100"
+    },
+    {
+      "name": "closing",
+      "selector": "#dash-stats",
+      "text": "TOTAL SALES\ni\n••••••\n \nNET PROFIT\ni\n••••••\n \nTOTAL PURCHASES\ni\n••••••\n \nOutstanding / Debts\n••••\ni\nApproved Expenses\n••••\ni\nReturns\n••••\ni\nShipping Collected\n••••\ni\nDeposits Collected\n••••\ni\nCustomer Discounts\n••••\ni\nLow Stock Items\n••••\ni"
+    }
+  ]
+}

@@ -4991,6 +4991,30 @@ body.dark-mode .sp-pick-menu{box-shadow:0 12px 32px rgba(0,0,0,.5),0 2px 6px rgb
 .sp-cmtwin-body .inv-cmt-item{padding:10px 18px}
 .sp-cmtwin-body .sp-disc-empty{padding:34px 18px}
 .sp-cmt-av{flex-shrink:0;display:flex}
+.sp-cmtwin{max-height:min(86dvh,760px)}
+.sp-cmtwin .modal-head{padding:20px 24px;background:var(--surface)}
+.sp-cmtwin-title{display:flex;align-items:center;gap:9px;font-size:1.12rem}
+.sp-cmtwin-count{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 6px;border-radius:8px;background:var(--primary-pale);color:var(--primary);font-size:.73rem;font-variant-numeric:tabular-nums}
+.sp-cmtwin-sub{margin-top:7px;font-size:.8rem;line-height:1.5}
+.sp-cmtwin .modal-x{width:36px;height:36px;border-radius:10px;background:var(--surface2)}
+.sp-cmtwin-body .sp-cmt-scroll{padding:20px 24px;scrollbar-gutter:stable;background:var(--surface)}
+.sp-cmtwin-body .inv-cmt-item{padding:0;margin:0 0 22px;gap:12px;border:0;align-items:flex-start}
+.sp-cmtwin-body .inv-cmt-item:last-child{margin-bottom:0}
+.sp-cmtwin-body .inv-cmt-item:hover{background:transparent}
+.sp-cmtwin .tx-cmt-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 7px;flex-wrap:wrap}
+.sp-cmtwin .tx-cmt-author{font-size:.86rem;color:var(--text);line-height:1.5}
+.sp-cmtwin .tx-cmt-time{font-size:.69rem;white-space:nowrap;line-height:1.5;font-variant-numeric:tabular-nums;margin-inline-start:auto}
+.sp-cmtwin .cmt-who{min-width:0}
+.sp-cmtwin .tx-cmt-text{display:block;padding:12px 14px;border-radius:12px;border-start-start-radius:4px;background:var(--surface2);border-color:transparent;font-size:.87rem;line-height:1.85;text-align:start;overflow-wrap:anywhere}
+.sp-cmtwin .tx-cmt-actions{margin:0;align-self:center}
+.sp-cmtwin .inv-cmt-item:focus-within .tx-cmt-actions{opacity:1}
+.sp-cmtwin-body .inv-cmt-form.sp-cmt-compose{padding:16px 24px 14px;background:var(--surface);border-top:1px solid var(--border)}
+.sp-cmtwin .inv-cmt-input-row{grid-template-columns:minmax(0,1fr) 42px;gap:10px;align-items:end;margin-top:9px}
+.sp-cmtwin textarea.inv-cmt-input{width:100%;height:84px;min-height:84px;max-height:180px;resize:vertical;padding:12px 14px;border-radius:12px;background:var(--surface2);color:var(--text);font:inherit;font-size:.86rem;line-height:1.7}
+.sp-cmtwin .inv-cmt-send-btn{width:42px;height:42px;border-radius:12px;margin-bottom:2px}
+.sp-cmtwin-body .sp-cmt-note{border:0;padding:10px 0 0;font-size:.68rem;line-height:1.6}
+.sp-cmt-compose-label{display:block;font-size:.78rem;font-weight:600;color:var(--text);margin-bottom:9px}
+@media(max-width:540px){.sp-cmtwin .modal-head{padding:16px}.sp-cmtwin-body .sp-cmt-scroll{padding:16px}.sp-cmtwin-body .inv-cmt-form.sp-cmt-compose{padding:12px 16px}.sp-cmtwin-body .inv-cmt-item{gap:9px;margin-bottom:18px}.sp-cmtwin .tx-cmt-text{padding:10px 12px}.sp-cmtwin .tx-cmt-time{font-size:.65rem}.sp-cmtwin .tx-cmt-actions{flex-direction:column}}
 
 /* ═══ Shopify — stock marks (✓ متاح N / ✕ غير متوفر / غير مربوط) ═══ */
 .sp-mk{display:inline-flex;align-items:center;gap:4px;font-size:.7rem;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.3}
@@ -20237,7 +20261,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     </div>
 
     <!-- 5. Full audit table -->
-    <div class="card oa-audit-table-card">
+    <div class="card oa-audit-table-card" dir="rtl">
       <div class="oa-table-heading">
         <h3 style="font-size:.95rem;color:var(--text);margin:0;font-weight:600">جدول التدقيق الكامل</h3>
         <label class="oa-payment-field" for="oa-payment-filter">حالة الدفع
@@ -24216,6 +24240,7 @@ const CARRIERS = [
   { code:'bosta',      ar:'بوسطة',                  en:'Bosta',        integration:'bosta' },
   { code:'jt-express', ar:'جيه آند تي إكسبريس',     en:'J&T Express',  integration:'none'  },
   { code:'mylerz',     ar:'مايلرز',                 en:'Mylerz',       integration:'none'  },
+  { code:'soulia',     ar:'الشحن بواسطة سوليا',      en:'Shipping by Soulia', integration:'none' },
 ];
 
 const LEGACY_CARRIER_CODE = 'unspecified';
@@ -24272,6 +24297,7 @@ function carrierCodeFromLooseName(name) {
 function carrierCodeFromName(name) {
   const n = String(name || '').trim().toLowerCase();
   if (!n) return '';
+  if (/^(?:shipping|shipiing)\s+by\s+soulia$/.test(n)) return 'soulia';
   const hit = CARRIERS.find(c =>
     c.code === n || c.ar.toLowerCase() === n || c.en.toLowerCase() === n);
   return hit ? hit.code : '';
@@ -37578,9 +37604,8 @@ function openMentionDropdown(input, txId, query) {
   dd.id = 'mention-dropdown';
 
   dd.innerHTML = candidates.map((u, i) => {
-    const initials = (u.name || u.username || '?').slice(0, 2).toUpperCase();
     return `<div class="mention-item" data-idx="${i}" data-name="${esc(u.name || u.username)}" data-uid="${esc(String(u._id || u.id || ''))}" onclick="selectMention(this,'${esc(txId)}')">
-      <div class="mention-avatar">${initials}</div>
+      ${userAvatarHtml(u, 28)}
       <div class="mention-name">${esc(u.name || u.username)}</div>
     </div>`;
   }).join('');
@@ -88489,14 +88514,30 @@ const LANG_PREF_KEY = 'soulia_lang_pref';
    ⚠ Both keys are duplicated as string literals in that <head> block, which runs long
    before these consts exist. Renaming either means editing both places. */
 const LANG_SYSTEM_CACHE_KEY = 'soulia_lang_system';
+let _sessionLangPref = null;
+let _langSaveQueue = Promise.resolve();
 
 function langLocked() { return settings.langEnabled === false && !isAdmin(); }
 
 function loadLangPref() {
+  if (_sessionLangPref) return _sessionLangPref;
   try { const v = localStorage.getItem(LANG_PREF_KEY); return (v === 'ar' || v === 'en') ? v : null; } catch (_) { return null; }
 }
-function saveLangPref(lang) { try { localStorage.setItem(LANG_PREF_KEY, lang); } catch (_) {} }
-function clearLangPref() { try { localStorage.removeItem(LANG_PREF_KEY); } catch (_) {} }
+function saveLangPref(lang) {
+  _sessionLangPref = lang;
+  try { localStorage.setItem(LANG_PREF_KEY, lang); } catch (_) {}
+}
+function clearLangPref() {
+  _sessionLangPref = null;
+  try { localStorage.removeItem(LANG_PREF_KEY); } catch (_) {}
+}
+// Serialize writes so a slower earlier request cannot overwrite the latest choice.
+function persistSystemLang(lang) {
+  _langSaveQueue = _langSaveQueue.then(() =>
+    api('/settings', { method: 'PUT', body: JSON.stringify({ lang }) })
+  ).catch(() => toast(t('langPolicySaveFailed'), true));
+  return _langSaveQueue;
+}
 
 function loadSystemLangCache() {
   try { const v = localStorage.getItem(LANG_SYSTEM_CACHE_KEY); return (v === 'ar' || v === 'en') ? v : null; } catch (_) { return null; }
@@ -88552,15 +88593,17 @@ function syncLangControls() {
 }
 
 function changeLang(lang) {
+  if (lang !== 'ar' && lang !== 'en') return;
   if (langLocked()) { toast(t('langLockedToast'), true); return; }
   currentLang = lang;
+  // Every explicit choice wins over stale settings responses on this device,
+  // including admin sessions and browsers where localStorage is unavailable.
+  saveLangPref(lang);
   if (isAdmin()) {
     // The admin sets the system default for everyone.
     settings.lang = lang;
-    api('/settings', { method: 'PUT', body: JSON.stringify({ lang }) }).catch(() => {});
-  } else {
-    // Staff preference stays on this device only.
-    saveLangPref(lang);
+    rememberSystemLang();
+    persistSystemLang(lang);
   }
   applyLang();
   syncLangButton();
@@ -88584,8 +88627,9 @@ function setForcedLang(lang) {
   if (!isAdmin() || (lang !== 'ar' && lang !== 'en')) return;
   settings.lang = lang;
   currentLang = lang;
-  api('/settings', { method: 'PUT', body: JSON.stringify({ lang }) })
-    .catch(() => toast(t('langPolicySaveFailed'), true));
+  saveLangPref(lang);
+  rememberSystemLang();
+  persistSystemLang(lang);
   toast(t('langForcedSavedToast', { v: t(lang === 'ar' ? 'langNameAr' : 'langNameEn') }));
   applyLang();
   syncLangButton();
@@ -89329,6 +89373,20 @@ function _gsOrderStatus(item) {
   return { ...meta, cls: 'search-order-badge-' + meta.tone };
 }
 
+function _gsOrderDate(item) {
+  const live = (transactions || []).find(tx => String(tx._id) === String(item.id));
+  const tx = live || item;
+  const raw = tx.transactionDate || tx.date || tx.createdAt || '';
+  if (!raw) return '';
+  const day = new Date(raw.length === 10 ? raw + 'T00:00:00' : raw);
+  if (Number.isNaN(day.getTime())) return '';
+  const locale = currentLang === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn';
+  const date = day.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
+  const timestamp = tx.createdAt || tx.date;
+  const time = timestamp ? new Date(timestamp) : null;
+  return date + (time && !Number.isNaN(time.getTime()) ? ' · ' + time.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: true }) : '');
+}
+
 function renderSearchDropdown() {
   const _sq = String(qs('#global-search')?.value || '').trim();
   const _phoneQueryAllowed = /^(010|011|012|015)/.test(_sq);
@@ -89367,7 +89425,7 @@ function renderSearchDropdown() {
         const _st = _gsOrderStatus(item);
         const bostaBadge = SouliaOrderStatus.badge(_st);
         const custName = String(item.subtitle || '').replace(/^\s*[^—]+—\s*/, '').trim();
-        const dateStr = item.createdAt ? fmtDateShort(new Date(item.createdAt)) : '';
+        const dateStr = _gsOrderDate(item);
         metaHtml = '<div class="search-order-meta">'
           + '<div class="search-order-top">'
             + '<span class="search-order-ref">' + _gsHighlight(item.title, _hlTokens) + '</span>'
@@ -95754,7 +95812,15 @@ const _puSVG = {
 
 // ── Quick summary tooltip ─────────────────────────────────────
 let _puTipEl = null;
+let _puTipTarget = null, _puTipFrame = null;
+const _puTipObserver = new MutationObserver(() => {
+  if (_puTipTarget && (!_puTipTarget.isConnected || !_puTipTarget.getClientRects().length)) _puHideQuickTip();
+});
 function _puShowQuickTip(target, grp) {
+  _puHideQuickTip();
+  if (!target.isConnected) return;
+  _puTipTarget = target;
+  _puTipObserver.observe(document.body, { childList: true, subtree: true });
   if (!_puTipEl) {
     _puTipEl = document.createElement('div');
     _puTipEl.className = 'pu-quick-tip';
@@ -95781,11 +95847,27 @@ function _puShowQuickTip(target, grp) {
   if (top + tipR.height > window.innerHeight - 6) top = r.top - tipR.height - 6;
   _puTipEl.style.left = left + 'px';
   _puTipEl.style.top  = top  + 'px';
-  requestAnimationFrame(() => _puTipEl.classList.add('show'));
+  _puTipFrame = requestAnimationFrame(() => {
+    _puTipFrame = null;
+    if (_puTipTarget === target && target.isConnected) _puTipEl.classList.add('show');
+    else _puHideQuickTip();
+  });
 }
 function _puHideQuickTip() {
+  if (_puTipFrame !== null) cancelAnimationFrame(_puTipFrame);
+  _puTipFrame = null; _puTipTarget = null;
+  _puTipObserver.disconnect();
   if (_puTipEl) _puTipEl.classList.remove('show');
 }
+document.addEventListener('pointermove', event => {
+  if (_puTipTarget && !_puTipTarget.contains(event.target)) _puHideQuickTip();
+}, { passive: true });
+document.addEventListener('pointerdown', _puHideQuickTip, { passive: true });
+window.addEventListener('scroll', _puHideQuickTip, { capture: true, passive: true });
+window.addEventListener('resize', _puHideQuickTip);
+window.addEventListener('blur', _puHideQuickTip);
+document.addEventListener('visibilitychange', () => { if (document.hidden) _puHideQuickTip(); });
+document.addEventListener('keydown', event => { if (event.key === 'Escape') _puHideQuickTip(); });
 
 // ── Fly-card animation prep → ready ───────────────────────────
 
@@ -95984,7 +96066,7 @@ function _puBuildPrepGroupCard(grp) {
     <div class="pu-prep-content">
       <div class="pu-prep-heading">
         <span class="pu-ref-hero" dir="ltr">${esc(grp.prepRef)}</span>
-        <span class="pu-prep-order-count">${t('puOrdersCount',{n:fmtN(totalCount)})}</span>
+        <span class="pu-prep-order-count">${_puGroupCountContent(totalCount)}</span>
       </div>
       ${_puGroupDatePreview(grp.createdAtIso, 'created')}
       <div class="pu-prep-amount">
@@ -96586,7 +96668,7 @@ function _puBuildGroupCard(group, colType) {
       <div class="pu-prep-content">
         <div class="pu-prep-heading">
           <span class="pu-ref-hero" dir="ltr">${esc(group.pickupRef || group.key)}</span>
-          <span class="pu-prep-order-count">${t('puOrdersCount',{n:fmtN(group.orders.length)})}</span>
+          <span class="pu-prep-order-count">${_puGroupCountContent(group.orders.length)}</span>
         </div>
         ${_puGroupDatePreview(group.pickupDate, 'ready')}
         <div class="pu-prep-amount"><span>${t('puGroupTotalLabel')}</span><strong class="pu-group-total"><bdi>${fmtJT(totalAmt)}</bdi></strong></div>
@@ -96897,7 +96979,7 @@ function _puUpdatePrepGroupProgress(prepRef) {
     }
 
     const orderCountBadge = groupEl.querySelector('.pu-prep-order-count');
-    if (orderCountBadge) orderCountBadge.textContent = t('puOrdersCount',{n:total});
+    if (orderCountBadge) orderCountBadge.innerHTML = _puGroupCountContent(total);
 
     // Update remaining-orders badge in row 2
     const remainBadge = groupEl.querySelector('.pu-prep-remain-badge');
@@ -97162,9 +97244,9 @@ function _pwOrderCardHtml(o, isSel, isDone) {
       <div class="pw-oc-top">
         ${isDone ? `<span class="pw-oc-done"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>` : ''}
         <span class="pw-oc-ref">#${esc(o.ref||'—')}</span>
-        ${window.AfterSales?.orderBadge(o)||''}
         <span class="pw-oc-total">${fmtJT(o.total||0)}</span>
       </div>
+      ${window.AfterSales?.orderBadge(o, false)||''}
       <div class="pw-oc-name">${esc(o.client||'—')}</div>
       ${(o.phone||o.clientPhone) ? `<div class="pw-oc-phone">${esc(o.phone||o.clientPhone)}</div>` : ''}
       <div class="pw-oc-meta">
@@ -97928,7 +98010,7 @@ function _pwRenderWork() {
          وارتفاعٌ يُقتطع من الأصناف. الفصل عمودياً يُنهي الاثنين ويجعل الحدّ
          بين «ما يُقرأ» و«ما يُجهَّز» حدّاً بصرياً صريحاً. -->
     <div class="pw-body2">
-      <aside class="pw-side">${_pwNotesHtml(o)}</aside>
+      <aside class="pw-side">${window.AfterSales?.preparationDetails(o)||''}${_pwNotesHtml(o)}</aside>
       <div class="pw-items-wrap">
         <div class="pw-items-bar">
           <span class="pw-items-title">${esc(t('puItemsHeader'))}</span>
@@ -97982,6 +98064,7 @@ function _pwRenderWork() {
   const changed = prevId !== String(o._id);
   _pwUpdateWork(host, markup, !changed);
   host.dataset.pwOrder = String(o._id);
+  void window.AfterSales?.loadPreparationDetails(host);
   /* ⚠ الخيط يفتح على الأحدث لا على الأقدم. القائمة تُمرَّر داخل سقفها، وأول ما
      يراه المُجهّز عند فتح الطلب يجب أن يكون آخر تعليمة وصلت — «ضيف كيس هدية»
      المكتوبة قبل دقيقة، لا أول تعليق كُتب قبل يومين. نفس ما يفعله
@@ -108571,6 +108654,8 @@ function _updateShopifyEditSummary() {
   const discount = Math.min(subtotal, (Number(_spEditOrder?.discount) || 0)
     + _spCodesTotal(subtotal) + _spManualAmount(subtotal));
   const total = Math.max(0, subtotal - discount + (Number(_spEditOrder?.shipCost) || 0));
+  const paid = _spDepositOf(_spEditOrder).deposit;
+  const balance = Math.round((total - paid) * 100) / 100;
   const unmatched = _shopifyEditItems.filter(i => !i.productId).length;
   /* ⚠ لا لاحقة «EGP» بعد fmtJ: هو يُخرج مقطع العملة بنفسه، فالسطر القديم
        (`${fmtJ(total)} EGP`) كان يطبعها مرّتين — «EGP 1,200 EGP».
@@ -108579,6 +108664,7 @@ function _updateShopifyEditSummary() {
   el.innerHTML = `
     <span class="sp-sumbar-seg">${tf(_shopifyEditItems.length === 1 ? 'spItemsCountOne' : 'spItemsCount', { n: `<b>${_shopifyEditItems.length}</b>` })}</span>
     <span class="sp-sumbar-seg sp-sumbar-total">${fmtJ(total)}</span>
+    ${paid > 0 ? `<span class="sp-sumbar-seg">${esc(t('spDepApprovedTotal'))}: ${fmtJ(paid)}</span><span class="sp-sumbar-seg sp-sumbar-total">${esc(balance < 0 ? (currentLang === 'en' ? 'Excess paid' : 'زيادة في المدفوع') : t('spRemaining'))}: ${fmtJ(Math.abs(balance))}</span>` : ''}
     ${unmatched > 0 ? `<span class="sp-sumbar-seg sp-sumbar-warn">${tf('spEditUnmatchedCount', { n: unmatched })}</span>` : ''}
   `;
 }
@@ -109197,6 +109283,8 @@ function _spDiscGuardHtml(ourDisc) {
 }
 
 function _spDiscSummaryHtml(itemsTotal, shopDisc, codesDisc, manualDisc, shipCost, grand) {
+  const paid = _spDepositOf(_spEditOrder);
+  const balance = Math.round((grand - paid.deposit) * 100) / 100;
   const row = (label, val, cls) =>
     `<div class="sp-sum-row ${cls || ''}"><span>${esc(label)}</span><span class="sp-sum-v">${val}</span></div>`;
   return [
@@ -109206,6 +109294,10 @@ function _spDiscSummaryHtml(itemsTotal, shopDisc, codesDisc, manualDisc, shipCos
     manualDisc > 0 ? row(t('spDiscManual'), fmtJSigned(manualDisc, '−'), 'is-minus') : '',
     shipCost > 0 ? row(t('spDiscShipping'), fmtJSigned(shipCost, '+')) : '',
     row(t('spDiscGrandTotal'), fmtJ(grand), 'is-total'),
+    paid.deposit > 0 ? row(t('spDepApprovedTotal'), fmtJSigned(paid.deposit, '−')) : '',
+    paid.deposit > 0 ? row(t('spRemaining'), fmtJ(Math.max(0, balance)), 'is-total') : '',
+    balance < 0 ? row(currentLang === 'en' ? 'Excess paid — requires settlement' : 'زيادة في المدفوع — تحتاج تسوية', fmtJ(-balance), 'is-minus') : '',
+    paid.pendingTotal > 0 ? row(currentLang === 'en' ? 'Deposit awaiting approval (not deducted)' : 'ديبوزت بانتظار الاعتماد (لم يُخصم)', fmtJ(paid.pendingTotal)) : '',
   ].filter(Boolean).join('');
 }
 
@@ -109472,6 +109564,8 @@ function _spRenderCommentsTab() {
   if (!host || !order) return;
 
   const list = Array.isArray(order.comments) ? order.comments : [];
+  const count = qs('#sp-cmtwin-count');
+  if (count) count.textContent = fmtN(list.length);
   const myName = currentUser?.name || currentUser?.username || '';
 
   /* ترتيب زمني (الأقدم أعلى) وحقل الكتابة أسفل — شكل المحادثة. الخيط يُفتح
@@ -109491,7 +109585,7 @@ function _spRenderCommentsTab() {
            وإلا الأحرف الأولى. */
         const _au = (typeof _pwFindUser === 'function' && _pwFindUser(c.employee)) || { name: c.employee || '؟' };
         return `<div class="inv-cmt-item" id="sp-cmt-${Number(c.id)}">
-          <div class="sp-cmt-av">${userAvatarHtml(_au, 30)}</div>
+          <div class="sp-cmt-av">${userAvatarHtml(_au, 36)}</div>
           <div class="tx-cmt-body">
             <div class="tx-cmt-meta"><span class="cmt-who"><span class="tx-cmt-author">${esc(c.employee || '؟')}</span>${cmtJobTitleHtml(c.employee)}</span><span class="tx-cmt-time">${_cmtTimeHtml(c)}</span></div>
             <div class="tx-cmt-text" data-comment-id="${Number(c.id)}" dir="auto">${renderMentionText(c.text)}</div>
@@ -109507,13 +109601,14 @@ function _spRenderCommentsTab() {
   host.innerHTML = `
     <div class="inv-cmt-list sp-cmt-scroll" id="sp-cmt-scroll">${rows}</div>
     <div class="inv-cmt-form sp-cmt-compose">
+      <label class="sp-cmt-compose-label" for="${inputId}">${esc(currentLang === 'en' ? 'Add a comment' : 'إضافة تعليق')}</label>
       ${_cmtToolsHtml(inputId, esc(order._id))}
       <div class="inv-cmt-input-row">
-        <input type="text" id="${inputId}" class="inv-cmt-input" dir="auto"
-          placeholder="${escHtml(t('ivCmtAddPlaceholder'))}"
+        <textarea id="${inputId}" class="inv-cmt-input" dir="auto" rows="3"
+          placeholder="${escHtml(currentLang === 'en' ? 'Write your comment… Use @ to mention someone' : 'اكتب تعليقك… استخدم @ للإشارة إلى زميل')}"
           oninput="onMentionInput(this,'${esc(order._id)}')"
-          onkeydown="onMentionKey(event,'${esc(order._id)}');if(event.key==='Enter'&&!_mentionDropdown){event.preventDefault();_spAddComment()}">
-        <button class="inv-cmt-send-btn" id="sp-cmt-btn" onclick="_spAddComment()" title="${escHtml(t('ivCmtSend'))}">
+          onkeydown="_spCommentKey(event,'${esc(order._id)}')"></textarea>
+        <button type="button" class="inv-cmt-send-btn" id="sp-cmt-btn" onclick="_spAddComment()" title="${escHtml(t('ivCmtSend'))}" aria-label="${escHtml(t('ivCmtSend'))}">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>
@@ -109521,6 +109616,15 @@ function _spRenderCommentsTab() {
     </div>
   `;
   const sc = qs('#sp-cmt-scroll'); if (sc) sc.scrollTop = sc.scrollHeight;
+}
+
+function _spCommentKey(event, orderId) {
+  const choosingMention = !!_mentionDropdown;
+  onMentionKey(event, orderId);
+  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && !choosingMention && !event.defaultPrevented) {
+    event.preventDefault();
+    _spAddComment();
+  }
 }
 
 /**
@@ -109747,7 +109851,7 @@ function openShopifyCommentsModal(orderId) {
     <div class="sp-cmtwin">
       <div class="modal-head">
         <div>
-          <div class="sp-cmtwin-title">${esc(t('spTabComments'))}</div>
+          <div class="sp-cmtwin-title">${esc(t('spTabComments'))}<span class="sp-cmtwin-count" id="sp-cmtwin-count"></span></div>
           <div class="sp-cmtwin-sub">#${ref} — ${esc(order.client || '')}</div>
         </div>
         <button class="modal-x" onclick="closeModal()" aria-label="${escHtml(t('cancel'))}">
@@ -109756,7 +109860,7 @@ function openShopifyCommentsModal(orderId) {
       </div>
       <div id="sp-cmt-host" class="sp-cmtwin-body"></div>
     </div>
-  `, 'max-width:620px;padding:0;overflow:hidden');
+  `, 'max-width:680px;padding:0;overflow:hidden');
 
   _spRenderCommentsTab();
   // التركيز على حقل الكتابة: النافذة تُفتح للكتابة في الأغلب لا للقراءة.

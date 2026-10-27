@@ -1,0 +1,61 @@
+{
+  "duration": 90,
+  "width": 1080,
+  "height": 1920,
+  "seeks": [
+    {
+      "time": 0.01,
+      "readyState": 4
+    },
+    {
+      "time": 7,
+      "readyState": 4
+    },
+    {
+      "time": 13,
+      "readyState": 4
+    },
+    {
+      "time": 24,
+      "readyState": 4
+    },
+    {
+      "time": 32,
+      "readyState": 4
+    },
+    {
+      "time": 41,
+      "readyState": 4
+    },
+    {
+      "time": 50,
+      "readyState": 4
+    },
+    {
+      "time": 58,
+      "readyState": 4
+    },
+    {
+      "time": 67,
+      "readyState": 4
+    },
+    {
+      "time": 75,
+      "readyState": 4
+    },
+    {
+      "time": 83,
+      "readyState": 4
+    },
+    {
+      "time": 89.8,
+      "readyState": 4
+    }
+  ],
+  "decodedFrames": 2700,
+  "fps": 30,
+  "scenes": 11,
+  "fullDecode": "passed; see decode-check.txt",
+  "audio": "Silent by design",
+  "visualSamples": 22
+}

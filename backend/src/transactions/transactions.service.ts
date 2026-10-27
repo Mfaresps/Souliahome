@@ -774,6 +774,16 @@ export class TransactionsService {
     return tx;
   }
 
+  async undoAfterSalesPreparation(id: string, caseId: string, by: string, actorId: string, context: DatabaseWriteContext) {
+    const tx = await this.transactionModel.findById(id).session(context.session).lean();
+    if (!tx || tx.cancelled || tx.archived || tx.afterSales?.caseId !== caseId || tx.afterSales?.role !== 'replacement' ||
+      tx.afterSales.shipmentPending || tx.bostaOrderId || tx.shippedAt || tx.deliveredAt ||
+      (tx.bostaStatus && !['CREATED', 'VALIDATION_ERROR'].includes(tx.bostaStatus))) throw new ConflictException('لا يمكن إلغاء تجهيز بديل دخل الشحن');
+    const changed = await resetPickupPreparation(this.transactionModel, [id], by, actorId, undefined, context);
+    if (!changed.includes(id)) throw new ConflictException('تغيرت حالة تجهيز البديل؛ حدّث الطلب');
+    context.afterCommit.push(() => { this.emit('tx:updated', { txId: id, by }); this.notifyUnitIdentitiesChanged(id); });
+  }
+
   async cancelAfterSalesReplacement(id: string, caseId: string, reason: string, by: string, context: DatabaseWriteContext) {
     const tx = await this.transactionModel.findById(id).session(context.session);
     if (!tx || tx.cancelled || tx.afterSales?.caseId !== caseId || tx.afterSales?.role !== 'replacement' || tx.afterSales.shipmentPending) throw new BadRequestException('لا يمكن إلغاء البديل في حالته الحالية');

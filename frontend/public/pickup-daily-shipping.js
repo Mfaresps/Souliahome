@@ -120,6 +120,9 @@ function _puDailyDayLabel(day) {
 function _puDailyCountHtml(count) {
   return `<span class="pu-daily-count"><bdi>${count}</bdi> <span>${esc(_puDailyText('أوردر', 'orders'))}</span></span>`;
 }
+function _puGroupCountContent(count) {
+  return `<bdi>${esc(String(fmtN(count)))}</bdi><span>${esc(_puDailyText('أوردر', count === 1 ? 'order' : 'orders'))}</span>`;
+}
 function _puDailyTableDateHtml(day) {
   if (!day) return `<span class="pu-daily-date">${esc(_puDailyText('تاريخ غير مسجل', 'Date not recorded'))}</span>`;
   const date = new Date(day + 'T12:00:00Z');
@@ -142,7 +145,7 @@ function _puGroupDatePreview(value, kind = 'shipped') {
   const part = options => new Intl.DateTimeFormat(locale, { timeZone: 'Africa/Cairo', ...options }).format(date);
   const labels = { created: ['تاريخ التحضير', 'Prepared on'], ready: ['موعد الاستلام', 'Pickup date'], shipped: ['تاريخ الشحن', 'Dispatched on'], order: ['تاريخ الطلب', 'Order date'] };
   const label = labels[kind] || labels.shipped;
-  return `<time class="pu-date-preview" datetime="${esc(day)}" title="${esc(_puDailyDayLabel(day))}"><strong class="pu-date-day">${esc(part({ day: '2-digit' }))}</strong><span class="pu-date-copy"><span class="pu-date-caption">${esc(_puDailyText(...label))}</span><b>${esc(part({ month: 'short', year: 'numeric' }))}<span class="pu-date-weekday"> · ${esc(part({ weekday: 'short' }))}</span></b></span></time>`;
+  return `<time class="pu-date-preview pu-date-simple" datetime="${esc(day)}" title="${esc(_puDailyDayLabel(day))}"><span class="pu-date-caption">${esc(_puDailyText(...label))}</span><bdi class="pu-date-value">${esc(part({ day: 'numeric', month: 'short', year: 'numeric' }))}</bdi></time>`;
 }
 function _puDailyGroupCard(group) {
   const card = document.createElement('button');

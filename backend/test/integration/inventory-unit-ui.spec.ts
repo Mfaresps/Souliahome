@@ -85,15 +85,15 @@ describe('Actual barcode management script in Chromium', () => {
     expect(await page.$$('#iu-previews .iu-label')).toHaveLength(1);
     expect(calls.some(call => call.search?.includes('unitIds=' + units[1]._id))).toBe(true);
   });
-  it('shows confirmed order delivery instead of the older prepared unit status', async () => {
-    units[0] = { ...units[0], status: 'prepared', displayStatus: 'delivered', statusSource: 'order' };
+  it.each(['shipped', 'delivered'])('shows confirmed order %s instead of the older prepared unit status', async status => {
+    units[0] = { ...units[0], status: 'prepared', displayStatus: status, statusSource: 'order' };
     units[1] = { ...units[1], status: 'prepared', displayStatus: 'prepared', statusSource: 'unit' };
     await page.evaluate(() => window.renderBarcodeManagement());
     await page.waitForSelector('#iu-units [data-unit-id]');
-    expect(await page.$eval(`[data-log-unit="${units[0]._id}"] .iu-status-pill`, el => el.textContent)).toBe('Delivered');
+    expect(await page.$eval(`[data-log-unit="${units[0]._id}"] .iu-status-pill`, el => el.textContent)).toBe(status === 'shipped' ? 'Shipped' : 'Delivered');
     expect(await page.$eval(`[data-log-unit="${units[1]._id}"] .iu-status-pill`, el => el.textContent)).toBe('Prepared');
     await page.evaluate(() => { currentLang = 'ar'; return window.renderBarcodeManagement(); });
-    expect(await page.$eval(`[data-log-unit="${units[0]._id}"] .iu-status-pill`, el => el.textContent)).toBe('تم تسليمها');
+    expect(await page.$eval(`[data-log-unit="${units[0]._id}"] .iu-status-pill`, el => el.textContent)).toBe(status === 'shipped' ? 'مع شركة الشحن' : 'تم تسليمها');
   });
   it('fits long product text and invoice dates on 50x25 labels without shrinking the QR', async () => {
     labels[0] = { ...labels[0], productName: 'Sandora-Deep Gray- organize L', sku: 'RIVA-COASTER-SMALL', manualCode: 'U-0000-0166-9', invoiceDate: '2026-10-26' };

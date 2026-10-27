@@ -28,8 +28,8 @@
 #rep-panel-orderaudit .oa-table-heading h3{font-size:1rem!important;font-weight:650!important;line-height:1.6}
 #rep-panel-orderaudit .oa-payment-field,#rep-panel-orderaudit .oa-search-field{display:flex;flex-direction:column;gap:8px;min-width:0}
 #rep-panel-orderaudit .oa-search-input-wrap{position:relative;display:block;min-width:0}
-#rep-panel-orderaudit .oa-search-input-wrap svg{position:absolute;inset-inline-start:13px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
-#rep-panel-orderaudit #oa-search{padding-inline-start:41px!important;font-size:.85rem!important}
+#rep-panel-orderaudit .oa-search-input-wrap svg{position:absolute;inset-inline-start:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted);pointer-events:none}
+#rep-panel-orderaudit .oa-search-input-wrap #oa-search{padding-inline-start:41px!important;padding-inline-end:12px!important;text-align:start;font-size:.85rem!important}
 #rep-panel-orderaudit #oa-payment-filter{font-size:.8rem!important}
 #rep-panel-orderaudit .oa-filters{gap:8px!important;padding-top:16px;border-top:1px solid var(--border);margin-bottom:16px!important}
 #rep-panel-orderaudit .oa-filters .tab-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:7px 12px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);font-size:.75rem;line-height:1.4}

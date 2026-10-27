@@ -1,0 +1,55 @@
+[
+  {"id":1,"start":0,"duration":5,"chapter":"THE JOURNEY","shots":[
+    {"duration":2.5,"layout":"hook","title":["EVERY ORDER","STARTS A","JOURNEY."],"assets":["order-card","order-items","dispatch-card"],"label":"FROM ORDER TO DELIVERY"},
+    {"duration":2.5,"layout":"connect","title":["ONE SYSTEM","CONTROLS","IT ALL."],"assets":["order-card","inventory-card","payment"],"label":"SOULIA / BUSINESS MANAGEMENT"}]},
+  {"id":2,"start":5,"duration":7,"chapter":"ORDER RECEIVED","shots":[
+    {"duration":2,"layout":"stack","title":["ORDER","RECEIVED."],"assets":["order-card","order-counts"],"label":"One clear view. Every essential detail."},
+    {"duration":2.5,"layout":"stack","title":["EVERY DETAIL.","RIGHT HERE."],"assets":["detail-head","customer","order-items"],"label":"DEMO-1001 / Customer · Address · Items"},
+    {"duration":2.5,"layout":"focus","title":["ONE ORDER.","ONE CLEAR VIEW."],"assets":["order-items","payment"],"label":"The real order workspace"}]},
+  {"id":3,"start":12,"duration":7,"chapter":"CONFIRMATION","shots":[
+    {"duration":2.5,"layout":"stack","title":["CONFIRM.","VERIFY."],"assets":["customer","followup-card"],"label":"Customer details. Assigned follow-up."},
+    {"duration":2.5,"layout":"focus","title":["MOVE","FORWARD."],"assets":["confirmation-summary-panel","confirmation-actions"],"label":"Review the Prepare & Ship controls"},
+    {"duration":2,"layout":"status","title":["CLEAR STATUS.","NEXT STEP."],"assets":["confirmed-card","order-items"],"label":"Confirmed / Demonstration state"}]},
+  {"id":4,"start":19,"duration":6,"chapter":"EMPLOYEE ASSIGNMENT","shots":[
+    {"duration":2,"layout":"handoff","title":["THE RIGHT","ORDER."],"assets":["order-card","assignment"],"label":"DEMO-1001 → Demo specialist"},
+    {"duration":2,"layout":"focus","title":["THE RIGHT","PERSON."],"assets":["assignment"],"label":"Employee selection. Open-order workload."},
+    {"duration":2,"layout":"stack","title":["OWNERSHIP.","MADE CLEAR."],"assets":["detail-head","followup-card"],"label":"One responsible team member"}]},
+  {"id":5,"start":25,"duration":7,"chapter":"PRODUCTS & INVENTORY","shots":[
+    {"duration":2.5,"layout":"focus","title":["STOCK","CHECKED."],"assets":["order-items","stock-detail"],"label":"Availability beside each ordered item"},
+    {"duration":2.5,"layout":"products","title":["PRODUCTS","CONTROLLED."],"assets":["product-one","product-two"],"label":"Product records. Visible stock quantities."},
+    {"duration":2,"layout":"stack","title":["KNOW WHAT’S","AVAILABLE."],"assets":["inventory-card","order-items"],"label":"The same products. The same order."}]},
+  {"id":6,"start":32,"duration":7,"chapter":"WAREHOUSE & PACKING","shots":[
+    {"duration":2,"layout":"focus","title":["PICK."],"assets":["pick-item","scan-before"],"label":"DEMO-1001 / Two required pieces"},
+    {"duration":2.5,"layout":"stack","title":["PACK."],"assets":["packing-note","pick-item"],"label":"Packing instructions stay with the order"},
+    {"duration":2.5,"layout":"scan","title":["VERIFY."],"assets":["pick-verified","scan-after"],"label":"Piece scanning / Isolated demo"}]},
+  {"id":7,"start":39,"duration":7,"chapter":"SHIPPING & DISPATCH","shots":[
+    {"duration":2.5,"layout":"focus","title":["READY","TO SHIP."],"assets":["carrier"],"label":"The actual carrier-selection controls"},
+    {"duration":2.5,"layout":"dispatch","title":["ORDER.","SHIPMENT.","CONNECTED."],"assets":["dispatch-card"],"label":"Bosta tracking / DEMO-TRACK"},
+    {"duration":2,"layout":"focus","title":["LABEL ACCESS.","IN ONE PLACE."],"assets":["dispatch-card","label-controls"],"label":"Preview label / Native control"}]},
+  {"id":8,"start":46,"duration":6,"chapter":"TRACKING & DELIVERY","shots":[
+    {"duration":2,"layout":"tracking","title":["FROM","DISPATCH…"],"assets":["dispatch-card"],"label":"Out for delivery / Demonstration state"},
+    {"duration":2,"layout":"tracking","title":["…TO","DELIVERY."],"assets":["delivered-card"],"label":"Delivered / Supported Bosta status"},
+    {"duration":2,"layout":"status","title":["JOURNEY", "COMPLETE."],"assets":["delivered-card","payment"],"label":"DEMO-1001 / Offline workflow illustration"}]},
+  {"id":9,"start":52,"duration":8,"chapter":"FINANCE & SUPPLIERS","shots":[
+    {"duration":2,"layout":"focus","title":["EVERY","TRANSACTION."],"assets":["payment","expense-card"],"label":"Order payment details → Operating expenses"},
+    {"duration":2,"layout":"stack","title":["ACCOUNTED","FOR."],"assets":["expense-card","account-controls"],"label":"Expenses. Approval status. Account filters."},
+    {"duration":2,"layout":"focus","title":["SUPPLIERS.","ORGANIZED."],"assets":["supplier-card","supplier-tabs"],"label":"Supplier records in the same workspace"},
+    {"duration":2,"layout":"stack","title":["RETURNS.","IN VIEW."],"assets":["returns","return-steps"],"label":"After-sales case linked to DEMO-1001"}]},
+  {"id":10,"start":60,"duration":8,"chapter":"TEAM & CUSTOMER SERVICE","shots":[
+    {"duration":2,"layout":"focus","title":["YOUR TEAM."],"assets":["assignment","team-cards"],"label":"Clear roles and responsibility"},
+    {"duration":2,"layout":"focus","title":["YOUR","WORKFLOWS."],"assets":["followup-card","packing-note"],"label":"Customer service. Notes. Follow-up."},
+    {"duration":2,"layout":"focus","title":["YOUR","CONTROL."],"assets":["permission-cards"],"label":"The actual role and permission controls"},
+    {"duration":2,"layout":"stack","title":["AFTER THE SALE.","STILL CONNECTED."],"assets":["returns","return-steps"],"label":"Returns. Requests. Case status."}]},
+  {"id":11,"start":68,"duration":9,"chapter":"REPORTS & BUSINESS OVERVIEW","shots":[
+    {"duration":2.5,"layout":"report","title":["EVERY","DETAIL."],"assets":["report-top","report-bottom"],"label":"Daily Orders Report / One demo order"},
+    {"duration":2,"layout":"metrics","title":["ONE CLEAR","PICTURE."],"assets":["report-counts","report-bottom"],"label":"Values computed by the real application"},
+    {"duration":2,"layout":"stack","title":["OVERVIEW.","MEET DETAIL."],"assets":["history-card","packing-note"],"label":"Transaction record. Order comments."},
+    {"duration":2.5,"layout":"connect","title":["EVERYTHING.","CONNECTED."],"assets":["order-card","inventory-card","expense-card"],"label":"Orders · Inventory · Finance · People"}]},
+  {"id":12,"start":77,"duration":13,"chapter":"SOULIA","shots":[
+    {"duration":2,"layout":"converge","title":["ONE", "CONNECTED", "OPERATION."],"assets":["order-card","inventory-card","dispatch-card","expense-card","assignment","report-top"],"label":"FROM ORDER TO DELIVERY"},
+    {"duration":2,"layout":"converge","title":["EVERY MODULE.","ONE SYSTEM."],"assets":["dashboard","order-items","payment","assignment"],"label":"SOULIA / BUSINESS MANAGEMENT"},
+    {"duration":2.5,"layout":"dashboard","title":["YOUR ENTIRE", "BUSINESS."],"assets":["dashboard"],"label":"FROM ORDER TO DELIVERY."},
+    {"duration":2.5,"layout":"dashboard","title":["CONNECTED."],"assets":["dashboard","order-card"],"label":"FROM ORDER TO DELIVERY."},
+    {"duration":2,"layout":"brand","title":["ONE SYSTEM."],"assets":[],"label":"SOULIA"},
+    {"duration":2,"layout":"brand","title":["ONE SYSTEM.","TOTAL CONTROL."],"assets":[],"label":"SOULIA"}]}
+]
